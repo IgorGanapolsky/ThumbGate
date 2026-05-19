@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThumbGate for the Agent Manager — Pre-Action Checks for Claude Code, Cursor, Codex</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Anthropic named the role that owns enterprise Claude Code: the Agent Manager. ThumbGate is the pre-action enforcement layer underneath CLAUDE.md, the plugin marketplace, permissions policy, and which skills ship.">
+<meta property="og:title" content="ThumbGate for the Agent Manager">
+<meta property="og:description" content="The role Anthropic named — Agent Manager — owns CLAUDE.md, the plugin marketplace, permissions, and which skills ship. ThumbGate is the runtime underneath all of that.">
+<meta property="og:type" content="article">
+<meta property="og:image" content="https://thumbgate-production.up.railway.app/og.png">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/agent-manager">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ThumbGate for the Agent Manager",
+  "description": "Anthropic named the role that owns enterprise Claude Code rollouts: the Agent Manager. ThumbGate is the pre-action enforcement layer underneath CLAUDE.md, the plugin marketplace, permissions policy, and which skills ship.",
+  "datePublished": "2026-05-19",
+  "dateModified": "2026-05-19",
+  "author": { "@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" },
+  "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate-production.up.railway.app" },
+  "about": [
+    { "@type": "Thing", "name": "Agent Manager" },
+    { "@type": "Thing", "name": "Claude Code rollout" },
+    { "@type": "Thing", "name": "Pre-Action Checks" }
+  ]
+}
+</script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root { --bg:#0a0a0b; --card:#161618; --border:#222225; --text:#e8e8ec; --muted:#8b8b94; --cyan:#22d3ee; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+  .container { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  nav { padding: 1rem 2rem; border-bottom: 1px solid var(--border); display:flex; gap:1.5rem; flex-wrap:wrap; }
+  nav a { color: var(--muted); text-decoration:none; font-size:0.9rem; }
+  nav .brand { color: var(--text); font-weight:700; }
+  .pill { display:inline-block; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--cyan); background:rgba(34,211,238,0.08); border:1px solid rgba(34,211,238,0.2); padding:4px 12px; border-radius:100px; margin-top:1.5rem; font-weight:600; }
+  h1 { font-size:2.2rem; line-height:1.15; margin:1rem 0 1rem; }
+  h2 { font-size:1.45rem; margin:2.2rem 0 1rem; color:var(--cyan); }
+  h3 { margin:0.6rem 0; font-size:1rem; }
+  p, li { margin-bottom:0.75rem; }
+  ul, ol { padding-left:1.25rem; }
+  .card { background: var(--card); border:1px solid var(--border); border-radius:12px; padding:1.25rem; margin:1rem 0; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; margin:1rem 0; }
+  .grid .card h3 { color:var(--cyan); }
+  .cta { display:inline-block; background:var(--cyan); color:#000; padding:0.8rem 1.2rem; border-radius:8px; text-decoration:none; font-weight:700; }
+  .secondary { color:var(--cyan); text-decoration:underline; margin-left:1rem; }
+  .quote { border-left:3px solid var(--cyan); padding:0.75rem 1rem; margin:1rem 0; color:var(--muted); font-style:italic; }
+  .table-clean { width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.95rem; }
+  .table-clean th, .table-clean td { border-bottom:1px solid var(--border); padding:0.6rem 0.5rem; text-align:left; vertical-align:top; }
+  .table-clean th { color:var(--cyan); font-weight:600; font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="brand">ThumbGate</a>
+  <a href="/guide">Guide</a>
+  <a href="/dashboard">Dashboard demo</a>
+  <a href="/#workflow-sprint-intake">Workflow Hardening Sprint</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+<div class="container">
+  <span class="pill">Built for the Agent Manager</span>
+  <h1>You own CLAUDE.md, the plugin marketplace, permissions, and which skills ship. ThumbGate is the enforcement layer underneath.</h1>
+  <p>Anthropic named the role: the <strong>Agent Manager</strong> — a hybrid PM/engineer single DRI who owns the Claude Code configuration that every developer in the org actually feels. Without that role, enterprise rollouts stall in phase two; with it, the model improving is no longer the bottleneck. ThumbGate is the pre-action runtime that role needs at the tool-call boundary.</p>
+
+  <h2>What the Agent Manager owns, and what ThumbGate ships for each</h2>
+  <table class="table-clean">
+    <thead><tr><th>You own</th><th>ThumbGate ships</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>CLAUDE.md hierarchy</strong><br>Keeping the policy that the model reads on every session current and consistent across repos.</td>
+        <td>Prevention rules auto-distilled from real <code>👎</code> feedback and written into <code>CLAUDE.md</code> by <code>scripts/feedback-to-rules.js</code>. Org-wide rule library on the hosted dashboard.</td>
+      </tr>
+      <tr>
+        <td><strong>Plugin marketplace</strong><br>Deciding which Claude Code / Cursor / Codex plugins are blessed and which are not.</td>
+        <td>ThumbGate ships as a Claude Code plugin, a Cursor extension, a Codex plugin, and a Gemini CLI hook. One install, every supported agent. Adapter compatibility matrix kept current as runtimes change.</td>
+      </tr>
+      <tr>
+        <td><strong>Permissions policy</strong><br>What an agent is allowed to execute, against which surfaces, with which evidence required.</td>
+        <td>PreToolUse hooks at the tool-call boundary. Each block carries the rule that fired, the evidence that triggered it, and a reason the agent can use to choose a safer plan. No "tell the model to be more careful."</td>
+      </tr>
+      <tr>
+        <td><strong>Which skills ship</strong><br>The set of in-context skills, prompts, and snippets every developer's agent has access to.</td>
+        <td>Skill ship matrix in <code>adapters/*</code> — Claude, Cursor, Codex, Gemini, Amp, Cline, OpenCode. Each adapter is version-pinned and CI-checked against the upstream runtime.</td>
+      </tr>
+      <tr>
+        <td><strong>Keep them current</strong><br>When Claude Code ships a breaking change to hooks or to the plugin API, your rollout cannot wait a quarter.</td>
+        <td>24×7 ops on the adapter matrix. SonarCloud regressions fixed in &lt;24h. The hosted tier is the operator the role does not have to be themselves.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Why this role exists in the first place</h2>
+  <p>Every enterprise Claude Code rollout hits the same wall: the model gets better, the setup does not, and nobody owns it. The teams that get past phase one and into actual adoption all turn out to have a single DRI behind CLAUDE.md, the plugin policy, the permissions, and the skill ship list. The teams that do not, stall.</p>
+  <div class="quote">"The minimum viable version is a DRI: one person with ownership over the Claude Code configuration, the authority to make calls on settings, permissions policy, the plugin marketplace, and CLAUDE.md conventions, and the responsibility to keep them current."</div>
+
+  <h2>The three-phase pattern, and where ThumbGate fits</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Phase 1 — Quiet investment</h3>
+      <p>Individual engineers install agents. CLAUDE.md is whatever they wrote. The Agent Manager role is unfilled or shared. ThumbGate enters as the free <code>npx thumbgate init</code> wedge — one repo, one repeated failure, one Pre-Action Check.</p>
+    </div>
+    <div class="card">
+      <h3>Phase 2 — Rollout lands</h3>
+      <p>Infrastructure is ready; the first wave finds it productive. This is where the Agent Manager becomes a named role. ThumbGate's hosted dashboard, org-wide rule library, and DPO export are what that role uses to keep CLAUDE.md and the permissions policy consistent across repos.</p>
+    </div>
+    <div class="card">
+      <h3>Phase 3 — Adoption spreads</h3>
+      <p>The team becomes the harness. The Agent Manager stops being a bottleneck because the policy enforces itself at the tool-call boundary. ThumbGate's Workflow Hardening Sprint locks down the patterns that earned trust in phase two so the next 10x of engineers do not regress them.</p>
+    </div>
+  </div>
+
+  <h2>How to start</h2>
+  <ol>
+    <li><strong>Install free.</strong> <code>npx thumbgate init</code> in one repo. Captures thumbs-up/down feedback locally; auto-promotes repeated failures into prevention rules.</li>
+    <li><strong>Wire one Pre-Action Check.</strong> Pick the most-repeated agent mistake your org has felt this month. Promote that one to a rule. Watch the next attempt get blocked at the tool-call boundary, with the rule that fired in the agent's reasoning trace.</li>
+    <li><strong>Run the Workflow Hardening Sprint.</strong> When phase 2 hits — when you need shared rules, org dashboard visibility, and adapter coverage you do not have to maintain yourself — the sprint is the path from local proof to managed rollout.</li>
+  </ol>
+
+  <div class="card">
+    <p><strong>Anthropic named the role. ThumbGate is the runtime that role needs.</strong> The free CLI is real, MIT-licensed, and the gates work locally without a hosted account. The paid tier is what we operate so the Agent Manager does not have to.</p>
+    <p>
+      <a href="/#workflow-sprint-intake" class="cta">Start the Workflow Hardening Sprint</a>
+      <a href="/checkout/pro?utm_source=website&utm_medium=agent_manager_page&utm_campaign=pro_upgrade&cta_id=agent_manager_pro_checkout&cta_placement=agent_manager_page&plan_id=pro" class="secondary">Or start Pro at $19/mo →</a>
+    </p>
+  </div>
+
+  <h2>Related reading</h2>
+  <ul>
+    <li><a href="/use-cases/platform-teams">ThumbGate for platform teams</a> — when the Agent Manager role lives in the platform org.</li>
+    <li><a href="/use-cases/regulated-workflows">ThumbGate for regulated workflows</a> — DORA / EU AI Act / HIPAA pressure on the same role.</li>
+    <li><a href="/compare/ai-experience-orchestration">Orchestration vs enforcement</a> — what the Agent Manager picks <em>under</em> a broader orchestration suite.</li>
+  </ul>
+</div>
+</body>
+</html>

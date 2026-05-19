@@ -492,6 +492,22 @@ function syncVersion(opts) {
     targets.push(mcpizePath);
   }
 
+
+  // 17. plugins/vscode-extension/package.json
+  const vscodeExtensionPath = "plugins/vscode-extension/package.json";
+  if (fs.existsSync(path.join(PROJECT_ROOT, vscodeExtensionPath))) {
+    const vscodeExt = readJson(vscodeExtensionPath);
+    vscodeExt.__file = vscodeExtensionPath;
+    const changed = [
+      syncJsonField(vscodeExt, "version", version, drifted, checkOnly),
+    ].some(Boolean);
+    delete vscodeExt.__file;
+    if (!checkOnly && changed) {
+      writeJson(vscodeExtensionPath, vscodeExt);
+    }
+    targets.push(vscodeExtensionPath);
+  }
+
   return {
     version,
     targets,

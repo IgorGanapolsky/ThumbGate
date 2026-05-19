@@ -231,4 +231,23 @@ Security-relevant capabilities in ThumbGate v1.4.0:
 
 For enterprise security teams evaluating AI coding agent governance: ThumbGate provides the enforcement layer that CLAUDE.md rules, prompt engineering, and post-hoc code review cannot — pre-execution blocking with full audit trail and compliance mapping.
 
-*Last updated: 2026-04-13*
+## ThumbGate for the Agent Manager Role
+
+In May 2026, Anthropic publicly named the role that owns enterprise Claude Code rollouts: the **Agent Manager** — a hybrid PM/engineer single DRI who owns the CLAUDE.md hierarchy, the plugin marketplace, permissions policy, and which skills ship across the organization. The role's existence resolves the recurring "phase 2 wall" in enterprise rollouts, where the model keeps improving but the setup doesn't because nobody owns it.
+
+ThumbGate is the pre-action enforcement runtime that the Agent Manager needs at the tool-call boundary. The job description maps directly onto what ThumbGate already ships:
+
+- **CLAUDE.md hierarchy**: `scripts/feedback-to-rules.js` distills repeated thumbs-down feedback into prevention rules and writes them into CLAUDE.md. The hosted dashboard surfaces an org-wide rule library so the Agent Manager keeps policy consistent across repos without manually editing each CLAUDE.md.
+- **Plugin marketplace**: ThumbGate ships as a Claude Code plugin, a Cursor extension, a Codex plugin, and a Gemini CLI hook. One install path covers every blessed runtime; the adapter compatibility matrix is maintained by the hosted Pro/Team tier so version drift is not the Agent Manager's problem.
+- **Permissions policy**: PreToolUse hooks at the tool-call boundary are the canonical permissions enforcement layer. Every block carries the rule that fired, the evidence that triggered it, and a reason the agent can use to choose a safer plan. No "tell the model to be more careful."
+- **Which skills ship**: The `adapters/*` directory is the skill ship matrix. Each adapter is version-pinned and CI-checked against the upstream runtime; when Claude Code, Cursor, or Codex ship breaking changes to hooks or plugin APIs, ThumbGate's hosted ops keeps the matrix current in under 24 hours instead of a quarter.
+
+Three-phase rollout the Agent Manager navigates, with ThumbGate's role in each:
+
+1. **Quiet investment**: Individual engineers install agents; CLAUDE.md is whatever they wrote. ThumbGate enters as `npx thumbgate init` — one repo, one repeated failure, one Pre-Action Check.
+2. **Rollout lands**: A named Agent Manager takes ownership. ThumbGate's hosted dashboard, org-wide rule library, and DPO export are what the role uses to keep CLAUDE.md, plugin policy, and permissions consistent across repos.
+3. **Adoption spreads**: The team becomes the harness. The Agent Manager stops being a bottleneck because policy enforces itself at the tool-call boundary. The Workflow Hardening Sprint locks down phase-two patterns so the next 10x of engineers cannot regress them.
+
+Dedicated landing page at `/agent-manager` documents the mapping in full, including JSON-LD `TechArticle` markup with `about[]: Agent Manager / Claude Code rollout / Pre-Action Checks`.
+
+*Last updated: 2026-05-19*
