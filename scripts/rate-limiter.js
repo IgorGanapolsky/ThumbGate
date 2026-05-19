@@ -54,6 +54,7 @@ function getInstallAgeDays() {
 }
 
 function isInTrialPeriod() {
+  if (process.env.CI || process.env.GITHUB_ACTIONS) return false;
   const age = getInstallAgeDays();
   if (age === null) return false;
   return age < TRIAL_DAYS;
