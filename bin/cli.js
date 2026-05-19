@@ -2372,7 +2372,10 @@ function help() {
 
   // Legacy and specialist commands kept visible until they graduate into the schema.
   console.log('Also available:');
-  console.log('  install-mcp           Install MCP server into Claude Code settings (--project for local)');
+  console.log('  install-mcp           Install MCP server + PreToolUse hooks into Claude Code settings');
+  console.log('                            default: machine-wide  (~/.claude/settings.json — shared dashboard)');
+  console.log('                            --project: per-repo    (<cwd>/.claude/settings.json — isolated dashboard)');
+  console.log('                            --no-hooks: MCP only, skip hook wiring');
   console.log('  cfo                   Hosted billing summary (local fallback JSON)');
   console.log('  billing:setup         Generate operator key + print Railway setup instructions');
   console.log('  repair-github-marketplace  Repair legacy GitHub Marketplace amount mappings');
