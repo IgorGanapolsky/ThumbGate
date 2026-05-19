@@ -22,6 +22,7 @@ const {
 // This captures UTM attribution in our funnel before handing off to Stripe.
 const PRO_CTA_URL = 'https://thumbgate.ai/go/pro?utm_source=npm&utm_medium=postinstall&utm_campaign=first_dollar';
 const WORKFLOW_SPRINT_URL = 'https://thumbgate.ai/#workflow-sprint-intake';
+const DASHBOARD_URL = 'https://thumbgate.ai/dashboard?utm_source=npm&utm_medium=postinstall&utm_campaign=dashboard_nudge';
 
 process.stderr.write(`
   ╭─────────────────────────────────────────────────────╮
@@ -32,13 +33,19 @@ process.stderr.write(`
   │  BEFORE the model sees them — zero tokens spent     │
   │  on mistakes you've already corrected.              │
   │                                                     │
-  │  Start free:                                        │
+  │  Start free (local-only, never expires):            │
   │    npx thumbgate init                               │
   │    npx thumbgate stats                              │
+  │                                                     │
+  │  See your gates firing live:                        │
+  │    ${DASHBOARD_URL.slice(0, 47).padEnd(47, ' ')} │
   ╰─────────────────────────────────────────────────────╯
 
   Pro — ${PRO_PRICE_LABEL}
-    personal local dashboard, DPO export
+    Hosted lesson sync across all your machines.
+    Adapter matrix kept current for Claude Code,
+    Cursor, Codex, Gemini, Amp, Cline, OpenCode.
+    Org dashboard. DPO export. 24×7 ops.
     Upgrade: ${PRO_CTA_URL}
     Direct:  ${PRO_MONTHLY_PAYMENT_LINK}
 

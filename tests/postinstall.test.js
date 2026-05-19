@@ -45,7 +45,9 @@ describe('postinstall banner', () => {
     assert.ok(stderr.includes('ThumbGate'), 'should mention ThumbGate');
     assert.ok(stderr.includes('npx thumbgate'), 'should include quick start');
     assert.match(stderr, /Workflow Hardening[\s\S]*Sprint/i);
-    assert.match(stderr, /personal local dashboard/i);
+    assert.match(stderr, /Hosted lesson sync/i);
+    assert.match(stderr, /Org dashboard/i);
+    assert.match(stderr, /thumbgate\.ai\/dashboard/i);
     assert.match(stderr, /Team: \$49\/seat\/mo/i);
     assert.doesNotMatch(stderr, /optional hosted API key/i);
     assert.match(stderr, /\$19\/mo or \$149\/yr/i);
