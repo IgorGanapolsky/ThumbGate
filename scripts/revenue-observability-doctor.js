@@ -81,11 +81,18 @@ async function probePublicFunnel({ appOrigin, fetchImpl = globalThis.fetch, time
   try {
     const rootUrl = new URL('/', appOrigin);
     const checkoutUrl = new URL('/checkout/pro', appOrigin);
-    const confirmUrl = new URL('/checkout/pro?confirm=1', appOrigin);
-    const [root, checkout, confirm] = await Promise.all([
+    // 2026-05-19: the confirm=1 verification was creating one zombie Stripe
+    // session per cron tick (50+ in 24h, matched the diagnostic pattern).
+    // Verifying the redirect contract by GETting the confirm path required
+    // hitting the Stripe-session-creation code path, which is the exact
+    // behavior we want to prevent in production. The interstitial-page
+    // checkout body already proves the deflection path is live; if buyers
+    // get past the interstitial and the confirm path is broken, that's a
+    // post-deflection regression separately covered by checkout-bot-guard
+    // integration tests, not by this prod healthcheck.
+    const [root, checkout] = await Promise.all([
       fetchTextWithTimeout(fetchImpl, rootUrl, {}, timeoutMs),
       fetchTextWithTimeout(fetchImpl, checkoutUrl, {}, timeoutMs),
-      fetchTextWithTimeout(fetchImpl, confirmUrl, { redirect: 'manual' }, timeoutMs),
     ]);
 
     const checkoutBody = checkout.text || '';
@@ -93,10 +100,9 @@ async function probePublicFunnel({ appOrigin, fetchImpl = globalThis.fetch, time
     const checkoutHasFocusedProCta = /Pay \$19\/mo with Stripe/.test(checkoutBody);
     const checkoutHasFallback = /Send the workflow first/.test(checkoutBody);
     const checkoutLeaksServiceLinks = /https:\/\/buy\.stripe\.com\/|Pay \$1 first rule|Pay \$99 teardown|Book \$499 diagnostic|Start \$1500 sprint/.test(checkoutBody);
-    const confirmRedirects = confirm.status >= 300 && confirm.status < 400;
 
     return {
-      ok: root.ok && checkout.ok && confirmRedirects && checkoutHasFocusedProCta && checkoutHasFallback && !checkoutLeaksServiceLinks,
+      ok: root.ok && checkout.ok && checkoutHasFocusedProCta && checkoutHasFallback && !checkoutLeaksServiceLinks,
       root: {
         status: root.status,
         ok: root.ok,
@@ -110,9 +116,13 @@ async function probePublicFunnel({ appOrigin, fetchImpl = globalThis.fetch, time
         leaksServiceLinks: checkoutLeaksServiceLinks,
       },
       confirm: {
-        status: confirm.status,
-        redirects: confirmRedirects,
-        location: confirm.location,
+        // Confirm-path probe disabled 2026-05-19 — was creating zombie Stripe
+        // sessions on every healthcheck. Kept the field shape so downstream
+        // consumers don't break; null/false values indicate "not probed".
+        status: null,
+        redirects: null,
+        location: null,
+        probeDisabled: true,
       },
     };
   } catch (error) {

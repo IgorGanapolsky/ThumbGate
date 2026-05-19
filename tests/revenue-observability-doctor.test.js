@@ -41,7 +41,7 @@ test('hasAllEnv and envPresence treat blank strings as missing', () => {
   });
 });
 
-test('probePublicFunnel passes only when Pro checkout is focused and confirmed route redirects', async () => {
+test('probePublicFunnel passes when Pro checkout is focused; confirm-path probe disabled 2026-05-19 to stop zombie Stripe sessions', async () => {
   const calls = [];
   const result = await probePublicFunnel({
     appOrigin: 'https://thumbgate.test',
@@ -49,11 +49,15 @@ test('probePublicFunnel passes only when Pro checkout is focused and confirmed r
       calls.push(String(url));
       const pathname = new URL(String(url)).pathname;
       const search = new URL(String(url)).search;
+      // 2026-05-19: doctor no longer GETs /checkout/pro?confirm=1 because
+      // it was creating one Stripe session per healthcheck tick. If a
+      // test ever sees a fetch with confirm=1 from the doctor again, this
+      // assertion catches the regression.
+      if (search.includes('confirm=1')) {
+        throw new Error('regression: doctor must not fetch confirm=1 (creates zombie Stripe sessions)');
+      }
       if (pathname === '/') {
         return response('<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script><script>fetch("/v1/telemetry/ping")</script>');
-      }
-      if (pathname === '/checkout/pro' && search.includes('confirm=1')) {
-        return response('', { status: 302, location: 'https://checkout.stripe.com/c/pay/test' });
       }
       return response('Start ThumbGate Pro <a>Pay $19/mo with Stripe</a><a>Not sure yet? Send the workflow first</a>');
     },
@@ -63,8 +67,11 @@ test('probePublicFunnel passes only when Pro checkout is focused and confirmed r
   assert.equal(result.checkout.focusedProCta, true);
   assert.equal(result.checkout.workflowFallback, true);
   assert.equal(result.checkout.leaksServiceLinks, false);
-  assert.equal(result.confirm.redirects, true);
-  assert.equal(calls.length, 3);
+  assert.equal(result.confirm.probeDisabled, true);
+  assert.equal(result.confirm.redirects, null);
+  // Exactly 2 fetches (root + /checkout/pro). Was 3 before — the third was
+  // the confirm=1 GET that's now disabled.
+  assert.equal(calls.length, 2);
 });
 
 test('probePublicFunnel fails when service links leak into Pro checkout interstitial', async () => {
