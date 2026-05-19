@@ -1,0 +1,8 @@
+# Static web assets are served by the API server in production deploys
+# (Railway), not part of the npm CLI package. Excluding to keep the
+# npm package boundary lean (≤254 runtime files).
+src/api/static/
+
+# Same for any other API-server-only static assets that may be added later
+# (e.g., images, robots.txt overrides) — they belong in the Railway image,
+# not the npm CLI.
