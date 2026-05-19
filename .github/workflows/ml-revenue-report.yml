@@ -1,0 +1,47 @@
+name: ML Revenue Report
+
+on:
+  workflow_dispatch:
+    inputs:
+      since:
+        description: 'window (e.g. 7d, 30d, or ISO timestamp)'
+        type: string
+        required: false
+        default: '30d'
+  schedule:
+    # Daily at 14:00 UTC = 10:00 ET. After daily-revenue-loop completes
+    # so the Stripe + telemetry data is fresh.
+    - cron: '0 14 * * *'
+
+concurrency:
+  group: ml-revenue-report
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Build Bayesian revenue report from /v1/telemetry/export + Stripe
+        env:
+          THUMBGATE_API_KEY: ${{ secrets.THUMBGATE_API_KEY }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          THUMBGATE_APP_ORIGIN: https://thumbgate-production.up.railway.app
+          SINCE: ${{ inputs.since || '30d' }}
+        run: |
+          node scripts/ml-revenue-report.js --since "$SINCE"
+          echo ""
+          echo "=== JSON dump for operator parsing ==="
+          node scripts/ml-revenue-report.js --since "$SINCE" --json | head -200
