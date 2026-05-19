@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThumbGate for Long-Running AI Agents — Deterministic Pre-Action Gates at the Tool-Call Boundary</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Long-running autonomous AI agents (Google's Remy, GitHub Copilot Workspace, Cursor background agents, Codex) need deterministic enforcement, not statistical model-level safety. ThumbGate is the pre-action gate layer that boards and risk committees can audit when agents run continuously across sensitive systems.">
+<meta property="og:title" content="ThumbGate for Long-Running AI Agents">
+<meta property="og:description" content="Statistical model-level safety cannot meet the deterministic assurance bar regulated industries require. ThumbGate ships PreToolUse hooks at the tool-call boundary — hard blocks, audit trail, no peeking past the gate.">
+<meta property="og:type" content="article">
+<meta property="og:image" content="https://thumbgate-production.up.railway.app/og.png">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/long-running-agents">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ThumbGate for Long-Running AI Agents",
+  "description": "The structural shift toward long-running autonomous AI agents (Google's Remy, GitHub Copilot Workspace, Cursor background agents) breaks the human-in-the-loop checkpoints today's permission models rely on. ThumbGate ships deterministic Pre-Action Checks at the tool-call boundary so boards and risk committees have something to audit when agents run continuously across sensitive systems.",
+  "datePublished": "2026-05-19",
+  "dateModified": "2026-05-19",
+  "author": { "@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" },
+  "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate-production.up.railway.app" },
+  "about": [
+    { "@type": "Thing", "name": "Long-running AI agent governance" },
+    { "@type": "Thing", "name": "Deterministic Pre-Action Checks" },
+    { "@type": "Thing", "name": "AI agent runtime infrastructure" },
+    { "@type": "Thing", "name": "Tool-call boundary enforcement" }
+  ]
+}
+</script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root { --bg:#0a0a0b; --card:#161618; --border:#222225; --text:#e8e8ec; --muted:#8b8b94; --cyan:#22d3ee; --amber:#f59e0b; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+  .container { max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  nav { padding: 1rem 2rem; border-bottom: 1px solid var(--border); display:flex; gap:1.5rem; flex-wrap:wrap; }
+  nav a { color: var(--muted); text-decoration:none; font-size:0.9rem; }
+  nav .brand { color: var(--text); font-weight:700; }
+  .pill { display:inline-block; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--cyan); background:rgba(34,211,238,0.08); border:1px solid rgba(34,211,238,0.2); padding:4px 12px; border-radius:100px; margin-top:1.5rem; font-weight:600; }
+  h1 { font-size:2.2rem; line-height:1.15; margin:1rem 0 1rem; }
+  h2 { font-size:1.45rem; margin:2.4rem 0 1rem; color:var(--cyan); }
+  h3 { margin:0.4rem 0 0.4rem; font-size:1.05rem; color:var(--text); }
+  p, li { margin-bottom:0.75rem; }
+  ul, ol { padding-left:1.25rem; }
+  code { background:#1f2024; padding:1px 6px; border-radius:4px; font-size:0.9em; color:var(--cyan); }
+  .card { background: var(--card); border:1px solid var(--border); border-radius:12px; padding:1.25rem 1.4rem; margin:1rem 0; }
+  .quote { border-left:3px solid var(--cyan); padding:0.75rem 1rem; margin:1.2rem 0; color:var(--text); font-style:italic; }
+  .quote cite { display:block; margin-top:0.5rem; font-style:normal; font-size:0.85rem; color:var(--muted); }
+  .quote cite a { color:var(--cyan); text-decoration:none; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1rem; margin:1rem 0; }
+  .grid .card h3 { color:var(--cyan); }
+  .cta { display:inline-block; background:var(--cyan); color:#000; padding:0.8rem 1.2rem; border-radius:8px; text-decoration:none; font-weight:700; }
+  .secondary { color:var(--cyan); text-decoration:underline; margin-left:1rem; }
+  .table-clean { width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.93rem; }
+  .table-clean th, .table-clean td { border-bottom:1px solid var(--border); padding:0.55rem 0.5rem; text-align:left; vertical-align:top; }
+  .table-clean th { color:var(--cyan); font-weight:600; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.05em; }
+  .warning { color:var(--amber); }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="brand">ThumbGate</a>
+  <a href="/guide">Guide</a>
+  <a href="/dashboard">Dashboard demo</a>
+  <a href="/agent-manager">Agent Manager</a>
+  <a href="/evals">Evals</a>
+  <a href="/#workflow-sprint-intake">Workflow Hardening Sprint</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+<div class="container">
+  <span class="pill">Runtime story · Not a product story</span>
+  <h1>Long-running agents need deterministic pre-action gates. Statistical model-level safety is not enough.</h1>
+  <p>Google's leaked <strong>Remy</strong> assistant — a 24/7 personal agent for work, school, and daily life — is the visible consumer case. GitHub Copilot Workspace, Cursor background agents, Codex Cloud, Claude Code agents, and every "delegated execution" surface shipping in 2026 are the same shape: continuous, autonomous, cross-system. The architectural consequence is the same in every case: enterprise AI moves from synchronous chat to long-lived async orchestration with delegated permissions, durable execution graphs, and no human-in-the-loop on every action.</p>
+
+  <p>That breaks the assurance model regulated industries actually need.</p>
+
+  <h2>The runtime gap, named by enterprise architects</h2>
+
+  <div class="quote">
+    "Remy isn't a product story; it's a runtime story."
+    <cite>— Seth Rogers, Associate Director for Customer Technology Advisory, <a href="https://www.kyndryl.com/" target="_blank" rel="noopener">Kyndryl</a>, in <a href="https://thenewstack.io/google-remy-agent-infrastructure/" target="_blank" rel="noopener">The New Stack</a>, May 18, 2026.</cite>
+  </div>
+
+  <div class="quote">
+    Statistical model-level safety controls "cannot meet the deterministic assurance bar that regulated industries require."
+    <cite>— Seth Rogers, Kyndryl, same source.</cite>
+  </div>
+
+  <div class="quote">
+    "Once you move from a synchronous request-response execution pattern to continuously running delegated execution, you stop building an AI app and start building a distributed system."
+    <cite>— Devin Cheevers, Director of Product, <a href="https://grafana.com/" target="_blank" rel="noopener">Grafana Labs</a>, same source.</cite>
+  </div>
+
+  <div class="quote">
+    "The future of AI is long-running autonomous agent workflows, not single prompts."
+    <cite>— Yaron Schneider, CTO and co-founder, <a href="https://www.diagrid.io/" target="_blank" rel="noopener">Diagrid</a>, same source.</cite>
+  </div>
+
+  <p>The pattern is clear across three independent voices in one article: the new failure mode is not model output — it's <em>what the agent runtime actually does</em> when the model is allowed to act over time. Alignment training and content filters are statistical. They produce a residual error rate. When an agent runs continuously across sensitive systems, that residual error rate compounds into material incident exposure. That is the gap ThumbGate exists to close.</p>
+
+  <h2>What changes when agents run continuously</h2>
+  <table class="table-clean">
+    <thead><tr><th>New runtime concern</th><th>Where ThumbGate enforces</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Durable execution graphs</strong><br>Agent workflows persist across hours and days, replaying tool calls when interrupted.</td>
+        <td>Every tool call passes through a PreToolUse hook before execution — including replayed ones. The block is at the hook boundary, not the workflow boundary, so replay safety is automatic.</td>
+      </tr>
+      <tr>
+        <td><strong>Long-lived state</strong><br>Agents accumulate context, credentials, and partial work over time.</td>
+        <td>Lessons captured from past corrections persist in the SQLite+FTS5 lesson DB and surface as Pre-Action Checks across every future session. A repeated mistake gets blocked, not re-learned.</td>
+      </tr>
+      <tr>
+        <td><strong>Asynchronous orchestration</strong><br>Multiple agents or workflows fan out, sometimes hitting the same surface concurrently.</td>
+        <td>Per-tool deterministic decisions — the hook runs at the moment of the call, not at the moment of the prompt. Parallel branches are independently gated.</td>
+      </tr>
+      <tr>
+        <td><strong>Delegated permissions</strong><br>The agent acts on behalf of a human across Workspace, Search, repo, CI — and the human is not watching every step.</td>
+        <td>Approval boundaries (Pro / Team tier) require human-in-the-loop on irreversible actions even when the rest of the workflow is autonomous. Audit trail logs every block, approve, and override with timestamp + rule + identity.</td>
+      </tr>
+      <tr>
+        <td><strong>Removed human-in-the-loop checkpoints</strong><br>The new pressure on permission models — humans cannot review every step at agent speed.</td>
+        <td>Pre-Action Checks <em>are</em> the new checkpoint. Each block carries the rule that fired and a reason the agent can use to choose a safer plan, so the human reviews exceptions, not every call.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Why deterministic matters more than aligned</h2>
+  <p>Alignment training and content filters answer "what is the model statistically likely to say?" That is a probabilistic property. It produces a residual error rate that, for regulated workloads, translates directly into incident exposure. Pre-Action Checks answer a different question: "is the specific tool call about to execute on the allowed list?" That answer is binary. The check fires or it does not. There is no temperature setting, no sampling, no model decision involved. That is the deterministic assurance bar boards and risk committees can sign.</p>
+
+  <p>ThumbGate does not replace alignment. It runs <em>after</em> the model has decided what to do and <em>before</em> the runtime executes it. The model can still be wrong; the gate catches the consequence.</p>
+
+  <h2>The buyer this serves</h2>
+  <p>Boards, risk committees, CISOs, platform-engineering leads, and (per Anthropic's recently-named role) <a href="/agent-manager">the Agent Manager</a> — the hybrid PM/engineer DRI who owns CLAUDE.md, the plugin marketplace, permissions policy, and which skills ship. Each of them is being asked the same question by their auditors and regulators in 2026: <em>"What enforces the policy when the agent runs without a human watching?"</em> The honest answer is not "the model" and not "the prompt." It is a runtime gate. ThumbGate is the runtime gate.</p>
+
+  <h2>How to start</h2>
+  <ol>
+    <li><strong>Install the free CLI on one repo.</strong> <code>npx thumbgate init</code> — local PreToolUse hooks wired in under a minute. No hosted account, no signup.</li>
+    <li><strong>Promote one repeated agent failure to a rule.</strong> A thumbs-down on a real mistake distills into a Pre-Action Check. The next attempt is blocked.</li>
+    <li><strong>Run the Workflow Hardening Sprint.</strong> When the rollout reaches phase two (named Agent Manager, org-wide rules, audit-ready evidence), the sprint is the path from local proof to managed enforcement across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode.</li>
+  </ol>
+
+  <div class="card">
+    <p><strong>The runtime story is the buying story for 2026.</strong> The agents are getting more autonomous and they are getting there fast. ThumbGate is the deterministic enforcement layer underneath every claim a vendor is making about "long-running" anything.</p>
+    <p>
+      <a href="/#workflow-sprint-intake" class="cta">Start the Workflow Hardening Sprint</a>
+      <a href="/checkout/pro?utm_source=website&utm_medium=long_running_agents_page&utm_campaign=pro_upgrade&cta_id=long_running_agents_pro_checkout&cta_placement=long_running_agents_page&plan_id=pro" class="secondary">Or start Pro at $19/mo →</a>
+    </p>
+  </div>
+
+  <h2>Related</h2>
+  <ul>
+    <li><a href="/agent-manager">ThumbGate for the Agent Manager</a> — who owns CLAUDE.md, plugin marketplace, permissions, and which skills ship.</li>
+    <li><a href="/evals">/evals</a> — every layer of ThumbGate's enforcement stack with a measurable benchmark.</li>
+    <li><a href="/use-cases/regulated-workflows">Regulated workflows</a> — DORA / EU AI Act / HIPAA framing.</li>
+    <li><a href="/compare/ai-experience-orchestration">Orchestration vs enforcement</a> — what the runtime gate is, what it is not.</li>
+  </ul>
+</div>
+</body>
+</html>

@@ -2502,6 +2502,7 @@ function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
     { path: '/pro', changefreq: 'weekly', priority: '0.9' },
+    { path: '/long-running-agents', changefreq: 'weekly', priority: '0.9' },
     { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
     { path: '/codex-plugin', changefreq: 'weekly', priority: '0.75' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
@@ -4394,6 +4395,31 @@ async function addContext(){
         });
       } catch {
         sendJson(res, 404, { error: 'Federal page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/long-running-agents' || pathname === '/long-running-agents.html')) {
+      // Landing page for the architectural-shift narrative that
+      // surfaced in The New Stack's 2026-05-18 Remy coverage. Long-
+      // running autonomous agents need deterministic enforcement at
+      // the tool-call boundary — exactly what ThumbGate ships.
+      // Routed through servePublicMarketingPage so X/Bluesky/LinkedIn
+      // arrivals capture UTM attribution and landing_page_view
+      // telemetry with pageType 'long_running_agents'. Modeled on
+      // the /federal handler.
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(path.join(PUBLIC_DIR, 'long-running-agents.html'), 'utf-8'),
+          extraTelemetry: { pageType: 'long_running_agents' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Long-running agents page not found' });
       }
       return;
     }
