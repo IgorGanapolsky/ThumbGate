@@ -54,3 +54,4 @@ When the feedback is a vague thumbs-down, ThumbGate can distill the lesson from 
 - Repository URL: `https://github.com/IgorGanapolsky/ThumbGate`
 - Homepage: `https://thumbgate-production.up.railway.app/guide`
 - Revenue pack: `node scripts/cursor-marketplace-revenue-pack.js --write-docs`
+- **2026-05-19**: Submitted ThumbGate to Cursor Marketplace via `cursor.com/marketplace/publish`. Asset verified. Awaiting manual review.
