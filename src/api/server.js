@@ -4846,7 +4846,7 @@ async function addContext(){
       // real-estate broker outreach. Static HTML served from src/api/static.
       try {
         const html = fs.readFileSync(
-          path.resolve(__dirname, 'static/broker-audit.html'),
+          path.resolve(__dirname, '../../assets/static/broker-audit.html'),
           'utf8'
         );
         if (isHeadRequest) {
