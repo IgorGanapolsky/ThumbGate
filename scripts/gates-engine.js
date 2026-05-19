@@ -2223,7 +2223,84 @@ function registerClaimGate(claimPattern, requiredActions, blockMessage) {
   return entry;
 }
 
-function verifyClaimEvidence(claimText) {
+function normalizeStringArray(value) {
+  if (!Array.isArray(value)) return [];
+  return Array.from(new Set(
+    value
+      .map((item) => String(item || '').trim())
+      .filter(Boolean)
+  ));
+}
+
+function normalizeGoalContract(goalContract) {
+  if (!goalContract || typeof goalContract !== 'object' || Array.isArray(goalContract)) {
+    return null;
+  }
+
+  const goal = String(goalContract.goal || '').trim();
+  const doneWhen = normalizeStringArray(goalContract.doneWhen);
+  const requiredActions = normalizeStringArray(goalContract.proveBy);
+  const mustNotChange = normalizeStringArray(goalContract.mustNotChange);
+  const handoff = {
+    workerAgent: String(goalContract.workerAgent || '').trim() || null,
+    reviewerAgent: String(goalContract.reviewerAgent || '').trim() || null,
+    orchestratorAgent: String(goalContract.orchestratorAgent || '').trim() || null,
+  };
+
+  const matched = Boolean(
+    goal ||
+    doneWhen.length > 0 ||
+    requiredActions.length > 0 ||
+    mustNotChange.length > 0 ||
+    handoff.workerAgent ||
+    handoff.reviewerAgent ||
+    handoff.orchestratorAgent
+  );
+
+  if (!matched) return null;
+
+  return {
+    goal: goal || null,
+    doneWhen,
+    requiredActions,
+    mustNotChange,
+    handoff,
+  };
+}
+
+function evaluateGoalContract(goalContract, actions = loadSessionActions()) {
+  const normalized = normalizeGoalContract(goalContract);
+  if (!normalized) {
+    return {
+      matched: false,
+      passed: true,
+      goal: null,
+      doneWhen: [],
+      requiredActions: [],
+      missingActions: [],
+      mustNotChange: [],
+      handoff: {
+        workerAgent: null,
+        reviewerAgent: null,
+        orchestratorAgent: null,
+      },
+    };
+  }
+
+  const missingActions = normalized.requiredActions.filter((actionId) => !actions[actionId]);
+  return {
+    matched: true,
+    passed: missingActions.length === 0,
+    goal: normalized.goal,
+    doneWhen: normalized.doneWhen,
+    requiredActions: normalized.requiredActions,
+    missingActions,
+    mustNotChange: normalized.mustNotChange,
+    handoff: normalized.handoff,
+  };
+}
+
+function verifyClaimEvidence(claimText, options = {}) {
   const normalizedClaimText = String(claimText || '').trim();
   if (!normalizedClaimText) {
     throw new Error('claimText is required');
@@ -2251,9 +2328,23 @@ function verifyClaimEvidence(claimText) {
     });
   }
 
+  const goalContract = evaluateGoalContract(options.goalContract, actions);
+  if (goalContract.matched) {
+    checks.push({
+      claim: 'goal_contract',
+      passed: goalContract.passed,
+      missing: goalContract.missingActions,
+      message: goalContract.passed
+        ? 'Goal contract evidence present'
+        : `Goal contract requires evidence: ${goalContract.missingActions.join(', ')}`,
+      goalContract,
+    });
+  }
+
   return {
     verified: checks.every((check) => check.passed),
     checks,
+    goalContract,
   };
 }
 
@@ -2297,6 +2388,8 @@ module.exports = {
   clearSessionActions,
   loadClaimGates,
   registerClaimGate,
+  normalizeGoalContract,
+  evaluateGoalContract,
   verifyClaimEvidence,
   DEFAULT_CONFIG_PATH,
   DEFAULT_CLAIM_GATES_PATH,
