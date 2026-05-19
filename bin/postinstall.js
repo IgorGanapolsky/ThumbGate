@@ -26,14 +26,13 @@ const DASHBOARD_URL = 'https://thumbgate.ai/dashboard?utm_source=npm&utm_medium=
 
 process.stderr.write(`
   ╭─────────────────────────────────────────────────────╮
-  │  ThumbGate installed.                               │
+  │  ThumbGate installed — 14-day Pro trial active.     │
   │                                                     │
-  │  Every repeat-mistake your agent makes costs        │
-  │  tokens. ThumbGate blocks known-bad tool calls      │
-  │  BEFORE the model sees them — zero tokens spent     │
-  │  on mistakes you've already corrected.              │
+  │  Every feature unlocked. No limits. No card needed. │
+  │  After 14 days, you keep the free tier (5 rules,    │
+  │  unlimited captures) or upgrade to keep Pro.        │
   │                                                     │
-  │  Start free (local-only, never expires):            │
+  │  Start now:                                         │
   │    npx thumbgate init                               │
   │    npx thumbgate stats                              │
   │                                                     │
@@ -41,17 +40,14 @@ process.stderr.write(`
   │    ${DASHBOARD_URL.slice(0, 47).padEnd(47, ' ')} │
   ╰─────────────────────────────────────────────────────╯
 
-  Pro — ${PRO_PRICE_LABEL}
-    Hosted lesson sync across all your machines.
-    Adapter matrix kept current for Claude Code,
-    Cursor, Codex, Gemini, Amp, Cline, OpenCode.
-    Org dashboard. DPO export. 24×7 ops.
-    Upgrade: ${PRO_CTA_URL}
-    Direct:  ${PRO_MONTHLY_PAYMENT_LINK}
+  Your 14-day Pro trial includes:
+    Unlimited prevention rules (free caps at 5)
+    Lesson search + recall across sessions
+    DPO export for preference fine-tuning
+    Hosted dashboard — no self-hosting needed
 
-  Team: ${TEAM_PRICE_LABEL}
-    Workflow Hardening Sprint intake:
-    ${WORKFLOW_SPRINT_URL}
+  After the trial: ${PRO_PRICE_LABEL}
+    Upgrade: ${PRO_CTA_URL}
 
   Or run: npx thumbgate pro
 
