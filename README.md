@@ -12,7 +12,7 @@
 
 Every retry loop, every hallucinated import, every *"let me try a different approach"* — those are billable tokens on every LLM vendor's bill. Thumbs-down once; ThumbGate blocks that exact mistake on every future call. Across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — any MCP-compatible agent, forever.
 
-Under the hood: your thumbs-down becomes one of your **Pre-Action Checks** that physically blocks the pattern **permanently** on every future call — across every session, every model, every agent. It is **self-improving agent governance**: every correction promotes a fresh prevention rule, and your library of prevention rules grows stronger with every lesson. Works with Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and any MCP-compatible agent. The monthly Anthropic / OpenAI bill stops paying for the same lesson over and over — local-first enforcement, zero tokens spent on repeats.
+Under the hood: your thumbs-down becomes part of an **Infrastructure Firewall** that physically blocks the pattern **permanently** on every future call — across every session, every model, every agent. It provides **governed autonomy**: every correction promotes a fresh prevention rule and logs to a verifiable **Rejection Ledger**. Works with Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and any MCP-compatible agent. How do you prove what the AI did last Tuesday? With a clear audit trail that keeps the Senior Architect in control without the manual labor of reading every line of slop.
 
 > **Prevent expensive AI mistakes. Make AI stop repeating mistakes. Turn a smart assistant into a reliable operator.**
 
@@ -455,6 +455,13 @@ Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recal
 - [Ready for Agent Intake](https://github.com/IgorGanapolsky/ThumbGate/issues/new?template=ready-for-agent.yml) — ready-for-agent intake template
 - [SEO Guide: Claude Code Guardrails](docs/learn/claude-code-guardrails.md)
 - [ThumbGate-Core](https://github.com/IgorGanapolsky/ThumbGate-Core) — private core for hosted overlays, ranking, policy synthesis, billing intelligence, and org/team workflows
+
+---
+
+## License
+
+MIT. See [LICENSE](LICENSE).
+ws
 
 ---
 
