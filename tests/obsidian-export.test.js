@@ -749,12 +749,15 @@ test('CLI: obsidian-export command is wired in cli.js', () => {
   assert.ok(cliSource.includes('obsidianExport'), 'CLI should reference obsidianExport function');
 });
 
-test('CLI: help output includes obsidian-export', () => {
-  const result = spawnSync(process.execPath, [CLI, 'help'], { encoding: 'utf-8' });
+test('CLI: help all output includes obsidian-export', () => {
+  // `obsidian-export` is a specialist Export-group command, not in the curated
+  // short surface — it lives in `help all` along with the rest of the ~70
+  // subcommands. (Default `help` was shortened 2026-05-18.)
+  const result = spawnSync(process.execPath, [CLI, 'help', 'all'], { encoding: 'utf-8' });
   assert.equal(result.status, 0);
   assert.ok(
     result.stdout.includes('obsidian-export') || result.stderr.includes('obsidian-export'),
-    'Help output should mention obsidian-export'
+    '`help all` output should mention obsidian-export'
   );
 });
 

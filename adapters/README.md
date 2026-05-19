@@ -1,9 +1,10 @@
 # Adapter Bundles
 
+- `xai-grok/README.md`: xAI Grok Build CLI — auto-detects Claude Code conventions (AGENTS.md, hooks, MCP, Skills). Use the existing `claude/.mcp.json`; no new config needed.
 - `chatgpt/openapi.yaml`: import into GPT Actions.
 - `gemini/function-declarations.json`: Gemini function-calling definitions.
 - `mcp/server-stdio.js`: underlying local MCP stdio server implementation.
-- `claude/.mcp.json`: example Claude Code MCP config using `npx --yes --package thumbgate@1.19.0 thumbgate serve`.
+- `claude/.mcp.json`: example Claude Code MCP config using `npx --yes --package thumbgate@1.20.0 thumbgate serve`.
 - `codex/config.toml`: example Codex MCP profile section using the same version-pinned portable launcher.
 - `amp/skills/thumbgate-feedback/SKILL.md`: Amp skill template.
 - `opencode/opencode.json`: portable OpenCode MCP profile using the same version-pinned portable launcher.
