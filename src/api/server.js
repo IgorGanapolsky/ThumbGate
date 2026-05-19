@@ -4398,6 +4398,29 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && (pathname === '/agent-manager' || pathname === '/agent-manager.html')) {
+      // ICP landing page for the role Anthropic named (Agent Manager —
+      // hybrid PM/engineer DRI who owns CLAUDE.md hierarchy, plugin
+      // marketplace, permissions policy, and which skills ship). Routed
+      // through servePublicMarketingPage so arrivals via X/Bluesky/LinkedIn
+      // threads about the role capture UTM attribution and
+      // landing_page_view telemetry for downstream pilot-pipeline analysis.
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(path.join(PUBLIC_DIR, 'agent-manager.html'), 'utf-8'),
+          extraTelemetry: { pageType: 'agent_manager' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Agent Manager page not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/learn/learn.css') {
       try {
         const cssPath = path.join(LEARN_DIR, 'learn.css');

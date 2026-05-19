@@ -220,6 +220,7 @@
     "bin/postinstall.js",
     "config/",
     "openapi/",
+    "public/agent-manager.html",
     "public/blog.html",
     "public/codex-plugin.html",
     "public/compare.html",
