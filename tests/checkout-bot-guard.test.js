@@ -178,6 +178,54 @@ describe('/checkout/pro bot guard', () => {
     }
   });
 
+  it('deflects bots that follow the confirm=1 link inside the interstitial HTML', async () => {
+    // 2026-05-19 audit: 2,210 of 2,251 Stripe sessions ever created were
+    // zombies (expired with no email). Cause: the interstitial HTML renders
+    // a `/checkout/pro?confirm=1` link; bot crawlers discovered it and
+    // followed it, bypassing the bot deflection and creating cs_live_*
+    // sessions per crawl. Belt + suspenders: rel="nofollow" on the link
+    // plus a server-side check that bot+confirm still gets the interstitial.
+    for (const ua of [
+      'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+      'Mozilla/5.0 (compatible; ClaudeBot/1.0; +claudebot@anthropic.com)',
+      'Slackbot-LinkExpanding 1.0 (+https://api.slack.com/robots)',
+      'curl/8.4.0',
+    ]) {
+      try { fs.unlinkSync(path.join(ENV.THUMBGATE_FEEDBACK_DIR, 'telemetry-pings.jsonl')); } catch {}
+      const res = await fetch(`${origin}/checkout/pro?confirm=1`, {
+        redirect: 'manual',
+        headers: { 'user-agent': ua, accept: 'text/html,*/*' },
+      });
+      assert.equal(res.status, 200, `bot+confirm should still see interstitial for ${ua}, got ${res.status}`);
+      const body = await res.text();
+      assert.match(body, /Start ThumbGate Pro/);
+      const events = readFunnelEvents();
+      assert.equal(
+        events.filter((e) => e.eventType === 'checkout_bootstrap').length,
+        0,
+        `bot+confirm must NOT create a Stripe session (${ua})`,
+      );
+      assert.ok(
+        events.some((e) => e.eventType === 'checkout_bot_deflected'),
+        `bot+confirm should still emit checkout_bot_deflected (${ua})`,
+      );
+    }
+  });
+
+  it('interstitial confirm link uses rel="nofollow" so crawlers stop following it', async () => {
+    const res = await fetch(`${origin}/checkout/pro`, {
+      redirect: 'manual',
+      headers: {
+        'user-agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+        accept: 'text/html,*/*',
+      },
+    });
+    const body = await res.text();
+    // The "Pay $19/mo with Stripe →" anchor that points at confirm=1 must
+    // be rel="nofollow" so well-behaved crawlers stop following it.
+    assert.match(body, /<a[^>]+rel="[^"]*nofollow[^"]*"[^>]+href="[^"]*confirm=1[^"]*"/);
+  });
+
   it('returns HTML interstitial for link-preview bots (Slackbot, LinkedInBot, Twitterbot)', async () => {
     for (const ua of [
       'Slackbot-LinkExpanding 1.0 (+https://api.slack.com/robots)',
