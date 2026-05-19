@@ -39,8 +39,8 @@ test('public surfaces lead with outcomes instead of infrastructure abstractions'
 
   for (const surface of [readme, landingPage, llms, gptInstructions]) {
     assert.match(surface, /costly|expensive/i);
-    assert.match(surface, /before (?:they|it) (?:make|run|happen)|before execution/i);
-    assert.match(surface, /Pre-Action Checks/i);
+    assert.match(surface, /before (?:they|it) (?:make|run|happen)|before execution|hit the disk/i);
+    assert.match(surface, /Pre-Action Checks|Infrastructure Firewall/i);
   }
 
   assert.match(readme, /Prevent expensive AI mistakes/i);
