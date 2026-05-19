@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 __GOOGLE_SITE_VERIFICATION_META__
 <title>Pricing — ThumbGate</title>
-<meta name="description" content="ThumbGate pricing: free CLI forever, $19/mo Pro dashboard, $49/seat Team enforcement. Self-serve checkout, no consulting upsell.">
+<meta name="description" content="ThumbGate pricing: free CLI forever, $19/mo Pro with hosted sync and dashboard, $49/seat Team with shared enforcement. Self-serve checkout.">
 <meta property="og:title" content="Pricing — ThumbGate">
 <meta property="og:description" content="Three tiers. Pick the one that matches your scale. Self-serve checkout on every subscription plan.">
 <meta property="og:type" content="website">
@@ -175,29 +175,6 @@ __GA_BOOTSTRAP__
 
   .btn-sub { font-size: 11px; color: var(--text-muted); margin-top: 8px; text-align: center; }
 
-  /* CONSULTING FOLD */
-  .consulting-fold {
-    margin: 32px 0; border: 1px solid var(--border); border-radius: 12px;
-    padding: 18px 22px; background: var(--bg-raised);
-  }
-  .consulting-fold summary {
-    cursor: pointer; font-size: 15px; font-weight: 600; color: var(--text-muted);
-    list-style: none;
-  }
-  .consulting-fold summary::-webkit-details-marker { display: none; }
-  .consulting-fold[open] summary { margin-bottom: 16px; }
-  .consulting-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 14px; margin: 8px 0;
-  }
-  .consulting-card {
-    border: 1px solid var(--border); border-radius: 8px;
-    padding: 14px; background: var(--bg-card);
-  }
-  .consulting-card .cp { font-size: 18px; font-weight: 700; color: var(--text); }
-  .consulting-card .cl { font-size: 13px; color: var(--text-muted); margin: 4px 0 10px; }
-  .consulting-card a { color: var(--cyan); font-size: 13px; text-decoration: none; font-weight: 600; }
-
   /* FAQ */
   .faq { padding: 48px 0; }
   .faq h2 { text-align: center; font-size: 24px; margin-bottom: 24px; }
@@ -299,7 +276,7 @@ __GA_BOOTSTRAP__
         <li><strong>Org dashboard</strong> — visibility across all agent surfaces and developers</li>
         <li>Check template library for deploys, publish, and DB operations</li>
         <li>Email support during pilot rollout</li>
-        <li>Self-serve checkout at $147/mo (3-seat minimum)</li>
+        <li>3-seat minimum, self-serve checkout</li>
       </ul>
       <a class="btn-team" href="/#workflow-sprint-intake?utm_source=pricing&utm_medium=team_card" onclick="try{posthog.capture('pricing_cta_click',{cta:'start_team',tier:'team',placement:'pricing_page',price:49})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'start_team',tier:'team'}})}catch(_){}">Send team workflow first</a>
       <p class="btn-sub">Rollout starts through intake so the workflow is scoped before checkout.</p>
@@ -307,27 +284,9 @@ __GA_BOOTSTRAP__
 
   </div>
 
-  <details class="consulting-fold">
-    <summary>Need a one-off diagnostic, hardening sprint, or governance kit?</summary>
-    <p style="color:var(--text-muted);font-size:14px;margin:0 0 14px;">For teams that want a stakeholder-visible artifact before subscribing. Each is one-time, fixed-scope, refundable if we can't extract a rule from your failure trace.</p>
-    <div class="consulting-grid">
-      <div class="consulting-card">
-        <div class="cp">$499</div>
-        <div class="cl">Sprint Diagnostic — 2-day triage on one workflow, top-5 rules ranked, PR delivered.</div>
-        <a href="mailto:igor.ganapolsky@gmail.com?subject=ThumbGate%20Sprint%20Diagnostic" onclick="try{posthog.capture('pricing_cta_click',{cta:'sprint_diagnostic',tier:'consulting',price:499})}catch(_){}">Email to start</a>
-      </div>
-      <div class="consulting-card">
-        <div class="cp">$1,500</div>
-        <div class="cl">Workflow Hardening Sprint — full hardening engagement, hooks deployed, rollout review.</div>
-        <a href="mailto:igor.ganapolsky@gmail.com?subject=ThumbGate%20Workflow%20Hardening%20Sprint" onclick="try{posthog.capture('pricing_cta_click',{cta:'workflow_hardening',tier:'consulting',price:1500})}catch(_){}">Email to start</a>
-      </div>
-      <div class="consulting-card">
-        <div class="cp">$97</div>
-        <div class="cl">Agent Governance Kit — self-serve digital kit, prevention-rule starters, proof report template.</div>
-        <a href="https://buy.stripe.com/bJe14naiE9Lo7xT49Z3sI12" onclick="try{posthog.capture('pricing_cta_click',{cta:'governance_kit',tier:'consulting',price:97})}catch(_){}">Buy kit</a>
-      </div>
-    </div>
-  </details>
+  <div style="text-align:center;margin:32px 0;color:var(--text-muted);font-size:14px;">
+    Need a hands-on engagement before committing to a subscription? <a href="mailto:igor.ganapolsky@gmail.com?subject=ThumbGate%20Engagement%20Inquiry" style="color:var(--cyan);text-decoration:none;font-weight:600;" onclick="try{posthog.capture('pricing_cta_click',{cta:'consulting_inquiry',tier:'consulting'})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'consulting_inquiry',tier:'consulting'}})}catch(_){}">Email us</a> — we scope it together.
+  </div>
 </section>
 
 <section class="faq">
