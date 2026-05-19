@@ -1503,7 +1503,7 @@ function renderCheckoutIntentPage({
 }) {
   const safeConfirmHref = escapeHtmlAttribute(confirmHref);
   const safeWorkflowIntakeHref = escapeHtmlAttribute(workflowIntakeHref);
-  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Confirm — ThumbGate Pro</title><style>body{background:#0a0a0a;color:#eee;font-family:system-ui,-apple-system,sans-serif;line-height:1.5}main{max-width:520px;margin:8vh auto;padding:0 20px}.brand{display:flex;align-items:center;gap:10px;margin-bottom:24px;font-size:14px;color:#94a3b8}.brand-mark{width:24px;height:24px;background:#22d3ee;border-radius:6px;display:inline-block}h1{font-size:24px;margin:0 0 8px;color:#fff}.price{font-size:32px;font-weight:700;color:#22d3ee;margin:8px 0 4px}.price small{font-size:14px;color:#94a3b8;font-weight:400}p{color:#cbd5e1;margin:8px 0}a{display:block;text-decoration:none}a.primary{background:#22d3ee;color:#000;padding:16px;text-align:center;border-radius:8px;font-weight:700;font-size:16px;margin:20px 0 10px}a.secondary{border:1px solid #374151;color:#cbd5e1;padding:12px;text-align:center;border-radius:8px;margin:8px 0 0;font-size:14px}.trust{margin:24px 0;padding:16px;border:1px solid #1f2937;border-radius:8px;background:#0f172a}.trust-item{font-size:13px;color:#cbd5e1;padding:4px 0;display:flex;gap:8px}.trust-item::before{content:"✓";color:#22d3ee;font-weight:700}.choice-note{font-size:13px;color:#94a3b8;margin-top:14px}.back{text-align:center;color:#64748b;font-size:12px;margin-top:24px}.back a{color:#64748b;display:inline}</style><main><div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div><h1>Start ThumbGate Pro</h1><div class="price">$19<small>/mo</small></div><p>Block every repeat AI-agent mistake. Local-first. MIT-licensed CLI included. Cancel anytime.</p><a class="primary" data-i="pro_checkout_confirmed" href="${safeConfirmHref}">Pay $19/mo with Stripe →</a><a class="secondary" data-i="workflow_sprint_intake" href="${safeWorkflowIntakeHref}">Not sure yet? Send the workflow first</a><p class="choice-note">One checkout path here. Diagnostics, sprints, kits, and custom services live outside the Pro checkout so the buyer is not asked to choose between unrelated offers.</p><div class="trust"><div class="trust-item">6 paying customers, 18,000+ installs verified on npm</div><div class="trust-item">Cancel anytime — instant refund within 7 days</div><div class="trust-item">MIT open source · no vendor lock-in</div><div class="trust-item">Works with Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode</div></div><p class="back"><a href="/">← Back to thumbgate.ai</a></p></main><script>addEventListener('click',e=>{let a=e.target.closest('[data-i]');if(a&&navigator.sendBeacon)navigator.sendBeacon('/v1/telemetry/ping',new Blob([JSON.stringify({eventType:'checkout_interstitial_cta_clicked',clientType:'web',page:'/checkout/pro',ctaId:a.dataset.i,ctaPlacement:'checkout_interstitial'})],{type:'application/json'}))})</script></html>`;
+  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Confirm — ThumbGate Pro</title><style>body{background:#0a0a0a;color:#eee;font-family:system-ui,-apple-system,sans-serif;line-height:1.5}main{max-width:520px;margin:8vh auto;padding:0 20px}.brand{display:flex;align-items:center;gap:10px;margin-bottom:24px;font-size:14px;color:#94a3b8}.brand-mark{width:24px;height:24px;background:#22d3ee;border-radius:6px;display:inline-block}h1{font-size:24px;margin:0 0 8px;color:#fff}.price{font-size:32px;font-weight:700;color:#22d3ee;margin:8px 0 4px}.price small{font-size:14px;color:#94a3b8;font-weight:400}p{color:#cbd5e1;margin:8px 0}a{display:block;text-decoration:none}a.primary{background:#22d3ee;color:#000;padding:16px;text-align:center;border-radius:8px;font-weight:700;font-size:16px;margin:20px 0 10px}a.secondary{border:1px solid #374151;color:#cbd5e1;padding:12px;text-align:center;border-radius:8px;margin:8px 0 0;font-size:14px}.trust{margin:24px 0;padding:16px;border:1px solid #1f2937;border-radius:8px;background:#0f172a}.trust-item{font-size:13px;color:#cbd5e1;padding:4px 0;display:flex;gap:8px}.trust-item::before{content:"✓";color:#22d3ee;font-weight:700}.choice-note{font-size:13px;color:#94a3b8;margin-top:14px}.back{text-align:center;color:#64748b;font-size:12px;margin-top:24px}.back a{color:#64748b;display:inline}</style><main><div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div><h1>Start ThumbGate Pro</h1><div class="price">$19<small>/mo</small></div><p>Block every repeat AI-agent mistake. Local-first. MIT-licensed CLI included. Cancel anytime.</p><a class="primary" data-i="pro_checkout_confirmed" href="${safeConfirmHref}">Pay $19/mo with Stripe →</a><a class="secondary" data-i="workflow_sprint_intake" href="${safeWorkflowIntakeHref}">Not sure yet? Send the workflow first</a><p class="choice-note">One checkout path here. Diagnostics, sprints, kits, and custom services live outside the Pro checkout so the buyer is not asked to choose between unrelated offers.</p><div class="trust"><div class="trust-item">5,200+ npm installs in the last 30 days (npm-stat verifiable)</div><div class="trust-item">Cancel anytime — instant refund within 7 days</div><div class="trust-item">MIT open source · no vendor lock-in</div><div class="trust-item">Works with Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode</div></div><p class="back"><a href="/">← Back to thumbgate.ai</a></p></main><script>addEventListener('click',e=>{let a=e.target.closest('[data-i]');if(a&&navigator.sendBeacon)navigator.sendBeacon('/v1/telemetry/ping',new Blob([JSON.stringify({eventType:'checkout_interstitial_cta_clicked',clientType:'web',page:'/checkout/pro',ctaId:a.dataset.i,ctaPlacement:'checkout_interstitial'})],{type:'application/json'}))})</script></html>`;
 }
 
 function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneyState(req, parsed)) {
@@ -4543,7 +4543,7 @@ async function addContext(){
       // and must click "Pay $19/mo with Stripe →" (which sets confirm=1) to
       // trigger the Stripe-session creation + redirect. Counter-risk: one
       // extra click on the human path. Mitigated because the interstitial
-      // also serves as a value-preview ("6 paying customers, MIT open source,
+      // also serves as a value-preview ("5,200+ npm installs/mo, MIT open source,
       // cancel anytime"), which typically lifts conversion more than the
       // click-friction costs.
       if (!isConfirmedCheckout) {
@@ -5557,100 +5557,78 @@ async function addContext(){
     // (after qualification). Every paid CTA across the site should funnel
     // here OR directly into Stripe checkout — never a different price.
     if (isGetLikeRequest && pathname === '/pricing') {
-      sendHtml(res, 200, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pricing — ThumbGate</title><meta name="description" content="ThumbGate pricing: free CLI, $19/mo Pro, $49/seat Team, $499 Sprint Diagnostic, $1500 full Workflow Hardening Sprint. Single source of truth across the site."><style>body{font-family:system-ui,-apple-system,sans-serif;max-width:980px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}h1{font-size:36px;margin:0 0 8px;text-align:center}.lede{color:#6b7280;font-size:18px;margin:0 0 32px;text-align:center}.grid{display:grid;grid-template-columns:1fr;gap:20px;margin-bottom:24px}@media(min-width:720px){.grid{grid-template-columns:repeat(2,1fr)}.hero{grid-column:1/-1}}.card{border:1px solid #e5e7eb;border-radius:12px;padding:24px;background:#fff;display:flex;flex-direction:column}.hero{border:2px solid #0f172a;background:linear-gradient(135deg,#fef3c7,#fff)}.tag{display:inline-block;background:#0f172a;color:#fff;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600;letter-spacing:0.5px;margin-bottom:12px}.tag-free{background:#10b981}.tag-pro{background:#3b82f6}.tag-team{background:#8b5cf6}.tag-diag{background:#0f172a}.tag-sprint{background:#b91c1c}h2{margin:0 0 4px;font-size:22px}.price{font-size:30px;font-weight:700;margin:8px 0 12px}.price small{font-size:14px;color:#6b7280;font-weight:400}.tagline{color:#374151;margin:0 0 16px;font-size:15px}ul{margin:0 0 20px;padding-left:18px}li{margin:6px 0;font-size:14px}.cta{display:inline-block;background:#0f172a;color:#fff;padding:12px 24px;border-radius:8px;font-weight:600;text-decoration:none;text-align:center;margin-top:auto}.cta-secondary{background:#fff;color:#0f172a;border:1px solid #0f172a}.cta-free{background:#10b981}.micro{border-top:1px solid #e5e7eb;padding-top:24px;margin-top:16px}.micro-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:16px 0}.micro-card{border:1px solid #e5e7eb;border-radius:8px;padding:14px;text-align:center;background:#fafafa}.micro-card .mp{font-size:20px;font-weight:700;color:#0f172a}.micro-card .ml{font-size:13px;color:#6b7280;margin:4px 0 8px}.micro-card a{color:#0066cc;font-size:13px;text-decoration:none}footer{margin-top:32px;padding-top:24px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px;text-align:center}footer a{color:#0066cc}</style></head><body>
+      sendHtml(res, 200, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pricing — ThumbGate</title><meta name="description" content="ThumbGate pricing: free CLI, $19/mo Pro, $49/seat Team. One subscription decision, no consulting upsell."><style>body{font-family:system-ui,-apple-system,sans-serif;max-width:980px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}h1{font-size:36px;margin:0 0 8px;text-align:center}.lede{color:#6b7280;font-size:18px;margin:0 0 32px;text-align:center;max-width:560px;margin-left:auto;margin-right:auto}.grid{display:grid;grid-template-columns:1fr;gap:20px;margin-bottom:24px}@media(min-width:720px){.grid{grid-template-columns:repeat(3,1fr)}}.card{border:1px solid #e5e7eb;border-radius:12px;padding:24px;background:#fff;display:flex;flex-direction:column}.hero{border:2px solid #3b82f6;background:linear-gradient(135deg,#eff6ff,#fff);position:relative}.hero::before{content:"Most popular";position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#3b82f6;color:#fff;padding:3px 12px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:0.5px}.tag{display:inline-block;background:#0f172a;color:#fff;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600;letter-spacing:0.5px;margin-bottom:12px}.tag-free{background:#10b981}.tag-pro{background:#3b82f6}.tag-team{background:#8b5cf6}h2{margin:0 0 4px;font-size:22px}.price{font-size:30px;font-weight:700;margin:8px 0 12px}.price small{font-size:14px;color:#6b7280;font-weight:400}.tagline{color:#374151;margin:0 0 16px;font-size:15px}ul{margin:0 0 20px;padding-left:18px}li{margin:6px 0;font-size:14px}.cta{display:inline-block;background:#0f172a;color:#fff;padding:12px 24px;border-radius:8px;font-weight:600;text-decoration:none;text-align:center;margin-top:auto}.cta-primary{background:#3b82f6}.cta-secondary{background:#fff;color:#0f172a;border:1px solid #0f172a}.cta-free{background:#10b981}details.consulting{margin-top:32px;border:1px solid #e5e7eb;border-radius:12px;padding:18px 22px;background:#fafafa}details.consulting summary{cursor:pointer;font-size:15px;font-weight:600;color:#475569;list-style:none}details.consulting summary::-webkit-details-marker{display:none}details.consulting[open] summary{margin-bottom:16px}.consulting-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:8px 0}.consulting-card{border:1px solid #e5e7eb;border-radius:8px;padding:14px;background:#fff}.consulting-card .cp{font-size:18px;font-weight:700;color:#0f172a}.consulting-card .cl{font-size:13px;color:#6b7280;margin:4px 0 10px}.consulting-card a{color:#0066cc;font-size:13px;text-decoration:none;font-weight:600}footer{margin-top:32px;padding-top:24px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px;text-align:center}footer a{color:#0066cc}</style></head><body>
 <h1>Pricing</h1>
-<p class="lede">Six paths to ThumbGate. Pick by what you need: an install, a subscription, a team rollout, or a stakeholder-visible artifact.</p>
+<p class="lede">Three tiers. Pick the one that matches your scale. Self-serve checkout on every subscription plan — no calls.</p>
 
 <div class="grid">
 
-<div class="card hero">
-<span class="tag tag-sprint">Sprint — Full engagement</span>
-<h2>Workflow Hardening Sprint</h2>
-<div class="price">$1,500 <small>· one-time</small></div>
-<p class="tagline">The full hardening engagement for a single AI-agent workflow. Built on top of the Sprint Diagnostic — we apply the diagnostic findings into a shipped Pre-Action Check pack, deploy hooks into your repo, and run the rollout review. Two weeks calendar-time, single fixed price.</p>
-<ul>
-<li>Diagnostic + applied rules + deployed PreToolUse hooks</li>
-<li>Best path if you need the workflow actually fixed, not just diagnosed</li>
-<li>Refund if we can't extract or apply a rule</li>
-</ul>
-<a class="cta" href="mailto:igor.ganapolsky@gmail.com?subject=ThumbGate%20Workflow%20Hardening%20Sprint%20-%20Intake&body=Stack%20(Claude%20Code%2FCursor%2Fother)%3A%0AOne%20repeated%20agent%20failure%20you%20want%20to%20kill%3A%0ATimeline%3A%0A">Email to start the full sprint →</a>
-</div>
-
 <div class="card">
-<span class="tag tag-diag">Diagnostic — Proof first</span>
-<h2>Sprint Diagnostic</h2>
-<div class="price">$499 <small>· one-time</small></div>
-<p class="tagline">Two-day diagnostic on one workflow. Top-5 prevention rules ranked by impact, scoped Pre-Action Check pack delivered as a PR, 60-minute findings review. The lightweight on-ramp to the full sprint.</p>
-<ul>
-<li>Best if you need a stakeholder-visible artifact (PR, doc, briefing)</li>
-<li>Two days fixed scope — no scope creep</li>
-<li>Refund if we can't extract a rule from your failure trace</li>
-</ul>
-<a class="cta" href="https://buy.stripe.com/28E00j3Uge1E2dzgWL3sI2J">Pay $499 diagnostic →</a>
-</div>
-
-<div class="card">
-<span class="tag tag-free">Free — Forever</span>
+<span class="tag tag-free">Free — Solo developer</span>
 <h2>ThumbGate CLI</h2>
-<div class="price">$0</div>
-<p class="tagline">MIT-licensed CLI + local PreToolUse hook. Unlimited captures, 5 active prevention rules, local lesson DB. Works with Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode.</p>
+<div class="price">$0 <small>forever</small></div>
+<p class="tagline">The pre-action gate layer for one developer. Block your first repeated AI mistake in 5 minutes.</p>
 <ul>
-<li>30-second install: <code>npx thumbgate init</code></li>
+<li>Unlimited feedback captures</li>
+<li>Up to 5 active prevention rules</li>
+<li>All MCP integrations (Claude Code, Cursor, Codex, Gemini, Amp)</li>
 <li>No account, no signup, no data leaves your machine</li>
-<li>Hit 5 active rules → upgrade to Pro for unlimited</li>
 </ul>
-<a class="cta cta-free" href="/go/install?utm_source=pricing">Install free CLI →</a>
+<a class="cta cta-free" href="/go/install?utm_source=pricing">Install free →</a>
 </div>
 
-<div class="card">
+<div class="card hero">
 <span class="tag tag-pro">Pro — Self-serve recurring</span>
 <h2>ThumbGate Pro</h2>
-<div class="price">$19 <small>/ month</small> · $149 / year</div>
-<p class="tagline">For developers running multiple AI agents who hit the 5-rule wall. Unlimited prevention rules, local dashboard, DPO export for offline preference fine-tuning, lesson search across sessions.</p>
+<div class="price">$19 <small>/ month · $149 / year</small></div>
+<p class="tagline">For developers running multiple agents who hit the 5-rule wall. Unlimited rules, lesson recall, audit-ready evidence.</p>
 <ul>
 <li>Unlimited active prevention rules</li>
-<li>Local dashboard + lesson recall</li>
+<li>Local dashboard + lesson search across sessions</li>
+<li>DPO export for offline preference fine-tuning</li>
+<li>Visual check debugger — see every blocked action</li>
 <li>7-day refund window. Cancel anytime.</li>
 </ul>
-<a class="cta cta-secondary" href="/go/pro?utm_source=pricing">Start Pro →</a>
+<a class="cta cta-primary" href="/go/pro?utm_source=pricing&utm_medium=hero_card">Start Pro — $19/mo →</a>
 </div>
 
 <div class="card">
-<span class="tag tag-team">Team — After qualification</span>
+<span class="tag tag-team">Team — Shared enforcement</span>
 <h2>ThumbGate Team</h2>
-<div class="price">$49 <small>/ seat / month</small> · 3-seat min ($147/mo)</div>
-<p class="tagline">For engineering teams with shared AI-agent workflows. Shared lesson DB so one engineer's save protects the whole team, org-level policy rollout, audit-ready evidence.</p>
+<div class="price">$49 <small>/ seat / month · 3-seat min</small></div>
+<p class="tagline">For engineering teams with shared AI-agent workflows. One engineer's save protects the whole team.</p>
 <ul>
-<li>Shared prevention-rule policy across seats</li>
-<li>Self-serve checkout — no sales call required</li>
-<li>Most teams start with a Sprint first, then scale to seats</li>
+<li>Shared lesson database across all seats</li>
+<li>Org dashboard + audit-ready policy rollout</li>
+<li>Self-serve checkout starts at $147/mo</li>
+<li>Email support during pilot rollout</li>
 </ul>
 <a class="cta cta-secondary" href="/go/teams?utm_source=pricing">Start Team →</a>
 </div>
 
 </div>
 
-<div class="micro">
-<h2 style="text-align:center;font-size:20px;margin:0 0 4px;">Micro-purchases — pay for one piece</h2>
-<p style="text-align:center;color:#6b7280;font-size:14px;margin:0 0 8px;">For evaluators who want to validate one specific surface before subscribing.</p>
-<div class="micro-grid">
-<div class="micro-card">
-<div class="mp">$1</div>
-<div class="ml">First Failure Rule</div>
-<a href="https://buy.stripe.com/fZu28rfCY6zcbO99uj3sI2G">Pay $1 →</a>
+<details class="consulting">
+<summary>▸ Need a one-off diagnostic, hardening sprint, or governance setup? View paid services</summary>
+<p style="color:#6b7280;font-size:14px;margin:0 0 14px;">For teams that want a stakeholder-visible artifact (PR, briefing, deployed hooks) before subscribing. Each is one-time, fixed-scope, refundable if we can't extract a rule from your failure trace.</p>
+<div class="consulting-grid">
+<div class="consulting-card">
+<div class="cp">$499</div>
+<div class="cl">Sprint Diagnostic — 2-day triage on one workflow, top-5 rules ranked, PR delivered.</div>
+<a href="mailto:igor.ganapolsky@gmail.com?subject=ThumbGate%20Sprint%20Diagnostic">Email to start →</a>
 </div>
-<div class="micro-card">
-<div class="mp">$19</div>
-<div class="ml">AI Agent Failure Quick Read</div>
-<a href="https://buy.stripe.com/5kQ7sL76s1eSaK55e33sI2H">Pay $19 →</a>
+<div class="consulting-card">
+<div class="cp">$1,500</div>
+<div class="cl">Workflow Hardening Sprint — full hardening engagement, hooks deployed, rollout review.</div>
+<a href="mailto:igor.ganapolsky@gmail.com?subject=ThumbGate%20Workflow%20Hardening%20Sprint">Email to start →</a>
 </div>
-<div class="micro-card">
-<div class="mp">$99</div>
-<div class="ml">Workflow Teardown</div>
-<a href="https://buy.stripe.com/8x214n2Qc4r44lHayn3sI2I">Pay $99 →</a>
+<div class="consulting-card">
+<div class="cp">$97</div>
+<div class="cl">OpenClaw Agent Governance Kit — self-serve digital kit, prevention-rule starters, proof report template.</div>
+<a href="https://buy.stripe.com/bJe14naiE9Lo7xT49Z3sI12">Buy kit →</a>
 </div>
 </div>
-</div>
+</details>
 
 <footer>
 <p>One source of truth for ThumbGate pricing. Numbers here override anything stale elsewhere on the site.</p>
