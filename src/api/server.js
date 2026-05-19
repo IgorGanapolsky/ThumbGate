@@ -1384,7 +1384,7 @@ function sendInvalidAnalyticsWindowProblem(res, title, err) {
     type: PROBLEM_TYPES.INVALID_REQUEST,
     title,
     status: 400,
-    detail: err && err.message ? err.message : 'Invalid analytics window request.',
+    detail: err?.message ? err.message : 'Invalid analytics window request.',
   });
 }
 
@@ -1812,7 +1812,7 @@ function appendBestEffortTelemetry(feedbackDir, payload, headers, context) {
         metadata: {
           context,
           eventType: payload && (payload.eventType || payload.event) ? payload.eventType || payload.event : 'unknown',
-          error: err && err.message ? err.message : 'unknown_error',
+          error: err?.message ? err.message : 'unknown_error',
         },
         diagnosis: {
           diagnosed: true,
@@ -1822,7 +1822,7 @@ function appendBestEffortTelemetry(feedbackDir, payload, headers, context) {
             constraintId: 'telemetry:emit',
             message: 'Server-side telemetry write failed.',
           }],
-          evidence: [err && err.message ? err.message : 'unknown_error'],
+          evidence: [err?.message ? err.message : 'unknown_error'],
         },
       });
     } catch (_) {}
@@ -2980,13 +2980,13 @@ function renderCheckoutSuccessPage(runtimeConfig) {
         curlBlock.textContent = body.nextSteps && body.nextSteps.curl ? body.nextSteps.curl : 'curl snippet unavailable.';
       } catch (err) {
         sendTelemetryOnce('checkout_session_lookup_failed', {
-          failureCode: err && err.message ? err.message : 'checkout_session_lookup_failed',
+          failureCode: err?.message ? err.message : 'checkout_session_lookup_failed',
         });
         statusEl.textContent = 'Provisioning lookup failed.';
         summaryEl.textContent = traceId
           ? 'You can retry this page. If it keeps failing, inspect the hosted API logs with trace ' + traceId + '.'
           : 'You can retry this page. If it keeps failing, inspect the hosted API logs.';
-        keyBlock.textContent = err && err.message ? err.message : 'Unknown error';
+        keyBlock.textContent = err?.message ? err.message : 'Unknown error';
       }
     }
 
@@ -3855,7 +3855,7 @@ function createApiServer() {
                 }
               })
               .catch((err) => {
-                console.warn('[newsletter] welcome email threw:', email, err && err.message);
+                console.warn('[newsletter] welcome email threw:', email, err?.message);
               });
           }
           const journeyState = resolveJourneyState(req, parsed);
@@ -4819,7 +4819,7 @@ async function addContext(){
           seatCount: analyticsMetadata.seatCount,
           referrer: analyticsMetadata.referrer,
           referrerHost: analyticsMetadata.referrerHost,
-          failureCode: err && err.message ? err.message : 'checkout_bootstrap_failed',
+          failureCode: err?.message ? err.message : 'checkout_bootstrap_failed',
           httpStatus: err && err.statusCode ? err.statusCode : null,
         }, req.headers, 'checkout_api_failed');
         res.writeHead(302, {
@@ -4874,6 +4874,26 @@ async function addContext(){
         renderCheckoutCancelledPage(hostedConfig),
         journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}
       );
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/broker-audit') {
+      // Public-facing broker lead-flow audit landing page. Wedge for the
+      // real-estate broker outreach. Static HTML served from src/api/static.
+      try {
+        const html = fs.readFileSync(
+          path.resolve(__dirname, '../../assets/static/broker-audit.html'),
+          'utf8'
+        );
+        if (isHeadRequest) {
+          sendHtml(res, 200, html, {}, { headOnly: true });
+          return;
+        }
+        sendHtml(res, 200, html);
+      } catch (err) {
+        console.error('broker-audit page read failed:', err?.message);
+        sendJson(res, 500, { error: 'broker-audit page unavailable' });
+      }
       return;
     }
 
@@ -5086,7 +5106,7 @@ async function addContext(){
               path: pathname,
               method: req.method,
               reason: err && err.statusCode && err.statusCode < 500 ? 'invalid_payload' : 'write_failed',
-              error: err && err.message ? err.message : 'unknown_error',
+              error: err?.message ? err.message : 'unknown_error',
             },
             diagnosis: {
               diagnosed: true,
@@ -5096,7 +5116,7 @@ async function addContext(){
                 constraintId: 'telemetry:ingest',
                 message: 'Telemetry ping could not be processed.',
               }],
-              evidence: [err && err.message ? err.message : 'unknown_error'],
+              evidence: [err?.message ? err.message : 'unknown_error'],
             },
           });
         } catch (_) {
@@ -5420,7 +5440,7 @@ async function addContext(){
           landingPath: referrerAttribution.landingPath || '/',
           referrerHost: referrerAttribution.referrerHost,
           referrer: referrerAttribution.referrer,
-          failureCode: err && err.message ? err.message : 'workflow_sprint_lead_failed',
+          failureCode: err?.message ? err.message : 'workflow_sprint_lead_failed',
           httpStatus: err && err.statusCode ? err.statusCode : null,
         }, req.headers, 'workflow_sprint_lead_failed');
         if (isFormSubmission && !wantsJson(req, parsed)) {
@@ -7024,7 +7044,7 @@ async function addContext(){
             type: err && err.statusCode === 404 ? PROBLEM_TYPES.NOT_FOUND : PROBLEM_TYPES.BAD_REQUEST,
             title: err && err.statusCode === 404 ? 'Lead Not Found' : 'Request Error',
             status: err && err.statusCode ? err.statusCode : 400,
-            detail: err && err.message ? err.message : 'Unable to advance workflow sprint lead.',
+            detail: err?.message ? err.message : 'Unable to advance workflow sprint lead.',
           });
         }
         return;
@@ -7173,7 +7193,7 @@ async function addContext(){
             type: PROBLEM_TYPES.INVALID_REQUEST,
             title: 'Invalid render spec request',
             status: 400,
-            detail: err && err.message ? err.message : 'Unable to build dashboard render spec.',
+            detail: err?.message ? err.message : 'Unable to build dashboard render spec.',
           });
         }
         return;

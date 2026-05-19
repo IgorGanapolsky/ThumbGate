@@ -3865,4 +3865,44 @@ test('loss analytics endpoint returns ranked causes and behavioral signals', asy
   assert.equal(body.telemetry.behavior.topExitSection.key, 'hero');
 });
 
+
+test('/broker-audit serves the public landing page with telemetry script', async () => {
+  const res = await fetch(apiUrl('/broker-audit'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+
+  const body = await res.text();
+  // Title + framing: free-audit primary, $49 fast-lane secondary
+  assert.match(body, /Free 20-Minute Broker Lead-Flow Audit/);
+  assert.match(body, /Email Igor for the free audit/);
+  assert.match(body, /\$49 fast-lane/);
+  // Stripe link wired to the verified plink
+  assert.match(body, /buy\.stripe\.com\/9B600jaiE7Dg6tPayn3sI2L/);
+  // Inline telemetry script wires the three events
+  assert.match(body, /broker_audit_page_view/);
+  assert.match(body, /broker_audit_cta_clicked/);
+  assert.match(body, /broker_audit_unload/);
+  // CSP-safe randomness (no Math.random in the telemetry block)
+  assert.match(body, /crypto\.randomUUID/);
+  // HEAD request should also succeed (route handles isHeadRequest)
+  const head = await fetch(apiUrl('/broker-audit'), { method: 'HEAD' });
+  assert.equal(head.status, 200);
+});
+
+test('/broker-audit returns 500 problem-json when static asset is missing', async () => {
+  // Exercises the catch branch of the /broker-audit handler so the read
+  // failure path is covered (Sonar new_coverage gate).
+  const assetPath = path.resolve(__dirname, '..', 'assets', 'static', 'broker-audit.html');
+  const backupPath = `${assetPath}.swap-${process.pid}`;
+  fs.renameSync(assetPath, backupPath);
+  try {
+    const res = await fetch(apiUrl('/broker-audit'));
+    assert.equal(res.status, 500);
+    const body = await res.json();
+    assert.equal(body.error, 'broker-audit page unavailable');
+  } finally {
+    fs.renameSync(backupPath, assetPath);
+  }
+});
+
 }
