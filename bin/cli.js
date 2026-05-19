@@ -2865,69 +2865,7 @@ switch (COMMAND) {
       console.log('✅ No repeat-offender patterns found. Your sessions are efficient!');
     } else {
       console.table(results);
-      console.log('\n💰 Total estimated monthly waste: 
-    dashboard();
-    break;
-  case 'artifact':
-  case 'artifacts':
-    artifacts();
-    break;
-  case 'analytics': {
-    const { run: runAnalytics } = require(path.join(PKG_ROOT, 'scripts', 'analytics-report'));
-    runAnalytics();
-    break;
-  }
-  case 'start-api':
-    startApi();
-    break;
-  case 'help':
-  case '--help':
-  case '-h':
-    help();
-    break;
-  case 'compact':
-    compact();
-    break;
-  case 'checkin': {
-    // User check-in command — asks how it's going after install
-    const thumbgateDir = path.join(CWD, '.thumbgate');
-    const configPath = path.join(thumbgateDir, 'config.json');
-    let installAge = 'unknown';
-    if (fs.existsSync(configPath)) {
-      try {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        if (config.installedAt) {
-          const days = Math.floor((Date.now() - new Date(config.installedAt).getTime()) / 86400000);
-          installAge = `${days} day${days !== 1 ? 's' : ''}`;
-        }
-      } catch { /* ignore */ }
-    }
-    console.log(`\n🔔 thumbgate check-in (installed ${installAge} ago)\n`);
-    console.log('Quick questions to help improve this tool:\n');
-    console.log('1. Is the gate engine catching real mistakes for you? (y/n/haven\'t tried)');
-    console.log('2. What failure pattern do you wish it caught but doesn\'t?');
-    console.log('3. Anything confusing or broken?\n');
-    console.log('Reply to any of these at: https://github.com/IgorGanapolsky/ThumbGate/discussions');
-    console.log('Or email: iganapolsky@gmail.com\n');
-
-    // Log the check-in event
-    const checkinLog = path.join(thumbgateDir, 'checkin-log.jsonl');
-    if (fs.existsSync(thumbgateDir)) {
-      const event = { event: 'checkin_shown', at: new Date().toISOString(), installAge };
-      fs.appendFileSync(checkinLog, JSON.stringify(event) + '\n');
-    }
-    break;
-  }
-  default:
-    if (COMMAND) {
-      console.error(`Unknown command: ${COMMAND}`);
-      console.error('Run: npx thumbgate help');
-      process.exit(1);
-    } else {
-      help();
-    }
-}
- + totalWaste);
+      console.log('\n💰 Total estimated monthly waste: $' + totalWaste);
       console.log('\nBlock these mistakes permanently with ThumbGate Pro:');
       console.log(PRO_CHECKOUT_URL);
     }
