@@ -4877,7 +4877,8 @@ async function addContext(){
           return;
         }
         sendHtml(res, 200, html);
-      } catch (_e) {
+      } catch (err) {
+        console.error('broker-audit page read failed:', err && err.message);
         sendJson(res, 500, { error: 'broker-audit page unavailable' });
       }
       return;
