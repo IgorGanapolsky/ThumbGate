@@ -219,6 +219,7 @@ const COMPARE_PAGE_PATH = path.resolve(__dirname, '../../public/compare.html');
 const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
 const NUMBERS_PAGE_PATH = path.resolve(__dirname, '../../public/numbers.html');
 const FEDERAL_PAGE_PATH = path.resolve(__dirname, '../../public/federal.html');
+const PRICING_PAGE_PATH = path.resolve(__dirname, '../../public/pricing.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
 const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
@@ -1966,6 +1967,10 @@ function loadLandingPageHtml(runtimeConfig, pageContext = {}) {
 
 function loadProPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(PRO_PAGE_PATH, runtimeConfig, pageContext);
+}
+
+function loadPricingPageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(PRICING_PAGE_PATH, runtimeConfig, pageContext);
 }
 
 function readOptionalPublicTemplate(filePath) {
@@ -4489,7 +4494,7 @@ async function addContext(){
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/ThumbGate',
-          endpoints: ['/health', '/dashboard', '/guide', '/codex-plugin', '/compare', '/learn', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/documents', '/v1/documents/import', '/v1/documents/{documentId}', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/decisions/evaluate', '/v1/decisions/outcome', '/v1/decisions/metrics', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
+          endpoints: ['/health', '/dashboard', '/guide', '/codex-plugin', '/compare', '/learn', '/pricing', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/documents', '/v1/documents/import', '/v1/documents/{documentId}', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/decisions/evaluate', '/v1/decisions/outcome', '/v1/decisions/metrics', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
         }, {}, {
           headOnly: isHeadRequest,
         });
@@ -5593,89 +5598,25 @@ async function addContext(){
     // Sprint (proof-pack, sales-led) → Pro (self-serve recurring) → Team
     // (after qualification). Every paid CTA across the site should funnel
     // here OR directly into Stripe checkout — never a different price.
-    if (isGetLikeRequest && pathname === '/pricing') {
-      sendHtml(res, 200, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pricing — ThumbGate</title><meta name="description" content="ThumbGate pricing: free CLI, $19/mo Pro, $49/seat Team. One subscription decision, no consulting upsell."><style>body{font-family:system-ui,-apple-system,sans-serif;max-width:980px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}h1{font-size:36px;margin:0 0 8px;text-align:center}.lede{color:#6b7280;font-size:18px;margin:0 0 32px;text-align:center;max-width:560px;margin-left:auto;margin-right:auto}.grid{display:grid;grid-template-columns:1fr;gap:20px;margin-bottom:24px}@media(min-width:720px){.grid{grid-template-columns:repeat(3,1fr)}}.card{border:1px solid #e5e7eb;border-radius:12px;padding:24px;background:#fff;display:flex;flex-direction:column}.hero{border:2px solid #3b82f6;background:linear-gradient(135deg,#eff6ff,#fff);position:relative}.hero::before{content:"Most popular";position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#3b82f6;color:#fff;padding:3px 12px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:0.5px}.tag{display:inline-block;background:#0f172a;color:#fff;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600;letter-spacing:0.5px;margin-bottom:12px}.tag-free{background:#10b981}.tag-pro{background:#3b82f6}.tag-team{background:#8b5cf6}h2{margin:0 0 4px;font-size:22px}.price{font-size:30px;font-weight:700;margin:8px 0 12px}.price small{font-size:14px;color:#6b7280;font-weight:400}.tagline{color:#374151;margin:0 0 16px;font-size:15px}ul{margin:0 0 20px;padding-left:18px}li{margin:6px 0;font-size:14px}.cta{display:inline-block;background:#0f172a;color:#fff;padding:12px 24px;border-radius:8px;font-weight:600;text-decoration:none;text-align:center;margin-top:auto}.cta-primary{background:#3b82f6}.cta-secondary{background:#fff;color:#0f172a;border:1px solid #0f172a}.cta-free{background:#10b981}details.consulting{margin-top:32px;border:1px solid #e5e7eb;border-radius:12px;padding:18px 22px;background:#fafafa}details.consulting summary{cursor:pointer;font-size:15px;font-weight:600;color:#475569;list-style:none}details.consulting summary::-webkit-details-marker{display:none}details.consulting[open] summary{margin-bottom:16px}.consulting-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:8px 0}.consulting-card{border:1px solid #e5e7eb;border-radius:8px;padding:14px;background:#fff}.consulting-card .cp{font-size:18px;font-weight:700;color:#0f172a}.consulting-card .cl{font-size:13px;color:#6b7280;margin:4px 0 10px}.consulting-card a{color:#0066cc;font-size:13px;text-decoration:none;font-weight:600}footer{margin-top:32px;padding-top:24px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px;text-align:center}footer a{color:#0066cc}</style></head><body>
-<h1>Pricing</h1>
-<p class="lede">Three tiers. Pick the one that matches your scale. Self-serve checkout on every subscription plan — no calls.</p>
-
-<div class="grid">
-
-<div class="card">
-<span class="tag tag-free">Free — Solo developer</span>
-<h2>ThumbGate CLI</h2>
-<div class="price">$0 <small>forever</small></div>
-<p class="tagline">The pre-action gate layer for one developer. Block your first repeated AI mistake in 5 minutes.</p>
-<ul>
-<li>Unlimited feedback captures</li>
-<li>Up to 5 active prevention rules</li>
-<li>All MCP integrations (Claude Code, Cursor, Codex, Gemini, Amp)</li>
-<li>No account, no signup, no data leaves your machine</li>
-</ul>
-<a class="cta cta-free" href="/go/install?utm_source=pricing">Install free →</a>
-</div>
-
-<div class="card hero">
-<span class="tag tag-pro">Pro — Self-serve recurring</span>
-<h2>ThumbGate Pro</h2>
-<div class="price">$19 <small>/ month · $149 / year</small></div>
-<p class="tagline">For developers running multiple agents who hit the 5-rule wall. Unlimited rules, lesson recall, audit-ready evidence.</p>
-<ul>
-<li>Unlimited active prevention rules</li>
-<li>Local dashboard + lesson search across sessions</li>
-<li>DPO export for offline preference fine-tuning</li>
-<li>Visual check debugger — see every blocked action</li>
-<li>7-day refund window. Cancel anytime.</li>
-</ul>
-<a class="cta cta-primary" href="/go/pro?utm_source=pricing&utm_medium=hero_card">Start Pro — $19/mo →</a>
-</div>
-
-<div class="card">
-<span class="tag tag-team">Team — Shared enforcement</span>
-<h2>ThumbGate Team</h2>
-<div class="price">$49 <small>/ seat / month · 3-seat min</small></div>
-<p class="tagline">For engineering teams with shared AI-agent workflows. One engineer's save protects the whole team.</p>
-<ul>
-<li>Shared lesson database across all seats</li>
-<li>Org dashboard + audit-ready policy rollout</li>
-<li>Self-serve checkout starts at $147/mo</li>
-<li>Email support during pilot rollout</li>
-</ul>
-<a class="cta cta-secondary" href="/go/teams?utm_source=pricing">Start Team →</a>
-</div>
-
-</div>
-
-<details class="consulting">
-<summary>▸ Need a one-off diagnostic, hardening sprint, or governance setup? View paid services</summary>
-<p style="color:#6b7280;font-size:14px;margin:0 0 14px;">For teams that want a stakeholder-visible artifact (PR, briefing, deployed hooks) before subscribing. Each is one-time, fixed-scope, refundable if we can't extract a rule from your failure trace.</p>
-<div class="consulting-grid">
-<div class="consulting-card">
-<div class="cp">$499</div>
-<div class="cl">Sprint Diagnostic — 2-day triage on one workflow, top-5 rules ranked, PR delivered.</div>
-<a href="mailto:igor.ganapolsky@gmail.com?subject=ThumbGate%20Sprint%20Diagnostic">Email to start →</a>
-</div>
-<div class="consulting-card">
-<div class="cp">$1,500</div>
-<div class="cl">Workflow Hardening Sprint — full hardening engagement, hooks deployed, rollout review.</div>
-<a href="mailto:igor.ganapolsky@gmail.com?subject=ThumbGate%20Workflow%20Hardening%20Sprint">Email to start →</a>
-</div>
-<div class="consulting-card">
-<div class="cp">$97</div>
-<div class="cl">OpenClaw Agent Governance Kit — self-serve digital kit, prevention-rule starters, proof report template.</div>
-<a href="https://buy.stripe.com/bJe14naiE9Lo7xT49Z3sI12">Buy kit →</a>
-</div>
-</div>
-</details>
-
-<footer>
-<p>One source of truth for ThumbGate pricing. Numbers here override anything stale elsewhere on the site.</p>
-<p><a href="/">Home</a> · <a href="/case-studies">Case Studies</a> · <a href="/support">Support</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
-</footer>
-</body></html>`, {}, {
-        headOnly: isHeadRequest,
-      });
+    if (isGetLikeRequest && (pathname === '/pricing' || pathname === '/pricing.html')) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadPricingPageHtml,
+          extraTelemetry: {
+            pageType: 'pricing',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Pricing page unavailable');
+      }
       return;
     }
+
 
     // Public support / contact page — required for Stripe Business → Public
     // details "Customer support URL" field. Single source of truth for how
@@ -6360,6 +6301,11 @@ async function addContext(){
       }
 
       if (req.method === 'GET' && pathname === '/v1/lessons/search') {
+        const lessonLimit = checkLimit('search_lessons');
+        if (!lessonLimit.allowed) {
+          sendJson(res, 429, { error: 'Free tier: lesson search requires Pro. Upgrade at /pricing', code: 'PRO_REQUIRED' });
+          return;
+        }
         const query = parsed.searchParams.get('q') || parsed.searchParams.get('query') || '';
         const limit = Number(parsed.searchParams.get('limit') || 10);
         const category = parsed.searchParams.get('category') || '';
@@ -6379,6 +6325,11 @@ async function addContext(){
       }
 
       if (req.method === 'GET' && pathname === '/v1/search') {
+        const searchLimit = checkLimit('search_thumbgate');
+        if (!searchLimit.allowed) {
+          sendJson(res, 429, { error: 'Free tier: search requires Pro. Upgrade at /pricing', code: 'PRO_REQUIRED' });
+          return;
+        }
         const query = parsed.searchParams.get('q') || parsed.searchParams.get('query') || '';
         const limit = Number(parsed.searchParams.get('limit') || 10);
         const source = parsed.searchParams.get('source') || 'all';
@@ -6399,6 +6350,11 @@ async function addContext(){
       }
 
       if (req.method === 'POST' && pathname === '/v1/search') {
+        const searchLimit = checkLimit('search_thumbgate');
+        if (!searchLimit.allowed) {
+          sendJson(res, 429, { error: 'Free tier: search requires Pro. Upgrade at /pricing', code: 'PRO_REQUIRED' });
+          return;
+        }
         const body = await parseJsonBody(req);
         let results;
         try {
@@ -6562,6 +6518,11 @@ async function addContext(){
       }
 
       if (req.method === 'POST' && pathname === '/v1/dpo/export') {
+        const dpoLimit = checkLimit('export_dpo');
+        if (!dpoLimit.allowed) {
+          sendJson(res, 429, { error: 'Free tier: DPO export requires Pro. Upgrade at /pricing', code: 'PRO_REQUIRED' });
+          return;
+        }
         const body = await parseJsonBody(req);
         const paths = resolveDpoExportPaths(body, {
           safeDataDir: requestSafeDataDir,

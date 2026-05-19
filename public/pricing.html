@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+__GOOGLE_SITE_VERIFICATION_META__
+<title>Pricing — ThumbGate</title>
+<meta name="description" content="ThumbGate pricing: free CLI forever, $19/mo Pro dashboard, $49/seat Team enforcement. Self-serve checkout, no consulting upsell.">
+<meta property="og:title" content="Pricing — ThumbGate">
+<meta property="og:description" content="Three tiers. Pick the one that matches your scale. Self-serve checkout on every subscription plan.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="__APP_ORIGIN__/pricing">
+<meta property="og:image" content="/og.png">
+<link rel="canonical" href="__APP_ORIGIN__/pricing">
+<link rel="icon" type="image/png" href="/thumbgate-icon.png">
+<link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
+
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.tagged-events.js"></script>
+__GA_BOOTSTRAP__
+
+<script>
+  const gaMeasurementId = '__GA_MEASUREMENT_ID__';
+  const serverVisitorId = '__SERVER_VISITOR_ID__';
+  const serverSessionId = '__SERVER_SESSION_ID__';
+  const serverAcquisitionId = '__SERVER_ACQUISITION_ID__';
+  const serverTelemetryCaptured = '__SERVER_TELEMETRY_CAPTURED__' === 'true';
+  const proPriceDollars = Number('__PRO_PRICE_DOLLARS__') || 19;
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "ThumbGate",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Cross-platform, Node.js >=18.18.0",
+  "url": "__APP_ORIGIN__/pricing",
+  "offers": [
+    { "@type": "Offer", "name": "ThumbGate CLI (Free)", "price": "0", "priceCurrency": "USD" },
+    { "@type": "Offer", "name": "ThumbGate Pro Monthly", "price": "__PRO_PRICE_DOLLARS__", "priceCurrency": "USD", "url": "__APP_ORIGIN__/checkout/pro?plan_id=pro&billing_cycle=monthly&landing_path=%2Fpricing" },
+    { "@type": "Offer", "name": "ThumbGate Pro Annual", "price": "149", "priceCurrency": "USD", "url": "__APP_ORIGIN__/checkout/pro?plan_id=pro&billing_cycle=annual&landing_path=%2Fpricing" },
+    { "@type": "Offer", "name": "ThumbGate Team", "price": "49", "priceCurrency": "USD", "url": "__APP_ORIGIN__/pricing#team" }
+  ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "What does Pro add over the free CLI?", "acceptedAnswer": { "@type": "Answer", "text": "Free gives you unlimited captures and 5 active rules, running entirely on your machine. Pro is the hosted layer: lesson sync across machines, a dashboard without self-hosting, managed adapter updates, unlimited rules, and DPO export. You're paying for infrastructure we run, not features we hide." } },
+    { "@type": "Question", "name": "Does ThumbGate send my code to the cloud?", "acceptedAnswer": { "@type": "Answer", "text": "No. The CLI is local-first — no data leaves your machine. Pro and Team add hosted sync for dashboards and shared lessons, but your source code stays local." } },
+    { "@type": "Question", "name": "When should I pick Team over Pro?", "acceptedAnswer": { "@type": "Answer", "text": "When one engineer's correction should protect the whole team. Team shares the lesson database across seats so a fix in one repo prevents the same mistake in every repo." } },
+    { "@type": "Question", "name": "Can I cancel anytime?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Pro and Team are month-to-month with a 7-day refund window on the first charge. Cancel from the billing portal and your subscription ends at the period close." } }
+  ]
+}
+</script>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0b;
+    --bg-raised: #111113;
+    --bg-card: #161618;
+    --border: #232327;
+    --text: #ececf1;
+    --text-muted: #9a9aa6;
+    --text-dim: #6b6b78;
+    --cyan: #22d3ee;
+    --cyan-dim: rgba(34, 211, 238, 0.12);
+    --cyan-glow: rgba(34, 211, 238, 0.22);
+    --green: #4ade80;
+    --green-dim: rgba(74, 222, 128, 0.12);
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+    --mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: var(--font);
+    background:
+      radial-gradient(circle at top, rgba(34, 211, 238, 0.16) 0%, rgba(34, 211, 238, 0) 28%),
+      linear-gradient(180deg, #0a0a0b 0%, #0d1016 48%, #0a0a0b 100%);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: inherit; }
+  .container { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+  /* NAV */
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(12px);
+    background: rgba(10, 10, 11, 0.86);
+    border-bottom: 1px solid rgba(35, 35, 39, 0.92);
+  }
+  nav .container { min-height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+  .nav-logo { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; text-decoration: none; }
+  .nav-links { display: flex; gap: 20px; align-items: center; }
+  .nav-links a { font-size: 13px; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta { background: var(--cyan); color: var(--bg); padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; text-decoration: none; transition: opacity 0.15s; }
+  .nav-cta:hover { opacity: 0.85; }
+
+  /* HERO */
+  .pricing-hero { padding: 80px 0 24px; text-align: center; }
+  .pricing-hero h1 { font-size: clamp(28px, 4vw, 40px); font-weight: 700; letter-spacing: -0.03em; margin: 0 0 12px; }
+  .pricing-hero .lede { color: var(--text-muted); font-size: 17px; max-width: 560px; margin: 0 auto; }
+
+  /* GRID */
+  .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 40px 0 32px; }
+  @media (max-width: 768px) { .pricing-grid { grid-template-columns: 1fr; } }
+
+  /* CARDS */
+  .price-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 32px 28px; display: flex; flex-direction: column;
+  }
+  .price-card.highlight {
+    border-color: var(--cyan);
+    box-shadow: 0 0 40px var(--cyan-dim), inset 0 1px 0 rgba(34, 211, 238, 0.15);
+    position: relative;
+  }
+  .price-card.highlight::before {
+    content: "Most popular";
+    position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+    background: var(--cyan); color: var(--bg);
+    padding: 3px 12px; border-radius: 6px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .price-card.team-card { border-color: rgba(74, 222, 128, 0.45); box-shadow: inset 0 1px 0 rgba(74, 222, 128, 0.16); }
+
+  .tier { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
+  .price-card.highlight .tier { color: var(--cyan); }
+  .price-card.team-card .tier { color: var(--green); }
+
+  .price { font-size: 40px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 4px; }
+  .price span { font-size: 16px; color: var(--text-dim); }
+  .price-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.55; }
+
+  .price-card ul { list-style: none; padding: 0; margin: 0 0 28px; }
+  .price-card li { font-size: 14px; color: var(--text-muted); padding: 6px 0; display: flex; align-items: flex-start; gap: 8px; }
+  .price-card li::before { content: "\2713"; color: var(--cyan); font-weight: 700; flex-shrink: 0; }
+  .price-card.team-card li::before { color: var(--green); }
+
+  /* BUTTONS */
+  .btn-install {
+    display: block; text-align: center; padding: 12px; border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); text-decoration: none; font-size: 14px; font-weight: 500;
+    transition: border-color 0.15s; margin-top: auto;
+  }
+  .btn-install:hover { border-color: var(--text-muted); }
+
+  .btn-pro {
+    display: block; text-align: center; padding: 12px;
+    background: var(--cyan); color: var(--bg); border-radius: 8px;
+    text-decoration: none; font-size: 14px; font-weight: 600; transition: opacity 0.15s;
+    margin-top: auto;
+  }
+  .btn-pro:hover { opacity: 0.85; }
+
+  .btn-team {
+    display: block; text-align: center; padding: 12px;
+    background: rgba(74, 222, 128, 0.14); color: var(--green);
+    border: 1px solid rgba(74, 222, 128, 0.4); border-radius: 8px;
+    text-decoration: none; font-size: 14px; font-weight: 600;
+    transition: border-color 0.15s, transform 0.15s; margin-top: auto;
+  }
+  .btn-team:hover { border-color: var(--green); transform: translateY(-1px); }
+
+  .btn-sub { font-size: 11px; color: var(--text-muted); margin-top: 8px; text-align: center; }
+
+  /* CONSULTING FOLD */
+  .consulting-fold {
+    margin: 32px 0; border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 22px; background: var(--bg-raised);
+  }
+  .consulting-fold summary {
+    cursor: pointer; font-size: 15px; font-weight: 600; color: var(--text-muted);
+    list-style: none;
+  }
+  .consulting-fold summary::-webkit-details-marker { display: none; }
+  .consulting-fold[open] summary { margin-bottom: 16px; }
+  .consulting-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px; margin: 8px 0;
+  }
+  .consulting-card {
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px; background: var(--bg-card);
+  }
+  .consulting-card .cp { font-size: 18px; font-weight: 700; color: var(--text); }
+  .consulting-card .cl { font-size: 13px; color: var(--text-muted); margin: 4px 0 10px; }
+  .consulting-card a { color: var(--cyan); font-size: 13px; text-decoration: none; font-weight: 600; }
+
+  /* FAQ */
+  .faq { padding: 48px 0; }
+  .faq h2 { text-align: center; font-size: 24px; margin-bottom: 24px; }
+  .faq-list { max-width: 640px; margin: 0 auto; }
+  .faq-item { border-bottom: 1px solid var(--border); }
+  .faq-q {
+    padding: 20px 0; font-size: 15px; font-weight: 600; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .faq-q::after { content: "+"; font-size: 18px; color: var(--text-muted); transition: transform 0.2s; }
+  .faq-item.open .faq-q::after { transform: rotate(45deg); }
+  .faq-a { font-size: 14px; color: var(--text-muted); line-height: 1.65; padding-bottom: 20px; display: none; }
+  .faq-item.open .faq-a { display: block; }
+
+  /* FOOTER */
+  footer { border-top: 1px solid var(--border); padding: 32px 0; margin-top: 48px; }
+  footer .container { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+  .footer-links { display: flex; gap: 20px; }
+  .footer-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; transition: color 0.15s; }
+  .footer-links a:hover { color: var(--text); }
+  .footer-copy { font-size: 12px; color: var(--text-muted); }
+</style>
+<script>
+  !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace("/ingest","")+ "/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group identify setPersonProperties setPersonPropertiesForFlags".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+  posthog.init('__POSTHOG_API_KEY__', {
+    api_host: '/ingest',
+    ui_host: 'https://us.posthog.com',
+    person_profiles: 'identified_only',
+  });
+  posthog.capture('$pageview');
+</script>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <a href="/" class="nav-logo">ThumbGate</a>
+    <div class="nav-links">
+      <a href="/#features">Features</a>
+      <a href="/pricing" style="color:var(--text);">Pricing</a>
+      <a href="/guide">Guide</a>
+      <a href="/dashboard">Dashboard</a>
+      <a class="nav-cta" href="/checkout/pro?utm_source=pricing&utm_medium=nav&utm_campaign=pricing_page&plan_id=pro&landing_path=%2Fpricing">Start Pro</a>
+    </div>
+  </div>
+</nav>
+
+<section class="pricing-hero">
+  <div class="container">
+    <h1>Stop paying for the same AI mistake twice.</h1>
+    <p class="lede">Three tiers. Pick the one that matches your scale. Self-serve checkout on every subscription plan.</p>
+  </div>
+</section>
+
+<section class="container">
+  <div class="pricing-grid">
+
+    <div class="price-card">
+      <div class="tier" style="color:var(--cyan);">Free</div>
+      <div class="price">$0</div>
+      <div class="price-sub">Block repeated mistakes daily. Forever free for solo devs.</div>
+      <ul>
+        <li>Unlimited feedback captures — every thumbs-down, every session</li>
+        <li>Up to 5 active prevention rules</li>
+        <li>All MCP integrations (Claude Code, Cursor, Codex, Gemini, Amp)</li>
+        <li>PreToolUse hook blocking with built-in safety checks</li>
+        <li>Runs 100% local — no account, no signup, no data leaves your machine</li>
+      </ul>
+      <a class="btn-install" href="/go/install?utm_source=pricing&utm_medium=free_card" onclick="try{posthog.capture('pricing_cta_click',{cta:'install_free',tier:'free',placement:'pricing_page'})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'install_free',tier:'free'}})}catch(_){}">Install free</a>
+    </div>
+
+    <div class="price-card highlight" id="pro">
+      <div class="tier">Pro</div>
+      <div class="price">$19<span>/mo</span></div>
+      <div class="price-sub">
+        The free CLI runs your gates locally and never expires.
+        Pro is what we operate for you: hosted lesson sync across all your machines, adapter matrix kept current as agent runtimes ship breaking changes, and a dashboard you never have to self-host.
+      </div>
+      <ul>
+        <li><strong>Hosted lesson sync</strong> — corrections follow you across machines, no manual export</li>
+        <li><strong>Managed adapter matrix</strong> — we track runtime changes in Claude Code, Cursor, Codex, Gemini, Amp so you don't</li>
+        <li><strong>Hosted dashboard</strong> — see every blocked action, every rule that fired, without running your own server</li>
+        <li><strong>Unlimited prevention rules</strong> — free caps at 5 auto-promoted rules</li>
+        <li><strong>DPO + HuggingFace export</strong> — training data from your real corrections</li>
+        <li><strong>Auto-connect</strong> — new agent surfaces appear automatically after setup</li>
+        <li>7-day refund window. Cancel anytime.</li>
+      </ul>
+      <a class="btn-pro" href="/checkout/pro?utm_source=pricing&utm_medium=hero_card&utm_campaign=pricing_page&plan_id=pro&landing_path=%2Fpricing" onclick="try{posthog.capture('pricing_cta_click',{cta:'start_pro',tier:'pro',placement:'pricing_page',price:19})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'start_pro',tier:'pro'}})}catch(_){}">Start Pro — $19/mo</a>
+      <p class="btn-sub">or $149/year (save 35%)</p>
+    </div>
+
+    <div class="price-card team-card" id="team">
+      <div class="tier">Team</div>
+      <div class="price">$49<span>/seat/mo</span></div>
+      <div class="price-sub">Shared enforcement memory for the whole team. One engineer's save protects every agent.</div>
+      <ul>
+        <li>Everything in Pro for each seat</li>
+        <li><strong>Shared lesson database</strong> — one engineer's fix protects every agent on the team</li>
+        <li><strong>Org dashboard</strong> — visibility across all agent surfaces and developers</li>
+        <li>Check template library for deploys, publish, and DB operations</li>
+        <li>Email support during pilot rollout</li>
+        <li>Self-serve checkout at $147/mo (3-seat minimum)</li>
+      </ul>
+      <a class="btn-team" href="/#workflow-sprint-intake?utm_source=pricing&utm_medium=team_card" onclick="try{posthog.capture('pricing_cta_click',{cta:'start_team',tier:'team',placement:'pricing_page',price:49})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'start_team',tier:'team'}})}catch(_){}">Send team workflow first</a>
+      <p class="btn-sub">Rollout starts through intake so the workflow is scoped before checkout.</p>
+    </div>
+
+  </div>
+
+  <details class="consulting-fold">
+    <summary>Need a one-off diagnostic, hardening sprint, or governance kit?</summary>
+    <p style="color:var(--text-muted);font-size:14px;margin:0 0 14px;">For teams that want a stakeholder-visible artifact before subscribing. Each is one-time, fixed-scope, refundable if we can't extract a rule from your failure trace.</p>
+    <div class="consulting-grid">
+      <div class="consulting-card">
+        <div class="cp">$499</div>
+        <div class="cl">Sprint Diagnostic — 2-day triage on one workflow, top-5 rules ranked, PR delivered.</div>
+        <a href="mailto:igor.ganapolsky@gmail.com?subject=ThumbGate%20Sprint%20Diagnostic" onclick="try{posthog.capture('pricing_cta_click',{cta:'sprint_diagnostic',tier:'consulting',price:499})}catch(_){}">Email to start</a>
+      </div>
+      <div class="consulting-card">
+        <div class="cp">$1,500</div>
+        <div class="cl">Workflow Hardening Sprint — full hardening engagement, hooks deployed, rollout review.</div>
+        <a href="mailto:igor.ganapolsky@gmail.com?subject=ThumbGate%20Workflow%20Hardening%20Sprint" onclick="try{posthog.capture('pricing_cta_click',{cta:'workflow_hardening',tier:'consulting',price:1500})}catch(_){}">Email to start</a>
+      </div>
+      <div class="consulting-card">
+        <div class="cp">$97</div>
+        <div class="cl">Agent Governance Kit — self-serve digital kit, prevention-rule starters, proof report template.</div>
+        <a href="https://buy.stripe.com/bJe14naiE9Lo7xT49Z3sI12" onclick="try{posthog.capture('pricing_cta_click',{cta:'governance_kit',tier:'consulting',price:97})}catch(_){}">Buy kit</a>
+      </div>
+    </div>
+  </details>
+</section>
+
+<section class="faq">
+  <div class="container">
+    <h2>Questions</h2>
+    <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-q">What does Pro add over the free CLI?</div>
+        <div class="faq-a">Free gives you unlimited captures and 5 active rules, running entirely on your machine. Pro is the hosted layer: lesson sync across machines, a dashboard without self-hosting, managed adapter updates, unlimited rules, and DPO export. You're paying for infrastructure we run, not features we hide.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Does ThumbGate send my code to the cloud?</div>
+        <div class="faq-a">No. The CLI is local-first and no source code leaves your machine. Pro and Team add hosted sync for dashboards and shared lessons, but your code stays local.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">When should I pick Team over Pro?</div>
+        <div class="faq-a">When one engineer's correction should protect the whole team. Team shares the lesson database across seats so a fix in one repo prevents the same mistake in every repo.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Can I cancel anytime?</div>
+        <div class="faq-a">Yes. Pro and Team are month-to-month with a 7-day refund window on the first charge. Cancel from the billing portal and your subscription ends at the period close.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">What happens if I stop paying?</div>
+        <div class="faq-a">You keep the free CLI with 5-rule cap. Your existing rules and captures stay on your machine. You lose dashboard access, lesson search, exports, and auto-connect.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-links">
+      <a href="/">Home</a>
+      <a href="/guide">Guide</a>
+      <a href="/support">Support</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+    </div>
+    <span class="footer-copy">One source of truth for ThumbGate pricing. Numbers here override anything stale elsewhere.</span>
+  </div>
+</footer>
+
+<script>
+document.querySelectorAll('.faq-q').forEach(function(q) {
+  q.addEventListener('click', function() {
+    this.parentElement.classList.toggle('open');
+  });
+});
+</script>
+<script>
+window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments) };
+</script>
+</body>
+</html>
