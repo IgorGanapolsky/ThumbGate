@@ -1,6 +1,6 @@
 # Money Marketplace Distribution Pack
 
-Updated: 2026-05-05T18:29:39.368Z
+Updated: 2026-05-19T22:24:56.042Z
 
 Turn platform discovery into tracked Pro and Sprint conversations without claiming publication before it happens.
 

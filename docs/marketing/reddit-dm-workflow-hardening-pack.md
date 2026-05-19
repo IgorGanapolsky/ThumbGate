@@ -1,6 +1,6 @@
 # Reddit DM Workflow Hardening Pack
 
-Updated: 2026-05-04T15:07:22.568Z
+Updated: 2026-05-04T15:13:16.404Z
 
 This pack turns the current warm Reddit workflow-risk queue into an operator-ready send surface. It is evidence-backed acquisition support, not proof of sent outreach or paid revenue.
 
@@ -34,7 +34,7 @@ Convert the current warm Reddit workflow-risk queue into replied conversations, 
 
 ## Demand Surfaces
 ### Workflow Hardening Sprint intake
-- URL: https://thumbgate.ai/?utm_source=reddit&utm_medium=reddit_dm&utm_campaign=reddit_sprint_intake&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=REDDIT-SPRINT_INTAKE&cta_id=reddit_sprint_intake&cta_placement=pack_surface&surface=reddit_dm_sprint#workflow-sprint-intake
+- URL: https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=reddit_dm&utm_campaign=reddit_sprint_intake&utm_content=workflow_sprint&campaign_variant=pain_confirmed&offer_code=REDDIT-SPRINT_INTAKE&cta_id=reddit_sprint_intake&cta_placement=pack_surface&surface=reddit_dm_sprint#workflow-sprint-intake
 - Operator use: Primary CTA after the buyer confirms one repeated workflow failure worth a 15-minute diagnostic.
 - Buyer signal: Warm Reddit engager who already described a real workflow risk and wants help fixing it.
 
@@ -51,10 +51,10 @@ Convert the current warm Reddit workflow-risk queue into replied conversations, 
 ## Follow-On Offers
 - Workflow Hardening Sprint: Discovery-led sprint, then Team at $49/seat/mo with a 3-seat minimum after qualification
   Buyer: Warm buyers who already named a repeated workflow failure and want one proof-backed fix loop.
-  CTA: https://thumbgate.ai/?utm_source=reddit&utm_medium=reddit_dm&utm_campaign=reddit_follow_on_sprint&utm_content=workflow_sprint&campaign_variant=team_follow_on&offer_code=REDDIT-FOLLOW_ON_SPRINT&cta_id=reddit_follow_on_sprint&cta_placement=post_reply&surface=reddit_dm_follow_on#workflow-sprint-intake
+  CTA: https://thumbgate-production.up.railway.app/?utm_source=reddit&utm_medium=reddit_dm&utm_campaign=reddit_follow_on_sprint&utm_content=workflow_sprint&campaign_variant=team_follow_on&offer_code=REDDIT-FOLLOW_ON_SPRINT&cta_id=reddit_follow_on_sprint&cta_placement=post_reply&surface=reddit_dm_follow_on#workflow-sprint-intake
 - ThumbGate Pro: $19/mo or $149/yr
   Buyer: Warm solo operators who asked for the self-serve path after the workflow discussion.
-  CTA: https://thumbgate.ai/checkout/pro?utm_source=reddit&utm_medium=reddit_dm&utm_campaign=reddit_follow_on_pro&utm_content=pro&campaign_variant=solo_follow_on&offer_code=REDDIT-FOLLOW_ON_PRO&cta_id=reddit_follow_on_pro&cta_placement=post_reply&plan_id=pro&surface=reddit_dm_follow_on
+  CTA: https://thumbgate-production.up.railway.app/checkout/pro?utm_source=reddit&utm_medium=reddit_dm&utm_campaign=reddit_follow_on_pro&utm_content=pro&campaign_variant=solo_follow_on&offer_code=REDDIT-FOLLOW_ON_PRO&cta_id=reddit_follow_on_pro&cta_placement=post_reply&plan_id=pro&surface=reddit_dm_follow_on
 
 ## Operator Queue
 ### u/Deep_Ad1959 — r/cursor
