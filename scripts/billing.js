@@ -2899,6 +2899,126 @@ function disableCustomerKeys(customerId) {
   return { disabledCount };
 }
 
+const DEFAULT_OWNER_EMAILS_FOR_ALERT = [
+  'iganapolsky@gmail.com',
+  'igor.ganapolsky@gmail.com',
+];
+
+function isOwnerEmailForAlert(email, env = process.env) {
+  if (!email) return false;
+  const normalized = String(email).trim().toLowerCase();
+  if (!normalized) return false;
+  const raw = env.THUMBGATE_OWNER_EMAILS;
+  const owners = raw && raw.trim()
+    ? raw.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
+    : DEFAULT_OWNER_EMAILS_FOR_ALERT;
+  return owners.includes(normalized);
+}
+
+/**
+ * Fire a real-time alert when an external (non-owner) customer pays.
+ * Returns { alerted: false, reason } if no alert was sent (no email,
+ * owner email, no transport configured). Returns
+ * { alerted: true, channels: [...] } on send.
+ *
+ * Closes the gap where the only way to learn about a real customer
+ * payment was the next daily revenue loop run — up to 24h lag.
+ *
+ * Channels (in order):
+ *   1. Slack incoming-webhook if THUMBGATE_SLACK_ALERT_WEBHOOK_URL
+ *   2. Resend email to operator if RESEND_API_KEY and a recipient
+ *      address (THUMBGATE_OPERATOR_ALERT_EMAIL or fallback to the
+ *      mailer's DEFAULT_CONTACT_EMAIL)
+ *   3. Structured stderr log (always; cheapest fallback so something
+ *      lands in Railway logs even if no transports configured)
+ *
+ * Injectable via opts for tests:
+ *   fetchImpl       — used by Slack POST
+ *   sendEmailImpl   — used by the Resend path
+ *   env             — env source (default process.env)
+ *   logger          — function(msg) for the structured log fallback
+ */
+async function emitExternalPaymentAlert({
+  session,
+  customerEmail,
+  customerName = null,
+  customerId,
+  installId = null,
+  traceId = null,
+  attribution = {},
+  amountCents = null,
+  currency = null,
+} = {}, opts = {}) {
+  const env = opts.env || process.env;
+  const fetchImpl = opts.fetchImpl || globalThis.fetch;
+  const logger = opts.logger || ((msg) => process.stderr.write(`${msg}\n`));
+  if (!customerEmail) {
+    return { alerted: false, reason: 'no_email_on_session' };
+  }
+  if (isOwnerEmailForAlert(customerEmail, env)) {
+    return { alerted: false, reason: 'owner_email' };
+  }
+
+  const amount = amountCents != null ? `${(amountCents / 100).toFixed(2)} ${String(currency || '').toUpperCase() || 'USD'}` : 'unknown amount';
+  const subject = `🎉 External Stripe payment: ${amount} from ${customerEmail}`;
+  const lines = [
+    'ThumbGate external customer payment',
+    '',
+    `Email:       ${customerEmail}`,
+    `Name:        ${customerName || '(not provided)'}`,
+    `Customer:    ${customerId || '(not yet linked)'}`,
+    `Amount:      ${amount}`,
+    `Session:     ${session?.id || '(unknown)'}`,
+    `Mode:        ${session?.mode || '(unknown)'}`,
+    `UTM source:  ${attribution.utmSource || '(none)'}`,
+    `UTM medium:  ${attribution.utmMedium || '(none)'}`,
+    `UTM campaign:${attribution.utmCampaign || '(none)'}`,
+    `Install ID:  ${installId || '(none)'}`,
+    `Trace ID:    ${traceId || '(none)'}`,
+  ];
+  const body = lines.join('\n');
+  const channels = [];
+
+  // Channel 1: Slack
+  const slackUrl = env.THUMBGATE_SLACK_ALERT_WEBHOOK_URL;
+  if (slackUrl && typeof fetchImpl === 'function') {
+    try {
+      const slackRes = await fetchImpl(slackUrl, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ text: `${subject}\n\`\`\`\n${body}\n\`\`\`` }),
+      });
+      if (slackRes && slackRes.ok) channels.push('slack');
+    } catch (_err) { /* swallow per contract */ }
+  }
+
+  // Channel 2: Resend email
+  const operatorEmail = env.THUMBGATE_OPERATOR_ALERT_EMAIL
+    || env.THUMBGATE_OPERATOR_EMAIL
+    || 'igor.ganapolsky@gmail.com';
+  if (env.RESEND_API_KEY) {
+    try {
+      const mailer = require('./mailer');
+      const sendEmailImpl = opts.sendEmailImpl || mailer.sendEmail;
+      const mailResult = await sendEmailImpl({
+        to: operatorEmail,
+        subject,
+        text: body,
+        html: `<pre style="font-family:ui-monospace,monospace;font-size:13px;line-height:1.5">${body.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</pre>`,
+      });
+      if (mailResult && mailResult.sent) channels.push('email');
+    } catch (_err) { /* swallow per contract */ }
+  }
+
+  // Channel 3: stderr log (always)
+  try {
+    logger(`[external-payment-alert] ${subject} | session=${session?.id} | install=${installId}`);
+    channels.push('log');
+  } catch (_) {}
+
+  return { alerted: channels.length > 0, channels, reason: channels.length > 0 ? null : 'no_transport_succeeded' };
+}
+
 function verifyWebhookSignature(rawBody, signature) {
   if (!CONFIG.STRIPE_WEBHOOK_SECRET) return true;
   if (!signature || !rawBody) return false;
@@ -3037,6 +3157,43 @@ async function handleWebhook(rawBody, signature) {
           recurringInterval: session.mode === 'subscription' ? 'month' : null,
           attribution,
         });
+      }
+      // Real-time alert when the checkout completes with a NON-OWNER
+      // email — the first signal that an external customer just paid.
+      // Currently the daily revenue loop is the only path to this
+      // information, which means up to 24h lag. Operator deserves
+      // immediate notice. Failure of the alert never blocks the rest
+      // of the webhook flow (return value is unchanged).
+      try {
+        const alertResult = await emitExternalPaymentAlert({
+          session,
+          customerEmail,
+          customerName,
+          customerId,
+          installId,
+          traceId,
+          attribution,
+          amountCents: session.amount_total,
+          currency: session.currency,
+        });
+        if (alertResult?.alerted) {
+          appendFunnelEvent({
+            stage: 'paid',
+            event: 'external_payment_alert_sent',
+            installId,
+            traceId,
+            evidence: session.id,
+            metadata: {
+              alertChannels: alertResult.channels,
+              customerId,
+              amountCents: session.amount_total,
+              currency: session.currency,
+            },
+          });
+        }
+      } catch (_alertErr) {
+        // Alert failure must never block webhook ack — Stripe would
+        // retry the whole webhook and we'd double-provision. Swallow.
       }
       return {
         handled: true,
@@ -3203,4 +3360,9 @@ module.exports = {
   // (freshBilling() re-requires the module so the default is restored between
   // tests — see tests/billing-webhook-email.test.js).
   _mailer: mailer,
+  // External-payment alerter — fires Slack/Resend/log when a non-owner
+  // pays. Exported for direct testing of the classifier + transport
+  // wiring without a full webhook round-trip.
+  emitExternalPaymentAlert,
+  isOwnerEmailForAlert,
 };
