@@ -27,6 +27,7 @@ COPY --from=builder /app/node_modules ./node_modules
 # Copy application source
 COPY package*.json ./
 COPY scripts/ ./scripts/
+COPY assets/ ./assets/
 COPY src/ ./src/
 COPY config/ ./config/
 COPY adapters/ ./adapters/
