@@ -8,7 +8,7 @@
 
 **AI agents repeat mistakes. You pay for every retry.**
 
-ThumbGate remembers what went wrong and blocks it before it happens again. One thumbs-down becomes a prevention rule that fires across every session, every agent, every model — before a single token is spent on the repeat.
+ThumbGate remembers what went wrong and permanently blocks it before it happens again. One thumbs-down becomes a prevention rule that fires across every session, every agent, every model — before a single token is spent on the repeat.
 
 ```
   Agent tries:   rm -rf tests/
@@ -54,7 +54,7 @@ If someone is not already bought into ThumbGate, do not lead with architecture. 
 
 1. **Show the pain:** open the **[ThumbGate GPT](https://thumbgate-production.up.railway.app/go/gpt?utm_source=github&utm_medium=readme&utm_campaign=first_dollar_activation&cta_id=readme_first_dollar_open_gpt&cta_placement=readme_first_dollar)** and paste the bad answer, risky command, deploy, PR action, or agent plan before it runs again.
 2. **Capture the lesson:** type `thumbs down:` or `thumbs up:` with one concrete sentence. Native ChatGPT rating buttons are not the ThumbGate capture path; typed feedback is.
-3. **Enforce the repeat:** run `npx thumbgate init` where the agent executes so the lesson can become a Pre-Action Check instead of another reminder.
+3. **Enforce the repeat:** run `npx thumbgate init` where the agent executes so the lesson can become one of your Pre-Action Checks instead of another reminder.
 4. **Upgrade only after proof:** Solo Pro is for the dashboard, DPO export, proof-ready evidence, and higher capture limits after one real blocked repeat. Team starts with the Workflow Hardening Sprint around one repeated failure, one owner, and one proof review.
 
 The buying question is simple: **what repeated AI mistake would be worth blocking before the next tool call?**
