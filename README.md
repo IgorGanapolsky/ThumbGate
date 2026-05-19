@@ -179,6 +179,19 @@ Each recommendation ships with the benchmark commands to run next: feedback-deri
 
 Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode**, and any MCP-compatible agent. Migrating from Roo Code (sunsetting 2026-05-15)? See [`adapters/cline/INSTALL.md`](./adapters/cline/INSTALL.md).
 
+### Install scope: machine-wide vs per-project
+
+ThumbGate supports two install scopes. Pick once when you install — you can switch later by re-running with the other flag.
+
+| Scope | Command | Settings file | Lesson DB + dashboard live in | When to use |
+|-------|---------|---------------|--------------------------------|-------------|
+| **Machine-wide** (default) | `npx thumbgate init` | `~/.claude/settings.json` | `~/.claude/memory/feedback/` | Solo dev — **one shared dashboard across every repo on this machine**. A lesson learned in `repo-A` blocks the same mistake in `repo-B` automatically. |
+| **Per-project** | `npx thumbgate init --project` (in the repo root) | `<repo>/.claude/settings.json` | `<repo>/.claude/memory/feedback/` | Client work, compliance, or multi-tenant — **separate dashboard per repo**, lessons stay isolated, audit trail belongs to the repo. |
+
+Both scopes write `mcpServers.thumbgate` + the PreToolUse / UserPromptSubmit / PostToolUse / SessionStart hooks; the only difference is *where*. Machine-wide is the right default for most developers. Switch to `--project` only when you have a reason to keep lessons from bleeding between repos.
+
+> Per-project lesson DBs live under each repo's `.claude/memory/feedback/` and **must stay gitignored** — they're a runtime store, not source. ThumbGate's bundled `.gitignore` template handles this.
+
 ### Status bar proof
 
 ![Claude Code ThumbGate footer](public/assets/claude-thumbgate-statusbar.svg)

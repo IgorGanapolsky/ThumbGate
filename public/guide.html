@@ -246,6 +246,29 @@ npx thumbgate init --agent codex
 npx thumbgate init --agent cursor
 npx thumbgate init --agent gemini</code></pre>
 
+<h3>Install scope: machine-wide vs per-project</h3>
+<p>ThumbGate supports two install scopes. Pick once when you install — you can switch later by re-running with the other flag.</p>
+<table>
+  <thead>
+    <tr><th>Scope</th><th>Command</th><th>Where lessons + dashboard live</th><th>When to use</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Machine-wide</strong> (default)</td>
+      <td><code>npx thumbgate init</code></td>
+      <td><code>~/.claude/memory/feedback/</code> — <strong>one shared dashboard across every repo on the machine</strong></td>
+      <td>Solo developer. A lesson learned in <code>repo-A</code> automatically blocks the same mistake in <code>repo-B</code>.</td>
+    </tr>
+    <tr>
+      <td><strong>Per-project</strong></td>
+      <td><code>npx thumbgate init --project</code> (run inside the repo)</td>
+      <td><code>&lt;repo&gt;/.claude/memory/feedback/</code> — <strong>separate dashboard per repo</strong></td>
+      <td>Client work, compliance, or multi-tenant. Lessons stay isolated; the audit trail belongs to the repo.</td>
+    </tr>
+  </tbody>
+</table>
+<p>Both scopes wire the same MCP server and PreToolUse / UserPromptSubmit / PostToolUse / SessionStart hooks — only the storage location differs. Machine-wide is the right default for most developers. Per-project lesson DBs live under each repo's <code>.claude/memory/feedback/</code> and <strong>must stay gitignored</strong>; ThumbGate's bundled <code>.gitignore</code> handles that.</p>
+
 <h2>How It Works</h2>
 
 <h3>1. You give feedback</h3>
