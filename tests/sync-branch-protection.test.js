@@ -63,14 +63,14 @@ test('syncBranchProtection resolves gh from fixed executable paths only', () => 
 test('diffContexts identifies missing and unexpected required contexts', () => {
   const result = diffContexts(
     ['test', 'CodeQL'],
-    ['test', 'CodeQL', 'SonarCloud Code Analysis']
+    ['test', 'CodeQL', 'Verify changeset']
   );
 
-  assert.deepEqual(result.missing, ['SonarCloud Code Analysis']);
+  assert.deepEqual(result.missing, ['Verify changeset']);
   assert.deepEqual(result.unexpected, []);
 });
 
-test('syncBranchProtection --check reports drift when main is missing SonarCloud Code Analysis', () => {
+test('syncBranchProtection --check reports drift when main is missing a required check', () => {
   const runner = createRunner([
     {
       status: 0,
@@ -96,7 +96,7 @@ test('syncBranchProtection --check reports drift when main is missing SonarCloud
 
   const result = syncBranchProtection({ check: true, repo: 'IgorGanapolsky/ThumbGate', branch: 'main' }, runner);
   assert.equal(result.ok, false);
-  assert.ok(result.diff.missing.includes('SonarCloud Code Analysis'));
+  assert.ok(result.diff.missing.length > 0);
 });
 
 test('syncBranchProtection falls back to REST branch protection when GraphQL returns no rules', () => {
@@ -123,7 +123,6 @@ test('syncBranchProtection falls back to REST branch protection when GraphQL ret
             'CodeQL',
             'Analyze JavaScript (javascript-typescript)',
             'Verify changeset',
-            'SonarCloud Code Analysis',
             'GitGuardian Security Checks',
             'Socket Security: Project Report',
             'Socket Security: Pull Request Alerts'
@@ -183,7 +182,6 @@ test('syncBranchProtection updates REST-backed branch protection when GraphQL ha
           'CodeQL',
           'Analyze JavaScript (javascript-typescript)',
           'Verify changeset',
-          'SonarCloud Code Analysis',
           'GitGuardian Security Checks',
           'Socket Security: Project Report',
           'Socket Security: Pull Request Alerts'
@@ -245,7 +243,6 @@ test('syncBranchProtection updates main branch protection to the configured qual
                 'CodeQL',
                 'Analyze JavaScript (javascript-typescript)',
                 'Verify changeset',
-                'SonarCloud Code Analysis',
                 'GitGuardian Security Checks',
                 'Socket Security: Project Report',
                 'Socket Security: Pull Request Alerts'
@@ -261,7 +258,7 @@ test('syncBranchProtection updates main branch protection to the configured qual
   const result = syncBranchProtection({ repo: 'IgorGanapolsky/ThumbGate', branch: 'main' }, runner);
   assert.equal(result.ok, true);
   assert.equal(result.updated, true);
-  assert.equal(result.actualContexts.includes('SonarCloud Code Analysis'), true);
+  assert.equal(result.actualContexts.includes('GitGuardian Security Checks'), true);
   assert.deepEqual(result.diff, { missing: [], unexpected: [] });
 });
 
