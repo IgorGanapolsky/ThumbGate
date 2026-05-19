@@ -405,5 +405,100 @@
             <span>ThumbGate</span>
         </div>
     </main>
+    <script>
+    (function () {
+      var endpoint = '/v1/telemetry/ping';
+      var pageLoadedAt = Date.now();
+      var params = new URLSearchParams(window.location.search);
+      var clientReferenceId = params.get('client_reference_id') || params.get('crid') || null;
+      var referrer = document.referrer || null;
+      var sessionId = (function () {
+        try {
+          var key = 'tg_broker_audit_sid';
+          var existing = sessionStorage.getItem(key);
+          if (existing) return existing;
+          var sid = 'ba_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+          sessionStorage.setItem(key, sid);
+          return sid;
+        } catch (_) { return null; }
+      })();
+
+      function send(payload) {
+        try {
+          var body = JSON.stringify(payload);
+          if (navigator.sendBeacon) {
+            navigator.sendBeacon(endpoint, new Blob([body], { type: 'application/json' }));
+            return;
+          }
+          fetch(endpoint, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: body,
+            keepalive: true
+          }).catch(function () {});
+        } catch (_) {}
+      }
+
+      function basePayload(eventType, extra) {
+        var out = {
+          eventType: eventType,
+          clientType: 'web',
+          page: '/broker-audit',
+          ctaPlacement: 'broker_audit',
+          clientReferenceId: clientReferenceId,
+          referrer: referrer,
+          referrerHost: (function () {
+            try { return referrer ? new URL(referrer).host : null; } catch (_) { return null; }
+          })(),
+          utmSource: params.get('utm_source'),
+          utmMedium: params.get('utm_medium'),
+          utmCampaign: params.get('utm_campaign'),
+          utmContent: params.get('utm_content'),
+          utmTerm: params.get('utm_term'),
+          sessionId: sessionId
+        };
+        if (extra) {
+          Object.keys(extra).forEach(function (k) { out[k] = extra[k]; });
+        }
+        return out;
+      }
+
+      // Page view
+      send(basePayload('broker_audit_page_view', null));
+
+      // CTA click delegation
+      document.addEventListener('click', function (e) {
+        var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+        if (!a) return;
+        var href = a.getAttribute('href') || '';
+        var ctaId = null;
+        if (href.indexOf('buy.stripe.com') !== -1) {
+          ctaId = 'stripe_49_fast_lane';
+        } else if (href.toLowerCase().indexOf('mailto:') === 0) {
+          ctaId = href.indexOf('support@thumbgate.ai') !== -1 ? 'email_support' : 'email_free_audit';
+        }
+        if (!ctaId) return;
+        send(basePayload('broker_audit_cta_clicked', {
+          ctaId: ctaId,
+          href: href,
+          dwellMs: Date.now() - pageLoadedAt
+        }));
+      }, true);
+
+      // Bounce / dwell on unload
+      var dwellFired = false;
+      function fireDwell() {
+        if (dwellFired) return;
+        dwellFired = true;
+        send(basePayload('broker_audit_unload', {
+          dwellMs: Date.now() - pageLoadedAt
+        }));
+      }
+      window.addEventListener('pagehide', fireDwell);
+      window.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'hidden') fireDwell();
+      });
+    })();
+    </script>
 </body>
 </html>
