@@ -848,12 +848,12 @@ async function callToolInner(name, args) {
       });
     }
     case 'verify_claim':
-      return toTextResult(verifyClaimEvidence(args.claim));
+      return toTextResult(verifyClaimEvidence(args.claim, { goalContract: args.goalContract }));
     case 'require_evidence_for_claim': {
       if (!args.claim || typeof args.claim !== 'string') {
         throw new Error('claim is required and must be a string');
       }
-      const verification = verifyClaimEvidence(args.claim);
+      const verification = verifyClaimEvidence(args.claim, { goalContract: args.goalContract });
       const mode = args.mode === 'advisory' ? 'advisory' : 'blocking';
       const hasMatchingChecks = Array.isArray(verification.checks) && verification.checks.length > 0;
       const evidenceMissing = hasMatchingChecks && !verification.verified;
@@ -865,9 +865,18 @@ async function callToolInner(name, args) {
         const { recordAuditEvent } = require('../../scripts/audit-trail');
         recordAuditEvent({
           toolName: 'require_evidence_for_claim',
-          toolInput: { claim: args.claim, mode, sessionId: args.sessionId || null },
+          toolInput: {
+            claim: args.claim,
+            mode,
+            sessionId: args.sessionId || null,
+            goalContract: verification.goalContract && verification.goalContract.matched
+              ? verification.goalContract
+              : null,
+          },
           decision: blocking ? 'deny' : 'allow',
-          gateId: 'completion_claim',
+          gateId: verification.goalContract && verification.goalContract.matched
+            ? 'completion_goal_contract'
+            : 'completion_claim',
           message: blocking
             ? `Completion claim blocked — missing evidence: ${missingActions.join(', ') || 'unknown'}`
             : `Completion claim verified (${verification.verified ? 'evidence present' : 'no matching gate'})`,
@@ -882,6 +891,7 @@ async function callToolInner(name, args) {
         matchedChecks: hasMatchingChecks,
         missingActions,
         checks: verification.checks,
+        goalContract: verification.goalContract,
         sessionId: args.sessionId || null,
       });
     }

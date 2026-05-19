@@ -1815,6 +1815,36 @@ test('verifyClaimEvidence returns missing actions when not tracked', () => {
   cleanupStateFiles();
 });
 
+test('verifyClaimEvidence evaluates explicit goal contracts', () => {
+  cleanupStateFiles();
+  const missingResult = verifyClaimEvidence('ready for handoff', {
+    goalContract: {
+      goal: 'Ship safely',
+      doneWhen: ['Tests pass', 'Review complete'],
+      proveBy: ['tests_passed', 'review_completed'],
+      workerAgent: 'worker',
+      reviewerAgent: 'reviewer',
+      orchestratorAgent: 'orchestrator',
+    },
+  });
+  assert.equal(missingResult.verified, false);
+  assert.equal(missingResult.goalContract.matched, true);
+  assert.deepEqual(missingResult.goalContract.missingActions.sort(), ['review_completed', 'tests_passed']);
+
+  trackAction('tests_passed');
+  trackAction('review_completed');
+  const verifiedResult = verifyClaimEvidence('ready for handoff', {
+    goalContract: {
+      goal: 'Ship safely',
+      proveBy: ['tests_passed', 'review_completed'],
+    },
+  });
+  assert.equal(verifiedResult.verified, true);
+  assert.equal(verifiedResult.goalContract.passed, true);
+  assert.deepEqual(verifiedResult.goalContract.missingActions, []);
+  cleanupStateFiles();
+});
+
 test('verifyClaimEvidence throws on empty claimText', () => {
   assert.throws(() => verifyClaimEvidence(''), /claimText is required/);
 });
