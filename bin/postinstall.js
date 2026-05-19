@@ -37,6 +37,9 @@ process.stderr.write(`
   │    npx thumbgate init                               │
   │    npx thumbgate stats                              │
   │                                                     │
+  │  Get the 5-min setup guide + weekly tips:           │
+  │    npx thumbgate subscribe you@company.com          │
+  │                                                     │
   │  See your gates firing live:                        │
   │    ${DASHBOARD_URL.slice(0, 47).padEnd(47, ' ')} │
   ╰─────────────────────────────────────────────────────╯
