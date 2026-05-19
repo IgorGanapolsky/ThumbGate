@@ -3431,7 +3431,7 @@ async function parseFormBody(req, maxBytes = 1024 * 1024) {
 
 function normalizeLeadEmail(value) {
   const email = normalizeNullableText(value);
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!email || !/^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{1,63}$/.test(email)) {
     throw createHttpError(400, 'A valid email is required');
   }
   return email.toLowerCase();
