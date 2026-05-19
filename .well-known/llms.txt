@@ -3,10 +3,7 @@
 # https://github.com/IgorGanapolsky/ThumbGate
 # https://www.npmjs.com/package/thumbgate
 
-> ThumbGate prevents expensive AI mistakes before they happen. It checks
-> risky commands, file edits, deploys, payments, API calls, and other agent
-> actions before execution. 👎 Thumbs down becomes a history-aware lesson and
-> a Pre-Action Check; 👍 thumbs up reinforces safe patterns.
+> ThumbGate is the Infrastructure Firewall for AI coding agents. AI will always hallucinate and break things; we make its mistakes harmless. It checks risky commands, file edits, deploys, payments, and API calls before execution. 👎 Thumbs down becomes a history-aware lesson and a permanent Infrastructure Firewall rule; 👍 thumbs up reinforces safe patterns. Provides governed autonomy and a verifiable Rejection Ledger.
 
 ## What ThumbGate solves
 
@@ -40,9 +37,9 @@ npx thumbgate init --agent claude-code
 ## Pricing
 
 - Free GPT: advice, checkpointing, and setup help in ChatGPT
-- Free local CLI: unlimited feedback captures, up to 5 active prevention rules, and local Pre-Action Checks after install (recall and lesson search are Pro-only)
-- Pro: $19/mo or $149/yr — personal enforcement proof, local dashboard, check debugger, DPO export, and review-ready exports
-- Team: $49/seat/mo, 3-seat minimum after intake — shared lessons, org visibility, approval boundaries, and rollout proof
+- Free local CLI: unlimited feedback captures, up to 5 active prevention rules, and local Infrastructure Firewall checks after install (recall and lesson search are Pro-only)
+- Pro: $19/mo or $149/yr — Hosted state management. We run the SQLite DB, sync your prevention rules across all your machines, and maintain the vector store so you don't have to.
+- Team: $49/seat/mo, 3-seat minimum after intake — Curated adapter compatibility matrix. We maintain the rule libraries so they work against Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode through all their breaking API changes.
 
 ## Links
 
@@ -67,3 +64,4 @@ npx thumbgate init --agent claude-code
 ## Technical stack
 
 Node.js >=18.18, SQLite+FTS5 lesson DB, Thompson Sampling, LanceDB vectors, MCP protocol, PreToolUse hooks
+ocol, PreToolUse hooks
