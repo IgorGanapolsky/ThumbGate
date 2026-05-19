@@ -23,6 +23,7 @@
  *   npx thumbgate background-governance  # background-agent run report + risk check
  *   npx thumbgate cfo           # local operational billing summary
  *   npx thumbgate pro           # solo dashboard + exports side lane
+   npx thumbgate audit <file>  # audit AI bill for repeat mistakes
  */
 
 'use strict';
@@ -2844,6 +2845,91 @@ switch (COMMAND) {
       console.log(JSON.stringify(demoOutput, null, 2));
     } else {
       process.stdout.write(demoOutput);
+    }
+    break;
+  }
+  case 'audit': {
+    const auditFile = process.argv[3];
+    if (!auditFile) {
+      console.error('Usage: npx thumbgate audit <path-to-transcript.txt>');
+      process.exit(1);
+    }
+    const { runAudit } = require(path.join(PKG_ROOT, 'scripts', 'audit'));
+    const { results, totalWaste, error } = runAudit(auditFile);
+    if (error) {
+      console.error(error);
+      process.exit(1);
+    }
+    console.log('\n🔍 AI Bill Audit Results\n');
+    if (results.length === 0) {
+      console.log('✅ No repeat-offender patterns found. Your sessions are efficient!');
+    } else {
+      console.table(results);
+      console.log('\n💰 Total estimated monthly waste: 
+    dashboard();
+    break;
+  case 'artifact':
+  case 'artifacts':
+    artifacts();
+    break;
+  case 'analytics': {
+    const { run: runAnalytics } = require(path.join(PKG_ROOT, 'scripts', 'analytics-report'));
+    runAnalytics();
+    break;
+  }
+  case 'start-api':
+    startApi();
+    break;
+  case 'help':
+  case '--help':
+  case '-h':
+    help();
+    break;
+  case 'compact':
+    compact();
+    break;
+  case 'checkin': {
+    // User check-in command — asks how it's going after install
+    const thumbgateDir = path.join(CWD, '.thumbgate');
+    const configPath = path.join(thumbgateDir, 'config.json');
+    let installAge = 'unknown';
+    if (fs.existsSync(configPath)) {
+      try {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        if (config.installedAt) {
+          const days = Math.floor((Date.now() - new Date(config.installedAt).getTime()) / 86400000);
+          installAge = `${days} day${days !== 1 ? 's' : ''}`;
+        }
+      } catch { /* ignore */ }
+    }
+    console.log(`\n🔔 thumbgate check-in (installed ${installAge} ago)\n`);
+    console.log('Quick questions to help improve this tool:\n');
+    console.log('1. Is the gate engine catching real mistakes for you? (y/n/haven\'t tried)');
+    console.log('2. What failure pattern do you wish it caught but doesn\'t?');
+    console.log('3. Anything confusing or broken?\n');
+    console.log('Reply to any of these at: https://github.com/IgorGanapolsky/ThumbGate/discussions');
+    console.log('Or email: iganapolsky@gmail.com\n');
+
+    // Log the check-in event
+    const checkinLog = path.join(thumbgateDir, 'checkin-log.jsonl');
+    if (fs.existsSync(thumbgateDir)) {
+      const event = { event: 'checkin_shown', at: new Date().toISOString(), installAge };
+      fs.appendFileSync(checkinLog, JSON.stringify(event) + '\n');
+    }
+    break;
+  }
+  default:
+    if (COMMAND) {
+      console.error(`Unknown command: ${COMMAND}`);
+      console.error('Run: npx thumbgate help');
+      process.exit(1);
+    } else {
+      help();
+    }
+}
+ + totalWaste);
+      console.log('\nBlock these mistakes permanently with ThumbGate Pro:');
+      console.log(PRO_CHECKOUT_URL);
     }
     break;
   }
