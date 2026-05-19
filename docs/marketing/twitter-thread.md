@@ -93,4 +93,7 @@ If you use AI coding agents daily and the "same mistake twice" problem resonates
 npx thumbgate init
 ```
 
+Hosted demo: thumbgate-production.up.railway.app
 GitHub: https://github.com/IgorGanapolsky/ThumbGate
+
+> Current stage: engineering validation, not customer proof. $0 revenue, building in public.

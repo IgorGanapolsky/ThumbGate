@@ -3951,7 +3951,7 @@ test('/broker-audit serves the public landing page with telemetry script', async
   const body = await res.text();
   // Title + framing: free-audit primary, $49 fast-lane secondary.
   assert.match(body, /Free 20-Minute Broker Lead-Flow Audit/);
-  assert.match(body, /action="\/v1\/intake\/broker-audit"/);
+  assert.match(body, /action="https:\/\/site-gamma-one-15\.vercel\.app\/api\/audit-form"/);
   assert.doesNotMatch(body, /REPLACE_ME/);
   assert.doesNotMatch(body, /phc_[A-Za-z0-9]+/);
   assert.match(body, /api_host:'\/ingest'/);
