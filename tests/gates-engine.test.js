@@ -731,6 +731,44 @@ test('formatOutput returns deny with approval message for approve result', () =>
   assert.ok(output.hookSpecificOutput.permissionDecisionReason.includes('deploy-approval'));
 });
 
+test('approval gates downgrade to warn when THUMBGATE_APPROVAL_GATES=0', () => {
+  const saved = process.env.THUMBGATE_APPROVAL_GATES;
+  process.env.THUMBGATE_APPROVAL_GATES = '0';
+  try {
+    const result = evaluateGates('Bash', { command: 'railway deploy --service prod' });
+    assert.equal(result.decision, 'warn');
+    assert.ok(result.message.includes('approval gate disabled'));
+  } finally {
+    if (saved !== undefined) process.env.THUMBGATE_APPROVAL_GATES = saved;
+    else delete process.env.THUMBGATE_APPROVAL_GATES;
+  }
+});
+
+test('approval gates fire as approve by default (toggle on)', () => {
+  const saved = process.env.THUMBGATE_APPROVAL_GATES;
+  delete process.env.THUMBGATE_APPROVAL_GATES;
+  try {
+    const result = evaluateGates('Bash', { command: 'railway deploy --service prod' });
+    assert.equal(result.decision, 'approve');
+    assert.equal(result.requiresApproval, true);
+  } finally {
+    if (saved !== undefined) process.env.THUMBGATE_APPROVAL_GATES = saved;
+    else delete process.env.THUMBGATE_APPROVAL_GATES;
+  }
+});
+
+test('isApprovalGatesEnabled returns true by default', () => {
+  const { isApprovalGatesEnabled } = require('../scripts/gates-engine');
+  const saved = process.env.THUMBGATE_APPROVAL_GATES;
+  delete process.env.THUMBGATE_APPROVAL_GATES;
+  try {
+    assert.equal(isApprovalGatesEnabled(), true);
+  } finally {
+    if (saved !== undefined) process.env.THUMBGATE_APPROVAL_GATES = saved;
+    else delete process.env.THUMBGATE_APPROVAL_GATES;
+  }
+});
+
 test('formatOutput surfaces reminder payloads when context is injected', () => {
   const output = JSON.parse(formatOutput(null, '[ThumbGate] lesson reminder'));
   assert.equal(output.hookSpecificOutput.additionalContext, '[ThumbGate] lesson reminder');

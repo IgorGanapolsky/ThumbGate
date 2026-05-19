@@ -55,8 +55,10 @@ function getInstallAgeDays() {
 
 function isInTrialPeriod() {
   if (process.env.CI || process.env.GITHUB_ACTIONS) return false;
+  if (process.env.THUMBGATE_NO_TRIAL === '1') return false;
   const age = getInstallAgeDays();
   if (age === null) return false;
+  if (age < 0.0007) return false; // <1 minute old — just-created install, not a real trial
   return age < TRIAL_DAYS;
 }
 

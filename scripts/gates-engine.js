@@ -1485,9 +1485,17 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
     }
 
     if (gate.action === 'approve') {
-      recordStat(gate.id, 'approve', gate);
-      const result = { decision: 'approve', gate: gate.id, message, severity: gate.severity, reasoning, requiresApproval: true };
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'approve', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+      const approvalEnabled = process.env.THUMBGATE_APPROVAL_GATES !== '0';
+      if (approvalEnabled) {
+        recordStat(gate.id, 'approve', gate);
+        const result = { decision: 'approve', gate: gate.id, message, severity: gate.severity, reasoning, requiresApproval: true };
+        const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'approve', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+        auditToFeedback(auditRecord);
+        return result;
+      }
+      recordStat(gate.id, 'warn', gate);
+      const result = { decision: 'warn', gate: gate.id, message: `[approval gate disabled] ${message}`, severity: gate.severity, reasoning };
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return result;
     }
@@ -1639,9 +1647,17 @@ function evaluateGates(toolName, toolInput, configPath) {
     }
 
     if (gate.action === 'approve') {
-      recordStat(gate.id, 'approve', gate);
-      const result = { decision: 'approve', gate: gate.id, message, severity: gate.severity, reasoning, requiresApproval: true };
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'approve', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+      const approvalEnabled = process.env.THUMBGATE_APPROVAL_GATES !== '0';
+      if (approvalEnabled) {
+        recordStat(gate.id, 'approve', gate);
+        const result = { decision: 'approve', gate: gate.id, message, severity: gate.severity, reasoning, requiresApproval: true };
+        const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'approve', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+        auditToFeedback(auditRecord);
+        return result;
+      }
+      recordStat(gate.id, 'warn', gate);
+      const result = { decision: 'warn', gate: gate.id, message: `[approval gate disabled] ${message}`, severity: gate.severity, reasoning };
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return result;
     }
@@ -1811,6 +1827,10 @@ function evaluateSecretGuard(input = {}) {
 }
 
 // ---------------------------------------------------------------------------
+function isApprovalGatesEnabled() {
+  return process.env.THUMBGATE_APPROVAL_GATES !== '0';
+}
+
 // PreToolUse hook interface (stdin/stdout JSON)
 // ---------------------------------------------------------------------------
 
@@ -2301,6 +2321,7 @@ module.exports = {
   evaluateGatesAsync,
   computeExecutableHash,
   formatOutput,
+  isApprovalGatesEnabled,
   run,
   runAsync,
   trackAction,
