@@ -158,6 +158,14 @@ test('public marketing directory aliases redirect to canonical pages', async () 
     ['/guides.html', '/learn'],
     ['/services', '/#workflow-sprint-intake'],
     ['/services.html', '/#workflow-sprint-intake'],
+    ['/sprint', '/#workflow-sprint-intake'],
+    ['/sprint.html', '/#workflow-sprint-intake'],
+    ['/workflow-hardening', '/#workflow-sprint-intake'],
+    ['/workflow-hardening.html', '/#workflow-sprint-intake'],
+    ['/workflow-hardening-sprint', '/#workflow-sprint-intake'],
+    ['/workflow-hardening-sprint.html', '/#workflow-sprint-intake'],
+    ['/workflow-sprint', '/#workflow-sprint-intake'],
+    ['/workflow-sprint.html', '/#workflow-sprint-intake'],
   ];
 
   for (const [pathname, expectedLocation] of cases) {
