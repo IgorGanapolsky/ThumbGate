@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code /goal vs Todo: The 4-Field Pattern That Actually Holds — ThumbGate</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Treating /goal like a todo wastes Claude Code. The pattern that holds: clear goal, measurable success, shown proof, hard limits. Maps directly to ThumbGate's rubric-engine for enforced verification.">
+<meta name="keywords" content="claude code /goal, claude code goal command, agent goal pattern, measurable success criteria, rubric engine, AI agent verification, ThumbGate rubric">
+<meta property="og:title" content="Claude Code /goal vs Todo: The 4-Field Pattern That Actually Holds">
+<meta property="og:description" content="The /goal command becomes ten times more useful when you treat it as a verifiable contract, not a todo. Here is the 4-field pattern and how to enforce it.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate-production.up.railway.app/learn/claude-code-goal-with-rubrics">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/learn/claude-code-goal-with-rubrics">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Claude Code /goal vs Todo: The 4-Field Pattern That Actually Holds",
+  "description": "Treating /goal like a todo wastes Claude Code. The pattern that holds: clear goal, measurable success, shown proof, hard limits — enforced by ThumbGate rubrics.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate-production.up.railway.app"
+  },
+  "datePublished": "2026-05-18",
+  "dateModified": "2026-05-18",
+  "mainEntityOfPage": "https://thumbgate-production.up.railway.app/learn/claude-code-goal-with-rubrics",
+  "about": [
+    {"@type": "Thing", "name": "Claude Code /goal command"},
+    {"@type": "Thing", "name": "AI agent rubric"},
+    {"@type": "Thing", "name": "verifiable AI agent outcomes"}
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+<style>
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  th, td { text-align: left; padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; vertical-align: top; }
+  th { color: var(--cyan); font-weight: 600; }
+  .mapping-row td:first-child { color: var(--green); font-weight: 500; }
+  pre.example { background: var(--bg-raised); padding: 14px 16px; border-radius: 8px; font-size: 13px; border-left: 3px solid var(--cyan); margin: 12px 0; overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Claude Code /goal With Rubrics</div>
+  <h1>Claude Code /goal vs Todo: The 4-Field Pattern That Actually Holds</h1>
+  <p style="color:var(--muted);">6 min read &middot; For developers using Claude Code's /goal command in production</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> Treating <code>/goal</code> like a todo wastes the command. The pattern that holds: <strong>clear goal, measurable success, shown proof, hard limits.</strong> That's a 4-field rubric — the same shape ThumbGate's rubric-engine enforces at gate-fire time. Pair them and the agent cannot fake completion.</div>
+
+  <h2>The todo-shaped /goal anti-pattern</h2>
+  <p>A common usage of Claude Code's <code>/goal</code> command looks like this:</p>
+
+  <pre class="example">/goal fix the auth bug</pre>
+
+  <p>This is a todo, not a goal. There is no way for the agent or you to know when the work is actually done. The agent will declare success after the first plausible-looking change, you will discover it was wrong an hour later, and the same conversation will re-enter the loop.</p>
+
+  <div class="callout">
+    <strong>The verifiable-contract reframe:</strong> A goal is not a wish. It is a contract with a clear outcome, a measurable success criterion, an inspectable proof, and a stop condition. Anything short of all four is a todo.
+  </div>
+
+  <h2>The 4-field pattern</h2>
+  <p>Each field maps to a specific failure mode the agent commits when the field is missing:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Field</th>
+        <th>What it answers</th>
+        <th>Failure mode if missing</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="mapping-row">
+        <td>1. Clear goal</td>
+        <td>What is the outcome, in one sentence, that someone outside the project would understand?</td>
+        <td>Scope creep. Agent expands the task to whatever it can find.</td>
+      </tr>
+      <tr class="mapping-row">
+        <td>2. Measurable success</td>
+        <td>What single check, run after the work, returns 0 / pass / a specific number?</td>
+        <td>"Looks done." Agent declares completion on optimistic intermediate signals.</td>
+      </tr>
+      <tr class="mapping-row">
+        <td>3. Shown proof</td>
+        <td>What output, file, or screenshot will be in the final message proving the check ran?</td>
+        <td>Hallucinated completion. Agent reports a green test that was never executed.</td>
+      </tr>
+      <tr class="mapping-row">
+        <td>4. Hard limits</td>
+        <td>What is the deadline, retry cap, or scope cliff that stops the work even if not yet "done"?</td>
+        <td>Infinite spin. Agent keeps trying variants past any reasonable budget.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Concrete /goal phrasing</h2>
+  <p>Same task, todo-shape vs goal-shape:</p>
+
+  <pre class="example"><strong>Todo shape (anti-pattern):</strong>
+/goal fix the auth bug
+
+<strong>Goal shape:</strong>
+/goal fix the auth bug
+  success: npm test --testPathPattern=auth returns exit 0 with 12 passing
+  proof: paste the final 'PASS auth' line of the test output
+  limit: stop after 3 implementation attempts; if still failing, file a /thumbsdown</pre>
+
+  <p>The agent now has a contract it cannot fake. The success criterion is mechanical (exit code + count). The proof is inspectable (a literal line of output). The limit is a stop condition that triggers a feedback capture instead of a fifth wasted attempt.</p>
+
+  <h2>Where ThumbGate plugs in</h2>
+  <p>The 4-field pattern is exactly the shape of a rubric. ThumbGate's <code>scripts/rubric-engine.js</code> evaluates each completed agent task against a 4-field rubric:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Claude Code /goal field</th>
+        <th>ThumbGate rubric field</th>
+        <th>What ThumbGate does</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="mapping-row">
+        <td>Clear goal</td>
+        <td><code>rubric.goal</code></td>
+        <td>Stored as the canonical task description in the feedback log</td>
+      </tr>
+      <tr class="mapping-row">
+        <td>Measurable success</td>
+        <td><code>rubric.verification.check</code></td>
+        <td>The check is run before the agent's "done" claim is promoted to memory</td>
+      </tr>
+      <tr class="mapping-row">
+        <td>Shown proof</td>
+        <td><code>rubric.verification.evidence</code></td>
+        <td>Captured into the lesson DB; missing proof = no promotion</td>
+      </tr>
+      <tr class="mapping-row">
+        <td>Hard limits</td>
+        <td><code>rubric.budget</code></td>
+        <td>Tied to budget-guard.js — when limit hit, ThumbGate forces a thumbs-down capture and surfaces it for review</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout callout-green">
+    <strong>Two layers, same shape:</strong> Claude Code's <code>/goal</code> sets the contract at task start. ThumbGate's rubric-engine enforces it at task end. The agent cannot promote a "done" memory unless every rubric field has the proof attached.
+  </div>
+
+  <h2>What this prevents in practice</h2>
+  <p>Three concrete agent failure modes the paired pattern blocks:</p>
+
+  <ul>
+    <li><strong>Test-skipping.</strong> Agent reports "tests pass" but never ran them. Rubric verification.check runs the actual command and refuses the "done" promotion if exit code != 0.</li>
+    <li><strong>Optimistic completion.</strong> Agent declares success on the first plausible change. The proof field requires an inspectable artifact (test output line, screenshot, exit code) that has to exist before promotion.</li>
+    <li><strong>Budget run-away.</strong> Agent retries silently across 8+ attempts. Hard limit triggers a budget-guard block, forces feedback capture, and prevents the same pattern from recurring on the next prompt.</li>
+  </ul>
+
+  <h2>Five minutes to wire it</h2>
+  <p>In your project root:</p>
+
+  <pre><code>npx thumbgate init</code></pre>
+
+  <p>Then, in any conversation, use the goal-shape phrasing above. ThumbGate's rubric-engine runs as part of the PreToolUse hook chain; no extra config required. The first time the agent tries to promote a "done" claim without proof, you'll see the gate fire in your dashboard.</p>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Pair /goal with a rubric the agent cannot fake.</h2>
+    <p>Works with Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent.</p>
+    <div class="cta-install">$ npx thumbgate init</div>
+  </div>
+
+  <div class="related">
+    <h3>Related articles</h3>
+    <a href="/learn/agent-harness-pattern">The Agent Harness Pattern: Why Your AI Needs a Seatbelt &rarr;</a>
+    <a href="/learn/agent-swarms-shared-gates">Agent Swarms: One Gate Layer, Every Model &rarr;</a>
+    <a href="/learn/mcp-pre-action-checks-explained">MCP Pre-Action Checks Explained &rarr;</a>
+  </div>
+</div>
+
+
+  <div class="sticky-cta">
+    <span style="color:var(--muted)">Try it now:</span>
+    <code>npx thumbgate init</code>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+  </div>
+</body>
+</html>

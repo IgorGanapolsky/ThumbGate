@@ -1,6 +1,6 @@
 # Money Now Actions
 
-Updated: 2026-05-05
+Updated: 2026-05-18
 
 Use this as the operator cockpit for the current run. Full copy, follow-ups, CTAs, and logging commands live in `operator-send-now.md`; the pipeline truth table lives in `sales-pipeline.md`.
 
@@ -10,10 +10,14 @@ Canonical truth table for today’s run lives in:
 
 - `reports/gtm/2026-05-05-money-today/operator-close-packet.md`
 
-Snapshot (as-of the May 4 baseline):
+Snapshot (as-of 2026-05-05 baseline; do not treat as commercial proof):
 
+- 30d visitors: 6169
+- Signups: 475
+- Sprint leads: 0
 - Paid orders: 4
-- Checkout starts: 87
+- Checkout starts: 133
+- Booked: `$149`
 - Pipeline: 20 active leads, 0 contacted, 0 replied, 0 paid in the local sales ledger
 - Revenue bottleneck: sending and logging outreach, not more prospect research
 
