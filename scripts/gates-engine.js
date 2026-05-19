@@ -1849,6 +1849,18 @@ function formatOutput(result, behavioralContext) {
     });
   }
 
+  if (result.decision === 'approve') {
+    const reminder = behavioralContext ? buildReminderOutput(behavioralContext) : {};
+    const reminderSuffix = behavioralContext ? `\n\nSystem reminder:\n${behavioralContext}` : '';
+    return JSON.stringify({
+      hookSpecificOutput: {
+        ...reminder,
+        permissionDecision: 'deny',
+        permissionDecisionReason: `[GATE:${result.gate}] APPROVAL REQUIRED: ${result.message} — Ask the human to confirm this action before proceeding.${reasoningSuffix}${reminderSuffix}`,
+      },
+    });
+  }
+
   if (result.decision === 'warn') {
     const extra = behavioralContext ? `\n${behavioralContext}` : '';
     const context = `[GATE:${result.gate}] WARNING: ${result.message}${reasoningSuffix}${extra}`;

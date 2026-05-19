@@ -851,6 +851,12 @@ function capture() {
     process.exit(1);
   }
 
+  const gateAction = (args.action || '').toLowerCase();
+  if (gateAction && !['block', 'approve', 'warn'].includes(gateAction)) {
+    console.error('Unrecognized --action. Use: block (default), approve, or warn');
+    process.exit(1);
+  }
+
   const result = captureFeedback({
     signal: normalized,
     context: args.context || '',
@@ -858,6 +864,7 @@ function capture() {
     whatToChange: args['what-to-change'],
     whatWorked: args['what-worked'],
     tags: args.tags,
+    gateAction: gateAction || undefined,
   });
 
   if (result.accepted) {

@@ -718,6 +718,19 @@ test('formatOutput returns additionalContext for warn result', () => {
   assert.ok(output.hookSpecificOutput.additionalContext.includes('Test warn message'));
 });
 
+test('formatOutput returns deny with approval message for approve result', () => {
+  const output = JSON.parse(formatOutput({
+    decision: 'approve',
+    gate: 'deploy-approval',
+    message: 'Production deploy detected. Human approval required.',
+    severity: 'high',
+  }));
+  assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
+  assert.ok(output.hookSpecificOutput.permissionDecisionReason.includes('APPROVAL REQUIRED'));
+  assert.ok(output.hookSpecificOutput.permissionDecisionReason.includes('Ask the human'));
+  assert.ok(output.hookSpecificOutput.permissionDecisionReason.includes('deploy-approval'));
+});
+
 test('formatOutput surfaces reminder payloads when context is injected', () => {
   const output = JSON.parse(formatOutput(null, '[ThumbGate] lesson reminder'));
   assert.equal(output.hookSpecificOutput.additionalContext, '[ThumbGate] lesson reminder');

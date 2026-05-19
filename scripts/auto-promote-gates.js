@@ -193,9 +193,9 @@ function patternToGateId(key) {
   return 'auto-' + key.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').slice(0, 50).toLowerCase();
 }
 
-function buildGateRule(group) {
-  const action = group.count === 'MANUAL' ? group.manualAction || 'block' : (group.count >= BLOCK_THRESHOLD ? 'block' : 'warn');
-  const severity = action === 'block' ? 'critical' : 'medium';
+function buildGateRule(group, actionOverride) {
+  const action = actionOverride || (group.count === 'MANUAL' ? group.manualAction || 'block' : (group.count >= BLOCK_THRESHOLD ? 'block' : 'warn'));
+  const severity = action === 'block' ? 'critical' : action === 'approve' ? 'high' : 'medium';
   const context = group.latestContext.slice(0, 120);
   const kind = group.key.startsWith('diagnosis:')
     ? 'repeated diagnosis'
@@ -332,7 +332,8 @@ function forcePromote(context, action = 'block') {
   return { gateId, action, totalGates: data.gates.length };
 }
 
-function promote(feedbackLogPath) {
+function promote(feedbackLogPath, options) {
+  const opts = options || {};
   const logPath = feedbackLogPath || getFeedbackLogPath();
   const entries = readJSONL(logPath);
   const groups = groupNegativeFeedback(entries, WINDOW_DAYS);
@@ -366,8 +367,8 @@ function promote(feedbackLogPath) {
       continue;
     }
 
-    // New gate
-    const gate = buildGateRule(group);
+    // New gate — respect explicit gateAction override (e.g. 'approve' for human-approval rules)
+    const gate = buildGateRule(group, opts.gateAction);
 
     // Enforce max limit — rotate oldest
     if (data.gates.length >= MAX_AUTO_GATES) {
