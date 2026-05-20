@@ -878,7 +878,14 @@ function stats() {
   const { analyzeFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const data = analyzeFeedback();
 
+  // Gate enforcement stats — runtime intercepts + configured gates
+  let gateData = { blocked: 0, warned: 0, passed: 0, byGate: {} };
+  try { gateData = require(path.join(PKG_ROOT, 'scripts', 'gates-engine')).loadStats(); } catch {}
+  let gateConfigData = { totalGates: 0, autoPromotedGates: 0, estimatedHoursSaved: '0.0', topBlocked: null, firstTimeFixRate: null };
+  try { gateConfigData = require(path.join(PKG_ROOT, 'scripts', 'gate-stats')).calculateStats(); } catch {}
+
   const avgCostOfMistake = 2.50;
+  const totalInterceptions = gateData.blocked + gateData.warned;
   const payload = {
     total: data.total,
     positives: data.totalPositive,
@@ -888,6 +895,13 @@ function stats() {
     revenueAtRisk: Number((data.totalNegative * avgCostOfMistake).toFixed(2)),
     topTags: data.topTags || [],
     recentActivity: data.recentActivity || [],
+    gatesBlocked: gateData.blocked,
+    gatesWarned: gateData.warned,
+    totalGates: gateConfigData.totalGates,
+    autoPromotedGates: gateConfigData.autoPromotedGates,
+    estimatedHoursSaved: gateConfigData.estimatedHoursSaved,
+    topBlockedGate: gateConfigData.topBlocked ? gateConfigData.topBlocked.id : null,
+    firstTimeFixRate: gateConfigData.firstTimeFixRate,
   };
 
   if (args.json) {
@@ -900,6 +914,18 @@ function stats() {
   console.log(`  Total Signals   : ${payload.total}`);
   console.log(`  Approval Rate   : ${payload.approvalRate}%`);
   console.log(`  Recent Trend    : ${payload.recentTrend}%`);
+
+  // Gate enforcement — the high-ROI section
+  if (totalInterceptions > 0 || payload.totalGates > 0) {
+    console.log('\n🛡️  PRE-ACTION GATE ENFORCEMENT');
+    console.log(`  Actions blocked : ${payload.gatesBlocked}`);
+    console.log(`  Actions warned  : ${payload.gatesWarned}`);
+    console.log(`  Active gates    : ${payload.totalGates} (${payload.autoPromotedGates} auto-promoted)`);
+    if (payload.topBlockedGate) console.log(`  Top blocker     : ${payload.topBlockedGate}`);
+    console.log(`  Est. time saved : ~${payload.estimatedHoursSaved} hours`);
+    const { formatFirstTimeFixRate } = require(path.join(PKG_ROOT, 'scripts', 'gate-stats'));
+    console.log(`  First-time fix  : ${formatFirstTimeFixRate(payload.firstTimeFixRate)}`);
+  }
 
   if (payload.negatives > 0) {
     console.log('\n⚠️  REVENUE-AT-RISK ANALYSIS');
@@ -1682,6 +1708,25 @@ function gateStats() {
   const { calculateStats, formatStats } = require(path.join(PKG_ROOT, 'scripts', 'gate-stats'));
   const stats = calculateStats();
   console.log('\n' + formatStats(stats) + '\n');
+}
+
+function contextPacks() {
+  const args = parseArgs(process.argv.slice(3));
+  const { generateAutoContextPacks } = require(path.join(PKG_ROOT, 'scripts', 'auto-context-packs'));
+  const result = generateAutoContextPacks();
+  if (args.json) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+  console.log(`\nGenerated ${result.packCount} context pack(s):`);
+  for (const p of result.packs) {
+    console.log(`  [${p.type}] ${p.name}`);
+    console.log(`    -> ${p.filePath}`);
+  }
+  if (result.packCount === 0) {
+    console.log('  (No failure patterns found yet — capture some feedback first.)');
+  }
+  console.log('');
 }
 
 function harnessAudit() {
@@ -2631,6 +2676,9 @@ switch (COMMAND) {
     break;
   case 'rules':
     rules();
+    break;
+  case 'context-packs':
+    contextPacks();
     break;
   case 'harness-audit':
   case 'harness':
