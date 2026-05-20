@@ -927,11 +927,14 @@ __GA_BOOTSTRAP__
         <p>Codex gets a standalone ThumbGate plugin bundle, a repo-local plugin profile, and the same auto-updating MCP launcher. The runtime resolves <code>thumbgate@latest</code> when Codex starts, so npm fixes reach active installs. The install page includes the zip, MCP config, and verification path in one place.</p>
         <div class="card-arrow">Open the Codex install page →</div>
       </a>
-      <a class="compat-card" href="/guides/cursor-prevent-repeated-mistakes" rel="noopener">
+      <div class="compat-card">
         <h3>🎯 Cursor plugin <span style="font-size:12px;font-weight:500;color:var(--text-muted);">(Marketplace review pending)</span></h3>
-        <p>Drop the ThumbGate MCP config into <code>.cursor/mcp.json</code> and Cursor gets the same pre-action checks as Claude Code and Codex. Ships with bundled rules, commands, hooks, and agents. The runtime install works today via <code>npx thumbgate init --agent cursor</code>; the official Cursor Marketplace listing was submitted 2026-05-19 and is awaiting Cursor's manual review.</p>
-        <div class="card-arrow">Read the Cursor guide →</div>
-      </a>
+        <p>Drop the ThumbGate MCP config into <code>.cursor/mcp.json</code> and Cursor gets the same pre-action checks as Claude Code and Codex. Ships with bundled rules, commands, hooks, and agents. The runtime install works today via <code>npx thumbgate init --agent cursor</code>; the official Cursor Marketplace listing was submitted 2026-05-20 and is awaiting Cursor's manual review.</p>
+        <div style="display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap;">
+          <a href="https://cursor.com/install-mcp/thumbgate?config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyItLXllcyIsIi0tcGFja2FnZSIsInRodW1iZ2F0ZUBsYXRlc3QiLCJ0aHVtYmdhdGUiLCJzZXJ2ZSJdfQ%3D%3D" target="_blank" rel="noopener" onclick="if(typeof posthog!=='undefined')posthog.capture('cursor_add_mcp_click',{cta:'add_to_cursor_badge'})"><img src="https://cursor.com/deeplink/mcp-install-dark.png" alt="Add ThumbGate to Cursor" height="32" style="border-radius:6px;"></a>
+          <a href="/guides/cursor-prevent-repeated-mistakes" rel="noopener" style="font-size:13px;color:var(--accent);text-decoration:none;font-weight:600;">Read the Cursor guide →</a>
+        </div>
+      </div>
       <a class="compat-card" href="/guide" rel="noopener">
         <h3>✏️ Editor workflows</h3>
         <p>VS Code works when you run an MCP-compatible agent inside it (Continue, Cline, etc.). Any editor that speaks MCP stdio gets the same gateway.</p>

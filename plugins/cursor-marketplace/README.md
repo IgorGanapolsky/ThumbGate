@@ -1,5 +1,7 @@
 # ThumbGate — for Cursor
 
+[![Add ThumbGate to Cursor](https://cursor.com/deeplink/mcp-install-dark.png)](https://cursor.com/install-mcp/thumbgate?config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyItLXllcyIsIi0tcGFja2FnZSIsInRodW1iZ2F0ZUBsYXRlc3QiLCJ0aHVtYmdhdGUiLCJzZXJ2ZSJdfQ%3D%3D)
+
 `ThumbGate` is the human-facing plugin name in Cursor listings.
 `thumbgate` stays the plugin slug, npm package, and launcher target.
 
