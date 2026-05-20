@@ -124,6 +124,25 @@ These patterns were adopted 2026-04-21 from @ultrathink-art's agent-architect-ki
 - **`require.main === module` is a lie in CommonJS.** Use a path-based check: `path.resolve(process.argv[1]) === path.resolve(__filename)`. SonarCloud rule S3403 flags the `require.main` form as an always-false equality under strict type inference.
   # WHY: 2026-04-21 — SonarCloud blocked PR #1115 on four scripts using `require.main === module`. Path-resolve form is the portable fix.
 
+- **When the CEO says "are you sure?" — you're wrong. Dig deeper.** Do not defend your current hypothesis. Re-examine from scratch: read build logs, check deployment history, query the API. The CEO asking twice means your root-cause analysis is superficial.
+  # WHY: 2026-05-20 — CTO blamed a Railway platform incident for production being stuck at v1.20.0. CEO pushed back twice. Real root cause was Dockerfile missing Python/g++ for better-sqlite3 native build on Alpine. Seven consecutive deploy failures went undiagnosed because the CTO stopped at the first plausible explanation.
+
+## Implementation Notes (MANDATORY)
+
+For every multi-step task (3+ files, multi-commit, or anything that touches production), maintain a running implementation notes file at `.claude/implementation-notes/<date>-<task>.md`.
+
+**ALWAYS include:**
+- Decisions made and why (not just what)
+- Assumptions — mark each as VERIFIED or UNVERIFIED
+- Things you got wrong and when you corrected them
+- Tradeoffs chosen and alternatives rejected
+- What the CEO would need to know if reviewing async
+
+**Pattern** (credit: @trq212):
+> implement SPEC and while you do, keep a running implementation-notes file with decisions you had to make that weren't in the spec, things you had to change, tradeoffs you had to make or anything else I should know
+
+**Why this exists:** On 2026-05-20 the CTO had to be asked "are you sure?" twice before finding the real deploy root cause. An implementation notes file would have forced documenting assumptions as VERIFIED vs UNVERIFIED, catching the wrong hypothesis earlier.
+
 ## Verification Commands (Standard Set)
 
 Run ALL of these before claiming any task complete:
