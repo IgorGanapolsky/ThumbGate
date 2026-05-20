@@ -1,0 +1,25 @@
+{
+  "results": [
+    {
+      "id": "fb_pos_001",
+      "signal": "up",
+      "text": "great suggestion",
+      "createdAt": "2026-05-20T10:00:00.000Z",
+      "dayKey": "2026-05-20"
+    },
+    {
+      "id": "fb_pos_002",
+      "signal": "up",
+      "text": "exactly what I wanted",
+      "createdAt": "2026-05-20T11:00:00.000Z",
+      "dayKey": "2026-05-20"
+    },
+    {
+      "id": "fb_neg_001",
+      "signal": "down",
+      "text": "wrong approach",
+      "createdAt": "2026-05-20T12:00:00.000Z",
+      "dayKey": "2026-05-20"
+    }
+  ]
+}
