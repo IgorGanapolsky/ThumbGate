@@ -32,7 +32,12 @@ jobs:
       RAILWAY_SYNC_VARIABLES: ${{ vars.RAILWAY_SYNC_VARIABLES || 'false' }}
       RAILWAY_VARIABLE_SYNC_REQUIRED: ${{ vars.RAILWAY_VARIABLE_SYNC_REQUIRED || 'false' }}
       RAILWAY_VARIABLE_COMMAND_TIMEOUT_SECONDS: ${{ vars.RAILWAY_VARIABLE_COMMAND_TIMEOUT_SECONDS || '45' }}
-      RAILWAY_DEPLOY_COMMAND_TIMEOUT_SECONDS: ${{ vars.RAILWAY_DEPLOY_COMMAND_TIMEOUT_SECONDS || '180' }}
+      RAILWAY_VARIABLE_COMMAND_KILL_AFTER_SECONDS: ${{ vars.RAILWAY_VARIABLE_COMMAND_KILL_AFTER_SECONDS || '15' }}
+      RAILWAY_DEPLOY_COMMAND_MAX_ATTEMPTS: ${{ vars.RAILWAY_DEPLOY_COMMAND_MAX_ATTEMPTS || '2' }}
+      RAILWAY_DEPLOY_COMMAND_TIMEOUT_SECONDS: ${{ vars.RAILWAY_DEPLOY_COMMAND_TIMEOUT_SECONDS || '90' }}
+      RAILWAY_DEPLOY_COMMAND_KILL_AFTER_SECONDS: ${{ vars.RAILWAY_DEPLOY_COMMAND_KILL_AFTER_SECONDS || '15' }}
+      RAILWAY_POST_FAILURE_HEALTHCHECK_MAX_ATTEMPTS: ${{ vars.RAILWAY_POST_FAILURE_HEALTHCHECK_MAX_ATTEMPTS || '12' }}
+      RAILWAY_POST_FAILURE_HEALTHCHECK_SLEEP_SECONDS: ${{ vars.RAILWAY_POST_FAILURE_HEALTHCHECK_SLEEP_SECONDS || '10' }}
       THUMBGATE_PUBLIC_APP_ORIGIN: ${{ vars.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
       THUMBGATE_BILLING_API_BASE_URL: ${{ vars.THUMBGATE_BILLING_API_BASE_URL || vars.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
       THUMBGATE_FEEDBACK_DIR: ${{ vars.THUMBGATE_FEEDBACK_DIR }}
@@ -125,8 +130,9 @@ jobs:
             local max_attempts=4
             local sleep_seconds=10
             local timeout_seconds="${RAILWAY_VARIABLE_COMMAND_TIMEOUT_SECONDS:-45}"
+            local kill_after_seconds="${RAILWAY_VARIABLE_COMMAND_KILL_AFTER_SECONDS:-15}"
 
-            until timeout --foreground "${timeout_seconds}s" "$@"; do
+            until timeout --foreground --kill-after="${kill_after_seconds}s" "${timeout_seconds}s" "$@"; do
               if [ "$attempt" -ge "$max_attempts" ]; then
                 echo "Railway command failed after $attempt attempts: $description"
                 return 1
@@ -186,16 +192,18 @@ jobs:
           fi
       - name: Deploy to Railway
         if: steps.railway-config.outputs.enabled == 'true'
+        timeout-minutes: 8
         run: |
           retry_railway() {
             local description="$1"
             shift
             local attempt=1
-            local max_attempts=4
+            local max_attempts="${RAILWAY_DEPLOY_COMMAND_MAX_ATTEMPTS:-2}"
             local sleep_seconds=15
-            local timeout_seconds="${RAILWAY_DEPLOY_COMMAND_TIMEOUT_SECONDS:-180}"
+            local timeout_seconds="${RAILWAY_DEPLOY_COMMAND_TIMEOUT_SECONDS:-90}"
+            local kill_after_seconds="${RAILWAY_DEPLOY_COMMAND_KILL_AFTER_SECONDS:-15}"
 
-            until timeout --foreground "${timeout_seconds}s" "$@"; do
+            until timeout --foreground --kill-after="${kill_after_seconds}s" "${timeout_seconds}s" "$@"; do
               if [ "$attempt" -ge "$max_attempts" ]; then
                 echo "Railway command failed after $attempt attempts: $description"
                 return 1
@@ -209,8 +217,8 @@ jobs:
           }
 
           verify_live_build_sha_after_railway_failure() {
-            local max_attempts="${RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:-120}"
-            local sleep_seconds="${RAILWAY_HEALTHCHECK_SLEEP_SECONDS:-10}"
+            local max_attempts="${RAILWAY_POST_FAILURE_HEALTHCHECK_MAX_ATTEMPTS:-12}"
+            local sleep_seconds="${RAILWAY_POST_FAILURE_HEALTHCHECK_SLEEP_SECONDS:-10}"
             local connect_timeout_seconds="${RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS:-5}"
             local max_time_seconds="${RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS:-20}"
             local response_file
