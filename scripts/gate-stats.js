@@ -9,6 +9,7 @@ const { sequencePathFor } = require('./risk-scorer');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const MANUAL_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'default.json');
+const STATS_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'gate-stats.json');
 
 function loadGatesFile(filePath) {
   if (!fs.existsSync(filePath)) return [];
@@ -65,6 +66,15 @@ function calculateStats() {
   // sample can produce a misleading 0.0% floor.
   const bayesErrorRate = tryComputeBayesErrorRate();
 
+  // Calibration: per-gate assessment of whether block actions are well-supported
+  // by negative feedback, or potentially over/under-blocking without confirmation.
+  const calibration = computeCalibration(allGates);
+
+  // First-time fix rate: 1 - (recurringBlocks / totalBlocksAndWarns)
+  // Measures how often a single gate fire resolves the issue vs the agent retrying.
+  // Returns null when there is no recorded block/warn data yet.
+  const firstTimeFixRate = computeFirstTimeFixRate();
+
   return {
     totalGates: allGates.length,
     manualGates: manualGates.length,
@@ -77,8 +87,68 @@ function calculateStats() {
     lastPromotion,
     estimatedHoursSaved,
     bayesErrorRate,
+    calibration,
+    firstTimeFixRate,
     gates: allGates,
   };
+}
+
+/**
+ * Assess each gate's calibration by comparing block occurrences to confirmed
+ * negative feedback counts. A gate with many blocks but no confirming negative
+ * feedback may be over-blocking; one with matching feedback is well-calibrated.
+ *
+ * @param {Array} gates - Combined array of manual + auto-promoted gate objects
+ * @returns {Array<{gateId: string, occurrences: number, action: string, calibrationNote: string}>}
+ */
+function computeCalibration(gates) {
+  const calibration = [];
+  for (const gate of gates || []) {
+    if (!gate || !gate.id) continue;
+    const occurrences = Number(gate.occurrences || 0);
+    const action = gate.action || 'unknown';
+    // Only annotate gates with recorded occurrence data
+    if (occurrences === 0) continue;
+
+    if (action === 'block') {
+      const confirmedNegative = Number(gate.confirmedNegative || gate.negativeCount || 0);
+      let calibrationNote;
+      if (occurrences > 10 && confirmedNegative === 0) {
+        calibrationNote = `over-blocking (${occurrences} blocks, 0 confirmed)`;
+      } else if (confirmedNegative > 0) {
+        calibrationNote = `well-calibrated (${occurrences} blocks, ${confirmedNegative} confirmed)`;
+      } else {
+        // Low occurrence count with no feedback — not enough data yet
+        calibrationNote = `insufficient data (${occurrences} blocks, 0 confirmed)`;
+      }
+      calibration.push({ gateId: gate.id, occurrences, action, calibrationNote });
+    }
+  }
+  return calibration;
+}
+
+/**
+ * Compute the first-time fix rate from the persisted gate-stats.json file.
+ *
+ * firstTimeFixRate = 1 - (recurringBlocks / totalBlocksAndWarns)
+ *
+ * Returns null when there are no recorded block/warn events yet.
+ * Returns a number in [0, 1] otherwise, where 1.0 means every gate fire
+ * was a first-time occurrence and 0.0 means every gate fired at least twice.
+ */
+function computeFirstTimeFixRate() {
+  try {
+    if (!fs.existsSync(STATS_PATH)) return null;
+    const raw = fs.readFileSync(STATS_PATH, 'utf8');
+    const data = JSON.parse(raw);
+    const totalBlocksAndWarns = (data.blocked || 0) + (data.warned || 0);
+    if (totalBlocksAndWarns === 0) return null;
+    const recurring = data.recurringBlocks || 0;
+    const rate = 1 - (recurring / totalBlocksAndWarns);
+    return Math.max(0, Math.min(1, rate));
+  } catch {
+    return null;
+  }
 }
 
 function tryComputeBayesErrorRate() {
@@ -142,6 +212,13 @@ function formatStats(stats) {
   lines.push(`  Last promotion: ${formatLastPromotion(stats.lastPromotion)}`);
   lines.push(`  Estimated time saved: ~${stats.estimatedHoursSaved} hours`);
   lines.push(`  Bayes error rate: ${formatBayesErrorRate(stats.bayesErrorRate)}`);
+  lines.push(`  First-time fix rate: ${formatFirstTimeFixRate(stats.firstTimeFixRate)}`);
+  if (Array.isArray(stats.calibration) && stats.calibration.length > 0) {
+    lines.push('Calibration:');
+    for (const entry of stats.calibration) {
+      lines.push(`  - ${entry.gateId}: ${entry.calibrationNote}`);
+    }
+  }
   return lines.join('\n');
 }
 
@@ -151,6 +228,14 @@ function formatBayesErrorRate(rate) {
   if (rate < 0.02) return `${pct}% — scorer is near-optimal; add features, don't tune thresholds`;
   if (rate < 0.10) return `${pct}% — scorer has modest headroom`;
   return `${pct}% — high irreducible error; the feature set can't discriminate`;
+}
+
+function formatFirstTimeFixRate(rate) {
+  if (rate === null || rate === undefined) return 'n/a (no blocks or warns recorded yet)';
+  const pct = (rate * 100).toFixed(1);
+  if (rate >= 0.95) return `${pct}% — agents fix issues on first block (excellent)`;
+  if (rate >= 0.80) return `${pct}% — most blocks resolved first time (good)`;
+  return `${pct}% — recurring blocks detected; agents may be ignoring gate feedback`;
 }
 
 if (require.main === module) {
@@ -170,5 +255,6 @@ module.exports = {
   formatBayesErrorRate,
   loadGatesFile,
   tryComputeBayesErrorRate,
+  computeCalibration,
   MANUAL_GATES_PATH,
 };

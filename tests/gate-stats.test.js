@@ -13,6 +13,7 @@ const {
   formatLastPromotion,
   formatBayesErrorRate,
   loadGatesFile,
+  computeCalibration,
 } = require('../scripts/gate-stats');
 
 // -- loadGatesFile --
@@ -208,4 +209,101 @@ test('formatStats renders the Bayes error rate line', () => {
   const output = formatStats(stats);
   assert.ok(output.includes('Bayes error rate'), 'formatter must render the bayesErrorRate line');
   assert.ok(output.includes('3.0%'));
+});
+
+// -- calibration --
+
+test('calculateStats: returns a calibration field that is an array', () => {
+  const stats = calculateStats();
+  assert.ok('calibration' in stats, 'calculateStats must emit a calibration field');
+  assert.ok(Array.isArray(stats.calibration), 'calibration must be an array');
+});
+
+test('calculateStats: each calibration entry has gateId and calibrationNote string fields', () => {
+  const stats = calculateStats();
+  for (const entry of stats.calibration) {
+    assert.strictEqual(typeof entry.gateId, 'string', 'each entry must have a gateId string');
+    assert.strictEqual(typeof entry.calibrationNote, 'string', 'each entry must have a calibrationNote string');
+  }
+});
+
+test('computeCalibration: over-blocking annotation for >10 occurrences with no confirmed negative', () => {
+  const gates = [
+    { id: 'risky-gate', action: 'block', occurrences: 15 },
+  ];
+  const result = computeCalibration(gates);
+  assert.strictEqual(result.length, 1);
+  assert.strictEqual(result[0].gateId, 'risky-gate');
+  assert.ok(result[0].calibrationNote.includes('over-blocking'));
+  assert.ok(result[0].calibrationNote.includes('15'));
+});
+
+test('computeCalibration: well-calibrated annotation when confirmedNegative > 0', () => {
+  const gates = [
+    { id: 'good-gate', action: 'block', occurrences: 8, confirmedNegative: 6 },
+  ];
+  const result = computeCalibration(gates);
+  assert.strictEqual(result.length, 1);
+  assert.strictEqual(result[0].gateId, 'good-gate');
+  assert.ok(result[0].calibrationNote.includes('well-calibrated'));
+  assert.ok(result[0].calibrationNote.includes('6 confirmed'));
+});
+
+test('computeCalibration: skips gates with zero occurrences', () => {
+  const gates = [
+    { id: 'unused-gate', action: 'block', occurrences: 0 },
+  ];
+  const result = computeCalibration(gates);
+  assert.strictEqual(result.length, 0);
+});
+
+test('computeCalibration: skips non-block gates', () => {
+  const gates = [
+    { id: 'warn-gate', action: 'warn', occurrences: 20 },
+  ];
+  const result = computeCalibration(gates);
+  assert.strictEqual(result.length, 0);
+});
+
+test('formatStats: renders Calibration section when calibration entries exist', () => {
+  const stats = {
+    totalGates: 1,
+    manualGates: 1,
+    autoPromotedGates: 0,
+    blockGates: 1,
+    warnGates: 0,
+    totalBlocked: 15,
+    totalWarned: 0,
+    topBlocked: { id: 'risky-gate', occurrences: 15 },
+    lastPromotion: null,
+    estimatedHoursSaved: '3.8',
+    bayesErrorRate: null,
+    calibration: [
+      { gateId: 'risky-gate', occurrences: 15, action: 'block', calibrationNote: 'over-blocking (15 blocks, 0 confirmed)' },
+    ],
+    gates: [],
+  };
+  const output = formatStats(stats);
+  assert.ok(output.includes('Calibration:'), 'must render Calibration section header');
+  assert.ok(output.includes('risky-gate: over-blocking'), 'must render gate calibration note');
+});
+
+test('formatStats: omits Calibration section when calibration is empty', () => {
+  const stats = {
+    totalGates: 0,
+    manualGates: 0,
+    autoPromotedGates: 0,
+    blockGates: 0,
+    warnGates: 0,
+    totalBlocked: 0,
+    totalWarned: 0,
+    topBlocked: null,
+    lastPromotion: null,
+    estimatedHoursSaved: '0.0',
+    bayesErrorRate: null,
+    calibration: [],
+    gates: [],
+  };
+  const output = formatStats(stats);
+  assert.ok(!output.includes('Calibration:'), 'must not render Calibration section when empty');
 });
