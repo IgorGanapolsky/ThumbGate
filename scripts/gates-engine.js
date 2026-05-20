@@ -439,6 +439,20 @@ function recordStat(gateId, action, gate) {
   else if (action === 'warn') stats.byGate[gateId].warned += 1;
   else if (action === 'approve') stats.byGate[gateId].pendingApproval = (stats.byGate[gateId].pendingApproval || 0) + 1;
   else if (action === 'log') stats.byGate[gateId].logged = (stats.byGate[gateId].logged || 0) + 1;
+
+  // Track per-gate recurrence within a session for first-time fix rate
+  if (action === 'block' || action === 'warn') {
+    if (!stats.sessionFiredGates) stats.sessionFiredGates = {};
+    const sessionKey = `session_${Math.floor(Date.now() / SESSION_ACTION_TTL_MS)}`;
+    if (!stats.sessionFiredGates[sessionKey]) stats.sessionFiredGates[sessionKey] = {};
+    if (stats.sessionFiredGates[sessionKey][gateId]) {
+      // Same gate fired again in this session — it's a recurring block
+      stats.recurringBlocks = (stats.recurringBlocks || 0) + 1;
+    } else {
+      stats.sessionFiredGates[sessionKey][gateId] = true;
+    }
+  }
+
   saveStats(stats);
   // Track lesson freshness when an auto-promoted gate fires
   if (gate && gate.sourceLessonId) {

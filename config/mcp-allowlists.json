@@ -68,7 +68,8 @@
       "perplexity_search",
       "perplexity_ask",
       "perplexity_research",
-      "perplexity_reason"
+      "perplexity_reason",
+      "suggest_fix"
     ],
     "essential": [
       "capture_feedback",
@@ -104,7 +105,8 @@
       "report_product_issue",
       "require_evidence_for_claim",
       "session_report",
-      "generate_operator_artifact"
+      "generate_operator_artifact",
+      "suggest_fix"
     ],
     "commerce": [
       "capture_feedback",
@@ -123,7 +125,8 @@
       "workflow_sentinel",
       "prevention_rules",
       "feedback_stats",
-      "feedback_summary"
+      "feedback_summary",
+      "suggest_fix"
     ],
     "readonly": [
       "recall",
@@ -164,7 +167,8 @@
       "session_report",
       "generate_operator_artifact",
       "perplexity_search",
-      "perplexity_ask"
+      "perplexity_ask",
+      "suggest_fix"
     ],
     "dispatch": [
       "recall",
@@ -204,7 +208,8 @@
       "session_report",
       "generate_operator_artifact",
       "perplexity_search",
-      "perplexity_ask"
+      "perplexity_ask",
+      "suggest_fix"
     ],
     "locked": [
       "feedback_summary",
@@ -228,7 +233,8 @@
       "workflow_sentinel",
       "settings_status",
       "native_messaging_audit",
-      "generate_operator_artifact"
+      "generate_operator_artifact",
+      "suggest_fix"
     ]
   }
 }

@@ -45,6 +45,29 @@ Thariq's implementation-notes pattern adopted to maintain decision transparency.
 - 19:30 UTC: Railway freeze still active. serviceConnect mutation still returns "Deploys have been paused temporarily"
 - PR #2253 (hook regression test): All checks green except `test` still running. Mergeable.
 
+## High-ROI Improvement Sprint (Ralph Mode / GSD)
+
+### Completed (all in PR #2269, feat/mcp-suggest-fix branch)
+
+1. **Gate enforcement stats visibility** — `thumbgate stats` now shows blocked/warned counts, active gates, time saved. Session-start hook injects gate enforcement summary.
+2. **Closeout enforcement** — When a risky op passes through gates, the next non-risky action gets a reminder to capture feedback. Added to both `run()` and `runAsync()` in gates-engine.
+3. **Context pack auto-assembly** — `scripts/auto-context-packs.js` generates context packs from top 5 blocked gates + top 5 failure tags. CLI: `thumbgate context-packs`. 9/9 tests pass.
+4. **MCP suggest_fix tool** — New MCP tool that returns ranked corrective action suggestions from lesson DB + prevention rules. Added to all 6 MCP profiles. 11/11 tests pass.
+5. **First-time fix rate tracking** — Per-gate recurrence tracking in `recordStat()` with session-scoped windows. `calculateStats()` returns `firstTimeFixRate`. 34/34 gate-stats tests pass.
+6. **Gate calibration analysis** — `computeCalibration()` labels gates as over-blocking/well-calibrated/insufficient-data based on occurrence counts and confirmed negative feedback.
+
+### Design decisions
+- Session window for recurrence: 1-hour buckets (matches `SESSION_ACTION_TTL_MS`)
+- suggest_fix: no LLM calls, pure DB lookup — fast and deterministic
+- Context packs: graceful degradation when feedback log or gate stats are empty
+- Calibration: only block gates analyzed (warns excluded); requires >10 occurrences for over-blocking label
+
+### What went wrong
+- Context-pack agent's worktree was auto-cleaned despite completing successfully — reimplemented in main worktree
+- PR #2265 became redundant (commits merged individually) and went CONFLICTING — closed it
+- Package boundary ratchet needed bumping from 3.70 MB to 3.75 MB for new files
+- commerce-quality.test.js needed suggest_fix added to expected tool list
+
 ## Lessons Logged
 - "Are you sure?" = I'm wrong. Dig deeper before asserting root cause.
 - Railway `subscriptionType: "hobby"` — hobby plans are deprioritized during incidents
