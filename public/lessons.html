@@ -449,6 +449,18 @@ function switchTab(name) {
   // Highlight the corresponding stat card
   var cardMap = { rules: 0, timeline: 2, insights: 3 };
   highlightCard(cardMap[name] !== undefined ? cardMap[name] : -1);
+  // Scroll the active tab content into view so the click has a visible effect.
+  // Without this, clicking a stat card or tab header when its content is below
+  // the fold appears to do nothing — the tab changes silently and the user
+  // never sees the new content. The tab-strip itself stays visible so the
+  // selected-state is still observable.
+  if (content && typeof content.scrollIntoView === 'function') {
+    try {
+      content.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (_err) {
+      content.scrollIntoView();
+    }
+  }
   if (typeof plausible === 'function') plausible('lessons_tab', { props: { tab: name } });
 }
 
