@@ -928,8 +928,8 @@ __GA_BOOTSTRAP__
         <div class="card-arrow">Open the Codex install page →</div>
       </a>
       <a class="compat-card" href="/guides/cursor-prevent-repeated-mistakes" rel="noopener">
-        <h3>🎯 Cursor plugin</h3>
-        <p>Drop the ThumbGate MCP config into <code>.cursor/mcp.json</code> and Cursor gets the same pre-action checks as Claude Code and Codex. Ships with bundled rules, commands, hooks, and agents.</p>
+        <h3>🎯 Cursor plugin <span style="font-size:12px;font-weight:500;color:var(--text-muted);">(Marketplace review pending)</span></h3>
+        <p>Drop the ThumbGate MCP config into <code>.cursor/mcp.json</code> and Cursor gets the same pre-action checks as Claude Code and Codex. Ships with bundled rules, commands, hooks, and agents. The runtime install works today via <code>npx thumbgate init --agent cursor</code>; the official Cursor Marketplace listing was submitted 2026-05-19 and is awaiting Cursor's manual review.</p>
         <div class="card-arrow">Read the Cursor guide →</div>
       </a>
       <a class="compat-card" href="/guide" rel="noopener">
@@ -1408,7 +1408,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What AI agents and editors does this work with?</div>
-        <div class="faq-a">ThumbGate works with Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and any other MCP-compatible agent. Cursor ships with a plugin bundle in this repo. Codex now ships both a standalone plugin bundle and a repo-local app plugin profile, and the published download is linked directly from this page. VS Code works when you run an MCP-compatible agent inside it, but this repo does not ship a standalone VS Code extension today.</div>
+        <div class="faq-a">ThumbGate works with Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and any other MCP-compatible agent. The Cursor plugin bundle ships in this repo and installs today via <code>npx thumbgate init --agent cursor</code>; the Cursor Marketplace listing was submitted 2026-05-19 and is still pending Cursor's manual review, so it is not yet discoverable from the in-app Marketplace. Codex now ships both a standalone plugin bundle and a repo-local app plugin profile, and the published download is linked directly from this page. VS Code works when you run an MCP-compatible agent inside it, but this repo does not ship a standalone VS Code extension today.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Do I have to chat inside the ThumbGate GPT for enforcement?</div>

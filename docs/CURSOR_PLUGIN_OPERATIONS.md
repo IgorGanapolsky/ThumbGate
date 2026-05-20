@@ -36,6 +36,7 @@
 - Keep `DPO` and `Thompson Sampling` in the body or tags, not the first sentence.
 - Keep proof near the pitch by linking [VERIFICATION_EVIDENCE.md](./VERIFICATION_EVIDENCE.md).
 - In manual forms, use the display name for `Name` and keep the slug for package/config paths only.
+- **Marketplace-listing claims must reflect review status.** The Cursor Marketplace submission was filed 2026-05-19 and is still pending Cursor's manual review (the listing URL `cursor.com/marketplace/thumbgate` returns 404 as of writing). Until Cursor confirms approval, public copy must say "Cursor Marketplace listing pending Cursor's review" or "Cursor support — Marketplace listing pending approval." The runtime install (`npx thumbgate init --agent cursor`) works today regardless of Marketplace status and is safe to promote as the install path. Re-flip the wording once Cursor approves the listing.
 
 ## Suggested short description
 
