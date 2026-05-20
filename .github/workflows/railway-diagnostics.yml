@@ -70,15 +70,19 @@ jobs:
       - name: Install Railway CLI
         run: |
           npm install -g @railway/cli
-          railway version || true
+          railway --version || true
 
       - name: Restart Railway service
         if: github.event.inputs.action == 'restart'
-        run: railway restart --service "$RAILWAY_SERVICE" --yes --json | tee railway-restart.json
+        run: |
+          set -o pipefail
+          railway restart --service "$RAILWAY_SERVICE" --yes --json | tee railway-restart.json
 
       - name: Redeploy Railway service
         if: github.event.inputs.action == 'redeploy'
-        run: railway redeploy --service "$RAILWAY_SERVICE" --yes --json | tee railway-redeploy.json
+        run: |
+          set -o pipefail
+          railway redeploy --service "$RAILWAY_SERVICE" --yes --json | tee railway-redeploy.json
 
       - name: Allow Railway action to settle
         if: github.event.inputs.action != 'inspect'

@@ -232,6 +232,7 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS/);
   assert.match(workflow, /RAILWAY_LOG_LINES/);
   assert.match(workflow, /RAILWAY_HTTP_LOG_LINES/);
+  assert.match(workflow, /RAILWAY_VARIABLE_SYNC_REQUIRED/);
   assert.match(workflow, /DEPLOYABLE_PATTERN=.*\\\.github\/workflows\/deploy-railway\\\.yml/);
   assert.match(workflow, /secrets\.THUMBGATE_API_KEY/);
   assert.match(workflow, /RESEND_API_KEY:\s*\$\{\{\s*secrets\.RESEND_API_KEY\s*\}\}/);
@@ -336,6 +337,10 @@ test('Deploy to Railway workflow retries transient Railway CLI failures before f
   assert.match(workflow, /set STRIPE_WEBHOOK_SECRET/);
   assert.match(workflow, /set RESEND_API_KEY/);
   assert.match(workflow, /set THUMBGATE_TRIAL_EMAIL_FROM/);
+  assert.match(workflow, /sync_railway_variables\(\) \{/);
+  assert.match(workflow, /Railway variable sync failed after retries; continuing to deploy with existing Railway runtime variables/);
+  assert.match(workflow, /RAILWAY_VARIABLE_SYNC_REQUIRED=true/);
+  assert.match(workflow, /Health verification must still prove the new build/);
   assert.match(workflow, /deploy with railway up/);
   assert.match(workflow, /Railway command failed \(attempt \$attempt\/\$max_attempts\)/);
   assert.match(workflow, /Retrying in \$\{sleep_seconds\}s/);
