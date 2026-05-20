@@ -253,8 +253,11 @@ module.exports = {
   formatStats,
   formatLastPromotion,
   formatBayesErrorRate,
+  formatFirstTimeFixRate,
+  computeFirstTimeFixRate,
   loadGatesFile,
   tryComputeBayesErrorRate,
   computeCalibration,
   MANUAL_GATES_PATH,
+  STATS_PATH,
 };
