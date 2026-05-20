@@ -221,6 +221,7 @@ test('commerce MCP profile has the right tools', () => {
     'commerce_recall',
     'set_branch_governance',
     'set_task_scope',
+    'suggest_fix',
     'get_branch_governance',
     'get_scope_state',
     'track_action',
