@@ -663,7 +663,8 @@
     "test:install-email-capture": "node --test tests/install-email-capture.test.js",
     "test:install-shim": "node --test tests/install-shim.test.js",
     "test:hook-runtime-subcommands": "node --test tests/hook-runtime-subcommands.test.js",
-    "test:implementation-notes": "node --test tests/implementation-notes.test.js"
+    "test:implementation-notes": "node --test tests/implementation-notes.test.js",
+    "test:lessons-page-clickability": "playwright test tests/e2e/lessons-page-clickability.spec.js"
   },
   "keywords": [
     "mcp",
