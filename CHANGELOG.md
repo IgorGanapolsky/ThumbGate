@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.21.2
+
+### Patch Changes
+
+- Publish the Claude Code init/statusline fix from #2233: `thumbgate init` now detects Claude Code through the canonical hook installer, hook-runtime fast paths preserve explicit subcommands such as `statusline-render`, `thumbgate --version` works, and the default Claude statusline stays compact with dashboard, lesson, branch, and PR details behind `THUMBGATE_STATUSLINE_VERBOSE=1`.
+
 ## 1.19.0
 
 ### Minor Changes

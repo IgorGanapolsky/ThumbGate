@@ -2,7 +2,7 @@
   "name": "thumbgate",
   "displayName": "ThumbGate",
   "description": "Pre-action checks for AI coding agents in VS Code, Open VSX-compatible IDEs, and Antigravity-style VS Code forks.",
-  "version": "1.21.0",
+  "version": "1.21.2",
   "publisher": "igorganapolsky",
   "license": "MIT",
   "icon": "assets/logo-400x400.png",
