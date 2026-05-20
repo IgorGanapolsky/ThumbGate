@@ -29,6 +29,7 @@ jobs:
       RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS || '20' }}
       RAILWAY_LOG_LINES: ${{ vars.RAILWAY_LOG_LINES || '200' }}
       RAILWAY_HTTP_LOG_LINES: ${{ vars.RAILWAY_HTTP_LOG_LINES || '50' }}
+      RAILWAY_VARIABLE_SYNC_REQUIRED: ${{ vars.RAILWAY_VARIABLE_SYNC_REQUIRED || 'false' }}
       THUMBGATE_PUBLIC_APP_ORIGIN: ${{ vars.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
       THUMBGATE_BILLING_API_BASE_URL: ${{ vars.THUMBGATE_BILLING_API_BASE_URL || vars.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
       THUMBGATE_FEEDBACK_DIR: ${{ vars.THUMBGATE_FEEDBACK_DIR }}
@@ -110,7 +111,7 @@ jobs:
         if: steps.railway-config.outputs.enabled == 'true'
         run: |
           npm install -g @railway/cli
-          railway version || true
+          railway --version || true
       - name: Set Railway environment variables
         if: steps.railway-config.outputs.enabled == 'true'
         run: |
@@ -138,30 +139,41 @@ jobs:
           if [ -n "$RAILWAY_SERVICE" ]; then
             SERVICE_ARGS+=(--service "$RAILWAY_SERVICE")
           fi
-          retry_railway "set THUMBGATE_API_KEY" railway variables set --skip-deploys THUMBGATE_API_KEY="$THUMBGATE_API_KEY" "${SERVICE_ARGS[@]}"
-          retry_railway "set THUMBGATE_BUILD_SHA" railway variables set --skip-deploys THUMBGATE_BUILD_SHA="$GITHUB_SHA" "${SERVICE_ARGS[@]}"
-          retry_railway "set THUMBGATE_BUILD_GENERATED_AT" railway variables set --skip-deploys THUMBGATE_BUILD_GENERATED_AT="$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "${SERVICE_ARGS[@]}"
-          retry_railway "set THUMBGATE_PUBLIC_APP_ORIGIN" railway variables set --skip-deploys THUMBGATE_PUBLIC_APP_ORIGIN="$THUMBGATE_PUBLIC_APP_ORIGIN" "${SERVICE_ARGS[@]}"
-          retry_railway "set THUMBGATE_BILLING_API_BASE_URL" railway variables set --skip-deploys THUMBGATE_BILLING_API_BASE_URL="$THUMBGATE_BILLING_API_BASE_URL" "${SERVICE_ARGS[@]}"
-          retry_railway "set STRIPE_SECRET_KEY" railway variables set --skip-deploys STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" "${SERVICE_ARGS[@]}"
-          retry_railway "set STRIPE_WEBHOOK_SECRET" railway variables set --skip-deploys STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET" "${SERVICE_ARGS[@]}"
-          if [ -n "$RESEND_API_KEY" ]; then
-            retry_railway "set RESEND_API_KEY" railway variables set --skip-deploys RESEND_API_KEY="$RESEND_API_KEY" "${SERVICE_ARGS[@]}"
-          fi
-          if [ -n "$THUMBGATE_TRIAL_EMAIL_FROM" ]; then
-            retry_railway "set THUMBGATE_TRIAL_EMAIL_FROM" railway variables set --skip-deploys THUMBGATE_TRIAL_EMAIL_FROM="$THUMBGATE_TRIAL_EMAIL_FROM" "${SERVICE_ARGS[@]}"
-          fi
-          if [ -n "$THUMBGATE_FEEDBACK_DIR" ]; then
-            retry_railway "set THUMBGATE_FEEDBACK_DIR" railway variables set --skip-deploys THUMBGATE_FEEDBACK_DIR="$THUMBGATE_FEEDBACK_DIR" "${SERVICE_ARGS[@]}"
-          fi
-          if [ -n "$THUMBGATE_GA_MEASUREMENT_ID" ]; then
-            retry_railway "set THUMBGATE_GA_MEASUREMENT_ID" railway variables set --skip-deploys THUMBGATE_GA_MEASUREMENT_ID="$THUMBGATE_GA_MEASUREMENT_ID" "${SERVICE_ARGS[@]}"
-          fi
-          if [ -n "$THUMBGATE_CHECKOUT_FALLBACK_URL" ]; then
-            retry_railway "set THUMBGATE_CHECKOUT_FALLBACK_URL" railway variables set --skip-deploys THUMBGATE_CHECKOUT_FALLBACK_URL="$THUMBGATE_CHECKOUT_FALLBACK_URL" "${SERVICE_ARGS[@]}"
-          fi
-          if [ -n "$THUMBGATE_GOOGLE_SITE_VERIFICATION" ]; then
-            retry_railway "set THUMBGATE_GOOGLE_SITE_VERIFICATION" railway variables set --skip-deploys THUMBGATE_GOOGLE_SITE_VERIFICATION="$THUMBGATE_GOOGLE_SITE_VERIFICATION" "${SERVICE_ARGS[@]}"
+
+          sync_railway_variables() {
+            retry_railway "set THUMBGATE_API_KEY" railway variables set --skip-deploys THUMBGATE_API_KEY="$THUMBGATE_API_KEY" "${SERVICE_ARGS[@]}"
+            retry_railway "set THUMBGATE_BUILD_SHA" railway variables set --skip-deploys THUMBGATE_BUILD_SHA="$GITHUB_SHA" "${SERVICE_ARGS[@]}"
+            retry_railway "set THUMBGATE_BUILD_GENERATED_AT" railway variables set --skip-deploys THUMBGATE_BUILD_GENERATED_AT="$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "${SERVICE_ARGS[@]}"
+            retry_railway "set THUMBGATE_PUBLIC_APP_ORIGIN" railway variables set --skip-deploys THUMBGATE_PUBLIC_APP_ORIGIN="$THUMBGATE_PUBLIC_APP_ORIGIN" "${SERVICE_ARGS[@]}"
+            retry_railway "set THUMBGATE_BILLING_API_BASE_URL" railway variables set --skip-deploys THUMBGATE_BILLING_API_BASE_URL="$THUMBGATE_BILLING_API_BASE_URL" "${SERVICE_ARGS[@]}"
+            retry_railway "set STRIPE_SECRET_KEY" railway variables set --skip-deploys STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" "${SERVICE_ARGS[@]}"
+            retry_railway "set STRIPE_WEBHOOK_SECRET" railway variables set --skip-deploys STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET" "${SERVICE_ARGS[@]}"
+            if [ -n "$RESEND_API_KEY" ]; then
+              retry_railway "set RESEND_API_KEY" railway variables set --skip-deploys RESEND_API_KEY="$RESEND_API_KEY" "${SERVICE_ARGS[@]}"
+            fi
+            if [ -n "$THUMBGATE_TRIAL_EMAIL_FROM" ]; then
+              retry_railway "set THUMBGATE_TRIAL_EMAIL_FROM" railway variables set --skip-deploys THUMBGATE_TRIAL_EMAIL_FROM="$THUMBGATE_TRIAL_EMAIL_FROM" "${SERVICE_ARGS[@]}"
+            fi
+            if [ -n "$THUMBGATE_FEEDBACK_DIR" ]; then
+              retry_railway "set THUMBGATE_FEEDBACK_DIR" railway variables set --skip-deploys THUMBGATE_FEEDBACK_DIR="$THUMBGATE_FEEDBACK_DIR" "${SERVICE_ARGS[@]}"
+            fi
+            if [ -n "$THUMBGATE_GA_MEASUREMENT_ID" ]; then
+              retry_railway "set THUMBGATE_GA_MEASUREMENT_ID" railway variables set --skip-deploys THUMBGATE_GA_MEASUREMENT_ID="$THUMBGATE_GA_MEASUREMENT_ID" "${SERVICE_ARGS[@]}"
+            fi
+            if [ -n "$THUMBGATE_CHECKOUT_FALLBACK_URL" ]; then
+              retry_railway "set THUMBGATE_CHECKOUT_FALLBACK_URL" railway variables set --skip-deploys THUMBGATE_CHECKOUT_FALLBACK_URL="$THUMBGATE_CHECKOUT_FALLBACK_URL" "${SERVICE_ARGS[@]}"
+            fi
+            if [ -n "$THUMBGATE_GOOGLE_SITE_VERIFICATION" ]; then
+              retry_railway "set THUMBGATE_GOOGLE_SITE_VERIFICATION" railway variables set --skip-deploys THUMBGATE_GOOGLE_SITE_VERIFICATION="$THUMBGATE_GOOGLE_SITE_VERIFICATION" "${SERVICE_ARGS[@]}"
+            fi
+          }
+
+          if ! sync_railway_variables; then
+            if [ "$RAILWAY_VARIABLE_SYNC_REQUIRED" = "true" ]; then
+              echo "::error::Railway variable sync failed and RAILWAY_VARIABLE_SYNC_REQUIRED=true."
+              exit 1
+            fi
+            echo "::warning::Railway variable sync failed after retries; continuing to deploy with existing Railway runtime variables. Health verification must still prove the new build."
           fi
       - name: Deploy to Railway
         if: steps.railway-config.outputs.enabled == 'true'
