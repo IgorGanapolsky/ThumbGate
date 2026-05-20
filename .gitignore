@@ -62,3 +62,7 @@ test-results/
 playwright-report/
 blob-report/
 /all-blob-reports/
+
+# Implementation notes (per-repo, agent-decision capture)
+.thumbgate/implementation-notes.md
+.thumbgate/implementation-notes.jsonl
