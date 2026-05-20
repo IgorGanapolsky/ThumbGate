@@ -6,15 +6,15 @@ If user gives explicit positive/negative outcome feedback, capture it immediatel
 ## Commands
 
 ```bash
-node .claude/scripts/feedback/capture-feedback.js --feedback=up --context="..." --tags="..."
-node .claude/scripts/feedback/capture-feedback.js --feedback=down --context="..." --tags="..."
+thumbgate capture --feedback=up --context="..." --tags="..."
+thumbgate capture --feedback=down --context="..." --tags="..."
 ```
 
 ## Session Start
 
 ```bash
-npm run feedback:summary
-npm run feedback:rules
+thumbgate stats
+thumbgate lessons
 ```
 
 Use generated rules as hard guardrails to avoid repeated mistakes.

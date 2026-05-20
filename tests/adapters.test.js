@@ -104,6 +104,18 @@ test('codex config.toml contains mcp_servers section', () => {
   }
 });
 
+test('codex plugin instructions use published ThumbGate CLI entrypoints', () => {
+  const filePath = path.join(root, 'plugins/codex-profile/AGENTS.md');
+  const content = fs.readFileSync(filePath, 'utf-8');
+
+  assert.match(content, /thumbgate capture --feedback=up/, 'Codex plugin must capture positive feedback through the published CLI');
+  assert.match(content, /thumbgate capture --feedback=down/, 'Codex plugin must capture negative feedback through the published CLI');
+  assert.match(content, /thumbgate stats/, 'Codex plugin session start should use the published stats command');
+  assert.match(content, /thumbgate lessons/, 'Codex plugin session start should use the published lessons command');
+  assert.doesNotMatch(content, /\.claude\/scripts\/feedback/, 'Codex plugin must not point at repo-local Claude scripts');
+  assert.doesNotMatch(content, /npm run feedback:/, 'Codex plugin must not depend on repo-local npm scripts');
+});
+
 test('opencode adapter is valid JSON with a version-pinned local MCP server', () => {
   const filePath = path.join(root, 'adapters/opencode/opencode.json');
   const payload = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
