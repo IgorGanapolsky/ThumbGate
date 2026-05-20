@@ -1,14 +1,16 @@
 # syntax=docker/dockerfile:1
 
 # ── Build stage ────────────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:22-bookworm-slim AS builder
 
 WORKDIR /app
 
-# Native build deps for better-sqlite3 et al. — Alpine uses musl libc and most
-# native-module prebuilt binaries ship glibc-only, so node-gyp falls back to
-# compiling from source and needs Python + a C++ toolchain.
-RUN apk add --no-cache python3 make g++
+# Debian/glibc base + Node 22 LTS — better-sqlite3 12.10.0 ships prebuilt
+# glibc binaries for node ABI v127 (Node 22) / v137 (Node 23) / v141 (Node 24)
+# / v147 (Node 25) via prebuild-install. Node 20 (ABI v115) has NO prebuild,
+# which is why the previous Alpine+Node20 image had to compile from source
+# with python3+make+g++. Moving to Node 22 lets prebuild-install resolve a
+# ready binary and skip node-gyp entirely.
 
 # Copy manifests first to leverage layer cache
 COPY package*.json ./
@@ -17,12 +19,16 @@ COPY package*.json ./
 RUN npm ci --omit=dev --no-audit --no-fund
 
 # ── Runtime stage ──────────────────────────────────────────────────────────────
-FROM node:20-alpine AS runtime
+FROM node:22-bookworm-slim AS runtime
 
-RUN apk add --no-cache git
+# git is invoked by some maintenance scripts; wget is used by the HEALTHCHECK
+# and is NOT preinstalled on bookworm-slim, so install both here.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git wget \
+    && rm -rf /var/lib/apt/lists/*
 
 # Non-root user for security
-RUN addgroup -S thumbgate && adduser -S thumbgate -G thumbgate
+RUN groupadd -r thumbgate && useradd -r -g thumbgate thumbgate
 
 WORKDIR /app
 
