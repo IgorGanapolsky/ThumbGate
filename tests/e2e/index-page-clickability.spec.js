@@ -152,31 +152,41 @@ test.describe('/ landing page clickability — comprehensive E2E coverage', () =
   });
 
   test('clicking "Upgrade to Pro" with a valid email clears the invalid-border style', async ({ page }) => {
-    // handleProCheckout() on a valid email both clears the border AND navigates
-    // to the checkout URL. The navigation destroys the page's execution context
-    // before the post-click DOM read can fire — page.route abort isn't fast
-    // enough to prevent it. Workaround: override window.location BEFORE
-    // navigating to the page, so the assignment in handleProCheckout becomes a
-    // no-op and the page stays around for the border read.
+    // handleProCheckout() on valid email clears the border AND calls
+    // location.assign(checkoutUrl). The navigation destroys the page context
+    // before the post-click DOM read can fire. We override window.location BEFORE
+    // page load so BOTH `href=` setters AND `assign()`/`replace()` method calls
+    // become no-ops — otherwise CI sees a timeout because the page has navigated
+    // away by the time `.poll()` retries.
     await page.addInitScript(() => {
+      const orig = window.location;
       Object.defineProperty(window, 'location', {
         configurable: true,
-        value: new Proxy(window.location, {
+        value: new Proxy(orig, {
+          get(target, prop) {
+            if (prop === 'assign' || prop === 'replace' || prop === 'reload') {
+              return () => {};
+            }
+            const v = target[prop];
+            return typeof v === 'function' ? v.bind(target) : v;
+          },
           set(target, prop, value) {
-            if (prop === 'href') return true; // swallow navigation
-            target[prop] = value;
+            if (prop === 'href') return true;
+            try { target[prop] = value; } catch (_) {}
             return true;
           },
         }),
       });
     });
+    // Also stub the newsletter signup endpoint so submitNewsletterSignup
+    // resolves immediately instead of hanging in CI.
+    await page.route('**/api/newsletter/**', (route) => route.fulfill({ status: 200, body: '{}' }));
+    await page.route('**/api/buyer-intent/**', (route) => route.fulfill({ status: 200, body: '{}' }));
     await page.goto('/#pricing');
     const email = page.locator('#pro-email');
-    // Apply red border first via invalid path
     await email.fill('not-a-real-email');
     await page.locator('#pro-checkout-link').click();
     await expect.poll(() => email.evaluate((el) => el.style.border)).toContain('rgb(248, 113, 113)');
-    // Now valid email — border should reset
     await email.fill('buyer@example.com');
     await page.locator('#pro-checkout-link').click();
     await expect.poll(() => email.evaluate((el) => el.style.border)).not.toContain('rgb(248, 113, 113)');
