@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: deploy-railway-${{ github.workflow }}-${{ github.ref }}
+  group: deploy-railway
   cancel-in-progress: true
 
 jobs:
@@ -23,7 +23,7 @@ jobs:
       RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
       RAILWAY_SERVICE: ${{ vars.RAILWAY_SERVICE }}
       RAILWAY_HEALTHCHECK_URL: ${{ vars.RAILWAY_HEALTHCHECK_URL || 'https://thumbgate-production.up.railway.app/health' }}
-      RAILWAY_HEALTHCHECK_MAX_ATTEMPTS: ${{ vars.RAILWAY_HEALTHCHECK_MAX_ATTEMPTS || '120' }}
+      RAILWAY_HEALTHCHECK_MAX_ATTEMPTS: ${{ vars.RAILWAY_HEALTHCHECK_MAX_ATTEMPTS || '36' }}
       RAILWAY_HEALTHCHECK_SLEEP_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_SLEEP_SECONDS || '10' }}
       RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS || '5' }}
       RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS || '20' }}
@@ -60,10 +60,20 @@ jobs:
           SHOULD_DEPLOY=true
           DEPLOYABLE_PATTERN='^(src/|scripts/.*\.(js|mjs|cjs)$|config/|adapters/.*\.(js|mjs|cjs|json|ya?ml|toml)$|public/|\.well-known/|openapi/|workers/|\.github/workflows/deploy-railway\.yml$|Dockerfile$|railway\.json$|package\.json$|package-lock\.json$)'
 
-          if [ "$GITHUB_EVENT_NAME" = "push" ] && [ -n "$BEFORE_SHA" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
-            CHANGED_FILES="$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" | sed '/^$/d')"
-            if [ -n "$CHANGED_FILES" ] && ! printf '%s\n' "$CHANGED_FILES" | grep -Eq "$DEPLOYABLE_PATTERN"; then
-              SHOULD_DEPLOY=false
+          # workflow_dispatch always deploys — no scope filter
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "workflow_dispatch: deploying unconditionally"
+            SHOULD_DEPLOY=true
+          elif [ "$GITHUB_EVENT_NAME" = "push" ] && [ -n "$BEFORE_SHA" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
+            # Verify BEFORE_SHA exists in the shallow clone; if not, deploy unconditionally
+            # (this prevents the false-positive "skip" when the SHA is unreachable)
+            if git cat-file -e "$BEFORE_SHA" 2>/dev/null; then
+              CHANGED_FILES="$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" | sed '/^$/d')"
+              if [ -n "$CHANGED_FILES" ] && ! printf '%s\n' "$CHANGED_FILES" | grep -Eq "$DEPLOYABLE_PATTERN"; then
+                SHOULD_DEPLOY=false
+              fi
+            else
+              echo "::warning::BEFORE_SHA ($BEFORE_SHA) not reachable in shallow clone — deploying unconditionally"
             fi
           fi
 
@@ -191,8 +201,9 @@ jobs:
             echo "::warning::Railway variable sync failed after retries; continuing to deploy with existing Railway runtime variables. Health verification must still prove the new build."
           fi
       - name: Deploy to Railway
+        id: railway-deploy
         if: steps.railway-config.outputs.enabled == 'true'
-        timeout-minutes: 8
+        timeout-minutes: 5
         run: |
           retry_railway() {
             local description="$1"
@@ -267,9 +278,10 @@ jobs:
           fi
       - name: Verify deployment health
         if: steps.railway-config.outputs.enabled == 'true'
+        timeout-minutes: 7
         run: |
-          # Railway promotion can lag well past five minutes after a detached upload succeeds.
-          MAX_ATTEMPTS="${RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:-120}"
+          # Railway healthcheck default timeout is 300s. With 36 attempts × 10s = 6 min max.
+          MAX_ATTEMPTS="${RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:-36}"
           SLEEP_SECONDS="${RAILWAY_HEALTHCHECK_SLEEP_SECONDS:-10}"
           CONNECT_TIMEOUT_SECONDS="${RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS:-5}"
           MAX_TIME_SECONDS="${RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS:-20}"
