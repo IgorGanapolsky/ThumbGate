@@ -7729,6 +7729,7 @@ function startServer({ port, host } = {}) {
   const listenPort = Number(port ?? process.env.PORT ?? 8787);
   const listenHost = String(host ?? process.env.HOST ?? '0.0.0.0').trim() || '0.0.0.0';
   const server = createApiServer();
+  registerGracefulShutdown(server);
   return new Promise((resolve) => {
     server.listen(listenPort, listenHost, () => {
       const address = server.address();
@@ -7743,6 +7744,39 @@ function startServer({ port, host } = {}) {
     });
   });
 }
+
+// Railway / Cloud Run / Kubernetes deploy rotations send SIGTERM to swap
+// containers. Without a handler, Node exits immediately — in-flight requests
+// are killed and the orchestrator may mark the container as "crashed" (instead
+// of "gracefully stopped"), wasting its restart-policy budget on a healthy
+// shutdown. Drain HTTP, give a deadline, then force-exit if anything hangs.
+function registerGracefulShutdown(server, { gracePeriodMs = 25_000 } = {}) {
+  if (server[GRACEFUL_SHUTDOWN_KEY]) return;
+  server[GRACEFUL_SHUTDOWN_KEY] = true;
+  let shuttingDown = false;
+  const stop = (signal) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`[shutdown] ${signal} received — draining connections (deadline ${gracePeriodMs}ms)`);
+    const forceTimer = setTimeout(() => {
+      console.error('[shutdown] grace period elapsed — forcing exit');
+      process.exit(1);
+    }, gracePeriodMs);
+    if (typeof forceTimer.unref === 'function') forceTimer.unref();
+    server.close((err) => {
+      if (err) {
+        console.error('[shutdown] server.close error:', err.message);
+        process.exit(1);
+      }
+      console.log('[shutdown] drained cleanly');
+      process.exit(0);
+    });
+  };
+  process.on('SIGTERM', () => stop('SIGTERM'));
+  process.on('SIGINT', () => stop('SIGINT'));
+}
+
+const GRACEFUL_SHUTDOWN_KEY = Symbol.for('thumbgate.gracefulShutdownRegistered');
 
 module.exports = {
   createApiServer,
