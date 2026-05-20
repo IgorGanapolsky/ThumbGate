@@ -368,6 +368,111 @@ function buildRecallResponse(args = {}) {
   return toTextResult(text);
 }
 
+function buildSuggestFixResponse(args = {}) {
+  const context = String(args.context || '').trim();
+  const rawLimit = Number(args.limit);
+  const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 5) : 3;
+
+  // If no context provided, return generic suggestion
+  if (!context) {
+    return toTextResult({
+      suggestions: [
+        {
+          action: 'Capture feedback about what went wrong so ThumbGate can learn and prevent recurrence.',
+          source: 'generic',
+        },
+      ],
+      query: '',
+      totalFound: 0,
+    });
+  }
+
+  // Search lessons via lesson-search module
+  const lessonModule = loadPrivateMcpModule('lessonSearch');
+  let lessonActions = [];
+  if (lessonModule) {
+    try {
+      const searchResult = lessonModule.searchLessons(context, { limit: 10 });
+      const results = Array.isArray(searchResult && searchResult.results) ? searchResult.results : [];
+      for (const result of results) {
+        const correctiveActions = (result.systemResponse && Array.isArray(result.systemResponse.correctiveActions))
+          ? result.systemResponse.correctiveActions
+          : [];
+        for (const action of correctiveActions) {
+          const text = String(action.text || '').trim();
+          if (text) {
+            lessonActions.push({
+              action: text,
+              source: action.source || `lesson:${result.id || 'unknown'}`,
+              score: result.score || 0,
+            });
+          }
+        }
+        // Also pick up lesson-level howToAvoid / actionNeeded when no explicit correctiveActions
+        if (correctiveActions.length === 0 && result.lesson) {
+          const text = result.lesson.howToAvoid || result.lesson.actionNeeded || '';
+          if (text) {
+            lessonActions.push({
+              action: String(text).trim(),
+              source: `lesson:${result.id || 'unknown'}`,
+              score: result.score || 0,
+            });
+          }
+        }
+      }
+    } catch {
+      // lesson search failure is non-fatal
+    }
+  }
+
+  // Search prevention rules directly via lesson-search module's helper
+  let ruleActions = [];
+  try {
+    const { readPreventionRuleMatches } = require('../../scripts/lesson-search');
+    const ruleMatches = readPreventionRuleMatches(context, limit);
+    for (const rule of ruleMatches) {
+      const text = rule.summary || rule.title || '';
+      if (text) {
+        ruleActions.push({
+          action: String(text).trim(),
+          source: `rule:${String(rule.title || 'prevention_rules').trim()}`,
+          score: rule.score || 0,
+        });
+      }
+    }
+  } catch {
+    // rule search failure is non-fatal
+  }
+
+  // Merge, deduplicate, sort by score, and take top `limit`
+  const seen = new Set();
+  const all = [...lessonActions, ...ruleActions]
+    .filter((item) => {
+      if (!item.action) return false;
+      const key = item.action.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a, b) => (b.score || 0) - (a.score || 0))
+    .slice(0, limit)
+    .map(({ action, source }) => ({ action, source }));
+
+  // If nothing matched, add generic fallback
+  if (all.length === 0) {
+    all.push({
+      action: 'No matching lessons or rules found. Capture feedback via capture_feedback so ThumbGate can learn from this failure.',
+      source: 'generic',
+    });
+  }
+
+  return toTextResult({
+    suggestions: all,
+    query: context,
+    totalFound: all.length,
+  });
+}
+
 function buildDiagnoseFailureResponse(args = {}) {
   let intentPlan = null;
   const requestedProfile = args.mcpProfile || getActiveMcpProfile();
@@ -579,6 +684,8 @@ async function callToolInner(name, args) {
         tags: Array.isArray(args.tags) ? args.tags : [],
       }));
     }
+    case 'suggest_fix':
+      return buildSuggestFixResponse(args);
     case 'retrieve_lessons': {
       // Cross-encoder reranking: retrieve more candidates, then rerank for precision
       const { retrieveWithRerankingSync } = loadOptionalModule(path.join(__dirname, '../../scripts/cross-encoder-reranker'), () => ({
@@ -1330,6 +1437,7 @@ module.exports = {
   acquireLock,
   toCaptureFeedbackTextResult,
   formatCorrectiveActionsReminder,
+  buildSuggestFixResponse,
   __test__: {
     PRIVATE_MCP_MODULES,
     loadPrivateMcpModule,

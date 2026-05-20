@@ -32,11 +32,13 @@ test.describe('/lessons clickability — comprehensive E2E coverage', () => {
     await card.click();
     await expect(page.locator('#tab-rules')).toHaveClass(/(^|\s)active(\s|$)/);
     // The tab content must be in the viewport after click — that's the bug fix
-    const inView = await page.locator('#tab-rules').evaluate((el) => {
+    // Wait for scroll animation to finish before checking position
+    await page.waitForFunction(() => {
+      const el = document.querySelector('#tab-rules');
+      if (!el) return false;
       const r = el.getBoundingClientRect();
       return r.top < window.innerHeight && r.bottom > 0;
-    });
-    expect(inView).toBe(true);
+    }, { timeout: 5000 });
   });
 
   test('clicking Critical tile activates Rules tab + applies critical filter', async ({ page }) => {
@@ -55,11 +57,12 @@ test.describe('/lessons clickability — comprehensive E2E coverage', () => {
     const card = page.locator('.stats-grid .stat-card').nth(2);
     await card.click();
     await expect(page.locator('#tab-timeline')).toHaveClass(/(^|\s)active(\s|$)/);
-    const inView = await page.locator('#tab-timeline').evaluate((el) => {
+    await page.waitForFunction(() => {
+      const el = document.querySelector('#tab-timeline');
+      if (!el) return false;
       const r = el.getBoundingClientRect();
       return r.top < window.innerHeight && r.bottom > 0;
-    });
-    expect(inView).toBe(true);
+    }, { timeout: 5000 });
   });
 
   test('clicking Approval Trend tile activates the Insights tab + scrolls into view', async ({ page }) => {
@@ -67,11 +70,12 @@ test.describe('/lessons clickability — comprehensive E2E coverage', () => {
     const card = page.locator('.stats-grid .stat-card').nth(3);
     await card.click();
     await expect(page.locator('#tab-insights')).toHaveClass(/(^|\s)active(\s|$)/);
-    const inView = await page.locator('#tab-insights').evaluate((el) => {
+    await page.waitForFunction(() => {
+      const el = document.querySelector('#tab-insights');
+      if (!el) return false;
       const r = el.getBoundingClientRect();
       return r.top < window.innerHeight && r.bottom > 0;
-    });
-    expect(inView).toBe(true);
+    }, { timeout: 5000 });
   });
 
   // --- three tab headers ---

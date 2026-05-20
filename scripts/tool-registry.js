@@ -398,6 +398,24 @@ const TOOLS = [
     },
   }),
   readOnlyTool({
+    name: 'suggest_fix',
+    description: 'Suggest corrective actions for a described failure by searching the lesson DB and prevention rules. Returns up to 3 ranked suggestions with their source. Call this when something goes wrong and you need guidance on what to do next.',
+    inputSchema: {
+      type: 'object',
+      required: ['context'],
+      properties: {
+        context: {
+          type: 'string',
+          description: 'Description of what went wrong or what the agent is trying to fix.',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of suggestions to return (default 3, max 5).',
+        },
+      },
+    },
+  }),
+  readOnlyTool({
     name: 'infer_lesson_from_history',
     description: 'Perform autonomous inference on chat history to identify why a failure occurred and what rule should be recorded.',
     inputSchema: {
