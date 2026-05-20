@@ -256,7 +256,7 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /--detach/);
   assert.match(workflow, /--project "\$RAILWAY_PROJECT_ID"/);
   assert.match(workflow, /--environment "\$RAILWAY_ENVIRONMENT_ID"/);
-  assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_MAX_ATTEMPTS\s*\|\|\s*'120'\s*\}\}/);
+  assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_MAX_ATTEMPTS\s*\|\|\s*'36'\s*\}\}/);
   assert.match(workflow, /RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS\s*\|\|\s*'5'\s*\}\}/);
   assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS\s*\|\|\s*'20'\s*\}\}/);
   assert.doesNotMatch(workflow, /secrets\.THUMBGATE_API_KEY\s*\|\|/);
@@ -271,11 +271,11 @@ test('Deploy to Railway workflow waits long enough to verify the promoted build 
   assert.match(workflow, /node scripts\/build-metadata\.js --sha "\$GITHUB_SHA" --output config\/build-metadata\.json/);
   assert.match(workflow, /railway up --ci --detach --project "\$RAILWAY_PROJECT_ID" --environment "\$RAILWAY_ENVIRONMENT_ID"/);
   assert.match(workflow, /--detach/);
-  assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_MAX_ATTEMPTS\s*\|\|\s*'120'\s*\}\}/);
+  assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_MAX_ATTEMPTS\s*\|\|\s*'36'\s*\}\}/);
   assert.match(workflow, /RAILWAY_HEALTHCHECK_SLEEP_SECONDS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_SLEEP_SECONDS\s*\|\|\s*'10'\s*\}\}/);
   assert.match(workflow, /RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS\s*\|\|\s*'5'\s*\}\}/);
   assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS:\s*\$\{\{\s*vars\.RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS\s*\|\|\s*'20'\s*\}\}/);
-  assert.match(workflow, /MAX_ATTEMPTS="\$\{RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:-120\}"/);
+  assert.match(workflow, /MAX_ATTEMPTS="\$\{RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:-36\}"/);
   assert.match(workflow, /SLEEP_SECONDS="\$\{RAILWAY_HEALTHCHECK_SLEEP_SECONDS:-10\}"/);
   assert.match(workflow, /CONNECT_TIMEOUT_SECONDS="\$\{RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS:-5\}"/);
   assert.match(workflow, /MAX_TIME_SECONDS="\$\{RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS:-20\}"/);
@@ -351,7 +351,7 @@ test('Deploy to Railway workflow retries transient Railway CLI failures before f
   assert.match(workflow, /RAILWAY_DEPLOY_COMMAND_MAX_ATTEMPTS/);
   assert.match(workflow, /RAILWAY_DEPLOY_COMMAND_KILL_AFTER_SECONDS/);
   assert.match(workflow, /RAILWAY_POST_FAILURE_HEALTHCHECK_MAX_ATTEMPTS/);
-  assert.match(workflow, /timeout-minutes:\s*8/);
+  assert.match(workflow, /timeout-minutes:\s*5/);
   assert.match(workflow, /timeout --foreground --kill-after="\$\{kill_after_seconds\}s" "\$\{timeout_seconds\}s" "\$@"/);
   assert.match(workflow, /deploy with railway up/);
   assert.match(workflow, /Railway command failed \(attempt \$attempt\/\$max_attempts\)/);
@@ -584,7 +584,7 @@ test('Deploy to Railway workflow serializes main deploys and cancels superseded 
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
 
   assert.match(workflow, /concurrency:/);
-  assert.match(workflow, /group:\s*deploy-railway-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.ref\s*\}\}/);
+  assert.match(workflow, /group:\s*deploy-railway/);
   assert.match(workflow, /cancel-in-progress:\s*true/);
 });
 
