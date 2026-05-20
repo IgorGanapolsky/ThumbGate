@@ -155,13 +155,34 @@ test.describe('/ landing page clickability — comprehensive E2E coverage', () =
   });
 
   test('clicking "Upgrade to Pro" with a valid email clears the invalid-border style', async ({ page }) => {
+    // handleProCheckout() on a valid email both clears the border AND navigates
+    // to the checkout URL. The navigation destroys the page's execution context
+    // before the post-click DOM read can fire — page.route abort isn't fast
+    // enough to prevent it. Workaround: override window.location BEFORE
+    // navigating to the page, so the assignment in handleProCheckout becomes a
+    // no-op and the page stays around for the border read.
+    await page.addInitScript(() => {
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: new Proxy(window.location, {
+          set(target, prop, value) {
+            if (prop === 'href') return true; // swallow navigation
+            target[prop] = value;
+            return true;
+          },
+        }),
+      });
+    });
     await page.goto('/#pricing');
     const email = page.locator('#pro-email');
+    // Apply red border first via invalid path
+    await email.fill('not-a-real-email');
+    await page.locator('#pro-checkout-link').click();
+    await expect.poll(() => email.evaluate((el) => el.style.border)).toContain('rgb(248, 113, 113)');
+    // Now valid email — border should reset
     await email.fill('buyer@example.com');
     await page.locator('#pro-checkout-link').click();
-    // handleProCheckout resets border to neutral on valid email
-    const borderStyle = await email.evaluate((el) => el.style.border);
-    expect(borderStyle).not.toContain('rgb(248, 113, 113)');
+    await expect.poll(() => email.evaluate((el) => el.style.border)).not.toContain('rgb(248, 113, 113)');
   });
 
   // --- sticky bottom CTA (appears after scrolling past hero) ---
