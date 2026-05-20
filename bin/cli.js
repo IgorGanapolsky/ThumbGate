@@ -885,7 +885,6 @@ function stats() {
   try { gateConfigData = require(path.join(PKG_ROOT, 'scripts', 'gate-stats')).calculateStats(); } catch {}
 
   const avgCostOfMistake = 2.50;
-  const avgCostPerBlockedAction = 15; // ~15 min debugging at $60/hr = $15
   const totalInterceptions = gateData.blocked + gateData.warned;
   const payload = {
     total: data.total,
@@ -901,7 +900,6 @@ function stats() {
     totalGates: gateConfigData.totalGates,
     autoPromotedGates: gateConfigData.autoPromotedGates,
     estimatedHoursSaved: gateConfigData.estimatedHoursSaved,
-    estimatedCostSaved: Number((totalInterceptions * avgCostPerBlockedAction).toFixed(2)),
     topBlockedGate: gateConfigData.topBlocked ? gateConfigData.topBlocked.id : null,
   };
 
@@ -924,7 +922,6 @@ function stats() {
     console.log(`  Active gates    : ${payload.totalGates} (${payload.autoPromotedGates} auto-promoted)`);
     if (payload.topBlockedGate) console.log(`  Top blocker     : ${payload.topBlockedGate}`);
     console.log(`  Est. time saved : ~${payload.estimatedHoursSaved} hours`);
-    console.log(`  Est. cost saved : ~$${payload.estimatedCostSaved}`);
   }
 
   if (payload.negatives > 0) {
@@ -2148,6 +2145,25 @@ function sessionStart() {
         const score = bucket && (bucket.risk || bucket.score || bucket.riskScore);
         if (key) reminderLines.push(`  ${i + 1}. ${key} (risk=${score || '?'})`);
       });
+    }
+  } catch (_) { /* non-critical */ }
+
+  // Gate enforcement summary — agent sees how many actions ThumbGate has blocked
+  try {
+    const { loadStats } = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
+    const gateStats = loadStats();
+    if (gateStats && (gateStats.blocked > 0 || gateStats.warned > 0)) {
+      if (reminderLines.length > 0) reminderLines.push('');
+      reminderLines.push(`Gate enforcement: ${gateStats.blocked} blocked, ${gateStats.warned} warned`);
+      const byGate = gateStats.byGate || {};
+      const topBlockers = Object.entries(byGate)
+        .filter(([, v]) => v.blocked > 0)
+        .sort(([, a], [, b]) => b.blocked - a.blocked)
+        .slice(0, 3);
+      if (topBlockers.length > 0) {
+        reminderLines.push('Top blockers:');
+        topBlockers.forEach(([id, v]) => reminderLines.push(`  - ${id}: ${v.blocked} blocks`));
+      }
     }
   } catch (_) { /* non-critical */ }
 
