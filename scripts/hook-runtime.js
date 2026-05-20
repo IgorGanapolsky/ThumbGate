@@ -33,34 +33,34 @@ function publishedHookCommandsAvailable(version) {
   return available;
 }
 
-function resolveCliBaseCommand() {
+function resolveCliCommand(subcommand) {
   const version = packageVersion();
   if (publishedHookCommandsAvailable(version)) {
-    return publishedCliShellCommand(version);
+    return publishedCliShellCommand(version, [subcommand]);
   }
   if (isSourceCheckout(PKG_ROOT)) {
-    return `node ${shellQuote(path.join(PKG_ROOT, 'bin', 'cli.js'))}`;
+    return `node ${shellQuote(path.join(PKG_ROOT, 'bin', 'cli.js'))} ${subcommand}`;
   }
-  return publishedCliShellCommand(version);
+  return publishedCliShellCommand(version, [subcommand]);
 }
 
-function resolveCodexCliBaseCommand() {
+function resolveCodexCliCommand(subcommand) {
   const version = packageVersion();
   if (publishedHookCommandsAvailable(version)) {
-    return publishedCliShellCommand('latest', [], { preferInstalled: false });
+    return publishedCliShellCommand('latest', [subcommand], { preferInstalled: false });
   }
   if (isSourceCheckout(PKG_ROOT)) {
-    return `node ${shellQuote(path.join(PKG_ROOT, 'bin', 'cli.js'))}`;
+    return `node ${shellQuote(path.join(PKG_ROOT, 'bin', 'cli.js'))} ${subcommand}`;
   }
-  return publishedCliShellCommand('latest', [], { preferInstalled: false });
+  return publishedCliShellCommand('latest', [subcommand], { preferInstalled: false });
 }
 
 function buildPortableHookCommand(subcommand) {
-  return `${resolveCliBaseCommand()} ${subcommand}`;
+  return resolveCliCommand(subcommand);
 }
 
 function buildCodexPortableHookCommand(subcommand) {
-  return `${resolveCodexCliBaseCommand()} ${subcommand}`;
+  return resolveCodexCliCommand(subcommand);
 }
 
 function preToolHookCommand() {
@@ -115,8 +115,8 @@ module.exports = {
   packageVersion,
   publishedHookCommandsAvailable,
   preToolHookCommand,
-  resolveCodexCliBaseCommand,
-  resolveCliBaseCommand,
+  resolveCodexCliCommand,
+  resolveCliCommand,
   sessionStartHookCommand,
   statuslineCommand,
   userPromptHookCommand,

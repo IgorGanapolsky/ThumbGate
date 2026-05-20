@@ -57,6 +57,7 @@ function runStatusline(cachePayload, extraEnv = {}) {
         ...process.env,
         HOME: homeDir,
         THUMBGATE_FEEDBACK_DIR: tmpDir,
+        THUMBGATE_STATUSLINE_VERBOSE: '1',
         ...extraEnv,
       },
       timeout: 5000,
@@ -94,6 +95,28 @@ test('statusline script reads jq input and outputs ThumbGate line', () => {
   assert.match(out, /Lessons/);
   assert.doesNotMatch(out, /Dashboard \(http:\/\/localhost:3456\/dashboard\)/);
   assert.doesNotMatch(out, /Lessons \(http:\/\/localhost:3456\/lessons\)/);
+});
+
+test('statusline is compact by default for Claude chrome', () => {
+  const out = runStatusline({
+    thumbs_up: '10', thumbs_down: '5', lessons: '3', trend: 'improving'
+  }, {
+    THUMBGATE_STATUSLINE_VERBOSE: '0',
+    _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify(linkFixture()),
+    _TEST_THUMBGATE_STATUSLINE_CONTEXT_JSON: JSON.stringify({
+      branchName: 'codex/fix-verbose-statusline',
+      prLabel: 'PR #999',
+    }),
+  });
+  const plain = stripStatuslineFormatting(out);
+  assert.match(plain, /ThumbGate v/);
+  assert.match(plain, /10/);
+  assert.match(plain, /5/);
+  assert.doesNotMatch(plain, /codex\/fix-verbose-statusline/);
+  assert.doesNotMatch(plain, /PR #999/);
+  assert.doesNotMatch(plain, /Dashboard/);
+  assert.doesNotMatch(plain, /Lessons/);
+  assert.doesNotMatch(plain, /Latest mistake/);
 });
 
 test('statusline includes branch, inferred work item, and PR context when available', () => {
@@ -481,6 +504,7 @@ test('statusline preserves dashboard links under a tight width budget', () => {
         ...process.env,
         HOME: homeDir,
         THUMBGATE_FEEDBACK_DIR: tmpDir,
+        THUMBGATE_STATUSLINE_VERBOSE: '1',
         THUMBGATE_STATUSLINE_MAX_CHARS: '72',
         _TEST_THUMBGATE_STATUSLINE_LINKS_JSON: JSON.stringify(linkFixture()),
       },
@@ -560,13 +584,18 @@ test('cache updater writes cache from feedback_stats input', () => {
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
-test('setupClaude uses portable ThumbGate commands for status line and cache updates', () => {
+test('Claude Code wiring uses portable ThumbGate commands for status line and cache updates', () => {
   const cliSource = fs.readFileSync(path.join(__dirname, '..', 'bin', 'cli.js'), 'utf8');
-  assert.ok(cliSource.includes('statusLine'), 'cli.js must wire statusLine');
-  assert.ok(cliSource.includes('cacheUpdateHookCommand'), 'cli.js must wire the portable cache updater command');
-  assert.ok(cliSource.includes('statuslineCommand'), 'cli.js must wire the portable statusline command');
+  assert.match(cliSource, /wireHooks\(\{\s*agent:\s*'claude-code'\s*\}\)/, 'cli.js must delegate Claude setup to canonical hook wiring');
   const cacheCommand = cacheUpdateHookCommand();
   const statusCommand = statuslineCommand();
+  assert.ok(
+    // Published install: subcommand in both fast-path exec and fallback npm-exec
+    /thumbgate["']?\s+"statusline-render".*\|\|.*thumbgate"\s+"statusline-render"/.test(statusCommand)
+      // Source checkout: direct node invocation
+      || /bin\/cli\.js"\s+statusline-render/.test(statusCommand),
+    `statusline command must forward statusline-render in both fast and fallback paths: ${statusCommand}`
+  );
   assert.ok(
     (cacheCommand.includes('--package') && cacheCommand.includes('thumbgate@') && cacheCommand.includes('thumbgate') && cacheCommand.includes('cache-update'))
       || cacheCommand.includes('bin/cli.js" cache-update'),
@@ -579,6 +608,76 @@ test('setupClaude uses portable ThumbGate commands for status line and cache upd
   );
 });
 
+test('hook runtime forwards subcommands for published-package Claude hooks', () => {
+  const hookRuntimePath = require.resolve('../scripts/hook-runtime');
+  const mcpConfigPath = require.resolve('../scripts/mcp-config');
+  const mcpConfig = require(mcpConfigPath);
+  const originalIsSourceCheckout = mcpConfig.isSourceCheckout;
+  const originalPublishedCliAvailable = mcpConfig.publishedCliAvailable;
+
+  try {
+    delete require.cache[hookRuntimePath];
+    mcpConfig.isSourceCheckout = () => false;
+    mcpConfig.publishedCliAvailable = () => true;
+    const publishedRuntime = require(hookRuntimePath);
+    const command = publishedRuntime.statuslineCommand();
+
+    assert.match(command, /\[ -x /);
+    assert.match(command, /thumbgate["']?\s+"statusline-render"/);
+    assert.match(command, /\|\|.*npm "exec"/);
+    assert.match(command, /"--"\s+"thumbgate"\s+"statusline-render"/);
+  } finally {
+    mcpConfig.isSourceCheckout = originalIsSourceCheckout;
+    mcpConfig.publishedCliAvailable = originalPublishedCliAvailable;
+    delete require.cache[hookRuntimePath];
+  }
+});
+
+test('hook runtime preserves subcommands in external fallback launchers', () => {
+  const hookRuntimePath = require.resolve('../scripts/hook-runtime');
+  const mcpConfigPath = require.resolve('../scripts/mcp-config');
+  const mcpConfig = require(mcpConfigPath);
+  const originalIsSourceCheckout = mcpConfig.isSourceCheckout;
+  const originalPublishedCliAvailable = mcpConfig.publishedCliAvailable;
+
+  try {
+    delete require.cache[hookRuntimePath];
+    mcpConfig.isSourceCheckout = () => false;
+    mcpConfig.publishedCliAvailable = () => false;
+    const fallbackRuntime = require(hookRuntimePath);
+
+    assert.match(fallbackRuntime.statuslineCommand(), /"--"\s+"thumbgate"\s+"statusline-render"/);
+    assert.match(fallbackRuntime.codexStatuslineCommand(), /thumbgate@latest/);
+    assert.match(fallbackRuntime.codexStatuslineCommand(), /node_modules\/\.bin\/thumbgate"\s+"statusline-render"/);
+  } finally {
+    mcpConfig.isSourceCheckout = originalIsSourceCheckout;
+    mcpConfig.publishedCliAvailable = originalPublishedCliAvailable;
+    delete require.cache[hookRuntimePath];
+  }
+});
+
+test('hook runtime preserves subcommands for source-checkout launchers', () => {
+  const hookRuntimePath = require.resolve('../scripts/hook-runtime');
+  const mcpConfigPath = require.resolve('../scripts/mcp-config');
+  const mcpConfig = require(mcpConfigPath);
+  const originalIsSourceCheckout = mcpConfig.isSourceCheckout;
+  const originalPublishedCliAvailable = mcpConfig.publishedCliAvailable;
+
+  try {
+    delete require.cache[hookRuntimePath];
+    mcpConfig.isSourceCheckout = () => true;
+    mcpConfig.publishedCliAvailable = () => false;
+    const sourceRuntime = require(hookRuntimePath);
+
+    assert.match(sourceRuntime.statuslineCommand(), /bin\/cli\.js"\s+statusline-render/);
+    assert.match(sourceRuntime.codexStatuslineCommand(), /bin\/cli\.js"\s+statusline-render/);
+  } finally {
+    mcpConfig.isSourceCheckout = originalIsSourceCheckout;
+    mcpConfig.publishedCliAvailable = originalPublishedCliAvailable;
+    delete require.cache[hookRuntimePath];
+  }
+});
+
 test('statusline shell wires dashboard and lesson links through osc_link', () => {
   const shellSource = fs.readFileSync(STATUSLINE_PATH, 'utf8');
   assert.match(shellSource, /statusline-links\.js/);
@@ -589,9 +688,9 @@ test('statusline shell wires dashboard and lesson links through osc_link', () =>
   assert.match(shellSource, /LATEST_LESSON_LINK="\$\(osc_link/);
 });
 
-test('statusline output ends with Dashboard and Lessons links (regression guard)', () => {
+test('verbose statusline output ends with Dashboard and Lessons links (regression guard)', () => {
   const shellSource = fs.readFileSync(STATUSLINE_PATH, 'utf8');
-  // Both branches (no-feedback and has-feedback) must retain Dashboard + Lessons links
+  // Both verbose branches (no-feedback and has-feedback) must retain Dashboard + Lessons links.
   const outputLines = shellSource.split('\n').filter(l => l.includes('DASHBOARD_LINK') && l.includes('LESSONS_LINK'));
   assert.ok(outputLines.length >= 2, `Expected at least 2 output lines with Dashboard+Lessons links, got ${outputLines.length}`);
   const lineAssembly = shellSource.split('\n').filter(l => l.includes('LATEST_LESSON_LINK') && l.includes('LINE='));
