@@ -1672,6 +1672,13 @@ function copyInstall(el) {
     toggleFaq(event.currentTarget);
   }
 
+  // Hoist FAQ handlers to window scope so the inline `onclick="toggleFaq(this)"`
+  // attributes on every FAQ question can resolve them. Without this, every FAQ
+  // click silently throws ReferenceError — all 13 FAQ items on the landing
+  // page are dead. Discovered by comprehensive E2E coverage in this PR.
+  window.toggleFaq = toggleFaq;
+  window.handleFaqKeydown = handleFaqKeydown;
+
   /* CTA clicks */
   trackClick('.btn-pro', 'checkout_start', { tier: 'pro', price: 19, billing: 'monthly' });
   trackClick('.btn-gpt-page:not(.btn-install-hero)', 'chatgpt_gpt_click', { tier: 'free', source: 'homepage_gpt' });
