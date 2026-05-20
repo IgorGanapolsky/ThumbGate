@@ -27,6 +27,7 @@ const {
   statuslineCommand,
   userPromptHookCommand,
 } = require('./hook-runtime');
+const { installShim } = require('./install-shim');
 
 function getHome() {
   return process.env.HOME || process.env.USERPROFILE || '';
@@ -338,6 +339,19 @@ function wireClaudeHooks(options) {
     options.projectSettingsPath || claudeProjectSettingsPath(options.projectDir);
   const dryRun = options.dryRun || false;
   const projectDir = options.projectDir || process.cwd();
+
+  // --- Install stable shim before resolving hook commands ---
+  // The shim at ~/.thumbgate/bin/thumbgate-hook always resolves @latest,
+  // so hooks never go stale across version bumps (Volta-style pattern).
+  // Skip in source-checkout mode — developers use direct node commands.
+  if (!dryRun && !require('./mcp-config').isSourceCheckout(path.join(__dirname, '..'))) {
+    try {
+      installShim();
+    } catch {
+      // Non-fatal: fall back to version-pinned commands
+    }
+  }
+
   const desiredStatusLine = statuslineCommand();
 
   // --- Step 0: clean up stale hooks from BOTH settings locations ---
