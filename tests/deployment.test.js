@@ -65,10 +65,15 @@ test('GET /health returns package version', async () => {
   assert.equal(body.version, pkg.version);
 });
 
-test('GET /health returns stamped build metadata', async () => {
+test('GET /health returns stamped build metadata (file wins over env per precedence inversion)', async () => {
+  // Precedence inversion (2026-05-20): the immutable JSON file baked into the
+  // Docker image at build time wins over runtime env vars. Test setup writes
+  // 'deploy-test-build-sha' to the file AND sets THUMBGATE_BUILD_SHA='deploy-test-env-build-sha'
+  // — file value is what /health must report. Old (env-wins) precedence let
+  // a stale Railway env var shadow the freshly-stamped image artifact.
   const res = await fetch(deployUrl('/health'));
   const body = await res.json();
-  assert.equal(body.buildSha, 'deploy-test-env-build-sha');
+  assert.equal(body.buildSha, 'deploy-test-build-sha');
 });
 
 test('GET /health returns numeric uptime', async () => {
