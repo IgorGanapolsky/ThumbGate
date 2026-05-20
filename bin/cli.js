@@ -2486,6 +2486,11 @@ switch (COMMAND) {
   case 'search-lessons':
     lessons();
     break;
+  case 'notes': {
+    const { cli: notesCli } = require(path.join(PKG_ROOT, 'scripts', 'implementation-notes'));
+    notesCli(process.argv.slice(3));
+    break;
+  }
   case 'lesson-health':
   case 'stale': {
     const { initDB } = require(path.join(PKG_ROOT, 'scripts', 'lesson-db'));
