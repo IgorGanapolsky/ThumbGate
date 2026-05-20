@@ -43,7 +43,9 @@ const path = require('node:path');
 // This number is allowed to DECREASE; another bump up requires a
 // deliberate changeset entry.
 // 257 → 258: scripts/cli-demo.js added in broker-audit-conversion-fix branch
-const BASELINE_FILE_COUNT = 258;
+// 258 → 259: scripts/audit.js added — the AI Bill Auditor command
+//            (changeset: ai-bill-auditor.md)
+const BASELINE_FILE_COUNT = 259;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
