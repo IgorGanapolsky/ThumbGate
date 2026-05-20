@@ -233,6 +233,8 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /RAILWAY_LOG_LINES/);
   assert.match(workflow, /RAILWAY_HTTP_LOG_LINES/);
   assert.match(workflow, /RAILWAY_VARIABLE_SYNC_REQUIRED/);
+  assert.match(workflow, /RAILWAY_VARIABLE_COMMAND_TIMEOUT_SECONDS/);
+  assert.match(workflow, /RAILWAY_DEPLOY_COMMAND_TIMEOUT_SECONDS/);
   assert.match(workflow, /DEPLOYABLE_PATTERN=.*\\\.github\/workflows\/deploy-railway\\\.yml/);
   assert.match(workflow, /secrets\.THUMBGATE_API_KEY/);
   assert.match(workflow, /RESEND_API_KEY:\s*\$\{\{\s*secrets\.RESEND_API_KEY\s*\}\}/);
@@ -306,6 +308,8 @@ test('Railway diagnostics workflow can inspect or bounce the service with the li
   assert.match(workflow, /RAILWAY_SERVICE/);
   assert.match(workflow, /railway restart --service "\$RAILWAY_SERVICE" --yes --json/);
   assert.match(workflow, /railway redeploy --service "\$RAILWAY_SERVICE" --yes --json/);
+  assert.match(workflow, /timeout --foreground "\$\{RAILWAY_CLI_COMMAND_TIMEOUT_SECONDS\}s" railway restart/);
+  assert.match(workflow, /timeout --foreground "\$\{RAILWAY_CLI_COMMAND_TIMEOUT_SECONDS\}s" railway redeploy/);
   assert.match(workflow, /bash scripts\/capture-railway-diagnostics\.sh railway-diagnostics/);
   assert.match(workflow, /actions\/upload-artifact@v7/);
 });
@@ -341,6 +345,7 @@ test('Deploy to Railway workflow retries transient Railway CLI failures before f
   assert.match(workflow, /Railway variable sync failed after retries; continuing to deploy with existing Railway runtime variables/);
   assert.match(workflow, /RAILWAY_VARIABLE_SYNC_REQUIRED=true/);
   assert.match(workflow, /Health verification must still prove the new build/);
+  assert.match(workflow, /timeout --foreground "\$\{timeout_seconds\}s" "\$@"/);
   assert.match(workflow, /deploy with railway up/);
   assert.match(workflow, /Railway command failed \(attempt \$attempt\/\$max_attempts\)/);
   assert.match(workflow, /Retrying in \$\{sleep_seconds\}s/);
