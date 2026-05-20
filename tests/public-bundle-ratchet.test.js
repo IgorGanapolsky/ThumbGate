@@ -45,7 +45,10 @@ const path = require('node:path');
 // 257 → 258: scripts/cli-demo.js added in broker-audit-conversion-fix branch
 // 258 → 259: scripts/audit.js added — the AI Bill Auditor command
 //            (changeset: ai-bill-auditor.md)
-const BASELINE_FILE_COUNT = 259;
+// 259 → 260: public/codex-enterprise.html added — landing page riding the
+//            2026-05-20 OpenAI×Dell Codex Enterprise partnership announcement
+//            (changeset: codex-enterprise-dell-landing.md)
+const BASELINE_FILE_COUNT = 260;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

@@ -2504,6 +2504,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/agent-manager', changefreq: 'weekly', priority: '0.9' },
     { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
     { path: '/codex-plugin', changefreq: 'weekly', priority: '0.75' },
+    { path: '/codex-enterprise', changefreq: 'weekly', priority: '0.85' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
   ];
   return [
@@ -4516,6 +4517,30 @@ async function addContext(){
         });
       } catch {
         sendJson(res, 404, { error: 'Agent Manager page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/codex-enterprise' || pathname === '/codex-enterprise.html')) {
+      // Landing page riding the 2026-05-20 OpenAI×Dell Codex Enterprise
+      // partnership announcement. Dell-distributed Codex expands the TAM
+      // for ThumbGate's governance layer — capture every agent decision,
+      // promote repeat failures to PreToolUse gates, ship the audit trail
+      // procurement requires. Routed through servePublicMarketingPage so
+      // arrivals via the partnership news cycle capture UTM attribution
+      // and landing_page_view telemetry with pageType: 'codex_enterprise'.
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(path.join(PUBLIC_DIR, 'codex-enterprise.html'), 'utf-8'),
+          extraTelemetry: { pageType: 'codex_enterprise' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Codex Enterprise page not found' });
       }
       return;
     }
