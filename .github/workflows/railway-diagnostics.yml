@@ -46,6 +46,7 @@ jobs:
       RAILWAY_LOG_LINES: ${{ github.event.inputs.log_lines || '200' }}
       RAILWAY_HTTP_LOG_LINES: ${{ github.event.inputs.http_log_lines || '50' }}
       RAILWAY_SETTLE_SECONDS: ${{ github.event.inputs.settle_seconds || '20' }}
+      RAILWAY_CLI_COMMAND_TIMEOUT_SECONDS: ${{ vars.RAILWAY_CLI_COMMAND_TIMEOUT_SECONDS || '60' }}
     steps:
       - uses: actions/checkout@v6
 
@@ -76,13 +77,13 @@ jobs:
         if: github.event.inputs.action == 'restart'
         run: |
           set -o pipefail
-          railway restart --service "$RAILWAY_SERVICE" --yes --json | tee railway-restart.json
+          timeout --foreground "${RAILWAY_CLI_COMMAND_TIMEOUT_SECONDS}s" railway restart --service "$RAILWAY_SERVICE" --yes --json | tee railway-restart.json
 
       - name: Redeploy Railway service
         if: github.event.inputs.action == 'redeploy'
         run: |
           set -o pipefail
-          railway redeploy --service "$RAILWAY_SERVICE" --yes --json | tee railway-redeploy.json
+          timeout --foreground "${RAILWAY_CLI_COMMAND_TIMEOUT_SECONDS}s" railway redeploy --service "$RAILWAY_SERVICE" --yes --json | tee railway-redeploy.json
 
       - name: Allow Railway action to settle
         if: github.event.inputs.action != 'inspect'
