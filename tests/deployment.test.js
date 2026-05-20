@@ -232,6 +232,7 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS/);
   assert.match(workflow, /RAILWAY_LOG_LINES/);
   assert.match(workflow, /RAILWAY_HTTP_LOG_LINES/);
+  assert.match(workflow, /RAILWAY_SYNC_VARIABLES/);
   assert.match(workflow, /RAILWAY_VARIABLE_SYNC_REQUIRED/);
   assert.match(workflow, /RAILWAY_VARIABLE_COMMAND_TIMEOUT_SECONDS/);
   assert.match(workflow, /RAILWAY_DEPLOY_COMMAND_TIMEOUT_SECONDS/);
@@ -342,6 +343,7 @@ test('Deploy to Railway workflow retries transient Railway CLI failures before f
   assert.match(workflow, /set RESEND_API_KEY/);
   assert.match(workflow, /set THUMBGATE_TRIAL_EMAIL_FROM/);
   assert.match(workflow, /sync_railway_variables\(\) \{/);
+  assert.match(workflow, /Railway variable sync skipped because RAILWAY_SYNC_VARIABLES is not true/);
   assert.match(workflow, /Railway variable sync failed after retries; continuing to deploy with existing Railway runtime variables/);
   assert.match(workflow, /RAILWAY_VARIABLE_SYNC_REQUIRED=true/);
   assert.match(workflow, /Health verification must still prove the new build/);
