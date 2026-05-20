@@ -5,6 +5,11 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Native build deps for better-sqlite3 et al. — Alpine uses musl libc and most
+# native-module prebuilt binaries ship glibc-only, so node-gyp falls back to
+# compiling from source and needs Python + a C++ toolchain.
+RUN apk add --no-cache python3 make g++
+
 # Copy manifests first to leverage layer cache
 COPY package*.json ./
 
