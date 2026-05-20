@@ -7750,30 +7750,55 @@ function startServer({ port, host } = {}) {
 // are killed and the orchestrator may mark the container as "crashed" (instead
 // of "gracefully stopped"), wasting its restart-policy budget on a healthy
 // shutdown. Drain HTTP, give a deadline, then force-exit if anything hangs.
-function registerGracefulShutdown(server, { gracePeriodMs = 25_000 } = {}) {
-  if (server[GRACEFUL_SHUTDOWN_KEY]) return;
+function registerGracefulShutdown(server, {
+  gracePeriodMs = 25_000,
+  processRef = process,
+  logger = console,
+  exit = process.exit,
+  setTimeoutFn = setTimeout,
+  clearTimeoutFn = clearTimeout,
+} = {}) {
+  if (server[GRACEFUL_SHUTDOWN_KEY]) return server[GRACEFUL_SHUTDOWN_KEY];
   server[GRACEFUL_SHUTDOWN_KEY] = true;
   let shuttingDown = false;
+  let forceTimer = null;
+  const cleanup = () => {
+    processRef.removeListener('SIGTERM', onSigterm);
+    processRef.removeListener('SIGINT', onSigint);
+    if (forceTimer) {
+      clearTimeoutFn(forceTimer);
+      forceTimer = null;
+    }
+  };
   const stop = (signal) => {
     if (shuttingDown) return;
     shuttingDown = true;
-    console.log(`[shutdown] ${signal} received — draining connections (deadline ${gracePeriodMs}ms)`);
-    const forceTimer = setTimeout(() => {
-      console.error('[shutdown] grace period elapsed — forcing exit');
-      process.exit(1);
+    logger.log(`[shutdown] ${signal} received — draining connections (deadline ${gracePeriodMs}ms)`);
+    forceTimer = setTimeoutFn(() => {
+      logger.error('[shutdown] grace period elapsed — forcing exit');
+      cleanup();
+      exit(1);
     }, gracePeriodMs);
     if (typeof forceTimer.unref === 'function') forceTimer.unref();
     server.close((err) => {
       if (err) {
-        console.error('[shutdown] server.close error:', err.message);
-        process.exit(1);
+        logger.error('[shutdown] server.close error:', err.message);
+        cleanup();
+        exit(1);
+        return;
       }
-      console.log('[shutdown] drained cleanly');
-      process.exit(0);
+      logger.log('[shutdown] drained cleanly');
+      cleanup();
+      exit(0);
     });
   };
-  process.on('SIGTERM', () => stop('SIGTERM'));
-  process.on('SIGINT', () => stop('SIGINT'));
+  const onSigterm = () => stop('SIGTERM');
+  const onSigint = () => stop('SIGINT');
+  processRef.on('SIGTERM', onSigterm);
+  processRef.on('SIGINT', onSigint);
+  server.once('close', cleanup);
+  server[GRACEFUL_SHUTDOWN_KEY] = { cleanup, stop };
+  return server[GRACEFUL_SHUTDOWN_KEY];
 }
 
 const GRACEFUL_SHUTDOWN_KEY = Symbol.for('thumbgate.gracefulShutdownRegistered');
@@ -7794,6 +7819,7 @@ module.exports = {
     renderPackagedDashboardHtml,
     renderPackagedLessonsHtml,
     readOptionalPublicTemplate,
+    registerGracefulShutdown,
     resolveLocalPageBootstrap,
   },
 };
