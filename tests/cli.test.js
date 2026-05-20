@@ -21,6 +21,7 @@ const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { PRO_MONTHLY_PAYMENT_LINK } = require('../scripts/commercial-offer');
 const { resolveLocalServerPath } = require('../scripts/mcp-config');
+const PKG_VERSION = require('../package.json').version;
 
 const CLI = path.resolve(__dirname, '../bin/cli.js');
 const PKG_ROOT = path.resolve(__dirname, '..');
@@ -1909,6 +1910,42 @@ describe('bin/cli.js', () => {
     fs.rmSync(isolatedHome, { recursive: true, force: true });
   });
 
+  test('init detects Claude Code and wires the canonical PreToolUse hook bundle', () => {
+    const isolatedDir = makeTmpDir();
+    const isolatedHome = makeTmpDir();
+    fs.mkdirSync(path.join(isolatedHome, '.claude'), { recursive: true });
+
+    const result = runCliSync(['init'], {
+      cwd: isolatedDir,
+      env: {
+        ...process.env,
+        HOME: isolatedHome,
+        USERPROFILE: isolatedHome,
+        PATH: '/usr/bin:/bin',
+        THUMBGATE_NO_NUDGE: '1',
+        THUMBGATE_PUBLISH_STATE: 'unpublished',
+      },
+    });
+
+    assert.equal(result.status, 0, `init failed:\n${result.stderr}`);
+    assert.match(result.stdout, /Claude Code/);
+
+    const settingsPath = path.join(isolatedHome, '.claude', 'settings.local.json');
+    const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+    assert.equal(settings.hooks.PreToolUse[0].matcher, 'Bash|Edit|Write|MultiEdit');
+    assert.match(settings.hooks.PreToolUse[0].hooks[0].command, /gate-check/);
+    assert.match(settings.hooks.UserPromptSubmit[0].hooks[0].command, /hook-auto-capture/);
+    assert.match(settings.hooks.PostToolUse[0].hooks[0].command, /cache-update/);
+    assert.match(settings.hooks.SessionStart[0].hooks[0].command, /session-start/);
+    assert.match(settings.statusLine.command, /statusline-render/);
+
+    const sharedSettings = JSON.parse(fs.readFileSync(path.join(isolatedHome, '.claude', 'settings.json'), 'utf8'));
+    assert.match(sharedSettings.statusLine.command, /statusline-render/);
+
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+    fs.rmSync(isolatedHome, { recursive: true, force: true });
+  });
+
   test('init --wire-hooks accepts split --agent value and writes Codex hooks plus status line', () => {
     const isolatedDir = makeTmpDir();
     const isolatedHome = makeTmpDir();
@@ -2316,6 +2353,12 @@ describe('bin/cli.js', () => {
       result.stdout.includes('Detecting platforms'),
       `Expected platform detection in output:\n${result.stdout}`
     );
+  });
+
+  test('--version prints package version', () => {
+    const result = runCliSync(['--version'], { cwd: tmpDir });
+    assert.equal(result.status, 0, `--version failed:\n${result.stderr}`);
+    assert.equal(result.stdout.trim(), PKG_VERSION);
   });
 
   test('capture --feedback=up routes to full engine', () => {

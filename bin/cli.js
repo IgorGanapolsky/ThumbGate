@@ -42,13 +42,6 @@ const {
 } = require(path.join(__dirname, '..', 'scripts', 'mcp-config'));
 const { trackEvent } = require(path.join(__dirname, '..', 'scripts', 'cli-telemetry'));
 const {
-  cacheUpdateHookCommand,
-  preToolHookCommand,
-  sessionStartHookCommand,
-  statuslineCommand,
-  userPromptHookCommand,
-} = require(path.join(__dirname, '..', 'scripts', 'hook-runtime'));
-const {
   PRO_MONTHLY_PAYMENT_LINK,
   PRO_PRICE_LABEL,
 } = require(path.join(__dirname, '..', 'scripts', 'commercial-offer'));
@@ -396,84 +389,24 @@ function whichExists(cmd) {
 
 function setupClaude() {
   const mcpChanged = mergeMcpJson(path.join(CWD, '.mcp.json'), 'Claude Code', 'project');
+  const { wireHooks } = require(path.join(PKG_ROOT, 'scripts', 'auto-wire-hooks'));
+  const hookResult = wireHooks({ agent: 'claude-code' });
 
-  // Wire the canonical ThumbGate gate hooks (PreToolUse pre-action check,
-  // UserPromptSubmit, PostToolUse, SessionStart) through the shared wiring
-  // path so `init`, `init --agent claude-code`, and `install` all produce the
-  // same hook set. Before this, `install` shipped a Claude config with no
-  // PreToolUse gate — the core ThumbGate feature was silently missing.
-  let wireChanged = false;
-  try {
-    const { wireHooks } = require(path.join(PKG_ROOT, 'scripts', 'auto-wire-hooks'));
-    const wireResult = wireHooks({ agent: 'claude-code' });
-    if (wireResult.error) {
-      console.log(`  Claude Code: ${wireResult.error}`);
-    } else if (wireResult.changed) {
-      wireChanged = true;
-      const lifecycles = [...new Set(wireResult.added.map((h) => h.lifecycle))].join(', ');
-      console.log(`  Claude Code: wired gate hooks (${lifecycles})`);
+  if (hookResult.error) {
+    console.log(`  Claude Code hooks: ${hookResult.error}`);
+    return mcpChanged;
+  }
+
+  if (!hookResult.changed) {
+    console.log(`  Claude Code hooks: already configured at ${hookResult.settingsPath}`);
+  } else {
+    for (const h of hookResult.added) {
+      console.log(`  Claude Code: wired ${h.lifecycle} hook`);
     }
-  } catch (err) {
-    console.log(`  Claude Code: hook wiring skipped (${err.message})`);
+    console.log(`  Claude Code settings: ${hookResult.settingsPath}`);
   }
 
-  // Upsert Stop hook into .claude/settings.json for autonomous self-scoring
-  const settingsPath = path.join(CWD, '.claude', 'settings.json');
-  const stopHookCommand = 'bash scripts/hook-stop-self-score.sh';
-
-  let settings = { hooks: {} };
-  if (fs.existsSync(settingsPath)) {
-    try { settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8')); } catch (_) { /* fresh */ }
-  }
-  settings.hooks = settings.hooks || {};
-
-  const stopAlreadyPresent = (settings.hooks.Stop || [])
-    .some(entry => (entry.hooks || []).some(h => h.command === stopHookCommand));
-
-  let hooksChanged = false;
-  if (!stopAlreadyPresent) {
-    settings.hooks.Stop = settings.hooks.Stop || [];
-    settings.hooks.Stop.push({ hooks: [{ type: 'command', command: stopHookCommand }] });
-    hooksChanged = true;
-    console.log('  Claude Code: installed Stop hook');
-  }
-
-  // Upsert PostToolUse hook for ThumbGate statusline cache updates
-  const cacheHookCommand = cacheUpdateHookCommand();
-  const originalPostToolUseCount = (settings.hooks.PostToolUse || []).length;
-  settings.hooks.PostToolUse = (settings.hooks.PostToolUse || []).filter(
-    (entry) => !(entry.hooks || []).some((h) => h.command && h.command !== cacheHookCommand && /(hook-thumbgate-cache-updater|cache-update\b)/.test(h.command))
-  );
-  if (settings.hooks.PostToolUse.length !== originalPostToolUseCount) {
-    hooksChanged = true;
-  }
-  const cacheAlreadyPresent = (settings.hooks.PostToolUse || [])
-    .some(entry => (entry.hooks || []).some(h => h.command === cacheHookCommand || (h.command && h.command.includes('cache-update'))));
-
-  if (!cacheAlreadyPresent) {
-    settings.hooks.PostToolUse = settings.hooks.PostToolUse || [];
-    settings.hooks.PostToolUse.push({
-      matcher: 'mcp__thumbgate__feedback_stats|mcp__thumbgate__dashboard',
-      hooks: [{ type: 'command', command: cacheHookCommand }]
-    });
-    hooksChanged = true;
-    console.log('  Claude Code: installed ThumbGate cache updater hook');
-  }
-
-  // Upsert statusLine for ThumbGate feedback display
-  const statuslineScript = statuslineCommand();
-  if (!settings.statusLine || settings.statusLine.command !== statuslineScript) {
-    settings.statusLine = { type: 'command', command: statuslineScript };
-    hooksChanged = true;
-    console.log('  Claude Code: installed ThumbGate status line');
-  }
-
-  if (hooksChanged) {
-    fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
-    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
-  }
-
-  return mcpChanged || hooksChanged || wireChanged;
+  return mcpChanged || hookResult.changed;
 }
 
 function setupCodex() {
@@ -745,7 +678,11 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
   let configured = 0;
 
   const platforms = [
-    { name: 'Claude Code', detect: [() => whichExists('claude'), () => fs.existsSync(path.join(HOME, '.claude'))], setup: setupClaude },
+    { name: 'Claude Code', detect: [
+      () => whichExists('claude'),
+      () => fs.existsSync(path.join(HOME, '.claude')),
+      () => fs.existsSync(path.join(CWD, '.claude')),
+    ], setup: setupClaude },
     { name: 'Codex', detect: [() => whichExists('codex'), () => fs.existsSync(path.join(HOME, '.codex'))], setup: setupCodex },
     { name: 'Gemini', detect: [() => whichExists('gemini'), () => fs.existsSync(path.join(HOME, '.gemini'))], setup: setupGemini },
     { name: 'Amp', detect: [() => whichExists('amp'), () => fs.existsSync(path.join(HOME, '.amp'))], setup: setupAmp },
