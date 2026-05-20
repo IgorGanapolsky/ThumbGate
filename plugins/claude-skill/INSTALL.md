@@ -40,7 +40,7 @@ npx thumbgate capture --feedback=up --context="skill install verified" --tags="i
 
 - Automatic feedback capture on quality signals
 - Prevention rules generated from repeated mistakes
-- Session-start context loading: `npm run feedback:summary && npm run feedback:rules`
+- Session-start context loading: `thumbgate stats && thumbgate lessons`
 
 ## Requirements
 

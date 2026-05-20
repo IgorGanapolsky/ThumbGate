@@ -49,7 +49,6 @@
     "scripts/cli-schema.js",
     "scripts/cli-status.js",
     "scripts/cli-telemetry.js",
-    "scripts/cli-test-block.js",
     "scripts/cloudflare-dynamic-sandbox.js",
     "scripts/code-graph-guardrails.js",
     "scripts/code-mode-mcp-plan.js",

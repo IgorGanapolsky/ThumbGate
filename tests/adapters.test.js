@@ -155,10 +155,15 @@ test('opencode review agent remains read-only and verification-focused', () => {
   assert.match(content, /Do not edit files\./, 'thumbgate-review must stay read-only');
 });
 
-test('amp SKILL.md contains capture-feedback reference', () => {
+test('amp SKILL.md uses published ThumbGate CLI entrypoints', () => {
   const filePath = path.join(root, 'adapters/amp/skills/thumbgate-feedback/SKILL.md');
   const content = fs.readFileSync(filePath, 'utf-8');
-  assert.match(content, /capture-feedback/, 'SKILL.md must reference capture-feedback');
+  assert.match(content, /thumbgate capture --feedback=up/, 'Amp SKILL.md must use published CLI for positive feedback');
+  assert.match(content, /thumbgate capture --feedback=down/, 'Amp SKILL.md must use published CLI for negative feedback');
+  assert.match(content, /thumbgate stats/, 'Amp SKILL.md session start should use published stats command');
+  assert.match(content, /thumbgate lessons/, 'Amp SKILL.md session start should use published lessons command');
+  assert.doesNotMatch(content, /\.claude\/scripts\/feedback/, 'Amp SKILL.md must not point at repo-local Claude scripts');
+  assert.doesNotMatch(content, /npm run feedback:/, 'Amp SKILL.md must not depend on repo-local npm scripts');
 });
 
 test('forge adapter forge.yaml contains thumbgate skills and MCP config', () => {

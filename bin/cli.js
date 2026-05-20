@@ -878,7 +878,15 @@ function stats() {
   const { analyzeFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const data = analyzeFeedback();
 
+  // Gate enforcement stats — runtime intercepts + configured gates
+  let gateData = { blocked: 0, warned: 0, passed: 0, byGate: {} };
+  try { gateData = require(path.join(PKG_ROOT, 'scripts', 'gates-engine')).loadStats(); } catch {}
+  let gateConfigData = { totalGates: 0, autoPromotedGates: 0, estimatedHoursSaved: '0.0', topBlocked: null };
+  try { gateConfigData = require(path.join(PKG_ROOT, 'scripts', 'gate-stats')).calculateStats(); } catch {}
+
   const avgCostOfMistake = 2.50;
+  const avgCostPerBlockedAction = 15; // ~15 min debugging at $60/hr = $15
+  const totalInterceptions = gateData.blocked + gateData.warned;
   const payload = {
     total: data.total,
     positives: data.totalPositive,
@@ -888,6 +896,13 @@ function stats() {
     revenueAtRisk: Number((data.totalNegative * avgCostOfMistake).toFixed(2)),
     topTags: data.topTags || [],
     recentActivity: data.recentActivity || [],
+    gatesBlocked: gateData.blocked,
+    gatesWarned: gateData.warned,
+    totalGates: gateConfigData.totalGates,
+    autoPromotedGates: gateConfigData.autoPromotedGates,
+    estimatedHoursSaved: gateConfigData.estimatedHoursSaved,
+    estimatedCostSaved: Number((totalInterceptions * avgCostPerBlockedAction).toFixed(2)),
+    topBlockedGate: gateConfigData.topBlocked ? gateConfigData.topBlocked.id : null,
   };
 
   if (args.json) {
@@ -901,14 +916,22 @@ function stats() {
   console.log(`  Approval Rate   : ${payload.approvalRate}%`);
   console.log(`  Recent Trend    : ${payload.recentTrend}%`);
 
+  // Gate enforcement — the high-ROI section
+  if (totalInterceptions > 0 || payload.totalGates > 0) {
+    console.log('\n🛡️  PRE-ACTION GATE ENFORCEMENT');
+    console.log(`  Actions blocked : ${payload.gatesBlocked}`);
+    console.log(`  Actions warned  : ${payload.gatesWarned}`);
+    console.log(`  Active gates    : ${payload.totalGates} (${payload.autoPromotedGates} auto-promoted)`);
+    if (payload.topBlockedGate) console.log(`  Top blocker     : ${payload.topBlockedGate}`);
+    console.log(`  Est. time saved : ~${payload.estimatedHoursSaved} hours`);
+    console.log(`  Est. cost saved : ~$${payload.estimatedCostSaved}`);
+  }
+
   if (payload.negatives > 0) {
     console.log('\n⚠️  REVENUE-AT-RISK ANALYSIS');
     console.log(`  Repeated Failures detected: ${payload.negatives}`);
     console.log(`  Estimated Operational Loss: $${payload.revenueAtRisk}`);
     console.log('  Action Required: Run "npx thumbgate rules" to generate guardrails.');
-    console.log('  Strategic Recommendation: if this is a shared workflow problem, start the Workflow Hardening Sprint.');
-    console.log('  Team intake: https://thumbgate-production.up.railway.app/#workflow-sprint-intake');
-    console.log('  Solo side lane: npx thumbgate pro');
   } else {
     console.log('\n✅ System is currently high-reliability. No immediate revenue loss detected.');
   }
