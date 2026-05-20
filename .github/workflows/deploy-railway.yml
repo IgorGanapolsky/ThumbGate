@@ -29,6 +29,7 @@ jobs:
       RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS || '20' }}
       RAILWAY_LOG_LINES: ${{ vars.RAILWAY_LOG_LINES || '200' }}
       RAILWAY_HTTP_LOG_LINES: ${{ vars.RAILWAY_HTTP_LOG_LINES || '50' }}
+      RAILWAY_SYNC_VARIABLES: ${{ vars.RAILWAY_SYNC_VARIABLES || 'false' }}
       RAILWAY_VARIABLE_SYNC_REQUIRED: ${{ vars.RAILWAY_VARIABLE_SYNC_REQUIRED || 'false' }}
       RAILWAY_VARIABLE_COMMAND_TIMEOUT_SECONDS: ${{ vars.RAILWAY_VARIABLE_COMMAND_TIMEOUT_SECONDS || '45' }}
       RAILWAY_DEPLOY_COMMAND_TIMEOUT_SECONDS: ${{ vars.RAILWAY_DEPLOY_COMMAND_TIMEOUT_SECONDS || '180' }}
@@ -141,6 +142,11 @@ jobs:
           SERVICE_ARGS=()
           if [ -n "$RAILWAY_SERVICE" ]; then
             SERVICE_ARGS+=(--service "$RAILWAY_SERVICE")
+          fi
+
+          if [ "$RAILWAY_SYNC_VARIABLES" != "true" ]; then
+            echo "Railway variable sync skipped because RAILWAY_SYNC_VARIABLES is not true. Deploy will use existing Railway runtime variables and stamped build metadata."
+            exit 0
           fi
 
           sync_railway_variables() {
