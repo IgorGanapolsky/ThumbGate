@@ -1178,10 +1178,15 @@ function chooseDecision({ riskScore, integrity, memoryGuard, learnedPolicy, blas
   if (lowRiskHandoff) {
     return 'allow';
   }
+  // Background customer-system actions checkpoint (warn), never hard-deny.
+  // The checkpoint IS the mitigation — blocking outright prevents legitimate work.
+  if (backgroundAgent && customerSystemAction) {
+    return 'warn';
+  }
   if (destructiveBypass || learnedHardStop || repeatedHighBlast || (hasOperationalBlockers && riskScore >= 0.72) || riskScore >= 0.86) {
     return 'deny';
   }
-  if (economicAction || (backgroundAgent && customerSystemAction) || (backgroundAgent && riskScore >= 0.3)) {
+  if (economicAction || (backgroundAgent && riskScore >= 0.3)) {
     return 'warn';
   }
   if ((workflowControl && workflowControl.mode === 'warn') || (costControl && costControl.mode === 'warn') || riskScore >= 0.45 || (learnedWarning && riskScore >= 0.3) || (learnedRecall && riskScore >= 0.34)) {
