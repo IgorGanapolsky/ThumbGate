@@ -30,6 +30,8 @@ jobs:
       RAILWAY_LOG_LINES: ${{ vars.RAILWAY_LOG_LINES || '200' }}
       RAILWAY_HTTP_LOG_LINES: ${{ vars.RAILWAY_HTTP_LOG_LINES || '50' }}
       RAILWAY_VARIABLE_SYNC_REQUIRED: ${{ vars.RAILWAY_VARIABLE_SYNC_REQUIRED || 'false' }}
+      RAILWAY_VARIABLE_COMMAND_TIMEOUT_SECONDS: ${{ vars.RAILWAY_VARIABLE_COMMAND_TIMEOUT_SECONDS || '45' }}
+      RAILWAY_DEPLOY_COMMAND_TIMEOUT_SECONDS: ${{ vars.RAILWAY_DEPLOY_COMMAND_TIMEOUT_SECONDS || '180' }}
       THUMBGATE_PUBLIC_APP_ORIGIN: ${{ vars.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
       THUMBGATE_BILLING_API_BASE_URL: ${{ vars.THUMBGATE_BILLING_API_BASE_URL || vars.THUMBGATE_PUBLIC_APP_ORIGIN || 'https://thumbgate-production.up.railway.app' }}
       THUMBGATE_FEEDBACK_DIR: ${{ vars.THUMBGATE_FEEDBACK_DIR }}
@@ -121,8 +123,9 @@ jobs:
             local attempt=1
             local max_attempts=4
             local sleep_seconds=10
+            local timeout_seconds="${RAILWAY_VARIABLE_COMMAND_TIMEOUT_SECONDS:-45}"
 
-            until "$@"; do
+            until timeout --foreground "${timeout_seconds}s" "$@"; do
               if [ "$attempt" -ge "$max_attempts" ]; then
                 echo "Railway command failed after $attempt attempts: $description"
                 return 1
@@ -184,8 +187,9 @@ jobs:
             local attempt=1
             local max_attempts=4
             local sleep_seconds=15
+            local timeout_seconds="${RAILWAY_DEPLOY_COMMAND_TIMEOUT_SECONDS:-180}"
 
-            until "$@"; do
+            until timeout --foreground "${timeout_seconds}s" "$@"; do
               if [ "$attempt" -ge "$max_attempts" ]; then
                 echo "Railway command failed after $attempt attempts: $description"
                 return 1
