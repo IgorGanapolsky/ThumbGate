@@ -347,7 +347,12 @@ test('Deploy to Railway workflow retries transient Railway CLI failures before f
   assert.match(workflow, /Railway variable sync failed after retries; continuing to deploy with existing Railway runtime variables/);
   assert.match(workflow, /RAILWAY_VARIABLE_SYNC_REQUIRED=true/);
   assert.match(workflow, /Health verification must still prove the new build/);
-  assert.match(workflow, /timeout --foreground "\$\{timeout_seconds\}s" "\$@"/);
+  assert.match(workflow, /RAILWAY_VARIABLE_COMMAND_KILL_AFTER_SECONDS/);
+  assert.match(workflow, /RAILWAY_DEPLOY_COMMAND_MAX_ATTEMPTS/);
+  assert.match(workflow, /RAILWAY_DEPLOY_COMMAND_KILL_AFTER_SECONDS/);
+  assert.match(workflow, /RAILWAY_POST_FAILURE_HEALTHCHECK_MAX_ATTEMPTS/);
+  assert.match(workflow, /timeout-minutes:\s*8/);
+  assert.match(workflow, /timeout --foreground --kill-after="\$\{kill_after_seconds\}s" "\$\{timeout_seconds\}s" "\$@"/);
   assert.match(workflow, /deploy with railway up/);
   assert.match(workflow, /Railway command failed \(attempt \$attempt\/\$max_attempts\)/);
   assert.match(workflow, /Retrying in \$\{sleep_seconds\}s/);
