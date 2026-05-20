@@ -247,9 +247,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 258 → 259 (2026-05-20) to ship scripts/audit.js — the AI Bill
   // Auditor (`thumbgate audit`). Omitting it crashes the published command
   // with a missing-module error. (changeset: ai-bill-auditor.md)
+  // Bumped 259 → 260 (2026-05-20) to ship public/codex-enterprise.html — the
+  // landing page riding the OpenAI×Dell Codex Enterprise distribution wave.
+  // Sister-bumped from tests/public-bundle-ratchet.test.js's 259 → 260; both
+  // ratchets must stay in lockstep. (changeset: codex-enterprise-dell-landing.md)
   assert.ok(
-    manifest.fileCount <= 259,
-    `npm package should stay <= 259 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 260,
+    `npm package should stay <= 260 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -323,11 +327,20 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // branch: scripts/activation-tracker.js + scripts/plausible-server-events.js
   // (~9 KB combined). Observed package after all three: ~3.55 MB.
   // See docs/FEDERAL.md and .changeset/high-roi-checkout-deploy-anticlaim-bundle.md.
+  // Bumped 3.60 MB -> 3.70 MB (2026-05-15) for the unified-revenue-rollup
+  // module (#2090) + Bayesian conversion-rate stats (#2091) + GET
+  // /v1/telemetry/export endpoint (#2092). Observed package ~3.601 MB after
+  // these — the slim headroom buffer needs to grow to avoid threshold-chasing
+  // every observability PR.
   // Bumped 3.70 MB -> 3.75 MB (2026-05-20) for auto-context-packs +
   // suggest_fix MCP tool + first-time-fix-rate tracking + calibration.
+  // Bumped 3.75 MB -> 3.80 MB (2026-05-20) for public/codex-enterprise.html —
+  // the Dell+OpenAI Codex Enterprise landing page (~14 KB). Stacked on top of
+  // the auto-context-packs ratchet from earlier the same day; the bump gives
+  // one normal-PR headroom buffer before the next ratchet review.
   assert.ok(
-    manifest.unpackedSize <= 3_750_000,
-    `npm package should stay <= 3.75 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_800_000,
+    `npm package should stay <= 3.80 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
