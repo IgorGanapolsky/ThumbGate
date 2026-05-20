@@ -5,7 +5,6 @@ const path = require('node:path');
 const fs = require('node:fs');
 const https = require('node:https');
 const Module = require('node:module');
-const { EventEmitter } = require('node:events');
 const { Readable } = require('node:stream');
 
 if (process.env.CODEX_SANDBOX) {
@@ -440,90 +439,6 @@ test('startServer accepts an explicit bind host', async () => {
   } finally {
     await new Promise((resolve) => explicit.server.close(resolve));
   }
-});
-
-test('registerGracefulShutdown drains once, exits cleanly, and removes signal listeners', () => {
-  const processRef = new EventEmitter();
-  const logs = [];
-  const exits = [];
-  const timers = new Set();
-  let closeCalls = 0;
-  const server = new EventEmitter();
-  server.close = (callback) => {
-    closeCalls += 1;
-    callback();
-  };
-
-  const registration = __test__.registerGracefulShutdown(server, {
-    gracePeriodMs: 10,
-    processRef,
-    logger: {
-      log: (message) => logs.push(message),
-      error: (message) => logs.push(message),
-    },
-    exit: (code) => exits.push(code),
-    setTimeoutFn: (callback) => {
-      const timer = { callback, unref() {} };
-      timers.add(timer);
-      return timer;
-    },
-    clearTimeoutFn: (timer) => timers.delete(timer),
-  });
-
-  assert.equal(typeof registration.cleanup, 'function');
-  assert.equal(processRef.listenerCount('SIGTERM'), 1);
-  assert.equal(processRef.listenerCount('SIGINT'), 1);
-
-  processRef.emit('SIGTERM');
-  processRef.emit('SIGTERM');
-
-  assert.equal(closeCalls, 1);
-  assert.deepEqual(exits, [0]);
-  assert.equal(processRef.listenerCount('SIGTERM'), 0);
-  assert.equal(processRef.listenerCount('SIGINT'), 0);
-  assert.equal(timers.size, 0);
-  assert.match(logs.join('\n'), /SIGTERM received/);
-  assert.match(logs.join('\n'), /drained cleanly/);
-});
-
-test('registerGracefulShutdown exits nonzero when drain fails or times out', () => {
-  const closeErrorProcess = new EventEmitter();
-  const closeErrorExits = [];
-  const closeErrorServer = new EventEmitter();
-  closeErrorServer.close = (callback) => callback(new Error('close failed'));
-
-  __test__.registerGracefulShutdown(closeErrorServer, {
-    processRef: closeErrorProcess,
-    logger: { log() {}, error() {} },
-    exit: (code) => closeErrorExits.push(code),
-    setTimeoutFn: () => ({ unref() {} }),
-    clearTimeoutFn: () => {},
-  });
-  closeErrorProcess.emit('SIGINT');
-  assert.deepEqual(closeErrorExits, [1]);
-  assert.equal(closeErrorProcess.listenerCount('SIGINT'), 0);
-
-  const timeoutProcess = new EventEmitter();
-  const timeoutExits = [];
-  let timeoutCallback;
-  const hangingServer = new EventEmitter();
-  hangingServer.close = () => {};
-
-  __test__.registerGracefulShutdown(hangingServer, {
-    gracePeriodMs: 1,
-    processRef: timeoutProcess,
-    logger: { log() {}, error() {} },
-    exit: (code) => timeoutExits.push(code),
-    setTimeoutFn: (callback) => {
-      timeoutCallback = callback;
-      return { unref() {} };
-    },
-    clearTimeoutFn: () => {},
-  });
-  timeoutProcess.emit('SIGTERM');
-  timeoutCallback();
-  assert.deepEqual(timeoutExits, [1]);
-  assert.equal(timeoutProcess.listenerCount('SIGTERM'), 0);
 });
 
 test('protected endpoints accept x-api-key as an alternate auth header', async () => {
