@@ -2085,10 +2085,27 @@ async function runAsync(input) {
     }
   }
 
+  // Closeout enforcement: when a risky action passes through, track it
+  const isRisky = isHighRiskAction(toolName, toolInput);
+  if (isRisky && (!result || result.decision !== 'deny')) {
+    try {
+      const cmd = String(toolInput.command || toolInput.content || '').slice(0, 120);
+      trackAction('risky-op-pending-closeout', { tool: toolName, command: cmd });
+    } catch (_) { /* best-effort */ }
+  }
+
   const behavioralContext = buildBehavioralContext();
   const lessonContext = buildRelevantLessonContext(toolName, toolInput);
   const recentContext = buildRecentCorrectiveActionsContext();
-  const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
+
+  let closeoutReminder = '';
+  try {
+    if (!isRisky && hasAction('risky-op-pending-closeout')) {
+      closeoutReminder = 'A risky operation recently completed. Capture feedback on the outcome: thumbgate capture --feedback=up|down --context="..."';
+    }
+  } catch (_) { /* best-effort */ }
+
+  const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext, closeoutReminder);
   return formatOutput(result, combinedContext);
 }
 
@@ -2118,10 +2135,29 @@ function run(input) {
     }
   }
 
+  // Closeout enforcement: when a risky action passes through gates, track it
+  // so downstream hooks can remind the agent to capture outcome feedback.
+  const isRisky = isHighRiskAction(toolName, toolInput);
+  if (isRisky && (!result || result.decision !== 'deny')) {
+    try {
+      const cmd = String(toolInput.command || toolInput.content || '').slice(0, 120);
+      trackAction('risky-op-pending-closeout', { tool: toolName, command: cmd });
+    } catch (_) { /* best-effort */ }
+  }
+
   const behavioralContext = buildBehavioralContext();
   const lessonContext = buildRelevantLessonContext(toolName, toolInput);
   const recentContext = buildRecentCorrectiveActionsContext();
-  const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
+
+  // If a prior risky operation is pending closeout, remind the agent
+  let closeoutReminder = '';
+  try {
+    if (!isRisky && hasAction('risky-op-pending-closeout')) {
+      closeoutReminder = 'A risky operation recently completed. Capture feedback on the outcome: thumbgate capture --feedback=up|down --context="..."';
+    }
+  } catch (_) { /* best-effort */ }
+
+  const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext, closeoutReminder);
   return formatOutput(result, combinedContext);
 }
 
