@@ -29,7 +29,7 @@ function normalizeText(value) {
 
 function noteId(record) {
   const seed = `${record.timestamp}|${record.tool}|${record.decision}|${record.rationale}`;
-  return `note_${crypto.createHash('sha1').update(seed).digest('hex').slice(0, 12)}`;
+  return `note_${crypto.createHash('sha256').update(seed).digest('hex').slice(0, 12)}`;
 }
 
 function renderMarkdownEntry(record) {
