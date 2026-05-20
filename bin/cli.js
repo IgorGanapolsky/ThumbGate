@@ -396,6 +396,26 @@ function whichExists(cmd) {
 function setupClaude() {
   const mcpChanged = mergeMcpJson(path.join(CWD, '.mcp.json'), 'Claude Code', 'project');
 
+  // Wire the canonical ThumbGate gate hooks (PreToolUse pre-action check,
+  // UserPromptSubmit, PostToolUse, SessionStart) through the shared wiring
+  // path so `init`, `init --agent claude-code`, and `install` all produce the
+  // same hook set. Before this, `install` shipped a Claude config with no
+  // PreToolUse gate — the core ThumbGate feature was silently missing.
+  let wireChanged = false;
+  try {
+    const { wireHooks } = require(path.join(PKG_ROOT, 'scripts', 'auto-wire-hooks'));
+    const wireResult = wireHooks({ agent: 'claude-code' });
+    if (wireResult.error) {
+      console.log(`  Claude Code: ${wireResult.error}`);
+    } else if (wireResult.changed) {
+      wireChanged = true;
+      const lifecycles = [...new Set(wireResult.added.map((h) => h.lifecycle))].join(', ');
+      console.log(`  Claude Code: wired gate hooks (${lifecycles})`);
+    }
+  } catch (err) {
+    console.log(`  Claude Code: hook wiring skipped (${err.message})`);
+  }
+
   // Upsert Stop hook into .claude/settings.json for autonomous self-scoring
   const settingsPath = path.join(CWD, '.claude', 'settings.json');
   const stopHookCommand = 'bash scripts/hook-stop-self-score.sh';
@@ -452,7 +472,7 @@ function setupClaude() {
     fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
   }
 
-  return mcpChanged || hooksChanged;
+  return mcpChanged || hooksChanged || wireChanged;
 }
 
 function setupCodex() {
@@ -724,6 +744,7 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
   let configured = 0;
 
   const platforms = [
+    { name: 'Claude Code', detect: [() => whichExists('claude'), () => fs.existsSync(path.join(HOME, '.claude'))], setup: setupClaude },
     { name: 'Codex', detect: [() => whichExists('codex'), () => fs.existsSync(path.join(HOME, '.codex'))], setup: setupCodex },
     { name: 'Gemini', detect: [() => whichExists('gemini'), () => fs.existsSync(path.join(HOME, '.gemini'))], setup: setupGemini },
     { name: 'Amp', detect: [() => whichExists('amp'), () => fs.existsSync(path.join(HOME, '.amp'))], setup: setupAmp },
@@ -2458,6 +2479,11 @@ if (COMMAND === 'daemon' || COMMAND === 'serve-daemon') {
 }
 
 switch (COMMAND) {
+  case '--version':
+  case '-v':
+  case 'version':
+    console.log(pkgVersion());
+    break;
   case 'init':
     init();
     upgradeNudge();
