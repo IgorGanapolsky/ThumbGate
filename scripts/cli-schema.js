@@ -526,6 +526,14 @@ const CLI_COMMANDS = [
     ],
   },
   {
+    name: 'audit',
+    description: 'Audit an agent transcript for repeat-mistake patterns and estimated token waste',
+    group: 'ops',
+    flags: [
+      { name: 'file', type: 'string', description: 'Path to the agent transcript to audit' },
+    ],
+  },
+  {
     name: 'init',
     description: 'Scaffold .thumbgate/ config and wire agent hooks',
     group: 'ops',

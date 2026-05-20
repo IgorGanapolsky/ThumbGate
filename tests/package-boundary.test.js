@@ -244,9 +244,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 257 → 258 (2026-05-19) to ship public/pricing.html. The hosted API
   // serves /pricing from this template, and npm-installed `thumbgate serve`
   // must not degrade the buyer path to a missing static asset.
+  // Bumped 258 → 259 (2026-05-20) to ship scripts/audit.js — the AI Bill
+  // Auditor (`thumbgate audit`). Omitting it crashes the published command
+  // with a missing-module error. (changeset: ai-bill-auditor.md)
   assert.ok(
-    manifest.fileCount <= 258,
-    `npm package should stay <= 258 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 259,
+    `npm package should stay <= 259 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

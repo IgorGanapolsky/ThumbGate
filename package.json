@@ -31,6 +31,7 @@
     "scripts/analytics-window.js",
     "scripts/async-job-runner.js",
     "scripts/audit-trail.js",
+    "scripts/audit.js",
     "scripts/auto-promote-gates.js",
     "scripts/auto-wire-hooks.js",
     "scripts/autoresearch-runner.js",

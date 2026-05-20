@@ -2470,3 +2470,76 @@ describe('bin/cli.js', () => {
     assert.ok(result.stderr.includes('local-intelligence'));
   });
 });
+
+// ---------------------------------------------------------------------------
+// AI Bill Auditor — `thumbgate audit <transcript>`
+// ---------------------------------------------------------------------------
+describe('thumbgate audit', () => {
+  const os = require('node:os');
+
+  test('reports repeat-offender patterns and estimated waste', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-audit-'));
+    const transcript = path.join(dir, 'transcript.txt');
+    fs.writeFileSync(transcript, [
+      'git push --force origin main',
+      'reverting that',
+      'git push --force origin main once more',
+      'I apologize for the confusion.',
+      'Let me try a different approach.',
+    ].join('\n'));
+
+    const result = runCliSync(['audit', transcript]);
+    fs.rmSync(dir, { recursive: true, force: true });
+
+    assert.strictEqual(result.status, 0, result.stderr);
+    assert.ok(result.stdout.includes('AI Bill Audit Results'));
+    assert.ok(result.stdout.includes('Total estimated monthly waste'));
+    assert.ok(result.stdout.includes('git push --force'));
+  });
+
+  test('clean transcript reports no repeat offenders', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-audit-'));
+    const transcript = path.join(dir, 'clean.txt');
+    fs.writeFileSync(transcript, 'All steps succeeded on the first try.\n');
+
+    const result = runCliSync(['audit', transcript]);
+    fs.rmSync(dir, { recursive: true, force: true });
+
+    assert.strictEqual(result.status, 0, result.stderr);
+    assert.ok(result.stdout.includes('No repeat-offender patterns found'));
+  });
+
+  test('missing file argument prints usage and exits non-zero', () => {
+    const result = runCliSync(['audit']);
+    assert.strictEqual(result.status, 1);
+    assert.ok(result.stderr.includes('Usage: npx thumbgate audit'));
+  });
+
+  test('nonexistent transcript path exits non-zero with a clear error', () => {
+    const result = runCliSync(['audit', '/no/such/transcript-xyz-9999.txt']);
+    assert.strictEqual(result.status, 1);
+    assert.ok(result.stderr.includes('File not found'));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Entrypoint integrity guard.
+// The AI Bill Auditor was committed twice (d4ace74b, 7806500b) with an
+// unterminated string literal that broke the entire CLI — no test caught it
+// because nothing asserted the entrypoint even parses. Every executable under
+// bin/ must pass `node --check`, always.
+// ---------------------------------------------------------------------------
+describe('bin/ entrypoint syntax integrity', () => {
+  const binDir = path.resolve(__dirname, '../bin');
+
+  for (const file of fs.readdirSync(binDir)) {
+    if (!file.endsWith('.js')) continue;
+    test(`bin/${file} parses with node --check`, () => {
+      const result = spawnSync(process.execPath, ['--check', path.join(binDir, file)], {
+        encoding: 'utf8',
+      });
+      assert.strictEqual(result.status, 0,
+        `bin/${file} has a syntax error:\n${result.stderr}`);
+    });
+  }
+});
