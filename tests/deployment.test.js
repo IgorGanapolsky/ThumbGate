@@ -214,8 +214,12 @@ test('CI workflow writes and uploads a prompt evaluation artifact', () => {
 test('runtime Docker image installs git for operational integrity checks', () => {
   const dockerfile = fs.readFileSync(path.join(PROJECT_ROOT, 'Dockerfile'), 'utf8');
 
-  assert.match(dockerfile, /FROM node:20-alpine AS runtime/);
-  assert.match(dockerfile, /RUN apk add --no-cache git/);
+  // Migrated 2026-05-20: node:20-alpine → node:22-bookworm-slim to get
+  // prebuilt better-sqlite3 binaries (Node 20 has no prebuilds in 12.10.0,
+  // and Alpine has no musl prebuilds either). bookworm-slim is glibc/debian,
+  // so install git via apt instead of apk.
+  assert.match(dockerfile, /FROM node:22-bookworm-slim AS runtime/);
+  assert.match(dockerfile, /apt-get install[^\n]*\bgit\b/);
 });
 
 test('Deploy to Railway workflow is the single authoritative Railway deploy lane', () => {
