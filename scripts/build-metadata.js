@@ -16,6 +16,13 @@ function normalizeNullableText(value) {
 }
 
 function resolveBuildMetadata({ env = process.env, filePath } = {}) {
+  // Precedence: immutable JSON file (baked into Docker image at build time, so it
+  // ALWAYS matches the deployed code) wins over runtime env vars. Env vars are
+  // mutable Railway/host config that can drift — they shadowed the freshly-stamped
+  // SHA in prod on 2026-05-20 and made /health lie about the deployed commit.
+  // Fall back to env vars only when the file is missing or its values are null,
+  // and require an explicit SHA env var (not just a stray GENERATED_AT) before
+  // trusting the env branch.
   const resolvedPath =
     normalizeNullableText(filePath) ||
     normalizeNullableText(env.THUMBGATE_BUILD_METADATA_PATH) ||
@@ -23,7 +30,28 @@ function resolveBuildMetadata({ env = process.env, filePath } = {}) {
   const envBuildSha = normalizeNullableText(env[BUILD_SHA_ENV_KEY]);
   const envGeneratedAt = normalizeNullableText(env[BUILD_GENERATED_AT_ENV_KEY]);
 
-  if (envBuildSha || envGeneratedAt) {
+  let fileBuildSha = null;
+  let fileGeneratedAt = null;
+  try {
+    const parsed = JSON.parse(fs.readFileSync(resolvedPath, 'utf8'));
+    fileBuildSha = normalizeNullableText(parsed.buildSha);
+    fileGeneratedAt = normalizeNullableText(parsed.generatedAt);
+  } catch {
+    // file missing or unreadable — fall through to env branch
+  }
+
+  if (fileBuildSha) {
+    return {
+      path: resolvedPath,
+      buildSha: fileBuildSha,
+      generatedAt: fileGeneratedAt || envGeneratedAt,
+    };
+  }
+
+  // No SHA in the file — fall back to env only if an explicit SHA is set.
+  // (Previously a bare GENERATED_AT with no SHA could short-circuit and return
+  // { buildSha: null }, losing both signals; now we require the SHA.)
+  if (envBuildSha) {
     return {
       path: resolvedPath,
       buildSha: envBuildSha,
@@ -31,20 +59,11 @@ function resolveBuildMetadata({ env = process.env, filePath } = {}) {
     };
   }
 
-  try {
-    const parsed = JSON.parse(fs.readFileSync(resolvedPath, 'utf8'));
-    return {
-      path: resolvedPath,
-      buildSha: normalizeNullableText(parsed.buildSha),
-      generatedAt: normalizeNullableText(parsed.generatedAt),
-    };
-  } catch {
-    return {
-      path: resolvedPath,
-      buildSha: null,
-      generatedAt: null,
-    };
-  }
+  return {
+    path: resolvedPath,
+    buildSha: null,
+    generatedAt: fileGeneratedAt || envGeneratedAt,
+  };
 }
 
 function writeBuildMetadataFile({ sha, outputPath, generatedAt = new Date().toISOString() }) {

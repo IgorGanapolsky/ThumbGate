@@ -48,19 +48,57 @@ describe('build-metadata', () => {
     }
   });
 
-  it('resolveBuildMetadata prefers deployment env metadata over file metadata', () => {
-    const tmpFile = path.join(os.tmpdir(), `build-meta-env-priority-${Date.now()}.json`);
+  // Precedence inversion (2026-05-20): the immutable JSON file (baked into the
+  // Docker image at build time, so it ALWAYS matches the deployed code) MUST
+  // win over runtime env vars. Env vars are mutable Railway/host config that
+  // can drift — a stale THUMBGATE_BUILD_SHA env var on Railway shadowed the
+  // freshly-stamped JSON file in prod and made /health lie about the deployed
+  // commit. Env vars now only fill in when the file has no SHA at all.
+  it('resolveBuildMetadata prefers immutable file metadata over runtime env vars (anti-drift)', () => {
+    const tmpFile = path.join(os.tmpdir(), `build-meta-file-priority-${Date.now()}.json`);
     try {
       writeBuildMetadataFile({ sha: 'file-sha', outputPath: tmpFile, generatedAt: '2026-01-01T00:00:00Z' });
       const result = resolveBuildMetadata({
         filePath: tmpFile,
         env: {
-          [BUILD_SHA_ENV_KEY]: 'env-sha',
+          [BUILD_SHA_ENV_KEY]: 'stale-env-sha',
           [BUILD_GENERATED_AT_ENV_KEY]: '2026-04-08T14:20:00Z',
         },
       });
-      assert.strictEqual(result.buildSha, 'env-sha');
-      assert.strictEqual(result.generatedAt, '2026-04-08T14:20:00Z');
+      assert.strictEqual(result.buildSha, 'file-sha', 'file-baked SHA wins (immutable image artifact)');
+      assert.strictEqual(result.generatedAt, '2026-01-01T00:00:00Z', 'file-baked generatedAt wins too');
+    } finally {
+      fs.unlinkSync(tmpFile);
+    }
+  });
+
+  it('resolveBuildMetadata falls back to env SHA only when file has no SHA', () => {
+    const result = resolveBuildMetadata({
+      filePath: '/tmp/nonexistent-build-meta.json',
+      env: {
+        [BUILD_SHA_ENV_KEY]: 'env-only-sha',
+        [BUILD_GENERATED_AT_ENV_KEY]: '2026-04-08T14:20:00Z',
+      },
+    });
+    assert.strictEqual(result.buildSha, 'env-only-sha');
+    assert.strictEqual(result.generatedAt, '2026-04-08T14:20:00Z');
+  });
+
+  it('resolveBuildMetadata does NOT short-circuit to a null SHA when only generatedAt env is set', () => {
+    // Regression for the secondary bug: previously `envBuildSha || envGeneratedAt`
+    // returned { buildSha: null } when only GENERATED_AT was set, losing the
+    // chance to read the file. Now the env branch requires an explicit SHA.
+    const tmpFile = path.join(os.tmpdir(), `build-meta-stray-${Date.now()}.json`);
+    try {
+      writeBuildMetadataFile({ sha: 'file-sha', outputPath: tmpFile, generatedAt: '2026-01-01T00:00:00Z' });
+      const result = resolveBuildMetadata({
+        filePath: tmpFile,
+        env: {
+          [BUILD_GENERATED_AT_ENV_KEY]: '2026-04-08T14:20:00Z',
+          // intentionally no BUILD_SHA env
+        },
+      });
+      assert.strictEqual(result.buildSha, 'file-sha', 'stray generatedAt env must not lose the SHA');
     } finally {
       fs.unlinkSync(tmpFile);
     }
