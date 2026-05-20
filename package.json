@@ -639,6 +639,10 @@
     "test:competitive-positioning-marketing": "node --test tests/competitive-positioning-marketing.test.js tests/knowledge-graph-guardrails.test.js tests/supply-chain-guardrails.test.js",
     "test:medium-weekly": "node --test tests/medium-weekly.test.js",
     "test:dashboard-deeplink-e2e": "node --test tests/dashboard-deeplink-e2e.test.js",
+    "test:e2e:playwright": "playwright test",
+    "test:e2e:playwright:headed": "playwright test --headed",
+    "test:e2e:playwright:ui": "playwright test --ui",
+    "test:e2e:playwright:report": "playwright show-report",
     "test:public-package-parity": "node --test tests/public-package-parity.test.js",
     "prepare": "bash bin/install-hooks.sh >/dev/null 2>&1 || true",
     "install:hooks": "bash bin/install-hooks.sh",
@@ -730,6 +734,7 @@
   "devDependencies": {
     "@changesets/changelog-github": "^0.7.0",
     "@changesets/cli": "^2.31.0",
+    "@playwright/test": "^1.60.0",
     "c8": "^11.0.0",
     "undici": "^8.2.0"
   }

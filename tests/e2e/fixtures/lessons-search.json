@@ -1,0 +1,10 @@
+{
+  "results": [
+    {
+      "id": "rule_001",
+      "title": "Always validate input",
+      "severity": "high",
+      "tags": ["validation"]
+    }
+  ]
+}

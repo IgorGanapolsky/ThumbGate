@@ -922,6 +922,28 @@ async function loadLive() {
 }
 
 loadLive().then(function() {
+  // Handle ?signal= query param from dashboard stat-card navigation.
+  // Vocabulary: 'up' | 'down' | 'all' (canonical). Also accepts the legacy
+  // 'positive' | 'negative' aliases the dashboard once emitted.
+  var qsSignal = new URLSearchParams(window.location.search).get('signal');
+  if (qsSignal) {
+    var signalMap = { positive: 'up', negative: 'down', up: 'up', down: 'down', all: 'all' };
+    var mapped = signalMap[qsSignal];
+    if (mapped) {
+      switchTab('timeline');
+      filterTimeline(mapped, null);
+      var filterBtns = document.querySelectorAll('#tab-timeline .filter-btn');
+      filterBtns.forEach(function(b) {
+        var label = b.textContent.trim().toLowerCase();
+        var match = (mapped === 'all' && label === 'all') ||
+                    (mapped === 'up' && (label.indexOf('👍') !== -1 || label.indexOf('positive') !== -1 || label === 'up')) ||
+                    (mapped === 'down' && (label.indexOf('👎') !== -1 || label.indexOf('negative') !== -1 || label === 'down'));
+        b.classList.toggle('active', match);
+      });
+      return;
+    }
+  }
+
   // Default: highlight Active Rules card on page load
   highlightCard(0);
 

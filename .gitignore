@@ -58,3 +58,7 @@ reports/gtm/2026-05-05-money-today/sales-pipeline-latest.md
 
 # RLHF runtime artifacts (per-checkout local state)
 .rlhf/
+test-results/
+playwright-report/
+blob-report/
+/all-blob-reports/

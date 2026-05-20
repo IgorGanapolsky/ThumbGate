@@ -1,0 +1,30 @@
+{
+  "operational": {
+    "source": "live",
+    "fallbackReason": null,
+    "window": {
+      "window": "lifetime",
+      "timeZone": "UTC",
+      "bounded": false,
+      "startLocalDate": null,
+      "endLocalDate": "2026-05-20",
+      "now": "2026-05-20T00:00:00.000Z"
+    }
+  },
+  "approval": {
+    "total": 12,
+    "positive": 10,
+    "negative": 2,
+    "approvalRate": 83,
+    "recentRate": 80,
+    "trendDirection": "stable"
+  },
+  "gateStats": {
+    "totalGates": 5,
+    "manualCount": 3,
+    "autoCount": 2,
+    "blockedCount": 0
+  },
+  "reviewDelta": null,
+  "since": null
+}
