@@ -221,3 +221,33 @@ test('/checkout/pro interstitial does not assert paying-customer counts or infla
   assert.doesNotMatch(html, /\d+\s+paying customers/i, '/checkout/pro must not assert a paying-customer count');
   assert.doesNotMatch(html, /18[,]?000\+?\s+installs/i, '/checkout/pro must not assert an inflated 18,000+ installs claim');
 });
+
+test('GET /codex-enterprise serves the Dell partnership landing HTML', async () => {
+  const [routeRes, htmlRes] = await Promise.all([
+    fetch(`${origin}/codex-enterprise`),
+    fetch(`${origin}/codex-enterprise.html`),
+  ]);
+  for (const res of [routeRes, htmlRes]) {
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-type') || '', /text\/html/);
+    const body = await res.text();
+    assert.ok(body.length > 500, 'codex-enterprise page must render non-empty HTML');
+  }
+});
+
+test('HEAD /codex-enterprise responds 200 with html content-type (no body)', async () => {
+  const res = await fetch(`${origin}/codex-enterprise`, { method: 'HEAD' });
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /text\/html/);
+});
+
+test('GET /sitemap.xml includes /codex-enterprise at priority 0.85', async () => {
+  const res = await fetch(`${origin}/sitemap.xml`);
+  assert.equal(res.status, 200);
+  const xml = await res.text();
+  assert.match(xml, /<loc>[^<]*\/codex-enterprise<\/loc>/, 'sitemap must list /codex-enterprise');
+  // The new entry uses priority 0.85 — guards against accidental priority drift.
+  const entry = xml.match(/<url>\s*<loc>[^<]*\/codex-enterprise<\/loc>[\s\S]*?<\/url>/);
+  assert.ok(entry, 'codex-enterprise <url> block must exist');
+  assert.match(entry[0], /<priority>0\.85<\/priority>/);
+});
