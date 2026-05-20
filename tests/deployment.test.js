@@ -580,12 +580,12 @@ test('Claude Code Review workflow only cancels manual issue-comment review rerun
   assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.event_name == 'issue_comment'\s*\}\}/);
 });
 
-test('Deploy to Railway workflow serializes main deploys and cancels superseded runs', () => {
+test('Deploy to Railway workflow serializes main deploys without cancelling in-flight deploys', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
 
   assert.match(workflow, /concurrency:/);
   assert.match(workflow, /group:\s*deploy-railway/);
-  assert.match(workflow, /cancel-in-progress:\s*true/);
+  assert.match(workflow, /cancel-in-progress:\s*false/);
 });
 
 test('Publish Tessl workflow verifies exports and only publishes when a Tessl token exists', () => {
