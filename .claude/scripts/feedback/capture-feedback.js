@@ -14,6 +14,39 @@ const {
   writePreventionRules,
 } = require('../../../scripts/feedback-loop');
 
+// Statusline cache lives in ~/.thumbgate/statusline_cache.json and is normally
+// refreshed by the `cache-update` PostToolUse hook — but ONLY when an
+// mcp__thumbgate__feedback_stats or mcp__thumbgate__dashboard tool call fires.
+// When feedback is captured via THIS script (a plain Bash invocation), no MCP
+// tool fires and the cache stays stale — statusline keeps showing old 👍/👎
+// counts until the next dashboard call (could be hours).
+//
+// Trigger cache refresh inline so the bar updates immediately. We have to
+// recompute stats from the freshly-updated feedback log via feedbackSummary()
+// because refreshStatuslineCache() merges a stats PAYLOAD into the cache —
+// calling it with no args would just bump the timestamp without new numbers.
+// Best-effort: if either module is unavailable, silently skip.
+function refreshStatuslineCacheBestEffort() {
+  try {
+    const { refreshStatuslineCache } = require('../../../scripts/hook-thumbgate-cache-updater');
+    if (typeof refreshStatuslineCache !== 'function') return;
+    // analyzeFeedback() returns the right shape for normalizeStatsPayload —
+    // { totalPositive, totalNegative, total, approvalRate, trend, rubric }.
+    // feedbackSummary() returns a string (the human-readable summary), which
+    // when destructured becomes an array of characters with numeric keys —
+    // wrong for the cache merge.
+    let stats;
+    try {
+      stats = analyzeFeedback() || {};
+    } catch (_err) {
+      stats = {};
+    }
+    refreshStatuslineCache(stats);
+  } catch (_err) {
+    // No-op — cache-updater not available, statusline will refresh on next PostToolUse
+  }
+}
+
 function parseArgs(argv) {
   const args = {};
   argv.forEach((arg) => {
@@ -108,6 +141,10 @@ function main() {
   });
 
   if (result.accepted) {
+    // Refresh the statusline cache inline so the bar reflects the new count
+    // immediately — without this, the cache stays stale until a PostToolUse
+    // hook fires for an mcp__thumbgate__* tool, which may be hours away.
+    refreshStatuslineCacheBestEffort();
     const ev = result.feedbackEvent;
     const mem = result.memoryRecord;
     console.log('');
