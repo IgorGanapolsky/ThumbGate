@@ -247,9 +247,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 258 → 259 (2026-05-20) to ship scripts/audit.js — the AI Bill
   // Auditor (`thumbgate audit`). Omitting it crashes the published command
   // with a missing-module error. (changeset: ai-bill-auditor.md)
+  // Bumped 259 → 260 (2026-05-20) to ship public/codex-enterprise.html — the
+  // landing page riding the OpenAI×Dell Codex Enterprise distribution wave.
+  // Sister-bumped from tests/public-bundle-ratchet.test.js's 259 → 260; both
+  // ratchets must stay in lockstep. (changeset: codex-enterprise-dell-landing.md)
   assert.ok(
-    manifest.fileCount <= 259,
-    `npm package should stay <= 259 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 260,
+    `npm package should stay <= 260 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
