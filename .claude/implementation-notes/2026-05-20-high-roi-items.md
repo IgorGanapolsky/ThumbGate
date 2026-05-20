@@ -38,8 +38,16 @@ Thariq's implementation-notes pattern adopted to maintain decision transparency.
 - PR #2249 (Dockerfile fix): MERGED to main
 - PR #2245 (deploy reliability): In Trunk queue, all CI green
 
+## Progress Log (continued)
+- 19:15 UTC: PR #2245 (deploy reliability): MERGED
+- 19:20 UTC: PR #2252 SonarCloud quality gate FAILED: 63.1% coverage (needs ≥80%) + 1 unreviewed security hotspot (SHA-1 in noteId)
+- 19:25 UTC: Added 21 CLI coverage tests (29 total, up from 8). Replaced SHA-1 with SHA-256 in noteId. Pushed both fixes.
+- 19:30 UTC: Railway freeze still active. serviceConnect mutation still returns "Deploys have been paused temporarily"
+- PR #2253 (hook regression test): All checks green except `test` still running. Mergeable.
+
 ## Lessons Logged
 - "Are you sure?" = I'm wrong. Dig deeper before asserting root cause.
 - Railway `subscriptionType: "hobby"` — hobby plans are deprioritized during incidents
 - Seven consecutive FAILED deploys went unnoticed because CI reported "success" on scope-skipped runs
 - The deploy-scope filter false positive was a SEPARATE bug from the Dockerfile issue — both needed fixing
+- SonarCloud quality gate checks new-line coverage, not overall. CLI code paths need tests even for thin dispatch logic.
