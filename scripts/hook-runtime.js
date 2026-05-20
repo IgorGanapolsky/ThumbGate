@@ -7,6 +7,7 @@ const {
   publishedCliAvailable,
 } = require('./mcp-config');
 const { publishedCliShellCommand } = require('./published-cli');
+const { shimInstalled, shimPath } = require('./install-shim');
 
 const PKG_ROOT = path.join(__dirname, '..');
 const featureSupportCache = new Map();
@@ -34,12 +35,17 @@ function publishedHookCommandsAvailable(version) {
 }
 
 function resolveCliCommand(subcommand) {
+  // Source checkout: always use direct node command for development
+  if (isSourceCheckout(PKG_ROOT)) {
+    return `node ${shellQuote(path.join(PKG_ROOT, 'bin', 'cli.js'))} ${subcommand}`;
+  }
+  // Prefer stable shim — always resolves @latest, survives version bumps
+  if (shimInstalled()) {
+    return `${shellQuote(shimPath())} ${subcommand}`;
+  }
   const version = packageVersion();
   if (publishedHookCommandsAvailable(version)) {
     return publishedCliShellCommand(version, [subcommand]);
-  }
-  if (isSourceCheckout(PKG_ROOT)) {
-    return `node ${shellQuote(path.join(PKG_ROOT, 'bin', 'cli.js'))} ${subcommand}`;
   }
   return publishedCliShellCommand(version, [subcommand]);
 }
