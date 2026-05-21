@@ -76,6 +76,37 @@ The 4,187 monthly npm downloads include registry mirrors/crawlers (Sunday downlo
 - Shows the exact `capture` command to create a first prevention rule in 30 seconds
 - Trial and email prompts deprioritized below the action
 
+## What I got wrong AGAIN (CEO "are you sure?" #4 and #5)
+
+### Wrong hypothesis #4: "activation guide text will fix 1.5%"
+A text box in terminal output won't fix anything. Nobody reads post-install output.
+
+### Wrong hypothesis #5: "init ships zero gates, copy default gates to fix it"
+COMPLETELY WRONG. Gates-engine loads from `config/gates/default.json` inside the npm
+package itself (`node_modules/thumbgate/config/gates/default.json`, line 61 of
+gates-engine.js). All 36 gates are ALWAYS loaded regardless of `.thumbgate/`. The
+"copy gates" fix was redundant. Reverted.
+
+Also wrong: `selfDistillation`, `contextStuffing`, `autoGatePromotion` config flags
+from `quick-start` are never read by any code. Dead config.
+
+### What actually works (verified)
+- Hooks auto-wire during init for all detected platforms ✓
+- 36 default gates loaded from package on every evaluation ✓
+- Gates-engine evaluates every tool call ✓
+- Checkout flow works end-to-end (interstitial → Stripe redirect) ✓
+- Free tier: unlimited feedback capture, unlimited prevention rules, 5 custom gates
+- Pro gates: recall, search, exports, unlimited custom gates
+
+### The real problem is not code
+1. **Free tier gives away the entire core product.** 36 gates + unlimited feedback +
+   unlimited rule generation. Pro only gates search/recall/exports — scale features
+   most users never need.
+2. **Volume too low.** 535 real installs/week. Even with 10x conversion improvement,
+   revenue ceiling is ~$3,600/year.
+3. **Funnel math:** 535/wk × 0.25% checkout CTR × 2.3% completion = ~0.03 paid/week.
+   No code change fixes this. Need either tighter free tier or 10x top-of-funnel.
+
 ## Fix: CLI --help bug (commit 2)
 - Global --help interceptor for 14 subcommands
 - `thumbgate capture --help` now shows usage instead of running capture
