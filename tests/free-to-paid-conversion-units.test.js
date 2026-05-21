@@ -6,7 +6,7 @@
  *   - scripts/rate-limiter.js: getInstallAgeDays, isInTrialPeriod,
  *     trialDaysRemaining, FREE_TIER_DAILY_BLOCKS, todayKey
  *   - scripts/gates-engine.js: getTodayBlockCount, incrementTodayBlockCount,
- *     applyDailyBlockCap, buildUpgradeNudgeContext, buildBlockActionProCta
+ *     applyDailyBlockCap, buildBlockActionProCta
  *   - scripts/cli-telemetry.js: SESSION_ID export shape, payload assembly
  *     (clientType, sessionId)
  *
@@ -250,139 +250,6 @@ test('gates-engine.applyDailyBlockCap increments under-limit blocks and returns 
     fs.rmSync(home, { recursive: true, force: true });
     delete process.env.THUMBGATE_FEEDBACK_DIR;
     delete process.env.THUMBGATE_NO_TRIAL;
-  }
-});
-
-// ---------------------------------------------------------------------------
-// gates-engine: buildUpgradeNudgeContext
-// ---------------------------------------------------------------------------
-
-test('gates-engine.buildUpgradeNudgeContext returns null when THUMBGATE_NO_NUDGE=1', () => {
-  const saved = process.env.THUMBGATE_NO_NUDGE;
-  process.env.THUMBGATE_NO_NUDGE = '1';
-  try {
-    delete require.cache[require.resolve('../scripts/gates-engine')];
-    const ge = require('../scripts/gates-engine');
-    assert.equal(ge.buildUpgradeNudgeContext(), null);
-  } finally {
-    if (saved != null) process.env.THUMBGATE_NO_NUDGE = saved; else delete process.env.THUMBGATE_NO_NUDGE;
-  }
-});
-
-test('gates-engine.buildUpgradeNudgeContext returns null when Pro tier is active', () => {
-  const savedKey = process.env.THUMBGATE_API_KEY;
-  process.env.THUMBGATE_API_KEY = 'sk-pro-test';
-  delete process.env.CI;
-  delete process.env.GITHUB_ACTIONS;
-  delete process.env.THUMBGATE_NO_NUDGE;
-  try {
-    delete require.cache[require.resolve('../scripts/rate-limiter')];
-    delete require.cache[require.resolve('../scripts/gates-engine')];
-    const ge = require('../scripts/gates-engine');
-    assert.equal(ge.buildUpgradeNudgeContext(), null);
-  } finally {
-    if (savedKey != null) process.env.THUMBGATE_API_KEY = savedKey; else delete process.env.THUMBGATE_API_KEY;
-  }
-});
-
-test('gates-engine.buildUpgradeNudgeContext returns null when in trial (Pro access already granted)', () => {
-  // The trial-expiry branch in buildUpgradeNudgeContext is gated by `isProTier()`,
-  // which itself returns true during the 14-day trial. This documents the
-  // observable behavior: trial users do not receive nudges (they already have Pro).
-  const home = freshHome();
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-nudge-trial-'));
-  const savedHome = process.env.HOME;
-  process.env.HOME = home;
-  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
-  delete process.env.CI;
-  delete process.env.GITHUB_ACTIONS;
-  delete process.env.THUMBGATE_API_KEY;
-  delete process.env.THUMBGATE_NO_RATE_LIMIT;
-  delete process.env.THUMBGATE_NO_TRIAL;
-  delete process.env.THUMBGATE_NO_NUDGE;
-  try {
-    delete require.cache[require.resolve('../scripts/cli-telemetry')];
-    delete require.cache[require.resolve('../scripts/rate-limiter')];
-    delete require.cache[require.resolve('../scripts/gates-engine')];
-    makeInstallId(home, 12); // 2 days remaining in trial
-    const rl = require('../scripts/rate-limiter');
-    if (!rl.isInTrialPeriod()) return; // bypass active — skip
-    const ge = require('../scripts/gates-engine');
-    ge.STATS_PATH = path.join(tmpDir, 'gate-stats.json');
-    fs.writeFileSync(ge.STATS_PATH, JSON.stringify({ blocked: 0, warned: 0, passed: 0, byGate: {} }));
-    assert.equal(ge.buildUpgradeNudgeContext(), null);
-  } finally {
-    if (savedHome != null) process.env.HOME = savedHome; else delete process.env.HOME;
-    fs.rmSync(home, { recursive: true, force: true });
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-    delete process.env.THUMBGATE_FEEDBACK_DIR;
-  }
-});
-
-test('gates-engine.buildUpgradeNudgeContext surfaces milestone message at >=10 blocks', () => {
-  const home = freshHome();
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-nudge-mile-'));
-  const savedHome = process.env.HOME;
-  process.env.HOME = home;
-  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
-  process.env.THUMBGATE_NO_TRIAL = '1';
-  delete process.env.CI;
-  delete process.env.GITHUB_ACTIONS;
-  delete process.env.THUMBGATE_API_KEY;
-  delete process.env.THUMBGATE_NO_RATE_LIMIT;
-  delete process.env.THUMBGATE_NO_NUDGE;
-  try {
-    delete require.cache[require.resolve('../scripts/cli-telemetry')];
-    delete require.cache[require.resolve('../scripts/rate-limiter')];
-    delete require.cache[require.resolve('../scripts/gates-engine')];
-    const rl = require('../scripts/rate-limiter');
-    if (rl.isProTier() || rl.isInTrialPeriod()) return; // creator-dev bypass
-
-    const ge = require('../scripts/gates-engine');
-    ge.STATS_PATH = path.join(tmpDir, 'gate-stats.json');
-    fs.writeFileSync(ge.STATS_PATH, JSON.stringify({ blocked: 11, warned: 0, passed: 0, byGate: {} }));
-    const msg = ge.buildUpgradeNudgeContext();
-    assert.ok(msg, 'expected milestone nudge at 11 blocks');
-    assert.match(msg, /thumbgate/i);
-  } finally {
-    if (savedHome != null) process.env.HOME = savedHome; else delete process.env.HOME;
-    delete process.env.THUMBGATE_NO_TRIAL;
-    delete process.env.THUMBGATE_FEEDBACK_DIR;
-    fs.rmSync(home, { recursive: true, force: true });
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-  }
-});
-
-test('gates-engine.buildUpgradeNudgeContext returns null when no milestone hit', () => {
-  const home = freshHome();
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-nudge-none-'));
-  const savedHome = process.env.HOME;
-  process.env.HOME = home;
-  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
-  process.env.THUMBGATE_NO_TRIAL = '1';
-  delete process.env.CI;
-  delete process.env.GITHUB_ACTIONS;
-  delete process.env.THUMBGATE_API_KEY;
-  delete process.env.THUMBGATE_NO_NUDGE;
-  try {
-    delete require.cache[require.resolve('../scripts/cli-telemetry')];
-    delete require.cache[require.resolve('../scripts/rate-limiter')];
-    delete require.cache[require.resolve('../scripts/gates-engine')];
-    const rl = require('../scripts/rate-limiter');
-    if (rl.isProTier() || rl.isInTrialPeriod()) return;
-
-    const ge = require('../scripts/gates-engine');
-    ge.STATS_PATH = path.join(tmpDir, 'gate-stats.json');
-    // 2 blocks: not on any milestone threshold
-    fs.writeFileSync(ge.STATS_PATH, JSON.stringify({ blocked: 2, warned: 0, passed: 0, byGate: {} }));
-    const msg = ge.buildUpgradeNudgeContext();
-    assert.equal(msg, null);
-  } finally {
-    if (savedHome != null) process.env.HOME = savedHome; else delete process.env.HOME;
-    delete process.env.THUMBGATE_NO_TRIAL;
-    delete process.env.THUMBGATE_FEEDBACK_DIR;
-    fs.rmSync(home, { recursive: true, force: true });
-    fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
 

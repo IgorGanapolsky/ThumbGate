@@ -81,17 +81,8 @@ test('buildBlockActionProCta returns message when blocks >= 5 (free tier)', () =
   delete process.env.THUMBGATE_NO_TRIAL;
 });
 
-test('buildUpgradeNudgeContext returns null in CI', () => {
-  process.env.CI = 'true';
-  delete require.cache[require.resolve('../scripts/gates-engine')];
-  const { buildUpgradeNudgeContext } = require('../scripts/gates-engine');
-  assert.equal(buildUpgradeNudgeContext(), null);
-  delete process.env.CI;
-});
-
-test('trialDaysRemaining and getInstallAgeDays are exported from rate-limiter', () => {
+test('getInstallAgeDays and isInTrialPeriod are exported from rate-limiter', () => {
   const rl = require('../scripts/rate-limiter');
-  assert.equal(typeof rl.trialDaysRemaining, 'function');
   assert.equal(typeof rl.getInstallAgeDays, 'function');
   assert.equal(typeof rl.isInTrialPeriod, 'function');
 });

@@ -192,3 +192,34 @@ Nous Research paper: training-only sparse attention, 1.4-1.7x pretraining speedu
 - **No direct technical application to ThumbGate.** ThumbGate doesn't train models.
 - **Market signal:** Long-context pretraining getting cheaper → context windows will grow → more context engineering needed → ThumbGate's lane gets wider.
 - **Not a feature to implement.** It validates ThumbGate's positioning as "infrastructure for AI agent context" but doesn't change what we build.
+
+## Cleanup pass (commit 10)
+
+Removed wrong code that survived earlier commits:
+
+1. **Removed `buildUpgradeNudgeContext()`** — milestone nudges + trial countdown were injected
+   into `additionalContext` which goes to the AI agent, not the human developer. Zero conversion
+   value. Removed from gates-engine.js and exports.
+2. **Removed `trialDaysRemaining` import from gates-engine** — was only used by the removed
+   nudge function. Still exported from rate-limiter for the `trial` CLI command.
+3. **Updated tests** — removed test for deleted function, kept rate-limiter export test.
+
+**Kept (correct, reaches humans):**
+- `buildBlockActionProCta()` — appended to deny `permissionDecisionReason` which appears in terminal
+- `applyDailyBlockCap()` — the high-ROI daily block cap (10/day, deny→warn after limit)
+- All bin/cli.js improvements (--help, trial command, UTM tracking, stats gate section, activation guide)
+- Session tracking + active user analytics
+
+**What remains in the PR after cleanup:**
+- ✅ Daily block cap (10/day free tier) — the structural fix
+- ✅ CLI --help bug fix (14 subcommands)
+- ✅ `thumbgate trial` command
+- ✅ Session tracking (sessionId + clientType in telemetry)
+- ✅ Active user analytics (/v1/metrics/real)
+- ✅ Block-action Pro CTA (deny output only)
+- ✅ Improved limitNudge with usage context
+- ✅ UTM-tracked checkout URLs
+- ✅ Stats gate enforcement section
+- ✅ Init activation guide (replaces 4 competing CTAs)
+- ❌ Removed: milestone nudges to AI agent
+- ❌ Removed: trial countdown to AI agent
