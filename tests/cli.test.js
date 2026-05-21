@@ -296,6 +296,9 @@ function unlicensedProEnv(homeDir, overrides = {}) {
     USERPROFILE: homeDir,
     THUMBGATE_API_KEY: '',
     THUMBGATE_PRO_MODE: '',
+    THUMBGATE_DEV_SECRET: '',
+    THUMBGATE_DEV_BYPASS: '',
+    THUMBGATE_DEV_KEY: '',
     // Use local stub so trackEvent doesn't block on DNS in sandboxed test environments
     THUMBGATE_API_URL: 'http://127.0.0.1:1',
     ...overrides,
