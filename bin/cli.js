@@ -2535,6 +2535,37 @@ if (COMMAND === 'daemon' || COMMAND === 'serve-daemon') {
   process.exit(0);
 }
 
+// ---------------------------------------------------------------------------
+// Global --help interceptor: `thumbgate <cmd> --help` shows per-command help
+// instead of running the command. Commands with their own --help guard (init)
+// handle it internally; everything else falls through here.
+// ---------------------------------------------------------------------------
+const _cliSubArgs = process.argv.slice(3);
+const _wantsHelp = _cliSubArgs.includes('--help') || _cliSubArgs.includes('-h');
+
+const SUBCOMMAND_HELP = {
+  capture:       'Usage: npx thumbgate capture --feedback=up|down --context="..." [--what-worked="..."] [--what-went-wrong="..."] [--what-to-change="..."] [--tags=a,b]',
+  feedback:      'Usage: npx thumbgate feedback --feedback=up|down --context="..." [--what-worked="..."] [--what-went-wrong="..."] [--what-to-change="..."] [--tags=a,b]',
+  stats:         'Usage: npx thumbgate stats\n\nShow gate enforcement statistics: blocked/warned counts, active gates, time saved.',
+  trial:         'Usage: npx thumbgate trial\n\nShow Pro trial status, remaining days, and upgrade path.',
+  pro:           'Usage: npx thumbgate pro [--activate <key>]\n\nLaunch the local Pro dashboard or activate a Pro license key.',
+  subscribe:     'Usage: npx thumbgate subscribe <email>\n\nSubscribe to the 5-minute setup guide + trial reminders.',
+  lessons:       'Usage: npx thumbgate lessons [--query="..."] [--limit=N]\n\nSearch the lesson database (Pro feature).',
+  search:        'Usage: npx thumbgate search <query>\n\nSearch ThumbGate knowledge base (Pro feature).',
+  'gate-check':  'Usage: npx thumbgate gate-check\n\nPreToolUse hook interface: reads tool call JSON from stdin, outputs gate verdict.',
+  'export-dpo':  'Usage: npx thumbgate export-dpo [--format=jsonl|csv]\n\nExport feedback as DPO training pairs (Pro feature).',
+  status:        'Usage: npx thumbgate status\n\nShow ThumbGate system health and active configuration.',
+  watch:         'Usage: npx thumbgate watch\n\nWatch for feedback changes and auto-regenerate prevention rules.',
+  compact:       'Usage: npx thumbgate compact\n\nCompact the lesson database and reclaim disk space.',
+  'context-packs': 'Usage: npx thumbgate context-packs\n\nGenerate context packs from top failure patterns.',
+  suggest:       'Usage: npx thumbgate suggest <gate-id>\n\nSuggest fixes for a specific gate based on lesson history.',
+};
+
+if (_wantsHelp && COMMAND && SUBCOMMAND_HELP[COMMAND]) {
+  console.log(SUBCOMMAND_HELP[COMMAND]);
+  process.exit(0);
+}
+
 switch (COMMAND) {
   case '--version':
   case '-v':
