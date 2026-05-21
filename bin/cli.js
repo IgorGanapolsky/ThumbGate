@@ -2638,6 +2638,11 @@ switch (COMMAND) {
   case 'costs': {
     const { main: costMain } = require(path.join(PKG_ROOT, 'scripts', 'cost-cli'));
     process.exit(costMain(process.argv.slice(3)));
+    // process.exit doesn't return, but keep an explicit break so the switch
+    // cannot accidentally fall through to case 'billing:setup' if a future
+    // refactor wraps costMain in try/finally that intercepts the exit, or
+    // a test runner stubs process.exit (flagged by gitar-bot on PR #2281).
+    break;
   }
   case 'billing:setup':
     require(path.join(PKG_ROOT, 'scripts', 'billing-setup'));
