@@ -5296,15 +5296,25 @@ async function addContext(){
       const bd = require('../../scripts/bot-detector');
       const { FEEDBACK_DIR: metricsDir } = getFeedbackPaths();
       const telemetryPath = path.join(metricsDir, 'telemetry-pings.jsonl');
-      let entries = [];
-      try {
-        if (fs.existsSync(telemetryPath)) {
-          entries = fs.readFileSync(telemetryPath, 'utf8')
-            .split('\n').filter(Boolean)
-            .map(l => { try { return JSON.parse(l); } catch(_e) { return null; } })
-            .filter(Boolean);
-        }
-      } catch { entries = []; }
+
+      // Cache parsed entries for 60s to avoid re-parsing 72K+ JSON lines per request
+      const cacheKey = '_metricsRealCache';
+      const cacheTTL = 60_000;
+      let entries;
+      if (global[cacheKey] && (Date.now() - global[cacheKey].ts) < cacheTTL) {
+        entries = global[cacheKey].entries;
+      } else {
+        entries = [];
+        try {
+          if (fs.existsSync(telemetryPath)) {
+            entries = fs.readFileSync(telemetryPath, 'utf8')
+              .split('\n').filter(Boolean)
+              .map(l => { try { return JSON.parse(l); } catch(_e) { return null; } })
+              .filter(Boolean);
+          }
+        } catch { entries = []; }
+        global[cacheKey] = { entries, ts: Date.now() };
+      }
 
       const now = Date.now();
       const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
@@ -5333,6 +5343,52 @@ async function addContext(){
         byVisitorType[e.visitorType] = (byVisitorType[e.visitorType] || 0) + 1;
       });
 
+      // ---------------------------------------------------------------
+      // Active user analytics: group by installId to distinguish real
+      // users from bots/mirrors. "Active" = performed a meaningful CLI
+      // action (capture, recall, search, gate-check, stats) — not just init.
+      // ---------------------------------------------------------------
+      // Only events that prove a human used the product beyond init.
+      // cli_pro_view excluded: browsing the upgrade page is not "using" the product.
+      // cli_gate_check excluded: runs as subprocess, never fires trackEvent().
+      // cli_search excluded: event name doesn't exist in production telemetry.
+      const ACTIVE_EVENTS = new Set([
+        'cli_capture', 'cli_recall', 'cli_stats',
+        'activation_first_rule_promoted',
+      ]);
+      const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
+      const last30 = classified.filter(e => {
+        const ts = e.timestamp || e.receivedAt;
+        return ts && new Date(ts).getTime() > thirtyDaysAgo;
+      });
+
+      // Per-install activity (all-time and recent windows)
+      const activeInstalls7d = new Set();
+      const activeInstalls30d = new Set();
+      const allTimeActiveInstalls = new Set();
+      const uniqueSessions7d = new Set();
+      const uniqueSessions30d = new Set();
+
+      for (const e of classified) {
+        if (!e.installId) continue;
+        const et = e.eventType || '';
+        if (!ACTIVE_EVENTS.has(et)) continue;
+        if (e.visitorType === 'bot' || e.visitorType === 'ci') continue;
+        allTimeActiveInstalls.add(e.installId);
+      }
+      for (const e of recent) {
+        if (!e.installId) continue;
+        if (e.visitorType === 'bot' || e.visitorType === 'ci') continue;
+        if (ACTIVE_EVENTS.has(e.eventType || '')) activeInstalls7d.add(e.installId);
+        if (e.sessionId) uniqueSessions7d.add(e.sessionId);
+      }
+      for (const e of last30) {
+        if (!e.installId) continue;
+        if (e.visitorType === 'bot' || e.visitorType === 'ci') continue;
+        if (ACTIVE_EVENTS.has(e.eventType || '')) activeInstalls30d.add(e.installId);
+        if (e.sessionId) uniqueSessions30d.add(e.sessionId);
+      }
+
       sendJson(res, 200, {
         allTime: {
           total: classified.length,
@@ -5341,6 +5397,12 @@ async function addContext(){
           owner: classified.filter(e => e.visitorType === 'owner').length,
           ci: classified.filter(e => e.visitorType === 'ci').length,
           uniqueInstalls: uniqueInstallIds.size,
+          activeInstalls: allTimeActiveInstalls.size,
+        },
+        last30Days: {
+          uniqueInstalls: new Set(last30.filter(e => e.installId).map(e => e.installId)).size,
+          activeInstalls: activeInstalls30d.size,
+          uniqueSessions: uniqueSessions30d.size,
         },
         last7Days: {
           total: recent.length,
@@ -5349,6 +5411,8 @@ async function addContext(){
           owner: recent.filter(e => e.visitorType === 'owner').length,
           ci: recent.filter(e => e.visitorType === 'ci').length,
           uniqueInstalls: recentInstallIds.size,
+          activeInstalls: activeInstalls7d.size,
+          uniqueSessions: uniqueSessions7d.size,
         },
         byEventType,
         byVisitorType,

@@ -52,6 +52,25 @@ const PKG_ROOT = path.join(__dirname, '..');
 
 const PRO_URL = 'https://thumbgate-production.up.railway.app';
 const PRO_CHECKOUT_URL = PRO_MONTHLY_PAYMENT_LINK;
+const TRIAL_DAYS = 14;
+
+function checkoutUrlFor(source, content) {
+  try {
+    const url = new URL(PRO_CHECKOUT_URL);
+    url.searchParams.set('utm_source', source || 'cli');
+    url.searchParams.set('utm_medium', 'cli');
+    url.searchParams.set('utm_campaign', 'pro_conversion');
+    if (content) url.searchParams.set('utm_content', content);
+    return url.toString();
+  } catch (_) {
+    return PRO_CHECKOUT_URL;
+  }
+}
+
+function trialDeadlineLabel(now = new Date()) {
+  const deadline = new Date(now.getTime() + (TRIAL_DAYS * 24 * 60 * 60 * 1000));
+  return deadline.toISOString().slice(0, 10);
+}
 
 function upgradeNudge() {
   if (process.env.THUMBGATE_NO_NUDGE === '1') return;
@@ -139,23 +158,44 @@ function proNudge(context) {
     const { isProTier } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
     if (isProTier()) return;
   } catch (_) { /* if rate-limiter is unavailable, fall through and nudge */ }
+  const checkoutUrl = checkoutUrlFor('cli_nudge', context || COMMAND || 'general');
   const messages = [
-    `\n  💡 Unlock Pro (${PRO_PRICE_LABEL}): searchable dashboard, DPO export, multi-repo sync\n     ${PRO_CHECKOUT_URL}\n`,
-    `\n  💡 Pro tip: export your feedback as DPO training pairs to improve your models.\n     Get Pro: ${PRO_CHECKOUT_URL}\n`,
-    `\n  💡 ThumbGate Pro: search, edit, and sync lessons across repos. ${PRO_PRICE_LABEL}.\n     ${PRO_CHECKOUT_URL}\n`,
+    `\n  💡 Unlock Pro (${PRO_PRICE_LABEL}): searchable dashboard, DPO export, multi-repo sync\n     ${checkoutUrl}\n`,
+    `\n  💡 Pro tip: export your feedback as DPO training pairs to improve your models.\n     Get Pro: ${checkoutUrl}\n`,
+    `\n  💡 ThumbGate Pro: search, edit, and sync lessons across repos. ${PRO_PRICE_LABEL}.\n     ${checkoutUrl}\n`,
   ];
   // Rotate message daily — no Math.random (security policy)
   const msg = messages[Math.floor(Date.now() / 86400000) % messages.length];
   process.stderr.write(msg);
 }
 
-function limitNudge(action) {
+function limitNudge(action, limitResult = {}) {
   if (process.env.THUMBGATE_NO_NUDGE === '1') return;
+  const checkoutUrl = checkoutUrlFor('cli_limit', action);
+  const usageLine = Number.isFinite(limitResult.used) && Number.isFinite(limitResult.limit)
+    ? `     Usage: ${limitResult.used}/${limitResult.limit} (${limitResult.limitType || 'limit'}).\n`
+    : '';
+  const reason = limitResult.message
+    ? String(limitResult.message).split('\n')[0]
+    : 'Free tier limit reached.';
   process.stderr.write(
-    `\n  ⚠️  Free tier limit reached. Upgrade to Pro for unlimited: https://thumbgate-production.up.railway.app/pro\n` +
-    `     ${action} daily limit reached. Upgrade to Pro for unlimited usage — ${PRO_PRICE_LABEL}:\n` +
-    `     ${PRO_CHECKOUT_URL}\n\n`
+    `\n  🔒 ${reason}\n` +
+    usageLine +
+    `     Upgrade to Pro (${PRO_PRICE_LABEL}) to continue ${action.replace(/_/g, ' ')}:\n` +
+    `     ${checkoutUrl}\n\n`
   );
+}
+
+function printInitConversionPrompt(email) {
+  if (process.env.THUMBGATE_NO_NUDGE === '1') return;
+  const checkoutUrl = checkoutUrlFor('cli_init', email ? 'init_email' : 'init_no_email');
+  console.log('');
+  console.log('  ┌──────────────────────────────────────────────────────────┐');
+  console.log(`  │  14-day Pro trial active through ${trialDeadlineLabel()}.              │`);
+  console.log('  │  Pro unlocks lesson search, recall, dashboard, exports. │');
+  console.log('  │  Add onboarding: npx thumbgate init --email you@company.com │');
+  console.log(`  │  Upgrade: ${checkoutUrl}`);
+  console.log('  └──────────────────────────────────────────────────────────┘');
 }
 
 function parseArgs(argv) {
@@ -613,6 +653,18 @@ function quickStart() {
 
 function init(cliArgs = parseArgs(process.argv.slice(3))) {
   const args = { ...cliArgs };
+  if (args.help || args.h) {
+    console.log('Usage: npx thumbgate init [--agent <name>] [--wire-hooks] [--email you@company.com]');
+    console.log('');
+    console.log('Scaffold ThumbGate in the current project and wire detected agent integrations.');
+    console.log('');
+    console.log('Options:');
+    console.log('  --agent <name>           Wire a specific agent: claude-code, codex, gemini, amp, cursor, cline');
+    console.log('  --wire-hooks             Wire hooks only; do not scaffold project files');
+    console.log('  --email <email>          Subscribe installer to the setup guide and trial reminders');
+    console.log('  --dry-run                Show hook changes without writing them');
+    return;
+  }
 
   // --wire-hooks only mode: skip scaffolding, just wire hooks
   if (args['wire-hooks']) {
@@ -746,16 +798,48 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
   }
 
   console.log('');
-  console.log(`thumbgate v${pkgVersion()} initialized.`);
-  console.log('Run: npx thumbgate help');
+  console.log(`✅ thumbgate v${pkgVersion()} initialized.`);
+  const onboardingEmail = typeof args.email === 'string'
+    ? args.email.trim()
+    : (typeof args['onboarding-email'] === 'string' ? args['onboarding-email'].trim() : '');
+  if (onboardingEmail) {
+    try {
+      execFileSync(process.execPath, [__filename, 'subscribe', onboardingEmail], {
+        cwd: CWD,
+        env: process.env,
+        stdio: 'inherit',
+      });
+      trackEvent('cli_init_email_subscribed', { command: 'init', source: 'init_email' });
+    } catch (_) {
+      console.log(`  Retry onboarding email: npx thumbgate subscribe ${onboardingEmail}`);
+    }
+  }
   trackEvent('cli_init', { command: 'init' });
-  proNudge();
+
+  // ---------------------------------------------------------------------------
+  // Activation guide: the ONE thing the user should do next.
+  // 98.5% of init users never promote their first prevention rule.
+  // This is the funnel break — not conversion, not nudges — activation.
+  // ---------------------------------------------------------------------------
   console.log('');
-  console.log('  ┌──────────────────────────────────────────────────────────┐');
-  console.log('  │  Teams: shared enforcement, CI gates, audit trails      │');
-  console.log('  │  One correction protects every agent on your team.      │');
-  console.log('  │  https://thumbgate-production.up.railway.app/pro        │');
-  console.log('  └──────────────────────────────────────────────────────────┘');
+  console.log('  ╭──────────────────────────────────────────────────────────╮');
+  console.log('  │  NEXT: Create your first prevention rule (30 seconds)   │');
+  console.log('  │                                                         │');
+  console.log('  │  When your AI agent makes a mistake, capture it:        │');
+  console.log('  │                                                         │');
+  console.log('  │  npx thumbgate capture --feedback=down \\               │');
+  console.log('  │    --context="agent deleted prod config" \\              │');
+  console.log('  │    --what-went-wrong="ran rm on .env" \\                 │');
+  console.log('  │    --what-to-change="never delete .env files"           │');
+  console.log('  │                                                         │');
+  console.log('  │  ThumbGate auto-promotes this to a prevention rule      │');
+  console.log('  │  that blocks the mistake from happening again.          │');
+  console.log('  ╰──────────────────────────────────────────────────────────╯');
+  console.log('');
+  printInitConversionPrompt(onboardingEmail);
+  if (!onboardingEmail) {
+    console.log('  Get trial reminders: npx thumbgate init --email you@company.com');
+  }
 
   try {
     const { appendFunnelEvent } = require(path.join(PKG_ROOT, 'scripts', 'billing'));
@@ -785,7 +869,7 @@ function capture() {
   const { getUsage } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
   const capLimit = checkLimit('capture_feedback');
   if (!capLimit.allowed) {
-    limitNudge('capture_feedback');
+    limitNudge('capture_feedback', capLimit);
     process.exit(1);
   }
   trackEvent('cli_capture', { command: 'capture' });
@@ -1187,6 +1271,13 @@ function lessons() {
   const tags = String(args.tags || '').split(',').map((t) => t.trim()).filter(Boolean);
   const query = args.query || process.argv.slice(3).find((a) => !a.startsWith('--')) || '';
   const limit = Number(args.limit || 10);
+  const { checkLimit } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
+  const searchLimit = checkLimit('search_lessons');
+  if (!searchLimit.allowed) {
+    trackEvent('cli_upgrade_prompt', { command: 'lessons', action: 'search_lessons', limitType: searchLimit.limitType || null });
+    limitNudge('search_lessons', searchLimit);
+    process.exit(1);
+  }
 
   // --remote: fetch from hosted Railway instance
   if (args.remote) {
@@ -1453,13 +1544,10 @@ function risk() {
 }
 
 function exportDpo() {
-  const { isProTier } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
-  if (!isProTier(null)) {
-    process.stderr.write(
-      `\n  🔒 DPO Export requires Pro (${PRO_PRICE_LABEL}).\n` +
-      `     Your feedback would generate valuable training pairs.\n` +
-      `     Upgrade: ${PRO_CHECKOUT_URL}\n\n`
-    );
+  const { checkLimit } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
+  const exportLimit = checkLimit('export_dpo');
+  if (!exportLimit.allowed) {
+    limitNudge('export_dpo', exportLimit);
     process.exit(1);
   }
   const extraArgs = process.argv.slice(3).join(' ');
@@ -1476,13 +1564,10 @@ function exportDpo() {
 }
 
 function exportDatabricks() {
-  const { isProTier } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
-  if (!isProTier(null)) {
-    process.stderr.write(
-      `\n  🔒 Databricks Export requires Pro (${PRO_PRICE_LABEL}).\n` +
-      `     Export feedback logs + proof artifacts for analytics.\n` +
-      `     Upgrade: ${PRO_CHECKOUT_URL}\n\n`
-    );
+  const { checkLimit } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
+  const exportLimit = checkLimit('export_databricks');
+  if (!exportLimit.allowed) {
+    limitNudge('export_databricks', exportLimit);
     process.exit(1);
   }
   const extraArgs = process.argv.slice(3).join(' ');
@@ -2461,6 +2546,37 @@ if (COMMAND === 'daemon' || COMMAND === 'serve-daemon') {
   process.exit(0);
 }
 
+// ---------------------------------------------------------------------------
+// Global --help interceptor: `thumbgate <cmd> --help` shows per-command help
+// instead of running the command. Commands with their own --help guard (init)
+// handle it internally; everything else falls through here.
+// ---------------------------------------------------------------------------
+const _cliSubArgs = process.argv.slice(3);
+const _wantsHelp = _cliSubArgs.includes('--help') || _cliSubArgs.includes('-h');
+
+const SUBCOMMAND_HELP = {
+  capture:       'Usage: npx thumbgate capture --feedback=up|down --context="..." [--what-worked="..."] [--what-went-wrong="..."] [--what-to-change="..."] [--tags=a,b]',
+  feedback:      'Usage: npx thumbgate feedback --feedback=up|down --context="..." [--what-worked="..."] [--what-went-wrong="..."] [--what-to-change="..."] [--tags=a,b]',
+  stats:         'Usage: npx thumbgate stats\n\nShow gate enforcement statistics: blocked/warned counts, active gates, time saved.',
+  trial:         'Usage: npx thumbgate trial\n\nShow Pro trial status, remaining days, and upgrade path.',
+  pro:           'Usage: npx thumbgate pro [--activate <key>]\n\nLaunch the local Pro dashboard or activate a Pro license key.',
+  subscribe:     'Usage: npx thumbgate subscribe <email>\n\nSubscribe to the 5-minute setup guide + trial reminders.',
+  lessons:       'Usage: npx thumbgate lessons [--query="..."] [--limit=N]\n\nSearch the lesson database (Pro feature).',
+  search:        'Usage: npx thumbgate search <query>\n\nSearch ThumbGate knowledge base (Pro feature).',
+  'gate-check':  'Usage: npx thumbgate gate-check\n\nPreToolUse hook interface: reads tool call JSON from stdin, outputs gate verdict.',
+  'export-dpo':  'Usage: npx thumbgate export-dpo [--format=jsonl|csv]\n\nExport feedback as DPO training pairs (Pro feature).',
+  status:        'Usage: npx thumbgate status\n\nShow ThumbGate system health and active configuration.',
+  watch:         'Usage: npx thumbgate watch\n\nWatch for feedback changes and auto-regenerate prevention rules.',
+  compact:       'Usage: npx thumbgate compact\n\nCompact the lesson database and reclaim disk space.',
+  'context-packs': 'Usage: npx thumbgate context-packs\n\nGenerate context packs from top failure patterns.',
+  suggest:       'Usage: npx thumbgate suggest <gate-id>\n\nSuggest fixes for a specific gate based on lesson history.',
+};
+
+if (_wantsHelp && COMMAND && SUBCOMMAND_HELP[COMMAND]) {
+  console.log(SUBCOMMAND_HELP[COMMAND]);
+  process.exit(0);
+}
+
 switch (COMMAND) {
   case '--version':
   case '-v':
@@ -2773,6 +2889,41 @@ switch (COMMAND) {
   case 'self-heal':
     selfHeal();
     break;
+  case 'trial': {
+    // Show trial status — connects the 4K monthly npm installers to checkout
+    const { isProTier, isInTrialPeriod, trialDaysRemaining, getInstallAgeDays } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
+    const ageDays = getInstallAgeDays();
+    const inTrial = isInTrialPeriod();
+    const remaining = trialDaysRemaining();
+    const isPro = isProTier();
+    console.log('');
+    console.log('  ThumbGate Pro Trial');
+    console.log('  ──────────────────');
+    if (isPro && !inTrial) {
+      console.log('  Status: ✅ Pro (active license or API key)');
+    } else if (inTrial) {
+      const expiryDate = new Date(Date.now() + remaining * 86400000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      console.log(`  Status: 🎁 Active (${remaining} day${remaining === 1 ? '' : 's'} remaining)`);
+      console.log(`  Expires: ${expiryDate}`);
+      console.log('');
+      console.log('  All Pro features unlocked:');
+      console.log('    • Unlimited prevention rules (free tier: 5)');
+      console.log('    • Recall, lesson search, DPO export');
+      console.log('    • Cross-machine sync via API key');
+    } else {
+      console.log('  Status: ⏰ Expired');
+      if (ageDays !== null) {
+        console.log(`  Installed: ${Math.floor(ageDays)} days ago`);
+      }
+      console.log('');
+      console.log('  Free tier: 5 active rules, no recall/search/export');
+    }
+    console.log('');
+    console.log(`  Keep Pro: ${PRO_CHECKOUT_URL}`);
+    console.log(`  Or set: THUMBGATE_API_KEY=<your-key>`);
+    console.log('');
+    break;
+  }
   case 'pro':
     pro();
     break;

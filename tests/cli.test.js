@@ -15,6 +15,7 @@
 
 const { spawnSync, spawn } = require('child_process');
 const fs = require('fs');
+const http = require('http');
 const os = require('os');
 const path = require('path');
 const { test, describe, before, after } = require('node:test');
@@ -934,6 +935,7 @@ describe('bin/cli.js', () => {
       env: {
         ...process.env,
         THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_API_KEY: 'tg_pro_test_lesson_search',
         THUMBGATE_NO_NUDGE: '1',
         THUMBGATE_API_URL: 'http://127.0.0.1:1',
       },
@@ -945,6 +947,25 @@ describe('bin/cli.js', () => {
     assert.match(result.stdout, /Harness recommendations/);
     assert.match(result.stdout, /Attach proof before shipping/);
     fs.rmSync(feedbackDir, { recursive: true, force: true });
+  });
+
+  test('lessons command blocks free users with a Pro upgrade prompt', () => {
+    const feedbackDir = makeTmpDir();
+    const freeHome = makeTmpDir();
+    const result = runCliSync(['lessons', '--query=shipping'], {
+      env: unlicensedProEnv(freeHome, {
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_NO_NUDGE: '',
+        THUMBGATE_NO_TRIAL: '1',
+      }),
+    });
+
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /Lesson search is a Pro feature/);
+    assert.match(result.stderr, /thumbgate\.ai\/go\/pro/);
+    assert.match(result.stderr, /utm_source=cli_limit/);
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+    fs.rmSync(freeHome, { recursive: true, force: true });
   });
 
   test('help command shows Pro nudge on stderr', () => {
@@ -1016,6 +1037,87 @@ describe('bin/cli.js', () => {
     });
     assert.strictEqual(result.status, 0, `init should succeed even with telemetry disabled: ${result.stderr}`);
     fs.rmSync(initDir, { recursive: true, force: true });
+  });
+
+  test('init --help prints usage without creating project files', () => {
+    const initDir = makeTmpDir();
+    const result = runCliSync(['init', '--help'], {
+      cwd: initDir,
+      env: {
+        ...process.env,
+        THUMBGATE_NO_TELEMETRY: '1',
+        THUMBGATE_NO_NUDGE: '1',
+        HOME: testHomeDir,
+        USERPROFILE: testHomeDir,
+      },
+    });
+    assert.strictEqual(result.status, 0);
+    assert.match(result.stdout, /Usage: npx thumbgate init/);
+    assert.equal(fs.existsSync(path.join(initDir, '.thumbgate')), false, 'init --help must not scaffold .thumbgate');
+    assert.equal(fs.existsSync(path.join(initDir, '.mcp.json')), false, 'init --help must not write MCP config');
+    fs.rmSync(initDir, { recursive: true, force: true });
+  });
+
+  test('init prints onboarding, trial deadline, and checkout path', () => {
+    const initDir = makeTmpDir();
+    const homeDir = makeTmpDir();
+    const result = runCliSync(['init'], {
+      cwd: initDir,
+      env: unlicensedProEnv(homeDir, {
+        THUMBGATE_NO_TELEMETRY: '1',
+        THUMBGATE_NO_NUDGE: '',
+      }),
+    });
+    assert.strictEqual(result.status, 0, `init should succeed: ${result.stderr}`);
+    assert.match(result.stdout, /npx thumbgate init --email you@company\.com/);
+    assert.match(result.stdout, /14-day Pro trial active through \d{4}-\d{2}-\d{2}/);
+    assert.match(result.stdout, /utm_source=cli_init/);
+    fs.rmSync(initDir, { recursive: true, force: true });
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  });
+
+  test('init --email posts installer email to onboarding endpoint', async () => {
+    const initDir = makeTmpDir();
+    const homeDir = makeTmpDir();
+    let captured = null;
+    const server = http.createServer((req, res) => {
+      let body = '';
+      req.on('data', (chunk) => { body += String(chunk || ''); });
+      req.on('end', () => {
+        captured = {
+          method: req.method,
+          url: req.url,
+          body: JSON.parse(body || '{}'),
+        };
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+      });
+    });
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const { port } = server.address();
+    try {
+      const result = await runCliCommand(['init', '--email', 'buyer@example.com'], {
+        cwd: initDir,
+        env: unlicensedProEnv(homeDir, {
+          THUMBGATE_NO_TELEMETRY: '1',
+          THUMBGATE_NO_NUDGE: '1',
+          THUMBGATE_INSTALL_EMAIL_ENDPOINT: `http://127.0.0.1:${port}/v1/marketing/install-email`,
+        }),
+        timeoutMs: 15000,
+      });
+      assert.strictEqual(result.status, 0, `init --email should succeed:\nstdout=${result.stdout}\nstderr=${result.stderr}`);
+      assert.equal(captured.method, 'POST');
+      assert.equal(captured.url, '/v1/marketing/install-email');
+      assert.equal(captured.body.email, 'buyer@example.com');
+      assert.equal(captured.body.source, 'cli_subscribe');
+      assert.equal(captured.body.cliVersion, PKG_VERSION);
+      assert.ok(captured.body.installId, 'installId should connect the email to the init event');
+      assert.match(result.stdout, /Subscribed buyer@example\.com/);
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+      fs.rmSync(initDir, { recursive: true, force: true });
+      fs.rmSync(homeDir, { recursive: true, force: true });
+    }
   });
 
   test('init records local CLI telemetry when telemetry is enabled', () => {

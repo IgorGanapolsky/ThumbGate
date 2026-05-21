@@ -29,6 +29,7 @@ const FREE_TIER_LIMITS = {
 };
 
 const FREE_TIER_MAX_GATES = 5; // 5 active prevention rules on free; Pro is unlimited
+const FREE_TIER_DAILY_BLOCKS = 10; // 10 gate blocks/day on free; after limit, deny → warn + upgrade CTA
 
 const UPGRADE_MESSAGE = `Pro: ${PRO_PRICE_LABEL} — unlimited rules, recall, lesson search, dashboard, and exports: ${PRO_MONTHLY_PAYMENT_LINK}\n  Team: ${TEAM_PRICE_LABEL} after workflow qualification.`;
 
@@ -45,7 +46,10 @@ function getInstallAgeDays() {
   try {
     const { INSTALL_ID_PATH } = require('./cli-telemetry');
     if (!fs.existsSync(INSTALL_ID_PATH)) return null;
-    const created = fs.statSync(INSTALL_ID_PATH).birthtimeMs || fs.statSync(INSTALL_ID_PATH).mtimeMs;
+    // Use mtimeMs — birthtimeMs is unreliable on Linux (ext4 doesn't backdate creation time).
+    // The install-id file is written once at install, so mtime == creation time in practice.
+    const stat = fs.statSync(INSTALL_ID_PATH);
+    const created = stat.mtimeMs || stat.birthtimeMs;
     if (!Number.isFinite(created) || created <= 0) return null;
     return (Date.now() - created) / (1000 * 60 * 60 * 24);
   } catch (_) {
@@ -211,6 +215,7 @@ function getUsage(action, authContext) {
 module.exports = {
   checkLimit,
   getUsage,
+  getInstallAgeDays,
   isProTier,
   isInTrialPeriod,
   trialDaysRemaining,
@@ -219,6 +224,7 @@ module.exports = {
   todayKey,
   FREE_TIER_LIMITS,
   FREE_TIER_MAX_GATES,
+  FREE_TIER_DAILY_BLOCKS,
   TRIAL_DAYS,
   UPGRADE_MESSAGE,
   PAYWALL_MESSAGES,

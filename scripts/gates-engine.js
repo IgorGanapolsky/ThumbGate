@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const { execSync, execFileSync } = require('child_process');
 const { loadOptionalModule } = require('./private-core-boundary');
 
-const { isProTier, FREE_TIER_MAX_GATES } = require('./rate-limiter');
+const { isProTier, isInTrialPeriod, FREE_TIER_MAX_GATES, FREE_TIER_DAILY_BLOCKS, todayKey } = require('./rate-limiter');
 const {
   DEFAULT_BASE_BRANCH,
   evaluateOperationalIntegrity,
@@ -464,6 +464,69 @@ function recordStat(gateId, action, gate) {
       db.close();
     } catch (_) { /* lesson DB may not be available */ }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Free-tier daily block cap
+// ---------------------------------------------------------------------------
+
+/**
+ * Count today's gate blocks from stats. Free tier gets FREE_TIER_DAILY_BLOCKS
+ * blocks/day. After the limit, deny → warn + upgrade CTA so the action proceeds
+ * but the user sees they lost protection.
+ */
+function getTodayBlockCount() {
+  const stats = loadStats();
+  const today = todayKey();
+  if (!stats.dailyBlocks || !stats.dailyBlocks[today]) return 0;
+  return stats.dailyBlocks[today];
+}
+
+function incrementTodayBlockCount() {
+  const stats = loadStats();
+  const today = todayKey();
+  if (!stats.dailyBlocks) stats.dailyBlocks = {};
+  // Clean old dates (keep only last 7 days to prevent unbounded growth)
+  const keys = Object.keys(stats.dailyBlocks);
+  if (keys.length > 7) {
+    keys.sort();
+    for (const k of keys.slice(0, keys.length - 7)) {
+      delete stats.dailyBlocks[k];
+    }
+  }
+  stats.dailyBlocks[today] = (stats.dailyBlocks[today] || 0) + 1;
+  saveStats(stats);
+  return stats.dailyBlocks[today];
+}
+
+/**
+ * If the user is free-tier and has exceeded daily block limit, downgrade
+ * a deny result to a warn with an upgrade CTA. Returns null if no cap applies.
+ */
+function applyDailyBlockCap(denyResult) {
+  // Pro, trial, CI, and THUMBGATE_NO_RATE_LIMIT users are uncapped
+  if (isProTier()) return null;
+  if (process.env.CI || process.env.GITHUB_ACTIONS) return null;
+
+  const todayCount = getTodayBlockCount();
+  if (todayCount < FREE_TIER_DAILY_BLOCKS) {
+    // Under limit: allow the block, increment counter
+    incrementTodayBlockCount();
+    return null;
+  }
+
+  // Over limit: downgrade deny → warn with upgrade CTA
+  const remaining = 0;
+  return {
+    decision: 'warn',
+    gate: denyResult.gate,
+    message: `⚠️ ${denyResult.message}\n\n🔓 Daily protection limit reached (${FREE_TIER_DAILY_BLOCKS}/${FREE_TIER_DAILY_BLOCKS} blocks used). This action was allowed through. Upgrade for unlimited protection: https://thumbgate.ai/go/pro`,
+    severity: denyResult.severity,
+    reasoning: (denyResult.reasoning || []).concat([
+      `Free-tier daily block limit (${FREE_TIER_DAILY_BLOCKS}) exceeded — deny downgraded to warn`,
+    ]),
+    dailyBlockCapApplied: true,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1491,11 +1554,19 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
     });
 
     if (gate.action === 'block') {
+      const denyResult = { decision: 'deny', gate: gate.id, message, severity: gate.severity, reasoning };
+      // Free-tier daily block cap: after N blocks/day, deny → warn + upgrade CTA
+      const cappedResult = applyDailyBlockCap(denyResult);
+      if (cappedResult) {
+        recordStat(gate.id, 'warn', gate);
+        const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: cappedResult.message, severity: gate.severity, source: 'gates-engine', dailyBlockCapApplied: true });
+        auditToFeedback(auditRecord);
+        return cappedResult;
+      }
       recordStat(gate.id, 'block', gate);
-      const result = { decision: 'deny', gate: gate.id, message, severity: gate.severity, reasoning };
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
-      return result;
+      return denyResult;
     }
 
     if (gate.action === 'approve') {
@@ -1653,11 +1724,19 @@ function evaluateGates(toolName, toolInput, configPath) {
     const reasoning = buildReasoning(gate, toolName, toolInput, matchDetails);
 
     if (gate.action === 'block') {
+      const denyResult = { decision: 'deny', gate: gate.id, message, severity: gate.severity, reasoning };
+      // Free-tier daily block cap: after N blocks/day, deny → warn + upgrade CTA
+      const cappedResult = applyDailyBlockCap(denyResult);
+      if (cappedResult) {
+        recordStat(gate.id, 'warn', gate);
+        const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: cappedResult.message, severity: gate.severity, source: 'gates-engine', dailyBlockCapApplied: true });
+        auditToFeedback(auditRecord);
+        return cappedResult;
+      }
       recordStat(gate.id, 'block', gate);
-      const result = { decision: 'deny', gate: gate.id, message, severity: gate.severity, reasoning };
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
-      return result;
+      return denyResult;
     }
 
     if (gate.action === 'approve') {
@@ -1856,6 +1935,35 @@ function buildReminderOutput(context) {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Upgrade nudge: surfaces Pro value at usage milestones and trial expiry.
+// Block-action Pro CTA: brief upgrade mention after a deny/warn decision.
+// Highest-intent moment — user just saw ThumbGate save them from a mistake.
+// ---------------------------------------------------------------------------
+
+function buildBlockActionProCta() {
+  try {
+    if (process.env.THUMBGATE_NO_NUDGE === '1') return null;
+    if (process.env.CI || process.env.GITHUB_ACTIONS) return null;
+    if (isProTier()) return null;
+    if (isInTrialPeriod()) return null; // Already have full access
+
+    const stats = loadStats();
+    const totalBlocks = stats.blocked || 0;
+    if (totalBlocks < 5) return null; // Too early — let them experience the product
+
+    if (totalBlocks < 25) {
+      return '\n\n💡 Pro: sync rules across machines + dashboard analytics → thumbgate.ai/go/pro';
+    }
+    if (totalBlocks < 100) {
+      return `\n\n💡 ${totalBlocks} actions blocked. Pro keeps rules in sync everywhere → thumbgate.ai/go/pro ($19/mo)`;
+    }
+    return `\n\n💡 ${totalBlocks} mistakes caught. Your team could use this → thumbgate.ai/go/pro`;
+  } catch (_) {
+    return null;
+  }
+}
+
 function formatOutput(result, behavioralContext) {
   if (!result) {
     // No gate matched — inject behavioral context if available
@@ -1874,11 +1982,12 @@ function formatOutput(result, behavioralContext) {
   if (result.decision === 'deny') {
     const reminder = behavioralContext ? buildReminderOutput(behavioralContext) : {};
     const reminderSuffix = behavioralContext ? `\n\nSystem reminder:\n${behavioralContext}` : '';
+    const proCta = buildBlockActionProCta() || '';
     return JSON.stringify({
       hookSpecificOutput: {
         ...reminder,
         permissionDecision: 'deny',
-        permissionDecisionReason: `[GATE:${result.gate}] ${result.message}${reasoningSuffix}${reminderSuffix}`,
+        permissionDecisionReason: `[GATE:${result.gate}] ${result.message}${reasoningSuffix}${reminderSuffix}${proCta}`,
       },
     });
   }
@@ -2468,6 +2577,10 @@ module.exports = {
   isRemoteSideEffectCommand,
   evaluateLocalOnlyRemoteSideEffectGate,
   PR_THREAD_RESOLUTION_ACTION,
+  buildBlockActionProCta,
+  applyDailyBlockCap,
+  getTodayBlockCount,
+  incrementTodayBlockCount,
 };
 
 // ---------------------------------------------------------------------------
