@@ -5229,40 +5229,57 @@ async function addContext(){
       // was down, when feedback-dir was unwritable, when env was misconfigured.
       // The fix is shallow but meaningful: probe each critical subsystem and
       // surface failures with HTTP 503 + a per-check breakdown.
+      // Tiered failure classification — not all degradations should kill the
+      // container. A *service-failing* check (feedback dir unwritable,
+      // appOrigin missing) returns 503 → Railway's healthcheck fails → SIGTERM
+      // → restart loop → outage (this exact failure mode took prod down
+      // 2026-05-21 18:21Z → 19:30Z when BUILD_METADATA.buildSha came up empty
+      // after a Railway env-var cleanup). A *telemetry-degraded* check (missing
+      // buildSha) returns 200 with `degraded: true` so observability stays
+      // visible but Railway doesn't kill an otherwise-healthy container over
+      // a SHA gap.
       const checks = {};
-      let allOk = true;
+      let failing = false;     // any service-failing check → 503
+      let degraded = false;    // any telemetry-degraded check → 200 + flag
 
       // Check 1: feedback dir exists and is writable.
+      // SERVICE-FAILING — if we can't write feedback, the API can't function.
       try {
         const { FEEDBACK_DIR } = getFeedbackPaths();
         fs.accessSync(FEEDBACK_DIR, fs.constants.W_OK);
         checks.feedbackDir = { ok: true };
       } catch (err) {
-        checks.feedbackDir = { ok: false, error: err?.code || 'inaccessible' };
-        allOk = false;
+        checks.feedbackDir = { ok: false, error: err?.code || 'inaccessible', severity: 'failing' };
+        failing = true;
       }
 
       // Check 2: hosted config resolves the canonical app origin.
-      // If appOrigin is missing/empty, redirects + checkout flow break silently.
+      // SERVICE-FAILING — if appOrigin is missing/empty, redirects + checkout
+      // flow break silently.
       if (hostedConfig?.appOrigin) {
         checks.hostedConfig = { ok: true };
       } else {
-        checks.hostedConfig = { ok: false, error: 'missing_appOrigin' };
-        allOk = false;
+        checks.hostedConfig = { ok: false, error: 'missing_appOrigin', severity: 'failing' };
+        failing = true;
       }
 
-      // Check 3: build metadata loaded. If BUILD_METADATA.buildSha is empty,
-      // Railway didn't inject the deploy SHA — observability is degraded.
+      // Check 3: build metadata loaded.
+      // TELEMETRY-DEGRADED — observability gap, not a runtime outage. The
+      // container still serves requests fine; we just can't tag responses with
+      // the deployed SHA. Surfaces the gap to monitors via `degraded: true`
+      // without triggering Railway's SIGTERM-on-503 loop.
       if (BUILD_METADATA?.buildSha) {
         checks.buildMetadata = { ok: true };
       } else {
-        checks.buildMetadata = { ok: false, error: 'missing_buildSha' };
-        allOk = false;
+        checks.buildMetadata = { ok: false, error: 'missing_buildSha', severity: 'degraded' };
+        degraded = true;
       }
 
-      const statusCode = allOk ? 200 : 503;
+      const statusCode = failing ? 503 : 200;
+      const status = failing ? 'failing' : (degraded ? 'degraded' : 'ok');
       sendJson(res, statusCode, {
-        status: allOk ? 'ok' : 'degraded',
+        status,
+        degraded: degraded || failing,
         version: pkg.version,
         buildSha: BUILD_METADATA.buildSha,
         uptime: process.uptime(),
