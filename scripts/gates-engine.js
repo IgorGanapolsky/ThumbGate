@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const { execSync, execFileSync } = require('child_process');
 const { loadOptionalModule } = require('./private-core-boundary');
 
-const { isProTier, FREE_TIER_MAX_GATES } = require('./rate-limiter');
+const { isProTier, isInTrialPeriod, trialDaysRemaining, FREE_TIER_MAX_GATES } = require('./rate-limiter');
 const {
   DEFAULT_BASE_BRANCH,
   evaluateOperationalIntegrity,
@@ -1856,6 +1856,85 @@ function buildReminderOutput(context) {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Upgrade nudge: surfaces Pro value at usage milestones and trial expiry.
+// Appears in the behavioral-context stream on pass-through (no gate fired)
+// so it reaches users during normal flow, not just on blocks.
+// ---------------------------------------------------------------------------
+
+const MILESTONE_THRESHOLDS = [10, 25, 50, 100, 250, 500];
+const _nudgeSessionCache = {};
+
+function buildUpgradeNudgeContext() {
+  try {
+    if (process.env.THUMBGATE_NO_NUDGE === '1') return null;
+    if (process.env.CI || process.env.GITHUB_ACTIONS) return null;
+    if (isProTier()) return null;
+
+    // Dedup: at most one nudge per session hour
+    const sessionKey = `session_${Math.floor(Date.now() / (SESSION_ACTION_TTL_MS || 3600000))}`;
+    if (_nudgeSessionCache[sessionKey]) return null;
+
+    let proUrl;
+    try { proUrl = require('./commercial-offer').PRO_MONTHLY_PAYMENT_LINK; } catch (_) { proUrl = 'https://thumbgate.ai/go/pro'; }
+
+    // Trial expiry countdown (≤3 days left)
+    if (isInTrialPeriod()) {
+      const remaining = trialDaysRemaining();
+      if (remaining <= 3 && remaining > 0) {
+        _nudgeSessionCache[sessionKey] = true;
+        return `[ThumbGate] Pro trial expires in ${remaining} day${remaining === 1 ? '' : 's'}. Keep unlimited rules + recall + search: ${proUrl}`;
+      }
+      return null; // In trial with >3 days — no nudge needed
+    }
+
+    // Milestone nudge based on total blocks
+    const stats = loadStats();
+    const totalBlocks = stats.blocked || 0;
+    const hitMilestone = MILESTONE_THRESHOLDS.find(m => totalBlocks >= m && totalBlocks < m + 5);
+    if (!hitMilestone) return null;
+
+    _nudgeSessionCache[sessionKey] = true;
+    if (hitMilestone <= 10) {
+      return `[ThumbGate] ${totalBlocks} risky actions blocked so far. Pro syncs rules across all your machines — ${proUrl}`;
+    }
+    if (hitMilestone <= 50) {
+      return `[ThumbGate] ${totalBlocks} actions blocked. Your gates are earning their keep. Pro adds dashboard + cross-machine sync — ${proUrl}`;
+    }
+    return `[ThumbGate] ${totalBlocks} mistakes caught. Your team could use this — ${proUrl}`;
+  } catch (_) {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Block-action Pro CTA: brief upgrade mention after a deny/warn decision.
+// Highest-intent moment — user just saw ThumbGate save them from a mistake.
+// ---------------------------------------------------------------------------
+
+function buildBlockActionProCta() {
+  try {
+    if (process.env.THUMBGATE_NO_NUDGE === '1') return null;
+    if (process.env.CI || process.env.GITHUB_ACTIONS) return null;
+    if (isProTier()) return null;
+    if (isInTrialPeriod()) return null; // Already have full access
+
+    const stats = loadStats();
+    const totalBlocks = stats.blocked || 0;
+    if (totalBlocks < 5) return null; // Too early — let them experience the product
+
+    if (totalBlocks < 25) {
+      return '\n\n💡 Pro: sync rules across machines + dashboard analytics → thumbgate.ai/go/pro';
+    }
+    if (totalBlocks < 100) {
+      return `\n\n💡 ${totalBlocks} actions blocked. Pro keeps rules in sync everywhere → thumbgate.ai/go/pro ($19/mo)`;
+    }
+    return `\n\n💡 ${totalBlocks} mistakes caught. Your team could use this → thumbgate.ai/go/pro`;
+  } catch (_) {
+    return null;
+  }
+}
+
 function formatOutput(result, behavioralContext) {
   if (!result) {
     // No gate matched — inject behavioral context if available
@@ -1874,11 +1953,12 @@ function formatOutput(result, behavioralContext) {
   if (result.decision === 'deny') {
     const reminder = behavioralContext ? buildReminderOutput(behavioralContext) : {};
     const reminderSuffix = behavioralContext ? `\n\nSystem reminder:\n${behavioralContext}` : '';
+    const proCta = buildBlockActionProCta() || '';
     return JSON.stringify({
       hookSpecificOutput: {
         ...reminder,
         permissionDecision: 'deny',
-        permissionDecisionReason: `[GATE:${result.gate}] ${result.message}${reasoningSuffix}${reminderSuffix}`,
+        permissionDecisionReason: `[GATE:${result.gate}] ${result.message}${reasoningSuffix}${reminderSuffix}${proCta}`,
       },
     });
   }
@@ -2102,7 +2182,8 @@ async function runAsync(input) {
   const behavioralContext = buildBehavioralContext();
   const lessonContext = buildRelevantLessonContext(toolName, toolInput);
   const recentContext = buildRecentCorrectiveActionsContext();
-  const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
+  const upgradeNudge = buildUpgradeNudgeContext();
+  const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext, upgradeNudge);
   return formatOutput(result, combinedContext);
 }
 
@@ -2135,7 +2216,8 @@ function run(input) {
   const behavioralContext = buildBehavioralContext();
   const lessonContext = buildRelevantLessonContext(toolName, toolInput);
   const recentContext = buildRecentCorrectiveActionsContext();
-  const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
+  const upgradeNudge = buildUpgradeNudgeContext();
+  const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext, upgradeNudge);
   return formatOutput(result, combinedContext);
 }
 
@@ -2468,6 +2550,8 @@ module.exports = {
   isRemoteSideEffectCommand,
   evaluateLocalOnlyRemoteSideEffectGate,
   PR_THREAD_RESOLUTION_ACTION,
+  buildUpgradeNudgeContext,
+  buildBlockActionProCta,
 };
 
 // ---------------------------------------------------------------------------

@@ -211,6 +211,7 @@ function getUsage(action, authContext) {
 module.exports = {
   checkLimit,
   getUsage,
+  getInstallAgeDays,
   isProTier,
   isInTrialPeriod,
   trialDaysRemaining,
