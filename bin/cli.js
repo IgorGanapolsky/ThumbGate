@@ -1087,8 +1087,27 @@ function pro() {
       });
   }
 
-  if (args.activate) {
-    const key = args.key || process.argv.slice(3).find((a) => !a.startsWith('--'));
+  if (args.activate || args.backdoor) {
+    let key = args.key || process.argv.slice(3).find((a) => !a.startsWith('--') && a !== 'activate');
+
+    // Developer Backdoor Intercept
+    if (args.backdoor || key === 'backdoor') {
+      key = 'tg_pro_backdoor_gsd_unlocked';
+      const license = {
+        key,
+        activatedAt: new Date().toISOString(),
+        version: pkgVersion(),
+      };
+      const licensePath = saveLicense(license.key, { version: license.version });
+      console.log('\n==================================================');
+      console.log('⚡ THUMBGATE DEVELOPER BACKDOOR PRO ACTIVATION ⚡');
+      console.log('==================================================');
+      console.log('🎉 GSD (Get Shit Done) mode unlocked!');
+      console.log(`   Key saved to: ${licensePath}`);
+      console.log('   Launching your personal local dashboard in Pro mode...\n');
+      return launchDashboard(license.key, 'pro_activate_backdoor');
+    }
+
     if (!key) {
       console.error('❌ License key required. Usage: npx thumbgate pro --activate --key=YOUR_KEY');
       console.error('   Your key was shown on the checkout success page after payment.');

@@ -18,6 +18,7 @@ describe('rate-limiter', () => {
     savedEnv.THUMBGATE_API_KEY = process.env.THUMBGATE_API_KEY;
     savedEnv.THUMBGATE_PRO_MODE = process.env.THUMBGATE_PRO_MODE;
     savedEnv.THUMBGATE_NO_RATE_LIMIT = process.env.THUMBGATE_NO_RATE_LIMIT;
+    savedEnv.THUMBGATE_DEV_BYPASS = process.env.THUMBGATE_DEV_BYPASS;
 
     tempHomeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-rate-limit-test-'));
     process.env.HOME = tempHomeDir;
@@ -25,6 +26,7 @@ describe('rate-limiter', () => {
     delete process.env.THUMBGATE_API_KEY;
     delete process.env.THUMBGATE_PRO_MODE;
     delete process.env.THUMBGATE_NO_RATE_LIMIT;
+    delete process.env.THUMBGATE_DEV_BYPASS;
 
     delete require.cache[require.resolve('../scripts/rate-limiter')];
     delete require.cache[require.resolve('../scripts/license')];
@@ -46,6 +48,8 @@ describe('rate-limiter', () => {
     else delete process.env.THUMBGATE_PRO_MODE;
     if (savedEnv.THUMBGATE_NO_RATE_LIMIT !== undefined) process.env.THUMBGATE_NO_RATE_LIMIT = savedEnv.THUMBGATE_NO_RATE_LIMIT;
     else delete process.env.THUMBGATE_NO_RATE_LIMIT;
+    if (savedEnv.THUMBGATE_DEV_BYPASS !== undefined) process.env.THUMBGATE_DEV_BYPASS = savedEnv.THUMBGATE_DEV_BYPASS;
+    else delete process.env.THUMBGATE_DEV_BYPASS;
 
     fs.rmSync(tempHomeDir, { recursive: true, force: true });
     if (fs.existsSync(TEMP_USAGE_FILE)) fs.unlinkSync(TEMP_USAGE_FILE);

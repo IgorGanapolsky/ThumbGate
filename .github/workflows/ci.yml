@@ -62,6 +62,9 @@ jobs:
       - name: Install deps
         run: npm ci --onnxruntime-node-install-cuda=skip
 
+      - name: Dependency cooldown check
+        run: ./scripts/dependency-cooldown-check.sh
+
       - name: Check version sync
         run: node scripts/sync-version.js --check
 

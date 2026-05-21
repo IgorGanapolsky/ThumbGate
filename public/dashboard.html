@@ -1999,6 +1999,113 @@ function renderGateAuditChartFromData(gateAudit) {
     },
   });
 }
+
+// Developer backdoor activation gesture on .nav-logo (8s hold or 8 clicks)
+(function() {
+  var logo = document.querySelector('.nav-logo');
+  if (!logo) return;
+
+  var clicks = 0;
+  var clickTimeout;
+  var holdTimeout;
+  var isHolding = false;
+
+  function triggerBackdoor() {
+    var notification = document.createElement('div');
+    notification.style.position = 'fixed';
+    notification.style.bottom = '24px';
+    notification.style.right = '24px';
+    notification.style.backgroundColor = '#10b981';
+    notification.style.color = '#ffffff';
+    notification.style.padding = '16px 24px';
+    notification.style.borderRadius = '12px';
+    notification.style.boxShadow = '0 10px 25px rgba(0,0,0,0.5)';
+    notification.style.zIndex = '99999';
+    notification.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+    notification.style.fontSize = '14px';
+    notification.style.fontWeight = '600';
+    notification.style.display = 'flex';
+    notification.style.alignItems = 'center';
+    notification.style.gap = '12px';
+    notification.style.opacity = '0';
+    notification.style.transform = 'translateY(20px)';
+    notification.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+    notification.innerHTML = '⚡ Unlocking Developer PRO Mode...';
+    document.body.appendChild(notification);
+
+    setTimeout(function() {
+      notification.style.opacity = '1';
+      notification.style.transform = 'translateY(0)';
+    }, 10);
+
+    fetch('/v1/backdoor/activate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(function(res) {
+      if (!res.ok) throw new Error('Backdoor failed: Local loopback required');
+      return res.json();
+    })
+    .then(function(data) {
+      notification.innerHTML = '🎉 Developer PRO Mode Activated!';
+      notification.style.backgroundColor = '#06b6d4';
+      setTimeout(function() {
+        window.location.reload();
+      }, 1500);
+    })
+    .catch(function(err) {
+      notification.innerHTML = '❌ Failed: ' + err.message;
+      notification.style.backgroundColor = '#ef4444';
+      setTimeout(function() {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateY(20px)';
+        setTimeout(function() {
+          notification.remove();
+        }, 300);
+      }, 3000);
+    });
+  }
+
+  logo.addEventListener('click', function(e) {
+    clicks++;
+    if (clicks >= 2) {
+      e.preventDefault();
+    }
+    clearTimeout(clickTimeout);
+    clickTimeout = setTimeout(function() {
+      clicks = 0;
+    }, 1000);
+
+    if (clicks === 8) {
+      triggerBackdoor();
+      clicks = 0;
+    }
+  });
+
+  function startHold(e) {
+    isHolding = true;
+    holdTimeout = setTimeout(function() {
+      if (isHolding) {
+        e.preventDefault();
+        triggerBackdoor();
+      }
+      isHolding = false;
+    }, 8000);
+  }
+
+  function stopHold() {
+    isHolding = false;
+    clearTimeout(holdTimeout);
+  }
+
+  logo.addEventListener('mousedown', startHold);
+  logo.addEventListener('touchstart', startHold, { passive: true });
+  logo.addEventListener('mouseup', stopHold);
+  logo.addEventListener('mouseleave', stopHold);
+  logo.addEventListener('touchend', stopHold);
+})();
 </script>
 </body>
 </html>

@@ -109,3 +109,46 @@ test('Pro feature gate blocks without license', () => {
     restore();
   }
 });
+
+test('isValidKey accepts developer backdoor keys', () => {
+  const { moduleExports: license, restore } = loadWithIsolatedLicenseEnv(LICENSE_MODULE_ID);
+  try {
+    assert.ok(license.isValidKey('backdoor'));
+    assert.ok(license.isValidKey('tg_pro_backdoor_gsd_unlocked'));
+    assert.ok(license.isValidKey('tg_pro_backdoor_test'));
+  } finally {
+    restore();
+  }
+});
+
+test('activateLicense accepts and persists developer backdoor keys', () => {
+  const { moduleExports: license, homeDir, restore } = loadWithIsolatedLicenseEnv(LICENSE_MODULE_ID);
+  try {
+    const key = 'tg_pro_backdoor_gsd_unlocked';
+    const activation = license.activateLicense(key, { homeDir });
+
+    assert.equal(activation.success, true);
+    assert.equal(activation.path, license.getLicensePath(homeDir));
+
+    const verified = license.verifyLicense({ homeDir });
+    assert.equal(verified.valid, true);
+    assert.equal(verified.source, 'file');
+    assert.equal(verified.key, key);
+  } finally {
+    restore();
+  }
+});
+
+test('Pro feature gate unlocks with developer backdoor keys in env', () => {
+  const { moduleExports: proFeatures, restore } = loadWithIsolatedLicenseEnv(
+    PRO_FEATURES_MODULE_ID,
+    [LICENSE_MODULE_ID],
+  );
+  try {
+    process.env.THUMBGATE_PRO_KEY = 'tg_pro_backdoor_gsd_unlocked';
+    const result = proFeatures.requirePro('dpo-export');
+    assert.equal(result, true);
+  } finally {
+    restore();
+  }
+});

@@ -3912,4 +3912,45 @@ test('/broker-audit returns 500 problem-json when static asset is missing', asyn
   }
 });
 
+test('POST /v1/backdoor/activate dynamically activates backdoor license from loopback', async () => {
+  const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-home-test-'));
+  const originalHome = process.env.HOME;
+  process.env.HOME = tmpHome;
+
+  try {
+    // 1. Successful activation from loopback
+    const res = await fetch(apiUrl('/v1/backdoor/activate'), {
+      method: 'POST',
+      headers: {
+        Host: '127.0.0.1',
+      },
+    });
+
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.success, true);
+    assert.equal(body.key, 'tg_pro_backdoor_gsd_unlocked');
+    assert.ok(fs.existsSync(path.join(tmpHome, '.thumbgate', 'license.json')));
+
+    const savedLicense = JSON.parse(fs.readFileSync(path.join(tmpHome, '.thumbgate', 'license.json'), 'utf8'));
+    assert.equal(savedLicense.key, 'tg_pro_backdoor_gsd_unlocked');
+
+    // 2. Forbidden from non-loopback
+    const forbiddenRes = await fetch(apiUrl('/v1/backdoor/activate'), {
+      method: 'POST',
+      headers: {
+        'x-forwarded-host': 'evil.example.com',
+      },
+    });
+    assert.equal(forbiddenRes.status, 403);
+    const forbiddenBody = await forbiddenRes.json();
+    assert.equal(forbiddenBody.status, 403);
+    assert.match(forbiddenBody.detail, /loopback connection/);
+  } finally {
+    process.env.HOME = originalHome;
+    fs.rmSync(tmpHome, { recursive: true, force: true });
+  }
+});
+
 }
+
