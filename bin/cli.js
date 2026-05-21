@@ -32,6 +32,17 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { execSync, execFileSync } = require('child_process');
+
+// Seamless auto-update: trigger a detached, throttled (≤1/24h),
+// best-effort `npm install -g thumbgate@latest` so the user's next
+// invocation gets the newer version automatically. Never blocks; opt-out
+// via THUMBGATE_NO_AUTO_UPDATE=1 (also auto-skipped in CI/test envs).
+// Implemented as a fire-and-forget call before main work so a slow npm
+// registry can never delay a user command.
+try {
+  require(path.join(__dirname, '..', 'scripts', 'auto-update-cli')).maybeTriggerBackgroundUpdate();
+} catch { /* never block CLI on auto-update wiring */ }
+
 const {
   codexAutoUpdateCliEntry,
   codexAutoUpdateMcpEntry,
