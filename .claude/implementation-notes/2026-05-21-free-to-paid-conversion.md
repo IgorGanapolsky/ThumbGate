@@ -112,6 +112,30 @@ from `quick-start` are never read by any code. Dead config.
 - `thumbgate capture --help` now shows usage instead of running capture
 - Previously only `init` had its own --help guard
 
+## Actual high-ROI fix (commit 8: daily block cap for free tier)
+
+After 5 wrong hypotheses, the CEO confirmed the structural analysis was correct:
+the free tier gives away the entire core product. The fix is to tighten the free tier.
+
+**Implementation: FREE_TIER_DAILY_BLOCKS = 10**
+- Free-tier users get 10 gate blocks per day
+- After 10 blocks, deny decisions downgrade to warn + upgrade CTA
+- The action PROCEEDS (not blocked), but the user sees:
+  "⚠️ [original message] 🔓 Daily protection limit reached (10/10). Upgrade for unlimited protection: thumbgate.ai/go/pro"
+- Pro, trial, CI users are uncapped
+- Safety-critical gates (secret guard, security scan, structural gates) are NOT capped — only configurable gates in the main loop
+- Daily block counter resets at midnight UTC, tracked in gate-stats.json
+- Old daily counters pruned after 7 days
+
+**Why this works:**
+- The user has experienced 10 real blocks (ThumbGate saved them 10 times)
+- They now see protection turning off — urgency is real, not manufactured
+- The upgrade URL appears at the exact moment they need it most
+- Normal users who rarely trigger gates never see the limit
+- Power users who depend on gate protection hit it naturally
+
+**Tests:** `tests/daily-block-cap.test.js` — 5 tests covering Pro bypass, CI bypass, under-limit pass-through, over-limit downgrade, and constant export.
+
 ## Lighthouse Attention assessment (CEO-requested)
 Nous Research paper: training-only sparse attention, 1.4-1.7x pretraining speedup at long context.
 - **No direct technical application to ThumbGate.** ThumbGate doesn't train models.
