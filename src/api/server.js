@@ -1533,7 +1533,6 @@ function buildCheckoutIntentHref(baseUrl, metadata = {}, overrides = {}) {
 }
 
 function renderCheckoutIntentPage({
-  confirmHref,
   workflowIntakeHref,
   confirmHiddenParams,
 }) {
@@ -4835,7 +4834,6 @@ async function addContext(){
           }
         }
         const html = renderCheckoutIntentPage({
-          confirmHref: buildCheckoutConfirmHref(parsed),
           workflowIntakeHref,
           confirmHiddenParams,
         });
