@@ -48,3 +48,41 @@ Audit found 4,187 monthly npm installs but $0 external revenue. The gates-engine
 ## Tests
 - `tests/gates-engine-upgrade-cta.test.js` — 6 tests covering null returns for CI/Pro/low-blocks and positive returns for free-tier with sufficient blocks
 - Pre-existing `package-boundary.test.js` failure (3.70 MB ratchet) is unrelated and was already failing on main
+
+## What I got wrong AGAIN (CEO "are you sure?" #3)
+
+The gates-engine `additionalContext` goes to the **AI agent**, not the human.
+My milestone nudges were wired into a channel that talks to Claude/Cursor/Codex — the person who would pay $19/mo never sees them. The block-action CTA in deny output does reach humans (deny messages appear in terminal), but marketing nags in error output annoy developers and likely increase `THUMBGATE_NO_NUDGE=1` adoption, not revenue.
+
+## The real discovery: /v1/metrics/real on production
+
+The endpoint already existed. Production data shows:
+
+| Metric | All Time | Last 7 Days |
+|--------|----------|-------------|
+| Total pings | 72,288 | 4,768 |
+| Real users | 14,892 (20.6%) | 3,128 (65.6%) |
+| Bots | 57,396 (79.4%) | 1,640 (34.4%) |
+| Unique installs | 24,051 | 535 |
+
+Key funnel: **34,728 init → 531 first rule (1.5%) → 87 Stripe redirects → 2 paid**
+
+The 4,187 monthly npm downloads include registry mirrors/crawlers (Sunday downloads are 2.5x Friday — opposite of real developer behavior). Real unique installs last 7 days: **535**.
+
+**The bottleneck is ACTIVATION, not conversion.** 98.5% of init users never promote their first prevention rule.
+
+## Fixes applied (commit 3: activation guide)
+- Replaced post-init marketing clutter (4 competing CTAs) with a single clear activation guide
+- Shows the exact `capture` command to create a first prevention rule in 30 seconds
+- Trial and email prompts deprioritized below the action
+
+## Fix: CLI --help bug (commit 2)
+- Global --help interceptor for 14 subcommands
+- `thumbgate capture --help` now shows usage instead of running capture
+- Previously only `init` had its own --help guard
+
+## Lighthouse Attention assessment (CEO-requested)
+Nous Research paper: training-only sparse attention, 1.4-1.7x pretraining speedup at long context.
+- **No direct technical application to ThumbGate.** ThumbGate doesn't train models.
+- **Market signal:** Long-context pretraining getting cheaper → context windows will grow → more context engineering needed → ThumbGate's lane gets wider.
+- **Not a feature to implement.** It validates ThumbGate's positioning as "infrastructure for AI agent context" but doesn't change what we build.
