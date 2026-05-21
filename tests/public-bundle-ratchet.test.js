@@ -48,7 +48,10 @@ const path = require('node:path');
 // 259 → 260: public/codex-enterprise.html added — landing page riding the
 //            2026-05-20 OpenAI×Dell Codex Enterprise partnership announcement
 //            (changeset: codex-enterprise-dell-landing.md)
-const BASELINE_FILE_COUNT = 260;
+// 260 → 261: public/agents-cost-savings.html added — FinOps-for-AI positioning
+//            page that pairs with the `thumbgate cost` CLI (#2281).
+//            (changeset: agents-cost-savings-landing.md)
+const BASELINE_FILE_COUNT = 261;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
