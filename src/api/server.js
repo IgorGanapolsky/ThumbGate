@@ -2505,6 +2505,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
     { path: '/codex-plugin', changefreq: 'weekly', priority: '0.75' },
     { path: '/codex-enterprise', changefreq: 'weekly', priority: '0.85' },
+    { path: '/agents-cost-savings', changefreq: 'weekly', priority: '0.85' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
   ];
   return [
@@ -4541,6 +4542,29 @@ async function addContext(){
         });
       } catch {
         sendJson(res, 404, { error: 'Codex Enterprise page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/agents-cost-savings' || pathname === '/agents-cost-savings.html')) {
+      // FinOps-for-AI positioning page. Pairs with the `thumbgate cost` CLI
+      // shipped in #2281: the CLI prints the dollar amount, this page is
+      // the public-facing explanation of why "prevention" (ThumbGate's
+      // PreToolUse gates) is a distinct category from "reporting" (Finout,
+      // Helicone, Vantage, AgentOps). Reply-to-pitch surface for buyers
+      // who get a FinOps-for-AI marketing email and need a frame.
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(path.join(PUBLIC_DIR, 'agents-cost-savings.html'), 'utf-8'),
+          extraTelemetry: { pageType: 'agents_cost_savings' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Agents Cost Savings page not found' });
       }
       return;
     }

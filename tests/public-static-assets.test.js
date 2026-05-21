@@ -251,3 +251,35 @@ test('GET /sitemap.xml includes /codex-enterprise at priority 0.85', async () =>
   assert.ok(entry, 'codex-enterprise <url> block must exist');
   assert.match(entry[0], /<priority>0\.85<\/priority>/);
 });
+
+test('GET /agents-cost-savings serves the FinOps-for-AI landing HTML', async () => {
+  const [routeRes, htmlRes] = await Promise.all([
+    fetch(`${origin}/agents-cost-savings`),
+    fetch(`${origin}/agents-cost-savings.html`),
+  ]);
+  for (const res of [routeRes, htmlRes]) {
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-type') || '', /text\/html/);
+    const body = await res.text();
+    assert.ok(body.length > 500, 'agents-cost-savings page must render non-empty HTML');
+    // Lock in the prevention-vs-reporting framing and the CLI cross-link —
+    // those are the page's reason for existing, not generic agent-cost copy.
+    assert.match(body, /prevention/i);
+    assert.match(body, /thumbgate cost/i);
+  }
+});
+
+test('HEAD /agents-cost-savings responds 200 with html content-type', async () => {
+  const res = await fetch(`${origin}/agents-cost-savings`, { method: 'HEAD' });
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /text\/html/);
+});
+
+test('GET /sitemap.xml includes /agents-cost-savings at priority 0.85', async () => {
+  const res = await fetch(`${origin}/sitemap.xml`);
+  assert.equal(res.status, 200);
+  const xml = await res.text();
+  const entry = xml.match(/<url>\s*<loc>[^<]*\/agents-cost-savings<\/loc>[\s\S]*?<\/url>/);
+  assert.ok(entry, 'agents-cost-savings <url> block must exist');
+  assert.match(entry[0], /<priority>0\.85<\/priority>/);
+});
