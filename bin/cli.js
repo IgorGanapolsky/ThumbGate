@@ -798,14 +798,11 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
   }
 
   console.log('');
-  console.log(`thumbgate v${pkgVersion()} initialized.`);
-  console.log('Run: npx thumbgate help');
+  console.log(`✅ thumbgate v${pkgVersion()} initialized.`);
   const onboardingEmail = typeof args.email === 'string'
     ? args.email.trim()
     : (typeof args['onboarding-email'] === 'string' ? args['onboarding-email'].trim() : '');
   if (onboardingEmail) {
-    console.log('');
-    console.log(`Subscribing ${onboardingEmail} to the ThumbGate setup sequence...`);
     try {
       execFileSync(process.execPath, [__filename, 'subscribe', onboardingEmail], {
         cwd: CWD,
@@ -814,21 +811,35 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
       });
       trackEvent('cli_init_email_subscribed', { command: 'init', source: 'init_email' });
     } catch (_) {
-      console.log(`Could not subscribe automatically. Retry with: npx thumbgate subscribe ${onboardingEmail}`);
+      console.log(`  Retry onboarding email: npx thumbgate subscribe ${onboardingEmail}`);
     }
-  } else {
-    console.log('Get the 5-minute setup guide + trial reminders:');
-    console.log('  npx thumbgate init --email you@company.com');
   }
   trackEvent('cli_init', { command: 'init' });
-  printInitConversionPrompt(onboardingEmail);
-  proNudge();
+
+  // ---------------------------------------------------------------------------
+  // Activation guide: the ONE thing the user should do next.
+  // 98.5% of init users never promote their first prevention rule.
+  // This is the funnel break — not conversion, not nudges — activation.
+  // ---------------------------------------------------------------------------
   console.log('');
-  console.log('  ┌──────────────────────────────────────────────────────────┐');
-  console.log('  │  Teams: shared enforcement, CI gates, audit trails      │');
-  console.log('  │  One correction protects every agent on your team.      │');
-  console.log('  │  https://thumbgate-production.up.railway.app/pro        │');
-  console.log('  └──────────────────────────────────────────────────────────┘');
+  console.log('  ╭──────────────────────────────────────────────────────────╮');
+  console.log('  │  NEXT: Create your first prevention rule (30 seconds)   │');
+  console.log('  │                                                         │');
+  console.log('  │  When your AI agent makes a mistake, capture it:        │');
+  console.log('  │                                                         │');
+  console.log('  │  npx thumbgate capture --feedback=down \\               │');
+  console.log('  │    --context="agent deleted prod config" \\              │');
+  console.log('  │    --what-went-wrong="ran rm on .env" \\                 │');
+  console.log('  │    --what-to-change="never delete .env files"           │');
+  console.log('  │                                                         │');
+  console.log('  │  ThumbGate auto-promotes this to a prevention rule      │');
+  console.log('  │  that blocks the mistake from happening again.          │');
+  console.log('  ╰──────────────────────────────────────────────────────────╯');
+  console.log('');
+  printInitConversionPrompt(onboardingEmail);
+  if (!onboardingEmail) {
+    console.log('  Get trial reminders: npx thumbgate init --email you@company.com');
+  }
 
   try {
     const { appendFunnelEvent } = require(path.join(PKG_ROOT, 'scripts', 'billing'));
