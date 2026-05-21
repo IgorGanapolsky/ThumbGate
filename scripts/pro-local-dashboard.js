@@ -16,7 +16,7 @@ const CREATOR_SYNTHETIC_KEY = process.env.THUMBGATE_DEV_KEY || '';
  *   2. Env var: THUMBGATE_DEV_BYPASS=[set via THUMBGATE_DEV_SECRET env var]
  * Requires a specific non-obvious value (not boolean) to prevent accidental activation.
  */
-function isCreatorDev({ env = process.env, homeDir = os.homedir() } = {}) {
+function isCreatorDev({ env = process.env, homeDir = env.HOME || env.USERPROFILE || os.homedir() } = {}) {
   // Layer 1: env var with specific value
   if (CREATOR_BYPASS_VALUE && String(env[CREATOR_BYPASS_ENV] || '') === CREATOR_BYPASS_VALUE) {
     return true;
@@ -37,7 +37,7 @@ function isCreatorDev({ env = process.env, homeDir = os.homedir() } = {}) {
  * with any non-empty bypass value. No env var needed — just the config file.
  * Used by the server to skip auth on localhost during local development.
  */
-function hasDevOverride(homeDir = os.homedir()) {
+function hasDevOverride(homeDir = process.env.HOME || process.env.USERPROFILE || os.homedir()) {
   // Disabled during test runs to avoid interfering with auth assertions
   if (process.env.NODE_TEST_CONTEXT || process.env.THUMBGATE_TESTING) return false;
   try {
@@ -47,11 +47,11 @@ function hasDevOverride(homeDir = os.homedir()) {
   } catch { return false; }
 }
 
-function getLicenseDir(homeDir = os.homedir()) {
+function getLicenseDir(homeDir = process.env.HOME || process.env.USERPROFILE || os.homedir()) {
   return path.join(homeDir, '.thumbgate');
 }
 
-function getLicensePath(homeDir = os.homedir()) {
+function getLicensePath(homeDir = process.env.HOME || process.env.USERPROFILE || os.homedir()) {
   return path.join(getLicenseDir(homeDir), 'license.json');
 }
 
