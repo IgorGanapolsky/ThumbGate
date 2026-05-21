@@ -251,9 +251,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // landing page riding the OpenAI×Dell Codex Enterprise distribution wave.
   // Sister-bumped from tests/public-bundle-ratchet.test.js's 259 → 260; both
   // ratchets must stay in lockstep. (changeset: codex-enterprise-dell-landing.md)
+  // Bumped 260 → 261 (2026-05-21) to ship public/agents-cost-savings.html —
+  // the FinOps-for-AI positioning page that pairs with the `thumbgate cost`
+  // CLI. Sister-bumped from public-bundle-ratchet.test.js's 260 → 261; the
+  // two ratchets must stay in lockstep. (changeset: agents-cost-savings-landing.md)
   assert.ok(
-    manifest.fileCount <= 260,
-    `npm package should stay <= 260 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 261,
+    `npm package should stay <= 261 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

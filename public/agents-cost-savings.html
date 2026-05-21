@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinOps for AI Agents — ThumbGate prevents the spend FinOps tools just report on</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Most FinOps platforms report on AI agent spend after it happens. ThumbGate is the runtime layer that prevents the wasted tool calls in the first place — and prints the dollar amount you saved.">
+<meta property="og:title" content="FinOps for AI Agents — Prevention, Not Reporting">
+<meta property="og:description" content="Cost dashboards tell you what your agents wasted last week. ThumbGate's PreToolUse gates stop the wasted tool calls before they fire — and `thumbgate cost` shows you the dollar amount.">
+<meta property="og:type" content="article">
+<meta property="og:image" content="https://thumbgate-production.up.railway.app/og.png">
+<link rel="canonical" href="https://thumbgate-production.up.railway.app/agents-cost-savings">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "FinOps for AI Agents — Prevention vs. Reporting",
+  "description": "Cost dashboards report agent spend after it happens. ThumbGate's runtime gates prevent the wasted tool calls in the first place, and `thumbgate cost` prints the dollar amount saved.",
+  "datePublished": "2026-05-21",
+  "dateModified": "2026-05-21",
+  "author": { "@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" },
+  "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate-production.up.railway.app" },
+  "about": [
+    { "@type": "Thing", "name": "FinOps for AI" },
+    { "@type": "Thing", "name": "Agent Cost Optimization" },
+    { "@type": "Thing", "name": "LLM Token Savings" },
+    { "@type": "Thing", "name": "PreToolUse Gates" }
+  ]
+}
+</script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root { --bg:#0a0a0b; --card:#161618; --border:#222225; --text:#e8e8ec; --muted:#8b8b94; --cyan:#22d3ee; --green:#34d399; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+  .container { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  nav { padding: 1rem 2rem; border-bottom: 1px solid var(--border); display:flex; gap:1.5rem; flex-wrap:wrap; }
+  nav a { color: var(--muted); text-decoration:none; font-size:0.9rem; }
+  nav .brand { color: var(--text); font-weight:700; }
+  .pill { display:inline-block; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--cyan); background:rgba(34,211,238,0.08); border:1px solid rgba(34,211,238,0.2); padding:4px 12px; border-radius:100px; margin-top:1.5rem; font-weight:600; }
+  h1 { font-size:2.2rem; line-height:1.15; margin:1rem 0 1rem; }
+  h2 { font-size:1.45rem; margin:2.2rem 0 1rem; color:var(--cyan); }
+  h3 { margin:0.6rem 0; font-size:1rem; }
+  p, li { margin-bottom:0.75rem; }
+  ul, ol { padding-left:1.25rem; }
+  .card { background: var(--card); border:1px solid var(--border); border-radius:12px; padding:1.25rem; margin:1rem 0; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; margin:1rem 0; }
+  .grid .card h3 { color:var(--cyan); }
+  .cta { display:inline-block; background:var(--cyan); color:#000; padding:0.8rem 1.2rem; border-radius:8px; text-decoration:none; font-weight:700; }
+  .secondary { color:var(--cyan); text-decoration:underline; margin-left:1rem; }
+  .quote { border-left:3px solid var(--cyan); padding:0.75rem 1rem; margin:1rem 0; color:var(--muted); font-style:italic; }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background:#0f0f11; border:1px solid var(--border); border-radius:6px; padding:0.15rem 0.4rem; font-size:0.9rem; }
+  pre { padding:0.85rem 1rem; overflow-x:auto; }
+  .footer-links { margin-top:2.5rem; padding-top:1.25rem; border-top:1px solid var(--border); color:var(--muted); font-size:0.9rem; }
+  .footer-links a { color:var(--cyan); text-decoration:none; }
+  table.compare { width:100%; border-collapse:collapse; margin:1rem 0; }
+  table.compare th, table.compare td { padding:0.6rem 0.8rem; border-bottom:1px solid var(--border); text-align:left; vertical-align:top; }
+  table.compare th { color:var(--cyan); font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em; }
+  .savings-num { color:var(--green); font-weight:700; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="brand">ThumbGate</a>
+  <a href="/guide">Guide</a>
+  <a href="/agent-manager">Agent Manager</a>
+  <a href="/codex-enterprise">Codex Enterprise</a>
+  <a href="/dashboard">Dashboard demo</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+<div class="container">
+  <span class="pill">FinOps for AI agents</span>
+  <h1>Cost dashboards tell you what your agents wasted last week. ThumbGate stops the waste before it fires.</h1>
+  <p>Most AI-spend platforms — Finout, Vantage, the new "AI FinOps Assistant" wave — focus on <em>showing you the bill after the agent ran</em>: cost allocation, anomaly detection, unit economics finance can trust. A few (Helicone's rate limits, Revenium's Economic Control) add coarse runtime enforcement keyed off $ thresholds or request counts. None of them stop the wasted tool call by understanding <em>why</em> it would have failed.</p>
+  <p>That's the layer ThumbGate occupies. Every PreToolUse gate that fires is a Claude / GPT call your agent <em>did not</em> make — input tokens you didn't spend, output tokens you didn't spend, retry loop you didn't trigger. The savings are computable, conservative, and now surfaced as a number on your CLI.</p>
+
+  <div class="quote">"74% of CIOs say their role will be at risk if their company does not deliver measurable business gains from AI within the next two years." — <a href="https://www.cio.com/article/4172555/how-it-teams-are-putting-ai-agents-to-work.html" target="_blank" rel="noopener" style="color:var(--cyan);font-style:normal;">CIO Online, 2026</a></div>
+  <p>"Measurable" is the operative word. A token-spend dashboard tells finance how much got burned; it doesn't tell the CIO board what was averted. <code>thumbgate cost</code> prints a single conservative dollar figure backed by the gate-block count from <em>your</em> machine — not "what enterprises like you saved." That's the artifact that survives a 2026 budget review.</p>
+
+  <h2>One command, one number</h2>
+  <p>Once ThumbGate is installed and gates have been firing, this is what an operator sees:</p>
+  <pre><code>$ thumbgate cost
+
+💰 ThumbGate cost-savings — cumulative
+──────────────────────────────────────────────────
+  Tool calls blocked : 247
+  Tool calls warned  : 12
+  Tool calls passed  : 3,401
+  Top blocker        : no-mocked-db (138 blocks)
+
+  Tokens you did NOT spend
+    Input  : 494K
+    Output : 148K
+    Total  : 642K
+
+  Estimated <span class="savings-num">$ saved  : $3.95</span></code></pre>
+  <p>The methodology is intentionally conservative: 2,000 input + 600 output tokens per blocked call, a Sonnet-heavy model mix (80% Sonnet 4.5, 15% Opus 4.6, 5% Haiku 4.5), Anthropic published prices. The goal is "you almost certainly saved at least this much" — not "let's flatter ourselves." Override the mix with <code>--mix '&#123;"claude-sonnet-4-5":1.0&#125;'</code> if your stack is different.</p>
+
+  <h2>Prevention vs. reporting</h2>
+  <table class="compare">
+    <thead>
+      <tr><th>Capability</th><th>Reporting-layer FinOps</th><th>ThumbGate (runtime gates)</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>See what agents spent last week</td><td>✅</td><td>Partial (via dashboard)</td></tr>
+      <tr><td>Allocate spend to teams / features</td><td>✅</td><td>Per-gate breakdown via <code>byGate</code></td></tr>
+      <tr><td>Stop a known-bad tool call before it hits the model</td><td>❌</td><td>✅ — PreToolUse gate fires, no API call made</td></tr>
+      <tr><td>Promote a one-off failure into a permanent gate</td><td>❌</td><td>✅ — feedback loop + lesson DB</td></tr>
+      <tr><td>Print conservative $ saved per day</td><td>❌</td><td>✅ — <code>thumbgate cost</code></td></tr>
+      <tr><td>K8s pod-level allocation, finance-grade reporting</td><td>✅ (that's their core)</td><td>❌ (not our layer)</td></tr>
+    </tbody>
+  </table>
+  <p>The two layers compose. ThumbGate prevents the wasted spend; a reporting FinOps tool tells finance what the remaining spend was for. Picking ThumbGate doesn't mean you don't also need cost visibility — it means the visibility number gets smaller.</p>
+
+  <h2>Why the savings are real, not theoretical</h2>
+  <ol>
+    <li><strong>Every block is one fewer round trip.</strong> A blocked tool call doesn't reach the model. There's no "ThumbGate intercepted but the request still cost you" — the agent's tool-call execution is replaced with the gate's verdict, and the agent's next reasoning step takes the verdict as context instead of the failed result.</li>
+    <li><strong>The avoided retry loop is the bulk of the saving.</strong> Failed tool calls don't just cost the call — they cost the model's next reasoning turn (which sees the failure and tries again), and often a third turn (which tries a different approach). Conservative 2k input + 600 output assumes one retry; in practice it's often more.</li>
+    <li><strong>The numbers come from your local <code>gate-stats.json</code>.</strong> Not from a marketing model, not from "what enterprises like you saved." Your machine, your gates, your blocks.</li>
+  </ol>
+
+  <h2>Get the number on your machine</h2>
+  <pre><code>npx thumbgate init        # wire the PreToolUse hook
+# ...let your agent run for a few hours...
+npx thumbgate cost        # see what the gates were worth</code></pre>
+  <p>Or as JSON, if you want to ship it to a dashboard:</p>
+  <pre><code>npx thumbgate cost --json | jq .savings.dollarsSaved</code></pre>
+
+  <div class="quote">"The category isn't 'FinOps for AI' — it's 'gates that stop the spend so FinOps has less to report on.' One sits behind the other."</div>
+
+  <div class="card">
+    <p><strong>The free CLI is real. The paid tier is the hosted dashboard, org-wide rule library, and the operator the Agent Manager doesn't have to be themselves.</strong></p>
+    <p>
+      <a href="/#workflow-sprint-intake?utm_source=website&amp;utm_medium=agents_cost_savings_page&amp;utm_campaign=finops_sprint&amp;cta_id=agents_cost_savings_sprint_intake&amp;cta_placement=agents_cost_savings_page" class="cta">Start the Workflow Hardening Sprint</a>
+      <a href="/checkout/pro?utm_source=website&amp;utm_medium=agents_cost_savings_page&amp;utm_campaign=pro_upgrade&amp;cta_id=agents_cost_savings_pro_checkout&amp;cta_placement=agents_cost_savings_page&amp;plan_id=pro" class="secondary">Or start Pro at $19/mo →</a>
+    </p>
+  </div>
+
+  <h2>Related reading</h2>
+  <ul>
+    <li><a href="/codex-enterprise">ThumbGate for Codex in the Enterprise</a> — the same prevention story for the OpenAI×Dell distribution wave.</li>
+    <li><a href="/agent-manager">ThumbGate for the Agent Manager</a> — the role inside the org that owns "what are our agents costing us."</li>
+    <li><a href="/dashboard">Dashboard demo</a> — the $ saved number rendered against demo data, so you can see the shape before installing.</li>
+  </ul>
+
+  <div class="footer-links">
+    Built for teams who watched their Claude bill spike, installed a FinOps dashboard, and realized the dashboard only told them <em>which</em> failed agent loop ran the meter — not how to stop it.
+  </div>
+</div>
+</body>
+</html>
