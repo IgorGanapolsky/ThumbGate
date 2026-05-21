@@ -4,7 +4,14 @@
 /**
  * Silent-Failure Clustering — Unsupervised candidate source for the meta-agent loop
  *
- * Off by default. Enabled with: THUMBGATE_SILENT_FAILURE_CLUSTERING=1
+ * Default-ON since 2026-05-21. Opt-out with: THUMBGATE_SILENT_FAILURE_CLUSTERING=0
+ * (or set NODE_ENV=test to skip in test runs). Was opt-in for the initial
+ * landing of PR #2285; flipped to default-on because the entire point is to
+ * cover the case where users never give thumbs-down — keeping it opt-in
+ * means lazy users (the ones who need it most) never benefit. Bounded risk:
+ * candidates still flow through meta-agent-loop's existing fp-rate eval, so
+ * a noisy cluster can't auto-promote to a real gate without passing the
+ * same precision/recall thresholds as LLM-generated candidates.
  *
  * Problem: ThumbGate's HITL loop only learns from explicit thumbs-down. Tool calls
  * that fail without user feedback (exit_code != 0, regex-matched error in output,
@@ -460,9 +467,20 @@ function generateSilentFailureCandidates(opts = {}) {
 // CLI
 // ---------------------------------------------------------------------------
 
+/**
+ * Resolve the enabled state. Default ON. Explicit "0" or "false" opts out;
+ * NODE_ENV=test also opts out to keep test runs deterministic.
+ */
+function isSilentFailureClusteringEnabled(env = process.env) {
+  if (env.NODE_ENV === 'test') return false;
+  const raw = env.THUMBGATE_SILENT_FAILURE_CLUSTERING;
+  if (raw === '0' || raw === 'false' || raw === 'off' || raw === 'no') return false;
+  return true;
+}
+
 async function main() {
-  if (process.env.THUMBGATE_SILENT_FAILURE_CLUSTERING !== '1') {
-    process.stdout.write('silent-failure-cluster: disabled (set THUMBGATE_SILENT_FAILURE_CLUSTERING=1 to enable)\n');
+  if (!isSilentFailureClusteringEnabled()) {
+    process.stdout.write('silent-failure-cluster: disabled (THUMBGATE_SILENT_FAILURE_CLUSTERING=0 or NODE_ENV=test)\n');
     return;
   }
 
@@ -492,6 +510,7 @@ if (require.main === module) {
 
 module.exports = {
   generateSilentFailureCandidates,
+  isSilentFailureClusteringEnabled,
   // exported for testing
   redactSecrets,
   normalizePaths,
