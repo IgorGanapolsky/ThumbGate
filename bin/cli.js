@@ -592,19 +592,63 @@ function detectAgent(projectDir) {
 }
 
 function quickStart() {
-  // quick-start is now an alias for init — init already copies default gates,
-  // enables selfDistillation/contextStuffing/autoGatePromotion, and wires hooks.
-  // Kept as a command for backward compatibility.
   const qsArgs = parseArgs(process.argv.slice(3));
   const projectDir = process.cwd();
   const detectedAgent = detectAgent(projectDir);
   const agent = qsArgs.agent || detectedAgent || 'claude-code';
+  const thumbgateDir = path.join(projectDir, '.thumbgate');
+  const configPath = path.join(thumbgateDir, 'config.json');
+  const agentSource = qsArgs.agent ? 'specified' : (detectedAgent ? 'auto-detected' : 'default');
 
   console.log(`\nthumbgate quick-start v${pkgVersion()}`);
-  console.log(`Agent: ${agent} (${qsArgs.agent ? 'specified' : (detectedAgent ? 'auto-detected' : 'default')})`);
+  console.log(`Agent: ${agent} (${agentSource})`);
   console.log('');
 
+  // 1. Run init with the resolved agent so hook wiring uses the same target.
   init({ ...qsArgs, agent });
+
+  // 2. Copy default gates
+  const defaultGates = path.join(PKG_ROOT, 'config', 'gates', 'default.json');
+  const targetGates = path.join(thumbgateDir, 'gates.json');
+  if (fs.existsSync(defaultGates)) {
+    fs.mkdirSync(thumbgateDir, { recursive: true });
+    fs.copyFileSync(defaultGates, targetGates);
+    console.log('  Copied default gates to .thumbgate/gates.json');
+  }
+
+  // 3. Write config
+  let baseConfig = {};
+  if (fs.existsSync(configPath)) {
+    try {
+      baseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    } catch (_) {
+      baseConfig = {};
+    }
+  }
+  const config = {
+    ...baseConfig,
+    selfDistillation: true,
+    contextStuffing: true,
+    maxTokenBudget: 10000,
+    autoGatePromotion: true,
+    agent,
+    version: pkgVersion(),
+    installId: baseConfig.installId || require('crypto').randomBytes(8).toString('hex'),
+    quickStart: true,
+    createdAt: baseConfig.createdAt || new Date().toISOString(),
+  };
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
+  console.log('  Created .thumbgate/config.json');
+
+  console.log('\n  Enforcement setup complete:');
+  console.log('    Self-distillation: ON (agent auto-learns from outcomes)');
+  console.log('    Context-stuffing:  ON (all lessons injected at session start)');
+  console.log('    Auto-gate promotion: ON (recurring failures become hard blocks)');
+  console.log('    Default gates: ' + (fs.existsSync(targetGates) ? 'loaded' : 'not found'));
+  console.log('\n  Next steps:');
+  console.log('    npx thumbgate capture --feedback=down --context="what failed"');
+  console.log('    npx thumbgate stats');
+  console.log('');
 }
 
 function init(cliArgs = parseArgs(process.argv.slice(3))) {
@@ -672,23 +716,10 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
     memoryPath: '.thumbgate/memory-log.jsonl',
     installId: existingInstallId || crypto.randomUUID(),
     createdAt: new Date().toISOString(),
-    selfDistillation: true,
-    contextStuffing: true,
-    autoGatePromotion: true,
-    maxTokenBudget: 10000,
   };
 
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
   console.log('Wrote .thumbgate/config.json');
-
-  // Copy default gates so ThumbGate blocks real mistakes on day one.
-  // Without gates, hooks fire but pass everything — zero visible value.
-  const defaultGatesSrc = path.join(PKG_ROOT, 'config', 'gates', 'default.json');
-  const defaultGatesDest = path.join(thumbgateDir, 'gates.json');
-  if (fs.existsSync(defaultGatesSrc) && !fs.existsSync(defaultGatesDest)) {
-    fs.copyFileSync(defaultGatesSrc, defaultGatesDest);
-    console.log('Loaded default gates → .thumbgate/gates.json');
-  }
 
   // Always create .mcp.json (project-level MCP config used by Claude, Codex, Cursor)
   mergeMcpJson(path.join(CWD, '.mcp.json'), 'MCP');
@@ -786,25 +817,23 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
   trackEvent('cli_init', { command: 'init' });
 
   // ---------------------------------------------------------------------------
-  // Activation status: show what's now active so the user knows ThumbGate works.
-  // Default gates provide immediate value — no manual setup required.
+  // Activation guide: the ONE thing the user should do next.
+  // 98.5% of init users never promote their first prevention rule.
+  // This is the funnel break — not conversion, not nudges — activation.
   // ---------------------------------------------------------------------------
-  const gatesLoaded = fs.existsSync(path.join(thumbgateDir, 'gates.json'));
-  const hooksWired = configured > 0;
   console.log('');
   console.log('  ╭──────────────────────────────────────────────────────────╮');
-  console.log('  │  ThumbGate is ' + (gatesLoaded && hooksWired ? 'ACTIVE' : 'READY ') + '                                      │');
+  console.log('  │  NEXT: Create your first prevention rule (30 seconds)   │');
   console.log('  │                                                         │');
-  if (gatesLoaded) {
-    console.log('  │  ✓ Default gates loaded — blocking dangerous actions    │');
-  }
-  if (hooksWired) {
-    console.log('  │  ✓ Hooks wired — evaluating every tool call             │');
-  }
-  console.log('  │  ✓ Auto-gate promotion ON — recurring failures → blocks │');
+  console.log('  │  When your AI agent makes a mistake, capture it:        │');
   console.log('  │                                                         │');
-  console.log('  │  Start coding. ThumbGate protects you automatically.    │');
-  console.log('  │  See what it blocked: npx thumbgate stats               │');
+  console.log('  │  npx thumbgate capture --feedback=down \\               │');
+  console.log('  │    --context="agent deleted prod config" \\              │');
+  console.log('  │    --what-went-wrong="ran rm on .env" \\                 │');
+  console.log('  │    --what-to-change="never delete .env files"           │');
+  console.log('  │                                                         │');
+  console.log('  │  ThumbGate auto-promotes this to a prevention rule      │');
+  console.log('  │  that blocks the mistake from happening again.          │');
   console.log('  ╰──────────────────────────────────────────────────────────╯');
   console.log('');
   printInitConversionPrompt(onboardingEmail);

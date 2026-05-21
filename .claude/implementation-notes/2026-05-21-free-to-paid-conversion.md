@@ -71,35 +71,10 @@ The 4,187 monthly npm downloads include registry mirrors/crawlers (Sunday downlo
 
 **The bottleneck is ACTIVATION, not conversion.** 98.5% of init users never promote their first prevention rule.
 
-## Fixes applied (commit 3: activation guide — SUPERSEDED by commit 5)
+## Fixes applied (commit 3: activation guide)
 - Replaced post-init marketing clutter (4 competing CTAs) with a single clear activation guide
 - Shows the exact `capture` command to create a first prevention rule in 30 seconds
 - Trial and email prompts deprioritized below the action
-- **CEO "are you sure?" #4**: A text box in terminal output won't fix 1.5% activation. Nobody reads post-install text.
-
-## What I got wrong AGAIN (CEO "are you sure?" #4)
-
-The activation guide was text in a terminal. That doesn't fix anything. The real question:
-**Why do 98.5% of init users never activate?**
-
-I initially blamed `--agent`/`--wire-hooks` being opt-in. That was WRONG too.
-The platform detection loop (lines 751-757) already auto-detects and wires hooks during bare `init`.
-`setupClaude()` calls `wireHooks({ agent: 'claude-code' })` automatically.
-
-**The actual root cause**: `init` wired hooks but copied ZERO gates. Without gates, the gates-engine
-fires on every tool call but passes everything through. Zero visible value. The user never sees
-ThumbGate block anything, so they never learn what it does, and never capture feedback.
-
-Meanwhile `quick-start` (a command nobody knows exists) DID copy 36 default gates + enable
-selfDistillation/contextStuffing/autoGatePromotion. The activation features were behind a
-command that isn't documented in the README or the init output.
-
-## Fixes applied (commit 5: init copies default gates)
-- `init` now copies `config/gates/default.json` (36 gates, 15KB) to `.thumbgate/gates.json`
-- `init` now enables `selfDistillation`, `contextStuffing`, `autoGatePromotion` by default
-- Post-init output shows ACTIVE status with what's actually running, not instructions to type
-- `quick-start` simplified to an alias for `init` (backward compat only)
-- **Why this matters**: New users immediately see ThumbGate block dangerous actions (rm .env, force-push, etc.) on their first coding session — zero manual setup required
 
 ## Fix: CLI --help bug (commit 2)
 - Global --help interceptor for 14 subcommands
