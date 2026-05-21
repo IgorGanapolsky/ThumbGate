@@ -106,6 +106,7 @@
       <tr><td>Allocate spend to teams / features</td><td>✅</td><td>Per-gate breakdown via <code>byGate</code></td></tr>
       <tr><td>Stop a known-bad tool call before it hits the model</td><td>❌</td><td>✅ — PreToolUse gate fires, no API call made</td></tr>
       <tr><td>Promote a one-off failure into a permanent gate</td><td>❌</td><td>✅ — feedback loop + lesson DB</td></tr>
+      <tr><td>Surface gate candidates from <em>silent</em> failures (where no human ever gave thumbs-down)</td><td>❌</td><td>✅ — unsupervised silent-failure clustering, on by default</td></tr>
       <tr><td>Print conservative $ saved per day</td><td>❌</td><td>✅ — <code>thumbgate cost</code></td></tr>
       <tr><td>K8s pod-level allocation, finance-grade reporting</td><td>✅ (that's their core)</td><td>❌ (not our layer)</td></tr>
     </tbody>
@@ -117,6 +118,7 @@
     <li><strong>Every block is one fewer round trip.</strong> A blocked tool call doesn't reach the model. There's no "ThumbGate intercepted but the request still cost you" — the agent's tool-call execution is replaced with the gate's verdict, and the agent's next reasoning step takes the verdict as context instead of the failed result.</li>
     <li><strong>The avoided retry loop is the bulk of the saving.</strong> Failed tool calls don't just cost the call — they cost the model's next reasoning turn (which sees the failure and tries again), and often a third turn (which tries a different approach). Conservative 2k input + 600 output assumes one retry; in practice it's often more.</li>
     <li><strong>The numbers come from your local <code>gate-stats.json</code>.</strong> Not from a marketing model, not from "what enterprises like you saved." Your machine, your gates, your blocks.</li>
+    <li><strong>You don't have to give thumbs-down for the system to learn.</strong> ThumbGate's unsupervised <em>silent-failure clustering</em> runs by default — it mines your conversation logs for tool calls that failed (non-zero exit code or matched error patterns) but never got an explicit thumbs-down, clusters them by tool + argument shape, and surfaces them as gate candidates. The same false-positive-rate guardrail that vets human-feedback candidates vets these. Lazy users still get the savings. Opt out with <code>THUMBGATE_SILENT_FAILURE_CLUSTERING=0</code> if you want HITL-only.</li>
   </ol>
 
   <h2>Get the number on your machine</h2>
