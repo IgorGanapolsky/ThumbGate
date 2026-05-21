@@ -71,7 +71,7 @@
 <div class="container">
   <span class="pill">FinOps for AI agents</span>
   <h1>Cost dashboards tell you what your agents wasted last week. ThumbGate stops the waste before it fires.</h1>
-  <p>FinOps platforms for AI spend — Finout, Helicone, Vantage, the new "AI FinOps Assistant" wave — are good at one thing: <em>showing you the bill after the agent ran</em>. They allocate tokens to teams, tag prompts by feature, and surface unit economics finance can trust. None of them stop the wasted tool call from happening in the first place.</p>
+  <p>Most AI-spend platforms — Finout, Vantage, the new "AI FinOps Assistant" wave — focus on <em>showing you the bill after the agent ran</em>: cost allocation, anomaly detection, unit economics finance can trust. A few (Helicone's rate limits, Revenium's Economic Control) add coarse runtime enforcement keyed off $ thresholds or request counts. None of them stop the wasted tool call by understanding <em>why</em> it would have failed.</p>
   <p>That's the layer ThumbGate occupies. Every PreToolUse gate that fires is a Claude / GPT call your agent <em>did not</em> make — input tokens you didn't spend, output tokens you didn't spend, retry loop you didn't trigger. The savings are computable, conservative, and now surfaced as a number on your CLI.</p>
 
   <div class="quote">"74% of CIOs say their role will be at risk if their company does not deliver measurable business gains from AI within the next two years." — <a href="https://www.cio.com/article/4172555/how-it-teams-are-putting-ai-agents-to-work.html" target="_blank" rel="noopener" style="color:var(--cyan);font-style:normal;">CIO Online, 2026</a></div>
