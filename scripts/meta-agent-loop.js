@@ -282,6 +282,8 @@ function buildPromotedGate(candidate, metrics, runId) {
     occurrences: metrics.hits,
     promotedAt: new Date().toISOString(),
     source: 'meta-agent',
+    // origin distinguishes silent-failure-clustered candidates from feedback-derived ones
+    origin: candidate.origin || 'user-feedback',
     runId,
     score: parseFloat(metrics.score.toFixed(3)),
     hitRate: parseFloat(metrics.hitRate.toFixed(3)),
@@ -369,6 +371,34 @@ async function runMetaAgentLoop({ dryRun = false, verbose = false } = {}) {
   }
   if (!candidates || candidates.length === 0) {
     candidates = generateCandidatesHeuristic(failures, blockPatterns);
+  }
+
+  // Tag existing-pipeline candidates with their origin so downstream precision
+  // measurement (silentFailureDerivedGates vs user-feedback-derived) is possible.
+  candidates = candidates.map((c) => (c.origin ? c : { ...c, origin: 'user-feedback' }));
+
+  // Step 3b: Silent-failure clustering — behind THUMBGATE_SILENT_FAILURE_CLUSTERING=1.
+  // Candidates flow through the SAME scoring / fp-rate eval below; we do not
+  // bypass any guardrail. Off by default to preserve existing behavior.
+  let silentFailureStats = null;
+  if (process.env.THUMBGATE_SILENT_FAILURE_CLUSTERING === '1') {
+    try {
+      const { generateSilentFailureCandidates } = require('./silent-failure-cluster');
+      const sfResult = generateSilentFailureCandidates({ feedbackLogPath });
+      silentFailureStats = sfResult.stats;
+      if (sfResult.candidates && sfResult.candidates.length > 0) {
+        candidates = candidates.concat(sfResult.candidates);
+      }
+      if (verbose) {
+        process.stdout.write(
+          `[meta-agent] silent-failure-cluster: candidates=${sfResult.candidates.length} `
+          + `failed=${sfResult.stats.failedCalls} clusters=${sfResult.stats.clusters} `
+          + `skipped=${sfResult.stats.skippedReason || 'none'}\n`
+        );
+      }
+    } catch (err) {
+      if (verbose) process.stdout.write(`[meta-agent] silent-failure-cluster failed (non-fatal): ${err.message}\n`);
+    }
   }
 
   if (verbose) {
@@ -507,6 +537,8 @@ async function runMetaAgentLoop({ dryRun = false, verbose = false } = {}) {
         skipped: evolutionResult.skipped || false,
       }
       : null,
+    silentFailureCluster: silentFailureStats,
+    silentFailureDerivedGates: promotedGates.filter((g) => g.origin === 'silent-failure-cluster').length,
   };
 
   if (!dryRun) {
