@@ -1,5 +1,764 @@
 # Changelog
 
+## 1.22.0
+
+### Minor Changes
+
+- [#2146](https://github.com/IgorGanapolsky/ThumbGate/pull/2146) [`8fd9a3f`](https://github.com/IgorGanapolsky/ThumbGate/commit/8fd9a3f80a4e01b6562dfc741cfb2e8265ab4faf) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Adds the `adapters/xai-grok/` directory documenting that ThumbGate works on xAI's **Grok Build CLI** (launched May 14, 2026) with **zero new configuration**. Grok Build deliberately adopted Claude Code's conventions — it auto-detects AGENTS.md / CLAUDE.md, MCP servers, hooks, and Anthropic Skills format on launch. The existing `adapters/claude/.mcp.json` works unchanged.
+
+  The new `adapters/xai-grok/README.md` documents:
+
+  - What Grok Build is + which conventions it adopted
+  - How to wire ThumbGate (use the existing Claude config; nothing new needed)
+  - What ThumbGate surfaces Grok Build picks up (MCP server, PreToolUse hook, CLAUDE.md rules, Skills, gate-check feedback)
+  - Verification steps via Grok Build's `/mcps` / `/hooks` / `/skills` modals
+  - **Explicit "not yet end-to-end verified"** caveat — SuperGrok Heavy access is gated behind their tier. Honest framing pending operator verification with screenshots from the inspect modal.
+
+  Also: `adapters/README.md` gains the xai-grok line in the adapter matrix.
+
+  Holding the landing-page agent-compatibility list update until an operator confirms end-to-end with screenshots. Per CLAUDE.md Honesty Protocol, "works on Grok Build" as a marketing claim needs proof, not just upstream-convention compatibility.
+
+- [#2187](https://github.com/IgorGanapolsky/ThumbGate/pull/2187) [`92f8e4b`](https://github.com/IgorGanapolsky/ThumbGate/commit/92f8e4b171ab75847f24e78efa139da7a71db95c) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Claim the "Agent Manager" role as our ICP, after Anthropic publicly named it (per @dani_avila7's thread). Three changes:
+
+  1. **`public/agent-manager.html` — new ICP landing page.** Direct address to the role Anthropic named — hybrid PM/engineer DRI who owns CLAUDE.md hierarchy, the plugin marketplace, permissions policy, and which skills ship. Includes a five-row mapping table from "what the Agent Manager owns" to "what ThumbGate ships for each," the three-phase rollout pattern with where we fit, and CTAs into the existing Workflow Hardening Sprint intake and Pro checkout.
+
+  2. **`src/api/server.js`** — dedicated `/agent-manager` (and `/agent-manager.html`) route. Routed through `servePublicMarketingPage` so thread arrivals from X/Bluesky/LinkedIn capture UTM attribution and `landing_page_view` telemetry with `pageType: 'agent_manager'`.
+
+  3. **`public/index.html`** — small addition to the existing ICP link row (Compare / Platform / Regulated): "Built for the Agent Manager →". Zero layout risk, claims the SEO term while search volume is being created.
+
+  Reply draft to @dani_avila7 was appended to `.thumbgate/reply-drafts.jsonl` (gitignored, draft-only per CLAUDE.md social policy). CEO review required before posting.
+
+- [#2235](https://github.com/IgorGanapolsky/ThumbGate/pull/2235) [`33e45aa`](https://github.com/IgorGanapolsky/ThumbGate/commit/33e45aaf23ef16e5471045f686d87333a68db8c3) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add the `thumbgate audit` command — the AI Bill Auditor.
+
+  `thumbgate audit <transcript>` scans an agent session transcript for repeat-mistake patterns (force-push retry loops, hallucinated-import retries, apology/reasoning-reset cycles) and reports the estimated token waste each pattern costs. It is the diagnostic wedge for the "Repeat Tax" — the recurring spend ThumbGate's gates exist to eliminate.
+
+  Ships `scripts/audit.js` (the heuristic engine, `runAudit()`), wires the `audit` command into the CLI switch and the `cli-schema.js` command registry, and bumps the public-bundle ratchet baseline 258 → 259 for the one new bundled file.
+
+- [#2139](https://github.com/IgorGanapolsky/ThumbGate/pull/2139) [`bf964cf`](https://github.com/IgorGanapolsky/ThumbGate/commit/bf964cff93573b28865e15ee2763eda002447bdb) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Adds the `/broker-audit` public landing page route serving `src/api/static/broker-audit.html` — the wedge surface for the real-estate broker cold-outreach campaign.
+
+  The route serves a free-audit-primary, $49-fast-lane-secondary funnel that matches the offer in the in-flight 65-broker cold email batch. Trust signals (refund language, no-call-required, response-time SLA) ride above the fold; the $49 Stripe link routes to a verified payment_link on the Saas Growth Dispatch account with `after_completion` → `/success`.
+
+  Cleanly scoped: only `src/api/server.js` (+19 lines for the route handler) and the new static file. No other routes touched. Plays alongside existing `/checkout/pro` and `/pricing` paths without modification.
+
+- [#2125](https://github.com/IgorGanapolsky/ThumbGate/pull/2125) [`2bffd3a`](https://github.com/IgorGanapolsky/ThumbGate/commit/2bffd3a6b92f40f97cfec905c96fc2d398191b28) Thanks [@dependabot](https://github.com/apps/dependabot)! - Bumps `protobufjs` from 7.5.6 to 8.3.0. This is a major version bump upstream (7.x to 8.x) and may include breaking changes to the protobufjs API surface. ThumbGate's usage should be re-verified against the v8 changelog. Lockfile-only change at the dependency level; downstream consumers should treat this as a notable upgrade.
+
+- [#2067](https://github.com/IgorGanapolsky/ThumbGate/pull/2067) [`c0faeea`](https://github.com/IgorGanapolsky/ThumbGate/commit/c0faeeaa5c76a06ec0d9a2f73e5cc27e87c9c27d) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add `/case-studies` public surface — first proof page for thumbgate.ai. Until now visitors landed on CLI install commands with zero evidence that anyone actually got value from the product. First entry is the Aiventyx Teams integration: real third-party CTR signal (62%, 5 clicks on 8 views), concrete fix description (added `teams` to `TRACKED_LINK_TARGETS`), and verification quote from the partner's own incognito test. Live `/go/teams?utm_source=case-study` link lets buyers reproduce the redirect themselves. Cross-links to /pricing/, /privacy/, /terms/, /support/ make this a buyer-trust hub.
+
+- [#2077](https://github.com/IgorGanapolsky/ThumbGate/pull/2077) [`22b5e71`](https://github.com/IgorGanapolsky/ThumbGate/commit/22b5e71b10069203a31fc158b684c836002bb555) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add `/compare/heidi` deep-dive page positioning ThumbGate as the behavior-enforcement layer (PreToolUse hook + lesson DB) next to Meterian's HEIDI as the supply-chain layer (manifest scanning + MCP-served vuln data). Honest framing: not a competitor, complementary stack. Adds a third comparison card on `/compare` linking to the page. Both tools are free at base, both local-first, run on the same machine without conflict. Pre-empts the buyer confusion that will land when "AI coding security" googlers see both products on the same search-result page.
+
+- [#2083](https://github.com/IgorGanapolsky/ThumbGate/pull/2083) [`bc32720`](https://github.com/IgorGanapolsky/ThumbGate/commit/bc32720f8e9a01ccbaabef62e834da4b4293f451) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add `scripts/eval_gate_classifier.py` — the first end-to-end ML pipeline in the repo. Loads `.thumbgate/feedback-log.jsonl`, builds features (TF-IDF on context + bag-of-tags + bag-of-categories), stratified train/test split, fits `LogisticRegression(class_weight='balanced')`, scores precision/recall/F1 (per-class + macro), ROC-AUC, PR-AUC, and full `classification_report`, then serializes the fitted pipeline with `joblib.dump` and writes a metrics card to `<feedback-dir>/eval/`. Run via `npm run eval:classifier`. sklearn / joblib / scipy are intentionally NOT runtime deps of the npm package — install via `pip install scikit-learn joblib` to enable. Pinned by `tests/eval-gate-classifier.test.js` (skips gracefully if sklearn isn't installed in CI).
+
+- [#2142](https://github.com/IgorGanapolsky/ThumbGate/pull/2142) [`439b57f`](https://github.com/IgorGanapolsky/ThumbGate/commit/439b57f1d03d6e83250e96d7732403f486954c22) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - **Fix: `hook-auto-capture` crashed with `MODULE_NOT_FOUND` in published thumbgate@1.19.0.**
+
+  `scripts/cli-feedback.js` did an unconditional `require('./history-distiller')`. But `history-distiller.js` is a `PRIVATE_CORE_MODULE` — present in the source checkout and in `ThumbGate-Core`, but intentionally excluded from the public npm tarball (see `tests/public-package-boundary.test.js`). When a published install ran the Claude Code `UserPromptSubmit` hook (`hook-auto-capture`), the `require` chain reached `cli-feedback.js`, hit the missing `history-distiller`, and threw — meaning every `thumbs up:` / `thumbs down:` typed in a hooked agent was silently dropped.
+
+  Fix: switched the require to `loadOptionalModule('./history-distiller', () => ({ distillFromHistory: () => null }))`, matching the pattern already in use by `scripts/feedback-loop.js` and `src/api/server.js`. The caller in `processInlineFeedback` already handles `distillResult === null` gracefully, so the public-shell state degrades cleanly: feedback is still captured, distillation is skipped.
+
+  Regression test in `tests/public-package-boundary.test.js#cli-feedback loads and runs in public-tarball state` forces the public-shell state via the existing `withBoundaryFallbackModule` helper and asserts `processInlineFeedback` returns a feedback record with `distillResult` either null or an object. This locks the bug class for cli-feedback.
+
+- [#2140](https://github.com/IgorGanapolsky/ThumbGate/pull/2140) [`b641443`](https://github.com/IgorGanapolsky/ThumbGate/commit/b6414432c0e47638c9a80f1696000a0d5050a364) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add goal contracts to the evidence-before-done MCP gate so multi-agent worker/reviewer/orchestrator loops can require explicit proof actions before completion claims pass.
+
+- [#2269](https://github.com/IgorGanapolsky/ThumbGate/pull/2269) [`41e6e59`](https://github.com/IgorGanapolsky/ThumbGate/commit/41e6e599eb20314f9ab0a8e637fae7c45197ae78) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(mcp): add `suggest_fix` tool for corrective action lookup from lesson DB
+  feat(context-packs): auto-assemble context packs from top failure patterns
+  feat(stats): first-time fix rate tracking with per-gate recurrence
+  feat(stats): gate calibration analysis (over-blocking/well-calibrated/insufficient data)
+
+- [#2252](https://github.com/IgorGanapolsky/ThumbGate/pull/2252) [`2a88b24`](https://github.com/IgorGanapolsky/ThumbGate/commit/2a88b2450c31fce70a33938eb6c2eedb9a530feb) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add `thumbgate notes` — a per-repo running implementation-notes capture for AI coding agents, inspired by the prompt pattern Anthropic's Thariq (@trq212) shared on X for Claude Code workflows.
+
+  The pattern: as an agent implements against a spec, ambiguities and tradeoffs come up. Capturing them as they happen — instead of relying on the agent's session memory — keeps the human in the loop without slowing the agent down. ThumbGate now persists those decisions to `.thumbgate/implementation-notes.{md,jsonl}` (gitignored) and can promote any entry to a durable lesson via the existing capture-feedback pipeline.
+
+  New surface:
+
+  - `thumbgate notes append --decision="..." [--tool=<name>] [--rationale="..."] [--signal=info|up|down] [--tags=a,b,c]`
+  - `thumbgate notes list [--limit=N] [--json]`
+  - `thumbgate notes show <id>`
+  - `thumbgate notes promote <id>` — calls the feedback-capture module to convert a note into a lesson.
+
+  Module: `scripts/implementation-notes.js` (dependency-injection on `capture` to stay free of hard imports from the feedback pipeline). 8 tests in `tests/implementation-notes.test.js`.
+
+  Hook integration (PostToolUse auto-append) is left for a follow-up so this PR can land standalone — the CLI surface is independently useful and exercised by tests.
+
+- [#2198](https://github.com/IgorGanapolsky/ThumbGate/pull/2198) [`518c5cf`](https://github.com/IgorGanapolsky/ThumbGate/commit/518c5cf69404e4dae225df5bf8a36dc476b94bcc) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add npm install-email capture wedge to convert ~5,000 monthly installers into a re-engageable list.
+
+  **The problem.** Daily revenue audit, May 19: 5,071 npm installs in last 30 days, ~3,925 visitors to thumbgate.ai/30d, 257 Stripe checkout starts, **0 external paid conversions**. The postinstall banner is the only surface every installer touches and it had no email capture. Zero leads collected from the entire 30-day install volume.
+
+  **Fix:**
+
+  1. **`bin/cli.js subscribe` subcommand.** `npx thumbgate subscribe you@company.com` POSTs `{ email, source, installId, cliVersion }` to `/v1/marketing/install-email`. Validates email shape client-side; never prompts interactively (postinstall must stay CI-safe). Per-attempt timeout 8s, exit codes 0/1/2/3 for success / bad-input / server-rejection / network-error.
+
+  2. **`POST /v1/marketing/install-email` server route in `src/api/server.js`.** Validates email against RFC 5321-bounded regex, clips overlong source/installId/cliVersion fields, persists capture to a **dedicated `marketing-install-emails.jsonl` ledger** (the standard telemetry sanitizer strips PII by design, so a separate sink is required), emits a privacy-clean `marketing_install_email_captured` telemetry ping for funnel attribution, then fires `sendNewsletterWelcomeEmail` via the existing Resend mailer. Mailer failure (e.g., `RESEND_API_KEY` unset) does NOT fail the capture — the operator can drip later from the ledger.
+
+  3. **`bin/postinstall.js` banner update.** New line `npx thumbgate subscribe you@company.com` between the free-start lines and the dashboard URL, sized to fit the existing box.
+
+  4. **`tests/install-email-capture.test.js` — 8 tests, all green:**
+     - OPTIONS preflight returns CORS headers
+     - POST happy path: ok:true, ledger row written, telemetry ping fired WITHOUT email field
+     - POST missing email → 400 invalid_email
+     - POST malformed email → 400 invalid_email
+     - POST invalid JSON → 400 invalid_json
+     - POST oversized body → 413 payload_too_large
+     - POST oversized non-email fields → clipped to defaults (source) or null (installId/cliVersion), not crash
+     - postinstall.js source contains the `npx thumbgate subscribe` line
+
+  **What this PR does NOT do:**
+
+  - Does not change the postinstall banner outside the single new line.
+  - Does not add a Stripe-side flow.
+  - Does not assume `RESEND_API_KEY` is set; capture works without it.
+  - Does not collect any PII in the standard telemetry stream — the dedicated ledger is the only place email lands.
+
+  **Expected outcome at 5% opt-in:** ~250 captured emails / 30 days vs current 0. Even at 1% it is 50/month — meaningfully better than zero.
+
+- [#2119](https://github.com/IgorGanapolsky/ThumbGate/pull/2119) [`4deb042`](https://github.com/IgorGanapolsky/ThumbGate/commit/4deb042216e850dec733ad6b4867a38690bbd490) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - **Moat decision (2026-05-18, audit-based).** Settles the "is the public/private split real?" question. Audit found 212 of 216 Core scripts also ship publicly via npm (98% overlap). The previous CLAUDE.md framing was aspirational; in practice the boundary did not exist.
+
+  This commit picks Option A from the strict assessment: **hosted-services moat, not closed-source intelligence.** Public code is permissive on purpose. The defensibility surfaces are (a) hosted infrastructure + reliability, (b) adapter compatibility matrix across Claude / Cursor / Codex / Gemini / Amp / Cline / OpenCode, (c) the dashboard + DPO export pipeline, (d) sprint / setup support revenue.
+
+  Surfaces:
+
+  - `MOAT.md` — full reasoning, including the 412 / 216 / 212 / 4 file-count breakdown
+  - `CLAUDE.md` — "Product Architecture Split" section rewritten as "Moat — Hosted Services, Not Closed-Source Intelligence." Four active rules replace the previous five aspirational ones
+  - `tests/public-bundle-ratchet.test.js` — pins the npm bundle file count at the 2026-05-18 baseline (254 files). Can decrease, cannot increase without a baseline bump + CHANGELOG note. Override env var `THUMBGATE_BUNDLE_RATCHET_BASELINE` documented inline
+  - `package.json` — `test:public-bundle-ratchet` wired into the main `test` chain so the regression-guard runs
+
+  `tests/public-core-boundary.test.js` is unchanged and stays green — it tests that default public CI doesn't depend on Core, which is still a real correctness property.
+
+- [#2191](https://github.com/IgorGanapolsky/ThumbGate/pull/2191) [`7ae4a15`](https://github.com/IgorGanapolsky/ThumbGate/commit/7ae4a158bc42d02c136af23ef2071682bed0cdd6) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Automate post-deploy verification of top-level marketing pages.
+
+  The existing `.github/workflows/deploy-verify.yml` already checks `/health` version and `/dashboard` after every push to main, plus sample-curls any `public/learn|guides|compare/*.html` route added in the diff. Top-level marketing pages — `/`, `/pro`, `/federal`, `/numbers`, `/llm-context.md`, `/robots.txt`, `/sitemap.xml` — had no automated coverage; a deploy that 500'd or returned blank HTML on those routes would only be caught by a real visitor.
+
+  This PR closes that gap with three additive surfaces:
+
+  1. **`config/post-deploy-marketing-pages.json`** — sentinel manifest. Each entry pairs a route with a stable body-copy sentinel string. Adding a new top-level marketing page = appending to JSON, no workflow edit required.
+
+  2. **`scripts/verify-marketing-pages-deployed.js`** — config-driven probe. Curls each manifest entry against `https://thumbgate-production.up.railway.app` (overridable via `THUMBGATE_PROD_URL` env or `--prod-url=…`), asserts sentinel present in response body. Exit 0 on full pass, 1 on any miss. Human or `--json` output. Browser-shaped UA so bot-deflection interstitials don't trigger false positives.
+
+  3. **`.github/workflows/deploy-verify.yml`** — new step `Verify top-level marketing pages still match sentinels` after the existing `/dashboard` check. The success and failure PR comments now surface "**N/M** top-level marketing pages match their sentinel manifest" or the failure detail.
+
+  Verified locally: probe runs against current production returns **8/8 pages PASS**. 16 unit tests at **87.69% line coverage**, **89.58% branch coverage** on the probe script — comfortably above SonarCloud's 80% gate.
+
+  Ratchet ceilings bumped 254 → 256 (both `tests/public-bundle-ratchet.test.js` and `tests/package-boundary.test.js`) for the probe script + manifest JSON. The probe ships in the public npm bundle so external operators self-hosting ThumbGate get the same regression guard against their own deployment.
+
+- [#2193](https://github.com/IgorGanapolsky/ThumbGate/pull/2193) [`b1f0160`](https://github.com/IgorGanapolsky/ThumbGate/commit/b1f01602e0ab0c5c59fe0f3ab52cbf9f51562ca2) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(security): implement high-ROI PostgreSQL AI guardrails (Google AI DB mandate)
+
+- [#2068](https://github.com/IgorGanapolsky/ThumbGate/pull/2068) [`14ca38a`](https://github.com/IgorGanapolsky/ThumbGate/commit/14ca38ab90fa4640bc891115fdcbf8f4f06a66c8) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Reverse trial, README hero rewrite, and GTM content for first-dollar push.
+
+  - **Reverse trial**: 14-day full Pro access for new installs. `isInTrialPeriod()` checks install-ID file age; `isProTier()` grants Pro during trial window. Post-install banner announces trial with dashboard URL and upgrade path.
+  - **README hero**: Replaced wordy 15-line opening with tight pain-first copy and a concrete blocked-action terminal example. Leads with "AI agents repeat mistakes. You pay for every retry."
+  - **GTM content**: Show HN post, Reddit r/ClaudeAI post, Twitter build-in-public thread, 30-second demo script, README hero draft — all in `docs/marketing/`.
+  - **Test coverage**: Updated rate-limiter tests for trial functions and postinstall tests for new banner content. All passing.
+
+- [#2178](https://github.com/IgorGanapolsky/ThumbGate/pull/2178) [`64ee4b3`](https://github.com/IgorGanapolsky/ThumbGate/commit/64ee4b320d7e0961527f918abb8d7051b3fc2742) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix the revenue funnel narrative — three changes that stop the page from arguing against its own paid tier.
+
+  **Pro checkout interstitial (`/checkout/pro`)** — drop "MIT-licensed CLI included" and "MIT open source · no vendor lock-in" from the trust bar; they advertise the reason not to pay. Lead instead with what the subscription actually buys: hosted lesson sync across machines, adapter matrix for 7 agent runtimes, hosted dashboard, 24×7 ops.
+
+  **Pro card on `/` home page** — same fix at the top of the price column. The free npm package is local-only and never expires; Pro is the operated hosted state. Make that the first thing the visitor reads.
+
+  **npm postinstall banner** — add the hosted dashboard URL so installers know it exists, and replace "personal local dashboard, DPO export" with the hosted-state Pro value-prop. At ~5,000 installs/30d this is the highest-leverage surface we have for converting installs into site visits.
+
+  **Removed bare "$4,800/mo + $7,500 sprint" enterprise pricing** from the Regulated tier on the home page — keep it for the intake call instead of scaring retail buyers.
+
+  Motivation: external customer audit shows lifetime external revenue = $0 and 2,252 checkout sessions with 1 external completion (0.04%). MOAT.md openly states 212 of 216 Core scripts ship publicly. Until the page answers "why pay when npm install gives me everything," the funnel will keep producing this result.
+
+- [#2110](https://github.com/IgorGanapolsky/ThumbGate/pull/2110) [`eca1d4e`](https://github.com/IgorGanapolsky/ThumbGate/commit/eca1d4eca0a0c9541aa5ce0019676f050716c3db) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Auto-promoted gates now expire. Default TTL is 90 days from promotion; tunable via `THUMBGATE_RULE_TTL_DAYS`. Gates that fire within the window have their TTL refreshed automatically (high-signal rules survive, dormant ones age out). Manually force-promoted gates (`MANUAL=1`) remain permanent (`expiresAt=null`).
+
+  Addresses the public critique from r/ClaudeCode (MomSausageandPeppers, 2026-05-17): "make single thumbs-down promotion reversible or expiry-bound; otherwise accidental dislikes become policy forever." Previously, one thumbs-down at `BLOCK_THRESHOLD` could pin a gate on disk indefinitely with no decay path.
+
+  New exports on `scripts/auto-promote-gates.js`:
+
+  - `expireGates(data, now?)` — sweeps expired gates, refreshes recently-fired ones
+  - `recordGateFire(data, gateId, now?)` — call when a gate actually blocks; updates `lastFiredAt` and extends `expiresAt`
+  - `getRuleTtlDays()` / `getRuleTtlMs()` / `DEFAULT_RULE_TTL_DAYS`
+
+  `promote()` now calls `expireGates()` before the promotion loop, so every daily run garbage-collects stale rules. New gate records carry `expiresAt` (ISO date) and `lastFiredAt` (null until first block). Malformed input (missing `gates`, non-array `gates`) is tolerated without throwing.
+
+  10 new unit tests in `tests/auto-promote-gates.test.js` cover TTL defaults, env override (with negative/non-numeric fallback), expiry sweep, refresh-on-fire, permanent-gate semantics, and malformed-input tolerance. All 30 tests in the file pass.
+
+- [#2149](https://github.com/IgorGanapolsky/ThumbGate/pull/2149) [`9f41191`](https://github.com/IgorGanapolsky/ThumbGate/commit/9f41191fc05b39a2617c7ac994ad322780cc6f2f) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Adds `scripts/stripe-payment-link-update.js` — the API-reachable lever for branded checkout pages. Stripe's `business_profile` + `branding` endpoints reject own-account writes (verified HTTP 403 on 2026-05-18), but `stripe.paymentLinks.update(id, params)` works on own-account links.
+
+  Targets the 3 customer-facing Payment Links documented in `docs/audits/payment-links-2026-05-18.md`:
+
+  - **$499 Sprint Diagnostic** (`buy.stripe.com/3cI7sLgH25v8dWh5e33sI0o`)
+  - **$1,500 Workflow Hardening Sprint** (`buy.stripe.com/8x25kDcqMaPs9G15e33sI0p`)
+  - **$97 OpenClaw Governance Kit** (`buy.stripe.com/bJe14naiE9Lo7xT49Z3sI12`)
+
+  For each, sets:
+
+  1. `custom_text.submit.message` — refund window + delivery promise (the urgency/trust copy buyers see on the checkout page)
+  2. `metadata` — `utm_source`, `cta_id`, `attribution_version`, `offer_kind` (so paid conversions can be attributed back to the campaign)
+  3. `automatic_tax.enabled = true` (so international buyers see correct totals)
+
+  10 unit tests against a mocked Stripe SDK cover: empty-link planning, full-link no-op, dry-run-no-writes, missing-slug error, page-traversal in `resolvePlinkId`, applyAll across all targets, and human-readable rendering. All passing.
+
+  Workflow `stripe-payment-link-update.yml` runs `--dry-run` on every push to the branch (so every commit shows what would change before merge) and only writes on explicit `workflow_dispatch` with `mode=apply`. Concurrency-gated so two runs can't race.
+
+  The other 97 active Payment Links on the account are deliberately left alone — they're noise from past iterations and changing them risks breaking embeds we don't know about.
+
+- [#2244](https://github.com/IgorGanapolsky/ThumbGate/pull/2244) [`51f545c`](https://github.com/IgorGanapolsky/ThumbGate/commit/51f545cc4a3e255cd0c2a4efa36c722b198d4e3f) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Adds Volta-style auto-update shim at `~/.thumbgate/bin/thumbgate-hook`. Hook commands now resolve through a stable shim that always runs `thumbgate@latest`, surviving across version bumps without re-wiring Claude settings. Fast path uses cached runtime binary; slow path falls back to `npx --yes thumbgate@latest`.
+
+### Patch Changes
+
+- [#2167](https://github.com/IgorGanapolsky/ThumbGate/pull/2167) [`22de2e0`](https://github.com/IgorGanapolsky/ThumbGate/commit/22de2e03b0590d9cae6e33733df705cd1b41ab45) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Aligns `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` with the Anthropic official plugin marketplace submission form (https://claude.ai/settings/plugins/submit). Changes:
+
+  **plugin.json:**
+
+  - Short description rewritten to the submission-form copy (178 chars, under the 200-char form limit, includes "PreToolUse Pre-Action Checks" for backward compat with the claude-mcpb regression test)
+  - Author block now includes email + url
+  - Added `category: "developer-tools"`
+  - Keywords expanded to include the 8 submission-form tags (guardrails, pretooluse, hooks, feedback, rlhf, dpo, agent-safety, workflow-hardening)
+
+  **marketplace.json:**
+
+  - Same short description
+  - New `longDescription` field — the full tripwire-not-memory-layer narrative from the submission form (verifiable claims only: 33 pre-action checks, Claude Code / Cursor / Codex / Gemini / Amp / Cline / OpenCode adapter coverage, NIST/SOC2/OWASP/CWE tags, DPO export, Free + Pro $19/mo tiers)
+  - `category: "developer-tools"` + 8 submission-form `tags`
+  - New `capabilities` block: skills 2, commands 5, agents 1, hooks 3, mcpServer "thumbgate serve"
+  - New `installCommand: "/plugin install thumbgate@claude-plugins-official"`
+  - Author email + url
+  - `keywords` expanded to match
+
+  51/51 tests pass across `version-metadata`, `package-boundary`, `claude-mcpb`, `skill-exporter`, `thumbgate-skill`, `public-package-parity`. Bundle ratchet unchanged.
+
+  This is the minimum manifest delta the marketplace submission needs. Demo GIF + npm version bump are separate workstreams.
+
+- [#2091](https://github.com/IgorGanapolsky/ThumbGate/pull/2091) [`a3ef495`](https://github.com/IgorGanapolsky/ThumbGate/commit/a3ef495a06ebb8ace931c7bd404cd7c30d33f81d) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add `scripts/conversion-rate-stats.js` — honest Bayesian beta-binomial conversion-rate estimation for low-N revenue data.
+
+  The audit on 2026-05-15 surfaced the right ML investment given ThumbGate's data volume: with only 3 lifetime orders and ~200 visitors per surface, frequentist conversion = charges/visitors produces dishonest rankings ("/pricing converts at 100%!" from one lucky charge on 1 visitor). The fix is a Bayesian beta-binomial model with a weakly-informative prior (Beta(1, 19), reflecting "most dev-tool surfaces convert at ~5% with broad uncertainty"). The posterior gives a credible interval that gets narrower as N grows: wide and honest at N=0, tight around the empirical rate at N=10k. Same code path, no need to switch models when data finally arrives.
+
+  The module exports:
+
+  - `posteriorParameters({successes, trials, priorAlpha, priorBeta})` — pure stats
+  - `estimateConversionRate(...)` — returns posterior mean, mode, 95% credible interval, and a verdict (`insufficient_data` / `wide_uncertainty` / `credible`)
+  - `rankSurfaces(surfaces, opts)` — ranks by lower-bound of credible interval (pessimistic ranking) by default. Prevents allocating traffic to a surface whose point estimate is high but whose lower bound is near zero.
+  - `renderConversionMarkdown(ranked)` — produces a markdown table ready to drop into the unified revenue rollup once [#2090](https://github.com/IgorGanapolsky/ThumbGate/issues/2090) lands.
+
+  Implementation includes a Lanczos approximation of log Γ, a Lentz continued-fraction evaluator for the regularized incomplete beta (CDF), and bisection on the CDF for the quantile function. No external dependencies — all pure-JS math.
+
+  20 unit tests cover: known logΓ values, CDF identity at Beta(1,1) = uniform, Beta(2,2) symmetry, quantile/CDF round-trip, prior + observation accumulation, N=0 returns the pure prior, N=10k tightens to the empirical rate, the "N=2 trap" (1 conversion of 2 visitors maps to ~9% posterior, NOT 50%), verdict cutoffs, pessimistic-ranking ordering, and markdown render.
+
+  Standalone for now; will fold into the unified revenue rollup as a follow-up after [#2090](https://github.com/IgorGanapolsky/ThumbGate/issues/2090) lands so we don't fight merge conflicts on the same file. Also reusable by `scripts/thompson-sampling.js` for adaptive surface allocation when transaction volume justifies it.
+
+- [#2257](https://github.com/IgorGanapolsky/ThumbGate/pull/2257) [`911aee7`](https://github.com/IgorGanapolsky/ThumbGate/commit/911aee76d0c5747ab58a096d5a57670abd56303c) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix `/health` reporting the wrong `buildSha` when a stale `THUMBGATE_BUILD_SHA` env var lingers on the runtime host. Invert precedence in `scripts/build-metadata.js`: the immutable JSON file baked into the Docker image at build time (which always matches the deployed code) now wins over mutable runtime env vars. Env vars fill in only when the file has no SHA.
+
+  Also tightens the env-branch condition: previously a stray `THUMBGATE_BUILD_GENERATED_AT` with no SHA would short-circuit to `{ buildSha: null }`, losing both signals. Now the env branch requires an explicit SHA before being trusted.
+
+  Background: 2026-05-20 — prod `/health` reported `version=1.21.2` but `buildSha=92f8e4b1` (a commit from days earlier). Root cause: the `Set Railway environment variables` step is gated by `RAILWAY_SYNC_VARIABLES=false` by default, so a once-set `THUMBGATE_BUILD_SHA` on Railway was never refreshed by subsequent deploys. The freshly-stamped `config/build-metadata.json` baked into the image had the correct SHA, but the env-wins precedence caused `resolveBuildMetadata` to return the stale env value instead.
+
+  Side benefit: the `Verify deployment health` step in `.github/workflows/deploy-railway.yml` compares `LIVE_SHA` to `$GITHUB_SHA`; with this fix, that comparison now succeeds against the freshly-baked file SHA, unblocking the gate.
+
+  Operator note: the persistent `THUMBGATE_BUILD_SHA` and `THUMBGATE_BUILD_GENERATED_AT` env vars on the Railway service can now be safely deleted from the dashboard — file precedence makes them moot.
+
+- [#2123](https://github.com/IgorGanapolsky/ThumbGate/pull/2123) [`8ebc051`](https://github.com/IgorGanapolsky/ThumbGate/commit/8ebc051af66091622736dd64bd6446083d3dac6e) Thanks [@dependabot](https://github.com/apps/dependabot)! - Bumps `@anthropic-ai/sdk` from 0.95.2 to 0.96.0 (minor SDK release, no API surface changes affecting ThumbGate's usage). Pulls in upstream bug fixes and updated TypeScript typings from `@anthropic-ai/sdk` v0.96.x. Lockfile-only change; no runtime code modifications required.
+
+- [#2126](https://github.com/IgorGanapolsky/ThumbGate/pull/2126) [`df0688e`](https://github.com/IgorGanapolsky/ThumbGate/commit/df0688ee2603b3827923487c7128b27580e7df7a) Thanks [@dependabot](https://github.com/apps/dependabot)! - Bumps `better-sqlite3` from 12.9.0 to 12.10.0 (minor release, no API surface changes affecting ThumbGate's usage). Pulls in upstream bug fixes from `better-sqlite3` v12.10.x. Lockfile-only change; no runtime code modifications required.
+
+- [#2121](https://github.com/IgorGanapolsky/ThumbGate/pull/2121) [`50bf936`](https://github.com/IgorGanapolsky/ThumbGate/commit/50bf9366579cdd52ec049cfdf53021fad86714d9) Thanks [@dependabot](https://github.com/apps/dependabot)! - Bumps `playwright-core` from 1.59.1 to 1.60.0 (minor release, no API surface changes affecting ThumbGate's usage). Pulls in upstream bug fixes and updated browser binaries from `playwright-core` v1.60.x. Lockfile-only change; no runtime code modifications required.
+
+- [#2124](https://github.com/IgorGanapolsky/ThumbGate/pull/2124) [`230fdb4`](https://github.com/IgorGanapolsky/ThumbGate/commit/230fdb461b0b5c861ca366eb3d0b2121084bf091) Thanks [@dependabot](https://github.com/apps/dependabot)! - Bumps `stripe` from 22.0.2 to 22.1.1 (minor SDK release, no API surface changes affecting ThumbGate's usage). Pulls in upstream bug fixes and updated TypeScript typings from `stripe-node` v22.1.x. Lockfile-only change; no runtime code modifications required.
+
+- [#2122](https://github.com/IgorGanapolsky/ThumbGate/pull/2122) [`a3b4f30`](https://github.com/IgorGanapolsky/ThumbGate/commit/a3b4f30adaa43e5b7353164d9c78f0235d5f4229) Thanks [@dependabot](https://github.com/apps/dependabot)! - Bumps `undici` (dev dependency) from 8.2.0 to 8.3.0 (minor release, no API surface changes affecting ThumbGate's usage). Pulls in upstream bug fixes from `undici` v8.3.x. Lockfile-only change; no runtime code modifications required.
+
+- [#2270](https://github.com/IgorGanapolsky/ThumbGate/pull/2270) [`59f6972`](https://github.com/IgorGanapolsky/ThumbGate/commit/59f69726623c1fc0f92d63f51fd653d98d6eb1e4) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix statusline 👍/👎 counts not updating after `thumbgate capture` / `node .claude/scripts/feedback/capture-feedback.js` runs.
+
+  **Background**: the statusline reads a cache file (`~/.thumbgate/statusline_cache.json`) that is normally refreshed by the `cache-update` PostToolUse hook — but that hook only fires for `mcp__thumbgate__feedback_stats` / `mcp__thumbgate__dashboard` MCP tool calls. When feedback is captured via Bash (the CLI), no MCP tool fires, the cache stays stale, and the bar keeps showing the old counts until the next dashboard call (potentially hours).
+
+  **Fix**: capture-feedback.js now calls `refreshStatuslineCache(analyzeFeedback())` inline after a successful capture. Cache updates immediately; statusline reflects the new count on the very next render.
+
+  **Notable subtlety found during implementation**: `feedbackSummary()` returns a string (the human-readable summary). When passed to `normalizeStatsPayload` it merges as a character array with numeric keys, producing the empty `{thumbs_up:'0', thumbs_down:'0'}` payload — no update. The correct stats API is `analyzeFeedback()` which returns the object shape `{ totalPositive, totalNegative, total, approvalRate, trend, rubric }` that `normalizeStatsPayload` expects.
+
+  **Best-effort design**: if `scripts/hook-thumbgate-cache-updater` isn't available (minimal install), the call no-ops silently rather than failing the capture.
+
+  **Verified locally**: captured 3 feedback entries, observed cache `updated_at` timestamp + `thumbs_up`/`thumbs_down` counters increment in real time, statusline-render reflected the new state.
+
+- [#2191](https://github.com/IgorGanapolsky/ThumbGate/pull/2191) [`7ae4a15`](https://github.com/IgorGanapolsky/ThumbGate/commit/7ae4a158bc42d02c136af23ef2071682bed0cdd6) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a defensive guard in `createCheckoutSession` that refuses to create a Stripe checkout session when the only Stripe product matching the plan's product name (e.g. "ThumbGate Pro") is archived. Without this guard, `buildSubscriptionPriceData` passes inline `product_data` to Stripe, Stripe name-matches an archived product, creates a new price under it that inherits `active=false`, and every buyer sees "Something went wrong / The page you were looking for could not be found." on the Stripe checkout page.
+
+  This is the May 2026 incident documented in ThumbGate#2188: 20 abandoned sessions in 7 days, 0 paid, 0 emails captured. The pattern looks like buyer abandonment in Stripe Dashboard but is actually a misconfiguration where every buyer was served a broken page from the moment they arrived.
+
+  The new `verifyActiveProductForPlan(stripe, planId)` helper runs before `sessions.create` and throws with a clear remediation message if the matching product is only present in archived state. Best-effort on Stripe API transient failures (does not block checkout on infra hiccups). Tests pin the four behaviors: active product present (pass), no product (pass — Stripe will create one), only archived product (throw with diagnostic), Stripe API timeout (graceful pass).
+
+- [#2137](https://github.com/IgorGanapolsky/ThumbGate/pull/2137) [`964552a`](https://github.com/IgorGanapolsky/ThumbGate/commit/964552aedf2547f31ab435fd863403ea5ec6be3a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Removes false trust claims from the live `/checkout/pro` interstitial. Verified ground truth via the existing audit (`~/.openclaw/memory/current-revenue-state.md` 2026-05-15) + the npm registry API:
+
+  - "6 paying customers" → **0** real external customers (only Stripe charge was a founder self-purchase)
+  - "18,000+ installs verified on npm" → **5,257** real downloads in the last 30 days (per `api.npmjs.org/downloads/range/last-month/thumbgate`)
+
+  Both claims were live on the buyer-facing checkout page. Per the CLAUDE.md Honesty Protocol, removed and replaced with a verifiable claim: "5,200+ npm installs in the last 30 days (npm-stat verifiable)." Conservative round-down so the claim survives normal week-over-week noise.
+
+  Adds a regression test in `tests/public-static-assets.test.js` that asserts `/checkout/pro` never contains a `\d+ paying customers` pattern or `18,000+ installs` claim. The existing landing-page banned-claims test already exists for `public/*.html` files but didn't cover the server-rendered interstitial — this closes that gap.
+
+- [#2109](https://github.com/IgorGanapolsky/ThumbGate/pull/2109) [`df9a383`](https://github.com/IgorGanapolsky/ThumbGate/commit/df9a383c9b56ef8d9021e9892f95c6ecd93c0313) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add `scripts/ci-cd-hygiene-audit.js` — daily audit that surfaces stale PRs, unresolved bot review threads, ignored CLEAN PRs, and repeatedly-failing workflows.
+
+  This is the missing fire-alarm for the kind of problem that just bit us: on 2026-05-17 the CEO asked "why isn't v1.19.0 published?" and the audit-by-hand turned up [#1953](https://github.com/IgorGanapolsky/ThumbGate/issues/1953) sitting CLEAN for 5 days, 4 unresolved Codex bot threads across 2 PRs, and the release PR ([#2082](https://github.com/IgorGanapolsky/ThumbGate/issues/2082)) blocked on one failing test that nobody had looked at. None of it was visible until someone asked.
+
+  Surfaces 5 signal classes:
+
+  1. **Merge backlog** — CLEAN PRs sitting open ≥ 2 days
+  2. **Unread review** — PRs with unresolved bot review threads (Codex / SonarCloud / etc.)
+  3. **Stale conflicts** — DIRTY PRs open ≥ 5 days
+  4. **Abandoned** — PRs with zero comments + zero reviews after 7 days
+  5. **Broken workflows** — workflows that failed ≥3 times in the last 100 runs
+
+  Wired into the Daily Revenue Loop alongside the existing rollups; outputs go to `reports/revenue/cicd-hygiene.{md,json}` and a GitHub Actions job-summary section. `--strict` exits 1 when the merge backlog reaches 3, so the workflow goes yellow when shipping hygiene is failing.
+
+  10 unit tests with an injected fake `gh` exec cover all 5 buckets, the age math, the workflow-failure-threshold logic, and the markdown render (both populated and empty paths).
+
+- [#2256](https://github.com/IgorGanapolsky/ThumbGate/pull/2256) [`45bc8cf`](https://github.com/IgorGanapolsky/ThumbGate/commit/45bc8cfc2da5cd5d569011e8b4eafbbb144315c0) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Ship `/codex-enterprise` landing page riding the 2026-05-20 OpenAI×Dell Codex Enterprise distribution partnership. Dell-distributed Codex pushes the OpenAI coding agent from individual-developer install into org-wide procurement, which expands the TAM for ThumbGate's governance layer — the runtime that captures every agent decision, promotes repeat failures to PreToolUse gates, and ships the audit trail enterprise procurement requires.
+
+  Three changes:
+
+  1. **`public/codex-enterprise.html` — new landing page.** Hero direct-addresses the governance gap that arrives with enterprise distribution; three-card value prop maps to (a) capture (Thariq pattern productionized), (b) promote (PreToolUse gates), (c) audit (SOC 2 / EU AI Act trail). Install CTA is `npx thumbgate init --agent codex` plus a link to the standalone Codex plugin zip in GitHub releases. Footer cross-links to `/agent-manager` for role-level framing.
+
+  2. **`src/api/server.js`** — dedicated `/codex-enterprise` (and `/codex-enterprise.html`) route. Routed through `servePublicMarketingPage` so partnership-news-cycle arrivals capture UTM attribution and `landing_page_view` telemetry with `pageType: 'codex_enterprise'`. Also added to `renderSitemapXml` so the page is crawlable from day one.
+
+  3. **`tests/public-bundle-ratchet.test.js`** — baseline bumped 259 → 260 to account for the new `public/codex-enterprise.html` shipping in the npm bundle. Comment notes the partnership rationale.
+
+  Regenerated `docs/marketing/codex-marketplace-revenue-pack.{md,json}` via `node scripts/codex-marketplace-revenue-pack.js --write-docs` to refresh URLs and timestamps against current package version.
+
+- [#2264](https://github.com/IgorGanapolsky/ThumbGate/pull/2264) [`62dceff`](https://github.com/IgorGanapolsky/ThumbGate/commit/62dceff395d3098858fa677cdd349ac1808646d4) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Update the Codex plugin agent instructions to use the published ThumbGate CLI entrypoints and add a regression test that blocks stale repo-local feedback commands.
+
+- [#2096](https://github.com/IgorGanapolsky/ThumbGate/pull/2096) [`71bc77d`](https://github.com/IgorGanapolsky/ThumbGate/commit/71bc77df6ff06492d6652fafd0dd8a78eaee6571) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Ship two new public pages from competitive-intel on the Rein governance project (LinkedIn post by @jnwhampton, 2026-05-15):
+
+  - `/compare/rein` — honest side-by-side. Both projects intercept agent actions before they fire; that's the shared category. The differences: integration layer (decorator vs PreToolUse hook), target user (production app agents in regulated domains vs AI coding agents), license (AGPL vs MIT), and learning loop (Rein has policy authoring; ThumbGate has thumbs-down → auto-promoted prevention rule). Not framed as "we win" — Rein is well-designed software, picks differ by stack.
+
+  - `/learn/ai-agent-governance` — claim the SEO term Rein is targeting by defining the four-layer pattern (prompt rules / decorator wrappers / pre-action hooks / sandbox isolation) and positioning ThumbGate at layer 3. The page is layer-agnostic; it explicitly tells readers to pick Rein at layer 2 if Rein's profile matches their stack.
+
+  Also wires both pages into `/compare` index card layout and adds them to the `tests/learn-hub.test.js` valid-internal-paths allowlist alongside `/learn/spec-driven-development` (the previous PR that was missed in that allowlist).
+
+- [#2191](https://github.com/IgorGanapolsky/ThumbGate/pull/2191) [`7ae4a15`](https://github.com/IgorGanapolsky/ThumbGate/commit/7ae4a158bc42d02c136af23ef2071682bed0cdd6) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(context): implement Context Architecture (structured layers, proactive governance, TS routing)
+
+- [#2138](https://github.com/IgorGanapolsky/ThumbGate/pull/2138) [`b6cbd47`](https://github.com/IgorGanapolsky/ThumbGate/commit/b6cbd476f4576fd6a4d7ea4a8daaef0542665258) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - `thumbgate help` (and bare `thumbgate`) now shows a curated 8-command short surface — `init`, `capture`, `stats`, `lessons`, `explore`, `dashboard`, `doctor`, `pro` — instead of dumping ~70 subcommands, internal hooks, "Also available" specialists, global flags, every `explore` sub-mode, and 18 example invocations the moment a first-time user types it.
+
+  The full surface is still discoverable via `thumbgate help all` (also `--all` / `--full`), unchanged from before.
+
+  Test coverage rewritten: `tests/cli.test.js` now asserts the short surface in the default path and the full surface behind `help all`, with a negative assertion that deep-niche commands (`proactive-agent-eval-guardrails`, `repair-github-marketplace`, etc.) stay out of the default view.
+
+  Surfaced by a real customer screenshot on 2026-05-18: the default output was getting truncated at the terminal's right margin and reading as noise.
+
+- [#2242](https://github.com/IgorGanapolsky/ThumbGate/pull/2242) [`4a0a3bb`](https://github.com/IgorGanapolsky/ThumbGate/commit/4a0a3bb0e100e8e5e4b6c825afbf15a8534356e6) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix Operations Dashboard stat-card filters so clicking Positive/Negative/Total navigates to the Lessons Timeline tab pre-filtered to that signal (previously all three cards landed on the Rules tab unfiltered — the dashboard emitted `?signal=positive|negative` but `lessons.html` never parsed the query param).
+
+  Two changes:
+
+  1. **`public/dashboard.html`** — switch stat-card hrefs to the canonical `up|down|all` vocabulary the rest of the codebase uses (was `positive|negative`).
+  2. **`public/lessons.html`** — read `?signal` at bootstrap, accept both canonical (`up|down|all`) and legacy (`positive|negative`) aliases, call `switchTab('timeline') + filterTimeline(mapped)` before falling through to the default Rules tab.
+
+  Adds a Playwright E2E suite (`tests/e2e/dashboard-stat-cards.spec.js`) and a sharded GitHub Actions workflow (`.github/workflows/e2e.yml`) so this regression class is caught in CI on any future change to `public/`, `src/api/`, or the test infrastructure itself.
+
+- [#2183](https://github.com/IgorGanapolsky/ThumbGate/pull/2183) [`fe6d564`](https://github.com/IgorGanapolsky/ThumbGate/commit/fe6d56437bd70eda83381b1fb6b0950ae69cb040) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix the broken "90-second demo" link from the README + tiny repo cleanup.
+
+  **Problem:** `README.md` line 39 advertises `[▶ Watch the 90-second demo](https://thumbgate-production.up.railway.app/#demo?...)`. The home page had no element with `id="demo"`, so browsers landed at the top of the home page instead of jumping to the demo section. The README link looked broken to anyone reading it on GitHub.
+
+  **Fix:**
+
+  1. Add `id="demo"` to the "See It In Action" section on the home page (preserves the existing `id="social-proof"` anchor via a sibling `<a>` so nothing else breaks).
+  2. Add a visible **▶ Watch the 90-second demo** button in the hero `.hero-actions` block pointing at `#demo`, with PostHog + first-party telemetry on click. This gives on-page visitors the same affordance the README has promised.
+
+  **Tiny cleanup:**
+
+  - `DISTRIBUTION_RUNBOOK.md` → `docs/DISTRIBUTION_RUNBOOK.md` (0 inbound references)
+  - `RAILWAY_BILLING_SETUP.md` → `docs/ops/RAILWAY_BILLING_SETUP.md` (0 inbound references)
+
+  Files with active inbound references (`LAUNCH.md`, `LAUNCH_NOW.md`, `LAUNCH_POSTS.md`, `FIRST_CUSTOMER_BATTLE_PLAN.md`, `MOAT.md`, `SKILL.md`, `primer.md`, `WORKFLOW.md`, `gate-program.md`) intentionally stay at root for this PR — moving them would require touching pinned test paths and is deferred.
+
+- [#2260](https://github.com/IgorGanapolsky/ThumbGate/pull/2260) [`a34e7a6`](https://github.com/IgorGanapolsky/ThumbGate/commit/a34e7a621e5cd926942755a0e6cc313e789232e4) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Harden the Railway deploy pipeline against the failure mode that took prod down on 2026-05-20 ("Stopping Container" right after healthcheck passes; cascading retry exhaustion on a single replica). Four targeted changes:
+
+  **1. `railway.json` — give cold start room + tolerate transient failures + keep old container alive during swap**
+
+  - `healthcheckTimeout`: 30 → 300 (per-deploy grace; better-sqlite3 native load + Node boot routinely exceeds 30s)
+  - `restartPolicyMaxRetries`: 3 → 10 (3 healthcheck flaps was a hair-trigger for full service stop)
+  - Added `overlapSeconds: 30` (Railway keeps the old container serving traffic for 30s after the new one is healthy, eliminating the gap window that caused today's HTTP 502)
+
+  **2. `Dockerfile` HEALTHCHECK — align with actual startup time**
+
+  - `--start-period=10s --retries=3` → `--start-period=60s --retries=5`
+  - 10 seconds was below the observed cold-start of ~15-30s; healthcheck failed before the app was ready, marked unhealthy, killed.
+
+  **3. `.github/workflows/deploy-railway.yml` — queue deploys, don't guillotine them**
+
+  - `cancel-in-progress: true` → `cancel-in-progress: false`
+  - Today's cascade: 4a0a3bb0 push → deploy starts → f52ef0b6 push 17 min later cancels it mid-flight → 51f545cc push 4 sec after that cancels f52ef0b6 mid-flight. Net result: 3 deploys started, 0 completed cleanly, prod stuck between containers.
+
+  **4. `src/api/server.js` — graceful SIGTERM handler**
+
+  - Without a handler, Node exits immediately on SIGTERM; Railway may flag the container as crashed (vs gracefully stopped), wasting restart-budget on healthy shutdowns and dropping in-flight requests.
+  - Now drains HTTP connections for up to 25s before force-exit. Logs shutdown phase for debuggability.
+
+  Background sources:
+
+  - Railway docs: [Deployment Teardown](https://docs.railway.com/deployments/deployment-teardown), [Healthchecks](https://docs.railway.com/reference/healthchecks)
+  - Railway community: [Container terminates after healthcheck](https://station.railway.com/questions/container-terminates-after-successful-he-67400aaf), [SIGTERM after 60-65s](https://station.railway.com/questions/container-sigterm-after-60-65-seconds-de-1e20ea2f)
+  - Today's incident report: [Railway GCP suspension May 19 2026](https://blog.railway.com/p/incident-report-may-19-2026-gcp-account-outage)
+
+  Not included (separate follow-up PRs):
+
+  - Migrate Dockerfile base to `node:20-bookworm-slim` (drops the `python3 make g++` toolchain crutch + gets prebuilt better-sqlite3 binaries; ~50% build time cut). Higher-leverage but bigger blast radius.
+  - Move to build-once-in-CI + push-to-GHCR + Railway image-auto-update. Eliminates `railway up` rebuild flakiness entirely.
+
+- [#2266](https://github.com/IgorGanapolsky/ThumbGate/pull/2266) [`51cd62c`](https://github.com/IgorGanapolsky/ThumbGate/commit/51cd62c91a3ff659207dec1b75e7509fe9074679) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Migrates the Docker base image from `node:20-alpine` to `node:22-bookworm-slim`
+  for both the builder and runtime stages.
+
+  **Why:** `better-sqlite3@12.10.0` does not ship a prebuilt binary for the Node 20
+  ABI (v115). On the previous Alpine image that meant `prebuild-install` always
+  fell back to `node-gyp rebuild`, which required `python3 + make + g++` to be
+  installed at build time. That toolchain added build minutes, image surface
+  area, and one more thing to keep patched. The upstream WiseLibs prebuild
+  matrix DOES include `node-v127-linux-x64` (Node 22), so moving the base to
+  Node 22 lets `prebuild-install` resolve a ready-made `better_sqlite3.node`
+  and skip the native compile entirely.
+
+  **What changed:**
+
+  - Builder + runtime: `node:20-alpine` → `node:22-bookworm-slim`
+  - Removed `apk add --no-cache python3 make g++` from the builder stage
+  - Swapped `apk add --no-cache git` for `apt-get install -y --no-install-recommends git wget` (wget is required by the existing HEALTHCHECK and is not preinstalled on bookworm-slim)
+  - Swapped `addgroup -S / adduser -S` for the Debian-equivalent `groupadd -r / useradd -r`
+  - Kept HEALTHCHECK timing, USER, EXPOSE, CMD, and the entire COPY layout identical
+
+  **Verification (local, linux/amd64):**
+
+  - `docker build` succeeds in ~61s (vs ~122s for the previous Alpine image, a ~2x speedup on a cold build)
+  - `better_sqlite3.node` is present at `node_modules/better-sqlite3/build/Release/` and dated to upstream's release, confirming a prebuild download rather than a local compile
+  - In-container `require('better-sqlite3')(':memory:')` round-trips a row correctly
+  - Container starts and `/health` returns the expected JSON payload
+
+  **Image size delta:** 511 MB → 564 MB (+53 MB). Acceptable trade-off given the
+  build-time win, removal of the build-toolchain attack surface, and the
+  reliability win of staying on prebuilt binaries.
+
+- [#2249](https://github.com/IgorGanapolsky/ThumbGate/pull/2249) [`ba8fc02`](https://github.com/IgorGanapolsky/ThumbGate/commit/ba8fc023b4e3eaf2c176d768df58bb5056ec1583) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix Railway production deploys that have been failing since the better-sqlite3@12.10.0 bump. The Dockerfile's `node:20-alpine` builder stage was missing Python and a C++ toolchain, so when better-sqlite3's prebuilt musl binary wasn't found, the `node-gyp rebuild` fallback failed with `Could not find any Python installation to use`. Every Railway deploy since the bump has built green in GitHub Actions, sent `railway up` successfully, then failed inside Railway's Docker build — and Railway's restart policy kept serving the old container (buildSha `92f8e4b1`, version 1.20.0) for hours.
+
+  Added `RUN apk add --no-cache python3 make g++` to the builder stage. Runtime stage stays slim (Python isn't needed at runtime, only at install).
+
+- [#2141](https://github.com/IgorGanapolsky/ThumbGate/pull/2141) [`e5084f2`](https://github.com/IgorGanapolsky/ThumbGate/commit/e5084f221bd8e407558be9e28c554bc009f67a51) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Docs: document the machine-wide vs per-project install scope choice.
+
+  ThumbGate has shipped two install scopes since v1.x — `npx thumbgate init` (machine-wide, default, writes to `~/.claude/settings.json`, one shared lesson DB and dashboard across every repo) and `npx thumbgate init --project` (per-repo, writes to `<repo>/.claude/settings.json`, separate lesson DB per repo). Until now, neither scope was documented on any user-facing surface — not the README, not thumbgate.ai, not the guide page, not the CLI help. Users had no way to make an informed choice.
+
+  This change adds:
+
+  - A dedicated "Install scope: machine-wide vs per-project" section to the README under "Install for Your Agent"
+  - The same comparison table to `public/guide.html` (rendered on thumbgate.ai/guide.html)
+  - An expanded `install-mcp` help line in `bin/cli.js` that documents both scopes, the default, and the `--no-hooks` opt-out from the install-mcp + hooks unification PR
+  - A regression test suite (`tests/install-scope-docs.test.js`, 9 tests) pinning the scope docs in README, guide.html, and CLI help so they cannot silently disappear
+
+  No code behavior changes — pure docs + CLI help text + regression test.
+
+- [#2272](https://github.com/IgorGanapolsky/ThumbGate/pull/2272) [`f3a99b7`](https://github.com/IgorGanapolsky/ThumbGate/commit/f3a99b75639c85d264eb5f95de745938bc19ba5a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - **E2E coverage expansion for the conversion funnel.** PR [#2268](https://github.com/IgorGanapolsky/ThumbGate/issues/2268) added comprehensive clickability coverage for `/lessons`, but the four highest-priority public pages a real visitor traverses on the way to revenue still had zero Playwright clickability assertions. CEO directive: "100% e2e verification."
+
+  Four new Playwright specs at `tests/e2e/<page>-clickability.spec.js`, each enumerating every deterministic clickable surface on its page and asserting a visible effect (URL change, content swap, accordion toggle, copy-hint flip, scroll-into-view) per click — never just "handler fired."
+
+  Per-page test counts:
+
+  - `/` (landing) — 19 tests (hero copy/CTAs, in-page nav anchors, FAQ accordion, pricing section CTAs, sticky bottom CTA)
+  - `/dashboard` — 21 tests (auth bar + Connect, Try Demo, 8 tab headers, 4 source filters, Mark Reviewed, DPO export, nav)
+  - `/agent-manager` — 11 tests (5 nav links, 2 primary CTAs, 3 related-reading links, render check)
+  - `/pricing` — 18 tests (5 nav links, 3 plan CTAs, scope-first link, 5-item FAQ accordion, 5 footer links)
+
+  Total: **69 new tests**, none duplicating the four stat cards already covered by `tests/e2e/dashboard-stat-cards.spec.js`.
+
+  Three of the `/` landing-page tests **intentionally fail** because they expose a real bug: `toggleFaq` and `handleFaqKeydown` in `public/index.html` are defined inside an IIFE, so the inline `onclick="toggleFaq(this)"` attributes throw `ReferenceError` and the entire FAQ accordion is dead. This PR does not fix the page bug — it surfaces it with a failing test so a follow-up can hoist the handlers to the window scope. The other 66 tests pass.
+
+  npm scripts added: `test:index-page-clickability`, `test:dashboard-page-clickability`, `test:agent-manager-page-clickability`, `test:pricing-page-clickability`.
+
+- [#2095](https://github.com/IgorGanapolsky/ThumbGate/pull/2095) [`2770a63`](https://github.com/IgorGanapolsky/ThumbGate/commit/2770a63b2351ad14d96bc8a0c91dc55b8a7eb55c) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add `scripts/external-customer-audit.js` — Stripe truth filtered by owner email.
+
+  Background: The unified revenue rollup ([#2090](https://github.com/IgorGanapolsky/ThumbGate/issues/2090)) shipped raw Stripe totals: lifetime net, MRR, active subscription count. Those numbers count the operator's own purchases and subscriptions as if they were external customers. On a small operator-run product that's a meaningful confound — the difference between "1 active subscription" and "0 real customers" is whether the operator subscribed to test billing.
+
+  This script splits Stripe activity into `owner` vs `external` buckets and reports external-only counts as the headline number. Owner emails come from `THUMBGATE_OWNER_EMAILS` (comma-separated env var) with a default of `iganapolsky@gmail.com,igor.ganapolsky@gmail.com`. Wired into the Daily Revenue Loop workflow as a separate step alongside the unified rollup; outputs `reports/revenue/external-audit.{md,json}` plus a GitHub job-summary section.
+
+  The script's headline always reports three external-only numbers explicitly so they cannot be confused with owner-inclusive totals:
+
+  - Real, non-owner paying customers lifetime
+  - Real, non-owner net revenue lifetime
+  - Real, non-owner active subscriptions (+ MRR)
+
+  11 unit tests with an injected fake Stripe client cover: missing-secret gap, owner/external partitioning by email match, case-insensitivity, refunded-charge exclusion, billing_details fallback when customer object has no email, subscription MRR split, checkout completion split, and the headline markdown rendering.
+
+- [#2276](https://github.com/IgorGanapolsky/ThumbGate/pull/2276) [`5cda284`](https://github.com/IgorGanapolsky/ThumbGate/commit/5cda284d7dfab2aa835896a73f20b94020145a9c) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - fix(dashboard): Active Gates stat-card click now activates the Gates tab + scrolls it into view
+
+  Clicking the Active Gates card on /dashboard previously appeared to do nothing.
+  Two bugs in switchTab():
+
+  1. The selector `document.querySelector('[onclick*="<name>"]')` matched the
+     stat-card (first in DOM order) instead of the tab header for that name,
+     so the tab header never lit up as active.
+  2. The tab content panel did get .active, but it sat below the fold; with
+     no scrollIntoView, the user perceived "nothing happened" because the
+     newly-visible content was off-screen.
+
+  Fix: scope the header selector to `.tab`, and call
+  `contentEl.scrollIntoView({ behavior: 'smooth', block: 'start' })` after
+  activating the panel. Regression pinned by two new tests in
+  tests/e2e/dashboard-stat-cards.spec.js.
+
+- [#2135](https://github.com/IgorGanapolsky/ThumbGate/pull/2135) [`b452526`](https://github.com/IgorGanapolsky/ThumbGate/commit/b452526e7f3848a6894f17329ee85127bf6a3e3d) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix four install-flow bugs surfaced during a real customer walkthrough on 2026-05-18:
+
+  1. **`npx thumbgate pro` (no args) silently falls back to the info banner for creator-dev users** — the dashboard-launch predicate `if (resolvedKey && resolvedKey.key)` rejected the legitimate `{key:'', source:'creator-dev', plan:'enterprise'}` shape that `resolveProKey()` returns when `THUMBGATE_DEV_KEY` is unset. Predicate now also accepts `source === 'creator-dev'`, matching what `startLocalProDashboard` already supports.
+
+  2. **`init` silently deletes user-authored hooks whose command contains a shell variable.** `pruneStaleFileHooks` was treating `"$CLAUDE_PROJECT_DIR"/.claude/hooks/x.sh` as a literal filesystem path, so `fs.existsSync` returned false and the hook was removed with a misleading "Removed stale hook referencing missing file" warning even when the script existed. Added a bounded `$VAR` / `${VAR}` expander with quote stripping, and a fail-safe: if any `$` remains after expansion, skip pruning rather than risk destroying a valid hook.
+
+  3. **`isProTier()` ignored creator-dev installs**, so commands that DO consult it (upgradeNudge, rate gates) still nagged the maintainer on their own machine. Added an `isCreatorDev()` check.
+
+  4. **`proNudge` never consulted `isProTier` at all** — every `stats` / `lessons` / `summary` call printed the Pro upsell even for paid users. Now short-circuits on Pro tier (and transitively on creator-dev).
+
+  README Quick Start showed the bare positional `npx thumbgate capture "text"` form which actually errors `Missing or unrecognized --feedback=up|down` — replaced with the working `--feedback= --context=` form. Same correction in the CLI Reference section.
+
+  6 new regression tests in `tests/creator-dev-and-prune.test.js`. All 150 existing cli / hook / rate-limiter tests still pass.
+
+- [#2115](https://github.com/IgorGanapolsky/ThumbGate/pull/2115) [`72fda40`](https://github.com/IgorGanapolsky/ThumbGate/commit/72fda40c8a693dd724cf3e8c3d59f43f680866bd) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Collapse the Pro buyer path to one Stripe CTA plus intake fallback by removing unrelated service payment links from `/pro` and the checkout interstitial, and add a revenue observability doctor that fails closed when revenue or visitor proof access is missing.
+
+- [#2179](https://github.com/IgorGanapolsky/ThumbGate/pull/2179) [`97e27f1`](https://github.com/IgorGanapolsky/ThumbGate/commit/97e27f12ef5e16b71932869f2fa3c50217e1e388) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Collapse the public Team funnel to intake-first and position ThumbGate against persistent agent skills with enforcement proof.
+
+- [#2115](https://github.com/IgorGanapolsky/ThumbGate/pull/2115) [`72fda40`](https://github.com/IgorGanapolsky/ThumbGate/commit/72fda40c8a693dd724cf3e8c3d59f43f680866bd) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Funnel collapse on `/`. The workflow-sprint section (paid consulting: $97 kit, $499 diagnostic, $1500 sprint, $3997 setup, $297/mo retainer) is now wrapped in a `<details>` element collapsed by default. A cold visitor scrolling the landing page sees only the three coherent SaaS tiers (Free $0, Pro $19/mo, Team $49/seat/mo) instead of 11 competing price points.
+
+  Verified counts:
+
+  - Before: 11 distinct price points visible on default scroll
+  - After: 6 visible (`$0`, `$19`, `$19/mo`, `$49`, `$49/seat/mo`, `$147/mo`) — all SaaS tier prices, no mixed signals
+  - Consulting prices still present, one click away, no revenue surface lost
+
+  Addresses the 2026-05-18 strict assessment finding: "Eleven distinct price points on one page, with three separate purchase paths. A cold buyer cannot tell what to buy. This is the biggest single problem."
+
+  Zero changes to: server routes, Stripe links, telemetry hooks, anchor IDs (`#workflow-sprint-intake` still resolves), form submission flow. Pure HTML restructure.
+
+- [#2112](https://github.com/IgorGanapolsky/ThumbGate/pull/2112) [`5441efe`](https://github.com/IgorGanapolsky/ThumbGate/commit/5441efece070396266dd2d1771c6ead9707cad87) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Gate pattern keys now collapse trivial command variants. Previously, `rm -rf node_modules`, `rm -rf ./node_modules`, and `rm -rf "node_modules"` produced three separate gate IDs — accidental dislikes proliferated and one captured failure didn't catch its near-twins on the next run.
+
+  Addresses the r/ClaudeCode critique (MomSausageandPeppers, 2026-05-17): "commands are matched by string equality, so trivial variations create separate gates."
+
+  New helper `normalizeCommandSignature(input)` (exported from `scripts/auto-promote-gates.js`) applies a conservative set of transforms:
+
+  - lowercase
+  - strip `/Users/<name>/` and `/home/<name>/` home-dir prefixes (→ `~`)
+  - drop `:LINE` and `:LINE:COL` refs
+  - per-token: strip one layer of matching outer quotes/backticks
+  - per-token: drop leading `./`
+  - collapse whitespace + trim
+
+  Explicitly does **not** reorder flags, collapse `&&` chains, or canonicalize subcommands — each of those can change semantics. Regression tests pin both behaviors (`does NOT reorder flags`, `does NOT collapse && chains`).
+
+  `extractPatternKey()` now routes context through `normalizeCommandSignature` so five common rm-rf variants collapse to one gate ID. Tag-based keys still take precedence when tags are present.
+
+  12 new tests in `tests/auto-promote-gates.test.js`; 31/31 in file passing.
+
+- [#2078](https://github.com/IgorGanapolsky/ThumbGate/pull/2078) [`1f01c75`](https://github.com/IgorGanapolsky/ThumbGate/commit/1f01c75731a89229fbd4c93f9fbc8e1181174378) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - chore(landing): flip the hero CTA on `public/index.html` from "Get Pro — $19/mo" to "Talk to me — Workflow Hardening Sprint →" pointing at the existing `#workflow-sprint-intake` anchor. Pro/Team tiers below the fold are untouched and still convert via `/checkout/pro`. Aligns the highest-traffic landing surface with the actual buyer ICP (platform / devex leaders who buy fixed-scope engagements, not $19/mo self-serve).
+
+  Adds `docs/marketing/buyer-list-real-humans-2026-05-14.md`, `docs/marketing/buyer-list-send-ready-2026-05-14.md`, `docs/marketing/bluesky-quote-tns-2026-05-14.md` — outreach drafts, not runtime files.
+
+- [#2253](https://github.com/IgorGanapolsky/ThumbGate/pull/2253) [`a49ac2f`](https://github.com/IgorGanapolsky/ThumbGate/commit/a49ac2fdc7383c72d83b543e7e45fa448a631db1) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add regression test for a previously-shipped class of bug where ThumbGate's hook command builders dropped the subcommand on the fast path (`exec "$BIN"` instead of `exec "$BIN" "<subcommand>"`). When the runtime binary existed (always, after first install), Claude Code would exec bare `thumbgate`, which prints the help screen — that help became users' statusline; the gate-check/cache-update/session-start/hook-auto-capture hooks became silent no-ops; and re-running `thumbgate init` would silently reinstall the broken settings.
+
+  The bug is already fixed in current source (`scripts/published-cli.js` correctly includes `${escapedArgs ? \` ${escapedArgs}\` : ''}` on both branches). These tests lock the behavior in:
+
+  - `tests/published-cli.test.js` — three new tests asserting the fast-path _independently_ contains the subcommand, that every hook subcommand appears exactly twice (once per branch), and that `preferInstalled=false` keeps the subcommand on its exec line.
+  - `tests/hook-runtime-subcommands.test.js` (new) — higher-level guard over `statuslineCommand`, `preToolHookCommand`, `userPromptHookCommand`, `sessionStartHookCommand`, `cacheUpdateHookCommand`. Asserts each result contains its subcommand AND never matches the `exec PATH` pattern without a subcommand argument.
+
+  Together these prevent future refactors of `resolveCliCommand` from re-introducing the bug class even on new branches (Volta shim, source checkout, additional builders).
+
+- [#2252](https://github.com/IgorGanapolsky/ThumbGate/pull/2252) [`2a88b24`](https://github.com/IgorGanapolsky/ThumbGate/commit/2a88b2450c31fce70a33938eb6c2eedb9a530feb) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add mandatory implementation notes system: `.claude/implementation-notes/` directory for per-task decision logs, new CLAUDE.md section mandating their use, and new hard-won lesson from the 2026-05-20 deploy root-cause misdiagnosis. Adopted from @trq212's prompting pattern for keeping the CEO in the loop on decisions, tradeoffs, and corrections during multi-step tasks.
+
+- [#2234](https://github.com/IgorGanapolsky/ThumbGate/pull/2234) [`e00b400`](https://github.com/IgorGanapolsky/ThumbGate/commit/e00b4000d04e9da72ebb1bbd9a6f34155e007a25) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix `thumbgate init` to auto-detect and wire Claude Code.
+
+  The platform-detection loop in `init` listed Codex, Gemini, Amp, Cursor, ForgeCode and Cline but had no Claude Code entry — so running `thumbgate init` inside Claude Code silently skipped the flagship agent, printing no status and wiring no hooks unless `--agent claude-code` was passed explicitly.
+
+  `init` now detects Claude Code (`which claude` / `~/.claude`) and wires it through the shared `wireHooks` path like every other agent. `setupClaude()` (used by `thumbgate install`) now delegates gate-hook wiring to that same path, so `init`, `init --agent claude-code`, and `install` all produce the identical hook set — including the PreToolUse pre-action gate, which `install` previously omitted entirely. `thumbgate --version` / `-v` now prints the package version instead of `Unknown command`.
+
+- [#2143](https://github.com/IgorGanapolsky/ThumbGate/pull/2143) [`60c421a`](https://github.com/IgorGanapolsky/ThumbGate/commit/60c421ad1f11b96b96b5515dc750bcb4d888d460) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Removes the "82% token savings" specific claim from the landing-page feature list. The 82% figure comes from a generic per-skill formula in `scripts/skill-packs.js` (`Math.round((1 - l1Chars/totalChars) * 100)`) — the actual savings vary per skill pack. No benchmark file substantiates 82% as an aggregate or median, so the specific number was an unverifiable trust signal.
+
+  Replaced with a mechanism description that points readers to the metric source:
+
+  > "Progressive Disclosure — 3-tier L1/L2/L3 loading cuts skill-pack token cost per the disclosureSavings metric in scripts/skill-packs.js"
+
+  Same class of fix as PR [#2137](https://github.com/IgorGanapolsky/ThumbGate/issues/2137) (false `/checkout/pro` claims). Adheres to the CLAUDE.md Honesty Protocol: code-shipped ≠ outcome-achieved; verifiable numbers only on buyer-facing surfaces.
+
+- [#2113](https://github.com/IgorGanapolsky/ThumbGate/pull/2113) [`97a59e4`](https://github.com/IgorGanapolsky/ThumbGate/commit/97a59e42569240fbabce75170fe99ee4c48aad30) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - New article: `/learn/agent-swarms-shared-gates` — explains why multi-agent swarms pay N&times; the token cost on every repeated mistake without shared safety memory, and how a single MCP gate layer makes Opus, GPT, and Gemini fail the same way only once.
+
+  Captures real search intent ("agent swarm token cost", "multi-agent shared memory", "agent swarm shared state") and grounds the claim in ThumbGate's actual architecture: one feedback dir, one PreToolUse hook, model-agnostic pattern matching, JSONL append-only feedback log that handles concurrent captures from multiple agents.
+
+  Honest framing: explicitly states what a shared gate layer does NOT solve (work routing, model selection, load balancing — that's the swarm framework's job). Linked from the learn index.
+
+- [#2148](https://github.com/IgorGanapolsky/ThumbGate/pull/2148) [`c353b56`](https://github.com/IgorGanapolsky/ThumbGate/commit/c353b56650574fbfd71bf5705d8dc6a9652d237e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - New article: `/learn/claude-code-goal-with-rubrics` — connects Min Choi's [viral /goal pattern tweet](https://x.com/minchoi/status/2054763842521960728) (Claude Code's `/goal` command is way more powerful when you stop treating it like a todo: clear goal, measurable success, shown proof, hard limits) to ThumbGate's existing `scripts/rubric-engine.js`.
+
+  The 4-field pattern Min Choi posted is exactly the shape ThumbGate's rubric-engine already enforces at gate-fire time. The article shows the mapping:
+
+  - Clear goal → `rubric.goal`
+  - Measurable success → `rubric.verification.check`
+  - Shown proof → `rubric.verification.evidence`
+  - Hard limits → `rubric.budget` (tied to `budget-guard.js`)
+
+  Captures real search intent for "claude code /goal command", "verifiable AI agent outcomes", "agent rubric pattern". Linked from `/learn` index card.
+
+- [#2268](https://github.com/IgorGanapolsky/ThumbGate/pull/2268) [`54006eb`](https://github.com/IgorGanapolsky/ThumbGate/commit/54006eb54aa9f7ef3470fea9347f2d6c81fd2d7a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix /lessons stat-card clicks that appeared to do nothing — switchTab() now scrolls the active tab content into view so the user sees a visible response. Without scrollIntoView, clicking "Active Rules" / "Critical" / "Actions Blocked" / "Approval Trend" was a silent no-op from the user's POV: the handler fired and the tab class flipped, but the tab content was below the fold and the page never scrolled to it. CEO reported the bug; verified the silent-handler symptom by inspection.
+
+  Also: 17 new Playwright E2E tests in `tests/e2e/lessons-page-clickability.spec.js` cover EVERY deterministic clickable surface on /lessons — 4 stat tiles, 3 tab headers, 4 rules filter buttons, 3 timeline filter buttons, 2 nav anchors, plus a render assertion. Each tile click test asserts the tab content is in-viewport after click (catches future scrollIntoView regressions). Closes the E2E coverage gap from PR [#2242](https://github.com/IgorGanapolsky/ThumbGate/issues/2242) (which only tested the dashboard stat cards, not the lessons-page tiles).
+
+- [#2084](https://github.com/IgorGanapolsky/ThumbGate/pull/2084) [`62e7d65`](https://github.com/IgorGanapolsky/ThumbGate/commit/62e7d65803bb2d65ed2da174933b47922020988d) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add top-level `Organization` JSON-LD block to the landing page so Google's TurboQuant entity index (and AI Overviews) can recognize ThumbGate as a distinct entity with founder, logo, and canonical `sameAs` profiles (GitHub repo, npm package, founder profile). Previously the only Organization markup was embedded as `provider` inside the Workflow Sprint Service block — embedded providers are less reliable entity signals than a standalone Organization node.
+
+  Conservative `sameAs` — only verified, ThumbGate-owned URLs (no speculative social profile claims).
+
+- [#2093](https://github.com/IgorGanapolsky/ThumbGate/pull/2093) [`1d4c76f`](https://github.com/IgorGanapolsky/ThumbGate/commit/1d4c76f5064e721946cdaf5c16473f1e7b8d0b7e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix `/pricing` contradiction: the previously shipped page collapsed two distinct products ("Sprint Diagnostic" $499 and "Workflow Hardening Sprint" $1500) into a single "$499 Sprint" card. Buyer arriving from the homepage hero — which correctly distinguishes "$499 diagnostic, $1500 sprint, $3,997 governance setup" — would see different numbers on adjacent pages.
+
+  This rewrites `/pricing` as the single source of truth with all six paid paths visible:
+
+  - **$1,500** Workflow Hardening Sprint (full engagement, hero card)
+  - **$499** Sprint Diagnostic (proof-pack on-ramp)
+  - **$0** Free CLI
+  - **$19/mo · $149/yr** Pro
+  - **$49/seat/mo** Team (3-seat min, $147/mo)
+  - Micro-purchase row: $1 first failure rule, $19 quick read, $99 workflow teardown
+
+  Each card has a direct Stripe Payment Link (or `/go/*` tracked-link router) so a buyer landing from any inbound channel can complete checkout in one click without leaving the pricing page.
+
+- [#2116](https://github.com/IgorGanapolsky/ThumbGate/pull/2116) [`c6e3699`](https://github.com/IgorGanapolsky/ThumbGate/commit/c6e36991114599cddaf1771c989221f64e6deb51) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - `/pricing` rebuilt SaaS-first. The previous version led with the **$1,500 Workflow Hardening Sprint as the hero card** and demoted Pro/Team to `cta-secondary` styling — actively working against $19/mo self-serve conversion. A buyer who clicked "Pricing" in the nav landed on a consulting upsell.
+
+  New structure:
+
+  - Hero card (blue accent, "Most popular" badge): **Pro $19/mo** with primary CTA
+  - Flanking cards: **Free CLI** ($0) and **Team** ($49/seat)
+  - Consulting ($499 diagnostic / $1,500 sprint / $97 kit) collapsed into a `<details>` element below the grid
+
+  Self-serve checkout on every paid plan — the lede now reads "Three tiers. Pick the one that matches your scale. Self-serve checkout on every paid plan — no calls" instead of "Six paths to ThumbGate. Pick by what you need."
+
+  All 126 existing tests in `tests/api-server.test.js` still pass, including the `pricing page is the single source of truth` test that pins every tier name + price + CTA route. No revenue surface lost — the $499/$1,500/$97 paths still convert through the same mailto and Stripe Payment Link, just behind one click.
+
+- [#2245](https://github.com/IgorGanapolsky/ThumbGate/pull/2245) [`ea7053f`](https://github.com/IgorGanapolsky/ThumbGate/commit/ea7053f75ef3a290fdd2274d7cddc2952bbecf72) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Improve Railway deploy reliability: fix deploy-scope false positive when BEFORE_SHA is unreachable in shallow clone, reduce health check window from 20 minutes to 6 minutes (matching Railway's 300s healthcheck timeout), simplify concurrency group, add explicit timeout to health verification step.
+
+- [#2099](https://github.com/IgorGanapolsky/ThumbGate/pull/2099) [`920f571`](https://github.com/IgorGanapolsky/ThumbGate/commit/920f571ad2f4fdd082623c371acb464193c73f35) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - README + LAUNCH_POSTS docs honesty pass triggered by [r/ClaudeCode comment thread](https://www.reddit.com/r/ClaudeCode/comments/1tc2k1z/comment/oll1dua/). Three corrections:
+
+  1. **"No LLM in enforcement" needs the qualifier.** Layer 2 description now distinguishes the deterministic runtime gate decision (literal pattern + AST + scoped lookup, zero LLM) from offline retrieval (local CPU-only `bge-small` embeddings via LanceDB — a model, but no external API call and no inference cost beyond CPU).
+  2. **Thompson Sampling does NOT select rules.** Old framing said "Thompson Sampling for adaptive rule selection" / "multi-armed bandit rule selection" which implied the bandit decides whether a rule fires. Corrected: TS tunes per-rule confidence weights for soft-gating rules. Hard rules ("block force-push to main") always fire deterministically — bandit exploration would be terrifying for hard rules.
+  3. **Cross-agent propagation + learning loop is the lead differentiator vs hand-rolled hooks.** Layer 4 description now explicitly answers "why ThumbGate over Claude Code's `permissions.deny` or a custom `PreToolUse` script": (a) checks propagate cross-agent over MCP — thumbs-down on Cursor blocks the same pattern on Claude Code, Codex, Gemini in the next session; (b) every feedback event becomes a fresh rule and tunes existing ones, so the corpus sharpens without an operator hand-writing patterns for every new mistake shape.
+
+- [#2101](https://github.com/IgorGanapolsky/ThumbGate/pull/2101) [`6a145b7`](https://github.com/IgorGanapolsky/ThumbGate/commit/6a145b737b073091bf47e6b125d201bb2264c7ba) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix broken README hero line. The README has shown `**Stop paying $ for the same AI mistake.**` since 2026-04-26 — a stray `$` placeholder that was never filled in. The canonical product line elsewhere on the site is `Stop paying for the same AI mistake twice` (matches `<title>` tag on the homepage). This PR aligns the README hero to that exact phrasing.
+
+  Caught by a self-critique pass during a bug-hunt session. The placeholder had been live on the public GitHub README for almost three weeks.
+
+- [#2161](https://github.com/IgorGanapolsky/ThumbGate/pull/2161) [`d3e2c67`](https://github.com/IgorGanapolsky/ThumbGate/commit/d3e2c6738f88be4254ba01fb522ff3f6b97aaba4) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Regulated-industries reframe — riding the GitLab/New Stack build-vs-buy thesis into a higher-ACV ICP.
+
+  **Trigger:** GitLab Field CTO Bryan Ross published "[The hidden cost of build vs. buy for agentic AI in regulated industries](https://thenewstack.io/agentic-ai-build-buy/)" in The New Stack on 2026-05-15, putting a $1.4M / 18-month price tag on DIY agentic AI platforms. The piece names the orchestration layer as the real complexity but does not name the execution-boundary layer underneath. That gap is ThumbGate.
+
+  **Shipped in this PR:**
+
+  - **New learn article** `/learn/regulated-agent-execution-boundary` — companion piece citing Ross's article, extending the build-vs-buy frame to the execution-boundary layer. SEO-targeted at DORA / EU AI Act / "agentic AI build vs buy" / "agent execution boundary" queries. Linked from `learn.html` at the top of the article grid.
+  - **Regulated pricing tier** on `/` — full-width card below the existing 3-tier grid (Free / Pro / Team). Contact-sales surface, not self-serve, with workflow-scoped pricing anchor ($4,800/mo + $7,500 sprint) and DORA/EU AI Act evidence packaging language. Targets banking, insurance, healthcare, public sector. Posthog + first-party telemetry events wired for `regulated_intake_started`.
+  - **Outreach draft** `reports/outreach/bryan-ross-gitlab-2026-05-18.md` — LinkedIn + email + public-comment variants for warm outreach to Bryan Ross. Citation-anchored, partnership/integration angle, no pitch. CEO approval required before send per `CLAUDE.md` outbound directive.
+  - **Sales anchor library** `docs/marketing/sales-anchors-2026-05.md` — reusable copy snippets for the $1.4M anchor across LinkedIn, email, Reddit, and discovery calls, with ICP gating signals and a 6-month half-life on the citation.
+
+  **ROI thesis:** Pro at $19/mo is the right wedge for solo devs and small consultancies. Regulated at $4,800/mo is a 250× ACV step for buyers with audit pressure. Even a single Regulated close at the floor price exceeds the entire Pro pipeline target for the quarter. The companion piece is also a backlink and SEO play against terms ("agentic AI build vs buy", "DORA agent compliance") with no existing competitor content.
+
+  No existing tests broken. Pricing grid still asserts 3 self-serve tiers; the Regulated card is structurally outside the grid and does not interfere with `pricing page is the single source of truth` assertions.
+
+- [#2267](https://github.com/IgorGanapolsky/ThumbGate/pull/2267) [`ff9adf9`](https://github.com/IgorGanapolsky/ThumbGate/commit/ff9adf923c900d8b044e9f181d805666672a6f4a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Revert the graceful shutdown listener cleanup after production verification showed the cleanup path could leave Railway without a healthy running container.
+
+- [#2243](https://github.com/IgorGanapolsky/ThumbGate/pull/2243) [`f52ef0b`](https://github.com/IgorGanapolsky/ThumbGate/commit/f52ef0b6db435c7ef41869d865040ae01303bd10) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix workflow sentinel to checkpoint (warn) background customer-system actions before hard-deny threshold. Previously, risk drivers from background agent + customer system action could push the score past 0.86, triggering a hard deny that blocked legitimate automated workflows.
+
+- [#2258](https://github.com/IgorGanapolsky/ThumbGate/pull/2258) [`689b215`](https://github.com/IgorGanapolsky/ThumbGate/commit/689b215bd3c7b030a963c3a41b284a843c735d8f) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Soften public-facing Cursor Marketplace claims while the listing is still in review.
+
+  The Cursor Marketplace submission was filed 2026-05-19 via `cursor.com/marketplace/publish`, but Cursor has not yet completed manual review and `cursor.com/marketplace/thumbgate` currently returns 404. Public marketing copy was implying the plugin is already live on the Marketplace, which could mislead visitors. The runtime install path (`npx thumbgate init --agent cursor`) works today and is unaffected — only the Marketplace LISTING is pending.
+
+  Files softened:
+
+  1. **`public/index.html`** — the "🎯 Cursor plugin" compat card (line ~931) gained a "(Marketplace review pending)" suffix and the body now explicitly states the runtime install works today via `npx thumbgate init --agent cursor` while the Marketplace listing is awaiting Cursor's manual review. The "What AI agents and editors does this work with?" FAQ (line ~1411) was updated for the same nuance — Cursor plugin bundle installs today via the npx command, in-app Marketplace discoverability is pending.
+
+  2. **`public/agent-manager.html`** — the Plugin marketplace row in the ICP mapping table (line 79) now annotates "Cursor extension" with the review-pending status and the working runtime install path.
+
+  3. **`public/llm-context.md`** — the Plugin marketplace bullet under the Agent Manager section (line 241) was softened with the same annotation so AI crawlers and LLM context surfaces don't quote the optimistic version.
+
+  4. **`docs/CURSOR_PLUGIN_OPERATIONS.md`** — added a Positioning rules bullet codifying the "Marketplace listing pending Cursor's review" wording requirement so future copy edits stay honest until Cursor approves. The runtime install path (`npx thumbgate init --agent cursor`) remains the safe-to-promote install path.
+
+  Auto-generated revenue-pack files (`docs/marketing/cursor-marketplace-revenue-pack.{md,json}`) were intentionally NOT hand-edited — they regenerate from `scripts/cursor-marketplace-revenue-pack.js --write-docs`.
+
+- [#2085](https://github.com/IgorGanapolsky/ThumbGate/pull/2085) [`460e254`](https://github.com/IgorGanapolsky/ThumbGate/commit/460e25459fba5f86f9c039b82e86885903399f41) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Ship `/learn/spec-driven-development` — landing page positioning ThumbGate as the runtime enforcement layer for spec-driven development. The spec-driven workflow (mission.md / tech-stack.md / roadmap.md constitution plus per-feature plan / requirements / validation) is rising as an alternative to vibe coding, but the spec only works if the agent cannot drift outside it. Page makes that gap explicit and positions ThumbGate as the "bailiff" enforcing the spec at the PreToolUse hook layer.
+
+  SEO angle: "spec-driven development" + "AI agent spec enforcement" are growing search terms with low competition for the enforcement-layer framing.
+
+- [#2156](https://github.com/IgorGanapolsky/ThumbGate/pull/2156) [`d9e35c5`](https://github.com/IgorGanapolsky/ThumbGate/commit/d9e35c50820440962ae8fa3a4a089ba75681e251) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix: natural Workflow Hardening Sprint URLs (`/sprint`, `/workflow-hardening`, `/workflow-hardening-sprint`, `/workflow-sprint`, and `.html` variants) now 302-redirect to the canonical `/#workflow-sprint-intake` anchor instead of returning a hostile JSON 401 (`urn:thumbgate:error:unauthorized`).
+
+  Recipients of outbound messages mentioning "the workflow hardening sprint" who typed the natural URL were being silently bounced. Live probe on 2026-05-18 confirmed the 401 response on all four URL variants on production.
+
+  Mirrors the existing `/services` → `/#workflow-sprint-intake` redirect pattern. 8 new redirect assertions added to `tests/public-static-assets.test.js`.
+
+- [#2100](https://github.com/IgorGanapolsky/ThumbGate/pull/2100) [`f92d3c5`](https://github.com/IgorGanapolsky/ThumbGate/commit/f92d3c58e0706b4c96d82f29915aa5fcf7271f9a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add `scripts/stripe-business-identity-probe.js` — what does the buyer actually see on the Stripe-hosted checkout page?
+
+  The stripe-checkout-diagnostic from PR [#2097](https://github.com/IgorGanapolsky/ThumbGate/issues/2097) revealed the failure mode is buyer-bail-at-Stripe-page (100 sessions, 100% open/expired, 100% no customer email, zero payment_intent errors). That means buyers are seeing something on the Stripe page in the first 3 seconds that makes them close the tab. The diagnostic doesn't pull the _identity surface_ — what name/logo/description/statement_descriptor the merchant actually has configured. This probe does.
+
+  Pulls every Stripe-side field that contributes to brand recognition on the checkout page:
+
+  - `account.business_profile.{name, url, support_email, product_description, mcc}` — buyer-facing merchant identity
+  - `account.settings.payments.statement_descriptor` — what shows on the card statement after purchase
+  - `account.settings.card_payments.statement_descriptor_prefix`
+  - `account.settings.branding.{logo, icon, primary_color, secondary_color}` — visual continuity from thumbgate.ai → Stripe page
+  - `paymentLinks.list` per-link config: `active`, `submit_type`, `billing_address_collection`, `phone_number_collection`, custom_text presence, metadata keys
+  - Diagnoses each missing field as `critical` / `warning` / `info` with a specific message about what the buyer will see (or not see) as a result.
+
+  Wired into the Daily Revenue Loop workflow as a new step between unified-rollup and external-customer-audit. Outputs markdown + JSON to `reports/revenue/stripe-business-identity.*` plus a GitHub Actions job-summary section.
+
+  12 unit tests cover identity field extraction (with and without business_profile / branding / payments / card_payments sections), gap diagnosis (critical on missing name, warning when name doesn't contain "ThumbGate", info on missing URL / support_email), Payment Link summary extraction, Payment Link gap diagnosis (critical on inactive Payment Link still on file, warning on phone-collection friction), the runProbe end-to-end happy path, and unconfigured-Stripe degradation.
+
+- [#2097](https://github.com/IgorGanapolsky/ThumbGate/pull/2097) [`ef92c9d`](https://github.com/IgorGanapolsky/ThumbGate/commit/ef92c9d19d448d4c4ad63e421b32c68607813880) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add `scripts/stripe-checkout-diagnostic.js` — answers the question raised by the external-customer-audit (PR [#2095](https://github.com/IgorGanapolsky/ThumbGate/issues/2095)): WHY are 1000 lifetime checkout sessions producing 0 completed payments? The unified rollup reports the count but not the cause. This script pulls real Stripe API data for the cause.
+
+  Diagnostic surface:
+
+  1. Checkout session terminal-status breakdown (complete / expired / open / ...) plus payment_status distribution.
+  2. PaymentIntent `last_payment_error` rollup by code, type, and decline_code — distinguishes "buyer abandoned at email step" from "card declined" from "fraud rule fired."
+  3. Stripe Account health: `details_submitted`, `charges_enabled`, `payouts_enabled`, `requirements.disabled_reason`, `currently_due`, `past_due`, `pending_verification` arrays — the explicit fields blocking the account from normal processing.
+  4. Webhook endpoint inventory — flags the perception-risk case where checkouts complete on Stripe but our local ledger never sees them because no webhook is wired.
+  5. Recent-20-sessions table with cross-linked payment_intent error data so the operator can see the most recent failure modes in one view.
+
+  The markdown report includes a top-to-bottom diagnosis ranking: if `charges_enabled = false` it names that as the binding blocker before anything else; if zero payment intents have errors but many sessions exist, it names buyer abandonment as the diagnosis; if no webhooks are configured, it warns that "0 completions" may be undercounted.
+
+  Wired into the Daily Revenue Loop workflow alongside the unified rollup and the external-customer audit. Outputs both markdown and JSON to `reports/revenue/stripe-checkout-diagnostic.*` and a GitHub job-summary section.
+
+  9 unit tests with an injected fake Stripe client cover argument parsing, status / payment-status / error-code bucketing, the binding-blocker diagnosis path, the missing-webhook flag, recent-sessions table rendering with PI error codes, and the uniform-abandonment-without-errors diagnosis.
+
+- [#2073](https://github.com/IgorGanapolsky/ThumbGate/pull/2073) [`8d61192`](https://github.com/IgorGanapolsky/ThumbGate/commit/8d61192b76d2540b96684cba55f41a5478504d32) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Swap the 5 hardcoded `buy.stripe.com/*` URLs in `src/api/server.js` to the new Payment Links generated by today's catalog-bootstrap dispatch (run 25883541719). The previous links resolved to ad-hoc Stripe-created products with no consistent naming; the new ones are wired to the persistent ThumbGate-branded products (`metadata.thumbgate_tier=*`) with per-tier thumbnails, so buyers landing on the Stripe page now see "ThumbGate — Workflow Sprint" with the ThumbGate icon instead of an unbranded $1,500 line item.
+
+- [#2092](https://github.com/IgorGanapolsky/ThumbGate/pull/2092) [`2f89fd6`](https://github.com/IgorGanapolsky/ThumbGate/commit/2f89fd6ff0cbdd1980720f3d756e995b0bef2544) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add `GET /v1/telemetry/export` — operator-key-gated endpoint that returns recent raw telemetry-pings + funnel-events rows so the Daily Revenue Loop CI can pull first-party event data off the Railway container and join CTA-click attribution into the unified revenue rollup. Closes the third gap surfaced in the 2026-05-15 audit (Plausible reports pageview→pageview, Stripe reports charges, but the pageview→CTA-click handoff lives in `.thumbgate/telemetry-pings.jsonl` on Railway with no export path).
+
+  Endpoint contract:
+
+  - Auth: `THUMBGATE_OPERATOR_KEY` or the admin `THUMBGATE_API_KEY` (same auth shape as `/v1/billing/summary`).
+  - Query params: `since` (ISO8601, default last 24h), `limit` (default 1000, hard cap 10000), `source` (`telemetry` | `funnel` | `both`, default `both`).
+  - Returns `{ generatedAt, since, limit, source, telemetry: { rows, truncated, totalAfterSince }, funnel: { rows, truncated, totalAfterSince } }`.
+  - Truncation keeps the MOST RECENT rows (slice(-limit)) and signals via `truncated: true`.
+  - Graceful: missing JSONL files return `rows: []`, never a crash.
+
+  12 integration tests cover both auth paths, both rejection paths, every query parameter, the since-window filter, the truncation behavior, the hard-cap clamp, the negative-limit fallback, and the stable response schema.
+
+- [#2090](https://github.com/IgorGanapolsky/ThumbGate/pull/2090) [`7e0e77d`](https://github.com/IgorGanapolsky/ThumbGate/commit/7e0e77d261cc986224e2342871cae69bcb89baa5) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add `scripts/unified-revenue-rollup.js` — single script that joins Stripe live status (cash, MRR, lifetime revenue, checkout completion) with Plausible web analytics (visitors, pageviews, traffic sources) and projects the join onto the seven public revenue surfaces (`/`, `/pricing`, `/case-studies`, `/compare/heidi`, `/learn/spec-driven-development`, `/pro`, `/go/teams`).
+
+  Closes the audit gap surfaced on 2026-05-15 where the previous `revenue-status.js` only did a binary "is Plausible installed on the page" check and `analytics-latest.md` had gone two days stale. The new rollup is wired into the Daily Revenue Loop workflow (`.github/workflows/daily-revenue-loop.yml`) so a fresh `reports/revenue/unified-rollup-latest.md` is produced every run, and the markdown is also surfaced into the GitHub Actions job summary for at-a-glance review.
+
+  The script degrades gracefully when STRIPE_SECRET_KEY or PLAUSIBLE_API_KEY are missing — every absence becomes a labelled gap line, never a crash — so the same script is safe to run locally or in CI with partial secrets.
+
+  Diagnostics flag "funnel leak" patterns: traffic-on-/pricing-with-$0-balance and traffic-on-/case-studies-with-zero-checkouts. These are info-level signals, not warnings — they describe state, they do not claim revenue.
+
+  14 tests cover: surface list completeness, arg parsing, Plausible-page-to-surface join with zero-fill, diagnostics-firing-rules, markdown rendering (positive and degraded paths), and the gather/build wiring with a fake Plausible API + injected stripe-live-status module.
+
+- [#1977](https://github.com/IgorGanapolsky/ThumbGate/pull/1977) [`0bf50bc`](https://github.com/IgorGanapolsky/ThumbGate/commit/0bf50bc58b5c8e5f1aed7816f8a3f2e66f54bc68) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add `.github/workflows/verify-deploy-comment.yml` which runs after the `Deploy to Railway` workflow finishes for `main` pushes. It polls `/health` for up to 8 minutes waiting for the production `buildSha` to match the merge commit, probes `/`, `/health`, `/dashboard`, and every newly added `public/learn/*.html` or `public/guides/*.html` route in the merge diff, then posts a single comment back on the PR that introduced the merge — with the buildSha match, the `/health` JSON snapshot, and the per-route HTTP codes. Codifies the CLAUDE.md deployment-verification gate (no claiming "deployed" without `/health` evidence) as automation rather than a human checklist.
+
+- [#2089](https://github.com/IgorGanapolsky/ThumbGate/pull/2089) [`ac34782`](https://github.com/IgorGanapolsky/ThumbGate/commit/ac347828825bfad4e96d7a135ba497cb4210dc5c) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Wire `/pricing` and `/case-studies` into the homepage top-nav so buyers landing on `thumbgate.ai` can reach the canonical pricing and proof surfaces in one click. Previously the "Pricing" link pointed to an in-page anchor (`#pricing`) — the dedicated `/pricing` page shipped in PR [#2068](https://github.com/IgorGanapolsky/ThumbGate/issues/2068) was reachable only via direct URL. `/case-studies` (PR [#2067](https://github.com/IgorGanapolsky/ThumbGate/issues/2067), currently Aiventyx-only) had no entry at all.
+
+- [#2147](https://github.com/IgorGanapolsky/ThumbGate/pull/2147) [`a7dc07c`](https://github.com/IgorGanapolsky/ThumbGate/commit/a7dc07cd8e1a41d9a023572d31354a714ec1c513) Thanks [@dependabot](https://github.com/apps/dependabot)! - Bumps `ws` from 8.20.0 to 8.20.1 (Dependabot). Patch-level transport-layer dep used by the local MCP stdio server. No public API changes.
+
+- [#2170](https://github.com/IgorGanapolsky/ThumbGate/pull/2170) [`75eba2a`](https://github.com/IgorGanapolsky/ThumbGate/commit/75eba2a46ad1ccdc7e0ad3cb883f38b320b41ecb) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - **Stops the source of the 2,251 zombie Stripe checkout sessions** surfaced by the 2026-05-19 diagnostic (98.2% expired, 0 email captured, $147 amounts).
+
+  Root cause was two independent leaks creating sessions on every visit:
+
+  1. **`public/index.html:1299`** — the "Start 3-seat Team — $147/mo" landing-page link hardcoded `&confirm=1` in the URL. Every crawler that hit the landing page followed this link → `/checkout/pro?confirm=1` → live Stripe `cs_live_*` session creation. Matches the `$147` amount on most expired sessions in the diagnostic. Fix: drop `confirm=1` from the link. Crawlers + humans now land on the interstitial (same flow as the $19 Pro path).
+
+  2. **`scripts/revenue-observability-doctor.js:84`** — the prod healthcheck GETs `/checkout/pro?confirm=1` to verify the redirect contract. Daily-revenue-loop cron runs this script. Each tick = one zombie session. Fix: drop the confirm-path probe; the interstitial-body check on `/checkout/pro` already proves the deflection is live, and the post-deflection confirm path is covered by `checkout-bot-guard` integration tests.
+
+  Doctor return shape preserved (`result.confirm.status / redirects / location`) for downstream consumers; values are now `null` and `probeDisabled: true` flag set. Test rewritten with a regression guard: throws if any future fetch from the doctor includes `confirm=1`.
+
+  5/5 doctor tests pass. Public-landing tests pass.
+
+- [#2181](https://github.com/IgorGanapolsky/ThumbGate/pull/2181) [`2ca74a0`](https://github.com/IgorGanapolsky/ThumbGate/commit/2ca74a0a9ae788d650afd60d9e64bd894c6f87d2) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Stop bots from burning `cs_live_*` Stripe sessions by following the `confirm=1` link inside the checkout interstitial.
+
+  2026-05-19 audit found 2,210 of 2,251 lifetime Stripe Checkout sessions (98%) were zombies — expired, no email, no payment attempt. Root cause: the interstitial HTML renders a `<a href="/checkout/pro?confirm=1...">` link for the "Pay $19/mo with Stripe →" CTA, and bot crawlers discovered/followed it, bypassing the bot-deflection check on raw GETs and triggering Stripe session creation per crawl.
+
+  Two-layer fix:
+
+  1. **Server-side:** bot UA + `confirm=1` (alone) no longer treated as confirmed checkout — deflects back to the interstitial. POST requests still proceed (form submissions). A `customer_email` query param also bypasses the bot check, because no real crawler fabricates customer emails on discovered URLs.
+
+  2. **HTML-side:** the confirm link in the interstitial now carries `rel="nofollow noindex"` so well-behaved crawlers (Google, Bing, ClaudeBot, GPTBot) stop following it in the first place.
+
+  Expected outcome: 30d Stripe session count should drop from ~250 zombies/mo to humans-only volume.
+
 ## 1.21.2
 
 ### Patch Changes
