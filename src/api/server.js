@@ -5296,15 +5296,25 @@ async function addContext(){
       const bd = require('../../scripts/bot-detector');
       const { FEEDBACK_DIR: metricsDir } = getFeedbackPaths();
       const telemetryPath = path.join(metricsDir, 'telemetry-pings.jsonl');
-      let entries = [];
-      try {
-        if (fs.existsSync(telemetryPath)) {
-          entries = fs.readFileSync(telemetryPath, 'utf8')
-            .split('\n').filter(Boolean)
-            .map(l => { try { return JSON.parse(l); } catch(_e) { return null; } })
-            .filter(Boolean);
-        }
-      } catch { entries = []; }
+
+      // Cache parsed entries for 60s to avoid re-parsing 72K+ JSON lines per request
+      const cacheKey = '_metricsRealCache';
+      const cacheTTL = 60_000;
+      let entries;
+      if (global[cacheKey] && (Date.now() - global[cacheKey].ts) < cacheTTL) {
+        entries = global[cacheKey].entries;
+      } else {
+        entries = [];
+        try {
+          if (fs.existsSync(telemetryPath)) {
+            entries = fs.readFileSync(telemetryPath, 'utf8')
+              .split('\n').filter(Boolean)
+              .map(l => { try { return JSON.parse(l); } catch(_e) { return null; } })
+              .filter(Boolean);
+          }
+        } catch { entries = []; }
+        global[cacheKey] = { entries, ts: Date.now() };
+      }
 
       const now = Date.now();
       const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
@@ -5338,9 +5348,13 @@ async function addContext(){
       // users from bots/mirrors. "Active" = performed a meaningful CLI
       // action (capture, recall, search, gate-check, stats) — not just init.
       // ---------------------------------------------------------------
+      // Only events that prove a human used the product beyond init.
+      // cli_pro_view excluded: browsing the upgrade page is not "using" the product.
+      // cli_gate_check excluded: runs as subprocess, never fires trackEvent().
+      // cli_search excluded: event name doesn't exist in production telemetry.
       const ACTIVE_EVENTS = new Set([
-        'cli_capture', 'cli_recall', 'cli_stats', 'cli_search',
-        'activation_first_rule_promoted', 'cli_pro_view', 'cli_gate_check',
+        'cli_capture', 'cli_recall', 'cli_stats',
+        'activation_first_rule_promoted',
       ]);
       const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
       const last30 = classified.filter(e => {

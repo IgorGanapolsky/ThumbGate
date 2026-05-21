@@ -163,16 +163,29 @@ who captured feedback."
 - `last30Days.uniqueSessions` — how many coding sessions involved ThumbGate this month
 - `allTime.activeInstalls` — total distinct humans who ever did more than init
 
-## Databricks Lakebase assessment (CEO-requested)
+## Databricks Lakebase assessment (CEO-requested) — REVISED
 
 Databricks post: Superhuman, Replit, YipitData using Lakebase to reduce sync overhead.
-- **No direct application.** ThumbGate processes ~5K telemetry pings/week on a single
-  Railway instance with JSONL files. We don't have a data volume or pipeline sprawl problem.
-- **Prerequisite gap:** We don't have enough data to NEED a warehouse. We need to collect
-  data first (the analytics fix above). Lakebase is for after you have too much data,
-  not before you have enough.
-- **Revisit when:** ThumbGate telemetry exceeds what JSONL files can handle (~100K events/day),
-  or when we need cross-install cohort analysis that exceeds in-memory processing.
+
+**Initial wrong assessment:** "No direct application." This was superficial.
+
+**What I missed:** ThumbGate ALREADY has a Databricks integration:
+- `scripts/export-databricks-bundle.js` — exports DPO/feedback data to Databricks format
+- `export_databricks` is a Pro-gated feature in rate-limiter
+- `/v1/analytics/databricks/export` API endpoint exists
+
+**The real connection:** Databricks Lakebase is relevant not as infrastructure FOR ThumbGate,
+but as a DESTINATION for ThumbGate's Pro export feature. Enterprise teams using Databricks
+for ML training pipelines are the ideal Pro customer — they need ThumbGate's DPO data
+flowing into their Lakebase tables for model fine-tuning.
+
+**Action items:**
+- Ensure Databricks export works end-to-end with Lakebase (not just legacy Databricks)
+- Position the Databricks export as a key Pro selling point for enterprise
+- Consider Databricks partnership/marketplace listing as a distribution channel
+
+**NOT an action item:** Using Lakebase for ThumbGate's own telemetry. 72K events in JSONL
+is fine with a 60s cache. We don't need a data warehouse for our own analytics.
 
 ## Lighthouse Attention assessment (CEO-requested)
 Nous Research paper: training-only sparse attention, 1.4-1.7x pretraining speedup at long context.
