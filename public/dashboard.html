@@ -750,10 +750,23 @@ function setSource(el, source) {
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
   document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
-  var tabEl = document.querySelector('[onclick*="' + name + '"]');
+  // Scope the header lookup to .tab — the prior selector
+  // [onclick*="<name>"] also matched the stat-cards (which carry onclick
+  // attributes like selectCard(this,'gates')), and a stat-card appears
+  // before the tab header in DOM order, so for 'gates' the wrong element
+  // (the card) got the .active class and the tab header stayed dormant.
+  var tabEl = document.querySelector('.tab[onclick*="' + name + '"]');
   var contentEl = document.getElementById('tab-' + name);
   if (tabEl) tabEl.classList.add('active');
-  if (contentEl) contentEl.classList.add('active');
+  if (contentEl) {
+    contentEl.classList.add('active');
+    // Stat-card clicks fire switchTab from above the fold; without this scroll
+    // the user sees "nothing happen" because the just-activated content sits
+    // below the viewport. Same class of bug as the /lessons tile fix in #2268.
+    try {
+      contentEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (_e) { /* older browsers without smooth-scroll: no-op */ }
+  }
   // Sync URL hash so deep-links stay shareable without scroll jump
   try {
     if (('#' + name) !== window.location.hash) {
