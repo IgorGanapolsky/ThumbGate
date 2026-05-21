@@ -74,6 +74,9 @@
   <p>FinOps platforms for AI spend — Finout, Helicone, Vantage, the new "AI FinOps Assistant" wave — are good at one thing: <em>showing you the bill after the agent ran</em>. They allocate tokens to teams, tag prompts by feature, and surface unit economics finance can trust. None of them stop the wasted tool call from happening in the first place.</p>
   <p>That's the layer ThumbGate occupies. Every PreToolUse gate that fires is a Claude / GPT call your agent <em>did not</em> make — input tokens you didn't spend, output tokens you didn't spend, retry loop you didn't trigger. The savings are computable, conservative, and now surfaced as a number on your CLI.</p>
 
+  <div class="quote">"74% of CIOs say their role will be at risk if their company does not deliver measurable business gains from AI within the next two years." — <a href="https://www.cio.com/article/4172555/how-it-teams-are-putting-ai-agents-to-work.html" target="_blank" rel="noopener" style="color:var(--cyan);font-style:normal;">CIO Online, 2026</a></div>
+  <p>"Measurable" is the operative word. A token-spend dashboard tells finance how much got burned; it doesn't tell the CIO board what was averted. <code>thumbgate cost</code> prints a single conservative dollar figure backed by the gate-block count from <em>your</em> machine — not "what enterprises like you saved." That's the artifact that survives a 2026 budget review.</p>
+
   <h2>One command, one number</h2>
   <p>Once ThumbGate is installed and gates have been firing, this is what an operator sees:</p>
   <pre><code>$ thumbgate cost
