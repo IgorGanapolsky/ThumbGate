@@ -150,7 +150,7 @@ test('/health surfaces a per-check breakdown (no longer always-green theater)', 
   assert.equal(body.checks.buildMetadata.ok, true);
 });
 
-test('/health returns degraded when feedback dir is not writable', async () => {
+test('/health returns 503 failing when feedback dir is not writable (service-failing severity)', async () => {
   const originalAccessSync = fs.accessSync;
   fs.accessSync = (target, mode) => {
     if (target === tmpFeedbackDir && mode === fs.constants.W_OK) {
@@ -165,14 +165,56 @@ test('/health returns degraded when feedback dir is not writable', async () => {
     const res = await fetch(apiUrl('/health'), { headers: authHeader });
     assert.equal(res.status, 503);
     const body = await res.json();
-    assert.equal(body.status, 'degraded');
-    assert.deepEqual(body.checks.feedbackDir, { ok: false, error: 'EACCES' });
+    assert.equal(body.status, 'failing');
+    assert.equal(body.degraded, true);
+    assert.equal(body.checks.feedbackDir.ok, false);
+    assert.equal(body.checks.feedbackDir.error, 'EACCES');
+    assert.equal(body.checks.feedbackDir.severity, 'failing');
   } finally {
     fs.accessSync = originalAccessSync;
   }
 });
 
-test('/health returns degraded when build metadata is missing', async () => {
+test('/health returns 200 degraded (not 503) when build metadata is missing', async () => {
+  // Regression for 2026-05-21 outage (18:21Z → 19:30Z): when BUILD_METADATA.buildSha
+  // was empty, /health returned 503 → Railway healthcheck failed → SIGTERM →
+  // restart loop → 70-min prod outage. A missing buildSha is an OBSERVABILITY
+  // gap (can't tag responses with the deployed SHA), not a service failure —
+  // the API still handles requests fine. It must return 200 with degraded=true.
+  const originalMetadataPath = process.env.THUMBGATE_BUILD_METADATA_PATH;
+  const missingMetadataPath = path.join(tmpFeedbackDir, 'missing-build-metadata-degraded.json');
+  let isolatedHandle;
+
+  process.env.THUMBGATE_BUILD_METADATA_PATH = missingMetadataPath;
+  delete require.cache[apiServerModulePath];
+  const isolatedServerModule = require('../src/api/server');
+
+  try {
+    isolatedHandle = await isolatedServerModule.startServer({ port: 0, host: '127.0.0.1' });
+    const isolatedOrigin = `http://localhost:${isolatedHandle.port}`;
+    const res = await fetch(new URL('/health', isolatedOrigin), { headers: authHeader });
+    assert.equal(res.status, 200, 'telemetry gap must NOT return 503 — that triggers Railway SIGTERM');
+    const body = await res.json();
+    assert.equal(body.status, 'degraded');
+    assert.equal(body.degraded, true);
+    assert.equal(body.checks.buildMetadata.ok, false);
+    assert.equal(body.checks.buildMetadata.error, 'missing_buildSha');
+    assert.equal(body.checks.buildMetadata.severity, 'degraded');
+    // Critical: other checks still pass — only the telemetry one is degraded.
+    assert.equal(body.checks.feedbackDir.ok, true);
+    assert.equal(body.checks.hostedConfig.ok, true);
+  } finally {
+    if (isolatedHandle) {
+      await new Promise((resolve) => isolatedHandle.server.close(resolve));
+    }
+    if (originalMetadataPath === undefined) delete process.env.THUMBGATE_BUILD_METADATA_PATH;
+    else process.env.THUMBGATE_BUILD_METADATA_PATH = originalMetadataPath;
+    delete require.cache[apiServerModulePath];
+    require('../src/api/server');
+  }
+});
+
+test('/health legacy test: build-metadata-missing path no longer returns 503', async () => {
   const originalMetadataPath = process.env.THUMBGATE_BUILD_METADATA_PATH;
   const missingMetadataPath = path.join(tmpFeedbackDir, 'missing-build-metadata.json');
   let isolatedHandle;
@@ -185,10 +227,12 @@ test('/health returns degraded when build metadata is missing', async () => {
     isolatedHandle = await isolatedServerModule.startServer({ port: 0, host: '127.0.0.1' });
     const isolatedOrigin = `http://localhost:${isolatedHandle.port}`;
     const res = await fetch(new URL('/health', isolatedOrigin), { headers: authHeader });
-    assert.equal(res.status, 503);
+    // Was 503 before the 2026-05-21 fix; now 200 because telemetry gap !== service failure.
+    assert.equal(res.status, 200);
     const body = await res.json();
     assert.equal(body.status, 'degraded');
-    assert.deepEqual(body.checks.buildMetadata, { ok: false, error: 'missing_buildSha' });
+    assert.equal(body.checks.buildMetadata.ok, false);
+    assert.equal(body.checks.buildMetadata.error, 'missing_buildSha');
   } finally {
     if (isolatedHandle) {
       await new Promise((resolve) => isolatedHandle.server.close(resolve));
