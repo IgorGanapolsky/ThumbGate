@@ -10,6 +10,9 @@ const _DEFAULT_TELEMETRY_HOST = 'https://thumbgate-production.up.railway.app';
 const TELEMETRY_ENDPOINT = `${process.env.THUMBGATE_API_URL || _DEFAULT_TELEMETRY_HOST}/v1/telemetry/ping`;
 const INSTALL_ID_PATH = path.join(process.env.HOME || process.env.USERPROFILE || '.', '.thumbgate', 'install-id');
 
+// Session ID: random per process invocation. Groups all events from one CLI run.
+const SESSION_ID = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
+
 /**
  * Get or create a stable anonymous install ID.
  * This is NOT tied to any personal info — it's a random UUID stored locally.
@@ -61,7 +64,9 @@ function trackEvent(eventType, metadata = {}) {
   const payload = JSON.stringify({
     eventType,
     installId: getInstallId(),
+    sessionId: SESSION_ID,
     visitorType: classifyInstall(),
+    clientType: 'cli',
     platform: os.platform(),
     arch: os.arch(),
     nodeVersion: process.version,
@@ -87,4 +92,4 @@ function trackEvent(eventType, metadata = {}) {
   } catch (_) {} // never crash the CLI
 }
 
-module.exports = { trackEvent, getInstallId, classifyInstall, INSTALL_ID_PATH };
+module.exports = { trackEvent, getInstallId, classifyInstall, INSTALL_ID_PATH, SESSION_ID };

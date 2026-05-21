@@ -136,6 +136,44 @@ the free tier gives away the entire core product. The fix is to tighten the free
 
 **Tests:** `tests/daily-block-cap.test.js` — 5 tests covering Pro bypass, CI bypass, under-limit pass-through, over-limit downgrade, and constant export.
 
+## Fix: user-level analytics (commit 9)
+
+CEO asked "do we even know how many unique users are using ThumbGate????" — answer was no.
+
+**Problem:** Telemetry was event-level pings with installId but no session grouping, no
+active-user computation, and no way to distinguish "500 bots that init'd" from "50 humans
+who captured feedback."
+
+**Fixes applied:**
+1. **CLI: sessionId** — each CLI process invocation generates a `SESSION_ID` (random UUID),
+   included in every telemetry ping. Groups events from one coding session.
+2. **CLI: clientType** — every ping now includes `clientType: 'cli'` for reliable filtering.
+3. **Server: active user analytics** — `/v1/metrics/real` now computes:
+   - `activeInstalls` (7d/30d/all-time) — unique installIds that performed a MEANINGFUL
+     action (capture, recall, search, stats, gate-check) — not just init'd
+   - `uniqueSessions` (7d/30d) — distinct sessionIds from non-bot CLI users
+   - Bots and CI installs excluded from active counts
+4. **Server: 30-day window** — added `last30Days` block to metrics response.
+
+**ACTIVE_EVENTS definition:** `cli_capture`, `cli_recall`, `cli_stats`, `cli_search`,
+`activation_first_rule_promoted`, `cli_pro_view`, `cli_gate_check`
+
+**What this enables:** After deploy, `/v1/metrics/real` will show:
+- `last7Days.activeInstalls` — how many real humans used ThumbGate meaningfully this week
+- `last30Days.uniqueSessions` — how many coding sessions involved ThumbGate this month
+- `allTime.activeInstalls` — total distinct humans who ever did more than init
+
+## Databricks Lakebase assessment (CEO-requested)
+
+Databricks post: Superhuman, Replit, YipitData using Lakebase to reduce sync overhead.
+- **No direct application.** ThumbGate processes ~5K telemetry pings/week on a single
+  Railway instance with JSONL files. We don't have a data volume or pipeline sprawl problem.
+- **Prerequisite gap:** We don't have enough data to NEED a warehouse. We need to collect
+  data first (the analytics fix above). Lakebase is for after you have too much data,
+  not before you have enough.
+- **Revisit when:** ThumbGate telemetry exceeds what JSONL files can handle (~100K events/day),
+  or when we need cross-install cohort analysis that exceeds in-memory processing.
+
 ## Lighthouse Attention assessment (CEO-requested)
 Nous Research paper: training-only sparse attention, 1.4-1.7x pretraining speedup at long context.
 - **No direct technical application to ThumbGate.** ThumbGate doesn't train models.
