@@ -51,9 +51,9 @@ test.describe('/ landing page clickability — comprehensive E2E coverage', () =
     await expect(page).toHaveURL(/#workflow-sprint-intake$/);
   });
 
-  test('clicking "Watch the 90-second demo" anchors to #demo', async ({ page }) => {
+  test('clicking "See the enforcement in action" anchors to #demo', async ({ page }) => {
     await page.goto('/');
-    await page.locator('a.btn-free', { hasText: /Watch the 90-second demo/ }).first().click();
+    await page.locator('a.btn-free', { hasText: /See the enforcement in action/ }).first().click();
     await expect(page).toHaveURL(/#demo$/);
   });
 
