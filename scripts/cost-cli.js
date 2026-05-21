@@ -53,7 +53,11 @@ function summarizeTopGate(byGate) {
 }
 
 function buildReport({ statsPath = DEFAULT_STATS_PATH, modelMix } = {}) {
-  const stats = readGateStats(statsPath) || { blocked: 0, warned: 0, passed: 0, byGate: {} };
+  // Read once, then use the null vs. parsed-object distinction to derive
+  // statsExists — avoids a second filesystem hit per the gitar-bot perf
+  // note on PR #2281.
+  const raw = readGateStats(statsPath);
+  const stats = raw || { blocked: 0, warned: 0, passed: 0, byGate: {} };
   const blockedCalls = Number(stats.blocked) || 0;
   const savings = computeTokenSavings({
     blockedCalls,
@@ -61,7 +65,7 @@ function buildReport({ statsPath = DEFAULT_STATS_PATH, modelMix } = {}) {
   });
   return {
     statsPath,
-    statsExists: !!readGateStats(statsPath),
+    statsExists: raw !== null,
     blocked: blockedCalls,
     warned: Number(stats.warned) || 0,
     passed: Number(stats.passed) || 0,
