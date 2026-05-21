@@ -105,8 +105,12 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // (2026-04-22), the public bundle sat at 212 files. Keep a generous
   // ceiling so ordinary additions don't trip this, but catch a large
   // regression (e.g., accidentally adding back a scripts/ subtree).
+  // Bumped 260 → 261 (2026-05-21) to ship public/agents-cost-savings.html
+  // — sister-bumped from public-bundle-ratchet + package-boundary
+  // (changeset: agents-cost-savings-landing.md). All three ratchets must
+  // stay in lockstep.
   const files = npmPackFiles();
-  const CEILING = 260;
+  const CEILING = 261;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
