@@ -195,7 +195,12 @@ function classifyUnreadReview(prs, { repo, gh } = {}) {
 
 function buildReport({ repo = DEFAULT_REPO, gh, now = new Date(), opts = {} } = {}) {
   const prs = listOpenPrs({ repo, gh });
-  const runs = listRecentRuns({ repo, gh });
+  // Forward `now` so listRecentRuns honors the injected clock. Without this
+  // the 7-day cutoff fell back to wall-clock Date.now(), causing the unit
+  // test (which stubs `now = 2026-05-17` + a `2026-05-14` run) to start
+  // dropping the oldest fixture run after exactly 7 wall-clock days had
+  // passed — a deterministic ticking time bomb every CI gate inherited.
+  const runs = listRecentRuns({ repo, gh, now });
   const backlog = bucketBacklog(prs, { ...opts, now });
   const unreadReview = classifyUnreadReview(prs, { repo, gh });
   const brokenWorkflows = classifyWorkflowFailures(runs, opts.workflowFailThreshold);
