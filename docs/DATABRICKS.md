@@ -30,6 +30,7 @@ If a prospect tells you "we already have Databricks for the MLOps stack" — tha
 | **Mosaic AI Foundation Model API** | ThumbGate's LLM router is vendor-neutral and accepts any HTTP-callable model endpoint. Routing to DBRX, Llama-via-Mosaic, or Anthropic-via-Mosaic-passthrough is a config-only swap. | Routable today via existing LLM client; no Mosaic-specific token wiring yet. |
 | **Mosaic AI Agent Framework** | ThumbGate gates compose around agents built in any framework, including Mosaic AI Agent Framework. The MCP-stdio transport is framework-agnostic. | Compatible today, no framework-specific integration. |
 | **Databricks Vector Search** | The lesson store is plugin-shaped (LanceDB by default). A Vector Search adapter replaces the LanceDB call site with the Databricks Python/REST client and gains UC-governed retrieval. | Plugin point exists; adapter is the work. |
+| **Databricks Lakebase** | Lakebase is fully-managed Postgres registered as a catalog in Unity Catalog (via Lakehouse Federation) with one-click sync from Delta. It governs the *data foundation* the agent reads from and writes to — apps, agents, analytics on one Postgres-compatible OLTP store with UC identity + governance bolted on. ThumbGate governs the *tool-call boundary* into that store — every `INSERT`, `UPDATE`, `DELETE`, or external-API call the agent attempts. The two layers compose: Lakebase governs the data; ThumbGate governs the decision to touch it. Lakebase's published case studies (Superhuman, Replit, YipitData, Intent HQ, Ensemble Health) are exactly the profile — production agents at scale — where adding a PreToolUse governance layer pays for itself within the first month of repeat-failure blocks. | Compatible today via standard Postgres adapters; no Lakebase-specific token wiring. Worth pulling in by signed pilot. |
 
 ---
 
@@ -44,6 +45,23 @@ If a prospect tells you "we already have Databricks for the MLOps stack" — tha
 | Databricks SQL access to ThumbGate artifacts | None | 2 days after the UC Delta export lands |
 
 **Total:** ~3 weeks of focused work for the full Databricks-native readiness. Not built on speculation. Pulled by a signed pilot.
+
+---
+
+## Why Lakebase + ThumbGate compose well
+
+Databricks Lakebase positions itself as the **governed data foundation** for apps + agents + analytics: fully-managed Postgres registered as a Unity Catalog catalog via Lakehouse Federation, with one-click sync from Delta Lake. It's a separate OLTP system the lakehouse federates over — not Delta itself — so the lineage story is "agent writes hit Postgres, UC governs identity/permissions and federates queries back into the warehouse." Within that frame, "what data did the agent touch?" is answerable.
+
+It does not answer "what tool calls did the agent attempt that we stopped?" — and it isn't trying to. That's a different lineage type: per-call evidence + per-rule provenance + the corrective action that fired. Lakebase + ThumbGate split the audit surface cleanly:
+
+| Question the auditor asks | Lakebase answers | ThumbGate answers |
+|---|---|---|
+| What did the agent read/write? | ✅ row-level lineage inside Unity Catalog | partial (only what the agent reported back to the gate) |
+| What tool calls did we let the agent attempt? | partial (only those that hit Lakebase) | ✅ every tool call across every adapter |
+| What did we **stop** the agent from doing, and why? | ❌ | ✅ PreToolUse gate verdict + rule that fired + lesson that promoted it |
+| How is this kept current as the agent's model changes? | UC migration tooling | adapter matrix CI-checked against upstream |
+
+The Lakebase customer wins Databricks published (Superhuman shipping 6× faster, Replit launching production code-gen in 3 weeks, YipitData processing 1M records/hour) all describe agents at scale where one failed tool-call shape, repeated thousands of times, is meaningful spend. That's the exact failure pattern ThumbGate's lesson DB → PreToolUse gate promotion is built for. The two are stack-mates, not substitutes.
 
 ---
 
