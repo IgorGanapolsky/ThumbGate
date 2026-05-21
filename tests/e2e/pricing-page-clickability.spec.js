@@ -29,10 +29,10 @@ test.describe('/pricing clickability — full CTA coverage', () => {
     await page.waitForURL(/\/$/);
   });
 
-  test('nav: "Features" anchors to /#features', async ({ page }) => {
+  test('nav: "Features" anchors to /#how-it-works', async ({ page }) => {
     await page.goto('/pricing');
-    await page.locator('nav a[href="/#features"]').first().click();
-    await page.waitForURL(/\/#features$/);
+    await page.locator('nav a[href="/#how-it-works"]').first().click();
+    await page.waitForURL(/\/#how-it-works$/);
   });
 
   test('nav: "Guide" navigates to /guide', async ({ page }) => {

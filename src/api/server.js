@@ -429,6 +429,46 @@ const TRACKED_LINK_TARGETS = Object.freeze({
       plan_id: 'team',
     },
   },
+  // Aliases: /go/team → same as /go/teams, /go/checkout → same as /go/pro,
+  // /go/trial → install guide (trial starts on init)
+  team: {
+    path: '/#workflow-sprint-intake',
+    ctaId: 'go_team',
+    ctaPlacement: 'link_router',
+    eventType: 'team_intake_started',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'link_router',
+      utm_campaign: 'team_intake',
+      plan_id: 'team',
+    },
+  },
+  checkout: {
+    path: '/checkout/pro',
+    ctaId: 'go_checkout',
+    ctaPlacement: 'link_router',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'link_router',
+      utm_campaign: 'pro_upgrade',
+      plan_id: 'pro',
+      billing_cycle: 'monthly',
+    },
+    allowCustomerEmail: true,
+  },
+  trial: {
+    path: '/guide',
+    ctaId: 'go_trial',
+    ctaPlacement: 'link_router',
+    eventType: 'trial_start_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'link_router',
+      utm_campaign: 'trial_start',
+      plan_id: 'free_trial',
+    },
+  },
   install: {
     path: '/guide',
     ctaId: 'go_install',
@@ -757,7 +797,7 @@ function getMcpSkillManifests(hostedConfig) {
         'Inspect prevention_rules after repeats.',
       ],
       installCommand: 'npx thumbgate init',
-      contextUrl: buildPublicUrl(hostedConfig, '/public/llm-context.md'),
+      contextUrl: buildPublicUrl(hostedConfig, '/llm-context.md'),
       proofUrl: VERIFICATION_EVIDENCE_URL,
     },
     {
@@ -784,7 +824,7 @@ function getMcpSkillManifests(hostedConfig) {
         'Evaluate NDCG@10 on visual hard negatives.',
         'Require artifact links before using retrieved evidence in claims.',
       ],
-      contextUrl: buildPublicUrl(hostedConfig, '/public/llm-context.md'),
+      contextUrl: buildPublicUrl(hostedConfig, '/llm-context.md'),
       proofUrl: VERIFICATION_EVIDENCE_URL,
     },
     {
@@ -798,7 +838,7 @@ function getMcpSkillManifests(hostedConfig) {
         'Compact feedback context with anchors for proof-critical lessons.',
         'Record estimated token savings next to the workflow evidence.',
       ],
-      contextUrl: buildPublicUrl(hostedConfig, '/public/llm-context.md'),
+      contextUrl: buildPublicUrl(hostedConfig, '/llm-context.md'),
       footprintUrl: buildPublicUrl(hostedConfig, '/.well-known/mcp/footprint.json'),
       proofUrl: VERIFICATION_EVIDENCE_URL,
     },
@@ -813,7 +853,7 @@ function getMcpSkillManifests(hostedConfig) {
         'Require baseline evals before adding autonomy or subagents.',
         'Classify tool risk before allowing writes, money movement, production changes, or outbound actions.',
       ],
-      contextUrl: buildPublicUrl(hostedConfig, '/public/llm-context.md'),
+      contextUrl: buildPublicUrl(hostedConfig, '/llm-context.md'),
       proofUrl: VERIFICATION_EVIDENCE_URL,
     },
     {
@@ -827,7 +867,7 @@ function getMcpSkillManifests(hostedConfig) {
         'Grade goal inference separately from intervention timing.',
         'Block multi-app proactive writes until rollback and orchestration evidence exists.',
       ],
-      contextUrl: buildPublicUrl(hostedConfig, '/public/llm-context.md'),
+      contextUrl: buildPublicUrl(hostedConfig, '/llm-context.md'),
       proofUrl: VERIFICATION_EVIDENCE_URL,
     },
     {
@@ -841,7 +881,7 @@ function getMcpSkillManifests(hostedConfig) {
         'Map every proxy metric to the real user objective.',
         'Require holdout or regression proof before treating benchmark gains as product gains.',
       ],
-      contextUrl: buildPublicUrl(hostedConfig, '/public/llm-context.md'),
+      contextUrl: buildPublicUrl(hostedConfig, '/llm-context.md'),
       proofUrl: VERIFICATION_EVIDENCE_URL,
     },
     {
@@ -855,7 +895,7 @@ function getMcpSkillManifests(hostedConfig) {
         'Reproduce locally before claiming a fix.',
         'Open one focused PR with tests, proof, and transparent ThumbGate context only when relevant.',
       ],
-      contextUrl: buildPublicUrl(hostedConfig, '/public/llm-context.md'),
+      contextUrl: buildPublicUrl(hostedConfig, '/llm-context.md'),
       proofUrl: VERIFICATION_EVIDENCE_URL,
     },
     {
@@ -869,7 +909,7 @@ function getMcpSkillManifests(hostedConfig) {
         'Route self-serve intent to the guide and team pain to Workflow Hardening Sprint intake.',
         'Block unsupported ad and landing-page claims before spend scales.',
       ],
-      contextUrl: buildPublicUrl(hostedConfig, '/public/llm-context.md'),
+      contextUrl: buildPublicUrl(hostedConfig, '/llm-context.md'),
       proofUrl: VERIFICATION_EVIDENCE_URL,
     },
   ];
@@ -1003,7 +1043,7 @@ function getMcpDiscoveryManifest(hostedConfig) {
     footprint: getContextFootprintReport(hostedConfig),
     proof: {
       verificationEvidenceUrl: VERIFICATION_EVIDENCE_URL,
-      llmContextUrl: buildPublicUrl(hostedConfig, '/public/llm-context.md'),
+      llmContextUrl: buildPublicUrl(hostedConfig, '/llm-context.md'),
     },
   };
 }
@@ -4663,7 +4703,7 @@ async function addContext(){
 
     if (isGetLikeRequest && pathname === '/checkout/pro') {
       if (isHeadRequest) {
-        sendText(res, 200, '', {}, {
+        sendHtml(res, 200, '', {}, {
           headOnly: true,
         });
         return;
@@ -6320,6 +6360,14 @@ async function addContext(){
           detail: err.message || 'An unexpected error occurred.',
         }, getPublicBillingHeaders(requestedTraceId));
       }
+      return;
+    }
+
+    // Catch non-API GET requests that didn't match any public page route above.
+    // Without this, /about, /docs, /demo etc. fall through to the API auth gate
+    // and return a raw JSON 401 instead of a user-friendly 404.
+    if (isGetLikeRequest && !pathname.startsWith('/v1/') && !pathname.startsWith('/api/')) {
+      sendHtml(res, 404, `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Page Not Found — ThumbGate</title><style>body{background:#0a0a0a;color:#e2e8f0;font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}main{text-align:center;padding:2rem}h1{font-size:4rem;margin:0;color:#22d3ee}p{font-size:1.1rem;color:#94a3b8;margin:1rem 0}a{color:#22d3ee;text-decoration:underline}</style></head><body><main><h1>404</h1><p>This page doesn't exist.</p><p><a href="/">Back to ThumbGate</a></p></main></body></html>`);
       return;
     }
 
