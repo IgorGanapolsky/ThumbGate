@@ -474,7 +474,7 @@ Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recal
 - [Agent Workflow Contract](WORKFLOW.md) — the agent-run contract for all ThumbGate operations
 - [Ready for Agent Intake](https://github.com/IgorGanapolsky/ThumbGate/issues/new?template=ready-for-agent.yml) — ready-for-agent intake template
 - [SEO Guide: Claude Code Guardrails](docs/learn/claude-code-guardrails.md)
-- [Unsupervised Learning Signals](docs/UL.md) — silent-failure clustering (experimental, behind `THUMBGATE_SILENT_FAILURE_CLUSTERING=1`; only useful on workspaces with ≥ 50 tool calls/day)
+- [Unsupervised Learning Signals](docs/UL.md) — silent-failure clustering (**on by default** as of 2026-05-21; opt out via `THUMBGATE_SILENT_FAILURE_CLUSTERING=0`; only meaningfully active on workspaces with ≥ 50 tool calls/day)
 - [ThumbGate-Core](https://github.com/IgorGanapolsky/ThumbGate-Core) — private core for hosted overlays, ranking, policy synthesis, billing intelligence, and org/team workflows
 
 ---
