@@ -46,7 +46,10 @@ function getInstallAgeDays() {
   try {
     const { INSTALL_ID_PATH } = require('./cli-telemetry');
     if (!fs.existsSync(INSTALL_ID_PATH)) return null;
-    const created = fs.statSync(INSTALL_ID_PATH).birthtimeMs || fs.statSync(INSTALL_ID_PATH).mtimeMs;
+    // Use mtimeMs — birthtimeMs is unreliable on Linux (ext4 doesn't backdate creation time).
+    // The install-id file is written once at install, so mtime == creation time in practice.
+    const stat = fs.statSync(INSTALL_ID_PATH);
+    const created = stat.mtimeMs || stat.birthtimeMs;
     if (!Number.isFinite(created) || created <= 0) return null;
     return (Date.now() - created) / (1000 * 60 * 60 * 24);
   } catch (_) {
