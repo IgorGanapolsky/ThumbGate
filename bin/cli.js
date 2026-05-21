@@ -2570,6 +2570,8 @@ const SUBCOMMAND_HELP = {
   compact:       'Usage: npx thumbgate compact\n\nCompact the lesson database and reclaim disk space.',
   'context-packs': 'Usage: npx thumbgate context-packs\n\nGenerate context packs from top failure patterns.',
   suggest:       'Usage: npx thumbgate suggest <gate-id>\n\nSuggest fixes for a specific gate based on lesson history.',
+  cost:          'Usage: npx thumbgate cost [--json] [--stats <path>] [--mix \'{"claude-sonnet-4-5":0.8,...}\']\n\nShow cumulative $ and tokens saved by PreToolUse gate blocks. Reads ~/.thumbgate/gate-stats.json.',
+  savings:       'Usage: npx thumbgate savings [--json] [--stats <path>] [--mix \'{"claude-sonnet-4-5":0.8,...}\']\n\nAlias for `thumbgate cost`.',
 };
 
 if (_wantsHelp && COMMAND && SUBCOMMAND_HELP[COMMAND]) {
@@ -2631,6 +2633,17 @@ switch (COMMAND) {
   case 'revenue':
     cfo();
     break;
+  case 'cost':
+  case 'savings':
+  case 'costs': {
+    const { main: costMain } = require(path.join(PKG_ROOT, 'scripts', 'cost-cli'));
+    process.exit(costMain(process.argv.slice(3)));
+    // process.exit doesn't return, but keep an explicit break so the switch
+    // cannot accidentally fall through to case 'billing:setup' if a future
+    // refactor wraps costMain in try/finally that intercepts the exit, or
+    // a test runner stubs process.exit (flagged by gitar-bot on PR #2281).
+    break;
+  }
   case 'billing:setup':
     require(path.join(PKG_ROOT, 'scripts', 'billing-setup'));
     break;
