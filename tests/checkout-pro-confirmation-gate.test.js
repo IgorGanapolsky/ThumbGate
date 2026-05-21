@@ -85,7 +85,7 @@ describe('/checkout/pro confirmation gate (closes 0/50 conversion leak)', () => 
     const body = await res.text();
     assert.match(body, /Start ThumbGate Pro/);
     assert.match(body, /Pay \$19\/mo with Stripe/);
-    assert.match(body, /\/checkout\/pro\?confirm=1/, 'interstitial must include the confirm link as the primary CTA');
+    assert.match(body, /name="confirm" value="1"/, 'interstitial must include the confirm field as the primary CTA');
     assert.match(body, /Not sure yet\? Send the workflow first/);
     assert.doesNotMatch(body, /Pay \$1 first rule/);
     assert.doesNotMatch(body, /Pay \$99 teardown/);

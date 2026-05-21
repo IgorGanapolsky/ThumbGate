@@ -84,7 +84,7 @@ describe('/checkout/pro bot guard', () => {
     assert.match(body, /Not sure yet\? Send the workflow first/);
     assert.match(body, /checkout_interstitial_workflow_sprint_intake/);
     assert.match(body, /checkout_interstitial_cta_clicked/);
-    assert.match(body, /\/checkout\/pro\?confirm=1/);
+    assert.match(body, /name="confirm" value="1"/);
     assert.doesNotMatch(body, /Pay \$1 first rule/);
     assert.doesNotMatch(body, /Pay \$19 quick read/);
     assert.doesNotMatch(body, /Pay \$99 teardown/);
@@ -109,10 +109,11 @@ describe('/checkout/pro bot guard', () => {
     });
     assert.equal(res.status, 200);
     const body = await res.text();
-    assert.match(body, /href="\/checkout\/pro\?confirm=1&amp;utm_source=reddit&amp;utm_campaign=first_dollar/);
-    assert.match(body, /&amp;cta_id=pricing_pro/);
-    assert.match(body, /&amp;billing_cycle=annual/);
-    assert.match(body, /&amp;landing_path=%2Fpricing/);
+    assert.match(body, /name="utm_source" value="reddit"/);
+    assert.match(body, /name="utm_campaign" value="first_dollar"/);
+    assert.match(body, /name="cta_id" value="pricing_pro"/);
+    assert.match(body, /name="billing_cycle" value="annual"/);
+    assert.match(body, /name="landing_path" value="\/pricing"/);
     assert.match(body, /utm_medium=checkout_interstitial_recovery/);
     assert.match(body, /cta_id=checkout_interstitial_workflow_sprint_intake/);
     assert.doesNotMatch(body, /checkout_interstitial_first_failure_rule_checkout/);
@@ -212,7 +213,7 @@ describe('/checkout/pro bot guard', () => {
     }
   });
 
-  it('interstitial confirm link uses rel="nofollow" so crawlers stop following it', async () => {
+  it('interstitial checkout uses a form (not a link) so crawlers cannot follow it', async () => {
     const res = await fetch(`${origin}/checkout/pro`, {
       redirect: 'manual',
       headers: {
@@ -221,9 +222,10 @@ describe('/checkout/pro bot guard', () => {
       },
     });
     const body = await res.text();
-    // The "Pay $19/mo with Stripe →" anchor that points at confirm=1 must
-    // be rel="nofollow" so well-behaved crawlers stop following it.
-    assert.match(body, /<a[^>]+rel="[^"]*nofollow[^"]*"[^>]+href="[^"]*confirm=1[^"]*"/);
+    assert.match(body, /<form action="\/checkout\/pro"/);
+    assert.match(body, /name="confirm" value="1"/);
+    assert.match(body, /name="customer_email"/);
+    assert.doesNotMatch(body, /<a[^>]+confirm=1/, 'confirm=1 must not be in a crawlable anchor');
   });
 
   it('returns HTML interstitial for link-preview bots (Slackbot, LinkedInBot, Twitterbot)', async () => {
@@ -255,7 +257,7 @@ describe('/checkout/pro bot guard', () => {
     assert.equal(res.status, 200, `expected checkout interstitial, got ${res.status}`);
     const body = await res.text();
     assert.match(body, /Start ThumbGate Pro/);
-    assert.match(body, /\/checkout\/pro\?confirm=1/);
+    assert.match(body, /name="confirm" value="1"/);
 
     const events = readFunnelEvents();
     assert.equal(
