@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Intake Risk Controls for Law Firms — ThumbGate</title>
+<title>AI Intake Risk Controls for Law Firms - ThumbGate</title>
 <script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
 <meta name="description" content="Pre-action controls for law-firm AI intake agents: reduce unauthorized-practice, conflict-check, confidentiality, and audit-trail risk before an agent sends a response or calls a tool.">
 <meta property="og:title" content="AI Intake Risk Controls for Law Firms">
@@ -16,7 +16,7 @@
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "AI Intake Risk Controls for Law Firms",
-  "description": "ThumbGate is a pre-action control layer for law-firm AI intake workflows. It can preload firm-approved ground truth, enforce guardrails before agent actions execute, and produce audit evidence for human review.",
+  "description": "ThumbGate is a pre-action control layer for law-firm AI intake workflows. It can preload firm-approved ground truth, evaluate proposed agent actions before execution, and produce audit evidence for human review.",
   "datePublished": "2026-05-21",
   "dateModified": "2026-05-22",
   "author": { "@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" },
@@ -51,66 +51,64 @@
     font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: var(--bg);
     color: var(--text);
-    line-height: 1.65;
+    line-height: 1.58;
   }
   a { color: var(--blue); }
   nav {
     display: flex;
     align-items: center;
-    gap: 1.2rem;
+    gap: 1.1rem;
     flex-wrap: wrap;
-    padding: 1rem clamp(1rem, 3vw, 2.25rem);
+    padding: 0.9rem clamp(1rem, 3vw, 2.25rem);
     border-bottom: 1px solid var(--line);
-    background: rgba(8, 9, 11, 0.92);
+    background: rgba(8, 9, 11, 0.94);
     position: sticky;
     top: 0;
     z-index: 10;
   }
-  nav a { color: var(--muted); text-decoration: none; font-size: 0.92rem; }
-  nav .brand { color: var(--text); font-weight: 800; }
+  nav a { color: var(--muted); text-decoration: none; font-size: 0.9rem; }
+  nav .brand { color: var(--text); font-weight: 850; }
   .wrap { max-width: 1120px; margin: 0 auto; padding: 0 clamp(1rem, 3vw, 2rem); }
   .hero {
-    min-height: calc(100vh - 72px);
+    min-height: calc(100vh - 68px);
     display: grid;
-    grid-template-columns: minmax(0, 1.02fr) minmax(320px, 0.88fr);
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 0.9fr);
     gap: clamp(2rem, 5vw, 4rem);
     align-items: center;
-    padding: clamp(3rem, 6vw, 5.5rem) 0 2.5rem;
+    padding: clamp(3rem, 6vw, 5rem) 0 2.2rem;
   }
   .eyebrow {
     display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
     color: var(--cyan);
     border: 1px solid rgba(45, 212, 191, 0.24);
     background: rgba(45, 212, 191, 0.08);
-    padding: 0.35rem 0.75rem;
+    padding: 0.34rem 0.72rem;
     border-radius: 999px;
-    font-size: 0.78rem;
-    font-weight: 800;
+    font-size: 0.76rem;
+    font-weight: 850;
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
   h1 {
-    font-size: clamp(2.25rem, 4.2vw, 3.6rem);
-    line-height: 1.02;
+    font-size: clamp(2.25rem, 4.1vw, 3.65rem);
+    line-height: 1.03;
     letter-spacing: 0;
-    margin: 1.2rem 0 1rem;
-    max-width: 780px;
+    margin: 1.1rem 0 1rem;
+    max-width: 800px;
   }
   .lead {
     color: var(--soft);
-    font-size: clamp(1.06rem, 1.7vw, 1.28rem);
+    font-size: clamp(1.05rem, 1.65vw, 1.24rem);
     max-width: 760px;
     margin: 0 0 1.4rem;
   }
-  .hero-actions { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin: 1.5rem 0; }
+  .hero-actions { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin: 1.4rem 0; }
   .cta {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     min-height: 48px;
-    padding: 0.78rem 1.1rem;
+    padding: 0.78rem 1.05rem;
     border-radius: 8px;
     background: var(--blue);
     color: #06111f;
@@ -122,78 +120,92 @@
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.75rem;
-    margin-top: 1.3rem;
+    margin-top: 1.2rem;
     max-width: 820px;
   }
   .proof {
     border: 1px solid var(--line);
     border-radius: 8px;
-    padding: 0.85rem;
+    padding: 0.82rem;
     background: rgba(255, 255, 255, 0.03);
     min-height: 92px;
   }
-  .proof strong { display: block; color: var(--text); font-size: 0.95rem; }
-  .proof span { color: var(--muted); font-size: 0.86rem; }
-  .demo-shell {
+  .proof strong { display: block; color: var(--text); font-size: 0.94rem; }
+  .proof span { color: var(--muted); font-size: 0.85rem; }
+  .control-flow {
     border: 1px solid #343a46;
     background: #101318;
     border-radius: 8px;
     box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
-    overflow: hidden;
+    padding: 1rem;
   }
-  .demo-top {
-    display: flex;
-    gap: 0.45rem;
-    align-items: center;
-    padding: 0.85rem 1rem;
-    border-bottom: 1px solid var(--line);
-    background: #171b22;
+  .flow-asset {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin: 0 0 0.9rem;
+    background: #08090b;
   }
-  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--red); }
-  .dot:nth-child(2) { background: var(--amber); }
-  .dot:nth-child(3) { background: var(--green); }
-  .demo-title { margin-left: 0.6rem; color: var(--muted); font-size: 0.82rem; }
-  .demo-body { padding: 1rem; display: grid; gap: 0.8rem; }
-  .capture {
+  .control-flow h2 { font-size: 1rem; margin: 0 0 0.85rem; color: var(--soft); }
+  .flow-step {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 0.8rem;
+    align-items: start;
     border: 1px solid var(--line);
     border-radius: 8px;
     background: var(--panel);
-    padding: 1rem;
+    padding: 0.88rem;
+    margin: 0.72rem 0;
   }
-  .capture .label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 800; }
-  .capture p { margin: 0.4rem 0 0; color: var(--soft); font-size: 0.92rem; }
+  .num {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    font-weight: 850;
+    color: #06111f;
+    background: var(--cyan);
+  }
+  .flow-step h3 { margin: 0 0 0.24rem; font-size: 0.98rem; }
+  .flow-step p { margin: 0; color: var(--muted); font-size: 0.9rem; }
   .blocked { border-color: rgba(251, 113, 133, 0.55); background: rgba(251, 113, 133, 0.08); }
+  .blocked .num { background: var(--red); color: #19070a; }
   .cleared { border-color: rgba(114, 227, 165, 0.42); background: rgba(114, 227, 165, 0.08); }
+  .cleared .num { background: var(--green); color: #06120b; }
   main section {
     border-top: 1px solid var(--line);
-    padding: clamp(2.5rem, 5vw, 4.5rem) 0;
+    padding: clamp(2.35rem, 5vw, 4rem) 0;
   }
   h2 {
-    font-size: clamp(1.85rem, 3vw, 2.7rem);
-    line-height: 1.14;
-    margin: 0 0 0.8rem;
+    font-size: clamp(1.75rem, 2.8vw, 2.5rem);
+    line-height: 1.15;
+    margin: 0 0 0.75rem;
     letter-spacing: 0;
   }
-  .section-lead { color: var(--muted); font-size: 1.08rem; max-width: 830px; margin: 0 0 1.6rem; }
+  .section-lead { color: var(--muted); font-size: 1.05rem; max-width: 820px; margin: 0 0 1.35rem; }
   .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
   .two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .card {
     border: 1px solid var(--line);
     background: var(--panel);
     border-radius: 8px;
-    padding: 1.1rem;
+    padding: 1rem;
   }
-  .card h3 { margin: 0 0 0.55rem; font-size: 1.08rem; color: var(--text); }
-  .card p, .card li { color: var(--muted); margin: 0.45rem 0; }
+  .card h3 { margin: 0 0 0.5rem; font-size: 1.04rem; color: var(--text); }
+  .card p, .card li { color: var(--muted); margin: 0.42rem 0; }
   .tag {
     display: inline-flex;
     color: #071116;
     background: var(--cyan);
     border-radius: 6px;
     padding: 0.14rem 0.45rem;
-    font-size: 0.74rem;
+    font-size: 0.72rem;
     font-weight: 850;
-    margin-bottom: 0.65rem;
+    margin-bottom: 0.62rem;
   }
   .amber { background: var(--amber); }
   .red { background: var(--red); color: #19070a; }
@@ -208,31 +220,22 @@
   }
   .matrix th { color: var(--cyan); background: #11151b; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
   .matrix td { color: var(--muted); }
-  .quote {
-    border-left: 3px solid var(--cyan);
-    padding: 0.8rem 1rem;
-    color: var(--soft);
-    background: rgba(45, 212, 191, 0.06);
-    border-radius: 0 8px 8px 0;
-  }
   .callout {
     background: #f2f4f8;
     color: #111827;
     border-radius: 8px;
-    padding: clamp(1.2rem, 3vw, 2rem);
+    padding: clamp(1.2rem, 3vw, 1.8rem);
   }
   .callout p, .callout li { color: #344054; }
   .callout .cta { background: #111827; color: #fff; }
-  .caption { color: var(--muted); font-size: 0.88rem; margin-top: 0.65rem; }
   .footer {
     color: var(--muted);
-    padding: 2.5rem 0 4rem;
+    padding: 2.2rem 0 4rem;
     border-top: 1px solid var(--line);
   }
-  .footer a { text-decoration: none; }
   @media (max-width: 880px) {
     .hero, .grid, .two, .proof-row { grid-template-columns: 1fr; }
-    .hero { min-height: auto; padding-top: 2.5rem; }
+    .hero { min-height: auto; padding-top: 2.4rem; }
     nav { position: static; }
   }
   @media (max-width: 700px) {
@@ -246,10 +249,7 @@
       background: var(--panel);
       overflow: hidden;
     }
-    .matrix td {
-      border-bottom: 1px solid var(--line);
-      padding: 0.75rem 0.9rem;
-    }
+    .matrix td { border-bottom: 1px solid var(--line); padding: 0.75rem 0.9rem; }
     .matrix td:last-child { border-bottom: 0; }
     .matrix td::before {
       display: block;
@@ -260,9 +260,9 @@
       margin-bottom: 0.25rem;
       text-transform: uppercase;
     }
-    .matrix td:nth-child(1)::before { content: "Concern"; }
-    .matrix td:nth-child(2)::before { content: "What ThumbGate provides"; }
-    .matrix td:nth-child(3)::before { content: "Evidence artifact"; }
+    .matrix td:nth-child(1)::before { content: "Buyer question"; }
+    .matrix td:nth-child(2)::before { content: "Pilot answer"; }
+    .matrix td:nth-child(3)::before { content: "Evidence to bring"; }
   }
 </style>
 </head>
@@ -279,41 +279,49 @@
 <div class="wrap">
   <header class="hero">
     <div>
-      <span class="eyebrow">Built for law-firm AI governance pilots</span>
+      <span class="eyebrow">Pre-read for law-firm AI governance pilots</span>
       <h1>Let AI intake move faster without letting it give legal advice, skip conflicts, or leak privileged data.</h1>
-      <p class="lead">ThumbGate adds a pre-action control layer around legal AI agents. It loads firm-approved rules and ground truth before launch, checks every proposed agent action before it runs, and leaves an audit trail a risk committee can review.</p>
+      <p class="lead">ThumbGate adds a pre-action control layer around legal AI agents. It loads firm-approved rules before launch, checks proposed agent actions before execution, and leaves an audit trail a risk committee can review.</p>
       <div class="hero-actions">
         <a class="cta" href="mailto:iganapolsky@gmail.com?subject=ThumbGate%20legal%20AI%20pilot%20walkthrough&amp;body=Hi%20Igor%2C%0A%0AWe%27d%20like%20to%20review%20the%20ThumbGate%20legal%20AI%20intake%20pilot.%20Please%20send%20the%20meeting%20invite%20and%20demo%20materials.%0A%0ABest%2C">Request the pilot walkthrough</a>
-        <a class="ghost" href="#demo">View the demo storyboard</a>
+        <a class="ghost" href="#demo">View the 25-minute demo plan</a>
       </div>
       <div class="proof-row" aria-label="Key proof points">
-        <div class="proof"><strong>Preloaded controls</strong><span>Firm policy, approved disclaimers, adverse-party lists, approved model endpoints.</span></div>
-        <div class="proof"><strong>Pre-action blocking</strong><span>Checks run before the agent replies, fetches records, schedules intake, or calls an external model.</span></div>
-        <div class="proof"><strong>Reviewable evidence</strong><span>Every block, warning, override, and handoff becomes an audit event.</span></div>
+        <div class="proof"><strong>Preloaded controls</strong><span>Firm policy, approved disclaimers, adverse-party lists, routing rules, and model endpoint allowlists.</span></div>
+        <div class="proof"><strong>Pre-action checks</strong><span>Controls run before the agent replies, fetches records, schedules intake, or calls an external model.</span></div>
+        <div class="proof"><strong>Reviewable evidence</strong><span>Every block, warning, override, and handoff becomes a structured audit event.</span></div>
       </div>
     </div>
 
-    <aside class="demo-shell" aria-label="ThumbGate demo screenshot mockup">
-      <div class="demo-top">
-        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-        <span class="demo-title">ThumbGate legal intake gate</span>
-      </div>
-      <div class="demo-body">
-        <div class="capture">
-          <span class="label">Prospect asks</span>
+    <aside class="control-flow" aria-label="ThumbGate pre-action control flow">
+      <img class="flow-asset" src="/assets/legal-intake-control-flow.svg" alt="Diagram of the ThumbGate legal intake pre-action control flow">
+      <h2>What the demo should show</h2>
+      <div class="flow-step">
+        <span class="num">1</span>
+        <div>
+          <h3>Prospect asks a risky intake question</h3>
           <p>"Can I sue my former employer in Florida if they changed my commission plan?"</p>
         </div>
-        <div class="capture blocked">
-          <span class="label">Blocked before delivery</span>
-          <p>Advice-shaped response detected: legal conclusion + jurisdictional recommendation. Replace with attorney handoff.</p>
+      </div>
+      <div class="flow-step blocked">
+        <span class="num">2</span>
+        <div>
+          <h3>Advice-shaped response is stopped</h3>
+          <p>Legal conclusion plus jurisdictional recommendation is routed to attorney review before delivery.</p>
         </div>
-        <div class="capture cleared">
-          <span class="label">Allowed response</span>
-          <p>"That needs attorney review. I can collect basic contact details and route this to the employment team."</p>
+      </div>
+      <div class="flow-step cleared">
+        <span class="num">3</span>
+        <div>
+          <h3>Safe handoff is allowed</h3>
+          <p>The agent collects neutral routing details and schedules review without creating reliance.</p>
         </div>
-        <div class="capture">
-          <span class="label">Audit trail</span>
-          <p>Rule: UPL.intake_advice.v3 | Source: firm policy + ABA Formal Op. 512 mapping | Outcome: handoff.</p>
+      </div>
+      <div class="flow-step">
+        <span class="num">4</span>
+        <div>
+          <h3>Audit event is exportable</h3>
+          <p>Rule version, source policy, proposed action, outcome, reviewer, and timestamp are preserved.</p>
         </div>
       </div>
     </aside>
@@ -321,157 +329,100 @@
 
   <main>
     <section>
-      <h2>The May 2026 sales frame: governance without slowing adoption.</h2>
-      <p class="section-lead">The strongest enterprise AI agencies are not pitching "a smarter chatbot" to law firms in 2026. They are selling controlled autonomy: AI agents that can do useful intake and routing work, but only inside documented policy boundaries.</p>
+      <h2>Why this is credible now.</h2>
+      <p class="section-lead">The market is not waiting for perfect AI. Large firms are adopting legal AI while ethics, security, and innovation teams are still formalizing the controls around it. ThumbGate fits that gap: it is not another research assistant; it is a control point around the assistants and agents a firm already wants to evaluate.</p>
       <div class="grid">
         <div class="card">
-          <span class="tag blue">Why now</span>
-          <h3>Agentic AI is already inside workflows</h3>
-          <p>Legal and business teams are adopting AI faster than governance teams can standardize it. The risk is not adoption itself; it is unmanaged AI actions with no visibility.</p>
+          <span class="tag blue">Governance</span>
+          <h3>ABA Formal Opinion 512 maps cleanly to controls</h3>
+          <p>Competence, confidentiality, supervision, verification, communication, and reasonable fees become concrete checks and review records.</p>
         </div>
         <div class="card">
-          <span class="tag amber">Buyer pain</span>
-          <h3>Partners need supervision evidence</h3>
-          <p>ABA Formal Opinion 512 points lawyers toward competence, confidentiality, supervision, verification, and communication duties when using generative AI.</p>
+          <span class="tag amber">Adoption</span>
+          <h3>AI is entering normal workflows</h3>
+          <p>The practical buyer question is no longer "will lawyers use AI?" It is "which actions can an agent take without review?"</p>
         </div>
         <div class="card">
-          <span class="tag green">Our angle</span>
-          <h3>Controls sit before the agent acts</h3>
-          <p>ThumbGate is not another model. It is the gate between a model and the firm: reply delivery, records access, model egress, scheduling, and escalation.</p>
+          <span class="tag green">Positioning</span>
+          <h3>Vendor-neutral by design</h3>
+          <p>The pilot can sit around internal tools, Azure OpenAI, Claude, Gemini, document systems, or purpose-built legal AI products.</p>
         </div>
       </div>
     </section>
 
     <section>
-      <h2>Yes, ThumbGate can be preloaded before day one.</h2>
-      <p class="section-lead">If the buyer asks whether the system can start with rules, guardrails, and ground truth instead of waiting to learn from mistakes, the answer is yes. The pilot should launch with a firm-approved baseline and then improve from observed events.</p>
-      <div class="grid">
-        <div class="card">
-          <span class="tag red">Hard blocks</span>
-          <h3>Things the agent cannot do</h3>
-          <p>Advice-shaped output from intake, external LLM calls with privileged markers, intake continuation before conflict precheck, unsafe engagement-language, and non-approved jurisdictional claims.</p>
-        </div>
-        <div class="card">
-          <span class="tag amber">Review queues</span>
-          <h3>Things requiring human approval</h3>
-          <p>Borderline legal-information responses, conflict ambiguity, sensitive practice areas, urgent deadlines, regulated client categories, and any response that could create reliance.</p>
-        </div>
-        <div class="card">
-          <span class="tag green">Allowed rails</span>
-          <h3>Things the agent can do safely</h3>
-          <p>Collect contact information, route to the right team, ask neutral intake questions, explain process, show firm-approved disclaimers, and schedule attorney review.</p>
-        </div>
-      </div>
-      <div class="card">
-        <h3>Preload sources for a Greenberg-style pilot</h3>
-        <p>Firm AI policy, intake scripts, approved disclaimers, office and practice-area routing rules, adverse-party sample list, approved vendor/model endpoints, escalation contacts, retention requirements, and the firm's preferred language for "information, not advice."</p>
-        <p class="caption">The rule pack is versioned. Every pilot change can be traced to a source: firm policy, attorney approval, test result, or observed incident.</p>
-      </div>
-    </section>
-
-    <section id="demo">
-      <h2>Demo materials for the call.</h2>
-      <p class="section-lead">The walkthrough should be visual and short: one risky prospect question, one blocked response, one safe handoff, one audit event, and one preload rule edit. That is the story buyers can repeat internally.</p>
-      <div class="grid">
-        <div class="card">
-          <span class="tag blue">Screenshot 1</span>
-          <h3>UPL response blocked</h3>
-          <p>The prospect receives a neutral intake handoff instead of a legal conclusion. The visual proof is the pre-delivery block, not a post-hoc moderation report.</p>
-        </div>
-        <div class="card">
-          <span class="tag amber">Screenshot 2</span>
-          <h3>Conflict precheck required</h3>
-          <p>The agent cannot collect sensitive facts until the matter clears a configured conflict precondition.</p>
-        </div>
-        <div class="card">
-          <span class="tag green">Video clip</span>
-          <h3>Rule preload to audit trail</h3>
-          <p>A 60-second clip should show one firm-approved rule being loaded, then firing, then appearing in the audit log.</p>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <h2>Three failure modes the pilot controls.</h2>
+      <h2>Three failure modes the pilot should control.</h2>
       <div class="grid">
         <div class="card">
           <span class="tag red">UPL</span>
-          <h3>Unauthorized practice of law</h3>
-          <p>The intake bot starts predicting outcomes, recommending strategy, or making jurisdiction-specific conclusions. ThumbGate blocks the response before delivery and redirects to attorney review.</p>
+          <h3>Unauthorized-practice risk</h3>
+          <p>Block outcome predictions, jurisdictional recommendations, and advice-shaped responses from non-attorney intake agents. Allow neutral collection and attorney handoff.</p>
         </div>
         <div class="card">
           <span class="tag amber">Conflicts</span>
           <h3>Conflict preconditions</h3>
-          <p>The agent tries to continue intake before checking a party or matter against the firm's configured adverse-party source. ThumbGate requires clearance first.</p>
+          <p>Require configured adverse-party clearance before the agent continues intake or requests sensitive matter facts.</p>
         </div>
         <div class="card">
           <span class="tag blue">Privilege</span>
           <h3>Confidentiality and egress</h3>
-          <p>The agent attempts to send privileged or confidential content to a non-approved external endpoint. ThumbGate blocks or reroutes the call to the approved in-tenant path.</p>
+          <p>Block or reroute outbound calls that include privileged markers, matter identifiers, or firm-classified confidential content.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="demo">
+      <h2>25-minute walkthrough agenda.</h2>
+      <p class="section-lead">The call should be visual. The goal is not to prove every enterprise feature. It is to show a repeatable mechanism the innovation team can explain internally.</p>
+      <div class="two grid">
+        <div class="card">
+          <h3>Show these assets</h3>
+          <ul>
+            <li>One unsafe intake transcript and blocked response.</li>
+            <li>One conflict-precheck stop before sensitive facts are collected.</li>
+            <li>One egress block or safe in-tenant reroute.</li>
+            <li>One audit export with rule version, source, outcome, and reviewer.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Skip these on the first call</h3>
+          <ul>
+            <li>Broad platform tour.</li>
+            <li>Pricing page or checkout flow.</li>
+            <li>Unverified sanctions statistics.</li>
+            <li>Claims about SOC 2, BAA, carrier discounts, or guaranteed malpractice prevention.</li>
+          </ul>
         </div>
       </div>
     </section>
 
     <section>
-      <h2>What the security and ethics committee gets.</h2>
+      <h2>Procurement questions to answer early.</h2>
       <table class="matrix">
         <thead>
-          <tr><th>Concern</th><th>What ThumbGate provides</th><th>Evidence artifact</th></tr>
+          <tr><th>Buyer question</th><th>Pilot answer</th><th>Evidence to bring</th></tr>
         </thead>
         <tbody>
-          <tr><td>ABA Formal Op. 512</td><td>Competence, confidentiality, supervision, and verification mapped to concrete controls.</td><td>Rule map + per-action audit log.</td></tr>
-          <tr><td>Model / vendor lock-in</td><td>Vendor-neutral gate layer over Claude, GPT, Gemini, Azure OpenAI, Bedrock, local models, and internal tools.</td><td>Endpoint allowlist and routing config.</td></tr>
-          <tr><td>Client data exposure</td><td>Runtime can run inside the firm's tenant; hosted dashboard can be limited to counters and rule metadata.</td><td>Data-flow diagram and redacted event export.</td></tr>
-          <tr><td>False positives</td><td>Controls split into hard block, human review, warning, and allow modes instead of one all-or-nothing policy.</td><td>Override and review history.</td></tr>
-          <tr><td>Ongoing improvement</td><td>Human feedback and clustered near-misses promote into candidate rules after evaluation.</td><td>Rule provenance and promotion history.</td></tr>
+          <tr><td>Will our data train models?</td><td>The pilot can run inside the firm's boundary. Hosted services should receive only counters and rule metadata unless explicitly approved.</td><td>Data-flow diagram, retention note, subprocessor list.</td></tr>
+          <tr><td>Who can see privileged data?</td><td>Default pilot design keeps privileged payloads in the firm's environment, with access governed by their controls.</td><td>Architecture note and access-control assumptions.</td></tr>
+          <tr><td>Can we reproduce a decision later?</td><td>Each event should preserve the rule version, source policy, proposed action, decision, reviewer, and timestamp.</td><td>Sample audit export.</td></tr>
+          <tr><td>How do we tune false positives?</td><td>Use hard block, review queue, warning, and allow modes. Promote rules only after test examples and attorney approval.</td><td>Rule lifecycle and override examples.</td></tr>
         </tbody>
       </table>
     </section>
 
     <section>
-      <h2>30-day pilot shape.</h2>
-      <div class="two grid">
-        <div class="card">
-          <h3>Scope</h3>
-          <p>One intake channel, one practice-area workflow, one adverse-party fixture, one approved-model routing policy, and one audit export format.</p>
-          <p>No firm-wide rollout, no per-attorney metering, no claim that the software replaces professional judgment.</p>
-        </div>
-        <div class="card">
-          <h3>Deliverables</h3>
-          <p>Preloaded rule pack, demo agent, screenshot set, 60-second video clip, security data-flow note, pilot metrics, and a go/no-go rollout recommendation.</p>
-          <p>Success is measured by prevented unsafe actions, reduced manual triage, and whether the committee trusts the evidence trail.</p>
-        </div>
-      </div>
-      <div class="quote">The buyer-safe promise: ThumbGate does not make legal judgment automatic. It makes unsafe AI autonomy harder to ship unnoticed.</div>
-    </section>
-
-    <section>
       <div class="callout">
-        <h2>Suggested first-call agenda.</h2>
-        <p>Use the meeting to get agreement on a narrow, testable pilot instead of trying to sell a broad platform in the first call.</p>
-        <ol>
-          <li>Five minutes: confirm their current AI intake and innovation priorities.</li>
-          <li>Eight minutes: show the UPL / conflict / privilege storyboard.</li>
-          <li>Six minutes: show how rules and ground truth are preloaded before launch.</li>
-          <li>Five minutes: review deployment boundary and audit evidence.</li>
-          <li>Six minutes: agree on a 30-day pilot workflow and success criteria.</li>
-        </ol>
-        <p><a class="cta" href="mailto:iganapolsky@gmail.com?subject=ThumbGate%20legal%20AI%20pilot%20walkthrough&amp;body=Hi%20Igor%2C%0A%0AWe%27d%20like%20to%20schedule%20the%20pilot%20walkthrough.%20Please%20send%20a%20calendar%20invite%20covering%20the%20AI%20intake%20scenario%2C%20preloaded%20guardrails%2C%20conflict%20precheck%2C%20and%20audit%20trail.%0A%0ABest%2C">Request the pilot walkthrough</a></p>
-      </div>
-    </section>
-
-    <section>
-      <h2>Related ThumbGate materials.</h2>
-      <div class="grid">
-        <div class="card"><h3><a href="/agent-manager">Agent Manager</a></h3><p>The operating role that owns AI agent reliability, approvals, metrics, and evidence.</p></div>
-        <div class="card"><h3><a href="/agents-cost-savings">FinOps for Agents</a></h3><p>Cost and risk visibility for teams running many agents across client matters.</p></div>
-        <div class="card"><h3><a href="/codex-enterprise">Codex Enterprise</a></h3><p>The same pre-action control pattern applied to enterprise coding agents.</p></div>
+        <h2>Recommended 30-day pilot.</h2>
+        <p>Start narrow: one intake channel, one practice-area workflow, one adverse-party fixture, one approved-model routing policy, and one audit export format.</p>
+        <p>Deliverables: preloaded rule pack, demo agent, screenshot set, 60-second walkthrough clip, security data-flow note, pilot metrics, and a go/no-go rollout recommendation.</p>
+        <p><a class="cta" href="mailto:iganapolsky@gmail.com?subject=ThumbGate%20legal%20AI%20pilot%20walkthrough&amp;body=Hi%20Igor%2C%0A%0AWe%27d%20like%20to%20review%20the%20ThumbGate%20legal%20AI%20intake%20pilot.%20Please%20send%20the%20meeting%20invite%20and%20demo%20materials.%0A%0ABest%2C">Request the pilot walkthrough</a></p>
       </div>
     </section>
   </main>
 
   <footer class="footer">
-    <p>ThumbGate is a software control layer, not legal advice. The page is intended for pilot scoping with law-firm innovation, technology, risk, and pricing teams. Final policy choices should be reviewed by the firm's attorneys and security team.</p>
+    <p>ThumbGate is a software control layer, not legal advice. This page is intended for pilot scoping with law-firm innovation, technology, risk, and pricing teams. Final policy choices should be reviewed by the firm's attorneys and security team.</p>
   </footer>
 </div>
 </body>
