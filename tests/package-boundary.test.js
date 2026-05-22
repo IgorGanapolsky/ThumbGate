@@ -255,9 +255,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // the FinOps-for-AI positioning page that pairs with the `thumbgate cost`
   // CLI. Sister-bumped from public-bundle-ratchet.test.js's 260 → 261; the
   // two ratchets must stay in lockstep. (changeset: agents-cost-savings-landing.md)
+  // Bumped 261 → 262 (2026-05-21) to ship public/ai-malpractice-prevention.html
+  // — the legal-vertical landing page built for the warm Greenberg Traurig lead
+  // (Matt Beekhuizen demo on 2026-05-28). Sister-bumped from
+  // public-bundle-ratchet + public-core-boundary; all three stay in lockstep.
+  // (changeset: ai-malpractice-prevention-landing.md)
   assert.ok(
-    manifest.fileCount <= 261,
-    `npm package should stay <= 261 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 262,
+    `npm package should stay <= 262 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

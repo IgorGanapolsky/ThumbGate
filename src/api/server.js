@@ -2548,6 +2548,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/codex-plugin', changefreq: 'weekly', priority: '0.75' },
     { path: '/codex-enterprise', changefreq: 'weekly', priority: '0.85' },
     { path: '/agents-cost-savings', changefreq: 'weekly', priority: '0.85' },
+    { path: '/ai-malpractice-prevention', changefreq: 'weekly', priority: '0.9' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
   ];
   return [
@@ -4607,6 +4608,32 @@ async function addContext(){
         });
       } catch {
         sendJson(res, 404, { error: 'Agents Cost Savings page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/ai-malpractice-prevention' || pathname === '/ai-malpractice-prevention.html')) {
+      // Legal-vertical landing page. Built 2026-05-21 in response to a
+      // warm-lead conversation with Greenberg Traurig (Matt Beekhuizen,
+      // Chief Pricing & Innovation Officer) booked for 2026-05-28. The page
+      // covers UPL (Rule 5.5), missed conflicts (Rules 1.7/1.9/1.10),
+      // and privilege breach (Rule 1.6) with concrete scenarios + the
+      // ABA Formal Op. 512 compliance map. Reusable for any law-firm
+      // outreach — not GT-specific, but written in operator vocabulary
+      // (vetting overhead, AFA reserve cost) that resonates with the
+      // Innovation/Pricing function inside firms.
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(path.join(PUBLIC_DIR, 'ai-malpractice-prevention.html'), 'utf-8'),
+          extraTelemetry: { pageType: 'ai_malpractice_prevention' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'AI Malpractice Prevention page not found' });
       }
       return;
     }

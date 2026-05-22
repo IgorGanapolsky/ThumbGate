@@ -51,7 +51,11 @@ const path = require('node:path');
 // 260 → 261: public/agents-cost-savings.html added — FinOps-for-AI positioning
 //            page that pairs with the `thumbgate cost` CLI (#2281).
 //            (changeset: agents-cost-savings-landing.md)
-const BASELINE_FILE_COUNT = 261;
+// 261 → 262: public/ai-malpractice-prevention.html added — legal-vertical
+//            landing page built for the warm Greenberg Traurig lead
+//            (Matt Beekhuizen demo 2026-05-28).
+//            (changeset: ai-malpractice-prevention-landing.md)
+const BASELINE_FILE_COUNT = 262;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
