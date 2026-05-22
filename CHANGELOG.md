@@ -1,5 +1,204 @@
 # Changelog
 
+## 1.23.0
+
+### Minor Changes
+
+- [#2282](https://github.com/IgorGanapolsky/ThumbGate/pull/2282) [`47d2d6c`](https://github.com/IgorGanapolsky/ThumbGate/commit/47d2d6c5f63fea7165640f724755bd5c16746dc7) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(landing): `/agents-cost-savings` — FinOps-for-AI positioning page
+
+  New marketing surface positioning ThumbGate as the _prevention_ layer for
+  AI agent spend, distinct from the _reporting_ layer that Finout, Helicone,
+  Vantage, and the new "AI FinOps Assistant" wave occupy.
+
+  The page anchors on a real number (the output of the new `thumbgate cost`
+  CLI shipped alongside) and a prevention-vs-reporting comparison table.
+  Composes with `/codex-enterprise` (the Dell-distribution landing) and
+  `/agent-manager` (the role-level framing) as a three-page enterprise
+  positioning surface.
+
+  - New file: `public/agents-cost-savings.html`
+  - Route: `/agents-cost-savings` + `/agents-cost-savings.html` via
+    `servePublicMarketingPage` (UTM attribution + `pageType: agents_cost_savings` telemetry)
+  - Sitemap entry at priority 0.85
+  - 3 new route/HEAD/sitemap tests in `tests/public-static-assets.test.js`
+  - Added to `package.json` `files` whitelist so it ships with the npm bundle
+
+  Honest scope: this is SEO + reply-to-pitch positioning, not a feature.
+  Won't generate revenue tomorrow. Will give ThumbGate-curious buyers who
+  get a Finout / Helicone email a frame for "we prevent, they report."
+
+- [#2291](https://github.com/IgorGanapolsky/ThumbGate/pull/2291) [`1968ed1`](https://github.com/IgorGanapolsky/ThumbGate/commit/1968ed1eed44e43909c34b3b84ea2bd46225f619) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(landing): /ai-malpractice-prevention — legal-vertical positioning page
+
+  New marketing surface positioning ThumbGate for law firms specifically.
+  Built 2026-05-21 in response to a warm-lead conversation with Greenberg
+  Traurig (Matt Beekhuizen, Chief Pricing & Innovation Officer; demo 2026-05-28).
+
+  The page covers the three failure modes ThumbGate prevents in legal:
+
+  - **Unauthorized practice of law** (Rule 5.5) — AI intake bot giving
+    outcome-shaped responses
+  - **Missed conflicts** (Rules 1.7/1.9/1.10) — adverse-party cross-matter
+    contamination
+  - **Privilege breach** (Rule 1.6) — privileged content sent to non-approved
+    LLM processors
+
+  Plus a compliance map to ABA Formal Op. 512 (Jul 2024), three concrete
+  scenarios with before/after framing, the on-prem/in-tenant deployment
+  story, and CPO-flavored framing on AFA reserve cost (the pricing-function
+  angle that resonates with Innovation/Pricing buyers inside firms, not
+  just GCs).
+
+  Reusable for any law-firm outreach — written in operator vocabulary
+  (vetting overhead, tool heterogeneity, reserve cost) rather than
+  Model-Rule-grandstand vocabulary, so it lands with the Chief Pricing &
+  Innovation Officer who's actually the buyer at most firms.
+
+  Changes:
+
+  - `public/ai-malpractice-prevention.html` (~290 LOC)
+  - `src/api/server.js` — route + sitemap entry at priority 0.9 (highest
+    single page — legal-vertical TAM is large)
+  - `package.json` — added to files whitelist
+  - `tests/public-static-assets.test.js` — +3 route/HEAD/sitemap tests
+    with content assertions (UPL, privilege, conflict, ABA Formal Op
+    locked in)
+  - `tests/package-boundary.test.js`, `tests/public-bundle-ratchet.test.js`,
+    `tests/public-core-boundary.test.js` — sister-bumped file ratchet
+    261 → 262
+
+  Companion private materials (NOT shipped):
+
+  - `.thumbgate/sales/2026-05-28-greenberg-traurig-prep.md` — demo
+    prep, applies Voss + Camp negotiation frameworks
+  - `.thumbgate/sales/demo-script-greenberg-traurig.md` — minute-by-minute
+    demo flow
+
+- [#2281](https://github.com/IgorGanapolsky/ThumbGate/pull/2281) [`5bd341c`](https://github.com/IgorGanapolsky/ThumbGate/commit/5bd341cc673575cb4f143e45d91bfb33f4eb3272) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(cli): add `thumbgate cost` to surface $ saved by gate blocks
+
+  Wires the existing `scripts/token-savings.js` (already used by the
+  dashboard) into a CLI subcommand so users can see — in plain dollars —
+  what their PreToolUse gates are worth without leaving the terminal.
+
+  ```
+  $ thumbgate cost
+
+  💰 ThumbGate cost-savings — cumulative
+  ──────────────────────────────────────────────────
+    Tool calls blocked : 247
+    Tool calls warned  : 12
+    Tool calls passed  : 3,401
+    Top blocker        : no-mocked-db (138 blocks)
+
+    Tokens you did NOT spend
+      Input  : 494K
+      Output : 148K
+      Total  : 642K
+
+    Estimated $ saved  : $3.95
+  ```
+
+  Flags: `--json` for machine output, `--stats <path>` to point at a
+  non-default `gate-stats.json`, `--mix <json>` to override the Sonnet-heavy
+  default model blend. Aliased as `savings` and `costs`.
+
+  Positioning: the 2026 wave of "FinOps for AI agents" tools (Finout, etc.)
+  _reports_ on agent spend. ThumbGate _prevents_ it. This subcommand makes
+  that value visible in dollars to the operator without integrating a
+  separate FinOps platform.
+
+  10 unit tests in `tests/cost-cli.test.js` cover arg parsing, missing/present
+  stats files, the no-data friendly message, and top-blocker selection.
+
+- [#2279](https://github.com/IgorGanapolsky/ThumbGate/pull/2279) [`e19b393`](https://github.com/IgorGanapolsky/ThumbGate/commit/e19b393abb2cda92c3c60639a23fde0e16ea0ed9) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(gates-engine): free-tier daily block cap (10/day) — deny → warn + upgrade CTA after limit
+  feat(gates-engine): Pro CTA in deny output after 5+ total blocks
+  feat(cli): `thumbgate trial` command showing trial status + upgrade path
+  feat(cli): global --help interceptor for 14 subcommands
+  feat(cli): UTM-tracked checkout URLs + improved limitNudge with usage context
+  feat(telemetry): sessionId + clientType in CLI pings for user-level analytics
+  feat(server): active user metrics (activeInstalls, uniqueSessions) on /v1/metrics/real
+
+### Patch Changes
+
+- [#2283](https://github.com/IgorGanapolsky/ThumbGate/pull/2283) [`1bccc2c`](https://github.com/IgorGanapolsky/ThumbGate/commit/1bccc2c60845f207a4d1c8ff1af914d34c0ac49c) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - fix(site): broken link audit — correct llm-context.md paths in 43 HTML files, fix dead pricing anchor, add 404 catch-all, add /go/team /go/checkout /go/trial shortlinks
+
+- [#2293](https://github.com/IgorGanapolsky/ThumbGate/pull/2293) [`5c4e0eb`](https://github.com/IgorGanapolsky/ThumbGate/commit/5c4e0eb1a507fb1163182bfe00a07f97a90dc830) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add first-party telemetry counters for ThumbGate GPT Action calls so ChatGPT usage can be measured separately from GPT link opens.
+
+- [#2287](https://github.com/IgorGanapolsky/ThumbGate/pull/2287) [`a15f8c1`](https://github.com/IgorGanapolsky/ThumbGate/commit/a15f8c1cf3fa6991b0670e62ea0a2f1977ccc7cd) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(checkout): add email capture to checkout interstitial
+
+  The checkout interstitial now collects the visitor's email before
+  redirecting to Stripe Checkout. Previously the "Pay $19/mo" button was
+  a plain anchor — visitors who abandoned Stripe were lost with no way to
+  follow up. The form pre-fills the Stripe receipt email and fires a
+  telemetry beacon on submit so the email is captured even if the visitor
+  never completes payment.
+
+  Side-effect: the confirm=1 trigger moved from a crawlable `<a>` to a
+  `<form>` hidden input, which is inherently bot-safe (crawlers don't
+  submit forms) and eliminates the zombie-session vector more cleanly than
+  the previous `rel="nofollow"` approach.
+
+- [#2278](https://github.com/IgorGanapolsky/ThumbGate/pull/2278) [`9981fd3`](https://github.com/IgorGanapolsky/ThumbGate/commit/9981fd37a329bfc9c9a724e37390db182db1a795) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - fix(tests): respect `HOME`/`USERPROFILE` env-override in `scripts/pro-local-dashboard.js`
+
+  `isCreatorDev`, `hasDevOverride`, `getLicenseDir`, and `getLicensePath` now
+  fall back to `process.env.HOME || process.env.USERPROFILE || os.homedir()`
+  instead of jumping straight to `os.homedir()`. This means tests that try to
+  isolate filesystem state by setting `HOME` to a tmpdir actually get isolated
+  — previously the dev-bypass / license-path lookups silently used the
+  developer's real home directory and pulled in local config, causing
+  "passes locally / flakes in CI" failures in `tests/cli.test.js`.
+
+  Companion test change: `tests/cli.test.js` adds `THUMBGATE_DEV_SECRET`,
+  `THUMBGATE_DEV_BYPASS`, and `THUMBGATE_DEV_KEY` to the env-isolation list
+  so developer dev-mode bypasses can't leak into the test runtime either.
+
+  No behavior change for end users — purely tightens test isolation around
+  the existing dev-mode escape hatches.
+
+- [#2286](https://github.com/IgorGanapolsky/ThumbGate/pull/2286) [`6ee6386`](https://github.com/IgorGanapolsky/ThumbGate/commit/6ee63863f258a68dd2e852bf9631fb1a40b0f7f1) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - fix(api): /health no longer kills the container over a missing buildSha
+
+  The /health endpoint previously returned HTTP 503 if any of three checks
+  failed — including a missing `BUILD_METADATA.buildSha`. Railway treats
+  503 as a healthcheck failure → sends SIGTERM → container exits →
+  restart-policy budget exhausts → outage.
+
+  This exact failure mode took prod down 2026-05-21 18:21Z → 19:30Z
+  (~70 min) after the THUMBGATE_BUILD_SHA env var was cleaned up earlier
+  in the day. A telemetry gap is not a service outage; the container still
+  serves requests fine when buildSha is empty.
+
+  Tiered failure classification:
+
+  - **service-failing** (feedback dir unwritable, hosted-config appOrigin
+    missing) → HTTP 503 + status: 'failing'. Container should be replaced.
+  - **telemetry-degraded** (buildSha missing) → HTTP 200 + status: 'degraded'
+    - `degraded: true` flag. Container stays alive; monitors see the gap.
+
+  Every check now carries a `severity` field so downstream monitors can
+  distinguish the two classes. Response shape is backwards-compatible
+  (adds `degraded` and `severity` fields; existing consumers ignore them).
+
+  Regression test pins the new behavior: a missing build-metadata file
+  must return 200 (not 503) and must set status='degraded'.
+
+- [#2280](https://github.com/IgorGanapolsky/ThumbGate/pull/2280) [`7b65511`](https://github.com/IgorGanapolsky/ThumbGate/commit/7b65511973ea2474d1cb0a93edb4bc5e484671c7) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - fix(landing): replace broken 90-second demo link with honest CTA
+
+  The hero "Watch the 90-second demo" anchor on `/` pointed to `#demo`,
+  which scrolled to a section that no longer hosts a video — the link
+  landed visitors on an empty placeholder. Replace with an honest CTA
+  that directs to a real, available surface so the landing-page promise
+  matches what's actually there. Companion E2E coverage updated in
+  `tests/e2e/index-page-clickability.spec.js`.
+
+- [#2293](https://github.com/IgorGanapolsky/ThumbGate/pull/2293) [`5c4e0eb`](https://github.com/IgorGanapolsky/ThumbGate/commit/5c4e0eb1a507fb1163182bfe00a07f97a90dc830) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Ship the self-healing health-check runtime in the npm package so `thumbgate self-heal` works from published installs.
+
+- [#2293](https://github.com/IgorGanapolsky/ThumbGate/pull/2293) [`5c4e0eb`](https://github.com/IgorGanapolsky/ThumbGate/commit/5c4e0eb1a507fb1163182bfe00a07f97a90dc830) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Ship `scripts/silent-failure-cluster.js` in the npm package so the experimental `THUMBGATE_SILENT_FAILURE_CLUSTERING=1` meta-agent lane works from published installs, not only source checkouts.
+
+- [#2285](https://github.com/IgorGanapolsky/ThumbGate/pull/2285) [`baef4ec`](https://github.com/IgorGanapolsky/ThumbGate/commit/baef4ec5947041561ca29bc40615f5059064abe4) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(ul): silent-failure clustering as a candidate source for meta-agent-loop (experimental, off by default)
+
+  New module `scripts/silent-failure-cluster.js` mines failed tool calls (exit_code != 0 or matching the existing `ERROR_PATTERNS`) from the JSONL conversation logs, excludes any failure within ±5 min of a feedback-log entry (already in the HITL loop), normalizes paths and redacts secrets in args, then clusters by `(tool, normalized-arg-signature)` with a min cluster size of 3. Each cluster is emitted as a candidate prevention rule tagged `origin: 'silent-failure-cluster'` and flows through the EXISTING `meta-agent-loop.js` hit-rate / fp-rate scoring — no guardrail is bypassed.
+
+  **Experimental — off by default.** Enable with `THUMBGATE_SILENT_FAILURE_CLUSTERING=1`. Pre-existing behavior is unchanged when the flag is unset. Only useful on workspaces generating ≥ 50 tool calls/day; below that threshold the module skips cleanly with `skippedReason: 'insufficient-data'`. No new npm dependencies.
+
 ## 1.22.0
 
 ### Minor Changes
@@ -674,7 +873,7 @@
 
 - [#2100](https://github.com/IgorGanapolsky/ThumbGate/pull/2100) [`f92d3c5`](https://github.com/IgorGanapolsky/ThumbGate/commit/f92d3c58e0706b4c96d82f29915aa5fcf7271f9a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add `scripts/stripe-business-identity-probe.js` — what does the buyer actually see on the Stripe-hosted checkout page?
 
-  The stripe-checkout-diagnostic from PR [#2097](https://github.com/IgorGanapolsky/ThumbGate/issues/2097) revealed the failure mode is buyer-bail-at-Stripe-page (100 sessions, 100% open/expired, 100% no customer email, zero payment_intent errors). That means buyers are seeing something on the Stripe page in the first 3 seconds that makes them close the tab. The diagnostic doesn't pull the _identity surface_ — what name/logo/description/statement_descriptor the merchant actually has configured. This probe does.
+  The stripe-checkout-diagnostic from PR [#2097](https://github.com/IgorGanapolsky/ThumbGate/issues/2097) revealed the failure mode is buyer-bail-at-Stripe-page (100 sessions, 100% open/expired, 100% no customer email, zero payment*intent errors). That means buyers are seeing something on the Stripe page in the first 3 seconds that makes them close the tab. The diagnostic doesn't pull the \_identity surface* — what name/logo/description/statement_descriptor the merchant actually has configured. This probe does.
 
   Pulls every Stripe-side field that contributes to brand recognition on the checkout page:
 
