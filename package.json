@@ -162,6 +162,7 @@
     "scripts/security-scanner.js",
     "scripts/self-distill-agent.js",
     "scripts/self-heal.js",
+    "scripts/self-healing-check.js",
     "scripts/semantic-dedup.js",
     "scripts/semantic-layer.js",
     "scripts/seo-gsd.js",
