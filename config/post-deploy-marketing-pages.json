@@ -28,6 +28,11 @@
       "description": "First-party numbers / data transparency page"
     },
     {
+      "route": "/ai-malpractice-prevention",
+      "sentinel": "AI Intake Risk Controls for Law Firms",
+      "description": "Legal AI intake risk-controls page for law-firm pilot conversations"
+    },
+    {
       "route": "/llm-context.md",
       "sentinel": "## What ThumbGate Is",
       "description": "Canonical declarative summary AI crawlers read"

@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="780" viewBox="0 0 1200 780" role="img" aria-labelledby="title desc">
+  <title id="title">ThumbGate legal intake control flow</title>
+  <desc id="desc">A four-step diagram showing a prospect question, a ThumbGate pre-action check, an attorney review handoff, and an exportable audit event.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#101318"/>
+      <stop offset="1" stop-color="#08090b"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="780" rx="34" fill="url(#bg)"/>
+  <rect x="44" y="42" width="1112" height="696" rx="26" fill="#14161a" stroke="#2c313a" stroke-width="2"/>
+  <text x="86" y="105" fill="#f2f4f8" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="800">Legal AI intake: pre-action control flow</text>
+  <text x="86" y="145" fill="#a7afbd" font-family="Inter, Arial, sans-serif" font-size="19">The agent can help with intake, but risky actions pass through policy checks before execution.</text>
+
+  <g filter="url(#shadow)">
+    <rect x="86" y="210" width="238" height="250" rx="18" fill="#1b1f26" stroke="#2c313a" stroke-width="2"/>
+    <circle cx="122" cy="250" r="20" fill="#2dd4bf"/>
+    <text x="116" y="257" fill="#071116" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="900">1</text>
+    <text x="86" y="504" fill="#a7afbd" font-family="Inter, Arial, sans-serif" font-size="15">Prospect asks</text>
+    <text x="116" y="306" fill="#f2f4f8" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800">Intake question</text>
+    <text x="116" y="350" fill="#d8deea" font-family="Inter, Arial, sans-serif" font-size="18">Can I sue my</text>
+    <text x="116" y="378" fill="#d8deea" font-family="Inter, Arial, sans-serif" font-size="18">former employer in</text>
+    <text x="116" y="406" fill="#d8deea" font-family="Inter, Arial, sans-serif" font-size="18">Florida?</text>
+  </g>
+
+  <path d="M348 334 H430" stroke="#62a4ff" stroke-width="5" stroke-linecap="round"/>
+  <path d="M430 334 l-18 -13 v26 z" fill="#62a4ff"/>
+
+  <g filter="url(#shadow)">
+    <rect x="454" y="188" width="292" height="294" rx="18" fill="#21161a" stroke="#fb7185" stroke-opacity="0.72" stroke-width="2"/>
+    <circle cx="490" cy="230" r="20" fill="#fb7185"/>
+    <text x="484" y="237" fill="#19070a" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="900">2</text>
+    <text x="486" y="286" fill="#f2f4f8" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800">ThumbGate check</text>
+    <text x="486" y="329" fill="#d8deea" font-family="Inter, Arial, sans-serif" font-size="18">Advice-shaped response</text>
+    <text x="486" y="357" fill="#d8deea" font-family="Inter, Arial, sans-serif" font-size="18">detected before delivery.</text>
+    <rect x="486" y="393" width="220" height="42" rx="10" fill="#fb7185" fill-opacity="0.18" stroke="#fb7185" stroke-opacity="0.55"/>
+    <text x="508" y="421" fill="#ffd9df" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="800">Route to review</text>
+  </g>
+
+  <path d="M770 334 H852" stroke="#62a4ff" stroke-width="5" stroke-linecap="round"/>
+  <path d="M852 334 l-18 -13 v26 z" fill="#62a4ff"/>
+
+  <g filter="url(#shadow)">
+    <rect x="876" y="210" width="238" height="250" rx="18" fill="#16231d" stroke="#72e3a5" stroke-opacity="0.65" stroke-width="2"/>
+    <circle cx="912" cy="250" r="20" fill="#72e3a5"/>
+    <text x="906" y="257" fill="#06120b" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="900">3</text>
+    <text x="906" y="306" fill="#f2f4f8" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800">Safe handoff</text>
+    <text x="906" y="350" fill="#d8deea" font-family="Inter, Arial, sans-serif" font-size="18">Collect neutral facts.</text>
+    <text x="906" y="378" fill="#d8deea" font-family="Inter, Arial, sans-serif" font-size="18">Schedule attorney</text>
+    <text x="906" y="406" fill="#d8deea" font-family="Inter, Arial, sans-serif" font-size="18">review.</text>
+  </g>
+
+  <path d="M994 484 V566 H724" stroke="#62a4ff" stroke-width="5" stroke-linecap="round" fill="none"/>
+  <path d="M724 566 l18 -13 v26 z" fill="#62a4ff"/>
+
+  <g filter="url(#shadow)">
+    <rect x="414" y="548" width="286" height="122" rx="18" fill="#1b1f26" stroke="#2c313a" stroke-width="2"/>
+    <circle cx="450" cy="588" r="20" fill="#62a4ff"/>
+    <text x="444" y="595" fill="#06111f" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="900">4</text>
+    <text x="486" y="592" fill="#f2f4f8" font-family="Inter, Arial, sans-serif" font-size="23" font-weight="800">Audit event</text>
+    <text x="486" y="631" fill="#d8deea" font-family="Inter, Arial, sans-serif" font-size="17">Rule, source, action, outcome, reviewer, timestamp.</text>
+  </g>
+</svg>
