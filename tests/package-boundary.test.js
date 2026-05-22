@@ -117,6 +117,7 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/feedback-loop.js',
     'scripts/gates-engine.js',
     'scripts/hf-papers.js',
+    'scripts/silent-failure-cluster.js',
     'scripts/statusline.sh',
     'scripts/statusline-meta.js',
     'scripts/tool-registry.js',
@@ -260,9 +261,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // (Matt Beekhuizen demo on 2026-05-28). Sister-bumped from
   // public-bundle-ratchet + public-core-boundary; all three stay in lockstep.
   // (changeset: ai-malpractice-prevention-landing.md)
+  // Bumped 262 → 263 (2026-05-22) to ship scripts/silent-failure-cluster.js.
+  // meta-agent-loop.js requires it when THUMBGATE_SILENT_FAILURE_CLUSTERING=1;
+  // without this file, published installs silently lose the experimental
+  // unsupervised-learning lane even though source-checkout tests pass.
   assert.ok(
-    manifest.fileCount <= 262,
-    `npm package should stay <= 262 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 263,
+    `npm package should stay <= 263 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
