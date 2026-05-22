@@ -4613,15 +4613,7 @@ async function addContext(){
     }
 
     if (isGetLikeRequest && (pathname === '/ai-malpractice-prevention' || pathname === '/ai-malpractice-prevention.html')) {
-      // Legal-vertical landing page. Built 2026-05-21 in response to a
-      // warm-lead conversation with Greenberg Traurig (Matt Beekhuizen,
-      // Chief Pricing & Innovation Officer) booked for 2026-05-28. The page
-      // covers UPL (Rule 5.5), missed conflicts (Rules 1.7/1.9/1.10),
-      // and privilege breach (Rule 1.6) with concrete scenarios + the
-      // ABA Formal Op. 512 compliance map. Reusable for any law-firm
-      // outreach — not GT-specific, but written in operator vocabulary
-      // (vetting overhead, AFA reserve cost) that resonates with the
-      // Innovation/Pricing function inside firms.
+      // Legal-vertical landing page (2026-05-21).
       try {
         servePublicMarketingPage({
           req,
