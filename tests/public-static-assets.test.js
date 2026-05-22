@@ -283,3 +283,40 @@ test('GET /sitemap.xml includes /agents-cost-savings at priority 0.85', async ()
   assert.ok(entry, 'agents-cost-savings <url> block must exist');
   assert.match(entry[0], /<priority>0\.85<\/priority>/);
 });
+
+test('GET /ai-malpractice-prevention serves the legal-vertical landing HTML', async () => {
+  const [routeRes, htmlRes] = await Promise.all([
+    fetch(`${origin}/ai-malpractice-prevention`),
+    fetch(`${origin}/ai-malpractice-prevention.html`),
+  ]);
+  for (const res of [routeRes, htmlRes]) {
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-type') || '', /text\/html/);
+    const body = await res.text();
+    assert.ok(body.length > 500, 'ai-malpractice-prevention page must render non-empty HTML');
+    // Lock in the legal-specific framing — these are the buyer-vocabulary
+    // anchors that distinguish this page from generic AI-safety positioning.
+    assert.match(body, /unauthorized practice of law|UPL/i);
+    assert.match(body, /privilege/i);
+    assert.match(body, /conflict/i);
+    assert.match(body, /ABA Formal Op/i);
+  }
+});
+
+test('HEAD /ai-malpractice-prevention responds 200 with html content-type', async () => {
+  const res = await fetch(`${origin}/ai-malpractice-prevention`, { method: 'HEAD' });
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /text\/html/);
+});
+
+test('GET /sitemap.xml includes /ai-malpractice-prevention at priority 0.9', async () => {
+  const res = await fetch(`${origin}/sitemap.xml`);
+  assert.equal(res.status, 200);
+  const xml = await res.text();
+  const entry = xml.match(/<url>\s*<loc>[^<]*\/ai-malpractice-prevention<\/loc>[\s\S]*?<\/url>/);
+  assert.ok(entry, 'ai-malpractice-prevention <url> block must exist');
+  // Priority 0.9 (higher than 0.85 sibling pages) — this is our highest-value
+  // single landing surface because the legal-vertical TAM is large and the
+  // pages where the FAQ engages partners directly are gold for SEO.
+  assert.match(entry[0], /<priority>0\.9<\/priority>/);
+});

@@ -109,8 +109,10 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // — sister-bumped from public-bundle-ratchet + package-boundary
   // (changeset: agents-cost-savings-landing.md). All three ratchets must
   // stay in lockstep.
+  // Bumped 261 → 262 (2026-05-21) to ship public/ai-malpractice-prevention.html
+  // — legal-vertical landing page (changeset: ai-malpractice-prevention-landing.md).
   const files = npmPackFiles();
-  const CEILING = 261;
+  const CEILING = 262;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

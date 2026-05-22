@@ -2548,6 +2548,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/codex-plugin', changefreq: 'weekly', priority: '0.75' },
     { path: '/codex-enterprise', changefreq: 'weekly', priority: '0.85' },
     { path: '/agents-cost-savings', changefreq: 'weekly', priority: '0.85' },
+    { path: '/ai-malpractice-prevention', changefreq: 'weekly', priority: '0.9' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
   ];
   return [
@@ -4607,6 +4608,24 @@ async function addContext(){
         });
       } catch {
         sendJson(res, 404, { error: 'Agents Cost Savings page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/ai-malpractice-prevention' || pathname === '/ai-malpractice-prevention.html')) {
+      // Legal-vertical landing page (2026-05-21).
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(path.join(PUBLIC_DIR, 'ai-malpractice-prevention.html'), 'utf-8'),
+          extraTelemetry: { pageType: 'ai_malpractice_prevention' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'AI Malpractice Prevention page not found' });
       }
       return;
     }
