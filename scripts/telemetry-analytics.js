@@ -313,6 +313,12 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     pipelineStatus: pickFirstText(raw.pipelineStatus, raw.workflowSprintStatus, raw.status),
     reasonCode,
     reasonDetail: pickFirstText(raw.reasonDetail, raw.reasonText, raw.otherReason, raw.notes),
+    integration: pickFirstText(raw.integration, raw.actionIntegration),
+    actionOperation: pickFirstText(raw.actionOperation, raw.operationId),
+    endpoint: pickFirstText(raw.endpoint, raw.apiPath),
+    decisionMode: pickFirstText(raw.decisionMode, raw.executionMode),
+    actionStatus: pickFirstText(raw.actionStatus, raw.status),
+    accepted: raw.accepted === undefined || raw.accepted === null ? null : Boolean(raw.accepted),
     pricingInterest: pickFirstText(raw.pricingInterest, raw.interestLevel),
     seoQuery: pickFirstText(raw.seoQuery, raw.query),
     seoSurface: pickFirstText(raw.seoSurface, raw.searchSurface, raw.surface),
@@ -526,6 +532,12 @@ function getTelemetrySummary(feedbackDir, options = {}) {
   let exitEngagementMsCount = 0;
   let exitScrollPercentTotal = 0;
   let exitScrollPercentCount = 0;
+  let chatgptActionCalls = 0;
+  let chatgptActionAccepted = 0;
+  const chatgptActionsByOperation = {};
+  const chatgptActionsByEndpoint = {};
+  const chatgptActionsByStatus = {};
+  const chatgptActionsByDecisionMode = {};
 
   for (const entry of events) {
     incrementCounter(byClientType, entry.clientType || entry.client || 'unknown');
@@ -714,6 +726,18 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       }
     }
 
+    if (
+      String(entry.eventType || entry.event || '').startsWith('chatgpt_action_') ||
+      entry.integration === 'chatgpt_gpt'
+    ) {
+      chatgptActionCalls += 1;
+      if (entry.accepted === true) chatgptActionAccepted += 1;
+      incrementCounter(chatgptActionsByOperation, entry.actionOperation);
+      incrementCounter(chatgptActionsByEndpoint, entry.endpoint);
+      incrementCounter(chatgptActionsByStatus, entry.actionStatus);
+      incrementCounter(chatgptActionsByDecisionMode, entry.decisionMode);
+    }
+
     if ((entry.clientType || entry.client) === 'cli') {
       if (entry.installId) cliInstalls.add(entry.installId);
       incrementCounter(cliByPlatform, entry.platform);
@@ -770,6 +794,7 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       landingViews: pageViews,
       installCopies,
       gptOpens,
+      gptActionCalls: chatgptActionCalls,
       checkoutStarts,
       checkoutInterstitialViews,
       checkoutInterstitialClicks,
@@ -777,6 +802,7 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       proConversions,
       landingToInstallCopyRate: safeRate(installCopies, pageViews),
       landingToGptOpenRate: safeRate(gptOpens, pageViews),
+      gptOpenToActionRate: safeRate(chatgptActionCalls, gptOpens),
       landingToCheckoutRate: safeRate(checkoutStarts, pageViews),
       checkoutInterstitialClickRate: safeRate(checkoutInterstitialClicks, checkoutInterstitialViews),
       checkoutInterstitialProConfirmRate: safeRate(checkoutInterstitialProConfirms, checkoutInterstitialViews),
@@ -834,6 +860,17 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       initPings: byEventType.cli_init || 0,
       byPlatform: cliByPlatform,
       byVersion: cliByVersion,
+    },
+    chatgpt: {
+      gptOpens,
+      actionCalls: chatgptActionCalls,
+      acceptedActionCalls: chatgptActionAccepted,
+      openToActionRate: safeRate(chatgptActionCalls, gptOpens),
+      acceptedActionRate: safeRate(chatgptActionAccepted, chatgptActionCalls),
+      byOperation: chatgptActionsByOperation,
+      byEndpoint: chatgptActionsByEndpoint,
+      byStatus: chatgptActionsByStatus,
+      byDecisionMode: chatgptActionsByDecisionMode,
     },
     marketing: {
       pageViewsBySource,
@@ -929,6 +966,7 @@ function getTelemetryAnalytics(feedbackDir, options = {}) {
     byClientType: summary.byClientType,
     byEventType: summary.byEventType,
     conversionFunnel: summary.conversionFunnel,
+    chatgpt: summary.chatgpt,
     visitors: {
       totalEvents: summary.web.totalEvents,
       uniqueVisitors: summary.web.uniqueVisitors,
