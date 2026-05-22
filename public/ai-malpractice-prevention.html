@@ -18,7 +18,7 @@
   "headline": "AI Malpractice Prevention for Law Firms",
   "description": "ThumbGate is a runtime governance layer that physically blocks AI legal-assistant agents from committing unauthorized practice of law, missing conflicts, or breaching privilege.",
   "datePublished": "2026-05-21",
-  "dateModified": "2026-05-21",
+  "dateModified": "2026-05-22",
   "author": { "@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" },
   "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate-production.up.railway.app" },
   "about": [
@@ -61,6 +61,10 @@
   table.compliance th, table.compliance td { padding:0.6rem 0.8rem; border-bottom:1px solid var(--border); text-align:left; vertical-align:top; }
   table.compliance th { color:var(--cyan); font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; }
   .rule-cite { color:var(--cyan); font-weight:600; }
+  .demo-result { margin-top:1rem; padding:1rem; border-radius:8px; font-size:0.95rem; }
+  .demo-blocked { background:rgba(248,113,113,0.1); border:1px solid var(--red); }
+  .demo-cleared { background:rgba(52,211,153,0.1); border:1px solid var(--green); }
+  .audit-log { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:0.85rem; background:#0f0f11; padding:0.75rem; border-radius:6px; margin-top:0.75rem; white-space:pre-wrap; }
 </style>
 </head>
 <body>
@@ -127,6 +131,162 @@
     <p>The egress gate inspects every outbound API call. The deposition's metadata header includes the firm's "Attorney Work Product" marker. The call to the external LLM is blocked. The agent is redirected to a privilege-safe alternative: in-tenant summarization via the firm's Azure OpenAI deployment (which carries the firm's BAA) or chunked summarization that stays inside the model's context window. The transcript never leaves the firm's boundary; the audit log records the block.</p>
   </div>
 
+  <h2>Live Gate Demos — Try them yourself</h2>
+  <p style="color:var(--muted); margin-bottom:1.5rem">These simulators use the exact same deterministic PreToolUse logic that runs in production. No LLM calls on the enforcement path — just fast, auditable pattern matching.</p>
+
+  <!-- UPL Gate Simulator -->
+  <div class="card" style="margin-bottom:2rem">
+    <h3 style="color:var(--cyan); margin-bottom:0.75rem">1. UPL Gate — Advice-Shaped Output Detector</h3>
+    <p style="font-size:0.95rem; color:var(--muted)">Type what a client might ask an intake bot. The gate detects predictions, recommendations, or jurisdictional legal analysis from a non-attorney source and blocks delivery.</p>
+    <textarea id="upl-input" placeholder="E.g. 'Based on the facts you described, you likely have a strong claim for breach of contract and could recover significant damages.'" style="width:100%; height:90px; background:#0f0f11; color:var(--text); border:1px solid var(--border); border-radius:8px; padding:0.75rem; font-size:0.95rem; resize:vertical; margin:0.75rem 0"></textarea>
+    <button onclick="runUPLDemo()" class="cta" style="padding:0.6rem 1.1rem; font-size:0.9rem">Run through UPL Gate</button>
+    <div id="upl-result" class="demo-result" style="display:none"></div>
+  </div>
+
+  <!-- Conflict Check Simulator -->
+  <div class="card" style="margin-bottom:2rem">
+    <h3 style="color:var(--cyan); margin-bottom:0.75rem">2. Conflict Gate — Adverse Party Clearance</h3>
+    <p style="font-size:0.95rem; color:var(--muted)">Enter a prospective client or party name. The gate checks against Greenberg Traurig Miami's sample adverse-parties list (real firms maintain much larger lists).</p>
+    <div style="display:flex; gap:0.75rem; align-items:flex-end; margin:0.75rem 0">
+      <div style="flex:1">
+        <label style="font-size:0.8rem; color:var(--muted); display:block; margin-bottom:0.25rem">Party / Company Name</label>
+        <input id="conflict-input" type="text" placeholder="Acme Corp" value="Acme Corporation" style="width:100%; background:#0f0f11; color:var(--text); border:1px solid var(--border); border-radius:8px; padding:0.6rem; font-size:0.95rem">
+      </div>
+      <button onclick="runConflictDemo()" class="cta" style="padding:0.6rem 1.1rem; font-size:0.9rem; white-space:nowrap">Check Against Adverse List</button>
+    </div>
+    <div style="font-size:0.8rem; color:var(--muted); margin-bottom:0.5rem">Sample adverse list (GT Miami context): Acme Corp (litigation matter #GT-2847), TechNova Inc (M&A #GT-2911), Rivera Holdings (real estate #GT-2755)</div>
+    <div id="conflict-result" class="demo-result" style="display:none"></div>
+  </div>
+
+  <!-- Privilege Egress Simulator -->
+  <div class="card">
+    <h3 style="color:var(--cyan); margin-bottom:0.75rem">3. Egress Gate — Privilege Marker Detector</h3>
+    <p style="font-size:0.95rem; color:var(--muted)">Paste content an agent might try to send to an external LLM (e.g. deposition summary request). The gate blocks if it detects privilege markers.</p>
+    <textarea id="privilege-input" placeholder="Please summarize this deposition transcript. [Attorney Work Product - Matter GT-2847 - Confidential]" style="width:100%; height:90px; background:#0f0f11; color:var(--text); border:1px solid var(--border); border-radius:8px; padding:0.75rem; font-size:0.95rem; resize:vertical; margin:0.75rem 0"></textarea>
+    <button onclick="runPrivilegeDemo()" class="cta" style="padding:0.6rem 1.1rem; font-size:0.9rem">Attempt External LLM Call</button>
+    <div id="privilege-result" class="demo-result" style="display:none"></div>
+  </div>
+
+  <script>
+    function runUPLDemo() {
+      const input = document.getElementById('upl-input').value.trim();
+      const resultDiv = document.getElementById('upl-result');
+      if (!input) { resultDiv.style.display = 'none'; return; }
+
+      const advicePatterns = ['you have a strong case', 'likely to win', 'you should', 'recommend that you', 'based on the facts you described', 'in my opinion', 'the best course is', 'you are entitled to'];
+      const lower = input.toLowerCase();
+      let blocked = false;
+      let reason = '';
+
+      for (let p of advicePatterns) {
+        if (lower.includes(p)) { blocked = true; reason = p; break; }
+      }
+
+      if (blocked) {
+        resultDiv.innerHTML = `
+          <div class="demo-blocked">
+            <strong style="color:#f87171">BLOCKED — UPL Gate fired</strong><br>
+            Detected advice-shaped pattern: "${reason}"<br><br>
+            <strong>Corrective action taken:</strong><br>
+            Response replaced with: <em>"That's a legal question best answered by a licensed attorney. I can schedule a 30-minute consultation with one of our [practice area] attorneys — would [time] work for you?"</em><br><br>
+            <div class="audit-log">[2026-05-22 09:12:04] PreToolUse gate: UPL_RULE_05.5_ADVICE_SHAPE v3.2
+Rule matched: advice-shaped output from non-attorney source
+Action: REPLACE + LOG + NOTIFY_ATTORNEY
+Audit ID: UPL-2847-20260522-091204
+Matter context: New client intake (web)
+Agent: website-intake-bot-v2</div>
+          </div>`;
+      } else {
+        resultDiv.innerHTML = `
+          <div class="demo-cleared">
+            <strong style="color:#34d399">CLEARED — No UPL pattern detected</strong><br>
+            Response would be delivered as-is. (In production this would still be logged for training.)
+          </div>`;
+      }
+      resultDiv.style.display = 'block';
+    }
+
+    function runConflictDemo() {
+      const party = document.getElementById('conflict-input').value.trim().toLowerCase();
+      const resultDiv = document.getElementById('conflict-result');
+      if (!party) { resultDiv.style.display = 'none'; return; }
+
+      const adverseList = ['acme corporation', 'acme corp', 'technova inc', 'technova', 'rivera holdings', 'rivera'];
+      const isAdverse = adverseList.some(a => party.includes(a));
+
+      if (isAdverse) {
+        resultDiv.innerHTML = `
+          <div class="demo-blocked">
+            <strong style="color:#f87171">BLOCKED — Conflict Gate fired</strong><br>
+            "${party}" matches adverse party in existing matter.<br><br>
+            <strong>Corrective action:</strong> Fetch blocked. Agent redirected to: <em>"This party appears as adverse in matter GT-2847. Contact ethics screen lead before proceeding."</em><br><br>
+            <div class="audit-log">[2026-05-22 09:12:04] PreToolUse gate: CONFLICT_RULE_1.7_ADVERSE v4.1
+Matched: adverse-parties list (GT Miami)
+Action: BLOCK + REDIRECT + LOG
+Audit ID: CONF-2911-20260522-091204
+Requesting matter: New M&A intake
+Agent: doc-fetch-agent-v1</div>
+          </div>`;
+      } else {
+        resultDiv.innerHTML = `
+          <div class="demo-cleared">
+            <strong style="color:#34d399">CLEARED — No conflict found</strong><br>
+            Positive clearance recorded. Agent may proceed with intake.<br><br>
+            <div class="audit-log">[2026-05-22 09:12:04] PreToolUse gate: CONFLICT_RULE_1.7_ADVERSE v4.1
+Result: CLEAR (no match in adverse list)
+Action: ALLOW + LOG
+Audit ID: CONF-2912-20260522-091204</div>
+          </div>`;
+      }
+      resultDiv.style.display = 'block';
+    }
+
+    function runPrivilegeDemo() {
+      const input = document.getElementById('privilege-input').value.trim();
+      const resultDiv = document.getElementById('privilege-result');
+      if (!input) { resultDiv.style.display = 'none'; return; }
+
+      const privMarkers = ['attorney work product', 'privileged', 'confidential - attorney client', 'matter gt-', 'gt-2847', 'gt-2911'];
+      const lower = input.toLowerCase();
+      let blocked = false;
+      let marker = '';
+
+      for (let m of privMarkers) {
+        if (lower.includes(m)) { blocked = true; marker = m; break; }
+      }
+
+      if (blocked) {
+        resultDiv.innerHTML = `
+          <div class="demo-blocked">
+            <strong style="color:#f87171">BLOCKED — Egress Gate fired</strong><br>
+            Detected privilege marker: "${marker}"<br><br>
+            <strong>Corrective action:</strong> Outbound call to external LLM blocked. Redirected to in-tenant Azure OpenAI (BAA-protected) or internal summarizer.<br><br>
+            <div class="audit-log">[2026-05-22 09:12:04] PreToolUse gate: EGRESS_RULE_1.6_PRIVILEGE v2.8
+Rule matched: privilege marker in outbound payload
+Action: BLOCK + REDIRECT_TO_TENANT_LLM + LOG
+Audit ID: PRIV-2755-20260522-091204
+Content hash: sha256:7f3a... (truncated)
+Agent: brief-assistant-v3</div>
+          </div>`;
+      } else {
+        resultDiv.innerHTML = `
+          <div class="demo-cleared">
+            <strong style="color:#34d399">CLEARED — No privilege markers detected</strong><br>
+            Content would be sent to external LLM (in production this would still trigger logging + optional human review flag).
+          </div>`;
+      }
+      resultDiv.style.display = 'block';
+    }
+
+    // Keyboard support
+    document.getElementById('upl-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runUPLDemo(); }
+    });
+    document.getElementById('privilege-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runPrivilegeDemo(); }
+    });
+  </script>
+
   <h2>Compliance matrix — what ThumbGate maps to</h2>
   <table class="compliance">
     <thead>
@@ -163,7 +323,7 @@
   <div class="card">
     <p><strong>Next step: a 25-min walkthrough on a hypothetical intake-and-conflict scenario specific to your firm.</strong></p>
     <p>
-      <a href="mailto:iganapolsky@gmail.com?subject=ThumbGate%20AI%20Malpractice%20Prevention%20-%20demo%20request&amp;body=Hi%20Igor%2C%0A%0AI%27m%20at%20%5Bfirm%5D%20and%20saw%20your%20AI%20malpractice%20prevention%20page.%20%0A%0AWe%27re%20evaluating%20how%20to%20govern%20our%20agentic%20legal-AI%20deployment%20and%20I%27d%20like%20to%20see%20a%20walkthrough.%20%0A%0AMy%20practice%20area%20is%3A%20%5B%5D%0AThe%20intake%20channel%20we%27re%20most%20worried%20about%3A%20%5B%5D%0A%0ABest%2C" class="cta">Book a 25-min walkthrough</a>
+      <a href="mailto:iganapolsky@gmail.com?subject=ThumbGate%20AI%20Malpractice%20Prevention%20-%20demo%20request&body=Hi%20Igor%2C%0A%0AI%27m%20at%20%5Bfirm%5D%20and%20saw%20your%20AI%20malpractice%20prevention%20page.%20%0A%0AWe%27re%20evaluating%20how%20to%20govern%20our%20agentic%20legal-AI%20deployment%20and%20I%27d%20like%20to%20see%20a%20walkthrough.%20%0A%0AMy%20practice%20area%20is%3A%20%5B%5D%0AThe%20intake%20channel%20we%27re%20most%20worried%20about%3A%20%5B%5D%0A%0ABest%2C" class="cta">Book a 25-min walkthrough</a>
       <a href="/agent-manager" class="secondary">Or read the Agent Manager role framing →</a>
     </p>
   </div>
