@@ -117,6 +117,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/feedback-loop.js',
     'scripts/gates-engine.js',
     'scripts/hf-papers.js',
+    'scripts/self-healing-check.js',
+    'scripts/silent-failure-cluster.js',
     'scripts/statusline.sh',
     'scripts/statusline-meta.js',
     'scripts/tool-registry.js',
@@ -260,9 +262,16 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // (Matt Beekhuizen demo on 2026-05-28). Sister-bumped from
   // public-bundle-ratchet + public-core-boundary; all three stay in lockstep.
   // (changeset: ai-malpractice-prevention-landing.md)
+  // Bumped 262 → 263 (2026-05-22) to ship scripts/silent-failure-cluster.js.
+  // meta-agent-loop.js requires it when THUMBGATE_SILENT_FAILURE_CLUSTERING=1;
+  // without this file, published installs silently lose the experimental
+  // unsupervised-learning lane even though source-checkout tests pass.
+  // Bumped 263 → 264 (2026-05-22) to ship scripts/self-healing-check.js.
+  // bin/cli.js runs it before scripts/self-heal.js for `thumbgate self-heal`;
+  // without this file, published installs fail with a missing-module error.
   assert.ok(
-    manifest.fileCount <= 262,
-    `npm package should stay <= 262 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 264,
+    `npm package should stay <= 264 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -347,9 +356,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // the Dell+OpenAI Codex Enterprise landing page (~14 KB). Stacked on top of
   // the auto-context-packs ratchet from earlier the same day; the bump gives
   // one normal-PR headroom buffer before the next ratchet review.
+  // Bumped 3.80 MB -> 3.82 MB (2026-05-22) for scripts/self-healing-check.js
+  // (~5 KB), which `thumbgate self-heal` invokes before self-heal.js in
+  // published installs. Observed unpacked size is ~3.806 MB.
   assert.ok(
-    manifest.unpackedSize <= 3_800_000,
-    `npm package should stay <= 3.80 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_820_000,
+    `npm package should stay <= 3.82 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

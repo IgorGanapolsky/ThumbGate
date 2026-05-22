@@ -758,6 +758,51 @@ test('getTelemetryAnalytics exposes the first-party marketing conversion funnel'
   assert.equal(analytics.recent[0].eventType, 'checkout_paid_confirmed');
 });
 
+test('getTelemetryAnalytics summarizes ChatGPT GPT Action usage separately from GPT opens', () => {
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'chatgpt_gpt_open',
+    clientType: 'web',
+    source: 'website',
+    ctaId: 'go_gpt',
+    linkSlug: 'gpt',
+    page: '/go/gpt',
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'chatgpt_action_capture_feedback',
+    clientType: 'api',
+    source: 'chatgpt_gpt',
+    integration: 'chatgpt_gpt',
+    actionOperation: 'captureFeedback',
+    endpoint: '/v1/feedback/capture',
+    actionStatus: 'accepted',
+    accepted: true,
+  });
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'chatgpt_action_evaluate_decision',
+    clientType: 'api',
+    source: 'chatgpt_gpt',
+    integration: 'chatgpt_gpt',
+    actionOperation: 'evaluateDecision',
+    endpoint: '/v1/decisions/evaluate',
+    actionStatus: 'accepted',
+    decisionMode: 'checkpoint_required',
+    accepted: true,
+  });
+
+  const analytics = getTelemetryAnalytics(tmpDir);
+
+  assert.equal(analytics.conversionFunnel.gptOpens, 1);
+  assert.equal(analytics.conversionFunnel.gptActionCalls, 2);
+  assert.equal(analytics.conversionFunnel.gptOpenToActionRate, 2);
+  assert.equal(analytics.chatgpt.actionCalls, 2);
+  assert.equal(analytics.chatgpt.acceptedActionCalls, 2);
+  assert.equal(analytics.chatgpt.acceptedActionRate, 1);
+  assert.equal(analytics.chatgpt.byOperation.captureFeedback, 1);
+  assert.equal(analytics.chatgpt.byOperation.evaluateDecision, 1);
+  assert.equal(analytics.chatgpt.byEndpoint['/v1/feedback/capture'], 1);
+  assert.equal(analytics.chatgpt.byDecisionMode.checkpoint_required, 1);
+});
+
 test('getTelemetryAnalytics summarizes reddit community and offer performance', () => {
   appendTelemetryEvent(tmpDir, {
     eventType: 'landing_page_view',

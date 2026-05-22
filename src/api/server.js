@@ -1867,6 +1867,19 @@ function appendBestEffortTelemetry(feedbackDir, payload, headers, context) {
   }
 }
 
+function inferActionIntegration(body = {}, headers = {}) {
+  const explicit = pickFirstText(body.integration, body.source, body.actionIntegration, body.provider);
+  const userAgent = String(headers['user-agent'] || '').toLowerCase();
+  if (/chatgpt|gpt[_-]?actions?|openai/.test(String(explicit || '').toLowerCase()) || /chatgpt|openai/.test(userAgent)) {
+    return 'chatgpt_gpt';
+  }
+  return explicit || 'api';
+}
+
+function chatgptActionEventType(integration, suffix) {
+  return integration === 'chatgpt_gpt' ? `chatgpt_action_${suffix}` : `api_action_${suffix}`;
+}
+
 function getPublicOrigin(req) {
   const proto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() || 'http';
   const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim() || 'localhost';
@@ -7019,6 +7032,18 @@ async function addContext(){
           tags: extractTags(body.tags),
           skill: body.skill,
         });
+        const actionIntegration = inferActionIntegration(body, req.headers);
+        appendBestEffortTelemetry(requestFeedbackDir, {
+          eventType: chatgptActionEventType(actionIntegration, 'capture_feedback'),
+          clientType: 'api',
+          source: actionIntegration,
+          integration: actionIntegration,
+          actionOperation: 'captureFeedback',
+          endpoint: '/v1/feedback/capture',
+          actionStatus: result.accepted ? 'accepted' : 'clarification_required',
+          accepted: Boolean(result.accepted),
+          failureCode: result.accepted ? null : 'clarification_required',
+        }, req.headers, 'api_action_capture_feedback');
         if (result?.accepted) {
           // Fan out to any connected dashboard clients so they re-render
           // without polling. Non-sensitive summary only (no chat history,
@@ -7829,6 +7854,18 @@ async function addContext(){
         });
         report.actionId = evaluation.actionId;
         if (report.decisionControl) report.decisionControl.actionId = evaluation.actionId;
+        const actionIntegration = inferActionIntegration(body, req.headers);
+        appendBestEffortTelemetry(requestFeedbackDir, {
+          eventType: chatgptActionEventType(actionIntegration, 'evaluate_decision'),
+          clientType: 'api',
+          source: actionIntegration,
+          integration: actionIntegration,
+          actionOperation: 'evaluateDecision',
+          endpoint: '/v1/decisions/evaluate',
+          actionStatus: 'accepted',
+          accepted: true,
+          decisionMode: report.decisionControl && report.decisionControl.executionMode,
+        }, req.headers, 'api_action_evaluate_decision');
         sendJson(res, 200, report);
         return;
       }

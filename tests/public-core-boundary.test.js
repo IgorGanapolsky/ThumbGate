@@ -111,8 +111,14 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // stay in lockstep.
   // Bumped 261 → 262 (2026-05-21) to ship public/ai-malpractice-prevention.html
   // — legal-vertical landing page (changeset: ai-malpractice-prevention-landing.md).
+  // Bumped 262 → 263 (2026-05-22) to ship scripts/silent-failure-cluster.js:
+  // meta-agent-loop.js imports it when THUMBGATE_SILENT_FAILURE_CLUSTERING=1,
+  // so omitting it breaks the published experimental unsupervised track.
+  // Bumped 263 → 264 (2026-05-22) to ship scripts/self-healing-check.js:
+  // `thumbgate self-heal` invokes it before scripts/self-heal.js, so omitting
+  // it breaks published installs even though source-checkout tests pass.
   const files = npmPackFiles();
-  const CEILING = 262;
+  const CEILING = 264;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

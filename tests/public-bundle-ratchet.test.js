@@ -55,7 +55,12 @@ const path = require('node:path');
 //            landing page built for the warm Greenberg Traurig lead
 //            (Matt Beekhuizen demo 2026-05-28).
 //            (changeset: ai-malpractice-prevention-landing.md)
-const BASELINE_FILE_COUNT = 262;
+// 262 → 263: scripts/silent-failure-cluster.js added so the experimental
+//            THUMBGATE_SILENT_FAILURE_CLUSTERING=1 lane works from npm, not
+//            only from source checkouts.
+// 263 → 264: scripts/self-healing-check.js added so `thumbgate self-heal`
+//            works from npm installs instead of failing before self-heal.js.
+const BASELINE_FILE_COUNT = 264;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
