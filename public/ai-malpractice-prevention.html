@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Malpractice Prevention for Law Firms — ThumbGate</title>
+<title>AI Intake Risk Controls for Law Firms — ThumbGate</title>
 <script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
-<meta name="description" content="Your AI intake agent can commit unauthorized practice of law, miss a conflict, or breach privilege — usually all three. ThumbGate physically blocks each at the tool-call boundary, with an audit trail your malpractice carrier can read.">
-<meta property="og:title" content="AI Malpractice Prevention for Law Firms">
-<meta property="og:description" content="Runtime governance for legal AI agents — block UPL, miss-conflict, and privilege breach at the tool-call boundary. ABA Formal Op. 512-ready audit trail.">
+<meta name="description" content="Pre-action controls for law-firm AI intake agents: reduce unauthorized-practice, conflict-check, confidentiality, and audit-trail risk before an agent sends a response or calls a tool.">
+<meta property="og:title" content="AI Intake Risk Controls for Law Firms">
+<meta property="og:description" content="ThumbGate adds pre-action guardrails, firm-approved ground truth, and audit trails to legal AI intake workflows. Built for law-firm innovation, risk, and pricing teams.">
 <meta property="og:type" content="article">
 <meta property="og:image" content="https://thumbgate-production.up.railway.app/og.png">
 <link rel="canonical" href="https://thumbgate-production.up.railway.app/ai-malpractice-prevention">
@@ -15,52 +15,255 @@
 {
   "@context": "https://schema.org",
   "@type": "TechArticle",
-  "headline": "AI Malpractice Prevention for Law Firms",
-  "description": "ThumbGate is a runtime governance layer that physically blocks AI legal-assistant agents from committing unauthorized practice of law, missing conflicts, or breaching privilege.",
+  "headline": "AI Intake Risk Controls for Law Firms",
+  "description": "ThumbGate is a pre-action control layer for law-firm AI intake workflows. It can preload firm-approved ground truth, enforce guardrails before agent actions execute, and produce audit evidence for human review.",
   "datePublished": "2026-05-21",
-  "dateModified": "2026-05-21",
+  "dateModified": "2026-05-22",
   "author": { "@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" },
   "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate-production.up.railway.app" },
   "about": [
-    { "@type": "Thing", "name": "Legal AI" },
+    { "@type": "Thing", "name": "Legal AI Governance" },
     { "@type": "Thing", "name": "Unauthorized Practice of Law" },
     { "@type": "Thing", "name": "Attorney-Client Privilege" },
-    { "@type": "Thing", "name": "ABA Model Rules" },
+    { "@type": "Thing", "name": "ABA Formal Opinion 512" },
     { "@type": "Thing", "name": "Conflict of Interest Check" }
   ]
 }
 </script>
 <style>
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-  :root { --bg:#0a0a0b; --card:#161618; --border:#222225; --text:#e8e8ec; --muted:#8b8b94; --cyan:#22d3ee; --red:#f87171; --green:#34d399; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
-  .container { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
-  nav { padding: 1rem 2rem; border-bottom: 1px solid var(--border); display:flex; gap:1.5rem; flex-wrap:wrap; }
-  nav a { color: var(--muted); text-decoration:none; font-size:0.9rem; }
-  nav .brand { color: var(--text); font-weight:700; }
-  .pill { display:inline-block; font-size:0.75rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--cyan); background:rgba(34,211,238,0.08); border:1px solid rgba(34,211,238,0.2); padding:4px 12px; border-radius:100px; margin-top:1.5rem; font-weight:600; }
-  h1 { font-size:2.2rem; line-height:1.15; margin:1rem 0 1rem; }
-  h2 { font-size:1.45rem; margin:2.2rem 0 1rem; color:var(--cyan); }
-  h3 { margin:0.6rem 0; font-size:1rem; }
-  p, li { margin-bottom:0.75rem; }
-  ul, ol { padding-left:1.25rem; }
-  .card { background: var(--card); border:1px solid var(--border); border-radius:12px; padding:1.25rem; margin:1rem 0; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1rem; margin:1rem 0; }
-  .grid .card h3 { color:var(--cyan); }
-  .scenario { border-left:3px solid var(--red); padding:0.9rem 1.1rem; margin:1rem 0; background:rgba(248,113,113,0.04); border-radius:6px; }
-  .scenario .label { display:inline-block; font-size:0.7rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--red); font-weight:700; margin-bottom:0.5rem; }
-  .scenario .resolve { display:inline-block; font-size:0.7rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--green); font-weight:700; margin:0.6rem 0 0.3rem; }
-  .cta { display:inline-block; background:var(--cyan); color:#000; padding:0.8rem 1.2rem; border-radius:8px; text-decoration:none; font-weight:700; }
-  .secondary { color:var(--cyan); text-decoration:underline; margin-left:1rem; }
-  .quote { border-left:3px solid var(--cyan); padding:0.75rem 1rem; margin:1rem 0; color:var(--muted); font-style:italic; }
-  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background:#0f0f11; border:1px solid var(--border); border-radius:6px; padding:0.15rem 0.4rem; font-size:0.9rem; }
-  pre { padding:0.85rem 1rem; overflow-x:auto; }
-  .footer-links { margin-top:2.5rem; padding-top:1.25rem; border-top:1px solid var(--border); color:var(--muted); font-size:0.9rem; }
-  .footer-links a { color:var(--cyan); text-decoration:none; }
-  table.compliance { width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.95rem; }
-  table.compliance th, table.compliance td { padding:0.6rem 0.8rem; border-bottom:1px solid var(--border); text-align:left; vertical-align:top; }
-  table.compliance th { color:var(--cyan); font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; }
-  .rule-cite { color:var(--cyan); font-weight:600; }
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --bg: #08090b;
+    --panel: #14161a;
+    --panel-2: #1b1f26;
+    --line: #2c313a;
+    --text: #f2f4f8;
+    --muted: #a7afbd;
+    --soft: #d8deea;
+    --blue: #62a4ff;
+    --cyan: #2dd4bf;
+    --amber: #f2bd5b;
+    --red: #fb7185;
+    --green: #72e3a5;
+  }
+  body {
+    margin: 0;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+  }
+  a { color: var(--blue); }
+  nav {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+    padding: 1rem clamp(1rem, 3vw, 2.25rem);
+    border-bottom: 1px solid var(--line);
+    background: rgba(8, 9, 11, 0.92);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  nav a { color: var(--muted); text-decoration: none; font-size: 0.92rem; }
+  nav .brand { color: var(--text); font-weight: 800; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 clamp(1rem, 3vw, 2rem); }
+  .hero {
+    min-height: calc(100vh - 72px);
+    display: grid;
+    grid-template-columns: minmax(0, 1.02fr) minmax(320px, 0.88fr);
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: center;
+    padding: clamp(3rem, 6vw, 5.5rem) 0 2.5rem;
+  }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--cyan);
+    border: 1px solid rgba(45, 212, 191, 0.24);
+    background: rgba(45, 212, 191, 0.08);
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  h1 {
+    font-size: clamp(2.25rem, 4.2vw, 3.6rem);
+    line-height: 1.02;
+    letter-spacing: 0;
+    margin: 1.2rem 0 1rem;
+    max-width: 780px;
+  }
+  .lead {
+    color: var(--soft);
+    font-size: clamp(1.06rem, 1.7vw, 1.28rem);
+    max-width: 760px;
+    margin: 0 0 1.4rem;
+  }
+  .hero-actions { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin: 1.5rem 0; }
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 0.78rem 1.1rem;
+    border-radius: 8px;
+    background: var(--blue);
+    color: #06111f;
+    text-decoration: none;
+    font-weight: 850;
+  }
+  .ghost { color: var(--soft); text-decoration: none; border-bottom: 1px solid var(--line); padding-bottom: 0.1rem; }
+  .proof-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-top: 1.3rem;
+    max-width: 820px;
+  }
+  .proof {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.85rem;
+    background: rgba(255, 255, 255, 0.03);
+    min-height: 92px;
+  }
+  .proof strong { display: block; color: var(--text); font-size: 0.95rem; }
+  .proof span { color: var(--muted); font-size: 0.86rem; }
+  .demo-shell {
+    border: 1px solid #343a46;
+    background: #101318;
+    border-radius: 8px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+    overflow: hidden;
+  }
+  .demo-top {
+    display: flex;
+    gap: 0.45rem;
+    align-items: center;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--line);
+    background: #171b22;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--red); }
+  .dot:nth-child(2) { background: var(--amber); }
+  .dot:nth-child(3) { background: var(--green); }
+  .demo-title { margin-left: 0.6rem; color: var(--muted); font-size: 0.82rem; }
+  .demo-body { padding: 1rem; display: grid; gap: 0.8rem; }
+  .capture {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+    padding: 1rem;
+  }
+  .capture .label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 800; }
+  .capture p { margin: 0.4rem 0 0; color: var(--soft); font-size: 0.92rem; }
+  .blocked { border-color: rgba(251, 113, 133, 0.55); background: rgba(251, 113, 133, 0.08); }
+  .cleared { border-color: rgba(114, 227, 165, 0.42); background: rgba(114, 227, 165, 0.08); }
+  main section {
+    border-top: 1px solid var(--line);
+    padding: clamp(2.5rem, 5vw, 4.5rem) 0;
+  }
+  h2 {
+    font-size: clamp(1.85rem, 3vw, 2.7rem);
+    line-height: 1.14;
+    margin: 0 0 0.8rem;
+    letter-spacing: 0;
+  }
+  .section-lead { color: var(--muted); font-size: 1.08rem; max-width: 830px; margin: 0 0 1.6rem; }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+  .two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .card {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    border-radius: 8px;
+    padding: 1.1rem;
+  }
+  .card h3 { margin: 0 0 0.55rem; font-size: 1.08rem; color: var(--text); }
+  .card p, .card li { color: var(--muted); margin: 0.45rem 0; }
+  .tag {
+    display: inline-flex;
+    color: #071116;
+    background: var(--cyan);
+    border-radius: 6px;
+    padding: 0.14rem 0.45rem;
+    font-size: 0.74rem;
+    font-weight: 850;
+    margin-bottom: 0.65rem;
+  }
+  .amber { background: var(--amber); }
+  .red { background: var(--red); color: #19070a; }
+  .blue { background: var(--blue); color: #06111f; }
+  .green { background: var(--green); color: #06120b; }
+  .matrix { width: 100%; border-collapse: collapse; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .matrix th, .matrix td {
+    padding: 0.82rem;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    text-align: left;
+  }
+  .matrix th { color: var(--cyan); background: #11151b; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
+  .matrix td { color: var(--muted); }
+  .quote {
+    border-left: 3px solid var(--cyan);
+    padding: 0.8rem 1rem;
+    color: var(--soft);
+    background: rgba(45, 212, 191, 0.06);
+    border-radius: 0 8px 8px 0;
+  }
+  .callout {
+    background: #f2f4f8;
+    color: #111827;
+    border-radius: 8px;
+    padding: clamp(1.2rem, 3vw, 2rem);
+  }
+  .callout p, .callout li { color: #344054; }
+  .callout .cta { background: #111827; color: #fff; }
+  .caption { color: var(--muted); font-size: 0.88rem; margin-top: 0.65rem; }
+  .footer {
+    color: var(--muted);
+    padding: 2.5rem 0 4rem;
+    border-top: 1px solid var(--line);
+  }
+  .footer a { text-decoration: none; }
+  @media (max-width: 880px) {
+    .hero, .grid, .two, .proof-row { grid-template-columns: 1fr; }
+    .hero { min-height: auto; padding-top: 2.5rem; }
+    nav { position: static; }
+  }
+  @media (max-width: 700px) {
+    .matrix, .matrix tbody, .matrix tr, .matrix td { display: block; width: 100%; }
+    .matrix { border: 0; }
+    .matrix thead { display: none; }
+    .matrix tr {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      margin-bottom: 0.85rem;
+      background: var(--panel);
+      overflow: hidden;
+    }
+    .matrix td {
+      border-bottom: 1px solid var(--line);
+      padding: 0.75rem 0.9rem;
+    }
+    .matrix td:last-child { border-bottom: 0; }
+    .matrix td::before {
+      display: block;
+      color: var(--cyan);
+      font-size: 0.72rem;
+      font-weight: 850;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.25rem;
+      text-transform: uppercase;
+    }
+    .matrix td:nth-child(1)::before { content: "Concern"; }
+    .matrix td:nth-child(2)::before { content: "What ThumbGate provides"; }
+    .matrix td:nth-child(3)::before { content: "Evidence artifact"; }
+  }
 </style>
 </head>
 <body>
@@ -69,115 +272,207 @@
   <a href="/agent-manager">Agent Manager</a>
   <a href="/codex-enterprise">Codex Enterprise</a>
   <a href="/agents-cost-savings">FinOps for Agents</a>
-  <a href="/federal">Federal</a>
   <a href="/dashboard">Dashboard demo</a>
   <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
 </nav>
-<div class="container">
-  <span class="pill">AI Malpractice Prevention</span>
-  <h1>Your AI intake agent can commit UPL, miss a conflict, or breach privilege — usually all three. ThumbGate prevents each at the tool-call boundary.</h1>
-  <p>2025 produced <strong>66 documented court sanctions against attorneys</strong> for AI-generated fake citations and related failures, with fines up to $31,000. That is just the public surface. The internal events — UPL-shaped responses from intake bots, conflict misses, privilege leaks to external LLM processors — are happening at every firm that deployed generative AI in the last 18 months, and most of them are not yet surfacing in OPR review or malpractice claims because the audit trail to catch them doesn't exist.</p>
-  <p>ThumbGate is the runtime layer that catches them <em>before</em> they happen. Every agent action — every API call, every document fetch, every drafted message — passes through a PreToolUse gate that fires before the action executes. Known-bad shapes are blocked with the audit trail your malpractice carrier and your OPR review actually want to read.</p>
-  <p>The framing matters: ThumbGate isn't another legal AI tool your innovation team has to vet. It's the <strong>vetting-collapse layer</strong> that sits between the agents you've already adopted — Harvey, Copilot, Legora, internal scripts, whatever a client mandates next quarter — and the tool calls those agents try to make. One control plane, every model, every matter, every output.</p>
 
-  <h2>The three failure modes ThumbGate prevents</h2>
-  <div class="grid">
-    <div class="card">
-      <h3>1. Unauthorized practice of law <span class="rule-cite">(Rule 5.5)</span></h3>
-      <p>The AI intake bot tells a prospect <em>"based on what you've described, you have a strong case for breach of fiduciary duty."</em> That's legal advice from a non-lawyer. Under Rule 5.5 — and under most state bar interpretations — the firm is on the hook. ThumbGate's UPL gate intercepts response candidates that match advice-shaped patterns (predictions, recommendations, outcome assertions) and replaces them with an intake hand-off to a licensed attorney.</p>
+<div class="wrap">
+  <header class="hero">
+    <div>
+      <span class="eyebrow">Built for law-firm AI governance pilots</span>
+      <h1>Let AI intake move faster without letting it give legal advice, skip conflicts, or leak privileged data.</h1>
+      <p class="lead">ThumbGate adds a pre-action control layer around legal AI agents. It loads firm-approved rules and ground truth before launch, checks every proposed agent action before it runs, and leaves an audit trail a risk committee can review.</p>
+      <div class="hero-actions">
+        <a class="cta" href="mailto:iganapolsky@gmail.com?subject=ThumbGate%20legal%20AI%20pilot%20walkthrough&amp;body=Hi%20Igor%2C%0A%0AWe%27d%20like%20to%20review%20the%20ThumbGate%20legal%20AI%20intake%20pilot.%20Please%20send%20the%20meeting%20invite%20and%20demo%20materials.%0A%0ABest%2C">Request the pilot walkthrough</a>
+        <a class="ghost" href="#demo">View the demo storyboard</a>
+      </div>
+      <div class="proof-row" aria-label="Key proof points">
+        <div class="proof"><strong>Preloaded controls</strong><span>Firm policy, approved disclaimers, adverse-party lists, approved model endpoints.</span></div>
+        <div class="proof"><strong>Pre-action blocking</strong><span>Checks run before the agent replies, fetches records, schedules intake, or calls an external model.</span></div>
+        <div class="proof"><strong>Reviewable evidence</strong><span>Every block, warning, override, and handoff becomes an audit event.</span></div>
+      </div>
     </div>
-    <div class="card">
-      <h3>2. Missed conflicts <span class="rule-cite">(Rules 1.7, 1.9, 1.10)</span></h3>
-      <p>The agent processes a new-client inquiry at 11pm on Sunday, schedules an intake call for Monday, sends a generic engagement letter — and only then runs the conflict check that finds the prospect is the opposing party in an existing matter. By then the firm has already received confidential information from the prospect. ThumbGate's conflict gate requires a positive clearance from the firm's adverse-parties list <em>before</em> the agent can accept any intake content beyond the initial routing question.</p>
-    </div>
-    <div class="card">
-      <h3>3. Privilege breach <span class="rule-cite">(Rule 1.6 + state evidence rules)</span></h3>
-      <p>An associate uses the firm's AI assistant to summarize a privileged deposition. The agent calls a public LLM endpoint to "improve the summary." Privileged content just left the firm's infrastructure to a third-party processor that has no equivalent privilege protection. ThumbGate's egress gate inspects every outbound API call from agents and blocks transmissions of content matching privilege-policy patterns (matter ID, client name, "Attorney Work Product" markers, custom firm classifiers) to non-approved processors.</p>
-    </div>
-  </div>
 
-  <h2>How the prevention actually works</h2>
-  <p>The mechanism is deliberately simple. ThumbGate sits between the agent and the world as a hook layer; every tool call the agent attempts (HTTP request, file read, database query, generated response delivery) passes through a <code>PreToolUse</code> gate first. The gate evaluates the proposed action against a lesson database built from your firm's own observed failures plus a library of legal-vertical defaults shipped with the product.</p>
-  <ul>
-    <li><strong>Promoted rules block known-bad shapes.</strong> When the same failure pattern recurs three or more times — silently, without a human even noticing — silent-failure clustering surfaces it as a candidate rule. A pre-promotion eval verifies precision before it joins the active gate set.</li>
-    <li><strong>Every block is logged with provenance.</strong> What was attempted, what rule fired, what corrective action the agent was redirected to. That log is the artifact your malpractice carrier and your OPR review actually want — not a vendor's "trust me" assurance.</li>
-    <li><strong>Nothing leaves your boundary.</strong> ThumbGate runs in-process or as a sidecar in your Azure / AWS tenant or on-prem. No client data, no privileged content, no matter metadata traverses our infrastructure. The hosted dashboard is optional and never receives privileged payloads — only counters and rule metadata.</li>
-  </ul>
+    <aside class="demo-shell" aria-label="ThumbGate demo screenshot mockup">
+      <div class="demo-top">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="demo-title">ThumbGate legal intake gate</span>
+      </div>
+      <div class="demo-body">
+        <div class="capture">
+          <span class="label">Prospect asks</span>
+          <p>"Can I sue my former employer in Florida if they changed my commission plan?"</p>
+        </div>
+        <div class="capture blocked">
+          <span class="label">Blocked before delivery</span>
+          <p>Advice-shaped response detected: legal conclusion + jurisdictional recommendation. Replace with attorney handoff.</p>
+        </div>
+        <div class="capture cleared">
+          <span class="label">Allowed response</span>
+          <p>"That needs attorney review. I can collect basic contact details and route this to the employment team."</p>
+        </div>
+        <div class="capture">
+          <span class="label">Audit trail</span>
+          <p>Rule: UPL.intake_advice.v3 | Source: firm policy + ABA Formal Op. 512 mapping | Outcome: handoff.</p>
+        </div>
+      </div>
+    </aside>
+  </header>
 
-  <h2>Three scenarios from real firm pain</h2>
+  <main>
+    <section>
+      <h2>The May 2026 sales frame: governance without slowing adoption.</h2>
+      <p class="section-lead">The strongest enterprise AI agencies are not pitching "a smarter chatbot" to law firms in 2026. They are selling controlled autonomy: AI agents that can do useful intake and routing work, but only inside documented policy boundaries.</p>
+      <div class="grid">
+        <div class="card">
+          <span class="tag blue">Why now</span>
+          <h3>Agentic AI is already inside workflows</h3>
+          <p>Legal and business teams are adopting AI faster than governance teams can standardize it. The risk is not adoption itself; it is unmanaged AI actions with no visibility.</p>
+        </div>
+        <div class="card">
+          <span class="tag amber">Buyer pain</span>
+          <h3>Partners need supervision evidence</h3>
+          <p>ABA Formal Opinion 512 points lawyers toward competence, confidentiality, supervision, verification, and communication duties when using generative AI.</p>
+        </div>
+        <div class="card">
+          <span class="tag green">Our angle</span>
+          <h3>Controls sit before the agent acts</h3>
+          <p>ThumbGate is not another model. It is the gate between a model and the firm: reply delivery, records access, model egress, scheduling, and escalation.</p>
+        </div>
+      </div>
+    </section>
 
-  <div class="scenario">
-    <span class="label">Scenario 1 — after-hours UPL</span>
-    <p><strong>Without ThumbGate:</strong> Saturday 11 PM. An estate-planning prospect uses the firm's website AI assistant to ask "if I name my brother as executor but he lives in another state, does that cause problems?" The assistant, trained on legal content, replies with a 4-paragraph explanation of out-of-state-executor bonds and tax implications. That's legal advice. The firm's malpractice carrier finds out 8 months later when the prospect (who hired a different firm) sues over an estate dispute and the deposition surfaces the chatbot transcript.</p>
-    <span class="resolve">With ThumbGate</span>
-    <p>The UPL gate matches the response shape (jurisdictional analysis + recommendation) against the promoted rule for "advice-shaped output from non-attorney source." The assistant's response is intercepted before delivery and replaced with: <em>"That's a legal question that needs a licensed attorney in your state. I can book you a 30-min consult with one of our estate-planning attorneys — would Monday at 10 AM work?"</em> The intake gets scheduled, the firm captures the lead, no UPL ever occurs, and the audit log shows the firm prevented the failure mode.</p>
-  </div>
+    <section>
+      <h2>Yes, ThumbGate can be preloaded before day one.</h2>
+      <p class="section-lead">If the buyer asks whether the system can start with rules, guardrails, and ground truth instead of waiting to learn from mistakes, the answer is yes. The pilot should launch with a firm-approved baseline and then improve from observed events.</p>
+      <div class="grid">
+        <div class="card">
+          <span class="tag red">Hard blocks</span>
+          <h3>Things the agent cannot do</h3>
+          <p>Advice-shaped output from intake, external LLM calls with privileged markers, intake continuation before conflict precheck, unsafe engagement-language, and non-approved jurisdictional claims.</p>
+        </div>
+        <div class="card">
+          <span class="tag amber">Review queues</span>
+          <h3>Things requiring human approval</h3>
+          <p>Borderline legal-information responses, conflict ambiguity, sensitive practice areas, urgent deadlines, regulated client categories, and any response that could create reliance.</p>
+        </div>
+        <div class="card">
+          <span class="tag green">Allowed rails</span>
+          <h3>Things the agent can do safely</h3>
+          <p>Collect contact information, route to the right team, ask neutral intake questions, explain process, show firm-approved disclaimers, and schedule attorney review.</p>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Preload sources for a Greenberg-style pilot</h3>
+        <p>Firm AI policy, intake scripts, approved disclaimers, office and practice-area routing rules, adverse-party sample list, approved vendor/model endpoints, escalation contacts, retention requirements, and the firm's preferred language for "information, not advice."</p>
+        <p class="caption">The rule pack is versioned. Every pilot change can be traced to a source: firm policy, attorney approval, test result, or observed incident.</p>
+      </div>
+    </section>
 
-  <div class="scenario">
-    <span class="label">Scenario 2 — adverse-party conflict miss</span>
-    <p><strong>Without ThumbGate:</strong> A junior associate uses the firm's AI document-fetcher agent to pull "all recent filings involving Acme Corporation" for due diligence on a new M&A engagement. The agent retrieves dozens of documents — including filings from a matter where the firm represents Acme's largest competitor. Privileged work product from the existing matter now sits in the associate's local cache. The firm has just created a screen problem at minimum; at worst, a disqualification motion six weeks later.</p>
-    <span class="resolve">With ThumbGate</span>
-    <p>The conflict gate fires on every document-fetch tool call. Before the fetch executes, it cross-references the requesting matter ID against the firm's adverse-parties list. The Acme-competitor matter is flagged. The fetch is blocked and the agent is redirected to: <em>"Acme Corporation appears as an adverse party in matter [REDACTED]. This fetch is blocked. Contact [matter-attorney email] to discuss whether an ethics screen is needed before proceeding."</em> No cross-contamination, no waiver risk.</p>
-  </div>
+    <section id="demo">
+      <h2>Demo materials for the call.</h2>
+      <p class="section-lead">The walkthrough should be visual and short: one risky prospect question, one blocked response, one safe handoff, one audit event, and one preload rule edit. That is the story buyers can repeat internally.</p>
+      <div class="grid">
+        <div class="card">
+          <span class="tag blue">Screenshot 1</span>
+          <h3>UPL response blocked</h3>
+          <p>The prospect receives a neutral intake handoff instead of a legal conclusion. The visual proof is the pre-delivery block, not a post-hoc moderation report.</p>
+        </div>
+        <div class="card">
+          <span class="tag amber">Screenshot 2</span>
+          <h3>Conflict precheck required</h3>
+          <p>The agent cannot collect sensitive facts until the matter clears a configured conflict precondition.</p>
+        </div>
+        <div class="card">
+          <span class="tag green">Video clip</span>
+          <h3>Rule preload to audit trail</h3>
+          <p>A 60-second clip should show one firm-approved rule being loaded, then firing, then appearing in the audit log.</p>
+        </div>
+      </div>
+    </section>
 
-  <div class="scenario">
-    <span class="label">Scenario 3 — egress privilege breach</span>
-    <p><strong>Without ThumbGate:</strong> A partner pastes a 200-page deposition transcript into the firm's "AI Brief Assistant" and asks for a summary. The Brief Assistant, under the hood, calls an external LLM API for the long-context summarization step because the in-house model's context window is too short. Privileged deposition content just left the firm's network to a vendor whose terms of service include "we may use submitted content to improve our models." Privilege waiver argument waiting to happen.</p>
-    <span class="resolve">With ThumbGate</span>
-    <p>The egress gate inspects every outbound API call. The deposition's metadata header includes the firm's "Attorney Work Product" marker. The call to the external LLM is blocked. The agent is redirected to a privilege-safe alternative: in-tenant summarization via the firm's Azure OpenAI deployment (which carries the firm's BAA) or chunked summarization that stays inside the model's context window. The transcript never leaves the firm's boundary; the audit log records the block.</p>
-  </div>
+    <section>
+      <h2>Three failure modes the pilot controls.</h2>
+      <div class="grid">
+        <div class="card">
+          <span class="tag red">UPL</span>
+          <h3>Unauthorized practice of law</h3>
+          <p>The intake bot starts predicting outcomes, recommending strategy, or making jurisdiction-specific conclusions. ThumbGate blocks the response before delivery and redirects to attorney review.</p>
+        </div>
+        <div class="card">
+          <span class="tag amber">Conflicts</span>
+          <h3>Conflict preconditions</h3>
+          <p>The agent tries to continue intake before checking a party or matter against the firm's configured adverse-party source. ThumbGate requires clearance first.</p>
+        </div>
+        <div class="card">
+          <span class="tag blue">Privilege</span>
+          <h3>Confidentiality and egress</h3>
+          <p>The agent attempts to send privileged or confidential content to a non-approved external endpoint. ThumbGate blocks or reroutes the call to the approved in-tenant path.</p>
+        </div>
+      </div>
+    </section>
 
-  <h2>Compliance matrix — what ThumbGate maps to</h2>
-  <table class="compliance">
-    <thead>
-      <tr><th>Authority</th><th>Requirement</th><th>ThumbGate's mechanism</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>ABA Model Rule 1.1 + cmt. 8</td><td>Competence in the benefits and risks of relevant technology</td><td>Audit trail of every agent action gives partners evidence of supervision-grade understanding</td></tr>
-      <tr><td>ABA Model Rule 1.6</td><td>Protect confidential information</td><td>Egress gate blocks outbound calls carrying client-confidential or privileged content to non-approved processors</td></tr>
-      <tr><td>ABA Model Rule 5.3</td><td>Supervise non-lawyer assistance, including AI tools</td><td>Per-call evidence + per-rule provenance is the supervision artifact</td></tr>
-      <tr><td>ABA Model Rule 5.5</td><td>No unauthorized practice of law</td><td>UPL gate intercepts advice-shaped output from non-attorney agents pre-delivery</td></tr>
-      <tr><td>ABA Formal Op. 512 (Jul 2024)</td><td>Verify AI output, protect confidentiality, consider client disclosure</td><td>Audit trail covers the verification + disclosure questions in one artifact</td></tr>
-      <tr><td>Rules 1.7 / 1.9 / 1.10</td><td>Conflict of interest screening</td><td>Conflict gate requires positive clearance against adverse-parties list before agent can accept intake content</td></tr>
-    </tbody>
-  </table>
+    <section>
+      <h2>What the security and ethics committee gets.</h2>
+      <table class="matrix">
+        <thead>
+          <tr><th>Concern</th><th>What ThumbGate provides</th><th>Evidence artifact</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>ABA Formal Op. 512</td><td>Competence, confidentiality, supervision, and verification mapped to concrete controls.</td><td>Rule map + per-action audit log.</td></tr>
+          <tr><td>Model / vendor lock-in</td><td>Vendor-neutral gate layer over Claude, GPT, Gemini, Azure OpenAI, Bedrock, local models, and internal tools.</td><td>Endpoint allowlist and routing config.</td></tr>
+          <tr><td>Client data exposure</td><td>Runtime can run inside the firm's tenant; hosted dashboard can be limited to counters and rule metadata.</td><td>Data-flow diagram and redacted event export.</td></tr>
+          <tr><td>False positives</td><td>Controls split into hard block, human review, warning, and allow modes instead of one all-or-nothing policy.</td><td>Override and review history.</td></tr>
+          <tr><td>Ongoing improvement</td><td>Human feedback and clustered near-misses promote into candidate rules after evaluation.</td><td>Rule provenance and promotion history.</td></tr>
+        </tbody>
+      </table>
+    </section>
 
-  <h2>Why this is the Chief Pricing & Innovation Officer's problem (not just the GC's)</h2>
-  <p>Every alternative-fee arrangement carries an implicit risk reserve against malpractice tail events. A single sanction, disqualification motion, or bar complaint compresses AFA margins for the entire vintage of matters affected. The events ThumbGate prevents are precisely the events that trigger reserves. Framed in pricing terms, the runtime gate is a <strong>reserve-cost reduction control</strong>: prevented sanctions are dollars not held against alternative-fee matter margins. The audit trail is the artifact the firm's malpractice carrier reads when arguing for a premium reduction at the next renewal.</p>
-  <p>Standardization gets easier the same way. Each new client mandate ("you must use Tool X for our matters, you may not use Tool Y") becomes a policy update at the gate, not a per-tool re-vetting cycle. The vetting work that takes calendar weeks today becomes a one-line rule in the gate config — applied across every existing agent without re-implementation.</p>
+    <section>
+      <h2>30-day pilot shape.</h2>
+      <div class="two grid">
+        <div class="card">
+          <h3>Scope</h3>
+          <p>One intake channel, one practice-area workflow, one adverse-party fixture, one approved-model routing policy, and one audit export format.</p>
+          <p>No firm-wide rollout, no per-attorney metering, no claim that the software replaces professional judgment.</p>
+        </div>
+        <div class="card">
+          <h3>Deliverables</h3>
+          <p>Preloaded rule pack, demo agent, screenshot set, 60-second video clip, security data-flow note, pilot metrics, and a go/no-go rollout recommendation.</p>
+          <p>Success is measured by prevented unsafe actions, reduced manual triage, and whether the committee trusts the evidence trail.</p>
+        </div>
+      </div>
+      <div class="quote">The buyer-safe promise: ThumbGate does not make legal judgment automatic. It makes unsafe AI autonomy harder to ship unnoticed.</div>
+    </section>
 
-  <h2>The deployment story (security committee's first objection answered first)</h2>
-  <ul>
-    <li><strong>Runs inside your boundary.</strong> ThumbGate is a Node.js process that runs as a sidecar in your Azure / AWS / on-prem environment. No client data, no privileged content, no matter metadata traverses our infrastructure.</li>
-    <li><strong>Microsoft 365 / Azure OpenAI compatible.</strong> If your firm is on the Microsoft stack, ThumbGate gates calls to your Azure OpenAI endpoint just as cleanly as it gates Anthropic, OpenAI public API, or any other LLM.</li>
-    <li><strong>BAA / DPA path.</strong> The optional hosted dashboard (analytics + rule library) carries a BAA. The runtime gate layer carries no BAA need because it never receives PHI / PII / privileged content — only counters and metadata.</li>
-    <li><strong>SOC 2 Type II in progress.</strong> Audit underway; final report Q3 2026. Pilot engagements can proceed under SOC 2 Type I + a Vendor Security Questionnaire response on file.</li>
-    <li><strong>No model lock-in.</strong> ThumbGate is vendor-neutral on the LLM. It works equally over Claude (Anthropic + AWS Bedrock), GPT-4 (OpenAI + Azure), Gemini, Llama-on-Mosaic, or any HTTP-callable model.</li>
-  </ul>
+    <section>
+      <div class="callout">
+        <h2>Suggested first-call agenda.</h2>
+        <p>Use the meeting to get agreement on a narrow, testable pilot instead of trying to sell a broad platform in the first call.</p>
+        <ol>
+          <li>Five minutes: confirm their current AI intake and innovation priorities.</li>
+          <li>Eight minutes: show the UPL / conflict / privilege storyboard.</li>
+          <li>Six minutes: show how rules and ground truth are preloaded before launch.</li>
+          <li>Five minutes: review deployment boundary and audit evidence.</li>
+          <li>Six minutes: agree on a 30-day pilot workflow and success criteria.</li>
+        </ol>
+        <p><a class="cta" href="mailto:iganapolsky@gmail.com?subject=ThumbGate%20legal%20AI%20pilot%20walkthrough&amp;body=Hi%20Igor%2C%0A%0AWe%27d%20like%20to%20schedule%20the%20pilot%20walkthrough.%20Please%20send%20a%20calendar%20invite%20covering%20the%20AI%20intake%20scenario%2C%20preloaded%20guardrails%2C%20conflict%20precheck%2C%20and%20audit%20trail.%0A%0ABest%2C">Request the pilot walkthrough</a></p>
+      </div>
+    </section>
 
-  <h2>Pilot shape</h2>
-  <p>The recommended first engagement is a 30-day pilot focused on a single intake-channel and a single practice-area-specific conflict-list. Two of your attorneys, two of your IT/innovation staff, and one ThumbGate engineer running biweekly sync calls. Pilot deliverable: a documented set of promoted gate rules specific to your firm's risk profile, the audit-trail format reviewed by your malpractice carrier or OPR liaison, and a written go/no-go recommendation on firm-wide rollout. Investment for the pilot is positioned as a Workflow Hardening Sprint — fixed-scope, fixed-price, no per-attorney metering during evaluation.</p>
+    <section>
+      <h2>Related ThumbGate materials.</h2>
+      <div class="grid">
+        <div class="card"><h3><a href="/agent-manager">Agent Manager</a></h3><p>The operating role that owns AI agent reliability, approvals, metrics, and evidence.</p></div>
+        <div class="card"><h3><a href="/agents-cost-savings">FinOps for Agents</a></h3><p>Cost and risk visibility for teams running many agents across client matters.</p></div>
+        <div class="card"><h3><a href="/codex-enterprise">Codex Enterprise</a></h3><p>The same pre-action control pattern applied to enterprise coding agents.</p></div>
+      </div>
+    </section>
+  </main>
 
-  <div class="quote">"The job of legal-AI governance isn't 'tell the model to be more careful.' It's the tool-call boundary, with an audit trail that survives the deposition."</div>
-
-  <div class="card">
-    <p><strong>Next step: a 25-min walkthrough on a hypothetical intake-and-conflict scenario specific to your firm.</strong></p>
-    <p>
-      <a href="mailto:iganapolsky@gmail.com?subject=ThumbGate%20AI%20Malpractice%20Prevention%20-%20demo%20request&amp;body=Hi%20Igor%2C%0A%0AI%27m%20at%20%5Bfirm%5D%20and%20saw%20your%20AI%20malpractice%20prevention%20page.%20%0A%0AWe%27re%20evaluating%20how%20to%20govern%20our%20agentic%20legal-AI%20deployment%20and%20I%27d%20like%20to%20see%20a%20walkthrough.%20%0A%0AMy%20practice%20area%20is%3A%20%5B%5D%0AThe%20intake%20channel%20we%27re%20most%20worried%20about%3A%20%5B%5D%0A%0ABest%2C" class="cta">Book a 25-min walkthrough</a>
-      <a href="/agent-manager" class="secondary">Or read the Agent Manager role framing →</a>
-    </p>
-  </div>
-
-  <h2>Related reading</h2>
-  <ul>
-    <li><a href="/agents-cost-savings">FinOps for AI agents</a> — the cost-control composition for firms running multiple agents across matters.</li>
-    <li><a href="/federal">Federal / regulated workloads</a> — the same compliance bones (deployable inside your tenant, audit trail, SOC 2 path) that work for federal also satisfy law-firm professional-responsibility committees.</li>
-    <li><a href="/agent-manager">ThumbGate for the Agent Manager</a> — the role inside the firm that owns "what are our agents costing us, and what did we stop them from doing?"</li>
-  </ul>
-
-  <div class="footer-links">
-    Built for law firms whose Innovation function has been told to "make AI work in intake and document review" but hasn't been given the safety net that lets their partners sign off without losing sleep. ABA Formal Op. 512 is the bar; ThumbGate is the floor.
-  </div>
+  <footer class="footer">
+    <p>ThumbGate is a software control layer, not legal advice. The page is intended for pilot scoping with law-firm innovation, technology, risk, and pricing teams. Final policy choices should be reviewed by the firm's attorneys and security team.</p>
+  </footer>
 </div>
 </body>
 </html>
