@@ -4,11 +4,16 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const landingPagePath = path.join(__dirname, '..', 'public', 'index.html');
+const proPagePath = path.join(__dirname, '..', 'public', 'pro.html');
 const codexPluginPagePath = path.join(__dirname, '..', 'public', 'codex-plugin.html');
 const buyerIntentScriptPath = path.join(__dirname, '..', 'public', 'js', 'buyer-intent.js');
 
 function readLandingPage() {
   return fs.readFileSync(landingPagePath, 'utf8');
+}
+
+function readProPage() {
+  return fs.readFileSync(proPagePath, 'utf8');
 }
 
 function readBuyerIntentScript() {
@@ -225,6 +230,35 @@ test('public landing page positions ThumbGate as agent governance for AI coding 
   assert.match(landingPage, /OpenCode/);
   assert.doesNotMatch(landingPage, /mailto:/i);
   assert.doesNotMatch(landingPage, /official Anthropic partner/i);
+});
+
+test('public landing page differentiates deterministic ThumbGate enforcement from native black-box thumbs', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /Native thumbs are a black box\. ThumbGate is the inspectable control layer\./);
+  assert.match(landingPage, /Codex, Claude Code, ChatGPT, and other agent surfaces can collect preference signals/);
+  assert.match(landingPage, /typed feedback becomes a local lesson/);
+  assert.match(landingPage, /every block names the matched rule, source lesson, tool call, and audit event/);
+  assert.match(landingPage, /Lessons live in your ThumbGate store/);
+  assert.match(landingPage, /exported as JSONL or DPO pairs/);
+  assert.match(landingPage, /The final decision is not another model opinion/);
+  assert.match(landingPage, /checks tool name, arguments, working directory, command shape, confidence, and required evidence/);
+  assert.match(landingPage, /Why this matters now/);
+  assert.match(landingPage, /Agent security is now mainstream risk/);
+  assert.match(landingPage, /MCP adoption is accelerating/);
+  assert.match(landingPage, /Repeated failures waste cash and trust/);
+});
+
+test('Pro page sells inspectable prevention rather than black-box preference memory', () => {
+  const proPage = readProPage();
+
+  assert.match(proPage, /Black-box thumbs do not prove prevention\. Pro gives the operator an audit loop\./);
+  assert.match(proPage, /Native rating buttons can tell a vendor that an answer felt wrong/);
+  assert.match(proPage, /the correction, the lesson, the rule, the blocked tool call, and the export path/);
+  assert.match(proPage, /Inspectable memory/);
+  assert.match(proPage, /Deterministic checks/);
+  assert.match(proPage, /Exportable proof/);
+  assert.match(proPage, /JSONL, DPO export, review packets, and team rollout conversations/);
 });
 
 test('public landing page exposes browser-bridge safety buyer guides', () => {

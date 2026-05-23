@@ -817,6 +817,37 @@ __GA_BOOTSTRAP__
   </div>
 </section>
 
+<section class="compatibility" id="deterministic-prevention">
+  <div class="container">
+    <div class="section-label">Deterministic Prevention</div>
+    <h2 class="section-title">Native thumbs are a black box. ThumbGate is the inspectable control layer.</h2>
+    <p style="text-align:center;font-size:16px;color:var(--text-muted);max-width:900px;margin:0 auto 28px;line-height:1.7;">Codex, Claude Code, ChatGPT, and other agent surfaces can collect preference signals, but you usually cannot see exactly what changed, which rule will fire, or why a future tool call is allowed. ThumbGate keeps the prevention layer outside the model: typed feedback becomes a local lesson, repeated mistakes become explicit rules, and every block names the matched rule, source lesson, tool call, and audit event.</p>
+    <div class="agent-grid">
+      <div class="agent-card">
+        <h3>Black-box memory</h3>
+        <p>Native thumbs and vendor memories may improve future behavior, but they do not give teams a deterministic allow/block contract at the moment an agent touches files, terminals, APIs, or CI.</p>
+      </div>
+      <div class="agent-card">
+        <h3>Inspectable ThumbGate memory</h3>
+        <p>Lessons live in your ThumbGate store, can be searched, exported as JSONL or DPO pairs, and traced back to the exact correction that created the rule.</p>
+      </div>
+      <div class="agent-card">
+        <h3>Rules before execution</h3>
+        <p>The final decision is not another model opinion. ThumbGate checks tool name, arguments, working directory, command shape, confidence, and required evidence before the action runs.</p>
+      </div>
+    </div>
+    <div style="margin:26px auto 0;max-width:960px;border:1px solid rgba(34,211,238,0.18);border-radius:8px;background:rgba(34,211,238,0.05);padding:18px 20px;">
+      <h3 style="margin:0 0 10px;color:var(--text);font-size:18px;">Why this matters now</h3>
+      <ul style="margin:0;padding-left:20px;color:var(--text-muted);line-height:1.7;">
+        <li><strong>Agent security is now mainstream risk.</strong> Coding agents run shell commands, write files, query databases, and chain actions with developer permissions, so unattended autonomy needs a local policy boundary.</li>
+        <li><strong>MCP adoption is accelerating.</strong> More tools are becoming agent-callable through shared protocols, which means one cross-agent governance layer beats one-off prompt rules per app.</li>
+        <li><strong>Repeated failures waste cash and trust.</strong> Every repeat burns tokens, review time, and release confidence. ThumbGate turns the first correction into a reusable prevention check.</li>
+      </ul>
+      <p style="margin:12px 0 0;font-size:13px;color:var(--text-dim);">Sources to verify the market timing: <a href="https://www.docker.com/blog/ai-coding-agent-horror-stories-security-risks/" target="_blank" rel="noopener" style="color:var(--cyan);">Docker on AI coding agent security risks</a>, <a href="https://www.techradar.com/pro/how-ai-agents-are-wrecking-havoc-in-legacy-security-setups-and-enterprises-are-catching-up" target="_blank" rel="noopener" style="color:var(--cyan);">TechRadar on enterprise agent security pressure</a>, and <a href="https://www.techradar.com/pro/zendesk-becomes-the-latest-to-adopt-mcp-to-futureproof-customers-in-the-ai-first-era" target="_blank" rel="noopener" style="color:var(--cyan);">current MCP adoption coverage</a>.</p>
+    </div>
+  </div>
+</section>
+
 <section class="marketing-deep-dive" style="padding:28px 0 10px;">
   <div class="container" style="max-width:1240px;">
     <div class="section-label">Status bar proof</div>
