@@ -243,7 +243,7 @@ test('public landing page differentiates deterministic ThumbGate enforcement fro
   assert.match(landingPage, /exported as JSONL or DPO pairs/);
   assert.match(landingPage, /The final decision is not another model opinion/);
   assert.match(landingPage, /checks tool name, arguments, working directory, command shape, confidence, and required evidence/);
-  assert.match(landingPage, /Why this matters in May 2026/);
+  assert.match(landingPage, /Why this matters now/);
   assert.match(landingPage, /Agent security is now mainstream risk/);
   assert.match(landingPage, /MCP adoption is accelerating/);
   assert.match(landingPage, /Repeated failures waste cash and trust/);
