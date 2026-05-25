@@ -300,6 +300,11 @@ test('GET /ai-malpractice-prevention serves the legal-vertical landing HTML', as
     assert.match(body, /privilege/i);
     assert.match(body, /conflict/i);
     assert.match(body, /ABA Formal Op/i);
+    assert.match(body, /Pre-execution controls for legal AI agents/i);
+    assert.match(body, /Book a 25-minute pilot walkthrough/i);
+    assert.match(body, /preloaded ground truth/i);
+    assert.match(body, /Local-first enforcement option/i);
+    assert.match(body, /No guaranteed-malpractice-prevention claim/i);
   }
 });
 

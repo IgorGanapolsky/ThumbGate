@@ -939,6 +939,17 @@ function capture() {
       }
     }
     console.log('');
+    try {
+      const { buildCaptureReceipt } = require(path.join(PKG_ROOT, 'scripts', 'commercial-offer'));
+      console.log(buildCaptureReceipt({
+        signal: normalized,
+        feedbackId: ev.id,
+        memoryId: mem.id,
+        actionType: ev.actionType,
+      }));
+    } catch (_) {
+      // Receipt is a conversion aid, not part of feedback persistence.
+    }
     proNudge();
   } else {
     if (args.json) {
@@ -1021,6 +1032,13 @@ function stats() {
     console.log('  Solo side lane: npx thumbgate pro');
   } else {
     console.log('\n✅ System is currently high-reliability. No immediate revenue loss detected.');
+  }
+  try {
+    const { buildStatsReceipt } = require(path.join(PKG_ROOT, 'scripts', 'commercial-offer'));
+    const receipt = buildStatsReceipt(payload);
+    if (receipt) console.log(receipt);
+  } catch (_) {
+    // Keep stats resilient if the receipt helper is unavailable in old installs.
   }
   proNudge();
 }

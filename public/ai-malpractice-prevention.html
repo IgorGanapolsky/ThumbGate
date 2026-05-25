@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Intake Risk Controls for Law Firms - ThumbGate</title>
+<title>Pre-Execution Controls for Legal AI Agents - ThumbGate</title>
 <script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
-<meta name="description" content="Pre-action controls for law-firm AI intake agents: reduce unauthorized-practice, conflict-check, confidentiality, and audit-trail risk before an agent sends a response or calls a tool.">
-<meta property="og:title" content="AI Intake Risk Controls for Law Firms">
-<meta property="og:description" content="ThumbGate adds pre-action guardrails, firm-approved ground truth, and audit trails to legal AI intake workflows. Built for law-firm innovation, risk, and pricing teams.">
+<meta name="description" content="Pre-execution controls for law-firm AI agents: block unauthorized advice, conflict-check failures, privilege leaks, and unapproved model calls before an agent acts.">
+<meta property="og:title" content="Pre-Execution Controls for Legal AI Agents">
+<meta property="og:description" content="ThumbGate preloads firm-approved ground truth, checks legal AI actions before execution, and records audit evidence for law-firm innovation, risk, and pricing teams.">
 <meta property="og:type" content="article">
 <meta property="og:image" content="https://thumbgate-production.up.railway.app/og.png">
 <link rel="canonical" href="https://thumbgate-production.up.railway.app/ai-malpractice-prevention">
@@ -15,10 +15,10 @@
 {
   "@context": "https://schema.org",
   "@type": "TechArticle",
-  "headline": "AI Intake Risk Controls for Law Firms",
-  "description": "ThumbGate is a pre-action control layer for law-firm AI intake workflows. It can preload firm-approved ground truth, evaluate proposed agent actions before execution, and produce audit evidence for human review.",
+  "headline": "Pre-Execution Controls for Legal AI Agents",
+  "description": "ThumbGate is a pre-execution control layer for law-firm AI intake workflows. It can preload firm-approved ground truth, evaluate proposed agent actions before execution, and produce audit evidence for human review.",
   "datePublished": "2026-05-21",
-  "dateModified": "2026-05-22",
+  "dateModified": "2026-05-25",
   "author": { "@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" },
   "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate-production.up.railway.app" },
   "about": [
@@ -132,6 +132,22 @@
   }
   .proof strong { display: block; color: var(--text); font-size: 0.94rem; }
   .proof span { color: var(--muted); font-size: 0.85rem; }
+  .trust-strip {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.7rem;
+    margin: 1.2rem 0 0;
+    max-width: 920px;
+  }
+  .trust-item {
+    border: 1px solid rgba(98, 164, 255, 0.24);
+    border-radius: 8px;
+    background: rgba(98, 164, 255, 0.07);
+    padding: 0.72rem;
+    color: var(--soft);
+    font-size: 0.82rem;
+    font-weight: 750;
+  }
   .control-flow {
     border: 1px solid #343a46;
     background: #101318;
@@ -234,7 +250,7 @@
     border-top: 1px solid var(--line);
   }
   @media (max-width: 880px) {
-    .hero, .grid, .two, .proof-row { grid-template-columns: 1fr; }
+    .hero, .grid, .two, .proof-row, .trust-strip { grid-template-columns: 1fr; }
     .hero { min-height: auto; padding-top: 2.4rem; }
     nav { position: static; }
   }
@@ -280,16 +296,22 @@
   <header class="hero">
     <div>
       <span class="eyebrow">Pre-read for law-firm AI governance pilots</span>
-      <h1>Let AI intake move faster without letting it give legal advice, skip conflicts, or leak privileged data.</h1>
-      <p class="lead">ThumbGate adds a pre-action control layer around legal AI agents. It loads firm-approved rules before launch, checks proposed agent actions before execution, and leaves an audit trail a risk committee can review.</p>
+      <h1>Pre-execution controls for legal AI agents.</h1>
+      <p class="lead">Block unauthorized advice, conflict-check failures, privilege leaks, and unapproved model calls before an intake agent replies, fetches records, schedules a meeting, or sends data outside the firm's approved boundary.</p>
       <div class="hero-actions">
-        <a class="cta" href="mailto:iganapolsky@gmail.com?subject=ThumbGate%20legal%20AI%20pilot%20walkthrough&amp;body=Hi%20Igor%2C%0A%0AWe%27d%20like%20to%20review%20the%20ThumbGate%20legal%20AI%20intake%20pilot.%20Please%20send%20the%20meeting%20invite%20and%20demo%20materials.%0A%0ABest%2C">Request the pilot walkthrough</a>
+        <a class="cta" href="mailto:iganapolsky@gmail.com?subject=ThumbGate%2025-minute%20legal%20AI%20pilot%20walkthrough&amp;body=Hi%20Igor%2C%0A%0AWe%27d%20like%20to%20review%20the%2025-minute%20ThumbGate%20legal%20AI%20intake%20pilot.%20Please%20send%20the%20meeting%20invite%20and%20demo%20materials.%0A%0ABest%2C">Book a 25-minute pilot walkthrough</a>
         <a class="ghost" href="#demo">View the 25-minute demo plan</a>
       </div>
       <div class="proof-row" aria-label="Key proof points">
         <div class="proof"><strong>Preloaded controls</strong><span>Firm policy, approved disclaimers, adverse-party lists, routing rules, and model endpoint allowlists.</span></div>
         <div class="proof"><strong>Pre-action checks</strong><span>Controls run before the agent replies, fetches records, schedules intake, or calls an external model.</span></div>
         <div class="proof"><strong>Reviewable evidence</strong><span>Every block, warning, override, and handoff becomes a structured audit event.</span></div>
+      </div>
+      <div class="trust-strip" aria-label="Trust and deployment assumptions">
+        <div class="trust-item">Local-first enforcement option</div>
+        <div class="trust-item">Works around Azure OpenAI, Claude, Gemini, and internal tools</div>
+        <div class="trust-item">ABA Formal Opinion 512 mapped to reviewable controls</div>
+        <div class="trust-item">No guaranteed-malpractice-prevention claim</div>
       </div>
     </div>
 
@@ -351,6 +373,28 @@
     </section>
 
     <section>
+      <h2>Yes, the pilot can start with preloaded ground truth.</h2>
+      <p class="section-lead">The first pilot should not ask the model to discover the firm's risk posture. ThumbGate should load the approved rule pack before the first intake simulation, then prove that the agent is physically stopped when a proposed action violates that pack.</p>
+      <div class="grid">
+        <div class="card">
+          <span class="tag green">Inputs</span>
+          <h3>Firm-approved source material</h3>
+          <p>Disclaimers, intake scripts, escalation rules, practice-area boundaries, jurisdiction notes, model endpoint policy, retention rules, and reviewer roles.</p>
+        </div>
+        <div class="card">
+          <span class="tag amber">Fixtures</span>
+          <h3>Adverse-party and matter examples</h3>
+          <p>A synthetic adverse-party list and red-team intake transcripts let the demo show conflict stops without exposing privileged or client data.</p>
+        </div>
+        <div class="card">
+          <span class="tag blue">Outputs</span>
+          <h3>Deterministic control evidence</h3>
+          <p>Each demo decision shows the matched rule, proposed action, allowed or blocked outcome, reviewer path, timestamp, and exportable audit record.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
       <h2>Three failure modes the pilot should control.</h2>
       <div class="grid">
         <div class="card">
@@ -394,6 +438,22 @@
           </ul>
         </div>
       </div>
+      <div class="two grid" style="margin-top:1rem;">
+        <div class="card">
+          <h3>Suggested agenda</h3>
+          <ul>
+            <li>3 minutes: confirm the target workflow and risk owners.</li>
+            <li>7 minutes: show blocked unauthorized-advice and conflict examples.</li>
+            <li>7 minutes: show preloaded ground truth and audit evidence.</li>
+            <li>5 minutes: discuss deployment boundary, data handling, and reviewer roles.</li>
+            <li>3 minutes: agree on pilot inputs and next step.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Recommended ask</h3>
+          <p>Ask for one practice-area workflow, one approved disclaimer, one synthetic adverse-party fixture, one security contact, and permission to build a no-client-data pilot pack.</p>
+        </div>
+      </div>
     </section>
 
     <section>
@@ -416,7 +476,7 @@
         <h2>Recommended 30-day pilot.</h2>
         <p>Start narrow: one intake channel, one practice-area workflow, one adverse-party fixture, one approved-model routing policy, and one audit export format.</p>
         <p>Deliverables: preloaded rule pack, demo agent, screenshot set, 60-second walkthrough clip, security data-flow note, pilot metrics, and a go/no-go rollout recommendation.</p>
-        <p><a class="cta" href="mailto:iganapolsky@gmail.com?subject=ThumbGate%20legal%20AI%20pilot%20walkthrough&amp;body=Hi%20Igor%2C%0A%0AWe%27d%20like%20to%20review%20the%20ThumbGate%20legal%20AI%20intake%20pilot.%20Please%20send%20the%20meeting%20invite%20and%20demo%20materials.%0A%0ABest%2C">Request the pilot walkthrough</a></p>
+        <p><a class="cta" href="mailto:iganapolsky@gmail.com?subject=ThumbGate%2025-minute%20legal%20AI%20pilot%20walkthrough&amp;body=Hi%20Igor%2C%0A%0AWe%27d%20like%20to%20review%20the%2025-minute%20ThumbGate%20legal%20AI%20intake%20pilot.%20Please%20send%20the%20meeting%20invite%20and%20demo%20materials.%0A%0ABest%2C">Book a 25-minute pilot walkthrough</a></p>
       </div>
     </section>
   </main>
