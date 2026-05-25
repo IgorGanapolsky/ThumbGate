@@ -111,7 +111,7 @@ test('dashboard defaults to the Total Feedback card highlight on first render', 
   assert.match(dashboard, /function setSelectedCard\(action\)/);
   assert.match(dashboard, /card\.classList\.toggle\('selected', card\.dataset\.cardAction === action\)/);
   assert.match(dashboard, /renderStats\(data\);\s+setSelectedCard\('all'\);\s+await loadDashboardData\(\);/);
-  assert.match(dashboard, /document\.getElementById\('statGates'\)\.textContent = '21';\s+setSelectedCard\('all'\);/);
+  assert.match(dashboard, /document\.getElementById\('statGates'\)\.textContent = '14';\s+setSelectedCard\('all'\);/);
 });
 
 test('dashboard has noindex and meta description for SEO safety', () => {

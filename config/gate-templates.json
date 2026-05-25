@@ -453,9 +453,9 @@
       "defaultAction": "block",
       "severity": "critical",
       "pattern": "(outcome prediction|jurisdictional recommendation|you (should|could|might) (file|sue|claim)|strong case|likely (prevail|win|succeed))",
-      "problem": "Stops intake agents from delivering advice-shaped responses that constitute unauthorized practice of law under ABA Model Rule 5.5.",
-      "roi": "One blocked UPL response prevents a malpractice exposure that no amount of disclaimers can undo.",
-      "rollout": "Enable on every AI intake channel before the first prospect interaction."
+      "problem": "Stops advice-shaped intake replies under ABA Rule 5.5.",
+      "roi": "Prevents malpractice exposure before delivery.",
+      "rollout": "Enable on every AI intake channel."
     },
     {
       "id": "require-conflict-check-before-intake",
@@ -465,9 +465,9 @@
       "defaultAction": "block",
       "severity": "critical",
       "pattern": "(collect_case_facts|schedule_consultation|intake_continue).*(missing|no|unchecked).*(conflict|adverse[_-]party|clearance)",
-      "problem": "Requires adverse-party clearance before the agent collects sensitive case facts, preventing conflicts of interest under ABA Model Rules 1.7, 1.9, and 1.10.",
-      "roi": "Catches conflicts before privileged information crosses ethical walls, avoiding disqualification motions and sanctions.",
-      "rollout": "Pair with the firm's conflicts database or a synthetic adverse-party fixture during pilot."
+      "problem": "Requires adverse-party clearance before sensitive facts.",
+      "roi": "Catches conflicts before privileged facts cross ethical walls.",
+      "rollout": "Use the firm's conflicts API or a synthetic pilot fixture."
     },
     {
       "id": "block-privileged-content-egress",
@@ -477,9 +477,9 @@
       "defaultAction": "block",
       "severity": "critical",
       "pattern": "(send_email|api_call|external_request|schedule|crm_update).*(privileged|attorney[_-]client|work[_-]product|matter[_-]id|confidential)",
-      "problem": "Blocks or reroutes outbound agent actions that contain privileged markers, matter identifiers, or attorney-client content before they leave the firm's boundary.",
-      "roi": "Prevents privilege waiver from a single agent action that sends protected content to an external system.",
-      "rollout": "Define privilege markers during pilot setup. Start with hard block; move to in-tenant reroute after reviewer workflow is established."
+      "problem": "Blocks outbound actions with privilege markers.",
+      "roi": "Prevents single-action privilege waiver.",
+      "rollout": "Define markers, start with hard block, then add in-tenant reroute."
     },
     {
       "id": "require-approved-disclaimer-before-response",
@@ -489,9 +489,9 @@
       "defaultAction": "block",
       "severity": "high",
       "pattern": "(intake_response|client_reply).*(missing|no).*(disclaimer|disclosure|non[_-]engagement)",
-      "problem": "Ensures every intake agent response includes the firm's approved disclaimer and non-engagement language before delivery.",
-      "roi": "Reduces inadvertent attorney-client relationship formation from informal AI responses.",
-      "rollout": "Load firm-approved disclaimer text during pilot setup. Enforce on all outbound intake responses."
+      "problem": "Requires firm-approved non-engagement language.",
+      "roi": "Reduces inadvertent client-relationship risk.",
+      "rollout": "Load approved disclaimer during pilot."
     },
     {
       "id": "restrict-model-endpoint-to-approved-list",
@@ -501,9 +501,9 @@
       "defaultAction": "block",
       "severity": "high",
       "pattern": "(model_call|llm_request|api_endpoint).*(unapproved|unknown|public|consumer)",
-      "problem": "Prevents intake agents from routing queries to unapproved model endpoints that may lack enterprise data handling agreements.",
-      "roi": "Keeps firm data within approved vendor boundaries and supports ABA Formal Opinion 512 technology competence requirements.",
-      "rollout": "Allowlist approved model endpoints during pilot. Block all others by default."
+      "problem": "Blocks unapproved model endpoints.",
+      "roi": "Keeps data inside approved vendor boundaries.",
+      "rollout": "Allowlist endpoints during pilot."
     },
     {
       "id": "require-attorney-review-before-routing",
@@ -513,9 +513,9 @@
       "defaultAction": "block",
       "severity": "high",
       "pattern": "(route_to_attorney|assign_practice_area|schedule_consultation).*(no|missing).*(review|approval|supervisor)",
-      "problem": "Requires attorney review before the intake agent routes a prospect to a practice area or schedules a consultation.",
-      "roi": "Prevents automated routing errors that waste attorney time or send prospects to the wrong practice group.",
-      "rollout": "Start with all routing decisions requiring review. Relax to warn mode for low-risk practice areas after pilot validation."
+      "problem": "Requires review before routing or scheduling.",
+      "roi": "Prevents bad prospect routing.",
+      "rollout": "Start strict; relax after pilot evidence."
     }
   ]
 }

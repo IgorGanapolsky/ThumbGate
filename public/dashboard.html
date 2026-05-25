@@ -1486,20 +1486,20 @@ function loadDemo() {
   document.getElementById('reviewCheckpointBtn').textContent = 'Connect to save your own review checkpoint';
   // Sample memories — legal AI intake scenarios for law firm pilot demo
   var demoResults = [
-    { signal: 'down', title: 'Intake agent provided outcome prediction to prospect', context: 'Prospect asked about wrongful termination in Florida. Agent responded with "you likely have a strong case" and cited comparative negligence statute. ThumbGate blocked the response before delivery — advice-shaped content from a non-attorney violates ABA Model Rule 5.5.', tags: ['upl-risk', 'aba-rule-5.5', 'auto-blocked', 'critical'], timestamp: '2026-05-25T14:20:00Z' },
-    { signal: 'up', title: 'Conflict pre-check stopped intake before facts collected', context: 'Prospect named an adverse party that matched the firm\'s synthetic conflict list. ThumbGate halted the intake conversation before any privileged case facts were disclosed, preventing an ethical wall breach under ABA Model Rules 1.7 and 1.9.', tags: ['conflict-check', 'aba-rule-1.7', 'aba-rule-1.9', 'prevention'], timestamp: '2026-05-25T11:45:00Z' },
-    { signal: 'down', title: 'Agent attempted to send case summary to external CRM', context: 'Intake agent tried to push a prospect summary containing matter identifiers and privileged consultation notes to an external CRM API. ThumbGate blocked the outbound call — privileged content markers detected in the payload.', tags: ['privilege-egress', 'aba-rule-1.6', 'auto-blocked', 'critical'], timestamp: '2026-05-24T16:30:00Z' },
-    { signal: 'up', title: 'Safe handoff collected neutral facts only', context: 'After ThumbGate blocked an advice-shaped response, the agent correctly pivoted to collecting only neutral routing information: name, contact, general practice area, and preferred callback time. No legal conclusions delivered.', tags: ['safe-handoff', 'compliant-response', 'aba-rule-5.5', 'metric:ROI'], timestamp: '2026-05-24T11:10:00Z' },
-    { signal: 'down', title: 'Agent made jurisdictional recommendation without review', context: 'Prospect asked which court to file in. Agent responded with a specific venue recommendation based on the facts provided. ThumbGate blocked — jurisdictional recommendations require attorney supervision under Rule 5.5.', tags: ['upl-risk', 'jurisdiction', 'aba-rule-5.5', 'auto-blocked'], timestamp: '2026-05-23T15:20:00Z' },
-    { signal: 'up', title: 'Audit export preserved full decision chain', context: 'Exported audit record showing: matched rule (block-unauthorized-practice v2), proposed agent action (reply with outcome prediction), decision (deny), reviewer path (attorney-review-queue), and UTC timestamp. Full reproducibility for compliance review.', tags: ['audit-trail', 'compliance', 'aba-opinion-512', 'metric:ROI'], timestamp: '2026-05-23T09:00:00Z' },
-    { signal: 'down', title: 'Response missing firm-approved disclaimer', context: 'Agent drafted a response to a prospect inquiry without including the firm\'s required non-engagement disclaimer. ThumbGate blocked delivery until approved disclaimer language was prepended.', tags: ['disclaimer-missing', 'non-engagement', 'aba-rule-5.5', 'auto-blocked'], timestamp: '2026-05-22T14:45:00Z' },
-    { signal: 'up', title: 'Model endpoint restricted to approved provider', context: 'Intake agent attempted to route a query to a consumer-grade model endpoint. ThumbGate enforced the approved-model allowlist, rerouting to the firm\'s enterprise Azure OpenAI instance with proper data handling agreements.', tags: ['model-governance', 'data-handling', 'aba-opinion-512', 'prevention'], timestamp: '2026-05-22T10:30:00Z' },
-    { signal: 'down', title: 'Agent disclosed opposing counsel information to prospect', context: 'During intake, agent referenced information about opposing counsel from a related matter. ThumbGate detected cross-matter information leakage and blocked the response to prevent confidentiality breach under Rule 1.6.', tags: ['privilege-egress', 'cross-matter', 'aba-rule-1.6', 'critical'], timestamp: '2026-05-21T16:15:00Z' },
-    { signal: 'up', title: 'Conflict check cleared — intake proceeded safely', context: 'Prospect\'s adverse party was checked against the synthetic conflict fixture. No match found. ThumbGate allowed intake to proceed with full fact collection. Clearance decision logged with timestamp and rule version.', tags: ['conflict-check', 'cleared', 'aba-rule-1.7', 'compliant-response'], timestamp: '2026-05-21T11:00:00Z' },
-    { signal: 'down', title: 'Intake agent attempted to schedule consultation directly', context: 'Agent tried to book a consultation on the firm calendar without attorney review of the intake summary. ThumbGate blocked — routing decisions require supervisor approval before prospect-attorney matching.', tags: ['routing-governance', 'attorney-review', 'auto-blocked'], timestamp: '2026-05-20T13:30:00Z' },
-    { signal: 'up', title: 'Egress rerouted to in-tenant system successfully', context: 'Agent needed to store intake notes. Instead of sending to external cloud storage, ThumbGate rerouted the write to the firm\'s in-tenant document management system. Privileged content never left the firm boundary.', tags: ['privilege-egress', 'in-tenant-reroute', 'aba-rule-1.6', 'metric:ROI'], timestamp: '2026-05-20T09:45:00Z' },
-    { signal: 'up', title: 'DPO export identified systematic UPL pattern', context: 'Exported 34 preference pairs from blocked intake responses. Analysis showed 76% of blocks were advice-shaped outcome predictions triggered by prospects asking "do I have a case?" variations. Led to improved intake script guidance.', tags: ['dpo-export', 'upl-pattern', 'prevention', 'metric:ROI'], timestamp: '2026-05-19T14:00:00Z' },
-    { signal: 'down', title: 'Agent used non-approved model for privilege-sensitive query', context: 'Intake query containing potential attorney-client privileged information was routed to a model endpoint without enterprise data processing agreement. ThumbGate blocked and logged the attempted endpoint for security review.', tags: ['model-governance', 'privilege-risk', 'aba-opinion-512', 'auto-blocked'], timestamp: '2026-05-18T11:20:00Z' }
+    { signal: 'down', title: 'Intake agent provided outcome prediction to prospect', context: 'Prospect asked about wrongful termination in Florida. Agent said "you likely have a strong case." ThumbGate blocked the advice-shaped response before delivery under ABA Rule 5.5.', tags: ['upl-risk', 'aba-rule-5.5', 'auto-blocked', 'critical'], timestamp: '2026-05-25T14:20:00Z' },
+    { signal: 'up', title: 'Conflict pre-check stopped intake before facts collected', context: 'Adverse party matched the synthetic conflict list. ThumbGate halted intake before privileged facts were disclosed, preventing a Rule 1.7/1.9 conflict issue.', tags: ['conflict-check', 'aba-rule-1.7', 'aba-rule-1.9', 'prevention'], timestamp: '2026-05-25T11:45:00Z' },
+    { signal: 'down', title: 'Agent attempted to send case summary to external CRM', context: 'Agent tried to push matter IDs and consultation notes to an external CRM. ThumbGate blocked the outbound call for privileged-content markers.', tags: ['privilege-egress', 'aba-rule-1.6', 'auto-blocked', 'critical'], timestamp: '2026-05-24T16:30:00Z' },
+    { signal: 'up', title: 'Safe handoff collected neutral facts only', context: 'After a UPL block, the agent pivoted to neutral routing facts: name, contact, practice area, and callback time. No legal conclusion was delivered.', tags: ['safe-handoff', 'compliant-response', 'aba-rule-5.5', 'metric:ROI'], timestamp: '2026-05-24T11:10:00Z' },
+    { signal: 'down', title: 'Agent made jurisdictional recommendation without review', context: 'Prospect asked where to file. Agent gave a venue recommendation. ThumbGate blocked it because jurisdiction guidance requires attorney supervision.', tags: ['upl-risk', 'jurisdiction', 'aba-rule-5.5', 'auto-blocked'], timestamp: '2026-05-23T15:20:00Z' },
+    { signal: 'up', title: 'Audit export preserved full decision chain', context: 'Export showed matched rule, proposed reply, deny decision, attorney-review route, and UTC timestamp. Compliance can replay the decision.', tags: ['audit-trail', 'compliance', 'aba-opinion-512', 'metric:ROI'], timestamp: '2026-05-23T09:00:00Z' },
+    { signal: 'down', title: 'Response missing firm-approved disclaimer', context: 'Agent drafted a prospect reply without the required non-engagement disclaimer. ThumbGate blocked delivery until approved text was added.', tags: ['disclaimer-missing', 'non-engagement', 'aba-rule-5.5', 'auto-blocked'], timestamp: '2026-05-22T14:45:00Z' },
+    { signal: 'up', title: 'Model endpoint restricted to approved provider', context: 'Agent tried a consumer model endpoint. ThumbGate enforced the allowlist and rerouted to the firm-approved Azure OpenAI endpoint.', tags: ['model-governance', 'data-handling', 'aba-opinion-512', 'prevention'], timestamp: '2026-05-22T10:30:00Z' },
+    { signal: 'down', title: 'Agent disclosed opposing counsel information to prospect', context: 'Agent referenced opposing-counsel information from another matter. ThumbGate blocked the cross-matter leak under Rule 1.6.', tags: ['privilege-egress', 'cross-matter', 'aba-rule-1.6', 'critical'], timestamp: '2026-05-21T16:15:00Z' },
+    { signal: 'up', title: 'Conflict check cleared — intake proceeded safely', context: 'Adverse party cleared the synthetic fixture. ThumbGate allowed intake and logged timestamp plus rule version.', tags: ['conflict-check', 'cleared', 'aba-rule-1.7', 'compliant-response'], timestamp: '2026-05-21T11:00:00Z' },
+    { signal: 'down', title: 'Intake agent attempted to schedule consultation directly', context: 'Agent tried to book a consultation without attorney review. ThumbGate blocked the routing action pending supervisor approval.', tags: ['routing-governance', 'attorney-review', 'auto-blocked'], timestamp: '2026-05-20T13:30:00Z' },
+    { signal: 'up', title: 'Egress rerouted to in-tenant system successfully', context: 'Agent needed to store intake notes. ThumbGate rerouted the write to the firm tenant, keeping privileged content inside the boundary.', tags: ['privilege-egress', 'in-tenant-reroute', 'aba-rule-1.6', 'metric:ROI'], timestamp: '2026-05-20T09:45:00Z' },
+    { signal: 'up', title: 'DPO export identified systematic UPL pattern', context: 'Exported 34 blocked intake pairs. 76% were outcome predictions after "do I have a case?" prompts, driving revised intake scripts.', tags: ['dpo-export', 'upl-pattern', 'prevention', 'metric:ROI'], timestamp: '2026-05-19T14:00:00Z' },
+    { signal: 'down', title: 'Agent used non-approved model for privilege-sensitive query', context: 'Privileged intake query was routed to an endpoint without enterprise DPA. ThumbGate blocked and logged it for security review.', tags: ['model-governance', 'privilege-risk', 'aba-opinion-512', 'auto-blocked'], timestamp: '2026-05-18T11:20:00Z' }
   ];
   isDemo = true;
   demoData = demoResults;
@@ -1515,12 +1515,12 @@ function loadDemo() {
   document.getElementById('searchResults').innerHTML = upgradeBanner + teaserHtml;
   // Sample gates — legal AI intake enforcement
   var demoGates = [
-    { name: 'block-unauthorized-practice', pattern: 'Block outcome predictions, jurisdictional recommendations, and advice-shaped responses from non-attorney intake agents (ABA Rule 5.5)', action: 'block' },
-    { name: 'require-conflict-clearance', pattern: 'Require adverse-party clearance before the agent collects case facts or schedules consultation (ABA Rules 1.7, 1.9, 1.10)', action: 'block' },
-    { name: 'block-privileged-egress', pattern: 'Block outbound calls containing privileged markers, matter IDs, or attorney-client content from leaving firm boundary (ABA Rule 1.6)', action: 'block' },
-    { name: 'require-approved-disclaimer', pattern: 'Ensure every intake response includes firm-approved non-engagement disclaimer before delivery', action: 'block' },
-    { name: 'restrict-model-endpoint', pattern: 'Only allow queries to model endpoints with enterprise data handling agreements (ABA Opinion 512)', action: 'block' },
-    { name: 'require-attorney-review', pattern: 'Route all case-routing and consultation-scheduling decisions through attorney review queue before execution', action: 'warn' }
+    { name: 'block-unauthorized-practice', pattern: 'Block advice-shaped intake replies from non-attorney agents (ABA Rule 5.5)', action: 'block' },
+    { name: 'require-conflict-clearance', pattern: 'Require adverse-party clearance before facts or scheduling (Rules 1.7/1.9/1.10)', action: 'block' },
+    { name: 'block-privileged-egress', pattern: 'Block outbound calls with matter IDs or attorney-client markers (Rule 1.6)', action: 'block' },
+    { name: 'require-approved-disclaimer', pattern: 'Require firm-approved non-engagement disclaimer before delivery', action: 'block' },
+    { name: 'restrict-model-endpoint', pattern: 'Allow only enterprise-approved model endpoints (ABA Opinion 512)', action: 'block' },
+    { name: 'require-attorney-review', pattern: 'Route case assignment and scheduling through attorney review', action: 'warn' }
   ];
   document.getElementById('gatesList').innerHTML = demoGates.map(function(g) {
     return '<div class="gate-card"><div><div class="gate-name">' + escHtml(g.name) + '</div>' +
@@ -1566,8 +1566,8 @@ function loadDemo() {
       { key: 'direct_outreach', opportunityRevenueCents: 100000 }
     ],
     anomalies: [
-      { type: 'upl_risk_concentration', message: 'Unauthorized-practice blocks are concentrated in litigation intake — consider practice-area-specific rule packs.', severity: 'warning' },
-      { type: 'egress_pattern', message: 'Privileged content egress attempts cluster around end-of-day intake sessions when attorney reviewers are offline.', severity: 'warning' }
+      { type: 'upl_risk_concentration', message: 'UPL blocks concentrate in litigation intake — add practice-area rules.', severity: 'warning' },
+      { type: 'egress_pattern', message: 'Privilege egress attempts cluster after hours — add reviewer coverage.', severity: 'warning' }
     ]
   });
   renderAgentInventory({
@@ -1591,17 +1591,17 @@ function loadDemo() {
   renderActionableRemediations([
     {
       title: 'add practice-area-specific UPL rules · litigation-intake',
-      rationale: 'Litigation intake generates 76% of UPL blocks. Practice-specific rule packs would reduce false positives while maintaining protection.',
+      rationale: 'Litigation intake generates 76% of UPL blocks. Add targeted rules to reduce false positives.',
       action: 'add-practice-area-rules',
     },
     {
       title: 'extend conflict check to affiliated entities · conflict-detection',
-      rationale: 'Current conflict fixture covers named parties only. Affiliated entities and parent companies are not yet covered.',
+      rationale: 'Conflict fixture covers named parties only. Add affiliates and parents.',
       action: 'extend-conflict-coverage',
     },
     {
       title: 'schedule attorney reviewer for off-hours intake · privilege-egress',
-      rationale: 'Egress attempts cluster after 6pm when no attorney reviewer is available. A backup reviewer queue would reduce overnight intake delays.',
+      rationale: 'Egress attempts cluster after 6pm. Add a backup reviewer queue.',
       action: 'schedule-off-hours-reviewer',
     }
   ]);
@@ -1618,9 +1618,9 @@ function loadDemo() {
       harnesses: { enabled: true, allowRuntimeExecution: true }
     },
     routingPreview: {
-      intakeAgent: { profile: 'legal-intake', reason: 'all intake agents route through legal-intake profile with full gate enforcement' },
-      auditExport: { profile: 'readonly', reason: 'audit export uses read-only profile — no write access to firm systems' },
-      reviewQueue: { profile: 'attorney-review', reason: 'blocked responses route to attorney review queue for manual disposition' }
+      intakeAgent: { profile: 'legal-intake', reason: 'all intake agents use strict legal gates' },
+      auditExport: { profile: 'readonly', reason: 'audit export has no firm-system write access' },
+      reviewQueue: { profile: 'attorney-review', reason: 'blocked responses route to attorney review' }
     },
     origins: [
       { path: 'intake.defaultProfile', value: 'legal-intake', scope: 'firm', sourcePath: 'config/firm-intake-policy.json' },
@@ -1639,12 +1639,12 @@ function loadDemo() {
       'Intake Routing': 1
     },
     templates: [
-      { name: 'Block unauthorized practice of law', category: 'UPL Prevention', signal: '👎', defaultAction: 'block', severity: 'critical', problem: 'Stops intake agents from delivering advice-shaped responses that constitute unauthorized practice of law under ABA Model Rule 5.5.', roi: 'One blocked UPL response prevents a malpractice exposure that no amount of disclaimers can undo.', rollout: 'Enable on every AI intake channel before the first prospect interaction.', pattern: '(outcome prediction|jurisdictional recommendation|you (should|could|might) (file|sue|claim))' },
-      { name: 'Require approved disclaimer', category: 'UPL Prevention', signal: '👎', defaultAction: 'block', severity: 'high', problem: 'Ensures every intake response includes the firm\'s approved non-engagement disclaimer before delivery.', roi: 'Reduces inadvertent attorney-client relationship formation from informal AI responses.', rollout: 'Load firm-approved disclaimer text during pilot setup.', pattern: '(intake_response|client_reply).*(missing|no).*(disclaimer)' },
-      { name: 'Require conflict check before intake', category: 'Conflict Detection', signal: '👎', defaultAction: 'block', severity: 'critical', problem: 'Requires adverse-party clearance before the agent collects sensitive case facts, preventing conflicts under ABA Rules 1.7, 1.9, and 1.10.', roi: 'Catches conflicts before privileged information crosses ethical walls, avoiding disqualification motions.', rollout: 'Pair with the firm\'s conflicts database or a synthetic adverse-party fixture during pilot.', pattern: '(collect_case_facts|intake_continue).*(missing|no).*(conflict|clearance)' },
-      { name: 'Block privileged content egress', category: 'Privilege Protection', signal: '👎', defaultAction: 'block', severity: 'critical', problem: 'Blocks outbound agent actions that contain privileged markers or matter identifiers before they leave the firm boundary.', roi: 'Prevents privilege waiver from a single agent action that sends protected content externally.', rollout: 'Define privilege markers during pilot setup. Start with hard block.', pattern: '(send_email|api_call|external_request).*(privileged|attorney[_-]client|matter[_-]id)' },
-      { name: 'Restrict model endpoint to approved list', category: 'Model Governance', signal: '👎', defaultAction: 'block', severity: 'high', problem: 'Prevents intake queries from routing to model endpoints without enterprise data handling agreements.', roi: 'Keeps firm data within approved vendor boundaries per ABA Opinion 512.', rollout: 'Allowlist approved model endpoints during pilot.', pattern: '(model_call|llm_request).*(unapproved|unknown|consumer)' },
-      { name: 'Require attorney review before routing', category: 'Intake Routing', signal: '👎', defaultAction: 'warn', severity: 'high', problem: 'Requires attorney review before the intake agent routes a prospect to a practice area or schedules consultation.', roi: 'Prevents automated routing errors that waste attorney time or misroute prospects.', rollout: 'Start with all routing requiring review. Relax for low-risk areas after pilot.', pattern: '(route_to_attorney|schedule_consultation).*(no|missing).*(review|approval)' }
+      { name: 'Block unauthorized practice of law', category: 'UPL Prevention', signal: '👎', defaultAction: 'block', severity: 'critical', problem: 'Stops advice-shaped intake replies under ABA Rule 5.5.', roi: 'Prevents malpractice exposure before delivery.', rollout: 'Enable on every AI intake channel.', pattern: '(outcome prediction|jurisdictional recommendation|you (should|could|might) (file|sue|claim))' },
+      { name: 'Require approved disclaimer', category: 'UPL Prevention', signal: '👎', defaultAction: 'block', severity: 'high', problem: 'Requires firm-approved non-engagement language.', roi: 'Reduces inadvertent client-relationship risk.', rollout: 'Load approved disclaimer during pilot.', pattern: '(intake_response|client_reply).*(missing|no).*(disclaimer)' },
+      { name: 'Require conflict check before intake', category: 'Conflict Detection', signal: '👎', defaultAction: 'block', severity: 'critical', problem: 'Requires adverse-party clearance before sensitive facts.', roi: 'Catches conflicts before privileged facts cross walls.', rollout: 'Use conflicts API or synthetic pilot fixture.', pattern: '(collect_case_facts|intake_continue).*(missing|no).*(conflict|clearance)' },
+      { name: 'Block privileged content egress', category: 'Privilege Protection', signal: '👎', defaultAction: 'block', severity: 'critical', problem: 'Blocks outbound actions with privilege markers.', roi: 'Prevents single-action privilege waiver.', rollout: 'Define markers; start with hard block.', pattern: '(send_email|api_call|external_request).*(privileged|attorney[_-]client|matter[_-]id)' },
+      { name: 'Restrict model endpoint to approved list', category: 'Model Governance', signal: '👎', defaultAction: 'block', severity: 'high', problem: 'Blocks unapproved model endpoints.', roi: 'Keeps data inside approved vendor boundaries.', rollout: 'Allowlist endpoints during pilot.', pattern: '(model_call|llm_request).*(unapproved|unknown|consumer)' },
+      { name: 'Require attorney review before routing', category: 'Intake Routing', signal: '👎', defaultAction: 'warn', severity: 'high', problem: 'Requires review before routing or scheduling.', roi: 'Prevents bad prospect routing.', rollout: 'Start strict; relax after pilot evidence.', pattern: '(route_to_attorney|schedule_consultation).*(no|missing).*(review|approval)' }
     ]
   });
   renderGeneratedView(buildDemoGeneratedViewSpec(currentGeneratedView));
@@ -1689,13 +1689,13 @@ function loadDemo() {
     },
     actionableRemediations: [
       {
-        title: 'add practice-area-specific UPL rules · litigation-intake',
-        rationale: 'Litigation intake generates 76% of UPL blocks. Practice-specific rule packs would reduce false positives while maintaining protection.',
+        title: 'add litigation-specific UPL rules',
+        rationale: '76% of UPL blocks come from litigation intake. Add targeted rules.',
         action: 'add-practice-area-rules'
       },
       {
-        title: 'extend conflict check to affiliated entities · conflict-detection',
-        rationale: 'Current conflict fixture covers named parties only. Affiliated entities and parent companies are not yet covered.',
+        title: 'extend conflict checks to affiliates',
+        rationale: 'Named-party fixture misses affiliates and parents.',
         action: 'extend-conflict-coverage'
       }
     ]
