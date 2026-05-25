@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.23.1 - 2026-05-25
+
+- Added `interface` block to plugin.json (displayName, capabilities, brandColor, privacy/TOS URLs)
+- Added UTM-tagged homepage URL
+- Added MCP keyword to plugin keywords
+- Version aligned with ThumbGate core
+
 ## 0.8.1 - 2026-03-26
 
 - Unified ThumbGate branding across all public surfaces (README, AGENTS.md, CLAUDE.md, GEMINI.md, landing page, package.json).
