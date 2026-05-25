@@ -638,7 +638,7 @@
     "test:high-roi": "node --test tests/high-roi.test.js tests/model-candidates.test.js tests/autonomous-workflow.test.js tests/high-roi-agent-workflows.test.js tests/interaction-model.test.js tests/interaction-model-e2e.test.js tests/code-graph-guardrails.test.js tests/proxy-pointer-rag-guardrails.test.js tests/rag-precision-guardrails.test.js tests/ai-engineering-stack-guardrails.test.js tests/long-running-agent-context-guardrails.test.js tests/reasoning-efficiency-guardrails.test.js tests/deepseek-v4-runtime-guardrails.test.js tests/upstream-contribution-engine.test.js tests/proactive-agent-eval-guardrails.test.js tests/reward-hacking-guardrails.test.js tests/chatgpt-ads-readiness-pack.test.js tests/oss-pr-opportunity-scout.test.js tests/agent-design-governance.test.js tests/gemini-embedding-policy.test.js tests/openclaw-agent-governance-kit.test.js",
     "test:public-static-assets": "node --test tests/public-static-assets.test.js",
     "test:token-savings": "node --test tests/token-savings.test.js",
-    "test:cost-cli": "node --test tests/cost-cli.test.js",
+    "test:cost-cli": "node --test tests/cost-cli.test.js tests/conversion-receipt.test.js",
     "test:numbers-page": "node --test tests/numbers-page.test.js",
     "test:workflow-gate-checkpoint": "node --test tests/workflow-gate-checkpoint.test.js tests/autonomous-workflow.test.js",
     "workflow:autonomous": "node scripts/autonomous-workflow.js",
