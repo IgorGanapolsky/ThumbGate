@@ -325,3 +325,12 @@ test('GET /sitemap.xml includes /ai-malpractice-prevention at priority 0.9', asy
   // pages where the FAQ engages partners directly are gold for SEO.
   assert.match(entry[0], /<priority>0\.9<\/priority>/);
 });
+
+test('GET /sitemap.xml includes background-agent control layer at priority 0.85', async () => {
+  const res = await fetch(`${origin}/sitemap.xml`);
+  assert.equal(res.status, 200);
+  const xml = await res.text();
+  const entry = xml.match(/<url>\s*<loc>[^<]*\/learn\/background-agent-control-layer<\/loc>[\s\S]*?<\/url>/);
+  assert.ok(entry, 'background-agent-control-layer <url> block must exist');
+  assert.match(entry[0], /<priority>0\.85<\/priority>/);
+});
