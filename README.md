@@ -24,7 +24,7 @@ The product is a self-improving enforcement layer: thumbs-down feedback, prompt 
 npx thumbgate init   # auto-detects your agent, wires hooks, 30 seconds
 ```
 
-Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and any MCP-compatible agent. Free tier: 5 active prevention rules. [Pro: $19/mo](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme) — unlimited rules, dashboard, DPO export.
+Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and any MCP-compatible agent. Free tier: unlimited feedback captures and 5 active auto-promoted prevention rules. [Pro: $19/mo or $149/yr](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme) — unlimited rules, history-aware lessons, feedback sessions, dashboard, DPO export. Team is $49/seat/mo with a shared hosted lesson DB and org dashboard.
 
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
