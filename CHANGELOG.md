@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.23.1
+
+### Patch Changes
+
+- [#2313](https://github.com/IgorGanapolsky/ThumbGate/pull/2313) [`6c2647d`](https://github.com/IgorGanapolsky/ThumbGate/commit/6c2647dbc93d9f4c6823e0debd759f7c2e1ce02b) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add CLI value receipts after feedback capture and stats so installers see stored proof, next proof commands, and tracked Pro or Team upgrade paths at the moment value is created.
+
+- [#2297](https://github.com/IgorGanapolsky/ThumbGate/pull/2297) [`a127dc6`](https://github.com/IgorGanapolsky/ThumbGate/commit/a127dc6df11589ecf2bc7ed23ece618ac1d1f566) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Position ThumbGate as deterministic, inspectable prevention instead of black-box native thumbs or vendor memory, and update the Pro buyer path with audit-loop proof copy.
+
+- [#2296](https://github.com/IgorGanapolsky/ThumbGate/pull/2296) [`6da4d87`](https://github.com/IgorGanapolsky/ThumbGate/commit/6da4d876708f01b0009fcc4ec4a3255ce431e177) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Tighten the law-firm AI intake pilot page with a visual control-flow asset and add the route to post-deploy marketing verification.
+
+- [#2313](https://github.com/IgorGanapolsky/ThumbGate/pull/2313) [`6c2647d`](https://github.com/IgorGanapolsky/ThumbGate/commit/6c2647dbc93d9f4c6823e0debd759f7c2e1ce02b) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Sharpen the legal AI pilot page for law-firm innovation and risk buyers with conservative pre-execution-control positioning, preloaded ground-truth pilot inputs, and a 25-minute walkthrough CTA.
+
+- [#2295](https://github.com/IgorGanapolsky/ThumbGate/pull/2295) [`ce44ea6`](https://github.com/IgorGanapolsky/ThumbGate/commit/ce44ea60db4e6421dd83c50effd347982d95c7e1) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Sharpen the law-firm AI intake pilot page with safer buyer-facing governance language, preloaded rule-pack positioning, demo storyboard, and meeting agenda for enterprise legal innovation review.
+
 ## 1.23.0
 
 ### Minor Changes
