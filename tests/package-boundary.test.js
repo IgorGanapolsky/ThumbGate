@@ -357,11 +357,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // the auto-context-packs ratchet from earlier the same day; the bump gives
   // one normal-PR headroom buffer before the next ratchet review.
   // Bumped 3.80 MB -> 3.82 MB (2026-05-22) for scripts/self-healing-check.js
-  // (~5 KB), which `thumbgate self-heal` invokes before self-heal.js in
-  // published installs. Observed unpacked size is ~3.806 MB.
+  // Bumped 3.82 MB -> 3.85 MB (2026-05-25) for 6 legal-intake gate templates
   assert.ok(
-    manifest.unpackedSize <= 3_820_000,
-    `npm package should stay <= 3.82 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_850_000,
+    `npm package should stay <= 3.85 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
