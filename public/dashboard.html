@@ -1444,68 +1444,62 @@ function loadDemo() {
     logo.insertAdjacentHTML('afterend', '<span class="demo-badge" id="demoBadge">Demo Mode</span>');
   }
   // Stats
-  document.getElementById('statTotal').textContent = '297';
-  document.getElementById('statPositive').textContent = '37';
-  document.getElementById('statNegative').textContent = '260';
-  document.getElementById('statGates').textContent = '21';
+  document.getElementById('statTotal').textContent = '184';
+  document.getElementById('statPositive').textContent = '91';
+  document.getElementById('statNegative').textContent = '93';
+  document.getElementById('statGates').textContent = '14';
   setSelectedCard('all');
-  // Demo: 260 negative-feedback events have produced ~180 actual gate blocks
-  // and ~85 bot deflections on /checkout/pro. Kept as illustrative defaults
-  // so the savings card never reads "0" in demo mode.
-  var demoSavings = TG_TOKEN_SAVINGS.compute(180, 85);
+  var demoSavings = TG_TOKEN_SAVINGS.compute(93, 42);
   var tEl = document.getElementById('statTokensSaved');
   var dEl = document.getElementById('statDollarsSaved');
   if (tEl) tEl.textContent = demoSavings.tokensSavedDisplay;
   if (dEl) dEl.textContent = '≈ ' + demoSavings.dollarsSavedDisplay + ' saved';
   renderTopBlockedGates([
-    { name: 'gate:no-force-push', blocked: 47 },
-    { name: 'gate:no-drop-prod', blocked: 31 },
-    { name: 'gate:no-hallucinated-import', blocked: 28 },
-    { name: 'gate:no-secret-commit', blocked: 19 },
-    { name: 'gate:require-tests-before-done', blocked: 14 },
-    { name: 'gate:no-figma-claim-without-check', blocked: 9 },
+    { name: 'gate:block-unauthorized-practice', blocked: 34 },
+    { name: 'gate:require-conflict-clearance', blocked: 22 },
+    { name: 'gate:block-privileged-egress', blocked: 17 },
+    { name: 'gate:require-approved-disclaimer', blocked: 11 },
+    { name: 'gate:restrict-model-endpoint', blocked: 6 },
+    { name: 'gate:require-attorney-review', blocked: 3 },
   ]);
   renderReviewDelta({
     hasBaseline: true,
-    reviewedAt: '2025-06-18T09:00:00Z',
-    previousHead: '9f1a2c3d',
-    currentHead: '5c7e9b1a',
-    feedbackAdded: 6,
-    negativeAdded: 4,
-    lessonsAdded: 2,
-    blocksAdded: 5,
-    warnsAdded: 1,
-    headline: 'Since your last review: 6 feedback events · 4 negative · 2 lessons · 5 gate blocks.',
+    reviewedAt: '2026-05-22T09:00:00Z',
+    previousHead: 'a4c1e7f2',
+    currentHead: 'b8d3f9a1',
+    feedbackAdded: 8,
+    negativeAdded: 5,
+    lessonsAdded: 3,
+    blocksAdded: 7,
+    warnsAdded: 2,
+    headline: 'Since your last review: 8 intake events · 5 blocked · 3 lessons · 7 gate enforcements.',
     latestFeedback: {
-      title: 'Claimed fix worked without running tests',
-      timestamp: '2025-06-22T10:20:00Z'
+      title: 'Intake agent provided jurisdictional recommendation without attorney review',
+      timestamp: '2026-05-25T14:20:00Z'
     },
     latestLesson: {
-      title: 'MISTAKE: Claimed Figma compliance without visual verification',
-      timestamp: '2025-06-21T08:10:00Z'
+      title: 'BLOCKED: Advice-shaped response detected — routed to attorney review queue',
+      timestamp: '2026-05-24T11:10:00Z'
     }
   });
   document.getElementById('reviewCheckpointBtn').disabled = true;
   document.getElementById('reviewCheckpointBtn').textContent = 'Connect to save your own review checkpoint';
-  // Sample memories — realistic scenarios from real agent-driven development
+  // Sample memories — legal AI intake scenarios for law firm pilot demo
   var demoResults = [
-    { signal: 'down', title: 'Claimed fix worked without running tests', context: 'Agent announced "fixed and pushed" but never ran the test suite. CI failed on 3 tests. Check now requires test evidence before any completion claim.', tags: ['anti-lying', 'verification-gap', 'ci', 'trust-breach'], timestamp: '2025-06-22T10:20:00Z' },
-    { signal: 'down', title: 'Force-pushed to main and lost teammate commits', context: 'Used git push --force on main to fix a rebase. Overwrote 3 commits from another team member. Had to recover from reflog. Check now blocks all --force pushes to protected branches.', tags: ['git', 'destructive', 'auto-blocked'], timestamp: '2025-06-20T09:15:00Z' },
-    { signal: 'up', title: 'Pre-action check caught .env commit', context: 'Check blocked a git add that included .env with production API keys. Saved from leaking secrets to a public repo.', tags: ['security', 'prevention', 'secrets'], timestamp: '2025-06-19T11:30:00Z' },
-    { signal: 'down', title: 'PR scope creep — 72 changed files for a 2-file fix', context: 'Agent included unrelated formatting changes, config files, and lock file updates in a PR that should have touched 2 files. User had to manually separate the changes.', tags: ['pr-scope', 'scope-creep', 'user-frustration', 'git-workflow'], timestamp: '2025-06-18T14:30:00Z' },
-    { signal: 'up', title: 'Full PR review cycle with on-device verification', context: 'Fixed 3 review findings, verified on physical Android device with fresh debug build, confirmed Delete Account flow end-to-end before marking PR ready.', tags: ['pr-review', 'on-device-verification', 'evidence-based', 'metric:ROI'], timestamp: '2025-06-17T16:45:00Z' },
-    { signal: 'down', title: 'Claimed Figma compliance without visual verification', context: 'Said UI matched Figma designs without actually checking. User pointed out wrong colors, missing spacing, and incorrect font weights. Should have used screenshot comparison.', tags: ['anti-lying', 'figma', 'visual-verification', 'trust-breach'], timestamp: '2025-06-16T08:05:00Z' },
-    { signal: 'down', title: 'Deployed without running tests', context: 'Pushed a refactor to main without running the test suite. Two integration tests failed in CI, blocking the release for 3 hours.', tags: ['ci', 'testing', 'deployment'], timestamp: '2025-06-15T09:15:00Z' },
-    { signal: 'up', title: 'Atomic commits improved bisect speed', context: 'Splitting a large feature into 8 atomic commits made git bisect find the regression in under 2 minutes instead of manual debugging.', tags: ['git', 'debugging', 'evidence-based'], timestamp: '2025-06-14T16:45:00Z' },
-    { signal: 'down', title: 'Deleted production database table', context: 'AI agent ran DROP TABLE on a staging-named table that was actually aliased to production. Added a gate requiring explicit confirmation for any destructive SQL.', tags: ['database', 'destructive', 'critical', 'auto-blocked'], timestamp: '2025-06-13T08:05:00Z' },
-    { signal: 'up', title: 'Read file before editing prevented breaking change', context: 'Always read the target file before making changes. Agent caught that the function signature had changed upstream and adapted the edit accordingly.', tags: ['code-quality', 'prevention', 'evidence-based'], timestamp: '2025-06-12T14:30:00Z' },
-    { signal: 'down', title: 'Pushed to wrong branch — created new PR instead of updating existing', context: 'Agent pushed changes to a new branch instead of the open PR branch. Had to cherry-pick commits and force-close the duplicate PR.', tags: ['git-workflow', 'branch-strategy', 'delegation', 'user-frustration'], timestamp: '2025-06-11T10:20:00Z' },
-    { signal: 'up', title: 'ADO tickets split correctly with parallel execution', context: 'Split frontend/backend tasks, corrected area path and iteration, created investigation subtask, and updated PR description — all done efficiently in parallel.', tags: ['ado-workflow', 'parallel-execution', 'triage', 'metric:ROI'], timestamp: '2025-06-10T13:00:00Z' },
-    { signal: 'down', title: 'Delegated debugging to QA instead of investigating', context: 'Told user to ask QA engineer for error logs instead of investigating the issue directly. Wasted 30 minutes of back-and-forth when the fix was a one-line config change.', tags: ['delegation', 'user-frustration', 'debugging', 'speed'], timestamp: '2025-06-09T15:30:00Z' },
-    { signal: 'down', title: 'iOS build failed — forgot pod install after adding dependency', context: 'Added a new npm package but did not run pod install or rebuild the native project. Build failed on iOS physical device. Metro bundler showed stale cache.', tags: ['ios-build', 'metro', 'speed', 'mobile'], timestamp: '2025-06-08T09:45:00Z' },
-    { signal: 'up', title: 'Prevention rule stopped repeat mistake', context: 'Gate auto-generated from 3 prior "forgot pod install" failures now blocks any npm install that touches native modules without a follow-up pod install step.', tags: ['prevention', 'ios-build', 'auto-generated', 'metric:ROI'], timestamp: '2025-06-07T11:00:00Z' },
-    { signal: 'down', title: 'Claimed performance fix without benchmarking', context: 'Said the optimization reduced render time by 40% but never ran a before/after benchmark. Actual measurement showed no improvement. Gate now requires metrics evidence.', tags: ['anti-lying', 'performance', 'verification-gap', 'measure-first'], timestamp: '2025-06-06T14:20:00Z' },
-    { signal: 'up', title: 'DPO export caught systematic failure pattern', context: 'Exported 47 preference pairs revealing that 80% of negative feedback involved claiming work was done without verification. Led to a new mandatory evidence gate.', tags: ['dpo-export', 'evidence-based', 'prevention', 'metric:ROI'], timestamp: '2025-06-05T10:15:00Z' }
+    { signal: 'down', title: 'Intake agent provided outcome prediction to prospect', context: 'Prospect asked about wrongful termination in Florida. Agent said "you likely have a strong case." ThumbGate blocked the advice-shaped response before delivery under ABA Rule 5.5.', tags: ['upl-risk', 'aba-rule-5.5', 'auto-blocked', 'critical'], timestamp: '2026-05-25T14:20:00Z' },
+    { signal: 'up', title: 'Conflict pre-check stopped intake before facts collected', context: 'Adverse party matched the synthetic conflict list. ThumbGate halted intake before privileged facts were disclosed, preventing a Rule 1.7/1.9 conflict issue.', tags: ['conflict-check', 'aba-rule-1.7', 'aba-rule-1.9', 'prevention'], timestamp: '2026-05-25T11:45:00Z' },
+    { signal: 'down', title: 'Agent attempted to send case summary to external CRM', context: 'Agent tried to push matter IDs and consultation notes to an external CRM. ThumbGate blocked the outbound call for privileged-content markers.', tags: ['privilege-egress', 'aba-rule-1.6', 'auto-blocked', 'critical'], timestamp: '2026-05-24T16:30:00Z' },
+    { signal: 'up', title: 'Safe handoff collected neutral facts only', context: 'After a UPL block, the agent pivoted to neutral routing facts: name, contact, practice area, and callback time. No legal conclusion was delivered.', tags: ['safe-handoff', 'compliant-response', 'aba-rule-5.5', 'metric:ROI'], timestamp: '2026-05-24T11:10:00Z' },
+    { signal: 'down', title: 'Agent made jurisdictional recommendation without review', context: 'Prospect asked where to file. Agent gave a venue recommendation. ThumbGate blocked it because jurisdiction guidance requires attorney supervision.', tags: ['upl-risk', 'jurisdiction', 'aba-rule-5.5', 'auto-blocked'], timestamp: '2026-05-23T15:20:00Z' },
+    { signal: 'up', title: 'Audit export preserved full decision chain', context: 'Export showed matched rule, proposed reply, deny decision, attorney-review route, and UTC timestamp. Compliance can replay the decision.', tags: ['audit-trail', 'compliance', 'aba-opinion-512', 'metric:ROI'], timestamp: '2026-05-23T09:00:00Z' },
+    { signal: 'down', title: 'Response missing firm-approved disclaimer', context: 'Agent drafted a prospect reply without the required non-engagement disclaimer. ThumbGate blocked delivery until approved text was added.', tags: ['disclaimer-missing', 'non-engagement', 'aba-rule-5.5', 'auto-blocked'], timestamp: '2026-05-22T14:45:00Z' },
+    { signal: 'up', title: 'Model endpoint restricted to approved provider', context: 'Agent tried a consumer model endpoint. ThumbGate enforced the allowlist and rerouted to the firm-approved Azure OpenAI endpoint.', tags: ['model-governance', 'data-handling', 'aba-opinion-512', 'prevention'], timestamp: '2026-05-22T10:30:00Z' },
+    { signal: 'down', title: 'Agent disclosed opposing counsel information to prospect', context: 'Agent referenced opposing-counsel information from another matter. ThumbGate blocked the cross-matter leak under Rule 1.6.', tags: ['privilege-egress', 'cross-matter', 'aba-rule-1.6', 'critical'], timestamp: '2026-05-21T16:15:00Z' },
+    { signal: 'up', title: 'Conflict check cleared — intake proceeded safely', context: 'Adverse party cleared the synthetic fixture. ThumbGate allowed intake and logged timestamp plus rule version.', tags: ['conflict-check', 'cleared', 'aba-rule-1.7', 'compliant-response'], timestamp: '2026-05-21T11:00:00Z' },
+    { signal: 'down', title: 'Intake agent attempted to schedule consultation directly', context: 'Agent tried to book a consultation without attorney review. ThumbGate blocked the routing action pending supervisor approval.', tags: ['routing-governance', 'attorney-review', 'auto-blocked'], timestamp: '2026-05-20T13:30:00Z' },
+    { signal: 'up', title: 'Egress rerouted to in-tenant system successfully', context: 'Agent needed to store intake notes. ThumbGate rerouted the write to the firm tenant, keeping privileged content inside the boundary.', tags: ['privilege-egress', 'in-tenant-reroute', 'aba-rule-1.6', 'metric:ROI'], timestamp: '2026-05-20T09:45:00Z' },
+    { signal: 'up', title: 'DPO export identified systematic UPL pattern', context: 'Exported 34 blocked intake pairs. 76% were outcome predictions after "do I have a case?" prompts, driving revised intake scripts.', tags: ['dpo-export', 'upl-pattern', 'prevention', 'metric:ROI'], timestamp: '2026-05-19T14:00:00Z' },
+    { signal: 'down', title: 'Agent used non-approved model for privilege-sensitive query', context: 'Privileged intake query was routed to an endpoint without enterprise DPA. ThumbGate blocked and logged it for security review.', tags: ['model-governance', 'privilege-risk', 'aba-opinion-512', 'auto-blocked'], timestamp: '2026-05-18T11:20:00Z' }
   ];
   isDemo = true;
   demoData = demoResults;
@@ -1519,14 +1513,14 @@ function loadDemo() {
     'style="flex:none;background:#b85c2d;color:#fff;padding:8px 18px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;white-space:nowrap;">Go Pro — $19/mo</a>' +
     '</div>';
   document.getElementById('searchResults').innerHTML = upgradeBanner + teaserHtml;
-  // Sample gates
+  // Sample gates — legal AI intake enforcement
   var demoGates = [
-    { name: 'no-force-push', pattern: 'Block git push --force to main or master branches', action: 'block' },
-    { name: 'read-before-edit', pattern: 'Must read file contents before any edit_file call', action: 'block' },
-    { name: 'test-before-deploy', pattern: 'Run npm test before any deployment or push to main', action: 'block' },
-    { name: 'no-secrets-in-commits', pattern: 'Block git add on .env, credentials, or API key files', action: 'block' },
-    { name: 'evidence-before-claim', pattern: 'Run verification commands before claiming task completion', action: 'block' },
-    { name: 'atomic-commits', pattern: 'Each commit should contain a single logical change', action: 'warn' }
+    { name: 'block-unauthorized-practice', pattern: 'Block advice-shaped intake replies from non-attorney agents (ABA Rule 5.5)', action: 'block' },
+    { name: 'require-conflict-clearance', pattern: 'Require adverse-party clearance before facts or scheduling (Rules 1.7/1.9/1.10)', action: 'block' },
+    { name: 'block-privileged-egress', pattern: 'Block outbound calls with matter IDs or attorney-client markers (Rule 1.6)', action: 'block' },
+    { name: 'require-approved-disclaimer', pattern: 'Require firm-approved non-engagement disclaimer before delivery', action: 'block' },
+    { name: 'restrict-model-endpoint', pattern: 'Allow only enterprise-approved model endpoints (ABA Opinion 512)', action: 'block' },
+    { name: 'require-attorney-review', pattern: 'Route case assignment and scheduling through attorney review', action: 'warn' }
   ];
   document.getElementById('gatesList').innerHTML = demoGates.map(function(g) {
     return '<div class="gate-card"><div><div class="gate-name">' + escHtml(g.name) + '</div>' +
@@ -1534,141 +1528,144 @@ function loadDemo() {
       '<span class="gate-action ' + g.action + '">' + g.action.toUpperCase() + '</span></div>';
   }).join('');
   renderTeam({
-    totalAgents: 8,
-    activeAgents: 5,
+    totalAgents: 4,
+    activeAgents: 3,
     windowHours: 24,
-    orgAdherenceRate: 92.4,
+    orgAdherenceRate: 96.1,
     riskAgents: [
-      { id: 'claude-reviewer', project: 'checkout-flow', branch: 'fix/stripe-timeout', adherenceRate: 67.5 },
-      { id: 'codex-second-pass', project: 'dashboard', branch: 'feat/team-rollout', adherenceRate: 74.2 }
+      { id: 'intake-chatbot-prod', project: 'client-intake', branch: 'litigation-practice', adherenceRate: 88.2 },
+      { id: 'intake-chatbot-staging', project: 'client-intake', branch: 'ip-practice-pilot', adherenceRate: 91.7 }
     ],
     topBlockedGates: [
-      { gateId: 'evidence-before-done', blocked: 12, warned: 1 },
-      { gateId: 'never-force-push-main', blocked: 7, warned: 0 }
+      { gateId: 'block-unauthorized-practice', blocked: 34, warned: 0 },
+      { gateId: 'require-conflict-clearance', blocked: 22, warned: 3 }
     ]
   }, {
     northStar: {
-      weeklyTeamsRunningProofBackedWorkflows: 3,
+      weeklyTeamsRunningProofBackedWorkflows: 2,
       paidTeamRuns: 1
     }
   });
   renderPredictive({
     upgradePropensity: {
-      pro: { band: 'high', score: 0.71 },
-      team: { band: 'medium', score: 0.54 }
+      pro: { band: 'high', score: 0.84 },
+      team: { band: 'high', score: 0.72 }
     },
     revenueForecast: {
-      predictedBookedRevenueCents: 12800,
-      incrementalOpportunityCents: 4900
+      predictedBookedRevenueCents: 250000,
+      incrementalOpportunityCents: 75000
     },
     anomalySummary: {
       count: 2,
       severity: 'warning'
     },
     topCreators: [
-      { key: 'reach_vb', opportunityRevenueCents: 3100 }
+      { key: 'innovation_team', opportunityRevenueCents: 150000 }
     ],
     topSources: [
-      { key: 'producthunt', opportunityRevenueCents: 1800 }
+      { key: 'direct_outreach', opportunityRevenueCents: 100000 }
     ],
     anomalies: [
-      { type: 'pricing_resistance', message: 'Price sensitivity dominates current loss reasons.', severity: 'warning' },
-      { type: 'creator_underperformance', message: 'Creator reach_vb is generating intent without revenue conversion.', severity: 'warning' }
+      { type: 'upl_risk_concentration', message: 'UPL blocks concentrate in litigation intake — add practice-area rules.', severity: 'warning' },
+      { type: 'egress_pattern', message: 'Privilege egress attempts cluster after hours — add reviewer coverage.', severity: 'warning' }
     ]
   });
   renderAgentInventory({
-    profile: 'default',
-    tier: 'builder',
-    configuredServerCount: 3,
-    observedToolCount: 4,
+    profile: 'legal-intake',
+    tier: 'enterprise',
+    configuredServerCount: 2,
+    observedToolCount: 5,
     observedTools: [
-      { toolName: 'Bash', evaluations: 120, intercepted: 19, allow: 101, deny: 12, warn: 7 },
-      { toolName: 'Edit', evaluations: 64, intercepted: 6, allow: 58, deny: 2, warn: 4 },
-      { toolName: 'Read', evaluations: 42, intercepted: 0, allow: 42, deny: 0, warn: 0 }
+      { toolName: 'intake_reply', evaluations: 89, intercepted: 34, allow: 55, deny: 34, warn: 0 },
+      { toolName: 'conflict_lookup', evaluations: 67, intercepted: 22, allow: 45, deny: 19, warn: 3 },
+      { toolName: 'send_to_crm', evaluations: 41, intercepted: 17, allow: 24, deny: 14, warn: 3 },
+      { toolName: 'schedule_consultation', evaluations: 28, intercepted: 3, allow: 25, deny: 0, warn: 3 },
+      { toolName: 'export_audit', evaluations: 19, intercepted: 0, allow: 19, deny: 0, warn: 0 }
     ],
     policySources: [
-      { source: 'gates-engine', count: 23 },
-      { source: 'secret-guard', count: 6 },
-      { source: 'workflow-sentinel', count: 4 }
+      { source: 'legal-intake-rules', count: 14 },
+      { source: 'privilege-guard', count: 6 },
+      { source: 'conflict-sentinel', count: 4 }
     ]
   });
   renderActionableRemediations([
     {
-      title: 'tighten verification before response · recent-signals',
-      rationale: 'Recent approval rate has dropped below the lifetime baseline, so fast completion claims need tighter proof.',
-      action: 'tighten-verification-before-response',
+      title: 'add practice-area-specific UPL rules · litigation-intake',
+      rationale: 'Litigation intake generates 76% of UPL blocks. Add targeted rules to reduce false positives.',
+      action: 'add-practice-area-rules',
     },
     {
-      title: 'audit domain failures · git-workflow',
-      rationale: 'Git workflow events are overrepresented in high-risk outcomes and deserve a stronger pre-action gate.',
-      action: 'audit-domain-failures',
+      title: 'extend conflict check to affiliated entities · conflict-detection',
+      rationale: 'Conflict fixture covers named parties only. Add affiliates and parents.',
+      action: 'extend-conflict-coverage',
     },
     {
-      title: 'review and update skill · github',
-      rationale: 'GitHub-related failures have crossed the negative-rate threshold, so the skill needs a correction pass.',
-      action: 'review-and-update-skill',
+      title: 'schedule attorney reviewer for off-hours intake · privilege-egress',
+      rationale: 'Egress attempts cluster after 6pm. Add a backup reviewer queue.',
+      action: 'schedule-off-hours-reviewer',
     }
   ]);
   renderSettingsStatus({
     activeLayers: [
       { scope: 'defaults', exists: true, leafCount: 7, sourcePath: null },
-      { scope: 'user', exists: true, leafCount: 2, sourcePath: '~/.thumbgate/settings.json' },
-      { scope: 'project', exists: true, leafCount: 2, sourcePath: '.thumbgate/settings.json' },
-      { scope: 'local', exists: false, leafCount: 0, sourcePath: '.thumbgate/settings.local.json' },
-      { scope: 'managed', exists: true, leafCount: 3, sourcePath: 'config/thumbgate-settings.managed.json' }
+      { scope: 'firm', exists: true, leafCount: 6, sourcePath: 'config/firm-intake-policy.json' },
+      { scope: 'practice-area', exists: true, leafCount: 4, sourcePath: 'config/litigation-rules.json' },
+      { scope: 'pilot', exists: true, leafCount: 3, sourcePath: '.thumbgate/pilot-settings.json' },
+      { scope: 'managed', exists: true, leafCount: 5, sourcePath: 'config/thumbgate-settings.managed.json' }
     ],
     resolvedSettings: {
-      mcp: { defaultProfile: 'essential', readonlySessionProfile: 'readonly' },
+      intake: { defaultProfile: 'legal-intake', enforcementMode: 'strict' },
       harnesses: { enabled: true, allowRuntimeExecution: true }
     },
     routingPreview: {
-      dashboardTool: { profile: 'readonly', reason: 'dashboard is available in the most restrictive profile that contains it' },
-      defaultSession: { profile: 'essential', reason: 'default auto-routing — essential profile from settings hierarchy' },
-      reviewSession: { profile: 'readonly', reason: 'read-only session detected — routing to readonly profile' }
+      intakeAgent: { profile: 'legal-intake', reason: 'all intake agents use strict legal gates' },
+      auditExport: { profile: 'readonly', reason: 'audit export has no firm-system write access' },
+      reviewQueue: { profile: 'attorney-review', reason: 'blocked responses route to attorney review' }
     },
     origins: [
-      { path: 'mcp.defaultProfile', value: 'essential', scope: 'project', sourcePath: '.thumbgate/settings.json' },
-      { path: 'mcp.readonlySessionProfile', value: 'readonly', scope: 'project', sourcePath: '.thumbgate/settings.json' },
-      { path: 'harnesses.allowRuntimeExecution', value: true, scope: 'project', sourcePath: '.thumbgate/settings.json' },
-      { path: 'dashboard.showPolicyOrigins', value: true, scope: 'managed', sourcePath: 'config/thumbgate-settings.managed.json' }
+      { path: 'intake.defaultProfile', value: 'legal-intake', scope: 'firm', sourcePath: 'config/firm-intake-policy.json' },
+      { path: 'intake.enforcementMode', value: 'strict', scope: 'firm', sourcePath: 'config/firm-intake-policy.json' },
+      { path: 'gates.conflictFixturePath', value: 'fixtures/adverse-parties.json', scope: 'pilot', sourcePath: '.thumbgate/pilot-settings.json' },
+      { path: 'gates.privilegeMarkers', value: ['attorney-client', 'work-product', 'matter-id'], scope: 'firm', sourcePath: 'config/firm-intake-policy.json' }
     ]
   });
   renderTemplates({
     total: 6,
     categories: {
-      'Git Safety': 1,
-      'Verification': 1,
-      'Agent Honesty': 1,
-      'Database Safety': 1,
-      'Secrets Hygiene': 1,
-      'Positive Reinforcement': 1
+      'UPL Prevention': 2,
+      'Conflict Detection': 1,
+      'Privilege Protection': 1,
+      'Model Governance': 1,
+      'Intake Routing': 1
     },
     templates: [
-      { name: 'Never force-push to main', category: 'Git Safety', signal: '👎', defaultAction: 'block', severity: 'critical', problem: 'Stops destructive history rewrites on protected branches before they land.', roi: 'Protects every shared repo from the fastest irreversible mistake.', rollout: 'Enable on every team repo on day one.', pattern: 'git\\s+push\\s+(--force|-f)' },
-      { name: 'Never skip tests before commit', category: 'Verification', signal: '👎', defaultAction: 'block', severity: 'high', problem: 'Requires proof before code leaves the laptop.', roi: 'Cuts review churn and CI rollback time across the team.', rollout: 'Pair with repository-specific test commands.', pattern: 'git\\s+commit' },
-      { name: 'Require evidence before saying done', category: 'Agent Honesty', signal: '👎', defaultAction: 'block', severity: 'high', problem: 'Prevents unsupported completion claims.', roi: 'Raises trust in autonomous runs.', rollout: 'Use anywhere proof matters more than speed.', pattern: 'completion_claim_without_verification' },
-      { name: 'Protect production SQL', category: 'Database Safety', signal: '👎', defaultAction: 'block', severity: 'critical', problem: 'Blocks destructive SQL operations on production-like targets.', roi: 'One saved incident pays for the rollout.', rollout: 'Turn on for any team touching live data.', pattern: '(drop|truncate|delete)\\s+.*production' }
+      { name: 'Block unauthorized practice of law', category: 'UPL Prevention', signal: '👎', defaultAction: 'block', severity: 'critical', problem: 'Stops advice-shaped intake replies under ABA Rule 5.5.', roi: 'Prevents malpractice exposure before delivery.', rollout: 'Enable on every AI intake channel.', pattern: '(outcome prediction|jurisdictional recommendation|you (should|could|might) (file|sue|claim))' },
+      { name: 'Require approved disclaimer', category: 'UPL Prevention', signal: '👎', defaultAction: 'block', severity: 'high', problem: 'Requires firm-approved non-engagement language.', roi: 'Reduces inadvertent client-relationship risk.', rollout: 'Load approved disclaimer during pilot.', pattern: '(intake_response|client_reply).*(missing|no).*(disclaimer)' },
+      { name: 'Require conflict check before intake', category: 'Conflict Detection', signal: '👎', defaultAction: 'block', severity: 'critical', problem: 'Requires adverse-party clearance before sensitive facts.', roi: 'Catches conflicts before privileged facts cross walls.', rollout: 'Use conflicts API or synthetic pilot fixture.', pattern: '(collect_case_facts|intake_continue).*(missing|no).*(conflict|clearance)' },
+      { name: 'Block privileged content egress', category: 'Privilege Protection', signal: '👎', defaultAction: 'block', severity: 'critical', problem: 'Blocks outbound actions with privilege markers.', roi: 'Prevents single-action privilege waiver.', rollout: 'Define markers; start with hard block.', pattern: '(send_email|api_call|external_request).*(privileged|attorney[_-]client|matter[_-]id)' },
+      { name: 'Restrict model endpoint to approved list', category: 'Model Governance', signal: '👎', defaultAction: 'block', severity: 'high', problem: 'Blocks unapproved model endpoints.', roi: 'Keeps data inside approved vendor boundaries.', rollout: 'Allowlist endpoints during pilot.', pattern: '(model_call|llm_request).*(unapproved|unknown|consumer)' },
+      { name: 'Require attorney review before routing', category: 'Intake Routing', signal: '👎', defaultAction: 'warn', severity: 'high', problem: 'Requires review before routing or scheduling.', roi: 'Prevents bad prospect routing.', rollout: 'Start strict; relax after pilot evidence.', pattern: '(route_to_attorney|schedule_consultation).*(no|missing).*(review|approval)' }
     ]
   });
   renderGeneratedView(buildDemoGeneratedViewSpec(currentGeneratedView));
   renderInsights({
-    gateStats: { blocked: 180 },
+    gateStats: { blocked: 93 },
     tokenSavings: {
       dollarsSaved: 0,
       dollarsSavedDisplay: '$0.00',
       tokensSavedDisplay: '0',
       blockedCalls: 0,
-      modelMix: { 'sonnet-4.5': 0.8, 'opus-4.6': 0.15, 'haiku-4.5': 0.05 },
-      blendedPricePer1M: { input: 6.2, output: 24.1 }
+      modelMix: { 'gpt-4o': 0.5, 'claude-sonnet-4.5': 0.35, 'azure-openai': 0.15 },
+      blendedPricePer1M: { input: 5.0, output: 15.0 }
     },
     lessonPipeline: {
       stages: [
-        { id: 'feedback', label: 'Feedback Signals', count: 297, detail: '37 up / 260 down' },
-        { id: 'lessons', label: 'Lessons Distilled', count: 94, detail: '72 mistakes / 22 good patterns' },
-        { id: 'gates', label: 'Gates Promoted', count: 21, detail: '22% of lessons become gates' },
-        { id: 'blocked', label: 'Actions Blocked', count: 180, detail: 'Repeat mistakes prevented' }
+        { id: 'feedback', label: 'Intake Events', count: 184, detail: '91 safe / 93 blocked' },
+        { id: 'lessons', label: 'Rules Refined', count: 42, detail: '28 UPL patterns / 14 egress patterns' },
+        { id: 'gates', label: 'Gates Active', count: 14, detail: '33% of rules become enforcement gates' },
+        { id: 'blocked', label: 'Risks Prevented', count: 93, detail: 'UPL, conflict, and privilege violations stopped' }
       ],
-      rates: { feedbackToLesson: 32, lessonToGate: 22 }
+      rates: { feedbackToLesson: 23, lessonToGate: 33 }
     },
     feedbackTimeSeries: {
       days: Array.from({ length: 30 }, function(_, index) {
@@ -1692,14 +1689,14 @@ function loadDemo() {
     },
     actionableRemediations: [
       {
-        title: 'tighten verification before response · recent-signals',
-        rationale: 'Recent approval rate has dropped below the lifetime baseline, so fast completion claims need tighter proof.',
-        action: 'tighten-verification-before-response'
+        title: 'add litigation-specific UPL rules',
+        rationale: '76% of UPL blocks come from litigation intake. Add targeted rules.',
+        action: 'add-practice-area-rules'
       },
       {
-        title: 'audit domain failures · git-workflow',
-        rationale: 'Git workflow events are overrepresented in high-risk outcomes and deserve a stronger pre-action gate.',
-        action: 'audit-domain-failures'
+        title: 'extend conflict checks to affiliates',
+        rationale: 'Named-party fixture misses affiliates and parents.',
+        action: 'extend-conflict-coverage'
       }
     ]
   });

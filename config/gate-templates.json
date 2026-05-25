@@ -444,6 +444,78 @@
       "problem": "Blocks background agents from cloning, building, testing, or publishing unless they run in an isolated durable environment with logs.",
       "roi": "Lets the team pursue unattended revenue and engineering workflows without turning local developer machines into the execution boundary.",
       "rollout": "Enable for every agent that can run tests, push branches, deploy, publish content, change billing, or touch customer data."
+    },
+    {
+      "id": "block-unauthorized-practice-of-law",
+      "name": "Block unauthorized practice of law",
+      "category": "Legal Intake Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(outcome prediction|jurisdictional recommendation|you (should|could|might) (file|sue|claim)|strong case|likely (prevail|win|succeed))",
+      "problem": "Stops advice-shaped intake replies under ABA Rule 5.5.",
+      "roi": "Prevents malpractice exposure before delivery.",
+      "rollout": "Enable on every AI intake channel."
+    },
+    {
+      "id": "require-conflict-check-before-intake",
+      "name": "Require conflict check before intake continues",
+      "category": "Legal Intake Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(collect_case_facts|schedule_consultation|intake_continue).*(missing|no|unchecked).*(conflict|adverse[_-]party|clearance)",
+      "problem": "Requires adverse-party clearance before sensitive facts.",
+      "roi": "Catches conflicts before privileged facts cross ethical walls.",
+      "rollout": "Use the firm's conflicts API or a synthetic pilot fixture."
+    },
+    {
+      "id": "block-privileged-content-egress",
+      "name": "Block privileged content egress",
+      "category": "Legal Intake Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(send_email|api_call|external_request|schedule|crm_update).*(privileged|attorney[_-]client|work[_-]product|matter[_-]id|confidential)",
+      "problem": "Blocks outbound actions with privilege markers.",
+      "roi": "Prevents single-action privilege waiver.",
+      "rollout": "Define markers, start with hard block, then add in-tenant reroute."
+    },
+    {
+      "id": "require-approved-disclaimer-before-response",
+      "name": "Require approved disclaimer before response",
+      "category": "Legal Intake Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(intake_response|client_reply).*(missing|no).*(disclaimer|disclosure|non[_-]engagement)",
+      "problem": "Requires firm-approved non-engagement language.",
+      "roi": "Reduces inadvertent client-relationship risk.",
+      "rollout": "Load approved disclaimer during pilot."
+    },
+    {
+      "id": "restrict-model-endpoint-to-approved-list",
+      "name": "Restrict model endpoint to approved list",
+      "category": "Legal Intake Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(model_call|llm_request|api_endpoint).*(unapproved|unknown|public|consumer)",
+      "problem": "Blocks unapproved model endpoints.",
+      "roi": "Keeps data inside approved vendor boundaries.",
+      "rollout": "Allowlist endpoints during pilot."
+    },
+    {
+      "id": "require-attorney-review-before-routing",
+      "name": "Require attorney review before case routing",
+      "category": "Legal Intake Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(route_to_attorney|assign_practice_area|schedule_consultation).*(no|missing).*(review|approval|supervisor)",
+      "problem": "Requires review before routing or scheduling.",
+      "roi": "Prevents bad prospect routing.",
+      "rollout": "Start strict; relax after pilot evidence."
     }
   ]
 }

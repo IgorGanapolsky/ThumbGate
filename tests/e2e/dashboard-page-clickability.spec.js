@@ -56,10 +56,10 @@ test.describe('/dashboard clickability — non-stat-card surfaces', () => {
     await expect(page.locator('#dashboardContent')).toBeVisible();
     await expect(page.locator('#demoBadge')).toBeVisible();
     // loadDemo() hard-codes these values — they are the contract.
-    await expect(page.locator('#statTotal')).toHaveText('297');
-    await expect(page.locator('#statPositive')).toHaveText('37');
-    await expect(page.locator('#statNegative')).toHaveText('260');
-    await expect(page.locator('#statGates')).toHaveText('21');
+    await expect(page.locator('#statTotal')).toHaveText('184');
+    await expect(page.locator('#statPositive')).toHaveText('91');
+    await expect(page.locator('#statNegative')).toHaveText('93');
+    await expect(page.locator('#statGates')).toHaveText('14');
   });
 
   test('clicking Connect with no API key is a no-op (button stays enabled, dashboard stays hidden)', async ({ page }) => {
