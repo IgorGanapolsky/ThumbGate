@@ -10,6 +10,8 @@
 
 ThumbGate is deterministic pre-action governance for AI agents. From developer workflows to legal intake to financial compliance — one rule blocks unauthorized actions before they execute, across every session, every agent, every model.
 
+The product is a self-improving enforcement layer: thumbs-down feedback, prompt evaluation, and proof from prior runs become prevention rules that permanently stop repeated failures before the next tool call.
+
 ```
   Agent tries:   rm -rf tests/
   ThumbGate:     ⛔ BLOCKED — "Never delete test directories"
