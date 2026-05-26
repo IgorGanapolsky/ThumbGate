@@ -23,7 +23,7 @@ jobs:
       RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
       RAILWAY_SERVICE: ${{ vars.RAILWAY_SERVICE }}
       RAILWAY_HEALTHCHECK_URL: ${{ vars.RAILWAY_HEALTHCHECK_URL || 'https://thumbgate-production.up.railway.app/health' }}
-      RAILWAY_HEALTHCHECK_MAX_ATTEMPTS: ${{ vars.RAILWAY_HEALTHCHECK_MAX_ATTEMPTS || '36' }}
+      RAILWAY_HEALTHCHECK_MAX_ATTEMPTS: ${{ vars.RAILWAY_HEALTHCHECK_MAX_ATTEMPTS || '48' }}
       RAILWAY_HEALTHCHECK_SLEEP_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_SLEEP_SECONDS || '10' }}
       RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS || '5' }}
       RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS: ${{ vars.RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS || '20' }}
@@ -278,10 +278,11 @@ jobs:
           fi
       - name: Verify deployment health
         if: steps.railway-config.outputs.enabled == 'true'
-        timeout-minutes: 7
+        timeout-minutes: 10
         run: |
-          # Railway healthcheck default timeout is 300s. With 36 attempts × 10s = 6 min max.
-          MAX_ATTEMPTS="${RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:-36}"
+          # Railway can briefly serve edge 502s after a successful promoted
+          # build. Keep this longer than Railway's 300s default health window.
+          MAX_ATTEMPTS="${RAILWAY_HEALTHCHECK_MAX_ATTEMPTS:-48}"
           SLEEP_SECONDS="${RAILWAY_HEALTHCHECK_SLEEP_SECONDS:-10}"
           CONNECT_TIMEOUT_SECONDS="${RAILWAY_HEALTHCHECK_CONNECT_TIMEOUT_SECONDS:-5}"
           MAX_TIME_SECONDS="${RAILWAY_HEALTHCHECK_MAX_TIME_SECONDS:-20}"
