@@ -23,18 +23,22 @@ test.describe('/ landing page clickability — comprehensive E2E coverage', () =
 
   test('renders the hero install command + visible CTAs', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('.hero-install-primary .cmd')).toHaveText('npx thumbgate init');
     await expect(page.locator('.hero-pro-primary')).toBeVisible();
     await expect(page.locator('.btn-install-hero')).toBeVisible();
     await expect(page.locator('.hero-pro', { hasText: /Workflow Hardening Sprint/ })).toBeVisible();
+    await expect(page.locator('.offer-router')).toBeVisible();
+    await expect(page.locator('.offer-route', { hasText: /Solo operator/ })).toBeVisible();
+    await expect(page.locator('.offer-route', { hasText: /Team workflow/ })).toBeVisible();
+    await expect(page.locator('.offer-route', { hasText: /Still evaluating/ })).toBeVisible();
   });
 
-  test('clicking hero install tile copies the command and flips copy-hint to "copied!"', async ({ page }) => {
+  test('clicking router install button copies the command and confirms the copy', async ({ page }) => {
     await page.goto('/');
-    const tile = page.locator('.hero-install-primary');
-    await tile.click();
-    await expect(tile.locator('.copy-hint')).toHaveText('copied!');
-    await expect(tile.locator('.copy-hint')).toHaveClass(/copied/);
+    const btn = page.locator('[data-router-install]');
+    await expect(btn.locator('.copy-hint')).toHaveText('Copy npx thumbgate init');
+    await btn.click();
+    await expect(btn.locator('.copy-hint')).toHaveText('copied!');
+    await expect(btn.locator('.copy-hint')).toHaveClass(/copied/);
   });
 
   test('clicking "Install Free CLI" button swaps its label to the Copied confirmation', async ({ page }) => {
@@ -52,10 +56,11 @@ test.describe('/ landing page clickability — comprehensive E2E coverage', () =
     await expect(page).toHaveURL(/#workflow-sprint-intake$/);
   });
 
-  test('clicking "See the enforcement in action" anchors to #demo', async ({ page }) => {
+  test('router Pro CTA navigates to hosted Pro checkout', async ({ page }) => {
     await page.goto('/');
-    await page.locator('a.btn-free', { hasText: /See the enforcement in action/ }).first().click();
-    await expect(page).toHaveURL(/#demo$/);
+    await page.locator('.offer-route.primary a', { hasText: /Pay \$19\/mo with Stripe/ }).click();
+    await expect(page).toHaveURL(/\/checkout\/pro/);
+    await expect(page).toHaveURL(/cta_id=router_start_pro/);
   });
 
   // --- nav region (in-page anchors that are actually visible) ---

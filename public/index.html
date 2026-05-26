@@ -411,6 +411,12 @@ __GA_BOOTSTRAP__
   .hero-actions .hero-install { margin-bottom: 0; font-size: 18px; padding: 14px 22px; border: 1px solid rgba(34,211,238,0.55); background: rgba(34,211,238,0.07); box-shadow: none; }
   .hero-actions .btn-install-hero { font-size: 16px; padding: 14px 22px; }
   .hero-actions .hero-diagnostic { font-size: 16px; padding: 14px 22px; background: var(--green); color: #06120a; font-weight: 800; box-shadow: none; }
+  .offer-router { max-width: 940px; margin: 18px auto 22px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; text-align: left; }
+  .offer-route { border: 1px solid rgba(34,211,238,0.18); background: rgba(17,17,19,0.72); border-radius: 8px; padding: 14px; min-height: 128px; }
+  .offer-route strong { display: block; color: var(--text); font-size: 14px; margin-bottom: 6px; }
+  .offer-route p { margin: 0 0 10px; color: var(--text-muted); font-size: 13px; line-height: 1.45; }
+  .offer-route a, .offer-route button { color: var(--cyan); font-weight: 800; font-size: 13px; text-decoration: none; background: transparent; border: 0; padding: 0; cursor: pointer; }
+  .offer-route.primary { border-color: rgba(34,211,238,0.42); background: rgba(34,211,238,0.07); }
   .btn-pro-page { display: inline-flex; align-items: center; justify-content: center; padding: 11px 18px; background: var(--cyan); color: var(--bg); border-radius: 999px; text-decoration: none; font-size: 14px; font-weight: 700; box-shadow: 0 0 0 1px rgba(34,211,238,0.28), 0 12px 32px rgba(34,211,238,0.18); transition: opacity 0.15s, transform 0.15s; }
   .btn-pro-page:hover { opacity: 0.9; transform: translateY(-1px); }
   .btn-gpt-page { display: inline-flex; align-items: center; justify-content: center; padding: 14px 32px; background: var(--green); color: #06120a; border-radius: 8px; text-decoration: none; font-size: 16px; font-weight: 800; box-shadow: 0 0 0 1px rgba(74,222,128,0.32), 0 12px 32px rgba(74,222,128,0.18); transition: opacity 0.15s, transform 0.15s; }
@@ -654,6 +660,7 @@ __GA_BOOTSTRAP__
     .hero { padding: 72px 0 56px; }
     .hero-actions { flex-direction: column; }
     .hero-actions a { width: 100%; }
+    .offer-router { grid-template-columns: 1fr; }
     .hero-paid-actions { justify-content: center; }
     .hero-paid-actions a { width: 100%; }
     .nav-links a:not(.nav-cta) { display: none; }
@@ -715,14 +722,26 @@ __GA_BOOTSTRAP__
 
     <div class="hero-actions">
       <a href="/checkout/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_upgrade&cta_id=hero_start_pro&cta_placement=hero&plan_id=pro&landing_path=%2F" data-revenue-cta data-cta-id="hero_start_pro" data-cta-placement="hero" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);try{posthog.capture('hero_pro_checkout_click',{cta:'hero_start_pro',tier:'pro',price:19})}catch(_){}" class="btn-pro-page hero-pro hero-pro-primary">Start Pro — $19/mo</a>
-      <div class="hero-install hero-install-primary" onclick="copyInstall(this)" title="Click to copy">
-        <span class="prompt">$</span>
-        <span class="cmd">npx thumbgate init</span>
-        <span class="copy-hint">click to copy</span>
-      </div>
-      <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="event.preventDefault(); navigator.clipboard.writeText('npx thumbgate init'); this.textContent='Copied ✓ — paste in your repo'; setTimeout(()=>{this.textContent='Install Free CLI'},2000); try{posthog.capture('hero_install_click',{cta:'install_cli'})}catch(_){}" class="btn-gpt-page btn-install-hero" title="Click to copy: npx thumbgate init">Install Free CLI</a>
       <a href="#workflow-sprint-intake" onclick="try{posthog.capture('hero_sprint_click',{cta:'sprint_intake'})}catch(_){};sendFirstPartyTelemetry('hero_sprint_intake_started',{ctaId:'hero_workflow_sprint',ctaPlacement:'hero',offer:'workflow_sprint'});" class="btn-pro-page hero-pro">Talk to me — Workflow Hardening Sprint →</a>
-      <a href="#demo" onclick="try{posthog.capture('hero_demo_click',{cta:'see_enforcement'})}catch(_){};sendFirstPartyTelemetry('hero_demo_clicked',{ctaId:'hero_see_enforcement',ctaPlacement:'hero'});" class="btn-free" style="font-size:15px;padding:14px 22px;">See the enforcement in action</a>
+      <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="event.preventDefault(); navigator.clipboard.writeText('npx thumbgate init'); this.textContent='Copied ✓ — paste in your repo'; setTimeout(()=>{this.textContent='Install Free CLI'},2000); try{posthog.capture('hero_install_click',{cta:'install_cli'})}catch(_){}" class="btn-gpt-page btn-install-hero" title="Click to copy: npx thumbgate init">Install Free CLI</a>
+    </div>
+
+    <div class="offer-router" aria-label="Choose the right ThumbGate path">
+      <div class="offer-route primary">
+        <strong>Solo operator: Start Pro</strong>
+        <p>Use Pro when one person needs hosted sync, dashboard evidence, and exports across machines.</p>
+        <a href="/checkout/pro?utm_source=website&utm_medium=offer_router&utm_campaign=pro_upgrade&cta_id=router_start_pro&cta_placement=offer_router&plan_id=pro&landing_path=%2F" data-revenue-cta data-cta-id="router_start_pro" data-cta-placement="offer_router" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);">Pay $19/mo with Stripe →</a>
+      </div>
+      <div class="offer-route">
+        <strong>Team workflow: Start with intake</strong>
+        <p>Use the sprint when a team has one repeated blocker, one owner, and needs proof before rollout.</p>
+        <a href="#workflow-sprint-intake" onclick="sendFirstPartyTelemetry('workflow_sprint_intake_started',{ctaId:'router_workflow_sprint',ctaPlacement:'offer_router',offer:'workflow_sprint'});try{posthog.capture('router_sprint_click',{cta:'router_workflow_sprint'})}catch(_){}">Send the workflow first →</a>
+      </div>
+      <div class="offer-route">
+        <strong>Still evaluating: Free CLI</strong>
+        <p>Use free local gates to prove one blocked repeat. Upgrade only when sync, exports, or shared ops matter.</p>
+        <button type="button" data-router-install onclick="copyInstall(this);try{posthog.capture('router_install_click',{cta:'router_install_cli'})}catch(_){}"><span class="copy-hint">Copy npx thumbgate init</span></button>
+      </div>
     </div>
 
     <div class="hero-trust-bar">
@@ -765,7 +784,6 @@ __GA_BOOTSTRAP__
       <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/THUMBGATE_BENCH.md" target="_blank" rel="noopener">ThumbGate Bench</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/RELEASE_CONFIDENCE.md" target="_blank" rel="noopener">Release confidence</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/actions" target="_blank" rel="noopener">Proof-backed CI</a>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/actions" target="_blank" rel="noopener">CI and proof lanes</a>
       <a href="#compatibility">Claude Code · Cursor · Codex · Gemini · Amp · Cline · OpenCode</a>
     </nav>
     <div class="marketing-test-copy" hidden>

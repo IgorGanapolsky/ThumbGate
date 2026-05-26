@@ -9,6 +9,10 @@ function readWorkflow() {
   return fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'daily-revenue-loop.yml'), 'utf8');
 }
 
+function readRevenueTruthWorkflow() {
+  return fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'revenue-truth-audit.yml'), 'utf8');
+}
+
 test('daily revenue loop audits hosted revenue truth before reporting', () => {
   const workflow = readWorkflow();
 
@@ -32,4 +36,20 @@ test('daily revenue loop audits Stripe and Plausible with stored artifacts', () 
   assert.match(workflow, /npm run social:poll:plausible/);
   assert.match(workflow, /actions\/upload-artifact@v7/);
   assert.match(workflow, /revenue-observability-\$\{\{ github\.run_id \}\}/);
+});
+
+test('manual revenue truth audit produces hosted and owner-filtered artifacts', () => {
+  const workflow = readRevenueTruthWorkflow();
+
+  assert.match(workflow, /name:\s*Revenue Truth Audit/);
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /THUMBGATE_OPERATOR_KEY:\s*\$\{\{\s*secrets\.THUMBGATE_OPERATOR_KEY\s*\}\}/);
+  assert.match(workflow, /THUMBGATE_API_KEY:\s*\$\{\{\s*secrets\.THUMBGATE_API_KEY\s*\}\}/);
+  assert.match(workflow, /node bin\/cli\.js cfo --window="\$\{\{ inputs\.window \}\}"/);
+  assert.match(workflow, /if \[ "\$SOURCE" != "hosted" \]/);
+  assert.match(workflow, /node scripts\/stripe-live-status\.js --strict/);
+  assert.match(workflow, /node scripts\/external-customer-audit\.js --json > reports\/revenue\/external-customer-audit\.json/);
+  assert.match(workflow, /Real non-owner paying customers lifetime/);
+  assert.match(workflow, /actions\/upload-artifact@v7/);
+  assert.match(workflow, /revenue-truth-audit-\$\{\{ github\.run_id \}\}/);
 });

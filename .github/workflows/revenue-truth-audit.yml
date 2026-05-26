@@ -1,0 +1,101 @@
+name: Revenue Truth Audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      window:
+        description: "Hosted billing window to audit"
+        required: false
+        default: "30d"
+        type: choice
+        options:
+          - today
+          - 30d
+          - lifetime
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Audit hosted billing summary
+        id: hosted
+        env:
+          THUMBGATE_OPERATOR_KEY: ${{ secrets.THUMBGATE_OPERATOR_KEY }}
+          THUMBGATE_API_KEY: ${{ secrets.THUMBGATE_API_KEY }}
+          THUMBGATE_BILLING_API_BASE_URL: ${{ vars.THUMBGATE_BILLING_API_BASE_URL || 'https://thumbgate.ai' }}
+        run: |
+          set -euo pipefail
+          mkdir -p reports/revenue
+          node bin/cli.js cfo --window="${{ inputs.window }}" > reports/revenue/hosted-cfo.json
+          SOURCE=$(node -p "require('./reports/revenue/hosted-cfo.json').source")
+          BOOKED=$(node -p "require('./reports/revenue/hosted-cfo.json').summary.revenue.bookedRevenueCents || 0")
+          PAID=$(node -p "require('./reports/revenue/hosted-cfo.json').summary.revenue.paidOrders || 0")
+          echo "source=$SOURCE" >> "$GITHUB_OUTPUT"
+          echo "booked_cents=$BOOKED" >> "$GITHUB_OUTPUT"
+          echo "paid_orders=$PAID" >> "$GITHUB_OUTPUT"
+          if [ "$SOURCE" != "hosted" ]; then
+            echo "::error::Hosted billing summary did not return hosted truth. Source=$SOURCE"
+            exit 1
+          fi
+
+      - name: Audit Stripe live status
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p reports/revenue
+          node scripts/stripe-live-status.js --strict > reports/revenue/stripe-live.json
+
+      - name: Audit external customer truth
+        id: external
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          THUMBGATE_OWNER_EMAILS: ${{ secrets.THUMBGATE_OWNER_EMAILS }}
+        run: |
+          set -euo pipefail
+          mkdir -p reports/revenue
+          node scripts/external-customer-audit.js --json > reports/revenue/external-customer-audit.json
+          node scripts/external-customer-audit.js > reports/revenue/external-customer-audit.md
+          REAL_CUSTOMERS=$(node -p "require('./reports/revenue/external-customer-audit.json').charges.external.uniqueCustomerCount || 0")
+          REAL_NET=$(node -p "require('./reports/revenue/external-customer-audit.json').charges.external.net || 0")
+          REAL_ACTIVE=$(node -p "require('./reports/revenue/external-customer-audit.json').subscriptions.activeExternal || 0")
+          echo "real_customers=$REAL_CUSTOMERS" >> "$GITHUB_OUTPUT"
+          echo "real_net=$REAL_NET" >> "$GITHUB_OUTPUT"
+          echo "real_active=$REAL_ACTIVE" >> "$GITHUB_OUTPUT"
+
+      - name: Write operator summary
+        run: |
+          set -euo pipefail
+          {
+            echo "## Revenue Truth Audit"
+            echo
+            echo "- Hosted source: ${{ steps.hosted.outputs.source }}"
+            echo "- Hosted paid orders (${{ inputs.window }}): ${{ steps.hosted.outputs.paid_orders }}"
+            echo "- Hosted booked cents (${{ inputs.window }}): ${{ steps.hosted.outputs.booked_cents }}"
+            echo "- Real non-owner paying customers lifetime: ${{ steps.external.outputs.real_customers }}"
+            echo "- Real non-owner active subscriptions: ${{ steps.external.outputs.real_active }}"
+            echo "- Real non-owner net revenue lifetime: \$${{ steps.external.outputs.real_net }}"
+            echo
+            cat reports/revenue/external-customer-audit.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload revenue truth artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: revenue-truth-audit-${{ github.run_id }}
+          path: reports/revenue/
