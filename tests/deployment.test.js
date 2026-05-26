@@ -525,6 +525,19 @@ test('CI workflow runs budget status and coverage checks before proof lanes', ()
   assert.match(workflow, /npm run test:coverage/);
 });
 
+test('CI workflow routes web-only PRs through focused revenue tests', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
+
+  assert.match(workflow, /name:\s*Detect CI scope/);
+  assert.match(workflow, /reason=web-revenue-surface-only/);
+  assert.match(workflow, /public\//);
+  assert.match(workflow, /scripts\/dashboard\\.js/);
+  assert.match(workflow, /tests\/\(api-server\|dashboard\|public-landing\|landing-page-claims\|funnel-invariants\|verify-marketing-pages-deployed\|public-static-assets\)\\\.test\\\.js/);
+  assert.match(workflow, /name:\s*Run focused web\/revenue tests[\s\S]*?if:\s*steps\.ci-scope\.outputs\.mode == 'web'[\s\S]*?tests\/api-server\.test\.js[\s\S]*?tests\/public-landing\.test\.js[\s\S]*?tests\/verify-marketing-pages-deployed\.test\.js/);
+  assert.match(workflow, /name:\s*Run tests[\s\S]*?if:\s*steps\.ci-scope\.outputs\.mode != 'web'[\s\S]*?run:\s*npm test/);
+  assert.match(workflow, /Merge queue and main pushes still run full CI/);
+});
+
 test('CodeQL workflow supports merge queue and cancels stale non-main runs', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'codeql.yml'), 'utf8');
 
