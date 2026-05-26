@@ -492,7 +492,7 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
   entry.isExternal = audience.isExternal;
   entry.isInternal = audience.isInternal;
   entry.isTest = audience.isTest;
-  entry.isBot = audience.isBot;
+  entry.isBotTraffic = audience.isBot;
 
   return entry;
 }
