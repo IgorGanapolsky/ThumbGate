@@ -551,6 +551,11 @@
       </div>
 
       <script>
+        function escapeHtml(s) {
+          return String(s).replace(/[&<>"']/g, function(c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+          });
+        }
         function runUPLDemo() {
           var input = document.getElementById('upl-input').value.trim();
           var resultDiv = document.getElementById('upl-result');
@@ -566,7 +571,7 @@
             resultDiv.innerHTML =
               '<div class="demo-blocked">' +
               '<strong style="color:#f87171">BLOCKED &mdash; UPL Gate fired</strong><br>' +
-              'Detected advice-shaped pattern: "' + reason + '"<br><br>' +
+              'Detected advice-shaped pattern: "' + escapeHtml(reason) + '"<br><br>' +
               '<strong>Corrective action taken:</strong><br>' +
               'Response replaced with: <em>"That\'s a legal question best answered by a licensed attorney. I can schedule a 30-minute consultation with one of our [practice area] attorneys &mdash; would [time] work for you?"</em><br><br>' +
               '<div class="audit-log">[2026-05-26 09:12:04] PreToolUse gate: UPL_RULE_05.5_ADVICE_SHAPE v3.2\nRule matched: advice-shaped output from non-attorney source\nAction: REPLACE + LOG + NOTIFY_ATTORNEY\nAudit ID: UPL-2847-20260526-091204\nMatter context: New client intake (web)\nAgent: website-intake-bot-v2</div>' +
@@ -591,7 +596,7 @@
             resultDiv.innerHTML =
               '<div class="demo-blocked">' +
               '<strong style="color:#f87171">BLOCKED &mdash; Conflict Gate fired</strong><br>' +
-              '"' + party + '" matches adverse party in existing matter.<br><br>' +
+              '"' + escapeHtml(party) + '" matches adverse party in existing matter.<br><br>' +
               '<strong>Corrective action:</strong> Fetch blocked. Agent redirected to: <em>"This party appears as adverse in matter M-2847. Contact ethics screen lead before proceeding."</em><br><br>' +
               '<div class="audit-log">[2026-05-26 09:12:04] PreToolUse gate: CONFLICT_RULE_1.7_ADVERSE v4.1\nMatched: adverse-parties list\nAction: BLOCK + REDIRECT + LOG\nAudit ID: CONF-2911-20260526-091204\nRequesting matter: New M&amp;A intake\nAgent: doc-fetch-agent-v1</div>' +
               '</div>';
@@ -621,7 +626,7 @@
             resultDiv.innerHTML =
               '<div class="demo-blocked">' +
               '<strong style="color:#f87171">BLOCKED &mdash; Egress Gate fired</strong><br>' +
-              'Detected privilege marker: "' + marker + '"<br><br>' +
+              'Detected privilege marker: "' + escapeHtml(marker) + '"<br><br>' +
               '<strong>Corrective action:</strong> Outbound call to external LLM blocked. Redirected to in-tenant Azure OpenAI (BAA-protected) or internal summarizer.<br><br>' +
               '<div class="audit-log">[2026-05-26 09:12:04] PreToolUse gate: EGRESS_RULE_1.6_PRIVILEGE v2.8\nRule matched: privilege marker in outbound payload\nAction: BLOCK + REDIRECT_TO_TENANT_LLM + LOG\nAudit ID: PRIV-2755-20260526-091204\nContent hash: sha256:7f3a... (truncated)\nAgent: brief-assistant-v3</div>' +
               '</div>';
