@@ -452,7 +452,7 @@
       "signal": "👎",
       "defaultAction": "block",
       "severity": "critical",
-      "pattern": "(outcome prediction|jurisdictional recommendation|you (should|could|might) (file|sue|claim)|strong case|likely (prevail|win|succeed))",
+      "pattern": "(outcome prediction|jurisdictional recommendation|[Yy]ou\\s+(should|could|might)\\s+(file|sue|claim)|strong case|likely\\s+(prevail|win|succeed))",
       "problem": "Stops advice-shaped intake replies under ABA Rule 5.5.",
       "roi": "Prevents malpractice exposure before delivery.",
       "rollout": "Enable on every AI intake channel."
@@ -488,7 +488,7 @@
       "signal": "👎",
       "defaultAction": "block",
       "severity": "high",
-      "pattern": "(intake_response|client_reply).*(missing|no).*(disclaimer|disclosure|non[_-]engagement)",
+      "pattern": "(intake_response|client_reply).*((missing|no)\\s*(disclaimer|disclosure|non[_-]engagement)|(disclaimer|disclosure|non[_-]engagement)\\s*[:=]?\\s*(missing|none|no))",
       "problem": "Requires firm-approved non-engagement language.",
       "roi": "Reduces inadvertent client-relationship risk.",
       "rollout": "Load approved disclaimer during pilot."
