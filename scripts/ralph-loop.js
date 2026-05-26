@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+require('dotenv').config({ path: require('node:path').resolve(__dirname, '..', '.env') });
+
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
