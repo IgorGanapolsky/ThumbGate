@@ -539,6 +539,91 @@
 </div>
 
 <script>
+// TG_TOKEN_SAVINGS — browser shim that mirrors scripts/token-savings.js
+// so loadDemo()'s TG_TOKEN_SAVINGS.compute(blockedCalls, deflectedBots)
+// call resolves. Pre-2026-05-26 the dashboard referenced this global
+// without ever defining it, silently halting loadDemo() at line ~1452.
+var TG_TOKEN_SAVINGS = (function () {
+  var DEFAULT_MODEL_MIX = { 'claude-sonnet-4-5': 0.80, 'claude-opus-4-6': 0.15, 'claude-haiku-4-5': 0.05 };
+  var DEFAULT_MODEL_PRICES = {
+    'claude-sonnet-4-5': { input: 3.0, output: 15.0 },
+    'claude-opus-4-6':   { input: 5.0, output: 25.0 },
+    'claude-haiku-4-5':  { input: 1.0, output: 5.0 },
+    'gpt-4o':            { input: 2.50, output: 10.0 }
+  };
+  var DEFAULT_AVG_INPUT_TOKENS = 2000;
+  var DEFAULT_AVG_OUTPUT_TOKENS = 600;
+  function clamp(n, fb) { var v = Number(n); return (isFinite(v) && v >= 0) ? v : fb; }
+  function blended(mix, prices) {
+    var i = 0, o = 0, w = 0;
+    for (var m in mix) {
+      var ww = clamp(mix[m], 0); if (ww <= 0) continue;
+      var p = prices[m]; if (!p) continue;
+      i += clamp(p.input, 0) * ww; o += clamp(p.output, 0) * ww; w += ww;
+    }
+    return w > 0 ? { input: i / w, output: o / w } : { input: 0, output: 0 };
+  }
+  function fmtTokens(n) {
+    if (!isFinite(n) || n <= 0) return '0';
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
+    return String(Math.round(n));
+  }
+  function fmtDollars(n) {
+    if (!isFinite(n)) return '$0.00';
+    if (n >= 1000) return '$' + Math.round(n).toLocaleString('en-US');
+    if (n >= 100) return '$' + n.toFixed(0);
+    if (n >= 10) return '$' + n.toFixed(1);
+    if (n >= 0.01) return '$' + n.toFixed(2);
+    if (n > 0) return '$' + n.toFixed(4);
+    return '$0.00';
+  }
+  function compute(blockedCalls, deflectedBots, opts) {
+    opts = opts || {};
+    var total = clamp(blockedCalls, 0) + clamp(deflectedBots, 0);
+    var avgIn = clamp(opts.avgInputTokensPerBlock, DEFAULT_AVG_INPUT_TOKENS);
+    var avgOut = clamp(opts.avgOutputTokensPerBlock, DEFAULT_AVG_OUTPUT_TOKENS);
+    var mix = (opts.modelMix && Object.keys(opts.modelMix).length) ? opts.modelMix : DEFAULT_MODEL_MIX;
+    var prices = opts.modelPrices || DEFAULT_MODEL_PRICES;
+    var b = blended(mix, prices);
+    var ti = total * avgIn, to = total * avgOut;
+    var dollars = (ti * b.input + to * b.output) / 1e6;
+    return {
+      blockedCalls: clamp(blockedCalls, 0),
+      deflectedBots: clamp(deflectedBots, 0),
+      tokensSavedInput: ti,
+      tokensSavedOutput: to,
+      tokensSavedTotal: ti + to,
+      dollarsSaved: dollars,
+      dollarsSavedDisplay: fmtDollars(dollars),
+      tokensSavedDisplay: fmtTokens(ti + to),
+      blendedPricePer1M: b,
+      modelMix: mix
+    };
+  }
+  return { compute: compute, formatDollars: fmtDollars, formatTokens: fmtTokens };
+})();
+
+// renderTopBlockedGates — defensive stub for the loadDemo() legacy direct
+// call. The current dashboard layout surfaces top-blocked gates via the
+// team panel (renderTeam → team.topBlockedGates) and has no dedicated
+// #topBlockedGates element. Stub keeps loadDemo() from throwing while
+// also rendering into a target element if one is ever added.
+function renderTopBlockedGates(gates) {
+  if (!Array.isArray(gates)) return;
+  var target = document.getElementById('topBlockedGates')
+    || document.getElementById('topBlockedList');
+  if (!target || typeof escHtml !== 'function') return;
+  target.innerHTML = gates.map(function (g) {
+    return '<div class="blocked-row"><div><div class="blocked-name">'
+      + escHtml(g.name || '')
+      + '</div></div><div class="blocked-meta">'
+      + (g.blocked || 0)
+      + '</div></div>';
+  }).join('');
+}
+
 let API_KEY = '';
 let currentSource = 'all';
 let isDemo = false;
@@ -1441,7 +1526,7 @@ function loadDemo() {
   // Demo badge in nav
   var logo = document.querySelector('.nav-logo');
   if (!document.getElementById('demoBadge')) {
-    logo.insertAdjacentHTML('afterend', '<span class="demo-badge" id="demoBadge">Demo Mode</span>');
+    logo.insertAdjacentHTML('afterend', '<span class="demo-badge" id="demoBadge">Demo Mode — Jamie M., Partner · Litigation Intake</span>');
   }
   // Stats
   document.getElementById('statTotal').textContent = '184';
@@ -1552,18 +1637,18 @@ function loadDemo() {
       team: { band: 'high', score: 0.72 }
     },
     revenueForecast: {
-      predictedBookedRevenueCents: 250000,
-      incrementalOpportunityCents: 75000
+      predictedBookedRevenueCents: 8400000,
+      incrementalOpportunityCents: 3200000
     },
     anomalySummary: {
       count: 2,
       severity: 'warning'
     },
     topCreators: [
-      { key: 'innovation_team', opportunityRevenueCents: 150000 }
+      { key: 'innovation_team', opportunityRevenueCents: 4800000 }
     ],
     topSources: [
-      { key: 'direct_outreach', opportunityRevenueCents: 100000 }
+      { key: 'direct_outreach', opportunityRevenueCents: 2400000 }
     ],
     anomalies: [
       { type: 'upl_risk_concentration', message: 'UPL blocks concentrate in litigation intake — add practice-area rules.', severity: 'warning' },
@@ -1858,6 +1943,7 @@ function chartDefaults() {
 function renderFeedbackTrendChart(ts) {
   var canvas = document.getElementById('feedbackTrendChart');
   if (!canvas) return;
+  if (typeof Chart === 'undefined') return;
   var days = ts.days || [];
   if (feedbackChart) feedbackChart.destroy();
 
@@ -1908,6 +1994,7 @@ function renderFeedbackTrendChart(ts) {
 function renderLessonTrendChart(ts) {
   var canvas = document.getElementById('lessonTrendChart');
   if (!canvas) return;
+  if (typeof Chart === 'undefined') return;
   var days = ts.days || [];
   if (lessonChart) lessonChart.destroy();
 
@@ -1966,6 +2053,7 @@ function renderLessonTrendChart(ts) {
 function renderGateAuditChartFromData(gateAudit) {
   var canvas = document.getElementById('gateAuditChart');
   if (!canvas) return;
+  if (typeof Chart === 'undefined') return;
   var days = gateAudit.days || [];
   if (gateAuditChart) gateAuditChart.destroy();
 

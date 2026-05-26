@@ -64,6 +64,10 @@
           {
             "type": "command",
             "command": "node bin/cli.js session-start"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/scripts/session-bootstrap/revenue-truth.sh"
           }
         ]
       }
