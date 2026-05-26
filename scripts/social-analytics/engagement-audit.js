@@ -107,7 +107,7 @@ function buildEngagementAudit(options = {}) {
   for (const entry of Object.values(replyState.repliedTo || {})) {
     const platform = String(entry.platform || '').trim().toLowerCase();
     if (!platforms[platform]) continue;
-    if (formatDateInTimezone(entry.at, timezone) !== targetDate) continue;
+    if (!entry.at || formatDateInTimezone(entry.at, timezone) !== targetDate) continue;
     platforms[platform].checked += 1;
     if (entry.drafted) {
       platforms[platform].drafted += 1;
@@ -129,7 +129,8 @@ function buildEngagementAudit(options = {}) {
   for (const draft of drafts) {
     const platform = String(draft.platform || '').trim().toLowerCase();
     if (!platforms[platform]) continue;
-    if (formatDateInTimezone(draft.draftedAt, timezone) !== targetDate) continue;
+    const draftDate = draft.draftedAt || draft.createdAt;
+    if (!draftDate || formatDateInTimezone(draftDate, timezone) !== targetDate) continue;
     platforms[platform].drafted += 1;
   }
 
