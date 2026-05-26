@@ -23,7 +23,6 @@
  *   npx thumbgate background-governance  # background-agent run report + risk check
  *   npx thumbgate cfo           # local operational billing summary
  *   npx thumbgate pro           # solo dashboard + exports side lane
- *   npx thumbgate sync          # push/pull Pro lessons across machines
  *   npx thumbgate audit <file>  # audit an agent transcript for repeat-mistake token waste
  */
 
@@ -1140,7 +1139,6 @@ function pro() {
   trackEvent('cli_pro_view', { command: 'pro' });
   const args = parseArgs(process.argv.slice(3));
   const {
-    resolveProApiBaseUrl,
     resolveProKey,
     saveLicense,
     startLocalProDashboard,
@@ -1155,8 +1153,7 @@ function pro() {
     console.log('Every licensed Pro user gets a personal local dashboard on localhost.');
     console.log('\nWhat is available:');
     console.log('  - Local Pro dashboard: your own browser dashboard for search, gates, and DPO export');
-    console.log('  - Pro sync: push/pull lessons across laptops, CI, containers, and agent runtimes');
-    console.log('  - Team rollout path: hosted lessons, org visibility, and workflow proof');
+    console.log('  - Team rollout path: shared hosted lessons, org visibility, and workflow proof');
     console.log('  - Commercial truth doc: source of truth for traction, pricing, and proof claims');
     console.log('\nLinks:');
     console.log(`  Buy Pro         : ${PRO_CHECKOUT_URL}`);
@@ -1164,7 +1161,6 @@ function pro() {
     console.log('  Launch dashboard: npx thumbgate pro');
     console.log('  Activate + run  : npx thumbgate pro --activate --key=YOUR_KEY');
     console.log('  Install configs : npx thumbgate pro --upgrade');
-    console.log('  Sync lessons    : npx thumbgate sync --push && npx thumbgate sync --pull');
     console.log('  Private core    : ThumbGate-Core (private repo)');
     console.log('  Core repo       : https://github.com/IgorGanapolsky/ThumbGate-Core\n');
   }
@@ -1206,7 +1202,7 @@ function pro() {
       version: pkgVersion(),
     };
 
-    const licensePath = saveLicense(license.key, { version: license.version, apiBaseUrl: resolveProApiBaseUrl() });
+    const licensePath = saveLicense(license.key, { version: license.version });
     console.log('\n✅ Pro license activated!');
     console.log(`   Key saved to: ${licensePath}`);
     console.log('   Launching your personal local dashboard...\n');
@@ -1303,28 +1299,18 @@ function lessons() {
 
   // --remote: fetch from hosted Railway instance
   if (args.remote) {
-    const { resolveProApiBaseUrl, resolveProKey } = require(path.join(PKG_ROOT, 'scripts', 'pro-local-dashboard'));
-    const resolvedKey = resolveProKey();
-    const apiBase = resolveProApiBaseUrl();
+    const apiBase = process.env.THUMBGATE_API_URL || PRO_URL;
     const params = new URLSearchParams({ q: query, limit: String(limit) });
     if (args.category) params.set('category', args.category);
     if (tags.length) params.set('tags', tags.join(','));
     const url = `${apiBase}/v1/lessons/search?${params}`;
     const mod = url.startsWith('https') ? require('https') : require('http');
     let body = '';
-    const requestOptions = {
-      timeout: 8000,
-      headers: resolvedKey && resolvedKey.key ? { Authorization: `Bearer ${resolvedKey.key}` } : {},
-    };
-    const req = mod.get(url, requestOptions, (res) => {
+    const req = mod.get(url, { timeout: 8000 }, (res) => {
       res.on('data', (chunk) => { body += chunk; });
       res.on('end', () => {
         try {
           const result = JSON.parse(body);
-          if (res.statusCode >= 400) {
-            process.stderr.write(`Remote lesson search failed (${res.statusCode}): ${result.detail || result.error || body.slice(0, 200)}\n`);
-            process.exit(1);
-          }
           if (args.json) {
             console.log(JSON.stringify(result, null, 2));
           } else {
@@ -1356,90 +1342,6 @@ function lessons() {
   }
 
   process.stdout.write(formatLessonSearchResults(result));
-}
-
-async function syncLessons() {
-  const args = parseArgs(process.argv.slice(3));
-  const {
-    resolveProApiBaseUrl,
-    resolveProKey,
-  } = require(path.join(PKG_ROOT, 'scripts', 'pro-local-dashboard'));
-  const {
-    buildLessonBundleFromDir,
-    getSyncStatusForDir,
-    mergeLessonBundleIntoDir,
-  } = require(path.join(PKG_ROOT, 'scripts', 'lesson-sync'));
-  const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
-
-  const resolvedKey = resolveProKey();
-  if (!resolvedKey || !resolvedKey.key) {
-    console.error('Pro sync requires an activated license key.');
-    console.error('Run: npx thumbgate pro --activate --key=YOUR_KEY');
-    process.exit(1);
-  }
-
-  const apiBase = String(args.apiBaseUrl || args['api-base-url'] || resolveProApiBaseUrl()).replace(/\/+$/, '');
-  const { FEEDBACK_DIR } = getFeedbackPaths();
-
-  async function requestJson(pathname, { method = 'GET', body } = {}) {
-    const res = await fetch(`${apiBase}${pathname}`, {
-      method,
-      headers: {
-        Authorization: `Bearer ${resolvedKey.key}`,
-        ...(body ? { 'content-type': 'application/json' } : {}),
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    const text = await res.text();
-    let json = {};
-    try {
-      json = text ? JSON.parse(text) : {};
-    } catch {
-      json = { error: text };
-    }
-    if (!res.ok) {
-      throw new Error(json.detail || json.error || `HTTP ${res.status}`);
-    }
-    return json;
-  }
-
-  const mode = args.push ? 'push' : args.pull ? 'pull' : 'status';
-
-  try {
-    if (mode === 'push') {
-      const bundle = buildLessonBundleFromDir(FEEDBACK_DIR, { source: { client: 'thumbgate-cli-sync' } });
-      const result = await requestJson('/v1/sync/push', { method: 'POST', body: { bundle } });
-      console.log(`Pushed ${bundle.lessonCount} local lesson(s) to ThumbGate Pro sync.`);
-      console.log(`Hosted imported ${result.imported || 0}; skipped ${result.skippedDuplicate || 0} duplicate(s).`);
-      process.exit(0);
-    }
-
-    if (mode === 'pull') {
-      const result = await requestJson('/v1/sync/pull', { method: 'POST', body: {} });
-      const merge = mergeLessonBundleIntoDir(result.bundle, FEEDBACK_DIR, { importTag: 'pro-sync-pull' });
-      console.log(`Pulled ${result.bundle.lessonCount || 0} hosted lesson(s) from ThumbGate Pro sync.`);
-      console.log(`Local imported ${merge.imported}; skipped ${merge.skippedDuplicate} duplicate(s).`);
-      process.exit(0);
-    }
-
-    const [local, remote] = await Promise.all([
-      Promise.resolve(getSyncStatusForDir(FEEDBACK_DIR)),
-      requestJson('/v1/sync/status'),
-    ]);
-    if (args.json) {
-      console.log(JSON.stringify({ apiBase, local, remote }, null, 2));
-      process.exit(0);
-    }
-    console.log('ThumbGate Pro Sync');
-    console.log(`API      : ${apiBase}`);
-    console.log(`Local    : ${local.lessonCount} lesson(s), last updated ${local.lastUpdatedAt || 'never'}`);
-    console.log(`Hosted   : ${remote.lessonCount} lesson(s), last updated ${remote.lastUpdatedAt || 'never'}`);
-    console.log('\nCommands : npx thumbgate sync --push | npx thumbgate sync --pull');
-    process.exit(0);
-  } catch (err) {
-    console.error(`Pro sync failed: ${err && err.message ? err.message : err}`);
-    process.exit(1);
-  }
 }
 
 function modelFit() {
@@ -2775,10 +2677,6 @@ switch (COMMAND) {
   case 'lessons':
   case 'search-lessons':
     lessons();
-    break;
-  case 'sync':
-  case 'pro-sync':
-    syncLessons();
     break;
   case 'notes': {
     const { cli: notesCli } = require(path.join(PKG_ROOT, 'scripts', 'implementation-notes'));

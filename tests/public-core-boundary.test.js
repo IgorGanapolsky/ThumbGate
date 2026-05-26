@@ -117,10 +117,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // Bumped 263 → 264 (2026-05-22) to ship scripts/self-healing-check.js:
   // `thumbgate self-heal` invokes it before scripts/self-heal.js, so omitting
   // it breaks published installs even though source-checkout tests pass.
-  // Bumped 264 → 265 (2026-05-26) to ship scripts/lesson-sync.js:
-  // the packaged API server requires it for hosted Pro sync routes.
   const files = npmPackFiles();
-  const CEILING = 265;
+  const CEILING = 264;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

@@ -136,12 +136,6 @@ const {
   generateSkills,
 } = require('../../scripts/skill-generator');
 const {
-  buildLessonBundleFromDir,
-  getAccountSyncDir,
-  getSyncStatusForDir,
-  mergeLessonBundleIntoDir,
-} = require('../../scripts/lesson-sync');
-const {
   satisfyCondition,
   loadStats: loadGateStats,
   setConstraint,
@@ -6494,61 +6488,6 @@ async function addContext(){
     }
 
     try {
-      if (
-        (req.method === 'GET' && pathname === '/v1/sync/status') ||
-        (req.method === 'POST' && (pathname === '/v1/sync/push' || pathname === '/v1/sync/pull'))
-      ) {
-        const token = extractBearerToken(req);
-        const validation = validateApiKey(token);
-        if (!validation.valid || !validation.customerId) {
-          sendProblem(res, {
-            type: PROBLEM_TYPES.FORBIDDEN,
-            title: 'Forbidden',
-            status: 403,
-            detail: 'Hosted Pro sync requires a customer-scoped billing API key.',
-          });
-          return;
-        }
-
-        const syncDir = getAccountSyncDir(requestSafeDataDir, validation.customerId);
-        if (req.method === 'GET' && pathname === '/v1/sync/status') {
-          const status = getSyncStatusForDir(syncDir);
-          sendJson(res, 200, {
-            ok: true,
-            customerHash: path.basename(syncDir),
-            ...status,
-          });
-          return;
-        }
-
-        if (req.method === 'POST' && pathname === '/v1/sync/push') {
-          const body = await parseJsonBody(req, 5 * 1024 * 1024);
-          const result = mergeLessonBundleIntoDir(body.bundle || body, syncDir, { importTag: 'hosted-pro-sync' });
-          sendJson(res, 200, {
-            ok: true,
-            customerHash: path.basename(syncDir),
-            ...result,
-            status: getSyncStatusForDir(syncDir),
-          });
-          return;
-        }
-
-        if (req.method === 'POST' && pathname === '/v1/sync/pull') {
-          const bundle = buildLessonBundleFromDir(syncDir, {
-            source: {
-              hosted: true,
-              customerHash: path.basename(syncDir),
-            },
-          });
-          sendJson(res, 200, {
-            ok: true,
-            customerHash: path.basename(syncDir),
-            bundle,
-          });
-          return;
-        }
-      }
-
       if (req.method === 'GET' && pathname === '/v1/feedback/stats') {
         sendJson(res, 200, analyzeFeedback(requestFeedbackPaths.FEEDBACK_LOG_PATH));
         return;
