@@ -1,9 +1,10 @@
 name: Video Autopilot
 
-# Fires every 4 hours, but scheduled runs are gated off by default. The
-# workflow can still generate dry-runs, but paid Zernio publishing requires an
-# explicit workflow input or repo variable because low-engagement duplicate
-# posts were burning attention without revenue.
+# Manual-dispatch only as of 2026-05-26. The cron previously fired every 4
+# hours (180+ runs/month) but every run was a no-op because per-platform
+# cooldowns and the "publishing off by default" gate meant nothing actually
+# shipped. Re-add the schedule only after a proven content cadence justifies
+# the burn.
 #
 # Content rotation: 6 templates picked by least-recently-used order in
 # the marketing DB — never double-posts the same template within 7 days.
@@ -12,12 +13,8 @@ name: Video Autopilot
 #   TikTok:    24 h (one distinct experiment/day)
 #   Instagram: 24 h (one Reel/day)
 #   YouTube:  12 h  (up to 2 Shorts/day)
-#
-# The CI run is a no-op (skips all platforms) if cooldowns haven't expired.
 
 on:
-  schedule:
-    - cron: '0 */4 * * *'   # every 4 hours, all days
   workflow_dispatch:
     inputs:
       template:

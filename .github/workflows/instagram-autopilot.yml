@@ -1,8 +1,11 @@
 name: Instagram Autopilot
 
-# Generates a ThumbGate Instagram static card once per day, but scheduled
-# publishing is off by default. Screenshots showed repeated low-engagement
-# cards, so Zernio publishing must be explicitly re-enabled after proof.
+# Manual-dispatch only as of 2026-05-26. The cron previously fired daily at
+# 13:00 UTC but scheduled publishing was off by default (low-engagement
+# cards observed in screenshots), so every run cost CI minutes for a no-op.
+# Re-add the schedule only after Zernio publishing is explicitly re-enabled
+# and post engagement justifies the burn.
+#
 # Complements video-autopilot.yml (which posts Reels) by covering the
 # Instagram feed with image content as well.
 #
@@ -10,14 +13,11 @@ name: Instagram Autopilot
 #   ZERNIO_API_KEY
 #   (Zernio must have an Instagram account connected under the same profile)
 #
-# Cadence: every 24h at 13:00 UTC (09:00 ET — peak engagement window).
 # Dedup: publishers/zernio.js enforces a 24h content-hash window via the
-# marketing DB, so a manual dispatch immediately after a scheduled run is
-# a safe no-op rather than a double-post.
+# marketing DB, so back-to-back manual dispatches are a safe no-op rather
+# than a double-post.
 
 on:
-  schedule:
-    - cron: '0 13 * * *'
   workflow_dispatch:
     inputs:
       image_only:
