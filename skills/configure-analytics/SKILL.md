@@ -45,18 +45,16 @@ THUMBGATE_GA_MEASUREMENT_ID=<G-ID or leave commented>
 
 ### 3. Set Railway production vars
 
-**Option A — Railway MCP (preferred):**
+**Option A — Railway CLI or GitHub deploy variables (preferred):**
 ```
-mcp__railway__set_variables({
-  project_id: "<thumbgate-project-id>",
-  service_id: "<thumbgate-service-id>",
-  variables: {
-    PLAUSIBLE_API_KEY: "<key>",
-    POSTHOG_API_KEY: "<phc_key>",
-    THUMBGATE_GA_MEASUREMENT_ID: "<G-ID>"
-  }
-})
+gh secret list --repo IgorGanapolsky/ThumbGate
+gh variable list --repo IgorGanapolsky/ThumbGate
 ```
+
+If Railway CLI auth works, set variables with `railway variables set`.
+If Railway CLI reports `invalid_grant`, use the GitHub PR/deploy path and the
+Railway dashboard in Chrome. Do not direct-push to `main`; use a focused branch,
+PR, required checks, and branch-protected merge.
 
 **Option B — Chrome (if MCP not authenticated):**
 - Navigate to railway.com dashboard
@@ -68,16 +66,16 @@ mcp__railway__set_variables({
 ### 4. Verify
 
 ```bash
-# Local: run funnel report
-npm run social:funnel
+# Local: run Plausible poller
+npm run social:poll:plausible
 
-# Production: check template var injection
-curl -s https://thumbgate-production.up.railway.app/checkout/pro | grep -o 'phc_[a-zA-Z0-9]*'
-curl -s https://thumbgate-production.up.railway.app/checkout/pro | grep -o 'G-[A-Z0-9]*'
+# Production: check instrumentation scripts and health
+curl -fsS https://thumbgate.ai/health
+curl -fsS https://thumbgate.ai/checkout/pro | grep -E 'plausible|posthog|G-[A-Z0-9]+'
 ```
 
 ## Current values (last updated 2026-05-26)
 
 - Plausible site: `thumbgate-production.up.railway.app`
 - PostHog project: US Cloud, project ID 299775
-- GA4: No ThumbGate property exists (only "Easy Smart Home LLC" in account)
+- GA4: use `THUMBGATE_GA_MEASUREMENT_ID` when present; do not assume the dashboard is export-ready without provider credentials.

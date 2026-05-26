@@ -11,37 +11,49 @@ into a readable local report.
 
 ## Steps
 
-### 1. Run the funnel report
+### 1. Run the live Plausible poller
 
 ```bash
-cd repo && npm run social:funnel
+cd /Users/igorganapolsky/workspace/git/igor/ThumbGate/repo
+npm run social:poll:plausible
 ```
 
-This pulls from three sources:
-- **Plausible API** (live, if `PLAUSIBLE_API_KEY` is set)
-- **Local billing JSONL** (Stripe webhook events)
-- **Local telemetry** (server-side analytics log)
+This pulls live Plausible visitors, source attribution, and checkout funnel
+metrics for the last 7 days, then stores the result in the social analytics
+SQLite store.
 
-### 2. For deeper Plausible drill-down
+### 2. Read local first-party telemetry quality
 
 ```bash
-cd repo && node scripts/social-analytics/pollers/plausible.js
+cd /Users/igorganapolsky/workspace/git/igor/ThumbGate/repo
+node -e "const {getFeedbackPaths}=require('./scripts/feedback-loop'); const {getTelemetryAnalytics}=require('./scripts/telemetry-analytics'); const {FEEDBACK_DIR}=getFeedbackPaths(); console.log(JSON.stringify(getTelemetryAnalytics(FEEDBACK_DIR,{window:'30d'}).trafficQuality,null,2));"
 ```
 
-Fetches visitors, source attribution, and full funnel metrics for last 7 days,
-stores in SQLite.
+Use `trafficQuality.external` for demand analysis. Treat raw event totals as
+diagnostic input only; they may include internal, test, bot, or low-confidence
+direct traffic.
 
-### 3. For JSON export (pipe to jq, save to file)
+### 3. Print the local operational dashboard
 
 ```bash
-cd repo && npm run social:funnel -- --json | jq . > .thumbgate/funnel-snapshot.json
+cd /Users/igorganapolsky/workspace/git/igor/ThumbGate/repo
+node scripts/dashboard.js
 ```
 
-### 4. For a specific time period
+Look for:
+- `External Visitors`
+- `Data Quality`
+- `Clean Visitors`
+- `Plausible Export`
+- `PostHog Export`
+- `GA4 Export`
+- `Visitor Paths`
 
-```bash
-cd repo && npm run social:funnel -- --period=30d
-```
+### 4. For Stripe truth
+
+Use the Stripe connector to inspect account, products, prices, subscriptions,
+charges, invoices, and search results. Do not count Igor's own test purchase as
+commercial revenue.
 
 ## Event name reference
 
@@ -53,10 +65,12 @@ These are the canonical Plausible event names fired by the checkout pipeline:
 | Checkout view | `Checkout Pro Viewed` | Server-side (plausible-server-events.js) |
 | Email submit | `Checkout Pro Email Submitted` | Server-side |
 | Stripe redirect | `Checkout Pro Stripe Redirect Started` | Server-side |
-| Purchase | `Checkout Pro Purchase Completed` | Server-side (billing.js webhook) + client-side (success page) |
+| Purchase | `Checkout Pro Purchase Completed` | Server-side only (billing.js Stripe webhook) |
+| Success confirmation | `Checkout Pro Success Page Confirmed` | Client-side success page confirmation |
 
 ## Troubleshooting
 
-- **All zeros from Plausible**: Check `PLAUSIBLE_API_KEY` is set (run `echo $PLAUSIBLE_API_KEY`)
-- **No local telemetry**: Check `.claude/memory/feedback/analytics.jsonl` exists
-- **Funnel report command missing**: Run `npm run` to see available scripts; may need `npm install`
+- **All zeros from Plausible**: check `PLAUSIBLE_API_KEY` and `PLAUSIBLE_SITE_ID`.
+- **No local telemetry**: check `.thumbgate/telemetry-pings.jsonl` and the active feedback directory.
+- **Raw local telemetry looks high but Stripe is zero**: inspect `trafficQuality`; internal/test traffic may be polluting the raw count.
+- **Purchase count double-counts**: verify success-page code does not emit `Checkout Pro Purchase Completed`; only the webhook should emit that canonical purchase event.
