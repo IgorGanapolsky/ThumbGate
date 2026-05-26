@@ -60,7 +60,9 @@ const path = require('node:path');
 //            only from source checkouts.
 // 263 → 264: scripts/self-healing-check.js added so `thumbgate self-heal`
 //            works from npm installs instead of failing before self-heal.js.
-const BASELINE_FILE_COUNT = 264;
+// 264 → 265: scripts/lesson-sync.js added so hosted Pro sync routes boot from
+//            npm installs, not only source checkouts.
+const BASELINE_FILE_COUNT = 265;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
