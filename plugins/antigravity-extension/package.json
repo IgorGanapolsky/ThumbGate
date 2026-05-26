@@ -6,7 +6,7 @@
   "publisher": "igorganapolsky",
   "icon": "assets/logo-400x400.png",
   "engines": {
-    "vscode": "^1.85.0"
+    "node": ">=18"
   },
   "categories": ["Other"],
   "keywords": [
