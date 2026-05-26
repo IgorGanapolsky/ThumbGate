@@ -167,17 +167,6 @@ function buildRalphSteps(options = {}, env = process.env) {
   }
 
   if (wants(mode, ['engage'])) {
-    steps.push(withSkipReason(makeNodeStep(
-      'sync-launch-assets',
-      'scripts/social-analytics/sync-launch-assets.js',
-      ['--limit=50', `--state-path=${options.launchAssetsPath || DEFAULT_LAUNCH_ASSETS_PATH}`],
-      {
-        stage: 'sense',
-        description: 'Syncs owned Zernio launch assets so reply monitoring anchors on current campaign posts.',
-        requiredEnvAll: ['ZERNIO_API_KEY'],
-      }
-    ), env));
-
     const replyArgs = [];
     if (dryRun) {
       replyArgs.push('--dry-run');
@@ -186,9 +175,6 @@ function buildRalphSteps(options = {}, env = process.env) {
     if (autonomousBlueskyPublish) {
       blueskyReplyArgs.push('--auto-approve-safe', `--limit=${blueskyPublishLimit}`);
     }
-    // Bluesky reply monitor: Zernio has no inbound/comments API, so we poll AT
-    // Protocol directly. Scheduled mode may auto-publish only bounded safe
-    // replies: no URLs, no sales terms, and max 260 chars.
     steps.push(
       makeNodeStep(
         'reply-monitor',
@@ -234,22 +220,8 @@ function buildRalphSteps(options = {}, env = process.env) {
     );
   }
 
-  if (mode === 'post') {
-    const postArgs = [];
-    if (dryRun) {
-      postArgs.push('--dry-run');
-    }
-    steps.push(makeNodeStep(
-      'daily-social-post',
-      'scripts/social-post-hourly.js',
-      postArgs,
-      {
-        stage: 'publish',
-        description: 'Runs the one-quality-post lane on demand. Ralph hourly mode does not call this step.',
-        requiredEnvAll: ['ZERNIO_API_KEY'],
-      }
-    ));
-  }
+  // post mode: daily-social-post removed 2026-05-26 (Zernio subscription cancelled).
+  // social-post-hourly.js depends on Zernio publisher — unusable without it.
 
   steps.push(...[
     {

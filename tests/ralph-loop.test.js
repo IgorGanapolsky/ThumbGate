@@ -50,7 +50,6 @@ test('buildRalphSteps keeps hourly all mode focused on sensing, replying, and au
 
   assert.deepEqual(ids, [
     'poll-analytics',
-    'sync-launch-assets',
     'reply-monitor',
     'reply-monitor-bluesky',
     'prospect-bluesky',
@@ -59,10 +58,7 @@ test('buildRalphSteps keeps hourly all mode focused on sensing, replying, and au
     'stack-survival-audit',
     'engagement-audit',
   ]);
-  assert.match(steps.find((step) => step.id === 'sync-launch-assets').skipReason, /ZERNIO_API_KEY/);
   assert.deepEqual(steps.find((step) => step.id === 'reply-monitor').args.slice(-1), ['--dry-run']);
-  // Bluesky reply monitor uses direct AT Protocol (Zernio has no inbound API as
-  // of 2026-04-21). Gated on BLUESKY_HANDLE + BLUESKY_APP_PASSWORD.
   const bluesky = steps.find((step) => step.id === 'reply-monitor-bluesky');
   assert.deepEqual(bluesky.args.slice(-1), ['--dry-run']);
   assert.match(bluesky.skipReason, /BLUESKY_HANDLE|BLUESKY_APP_PASSWORD/);
@@ -84,8 +80,7 @@ test('buildRalphSteps can publish bounded safe Bluesky replies on the scheduled 
   const bluesky = steps.find((step) => step.id === 'reply-monitor-bluesky');
   const publish = steps.find((step) => step.id === 'publish-approved-bluesky');
 
-  assert.deepEqual(ids.slice(0, 5), [
-    'sync-launch-assets',
+  assert.deepEqual(ids.slice(0, 4), [
     'reply-monitor',
     'reply-monitor-bluesky',
     'publish-approved-bluesky',
@@ -98,29 +93,25 @@ test('buildRalphSteps can publish bounded safe Bluesky replies on the scheduled 
   assert.match(publish.description, /safe auto-approval/);
 });
 
-test('buildRalphSteps supports manual post mode with skip evidence', () => {
+test('buildRalphSteps post mode only has prove steps (daily-social-post removed with Zernio)', () => {
   const steps = buildRalphSteps({ mode: 'post', dryRun: true }, {});
-  const post = steps.find((step) => step.id === 'daily-social-post');
 
   assert.deepEqual(steps.map((step) => step.id), [
-    'daily-social-post',
     'reward-report',
     'trace-intelligence',
     'stack-survival-audit',
     'engagement-audit',
   ]);
-  assert.deepEqual(post.args.slice(-1), ['--dry-run']);
-  assert.match(post.skipReason, /ZERNIO_API_KEY/);
 });
 
 test('runStep records skipped, external, and failed step evidence', () => {
   const skipped = runStep({
-    id: 'sync-launch-assets',
-    stage: 'sense',
-    skipReason: 'missing env: ZERNIO_API_KEY',
+    id: 'reply-monitor-bluesky',
+    stage: 'engage',
+    skipReason: 'missing env: BLUESKY_HANDLE',
   });
   assert.equal(skipped.status, 'skipped');
-  assert.match(skipped.skipReason, /ZERNIO_API_KEY/);
+  assert.match(skipped.skipReason, /BLUESKY_HANDLE/);
 
   const passed = runStep({
     id: 'node-ok',
@@ -200,7 +191,7 @@ test('runRalphLoop writes machine-readable evidence and keeps state paths explic
     draftsPath: path.join(tmp, 'reply-drafts.jsonl'),
     launchAssetsPath: path.join(tmp, 'social-launch-assets.json'),
   }, {
-    env: { ZERNIO_API_KEY: 'zernio_test_key' },
+    env: {},
     runner: (step) => {
       calls.push(step.id);
       return {
@@ -211,7 +202,7 @@ test('runRalphLoop writes machine-readable evidence and keeps state paths explic
     },
   });
 
-  assert.deepEqual(calls, ['sync-launch-assets', 'reply-monitor']);
+  assert.deepEqual(calls, ['reply-monitor']);
   assert.equal(report.mode, 'engage');
   assert.equal(report.dryRun, true);
   assert.equal(typeof report.reward.averageReward, 'number');

@@ -324,27 +324,25 @@ describe('social-analytics poll-all', () => {
     LEGACY_POLLERS,
   } = require('../scripts/social-analytics/poll-all');
 
-  // 2026-04-20: POLLERS narrowed to the Zernio-canonical stack (github,
-  // plausible, zernio). The 6 direct-API pollers (instagram, tiktok, linkedin,
-  // reddit, threads, youtube) moved to LEGACY_POLLERS and only activate
-  // via THUMBGATE_USE_DIRECT_POLLERS=1. X/Twitter was retired from distribution
-  // 2026-04-20 and is not in either list.
-  it('default POLLERS is the Zernio-canonical list (github + plausible + zernio)', () => {
-    assert.equal(POLLERS.length, 3);
+  // 2026-05-26: Zernio subscription cancelled. POLLERS narrowed to github + plausible.
+  // The 6 direct-API pollers remain in LEGACY_POLLERS.
+  it('default POLLERS is github + plausible (Zernio removed 2026-05-26)', () => {
+    assert.equal(POLLERS.length, 2);
     const names = POLLERS.map((p) => p.name);
-    assert.deepEqual(names.sort(), ['github', 'plausible', 'zernio']);
+    assert.deepEqual(names.sort(), ['github', 'plausible']);
   });
 
-  it('LEGACY_POLLERS + POLLERS covers the 9 active platforms (X excluded post-retirement)', () => {
+  it('LEGACY_POLLERS + POLLERS covers the 8 active platforms (X and Zernio excluded)', () => {
     const all = [...POLLERS, ...LEGACY_POLLERS].map((p) => p.name);
-    assert.equal(all.length, 9);
+    assert.equal(all.length, 8);
     for (const name of [
       'github', 'instagram', 'tiktok', 'linkedin',
-      'reddit', 'threads', 'youtube', 'plausible', 'zernio',
+      'reddit', 'threads', 'youtube', 'plausible',
     ]) {
       assert.ok(all.includes(name), `missing poller: ${name}`);
     }
     assert.ok(!all.includes('x'), 'X must not appear in any poller list — retired 2026-04-20');
+    assert.ok(!all.includes('zernio'), 'Zernio must not appear — subscription cancelled 2026-05-26');
   });
 
   it('each poller has envRequired array', () => {

@@ -23,15 +23,12 @@ const { initDb } = require('./store');
  * THUMBGATE_USE_DIRECT_POLLERS=1. This surfaces the legacy list without making it
  * the default contract.
  *
- * See CLAUDE.md § Social stack: Zernio canonical before broadening this list.
+ * Zernio removed 2026-05-26 (subscription cancelled). Direct pollers are the path forward.
  */
 const POLLERS = [
   { name: 'github', module: './pollers/github', envRequired: ['GITHUB_TOKEN'] },
   // PLAUSIBLE_SITE_ID defaults to thumbgate-production.up.railway.app if not set.
   { name: 'plausible', module: './pollers/plausible', envRequired: ['PLAUSIBLE_API_KEY'] },
-  // Zernio covers all connected social accounts (Reddit, LinkedIn, Bluesky, Threads,
-  // Instagram, YouTube, TikTok) via a unified API. This is the canonical social poller.
-  { name: 'zernio', module: './pollers/zernio', envRequired: ['ZERNIO_API_KEY'] },
 ];
 
 /**
@@ -116,7 +113,7 @@ async function main() {
   if (process.env.THUMBGATE_USE_DIRECT_POLLERS === '1') {
     console.log('Mode: DIRECT (legacy per-platform pollers enabled)');
   } else {
-    console.log('Mode: ZERNIO-CANONICAL (github + plausible + zernio)');
+    console.log('Mode: CANONICAL (github + plausible)');
   }
   console.log('');
 
