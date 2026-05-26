@@ -40,13 +40,18 @@ echo ""
 # Run the gate evaluation. Pure local: read JSON, compile regex, test string.
 # No network primitive is invoked anywhere in this path.
 echo "--- Gate evaluation (local-only, no cloud call) ---"
-node - <<EOF
+# Pass the prompt and templates path via env vars so we never have to quote
+# user-supplied text into a heredoc'd JS source. bash ${var@Q} produces
+# bash-ANSI-C output (e.g. $'don\'t' or 'a'\''b') that is not valid JavaScript;
+# env-var passing is robust to any future prompt content (apostrophes,
+# newlines, em-dashes, the lot).
+DEMO_PROMPT="${DEMO_PROMPT}" TEMPLATES_PATH="${TEMPLATES}" node - <<'EOF'
 const fs = require('fs');
-const data = JSON.parse(fs.readFileSync('${TEMPLATES}', 'utf8'));
+const data = JSON.parse(fs.readFileSync(process.env.TEMPLATES_PATH, 'utf8'));
 const gate = data.templates.find((t) => t.id === 'block-unauthorized-practice-of-law');
 if (!gate) { console.error('Gate not found'); process.exit(2); }
 const re = new RegExp(gate.pattern);
-const prompt = ${DEMO_PROMPT@Q};
+const prompt = process.env.DEMO_PROMPT;
 const fired = re.test(prompt);
 console.log('  gate:      ' + gate.id);
 console.log('  aba_rule:  Rule 5.5 — Unauthorized Practice of Law');
