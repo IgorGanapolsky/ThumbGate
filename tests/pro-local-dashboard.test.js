@@ -50,6 +50,7 @@ test('pro local dashboard helper prefers THUMBGATE_API_KEY over saved license', 
   assert.deepEqual(resolved, {
     key: 'tg_env_override',
     source: 'env',
+    apiBaseUrl: 'https://thumbgate-production.up.railway.app',
   });
 
   fs.rmSync(homeDir, { recursive: true, force: true });

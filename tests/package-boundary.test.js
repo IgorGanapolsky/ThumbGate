@@ -269,9 +269,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 263 → 264 (2026-05-22) to ship scripts/self-healing-check.js.
   // bin/cli.js runs it before scripts/self-heal.js for `thumbgate self-heal`;
   // without this file, published installs fail with a missing-module error.
+  // Bumped 264 → 265 (2026-05-26) to ship scripts/lesson-sync.js.
+  // src/api/server.js requires it for /v1/sync/*; omitting it makes the
+  // published packaged runtime fail health checks even though source tests pass.
   assert.ok(
-    manifest.fileCount <= 264,
-    `npm package should stay <= 264 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 265,
+    `npm package should stay <= 265 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -361,9 +364,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // published installs. Observed unpacked size is ~3.806 MB.
   // Bumped 3.84 MB -> 3.85 MB (2026-05-26) after injecting Plausible/PostHog/GA4
   // scripts into the checkout interstitial page in server.js.
+  // Bumped 3.85 MB -> 3.86 MB (2026-05-26) to ship scripts/lesson-sync.js
+  // (~6.5 KB), required by the packaged API server for hosted Pro sync.
   assert.ok(
-    manifest.unpackedSize <= 3_850_000,
-    `npm package should stay <= 3.85 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_860_000,
+    `npm package should stay <= 3.86 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

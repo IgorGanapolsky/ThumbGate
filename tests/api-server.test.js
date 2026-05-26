@@ -1812,6 +1812,58 @@ test('feedback capture accepts valid payload', async () => {
   assert.ok(body.memoryRecord);
 });
 
+test('Pro sync stores lesson bundles in customer-scoped hosted memory', async () => {
+  const customerA = billing.provisionApiKey('cus_sync_a', { source: 'test_sync_a' });
+  const customerB = billing.provisionApiKey('cus_sync_b', { source: 'test_sync_b' });
+  const lessonBundle = {
+    version: '1.0.0',
+    exportedAt: '2026-05-26T12:00:00.000Z',
+    source: { project: 'machine-a' },
+    lessonCount: 1,
+    lessons: [{
+      id: 'fb_customer_a_only',
+      signal: 'down',
+      title: 'Never claim Stripe revenue from a test subscription',
+      context: 'Test payment was counted as money',
+      whatToChange: 'Check live charges and balance before revenue claims',
+      tags: ['stripe', 'revenue'],
+      timestamp: '2026-05-26T12:00:00.000Z',
+    }],
+  };
+
+  const pushRes = await fetch(apiUrl('/v1/sync/push'), {
+    method: 'POST',
+    headers: { authorization: `Bearer ${customerA.key}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ bundle: lessonBundle }),
+  });
+  assert.equal(pushRes.status, 200);
+  const pushBody = await pushRes.json();
+  assert.equal(pushBody.imported, 1);
+  assert.equal(pushBody.status.lessonCount, 1);
+
+  const pullARes = await fetch(apiUrl('/v1/sync/pull'), {
+    method: 'POST',
+    headers: { authorization: `Bearer ${customerA.key}`, 'content-type': 'application/json' },
+    body: '{}',
+  });
+  assert.equal(pullARes.status, 200);
+  const pullABody = await pullARes.json();
+  assert.equal(pullABody.bundle.lessonCount, 1);
+  assert.equal(pullABody.bundle.lessons[0].title, 'Never claim Stripe revenue from a test subscription');
+
+  const statusBRes = await fetch(apiUrl('/v1/sync/status'), {
+    headers: { authorization: `Bearer ${customerB.key}` },
+  });
+  assert.equal(statusBRes.status, 200);
+  const statusBBody = await statusBRes.json();
+  assert.equal(statusBBody.lessonCount, 0, 'second customer must not see first customer sync data');
+
+  const adminRes = await fetch(apiUrl('/v1/sync/status'), {
+    headers: authHeader,
+  });
+  assert.equal(adminRes.status, 403, 'static admin key must not be treated as a customer sync namespace');
+});
+
 test('feedback capture preserves related feedback linkage when provided', async () => {
   const res = await fetch(apiUrl('/v1/feedback/capture'), {
     method: 'POST',

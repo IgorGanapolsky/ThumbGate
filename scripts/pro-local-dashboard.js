@@ -63,7 +63,7 @@ function readLicense({ homeDir } = {}) {
   }
 }
 
-function saveLicense(key, { homeDir, version } = {}) {
+function saveLicense(key, { homeDir, version, apiBaseUrl } = {}) {
   const licenseDir = getLicenseDir(homeDir);
   const licensePath = getLicensePath(homeDir);
   fs.mkdirSync(licenseDir, { recursive: true });
@@ -73,9 +73,34 @@ function saveLicense(key, { homeDir, version } = {}) {
       key: String(key || '').trim(),
       savedAt: new Date().toISOString(),
       version: version || null,
+      apiBaseUrl: apiBaseUrl || null,
     }, null, 2) + '\n'
   );
   return licensePath;
+}
+
+function trimTrailingSlashes(value) {
+  let result = String(value || '').trim();
+  while (result.endsWith('/')) {
+    result = result.slice(0, -1);
+  }
+  return result;
+}
+
+function resolveProApiBaseUrl({ env = process.env, homeDir } = {}) {
+  const envUrl = trimTrailingSlashes(
+    env.THUMBGATE_API_BASE_URL ||
+    env.THUMBGATE_BILLING_API_BASE_URL ||
+    env.THUMBGATE_API_URL ||
+    ''
+  );
+  if (envUrl) return envUrl;
+
+  const license = readLicense({ homeDir });
+  const licenseUrl = trimTrailingSlashes(license && license.apiBaseUrl ? license.apiBaseUrl : '');
+  if (licenseUrl) return licenseUrl;
+
+  return DEFAULT_PRO_API;
 }
 
 function resolveProKey({ env = process.env, homeDir } = {}) {
@@ -85,6 +110,7 @@ function resolveProKey({ env = process.env, homeDir } = {}) {
       key: CREATOR_SYNTHETIC_KEY,
       source: 'creator-dev',
       plan: 'enterprise',
+      apiBaseUrl: resolveProApiBaseUrl({ env, homeDir }),
     };
   }
 
@@ -93,6 +119,7 @@ function resolveProKey({ env = process.env, homeDir } = {}) {
     return {
       key: envKey,
       source: 'env',
+      apiBaseUrl: resolveProApiBaseUrl({ env, homeDir }),
     };
   }
 
@@ -103,6 +130,7 @@ function resolveProKey({ env = process.env, homeDir } = {}) {
       key: licenseKey,
       source: 'license',
       licensePath: getLicensePath(homeDir),
+      apiBaseUrl: resolveProApiBaseUrl({ env, homeDir }),
     };
   }
 
@@ -168,6 +196,7 @@ module.exports = {
   isCreatorDev,
   readLicense,
   saveLicense,
+  resolveProApiBaseUrl,
   resolveProKey,
   validateProKey,
   startLocalProDashboard,
