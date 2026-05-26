@@ -68,6 +68,19 @@ function checkoutUrlFor(source, content) {
   }
 }
 
+function pricingUrlFor(source, content) {
+  try {
+    const url = new URL('/pricing', PRO_URL);
+    url.searchParams.set('utm_source', source || 'cli');
+    url.searchParams.set('utm_medium', 'cli');
+    url.searchParams.set('utm_campaign', 'pro_education');
+    if (content) url.searchParams.set('utm_content', content);
+    return url.toString();
+  } catch (_) {
+    return `${PRO_URL}/pricing`;
+  }
+}
+
 function trialDeadlineLabel(now = new Date()) {
   const deadline = new Date(now.getTime() + (TRIAL_DAYS * 24 * 60 * 60 * 1000));
   return deadline.toISOString().slice(0, 10);
@@ -79,11 +92,13 @@ function upgradeNudge() {
     const { isProTier } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));
     if (isProTier()) return;
   } catch (_) { return; }
+  const pricingUrl = pricingUrlFor('cli_upgrade_nudge', COMMAND || 'general');
   process.stderr.write(
     '\n  Team rollout: start with the Workflow Hardening Sprint\n' +
     '  https://thumbgate-production.up.railway.app/#workflow-sprint-intake\n' +
     `\n  Solo side lane: Pro — ${PRO_PRICE_LABEL}\n` +
-    `  ${PRO_CHECKOUT_URL}\n\n`
+    '  Keeps lessons, rules, and the dashboard synced across machines and agent runtimes.\n' +
+    `  ${pricingUrl}\n\n`
   );
 }
 
@@ -160,10 +175,11 @@ function proNudge(context) {
     if (isProTier()) return;
   } catch (_) { /* if rate-limiter is unavailable, fall through and nudge */ }
   const checkoutUrl = checkoutUrlFor('cli_nudge', context || COMMAND || 'general');
+  const pricingUrl = pricingUrlFor('cli_nudge', context || COMMAND || 'general');
   const messages = [
-    `\n  💡 Unlock Pro (${PRO_PRICE_LABEL}): searchable dashboard, DPO export, multi-repo sync\n     ${checkoutUrl}\n`,
-    `\n  💡 Pro tip: export your feedback as DPO training pairs to improve your models.\n     Get Pro: ${checkoutUrl}\n`,
-    `\n  💡 ThumbGate Pro: search, edit, and sync lessons across repos. ${PRO_PRICE_LABEL}.\n     ${checkoutUrl}\n`,
+    `\n  💡 Pro (${PRO_PRICE_LABEL}): keep lessons, rules, and dashboard state synced across machines and agent runtimes.\n     See pricing: ${pricingUrl}\n`,
+    `\n  💡 You just taught ThumbGate something locally. Pro keeps that lesson alive on every laptop, CI box, and agent runtime.\n     See pricing: ${pricingUrl}\n`,
+    `\n  💡 ThumbGate Pro syncs lessons/rules across Claude, Codex, Cursor, containers, and CI. ${PRO_PRICE_LABEL}.\n     Start Pro: ${checkoutUrl}\n`,
   ];
   // Rotate message daily — no Math.random (security policy)
   const msg = messages[Math.floor(Date.now() / 86400000) % messages.length];
@@ -193,7 +209,7 @@ function printInitConversionPrompt(email) {
   console.log('');
   console.log('  ┌──────────────────────────────────────────────────────────┐');
   console.log(`  │  14-day Pro trial active through ${trialDeadlineLabel()}.              │`);
-  console.log('  │  Pro unlocks lesson search, recall, dashboard, exports. │');
+  console.log('  │  Pro keeps lessons/rules/dashboard synced everywhere.   │');
   console.log('  │  Add onboarding: npx thumbgate init --email you@company.com │');
   console.log(`  │  Upgrade: ${checkoutUrl}`);
   console.log('  └──────────────────────────────────────────────────────────┘');
@@ -1154,8 +1170,8 @@ function pro() {
     console.log('Self-serve side lane today: Pro ($19/mo or $149/yr).');
     console.log('Every licensed Pro user gets a personal local dashboard on localhost.');
     console.log('\nWhat is available:');
+    console.log('  - Hosted sync: keep lessons, rules, and dashboard state aligned across laptops, CI, containers, and agent runtimes');
     console.log('  - Local Pro dashboard: your own browser dashboard for search, gates, and DPO export');
-    console.log('  - Pro sync: push/pull lessons across laptops, CI, containers, and agent runtimes');
     console.log('  - Team rollout path: hosted lessons, org visibility, and workflow proof');
     console.log('  - Commercial truth doc: source of truth for traction, pricing, and proof claims');
     console.log('\nLinks:');

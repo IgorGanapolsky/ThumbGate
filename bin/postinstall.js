@@ -26,32 +26,21 @@ const DASHBOARD_URL = 'https://thumbgate.ai/dashboard?utm_source=npm&utm_medium=
 
 process.stderr.write(`
   ╭─────────────────────────────────────────────────────╮
-  │  ThumbGate installed — 14-day Pro trial active.     │
+  │  ThumbGate installed — 14-day Pro trial is live.    │
   │                                                     │
-  │  Every feature unlocked. No limits. No card needed. │
-  │  After 14 days, you keep the free tier (5 rules,    │
-  │  unlimited captures) or upgrade to keep Pro.        │
+  │  Start now:  npx thumbgate init                     │
+  │  Updates:    npx thumbgate subscribe you@company.com│
   │                                                     │
-  │  Start now:                                         │
-  │    npx thumbgate init                               │
-  │    npx thumbgate stats                              │
-  │                                                     │
-  │  Get the 5-min setup guide + weekly tips:           │
-  │    npx thumbgate subscribe you@company.com          │
-  │                                                     │
-  │  See your gates firing live:                        │
-  │    ${DASHBOARD_URL.slice(0, 47).padEnd(47, ' ')} │
+  │  Free after trial: 3 rules, 10 captures/day.       │
+  │  Pro ($19/mo): unlimited everything.                │
   ╰─────────────────────────────────────────────────────╯
 
-  Your 14-day Pro trial includes:
-    Unlimited prevention rules (free caps at 5)
-    Lesson search + recall across sessions
-    DPO export for preference fine-tuning
-    Hosted dashboard — no self-hosting needed
+  Trial unlocks: unlimited rules, lesson search, DPO export,
+  hosted dashboard. After 14 days, free tier limits apply.
+  Subscribe for the 5-min setup guide + weekly tips:
+  npx thumbgate subscribe you@company.com
 
-  After the trial: ${PRO_PRICE_LABEL}
-    Upgrade: ${PRO_CTA_URL}
-
-  Or run: npx thumbgate pro
+  Dashboard: ${DASHBOARD_URL}
+  Keep Pro: ${PRO_CTA_URL}
 
 `);

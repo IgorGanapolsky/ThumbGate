@@ -96,11 +96,12 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /\/mo/);
   assert.match(landingPage, /\$49/);
   assert.match(landingPage, /\/seat\/mo/);
-  // Free tier moved from "3 captures total, 1 rule" to "Unlimited captures,
-  // 5 active rules" in feat/free-tier-unlimited-captures-5-rules. Price-sub
-  // copy moved from "See how it works..." to "Block repeated mistakes daily..."
+  // Free tier is intentionally capped so the npm package proves value without
+  // cannibalizing Pro.
   assert.match(landingPage, /Block repeated mistakes daily/);
-  assert.match(landingPage, /Unlimited captures.*5 (active )?rules/i);
+  assert.match(landingPage, /10 captures\/day, 3 active rules/i);
+  assert.match(landingPage, /10 feedback captures\/day/i);
+  assert.match(landingPage, /Up to 3 active auto-promoted prevention rules/i);
   assert.doesNotMatch(landingPage, /3 captures.*1 rule.*1 agent/i);
   assert.doesNotMatch(landingPage, /3 captures total/i);
   assert.match(landingPage, /solo side lane/i);

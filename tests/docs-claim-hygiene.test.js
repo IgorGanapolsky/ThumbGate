@@ -89,9 +89,8 @@ test('active commercial surfaces avoid stale free-tier limit claims', () => {
 test('pricing comparison keeps free-tier pro features out of the free column', () => {
   const pricing = fs.readFileSync(path.join(projectRoot, 'docs/marketing/pricing-comparison.md'), 'utf8');
 
-  // Free tier moved from "3 total" captures to unlimited captures + 5 active
-  // rules on 2026-05-07 (feat/free-tier-unlimited-captures-5-rules).
-  assert.match(pricing, /\|\s*Feedback capture\s*\|\s*Unlimited\s*\|\s*Unlimited\s*\|/i);
+  assert.match(pricing, /\|\s*Feedback capture\s*\|\s*10\/day, 50 total\s*\|\s*Unlimited\s*\|/i);
+  assert.match(pricing, /\|\s*Prevention rules\s*\|\s*Up to 3 active\s*\|\s*Unlimited\s*\|/i);
   assert.match(pricing, /\|\s*Recall \+ lesson search\s*\|\s*No\s*\|\s*Yes\s*\|/i);
   assert.match(pricing, /\|\s*DPO\/KTO export\s*\|\s*No\s*\|\s*Yes\s*\|/i);
 });

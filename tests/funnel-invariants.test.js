@@ -61,6 +61,18 @@ describe('funnel invariant: free tier has real limits', () => {
     assert.ok(proOnly.length >= 1, 'At least one action must be Pro-only (daily=0) to give users a reason to upgrade');
   });
 
+  it('capture_feedback has a finite daily limit', () => {
+    const { FREE_TIER_LIMITS } = require('../scripts/rate-limiter');
+    const daily = FREE_TIER_LIMITS.capture_feedback?.daily;
+    assert.ok(Number.isFinite(daily) && daily > 0 && daily <= 25,
+      `capture_feedback daily limit must be finite and <= 25 to create upgrade pressure, got ${daily}`);
+  });
+
+  it('FREE_TIER_MAX_GATES is <= 5', () => {
+    const { FREE_TIER_MAX_GATES } = require('../scripts/rate-limiter');
+    assert.ok(FREE_TIER_MAX_GATES <= 5, `FREE_TIER_MAX_GATES must be <= 5 to create upgrade pressure, got ${FREE_TIER_MAX_GATES}`);
+  });
+
   it('UPGRADE_MESSAGE contains a URL', () => {
     const { UPGRADE_MESSAGE } = require('../scripts/rate-limiter');
     assert.ok(/https?:\/\//.test(UPGRADE_MESSAGE), 'UPGRADE_MESSAGE must contain a URL so users know where to go');

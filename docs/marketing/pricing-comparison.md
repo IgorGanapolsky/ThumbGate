@@ -2,13 +2,13 @@
 
 | Feature | Free | Pro ($19/mo or $149/yr) |
 |---------|------|--------------|
-| Feedback capture | Unlimited | Unlimited |
+| Feedback capture | 10/day, 50 total | Unlimited |
 | Recall + lesson search | No | Yes |
-| Prevention rules | Up to 5 active | Unlimited |
+| Prevention rules | Up to 3 active | Unlimited |
 | 5 built-in checks | Yes | Yes |
 | PreToolUse hook blocking | Yes | Yes |
 | DPO/KTO export | No | Yes |
-| Auto-gate promotion | Up to 5 rules | Unlimited |
+| Auto-gate promotion | Up to 3 rules | Unlimited |
 | Unlimited custom checks | No | Yes |
 | Multi-repo sync | No | Yes |
 | CI webhook auto-ingest | No | Yes |

@@ -51,11 +51,17 @@ describe('rate-limiter', () => {
     if (fs.existsSync(TEMP_USAGE_FILE)) fs.unlinkSync(TEMP_USAGE_FILE);
   });
 
-  it('allows unlimited capture_feedback on free tier (habit-building lane)', () => {
-    for (let i = 0; i < 50; i++) {
+  it('allows 10 capture_feedback events per day on free tier, then nudges Pro', () => {
+    assert.equal(rateLimiter.FREE_TIER_LIMITS.capture_feedback.daily, 10);
+    assert.equal(rateLimiter.FREE_TIER_LIMITS.capture_feedback.lifetime, 50);
+    for (let i = 0; i < 10; i++) {
       const result = rateLimiter.checkLimit('capture_feedback');
       assert.equal(result.allowed, true, `call ${i + 1} should be allowed`);
     }
+    const blocked = rateLimiter.checkLimit('capture_feedback');
+    assert.equal(blocked.allowed, false, 'call 11 should be blocked on the free daily limit');
+    assert.equal(blocked.limitType, 'daily');
+    assert.match(blocked.message, /Daily limit reached|10 captures\/day|Upgrade/i);
   });
 
   it('blocks recall on free tier (Pro-only)', () => {
