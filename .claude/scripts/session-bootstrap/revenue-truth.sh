@@ -1,56 +1,56 @@
 #!/usr/bin/env bash
 # Revenue Truth Bootstrap — runs at SessionStart.
-# Prints live billing summary so future "are you sure?" loops are unnecessary.
-# Never logs secret values; only their presence/absence and the API response.
+# Thin wrapper around the canonical scripts/revenue-status.js pipeline so
+# this hook stays in sync with however the rest of the codebase resolves
+# billing credentials. Never logs secret values.
 
 set -u
 set -o pipefail
 
-BILLING_HOST="${THUMBGATE_BILLING_HOST:-https://thumbgate-production.up.railway.app}"
-ADMIN_KEY_PRESENT="missing"
-STRIPE_KEY_PRESENT="missing"
-
-if [ -n "${THUMBGATE_ADMIN_KEY:-}" ]; then
-  ADMIN_KEY_PRESENT="set"
-fi
-if [ -n "${STRIPE_SECRET:-}" ]; then
-  STRIPE_KEY_PRESENT="set"
-fi
+ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 
 echo "=== ThumbGate revenue-truth bootstrap ==="
-echo "Host: ${BILLING_HOST}"
-echo "THUMBGATE_ADMIN_KEY: ${ADMIN_KEY_PRESENT}"
-echo "STRIPE_SECRET: ${STRIPE_KEY_PRESENT}"
 
-if [ "${ADMIN_KEY_PRESENT}" = "missing" ]; then
+# Auth priority chain matches scripts/operational-summary.js +
+# scripts/revenue-status.js exactly:
+#   1. $THUMBGATE_OPERATOR_KEY (read-only billing-summary access)
+#   2. ~/.config/thumbgate/operator.json (CLI-provisioned)
+#   3. $THUMBGATE_API_KEY (full admin)
+KEY_SOURCE="none"
+if [ -n "${THUMBGATE_OPERATOR_KEY:-}" ]; then
+  KEY_SOURCE="env:THUMBGATE_OPERATOR_KEY"
+elif [ -f "${HOME}/.config/thumbgate/operator.json" ]; then
+  KEY_SOURCE="file:~/.config/thumbgate/operator.json"
+elif [ -n "${THUMBGATE_API_KEY:-}" ]; then
+  KEY_SOURCE="env:THUMBGATE_API_KEY"
+fi
+
+echo "Auth source: ${KEY_SOURCE}"
+
+if [ "${KEY_SOURCE}" = "none" ]; then
   cat <<'EOF'
 
 NO LIVE REVENUE NUMBERS THIS SESSION.
-- THUMBGATE_ADMIN_KEY is not set in this container's environment.
-- Set it in the Railway/harness env (not in chat). See:
-  .claude/skills/revenue-truth/SKILL.md
-- Until then, the agent MUST cite docs/VERIFICATION_EVIDENCE.md with the
-  snapshot date and explicitly mark numbers as historical, not current.
+
+How to fix (one-time, persists for future sessions):
+  Option A — generate an operator key via the CLI:
+    node bin/cli.js billing:setup
+    (writes ~/.config/thumbgate/operator.json on this machine)
+
+  Option B — paste an existing operator key into the harness env:
+    THUMBGATE_OPERATOR_KEY=tg_op_...   # read-only, recommended for agents
+  OR the full admin key:
+    THUMBGATE_API_KEY=tg_...            # admin, only if operator unavailable
+
+The harness env is the agent container's env, not Railway's server env.
+Railway holds the server-side copy that signs /v1/billing/summary; the
+agent needs its own copy to call that endpoint.
+
+Until a key is present, treat any revenue number as historical (cite
+docs/VERIFICATION_EVIDENCE.md with the snapshot date).
 EOF
   exit 0
 fi
 
-SUMMARY="$(curl -fsS --max-time 8 \
-  -H "Authorization: Bearer ${THUMBGATE_ADMIN_KEY}" \
-  "${BILLING_HOST}/v1/billing/summary?window=30d" 2>/dev/null || true)"
-
-if [ -z "${SUMMARY}" ]; then
-  echo "Billing endpoint did not respond. Treat all revenue numbers as historical until next refresh."
-  exit 0
-fi
-
-echo ""
-echo "Live 30d truth:"
-echo "${SUMMARY}" | jq -r '{
-  window,
-  booked_cents: .revenue.bookedRevenueCents,
-  paid_orders: .revenue.paidOrders,
-  checkout_starts: .funnel.checkoutStarts,
-  visitors: .funnel.uniqueVisitors,
-  acquisition: .funnel.acquisitionBySource
-}' 2>/dev/null || echo "${SUMMARY}"
+# Defer to the canonical pipeline so this hook can never drift again.
+( cd "${ROOT}" && node scripts/revenue-status.js 2>&1 ) | sed 's/^/  /'

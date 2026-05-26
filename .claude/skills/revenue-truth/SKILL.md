@@ -12,27 +12,40 @@ allowed-tools:
 
 On 2026-05-26 the CTO answered "why didn't we make money?" three times in a row by quoting *planning documents* and *stale March snapshots* as if they were current telemetry. The CEO had to push back with "are you sure?" three times before the CTO admitted he had never queried the live billing endpoint. This skill exists so that never happens again.
 
+The first version of this skill (written same day) referenced an env var named `THUMBGATE_ADMIN_KEY` that does not exist anywhere in the codebase — a name I invented without grepping. The CEO caught it with another "are you sure?". The skill now defers to the canonical `scripts/revenue-status.js` pipeline so it cannot drift again.
+
 ## Hard rule
 
-**Before claiming any revenue, visitor, conversion, or funnel number, you MUST run the live verification below and quote its output. If the env vars are missing, say so — do not fall back to planning docs.**
+**Before claiming any revenue, visitor, conversion, or funnel number, you MUST run `node scripts/revenue-status.js` and quote its output. If no credentials are configured, say so — do not fall back to planning docs.**
 
-## Required environment variables
-
-These must be set in the harness/Railway environment config — **never pasted in chat**. Pasting a secret in chat burns it and forces rotation.
-
-| Var | Where it lives | What it unlocks |
-|-----|---------------|-----------------|
-| `THUMBGATE_ADMIN_KEY` | Railway env (admin tier) | `/v1/billing/summary` live revenue + funnel |
-| `STRIPE_SECRET` | Railway env (`sk_live_*`) | Direct Stripe `/v1/charges`, `/v1/balance` |
-| `STRIPE_WEBHOOK_SECRET` | Railway env (`whsec_*`) | Verify webhook payloads in tests |
-
-If any value is leaked into a chat transcript, surface immediately, rotate the key in Stripe, and update the env var. Do not reuse a leaked key.
-
-## Step 1 — Live billing summary (preferred)
+## Canonical command
 
 ```bash
+node scripts/revenue-status.js
+```
+
+Reads credentials in this exact priority order (same as `scripts/operational-summary.js` and `scripts/operational-dashboard.js`):
+
+1. `$THUMBGATE_OPERATOR_KEY` — read-only billing-summary access, recommended for agents
+2. `~/.config/thumbgate/operator.json` — created by `node bin/cli.js billing:setup`
+3. `$THUMBGATE_API_KEY` — full admin, only when operator unavailable
+
+Output sections (quote these directly, never paraphrase):
+- `Source:` — `hosted-billing-summary` (live) vs `local-fallback` (no creds)
+- `Today / 30d / Lifetime:` — visitors, pageViews, checkoutStarts, paidOrders, bookedRevenue
+- `30d attribution coverage` — channel telemetry quality
+- `Gaps:` — exact phrases describing what's missing
+
+## Quick lookups against the same endpoint
+
+If you need a single field rather than the full report, query directly:
+
+```bash
+KEY="${THUMBGATE_OPERATOR_KEY:-${THUMBGATE_API_KEY:-}}"
+[ -z "$KEY" ] && { echo "no operator/api key configured"; exit 1; }
+
 curl -fsS \
-  -H "Authorization: Bearer ${THUMBGATE_ADMIN_KEY:?set THUMBGATE_ADMIN_KEY in env}" \
+  -H "Authorization: Bearer ${KEY}" \
   "https://thumbgate-production.up.railway.app/v1/billing/summary?window=30d" \
   | jq '{
       window,
@@ -44,44 +57,38 @@ curl -fsS \
     }'
 ```
 
-Returns the **actual** numbers. Quote these — not plan models in `reports/gtm/*`.
-
-## Step 2 — Stripe direct (cross-check)
+## Stripe direct (cross-check only)
 
 ```bash
 curl -fsS https://api.stripe.com/v1/charges?limit=20 \
-  -u "${STRIPE_SECRET:?set STRIPE_SECRET in env}:" \
+  -u "${STRIPE_SECRET_KEY:?set STRIPE_SECRET_KEY in env}:" \
   | jq '[.data[] | select(.paid==true and .refunded==false)
          | {amount, created, description, customer}]
         | {count: length, total_cents: (map(.amount) | add)}'
 ```
 
-If the two numbers disagree, **the billing endpoint is the source of truth** for booked-revenue claims; Stripe disagreement is an attribution bug worth filing.
-
-## Step 3 — Same-day truth
-
-```bash
-curl -fsS \
-  -H "Authorization: Bearer ${THUMBGATE_ADMIN_KEY:?}" \
-  "https://thumbgate-production.up.railway.app/v1/billing/summary?window=today" \
-  | jq '{paid_today: .revenue.paidOrdersToday, booked_today_cents: .revenue.bookedRevenueTodayCents}'
-```
+Note the var is `STRIPE_SECRET_KEY` (matches `src/api/server.js:2597`), not `STRIPE_SECRET`. If the two sources disagree, **`/v1/billing/summary` is truth** for booked-revenue claims; Stripe disagreement is an attribution bug worth filing.
 
 ## What counts as truth vs. noise
 
 | Source | Truth? | Notes |
 |--------|--------|-------|
-| `/v1/billing/summary` JSON output | YES | Backed by Stripe-reconciled ledger |
+| `scripts/revenue-status.js` output where `Source: hosted-billing-summary` | YES | Backed by Stripe-reconciled ledger |
+| `scripts/revenue-status.js` output where `Source: local-fallback` | NO | Means no key configured; numbers are zero-state local |
 | Stripe API `/v1/charges` | YES | Cross-check only |
 | `reports/gtm/*/operator-close-packet.md` numbers labeled "revenue plan" | NO | These are forecasts |
 | `docs/VERIFICATION_EVIDENCE.md` snapshot dates | YES at that date, NO as current | Always check the date in the section heading |
 | `docs/COMMERCIAL_TRUTH.md` cumulative line | YES as of file's "Updated:" date | Stale if `git log -1 -- docs/COMMERCIAL_TRUTH.md` is >7 days old |
 
-## If env vars are missing
+## If no credentials are configured
 
 State this exactly:
 
-> "I do not have THUMBGATE_ADMIN_KEY in this session's env. The last verified production snapshot in the repo is `<date>: <numbers>` from `docs/VERIFICATION_EVIDENCE.md`. Any number labeled '30d' in operator packets without a corresponding `/v1/billing/summary` curl is a forecast, not measured traffic. To get current truth, set THUMBGATE_ADMIN_KEY in the harness env (not in chat)."
+> "No operator key in this session's env and no `~/.config/thumbgate/operator.json` on this container. `scripts/revenue-status.js` reports `Source: local-fallback`. The last verified production snapshot in the repo is `<date>: <numbers>` from `docs/VERIFICATION_EVIDENCE.md`. Any number labeled '30d' in operator packets without a corresponding live curl is a forecast, not measured traffic."
+
+Then offer one specific resolution:
+
+> "To unlock live numbers for this session AND future sessions: paste a `THUMBGATE_OPERATOR_KEY` value into the harness env (the agent container's env, not Railway's server env). Generate one with `node bin/cli.js billing:setup` on a machine where the admin key is already configured, or copy the existing operator key from Railway's variables."
 
 Then stop. **Do not speculate. Do not quote forecasts as actuals.**
 
@@ -90,8 +97,9 @@ Then stop. **Do not speculate. Do not quote forecasts as actuals.**
 When booked revenue is low, also pull acquisition breakdown:
 
 ```bash
+KEY="${THUMBGATE_OPERATOR_KEY:-${THUMBGATE_API_KEY:-}}"
 curl -fsS \
-  -H "Authorization: Bearer ${THUMBGATE_ADMIN_KEY:?}" \
+  -H "Authorization: Bearer ${KEY}" \
   "https://thumbgate-production.up.railway.app/v1/billing/summary?window=30d" \
   | jq '.funnel.acquisitionBySource'
 ```
