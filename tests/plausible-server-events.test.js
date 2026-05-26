@@ -98,6 +98,7 @@ test('recordCheckoutFunnelEvent maps known stages to canonical names', () => {
   assert.equal(CHECKOUT_EVENT_NAMES.view, 'Checkout Pro Viewed');
   assert.equal(CHECKOUT_EVENT_NAMES.emailSubmitted, 'Checkout Pro Email Submitted');
   assert.equal(CHECKOUT_EVENT_NAMES.stripeRedirect, 'Checkout Pro Stripe Redirect Started');
+  assert.equal(CHECKOUT_EVENT_NAMES.purchase, 'Checkout Pro Purchase Completed');
 });
 
 test('recordCheckoutFunnelEvent rejects unknown stage names without throwing', async () => {

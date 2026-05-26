@@ -39,6 +39,7 @@ const savedTestLegacyFeedbackDir = process.env._TEST_LEGACY_FEEDBACK_DIR;
 const savedTestRlhfFeedbackDir = process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR;
 const savedLegacyFeedbackDir = process.env.THUMBGATE_LEGACY_FEEDBACK_DIR;
 const savedFallbackFeedbackDir = process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR;
+const savedPlausibleDisable = process.env.THUMBGATE_PLAUSIBLE_DISABLE;
 
 // Initial setup
 process.env._TEST_API_KEYS_PATH = testApiKeysPath;
@@ -55,6 +56,7 @@ delete process.env._TEST_LEGACY_FEEDBACK_DIR;
 delete process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR;
 delete process.env.THUMBGATE_LEGACY_FEEDBACK_DIR;
 delete process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR;
+process.env.THUMBGATE_PLAUSIBLE_DISABLE = '1';
 
 after(() => {
   process.env.STRIPE_SECRET_KEY = savedStripeSecretKey || '';
@@ -87,6 +89,8 @@ after(() => {
   else process.env.THUMBGATE_LEGACY_FEEDBACK_DIR = savedLegacyFeedbackDir;
   if (savedFallbackFeedbackDir === undefined) delete process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR;
   else process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR = savedFallbackFeedbackDir;
+  if (savedPlausibleDisable === undefined) delete process.env.THUMBGATE_PLAUSIBLE_DISABLE;
+  else process.env.THUMBGATE_PLAUSIBLE_DISABLE = savedPlausibleDisable;
   fs.rmSync(billingTestRoot, { recursive: true, force: true });
 });
 
