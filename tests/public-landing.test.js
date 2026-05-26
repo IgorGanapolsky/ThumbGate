@@ -71,6 +71,11 @@ test('public landing page exposes above-fold paid Pro CTA with canonical revenue
   assert.match(heroBlock, /Start Pro — \$19\/mo/);
   assert.match(heroBlock, /\/checkout\/pro\?/);
   assert.ok(heroBlock.indexOf('hero_start_pro') < heroBlock.indexOf('hero_install_cli'));
+  assert.match(heroBlock, /aria-label="Choose the right ThumbGate path"/);
+  assert.match(heroBlock, /Solo operator: Start Pro/);
+  assert.match(heroBlock, /data-cta-id="router_start_pro"/);
+  assert.match(heroBlock, /Team workflow: Start with intake/);
+  assert.match(heroBlock, /Still evaluating: Free CLI/);
   assert.match(landingPage, /function trackRevenueCta/);
   assert.match(landingPage, /plausible\('pricing_cta_click'/);
   assert.match(landingPage, /plausible\('checkout_start'/);
@@ -200,7 +205,7 @@ test('public landing page includes Plausible analytics and search engine proof b
   assert.match(landingPage, /Release confidence/i);
   assert.match(landingPage, /ThumbGate Bench/i);
   assert.match(landingPage, /Proof-backed CI/i);
-  assert.match(landingPage, /CI and proof lanes/i);
+  assert.doesNotMatch(landingPage, /CI and proof lanes/i);
   assert.match(landingPage, /Claude Code · Cursor · Codex · Gemini · Amp · Cline · OpenCode/i);
 });
 
@@ -359,6 +364,9 @@ test('public landing page proof bar uses individually clickable link chips', () 
   assert.match(landingPage, /Claude Extension →/);
   assert.match(landingPage, /Codex plugin setup →/);
   assert.match(landingPage, /Verification evidence →/);
+  assert.equal((landingPage.match(/Claude Extension →/g) || []).length, 1);
+  assert.equal((landingPage.match(/Proof-backed CI/g) || []).length, 1);
+  assert.doesNotMatch(landingPage, /CI and proof lanes/);
 });
 
 test('public landing page Pro tier uses outcome-framed bullets that justify upgrade', () => {
