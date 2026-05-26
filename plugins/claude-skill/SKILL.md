@@ -23,7 +23,7 @@ When user provides feedback, execute:
 
 ```bash
 # negative
-node .claude/scripts/feedback/capture-feedback.js \
+npx thumbgate capture \
   --feedback=down \
   --context="<what failed>" \
   --what-went-wrong="<specific failure>" \
@@ -31,7 +31,7 @@ node .claude/scripts/feedback/capture-feedback.js \
   --tags="<domain>,regression"
 
 # positive
-node .claude/scripts/feedback/capture-feedback.js \
+npx thumbgate capture \
   --feedback=up \
   --context="<what succeeded>" \
   --what-worked="<repeatable pattern>" \
@@ -41,6 +41,6 @@ node .claude/scripts/feedback/capture-feedback.js \
 At session start, run:
 
 ```bash
-npm run feedback:summary
-npm run feedback:rules
+npx thumbgate stats
+npx thumbgate lessons
 ```

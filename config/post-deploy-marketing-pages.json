@@ -33,6 +33,11 @@
       "description": "Legal AI intake risk-controls page for law-firm pilot conversations"
     },
     {
+      "route": "/learn/background-agent-control-layer",
+      "sentinel": "Background agents need a control layer outside the model",
+      "description": "Background-agent AI-SDLC control-layer positioning page"
+    },
+    {
       "route": "/llm-context.md",
       "sentinel": "## What ThumbGate Is",
       "description": "Canonical declarative summary AI crawlers read"

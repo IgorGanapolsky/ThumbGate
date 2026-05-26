@@ -4,7 +4,8 @@
   "description": "👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.",
   "version": "1.23.1",
   "author": {
-    "name": "Igor Ganapolsky"
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
   },
   "homepage": "https://thumbgate-production.up.railway.app",
   "repository": "https://github.com/IgorGanapolsky/ThumbGate",
@@ -17,7 +18,27 @@
     "thumbgate",
     "ai-agent-memory",
     "mistake-prevention",
-    "coding-agent"
+    "coding-agent",
+    "pre-action-gates",
+    "mcp"
   ],
-  "logo": "assets/logo-400x400.png"
+  "logo": "assets/logo-400x400.png",
+  "interface": {
+    "displayName": "ThumbGate for Cursor",
+    "shortDescription": "Pre-action gates + mistake prevention + reliability memory for Cursor.",
+    "longDescription": "Adds ThumbGate's pre-action gates, domain skill packs (Stripe, Railway, DB), hallucination detection, PII scanning, progressive disclosure (82% token savings), and MCP reliability memory to Cursor workflows.",
+    "developerName": "Igor Ganapolsky",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive", "Write"],
+    "websiteURL": "https://thumbgate-production.up.railway.app",
+    "privacyPolicyURL": "https://thumbgate-production.up.railway.app/privacy",
+    "termsOfServiceURL": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/LICENSE",
+    "defaultPrompt": [
+      "Capture a thumbs down with context after a mistake.",
+      "Check prevention gates before a deploy or publish.",
+      "Load ThumbGate skill packs before a risky task.",
+      "Run the eval harness to measure before/after impact."
+    ],
+    "brandColor": "#0ea5e9"
+  }
 }

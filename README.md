@@ -6,9 +6,11 @@
   </a>
 </p>
 
-**AI agents repeat mistakes. You pay for every retry.**
+**AI agents repeat mistakes. In regulated industries, one wrong action is a liability event.**
 
-ThumbGate remembers what went wrong and permanently blocks it before it happens again. One thumbs-down becomes a prevention rule that fires across every session, every agent, every model — before a single token is spent on the repeat.
+ThumbGate is deterministic pre-action governance for AI agents. From developer workflows to legal intake to financial compliance — one rule blocks unauthorized actions before they execute, across every session, every agent, every model.
+
+The product is a self-improving enforcement layer: thumbs-down feedback, prompt evaluation, and proof from prior runs become prevention rules that permanently stop repeated failures before the next tool call.
 
 ```
   Agent tries:   rm -rf tests/
@@ -22,7 +24,7 @@ ThumbGate remembers what went wrong and permanently blocks it before it happens 
 npx thumbgate init   # auto-detects your agent, wires hooks, 30 seconds
 ```
 
-Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and any MCP-compatible agent. Free tier: 5 active prevention rules. [Pro: $19/mo](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme) — unlimited rules, dashboard, DPO export.
+Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and any MCP-compatible agent. Free tier: unlimited feedback captures and 5 active auto-promoted prevention rules. [Pro: $19/mo or $149/yr](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme) — unlimited rules, history-aware lessons, feedback sessions, dashboard, DPO export. Team is $49/seat/mo with a shared hosted lesson DB and org dashboard.
 
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
@@ -246,12 +248,21 @@ ThumbGate sells three concrete outcomes:
 
 ## Use Cases
 
+### Developer Workflows
 - **Stop force-push to main** — Check blocks `git push --force` on protected branches before it runs
 - **Prevent repeated migration failures** — Each mistake becomes a searchable lesson that fires before the next attempt
 - **Block unauthorized file edits** — Control which files agents can touch with path-based rules
 - **Memory across sessions** — The agent remembers your feedback from yesterday
 - **Shared team safety** — One developer's thumbs-down protects the whole team
 - **Auto-improving without feedback** — Self-improvement mode evaluates outcomes and generates rules automatically
+
+### Enterprise & Regulated Industries
+- **Legal AI intake governance** — Block unauthorized practice of law (ABA Rule 5.5), require conflict-of-interest clearance before fact collection (Rules 1.7/1.9/1.10), prevent privileged content from leaving firm boundaries (Rule 1.6)
+- **Financial compliance** — Gate AI-generated trade recommendations, block unauthorized disclosures, enforce approval chains before customer-facing outputs
+- **Healthcare** — Prevent AI agents from providing medical diagnoses, enforce HIPAA-compliant data routing, require clinician review before patient-facing content
+- **Audit trail** — Every gate decision (block, allow, reroute) is preserved with rule version, timestamp, and reviewer path for compliance review
+
+[See the legal-intake demo →](https://thumbgate-production.up.railway.app/dashboard)
 
 ---
 
@@ -290,22 +301,26 @@ npx thumbgate bench --programbench-smoke  # include cleanroom whole-repo proof l
 
 ## Pricing
 
-| | Free | Pro ($19/mo) | Team ($49/seat/mo) |
-|---|---|---|---|
-| Local CLI + enforced checks | ✅ | ✅ | ✅ |
-| Feedback captures (lifetime) | 3 | Unlimited | Unlimited |
-| Auto-promoted prevention rules | 1 | Unlimited | Unlimited |
-| MCP agent integrations | All | All | All |
-| Personal dashboard | — | ✅ | ✅ |
-| DPO export (model fine-tuning) | — | ✅ | ✅ |
-| Team lesson export/import | — | ✅ | ✅ |
-| Shared hosted lesson DB | — | — | ✅ |
-| Org-wide dashboard | — | — | ✅ |
-| Approval + audit proof | — | — | ✅ |
+| | Free | Pro ($19/mo) | Team ($49/seat/mo) | Enterprise |
+|---|---|---|---|---|
+| Local CLI + enforced checks | ✅ | ✅ | ✅ | ✅ |
+| Feedback captures (lifetime) | 3 | Unlimited | Unlimited | Unlimited |
+| Auto-promoted prevention rules | 1 | Unlimited | Unlimited | Unlimited |
+| MCP agent integrations | All | All | All | All |
+| Personal dashboard | — | ✅ | ✅ | ✅ |
+| DPO export (model fine-tuning) | — | ✅ | ✅ | ✅ |
+| Team lesson export/import | — | ✅ | ✅ | ✅ |
+| Shared hosted lesson DB | — | — | ✅ | ✅ |
+| Org-wide dashboard | — | — | ✅ | ✅ |
+| Approval + audit proof | — | — | ✅ | ✅ |
+| Regulatory gate templates | — | — | — | ✅ |
+| Custom policy layers (firm/practice-area) | — | — | — | ✅ |
+| Compliance audit export | — | — | — | ✅ |
+| Dedicated onboarding + SLA | — | — | — | ✅ |
 
 The free tier gives you unlimited feedback captures and up to 5 active auto-promoted prevention rules — generous enough to make ThumbGate part of your daily flow. MCP integrations for all agents (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode) ship free.
 
-Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recall, lesson search, DPO export, and a personal dashboard. Team ($49/seat/mo) adds a shared hosted lesson DB, org dashboard, and shared enforcement across the org. Pro and Team include `open_feedback_session`, `append_feedback_context`, and `finalize_feedback_session` for structured multi-turn feedback capture.
+Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recall, lesson search, DPO export, and a personal dashboard. Team ($49/seat/mo) adds a shared hosted lesson DB, org dashboard, and shared enforcement across the org. Enterprise adds regulatory gate templates (legal intake, financial compliance, healthcare), custom policy layers scoped to firm/practice-area, compliance audit export, and dedicated onboarding with SLA.
 
 **Best first paid motion for teams:** the **Workflow Hardening Sprint** — qualify one repeated failure before committing to a full rollout. **[Start intake →](https://thumbgate-production.up.railway.app/?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake)**
 

@@ -1,0 +1,30 @@
+{
+  "name": "thumbgate-antigravity",
+  "displayName": "ThumbGate for Antigravity",
+  "description": "Pre-action gates and reliability memory for Google Antigravity IDE",
+  "version": "1.23.1",
+  "publisher": "igorganapolsky",
+  "icon": "assets/logo-400x400.png",
+  "engines": {
+    "node": ">=18"
+  },
+  "categories": ["Other"],
+  "keywords": [
+    "antigravity",
+    "thumbgate",
+    "pre-action-gates",
+    "feedback",
+    "mcp",
+    "agent-reliability"
+  ],
+  "author": {
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "homepage": "https://thumbgate-production.up.railway.app?utm_source=antigravity&utm_medium=vsix",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/IgorGanapolsky/ThumbGate"
+  },
+  "license": "MIT"
+}

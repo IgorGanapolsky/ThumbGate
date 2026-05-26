@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Background Agents Need a Control Layer Outside the Model - ThumbGate</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Engineering teams are shipping background agents, but the operating system around them is the real bottleneck. Learn where ThumbGate fits: pre-action controls, evidence, and local enforcement outside the model context.">
+<meta name="keywords" content="background agents, AI SDLC, agent control layer, pre-action checks, agent governance, agent operating system, AI software engineering agents, ThumbGate">
+<meta property="og:title" content="Background Agents Need a Control Layer Outside the Model">
+<meta property="og:description" content="Agents can produce work. Production teams still need triggers, isolated runs, context, visibility, and controls. ThumbGate owns the controls and evidence layer.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/background-agent-control-layer">
+<link rel="canonical" href="https://thumbgate.ai/learn/background-agent-control-layer">
+<link rel="stylesheet" href="/learn/learn.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Background Agents Need a Control Layer Outside the Model",
+  "description": "A practical map of the control and evidence layer teams need around background AI software engineering agents.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-05-25",
+  "dateModified": "2026-05-25",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/background-agent-control-layer",
+  "about": [
+    { "@type": "Thing", "name": "background agents" },
+    { "@type": "Thing", "name": "AI SDLC" },
+    { "@type": "Thing", "name": "pre-action checks" },
+    { "@type": "Thing", "name": "agent governance" }
+  ]
+}
+</script>
+<style>
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  th, td { text-align: left; padding: 0.7rem 0.8rem; border-bottom: 1px solid var(--border); vertical-align: top; font-size: 0.92rem; }
+  th { color: var(--cyan); font-weight: 700; }
+  .layer strong { color: var(--green); }
+  .mini-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1.25rem 0; }
+  .mini-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+  .mini-card h3 { margin-top: 0; color: var(--text); }
+  .mini-card p { color: var(--muted); }
+  @media (max-width: 700px) { .mini-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Background Agent Control Layer</div>
+  <h1>Background agents need a control layer outside the model.</h1>
+  <p style="color:var(--muted);">5 min read &middot; For engineering leaders moving from individual AI coding to team-scale background agents</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> The hard part is no longer proving an agent can open a pull request. The hard part is the system around it: what starts the work, where it runs, what context it gets, what evidence it leaves, and which controls run outside the model context.</div>
+
+  <h2>The buyer problem changed</h2>
+  <p>Most AI coding rollouts begin with individual acceleration. A developer uses Claude Code, Cursor, Codex, Gemini, or a background agent and gets faster at producing diffs. Then the team hits the next bottleneck: review queues, CI pressure, release routing, credential scope, and unclear accountability.</p>
+  <p>That is the moment agent adoption stops being a prompt-engineering problem and becomes an operating-system problem. The question shifts from "can the agent write code?" to "can the organization safely receive, constrain, inspect, and improve the work?"</p>
+
+  <div class="callout">
+    <strong>ThumbGate's position:</strong> memory and context help the agent know more. A control layer decides what the agent is allowed to do next, records why, and turns repeated failures into enforceable rules.
+  </div>
+
+  <h2>The five layers around a production agent</h2>
+  <p>For teams running agents beyond the IDE, the system usually decomposes into five layers. ThumbGate does not need to replace all five. It wins by being the enforcement and evidence layer that composes with the rest.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Layer</th>
+        <th>Buyer question</th>
+        <th>ThumbGate role</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="layer">
+        <td><strong>Triggers</strong></td>
+        <td>What starts the work: ticket, PR, incident, CVE, scheduled migration, or human request?</td>
+        <td>Attach a contract: repo scope, allowed tools, done criteria, review threshold, and blocked-action policy.</td>
+      </tr>
+      <tr class="layer">
+        <td><strong>Isolated runs</strong></td>
+        <td>Where does the agent execute, and which credentials, repos, network paths, and files can it touch?</td>
+        <td>Run pre-action checks in the execution boundary before privileged tools fire.</td>
+      </tr>
+      <tr class="layer">
+        <td><strong>Context</strong></td>
+        <td>What does the agent need beyond the prompt: ownership, CI logs, docs, conventions, and prior failures?</td>
+        <td>Promote feedback and failures into local lessons, then compile trusted lessons into rules.</td>
+      </tr>
+      <tr class="layer">
+        <td><strong>Visibility</strong></td>
+        <td>What evidence can reviewers inspect: logs, diffs, tests, blocked actions, overrides, and decisions?</td>
+        <td>Emit structured evidence for allow, warn, block, override, and handoff decisions.</td>
+      </tr>
+      <tr class="layer">
+        <td><strong>Controls</strong></td>
+        <td>Which governance rules live outside the model so the agent cannot reason around them?</td>
+        <td>Enforce PreToolUse gates, policy bundles, local allowlists, and repeated-failure prevention rules.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Why controls outside context matter</h2>
+  <p>A prompt rule is useful until the model forgets it, compresses it away, misunderstands it, or decides a new situation is an exception. A pre-action control does not depend on the model remembering the rule. It sees the proposed tool call and returns allow, warn, block, or review.</p>
+  <p>That is a different category of safety. It is not a bigger memory. It is a runtime boundary.</p>
+
+  <div class="mini-grid">
+    <div class="mini-card">
+      <h3>Memory answers what happened</h3>
+      <p>It stores prior runs, feedback, conventions, and task context so the agent stops starting from zero.</p>
+    </div>
+    <div class="mini-card">
+      <h3>Controls answer whether this may run</h3>
+      <p>They block known-bad actions before execution and preserve proof that the decision happened.</p>
+    </div>
+  </div>
+
+  <h2>The high-ROI starting workflows</h2>
+  <p>Start with work that already has clear, verifiable criteria. That gives the control layer a concrete success standard instead of a vague promise.</p>
+  <ul>
+    <li><strong>CVE remediation:</strong> trigger from advisory, limit repo scope, run tests, block unsafe dependency changes, create PR evidence.</li>
+    <li><strong>CI/CD migrations:</strong> enforce branch, environment, and secret boundaries before the agent edits pipelines.</li>
+    <li><strong>Test generation:</strong> require failing-before/passing-after proof before marking a run complete.</li>
+    <li><strong>Documentation updates:</strong> block edits that cite unsupported claims, stale endpoints, or missing proof links.</li>
+    <li><strong>Legal or regulated intake:</strong> block advice-shaped responses, confidential egress, and unapproved model calls before they happen.</li>
+  </ul>
+
+  <h2>How ThumbGate fits next to background-agent platforms</h2>
+  <p>Background-agent platforms provide orchestration, environments, and fleet execution. ThumbGate should not pretend to replace that stack. It should attach as the local enforcement and proof layer across agents, models, repos, and workflows.</p>
+  <p>The integration shape is simple: when an agent proposes an action, ThumbGate evaluates the action against local rules and prior failures. If the action is safe, it proceeds and logs evidence. If the action matches a known-bad pattern, it blocks or routes to review before the tool runs.</p>
+
+  <div class="callout callout-green">
+    <strong>Sales line:</strong> If your team already has agents, ThumbGate helps you ship the system around them: pre-action controls, reviewable evidence, and local rules that survive model churn.
+  </div>
+
+  <h2>What to show in a buyer demo</h2>
+  <ol>
+    <li>One trigger with a clear contract: repo, task, allowed tools, and done criteria.</li>
+    <li>One proposed risky action stopped before execution.</li>
+    <li>One safe action allowed with evidence attached.</li>
+    <li>One failure converted into a reusable rule.</li>
+    <li>One export that a reviewer, security lead, or risk officer can inspect later.</li>
+  </ol>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Add the control layer before agents scale</h2>
+    <p>Install local pre-action gates, then decide which workflows deserve hosted evidence, team rules, and audit exports.</p>
+    <div class="cta-install">$ npx thumbgate init</div>
+  </div>
+
+  <div class="related">
+    <h3>Related articles</h3>
+    <a href="/learn/mcp-pre-action-checks-explained">MCP Pre-Action Checks Explained &rarr;</a>
+    <a href="/learn/ai-agent-persistent-memory">AI Agent Persistent Memory &rarr;</a>
+    <a href="/learn/regulated-agent-execution-boundary">Regulated Agent Execution Boundary &rarr;</a>
+    <a href="/ai-malpractice-prevention">Pre-Execution Controls for Legal AI Agents &rarr;</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span style="color:var(--muted)">Try it now:</span>
+  <code>npx thumbgate init</code>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+</div>
+</body>
+</html>

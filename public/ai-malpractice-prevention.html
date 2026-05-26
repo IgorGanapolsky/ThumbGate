@@ -284,9 +284,8 @@
 </head>
 <body>
 <nav>
-  <a href="/" class="brand">ThumbGate</a>
+  <a href="/ai-malpractice-prevention" class="brand">ThumbGate</a>
   <a href="/agent-manager">Agent Manager</a>
-  <a href="/codex-enterprise">Codex Enterprise</a>
   <a href="/agents-cost-savings">FinOps for Agents</a>
   <a href="/dashboard">Dashboard demo</a>
   <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
@@ -352,7 +351,7 @@
   <main>
     <section>
       <h2>Why this is credible now.</h2>
-      <p class="section-lead">The market is not waiting for perfect AI. Large firms are adopting legal AI while ethics, security, and innovation teams are still formalizing the controls around it. ThumbGate fits that gap: it is not another research assistant; it is a control point around the assistants and agents a firm already wants to evaluate.</p>
+      <p class="section-lead">The market is not waiting for perfect AI. Large firms are adopting legal AI while ethics, security, and innovation teams are still formalizing the controls around it. ThumbGate fits that gap: it is not another research assistant; it is a control point around the assistants and agents a firm already wants to evaluate. Governance has to live outside the model's context window. If the agent can reason around the rule, it is not really a rule.</p>
       <div class="grid">
         <div class="card">
           <span class="tag blue">Governance</span>
@@ -369,6 +368,32 @@
           <h3>Vendor-neutral by design</h3>
           <p>The pilot can sit around internal tools, Azure OpenAI, Claude, Gemini, document systems, or purpose-built legal AI products.</p>
         </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>The pilot is an AI-SDLC control layer, not a chatbot demo.</h2>
+      <p class="section-lead">The strongest buyer framing is simple: the firm may already have agents, copilots, research tools, and intake experiments. What it still needs is the system around those agents: triggers, isolated runs, approved context, visibility, and controls that live outside the model prompt.</p>
+      <div class="grid">
+        <div class="card">
+          <span class="tag blue">Trigger</span>
+          <h3>Define what starts legal AI work</h3>
+          <p>A pilot run should begin from a scoped intake event, not an open-ended prompt. The event carries practice area, jurisdiction, allowed tools, reviewer role, and done criteria.</p>
+        </div>
+        <div class="card">
+          <span class="tag amber">Context</span>
+          <h3>Load only approved firm ground truth</h3>
+          <p>Disclaimers, adverse-party fixtures, model allowlists, routing policy, and supervision rules should be versioned inputs, not improvised chat context.</p>
+        </div>
+        <div class="card">
+          <span class="tag green">Controls</span>
+          <h3>Block before the action happens</h3>
+          <p>Pre-action gates stop advice-shaped replies, conflict-precheck bypass, and confidential egress before the agent sends, fetches, schedules, or calls out.</p>
+        </div>
+      </div>
+      <div class="callout" style="margin-top:1rem;">
+        <p><strong>Executive takeaway:</strong> ThumbGate does not ask a law firm to trust a bigger prompt. It gives risk, innovation, and security teams a reviewable control point between the agent and the next privileged action.</p>
+        <p><a href="/learn/background-agent-control-layer">Read the background-agent control-layer brief &rarr;</a></p>
       </div>
     </section>
 
@@ -476,7 +501,11 @@
         <h2>Recommended 30-day pilot.</h2>
         <p>Start narrow: one intake channel, one practice-area workflow, one adverse-party fixture, one approved-model routing policy, and one audit export format.</p>
         <p>Deliverables: preloaded rule pack, demo agent, screenshot set, 60-second walkthrough clip, security data-flow note, pilot metrics, and a go/no-go rollout recommendation.</p>
-        <p><a class="cta" href="mailto:iganapolsky@gmail.com?subject=ThumbGate%2025-minute%20legal%20AI%20pilot%20walkthrough&amp;body=Hi%20Igor%2C%0A%0AWe%27d%20like%20to%20review%20the%2025-minute%20ThumbGate%20legal%20AI%20intake%20pilot.%20Please%20send%20the%20meeting%20invite%20and%20demo%20materials.%0A%0ABest%2C">Book a 25-minute pilot walkthrough</a></p>
+        <p style="margin:1.2rem 0 0.6rem;color:var(--amber);font-size:1.1rem;font-weight:700;">Pilot setup fee: $2,500 &ndash; $7,500 flat (scope-dependent). No per-seat or per-query billing during the pilot.</p>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:1rem;">
+          <a class="cta" href="mailto:iganapolsky@gmail.com?subject=ThumbGate%2025-minute%20legal%20AI%20pilot%20walkthrough&amp;body=Hi%20Igor%2C%0A%0AWe%27d%20like%20to%20review%20the%2025-minute%20ThumbGate%20legal%20AI%20intake%20pilot.%20Please%20send%20the%20meeting%20invite%20and%20demo%20materials.%0A%0ABest%2C">Book a 25-minute pilot walkthrough</a>
+          <a class="ghost" href="/dashboard">View the live dashboard demo</a>
+        </div>
       </div>
     </section>
   </main>
