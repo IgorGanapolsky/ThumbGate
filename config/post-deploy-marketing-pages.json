@@ -29,7 +29,7 @@
     },
     {
       "route": "/ai-malpractice-prevention",
-      "sentinel": "AI Intake Risk Controls for Law Firms",
+      "sentinel": "Pre-Execution Controls for Legal AI Agents",
       "description": "Legal AI intake risk-controls page for law-firm pilot conversations"
     },
     {
