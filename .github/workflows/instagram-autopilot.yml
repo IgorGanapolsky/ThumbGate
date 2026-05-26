@@ -16,8 +16,6 @@ name: Instagram Autopilot
 # a safe no-op rather than a double-post.
 
 on:
-  schedule:
-    - cron: '0 13 * * *'
   workflow_dispatch:
     inputs:
       image_only:

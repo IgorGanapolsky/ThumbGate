@@ -5,8 +5,6 @@ name: Social Analytics Poll
 # Each poller is self-skipping when its required env vars are absent.
 
 on:
-  schedule:
-    - cron: '0 6 * * *'   # Daily at 06:00 UTC
   workflow_dispatch:
     inputs:
       verbose:

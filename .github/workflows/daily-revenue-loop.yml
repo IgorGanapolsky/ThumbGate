@@ -1,8 +1,6 @@
 name: Daily Revenue Loop
 
 on:
-  schedule:
-    - cron: '0 13 * * *'  # 9am ET (1pm UTC)
   workflow_dispatch:
     inputs:
       dry_run:

@@ -1,9 +1,9 @@
 name: Video Autopilot
 
-# Fires every 4 hours, but scheduled runs are gated off by default. The
-# workflow can still generate dry-runs, but paid Zernio publishing requires an
-# explicit workflow input or repo variable because low-engagement duplicate
-# posts were burning attention without revenue.
+# Manual-only cost governor: scheduled video generation burned GitHub-hosted
+# Actions minutes without producing revenue. Keep this workflow available for
+# explicit operator runs; move recurring media loops to local/Railway/runner
+# compute before re-enabling automation.
 #
 # Content rotation: 6 templates picked by least-recently-used order in
 # the marketing DB — never double-posts the same template within 7 days.
@@ -16,8 +16,6 @@ name: Video Autopilot
 # The CI run is a no-op (skips all platforms) if cooldowns haven't expired.
 
 on:
-  schedule:
-    - cron: '0 */4 * * *'   # every 4 hours, all days
   workflow_dispatch:
     inputs:
       template:

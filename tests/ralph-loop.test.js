@@ -228,7 +228,7 @@ test('runRalphLoop writes machine-readable evidence and keeps state paths explic
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-test('Ralph workflows are scheduled, stateful, and split outbound from reply engagement', () => {
+test('Ralph workflows are manual, stateful, and split outbound from reply engagement', () => {
   const workflowsDir = path.join(PROJECT_ROOT, '.github', 'workflows');
   const ralph = fs.readFileSync(path.join(workflowsDir, 'ralph-loop.yml'), 'utf8');
   const ralphMode = fs.readFileSync(path.join(workflowsDir, 'ralph-mode.yml'), 'utf8');
@@ -236,7 +236,8 @@ test('Ralph workflows are scheduled, stateful, and split outbound from reply eng
   const socialEngagement = fs.readFileSync(path.join(workflowsDir, 'social-engagement-hourly.yml'), 'utf8');
 
   assert.match(ralph, /name: Ralph Loop Audience Engagement/);
-  assert.match(ralph, /cron: '17 \* \* \* \*'/);
+  assert.match(ralph, /workflow_dispatch:/);
+  assert.doesNotMatch(ralph, /^\s*schedule:/m);
   assert.match(ralph, /actions\/cache\/restore@v[45]/);
   assert.match(ralph, /actions\/cache\/save@v[45]/);
   assert.match(ralph, /node scripts\/ralph-loop\.js --mode="\$MODE"/);
@@ -250,7 +251,8 @@ test('Ralph workflows are scheduled, stateful, and split outbound from reply eng
   assert.match(ralph, /THUMBGATE_BLUESKY_PUBLISH_LIMIT/);
   assert.match(ralph, /scripts\/social-reply-monitor-bluesky\.js/);
   assert.match(ralphMode, /name: Ralph Mode - 24\/7 Engagement Loop/);
-  assert.match(ralphMode, /cron: '0 \*\/2 \* \* \*'/);
+  assert.match(ralphMode, /workflow_dispatch:/);
+  assert.doesNotMatch(ralphMode, /^\s*schedule:/m);
   assert.match(ralphMode, /actions\/cache\/restore@v[45]/);
   assert.match(ralphMode, /actions\/cache\/save@v[45]/);
   assert.match(ralphMode, /\.thumbgate\/ralph-state\.json/);
@@ -258,5 +260,6 @@ test('Ralph workflows are scheduled, stateful, and split outbound from reply eng
   assert.match(replyMonitor, /bluesky/);
   assert.match(replyMonitor, /scripts\/social-reply-monitor-bluesky\.js/);
   assert.doesNotMatch(replyMonitor, /^\s*schedule:/m);
+  assert.doesNotMatch(socialEngagement, /^\s*schedule:/m);
   assert.doesNotMatch(socialEngagement, /0 9,13,17,21 \* \* \*/);
 });
