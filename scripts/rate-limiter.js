@@ -166,9 +166,10 @@ function checkLimit(action, authContext) {
 
   // Check daily limit
   if (dailyLimit !== Infinity && dailyCurrent >= dailyLimit) {
+    const paywallMsg = PAYWALL_MESSAGES[action] || PAYWALL_MESSAGES.default;
     return {
       allowed: false,
-      message: `Daily limit reached. ${UPGRADE_MESSAGE}`,
+      message: `Daily limit reached. ${paywallMsg}\n\n${UPGRADE_MESSAGE}`,
       used: dailyCurrent,
       limit: dailyLimit,
       limitType: 'daily',

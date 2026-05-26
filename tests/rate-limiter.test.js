@@ -61,7 +61,9 @@ describe('rate-limiter', () => {
     const blocked = rateLimiter.checkLimit('capture_feedback');
     assert.equal(blocked.allowed, false, 'call 11 should be blocked on the free daily limit');
     assert.equal(blocked.limitType, 'daily');
-    assert.match(blocked.message, /Daily limit reached|10 captures\/day|Upgrade/i);
+    assert.match(blocked.message, /Daily limit reached/i);
+    assert.match(blocked.message, /10 captures\/day \(50 total\)/i);
+    assert.match(blocked.message, /Upgrade|Pro/i);
   });
 
   it('blocks recall on free tier (Pro-only)', () => {
