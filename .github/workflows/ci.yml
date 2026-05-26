@@ -38,12 +38,52 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Detect CI scope
+        id: ci-scope
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$EVENT_NAME" != "pull_request" ]]; then
+            echo "mode=full" >> "$GITHUB_OUTPUT"
+            echo "reason=non-pr-event" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git diff --name-only "$BASE_SHA" "$HEAD_SHA" | sed '/^$/d' > /tmp/ci-changed-files.txt
+          echo "Changed files:"
+          sed 's/^/- /' /tmp/ci-changed-files.txt || true
+
+          if [[ ! -s /tmp/ci-changed-files.txt ]]; then
+            echo "mode=full" >> "$GITHUB_OUTPUT"
+            echo "reason=no-changed-files" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if grep -Ev '^(\.changeset/.*\.md|public/|config/post-deploy-marketing-pages\.json|scripts/dashboard\.js|scripts/verify-marketing-pages-deployed\.js|tests/(api-server|dashboard|public-landing|landing-page-claims|funnel-invariants|verify-marketing-pages-deployed|public-static-assets)\.test\.js|tests/e2e/)' /tmp/ci-changed-files.txt > /tmp/ci-full-required-files.txt; then
+            echo "mode=full" >> "$GITHUB_OUTPUT"
+            echo "reason=runtime-or-workflow-surface" >> "$GITHUB_OUTPUT"
+            echo "Files requiring full CI:"
+            sed 's/^/- /' /tmp/ci-full-required-files.txt
+            exit 0
+          fi
+
+          echo "mode=web" >> "$GITHUB_OUTPUT"
+          echo "reason=web-revenue-surface-only" >> "$GITHUB_OUTPUT"
+          echo "Focused web/revenue CI selected. Merge queue and main pushes still run full CI."
+
       - name: Setup Python
+        if: steps.ci-scope.outputs.mode != 'web'
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
       - name: Install Python deps
+        if: steps.ci-scope.outputs.mode != 'web'
         # scikit-learn + joblib are required by scripts/eval_gate_classifier.py
         # so tests/eval-gate-classifier.test.js can exercise the actual ML
         # pipeline (train_and_score, joblib.dump, ROC-AUC, classification_report)
@@ -72,6 +112,7 @@ jobs:
       - name: Run budget status gate
         run: npm run budget:status
       - name: Check operational integrity
+        if: steps.ci-scope.outputs.mode != 'web'
         env:
           GH_TOKEN: ${{ github.token }}
         run: npm run ops:integrity:ci
@@ -80,10 +121,25 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
         run: npm run branch-protection:check
+
+      - name: Run focused web/revenue tests
+        if: steps.ci-scope.outputs.mode == 'web'
+        run: |
+          node --test \
+            tests/api-server.test.js \
+            tests/dashboard.test.js \
+            tests/public-landing.test.js \
+            tests/funnel-invariants.test.js \
+            tests/landing-page-claims.test.js \
+            tests/verify-marketing-pages-deployed.test.js \
+            tests/public-static-assets.test.js
+
       - name: Run tests
+        if: steps.ci-scope.outputs.mode != 'web'
         run: npm test
 
       - name: Run gate-eval regression suite
+        if: steps.ci-scope.outputs.mode != 'web'
         # Exits non-zero if any case in config/evals/*.json fails against
         # config/specs/*.json. Any constraint regex change that flips a
         # previously-blocking case to pass (or vice versa) blocks merge
@@ -91,34 +147,43 @@ jobs:
         run: npm run gate-eval:ci
 
       - name: Run coverage
+        if: steps.ci-scope.outputs.mode != 'web'
         run: npm run test:coverage
 
       - name: Check congruence (branding, tech stack, version across all surfaces)
+        if: steps.ci-scope.outputs.mode != 'web'
         run: npm run test:congruence
 
       - name: Run adapter proof
+        if: steps.ci-scope.outputs.mode != 'web'
         run: npm run prove:adapters
 
       - name: Run automation proof
+        if: steps.ci-scope.outputs.mode != 'web'
         run: npm run prove:automation
 
       - name: Run runtime proof
+        if: steps.ci-scope.outputs.mode != 'web'
         run: npm run prove:runtime
 
       - name: Run evolution proof
+        if: steps.ci-scope.outputs.mode != 'web'
         run: npm run prove:evolution
 
       - name: Run workflow contract proof
+        if: steps.ci-scope.outputs.mode != 'web'
         run: npm run prove:workflow-contract
 
       - name: Run autoresearch proof
+        if: steps.ci-scope.outputs.mode != 'web'
         run: npm run prove:autoresearch
 
       - name: Run Tessl distribution proof
+        if: steps.ci-scope.outputs.mode != 'web'
         run: npm run prove:tessl
 
       - name: Write prompt evaluation report
-        if: always()
+        if: always() && steps.ci-scope.outputs.mode != 'web'
         run: |
           mkdir -p proof
           node scripts/prompt-eval.js --min-score=0 --synthetic --synthetic-variants=1 --suite-output proof/prompt-eval-suite.generated.json --output proof/prompt-eval-report.json --json > /dev/null

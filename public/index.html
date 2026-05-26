@@ -24,7 +24,7 @@ __GOOGLE_SITE_VERIFICATION_META__
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
 <!-- Privacy-friendly analytics by Plausible -->
-<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.tagged-events.js"></script>
 __GA_BOOTSTRAP__
 
 <script>
@@ -695,7 +695,7 @@ __GA_BOOTSTRAP__
       <a href="#claude-code-section" class="nav-claude" onclick="posthog.capture('nav_claude_click')" style="display:none;">Claude</a>
       <a href="#workflow-sprint-intake" onclick="posthog.capture('workflow_sprint')" style="display:none;">Start Sprint</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" target="_blank" rel="noopener" onclick="posthog.capture('nav_claude_extension_click',{cta:'install_claude_extension'})" class="nav-cta" style="background:#d97706;display:none;">Claude Extension</a>
-      <a href="/go/install?utm_source=website&utm_medium=nav&utm_campaign=install_free&cta_id=nav_install_free&cta_placement=nav" onclick="posthog.capture('nav_cta_click',{cta:'install_free'})" class="nav-cta">Install Free</a>
+      <a href="/checkout/pro?utm_source=website&utm_medium=nav&utm_campaign=pro_upgrade&cta_id=nav_start_pro&cta_placement=nav&plan_id=pro&landing_path=%2F" data-revenue-cta data-cta-id="nav_start_pro" data-cta-placement="nav" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);try{posthog.capture('nav_pro_click',{cta:'nav_start_pro',tier:'pro',price:19})}catch(_){}" class="nav-cta">Start Pro — $19/mo</a>
     </div>
   </div>
 </nav>
@@ -714,6 +714,7 @@ __GA_BOOTSTRAP__
     </div>
 
     <div class="hero-actions">
+      <a href="/checkout/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_upgrade&cta_id=hero_start_pro&cta_placement=hero&plan_id=pro&landing_path=%2F" data-revenue-cta data-cta-id="hero_start_pro" data-cta-placement="hero" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);try{posthog.capture('hero_pro_checkout_click',{cta:'hero_start_pro',tier:'pro',price:19})}catch(_){}" class="btn-pro-page hero-pro hero-pro-primary">Start Pro — $19/mo</a>
       <div class="hero-install hero-install-primary" onclick="copyInstall(this)" title="Click to copy">
         <span class="prompt">$</span>
         <span class="cmd">npx thumbgate init</span>
@@ -1105,7 +1106,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="autoresearch-cta">
         <a class="primary" href="/guides/autoresearch-agent-safety?utm_source=website&utm_medium=autoresearch_pack&utm_campaign=autoresearch_safety&cta_id=autoresearch_guide&cta_placement=autoresearch_pack">Read the Autoresearch guide</a>
-        <a class="secondary" href="/checkout/pro?utm_source=website&utm_medium=autoresearch_pack&utm_campaign=autoresearch_safety&cta_id=autoresearch_pro_checkout&cta_placement=autoresearch_pack&plan_id=pro&landing_path=%2F">Start Pro</a>
+        <a class="secondary" href="/checkout/pro?utm_source=website&utm_medium=autoresearch_pack&utm_campaign=autoresearch_safety&cta_id=autoresearch_pro_checkout&cta_placement=autoresearch_pack&plan_id=pro&landing_path=%2F" data-revenue-cta data-cta-id="autoresearch_pro_checkout" data-cta-placement="autoresearch_pack" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);">Start Pro</a>
       </div>
     </div>
   </div>
@@ -1322,7 +1323,7 @@ __GA_BOOTSTRAP__
           <div style="font-family:var(--mono);font-size:12px;color:var(--cyan);line-height:1.6;">checks: 36 active<br>feedback: unlimited<br>exports: DPO + lessons</div>
         </div>
         <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--cyan);font-weight:800;margin-bottom:8px;">PAY-NOW PRO</div>
-        <a href="/checkout/pro?utm_source=pricing&utm_medium=cta&utm_campaign=v2_landing&utm_content=pricing_pro&plan_id=pro" id="pro-checkout-link" class="btn-pro" onclick="handleProCheckout();return false;" style="display:block;width:100%;text-align:center;padding:12px;font-size:15px;">Upgrade to Pro — $19/mo</a>
+        <a href="/checkout/pro?utm_source=pricing&utm_medium=cta&utm_campaign=v2_landing&utm_content=pricing_pro&cta_id=pricing_pro_checkout&cta_placement=pricing&plan_id=pro&landing_path=%2F" id="pro-checkout-link" class="btn-pro" data-revenue-cta data-cta-id="pricing_pro_checkout" data-cta-placement="pricing" data-tier="pro" data-plan-id="pro" data-price="19" onclick="handleProCheckout();return false;" style="display:block;width:100%;text-align:center;padding:12px;font-size:15px;">Upgrade to Pro — $19/mo</a>
         <p style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;">Billed today · cancel anytime.</p>
         <input type="email" id="pro-email" data-buyer-email placeholder="you@company.com" style="margin-top:10px;width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-raised);color:var(--text);font-size:14px;">
       </div>
@@ -1506,7 +1507,7 @@ __GA_BOOTSTRAP__
     </div>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;align-items:center;margin-top:12px;opacity:0.7;">
       <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('final_claude_extension_click',{cta:'install_claude_extension'})" style="padding:8px 16px;font-size:12px;background:#d97706;color:#fff;">Install Claude Extension</a>
-      <a href="/go/pro?utm_source=website&utm_medium=final_cta&utm_campaign=pro_upgrade&cta_id=final_go_pro&cta_placement=final_cta&plan_id=pro&landing_path=%2F" onclick="posthog.capture('final_pro_click',{cta:'go_pro'})" class="btn-pro" style="padding:8px 16px;font-size:12px;opacity:0.85;">Upgrade to Pro — $19/mo</a>
+      <a href="/checkout/pro?utm_source=website&utm_medium=final_cta&utm_campaign=pro_upgrade&cta_id=final_go_pro&cta_placement=final_cta&plan_id=pro&landing_path=%2F" data-revenue-cta data-cta-id="final_go_pro" data-cta-placement="final_cta" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);try{posthog.capture('final_pro_click',{cta:'final_go_pro',tier:'pro',price:19})}catch(_){}" class="btn-pro" style="padding:8px 16px;font-size:12px;opacity:0.85;">Upgrade to Pro — $19/mo</a>
       <a href="#workflow-sprint-intake" class="btn-team" style="padding:8px 16px;font-size:12px;">Start Workflow Hardening Sprint</a>
     </div>
   </div>
@@ -1535,7 +1536,7 @@ __GA_BOOTSTRAP__
     <span class="cmd">npx thumbgate init</span>
     <span class="copy-hint">copy</span>
   </div>
-  <a href="/go/pro?utm_source=website&utm_medium=sticky_cta&utm_campaign=pro_upgrade&cta_id=sticky_go_pro&cta_placement=sticky_cta&plan_id=pro&landing_path=%2F" onclick="posthog.capture('sticky_pro_click',{cta:'go_pro'})" class="btn-pro" style="padding:8px 16px;font-size:12px;border-radius:6px;white-space:nowrap;">Go Pro — $19/mo</a>
+  <a href="/checkout/pro?utm_source=website&utm_medium=sticky_cta&utm_campaign=pro_upgrade&cta_id=sticky_go_pro&cta_placement=sticky_cta&plan_id=pro&landing_path=%2F" data-revenue-cta data-cta-id="sticky_go_pro" data-cta-placement="sticky_cta" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);try{posthog.capture('sticky_pro_click',{cta:'sticky_go_pro',tier:'pro',price:19})}catch(_){}" class="btn-pro" style="padding:8px 16px;font-size:12px;border-radius:6px;white-space:nowrap;">Go Pro — $19/mo</a>
 </div>
 <script>
 (function() {
@@ -1611,6 +1612,53 @@ function sendFirstPartyTelemetry(eventType, props) {
 function sendGa4Event(eventName, params) {
   if (!gaMeasurementId || typeof globalThis.gtag !== 'function') return;
   globalThis.gtag('event', eventName, params || {});
+}
+
+function readRevenueCtaMeta(el) {
+  var label = (el && el.textContent ? el.textContent : '').trim().substring(0, 80);
+  var section = el && el.closest ? el.closest('section') : null;
+  var fallbackPlacement = section ? (section.id || String(section.className || '').split(' ')[0] || 'unknown') : 'unknown';
+  return {
+    ctaId: (el && el.dataset && el.dataset.ctaId) || 'pro_checkout',
+    ctaPlacement: (el && el.dataset && el.dataset.ctaPlacement) || fallbackPlacement,
+    tier: (el && el.dataset && el.dataset.tier) || 'pro',
+    planId: (el && el.dataset && el.dataset.planId) || 'pro',
+    price: Number((el && el.dataset && el.dataset.price) || proPriceDollars || 19),
+    billing: (el && el.dataset && el.dataset.billing) || 'monthly',
+    label: label,
+  };
+}
+
+function trackRevenueCta(el) {
+  var meta = readRevenueCtaMeta(el);
+  var plausibleProps = {
+    cta: meta.ctaId,
+    cta_id: meta.ctaId,
+    section: meta.ctaPlacement,
+    tier: meta.tier,
+    plan_id: meta.planId,
+    price: meta.price,
+    billing: meta.billing,
+    label: meta.label,
+  };
+  if (typeof plausible === 'function') {
+    plausible('pricing_cta_click', { props: plausibleProps });
+    plausible('checkout_start', { props: plausibleProps });
+  }
+  sendFirstPartyTelemetry('cta_click', {
+    ctaId: meta.ctaId,
+    ctaPlacement: meta.ctaPlacement,
+    planId: meta.planId,
+    tier: meta.tier,
+    price: meta.price,
+    billing: meta.billing,
+    label: meta.label,
+  });
+  sendGa4Event('begin_checkout', {
+    currency: 'USD',
+    value: meta.price,
+    items: [{ item_id: 'pro_monthly', item_name: 'ThumbGate Pro Monthly' }],
+  });
 }
 
 function initializeTeamIntakeTelemetry() {
@@ -1711,7 +1759,7 @@ function copyInstall(el) {
   window.handleFaqKeydown = handleFaqKeydown;
 
   /* CTA clicks */
-  trackClick('.btn-pro', 'checkout_start', { tier: 'pro', price: 19, billing: 'monthly' });
+  trackClick('.btn-pro:not([data-revenue-cta])', 'checkout_start', { tier: 'pro', price: 19, billing: 'monthly' });
   trackClick('.btn-gpt-page:not(.btn-install-hero)', 'chatgpt_gpt_click', { tier: 'free', source: 'homepage_gpt' });
   trackClick('.btn-install-hero', 'install_guide_click', { tier: 'free', source: 'hero_install' });
   trackClick('.btn-pro-page:not(.btn-install-link)', 'pro_page_click', { tier: 'pro', source: 'hero' });
@@ -1719,12 +1767,13 @@ function copyInstall(el) {
   trackClick('.btn-team', 'workflow_sprint_intake_click', { tier: 'team', offer: 'workflow_hardening_sprint' });
   trackClick('.btn-free', 'install_click', { tier: 'free' });
   trackClick('.btn-demo-link', 'demo_click', { source: 'homepage' });
-  trackClick('.nav-cta', 'chatgpt_gpt_click', { tier: 'free', source: 'nav' });
+  trackClick('.nav-cta:not([data-revenue-cta])', 'chatgpt_gpt_click', { tier: 'free', source: 'nav' });
 
   /* Pricing CTA conversion tracking — fires on every Get Started / Pro / Team button click
      with section context so we can distinguish pricing section vs final CTA section clicks */
   document.querySelectorAll('.btn-pro, .btn-gpt-page, .btn-pro-page, .btn-install-hero, .btn-install-link, .btn-team, .btn-free, .btn-demo-link, .nav-cta').forEach(function(el) {
     el.addEventListener('click', function() {
+      if (el.hasAttribute('data-revenue-cta')) return;
       var section = el.closest('section');
       var sectionId = section ? (section.id || section.className.split(' ')[0] || 'unknown') : 'unknown';
       var tier = resolvePricingClickTier(el);
@@ -1783,8 +1832,10 @@ function copyInstall(el) {
     ctaImpressions: [
       { selector: '#pro-checkout-link', ctaId: 'pricing_pro_checkout', ctaPlacement: 'pricing', planId: 'pro' },
       { selector: '.price-card.pro .btn-pro', ctaId: 'pricing_pro_monthly', ctaPlacement: 'pricing', planId: 'pro' },
-      { selector: '.hero-actions .btn-pro-page', ctaId: 'hero_workflow_intake', ctaPlacement: 'hero', planId: 'team' },
-      { selector: '.hero-actions .hero-pro', ctaId: 'hero_workflow_sprint_recovery_intake', ctaPlacement: 'hero', planId: 'team' },
+      { selector: '.nav-cta[data-revenue-cta]', ctaId: 'nav_start_pro', ctaPlacement: 'nav', planId: 'pro' },
+      { selector: '.hero-actions .hero-pro-primary', ctaId: 'hero_start_pro', ctaPlacement: 'hero', planId: 'pro' },
+      { selector: '.hero-actions .btn-pro-page:not(.hero-pro-primary)', ctaId: 'hero_workflow_intake', ctaPlacement: 'hero', planId: 'team' },
+      { selector: '.hero-actions .hero-pro:not(.hero-pro-primary)', ctaId: 'hero_workflow_sprint_recovery_intake', ctaPlacement: 'hero', planId: 'team' },
       { selector: '.sticky-cta .btn-pro', ctaId: 'sticky_go_pro', ctaPlacement: 'sticky_cta', planId: 'pro' },
       { selector: '.price-card.team .btn-team', ctaId: 'team_workflow_sprint', ctaPlacement: 'pricing', planId: 'team' },
       { selector: '#team-pilot-intake-form', ctaId: 'workflow_sprint_intake', ctaPlacement: 'team_visible_intake', planId: 'team' }
@@ -1799,6 +1850,8 @@ initializeTeamIntakeTelemetry();
 async function handleProCheckout() {
   var buyerIntent = globalThis.ThumbGateBuyerIntent;
   var email = document.getElementById('pro-email');
+  var checkoutLink = document.getElementById('pro-checkout-link');
+  trackRevenueCta(checkoutLink);
   var normalizedEmail = buyerIntent.normalizeBuyerEmail(email && email.value);
   if (!email || !buyerIntent.isValidBuyerEmail(normalizedEmail)) {
     email.style.border = '2px solid #f87171';
@@ -1813,16 +1866,10 @@ async function handleProCheckout() {
   if (globalThis.buyerJourney && typeof globalThis.buyerJourney.markEmailCaptured === 'function') {
     globalThis.buyerJourney.markEmailCaptured();
   }
-  var checkoutLink = document.getElementById('pro-checkout-link');
   var checkoutUrl = checkoutLink ? checkoutLink.href : '/checkout/pro';
   if (typeof plausible === 'function') {
     plausible('pro_email_captured', { props: { page: 'homepage', intent: 'checkout' } });
   }
-  sendGa4Event('begin_checkout', {
-    currency: 'USD',
-    value: proPriceDollars,
-    items: [{ item_id: 'pro_monthly', item_name: 'ThumbGate Pro Monthly' }],
-  });
   try {
     await buyerIntent.submitNewsletterSignup(normalizedEmail);
   } catch (_err) {

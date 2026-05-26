@@ -1178,7 +1178,7 @@ function computeInstrumentationReadiness(analytics, billing) {
   const dashboardGradeExportReady = plausibleExportConfigured || posthogExportConfigured || ga4ExportConfigured;
 
   return {
-    plausibleConfigured: /plausible\.io\/js\/script\.js|\/js\/analytics\.js/.test(landingPage),
+    plausibleConfigured: /plausible\.io\/js\/script(?:\.tagged-events)?\.js|\/js\/analytics\.js/.test(landingPage),
     ga4Configured: Boolean(runtimeConfig.gaMeasurementId),
     googleSearchConsoleConfigured: Boolean(runtimeConfig.googleSiteVerification),
     softwareApplicationSchemaPresent: /"@type": "SoftwareApplication"/.test(landingPage),
