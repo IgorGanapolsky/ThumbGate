@@ -51,9 +51,32 @@ test('public landing page routes Pro buyers through the hosted checkout surface'
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /\/checkout\/pro\?/);
-  assert.match(landingPage, /\/go\/pro\?utm_source=website/);
   assert.match(landingPage, /Free Trial|Upgrade to Pro/i);
   assert.doesNotMatch(landingPage, /gumroad\.com/);
+});
+
+test('public landing page exposes above-fold paid Pro CTA with canonical revenue analytics', () => {
+  const landingPage = readLandingPage();
+  const heroStart = landingPage.indexOf('<!-- HERO -->');
+  const heroEnd = landingPage.indexOf('<div class="hero-trust-bar">');
+  const aboveFold = landingPage.slice(0, heroEnd);
+  const heroBlock = landingPage.slice(heroStart, heroEnd);
+
+  assert.ok(heroStart > -1);
+  assert.ok(heroEnd > heroStart);
+  assert.match(aboveFold, /cta_id=nav_start_pro/);
+  assert.match(aboveFold, /data-revenue-cta data-cta-id="nav_start_pro"/);
+  assert.match(heroBlock, /cta_id=hero_start_pro/);
+  assert.match(heroBlock, /data-revenue-cta data-cta-id="hero_start_pro"/);
+  assert.match(heroBlock, /Start Pro — \$19\/mo/);
+  assert.match(heroBlock, /\/checkout\/pro\?/);
+  assert.ok(heroBlock.indexOf('hero_start_pro') < heroBlock.indexOf('hero_install_cli'));
+  assert.match(landingPage, /function trackRevenueCta/);
+  assert.match(landingPage, /plausible\('pricing_cta_click'/);
+  assert.match(landingPage, /plausible\('checkout_start'/);
+  assert.match(landingPage, /sendFirstPartyTelemetry\('cta_click'/);
+  assert.match(landingPage, /sendGa4Event\('begin_checkout'/);
+  assert.match(landingPage, /script\.tagged-events\.js/);
 });
 
 test('public landing page includes copy-to-clipboard install command', () => {
@@ -136,9 +159,9 @@ test('public landing page keeps Team services intake-led instead of exposing a p
   assert.doesNotMatch(landingPage, /Pay \$19 quick read/);
   assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
   assert.doesNotMatch(landingPage, /quick_read_checkout_started/);
-  // Hero CTA pair: Free CLI + Workflow Hardening Sprint intake. Pro $19/mo
-  // remains wired via /checkout/pro, but services are no longer exposed as
-  // competing direct checkout paths on the homepage.
+  // Hero keeps a paid Pro side lane plus Workflow Hardening Sprint intake.
+  // Services are no longer exposed as competing direct checkout paths on the
+  // homepage.
   assert.doesNotMatch(landingPage, /Pay \$499 diagnostic/);
   assert.match(landingPage, /Talk to me — Workflow Hardening Sprint/);
   assert.doesNotMatch(landingPage, /Pay \$1500 sprint/);
@@ -172,7 +195,7 @@ test('public landing page keeps Team services intake-led instead of exposing a p
 test('public landing page includes Plausible analytics and search engine proof bar', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /plausible\.io\/js\/script\.js/);
+  assert.match(landingPage, /plausible\.io\/js\/script\.tagged-events\.js/);
   assert.match(landingPage, /Verification evidence/i);
   assert.match(landingPage, /Release confidence/i);
   assert.match(landingPage, /ThumbGate Bench/i);
@@ -472,7 +495,11 @@ test('public landing page includes Plausible custom event tracking for all CTAs'
   assert.match(landingPage, /#workflow-sprint-intake/);
 
   // trackClick wires up CTA events by selector and event name
-  assert.match(landingPage, /trackClick\('.btn-pro', 'checkout_start'/);
+  assert.match(landingPage, /trackClick\('.btn-pro:not\(\[data-revenue-cta\]\)', 'checkout_start'/);
+  assert.match(landingPage, /function trackRevenueCta/);
+  assert.match(landingPage, /data-revenue-cta/);
+  assert.match(landingPage, /plausible\('pricing_cta_click'/);
+  assert.match(landingPage, /plausible\('checkout_start'/);
   assert.match(landingPage, /trackClick\('.btn-gpt-page:not\(.btn-install-hero\)', 'chatgpt_gpt_click'/);
   assert.match(landingPage, /trackClick\('.btn-install-hero', 'install_guide_click'/);
   assert.match(landingPage, /trackClick\('.btn-install-link', 'install_guide_click'/);
@@ -480,7 +507,7 @@ test('public landing page includes Plausible custom event tracking for all CTAs'
   assert.match(landingPage, /selector: '#team-pilot-intake-form'/);
   assert.match(landingPage, /trackClick\('.btn-free', 'install_click'/);
   assert.match(landingPage, /trackClick\('.btn-demo-link', 'demo_click'/);
-  assert.match(landingPage, /trackClick\('.nav-cta', 'chatgpt_gpt_click'/);
+  assert.match(landingPage, /trackClick\('.nav-cta:not\(\[data-revenue-cta\]\)', 'chatgpt_gpt_click'/);
   assert.match(landingPage, /plausible\('faq_open'/);
   assert.match(landingPage, /plausible\('scroll_depth'/);
   assert.match(landingPage, /trackClick\('.proof-bar a', 'proof_bar_click'\)/);

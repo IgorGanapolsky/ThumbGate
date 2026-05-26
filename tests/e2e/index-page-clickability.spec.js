@@ -24,8 +24,9 @@ test.describe('/ landing page clickability — comprehensive E2E coverage', () =
   test('renders the hero install command + visible CTAs', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('.hero-install-primary .cmd')).toHaveText('npx thumbgate init');
+    await expect(page.locator('.hero-pro-primary')).toBeVisible();
     await expect(page.locator('.btn-install-hero')).toBeVisible();
-    await expect(page.locator('.hero-pro')).toBeVisible();
+    await expect(page.locator('.hero-pro', { hasText: /Workflow Hardening Sprint/ })).toBeVisible();
   });
 
   test('clicking hero install tile copies the command and flips copy-hint to "copied!"', async ({ page }) => {
@@ -47,7 +48,7 @@ test.describe('/ landing page clickability — comprehensive E2E coverage', () =
 
   test('clicking "Talk to me — Workflow Hardening Sprint" anchors to #workflow-sprint-intake', async ({ page }) => {
     await page.goto('/');
-    await page.locator('a.hero-pro').click();
+    await page.locator('a.hero-pro', { hasText: /Workflow Hardening Sprint/ }).click();
     await expect(page).toHaveURL(/#workflow-sprint-intake$/);
   });
 
@@ -91,11 +92,13 @@ test.describe('/ landing page clickability — comprehensive E2E coverage', () =
     await page.waitForURL(/\/learn$/);
   });
 
-  test('nav "Install Free" CTA navigates to /go/install', async ({ page }) => {
+  test('nav "Start Pro" CTA navigates to /checkout/pro', async ({ page }) => {
     await page.goto('/');
-    await page.locator('nav a.nav-cta', { hasText: 'Install Free' }).first().click();
-    // /go/install is a redirect endpoint — assert URL change away from / first
-    await page.waitForURL((url) => url.pathname !== '/', { timeout: 5000 });
+    await page.route('**/checkout/pro**', (route) =>
+      route.fulfill({ status: 200, contentType: 'text/html', body: '<html><body>checkout</body></html>' }),
+    );
+    await page.locator('nav a.nav-cta', { hasText: 'Start Pro' }).first().click();
+    await page.waitForURL(/\/checkout\/pro/);
   });
 
   // --- FAQ accordion (deterministic, no backend) ---
