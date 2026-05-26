@@ -10,8 +10,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const https = require('node:https');
 const os = require('node:os');
 const path = require('node:path');
+const { EventEmitter } = require('node:events');
 
 const billingModulePath = require.resolve('../scripts/billing');
 
@@ -26,6 +28,7 @@ const savedEnv = {
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
   STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID,
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+  THUMBGATE_PLAUSIBLE_DISABLE: process.env.THUMBGATE_PLAUSIBLE_DISABLE,
 };
 
 function primeEnv(suffix) {
@@ -37,6 +40,7 @@ function primeEnv(suffix) {
   // Force non-LOCAL_MODE so handleWebhook actually runs.
   process.env.STRIPE_SECRET_KEY = 'sk_test_fake_for_webhook_test';
   process.env.STRIPE_PRICE_ID = '';
+  process.env.THUMBGATE_PLAUSIBLE_DISABLE = '1';
   // No webhook secret → constructEvent path skipped; raw body is JSON-parsed.
   delete process.env.STRIPE_WEBHOOK_SECRET;
 }
@@ -181,4 +185,61 @@ test('handleWebhook reports no_recipient when customer email missing', async () 
   assert.equal(called, false, 'mailer should not be called with no recipient');
 
   billing._mailer = null;
+});
+
+test('handleWebhook emits Plausible purchase event on checkout completion', async () => {
+  primeEnv('plausible');
+  process.env.THUMBGATE_PLAUSIBLE_DISABLE = '0';
+  process.env.THUMBGATE_PLAUSIBLE_DOMAIN = 'thumbgate.test';
+
+  const originalRequest = https.request;
+  const requests = [];
+  https.request = (options, callback) => {
+    const req = new EventEmitter();
+    let body = '';
+    req.write = (chunk) => { body += chunk; };
+    req.end = (chunk) => {
+      if (chunk) body += chunk;
+      requests.push({ options, body });
+      const res = new EventEmitter();
+      res.statusCode = 202;
+      callback(res);
+      res.emit('end');
+    };
+    req.destroy = () => {};
+    req.setTimeout = () => {};
+    req.on = EventEmitter.prototype.on.bind(req);
+    return req;
+  };
+
+  try {
+    const billing = freshBilling();
+    billing._mailer = {
+      sendTrialWelcomeEmail: async () => ({ sent: true, id: 'email_fake_plausible' }),
+    };
+
+    const event = makeCheckoutCompletedEvent({
+      email: 'buyer3@example.com',
+      customerId: 'cus_test_plausible',
+      sessionId: 'cs_test_plausible',
+    });
+
+    const res = await billing.handleWebhook(Buffer.from(JSON.stringify(event)), null);
+
+    assert.equal(res.handled, true);
+    assert.equal(requests.length, 1);
+    const payload = JSON.parse(requests[0].body);
+    assert.equal(payload.name, 'Checkout Pro Purchase Completed');
+    assert.equal(payload.domain, 'thumbgate.test');
+    assert.equal(payload.url, 'https://thumbgate.test/success');
+    assert.equal(payload.props.sessionId, 'cs_test_plausible');
+    assert.equal(payload.props.customerId, 'cus_test_plausible');
+    assert.equal(payload.props.amount, '1900');
+    assert.equal(payload.props.currency, 'usd');
+
+    billing._mailer = null;
+  } finally {
+    https.request = originalRequest;
+    delete process.env.THUMBGATE_PLAUSIBLE_DOMAIN;
+  }
 });

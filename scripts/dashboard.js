@@ -967,6 +967,20 @@ function computeAnalyticsSummary(feedbackDir, options = {}) {
   return {
     window: telemetry.window || analyticsWindow,
     telemetry,
+    firstPartyTrafficQuality: telemetry.trafficQuality || {
+      rawEvents: telemetry.totalEvents || 0,
+      externalEvents: 0,
+      excludedEvents: 0,
+      exclusionRate: 0,
+      byAudience: {},
+      byExclusionReason: {},
+      external: {
+        uniqueVisitors: 0,
+        pageViews: 0,
+        checkoutStarts: 0,
+      },
+      verdict: 'missing',
+    },
     funnel: {
       visitors: uniqueVisitors,
       sessions: telemetry.visitors ? telemetry.visitors.uniqueSessions || 0 : 0,
@@ -1149,7 +1163,19 @@ function computeInstrumentationReadiness(analytics, billing) {
   const coverage = billing && billing.coverage ? billing.coverage : {};
   const telemetry = analytics.telemetry || {};
   const visitors = telemetry.visitors || {};
+  const quality = telemetry.trafficQuality || analytics.firstPartyTrafficQuality || {};
+  const external = quality.external || {};
   const cli = telemetry.cli || {};
+  const plausibleExportConfigured = Boolean(
+    process.env.PLAUSIBLE_API_KEY && (process.env.PLAUSIBLE_SITE_ID || process.env.PLAUSIBLE_DOMAIN)
+  );
+  const posthogExportConfigured = Boolean(
+    (process.env.POSTHOG_PERSONAL_API_KEY || process.env.POSTHOG_API_KEY) && process.env.POSTHOG_PROJECT_ID
+  );
+  const ga4ExportConfigured = Boolean(
+    process.env.GA4_PROPERTY_ID && (process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.GOOGLE_CLIENT_EMAIL)
+  );
+  const dashboardGradeExportReady = plausibleExportConfigured || posthogExportConfigured || ga4ExportConfigured;
 
   return {
     plausibleConfigured: /plausible\.io\/js\/script\.js|\/js\/analytics\.js/.test(landingPage),
@@ -1159,6 +1185,20 @@ function computeInstrumentationReadiness(analytics, billing) {
     faqSchemaPresent: /"@type": "FAQPage"/.test(landingPage),
     telemetryEventsPresent: (telemetry.totalEvents || 0) > 0,
     uniqueVisitorsTracked: visitors.uniqueVisitors || 0,
+    rawTelemetryEvents: quality.rawEvents || telemetry.totalEvents || 0,
+    externalTelemetryEvents: quality.externalEvents || 0,
+    excludedTelemetryEvents: quality.excludedEvents || 0,
+    externalVisitorsTracked: external.uniqueVisitors || 0,
+    externalPageViewsTracked: external.pageViews || 0,
+    externalCheckoutStartsTracked: external.checkoutStarts || 0,
+    externalVisitorPathsTracked: Array.isArray(external.visitorPaths) ? external.visitorPaths.length : 0,
+    internalTestPollutionRate: quality.exclusionRate || 0,
+    trafficQualityVerdict: quality.verdict || 'missing',
+    topExcludedTrafficReason: quality.topExclusionReason || null,
+    plausibleExportConfigured,
+    posthogExportConfigured,
+    ga4ExportConfigured,
+    dashboardGradeExportReady,
     cliInstallsTracked: cli.uniqueInstalls || 0,
     funnelEventsPresent: (analytics.reconciliation.telemetryCheckoutStarts || 0) > 0,
     seoSignalsPresent: (analytics.seo.landingViews || 0) > 0,
@@ -1865,8 +1905,10 @@ function printDashboard(data) {
   console.log('');
   console.log('\uD83D\uDCBC Growth Analytics');
   console.log(`  Unique Visitors  : ${analytics.trafficMetrics.visitors}`);
+  console.log(`  External Visitors: ${instrumentation.externalVisitorsTracked}`);
   console.log(`  Sessions         : ${analytics.trafficMetrics.sessions}`);
   console.log(`  Page Views       : ${analytics.trafficMetrics.pageViews}`);
+  console.log(`  External Views   : ${instrumentation.externalPageViewsTracked}`);
   console.log(`  CTA Clicks       : ${analytics.trafficMetrics.ctaClicks}`);
   console.log(`  Leads            : ${analytics.funnel.acquisitionLeads}`);
   console.log(`  Sprint Leads     : ${analytics.pipeline.workflowSprintLeads.total}`);
@@ -1877,6 +1919,7 @@ function printDashboard(data) {
   console.log(`  Booked Revenue   : $${(analytics.revenue.bookedRevenueCents / 100).toFixed(2)}`);
   console.log(`  Matched Journeys : ${analytics.reconciliation.matchedPaidOrders}/${analytics.reconciliation.telemetryCheckoutStarts}`);
   console.log(`  Buyer Loss       : ${analytics.buyerLoss.totalSignals}`);
+  console.log(`  Data Quality     : ${analytics.firstPartyTrafficQuality.verdict} (${instrumentation.excludedTelemetryEvents}/${instrumentation.rawTelemetryEvents} excluded)`);
   if (analytics.telemetry.visitors.topSource) {
     console.log(`  Top Source       : ${analytics.telemetry.visitors.topSource.key} (${analytics.telemetry.visitors.topSource.count}\u00D7)`);
   }
@@ -1896,6 +1939,15 @@ function printDashboard(data) {
   console.log(`  GA4              : ${instrumentation.ga4Configured ? 'configured' : 'missing'}`);
   console.log(`  Search Console   : ${instrumentation.googleSearchConsoleConfigured ? 'configured' : 'missing'}`);
   console.log(`  Telemetry Events : ${instrumentation.telemetryEventsPresent ? instrumentation.uniqueVisitorsTracked : 0} visitors`);
+  console.log(`  Clean Visitors   : ${instrumentation.externalVisitorsTracked} external (${Math.round((instrumentation.internalTestPollutionRate || 0) * 100)}% internal/test/bot events)`);
+  console.log(`  Clean Paths      : ${instrumentation.externalVisitorPathsTracked} first-party paths`);
+  if (instrumentation.topExcludedTrafficReason) {
+    console.log(`  Top Exclusion    : ${instrumentation.topExcludedTrafficReason.key} (${instrumentation.topExcludedTrafficReason.count}\u00D7)`);
+  }
+  console.log(`  Plausible Export : ${instrumentation.plausibleExportConfigured ? 'configured' : 'missing API credentials'}`);
+  console.log(`  PostHog Export   : ${instrumentation.posthogExportConfigured ? 'configured' : 'missing API credentials'}`);
+  console.log(`  GA4 Export       : ${instrumentation.ga4ExportConfigured ? 'configured' : 'missing API credentials'}`);
+  console.log(`  Visitor Paths    : ${instrumentation.dashboardGradeExportReady ? 'export-ready' : 'not dashboard-grade in repo'}`);
   console.log(`  SEO Signals      : ${instrumentation.seoSignalsPresent ? analytics.seo.landingViews : 0}`);
   console.log(`  Buyer Loss       : ${instrumentation.buyerLossSignalsPresent ? analytics.buyerLoss.totalSignals : 0}`);
   console.log(`  Attribution      : ${Math.round((instrumentation.trafficAttributionCoverage || 0) * 100)}% page-view coverage`);

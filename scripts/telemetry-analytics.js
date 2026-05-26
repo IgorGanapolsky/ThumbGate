@@ -255,6 +255,149 @@ function inferTrafficChannel(raw = {}, referrerHost = null) {
   return 'referral';
 }
 
+function normalizeBoolean(value) {
+  if (value === true || value === false) return value;
+  const text = normalizeText(value, 32);
+  if (!text) return false;
+  return ['1', 'true', 'yes', 'y', 'bot'].includes(text.toLowerCase());
+}
+
+function includesAnyToken(values, tokens) {
+  const haystack = values
+    .map((value) => normalizeText(value, 512))
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  if (!haystack) return false;
+  return tokens.some((token) => haystack.includes(token));
+}
+
+function addAudienceReason(reasons, code) {
+  if (!reasons.includes(code)) reasons.push(code);
+}
+
+function classifyTelemetryAudience(entry = {}, raw = {}) {
+  const reasons = [];
+  const identityValues = [
+    raw.email,
+    raw.customerEmail,
+    raw.buyerEmail,
+    raw.userEmail,
+    entry.visitorId,
+    entry.sessionId,
+    entry.traceId,
+    entry.acquisitionId,
+    entry.installId,
+  ];
+  const attributionValues = [
+    entry.source,
+    entry.utmSource,
+    entry.utmMedium,
+    entry.utmCampaign,
+    entry.utmContent,
+    entry.creator,
+    entry.offerCode,
+    entry.campaignVariant,
+    entry.referrerHost,
+  ];
+  const eventValues = [
+    entry.eventType,
+    entry.event,
+    entry.page,
+    entry.landingPath,
+    entry.ctaId,
+    entry.reasonCode,
+    entry.reasonDetail,
+  ];
+  const userAgent = normalizeText(entry.userAgent || raw.userAgent, 512) || '';
+  const hostValues = [raw.host, raw.hostname, raw.origin, raw.url, raw.pageUrl, entry.referrerHost];
+
+  if (normalizeBoolean(entry.isBot || raw.isBot) || includesAnyToken([userAgent], [
+    'bot',
+    'crawler',
+    'spider',
+    'headless',
+    'playwright',
+    'puppeteer',
+    'curl/',
+    'wget/',
+    'lighthouse',
+  ])) {
+    addAudienceReason(reasons, 'bot_or_automation_user_agent');
+  }
+
+  if (includesAnyToken(identityValues, [
+    '@example.com',
+    'buyer@example.com',
+    'test@example.com',
+    'codex-verification',
+    'audit@thumbgate.ai',
+  ])) {
+    addAudienceReason(reasons, 'test_identity');
+  }
+
+  if (includesAnyToken([...attributionValues, ...eventValues], [
+    'codex',
+    'audit',
+    'verification',
+    'synthetic',
+    'smoke',
+    'probe',
+    'test',
+  ])) {
+    addAudienceReason(reasons, 'test_or_audit_attribution');
+  }
+
+  if (includesAnyToken(hostValues, [
+    'localhost',
+    '127.0.0.1',
+    '::1',
+    'thumbgate-production.up.railway.app',
+  ])) {
+    addAudienceReason(reasons, 'internal_host');
+  }
+
+  if (includesAnyToken([userAgent, ...identityValues], [
+    'codex',
+    'github-actions',
+    'node-fetch',
+    'thumbgate-analytics',
+    'thumbgate-verification',
+  ])) {
+    addAudienceReason(reasons, 'internal_operator_or_ci');
+  }
+
+  if (
+    (entry.clientType || entry.client) === 'unknown' &&
+    !pickFirstText(entry.visitorId, entry.sessionId, entry.acquisitionId, entry.installId, entry.traceId) &&
+    !userAgent &&
+    includesAnyToken([entry.source, entry.utmSource], ['direct', 'website'])
+  ) {
+    addAudienceReason(reasons, 'unknown_direct_no_identity');
+  }
+
+  const audience = reasons.includes('test_identity') || reasons.includes('test_or_audit_attribution')
+    ? 'test'
+    : (reasons.includes('bot_or_automation_user_agent')
+      ? 'bot'
+      : (
+        reasons.includes('internal_host') ||
+        reasons.includes('internal_operator_or_ci') ||
+        reasons.includes('unknown_direct_no_identity')
+          ? 'internal'
+          : 'external'
+      ));
+
+  return {
+    audience,
+    reasons,
+    isExternal: audience === 'external',
+    isInternal: audience === 'internal',
+    isTest: audience === 'test',
+    isBot: audience === 'bot',
+  };
+}
+
 function sanitizeTelemetryPayload(payload = {}, headers = {}) {
   const raw = payload && typeof payload === 'object' ? payload : {};
   const clientType = inferClientType(raw);
@@ -341,6 +484,15 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
       pickFirstText(raw.utmSource, raw.utmMedium, raw.utmCampaign, raw.utmContent, raw.utmTerm)
     ),
   };
+
+  const audience = classifyTelemetryAudience(entry, raw);
+  entry.audience = audience.audience;
+  entry.trafficAudience = audience.audience;
+  entry.audienceReasons = audience.reasons;
+  entry.isExternal = audience.isExternal;
+  entry.isInternal = audience.isInternal;
+  entry.isTest = audience.isTest;
+  entry.isBotTraffic = audience.isBot;
 
   return entry;
 }
@@ -432,7 +584,160 @@ function summarizeRecentEvents(events) {
       community: entry.community || null,
       offerCode: entry.offerCode || null,
       campaignVariant: entry.campaignVariant || null,
+      audience: entry.audience || 'external',
+      audienceReasons: entry.audienceReasons || [],
     }));
+}
+
+function summarizeExternalTrafficQuality(events) {
+  const byAudience = {};
+  const byExclusionReason = {};
+  const externalVisitors = new Set();
+  const externalSessions = new Set();
+  const externalCheckoutStarters = new Set();
+  const pageViewsBySource = {};
+  const pageViewsByPath = {};
+  const pageViewsByTrafficChannel = {};
+  const checkoutStartsBySource = {};
+  const checkoutStartsByTrafficChannel = {};
+  const buyerLossReasons = {};
+  const visitorPaths = new Map();
+  let externalEvents = 0;
+  let excludedEvents = 0;
+  let externalWebEvents = 0;
+  let externalPageViews = 0;
+  let externalCtaClicks = 0;
+  let externalCheckoutStarts = 0;
+  let externalBuyerLossSignals = 0;
+
+  for (const entry of events) {
+    const audience = entry.audience || 'external';
+    incrementCounter(byAudience, audience);
+    if (audience !== 'external') {
+      excludedEvents += 1;
+      const reasons = Array.isArray(entry.audienceReasons) && entry.audienceReasons.length > 0
+        ? entry.audienceReasons
+        : [`${audience}_traffic`];
+      for (const reason of reasons) incrementCounter(byExclusionReason, reason);
+      continue;
+    }
+
+    externalEvents += 1;
+    if ((entry.clientType || entry.client) !== 'web') continue;
+
+    externalWebEvents += 1;
+    const visitorKey = pickFirstText(entry.visitorId, entry.installId, entry.sessionId);
+    if (visitorKey) externalVisitors.add(visitorKey);
+    if (entry.sessionId) externalSessions.add(entry.sessionId);
+
+    const eventType = entry.eventType || entry.event;
+    if (visitorKey) {
+      const pathRow = visitorPaths.get(visitorKey) || {
+        visitorKey,
+        firstSeenAt: entry.receivedAt || null,
+        lastSeenAt: entry.receivedAt || null,
+        source: entry.source || null,
+        trafficChannel: entry.trafficChannel || null,
+        events: [],
+        pages: [],
+        checkoutStarts: 0,
+      };
+      if (!pathRow.firstSeenAt || String(entry.receivedAt || '') < pathRow.firstSeenAt) {
+        pathRow.firstSeenAt = entry.receivedAt || null;
+      }
+      if (!pathRow.lastSeenAt || String(entry.receivedAt || '') > pathRow.lastSeenAt) {
+        pathRow.lastSeenAt = entry.receivedAt || null;
+      }
+      pathRow.events.push({
+        at: entry.receivedAt || null,
+        eventType,
+        page: entry.page || entry.landingPath || null,
+        ctaId: entry.ctaId || null,
+      });
+      if ((entry.page || entry.landingPath) && !pathRow.pages.includes(entry.page || entry.landingPath)) {
+        pathRow.pages.push(entry.page || entry.landingPath);
+      }
+      if (eventType === 'checkout_start' || eventType === 'checkout_bootstrap') {
+        pathRow.checkoutStarts += 1;
+      }
+      visitorPaths.set(visitorKey, pathRow);
+    }
+
+    if (eventType === 'landing_page_view') {
+      externalPageViews += 1;
+      incrementCounter(pageViewsBySource, entry.source);
+      incrementCounter(pageViewsByPath, entry.page);
+      incrementCounter(pageViewsByTrafficChannel, entry.trafficChannel);
+    }
+
+    if (isMarketingClickEvent(eventType)) {
+      externalCtaClicks += 1;
+    }
+
+    if (eventType === 'checkout_start' || eventType === 'checkout_bootstrap') {
+      externalCheckoutStarts += 1;
+      incrementCounter(checkoutStartsBySource, entry.source);
+      incrementCounter(checkoutStartsByTrafficChannel, entry.trafficChannel);
+      const starterKey = pickFirstText(
+        entry.acquisitionId,
+        entry.visitorId,
+        entry.sessionId,
+        entry.installId,
+        entry.traceId
+      );
+      if (starterKey) externalCheckoutStarters.add(starterKey);
+    }
+
+    if (eventType === 'checkout_cancelled' || eventType === 'checkout_abandoned' || eventType === 'reason_not_buying') {
+      externalBuyerLossSignals += 1;
+      incrementCounter(buyerLossReasons, entry.reasonCode);
+    }
+  }
+
+  const topPath = getTopCounterEntry(pageViewsByPath);
+  const topSource = getTopCounterEntry(pageViewsBySource);
+  const topTrafficChannel = getTopCounterEntry(pageViewsByTrafficChannel);
+  const topExclusionReason = getTopCounterEntry(byExclusionReason);
+
+  return {
+    rawEvents: events.length,
+    externalEvents,
+    excludedEvents,
+    internalEvents: byAudience.internal || 0,
+    testEvents: byAudience.test || 0,
+    botEvents: byAudience.bot || 0,
+    exclusionRate: safeRate(excludedEvents, events.length),
+    byAudience,
+    byExclusionReason,
+    topExclusionReason: topExclusionReason ? { key: topExclusionReason[0], count: topExclusionReason[1] } : null,
+    external: {
+      totalEvents: externalWebEvents,
+      uniqueVisitors: externalVisitors.size,
+      uniqueSessions: externalSessions.size,
+      uniqueCheckoutStarters: externalCheckoutStarters.size,
+      pageViews: externalPageViews,
+      ctaClicks: externalCtaClicks,
+      checkoutStarts: externalCheckoutStarts,
+      buyerLossSignals: externalBuyerLossSignals,
+      pageViewToCheckoutRate: safeRate(externalCheckoutStarts, externalPageViews),
+      visitorToCheckoutRate: safeRate(externalCheckoutStarts, externalVisitors.size),
+      bySource: pageViewsBySource,
+      byPath: pageViewsByPath,
+      byTrafficChannel: pageViewsByTrafficChannel,
+      checkoutStartsBySource,
+      checkoutStartsByTrafficChannel,
+      buyerLossReasons,
+      topSource: topSource ? { key: topSource[0], count: topSource[1] } : null,
+      topPath: topPath ? { key: topPath[0], count: topPath[1] } : null,
+      topTrafficChannel: topTrafficChannel ? { key: topTrafficChannel[0], count: topTrafficChannel[1] } : null,
+      visitorPaths: Array.from(visitorPaths.values())
+        .sort((a, b) => String(a.firstSeenAt || '').localeCompare(String(b.firstSeenAt || '')))
+        .slice(0, 50),
+    },
+    verdict: externalEvents > 0
+      ? (excludedEvents > externalEvents ? 'polluted_but_usable' : 'usable')
+      : (events.length > 0 ? 'polluted_no_external_signal' : 'missing'),
+  };
 }
 
 function getTelemetrySummary(feedbackDir, options = {}) {
@@ -445,6 +750,7 @@ function getTelemetrySummary(feedbackDir, options = {}) {
     analyticsWindow,
     (entry) => entry && (entry.receivedAt || entry.timestamp)
   );
+  const trafficQuality = summarizeExternalTrafficQuality(events);
   const byClientType = {};
   const byEventType = {};
   const webVisitors = new Set();
@@ -788,6 +1094,7 @@ function getTelemetrySummary(feedbackDir, options = {}) {
     window: serializeAnalyticsWindow(analyticsWindow),
     totalEvents: events.length,
     latestSeenAt,
+    trafficQuality,
     byClientType,
     byEventType,
     conversionFunnel: {
@@ -963,6 +1270,8 @@ function getTelemetryAnalytics(feedbackDir, options = {}) {
     window: summary.window,
     totalEvents: summary.totalEvents,
     latestSeenAt: summary.latestSeenAt,
+    trafficQuality: summary.trafficQuality,
+    qualified: summary.trafficQuality.external,
     byClientType: summary.byClientType,
     byEventType: summary.byEventType,
     conversionFunnel: summary.conversionFunnel,
@@ -1142,6 +1451,7 @@ const appendTelemetryPing = appendTelemetryEvent;
 module.exports = {
   TELEMETRY_FILE_NAME,
   sanitizeTelemetryPayload,
+  classifyTelemetryAudience,
   appendTelemetryPing,
   appendTelemetryEvent,
   getTelemetrySourceDiagnostics,

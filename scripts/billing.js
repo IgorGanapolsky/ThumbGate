@@ -51,6 +51,7 @@ const {
 } = require('./analytics-window');
 const { ensureParentDir } = require('./fs-utils');
 const mailer = require('./mailer');
+const { recordCheckoutFunnelEvent } = require('./plausible-server-events');
 
 function loadWorkflowSprintIntakeModule() {
   const modulePath = path.resolve(__dirname, 'workflow-sprint-intake.js');
@@ -3038,6 +3039,22 @@ async function handleWebhook(rawBody, signature) {
           attribution,
         });
       }
+      // Fire Plausible purchase event so the funnel poller can measure
+      // end-to-end conversion: visitor → CTA → checkout → email → Stripe → purchase.
+      // Fire-and-forget (never blocks the webhook response).
+      void recordCheckoutFunnelEvent('purchase', {
+        page: '/success',
+        props: {
+          sessionId: session.id,
+          customerId,
+          traceId: traceId || '',
+          packId: packId || '',
+          amount: session.amount_total != null ? String(session.amount_total) : '',
+          currency: session.currency || '',
+          ...attribution,
+        },
+      });
+
       return {
         handled: true,
         action: 'provisioned_api_key',

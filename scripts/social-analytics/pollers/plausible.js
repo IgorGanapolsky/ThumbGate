@@ -9,8 +9,10 @@
  */
 
 const { upsertMetric, initDb } = require('../store');
+const { CHECKOUT_EVENT_NAMES } = require('../../plausible-server-events');
 
 const PLAUSIBLE_BASE = 'https://plausible.io/api/v1';
+const CTA_CLICK_EVENT_NAME = 'pricing_cta_click';
 
 /**
  * Builds a Plausible API request URL and executes it.
@@ -108,23 +110,33 @@ async function getCustomEventCount(eventName, period = '7d') {
 }
 
 /**
- * Builds a funnel object from visitors, CTA Click, Checkout Start, and Purchase events.
- * Computes conversion rates between each stage.
+ * Builds a funnel object from real Plausible event names.
+ *
+ * Event-name mapping (must match what actually fires):
+ *   - CTA clicks  → 'pricing_cta_click' (client-side, pricing.html onclick handlers)
+ *   - Checkout    → 'Checkout Pro Viewed' (server-side, plausible-server-events.js)
+ *   - Email       → 'Checkout Pro Email Submitted' (server-side)
+ *   - Stripe redir→ 'Checkout Pro Stripe Redirect Started' (server-side)
+ *   - Purchase    → 'Checkout Pro Purchase Completed' (server-side, billing webhook)
  *
  * @param {string} [period='7d'] - Plausible period string.
  * @returns {Promise<object>} Funnel metrics with conversion rates.
  */
 async function getFunnelMetrics(period = '7d') {
-  const [visitorsRes, ctaRes, checkoutRes, purchaseRes] = await Promise.all([
+  const [visitorsRes, ctaRes, checkoutViewedRes, emailRes, stripeRedirectRes, purchaseRes] = await Promise.all([
     getVisitors(period),
-    getCustomEventCount('CTA Click', period),
-    getCustomEventCount('Checkout Start', period),
-    getCustomEventCount('Purchase', period),
+    getCustomEventCount(CTA_CLICK_EVENT_NAME, period),
+    getCustomEventCount(CHECKOUT_EVENT_NAMES.view, period),
+    getCustomEventCount(CHECKOUT_EVENT_NAMES.emailSubmitted, period),
+    getCustomEventCount(CHECKOUT_EVENT_NAMES.stripeRedirect, period),
+    getCustomEventCount(CHECKOUT_EVENT_NAMES.purchase, period),
   ]);
 
   const visitors = visitorsRes.results?.visitors?.value ?? 0;
   const ctaClicks = ctaRes.results?.events?.value ?? 0;
-  const checkoutStarts = checkoutRes.results?.events?.value ?? 0;
+  const checkoutViewed = checkoutViewedRes.results?.events?.value ?? 0;
+  const emailSubmitted = emailRes.results?.events?.value ?? 0;
+  const stripeRedirects = stripeRedirectRes.results?.events?.value ?? 0;
   const purchases = purchaseRes.results?.events?.value ?? 0;
 
   const rate = (numerator, denominator) =>
@@ -134,11 +146,15 @@ async function getFunnelMetrics(period = '7d') {
     period,
     visitors,
     cta_clicks: ctaClicks,
-    checkout_starts: checkoutStarts,
+    checkout_viewed: checkoutViewed,
+    email_submitted: emailSubmitted,
+    stripe_redirects: stripeRedirects,
     purchases,
     visitor_to_cta_pct: rate(ctaClicks, visitors),
-    cta_to_checkout_pct: rate(checkoutStarts, ctaClicks),
-    checkout_to_purchase_pct: rate(purchases, checkoutStarts),
+    cta_to_checkout_pct: rate(checkoutViewed, ctaClicks),
+    checkout_to_email_pct: rate(emailSubmitted, checkoutViewed),
+    email_to_stripe_pct: rate(stripeRedirects, emailSubmitted),
+    stripe_to_purchase_pct: rate(purchases, stripeRedirects),
     visitor_to_purchase_pct: rate(purchases, visitors),
   };
 }
@@ -210,7 +226,9 @@ async function pollPlausible(db) {
   console.log(
     `[plausible] Funnel: ${funnelRes.visitors} visitors → ` +
       `${funnelRes.cta_clicks} CTA clicks → ` +
-      `${funnelRes.checkout_starts} checkouts → ` +
+      `${funnelRes.checkout_viewed} checkout views → ` +
+      `${funnelRes.email_submitted} emails → ` +
+      `${funnelRes.stripe_redirects} Stripe redirects → ` +
       `${funnelRes.purchases} purchases (${funnelRes.visitor_to_purchase_pct}%)`
   );
 
@@ -226,6 +244,7 @@ module.exports = {
   getCustomEventCount,
   getFunnelMetrics,
   pollPlausible,
+  CTA_CLICK_EVENT_NAME,
 };
 
 // Allow running directly: node scripts/social-analytics/pollers/plausible.js

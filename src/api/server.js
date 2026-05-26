@@ -2834,7 +2834,8 @@ function renderCheckoutSuccessPage(runtimeConfig) {
   </style>
   <link rel="icon" type="image/png" href="/thumbgate-icon.png">
   <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
-<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.tagged-events.js"></script>
+<script>window.plausible = window.plausible || function() { (window.plausible.q = window.plausible.q || []).push(arguments); };</script>
 </head>
 <body>
   <main>
@@ -3012,6 +3013,7 @@ function renderCheckoutSuccessPage(runtimeConfig) {
         }
 
         sendTelemetryOnce('checkout_paid_confirmed');
+        try { window.plausible && window.plausible('Checkout Pro Success Page Confirmed', { props: { sessionId: sessionId || '', traceId: traceId || '', source: 'success_page' } }); } catch (_) {}
         statusEl.textContent = 'ThumbGate Pro activated.';
         const resolvedTraceId = body.traceId || traceId || '';
         const emailStatus = body.trialEmail || {};

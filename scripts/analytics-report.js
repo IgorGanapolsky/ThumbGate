@@ -221,6 +221,14 @@ function formatReport(monthly, weekly, github, npmMeta, telemetry = null, billin
     : 0;
   const telemetryWindow = telemetry && telemetry.window ? telemetry.window : 'all';
   const telemetryLastSeen = telemetry && telemetry.latestSeenAt ? telemetry.latestSeenAt : 'none';
+  const trafficQuality = telemetry && telemetry.trafficQuality ? telemetry.trafficQuality : null;
+  const externalTraffic = trafficQuality && trafficQuality.external ? trafficQuality.external : null;
+  const exportReadiness = {
+    plausible: Boolean(process.env.PLAUSIBLE_API_KEY && (process.env.PLAUSIBLE_SITE_ID || process.env.PLAUSIBLE_DOMAIN)),
+    posthog: Boolean((process.env.POSTHOG_PERSONAL_API_KEY || process.env.POSTHOG_API_KEY) && process.env.POSTHOG_PROJECT_ID),
+    ga4: Boolean(process.env.GA4_PROPERTY_ID && (process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.GOOGLE_CLIENT_EMAIL)),
+  };
+  const anyDashboardExportReady = exportReadiness.plausible || exportReadiness.posthog || exportReadiness.ga4;
   const creatorRows = formatCreatorRows(telemetry, billingSummary);
   const predictive = buildPredictiveInsights({
     telemetryAnalytics: telemetry || {},
@@ -264,6 +272,25 @@ function formatReport(monthly, weekly, github, npmMeta, telemetry = null, billin
     `   Checkouts:  ${productHuntCheckouts}`,
     `   Window:     ${telemetryWindow}`,
     `   Last seen:  ${telemetryLastSeen}`,
+    '',
+    '🧼 First-party traffic quality',
+    `   Raw events:       ${trafficQuality ? trafficQuality.rawEvents : 0}`,
+    `   External events:  ${trafficQuality ? trafficQuality.externalEvents : 0}`,
+    `   Excluded events:  ${trafficQuality ? trafficQuality.excludedEvents : 0}`,
+    `   Clean visitors:   ${externalTraffic ? externalTraffic.uniqueVisitors : 0}`,
+    `   Clean page views: ${externalTraffic ? externalTraffic.pageViews : 0}`,
+    `   Clean checkouts:  ${externalTraffic ? externalTraffic.checkoutStarts : 0}`,
+    `   Clean paths:      ${externalTraffic && externalTraffic.visitorPaths ? externalTraffic.visitorPaths.length : 0}`,
+    `   Verdict:          ${trafficQuality ? trafficQuality.verdict : 'missing'}`,
+    ...(trafficQuality && trafficQuality.topExclusionReason
+      ? [`   Top exclusion:   ${trafficQuality.topExclusionReason.key} (${trafficQuality.topExclusionReason.count}×)`]
+      : ['   Top exclusion:   none']),
+    '',
+    '📤 Dashboard-grade visitor-path exports',
+    `   Plausible API:    ${exportReadiness.plausible ? 'configured' : 'missing PLAUSIBLE_API_KEY + site id/domain'}`,
+    `   PostHog API:      ${exportReadiness.posthog ? 'configured' : 'missing POSTHOG_* export credentials'}`,
+    `   GA4 Data API:     ${exportReadiness.ga4 ? 'configured' : 'missing GA4_PROPERTY_ID + Google credentials'}`,
+    `   Export verdict:   ${anyDashboardExportReady ? 'ready for provider path pulls' : 'not dashboard-grade in this repo yet'}`,
     '',
     '🎥 Creator Partnerships',
     '   Ranked: booked revenue → paid orders → qualified sprint leads → checkouts',

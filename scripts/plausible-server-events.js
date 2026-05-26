@@ -142,6 +142,7 @@ const CHECKOUT_EVENT_NAMES = Object.freeze({
   view: 'Checkout Pro Viewed',
   emailSubmitted: 'Checkout Pro Email Submitted',
   stripeRedirect: 'Checkout Pro Stripe Redirect Started',
+  purchase: 'Checkout Pro Purchase Completed',
 });
 
 function recordCheckoutFunnelEvent(stage, options = {}) {
