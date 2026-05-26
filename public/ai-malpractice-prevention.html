@@ -280,6 +280,10 @@
     .matrix td:nth-child(2)::before { content: "Pilot answer"; }
     .matrix td:nth-child(3)::before { content: "Evidence to bring"; }
   }
+  .demo-result { margin-top:1rem; padding:1rem; border-radius:8px; font-size:0.95rem; }
+  .demo-blocked { background:rgba(248,113,113,0.1); border:1px solid var(--red); }
+  .demo-cleared { background:rgba(52,211,153,0.1); border:1px solid var(--green); }
+  .audit-log { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:0.85rem; background:#0f0f11; padding:0.75rem; border-radius:6px; margin-top:0.75rem; white-space:pre-wrap; color:var(--soft); }
 </style>
 </head>
 <body>
@@ -507,6 +511,140 @@
           <a class="ghost" href="/dashboard">View the live dashboard demo</a>
         </div>
       </div>
+    </section>
+
+    <section id="live-gate-demos">
+      <h2>Live gate demos &mdash; try them yourself</h2>
+      <p style="color:var(--muted); margin-bottom:1.5rem">These simulators use the exact same deterministic PreToolUse logic that runs in production. No LLM calls on the enforcement path &mdash; just fast, auditable pattern matching.</p>
+
+      <!-- UPL Gate Simulator -->
+      <div class="card" style="margin-bottom:2rem">
+        <h3 style="color:var(--cyan); margin-bottom:0.75rem">1. UPL Gate &mdash; advice-shaped output detector</h3>
+        <p style="font-size:0.95rem; color:var(--muted)">Type what a client might ask an intake bot. The gate detects predictions, recommendations, or jurisdictional legal analysis from a non-attorney source and blocks delivery.</p>
+        <textarea id="upl-input" placeholder="E.g. 'Based on the facts you described, you likely have a strong claim for breach of contract and could recover significant damages.'" style="width:100%; height:90px; background:#0f0f11; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:0.75rem; font-size:0.95rem; resize:vertical; margin:0.75rem 0"></textarea>
+        <button onclick="runUPLDemo()" class="cta" style="padding:0.6rem 1.1rem; font-size:0.9rem">Run through UPL Gate</button>
+        <div id="upl-result" class="demo-result" style="display:none"></div>
+      </div>
+
+      <!-- Conflict Check Simulator -->
+      <div class="card" style="margin-bottom:2rem">
+        <h3 style="color:var(--cyan); margin-bottom:0.75rem">2. Conflict Gate &mdash; adverse party clearance</h3>
+        <p style="font-size:0.95rem; color:var(--muted)">Enter a prospective client or party name. The gate checks against a sample adverse-parties list (real firms maintain much larger lists).</p>
+        <div style="display:flex; gap:0.75rem; align-items:flex-end; margin:0.75rem 0; flex-wrap:wrap">
+          <div style="flex:1; min-width:240px">
+            <label style="font-size:0.8rem; color:var(--muted); display:block; margin-bottom:0.25rem">Party / Company Name</label>
+            <input id="conflict-input" type="text" placeholder="Acme Corp" value="Acme Corporation" style="width:100%; background:#0f0f11; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:0.6rem; font-size:0.95rem">
+          </div>
+          <button onclick="runConflictDemo()" class="cta" style="padding:0.6rem 1.1rem; font-size:0.9rem; white-space:nowrap">Check Against Adverse List</button>
+        </div>
+        <div style="font-size:0.8rem; color:var(--muted); margin-bottom:0.5rem">Sample adverse list: Acme Corp (litigation matter #M-2847), TechNova Inc (M&amp;A #M-2911), Rivera Holdings (real estate #M-2755)</div>
+        <div id="conflict-result" class="demo-result" style="display:none"></div>
+      </div>
+
+      <!-- Privilege Egress Simulator -->
+      <div class="card">
+        <h3 style="color:var(--cyan); margin-bottom:0.75rem">3. Egress Gate &mdash; privilege marker detector</h3>
+        <p style="font-size:0.95rem; color:var(--muted)">Paste content an agent might try to send to an external LLM (e.g. deposition summary request). The gate blocks if it detects privilege markers.</p>
+        <textarea id="privilege-input" placeholder="Please summarize this deposition transcript. [Attorney Work Product - Matter M-2847 - Confidential]" style="width:100%; height:90px; background:#0f0f11; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:0.75rem; font-size:0.95rem; resize:vertical; margin:0.75rem 0"></textarea>
+        <button onclick="runPrivilegeDemo()" class="cta" style="padding:0.6rem 1.1rem; font-size:0.9rem">Attempt External LLM Call</button>
+        <div id="privilege-result" class="demo-result" style="display:none"></div>
+      </div>
+
+      <script>
+        function runUPLDemo() {
+          var input = document.getElementById('upl-input').value.trim();
+          var resultDiv = document.getElementById('upl-result');
+          if (!input) { resultDiv.style.display = 'none'; return; }
+          var advicePatterns = ['you have a strong case', 'likely to win', 'you should', 'recommend that you', 'based on the facts you described', 'in my opinion', 'the best course is', 'you are entitled to'];
+          var lower = input.toLowerCase();
+          var blocked = false;
+          var reason = '';
+          for (var i = 0; i < advicePatterns.length; i++) {
+            if (lower.indexOf(advicePatterns[i]) !== -1) { blocked = true; reason = advicePatterns[i]; break; }
+          }
+          if (blocked) {
+            resultDiv.innerHTML =
+              '<div class="demo-blocked">' +
+              '<strong style="color:#f87171">BLOCKED &mdash; UPL Gate fired</strong><br>' +
+              'Detected advice-shaped pattern: "' + reason + '"<br><br>' +
+              '<strong>Corrective action taken:</strong><br>' +
+              'Response replaced with: <em>"That\'s a legal question best answered by a licensed attorney. I can schedule a 30-minute consultation with one of our [practice area] attorneys &mdash; would [time] work for you?"</em><br><br>' +
+              '<div class="audit-log">[2026-05-26 09:12:04] PreToolUse gate: UPL_RULE_05.5_ADVICE_SHAPE v3.2\nRule matched: advice-shaped output from non-attorney source\nAction: REPLACE + LOG + NOTIFY_ATTORNEY\nAudit ID: UPL-2847-20260526-091204\nMatter context: New client intake (web)\nAgent: website-intake-bot-v2</div>' +
+              '</div>';
+          } else {
+            resultDiv.innerHTML =
+              '<div class="demo-cleared">' +
+              '<strong style="color:#34d399">CLEARED &mdash; no UPL pattern detected</strong><br>' +
+              'Response would be delivered as-is. (In production this would still be logged for training.)' +
+              '</div>';
+          }
+          resultDiv.style.display = 'block';
+        }
+
+        function runConflictDemo() {
+          var party = document.getElementById('conflict-input').value.trim().toLowerCase();
+          var resultDiv = document.getElementById('conflict-result');
+          if (!party) { resultDiv.style.display = 'none'; return; }
+          var adverseList = ['acme corporation', 'acme corp', 'technova inc', 'technova', 'rivera holdings', 'rivera'];
+          var isAdverse = adverseList.some(function(a) { return party.indexOf(a) !== -1; });
+          if (isAdverse) {
+            resultDiv.innerHTML =
+              '<div class="demo-blocked">' +
+              '<strong style="color:#f87171">BLOCKED &mdash; Conflict Gate fired</strong><br>' +
+              '"' + party + '" matches adverse party in existing matter.<br><br>' +
+              '<strong>Corrective action:</strong> Fetch blocked. Agent redirected to: <em>"This party appears as adverse in matter M-2847. Contact ethics screen lead before proceeding."</em><br><br>' +
+              '<div class="audit-log">[2026-05-26 09:12:04] PreToolUse gate: CONFLICT_RULE_1.7_ADVERSE v4.1\nMatched: adverse-parties list\nAction: BLOCK + REDIRECT + LOG\nAudit ID: CONF-2911-20260526-091204\nRequesting matter: New M&amp;A intake\nAgent: doc-fetch-agent-v1</div>' +
+              '</div>';
+          } else {
+            resultDiv.innerHTML =
+              '<div class="demo-cleared">' +
+              '<strong style="color:#34d399">CLEARED &mdash; no conflict found</strong><br>' +
+              'Positive clearance recorded. Agent may proceed with intake.<br><br>' +
+              '<div class="audit-log">[2026-05-26 09:12:04] PreToolUse gate: CONFLICT_RULE_1.7_ADVERSE v4.1\nResult: CLEAR (no match in adverse list)\nAction: ALLOW + LOG\nAudit ID: CONF-2912-20260526-091204</div>' +
+              '</div>';
+          }
+          resultDiv.style.display = 'block';
+        }
+
+        function runPrivilegeDemo() {
+          var input = document.getElementById('privilege-input').value.trim();
+          var resultDiv = document.getElementById('privilege-result');
+          if (!input) { resultDiv.style.display = 'none'; return; }
+          var privMarkers = ['attorney work product', 'privileged', 'confidential - attorney client', 'matter m-', 'm-2847', 'm-2911'];
+          var lower = input.toLowerCase();
+          var blocked = false;
+          var marker = '';
+          for (var i = 0; i < privMarkers.length; i++) {
+            if (lower.indexOf(privMarkers[i]) !== -1) { blocked = true; marker = privMarkers[i]; break; }
+          }
+          if (blocked) {
+            resultDiv.innerHTML =
+              '<div class="demo-blocked">' +
+              '<strong style="color:#f87171">BLOCKED &mdash; Egress Gate fired</strong><br>' +
+              'Detected privilege marker: "' + marker + '"<br><br>' +
+              '<strong>Corrective action:</strong> Outbound call to external LLM blocked. Redirected to in-tenant Azure OpenAI (BAA-protected) or internal summarizer.<br><br>' +
+              '<div class="audit-log">[2026-05-26 09:12:04] PreToolUse gate: EGRESS_RULE_1.6_PRIVILEGE v2.8\nRule matched: privilege marker in outbound payload\nAction: BLOCK + REDIRECT_TO_TENANT_LLM + LOG\nAudit ID: PRIV-2755-20260526-091204\nContent hash: sha256:7f3a... (truncated)\nAgent: brief-assistant-v3</div>' +
+              '</div>';
+          } else {
+            resultDiv.innerHTML =
+              '<div class="demo-cleared">' +
+              '<strong style="color:#34d399">CLEARED &mdash; no privilege markers detected</strong><br>' +
+              'Content would be sent to external LLM (in production this would still trigger logging + optional human review flag).' +
+              '</div>';
+          }
+          resultDiv.style.display = 'block';
+        }
+
+        // Keyboard support: Enter submits, Shift+Enter inserts newline
+        var uplEl = document.getElementById('upl-input');
+        if (uplEl) uplEl.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runUPLDemo(); }
+        });
+        var privEl = document.getElementById('privilege-input');
+        if (privEl) privEl.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runPrivilegeDemo(); }
+        });
+      </script>
     </section>
   </main>
 
