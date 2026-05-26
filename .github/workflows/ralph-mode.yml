@@ -1,13 +1,11 @@
 name: Ralph Mode - 24/7 Engagement Loop
 
 # Ralph Mode handles outbound campaign posts and GitHub/dev.to outreach.
-# Ralph Loop Audience Engagement handles hourly reply sensing, analytics, and
+# Ralph Loop Audience Engagement handles operator-triggered reply sensing, analytics, and
 # draft-safe audience replies. Keep both lanes stateful so CI does not repeat
 # the same contact or forget previous engagement.
 
 on:
-  schedule:
-    - cron: '0 */2 * * *'  # Every 2 hours
   workflow_dispatch: {}      # Manual trigger
 
 permissions:

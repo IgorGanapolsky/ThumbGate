@@ -178,13 +178,14 @@ test('buildMcpConfig returns official Perplexity MCP install commands', () => {
   assert.equal(config.mcpServers.perplexity.env.PERPLEXITY_API_KEY, '${PERPLEXITY_API_KEY}');
 });
 
-test('Perplexity command-center workflow is scheduled, secret-backed, and artifact-only', () => {
+test('Perplexity command-center workflow is manual, secret-backed, and artifact-only', () => {
   const workflow = fs.readFileSync(
     path.join(__dirname, '..', '.github', 'workflows', 'perplexity-command-center.yml'),
     'utf8'
   );
 
-  assert.match(workflow, /cron: '30 12 \* \* \*'/);
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.doesNotMatch(workflow, /^\s*schedule:/m);
   assert.match(workflow, /PERPLEXITY_API_KEY:\s*\$\{\{\s*secrets\.PERPLEXITY_API_KEY\s*\}\}/);
   assert.match(workflow, /node scripts\/perplexity-command-center\.js "\$COMMAND"/);
   assert.match(workflow, /--allow-chat-fallback/);

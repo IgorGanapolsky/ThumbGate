@@ -1,7 +1,7 @@
 name: Ralph Loop Audience Engagement
 
 # Ralph Mode is the always-on acquisition loop:
-# - hourly audience sensing and reply monitoring
+# - operator-triggered audience sensing and reply monitoring
 # - cache-backed state so CI does not forget handled replies
 # - Reddit remains draft-only; LinkedIn replies pass the social quality gate
 # - Bluesky can auto-publish a bounded set of safe replies: no URLs, no sales
@@ -10,8 +10,6 @@ name: Ralph Loop Audience Engagement
 # - X/Twitter was retired from distribution 2026-04-20.
 
 on:
-  schedule:
-    - cron: '17 * * * *'
   workflow_dispatch:
     inputs:
       mode:

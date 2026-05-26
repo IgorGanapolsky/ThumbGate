@@ -5,8 +5,6 @@ name: Weekly Social Post
 # publishing requires workflow opt-in or THUMBGATE_ENABLE_ZERNIO_WEEKLY_SOCIAL=1.
 
 on:
-  schedule:
-    - cron: '0 14 * * 1'   # Every Monday at 14:00 UTC (9am ET — prime posting time)
   workflow_dispatch:
     inputs:
       dry_run:

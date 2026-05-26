@@ -5,8 +5,6 @@ name: Medium Weekly Visibility
 # Medium URL in docs/marketing/medium/published.csv after visible publish.
 
 on:
-  schedule:
-    - cron: '30 13 * * 1' # Mondays 09:30 America/New_York during daylight time
   workflow_dispatch:
 
 permissions:

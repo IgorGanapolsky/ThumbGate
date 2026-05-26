@@ -2,6 +2,8 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const {
   parseArgs,
   ageInDays,
@@ -11,6 +13,21 @@ const {
   buildReport,
   renderMarkdown,
 } = require('../scripts/ci-cd-hygiene-audit');
+
+const PROJECT_ROOT = path.join(__dirname, '..');
+
+test('GitHub Actions schedules stay limited to security maintenance', () => {
+  const workflowsDir = path.join(PROJECT_ROOT, '.github', 'workflows');
+  const allowedScheduledWorkflows = new Set(['codeql.yml']);
+  const offenders = fs.readdirSync(workflowsDir)
+    .filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'))
+    .filter((name) => {
+      const body = fs.readFileSync(path.join(workflowsDir, name), 'utf8');
+      return /^\s{2}schedule:\s*$/m.test(body) && !allowedScheduledWorkflows.has(name);
+    });
+
+  assert.deepEqual(offenders, [], 'noncritical recurring loops must run outside GitHub-hosted Actions or via workflow_dispatch');
+});
 
 test('parseArgs reads --json, --strict, --repo flags', () => {
   assert.equal(parseArgs(['--json']).json, true);

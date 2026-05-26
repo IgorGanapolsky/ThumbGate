@@ -1,6 +1,8 @@
 name: Marketing Autopilot
 
-# Text content autopilot — fires every 4 hours.
+# Manual-only cost governor: scheduled content autopilot burned GitHub-hosted
+# Actions minutes without clear revenue attribution. Keep operator dispatch;
+# move recurring loops to local/Railway/runner compute before re-enabling.
 # Posts text/image content to LinkedIn, Threads, Bluesky, and Instagram.
 # YouTube remains video-only via the video autopilot.
 # Posts to Reddit via the configured OAuth publisher.
@@ -10,8 +12,6 @@ name: Marketing Autopilot
 # X_* secrets and scripts/post-to-x*.* helpers have been retired.
 
 on:
-  schedule:
-    - cron: '15 */4 * * *'   # every 4 hours, offset from video-autopilot
   workflow_dispatch:
     inputs:
       action:
