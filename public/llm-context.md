@@ -127,7 +127,7 @@ This alignment means ThumbGate is not an experimental tool — it implements the
 ## Pricing
 
 - **Free GPT**: Advice, checkpointing, setup help, and typed thumbs-up/down memory capture inside ChatGPT.
-- **Free local CLI**: Local enforcement for individual developers after install. Includes unlimited feedback captures, up to 5 active auto-promoted prevention rules, and PreToolUse hook blocking. Recall, lesson search, and exports are Pro-only.
+- **Free local CLI**: Local enforcement for individual developers after install. Includes 10 feedback captures/day, 50 total captures, up to 3 active auto-promoted prevention rules, and PreToolUse hook blocking. Recall, lesson search, unlimited captures/rules, and exports are Pro-only.
 - **Workflow Hardening Sprint / Team**: Team pricing anchors at $49/seat/mo with a 3-seat minimum after qualification. The first paid step is an intake-led sprint around one workflow, one repeated blocker, and one proof review.
 - **Pro**: $19/mo or $149/yr. Adds personal enforcement proof, a local dashboard, DPO export for fine-tuning, a check debugger, and advanced data exports for solo operators who want a self-serve side lane.
 

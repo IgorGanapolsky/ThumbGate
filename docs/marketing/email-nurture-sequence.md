@@ -166,7 +166,7 @@ If ThumbGate has saved you from a repeated mistake, we'd genuinely love to hear 
 
 You've been using ThumbGate for two weeks. By now you likely know whether the local loop is catching real mistakes.
 
-Free tier gives you unlimited feedback captures and 5 active prevention rules, but keeps recall, lesson search, the dashboard, and DPO exports behind Pro. If you've leaned on ThumbGate for two weeks, the next step is the dashboard and unlimited rules.
+Free tier gives you 10 feedback captures/day, 50 total captures, and 3 active prevention rules, but keeps recall, lesson search, the dashboard, hosted sync, and DPO exports behind Pro. If you've leaned on ThumbGate for two weeks, the next step is the dashboard and unlimited rules.
 
 ThumbGate Pro removes the limit and adds:
 

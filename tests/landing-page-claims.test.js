@@ -53,23 +53,25 @@ describe('Free tier bullets: extraction', () => {
 });
 
 describe('Free tier bullets: code-backed claims', () => {
-  test('"Unlimited feedback captures" matches FREE_TIER_LIMITS.capture_feedback.lifetime', () => {
+  test('"10 feedback captures/day" matches FREE_TIER_LIMITS.capture_feedback', () => {
     const { FREE_TIER_LIMITS } = require(path.join(ROOT, 'scripts', 'rate-limiter.js'));
-    assert.equal(FREE_TIER_LIMITS.capture_feedback.lifetime, Infinity,
-      'free tier captures must be unlimited to back habit-formation flow');
+    assert.equal(FREE_TIER_LIMITS.capture_feedback.daily, 10,
+      'free tier daily captures must match the public pricing page');
+    assert.equal(FREE_TIER_LIMITS.capture_feedback.lifetime, 50,
+      'free tier lifetime captures must match the public pricing page');
     assert.ok(
-      FREE_BULLETS.some((b) => /unlimited (feedback )?captures/i.test(b)),
-      'Landing page must claim "unlimited captures"',
+      FREE_BULLETS.some((b) => /10 feedback captures\/day/i.test(b)),
+      'Landing page must claim "10 feedback captures/day"',
     );
   });
 
-  test('"5 prevention rules" matches FREE_TIER_MAX_GATES', () => {
+  test('"3 prevention rules" matches FREE_TIER_MAX_GATES', () => {
     const { FREE_TIER_LIMITS, FREE_TIER_MAX_GATES } = require(path.join(ROOT, 'scripts', 'rate-limiter.js'));
-    assert.equal(FREE_TIER_MAX_GATES, 5, 'FREE_TIER_MAX_GATES must be 5 to back "5 active prevention rules" claim');
-    assert.equal(FREE_TIER_LIMITS.prevention_rules.lifetime, Infinity, 'prevention_rules.lifetime must be Infinity (cap is via FREE_TIER_MAX_GATES)');
+    assert.equal(FREE_TIER_MAX_GATES, 3, 'FREE_TIER_MAX_GATES must be 3 to back "3 active prevention rules" claim');
+    assert.equal(FREE_TIER_LIMITS.prevention_rules.daily, 3, 'prevention_rules.daily must be 3');
     assert.ok(
-      FREE_BULLETS.some((b) => /5 (active )?(auto-promoted )?prevention rules/i.test(b)),
-      'Landing page must claim 5 active prevention rules',
+      FREE_BULLETS.some((b) => /3 (active )?(auto-promoted )?prevention rules/i.test(b)),
+      'Landing page must claim 3 active prevention rules',
     );
   });
 

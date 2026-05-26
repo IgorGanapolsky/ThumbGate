@@ -12,31 +12,33 @@ const {
 const USAGE_FILE = path.join(process.env.HOME || '/tmp', '.thumbgate', 'usage-limits.json');
 
 // ──────────────────────────────────────────────────────────
-// Free tier: generous on captures (habit formation) and rules
-// (5 active gates), gated on Pro-only features (recall, search,
-// exports). Dashboard, exports, and unlimited rules drive Pro.
+// Free tier: tight enough to create upgrade pressure after
+// real usage. Captures and rules are capped so heavy users
+// hit the wall within the first week, not the first quarter.
 // ──────────────────────────────────────────────────────────
 const FREE_TIER_LIMITS = {
-  capture_feedback:   { daily: Infinity, lifetime: Infinity, label: 'feedback captures' },
-  prevention_rules:   { daily: Infinity, lifetime: Infinity, label: 'prevention rules generated' },
+  capture_feedback:   { daily: 10,       lifetime: 50,       label: 'feedback captures (10/day, 50 total on free)' },
+  prevention_rules:   { daily: 3,        lifetime: 15,       label: 'prevention rules generated (3/day on free)' },
   recall:             { daily: 0,        lifetime: 0,        label: 'recall queries (Pro only)' },
   search_lessons:     { daily: 0,        lifetime: 0,        label: 'lesson searches (Pro only)' },
   search_thumbgate:   { daily: 0,        lifetime: 0,        label: 'ThumbGate searches (Pro only)' },
   commerce_recall:    { daily: 0,        lifetime: 0,        label: 'commerce recalls (Pro only)' },
   export_dpo:         { daily: 0,        lifetime: 0,        label: 'DPO exports (Pro only)' },
   export_databricks:  { daily: 0,        lifetime: 0,        label: 'Databricks exports (Pro only)' },
-  construct_context_pack: { daily: Infinity, lifetime: Infinity, label: 'context packs' },
+  construct_context_pack: { daily: 5,    lifetime: Infinity,  label: 'context packs (5/day on free)' },
 };
 
-const FREE_TIER_MAX_GATES = 5; // 5 active prevention rules on free; Pro is unlimited
-const FREE_TIER_DAILY_BLOCKS = 10; // 10 gate blocks/day on free; after limit, deny → warn + upgrade CTA
+const FREE_TIER_MAX_GATES = 3; // 3 active prevention rules on free; Pro is unlimited
+const FREE_TIER_DAILY_BLOCKS = 5; // 5 gate blocks/day on free; after limit, deny → warn + upgrade CTA
 
 const UPGRADE_MESSAGE = `Pro: ${PRO_PRICE_LABEL} — unlimited rules, recall, lesson search, dashboard, and exports: ${PRO_MONTHLY_PAYMENT_LINK}\n  Team: ${TEAM_PRICE_LABEL} after workflow qualification.`;
 
 const PAYWALL_MESSAGES = {
-  prevention_rules: 'Free tier includes 5 active prevention rules. Promote more or unlock unlimited rules with Pro.',
+  capture_feedback: 'Free tier: 10 captures/day (50 total). Your feedback is stored locally — upgrade to capture unlimited.',
+  prevention_rules: 'Free tier includes 3 active prevention rules. Upgrade to Pro for unlimited rules.',
   recall: 'Recall is a Pro feature. Your past feedback is stored locally — upgrade to search and reuse it.',
   search_lessons: 'Lesson search is a Pro feature. Upgrade to find patterns in your agent\'s mistakes.',
+  construct_context_pack: 'Free tier: 5 context packs/day. Upgrade to Pro for unlimited.',
   default: 'This feature requires Pro. Start Pro — card required; billed today.',
 };
 
@@ -164,9 +166,10 @@ function checkLimit(action, authContext) {
 
   // Check daily limit
   if (dailyLimit !== Infinity && dailyCurrent >= dailyLimit) {
+    const paywallMsg = PAYWALL_MESSAGES[action] || PAYWALL_MESSAGES.default;
     return {
       allowed: false,
-      message: `Daily limit reached. ${UPGRADE_MESSAGE}`,
+      message: `Daily limit reached. ${paywallMsg}\n\n${UPGRADE_MESSAGE}`,
       used: dailyCurrent,
       limit: dailyLimit,
       limitType: 'daily',

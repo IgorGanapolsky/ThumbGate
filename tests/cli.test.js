@@ -798,6 +798,7 @@ describe('bin/cli.js', () => {
     });
     assert.strictEqual(result.status, 0, `Expected exit 0, got ${result.status}\n${result.stderr}`);
     assert.match(result.stdout, /Pro \(\$19\/mo or \$149\/yr\)/);
+    assert.match(result.stdout, /Hosted sync: keep lessons, rules, and dashboard state aligned across laptops, CI, containers, and agent runtimes/);
     assert.match(result.stdout, /personal local dashboard/i);
     assert.match(result.stdout, /Launch dashboard\s*:\s*npx thumbgate pro/);
     assert.match(result.stdout, /Activate \+ run\s*:\s*npx thumbgate pro --activate --key=YOUR_KEY/);
@@ -1018,6 +1019,7 @@ describe('bin/cli.js', () => {
     });
     assert.equal(checkoutUrl, PRO_MONTHLY_PAYMENT_LINK, 'Pro command should include the attributed Pro checkout URL');
     assert.ok(result.stdout.includes('$19/mo or $149/yr'), 'Pro command should include current pricing');
+    assert.ok(result.stdout.includes('Hosted sync: keep lessons, rules, and dashboard state aligned'), 'Pro command should lead with hosted sync');
     assert.ok(result.stdout.includes('Launch dashboard: npx thumbgate pro'), 'Pro command should include the local dashboard launcher');
     assert.ok(result.stdout.includes('Private core    : ThumbGate-Core (private repo)'), 'Pro command should describe the current private-core split');
   });

@@ -23,8 +23,8 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 ### Free (local, `npx thumbgate serve`)
 
-- Unlimited feedback captures
-- Up to 5 active auto-promoted prevention rules
+- 10 feedback captures/day, 50 total captures
+- Up to 3 active auto-promoted prevention rules
 - No recall or lesson search
 - No exports (DPO, Databricks, HuggingFace)
 - 5 built-in checks plus local PreToolUse hook blocking
@@ -36,7 +36,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 - Personal local dashboard
 - DPO export and advanced data exports
 - Review-ready workflow support for the first risky flow
-- Unlimited custom checks with auto-promotion into prevention rules
+- Unlimited captures and custom checks with auto-promotion into prevention rules
 - Secondary self-serve lane for solo operators, not the default enterprise pitch
 
 ### Team ($49/seat/mo, min 3, hosted rollout intake-first)

@@ -282,18 +282,19 @@ test('gates-engine.buildBlockActionProCta tiered messages at 5, 25, and 100 bloc
     fs.writeFileSync(ge.STATS_PATH, JSON.stringify({ blocked: 10, warned: 0, passed: 0, byGate: {} }));
     const lowMsg = ge.buildBlockActionProCta();
     assert.ok(lowMsg && lowMsg.includes('thumbgate.ai/go/pro'));
-    assert.match(lowMsg, /sync rules across machines/);
+    assert.match(lowMsg, /rule synced across laptops, CI, containers, and agent runtimes/);
 
     fs.writeFileSync(ge.STATS_PATH, JSON.stringify({ blocked: 50, warned: 0, passed: 0, byGate: {} }));
     const midMsg = ge.buildBlockActionProCta();
     assert.ok(midMsg && midMsg.includes('thumbgate.ai/go/pro'));
     assert.match(midMsg, /\$19\/mo/);
     assert.match(midMsg, /50 actions blocked/);
+    assert.match(midMsg, /lessons\/rules synced everywhere/);
 
     fs.writeFileSync(ge.STATS_PATH, JSON.stringify({ blocked: 250, warned: 0, passed: 0, byGate: {} }));
     const teamMsg = ge.buildBlockActionProCta();
     assert.ok(teamMsg && teamMsg.includes('thumbgate.ai/go/pro'));
-    assert.match(teamMsg, /Your team could use this/);
+    assert.match(teamMsg, /shared hosted enforcement/);
   } finally {
     if (savedHome != null) process.env.HOME = savedHome; else delete process.env.HOME;
     delete process.env.THUMBGATE_NO_TRIAL;
@@ -301,6 +302,20 @@ test('gates-engine.buildBlockActionProCta tiered messages at 5, 25, and 100 bloc
     fs.rmSync(home, { recursive: true, force: true });
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
+});
+
+test('commercial-offer capture receipt sells hosted sync at the moment of proof', () => {
+  const { buildCaptureReceipt } = require('../scripts/commercial-offer');
+  const receipt = buildCaptureReceipt({
+    signal: 'down',
+    feedbackId: 'fb_123',
+    memoryId: 'mem_123',
+    actionType: 'block',
+  });
+
+  assert.match(receipt, /Free today\s*: this proof protects this local machine/);
+  assert.match(receipt, /Pro sync\s*: keep this lesson, rule, and dashboard synced across machines and agent runtimes/);
+  assert.match(receipt, /utm_source=cli_capture_receipt/);
 });
 
 test('gates-engine.buildBlockActionProCta returns null during trial', () => {
