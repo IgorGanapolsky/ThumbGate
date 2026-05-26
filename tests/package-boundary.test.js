@@ -359,13 +359,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 3.80 MB -> 3.82 MB (2026-05-22) for scripts/self-healing-check.js
   // (~5 KB), which `thumbgate self-heal` invokes before self-heal.js in
   // published installs. Observed unpacked size is ~3.806 MB.
-  // Bumped 3.82 MB -> 3.84 MB (2026-05-25) after the feat/pricing-surface
-  // branch's accumulated public/runtime bundle crossed the prior ceiling by
-  // 3.1 KB with no file-count increase. Observed unpacked size is 3.823 MB;
-  // keep the headroom narrow so the next addition still has to justify itself.
+  // Bumped 3.84 MB -> 3.85 MB (2026-05-26) after injecting Plausible/PostHog/GA4
+  // scripts into the checkout interstitial page in server.js.
   assert.ok(
-    manifest.unpackedSize <= 3_840_000,
-    `npm package should stay <= 3.84 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_850_000,
+    `npm package should stay <= 3.85 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
