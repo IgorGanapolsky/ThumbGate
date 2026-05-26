@@ -411,12 +411,10 @@ __GA_BOOTSTRAP__
   .hero-actions .hero-install { margin-bottom: 0; font-size: 18px; padding: 14px 22px; border: 1px solid rgba(34,211,238,0.55); background: rgba(34,211,238,0.07); box-shadow: none; }
   .hero-actions .btn-install-hero { font-size: 16px; padding: 14px 22px; }
   .hero-actions .hero-diagnostic { font-size: 16px; padding: 14px 22px; background: var(--green); color: #06120a; font-weight: 800; box-shadow: none; }
-  .offer-router { max-width: 940px; margin: 18px auto 22px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; text-align: left; }
-  .offer-route { border: 1px solid rgba(34,211,238,0.18); background: rgba(17,17,19,0.72); border-radius: 8px; padding: 14px; min-height: 128px; }
-  .offer-route strong { display: block; color: var(--text); font-size: 14px; margin-bottom: 6px; }
-  .offer-route p { margin: 0 0 10px; color: var(--text-muted); font-size: 13px; line-height: 1.45; }
-  .offer-route a, .offer-route button { color: var(--cyan); font-weight: 800; font-size: 13px; text-decoration: none; background: transparent; border: 0; padding: 0; cursor: pointer; }
-  .offer-route.primary { border-color: rgba(34,211,238,0.42); background: rgba(34,211,238,0.07); }
+  .offer-router{max-width:940px;margin:18px auto 22px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;text-align:left}
+  .offer-route{border:1px solid rgba(34,211,238,.18);background:rgba(17,17,19,.72);border-radius:8px;padding:14px}
+  .offer-route strong{display:block;color:var(--text);font-size:14px;margin-bottom:6px}.offer-route p{margin:0 0 10px;color:var(--text-muted);font-size:13px}
+  .offer-route a,.offer-route button{color:var(--cyan);font-weight:800;font-size:13px;text-decoration:none;background:transparent;border:0;padding:0;cursor:pointer}.offer-route.primary{background:rgba(34,211,238,.07)}
   .btn-pro-page { display: inline-flex; align-items: center; justify-content: center; padding: 11px 18px; background: var(--cyan); color: var(--bg); border-radius: 999px; text-decoration: none; font-size: 14px; font-weight: 700; box-shadow: 0 0 0 1px rgba(34,211,238,0.28), 0 12px 32px rgba(34,211,238,0.18); transition: opacity 0.15s, transform 0.15s; }
   .btn-pro-page:hover { opacity: 0.9; transform: translateY(-1px); }
   .btn-gpt-page { display: inline-flex; align-items: center; justify-content: center; padding: 14px 32px; background: var(--green); color: #06120a; border-radius: 8px; text-decoration: none; font-size: 16px; font-weight: 800; box-shadow: 0 0 0 1px rgba(74,222,128,0.32), 0 12px 32px rgba(74,222,128,0.18); transition: opacity 0.15s, transform 0.15s; }
@@ -729,18 +727,18 @@ __GA_BOOTSTRAP__
     <div class="offer-router" aria-label="Choose the right ThumbGate path">
       <div class="offer-route primary">
         <strong>Solo operator: Start Pro</strong>
-        <p>Use Pro when one person needs hosted sync, dashboard evidence, and exports across machines.</p>
-        <a href="/checkout/pro?utm_source=website&utm_medium=offer_router&utm_campaign=pro_upgrade&cta_id=router_start_pro&cta_placement=offer_router&plan_id=pro&landing_path=%2F" data-revenue-cta data-cta-id="router_start_pro" data-cta-placement="offer_router" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);">Pay $19/mo with Stripe →</a>
+        <p>Sync, proof, exports.</p>
+        <a href="/checkout/pro?utm_source=website&utm_medium=offer_router&cta_id=router_start_pro&cta_placement=offer_router&plan_id=pro" data-revenue-cta data-cta-id="router_start_pro" data-cta-placement="offer_router" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);">Pay $19/mo with Stripe →</a>
       </div>
       <div class="offer-route">
         <strong>Team workflow: Start with intake</strong>
-        <p>Use the sprint when a team has one repeated blocker, one owner, and needs proof before rollout.</p>
-        <a href="#workflow-sprint-intake" onclick="sendFirstPartyTelemetry('workflow_sprint_intake_started',{ctaId:'router_workflow_sprint',ctaPlacement:'offer_router',offer:'workflow_sprint'});try{posthog.capture('router_sprint_click',{cta:'router_workflow_sprint'})}catch(_){}">Send the workflow first →</a>
+        <p>Proof before rollout.</p>
+        <a href="#workflow-sprint-intake" onclick="sendFirstPartyTelemetry('workflow_sprint_intake_started',{ctaId:'router_workflow_sprint',ctaPlacement:'offer_router',offer:'workflow_sprint'});">Send the workflow first →</a>
       </div>
       <div class="offer-route">
         <strong>Still evaluating: Free CLI</strong>
-        <p>Use free local gates to prove one blocked repeat. Upgrade only when sync, exports, or shared ops matter.</p>
-        <button type="button" data-router-install onclick="copyInstall(this);try{posthog.capture('router_install_click',{cta:'router_install_cli'})}catch(_){}"><span class="copy-hint">Copy npx thumbgate init</span></button>
+        <p>Local proof first.</p>
+        <button data-router-install onclick="copyInstall(this)"><span class="copy-hint">Copy npx thumbgate init</span></button>
       </div>
     </div>
 
