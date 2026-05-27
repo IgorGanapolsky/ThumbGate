@@ -442,3 +442,26 @@ test('GET /compare/anthropic-containment serves the hand-written comparison page
   assert.match(html, /Tool output is an attack surface/);
   assert.match(html, /software you build yourself is often the weakest/);
 });
+
+test('GET /sitemap.xml includes the anthropic-containment comparison page', async () => {
+  const res = await fetch(`${origin}/sitemap.xml`);
+  assert.equal(res.status, 200);
+  const xml = await res.text();
+  const entry = xml.match(/<url>\s*<loc>[^<]*\/compare\/anthropic-containment<\/loc>[\s\S]*?<\/url>/);
+  assert.ok(entry, 'compare/anthropic-containment <url> block must exist');
+  assert.match(entry[0], /<priority>0\.85<\/priority>/);
+});
+
+test('comparison pages cross-link so crawlers can discover the full set', async () => {
+  // Discovery surface: every recent /compare page should link to the other recent ones,
+  // so a crawler that lands on any single page can reach the others without sitemap.
+  const [bb, cch] = await Promise.all([
+    fetch(`${origin}/compare/bumblebee`).then((r) => r.text()),
+    fetch(`${origin}/compare/claude-code-hooks`).then((r) => r.text()),
+  ]);
+  // /compare/bumblebee must link to anthropic-containment
+  assert.match(bb, /href="\/compare\/anthropic-containment"/);
+  // /compare/claude-code-hooks must link to both newer pages
+  assert.match(cch, /href="\/compare\/anthropic-containment"/);
+  assert.match(cch, /href="\/compare\/bumblebee"/);
+});

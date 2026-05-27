@@ -2593,6 +2593,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/learn/background-agent-control-layer', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/claude-code-hooks', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/bumblebee', changefreq: 'weekly', priority: '0.85' },
+    { path: '/compare/anthropic-containment', changefreq: 'weekly', priority: '0.85' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
   ];
   return [
