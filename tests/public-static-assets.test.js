@@ -591,3 +591,32 @@ test('GET /ai-malpractice-prevention surfaces the monitor-vs-enforce framing', a
   assert.match(html, /Monitor vs enforce/);
   assert.match(html, /runtime block before execution/);
 });
+
+test('GET /learn/feedback-loop-vs-decision-layer serves the hand-written learn page', async () => {
+  const res = await fetch(`${origin}/learn/feedback-loop-vs-decision-layer`);
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  const html = await res.text();
+  assert.match(html, /feedback loop is the product/);
+  assert.match(html, /PreToolUse hook is its endpoint/);
+  assert.match(html, /"@type":\s*"FAQPage"/);
+  assert.match(html, /"@type":\s*"TechArticle"/);
+  assert.match(html, /Stage 1 &mdash; Capture/);
+  assert.match(html, /Stage 2 &mdash; Memory/);
+  assert.match(html, /Stage 3 &mdash; Rule promotion/);
+  assert.match(html, /Stage 4 &mdash; Enforcement/);
+});
+
+test('GET /sitemap.xml includes /learn/feedback-loop-vs-decision-layer at priority 0.9', async () => {
+  const res = await fetch(`${origin}/sitemap.xml`);
+  assert.equal(res.status, 200);
+  const xml = await res.text();
+  const entry = xml.match(/<url>\s*<loc>[^<]*\/learn\/feedback-loop-vs-decision-layer<\/loc>[\s\S]*?<\/url>/);
+  assert.ok(entry, 'feedback-loop-vs-decision-layer <url> block must exist');
+  assert.match(entry[0], /<priority>0\.9<\/priority>/);
+});
+
+test('background-agent-control-layer links to feedback-loop-vs-decision-layer for discovery', async () => {
+  const html = await fetch(`${origin}/learn/background-agent-control-layer`).then((r) => r.text());
+  assert.match(html, /href="\/learn\/feedback-loop-vs-decision-layer"/);
+});

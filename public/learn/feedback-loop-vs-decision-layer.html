@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The feedback loop is the product. The PreToolUse hook is its endpoint. - ThumbGate</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="ThumbGate is not a PreToolUse hook with feedback bolted on. It is a four-stage feedback-to-enforcement loop — capture the attorney or engineer's vote on any AI answer, store the lesson locally, promote recurring patterns to deterministic rules, then enforce at PreToolUse — where the hook is the endpoint of the loop, not the product. This is why customers buy the loop, not the hook.">
+<meta name="keywords" content="ThumbGate feedback loop, agent governance loop, decision-layer vs action-layer enforcement, thumbs up down AI agent, Thompson Sampling rule promotion, PreToolUse endpoint, lesson DB enforcement">
+<meta property="og:title" content="The feedback loop is the product. The PreToolUse hook is its endpoint.">
+<meta property="og:description" content="Capture vote → store lesson → promote rule → enforce at runtime. ThumbGate is the loop. The hook is one stage of four.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/feedback-loop-vs-decision-layer">
+<link rel="canonical" href="https://thumbgate.ai/learn/feedback-loop-vs-decision-layer">
+<link rel="stylesheet" href="/learn/learn.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "The feedback loop is the product. The PreToolUse hook is its endpoint.",
+  "description": "Decision-layer governance (prompt rules, AI judge models, human-in-the-loop workflow principles) is necessary but not sufficient. Action-layer enforcement at the PreToolUse hook is the deterministic gate. But neither alone is the product. ThumbGate's product is the four-stage feedback-to-enforcement loop: capture the user's vote on any AI answer, store the lesson, promote recurring patterns to rules, then enforce — closing the loop so the next decision is gated before the next human is ever asked to approve.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-05-27",
+  "dateModified": "2026-05-27",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/feedback-loop-vs-decision-layer",
+  "about": [
+    { "@type": "Thing", "name": "agent governance feedback loop" },
+    { "@type": "Thing", "name": "decision-layer vs action-layer enforcement" },
+    { "@type": "Thing", "name": "deterministic rule promotion" },
+    { "@type": "Thing", "name": "Thompson Sampling for agent rules" }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is ThumbGate a PreToolUse hook, a feedback collector, or a rule engine?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "All three, in a loop. ThumbGate is the four-stage loop: (1) Capture — the user clicks 👍 or 👎 on any AI answer, decision, or proposed tool call; (2) Memory — the feedback record lands in a local lesson DB (SQLite + LanceDB vector index) on the user's infrastructure; (3) Rule promotion — recurring 👎 patterns get promoted to deterministic prevention rules via Thompson Sampling, and recurring 👍 patterns become reinforced routing; (4) Enforcement — the promoted rules fire at the PreToolUse hook before the agent's next proposed tool call executes. The PreToolUse hook is one stage of four. Customers buy the loop, not any single stage."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is decision-layer governance, and why isn't it enough?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Decision-layer governance is anything that asks the model to reason about whether an action is safe: prompt rules embedded in the system prompt, AI 'judge' models that score proposed actions, human-in-the-loop workflow principles, ethics-training modules for the model. All of these can fail in three ways: the model forgets the rule under context compression, the model reasons around the rule as a new edge case, or the model produces output the human approver misses. Sullivan & Cromwell had every form of decision-layer governance — policies, mandatory training, verification requirements — and still filed AI-hallucinated citations with a federal judge in early 2026. Decision-layer governance is necessary. It is not sufficient."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is action-layer enforcement, and why isn't it enough by itself either?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Action-layer enforcement is a runtime gate that inspects the proposed action (a tool call, a shell command, an outbound API request) before it executes and returns allow / warn / block / route-to-human deterministically — no LLM in the decision path. It catches what decision-layer governance misses. But action-layer enforcement alone is a static rule set. It doesn't learn from the team's actual incidents. It doesn't get sharper after each blocked action. It treats every team the same. The piece that makes the gate yours is the feedback loop that promotes your team's specific patterns into the rule set. Action-layer enforcement is necessary. It is not sufficient either."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why does the loop matter more than the hook?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Three reasons. First, the loop encodes your team's specific failure patterns — not generic SOC2 boilerplate, not vendor-shipped rules. Every 👎 your attorney or engineer logs becomes part of your firm's governance. Second, the loop survives model upgrades — a rule promoted from a lesson DB lives in your infrastructure, not in a prompt that the next Claude or Gemini release will reinterpret. Third, the loop turns vendor incidents into competitor moats — Sullivan & Cromwell's hallucination is a one-time embarrassment for them; if their lesson DB had captured the pattern and promoted it to a rule, every subsequent intake at every S&C office would have the gate firing the moment a similar advice-shaped output was proposed. The PreToolUse hook is the moment of enforcement. The loop is what makes the moment intelligent."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does the loop compare to RLHF or fine-tuning the model?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "RLHF (Reinforcement Learning from Human Feedback) is decision-layer governance — it adjusts the model's weights so the model is statistically less likely to produce bad output. ThumbGate's loop is the opposite category: it doesn't touch the model. The lesson DB and the promoted rules live outside the model context. A model upgrade resets training-baked safety; rules in the lesson DB survive. RLHF needs millions of examples to shift behavior; one team's 👎 in ThumbGate becomes a rule after a small number of consistent flags (default Thompson Sampling threshold). RLHF is a model-vendor decision; the lesson DB is your team's decision."
+      }
+    }
+  ]
+}
+</script>
+<style>
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  th, td { text-align: left; padding: 0.7rem 0.8rem; border-bottom: 1px solid var(--border); vertical-align: top; font-size: 0.92rem; }
+  th { color: var(--cyan); font-weight: 700; }
+  .layer strong { color: var(--green); }
+  .mini-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1.25rem 0; }
+  .mini-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+  .mini-card h3 { margin-top: 0; color: var(--text); }
+  .mini-card p { color: var(--muted); }
+  .loop-stage { border-left: 3px solid var(--cyan); padding: 0.6rem 1rem; margin: 0.75rem 0; background: rgba(34, 211, 238, 0.04); border-radius: 0 6px 6px 0; }
+  .loop-stage strong { color: var(--cyan); display: block; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.2rem; }
+  blockquote { border-left: 3px solid var(--cyan); margin: 1rem 0; padding: 0.5rem 1rem; color: var(--text); font-style: italic; background: rgba(34, 211, 238, 0.05); }
+  @media (max-width: 700px) { .mini-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / The feedback loop vs the decision layer</div>
+  <h1>The feedback loop is the product. The PreToolUse hook is its endpoint.</h1>
+  <p style="color:var(--muted);">6 min read &middot; For engineering leaders, attorneys, and risk teams deciding how to govern AI agents in their environment</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> ThumbGate isn't a PreToolUse hook with feedback bolted on. It's a four-stage feedback-to-enforcement loop. Capture the user's 👍/👎 on any AI answer → store the lesson locally → promote recurring patterns to deterministic rules → enforce at PreToolUse. The hook is one stage of four. The loop is the product. Decision-layer governance (prompt rules, AI judges, "human in the loop") is necessary but not sufficient — Sullivan &amp; Cromwell had every form of it and still got sanctioned. Action-layer enforcement alone is a static rule set. The loop is what makes the rule set <em>yours</em>.</div>
+
+  <h2>Two layers that everyone confuses</h2>
+  <p>Most "AI agent governance" conversations are stuck in one of two camps:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Layer</th>
+        <th>What it does</th>
+        <th>Why it isn't enough alone</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="layer">
+        <td><strong>Decision-layer</strong></td>
+        <td>Prompt rules embedded in the system prompt. AI judge models that score proposed actions. Human-in-the-loop workflow principles. RLHF training that adjusts model weights toward safe output.</td>
+        <td>The model can forget the rule under context compression, reason around it as a new edge case, or produce output the human approver misses. Decision-layer governance is what Sullivan &amp; Cromwell had when they filed AI-hallucinated citations with a federal judge.</td>
+      </tr>
+      <tr class="layer">
+        <td><strong>Action-layer</strong></td>
+        <td>A runtime gate that inspects the proposed tool call (bash, SQL, file write, MCP call, outbound LLM call) at PreToolUse and returns allow / warn / block / route-to-human deterministically.</td>
+        <td>A static rule set is generic. It doesn't learn from <em>your</em> team's incidents. It doesn't get sharper after each blocked action. Every team gets the same starter pack. The piece that makes the gate <em>yours</em> is missing.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>Both layers are necessary. Neither is sufficient. The product that makes them a system is the loop that connects them.</strong>
+  </div>
+
+  <h2>The four-stage feedback-to-enforcement loop</h2>
+  <p>ThumbGate is the loop, not the hook. Four stages, all in your environment, all closing the gap between "the user noticed something was wrong" and "the next agent action that pattern matches is gated automatically."</p>
+
+  <div class="loop-stage">
+    <strong>Stage 1 &mdash; Capture</strong>
+    The user (attorney, engineer, risk officer) reviews an AI answer &mdash; a Claude for Legal drafted clause, a Cursor proposed refactor, a Claude Code shell command, a Codex agent's research summary. They click 👍 (the answer was good) or 👎 (the answer was wrong, unauthorized, or unsafe). One click. The record stores the context, what worked or went wrong, and what should change next time.
+  </div>
+
+  <div class="loop-stage">
+    <strong>Stage 2 &mdash; Memory</strong>
+    The feedback record lands in a local lesson DB on the team's infrastructure &mdash; SQLite with FTS5 for keyword/lexical recall, plus LanceDB for vector/semantic recall. Wins, mistakes, and edge cases all stored. The DB is searchable: when a new agent task matches a prior pattern, the relevant lessons surface as context before the agent answers. Nothing leaves the team's perimeter.
+  </div>
+
+  <div class="loop-stage">
+    <strong>Stage 3 &mdash; Rule promotion</strong>
+    When a 👎 pattern recurs across distinct sessions, Thompson Sampling promotes it from a one-off lesson to a deterministic prevention rule. Wins reinforce preferred routing the same way. The rule is human-readable and editable &mdash; the team's ethics or platform lead can audit, soften, or override it. The promotion logic is deterministic, not a black box.
+  </div>
+
+  <div class="loop-stage">
+    <strong>Stage 4 &mdash; Enforcement</strong>
+    Promoted rules fire at the PreToolUse hook before the agent's next proposed tool call executes. Allow, warn, block, or route-to-human, with an artifact-level audit log (rule ID, version, matched pattern, audit ID, ISO 27001 control mapping). The user's vote from Stage 1 is now an enforced constraint that fires deterministically before any human is asked to approve again. The loop closes.
+  </div>
+
+  <h2>Why the loop matters more than any single stage</h2>
+
+  <div class="mini-grid">
+    <div class="mini-card">
+      <h3>It encodes your patterns, not vendor boilerplate</h3>
+      <p>Generic governance rules ("don't push to main") are table stakes. The rules that actually matter for your firm or your team are the ones derived from your incidents &mdash; the specific UPL phrasing your associates flag, the matter-number conventions your privilege review uses, the deploy commands your platform team blocks. The loop encodes those automatically.</p>
+    </div>
+    <div class="mini-card">
+      <h3>It survives model upgrades and prompt resets</h3>
+      <p>A rule in the prompt vanishes when the next Claude or Gemini release reinterprets context. A rule promoted from your lesson DB lives in your infrastructure, separate from any model vendor. Model upgrades reset training-baked safety; the lesson DB doesn't.</p>
+    </div>
+    <div class="mini-card">
+      <h3>It turns one incident into permanent prevention</h3>
+      <p>Sullivan &amp; Cromwell's hallucination was a one-time embarrassment for them. If their lesson DB had captured the pattern and promoted it to a rule, every subsequent intake across every S&amp;C office would have the gate firing the moment a similar advice-shaped output was proposed. The first 👎 becomes the rule that catches the next ten cases.</p>
+    </div>
+    <div class="mini-card">
+      <h3>It composes with model providers, not against them</h3>
+      <p>Anthropic's Claude for Legal, Harvey's BigLaw assistants, Cursor's agent mode, OpenAI's Codex CLI &mdash; all of these are decision-layer products. The loop runs underneath them, agnostic to which vendor generated the proposed action. You don't pick a vendor and live with their generic safety; you pick the vendor for capability and own the safety yourself.</p>
+    </div>
+  </div>
+
+  <h2>How this differs from RLHF and other "model-side" approaches</h2>
+  <p>RLHF (Reinforcement Learning from Human Feedback) is decision-layer governance &mdash; it adjusts the model's weights so the model is statistically less likely to produce bad output. ThumbGate's loop is the opposite category. It doesn't touch the model. The lesson DB and the promoted rules live outside the model context.</p>
+  <table>
+    <thead>
+      <tr><th>Property</th><th>RLHF / model fine-tuning</th><th>ThumbGate feedback loop</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Where the change lives</strong></td><td>Inside the model weights</td><td>Outside the model, in your lesson DB</td></tr>
+      <tr><td><strong>Who controls it</strong></td><td>Model vendor</td><td>Your team</td></tr>
+      <tr><td><strong>How many examples to shift behavior</strong></td><td>Millions</td><td>Default Thompson Sampling threshold &mdash; a small number of consistent 👎</td></tr>
+      <tr><td><strong>What happens at model upgrade</strong></td><td>Training-baked safety partially resets</td><td>Rules survive; loop continues</td></tr>
+      <tr><td><strong>Auditability</strong></td><td>Opaque weights; explainability is best-effort</td><td>Rule ID + version + matched pattern + audit ID, deterministic</td></tr>
+    </tbody>
+  </table>
+
+  <blockquote>The loop is the product. The hook is the moment of enforcement. The DB is the memory. The promotion is the learning. Without all four, "agent governance" is either a prompt rule or a static gate &mdash; both useful, neither sufficient.</blockquote>
+
+  <h2>What to do with this if you're evaluating ThumbGate</h2>
+  <ol>
+    <li><strong>Don't ask "does it have PreToolUse hooks?"</strong> &mdash; every governance tool will say yes. Ask <em>"does the gate get sharper after each incident, automatically, in our environment?"</em></li>
+    <li><strong>Don't ask "what rules ship out of the box?"</strong> &mdash; the rules that matter are the ones derived from your team's incidents. Ask <em>"how does a 👎 from one of our reviewers become a rule that fires for everyone next week?"</em></li>
+    <li><strong>Don't ask "does it work with Claude?"</strong> &mdash; ask <em>"does it work with whichever vendor we pick next quarter?"</em> The loop is vendor-agnostic by design.</li>
+  </ol>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Install the loop, not just the gate</h2>
+    <p>The PreToolUse hook is the endpoint. The loop is what makes it learn. Two minutes to install.</p>
+    <div class="cta-install">$ npx thumbgate init</div>
+  </div>
+
+  <div class="related">
+    <h3>Related articles</h3>
+    <a href="/learn/background-agent-control-layer">Background Agent Control Layer &rarr;</a>
+    <a href="/learn/ac-dc-runtime-enforcement">AC/DC Runtime Enforcement &rarr;</a>
+    <a href="/learn/mcp-pre-action-checks-explained">MCP Pre-Action Checks Explained &rarr;</a>
+    <a href="/compare/anthropic-containment">ThumbGate vs Anthropic Containment &rarr;</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span style="color:var(--muted)">Try it now:</span>
+  <code>npx thumbgate init</code>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+</div>
+</body>
+</html>
