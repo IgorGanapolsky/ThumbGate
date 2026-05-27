@@ -52,7 +52,10 @@ const PKG_ROOT = path.join(__dirname, '..');
 
 const PRO_URL = 'https://thumbgate.ai';
 const PRO_CHECKOUT_URL = PRO_MONTHLY_PAYMENT_LINK;
-const TRIAL_DAYS = 14;
+// Mirrors scripts/rate-limiter.js TRIAL_DAYS — must stay in sync. Gitar
+// caught a 14-vs-7 mismatch on PR #2337 (banner said "7-day trial" but
+// the date label was computed 14 days out).
+const TRIAL_DAYS = 7;
 
 function checkoutUrlFor(source, content) {
   try {
