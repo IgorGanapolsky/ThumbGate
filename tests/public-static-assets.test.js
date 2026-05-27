@@ -103,6 +103,40 @@ test('landing page does not render empty revenue links', async () => {
   assert.match(html, /Team checkout happens after scope\./);
 });
 
+test('homepage and pricing surfaces expose canonical and LLM context links', async () => {
+  const pages = [
+    ['/', `${origin}/`, `${origin}/llm-context.md`],
+    ['/pricing', `${origin}/pricing`, `${origin}/llm-context.md`],
+    ['/pro', `${origin}/pro`, `${origin}/llm-context.md`],
+  ];
+
+  for (const [pathname, canonicalUrl, contextUrl] of pages) {
+    const res = await fetch(`${origin}${pathname}`);
+    assert.equal(res.status, 200, `${pathname} should render`);
+    const html = await res.text();
+    assert.match(html, new RegExp(`<link rel="canonical" href="${canonicalUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`));
+    assert.match(html, new RegExp(`<link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="${contextUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`));
+  }
+});
+
+test('LLM discovery file is available at root and well-known paths with canonical thumbgate.ai URLs', async () => {
+  const [rootRes, wellKnownRes] = await Promise.all([
+    fetch(`${origin}/llms.txt`),
+    fetch(`${origin}/.well-known/llms.txt`),
+  ]);
+
+  for (const res of [rootRes, wellKnownRes]) {
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-type') || '', /text\/plain/);
+    const body = await res.text();
+    assert.match(body, /^# ThumbGate/m);
+    assert.match(body, /https:\/\/thumbgate\.ai\/llm-context\.md/);
+    assert.match(body, /https:\/\/thumbgate\.ai\/pricing/);
+    assert.doesNotMatch(body, /thumbgate-production\.up\.railway\.app/);
+    assert.doesNotMatch(body, /\/public\/llm-context\.md/);
+  }
+});
+
 test('landing page internal links resolve without auth or broken .html aliases', async () => {
   const res = await fetch(`${origin}/`);
   assert.equal(res.status, 200);

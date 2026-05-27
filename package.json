@@ -209,7 +209,6 @@
     "LICENSE",
     "README.md",
     "adapters/amp/skills/thumbgate-feedback/SKILL.md",
-    "adapters/chatgpt/openapi.yaml",
     "adapters/claude/.mcp.json",
     "adapters/codex/config.toml",
     "adapters/forge/forge.yaml",

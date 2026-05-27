@@ -773,7 +773,7 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
   }
 
   // ChatGPT — cannot be automated
-  const chatgptSpec = path.join(PKG_ROOT, 'adapters', 'chatgpt', 'openapi.yaml');
+  const chatgptSpec = path.join(PKG_ROOT, 'openapi', 'openapi.yaml');
   if (fs.existsSync(chatgptSpec)) {
     const projectChatgptSpec = path.join(thumbgateDir, 'chatgpt-openapi.yaml');
     fs.copyFileSync(chatgptSpec, projectChatgptSpec);

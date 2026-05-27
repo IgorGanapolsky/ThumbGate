@@ -1424,6 +1424,12 @@ test('robots and sitemap endpoints publish crawl metadata for the canonical app 
   const robotsBody = await robotsRes.text();
   assert.match(robotsBody, /User-agent: \*/);
   assert.match(robotsBody, /Allow: \//);
+  assert.match(robotsBody, /User-agent: OAI-SearchBot/);
+  assert.match(robotsBody, /User-agent: ChatGPT-User/);
+  assert.match(robotsBody, /User-agent: Claude-SearchBot/);
+  assert.match(robotsBody, /User-agent: Claude-User/);
+  assert.match(robotsBody, /User-agent: Perplexity-User/);
+  assert.match(robotsBody, /# https:\/\/app\.example\.com\/llms\.txt/);
   assert.match(robotsBody, /Sitemap: https:\/\/app\.example\.com\/sitemap\.xml/);
 
   const sitemapRes = await fetch(apiUrl('/sitemap.xml'));
