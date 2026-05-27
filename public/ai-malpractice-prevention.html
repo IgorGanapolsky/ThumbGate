@@ -533,11 +533,11 @@
         <div style="display:flex; gap:0.75rem; align-items:flex-end; margin:0.75rem 0; flex-wrap:wrap">
           <div style="flex:1; min-width:240px">
             <label style="font-size:0.8rem; color:var(--muted); display:block; margin-bottom:0.25rem">Party / Company Name</label>
-            <input id="conflict-input" type="text" placeholder="Acme Corp" value="Acme Corporation" style="width:100%; background:#0f0f11; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:0.6rem; font-size:0.95rem">
+            <input id="conflict-input" type="text" placeholder="Latam Real Capital" value="Latam Real Capital S.A." style="width:100%; background:#0f0f11; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:0.6rem; font-size:0.95rem">
           </div>
           <button onclick="runConflictDemo()" class="cta" style="padding:0.6rem 1.1rem; font-size:0.9rem; white-space:nowrap">Check Against Adverse List</button>
         </div>
-        <div style="font-size:0.8rem; color:var(--muted); margin-bottom:0.5rem">Sample adverse list: Acme Corp (litigation matter #M-2847), TechNova Inc (M&amp;A #M-2911), Rivera Holdings (real estate #M-2755)</div>
+        <div style="font-size:0.8rem; color:var(--muted); margin-bottom:0.5rem">Sample adverse list (synthetic, illustrative): Latam Real Capital S.A. (real estate #M-2847), Hospitalia Holdings (hospitality M&amp;A #M-2911), NovaIA Latam (AI venture #M-2755)</div>
         <div id="conflict-result" class="demo-result" style="display:none"></div>
       </div>
 
@@ -556,6 +556,49 @@
             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
           });
         }
+        // Produces the same JSON shape a production ThumbGate gate would stream to the firm's SIEM.
+        // Includes ISO 27001 control mapping so procurement can map evidence to controls without translation.
+        window.__thumbgateBuildAudit = function(args) {
+          return {
+            audit_id: args.audit_id,
+            timestamp_iso: args.timestamp_iso,
+            rule: { id: args.rule_id, version: args.rule_version, matched: args.matched },
+            blocked_call: {
+              agent: args.agent,
+              input_excerpt: String(args.input || '').slice(0, 280),
+              matter_context: args.matter_context
+            },
+            action: args.action,
+            reviewer: null,
+            iso_27001_controls: args.iso_controls,
+            generated_by: 'ThumbGate PreToolUse Gate (sample export — production version streams to your SIEM)',
+            sample_disclaimer: 'Synthetic audit record for evaluation. No real client data referenced.'
+          };
+        };
+        window.__thumbgateDownloadAudit = function(payload, filename) {
+          try {
+            var json = JSON.stringify(payload, null, 2);
+            var blob = new Blob([json], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url; a.download = filename;
+            document.body.appendChild(a); a.click();
+            document.body.removeChild(a);
+            setTimeout(function() { URL.revokeObjectURL(url); }, 0);
+          } catch (e) { console.error('audit download failed', e); }
+        };
+        window.__thumbgateAuditRegistry = {};
+        window.__thumbgateAuditByKey = function(key) {
+          var entry = window.__thumbgateAuditRegistry[key];
+          if (!entry) return;
+          window.__thumbgateDownloadAudit(entry.payload, entry.filename);
+        };
+        window.__thumbgateAuditButton = function(key, payload, filename) {
+          window.__thumbgateAuditRegistry[key] = { payload: payload, filename: filename };
+          return '<button class="cta" style="margin-top:0.5rem; padding:0.45rem 0.9rem; font-size:0.82rem; background:transparent; color:var(--cyan); border:1px solid var(--cyan)" ' +
+            'onclick="__thumbgateAuditByKey(\'' + key + '\')">' +
+            'Download audit JSON (sample) &darr;</button>';
+        };
         function runUPLDemo() {
           var input = document.getElementById('upl-input').value.trim();
           var resultDiv = document.getElementById('upl-result');
@@ -568,6 +611,18 @@
             if (lower.indexOf(advicePatterns[i]) !== -1) { blocked = true; reason = advicePatterns[i]; break; }
           }
           if (blocked) {
+            var uplPayload = __thumbgateBuildAudit({
+              audit_id: 'UPL-2847-20260526-091204',
+              timestamp_iso: '2026-05-26T09:12:04Z',
+              rule_id: 'UPL_RULE_05.5_ADVICE_SHAPE',
+              rule_version: '3.2',
+              matched: 'advice-shaped output from non-attorney source ("' + reason + '")',
+              agent: 'website-intake-bot-v2',
+              input: input,
+              matter_context: 'New client intake (web)',
+              action: 'REPLACE + LOG + NOTIFY_ATTORNEY',
+              iso_controls: ['A.5.34 (Privacy & PII protection)', 'A.5.24 (Information security incident management)']
+            });
             resultDiv.innerHTML =
               '<div class="demo-blocked">' +
               '<strong style="color:#f87171">BLOCKED &mdash; UPL Gate fired</strong><br>' +
@@ -575,6 +630,7 @@
               '<strong>Corrective action taken:</strong><br>' +
               'Response replaced with: <em>"That\'s a legal question best answered by a licensed attorney. I can schedule a 30-minute consultation with one of our [practice area] attorneys &mdash; would [time] work for you?"</em><br><br>' +
               '<div class="audit-log">[2026-05-26 09:12:04] PreToolUse gate: UPL_RULE_05.5_ADVICE_SHAPE v3.2\nRule matched: advice-shaped output from non-attorney source\nAction: REPLACE + LOG + NOTIFY_ATTORNEY\nAudit ID: UPL-2847-20260526-091204\nMatter context: New client intake (web)\nAgent: website-intake-bot-v2</div>' +
+              __thumbgateAuditButton('upl', uplPayload, 'ThumbGate-Audit-UPL-2847-2026-05-26.json') +
               '</div>';
           } else {
             resultDiv.innerHTML =
@@ -590,15 +646,28 @@
           var party = document.getElementById('conflict-input').value.trim().toLowerCase();
           var resultDiv = document.getElementById('conflict-result');
           if (!party) { resultDiv.style.display = 'none'; return; }
-          var adverseList = ['acme corporation', 'acme corp', 'technova inc', 'technova', 'rivera holdings', 'rivera'];
+          var adverseList = ['latam real capital', 'latam real', 'hospitalia holdings', 'hospitalia', 'novaia latam', 'novaia'];
           var isAdverse = adverseList.some(function(a) { return party.indexOf(a) !== -1; });
           if (isAdverse) {
+            var conflictPayload = __thumbgateBuildAudit({
+              audit_id: 'CONF-2911-20260526-091204',
+              timestamp_iso: '2026-05-26T09:12:04Z',
+              rule_id: 'CONFLICT_RULE_1.7_ADVERSE',
+              rule_version: '4.1',
+              matched: 'adverse-parties list match for "' + party + '"',
+              agent: 'doc-fetch-agent-v1',
+              input: party,
+              matter_context: 'New M&A intake — preliminary conflict check',
+              action: 'BLOCK + REDIRECT + LOG',
+              iso_controls: ['A.5.10 (Acceptable use of information)', 'A.5.24 (Information security incident management)', 'A.8.10 (Information deletion)']
+            });
             resultDiv.innerHTML =
               '<div class="demo-blocked">' +
               '<strong style="color:#f87171">BLOCKED &mdash; Conflict Gate fired</strong><br>' +
               '"' + escapeHtml(party) + '" matches adverse party in existing matter.<br><br>' +
               '<strong>Corrective action:</strong> Fetch blocked. Agent redirected to: <em>"This party appears as adverse in matter M-2847. Contact ethics screen lead before proceeding."</em><br><br>' +
               '<div class="audit-log">[2026-05-26 09:12:04] PreToolUse gate: CONFLICT_RULE_1.7_ADVERSE v4.1\nMatched: adverse-parties list\nAction: BLOCK + REDIRECT + LOG\nAudit ID: CONF-2911-20260526-091204\nRequesting matter: New M&amp;A intake\nAgent: doc-fetch-agent-v1</div>' +
+              __thumbgateAuditButton('conflict', conflictPayload, 'ThumbGate-Audit-CONF-2911-2026-05-26.json') +
               '</div>';
           } else {
             resultDiv.innerHTML =
@@ -623,12 +692,25 @@
             if (lower.indexOf(privMarkers[i]) !== -1) { blocked = true; marker = privMarkers[i]; break; }
           }
           if (blocked) {
+            var privilegePayload = __thumbgateBuildAudit({
+              audit_id: 'PRIV-2755-20260526-091204',
+              timestamp_iso: '2026-05-26T09:12:04Z',
+              rule_id: 'EGRESS_RULE_1.6_PRIVILEGE',
+              rule_version: '2.8',
+              matched: 'privilege marker in outbound payload ("' + marker + '")',
+              agent: 'brief-assistant-v3',
+              input: input,
+              matter_context: 'Outbound LLM call from attorney workspace',
+              action: 'BLOCK + REDIRECT_TO_TENANT_LLM + LOG',
+              iso_controls: ['A.5.34 (Privacy & PII protection)', 'A.5.14 (Information transfer)', 'A.8.24 (Use of cryptography)']
+            });
             resultDiv.innerHTML =
               '<div class="demo-blocked">' +
               '<strong style="color:#f87171">BLOCKED &mdash; Egress Gate fired</strong><br>' +
               'Detected privilege marker: "' + escapeHtml(marker) + '"<br><br>' +
               '<strong>Corrective action:</strong> Outbound call to external LLM blocked. Redirected to in-tenant Azure OpenAI (BAA-protected) or internal summarizer.<br><br>' +
               '<div class="audit-log">[2026-05-26 09:12:04] PreToolUse gate: EGRESS_RULE_1.6_PRIVILEGE v2.8\nRule matched: privilege marker in outbound payload\nAction: BLOCK + REDIRECT_TO_TENANT_LLM + LOG\nAudit ID: PRIV-2755-20260526-091204\nContent hash: sha256:7f3a... (truncated)\nAgent: brief-assistant-v3</div>' +
+              __thumbgateAuditButton('privilege', privilegePayload, 'ThumbGate-Audit-PRIV-2755-2026-05-26.json') +
               '</div>';
           } else {
             resultDiv.innerHTML =
