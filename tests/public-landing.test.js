@@ -127,8 +127,8 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   // Free tier is intentionally capped so the npm package proves value without
   // cannibalizing Pro.
   assert.match(landingPage, /Block repeated mistakes daily/);
-  assert.match(landingPage, /10 captures\/day, 3 active rules/i);
-  assert.match(landingPage, /10 feedback captures\/day/i);
+  assert.match(landingPage, /5 captures\/day, 3 active rules/i);
+  assert.match(landingPage, /5 feedback captures\/day/i);
   assert.match(landingPage, /Up to 3 active auto-promoted prevention rules/i);
   assert.doesNotMatch(landingPage, /3 captures.*1 rule.*1 agent/i);
   assert.doesNotMatch(landingPage, /3 captures total/i);

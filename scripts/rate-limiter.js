@@ -17,32 +17,32 @@ const USAGE_FILE = path.join(process.env.HOME || '/tmp', '.thumbgate', 'usage-li
 // hit the wall within the first week, not the first quarter.
 // ──────────────────────────────────────────────────────────
 const FREE_TIER_LIMITS = {
-  capture_feedback:   { daily: 10,       lifetime: 50,       label: 'feedback captures (10/day, 50 total on free)' },
-  prevention_rules:   { daily: 3,        lifetime: 15,       label: 'prevention rules generated (3/day on free)' },
+  capture_feedback:   { daily: 5,        lifetime: 25,       label: 'feedback captures (5/day, 25 total on free)' },
+  prevention_rules:   { daily: 2,        lifetime: 6,        label: 'prevention rules generated (2/day on free)' },
   recall:             { daily: 0,        lifetime: 0,        label: 'recall queries (Pro only)' },
   search_lessons:     { daily: 0,        lifetime: 0,        label: 'lesson searches (Pro only)' },
   search_thumbgate:   { daily: 0,        lifetime: 0,        label: 'ThumbGate searches (Pro only)' },
   commerce_recall:    { daily: 0,        lifetime: 0,        label: 'commerce recalls (Pro only)' },
   export_dpo:         { daily: 0,        lifetime: 0,        label: 'DPO exports (Pro only)' },
   export_databricks:  { daily: 0,        lifetime: 0,        label: 'Databricks exports (Pro only)' },
-  construct_context_pack: { daily: 5,    lifetime: Infinity,  label: 'context packs (5/day on free)' },
+  construct_context_pack: { daily: 3,    lifetime: Infinity,  label: 'context packs (3/day on free)' },
 };
 
 const FREE_TIER_MAX_GATES = 3; // 3 active prevention rules on free; Pro is unlimited
-const FREE_TIER_DAILY_BLOCKS = 5; // 5 gate blocks/day on free; after limit, deny → warn + upgrade CTA
+const FREE_TIER_DAILY_BLOCKS = 3; // 3 gate blocks/day on free; after limit, deny → warn + upgrade CTA
 
 const UPGRADE_MESSAGE = `Pro: ${PRO_PRICE_LABEL} — unlimited rules, recall, lesson search, dashboard, and exports: ${PRO_MONTHLY_PAYMENT_LINK}\n  Team: ${TEAM_PRICE_LABEL} after workflow qualification.`;
 
 const PAYWALL_MESSAGES = {
-  capture_feedback: 'Free tier: 10 captures/day (50 total). Your feedback is stored locally — upgrade to capture unlimited.',
-  prevention_rules: 'Free tier includes 3 active prevention rules. Upgrade to Pro for unlimited rules.',
+  capture_feedback: 'Free tier: 5 captures/day (25 total). Your feedback is stored locally — upgrade to capture unlimited.',
+  prevention_rules: 'Free tier includes 3 active prevention rules and 2 rule generations/day. Upgrade to Pro for unlimited rules.',
   recall: 'Recall is a Pro feature. Your past feedback is stored locally — upgrade to search and reuse it.',
   search_lessons: 'Lesson search is a Pro feature. Upgrade to find patterns in your agent\'s mistakes.',
-  construct_context_pack: 'Free tier: 5 context packs/day. Upgrade to Pro for unlimited.',
+  construct_context_pack: 'Free tier: 3 context packs/day. Upgrade to Pro for unlimited.',
   default: 'This feature requires Pro. Start Pro — card required; billed today.',
 };
 
-const TRIAL_DAYS = 14;
+const TRIAL_DAYS = 7;
 
 function getInstallAgeDays() {
   try {
@@ -93,7 +93,8 @@ function isProTier(authContext) {
     const { isProLicensed } = require('./license');
     if (isProLicensed()) return true;
   } catch (_) {}
-  // 14-day reverse trial: new installs get full Pro access
+  // 7-day reverse trial: new installs get full Pro access, then hit a clear
+  // hosted-sync/unlimited-rules pay moment while the product is still fresh.
   if (isInTrialPeriod()) return true;
   return false;
 }

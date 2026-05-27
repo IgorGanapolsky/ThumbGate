@@ -42,8 +42,9 @@ const ONE_DAY = 24 * ONE_HOUR;
 
 const telemetryRows = [
   { eventType: 'page_view', path: '/', timestamp: new Date(NOW_MS - 3 * ONE_DAY).toISOString() }, // outside 24h
-  { eventType: 'cta_clicked', ctaId: 'pricing_pro', path: '/pricing', timestamp: new Date(NOW_MS - 2 * ONE_HOUR).toISOString() }, // inside
-  { eventType: 'cta_clicked', ctaId: 'workflow_sprint_intake', path: '/', timestamp: new Date(NOW_MS - 30 * 60 * 1000).toISOString() }, // inside
+  { eventType: 'cta_clicked', ctaId: 'pricing_pro', path: '/pricing', sessionId: 'sess-checkout-leak', visitorId: 'visitor-a', timestamp: new Date(NOW_MS - 2 * ONE_HOUR).toISOString() }, // inside
+  { eventType: 'checkout_interstitial_cta_clicked', ctaId: 'pro_checkout_confirmed', path: '/checkout/pro', sessionId: 'sess-checkout-leak', visitorId: 'visitor-a', timestamp: new Date(NOW_MS - 90 * 60 * 1000).toISOString() }, // inside
+  { eventType: 'cta_clicked', ctaId: 'workflow_sprint_intake', path: '/', sessionId: 'sess-workflow', visitorId: 'visitor-b', timestamp: new Date(NOW_MS - 30 * 60 * 1000).toISOString() }, // inside
 ];
 fs.writeFileSync(
   path.join(ENV.THUMBGATE_FEEDBACK_DIR, 'telemetry-pings.jsonl'),
@@ -137,9 +138,9 @@ describe('GET /v1/telemetry/export', () => {
     const body = await res.json();
     assert.equal(body.source, 'both');
     assert.equal(body.limit, 1000);
-    // Two telemetry rows are inside the 24h window; the 3-day-old one is out.
-    assert.equal(body.telemetry.rows.length, 2);
-    assert.equal(body.telemetry.totalAfterSince, 2);
+    // Three telemetry rows are inside the 24h window; the 3-day-old one is out.
+    assert.equal(body.telemetry.rows.length, 3);
+    assert.equal(body.telemetry.totalAfterSince, 3);
     assert.equal(body.telemetry.truncated, false);
     // One funnel row inside the window.
     assert.equal(body.funnel.rows.length, 1);
@@ -159,7 +160,7 @@ describe('GET /v1/telemetry/export', () => {
     assert.equal(res.status, 200);
     const body = await res.json();
     assert.equal(body.source, 'telemetry');
-    assert.equal(body.telemetry.rows.length, 2);
+    assert.equal(body.telemetry.rows.length, 3);
     assert.equal(body.funnel.rows.length, 0);
     assert.equal(body.funnel.totalAfterSince, 0);
   });
@@ -181,7 +182,7 @@ describe('GET /v1/telemetry/export', () => {
     assert.equal(res.status, 200);
     const body = await res.json();
     // Expanding the window to 5 days picks up all 3 telemetry rows and both funnel rows.
-    assert.equal(body.telemetry.rows.length, 3);
+    assert.equal(body.telemetry.rows.length, 4);
     assert.equal(body.funnel.rows.length, 2);
   });
 
@@ -192,7 +193,7 @@ describe('GET /v1/telemetry/export', () => {
     assert.equal(res.status, 200);
     const body = await res.json();
     // Default 24h window, same as the no-param call.
-    assert.equal(body.telemetry.rows.length, 2);
+    assert.equal(body.telemetry.rows.length, 3);
   });
 
   it('truncates to limit and reports truncated=true with totalAfterSince intact', async () => {
@@ -203,7 +204,7 @@ describe('GET /v1/telemetry/export', () => {
     const body = await res.json();
     assert.equal(body.limit, 1);
     assert.equal(body.telemetry.rows.length, 1);
-    assert.equal(body.telemetry.totalAfterSince, 2);
+    assert.equal(body.telemetry.totalAfterSince, 3);
     assert.equal(body.telemetry.truncated, true);
     // Keeps the MOST RECENT row when truncating (slice(-limit)).
     const keptCta = body.telemetry.rows[0].ctaId;
@@ -237,5 +238,22 @@ describe('GET /v1/telemetry/export', () => {
     }
     assert.ok(body.generatedAt);
     assert.ok(body.since);
+  });
+
+  it('returns a visitor journey summary with path and dropoff buckets', async () => {
+    const res = await get('/v1/telemetry/export', { Authorization: `Bearer ${ENV.THUMBGATE_OPERATOR_KEY}` });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.ok(body.journeySummary, 'journeySummary must be present for dashboard-grade readback');
+    assert.equal(typeof body.journeySummary.sessionCount, 'number');
+    assert.ok(body.journeySummary.sessionCount >= 2);
+    assert.ok(body.journeySummary.stageCounts.pricing >= 1);
+    assert.ok(body.journeySummary.stageCounts.email_submitted >= 1);
+    assert.ok(body.journeySummary.dropoffCounts.stripe_redirect >= 1);
+    const checkoutJourney = body.journeySummary.journeys.find((journey) => journey.sessionId === 'sess-checkout-leak');
+    assert.ok(checkoutJourney, 'checkout journey should be grouped by session id');
+    assert.equal(checkoutJourney.maxStage, 'email_submitted');
+    assert.equal(checkoutJourney.dropoffStage, 'stripe_redirect');
+    assert.deepEqual(checkoutJourney.paths, ['/pricing', '/checkout/pro']);
   });
 });

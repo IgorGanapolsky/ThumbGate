@@ -8,6 +8,7 @@ const path = require('node:path');
 
 const {
   PROMPTS,
+  DISCOVERY_SURFACES,
   runVisibilityCheck,
   formatReport,
   saveReport,
@@ -20,6 +21,15 @@ test('PROMPTS array is non-empty and contains expected entries', () => {
   assert.ok(PROMPTS.some((p) => /parallel AI coding agent safety/i.test(p)));
   assert.ok(PROMPTS.some((p) => /environment inspection/i.test(p)));
   assert.ok(PROMPTS.some((p) => /thumbgate/i.test(p)));
+  assert.ok(PROMPTS.some((p) => /pre-action gates/i.test(p)));
+  assert.ok(PROMPTS.some((p) => /agent governance platform/i.test(p)));
+});
+
+test('DISCOVERY_SURFACES covers canonical AI-search entrypoints', () => {
+  assert.ok(DISCOVERY_SURFACES.some((surface) => surface.url === 'https://thumbgate.ai/llms.txt'));
+  assert.ok(DISCOVERY_SURFACES.some((surface) => surface.url === 'https://thumbgate.ai/.well-known/llms.txt'));
+  assert.ok(DISCOVERY_SURFACES.some((surface) => surface.url === 'https://thumbgate.ai/llm-context.md'));
+  assert.ok(DISCOVERY_SURFACES.some((surface) => surface.url === 'https://thumbgate.ai/openapi.yaml'));
 });
 
 test('runVisibilityCheck with mocked queryFn returns found results', async () => {
@@ -53,6 +63,7 @@ test('formatReport produces correct tags for found results', async () => {
   assert.ok(report.includes('[FOUND]'));
   assert.ok(report.includes('[MISSING]'));
   assert.ok(/Score: \d+\/\d+/.test(report));
+  assert.ok(report.includes('Discovery surfaces to verify'));
 });
 
 test('formatReport manual-only produces manual score line', async () => {
@@ -80,6 +91,7 @@ describe('saveReport', () => {
     assert.ok(fs.existsSync(filePath));
     const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
     assert.equal(data.score, '1/2');
+    assert.ok(Array.isArray(data.discoverySurfaces));
     assert.equal(data.results.length, 2);
     assert.equal(data.results[0].status, 'FOUND');
   });

@@ -9,7 +9,7 @@
     {
       "name": "thumbgate",
       "description": "One 👎 becomes a hard rule the agent cannot bypass. Captures thumbs-down feedback, distills it into PreToolUse Pre-Action Checks, enforced across every future Claude Code session.",
-      "longDescription": "ThumbGate is a tripwire, not a memory layer. When you thumbs-down an agent action — a force-push that overwrote a teammate's commit, a destructive SQL drop, a refactor you already rejected — ThumbGate captures the pattern, distills a one-sentence lesson, and installs it as a PreToolUse block. The next time the agent reaches for the same tool call shape, the hook fires before execution and Claude sees your own words back as the reason.\n\nThe enforcement lives in the hook, not in the model's context, so the agent cannot bypass it by forgetting, by being prompted around it, or by switching sessions. Same rule works in Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and OpenCode.\n\n33 pre-action checks shipped (force-push, destructive SQL, mass-delete, npm publish from wrong branch, deploy without verification). Budget enforcement (action count + time limits) prevents runaway agent sessions. NIST / SOC2 / OWASP / CWE compliance tags on every rule for enterprise teams. DPO training-pair export for teams running their own fine-tunes.\n\nFree tier: unlimited local rules, fully offline. Pro ($19/mo): cloud sync across team, dashboard, audit export.",
+      "longDescription": "ThumbGate is a tripwire, not a memory layer. When you thumbs-down an agent action — a force-push that overwrote a teammate's commit, a destructive SQL drop, a refactor you already rejected — ThumbGate captures the pattern, distills a one-sentence lesson, and installs it as a PreToolUse block. The next time the agent reaches for the same tool call shape, the hook fires before execution and Claude sees your own words back as the reason.\n\nThe enforcement lives in the hook, not in the model's context, so the agent cannot bypass it by forgetting, by being prompted around it, or by switching sessions. Same rule works in Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and OpenCode.\n\n33 pre-action checks shipped (force-push, destructive SQL, mass-delete, npm publish from wrong branch, deploy without verification). Budget enforcement (action count + time limits) prevents runaway agent sessions. NIST / SOC2 / OWASP / CWE compliance tags on every rule for enterprise teams. DPO training-pair export for teams running their own fine-tunes.\n\nFree tier: 5 feedback captures/day, 25 total captures, 3 active auto-promoted prevention rules, fully offline. Pro ($19/mo): hosted sync across machines and agent runtimes, dashboard, audit export.",
       "source": {
         "source": "npm",
         "package": "thumbgate"
@@ -20,7 +20,7 @@
         "email": "ig5973700@gmail.com",
         "url": "https://thumbgate.ai"
       },
-      "homepage": "https://thumbgate-production.up.railway.app",
+      "homepage": "https://thumbgate.ai",
       "repository": "https://github.com/IgorGanapolsky/ThumbGate",
       "license": "MIT",
       "category": "developer-tools",
@@ -60,7 +60,7 @@
       "installCommand": "/plugin install thumbgate@claude-plugins-official",
       "metadata": {
         "author": "Igor Ganapolsky",
-        "homepage": "https://thumbgate-production.up.railway.app",
+        "homepage": "https://thumbgate.ai",
         "license": "MIT",
         "keywords": [
           "guardrails",

@@ -26,17 +26,17 @@ const DASHBOARD_URL = 'https://thumbgate.ai/dashboard?utm_source=npm&utm_medium=
 
 process.stderr.write(`
   ╭─────────────────────────────────────────────────────╮
-  │  ThumbGate installed — 14-day Pro trial is live.    │
+  │  ThumbGate installed — 7-day Pro trial is live.     │
   │                                                     │
   │  Start now:  npx thumbgate init                     │
   │  Updates:    npx thumbgate subscribe you@company.com│
   │                                                     │
-  │  Free after trial: 3 rules, 10 captures/day.       │
+  │  Free after trial: 3 rules, 5 captures/day.        │
   │  Pro ($19/mo): unlimited everything.                │
   ╰─────────────────────────────────────────────────────╯
 
   Trial unlocks: unlimited rules, lesson search, DPO export,
-  hosted dashboard. After 14 days, free tier limits apply.
+  hosted dashboard. After 7 days, free tier limits apply.
   Subscribe for the 5-min setup guide + weekly tips:
   npx thumbgate subscribe you@company.com
 

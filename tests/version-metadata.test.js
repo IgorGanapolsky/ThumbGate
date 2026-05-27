@@ -21,8 +21,11 @@ const {
 } = require('../scripts/distribution-surfaces');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
-const CANONICAL_APP_ORIGIN = 'https://thumbgate-production.up.railway.app';
-const CANONICAL_PUBLIC_ORIGIN = 'https://thumbgate.ai';
+const CANONICAL_APP_ORIGIN = 'https://thumbgate.ai';
+const CANONICAL_DEPLOY_ORIGIN = 'https://thumbgate-production.up.railway.app';
+// CANONICAL_PUBLIC_ORIGIN was a duplicate alias for CANONICAL_APP_ORIGIN; both
+// resolved to 'https://thumbgate.ai', so the constant has been removed. Restore
+// only if the two ever need to diverge.
 const CURRENT_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/ThumbGate';
 const PRIVATE_CORE_REPOSITORY_URL = 'https://github.com/IgorGanapolsky/ThumbGate-Core';
 
@@ -39,7 +42,10 @@ function escapeRegExp(value) {
 }
 
 function mentionsCanonicalOrigin(artifact) {
-  return [CANONICAL_PUBLIC_ORIGIN, CANONICAL_APP_ORIGIN].some((origin) => {
+  // CANONICAL_PUBLIC_ORIGIN was an alias for CANONICAL_APP_ORIGIN — removed
+  // the duplicate from the list per Gitar review on PR #2337. Add back as a
+  // distinct entry only if the two ever diverge again.
+  return [CANONICAL_APP_ORIGIN, CANONICAL_DEPLOY_ORIGIN].some((origin) => {
     const originPattern = new RegExp(`(^|[^\\w.+-])${escapeRegExp(origin)}(?=$|[/?#"'\\s<>).])`);
     return originPattern.test(artifact);
   });
@@ -87,7 +93,7 @@ test('public docs render the current package version', () => {
   const productHuntKit = readText('docs/marketing/product-hunt-launch.md');
 
   assert.match(readme, /Open ThumbGate GPT/);
-  assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/go\/gpt\?utm_source=github/);
+  assert.match(readme, /https:\/\/thumbgate\.ai\/go\/gpt\?utm_source=github/);
   assert.match(readme, /ThumbGate GPT: start here/i);
   assert.match(readme, /No, users do not have to keep chatting inside the ThumbGate GPT to use ThumbGate/i);
   assert.match(readme, /hard enforcement layer still runs where the work happens/i);

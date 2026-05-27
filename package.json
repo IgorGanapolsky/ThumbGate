@@ -2,7 +2,7 @@
   "name": "thumbgate",
   "version": "1.23.1",
   "description": "ThumbGate self-improving agent governance: thumbs-up/down turns every mistake into a prevention rule and blocks repeat patterns. 33 pre-action checks, budget enforcement, and self-protection for Claude Code, Cursor, Codex, Gemini CLI, and Amp.",
-  "homepage": "https://thumbgate-production.up.railway.app",
+  "homepage": "https://thumbgate.ai",
   "repository": {
     "type": "git",
     "url": "https://github.com/IgorGanapolsky/ThumbGate.git"
@@ -198,6 +198,7 @@
     "scripts/verification-loop.js",
     "scripts/verifier-scoring.js",
     "scripts/verify-marketing-pages-deployed.js",
+    "scripts/visitor-journey.js",
     "scripts/workflow-runs.js",
     "scripts/workflow-sentinel.js",
     "scripts/workspace-agent-routines.js",

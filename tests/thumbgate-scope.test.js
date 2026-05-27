@@ -51,5 +51,5 @@ test('canonical package metadata points only at ThumbGate', () => {
   assert.equal(packageJson.name, 'thumbgate');
   assert.equal(packageJson.repository.url, 'https://github.com/IgorGanapolsky/ThumbGate.git');
   assert.equal(packageJson.bugs.url, 'https://github.com/IgorGanapolsky/ThumbGate/issues');
-  assert.equal(packageJson.homepage, 'https://thumbgate-production.up.railway.app');
+  assert.equal(packageJson.homepage, 'https://thumbgate.ai');
 });
