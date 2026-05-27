@@ -25,7 +25,7 @@
 
 const https = require('node:https');
 
-const DEFAULT_PLAUSIBLE_DOMAIN = 'thumbgate-production.up.railway.app';
+const DEFAULT_PLAUSIBLE_DOMAIN = 'thumbgate.ai';
 const PLAUSIBLE_ENDPOINT = 'https://plausible.io/api/event';
 const REQUEST_TIMEOUT_MS = 2_000;
 

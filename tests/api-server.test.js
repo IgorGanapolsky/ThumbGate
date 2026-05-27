@@ -1735,6 +1735,8 @@ test('checkout interstitial: GET without confirm=1 (human UA) renders the inters
   const body = await res.text();
   assert.match(body, /Start ThumbGate Pro/i);
   assert.match(body, /\$19/);
+  assert.match(body, /data-domain="thumbgate\.ai"/);
+  assert.doesNotMatch(body, /data-domain="thumbgate-production\.up\.railway\.app"/);
   // Form must carry confirm=1 hidden input so submission triggers the Stripe path
   assert.match(body, /name="confirm" value="1"/);
   assert.match(body, /Not sure yet\? Send the workflow first/);
