@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AC/DC governs the code agents write. Runtime enforcement governs what agents do. - ThumbGate</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Sonar's Agent Centric Development Cycle (AC/DC) defines Guide → Generate → Verify → Solve for code-quality. It has no Pre-Execution Gate. Here is where runtime enforcement plugs into AC/DC, with a worked map for each stage.">
+<meta name="keywords" content="AC/DC framework, Agent Centric Development Cycle, AI coding agent governance, PreToolUse runtime enforcement, agentic SDLC, Sonar AC/DC, ThumbGate">
+<meta property="og:title" content="AC/DC + Runtime Enforcement: Closing the Pre-Execution Gap">
+<meta property="og:description" content="Sonar's AC/DC governs what agents WRITE. Runtime enforcement at PreToolUse governs what agents DO. The two compose — but only one of them stops rm -rf / DROP TABLE / unauthorized MCP calls before they happen.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/ac-dc-runtime-enforcement">
+<link rel="canonical" href="https://thumbgate.ai/learn/ac-dc-runtime-enforcement">
+<link rel="stylesheet" href="/learn/learn.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "AC/DC governs the code agents write. Runtime enforcement governs what agents do.",
+  "description": "Sonar's Agent Centric Development Cycle (AC/DC) framework — Guide, Generate, Verify, Solve — is a code-quality lifecycle. Its Verify stage operates on generated code. Many of the highest-blast-radius agent failures (destructive shell commands, unauthorized MCP calls, secret exfiltration) never become code that Verify can inspect. They happen between Generate and the next Guide as runtime actions. This article maps each AC/DC stage to the runtime-enforcement layer that closes the pre-execution gap.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-05-27",
+  "dateModified": "2026-05-27",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/ac-dc-runtime-enforcement",
+  "citation": [
+    "https://www.sonarsource.com/blog/the-future-is-ac-dc-the-agent-centric-development-cycle",
+    "https://thenewstack.io/agentic-development-cycle-framework/"
+  ],
+  "about": [
+    { "@type": "Thing", "name": "AC/DC framework" },
+    { "@type": "Thing", "name": "Agent Centric Development Cycle" },
+    { "@type": "Thing", "name": "agentic SDLC governance" },
+    { "@type": "Thing", "name": "PreToolUse runtime enforcement" }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is the AC/DC framework?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "AC/DC stands for Agent Centric Development Cycle. It is a four-stage governance framework published by Sonar (the company behind SonarCloud and SonarQube) for teams running AI coding agents. The stages are Guide (hand the agent your standards, architecture, and constraints before it writes code), Generate (the LLM writes code), Verify (mandatory verification of the generated code, primarily through static analysis), and Solve (fix the issues Verify surfaces). Each stage feeds the next, and outputs from Verify and Solve loop back into Guide so future iterations improve. AC/DC is a code-quality lifecycle for agentic development."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does AC/DC cover runtime safety?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Not directly. AC/DC's Verify stage inspects generated code — typically after the agent has produced a diff or pull request. Many of the highest-blast-radius agent failures never become code that Verify can inspect. A destructive shell command like rm -rf, a DROP TABLE against the wrong database, a git push --force to main, a leaked environment variable through an MCP tool call, or an outbound LLM call to an unauthorized endpoint all happen between Generate and the next Guide loop as runtime actions. They produce no committed source code. Runtime enforcement at the PreToolUse hook is the layer that catches them before execution."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does runtime enforcement replace AC/DC's Verify stage?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. They cover different surfaces and compose cleanly. AC/DC's Verify stage catches problems in committed code. Runtime enforcement catches problems in proposed tool calls before the tool fires. A correct deployment of both means: PreToolUse hooks block destructive or unauthorized actions before execution, Verify catches quality and security issues in the code the agent did write, and Solve fixes what Verify surfaces. The two layers add up to coverage of both the action surface and the code surface."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Where does ThumbGate fit into AC/DC?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ThumbGate fits at two AC/DC stages. At Guide, ThumbGate's prevention-rules.md and context packs hand the agent local, learned constraints before it writes code — generated from prior failures captured by feedback hooks. At Verify, ThumbGate adds a runtime-action verification layer that operates on the tool call the agent is about to make, not on the code it already wrote. This closes the pre-execution gap between Generate and the next Guide iteration that pure-static Verify cannot reach."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is Sonar a ThumbGate competitor?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Sonar runs at the code-quality layer (static analysis of committed code, security hotspots, coverage, duplications). ThumbGate runs at the runtime-action layer (PreToolUse hooks in Claude Code, Cursor, Codex CLI, Gemini CLI, Amp, Cline, OpenCode, Claude Desktop). The two layers are complementary. Regulated teams already running Sonar can keep Sonar at Verify-of-code and add ThumbGate at Verify-of-action to close the runtime gap AC/DC does not explicitly name."
+      }
+    }
+  ]
+}
+</script>
+<style>
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  th, td { text-align: left; padding: 0.7rem 0.8rem; border-bottom: 1px solid var(--border); vertical-align: top; font-size: 0.92rem; }
+  th { color: var(--cyan); font-weight: 700; }
+  .layer strong { color: var(--green); }
+  .mini-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1.25rem 0; }
+  .mini-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+  .mini-card h3 { margin-top: 0; color: var(--text); }
+  .mini-card p { color: var(--muted); }
+  blockquote { border-left: 3px solid var(--cyan); margin: 1rem 0; padding: 0.5rem 1rem; color: var(--text); font-style: italic; background: rgba(34, 211, 238, 0.05); }
+  @media (max-width: 700px) { .mini-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / AC/DC Runtime Enforcement</div>
+  <h1>AC/DC governs the code agents write. Runtime enforcement governs what agents do.</h1>
+  <p style="color:var(--muted);">6 min read &middot; For engineering leaders adopting Sonar's Agent Centric Development Cycle</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> Sonar's AC/DC framework (Guide → Generate → Verify → Solve) is a code-quality lifecycle for agentic development. It has no Pre-Execution Gate stage. The highest-blast-radius agent failures — destructive shell, unauthorized MCP calls, force-push to main, secret exfiltration — never become committed code. They are runtime actions that happen between Generate and the next Guide loop. PreToolUse runtime enforcement is the layer that closes that gap. The two compose: AC/DC verifies the code, runtime enforcement verifies the action.</div>
+
+  <h2>What AC/DC is</h2>
+  <p>Sonar published <a href="https://www.sonarsource.com/blog/the-future-is-ac-dc-the-agent-centric-development-cycle" target="_blank" rel="noopener">the Agent Centric Development Cycle</a> (AC/DC) in early 2026 as a framework for teams shipping AI coding agents at scale. <a href="https://thenewstack.io/agentic-development-cycle-framework/" target="_blank" rel="noopener">The New Stack covered it as the governance framework</a> teams should reach for. Four stages, each feeding the next, with outputs from Verify and Solve looping back into Guide:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Stage</th>
+        <th>What happens</th>
+        <th>What it inspects</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="layer">
+        <td><strong>Guide</strong></td>
+        <td>Hand the agent your standards, architecture, and constraints before it writes a line of code.</td>
+        <td>Prompts, context packs, conventions.</td>
+      </tr>
+      <tr class="layer">
+        <td><strong>Generate</strong></td>
+        <td>The LLM produces the code it believes will achieve the desired outcome.</td>
+        <td>Nothing yet &mdash; pure generation.</td>
+      </tr>
+      <tr class="layer">
+        <td><strong>Verify</strong></td>
+        <td>Mandatory verification of the generated code &mdash; static analysis, security hotspots, coverage, duplication.</td>
+        <td>Committed source code.</td>
+      </tr>
+      <tr class="layer">
+        <td><strong>Solve</strong></td>
+        <td>Fix the issues Verify surfaces, so the next iteration is cleaner.</td>
+        <td>Issues, lessons.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <blockquote>"In an agentic development model, the primary challenge is no longer writing code; it is creating a system that makes generated code trustworthy." — Sonar, on AC/DC</blockquote>
+
+  <p>That's a correct framing for the code-quality slice of agentic governance. It is also the slice Sonar happens to own. The framework is honest about that — it is explicitly a code-trust framework, not an action-trust framework.</p>
+
+  <h2>The structural gap: no Pre-Execution Gate</h2>
+  <p>Look at the four stages again. Verify inspects code the agent already wrote. Solve fixes that code. Guide informs the next generation. Nowhere in the loop is there a stage that intercepts an action the agent is about to take.</p>
+
+  <p>That matters because the failures that wake operators at 2 a.m. are rarely "the committed code had a bug Verify missed." They are:</p>
+
+  <ul>
+    <li>An agent ran <code>rm -rf node_modules ../</code> with a path that traversed out of the workspace.</li>
+    <li>An agent ran <code>DROP TABLE users</code> against the staging connection because the staging connection happened to point at prod.</li>
+    <li>An agent ran <code>git push --force</code> to <code>main</code> to "clean up history" and erased two days of work.</li>
+    <li>An MCP tool was given an outbound URL the agent improvised &mdash; and the URL was a credential-stealing endpoint hidden in a doc the agent ingested.</li>
+    <li>An agent committed <code>.env</code> with live keys, pushed, and the leak detector caught it ninety seconds later.</li>
+  </ul>
+
+  <p>None of those produce committed source code that Verify can read. They are runtime actions that happen <em>between</em> Generate and the next Guide loop. By the time AC/DC's Verify stage runs, the damage is done.</p>
+
+  <div class="callout">
+    <strong>The gap in plain terms:</strong> AC/DC governs what the agent <strong>writes</strong>. The unsolved layer is what the agent <strong>does</strong> &mdash; tool calls, shell commands, file writes, MCP invocations, outbound network calls &mdash; before any of those actions become text that a static analyzer can see.
+  </div>
+
+  <h2>Where runtime enforcement plugs into AC/DC</h2>
+  <p>ThumbGate operates at the PreToolUse boundary inside the agent runtime &mdash; Claude Code, Cursor, OpenAI Codex CLI, Google Gemini CLI, Sourcegraph Amp, Cline, OpenCode, Claude Desktop. When the agent is about to execute a tool call, ThumbGate inspects the proposed call and returns allow, warn, block, or route-to-human. The boundary is the runtime, not the file system.</p>
+
+  <p>Mapped onto AC/DC, that lands in two stages:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>AC/DC stage</th>
+        <th>What runtime enforcement adds</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="layer">
+        <td><strong>Guide</strong></td>
+        <td>Local prevention rules promoted from prior failures (auto-generated from feedback hooks) become part of the context handed to the agent. The agent doesn't just see "your team's standards" &mdash; it sees "your team's standards plus a list of specific tool-call patterns that have caused incidents here."</td>
+      </tr>
+      <tr class="layer">
+        <td><strong>Verify (runtime)</strong></td>
+        <td>A second Verify pass runs at PreToolUse: before the agent's proposed tool call executes, ThumbGate checks it against the local lesson DB, allowlists, and policy bundles. Allow, warn, block, or route. Evidence is logged structurally so reviewers can audit decisions later.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="mini-grid">
+    <div class="mini-card">
+      <h3>Verify of code</h3>
+      <p>Static analysis on committed source code. Catches quality, security, and duplication issues after the diff exists. This is what Sonar does well, and what AC/DC's Verify stage maps to.</p>
+    </div>
+    <div class="mini-card">
+      <h3>Verify of action</h3>
+      <p>Runtime inspection of the proposed tool call before it fires. Catches destructive shell, unauthorized MCP, secret exfiltration, force-push, and out-of-scope file writes &mdash; before they become incidents.</p>
+    </div>
+  </div>
+
+  <h2>The two-layer deployment for an AC/DC team</h2>
+  <p>If your team already runs Sonar (or any static-analysis Verify stage), the integration story is short and additive:</p>
+
+  <ol>
+    <li><strong>Keep AC/DC's Verify on code.</strong> Sonar, SonarQube, or your existing static-analysis pipeline continues to inspect the source the agent produces. Nothing changes there.</li>
+    <li><strong>Add a Verify-of-action layer at the PreToolUse boundary.</strong> Install ThumbGate in the agent runtimes your developers actually use. The runtime now inspects every proposed tool call against your local rules and the prevention-rules.md generated from prior failures.</li>
+    <li><strong>Wire the feedback loop back into Guide.</strong> Every blocked action becomes a lesson. Lessons promote to prevention rules. Prevention rules become part of the context the next Guide iteration hands to the agent. AC/DC's loop closes one stage earlier.</li>
+  </ol>
+
+  <div class="callout callout-green">
+    <strong>Sales line:</strong> If your team adopted AC/DC and stopped at Verify-of-code, you are governing what the agent wrote and not what the agent did. Add the Pre-Execution Gate before the next blast-radius incident teaches you which half of the loop was missing.
+  </div>
+
+  <h2>What this looks like in a buyer demo</h2>
+  <ol>
+    <li>One AC/DC iteration where Sonar's Verify catches a real code-quality issue in generated code. Good. That's what AC/DC promises.</li>
+    <li>One proposed tool call (<code>git push --force origin main</code>) blocked at PreToolUse before execution. Evidence logged.</li>
+    <li>The blocked call promoted to a prevention rule. The next agent run sees that rule in its Guide context.</li>
+    <li>An export a reviewer or risk officer can inspect: allowed calls, blocked calls, overrides, rule-promotion history.</li>
+  </ol>
+
+  <h2>FAQ</h2>
+  <details class="faq-item" open>
+    <summary>Why doesn't AC/DC name a Pre-Execution Gate stage?</summary>
+    <p>AC/DC is framed by Sonar, whose product surface ends at static analysis of code. Naming a runtime-action stage that Sonar doesn't ship would be marketing against itself. The framework is internally consistent for the slice it owns; it just doesn't claim coverage of runtime actions. That's the gap a runtime-enforcement layer fills.</p>
+  </details>
+  <details class="faq-item">
+    <summary>Can I run ThumbGate without Sonar, or vice versa?</summary>
+    <p>Yes to both. ThumbGate adds runtime-action Verify regardless of what static-analysis tool runs alongside it. AC/DC's Verify stage can be filled by any static-analysis pipeline. They are independent layers.</p>
+  </details>
+  <details class="faq-item">
+    <summary>Where do prevention rules come from?</summary>
+    <p>From your team's own incidents and feedback. ThumbGate captures thumbs-down events via feedback hooks, promotes recurring failures to the local lesson DB, and synthesizes prevention rules that survive model upgrades and prompt resets. The rules are local to your team &mdash; they encode your specific failure patterns, not generic SOC2 boilerplate.</p>
+  </details>
+  <details class="faq-item">
+    <summary>Does ThumbGate work with Claude Code only?</summary>
+    <p>No. The PreToolUse boundary exists in Claude Code, Cursor, OpenAI Codex CLI, Google Gemini CLI, Sourcegraph Amp, Cline, OpenCode, and Claude Desktop. ThumbGate's adapter matrix covers all of them. One rule set, every agent runtime.</p>
+  </details>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Close the pre-execution gap in AC/DC</h2>
+    <p>Install runtime enforcement at the PreToolUse boundary across every agent your team uses. Local rules, hosted evidence, no static-analyzer in the path.</p>
+    <div class="cta-install">$ npx thumbgate init</div>
+  </div>
+
+  <div class="related">
+    <h3>Related articles</h3>
+    <a href="/learn/background-agent-control-layer">Background Agent Control Layer &rarr;</a>
+    <a href="/learn/mcp-pre-action-checks-explained">MCP Pre-Action Checks Explained &rarr;</a>
+    <a href="/learn/regulated-agent-execution-boundary">Regulated Agent Execution Boundary &rarr;</a>
+    <a href="/compare/anthropic-containment">ThumbGate vs Anthropic Containment &rarr;</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span style="color:var(--muted)">Try it now:</span>
+  <code>npx thumbgate init</code>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+</div>
+</body>
+</html>

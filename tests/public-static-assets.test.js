@@ -504,3 +504,37 @@ test('comparison pages link back to oak-and-sparrow-gatekeeper for discovery', a
   assert.match(cch, /href="\/compare\/oak-and-sparrow-gatekeeper"/);
   assert.match(ant, /href="\/compare\/oak-and-sparrow-gatekeeper"/);
 });
+
+test('GET /learn/ac-dc-runtime-enforcement serves the hand-written learn page', async () => {
+  const res = await fetch(`${origin}/learn/ac-dc-runtime-enforcement`);
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  const html = await res.text();
+  // Title + positioning
+  assert.match(html, /AC\/DC governs the code agents write/);
+  assert.match(html, /Runtime enforcement governs what agents do/);
+  // FAQ + TechArticle schema for LLM citation
+  assert.match(html, /"@type":\s*"FAQPage"/);
+  assert.match(html, /"@type":\s*"TechArticle"/);
+  // Honest framing — must cite Sonar's article + The New Stack
+  assert.match(html, /sonarsource\.com\/blog\/the-future-is-ac-dc/);
+  assert.match(html, /thenewstack\.io\/agentic-development-cycle-framework/);
+  // The structural-gap claim that anchors the page
+  assert.match(html, /Pre-Execution Gate/);
+  assert.match(html, /PreToolUse/);
+});
+
+test('GET /sitemap.xml includes /learn/ac-dc-runtime-enforcement at priority 0.85', async () => {
+  const res = await fetch(`${origin}/sitemap.xml`);
+  assert.equal(res.status, 200);
+  const xml = await res.text();
+  const entry = xml.match(/<url>\s*<loc>[^<]*\/learn\/ac-dc-runtime-enforcement<\/loc>[\s\S]*?<\/url>/);
+  assert.ok(entry, 'ac-dc-runtime-enforcement <url> block must exist');
+  assert.match(entry[0], /<priority>0\.85<\/priority>/);
+});
+
+test('background-agent-control-layer links to ac-dc-runtime-enforcement for discovery', async () => {
+  // Discovery surface: the most-trafficked /learn page should reach the newest one.
+  const html = await fetch(`${origin}/learn/background-agent-control-layer`).then((r) => r.text());
+  assert.match(html, /href="\/learn\/ac-dc-runtime-enforcement"/);
+});
