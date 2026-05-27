@@ -5689,7 +5689,7 @@ async function addContext(){
         });
       } catch (err) {
         result.journeySummary = {
-          error: err && err.message ? err.message : 'journey_summary_unavailable',
+          error: err?.message || 'journey_summary_unavailable',
         };
       }
 
