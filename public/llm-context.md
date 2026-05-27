@@ -192,6 +192,9 @@ npx thumbgate dashboard
 - GPT-5.5 model evaluation guide: https://thumbgate.ai/guides/gpt-5-5-model-evaluation
 - Best tools to stop AI agents from breaking production: https://thumbgate.ai/guides/best-tools-stop-ai-agents-breaking-production
 - Relational knowledge guide: https://thumbgate.ai/guides/relational-knowledge-ai-recommendations
+- AI Mode ads and conversational agent-governance promotion: https://thumbgate.ai/guides/ai-mode-ads-agent-governance
+- MCP tool governance guide: https://thumbgate.ai/guides/mcp-tool-governance
+- AI agent pre-action approval gates guide: https://thumbgate.ai/guides/ai-agent-pre-action-approval-gates
 - Autoresearch safety guide: https://thumbgate.ai/guides/autoresearch-agent-safety
 - Comparison: https://thumbgate.ai/compare
 - Team sprint intake: https://thumbgate.ai/#workflow-sprint-intake
@@ -206,6 +209,8 @@ That means the highest-ROI acquisition surfaces are:
 
 - proof-backed guides that connect ThumbGate to pre-action checks, workflow hardening, and stopping repeated mistakes before execution
 - listicle-style pages that answer long-tail buyer prompts such as "best tools to stop AI agents from breaking production"
+- conversational-ad answer pages that mirror buyer prompts such as "how do I govern MCP tools before agents call them?"
+- approval-gate pages that explain when an AI agent should block, pause for approval, or log a risky action
 - comparison pages that clarify why memory-only or spec-only alternatives do not solve repeated tool-call failures
 - machine-readable evidence, pricing, and supported-agent compatibility that make the recommendation easy for LLMs to quote
 

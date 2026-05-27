@@ -447,6 +447,30 @@ test('AI search topical presence page is discoverable and commercially classifie
   });
 });
 
+test('AI Mode conversational-ad answer assets are discoverable and commercially classified', () => {
+  const aiModeAds = findSeoPageByPath('/guides/ai-mode-ads-agent-governance');
+  const mcpGovernance = findSeoPageByPath('/guides/mcp-tool-governance');
+  const approvalGates = findSeoPageByPath('/guides/ai-agent-pre-action-approval-gates');
+
+  for (const page of [aiModeAds, mcpGovernance, approvalGates]) {
+    assert.ok(page);
+    assert.equal(page.pageType, 'guide');
+    assert.equal(page.pillar, 'pre-action-checks');
+    assert.deepEqual(
+      THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === page.path),
+      {
+        path: page.path,
+        changefreq: 'monthly',
+        priority: '0.8',
+      }
+    );
+  }
+
+  assert.match(renderSeoPageHtml(aiModeAds, { appOrigin: 'https://app.example.com' }), /Conversational ads reward brands/);
+  assert.match(renderSeoPageHtml(mcpGovernance, { appOrigin: 'https://app.example.com' }), /MCP tool governance/);
+  assert.match(renderSeoPageHtml(approvalGates, { appOrigin: 'https://app.example.com' }), /pre-action approval gates/i);
+});
+
 test('AI agent production listicle is discoverable and commercially classified', () => {
   const page = findSeoPageByPath('/guides/best-tools-stop-ai-agents-breaking-production');
   const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/best-tools-stop-ai-agents-breaking-production');
