@@ -662,3 +662,14 @@ test('comparison pages link back to anthropic-claude-for-legal for discovery', a
   assert.match(gk, /href="\/compare\/anthropic-claude-for-legal"/);
   assert.match(arc, /href="\/compare\/anthropic-claude-for-legal"/);
 });
+
+test('/ai-malpractice-prevention surfaces feedback-loop framing + jump-link to live demos in the hero', async () => {
+  const res = await fetch(`${origin}/ai-malpractice-prevention`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  // The feedback-loop callout (CEO scope correction surfaced in the hero)
+  assert.match(html, /The gate learns from your attorneys/);
+  assert.match(html, /href="\/learn\/feedback-loop-vs-decision-layer"/);
+  // The jump-link to the live gate demos (so Igor doesn't have to scroll through 9 sections mid-demo)
+  assert.match(html, /href="#live-gate-demos"[^>]*>Try the live gates/);
+});
