@@ -1453,18 +1453,27 @@ test('/llms.txt serves the llmstxt.org manifest for LLM crawlers', async () => {
 
 test('/llms.txt returns 404 when the manifest file is missing', async () => {
   // Covers the catch branch of the /llms.txt handler (SonarCloud
-  // new_coverage gate). Uses the same in-memory swap pattern as the
-  // broker-audit missing-asset test so a SIGTERM cannot leave an orphan.
-  const assetPath = path.resolve(__dirname, '..', 'public', 'llms.txt');
-  const savedContent = fs.readFileSync(assetPath);
-  fs.unlinkSync(assetPath);
+  // new_coverage gate). Truly SIGTERM-safe — we monkey-patch
+  // fs.readFileSync to throw ENOENT only for llms.txt paths; the real
+  // file on disk is never touched. Restoring the patch in finally is
+  // best-effort but a process death leaves only an in-memory module
+  // state that next test run rebuilds from scratch.
+  const originalReadFileSync = fs.readFileSync;
+  fs.readFileSync = function patched(p, ...args) {
+    if (typeof p === 'string' && p.endsWith('/public/llms.txt')) {
+      const err = new Error(`ENOENT: no such file or directory, open '${p}'`);
+      err.code = 'ENOENT';
+      throw err;
+    }
+    return originalReadFileSync.call(this, p, ...args);
+  };
   try {
     const res = await fetch(apiUrl('/llms.txt'));
     assert.equal(res.status, 404);
     const body = await res.json();
     assert.equal(body.error, 'Not found');
   } finally {
-    fs.writeFileSync(assetPath, savedContent);
+    fs.readFileSync = originalReadFileSync;
   }
 });
 
@@ -4045,22 +4054,27 @@ test('/broker-audit returns 500 problem-json when static asset is missing', asyn
   // Exercises the catch branch of the /broker-audit handler so the read
   // failure path is covered (Sonar new_coverage gate).
   //
-  // Uses in-memory swap (read -> unlink -> restore from buffer) instead of
-  // rename-and-restore. The rename approach left orphaned .swap-<pid> files
-  // when the test process was SIGTERM'd, which then made every subsequent
-  // CI run on every PR fail with ENOENT until someone manually restored the
-  // asset. In-memory swap survives a crash: git already tracks the file, so
-  // `git restore assets/static/broker-audit.html` recovers immediately.
-  const assetPath = path.resolve(__dirname, '..', 'assets', 'static', 'broker-audit.html');
-  const savedContent = fs.readFileSync(assetPath);
-  fs.unlinkSync(assetPath);
+  // Truly SIGTERM-safe: we monkey-patch fs.readFileSync to throw ENOENT
+  // only for the broker-audit asset path. The real file on disk is never
+  // touched, so a crashed test run cannot leave the asset in a deleted
+  // state. Previous rename-and-restore approach orphaned .swap-<pid> files
+  // when SIGTERM'd, breaking every subsequent CI run on every PR.
+  const originalReadFileSync = fs.readFileSync;
+  fs.readFileSync = function patched(p, ...args) {
+    if (typeof p === 'string' && p.endsWith('/assets/static/broker-audit.html')) {
+      const err = new Error(`ENOENT: no such file or directory, open '${p}'`);
+      err.code = 'ENOENT';
+      throw err;
+    }
+    return originalReadFileSync.call(this, p, ...args);
+  };
   try {
     const res = await fetch(apiUrl('/broker-audit'));
     assert.equal(res.status, 500);
     const body = await res.json();
     assert.equal(body.error, 'broker-audit page unavailable');
   } finally {
-    fs.writeFileSync(assetPath, savedContent);
+    fs.readFileSync = originalReadFileSync;
   }
 });
 
