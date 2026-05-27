@@ -4178,7 +4178,8 @@ function createApiServer() {
         }, {
           headOnly: isHeadRequest,
         });
-      } catch (_err) {
+      } catch (err) {
+        console.error('llms.txt read failed:', err?.message);
         sendJson(res, 404, { error: 'Not found' });
       }
       return;
