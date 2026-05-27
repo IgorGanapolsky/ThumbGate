@@ -25,6 +25,8 @@ const HARNESSES = Object.freeze({
   deploy: path.join(HARNESS_DIR, 'deploy.json'),
   'code-edit': path.join(HARNESS_DIR, 'code-edit.json'),
   'db-write': path.join(HARNESS_DIR, 'db-write.json'),
+  terraform: path.join(HARNESS_DIR, 'terraform.json'),
+  'token-usage': path.join(HARNESS_DIR, 'token-usage.json'),
   routine: path.join(HARNESS_DIR, 'routine.json'),
 });
 
@@ -49,6 +51,22 @@ const DB_WRITE_PATTERNS = [
   /\brm\s+.*\.sqlite\b/i,
   /\blancedb\b.*(?:create|delete|drop|truncate)/i,
   /\.db\.exec\(|\.db\.prepare\(/i,
+];
+
+const TERRAFORM_PATTERNS = [
+  /\bterraform\s+(?:plan|show|validate|apply|destroy|import|state|workspace)\b/i,
+  /\bterraform\s+show\s+-json\b/i,
+  /\btfplan(?:\.json)?\b/i,
+  /\b(?:tofu|opentofu)\s+(?:plan|show|validate|apply|destroy|import|state|workspace)\b/i,
+];
+
+const TOKEN_USAGE_PATTERNS = [
+  /(?:^|\s)\/usage\b/i,
+  /\bclaude(?:\s+code)?\s+usage\b/i,
+  /\btoken(?:s)?\b.*\b(skill|agent|mcp|plugin|usage|budget|spend|cost)\b/i,
+  /\b(?:skill|agent|mcp|plugin)s?\b.*\btoken(?:s)?\b/i,
+  /\bmcp\s+server\b.*\b(context|token|usage|budget|flush|disable)\b/i,
+  /\btokenEstimate\b/i,
 ];
 
 const ROUTINE_PATTERNS = [
@@ -82,6 +100,13 @@ function selectHarness(toolName, toolInput) {
     if (path.isAbsolute(override)) return override;
   }
 
+  const fullToolText = typeof toolInput === 'object' && toolInput !== null
+    ? JSON.stringify(toolInput)
+    : String(toolInput || '');
+  if (fullToolText && TOKEN_USAGE_PATTERNS.some((p) => p.test(fullToolText))) {
+    return HARNESSES['token-usage'];
+  }
+
   // 2. Edit/Write tools always get code-edit harness
   if (CODE_EDIT_TOOL_NAMES.has(toolName)) {
     return HARNESSES['code-edit'];
@@ -90,6 +115,12 @@ function selectHarness(toolName, toolInput) {
   // 3. Inspect command text for Bash tool
   const commandText = extractCommandText(toolInput);
   if (commandText) {
+    if (TERRAFORM_PATTERNS.some((p) => p.test(commandText))) {
+      return HARNESSES.terraform;
+    }
+    if (TOKEN_USAGE_PATTERNS.some((p) => p.test(commandText))) {
+      return HARNESSES['token-usage'];
+    }
     if (DB_WRITE_PATTERNS.some((p) => p.test(commandText))) {
       return HARNESSES['db-write'];
     }
@@ -476,5 +507,6 @@ module.exports = {
   HARNESSES,
   DEPLOY_PATTERNS,
   DB_WRITE_PATTERNS,
+  TOKEN_USAGE_PATTERNS,
   CODE_EDIT_TOOL_NAMES,
 };

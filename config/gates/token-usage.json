@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "harness": "token-usage",
+  "description": "Specialized gates for Claude Code /usage, MCP token hotspots, context bloat, and agent runtime budget governance.",
+  "gates": [
+    {
+      "id": "usage-breakdown-capture",
+      "layer": "Observability",
+      "pattern": "(?:^|\\s)/usage\\b|\\bclaude(?:\\s+code)?\\s+usage\\b",
+      "toolNames": ["Bash"],
+      "action": "log",
+      "severity": "low",
+      "message": "Claude Code usage breakdown requested. Capture runtime_component labels for Skills, Agents, MCPs, Plugins, and subagents so token hotspots can become prevention rules."
+    },
+    {
+      "id": "mcp-context-bloat-budget",
+      "layer": "Cost",
+      "pattern": "\\b[Mm][Cc][Pp]\\s+server\\b.*\\b(context|token|usage|budget|flush|disable)\\b|\\b[Mm][Cc][Pp]\\s+tool\\s+results\\s+stay\\s+in\\s+context\\b",
+      "toolNames": ["Bash", "Edit", "Write", "MultiEdit"],
+      "action": "warn",
+      "severity": "medium",
+      "message": "MCP context-bloat risk detected. Add a token budget, flush policy, output cap, and disable/allowlist rule before this server dominates agent context."
+    },
+    {
+      "id": "high-token-tool-chain-approval",
+      "layer": "Cost",
+      "pattern": "\\b(?:skill|agent|mcp|plugin)s?\\b.*\\b(?:token|cost|spend|budget)s?\\b.*\\b(?:high|expensive|runaway|dominates|over|exceeds|exceeded)\\b|\\btoken(?:s)?\\b.*\\b(?:high|expensive|runaway|dominates|over|exceeds|exceeded)\\b.*\\b(?:skill|agent|mcp|plugin)s?\\b",
+      "toolNames": ["Bash", "Edit", "Write", "MultiEdit"],
+      "action": "approve",
+      "severity": "high",
+      "message": "High-token runtime component detected. Require owner approval with usage evidence, cheaper path considered, budget_decision, and rollback/disable plan before continuing."
+    },
+    {
+      "id": "repeated-token-waste-loop",
+      "layer": "Learning",
+      "pattern": "\\b(repeated|repeat|again|same)\\b.*\\b(token|context|tool\\s+call|mcp|subagent|skill)\\b.*\\b(waste|loop|failed|failure|wrong|retry)\\b",
+      "toolNames": ["Bash", "Edit", "Write", "MultiEdit"],
+      "action": "warn",
+      "severity": "high",
+      "message": "Repeated token-waste loop detected. Convert the thumbs-down outcome into a durable lesson or prevention rule before spending more context on the same path."
+    }
+  ]
+}

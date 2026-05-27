@@ -69,6 +69,15 @@ test('renderPlanMarkdown names all five GSD stages and page briefs', () => {
   assert.match(markdown, /Claude Code Skills Guardrails \| Turn Skillbooks Into Enforced Workflows/);
   assert.match(markdown, /Long-Running Agent Context Management \| Director Journals and Critic Reviews/);
   assert.match(markdown, /Reasoning Compression Guardrails \| Step-Level Verifier Checks Before Token Savings/);
+  assert.match(markdown, /Claude Code Ultrawork Safety \| Guardrails for Agents That Keep Running/);
+  assert.match(markdown, /Local Desktop Agent Governance \| Guardrails for OpenHuman-Style Memory/);
+  assert.match(markdown, /Cloudflare Agent Platform Governance \| Guardrails for Browser, Sandbox, Memory, and Commerce/);
+  assert.match(markdown, /Direct Corpus Interaction Agent Governance \| Guardrails for Terminal-Native Retrieval/);
+  assert.match(markdown, /Terraform MCP Plan Review Governance \| Shift-Left IaC Guardrails/);
+  assert.match(markdown, /Delta-Mem Agent Memory Governance \| Policy and Audit Layer for Working Memory/);
+  assert.match(markdown, /Claude Code Usage Token Governance \| Turn \/usage Visibility into Gates/);
+  assert.match(markdown, /Agentic Agile Development Governance \| Acceptance Evidence for AI Agents/);
+  assert.match(markdown, /AI Fluency Marketing Agent Governance \| Brand-Safe Feedback Memory/);
   assert.match(markdown, /Authority Map/);
   assert.match(markdown, /Semantic Mesh/);
   assert.match(markdown, /Background Agent Governance \| Risk-Tiered Review for Agent PRs/);
@@ -76,6 +85,8 @@ test('renderPlanMarkdown names all five GSD stages and page briefs', () => {
   assert.match(markdown, /AI Search Topical Presence \| Become the Obvious Recommendation/);
   assert.match(markdown, /Best Tools to Stop AI Agents From Breaking Production \| ThumbGate Listicle/);
   assert.match(markdown, /Relational Knowledge in AI Recommendations \| Why Brands Get Picked/);
+  assert.match(markdown, /Langfuse \+ ThumbGate \| Observability Plus Pre-Action Enforcement/);
+  assert.match(markdown, /Low-Latency AI Governance \| Keep Pre-Action Gates in the Production Path/);
   assert.match(markdown, /How to Stop AI Coding Agents From Repeating Mistakes \| ThumbGate/);
   assert.match(markdown, /Cursor Agent Guardrails \| Stop Repeated Mistakes with ThumbGate/);
   assert.match(markdown, /Roo Code Alternative: Migrating to Cline with Portable Lesson Memory/);
@@ -122,6 +133,215 @@ test('Autoresearch safety page is discoverable and commercially classified', () 
   assert.equal(page.pillar, 'pre-action-checks');
   assert.deepEqual(sitemapEntry, {
     path: '/guides/autoresearch-agent-safety',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
+test('Claude Code Ultrawork safety page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/claude-code-ultrawork-safety');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/claude-code-ultrawork-safety');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'claude code ultrawork safety');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-checks');
+  assert.match(html, /Claude Code Ultrawork makes agents faster/);
+  assert.match(html, /worktree isolation/);
+  assert.match(html, /Cap background-agent runs by time, tokens, changed files/);
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/claude-code-ultrawork-safety',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
+test('local desktop agent governance page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/local-desktop-agent-governance');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/local-desktop-agent-governance');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'local desktop agent governance');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-checks');
+  assert.match(html, /Local desktop agents need memory and impulse control/);
+  assert.match(html, /OpenHuman-style systems focus on local memory/);
+  assert.match(html, /lessons, successes, mistakes, and rules/);
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/local-desktop-agent-governance',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
+test('Cloudflare agent platform governance page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/cloudflare-agent-platform-governance');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/cloudflare-agent-platform-governance');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'cloudflare agent platform governance');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-checks');
+  assert.match(html, /Cloudflare gives agents the stack/);
+  assert.match(html, /Browser Run, Sandboxes, Dynamic Workers, Workflows, Agent Memory, and agent commerce/);
+  assert.match(html, /users should vote on answers, plans, tool choices, and outcomes/i);
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/cloudflare-agent-platform-governance',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
+test('direct corpus interaction agent governance page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/direct-corpus-interaction-agent-governance');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/direct-corpus-interaction-agent-governance');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'direct corpus interaction agent governance');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-checks');
+  assert.match(html, /Terminal-native retrieval needs terminal-native guardrails/);
+  assert.match(html, /find, glob, grep, rg, sed, head, tail/);
+  assert.match(html, /Users can vote on answers, searches, evidence trails, and outcomes/);
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/direct-corpus-interaction-agent-governance',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
+test('Terraform MCP plan review governance page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/terraform-mcp-plan-review-governance');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/terraform-mcp-plan-review-governance');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'terraform mcp plan review governance');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-checks');
+  assert.match(html, /Terraform MCP gives agents context/);
+  assert.match(html, /terraform show -json/);
+  assert.match(html, /config\/gates\/terraform\.json/);
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/terraform-mcp-plan-review-governance',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
+test('Delta-Mem agent memory governance page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/delta-mem-agent-memory-governance');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/delta-mem-agent-memory-governance');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'delta mem agent memory governance');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-checks');
+  assert.match(html, /Working memory helps agents remember/);
+  assert.match(html, /stored, retrieved, forgotten, exposed, or enforced/);
+  assert.match(html, /memory-source labels/);
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/delta-mem-agent-memory-governance',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
+test('Claude Code usage token governance page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/claude-code-usage-token-governance');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/claude-code-usage-token-governance');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'claude code usage token governance');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'cost-control');
+  assert.match(html, /Usage breakdowns show where tokens went/);
+  assert.match(html, /Skills, Agents, MCPs, and Plugins/);
+  assert.match(html, /runtime_component/);
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/claude-code-usage-token-governance',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
+test('Agentic Agile development governance page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/agentic-agile-development-governance');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/agentic-agile-development-governance');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'agentic agile development governance');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-checks');
+  assert.match(html, /acceptance evidence and gates/);
+  assert.match(html, /Definition of done/);
+  assert.match(html, /retrospective lessons/);
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/agentic-agile-development-governance',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
+test('AI fluency marketing agent governance page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/ai-fluency-marketing-agent-governance');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/ai-fluency-marketing-agent-governance');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'ai fluency marketing agent governance');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'approval-gates');
+  assert.match(html, /brand-safe agent memory/);
+  assert.match(html, /brand lessons/);
+  assert.match(html, /vote, remember, approve, prove/);
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/ai-fluency-marketing-agent-governance',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
+test('Langfuse observability enforcement page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/langfuse-thumbgate-observability-enforcement');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/langfuse-thumbgate-observability-enforcement');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'langfuse thumbgate observability enforcement');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-checks');
+  assert.match(html, /Langfuse observes agent behavior/);
+  assert.match(html, /ThumbGate gate decisions can become Langfuse scores/);
+  assert.match(html, /Gate block rate by prompt version/);
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/langfuse-thumbgate-observability-enforcement',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
+test('low-latency AI governance page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/low-latency-ai-governance');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/low-latency-ai-governance');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'low latency ai governance');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-checks');
+  assert.match(html, /AI governance only works when it is fast enough/);
+  assert.match(html, /Track p50 and p99 gate latency/);
+  assert.match(html, /risk-tiered decisions/);
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/low-latency-ai-governance',
     changefreq: 'monthly',
     priority: '0.8',
   });

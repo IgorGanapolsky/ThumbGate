@@ -22,6 +22,15 @@ const GUIDE_FILES = [
   'guides/long-running-agent-context-management.html',
   'guides/reasoning-compression-guardrails.html',
   'guides/deepseek-v4-runtime-guardrails.html',
+  'guides/claude-code-ultrawork-safety.html',
+  'guides/local-desktop-agent-governance.html',
+  'guides/cloudflare-agent-platform-governance.html',
+  'guides/direct-corpus-interaction-agent-governance.html',
+  'guides/terraform-mcp-plan-review-governance.html',
+  'guides/delta-mem-agent-memory-governance.html',
+  'guides/claude-code-usage-token-governance.html',
+  'guides/agentic-agile-development-governance.html',
+  'guides/ai-fluency-marketing-agent-governance.html',
   'guides/background-agent-governance.html',
   'guides/ai-agent-workflow-migration-checklist.html',
   'guides/ai-agent-governance-sprint.html',
@@ -35,6 +44,8 @@ const GUIDE_FILES = [
   'guides/ai-mode-ads-agent-governance.html',
   'guides/mcp-tool-governance.html',
   'guides/ai-agent-pre-action-approval-gates.html',
+  'guides/langfuse-thumbgate-observability-enforcement.html',
+  'guides/low-latency-ai-governance.html',
   'guides/claude-code-feedback.html',
   'guides/stop-repeated-ai-agent-mistakes.html',
   'guides/claude-code-prevent-repeated-mistakes.html',
@@ -151,6 +162,137 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('Workflow Hardening Sprint'));
   });
 
+  it('Claude Code Ultrawork safety guide routes long-running agents into governance checks', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/claude-code-ultrawork-safety.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('Claude Code Ultrawork makes agents faster. ThumbGate makes them governable.'));
+    assert.ok(html.includes('Ultrawork, Ralph loops, background sessions, batch agents, and parallel worktrees'));
+    assert.ok(html.includes('Pre-dispatch scope'));
+    assert.ok(html.includes('Cap background-agent runs by time, tokens, changed files'));
+    assert.ok(html.includes('Workflow Hardening Sprint'));
+  });
+
+  it('local desktop agent governance guide pairs local memory with enforcement', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/local-desktop-agent-governance.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('Local desktop agents need memory and impulse control.'));
+    assert.ok(html.includes('Obsidian-style vaults'));
+    assert.ok(html.includes('users vote on answers and actions'));
+    assert.ok(html.includes('successes as well as mistakes'));
+    assert.ok(html.includes('Model routing'));
+    assert.ok(html.includes('pre-action enforcement'));
+    assert.ok(html.includes('Go Pro'));
+  });
+
+  it('Cloudflare agent platform governance guide routes platform-stack demand into gates', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/cloudflare-agent-platform-governance.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('Cloudflare gives agents the stack. ThumbGate gives them judgment.'));
+    assert.ok(html.includes('Browser Run'));
+    assert.ok(html.includes('Sandboxes'));
+    assert.ok(html.includes('Agent Memory'));
+    assert.ok(html.includes('agent commerce'));
+    assert.ok(html.includes('Users should vote on answers, plans, tool choices, and outcomes'));
+    assert.ok(html.includes('pre-action governance'));
+    assert.ok(html.includes('Go Pro'));
+  });
+
+  it('direct corpus interaction guide routes terminal-retrieval demand into gates', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/direct-corpus-interaction-agent-governance.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('Terminal-native retrieval needs terminal-native guardrails.'));
+    assert.ok(html.includes('find, glob, grep, rg, sed, head, tail'));
+    assert.ok(html.includes('Search scope'));
+    assert.ok(html.includes('Secret exposure'));
+    assert.ok(html.includes('Users can vote on answers, searches, evidence trails, and outcomes'));
+    assert.ok(html.includes('pre-action gates'));
+    assert.ok(html.includes('Go Pro'));
+  });
+
+  it('Terraform MCP plan review guide routes IaC risk into gates', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/terraform-mcp-plan-review-governance.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('Terraform MCP gives agents context. ThumbGate decides if the plan is safe to run.'));
+    assert.ok(html.includes('terraform show -json'));
+    assert.ok(html.includes('wildcard IAM'));
+    assert.ok(html.includes('public ingress'));
+    assert.ok(html.includes('database replacement'));
+    assert.ok(html.includes('config/gates/terraform.json'));
+    assert.ok(html.includes('Go Pro'));
+  });
+
+  it('Delta-Mem agent memory governance guide routes working-memory demand into policy gates', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/delta-mem-agent-memory-governance.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('Working memory helps agents remember. ThumbGate decides what memory can do.'));
+    assert.ok(html.includes('stored, retrieved, forgotten, exposed, or enforced'));
+    assert.ok(html.includes('memory-source labels'));
+    assert.ok(html.includes('success reinforcement'));
+    assert.ok(html.includes('dashboard proof'));
+    assert.ok(html.includes('Go Pro'));
+  });
+
+  it('Claude Code usage token governance guide routes /usage visibility into prevention gates', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/claude-code-usage-token-governance.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('Usage breakdowns show where tokens went. ThumbGate prevents the waste from repeating.'));
+    assert.ok(html.includes('Skills, Agents, MCPs, and Plugins'));
+    assert.ok(html.includes('config/gates/token-usage.json'));
+    assert.ok(html.includes('runtime_component'));
+    assert.ok(html.includes('budget_decision'));
+    assert.ok(html.includes('repeated token waste'));
+    assert.ok(html.includes('Go Pro'));
+  });
+
+  it('Agentic Agile development governance guide routes process demand into acceptance gates', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/agentic-agile-development-governance.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('Agentic agile needs more than prompts. It needs acceptance evidence and gates.'));
+    assert.ok(html.includes('Definition of done'));
+    assert.ok(html.includes('Retrospective memory'));
+    assert.ok(html.includes('dashboard proof'));
+    assert.ok(html.includes('governed AI delivery workflow'));
+    assert.ok(html.includes('Go Pro'));
+  });
+
+  it('AI fluency marketing governance guide routes non-developer adoption into approval gates', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/ai-fluency-marketing-agent-governance.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('AI-fluent teams need brand-safe agent memory, not one-off prompts.'));
+    assert.ok(html.includes('brand lessons'));
+    assert.ok(html.includes('vote, remember, approve, prove'));
+    assert.ok(html.includes('legal claims review'));
+    assert.ok(html.includes('cross-tool governance'));
+    assert.ok(html.includes('Go Pro'));
+  });
+
   it('AI agent workflow migration checklist routes buyers into the paid diagnostic', () => {
     const html = fs.readFileSync(
       path.join(PUBLIC_DIR, 'guides/ai-agent-workflow-migration-checklist.html'),
@@ -191,6 +333,32 @@ describe('SEO guide and comparison pages', () => {
     ]);
     assert.ok(html.includes('$499'));
     assert.ok(html.includes('$1500'));
+  });
+
+  it('Langfuse enforcement guide explains observability plus gate-score export', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/langfuse-thumbgate-observability-enforcement.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('Langfuse observes agent behavior. ThumbGate gates the next action.'));
+    assert.ok(html.includes('Langfuse is observability, prompt management, scoring, and experiments'));
+    assert.ok(html.includes('Pre-action enforcement before tool execution'));
+    assert.ok(html.includes('Gate block rate by prompt version'));
+    assert.ok(html.includes('Go Pro'));
+  });
+
+  it('low-latency AI governance guide keeps pre-action gates in the production path', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/low-latency-ai-governance.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('AI governance only works when it is fast enough to stay in the path.'));
+    assert.ok(html.includes('Track p50 and p99 gate latency'));
+    assert.ok(html.includes('local-first pre-action checks'));
+    assert.ok(html.includes('risk-tiered decisions'));
+    assert.ok(html.includes('Go Pro'));
   });
 
   it('AI deployment readiness guide converts production rollout demand into paid sprint paths', () => {

@@ -43,6 +43,24 @@ ThumbGate is built on Node.js >=18.18.0 and runs locally on each developer's mac
 
 **Background Agent Governance**: `npx thumbgate background-governance` reports unattended agent runs, gate blocks, pass rate, failing agents, and run types. `npx thumbgate background-governance --check --agent-id=builder --branch=main --files-changed=25 --json` pre-checks a background-agent dispatch for high failure rate, protected branches, repeated gate blocks, and large blast radius before the PR queue reaches a human reviewer.
 
+**Claude Code Ultrawork Safety**: Ultrawork-style Claude Code workflows, Ralph loops, `/background`, `/batch`, subagents, and parallel worktrees increase throughput and blast radius at the same time. ThumbGate positions itself as the governance layer for these long-running loops: pre-dispatch scope checks, changed-file budgets, stop conditions, worktree isolation proof, evidence requirements, approval gates, and audit logs before risky tool calls execute.
+
+**Local Desktop Agent Governance**: OpenHuman/OpenClaw-style desktop agents normalize local memory, markdown or Obsidian-like knowledge trees, SQLite persistence, continuous context fetching, local inference, and model routing. ThumbGate is complementary: users can vote on answers, plans, tool choices, and outcomes so successes and mistakes become durable lessons, recall context, rule candidates, and enforcement signals. Memory gives the agent continuity; ThumbGate records what worked, what failed, and whether the next local file write, git command, account action, model route, or MCP tool call should be allowed, logged, paused for approval, or blocked.
+
+**Cloudflare Agent Platform Governance**: Cloudflare-style agent stacks combine lightweight compute, Linux sandboxes, durable workflows, managed memory, browser automation, WebMCP, and agent commerce. ThumbGate is the complementary decision boundary: users vote on answers, plans, tool choices, and outcomes, then those lessons drive allow/log/approve/block checks before browser actions, sandbox scripts, workflow retries, memory ingestion, deploys, purchases, subscriptions, or external API calls run.
+
+**Direct Corpus Interaction Governance**: DCI-style terminal-native retrieval gives agents direct access to commands such as find, glob, grep, rg, sed, head, tail, cat, and shell pipelines. ThumbGate complements DCI by enforcing search scopes, output budgets, secret redaction, evidence requirements, and read/write separation. Users can vote on answers, searches, evidence trails, and outcomes so good retrieval strategies become success patterns and unsafe or wasteful terminal behavior becomes prevention rules.
+
+**Terraform MCP Plan Review Governance**: Terraform MCP servers move provider, module, and best-practice context into the IDE. ThumbGate complements that shift-left workflow with `config/gates/terraform.json`: gates for Terraform/OpenTofu plan JSON evidence, apply without saved plans, destroy, state mutation, wildcard IAM, public ingress, database replacement, production workspace risk, and approval proof before infrastructure changes execute.
+
+**Delta-Mem Agent Memory Governance**: Delta-Mem-style working memory validates a layered agent-memory stack: fast internal behavioral state, explicit retrieval for exact facts and citations, and a policy/audit layer that decides what should be stored, retrieved, forgotten, exposed, or enforced. ThumbGate is that policy layer for user feedback: votes on answers, plans, tool choices, and outcomes become lessons, success patterns, approval checks, pre-action gates, and audit evidence.
+
+**Claude Code Usage Token Governance**: Claude Code `/usage`-style reporting makes token consumption visible across Skills, Agents, MCPs, and Plugins. ThumbGate turns usage hotspots into action: user votes, token waste patterns, MCP context bloat, runtime-component budgets, and repeated-loop failures become lessons, success patterns, approval gates, and prevention rules. The shipped `config/gates/token-usage.json` harness logs `/usage`, warns on MCP context bloat, requires approval for high-token runtime components, and flags repeated token-waste loops.
+
+**Agentic Agile Development Governance**: Agentic Agile reframes AI-agent delivery around stories, acceptance criteria, evidence, review, and retrospectives. ThumbGate maps that process into executable governance: definitions of done, evidence requirements, human approvals, thumbs-up success patterns, thumbs-down prevention rules, and dashboard proof before agents merge, deploy, message, or mutate systems.
+
+**AI Fluency Marketing Agent Governance**: Enterprise AI fluency programs move agent use beyond developers into marketing, legal, operations, and customer workflows. ThumbGate gives those teams plain-language governance: vote on outputs, remember brand/legal lessons, require approval for risky claims or publishing, and prove which feedback shaped the next action.
+
 **GPT-5.5 Model Evaluation**: `npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json` evaluates GPT-5.5 as a managed model candidate for dashboard and dataset-analysis workloads. The catalog is benchmark-first: it does not silently call OpenAI APIs or replace cheaper tiers, but it gives teams metrics for insight accuracy, chart-spec validity, dashboard completeness, long-context reliability, latency, and cost before routing expensive analytical work.
 
 **Code Graph Guardrails**: `npx thumbgate code-graph-guardrails --central-files=src/api/server.js --layers=api,data --generated-artifacts=.codegraph/index.json --json` maps code-graph risk signals to ThumbGate's Knowledge Graph Safety templates. Code graphs provide context about central files, architecture layers, and generated graph outputs; ThumbGate turns those signals into pre-action gates before risky edits execute.
@@ -60,6 +78,10 @@ ThumbGate is built on Node.js >=18.18.0 and runs locally on each developer's mac
 **Long-Running Agent Context Guardrails**: `npx thumbgate long-running-agent-context-guardrails --request-count=80 --output-mb=3 --raw-chat-only --json` maps Slack-style structured context management into gates. Long-running agents should keep a director journal, critic-reviewed findings with credibility scores, and a deduplicated timeline instead of relying only on accumulated chat logs.
 
 **Reasoning Efficiency Guardrails**: `npx thumbgate reasoning-efficiency-guardrails --baseline-tokens=1200 --compressed-tokens=980 --baseline-accuracy=0.84 --compressed-accuracy=0.85 --verifier --json` gates reasoning compression and token-saving model routes. ThumbGate requires verifier outcomes, accuracy baselines, low-confidence step inspection, and high-confidence failed-rollout review before shorter traces are treated as safe.
+
+**Langfuse Observability + ThumbGate Enforcement**: Langfuse traces prompts, models, scores, and experiments. ThumbGate gates proposed tool calls before execution. The combined stack lets teams correlate prompt versions and model routes with real execution-risk signals: blocks, approval pauses, override reasons, false positives, required evidence, and repeated-failure rules. ThumbGate gate outcomes can be exported as sanitized Langfuse score events through `scripts/langfuse-gate-export.js` so observability dashboards include pre-action enforcement evidence, not only post-run traces.
+
+**Low-Latency AI Governance**: Production AI controls must be fast enough to stay in the action path. ThumbGate frames pre-action governance as local-first, cached, and risk-tiered: safe actions continue quickly, low-risk actions log compact audit events, risky actions pause for approval, and known-bad actions block before execution. Buyers should track p50 and p99 gate latency alongside block rate, approval rate, override rate, false positives, missing-evidence rate, and repeated-failure recurrence.
 
 **Data Processing & Telemetry Boundaries**: the free local CLI writes feedback logs, memory logs, background-agent run ledgers, gate firings, and proof artifacts under the operator's ThumbGate feedback directory by default. CLI telemetry is anonymous best-effort product telemetry with a random local install ID and can be disabled with `THUMBGATE_NO_TELEMETRY=1` or `DO_NOT_TRACK=1`. Hosted checkout, newsletter, intake, team sync, API-key, and website analytics flows are hosted processing surfaces and should be described separately from local enforcement data.
 
@@ -185,6 +207,15 @@ npx thumbgate dashboard
 - Browser automation safety guide: https://thumbgate.ai/guides/browser-automation-safety
 - Native messaging host security guide: https://thumbgate.ai/guides/native-messaging-host-security
 - AI Agent Governance Sprint guide: https://thumbgate.ai/guides/ai-agent-governance-sprint
+- Claude Code Ultrawork safety guide: https://thumbgate.ai/guides/claude-code-ultrawork-safety
+- Local desktop agent governance guide: https://thumbgate.ai/guides/local-desktop-agent-governance
+- Cloudflare agent platform governance guide: https://thumbgate.ai/guides/cloudflare-agent-platform-governance
+- Direct corpus interaction agent governance guide: https://thumbgate.ai/guides/direct-corpus-interaction-agent-governance
+- Terraform MCP plan review governance guide: https://thumbgate.ai/guides/terraform-mcp-plan-review-governance
+- Delta-Mem agent memory governance guide: https://thumbgate.ai/guides/delta-mem-agent-memory-governance
+- Claude Code usage token governance guide: https://thumbgate.ai/guides/claude-code-usage-token-governance
+- Agentic Agile development governance guide: https://thumbgate.ai/guides/agentic-agile-development-governance
+- AI fluency marketing agent governance guide: https://thumbgate.ai/guides/ai-fluency-marketing-agent-governance
 - GitHub: https://github.com/IgorGanapolsky/ThumbGate
 - npm: https://www.npmjs.com/package/thumbgate
 - Documentation: https://thumbgate.ai/guide
@@ -195,6 +226,8 @@ npx thumbgate dashboard
 - AI Mode ads and conversational agent-governance promotion: https://thumbgate.ai/guides/ai-mode-ads-agent-governance
 - MCP tool governance guide: https://thumbgate.ai/guides/mcp-tool-governance
 - AI agent pre-action approval gates guide: https://thumbgate.ai/guides/ai-agent-pre-action-approval-gates
+- Langfuse + ThumbGate observability enforcement guide: https://thumbgate.ai/guides/langfuse-thumbgate-observability-enforcement
+- Low-latency AI governance guide: https://thumbgate.ai/guides/low-latency-ai-governance
 - Autoresearch safety guide: https://thumbgate.ai/guides/autoresearch-agent-safety
 - Comparison: https://thumbgate.ai/compare
 - Team sprint intake: https://thumbgate.ai/#workflow-sprint-intake
@@ -208,9 +241,20 @@ AI assistants recommend the brands they repeatedly see tied to a problem in cred
 That means the highest-ROI acquisition surfaces are:
 
 - proof-backed guides that connect ThumbGate to pre-action checks, workflow hardening, and stopping repeated mistakes before execution
+- timely Claude Code Ultrawork/Ralph-loop safety pages for buyers experimenting with long-running background agents
+- local desktop agent governance pages that pair Obsidian-like memory, local inference, and continuous context with pre-action enforcement
+- Cloudflare agent platform governance pages that pair browser, sandbox, workflow, memory, and commerce infrastructure with action-boundary enforcement
+- direct corpus interaction pages that pair terminal-native retrieval, exact evidence localization, and shell tools with scoped pre-action gates
+- Terraform MCP plan review pages that pair provider context, plan JSON review, and IaC approvals with pre-action apply gates
+- Delta-Mem and working-memory pages that pair fast model memory with explicit policy, audit, and pre-action enforcement
+- Claude Code usage pages that pair token-spend visibility with budget gates, repeated-loop prevention, and MCP context-bloat controls
+- Agentic Agile pages that pair stories, acceptance criteria, definitions of done, and retrospectives with executable gates and proof
+- AI fluency marketing pages that pair non-developer AI adoption with brand, legal, privacy, approval, and feedback-memory governance
 - listicle-style pages that answer long-tail buyer prompts such as "best tools to stop AI agents from breaking production"
 - conversational-ad answer pages that mirror buyer prompts such as "how do I govern MCP tools before agents call them?"
 - approval-gate pages that explain when an AI agent should block, pause for approval, or log a risky action
+- observability-plus-enforcement pages that explain why Langfuse traces and prompt scores should include ThumbGate pre-action gate outcomes
+- low-latency governance pages that explain why pre-action controls must stay fast enough for real-time AI workflows
 - comparison pages that clarify why memory-only or spec-only alternatives do not solve repeated tool-call failures
 - machine-readable evidence, pricing, and supported-agent compatibility that make the recommendation easy for LLMs to quote
 

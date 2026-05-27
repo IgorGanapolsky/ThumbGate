@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "harness": "terraform",
+  "description": "Specialized gates for Terraform and OpenTofu infrastructure workflows. Loaded when tool context matches Terraform plan, validate, apply, destroy, state, or plan JSON review commands.",
+  "gates": [
+    {
+      "id": "terraform-destroy-block",
+      "layer": "Execution",
+      "pattern": "\\b(?:terraform|tofu|opentofu)\\s+destroy\\b",
+      "toolNames": ["Bash"],
+      "action": "block",
+      "severity": "critical",
+      "message": "Terraform destroy is blocked. Require an approved plan JSON review, explicit environment scope, rollback path, and human approval before destructive infrastructure removal."
+    },
+    {
+      "id": "terraform-apply-requires-plan-json",
+      "layer": "Execution",
+      "pattern": "\\b(?:terraform|tofu|opentofu)\\s+apply\\b(?!.*(?:tfplan|\\.tfplan|plan\\.out))",
+      "toolNames": ["Bash"],
+      "action": "approve",
+      "severity": "critical",
+      "message": "Terraform apply without a saved plan artifact is risky. Generate a plan, export it with terraform show -json, review the JSON, then apply the approved plan artifact."
+    },
+    {
+      "id": "terraform-plan-json-evidence",
+      "layer": "Evidence",
+      "pattern": "\\b(?:terraform|tofu|opentofu)\\s+show\\s+-json\\b.*(?:tfplan|\\.tfplan|plan\\.out)",
+      "toolNames": ["Bash"],
+      "action": "log",
+      "severity": "medium",
+      "message": "Terraform plan JSON evidence detected. Attach the risk summary before apply: replacements, deletes, IAM changes, public ingress, database changes, and cost-sensitive resources."
+    },
+    {
+      "id": "terraform-state-mutation-approval",
+      "layer": "Execution",
+      "pattern": "\\b(?:terraform|tofu|opentofu)\\s+state\\s+(?:rm|mv|replace-provider|push)\\b",
+      "toolNames": ["Bash"],
+      "action": "approve",
+      "severity": "high",
+      "message": "Terraform state mutation detected. Human approval required because state edits can hide drift or detach managed infrastructure from review."
+    },
+    {
+      "id": "terraform-public-ingress-approval",
+      "layer": "Infrastructure",
+      "pattern": "(?:cidr_blocks|ipv6_cidr_blocks)\\s*=\\s*\\[?\\s*[\"'](?:0\\.0\\.0\\.0/0|::/0)[\"']",
+      "toolNames": ["Edit", "Write", "MultiEdit"],
+      "action": "approve",
+      "severity": "critical",
+      "message": "Public ingress detected in Terraform. Require explicit business justification, port scope, security group name, and expiry or compensating control."
+    },
+    {
+      "id": "terraform-wildcard-iam-approval",
+      "layer": "Infrastructure",
+      "pattern": "(?:actions?|resources?)\\s*=\\s*\\[?\\s*[\"']\\*[\"']|(?:Action|Resource)\\s*=\\s*[\"']\\*[\"']",
+      "toolNames": ["Edit", "Write", "MultiEdit"],
+      "action": "approve",
+      "severity": "critical",
+      "message": "Wildcard IAM detected in Terraform. Require least-privilege scope or an explicit, time-boxed exception before merge or apply."
+    },
+    {
+      "id": "terraform-db-replacement-review",
+      "layer": "Infrastructure",
+      "pattern": "(?:aws_db_instance|google_sql_database_instance|azurerm_postgresql|azurerm_mysql|cloudsql|spanner|alloydb).*(?:replace|delete|destroy|recreate|forces replacement)",
+      "toolNames": ["Bash", "Edit", "Write", "MultiEdit"],
+      "action": "approve",
+      "severity": "critical",
+      "message": "Database infrastructure replacement risk detected. Require backup proof, maintenance window, rollback plan, and owner approval."
+    }
+  ]
+}

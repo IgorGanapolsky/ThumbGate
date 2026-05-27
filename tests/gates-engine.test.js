@@ -757,6 +757,35 @@ test('approval gates fire as approve by default (toggle on)', () => {
   }
 });
 
+test('token-usage harness logs Claude Code usage breakdown capture', () => {
+  const result = evaluateGates('Bash', { command: '/usage' });
+  assert.equal(result, null);
+  const stats = loadStats();
+  assert.equal(stats.byGate['usage-breakdown-capture'].logged, 1);
+});
+
+test('token-usage harness warns on MCP context bloat in edited content', () => {
+  const result = evaluateGates('Write', {
+    file_path: 'docs/mcp-budget.md',
+    content: 'MCP server testmcp context token usage budget needs a flush policy before tool results stay in context.',
+  });
+
+  assert.equal(result.decision, 'warn');
+  assert.equal(result.gate, 'mcp-context-bloat-budget');
+  assert.match(result.message, /MCP context-bloat risk/);
+});
+
+test('token-usage harness requires approval for high-token runtime component spend', () => {
+  const result = evaluateGates('Bash', {
+    command: 'agent token usage shows MCP plugin spend exceeds budget and dominates the session',
+  });
+
+  assert.equal(result.decision, 'approve');
+  assert.equal(result.requiresApproval, true);
+  assert.equal(result.gate, 'high-token-tool-chain-approval');
+  assert.match(result.message, /High-token runtime component/);
+});
+
 test('isApprovalGatesEnabled returns true by default', () => {
   const { isApprovalGatesEnabled } = require('../scripts/gates-engine');
   const saved = process.env.THUMBGATE_APPROVAL_GATES;

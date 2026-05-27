@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agentic Agile Development Governance | Acceptance Evidence for AI Agents</title>
+  <meta name="description" content="Agentic Agile reframes AI work as iterative delivery with stories, acceptance criteria, review evidence, and definitions of done. ThumbGate turns those crite..." />
+  <meta property="og:title" content="Agentic Agile Development Governance | Acceptance Evidence for AI Agents" />
+  <meta property="og:description" content="Agentic Agile reframes AI work as iterative delivery with stories, acceptance criteria, review evidence, and definitions of done. ThumbGate turns those crite..." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/guides/agentic-agile-development-governance" />
+  <link rel="canonical" href="https://thumbgate.ai/guides/agentic-agile-development-governance" />
+  <link rel="llm-context" href="/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --bg-raised: #111113;
+      --bg-card: #161618;
+      --line: #222225;
+      --text: #e8e8ec;
+      --muted: #8b8b96;
+      --cyan: #22d3ee;
+      --green: #4ade80;
+      --red: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(12px);
+      background: rgba(10, 10, 11, 0.88);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
+    .brand {
+      font-weight: 700;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 211, 238, 0.22);
+      background: rgba(34, 211, 238, 0.1);
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.06;
+      letter-spacing: -0.04em;
+      margin: 16px 0;
+      max-width: 760px;
+    }
+    .hero p {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .signal-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 28px 0 0;
+    }
+    .signal-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .signal-pill.up {
+      border-color: rgba(74, 222, 128, 0.28);
+      color: #b8f7c8;
+      background: rgba(74, 222, 128, 0.1);
+    }
+    .signal-pill.down {
+      border-color: rgba(248, 113, 113, 0.28);
+      color: #ffc0c0;
+      background: rgba(248, 113, 113, 0.1);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+      gap: 24px;
+      padding-bottom: 72px;
+    }
+    .card, .detail-section, .sidebar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .card { padding: 24px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p { color: var(--muted); }
+    .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+    .card h2 { margin-top: 0; }
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .sidebar-card {
+      padding: 20px;
+    }
+    /* Only the first sidebar card sticks. Stacking multiple stickies at the
+       same top offset makes them overlap each other on scroll. The related-
+       pages card flows normally below. */
+    .sidebar-card:first-child {
+      position: sticky;
+      top: 84px;
+      max-height: calc(100vh - 104px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .proof-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 18px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: var(--cyan);
+      color: #071116;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .paid-sprint-card {
+      border-color: rgba(74, 222, 128, 0.32);
+      background: linear-gradient(180deg, rgba(17, 17, 19, 0.98), rgba(10, 20, 14, 0.96));
+    }
+    .paid-sprint-card p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    .paid-offers {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .paid-offer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid rgba(74, 222, 128, 0.28);
+      border-radius: 10px;
+      color: var(--fg);
+      text-decoration: none;
+      background: rgba(0, 0, 0, 0.22);
+    }
+    .paid-offer strong {
+      color: #9af5b0;
+      white-space: nowrap;
+    }
+    .paid-offer:hover, .paid-offer:focus-visible {
+      border-color: rgba(74, 222, 128, 0.62);
+      outline: none;
+    }
+    .secondary-cta {
+      display: inline-flex;
+      margin-top: 12px;
+      color: var(--cyan);
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .faq-item {
+      border-top: 1px solid var(--line);
+      padding: 14px 0;
+    }
+    .faq-item summary {
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .faq-item p {
+      color: var(--muted);
+    }
+    .related-card {
+      display: block;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      margin-top: 12px;
+      color: var(--text);
+    }
+    .related-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    @media (max-width: 860px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .sidebar-card:first-child {
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
+    }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Agentic agile needs more than prompts. It needs acceptance evidence and gates.",
+  "description": "Agentic Agile reframes AI work as iterative delivery with stories, acceptance criteria, review evidence, and definitions of done. ThumbGate turns those crite...",
+  "about": [
+    "claude code masterclass guardrails",
+    "claude code usage token governance",
+    "cursor prevent repeated mistakes",
+    "claude code prevent repeated mistakes"
+  ],
+  "url": "https://thumbgate.ai/guides/agentic-agile-development-governance",
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "mainEntityOfPage": "https://thumbgate.ai/guides/agentic-agile-development-governance"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does ThumbGate manage agile projects?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. ThumbGate does not replace Jira, Linear, or GitHub Projects. It governs agent actions against the story, acceptance evidence, user feedback, and approval rules."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why is Agile relevant to AI agents?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Because production agent work needs scoped intent, reviewable outputs, definitions of done, and retrospectives. Prompts alone do not create accountable delivery."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does this become a paid feature?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Teams pay for synced policies, shared lessons, dashboard proof, exports, and cross-runtime enforcement that keep agent delivery consistent across machines and workflows."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="container">
+      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+    </div>
+  </div>
+
+  <main class="container">
+    <section class="hero">
+      <div class="eyebrow">guide | agentic agile development governance</div>
+      <h1>Agentic agile needs more than prompts. It needs acceptance evidence and gates.</h1>
+      <p>Agentic Agile reframes AI work as iterative delivery with stories, acceptance criteria, review evidence, and definitions of done. ThumbGate turns those criteria into feedback memory, pre-action approvals, completion checks, and audit proof before agents merge, deploy, message, or mutate systems.</p>
+      <div class="signal-row">
+        <div class="signal-pill up">👍 Thumbs up reinforces good behavior</div>
+        <div class="signal-pill down">👎 Thumbs down blocks repeated mistakes</div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div>
+        <div class="card">
+          <h2>Why this page exists</h2>
+          <ul><li>Enterprise agent teams need process memory, not just better prompting.</li><li>Acceptance criteria should become executable checks, required evidence, and approval gates.</li><li>ThumbGate can own the control plane between story intent, agent action, human feedback, and release proof.</li></ul>
+        </div>
+
+      <section class="detail-section">
+        <h2>Why Agentic Agile helps ThumbGate</h2>
+        <p>The Microsoft framing is useful because it makes agent development sound like accountable software delivery instead of prompt tinkering. Stories, sprint goals, acceptance criteria, and retrospectives are already familiar to enterprise buyers.</p><p>ThumbGate fits naturally as the enforcement and memory layer. A user can vote on the answer, the plan, the tool choice, the pull request, and the outcome. Those votes become lessons, success patterns, gates, and dashboard proof for the next iteration.</p>
+
+      </section>
+      <section class="detail-section">
+        <h2>What ThumbGate should gate in an agentic agile loop</h2>
+
+        <ul><li>Story intent: require a clear task, owner, scope, and forbidden actions before the agent starts.</li><li>Definition of done: require tests, screenshots, diffs, telemetry, or customer evidence before the agent claims completion.</li><li>Review boundary: pause before merge, deploy, external message, payment, data export, or destructive command.</li><li>Retrospective memory: convert repeated review comments into prevention rules and accepted practices into success patterns.</li><li>Audit proof: preserve who approved what, which evidence was attached, and which rule changed after feedback.</li></ul>
+      </section>
+      <section class="detail-section">
+        <h2>The buyer-facing message</h2>
+        <p>This is especially strong for pilots with legal, compliance, and enterprise IT teams. The pitch is not “trust our agent.” It is “make every agent sprint observable, reviewable, and enforceable.”</p><p>Pro and Team then become process infrastructure: synced definitions of done, shared approval policies, cross-runtime lessons, and evidence dashboards across Claude Code, Cursor, MCP tools, browser agents, and CI.</p>
+
+      </section>
+      <section class="detail-section">
+        <h2>High-ROI product hooks</h2>
+
+        <ul><li>Add an Agentic Agile guide and schema language around story, acceptance criteria, evidence, review, and retrospective lessons.</li><li>Map thumbs-up to reusable success patterns and thumbs-down to explicit acceptance failures.</li><li>Show dashboard proof by story or task so a buyer can inspect decisions without reading every transcript.</li><li>Use this page as the enterprise bridge from “developer tool” to “governed AI delivery workflow.”</li></ul>
+      </section>
+        <div class="detail-section">
+          <h2>FAQ</h2>
+
+      <details class="faq-item">
+        <summary>Does ThumbGate manage agile projects?</summary>
+        <p>No. ThumbGate does not replace Jira, Linear, or GitHub Projects. It governs agent actions against the story, acceptance evidence, user feedback, and approval rules.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Why is Agile relevant to AI agents?</summary>
+        <p>Because production agent work needs scoped intent, reviewable outputs, definitions of done, and retrospectives. Prompts alone do not create accountable delivery.</p>
+      </details>
+      <details class="faq-item">
+        <summary>How does this become a paid feature?</summary>
+        <p>Teams pay for synced policies, shared lessons, dashboard proof, exports, and cross-runtime enforcement that keep agent delivery consistent across machines and workflows.</p>
+      </details>
+        </div>
+      </div>
+
+      <aside class="sidebar">
+
+
+
+
+
+        <div class="sidebar-card">
+          <h2>GSD execution brief</h2>
+          <p>This page was prioritized because it captures high-intent demand around agentic agile development governance and feeds directly into ThumbGate's proof-led conversion path.</p>
+          <p><strong>Opportunity score:</strong> 83</p>
+          <p><strong>Primary persona:</strong> engineering-lead</p>
+          <p><strong>Keyword cluster:</strong> claude code masterclass guardrails, claude code usage token governance, cursor prevent repeated mistakes, claude code prevent repeated mistakes</p>
+          <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
+          <div class="proof-links"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json" target="_blank" rel="noopener">Automation proof</a><a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub repository</a></div>
+          <a class="cta-button" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_agentic-agile-development-governance&amp;cta_placement=seo_brief&amp;plan_id=pro" target="_blank" rel="noopener">Go Pro — $19/mo</a>
+        </div>
+        <div class="sidebar-card">
+          <h2>Related pages</h2>
+
+        <a class="related-card" href="/guides/ai-agent-pre-action-approval-gates">
+          <span class="related-label">Related page</span>
+          <strong>AI agent pre-action approval gates for risky tool calls</strong>
+        </a>
+        <a class="related-card" href="/guides/background-agent-governance">
+          <span class="related-label">Related page</span>
+          <strong>Background Agent Governance for Agent PRs</strong>
+        </a>
+        <a class="related-card" href="/guides/stop-repeated-ai-agent-mistakes">
+          <span class="related-label">Related page</span>
+          <strong>How to Stop AI Coding Agents From Repeating Mistakes</strong>
+        </a>
+        </div>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>

@@ -1192,7 +1192,18 @@ function checkWhenClause(when, constraints) {
 }
 
 function matchGate(gate, toolName, toolInput = {}) {
-  const matchText = toolInput.command || toolInput.file_path || toolInput.path || '';
+  const matchText = [
+    toolInput.command,
+    toolInput.file_path,
+    toolInput.filePath,
+    toolInput.path,
+    toolInput.input,
+    toolInput.text,
+    toolInput.content,
+    toolInput.query,
+  ]
+    .filter((value) => typeof value === 'string' && value.length > 0)
+    .join('\n');
   const affected = extractAffectedFiles(toolName, toolInput);
   const affectedFiles = affected.files;
   const repoRoot = affected.repoRoot;

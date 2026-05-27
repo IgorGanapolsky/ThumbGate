@@ -116,6 +116,11 @@ const HIGH_ROI_QUERY_SEEDS = [
     'New team-buying query for unattended agent PRs where alignment context, isolated execution, risk-tiered review, and audit evidence create immediate ROI.',
   ),
   querySeed(
+    'claude code ultrawork safety',
+    94,
+    'Fresh Claude Code Ultrawork and Ralph-loop demand where ThumbGate can own safety for long-running background agents, parallel worktrees, budgets, approvals, and audit proof.',
+  ),
+  querySeed(
     'ai agent governance sprint',
     95,
     'Bottom-of-funnel service query that turns background-agent governance demand into a paid 48-hour Team intake and implementation wedge.',
@@ -169,6 +174,56 @@ const HIGH_ROI_QUERY_SEEDS = [
     'ai agent pre action approval gates',
     95,
     'Bottom-of-funnel query for teams ready to add human approval and evidence requirements before AI agents touch risky tools.',
+  ),
+  querySeed(
+    'langfuse thumbgate observability enforcement',
+    94,
+    'Fresh observability-and-eval demand where ThumbGate can own the missing pre-action enforcement layer around Langfuse traces, prompt versions, scores, and experiments.',
+  ),
+  querySeed(
+    'low latency ai governance',
+    93,
+    'Fresh real-time personalization and AI-product demand where ThumbGate can explain that pre-action governance must be fast enough to stay in the production path.',
+  ),
+  querySeed(
+    'local desktop agent governance',
+    93,
+    'Fresh OpenHuman/OpenClaw-style local desktop agent demand where ThumbGate can own the missing governance layer around Obsidian-like memory, local files, model routing, and tool execution.',
+  ),
+  querySeed(
+    'cloudflare agent platform governance',
+    94,
+    'Fresh Cloudflare agent-stack demand where ThumbGate can own the missing control layer around Workers, Sandboxes, Browser Run, Agent Memory, Workflows, and agent commerce.',
+  ),
+  querySeed(
+    'direct corpus interaction agent governance',
+    94,
+    'Fresh DCI/terminal-agent demand where ThumbGate can own governance for raw file search, grep, rg, shell pipelines, evidence localization, and follow-on writes.',
+  ),
+  querySeed(
+    'terraform mcp plan review governance',
+    95,
+    'Bottom-of-funnel DevOps shift-left query where ThumbGate can govern Terraform MCP edits, plan JSON reviews, apply gates, IAM changes, public ingress, and database replacement risk.',
+  ),
+  querySeed(
+    'delta mem agent memory governance',
+    94,
+    'Fresh working-memory research demand where ThumbGate can own the policy and audit layer around what agents remember, forget, expose, retrieve, and turn into gates.',
+  ),
+  querySeed(
+    'claude code usage token governance',
+    96,
+    'High-intent Claude Code query where /usage visibility creates demand for token waste prevention, MCP budget gates, and repeated-mistake feedback loops.',
+  ),
+  querySeed(
+    'agentic agile development governance',
+    93,
+    'Enterprise agent-development process query where ThumbGate can own acceptance evidence, definitions of done, review gates, and policy memory.',
+  ),
+  querySeed(
+    'ai fluency marketing agent governance',
+    88,
+    'Emerging non-developer AI adoption query where marketing, legal, and ops teams need brand-safe feedback memory, approval gates, and audit proof.',
   ),
   {
     query: 'thumbs up thumbs down feedback for ai coding agents',
@@ -1600,6 +1655,58 @@ const PAGE_BLUEPRINTS = [
   buildLongRunningAgentContextGuide(),
   buildReasoningCompressionGuide(),
   buildDeepSeekV4RuntimeGuide(),
+  guideBlueprint({
+    query: 'claude code ultrawork safety',
+    path: '/guides/claude-code-ultrawork-safety',
+    pillar: 'pre-action-checks',
+    title: 'Claude Code Ultrawork Safety | Guardrails for Agents That Keep Running',
+    heroTitle: 'Claude Code Ultrawork makes agents faster. ThumbGate makes them governable.',
+    heroSummary: 'Ultrawork, Ralph loops, background sessions, batch agents, and parallel worktrees all push Claude Code toward longer autonomous runs. ThumbGate adds the control layer: budgets, stop conditions, approval gates, worktree isolation checks, and audit proof before risky actions execute.',
+    takeaways: [
+      'Long-running Claude Code workflows multiply speed, token use, file-edit blast radius, and approval risk at the same time.',
+      'The safety layer should sit before execution: pre-dispatch checks, per-agent budgets, worktree isolation, evidence requirements, and human approval for high-risk tools.',
+      'ThumbGate turns Ultrawork-style autonomy into a governed workflow instead of an unattended prompt loop.',
+    ],
+    sections: [
+      paragraphs('Why Ultrawork changes the risk profile', [
+        'Claude Code already supports parallel work patterns through subagents, background sessions, batch work, and isolated worktrees. Ultrawork-style community workflows push that pattern further: keep agents running, split work aggressively, and let the system continue for hours.',
+        'That is exciting for throughput, but it also turns small mistakes into compounding mistakes. A bad assumption can spread across branches, a skipped test can become several pull requests, and a missing approval can reach production-adjacent commands before a human notices.',
+      ]),
+      bullets('What has to be gated before agents keep running', [
+        'Pre-dispatch scope: branch, changed-file budget, target directories, and whether tasks overlap.',
+        'Tool risk: shell commands, git writes, deploys, database changes, external LLM calls, payment actions, and customer-facing sends.',
+        'Evidence requirements: tests, CI links, read-before-write proof, screenshots, API responses, rollback commands, and reviewer notes.',
+        'Stop conditions: repeated gate blocks, rising failure rate, excessive token burn, missing proof, stale context, or conflicting worktree edits.',
+        'Human approval: production, secrets-adjacent, legal/compliance, customer-data, payment, or protected-branch actions.',
+      ]),
+      paragraphs('How ThumbGate fits', [
+        'ThumbGate does not need to replace Claude Code. Claude Code can still plan, delegate, run background sessions, and use worktrees. ThumbGate sits at the action boundary and decides whether the next proposed tool call should be allowed, logged, paused for approval, or blocked.',
+        'For a team testing Ultrawork, the first paid wedge is not a broad platform migration. It is one Workflow Hardening Sprint around the riskiest autonomous loop: define budgets, add gates, capture thumbs-downs, prove the checks fired, and leave behind an audit trail the team can review.',
+      ]),
+      bullets('Minimum viable Ultrawork governance checklist', [
+        'Run each parallel worker in an isolated worktree and block overlapping ownership without an explicit plan.',
+        'Cap background-agent runs by time, tokens, changed files, and repeated gate blocks.',
+        'Require tests or CI evidence before an agent opens or updates a PR.',
+        'Pause for approval before deploys, protected-branch writes, migrations, external data sends, or expensive API calls.',
+        'Export gate decisions so the team can inspect which agents were blocked, approved, overridden, or allowed.',
+      ]),
+    ],
+    faq: [
+      answer(
+        'Does ThumbGate replace Claude Code Ultrawork?',
+        'No. ThumbGate is the governance layer around Ultrawork-style autonomy. Claude Code keeps generating and delegating work; ThumbGate checks risky actions before they execute.',
+      ),
+      answer(
+        'What is the biggest risk in long-running Claude Code agents?',
+        'The biggest risk is compounding unchecked action: repeated file edits, shell commands, deploys, or PR updates can continue after context gets stale or the initial assumption proves wrong.',
+      ),
+      answer(
+        'What should teams add before running agents for hours?',
+        'Teams should add worktree isolation, changed-file budgets, stop conditions, pre-action approval gates, required evidence, and audit logs before letting background agents run unattended.',
+      ),
+    ],
+    relatedPaths: ['/guides/background-agent-governance', '/guides/long-running-agent-context-management', '/guides/ai-agent-pre-action-approval-gates'],
+  }),
   {
     query: 'pre-action checks for ai coding agents',
     path: '/guides/pre-action-checks',
@@ -2118,6 +2225,524 @@ const PAGE_BLUEPRINTS = [
     ],
     relatedPaths: ['/guides/pre-action-checks', '/guides/mcp-tool-governance', '/guides/ai-agent-governance-sprint'],
   },
+  guideBlueprint({
+    query: 'langfuse thumbgate observability enforcement',
+    path: '/guides/langfuse-thumbgate-observability-enforcement',
+    pillar: 'pre-action-checks',
+    title: 'Langfuse + ThumbGate | Observability Plus Pre-Action Enforcement',
+    heroTitle: 'Langfuse observes agent behavior. ThumbGate gates the next action.',
+    heroSummary: 'Langfuse is strong for traces, prompt management, scoring, and experiments. ThumbGate adds the pre-action enforcement layer: block, approve, or log risky tool calls before they execute, then export the gate result back as evaluation evidence.',
+    takeaways: [
+      'LLM observability explains what happened; pre-action gates decide whether the next risky action is allowed.',
+      'ThumbGate gate decisions can become Langfuse scores so teams correlate prompt versions with blocks, approvals, overrides, and false positives.',
+      'The high-ROI enterprise story is one stack: Langfuse for evaluation visibility, ThumbGate for execution control.',
+    ],
+    sections: [
+      paragraphs('Where Langfuse fits', [
+        'Langfuse helps teams trace LLM calls, manage prompts, score outputs, and compare experiments. That is essential once agents move from demos into repeated workflows because teams need to know which prompt version, model route, or experiment produced a behavior.',
+        'But observability is still mostly after-the-fact. A beautiful trace can explain why an unsafe tool call happened; it does not automatically stop the call before it reaches the shell, database, browser, payment API, or production deploy path.',
+      ]),
+      bullets('Where ThumbGate fits', [
+        'Pre-action enforcement before tool execution, not only post-run review.',
+        'Risk-tiered outcomes: allow safe actions, log low-risk actions, pause risky actions for approval, and block known-bad actions.',
+        'Gate evidence tied to agent, tool, prompt version, workflow, rule ID, and required proof.',
+        'Exportable scores/events that Langfuse can use for evaluation dashboards and experiment comparison.',
+      ]),
+      paragraphs('The combined workflow', [
+        'Use Langfuse to answer “which prompt, model, trace, or experiment produced this behavior?” Use ThumbGate to answer “should this proposed tool call run right now?” The strongest production loop sends ThumbGate gate outcomes back into Langfuse as scores so prompt experiments are judged not only on output quality, but also on whether they increase unsafe action attempts.',
+        'That matters for buyers because prompt improvements can look better in a benchmark while making agents more aggressive in production. ThumbGate supplies the missing enforcement signal: blocked actions, approval pauses, override reasons, required evidence, and repeated-failure rules.',
+      ]),
+      bullets('Metrics a buyer should track together', [
+        'Gate block rate by prompt version and model route.',
+        'Approval pause rate for deploys, database changes, payment actions, customer-facing sends, and high-cost API calls.',
+        'False-positive override rate by rule ID and workflow.',
+        'Missing-evidence rate before risky actions, such as tests, screenshots, CI links, or read-before-write proof.',
+        'Repeated-failure recurrence after a thumbs-down becomes a prevention rule.',
+      ]),
+    ],
+    faq: [
+      answer(
+        'Does ThumbGate replace Langfuse?',
+        'No. Langfuse is observability, prompt management, scoring, and experiments. ThumbGate is pre-action enforcement for agent tool calls. They are complementary in a production agent stack.',
+      ),
+      answer(
+        'What should ThumbGate send into Langfuse?',
+        'ThumbGate should export sanitized gate outcomes as Langfuse scores or events: trace ID, gate ID, decision, risk tier, tool, agent, prompt version, evidence requirement, rule ID, and override metadata without secrets or PII.',
+      ),
+      answer(
+        'Why does this help enterprise buyers?',
+        'It lets teams evaluate prompt and model changes against real execution-risk signals. A prompt version is not better if it produces more unsafe actions, missing evidence, or human approval escalations.',
+      ),
+    ],
+    relatedPaths: ['/guides/pre-action-checks', '/guides/ai-agent-pre-action-approval-gates', '/guides/mcp-tool-governance'],
+  }),
+  guideBlueprint({
+    query: 'low latency ai governance',
+    path: '/guides/low-latency-ai-governance',
+    pillar: 'pre-action-checks',
+    title: 'Low-Latency AI Governance | Keep Pre-Action Gates in the Production Path',
+    heroTitle: 'AI governance only works when it is fast enough to stay in the path.',
+    heroSummary: 'Real-time AI products prove that milliseconds drive adoption and revenue. ThumbGate positions pre-action governance as a low-latency control layer: local checks, cached policies, risk-tiered outcomes, and audit events before high-risk agent actions execute.',
+    takeaways: [
+      'If governance adds seconds to a real-time workflow, teams route around it.',
+      'The right control layer should block, approve, or log risky actions with local policy checks before execution.',
+      'ThumbGate gives buyers a latency-aware answer: fast gates for common actions, approval pauses only for high-risk actions, and audit proof for everything important.',
+    ],
+    sections: [
+      paragraphs('Why latency is now a governance requirement', [
+        'Real-time personalization teams optimize for milliseconds because relevance decays quickly. The same lesson applies to AI governance. A control that is correct but slow will be disabled, bypassed, or moved to post-hoc review where it cannot stop damage.',
+        'This is especially important as AI agents move from code suggestions into customer-facing recommendations, data pipelines, refunds, travel offers, pricing changes, and operational workflows. The gate has to be fast enough to remain in the critical path.',
+      ]),
+      bullets('What low-latency governance should do', [
+        'Run common policy checks locally or near the runtime instead of waiting on a distant review loop.',
+        'Use risk tiers so safe actions continue, uncertain actions are logged, risky actions pause for approval, and known-bad actions are blocked.',
+        'Cache policy, lesson, and rule context so every tool call does not require a heavyweight retrieval or analytics query.',
+        'Emit compact audit events after the decision so observability systems can analyze behavior without slowing the action boundary.',
+        'Track p50 and p99 gate latency alongside block rate, approval rate, false-positive overrides, and incident recurrence.',
+      ]),
+      paragraphs('Where ThumbGate fits', [
+        'ThumbGate is strongest at the action boundary. It checks the proposed command, file edit, MCP tool call, API action, or workflow transition before execution. Fast local checks keep low-risk work moving, while high-risk work can still pause for explicit approval.',
+        'That makes ThumbGate a better enterprise story than broad "AI monitoring." Monitoring explains what happened. Low-latency pre-action governance decides whether the next action should happen at all.',
+      ]),
+      bullets('Buyer workflows that need fast gates', [
+        'Customer-facing recommendations and personalization changes.',
+        'Travel, ecommerce, fintech, and healthcare workflows where stale or wrong actions affect conversion or trust.',
+        'Data-pipeline actions that update feature stores, Redis caches, Databricks jobs, or production dashboards.',
+        'AI-agent actions that call payment, refund, deploy, browser, CRM, or external LLM tools.',
+        'Background agents that need to continue safely without waiting on a human for every low-risk step.',
+      ]),
+    ],
+    faq: [
+      answer(
+        'Why does AI governance need low latency?',
+        'Because teams will bypass controls that slow down production workflows. The useful gate is fast on common actions and strict only where risk justifies the pause.',
+      ),
+      answer(
+        'Does ThumbGate add a remote approval call to every action?',
+        'No. ThumbGate is designed around local-first pre-action checks, cached lessons and rules, and risk-tiered decisions. Only high-risk actions should require human approval.',
+      ),
+      answer(
+        'How should teams measure governance performance?',
+        'Track p50 and p99 gate latency together with block rate, approval rate, override rate, false positives, missing-evidence rate, and repeated-failure recurrence.',
+      ),
+    ],
+    relatedPaths: ['/guides/pre-action-checks', '/guides/ai-agent-pre-action-approval-gates', '/guides/langfuse-thumbgate-observability-enforcement'],
+  }),
+  guideBlueprint({
+    query: 'local desktop agent governance',
+    path: '/guides/local-desktop-agent-governance',
+    pillar: 'pre-action-checks',
+    title: 'Local Desktop Agent Governance | Guardrails for OpenHuman-Style Memory',
+    heroTitle: 'Local desktop agents need memory and impulse control.',
+    heroSummary: 'OpenHuman-style desktop agents normalize local memory, markdown knowledge trees, continuous context fetching, local inference, and model routing. ThumbGate adds the feedback and governance layer: users vote on answers and actions, then mistakes and successes become lessons, recall, rules, and pre-action gates.',
+    takeaways: [
+      'Local-first agent memory validates ThumbGate’s continuity thesis, but persistent context also needs human feedback about what was useful, wrong, risky, or worth repeating.',
+      'Markdown, Obsidian-style vaults, SQLite, Ollama, and local files need action boundaries before agents can write, send, deploy, or call tools.',
+      'ThumbGate is complementary: local desktop agents get the brain; ThumbGate supplies voting, lesson capture, success reinforcement, pre-action enforcement, approval routing, and audit proof.',
+    ],
+    sections: [
+      paragraphs('Why OpenHuman-style memory matters', [
+        'The desktop-agent market is moving from stateless chat windows toward persistent local systems: connected sources, markdown memory trees, SQLite persistence, local inference, and model routing. That is a meaningful shift because developers want continuity across projects, tabs, files, emails, commits, and agent sessions.',
+        'Memory architecture is useful because it reduces re-explaining and token burn. But memory is not enough if the system never learns which answers were good, which answers were wrong, which tool choices were risky, and which successes should be repeated.',
+      ]),
+      bullets('Where local desktop agents need gates', [
+        'Filesystem writes: block edits to secrets, generated artifacts, production configs, or protected paths without evidence.',
+        'Git operations: pause or block protected-branch pushes, force pushes, broad refactors, or overlapping worktree ownership.',
+        'Connected accounts: require approval before sending email, calendar updates, customer messages, CRM writes, or external LLM calls.',
+        'Memory ingestion: log or block sensitive source capture, PII leakage, and cross-project context bleed.',
+        'Model routing: require cost, privacy, and data-boundary checks before moving local context to a cloud model.',
+      ]),
+      paragraphs('How ThumbGate complements Obsidian-style memory', [
+        'A markdown memory tree can tell the agent what happened. ThumbGate records whether the human thought the answer, plan, tool choice, or outcome was good or bad. That vote becomes durable memory: lessons, mistakes, successes, recall context, rule candidates, and enforcement signals.',
+        'This is the clean answer to OpenHuman and OpenClaw-style adoption: do not fight local desktop agents. Teach and govern them. Let the agent remember and propose answers or actions, then reinforce successes, capture mistakes, and route risky actions through block, approve, log, or evidence-required gates.',
+      ]),
+      bullets('Minimum local-agent governance checklist', [
+        'Classify connected sources by sensitivity before continuous context fetching runs.',
+        'Let users vote on answers, plans, tool choices, and outcomes so the system captures successes as well as mistakes.',
+        'Keep local memory readable and portable, but gate writes and sends separately from reads.',
+        'Require evidence before tool execution: tests, diffs, read-before-write proof, screenshots, API responses, or human approval.',
+        'Track gate decisions by agent, tool, source, memory scope, model route, and workflow.',
+        'Turn thumbs-down reviews into prevention rules so repeated local-agent mistakes become durable blocks.',
+      ]),
+    ],
+    faq: [
+      answer(
+        'Does ThumbGate compete with OpenHuman?',
+        'No. OpenHuman-style systems focus on local memory, environment awareness, model routing, and desktop continuity. ThumbGate focuses on pre-action enforcement before risky tool calls execute.',
+      ),
+      answer(
+        'Why do local desktop agents need governance?',
+        'Because local context is powerful and sensitive. Once an agent can read files, synthesize memory, route models, and call tools, teams need deterministic boundaries before it writes, sends, deploys, or exposes data.',
+      ),
+      answer(
+        'How does ThumbGate use local memory safely?',
+        'ThumbGate keeps lessons, successes, mistakes, and rules local-first. User votes improve recall and reinforcement, while high-risk actions can still be allowed, logged, paused for approval, or blocked at the action boundary.',
+      ),
+    ],
+    relatedPaths: ['/guides/pre-action-checks', '/guides/claude-code-ultrawork-safety', '/guides/mcp-tool-governance'],
+  }),
+  guideBlueprint({
+    query: 'cloudflare agent platform governance',
+    path: '/guides/cloudflare-agent-platform-governance',
+    pillar: 'pre-action-checks',
+    title: 'Cloudflare Agent Platform Governance | Guardrails for Browser, Sandbox, Memory, and Commerce',
+    heroTitle: 'Cloudflare gives agents the stack. ThumbGate gives them judgment.',
+    heroSummary: 'Cloudflare’s agent platform points to the new default: agents will run code, browse, remember, orchestrate workflows, and buy infrastructure. ThumbGate adds the feedback memory and pre-action governance layer before those primitives touch files, browsers, sandboxes, payments, deploys, or customer data.',
+    takeaways: [
+      'The platform shift validates ThumbGate’s thesis: agents are not just chatbots; they are operators with compute, browser, memory, workflow, and commerce permissions.',
+      'Agent memory needs human feedback. Users should vote on answers, plans, tool choices, and outcomes so successes and mistakes become durable lessons.',
+      'Browser Run, Sandboxes, Dynamic Workers, Workflows, Agent Memory, and agent commerce all need risk-tiered gates before agents execute irreversible steps.',
+    ],
+    sections: [
+      paragraphs('Why the Cloudflare stack matters', [
+        'The agent infrastructure market is moving toward complete production stacks: lightweight compute for quick tasks, Linux sandboxes for builds, durable workflows for orchestration, managed memory for continuity, browser automation for web work, and commerce protocols for paid actions.',
+        'That is bullish for ThumbGate because every new primitive expands the action surface. The buyer question changes from "can an agent do this?" to "which agent actions should be allowed, paused, logged, or blocked before they run?"',
+      ]),
+      bullets('Where agent platforms need a gate', [
+        'Dynamic Workers: require budget, tenant, and policy checks before running generated request handlers or automation code.',
+        'Sandboxes: verify repo scope, credentials, filesystem writes, package installs, and network egress before builds or scripts run.',
+        'Browser automation: gate form fills, downloads, uploads, customer messages, account changes, and WebMCP tool interactions.',
+        'Durable workflows: attach stop conditions, retry budgets, owner approval, and rollback evidence to long-running agent steps.',
+        'Agent memory: record user votes on answers and outcomes, then separate useful success patterns from risky repeated mistakes.',
+        'Agent commerce: require spending caps, identity checks, approval policies, and audit proof before purchases, subscriptions, domains, or deploys.',
+      ]),
+      paragraphs('How ThumbGate complements Cloudflare', [
+        'Cloudflare can provide the runtime primitives. ThumbGate provides the decision boundary and feedback loop that tells the runtime what should happen next. A human vote on a good answer becomes a reusable success pattern; a thumbs-down on a risky action becomes a lesson and, when appropriate, a pre-action check.',
+        'That framing keeps ThumbGate out of the commodity-infrastructure fight. We are not trying to be the browser, sandbox, workflow engine, or memory database. We are the governance layer that makes those capabilities safe enough for teams to adopt.',
+      ]),
+      bullets('High-ROI product hooks', [
+        'Add Cloudflare Workers and Browser Run to the integration roadmap as governed surfaces, not core hosting dependencies.',
+        'Create policy templates for browser actions, sandbox egress, workflow retries, memory ingestion, and agent-initiated commerce.',
+        'Expose gate telemetry by runtime primitive: browser, sandbox, workflow, memory, deploy, payment, and external API.',
+        'Position Team around shared lessons and approval boundaries across hosted agent infrastructure, not hidden algorithm IP.',
+      ]),
+    ],
+    faq: [
+      answer(
+        'Does ThumbGate replace Cloudflare’s agent platform?',
+        'No. Cloudflare provides infrastructure primitives for running agents. ThumbGate governs feedback, lessons, approvals, and pre-action decisions around those primitives.',
+      ),
+      answer(
+        'Why do Browser Run and Sandboxes need ThumbGate?',
+        'Because browser and sandbox agents can take real actions: write files, run scripts, submit forms, download data, call APIs, and trigger deploys. Those actions need deterministic boundaries before execution.',
+      ),
+      answer(
+        'How does agent commerce affect ThumbGate?',
+        'Agent commerce makes governance urgent. If agents can create accounts, buy domains, start subscriptions, or deploy paid infrastructure, teams need spending caps, approval rules, audit trails, and feedback-derived policies before money moves.',
+      ),
+    ],
+    relatedPaths: ['/guides/pre-action-checks', '/guides/browser-automation-safety', '/guides/ai-agent-pre-action-approval-gates'],
+  }),
+  guideBlueprint({
+    query: 'direct corpus interaction agent governance',
+    path: '/guides/direct-corpus-interaction-agent-governance',
+    pillar: 'pre-action-checks',
+    title: 'Direct Corpus Interaction Agent Governance | Guardrails for Terminal-Native Retrieval',
+    heroTitle: 'Terminal-native retrieval needs terminal-native guardrails.',
+    heroSummary: 'Direct corpus interaction lets agents search raw files with commands like find, glob, grep, rg, sed, head, tail, and shell pipelines. ThumbGate turns user votes on answers and actions into lessons, success patterns, and pre-action gates before terminal access spills secrets, burns tokens, or mutates the wrong workspace.',
+    takeaways: [
+      'DCI validates ThumbGate’s thesis that useful agents need tools and evidence, not just vector snippets.',
+      'Raw terminal access creates risk: large outputs, context bloat, path traversal, secret exposure, unsafe writes, and runaway search loops.',
+      'ThumbGate should govern terminal-native retrieval with read scopes, output budgets, evidence requirements, and feedback-derived rules.',
+    ],
+    sections: [
+      paragraphs('Why DCI matters for ThumbGate', [
+        'Classic RAG compresses evidence through an embedding index before the agent can reason. Direct corpus interaction gives the agent a terminal-like interface so it can inspect file paths, exact strings, versions, error codes, surrounding lines, and weak clues across changing workspaces.',
+        'That is the world ThumbGate is built for. Agents that can search and verify directly also need a durable record of which answers were useful, which searches were wasteful, which tool choices were risky, and which follow-on actions should be allowed or blocked.',
+      ]),
+      bullets('What to gate in terminal-native retrieval', [
+        'Search scope: restrict directories, file extensions, generated artifacts, dependency folders, and customer-data locations.',
+        'Output budget: cap command output, repeated searches, context size, and long-running shell pipelines.',
+        'Secret exposure: block or redact credentials, tokens, private keys, customer records, and regulated data before tool output is fed back to the model.',
+        'Evidence quality: require exact file paths, line references, timestamps, diffs, and command transcripts before the agent claims completion.',
+        'Follow-on mutations: separate read/search permissions from write, delete, commit, push, deploy, email, or API permissions.',
+        'Loop control: turn failed searches and repeated bad hypotheses into lessons so the agent does not burn the same query path again.',
+      ]),
+      paragraphs('How ThumbGate complements vector databases', [
+        'ThumbGate does not need to pick a side between vector retrieval and DCI. Semantic retrieval is useful for broad discovery; terminal-native search is useful for exact verification. The governance layer should cover both.',
+        'The paid angle is operational proof: Pro and Team keep lessons, evidence rules, search budgets, and approval boundaries synced across machines and agent runtimes. Free CLI proves the loop locally; hosted sync makes it reliable for daily operators and teams.',
+      ]),
+      bullets('High-ROI product hooks', [
+        'Add a DCI policy preset for `find`, `glob`, `grep`, `rg`, `sed`, `head`, `tail`, `cat`, and shell pipeline use.',
+        'Add telemetry fields for search scope, matched files, output bytes, command count, redaction count, and evidence references.',
+        'Use thumbs-up on good evidence trails as success patterns for future retrieval tasks.',
+        'Use thumbs-down on wasteful or unsafe searches as prevention rules for future terminal-agent runs.',
+      ]),
+    ],
+    faq: [
+      answer(
+        'Does ThumbGate replace vector databases?',
+        'No. ThumbGate governs both semantic retrieval and terminal-native retrieval. Vector search can find candidate areas; DCI-style terminal tools can verify exact evidence inside the workspace.',
+      ),
+      answer(
+        'Why is terminal access risky for agents?',
+        'Terminal tools can expose secrets, generate huge outputs, traverse sensitive directories, run expensive loops, and lead into file writes or deploy commands. That power needs scope, budgets, redaction, and approval boundaries.',
+      ),
+      answer(
+        'How does user feedback help retrieval?',
+        'Users can vote on answers, searches, evidence trails, and outcomes. ThumbGate stores those votes as lessons so successful search strategies are reinforced and repeated bad search paths become explicit rules.',
+      ),
+    ],
+    relatedPaths: ['/guides/code-knowledge-graph-guardrails', '/guides/developer-machine-supply-chain-guardrails', '/guides/pre-action-checks'],
+  }),
+  guideBlueprint({
+    query: 'terraform mcp plan review governance',
+    path: '/guides/terraform-mcp-plan-review-governance',
+    pillar: 'pre-action-checks',
+    title: 'Terraform MCP Plan Review Governance | Shift-Left IaC Guardrails',
+    heroTitle: 'Terraform MCP gives agents context. ThumbGate decides if the plan is safe to run.',
+    heroSummary: 'Terraform MCP servers help coding agents inspect providers, modules, and best practices inside the IDE. ThumbGate adds the missing execution boundary: plan JSON evidence, destructive-change review, IAM and public-ingress checks, approval routing, and feedback-derived rules before terraform apply changes infrastructure.',
+    takeaways: [
+      'Shift-left DevOps works best when context and enforcement are paired: MCP supplies provider knowledge, ThumbGate supplies pre-action gates.',
+      'LLM plan summaries are useful, but teams need deterministic blocks and approvals for destroy, replacement, wildcard IAM, public ingress, and production workspace changes.',
+      'ThumbGate now ships a Terraform gate harness for plan/apply/destroy workflows so platform teams can demo a concrete infrastructure-safety path.',
+    ],
+    sections: [
+      paragraphs('Why Terraform MCP is a strong ThumbGate wedge', [
+        'Terraform MCP moves infrastructure context into the coding loop. An agent can look up provider versions, split legacy files into cleaner modules, and validate configuration before a pull request. That shortens feedback loops, but it also puts more infrastructure intent inside an autonomous editor session.',
+        'The risk is not only bad syntax. The expensive failures are semantic: replacing a database, opening a security group to the internet, granting wildcard IAM, mutating state, or applying a plan to the wrong workspace. Those are action-boundary problems, not documentation problems.',
+      ]),
+      bullets('Where ThumbGate gates the shift-left workflow', [
+        'Before editing Terraform: capture user feedback on prior plans, provider mistakes, unsafe modules, and accepted patterns as reusable lessons.',
+        'Before plan review: require `terraform validate`, a saved plan artifact, and `terraform show -json` evidence instead of raw terminal text only.',
+        'Before apply: pause or block when the plan contains deletes, replacements, wildcard IAM, public ingress, state mutation, production workspace drift, or database changes.',
+        'Before merge: attach a short risk summary with owner, environment, rollback path, and approval evidence.',
+        'After outcome: let users vote thumbs up/down on the answer, plan, action, and result so the next IaC review gets better.',
+      ]),
+      paragraphs('Concrete ThumbGate artifact', [
+        'The Terraform harness lives at `config/gates/terraform.json`. It is selected for Terraform and OpenTofu commands such as `terraform plan`, `terraform show -json`, `terraform apply`, `terraform destroy`, `terraform state`, and `tofu plan`.',
+        'This makes the marketing story demonstrable: Terraform MCP helps the agent understand infrastructure; ThumbGate governs whether the next infrastructure action is safe enough to execute.',
+      ]),
+      bullets('High-ROI demo script', [
+        'Create a fake plan with one database replacement and one `0.0.0.0/0` security group rule.',
+        'Run `terraform plan -out=tfplan` and `terraform show -json tfplan > tfplan.json`.',
+        'Ask the agent to summarize the risk, then route `terraform apply` through ThumbGate.',
+        'Show the gate requiring plan JSON evidence, owner approval, rollback proof, and a maintenance window before apply.',
+        'Capture thumbs-down feedback on the unsafe pattern so the same IaC mistake becomes a durable rule.',
+      ]),
+    ],
+    faq: [
+      answer(
+        'Does ThumbGate replace Terraform MCP?',
+        'No. Terraform MCP gives agents provider and module context. ThumbGate governs feedback, lessons, plan evidence, approval boundaries, and pre-action checks before infrastructure changes execute.',
+      ),
+      answer(
+        'Why not just ask an LLM to review terraform plan JSON?',
+        'LLM review is useful for summarization, but it is not an enforcement boundary. ThumbGate turns the review into deterministic gates: block destroy, pause apply, require evidence, and log who approved risky changes.',
+      ),
+      answer(
+        'What Terraform risks should be gated first?',
+        'Start with destroy, apply without a saved plan, state mutation, wildcard IAM, public ingress, database replacement, production workspace changes, and missing validate or plan JSON evidence.',
+      ),
+    ],
+    relatedPaths: ['/guides/pre-action-checks', '/guides/mcp-tool-governance', '/guides/developer-machine-supply-chain-guardrails'],
+  }),
+  guideBlueprint({
+    query: 'delta mem agent memory governance',
+    path: '/guides/delta-mem-agent-memory-governance',
+    pillar: 'pre-action-checks',
+    title: 'Delta-Mem Agent Memory Governance | Policy and Audit Layer for Working Memory',
+    heroTitle: 'Working memory helps agents remember. ThumbGate decides what memory can do.',
+    heroSummary: 'Delta-Mem-style adapters point to a layered enterprise stack: fast working memory inside the model, explicit retrieval for evidence, and policy layers that decide what should be stored, retrieved, forgotten, exposed, or enforced. ThumbGate is the feedback, audit, and pre-action gate around that memory.',
+    takeaways: [
+      'Lightweight working memory validates ThumbGate’s feedback-memory thesis without making explicit logs, RAG, or audit trails obsolete.',
+      'Compressed memory can improve continuity, but it can also blend facts, preserve bad habits, or hide why an agent acted.',
+      'ThumbGate turns user votes on answers, plans, tool choices, and outcomes into lessons, success patterns, rules, approval checks, and auditable gate decisions.',
+    ],
+    sections: [
+      paragraphs('Why Delta-Mem matters for ThumbGate', [
+        'The important market signal is not the exact adapter architecture. It is that production agents need memory that survives long workflows without dumping every prior token into context. That aligns with ThumbGate’s core premise: useful agents must learn from prior outcomes.',
+        'But working memory is not the same as governance. A compact memory state can help the model carry style, preferences, and task progress. It cannot by itself prove which source justified an action, whether a user approved it, whether regulated data should be exposed, or whether a repeated mistake should be blocked.',
+      ]),
+      bullets('Where working memory needs policy', [
+        'Store: decide which user feedback, tool outcomes, project conventions, and approvals deserve durable memory.',
+        'Retrieve: distinguish fast behavioral hints from exact evidence that needs logs, citations, files, or RAG.',
+        'Forget: avoid preserving stale decisions, sensitive data, failed hypotheses, or one-off corrections as permanent behavior.',
+        'Expose: prevent private lessons, customer data, secrets, or cross-project context from leaking into the next answer.',
+        'Enforce: turn repeated thumbs-down patterns into pre-action checks before the agent writes files, sends messages, deploys, spends money, or calls tools.',
+      ]),
+      paragraphs('The ThumbGate architecture story', [
+        'ThumbGate should not claim to replace Delta-Mem, RAG, or model memory. The stronger claim is orchestration: memory systems produce signals; ThumbGate decides how those signals become lessons, prompts, approvals, blocks, dashboards, exports, and audit evidence.',
+        'That is also the paid moat. Pro and Team are not about hiding an algorithm. They are about synced lessons, policy history, dashboard proof, team-level approval boundaries, DPO/KTO-ready exports, and cross-runtime governance that stays readable when model memory is opaque.',
+      ]),
+      bullets('High-ROI product hooks', [
+        'Add memory-source labels to gate telemetry: user vote, lesson search, explicit log, RAG citation, model working memory, or manual policy.',
+        'Separate success reinforcement from enforcement: thumbs-up creates reusable patterns; thumbs-down can become an approval or block rule.',
+        'Expose “why this was remembered” and “why this was blocked” in dashboard proof so teams can audit memory-derived behavior.',
+        'Use Delta-Mem-style research language in SEO only as a category hook; keep the product claim focused on shipped ThumbGate feedback, lessons, and gates.',
+      ]),
+    ],
+    faq: [
+      answer(
+        'Does Delta-Mem make ThumbGate unnecessary?',
+        'No. Working memory helps an agent carry behavioral state. ThumbGate governs what user feedback becomes a lesson, which lessons become rules, and which risky actions require approval or blocking before execution.',
+      ),
+      answer(
+        'Why does working memory still need RAG or logs?',
+        'Compressed memory is not lossless. Exact factual recall, citations, compliance, regulated content, and audit proof still need explicit retrieval, logs, documents, or structured evidence.',
+      ),
+      answer(
+        'How should teams combine working memory with ThumbGate?',
+        'Use working memory for fast continuity, RAG or logs for exact evidence, and ThumbGate for policy: store, retrieve, forget, expose, approve, block, and audit decisions.',
+      ),
+    ],
+    relatedPaths: ['/guides/local-desktop-agent-governance', '/compare/mem0', '/guides/pre-action-checks'],
+  }),
+  guideBlueprint({
+    query: 'claude code usage token governance',
+    path: '/guides/claude-code-usage-token-governance',
+    pillar: 'cost-control',
+    title: 'Claude Code Usage Token Governance | Turn /usage Visibility into Gates',
+    heroTitle: 'Usage breakdowns show where tokens went. ThumbGate prevents the waste from repeating.',
+    heroSummary: 'Claude Code /usage-style reporting makes token consumption visible across Skills, Agents, MCPs, and Plugins. ThumbGate adds the next control layer: feedback-derived lessons, budget gates, risky-tool approvals, and audit proof before expensive or unsafe agent loops keep running.',
+    takeaways: [
+      'Usage visibility is a diagnostic. ThumbGate turns the diagnosis into durable rules and pre-action checks.',
+      'MCP servers, skills, plugins, and subagents need budgets by task, runtime, and risk tier.',
+      'ThumbGate now ships a token-usage harness for /usage, MCP context bloat, high-token runtime components, and repeated token-waste loops.',
+      'Thumbs-down on wasteful answers or loops should create prevention rules; thumbs-up on efficient workflows should become success patterns.',
+    ],
+    sections: [
+      paragraphs('Why Claude Code /usage is a ThumbGate wedge', [
+        'Boris Cherny’s post says Claude Code will expose which Skills, Agents, MCPs, and Plugins consume tokens. That is a strong market validation: agent buyers now expect runtime-level accountability, not a single blended model bill.',
+        'But cost visibility does not stop waste by itself. If one MCP server keeps dumping tool results into context, or one skill repeatedly chooses an expensive path, the user still needs a governance layer that learns from the outcome and blocks or pauses the same pattern next time.',
+      ]),
+      bullets('What to govern after /usage exposes the hotspot', [
+        'Budget: cap token spend by skill, agent, MCP server, plugin, workspace, task, or customer.',
+        'Loop risk: pause repeated tool calls, repeated failed searches, repeated edits, and runaway subagent chains.',
+        'MCP context bloat: flag servers whose results stay in context longer than needed or return excessive output.',
+        'Action risk: require approval before high-spend tools deploy, email, buy, upload, delete, or mutate production resources.',
+        'Outcome learning: connect user votes to the usage report so expensive bad answers become prevention rules.',
+      ]),
+      paragraphs('The product story for Pro and Team', [
+        'Free local enforcement can prove the concept on one machine. Pro should make the usage-to-governance loop portable: synced lessons, shared budgets, dashboard proof, and cross-runtime reports for Claude Code Desktop, CLI, MCP servers, and agent plugins.',
+        'This turns token accountability into a buyer conversation: “Show us where the agent spent tokens, show us which waste patterns were blocked, and show us which human approvals changed future behavior.”',
+      ]),
+      bullets('High-ROI implementation hooks', [
+        'Use `config/gates/token-usage.json` to demonstrate gates for Claude Code `/usage`, MCP context bloat, high-token runtime components, and repeated token-waste loops.',
+        'Add `runtime_component` telemetry labels: skill, agent, MCP server, plugin, subagent, hook, or manual command.',
+        'Add `usage_bucket` and `budget_decision` fields to gate events so dashboards can group cost hotspots.',
+        'Create default budget gates for repeated MCP output, repeated failed tool calls, and high-token context dumps.',
+        'Use thumbs-up outcomes as success patterns for cheaper workflows and thumbs-down outcomes as cost-prevention rules.',
+      ]),
+    ],
+    faq: [
+      answer(
+        'Does Claude Code /usage replace ThumbGate analytics?',
+        'No. /usage shows where tokens were spent. ThumbGate records why the work was approved, blocked, repeated, or corrected, then turns that feedback into rules and gates.',
+      ),
+      answer(
+        'What should teams do when an MCP server dominates token usage?',
+        'Add output budgets, flushing rules, approval gates for expensive tool chains, and lessons that steer the agent toward cheaper evidence paths.',
+      ),
+      answer(
+        'How does this help revenue?',
+        'It creates a concrete paid pain: teams can justify Pro or Team when ThumbGate reduces repeated token waste and proves governance across machines and runtimes.',
+      ),
+    ],
+    relatedPaths: ['/guides/claude-code-ultrawork-safety', '/guides/mcp-tool-governance', '/guides/stop-repeated-ai-agent-mistakes'],
+  }),
+  guideBlueprint({
+    query: 'agentic agile development governance',
+    path: '/guides/agentic-agile-development-governance',
+    pillar: 'pre-action-checks',
+    title: 'Agentic Agile Development Governance | Acceptance Evidence for AI Agents',
+    heroTitle: 'Agentic agile needs more than prompts. It needs acceptance evidence and gates.',
+    heroSummary: 'Agentic Agile reframes AI work as iterative delivery with stories, acceptance criteria, review evidence, and definitions of done. ThumbGate turns those criteria into feedback memory, pre-action approvals, completion checks, and audit proof before agents merge, deploy, message, or mutate systems.',
+    takeaways: [
+      'Enterprise agent teams need process memory, not just better prompting.',
+      'Acceptance criteria should become executable checks, required evidence, and approval gates.',
+      'ThumbGate can own the control plane between story intent, agent action, human feedback, and release proof.',
+    ],
+    sections: [
+      paragraphs('Why Agentic Agile helps ThumbGate', [
+        'The Microsoft framing is useful because it makes agent development sound like accountable software delivery instead of prompt tinkering. Stories, sprint goals, acceptance criteria, and retrospectives are already familiar to enterprise buyers.',
+        'ThumbGate fits naturally as the enforcement and memory layer. A user can vote on the answer, the plan, the tool choice, the pull request, and the outcome. Those votes become lessons, success patterns, gates, and dashboard proof for the next iteration.',
+      ]),
+      bullets('What ThumbGate should gate in an agentic agile loop', [
+        'Story intent: require a clear task, owner, scope, and forbidden actions before the agent starts.',
+        'Definition of done: require tests, screenshots, diffs, telemetry, or customer evidence before the agent claims completion.',
+        'Review boundary: pause before merge, deploy, external message, payment, data export, or destructive command.',
+        'Retrospective memory: convert repeated review comments into prevention rules and accepted practices into success patterns.',
+        'Audit proof: preserve who approved what, which evidence was attached, and which rule changed after feedback.',
+      ]),
+      paragraphs('The buyer-facing message', [
+        'This is especially strong for pilots with legal, compliance, and enterprise IT teams. The pitch is not “trust our agent.” It is “make every agent sprint observable, reviewable, and enforceable.”',
+        'Pro and Team then become process infrastructure: synced definitions of done, shared approval policies, cross-runtime lessons, and evidence dashboards across Claude Code, Cursor, MCP tools, browser agents, and CI.',
+      ]),
+      bullets('High-ROI product hooks', [
+        'Add an Agentic Agile guide and schema language around story, acceptance criteria, evidence, review, and retrospective lessons.',
+        'Map thumbs-up to reusable success patterns and thumbs-down to explicit acceptance failures.',
+        'Show dashboard proof by story or task so a buyer can inspect decisions without reading every transcript.',
+        'Use this page as the enterprise bridge from “developer tool” to “governed AI delivery workflow.”',
+      ]),
+    ],
+    faq: [
+      answer(
+        'Does ThumbGate manage agile projects?',
+        'No. ThumbGate does not replace Jira, Linear, or GitHub Projects. It governs agent actions against the story, acceptance evidence, user feedback, and approval rules.',
+      ),
+      answer(
+        'Why is Agile relevant to AI agents?',
+        'Because production agent work needs scoped intent, reviewable outputs, definitions of done, and retrospectives. Prompts alone do not create accountable delivery.',
+      ),
+      answer(
+        'How does this become a paid feature?',
+        'Teams pay for synced policies, shared lessons, dashboard proof, exports, and cross-runtime enforcement that keep agent delivery consistent across machines and workflows.',
+      ),
+    ],
+    relatedPaths: ['/guides/ai-agent-pre-action-approval-gates', '/guides/background-agent-governance', '/guides/stop-repeated-ai-agent-mistakes'],
+  }),
+  guideBlueprint({
+    query: 'ai fluency marketing agent governance',
+    path: '/guides/ai-fluency-marketing-agent-governance',
+    pillar: 'approval-gates',
+    title: 'AI Fluency Marketing Agent Governance | Brand-Safe Feedback Memory',
+    heroTitle: 'AI-fluent teams need brand-safe agent memory, not one-off prompts.',
+    heroSummary: 'Enterprise AI fluency programs are moving agent use beyond developers into marketing, legal, operations, and customer-facing workflows. ThumbGate helps those teams vote on outputs, capture lessons, enforce approval boundaries, and prove which brand, compliance, or customer-risk rules shaped the next action.',
+    takeaways: [
+      'Adobe/Whirlpool-style AI fluency validates a broader buyer: non-developer teams adopting AI need governance they can understand.',
+      'Marketing teams need memory for successful briefs and campaign patterns, plus gates for brand, legal, privacy, and claims risk.',
+      'ThumbGate should position Pro/Team as shared feedback memory and approval proof across human-in-the-loop business workflows.',
+    ],
+    sections: [
+      paragraphs('Why marketing AI fluency matters for ThumbGate', [
+        'The Adweek/LinkedIn signal is that AI fluency is becoming a mainstream work skill, not a niche engineering skill. As brands train newer marketers on AI, the question becomes: how do teams preserve what worked, avoid repeating bad outputs, and keep risky claims from shipping?',
+        'ThumbGate already has the right primitive: users can vote on answers, plans, drafts, tool choices, and outcomes. For marketing and business teams, those votes become brand lessons, success patterns, approval rules, and audit evidence.',
+      ]),
+      bullets('Where business teams need gates', [
+        'Brand voice: reinforce approved tone, phrasing, positioning, and campaign patterns.',
+        'Legal claims: pause before publishing unsupported performance, privacy, medical, financial, or competitive claims.',
+        'Customer data: block leaking CRM, support, sales, or research data into public drafts or external tools.',
+        'Channel approvals: require review before posting, emailing, buying ads, sending proposals, or changing live pages.',
+        'Learning loop: convert corrections from brand/legal reviews into durable lessons instead of repeating the same rewrite cycle.',
+      ]),
+      paragraphs('The revenue angle', [
+        'This page expands ThumbGate beyond “developer guardrails” without diluting the product. The message is still precise: ThumbGate records feedback and turns it into enforceable lessons before agents act.',
+        'For enterprise buyers, the paid moat is shared governance: synced brand lessons, approval trails, proof dashboards, exports, and cross-tool enforcement across marketing assistants, browser agents, docs, CRM workflows, and developer agents.',
+      ]),
+      bullets('High-ROI product hooks', [
+        'Create a marketing-governance landing asset that uses accessible language: vote, remember, approve, prove.',
+        'Add examples for brand review, legal claims review, CRM data boundaries, and campaign publishing approval.',
+        'Route the page to Pro/Team and the Workflow Hardening Sprint rather than the solo CLI only.',
+        'Use this as outreach material for non-engineering innovation, marketing ops, and risk leaders.',
+      ]),
+    ],
+    faq: [
+      answer(
+        'Is ThumbGate only for developers?',
+        'No. ThumbGate started with coding-agent enforcement, but the core loop is broader: users vote on answers and actions, ThumbGate records lessons, and future agent work is guided or gated by those lessons.',
+      ),
+      answer(
+        'How does this help marketing teams?',
+        'It turns brand, legal, privacy, and campaign feedback into reusable memory and approval gates instead of leaving every prompt correction trapped in a chat transcript.',
+      ),
+      answer(
+        'What is the paid reason to use ThumbGate here?',
+        'Teams pay for shared lessons, approval proof, dashboard visibility, exports, and cross-tool governance that a single local CLI cannot provide across departments.',
+      ),
+    ],
+    relatedPaths: ['/guides/ai-mode-ads-agent-governance', '/guides/ai-agent-pre-action-approval-gates', '/guides/relational-knowledge-ai-recommendations'],
+  }),
   guideBlueprint({
     query: 'autoresearch agent safety',
     path: '/guides/autoresearch-agent-safety',

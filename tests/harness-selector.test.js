@@ -97,6 +97,60 @@ describe('selectHarnessName — deploy harness', () => {
 });
 
 // ---------------------------------------------------------------------------
+// selectHarnessName — terraform
+// ---------------------------------------------------------------------------
+
+describe('selectHarnessName — terraform harness', () => {
+  it('detects terraform plan JSON review', () => {
+    assert.strictEqual(
+      selectHarnessName('Bash', { command: 'terraform show -json tfplan > tfplan.json' }),
+      'terraform'
+    );
+  });
+
+  it('detects terraform apply before generic deploy matching', () => {
+    assert.strictEqual(
+      selectHarnessName('Bash', { command: 'terraform apply tfplan' }),
+      'terraform'
+    );
+  });
+
+  it('detects OpenTofu workflows', () => {
+    assert.strictEqual(
+      selectHarnessName('Bash', { command: 'tofu plan -out=tfplan' }),
+      'terraform'
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// selectHarnessName — token-usage
+// ---------------------------------------------------------------------------
+
+describe('selectHarnessName — token-usage harness', () => {
+  it('detects Claude Code /usage requests', () => {
+    assert.strictEqual(
+      selectHarnessName('Bash', { command: '/usage' }),
+      'token-usage'
+    );
+  });
+
+  it('detects MCP token budget hotspots', () => {
+    assert.strictEqual(
+      selectHarnessName('Bash', { command: 'review MCP server token usage and context budget' }),
+      'token-usage'
+    );
+  });
+
+  it('detects runtime component token analysis from text input', () => {
+    assert.strictEqual(
+      selectHarnessName('Read', { text: 'Skills and MCP plugins are using too many tokens' }),
+      'token-usage'
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
 // selectHarnessName — db-write
 // ---------------------------------------------------------------------------
 
@@ -227,6 +281,18 @@ describe('selectHarness returns valid file paths', () => {
     assert.ok(p, 'should return a path');
     assert.ok(fs.existsSync(p), `harness file should exist: ${p}`);
   });
+
+  it('terraform harness file exists on disk', () => {
+    const p = selectHarness('Bash', { command: 'terraform destroy' });
+    assert.ok(p, 'should return a path');
+    assert.ok(fs.existsSync(p), `harness file should exist: ${p}`);
+  });
+
+  it('token-usage harness file exists on disk', () => {
+    const p = selectHarness('Bash', { command: '/usage' });
+    assert.ok(p, 'should return a path');
+    assert.ok(fs.existsSync(p), `harness file should exist: ${p}`);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -234,11 +300,13 @@ describe('selectHarness returns valid file paths', () => {
 // ---------------------------------------------------------------------------
 
 describe('listHarnesses and getHarnessPath', () => {
-  it('lists all three harnesses', () => {
+  it('lists all specialized harnesses', () => {
     const names = listHarnesses();
     assert.ok(names.includes('deploy'), 'should include deploy');
     assert.ok(names.includes('code-edit'), 'should include code-edit');
     assert.ok(names.includes('db-write'), 'should include db-write');
+    assert.ok(names.includes('terraform'), 'should include terraform');
+    assert.ok(names.includes('token-usage'), 'should include token-usage');
     assert.ok(names.includes('routine'), 'should include routine');
   });
 

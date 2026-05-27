@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claude Code Ultrawork Safety | Guardrails for Agents That Keep Running</title>
+  <meta name="description" content="Ultrawork, Ralph loops, background sessions, batch agents, and parallel worktrees all push Claude Code toward longer autonomous runs. ThumbGate adds the cont..." />
+  <meta property="og:title" content="Claude Code Ultrawork Safety | Guardrails for Agents That Keep Running" />
+  <meta property="og:description" content="Ultrawork, Ralph loops, background sessions, batch agents, and parallel worktrees all push Claude Code toward longer autonomous runs. ThumbGate adds the cont..." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/guides/claude-code-ultrawork-safety" />
+  <link rel="canonical" href="https://thumbgate.ai/guides/claude-code-ultrawork-safety" />
+  <link rel="llm-context" href="/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --bg-raised: #111113;
+      --bg-card: #161618;
+      --line: #222225;
+      --text: #e8e8ec;
+      --muted: #8b8b96;
+      --cyan: #22d3ee;
+      --green: #4ade80;
+      --red: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(12px);
+      background: rgba(10, 10, 11, 0.88);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
+    .brand {
+      font-weight: 700;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 211, 238, 0.22);
+      background: rgba(34, 211, 238, 0.1);
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.06;
+      letter-spacing: -0.04em;
+      margin: 16px 0;
+      max-width: 760px;
+    }
+    .hero p {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .signal-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 28px 0 0;
+    }
+    .signal-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .signal-pill.up {
+      border-color: rgba(74, 222, 128, 0.28);
+      color: #b8f7c8;
+      background: rgba(74, 222, 128, 0.1);
+    }
+    .signal-pill.down {
+      border-color: rgba(248, 113, 113, 0.28);
+      color: #ffc0c0;
+      background: rgba(248, 113, 113, 0.1);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+      gap: 24px;
+      padding-bottom: 72px;
+    }
+    .card, .detail-section, .sidebar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .card { padding: 24px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p { color: var(--muted); }
+    .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+    .card h2 { margin-top: 0; }
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .sidebar-card {
+      padding: 20px;
+    }
+    /* Only the first sidebar card sticks. Stacking multiple stickies at the
+       same top offset makes them overlap each other on scroll. The related-
+       pages card flows normally below. */
+    .sidebar-card:first-child {
+      position: sticky;
+      top: 84px;
+      max-height: calc(100vh - 104px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .proof-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 18px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: var(--cyan);
+      color: #071116;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .paid-sprint-card {
+      border-color: rgba(74, 222, 128, 0.32);
+      background: linear-gradient(180deg, rgba(17, 17, 19, 0.98), rgba(10, 20, 14, 0.96));
+    }
+    .paid-sprint-card p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    .paid-offers {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .paid-offer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid rgba(74, 222, 128, 0.28);
+      border-radius: 10px;
+      color: var(--fg);
+      text-decoration: none;
+      background: rgba(0, 0, 0, 0.22);
+    }
+    .paid-offer strong {
+      color: #9af5b0;
+      white-space: nowrap;
+    }
+    .paid-offer:hover, .paid-offer:focus-visible {
+      border-color: rgba(74, 222, 128, 0.62);
+      outline: none;
+    }
+    .secondary-cta {
+      display: inline-flex;
+      margin-top: 12px;
+      color: var(--cyan);
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .faq-item {
+      border-top: 1px solid var(--line);
+      padding: 14px 0;
+    }
+    .faq-item summary {
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .faq-item p {
+      color: var(--muted);
+    }
+    .related-card {
+      display: block;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      margin-top: 12px;
+      color: var(--text);
+    }
+    .related-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    @media (max-width: 860px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .sidebar-card:first-child {
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
+    }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Claude Code Ultrawork makes agents faster. ThumbGate makes them governable.",
+  "description": "Ultrawork, Ralph loops, background sessions, batch agents, and parallel worktrees all push Claude Code toward longer autonomous runs. ThumbGate adds the cont...",
+  "about": [
+    "claude code masterclass guardrails",
+    "cursor prevent repeated mistakes",
+    "claude code prevent repeated mistakes",
+    "codex cli guardrails"
+  ],
+  "url": "https://thumbgate.ai/guides/claude-code-ultrawork-safety",
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "mainEntityOfPage": "https://thumbgate.ai/guides/claude-code-ultrawork-safety"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does ThumbGate replace Claude Code Ultrawork?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. ThumbGate is the governance layer around Ultrawork-style autonomy. Claude Code keeps generating and delegating work; ThumbGate checks risky actions before they execute."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the biggest risk in long-running Claude Code agents?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The biggest risk is compounding unchecked action: repeated file edits, shell commands, deploys, or PR updates can continue after context gets stale or the initial assumption proves wrong."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What should teams add before running agents for hours?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Teams should add worktree isolation, changed-file budgets, stop conditions, pre-action approval gates, required evidence, and audit logs before letting background agents run unattended."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="container">
+      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+    </div>
+  </div>
+
+  <main class="container">
+    <section class="hero">
+      <div class="eyebrow">guide | claude code ultrawork safety</div>
+      <h1>Claude Code Ultrawork makes agents faster. ThumbGate makes them governable.</h1>
+      <p>Ultrawork, Ralph loops, background sessions, batch agents, and parallel worktrees all push Claude Code toward longer autonomous runs. ThumbGate adds the control layer: budgets, stop conditions, approval gates, worktree isolation checks, and audit proof before risky actions execute.</p>
+      <div class="signal-row">
+        <div class="signal-pill up">👍 Thumbs up reinforces good behavior</div>
+        <div class="signal-pill down">👎 Thumbs down blocks repeated mistakes</div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div>
+        <div class="card">
+          <h2>Why this page exists</h2>
+          <ul><li>Long-running Claude Code workflows multiply speed, token use, file-edit blast radius, and approval risk at the same time.</li><li>The safety layer should sit before execution: pre-dispatch checks, per-agent budgets, worktree isolation, evidence requirements, and human approval for high-risk tools.</li><li>ThumbGate turns Ultrawork-style autonomy into a governed workflow instead of an unattended prompt loop.</li></ul>
+        </div>
+
+      <section class="detail-section">
+        <h2>Why Ultrawork changes the risk profile</h2>
+        <p>Claude Code already supports parallel work patterns through subagents, background sessions, batch work, and isolated worktrees. Ultrawork-style community workflows push that pattern further: keep agents running, split work aggressively, and let the system continue for hours.</p><p>That is exciting for throughput, but it also turns small mistakes into compounding mistakes. A bad assumption can spread across branches, a skipped test can become several pull requests, and a missing approval can reach production-adjacent commands before a human notices.</p>
+
+      </section>
+      <section class="detail-section">
+        <h2>What has to be gated before agents keep running</h2>
+
+        <ul><li>Pre-dispatch scope: branch, changed-file budget, target directories, and whether tasks overlap.</li><li>Tool risk: shell commands, git writes, deploys, database changes, external LLM calls, payment actions, and customer-facing sends.</li><li>Evidence requirements: tests, CI links, read-before-write proof, screenshots, API responses, rollback commands, and reviewer notes.</li><li>Stop conditions: repeated gate blocks, rising failure rate, excessive token burn, missing proof, stale context, or conflicting worktree edits.</li><li>Human approval: production, secrets-adjacent, legal/compliance, customer-data, payment, or protected-branch actions.</li></ul>
+      </section>
+      <section class="detail-section">
+        <h2>How ThumbGate fits</h2>
+        <p>ThumbGate does not need to replace Claude Code. Claude Code can still plan, delegate, run background sessions, and use worktrees. ThumbGate sits at the action boundary and decides whether the next proposed tool call should be allowed, logged, paused for approval, or blocked.</p><p>For a team testing Ultrawork, the first paid wedge is not a broad platform migration. It is one Workflow Hardening Sprint around the riskiest autonomous loop: define budgets, add gates, capture thumbs-downs, prove the checks fired, and leave behind an audit trail the team can review.</p>
+
+      </section>
+      <section class="detail-section">
+        <h2>Minimum viable Ultrawork governance checklist</h2>
+
+        <ul><li>Run each parallel worker in an isolated worktree and block overlapping ownership without an explicit plan.</li><li>Cap background-agent runs by time, tokens, changed files, and repeated gate blocks.</li><li>Require tests or CI evidence before an agent opens or updates a PR.</li><li>Pause for approval before deploys, protected-branch writes, migrations, external data sends, or expensive API calls.</li><li>Export gate decisions so the team can inspect which agents were blocked, approved, overridden, or allowed.</li></ul>
+      </section>
+        <div class="detail-section">
+          <h2>FAQ</h2>
+
+      <details class="faq-item">
+        <summary>Does ThumbGate replace Claude Code Ultrawork?</summary>
+        <p>No. ThumbGate is the governance layer around Ultrawork-style autonomy. Claude Code keeps generating and delegating work; ThumbGate checks risky actions before they execute.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What is the biggest risk in long-running Claude Code agents?</summary>
+        <p>The biggest risk is compounding unchecked action: repeated file edits, shell commands, deploys, or PR updates can continue after context gets stale or the initial assumption proves wrong.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What should teams add before running agents for hours?</summary>
+        <p>Teams should add worktree isolation, changed-file budgets, stop conditions, pre-action approval gates, required evidence, and audit logs before letting background agents run unattended.</p>
+      </details>
+        </div>
+      </div>
+
+      <aside class="sidebar">
+
+
+
+
+
+        <div class="sidebar-card">
+          <h2>GSD execution brief</h2>
+          <p>This page was prioritized because it captures high-intent demand around claude code ultrawork safety and feeds directly into ThumbGate's proof-led conversion path.</p>
+          <p><strong>Opportunity score:</strong> 88</p>
+          <p><strong>Primary persona:</strong> claude-code-builder</p>
+          <p><strong>Keyword cluster:</strong> claude code masterclass guardrails, cursor prevent repeated mistakes, claude code prevent repeated mistakes, codex cli guardrails</p>
+          <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
+          <div class="proof-links"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json" target="_blank" rel="noopener">Automation proof</a><a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub repository</a></div>
+          <a class="cta-button" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_claude-code-ultrawork-safety&amp;cta_placement=seo_brief&amp;plan_id=pro" target="_blank" rel="noopener">Go Pro — $19/mo</a>
+        </div>
+        <div class="sidebar-card">
+          <h2>Related pages</h2>
+
+        <a class="related-card" href="/guides/background-agent-governance">
+          <span class="related-label">Related page</span>
+          <strong>Background Agent Governance for Agent PRs</strong>
+        </a>
+        <a class="related-card" href="/guides/long-running-agent-context-management">
+          <span class="related-label">Related page</span>
+          <strong>Long-Running Agents Need Structured Memory, Not Raw Chat Logs</strong>
+        </a>
+        <a class="related-card" href="/guides/ai-agent-pre-action-approval-gates">
+          <span class="related-label">Related page</span>
+          <strong>AI agent pre-action approval gates for risky tool calls</strong>
+        </a>
+        </div>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>
