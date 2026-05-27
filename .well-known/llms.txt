@@ -24,6 +24,15 @@
 4. PreToolUse hooks block the pattern before it executes again
 5. Thompson Sampling adapts gate confidence over time
 
+## Agentic development cycle fit
+
+ThumbGate maps to Guide, Generate, Verify, Solve by adding a pre-action execution gate:
+
+- Guide: feedback and policies become concrete rules
+- Generate: agents still produce plans, edits, and tool calls
+- Verify: risky actions require evidence before execution
+- Solve: blocked failures become reusable lessons and prevention gates
+
 ## Who it's for
 
 - Developers using Claude Code, Cursor, Codex, Gemini CLI, or any MCP-compatible agent

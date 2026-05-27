@@ -55,6 +55,16 @@ test('public landing page routes Pro buyers through the hosted checkout surface'
   assert.doesNotMatch(landingPage, /gumroad\.com/);
 });
 
+test('public landing page maps agentic development cycle to pre-action execution gate', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /Agentic Development Cycle/);
+  assert.match(landingPage, /Guide, Generate, Verify, Solve still needs an execution gate/);
+  assert.match(landingPage, /The New Stack's May 2026 AC\/DC framing/);
+  assert.match(landingPage, /ThumbGate's role: the pre-action gate between generated intent and executed action/);
+  assert.match(landingPage, /How does ThumbGate fit the agentic development cycle\?/);
+});
+
 test('public landing page exposes above-fold paid Pro CTA with canonical revenue analytics', () => {
   const landingPage = readLandingPage();
   const heroStart = landingPage.indexOf('<!-- HERO -->');

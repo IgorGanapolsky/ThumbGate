@@ -21,7 +21,7 @@ __GOOGLE_SITE_VERIFICATION_META__
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://thumbgate.ai/og.png">
 <meta name="thumbgate-version" content="1.23.1">
-<meta name="keywords" content="ThumbGate, thumbgate, AI agent orchestration, AI experience orchestration, agent enforcement layer, save LLM tokens, reduce Claude API cost, reduce OpenAI cost, AI agent token savings, prevent LLM retries, prevent hallucination retries, stop AI token waste, pre-action checks, agent governance, Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, workflow hardening, context engineering, AI authenticity, brand authenticity AI">
+<meta name="keywords" content="ThumbGate, thumbgate, AI agent orchestration, AI experience orchestration, agentic development cycle, AC/DC framework, Guide Generate Verify Solve, agent enforcement layer, save LLM tokens, reduce Claude API cost, reduce OpenAI cost, AI agent token savings, prevent LLM retries, prevent hallucination retries, stop AI token waste, pre-action checks, agent governance, Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, workflow hardening, context engineering, AI authenticity, brand authenticity AI">
 <link rel="canonical" href="__APP_ORIGIN__/">
 <link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -89,6 +89,7 @@ __GA_BOOTSTRAP__
     "ThumbGate GPT for ChatGPT — preflight risky commands, refunds, deploys, and PR actions, capture typed thumbs-up/down lessons, and route users into local enforcement",
     "Workflow Sentinel — score blast radius before PR, merge, release, and publish actions fire",
     "Workflow architecture checks — distinguish predefined workflows, parallel fan-out, and open-ended agents before execution",
+    "Agentic development cycle control — maps Guide, Generate, Verify, and Solve into enforceable pre-action gates before risky tool calls execute",
     "Environment inspection evidence — require read-before-write, screenshots, API response checks, tests, or output validation for open-ended agent loops",
     "Parallel branch budgets — prevent agent desktops and fan-out workflows from silently multiplying token spend",
     "Docker Sandboxes routing — move high-risk local runs into isolated microVM-backed execution",
@@ -319,6 +320,14 @@ __GA_BOOTSTRAP__
       "acceptedAnswer": {
         "@type": "Answer",
         "text": "Prompt rules are suggestions agents can ignore. Pre-Action Checks are enforcement — they block the action before execution via PreToolUse hooks. Checks are auto-generated from feedback and use Thompson Sampling to adapt."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does ThumbGate fit the agentic development cycle?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Agentic development is converging around Guide, Generate, Verify, and Solve. ThumbGate adds the execution-control layer between those stages: project guidance and feedback become rules, generated tool calls are checked before execution, verification evidence is required for risky actions, and solved failures become reusable prevention gates."
       }
     },
     {
@@ -808,6 +817,36 @@ __GA_BOOTSTRAP__
         <span data-anchor="team-intake-form">Start Team Pilot Intake id="team-pilot-intake-form" data-team-intake-form name="ctaPlacement" value="team_visible_intake" name="utmMedium" value="visible_team_intake" name="planId" value="team" name="ctaId" value="workflow_sprint_intake" Team checkout happens after scope. team_workflow_sprint_recovery_intake scope_first workflow_sprint_intake_started workflow_sprint_intake_submit_attempted pricing_team_intake team_intake_started</span>
         <span data-anchor="chatgpt-context">No, you do not have to chat inside the GPT forever. ChatGPT is the discovery and memory surface. Do not rely on ChatGPT's native rating buttons for ThumbGate memory. Explore GPTs choose the GPT by Igor Ganapolsky Programming Do I have to chat inside the ThumbGate GPT for enforcement? capture thumbs-up/down lessons Real blocking for coding agents still runs locally adapters/chatgpt/INSTALL.md Native ChatGPT rating buttons are not the ThumbGate capture path. thumbs up: this review named exact files, commands, and tests. thumbs down: the answer ignored my request.</span>
       </div>
+    </div>
+  </div>
+</section>
+
+<section class="compatibility" id="agentic-development-cycle">
+  <div class="container">
+    <div class="section-label">Agentic Development Cycle</div>
+    <h2 class="section-title">Guide, Generate, Verify, Solve still needs an execution gate.</h2>
+    <p style="text-align:center;font-size:16px;color:var(--text-muted);max-width:900px;margin:0 auto 28px;line-height:1.7;">The market is converging on agentic development as a control loop, not a code-generation trick. <a href="https://thenewstack.io/agentic-development-cycle-framework/" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:underline;">The New Stack's May 2026 AC/DC framing</a> names the core stages: Guide, Generate, Verify, and Solve. ThumbGate gives that loop a hard pre-action boundary so agent work is governed before it touches files, terminals, CI, payments, or production systems.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;max-width:1080px;margin:0 auto;">
+      <div class="compat-card" style="cursor:default;">
+        <h3>Guide</h3>
+        <p>Rules, standards, past thumbs-downs, workflow boundaries, and approval policies are loaded as concrete operating context instead of vague prompt advice.</p>
+      </div>
+      <div class="compat-card" style="cursor:default;">
+        <h3>Generate</h3>
+        <p>Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and MCP-compatible agents keep generating plans, edits, and tool calls.</p>
+      </div>
+      <div class="compat-card" style="cursor:default;">
+        <h3>Verify</h3>
+        <p>Pre-Action Checks require inspection evidence, tests, CI, screenshots, API responses, or human approval before high-risk actions proceed.</p>
+      </div>
+      <div class="compat-card" style="cursor:default;">
+        <h3>Solve</h3>
+        <p>Blocked failures and accepted fixes become lessons, shared rules, DPO exports, and audit events so the same mistake is not paid for again.</p>
+      </div>
+    </div>
+    <div style="max-width:900px;margin:22px auto 0;padding:16px 18px;border:1px solid rgba(74,222,128,0.28);border-radius:8px;background:rgba(74,222,128,0.07);">
+      <strong style="display:block;color:var(--green);margin-bottom:6px;">ThumbGate's role: the pre-action gate between generated intent and executed action.</strong>
+      <p style="margin:0;color:var(--text-muted);font-size:14px;line-height:1.65;">Verification after a pull request is useful, but it is too late for force-pushes, destructive SQL, unsafe deploys, leaked secrets, and costly external API calls. ThumbGate checks the action before it runs, then feeds the result back into the next Guide and Solve cycle.</p>
     </div>
   </div>
 </section>
@@ -1488,6 +1527,10 @@ __GA_BOOTSTRAP__
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How are pre-action checks different from prompt rules?</div>
         <div class="faq-a">Prompt rules are a starting point, not a finish line. Without prompt evaluation you do not know whether they still hold up under real tool use. ThumbGate adds the human-in-the-loop measurement loop and the enforcement layer: proof lanes, ThumbGate Bench, and self-heal checks show whether behavior improved, and Pre-Action Checks block the action before execution when it did not.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How does ThumbGate fit the agentic development cycle?</div>
+        <div class="faq-a">Agentic development is not just generation. Teams need Guide, Generate, Verify, and Solve working as a repeatable loop. ThumbGate is the pre-action execution gate in that loop: guidance and feedback become rules, generated tool calls are checked before execution, verification evidence is required for risky actions, and solved failures become reusable prevention gates.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What does Pro cost?</div>
