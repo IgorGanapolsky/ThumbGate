@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ThumbGate vs Arcjet | Agent-Outbound Gate Pairs With App-Inbound Firewall</title>
+  <meta name="description" content="Arcjet is a runtime SDK that protects your Node/Python application from inbound attacks (bots, rate-limit, prompt-injection, DLP). ThumbGate is a PreToolUse hook inside the AI coding agent that gates outbound tool calls before they fire. Different sides of the same agentic perimeter — use both at regulated firms." />
+  <meta property="og:title" content="ThumbGate vs Arcjet | Agent-Outbound Gate Pairs With App-Inbound Firewall" />
+  <meta property="og:description" content="Arcjet shields your application from what an agent might send IN. ThumbGate shields your engineering org from what the dev's AI coding agent might send OUT. Complementary, not competitive." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/compare/arcjet" />
+  <link rel="canonical" href="https://thumbgate.ai/compare/arcjet" />
+  <link rel="llm-context" href="/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root { --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #161618; --line: #222225; --text: #e8e8ec; --muted: #8b8b96; --cyan: #22d3ee; --green: #4ade80; --amber: #fbbf24; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); background: rgba(10, 10, 11, 0.88); border-bottom: 1px solid var(--line); }
+    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; padding-bottom: 14px; }
+    .brand { font-weight: 700; color: var(--text); display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(34, 211, 238, 0.22); background: rgba(34, 211, 238, 0.1); color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
+    h1 { font-size: clamp(34px, 5vw, 56px); line-height: 1.06; letter-spacing: -0.04em; margin: 16px 0; max-width: 860px; }
+    .hero p { max-width: 760px; color: var(--muted); font-size: 18px; }
+    .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 24px; padding-bottom: 72px; }
+    .card, .detail-section, .sidebar-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px; }
+    .card { padding: 24px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p, .detail-section li, .sidebar-card p { color: var(--muted); }
+    .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+    .comparison-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+    .comparison-table th, .comparison-table td { border: 1px solid var(--line); padding: 12px; text-align: left; vertical-align: top; }
+    .comparison-table th { background: var(--bg-raised); color: var(--cyan); }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+    .pill { border: 1px solid var(--line); background: var(--bg-raised); border-radius: 999px; padding: 10px 14px; font-size: 14px; font-weight: 650; }
+    .pill.good { color: #b8f7c8; border-color: rgba(74, 222, 128, 0.28); background: rgba(74, 222, 128, 0.1); }
+    .pill.warn { color: #ffe2a4; border-color: rgba(251, 191, 36, 0.28); background: rgba(251, 191, 36, 0.1); }
+    .sidebar { display: flex; flex-direction: column; gap: 18px; }
+    .sidebar-card { padding: 20px; }
+    .sidebar-card:first-child { position: sticky; top: 84px; max-height: calc(100vh - 104px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .cta-button { display: inline-flex; align-items: center; justify-content: center; margin-top: 18px; padding: 12px 16px; border-radius: 10px; background: var(--cyan); color: #071116; font-weight: 700; text-decoration: none; }
+    .related-card { display: block; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg-raised); margin-top: 12px; color: var(--text); }
+    .related-label { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .faq-item { border-top: 1px solid var(--line); padding: 14px 0; }
+    .faq-item summary { cursor: pointer; font-weight: 600; }
+    .faq-item p { color: var(--muted); }
+    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } .sidebar-card:first-child { position: static; max-height: none; overflow: visible; } }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ThumbGate vs Arcjet",
+  "description": "Arcjet is a runtime SDK that shields your Node/Python web application from inbound traffic — bots, rate-limit abuse, prompt-injection attempts, PII egress, WAF rules. ThumbGate is a PreToolUse hook inside the AI coding agent that gates outbound tool calls before they fire. Same agentic-perimeter story, opposite sides.",
+  "about": ["thumbgate vs arcjet", "AI agent security layer", "PreToolUse vs WAF SDK", "agent governance"],
+  "url": "https://thumbgate.ai/compare/arcjet",
+  "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+  "mainEntityOfPage": "https://thumbgate.ai/compare/arcjet"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is Arcjet a ThumbGate competitor?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. They are adjacent on the agentic perimeter. Arcjet is a runtime SDK that installs in your Node, Python, Deno, or Bun web application and intercepts inbound traffic at the HTTP request entry — bot detection, rate-limit, prompt-injection in user input, PII detection, Shield WAF rules. It protects your application from what an external user or agent might send IN. ThumbGate runs at the PreToolUse hook inside an AI coding agent runtime (Claude Code, Cursor, Codex CLI, Gemini CLI, Amp, Cline, OpenCode, Claude Desktop) and intercepts the tool call the developer's agent is about to execute — bash, SQL, file write, MCP tool, outbound LLM call. It protects your engineering org from what the agent might send OUT. Different sides of the same perimeter."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I use both Arcjet and ThumbGate?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. The integration shape is clean because the two products do not overlap: Arcjet runs as middleware in your production web servers; ThumbGate runs as a PreToolUse hook in your developers' agent runtimes. At a regulated firm, the dual-deploy story is: Arcjet enforces inbound rules on the application your customers and external agents reach. ThumbGate enforces outbound rules on the AI coding agents your engineers use. Neither layer can substitute for the other."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why doesn't Arcjet ship a PreToolUse hook for AI coding agents?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Arcjet's product surface is application-side. Their SDK is designed to be added to a Next.js, Express, Fastify, Nuxt, or similar web framework. Their AI agent coverage is about protecting an application that hosts an AI agent (a chatbot, an MCP server, a tool-using endpoint) from external abuse. ThumbGate's product surface is the opposite end: inside the developer's IDE-agent process, before any tool call leaves the agent's memory. Two product surfaces, both correct, both needed."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "When would I pick ThumbGate over Arcjet?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "If the failure mode you are worried about is your AI coding agent running rm -rf in the wrong directory, force-pushing to main, dropping a table against staging-that-was-actually-prod, or sending a privileged document to an external LLM, ThumbGate is the layer. If the failure mode is your hosted application being scraped, prompt-injected, or rate-limit-abused by external traffic, Arcjet is the layer. Most firms with both kinds of risk install both."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does ThumbGate's PreToolUse hook overlap with Arcjet's prompt-injection detection?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Different attack and different defender. Arcjet's prompt-injection detection inspects incoming user prompts to your hosted LLM endpoint and flags injection patterns before your model sees them. ThumbGate inspects the tool call your model decided to make after processing whatever input it received and blocks the call before the tool fires. One catches the attack on the way in; the other catches the consequence on the way out."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28" /><span>ThumbGate</span></a>
+      <nav><a href="/learn">Learn</a> &nbsp; <a href="/pro">Pro</a> &nbsp; <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a></nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="container">
+      <span class="eyebrow">ThumbGate vs Arcjet</span>
+      <h1>One protects your app from inbound traffic. One protects your engineering org from outbound agent actions.</h1>
+      <p><strong>Arcjet</strong> is a runtime SDK that installs in your Node, Python, Deno, or Bun web application and intercepts inbound HTTP requests &mdash; bot detection, rate-limit, prompt-injection in user input, PII detection, Shield WAF rules. <strong>ThumbGate</strong> is a PreToolUse hook inside an AI coding agent (Claude Code, Cursor, Codex CLI, Gemini CLI, Sourcegraph Amp, Cline, OpenCode, Claude Desktop) that intercepts the tool call the developer's agent is about to execute &mdash; bash, SQL, file write, MCP, outbound LLM call. Different sides of the same agentic perimeter. Most regulated firms run both.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <div class="grid">
+      <div class="content">
+
+        <section class="detail-section">
+          <h2>Side-by-side scope comparison</h2>
+          <table class="comparison-table">
+            <thead>
+              <tr><th>Dimension</th><th>Arcjet</th><th>ThumbGate</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Install surface</strong></td><td>Runtime SDK in your Node / Python / Deno / Bun web application</td><td>PreToolUse hook inside the developer's AI coding agent process</td></tr>
+              <tr><td><strong>Traffic direction</strong></td><td>Inbound &mdash; what reaches your application</td><td>Outbound &mdash; what the agent is about to do</td></tr>
+              <tr><td><strong>What it blocks</strong></td><td>Bots, rate-limit abuse, prompt-injection in user input, PII egress, WAF violations</td><td><code>rm -rf</code> traversal, destructive SQL against non-test, <code>git push --force</code>, MCP tool calls to untrusted hosts, secret-carrying file writes</td></tr>
+              <tr><td><strong>Framework coverage</strong></td><td>Next.js, Express, Fastify, NestJS, Nuxt, Astro, React Router, Remix, SvelteKit, Bun, Deno, Python</td><td>Claude Code, Cursor, OpenAI Codex CLI, Google Gemini CLI, Sourcegraph Amp, Cline, OpenCode, Claude Desktop</td></tr>
+              <tr><td><strong>Decision boundary</strong></td><td>HTTP request middleware in your web server</td><td>PreToolUse hook in the agent runtime, before tool API fires</td></tr>
+              <tr><td><strong>AI in the gate?</strong></td><td>No (Arcjet ships deterministic rules + their <em>Shield</em> WAF; prompt-injection detection is pattern-based)</td><td>No (deterministic PreToolUse rule match + lesson DB; no model in the enforcement path)</td></tr>
+              <tr><td><strong>Lesson promotion from feedback</strong></td><td>No &mdash; rules are configured by the developer</td><td>Yes &mdash; thumbs-down on a bad tool call promotes to a prevention rule via Thompson Sampling</td></tr>
+              <tr><td><strong>Best alongside</strong></td><td>ThumbGate at the dev-agent layer</td><td>Arcjet at the application-inbound layer</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="detail-section">
+          <h2>The shared architectural insight</h2>
+          <p>Both products land on the same core decision: <strong>the gate runs deterministically, in your runtime, with no LLM in the enforcement path</strong>. Arcjet says it about their Shield WAF and rate-limit rules. ThumbGate says it about the PreToolUse hook. Neither product asks an external "judge model" to decide if an action is safe &mdash; both run pattern-match + policy logic in-process, which is what makes them auditable, cheap, and survivable under load.</p>
+          <p>The vendors who put an LLM in the enforcement path lose on three axes at once: <em>latency</em> (every request waits for a model call), <em>cost</em> (every request pays for inference), and <em>auditability</em> (the model's decision is non-deterministic, so an audit log of "the model said it was fine" is not a defense). Arcjet and ThumbGate independently arrived at the same posture from opposite ends of the perimeter.</p>
+        </section>
+
+        <section class="detail-section">
+          <h2>The dual-deploy story for a regulated firm</h2>
+          <p>Take a fintech or law firm running its own customer-facing application <em>and</em> developing it with AI coding agents:</p>
+          <ul>
+            <li><strong>Arcjet on the customer-facing app.</strong> Bot detection on the signup endpoint, rate-limit on the chat endpoint, prompt-injection scoring on incoming user messages, PII detection on form submissions, WAF rules on every route.</li>
+            <li><strong>ThumbGate on the engineering team's AI coding agents.</strong> PreToolUse rules block destructive shell, enforce per-repo scope on the agent's tool calls, prevent privileged customer data from being sent to external LLMs during dev workflows, and turn each incident into a prevention rule the next sprint inherits automatically.</li>
+          </ul>
+          <p>Neither layer overlaps with the other. Together they cover both the application's attack surface and the developer-agent's action surface &mdash; which is what <a href="/ai-malpractice-prevention">our /ai-malpractice-prevention</a> page describes for the legal-vertical case.</p>
+        </section>
+
+        <section class="detail-section">
+          <h2>FAQ</h2>
+          <details class="faq-item" open>
+            <summary>Does Arcjet have a PreToolUse hook?</summary>
+            <p>Not at the IDE-agent layer. Arcjet's "For Agents" surface (MCP server support, Arcjet Guards, Plugin, Skills, AI app protection) protects an application that <em>hosts</em> an AI agent &mdash; a chatbot endpoint, an MCP server, a tool-using API &mdash; from external misuse. ThumbGate runs upstream of that, inside the developer's coding agent before any tool call leaves the agent's memory.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Where does each one log evidence?</summary>
+            <p>Arcjet emits decisions to your application's logging pipeline and the Arcjet dashboard for analytics. ThumbGate writes structured allow/warn/block decisions to a local lesson DB and (optionally on the Pro tier) syncs anonymized rule patterns to a hosted evidence dashboard. Both are SIEM-pluggable.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Can ThumbGate enforce policy on the application Arcjet protects?</summary>
+            <p>No, and that is the point. ThumbGate runs in the dev's local agent runtime, not in the production web server. If an attacker hits your production app, Arcjet is the layer that sees the request first. If your AI coding agent is about to push to production, ThumbGate is the layer that sees the action first.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Pricing &mdash; what tier do I need from each?</summary>
+            <p>Arcjet has a free tier and paid tiers for production volume (see <a href="https://arcjet.com/pricing" target="_blank" rel="noopener">arcjet.com/pricing</a>). ThumbGate ships an open-source free tier with the full PreToolUse engine and prevention-rule promotion; Pro/Team adds hosted evidence sync, adapter coverage for all eight agent runtimes, and the audit-export endpoint we ship to procurement teams. The two pricing decisions are independent.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Is this comparison sponsored or partnered?</summary>
+            <p>No. We don't have a partnership with Arcjet. We wrote this page because the same prospects evaluate both vendors &mdash; we want them to choose by scope, not by confusion. If anything here misrepresents Arcjet, open an issue at <a href="https://github.com/IgorGanapolsky/ThumbGate/issues" target="_blank" rel="noopener">our repo</a> and we will correct it.</p>
+          </details>
+        </section>
+
+      </div>
+
+      <aside class="sidebar">
+        <div class="sidebar-card">
+          <span class="related-label">Install ThumbGate</span>
+          <p style="font-size: 14px;">Get PreToolUse rules running in your dev's AI coding agent in two minutes.</p>
+          <a class="cta-button" href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">npx thumbgate init &rarr;</a>
+        </div>
+
+        <div class="sidebar-card">
+          <span class="related-label">Try Arcjet too</span>
+          <p style="font-size: 13px;">If you need an application-inbound firewall, install Arcjet on the same project. <a href="https://docs.arcjet.com/" target="_blank" rel="noopener">docs.arcjet.com</a></p>
+        </div>
+
+        <div class="sidebar-card">
+          <span class="related-label">Related comparisons</span>
+          <a class="related-card" href="/compare/anthropic-containment">
+            <strong>ThumbGate vs Anthropic's Claude Containment</strong><br>
+            <span style="color: var(--muted); font-size: 13px;">IDE-agent extension of Anthropic's published architecture</span>
+          </a>
+          <a class="related-card" href="/compare/bumblebee">
+            <strong>ThumbGate vs Bumblebee</strong><br>
+            <span style="color: var(--muted); font-size: 13px;">Runtime enforcement vs Perplexity's static MCP inventory</span>
+          </a>
+          <a class="related-card" href="/compare/oak-and-sparrow-gatekeeper">
+            <strong>ThumbGate vs Gatekeeper (Oak &amp; Sparrow)</strong><br>
+            <span style="color: var(--muted); font-size: 13px;">Agent-action gate vs workforce-input gate</span>
+          </a>
+        </div>
+
+        <div class="sidebar-card">
+          <span class="related-label">Sources</span>
+          <p style="font-size: 13px;">Arcjet product facts from <a href="https://docs.arcjet.com/" target="_blank" rel="noopener">docs.arcjet.com</a> and The New Stack's <a href="https://thenewstack.io/arcjet-wafs-guards-ai-agents-security/" target="_blank" rel="noopener">"The attack surface moved inside the agent. So did Arcjet."</a> as of 2026-05-27. If anything here misrepresents Arcjet, open an issue at <a href="https://github.com/IgorGanapolsky/ThumbGate/issues" target="_blank" rel="noopener">our repo</a> and we will correct it.</p>
+        </div>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>
