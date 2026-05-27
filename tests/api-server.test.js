@@ -1441,6 +1441,16 @@ test('robots and sitemap endpoints publish crawl metadata for the canonical app 
   assert.match(sitemapBody, /<priority>0\.8<\/priority>/);
 });
 
+test('/llms.txt serves the llmstxt.org manifest for LLM crawlers', async () => {
+  const res = await fetch(apiUrl('/llms.txt'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/markdown/);
+  const body = await res.text();
+  assert.match(body, /^# ThumbGate/);
+  assert.match(body, /Infrastructure firewall for AI coding agents/);
+  assert.match(body, /## /);
+});
+
 test('provisioning endpoint works', async () => {
   const res = await fetch(apiUrl('/v1/billing/provision'), {
     method: 'POST',

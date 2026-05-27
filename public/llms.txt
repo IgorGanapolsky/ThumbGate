@@ -1,0 +1,41 @@
+# ThumbGate
+
+> Infrastructure firewall for AI coding agents. Captures thumbs-up/down feedback, promotes confirmed mistakes to prevention rules, and blocks known-bad tool calls via PreToolUse hooks before the agent acts on code, money, or customer systems.
+
+ThumbGate sits between an AI agent (Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, Claude Desktop) and its tools. Deterministic pattern-matching gates run on every PreToolUse event — no LLM on the enforcement path, no extra latency. Local-first by default; hosted sync, shared rules, and team dashboards are paid.
+
+Stack: Node.js >= 18.18.0 · SQLite + FTS5 lesson database · Thompson Sampling for rule promotion · LanceDB vector store · ContextFS context assembly.
+
+## What ThumbGate is for
+
+- [Pre-Execution Controls for Legal AI Agents](https://thumbgate-production.up.railway.app/ai-malpractice-prevention): Block unauthorized practice of law (UPL), conflict-check failures, and privilege leaks before an intake bot acts. Includes live interactive simulators for the UPL, Conflict, and Egress gates.
+- [Agent Manager](https://thumbgate-production.up.railway.app/agent-manager): Inventory of every AI agent in your environment with active checks, hit rates, and risk classification.
+- [FinOps for Agents](https://thumbgate-production.up.railway.app/agents-cost-savings): Track and cap LLM spend per agent, per workflow, per matter.
+- [Federal AI Governance](https://thumbgate-production.up.railway.app/federal): Pre-execution controls aligned to NIST AI RMF + OMB M-24-10 for agency AI agent rollouts.
+- [Codex Enterprise integration](https://thumbgate-production.up.railway.app/codex-enterprise): Drop-in PreToolUse layer for OpenAI×Dell Codex Enterprise deployments.
+
+## How to install
+
+- Free CLI: `npx thumbgate init`. 10 feedback captures/day, 3 active prevention rules, 5 built-in checks, local PreToolUse blocking, MCP integrations for Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, Claude Desktop.
+- [Pricing](https://thumbgate-production.up.railway.app/pricing): Pro $19/mo for hosted sync + adapter matrix + dashboard + DPO export. Team $49/seat (min 3) for workflow hardening sprint + shared lesson DB.
+
+## Reference
+
+- [Guide](https://thumbgate-production.up.railway.app/guide): How the gate engine, lesson DB, and prevention-rule loop work end-to-end.
+- [Compatibility matrix](https://thumbgate-production.up.railway.app/compare): What's supported across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode.
+- [Dashboard](https://thumbgate-production.up.railway.app/dashboard): Gate hit rates, agent inventory, remediations, token-savings telemetry.
+- [Learn](https://thumbgate-production.up.railway.app/learn): Background-agent control layer, deterministic prevention vs probabilistic alignment, lessons learned in production.
+- [LLM context document](https://thumbgate-production.up.railway.app/llm-context.md): Single-file declarative content for AI retrieval.
+
+## Source code
+
+- npm package: `thumbgate` — MIT licensed, local-first, no telemetry without explicit opt-in (`THUMBGATE_NO_TELEMETRY=1` to disable usage pings entirely).
+- GitHub: https://github.com/IgorGanapolsky/ThumbGate
+- Compatible with Claude Code (CLI + Desktop extension), Cursor, OpenAI Codex CLI, Google Gemini CLI, Sourcegraph Amp, Cline, OpenCode.
+
+## Optional
+
+- [Pro details](https://thumbgate-production.up.railway.app/pro): Hosted sync + DPO export + dashboard.
+- [Numbers page](https://thumbgate-production.up.railway.app/numbers): Token-savings telemetry, gate-firing rates.
+- [Lessons](https://thumbgate-production.up.railway.app/lessons): Public learnings from gate-blocked agent mistakes.
+- [Blog](https://thumbgate-production.up.railway.app/blog): Long-form writing on agent governance, prevention rules, and the AI-malpractice problem.

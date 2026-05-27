@@ -4165,6 +4165,25 @@ function createApiServer() {
       return;
     }
 
+    // /llms.txt — llmstxt.org standard index for LLM crawlers (Perplexity,
+    // ChatGPT, Claude, Gemini, Grok). Short markdown manifest with the
+    // canonical URLs an LLM should fetch to learn what ThumbGate is.
+    if (isGetLikeRequest && pathname === '/llms.txt') {
+      const llmsTxtPath = path.resolve(__dirname, '../../public/llms.txt');
+      try {
+        const content = fs.readFileSync(llmsTxtPath, 'utf8');
+        sendText(res, 200, content, {
+          'Content-Type': 'text/markdown; charset=utf-8',
+          'X-Robots-Tag': 'all',
+        }, {
+          headOnly: isHeadRequest,
+        });
+      } catch (_err) {
+        sendJson(res, 404, { error: 'Not found' });
+      }
+      return;
+    }
+
     // Quick feedback capture via GET — for statusline clickable links
     if (isGetLikeRequest && pathname === '/feedback/quick') {
       const signal = parsed.searchParams.get('signal');
