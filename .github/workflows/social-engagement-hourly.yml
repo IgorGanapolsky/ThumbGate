@@ -8,9 +8,9 @@ name: Social Engagement (Smart Schedule)
 # - Reddit: reply-only, no auto-posting (ban risk)
 
 on:
-  schedule:
-    # Post once daily at 2pm UTC (10am EST — peak dev engagement)
-    - cron: '0 14 * * *'
+  # schedule:  # Disabled to optimize GitHub Actions budget
+    # # Post once daily at 2pm UTC (10am EST — peak dev engagement)
+    # - cron: '0 14 * * *'
   workflow_dispatch:
     inputs:
       action:

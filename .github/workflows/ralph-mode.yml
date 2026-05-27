@@ -6,8 +6,9 @@ name: Ralph Mode - 24/7 Engagement Loop
 # the same contact or forget previous engagement.
 
 on:
-  schedule:
-    - cron: '0 */2 * * *'  # Every 2 hours
+  # schedule:  # Disabled to optimize GitHub Actions budget
+    # - cron: '0 */2 * * *'  # Every 2 hours
+  workflow_dispatch:
   workflow_dispatch: {}      # Manual trigger
 
 permissions:

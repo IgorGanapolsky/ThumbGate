@@ -1,8 +1,8 @@
 name: Self-Healing Monitor
 
 on:
-  schedule:
-    - cron: '0 8 * * *' # Daily at 8am UTC (was every 6h — saves 3 runs/day)
+  # schedule:  # Disabled to optimize GitHub Actions budget
+    # - cron: '0 8 * * *' # Daily at 8am UTC (was every 6h — saves 3 runs/day)
   workflow_dispatch:
     inputs:
       heal:

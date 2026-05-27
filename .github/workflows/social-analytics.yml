@@ -1,9 +1,9 @@
 name: Social Analytics Pipeline
 
 on:
-  schedule:
-    - cron: '0 10 * * *'    # Daily at 10am UTC (was every 6h — saves 3 runs/day)
-    - cron: '0 9 * * 1'     # Weekly digest: Monday 9am UTC
+  # schedule:  # Disabled to optimize GitHub Actions budget
+    # - cron: '0 10 * * *'    # Daily at 10am UTC (was every 6h — saves 3 runs/day)
+    # - cron: '0 9 * * 1'     # Weekly digest: Monday 9am UTC
   workflow_dispatch:
     inputs:
       digest_only:
