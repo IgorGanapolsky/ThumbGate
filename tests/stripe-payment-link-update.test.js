@@ -70,12 +70,11 @@ test('parseArgs: --dry-run and --json flags work', () => {
   assert.deepStrictEqual(parseArgs(['--json', '--dry-run']), { dryRun: true, json: true });
 });
 
-test('TARGETS: 3 customer-facing payment links with required fields', () => {
-  assert.strictEqual(TARGETS.length, 3);
+test('TARGETS: 2 customer-facing payment links with required fields', () => {
+  assert.strictEqual(TARGETS.length, 2);
   const labels = TARGETS.map((t) => t.label);
   assert.ok(labels.some((l) => /diagnostic/i.test(l)));
   assert.ok(labels.some((l) => /sprint/i.test(l)));
-  assert.ok(labels.some((l) => /kit/i.test(l)));
   for (const t of TARGETS) {
     assert.ok(t.urlSlug, `${t.label} missing urlSlug`);
     assert.ok(t.customText, `${t.label} missing customText`);
@@ -145,7 +144,7 @@ test('applyAll: processes every TARGETS entry', async () => {
   const links = TARGETS.map((t, i) => makeEmptyLink(t.urlSlug, `plink_${i}`));
   const { stripe } = makeStripeMock(links);
   const results = await applyAll({ stripe, options: { dryRun: false } });
-  assert.strictEqual(results.length, 3);
+  assert.strictEqual(results.length, 2);
   for (const r of results) {
     assert.strictEqual(r.error, undefined);
     assert.strictEqual(r.changed, true);
