@@ -2576,6 +2576,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/agents-cost-savings', changefreq: 'weekly', priority: '0.85' },
     { path: '/ai-malpractice-prevention', changefreq: 'weekly', priority: '0.9' },
     { path: '/learn/background-agent-control-layer', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/ac-dc-runtime-enforcement', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/claude-code-hooks', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/bumblebee', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/anthropic-containment', changefreq: 'weekly', priority: '0.85' },
