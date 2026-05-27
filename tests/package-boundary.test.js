@@ -361,9 +361,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // published installs. Observed unpacked size is ~3.806 MB.
   // Bumped 3.84 MB -> 3.85 MB (2026-05-26) after injecting Plausible/PostHog/GA4
   // scripts into the checkout interstitial page in server.js.
+  // Bumped 3.85 MB -> 3.90 MB (2026-05-27) after the GT live gate simulators
+  // (#2330) added ~138 lines to public/ai-malpractice-prevention.html and the
+  // /llms.txt + broker-audit-test-stability fix (#2333) added the route
+  // handler + larger comments. Observed unpacked size is ~3.862 MB; margin
+  // stays narrow at ~38 KB.
   assert.ok(
-    manifest.unpackedSize <= 3_850_000,
-    `npm package should stay <= 3.85 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_900_000,
+    `npm package should stay <= 3.90 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
