@@ -773,8 +773,11 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
   }
 
   // ChatGPT — cannot be automated
-  const chatgptSpec = path.join(PKG_ROOT, 'openapi', 'openapi.yaml');
-  if (fs.existsSync(chatgptSpec)) {
+  const chatgptSpec = [
+    path.join(PKG_ROOT, 'openapi', 'openapi.yaml'),
+    path.join(PKG_ROOT, 'adapters', 'chatgpt', 'openapi.yaml'),
+  ].find((candidate) => fs.existsSync(candidate));
+  if (chatgptSpec) {
     const projectChatgptSpec = path.join(thumbgateDir, 'chatgpt-openapi.yaml');
     fs.copyFileSync(chatgptSpec, projectChatgptSpec);
     console.log(`  ChatGPT: import ${path.relative(CWD, projectChatgptSpec)} in GPT Builder > Actions`);

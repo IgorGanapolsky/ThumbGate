@@ -222,6 +222,12 @@ test('runtime Docker image installs git for operational integrity checks', () =>
   assert.match(dockerfile, /apt-get install[^\n]*\bgit\b/);
 });
 
+test('runtime Docker image copies the canonical OpenAPI spec used by hosted GPT Actions import', () => {
+  const dockerfile = fs.readFileSync(path.join(PROJECT_ROOT, 'Dockerfile'), 'utf8');
+
+  assert.match(dockerfile, /COPY openapi\/ \.\/openapi\//);
+});
+
 test('Deploy to Railway workflow is the single authoritative Railway deploy lane', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
 
