@@ -50,7 +50,7 @@ const COMMAND = process.argv[2];
 const CWD = process.cwd();
 const PKG_ROOT = path.join(__dirname, '..');
 
-const PRO_URL = 'https://thumbgate-production.up.railway.app';
+const PRO_URL = 'https://thumbgate.ai';
 const PRO_CHECKOUT_URL = PRO_MONTHLY_PAYMENT_LINK;
 const TRIAL_DAYS = 14;
 
@@ -94,7 +94,7 @@ function upgradeNudge() {
   const pricingUrl = pricingUrlFor('cli_upgrade_nudge', COMMAND || 'general');
   process.stderr.write(
     '\n  Team rollout: start with the Workflow Hardening Sprint\n' +
-    '  https://thumbgate-production.up.railway.app/#workflow-sprint-intake\n' +
+    '  https://thumbgate.ai/#workflow-sprint-intake\n' +
     `\n  Solo side lane: Pro — ${PRO_PRICE_LABEL}\n` +
     '  Keeps lessons, rules, and the dashboard synced across machines and agent runtimes.\n' +
     `  ${pricingUrl}\n\n`
@@ -154,7 +154,7 @@ function telemetryPing(installId) {
     timestamp: new Date().toISOString(),
   };
   appendLocalTelemetry(payloadObject);
-  const apiUrl = process.env.THUMBGATE_API_URL || 'https://thumbgate-production.up.railway.app';
+  const apiUrl = process.env.THUMBGATE_API_URL || 'https://thumbgate.ai';
   const payload = JSON.stringify(payloadObject);
   try {
     const url = new URL('/v1/telemetry/ping', apiUrl);
@@ -207,7 +207,7 @@ function printInitConversionPrompt(email) {
   const checkoutUrl = checkoutUrlFor('cli_init', email ? 'init_email' : 'init_no_email');
   console.log('');
   console.log('  ┌──────────────────────────────────────────────────────────┐');
-  console.log(`  │  14-day Pro trial active through ${trialDeadlineLabel()}.              │`);
+  console.log(`  │  7-day Pro trial active through ${trialDeadlineLabel()}.               │`);
   console.log('  │  Pro keeps lessons/rules/dashboard synced everywhere.   │');
   console.log('  │  Add onboarding: npx thumbgate init --email you@company.com │');
   console.log(`  │  Upgrade: ${checkoutUrl}`);
@@ -954,7 +954,7 @@ function capture() {
       const pct = Math.round((capLimit.used / capLimit.limit) * 100);
       console.log(`  Usage       : ${capLimit.used}/${capLimit.limit} captures today (${pct}%)`);
       if (capLimit.remaining <= 1) {
-        console.log(`  ⚠️  Free tier limit reached. Upgrade to Pro for unlimited: https://thumbgate-production.up.railway.app/pro`);
+        console.log(`  ⚠️  Free tier limit reached. Upgrade to Pro for unlimited: https://thumbgate.ai/pro`);
       }
     }
     console.log('');
@@ -1047,7 +1047,7 @@ function stats() {
     console.log(`  Estimated Operational Loss: $${payload.revenueAtRisk}`);
     console.log('  Action Required: Run "npx thumbgate rules" to generate guardrails.');
     console.log('  Strategic Recommendation: if this is a shared workflow problem, start the Workflow Hardening Sprint.');
-    console.log('  Team intake: https://thumbgate-production.up.railway.app/#workflow-sprint-intake');
+    console.log('  Team intake: https://thumbgate.ai/#workflow-sprint-intake');
     console.log('  Solo side lane: npx thumbgate pro');
   } else {
     console.log('\n✅ System is currently high-reliability. No immediate revenue loss detected.');
@@ -1164,7 +1164,7 @@ function pro() {
   } = require(path.join(PKG_ROOT, 'scripts', 'pro-local-dashboard'));
 
   function printProInfo() {
-    const hostedUrl = 'https://thumbgate-production.up.railway.app';
+    const hostedUrl = 'https://thumbgate.ai';
     const truthUrl = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md';
     console.log('\nThumbGate Pro — Local Dashboard');
     console.log('─'.repeat(50));
@@ -2132,7 +2132,7 @@ function backgroundGovernance() {
   console.log('  - Run --check before dispatching an unattended PR job.');
   console.log('  - Route protected branches and large blast-radius jobs to human review.');
   console.log('  - Convert CI failures into thumbs-down lessons so repeats become Pre-Action Checks.');
-  console.log('\nGuide: https://thumbgate-production.up.railway.app/guides/background-agent-governance\n');
+  console.log('\nGuide: https://thumbgate.ai/guides/background-agent-governance\n');
 }
 
 function optimize() {

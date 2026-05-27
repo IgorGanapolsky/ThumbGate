@@ -15,10 +15,22 @@ const PROMPTS = [
   'workflow vs agent reliability for coding agents',
   'how to require environment inspection before AI agent actions',
   'how to block bad tool calls in AI agents',
+  'local pre-action gates for AI agents',
+  'agent governance platform for Claude Code Cursor Codex',
+  'AI agent audit trail and approval gates',
   'alternatives to thumbgate',
   'pre-tool-use hooks for AI agents',
   'AI coding agent memory and learning',
 ];
+
+const DISCOVERY_SURFACES = Object.freeze([
+  { surface: 'canonical_site', url: 'https://thumbgate.ai/', purpose: 'human and crawler canonical landing page' },
+  { surface: 'llms_txt', url: 'https://thumbgate.ai/llms.txt', purpose: 'LLM-readable product map' },
+  { surface: 'well_known_llms_txt', url: 'https://thumbgate.ai/.well-known/llms.txt', purpose: 'well-known LLM discovery path' },
+  { surface: 'llm_context', url: 'https://thumbgate.ai/llm-context.md', purpose: 'long-form answer context for AI search systems' },
+  { surface: 'openapi', url: 'https://thumbgate.ai/openapi.yaml', purpose: 'GPT Actions and tool import schema' },
+  { surface: 'sitemap', url: 'https://thumbgate.ai/sitemap.xml', purpose: 'canonical crawl route inventory' },
+]);
 
 async function queryPerplexity(prompt, apiKey, opts = {}) {
   const client = opts.client || new PerplexityClient({ apiKey });
@@ -79,6 +91,11 @@ function formatReport(results) {
   } else {
     lines.push('', `Manual checklist: ${results.length} prompts to test`);
   }
+  lines.push('', 'Discovery surfaces to verify:');
+  for (const surface of DISCOVERY_SURFACES) {
+    lines.push(`- ${surface.surface}: ${surface.url} — ${surface.purpose}`);
+  }
+  lines.push('', 'Distribution note: crawler files make ThumbGate eligible for discovery; citations still require third-party mentions, backlinks, and prompt-match content.');
   return lines.join('\n');
 }
 
@@ -94,6 +111,7 @@ function saveReport(results, opts = {}) {
   const report = {
     date,
     score: total > 0 ? `${found}/${total}` : 'manual',
+    discoverySurfaces: DISCOVERY_SURFACES,
     results: results.map((r) => ({
       prompt: r.prompt,
       status: r.status,
@@ -105,7 +123,7 @@ function saveReport(results, opts = {}) {
   return filePath;
 }
 
-module.exports = { PROMPTS, queryPerplexity, runVisibilityCheck, formatReport, saveReport };
+module.exports = { PROMPTS, DISCOVERY_SURFACES, queryPerplexity, runVisibilityCheck, formatReport, saveReport };
 
 if (require.main === module) {
   (async () => {

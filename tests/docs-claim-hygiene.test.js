@@ -67,10 +67,10 @@ test('README keeps buyer CTAs on current first-party ThumbGate surfaces', () => 
   const readme = fs.readFileSync(path.join(projectRoot, 'README.md'), 'utf8');
 
   assert.doesNotMatch(readme, /https:\/\/usethumbgate\.com/i);
-  assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/\?utm_source=github&utm_medium=readme/);
-  assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/checkout\/pro\?utm_source=github&utm_medium=readme/);
-  assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/dashboard\?utm_source=github&utm_medium=readme/);
-  assert.match(readme, /https:\/\/thumbgate-production\.up\.railway\.app\/guides\/codex-cli-guardrails\?utm_source=github&utm_medium=readme/);
+  assert.match(readme, /https:\/\/thumbgate\.ai\/\?utm_source=github&utm_medium=readme/);
+  assert.match(readme, /https:\/\/thumbgate\.ai\/checkout\/pro\?utm_source=github&utm_medium=readme/);
+  assert.match(readme, /https:\/\/thumbgate\.ai\/dashboard\?utm_source=github&utm_medium=readme/);
+  assert.match(readme, /https:\/\/thumbgate\.ai\/guides\/codex-cli-guardrails\?utm_source=github&utm_medium=readme/);
 });
 
 test('active commercial surfaces avoid stale free-tier limit claims', () => {
@@ -89,7 +89,7 @@ test('active commercial surfaces avoid stale free-tier limit claims', () => {
 test('pricing comparison keeps free-tier pro features out of the free column', () => {
   const pricing = fs.readFileSync(path.join(projectRoot, 'docs/marketing/pricing-comparison.md'), 'utf8');
 
-  assert.match(pricing, /\|\s*Feedback capture\s*\|\s*10\/day, 50 total\s*\|\s*Unlimited\s*\|/i);
+  assert.match(pricing, /\|\s*Feedback capture\s*\|\s*5\/day, 25 total\s*\|\s*Unlimited\s*\|/i);
   assert.match(pricing, /\|\s*Prevention rules\s*\|\s*Up to 3 active\s*\|\s*Unlimited\s*\|/i);
   assert.match(pricing, /\|\s*Recall \+ lesson search\s*\|\s*No\s*\|\s*Yes\s*\|/i);
   assert.match(pricing, /\|\s*DPO\/KTO export\s*\|\s*No\s*\|\s*Yes\s*\|/i);

@@ -53,22 +53,22 @@ describe('Free tier bullets: extraction', () => {
 });
 
 describe('Free tier bullets: code-backed claims', () => {
-  test('"10 feedback captures/day" matches FREE_TIER_LIMITS.capture_feedback', () => {
+  test('"5 feedback captures/day" matches FREE_TIER_LIMITS.capture_feedback', () => {
     const { FREE_TIER_LIMITS } = require(path.join(ROOT, 'scripts', 'rate-limiter.js'));
-    assert.equal(FREE_TIER_LIMITS.capture_feedback.daily, 10,
+    assert.equal(FREE_TIER_LIMITS.capture_feedback.daily, 5,
       'free tier daily captures must match the public pricing page');
-    assert.equal(FREE_TIER_LIMITS.capture_feedback.lifetime, 50,
+    assert.equal(FREE_TIER_LIMITS.capture_feedback.lifetime, 25,
       'free tier lifetime captures must match the public pricing page');
     assert.ok(
-      FREE_BULLETS.some((b) => /10 feedback captures\/day/i.test(b)),
-      'Landing page must claim "10 feedback captures/day"',
+      FREE_BULLETS.some((b) => /5 feedback captures\/day/i.test(b)),
+      'Landing page must claim "5 feedback captures/day"',
     );
   });
 
   test('"3 prevention rules" matches FREE_TIER_MAX_GATES', () => {
     const { FREE_TIER_LIMITS, FREE_TIER_MAX_GATES } = require(path.join(ROOT, 'scripts', 'rate-limiter.js'));
     assert.equal(FREE_TIER_MAX_GATES, 3, 'FREE_TIER_MAX_GATES must be 3 to back "3 active prevention rules" claim');
-    assert.equal(FREE_TIER_LIMITS.prevention_rules.daily, 3, 'prevention_rules.daily must be 3');
+    assert.equal(FREE_TIER_LIMITS.prevention_rules.daily, 2, 'prevention_rules.daily must be 2');
     assert.ok(
       FREE_BULLETS.some((b) => /3 (active )?(auto-promoted )?prevention rules/i.test(b)),
       'Landing page must claim 3 active prevention rules',

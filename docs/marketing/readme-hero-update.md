@@ -28,7 +28,7 @@ ThumbGate remembers what went wrong and blocks it before it happens again. One t
 npx thumbgate init   # auto-detects your agent, wires hooks, 30 seconds
 ```
 
-Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and any MCP-compatible agent. Free tier: 10 captures/day, 50 total captures, and 3 active prevention rules. [Pro: $19/mo](https://thumbgate-production.up.railway.app/checkout/pro?utm_source=github&utm_medium=readme) — unlimited captures/rules, hosted sync, dashboard, DPO export.
+Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and any MCP-compatible agent. Free tier: 5 captures/day, 25 total captures, and 3 active prevention rules. [Pro: $19/mo](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme) — unlimited captures/rules, hosted sync, dashboard, DPO export.
 
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)

@@ -42,7 +42,7 @@ describe('postinstall banner', () => {
     assert.equal(exitCode, 0);
     assert.ok(stderr.includes('ThumbGate'), 'should mention ThumbGate');
     assert.ok(stderr.includes('npx thumbgate'), 'should include quick start');
-    assert.match(stderr, /14-day Pro trial/i, 'should mention reverse trial');
+    assert.match(stderr, /7-day Pro trial/i, 'should mention reverse trial');
     assert.match(stderr, /thumbgate\.ai\/dashboard/i, 'should include dashboard URL');
     assert.match(stderr, /unlimited rules/i, 'should list trial features');
     assert.match(stderr, /Lesson search/i, 'should mention lesson search');

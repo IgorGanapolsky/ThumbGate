@@ -5630,6 +5630,7 @@ async function addContext(){
         source,
         telemetry: { rows: [], truncated: false, totalAfterSince: 0 },
         funnel: { rows: [], truncated: false, totalAfterSince: 0 },
+        journeySummary: null,
       };
 
       function readJsonlSince(p) {
@@ -5675,6 +5676,19 @@ async function addContext(){
         result.funnel.totalAfterSince = all.length;
         result.funnel.rows = all.slice(-limit);
         result.funnel.truncated = all.length > limit;
+      }
+
+      try {
+        const { buildVisitorJourneySummary } = require('../../scripts/visitor-journey');
+        result.journeySummary = buildVisitorJourneySummary({
+          telemetryRows: wantTelemetry ? result.telemetry.rows : [],
+          funnelRows: wantFunnel ? result.funnel.rows : [],
+          limit: Math.min(limit, 500),
+        });
+      } catch (err) {
+        result.journeySummary = {
+          error: err && err.message ? err.message : 'journey_summary_unavailable',
+        };
       }
 
       sendJson(res, 200, result);

@@ -183,6 +183,13 @@ async function buildRevenueObservabilityDoctor({
       envPresence(env, QUERY_ACCESS_KEYS.posthog)
     ),
     buildCheck(
+      'first_party_journey_export',
+      Boolean(hostedApiKey),
+      'high',
+      'Operator-key gated /v1/telemetry/export now returns session-level journeySummary, stage counts, and dropoff buckets from first-party ledgers.',
+      { endpoint: '/v1/telemetry/export', requires: 'THUMBGATE_OPERATOR_KEY or THUMBGATE_API_KEY' }
+    ),
+    buildCheck(
       'public_funnel_health',
       publicFunnel.ok,
       'critical',
@@ -209,7 +216,8 @@ async function buildRevenueObservabilityDoctor({
     canProveRevenue: checks.find((check) => check.id === 'stripe_query_access')?.ok === true,
     canProveVisitorBehavior: (
       checks.find((check) => check.id === 'plausible_query_access')?.ok === true ||
-      checks.find((check) => check.id === 'posthog_query_access')?.ok === true
+      checks.find((check) => check.id === 'posthog_query_access')?.ok === true ||
+      checks.find((check) => check.id === 'first_party_journey_export')?.ok === true
     ),
     checks,
     nextActions: checks

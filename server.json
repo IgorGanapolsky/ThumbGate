@@ -3,7 +3,7 @@
   "name": "io.github.IgorGanapolsky/thumbgate",
   "description": "Pre-action gates that block AI agents from repeating known mistakes.",
   "title": "ThumbGate",
-  "websiteUrl": "https://thumbgate-production.up.railway.app",
+  "websiteUrl": "https://thumbgate.ai",
   "repository": {
     "source": "github",
     "url": "https://github.com/IgorGanapolsky/ThumbGate"

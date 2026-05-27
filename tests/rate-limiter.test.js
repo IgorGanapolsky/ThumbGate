@@ -51,18 +51,18 @@ describe('rate-limiter', () => {
     if (fs.existsSync(TEMP_USAGE_FILE)) fs.unlinkSync(TEMP_USAGE_FILE);
   });
 
-  it('allows 10 capture_feedback events per day on free tier, then nudges Pro', () => {
-    assert.equal(rateLimiter.FREE_TIER_LIMITS.capture_feedback.daily, 10);
-    assert.equal(rateLimiter.FREE_TIER_LIMITS.capture_feedback.lifetime, 50);
-    for (let i = 0; i < 10; i++) {
+  it('allows 5 capture_feedback events per day on free tier, then nudges Pro', () => {
+    assert.equal(rateLimiter.FREE_TIER_LIMITS.capture_feedback.daily, 5);
+    assert.equal(rateLimiter.FREE_TIER_LIMITS.capture_feedback.lifetime, 25);
+    for (let i = 0; i < 5; i++) {
       const result = rateLimiter.checkLimit('capture_feedback');
       assert.equal(result.allowed, true, `call ${i + 1} should be allowed`);
     }
     const blocked = rateLimiter.checkLimit('capture_feedback');
-    assert.equal(blocked.allowed, false, 'call 11 should be blocked on the free daily limit');
+    assert.equal(blocked.allowed, false, 'call 6 should be blocked on the free daily limit');
     assert.equal(blocked.limitType, 'daily');
     assert.match(blocked.message, /Daily limit reached/i);
-    assert.match(blocked.message, /10 captures\/day \(50 total\)/i);
+    assert.match(blocked.message, /5 captures\/day \(25 total\)/i);
     assert.match(blocked.message, /Upgrade|Pro/i);
   });
 
@@ -81,10 +81,10 @@ describe('rate-limiter', () => {
     }
   });
 
-  it('14-day reverse trial grants pro tier for new installs', () => {
+  it('7-day reverse trial grants pro tier for new installs', () => {
     assert.equal(typeof rateLimiter.isInTrialPeriod, 'function');
     assert.equal(typeof rateLimiter.trialDaysRemaining, 'function');
-    assert.equal(rateLimiter.TRIAL_DAYS, 14);
+    assert.equal(rateLimiter.TRIAL_DAYS, 7);
   });
 
   it('unknown actions have no limit', () => {

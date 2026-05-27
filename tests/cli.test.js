@@ -1072,7 +1072,7 @@ describe('bin/cli.js', () => {
     });
     assert.strictEqual(result.status, 0, `init should succeed: ${result.stderr}`);
     assert.match(result.stdout, /npx thumbgate init --email you@company\.com/);
-    assert.match(result.stdout, /14-day Pro trial active through \d{4}-\d{2}-\d{2}/);
+    assert.match(result.stdout, /7-day Pro trial active through \d{4}-\d{2}-\d{2}/);
     assert.match(result.stdout, /utm_source=cli_init/);
     fs.rmSync(initDir, { recursive: true, force: true });
     fs.rmSync(homeDir, { recursive: true, force: true });

@@ -269,9 +269,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 263 → 264 (2026-05-22) to ship scripts/self-healing-check.js.
   // bin/cli.js runs it before scripts/self-heal.js for `thumbgate self-heal`;
   // without this file, published installs fail with a missing-module error.
+  // Bumped 264 → 265 (2026-05-26) to ship scripts/visitor-journey.js because
+  // src/api/server.js uses it for the operator-gated telemetry journey export.
   assert.ok(
-    manifest.fileCount <= 264,
-    `npm package should stay <= 264 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 265,
+    `npm package should stay <= 265 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

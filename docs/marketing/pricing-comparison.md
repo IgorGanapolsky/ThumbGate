@@ -2,7 +2,7 @@
 
 | Feature | Free | Pro ($19/mo or $149/yr) |
 |---------|------|--------------|
-| Feedback capture | 10/day, 50 total | Unlimited |
+| Feedback capture | 5/day, 25 total | Unlimited |
 | Recall + lesson search | No | Yes |
 | Prevention rules | Up to 3 active | Unlimited |
 | 5 built-in checks | Yes | Yes |

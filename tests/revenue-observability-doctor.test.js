@@ -133,4 +133,5 @@ test('doctor is ready when proof access and focused public funnel are present', 
   assert.equal(report.verdict, 'ready');
   assert.equal(report.canProveRevenue, true);
   assert.equal(report.canProveVisitorBehavior, true);
+  assert.ok(report.checks.some((check) => check.id === 'first_party_journey_export' && check.ok));
 });

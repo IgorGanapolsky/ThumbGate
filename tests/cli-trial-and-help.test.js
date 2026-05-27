@@ -86,7 +86,7 @@ test('thumbgate trial: prints status section + upgrade URL', () => {
 test('thumbgate trial: in-trial install reports remaining days + expiry date', () => {
   const home = freshHome();
   try {
-    makeInstallId(home, 4); // ~10 days remaining of a 14-day trial
+    makeInstallId(home, 4); // ~10 days remaining of a 7-day trial
     const result = runCli(['trial'], unlicensedEnv(home));
     assert.equal(result.status, 0, `trial subcommand should exit 0; stderr=${result.stderr}`);
     // Acceptable: either trial active OR (on machines where creator-dev bypass kicks in)

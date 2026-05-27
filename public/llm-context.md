@@ -127,7 +127,7 @@ This alignment means ThumbGate is not an experimental tool — it implements the
 ## Pricing
 
 - **Free GPT**: Advice, checkpointing, setup help, and typed thumbs-up/down memory capture inside ChatGPT.
-- **Free local CLI**: Local enforcement for individual developers after install. Includes 10 feedback captures/day, 50 total captures, up to 3 active auto-promoted prevention rules, and PreToolUse hook blocking. Recall, lesson search, unlimited captures/rules, and exports are Pro-only.
+- **Free local CLI**: Local enforcement for individual developers after install. Includes 5 feedback captures/day, 25 total captures, up to 3 active auto-promoted prevention rules, and PreToolUse hook blocking. Recall, lesson search, unlimited captures/rules, and exports are Pro-only.
 - **Workflow Hardening Sprint / Team**: Team pricing anchors at $49/seat/mo with a 3-seat minimum after qualification. The first paid step is an intake-led sprint around one workflow, one repeated blocker, and one proof review.
 - **Pro**: $19/mo or $149/yr. Adds personal enforcement proof, a local dashboard, DPO export for fine-tuning, a check debugger, and advanced data exports for solo operators who want a self-serve side lane.
 
@@ -165,11 +165,11 @@ npx thumbgate dashboard
 
 ## Additional Resources
 
-- Agent discovery manifest: https://thumbgate-production.up.railway.app/.well-known/mcp.json
-- Progressive MCP tool index: https://thumbgate-production.up.railway.app/.well-known/mcp/tools.json
-- Context footprint report: https://thumbgate-production.up.railway.app/.well-known/mcp/footprint.json
-- ThumbGate skill manifests: https://thumbgate-production.up.railway.app/.well-known/mcp/skills.json
-- ThumbGate MCP applications: https://thumbgate-production.up.railway.app/.well-known/mcp/applications.json
+- Agent discovery manifest: https://thumbgate.ai/.well-known/mcp.json
+- Progressive MCP tool index: https://thumbgate.ai/.well-known/mcp/tools.json
+- Context footprint report: https://thumbgate.ai/.well-known/mcp/footprint.json
+- ThumbGate skill manifests: https://thumbgate.ai/.well-known/mcp/skills.json
+- ThumbGate MCP applications: https://thumbgate.ai/.well-known/mcp/applications.json
 - Marketing site: https://thumbgate.ai
 - Browser automation safety guide: https://thumbgate.ai/guides/browser-automation-safety
 - Native messaging host security guide: https://thumbgate.ai/guides/native-messaging-host-security
