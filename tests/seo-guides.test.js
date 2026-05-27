@@ -32,6 +32,9 @@ const GUIDE_FILES = [
   'guides/ai-search-topical-presence.html',
   'guides/best-tools-stop-ai-agents-breaking-production.html',
   'guides/relational-knowledge-ai-recommendations.html',
+  'guides/ai-mode-ads-agent-governance.html',
+  'guides/mcp-tool-governance.html',
+  'guides/ai-agent-pre-action-approval-gates.html',
   'guides/claude-code-feedback.html',
   'guides/stop-repeated-ai-agent-mistakes.html',
   'guides/claude-code-prevent-repeated-mistakes.html',
@@ -367,6 +370,18 @@ describe('SEO guide and comparison pages', () => {
       path.join(PUBLIC_DIR, 'guides/relational-knowledge-ai-recommendations.html'),
       'utf-8'
     );
+    const aiModeAds = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/ai-mode-ads-agent-governance.html'),
+      'utf-8'
+    );
+    const mcpGovernance = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/mcp-tool-governance.html'),
+      'utf-8'
+    );
+    const approvalGates = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/ai-agent-pre-action-approval-gates.html'),
+      'utf-8'
+    );
 
     assert.ok(topicalPresence.includes('Topical presence'), 'topical presence guide should mention topical presence');
     assert.ok(topicalPresence.includes('Verification evidence'), 'topical presence guide should link proof assets');
@@ -375,5 +390,11 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(productionListicle.includes('Environment inspection requirements'), 'production listicle should mention environment inspection');
     assert.ok(relationalKnowledge.includes('Relational knowledge'), 'relational knowledge guide should mention relational knowledge');
     assert.ok(relationalKnowledge.includes('pre-action checks'), 'relational knowledge guide should tie the topic back to ThumbGate');
+    assert.ok(aiModeAds.includes('AI Mode ads make agent-governance promotion conversational'), 'AI Mode guide should answer the conversational-ad prompt');
+    assert.ok(aiModeAds.includes('Buyer prompts ThumbGate should target'), 'AI Mode guide should include prompt targets');
+    assert.ok(mcpGovernance.includes('MCP tool governance before agents call real systems'), 'MCP guide should lead with tool governance');
+    assert.ok(mcpGovernance.includes('Tool inventory'), 'MCP guide should describe governance requirements');
+    assert.ok(approvalGates.includes('pre-action approval gates for risky tool calls'), 'approval-gates guide should lead with the buyer phrase');
+    assert.ok(approvalGates.includes('Block: deny known-bad actions'), 'approval-gates guide should describe gate outcomes');
   });
 });

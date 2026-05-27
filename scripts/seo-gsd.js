@@ -155,6 +155,21 @@ const HIGH_ROI_QUERY_SEEDS = [
     91,
     'Captures research-led interest in how AI systems decide which brands and tools to recommend.',
   ),
+  querySeed(
+    'ai mode ads agent governance',
+    94,
+    'Conversational Google AI Mode ad demand where ThumbGate can become the cited answer for teams asking how to govern AI-agent actions, not just buy clicks.',
+  ),
+  querySeed(
+    'mcp tool governance',
+    95,
+    'High-intent MCP buyer query where teams need approval boundaries and audit proof before exposing tools to agents.',
+  ),
+  querySeed(
+    'ai agent pre action approval gates',
+    95,
+    'Bottom-of-funnel query for teams ready to add human approval and evidence requirements before AI agents touch risky tools.',
+  ),
   {
     query: 'thumbs up thumbs down feedback for ai coding agents',
     businessValue: 95,
@@ -1362,6 +1377,51 @@ const AI_RECOMMENDATION_VISIBILITY_GUIDE_SPECS = Object.freeze([
     ],
     relatedPaths: ['/guides/ai-search-topical-presence', '/compare/mem0'],
   },
+  {
+    slug: 'ai-mode-ads-agent-governance',
+    meta: {
+      query: 'ai mode ads agent governance',
+      title: 'AI Mode Ads for Agent Governance | Turn Buyer Prompts Into ThumbGate Demand',
+      heroTitle: 'AI Mode ads make agent-governance promotion conversational',
+      heroSummary: 'Google AI Mode and conversational ad formats shift promotion from click-chasing to answer ownership. ThumbGate should show up when buyers ask how to govern Claude Code, Cursor, Codex, Gemini, MCP tools, and risky agent actions.',
+    },
+    takeaways: [
+      'Conversational ads reward brands that answer the buyer question directly before the click.',
+      'ThumbGate should own prompts about pre-action gates, MCP tool governance, repeated AI-agent mistakes, and audit proof.',
+      'The best paid-search asset is an answer page with schema, proof links, and a checkout or workflow-intake path.',
+    ],
+    sections: [
+      ['paragraphs', 'Why conversational ads change the promotion plan', [
+        'Search ads are moving toward generated answers and product recommendations inside the search conversation. A buyer may not click ten blue links before forming an opinion; the assistant-like surface may summarize the category, compare options, and mention a vendor in one flow.',
+        'That means ThumbGate promotion has to be answer-shaped. The page must say exactly what ThumbGate is, which agent-risk problem it solves, which tools it supports, and what proof a buyer can verify before starting checkout or a Workflow Hardening Sprint.',
+      ]],
+      ['bullets', 'Buyer prompts ThumbGate should target', [
+        'How do I stop Claude Code or Cursor from repeating risky mistakes?',
+        'What is the pre-action approval layer for AI coding agents?',
+        'How do teams govern MCP tools before agents call them?',
+        'How do I audit AI-agent actions before production deploys, payments, or database writes?',
+        'What tool turns thumbs-down feedback into enforceable rules?',
+      ]],
+      ['paragraphs', 'How this page should be used', [
+        'Use this page as the landing asset for AI Mode, Gemini, and high-intent search experiments. Do not send conversational-ad traffic to a generic homepage first. Send it to the answer that mirrors the buyer prompt, then route warm readers to Pro checkout, the install guide, or workflow intake depending on intent.',
+      ]],
+    ],
+    faq: [
+      [
+        'How do AI Mode ads help ThumbGate?',
+        'They favor direct, conversational answers. ThumbGate benefits when it has pages that answer specific buyer prompts about AI-agent governance, MCP tool risk, pre-action approval gates, and repeated failure prevention.',
+      ],
+      [
+        'Should ThumbGate run broad Google Ads immediately?',
+        'No. The high-ROI path is to build answer assets first, then test narrow paid search or AI Mode campaigns against exact buyer prompts where the page, schema, proof links, and checkout route all match the question.',
+      ],
+      [
+        'What is the one-sentence ad answer?',
+        'ThumbGate is the pre-action execution gate for AI agents: it checks risky tool calls before they run, turns feedback into rules, and gives teams audit proof.',
+      ],
+    ],
+    relatedPaths: ['/guides/ai-search-topical-presence', '/guides/pre-action-checks', '/guides/mcp-tool-governance'],
+  },
 ]);
 
 function buildAiRecommendationVisibilityGuide(spec) {
@@ -1952,6 +2012,112 @@ const PAGE_BLUEPRINTS = [
   },
   ...BROWSER_BRIDGE_GUIDE_SPECS.map(buildBrowserBridgeGuide),
   ...AI_RECOMMENDATION_VISIBILITY_GUIDE_SPECS.map(buildAiRecommendationVisibilityGuide),
+  {
+    query: 'mcp tool governance',
+    path: '/guides/mcp-tool-governance',
+    pageType: 'guide',
+    pillar: 'pre-action-checks',
+    title: 'MCP Tool Governance | Pre-Action Gates Before Agents Call Tools',
+    heroTitle: 'MCP tool governance before agents call real systems',
+    heroSummary: 'MCP makes tools easy for agents to discover and call. ThumbGate adds the missing governance layer: approval boundaries, evidence requirements, and audit logs before high-risk MCP tool calls execute.',
+    takeaways: [
+      'MCP adoption expands what agents can touch, so teams need a tool-call control plane.',
+      'Governance belongs before execution, not only in post-run logs or prompt rules.',
+      'ThumbGate turns feedback, policies, and evidence requirements into enforceable pre-action gates for MCP-compatible agent workflows.',
+    ],
+    sections: [
+      {
+        heading: 'Why MCP changes the risk model',
+        paragraphs: [
+          'MCP turns databases, file systems, browsers, ticketing systems, cloud APIs, and internal tools into surfaces an agent can call. That is useful, but it also means a bad plan can become a real action faster than a human reviewer can notice.',
+          'The governance question is no longer only which tools exist. It is which agent, workflow, branch, file path, command, customer record, or environment is allowed to use each tool under which proof requirements.',
+        ],
+      },
+      {
+        heading: 'What MCP tool governance needs',
+        bullets: [
+          'Tool inventory: know which tools are exposed to which agents and runtimes.',
+          'Risk tiers: classify destructive, customer-facing, production, payment, and data-export tools differently from read-only tools.',
+          'Pre-action checks: require evidence or approval before risky calls execute.',
+          'Feedback loops: turn thumbs-down reviews and incidents into reusable prevention rules.',
+          'Audit proof: log allowed, blocked, and approved tool calls with enough context for review.',
+        ],
+      },
+      {
+        heading: 'Where ThumbGate fits',
+        paragraphs: [
+          'ThumbGate sits between generated intent and executed action. The agent can still plan and propose MCP tool calls, but ThumbGate checks the call against learned lessons, policy boundaries, evidence requirements, and workflow risk before the tool runs.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'What is MCP tool governance?',
+        answer: 'MCP tool governance is the policy, approval, evidence, and audit layer around tools exposed through Model Context Protocol so agents do not call high-risk systems without the right checks.',
+      },
+      {
+        question: 'How is this different from an MCP server allowlist?',
+        answer: 'An allowlist says a tool exists or is available. ThumbGate adds runtime context: tool arguments, branch, path, environment, prior feedback, evidence requirements, and whether this exact action should be allowed now.',
+      },
+      {
+        question: 'Can ThumbGate work across multiple MCP-compatible agents?',
+        answer: 'Yes. The same local-first lesson and pre-action gate pattern is designed for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and MCP-compatible workflows.',
+      },
+    ],
+    relatedPaths: ['/guides/pre-action-checks', '/guides/ai-mode-ads-agent-governance', '/guides/background-agent-governance'],
+  },
+  {
+    query: 'ai agent pre action approval gates',
+    path: '/guides/ai-agent-pre-action-approval-gates',
+    pageType: 'guide',
+    pillar: 'pre-action-checks',
+    title: 'AI Agent Pre-Action Approval Gates | Human Review Before Risky Tool Calls',
+    heroTitle: 'AI agent pre-action approval gates for risky tool calls',
+    heroSummary: 'Human review after the damage lands is too late. ThumbGate adds pre-action approval gates so risky AI-agent commands, deploys, file edits, API calls, and MCP tool calls can require evidence or explicit approval before execution.',
+    takeaways: [
+      'Approval gates matter most at the action boundary, where the agent is about to touch files, terminals, APIs, CI, payments, or production systems.',
+      'The right gate can block, pause for approval, or log-and-continue depending on risk.',
+      'ThumbGate converts prior thumbs-downs, workflow policies, and verification expectations into reusable approval rules.',
+    ],
+    sections: [
+      {
+        heading: 'Why approval must happen before execution',
+        paragraphs: [
+          'Many agent failures are irreversible or expensive by the time a post-run reviewer sees them: force-pushes, destructive SQL, unsafe deploys, leaked secrets, customer-facing messages, and runaway API calls.',
+          'A pre-action approval gate pauses the action while there is still something to decide. The agent keeps its speed on safe work, but risky work requires proof, policy match, or a human yes.',
+        ],
+      },
+      {
+        heading: 'Three practical gate outcomes',
+        bullets: [
+          'Block: deny known-bad actions such as force-pushing protected branches or touching secret files.',
+          'Approve: pause production deploys, schema migrations, payment actions, or customer-facing sends until a human approves.',
+          'Log: allow lower-risk actions while preserving audit evidence for review and future lessons.',
+        ],
+      },
+      {
+        heading: 'How ThumbGate turns approvals into learning',
+        paragraphs: [
+          'Every approval, block, and thumbs-down gives the system better operating context. Repeated failures become prevention rules, accepted safe paths become reinforced lessons, and the audit trail gives teams evidence that the boundary fired before execution.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'What should require a pre-action approval gate?',
+        answer: 'Production deploys, destructive database actions, protected-branch writes, payment or refund actions, customer-facing sends, secret or PII access, high-cost API calls, and any repeated failure pattern the team has already corrected once.',
+      },
+      {
+        question: 'Do approval gates slow every agent action down?',
+        answer: 'No. Good gates are risk-tiered. Safe actions can continue, uncertain actions can be logged, risky actions can pause for approval, and known-bad actions can be blocked.',
+      },
+      {
+        question: 'How does ThumbGate know what to block?',
+        answer: 'ThumbGate uses explicit feedback, learned lessons, policy templates, command and path context, evidence requirements, and prior gate outcomes to decide whether the proposed action should proceed.',
+      },
+    ],
+    relatedPaths: ['/guides/pre-action-checks', '/guides/mcp-tool-governance', '/guides/ai-agent-governance-sprint'],
+  },
   guideBlueprint({
     query: 'autoresearch agent safety',
     path: '/guides/autoresearch-agent-safety',
@@ -2756,7 +2922,7 @@ function renderSeoPageHtml(page, runtimeConfig = {}) {
   <meta property="og:type" content="article" />
   <meta property="og:url" content="${escapeHtml(canonicalUrl)}" />
   <link rel="canonical" href="${escapeHtml(canonicalUrl)}" />
-  <link rel="llm-context" href="/public/llm-context.md" type="text/markdown" />
+  <link rel="llm-context" href="/llm-context.md" type="text/markdown" />
   <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
   <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
   <meta property="og:image" content="/og.png" />
