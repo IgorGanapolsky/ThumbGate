@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ThumbGate vs Anthropic's Claude Containment | IDE-Agent Extension of a Published Architecture</title>
+<meta name="description" content="Anthropic published their three-layer containment architecture for Claude: ephemeral containers, OS-level sandboxes (Seatbelt / bubblewrap), and an MITM egress proxy. ThumbGate extends the same model to the IDE-agent layer — Cursor, Codex, Gemini, Amp, Cline, OpenCode — where Anthropic's sandbox stops." />
+<meta property="og:title" content="ThumbGate vs Anthropic's Claude Containment | IDE-Agent Extension" />
+<meta property="og:description" content="Anthropic contains Claude on claude.ai and Claude Code. ThumbGate contains the agents Anthropic does not own: Cursor, Codex, Gemini, Amp, Cline, OpenCode. Same three-layer model, extended to the agents you actually use." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://thumbgate.ai/compare/anthropic-containment" />
+<link rel="canonical" href="https://thumbgate.ai/compare/anthropic-containment" />
+<link rel="llm-context" href="/llm-context.md" type="text/markdown" />
+<link rel="icon" type="image/png" href="/thumbgate-icon.png" />
+<link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+<meta property="og:image" content="/og.png" />
+<style>
+  :root { --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #161618; --line: #222225; --text: #e8e8ec; --muted: #8b8b96; --cyan: #22d3ee; --green: #4ade80; --amber: #fbbf24; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+  a { color: var(--cyan); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+  .topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); background: rgba(10, 10, 11, 0.88); border-bottom: 1px solid var(--line); }
+  .topbar .container { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; padding-bottom: 14px; }
+  .brand { font-weight: 700; color: var(--text); display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+  .brand .logo-mark { width: 28px; height: 28px; display: block; }
+  .hero { padding: 72px 0 32px; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(34, 211, 238, 0.22); background: rgba(34, 211, 238, 0.1); color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
+  h1 { font-size: clamp(34px, 5vw, 56px); line-height: 1.06; letter-spacing: -0.04em; margin: 16px 0; max-width: 860px; }
+  .hero p { max-width: 760px; color: var(--muted); font-size: 18px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 24px; padding-bottom: 72px; }
+  .card, .detail-section, .sidebar-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px; }
+  .card { padding: 24px; }
+  .detail-section { padding: 24px; margin-bottom: 18px; }
+  .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+  .detail-section p, .detail-section li, .sidebar-card p { color: var(--muted); }
+  .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+  .comparison-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+  .comparison-table th, .comparison-table td { border: 1px solid var(--line); padding: 12px; text-align: left; vertical-align: top; }
+  .comparison-table th { background: var(--bg-raised); color: var(--cyan); }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+  .pill { border: 1px solid var(--line); background: var(--bg-raised); border-radius: 999px; padding: 10px 14px; font-size: 14px; font-weight: 650; }
+  .pill.good { color: #b8f7c8; border-color: rgba(74, 222, 128, 0.28); background: rgba(74, 222, 128, 0.1); }
+  .pill.warn { color: #ffe2a4; border-color: rgba(251, 191, 36, 0.28); background: rgba(251, 191, 36, 0.1); }
+  .sidebar { display: flex; flex-direction: column; gap: 18px; }
+  .sidebar-card { padding: 20px; }
+  .sidebar-card:first-child { position: sticky; top: 84px; max-height: calc(100vh - 104px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .cta-button { display: inline-flex; align-items: center; justify-content: center; margin-top: 18px; padding: 12px 16px; border-radius: 10px; background: var(--cyan); color: #071116; font-weight: 700; text-decoration: none; }
+  .related-card { display: block; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg-raised); margin-top: 12px; color: var(--text); }
+  .related-label { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .faq-item { border-top: 1px solid var(--line); padding: 14px 0; }
+  .faq-item summary { cursor: pointer; font-weight: 600; }
+  .faq-item p { color: var(--muted); }
+  blockquote { border-left: 3px solid var(--cyan); margin: 14px 0; padding: 6px 16px; color: var(--text); font-style: italic; background: rgba(34, 211, 238, 0.05); }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } .sidebar-card:first-child { position: static; max-height: none; overflow: visible; } }
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ThumbGate vs Anthropic's Claude Containment Architecture",
+  "description": "Anthropic published their three-layer containment model: environment isolation (ephemeral gVisor containers, Seatbelt/bubblewrap sandboxes, hypervisor VMs), behavioral guidance, and external content controls. ThumbGate extends the same model to the IDE-agent layer where Anthropic's sandbox stops.",
+  "about": ["thumbgate vs anthropic containment", "Claude Code sandbox", "IDE agent safety architecture", "PreToolUse hooks for non-Claude agents"],
+  "url": "https://thumbgate.ai/compare/anthropic-containment",
+  "citation": "https://www.anthropic.com/engineering/how-we-contain-claude",
+  "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+  "mainEntityOfPage": "https://thumbgate.ai/compare/anthropic-containment"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is ThumbGate a competitor to Anthropic's Claude containment?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Anthropic's published containment architecture (gVisor ephemeral containers on claude.ai, Seatbelt on macOS and bubblewrap on Linux for Claude Code, hypervisor VMs for Claude Cowork, MITM egress proxy) covers what they ship. It stops at the Claude Code process boundary. ThumbGate runs the same three-layer model (environment → permission gate → egress) at the IDE-agent layer for the agents Anthropic does not own: Cursor, OpenAI Codex CLI, Google Gemini CLI, Sourcegraph Amp, Cline, OpenCode, and Claude Desktop. Same architectural model, extended to the agents your team actually uses alongside Claude Code."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does Anthropic's article tell us about agent containment?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Three lessons we operationalize: (1) Design for containment at the environment layer first, then steer behavior at the model layer. (2) Tool output is an attack surface even when the tool is trusted — a system prompt cannot prevent an exfiltration that the tool itself returns. (3) Battle-tested primitives (hypervisors, seccomp, gVisor) are more reliable than custom proxy components. ThumbGate's PreToolUse hook is the IDE-agent analogue of Anthropic's permission gate; the planned PostToolUse output inspection is the IDE-agent analogue of Anthropic's tool-output check before context insertion."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Where does Anthropic's containment stop and ThumbGate begin?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Anthropic's containment lives inside the products they ship (claude.ai, Claude Code, Claude Cowork). The moment your developer opens Cursor with the Anthropic API key, or runs an OpenAI Codex CLI session against a local repo, or wires up an MCP server in any agent runtime, you've left Anthropic's containment boundary. ThumbGate runs the same PreToolUse-gating model inside those non-Anthropic-owned runtimes. The two compose: Anthropic contains Claude inside their products, ThumbGate contains the agents your team uses outside them."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why should I use a third-party tool instead of writing my own bubblewrap rules?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Anthropic's own conclusion: 'the software you build yourself is often the weakest.' Their early custom MITM proxy failed in real incidents involving credential exfiltration and allowlist bypasses; they rebuilt on hypervisor primitives. ThumbGate's gate engine, lesson DB, Thompson Sampling auto-promotion, and adapter matrix across eight agent runtimes is the same argument: maintained infrastructure beats per-team shell scripts that go stale the moment Claude Code, Cursor, or Codex ship a breaking change to their hook API."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does ThumbGate use any of the same primitives Anthropic uses?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Different layer, different primitives. Anthropic relies on OS sandboxes (Seatbelt, bubblewrap, gVisor, hypervisors) because they ship the runtime. ThumbGate runs as a PreToolUse hook inside agent runtimes that don't expose those OS primitives to third parties, so ThumbGate's enforcement layer is pure JavaScript pattern matching against intercepted tool calls — fast, auditable, no LLM on the path. The architectural model is the same; the implementation is what each layer can reach."
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="topbar">
+  <div class="container">
+    <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+  </div>
+</div>
+
+<section class="hero">
+  <div class="container">
+    <span class="eyebrow">ThumbGate vs Anthropic Containment</span>
+    <h1>Anthropic contains Claude inside their products. ThumbGate contains every other agent your team uses.</h1>
+    <p>Anthropic published <a href="https://www.anthropic.com/engineering/how-we-contain-claude" target="_blank" rel="noopener">"How we contain Claude"</a> on their engineering blog — a three-layer architecture (environment isolation → behavioral guidance → external content controls) implemented across claude.ai, Claude Code, and Claude Cowork. That coverage stops at the Anthropic product boundary. <strong>ThumbGate runs the same architectural model at the IDE-agent layer</strong> — Cursor, OpenAI Codex CLI, Google Gemini CLI, Sourcegraph Amp, Cline, OpenCode, and Claude Desktop — where Anthropic's sandbox does not reach.</p>
+    <div class="pill-row">
+      <span class="pill">Same 3-layer model</span>
+      <span class="pill">Different runtime layer</span>
+      <span class="pill good">Composable, not competitive</span>
+    </div>
+  </div>
+</section>
+
+<div class="container grid">
+  <main>
+    <article class="detail-section">
+      <h2>Anthropic's published architecture, mapped to ThumbGate</h2>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Anthropic layer (published practice)</th>
+            <th>Where ThumbGate fits</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Ephemeral gVisor containers</strong> (claude.ai per-session filesystem; "no code runs on the local machine")</td>
+            <td>Out of scope — Anthropic's hosted product. ThumbGate is local-first by design.</td>
+          </tr>
+          <tr>
+            <td><strong>OS-level sandbox</strong> (Seatbelt on macOS, bubblewrap on Linux for Claude Code; 84% reduction in permission prompts)</td>
+            <td><strong>Direct analogue.</strong> ThumbGate's PreToolUse hook is the cross-agent version: same "evaluate before execution" model, but works inside Cursor, Codex, Gemini, Amp, Cline, OpenCode where bubblewrap/Seatbelt don't apply.</td>
+          </tr>
+          <tr>
+            <td><strong>Hypervisor VM isolation</strong> (Claude Cowork; "the agent loop ran inside the guest…executed as an ordinary Linux user with no awareness it was sandboxed")</td>
+            <td>Out of scope — Anthropic's managed VM offering. ThumbGate's adjacent value: deterministic rule enforcement that follows the agent across whichever machine you run it on.</td>
+          </tr>
+          <tr>
+            <td><strong>MITM egress proxy</strong> (intercepts API traffic, validates VM-provisioned session tokens after credential exfiltration was discovered through approved domains)</td>
+            <td><strong>Roadmap analogue.</strong> ThumbGate's egress-rule gates can block external LLM calls when privilege markers or restricted hostnames appear in the outbound payload — same defense, IDE-agent layer.</td>
+          </tr>
+          <tr>
+            <td><strong>Tool output inspection pre-context</strong> ("tool output is an attack surface even when the tool is trusted")</td>
+            <td><strong>Direct roadmap item.</strong> PostToolUse output inspection is the natural extension of ThumbGate's PreToolUse model. Same logic, applied to the returned payload before it enters agent context.</td>
+          </tr>
+          <tr>
+            <td><strong>Model-layer behavioral guidance</strong> (system prompts, model tuning)</td>
+            <td>Not us. ThumbGate is deterministic enforcement, not steering. We assume the model will sometimes try the wrong thing; the gate is what stops it from succeeding.</td>
+          </tr>
+        </tbody>
+      </table>
+    </article>
+
+    <article class="detail-section">
+      <h2>Three lessons from Anthropic that operationalize for non-Anthropic agents</h2>
+      <p><strong>1. Environment first, behavior second.</strong> Anthropic writes:</p>
+      <blockquote>"Design for containment at the environment layer first, then steer behavior at the model layer."</blockquote>
+      <p>This is exactly why ThumbGate is a PreToolUse hook rather than a system-prompt addition. The gate fires regardless of what the model "tries to do" — it acts on the actual tool-call payload, not on the model's intent.</p>
+
+      <p><strong>2. Tool output is an attack surface.</strong> Anthropic writes:</p>
+      <blockquote>"Tool output is an attack surface even when the tool is trusted."</blockquote>
+      <p>This is the architectural justification for ThumbGate's roadmapped PostToolUse output-inspection layer. A trusted internal tool returning poisoned data is the same threat as an untrusted external one — both flow into the model's context window with the same authority.</p>
+
+      <p><strong>3. Battle-tested primitives beat custom proxies.</strong> Anthropic writes:</p>
+      <blockquote>"The software you build yourself is often the weakest."</blockquote>
+      <p>Their early custom MITM proxy failed in real incidents involving credential exfiltration and allowlist bypasses; they rebuilt on hypervisor primitives. The same argument applies one layer up: a maintained third-party gate engine, lesson DB, and adapter matrix across eight agent runtimes is more reliable than per-team shell scripts that go stale the moment Claude Code, Cursor, or Codex ship a breaking change to their hook API.</p>
+    </article>
+
+    <article class="detail-section">
+      <h2>When you should rely on Anthropic's containment vs ThumbGate</h2>
+      <ul>
+        <li><strong>You only use claude.ai:</strong> Anthropic's containment is doing the work. ThumbGate adds nothing.</li>
+        <li><strong>You only use Claude Code on macOS or Linux:</strong> Anthropic's bubblewrap/Seatbelt covers the bash + filesystem surface. ThumbGate adds value for repeated-mistake prevention (the "thumbs down → blocked next time" loop) and for any MCP servers wired into Claude Code that bubblewrap doesn't gate.</li>
+        <li><strong>You use Cursor, Codex CLI, Gemini CLI, Amp, Cline, OpenCode, or Claude Desktop:</strong> Anthropic's sandboxes do not apply. ThumbGate is the only PreToolUse layer that covers all of them with one configuration.</li>
+        <li><strong>You use Claude Cowork:</strong> Anthropic's hypervisor VM contains the execution surface. ThumbGate's enforcement persists across whichever VM or machine the agent runs on, useful when you want the same rule to fire in dev + production.</li>
+      </ul>
+    </article>
+
+    <article class="detail-section">
+      <h2>FAQ</h2>
+      <details class="faq-item" open>
+        <summary>Is ThumbGate a competitor to Anthropic's Claude containment?</summary>
+        <p>No. Anthropic's containment stops at the Claude Code / claude.ai / Claude Cowork product boundary. ThumbGate runs the same three-layer model at the IDE-agent layer — Cursor, Codex, Gemini, Amp, Cline, OpenCode, Claude Desktop — where Anthropic's sandbox does not reach.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What does Anthropic's article tell us about agent containment?</summary>
+        <p>Three lessons we operationalize: environment first then behavior, tool output is an attack surface, battle-tested primitives beat custom proxies. ThumbGate's PreToolUse hook is the IDE-agent analogue of Anthropic's permission gate; the planned PostToolUse output inspection is the analogue of Anthropic's tool-output check before context insertion.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Why use a third-party tool instead of writing my own bubblewrap rules?</summary>
+        <p>Anthropic's own conclusion: "the software you build yourself is often the weakest." Their early custom MITM proxy failed in real incidents; they rebuilt on hypervisor primitives. ThumbGate's maintained gate engine + lesson DB + adapter matrix is the same argument one layer up: maintained infrastructure beats per-team shell scripts that go stale the moment Claude Code, Cursor, or Codex ship a breaking change to their hook API.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Where does Anthropic's containment stop and ThumbGate begin?</summary>
+        <p>Inside Anthropic's products: Anthropic. The moment your dev opens Cursor with the Anthropic API key, or runs Codex against a local repo, or wires up an MCP server in any agent runtime: ThumbGate. The two compose without overlap.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Where do I start?</summary>
+        <p>If you use Claude Code: keep using it as-is, install ThumbGate alongside (<code>npx thumbgate init</code>) for the repeated-mistake prevention loop and for the MCP servers Anthropic's sandbox doesn't reach. If you use any other agent runtime: ThumbGate is the only deterministic PreToolUse layer for them.</p>
+      </details>
+    </article>
+  </main>
+
+  <aside class="sidebar">
+    <div class="sidebar-card">
+      <h3 style="margin: 0 0 8px;">Install ThumbGate free</h3>
+      <p>10 captures/day, 3 active rules, PreToolUse blocking across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, Claude Desktop.</p>
+      <pre style="background: var(--bg-raised); border: 1px solid var(--line); border-radius: 8px; padding: 12px; font-size: 13px; overflow: auto;">npx thumbgate init</pre>
+      <a class="cta-button" href="/pricing">See Pro vs Team pricing →</a>
+      <p style="font-size: 12px; margin-top: 16px;">MIT licensed. No telemetry without opt-in. <code>THUMBGATE_NO_TELEMETRY=1</code> disables.</p>
+    </div>
+
+    <div class="sidebar-card">
+      <span class="related-label">Read Anthropic's article</span>
+      <p style="font-size: 13px;"><a href="https://www.anthropic.com/engineering/how-we-contain-claude" target="_blank" rel="noopener">"How we contain Claude" — Anthropic engineering blog</a>. The published architectural model this page extends to non-Anthropic agent runtimes.</p>
+    </div>
+
+    <div class="sidebar-card">
+      <span class="related-label">Related comparisons</span>
+      <a class="related-card" href="/compare/bumblebee">
+        <strong>ThumbGate vs Bumblebee</strong><br>
+        <span style="color: var(--muted); font-size: 13px;">Runtime enforcement vs Perplexity's static MCP inventory</span>
+      </a>
+      <a class="related-card" href="/compare/claude-code-hooks">
+        <strong>ThumbGate vs claude-code-hooks</strong><br>
+        <span style="color: var(--muted); font-size: 13px;">Hosted sync vs local shell scripts</span>
+      </a>
+      <a class="related-card" href="/compare/heidi">
+        <strong>ThumbGate vs HEIDI</strong><br>
+        <span style="color: var(--muted); font-size: 13px;">Agent behavior vs dependency CVE scanning</span>
+      </a>
+    </div>
+
+    <div class="sidebar-card">
+      <span class="related-label">Sources</span>
+      <p style="font-size: 13px;">All Anthropic quotes from <a href="https://www.anthropic.com/engineering/how-we-contain-claude" target="_blank" rel="noopener">"How we contain Claude"</a> on the Anthropic engineering blog. If anything here misrepresents Anthropic's published architecture, open an issue at <a href="https://github.com/IgorGanapolsky/ThumbGate/issues" target="_blank" rel="noopener">our repo</a> and we'll correct it.</p>
+    </div>
+  </aside>
+</div>
+</body>
+</html>
