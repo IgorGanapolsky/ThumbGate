@@ -32,6 +32,10 @@ Snapshot (as-of 2026-05-05 baseline; do not treat as commercial proof):
 
 Guardrail reminder: do not publish posts, send messages, invite members, upload files, create accounts, change billing, submit forms, or run paid ads without explicit action-time confirmation.
 
+## Action-time approval (next run card)
+
+- `reports/gtm/2026-05-04-money-now/action-time-approval-2026-05-28.md`
+
 ## Operator Lab promo (prep only; no publish)
 
 - Approval-ready checklist: `reports/gtm/2026-05-04-community-course-promo/next-actions-2026-05-27.md`
