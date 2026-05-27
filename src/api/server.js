@@ -6092,7 +6092,19 @@ async function addContext(){
 
     // Public OpenAPI spec — no auth required (needed for ChatGPT GPT Store import)
     if (isGetLikeRequest && (pathname === '/openapi.json' || pathname === '/openapi.yaml')) {
-      const specPath = path.join(__dirname, '../../openapi/openapi.yaml');
+      const specPath = [
+        path.join(__dirname, '../../openapi/openapi.yaml'),
+        path.join(__dirname, '../../adapters/chatgpt/openapi.yaml'),
+      ].find((candidate) => fs.existsSync(candidate));
+      if (!specPath) {
+        sendProblem(res, {
+          type: PROBLEM_TYPES.NOT_FOUND,
+          title: 'Not Found',
+          status: 404,
+          detail: 'OpenAPI spec not found.',
+        });
+        return;
+      }
       try {
         const yaml = renderOpenApiYamlForRequest(fs.readFileSync(specPath, 'utf8'), req);
         if (pathname === '/openapi.yaml') {
