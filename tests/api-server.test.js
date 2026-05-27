@@ -1451,6 +1451,23 @@ test('/llms.txt serves the llmstxt.org manifest for LLM crawlers', async () => {
   assert.match(body, /## /);
 });
 
+test('/llms.txt returns 404 when the manifest file is missing', async () => {
+  // Covers the catch branch of the /llms.txt handler (SonarCloud
+  // new_coverage gate). Uses the same in-memory swap pattern as the
+  // broker-audit missing-asset test so a SIGTERM cannot leave an orphan.
+  const assetPath = path.resolve(__dirname, '..', 'public', 'llms.txt');
+  const savedContent = fs.readFileSync(assetPath);
+  fs.unlinkSync(assetPath);
+  try {
+    const res = await fetch(apiUrl('/llms.txt'));
+    assert.equal(res.status, 404);
+    const body = await res.json();
+    assert.equal(body.error, 'Not found');
+  } finally {
+    fs.writeFileSync(assetPath, savedContent);
+  }
+});
+
 test('provisioning endpoint works', async () => {
   const res = await fetch(apiUrl('/v1/billing/provision'), {
     method: 'POST',
