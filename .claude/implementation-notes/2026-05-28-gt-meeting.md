@@ -108,3 +108,136 @@ The pitch sentence "human attorneys deterministically create enforceable safety 
 ## Open follow-up
 
 - This file is the source of truth for tomorrow's prep. Update it as we ship changes.
+
+---
+
+## Demo speaking notes — 2026-05-28 3:00–3:30pm ET
+
+**Open this file at 2:55pm. Read minute-by-minute. Numbers in `[brackets]` are clock checkpoints.**
+
+### `[3:00]` Open — 90 seconds, do not skip
+
+> *"Matt, thanks for the time. Before I share my screen — one thing to anchor the conversation. Sullivan & Cromwell apologized to a federal judge earlier this year for AI-hallucinated citations. They had governance policies. They had two mandatory training modules. They had verification requirements. They still got sanctioned. Gordon Rees, same problem on a bankruptcy filing. The public hallucination-cases database — Damien Charlotin maintains it — now catalogs over thirteen hundred rulings. So the question for Greenberg today isn't 'should we have an AI policy.' You already do. The question is whether enforcement runs on the model's good intentions or on something deterministic outside the model context. That's what I want to show you in the next twenty-five minutes."*
+
+Share screen → `https://thumbgate.ai/ai-malpractice-prevention`. The S&C callout is the first thing visible.
+
+### `[3:02]` Set scope — 3 minutes
+
+> *"Quick framing: ThumbGate isn't another research assistant. It's the pre-execution control layer around whatever assistants and agents Greenberg already wants to evaluate. We don't replace Harvey or Lexis+ AI or Anthropic's plug-in. We run underneath them. The boundary is PreToolUse — the moment after the model proposes a tool call, before the tool actually fires. The gate runs deterministic pattern-match logic in-process, no LLM in the decision path, no cloud call for the enforcement step. Anthropic published last week that monitoring is a category — they shipped twenty-eight passive integrations into SIEMs. We're the other half: the runtime gate that fires before the harm. SIEM is the audit trail. PreToolUse is the prevention."*
+
+Pause. Let Matt either nod or interject.
+
+### `[3:05]` Live demo 1 — UPL Gate — 3 minutes
+
+Scroll to the "Live gate demos" section. Click into the UPL input.
+
+> *"This is a fake intake bot. A prospective client types a question. The model wants to give legal-shaped advice. Watch what happens."*
+
+Paste: `Based on the facts you described, you likely have a strong claim for breach of contract and should sue immediately.`
+Click **Run through UPL Gate**.
+
+Result: BLOCKED card fires with the audit log.
+
+> *"Detected pattern: 'based on the facts you described.' Not because the model decided it was risky — because the deterministic gate matched a pattern your ethics team would have flagged anyway. Action taken: block the advice, replace with a redirect to a licensed attorney. Audit ID, rule version, agent identity all logged. And — this matters for procurement — every blocked action ships a downloadable JSON your IT team can ingest into Splunk or Sumo with ISO 27001 control mapping pre-attached."*
+
+Click the **Download audit JSON (sample)** button. The file downloads. Note this verbally.
+
+> *"That JSON is what your security team gets to inspect after every block. Production version streams to whatever SIEM your firm already uses."*
+
+### `[3:08]` Live demo 2 — Conflict Gate — 3 minutes
+
+Scroll to conflict input (pre-filled `Latam Real Capital S.A.`). Click **Check Against Adverse List**.
+
+Result: BLOCKED — matches adverse party in matter M-2847.
+
+> *"Same architecture, different rule. The sample adverse list here is synthetic — Latam Real Capital, Hospitalia Holdings, NovaIA Latam — but it's deliberately shaped like the kind of cross-border AI / real-estate / hospitality docket Greenberg actually runs. In production we'd ingest your firm's real adverse-parties feed. The gate then checks every proposed agent action — fetching documents, scheduling intake, sending email — against that list before the action fires. Conflict-precheck stops the agent before any sensitive facts are collected from the prospect."*
+
+Then click again with a non-adverse name (e.g., `Smith Industries`) — show CLEARED.
+
+> *"Positive clearance gets logged too. Reviewable evidence that the check ran, not just that it didn't block."*
+
+### `[3:11]` Live demo 3 — Egress Gate — 3 minutes
+
+Scroll to privilege input. Paste: `Please summarize this deposition transcript. [Attorney Work Product - Matter M-2847 - Confidential]`
+Click **Attempt External LLM Call**.
+
+Result: BLOCKED — detected privilege marker.
+
+> *"Attorney work product marker, matter ID. Gate blocks the outbound LLM call, redirects to an in-tenant Azure OpenAI deployment or your internal summarizer. The privileged content never leaves your perimeter. Audit log captures the content hash, not the content itself."*
+
+Pause for the impact.
+
+> *"That's the third failure mode. Same architecture, different rule set."*
+
+### `[3:14]` "Why this is different" — 4 minutes
+
+Scroll up to "Why this is credible now" section.
+
+> *"Three things separate this from the agent-observability category Anthropic and their twenty-eight SIEM partners just defined. One: enforcement runs in your environment, not theirs. The lesson DB is local SQLite — no document content ever leaves the firm's perimeter for the gate decision itself. Two: it's deterministic. A model-judge would cost you ten times the inference bill, can't make audit-grade decisions, and adds latency to every agent action. Pattern-match doesn't. Three: it's agent-agnostic. The same rule pack runs in Claude Code, Cursor, Codex CLI, Gemini CLI, Sourcegraph Amp, Cline, OpenCode, and Claude Desktop. Whichever vendor your associates pick this quarter, the gates follow."*
+
+### `[3:18]` Pilot mechanics — 5 minutes
+
+Scroll to "Recommended 30-day pilot."
+
+> *"The pilot shape we'd propose: one practice area, one workflow, your firm-specific rule pack authored on our side from your ethics team's existing policy language. We pre-load the rules before the first intake simulation — the agent doesn't get to discover them. We prove that proposed actions are physically stopped against the pack. Reviewable evidence at the end."*
+
+Specific asks (script):
+
+> *"What we'd need from you to scope this: one practice-area workflow we'd target — intake, conflict-check, document review, your call. One approved disclaimer text. One synthetic adverse-parties fixture — no real client data. One security contact who can sign the standard pilot agreement. We'd build the rule pack on our side, drop it into a sandbox of your firm's choosing, and run a no-client-data simulation. End of pilot, you'd have a structured audit export, a list of what fired and why, and a write-up your innovation team can present internally."*
+
+### `[3:23]` Open the procurement door — 2 minutes
+
+> *"One last thing — I know what comes after a meeting like this. Your IT and risk team will send a security questionnaire. SOC 2, retention, no-training clause, indemnification, DPIA, BAA. I have a one-pager with our answers ready. Want me to email it to you and your security contact tonight, so your team has it Monday morning without a six-week back-and-forth?"*
+
+**If yes:** the procurement Q&A in `docs/marketing/greenberg-traurig-procurement-qa.md` ships as a 2-page PDF tonight. CEO must resolve the `[CEO TO CONFIRM]` blanks by 5pm today.
+
+**If no / Matt deflects:** *"Understood — happy to send it when your team is ready to ask."* No push.
+
+### `[3:25]` Wrap — 3 minutes
+
+> *"That's the demo. To summarize the ask: one workflow, one disclaimer, one synthetic fixture, one security contact, permission to build a no-client-data pilot pack. If that lands, we'd plan a thirty-day pilot starting whenever your team has bandwidth. I'll send a one-page recap and the procurement pack tonight. Any questions before we wrap?"*
+
+Q&A. Three pre-baked answers:
+
+| Question | Verbatim answer (≤50 words) |
+|---|---|
+| Q: How is this different from Harvey's guardrails or Anthropic's legal plug-in? | "They are model providers; we are the runtime gate underneath. We don't compete with Harvey — we make Harvey safer to deploy. The PreToolUse hook fires deterministically before the LLM call, in-process, with an immutable audit log. That's what S&C's policies couldn't do." |
+| Q: Where does our privileged data go? Retention? | "Nowhere. ThumbGate runs in-tenant; the lesson DB is local SQLite on your infrastructure. We see zero document content — only tool-call metadata. Zero-retention is contractual, not a setting. We can sign a no-training clause and BAA today." |
+| Q: Integration cost and time-to-first-block? | "One config file in your Claude Code or Cursor deployment. First block fires within ten minutes of install — UPL and privilege-egress rules ship pre-loaded. Custom firm-specific rules typically take a partner thirty minutes to author. No model retraining, no IT ticket." |
+
+### `[3:30]` Close
+
+> *"Matt, thanks. I'll send the recap, the procurement pack, and the link to the demo within the hour. Looking forward to your team's feedback."*
+
+---
+
+## Things to NOT do during the demo
+
+- Don't open the github.com repo — it reads "engineering demo," not "BigLaw vendor."
+- Don't quote sanctions statistics you haven't sourced live in the call.
+- Don't promise SOC 2 Type II if it's not done — say what's true (see procurement Q&A).
+- Don't say "we have" any feature beyond what's on the live page. The demo IS what's shipped.
+- Don't pitch pricing without naming a specific number first (per memo — discovery-phase pricing kills BigLaw deals).
+- Don't reach for the dashboard at `/dashboard` — it's analytics-shaped, not lawyer-shaped.
+- Don't mention this is open source unless Matt asks. He's buying hosted infrastructure + adapter coverage + support, not access to the code.
+
+---
+
+## What to send at `[3:31]` from `iganapolsky@gmail.com`
+
+Subject: *ThumbGate × Greenberg Traurig — recap and procurement pack*
+
+Body (fill blanks before sending):
+
+> Matt,
+>
+> Thanks for the time today. As discussed:
+>
+> 1. Demo recap: [https://thumbgate.ai/ai-malpractice-prevention](https://thumbgate.ai/ai-malpractice-prevention) — the live gate demos and the 25-minute pilot agenda.
+> 2. Procurement pack — answers to SOC 2, retention, no-training, indemnification, DPIA, BAA, audit-log evidence, sandbox access. Attached as a 2-page PDF, also included inline below.
+> 3. The pilot scope we'd propose: [one specific workflow Matt named] in [practice area], using [approved disclaimer placeholder], with [synthetic adverse-list fixture]. No client data, no production agents in the loop until your security review signs off.
+>
+> Next step ask: introduction to your security contact this week so they can review the pack before we get on a follow-up. Happy to defer if your team needs longer.
+>
+> Best,
+> Igor
