@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ThumbGate vs Claude for Legal | Runtime Gate Pairs With Anthropic's Practice-Area Plugins</title>
+  <meta name="description" content="Anthropic shipped Claude for Legal (May 2026): 12 practice-area plugins + 20+ connectors + Claude Opus 4.7 at 90.9% on Harvey's BigLaw Bench. It is a model + integrations bundle with 'human in the loop' as the safety story. ThumbGate is the runtime gate underneath: PreToolUse enforcement that fires before Claude's proposed tool call executes. Use both." />
+  <meta property="og:title" content="ThumbGate vs Claude for Legal | Runtime Gate Pairs With Anthropic's Practice-Area Plugins" />
+  <meta property="og:description" content="Claude for Legal generates the action; ThumbGate gates the action. Same architectural insight as Anthropic's published containment: deterministic enforcement at runtime, in your environment, with no LLM in the decision path. Complementary, not competitive." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/compare/anthropic-claude-for-legal" />
+  <link rel="canonical" href="https://thumbgate.ai/compare/anthropic-claude-for-legal" />
+  <link rel="llm-context" href="/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root { --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #161618; --line: #222225; --text: #e8e8ec; --muted: #8b8b96; --cyan: #22d3ee; --green: #4ade80; --amber: #fbbf24; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); background: rgba(10, 10, 11, 0.88); border-bottom: 1px solid var(--line); }
+    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; padding-bottom: 14px; }
+    .brand { font-weight: 700; color: var(--text); display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(34, 211, 238, 0.22); background: rgba(34, 211, 238, 0.1); color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
+    h1 { font-size: clamp(34px, 5vw, 56px); line-height: 1.06; letter-spacing: -0.04em; margin: 16px 0; max-width: 860px; }
+    .hero p { max-width: 760px; color: var(--muted); font-size: 18px; }
+    .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 24px; padding-bottom: 72px; }
+    .card, .detail-section, .sidebar-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px; }
+    .card { padding: 24px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p, .detail-section li, .sidebar-card p { color: var(--muted); }
+    .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+    .comparison-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+    .comparison-table th, .comparison-table td { border: 1px solid var(--line); padding: 12px; text-align: left; vertical-align: top; }
+    .comparison-table th { background: var(--bg-raised); color: var(--cyan); }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+    .pill { border: 1px solid var(--line); background: var(--bg-raised); border-radius: 999px; padding: 10px 14px; font-size: 14px; font-weight: 650; }
+    .pill.good { color: #b8f7c8; border-color: rgba(74, 222, 128, 0.28); background: rgba(74, 222, 128, 0.1); }
+    .pill.warn { color: #ffe2a4; border-color: rgba(251, 191, 36, 0.28); background: rgba(251, 191, 36, 0.1); }
+    .sidebar { display: flex; flex-direction: column; gap: 18px; }
+    .sidebar-card { padding: 20px; }
+    .sidebar-card:first-child { position: sticky; top: 84px; max-height: calc(100vh - 104px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .cta-button { display: inline-flex; align-items: center; justify-content: center; margin-top: 18px; padding: 12px 16px; border-radius: 10px; background: var(--cyan); color: #071116; font-weight: 700; text-decoration: none; }
+    .related-card { display: block; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg-raised); margin-top: 12px; color: var(--text); }
+    .related-label { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .faq-item { border-top: 1px solid var(--line); padding: 14px 0; }
+    .faq-item summary { cursor: pointer; font-weight: 600; }
+    .faq-item p { color: var(--muted); }
+    blockquote { border-left: 3px solid var(--cyan); margin: 14px 0; padding: 6px 16px; color: var(--text); font-style: italic; background: rgba(34, 211, 238, 0.05); }
+    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } .sidebar-card:first-child { position: static; max-height: none; overflow: visible; } }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ThumbGate vs Claude for Legal",
+  "description": "Anthropic's Claude for Legal (launched 2026-05-12) ships 12 practice-area plugins + 20+ connectors + Claude Opus 4.7 at 90.9% on Harvey's BigLaw Bench. The safety story is 'human in the loop.' ThumbGate is the runtime gate underneath: PreToolUse enforcement that fires before Claude's proposed tool call executes. Same architectural insight as Anthropic's own published containment model, extended to the developer-agent layer.",
+  "about": ["thumbgate vs claude for legal", "Anthropic legal AI governance", "PreToolUse runtime enforcement for legal agents", "law firm agent safety architecture"],
+  "url": "https://thumbgate.ai/compare/anthropic-claude-for-legal",
+  "citation": [
+    "https://www.artificiallawyer.com/2026/05/12/claude-for-legal-launches-may-reshape-the-legal-tech-world/",
+    "https://fortune.com/2026/05/12/anthropic-legal-plug-in-release-claude-cowork-big-law/",
+    "https://www.anthropic.com/engineering/how-we-contain-claude"
+  ],
+  "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+  "mainEntityOfPage": "https://thumbgate.ai/compare/anthropic-claude-for-legal"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is Claude for Legal a ThumbGate competitor?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Claude for Legal is a vertical bundle: Claude Opus 4.7 plus 12 practice-area plugins (Commercial, Employment, Privacy, Product, Corporate, AI Governance, etc.) plus 20+ connectors (DocuSign, Ironclad, iManage, NetDocuments, LexisNexis, Thomson Reuters, Box, Everlaw, LSuite) embedded into Word, Outlook, Claude Cowork, and Claude Projects. It is what the agent uses to do legal work. ThumbGate is the runtime gate that runs at PreToolUse — the moment after Claude proposes a tool call (a fetch from LexisNexis, a write to iManage, an outbound LLM call) and before that tool actually fires. Anthropic generates the action; ThumbGate gates the action. Most BigLaw deployments need both."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Doesn't Claude for Legal already have safety built in?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Anthropic's published safety story for Claude for Legal is 'keep a human in the loop on decision making' — a workflow principle, not a runtime enforcement layer. That principle is correct and necessary, but it relies on the attorney to spot the wrong action before approving. Sullivan & Cromwell apologized to a federal judge in early 2026 for AI-hallucinated citations despite policies, mandatory training, and verification requirements. Policies are not enforcement. A runtime PreToolUse hook inspects the proposed tool call deterministically before the attorney sees it for approval — the gate fires whether or not the human is paying attention."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does ThumbGate work with Claude for Legal specifically?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. ThumbGate's enforcement runs at the agent runtime's PreToolUse boundary, which exists in every Claude surface that exposes tool calls — Claude Code, Claude Desktop (which is where Claude for Legal's M365 plugins surface for desktop users), and the Claude API when called from Cursor, Codex CLI, Gemini CLI, Sourcegraph Amp, Cline, or OpenCode. The same rule pack — unauthorized-practice patterns, conflict-checker, privilege-marker egress — fires regardless of whether the model proposing the action is Claude Opus 4.7 via Claude for Legal, Claude via direct API, or another vendor's model."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Anthropic's containment architecture also covers tool calls — isn't that the same thing as ThumbGate?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Anthropic's published containment architecture (gVisor ephemeral containers for claude.ai, Seatbelt/bubblewrap sandboxes for Claude Code, hypervisor VMs for Claude Cowork, MITM egress proxy after credential exfiltration was discovered) covers what Anthropic ships. It stops at the Claude Code process boundary. ThumbGate runs the same three-layer model at the IDE-agent layer for the agents that share a developer's environment with Claude — Cursor, Codex CLI, Gemini CLI, Amp, Cline, OpenCode — and at the firm-specific rule layer that Anthropic's general-purpose containment cannot encode (your adverse-parties list, your UPL phrasing, your privilege markers, your matter-specific allowlists). See our /compare/anthropic-containment page for the deeper architectural map."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why would a BigLaw firm running Claude for Legal need a separate runtime gate?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Three reasons. First, regulatory: the firm-specific rules that satisfy ABA Formal Opinion 512 and state-bar Unauthorized-Practice-of-Law conventions are not in Anthropic's product — they live in your ethics team's policy memo. Second, evidentiary: a procurement review needs structured audit logs that show 'rule X version Y matched proposed action Z and blocked it' — Claude for Legal's safety story is process-level (human in the loop), not artifact-level. Third, vendor independence: the same rule pack must fire when associates use Cursor, Codex, or Gemini CLI alongside Claude for Legal, and Anthropic's safety architecture does not extend to other vendors' agents."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28" /><span>ThumbGate</span></a>
+      <nav><a href="/learn">Learn</a> &nbsp; <a href="/pro">Pro</a> &nbsp; <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a></nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="container">
+      <span class="eyebrow">ThumbGate vs Claude for Legal</span>
+      <h1>Anthropic generates the legal action. ThumbGate learns from the attorney and gates the legal action.</h1>
+      <p><strong>Claude for Legal</strong> (launched 2026-05-12) is a vertical bundle: Claude Opus 4.7 (90.9% on Harvey's BigLaw Bench), 12 practice-area plugins (Commercial, Employment, Privacy, Corporate, AI Governance, and more), and 20+ connectors (DocuSign, Ironclad, iManage, NetDocuments, LexisNexis, Thomson Reuters, Box, Everlaw, LSuite) embedded into Word, Outlook, Claude Cowork, and Claude Projects. <strong>ThumbGate</strong> is the full feedback-to-enforcement loop underneath: every 👍 / 👎 an attorney gives on any AI answer becomes a lesson in a local lesson DB, recurring lessons get promoted to prevention rules, and those rules then fire at the PreToolUse hook before Claude's next proposed tool call executes. Anthropic's safety story is <em>"human in the loop on decision making."</em> Ours is <em>"the attorney's vote becomes the rule, and the rule fires deterministically before the next decision is even shown to a human."</em> Most regulated firms need both.</p>
+    </div>
+  </section>
+
+  <main class="container">
+    <div class="grid">
+      <div class="content">
+
+        <section class="detail-section">
+          <h2>Side-by-side scope comparison</h2>
+          <table class="comparison-table">
+            <thead>
+              <tr><th>Dimension</th><th>Claude for Legal</th><th>ThumbGate</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Product category</strong></td><td>Vertical AI bundle: model + practice-area plugins + connectors</td><td>Runtime governance gate at PreToolUse</td></tr>
+              <tr><td><strong>What it does</strong></td><td>Generates legal work product across Word, Outlook, Cowork, Projects</td><td>Inspects the proposed tool call and returns allow / warn / block / route-to-human before the tool fires</td></tr>
+              <tr><td><strong>Surfaces</strong></td><td>Word, Outlook, Claude Cowork, Claude Projects, Claude.ai, Microsoft 365</td><td>Claude Code, Claude Desktop, Cursor, OpenAI Codex CLI, Google Gemini CLI, Sourcegraph Amp, Cline, OpenCode</td></tr>
+              <tr><td><strong>Safety story</strong></td><td>"Keep a human in the loop on decision making" (workflow principle)</td><td>Deterministic PreToolUse pattern-match against firm-configured rules (artifact)</td></tr>
+              <tr><td><strong>Firm-specific rule encoding</strong></td><td>Not in product &mdash; lives in your ethics team's policy memo</td><td>Your adverse-parties list, UPL phrasing, privilege markers, matter-specific allowlists as enforced rules</td></tr>
+              <tr><td><strong>Audit evidence</strong></td><td>Process-level (human approvals captured in workflow)</td><td>Artifact-level (rule ID + version + matched pattern + audit ID + ISO 27001 control mapping in downloadable JSON per blocked action)</td></tr>
+              <tr><td><strong>Vendor coverage</strong></td><td>Claude only</td><td>Claude + every other agent your associates use alongside it</td></tr>
+              <tr><td><strong>Pricing model</strong></td><td>Bundled with paid Claude subscriptions (no separate SKU disclosed at launch)</td><td>Open-source free tier + Pro/Team for hosted evidence, adapter coverage, audit-export</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="detail-section">
+          <h2>The full ThumbGate loop &mdash; not just the gate</h2>
+          <p>The PreToolUse hook is the endpoint of a four-stage loop, not the whole product. The loop is what makes the gate <em>your firm's gate</em>, not a generic one. Every stage is in your environment:</p>
+          <ol>
+            <li><strong>Capture.</strong> An attorney reviews an AI answer &mdash; a Claude for Legal drafted clause, a Cowork project summary, a proposed conflict-check action, a research citation. They click 👍 (the answer was good) or 👎 (the answer was wrong, unauthorized, or unsafe). One click. The feedback record is structured: the context, what worked or went wrong, and what should change next time.</li>
+            <li><strong>Memory.</strong> The feedback record lands in a local lesson DB (SQLite + LanceDB vector index) on the firm's infrastructure. The same record stores wins, mistakes, and edge cases. Nothing leaves the firm's perimeter. The lesson DB is searchable: when a new intake matches a prior pattern, the relevant lessons are retrieved before the agent answers.</li>
+            <li><strong>Rule promotion.</strong> When a 👎 pattern recurs across distinct sessions, Thompson Sampling promotes it from a one-off lesson to a deterministic prevention rule. The rule is human-readable and editable &mdash; your ethics team can audit, soften, or override it. Wins get reinforced the same way: patterns the attorneys consistently approved become the routing the agent prefers.</li>
+            <li><strong>Enforcement.</strong> The promoted rules fire at the PreToolUse hook before Claude's next proposed tool call executes. Allow, warn, block, or route-to-human, with an artifact-level audit log (rule ID, version, matched pattern, audit ID, ISO 27001 control mapping). The attorney's vote from stage 1 is now an enforced constraint that fires deterministically before any human is asked to approve again.</li>
+          </ol>
+          <p>That is what "infrastructure firewall for AI coding agents" means in practice. Claude for Legal generates the legal action. ThumbGate <em>learns from the attorney's vote on that action</em>, then <em>enforces the lesson on the next one</em>. The two products are stacked, not competing.</p>
+        </section>
+
+        <section class="detail-section">
+          <h2>The shared architectural insight, made explicit</h2>
+          <p>Anthropic's own published <a href="/compare/anthropic-containment">containment architecture</a> (gVisor ephemeral containers for claude.ai, Seatbelt/bubblewrap sandboxes for Claude Code, hypervisor VMs for Claude Cowork, MITM egress proxy added after credential exfiltration was discovered through approved domains, tool-output inspection before context insertion) is the strongest endorsement of ThumbGate's posture from the company that built Claude. They run runtime enforcement at every layer they ship.</p>
+          <p>Claude for Legal extends Anthropic's <em>capability</em> surface (legal plugins, M365 integration, connectors) but does not extend the <em>enforcement</em> surface. Their safety language for the legal product is "human in the loop." That principle is right. It is also the same principle Sullivan &amp; Cromwell had codified in policy when their associates filed hallucinated citations with a federal judge in early 2026. Gordon Rees same outcome on a bankruptcy filing. <a href="https://www.damiencharlotin.com/hallucinations/" target="_blank" rel="noopener">Damien Charlotin's public database</a> catalogs 1,369+ AI hallucination rulings. <strong>Policies are not enforcement.</strong> A runtime gate that inspects the proposed action <em>before</em> the human is asked to approve it is.</p>
+          <blockquote>"The legal sector is facing mounting pressure to adopt AI, and the firms and in-house teams that move are pulling ahead fast." &mdash; Anthropic, on Claude for Legal launch</blockquote>
+          <p>The firms moving fastest are also the firms most exposed to the failure modes Sullivan &amp; Cromwell hit. The combination of Anthropic's capability layer and a deterministic runtime gate is what separates "moves fast and apologizes to a judge" from "moves fast and ships audit evidence to procurement."</p>
+        </section>
+
+        <section class="detail-section">
+          <h2>The dual-deploy story for a regulated firm</h2>
+          <p>If your firm adopts Claude for Legal &mdash; or is already a paid Claude customer with the plugins available &mdash; the integration with ThumbGate is short and additive:</p>
+          <ol>
+            <li><strong>Claude for Legal handles capability.</strong> Associates use the Commercial, Corporate, Employment, Privacy, and IP plugins in Word, Outlook, Cowork, and Projects to generate work product. M365 connectors keep one context-carrying agent across tools.</li>
+            <li><strong>ThumbGate handles enforcement.</strong> Every tool call Claude proposes &mdash; a LexisNexis fetch, an iManage write, a DocuSign send, an outbound LLM call, a Box upload, a shell command in Claude Code &mdash; is inspected at PreToolUse against your firm-specific rule pack. Allow / warn / block / route-to-human, deterministically, with an audit log per decision.</li>
+            <li><strong>Vendor-agnostic coverage.</strong> When associates also use Cursor, Codex, or Gemini CLI alongside Claude for Legal &mdash; which most teams do &mdash; the same rule pack fires there too. Anthropic's containment does not extend to other vendors' agents. ThumbGate does.</li>
+          </ol>
+          <p>The result is what BigLaw procurement actually asks for: the capability gains Claude for Legal promises, plus the artifact-level audit evidence (rule ID, version, matched pattern, audit ID, ISO 27001 control mapping) a security review needs to sign off on the deployment. Our <a href="/ai-malpractice-prevention">legal-vertical pre-execution-controls page</a> shows the live demos: UPL Gate, Conflict Gate, Egress Gate.</p>
+        </section>
+
+        <section class="detail-section">
+          <h2>FAQ</h2>
+          <details class="faq-item" open>
+            <summary>If Anthropic is going direct to BigLaw, why does ThumbGate matter?</summary>
+            <p>Because the demand Anthropic just created &mdash; for AI inside legal workflows &mdash; is also the demand Sullivan &amp; Cromwell created when they apologized to a federal judge. The procurement question after a Claude for Legal pilot is the same question: how does your firm prove the model didn't take an unauthorized action? Anthropic's answer is "human in the loop." Procurement teams want an artifact-level answer too.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Does ThumbGate need to be a Claude partner to gate Claude for Legal?</summary>
+            <p>No. The PreToolUse hook is a runtime boundary inside the agent process &mdash; it doesn't require an Anthropic partnership any more than a Node.js middleware library needs a partnership with the framework it sits in. Claude Code, Claude Desktop, and any tool that calls the Anthropic API ship the integration surface ThumbGate uses.</p>
+          </details>
+          <details class="faq-item">
+            <summary>What about firms that only use Claude for Legal, no other agents?</summary>
+            <p>Still relevant. Claude for Legal's enforcement is process-level ("human in the loop"); your firm's policy team probably wants rule-level enforcement for ABA Formal Opinion 512 + state-bar UPL conventions + your adverse-parties list. Those rules live in your ethics memo today. ThumbGate moves them into the runtime so they fire whether or not the associate notices the issue.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Is this comparison sponsored or partnered?</summary>
+            <p>No. We don't have a partnership with Anthropic. We wrote this page because BigLaw prospects evaluate both products &mdash; we want them to choose by scope, not by confusion. If anything here misrepresents Claude for Legal, open an issue at <a href="https://github.com/IgorGanapolsky/ThumbGate/issues" target="_blank" rel="noopener">our repo</a> and we will correct it.</p>
+          </details>
+        </section>
+
+      </div>
+
+      <aside class="sidebar">
+        <div class="sidebar-card">
+          <span class="related-label">Install ThumbGate</span>
+          <p style="font-size: 14px;">Get PreToolUse rules running alongside Claude for Legal in two minutes.</p>
+          <a class="cta-button" href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">npx thumbgate init &rarr;</a>
+        </div>
+
+        <div class="sidebar-card">
+          <span class="related-label">Try Claude for Legal too</span>
+          <p style="font-size: 13px;">Anthropic's vertical bundle. Plugins + connectors in your Word/Outlook/Cowork workspace. Available to all paid Claude customers. <a href="https://www.anthropic.com/" target="_blank" rel="noopener">anthropic.com</a></p>
+        </div>
+
+        <div class="sidebar-card">
+          <span class="related-label">Related comparisons</span>
+          <a class="related-card" href="/compare/anthropic-containment">
+            <strong>ThumbGate vs Anthropic's Claude Containment</strong><br>
+            <span style="color: var(--muted); font-size: 13px;">IDE-agent extension of Anthropic's published architecture</span>
+          </a>
+          <a class="related-card" href="/compare/arcjet">
+            <strong>ThumbGate vs Arcjet</strong><br>
+            <span style="color: var(--muted); font-size: 13px;">Agent-outbound gate vs app-inbound firewall</span>
+          </a>
+          <a class="related-card" href="/compare/oak-and-sparrow-gatekeeper">
+            <strong>ThumbGate vs Gatekeeper (Oak &amp; Sparrow)</strong><br>
+            <span style="color: var(--muted); font-size: 13px;">Agent-action gate vs workforce-input gate</span>
+          </a>
+          <a class="related-card" href="/ai-malpractice-prevention">
+            <strong>Pre-Execution Controls for Legal AI Agents</strong><br>
+            <span style="color: var(--muted); font-size: 13px;">Live UPL / Conflict / Egress gate demos</span>
+          </a>
+        </div>
+
+        <div class="sidebar-card">
+          <span class="related-label">Sources</span>
+          <p style="font-size: 13px;">Claude for Legal product facts verified from <a href="https://www.artificiallawyer.com/2026/05/12/claude-for-legal-launches-may-reshape-the-legal-tech-world/" target="_blank" rel="noopener">Artificial Lawyer (2026-05-12)</a>, <a href="https://fortune.com/2026/05/12/anthropic-legal-plug-in-release-claude-cowork-big-law/" target="_blank" rel="noopener">Fortune (2026-05-12)</a>, and Anthropic's launch announcement. Sullivan &amp; Cromwell incident framing from <a href="https://compliancehub.wiki/legal-ai-hallucination-reckoning-2026/" target="_blank" rel="noopener">ComplianceHub</a>. Hallucination ruling count from <a href="https://www.damiencharlotin.com/hallucinations/" target="_blank" rel="noopener">Damien Charlotin's database</a> (1,369+ rulings as of 2026-05-27). If anything here misrepresents Claude for Legal, open an issue at <a href="https://github.com/IgorGanapolsky/ThumbGate/issues" target="_blank" rel="noopener">our repo</a> and we will correct it.</p>
+        </div>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>

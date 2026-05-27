@@ -620,3 +620,45 @@ test('background-agent-control-layer links to feedback-loop-vs-decision-layer fo
   const html = await fetch(`${origin}/learn/background-agent-control-layer`).then((r) => r.text());
   assert.match(html, /href="\/learn\/feedback-loop-vs-decision-layer"/);
 });
+
+test('GET /compare/anthropic-claude-for-legal serves the hand-written comparison page', async () => {
+  const res = await fetch(`${origin}/compare/anthropic-claude-for-legal`);
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  const html = await res.text();
+  // Title + positioning
+  assert.match(html, /ThumbGate vs Claude for Legal/);
+  assert.match(html, /Runtime Gate Pairs With Anthropic's Practice-Area Plugins/);
+  // FAQ + TechArticle schema for LLM citation
+  assert.match(html, /"@type":\s*"FAQPage"/);
+  assert.match(html, /"@type":\s*"TechArticle"/);
+  // Honest framing — must cite Anthropic launch sources
+  assert.match(html, /artificiallawyer\.com\/2026\/05\/12\/claude-for-legal-launches/);
+  // The full feedback-loop framing — NOT PreToolUse-only
+  assert.match(html, /full ThumbGate loop/);
+  assert.match(html, /Rule promotion/);
+});
+
+test('GET /sitemap.xml includes the anthropic-claude-for-legal comparison page', async () => {
+  const res = await fetch(`${origin}/sitemap.xml`);
+  assert.equal(res.status, 200);
+  const xml = await res.text();
+  const entry = xml.match(/<url>\s*<loc>[^<]*\/compare\/anthropic-claude-for-legal<\/loc>[\s\S]*?<\/url>/);
+  assert.ok(entry, 'compare/anthropic-claude-for-legal <url> block must exist');
+  assert.match(entry[0], /<priority>0\.9<\/priority>/);
+});
+
+test('comparison pages link back to anthropic-claude-for-legal for discovery', async () => {
+  const [bb, cch, ant, gk, arc] = await Promise.all([
+    fetch(`${origin}/compare/bumblebee`).then((r) => r.text()),
+    fetch(`${origin}/compare/claude-code-hooks`).then((r) => r.text()),
+    fetch(`${origin}/compare/anthropic-containment`).then((r) => r.text()),
+    fetch(`${origin}/compare/oak-and-sparrow-gatekeeper`).then((r) => r.text()),
+    fetch(`${origin}/compare/arcjet`).then((r) => r.text()),
+  ]);
+  assert.match(bb, /href="\/compare\/anthropic-claude-for-legal"/);
+  assert.match(cch, /href="\/compare\/anthropic-claude-for-legal"/);
+  assert.match(ant, /href="\/compare\/anthropic-claude-for-legal"/);
+  assert.match(gk, /href="\/compare\/anthropic-claude-for-legal"/);
+  assert.match(arc, /href="\/compare\/anthropic-claude-for-legal"/);
+});
