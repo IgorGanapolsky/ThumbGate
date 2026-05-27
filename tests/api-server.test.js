@@ -4027,16 +4027,23 @@ test('/broker-audit serves the public landing page with telemetry script', async
 test('/broker-audit returns 500 problem-json when static asset is missing', async () => {
   // Exercises the catch branch of the /broker-audit handler so the read
   // failure path is covered (Sonar new_coverage gate).
+  //
+  // Uses in-memory swap (read -> unlink -> restore from buffer) instead of
+  // rename-and-restore. The rename approach left orphaned .swap-<pid> files
+  // when the test process was SIGTERM'd, which then made every subsequent
+  // CI run on every PR fail with ENOENT until someone manually restored the
+  // asset. In-memory swap survives a crash: git already tracks the file, so
+  // `git restore assets/static/broker-audit.html` recovers immediately.
   const assetPath = path.resolve(__dirname, '..', 'assets', 'static', 'broker-audit.html');
-  const backupPath = `${assetPath}.swap-${process.pid}`;
-  fs.renameSync(assetPath, backupPath);
+  const savedContent = fs.readFileSync(assetPath);
+  fs.unlinkSync(assetPath);
   try {
     const res = await fetch(apiUrl('/broker-audit'));
     assert.equal(res.status, 500);
     const body = await res.json();
     assert.equal(body.error, 'broker-audit page unavailable');
   } finally {
-    fs.renameSync(backupPath, assetPath);
+    fs.writeFileSync(assetPath, savedContent);
   }
 });
 
