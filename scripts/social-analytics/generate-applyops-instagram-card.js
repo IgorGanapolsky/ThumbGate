@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 let sharp;
 try { sharp = require('sharp'); } catch { /* optional dependency */ }
 
@@ -11,10 +11,10 @@ const DEFAULT_OUTPUT = path.join(REPO_ROOT, '.thumbgate', 'applyops-instagram-ca
 
 function escapeXml(value) {
   return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
 }
 
 async function generateApplyOpsInstagramCard(outputPath = DEFAULT_OUTPUT) {
@@ -60,7 +60,7 @@ async function generateApplyOpsInstagramCard(outputPath = DEFAULT_OUTPUT) {
   return outputPath;
 }
 
-if (require.main === module) {
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
   const outputArg = process.argv.find((arg) => arg.startsWith('--output='));
   const outputPath = outputArg ? outputArg.slice('--output='.length) : DEFAULT_OUTPUT;
 

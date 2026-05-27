@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 const {
   getConnectedAccounts,
   publishPost,
@@ -67,7 +67,7 @@ async function main() {
   console.log(`[applyops:instagram] published id=${result.id || result.data?.id || 'unknown'}`);
 }
 
-if (require.main === module) {
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
   main().catch((err) => {
     console.error(`[applyops:instagram] failed: ${err.message}`);
     process.exit(1);
