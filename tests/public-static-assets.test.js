@@ -424,3 +424,21 @@ test('GET /sitemap.xml includes the bumblebee comparison page', async () => {
   assert.ok(entry, 'compare/bumblebee <url> block must exist');
   assert.match(entry[0], /<priority>0\.85<\/priority>/);
 });
+
+test('GET /compare/anthropic-containment serves the hand-written comparison page', async () => {
+  const res = await fetch(`${origin}/compare/anthropic-containment`);
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  const html = await res.text();
+  // Title + positioning
+  assert.match(html, /ThumbGate vs Anthropic's Claude Containment/);
+  assert.match(html, /IDE-Agent Extension/);
+  // FAQ + TechArticle schema for LLM citation
+  assert.match(html, /"@type":\s*"FAQPage"/);
+  assert.match(html, /"@type":\s*"TechArticle"/);
+  // Honest framing — must cite Anthropic's actual article URL
+  assert.match(html, /anthropic\.com\/engineering\/how-we-contain-claude/);
+  // The three lessons that anchor the page
+  assert.match(html, /Tool output is an attack surface/);
+  assert.match(html, /software you build yourself is often the weakest/);
+});
