@@ -111,6 +111,17 @@ The high-ROI pattern is progressive disclosure:
 
 The CLI command `npx thumbgate harness-audit` scores global docs, progressive MCP discovery, and specialized harness coverage so teams can see whether their agent setup is compounding useful context or compounding instruction bloat.
 
+## Agentic Development Cycle Alignment
+
+The May 2026 agentic development conversation is converging around Guide, Generate, Verify, and Solve. ThumbGate fits this cycle as the pre-action execution gate:
+
+- **Guide**: team standards, approval policies, prior thumbs-downs, and workflow boundaries are loaded as concrete operating context.
+- **Generate**: Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and MCP-compatible agents keep generating plans and tool calls.
+- **Verify**: ThumbGate requires evidence before high-risk actions execute: tests, CI, read-before-write, screenshots, API responses, or human approval.
+- **Solve**: blocked failures and accepted fixes become lessons, shared rules, DPO exports, and audit events.
+
+The key distinction is timing. Post-generation verification catches some mistakes after work has happened. ThumbGate checks the proposed tool call before it runs, then feeds the result back into the next Guide and Solve cycle.
+
 ## Enterprise Safety Framework Alignment
 
 ThumbGate's architecture maps directly to the enterprise safety framework pattern recommended by Google Cloud for agentic AI workflows (April 2026). Google Cloud's reference architecture routes every agent action through a Safety Framework check before execution, with unsafe actions producing a canned response and safe actions proceeding to the Agentic Workflow, followed by a Quality Framework check on the output.

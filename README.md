@@ -44,6 +44,19 @@ Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and 
 
 ---
 
+## Agentic development cycle fit
+
+Agentic development is becoming a loop: **Guide → Generate → Verify → Solve**. ThumbGate gives that loop a hard execution boundary.
+
+- **Guide:** standards, prior thumbs-downs, and approval policies become concrete context.
+- **Generate:** Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and MCP agents keep producing plans and tool calls.
+- **Verify:** risky actions need evidence before execution, not just after PR review.
+- **Solve:** blocked failures become reusable lessons, shared prevention rules, DPO exports, and audit events.
+
+In that stack, ThumbGate is the pre-action gate between generated intent and executed action.
+
+---
+
 ## 🎬 90-second demo
 
 Watch the force-push scenario: agent tries to `git push --force`, one thumbs-down, next session it's blocked — zero tokens spent on the repeat.

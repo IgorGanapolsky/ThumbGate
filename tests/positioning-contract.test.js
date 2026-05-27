@@ -136,6 +136,25 @@ test('LLM context keeps team pricing and CLI-first positioning aligned with comm
   assert.doesNotMatch(context, /\$12\/seat\/mo/i);
 });
 
+test('AI-visible surfaces map ThumbGate to the agentic development cycle', () => {
+  const readme = readText('README.md');
+  const landingPage = readText(path.join('public', 'index.html'));
+  const llms = readText(path.join('.well-known', 'llms.txt'));
+  const context = readText(path.join('public', 'llm-context.md'));
+
+  for (const surface of [readme, landingPage, llms, context]) {
+    assert.match(surface, /Guide/i);
+    assert.match(surface, /Generate/i);
+    assert.match(surface, /Verify/i);
+    assert.match(surface, /Solve/i);
+    assert.match(surface, /pre-action (?:execution )?gate|pre-action boundary/i);
+  }
+
+  assert.match(landingPage, /The New Stack's May 2026 AC\/DC framing/);
+  assert.match(context, /Agentic Development Cycle Alignment/);
+  assert.match(llms, /Agentic development cycle fit/);
+});
+
 test('LLM context maps ThumbGate to LangChain three-layer continual learning framework', () => {
   const context = readText(path.join('public', 'llm-context.md'));
 
