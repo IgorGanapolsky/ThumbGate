@@ -26,8 +26,8 @@ If you include a snippet or stack trace, redact secrets.
 
 - Self-serve setup: https://thumbgate-production.up.railway.app/guide
 - If you want hands-on hardening for one workflow: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
+- If you already know you want the Pro features (self-serve): https://thumbgate-production.up.railway.app/checkout/pro
 
 Engineering proof artifacts:
 
 - `docs/VERIFICATION_EVIDENCE.md`
-
