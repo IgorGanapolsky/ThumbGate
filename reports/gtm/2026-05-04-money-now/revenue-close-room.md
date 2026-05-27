@@ -1,6 +1,6 @@
 # Revenue Close Room (Money Now)
 
-Updated: 2026-05-05
+Updated: 2026-05-27
 
 This file is the close-room script + truth table for converting warm/high-intent leads into:
 
@@ -17,6 +17,8 @@ Source of truth:
 Guardrail: do not publish posts, send messages, or invite members without explicit action-time confirmation.
 
 ## Current Signal Snapshot (operator-reported; not commercial proof)
+
+Baseline: 2026-05-05 (treat as historical snapshot; do not treat as commercial proof)
 
 - 30d visitors: 6169
 - Checkout starts: 133
@@ -71,4 +73,3 @@ Use the `$1500` sprint checkout link from `docs/COMMERCIAL_TRUTH.md` / sprint do
 1. Send the 4 warm Sprint DMs in `reports/gtm/2026-05-04-money-now/operator-send-now.md`.
 2. After each send, log the stage movement using `npm run sales:pipeline -- advance ...` (commands are in the send sheet).
 3. When anyone replies with pain, reply with the Diagnostic or Sprint close copy above (then attach proof packet).
-

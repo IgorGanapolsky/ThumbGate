@@ -1,7 +1,7 @@
 # Commercial Truth
 
 Status: current
-Updated: April 10, 2026
+Updated: May 27, 2026
 
 This document is the source of truth for product, pricing, traction, and proof claims in this repository.
 
@@ -10,6 +10,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 - The open-source `thumbgate` package is free and MIT licensed.
 - The local CLI is the adoption wedge; it is not the primary monetization story.
 - The primary commercial motion is the **Workflow Hardening Sprint** for one workflow, followed by Team expansion when shared enforcement, approval boundaries, and auditability matter across operators.
+- The current paid services offers are the **Workflow Hardening Diagnostic ($499)** and the **Workflow Hardening Sprint ($1500)**; routing and scripts live in `reports/gtm/2026-05-04-money-now/revenue-close-room.md`.
 - The current public self-serve commercial offer is **Pro at $19/mo or $149/yr** via Stripe checkout.
 - Legacy one-time Stripe links are retained only for past buyers and are not a current public offer.
 - The current Team pricing anchor is **$49/seat/mo with a 3-seat minimum**, and the public Team path remains an **intake-led pilot for the first workflow** until hosted rollout scope is qualified.
@@ -76,4 +77,13 @@ This document is the source of truth for product, pricing, traction, and proof c
 - Treat `workflowSprintLeads` as pipeline evidence only; qualified intake volume is useful for selling, but it is not revenue.
 - Use `docs/VERIFICATION_EVIDENCE.md`, `proof/compatibility/report.json`, and `proof/automation/report.json` for engineering proof.
 - When in doubt, prefer "early-stage" or "pilot" language over unverified traction claims.
+
+## Current Live Checkout Links (hosted)
+
+Guardrail: never improvise or guess checkout URLs. If these ever change, update this file and `reports/gtm/2026-05-04-money-now/revenue-close-room.md` together.
+
+- Pro (self-serve): `https://thumbgate-production.up.railway.app/checkout/pro`
+- Workflow Hardening Diagnostic ($499): `https://buy.stripe.com/28E00j3Uge1E2dzgWL3sI2J`
+- Workflow Hardening Sprint ($1500): `https://buy.stripe.com/6oU00j8aw2iWdWh9uj3sI2K`
+- Sprint/Diagnostic intake (qualification + routing): `https://thumbgate-production.up.railway.app/#workflow-sprint-intake`
  

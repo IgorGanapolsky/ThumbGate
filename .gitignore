@@ -6,6 +6,7 @@ node_modules/
 .claude/settings.local.json
 .claude/debug/
 .claude/worktrees/
+.claude/implementation-notes/
 .claude/context-engine/quality-log.json
 .claude/memory/*.sqlite*
 .claude/memory/feedback/*.json
@@ -43,6 +44,9 @@ test-vault-*/
 
 coverage/
 undefined/
+
+# Local helper artifacts (regenerable)
+.tmp-changeset-status.json
 
 # Generated explainer-video artifacts (regenerable via scripts/render-demo-video/*)
 scripts/render-demo-video/narration.mp3

@@ -63,18 +63,6 @@ const TARGETS = [
       offer_kind: 'one_time_consulting',
     },
   },
-  {
-    urlSlug: 'bJe14naiE9Lo7xT49Z3sI12',
-    label: 'OpenClaw Agent Governance Kit',
-    expectedPriceUsd: 97,
-    customText: 'Self-serve digital kit — ThumbGate prevention-rule starters, OpenClaw workflow prompts, agent registry checklist, proof report template. Instant download.',
-    metadata: {
-      utm_source: 'thumbgate.ai',
-      cta_id: 'openclaw_governance_kit_97',
-      attribution_version: '2026-05-18',
-      offer_kind: 'digital_kit',
-    },
-  },
 ];
 
 function parseArgs(argv = []) {

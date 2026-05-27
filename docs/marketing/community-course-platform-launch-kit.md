@@ -43,6 +43,15 @@ npx thumbgate init
 
 Validated against official pricing/help pages on 2026-05-05. Pricing and eligibility are volatile, so re-check the linked source before entering a card, buying ads, or publishing a paid listing.
 
+## 2026-05-27 Pricing Re-check (official sources)
+
+Validated against official pricing/fee pages on 2026-05-27. Treat non-official summaries as non-authoritative.
+
+- Kajabi pricing (Starter + payment rates): https://www.kajabi.com/pricing
+- Thinkific pricing (Basic/Start/Grow): https://www.thinkific.com/pricing/
+- Teachable transaction fees by plan (Starter fee is the key constraint): https://support.teachable.com/en/articles/11682553-teachable-fees
+- Podia transaction fees (Mover fee vs Shaker): https://help.podia.com/en/articles/11371138-understanding-podia-transaction-fees
+
 **Best autonomous revenue sequence:**
 
 1. Keep Skool as the free community funnel and use it to collect repeated-failure posts.
@@ -55,9 +64,9 @@ Validated against official pricing/help pages on 2026-05-05. Pricing and eligibi
 | --- | --- | --- | --- |
 | Skool | Primary free community | Free group first; paid/freemium later only after proof | Skool supports free, subscription, freemium, tiered, and one-time payment groups. Source: https://help.skool.com/article/215-how-to-setup-pricing-for-the-group |
 | Kajabi | Later all-in-one course stack | Do not start paid until the free funnel proves demand | Official pricing page shows Starter at $89/mo monthly or $71/mo annually, 1 product, 250 contacts, 1 website, 1 community; Kajabi Payments rates and third-party provider fees vary by plan. Source: https://www.kajabi.com/pricing |
-| Thinkific | Course-first storefront | Candidate for a free mini-course when owned course UX matters | Official pricing page positions Thinkific around Basic, Start, Grow, and Plus plans; verify the current Start price and payment-processing economics immediately before purchase. Source: https://www.thinkific.com/pricing/ |
-| Teachable | Course storefront and student apps | Lead magnet only until conversion proof exists | Official pricing page lists Starter at $39/mo monthly with a 7.5% transaction fee and 5 products. Source: https://www.teachable.com/pricing |
-| Podia | Simple digital product storefront | Good for checklist/download if we need a lightweight owned offer | Official pricing lists Mover at $39/mo monthly or $33/mo annually with a 5% transaction fee; Shaker at $89/mo monthly or $75/mo annually with no Podia transaction fee. Source: https://www.podia.com/pricing |
+| Thinkific | Course-first storefront | Candidate for a free mini-course when owned course UX matters | Official pricing page lists Basic ($49/mo monthly, $36/mo annual), Start ($99/mo monthly, $74/mo annual), and Grow ($199/mo monthly, $149/mo annual). Source: https://www.thinkific.com/pricing/ |
+| Teachable | Course storefront and student apps | Lead magnet only until conversion proof exists | Official fee table: Starter plan charges a 7.5% transaction fee; other paid plans list 0% transaction fee. Source: https://support.teachable.com/en/articles/11682553-teachable-fees |
+| Podia | Simple digital product storefront | Good for checklist/download if we need a lightweight owned offer | Official fee table: Mover plan charges a 5% transaction fee; Shaker removes the 5% Podia transaction fee (payment processor fees still apply). Source: https://help.podia.com/en/articles/11371138-understanding-podia-transaction-fees |
 | Mighty Networks | Skool alternative | Keep as backup for cohort/community format | Treat as a migration candidate, not a second community to operate in parallel. Source: https://www.mightynetworks.com/pricing |
 | Circle | Polished community/events/courses | Upgrade path after Skool proof | Official pricing page lists Professional at $89/mo with a 14-day trial and 2% transaction fee on Professional. Source: https://circle.so/pricing |
 | LearnWorlds | Interactive LMS | Use only if the course becomes the product | Official plan comparison notes a $5 per-course-enrollment fee on Starter and no transaction fee on Pro/Learning Center/Corporate. Source: https://www.learnworlds.com/plans/ |
@@ -293,7 +302,8 @@ Safe preview:
 gh workflow run thumbgate-creator-platform-promo.yml \
   --repo IgorGanapolsky/ThumbGate \
   -f mode=preview \
-  -f platforms=linkedin,instagram,reddit,tiktok,youtube,twitter
+  -f offer=operator-lab \
+  -f platforms=linkedin,instagram,threads,bluesky,reddit,youtube
 ```
 
 Schedule after operator approval:
@@ -302,7 +312,8 @@ Schedule after operator approval:
 gh workflow run thumbgate-creator-platform-promo.yml \
   --repo IgorGanapolsky/ThumbGate \
   -f mode=schedule \
-  -f platforms=linkedin,instagram,tiktok,youtube \
+  -f offer=operator-lab \
+  -f platforms=linkedin,instagram,threads,bluesky,reddit,youtube \
   -f timezone=America/New_York \
   -f schedule='2026-05-05T10:15:00-04:00'
 ```
@@ -313,7 +324,8 @@ Publish after operator approval:
 gh workflow run thumbgate-creator-platform-promo.yml \
   --repo IgorGanapolsky/ThumbGate \
   -f mode=publish \
-  -f platforms=linkedin,instagram,tiktok,youtube
+  -f offer=operator-lab \
+  -f platforms=linkedin,instagram,threads,bluesky,reddit,youtube
 ```
 
 ## Stop Conditions

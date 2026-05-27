@@ -1,13 +1,13 @@
 # ThumbGate Community + Course Promo Operator Handoff
 
 Generated: 2026-05-04
-Updated: 2026-05-05
+Updated: 2026-05-26
 
 ## Live Assets
 
 - Skool group: `https://www.skool.com/thumbgate-operator-lab-6000`
 - Production landing page: `https://thumbgate-production.up.railway.app/`
-- Marketing site: `https://thumbgate.ai/`
+- Marketing site (optional / legacy): `https://thumbgate.ai/`
 - Workflow sprint intake: linked from the production landing page
 - Skool artwork (local files):
   - Cover: `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`
@@ -60,12 +60,14 @@ The best first win is narrow: one mistake, one rule, one blocked repeat.
 
 ## Research Notes
 
-Skool official sources (verified 2026-05-05):
+Skool official sources (re-verified 2026-05-26):
 
 - Pricing models supported: free, subscription, freemium, tiered pricing, and one-time payment.
   - https://help.skool.com/article/215-how-to-setup-pricing-for-the-group
 - Owner billing: plans are recurring subscriptions after a 14-day free trial.
   - https://help.skool.com/article/227-payment-terms-and-policy
+- Payments FAQ (owner/member billing behaviors, disputes, and receipts):
+  - https://help.skool.com/article/86-payments-faq
 - Category limit: up to 10 categories per group.
   - https://help.skool.com/article/67-how-to-setup-categories
 - Cover + icon setup path: Settings > General (opens the native file manager).
@@ -76,6 +78,8 @@ Skool official sources (verified 2026-05-05):
   - Eligibility needs: minimum threshold of members/posts/activity + group description + about page description/images + cover image. (Threshold values are not published.)
   - Visibility timing: once threshold is hit, visibility is typically within ~2 hours.
   - Ranking boosts: high-quality artwork/about page, authentic engagement, active owner/admin behavior.
+  - Ranking penalties include “payments off-platform”; avoid pushing Skool members to pay elsewhere as the default group monetization story.
+  - Skool notes “updates coming to the Discovery algorithm in Q2 of 2026” in the official FAQ; treat rankings as a moving target.
   - https://help.skool.com/article/153-discovery-faqs
 - Discovery “unlisted” checklist (new groups):
   - Cover image, group description, completed About page, at least one post, invite members.

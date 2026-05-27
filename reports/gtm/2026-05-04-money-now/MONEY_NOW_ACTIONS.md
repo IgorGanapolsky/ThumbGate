@@ -1,8 +1,11 @@
 # Money Now Actions
 
-Updated: 2026-05-18
+Updated: 2026-05-27
 
 Use this as the operator cockpit for the current run. Full copy, follow-ups, CTAs, and logging commands live in `operator-send-now.md`; the pipeline truth table lives in `sales-pipeline.md`.
+Follow-up copy blocks (when leads are already `contacted`) live in `follow-up-pack-2026-05-26.md`.
+Personalized warm follow-up drafts (prep only) live in `warm-follow-up-pack-2026-05-27.md`.
+Operator send queue + logging commands were refreshed: `reports/gtm/2026-05-04-money-now/operator-send-now.md` (Updated: 2026-05-27).
 
 ## Current Revenue State
 
@@ -17,18 +20,25 @@ Snapshot (as-of 2026-05-05 baseline; do not treat as commercial proof):
 - Sprint leads: 0
 - Paid orders: 4
 - Checkout starts: 133
-- Booked: `$149`
-- Pipeline: 20 active leads, 0 contacted, 0 replied, 0 paid in the local sales ledger
-- Revenue bottleneck: sending and logging outreach, not more prospect research
+- Booked: unverified (operator snapshot claimed `$149` on 2026-05-05; as of 2026-05-26 hosted billing was unreachable and `cfo` fell back to `LOCAL-UNVERIFIED`)
+- Pipeline (local ledger, 2026-05-26): 23 active leads, 21 contacted, 1 replied, 0 paid
+- Revenue bottleneck: follow-ups + converting replies into booked diagnostics/sprint intakes
 
 ## Do First
-1. Send the 4 warm Reddit Workflow Hardening Sprint DMs.
+1. Send the pain-confirmation follow-ups to the 4 warm Reddit leads (already `contacted` in the sales ledger).
 2. Send the 3 self-serve Pro guide-first messages.
-3. Send the 5 strongest production-rollout sprint messages.
-4. After each send, run that row's `Log after send` command from `operator-send-now.md`.
-5. Only send proof links after the buyer confirms pain.
+3. After each send, run that row's `Log after send` command from `operator-send-now.md`.
+4. Only send proof links after the buyer confirms pain.
 
 Guardrail reminder: do not publish posts, send messages, invite members, upload files, create accounts, change billing, submit forms, or run paid ads without explicit action-time confirmation.
+
+## Operator Lab promo (prep only; no publish)
+
+- Approval-ready checklist: `reports/gtm/2026-05-04-community-course-promo/next-actions-2026-05-27.md`
+- Media-backed post previews (safe): `reports/gtm/2026-05-04-community-course-promo/zernio-preview-operator-lab-2026-05-27.json`
+- Publish/schedule must run via GitHub Actions (Zernio secrets); local runs are preview-only.
+- Course/classroom listing copy: `reports/gtm/2026-05-04-community-course-promo/course-listing-copy-operator-lab-2026-05-27.md`
+- Skool post pack (safe): `reports/gtm/2026-05-04-community-course-promo/skool-post-pack-2026-05-26.md`
 
 
 ## Top Send Queue
