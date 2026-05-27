@@ -538,3 +538,56 @@ test('background-agent-control-layer links to ac-dc-runtime-enforcement for disc
   const html = await fetch(`${origin}/learn/background-agent-control-layer`).then((r) => r.text());
   assert.match(html, /href="\/learn\/ac-dc-runtime-enforcement"/);
 });
+
+test('GET /compare/arcjet serves the hand-written comparison page', async () => {
+  const res = await fetch(`${origin}/compare/arcjet`);
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  const html = await res.text();
+  // Title + positioning
+  assert.match(html, /ThumbGate vs Arcjet/);
+  assert.match(html, /Agent-Outbound Gate Pairs With App-Inbound Firewall/);
+  // FAQ + TechArticle schema for LLM citation
+  assert.match(html, /"@type":\s*"FAQPage"/);
+  assert.match(html, /"@type":\s*"TechArticle"/);
+  // Honest framing — must link to Arcjet's actual docs + the TNS Arcjet article we cite
+  assert.match(html, /docs\.arcjet\.com/);
+  assert.match(html, /thenewstack\.io\/arcjet-wafs-guards-ai-agents-security/);
+  // The dual-side framing that anchors the page
+  assert.match(html, /inbound/);
+  assert.match(html, /outbound/);
+});
+
+test('GET /sitemap.xml includes the arcjet comparison page', async () => {
+  const res = await fetch(`${origin}/sitemap.xml`);
+  assert.equal(res.status, 200);
+  const xml = await res.text();
+  const entry = xml.match(/<url>\s*<loc>[^<]*\/compare\/arcjet<\/loc>[\s\S]*?<\/url>/);
+  assert.ok(entry, 'compare/arcjet <url> block must exist');
+  assert.match(entry[0], /<priority>0\.85<\/priority>/);
+});
+
+test('comparison pages link back to arcjet for discovery', async () => {
+  // Every recently-shipped /compare page must back-link to the newest one so a crawler
+  // landing on any one of them can reach the arcjet page.
+  const [bb, cch, ant, gk] = await Promise.all([
+    fetch(`${origin}/compare/bumblebee`).then((r) => r.text()),
+    fetch(`${origin}/compare/claude-code-hooks`).then((r) => r.text()),
+    fetch(`${origin}/compare/anthropic-containment`).then((r) => r.text()),
+    fetch(`${origin}/compare/oak-and-sparrow-gatekeeper`).then((r) => r.text()),
+  ]);
+  assert.match(bb, /href="\/compare\/arcjet"/);
+  assert.match(cch, /href="\/compare\/arcjet"/);
+  assert.match(ant, /href="\/compare\/arcjet"/);
+  assert.match(gk, /href="\/compare\/arcjet"/);
+});
+
+test('GET /ai-malpractice-prevention surfaces the monitor-vs-enforce framing', async () => {
+  const res = await fetch(`${origin}/ai-malpractice-prevention`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  // The pre-fold callout the demo opens with — pre-empts the "monitoring" frame
+  // that's currently dominant in TNS / agent-observability coverage.
+  assert.match(html, /Monitor vs enforce/);
+  assert.match(html, /runtime block before execution/);
+});

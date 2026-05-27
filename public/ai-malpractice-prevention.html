@@ -515,6 +515,9 @@
 
     <section id="live-gate-demos">
       <h2>Live gate demos &mdash; try them yourself</h2>
+      <div style="border-left: 3px solid var(--cyan); background: rgba(34, 211, 238, 0.06); padding: 0.85rem 1.1rem; margin: 0 0 1.5rem; border-radius: 0 6px 6px 0;">
+        <strong style="color: var(--cyan)">Monitor vs enforce.</strong> <span style="color: var(--text)">Agent observability tools log what your agent <em>did</em>. ThumbGate gates what your agent is <em>about to do</em> &mdash; runtime block before execution, not retrospective alert after the harm. SIEM ingestion is the audit trail. The PreToolUse hook is the prevention.</span>
+      </div>
       <p style="color:var(--muted); margin-bottom:1.5rem">These simulators use the exact same deterministic PreToolUse logic that runs in production. No LLM calls on the enforcement path &mdash; just fast, auditable pattern matching.</p>
 
       <!-- UPL Gate Simulator -->
