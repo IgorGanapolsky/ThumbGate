@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ThumbGate vs Bumblebee | Runtime Enforcement Pairs With Static Inventory</title>
+<meta name="description" content="Perplexity's Bumblebee scans developer machines for installed MCP configs, extensions, and packages. ThumbGate blocks those installed agents from running bad tool calls at runtime. Same supply-chain surface — different halves of the answer. Use both." />
+<meta property="og:title" content="ThumbGate vs Bumblebee | Runtime Enforcement Pairs With Static Inventory" />
+<meta property="og:description" content="Bumblebee tells you what AI agents and MCP servers are wired up. ThumbGate stops those wired-up agents from doing bad things. Complementary, not competitive." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://thumbgate.ai/compare/bumblebee" />
+<link rel="canonical" href="https://thumbgate.ai/compare/bumblebee" />
+<link rel="llm-context" href="/llm-context.md" type="text/markdown" />
+<link rel="icon" type="image/png" href="/thumbgate-icon.png" />
+<link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+<meta property="og:image" content="/og.png" />
+<style>
+  :root { --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #161618; --line: #222225; --text: #e8e8ec; --muted: #8b8b96; --cyan: #22d3ee; --green: #4ade80; --amber: #fbbf24; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+  a { color: var(--cyan); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+  .topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); background: rgba(10, 10, 11, 0.88); border-bottom: 1px solid var(--line); }
+  .topbar .container { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; padding-bottom: 14px; }
+  .brand { font-weight: 700; color: var(--text); display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+  .brand .logo-mark { width: 28px; height: 28px; display: block; }
+  .hero { padding: 72px 0 32px; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(34, 211, 238, 0.22); background: rgba(34, 211, 238, 0.1); color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
+  h1 { font-size: clamp(34px, 5vw, 56px); line-height: 1.06; letter-spacing: -0.04em; margin: 16px 0; max-width: 820px; }
+  .hero p { max-width: 760px; color: var(--muted); font-size: 18px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 24px; padding-bottom: 72px; }
+  .card, .detail-section, .sidebar-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px; }
+  .card { padding: 24px; }
+  .detail-section { padding: 24px; margin-bottom: 18px; }
+  .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+  .detail-section p, .detail-section li, .sidebar-card p { color: var(--muted); }
+  .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+  .comparison-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+  .comparison-table th, .comparison-table td { border: 1px solid var(--line); padding: 12px; text-align: left; vertical-align: top; }
+  .comparison-table th { background: var(--bg-raised); color: var(--cyan); }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+  .pill { border: 1px solid var(--line); background: var(--bg-raised); border-radius: 999px; padding: 10px 14px; font-size: 14px; font-weight: 650; }
+  .pill.good { color: #b8f7c8; border-color: rgba(74, 222, 128, 0.28); background: rgba(74, 222, 128, 0.1); }
+  .pill.warn { color: #ffe2a4; border-color: rgba(251, 191, 36, 0.28); background: rgba(251, 191, 36, 0.1); }
+  .sidebar { display: flex; flex-direction: column; gap: 18px; }
+  .sidebar-card { padding: 20px; }
+  .sidebar-card:first-child { position: sticky; top: 84px; max-height: calc(100vh - 104px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .cta-button { display: inline-flex; align-items: center; justify-content: center; margin-top: 18px; padding: 12px 16px; border-radius: 10px; background: var(--cyan); color: #071116; font-weight: 700; text-decoration: none; }
+  .related-card { display: block; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg-raised); margin-top: 12px; color: var(--text); }
+  .related-label { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .faq-item { border-top: 1px solid var(--line); padding: 14px 0; }
+  .faq-item summary { cursor: pointer; font-weight: 600; }
+  .faq-item p { color: var(--muted); }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } .sidebar-card:first-child { position: static; max-height: none; overflow: visible; } }
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ThumbGate vs Bumblebee",
+  "description": "Perplexity's Bumblebee is a read-only scanner that inventories MCP configs, editor extensions, and package lockfiles on developer machines. ThumbGate is a runtime PreToolUse firewall that blocks AI agents from making bad tool calls. Same supply-chain surface, different halves of the answer.",
+  "about": ["thumbgate vs bumblebee", "AI agent supply chain security", "MCP config inventory vs runtime enforcement", "PreToolUse hooks vs static scan"],
+  "url": "https://thumbgate.ai/compare/bumblebee",
+  "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+  "mainEntityOfPage": "https://thumbgate.ai/compare/bumblebee"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is Bumblebee a ThumbGate competitor?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Different layers of the same supply-chain story. Bumblebee (open-sourced by Perplexity 2026-05-23) is a static read-only scanner that inventories what is installed on a developer machine: MCP host configs, editor extensions, browser extensions, and package lockfiles across npm, PyPI, Go modules, RubyGems, and Composer. It answers 'when an advisory drops, which of my dev machines have the bad version installed right now?' ThumbGate is a runtime PreToolUse firewall that intercepts AI agent tool calls before they execute. Bumblebee tells you what an agent CAN reach; ThumbGate tells the agent what it CANNOT do with that reach. Use both."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I use Bumblebee and ThumbGate together?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, and they compose cleanly. Bumblebee runs as a single Go binary on macOS and Linux, emits NDJSON to stdout, and exits — zero overlap with anything ThumbGate hooks. ThumbGate runs as the PreToolUse layer inside Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and Claude Desktop. Common dual-use pattern: run Bumblebee weekly to inventory which MCP servers are wired into each dev's agents, then use ThumbGate to enforce rules against the tool calls those wired-up agents try to make."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does ThumbGate ingest Bumblebee's NDJSON output?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Not yet at the time of writing. Bumblebee's NDJSON format (one component record per line, scan_summary terminator) is well-suited to feed ThumbGate's agent-manager inventory. A `thumbgate import-bumblebee scan.ndjson` command is on the near-term roadmap. If you want it sooner, open an issue at github.com/IgorGanapolsky/ThumbGate."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Bumblebee is from Perplexity. Why should I also use ThumbGate?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Because Bumblebee answers a discovery question and ThumbGate answers an enforcement question. Bumblebee tells you 'developer machine X has Cursor wired to MCP server Y, which has the npm package Z installed and Z is on the malicious advisory list.' That is decision-grade information for incident response. ThumbGate's PreToolUse hook fires every time Cursor tries to invoke a tool on that machine and can block, replace, or log the call before it executes. Bumblebee is the X-ray; ThumbGate is the airport-security gate. Both, ideally."
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="topbar">
+  <div class="container">
+    <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+  </div>
+</div>
+
+<section class="hero">
+  <div class="container">
+    <span class="eyebrow">ThumbGate vs Bumblebee</span>
+    <h1>Bumblebee tells you what's installed. ThumbGate stops what's installed from doing bad things.</h1>
+    <p><strong>Bumblebee</strong> (open-sourced by <a href="https://www.perplexity.ai/hub/blog/perplexity-is-open-sourcing-bumblebee" target="_blank" rel="noopener">Perplexity on 2026-05-23</a>) is a read-only scanner that inventories MCP configs, editor extensions, browser extensions, and package lockfiles on developer endpoints. <strong>ThumbGate</strong> is the runtime PreToolUse firewall that blocks the agents Bumblebee discovered from executing bad tool calls. Different layers of the same supply-chain story. Use both.</p>
+    <div class="pill-row">
+      <span class="pill">Both open source</span>
+      <span class="pill">Both local-first</span>
+      <span class="pill">Both target the MCP/AI-agent surface</span>
+      <span class="pill good">Zero overlap</span>
+    </div>
+  </div>
+</section>
+
+<div class="container grid">
+  <main>
+    <article class="detail-section">
+      <h2>Side-by-side feature comparison</h2>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Capability</th>
+            <th>Bumblebee</th>
+            <th>ThumbGate</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>What it does</td>
+            <td>Static read-only inventory of on-disk metadata</td>
+            <td>Runtime PreToolUse enforcement on AI agent tool calls</td>
+          </tr>
+          <tr>
+            <td>When it runs</td>
+            <td>On demand: weekly baseline, project scan, or deep incident-response sweep</td>
+            <td>Every tool call an agent attempts, in real time, before execution</td>
+          </tr>
+          <tr>
+            <td>What it covers</td>
+            <td>MCP host configs, editor extensions (VS Code family), browser extensions (Chromium + Firefox), npm/pnpm/Yarn/Bun, PyPI, Go modules, RubyGems, Composer lockfiles</td>
+            <td>Tool calls inside Claude Code, Cursor, OpenAI Codex CLI, Google Gemini CLI, Sourcegraph Amp, Cline, OpenCode, Claude Desktop (via MCP)</td>
+          </tr>
+          <tr>
+            <td>What it blocks</td>
+            <td>Nothing — pure observation. Read-only by design (no execution, no package-manager calls)</td>
+            <td>The actual tool call. Bash, file write, MCP tool, HTTP fetch — gate fires before the side effect</td>
+          </tr>
+          <tr>
+            <td>Output format</td>
+            <td>NDJSON to stdout, scan_summary terminator, pipeable into jq / SIEM / agentic workflows</td>
+            <td>Block/allow decision + audit log entry per gate firing. DPO preference pairs for fine-tuning</td>
+          </tr>
+          <tr>
+            <td>Distribution</td>
+            <td>Single Go binary (zero non-stdlib deps). <code>go install github.com/perplexityai/bumblebee/cmd/bumblebee@latest</code></td>
+            <td>npm package: <code>npx thumbgate init</code></td>
+          </tr>
+          <tr>
+            <td>Platforms</td>
+            <td>macOS, Linux</td>
+            <td>macOS, Linux, Windows (Node.js &gt;=18.18)</td>
+          </tr>
+          <tr>
+            <td>License</td>
+            <td>Apache 2.0</td>
+            <td>MIT (npm package); Pro/Team are hosted services</td>
+          </tr>
+          <tr>
+            <td>Built by</td>
+            <td>Perplexity AI (used internally to protect Perplexity dev machines behind their search product, Comet browser, and Computer AI agent)</td>
+            <td>Independent (MIT-licensed open source + hosted Pro/Team services)</td>
+          </tr>
+        </tbody>
+      </table>
+    </article>
+
+    <article class="detail-section">
+      <h2>Pick Bumblebee for</h2>
+      <ul>
+        <li>Supply-chain incident response: an advisory drops, you need to know which dev machines have the bad version installed RIGHT NOW.</li>
+        <li>MCP config inventory: which AI assistants on which machines are wired to which MCP servers, and which of those servers carry credentials in their env blocks.</li>
+        <li>Weekly baseline snapshots of dev-machine state, centralized so future incident response is a search instead of a phone call.</li>
+        <li>You want a single read-only Go binary that does not execute install scripts or trigger package managers.</li>
+      </ul>
+      <p>Bumblebee is the first open-source scanner to treat MCP configuration files as a first-class security surface. That's a genuinely new contribution to the supply-chain category and the right tool for the inventory job. Recommend installing it regardless of whether you use ThumbGate.</p>
+    </article>
+
+    <article class="detail-section">
+      <h2>Pick ThumbGate for</h2>
+      <ul>
+        <li>Stopping agent mistakes before they execute: bad bash, destructive DB query, unauthorized file write, privilege-violating LLM call.</li>
+        <li>Cross-agent enforcement: the same prevention rule fires inside Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and Claude Desktop with one config.</li>
+        <li>Operator-feedback learning: thumbs-down on a bad output becomes a real Pre-Action Check that blocks the repeat next time, with precision/recall gating before any rule auto-promotes.</li>
+        <li>Hosted lesson sync, dashboard, DPO export, adapter matrix maintenance, 24×7 ops on the rule engine (Pro/Team tiers).</li>
+      </ul>
+    </article>
+
+    <article class="detail-section">
+      <h2>The integration story: discovery feeds enforcement</h2>
+      <p>Bumblebee scan output looks like:</p>
+      <pre style="background: var(--bg-raised); border: 1px solid var(--line); border-radius: 8px; padding: 14px; overflow: auto; font-size: 13px; color: var(--soft);">{"kind":"mcp_server","host":"claude-code","name":"github","command":"npx","args":["-y","@modelcontextprotocol/server-github"],"env_keys":["GITHUB_TOKEN"]}
+{"kind":"mcp_server","host":"cursor","name":"linear","command":"npx","args":["@linear/mcp-server"],"env_keys":["LINEAR_API_KEY"]}
+{"kind":"npm_package","manifest":"package.json","name":"some-vulnerable-pkg","version":"1.2.3"}
+{"kind":"scan_summary","components":847,"duration_ms":1240}</pre>
+      <p>ThumbGate's agent-manager treats each <code>mcp_server</code> record as an attack-surface entry that gates can be written against. Each <code>npm_package</code> entry on the advisory list can become a check that blocks any agent tool call referencing it.</p>
+      <p>A first-pass integration is on the near-term roadmap: <code>thumbgate import-bumblebee scan.ndjson</code> will load Bumblebee inventory into ThumbGate's agent inventory + auto-seed gates from CVE-flagged components. Open an issue at <a href="https://github.com/IgorGanapolsky/ThumbGate/issues" target="_blank" rel="noopener">github.com/IgorGanapolsky/ThumbGate</a> if you want it sooner than later.</p>
+    </article>
+
+    <article class="detail-section">
+      <h2>FAQ</h2>
+      <details class="faq-item" open>
+        <summary>Is Bumblebee a ThumbGate competitor?</summary>
+        <p>No. Bumblebee answers 'what is installed on this dev machine right now' (static inventory). ThumbGate answers 'what is this agent about to do, and should we allow it' (runtime enforcement). Same supply-chain category, different halves of the answer. Use both.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Can I use them together?</summary>
+        <p>Yes, and they compose cleanly with zero overlap. Bumblebee is a one-shot Go binary that scans and exits. ThumbGate is a persistent PreToolUse hook in every agent runtime you use. They don't see each other; they don't need to. The integration value is in feeding Bumblebee's MCP inventory into ThumbGate's agent dashboard so you can write gates against actual installed servers.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Does ThumbGate already ingest Bumblebee output?</summary>
+        <p>Not yet. Bumblebee released 2026-05-23; the import command is on the near-term roadmap. NDJSON is a clean fit so the integration will land as a small CLI subcommand rather than a heavy adapter.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Why should I use ThumbGate if Perplexity made Bumblebee?</summary>
+        <p>Bumblebee is read-only by design — it cannot block anything. Perplexity ships it to inventory developer machines, not to enforce policy on agent tool calls. ThumbGate fills the enforcement layer Bumblebee deliberately leaves to other tools. The two ship without conflict and your security posture is better with both than either alone.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Where do I start?</summary>
+        <p>Both can install in under 60 seconds. Bumblebee: <code>go install github.com/perplexityai/bumblebee/cmd/bumblebee@latest</code> then <code>bumblebee self-test</code>. ThumbGate: <code>npx thumbgate init</code>. Run Bumblebee weekly for inventory; let ThumbGate run continuously inside your agent.</p>
+      </details>
+    </article>
+  </main>
+
+  <aside class="sidebar">
+    <div class="sidebar-card">
+      <h3 style="margin: 0 0 8px;">Install ThumbGate free</h3>
+      <p>10 captures/day, 3 active rules, PreToolUse blocking across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, Claude Desktop.</p>
+      <pre style="background: var(--bg-raised); border: 1px solid var(--line); border-radius: 8px; padding: 12px; font-size: 13px; overflow: auto;">npx thumbgate init</pre>
+      <a class="cta-button" href="/pricing">See Pro vs Team pricing →</a>
+      <p style="font-size: 12px; margin-top: 16px;">MIT licensed. No telemetry without opt-in. <code>THUMBGATE_NO_TELEMETRY=1</code> disables.</p>
+    </div>
+
+    <div class="sidebar-card">
+      <span class="related-label">Install Bumblebee too</span>
+      <p style="font-size: 13px;">Bumblebee is a great companion tool, not a competitor. Inventories on-disk MCP configs + extensions + lockfiles in read-only NDJSON.</p>
+      <pre style="background: var(--bg-raised); border: 1px solid var(--line); border-radius: 8px; padding: 10px; font-size: 12px; overflow: auto;">go install github.com/perplexityai/bumblebee/cmd/bumblebee@latest
+bumblebee self-test
+bumblebee scan profile baseline</pre>
+    </div>
+
+    <div class="sidebar-card">
+      <span class="related-label">Related comparisons</span>
+      <a class="related-card" href="/compare/claude-code-hooks">
+        <strong>ThumbGate vs claude-code-hooks</strong><br>
+        <span style="color: var(--muted); font-size: 13px;">Hosted sync vs local shell scripts</span>
+      </a>
+      <a class="related-card" href="/compare/heidi">
+        <strong>ThumbGate vs HEIDI</strong><br>
+        <span style="color: var(--muted); font-size: 13px;">Agent behavior vs dependency CVE scanning</span>
+      </a>
+      <a class="related-card" href="/compare/mem0">
+        <strong>ThumbGate vs Mem0</strong><br>
+        <span style="color: var(--muted); font-size: 13px;">Enforcement gates vs long-term agent memory</span>
+      </a>
+    </div>
+
+    <div class="sidebar-card">
+      <span class="related-label">Sources</span>
+      <p style="font-size: 13px;">Bumblebee data from <a href="https://github.com/perplexityai/bumblebee" target="_blank" rel="noopener">github.com/perplexityai/bumblebee</a> README, <a href="https://www.perplexity.ai/hub/blog/perplexity-is-open-sourcing-bumblebee" target="_blank" rel="noopener">Perplexity's release announcement</a>, and <a href="https://devops.com/perplexity-bumblebee-shakes-loose-hidden-threats-on-dev-desktops/" target="_blank" rel="noopener">DevOps.com coverage</a>. If anything here misrepresents Bumblebee, open an issue at <a href="https://github.com/IgorGanapolsky/ThumbGate/issues" target="_blank" rel="noopener">our repo</a> and we'll correct it.</p>
+    </div>
+  </aside>
+</div>
+</body>
+</html>
