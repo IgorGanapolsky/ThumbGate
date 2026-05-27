@@ -82,7 +82,7 @@ describe('/checkout/pro bot guard', () => {
     const body = await res.text();
     assert.match(body, /Start ThumbGate Pro/);
     assert.match(body, /Not sure yet\? Send the workflow first/);
-    assert.match(body, /checkout_interstitial_workflow_sprint_intake/);
+    assert.match(body, /href="\/#workflow-sprint-intake"/);
     assert.match(body, /checkout_interstitial_cta_clicked/);
     assert.match(body, /name="confirm" value="1"/);
     assert.doesNotMatch(body, /Pay \$1 first rule/);
@@ -99,7 +99,7 @@ describe('/checkout/pro bot guard', () => {
     assert.doesNotMatch(body, /checkout\.stripe\.com/);
   });
 
-  it('preserves attribution params through the bot-safe confirmation link', async () => {
+  it('keeps attribution out of bot-safe checkout HTML while logging it first-party', async () => {
     const res = await fetch(`${origin}/checkout/pro?utm_source=reddit&utm_campaign=first_dollar&cta_id=pricing_pro&billing_cycle=annual&landing_path=%2Fpricing`, {
       redirect: 'manual',
       headers: {
@@ -109,18 +109,27 @@ describe('/checkout/pro bot guard', () => {
     });
     assert.equal(res.status, 200);
     const body = await res.text();
-    assert.match(body, /name="utm_source" value="reddit"/);
-    assert.match(body, /name="utm_campaign" value="first_dollar"/);
-    assert.match(body, /name="cta_id" value="pricing_pro"/);
-    assert.match(body, /name="billing_cycle" value="annual"/);
-    assert.match(body, /name="landing_path" value="\/pricing"/);
-    assert.match(body, /utm_medium=checkout_interstitial_recovery/);
-    assert.match(body, /cta_id=checkout_interstitial_workflow_sprint_intake/);
+    assert.doesNotMatch(body, /name="utm_source" value="reddit"/);
+    assert.doesNotMatch(body, /name="utm_campaign" value="first_dollar"/);
+    assert.doesNotMatch(body, /name="cta_id" value="pricing_pro"/);
+    assert.doesNotMatch(body, /name="billing_cycle" value="annual"/);
+    assert.doesNotMatch(body, /name="landing_path" value="\/pricing"/);
+    assert.match(body, /href="\/#workflow-sprint-intake"/);
     assert.doesNotMatch(body, /checkout_interstitial_first_failure_rule_checkout/);
     assert.doesNotMatch(body, /checkout_interstitial_quick_read_checkout/);
     assert.doesNotMatch(body, /checkout_interstitial_workflow_teardown_checkout/);
     assert.doesNotMatch(body, /checkout_interstitial_sprint_diagnostic_checkout/);
     assert.doesNotMatch(body, /checkout_interstitial_workflow_sprint_checkout/);
+
+    const telemetryEvents = readFunnelEvents();
+    const event = telemetryEvents.find((entry) =>
+      entry.eventType === 'checkout_bot_deflected' &&
+      entry.utmSource === 'reddit' &&
+      entry.utmCampaign === 'first_dollar' &&
+      entry.ctaId === 'pricing_pro' &&
+      entry.landingPath === '/pricing'
+    );
+    assert.ok(event, 'expected first-party telemetry to preserve attribution');
   });
 
   it('keeps service payment links off the Pro interstitial when paid path env vars are missing', async () => {
