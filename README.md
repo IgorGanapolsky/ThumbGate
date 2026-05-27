@@ -28,7 +28,7 @@ Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and 
 
 **Free:** 5 feedback captures/day (25 total captures), 3 active auto-promoted prevention rules, all MCP integrations, local-first.
 **[Pro — $19/mo or $149/yr](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme):** no limits on captures or rules, history-aware lessons, feedback sessions, hosted dashboard, DPO export.
-**Team — $49/seat/mo:** shared lesson DB, org dashboard, approval boundaries.
+**Team — $49/seat/mo:** shared hosted lesson DB, org dashboard, approval boundaries.
 
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
