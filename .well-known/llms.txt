@@ -1,5 +1,5 @@
 # ThumbGate — Stop AI agents before they make costly mistakes.
-# https://thumbgate-production.up.railway.app
+# https://thumbgate.ai
 # https://github.com/IgorGanapolsky/ThumbGate
 # https://www.npmjs.com/package/thumbgate
 
@@ -40,22 +40,25 @@ npx thumbgate init --agent claude-code
 ## Pricing
 
 - Free GPT: advice, checkpointing, and setup help in ChatGPT
-- Free local CLI: unlimited feedback captures, up to 5 active prevention rules, and local Pre-Action Checks after install (recall and lesson search are Pro-only)
-- Pro: $19/mo or $149/yr — personal enforcement proof, local dashboard, check debugger, DPO export, and review-ready exports
+- Free local CLI: 10 captures/day, 50 total captures, up to 3 active auto-promoted prevention rules, and local Pre-Action Checks after install (recall and lesson search are Pro-only)
+- Pro: $19/mo or $149/yr — personal enforcement proof, local dashboard, check debugger, DPO export, synced lessons/rules across machines, and review-ready exports
 - Team: $49/seat/mo, 3-seat minimum after intake — shared lessons, org visibility, approval boundaries, and rollout proof
 
 ## Links
 
-- Agent discovery: https://thumbgate-production.up.railway.app/.well-known/mcp.json
-- Progressive tool index: https://thumbgate-production.up.railway.app/.well-known/mcp/tools.json
-- Context footprint report: https://thumbgate-production.up.railway.app/.well-known/mcp/footprint.json
-- Agent skills: https://thumbgate-production.up.railway.app/.well-known/mcp/skills.json
-- MCP applications: https://thumbgate-production.up.railway.app/.well-known/mcp/applications.json
-- Documentation: https://thumbgate-production.up.railway.app/guide
-- Dashboard: https://thumbgate-production.up.railway.app/dashboard
+- Home: https://thumbgate.ai/
+- Pricing: https://thumbgate.ai/pricing
+- Pro checkout: https://thumbgate.ai/checkout/pro
+- Agent discovery: https://thumbgate.ai/.well-known/mcp.json
+- Progressive tool index: https://thumbgate.ai/.well-known/mcp/tools.json
+- Context footprint report: https://thumbgate.ai/.well-known/mcp/footprint.json
+- Agent skills: https://thumbgate.ai/.well-known/mcp/skills.json
+- MCP applications: https://thumbgate.ai/.well-known/mcp/applications.json
+- Documentation: https://thumbgate.ai/guide
+- Dashboard: https://thumbgate.ai/dashboard
 - GitHub: https://github.com/IgorGanapolsky/ThumbGate
 - npm: https://www.npmjs.com/package/thumbgate
-- Full LLM context: https://thumbgate-production.up.railway.app/public/llm-context.md
+- Full LLM context: https://thumbgate.ai/llm-context.md
 
 ## Compared to alternatives
 

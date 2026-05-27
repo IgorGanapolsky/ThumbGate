@@ -2530,6 +2530,16 @@ function renderRobotsTxt(runtimeConfig) {
     'Disallow: /v1/billing/',
     '',
     '# AI crawler access — allow all major LLM crawlers',
+    'User-agent: OAI-SearchBot',
+    'Allow: /',
+    'Disallow: /checkout/',
+    'Disallow: /v1/billing/',
+    '',
+    'User-agent: ChatGPT-User',
+    'Allow: /',
+    'Disallow: /checkout/',
+    'Disallow: /v1/billing/',
+    '',
     'User-agent: GPTBot',
     'Allow: /',
     'Disallow: /checkout/',
@@ -2538,7 +2548,16 @@ function renderRobotsTxt(runtimeConfig) {
     'User-agent: ClaudeBot',
     'Allow: /',
     '',
+    'User-agent: Claude-SearchBot',
+    'Allow: /',
+    '',
+    'User-agent: Claude-User',
+    'Allow: /',
+    '',
     'User-agent: PerplexityBot',
+    'Allow: /',
+    '',
+    'User-agent: Perplexity-User',
     'Allow: /',
     '',
     'User-agent: Googlebot',
@@ -2555,6 +2574,7 @@ function renderRobotsTxt(runtimeConfig) {
     '',
     '# LLM context document — clean declarative content for AI retrieval',
     `# ${runtimeConfig.appOrigin}/llm-context.md`,
+    `# ${runtimeConfig.appOrigin}/llms.txt`,
     '',
     `Sitemap: ${runtimeConfig.appOrigin}/sitemap.xml`,
   ].join('\n');
@@ -4129,7 +4149,7 @@ function createApiServer() {
       return;
     }
 
-    if (isGetLikeRequest && pathname === '/.well-known/llms.txt') {
+    if (isGetLikeRequest && (pathname === '/.well-known/llms.txt' || pathname === '/llms.txt')) {
       const llmsTxtPath = path.join(__dirname, '..', '..', '.well-known', 'llms.txt');
       try {
         const content = fs.readFileSync(llmsTxtPath, 'utf8');
@@ -6072,7 +6092,7 @@ async function addContext(){
 
     // Public OpenAPI spec — no auth required (needed for ChatGPT GPT Store import)
     if (isGetLikeRequest && (pathname === '/openapi.json' || pathname === '/openapi.yaml')) {
-      const specPath = path.join(__dirname, '../../adapters/chatgpt/openapi.yaml');
+      const specPath = path.join(__dirname, '../../openapi/openapi.yaml');
       try {
         const yaml = renderOpenApiYamlForRequest(fs.readFileSync(specPath, 'utf8'), req);
         if (pathname === '/openapi.yaml') {
