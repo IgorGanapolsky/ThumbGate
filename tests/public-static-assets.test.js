@@ -465,3 +465,42 @@ test('comparison pages cross-link so crawlers can discover the full set', async 
   assert.match(cch, /href="\/compare\/anthropic-containment"/);
   assert.match(cch, /href="\/compare\/bumblebee"/);
 });
+
+test('GET /compare/oak-and-sparrow-gatekeeper serves the hand-written comparison page', async () => {
+  const res = await fetch(`${origin}/compare/oak-and-sparrow-gatekeeper`);
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  const html = await res.text();
+  // Title + positioning
+  assert.match(html, /ThumbGate vs Gatekeeper/);
+  assert.match(html, /Agent-Action Gate Pairs With Workforce-Input Gate/);
+  // FAQ + TechArticle schema for LLM citation
+  assert.match(html, /"@type":\s*"FAQPage"/);
+  assert.match(html, /"@type":\s*"TechArticle"/);
+  // Honest framing — must link to Oak & Sparrow's actual site
+  assert.match(html, /oakandsparrowsystemsenterprise\.io/);
+  // The shared-architecture frame that anchors the page
+  assert.match(html, /deterministic enforcement/);
+});
+
+test('GET /sitemap.xml includes the oak-and-sparrow-gatekeeper comparison page', async () => {
+  const res = await fetch(`${origin}/sitemap.xml`);
+  assert.equal(res.status, 200);
+  const xml = await res.text();
+  const entry = xml.match(/<url>\s*<loc>[^<]*\/compare\/oak-and-sparrow-gatekeeper<\/loc>[\s\S]*?<\/url>/);
+  assert.ok(entry, 'compare/oak-and-sparrow-gatekeeper <url> block must exist');
+  assert.match(entry[0], /<priority>0\.85<\/priority>/);
+});
+
+test('comparison pages link back to oak-and-sparrow-gatekeeper for discovery', async () => {
+  // Every recently-shipped /compare page must back-link to the newest one so a crawler
+  // landing on bumblebee / claude-code-hooks / anthropic-containment can reach it.
+  const [bb, cch, ant] = await Promise.all([
+    fetch(`${origin}/compare/bumblebee`).then((r) => r.text()),
+    fetch(`${origin}/compare/claude-code-hooks`).then((r) => r.text()),
+    fetch(`${origin}/compare/anthropic-containment`).then((r) => r.text()),
+  ]);
+  assert.match(bb, /href="\/compare\/oak-and-sparrow-gatekeeper"/);
+  assert.match(cch, /href="\/compare\/oak-and-sparrow-gatekeeper"/);
+  assert.match(ant, /href="\/compare\/oak-and-sparrow-gatekeeper"/);
+});

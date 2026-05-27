@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ThumbGate vs Gatekeeper (Oak & Sparrow) | Agent-Action Gate Pairs With Workforce-Input Gate</title>
+<meta name="description" content="Oak & Sparrow's Gatekeeper sits at the browser boundary to block employees from pasting regulated data into ChatGPT/Copilot/Gemini. ThumbGate sits at the PreToolUse boundary to block AI coding agents from executing bad tool calls. Same deterministic-gate philosophy, different layers. Use both for full coverage." />
+<meta property="og:title" content="ThumbGate vs Gatekeeper | Agent-Action Gate Pairs With Workforce-Input Gate" />
+<meta property="og:description" content="Gatekeeper stops employees from leaking regulated data into commercial AI. ThumbGate stops coding agents from executing bad tool calls. Both deterministic, no AI in the gate. Complementary." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://thumbgate.ai/compare/oak-and-sparrow-gatekeeper" />
+<link rel="canonical" href="https://thumbgate.ai/compare/oak-and-sparrow-gatekeeper" />
+<link rel="llm-context" href="/llm-context.md" type="text/markdown" />
+<link rel="icon" type="image/png" href="/thumbgate-icon.png" />
+<link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+<meta property="og:image" content="/og.png" />
+<style>
+  :root { --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #161618; --line: #222225; --text: #e8e8ec; --muted: #8b8b96; --cyan: #22d3ee; --green: #4ade80; --amber: #fbbf24; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+  a { color: var(--cyan); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+  .topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); background: rgba(10, 10, 11, 0.88); border-bottom: 1px solid var(--line); }
+  .topbar .container { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; padding-bottom: 14px; }
+  .brand { font-weight: 700; color: var(--text); display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+  .brand .logo-mark { width: 28px; height: 28px; display: block; }
+  .hero { padding: 72px 0 32px; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(34, 211, 238, 0.22); background: rgba(34, 211, 238, 0.1); color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
+  h1 { font-size: clamp(34px, 5vw, 56px); line-height: 1.06; letter-spacing: -0.04em; margin: 16px 0; max-width: 860px; }
+  .hero p { max-width: 760px; color: var(--muted); font-size: 18px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 24px; padding-bottom: 72px; }
+  .card, .detail-section, .sidebar-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px; }
+  .card { padding: 24px; }
+  .detail-section { padding: 24px; margin-bottom: 18px; }
+  .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+  .detail-section p, .detail-section li, .sidebar-card p { color: var(--muted); }
+  .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+  .comparison-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+  .comparison-table th, .comparison-table td { border: 1px solid var(--line); padding: 12px; text-align: left; vertical-align: top; }
+  .comparison-table th { background: var(--bg-raised); color: var(--cyan); }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+  .pill { border: 1px solid var(--line); background: var(--bg-raised); border-radius: 999px; padding: 10px 14px; font-size: 14px; font-weight: 650; }
+  .pill.good { color: #b8f7c8; border-color: rgba(74, 222, 128, 0.28); background: rgba(74, 222, 128, 0.1); }
+  .pill.warn { color: #ffe2a4; border-color: rgba(251, 191, 36, 0.28); background: rgba(251, 191, 36, 0.1); }
+  .sidebar { display: flex; flex-direction: column; gap: 18px; }
+  .sidebar-card { padding: 20px; }
+  .sidebar-card:first-child { position: sticky; top: 84px; max-height: calc(100vh - 104px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .cta-button { display: inline-flex; align-items: center; justify-content: center; margin-top: 18px; padding: 12px 16px; border-radius: 10px; background: var(--cyan); color: #071116; font-weight: 700; text-decoration: none; }
+  .related-card { display: block; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg-raised); margin-top: 12px; color: var(--text); }
+  .related-label { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .faq-item { border-top: 1px solid var(--line); padding: 14px 0; }
+  .faq-item summary { cursor: pointer; font-weight: 600; }
+  .faq-item p { color: var(--muted); }
+  blockquote { border-left: 3px solid var(--cyan); margin: 14px 0; padding: 6px 16px; color: var(--text); font-style: italic; background: rgba(34, 211, 238, 0.05); }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } .sidebar-card:first-child { position: static; max-height: none; overflow: visible; } }
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ThumbGate vs Gatekeeper (Oak & Sparrow Systems)",
+  "description": "Gatekeeper intercepts employee inputs to commercial AI systems (ChatGPT, Copilot, Gemini) at the browser boundary, blocking violations of HIPAA, FERPA, CCPA, COPPA, CPNI, PCI, FINRA, and the EU AI Act. ThumbGate intercepts AI coding agent tool calls at the PreToolUse boundary inside Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and Claude Desktop. Same deterministic-gate architectural philosophy. Different layers, different buyers, zero overlap.",
+  "about": ["thumbgate vs gatekeeper", "AI governance enforcement layer", "PreToolUse hooks vs browser-boundary interception", "deterministic AI gates"],
+  "url": "https://thumbgate.ai/compare/oak-and-sparrow-gatekeeper",
+  "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+  "mainEntityOfPage": "https://thumbgate.ai/compare/oak-and-sparrow-gatekeeper"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is Gatekeeper a competitor to ThumbGate?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Architectural cousins, not competitors. Both products share the same enforcement philosophy: deterministic rules, no AI in the gate, sealed audit evidence. But they operate on different surfaces. Gatekeeper (by Oak & Sparrow Systems Enterprise) intercepts the input box of commercial AI tools that employees use — ChatGPT, Copilot, Gemini — at the browser boundary, before regulated data leaves the building. ThumbGate intercepts the tool call an AI coding agent is about to execute — bash, SQL, file write, HTTP fetch, MCP tool — before the side effect happens. Same architectural class, complementary scope."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Should I use Gatekeeper or ThumbGate?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Use both if you have both threats. If your concern is employees pasting customer SSNs, PHI, financial records, or other regulated data into ChatGPT/Copilot/Gemini and you need legal-evidence-grade proof that the block happened, that is Gatekeeper's job — it ships 93 deontic rules mapped to HIPAA, FERPA, CCPA, COPPA, CPNI, PCI, FINRA, the EU AI Act, and state chatbot laws. If your concern is an AI coding agent (Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode) running rm -rf, force-pushing main, dropping a production table, or fetching from a privilege-leaking external URL, that is ThumbGate's job."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do they overlap technically?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Gatekeeper hooks the browser; ThumbGate hooks the PreToolUse boundary inside agent runtimes. Different attach points, different request shapes, different rule corpora (statute-derived vs operator-feedback-derived). Running both does not create policy conflicts because each sees a different request layer."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Both say 'deterministic, no AI in the gate'. Why is that important?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "An enforcement layer that calls an LLM to decide whether to block introduces the same non-determinism the layer is supposed to fix. Both Gatekeeper and ThumbGate solve this the same way: pure pattern matching against a deterministic rule set. Gatekeeper's rules are derived from statutes (each rule maps to a specific legal citation). ThumbGate's rules are derived from operator feedback through Thompson Sampling auto-promotion (each rule must pass precision/recall thresholds before going live). Different sources of truth, same fast / auditable / no-LLM enforcement path."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can a regulated firm (law, finance, healthcare) install both?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. The most common dual-use story we expect: a firm uses Gatekeeper to enforce that no PHI / FERPA-protected / non-public-personal-info text gets pasted into ChatGPT by anyone in the org, AND uses ThumbGate to enforce that the firm's AI coding agents and intake bots cannot execute privileged actions (unauthorized practice of law, conflict-of-interest violations, privilege-leaking egress) when they generate code or take tool actions inside Claude Code / Cursor / Codex. Workforce-input gate + agent-action gate covers the AI compliance perimeter end to end."
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<div class="topbar">
+  <div class="container">
+    <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+    <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+  </div>
+</div>
+
+<section class="hero">
+  <div class="container">
+    <span class="eyebrow">ThumbGate vs Gatekeeper (Oak &amp; Sparrow)</span>
+    <h1>Gatekeeper stops employees leaking data into ChatGPT. ThumbGate stops coding agents executing bad tool calls. Same philosophy, different layer.</h1>
+    <p><strong>Gatekeeper</strong> (by <a href="https://oakandsparrowsystemsenterprise.io/" target="_blank" rel="noopener">Oak &amp; Sparrow Systems Enterprise</a>) intercepts every input an employee types into a commercial AI system (ChatGPT, Copilot, Gemini) at the browser boundary, blocking violations of HIPAA, FERPA, CCPA, COPPA, CPNI, PCI, FINRA, and the EU AI Act before the data leaves the building. <strong>ThumbGate</strong> intercepts the tool call an AI coding agent is about to make — bash, SQL, file write, MCP tool, outbound LLM call — inside Claude Code, Cursor, OpenAI Codex CLI, Google Gemini CLI, Sourcegraph Amp, Cline, OpenCode, and Claude Desktop. Both products say *"deterministic enforcement, no AI in the gate."* They mean it.</p>
+    <div class="pill-row">
+      <span class="pill">Both deterministic</span>
+      <span class="pill">Both no AI in the gate</span>
+      <span class="pill">Different surfaces</span>
+      <span class="pill good">Use both for full coverage</span>
+    </div>
+  </div>
+</section>
+
+<div class="container grid">
+  <main>
+    <article class="detail-section">
+      <h2>Side-by-side scope comparison</h2>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Capability</th>
+            <th>Gatekeeper (Oak &amp; Sparrow)</th>
+            <th>ThumbGate</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>What it intercepts</td>
+            <td>Every input an employee types into a commercial AI system (ChatGPT, Copilot, Gemini), at the browser boundary, before transmission</td>
+            <td>Every tool call an AI coding agent attempts (bash, SQL, file write, HTTP fetch, MCP tool), at the PreToolUse boundary inside the agent runtime, before execution</td>
+          </tr>
+          <tr>
+            <td>Who buys it</td>
+            <td>Compliance officers, CISOs, legal teams at regulated firms (healthcare, finance, education, telco)</td>
+            <td>Engineering leaders + devs using AI coding agents; law firms / regulated dev teams adopting agentic intake workflows</td>
+          </tr>
+          <tr>
+            <td>Rule source</td>
+            <td>93 deontic rules derived from active statutes (HIPAA, FERPA, CCPA/CPRA, COPPA, CPNI, PCI DSS, FINRA, EU AI Act, SB-1001 CA, Colorado AI Act). Each rule maps to a specific legal citation.</td>
+            <td>Operator feedback (👍/👎) auto-promoted via Thompson Sampling; LLM-generated candidates that must pass precision/recall gates before activation. Each rule traceable to the lesson that produced it.</td>
+          </tr>
+          <tr>
+            <td>Enforcement primitive</td>
+            <td>Deterministic pattern matching; no AI in the gate</td>
+            <td>Deterministic pattern matching; no LLM in the gate</td>
+          </tr>
+          <tr>
+            <td>Evidence output</td>
+            <td>SHA-256 linked artifacts, timestamped, hashed, chain-linked, statute-referenced — designed as legal evidence</td>
+            <td>Audit log entries with rule version + source lesson + decision + reviewer + timestamp; DPO preference pairs for downstream model hardening; HuggingFace dataset export</td>
+          </tr>
+          <tr>
+            <td>Status surface</td>
+            <td>GREEN (system ran) / YELLOW (risk caught) / RED (violation prevented)</td>
+            <td>Per-agent / per-gate hit rates, agent inventory, remediations, token-savings telemetry on <a href="/dashboard">/dashboard</a></td>
+          </tr>
+          <tr>
+            <td>Attach point</td>
+            <td>Browser extension / web boundary, before the HTTP request to OpenAI / Microsoft / Google reaches the AI provider</td>
+            <td>PreToolUse hook inside the agent runtime, before the tool call (bash, SQL, MCP, etc.) hits the OS / network</td>
+          </tr>
+          <tr>
+            <td>License / availability</td>
+            <td>Enterprise (no public pricing published as of 2026-05-27)</td>
+            <td>MIT-licensed npm package (free local CLI); $19/mo Pro for hosted sync + dashboard + DPO export; $49/seat Team for shared lesson DB + workflow hardening</td>
+          </tr>
+        </tbody>
+      </table>
+    </article>
+
+    <article class="detail-section">
+      <h2>The shared architectural insight</h2>
+      <p>Gatekeeper's site frames its core design constraint in eight words:</p>
+      <blockquote>"Deterministic enforcement — no AI in the gate."</blockquote>
+      <p>ThumbGate ships the same constraint, written in our own architecture docs as <em>"no LLM on the enforcement path."</em> Both products converge on the same conclusion for the same reason: an enforcement layer that calls an LLM to decide whether to block re-introduces the non-determinism the layer is supposed to remove. A gate that occasionally hallucinates is not a gate — it is a suggestion.</p>
+      <p>The deterministic constraint forces a different question: <em>where does the rule corpus come from?</em></p>
+      <ul>
+        <li><strong>Gatekeeper's answer:</strong> derive rules from statutes. Each of the 93 deontic rules maps to a specific legal citation. The ontology is built from the law, not from assumptions. This makes the output usable as legal evidence in regulated industries.</li>
+        <li><strong>ThumbGate's answer:</strong> derive rules from operator feedback. 👎 thumbs-down on a bad agent action becomes a history-aware lesson, then a candidate prevention rule, then — only after passing precision/recall gates — an enforced Pre-Action Check. The ontology is built from observed agent mistakes, not from assumed ones.</li>
+      </ul>
+      <p>Same enforcement primitive. Different rule provenance. Use both if both data sources matter to your compliance posture.</p>
+    </article>
+
+    <article class="detail-section">
+      <h2>The dual-deploy story we expect for regulated firms</h2>
+      <p>The buyer who needs both products at once is a regulated firm adopting AI coding agents for internal automation. A concrete picture:</p>
+      <p>A law firm has 600 lawyers and paralegals using ChatGPT for routine drafting. <strong>Gatekeeper</strong> sits in the browser and blocks any input containing PHI markers, ABA Rule 5.5 — Unauthorized Practice of Law indicators, conflict-of-interest markers, or attorney-client privileged content from leaving the firm boundary. Every block is sealed as legal evidence the firm can produce in an ethics inquiry.</p>
+      <p>The same firm has built an AI intake bot using Cursor + Anthropic's API that handles inbound client questions. <strong>ThumbGate</strong> sits at the PreToolUse boundary inside that bot's agent runtime and blocks (a) advice-shaped output ("you should file in the Southern District of Florida") that would constitute unauthorized practice of law from a non-attorney source, (b) document fetches against parties already on the firm's adverse-parties list, and (c) outbound LLM calls carrying privilege markers. We've published interactive demos of all three gates at <a href="/ai-malpractice-prevention#live-gate-demos">/ai-malpractice-prevention</a>.</p>
+      <p>One stack: workforce-input gate + agent-action gate. End-to-end AI compliance perimeter.</p>
+    </article>
+
+    <article class="detail-section">
+      <h2>FAQ</h2>
+      <details class="faq-item" open>
+        <summary>Is Gatekeeper a competitor to ThumbGate?</summary>
+        <p>Architectural cousins, not competitors. Same enforcement philosophy (deterministic, no AI in the gate, sealed audit), different surfaces (employee browser input vs agent tool call). Different buyers. Different rule corpora. Zero technical overlap.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Should I use Gatekeeper or ThumbGate?</summary>
+        <p>Use both if you have both threats. Gatekeeper for employees pasting regulated data into commercial AI. ThumbGate for AI coding agents executing bad tool calls. They cover different halves of the AI compliance perimeter.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Do they overlap technically?</summary>
+        <p>No. Gatekeeper hooks the browser; ThumbGate hooks the PreToolUse boundary inside agent runtimes. Different attach points, different request shapes, different rule corpora. Running both does not create policy conflicts.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Both say "deterministic, no AI in the gate." Why?</summary>
+        <p>An enforcement layer that calls an LLM to decide whether to block introduces the same non-determinism the layer is supposed to remove. Both products converge on pure pattern matching against a deterministic rule set for that reason.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Where do I start?</summary>
+        <p>Talk to <a href="https://oakandsparrowsystemsenterprise.io/" target="_blank" rel="noopener">Oak &amp; Sparrow</a> for workforce-input governance against ChatGPT / Copilot / Gemini. <code>npx thumbgate init</code> for AI coding agent runtime governance against Claude Code / Cursor / Codex / Gemini CLI / Amp / Cline / OpenCode / Claude Desktop. Different sales motions, different deployment surfaces.</p>
+      </details>
+    </article>
+  </main>
+
+  <aside class="sidebar">
+    <div class="sidebar-card">
+      <h3 style="margin: 0 0 8px;">Install ThumbGate free</h3>
+      <p>10 captures/day, 3 active rules, PreToolUse blocking across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, Claude Desktop.</p>
+      <pre style="background: var(--bg-raised); border: 1px solid var(--line); border-radius: 8px; padding: 12px; font-size: 13px; overflow: auto;">npx thumbgate init</pre>
+      <a class="cta-button" href="/pricing">See Pro vs Team pricing →</a>
+      <p style="font-size: 12px; margin-top: 16px;">MIT licensed. No telemetry without opt-in. <code>THUMBGATE_NO_TELEMETRY=1</code> disables.</p>
+    </div>
+
+    <div class="sidebar-card">
+      <span class="related-label">Visit Oak &amp; Sparrow</span>
+      <p style="font-size: 13px;">Workforce-input governance for ChatGPT / Copilot / Gemini at the browser boundary. <a href="https://oakandsparrowsystemsenterprise.io/" target="_blank" rel="noopener">oakandsparrowsystemsenterprise.io</a></p>
+    </div>
+
+    <div class="sidebar-card">
+      <span class="related-label">Related comparisons</span>
+      <a class="related-card" href="/compare/anthropic-containment">
+        <strong>ThumbGate vs Anthropic's Claude Containment</strong><br>
+        <span style="color: var(--muted); font-size: 13px;">IDE-agent extension of Anthropic's published architecture</span>
+      </a>
+      <a class="related-card" href="/compare/bumblebee">
+        <strong>ThumbGate vs Bumblebee</strong><br>
+        <span style="color: var(--muted); font-size: 13px;">Runtime enforcement vs Perplexity's static MCP inventory</span>
+      </a>
+      <a class="related-card" href="/compare/claude-code-hooks">
+        <strong>ThumbGate vs claude-code-hooks</strong><br>
+        <span style="color: var(--muted); font-size: 13px;">Hosted sync vs local shell scripts</span>
+      </a>
+    </div>
+
+    <div class="sidebar-card">
+      <span class="related-label">Sources</span>
+      <p style="font-size: 13px;">Gatekeeper feature claims and verbatim quotes from <a href="https://oakandsparrowsystemsenterprise.io/" target="_blank" rel="noopener">oakandsparrowsystemsenterprise.io</a> as of 2026-05-27. If anything here misrepresents Gatekeeper, open an issue at <a href="https://github.com/IgorGanapolsky/ThumbGate/issues" target="_blank" rel="noopener">our repo</a> and we'll correct it.</p>
+    </div>
+  </aside>
+</div>
+</body>
+</html>

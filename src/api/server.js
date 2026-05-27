@@ -2594,6 +2594,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/compare/claude-code-hooks', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/bumblebee', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/anthropic-containment', changefreq: 'weekly', priority: '0.85' },
+    { path: '/compare/oak-and-sparrow-gatekeeper', changefreq: 'weekly', priority: '0.85' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
   ];
   return [
