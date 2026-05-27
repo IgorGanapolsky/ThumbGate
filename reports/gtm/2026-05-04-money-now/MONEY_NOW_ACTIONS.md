@@ -34,11 +34,11 @@ Guardrail reminder: do not publish posts, send messages, invite members, upload 
 
 ## Action-time approval (next run card)
 
-- `reports/gtm/2026-05-04-money-now/action-time-approval-2026-05-29.md`
+- `reports/gtm/2026-05-04-money-now/action-time-approval-2026-05-30.md`
 
 ## Operator Lab promo (prep only; no publish)
 
-- Approval-ready checklist: `reports/gtm/2026-05-04-community-course-promo/next-actions-2026-05-29.md`
+- Approval-ready checklist: `reports/gtm/2026-05-04-community-course-promo/next-actions-2026-05-30.md`
 - Media-backed post previews (safe): `reports/gtm/2026-05-04-community-course-promo/zernio-preview-operator-lab-2026-05-27.json`
 - Publish/schedule must run via GitHub Actions (Zernio secrets); local runs are preview-only.
 - Course/classroom listing copy: `reports/gtm/2026-05-04-community-course-promo/course-listing-copy-operator-lab-2026-05-27.md`
