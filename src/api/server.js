@@ -5217,7 +5217,8 @@ async function addContext(){
       let toolName = encodedToolName;
       try {
         toolName = decodeURIComponent(encodedToolName);
-      } catch (_err) {
+      } catch (err) {
+        console.error('mcp/tools/* decode failed:', err?.message);
         sendJson(res, 400, {
           error: 'invalid_tool_name',
           toolIndexUrl: buildPublicUrl(hostedConfig, '/.well-known/mcp/tools.json'),
