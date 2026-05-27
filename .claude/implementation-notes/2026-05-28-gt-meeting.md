@@ -223,7 +223,7 @@ Q&A. Three pre-baked answers:
 
 ---
 
-## What to send at `[3:31]` from `iganapolsky@gmail.com`
+## What to send at `[3:31]` from the CEO's email account
 
 Subject: *ThumbGate × Greenberg Traurig — recap and procurement pack*
 
