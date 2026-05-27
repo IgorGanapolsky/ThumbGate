@@ -105,3 +105,21 @@ curl -fsS \
 ```
 
 This tells you whether traffic came from channels we actually posted to (Bluesky, Threads, Reddit) or from background ai_search / direct. Channel mismatch is usually the real story.
+
+## If you're running from a cloud Claude Code session and seeing 401
+
+Use the wrapper, not the raw script:
+
+```bash
+npm run revenue:truth     # or: bash bin/revenue-truth.sh
+```
+
+The wrapper handles three branches:
+
+1. **Operator key configured AND fresh.** Runs the canonical pipeline. Output starts with `Source: hosted-billing-summary`.
+2. **Operator key configured but STALE** (env var or `~/.config/thumbgate/operator.json` exists but no longer authenticates against Railway after a rotation). Runs the pipeline, then prints a loud `WARNING — configured operator key authenticated against the LOCAL fallback` block with the exact fix command. This is what you want to see when describing the 401 to the CEO instead of guessing.
+3. **No operator key AND shell looks like a cloud session** (`$CI`, `$CODESPACES`, `$GITHUB_ACTIONS`, `$CLAUDE_CODE_REMOTE`, or `/home/user/...` Linux container path). Prints a one-paragraph "revenue truth is local-only by design, run from your laptop, do NOT paste the key here" message and exits `0`. This is the **expected** posture for cloud sessions — not a bug, not a blocker, not something to keep reporting back to the CEO.
+
+The wrapper refuses to accept the operator key as a CLI argument (exits 64). Pasting the key on the command line would leak it to shell history; pasting it into the Claude transcript would leak it to the model context. Per CLAUDE.md hard-block rule #2.
+
+**Anti-pattern this section exists to prevent:** an agent in a cloud session running `node scripts/revenue-status.js` directly, hitting 401, then repeatedly telling the CEO "I can't see hosted revenue" across multiple turns as if it were news. After the first observation, route to `npm run revenue:truth` so the diagnostic message is the response, not a back-and-forth.

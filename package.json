@@ -258,6 +258,7 @@
     "verify:full": "node scripts/verify-run.js full",
     "budget:status": "node scripts/budget-guard.js --status",
     "revenue:status": "node scripts/revenue-status.js",
+    "revenue:truth": "bash bin/revenue-truth.sh",
     "revenue:doctor": "node scripts/revenue-observability-doctor.js",
     "revenue:plan": "node scripts/may-2026-revenue-machine.js",
     "revenue:status:local": "node bin/cli.js cfo",
