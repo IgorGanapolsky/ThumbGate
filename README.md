@@ -495,6 +495,7 @@ Pro ($19/mo or $149/yr) removes the capture/rule caps and adds history-aware les
 - [SEO Guide: Claude Code Guardrails](docs/learn/claude-code-guardrails.md)
 - [Unsupervised Learning Signals](docs/UL.md) — silent-failure clustering (experimental, behind `THUMBGATE_SILENT_FAILURE_CLUSTERING=1`; only useful on workspaces with ≥ 50 tool calls/day)
 - [ThumbGate-Core](https://github.com/IgorGanapolsky/ThumbGate-Core) — private core for hosted overlays, ranking, policy synthesis, billing intelligence, and org/team workflows
+- [mac-yolo-safeguards](https://github.com/IgorGanapolsky/mac-yolo-safeguards?utm_source=thumbgate&utm_medium=readme&utm_campaign=companion_kit) — OS-level companion kit (macOS). ThumbGate stops the agent from billing you for repeated mistakes (token-layer governance). mac-yolo-safeguards stops the agent from freezing your Mac when it spawns runaway processes (OS-layer blast-radius containment). Same author, MIT, no telemetry.
 
 ---
 
