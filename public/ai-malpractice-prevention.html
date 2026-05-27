@@ -584,7 +584,7 @@
             a.href = url; a.download = filename;
             document.body.appendChild(a); a.click();
             document.body.removeChild(a);
-            setTimeout(function() { URL.revokeObjectURL(url); }, 0);
+            setTimeout(function() { URL.revokeObjectURL(url); }, 10000);
           } catch (e) { console.error('audit download failed', e); }
         };
         window.__thumbgateAuditRegistry = {};
