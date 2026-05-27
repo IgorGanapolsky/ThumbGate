@@ -396,3 +396,31 @@ test('GET /sitemap.xml includes the claude-code-hooks comparison page', async ()
   assert.ok(entry, 'compare/claude-code-hooks <url> block must exist');
   assert.match(entry[0], /<priority>0\.85<\/priority>/);
 });
+
+test('GET /compare/bumblebee serves the hand-written comparison page', async () => {
+  const res = await fetch(`${origin}/compare/bumblebee`);
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  const html = await res.text();
+  // Title + canonical positioning
+  assert.match(html, /ThumbGate vs Bumblebee/);
+  assert.match(html, /Runtime Enforcement Pairs With Static Inventory/);
+  // FAQ + TechArticle schema must be present for LLM citation
+  assert.match(html, /"@type":\s*"FAQPage"/);
+  assert.match(html, /"@type":\s*"TechArticle"/);
+  // Honest framing — must link to Perplexity's repo
+  assert.match(html, /github\.com\/perplexityai\/bumblebee/);
+  // Comparison table must surface the key rows
+  assert.match(html, /What it does/);
+  assert.match(html, /What it blocks/);
+  assert.match(html, /Output format/);
+});
+
+test('GET /sitemap.xml includes the bumblebee comparison page', async () => {
+  const res = await fetch(`${origin}/sitemap.xml`);
+  assert.equal(res.status, 200);
+  const xml = await res.text();
+  const entry = xml.match(/<url>\s*<loc>[^<]*\/compare\/bumblebee<\/loc>[\s\S]*?<\/url>/);
+  assert.ok(entry, 'compare/bumblebee <url> block must exist');
+  assert.match(entry[0], /<priority>0\.85<\/priority>/);
+});
