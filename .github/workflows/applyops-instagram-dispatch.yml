@@ -46,12 +46,15 @@ jobs:
         run: node scripts/social-analytics/generate-applyops-instagram-card.js
 
       - name: Validate or publish ApplyOps Instagram post
+        env:
+          PUBLISH_ENABLED: ${{ github.event.inputs.publish_enabled }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: |
-          if [ "${{ github.event.inputs.publish_enabled }}" != "true" ]; then
+          if [ "$PUBLISH_ENABLED" != "true" ]; then
             node scripts/social-analytics/publish-applyops-instagram.js --dry-run
             exit 0
           fi
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+          if [ "$DRY_RUN" = "true" ]; then
             node scripts/social-analytics/publish-applyops-instagram.js --dry-run
             exit 0
           fi
