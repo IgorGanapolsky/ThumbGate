@@ -35,7 +35,7 @@ const LINKS_FIXTURE = {
 
 const ABOUT_FIXTURE = {
   repositoryUrl: 'https://github.com/IgorGanapolsky/ThumbGate',
-  homepageUrl: 'https://thumbgate-production.up.railway.app',
+  homepageUrl: 'https://thumbgate.ai',
 };
 
 function makeTempDir() {
