@@ -314,6 +314,10 @@
         Every 👍 / 👎 an attorney logs on an AI answer becomes a lesson in your firm's local DB. Recurring patterns promote to deterministic rules. The next time a similar action is proposed, the rule fires before any human is asked to approve.
         <a href="/learn/feedback-loop-vs-decision-layer" style="color: var(--cyan); white-space: nowrap;">How the feedback loop works &rarr;</a>
       </p>
+      <p style="color: var(--soft); font-size: 0.95rem; max-width: 760px; margin: 0 0 1.1rem; padding: 0.7rem 1rem; border-left: 3px solid #a78bfa; background: rgba(167, 139, 250, 0.06); border-radius: 0 6px 6px 0;">
+        <strong style="color: #a78bfa">No public-facing chatbot? You still have the risk surface.</strong>
+        Most BigLaw firms don't take client intake through a chatbot &mdash; but their associates already paste matter context into Claude, Cursor, Codex, and internal LLM gateways every day. The risk isn't a bot giving public advice; it's <em>internal</em> agent use the firm can't see. ThumbGate sits between each agent and its next action, captures attorney 👍/👎 on every output, and produces a <strong style="color: var(--soft)">searchable audit log + RAG of every gated detection</strong> &mdash; queryable by ethics, risk, and innovation owners. Your conflicts DB and document systems stay where they are; we instrument what the agents inside the firm are about to do.
+      </p>
       <div class="hero-actions">
         <a class="cta" href="mailto:iganapolsky@gmail.com?subject=ThumbGate%2025-minute%20legal%20AI%20pilot%20walkthrough&amp;body=Hi%20Igor%2C%0A%0AWe%27d%20like%20to%20review%20the%2025-minute%20ThumbGate%20legal%20AI%20intake%20pilot.%20Please%20send%20the%20meeting%20invite%20and%20demo%20materials.%0A%0ABest%2C">Book a 25-minute pilot walkthrough</a>
         <a class="ghost" href="#live-gate-demos">Try the live gates &rarr;</a>
@@ -550,7 +554,7 @@
       <!-- Conflict Check Simulator -->
       <div class="card" style="margin-bottom:2rem">
         <h3 style="color:var(--cyan); margin-bottom:0.75rem">2. Conflict Gate &mdash; adverse party clearance</h3>
-        <p style="font-size:0.95rem; color:var(--muted)">Enter a prospective client or party name. The gate checks against a sample adverse-parties list (real firms maintain much larger lists). Names on the adverse list arrived there from prior attorney decisions captured by the same feedback loop.</p>
+        <p style="font-size:0.95rem; color:var(--muted)">Enter a prospective client or party name. <strong>In production this gate queries YOUR firm's existing conflicts DB</strong> (Intapp Open, IntelliPlan, Aderant, or a custom system) &mdash; not a vendor-hosted list. ThumbGate is the agent-side enforcement; your DB stays the source of truth. The sample list below is illustrative only.</p>
         <div style="display:flex; gap:0.75rem; align-items:flex-end; margin:0.75rem 0; flex-wrap:wrap">
           <div style="flex:1; min-width:240px">
             <label style="font-size:0.8rem; color:var(--muted); display:block; margin-bottom:0.25rem">Party / Company Name</label>
