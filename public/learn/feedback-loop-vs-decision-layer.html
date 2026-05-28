@@ -100,6 +100,21 @@
   .loop-stage { border-left: 3px solid var(--cyan); padding: 0.6rem 1rem; margin: 0.75rem 0; background: rgba(34, 211, 238, 0.04); border-radius: 0 6px 6px 0; }
   .loop-stage strong { color: var(--cyan); display: block; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.2rem; }
   blockquote { border-left: 3px solid var(--cyan); margin: 1rem 0; padding: 0.5rem 1rem; color: var(--text); font-style: italic; background: rgba(34, 211, 238, 0.05); }
+  .loop-diagram { display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 0.5rem; align-items: stretch; margin: 1.5rem 0 0.5rem; padding: 1.25rem; background: rgba(34, 211, 238, 0.03); border: 1px solid rgba(34, 211, 238, 0.2); border-radius: 10px; position: relative; }
+  .loop-diagram .stage { background: #0f0f11; border: 1px solid rgba(34, 211, 238, 0.4); border-radius: 8px; padding: 0.75rem 0.85rem; display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+  .loop-diagram .stage .num { font-size: 0.7rem; color: var(--cyan); letter-spacing: 0.12em; text-transform: uppercase; font-weight: 600; }
+  .loop-diagram .stage .name { color: var(--text); font-size: 1rem; font-weight: 600; line-height: 1.2; }
+  .loop-diagram .stage .blurb { color: var(--muted); font-size: 0.78rem; line-height: 1.35; }
+  .loop-diagram .arrow { display: flex; align-items: center; justify-content: center; color: var(--cyan); font-size: 1.4rem; line-height: 1; user-select: none; }
+  .loop-diagram .closes { display: flex; align-items: center; justify-content: center; color: var(--green); font-weight: 600; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; padding-left: 0.4rem; border-left: 1px dashed rgba(114, 227, 165, 0.4); }
+  .loop-diagram .closes span { writing-mode: vertical-rl; transform: rotate(180deg); }
+  .loop-diagram-caption { font-size: 0.82rem; color: var(--muted); margin: 0.25rem 0 1.25rem; text-align: center; }
+  @media (max-width: 800px) {
+    .loop-diagram { grid-template-columns: 1fr; }
+    .loop-diagram .arrow { transform: rotate(90deg); padding: 0.1rem 0; }
+    .loop-diagram .closes { writing-mode: initial; padding: 0.5rem; border-left: none; border-top: 1px dashed rgba(114, 227, 165, 0.4); justify-content: center; }
+    .loop-diagram .closes span { writing-mode: initial; transform: none; }
+  }
   @media (max-width: 700px) { .mini-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
@@ -150,6 +165,34 @@
 
   <h2>The four-stage feedback-to-enforcement loop</h2>
   <p>ThumbGate is the loop, not the hook. Four stages, all in your environment, all closing the gap between "the user noticed something was wrong" and "the next agent action that pattern matches is gated automatically."</p>
+
+  <div class="loop-diagram" aria-label="Four-stage feedback-to-enforcement loop">
+    <div class="stage">
+      <span class="num">Stage 1</span>
+      <span class="name">Capture</span>
+      <span class="blurb">Attorney clicks 👍 or 👎 on an AI answer. One click, full context recorded.</span>
+    </div>
+    <div class="arrow" aria-hidden="true">&rarr;</div>
+    <div class="stage">
+      <span class="num">Stage 2</span>
+      <span class="name">Memory</span>
+      <span class="blurb">Local lesson DB (SQLite + LanceDB). Nothing leaves the firm.</span>
+    </div>
+    <div class="arrow" aria-hidden="true">&rarr;</div>
+    <div class="stage">
+      <span class="num">Stage 3</span>
+      <span class="name">Rule promotion</span>
+      <span class="blurb">Recurring 👎 patterns promote to deterministic, human-editable rules.</span>
+    </div>
+    <div class="arrow" aria-hidden="true">&rarr;</div>
+    <div class="stage">
+      <span class="num">Stage 4</span>
+      <span class="name">Enforcement</span>
+      <span class="blurb">Rules fire pre-action: allow, warn, block, or route to attorney.</span>
+    </div>
+    <div class="closes" aria-label="Loop closes back to capture"><span>Loop closes &rarr; back to capture</span></div>
+  </div>
+  <p class="loop-diagram-caption">All four stages run inside your environment. The hook is just the visible endpoint of stage 4.</p>
 
   <div class="loop-stage">
     <strong>Stage 1 &mdash; Capture</strong>
