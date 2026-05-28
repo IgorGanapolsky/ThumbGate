@@ -45,21 +45,21 @@ echo "--- Gate evaluation (local-only, no cloud call) ---"
 # bash-ANSI-C output (e.g. $'don\'t' or 'a'\''b') that is not valid JavaScript;
 # env-var passing is robust to any future prompt content (apostrophes,
 # newlines, em-dashes, the lot).
-DEMO_PROMPT="${DEMO_PROMPT}" TEMPLATES_PATH="${TEMPLATES}" node - <<'EOF'
-const fs = require('fs');
-const data = JSON.parse(fs.readFileSync(process.env.TEMPLATES_PATH, 'utf8'));
-const gate = data.templates.find((t) => t.id === 'block-unauthorized-practice-of-law');
-if (!gate) { console.error('Gate not found'); process.exit(2); }
+DEMO_PROMPT="${DEMO_PROMPT}" TEMPLATES_PATH="${TEMPLATES}" node -e '
+const fs = require("fs");
+const data = JSON.parse(fs.readFileSync(process.env.TEMPLATES_PATH, "utf8"));
+const gate = data.templates.find((t) => t.id === "block-unauthorized-practice-of-law");
+if (!gate) { console.error("Gate not found"); process.exit(2); }
 const re = new RegExp(gate.pattern);
 const prompt = process.env.DEMO_PROMPT;
 const fired = re.test(prompt);
-console.log('  gate:      ' + gate.id);
-console.log('  aba_rule:  Rule 5.5 — Unauthorized Practice of Law');
-console.log('  pattern:   ' + gate.pattern);
-console.log('  result:    ' + (fired ? 'BLOCKED' : 'allowed'));
-console.log('  decision:  ' + (fired ? 'denied — routed to attorney review queue' : 'no match'));
+console.log("  gate:      " + gate.id);
+console.log("  aba_rule:  Rule 5.5 — Unauthorized Practice of Law");
+console.log("  pattern:   " + gate.pattern);
+console.log("  result:    " + (fired ? "BLOCKED" : "allowed"));
+console.log("  decision:  " + (fired ? "denied — routed to attorney review queue" : "no match"));
 if (!fired) process.exit(1);
-EOF
+'
 GATE_RC=$?
 echo ""
 
