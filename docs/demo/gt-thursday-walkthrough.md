@@ -1,6 +1,6 @@
 # Greenberg Traurig — Thursday Walkthrough Script
 
-**Audience:** Matt Beekhuizen, Head of Innovation
+**Audience:** Matthew N. Beekhuizen, Chief Pricing and Innovation Officer, Greenberg Traurig
 **Date:** 2026-05-28 (Thursday)
 **Duration:** 25 minutes (target)
 **Goal:** Land a paid pilot on one Greenberg Traurig intake workflow.
@@ -30,9 +30,9 @@ If any check fails, **do not run the demo as designed.** Either re-stage the fai
 
 ## The pitch in one sentence
 
-ThumbGate lets your attorneys create enforceable safety gates with one click of a thumbs-down, and simultaneously trains a proactive RL model for intake efficiency — all 100% locally with zero cloud data calls for enforcement.
+ThumbGate gives GT's innovation, pricing, risk, and attorney teams a pre-execution control layer around legal AI workflows: firm-approved rules run before an agent replies, fetches records, schedules intake, or sends data outside the firm's approved boundary.
 
-Three pillars: **deterministic safety gates** (the kill switch), **proactive efficiency** (the RL layer), **zero cloud egress** (privilege protection).
+Three pillars: **deterministic safety gates** (the kill switch), **reviewable control evidence** (the pricing/innovation proof), **local-first enforcement** (privilege protection).
 
 ---
 
@@ -45,7 +45,7 @@ Open on a slide showing one intake transcript:
 > Prospect: "Hi, I was fired last week in Florida. Can I sue my employer?"
 > AI intake agent: "Based on what you've described, you likely have a strong case for wrongful termination. You should file in the Southern District of Florida."
 
-Two sentences. Roughly **$50K–$2M of malpractice exposure** depending on outcome and how many prospects saw similar replies before someone caught it. ABA Rule 5.5 — Unauthorized Practice of Law.
+Two sentences. This is the pattern to avoid: advice-shaped output from a non-attorney intake agent before conflict clearance, supervision, and approved disclaimers. Do not quote firm-specific exposure numbers. Anchor on ABA Rule 5.5, confidentiality, supervision, and the fact that policies alone do not enforce themselves.
 
 > "Most AI safety tools would have caught this *after* it landed in the prospect's inbox. We catch it before the call returns."
 
@@ -107,7 +107,7 @@ Switch back to dashboard. Scroll to the **Predictive Insights** card.
 - **Top source:** direct_outreach — $24,000.
 - **Upgrade propensity:** Pro 0.84 (high), Team 0.72 (high).
 
-Frame: "This isn't just blocking — Thompson Sampling weights are mathematically biased toward routing patterns the firm has rewarded with thumbs-up. The same loop that creates the kill switch *also* steers the agent toward the cheapest, most accurate path for the next intake. The system gets faster *and* safer the more it sees."
+Frame: "This isn't just blocking. The same feedback loop that creates the kill switch also records which intake routes, disclaimers, escalation paths, and review decisions worked. That gives an innovation and pricing team better predictability: which workflows are safe enough to scale, which need attorney review, and which should remain out of bounds."
 
 Show the **Insights pipeline** card:
 - Intake Events 184 → Rules Refined 42 → Gates Active 14 → Risks Prevented 93.
@@ -149,9 +149,9 @@ Optional (if asked): show that the lesson DB is a single SQLite file you can put
 
 The number to land on:
 
-> **Workflow Hardening Sprint — one Greenberg Traurig intake workflow — $1,500, three weeks.**
-> By end of week 3 you have: ABA-mapped gates installed in your environment, attorney-review queue wired to your existing case management, audit export running, and the verification evidence pack ready for your malpractice carrier.
-> If the pilot pays for itself, we expand to additional practice areas at $49/seat/mo on Team, minimum three seats.
+> **30-day legal AI governance pilot — one Greenberg Traurig intake workflow — $2,500–$7,500 flat, scope-dependent.**
+> By the end of the pilot you have: a preloaded no-client-data rule pack, synthetic adverse-party fixture, blocked-action demos, local-first enforcement proof, sample audit export, security/data-flow note, pilot metrics, and a go/no-go rollout recommendation.
+> If the pilot is useful, the next commercial discussion is a scoped Team rollout or practice-area expansion. Do not lead with self-serve checkout or per-seat pricing on the first call.
 
 Stop talking. Let him respond.
 

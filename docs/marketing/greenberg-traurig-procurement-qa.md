@@ -4,6 +4,8 @@
 **For meeting:** 2026-05-28 3:00pm with Matt Beekhuizen (Chief Pricing & Innovation Officer, Greenberg Traurig)
 **Use:** Hand-deliver this in the last 5 min of the demo, OR email immediately after as the post-demo follow-up. Pre-empts the 6-week procurement questionnaire by giving Matt's team the answers they were going to ask for.
 
+**Before the meeting:** rehearse the conservative spoken answers in `docs/marketing/greenberg-traurig-ceo-answer-sheet.md`. This procurement pack still contains CEO/legal confirmation placeholders and should not be sent externally until those are resolved.
+
 ---
 
 ## Why this exists
