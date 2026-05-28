@@ -134,6 +134,10 @@
       <span class="eyebrow">ThumbGate vs Claude for Legal</span>
       <h1>Anthropic generates the legal action. ThumbGate learns from the attorney and gates the legal action.</h1>
       <p><strong>Claude for Legal</strong> (launched 2026-05-12) is a vertical bundle: Claude Opus 4.7 (90.9% on Harvey's BigLaw Bench), 12 practice-area plugins (Commercial, Employment, Privacy, Corporate, AI Governance, and more), and 20+ connectors (DocuSign, Ironclad, iManage, NetDocuments, LexisNexis, Thomson Reuters, Box, Everlaw, LSuite) embedded into Word, Outlook, Claude Cowork, and Claude Projects. <strong>ThumbGate</strong> is the full feedback-to-enforcement loop underneath: every 👍 / 👎 an attorney gives on any AI answer becomes a lesson in a local lesson DB, recurring lessons get promoted to prevention rules, and those rules then fire at the PreToolUse hook before Claude's next proposed tool call executes. Anthropic's safety story is <em>"human in the loop on decision making."</em> Ours is <em>"the attorney's vote becomes the rule, and the rule fires deterministically before the next decision is even shown to a human."</em> Most regulated firms need both.</p>
+      <p style="margin-top:18px; padding:14px 18px; border-left:3px solid #a78bfa; background:rgba(167,139,250,0.08); border-radius:0 6px 6px 0; max-width:760px;">
+        <strong style="color:#a78bfa">No public-facing chatbot? You still have the risk surface.</strong>
+        Most BigLaw firms don't take client intake through a chatbot &mdash; but associates already paste matter context into Claude (including Claude for Legal), Cursor, Codex, and internal LLM gateways every day. The risk isn't a bot giving public advice; it's <em>internal</em> agent use the firm can't see. ThumbGate produces a searchable audit log + RAG of every gated detection &mdash; queryable by ethics, risk, and innovation owners. Your conflicts DB and document systems stay where they are.
+      </p>
     </div>
   </section>
 
