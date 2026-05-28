@@ -74,6 +74,22 @@ End with this:
 
 > Would you be open to a narrow no-client-data pilot: one intake workflow, one approved disclaimer/routing policy, one synthetic adverse-party fixture, and one audit export format? If yes, the next step is a 30-minute technical scoping call with whoever owns AI/security review.
 
+## Likely technical pressure-tests (rehearse)
+
+These three came out of an external review of `/ai-malpractice-prevention`. Each is the kind of sharp question an innovation/risk owner would ask in the first ten minutes.
+
+### Edge-case bypass — "what happens if an agent doesn't go through ThumbGate?"
+
+> ThumbGate is a feedback-to-enforcement loop, not a single check. Attorneys 👍/👎 agent outputs, the lesson DB promotes repeated patterns into deterministic rules, and the enforcement hook runs those rules pre-action across whichever agents are wired in (Claude Code, Cursor, Codex, Gemini, internal LLM gateways). If a specific agent isn't wired in, that agent doesn't get the loop's enforcement — same way a packet that doesn't traverse a firewall isn't inspected. We don't claim coverage on agents we don't see. Defense is two-part: (1) `npm run self-heal:check` enumerates which agents are wired across the developer fleet, so "ungoverned agent" is a discoverable state; (2) enforcement decisions emit a heartbeat to the audit stream, so absence-of-heartbeat is itself a detectable signal. Bypasses don't go silent.
+
+### DLP integration — "how does the local gate fit with our existing DLP stack?"
+
+> Today the gate is complementary, not a replacement. It emits structured JSON audit events that Forcepoint, Purview, Splunk, or your SIEM can ingest one-way. Bidirectional integration — where your existing DLP rules feed the gate's policy engine — is an integration project, not a config flag. Honest framing: pilot proves the control pattern; if it works, bidirectional DLP wiring is the natural follow-on for phase two.
+
+### Latency — "you promise machine speed but the workflow routes to humans. What's the SLA?"
+
+> Gate decision latency is sub-millisecond — regex/rule match plus a lesson DB lookup. That's the "machine speed" claim. Routing to attorney review is a queue, not a blocking call: the intake agent doesn't wait on a human to respond. The human-review SLA is the firm's own SLA, set by the reviewer rota. We don't bottleneck intake volume on review queue depth.
+
 ## What not to do
 
 - Do not pitch Stripe checkout.
