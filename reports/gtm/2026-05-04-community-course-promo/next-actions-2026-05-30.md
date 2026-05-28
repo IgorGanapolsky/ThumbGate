@@ -14,6 +14,7 @@ Guardrail: do not publish posts, send messages, invite members, upload files, cr
   - Icon: `docs/marketing/assets/thumbgate-skool-icon-128x128.png`
 - Course/classroom listing copy (prep only): `reports/gtm/2026-05-04-community-course-promo/course-listing-copy-operator-lab-2026-05-27.md`
 - Skool pinned “Start Here” post (prep only): `reports/gtm/2026-05-04-community-course-promo/skool-start-here-post-2026-05-27.md`
+- Skool post pack (prep only; includes Diagnostic + Pro lanes): `reports/gtm/2026-05-04-community-course-promo/skool-post-pack-2026-05-26.md`
 - Week 1 content sequence (prep only): `reports/gtm/2026-05-04-community-course-promo/operator-lab-week-1-sequence-2026-05-26.md`
 - Attendee outreach drafts (prep only): `reports/gtm/2026-05-04-community-course-promo/operator-lab-attendee-queue-2026-05-27.md`
 - Comment + DM pack (prep only): `reports/gtm/2026-05-04-community-course-promo/operator-lab-comment-pack-2026-05-27.md`

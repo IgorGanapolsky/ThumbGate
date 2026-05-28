@@ -57,7 +57,7 @@ If you already have a workflow blocker and want the proof path, reply with the f
 
 ## Post 4 — Diagnostic offer (tight)
 
-Title: One Paid Diagnostic Slot This Week
+Title: Workflow Hardening Diagnostic ($499)
 
 Body:
 
@@ -68,7 +68,10 @@ I can do a Workflow Hardening Diagnostic:
 - isolate the repeat failure pattern
 - propose the prevention gate + proof plan
 
-Same-day kickoff.
+If you want to book the Diagnostic directly:
+https://buy.stripe.com/28E00j3Uge1E2dzgWL3sI2J
+
+If you want to qualify it first (and route to Sprint if it is the right fit):
 https://thumbgate-production.up.railway.app/#workflow-sprint-intake
 
 ## Post 5 — Self-serve Pro lane (for builders)
