@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-05-25T20:11:57.326Z",
+  "generatedAt": "2026-05-28T16:16:29.444Z",
   "channel": "Codex",
   "objective": "Turn Codex plugin interest into proof-backed installs, Pro checkout starts, and qualified workflow sprint conversations.",
   "canonicalIdentity": {
     "displayName": "ThumbGate for Codex",
     "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
-    "homepageUrl": "https://thumbgate-production.up.railway.app",
+    "homepageUrl": "https://thumbgate.ai",
     "installPageUrl": "https://thumbgate.ai/codex-plugin",
     "shortDescription": "Auto-updating ThumbGate plugin for Codex. Capture thumbs-up/down feedback, turn repeated failures into Pre-Action Checks, and keep proof close to the install path."
   },
@@ -29,7 +29,7 @@
       "key": "standalone_bundle",
       "name": "Standalone bundle download",
       "url": "https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip",
-      "versionedUrl": "https://github.com/IgorGanapolsky/ThumbGate/releases/download/v1.23.1/thumbgate-codex-plugin-v1.23.1.zip",
+      "versionedUrl": "https://github.com/IgorGanapolsky/ThumbGate/releases/download/v1.23.2/thumbgate-codex-plugin-v1.23.2.zip",
       "supportUrl": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/codex-profile/README.md",
       "evidenceSource": "plugins/codex-profile/README.md",
       "operatorUse": "Portable plugin path for buyers who want a direct asset instead of a repo checkout.",

@@ -1,5 +1,258 @@
 # Changelog
 
+## 1.23.2
+
+### Patch Changes
+
+- 4e2989b: Position ThumbGate as the pre-action execution gate for the agentic development cycle across the homepage, README, llms.txt, and full LLM context.
+- 821c3eb: Add AI Mode, MCP tool governance, and pre-action approval-gate answer assets for conversational search and ad discovery.
+- a01f208: Expose canonical AI-search discovery metadata via root llms.txt, updated crawler directives, and buyer-page LLM context links.
+- ec4f7ec: site: `/ai-malpractice-prevention` — add downloadable audit JSON to each gate demo + Greenberg Traurig–shaped adverse-parties
+
+  Two surgical improvements to the live legal-vertical demo surface before the 2026-05-28 Greenberg Traurig pilot meeting.
+
+  **1. Downloadable audit JSON under every BLOCKED state.** The 25-minute agenda card on the page already promises _"one audit export with rule version, source, outcome, and reviewer"_ — the demos previously only printed an inline audit-log string with no downloadable artifact. Adds a "Download audit JSON (sample)" button under each of the three BLOCKED branches (UPL, Conflict, Egress). The JSON shape includes ISO 27001 control mapping (A.5.10, A.5.14, A.5.24, A.5.34, A.8.10, A.8.24) so a procurement reviewer can map evidence to controls without translation. Honest framing in the payload's `generated_by` field: _"production version streams to your SIEM."_ Pure client-side `Blob` download — no new API route, no server dependency, no test impact.
+
+  **2. Adverse-parties list reshaped to look like a real Greenberg Traurig matter.** Swapped the generic `Acme Corp / TechNova Inc / Rivera Holdings` synthetic names for `Latam Real Capital S.A. / Hospitalia Holdings / NovaIA Latam` — a Latin-America real-estate / hospitality / AI deal pattern that mirrors GT's recent docket (e.g. GT just represented Enter on a $100M Series B creating Latin America's first AI unicorn per PRNewswire 302767169). Demos that look like the prospect's own deal flow convert better than generic ones. All names are explicitly fictional; the page's caption now reads _"(synthetic, illustrative)"_ to keep the framing honest.
+
+  Also includes `.claude/implementation-notes/2026-05-28-gt-meeting.md` per CLAUDE.md's implementation-notes mandate — full demo prep memo including five concrete agenda improvements, three probable Matt Beekhuizen questions with verbatim ≤50-word answers, top deal-killers in order, three-pillar pitch calibrations (Pillar 2 over-claims Thompson Sampling as a model router — softened), and `VERIFIED` vs `UNVERIFIED` assumptions list.
+
+  Headless verification (window=global Node sandbox): all 3 demos correctly return BLOCKED on triggering inputs + CLEARED on safe inputs, all 3 download buttons fire with correct filenames, JSON shape includes all required fields. 39/39 `public-static-assets.test.js` still green.
+
+- 780e181: site: `/ai-malpractice-prevention` hero — predictability/insights/value bridge paragraph
+
+  Adds a single green-bordered bridge paragraph between the existing `lead` and the existing feedback-loop callout on `/ai-malpractice-prevention`, mapping the defensive "pre-execution controls" framing into the offensive language law-firm innovation teams use about themselves: _predictability, insights, value._
+
+  The page already opens with the Sullivan & Cromwell wedge (still correct against the 2026 post-hallucination reckoning). The bridge sits below that wedge and reframes the runtime gate as the enabler of predictable agentic-AI deployment, not just a defensive shield. Rationale: BigLaw innovation buyers measure vendors against their own firm's stated innovation philosophy, which is uniformly value-positive, not risk-defensive.
+
+  No `<h1>`, og, canonical, or schema changes — too risky to alter on a high-value landing page. 1 regression test added asserting all three nouns and the "predictable enough to sell" anchor phrase are present in the rendered hero.
+
+- c85fae2: site: `/ai-malpractice-prevention` hero — feedback-loop callout + jump-link to live demos (last-mile Greenberg Traurig polish)
+
+  Two surgical hero-section edits before tomorrow's 2026-05-28 3pm Greenberg Traurig pilot meeting, surfaced by a critical audit just before the demo:
+
+  1. **Feedback-loop callout in the hero** — pre-empts misreading ThumbGate as a static rule engine. Cyan-bordered single-paragraph callout under the `lead` paragraph: _"The gate learns from your attorneys. Every 👍/👎 an attorney logs on an AI answer becomes a lesson in your firm's local DB. Recurring patterns promote to deterministic rules. The next time a similar action is proposed, the rule fires before any human is asked to approve."_ Links to `/learn/feedback-loop-vs-decision-layer` (shipped earlier tonight) for the full mechanism. Surfaces the CEO's full-loop scope correction directly on the highest-priority demo page where Matt will actually start.
+
+  2. **"Try the live gates →" jump-link in the hero CTAs row** — anchored to `#live-gate-demos` (the three interactive UPL / Conflict / Egress gates at the bottom of the 9-section page). Eliminates a 2-3 second mid-demo scroll-fumble: Igor can click straight from the hero to the demos when Matt's attention is freshest, without scrolling through 8 sections of pilot-design narrative.
+
+  No new files. No structural changes to the existing hero copy. No h1/og/canonical/schema changes (deliberate — too risky to alter under 14 hours before the meeting). 5 minutes of work, immediate demo-day impact.
+
+- 905c66d: Add ApplyOps Instagram dispatch workflow and card publisher for partner-pilot revenue distribution.
+- bd82775: Add repeatable ApplyOps deploy and pricing verification skills for cross-product revenue surface management.
+- a32e6d0: Add a background-agent control-layer positioning page and wire it into the legal AI pilot narrative.
+- 6ac8f7b: ops: SessionStart bootstrap suppresses 4-line 401 nag in stale-key state
+
+  The CEO called out tonight that every session resume shows the same multi-line `Hosted billing summary returned 401` / `operator key on this machine does not match` / `local operational billing summary is unavailable` Gaps block, even after I shipped `bin/revenue-truth.sh` (PR #2359) earlier. **PR #2359 shipped the wrapper at the wrong path** — the SessionStart hook calls `.claude/scripts/session-bootstrap/revenue-truth.sh`, not `bin/revenue-truth.sh`. Even if #2359 had merged, the bootstrap would still nag.
+
+  This PR fixes the actual file the hook calls. After running the canonical `scripts/revenue-status.js` pipeline, it detects the stale-key case (output contains `Source: local-fallback` or `Hosted summary working: no`) and:
+
+  1. Filters out the four noisy `Gaps:` lines that re-derive the 401 every session:
+
+     - `- spawnSync gh ENOENT` (gh CLI absent — expected in cloud containers)
+     - `- Hosted billing summary today returned 401`
+     - `- Hosted billing summary rejected credentials (HTTP 401) …`
+     - `- local operational billing summary is unavailable`
+
+  2. Replaces them with a single short paragraph: _"authenticated against LOCAL fallback (not hosted Railway summary). Numbers above are local lesson DB readings, not Stripe-reconciled hosted revenue. EXPECTED posture for any session that does not hold the rotated Railway operator key — not a blocker."_ + the exact local-machine fix command (`node bin/cli.js billing:setup`) + a reminder NOT to paste the key into chat or argv (CLAUDE.md hard-block rule #2).
+
+  Happy-path output (key fresh, hosted summary authenticates) is unchanged — same full pipeline output as before.
+
+  Smoke test in this container (which is in the stale-key state by design) confirms the 4 noisy lines are gone and the replacement paragraph fires correctly. PR #2359 should be closed as superseded — the wrapper at `bin/revenue-truth.sh` was at the wrong path and the legacy bootstrap is the correct fix surface.
+
+- dd166ac: Use `thumbgate.ai` as the canonical Plausible domain for server-side checkout funnel events and the checkout interstitial so homepage, checkout, and purchase analytics do not split across the legacy Railway domain.
+- fdfc360: Close checkout funnel attribution by emitting the canonical Plausible purchase event from Stripe webhook completion, aligning the Plausible poller to canonical checkout event names, and separating raw telemetry from qualified external visitor paths in analytics reports.
+- f1e6f2a: Inject Plausible, PostHog, and GA4 analytics scripts into the checkout interstitial page (/checkout/pro) which previously had zero client-side analytics, closing the funnel attribution gap.
+- ecdc28a: site: `/compare/anthropic-claude-for-legal` — preempt the direct-to-BigLaw Anthropic threat
+
+  Anthropic launched **Claude for Legal** on 2026-05-12 — 12 practice-area plugins (Commercial, Employment, Privacy, Corporate, AI Governance, ...), 20+ connectors (DocuSign, Ironclad, iManage, NetDocuments, LexisNexis, Thomson Reuters, Box, Everlaw, LSuite), Claude Opus 4.7 at **90.9% on Harvey's BigLaw Bench**. Available to all paid Claude customers as one-click installs into Word, Outlook, Cowork, and Projects.
+
+  This is the most likely _"what about Anthropic's legal product?"_ question Matt Beekhuizen could raise at tomorrow's Greenberg Traurig pilot meeting. The page closes that gap with the honest framing: **Anthropic generates the legal action; ThumbGate learns from the attorney and gates the action.**
+
+  Critically, this page leads with **ThumbGate's full feedback-to-enforcement loop**, not just the PreToolUse endpoint:
+
+  1. **Capture** — attorney 👍/👎 on any AI answer (Claude for Legal draft, Cowork summary, conflict-check action, research citation)
+  2. **Memory** — feedback record lands in local lesson DB (SQLite + LanceDB), wins/mistakes/edge cases all stored, vector-searchable
+  3. **Rule promotion** — recurring 👎 patterns become deterministic prevention rules via Thompson Sampling; wins reinforce preferred routing
+  4. **Enforcement** — promoted rules fire at PreToolUse before Claude's next proposed tool call, with artifact-level audit logs
+
+  The loop is the product. The hook is the endpoint. This page is the first compare/\* page to lead with that framing explicitly — corrects a scope-narrowing pattern caught by the CEO in review.
+
+  Ships:
+
+  - `public/compare/anthropic-claude-for-legal.html` (~24 KB): 8-row scope comparison, dedicated "full ThumbGate loop" section, shared-architectural-insight section citing Anthropic's own published containment as endorsement of the deterministic-runtime-gate posture, dual-deploy story, 5 FAQ entries, 3 verified citations in schema.org. Sitemap priority **0.9** (same tier as `/ai-malpractice-prevention`) — this is a vertical-flagship comparison.
+  - `src/api/server.js`: sitemap entry at priority 0.9.
+  - `public/compare/{anthropic-containment,bumblebee,claude-code-hooks,oak-and-sparrow-gatekeeper,arcjet}.html`: each adds a related-card pointing at the new page.
+  - `tests/public-static-assets.test.js`: route + schema + sitemap regression + 5-way cross-link discoverability test. Verifies the "full feedback loop" framing is in the rendered HTML.
+
+  Anthropic's safety story for Claude for Legal is _"keep a human in the loop on decision making"_ — a workflow principle. Sullivan & Cromwell had that principle codified in policy when their associates filed hallucinated citations with a federal judge. The page draws the line: policies are not enforcement; a runtime gate that fires before the human is asked to approve is.
+
+- b55ac98: site: head-to-head comparison page `/compare/anthropic-containment`
+
+  Anthropic published ["How we contain Claude"](https://www.anthropic.com/engineering/how-we-contain-claude) on their engineering blog — a three-layer architecture (ephemeral gVisor containers for claude.ai, Seatbelt/bubblewrap OS sandboxes for Claude Code, hypervisor VMs for Claude Cowork, MITM egress proxy after credential exfiltration was discovered through approved domains, tool-output inspection before context insertion).
+
+  That architecture is concretely published, citation-grade, and stops at the Anthropic product boundary. ThumbGate runs the same model at the IDE-agent layer where Anthropic's sandbox does not reach: Cursor, OpenAI Codex CLI, Google Gemini CLI, Sourcegraph Amp, Cline, OpenCode, Claude Desktop.
+
+  Ships:
+
+  - `public/compare/anthropic-containment.html` (~14 KB): comparison page in the existing `/compare/bumblebee` and `/compare/claude-code-hooks` style. Maps each of Anthropic's 5 published layers to where ThumbGate fits. Quotes their published architectural lessons verbatim (with attribution). `TechArticle` + `FAQPage` schema.org markup for LLM citation. Three "pick X for" guidance sections.
+  - `tests/public-static-assets.test.js`: regression test for the route and schema-markup invariants.
+
+  **Sitemap entry intentionally omitted from this PR.** Recent comparison-page PRs (#2336, #2339) added a `src/api/server.js` sitemap line and tripped SonarCloud's "new code" line-shift heuristic each time, requiring a follow-up fix commit. The page is still crawlable via internal `/compare/*` links and the robots.txt allowlist; sitemap inclusion can be batched in a separate PR that updates multiple paths in one shift.
+
+  Strategic context: Anthropic's article is being cited heavily across the "AI agent safety" content surface this week. Same listicle authors that picked up Bumblebee will pick this up. Positions ThumbGate as the published-architecture-extended-to-IDE-agents play.
+
+- b473a48: site: `/compare/arcjet` + monitor-vs-enforce callout on `/ai-malpractice-prevention`
+
+  The New Stack's _"Who's monitoring the agents?"_ (Darryl K. Taft, Mar 2026) and _"The attack surface moved inside the agent. So did Arcjet."_ both ran without ThumbGate cited. The same publication that runs Sonar's AC/DC framework + Anthropic's containment architecture has been steadily covering agent-governance coverage in 2026 — and ThumbGate is absent from every single piece. **Arcjet specifically sits adjacent to our wedge** (TNS describes them as "WAF moved inside the agent"). A prospect that searches `ThumbGate vs Arcjet` currently gets nothing from us.
+
+  This PR closes two gaps before tomorrow's Greenberg Traurig pilot meeting:
+
+  **1. `/compare/arcjet`** (~12 KB) — same template as the four prior `/compare/*` pages. Positions Arcjet honestly as **runtime SDK in your application code** (Node, Python, Deno, Bun) protecting **inbound** HTTP traffic — bot detection, rate-limit, prompt-injection scoring, PII detection, Shield WAF rules — and ThumbGate as **PreToolUse hook inside the developer's AI coding agent** gating **outbound** tool calls before they fire. 8-row side-by-side scope table, "shared architectural insight" section (both products independently arrived at the same posture: deterministic gate, in-runtime, no LLM on the enforcement path), dual-deploy story for a regulated firm running both, 5 FAQ entries. TechArticle + FAQPage schema.org markup. Honest framing: not sponsored, not a partnership, will correct on issue report.
+
+  **2. Monitor-vs-enforce callout above the live demos on `/ai-malpractice-prevention`** — single cyan-bordered callout pre-empting the "monitoring" frame Matt Beekhuizen may have pattern-matched ThumbGate into after reading TNS coverage: _"Agent observability tools log what your agent did. ThumbGate gates what your agent is about to do — runtime block before execution, not retrospective alert."_
+
+  **3. `docs/marketing/blog-tns-monitor-vs-enforce-pitch.md`** — pitch email targeting Darryl K. Taft (not Jennifer Riggins; different author, different angle) as a follow-up to _"Who's monitoring the agents?"_ with the runtime-enforcement counter-framing. Distribution plan attached.
+
+  Cross-link discovery graph updated: `/compare/{bumblebee,claude-code-hooks,anthropic-containment,oak-and-sparrow-gatekeeper}` now each back-link to `/compare/arcjet`, so a crawler that lands on any prior compare page reaches the new one.
+
+  Sitemap entry at priority 0.85 alongside the four siblings. Regression tests added for route + schema invariants, sitemap, cross-link discovery, and the monitor-vs-enforce callout.
+
+- 3190819: site: head-to-head comparison page `/compare/bumblebee`
+
+  Perplexity open-sourced [Bumblebee](https://github.com/perplexityai/bumblebee) on 2026-05-23 — a read-only scanner that inventories MCP configs, editor extensions, browser extensions, and package lockfiles on developer endpoints. It is the first open-source scanner to treat MCP configuration files as a security surface.
+
+  Bumblebee answers a discovery question (what is installed). ThumbGate answers an enforcement question (what should the installed agent be allowed to do). Same supply-chain category, different halves of the answer. The two compose cleanly with zero overlap.
+
+  This page positions ThumbGate as the runtime-enforcement complement to Bumblebee's static inventory:
+
+  - 9-row side-by-side feature table covering scope, timing, coverage, blocking, output format, distribution, platforms, license, and authorship.
+  - Three "pick X for" sections that recommend installing both.
+  - Integration story: how Bumblebee's NDJSON output can seed ThumbGate's agent-manager inventory + auto-generate gates from CVE-flagged components.
+  - `TechArticle` + `FAQPage` schema.org markup so Perplexity / ChatGPT / Claude / Gemini can cite individual answers.
+  - Honest framing: credits Perplexity, links to their repo and blog post, recommends `go install` and `bumblebee self-test` alongside `npx thumbgate init`.
+
+  Strategic context: Bumblebee will get cited heavily in upcoming "AI agent safety" listicles because of Perplexity's brand authority. Riding alongside it in the same comparison content is the cheapest path to LLM-citation surface for ThumbGate, which the visibility audit confirmed is the binding constraint on inbound traffic.
+
+- f09f882: site: head-to-head comparison page `/compare/claude-code-hooks`
+
+  karanb192/claude-code-hooks currently ranks #1 on the buyer query "Claude Code safety pre-tool-use hooks npm package" — the exact query an npm/GitHub user searches before they discover ThumbGate. This PR ships a fair, fact-based comparison page that explains the scope difference (their local shell scripts vs our hosted sync + adapter matrix + dashboard) and links honestly to their repo.
+
+  - `public/compare/claude-code-hooks.html`: full comparison page in the same style as the existing `/compare/heidi`, `/compare/mem0`, `/compare/speclock` pages. TechArticle + FAQPage schema.org markup so Perplexity/ChatGPT/Claude/Gemini can cite it. Honest framing — credits karanb192 explicitly and recommends installing both for the seed library.
+  - `src/api/server.js`: sitemap entry added at priority 0.85.
+  - `tests/public-static-assets.test.js`: regression tests for the route + sitemap inclusion.
+
+  Targets the third-party listicle gap identified in the LLM-search visibility audit: ThumbGate is currently absent from every "best AI agent safety tools" comparison that LLMs retrieve from. Owning the head-to-head against the top-ranking competitor is the lowest-cost way to surface in those answers.
+
+- e896235: site: head-to-head comparison page `/compare/oak-and-sparrow-gatekeeper`
+
+  Joshua Johosky / Oak & Sparrow Systems Enterprise launched **Gatekeeper** publicly the week of 2026-05-25 — a browser-boundary input gate that blocks employees from leaking regulated data into commercial AI systems (ChatGPT, Microsoft Copilot, Google Gemini). 93 deontic rules harvested from HIPAA, FERPA, CCPA, COPPA, CPNI, PCI, FINRA, and the EU AI Act. Architectural philosophy: _"deterministic enforcement, no AI in the gate."_ That phrase is verbatim how ThumbGate has described itself for nine months.
+
+  Gatekeeper is **not** a ThumbGate competitor. It's an adjacent product on a different layer:
+
+  - Gatekeeper gates **what an employee types into a browser AI** before the data leaves the corporate network.
+  - ThumbGate gates **what an AI coding agent is about to do** at the PreToolUse hook inside Claude Code, Cursor, Codex CLI, Gemini CLI, Amp, Cline, OpenCode, Claude Desktop.
+
+  Same architectural insight (deterministic gate, runtime, no model in the path); different deployment surface. The honest positioning is _dual-deploy at regulated firms_: Gatekeeper for the workforce-input boundary, ThumbGate for the developer-action boundary.
+
+  Ships:
+
+  - `public/compare/oak-and-sparrow-gatekeeper.html` (~22 KB): comparison page in the same `/compare/{bumblebee,claude-code-hooks,anthropic-containment}` template. 8-row side-by-side scope table, "shared architectural insight" section, dual-deploy story scoped to a regulated law firm, 5 FAQ entries. `TechArticle` + `FAQPage` schema.org markup for LLM citation. Links to Oak & Sparrow's site and to `/ai-malpractice-prevention`.
+  - `src/api/server.js`: sitemap entry at priority 0.85 alongside the three siblings.
+  - `public/compare/anthropic-containment.html`, `public/compare/bumblebee.html`, `public/compare/claude-code-hooks.html`: each prepends a related-card pointing at the new page so a crawler that lands on any /compare/\* page reaches the gatekeeper one.
+  - `tests/public-static-assets.test.js`: route + schema invariants, sitemap regression, and a cross-link discoverability test asserting the three prior pages link back.
+
+  Strategic context: Gatekeeper has visible LinkedIn momentum behind it (Joshua's launch post sits at hundreds of engagements). Listicle authors covering "AI governance enforcement layer" this week will pick up both products. We want them to cite _both_ with the dual-deploy framing — not pick Gatekeeper and pass on ThumbGate because they're confused by overlapping language.
+
+- efbc860: site: cross-link the three new /compare pages + add anthropic-containment to sitemap
+
+  Verification on 2026-05-27 showed `/compare/anthropic-containment` (just shipped via #2340) had **zero discovery surface**: omitted from sitemap deliberately to dodge SonarCloud's line-shift heuristic, and no older `/compare/*` page linked back to it.
+
+  This PR repairs the discovery surface in one shot:
+
+  - `src/api/server.js`: adds `/compare/anthropic-containment` to the sitemap entries at priority 0.85, matching its sibling entries.
+  - `public/compare/bumblebee.html`: prepends a related-card pointing at `/compare/anthropic-containment`.
+  - `public/compare/claude-code-hooks.html`: prepends related-cards pointing at both `/compare/anthropic-containment` AND `/compare/bumblebee` (this page predates both and was previously the leaf node).
+  - `tests/public-static-assets.test.js`: sitemap regression test for anthropic-containment + a cross-link discoverability test that asserts each newer page reaches the others.
+
+  After this PR every recent /compare page is reachable both from sitemap.xml (crawlers) and from each other (LLM traversal). The cumulative LLM-citation surface now genuinely is three independent paths to ThumbGate's IDE-agent-firewall positioning instead of one well-connected pair and one orphan.
+
+  Accepting the SonarCloud line-shift risk for the sitemap +1 line; the discovery upside outweighs another revert-cycle.
+
+- cf6d835: docs(readme): cross-link to mac-yolo-safeguards as the OS-layer companion kit. ThumbGate handles token-layer governance (block repeated mistakes via thumbs-down). mac-yolo-safeguards handles OS-layer blast-radius (prevent Mac freeze when agents spawn runaway processes). Same author, both MIT, both no-telemetry. UTM-tagged to attribute click-through in mac-yolo-safeguards's GitHub traffic.
+- ed15f97: Fix /dashboard demo path that silently halted on undefined globals. Adds a TG_TOKEN_SAVINGS browser shim (mirrors scripts/token-savings.js), a defensive renderTopBlockedGates stub, and `typeof Chart === 'undefined'` guards on the three chart renderers so missing chart.js CDN never breaks the demo. Production was affected — unit tests check static HTML only and the existing e2e tests use ?noauto, which bypassed loadDemo() entirely.
+- d19582a: docs: minute-by-minute Greenberg Traurig demo script appended to implementation-notes memo
+
+  Appends a time-blocked speaking script to `.claude/implementation-notes/2026-05-28-gt-meeting.md` so Igor opens one file at 2:55pm and runs the 30-minute demo on autopilot.
+
+  Contents: 90-second Sullivan & Cromwell opener (verbatim), three live-demo walkthrough scripts with exact paste-text and click sequences, four-minute "why this is different" segment, five-minute pilot-mechanics ask, two-minute procurement-pack handoff, Q&A with three pre-baked verbatim ≤50-word answers, the post-call recap email template, and a "things to NOT do during the demo" checklist.
+
+  No public-surface change. Pure docs.
+
+- e63364b: site: add live UPL / Conflict / Egress gate simulators to the Legal AI page
+
+  Three interactive simulators on `/ai-malpractice-prevention`:
+
+  - UPL Gate: detects advice-shaped output from non-attorney sources, shows the corrective hand-off and full audit log.
+  - Conflict Gate: cross-references a party name against a sample adverse-parties list with realistic block/clear results.
+  - Egress Gate: detects privilege markers in outbound payloads and shows the in-tenant LLM redirect.
+
+  All three use the same deterministic PreToolUse logic that runs in production — no LLM calls on the enforcement path. Gives law-firm pilot prospects a hands-on "this is what protection actually feels like" moment during the walkthrough.
+
+  Re-implements the value of PR #2292 on top of current main (the original branch was 4 days behind and would have regressed the page's recent SEO + copy work).
+
+- ed15f97: Greenberg Traurig walkthrough prep: legal-intake gate patterns now case-insensitive on "[Yy]ou should file..." UPL phrasing and accept both "missing disclaimer" and "disclaimer=missing" orderings. Dashboard demo persona updated to "Jamie M., Partner · Litigation Intake" and forecast figures rescaled to BigLaw-pilot credibility ($84K booked + $32K incremental). Adds pattern-proof and zero-egress-proof scripts plus 25-minute talk track under docs/demo/.
+- 6846e6d: Harden the Greenberg Traurig walkthrough proof by making the zero-egress demo script use a reliable env-var-backed Node invocation and aligning the internal call script with the live legal AI governance pilot offer.
+- 5ea6d90: Expose the Pro checkout path above the fold on the homepage and emit canonical revenue analytics for paid CTA clicks.
+- 8b54490: site: `/learn/ac-dc-runtime-enforcement` — plug ThumbGate into Sonar's AC/DC framework
+
+  Sonar published the Agent Centric Development Cycle (**AC/DC** — Guide → Generate → Verify → Solve) earlier this year and The New Stack covered it as the framework engineering leaders should reach for when adopting AI coding agents at scale. The framework is real, sticky, and starting to anchor "agentic SDLC governance" listicle coverage this week.
+
+  AC/DC governs **what an agent writes** (Verify is static analysis on committed code — Sonar's product surface). It does not name a stage for **what an agent does** — the runtime actions (shell, file writes, MCP calls, git operations, outbound network) that happen between Generate and the next Guide loop and produce no committed source code for Verify to inspect. That's the gap a PreToolUse runtime enforcement layer fills.
+
+  Strategic posture: extend Sonar's framework with the missing fifth stage, don't compete with it. Same pattern as `/compare/anthropic-containment` (which extends Anthropic's published containment model to non-Claude IDE agents).
+
+  Ships:
+
+  - `public/learn/ac-dc-runtime-enforcement.html` (~16 KB): maps each AC/DC stage to where runtime enforcement plugs in. Two-layer deployment story for an AC/DC team. `TechArticle` + `FAQPage` schema.org markup with `citation` field pointing at Sonar's blog post and The New Stack article — gives LLMs the inbound provenance trail. 5 FAQ entries. Buyer-demo script. Sales line.
+  - `src/api/server.js`: sitemap entry at priority 0.85 alongside `/learn/background-agent-control-layer`.
+  - `public/learn/background-agent-control-layer.html`: adds the new page to its Related section so the most-trafficked /learn page back-links to it.
+  - `tests/public-static-assets.test.js`: route + schema invariants, sitemap regression, cross-link discoverability test.
+  - `docs/marketing/blog-acdc-runtime-enforcement-gap.md`: blog post draft + LinkedIn variant + distribution plan (5-day rollout) targeting The New Stack as a guest-post follow-up to their AC/DC piece.
+
+  Why the citation field matters: AC/DC will be cited frequently this quarter as listicles get refreshed. The schema.org `citation` field on our TechArticle gives LLMs (Perplexity, Gemini Deep Research, ChatGPT, Grok) a structured reason to surface ThumbGate when someone asks "how do I extend AC/DC for runtime governance?" — without us having to be in the source listicle Sonar's framework was named in.
+
+- cb8197c: site: `/learn/feedback-loop-vs-decision-layer` — anchor the full-loop scope correction
+
+  Permanent /learn page anchoring the CEO scope correction from 2026-05-27: ThumbGate is a four-stage feedback-to-enforcement loop, NOT a PreToolUse hook with feedback bolted on. Captures the canonical framing once so every future compare/blog/learn piece can cite a single canonical reference.
+
+  The page makes three structural points:
+
+  1. **Decision-layer governance** (prompt rules, AI judge models, "human in the loop" workflow principles, RLHF) is necessary but not sufficient — Sullivan & Cromwell had every form and still got sanctioned.
+  2. **Action-layer enforcement alone** (a static rule set fired at PreToolUse) is necessary but not sufficient either — generic rules don't encode YOUR team's incidents.
+  3. **The loop is the product**: Capture (👍/👎 on any AI answer) → Memory (local SQLite + LanceDB) → Rule promotion (Thompson Sampling) → Enforcement (PreToolUse hook). The hook is one stage of four.
+
+  Also includes a direct comparison vs RLHF: where the change lives, who controls it, how many examples to shift behavior, what happens at model upgrade, auditability. ThumbGate's loop wins on every row when the buyer's question is "how do I keep MY team's safety posture across model changes."
+
+  Self-contained content, no commercial confirmations required, no public-API change. Adds 1 new HTML file + sitemap entry + cross-link from /learn/background-agent-control-layer + regression test + this changeset.
+
+- e2450dc: Align the legal AI post-deploy sentinel with the current page headline.
+- 3a53242: Add legal-intake demo data for Greenberg Traurig pilot walkthrough
+- 2ec241d: Fix hosted OpenAPI spec delivery by copying the canonical OpenAPI directory into the runtime image and keeping source-checkout fallback paths.
+- a32e6d0: Fix IDE plugins, add enterprise positioning to README, fix legal page nav
+- cc33735: Add customer-scoped Pro lesson sync endpoints and CLI push/pull commands.
+- 47cf930: Tighten Free limits and reposition CLI upgrade prompts around hosted Pro sync across machines, CI, containers, and agent runtimes.
+- 5f5f255: Tighten free-to-paid conversion boundaries, add first-party visitor journey summaries to the operator telemetry export, and strengthen AI-search discovery metadata.
+- fcee825: Add a manual revenue truth audit workflow and tighten the homepage offer router so buyers can choose Pro, workflow intake, or free evaluation without CTA overload.
+- f0411a6: site: `/ai-malpractice-prevention` Sullivan & Cromwell opener + Greenberg Traurig procurement pack skeleton
+
+  Last-mile demo prep before the 2026-05-28 3pm Greenberg Traurig pilot meeting with Matt Beekhuizen (Chief Pricing & Innovation Officer). Two items the demo-research memo flagged as `<12-hour HIGH priority`:
+
+  1. **Above-the-fold "Why this matters now" callout on `/ai-malpractice-prevention`** — amber-bordered banner citing the canonical 2026 legal-AI hallucination incident: Sullivan & Cromwell apologized to a federal judge for AI-hallucinated citations **despite** policies, mandatory training, and verification requirements. Gordon Rees same problem on a bankruptcy filing. Damien Charlotin's public database now catalogs **1,369+ rulings**. Anchor sentence: _"The firms with policies still got sanctioned. Policies are not enforcement. A runtime gate is."_ This pre-empts the dominant 2026 buyer objection ("we have policies already") in 60 seconds.
+
+  2. **`docs/marketing/greenberg-traurig-procurement-qa.md`** — 10-question procurement Q&A skeleton with explicit `[CEO TO CONFIRM]` placeholders for SOC 2 status, BAA capability, IP/hallucination indemnification, pilot pricing, post-pilot pricing. Verified-answer language drafted for data retention, DPIA template (EU AI Act), 90-day audit-log evidence (citing the downloadable audit JSON shipped in PR #2349), and sandbox-without-gatekeeper. The file intentionally stays a docs/ file (not a public surface) until CEO resolves the commercial placeholders.
+
+  No public-API or behavior change. The S&C callout is content-only (HTML insertion into existing `<header class="hero">`). The procurement Q&A is a docs file with no route or sitemap entry.
+
 ## 1.23.1
 
 ### Patch Changes
