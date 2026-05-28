@@ -53,4 +53,40 @@ EOF
 fi
 
 # Defer to the canonical pipeline so this hook can never drift again.
-( cd "${ROOT}" && node scripts/revenue-status.js 2>&1 ) | sed 's/^/  /'
+# Capture output to detect the stale-key case (key configured but pipeline
+# still falls back to Source: local-fallback because the configured key no
+# longer authenticates against Railway after a rotation). Without this, every
+# cloud session sees a multi-line 401 nag in the SessionStart bootstrap and
+# re-derives "operator key mismatch is a blocker" — it isn't, it's the
+# expected posture for any session that doesn't hold the Railway key.
+RAW="$( cd "${ROOT}" && node scripts/revenue-status.js 2>&1 )"
+RC=$?
+
+if echo "$RAW" | grep -qE "Source: local-fallback|Hosted summary working: no"; then
+  # Stale or insufficient credential. Show the live numbers (still valid
+  # local lesson DB readings, just not Stripe-reconciled) and replace the
+  # 401-shaped Gaps lines with a single one-liner so it stops reading as a
+  # blocker.
+  echo "$RAW" \
+    | grep -vE "^[[:space:]]*- spawnSync gh ENOENT$" \
+    | grep -vE "^[[:space:]]*- Hosted billing summary today returned 401$" \
+    | grep -vE "^[[:space:]]*- Hosted billing summary rejected credentials \(HTTP 401\)" \
+    | grep -vE "^[[:space:]]*- local operational billing summary is unavailable$" \
+    | sed 's/^/  /'
+  cat <<EOF
+
+  ${KEY_SOURCE}: authenticated against LOCAL fallback (not hosted Railway
+  summary). Numbers above are local lesson DB readings, not Stripe-
+  reconciled hosted revenue. EXPECTED posture for any session that does
+  not hold the rotated Railway operator key — not a blocker. To see
+  hosted truth, run \`node bin/cli.js billing:setup\` from a machine
+  that can write to ~/.config/thumbgate/operator.json. Do NOT paste the
+  key into chat or argv (CLAUDE.md hard-block rule #2).
+EOF
+  exit 0
+fi
+
+# Happy path: hosted summary authenticated. Print full pipeline output as
+# the original script did.
+echo "$RAW" | sed 's/^/  /'
+exit $RC
