@@ -7,6 +7,11 @@ on:
         description: 'Post body to publish via Zernio'
         required: true
         type: string
+      platforms:
+        description: 'Comma-separated Zernio platforms to publish to. Exclude twitter/youtube until those accounts are fixed.'
+        required: false
+        type: string
+        default: 'reddit,threads,bluesky'
 
 permissions:
   contents: read
@@ -36,6 +41,7 @@ jobs:
       - name: Publish via Zernio
         env:
           POST_TEXT: ${{ github.event.inputs.text }}
+          POST_PLATFORMS: ${{ github.event.inputs.platforms }}
           THUMBGATE_DEDUP_LOG_PATH: ${{ runner.temp }}/zernio-dedup-log.json
         run: |
           if [ -z "${ZERNIO_API_KEY:-}" ]; then
@@ -43,4 +49,6 @@ jobs:
             exit 1
           fi
 
-          node scripts/social-analytics/publishers/zernio.js --text="$POST_TEXT"
+          node scripts/social-analytics/publishers/zernio.js \
+            --text="$POST_TEXT" \
+            --platforms="$POST_PLATFORMS"
