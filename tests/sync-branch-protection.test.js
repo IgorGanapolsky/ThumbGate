@@ -70,24 +70,13 @@ test('diffContexts identifies missing and unexpected required contexts', () => {
   assert.deepEqual(result.unexpected, []);
 });
 
-test('syncBranchProtection --check reports drift when main is missing a required check', () => {
+test('syncBranchProtection --check reports drift when main is missing a required check through REST', () => {
   const runner = createRunner([
     {
       status: 0,
       stdout: JSON.stringify({
-        data: {
-          repository: {
-            branchProtectionRules: {
-              nodes: [
-                {
-                  id: 'BPR_123',
-                  pattern: 'main',
-                  requiresStatusChecks: true,
-                  requiredStatusCheckContexts: ['test', 'CodeQL']
-                }
-              ]
-            }
-          }
+        required_status_checks: {
+          contexts: ['test', 'CodeQL']
         }
       }),
       stderr: ''
@@ -99,21 +88,8 @@ test('syncBranchProtection --check reports drift when main is missing a required
   assert.ok(result.diff.missing.length > 0);
 });
 
-test('syncBranchProtection falls back to REST branch protection when GraphQL returns no rules', () => {
+test('syncBranchProtection loads REST branch protection before GraphQL', () => {
   const runner = createRunner([
-    {
-      status: 0,
-      stdout: JSON.stringify({
-        data: {
-          repository: {
-            branchProtectionRules: {
-              nodes: []
-            }
-          }
-        }
-      }),
-      stderr: ''
-    },
     {
       status: 0,
       stdout: JSON.stringify({
@@ -149,22 +125,9 @@ test('parseRestRuleId validates REST fallback rule ids', () => {
   assert.throws(() => parseRestRuleId('rest:IgorGanapolsky/ThumbGate#../main'), /Unsafe branch pattern/);
 });
 
-test('syncBranchProtection updates REST-backed branch protection when GraphQL has no rule', () => {
+test('syncBranchProtection updates REST-backed branch protection', () => {
   const calls = [];
   const runner = createRunner([
-    {
-      status: 0,
-      stdout: JSON.stringify({
-        data: {
-          repository: {
-            branchProtectionRules: {
-              nodes: []
-            }
-          }
-        }
-      }),
-      stderr: ''
-    },
     {
       status: 0,
       stdout: JSON.stringify({
@@ -207,8 +170,55 @@ test('syncBranchProtection updates REST-backed branch protection when GraphQL ha
   assert.ok(patchCall.includes('contexts[]=Socket Security: Pull Request Alerts'));
 });
 
-test('syncBranchProtection updates main branch protection to the configured quality checks', () => {
+test('syncBranchProtection falls back to GraphQL when REST protection is unavailable', () => {
   const runner = createRunner([
+    {
+      status: 1,
+      stdout: '',
+      stderr: 'Not Found'
+    },
+    {
+      status: 0,
+      stdout: JSON.stringify({
+        data: {
+          repository: {
+            branchProtectionRules: {
+              nodes: [
+                {
+                  id: 'BPR_123',
+                  pattern: 'main',
+                  requiresStatusChecks: true,
+                  requiredStatusCheckContexts: [
+                    'test',
+                    'CodeQL',
+                    'Analyze JavaScript (javascript-typescript)',
+                    'Verify changeset',
+                    'GitGuardian Security Checks',
+                    'Socket Security: Project Report',
+                    'Socket Security: Pull Request Alerts'
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }),
+      stderr: ''
+    }
+  ]);
+
+  const result = syncBranchProtection({ check: true, repo: 'IgorGanapolsky/ThumbGate', branch: 'main' }, runner);
+  assert.equal(result.ok, true);
+  assert.equal(result.ruleId, 'BPR_123');
+});
+
+test('syncBranchProtection updates main branch protection to the configured quality checks through GraphQL fallback', () => {
+  const runner = createRunner([
+    {
+      status: 1,
+      stdout: '',
+      stderr: 'Not Found'
+    },
     {
       status: 0,
       stdout: JSON.stringify({
@@ -269,6 +279,11 @@ test('syncBranchProtection rejects invalid repository names before invoking gh',
 test('syncBranchProtection throws when the protected branch rule does not exist', () => {
   const runner = createRunner([
     {
+      status: 1,
+      stdout: '',
+      stderr: 'Not Found'
+    },
+    {
       status: 0,
       stdout: JSON.stringify({
         data: {
@@ -280,11 +295,6 @@ test('syncBranchProtection throws when the protected branch rule does not exist'
         }
       }),
       stderr: ''
-    },
-    {
-      status: 1,
-      stdout: '',
-      stderr: 'Not Found'
     }
   ]);
 
@@ -304,19 +314,8 @@ test('runCli exits nonzero when branch protection drifts from the configured qua
       {
         status: 0,
         stdout: JSON.stringify({
-          data: {
-            repository: {
-              branchProtectionRules: {
-                nodes: [
-                  {
-                    id: 'BPR_123',
-                    pattern: 'main',
-                    requiresStatusChecks: true,
-                    requiredStatusCheckContexts: ['test']
-                  }
-                ]
-              }
-            }
+          required_status_checks: {
+            contexts: ['test']
           }
         }),
         stderr: ''

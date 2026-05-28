@@ -64,6 +64,13 @@ jobs:
             exit 0
           fi
 
+          if ! grep -Ev '^(\.changeset/.*\.md|CLAUDE\.md|README\.md|docs/|reports/|proof/)' /tmp/ci-changed-files.txt > /tmp/ci-non-doc-files.txt; then
+            echo "mode=docs" >> "$GITHUB_OUTPUT"
+            echo "reason=docs-or-reports-only" >> "$GITHUB_OUTPUT"
+            echo "Docs/report-only CI selected. Merge queue and main pushes still run full CI."
+            exit 0
+          fi
+
           if grep -Ev '^(\.changeset/.*\.md|public/|config/post-deploy-marketing-pages\.json|scripts/dashboard\.js|scripts/verify-marketing-pages-deployed\.js|tests/(api-server|dashboard|public-landing|landing-page-claims|funnel-invariants|verify-marketing-pages-deployed|public-static-assets)\.test\.js|tests/e2e/)' /tmp/ci-changed-files.txt > /tmp/ci-full-required-files.txt; then
             echo "mode=full" >> "$GITHUB_OUTPUT"
             echo "reason=runtime-or-workflow-surface" >> "$GITHUB_OUTPUT"
@@ -91,6 +98,7 @@ jobs:
         # end users — these installs only affect the CI runner.
         run: pip install pytest scikit-learn joblib
       - name: Setup Node
+        if: steps.ci-scope.outputs.mode != 'docs'
         uses: actions/setup-node@v6
         with:
           node-version: '20'
@@ -100,27 +108,35 @@ jobs:
             workers/package-lock.json
 
       - name: Install deps
+        if: steps.ci-scope.outputs.mode != 'docs'
         run: npm ci --onnxruntime-node-install-cuda=skip
 
       - name: Check version sync
         run: node scripts/sync-version.js --check
 
       - name: Check changeset coverage for release-relevant PRs
-        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        if: steps.ci-scope.outputs.mode != 'docs' && (github.event_name == 'pull_request' || github.event_name == 'merge_group')
         run: npm run changeset:check
 
       - name: Run budget status gate
+        if: steps.ci-scope.outputs.mode != 'docs'
         run: npm run budget:status
       - name: Check operational integrity
-        if: steps.ci-scope.outputs.mode != 'web'
+        if: steps.ci-scope.outputs.mode == 'full'
         env:
           GH_TOKEN: ${{ github.token }}
         run: npm run ops:integrity:ci
       - name: Check branch protection congruence
-        if: github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]'
+        if: steps.ci-scope.outputs.mode != 'docs' && (github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]')
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: npm run branch-protection:check
+
+      - name: Run docs-only sanity checks
+        if: steps.ci-scope.outputs.mode == 'docs'
+        run: |
+          node scripts/changeset-check.js
+          git diff --check
 
       - name: Run focused web/revenue tests
         if: steps.ci-scope.outputs.mode == 'web'
@@ -207,7 +223,7 @@ jobs:
         run: npm run test:congruence:live
 
       - name: Upload proof artifacts
-        if: always()
+        if: always() && steps.ci-scope.outputs.mode != 'docs'
         uses: actions/upload-artifact@v7
         with:
           name: proof-artifacts

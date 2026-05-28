@@ -181,6 +181,13 @@ function loadRestBranchProtectionRule(repo, branch, runner = runGh) {
 }
 
 function loadBranchProtectionRule(repo, runner = runGh, branch = DEFAULT_BRANCH) {
+  // CI only checks the concrete default branch. Prefer REST so routine PR
+  // validation does not burn the user-scoped GraphQL budget used by gh PR ops.
+  const restRules = loadRestBranchProtectionRule(repo, branch, runner);
+  if (restRules.length > 0) {
+    return restRules;
+  }
+
   const { owner, name } = splitRepo(repo);
   const query = `
     query BranchProtectionRules($owner: String!, $name: String!) {
@@ -215,8 +222,7 @@ function loadBranchProtectionRule(repo, runner = runGh, branch = DEFAULT_BRANCH)
   }
 
   const payload = JSON.parse(result.stdout || '{}');
-  const rules = payload.data?.repository?.branchProtectionRules?.nodes || [];
-  return rules.length > 0 ? rules : loadRestBranchProtectionRule(repo, branch, runner);
+  return payload.data?.repository?.branchProtectionRules?.nodes || [];
 }
 
 function findBranchProtectionRule(rules, branch) {
