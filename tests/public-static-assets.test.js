@@ -673,3 +673,14 @@ test('/ai-malpractice-prevention surfaces feedback-loop framing + jump-link to l
   // The jump-link to the live gate demos (so Igor doesn't have to scroll through 9 sections mid-demo)
   assert.match(html, /href="#live-gate-demos"[^>]*>Try the live gates/);
 });
+
+test('/ai-malpractice-prevention surfaces the GT-aligned predictability bridge', async () => {
+  const res = await fetch(`${origin}/ai-malpractice-prevention`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  // The bridge paragraph that translates our defensive frame into GT's own three nouns
+  // (predictability, insights, value) — the same language GT's public innovation page uses.
+  assert.match(html, /Predictability you can put in front of a client/);
+  assert.match(html, /Predictability\. Insights\. Value\./);
+  assert.match(html, /agentic-AI deployment.*predictable enough to sell/i);
+});
