@@ -8,7 +8,9 @@
 
 Do not oversell enterprise maturity. The strongest honest posture is:
 
-> ThumbGate is early, but the pilot is intentionally scoped so GT does not have to trust our hosted infrastructure with client data. The enforcement path runs locally, the demo uses synthetic fixtures, and the pilot deliverable is evidence: which legal AI actions were blocked, warned, allowed, or routed to attorney review.
+> ThumbGate is early, but the pilot is intentionally scoped so GT does not have to trust our hosted infrastructure with client data. The enforcement path runs locally, the demo uses synthetic fixtures, and the pilot deliverable is evidence: which legal AI actions were blocked, allowed, or routed to attorney review.
+
+The live demos on `/ai-malpractice-prevention` show three dispositions (BLOCKED, CLEARED/ALLOWED, routed to attorney review). The pilot's audit log can also surface a "flagged for review" soft-warning tier for low-confidence rule matches — mention verbally only if Matt asks why we don't show four boxes.
 
 ## Seven answers to rehearse
 
