@@ -434,7 +434,7 @@ describe('zernio publisher', () => {
     assert.match(workflow, /workflow_dispatch:/);
     assert.match(workflow, /ZERNIO_API_KEY: \$\{\{ secrets\.ZERNIO_API_KEY \}\}/);
     assert.match(workflow, /thumbgate\\\.ai\|buy\\\.stripe\\\.com/);
-    assert.match(workflow, /default: 'linkedin,threads,bluesky'/);
+    assert.match(workflow, /default: 'threads,bluesky'/);
     assert.match(workflow, /--platforms="\$OFFER_PLATFORMS"/);
     assert.match(workflow, /--campaign="\$OFFER_CAMPAIGN"/);
     assert.match(workflow, /--medium="\$OFFER_MEDIUM"/);
