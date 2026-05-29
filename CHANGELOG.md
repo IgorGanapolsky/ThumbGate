@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.23.2
+## 1.25.0
 
 ### Patch Changes
 

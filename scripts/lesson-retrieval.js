@@ -271,7 +271,21 @@ function tokenize(text) {
   return (text || '').split(/[\s.,;:!?()\[\]{}"'`]+/).filter((t) => t.length > 3);
 }
 
-module.exports = {
+function calculateRetrievalEntropy(lessons) {
+  if (!Array.isArray(lessons) || lessons.length === 0) return 0;
+  let pW = 0, nW = 0, tW = 0;
+  for (const l of lessons) {
+    const w = l.relevanceScore || 0.1;
+    if (l.signal === "positive") pW += w; else nW += w;
+    tW += w;
+  }
+  if (tW === 0) return 0;
+  const pPos = pW / tW, pNeg = nW / tW;
+  const entropy = (pPos > 0 ? -pPos * Math.log2(pPos) : 0) + (pNeg > 0 ? -pNeg * Math.log2(pNeg) : 0);
+  return Number(entropy.toFixed(4));
+}
+
+module.exports = { calculateRetrievalEntropy, 
   retrieveRelevantLessons,
   retrieveRelevantLessonsAsync,
   reciprocalRankFusion,

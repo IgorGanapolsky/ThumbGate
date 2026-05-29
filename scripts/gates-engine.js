@@ -2132,8 +2132,9 @@ function buildRecentCorrectiveActionsContext(options = {}) {
 function buildRelevantLessonContext(toolName, toolInput) {
   if (!toolName) return null;
 
-  const { retrieveRelevantLessons } = loadOptionalModule('./lesson-retrieval', () => ({
+  const { retrieveRelevantLessons, calculateRetrievalEntropy } = loadOptionalModule('./lesson-retrieval', () => ({
     retrieveRelevantLessons: () => [],
+    calculateRetrievalEntropy: () => 0,
   }));
 
   // Extract a searchable action context from the tool input
@@ -2141,7 +2142,13 @@ function buildRelevantLessonContext(toolName, toolInput) {
   if (!actionContext) return null;
 
   try {
-    const lessons = retrieveRelevantLessons(toolName, actionContext, { maxResults: 3 });
+    const lessons = retrieveRelevantLessons(toolName, actionContext, { maxResults: 5 });
+
+    const entropy = calculateRetrievalEntropy(lessons);
+    if (entropy > 0.7) {
+      recordStat("retrieval_entropy_high", "block");
+      return { decision: "deny", gate: "knowledge-conflict-gate", message: "✗ THUMBGATE: Action blocked due to high Knowledge Entropy (conflicting past lessons).", severity: "high" };
+    }
     return formatNegativeLessonContext(lessons);
   } catch {
     return null;
@@ -2157,9 +2164,9 @@ function buildRelevantLessonContext(toolName, toolInput) {
 async function buildRelevantLessonContextAsync(toolName, toolInput) {
   if (!toolName) return null;
 
-  const { retrieveRelevantLessonsAsync, retrieveRelevantLessons } = loadOptionalModule(
+  const { retrieveRelevantLessonsAsync, retrieveRelevantLessons, calculateRetrievalEntropy } = loadOptionalModule(
     './lesson-retrieval',
-    () => ({ retrieveRelevantLessonsAsync: null, retrieveRelevantLessons: () => [] }),
+    () => ({ retrieveRelevantLessonsAsync: null, retrieveRelevantLessons: () => [], calculateRetrievalEntropy: () => 0 }),
   );
 
   const actionContext = extractActionContext(toolName, toolInput);
