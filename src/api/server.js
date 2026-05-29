@@ -3871,12 +3871,56 @@ function createApiServer() {
                   tools: getPublicMcpTools(),
                 },
               });
+            } else if (msg.method === 'tools/call') {
+              // Authenticated tool execution. Accept either an OAuth 2.1 access
+              // token (audience-bound to this MCP server, RFC 8707) or a raw
+              // ThumbGate API key, both via the Bearer header.
+              const bearer = extractBearerToken(req);
+              const resourceUrl = buildPublicUrl(hostedConfig, '/mcp');
+              const oauthSession = mcpOauth.resolveAccessToken(oauthStore, bearer);
+              // OAuth path: token must resolve AND be audience-bound to this server
+              // (RFC 8707). Raw-key path: only an exact match to a configured
+              // operator/admin key — never "any non-empty bearer".
+              const adminKey = String(process.env.THUMBGATE_API_KEY || '').trim();
+              const operatorKey = String(process.env.THUMBGATE_OPERATOR_KEY || '').trim();
+              const rawKeyValid = Boolean(bearer) && ((adminKey && bearer === adminKey) || (operatorKey && bearer === operatorKey));
+              const authed = oauthSession
+                ? mcpOauth.tokenAudienceValid(oauthSession, resourceUrl)
+                : rawKeyValid;
+              if (!authed) {
+                res.writeHead(401, {
+                  'Content-Type': 'application/json',
+                  // RFC 9728: point unauthenticated clients at the resource metadata.
+                  'WWW-Authenticate': `Bearer resource_metadata="${buildPublicUrl(hostedConfig, '/.well-known/oauth-protected-resource')}"`,
+                });
+                res.end(JSON.stringify({
+                  jsonrpc: '2.0', id: msg.id,
+                  error: { code: -32001, message: 'Authentication required. Use OAuth 2.1 (see /.well-known/oauth-protected-resource) or a ThumbGate API key.' },
+                }));
+                return;
+              }
+              (async () => {
+                try {
+                  const { callTool } = require('../../adapters/mcp/server-stdio');
+                  const name = msg.params && msg.params.name;
+                  const args = (msg.params && msg.params.arguments) || {};
+                  const result = await callTool(name, args);
+                  sendJson(res, 200, {
+                    jsonrpc: '2.0', id: msg.id,
+                    result: { content: [{ type: 'text', text: typeof result === 'string' ? result : JSON.stringify(result) }] },
+                  });
+                } catch (err) {
+                  sendJson(res, 200, {
+                    jsonrpc: '2.0', id: msg.id,
+                    result: { isError: true, content: [{ type: 'text', text: String(err && err.message || err) }] },
+                  });
+                }
+              })();
             } else {
-              // All other tool calls require auth — return method not found for unauthenticated
               sendJson(res, 200, {
                 jsonrpc: '2.0',
                 id: msg.id,
-                error: { code: -32601, message: 'Method requires authentication. Provide Bearer token.' },
+                error: { code: -32601, message: `Method not found: ${msg.method}` },
               });
             }
           } catch (_e) {
@@ -5188,6 +5232,93 @@ async function addContext(){
     if (isGetLikeRequest && (pathname === '/.well-known/oauth-authorization-server' || pathname === '/.well-known/openid-configuration')) {
       sendJson(res, 200, mcpOauth.buildAuthServerMetadata(buildPublicUrl(hostedConfig, '')), {}, {
         headOnly: isHeadRequest,
+      });
+      return;
+    }
+
+    // --- OAuth 2.1 (PKCE) endpoints for the remote MCP connector ---
+    // RFC 7591 Dynamic Client Registration.
+    if (req.method === 'POST' && pathname === '/oauth/register') {
+      let body = '';
+      req.on('data', (c) => { body += c; if (body.length > 16384) req.destroy(); });
+      req.on('end', () => {
+        let parsed = {};
+        try { parsed = body ? JSON.parse(body) : {}; } catch { /* ignore */ }
+        const reg = mcpOauth.registerClient(oauthStore, parsed);
+        if (reg.error) { sendJson(res, 400, reg); return; }
+        sendJson(res, 201, reg);
+      });
+      return;
+    }
+    // Authorization endpoint: GET renders consent, POST issues the code.
+    if (pathname === '/oauth/authorize') {
+      if (isGetLikeRequest) {
+        const q = parsed.searchParams;
+        const fields = ['client_id', 'redirect_uri', 'code_challenge', 'code_challenge_method', 'scope', 'state', 'resource'];
+        const hidden = fields.map((f) => `<input type="hidden" name="${f}" value="${escapeHtmlAttribute(q.get(f) || '')}">`).join('\n');
+        const html = `<!doctype html><html><head><meta charset="utf-8"><title>Authorize ThumbGate</title>
+<style>body{font:15px system-ui;margin:0;background:#0b0b0c;color:#eee;display:flex;min-height:100vh;align-items:center;justify-content:center}
+.card{background:#161618;border:1px solid #2a2a2e;border-radius:12px;padding:28px;max-width:420px}
+input[type=password]{width:100%;padding:10px;margin:8px 0 16px;border-radius:8px;border:1px solid #2a2a2e;background:#0b0b0c;color:#eee}
+button{width:100%;padding:11px;border-radius:8px;border:0;background:#10b981;color:#04120c;font-weight:600;cursor:pointer}
+a{color:#8b9}</style></head><body><form class="card" method="post" action="/oauth/authorize">
+<h2>Authorize Claude → ThumbGate</h2>
+<p>Paste your ThumbGate API key to let this connector act as you. Get one with <code>npx thumbgate init</code> or from your <a href="/dashboard">dashboard</a>.</p>
+${hidden}
+<input type="password" name="api_key" placeholder="ThumbGate API key" autocomplete="off" required>
+<button type="submit" name="approve" value="yes">Approve</button>
+</form></body></html>`;
+        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
+        return;
+      }
+      if (req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => { body += c; if (body.length > 16384) req.destroy(); });
+        req.on('end', () => {
+          const form = new URLSearchParams(body);
+          const redirectUri = form.get('redirect_uri') || '';
+          const state = form.get('state') || '';
+          const issued = mcpOauth.createAuthorizationCode(oauthStore, {
+            clientId: form.get('client_id') || '',
+            redirectUri,
+            codeChallenge: form.get('code_challenge') || '',
+            codeChallengeMethod: form.get('code_challenge_method') || '',
+            scope: form.get('scope') || undefined,
+            resource: form.get('resource') || buildPublicUrl(hostedConfig, '/mcp'),
+            boundKey: form.get('api_key') || '',
+            state,
+          });
+          if (issued.error) {
+            sendJson(res, 400, { error: issued.error, error_description: issued.error_description });
+            return;
+          }
+          const sep = redirectUri.includes('?') ? '&' : '?';
+          const loc = `${redirectUri}${sep}code=${encodeURIComponent(issued.code)}${state ? `&state=${encodeURIComponent(state)}` : ''}`;
+          res.writeHead(302, { Location: loc });
+          res.end();
+        });
+        return;
+      }
+    }
+    // Token endpoint (authorization_code + PKCE).
+    if (req.method === 'POST' && pathname === '/oauth/token') {
+      let body = '';
+      req.on('data', (c) => { body += c; if (body.length > 16384) req.destroy(); });
+      req.on('end', () => {
+        const form = new URLSearchParams(body);
+        if (form.get('grant_type') !== 'authorization_code') {
+          sendJson(res, 400, { error: 'unsupported_grant_type' });
+          return;
+        }
+        const tok = mcpOauth.exchangeCode(oauthStore, {
+          code: form.get('code') || '',
+          codeVerifier: form.get('code_verifier') || '',
+          clientId: form.get('client_id') || '',
+          redirectUri: form.get('redirect_uri') || '',
+          resource: form.get('resource') || undefined,
+        });
+        if (tok.error) { sendJson(res, 400, tok); return; }
+        sendJson(res, 200, tok, { 'Cache-Control': 'no-store' });
       });
       return;
     }

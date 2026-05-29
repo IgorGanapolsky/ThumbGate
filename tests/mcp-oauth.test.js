@@ -125,6 +125,30 @@ test('redirect_uri / client mismatch is rejected at token exchange', () => {
   assert.equal(r.error, 'invalid_grant');
 });
 
+test('RFC 8707: token is audience-bound to the resource, mismatch rejected', () => {
+  const store = oauth.createStore();
+  const client = registerTestClient(store);
+  const { verifier, challenge } = pkcePair();
+  const redirectUri = client.redirect_uris[0];
+  const resource = 'https://thumbgate.ai/mcp';
+  const auth = oauth.createAuthorizationCode(store, {
+    clientId: client.client_id, redirectUri, codeChallenge: challenge, codeChallengeMethod: 'S256', boundKey: 'k', resource,
+  });
+  // resource mismatch at token time -> invalid_target
+  const bad = oauth.exchangeCode(store, { code: auth.code, codeVerifier: verifier, clientId: client.client_id, redirectUri, resource: 'https://evil.example/mcp' });
+  assert.equal(bad.error, 'invalid_target');
+
+  // matching resource -> token carries the audience
+  const auth2 = oauth.createAuthorizationCode(store, {
+    clientId: client.client_id, redirectUri, codeChallenge: challenge, codeChallengeMethod: 'S256', boundKey: 'k', resource,
+  });
+  const tok = oauth.exchangeCode(store, { code: auth2.code, codeVerifier: verifier, clientId: client.client_id, redirectUri, resource });
+  const session = oauth.resolveAccessToken(store, tok.access_token);
+  assert.equal(session.aud, resource);
+  assert.equal(oauth.tokenAudienceValid(session, resource), true);
+  assert.equal(oauth.tokenAudienceValid(session, 'https://other.example/mcp'), false);
+});
+
 test('expired access token resolves to null', () => {
   const store = oauth.createStore();
   store.tokens.set('tgat_x', { boundKey: 'k', scope: 'mcp:read', clientId: 'c', expiresAt: Date.now() - 1 });

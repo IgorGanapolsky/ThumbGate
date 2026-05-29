@@ -56,7 +56,11 @@ function createStore() {
 // ---------------------------------------------------------------------------
 
 function trimSlash(u) {
-  return String(u || '').replace(/\/+$/, '');
+  // Non-regex trailing-slash strip (avoids a SonarCloud S5852 false-positive on a
+  // provably-linear pattern).
+  let s = String(u || '');
+  while (s.endsWith('/')) s = s.slice(0, -1);
+  return s;
 }
 
 function buildProtectedResourceMetadata(baseUrl) {
@@ -132,7 +136,7 @@ function getClient(store, clientId) {
  * token will act as (resolved by the authorize step once the user consents).
  */
 function createAuthorizationCode(store, {
-  clientId, redirectUri, codeChallenge, codeChallengeMethod, scope, boundKey, state,
+  clientId, redirectUri, codeChallenge, codeChallengeMethod, scope, boundKey, state, resource,
 } = {}) {
   const client = getClient(store, clientId);
   if (!client) return { error: 'invalid_client' };
@@ -147,6 +151,7 @@ function createAuthorizationCode(store, {
     codeChallenge,
     scope: scope || DEFAULT_SCOPE,
     boundKey: boundKey || '',
+    resource: resource || '', // RFC 8707 resource indicator (the MCP server URL)
     expiresAt: now() + AUTH_CODE_TTL_MS,
     used: false,
   });
@@ -171,7 +176,7 @@ function verifyPkce(codeChallenge, codeVerifier) {
 // Token exchange + validation
 // ---------------------------------------------------------------------------
 
-function exchangeCode(store, { code, codeVerifier, clientId, redirectUri } = {}) {
+function exchangeCode(store, { code, codeVerifier, clientId, redirectUri, resource } = {}) {
   const entry = store.codes.get(code);
   if (!entry) return { error: 'invalid_grant', error_description: 'unknown code' };
   // Single-use + expiry: consume regardless of outcome.
@@ -181,12 +186,17 @@ function exchangeCode(store, { code, codeVerifier, clientId, redirectUri } = {})
   if (entry.clientId !== clientId) return { error: 'invalid_grant', error_description: 'client mismatch' };
   if (entry.redirectUri !== redirectUri) return { error: 'invalid_grant', error_description: 'redirect_uri mismatch' };
   if (!verifyPkce(entry.codeChallenge, codeVerifier)) return { error: 'invalid_grant', error_description: 'PKCE verification failed' };
+  // RFC 8707: the resource at token time must match the one bound at authorize time.
+  if (entry.resource && resource && entry.resource !== resource) {
+    return { error: 'invalid_target', error_description: 'resource indicator mismatch' };
+  }
 
   const accessToken = `tgat_${randomToken(32)}`;
   store.tokens.set(accessToken, {
     boundKey: entry.boundKey,
     scope: entry.scope,
     clientId,
+    aud: entry.resource || resource || '',
     expiresAt: now() + ACCESS_TOKEN_TTL_MS,
   });
   return {
@@ -206,7 +216,18 @@ function resolveAccessToken(store, token) {
     store.tokens.delete(token);
     return null;
   }
-  return { boundKey: entry.boundKey, scope: entry.scope, clientId: entry.clientId };
+  return { boundKey: entry.boundKey, scope: entry.scope, clientId: entry.clientId, aud: entry.aud };
+}
+
+/**
+ * RFC 8707 audience validation: a token is valid for `expectedResource` only if it
+ * was issued for it (or carries no audience, for back-compat). MCP servers MUST
+ * reject tokens minted for a different resource.
+ */
+function tokenAudienceValid(session, expectedResource) {
+  if (!session) return false;
+  if (!session.aud) return true; // no audience recorded — accept (back-compat)
+  return session.aud === expectedResource;
 }
 
 /** Best-effort GC of expired codes/tokens (call opportunistically). */
@@ -226,6 +247,7 @@ module.exports = {
   verifyPkce,
   exchangeCode,
   resolveAccessToken,
+  tokenAudienceValid,
   pruneExpired,
   base64UrlSha256,
   AUTH_CODE_TTL_MS,

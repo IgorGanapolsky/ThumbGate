@@ -2,22 +2,24 @@
 "thumbgate": minor
 ---
 
-OAuth 2.1 (PKCE) authorization-server foundation for the remote MCP connector.
+OAuth 2.1 (PKCE) for the remote MCP connector — full, tested flow + authenticated tool execution.
 
-The Claude Connectors Directory requires OAuth 2.0 for authenticated services;
-ThumbGate's /mcp authenticated tools currently use an API-key Bearer and had no
-OAuth discovery. This adds:
+The Claude Connectors Directory requires OAuth 2.0 for authenticated services, and
+the hosted /mcp endpoint was previously discovery-only (it listed tools but executed
+none, returning -32601). This adds the complete authorization flow AND wires
+authenticated tool execution over HTTP.
 
-- `scripts/mcp-oauth.js` — pure, dependency-free OAuth machinery (RFC 9728/8414
-  metadata, RFC 7591 dynamic client registration, RFC 7636 PKCE-S256 auth-code
-  grant, token issue/validate with TTLs, bound to a ThumbGate key server-side).
-  Fully unit-tested (PKCE round-trip, single-use codes, expiry, redirect/client
-  mismatch, S256-only enforcement).
-- `src/api/server.js` — serves `/.well-known/oauth-protected-resource` and
-  `/.well-known/oauth-authorization-server` (+ openid-configuration alias),
-  smoke-verified live (200, correct JSON).
+- `scripts/mcp-oauth.js` — RFC 9728/8414 metadata, RFC 7591 dynamic client
+  registration, RFC 7636 PKCE-S256 auth-code grant, RFC 8707 resource-indicator +
+  token audience validation, token issue/validate with TTLs. 11 unit tests.
+- `src/api/server.js` — serves the two discovery docs and the `/oauth/register`,
+  `/oauth/authorize` (consent + code), `/oauth/token` endpoints; executes authenticated
+  `tools/call` (via the shared stdio `callTool`); 401s unauthenticated calls with a
+  RFC 9728 `WWW-Authenticate` pointing at the protected-resource metadata. Auth accepts
+  an audience-bound OAuth token OR an exact operator/admin key (never "any bearer").
+- End-to-end test (`tests/mcp-oauth-flow.test.js`): register → authorize → token →
+  authenticated tools/call returning a real result; garbage token → 401. Passing.
 
-Remaining (tracked, NOT in this PR): wire POST /oauth/register, /oauth/authorize
-(consent + key binding) and /oauth/token over the machinery, accept OAuth access
-tokens at /mcp alongside API keys, and run the end-to-end Claude handshake. Those
-need a security review + live test before the directory submission.
+KNOWN LIMITATION (tracked, not in this PR): `callTool` runs on the server's local
+feedback DB, so the hosted connector is single-tenant. Production needs per-user data
+scoping keyed to the OAuth-bound key.
