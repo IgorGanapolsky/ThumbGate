@@ -305,6 +305,72 @@ function detectPredictiveAnomalies({ telemetryAnalytics = {}, billingSummary = {
   return anomalies;
 }
 
+/**
+ * Principled revenue range from a Bayesian beta-binomial credible interval on the
+ * conversion rate (reuses scripts/conversion-rate-stats.js). Unlike the heuristic
+ * point forecast, this is honest about uncertainty: with little data the interval
+ * (and the revenue range) is wide; as N grows it tightens toward the empirical rate.
+ *
+ * Returns the low / expected / high booked-revenue in cents plus the rate interval
+ * and a data-grounded confidence = 1 - intervalWidth (clamped). Defensive: any
+ * stats error degrades to a point estimate so this never throws into the forecast.
+ *
+ * @returns {{trials, rateLo, rateExpected, rateHi, lowCents, expectedCents, highCents, credibleLevel, confidence}}
+ */
+function revenueCredibleRange({ successes, trials, revenuePerPaidCents, credibleLevel = 0.9 } = {}) {
+  const successCount = Math.max(0, Math.round(toNumber(successes)));
+  const trialCount = Math.max(successCount, Math.round(toNumber(trials)));
+  const revenuePerPaid = Math.max(1, Math.round(toNumber(revenuePerPaidCents)));
+  const toCents = (rate) => Math.round(trialCount * clamp01(rate) * revenuePerPaid);
+
+  if (trialCount === 0) {
+    return {
+      trials: 0,
+      rateLo: 0,
+      rateExpected: 0,
+      rateHi: 0,
+      lowCents: 0,
+      expectedCents: 0,
+      highCents: 0,
+      credibleLevel,
+      confidence: 0,
+    };
+  }
+
+  try {
+    const { estimateConversionRate } = require('./conversion-rate-stats');
+    const est = estimateConversionRate({ successes: successCount, trials: trialCount, credibleLevel });
+    const rateLo = clamp01(est.lower);
+    const rateHi = clamp01(est.upper);
+    const rateExpected = clamp01(est.mean);
+    return {
+      trials: trialCount,
+      rateLo: Number(rateLo.toFixed(6)),
+      rateExpected: Number(rateExpected.toFixed(6)),
+      rateHi: Number(rateHi.toFixed(6)),
+      lowCents: toCents(rateLo),
+      expectedCents: toCents(rateExpected),
+      highCents: toCents(rateHi),
+      credibleLevel,
+      // Narrower interval = more data = higher confidence. Width is in rate space [0,1].
+      confidence: Number(clamp01(1 - (rateHi - rateLo)).toFixed(4)),
+    };
+  } catch (_) {
+    const point = safeRate(successCount, trialCount);
+    return {
+      trials: trialCount,
+      rateLo: point,
+      rateExpected: point,
+      rateHi: point,
+      lowCents: toCents(point),
+      expectedCents: toCents(point),
+      highCents: toCents(point),
+      credibleLevel,
+      confidence: 0,
+    };
+  }
+}
+
 function buildPredictiveInsights({ telemetryAnalytics = {}, billingSummary = {}, stagingModel = {}, gateStats = {}, team = {} } = {}) {
   const benchmarks = buildBenchmarks({ telemetryAnalytics, billingSummary, stagingModel });
   const creators = scoreDimensionForecasts(stagingModel.dims && stagingModel.dims.creators ? stagingModel.dims.creators : [], benchmarks);
@@ -331,12 +397,38 @@ function buildPredictiveInsights({ telemetryAnalytics = {}, billingSummary = {},
     modelVersion: 'predictive-insights-v1',
     benchmarks,
     upgradePropensity,
-    revenueForecast: {
-      predictedBookedRevenueCents: aggregatePredictedBookedRevenueCents,
-      incrementalOpportunityCents: Math.max(0, aggregatePredictedBookedRevenueCents - benchmarks.bookedRevenueCents),
-      confidence: Number(clamp01((upgradePropensity.pro.confidence + upgradePropensity.team.confidence) / 2).toFixed(4)),
-      band: toBand(clamp01((upgradePropensity.pro.score * 0.55) + (upgradePropensity.team.score * 0.45))),
-    },
+    revenueForecast: (() => {
+      // Strongest-signal conversion path for the credible range: prefer
+      // checkout→paid (highest intent + weight), fall back to visitor→paid.
+      const useCheckout = benchmarks.checkoutStarts > 0;
+      const range = revenueCredibleRange({
+        successes: benchmarks.paidCustomers,
+        trials: useCheckout ? benchmarks.checkoutStarts : benchmarks.uniqueVisitors,
+        revenuePerPaidCents: benchmarks.revenuePerPaidCents,
+        credibleLevel: 0.9,
+      });
+      return {
+        predictedBookedRevenueCents: aggregatePredictedBookedRevenueCents,
+        incrementalOpportunityCents: Math.max(0, aggregatePredictedBookedRevenueCents - benchmarks.bookedRevenueCents),
+        confidence: Number(clamp01((upgradePropensity.pro.confidence + upgradePropensity.team.confidence) / 2).toFixed(4)),
+        band: toBand(clamp01((upgradePropensity.pro.score * 0.55) + (upgradePropensity.team.score * 0.45))),
+        // Bayesian credible range — honest uncertainty, defensible to a buyer.
+        range: {
+          lowCents: range.lowCents,
+          expectedCents: range.expectedCents,
+          highCents: range.highCents,
+        },
+        rateCredibleInterval: {
+          lower: range.rateLo,
+          expected: range.rateExpected,
+          upper: range.rateHi,
+          level: range.credibleLevel,
+          basis: useCheckout ? 'checkout_to_paid' : 'visitor_to_paid',
+          sampleSize: range.trials,
+        },
+        statisticalConfidence: range.confidence,
+      };
+    })(),
     topCreators: creators.slice(0, 5),
     topSources: sources.slice(0, 5),
     anomalies,
@@ -353,4 +445,5 @@ module.exports = {
   detectPredictiveAnomalies,
   scoreDimensionForecasts,
   scoreUpgradePropensity,
+  revenueCredibleRange,
 };
