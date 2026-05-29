@@ -49,11 +49,9 @@ auto-wires the hooks. (The same server is published to the [MCP Registry](https:
 
 ---
 
-> *"A better dashboard doesn't make the agents more reliable. The hard part isn't visibility. It's trust."*
+> **Visibility isn't trust.** A dashboard shows you what an agent did; it doesn't stop the agent from doing it again. ThumbGate is the enforcement layer: PreToolUse gates, thumbs-down → rule, and an audit trail on every interception — so a mistake gets blocked, not just logged.
 >
-> — **Rob May**, CEO & co-founder, Neurometric AI, quoted in [The New Stack](https://thenewstack.io/claude-code-agent-view/) on Anthropic's Claude Code Agent View (May 2026).
->
-> ThumbGate is the open-source layer that makes the trust part real: PreToolUse gates, thumbs-down to rule, audit trail on every interception.
+> Published in the [MCP Registry](https://registry.modelcontextprotocol.io) (`io.github.IgorGanapolsky/thumbgate`) and usable as a one-line Claude connector.
 
 ---
 
