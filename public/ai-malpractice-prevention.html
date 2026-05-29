@@ -323,6 +323,9 @@
         <a class="ghost" href="#live-gate-demos">Try the live gates &rarr;</a>
         <a class="ghost" href="#demo">View the 25-minute demo plan</a>
       </div>
+      <p style="font-size: 0.85rem; color: var(--muted); margin: -0.5rem 0 1.2rem; max-width: 760px;">
+        Button not opening your mail client? <button type="button" onclick="__thumbgateCopyPilotEmail(this)" style="padding:0.35rem 0.7rem; font-size:0.85rem; background:transparent; color:var(--cyan); border:1px solid var(--cyan); border-radius:5px; cursor:pointer; vertical-align: baseline;">Copy the email instead</button> or write to <span style="color: var(--text); user-select: all; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;">iganapolsky@gmail.com</span> directly.
+      </p>
       <div class="proof-row" aria-label="Key proof points">
         <div class="proof"><strong>Preloaded controls</strong><span>Firm policy, approved disclaimers, adverse-party lists, routing rules, and model endpoint allowlists.</span></div>
         <div class="proof"><strong>Pre-action checks</strong><span>Controls run before the agent replies, fetches records, schedules intake, or calls an external model.</span></div>
@@ -542,6 +545,9 @@
           <a class="cta" href="mailto:iganapolsky@gmail.com?subject=ThumbGate%2025-minute%20legal%20AI%20pilot%20walkthrough&amp;body=Hi%20Igor%2C%0A%0AWe%27d%20like%20to%20review%20the%2025-minute%20ThumbGate%20legal%20AI%20intake%20pilot.%20Please%20send%20the%20meeting%20invite%20and%20demo%20materials.%0A%0ABest%2C">Book a 25-minute pilot walkthrough</a>
           <a class="ghost" href="/dashboard">View the live dashboard demo</a>
         </div>
+        <p style="font-size:0.85rem; color:var(--muted); margin:0.75rem 0 0;">
+          Button not opening your mail client (common on Gmail Web / iPhone)? <button type="button" onclick="__thumbgateCopyPilotEmail(this)" style="padding:0.35rem 0.7rem; font-size:0.85rem; background:transparent; color:var(--cyan); border:1px solid var(--cyan); border-radius:5px; cursor:pointer; vertical-align: baseline;">Copy the email instead</button> or write to <span style="color: var(--text); user-select: all; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;">iganapolsky@gmail.com</span> directly.
+        </p>
       </div>
     </section>
 
@@ -603,6 +609,23 @@
             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
           });
         }
+        window.__thumbgateCopyPilotEmail = function(btn) {
+          var body = "Hi Igor,\n\nWe'd like to review the 25-minute ThumbGate legal AI intake pilot. Please send the meeting invite and demo materials.\n\nBest,";
+          var full = "To: iganapolsky@gmail.com\nSubject: ThumbGate 25-minute legal AI pilot walkthrough\n\n" + body;
+          var done = function(label) {
+            var orig = btn.dataset.origLabel || btn.textContent;
+            btn.dataset.origLabel = orig;
+            btn.textContent = label;
+            setTimeout(function() { btn.textContent = orig; }, 2400);
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(full)
+              .then(function() { done('Copied — paste into Gmail or any mail client'); })
+              .catch(function() { done('Copy failed — email iganapolsky@gmail.com directly'); });
+          } else {
+            done('Email iganapolsky@gmail.com directly');
+          }
+        };
         // Produces the same JSON shape a production ThumbGate gate would stream to the firm's SIEM.
         // Includes ISO 27001 control mapping so procurement can map evidence to controls without translation.
         window.__thumbgateBuildAudit = function(args) {
