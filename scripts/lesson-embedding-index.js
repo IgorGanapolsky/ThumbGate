@@ -53,7 +53,9 @@ function lessonText(lesson) {
 }
 
 function hashText(text) {
-  return crypto.createHash('sha1').update(String(text || '')).digest('hex');
+  // Content-change key for the embedding cache (not a security context). sha256
+  // matches the repo's standard non-security hashing and avoids the weak-hash flag.
+  return crypto.createHash('sha256').update(String(text || '')).digest('hex');
 }
 
 function cosineSimilarity(a, b) {

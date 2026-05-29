@@ -24,7 +24,7 @@ full lexical fallback (zero regression when embeddings are unavailable).
   lexical. No behavior change for sync callers.
 - **Why a persistent embedding cache:** Embedding the whole lesson corpus on every tool
   call is too expensive. `lesson-embedding-index.js` caches doc vectors keyed by
-  `id + sha1(text)` in `<feedbackDir>/lesson-embeddings.json`; only the query is embedded
+  `id + sha256(text)` in `<feedbackDir>/lesson-embeddings.json`; only the query is embedded
   per call, and only changed/new lessons are re-embedded. Amortizes to ~1 embed/action.
 - **Embedder reuse:** delegates to `vector-store.embed()` (Gemini → local transformers →
   stub), now exported. No new embedding dependency.

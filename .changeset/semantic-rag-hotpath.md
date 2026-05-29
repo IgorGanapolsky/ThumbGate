@@ -16,7 +16,7 @@ This surfaces past mistakes that share no keywords with the current action
 so agents are warned about semantically-related failures before executing.
 
 - New `scripts/lesson-embedding-index.js`: cached dense index (vectors keyed by
-  `id + sha1(text)`, persisted to `lesson-embeddings.json`; only the query is embedded
+  `id + sha256(text)`, persisted to `lesson-embeddings.json`; only the query is embedded
   per call, only new/changed lessons re-embed). Reuses `vector-store.embed`
   (Gemini → local transformers → stub) — no new dependency.
 - New `retrieveRelevantLessonsAsync` + `reciprocalRankFusion` in `scripts/lesson-retrieval.js`.
