@@ -199,6 +199,10 @@ const {
 } = require('../../scripts/rate-limiter');
 const { sendProblem, PROBLEM_TYPES } = require('../../scripts/problem-detail');
 const { TOOLS: MCP_TOOLS } = require('../../scripts/tool-registry');
+const mcpOauth = require('../../scripts/mcp-oauth');
+// OAuth 2.1 (PKCE) authorization-server state for the remote MCP connector
+// (Claude Connectors Directory requires OAuth for authenticated services).
+const oauthStore = mcpOauth.createStore();
 const resendMailer = require('../../scripts/mailer/resend-mailer');
 const {
   buildContextFootprintReport,
@@ -5168,6 +5172,21 @@ async function addContext(){
 
     if (isGetLikeRequest && pathname === '/.well-known/mcp.json') {
       sendJson(res, 200, getMcpDiscoveryManifest(hostedConfig), {}, {
+        headOnly: isHeadRequest,
+      });
+      return;
+    }
+
+    // OAuth 2.1 discovery metadata for the remote MCP connector (RFC 9728 / RFC 8414).
+    // Lets Claude discover how to authenticate before calling authenticated tools.
+    if (isGetLikeRequest && pathname === '/.well-known/oauth-protected-resource') {
+      sendJson(res, 200, mcpOauth.buildProtectedResourceMetadata(buildPublicUrl(hostedConfig, '')), {}, {
+        headOnly: isHeadRequest,
+      });
+      return;
+    }
+    if (isGetLikeRequest && (pathname === '/.well-known/oauth-authorization-server' || pathname === '/.well-known/openid-configuration')) {
+      sendJson(res, 200, mcpOauth.buildAuthServerMetadata(buildPublicUrl(hostedConfig, '')), {}, {
         headOnly: isHeadRequest,
       });
       return;
