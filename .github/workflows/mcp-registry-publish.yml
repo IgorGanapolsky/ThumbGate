@@ -16,9 +16,30 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Download mcp-publisher
+        # v1.7.9: v1.5.0 requested the old OIDC audience ("mcp-registry"); the
+        # registry now requires "https://registry.modelcontextprotocol.io" and
+        # rejects the old one (401 invalid audience). Newer publisher fixes it.
         run: |
-          curl -sL https://github.com/modelcontextprotocol/registry/releases/download/v1.5.0/mcp-publisher_linux_amd64.tar.gz | tar xz
+          curl -sL https://github.com/modelcontextprotocol/registry/releases/download/v1.7.9/mcp-publisher_linux_amd64.tar.gz | tar xz
           chmod +x mcp-publisher
+          ./mcp-publisher --version || true
+
+      - name: Wait for the npm package version to be live on npm
+        # The registry validates that the npm package+version in server.json
+        # already exists on npmjs.org. On release the npm publish can lag, and a
+        # version bump can land before npm has it — both 404 the registry publish.
+        # Poll until it's available (up to 10 min) so this never races.
+        run: |
+          NAME="$(node -p "require('./server.json').packages[0].identifier")"
+          VER="$(node -p "require('./server.json').packages[0].version")"
+          echo "Waiting for ${NAME}@${VER} on npm (registry validates it exists)..."
+          for i in $(seq 1 30); do
+            if curl -sfo /dev/null "https://registry.npmjs.org/${NAME}/${VER}"; then
+              echo "✓ ${NAME}@${VER} is live on npm"; exit 0
+            fi
+            echo "  not yet (${i}/30); sleeping 20s"; sleep 20
+          done
+          echo "✗ ${NAME}@${VER} never appeared on npm after 10 min — aborting"; exit 1
 
       - name: Validate server.json
         run: ./mcp-publisher validate
