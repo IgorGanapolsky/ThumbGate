@@ -2141,7 +2141,27 @@ function buildRelevantLessonContext(toolName, toolInput) {
   if (!actionContext) return null;
 
   try {
-    const lessons = retrieveRelevantLessons(toolName, actionContext, { maxResults: 3 });
+    const { retrieveRelevantLessons, calculateRetrievalEntropy } = loadOptionalModule('./lesson-retrieval', () => ({ retrieveRelevantLessons: () => [], calculateRetrievalEntropy: () => 0 }));
+    const lessons = retrieveRelevantLessons(toolName, actionContext, { maxResults: 5 });
+    
+    // Knowledge Entropy: measure conflict in retrieved signals
+    const entropy = calculateRetrievalEntropy(lessons);
+    if (entropy > 0.7) {
+      // High conflict (e.g. 1 up, 1 down) -> Tighten gate margin
+      recordStat('retrieval_entropy_high', 'block');
+      return {
+        decision: 'deny',
+        gate: 'knowledge-conflict-gate',
+        message: '✗ THUMBGATE: Action blocked due to high Knowledge Entropy (conflicting past lessons).',
+        reasoning: [
+          `Retrieved ${lessons.length} semantically relevant lessons.`,
+          `Entropy score: ${entropy} (High conflict detected).`,
+          'When past successes and failures conflict for the same pattern, ThumbGate requires explicit verification.'
+        ],
+        severity: 'high'
+      };
+    }
+
     return formatNegativeLessonContext(lessons);
   } catch {
     return null;
