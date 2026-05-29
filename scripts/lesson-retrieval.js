@@ -271,10 +271,40 @@ function tokenize(text) {
   return (text || '').split(/[\s.,;:!?()\[\]{}"'`]+/).filter((t) => t.length > 3);
 }
 
+function calculateRetrievalEntropy(lessons) {
+  if (!Array.isArray(lessons) || lessons.length === 0) return 0;
+  
+  // Treat up/down signals as 'logits'
+  let positiveWeight = 0;
+  let negativeWeight = 0;
+  let totalWeight = 0;
+
+  for (const l of lessons) {
+    const weight = l.relevanceScore || 0.1;
+    if (l.signal === 'positive') positiveWeight += weight;
+    else negativeWeight += weight;
+    totalWeight += weight;
+  }
+
+  if (totalWeight === 0) return 0;
+
+  const pPos = positiveWeight / totalWeight;
+  const pNeg = negativeWeight / totalWeight;
+
+  // Shannons Entropy: -Σ p * log2(p)
+  // Max entropy (1.0) means perfectly conflicting knowledge.
+  // Min entropy (0.0) means unanimous consensus.
+  const entropy = (pPos > 0 ? -pPos * Math.log2(pPos) : 0) + 
+                  (pNeg > 0 ? -pNeg * Math.log2(pNeg) : 0);
+  
+  return Number(entropy.toFixed(4));
+}
+
 module.exports = {
   retrieveRelevantLessons,
   retrieveRelevantLessonsAsync,
   reciprocalRankFusion,
+  calculateRetrievalEntropy,
   scoreRelevance,
   buildActionSignature,
   textBigrams,

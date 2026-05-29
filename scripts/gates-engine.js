@@ -2141,7 +2141,25 @@ function buildRelevantLessonContext(toolName, toolInput) {
   if (!actionContext) return null;
 
   try {
-    const lessons = retrieveRelevantLessons(toolName, actionContext, { maxResults: 3 });
+    const { retrieveRelevantLessons, calculateRetrievalEntropy } = loadOptionalModule('./lesson-retrieval', () => ({ retrieveRelevantLessons: () => [], calculateRetrievalEntropy: () => 0 }));
+    const lessons = retrieveRelevantLessons(toolName, actionContext, { maxResults: 5 });
+    
+    const entropy = calculateRetrievalEntropy(lessons);
+    if (entropy > 0.7) {
+      recordStat('retrieval_entropy_high', 'block');
+      return {
+        decision: 'deny',
+        gate: 'knowledge-conflict-gate',
+        message: '✗ THUMBGATE: Action blocked due to high Knowledge Entropy (conflicting past lessons).',
+        reasoning: [
+          `Retrieved ${lessons.length} semantically relevant lessons.`,
+          `Entropy score: ${entropy} (High conflict detected).`,
+          'When past successes and failures conflict for the same pattern, ThumbGate requires explicit verification.'
+        ],
+        severity: 'high'
+      };
+    }
+
     return formatNegativeLessonContext(lessons);
   } catch {
     return null;
@@ -2157,9 +2175,9 @@ function buildRelevantLessonContext(toolName, toolInput) {
 async function buildRelevantLessonContextAsync(toolName, toolInput) {
   if (!toolName) return null;
 
-  const { retrieveRelevantLessonsAsync, retrieveRelevantLessons } = loadOptionalModule(
+  const { retrieveRelevantLessonsAsync, retrieveRelevantLessons, calculateRetrievalEntropy } = loadOptionalModule(
     './lesson-retrieval',
-    () => ({ retrieveRelevantLessonsAsync: null, retrieveRelevantLessons: () => [] }),
+    () => ({ retrieveRelevantLessonsAsync: null, retrieveRelevantLessons: () => [], calculateRetrievalEntropy: () => 0 }),
   );
 
   const actionContext = extractActionContext(toolName, toolInput);
@@ -2167,8 +2185,25 @@ async function buildRelevantLessonContextAsync(toolName, toolInput) {
 
   try {
     const lessons = retrieveRelevantLessonsAsync
-      ? await retrieveRelevantLessonsAsync(toolName, actionContext, { maxResults: 3 })
-      : retrieveRelevantLessons(toolName, actionContext, { maxResults: 3 });
+      ? await retrieveRelevantLessonsAsync(toolName, actionContext, { maxResults: 5 })
+      : retrieveRelevantLessons(toolName, actionContext, { maxResults: 5 });
+
+    const entropy = calculateRetrievalEntropy(lessons);
+    if (entropy > 0.7) {
+      recordStat('retrieval_entropy_high', 'block');
+      return {
+        decision: 'deny',
+        gate: 'knowledge-conflict-gate',
+        message: '✗ THUMBGATE: Action blocked due to high Knowledge Entropy (conflicting past lessons).',
+        reasoning: [
+          `Retrieved ${lessons.length} semantically relevant lessons.`,
+          `Entropy score: ${entropy} (High conflict detected).`,
+          'When past successes and failures conflict for the same pattern, ThumbGate requires explicit verification.'
+        ],
+        severity: 'high'
+      };
+    }
+
     return formatNegativeLessonContext(lessons);
   } catch {
     return null;
@@ -2243,10 +2278,21 @@ async function runAsync(input) {
   }
 
   const behavioralContext = buildBehavioralContext();
-  const lessonContext = await buildRelevantLessonContextAsync(toolName, toolInput);
-  const recentContext = buildRecentCorrectiveActionsContext();
-  const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
-  return formatOutput(result, combinedContext);
+  const lessonContextRaw = await buildRelevantLessonContextAsync(toolName, toolInput);
+  
+  let finalResult = result;
+  let combinedContextStr = null;
+
+  if (lessonContextRaw && typeof lessonContextRaw === 'object' && lessonContextRaw.decision) {
+    if (!finalResult || finalResult.decision === 'allow') {
+      finalResult = lessonContextRaw;
+    }
+  } else {
+    const recentContext = buildRecentCorrectiveActionsContext();
+    combinedContextStr = mergeContextStrings(lessonContextRaw, recentContext, behavioralContext);
+  }
+
+  return formatOutput(finalResult, combinedContextStr);
 }
 
 function run(input) {
@@ -2276,10 +2322,21 @@ function run(input) {
   }
 
   const behavioralContext = buildBehavioralContext();
-  const lessonContext = buildRelevantLessonContext(toolName, toolInput);
-  const recentContext = buildRecentCorrectiveActionsContext();
-  const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
-  return formatOutput(result, combinedContext);
+  const lessonContextRaw = buildRelevantLessonContext(toolName, toolInput);
+  
+  let finalResult = result;
+  let combinedContextStr = null;
+
+  if (lessonContextRaw && typeof lessonContextRaw === 'object' && lessonContextRaw.decision) {
+    if (!finalResult || finalResult.decision === 'allow') {
+      finalResult = lessonContextRaw;
+    }
+  } else {
+    const recentContext = buildRecentCorrectiveActionsContext();
+    combinedContextStr = mergeContextStrings(lessonContextRaw, recentContext, behavioralContext);
+  }
+
+  return formatOutput(finalResult, combinedContextStr);
 }
 
 // ---------------------------------------------------------------------------
