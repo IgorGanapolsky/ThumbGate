@@ -52,6 +52,17 @@ function lessonText(lesson) {
   ].filter(Boolean).join(' ').trim();
 }
 
+/**
+ * Truncate a vector to a specific dimension (Matryoshka Embedding Truncation).
+ * Assumes the model supports MRL (like text-embedding-3 or modern transformers).
+ */
+function truncateVector(vector, dimension) {
+  if (!Array.isArray(vector) || !dimension || vector.length <= dimension) {
+    return vector;
+  }
+  return vector.slice(0, dimension);
+}
+
 function hashText(text) {
   // Content-change key for the embedding cache (not a security context). sha256
   // matches the repo's standard non-security hashing and avoids the weak-hash flag.
@@ -129,15 +140,19 @@ function writeCache(cachePath, cache) {
  * @returns {Promise<Array<{id:string, score:number}>>}
  */
 async function semanticRank(queryText, lessons = [], options = {}) {
-  const { feedbackDir, embedder = defaultEmbedder(), persist = true } = options;
+  const { feedbackDir, embedder = defaultEmbedder(), persist = true, truncateDimension = null } = options;
   if (!queryText || !Array.isArray(lessons) || lessons.length === 0) return [];
 
   const cachePath = getCachePath(feedbackDir);
   const cache = readCache(cachePath);
   let cacheDirty = false;
 
-  const queryVector = await embedder(queryText, { kind: 'query', task: 'code retrieval' });
+  let queryVector = await embedder(queryText, { kind: 'query', task: 'code retrieval' });
   if (!Array.isArray(queryVector) || queryVector.length === 0) return [];
+  
+  if (truncateDimension) {
+    queryVector = truncateVector(queryVector, truncateDimension);
+  }
 
   const scored = [];
   for (const lesson of lessons) {
@@ -159,7 +174,8 @@ async function semanticRank(queryText, lessons = [], options = {}) {
       cacheDirty = true;
     }
 
-    scored.push({ id: lesson.id, score: cosineSimilarity(queryVector, entry.vector) });
+    const docVector = truncateDimension ? truncateVector(entry.vector, truncateDimension) : entry.vector;
+    scored.push({ id: lesson.id, score: cosineSimilarity(queryVector, docVector) });
   }
 
   // Prune cache entries for lessons no longer present (bounded growth).
@@ -180,6 +196,7 @@ module.exports = {
   semanticRank,
   isEmbedderAvailable,
   cosineSimilarity,
+  truncateVector,
   lessonText,
   hashText,
   getCachePath,

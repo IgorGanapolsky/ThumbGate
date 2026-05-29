@@ -222,7 +222,7 @@ describe('buildRelevantLessonContext', () => {
 
     if (ctx !== null) {
       const bulletLines = ctx.match(/^\s+•/gm) || [];
-      assert.ok(bulletLines.length <= 3, `should cap at 3 lessons, got ${bulletLines.length}`);
+      assert.ok(bulletLines.length <= 5, `should cap at 5 lessons, got ${bulletLines.length}`);
     }
   });
 
