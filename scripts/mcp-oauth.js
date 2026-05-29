@@ -30,6 +30,14 @@ const AUTH_CODE_TTL_MS = 60 * 1000; // 1 minute
 const ACCESS_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const DEFAULT_SCOPE = 'mcp:read mcp:write';
 
+// Upper bounds on the in-memory store. The registration and authorization
+// endpoints are reachable pre-auth, so without a cap a malicious caller could
+// grow these Maps unboundedly and exhaust server memory. When a Map is full we
+// evict the oldest entry (FIFO) rather than deny service to legitimate clients.
+const MAX_CLIENTS = 10000;
+const MAX_CODES = 10000;
+const MAX_TOKENS = 50000;
+
 function now() {
   return Date.now();
 }
@@ -42,13 +50,32 @@ function base64UrlSha256(input) {
   return crypto.createHash('sha256').update(String(input)).digest('base64url');
 }
 
-/** Create a fresh in-memory store. Callers may persist if they wish. */
+/**
+ * Create a fresh in-memory store.
+ *
+ * DURABILITY (known limitation): this uses plain Maps, so a process restart or a
+ * multi-instance / load-balanced deployment will drop issued tokens and
+ * registered clients (clients see 401s, in-flight authorizations break). For
+ * single-instance use this is fine; production multi-tenancy needs a durable,
+ * shared backing (Redis/DB) — tracked as the per-user-data-scoping follow-up.
+ * Entry counts are bounded (see MAX_* and capInsert) to prevent memory
+ * exhaustion from anonymous calls to the registration/authorization endpoints.
+ */
 function createStore() {
   return {
     clients: new Map(),
     codes: new Map(),
     tokens: new Map(),
   };
+}
+
+/** Insert into a Map, evicting the oldest entry (FIFO) once `max` is reached. */
+function capInsert(map, key, value, max) {
+  if (map.size >= max && !map.has(key)) {
+    const oldest = map.keys().next().value;
+    if (oldest !== undefined) map.delete(oldest);
+  }
+  map.set(key, value);
 }
 
 // ---------------------------------------------------------------------------
@@ -93,19 +120,25 @@ function buildAuthServerMetadata(baseUrl) {
 // Dynamic client registration (RFC 7591)
 // ---------------------------------------------------------------------------
 
+// The MCP authorization spec is explicit: "All redirect URIs MUST be either
+// `localhost` or use HTTPS." We therefore accept only HTTPS and loopback
+// (http://localhost | http://127.0.0.1) and reject every other scheme —
+// including native-app custom schemes (myapp://, intent://, etc.), which the MCP
+// profile does not sanction and the real client (Claude) does not use.
+function isAllowedRedirectUri(uri) {
+  const u = String(uri || '');
+  if (/^https:\/\//i.test(u)) return true;
+  if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(u)) return true;
+  return false;
+}
+
 function registerClient(store, body = {}) {
   const redirectUris = Array.isArray(body.redirect_uris) ? body.redirect_uris.filter(Boolean) : [];
   if (redirectUris.length === 0) {
     return { error: 'invalid_redirect_uri', error_description: 'redirect_uris is required' };
   }
   for (const uri of redirectUris) {
-    const isHttps = /^https:\/\//.test(uri);
-    const isLocalhost = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/.test(uri);
-    // Custom native-app scheme (e.g. myapp://) — allowed, but never insecure web
-    // or dangerous schemes.
-    const isCustomScheme = /^[a-z][a-z0-9.+-]*:\/\//i.test(uri)
-      && !/^(https?|ftp|file|data|javascript|vbscript):/i.test(uri);
-    if (!isHttps && !isLocalhost && !isCustomScheme) {
+    if (!isAllowedRedirectUri(uri)) {
       return { error: 'invalid_redirect_uri', error_description: `unsupported redirect_uri: ${uri}` };
     }
   }
@@ -119,7 +152,7 @@ function registerClient(store, body = {}) {
     client_name: typeof body.client_name === 'string' ? body.client_name.slice(0, 200) : 'mcp-client',
     created_at: now(),
   };
-  store.clients.set(clientId, record);
+  capInsert(store.clients, clientId, record, MAX_CLIENTS);
   return record;
 }
 
@@ -145,7 +178,7 @@ function createAuthorizationCode(store, {
   if (!codeChallenge || String(codeChallenge).length < 16) return { error: 'invalid_request', error_description: 'code_challenge required' };
 
   const code = randomToken(24);
-  store.codes.set(code, {
+  capInsert(store.codes, code, {
     clientId,
     redirectUri,
     codeChallenge,
@@ -154,7 +187,7 @@ function createAuthorizationCode(store, {
     resource: resource || '', // RFC 8707 resource indicator (the MCP server URL)
     expiresAt: now() + AUTH_CODE_TTL_MS,
     used: false,
-  });
+  }, MAX_CODES);
   return { code, state };
 }
 
@@ -192,13 +225,13 @@ function exchangeCode(store, { code, codeVerifier, clientId, redirectUri, resour
   }
 
   const accessToken = `tgat_${randomToken(32)}`;
-  store.tokens.set(accessToken, {
+  capInsert(store.tokens, accessToken, {
     boundKey: entry.boundKey,
     scope: entry.scope,
     clientId,
     aud: entry.resource || resource || '',
     expiresAt: now() + ACCESS_TOKEN_TTL_MS,
-  });
+  }, MAX_TOKENS);
   return {
     access_token: accessToken,
     token_type: 'Bearer',
@@ -249,8 +282,12 @@ module.exports = {
   resolveAccessToken,
   tokenAudienceValid,
   pruneExpired,
+  isAllowedRedirectUri,
   base64UrlSha256,
   AUTH_CODE_TTL_MS,
   ACCESS_TOKEN_TTL_MS,
   DEFAULT_SCOPE,
+  MAX_CLIENTS,
+  MAX_CODES,
+  MAX_TOKENS,
 };
