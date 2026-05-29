@@ -24,7 +24,7 @@ The product is a self-improving enforcement layer: thumbs-down feedback, prompt 
 npx thumbgate init   # auto-detects your agent, wires hooks, 30 seconds
 ```
 
-Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and any MCP-compatible agent.
+Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, Grok Build CLI (xAI)** and any MCP-compatible agent.
 
 **Free:** 5 feedback captures/day (25 total captures), 3 active auto-promoted prevention rules, all MCP integrations, local-first.
 **[Pro — $19/mo or $149/yr](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme):** no limits on captures or rules, history-aware lessons, feedback sessions, hosted dashboard, DPO export.
@@ -199,10 +199,11 @@ Each recommendation ships with the benchmark commands to run next: feedback-deri
 | **Gemini CLI** | `npx thumbgate init --agent gemini` |
 | **Amp** | `npx thumbgate init --agent amp` |
 | **Cline** (Roo Code successor) | `npx thumbgate init --agent cline` |
+| **Grok Build CLI (xAI)** | `npx thumbgate init` (Claude-compatible config); see [adapters/xai-grok/README.md](adapters/xai-grok/README.md). **Not yet verified end-to-end against the live Grok Build product.** |
 | **Claude Desktop** | [Download extension bundle](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb) |
 | **Any MCP agent** | `npx thumbgate serve` |
 
-Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode**, and any MCP-compatible agent. Migrating from Roo Code (sunsetting 2026-05-15)? See [`adapters/cline/INSTALL.md`](./adapters/cline/INSTALL.md).
+Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, Grok Build CLI (xAI)**, and any MCP-compatible agent. Migrating from Roo Code (sunsetting 2026-05-15)? See [`adapters/cline/INSTALL.md`](./adapters/cline/INSTALL.md).
 
 ### Install scope: machine-wide vs per-project
 
