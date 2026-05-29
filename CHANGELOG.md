@@ -1,5 +1,48 @@
 # Changelog
 
+## 1.25.0
+
+### Minor Changes
+
+- [#2388](https://github.com/IgorGanapolsky/ThumbGate/pull/2388) [`6c92c35`](https://github.com/IgorGanapolsky/ThumbGate/commit/6c92c3582fce287fffea066646cc2fdacac819ac) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Trustworthy revenue predictions: Bayesian credible intervals on the forecast.
+
+  `predictive-insights` previously emitted a point revenue forecast plus an ad-hoc
+  confidence heuristic (`log1p(sampleVolume)/log1p(40)`) — a number you couldn't
+  defend to a buyer. It now also emits a **Bayesian beta-binomial credible range**
+  (reusing the existing `scripts/conversion-rate-stats.js` posterior), so the forecast
+  is honest about uncertainty: with little funnel data the interval is wide; as N grows
+  it tightens toward the empirical rate.
+
+  `revenueForecast` gains (purely additive — the existing `predictedBookedRevenueCents`,
+  `confidence`, and `band` are unchanged, so dashboards/tests keep working):
+
+  - `range: { lowCents, expectedCents, highCents }` — booked-revenue at the 90% credible bounds.
+  - `rateCredibleInterval: { lower, expected, upper, level, basis, sampleSize }` — the
+    posterior interval on the conversion rate and which funnel path it used
+    (checkout→paid when checkout data exists, else visitor→paid).
+  - `statisticalConfidence` — `1 − intervalWidth`, a data-grounded confidence (narrower
+    interval ⇒ higher confidence) distinct from the legacy heuristic.
+
+  New `revenueCredibleRange()` export. Degrades to a point estimate if the stats layer
+  errors — never throws into the forecast.
+
+### Patch Changes
+
+- [#2390](https://github.com/IgorGanapolsky/ThumbGate/pull/2390) [`c04d567`](https://github.com/IgorGanapolsky/ThumbGate/commit/c04d5679cd910548fbe779c771d1c6c8c32157e5) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Make the Claude/MCP connector discoverable: fix the MCP Registry publish + document the remote connector.
+
+  ThumbGate already runs as a working remote MCP server (https://thumbgate.ai/mcp),
+  but it wasn't listed in the MCP Registry — the publish workflow had been failing.
+
+  - `.github/workflows/mcp-registry-publish.yml`: bump `mcp-publisher` v1.5.0 → v1.7.9
+    (v1.5.0 requested the old OIDC audience `mcp-registry`; the registry now requires
+    `https://registry.modelcontextprotocol.io` and 401s the old one). Add a step that
+    waits for the npm package version in `server.json` to be live on npmjs.org before
+    publishing, so a release that bumps the version ahead of npm no longer 404s the
+    registry publish.
+  - README: add an "Add ThumbGate to Claude (remote connector)" section pointing at
+    `https://thumbgate.ai/mcp` (Settings → Connectors → Add custom connector) — usable
+    today with no install.
+
 ## 1.24.0
 
 ### Minor Changes
