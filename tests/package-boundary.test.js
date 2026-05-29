@@ -363,9 +363,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // published installs. Observed unpacked size is ~3.806 MB.
   // Bumped 3.84 MB -> 3.85 MB (2026-05-26) after injecting Plausible/PostHog/GA4
   // scripts into the checkout interstitial page in server.js.
+  // Bumped 3.85 MB -> 3.87 MB (2026-05-29) for scripts/lesson-embedding-index.js
+  // — the cached dense index that powers hybrid (semantic + lexical) retrieval in
+  // the per-action gate hot path (#2380). Observed unpacked size ~3.852 MB after
+  // the addition; the bump restores a one-normal-PR headroom buffer.
   assert.ok(
-    manifest.unpackedSize <= 3_850_000,
-    `npm package should stay <= 3.85 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_870_000,
+    `npm package should stay <= 3.87 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
