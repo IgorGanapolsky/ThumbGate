@@ -302,6 +302,67 @@ function scanDependencyChange(oldContent, newContent) {
   };
 }
 
+/**
+ * Slopsquat scan for Bash package-install commands. Offline + deterministic:
+ * detects single-character typosquats (critical) and near-misses (high) of
+ * popular npm/PyPI packages before they install.
+ *
+ * Enforcement honors THUMBGATE_SLOPSQUAT_MODE (block | warn | off):
+ *   - block (default): a critical (distance-1) finding denies; near-miss warns.
+ *   - warn: any finding warns.
+ *   - off: skip entirely.
+ *
+ * @returns {Object|null} gate result, or null if clean / disabled.
+ */
+function evaluateSlopsquatScan(toolName, toolInput = {}) {
+  const { scanInstallCommand, resolveMode } = require('./slopsquat-guard');
+  const mode = resolveMode();
+  if (mode === 'off') return null;
+
+  const command = toolInput.command || toolInput.cmd || '';
+  if (!command) return null;
+
+  const { detected, findings } = scanInstallCommand(command);
+  if (!detected) return null;
+
+  const hasCritical = findings.some((f) => f.severity === 'critical');
+  const overallSeverity = hasCritical ? 'critical' : 'high';
+  // In block mode a confirmed typosquat (distance-1) denies; everything else warns.
+  const decision = mode === 'block' && hasCritical ? 'deny' : 'warn';
+  const gateId = 'slopsquat-guard';
+
+  const summary = findings
+    .map((f) => `[${f.severity.toUpperCase()}] ${f.label}`)
+    .join('; ');
+  const message = `Slopsquat guard flagged ${findings.length} package(s): ${summary}`;
+  const reasoning = [
+    'Scanned package-install command for hallucinated/typosquatted dependencies',
+    ...findings.map((f) => `${f.id}: install "${f.package}" — did you mean "${f.suggestion}"? (${f.ecosystem})`),
+  ];
+
+  recordAuditEvent({
+    toolName,
+    toolInput: { command: String(command).slice(0, 200) },
+    decision,
+    gateId,
+    message,
+    severity: overallSeverity,
+    source: 'slopsquat-guard',
+  });
+
+  return {
+    decision,
+    gate: gateId,
+    message,
+    severity: overallSeverity,
+    reasoning,
+    securityScan: {
+      findings,
+      filePath: '',
+    },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // PreToolUse integration — called from gates-engine
 // ---------------------------------------------------------------------------
@@ -316,6 +377,12 @@ function scanDependencyChange(oldContent, newContent) {
 function evaluateSecurityScan(input = {}) {
   const toolName = input.tool_name || input.toolName || '';
   const toolInput = input.tool_input || {};
+
+  // Bash: intercept package-install commands for slopsquat / typosquat risk
+  // (hallucinated or near-miss package names — a known agent malware vector).
+  if (toolName === 'Bash') {
+    return evaluateSlopsquatScan(toolName, toolInput);
+  }
 
   // Only scan write-type operations
   const WRITE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
@@ -444,5 +511,6 @@ module.exports = {
   scanCode,
   scanDependencyChange,
   evaluateSecurityScan,
+  evaluateSlopsquatScan,
   scanGitDiff,
 };

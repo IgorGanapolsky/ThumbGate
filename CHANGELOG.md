@@ -1,5 +1,122 @@
 # Changelog
 
+## 1.25.0
+
+### Minor Changes
+
+- [#2388](https://github.com/IgorGanapolsky/ThumbGate/pull/2388) [`6c92c35`](https://github.com/IgorGanapolsky/ThumbGate/commit/6c92c3582fce287fffea066646cc2fdacac819ac) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Trustworthy revenue predictions: Bayesian credible intervals on the forecast.
+
+  `predictive-insights` previously emitted a point revenue forecast plus an ad-hoc
+  confidence heuristic (`log1p(sampleVolume)/log1p(40)`) — a number you couldn't
+  defend to a buyer. It now also emits a **Bayesian beta-binomial credible range**
+  (reusing the existing `scripts/conversion-rate-stats.js` posterior), so the forecast
+  is honest about uncertainty: with little funnel data the interval is wide; as N grows
+  it tightens toward the empirical rate.
+
+  `revenueForecast` gains (purely additive — the existing `predictedBookedRevenueCents`,
+  `confidence`, and `band` are unchanged, so dashboards/tests keep working):
+
+  - `range: { lowCents, expectedCents, highCents }` — booked-revenue at the 90% credible bounds.
+  - `rateCredibleInterval: { lower, expected, upper, level, basis, sampleSize }` — the
+    posterior interval on the conversion rate and which funnel path it used
+    (checkout→paid when checkout data exists, else visitor→paid).
+  - `statisticalConfidence` — `1 − intervalWidth`, a data-grounded confidence (narrower
+    interval ⇒ higher confidence) distinct from the legacy heuristic.
+
+  New `revenueCredibleRange()` export. Degrades to a point estimate if the stats layer
+  errors — never throws into the forecast.
+
+### Patch Changes
+
+- [#2390](https://github.com/IgorGanapolsky/ThumbGate/pull/2390) [`c04d567`](https://github.com/IgorGanapolsky/ThumbGate/commit/c04d5679cd910548fbe779c771d1c6c8c32157e5) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Make the Claude/MCP connector discoverable: fix the MCP Registry publish + document the remote connector.
+
+  ThumbGate already runs as a working remote MCP server (https://thumbgate.ai/mcp),
+  but it wasn't listed in the MCP Registry — the publish workflow had been failing.
+
+  - `.github/workflows/mcp-registry-publish.yml`: bump `mcp-publisher` v1.5.0 → v1.7.9
+    (v1.5.0 requested the old OIDC audience `mcp-registry`; the registry now requires
+    `https://registry.modelcontextprotocol.io` and 401s the old one). Add a step that
+    waits for the npm package version in `server.json` to be live on npmjs.org before
+    publishing, so a release that bumps the version ahead of npm no longer 404s the
+    registry publish.
+  - README: add an "Add ThumbGate to Claude (remote connector)" section pointing at
+    `https://thumbgate.ai/mcp` (Settings → Connectors → Add custom connector) — usable
+    today with no install.
+
+## 1.24.0
+
+### Minor Changes
+
+- [#2380](https://github.com/IgorGanapolsky/ThumbGate/pull/2380) [`94728d2`](https://github.com/IgorGanapolsky/ThumbGate/commit/94728d2270d9ef8188a9b3b50f591559a3ebf848) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Real semantic RAG in the per-action gating hot path.
+
+  The "learn from the past" core is now literally semantic. Previously the per-action
+  lesson retrieval that gates tool calls was _commented_ "semantically-relevant" but
+  ran purely lexical scoring (token overlap + bigram Jaccard + BM25); the embedding /
+  LanceDB vector store existed only for storage. The async gate path (`runAsync`) now
+  uses **hybrid dense + sparse retrieval**: lexical ranking ⊕ embedding-similarity
+  ranking → Reciprocal Rank Fusion (k=60) → existing cross-encoder rerank → top-K.
+
+  This surfaces past mistakes that share no keywords with the current action
+  (paraphrase / synonym / different file path) — recall lexical matching cannot give —
+  so agents are warned about semantically-related failures before executing.
+
+  - New `scripts/lesson-embedding-index.js`: cached dense index (vectors keyed by
+    `id + sha256(text)`, persisted to `lesson-embeddings.json`; only the query is embedded
+    per call, only new/changed lessons re-embed). Reuses `vector-store.embed`
+    (Gemini → local transformers → stub) — no new dependency.
+  - New `retrieveRelevantLessonsAsync` + `reciprocalRankFusion` in `scripts/lesson-retrieval.js`.
+  - `gates-engine` gains `buildRelevantLessonContextAsync`, wired into `runAsync`.
+  - Honest degradation: when no real embedder is available (or embedding errors), the
+    path returns the identical pure-lexical result. No fabricated vectors, no regression
+    to the synchronous `run()` path.
+
+- [`dfc2854`](https://github.com/IgorGanapolsky/ThumbGate/commit/dfc2854991ecdff184a04878d0cb2cb53bcdf32e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Slopsquat guard: block hallucinated/typosquatted package installs before they run.
+
+  LLM coding agents hallucinate package names — ~20% of model-suggested npm/PyPI
+  packages don't exist — and attackers register the most-hallucinated names within
+  hours to ship malware ("slopsquatting"). The Stanford AI Index 2026 lists it among
+  the top new attack surfaces for autonomous agents. ThumbGate's existing supply-chain
+  checks only scanned `package.json` _writes_; nothing inspected the actual
+  `npm install <pkg>` / `pip install <pkg>` Bash command an agent runs.
+
+  New `scripts/slopsquat-guard.js` + a Bash branch in `evaluateSecurityScan` close that:
+
+  - Intercepts install commands across npm/yarn/pnpm/bun and pip/uv/poetry/pipx
+    (incl. `npx <pkg>`), extracting package names (handles flags, scopes, version
+    specifiers, extras; skips local paths / git / URL installs).
+  - Deterministic, offline detection: single-character typosquats of popular packages
+    (critical → deny) and distance-2 near-misses (high → warn), via bounded Levenshtein
+    against a bundled popular-package list. No network in the gate hot path.
+  - False-positive safe: a known-legit allowlist exempts popular packages and their
+    legitimate near-neighbors (e.g. `preact` is one char from `react`).
+  - Configurable via `THUMBGATE_SLOPSQUAT_MODE` = `block` (default) | `warn` | `off`.
+  - Optional online registry-existence verification (`verifyPackageExists`) is exposed
+    for explicit audit/CLI use and fails open — never used in the blocking hot path.
+
+  A fresh install now blocks `npm install expres` with "did you mean express?" out of
+  the box — a concrete, security-grade day-one block.
+
+### Patch Changes
+
+- [#2372](https://github.com/IgorGanapolsky/ThumbGate/pull/2372) [`3156075`](https://github.com/IgorGanapolsky/ThumbGate/commit/315607534758b2c30dcc3e31335f270dd29ee0ea) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - site: /ai-malpractice-prevention — two updates from the GT call
+
+  1. **New hero callout for BigLaw firms without a public-facing chatbot.** Most BigLaw doesn't take intake through a chatbot, but associates already use Claude/Cursor/Codex on real matters. The relevant risk surface is internal AI use. ThumbGate produces a searchable audit log + RAG of every gated detection — queryable by ethics, risk, and innovation owners. Conflicts DB and document systems stay where they are; we instrument what the agents inside the firm are about to do.
+
+  2. **Conflict Gate demo reframed.** Copy now makes explicit the gate queries the firm's existing conflicts DB (Intapp Open, IntelliPlan, Aderant, or custom) in production — not a vendor-hosted list. The sample list shown is illustrative only. Removes a procurement objection from buyers with 10k+ row adverse databases.
+
+- [#2373](https://github.com/IgorGanapolsky/ThumbGate/pull/2373) [`f9a11b4`](https://github.com/IgorGanapolsky/ThumbGate/commit/f9a11b49b67369c2579138fde070cbb8c2b51c26) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - site: BigLaw conversion clarity — two pages, three new procurement-defensible blocks
+
+  - `/ai-malpractice-prevention` recommended-pilot section now includes three color-coded blocks: "What you walk away with" (audit log + RAG of every gated detection), "What we don't claim" (pre-SOC2, no hallucination indemnity, local-first), "What you bring" (one owner, one workflow, your approved disclaimer, read-only conflicts DB access). Pre-empts procurement objections without overpromising.
+  - `/compare/anthropic-claude-for-legal` hero now carries the same BigLaw-internal-AI callout the malpractice page added — anyone landing from the Claude-for-Legal comparison sees the no-public-chatbot framing without needing to navigate.
+
+- [#2369](https://github.com/IgorGanapolsky/ThumbGate/pull/2369) [`b276d73`](https://github.com/IgorGanapolsky/ThumbGate/commit/b276d733fbec2536864361dfc626f0a2bd2f78b9) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - site: /ai-malpractice-prevention live demos now ship one-click **Fill sample** buttons for each gate (UPL, Conflict, Egress) — one fires BLOCK, one fires CLEAR. UPL Gate copy corrected to clarify the input is an advice-shaped _response a bot would deliver_, not a _question from a client_. Each demo description now references the feedback-to-enforcement loop (capture 👍/👎 → memory → rule promotion → enforcement) so prospects see the loop, not just the endpoint.
+
+- [#2371](https://github.com/IgorGanapolsky/ThumbGate/pull/2371) [`604c8c2`](https://github.com/IgorGanapolsky/ThumbGate/commit/604c8c2d886b514eebb5ee06bbd4defe8558cdaf) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - site: `/learn/feedback-loop-vs-decision-layer` — replaced wall-of-text 4-stage list with a visual loop diagram (Capture → Memory → Rule promotion → Enforcement → loop closes back to Capture). Diagram leads the section so scanners see the loop shape before reading prose. Mobile-responsive (stacks vertically with rotated arrows below 800px). Existing per-stage detail blocks preserved below the diagram for readers who want the full text.
+
+- [#2375](https://github.com/IgorGanapolsky/ThumbGate/pull/2375) [`c6b34b2`](https://github.com/IgorGanapolsky/ThumbGate/commit/c6b34b22397407070fbb9469fdc91861887830f0) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - site: /ai-malpractice-prevention — copy-email fallback for the pilot CTAs
+
+  Both "Book a 25-minute pilot walkthrough" mailto: buttons now ship a paired fallback line: a copy-to-clipboard button (writes the full prefilled email — To/Subject/Body — to the system clipboard) plus the bare email address surfaced as a click-to-select span. Removes the silent conversion failure path for visitors on Gmail Web, iPhone, or any environment where mailto: doesn't open a configured mail client. Pure vanilla JS, no external dependencies.
+
 ## 1.23.2
 
 ### Patch Changes
