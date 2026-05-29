@@ -2,14 +2,17 @@
 "thumbgate": patch
 ---
 
-Serve MCP tool annotations on the remote /mcp connector.
+Serve MCP tool titles + annotations on the remote /mcp connector (Connectors Directory requirement).
 
-The remote `/mcp` tools/list (`getPublicMcpTools`) and the server-card discovery
-(`getServerCardTools`) were mapping tools to `{name, description, inputSchema}` —
-silently **dropping the `readOnlyHint`/`destructiveHint` annotations** defined in
-`scripts/tool-registry.js`. So all 82 tools were served unannotated, which (a) is
-the #1 rejection cause for the Claude Connectors Directory and (b) deprives MCP
-clients of the safety hints they use for permission prompts.
+The remote `/mcp` tools/list (`getPublicMcpTools`) and server-card discovery
+(`getServerCardTools`) served all 82 tools with **no `title` and no
+`readOnlyHint`/`destructiveHint`** — the #1 Claude Connectors Directory rejection
+cause, and missing safety hints for every MCP client.
 
-Now both functions pass `tool.annotations` through. New `tests/mcp-tool-annotations.test.js`
-pins the contract: every served tool declares a readOnlyHint or destructiveHint.
+- `tool-registry.js`: normalize every tool at export to carry a human-readable
+  `title` (humanized from the name) plus an annotation (`title` + the
+  readOnly/destructive hint; un-hinted tools default conservatively to
+  destructiveHint so they're gated, not silently treated as read-only).
+- `src/api/server.js`: `getPublicMcpTools`/`getServerCardTools` now pass `title`
+  and `annotations` through.
+- Test pins the contract: every served tool has a title and a hint.

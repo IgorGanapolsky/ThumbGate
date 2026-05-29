@@ -1,10 +1,23 @@
 #!/usr/bin/env node
 'use strict';
 
+// Human-readable display title from a snake_case tool name.
+// e.g. "capture_feedback" -> "Capture Feedback". The Claude Connectors Directory
+// requires every tool to carry BOTH a title and a readOnlyHint/destructiveHint.
+function humanizeTitle(name) {
+  return String(name || '')
+    .split(/[_-]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
+
 function readOnlyTool(tool) {
   return {
     ...tool,
+    title: tool.title || humanizeTitle(tool.name),
     annotations: {
+      title: tool.title || humanizeTitle(tool.name),
       readOnlyHint: true,
     },
   };
@@ -13,7 +26,9 @@ function readOnlyTool(tool) {
 function destructiveTool(tool) {
   return {
     ...tool,
+    title: tool.title || humanizeTitle(tool.name),
     annotations: {
+      title: tool.title || humanizeTitle(tool.name),
       destructiveHint: true,
     },
   };
@@ -1396,6 +1411,25 @@ const TOOLS = [
   }),
 ];
 
+// Normalize at export: guarantee EVERY tool carries a human-readable title and a
+// readOnlyHint/destructiveHint annotation (both required by the Connectors
+// Directory; the #1 rejection cause is missing annotations). Tools defined as
+// plain objects (not via readOnlyTool/destructiveTool) are backfilled here:
+// title from the name, and a conservative destructiveHint when no hint is set
+// (so an un-hinted tool is gated rather than silently treated as read-only).
+const NORMALIZED_TOOLS = TOOLS.map((tool) => {
+  const title = tool.title || humanizeTitle(tool.name);
+  const existing = tool.annotations || {};
+  const hasHint = existing.readOnlyHint === true || existing.destructiveHint === true;
+  const annotations = {
+    title,
+    ...existing,
+    ...(hasHint ? {} : { destructiveHint: true }),
+  };
+  return { ...tool, title, annotations };
+});
+
 module.exports = {
-  TOOLS,
+  TOOLS: NORMALIZED_TOOLS,
+  humanizeTitle,
 };

@@ -748,6 +748,7 @@ function updateLessonRecord(feedbackDir, lessonId, updater) {
 function getPublicMcpTools() {
   return MCP_TOOLS.map((tool) => ({
     name: tool.name,
+    ...(tool.title ? { title: tool.title } : {}),
     description: tool.description,
     inputSchema: tool.inputSchema,
     // Serve the tool-registry annotations (readOnlyHint/destructiveHint). Required
@@ -760,6 +761,7 @@ function getPublicMcpTools() {
 function getServerCardTools() {
   return MCP_TOOLS.map((tool) => ({
     name: tool.name,
+    ...(tool.title ? { title: tool.title } : {}),
     description: tool.description,
     inputSchema: tool.inputSchema,
     ...(tool.annotations ? { annotations: tool.annotations } : {}),

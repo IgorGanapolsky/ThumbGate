@@ -13,14 +13,21 @@ const { getPublicMcpTools, getServerCardTools } = __test__;
 
 function assertEveryToolAnnotated(tools, label) {
   assert.ok(Array.isArray(tools) && tools.length > 0, `${label}: non-empty tool list`);
-  const missing = tools.filter((t) => {
+  const missingHint = tools.filter((t) => {
     const a = t.annotations || {};
     return a.readOnlyHint !== true && a.destructiveHint !== true;
   });
   assert.equal(
-    missing.length,
+    missingHint.length,
     0,
-    `${label}: ${missing.length} tool(s) missing a readOnlyHint/destructiveHint annotation: ${missing.map((t) => t.name).join(', ')}`,
+    `${label}: ${missingHint.length} tool(s) missing a readOnlyHint/destructiveHint annotation: ${missingHint.map((t) => t.name).join(', ')}`,
+  );
+  // Connectors Directory requires a title on every tool, in addition to a hint.
+  const missingTitle = tools.filter((t) => !t.title || typeof t.title !== 'string');
+  assert.equal(
+    missingTitle.length,
+    0,
+    `${label}: ${missingTitle.length} tool(s) missing a title: ${missingTitle.map((t) => t.name).join(', ')}`,
   );
 }
 
