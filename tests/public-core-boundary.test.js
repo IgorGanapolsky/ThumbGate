@@ -117,8 +117,12 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // Bumped 263 → 264 (2026-05-22) to ship scripts/self-healing-check.js:
   // `thumbgate self-heal` invokes it before scripts/self-heal.js, so omitting
   // it breaks published installs even though source-checkout tests pass.
+  // Bumped 264 → 265 (2026-05-29) to ship scripts/slopsquat-guard.js:
+  // security-scanner.js requires it to intercept package-install Bash commands
+  // for hallucinated/typosquatted dependencies (slopsquat). In-scope public
+  // shell (a PreToolUse security gate); omitting it breaks the scan at runtime.
   const files = npmPackFiles();
-  const CEILING = 264;
+  const CEILING = 265;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
