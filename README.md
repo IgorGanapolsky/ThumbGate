@@ -26,6 +26,19 @@ npx thumbgate init   # auto-detects your agent, wires hooks, 30 seconds
 
 Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and any MCP-compatible agent.
 
+### Add ThumbGate to Claude (remote connector, 30 seconds, no install)
+
+ThumbGate is a hosted remote MCP server. To use it in **Claude.ai / Claude Desktop**:
+**Settings → Connectors → Add custom connector**, then paste:
+
+```
+https://thumbgate.ai/mcp
+```
+
+That's it — Claude can now call ThumbGate's gate-check and feedback tools directly.
+For local/CLI agents (Claude Code, Cursor, Codex, …) use `npx thumbgate init`, which
+auto-wires the hooks. (The same server is published to the [MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.IgorGanapolsky/thumbgate`.)
+
 **Free:** 5 feedback captures/day (25 total captures), 3 active auto-promoted prevention rules, all MCP integrations, local-first.
 **[Pro — $19/mo or $149/yr](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme):** no limits on captures or rules, history-aware lessons, feedback sessions, hosted dashboard, DPO export.
 **Team — $49/seat/mo:** shared hosted lesson DB, org dashboard, approval boundaries.
