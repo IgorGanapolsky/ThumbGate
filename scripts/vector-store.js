@@ -312,6 +312,7 @@ function setGeminiEmbedderForTests(loader) {
 module.exports = {
   upsertFeedback,
   searchSimilar,
+  embed,
   TABLE_NAME,
   getEmbeddingConfig,
   getLastEmbeddingProfile,
