@@ -58,6 +58,138 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
   }));
 }
 
+/**
+ * Reciprocal Rank Fusion — merge several ranked id-lists into one ranking.
+ *
+ * RRF is scale-free: it fuses on rank position, not raw scores, so the lexical
+ * (BM25-ish, 0..~1.5) and dense (cosine, -1..1) rankers combine without any
+ * normalization. score(id) = Σ 1/(k + rank), rank starting at 1. k=60 is the
+ * value from the original Cormack et al. paper and the de-facto standard.
+ *
+ * @param {string[][]} rankedLists - each inner array is ids in descending relevance
+ * @param {object} [options]
+ * @param {number} [options.k=60]
+ * @returns {Array<{id:string, score:number}>} fused ids, descending
+ */
+function reciprocalRankFusion(rankedLists = [], options = {}) {
+  const k = Number.isFinite(options.k) ? options.k : 60;
+  const scores = new Map();
+  for (const list of rankedLists) {
+    if (!Array.isArray(list)) continue;
+    list.forEach((id, index) => {
+      if (id === undefined || id === null) return;
+      const rank = index + 1;
+      scores.set(id, (scores.get(id) || 0) + 1 / (k + rank));
+    });
+  }
+  return [...scores.entries()]
+    .map(([id, score]) => ({ id, score }))
+    .sort((a, b) => b.score - a.score);
+}
+
+function loadMemories(feedbackDir) {
+  const { getFeedbackPaths, readJSONL } = require('./feedback-loop');
+  const pathMod = require('path');
+  const paths = feedbackDir
+    ? { MEMORY_LOG_PATH: pathMod.join(feedbackDir, 'memory-log.jsonl') }
+    : getFeedbackPaths();
+  return readJSONL(paths.MEMORY_LOG_PATH, { maxLines: 200 });
+}
+
+function shapeLesson(m) {
+  return {
+    id: m.id,
+    title: m.title,
+    content: m.content,
+    signal: m.tags?.includes('negative') ? 'negative' : 'positive',
+    rule: m.structuredRule || null,
+    relevanceScore: m.rerankedScore ?? m.relevanceScore,
+    timestamp: m.timestamp,
+  };
+}
+
+/**
+ * Hybrid (dense + sparse) per-action lesson retrieval — the async counterpart of
+ * retrieveRelevantLessons. Used by the async gate path (gates-engine runAsync).
+ *
+ * Pipeline: lexical ranking ⊕ dense (embedding) ranking → Reciprocal Rank Fusion
+ * → cross-encoder rerank → top-K. Dense recall surfaces past mistakes that share
+ * no keywords with the action (paraphrase/synonym) — the value lexical alone misses.
+ *
+ * HONEST DEGRADATION: if no real embedder is available, or embedding errors, this
+ * returns the pure-lexical result (identical to retrieveRelevantLessons). Never
+ * fabricates semantics.
+ */
+async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {}) {
+  const { maxResults = 5, feedbackDir } = options;
+
+  let embeddingIndex;
+  try {
+    embeddingIndex = require('./lesson-embedding-index');
+  } catch {
+    return retrieveRelevantLessons(toolName, actionContext, options);
+  }
+
+  // No real embedder → degrade to lexical (no fake vectors, no regression).
+  if (!options.embedder && !embeddingIndex.isEmbedderAvailable()) {
+    return retrieveRelevantLessons(toolName, actionContext, options);
+  }
+
+  const memories = loadMemories(feedbackDir);
+  if (memories.length === 0) return [];
+
+  const actionSig = buildActionSignature(toolName, actionContext);
+
+  // Sparse: score every memory, keep those with any lexical signal.
+  const lexicalScored = memories
+    .map((mem) => ({ ...mem, relevanceScore: scoreRelevance(mem, toolName, actionContext, actionSig) }))
+    .filter((m) => m.relevanceScore > 0.1)
+    .sort((a, b) => b.relevanceScore - a.relevanceScore);
+  const lexicalRanked = lexicalScored.slice(0, RERANK_CANDIDATE_POOL).map((m) => m.id);
+
+  // Dense: rank the full corpus by embedding similarity (cached vectors).
+  let semanticRanked = [];
+  try {
+    const dense = await embeddingIndex.semanticRank(actionContext, memories, {
+      feedbackDir,
+      embedder: options.embedder,
+    });
+    semanticRanked = dense.slice(0, RERANK_CANDIDATE_POOL).map((d) => d.id);
+  } catch {
+    // Embedding failed at runtime → fall back to pure lexical.
+    return retrieveRelevantLessons(toolName, actionContext, options);
+  }
+
+  // Fuse. Candidate pool is the union — dense can introduce lessons lexical missed.
+  const fused = reciprocalRankFusion([lexicalRanked, semanticRanked]);
+  if (fused.length === 0) return [];
+
+  const byId = new Map(memories.map((m) => [m.id, m]));
+  const lexById = new Map(lexicalScored.map((m) => [m.id, m.relevanceScore]));
+  const topFusedScore = fused[0].score || 1;
+
+  const candidates = fused
+    .slice(0, RERANK_CANDIDATE_POOL)
+    .map((entry) => {
+      const mem = byId.get(entry.id);
+      if (!mem) return null;
+      // Carry a relevanceScore the cross-encoder can blend against. Prefer the
+      // lexical score when present; otherwise use the normalized fusion score so
+      // dense-only candidates still rank sensibly.
+      const relevanceScore = lexById.has(entry.id)
+        ? lexById.get(entry.id)
+        : entry.score / topFusedScore;
+      return { ...mem, relevanceScore };
+    })
+    .filter(Boolean);
+
+  if (candidates.length === 0) return [];
+
+  const { rerankLessons } = require('./lesson-reranker');
+  const reranked = rerankLessons(actionContext, candidates, { topK: maxResults, toolName });
+  return reranked.map(shapeLesson);
+}
+
 function buildActionSignature(toolName, actionContext) {
   const toolLower = (toolName || '').toLowerCase();
   const contextLower = (actionContext || '').toLowerCase();
@@ -141,6 +273,8 @@ function tokenize(text) {
 
 module.exports = {
   retrieveRelevantLessons,
+  retrieveRelevantLessonsAsync,
+  reciprocalRankFusion,
   scoreRelevance,
   buildActionSignature,
   textBigrams,

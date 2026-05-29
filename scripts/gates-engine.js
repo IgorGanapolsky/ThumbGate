@@ -2142,21 +2142,55 @@ function buildRelevantLessonContext(toolName, toolInput) {
 
   try {
     const lessons = retrieveRelevantLessons(toolName, actionContext, { maxResults: 3 });
-    // retrieveRelevantLessons already filters at relevanceScore > 0.1 internally;
-    // any negative lesson that survives retrieval is relevant enough to surface.
-    const negative = lessons.filter((l) => l.signal === 'negative');
-    if (negative.length === 0) return null;
-
-    const formatted = negative.map((l) => {
-      const title = (l.title || '').replace(/^MISTAKE:\s*/, '').slice(0, 140);
-      const advice = extractAvoidanceAdvice(l.content);
-      return advice ? `  • ${title}\n    → ${advice}` : `  • ${title}`;
-    });
-
-    return `[ThumbGate] Past mistakes relevant to this action — read before proceeding:\n${formatted.join('\n')}`;
+    return formatNegativeLessonContext(lessons);
   } catch {
     return null;
   }
+}
+
+/**
+ * Async counterpart of buildRelevantLessonContext: uses HYBRID (dense embeddings +
+ * lexical) retrieval so the agent is warned about semantically-related past mistakes
+ * even when they share no keywords with the current action. Wired into runAsync.
+ * Degrades to the lexical result automatically when no embedder is available.
+ */
+async function buildRelevantLessonContextAsync(toolName, toolInput) {
+  if (!toolName) return null;
+
+  const { retrieveRelevantLessonsAsync, retrieveRelevantLessons } = loadOptionalModule(
+    './lesson-retrieval',
+    () => ({ retrieveRelevantLessonsAsync: null, retrieveRelevantLessons: () => [] }),
+  );
+
+  const actionContext = extractActionContext(toolName, toolInput);
+  if (!actionContext) return null;
+
+  try {
+    const lessons = retrieveRelevantLessonsAsync
+      ? await retrieveRelevantLessonsAsync(toolName, actionContext, { maxResults: 3 })
+      : retrieveRelevantLessons(toolName, actionContext, { maxResults: 3 });
+    return formatNegativeLessonContext(lessons);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Shared formatter: render the negative (mistake) lessons that survived retrieval
+ * into the PreToolUse warning block. Retrieval already filters by relevance, so any
+ * negative lesson present is relevant enough to surface.
+ */
+function formatNegativeLessonContext(lessons) {
+  const negative = (lessons || []).filter((l) => l.signal === 'negative');
+  if (negative.length === 0) return null;
+
+  const formatted = negative.map((l) => {
+    const title = (l.title || '').replace(/^MISTAKE:\s*/, '').slice(0, 140);
+    const advice = extractAvoidanceAdvice(l.content);
+    return advice ? `  • ${title}\n    → ${advice}` : `  • ${title}`;
+  });
+
+  return `[ThumbGate] Past mistakes relevant to this action — read before proceeding:\n${formatted.join('\n')}`;
 }
 
 function extractActionContext(toolName, toolInput) {
@@ -2209,7 +2243,7 @@ async function runAsync(input) {
   }
 
   const behavioralContext = buildBehavioralContext();
-  const lessonContext = buildRelevantLessonContext(toolName, toolInput);
+  const lessonContext = await buildRelevantLessonContextAsync(toolName, toolInput);
   const recentContext = buildRecentCorrectiveActionsContext();
   const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
   return formatOutput(result, combinedContext);
@@ -2562,6 +2596,7 @@ module.exports = {
   buildBehavioralContext,
   buildRecentCorrectiveActionsContext,
   buildRelevantLessonContext,
+  buildRelevantLessonContextAsync,
   extractActionContext,
   extractAvoidanceAdvice,
   mergeContextStrings,
