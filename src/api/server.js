@@ -750,6 +750,10 @@ function getPublicMcpTools() {
     name: tool.name,
     description: tool.description,
     inputSchema: tool.inputSchema,
+    // Serve the tool-registry annotations (readOnlyHint/destructiveHint). Required
+    // by the Claude Connectors Directory (missing annotations = the #1 rejection
+    // cause) and used by MCP clients for permission prompts. Was being dropped here.
+    ...(tool.annotations ? { annotations: tool.annotations } : {}),
   }));
 }
 
@@ -758,6 +762,7 @@ function getServerCardTools() {
     name: tool.name,
     description: tool.description,
     inputSchema: tool.inputSchema,
+    ...(tool.annotations ? { annotations: tool.annotations } : {}),
   }));
 }
 
@@ -8072,6 +8077,8 @@ module.exports = {
     renderPackagedLessonsHtml,
     readOptionalPublicTemplate,
     resolveLocalPageBootstrap,
+    getPublicMcpTools,
+    getServerCardTools,
   },
 };
 
