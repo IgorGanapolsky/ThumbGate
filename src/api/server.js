@@ -3675,15 +3675,22 @@ function extractApiKey(req) {
  * credential safe to share with a directory reviewer — tool execution enforces
  * read-only for it (see the tools/call handler).
  */
-// Constant-time secret comparison. Hashing both sides to a fixed length first
-// avoids the length-leak and the length-mismatch throw of a raw timingSafeEqual.
+// Constant-time secret comparison via the double-HMAC pattern ("Cryptographic
+// Right Answers"). HMAC-ing both operands to a fixed length first avoids the
+// length-leak and the length-mismatch throw of a raw timingSafeEqual. The key
+// is random per-process (generated once below, never persisted), so neither
+// operand can be recovered from the digest. These are API/OAuth keys compared
+// in constant time at request handling — not passwords stored at rest — so a
+// password KDF (bcrypt/scrypt/argon2) is deliberately not used here.
+const TIMING_SAFE_COMPARE_KEY = require('crypto').randomBytes(32);
+
 function safeKeyEqual(a, b) {
   const x = String(a || '');
   const y = String(b || '');
   if (!x || !y) return false;
   const crypto = require('crypto');
-  const hx = crypto.createHash('sha256').update(x).digest();
-  const hy = crypto.createHash('sha256').update(y).digest();
+  const hx = crypto.createHmac('sha256', TIMING_SAFE_COMPARE_KEY).update(x).digest();
+  const hy = crypto.createHmac('sha256', TIMING_SAFE_COMPARE_KEY).update(y).digest();
   return crypto.timingSafeEqual(hx, hy);
 }
 
