@@ -6467,6 +6467,49 @@ ${hidden}
     }
 
 
+    // Remote MCP connector documentation — the `resource_documentation` target
+    // advertised by /.well-known/oauth-protected-resource. The Claude Connectors
+    // Directory requires this URL to resolve (200) for submission review.
+    if (isGetLikeRequest && (pathname === '/docs/connectors' || pathname === '/docs/connectors/')) {
+      const mcpUrl = buildPublicUrl(hostedConfig, '/mcp');
+      const cardUrl = buildPublicUrl(hostedConfig, '/.well-known/mcp/server-card.json');
+      const prmUrl = buildPublicUrl(hostedConfig, '/.well-known/oauth-protected-resource');
+      sendHtml(res, 200, `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Remote MCP Connector — ThumbGate</title><meta name="description" content="Connect ThumbGate to Claude as a remote MCP server: OAuth 2.1 (PKCE) authorization, available tools, and the read-only reviewer credential."><style>body{font-family:system-ui,-apple-system,sans-serif;max-width:780px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}h1{font-size:30px;margin:0 0 8px}.lede{color:#6b7280;font-size:18px;margin:0 0 28px}h2{font-size:20px;margin:28px 0 8px}code{background:#f3f4f6;padding:1px 6px;border-radius:4px;font-size:13.5px}pre{background:#0f172a;color:#e2e8f0;padding:14px 16px;border-radius:8px;overflow:auto;font-size:13px}a{color:#0066cc}ol,ul{padding-left:22px}li{margin:6px 0}.note{border-left:3px solid #22d3ee;background:#ecfeff;padding:10px 14px;border-radius:0 8px 8px 0;margin:16px 0}footer{margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px}</style></head><body>
+<h1>ThumbGate — Remote MCP Connector</h1>
+<p class="lede">ThumbGate is a remote Model Context Protocol (MCP) server. Add it as a connector in Claude to give an agent governed access to ThumbGate's feedback capture, lesson retrieval, context assembly, and pre-action gate tools — over HTTP, authenticated with OAuth 2.1.</p>
+
+<h2>Connect URL</h2>
+<pre>${esc(mcpUrl)}</pre>
+<p>In Claude, add a custom connector and paste the URL above. Claude discovers the authorization server automatically via the protected-resource metadata at <a href="${esc(prmUrl)}">${esc(prmUrl)}</a>.</p>
+
+<h2>Authorization (OAuth 2.1 + PKCE)</h2>
+<ol>
+  <li>Claude reads the <code>resource</code> and <code>authorization_servers</code> from the protected-resource metadata.</li>
+  <li>It runs the standard OAuth 2.1 authorization-code flow with PKCE (<code>S256</code> only — <code>plain</code> is rejected).</li>
+  <li>The issued access token is audience-bound to the <code>${esc(mcpUrl)}</code> resource (RFC 8707); a token for any other audience is rejected.</li>
+  <li>The bearer token is then sent on the <code>Authorization</code> header for every <code>tools/call</code>.</li>
+</ol>
+
+<h2>Available tools</h2>
+<p>The full, machine-readable tool registry — names, input schemas, and the <code>readOnlyHint</code> / <code>destructiveHint</code> annotations — is published at <a href="${esc(cardUrl)}">${esc(cardUrl)}</a>. Tools fall into these groups:</p>
+<ul>
+  <li><strong>Feedback &amp; lessons</strong> — <code>capture_feedback</code>, <code>feedback_summary</code>, <code>search_lessons</code>, <code>retrieve_lessons</code>, <code>prevention_rules</code>.</li>
+  <li><strong>Context engineering</strong> — <code>construct_context_pack</code>, <code>evaluate_context_pack</code>, <code>unified_context</code>, <code>recall</code>.</li>
+  <li><strong>Pre-action gates &amp; governance</strong> — <code>satisfy_gate</code>, <code>track_action</code>, <code>approve_protected_action</code>, <code>verify_claim</code>, <code>enforcement_matrix</code>.</li>
+  <li><strong>Diagnostics &amp; planning</strong> — <code>diagnose_failure</code>, <code>suggest_fix</code>, <code>security_scan</code>, and the <code>plan_*</code> advisory tools.</li>
+</ul>
+
+<h2>Reviewer credential (read-only)</h2>
+<div class="note">For directory reviewers: ThumbGate issues a dedicated <strong>read-only</strong> reviewer credential. A token bound to that credential may invoke only tools annotated <code>readOnlyHint: true</code>; any write or mutating tool call is rejected. This makes the credential safe to share for review without granting the ability to mutate shared server state. Request it from the contact below.</div>
+
+<h2>Source &amp; contact</h2>
+<p>Open-source CLI and server: <a href="https://github.com/IgorGanapolsky/ThumbGate">github.com/IgorGanapolsky/ThumbGate</a>. Questions or reviewer-credential requests: <a href="mailto:igor.ganapolsky@gmail.com">igor.ganapolsky@gmail.com</a>.</p>
+
+<footer><a href="/">ThumbGate</a> · <a href="/support">Support</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></footer>
+</body></html>`, {}, { headOnly: isHeadRequest });
+      return;
+    }
+
     // Public support / contact page — required for Stripe Business → Public
     // details "Customer support URL" field. Single source of truth for how
     // customers reach us (email, GitHub issues, status page).

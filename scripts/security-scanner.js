@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 
+const { loadOptionalModule } = require("./private-core-boundary");
+
+
 /**
  * Security Scanner — OWASP-aware static analysis for PreToolUse checks.
  *
@@ -16,6 +19,10 @@
 const fs = require('fs');
 const path = require('path');
 const { recordAuditEvent, auditToFeedback } = require('./audit-trail');
+const { scanInstallCommand, detectSlopsquat } = loadOptionalModule('./slopsquat-guard', () => ({
+  scanInstallCommand: () => ({ detected: false, findings: [] }),
+  detectSlopsquat: () => null,
+}));
 
 // ---------------------------------------------------------------------------
 // Vulnerability pattern definitions (OWASP Top 10 + supply chain)
@@ -277,6 +284,18 @@ function scanDependencyChange(oldContent, newContent) {
             path: 'package.json',
           });
         }
+
+        // Tier 3: Slopsquat Guard — deterministic typosquat detection
+        const slopsquatFinding = detectSlopsquat(pkg, 'npm');
+        if (slopsquatFinding) {
+          findings.push({
+            id: slopsquatFinding.id,
+            category: 'supply-chain',
+            severity: slopsquatFinding.severity,
+            label: slopsquatFinding.label,
+            path: 'package.json',
+          });
+        }
       }
     }
   }
@@ -313,27 +332,68 @@ function scanDependencyChange(oldContent, newContent) {
  * @param {Object} input - Hook input { tool_name, tool_input }
  * @returns {Object|null} Gate result or null if clean
  */
+
+/**
+ * Evaluate slopsquat guard for a Bash command.
+ * @param {string} toolName 
+ * @param {Object} toolInput 
+ * @returns {Object|null}
+ */
+function evaluateSlopsquatScan(toolName, toolInput) {
+  if (toolName !== "Bash") return null;
+  const command = toolInput.command || "";
+  if (!command) return null;
+
+  const { resolveMode, scanInstallCommand } = loadOptionalModule("./slopsquat-guard", () => ({
+    resolveMode: () => "block",
+    scanInstallCommand: () => ({ detected: false, findings: [] }),
+  }));
+
+  const mode = resolveMode();
+  if (mode === "off") return null;
+
+  const result = scanInstallCommand(command);
+  if (!result.detected) return null;
+
+  const hasCritical = result.findings.some(f => f.severity === "critical");
+  const decision = (mode === "block" && hasCritical) ? "deny" : "warn";
+
+  return {
+    decision,
+    gate: "slopsquat-guard",
+    message: "✗ THUMBGATE: " + result.findings[0].label,
+    severity: hasCritical ? "critical" : "high",
+    reasoning: result.findings.map(f => f.label),
+  };
+}
+
 function evaluateSecurityScan(input = {}) {
   const toolName = input.tool_name || input.toolName || '';
   const toolInput = input.tool_input || {};
 
-  // Only scan write-type operations
+  // Only scan write-type operations and Bash commands
   const WRITE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
-  if (!WRITE_TOOLS.has(toolName)) {
+  const IS_BASH = toolName === 'Bash';
+  
+  if (!WRITE_TOOLS.has(toolName) && !IS_BASH) {
     return null;
   }
 
   const filePath = toolInput.file_path || toolInput.path || '';
   const content = toolInput.content || toolInput.new_string || '';
+  const command = toolInput.command || '';
 
-  if (!content) return null;
+  if (!content && !command) return null;
 
-  // Tier 1: Code vulnerability scan
-  const codeResult = scanCode(content, filePath);
+  // Tier 1: Code vulnerability scan (for Edits)
+  let codeResult = { detected: false, findings: [] };
+  if (content) {
+    codeResult = scanCode(content, filePath);
+  }
 
   // Tier 2: Supply chain scan for package.json changes
   let supplyChainResult = { detected: false, findings: [] };
-  if (filePath && path.basename(filePath) === 'package.json') {
+  if (filePath && path.basename(filePath) === 'package.json' && content) {
     let oldContent = '';
     try {
       const absPath = path.isAbsolute(filePath) ? filePath : path.resolve(filePath);
@@ -344,7 +404,14 @@ function evaluateSecurityScan(input = {}) {
     supplyChainResult = scanDependencyChange(oldContent, content);
   }
 
-  const allFindings = [...codeResult.findings, ...supplyChainResult.findings];
+  // Tier 3: Slopsquat Guard for Bash commands
+  let slopsquatResult = { detected: false, findings: [] };
+  if (IS_BASH && command) {
+    const slopsquatGate = evaluateSlopsquatScan(toolName, toolInput);
+    if (slopsquatGate) return slopsquatGate;
+  }
+
+  const allFindings = [...codeResult.findings, ...supplyChainResult.findings, ...slopsquatResult.findings];
   if (allFindings.length === 0) return null;
 
   // Determine overall severity
@@ -359,16 +426,18 @@ function evaluateSecurityScan(input = {}) {
     `[${f.severity.toUpperCase()}] ${f.label}${f.line ? ` (line ${f.line})` : ''}`
   ).join('; ');
 
-  const message = `Security scan detected ${allFindings.length} issue(s) in ${filePath || 'code'}: ${summary}`;
+  const message = `Security scan detected ${allFindings.length} issue(s) in ${filePath || (IS_BASH ? 'command' : 'code')}: ${summary}`;
 
   const reasoning = [
-    `Scanned ${content.length} bytes of content being written to ${filePath || 'unknown file'}`,
+    IS_BASH 
+      ? `Scanned Bash command for slopsquat/typosquat risk: "${command.slice(0, 100)}..."`
+      : `Scanned ${content.length} bytes of content being written to ${filePath || 'unknown file'}`,
     ...allFindings.map(f => `${f.category}/${f.id}: ${f.label}${f.match ? ` — matched: ${f.match.slice(0, 60)}` : ''}`),
   ];
 
   recordAuditEvent({
     toolName,
-    toolInput: { file_path: filePath, content_length: content.length },
+    toolInput: { file_path: filePath, content_length: content.length, command: IS_BASH ? command : undefined },
     decision,
     gateId,
     message,
@@ -439,6 +508,7 @@ function scanGitDiff(diffContent) {
 // ---------------------------------------------------------------------------
 
 module.exports = {
+  evaluateSlopsquatScan,
   VULN_PATTERNS,
   SUPPLY_CHAIN_PATTERNS,
   scanCode,
