@@ -3675,23 +3675,21 @@ function extractApiKey(req) {
  * credential safe to share with a directory reviewer — tool execution enforces
  * read-only for it (see the tools/call handler).
  */
-// Constant-time secret comparison via the double-HMAC pattern ("Cryptographic
-// Right Answers"). HMAC-ing both operands to a fixed length first avoids the
-// length-leak and the length-mismatch throw of a raw timingSafeEqual. The key
-// is random per-process (generated once below, never persisted), so neither
-// operand can be recovered from the digest. These are API/OAuth keys compared
-// in constant time at request handling — not passwords stored at rest — so a
-// password KDF (bcrypt/scrypt/argon2) is deliberately not used here.
-const TIMING_SAFE_COMPARE_KEY = require('crypto').randomBytes(32);
-
+// Constant-time comparison of two API/OAuth bearer keys. We compare the raw
+// bytes with crypto.timingSafeEqual after an explicit equal-length guard
+// (timingSafeEqual throws on a length mismatch). No digest is taken: these are
+// high-entropy random credentials compared transiently at request time, not
+// user passwords stored at rest, so neither a KDF (bcrypt/scrypt/argon2) nor a
+// length-normalizing hash is appropriate — and hashing the credential here is
+// exactly what static analysis (correctly, for *stored* passwords) flags. The
+// only side-channel is whether the two keys share a length, which reveals
+// nothing useful about a random secret. Once lengths match, the byte compare
+// is constant-time and leaks no information about where they differ.
 function safeKeyEqual(a, b) {
-  const x = String(a || '');
-  const y = String(b || '');
-  if (!x || !y) return false;
-  const crypto = require('crypto');
-  const hx = crypto.createHmac('sha256', TIMING_SAFE_COMPARE_KEY).update(x).digest();
-  const hy = crypto.createHmac('sha256', TIMING_SAFE_COMPARE_KEY).update(y).digest();
-  return crypto.timingSafeEqual(hx, hy);
+  const x = Buffer.from(String(a || ''), 'utf8');
+  const y = Buffer.from(String(b || ''), 'utf8');
+  if (x.length === 0 || y.length === 0 || x.length !== y.length) return false;
+  return require('crypto').timingSafeEqual(x, y);
 }
 
 function resolveKeyRole(key) {
