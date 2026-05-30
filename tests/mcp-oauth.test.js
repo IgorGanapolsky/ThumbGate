@@ -44,6 +44,30 @@ test('registerClient issues a client_id and stores it; rejects missing/invalid r
   assert.equal(oauth.registerClient(store, { redirect_uris: ['ftp://x'] }).error, 'invalid_redirect_uri');
 });
 
+test('registerClient enforces MCP redirect_uri rule: only HTTPS or loopback, reject all custom/other schemes', () => {
+  const store = oauth.createStore();
+  // Per the MCP auth spec, redirect URIs MUST be localhost or HTTPS. Everything
+  // else — custom app schemes included — is rejected.
+  for (const bad of ['intent://x', 'com.example.app://cb', 'myapp://cb', 'tel://123', 'javascript://alert', 'data://x', 'http://evil.example/cb', 'ftp://x']) {
+    assert.equal(oauth.isAllowedRedirectUri(bad), false, bad);
+    assert.equal(oauth.registerClient(store, { redirect_uris: [bad] }).error, 'invalid_redirect_uri', bad);
+  }
+  // HTTPS and loopback are allowed (what real MCP clients use).
+  for (const good of ['https://claude.ai/api/mcp/auth_callback', 'http://localhost:3000/callback', 'http://127.0.0.1:8123/cb']) {
+    assert.equal(oauth.isAllowedRedirectUri(good), true, good);
+    assert.match(oauth.registerClient(store, { redirect_uris: [good] }).client_id, /^tg_/, good);
+  }
+});
+
+test('in-memory store is bounded — oldest entries are evicted past the cap (DoS guard)', () => {
+  const store = oauth.createStore();
+  const overBy = 25;
+  for (let i = 0; i < oauth.MAX_CLIENTS + overBy; i++) {
+    oauth.registerClient(store, { redirect_uris: [`https://c${i}.example/cb`] });
+  }
+  assert.equal(store.clients.size, oauth.MAX_CLIENTS, 'client map never exceeds MAX_CLIENTS');
+});
+
 // --- full PKCE authorization-code flow ------------------------------------
 
 test('happy path: authorize -> token, bound key resolves', () => {

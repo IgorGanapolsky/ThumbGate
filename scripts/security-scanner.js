@@ -15,8 +15,12 @@
 
 const fs = require('fs');
 const path = require('path');
+const { loadOptionalModule } = require('./private-core-boundary');
 const { recordAuditEvent, auditToFeedback } = require('./audit-trail');
-const { scanInstallCommand, detectSlopsquat } = require('./slopsquat-guard');
+const { scanInstallCommand, detectSlopsquat } = loadOptionalModule('./slopsquat-guard', () => ({
+  scanInstallCommand: () => ({ detected: false, findings: [] }),
+  detectSlopsquat: () => null,
+}));
 
 // ---------------------------------------------------------------------------
 // Vulnerability pattern definitions (OWASP Top 10 + supply chain)

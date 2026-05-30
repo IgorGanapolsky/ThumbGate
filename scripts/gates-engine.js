@@ -55,9 +55,9 @@ const {
 const {
   evaluateSecurityScan,
 } = require('./security-scanner');
-const {
-  evaluateSequenceState,
-} = require('./sequence-guard');
+const { evaluateSequenceState } = loadOptionalModule('./sequence-guard', () => ({
+  evaluateSequenceState: () => null,
+}));
 const { getAutoGatesPath } = require('./auto-promote-gates');
 const { recordAuditEvent, auditToFeedback } = require('./audit-trail');
 
