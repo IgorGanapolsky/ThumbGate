@@ -3675,6 +3675,18 @@ function extractApiKey(req) {
  * credential safe to share with a directory reviewer — tool execution enforces
  * read-only for it (see the tools/call handler).
  */
+// Constant-time secret comparison. Hashing both sides to a fixed length first
+// avoids the length-leak and the length-mismatch throw of a raw timingSafeEqual.
+function safeKeyEqual(a, b) {
+  const x = String(a || '');
+  const y = String(b || '');
+  if (!x || !y) return false;
+  const crypto = require('crypto');
+  const hx = crypto.createHash('sha256').update(x).digest();
+  const hy = crypto.createHash('sha256').update(y).digest();
+  return crypto.timingSafeEqual(hx, hy);
+}
+
 function resolveKeyRole(key) {
   const k = String(key || '').trim();
   const adminKey = String(process.env.THUMBGATE_API_KEY || '').trim();
@@ -3682,9 +3694,9 @@ function resolveKeyRole(key) {
   const reviewerKey = String(process.env.THUMBGATE_REVIEWER_KEY || '').trim();
   const configured = [adminKey, operatorKey, reviewerKey].filter(Boolean);
   if (configured.length === 0) return k ? 'dev' : null;
-  if (adminKey && k === adminKey) return 'admin';
-  if (operatorKey && k === operatorKey) return 'operator';
-  if (reviewerKey && k === reviewerKey) return 'reviewer';
+  if (safeKeyEqual(k, adminKey)) return 'admin';
+  if (safeKeyEqual(k, operatorKey)) return 'operator';
+  if (safeKeyEqual(k, reviewerKey)) return 'reviewer';
   return null;
 }
 
@@ -3910,7 +3922,7 @@ function createApiServer() {
               const adminKey = String(process.env.THUMBGATE_API_KEY || '').trim();
               const operatorKey = String(process.env.THUMBGATE_OPERATOR_KEY || '').trim();
               const reviewerKey = String(process.env.THUMBGATE_REVIEWER_KEY || '').trim();
-              const rawKeyValid = Boolean(bearer) && ((adminKey && bearer === adminKey) || (operatorKey && bearer === operatorKey) || (reviewerKey && bearer === reviewerKey));
+              const rawKeyValid = Boolean(bearer) && (safeKeyEqual(bearer, adminKey) || safeKeyEqual(bearer, operatorKey) || safeKeyEqual(bearer, reviewerKey));
               const authed = oauthSession
                 ? mcpOauth.tokenAudienceValid(oauthSession, resourceUrl)
                 : rawKeyValid;
@@ -3931,7 +3943,7 @@ function createApiServer() {
               // safe to share (e.g. with a directory reviewer) without granting the
               // ability to mutate shared server state.
               const effectiveKey = oauthSession ? String(oauthSession.boundKey || '') : bearer;
-              const isReviewer = Boolean(reviewerKey) && effectiveKey === reviewerKey;
+              const isReviewer = Boolean(reviewerKey) && safeKeyEqual(effectiveKey, reviewerKey);
               if (isReviewer) {
                 const name = msg.params && msg.params.name;
                 const tool = MCP_TOOLS.find((t) => t.name === name);
