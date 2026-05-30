@@ -1,0 +1,684 @@
+test	Set up job	﻿2026-05-30T15:58:35.1871637Z Current runner version: '2.334.0'
+test	Set up job	2026-05-30T15:58:35.1895326Z ##[group]Runner Image Provisioner
+test	Set up job	2026-05-30T15:58:35.1896227Z Hosted Compute Agent
+test	Set up job	2026-05-30T15:58:35.1896885Z Version: 20260520.533
+test	Set up job	2026-05-30T15:58:35.1897550Z Commit: 189110e25284a9812c124fd27b339e2fb4f2f9db
+test	Set up job	2026-05-30T15:58:35.1898266Z Build Date: 2026-05-20T17:44:04Z
+test	Set up job	2026-05-30T15:58:35.1898982Z Worker ID: {a67d28f4-58f5-4f5c-9029-3e3007c5a721}
+test	Set up job	2026-05-30T15:58:35.1899680Z Azure Region: westus2
+test	Set up job	2026-05-30T15:58:35.1900406Z ##[endgroup]
+test	Set up job	2026-05-30T15:58:35.1901806Z ##[group]Operating System
+test	Set up job	2026-05-30T15:58:35.1902633Z Ubuntu
+test	Set up job	2026-05-30T15:58:35.1903169Z 24.04.4
+test	Set up job	2026-05-30T15:58:35.1903712Z LTS
+test	Set up job	2026-05-30T15:58:35.1904218Z ##[endgroup]
+test	Set up job	2026-05-30T15:58:35.1904789Z ##[group]Runner Image
+test	Set up job	2026-05-30T15:58:35.1905433Z Image: ubuntu-24.04
+test	Set up job	2026-05-30T15:58:35.1905961Z Version: 20260525.161.1
+test	Set up job	2026-05-30T15:58:35.1907028Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260525.161/images/ubuntu/Ubuntu2404-Readme.md
+test	Set up job	2026-05-30T15:58:35.1908641Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260525.161
+test	Set up job	2026-05-30T15:58:35.1909549Z ##[endgroup]
+test	Set up job	2026-05-30T15:58:35.1910721Z ##[group]GITHUB_TOKEN Permissions
+test	Set up job	2026-05-30T15:58:35.1912842Z Contents: read
+test	Set up job	2026-05-30T15:58:35.1913525Z Metadata: read
+test	Set up job	2026-05-30T15:58:35.1914061Z PullRequests: read
+test	Set up job	2026-05-30T15:58:35.1914644Z ##[endgroup]
+test	Set up job	2026-05-30T15:58:35.1916618Z Secret source: Actions
+test	Set up job	2026-05-30T15:58:35.1917395Z Prepare workflow directory
+test	Set up job	2026-05-30T15:58:35.2441507Z Prepare all required actions
+test	Set up job	2026-05-30T15:58:35.2478827Z Getting action download info
+test	Set up job	2026-05-30T15:58:35.7338328Z Download action repository 'actions/checkout@v6' (SHA:de0fac2e4500dabe0009e67214ff5f5447ce83dd)
+test	Set up job	2026-05-30T15:58:35.8258875Z Download action repository 'actions/setup-python@v6' (SHA:a309ff8b426b58ec0e2a45f0f869d46889d02405)
+test	Set up job	2026-05-30T15:58:35.9283534Z Download action repository 'actions/setup-node@v6' (SHA:48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e)
+test	Set up job	2026-05-30T15:58:35.9974458Z Download action repository 'actions/upload-artifact@v7' (SHA:043fb46d1a93c77aae656e7c1c64a875d1fc6a0a)
+test	Set up job	2026-05-30T15:58:36.1766860Z Complete job name: test
+test	Checkout	﻿2026-05-30T15:58:36.2453559Z ##[group]Run actions/checkout@v6
+test	Checkout	2026-05-30T15:58:36.2454426Z with:
+test	Checkout	2026-05-30T15:58:36.2454867Z   fetch-depth: 0
+test	Checkout	2026-05-30T15:58:36.2455341Z   repository: IgorGanapolsky/ThumbGate
+test	Checkout	2026-05-30T15:58:36.2460299Z   token: ***
+test	Checkout	2026-05-30T15:58:36.2460727Z   ssh-strict: true
+test	Checkout	2026-05-30T15:58:36.2461166Z   ssh-user: git
+test	Checkout	2026-05-30T15:58:36.2461631Z   persist-credentials: true
+test	Checkout	2026-05-30T15:58:36.2462254Z   clean: true
+test	Checkout	2026-05-30T15:58:36.2462723Z   sparse-checkout-cone-mode: true
+test	Checkout	2026-05-30T15:58:36.2463286Z   fetch-tags: false
+test	Checkout	2026-05-30T15:58:36.2463744Z   show-progress: true
+test	Checkout	2026-05-30T15:58:36.2464180Z   lfs: false
+test	Checkout	2026-05-30T15:58:36.2464586Z   submodules: false
+test	Checkout	2026-05-30T15:58:36.2465025Z   set-safe-directory: true
+test	Checkout	2026-05-30T15:58:36.2465729Z env:
+test	Checkout	2026-05-30T15:58:36.2466848Z   STRIPE_SECRET_KEY: ***
+test	Checkout	2026-05-30T15:58:36.2467443Z   STRIPE_PRICE_ID: ***
+test	Checkout	2026-05-30T15:58:36.2467946Z   STRIPE_PRODUCT_ID: ***
+test	Checkout	2026-05-30T15:58:36.2469160Z   STRIPE_PUBLISHABLE_KEY: ***
+test	Checkout	2026-05-30T15:58:36.2469838Z   STRIPE_WEBHOOK_SECRET: ***
+test	Checkout	2026-05-30T15:58:36.2470497Z   THUMBGATE_API_KEY: ***
+test	Checkout	2026-05-30T15:58:36.2470960Z ##[endgroup]
+test	Checkout	2026-05-30T15:58:36.3478432Z Syncing repository: IgorGanapolsky/ThumbGate
+test	Checkout	2026-05-30T15:58:36.3480303Z ##[group]Getting Git version info
+test	Checkout	2026-05-30T15:58:36.3481099Z Working directory is '/home/runner/work/ThumbGate/ThumbGate'
+test	Checkout	2026-05-30T15:58:36.3482432Z [command]/usr/bin/git version
+test	Checkout	2026-05-30T15:58:36.3507314Z git version 2.54.0
+test	Checkout	2026-05-30T15:58:36.3530645Z ##[endgroup]
+test	Checkout	2026-05-30T15:58:36.3545234Z Temporarily overriding HOME='/home/runner/work/_temp/100fdb28-e203-4cad-9d5d-dae18d80467d' before making global git config changes
+test	Checkout	2026-05-30T15:58:36.3548804Z Adding repository directory to the temporary git global config as a safe directory
+test	Checkout	2026-05-30T15:58:36.3551615Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/ThumbGate/ThumbGate
+test	Checkout	2026-05-30T15:58:36.3589247Z Deleting the contents of '/home/runner/work/ThumbGate/ThumbGate'
+test	Checkout	2026-05-30T15:58:36.3593209Z ##[group]Initializing the repository
+test	Checkout	2026-05-30T15:58:36.3596936Z [command]/usr/bin/git init /home/runner/work/ThumbGate/ThumbGate
+test	Checkout	2026-05-30T15:58:36.3693693Z hint: Using 'master' as the name for the initial branch. This default branch name
+test	Checkout	2026-05-30T15:58:36.3695034Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+test	Checkout	2026-05-30T15:58:36.3696357Z hint: to use in all of your new repositories, which will suppress this warning,
+test	Checkout	2026-05-30T15:58:36.3697910Z hint: call:
+test	Checkout	2026-05-30T15:58:36.3698708Z hint:
+test	Checkout	2026-05-30T15:58:36.3699763Z hint: 	git config --global init.defaultBranch <name>
+test	Checkout	2026-05-30T15:58:36.3701025Z hint:
+test	Checkout	2026-05-30T15:58:36.3702219Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+test	Checkout	2026-05-30T15:58:36.3704159Z hint: 'development'. The just-created branch can be renamed via this command:
+test	Checkout	2026-05-30T15:58:36.3705782Z hint:
+test	Checkout	2026-05-30T15:58:36.3706522Z hint: 	git branch -m <name>
+test	Checkout	2026-05-30T15:58:36.3707346Z hint:
+test	Checkout	2026-05-30T15:58:36.3708477Z hint: Disable this message with "git config set advice.defaultBranchName false"
+test	Checkout	2026-05-30T15:58:36.3710664Z Initialized empty Git repository in /home/runner/work/ThumbGate/ThumbGate/.git/
+test	Checkout	2026-05-30T15:58:36.3714041Z [command]/usr/bin/git remote add origin https://github.com/IgorGanapolsky/ThumbGate
+test	Checkout	2026-05-30T15:58:36.3746121Z ##[endgroup]
+test	Checkout	2026-05-30T15:58:36.3747749Z ##[group]Disabling automatic garbage collection
+test	Checkout	2026-05-30T15:58:36.3749646Z [command]/usr/bin/git config --local gc.auto 0
+test	Checkout	2026-05-30T15:58:36.3771676Z ##[endgroup]
+test	Checkout	2026-05-30T15:58:36.3772881Z ##[group]Setting up auth
+test	Checkout	2026-05-30T15:58:36.3773449Z Removing SSH command configuration
+test	Checkout	2026-05-30T15:58:36.3778185Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+test	Checkout	2026-05-30T15:58:36.3805370Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+test	Checkout	2026-05-30T15:58:36.4078334Z Removing HTTP extra header
+test	Checkout	2026-05-30T15:58:36.4086738Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+test	Checkout	2026-05-30T15:58:36.4112709Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+test	Checkout	2026-05-30T15:58:36.4288796Z Removing includeIf entries pointing to credentials config files
+test	Checkout	2026-05-30T15:58:36.4291169Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+test	Checkout	2026-05-30T15:58:36.4309788Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+test	Checkout	2026-05-30T15:58:36.4477275Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-be8a585c-6bc2-4e7c-a791-c8b80b730571.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+test	Checkout	2026-05-30T15:58:36.4505831Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/ThumbGate/ThumbGate/.git.path /home/runner/work/_temp/git-credentials-be8a585c-6bc2-4e7c-a791-c8b80b730571.config
+test	Checkout	2026-05-30T15:58:36.4529168Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/ThumbGate/ThumbGate/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-be8a585c-6bc2-4e7c-a791-c8b80b730571.config
+test	Checkout	2026-05-30T15:58:36.4557235Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-be8a585c-6bc2-4e7c-a791-c8b80b730571.config
+test	Checkout	2026-05-30T15:58:36.4587120Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-be8a585c-6bc2-4e7c-a791-c8b80b730571.config
+test	Checkout	2026-05-30T15:58:36.4606014Z ##[endgroup]
+test	Checkout	2026-05-30T15:58:36.4607005Z ##[group]Fetching the repository
+test	Checkout	2026-05-30T15:58:36.4614284Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/* +817d44c4b3c92a9e7c1fc19a7e6261c14aa9acf8:refs/remotes/pull/2411/merge
+test	Checkout	2026-05-30T15:58:38.8919546Z From https://github.com/IgorGanapolsky/ThumbGate
+test	Checkout	2026-05-30T15:58:38.8920745Z  * [new branch]        agent/gemini/optimize-gh-actions -> origin/agent/gemini/optimize-gh-actions
+test	Checkout	2026-05-30T15:58:38.8921494Z  * [new branch]        chore/agent-reliability-skills -> origin/chore/agent-reliability-skills
+test	Checkout	2026-05-30T15:58:38.8922445Z  * [new branch]        claude/blog-rm-rf-prevention-2026-05-27 -> origin/claude/blog-rm-rf-prevention-2026-05-27
+test	Checkout	2026-05-30T15:58:38.8923151Z  * [new branch]        claude/cap-actions-burn-v1 -> origin/claude/cap-actions-burn-v1
+test	Checkout	2026-05-30T15:58:38.8923777Z  * [new branch]        claude/llms-txt-geo-2026-05-26 -> origin/claude/llms-txt-geo-2026-05-26
+test	Checkout	2026-05-30T15:58:38.8924652Z  * [new branch]        codex/cicd-rate-limit-hygiene -> origin/codex/cicd-rate-limit-hygiene
+test	Checkout	2026-05-30T15:58:38.8925367Z  * [new branch]        codex/gt-call-readiness-hotfix -> origin/codex/gt-call-readiness-hotfix
+test	Checkout	2026-05-30T15:58:38.8926412Z  * [new branch]        codex/langfuse-observability-enforcement -> origin/codex/langfuse-observability-enforcement
+test	Checkout	2026-05-30T15:58:38.8927903Z  * [new branch]        codex/ralph-loop-community-growth-2026-05-27-actions -> origin/codex/ralph-loop-community-growth-2026-05-27-actions
+test	Checkout	2026-05-30T15:58:38.8928736Z  * [new branch]        docs/grok-build-honest-support -> origin/docs/grok-build-honest-support
+test	Checkout	2026-05-30T15:58:38.8929341Z  * [new branch]        feat/cli-auto-update  -> origin/feat/cli-auto-update
+test	Checkout	2026-05-30T15:58:38.8929893Z  * [new branch]        feat/mcp-reviewer-key -> origin/feat/mcp-reviewer-key
+test	Checkout	2026-05-30T15:58:38.8930580Z  * [new branch]        feat/silent-failure-cluster-default-on -> origin/feat/silent-failure-cluster-default-on
+test	Checkout	2026-05-30T15:58:38.8931260Z  * [new branch]        feat/slopsquat-guard  -> origin/feat/slopsquat-guard
+test	Checkout	2026-05-30T15:58:38.8931900Z  * [new branch]        feature/add-live-demos-for-gt -> origin/feature/add-live-demos-for-gt
+test	Checkout	2026-05-30T15:58:38.8933099Z  * [new branch]        fix/revenue-bridge-2026-05-26 -> origin/fix/revenue-bridge-2026-05-26
+test	Checkout	2026-05-30T15:58:38.8933656Z  * [new branch]        gh-pages              -> origin/gh-pages
+test	Checkout	2026-05-30T15:58:38.8934123Z  * [new branch]        main                  -> origin/main
+test	Checkout	2026-05-30T15:58:38.8934584Z  * [new branch]        release/v1.25.1       -> origin/release/v1.25.1
+test	Checkout	2026-05-30T15:58:38.8935136Z  * [new tag]           archive/fix-ci-smoke-test-retry -> archive/fix-ci-smoke-test-retry
+test	Checkout	2026-05-30T15:58:38.8935907Z  * [new tag]           archive/pr-1078-feat-merge-conductor-orchestration -> archive/pr-1078-feat-merge-conductor-orchestration
+test	Checkout	2026-05-30T15:58:38.8936837Z  * [new tag]           archive/pr-1116-codex-feat-openai-cloudflare-agent-roi -> archive/pr-1116-codex-feat-openai-cloudflare-agent-roi
+test	Checkout	2026-05-30T15:58:38.8937722Z  * [new tag]           archive/pr-1124-feat-migrate-to-thumbgate-ai -> archive/pr-1124-feat-migrate-to-thumbgate-ai
+test	Checkout	2026-05-30T15:58:38.8938489Z  * [new tag]           archive/pr-1305-codex-release-1.16.4 -> archive/pr-1305-codex-release-1.16.4
+test	Checkout	2026-05-30T15:58:38.8939043Z  * [new tag]           carousel-assets-v1    -> carousel-assets-v1
+test	Checkout	2026-05-30T15:58:38.8939646Z  * [new tag]           v0.6.10               -> v0.6.10
+test	Checkout	2026-05-30T15:58:38.8940051Z  * [new tag]           v0.6.11               -> v0.6.11
+test	Checkout	2026-05-30T15:58:38.8940435Z  * [new tag]           v0.6.12               -> v0.6.12
+test	Checkout	2026-05-30T15:58:38.8940903Z  * [new tag]           v0.6.13               -> v0.6.13
+test	Checkout	2026-05-30T15:58:38.8941322Z  * [new tag]           v0.6.16               -> v0.6.16
+test	Checkout	2026-05-30T15:58:38.8941708Z  * [new tag]           v0.6.8                -> v0.6.8
+test	Checkout	2026-05-30T15:58:38.8942230Z  * [new tag]           v0.6.9                -> v0.6.9
+test	Checkout	2026-05-30T15:58:38.8942749Z  * [new tag]           v0.7.0                -> v0.7.0
+test	Checkout	2026-05-30T15:58:38.8943126Z  * [new tag]           v0.7.3                -> v0.7.3
+test	Checkout	2026-05-30T15:58:38.8943510Z  * [new tag]           v0.8.0                -> v0.8.0
+test	Checkout	2026-05-30T15:58:38.8943889Z  * [new tag]           v0.8.1                -> v0.8.1
+test	Checkout	2026-05-30T15:58:38.8944267Z  * [new tag]           v0.8.2                -> v0.8.2
+test	Checkout	2026-05-30T15:58:38.8944637Z  * [new tag]           v0.8.3                -> v0.8.3
+test	Checkout	2026-05-30T15:58:38.8945016Z  * [new tag]           v0.8.4                -> v0.8.4
+test	Checkout	2026-05-30T15:58:38.8945384Z  * [new tag]           v0.8.5                -> v0.8.5
+test	Checkout	2026-05-30T15:58:38.8945766Z  * [new tag]           v0.8.6                -> v0.8.6
+test	Checkout	2026-05-30T15:58:38.8946153Z  * [new tag]           v0.8.7                -> v0.8.7
+test	Checkout	2026-05-30T15:58:38.8946526Z  * [new tag]           v0.8.8                -> v0.8.8
+test	Checkout	2026-05-30T15:58:38.8946910Z  * [new tag]           v0.8.9                -> v0.8.9
+test	Checkout	2026-05-30T15:58:38.8947283Z  * [new tag]           v0.9.0                -> v0.9.0
+test	Checkout	2026-05-30T15:58:38.8947669Z  * [new tag]           v0.9.10               -> v0.9.10
+test	Checkout	2026-05-30T15:58:38.8948045Z  * [new tag]           v0.9.11               -> v0.9.11
+test	Checkout	2026-05-30T15:58:38.8948452Z  * [new tag]           v0.9.12               -> v0.9.12
+test	Checkout	2026-05-30T15:58:38.8948822Z  * [new tag]           v0.9.13               -> v0.9.13
+test	Checkout	2026-05-30T15:58:38.8949208Z  * [new tag]           v0.9.14               -> v0.9.14
+test	Checkout	2026-05-30T15:58:38.8949577Z  * [new tag]           v0.9.2                -> v0.9.2
+test	Checkout	2026-05-30T15:58:38.8949959Z  * [new tag]           v0.9.3                -> v0.9.3
+test	Checkout	2026-05-30T15:58:38.8950335Z  * [new tag]           v0.9.4                -> v0.9.4
+test	Checkout	2026-05-30T15:58:38.8950715Z  * [new tag]           v0.9.5                -> v0.9.5
+test	Checkout	2026-05-30T15:58:38.8951087Z  * [new tag]           v0.9.6                -> v0.9.6
+test	Checkout	2026-05-30T15:58:38.8951466Z  * [new tag]           v0.9.7                -> v0.9.7
+test	Checkout	2026-05-30T15:58:38.8951835Z  * [new tag]           v0.9.8                -> v0.9.8
+test	Checkout	2026-05-30T15:58:38.8952390Z  * [new tag]           v0.9.9                -> v0.9.9
+test	Checkout	2026-05-30T15:58:38.8952774Z  * [new tag]           v1.0.0                -> v1.0.0
+test	Checkout	2026-05-30T15:58:38.8953276Z  * [new tag]           v1.1.0                -> v1.1.0
+test	Checkout	2026-05-30T15:58:38.8953666Z  * [new tag]           v1.10.1               -> v1.10.1
+test	Checkout	2026-05-30T15:58:38.8954068Z  * [new tag]           v1.11.0               -> v1.11.0
+test	Checkout	2026-05-30T15:58:38.8954456Z  * [new tag]           v1.11.1               -> v1.11.1
+test	Checkout	2026-05-30T15:58:38.8954849Z  * [new tag]           v1.12.0               -> v1.12.0
+test	Checkout	2026-05-30T15:58:38.8955327Z  * [new tag]           v1.12.1               -> v1.12.1
+test	Checkout	2026-05-30T15:58:38.8955737Z  * [new tag]           v1.12.2               -> v1.12.2
+test	Checkout	2026-05-30T15:58:38.8956128Z  * [new tag]           v1.13.0               -> v1.13.0
+test	Checkout	2026-05-30T15:58:38.8956511Z  * [new tag]           v1.14.0               -> v1.14.0
+test	Checkout	2026-05-30T15:58:38.8956901Z  * [new tag]           v1.14.1               -> v1.14.1
+test	Checkout	2026-05-30T15:58:38.8957296Z  * [new tag]           v1.15.0               -> v1.15.0
+test	Checkout	2026-05-30T15:58:38.8957696Z  * [new tag]           v1.16.0               -> v1.16.0
+test	Checkout	2026-05-30T15:58:38.8958092Z  * [new tag]           v1.16.1               -> v1.16.1
+test	Checkout	2026-05-30T15:58:38.8958494Z  * [new tag]           v1.16.10              -> v1.16.10
+test	Checkout	2026-05-30T15:58:38.8958891Z  * [new tag]           v1.16.11              -> v1.16.11
+test	Checkout	2026-05-30T15:58:38.8959290Z  * [new tag]           v1.16.12              -> v1.16.12
+test	Checkout	2026-05-30T15:58:38.8959683Z  * [new tag]           v1.16.13              -> v1.16.13
+test	Checkout	2026-05-30T15:58:38.8960087Z  * [new tag]           v1.16.19              -> v1.16.19
+test	Checkout	2026-05-30T15:58:38.8960484Z  * [new tag]           v1.16.2               -> v1.16.2
+test	Checkout	2026-05-30T15:58:38.8960875Z  * [new tag]           v1.16.20              -> v1.16.20
+test	Checkout	2026-05-30T15:58:38.8961282Z  * [new tag]           v1.16.21              -> v1.16.21
+test	Checkout	2026-05-30T15:58:38.8961673Z  * [new tag]           v1.16.22              -> v1.16.22
+test	Checkout	2026-05-30T15:58:38.8962328Z  * [new tag]           v1.16.3               -> v1.16.3
+test	Checkout	2026-05-30T15:58:38.8962728Z  * [new tag]           v1.16.4               -> v1.16.4
+test	Checkout	2026-05-30T15:58:38.8963133Z  * [new tag]           v1.16.5               -> v1.16.5
+test	Checkout	2026-05-30T15:58:38.8963517Z  * [new tag]           v1.16.6               -> v1.16.6
+test	Checkout	2026-05-30T15:58:38.8963916Z  * [new tag]           v1.16.7               -> v1.16.7
+test	Checkout	2026-05-30T15:58:38.8964302Z  * [new tag]           v1.16.8               -> v1.16.8
+test	Checkout	2026-05-30T15:58:38.8964711Z  * [new tag]           v1.16.9               -> v1.16.9
+test	Checkout	2026-05-30T15:58:38.8965116Z  * [new tag]           v1.17.0               -> v1.17.0
+test	Checkout	2026-05-30T15:58:38.8965517Z  * [new tag]           v1.18.0               -> v1.18.0
+test	Checkout	2026-05-30T15:58:38.8965912Z  * [new tag]           v1.19.0               -> v1.19.0
+test	Checkout	2026-05-30T15:58:38.8966316Z  * [new tag]           v1.2.0                -> v1.2.0
+test	Checkout	2026-05-30T15:58:38.8966710Z  * [new tag]           v1.20.0               -> v1.20.0
+test	Checkout	2026-05-30T15:58:38.8967124Z  * [new tag]           v1.21.0               -> v1.21.0
+test	Checkout	2026-05-30T15:58:38.8967517Z  * [new tag]           v1.21.2               -> v1.21.2
+test	Checkout	2026-05-30T15:58:38.8967925Z  * [new tag]           v1.22.0               -> v1.22.0
+test	Checkout	2026-05-30T15:58:38.8968317Z  * [new tag]           v1.23.0               -> v1.23.0
+test	Checkout	2026-05-30T15:58:38.8968712Z  * [new tag]           v1.23.1               -> v1.23.1
+test	Checkout	2026-05-30T15:58:38.8969104Z  * [new tag]           v1.23.2               -> v1.23.2
+test	Checkout	2026-05-30T15:58:38.8969497Z  * [new tag]           v1.25.0               -> v1.25.0
+test	Checkout	2026-05-30T15:58:38.8969883Z  * [new tag]           v1.3.0                -> v1.3.0
+test	Checkout	2026-05-30T15:58:38.8970279Z  * [new tag]           v1.4.0                -> v1.4.0
+test	Checkout	2026-05-30T15:58:38.8970672Z  * [new tag]           v1.4.1                -> v1.4.1
+test	Checkout	2026-05-30T15:58:38.8971064Z  * [new tag]           v1.4.3                -> v1.4.3
+test	Checkout	2026-05-30T15:58:38.8971458Z  * [new tag]           v1.4.4                -> v1.4.4
+test	Checkout	2026-05-30T15:58:38.8971853Z  * [new tag]           v1.4.5                -> v1.4.5
+test	Checkout	2026-05-30T15:58:38.8972445Z  * [new tag]           v1.4.6                -> v1.4.6
+test	Checkout	2026-05-30T15:58:38.8973021Z  * [new tag]           v1.5.0                -> v1.5.0
+test	Checkout	2026-05-30T15:58:38.8973417Z  * [new tag]           v1.5.1                -> v1.5.1
+test	Checkout	2026-05-30T15:58:38.8973804Z  * [new tag]           v1.5.2                -> v1.5.2
+test	Checkout	2026-05-30T15:58:38.8974198Z  * [new tag]           v1.5.3                -> v1.5.3
+test	Checkout	2026-05-30T15:58:38.8974585Z  * [new tag]           v1.5.4                -> v1.5.4
+test	Checkout	2026-05-30T15:58:38.8974981Z  * [new tag]           v1.5.8                -> v1.5.8
+test	Checkout	2026-05-30T15:58:38.8975373Z  * [new tag]           v1.6.0                -> v1.6.0
+test	Checkout	2026-05-30T15:58:38.8975770Z  * [new tag]           v1.7.0                -> v1.7.0
+test	Checkout	2026-05-30T15:58:38.8976153Z  * [new tag]           v1.8.0                -> v1.8.0
+test	Checkout	2026-05-30T15:58:38.8976544Z  * [new tag]           v1.9.0                -> v1.9.0
+test	Checkout	2026-05-30T15:58:38.8977214Z  * [new tag]           wip/sentinel-from-parallel-session-2026-05-20 -> wip/sentinel-from-parallel-session-2026-05-20
+test	Checkout	2026-05-30T15:58:38.8977993Z  * [new ref]           817d44c4b3c92a9e7c1fc19a7e6261c14aa9acf8 -> pull/2411/merge
+test	Checkout	2026-05-30T15:58:38.9026861Z ##[endgroup]
+test	Checkout	2026-05-30T15:58:38.9027798Z ##[group]Determining the checkout info
+test	Checkout	2026-05-30T15:58:38.9028748Z ##[endgroup]
+test	Checkout	2026-05-30T15:58:38.9033353Z [command]/usr/bin/git sparse-checkout disable
+test	Checkout	2026-05-30T15:58:38.9083829Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+test	Checkout	2026-05-30T15:58:38.9094600Z ##[group]Checking out the ref
+test	Checkout	2026-05-30T15:58:38.9098121Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/2411/merge
+test	Checkout	2026-05-30T15:58:39.0689914Z Note: switching to 'refs/remotes/pull/2411/merge'.
+test	Checkout	2026-05-30T15:58:39.0690533Z 
+test	Checkout	2026-05-30T15:58:39.0690937Z You are in 'detached HEAD' state. You can look around, make experimental
+test	Checkout	2026-05-30T15:58:39.0691834Z changes and commit them, and you can discard any commits you make in this
+test	Checkout	2026-05-30T15:58:39.0693249Z state without impacting any branches by switching back to a branch.
+test	Checkout	2026-05-30T15:58:39.0693766Z 
+test	Checkout	2026-05-30T15:58:39.0694174Z If you want to create a new branch to retain commits you create, you may
+test	Checkout	2026-05-30T15:58:39.0695110Z do so (now or later) by using -c with the switch command. Example:
+test	Checkout	2026-05-30T15:58:39.0695629Z 
+test	Checkout	2026-05-30T15:58:39.0695908Z   git switch -c <new-branch-name>
+test	Checkout	2026-05-30T15:58:39.0696271Z 
+test	Checkout	2026-05-30T15:58:39.0696528Z Or undo this operation with:
+test	Checkout	2026-05-30T15:58:39.0696849Z 
+test	Checkout	2026-05-30T15:58:39.0697072Z   git switch -
+test	Checkout	2026-05-30T15:58:39.0697365Z 
+test	Checkout	2026-05-30T15:58:39.0697855Z Turn off this advice by setting config variable advice.detachedHead to false
+test	Checkout	2026-05-30T15:58:39.0698489Z 
+test	Checkout	2026-05-30T15:58:39.0699230Z HEAD is now at 817d44c4 Merge 1569f8e82d24a0b6ab9016f291f2a07d75cdf540 into a6a640b9657f8d85e0653f89e4ccc32bf8b70d28
+test	Checkout	2026-05-30T15:58:39.0708734Z ##[endgroup]
+test	Checkout	2026-05-30T15:58:39.0749480Z [command]/usr/bin/git log -1 --format=%H
+test	Checkout	2026-05-30T15:58:39.0769802Z 817d44c4b3c92a9e7c1fc19a7e6261c14aa9acf8
+test	Detect CI scope	﻿2026-05-30T15:58:39.0964914Z ##[group]Run set -euo pipefail
+test	Detect CI scope	2026-05-30T15:58:39.0965438Z ^[[36;1mset -euo pipefail^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0965769Z ^[[36;1m^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0966114Z ^[[36;1mif [[ "$EVENT_NAME" != "pull_request" ]]; then^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0966600Z ^[[36;1m  echo "mode=full" >> "$GITHUB_OUTPUT"^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0967074Z ^[[36;1m  echo "reason=non-pr-event" >> "$GITHUB_OUTPUT"^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0967497Z ^[[36;1m  exit 0^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0967756Z ^[[36;1mfi^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0968007Z ^[[36;1m^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0968414Z ^[[36;1mgit diff --name-only "$BASE_SHA" "$HEAD_SHA" | sed '/^$/d' > /tmp/ci-changed-files.txt^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0968916Z ^[[36;1mecho "Changed files:"^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0969283Z ^[[36;1msed 's/^/- /' /tmp/ci-changed-files.txt || true^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0969647Z ^[[36;1m^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0969938Z ^[[36;1mif [[ ! -s /tmp/ci-changed-files.txt ]]; then^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0970352Z ^[[36;1m  echo "mode=full" >> "$GITHUB_OUTPUT"^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0970804Z ^[[36;1m  echo "reason=no-changed-files" >> "$GITHUB_OUTPUT"^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0971197Z ^[[36;1m  exit 0^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0971457Z ^[[36;1mfi^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0971722Z ^[[36;1m^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0973247Z ^[[36;1mif grep -Ev '^(\.changeset/.*\.md|public/|config/post-deploy-marketing-pages\.json|scripts/dashboard\.js|scripts/verify-marketing-pages-deployed\.js|tests/(api-server|dashboard|public-landing|landing-page-claims|funnel-invariants|verify-marketing-pages-deployed|public-static-assets)\.test\.js|tests/e2e/)' /tmp/ci-changed-files.txt > /tmp/ci-full-required-files.txt; then^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0974761Z ^[[36;1m  echo "mode=full" >> "$GITHUB_OUTPUT"^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0975219Z ^[[36;1m  echo "reason=runtime-or-workflow-surface" >> "$GITHUB_OUTPUT"^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0975660Z ^[[36;1m  echo "Files requiring full CI:"^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0976067Z ^[[36;1m  sed 's/^/- /' /tmp/ci-full-required-files.txt^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0976421Z ^[[36;1m  exit 0^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0976686Z ^[[36;1mfi^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0976928Z ^[[36;1m^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0977208Z ^[[36;1mecho "mode=web" >> "$GITHUB_OUTPUT"^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0977630Z ^[[36;1mecho "reason=web-revenue-surface-only" >> "$GITHUB_OUTPUT"^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0978194Z ^[[36;1mecho "Focused web/revenue CI selected. Merge queue and main pushes still run full CI."^[[0m
+test	Detect CI scope	2026-05-30T15:58:39.0999373Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+test	Detect CI scope	2026-05-30T15:58:39.0999822Z env:
+test	Detect CI scope	2026-05-30T15:58:39.1000779Z   STRIPE_SECRET_KEY: ***
+test	Detect CI scope	2026-05-30T15:58:39.1001151Z   STRIPE_PRICE_ID: ***
+test	Detect CI scope	2026-05-30T15:58:39.1001478Z   STRIPE_PRODUCT_ID: ***
+test	Detect CI scope	2026-05-30T15:58:39.1002381Z   STRIPE_PUBLISHABLE_KEY: ***
+test	Detect CI scope	2026-05-30T15:58:39.1002805Z   STRIPE_WEBHOOK_SECRET: ***
+test	Detect CI scope	2026-05-30T15:58:39.1003207Z   THUMBGATE_API_KEY: ***
+test	Detect CI scope	2026-05-30T15:58:39.1003501Z   EVENT_NAME: pull_request
+test	Detect CI scope	2026-05-30T15:58:39.1004023Z   BASE_SHA: a6a640b9657f8d85e0653f89e4ccc32bf8b70d28
+test	Detect CI scope	2026-05-30T15:58:39.1004425Z   HEAD_SHA: 1569f8e82d24a0b6ab9016f291f2a07d75cdf540
+test	Detect CI scope	2026-05-30T15:58:39.1004788Z ##[endgroup]
+test	Detect CI scope	2026-05-30T15:58:39.1088757Z Changed files:
+test	Detect CI scope	2026-05-30T15:58:39.1098555Z - .changeset/connector-directory-404-fixes.md
+test	Detect CI scope	2026-05-30T15:58:39.1099196Z - .changeset/rich-jars-hunt.md
+test	Detect CI scope	2026-05-30T15:58:39.1099579Z - .claude-plugin/marketplace.json
+test	Detect CI scope	2026-05-30T15:58:39.1099965Z - .claude-plugin/plugin.json
+test	Detect CI scope	2026-05-30T15:58:39.1100325Z - .cursor-plugin/marketplace.json
+test	Detect CI scope	2026-05-30T15:58:39.1100697Z - .well-known/mcp/server-card.json
+test	Detect CI scope	2026-05-30T15:58:39.1101025Z - adapters/README.md
+test	Detect CI scope	2026-05-30T15:58:39.1174735Z - adapters/claude/.mcp.json
+test	Detect CI scope	2026-05-30T15:58:39.1175410Z - adapters/mcp/server-stdio.js
+test	Detect CI scope	2026-05-30T15:58:39.1176117Z - adapters/opencode/opencode.json
+test	Detect CI scope	2026-05-30T15:58:39.1176722Z - docs/PLUGIN_DISTRIBUTION.md
+test	Detect CI scope	2026-05-30T15:58:39.1177300Z - docs/VERIFICATION_EVIDENCE.md
+test	Detect CI scope	2026-05-30T15:58:39.1177647Z - docs/X_AUTOMATION_REPORT.md
+test	Detect CI scope	2026-05-30T15:58:39.1178003Z - docs/guides/opencode-integration.md
+test	Detect CI scope	2026-05-30T15:58:39.1178363Z - docs/mcp-hub-submission.md
+test	Detect CI scope	2026-05-30T15:58:39.1178863Z - mcpize.yaml
+test	Detect CI scope	2026-05-30T15:58:39.1179142Z - package-lock.json
+test	Detect CI scope	2026-05-30T15:58:39.1179419Z - package.json
+test	Detect CI scope	2026-05-30T15:58:39.1179783Z - plugins/claude-codex-bridge/.claude-plugin/plugin.json
+test	Detect CI scope	2026-05-30T15:58:39.1180206Z - plugins/claude-codex-bridge/.mcp.json
+test	Detect CI scope	2026-05-30T15:58:39.1180611Z - plugins/codex-profile/.codex-plugin/plugin.json
+test	Detect CI scope	2026-05-30T15:58:39.1181051Z - plugins/cursor-marketplace/.cursor-plugin/plugin.json
+test	Detect CI scope	2026-05-30T15:58:39.1181459Z - plugins/opencode-profile/INSTALL.md
+test	Detect CI scope	2026-05-30T15:58:39.1181811Z - plugins/vscode-extension/package.json
+test	Detect CI scope	2026-05-30T15:58:39.1182276Z - public/favicon.ico
+test	Detect CI scope	2026-05-30T15:58:39.1182649Z - public/index.html
+test	Detect CI scope	2026-05-30T15:58:39.1182943Z - public/numbers.html
+test	Detect CI scope	2026-05-30T15:58:39.1183252Z - scripts/context-manager.js
+test	Detect CI scope	2026-05-30T15:58:39.1183588Z - scripts/hallucination-detector.js
+test	Detect CI scope	2026-05-30T15:58:39.1183935Z - scripts/thompson-sampling.js
+test	Detect CI scope	2026-05-30T15:58:39.1184263Z - server.json
+test	Detect CI scope	2026-05-30T15:58:39.1184529Z - src/api/server.js
+test	Detect CI scope	2026-05-30T15:58:39.1184847Z - tests/adaptive-reliability.test.js
+test	Detect CI scope	2026-05-30T15:58:39.1185248Z Files requiring full CI:
+test	Detect CI scope	2026-05-30T15:58:39.1185576Z - .claude-plugin/marketplace.json
+test	Detect CI scope	2026-05-30T15:58:39.1185908Z - .claude-plugin/plugin.json
+test	Detect CI scope	2026-05-30T15:58:39.1186239Z - .cursor-plugin/marketplace.json
+test	Detect CI scope	2026-05-30T15:58:39.1186576Z - .well-known/mcp/server-card.json
+test	Detect CI scope	2026-05-30T15:58:39.1186930Z - adapters/README.md
+test	Detect CI scope	2026-05-30T15:58:39.1187241Z - adapters/claude/.mcp.json
+test	Detect CI scope	2026-05-30T15:58:39.1187586Z - adapters/mcp/server-stdio.js
+test	Detect CI scope	2026-05-30T15:58:39.1187918Z - adapters/opencode/opencode.json
+test	Detect CI scope	2026-05-30T15:58:39.1188259Z - docs/PLUGIN_DISTRIBUTION.md
+test	Detect CI scope	2026-05-30T15:58:39.1188581Z - docs/VERIFICATION_EVIDENCE.md
+test	Detect CI scope	2026-05-30T15:58:39.1188913Z - docs/X_AUTOMATION_REPORT.md
+test	Detect CI scope	2026-05-30T15:58:39.1189249Z - docs/guides/opencode-integration.md
+test	Detect CI scope	2026-05-30T15:58:39.1189598Z - docs/mcp-hub-submission.md
+test	Detect CI scope	2026-05-30T15:58:39.1189904Z - mcpize.yaml
+test	Detect CI scope	2026-05-30T15:58:39.1190180Z - package-lock.json
+test	Detect CI scope	2026-05-30T15:58:39.1190447Z - package.json
+test	Detect CI scope	2026-05-30T15:58:39.1190804Z - plugins/claude-codex-bridge/.claude-plugin/plugin.json
+test	Detect CI scope	2026-05-30T15:58:39.1191225Z - plugins/claude-codex-bridge/.mcp.json
+test	Detect CI scope	2026-05-30T15:58:39.1191629Z - plugins/codex-profile/.codex-plugin/plugin.json
+test	Detect CI scope	2026-05-30T15:58:39.1192153Z - plugins/cursor-marketplace/.cursor-plugin/plugin.json
+test	Detect CI scope	2026-05-30T15:58:39.1192572Z - plugins/opencode-profile/INSTALL.md
+test	Detect CI scope	2026-05-30T15:58:39.1192933Z - plugins/vscode-extension/package.json
+test	Detect CI scope	2026-05-30T15:58:39.1193286Z - scripts/context-manager.js
+test	Detect CI scope	2026-05-30T15:58:39.1193613Z - scripts/hallucination-detector.js
+test	Detect CI scope	2026-05-30T15:58:39.1193970Z - scripts/thompson-sampling.js
+test	Detect CI scope	2026-05-30T15:58:39.1194271Z - server.json
+test	Detect CI scope	2026-05-30T15:58:39.1194544Z - src/api/server.js
+test	Detect CI scope	2026-05-30T15:58:39.1194846Z - tests/adaptive-reliability.test.js
+test	Setup Python	﻿2026-05-30T15:58:39.1312605Z ##[group]Run actions/setup-python@v6
+test	Setup Python	2026-05-30T15:58:39.1312974Z with:
+test	Setup Python	2026-05-30T15:58:39.1313343Z   python-version: 3.12
+test	Setup Python	2026-05-30T15:58:39.1313643Z   check-latest: false
+test	Setup Python	2026-05-30T15:58:39.1316533Z   token: ***
+test	Setup Python	2026-05-30T15:58:39.1316803Z   update-environment: true
+test	Setup Python	2026-05-30T15:58:39.1317113Z   allow-prereleases: false
+test	Setup Python	2026-05-30T15:58:39.1317400Z   freethreaded: false
+test	Setup Python	2026-05-30T15:58:39.1317682Z env:
+test	Setup Python	2026-05-30T15:58:39.1318286Z   STRIPE_SECRET_KEY: ***
+test	Setup Python	2026-05-30T15:58:39.1318702Z   STRIPE_PRICE_ID: ***
+test	Setup Python	2026-05-30T15:58:39.1319008Z   STRIPE_PRODUCT_ID: ***
+test	Setup Python	2026-05-30T15:58:39.1319670Z   STRIPE_PUBLISHABLE_KEY: ***
+test	Setup Python	2026-05-30T15:58:39.1320060Z   STRIPE_WEBHOOK_SECRET: ***
+test	Setup Python	2026-05-30T15:58:39.1320433Z   THUMBGATE_API_KEY: ***
+test	Setup Python	2026-05-30T15:58:39.1320726Z ##[endgroup]
+test	Setup Python	2026-05-30T15:58:39.2538088Z ##[group]Installed versions
+test	Setup Python	2026-05-30T15:58:39.2625568Z Successfully set up CPython (3.12.13)
+test	Setup Python	2026-05-30T15:58:39.2626460Z ##[endgroup]
+test	Install Python deps	﻿2026-05-30T15:58:39.2715145Z ##[group]Run pip install pytest scikit-learn joblib
+test	Install Python deps	2026-05-30T15:58:39.2715638Z ^[[36;1mpip install pytest scikit-learn joblib^[[0m
+test	Install Python deps	2026-05-30T15:58:39.2814257Z shell: /usr/bin/bash -e {0}
+test	Install Python deps	2026-05-30T15:58:39.2814622Z env:
+test	Install Python deps	2026-05-30T15:58:39.2815342Z   STRIPE_SECRET_KEY: ***
+test	Install Python deps	2026-05-30T15:58:39.2815738Z   STRIPE_PRICE_ID: ***
+test	Install Python deps	2026-05-30T15:58:39.2816078Z   STRIPE_PRODUCT_ID: ***
+test	Install Python deps	2026-05-30T15:58:39.2816742Z   STRIPE_PUBLISHABLE_KEY: ***
+test	Install Python deps	2026-05-30T15:58:39.2817143Z   STRIPE_WEBHOOK_SECRET: ***
+test	Install Python deps	2026-05-30T15:58:39.2817528Z   THUMBGATE_API_KEY: ***
+test	Install Python deps	2026-05-30T15:58:39.2817900Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Install Python deps	2026-05-30T15:58:39.2818398Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+test	Install Python deps	2026-05-30T15:58:39.2818882Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Install Python deps	2026-05-30T15:58:39.2819321Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Install Python deps	2026-05-30T15:58:39.2819751Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Install Python deps	2026-05-30T15:58:39.2820242Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+test	Install Python deps	2026-05-30T15:58:39.2820628Z ##[endgroup]
+test	Install Python deps	2026-05-30T15:58:42.6629686Z Collecting pytest
+test	Install Python deps	2026-05-30T15:58:42.7335893Z   Downloading pytest-9.0.3-py3-none-any.whl.metadata (7.6 kB)
+test	Install Python deps	2026-05-30T15:58:42.8172678Z Collecting scikit-learn
+test	Install Python deps	2026-05-30T15:58:42.8257554Z   Downloading scikit_learn-1.8.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (11 kB)
+test	Install Python deps	2026-05-30T15:58:42.8642940Z Collecting joblib
+test	Install Python deps	2026-05-30T15:58:42.8713088Z   Downloading joblib-1.5.3-py3-none-any.whl.metadata (5.5 kB)
+test	Install Python deps	2026-05-30T15:58:42.8847052Z Collecting iniconfig>=1.0.1 (from pytest)
+test	Install Python deps	2026-05-30T15:58:42.8913504Z   Downloading iniconfig-2.3.0-py3-none-any.whl.metadata (2.5 kB)
+test	Install Python deps	2026-05-30T15:58:42.9082829Z Collecting packaging>=22 (from pytest)
+test	Install Python deps	2026-05-30T15:58:42.9149511Z   Downloading packaging-26.2-py3-none-any.whl.metadata (3.5 kB)
+test	Install Python deps	2026-05-30T15:58:42.9291018Z Collecting pluggy<2,>=1.5 (from pytest)
+test	Install Python deps	2026-05-30T15:58:42.9359671Z   Downloading pluggy-1.6.0-py3-none-any.whl.metadata (4.8 kB)
+test	Install Python deps	2026-05-30T15:58:42.9557266Z Collecting pygments>=2.7.2 (from pytest)
+test	Install Python deps	2026-05-30T15:58:42.9623803Z   Downloading pygments-2.20.0-py3-none-any.whl.metadata (2.5 kB)
+test	Install Python deps	2026-05-30T15:58:43.1370462Z Collecting numpy>=1.24.1 (from scikit-learn)
+test	Install Python deps	2026-05-30T15:58:43.1440995Z   Downloading numpy-2.4.6-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (6.6 kB)
+test	Install Python deps	2026-05-30T15:58:43.2561694Z Collecting scipy>=1.10.0 (from scikit-learn)
+test	Install Python deps	2026-05-30T15:58:43.2631032Z   Downloading scipy-1.17.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (62 kB)
+test	Install Python deps	2026-05-30T15:58:43.2944043Z Collecting threadpoolctl>=3.2.0 (from scikit-learn)
+test	Install Python deps	2026-05-30T15:58:43.3012592Z   Downloading threadpoolctl-3.6.0-py3-none-any.whl.metadata (13 kB)
+test	Install Python deps	2026-05-30T15:58:43.3160155Z Downloading pytest-9.0.3-py3-none-any.whl (375 kB)
+test	Install Python deps	2026-05-30T15:58:43.3411912Z Downloading pluggy-1.6.0-py3-none-any.whl (20 kB)
+test	Install Python deps	2026-05-30T15:58:43.3524476Z Downloading scikit_learn-1.8.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (8.9 MB)
+test	Install Python deps	2026-05-30T15:58:43.4048234Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 8.9/8.9 MB 173.9 MB/s  0:00:00
+test	Install Python deps	2026-05-30T15:58:43.4119339Z Downloading joblib-1.5.3-py3-none-any.whl (309 kB)
+test	Install Python deps	2026-05-30T15:58:43.4218978Z Downloading iniconfig-2.3.0-py3-none-any.whl (7.5 kB)
+test	Install Python deps	2026-05-30T15:58:43.4310415Z Downloading numpy-2.4.6-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.6 MB)
+test	Install Python deps	2026-05-30T15:58:43.4694669Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.6/16.6 MB 454.7 MB/s  0:00:00
+test	Install Python deps	2026-05-30T15:58:43.4763910Z Downloading packaging-26.2-py3-none-any.whl (100 kB)
+test	Install Python deps	2026-05-30T15:58:43.4857030Z Downloading pygments-2.20.0-py3-none-any.whl (1.2 MB)
+test	Install Python deps	2026-05-30T15:58:43.4926488Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 214.1 MB/s  0:00:00
+test	Install Python deps	2026-05-30T15:58:43.5016471Z Downloading scipy-1.17.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (35.2 MB)
+test	Install Python deps	2026-05-30T15:58:43.5800704Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 35.2/35.2 MB 458.8 MB/s  0:00:00
+test	Install Python deps	2026-05-30T15:58:43.5897870Z Downloading threadpoolctl-3.6.0-py3-none-any.whl (18 kB)
+test	Install Python deps	2026-05-30T15:58:43.7761119Z Installing collected packages: threadpoolctl, pygments, pluggy, packaging, numpy, joblib, iniconfig, scipy, pytest, scikit-learn
+test	Install Python deps	2026-05-30T15:58:52.3427708Z 
+test	Install Python deps	2026-05-30T15:58:52.3442814Z Successfully installed iniconfig-2.3.0 joblib-1.5.3 numpy-2.4.6 packaging-26.2 pluggy-1.6.0 pygments-2.20.0 pytest-9.0.3 scikit-learn-1.8.0 scipy-1.17.1 threadpoolctl-3.6.0
+test	Setup Node	﻿2026-05-30T15:58:52.4192764Z ##[group]Run actions/setup-node@v6
+test	Setup Node	2026-05-30T15:58:52.4193062Z with:
+test	Setup Node	2026-05-30T15:58:52.4193277Z   node-version: 20
+test	Setup Node	2026-05-30T15:58:52.4193504Z   cache: npm
+test	Setup Node	2026-05-30T15:58:52.4193835Z   cache-dependency-path: package-lock.json
+test	Setup Node	workers/package-lock.json
+test	Setup Node	
+test	Setup Node	2026-05-30T15:58:52.4194216Z   check-latest: false
+test	Setup Node	2026-05-30T15:58:52.4196957Z   token: ***
+test	Setup Node	2026-05-30T15:58:52.4197201Z   package-manager-cache: true
+test	Setup Node	2026-05-30T15:58:52.4197460Z env:
+test	Setup Node	2026-05-30T15:58:52.4198016Z   STRIPE_SECRET_KEY: ***
+test	Setup Node	2026-05-30T15:58:52.4198318Z   STRIPE_PRICE_ID: ***
+test	Setup Node	2026-05-30T15:58:52.4198580Z   STRIPE_PRODUCT_ID: ***
+test	Setup Node	2026-05-30T15:58:52.4199193Z   STRIPE_PUBLISHABLE_KEY: ***
+test	Setup Node	2026-05-30T15:58:52.4199525Z   STRIPE_WEBHOOK_SECRET: ***
+test	Setup Node	2026-05-30T15:58:52.4199840Z   THUMBGATE_API_KEY: ***
+test	Setup Node	2026-05-30T15:58:52.4200134Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Setup Node	2026-05-30T15:58:52.4200563Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+test	Setup Node	2026-05-30T15:58:52.4200978Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Setup Node	2026-05-30T15:58:52.4201387Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Setup Node	2026-05-30T15:58:52.4201762Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Setup Node	2026-05-30T15:58:52.4202385Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+test	Setup Node	2026-05-30T15:58:52.4202723Z ##[endgroup]
+test	Setup Node	2026-05-30T15:58:52.5727422Z Attempting to download 20...
+test	Setup Node	2026-05-30T15:58:53.2720809Z Acquiring 20.20.2 - x64 from https://github.com/actions/node-versions/releases/download/20.20.2-23521894959/node-20.20.2-linux-x64.tar.gz
+test	Setup Node	2026-05-30T15:58:53.6464476Z Extracting ...
+test	Setup Node	2026-05-30T15:58:53.6560746Z [command]/usr/bin/tar xz --strip 1 --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/d4d35fd7-ebf4-41ef-a8ec-657c341abe6e -f /home/runner/work/_temp/f579c6bf-124c-41f0-b39e-ebebb1146705
+test	Setup Node	2026-05-30T15:58:54.6008805Z Adding to the cache ...
+test	Setup Node	2026-05-30T15:58:55.8387699Z ##[group]Environment details
+test	Setup Node	2026-05-30T15:58:56.0701809Z node: v20.20.2
+test	Setup Node	2026-05-30T15:58:56.0702383Z npm: 10.8.2
+test	Setup Node	2026-05-30T15:58:56.0702623Z yarn: 1.22.22
+test	Setup Node	2026-05-30T15:58:56.0703104Z ##[endgroup]
+test	Setup Node	2026-05-30T15:58:56.0720888Z [command]/opt/hostedtoolcache/node/20.20.2/x64/bin/npm config get cache
+test	Setup Node	2026-05-30T15:58:56.1670084Z /home/runner/.npm
+test	Setup Node	2026-05-30T15:58:56.4317814Z npm cache is not found
+test	Install deps	﻿2026-05-30T15:58:56.4442012Z ##[group]Run npm ci --onnxruntime-node-install-cuda=skip
+test	Install deps	2026-05-30T15:58:56.4442820Z ^[[36;1mnpm ci --onnxruntime-node-install-cuda=skip^[[0m
+test	Install deps	2026-05-30T15:58:56.4458911Z shell: /usr/bin/bash -e {0}
+test	Install deps	2026-05-30T15:58:56.4459175Z env:
+test	Install deps	2026-05-30T15:58:56.4459791Z   STRIPE_SECRET_KEY: ***
+test	Install deps	2026-05-30T15:58:56.4460233Z   STRIPE_PRICE_ID: ***
+test	Install deps	2026-05-30T15:58:56.4460496Z   STRIPE_PRODUCT_ID: ***
+test	Install deps	2026-05-30T15:58:56.4461116Z   STRIPE_PUBLISHABLE_KEY: ***
+test	Install deps	2026-05-30T15:58:56.4461471Z   STRIPE_WEBHOOK_SECRET: ***
+test	Install deps	2026-05-30T15:58:56.4461787Z   THUMBGATE_API_KEY: ***
+test	Install deps	2026-05-30T15:58:56.4462241Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Install deps	2026-05-30T15:58:56.4462672Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+test	Install deps	2026-05-30T15:58:56.4463105Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Install deps	2026-05-30T15:58:56.4463486Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Install deps	2026-05-30T15:58:56.4463879Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Install deps	2026-05-30T15:58:56.4464306Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+test	Install deps	2026-05-30T15:58:56.4464639Z ##[endgroup]
+test	Install deps	2026-05-30T15:58:56.8003957Z npm warn EBADENGINE Unsupported engine {
+test	Install deps	2026-05-30T15:58:56.8004595Z npm warn EBADENGINE   package: 'undici@8.3.0',
+test	Install deps	2026-05-30T15:58:56.8005136Z npm warn EBADENGINE   required: { node: '>=22.19.0' },
+test	Install deps	2026-05-30T15:58:56.8005706Z npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '10.8.2' }
+test	Install deps	2026-05-30T15:58:56.8006206Z npm warn EBADENGINE }
+test	Install deps	2026-05-30T15:58:58.1002768Z npm warn deprecated prebuild-install@7.1.3: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.
+test	Install deps	2026-05-30T15:58:58.4074353Z npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+test	Install deps	2026-05-30T15:58:58.5437029Z npm warn deprecated boolean@3.2.0: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+test	Install deps	2026-05-30T16:00:30.1331974Z 
+test	Install deps	2026-05-30T16:00:30.1332893Z > thumbgate@1.25.1 postinstall
+test	Install deps	2026-05-30T16:00:30.1333474Z > node bin/postinstall.js || true
+test	Install deps	2026-05-30T16:00:30.1333696Z 
+test	Install deps	2026-05-30T16:00:30.1671926Z 
+test	Install deps	2026-05-30T16:00:30.1672860Z > thumbgate@1.25.1 prepare
+test	Install deps	2026-05-30T16:00:30.2400077Z > bash bin/install-hooks.sh >/dev/null 2>&1 || true
+test	Install deps	2026-05-30T16:00:30.2400608Z 
+test	Install deps	2026-05-30T16:00:30.2400626Z 
+test	Install deps	2026-05-30T16:00:30.2401018Z added 305 packages, and audited 306 packages in 2m
+test	Install deps	2026-05-30T16:00:30.2401433Z 
+test	Install deps	2026-05-30T16:00:30.2401840Z 50 packages are looking for funding
+test	Install deps	2026-05-30T16:00:30.2402566Z   run `npm fund` for details
+test	Install deps	2026-05-30T16:00:30.2425165Z 
+test	Install deps	2026-05-30T16:00:30.2425714Z found 0 vulnerabilities
+test	Check version sync	﻿2026-05-30T16:00:30.2638116Z ##[group]Run node scripts/sync-version.js --check
+test	Check version sync	2026-05-30T16:00:30.2638527Z ^[[36;1mnode scripts/sync-version.js --check^[[0m
+test	Check version sync	2026-05-30T16:00:30.2655985Z shell: /usr/bin/bash -e {0}
+test	Check version sync	2026-05-30T16:00:30.2656276Z env:
+test	Check version sync	2026-05-30T16:00:30.2656891Z   STRIPE_SECRET_KEY: ***
+test	Check version sync	2026-05-30T16:00:30.2657200Z   STRIPE_PRICE_ID: ***
+test	Check version sync	2026-05-30T16:00:30.2657686Z   STRIPE_PRODUCT_ID: ***
+test	Check version sync	2026-05-30T16:00:30.2658322Z   STRIPE_PUBLISHABLE_KEY: ***
+test	Check version sync	2026-05-30T16:00:30.2658804Z   STRIPE_WEBHOOK_SECRET: ***
+test	Check version sync	2026-05-30T16:00:30.2659124Z   THUMBGATE_API_KEY: ***
+test	Check version sync	2026-05-30T16:00:30.2659455Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Check version sync	2026-05-30T16:00:30.2659908Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+test	Check version sync	2026-05-30T16:00:30.2660341Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Check version sync	2026-05-30T16:00:30.2660725Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Check version sync	2026-05-30T16:00:30.2661115Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Check version sync	2026-05-30T16:00:30.2661544Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+test	Check version sync	2026-05-30T16:00:30.2661877Z ##[endgroup]
+test	Check version sync	2026-05-30T16:00:30.2991733Z ✔ All 32 targets in sync at v1.25.1
+test	Check changeset coverage for release-relevant PRs	﻿2026-05-30T16:00:30.3068607Z ##[group]Run npm run changeset:check
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.3068946Z ^[[36;1mnpm run changeset:check^[[0m
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.3084948Z shell: /usr/bin/bash -e {0}
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.3085233Z env:
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.3085828Z   STRIPE_SECRET_KEY: ***
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.3086132Z   STRIPE_PRICE_ID: ***
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.3086395Z   STRIPE_PRODUCT_ID: ***
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.3086993Z   STRIPE_PUBLISHABLE_KEY: ***
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.3087474Z   STRIPE_WEBHOOK_SECRET: ***
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.3087792Z   THUMBGATE_API_KEY: ***
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.3088101Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.3088534Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.3088971Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.3089360Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.3089748Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.3090142Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.3090504Z ##[endgroup]
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4127103Z 
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4127710Z > thumbgate@1.25.1 changeset:check
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4128194Z > node scripts/changeset-check.js
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4128415Z 
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4519397Z Release-relevant changes require at least one valid .changeset entry for thumbgate.
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4520563Z 
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4521168Z Release-relevant files:
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4521576Z - .claude-plugin/marketplace.json
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4521908Z - .claude-plugin/plugin.json
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4522363Z - .cursor-plugin/marketplace.json
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4522693Z - .well-known/mcp/server-card.json
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4522980Z - adapters/README.md
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4523249Z - adapters/claude/.mcp.json
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4523550Z - adapters/mcp/server-stdio.js
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4523854Z - adapters/opencode/opencode.json
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4524138Z - package-lock.json
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4524386Z - package.json
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4524736Z - plugins/claude-codex-bridge/.claude-plugin/plugin.json
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4525129Z - plugins/claude-codex-bridge/.mcp.json
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4525514Z - plugins/codex-profile/.codex-plugin/plugin.json
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4525992Z - plugins/cursor-marketplace/.cursor-plugin/plugin.json
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4526375Z - plugins/opencode-profile/INSTALL.md
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4526734Z - plugins/vscode-extension/package.json
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4527033Z - public/index.html
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4527290Z - public/numbers.html
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4527559Z - scripts/context-manager.js
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4527885Z - scripts/hallucination-detector.js
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4528208Z - scripts/thompson-sampling.js
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4528462Z - server.json
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4528589Z 
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4528706Z Invalid changesets:
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4529234Z - .changeset/rich-jars-hunt.md: missing summary; missing release entries; missing thumbgate release entry
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4529627Z 
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4529914Z Run `npm run changeset` and add a release note for thumbgate before merging.
+test	Check changeset coverage for release-relevant PRs	2026-05-30T16:00:30.4615700Z ##[error]Process completed with exit code 1.
+test	Write prompt evaluation report	﻿2026-05-30T16:00:30.4718122Z ##[group]Run mkdir -p proof
+test	Write prompt evaluation report	2026-05-30T16:00:30.4718453Z ^[[36;1mmkdir -p proof^[[0m
+test	Write prompt evaluation report	2026-05-30T16:00:30.4719243Z ^[[36;1mnode scripts/prompt-eval.js --min-score=0 --synthetic --synthetic-variants=1 --suite-output proof/prompt-eval-suite.generated.json --output proof/prompt-eval-report.json --json > /dev/null^[[0m
+test	Write prompt evaluation report	2026-05-30T16:00:30.4721571Z ^[[36;1mnode -e "const fs=require('node:fs'); const report=JSON.parse(fs.readFileSync('proof/prompt-eval-report.json','utf8')); const lines=['## Prompt Evaluation', '- Score: ' + report.score + '%', '- Passed: ' + report.passed + '/' + report.total, '- Failed: ' + report.failed, '- Errors: ' + report.errors, '- Skipped: ' + report.skipped, '- Synthetic cases: ' + (report.syntheticCount || 0)]; if (report.comparison) lines.push('- Regressions: ' + report.comparison.regressions.length); fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');"^[[0m
+test	Write prompt evaluation report	2026-05-30T16:00:30.4739147Z shell: /usr/bin/bash -e {0}
+test	Write prompt evaluation report	2026-05-30T16:00:30.4739439Z env:
+test	Write prompt evaluation report	2026-05-30T16:00:30.4740095Z   STRIPE_SECRET_KEY: ***
+test	Write prompt evaluation report	2026-05-30T16:00:30.4740398Z   STRIPE_PRICE_ID: ***
+test	Write prompt evaluation report	2026-05-30T16:00:30.4740667Z   STRIPE_PRODUCT_ID: ***
+test	Write prompt evaluation report	2026-05-30T16:00:30.4741410Z   STRIPE_PUBLISHABLE_KEY: ***
+test	Write prompt evaluation report	2026-05-30T16:00:30.4741755Z   STRIPE_WEBHOOK_SECRET: ***
+test	Write prompt evaluation report	2026-05-30T16:00:30.4742211Z   THUMBGATE_API_KEY: ***
+test	Write prompt evaluation report	2026-05-30T16:00:30.4742627Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Write prompt evaluation report	2026-05-30T16:00:30.4743063Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+test	Write prompt evaluation report	2026-05-30T16:00:30.4743497Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Write prompt evaluation report	2026-05-30T16:00:30.4743886Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Write prompt evaluation report	2026-05-30T16:00:30.4744276Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Write prompt evaluation report	2026-05-30T16:00:30.4744676Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+test	Write prompt evaluation report	2026-05-30T16:00:30.4745000Z ##[endgroup]
+test	Upload proof artifacts	﻿2026-05-30T16:00:30.7644513Z ##[group]Run actions/upload-artifact@v7
+test	Upload proof artifacts	2026-05-30T16:00:30.7644821Z with:
+test	Upload proof artifacts	2026-05-30T16:00:30.7645034Z   name: proof-artifacts
+test	Upload proof artifacts	2026-05-30T16:00:30.7646696Z   path: proof/compatibility/report.json
+test	Upload proof artifacts	proof/compatibility/report.md
+test	Upload proof artifacts	proof/automation/report.json
+test	Upload proof artifacts	proof/automation/report.md
+test	Upload proof artifacts	proof/runtime-report.json
+test	Upload proof artifacts	proof/runtime-report.md
+test	Upload proof artifacts	proof/evolution-report.json
+test	Upload proof artifacts	proof/evolution-report.md
+test	Upload proof artifacts	proof/workflow-contract/report.json
+test	Upload proof artifacts	proof/workflow-contract/report.md
+test	Upload proof artifacts	proof/autoresearch-report.json
+test	Upload proof artifacts	proof/autoresearch-report.md
+test	Upload proof artifacts	proof/tessl-report.json
+test	Upload proof artifacts	proof/tessl-report.md
+test	Upload proof artifacts	proof/prompt-eval-report.json
+test	Upload proof artifacts	proof/prompt-eval-suite.generated.json
+test	Upload proof artifacts	
+test	Upload proof artifacts	2026-05-30T16:00:30.7648403Z   if-no-files-found: warn
+test	Upload proof artifacts	2026-05-30T16:00:30.7648652Z   compression-level: 6
+test	Upload proof artifacts	2026-05-30T16:00:30.7648888Z   overwrite: false
+test	Upload proof artifacts	2026-05-30T16:00:30.7649123Z   include-hidden-files: false
+test	Upload proof artifacts	2026-05-30T16:00:30.7649379Z   archive: true
+test	Upload proof artifacts	2026-05-30T16:00:30.7649583Z env:
+test	Upload proof artifacts	2026-05-30T16:00:30.7650164Z   STRIPE_SECRET_KEY: ***
+test	Upload proof artifacts	2026-05-30T16:00:30.7650456Z   STRIPE_PRICE_ID: ***
+test	Upload proof artifacts	2026-05-30T16:00:30.7650738Z   STRIPE_PRODUCT_ID: ***
+test	Upload proof artifacts	2026-05-30T16:00:30.7651338Z   STRIPE_PUBLISHABLE_KEY: ***
+test	Upload proof artifacts	2026-05-30T16:00:30.7651680Z   STRIPE_WEBHOOK_SECRET: ***
+test	Upload proof artifacts	2026-05-30T16:00:30.7651993Z   THUMBGATE_API_KEY: ***
+test	Upload proof artifacts	2026-05-30T16:00:30.7652452Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Upload proof artifacts	2026-05-30T16:00:30.7652873Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib/pkgconfig
+test	Upload proof artifacts	2026-05-30T16:00:30.7653307Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Upload proof artifacts	2026-05-30T16:00:30.7653688Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Upload proof artifacts	2026-05-30T16:00:30.7654073Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.12.13/x64
+test	Upload proof artifacts	2026-05-30T16:00:30.7654455Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.12.13/x64/lib
+test	Upload proof artifacts	2026-05-30T16:00:30.7654795Z ##[endgroup]
+test	Upload proof artifacts	2026-05-30T16:00:30.9056292Z Multiple search paths detected. Calculating the least common ancestor of all paths
+test	Upload proof artifacts	2026-05-30T16:00:30.9061742Z The least common ancestor is /home/runner/work/ThumbGate/ThumbGate/proof. This will be the root directory of the artifact
+test	Upload proof artifacts	2026-05-30T16:00:30.9063050Z With the provided path, there will be 12 files uploaded
+test	Upload proof artifacts	2026-05-30T16:00:30.9064670Z Artifact name is valid!
+test	Upload proof artifacts	2026-05-30T16:00:30.9065192Z Root directory input is valid!
+test	Upload proof artifacts	2026-05-30T16:00:31.1974936Z Uploading artifact: proof-artifacts.zip
+test	Upload proof artifacts	2026-05-30T16:00:31.2013978Z Beginning upload of artifact content to blob storage
+test	Upload proof artifacts	2026-05-30T16:00:31.5458254Z Uploaded bytes 10406
+test	Upload proof artifacts	2026-05-30T16:00:31.6228603Z Finished uploading artifact content to blob storage!
+test	Upload proof artifacts	2026-05-30T16:00:31.6229700Z SHA256 digest of uploaded artifact is ded303829222b060eaa3f804f5d8ecff0d199f9e2f728ec2f8c104e004731675
+test	Upload proof artifacts	2026-05-30T16:00:31.6230980Z Finalizing artifact upload
+test	Upload proof artifacts	2026-05-30T16:00:31.9442682Z Artifact proof-artifacts successfully finalized. Artifact ID 7309453623
+test	Upload proof artifacts	2026-05-30T16:00:31.9444650Z Artifact proof-artifacts has been successfully uploaded! Final size is 10406 bytes. Artifact ID is 7309453623
+test	Upload proof artifacts	2026-05-30T16:00:31.9447603Z Artifact download URL: https://github.com/IgorGanapolsky/ThumbGate/actions/runs/26688316030/artifacts/7309453623
+test	Post Checkout	﻿2026-05-30T16:00:31.9579683Z Post job cleanup.
+test	Post Checkout	2026-05-30T16:00:32.0359667Z [command]/usr/bin/git version
+test	Post Checkout	2026-05-30T16:00:32.0393164Z git version 2.54.0
+test	Post Checkout	2026-05-30T16:00:32.0427847Z Temporarily overriding HOME='/home/runner/work/_temp/71154c22-0d6c-40bb-b9a9-c97fdb5be90b' before making global git config changes
+test	Post Checkout	2026-05-30T16:00:32.0429094Z Adding repository directory to the temporary git global config as a safe directory
+test	Post Checkout	2026-05-30T16:00:32.0432682Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/ThumbGate/ThumbGate
+test	Post Checkout	2026-05-30T16:00:32.0461549Z Removing SSH command configuration
+test	Post Checkout	2026-05-30T16:00:32.0470295Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+test	Post Checkout	2026-05-30T16:00:32.0504830Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+test	Post Checkout	2026-05-30T16:00:32.0681403Z Removing HTTP extra header
+test	Post Checkout	2026-05-30T16:00:32.0686297Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+test	Post Checkout	2026-05-30T16:00:32.0713984Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+test	Post Checkout	2026-05-30T16:00:32.0881224Z Removing includeIf entries pointing to credentials config files
+test	Post Checkout	2026-05-30T16:00:32.0887069Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+test	Post Checkout	2026-05-30T16:00:32.0913994Z includeif.gitdir:/home/runner/work/ThumbGate/ThumbGate/.git.path
+test	Post Checkout	2026-05-30T16:00:32.0915229Z includeif.gitdir:/home/runner/work/ThumbGate/ThumbGate/.git/worktrees/*.path
+test	Post Checkout	2026-05-30T16:00:32.0916259Z includeif.gitdir:/github/workspace/.git.path
+test	Post Checkout	2026-05-30T16:00:32.0917090Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+test	Post Checkout	2026-05-30T16:00:32.0923632Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/ThumbGate/ThumbGate/.git.path
+test	Post Checkout	2026-05-30T16:00:32.0941745Z /home/runner/work/_temp/git-credentials-be8a585c-6bc2-4e7c-a791-c8b80b730571.config
+test	Post Checkout	2026-05-30T16:00:32.0951368Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/ThumbGate/ThumbGate/.git.path /home/runner/work/_temp/git-credentials-be8a585c-6bc2-4e7c-a791-c8b80b730571.config
+test	Post Checkout	2026-05-30T16:00:32.0984030Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/ThumbGate/ThumbGate/.git/worktrees/*.path
+test	Post Checkout	2026-05-30T16:00:32.1003317Z /home/runner/work/_temp/git-credentials-be8a585c-6bc2-4e7c-a791-c8b80b730571.config
+test	Post Checkout	2026-05-30T16:00:32.1011696Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/ThumbGate/ThumbGate/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-be8a585c-6bc2-4e7c-a791-c8b80b730571.config
+test	Post Checkout	2026-05-30T16:00:32.1036814Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+test	Post Checkout	2026-05-30T16:00:32.1053992Z /github/runner_temp/git-credentials-be8a585c-6bc2-4e7c-a791-c8b80b730571.config
+test	Post Checkout	2026-05-30T16:00:32.1060038Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-be8a585c-6bc2-4e7c-a791-c8b80b730571.config
+test	Post Checkout	2026-05-30T16:00:32.1085799Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+test	Post Checkout	2026-05-30T16:00:32.1102022Z /github/runner_temp/git-credentials-be8a585c-6bc2-4e7c-a791-c8b80b730571.config
+test	Post Checkout	2026-05-30T16:00:32.1109270Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-be8a585c-6bc2-4e7c-a791-c8b80b730571.config
+test	Post Checkout	2026-05-30T16:00:32.1143428Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+test	Post Checkout	2026-05-30T16:00:32.1322669Z Removing credentials config '/home/runner/work/_temp/git-credentials-be8a585c-6bc2-4e7c-a791-c8b80b730571.config'
+test	Complete job	﻿2026-05-30T16:00:32.1440113Z Cleaning up orphan processes
