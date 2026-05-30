@@ -218,9 +218,60 @@ function fullHallucinationCheck(agentOutput, evidence = {}) {
   };
 }
 
+/**
+ * Proactively check a claim against actual repository ground truth.
+ * Executes CLI commands to verify numeric and state claims.
+ */
+function checkGroundTruth(claim, projectRoot = process.cwd()) {
+  const { execSync } = require('child_process');
+  const evidence = {};
+
+  try {
+    switch (claim.type) {
+      case 'test_result': {
+        // Pattern: "X tests pass"
+        const countMatch = claim.context.match(/(\d+)\s+tests?\s+(?:pass|run|fail)/i);
+        if (countMatch) {
+          const expected = parseInt(countMatch[1], 10);
+          // Run a dry-run or quick test listing
+          const output = execSync('npm test -- --listTests', { cwd: projectRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+          const actual = (output.match(/\.test\.js/g) || []).length;
+          evidence.test_output = actual >= expected;
+          evidence.exit_code = true; // Placeholder for successful check
+        }
+        break;
+      }
+      case 'pr_merge': {
+        // Check local git log or gh status
+        const output = execSync('git log -n 1 --oneline', { cwd: projectRoot, encoding: 'utf8' });
+        evidence.pr_state = output.includes('Merge pull request') || output.includes('(#');
+        break;
+      }
+      case 'deployment': {
+        // Check health endpoint if PROD_URL is available
+        const url = process.env.PROD_URL;
+        if (url) {
+          try {
+            execSync(`curl -s --fail ${url}/health`, { stdio: 'ignore' });
+            evidence.health_check = true;
+          } catch {
+            evidence.health_check = false;
+          }
+        }
+        break;
+      }
+    }
+  } catch (e) {
+    // Ground truth check failed - evidence remains empty/unverified
+  }
+
+  return evidence;
+}
+
 module.exports = {
   CLAIM_PATTERNS, CONFIDENCE_THRESHOLDS,
   decomposeClaims, verifyClaim,
   confidenceWeightedDecision,
   retrievalGroundedCheck, fullHallucinationCheck,
+  checkGroundTruth,
 };

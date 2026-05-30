@@ -27,8 +27,9 @@ const {
   recordProvenance,
 } = require('./contextfs');
 const { loadOptionalModule } = require('./private-core-boundary');
-const { retrieveRelevantLessons } = loadOptionalModule('./lesson-retrieval', () => ({
+const { retrieveRelevantLessons, calculateRetrievalEntropy } = loadOptionalModule('./lesson-retrieval', () => ({
   retrieveRelevantLessons: () => [],
+  calculateRetrievalEntropy: () => 0,
 }));
 const { evaluatePretool } = require('./hybrid-feedback-context');
 const { loadProfile } = require('./user-profile');
@@ -93,13 +94,21 @@ function assembleSession() {
 
 function assembleLessons(query, agentProfile, options = {}) {
   try {
-    return retrieveRelevantLessons(
+    const lessons = retrieveRelevantLessons(
       options.toolName || '',
       query,
       { maxResults: agentProfile.maxLessons, feedbackDir: options.feedbackDir },
     );
+    
+    const entropy = calculateRetrievalEntropy(lessons);
+    
+    return { 
+      items: lessons, 
+      entropy, 
+      highConflict: entropy > 0.7 
+    };
   } catch {
-    return [];
+    return { items: [], entropy: 0, highConflict: false };
   }
 }
 
@@ -224,7 +233,8 @@ function assembleUnifiedContext(params = {}) {
   // Assemble all components — each is fault-tolerant
   const session = assembleSession();
   const userProfile = assembleUserProfile();
-  const lessons = assembleLessons(query, agentProfile, { toolName, feedbackDir });
+  const lessonData = assembleLessons(query, agentProfile, { toolName, feedbackDir });
+  const lessons = lessonData.items;
   const guards = assembleGuards(toolName, toolInput);
   const contextPack = assembleContextPack(query, agentProfile);
   const codeGraph = assembleCodeGraph(query, repoPath, agentProfile);
@@ -232,9 +242,17 @@ function assembleUnifiedContext(params = {}) {
   const components = { session, userProfile, lessons, guards, contextPack, codeGraph };
   const tier = classifyTier(components);
 
+  // v4.2: Entropy-Aware Reliability Directive
+  let reliabilityDirective = null;
+  if (lessonData.highConflict) {
+    reliabilityDirective = 'CAUTION: Conflicting past patterns detected for this action. Prioritize absolute ground truth verification over rapid completion.';
+  }
+
   const result = {
     tier,
     agentType: agentType || 'default',
+    reliabilityDirective,
+    entropy: lessonData.entropy,
     agentProfile: {
       maxLessons: agentProfile.maxLessons,
       contextBudget: agentProfile.contextBudget,
