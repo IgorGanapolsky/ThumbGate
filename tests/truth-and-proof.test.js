@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 
 const REPO_ROOT = path.join(__dirname, '..');
 const SCRIPTS_DIR = path.join(REPO_ROOT, 'scripts');
@@ -42,7 +42,7 @@ test('require-proof.js - blocks commit when source changed but no tests_passed',
   setTestAction('tests_passed', false);
 
   try {
-    execSync(`node ${REQUIRE_PROOF}`, { cwd: TEST_DIR, stdio: 'pipe' });
+    execFileSync(process.execPath, [REQUIRE_PROOF], { cwd: TEST_DIR, stdio: 'pipe' });
     assert.fail('Should have failed without tests_passed evidence');
   } catch (err) {
     assert.ok(err.stderr.toString().includes('Completion evidence missing'), 'Error message should mention missing evidence');
@@ -61,7 +61,7 @@ test('require-proof.js - allows commit when tests_passed is tracked', (t) => {
 
   setTestAction('tests_passed', true);
 
-  const output = execSync(`node ${REQUIRE_PROOF}`, { cwd: TEST_DIR, encoding: 'utf8' });
+  const output = execFileSync(process.execPath, [REQUIRE_PROOF], { cwd: TEST_DIR, encoding: 'utf8' });
   assert.ok(output.includes('completion evidence verified'), 'Should verify completion evidence');
 });
 
@@ -73,7 +73,7 @@ test('ingest-manual-feedback.js - ingests and marks files as ingested', (t) => {
   const content = 'MISTAKE: This is a test failure';
   fs.writeFileSync(feedbackFile, content);
 
-  execSync(`node ${INGEST_FEEDBACK}`, { cwd: REPO_ROOT });
+  execFileSync(process.execPath, [INGEST_FEEDBACK], { cwd: REPO_ROOT });
 
   assert.ok(!fs.existsSync(feedbackFile), 'Original file should be gone');
   assert.ok(fs.existsSync(`${feedbackFile}.ingested`), 'File should be marked as ingested');
