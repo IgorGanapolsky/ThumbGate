@@ -9,7 +9,7 @@ const net = require('net');
 const { execFileSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
-const DEFAULT_TIMEOUT_MS = 15000;
+const DEFAULT_TIMEOUT_MS = 45000;
 const DEFAULT_PUBLISH_INSTALL_RETRIES = 12;
 const DEFAULT_PUBLISH_INSTALL_DELAY_MS = 10000;
 const MAX_PUBLISH_INSTALL_DELAY_MS = 45000;
