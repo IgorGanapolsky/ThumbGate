@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 
+const { loadOptionalModule } = require("./private-core-boundary");
+
+
 /**
  * Security Scanner — OWASP-aware static analysis for PreToolUse checks.
  *
@@ -15,7 +18,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const { loadOptionalModule } = require('./private-core-boundary');
 const { recordAuditEvent, auditToFeedback } = require('./audit-trail');
 const { scanInstallCommand, detectSlopsquat } = loadOptionalModule('./slopsquat-guard', () => ({
   scanInstallCommand: () => ({ detected: false, findings: [] }),
@@ -330,6 +332,41 @@ function scanDependencyChange(oldContent, newContent) {
  * @param {Object} input - Hook input { tool_name, tool_input }
  * @returns {Object|null} Gate result or null if clean
  */
+
+/**
+ * Evaluate slopsquat guard for a Bash command.
+ * @param {string} toolName 
+ * @param {Object} toolInput 
+ * @returns {Object|null}
+ */
+function evaluateSlopsquatScan(toolName, toolInput) {
+  if (toolName !== "Bash") return null;
+  const command = toolInput.command || "";
+  if (!command) return null;
+
+  const { resolveMode, scanInstallCommand } = loadOptionalModule("./slopsquat-guard", () => ({
+    resolveMode: () => "block",
+    scanInstallCommand: () => ({ detected: false, findings: [] }),
+  }));
+
+  const mode = resolveMode();
+  if (mode === "off") return null;
+
+  const result = scanInstallCommand(command);
+  if (!result.detected) return null;
+
+  const hasCritical = result.findings.some(f => f.severity === "critical");
+  const decision = (mode === "block" && hasCritical) ? "deny" : "warn";
+
+  return {
+    decision,
+    gate: "slopsquat-guard",
+    message: "✗ THUMBGATE: " + result.findings[0].label,
+    severity: hasCritical ? "critical" : "high",
+    reasoning: result.findings.map(f => f.label),
+  };
+}
+
 function evaluateSecurityScan(input = {}) {
   const toolName = input.tool_name || input.toolName || '';
   const toolInput = input.tool_input || {};
@@ -370,7 +407,8 @@ function evaluateSecurityScan(input = {}) {
   // Tier 3: Slopsquat Guard for Bash commands
   let slopsquatResult = { detected: false, findings: [] };
   if (IS_BASH && command) {
-    slopsquatResult = scanInstallCommand(command);
+    const slopsquatGate = evaluateSlopsquatScan(toolName, toolInput);
+    if (slopsquatGate) return slopsquatGate;
   }
 
   const allFindings = [...codeResult.findings, ...supplyChainResult.findings, ...slopsquatResult.findings];
@@ -470,6 +508,7 @@ function scanGitDiff(diffContent) {
 // ---------------------------------------------------------------------------
 
 module.exports = {
+  evaluateSlopsquatScan,
   VULN_PATTERNS,
   SUPPLY_CHAIN_PATTERNS,
   scanCode,
