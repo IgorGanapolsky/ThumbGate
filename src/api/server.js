@@ -3663,6 +3663,49 @@ function extractApiKey(req) {
 }
 
 /**
+ * Map a ThumbGate key presented at the OAuth consent screen to a role.
+ *
+ * - When any key is configured (production), the presented key MUST match a
+ *   configured admin/operator/reviewer key; otherwise returns null (reject) so
+ *   the OAuth flow actually authenticates the holder.
+ * - When NO keys are configured (insecure/dev mode, e.g. local tests), any
+ *   non-empty key is accepted as role 'dev' to preserve local development.
+ *
+ * 'reviewer' (THUMBGATE_REVIEWER_KEY) is a read-only, independently-revocable
+ * credential safe to share with a directory reviewer — tool execution enforces
+ * read-only for it (see the tools/call handler).
+ */
+// Constant-time comparison of two API/OAuth bearer keys. We compare the raw
+// bytes with crypto.timingSafeEqual after an explicit equal-length guard
+// (timingSafeEqual throws on a length mismatch). No digest is taken: these are
+// high-entropy random credentials compared transiently at request time, not
+// user passwords stored at rest, so neither a KDF (bcrypt/scrypt/argon2) nor a
+// length-normalizing hash is appropriate — and hashing the credential here is
+// exactly what static analysis (correctly, for *stored* passwords) flags. The
+// only side-channel is whether the two keys share a length, which reveals
+// nothing useful about a random secret. Once lengths match, the byte compare
+// is constant-time and leaks no information about where they differ.
+function safeKeyEqual(a, b) {
+  const x = Buffer.from(String(a || ''), 'utf8');
+  const y = Buffer.from(String(b || ''), 'utf8');
+  if (x.length === 0 || y.length === 0 || x.length !== y.length) return false;
+  return require('crypto').timingSafeEqual(x, y);
+}
+
+function resolveKeyRole(key) {
+  const k = String(key || '').trim();
+  const adminKey = String(process.env.THUMBGATE_API_KEY || '').trim();
+  const operatorKey = String(process.env.THUMBGATE_OPERATOR_KEY || '').trim();
+  const reviewerKey = String(process.env.THUMBGATE_REVIEWER_KEY || '').trim();
+  const configured = [adminKey, operatorKey, reviewerKey].filter(Boolean);
+  if (configured.length === 0) return k ? 'dev' : null;
+  if (safeKeyEqual(k, adminKey)) return 'admin';
+  if (safeKeyEqual(k, operatorKey)) return 'operator';
+  if (safeKeyEqual(k, reviewerKey)) return 'reviewer';
+  return null;
+}
+
+/**
  * Admin-only guard for static THUMBGATE_API_KEY.
  * Billing keys are intentionally excluded from admin actions.
  */
@@ -3883,7 +3926,8 @@ function createApiServer() {
               // operator/admin key — never "any non-empty bearer".
               const adminKey = String(process.env.THUMBGATE_API_KEY || '').trim();
               const operatorKey = String(process.env.THUMBGATE_OPERATOR_KEY || '').trim();
-              const rawKeyValid = Boolean(bearer) && ((adminKey && bearer === adminKey) || (operatorKey && bearer === operatorKey));
+              const reviewerKey = String(process.env.THUMBGATE_REVIEWER_KEY || '').trim();
+              const rawKeyValid = Boolean(bearer) && (safeKeyEqual(bearer, adminKey) || safeKeyEqual(bearer, operatorKey) || safeKeyEqual(bearer, reviewerKey));
               const authed = oauthSession
                 ? mcpOauth.tokenAudienceValid(oauthSession, resourceUrl)
                 : rawKeyValid;
@@ -3898,6 +3942,24 @@ function createApiServer() {
                   error: { code: -32001, message: 'Authentication required. Use OAuth 2.1 (see /.well-known/oauth-protected-resource) or a ThumbGate API key.' },
                 }));
                 return;
+              }
+              // The reviewer credential (THUMBGATE_REVIEWER_KEY) is read-only: it may
+              // only invoke tools annotated readOnlyHint:true. This makes a credential
+              // safe to share (e.g. with a directory reviewer) without granting the
+              // ability to mutate shared server state.
+              const effectiveKey = oauthSession ? String(oauthSession.boundKey || '') : bearer;
+              const isReviewer = Boolean(reviewerKey) && safeKeyEqual(effectiveKey, reviewerKey);
+              if (isReviewer) {
+                const name = msg.params && msg.params.name;
+                const tool = MCP_TOOLS.find((t) => t.name === name);
+                const readOnly = Boolean(tool && tool.annotations && tool.annotations.readOnlyHint === true);
+                if (!readOnly) {
+                  sendJson(res, 200, {
+                    jsonrpc: '2.0', id: msg.id,
+                    error: { code: -32002, message: `Tool "${name}" requires write access; the reviewer credential is read-only.` },
+                  });
+                  return;
+                }
               }
               (async () => {
                 try {
@@ -5278,6 +5340,14 @@ ${hidden}
           const form = new URLSearchParams(body);
           const redirectUri = form.get('redirect_uri') || '';
           const state = form.get('state') || '';
+          // Validate the presented ThumbGate key before issuing a code. When keys
+          // are configured (production) the key MUST match a configured admin /
+          // operator / reviewer key — otherwise OAuth would authenticate nobody.
+          // In insecure/dev mode (no keys configured) any non-empty key is accepted.
+          if (!resolveKeyRole(form.get('api_key') || '')) {
+            sendJson(res, 400, { error: 'access_denied', error_description: 'invalid ThumbGate API key' });
+            return;
+          }
           const issued = mcpOauth.createAuthorizationCode(oauthStore, {
             clientId: form.get('client_id') || '',
             redirectUri,
