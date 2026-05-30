@@ -5,6 +5,10 @@ const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 
 process.env.THUMBGATE_ALLOW_INSECURE = 'true';
+// Configure the operator key this test presents at the consent screen, so the
+// flow is deterministic whether or not the environment (e.g. CI) also injects a
+// THUMBGATE_API_KEY — /oauth/authorize now validates the presented key.
+process.env.THUMBGATE_OPERATOR_KEY = 'test-operator-key';
 process.env.THUMBGATE_PUBLIC_APP_ORIGIN = process.env.THUMBGATE_PUBLIC_APP_ORIGIN || 'http://127.0.0.1';
 
 const { startServer } = require('../src/api/server');
