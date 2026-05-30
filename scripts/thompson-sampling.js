@@ -302,24 +302,30 @@ function getCalibration(model) {
 // ---------------------------------------------------------------------------
 
 /**
- * Draw one sample from the Beta posterior for each category via the
- * Marsaglia-Tsang (2000) gamma ratio method. No external library needed.
+ * Draw one sample from the Beta posterior for each category.
+ * Supports temperature scaling to adjust exploitation vs exploration.
  *
- * betaSample(alpha, beta) = gammaSample(alpha) / (gammaSample(alpha) + gammaSample(beta))
+ * Temperature (T):
+ *   T = 1.0 (default) — Standard Thompson Sampling.
+ *   T < 1.0 — Sharper distribution, favors high-reliability categories (exploit).
+ *   T > 1.0 — Flatter distribution, increases uncertainty and exploration.
  *
- * This is the JS equivalent of Python's random.betavariate(alpha, beta).
- * Used for Thompson Sampling action selection (explore via uncertainty).
+ * Implementation: Scales alpha and beta by 1/T.
  *
  * @param {Object} model - Model object containing categories
+ * @param {number} temperature - Scaling factor (default 1.0)
  * @returns {Object} Map of category → float sample in [0, 1]
  */
-function samplePosteriors(model) {
+function samplePosteriors(model, temperature = 1.0) {
   const samples = {};
+  const T = Math.max(0.01, Number(temperature) || 1.0);
+  const invT = 1.0 / T;
+
   for (const [cat, params] of Object.entries(model.categories || {})) {
-    samples[cat] = betaSample(
-      Math.max(params.alpha, 0.01),
-      Math.max(params.beta, 0.01),
-    );
+    // Scale precision by inverse temperature
+    const alpha = Math.max(params.alpha * invT, 0.01);
+    const beta = Math.max(params.beta * invT, 0.01);
+    samples[cat] = betaSample(alpha, beta);
   }
   return samples;
 }
