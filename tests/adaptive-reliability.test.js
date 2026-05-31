@@ -24,8 +24,8 @@ test('Adaptive Temperature - Scales Posterior Distribution', () => {
   // With alpha=10, beta=2 scaled by 1/10=0.1: alpha=1, beta=0.2. Mean=0.83, Var is very high.
   
   // Repeat sampling to see variance difference
-  const lowTVar = Array.from({length: 10}, () => ts.samplePosteriors(model, 0.1).test);
-  const highTVar = Array.from({length: 10}, () => ts.samplePosteriors(model, 10.0).test);
+  const lowTVar = Array.from({length: 200}, () => ts.samplePosteriors(model, 0.1).test);
+  const highTVar = Array.from({length: 200}, () => ts.samplePosteriors(model, 10.0).test);
   
   const lowTRange = Math.max(...lowTVar) - Math.min(...lowTVar);
   const highTRange = Math.max(...highTVar) - Math.min(...highTVar);
