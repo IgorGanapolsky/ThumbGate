@@ -57,19 +57,24 @@ type Baz = { qux: number }
   });
 
   it('CLI run executes successfully with mock file', () => {
-    const { execSync } = require('child_process');
+    const { spawnSync } = require('child_process');
     const fs = require('fs');
+    const os = require('os');
     const path = require('path');
     
-    const mockFile = path.join(__dirname, 'mock-plan-for-cli.md');
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-plan-gate-'));
+    const mockFile = path.join(tmpDir, 'mock-plan-for-cli.md');
     fs.writeFileSync(mockFile, VALID_PLAN);
     
     try {
-      const output = execSync(`node ${path.join(__dirname, '..', 'scripts', 'plan-gate.js')} ${mockFile} --json`, { encoding: 'utf8' });
-      const parsed = JSON.parse(output);
+      const result = spawnSync(process.execPath, [path.join(__dirname, '..', 'scripts', 'plan-gate.js'), mockFile, '--json'], {
+        encoding: 'utf8',
+      });
+      assert.strictEqual(result.status, 0, result.stderr);
+      const parsed = JSON.parse(result.stdout);
       assert.strictEqual(parsed.allPass, true);
     } finally {
-      if (fs.existsSync(mockFile)) fs.unlinkSync(mockFile);
+      fs.rmSync(tmpDir, { recursive: true, force: true });
     }
   });
 
