@@ -161,12 +161,118 @@ function mergeUnique(values = []) {
   return Array.from(new Set(values.filter(Boolean)));
 }
 
+function normalizeContextForQuality(context) {
+  return String(context || '').trim().toLowerCase();
+}
+
+function hasAny(context, terms) {
+  return terms.some((term) => context.includes(term));
+}
+
+function inferMissingContext(context) {
+  const normalized = normalizeContextForQuality(context);
+  const missing = [];
+
+  if (!normalized || normalized.length < 24) {
+    missing.push('problem_statement');
+  }
+  if (!hasAny(normalized, ['done when', 'acceptance', 'success', 'verify', 'test', 'passing', 'expected'])) {
+    missing.push('acceptance_criteria');
+  }
+  if (!hasAny(normalized, ['user', 'customer', 'operator', 'developer', 'agent', 'buyer', 'admin'])) {
+    missing.push('target_user');
+  }
+  if (!hasAny(normalized, ['must not', 'avoid', 'without', 'constraint', 'keep', 'preserve', 'do not'])) {
+    missing.push('constraints');
+  }
+
+  return missing;
+}
+
+function inferImplicitAssumptions(context, intentId) {
+  const normalized = normalizeContextForQuality(context);
+  const assumptions = [];
+
+  if (!hasAny(normalized, ['file', 'module', 'script', 'api', 'cli', 'mcp', 'test'])) {
+    assumptions.push('implementation_surface_is_known');
+  }
+  if (!hasAny(normalized, ['verify', 'test', 'prove', 'smoke', 'manual'])) {
+    assumptions.push('verification_path_is_known');
+  }
+  if (intentId && intentId.includes('publish') && !hasAny(normalized, ['redact', 'privacy', 'public', 'secret'])) {
+    assumptions.push('publication_safety_is_satisfied');
+  }
+
+  return assumptions;
+}
+
+function buildClarifyingQuestions(missingContext) {
+  const questions = {
+    problem_statement: 'What specific user-visible problem should this plan solve?',
+    acceptance_criteria: 'What evidence will prove the plan is complete?',
+    target_user: 'Who is the target user or operator for this change?',
+    constraints: 'What must remain unchanged while executing this plan?',
+  };
+  return missingContext.map((item) => questions[item]).filter(Boolean);
+}
+
+function inferAbstractionLevel(context) {
+  const normalized = normalizeContextForQuality(context);
+  if (hasAny(normalized, ['file', 'line', 'function', 'module', 'script', 'endpoint', 'test'])) {
+    return 'implementation';
+  }
+  if (hasAny(normalized, ['workflow', 'pipeline', 'system', 'architecture', 'orchestration'])) {
+    return 'system';
+  }
+  return 'concept';
+}
+
+function buildValidationChecklist({ context, intent, missingContext }) {
+  const normalized = normalizeContextForQuality(context);
+  const checklist = [
+    'Confirm the plan addresses the stated intent before tool use.',
+    'Verify all checkpoint reasons are resolved before claiming ready.',
+  ];
+
+  if (missingContext.length > 0) {
+    checklist.push('Resolve missing context or document why defaults are safe.');
+  }
+  if (intent && ['high', 'critical'].includes(intent.risk)) {
+    checklist.push('Preserve approval and safety checks for high-risk execution.');
+  }
+  if (hasAny(normalized, ['code', 'file', 'test', 'refactor', 'implement'])) {
+    checklist.push('Run targeted tests for the touched implementation surface.');
+  }
+
+  return checklist;
+}
+
+function evaluatePlanQuality({ intentId, intent = null, context = '' } = {}) {
+  const missingContext = inferMissingContext(context);
+  const implicitAssumptions = inferImplicitAssumptions(context, intentId);
+  const clarifyingQuestions = buildClarifyingQuestions(missingContext);
+  const abstractionLevel = inferAbstractionLevel(context);
+  const score = Math.max(0, 1 - ((missingContext.length * 0.18) + (implicitAssumptions.length * 0.08)));
+  const gate = missingContext.length >= 2 ? 'block' : missingContext.length === 1 ? 'warn' : 'pass';
+
+  return {
+    gate,
+    score: Number(score.toFixed(2)),
+    abstractionLevel,
+    missingContext,
+    implicitAssumptions,
+    clarifyingQuestions,
+    validationChecklist: buildValidationChecklist({ context, intent, missingContext }),
+  };
+}
+
 function planIntent(options = {}) {
   const bundle = loadPolicyBundle(options.bundleId);
   const profile = assertKnownMcpProfile(options.mcpProfile || getActiveMcpProfile());
   const intentId = String(options.intentId || '').trim();
   const context = String(options.context || '').trim();
   const approved = options.approved === true;
+  const enforcePlanQuality = options.enforcePlanQuality === true;
   const tokenBudget = resolveTokenBudget(options.tokenBudget);
   const delegationMode = normalizeDelegationMode(options.delegationMode);
 
@@ -181,7 +287,10 @@ function planIntent(options = {}) {
 
   const requiredRisks = getRequiredApprovalRisks(bundle, profile);
   const requiresApproval = requiredRisks.includes(intent.risk);
-  const checkpointRequired = requiresApproval && !approved;
+  const approvalCheckpointRequired = requiresApproval && !approved;
+  const planQuality = evaluatePlanQuality({ intentId, intent, context });
+  const qualityCheckpointRequired = enforcePlanQuality && planQuality.gate === 'block';
+  const checkpointRequired = approvalCheckpointRequired || qualityCheckpointRequired;
   const partnerStrategy = buildPartnerStrategy({
     partnerProfile: options.partnerProfile,
     tokenBudget,
@@ -219,14 +328,22 @@ function planIntent(options = {}) {
       risk: intent.risk,
     },
     context,
+    planQuality,
     requiresApproval,
     approved,
     checkpoint: checkpointRequired
-      ? {
-        type: 'human_approval',
-        reason: `Intent '${intent.id}' has risk '${intent.risk}' under profile '${profile}'.`,
-        requiredForRiskLevels: requiredRisks,
-      }
+      ? approvalCheckpointRequired
+        ? {
+          type: 'human_approval',
+          reason: `Intent '${intent.id}' has risk '${intent.risk}' under profile '${profile}'.`,
+          requiredForRiskLevels: requiredRisks,
+        }
+        : {
+          type: 'plan_quality',
+          reason: 'Plan context is too underspecified for safe execution.',
+          missingContext: planQuality.missingContext,
+          clarifyingQuestions: planQuality.clarifyingQuestions,
+        }
       : null,
     actions: plannedActions,
     phases,
@@ -368,6 +485,7 @@ module.exports = {
   assertKnownMcpProfile,
   listIntents,
   planIntent,
+  evaluatePlanQuality,
   resolveTokenBudget,
   decomposeActions,
   ACTION_CATEGORY_MAP,

@@ -216,7 +216,7 @@ const {
   finalizeSession: finalizeFeedbackSession,
 } = require('../../scripts/feedback-session');
 
-const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.25.1' };
+const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.25.2' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
@@ -779,6 +779,7 @@ async function callToolInner(name, args) {
           bundleId: args.bundleId,
           partnerProfile: args.partnerProfile,
           delegationMode: args.delegationMode,
+          enforcePlanQuality: args.enforcePlanQuality === true,
           approved: args.approved === true,
           repoPath: args.repoPath,
         }));

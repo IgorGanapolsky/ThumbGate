@@ -476,6 +476,7 @@ const TOOLS = [
         bundleId: { type: 'string' },
         partnerProfile: { type: 'string' },
         delegationMode: { type: 'string', enum: ['off', 'auto', 'sequential'] },
+        enforcePlanQuality: { type: 'boolean' },
         approved: { type: 'boolean' },
         repoPath: { type: 'string' },
       },
