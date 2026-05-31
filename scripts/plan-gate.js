@@ -1,11 +1,20 @@
 #!/usr/bin/env node
 'use strict';
 
+/**
+ * Plan Gate — implementing the CodeRabbit "Planning-First" pattern.
+ *
+ * 1. (Static) Validates structured 'PLAN.md' / 'PRD' content (used in loop-closure).
+ * 2. (Dynamic) Intercepts high-risk tool calls during agent execution.
+ */
+
 const fs = require('fs');
 const path = require('path');
 
+const RISK_TOOLS = ['Bash', 'Write', 'Edit', 'Deploy'];
+
 // ---------------------------------------------------------------------------
-// Gate validators
+// Gate validators (Legacy / Loop Closure)
 // ---------------------------------------------------------------------------
 
 function countTableRows(content, sectionHeading) {
@@ -57,10 +66,6 @@ function getStatus(content) {
   return match ? match[1].trim() : null;
 }
 
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
-
 function validatePlan(content) {
   const questionCount = countTableRows(content, 'Clarifying Questions Resolved');
   const contractCount = countContracts(content);
@@ -110,6 +115,77 @@ function formatReport(result) {
   return lines.join('\n');
 }
 
+// ---------------------------------------------------------------------------
+// Dynamic Gating (CodeRabbit Orchestration Pattern)
+// ---------------------------------------------------------------------------
+
+/**
+ * Evaluates the planning state for the current tool call.
+ */
+function evaluatePlanGate(toolName, toolInput, options = {}) {
+  if (!RISK_TOOLS.includes(toolName)) return null;
+
+  const projectRoot = options.projectRoot || process.cwd();
+  const planPath = path.join(projectRoot, 'PLAN.md');
+
+  // Tier 1: Existence Check
+  if (!fs.existsSync(planPath)) {
+    return {
+      decision: 'warn',
+      gate: 'plan-gate-missing',
+      message: '⚠️ THUMBGATE: High-risk tool call without a PLAN.md. Please create a plan documenting your intent and assumptions.',
+      severity: 'high'
+    };
+  }
+
+  // Tier 2: Alignment Check (Simple)
+  const planContent = fs.readFileSync(planPath, 'utf8');
+  const action = toolName === 'Bash' ? toolInput.command : toolInput.filePath;
+  
+  if (action && !planContent.toLowerCase().includes(path.basename(action).toLowerCase())) {
+    return {
+      decision: 'warn',
+      gate: 'plan-gate-drift',
+      message: `⚠️ THUMBGATE: Strategic Drift detected. The action "${action}" is not mentioned in your PLAN.md.`,
+      severity: 'medium'
+    };
+  }
+
+  // Tier 3: Implicit Assumption Extraction
+  const assumptions = extractAssumptions(planContent);
+  if (assumptions.length > 0) {
+    return {
+      decision: 'warn',
+      gate: 'plan-gate-assumptions',
+      message: '🔍 THUMBGATE: Explicitly verify these implicit assumptions before proceeding:\n- ' + assumptions.join('\n- '),
+      severity: 'medium'
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Scans plan content for "Assumes" or "Implicit" keywords.
+ */
+function extractAssumptions(content) {
+  const lines = content.split('\n');
+  const assumptions = [];
+  const regex = /(?:assume|assumption|implicit|pre-requisite|depends on)s?[:\-]?\s*(.*)/i;
+  
+  for (const line of lines) {
+    const match = line.match(regex);
+    if (match && match[1].trim()) {
+      assumptions.push(match[1].trim());
+    }
+  }
+  return assumptions.slice(0, 5);
+}
+
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
+
 function run() {
   const args = process.argv.slice(2);
   const jsonFlag = args.includes('--json');
@@ -146,6 +222,8 @@ module.exports = {
   countContracts,
   countValidationScenarios,
   getStatus,
+  evaluatePlanGate,
+  extractAssumptions,
 };
 
 // Run only when executed directly

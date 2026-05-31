@@ -62,7 +62,9 @@ const path = require('node:path');
 //            works from npm installs instead of failing before self-heal.js.
 // 264 → 265: scripts/visitor-journey.js added so hosted telemetry export can
 //            produce session-level path/dropoff summaries in packaged runtime.
-const BASELINE_FILE_COUNT = 265;
+// 265 → 268: scripts/install-shim.js, scripts/plan-gate.js, scripts/trajectory-scorer.js
+//            added for CodeRabbit high-ROI orchestration and install hooks.
+const BASELINE_FILE_COUNT = 268;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

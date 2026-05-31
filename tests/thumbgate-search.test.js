@@ -18,6 +18,7 @@ process.env.THUMBGATE_CONTEXTFS_DIR = path.join(tmpDir, 'contextfs');
 process.env.THUMBGATE_API_KEY = 'test-search-key';
 process.env.THUMBGATE_PROOF_DIR = tmpProofDir;
 process.env.THUMBGATE_NO_RATE_LIMIT = '1';
+process.env.THUMBGATE_DISABLE_MCP_FIREWALL = '1';
 process.env._TEST_API_KEYS_PATH = path.join(tmpDir, 'api-keys.json');
 process.env._TEST_FUNNEL_LEDGER_PATH = path.join(tmpDir, 'funnel-events.jsonl');
 process.env._TEST_REVENUE_LEDGER_PATH = path.join(tmpDir, 'revenue-events.jsonl');

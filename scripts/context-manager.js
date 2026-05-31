@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
+
 /**
  * Context Manager — Unified Context-Augmented Generation (CAG) Orchestrator
  *
@@ -246,6 +249,13 @@ function assembleUnifiedContext(params = {}) {
   let reliabilityDirective = null;
   if (lessonData.highConflict) {
     reliabilityDirective = 'CAUTION: Conflicting past patterns detected for this action. Prioritize absolute ground truth verification over rapid completion.';
+  }
+
+  // v1.26.0: CodeRabbit Planning Directive
+  const planPath = path.join(repoPath || process.cwd(), 'PLAN.md');
+  if (!fs.existsSync(planPath) && ['Bash', 'Write', 'Edit', 'Deploy'].includes(toolName)) {
+    const planReminder = 'ORCHESTRATION: High-risk action detected without a PLAN.md. Please document your intent, assumptions, and verification steps before proceeding.';
+    reliabilityDirective = reliabilityDirective ? `${reliabilityDirective}\n\n${planReminder}` : planReminder;
   }
 
   const result = {

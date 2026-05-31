@@ -55,4 +55,42 @@ type Baz = { qux: number }
     const result = validatePlan(plan);
     assert.strictEqual(result.allPass, false);
   });
+
+  it('CLI run executes successfully with mock file', () => {
+    const { spawnSync } = require('child_process');
+    const fs = require('fs');
+    const os = require('os');
+    const path = require('path');
+    
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-plan-gate-'));
+    const mockFile = path.join(tmpDir, 'mock-plan-for-cli.md');
+    fs.writeFileSync(mockFile, VALID_PLAN);
+    
+    try {
+      const result = spawnSync(process.execPath, [path.join(__dirname, '..', 'scripts', 'plan-gate.js'), mockFile, '--json'], {
+        encoding: 'utf8',
+      });
+      assert.strictEqual(result.status, 0, result.stderr);
+      const parsed = JSON.parse(result.stdout);
+      assert.strictEqual(parsed.allPass, true);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('CLI run exits with 1 when plan file is missing', () => {
+    const { spawnSync } = require('child_process');
+    const path = require('path');
+    
+    const result = spawnSync('node', [path.join(__dirname, '..', 'scripts', 'plan-gate.js')]);
+    assert.strictEqual(result.status, 1);
+  });
+
+  it('CLI run exits with 1 when target file does not exist', () => {
+    const { spawnSync } = require('child_process');
+    const path = require('path');
+    
+    const result = spawnSync('node', [path.join(__dirname, '..', 'scripts', 'plan-gate.js'), 'non-existent-plan-file-999.md']);
+    assert.strictEqual(result.status, 1);
+  });
 });

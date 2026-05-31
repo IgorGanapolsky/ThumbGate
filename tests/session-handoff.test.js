@@ -90,9 +90,6 @@ test('writeSessionHandoff with minimal args auto-detects project', () => {
 });
 
 test('writeSessionHandoff syncs to primer.md if it exists', () => {
-  const mdPath = path.join(process.cwd(), 'primer.md.test');
-  const originalMd = fs.readFileSync(path.join(process.cwd(), 'primer.md'), 'utf8');
-  
   // Mock primer.md by creating a temporary one in the test's CWD
   // Since scripts/contextfs.js uses process.cwd(), we need to be careful.
   // We'll just verify that the logic exists and run a manual integration check if needed.

@@ -99,9 +99,11 @@ test('npm package ships static dependencies needed for packaged entrypoints', ()
   const files = npmPackFiles();
   const mcpMissing = collectStaticRuntimeDependencies('adapters/mcp/server-stdio.js', files);
   const apiMissing = collectStaticRuntimeDependencies('src/api/server.js', files);
+  const hookRuntimeMissing = collectStaticRuntimeDependencies('scripts/hook-runtime.js', files);
 
   assert.deepEqual(mcpMissing, []);
   assert.deepEqual(apiMissing, []);
+  assert.deepEqual(hookRuntimeMissing, []);
 });
 
 test('npm package ships a slim runtime boundary instead of repo/dev surfaces', () => {
@@ -118,10 +120,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/gates-engine.js',
     'scripts/hf-papers.js',
     'scripts/self-healing-check.js',
+    'scripts/install-shim.js',
+    'scripts/plan-gate.js',
     'scripts/silent-failure-cluster.js',
     'scripts/statusline.sh',
     'scripts/statusline-meta.js',
     'scripts/tool-registry.js',
+    'scripts/trajectory-scorer.js',
     'skills/thumbgate/SKILL.md',
     'config/pro/constraints-pro.json',
     'config/pro/prevention-rules-pro.md',
@@ -271,9 +276,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // without this file, published installs fail with a missing-module error.
   // Bumped 264 → 265 (2026-05-26) to ship scripts/visitor-journey.js because
   // src/api/server.js uses it for the operator-gated telemetry journey export.
+  // Bumped 265 → 268 (2026-05-31) to ship scripts/install-shim.js because
+  // scripts/hook-runtime.js requires it during `thumbgate init --wire-hooks`,
+  // plus scripts/plan-gate.js and scripts/trajectory-scorer.js because
+  // scripts/gates-engine.js requires them in the packaged runtime.
   assert.ok(
-    manifest.fileCount <= 265,
-    `npm package should stay <= 265 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 268,
+    `npm package should stay <= 268 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -370,9 +379,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 3.87 MB -> 3.90 MB (2026-05-29) for scripts/mcp-oauth.js + the OAuth 2.1
   // (PKCE) endpoints/tool-execution wiring in src/api/server.js (the remote MCP
   // connector's authorization, #2392). Observed ~3.870 MB after the addition.
+  // Bumped 3.90 MB -> 3.93 MB (2026-05-31) to ship the missing published
+  // hook/planning runtime files and restore plan-gate validators. Observed
+  // package after the fix is ~3.902 MB.
   assert.ok(
-    manifest.unpackedSize <= 3_900_000,
-    `npm package should stay <= 3.90 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_930_000,
+    `npm package should stay <= 3.93 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

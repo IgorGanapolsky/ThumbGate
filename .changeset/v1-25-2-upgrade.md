@@ -2,7 +2,7 @@
 "thumbgate": patch
 ---
 
-ThumbGate v1.25.2 Release:
+ThumbGate v1.26.0 Release:
 - Top-P Nucleus Gating (eliminate knowledge slop)
 - Knowledge Entropy Scoring (logit-inspired conflict detection)
 - Stateful Sequence Governance (Ralph Loop hardware-wired)
