@@ -55,4 +55,37 @@ type Baz = { qux: number }
     const result = validatePlan(plan);
     assert.strictEqual(result.allPass, false);
   });
+
+  it('CLI run executes successfully with mock file', () => {
+    const { execSync } = require('child_process');
+    const fs = require('fs');
+    const path = require('path');
+    
+    const mockFile = path.join(__dirname, 'mock-plan-for-cli.md');
+    fs.writeFileSync(mockFile, VALID_PLAN);
+    
+    try {
+      const output = execSync(`node ${path.join(__dirname, '..', 'scripts', 'plan-gate.js')} ${mockFile} --json`, { encoding: 'utf8' });
+      const parsed = JSON.parse(output);
+      assert.strictEqual(parsed.allPass, true);
+    } finally {
+      if (fs.existsSync(mockFile)) fs.unlinkSync(mockFile);
+    }
+  });
+
+  it('CLI run exits with 1 when plan file is missing', () => {
+    const { spawnSync } = require('child_process');
+    const path = require('path');
+    
+    const result = spawnSync('node', [path.join(__dirname, '..', 'scripts', 'plan-gate.js')]);
+    assert.strictEqual(result.status, 1);
+  });
+
+  it('CLI run exits with 1 when target file does not exist', () => {
+    const { spawnSync } = require('child_process');
+    const path = require('path');
+    
+    const result = spawnSync('node', [path.join(__dirname, '..', 'scripts', 'plan-gate.js'), 'non-existent-plan-file-999.md']);
+    assert.strictEqual(result.status, 1);
+  });
 });
