@@ -121,8 +121,12 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // requires it for the remote MCP connector's OAuth 2.1 discovery/authorization
   // (Claude Connectors Directory requirement). In-scope public shell (the hosted
   // connector); omitting it breaks the metadata endpoints at runtime.
+  // Bumped 265 → 268 (2026-05-31) to ship the release runtime files for agent
+  // orchestration hardening: scripts/install-shim.js, scripts/plan-gate.js, and
+  // scripts/trajectory-scorer.js. These are invoked by the published CLI/hooks,
+  // so omitting them breaks packaged installs while staying inside public shell.
   const files = npmPackFiles();
-  const CEILING = 265;
+  const CEILING = 268;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
