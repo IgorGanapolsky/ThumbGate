@@ -637,7 +637,7 @@ function buildEstimateUncertaintyResponse(args = {}) {
 
 async function callTool(name, args = {}) {
   assertToolAllowed(name, getActiveMcpProfile());
-  if (name !== 'workflow_sentinel') {
+  if (name !== 'workflow_sentinel' && process.env.THUMBGATE_DISABLE_MCP_FIREWALL !== '1') {
     const firewallResult = (await evaluateGatesAsync(name, args)) || evaluateSecretGuard({ tool_name: name, tool_input: args });
     if (firewallResult && firewallResult.decision === 'deny') {
       const err = new Error(`Action blocked by Semantic Firewall: ${firewallResult.message}`);

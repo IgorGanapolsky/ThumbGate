@@ -379,9 +379,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 3.87 MB -> 3.90 MB (2026-05-29) for scripts/mcp-oauth.js + the OAuth 2.1
   // (PKCE) endpoints/tool-execution wiring in src/api/server.js (the remote MCP
   // connector's authorization, #2392). Observed ~3.870 MB after the addition.
+  // Bumped 3.90 MB -> 3.93 MB (2026-05-31) to ship the missing published
+  // hook/planning runtime files and restore plan-gate validators. Observed
+  // package after the fix is ~3.902 MB.
   assert.ok(
-    manifest.unpackedSize <= 3_900_000,
-    `npm package should stay <= 3.90 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_930_000,
+    `npm package should stay <= 3.93 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

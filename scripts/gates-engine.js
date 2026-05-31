@@ -93,6 +93,10 @@ const REMOTE_SIDE_EFFECT_BASH_PATTERN = /\b(?:git\s+push\b|gh\s+pr\s+(?:create|m
 const BOOSTED_RISK_BLOCK_SCORE = 0.8;
 const BOOSTED_RISK_MIN_EXAMPLES = 3;
 const PR_THREAD_RESOLUTION_ACTION = 'pr_thread_resolution_verified_after_commit';
+
+function isRuntimePlanGateEnabled() {
+  return process.env.THUMBGATE_PLAN_GATE === '1' || process.env.THUMBGATE_PLAN_GATE === 'true';
+}
 const PR_THREAD_RESOLUTION_CLAIM_PATTERN = '(?:thread|review|comment).*?(?:resolved|verified|checked|addressed|fixed)|(?:resolved|verified|checked|addressed|fixed).*?(?:thread|review|comment)';
 const PR_THREAD_RESOLUTION_REQUIRED_ACTIONS = ['pr_threads_checked', 'thread_resolution_verified'];
 
@@ -1514,17 +1518,21 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
     return boostedRiskGuard;
   }
 
-  // Tier 1b: Planning and Trajectory (v1.26.0 - CodeRabbit Pattern)
-  const planGate = evaluatePlanGate(toolName, toolInput);
-  if (planGate) {
-    recordStat(planGate.gate, planGate.decision === 'deny' ? 'block' : 'warn');
-    return planGate;
-  }
+  // Tier 1b: Planning and Trajectory (v1.26.0 - CodeRabbit Pattern).
+  // Keep runtime enforcement explicit so advisory planning checks do not mask
+  // higher-priority deny/approve gates in established workflows.
+  if (isRuntimePlanGateEnabled()) {
+    const planGate = evaluatePlanGate(toolName, toolInput);
+    if (planGate) {
+      recordStat(planGate.gate, planGate.decision === 'deny' ? 'block' : 'warn');
+      return planGate;
+    }
 
-  const trajectory = getTrajectoryScore();
-  if (trajectory.isDrifting) {
-    recordStat('strategic-drift', 'block');
-    return { decision: 'deny', gate: 'strategic-drift', message: trajectory.message, severity: 'high' };
+    const trajectory = getTrajectoryScore();
+    if (trajectory.isDrifting) {
+      recordStat('strategic-drift', 'block');
+      return { decision: 'deny', gate: 'strategic-drift', message: trajectory.message, severity: 'high' };
+    }
   }
 
   // Fast-path: feedback/recall tools skip metric gates entirely (avoids Stripe API calls)
@@ -1724,17 +1732,21 @@ function evaluateGates(toolName, toolInput, configPath) {
     return boostedRiskGuard;
   }
 
-  // Tier 1b: Planning and Trajectory (v1.26.0 - CodeRabbit Pattern)
-  const planGate = evaluatePlanGate(toolName, toolInput);
-  if (planGate) {
-    recordStat(planGate.gate, planGate.decision === 'deny' ? 'block' : 'warn');
-    return planGate;
-  }
+  // Tier 1b: Planning and Trajectory (v1.26.0 - CodeRabbit Pattern).
+  // Keep runtime enforcement explicit so advisory planning checks do not mask
+  // higher-priority deny/approve gates in established workflows.
+  if (isRuntimePlanGateEnabled()) {
+    const planGate = evaluatePlanGate(toolName, toolInput);
+    if (planGate) {
+      recordStat(planGate.gate, planGate.decision === 'deny' ? 'block' : 'warn');
+      return planGate;
+    }
 
-  const trajectory = getTrajectoryScore();
-  if (trajectory.isDrifting) {
-    recordStat('strategic-drift', 'block');
-    return { decision: 'deny', gate: 'strategic-drift', message: trajectory.message, severity: 'high' };
+    const trajectory = getTrajectoryScore();
+    if (trajectory.isDrifting) {
+      recordStat('strategic-drift', 'block');
+      return { decision: 'deny', gate: 'strategic-drift', message: trajectory.message, severity: 'high' };
+    }
   }
 
   for (const gate of config.gates) {
