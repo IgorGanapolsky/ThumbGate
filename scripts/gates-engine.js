@@ -55,6 +55,8 @@ const {
 const {
   evaluateSecurityScan,
 } = require('./security-scanner');
+const { evaluatePlanGate } = require('./plan-gate');
+const { getTrajectoryScore } = require('./trajectory-scorer');
 const { evaluateSequenceState } = loadOptionalModule('./sequence-guard', () => ({
   evaluateSequenceState: () => null,
 }));
@@ -1512,6 +1514,19 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
     return boostedRiskGuard;
   }
 
+  // Tier 1b: Planning and Trajectory (v1.26.0 - CodeRabbit Pattern)
+  const planGate = evaluatePlanGate(toolName, toolInput);
+  if (planGate) {
+    recordStat(planGate.gate, planGate.decision === 'deny' ? 'block' : 'warn');
+    return planGate;
+  }
+
+  const trajectory = getTrajectoryScore();
+  if (trajectory.isDrifting) {
+    recordStat('strategic-drift', 'block');
+    return { decision: 'deny', gate: 'strategic-drift', message: trajectory.message, severity: 'high' };
+  }
+
   // Fast-path: feedback/recall tools skip metric gates entirely (avoids Stripe API calls)
   const METRIC_SKIP_TOOLS = ['capture_feedback', 'feedback_stats', 'recall', 'feedback_summary', 'prevention_rules'];
   const skipMetrics = METRIC_SKIP_TOOLS.includes(toolName);
@@ -1707,6 +1722,19 @@ function evaluateGates(toolName, toolInput, configPath) {
     });
     auditToFeedback(auditRecord);
     return boostedRiskGuard;
+  }
+
+  // Tier 1b: Planning and Trajectory (v1.26.0 - CodeRabbit Pattern)
+  const planGate = evaluatePlanGate(toolName, toolInput);
+  if (planGate) {
+    recordStat(planGate.gate, planGate.decision === 'deny' ? 'block' : 'warn');
+    return planGate;
+  }
+
+  const trajectory = getTrajectoryScore();
+  if (trajectory.isDrifting) {
+    recordStat('strategic-drift', 'block');
+    return { decision: 'deny', gate: 'strategic-drift', message: trajectory.message, severity: 'high' };
   }
 
   for (const gate of config.gates) {
