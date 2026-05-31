@@ -16,6 +16,13 @@
       "lineSubstring": "spawnSync('git'",
       "resolution": "SAFE",
       "rationale": "Installer MUST resolve git via the developer's own PATH. Git ships from many locations (brew, apt, scoop, Xcode, Git-for-Windows); pinning an absolute path would break every machine. The command literal ('git') is hard-coded, not user input, and args is always an array, so no shell interpolation is possible. Reviewed 2026-04-21."
+    },
+    {
+      "filePath": "scripts/trajectory-scorer.js",
+      "ruleKey": "javascript:S4036",
+      "lineSubstring": "execSync('git diff --name-only HEAD'",
+      "resolution": "SAFE",
+      "rationale": "Trajectory scoring needs a local git diff to compare changed files against the user's primer. The command is a fixed literal, cwd is the project root, and no user-controlled text is interpolated into the shell command. Reviewed 2026-05-31 for the v1.26.0 orchestration release."
     }
   ]
 
