@@ -6866,6 +6866,7 @@ ${hidden}
             bundleId: body.bundleId,
             partnerProfile: body.partnerProfile,
             delegationMode: body.delegationMode,
+            enforcePlanQuality: body.enforcePlanQuality === true,
             approved: body.approved === true,
             repoPath: body.repoPath,
           });

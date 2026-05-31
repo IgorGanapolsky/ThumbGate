@@ -285,7 +285,40 @@ function calculateRetrievalEntropy(lessons) {
   return Number(entropy.toFixed(4));
 }
 
-module.exports = { calculateRetrievalEntropy, 
+
+/**
+ * Filter lessons using Top-P (nucleus) sampling logic.
+ * Keeps lessons that contribute to the top cumulative relevance mass.
+ */
+function filterTopP(lessons, topP = 0.9) {
+  if (!Array.isArray(lessons) || lessons.length === 0) return [];
+  if (topP >= 1.0) return lessons;
+  const sorted = [...lessons].sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0));
+  let cumulative = 0;
+  const filtered = [];
+  for (const l of sorted) {
+    filtered.push(l);
+    cumulative += (l.relevanceScore || 0);
+    if (cumulative >= topP) break;
+  }
+  return filtered;
+}
+
+function calculateRetrievalEntropy(lessons) {
+  if (!Array.isArray(lessons) || lessons.length === 0) return 0;
+  let pW = 0, nW = 0, tW = 0;
+  for (const l of lessons) {
+    const w = l.relevanceScore || 0.1;
+    if (l.signal === "positive") pW += w; else nW += w;
+    tW += w;
+  }
+  if (tW === 0) return 0;
+  const pPos = pW / tW, pNeg = nW / tW;
+  const entropy = (pPos > 0 ? -pPos * Math.log2(pPos) : 0) + (pNeg > 0 ? -pNeg * Math.log2(pNeg) : 0);
+  return Number(entropy.toFixed(4));
+}
+
+module.exports = { calculateRetrievalEntropy, filterTopP,  calculateRetrievalEntropy, 
   retrieveRelevantLessons,
   retrieveRelevantLessonsAsync,
   reciprocalRankFusion,

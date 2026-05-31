@@ -9,6 +9,7 @@ const {
   loadPolicyBundle,
   listIntents,
   planIntent,
+  evaluatePlanQuality,
   resolveTokenBudget,
   decomposeActions,
   scoreActions,
@@ -207,6 +208,46 @@ test('planIntent accepts custom token budget', () => {
   assert.equal(plan.tokenBudget.total, 8000);
   assert.equal(plan.tokenBudget.perAction, 2000);
   assert.equal(plan.tokenBudget.contextPack, DEFAULT_TOKEN_BUDGET.contextPack);
+});
+
+test('evaluatePlanQuality surfaces missing intent context before execution', () => {
+  const quality = evaluatePlanQuality({
+    intentId: 'capture_feedback_loop',
+    context: 'Improve it',
+  });
+
+  assert.equal(quality.gate, 'block');
+  assert.ok(quality.missingContext.includes('problem_statement'));
+  assert.ok(quality.missingContext.includes('acceptance_criteria'));
+  assert.ok(quality.clarifyingQuestions.length >= 2);
+  assert.equal(quality.abstractionLevel, 'concept');
+});
+
+test('planIntent exposes plan quality without changing default ready behavior', () => {
+  const plan = planIntent({
+    bundleId: 'default-v1',
+    mcpProfile: 'default',
+    intentId: 'capture_feedback_loop',
+    context: 'Improve it',
+  });
+
+  assert.equal(plan.status, 'ready');
+  assert.equal(plan.checkpoint, null);
+  assert.equal(plan.planQuality.gate, 'block');
+});
+
+test('planIntent can enforce plan quality as a checkpoint', () => {
+  const plan = planIntent({
+    bundleId: 'default-v1',
+    mcpProfile: 'default',
+    intentId: 'capture_feedback_loop',
+    context: 'Improve it',
+    enforcePlanQuality: true,
+  });
+
+  assert.equal(plan.status, 'checkpoint_required');
+  assert.equal(plan.checkpoint.type, 'plan_quality');
+  assert.ok(plan.checkpoint.missingContext.includes('acceptance_criteria'));
 });
 
 test('planIntent applies partner-aware token budget and action scoring', () => {

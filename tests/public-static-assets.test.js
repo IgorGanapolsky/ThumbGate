@@ -684,3 +684,26 @@ test('/ai-malpractice-prevention surfaces the GT-aligned predictability bridge',
   assert.match(html, /Predictability\. Insights\. Value\./);
   assert.match(html, /agentic-AI deployment.*predictable enough to sell/i);
 });
+
+test('GET /favicon.ico serves the directory-verification favicon without an API key', async () => {
+  const res = await fetch(`${origin}/favicon.ico`);
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /icon/);
+  assert.ok(Number(res.headers.get('content-length')) > 0, 'favicon must be non-zero');
+});
+
+test('GET /docs/connectors serves the MCP connector documentation (PRM resource_documentation target)', async () => {
+  const res = await fetch(`${origin}/docs/connectors`);
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /text\/html/);
+  const body = await res.text();
+  assert.match(body, /Remote MCP Connector/, 'must render the connector doc title');
+  assert.match(body, /\/mcp/, 'must show the connect URL');
+  assert.match(body, /reviewer credential/i, 'must document the read-only reviewer credential');
+  assert.match(body, /PKCE/i, 'must describe the OAuth 2.1 PKCE flow');
+});
+
+test('GET /docs/connectors/ (trailing slash) also resolves', async () => {
+  const res = await fetch(`${origin}/docs/connectors/`);
+  assert.equal(res.status, 200);
+});

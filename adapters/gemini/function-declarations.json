@@ -133,6 +133,7 @@
           "context": { "type": "string" },
           "mcpProfile": { "type": "string" },
           "bundleId": { "type": "string" },
+          "enforcePlanQuality": { "type": "boolean" },
           "approved": { "type": "boolean" }
         },
         "required": ["intentId"]
