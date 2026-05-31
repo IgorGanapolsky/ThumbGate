@@ -248,6 +248,8 @@ test('commerce_recall MCP tool returns quality scores', async () => {
   // Set MCP profile to commerce
   const origProfile = process.env.THUMBGATE_MCP_PROFILE;
   process.env.THUMBGATE_MCP_PROFILE = 'commerce';
+  const origFirewall = process.env.THUMBGATE_DISABLE_MCP_FIREWALL;
+  process.env.THUMBGATE_DISABLE_MCP_FIREWALL = '1';
 
   const { callTool } = require('../adapters/mcp/server-stdio');
   const result = await callTool('commerce_recall', { query: 'product recommendation for skincare' });
@@ -255,6 +257,7 @@ test('commerce_recall MCP tool returns quality scores', async () => {
   assert.ok(result.content[0].text.includes('brand_compliance'));
 
   process.env.THUMBGATE_MCP_PROFILE = origProfile || '';
+  process.env.THUMBGATE_DISABLE_MCP_FIREWALL = origFirewall || '';
 });
 
 }

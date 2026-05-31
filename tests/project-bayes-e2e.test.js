@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'thumbgate-bayes-e2e-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+process.env.THUMBGATE_DISABLE_MCP_FIREWALL = '1';
 
 const { captureFeedback, readJSONL } = require('../scripts/feedback-loop');
 const { callTool } = require('../adapters/mcp/server-stdio');

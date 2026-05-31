@@ -11,6 +11,7 @@ const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-mcp-proof-'
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 process.env.THUMBGATE_PROOF_DIR = tmpProofDir;
 process.env.THUMBGATE_NO_RATE_LIMIT = '1'; // bypass free-tier rate limits during tests
+process.env.THUMBGATE_DISABLE_MCP_FIREWALL = '1';
 
 const RUNNER_PATH = require.resolve('../scripts/async-job-runner');
 const HARNESS_PATH = require.resolve('../scripts/natural-language-harness');
