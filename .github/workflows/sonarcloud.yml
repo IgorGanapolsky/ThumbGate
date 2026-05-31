@@ -255,6 +255,9 @@ jobs:
           # in /api/hotspots/search once ingestion completes.
           sleep 30
           node scripts/sonar-review-hotspots.js
+          # Hotspot status changes are asynchronous on SonarCloud; give the
+          # quality gate a short window to observe the reviewed state.
+          sleep 30
 
       - name: Check SonarCloud quality gate
         if: steps.sonar-scope.outputs.scan == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]') && (github.event_name == 'pull_request' || github.event_name == 'merge_group')
