@@ -23,12 +23,14 @@ function getTrajectoryScore(options = {}) {
   const intent = fs.readFileSync(primerPath, 'utf8').toLowerCase();
   
   // Get currently modified files (unstaged + staged)
-  let changedFiles = [];
-  try {
-    const output = execSync('git diff --name-only HEAD', { cwd: projectRoot, encoding: 'utf8' });
-    changedFiles = output.split('\n').filter(f => f.trim());
-  } catch {
-    return { score: 0, isDrifting: false, drift: false };
+  let changedFiles = options.changedFiles;
+  if (!changedFiles) {
+    try {
+      const output = execSync('git diff --name-only HEAD', { cwd: projectRoot, encoding: 'utf8' });
+      changedFiles = output.split('\n').filter(f => f.trim());
+    } catch {
+      return { score: 0, isDrifting: false, drift: false };
+    }
   }
 
   if (changedFiles.length === 0) return { score: 0, isDrifting: false, drift: false };

@@ -52,14 +52,29 @@ test('Assumption Extraction - Finds keywords', () => {
 
 test('Trajectory Scorer - Measures Drift', () => {
   const TEST_PRIMER = path.join(process.cwd(), 'primer.md');
+  
+  // 1. Missing primer.md should return early
+  if (fs.existsSync(TEST_PRIMER)) fs.unlinkSync(TEST_PRIMER);
+  const noPrimer = ts.getTrajectoryScore();
+  assert.strictEqual(noPrimer.score, 0);
+  assert.strictEqual(noPrimer.isDrifting, false);
+
+  // 2. Empty changed files
   fs.writeFileSync(TEST_PRIMER, 'Goal: Fix script.js');
-  
-  // Mock git diff by creating a dummy repo or just assuming empty
-  // Since we are in the real repo, this might return actual diffs
-  const result = ts.getTrajectoryScore();
-  
-  assert.ok(result.hasOwnProperty('score'));
-  assert.ok(result.hasOwnProperty('isDrifting'));
-  
+  const emptyChanged = ts.getTrajectoryScore({ changedFiles: [] });
+  assert.strictEqual(emptyChanged.score, 0);
+  assert.strictEqual(emptyChanged.isDrifting, false);
+
+  // 3. Allowed changed files (no drift)
+  const noDrift = ts.getTrajectoryScore({ changedFiles: ['script.js'] });
+  assert.strictEqual(noDrift.score, 1);
+  assert.strictEqual(noDrift.isDrifting, false);
+
+  // 4. Drifting files (driftRatio > 0.6 and changedFiles.length > 3)
+  const drift = ts.getTrajectoryScore({ changedFiles: ['auth.js', 'db.js', 'api.js', 'script.js'] });
+  assert.ok(drift.score < 0.4);
+  assert.strictEqual(drift.isDrifting, true);
+  assert.ok(drift.message.includes('Strategic Drift Detected'));
+
   if (fs.existsSync(TEST_PRIMER)) fs.unlinkSync(TEST_PRIMER);
 });
