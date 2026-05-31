@@ -2,11 +2,14 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const fs = require('fs');
-const path = require('path');
 const ts = require('../scripts/thompson-sampling');
 const hd = require('../scripts/hallucination-detector');
 const cm = require('../scripts/context-manager');
+
+function betaVariance({ alpha, beta }) {
+  const total = alpha + beta;
+  return (alpha * beta) / (total * total * (total + 1));
+}
 
 test('Adaptive Temperature - Scales Posterior Distribution', () => {
   const model = {
@@ -15,22 +18,17 @@ test('Adaptive Temperature - Scales Posterior Distribution', () => {
     }
   };
 
-  // Low temperature (Exploit)
-  const lowTSamples = ts.samplePosteriors(model, 0.1);
-  // High temperature (Explore)
-  const highTSamples = ts.samplePosteriors(model, 10.0);
-  
-  // With alpha=10, beta=2 scaled by 1/0.1=10: alpha=100, beta=20. Mean=0.83, Var is very low.
-  // With alpha=10, beta=2 scaled by 1/10=0.1: alpha=1, beta=0.2. Mean=0.83, Var is very high.
-  
-  // Repeat sampling to see variance difference
-  const lowTVar = Array.from({length: 200}, () => ts.samplePosteriors(model, 0.1).test);
-  const highTVar = Array.from({length: 200}, () => ts.samplePosteriors(model, 10.0).test);
-  
-  const lowTRange = Math.max(...lowTVar) - Math.min(...lowTVar);
-  const highTRange = Math.max(...highTVar) - Math.min(...highTVar);
-  
-  assert.ok(highTRange > lowTRange, 'High temperature should produce more variance (exploration)');
+  const lowTParams = ts.getTemperatureScaledPosteriorParams(model.categories.test, 0.1);
+  const highTParams = ts.getTemperatureScaledPosteriorParams(model.categories.test, 10.0);
+
+  assert.equal(lowTParams.alpha, 100);
+  assert.equal(lowTParams.beta, 20);
+  assert.equal(highTParams.alpha, 1);
+  assert.equal(highTParams.beta, 0.2);
+  assert.ok(
+    betaVariance(highTParams) > betaVariance(lowTParams),
+    'High temperature should produce more variance (exploration)'
+  );
 });
 
 test('Proactive Hallucination Detection - checkGroundTruth', (t) => {

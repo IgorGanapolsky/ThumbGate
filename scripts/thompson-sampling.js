@@ -302,6 +302,24 @@ function getCalibration(model) {
 // ---------------------------------------------------------------------------
 
 /**
+ * Return the Beta posterior parameters after applying Thompson temperature
+ * scaling. The posterior mean is preserved while precision changes:
+ * lower temperatures sharpen the posterior, higher temperatures flatten it.
+ *
+ * @param {Object} params - Category posterior parameters
+ * @param {number} temperature - Scaling factor (default 1.0)
+ * @returns {{ alpha: number, beta: number }}
+ */
+function getTemperatureScaledPosteriorParams(params, temperature = 1.0) {
+  const T = Math.max(0.01, Number(temperature) || 1.0);
+  const invT = 1.0 / T;
+  return {
+    alpha: Math.max(params.alpha * invT, 0.01),
+    beta: Math.max(params.beta * invT, 0.01),
+  };
+}
+
+/**
  * Draw one sample from the Beta posterior for each category.
  * Supports temperature scaling to adjust exploitation vs exploration.
  *
@@ -318,13 +336,9 @@ function getCalibration(model) {
  */
 function samplePosteriors(model, temperature = 1.0) {
   const samples = {};
-  const T = Math.max(0.01, Number(temperature) || 1.0);
-  const invT = 1.0 / T;
 
   for (const [cat, params] of Object.entries(model.categories || {})) {
-    // Scale precision by inverse temperature
-    const alpha = Math.max(params.alpha * invT, 0.01);
-    const beta = Math.max(params.beta * invT, 0.01);
+    const { alpha, beta } = getTemperatureScaledPosteriorParams(params, temperature);
     samples[cat] = betaSample(alpha, beta);
   }
   return samples;
@@ -457,6 +471,7 @@ module.exports = {
   getReliability,
   isCalibrated,
   getCalibration,
+  getTemperatureScaledPosteriorParams,
   samplePosteriors,
   argmaxPosteriors,
   pickBestCategory,
