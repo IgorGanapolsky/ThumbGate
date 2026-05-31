@@ -18,7 +18,7 @@ function getTrajectoryScore(options = {}) {
   const projectRoot = options.projectRoot || process.cwd();
   const primerPath = path.join(projectRoot, 'primer.md');
 
-  if (!fs.existsSync(primerPath)) return { score: 0, drift: false };
+  if (!fs.existsSync(primerPath)) return { score: 0, isDrifting: false, drift: false };
 
   const intent = fs.readFileSync(primerPath, 'utf8').toLowerCase();
   
@@ -28,10 +28,10 @@ function getTrajectoryScore(options = {}) {
     const output = execSync('git diff --name-only HEAD', { cwd: projectRoot, encoding: 'utf8' });
     changedFiles = output.split('\n').filter(f => f.trim());
   } catch {
-    return { score: 0, drift: false };
+    return { score: 0, isDrifting: false, drift: false };
   }
 
-  if (changedFiles.length === 0) return { score: 0, drift: false };
+  if (changedFiles.length === 0) return { score: 0, isDrifting: false, drift: false };
 
   // Calculate drift: How many changed files are NOT mentioned in the intent?
   let driftCount = 0;
