@@ -124,6 +124,39 @@ That single command creates a prevention rule. Next time any AI agent tries to r
    Verdict: BLOCK
 ```
 
+## Customer / Repo Brain
+
+ThumbGate can also scaffold a governed brain for enterprise teams: stable operating truth, routed task context, sourced memory, and hard "never-do" gates that agents can check before acting.
+
+```bash
+npx thumbgate brain init
+npx thumbgate brain context --task="debug CI failure"
+npx thumbgate brain remember --type=decision --title="Do not claim deploys without proof" --source="CI run URL or user correction"
+npx thumbgate brain check --text="I will claim the deploy passed without evidence"
+npx thumbgate brain cleanup
+```
+
+This gives teams the high-ROI version of a customer brain without loading every note into every prompt:
+
+- **Soul:** `.thumbgate/brain/soul/` holds company profile, style guide, audience, keyword map, and never-do rules.
+- **Memory:** `.thumbgate/brain/memory/` stores decisions, patterns, feedback, and logs with required provenance.
+- **Router:** `.thumbgate/brain/router.md` explains which files to load for marketing, SEO, coding, CI, deploy, and tool-failure tasks.
+- **Gates:** `.thumbgate/brain/never-do-gates.json` turns never-do rules into deterministic pre-action checks.
+- **Cleanup:** `brain cleanup` reports stale, duplicate, and unsourced memory before the brain rots.
+
+## Team / Enterprise Postgres
+
+Local installs stay zero-config on SQLite, JSONL, and LanceDB. Team and Enterprise deployments can move shared memory, lessons, action receipts, and semantic retrieval into Postgres + pgvector:
+
+```bash
+npx thumbgate setup-postgres --out=thumbgate-enterprise.sql
+npx thumbgate migrate-to-postgres --feedback-dir=.thumbgate --org-id=acme --project-id=api --out=thumbgate-import.sql
+DATABASE_URL=postgres://... npx thumbgate setup-postgres --apply
+THUMBGATE_STORAGE=postgres DATABASE_URL=postgres://... THUMBGATE_ORG_ID=acme THUMBGATE_PROJECT_ID=api npx thumbgate status
+```
+
+The generated schema creates tenant-scoped `thumbgate.*` tables, pgvector embeddings, HNSW vector indexes, and row-level-security policies keyed by `thumbgate.org_id`. Use `--embedding-dim=768` when the enterprise embedding provider is configured for 768-dimensional Gemini/Vertex embeddings; the default is 384 to match the local embedding path.
+
 ---
 
 ## Architecture

@@ -69,7 +69,16 @@ const path = require('node:path');
 //            (repeat-metric, no-op detection, outcome-paired action receipts).
 //            (changeset: action-loop-instrumentation.md). Keep in lockstep with
 //            CEILING in tests/public-core-boundary.test.js.
-const BASELINE_FILE_COUNT = 271;
+// 271 → 272: scripts/brain.js added for the packaged customer/repo brain CLI
+//            (`thumbgate brain ...`): stable soul files, routed context packs,
+//            sourced memory writes, never-do gates, and cleanup reporting.
+//            (changeset: customer-brain-cli.md). Keep in lockstep with CEILING
+//            in tests/public-core-boundary.test.js.
+// 272 → 277: Added enterprise Postgres + pgvector storage runtime:
+//            scripts/enterprise-postgres.js, scripts/postgres-db.js,
+//            scripts/storage-adapter.js, scripts/migrate-to-postgres.js,
+//            scripts/postgres-guard.js.
+const BASELINE_FILE_COUNT = 277;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

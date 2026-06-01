@@ -130,8 +130,15 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // These are pure public-shell intelligence features (no Core dependency) wired
   // into gate_stats/dashboard, track_action, and capture_feedback. Keep in
   // lockstep with BASELINE_FILE_COUNT in tests/public-bundle-ratchet.test.js.
+  // Bumped 271 → 272 (2026-06-01) to ship scripts/brain.js for the packaged
+  // customer/repo brain CLI: stable soul, sourced memory, routed context,
+  // never-do gates, and cleanup reporting. It is public-shell runtime invoked
+  // by bin/cli.js, not a private Core import.
+  // Bumped 272 → 277 (2026-06-01) to ship enterprise Postgres + pgvector storage:
+  // scripts/enterprise-postgres.js, scripts/postgres-db.js, scripts/storage-adapter.js,
+  // scripts/migrate-to-postgres.js, scripts/postgres-guard.js.
   const files = npmPackFiles();
-  const CEILING = 271;
+  const CEILING = 277;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

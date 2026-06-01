@@ -38,4 +38,13 @@ test('postgres-guard', async (t) => {
     res = evaluatePostgresQuery('DELETE FROM users WHERE id = 1;');
     assert.strictEqual(res.mode, 'allow');
   });
+
+  await t.test('allows idempotent upserts with ON CONFLICT DO UPDATE', () => {
+    const res = evaluatePostgresQuery(`
+      INSERT INTO thumbgate.projects (id, org_id, slug)
+      VALUES ('p1', 'o1', 'api')
+      ON CONFLICT (id) DO UPDATE SET slug = EXCLUDED.slug;
+    `);
+    assert.strictEqual(res.mode, 'allow');
+  });
 });

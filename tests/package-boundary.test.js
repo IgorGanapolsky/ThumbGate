@@ -116,14 +116,19 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'bin/postinstall.js',
     'adapters/mcp/server-stdio.js',
     'scripts/bot-detection.js',
+    'scripts/enterprise-postgres.js',
     'scripts/feedback-loop.js',
     'scripts/gates-engine.js',
     'scripts/hf-papers.js',
     'scripts/self-healing-check.js',
     'scripts/install-shim.js',
+    'scripts/migrate-to-postgres.js',
     'scripts/plan-gate.js',
+    'scripts/postgres-db.js',
+    'scripts/postgres-guard.js',
     'scripts/silent-failure-cluster.js',
     'scripts/statusline.sh',
+    'scripts/storage-adapter.js',
     'scripts/statusline-meta.js',
     'scripts/tool-registry.js',
     'scripts/trajectory-scorer.js',
@@ -284,9 +289,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // scripts/noop-detect.js, and scripts/action-receipts.js because
   // adapters/mcp/server-stdio.js and scripts/dashboard.js require them in the
   // packaged runtime (action-loop instrumentation).
+  // Bumped 271 → 272 (2026-06-01) to ship scripts/brain.js because bin/cli.js
+  // requires it for the packaged `thumbgate brain` customer/repo brain CLI.
+  // Bumped 272 → 277 (2026-06-01) to ship enterprise Postgres + pgvector storage:
+  // scripts/enterprise-postgres.js, scripts/postgres-db.js, scripts/storage-adapter.js,
+  // scripts/migrate-to-postgres.js, scripts/postgres-guard.js.
   assert.ok(
-    manifest.fileCount <= 271,
-    `npm package should stay <= 271 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 277,
+    `npm package should stay <= 277 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -391,9 +401,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Observed package after the addition is ~3.937 MB.
   // Bumped 3.95 MB -> 3.97 MB (2026-06-01) for Vertex AI setup CLI, guides,
   // and enterprise cost-containment HTML/script additions.
+  // Bumped 3.97 MB -> 3.99 MB (2026-06-01) for scripts/brain.js and README
+  // customer/repo brain docs. Observed package after the addition is
+  // 3,975,183 bytes; 3.99 MB keeps the headroom intentionally narrow.
+  // Bumped 3.99 MB -> 4.05 MB (2026-06-01) for enterprise Postgres + pgvector
+  // storage. Observed package after the addition is 4,018,563 bytes.
   assert.ok(
-    manifest.unpackedSize <= 3_970_000,
-    `npm package should stay <= 3.97 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_050_000,
+    `npm package should stay <= 4.05 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

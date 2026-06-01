@@ -37,6 +37,10 @@ function evaluatePostgresQuery(query) {
 
   // 4. Mass UPDATE/DELETE without restrictive WHERE
   if (normalized.includes('UPDATE ') || normalized.includes('DELETE FROM ')) {
+    const isUpsertConflictUpdate = normalized.includes('INSERT INTO ') && normalized.includes('ON CONFLICT') && normalized.includes('DO UPDATE SET');
+    if (isUpsertConflictUpdate) {
+      return { mode: 'allow', reason: 'safe upsert conflict handler' };
+    }
     if (!normalized.includes('WHERE ')) {
       return { mode: 'block', reason: 'Unbounded UPDATE or DELETE without a WHERE clause is blocked.' };
     }
