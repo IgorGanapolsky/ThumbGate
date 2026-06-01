@@ -109,6 +109,32 @@ ThumbGate doesn't make your agent smarter. It makes your agent *cheaper to be wr
 
 ---
 
+## 🧠 The Context Brain
+
+Every coding agent starts each session amnesiac — it has no memory of the mistakes it made yesterday, the fixes your team already rejected, or the rules this repo enforces. So it repeats them, and you pay for it again.
+
+ThumbGate gives your repo a **context brain**: a single, versioned, agent-readable artifact that consolidates everything the agent should know *before it acts* — the lessons it has learned, the guardrails it must not cross, the gates that are enforced, and the project's own instruction files.
+
+```bash
+npx thumbgate brain --write     # → .thumbgate/BRAIN.md
+```
+
+Then point your agent at it — add `Read .thumbgate/BRAIN.md first` to your `CLAUDE.md` / `AGENTS.md`, and every Claude Code, Codex, Cursor, or Gemini CLI session boots with your repo's institutional memory already loaded. The output is **deterministic**, so `BRAIN.md` lives in git and only changes when the underlying memory does — review it like any other file.
+
+```
+# ThumbGate Context Brain
+## What this codebase taught its agents (lessons)
+- ⛔ Force-pushing to main was rejected — use --force-with-lease on feature branches only
+## Guardrails — do NOT repeat these (prevention rules)
+- Never run DROP on production tables
+## Active enforcement (gates)
+- `DROP.*production` → block
+```
+
+Same idea the SEO world is now calling a *"client brain"* — persistent context that AI reads before doing the work — applied to **engineering**: the institutional memory that stops your coding agent from relearning the same lesson on your dime.
+
+---
+
 ## Quick Start
 
 ```bash
@@ -333,6 +359,7 @@ npx thumbgate init                                              # detect agent, 
 npx thumbgate doctor                                            # health check
 npx thumbgate capture up|down "<text>"                         # capture a signal as a stored lesson (positional format)
 npx thumbgate lessons                                           # see what's been learned
+npx thumbgate brain --write                                     # build .thumbgate/BRAIN.md — the agent-readable context brain
 npx thumbgate explore    # terminal explorer for lessons, checks, stats
 npx thumbgate background-governance  # review background-agent run risk
 npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json  # evaluate GPT-5.5 routing
