@@ -12,19 +12,20 @@ const DEFAULT_MODEL = MODELS.FAST;
 const DEFAULT_MAX_TOKENS = 1024;
 const DEFAULT_CACHE_TTL = '5m';
 
-let _client = null;
+let _anthropicClient = null;
+let _geminiClient = null;
 
 function isAvailable() {
   return Boolean(process.env.ANTHROPIC_API_KEY);
 }
 
 function getClient() {
-  if (_client) return _client;
+  if (_anthropicClient) return _anthropicClient;
   if (!isAvailable()) return null;
   try {
     const Anthropic = require('@anthropic-ai/sdk');
-    _client = new Anthropic();
-    return _client;
+    _anthropicClient = new Anthropic();
+    return _anthropicClient;
   } catch {
     return null;
   }
@@ -138,7 +139,92 @@ function parseClaudeJson(text) {
   }
 }
 
+async function callGeminiInternal(options = {}) {
+  const env = process.env;
+  const { detectInferenceBackend } = require('./local-model-profile');
+  const providerMode = detectInferenceBackend(env).providerMode;
+
+  try {
+    const { GoogleGenAI } = require('@google/genai');
+    if (!_geminiClient) {
+      if (providerMode === 'vertex') {
+        _geminiClient = new GoogleGenAI({
+          enterprise: true,
+          project: env.VERTEX_PROJECT_ID || 'ai-revenue28-webhook',
+          location: env.VERTEX_LOCATION || 'us-central1',
+        });
+      } else {
+        _geminiClient = new GoogleGenAI({
+          apiKey: env.GEMINI_API_KEY,
+        });
+      }
+    }
+
+    const contents = convertMessagesToGemini(options.messages, options.userPrompt);
+    const config = {};
+    if (options.systemPrompt) {
+      config.systemInstruction = options.systemPrompt;
+    }
+    if (Number.isFinite(options.temperature)) {
+      config.temperature = options.temperature;
+    }
+    if (options.maxTokens) {
+      config.maxOutputTokens = options.maxTokens;
+    }
+
+    const response = await runStep('llm.callGemini', {
+      retries: 2,
+      logger: (msg) => console.warn(msg),
+    }, async () => _geminiClient.models.generateContent({
+      model: options.model,
+      contents,
+      config,
+    }));
+
+    return {
+      text: response.text || '',
+      usage: response.usageMetadata ? {
+        input_tokens: response.usageMetadata.promptTokenCount,
+        output_tokens: response.usageMetadata.candidatesTokenCount,
+      } : null,
+      stopReason: response.candidates?.[0]?.finishReason || null,
+      id: null,
+      model: options.model,
+    };
+  } catch (err) {
+    console.error('Gemini/Vertex AI execution error:', err);
+    return null;
+  }
+}
+
+function convertMessagesToGemini(messages, userPrompt) {
+  const list = Array.isArray(messages) && messages.length > 0
+    ? messages
+    : [{ role: 'user', content: userPrompt }];
+
+  return list.map((msg) => {
+    const role = msg.role === 'assistant' ? 'model' : 'user';
+    let text = '';
+    if (typeof msg.content === 'string') {
+      text = msg.content;
+    } else if (Array.isArray(msg.content)) {
+      text = msg.content.map((c) => c.text || '').join('');
+    } else if (msg.content && typeof msg.content === 'object') {
+      text = msg.content.text || JSON.stringify(msg.content);
+    }
+    return {
+      role,
+      parts: [{ text }],
+    };
+  });
+}
+
 async function callClaudeInternal(options = {}) {
+  const modelName = options.model || '';
+  if (modelName.startsWith('gemini') || modelName.startsWith('vertex')) {
+    return callGeminiInternal(options);
+  }
+
   const client = getClient();
   if (!client) return null;
 

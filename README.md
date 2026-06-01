@@ -24,24 +24,7 @@ The product is a self-improving enforcement layer: thumbs-down feedback, prompt 
 npx thumbgate init   # auto-detects your agent, wires hooks, 30 seconds
 ```
 
-Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and any MCP-compatible agent.
-
-### Add ThumbGate to Claude (remote connector, 30 seconds, no install)
-
-ThumbGate is a hosted remote MCP server. To use it in **Claude.ai / Claude Desktop**:
-**Settings → Connectors → Add custom connector**, then paste:
-
-```
-https://thumbgate.ai/mcp
-```
-
-That's it — Claude can now call ThumbGate's gate-check and feedback tools directly.
-For local/CLI agents (Claude Code, Cursor, Codex, …) use `npx thumbgate init`, which
-auto-wires the hooks. (The same server is published to the [MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.IgorGanapolsky/thumbgate`.)
-
-**Free:** 5 feedback captures/day (25 total captures), 3 active auto-promoted prevention rules, all MCP integrations, local-first.
-**[Pro — $19/mo or $149/yr](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme):** no limits on captures or rules, history-aware lessons, feedback sessions, hosted dashboard, DPO export.
-**Team — $49/seat/mo:** shared hosted lesson DB, org dashboard, approval boundaries.
+Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and any MCP-compatible agent. Free tier: unlimited feedback captures and 5 active auto-promoted prevention rules. [Pro: $19/mo or $149/yr](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme) — unlimited rules, history-aware lessons, feedback sessions, dashboard, DPO export. Team is $49/seat/mo with a shared hosted lesson DB and org dashboard.
 
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
@@ -49,9 +32,11 @@ auto-wires the hooks. (The same server is published to the [MCP Registry](https:
 
 ---
 
-> **Visibility isn't trust.** A dashboard shows you what an agent did; it doesn't stop the agent from doing it again. ThumbGate is the enforcement layer: PreToolUse gates, thumbs-down → rule, and an audit trail on every interception — so a mistake gets blocked, not just logged.
+> *"A better dashboard doesn't make the agents more reliable. The hard part isn't visibility. It's trust."*
 >
-> Published in the [MCP Registry](https://registry.modelcontextprotocol.io) (`io.github.IgorGanapolsky/thumbgate`) and usable as a one-line Claude connector.
+> — **Rob May**, CEO & co-founder, Neurometric AI, quoted in [The New Stack](https://thenewstack.io/claude-code-agent-view/) on Anthropic's Claude Code Agent View (May 2026).
+>
+> ThumbGate is the open-source layer that makes the trust part real: PreToolUse gates, thumbs-down to rule, audit trail on every interception.
 
 ---
 
@@ -128,7 +113,7 @@ ThumbGate doesn't make your agent smarter. It makes your agent *cheaper to be wr
 
 ```bash
 npx thumbgate init                                                         # auto-detects your agent, wires everything
-npx thumbgate capture --feedback=down --context="Never run DROP on production tables"
+npx thumbgate capture down "Never run DROP on production tables"
 ```
 
 That single command creates a prevention rule. Next time any AI agent tries to run `DROP` on production:
@@ -313,7 +298,7 @@ ThumbGate sells three concrete outcomes:
 ```bash
 npx thumbgate init                                              # detect agent, wire hooks
 npx thumbgate doctor                                            # health check
-npx thumbgate capture --feedback=up|down --context="<text>"    # capture a signal as a stored lesson
+npx thumbgate capture up|down "<text>"                         # capture a signal as a stored lesson (positional format)
 npx thumbgate lessons                                           # see what's been learned
 npx thumbgate explore    # terminal explorer for lessons, checks, stats
 npx thumbgate background-governance  # review background-agent run risk
@@ -332,8 +317,8 @@ npx thumbgate bench --programbench-smoke  # include cleanroom whole-repo proof l
 | | Free | Pro ($19/mo) | Team ($49/seat/mo) | Enterprise |
 |---|---|---|---|---|
 | Local CLI + enforced checks | ✅ | ✅ | ✅ | ✅ |
-| Feedback captures | 5/day, 25 total | Unlimited | Unlimited | Unlimited |
-| Auto-promoted prevention rules | 3 active | Unlimited | Unlimited | Unlimited |
+| Feedback captures (lifetime) | 3 | Unlimited | Unlimited | Unlimited |
+| Auto-promoted prevention rules | 1 | Unlimited | Unlimited | Unlimited |
 | MCP agent integrations | All | All | All | All |
 | Personal dashboard | — | ✅ | ✅ | ✅ |
 | DPO export (model fine-tuning) | — | ✅ | ✅ | ✅ |
@@ -346,9 +331,9 @@ npx thumbgate bench --programbench-smoke  # include cleanroom whole-repo proof l
 | Compliance audit export | — | — | — | ✅ |
 | Dedicated onboarding + SLA | — | — | — | ✅ |
 
-The free tier gives you 5 feedback captures/day, 25 total captures, and up to 3 active auto-promoted prevention rules — enough to prove value without replacing Pro for daily operators. MCP integrations for all agents (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode) ship free.
+The free tier gives you unlimited feedback captures and up to 5 active auto-promoted prevention rules — generous enough to make ThumbGate part of your daily flow. MCP integrations for all agents (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode) ship free.
 
-Pro ($19/mo or $149/yr) removes the capture/rule caps and adds history-aware lesson recall, lesson search, DPO export, hosted sync, and a personal dashboard. Team ($49/seat/mo) adds a shared hosted lesson DB, org dashboard, and shared enforcement across the org. Enterprise adds regulatory gate templates (legal intake, financial compliance, healthcare), custom policy layers scoped to firm/practice-area, compliance audit export, and dedicated onboarding with SLA.
+Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recall, lesson search, DPO export, and a personal dashboard. Team ($49/seat/mo) adds a shared hosted lesson DB, org dashboard, and shared enforcement across the org. Enterprise adds regulatory gate templates (legal intake, financial compliance, healthcare), custom policy layers scoped to firm/practice-area, compliance audit export, and dedicated onboarding with SLA.
 
 **Best first paid motion for teams:** the **Workflow Hardening Sprint** — qualify one repeated failure before committing to a full rollout. **[Start intake →](https://thumbgate.ai/?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake)**
 
@@ -437,7 +422,7 @@ curl -X POST http://localhost:3456/v1/dpo/export \
 | Layer | Technology |
 |-------|-----------|
 | **Storage** | SQLite + FTS5, LanceDB vectors, JSONL logs |
-| **Capture** | 10/day on Free; unlimited on Pro/Team |
+| **Capture** | Unlimited feedback captures (free + Pro) |
 | **Intelligence** | MemAlign dual recall, Thompson Sampling |
 | **Enforcement** | PreToolUse hook engine, Checks config |
 | **Interfaces** | MCP stdio, HTTP API, CLI (Node.js >=18) |
@@ -488,6 +473,26 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 
 ---
 
+## Enterprise Gating (Vertex AI & Google Cloud)
+
+For enterprise subscriptions, ThumbGate natively integrates with Google Cloud Platform and **Vertex AI** to route all agent checks through compliant Gemini models inside your corporate VPC.
+
+### Zero-Friction Setup
+To instantly wire your local installation to Google Cloud, simply run:
+```bash
+npx thumbgate setup-vertex
+```
+* **Auto-Discovery:** Automatically detects your active authenticated `gcloud` session and active project ID.
+* **Auto-Enablement:** Programmatically enables the Vertex AI API in your project.
+* **Auto-Configuration:** Writes secure billing and project credentials directly to your local `.env` file.
+
+### Zero-Friction Cost Containment ($10/mo Hard Cap)
+Google Cloud budget alerts are "alert-only" and do not stop API traffic, risking unexpected bill shock. ThumbGate completely resolves this on the client side:
+* **Instant Shutdown:** ThumbGate maintains a lightweight, local token ledger and instantly halts outgoing API traffic the millisecond your monthly token spending approaches the **$10 limit** (500k tokens of Gemini 1.5 Flash).
+* **Bypasses Console Complexity:** Requires **zero** GCP web console setups, zero Pub/Sub topics, and zero Cloud Functions. Perfect for non-technical managers and teams.
+
+---
+
 ## FAQ
 
 **Is ThumbGate a model fine-tuning tool?**
@@ -500,9 +505,9 @@ Those are suggestions the agent can ignore. ThumbGate checks are enforced — th
 If it supports MCP or pre-action hooks, yes. Claude Code, Claude Desktop, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode all work out of the box.
 
 **Is it free?**
-The free tier gives you 5 feedback captures/day, 25 total captures, and up to 3 active auto-promoted prevention rules. MCP integrations ship free for every agent.
+The free tier gives you unlimited feedback captures and up to 5 active auto-promoted prevention rules — generous enough for solo devs to use daily. MCP integrations ship free for every agent.
 
-Pro ($19/mo or $149/yr) removes the capture/rule caps and adds history-aware lesson recall, lesson search, hosted sync, and a personal dashboard. Team ($49/seat/mo) adds a shared hosted lesson DB, org dashboard, and shared enforcement.
+Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recall, lesson search, and a personal dashboard. Team ($49/seat/mo) adds a shared hosted lesson DB, org dashboard, and shared enforcement.
 
 ---
 
@@ -521,7 +526,6 @@ Pro ($19/mo or $149/yr) removes the capture/rule caps and adds history-aware les
 - [SEO Guide: Claude Code Guardrails](docs/learn/claude-code-guardrails.md)
 - [Unsupervised Learning Signals](docs/UL.md) — silent-failure clustering (**on by default** as of 2026-05-21; opt out via `THUMBGATE_SILENT_FAILURE_CLUSTERING=0`; only meaningfully active on workspaces with ≥ 50 tool calls/day)
 - [ThumbGate-Core](https://github.com/IgorGanapolsky/ThumbGate-Core) — private core for hosted overlays, ranking, policy synthesis, billing intelligence, and org/team workflows
-- [mac-yolo-safeguards](https://github.com/IgorGanapolsky/mac-yolo-safeguards?utm_source=thumbgate&utm_medium=readme&utm_campaign=companion_kit) — OS-level companion kit (macOS). ThumbGate stops the agent from billing you for repeated mistakes (token-layer governance). mac-yolo-safeguards stops the agent from freezing your Mac when it spawns runaway processes (OS-layer blast-radius containment). Same author, MIT, no telemetry.
 
 ---
 

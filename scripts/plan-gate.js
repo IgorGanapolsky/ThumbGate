@@ -162,6 +162,17 @@ function evaluatePlanGate(toolName, toolInput, options = {}) {
     };
   }
 
+  // Tier 4: Self-Critique / Risk Mitigation Check (Tip #8)
+  const hasCritique = /(?:critique|self-critique|risk|mitigation|alternative|flaw|weakness|pitfall)/i.test(planContent);
+  if (!hasCritique) {
+    return {
+      decision: 'warn',
+      gate: 'plan-gate-critique-missing',
+      message: '🧐 THUMBGATE: No Self-Critique/Risk Analysis detected in your PLAN.md. Please add a "Critique", "Risks", or "Mitigations" section to evaluate potential flaws in this plan before executing high-risk tools.',
+      severity: 'medium'
+    };
+  }
+
   return null;
 }
 

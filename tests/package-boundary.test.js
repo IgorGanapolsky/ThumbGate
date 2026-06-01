@@ -389,9 +389,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 3.93 MB -> 3.95 MB (2026-06-01) for the action-loop instrumentation
   // runtime (scripts/repeat-metric.js, noop-detect.js, action-receipts.js).
   // Observed package after the addition is ~3.937 MB.
+  // Bumped 3.95 MB -> 3.97 MB (2026-06-01) for Vertex AI setup CLI, guides,
+  // and enterprise cost-containment HTML/script additions.
   assert.ok(
-    manifest.unpackedSize <= 3_950_000,
-    `npm package should stay <= 3.95 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_970_000,
+    `npm package should stay <= 3.97 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

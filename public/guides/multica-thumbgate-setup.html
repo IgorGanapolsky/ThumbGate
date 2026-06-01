@@ -121,7 +121,7 @@ npx thumbgate init --agent opencode</code></pre>
       <p>The PreToolUse hook fails closed by default — tool calls that can't reach the gate are blocked. You can relax to fail-open via <code class="inline">.thumbgate/config.json</code> if your workflow prefers availability over strictness.</p>
 
       <h3>Does thumbsing down in Multica's UI talk to ThumbGate?</h3>
-      <p>Not directly. Multica's issue statuses ("In review") are workflow signals, not tool-call feedback. Capture ThumbGate feedback via <code class="inline">npx thumbgate capture --feedback=down --context "..."</code> in the agent's shell. Future work: a Multica webhook that forwards issue-close reasons as ThumbGate feedback.</p>
+      <p>Not directly. Multica's issue statuses ("In review") are workflow signals, not tool-call feedback. Capture ThumbGate feedback via <code class="inline">npx thumbgate capture down "context"</code> in the agent's shell. Future work: a Multica webhook that forwards issue-close reasons as ThumbGate feedback.</p>
     </article>
   </main>
 

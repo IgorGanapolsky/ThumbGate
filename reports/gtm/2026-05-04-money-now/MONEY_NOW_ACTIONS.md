@@ -4,11 +4,15 @@ Updated: 2026-05-18
 
 Use this as the operator cockpit for the current run. Full copy, follow-ups, CTAs, and logging commands live in `operator-send-now.md`; the pipeline truth table lives in `sales-pipeline.md`.
 
+Action-time approval card for any outbound action:
+
+- `reports/gtm/2026-05-04-money-now/action-time-approval-2026-06-01.md`
+
 ## Current Revenue State
 
 Canonical truth table for today’s run lives in:
 
-- `reports/gtm/2026-05-05-money-today/operator-close-packet.md`
+- `reports/gtm/2026-05-04-money-now/revenue-close-room.md`
 
 Snapshot (as-of 2026-05-05 baseline; do not treat as commercial proof):
 
