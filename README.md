@@ -292,6 +292,24 @@ ThumbGate sells three concrete outcomes:
 
 [See the legal-intake demo →](https://thumbgate.ai/dashboard)
 
+#### Dialogflow CX / GCP guardrails (Enterprise add-on)
+
+The same pre-action gate guards **Dialogflow CX (DFCX) fulfillment**. Deployed as Cloud Run / Cloud Functions middleware *inside your GCP tenant*, it evaluates each fulfillment turn — configured policy gates + same-session repeat detection + optional risk score — **before** the side-effect (BigQuery / CRM / billing) executes. Risky or repeat actions are blocked; allowed turns pass through to your existing fulfillment. Optional **Vertex AI / Gemini** scoring runs in-tenant, so no conversational data leaves your VPC.
+
+```mermaid
+flowchart LR
+    C["Caller"] --> DFCX["Dialogflow CX"]
+    DFCX -->|"fulfillment webhook"| TG["ThumbGate gate<br/>(Cloud Run · your tenant)"]
+    TG --> Q{"allow?"}
+    Q -->|"allow"| F["Your existing fulfillment<br/>DB / CRM / billing"]
+    Q -->|"block"| S["Safe response<br/>(no side-effect)"]
+    F --> DFCX
+    S --> DFCX
+    TG -. "optional scoring" .-> V["Vertex AI / Gemini<br/>(in-tenant · no egress)"]
+```
+
+Code + deploy guide: [`adapters/gcp/`](adapters/gcp/README.md) · pilot scope: [`docs/enterprise/gcp-dfcx-pilot.md`](docs/enterprise/gcp-dfcx-pilot.md). Try the gate locally (no GCP needed): `node adapters/gcp/dogfood-dfcx.js`.
+
 ---
 
 ## Built-in Checks

@@ -12,7 +12,9 @@ test('geminiConfig: GEMINI_API_KEY selects the generative-language transport', (
   const cfg = geminiConfig({ GEMINI_API_KEY: 'k123' });
   assert.equal(cfg.transport, 'generativelanguage');
   assert.equal(cfg.model, DEFAULT_MODEL);
-  assert.match(cfg.url, /generativelanguage\.googleapis\.com.*generateContent\?key=k123$/);
+  assert.match(cfg.url, /generativelanguage\.googleapis\.com.*generateContent$/);
+  assert.equal(cfg.headers['x-goog-api-key'], 'k123', 'key goes in a header, not the URL');
+  assert.ok(!/k123/.test(cfg.url), 'key must NOT appear in the URL');
   assert.equal(cfg.headers.authorization, undefined);
 });
 
@@ -49,9 +51,11 @@ test('parseGeminiResponse: extracts and concatenates candidate text', () => {
 test('scoreWithGemini: sends the right URL/body and parses the response (mocked fetch)', async () => {
   let seenUrl = null;
   let seenBody = null;
+  let seenHeaders = null;
   const fetchImpl = async (url, init) => {
     seenUrl = url;
     seenBody = JSON.parse(init.body);
+    seenHeaders = init.headers;
     return { ok: true, async json() { return { candidates: [{ content: { parts: [{ text: 'risk=0.8' }] } }] }; } };
   };
   const out = await scoreWithGemini('rate this action', {
@@ -60,7 +64,9 @@ test('scoreWithGemini: sends the right URL/body and parses the response (mocked 
   });
   assert.equal(out.text, 'risk=0.8');
   assert.equal(out.transport, 'generativelanguage');
-  assert.match(seenUrl, /key=KEY$/);
+  assert.match(seenUrl, /generateContent$/);
+  assert.ok(!/KEY/.test(seenUrl), 'key must not be in the request URL');
+  assert.equal(seenHeaders['x-goog-api-key'], 'KEY');
   assert.equal(seenBody.contents[0].parts[0].text, 'rate this action');
 });
 

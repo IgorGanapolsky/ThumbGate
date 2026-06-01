@@ -37,9 +37,10 @@ function geminiConfig(env = process.env) {
     return {
       transport: 'generativelanguage',
       model,
-      url: 'https://generativelanguage.googleapis.com/v1beta/models/' + model
-        + ':generateContent?key=' + env.GEMINI_API_KEY,
-      headers: { 'content-type': 'application/json' },
+      // Key passed via header (x-goog-api-key), not the URL query string, so it
+      // never lands in access logs / proxies.
+      url: 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent',
+      headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
     };
   }
   return null;

@@ -186,9 +186,12 @@ function createHttpHandler(fulfill, opts = {}) {
       res.setHeader('content-type', 'application/json');
       res.end(JSON.stringify(response));
     } catch (err) {
+      // Log internally for operators; never leak error/stack details to the
+      // external caller (Dialogflow CX / the open internet).
+      try { console.error('thumbgate-dfcx-gate error:', err); } catch (_) { /* ignore */ }
       res.statusCode = 500;
       res.setHeader('content-type', 'application/json');
-      res.end(JSON.stringify({ error: 'thumbgate-dfcx-gate-failure', detail: String((err && err.message) || err) }));
+      res.end(JSON.stringify({ error: 'thumbgate-dfcx-gate-failure' }));
     }
   };
 }
