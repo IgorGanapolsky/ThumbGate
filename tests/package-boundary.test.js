@@ -280,9 +280,15 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // scripts/hook-runtime.js requires it during `thumbgate init --wire-hooks`,
   // plus scripts/plan-gate.js and scripts/trajectory-scorer.js because
   // scripts/gates-engine.js requires them in the packaged runtime.
+  // Bumped 268 → 269 (2026-06-01) to ship scripts/enterprise-gcp-guardrails.js.
+  // bin/cli.js requires it for `thumbgate enterprise-gcp-webhook`, the first
+  // real Dialogflow CX webhook guard slice for enterprise GCP pilots.
+  // Bumped 269 → 270 (2026-06-01) to ship scripts/setup-vertex.js.
+  // bin/cli.js requires it for `thumbgate setup-vertex`, the enterprise
+  // Vertex AI / Dialogflow CX onboarding command.
   assert.ok(
-    manifest.fileCount <= 268,
-    `npm package should stay <= 268 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 270,
+    `npm package should stay <= 270 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -382,9 +388,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 3.90 MB -> 3.93 MB (2026-05-31) to ship the missing published
   // hook/planning runtime files and restore plan-gate validators. Observed
   // package after the fix is ~3.902 MB.
+  // Bumped 3.93 MB -> 3.94 MB (2026-06-01) to ship scripts/setup-vertex.js
+  // and the hosted Dialogflow CX webhook route. Observed package is 3,936,279
+  // bytes; this keeps the runtime command working from npm without broadening
+  // the public shell.
   assert.ok(
-    manifest.unpackedSize <= 3_930_000,
-    `npm package should stay <= 3.93 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_940_000,
+    `npm package should stay <= 3.94 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

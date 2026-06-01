@@ -125,8 +125,14 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // orchestration hardening: scripts/install-shim.js, scripts/plan-gate.js, and
   // scripts/trajectory-scorer.js. These are invoked by the published CLI/hooks,
   // so omitting them breaks packaged installs while staying inside public shell.
+  // Bumped 268 → 269 (2026-06-01) to ship scripts/enterprise-gcp-guardrails.js:
+  // `thumbgate enterprise-gcp-webhook` requires it for the Dialogflow CX webhook
+  // guard pilot surface, so omitting it breaks packaged enterprise evaluations.
+  // Bumped 269 → 270 (2026-06-01) to ship scripts/setup-vertex.js:
+  // `thumbgate setup-vertex` requires it for Vertex AI / Dialogflow CX
+  // onboarding from npm installs.
   const files = npmPackFiles();
-  const CEILING = 268;
+  const CEILING = 270;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

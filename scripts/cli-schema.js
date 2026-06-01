@@ -465,6 +465,42 @@ const CLI_COMMANDS = [
   },
 
   // -------------------------------------------------------------------------
+  // Enterprise guardrails
+  // -------------------------------------------------------------------------
+  {
+    name: 'setup-vertex',
+    description: 'Plan or apply Google Cloud setup for Vertex AI and Dialogflow CX enterprise pilots',
+    group: 'ops',
+    flags: [
+      { name: 'project',         type: 'string',  description: 'Google Cloud project id; falls back to active gcloud project with --apply' },
+      { name: 'billing-account', type: 'string',  description: 'Billing account id for budget creation' },
+      { name: 'budget-usd',      type: 'number',  description: 'Monthly budget guard target (default 10)' },
+      { name: 'region',          type: 'string',  description: 'Cloud Run / Vertex region (default us-central1)' },
+      { name: 'service',         type: 'string',  description: 'Cloud Run service name (default thumbgate-dfcx-guard)' },
+      { name: 'api-key',         type: 'string',  description: 'ThumbGate API key for Cloud Run startup; prefer THUMBGATE_API_KEY env var' },
+      { name: 'apply',           type: 'boolean', description: 'Enable required Google Cloud APIs' },
+      { name: 'create-budget',   type: 'boolean', description: 'Create a Cloud Billing budget; requires --billing-account' },
+      { name: 'deploy',          type: 'boolean', description: 'Deploy the hosted webhook to Cloud Run with min-instances=0 and max-instances=1' },
+      jsonFlag(),
+    ],
+  },
+  {
+    name: 'enterprise-gcp-webhook',
+    aliases: ['dfcx-webhook-gate'],
+    description: 'Evaluate a Dialogflow CX webhook request before fulfillment side effects',
+    group: 'gates',
+    flags: [
+      { name: 'input',              type: 'string',  description: 'Dialogflow CX webhook JSON file; stdin is used when omitted' },
+      { name: 'response',           type: 'boolean', description: 'Emit a Dialogflow CX webhook response envelope' },
+      { name: 'block-threshold',    type: 'number',  description: 'Risk score threshold for block (default 0.8)' },
+      { name: 'review-threshold',   type: 'number',  description: 'Risk score threshold for review (default 0.45)' },
+      { name: 'high-amount',        type: 'number',  description: 'Transaction amount that triggers review (default 500)' },
+      { name: 'max-context-length', type: 'number',  description: 'Conversation text length that triggers review (default 2000)' },
+      jsonFlag(),
+    ],
+  },
+
+  // -------------------------------------------------------------------------
   // Gates
   // -------------------------------------------------------------------------
   {

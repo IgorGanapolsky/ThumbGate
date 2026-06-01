@@ -1,0 +1,21 @@
+PaperBanana diagram brief:
+
+Create a decision matrix diagram for ThumbGate Dialogflow CX webhook risk scoring.
+Show input signals feeding into an evaluation box:
+
+- fulfillment tag or page mentions charge, refund, billing, payment, delete, disable, transfer, admin, CRM, or BigQuery
+- parameter names contain api key, access token, secret, password, SSN, card number, bank account, or routing number
+- parameter values look like SSNs or payment cards
+- transaction amount is above the configured high-value threshold
+- context is unusually long
+- request contains previous block or repeat attempt markers
+
+Then show three deterministic outcomes:
+- allow: low-risk read-only fulfillment, exit 0
+- review: risky but non-blocking fulfillment, exit 3
+- block: sensitive or repeat-risk fulfillment, exit 2
+
+Visual requirements:
+- Make the thresholds and reason codes feel auditable.
+- Show that the Dialogflow CX response envelope carries `thumbgate_decision`, `thumbgate_allowed`, `thumbgate_risk_score`, and `thumbgate_reason_codes`.
+- Avoid implying an LLM is on the enforcement path.

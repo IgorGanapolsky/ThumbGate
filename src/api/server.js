@@ -5649,6 +5649,21 @@ ${hidden}
       return;
     }
 
+    if (req.method === 'POST' && pathname === '/v1/enterprise/gcp/dialogflow-cx-webhook') {
+      try {
+        const body = await parseJsonBody(req, 1024 * 1024);
+        const { evaluateDialogflowCxWebhook } = require('../../scripts/enterprise-gcp-guardrails');
+        const result = evaluateDialogflowCxWebhook(body);
+        sendJson(res, 200, result.response);
+      } catch (error) {
+        sendJson(res, error.statusCode || 400, {
+          error: 'dialogflow_cx_webhook_failed',
+          message: error.message || 'Dialogflow CX webhook guard failed',
+        });
+      }
+      return;
+    }
+
     if (req.method === 'GET' && pathname === '/v1/metrics/real') {
       const bd = require('../../scripts/bot-detector');
       const { FEEDBACK_DIR: metricsDir } = getFeedbackPaths();

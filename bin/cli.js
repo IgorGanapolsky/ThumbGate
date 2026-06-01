@@ -1095,6 +1095,61 @@ function feedbackSelfTest() {
   }
 }
 
+function enterpriseGcpWebhook() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    evaluateDialogflowCxWebhook,
+    readPayloadFromFileOrStdin,
+  } = require(path.join(PKG_ROOT, 'scripts', 'enterprise-gcp-guardrails'));
+
+  try {
+    const payload = readPayloadFromFileOrStdin({
+      inputPath: args.input,
+      stdinText: readStdinText(),
+    });
+    const result = evaluateDialogflowCxWebhook(payload, {
+      blockThreshold: args['block-threshold'],
+      reviewThreshold: args['review-threshold'],
+      highAmount: args['high-amount'],
+      maxContextLength: args['max-context-length'],
+    });
+
+    if (args.response) {
+      console.log(JSON.stringify(result.response, null, 2));
+    } else if (args.json) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      console.log(`ThumbGate Dialogflow CX webhook gate: ${result.decision.toUpperCase()}`);
+      console.log(`Risk score: ${result.riskScore.toFixed(3)} (review ${result.thresholds.review}, block ${result.thresholds.block})`);
+      if (result.reasons.length > 0) {
+        console.log('Reasons:');
+        for (const reason of result.reasons) {
+          console.log(`- ${reason.code}: ${reason.detail}`);
+        }
+      } else {
+        console.log('Reasons: none');
+      }
+      console.log('');
+      console.log('Use --response to emit a Dialogflow CX webhook response envelope.');
+    }
+
+    if (result.decision === 'block') process.exitCode = 2;
+    else if (result.decision === 'review') process.exitCode = 3;
+  } catch (error) {
+    if (args.json || args.response) {
+      console.log(JSON.stringify({ ok: false, error: error.message }, null, 2));
+    } else {
+      console.error(`ThumbGate Dialogflow CX webhook gate failed: ${error.message}`);
+    }
+    process.exitCode = 1;
+  }
+}
+
+function setupVertex() {
+  const { runSetupVertex } = require(path.join(PKG_ROOT, 'scripts', 'setup-vertex'));
+  process.exitCode = runSetupVertex(process.argv.slice(3), { cwd: PKG_ROOT });
+}
+
 function stats() {
   trackEvent('cli_stats', { command: 'stats' });
   const args = parseArgs(process.argv.slice(3));
@@ -2677,6 +2732,8 @@ function help() {
   console.log('  npx thumbgate long-running-agent-context-guardrails --request-count=80 --output-mb=3 --raw-chat-only --json');
   console.log('  npx thumbgate reasoning-efficiency-guardrails --baseline-tokens=1200 --compressed-tokens=980 --baseline-accuracy=0.84 --compressed-accuracy=0.85 --verifier --json');
   console.log('  npx thumbgate deepseek-v4-runtime-guardrails --context-tokens=900000 --hybrid-attention --speculative-decoding --accept-length=1.4 --precision-mode=fp8 --json');
+  console.log('  npx thumbgate setup-vertex --project=my-gcp-project --billing-account=000000-000000-000000');
+  console.log('  npx thumbgate enterprise-gcp-webhook --input=dialogflow-webhook.json --json');
   console.log('  npx thumbgate upstream-contributions --max-repos=10 --write');
   console.log('  npx thumbgate background-governance --json');
   console.log('  npx thumbgate background-governance --check --agent-id=builder --branch=main --files-changed=25 --json');
@@ -2708,6 +2765,8 @@ const SUBCOMMAND_HELP = {
   feedback:      'Usage: npx thumbgate feedback --feedback=up|down --context="..." [--what-worked="..."] [--what-went-wrong="..."] [--what-to-change="..."] [--tags=a,b]',
   'feedback-self-test': 'Usage: npx thumbgate feedback-self-test [--json] [--persist] [--feedback=up|down]\n\nCapture a synthetic thumbs signal and verify feedback-log + memory-log writes. Defaults to an isolated test store; use --persist to dogfood the active ThumbGate store.',
   dogfood:       'Usage: npx thumbgate dogfood [--json] [--persist] [--feedback=up|down]\n\nAlias for feedback-self-test.',
+  'setup-vertex': 'Usage: npx thumbgate setup-vertex [--project=<gcp-project>] [--billing-account=<ID>] [--budget-usd=10] [--apply] [--create-budget] [--deploy] [--json]\n\nPlan or apply the Google Cloud setup for ThumbGate Vertex AI / Dialogflow CX enterprise pilots. Default is plan-only. Set THUMBGATE_API_KEY before --deploy.',
+  'enterprise-gcp-webhook': 'Usage: npx thumbgate enterprise-gcp-webhook --input=dialogflow-webhook.json [--json|--response]\n\nEvaluate a Dialogflow CX webhook request before fulfillment. Exits 2 for block, 3 for review, 0 for allow.',
   stats:         'Usage: npx thumbgate stats\n\nShow gate enforcement statistics: blocked/warned counts, active gates, time saved.',
   trial:         'Usage: npx thumbgate trial\n\nShow Pro trial status, remaining days, and upgrade path.',
   pro:           'Usage: npx thumbgate pro [--activate <key>]\n\nLaunch the local Pro dashboard or activate a Pro license key.',
@@ -2779,6 +2838,13 @@ switch (COMMAND) {
   case 'feedback-self-test':
   case 'dogfood':
     feedbackSelfTest();
+    break;
+  case 'setup-vertex':
+    setupVertex();
+    break;
+  case 'enterprise-gcp-webhook':
+  case 'dfcx-webhook-gate':
+    enterpriseGcpWebhook();
     break;
   case 'stats':
     stats();

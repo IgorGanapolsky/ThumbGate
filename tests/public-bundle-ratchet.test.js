@@ -64,7 +64,12 @@ const path = require('node:path');
 //            produce session-level path/dropoff summaries in packaged runtime.
 // 265 → 268: scripts/install-shim.js, scripts/plan-gate.js, scripts/trajectory-scorer.js
 //            added for CodeRabbit high-ROI orchestration and install hooks.
-const BASELINE_FILE_COUNT = 268;
+// 268 → 269: scripts/enterprise-gcp-guardrails.js added so
+//            `thumbgate enterprise-gcp-webhook` works from npm installs for
+//            scoped Dialogflow CX enterprise guard pilots.
+// 269 → 270: scripts/setup-vertex.js added so `thumbgate setup-vertex`
+//            works from npm installs for Vertex AI / Dialogflow CX onboarding.
+const BASELINE_FILE_COUNT = 270;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

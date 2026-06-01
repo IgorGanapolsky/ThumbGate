@@ -1,0 +1,16 @@
+{
+  "fulfillmentInfo": {
+    "tag": "refund_billing_account"
+  },
+  "pageInfo": {
+    "currentPage": "projects/acme/locations/us-central1/agents/support/flows/default/pages/Billing Refund"
+  },
+  "text": "Refund this customer and update the billing account.",
+  "sessionInfo": {
+    "parameters": {
+      "amount": 1200,
+      "card_number": "4111111111111111",
+      "thumbgatePreviousBlock": true
+    }
+  }
+}

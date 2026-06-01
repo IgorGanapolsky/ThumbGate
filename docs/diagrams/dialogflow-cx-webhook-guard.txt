@@ -1,0 +1,19 @@
+PaperBanana diagram brief:
+
+Create a methodology diagram for ThumbGate as a Dialogflow CX webhook guard.
+Show these stages left to right:
+
+1. Dialogflow CX agent receives a user turn and prepares a webhook fulfillment request.
+2. Customer webhook middleware calls `thumbgate enterprise-gcp-webhook` before any side effect.
+3. ThumbGate normalizes fulfillment tag, current page, query text, session parameters, amount, and repeat-attempt markers.
+4. ThumbGate evaluates deterministic guardrails for risky fulfillment actions, sensitive parameter names, sensitive values, high-value transactions, long context, and prior block markers.
+5. ThumbGate returns allow, review, or block.
+6. Allowed requests proceed to CRM, billing, BigQuery, account, or other enterprise APIs.
+7. Review requests route to a human approval queue.
+8. Blocked requests return a Dialogflow CX webhook response envelope before any side effect.
+
+Visual requirements:
+- Use green for allow, amber for review, red for block.
+- Make "before side effects" the central message.
+- Include an audit log ribbon below the pipeline.
+- Avoid claiming marketplace certification or full CCAI governance.

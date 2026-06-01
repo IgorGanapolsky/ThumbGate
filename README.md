@@ -141,6 +141,31 @@ That single command creates a prevention rule. Next time any AI agent tries to r
 
 ---
 
+## Enterprise GCP / Vertex AI / Dialogflow CX Pilot
+
+ThumbGate now has a first buildable enterprise slice for Google Cloud teams working around **Vertex AI Agent Engine**, **Vertex AI Agent Builder**, **Dialogflow CX**, and **DFCX** webhook fulfillment. This is a scoped pilot surface, not a claim that ThumbGate is a certified GCP compliance product, a Vertex AI marketplace integration, or a Dialogflow CX marketplace app.
+
+What exists in this PR is the **Dialogflow CX webhook guard**: use it when a DFCX fulfillment webhook is about to touch CRM, billing, BigQuery, account, or other side-effecting enterprise APIs:
+
+```bash
+npx thumbgate setup-vertex --project=my-gcp-project --billing-account=000000-000000-000000
+THUMBGATE_API_KEY="$(openssl rand -hex 32)" npx thumbgate setup-vertex --project=my-gcp-project --deploy
+npx thumbgate enterprise-gcp-webhook --input=docs/examples/dialogflow-cx-high-risk-webhook.json --json
+npx thumbgate enterprise-gcp-webhook --input=docs/examples/dialogflow-cx-high-risk-webhook.json --response
+```
+
+`setup-vertex` gives enterprise customers a concrete Google Cloud setup plan for Vertex AI / Agent Builder / Dialogflow CX pilots, including required APIs, a $10/month default budget guard, and a Cloud Run deploy command with `min-instances=0` and `max-instances=1`. The webhook CLI normalizes Dialogflow CX fields, evaluates deterministic risk signals, and returns `allow`, `review`, or `block` before fulfillment side effects run. In middleware mode, `--response` emits a Dialogflow CX-compatible response envelope with `thumbgate_decision`, `thumbgate_allowed`, `thumbgate_risk_score`, and `thumbgate_reason_codes`.
+
+For Vertex AI Agent Engine / Agent Builder, the honest current integration shape is: place ThumbGate in the middleware or tool-execution boundary before a deployed agent calls production systems. A native Vertex Agent Engine deployment template is not shipped yet.
+
+![Dialogflow CX webhook guard](docs/diagrams/dialogflow-cx-webhook-guard.png)
+
+![Dialogflow CX decision matrix](docs/diagrams/dialogflow-cx-decision-matrix.png)
+
+See [ThumbGate Enterprise GCP Guardrails](docs/ENTERPRISE_GCP_GUARDRAILS.md) for the honest pilot scope, non-claims, and dogfood commands.
+
+---
+
 ## Architecture
 
 ThumbGate operates as a 4-layer enforcement stack between your AI agent and your codebase:
