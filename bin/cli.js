@@ -611,6 +611,85 @@ function detectAgent(projectDir) {
   return null;
 }
 
+async function setupVertex() {
+  const { execSync } = require('child_process');
+  console.log(`\nthumbgate setup-vertex v${pkgVersion()}`);
+  console.log('  Zero-friction Google Cloud & Vertex AI onboarding...');
+  console.log('');
+
+  // 1. Detect gcloud CLI
+  let activeAccount = '';
+  let activeProject = '';
+  try {
+    activeAccount = execSync('gcloud config get-value account', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    activeProject = execSync('gcloud config get-value project', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+  } catch (_) {
+    console.log('  ⚠️  Google Cloud SDK (gcloud CLI) not detected or not logged in.');
+    console.log('      To automate setup, install the Google Cloud CLI and run: gcloud auth login');
+    console.log('      Otherwise, manually set the following variables in your .env file:');
+    console.log('      THUMBGATE_PROVIDER_MODE=vertex');
+    console.log('      VERTEX_PROJECT_ID=<your-gcp-project-id>');
+    console.log('');
+    return;
+  }
+
+  if (!activeAccount) {
+    console.log('  ⚠️  No active Google Cloud account set. Run: gcloud auth login');
+    return;
+  }
+
+  console.log(`  Active Account : \x1b[36m${activeAccount}\x1b[0m`);
+  if (!activeProject) {
+    console.log('  ⚠️  No active Google Cloud project set. Run: gcloud config set project <PROJECT_ID>');
+    return;
+  }
+  console.log(`  Active Project : \x1b[36m${activeProject}\x1b[0m`);
+
+  // 2. Auto-enable Vertex AI API
+  console.log('  ⚙️  Enabling Vertex AI API in your project (this can take a few seconds)...');
+  try {
+    execSync(`gcloud services enable aiplatform.googleapis.com --project=${activeProject}`, { stdio: 'inherit' });
+    console.log('  ✅  Vertex AI API successfully enabled.');
+  } catch (err) {
+    console.log('  ⚠️  Could not programmatically enable Vertex AI API. Please make sure your billing is open.');
+  }
+
+  // 3. Write env config to .env
+  const envPath = path.join(process.cwd(), '.env');
+  let envContent = '';
+  if (fs.existsSync(envPath)) {
+    envContent = fs.readFileSync(envPath, 'utf8');
+  }
+
+  // Helper to update or append env values
+  function updateEnvKey(content, key, value) {
+    const regex = new RegExp(`^${key}=.*$`, 'm');
+    if (regex.test(content)) {
+      return content.replace(regex, `${key}=${value}`);
+    }
+    return content.trim() + `\n${key}=${value}\n`;
+  }
+
+  let updatedContent = updateEnvKey(envContent, 'THUMBGATE_PROVIDER_MODE', 'vertex');
+  updatedContent = updateEnvKey(updatedContent, 'VERTEX_PROJECT_ID', activeProject);
+
+  fs.writeFileSync(envPath, updatedContent, 'utf8');
+  console.log('  ✅  Wrote configuration to local .env file.');
+
+  // 4. Print gorgeous success activation box
+  console.log('');
+  console.log('  ╭──────────────────────────────────────────────────────────╮');
+  console.log('  │  🎉 Vertex AI Setup Complete — ZERO FRICTION!            │');
+  console.log('  │                                                         │');
+  console.log('  │  ThumbGate is now fully wired to your GCP environment.   │');
+  console.log('  │  All agent checks will route securely via Vertex AI.     │');
+  console.log('  │                                                         │');
+  console.log('  │  Try a test run:                                        │');
+  console.log('  │  npx thumbgate feedback-self-test                       │');
+  console.log('  ╰──────────────────────────────────────────────────────────╯');
+  console.log('');
+}
+
 function quickStart() {
   const qsArgs = parseArgs(process.argv.slice(3));
   const projectDir = process.cwd();
@@ -902,13 +981,34 @@ function capture() {
     return;
   }
 
-  const signal = (args.feedback || '').toLowerCase();
+  // Parse pure positional arguments
+  const rawArgv = process.argv.slice(3);
+  const positionalArgs = [];
+  for (let i = 0; i < rawArgv.length; i++) {
+    const arg = rawArgv[i];
+    if (arg.startsWith('--')) {
+      if (!arg.includes('=')) {
+        i++;
+      }
+    } else {
+      positionalArgs.push(arg);
+    }
+  }
+
+  let signal = (args.feedback || '').toLowerCase();
+  if (!signal && positionalArgs[0]) {
+    const firstPos = positionalArgs[0].toLowerCase();
+    if (['up', 'down', 'thumbsup', 'thumbsdown', 'thumbs_up', 'thumbs_down', 'positive', 'negative'].some(v => firstPos.includes(v))) {
+      signal = firstPos;
+    }
+  }
+
   const normalized = ['up', 'thumbsup', 'thumbs_up', 'positive'].some(v => signal.includes(v)) ? 'up'
     : ['down', 'thumbsdown', 'thumbs_down', 'negative'].some(v => signal.includes(v)) ? 'down'
     : signal;
 
   if (normalized !== 'up' && normalized !== 'down') {
-    console.error('Missing or unrecognized --feedback=up|down');
+    console.error('Missing or unrecognized --feedback=up|down (or positional argument)');
     process.exit(1);
   }
 
@@ -918,11 +1018,30 @@ function capture() {
     process.exit(1);
   }
 
+  let context = args.context || '';
+  if (!context && positionalArgs[1]) {
+    context = positionalArgs[1];
+  }
+
+  let whatWentWrong = args['what-went-wrong'];
+  if (!whatWentWrong && positionalArgs[2]) {
+    whatWentWrong = positionalArgs[2];
+  } else if (!whatWentWrong && normalized === 'down' && context) {
+    whatWentWrong = context;
+  }
+
+  let whatToChange = args['what-to-change'];
+  if (!whatToChange && positionalArgs[3]) {
+    whatToChange = positionalArgs[3];
+  } else if (!whatToChange && normalized === 'down' && context) {
+    whatToChange = `avoid: ${context}`;
+  }
+
   const result = captureFeedback({
     signal: normalized,
-    context: args.context || '',
-    whatWentWrong: args['what-went-wrong'],
-    whatToChange: args['what-to-change'],
+    context: context,
+    whatWentWrong: whatWentWrong,
+    whatToChange: whatToChange,
     whatWorked: args['what-worked'],
     tags: args.tags,
     gateAction: gateAction || undefined,
@@ -2723,6 +2842,7 @@ const SUBCOMMAND_HELP = {
   suggest:       'Usage: npx thumbgate suggest <gate-id>\n\nSuggest fixes for a specific gate based on lesson history.',
   cost:          'Usage: npx thumbgate cost [--json] [--stats <path>] [--mix \'{"claude-sonnet-4-5":0.8,...}\']\n\nShow cumulative $ and tokens saved by PreToolUse gate blocks. Reads ~/.thumbgate/gate-stats.json.',
   savings:       'Usage: npx thumbgate savings [--json] [--stats <path>] [--mix \'{"claude-sonnet-4-5":0.8,...}\']\n\nAlias for `thumbgate cost`.',
+  'setup-vertex': 'Usage: npx thumbgate setup-vertex\n\nAuto-enable Vertex AI API on GCP and write secure credentials to local .env.',
 };
 
 if (_wantsHelp && COMMAND && SUBCOMMAND_HELP[COMMAND]) {
@@ -2779,6 +2899,12 @@ switch (COMMAND) {
   case 'feedback-self-test':
   case 'dogfood':
     feedbackSelfTest();
+    break;
+  case 'setup-vertex':
+    setupVertex().catch((err) => {
+      console.error(err && err.message ? err.message : err);
+      process.exit(1);
+    });
     break;
   case 'stats':
     stats();

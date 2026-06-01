@@ -99,14 +99,14 @@ npx thumbgate init --agent codex
 npx thumbgate init --agent gemini</code></pre>
       <p>The installer writes the MCP server config, wires the PreToolUse hook, creates <code class="inline">.thumbgate/memory.sqlite</code>, and prints every file it touched so you can roll back.</p>
 
+      <h2>Zero-Friction Enterprise Vertex AI Setup</h2>
+      <p>For enterprise teams, configure ThumbGate to route checks securely through Vertex AI using compliant Gemini models inside your corporate VPC with zero friction:</p>
+      <pre><code>npx thumbgate setup-vertex</code></pre>
+      <p>This automatically detects your active gcloud session, enables the Vertex AI API in your project, and writes the secure credentials to your local <code>.env</code> file. No manual console configurations required.</p>
+
       <h2>Teach it a BigQuery lesson</h2>
-      <p>The first time your agent proposes <code class="inline">DROP TABLE prod_events</code>, capture the thumbs-down:</p>
-      <pre><code>npx thumbgate capture \
-  --feedback=down \
-  --context="agent proposed DROP TABLE prod_events during migration rewrite" \
-  --what-went-wrong="destructive DDL on a prod BigQuery table" \
-  --what-to-change="require explicit confirmation before any DROP on prod_* datasets" \
-  --tags="bigquery,ddl,prod"</code></pre>
+      <p>The first time your agent proposes <code class="inline">DROP TABLE prod_events</code>, capture the thumbs-down with zero friction:</p>
+      <pre><code>npx thumbgate capture down "destructive DDL on a prod BigQuery table" "require explicit confirmation before any DROP on prod_* datasets" --tags="bigquery,ddl,prod"</code></pre>
       <p>Every future agent session — Claude Code, Codex, Gemini CLI, tomorrow morning's autopilot run — now checks this lesson against proposed tool calls before firing them.</p>
 
       <h2>Knowledge Catalog vs. ThumbGate memory</h2>

@@ -24,7 +24,7 @@ test('Plan Gate - Warns if PLAN.md is missing for risk tools', () => {
 });
 
 test('Plan Gate - Passes if PLAN.md exists and matches', () => {
-  fs.writeFileSync(TEST_PLAN, 'Intent: Update index.js\nAssumes: node is installed.');
+  fs.writeFileSync(TEST_PLAN, 'Intent: Update index.js\nAssumes: node is installed.\nRisks: None.');
   const result = pg.evaluatePlanGate('Write', { filePath: 'index.js' });
   // Should return null (allowed) or assumption warning
   if (result) {
@@ -34,8 +34,15 @@ test('Plan Gate - Passes if PLAN.md exists and matches', () => {
   }
 });
 
+test('Plan Gate - Warns if Self-Critique/Risks are missing in PLAN.md', () => {
+  fs.writeFileSync(TEST_PLAN, 'Intent: Update index.js\nGoal: Solve bug.');
+  const result = pg.evaluatePlanGate('Write', { filePath: 'index.js' });
+  assert.strictEqual(result.gate, 'plan-gate-critique-missing');
+  assert.strictEqual(result.decision, 'warn');
+});
+
 test('Plan Gate - Detects Drift', () => {
-  fs.writeFileSync(TEST_PLAN, 'Intent: Fix README.md');
+  fs.writeFileSync(TEST_PLAN, 'Intent: Fix README.md\nMitigations: None.');
   const result = pg.evaluatePlanGate('Write', { filePath: 'auth.js' });
   assert.strictEqual(result.gate, 'plan-gate-drift');
   assert.strictEqual(result.decision, 'warn');

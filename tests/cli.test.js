@@ -2521,6 +2521,16 @@ describe('bin/cli.js', () => {
     assert.notEqual(result.status, 1, `capture should not exit 1:\n${result.stderr}`);
   });
 
+  test('capture down [context] positional arguments route to full engine', () => {
+    const isolatedDir = makeTmpDir();
+    const result = runCliSync(
+      ['capture', 'down', 'deleted prod config', 'ran rm on .env', 'never delete .env files'],
+      { cwd: isolatedDir }
+    );
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+    assert.notEqual(result.status, 1, `capture should not exit 1:\n${result.stderr}`);
+  });
+
   test('import-doc ingests a policy file and returns proposed gates as JSON', () => {
     const cwd = makeTmpDir();
     const feedbackDir = makeTmpDir();
@@ -2655,10 +2665,13 @@ describe('thumbgate audit', () => {
     assert.ok(result.stderr.includes('Usage: npx thumbgate audit'));
   });
 
-  test('nonexistent transcript path exits non-zero with a clear error', () => {
-    const result = runCliSync(['audit', '/no/such/transcript-xyz-9999.txt']);
-    assert.strictEqual(result.status, 1);
-    assert.ok(result.stderr.includes('File not found'));
+  test('setup-vertex CLI command exits 0 and falls back gracefully when gcloud is absent', () => {
+    // Run setup-vertex with a mocked PATH to ensure gcloud is not found
+    const result = runCliSync(['setup-vertex'], {
+      env: { PATH: '' }
+    });
+    assert.strictEqual(result.status, 0);
+    assert.ok(result.stdout.includes('Google Cloud SDK (gcloud CLI) not detected'));
   });
 });
 

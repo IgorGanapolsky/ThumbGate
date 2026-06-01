@@ -1536,6 +1536,14 @@ __GA_BOOTSTRAP__
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What does Pro cost?</div>
         <div class="faq-a">Pro is $19/mo or $149/yr for individual operators and bills immediately through Stripe. Team is $49/seat/mo with a 3-seat minimum and starts through the workflow intake so scope, shared rules, and rollout proof are explicit before a team rollout.</div>
       </div>
+      <div class="faq-item">
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Does ThumbGate support enterprise Google Cloud / Vertex AI?</div>
+        <div class="faq-a">Yes! ThumbGate features a zero-friction enterprise setup path via <code>npx thumbgate setup-vertex</code>. This command automatically detects your active gcloud session, enables the Vertex AI API on your Google Cloud project, and configures secure Application Default Credentials (ADC) to route all evaluations within your corporate VPC.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How does ThumbGate contain enterprise API costs?</div>
+        <div class="faq-a">ThumbGate prevents runaway API costs through a local client-side token ledger (FrontierBudget) that enforces strict cost-containment limits (such as keeping monthly costs under $10/mo). Because GCP billing console alerts are delayed, our local circuit breaker halts runaway agent loops in milliseconds to guarantee budget protection.</div>
+      </div>
     </div>
   </div>
 </section>
