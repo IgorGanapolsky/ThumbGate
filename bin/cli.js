@@ -826,6 +826,14 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
   console.log('Wrote .thumbgate/config.json');
 
+  const { ensureBrain } = require(path.join(PKG_ROOT, 'scripts', 'brain'));
+  const brainResult = ensureBrain(CWD);
+  if (brainResult.created.length) {
+    console.log(`Scaffolded ThumbGate brain (${brainResult.created.length} files/dirs)`);
+  } else {
+    console.log('ThumbGate brain already present');
+  }
+
   // Always create .mcp.json (project-level MCP config used by Claude, Codex, Cursor)
   mergeMcpJson(path.join(CWD, '.mcp.json'), 'MCP');
 
@@ -1597,6 +1605,107 @@ function lessons() {
   }
 
   process.stdout.write(formatLessonSearchResults(result));
+}
+
+function brain() {
+  const args = parseArgs(process.argv.slice(3));
+  const subcommand = process.argv.slice(3).find((arg) => !arg.startsWith('--')) || 'status';
+  const {
+    buildContextPack,
+    checkNeverDo,
+    cleanupReport,
+    ensureBrain,
+    formatContextPack,
+    recordMemory,
+    refreshNeverDoGates,
+  } = require(path.join(PKG_ROOT, 'scripts', 'brain'));
+
+  if (subcommand === 'init' || subcommand === 'status') {
+    const result = ensureBrain(CWD);
+    const gates = refreshNeverDoGates(CWD);
+    const payload = { ...result, gateCount: gates.gateCount };
+    if (args.json) {
+      console.log(JSON.stringify(payload, null, 2));
+      return;
+    }
+    console.log('ThumbGate brain');
+    console.log('='.repeat(15));
+    console.log(`Brain dir : ${path.relative(CWD, result.brainDir)}`);
+    console.log(`Created   : ${result.created.length}`);
+    console.log(`Soul files: ${result.soulFiles.length}`);
+    console.log(`Memory dirs: ${result.memoryDirs.length}`);
+    console.log(`Never-do gates: ${gates.gateCount}`);
+    return;
+  }
+
+  if (subcommand === 'context') {
+    const task = args.task || process.argv.slice(4).find((arg) => !arg.startsWith('--')) || '';
+    const pack = buildContextPack(CWD, { task });
+    if (args.json) {
+      console.log(JSON.stringify(pack, null, 2));
+      return;
+    }
+    process.stdout.write(formatContextPack(pack));
+    return;
+  }
+
+  if (subcommand === 'remember') {
+    const title = args.title || process.argv.slice(4).find((arg) => !arg.startsWith('--')) || '';
+    const result = recordMemory(CWD, {
+      type: args.type,
+      title,
+      content: args.content || title,
+      reason: args.reason,
+      source: args.source,
+      tags: args.tags,
+      date: args.date,
+    });
+    if (args.json) {
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+    if (!result.ok) {
+      console.error(result.error);
+      process.exit(1);
+    }
+    console.log(`Stored brain memory: ${result.path}`);
+    return;
+  }
+
+  if (subcommand === 'check') {
+    const text = args.text || args.action || readStdinText();
+    const result = checkNeverDo(CWD, { text });
+    if (args.json) {
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+    console.log(`ThumbGate brain decision: ${result.decision.toUpperCase()}`);
+    for (const rule of result.blocked) console.log(`- ${rule.text}`);
+    if (!result.ok) process.exit(2);
+    return;
+  }
+
+  if (subcommand === 'cleanup') {
+    const report = cleanupReport(CWD, args);
+    if (args.json) {
+      console.log(JSON.stringify(report, null, 2));
+      return;
+    }
+    console.log('ThumbGate brain cleanup report');
+    console.log('='.repeat(31));
+    console.log(`Memory files: ${report.total}`);
+    console.log(`Unsourced   : ${report.unsourced.length}`);
+    console.log(`Stale       : ${report.stale.length}`);
+    console.log(`Duplicates  : ${report.duplicates.length}`);
+    if (report.unsourced.length) {
+      console.log('\nUnsourced files:');
+      for (const filePath of report.unsourced) console.log(`- ${filePath}`);
+    }
+    return;
+  }
+
+  console.error('Usage: npx thumbgate brain init|context|remember|check|cleanup [--json]');
+  process.exit(1);
 }
 
 function modelFit() {
@@ -2692,6 +2801,7 @@ function help() {
     console.log('  capture --feedback=up|down --context="<text>"    Capture a thumbs signal as a stored lesson');
     console.log('  stats                                             Approval rate, recent trend, blocked-pattern count');
     console.log('  lessons [query]                                   Search promoted lessons');
+    console.log('  brain context --task="<task>"                     Load routed repo/customer brain context');
     console.log('  explore                                           Interactive TUI for lessons, gates, stats');
     console.log('  dashboard                                         Open the local ThumbGate dashboard');
     console.log('  doctor                                            Audit runtime isolation + bootstrap context');
@@ -2839,6 +2949,7 @@ const SUBCOMMAND_HELP = {
   pro:           'Usage: npx thumbgate pro [--activate <key>]\n\nLaunch the local Pro dashboard or activate a Pro license key.',
   subscribe:     'Usage: npx thumbgate subscribe <email>\n\nSubscribe to the 5-minute setup guide + trial reminders.',
   lessons:       'Usage: npx thumbgate lessons [--query="..."] [--limit=N]\n\nSearch the lesson database (Pro feature).',
+  brain:         'Usage: npx thumbgate brain init|context|remember|check|cleanup [--json]\n\nScaffold and use the per-repo Customer Brain: stable soul, sourced memory, routed context, never-do gates, and cleanup reports.',
   search:        'Usage: npx thumbgate search <query>\n\nSearch ThumbGate knowledge base (Pro feature).',
   'gate-check':  'Usage: npx thumbgate gate-check\n\nPreToolUse hook interface: reads tool call JSON from stdin, outputs gate verdict.',
   'export-dpo':  'Usage: npx thumbgate export-dpo [--format=jsonl|csv]\n\nExport feedback as DPO training pairs (Pro feature).',
@@ -2947,6 +3058,11 @@ switch (COMMAND) {
   case 'lessons':
   case 'search-lessons':
     lessons();
+    break;
+  case 'brain':
+  case 'customer-brain':
+  case 'repo-brain':
+    brain();
     break;
   case 'notes': {
     const { cli: notesCli } = require(path.join(PKG_ROOT, 'scripts', 'implementation-notes'));

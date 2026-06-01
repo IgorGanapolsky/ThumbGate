@@ -95,6 +95,23 @@ const CLI_COMMANDS = [
     ],
   },
   {
+    name: 'brain',
+    aliases: ['customer-brain', 'repo-brain'],
+    description: 'Scaffold and query the governed customer/repo brain',
+    group: 'discovery',
+    flags: [
+      { name: 'json',       type: 'boolean', description: 'Output as JSON' },
+      { name: 'task',       type: 'string',  description: 'Task description for routed context loading' },
+      { name: 'type',       type: 'string',  description: 'Memory type for remember: decision | pattern | feedback | log' },
+      { name: 'title',      type: 'string',  description: 'Title for a sourced memory entry' },
+      { name: 'content',    type: 'string',  description: 'Body for a sourced memory entry' },
+      { name: 'source',     type: 'string',  description: 'Required provenance for factual memory writes' },
+      { name: 'tags',       type: 'string',  description: 'Comma-separated memory tags' },
+      { name: 'text',       type: 'string',  description: 'Text/action to check against never-do rules' },
+      { name: 'stale-days', type: 'number',  description: 'Age threshold for cleanup report (default 60)' },
+    ],
+  },
+  {
     name: 'stats',
     description: 'Feedback analytics — approval rate, Revenue-at-Risk, recent trend',
     group: 'discovery',
