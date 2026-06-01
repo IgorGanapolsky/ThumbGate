@@ -1,14 +1,15 @@
 # Money Now Actions
 
-Updated: 2026-05-18
+Updated: 2026-06-01
 
 Use this as the operator cockpit for the current run. Full copy, follow-ups, CTAs, and logging commands live in `operator-send-now.md`; the pipeline truth table lives in `sales-pipeline.md`.
 
 ## Current Revenue State
 
-Canonical truth table for today’s run lives in:
+Canonical truth for today’s run lives in:
 
-- `reports/gtm/2026-05-05-money-today/operator-close-packet.md`
+- `reports/gtm/2026-05-04-money-now/sales-pipeline.md`
+- `reports/gtm/2026-05-04-money-now/operator-send-now.md`
 
 Snapshot (as-of 2026-05-05 baseline; do not treat as commercial proof):
 
