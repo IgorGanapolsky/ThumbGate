@@ -581,6 +581,40 @@ describe('bin/cli.js', () => {
     }
   });
 
+  test('brain --json emits a structured context model', () => {
+    const result = runCliSync(['brain', '--json']);
+    assert.strictEqual(result.status, 0, `Expected exit 0, got ${result.status}\n${result.stderr}`);
+    const model = JSON.parse(result.stdout);
+    for (const key of ['lessons', 'rules', 'gates', 'project']) {
+      assert.ok(key in model, `brain model should contain "${key}"`);
+    }
+    assert.ok(Array.isArray(model.lessons.lessons), 'lessons.lessons should be an array');
+    assert.ok(Array.isArray(model.gates.gates), 'gates.gates should be an array');
+    assert.ok(typeof model.project.root === 'string', 'project.root should be a path');
+  });
+
+  test('brain renders a deterministic agent-readable markdown brain', () => {
+    const a = runCliSync(['brain']);
+    assert.strictEqual(a.status, 0, `Expected exit 0, got ${a.status}\n${a.stderr}`);
+    assert.ok(a.stdout.startsWith('# ThumbGate Context Brain'), 'brain should start with the title');
+    for (const section of ['(lessons)', 'prevention rules', 'Active enforcement', 'Project context']) {
+      assert.ok(a.stdout.includes(section), `brain should include the "${section}" section`);
+    }
+    // Deterministic: no volatile timestamp, so two runs match byte-for-byte.
+    const b = runCliSync(['brain']);
+    assert.strictEqual(a.stdout, b.stdout, 'brain output must be deterministic across runs');
+  });
+
+  test('brain --write saves a versioned BRAIN.md to .thumbgate/', () => {
+    const dir = makeTmpDir();
+    const result = runCliSync(['brain', '--write'], { cwd: dir });
+    assert.strictEqual(result.status, 0, `Expected exit 0, got ${result.status}\n${result.stderr}`);
+    const written = path.join(dir, '.thumbgate', 'BRAIN.md');
+    assert.ok(fs.existsSync(written), 'brain --write should create .thumbgate/BRAIN.md');
+    assert.ok(fs.readFileSync(written, 'utf8').includes('# ThumbGate Context Brain'),
+      'written brain should contain the title');
+  });
+
   test('feedback-self-test verifies capture and lesson writes in explicit isolated store', () => {
     const feedbackDir = makeTmpDir();
     const result = runCliSync(['feedback-self-test', '--json', `--feedback-dir=${feedbackDir}`], {

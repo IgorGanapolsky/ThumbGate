@@ -604,6 +604,16 @@ const CLI_COMMANDS = [
       { name: 'info',    type: 'boolean', description: 'Show Pro feature list' },
     ],
   },
+  {
+    name: 'brain',
+    description: 'Build the agent-readable context brain (lessons + rules + gates + project context)',
+    group: 'ops',
+    flags: [
+      { name: 'write', type: 'boolean', description: 'Save to .thumbgate/BRAIN.md (versioned, deterministic)' },
+      { name: 'limit', type: 'number',  description: 'Max lessons to include (default 15)' },
+      { name: 'json',  type: 'boolean', description: 'Output the structured model as JSON' },
+    ],
+  },
 ];
 
 /**
