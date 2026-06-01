@@ -2521,6 +2521,16 @@ describe('bin/cli.js', () => {
     assert.notEqual(result.status, 1, `capture should not exit 1:\n${result.stderr}`);
   });
 
+  test('capture down [context] positional arguments route to full engine', () => {
+    const isolatedDir = makeTmpDir();
+    const result = runCliSync(
+      ['capture', 'down', 'deleted prod config', 'ran rm on .env', 'never delete .env files'],
+      { cwd: isolatedDir }
+    );
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+    assert.notEqual(result.status, 1, `capture should not exit 1:\n${result.stderr}`);
+  });
+
   test('import-doc ingests a policy file and returns proposed gates as JSON', () => {
     const cwd = makeTmpDir();
     const feedbackDir = makeTmpDir();

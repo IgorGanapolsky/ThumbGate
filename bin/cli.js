@@ -902,13 +902,34 @@ function capture() {
     return;
   }
 
-  const signal = (args.feedback || '').toLowerCase();
+  // Parse pure positional arguments
+  const rawArgv = process.argv.slice(3);
+  const positionalArgs = [];
+  for (let i = 0; i < rawArgv.length; i++) {
+    const arg = rawArgv[i];
+    if (arg.startsWith('--')) {
+      if (!arg.includes('=')) {
+        i++;
+      }
+    } else {
+      positionalArgs.push(arg);
+    }
+  }
+
+  let signal = (args.feedback || '').toLowerCase();
+  if (!signal && positionalArgs[0]) {
+    const firstPos = positionalArgs[0].toLowerCase();
+    if (['up', 'down', 'thumbsup', 'thumbsdown', 'thumbs_up', 'thumbs_down', 'positive', 'negative'].some(v => firstPos.includes(v))) {
+      signal = firstPos;
+    }
+  }
+
   const normalized = ['up', 'thumbsup', 'thumbs_up', 'positive'].some(v => signal.includes(v)) ? 'up'
     : ['down', 'thumbsdown', 'thumbs_down', 'negative'].some(v => signal.includes(v)) ? 'down'
     : signal;
 
   if (normalized !== 'up' && normalized !== 'down') {
-    console.error('Missing or unrecognized --feedback=up|down');
+    console.error('Missing or unrecognized --feedback=up|down (or positional argument)');
     process.exit(1);
   }
 
@@ -918,11 +939,30 @@ function capture() {
     process.exit(1);
   }
 
+  let context = args.context || '';
+  if (!context && positionalArgs[1]) {
+    context = positionalArgs[1];
+  }
+
+  let whatWentWrong = args['what-went-wrong'];
+  if (!whatWentWrong && positionalArgs[2]) {
+    whatWentWrong = positionalArgs[2];
+  } else if (!whatWentWrong && normalized === 'down' && context) {
+    whatWentWrong = context;
+  }
+
+  let whatToChange = args['what-to-change'];
+  if (!whatToChange && positionalArgs[3]) {
+    whatToChange = positionalArgs[3];
+  } else if (!whatToChange && normalized === 'down' && context) {
+    whatToChange = `avoid: ${context}`;
+  }
+
   const result = captureFeedback({
     signal: normalized,
-    context: args.context || '',
-    whatWentWrong: args['what-went-wrong'],
-    whatToChange: args['what-to-change'],
+    context: context,
+    whatWentWrong: whatWentWrong,
+    whatToChange: whatToChange,
     whatWorked: args['what-worked'],
     tags: args.tags,
     gateAction: gateAction || undefined,
