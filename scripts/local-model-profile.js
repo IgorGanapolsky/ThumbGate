@@ -111,7 +111,8 @@ function isSparseAttentionFamily(modelFamily) {
 
 function resolveProviderMode(env = process.env) {
   const explicit = normalizeSlug(env.THUMBGATE_PROVIDER_MODE || env.THUMBGATE_MODEL_PROVIDER_MODE);
-  if (explicit === 'local' || explicit === 'managed') return explicit;
+  if (explicit === 'local' || explicit === 'managed' || explicit === 'vertex') return explicit;
+  if (env.VERTEX_PROJECT_ID || env.VERTEX_API_ENDPOINT) return 'vertex';
   if (env.THUMBGATE_LOCAL_MODEL_FAMILY || env.THUMBGATE_LOCAL_MODEL_SERVER) return 'local';
   return 'managed';
 }
@@ -133,6 +134,7 @@ function resolveModelFamily(env = process.env) {
 }
 
 function buildBackendLabel(providerMode, modelFamily) {
+  if (providerMode === 'vertex') return 'Vertex AI secure cloud backend';
   if (providerMode === 'managed') return 'Managed API backend';
   if (modelFamily.startsWith('deepseek')) return 'Local DeepSeek sparse backend';
   if (modelFamily.startsWith('glm')) return 'Local GLM sparse backend';
@@ -148,14 +150,18 @@ function detectInferenceBackend(env = process.env) {
     && supportsSparseAttention
     && INDEXCACHE_SERVER_ENGINES.has(serverEngine);
   const indexCacheEnabled = indexCacheEligible && parseBoolean(env.THUMBGATE_INDEXCACHE_ENABLED, false);
-  const id = providerMode === 'managed'
-    ? 'managed-api'
-    : supportsSparseAttention
-      ? `local-${modelFamily}-sparse`
-      : 'local-dense';
+  const id = providerMode === 'vertex'
+    ? 'vertex-api'
+    : providerMode === 'managed'
+      ? 'managed-api'
+      : supportsSparseAttention
+        ? `local-${modelFamily}-sparse`
+        : 'local-dense';
 
   let rationale = 'Baseline backend with no sparse-attention acceleration.';
-  if (providerMode === 'managed') {
+  if (providerMode === 'vertex') {
+    rationale = 'Vertex AI secure cloud backend providing compliant enterprise Gemini models inside VPC boundary.';
+  } else if (providerMode === 'managed') {
     rationale = 'Managed API path does not expose sparse-attention kernel controls like IndexCache.';
   } else if (indexCacheEnabled) {
     rationale = `Local ${modelFamily} backend is sparse-attention capable and IndexCache-ready on ${serverEngine}.`;
@@ -336,7 +342,8 @@ function resolveModelRole(role, env) {
   const envKey = `THUMBGATE_MODEL_ROLE_${normalized.toUpperCase()}`;
   const modelFamily = resolveModelFamily(e);
   const isLocalGlm = modelFamily.startsWith('glm');
-  const provider = isLocalGlm ? 'local' : 'gemini';
+  const providerMode = resolveProviderMode(e);
+  const provider = isLocalGlm ? 'local' : (providerMode === 'vertex' ? 'vertex' : 'gemini');
   const defaultModel = isLocalGlm ? (GLM_MODEL_ROLES[normalized] || MODEL_ROLES[normalized]) : MODEL_ROLES[normalized];
   const model = (e[envKey] && String(e[envKey]).trim()) || defaultModel;
   return { role: normalized, model, provider, envKey };
