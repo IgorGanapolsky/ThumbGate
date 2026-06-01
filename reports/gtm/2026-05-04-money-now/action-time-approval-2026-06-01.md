@@ -73,6 +73,10 @@ Approval: ☐ YES (update Skool + pin) ☐ NO (defer)
 ## Notes (constraints observed)
 
 - Local Skool media upload remains blocked by the browser/native file picker; treat Skool media updates as action-time tasks.
-- In this checkout, the only confirmed Operator Lab assets under `docs/marketing/assets/` are:
+- In this checkout, the confirmed Operator Lab assets under `docs/marketing/assets/` are:
   - `thumbgate-skool-cover-1084x576.png`
   - `thumbgate-skool-icon-128x128.png`
+  - `thumbgate-operator-lab-about-hero.png`
+  - `thumbgate-operator-lab-social-landscape.png`
+  - `thumbgate-operator-lab-social-square.png`
+  - `thumbgate-operator-lab-social-story.png`

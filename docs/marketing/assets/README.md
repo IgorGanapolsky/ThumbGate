@@ -20,6 +20,12 @@ These assets are the local source of truth for the March 2026 AI reliability sys
 - `ai-reliability-system-x-card.svg`
 - `pre-action-checks-instagram-carousel.html`
 - `pre-action-checks-caption.txt`
+- `thumbgate-skool-cover-1084x576.png` (Skool cover)
+- `thumbgate-skool-icon-128x128.png` (Skool icon)
+- `thumbgate-operator-lab-about-hero.png` (Skool About/hero image)
+- `thumbgate-operator-lab-social-landscape.png` (1200x675)
+- `thumbgate-operator-lab-social-square.png` (1080x1080)
+- `thumbgate-operator-lab-social-story.png` (1080x1920)
 
 ## Notes
 
