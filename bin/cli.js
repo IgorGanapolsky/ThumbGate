@@ -2569,6 +2569,7 @@ function help() {
     console.log('  explore                                           Interactive TUI for lessons, gates, stats');
     console.log('  dashboard                                         Open the local ThumbGate dashboard');
     console.log('  doctor                                            Audit runtime isolation + bootstrap context');
+    console.log('  setup-vertex [--key=K] [--write]                  Enterprise: verify a live Gemini key for the DFCX gate');
     console.log('  pro                                               ThumbGate Pro (dashboard, exports, sync)');
     console.log('  subscribe <email>                                 Get the 5-min setup guide + weekly tips by email');
     console.log('');
@@ -2712,6 +2713,7 @@ const SUBCOMMAND_HELP = {
   trial:         'Usage: npx thumbgate trial\n\nShow Pro trial status, remaining days, and upgrade path.',
   pro:           'Usage: npx thumbgate pro [--activate <key>]\n\nLaunch the local Pro dashboard or activate a Pro license key.',
   subscribe:     'Usage: npx thumbgate subscribe <email>\n\nSubscribe to the 5-minute setup guide + trial reminders.',
+  'setup-vertex': 'Usage: npx thumbgate setup-vertex [--key=KEY] [--write] [--model=gemini-2.5-flash] [--json]\n\nEnterprise: verify a Gemini API key with a real live API call (auth + inference)\nfor the Dialogflow CX / Vertex guardrail. --write saves the key to ./.env\n(chmod 600, gitignored). Get a key at https://aistudio.google.com/app/apikey.',
   lessons:       'Usage: npx thumbgate lessons [--query="..."] [--limit=N]\n\nSearch the lesson database (Pro feature).',
   search:        'Usage: npx thumbgate search <query>\n\nSearch ThumbGate knowledge base (Pro feature).',
   'gate-check':  'Usage: npx thumbgate gate-check\n\nPreToolUse hook interface: reads tool call JSON from stdin, outputs gate verdict.',
@@ -2728,6 +2730,133 @@ const SUBCOMMAND_HELP = {
 if (_wantsHelp && COMMAND && SUBCOMMAND_HELP[COMMAND]) {
   console.log(SUBCOMMAND_HELP[COMMAND]);
   process.exit(0);
+}
+
+// -----------------------------------------------------------------------------
+// setup-vertex — enterprise onboarding for the Dialogflow CX / Vertex (Gemini)
+// guardrail. Verifies a Gemini API key with a REAL live API call (auth + a real
+// inference round-trip), optionally stores it in ./.env (chmod 600, gitignored),
+// and prints the Cloud Run deploy steps for the DFCX webhook gate. No mocks.
+// -----------------------------------------------------------------------------
+async function verifyGeminiKey(key, model) {
+  const base = 'https://generativelanguage.googleapis.com/v1beta';
+  // 1) Auth check — list models. Distinguishes a bad key from a quota problem.
+  const listRes = await fetch(base + '/models', { headers: { 'x-goog-api-key': key } });
+  if (listRes.status === 401 || listRes.status === 403) {
+    return { ok: false, stage: 'auth', status: listRes.status,
+      message: 'API key was rejected. Check the key and that the Generative Language API is enabled.' };
+  }
+  if (!listRes.ok) {
+    return { ok: false, stage: 'auth', status: listRes.status,
+      message: 'Could not reach the Gemini API (HTTP ' + listRes.status + ').' };
+  }
+  // 2) Inference check — a real generateContent round-trip.
+  const genRes = await fetch(base + '/models/' + encodeURIComponent(model) + ':generateContent', {
+    method: 'POST',
+    headers: { 'x-goog-api-key': key, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: 'Reply with exactly this token and nothing else: THUMBGATE_VERTEX_LIVE_OK' }] }],
+      // 256 leaves room for "thinking" models (e.g. gemini-2.5-flash) so the
+      // visible answer isn't truncated; still a trivially cheap verification call.
+      generationConfig: { temperature: 0, maxOutputTokens: 256 },
+    }),
+  });
+  const body = await genRes.json().catch(() => ({}));
+  if (!genRes.ok) {
+    const msg = (body && body.error && body.error.message) ? String(body.error.message).split('\n')[0] : ('HTTP ' + genRes.status);
+    return { ok: false, stage: 'inference', status: genRes.status, quota: genRes.status === 429, model, message: msg };
+  }
+  const parts = body && body.candidates && body.candidates[0] && body.candidates[0].content && body.candidates[0].content.parts;
+  const text = parts && parts[0] && typeof parts[0].text === 'string' ? parts[0].text : '';
+  return { ok: true, stage: 'inference', model: body.modelVersion || model,
+    responseId: body.responseId || null, usage: body.usageMetadata || null, text: text.trim() };
+}
+
+async function setupVertex(args) {
+  const json = !!args.json;
+  const model = args.model || process.env.THUMBGATE_GEMINI_MODEL || 'gemini-2.5-flash';
+  const emit = (o) => { if (json) console.log(JSON.stringify(o, null, 2)); };
+  const envPath = path.join(CWD, '.env');
+
+  // Resolve the key: --key flag, then env, then ./.env
+  let key = (typeof args.key === 'string' && args.key) || process.env.GEMINI_API_KEY || '';
+  if (!key && fs.existsSync(envPath)) {
+    const line = fs.readFileSync(envPath, 'utf8').split('\n').find((l) => l.startsWith('GEMINI_API_KEY='));
+    if (line) key = line.slice('GEMINI_API_KEY='.length).trim();
+  }
+  if (!key) {
+    if (json) { emit({ ok: false, error: 'no_key' }); return 1; }
+    console.log('\n  ThumbGate × Vertex (Gemini) — enterprise setup\n');
+    console.log('  No Gemini API key found. To get one (the free tier works for setup):');
+    console.log('    1. Open  https://aistudio.google.com/app/apikey');
+    console.log('    2. Create an API key');
+    console.log('    3. Re-run with it:\n');
+    console.log('       npx thumbgate setup-vertex --key=YOUR_KEY --write\n');
+    console.log('  Or:  export GEMINI_API_KEY=YOUR_KEY  &&  npx thumbgate setup-vertex --write\n');
+    console.log('  For Vertex AI via a service account (in-tenant, no AI Studio key), see the');
+    console.log('  enterprise pilot guide: docs/enterprise/gcp-dfcx-pilot.md in the ThumbGate repo.\n');
+    return 1;
+  }
+
+  if (!json) process.stdout.write('  Verifying the key against the live Gemini API (' + model + ')… ');
+  let res;
+  try {
+    res = await verifyGeminiKey(key, model);
+  } catch (e) {
+    if (json) { emit({ ok: false, error: 'network', message: e.message }); }
+    else { console.log('FAILED'); console.error('\n  Network error reaching the Gemini API: ' + e.message); }
+    return 1;
+  }
+
+  if (!res.ok) {
+    if (json) { emit({ ok: false, ...res }); return 1; }
+    console.log('FAILED');
+    if (res.quota) {
+      console.error('\n  The key is valid, but model "' + model + '" has no quota on this project (HTTP 429).');
+      console.error('  Try the default model:   npx thumbgate setup-vertex --model=gemini-2.5-flash');
+      console.error('  Or enable billing for higher-tier models in Google Cloud.');
+    } else {
+      console.error('\n  ' + res.message + '  (stage: ' + res.stage + ', HTTP ' + res.status + ')');
+    }
+    return 1;
+  }
+
+  // Success. Optionally persist the key locally.
+  let wrote = false;
+  if (args.write) {
+    try {
+      const kept = fs.existsSync(envPath)
+        ? fs.readFileSync(envPath, 'utf8').split('\n').filter((l) => l && !l.startsWith('GEMINI_API_KEY='))
+        : [];
+      kept.push('GEMINI_API_KEY=' + key);
+      fs.writeFileSync(envPath, kept.join('\n') + '\n', { mode: 0o600 });
+      try { fs.chmodSync(envPath, 0o600); } catch (_) { /* best-effort */ }
+      const giPath = path.join(CWD, '.gitignore');
+      const gi = fs.existsSync(giPath) ? fs.readFileSync(giPath, 'utf8') : '';
+      if (!gi.split('\n').some((l) => l.trim() === '.env')) {
+        fs.appendFileSync(giPath, (gi === '' || gi.endsWith('\n') ? '' : '\n') + '\n# Local secrets — never commit\n.env\n');
+      }
+      wrote = true;
+    } catch (_) { /* non-fatal: verification still succeeded */ }
+  }
+
+  if (json) { emit({ ok: true, model: res.model, responseId: res.responseId, usage: res.usage, wroteEnv: wrote }); return 0; }
+
+  console.log('OK ✓');
+  console.log('\n  ✅ Live Gemini call succeeded — this is a real round-trip, not a stub.');
+  console.log('     model      : ' + res.model);
+  if (res.responseId) console.log('     responseId : ' + res.responseId);
+  if (res.usage && res.usage.totalTokenCount) console.log('     tokens     : ' + res.usage.totalTokenCount);
+  console.log('     reply      : ' + (res.text || '(empty)'));
+  if (wrote) console.log('\n  🔐 Saved GEMINI_API_KEY to ./.env (chmod 600, added to .gitignore).');
+  else console.log('\n  ℹ️  Key not saved. Re-run with --write to store it in ./.env.');
+  console.log('\n  Next — deploy the Dialogflow CX webhook gate inside your GCP tenant:');
+  console.log('     1. Entrypoint: adapters/gcp/server.js (plain Node, no framework dependency)');
+  console.log('     2. Deploy to Cloud Run; set env GEMINI_API_KEY + THUMBGATE_DFCX_FULFILLMENT_URL');
+  console.log('     3. In Dialogflow CX, point your fulfillment webhook at the Cloud Run URL');
+  console.log('     4. Smoke-test the gate locally first:  node adapters/gcp/dogfood-dfcx.js');
+  console.log('\n  Full pilot guide: docs/enterprise/gcp-dfcx-pilot.md (ThumbGate repo)\n');
+  return 0;
 }
 
 switch (COMMAND) {
@@ -3348,6 +3477,16 @@ switch (COMMAND) {
       const event = { event: 'checkin_shown', at: new Date().toISOString(), installAge };
       fs.appendFileSync(checkinLog, JSON.stringify(event) + '\n');
     }
+    break;
+  }
+  case 'setup-vertex': {
+    const args = parseArgs(process.argv.slice(3));
+    (async () => {
+      let code = 1;
+      try { code = await setupVertex(args); }
+      catch (e) { console.error('setup-vertex failed: ' + (e && e.message ? e.message : e)); code = 1; }
+      process.exit(code);
+    })();
     break;
   }
   default:
