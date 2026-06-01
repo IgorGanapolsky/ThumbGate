@@ -100,7 +100,7 @@ ThumbGate doesn't make your agent smarter. It makes your agent *cheaper to be wr
 
 ```bash
 npx thumbgate init                                                         # auto-detects your agent, wires everything
-npx thumbgate capture --feedback=down --context="Never run DROP on production tables"
+npx thumbgate capture down "Never run DROP on production tables"
 ```
 
 That single command creates a prevention rule. Next time any AI agent tries to run `DROP` on production:
@@ -285,7 +285,7 @@ ThumbGate sells three concrete outcomes:
 ```bash
 npx thumbgate init                                              # detect agent, wire hooks
 npx thumbgate doctor                                            # health check
-npx thumbgate capture --feedback=up|down --context="<text>"    # capture a signal as a stored lesson
+npx thumbgate capture up|down "<text>"                         # capture a signal as a stored lesson (positional format)
 npx thumbgate lessons                                           # see what's been learned
 npx thumbgate explore    # terminal explorer for lessons, checks, stats
 npx thumbgate background-governance  # review background-agent run risk
@@ -455,6 +455,26 @@ Give the agent more context when a thumbs-down isn't enough:
 ```
 
 Free and self-hosted users can invoke `search_lessons` directly through MCP, and via the CLI with `npx thumbgate lessons`. History-aware feedback sessions give the agent full context for each lesson.
+
+---
+
+## Enterprise Gating (Vertex AI & Google Cloud)
+
+For enterprise subscriptions, ThumbGate natively integrates with Google Cloud Platform and **Vertex AI** to route all agent checks through compliant Gemini models inside your corporate VPC.
+
+### Zero-Friction Setup
+To instantly wire your local installation to Google Cloud, simply run:
+```bash
+npx thumbgate setup-vertex
+```
+* **Auto-Discovery:** Automatically detects your active authenticated `gcloud` session and active project ID.
+* **Auto-Enablement:** Programmatically enables the Vertex AI API in your project.
+* **Auto-Configuration:** Writes secure billing and project credentials directly to your local `.env` file.
+
+### Zero-Friction Cost Containment ($10/mo Hard Cap)
+Google Cloud budget alerts are "alert-only" and do not stop API traffic, risking unexpected bill shock. ThumbGate completely resolves this on the client side:
+* **Instant Shutdown:** ThumbGate maintains a lightweight, local token ledger and instantly halts outgoing API traffic the millisecond your monthly token spending approaches the **$10 limit** (500k tokens of Gemini 1.5 Flash).
+* **Bypasses Console Complexity:** Requires **zero** GCP web console setups, zero Pub/Sub topics, and zero Cloud Functions. Perfect for non-technical managers and teams.
 
 ---
 
