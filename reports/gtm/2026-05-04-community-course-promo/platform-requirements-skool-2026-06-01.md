@@ -21,6 +21,10 @@ Guardrail: do not publish posts, send messages, invite members, upload files, cr
   - https://help.skool.com/article/122-how-to-toggle-between-private-and-public
 - Discovery eligibility + basic requirements:
   - https://help.skool.com/article/153-discovery-faqs
+- Pinning posts:
+  - https://help.skool.com/article/38-how-do-to-pin-a-post
+- Adding videos (native upload + embeds):
+  - https://help.skool.com/article/58-video
 - Classroom video troubleshooting (hosting partners):
   - https://help.skool.com/article/178-how-to-troubleshoot-video-issues
 
@@ -44,9 +48,15 @@ Guardrail: do not publish posts, send messages, invite members, upload files, cr
   - Private groups require joining to see posts, but are still searchable in Discovery (per Skool’s wording).
 - Discovery basics:
   - Discovery eligibility depends on meeting Skool’s Discovery requirements (see official Discovery FAQ).
+- Pinned posts:
+  - Skool supports pinning posts to the feed and also pinning posts to course pages.
+  - Official limits:
+    - Admins can pin up to `3` posts to the community feed.
+    - You can pin up to `12` posts per course page, and a post can be pinned to the feed and a page at the same time.
 - Classroom video:
-  - Skool’s help docs reference multiple video hosting partners for Classroom videos: YouTube, Vimeo, Wistia, and Loom.
-  - Operational default: use a supported external video host (YouTube/Vimeo/Wistia/Loom) and embed into Classroom rather than depending on a direct-file upload path.
+  - Skool supports native video uploads into Classroom pages, and members can upload videos to community posts/comments.
+  - Skool also supports embedding videos hosted on YouTube, Vimeo, Wistia, and Loom.
+  - Operational default (given local picker/upload blockers): use a supported external video host and embed into Classroom rather than depending on direct-file upload.
 
 ## Unverified specs (need direct Skool confirmation)
 
@@ -71,4 +81,4 @@ Guardrail: do not publish posts, send messages, invite members, upload files, cr
   - video limits (duration, size, codecs, aspect ratios) if direct upload exists
   - About text constraints (length, links)
   - discoverability settings and keyword behavior
-  - pinned post behavior and any limitations
+  - pinned post behavior and any ranking limitations

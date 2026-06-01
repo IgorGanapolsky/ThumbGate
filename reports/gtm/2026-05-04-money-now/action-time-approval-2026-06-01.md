@@ -67,6 +67,10 @@ Goal: improve Skool group conversion by aligning cover/icon/About and pinning a 
     - Sprint intake: `https://thumbgate-production.up.railway.app/#workflow-sprint-intake`
     - Pro: `https://thumbgate-production.up.railway.app/checkout/pro`
     - Proof: `docs/VERIFICATION_EVIDENCE.md`
+- Notes:
+  - Skool supports pinning posts; admins can pin up to `3` posts to the feed. We only need `1` pinned router post.
+  - Skool supports videos (native uploads + embeds), but local file-picker upload is currently blocked; prefer YouTube/Vimeo/Loom/Wistia embeds if video is needed.
+  - Platform requirements tracker: `reports/gtm/2026-05-04-community-course-promo/platform-requirements-skool-2026-06-01.md`
 
 Approval: ☐ YES (update Skool + pin) ☐ NO (defer)
 
