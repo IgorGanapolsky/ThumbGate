@@ -377,13 +377,17 @@ async function runMetaAgentLoop({ dryRun = false, verbose = false } = {}) {
   // measurement (silentFailureDerivedGates vs user-feedback-derived) is possible.
   candidates = candidates.map((c) => (c.origin ? c : { ...c, origin: 'user-feedback' }));
 
-  // Step 3b: Silent-failure clustering — behind THUMBGATE_SILENT_FAILURE_CLUSTERING=1.
-  // Candidates flow through the SAME scoring / fp-rate eval below; we do not
-  // bypass any guardrail. Off by default to preserve existing behavior.
+  // Step 3b: Silent-failure clustering — DEFAULT-ON as of 2026-05-21
+  // (flipped from opt-in by PR #2289). Opt out via
+  // THUMBGATE_SILENT_FAILURE_CLUSTERING=0 (or NODE_ENV=test). Candidates flow
+  // through the SAME scoring / fp-rate eval below; we do not bypass any
+  // guardrail. The point of this clustering is to cover the case where users
+  // are lazy and never give thumbs-down — keeping it opt-in meant the users
+  // who need it most never got the benefit.
   let silentFailureStats = null;
-  if (process.env.THUMBGATE_SILENT_FAILURE_CLUSTERING === '1') {
+  const { isSilentFailureClusteringEnabled, generateSilentFailureCandidates } = require('./silent-failure-cluster');
+  if (isSilentFailureClusteringEnabled()) {
     try {
-      const { generateSilentFailureCandidates } = require('./silent-failure-cluster');
       const sfResult = generateSilentFailureCandidates({ feedbackLogPath });
       silentFailureStats = sfResult.stats;
       if (sfResult.candidates && sfResult.candidates.length > 0) {
