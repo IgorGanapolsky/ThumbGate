@@ -2,11 +2,20 @@
 
 Guardrail: do not publish posts, send messages, invite members, upload files, create accounts, change billing, submit forms, or run paid ads without explicit action-time confirmation.
 
+## Field constraints (Skool UI)
+
+- Group description: `<= 150` chars
+- About page description: `<= 1000` chars
+
 ## Short tagline
 
 Infrastructure Firewall for AI coding agents: turn repeated mistakes into prevention rules, proof, and safer workflows.
 
-## One-paragraph description
+## Group description (<= 150 chars)
+
+Infrastructure Firewall for AI agents: turn repeated workflow mistakes into prevention rules, proof, and safer shipping.
+
+## About page description (<= 1000 chars)
 
 ThumbGate Operator Lab is a practical community for people shipping Claude/Codex/Gemini-first workflows who keep seeing the same failure patterns: wrong files changed, unsafe tool calls, brittle prompt guardrails, rollout regressions, and “looks right” outputs that don’t hold up under proof. You’ll learn the Reliability Gateway loop: capture feedback → distill lessons → promote into enforceable Pre-Action Gates → generate verification evidence you can defend.
 
@@ -29,9 +38,13 @@ ThumbGate Operator Lab is a practical community for people shipping Claude/Codex
 - Pro self-serve checkout: `https://thumbgate-production.up.railway.app/checkout/pro`
 - Setup guide: `https://thumbgate-production.up.railway.app/guide`
 
+## About page media suggestion (optional)
+
+- Hero image: `docs/marketing/assets/thumbgate-operator-lab-about-hero.png`
+- If video upload is blocked: embed a Loom/YouTube explainer on the About page instead of relying on native uploads.
+
 ## Offer truth anchors (internal)
 
 - Pricing and what we can claim: `docs/COMMERCIAL_TRUTH.md`
 - Sprint scope + deliverables: `docs/WORKFLOW_HARDENING_SPRINT.md`
 - Close scripts and routing: `reports/gtm/2026-05-04-money-now/revenue-close-room.md`
-
