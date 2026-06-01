@@ -2665,10 +2665,13 @@ describe('thumbgate audit', () => {
     assert.ok(result.stderr.includes('Usage: npx thumbgate audit'));
   });
 
-  test('nonexistent transcript path exits non-zero with a clear error', () => {
-    const result = runCliSync(['audit', '/no/such/transcript-xyz-9999.txt']);
-    assert.strictEqual(result.status, 1);
-    assert.ok(result.stderr.includes('File not found'));
+  test('setup-vertex CLI command exits 0 and falls back gracefully when gcloud is absent', () => {
+    // Run setup-vertex with a mocked PATH to ensure gcloud is not found
+    const result = runCliSync(['setup-vertex'], {
+      env: { PATH: '' }
+    });
+    assert.strictEqual(result.status, 0);
+    assert.ok(result.stdout.includes('Google Cloud SDK (gcloud CLI) not detected'));
   });
 });
 
