@@ -51,6 +51,20 @@ const CLI_COMMANDS = [
       { name: 'json',            type: 'boolean', description: 'Output as JSON' },
     ],
   },
+  {
+    name: 'feedback-self-test',
+    aliases: ['dogfood'],
+    description: 'Prove thumbs feedback capture works in the current runtime',
+    group: 'capture',
+    mcpTool: 'capture_feedback',
+    flags: [
+      { name: 'feedback',     type: 'string',  description: 'Signal to test: up or down (default down)' },
+      { name: 'context',      type: 'string',  description: 'Context to store in the test capture' },
+      { name: 'persist',      type: 'boolean', description: 'Use the active ThumbGate store instead of an isolated test store' },
+      { name: 'feedback-dir', type: 'string',  description: 'Explicit feedback directory for the self-test' },
+      { name: 'json',         type: 'boolean', description: 'Output as JSON' },
+    ],
+  },
 
   // -------------------------------------------------------------------------
   // Discovery

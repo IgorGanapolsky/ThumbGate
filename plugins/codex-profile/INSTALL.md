@@ -45,6 +45,14 @@ That now installs:
 - the ThumbGate MCP server in `~/.codex/config.toml`
 - Codex hooks plus the ThumbGate status line target in `~/.codex/config.json`
 
+Immediately verify the feedback loop:
+
+```bash
+npx thumbgate feedback-self-test
+```
+
+This is the dogfood check: it captures a synthetic thumbs signal and verifies the local feedback + lesson files. Use `npx thumbgate feedback-self-test --persist` only when you want the self-test stored in the active ThumbGate project memory.
+
 If you only want the MCP server block manually, add it to your Codex config:
 
 ```bash
@@ -93,7 +101,13 @@ The real generated command includes a `mkdir -p ~/.thumbgate/runtime` guard befo
 
 ## Verify
 
-Start the MCP server manually to confirm it runs:
+First prove capture works:
+
+```bash
+npx thumbgate feedback-self-test
+```
+
+Then start the MCP server manually if you are debugging transport:
 
 ```bash
 node adapters/mcp/server-stdio.js

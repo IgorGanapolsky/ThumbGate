@@ -49,6 +49,14 @@ npx thumbgate init --agent codex
 
 That writes the MCP server block to `~/.codex/config.toml` and the Codex hook/status-line bundle to `~/.codex/config.json`.
 
+Verify feedback capture with one command:
+
+```bash
+npx thumbgate feedback-self-test
+```
+
+The self-test captures a synthetic thumbs signal, verifies both `feedback-log.jsonl` and `memory-log.jsonl`, and prints the storage path. It uses an isolated test store by default; add `--persist` when you intentionally want to dogfood the active ThumbGate store.
+
 If you only need the MCP server manually, copy the MCP profile from `adapters/codex/config.toml` into `~/.codex/config.toml`.
 
 That profile launches the latest npm release instead of pinning a stale local runtime:
