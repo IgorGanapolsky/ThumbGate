@@ -473,7 +473,7 @@ function generateSilentFailureCandidates(opts = {}) {
  */
 function isSilentFailureClusteringEnabled(env = process.env) {
   if (env.NODE_ENV === 'test') return false;
-  const raw = env.THUMBGATE_SILENT_FAILURE_CLUSTERING;
+  const raw = (env.THUMBGATE_SILENT_FAILURE_CLUSTERING || '').toLowerCase();
   if (raw === '0' || raw === 'false' || raw === 'off' || raw === 'no') return false;
   return true;
 }

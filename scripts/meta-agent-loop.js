@@ -385,10 +385,9 @@ async function runMetaAgentLoop({ dryRun = false, verbose = false } = {}) {
   // are lazy and never give thumbs-down — keeping it opt-in meant the users
   // who need it most never got the benefit.
   let silentFailureStats = null;
-  const { isSilentFailureClusteringEnabled } = require('./silent-failure-cluster');
+  const { isSilentFailureClusteringEnabled, generateSilentFailureCandidates } = require('./silent-failure-cluster');
   if (isSilentFailureClusteringEnabled()) {
     try {
-      const { generateSilentFailureCandidates } = require('./silent-failure-cluster');
       const sfResult = generateSilentFailureCandidates({ feedbackLogPath });
       silentFailureStats = sfResult.stats;
       if (sfResult.candidates && sfResult.candidates.length > 0) {
