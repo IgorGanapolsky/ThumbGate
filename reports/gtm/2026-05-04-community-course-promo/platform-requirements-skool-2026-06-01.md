@@ -24,7 +24,7 @@ Guardrail: do not publish posts, send messages, invite members, upload files, cr
   - `docs/marketing/assets/thumbgate-operator-lab-social-landscape.png`
   - `docs/marketing/assets/thumbgate-operator-lab-social-square.png`
   - `docs/marketing/assets/thumbgate-operator-lab-social-story.png`
-- Missing (referenced elsewhere but not present in this repo checkout):
+- Not present in this repo checkout (may exist locally but untracked / not committed):
   - `docs/marketing/assets/thumbgate-operator-lab-explainer.mp4`
   - `docs/marketing/assets/thumbgate-operator-lab-explainer-vertical.mp4`
 
