@@ -546,7 +546,7 @@ describe('bin/cli.js', () => {
     assert.strictEqual(result.status, 0, `Expected exit 0, got ${result.status}\n${result.stderr}`);
     assert.ok(result.stdout.includes('thumbgate'), 'Help should include CLI name');
     // Core commands a first-time user should see immediately.
-    for (const cmd of ['init', 'capture', 'stats', 'lessons', 'explore', 'dashboard', 'doctor', 'pro']) {
+    for (const cmd of ['init', 'feedback-self-test', 'capture', 'stats', 'lessons', 'explore', 'dashboard', 'doctor', 'pro']) {
       assert.ok(result.stdout.includes(cmd), `Default help should mention ${cmd}`);
     }
     // Hint to discover the rest, instead of dumping ~70 commands.
@@ -574,10 +574,39 @@ describe('bin/cli.js', () => {
       'export-databricks', 'lessons', 'stats', 'north-star', 'eval',
       'rules', 'self-heal', 'prove', 'doctor', 'dispatch',
       'background-governance', 'analytics', 'gate-check', 'statusline-render',
+      'feedback-self-test',
     ];
     for (const cmd of expected) {
       assert.ok(result.stdout.includes(cmd), `\`help all\` should mention ${cmd}`);
     }
+  });
+
+  test('feedback-self-test verifies capture and lesson writes in explicit isolated store', () => {
+    const feedbackDir = makeTmpDir();
+    const result = runCliSync(['feedback-self-test', '--json', `--feedback-dir=${feedbackDir}`], {
+      env: {
+        THUMBGATE_NO_NUDGE: '1',
+      },
+    });
+
+    assert.strictEqual(result.status, 0, `Expected exit 0, got ${result.status}\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.command, 'feedback-self-test');
+    assert.equal(payload.signal, 'down');
+    assert.equal(payload.feedbackStored, true);
+    assert.equal(payload.memoryStored, true);
+    assert.equal(payload.isolated, true);
+    assert.equal(payload.feedbackDir, feedbackDir);
+    assert.match(payload.feedbackId, /^fb_/);
+    assert.match(payload.memoryId, /^mem_/);
+
+    const feedbackLog = fs.readFileSync(path.join(feedbackDir, 'feedback-log.jsonl'), 'utf8');
+    const memoryLog = fs.readFileSync(path.join(feedbackDir, 'memory-log.jsonl'), 'utf8');
+    assert.match(feedbackLog, new RegExp(payload.feedbackId));
+    assert.match(memoryLog, new RegExp(payload.memoryId));
+
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
 
   test('eval command turns local feedback into reusable proof JSON', () => {
@@ -1071,6 +1100,10 @@ describe('bin/cli.js', () => {
       }),
     });
     assert.strictEqual(result.status, 0, `init should succeed: ${result.stderr}`);
+    assert.match(result.stdout, /npx thumbgate feedback-self-test/);
+    assert.match(result.stdout, /thumbs down: agent skipped verification/);
+    assert.doesNotMatch(result.stdout, /--what-went-wrong/);
+    assert.doesNotMatch(result.stdout, /--what-to-change/);
     assert.match(result.stdout, /npx thumbgate init --email you@company\.com/);
     assert.match(result.stdout, /7-day Pro trial active through \d{4}-\d{2}-\d{2}/);
     assert.match(result.stdout, /utm_source=cli_init/);

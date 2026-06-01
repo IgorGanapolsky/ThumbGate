@@ -341,13 +341,14 @@ describe('agent-first CLI experience', () => {
   // help includes new commands
   // -------------------------------------------------------------------------
 
-  test('help all lists status, demo, and explore subcommands', () => {
+  test('help all lists status, demo, feedback self-test, and explore subcommands', () => {
     // These specialist + sub-mode commands live in the full surface now;
     // default `help` is curated to 8 common commands. (Shortened 2026-05-18.)
     const result = runCliSync(['help', 'all'], { cwd: tmpDir });
     assert.equal(result.status, 0);
     assert.match(result.stdout, /status/);
     assert.match(result.stdout, /demo/);
+    assert.match(result.stdout, /feedback-self-test/);
     assert.match(result.stdout, /explore lessons/);
     assert.match(result.stdout, /explore gates/);
     assert.match(result.stdout, /explore rules/);
@@ -357,11 +358,15 @@ describe('agent-first CLI experience', () => {
   // cli-schema includes new commands
   // -------------------------------------------------------------------------
 
-  test('cli-schema includes status and demo commands', () => {
+  test('cli-schema includes status, demo, and feedback self-test commands', () => {
     const { findCommand } = require('../scripts/cli-schema');
     const statusCmd = findCommand('status');
     assert.ok(statusCmd, 'status command not in schema');
     assert.ok(statusCmd.flags.some(f => f.name === 'json'), 'status missing --json flag');
+    const selfTestCmd = findCommand('feedback-self-test');
+    assert.ok(selfTestCmd, 'feedback-self-test command not in schema');
+    assert.ok(selfTestCmd.aliases.includes('dogfood'), 'feedback-self-test missing dogfood alias');
+    assert.ok(selfTestCmd.flags.some(f => f.name === 'persist'), 'feedback-self-test missing --persist flag');
 
     const demoCmd = findCommand('demo');
     assert.ok(demoCmd, 'demo command not in schema');

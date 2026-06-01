@@ -29,6 +29,7 @@
 'use strict';
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 const { execSync, execFileSync } = require('child_process');
@@ -845,17 +846,12 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
   // ---------------------------------------------------------------------------
   console.log('');
   console.log('  ╭──────────────────────────────────────────────────────────╮');
-  console.log('  │  NEXT: Create your first prevention rule (30 seconds)   │');
+  console.log('  │  NEXT: Prove feedback capture works                     │');
   console.log('  │                                                         │');
-  console.log('  │  When your AI agent makes a mistake, capture it:        │');
+  console.log('  │  npx thumbgate feedback-self-test                       │');
   console.log('  │                                                         │');
-  console.log('  │  npx thumbgate capture --feedback=down \\               │');
-  console.log('  │    --context="agent deleted prod config" \\              │');
-  console.log('  │    --what-went-wrong="ran rm on .env" \\                 │');
-  console.log('  │    --what-to-change="never delete .env files"           │');
-  console.log('  │                                                         │');
-  console.log('  │  ThumbGate auto-promotes this to a prevention rule      │');
-  console.log('  │  that blocks the mistake from happening again.          │');
+  console.log('  │  Then dogfood it in chat:                               │');
+  console.log('  │  thumbs down: agent skipped verification                │');
   console.log('  ╰──────────────────────────────────────────────────────────╯');
   console.log('');
   printInitConversionPrompt(onboardingEmail);
@@ -986,6 +982,116 @@ function capture() {
     console.log('─'.repeat(50));
     console.log(`  Reason      : ${result.reason}\n`);
     process.exit(2);
+  }
+}
+
+function readJsonlEntries(filePath) {
+  try {
+    return fs.readFileSync(filePath, 'utf8')
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+  } catch (_) {
+    return [];
+  }
+}
+
+function shellSingleQuote(value) {
+  return `'${String(value).replace(/'/g, `'\\''`)}'`;
+}
+
+function feedbackSelfTest() {
+  const args = parseArgs(process.argv.slice(3));
+  const signalArg = String(args.feedback || args.signal || 'down').toLowerCase();
+  const normalized = ['up', 'thumbsup', 'thumbs_up', 'positive'].some((v) => signalArg.includes(v)) ? 'up'
+    : ['down', 'thumbsdown', 'thumbs_down', 'negative'].some((v) => signalArg.includes(v)) ? 'down'
+    : signalArg;
+
+  if (normalized !== 'up' && normalized !== 'down') {
+    console.error('feedback-self-test needs --feedback=up|down when overriding the default.');
+    process.exit(1);
+  }
+
+  const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  const previousNoNudge = process.env.THUMBGATE_NO_NUDGE;
+  const feedbackDir = args['feedback-dir']
+    ? path.resolve(CWD, args['feedback-dir'])
+    : args.persist
+      ? null
+      : fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-feedback-self-test-'));
+  const isolated = Boolean(feedbackDir);
+
+  if (feedbackDir) process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
+  process.env.THUMBGATE_NO_NUDGE = '1';
+
+  try {
+    const { captureFeedback, getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+    const context = args.context || `feedback self-test: typed thumbs ${normalized} reaches ThumbGate capture`;
+    const result = captureFeedback({
+      signal: normalized,
+      context,
+      whatWentWrong: normalized === 'down'
+        ? (args['what-went-wrong'] || 'Need proof that feedback capture is wired in this runtime')
+        : undefined,
+      whatToChange: normalized === 'down'
+        ? (args['what-to-change'] || 'Run a one-command self-test before claiming thumbs feedback is captured')
+        : undefined,
+      whatWorked: normalized === 'up'
+        ? (args['what-worked'] || 'Feedback capture persisted and was verified by a self-test')
+        : undefined,
+      tags: args.tags || 'self-test,dogfood,feedback-capture',
+    });
+
+    const paths = getFeedbackPaths();
+    const feedbackRows = readJsonlEntries(paths.FEEDBACK_LOG_PATH);
+    const memoryRows = readJsonlEntries(paths.MEMORY_LOG_PATH);
+    const feedbackId = result.feedbackEvent && result.feedbackEvent.id;
+    const memoryId = result.memoryRecord && result.memoryRecord.id;
+    const feedbackStored = Boolean(feedbackId && feedbackRows.some((row) => row.id === feedbackId));
+    const memoryStored = Boolean(memoryId && memoryRows.some((row) => row.id === memoryId));
+    const ok = Boolean(result.accepted && feedbackStored && memoryStored);
+
+    const payload = {
+      ok,
+      command: 'feedback-self-test',
+      signal: normalized,
+      accepted: Boolean(result.accepted),
+      feedbackId: feedbackId || null,
+      memoryId: memoryId || null,
+      feedbackStored,
+      memoryStored,
+      isolated,
+      feedbackDir: paths.FEEDBACK_DIR,
+      nextDogfoodCommand: `npx thumbgate capture --feedback=${normalized} --context=${shellSingleQuote(context)}`,
+    };
+
+    if (args.json) {
+      console.log(JSON.stringify(payload, null, 2));
+    } else if (ok) {
+      console.log('\nThumbGate feedback self-test: PASS');
+      console.log('─'.repeat(50));
+      console.log(`  Captured     : ${normalized} (${feedbackId})`);
+      console.log(`  Stored lesson: ${memoryId}`);
+      console.log(`  Storage      : ${paths.FEEDBACK_DIR}`);
+      console.log(`  Mode         : ${isolated ? 'isolated test store' : 'active ThumbGate store'}`);
+      console.log('\nDogfood in chat with:');
+      console.log(`  thumbs ${normalized}: ${context}`);
+    } else {
+      console.log('\nThumbGate feedback self-test: FAIL');
+      console.log('─'.repeat(50));
+      console.log(`  Accepted       : ${payload.accepted}`);
+      console.log(`  Feedback stored: ${feedbackStored}`);
+      console.log(`  Memory stored  : ${memoryStored}`);
+      console.log(`  Storage        : ${paths.FEEDBACK_DIR}`);
+    }
+
+    if (!ok) process.exit(2);
+  } finally {
+    if (previousFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+    else process.env.THUMBGATE_FEEDBACK_DIR = previousFeedbackDir;
+    if (previousNoNudge === undefined) delete process.env.THUMBGATE_NO_NUDGE;
+    else process.env.THUMBGATE_NO_NUDGE = previousNoNudge;
   }
 }
 
@@ -2456,6 +2562,7 @@ function help() {
     console.log('');
     console.log('Common commands:');
     console.log('  init                                              Detect agent and wire ThumbGate hooks');
+    console.log('  feedback-self-test                                Prove thumbs capture works locally');
     console.log('  capture --feedback=up|down --context="<text>"    Capture a thumbs signal as a stored lesson');
     console.log('  stats                                             Approval rate, recent trend, blocked-pattern count');
     console.log('  lessons [query]                                   Search promoted lessons');
@@ -2557,6 +2664,7 @@ function help() {
 
   console.log('Examples:');
   console.log('  npx thumbgate init');
+  console.log('  npx thumbgate feedback-self-test');
   console.log('  npx thumbgate status --json');
   console.log('  npx thumbgate explore lessons --json');
   console.log('  npx thumbgate explore gates --json');
@@ -2598,6 +2706,8 @@ const _wantsHelp = _cliSubArgs.includes('--help') || _cliSubArgs.includes('-h');
 const SUBCOMMAND_HELP = {
   capture:       'Usage: npx thumbgate capture --feedback=up|down --context="..." [--what-worked="..."] [--what-went-wrong="..."] [--what-to-change="..."] [--tags=a,b]',
   feedback:      'Usage: npx thumbgate feedback --feedback=up|down --context="..." [--what-worked="..."] [--what-went-wrong="..."] [--what-to-change="..."] [--tags=a,b]',
+  'feedback-self-test': 'Usage: npx thumbgate feedback-self-test [--json] [--persist] [--feedback=up|down]\n\nCapture a synthetic thumbs signal and verify feedback-log + memory-log writes. Defaults to an isolated test store; use --persist to dogfood the active ThumbGate store.',
+  dogfood:       'Usage: npx thumbgate dogfood [--json] [--persist] [--feedback=up|down]\n\nAlias for feedback-self-test.',
   stats:         'Usage: npx thumbgate stats\n\nShow gate enforcement statistics: blocked/warned counts, active gates, time saved.',
   trial:         'Usage: npx thumbgate trial\n\nShow Pro trial status, remaining days, and upgrade path.',
   pro:           'Usage: npx thumbgate pro [--activate <key>]\n\nLaunch the local Pro dashboard or activate a Pro license key.',
@@ -2665,6 +2775,10 @@ switch (COMMAND) {
   case 'feedback':
     capture();
     upgradeNudge();
+    break;
+  case 'feedback-self-test':
+  case 'dogfood':
+    feedbackSelfTest();
     break;
   case 'stats':
     stats();
