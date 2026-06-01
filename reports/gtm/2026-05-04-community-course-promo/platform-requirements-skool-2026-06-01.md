@@ -20,11 +20,13 @@ Guardrail: do not publish posts, send messages, invite members, upload files, cr
 - Present:
   - `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`
   - `docs/marketing/assets/thumbgate-skool-icon-128x128.png`
-- Missing (operator-claimed list not found in this checkout):
   - `docs/marketing/assets/thumbgate-operator-lab-about-hero.png`
+  - `docs/marketing/assets/thumbgate-operator-lab-social-landscape.png`
+  - `docs/marketing/assets/thumbgate-operator-lab-social-square.png`
+  - `docs/marketing/assets/thumbgate-operator-lab-social-story.png`
+- Missing (referenced elsewhere but not present in this repo checkout):
   - `docs/marketing/assets/thumbgate-operator-lab-explainer.mp4`
   - `docs/marketing/assets/thumbgate-operator-lab-explainer-vertical.mp4`
-  - `docs/marketing/assets/thumbgate-operator-lab-social-*.png`
 
 ## Verification TODO (when web access is available)
 
@@ -35,4 +37,3 @@ Guardrail: do not publish posts, send messages, invite members, upload files, cr
   - About text constraints (length, links)
   - discoverability settings and keyword behavior
   - pinned post behavior and any limitations
-
