@@ -17,6 +17,7 @@ const { filterEntriesForWindow, resolveAnalyticsWindow } = require('./analytics-
 const { resolveHostedBillingConfig } = require('./hosted-config');
 const { generateAgentReadinessReport } = require('./agent-readiness');
 const { summarizeGateTemplates } = require('./gate-templates');
+const { mergeRepeatMetricIntoGateStats } = require('./repeat-metric');
 const { buildPredictiveInsights } = loadOptionalModule('./predictive-insights', () => ({
   buildPredictiveInsights: () => ({
     upgradePropensity: {
@@ -1616,8 +1617,7 @@ function generateDashboard(feedbackDir, options = {}) {
   // Surface the "repeat-attempts blocked before execution" metric on the
   // dashboard JSON and the /v1/dashboard HTTP route. Use the non-mutating
   // helper (mirrors server-stdio.js) instead of mutating computeGateStats()'s
-  // return value.
-  const { mergeRepeatMetricIntoGateStats } = require('./repeat-metric');
+  // return value. (mergeRepeatMetricIntoGateStats is imported at top of file.)
   const gateStats = mergeRepeatMetricIntoGateStats(computeGateStats());
   const prevention = computePreventionImpact(feedbackDir, gateStats);
   const trend = computeSessionTrend(entries, 10);
