@@ -7,9 +7,15 @@ silently recovers, the user moves on, the signal is lost. The unsupervised
 learning surface below mines those silent failures so they can re-enter the
 existing gate-promotion pipeline.
 
-## Silent-failure clustering (experimental)
+## Silent-failure clustering (default-on as of 2026-05-21)
 
-**Flag**: `THUMBGATE_SILENT_FAILURE_CLUSTERING=1` (off by default)
+**Status**: ON by default. The opt-in flag from PR #2285 was flipped to
+opt-out in PR #2289 — the whole point of the feature is to help users who
+don't manually thumbs-down, so leaving it opt-in defeated the purpose.
+
+**Opt out**: set `THUMBGATE_SILENT_FAILURE_CLUSTERING=0` (also accepts
+`false`, `off`, `no`) or run with `NODE_ENV=test`. Back-compat: anyone
+who had `=1` set before the flip stays enabled — no-op for them.
 
 **Module**: `scripts/silent-failure-cluster.js`
 

@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 const { loadOptionalModule } = require('./private-core-boundary');
@@ -67,12 +68,28 @@ const { recordAuditEvent, auditToFeedback } = require('./audit-trail');
 
 const DEFAULT_CONFIG_PATH = path.join(__dirname, '..', 'config', 'gates', 'default.json');
 const DEFAULT_CLAIM_GATES_PATH = path.join(__dirname, '..', 'config', 'gates', 'claim-verification.json');
-const STATE_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'gate-state.json');
-const CONSTRAINTS_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'session-constraints.json');
-const STATS_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'gate-stats.json');
-const SESSION_ACTIONS_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'session-actions.json');
-const CUSTOM_CLAIM_GATES_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'claim-verification.json');
-const GOVERNANCE_STATE_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'governance-state.json');
+
+function resolveThumbgateStateDir() {
+  if (process.env.THUMBGATE_STATE_DIR) return process.env.THUMBGATE_STATE_DIR;
+
+  if (process.env.XDG_STATE_HOME) {
+    return path.join(process.env.XDG_STATE_HOME, 'thumbgate');
+  }
+
+  if (process.env.CODEX_SANDBOX) {
+    return path.join(os.tmpdir(), 'thumbgate');
+  }
+
+  return path.join(process.env.HOME || os.tmpdir(), '.thumbgate');
+}
+
+const STATE_DIR = resolveThumbgateStateDir();
+const STATE_PATH = path.join(STATE_DIR, 'gate-state.json');
+const CONSTRAINTS_PATH = path.join(STATE_DIR, 'session-constraints.json');
+const STATS_PATH = path.join(STATE_DIR, 'gate-stats.json');
+const SESSION_ACTIONS_PATH = path.join(STATE_DIR, 'session-actions.json');
+const CUSTOM_CLAIM_GATES_PATH = path.join(STATE_DIR, 'claim-verification.json');
+const GOVERNANCE_STATE_PATH = path.join(STATE_DIR, 'governance-state.json');
 const TTL_MS = 5 * 60 * 1000; // 5 minutes
 const SESSION_ACTION_TTL_MS = 60 * 60 * 1000; // 1 hour
 const PROTECTED_APPROVAL_TTL_MS = 60 * 60 * 1000; // 1 hour

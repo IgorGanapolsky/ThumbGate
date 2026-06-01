@@ -280,9 +280,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // scripts/hook-runtime.js requires it during `thumbgate init --wire-hooks`,
   // plus scripts/plan-gate.js and scripts/trajectory-scorer.js because
   // scripts/gates-engine.js requires them in the packaged runtime.
+  // Bumped 268 → 271 (2026-06-01) to ship scripts/repeat-metric.js,
+  // scripts/noop-detect.js, and scripts/action-receipts.js because
+  // adapters/mcp/server-stdio.js and scripts/dashboard.js require them in the
+  // packaged runtime (action-loop instrumentation).
   assert.ok(
-    manifest.fileCount <= 268,
-    `npm package should stay <= 268 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 271,
+    `npm package should stay <= 271 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -382,9 +386,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 3.90 MB -> 3.93 MB (2026-05-31) to ship the missing published
   // hook/planning runtime files and restore plan-gate validators. Observed
   // package after the fix is ~3.902 MB.
+  // Bumped 3.93 MB -> 3.95 MB (2026-06-01) for the action-loop instrumentation
+  // runtime (scripts/repeat-metric.js, noop-detect.js, action-receipts.js).
+  // Observed package after the addition is ~3.937 MB.
   assert.ok(
-    manifest.unpackedSize <= 3_930_000,
-    `npm package should stay <= 3.93 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 3_950_000,
+    `npm package should stay <= 3.95 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

@@ -450,3 +450,35 @@ test('normalizeForSignature — redaction happens before path replacement', () =
   const out = normalizeForSignature('sk-ant-0000000000000000000000000000000000');
   assert.match(out, /\[REDACTED\]/);
 });
+
+// ---------------------------------------------------------------------------
+// Default-on enablement (PR #2289 flip)
+// ---------------------------------------------------------------------------
+
+const { isSilentFailureClusteringEnabled } = require('../scripts/silent-failure-cluster');
+
+test('isSilentFailureClusteringEnabled — default ON when env is empty', () => {
+  assert.equal(isSilentFailureClusteringEnabled({}), true);
+});
+
+test('isSilentFailureClusteringEnabled — explicit "0" opts out', () => {
+  assert.equal(isSilentFailureClusteringEnabled({ THUMBGATE_SILENT_FAILURE_CLUSTERING: '0' }), false);
+});
+
+test('isSilentFailureClusteringEnabled — "false"/"off"/"no" also opt out (forgiving syntax)', () => {
+  for (const v of ['false', 'off', 'no']) {
+    assert.equal(isSilentFailureClusteringEnabled({ THUMBGATE_SILENT_FAILURE_CLUSTERING: v }), false, `expected ${v} to opt out`);
+  }
+});
+
+test('isSilentFailureClusteringEnabled — explicit "1" keeps it enabled (back-compat for users who already set the old opt-in)', () => {
+  assert.equal(isSilentFailureClusteringEnabled({ THUMBGATE_SILENT_FAILURE_CLUSTERING: '1' }), true);
+});
+
+test('isSilentFailureClusteringEnabled — NODE_ENV=test opts out (deterministic test runs)', () => {
+  assert.equal(isSilentFailureClusteringEnabled({ NODE_ENV: 'test' }), false);
+});
+
+test('isSilentFailureClusteringEnabled — NODE_ENV=test wins even over explicit "1"', () => {
+  assert.equal(isSilentFailureClusteringEnabled({ NODE_ENV: 'test', THUMBGATE_SILENT_FAILURE_CLUSTERING: '1' }), false);
+});
