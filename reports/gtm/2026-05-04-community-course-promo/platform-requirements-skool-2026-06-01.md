@@ -1,6 +1,6 @@
 # Platform Requirements — Skool (2026-06-01)
 
-Status: needs link verification (network access required).
+Status: partially verified (official links captured; some specs still unverified).
 
 Purpose: keep one place to track Skool surface requirements we must satisfy for Operator Lab visibility and conversion (cover/icon sizes, video formats, About text constraints, discovery keywords, pinned post behavior).
 
@@ -15,6 +15,15 @@ Guardrail: do not publish posts, send messages, invite members, upload files, cr
 - Pinned “Start Here” post
 - Optional: intro/explainer video
 
+## Official Skool references (verified links)
+
+- Public vs private groups:
+  - https://help.skool.com/article/122-how-to-toggle-between-private-and-public
+- Discovery eligibility + basic requirements:
+  - https://help.skool.com/article/153-discovery-faqs
+- Classroom video troubleshooting (hosting partners):
+  - https://help.skool.com/article/178-how-to-troubleshoot-video-issues
+
 ## Current local asset reality (this checkout)
 
 - Present:
@@ -28,12 +37,38 @@ Guardrail: do not publish posts, send messages, invite members, upload files, cr
   - `docs/marketing/assets/thumbgate-operator-lab-explainer.mp4`
   - `docs/marketing/assets/thumbgate-operator-lab-explainer-vertical.mp4`
 
+## What we can say with confidence today (from official help docs)
+
+- Public vs private:
+  - Public groups expose members + posts publicly and are searchable in Discovery.
+  - Private groups require joining to see posts, but are still searchable in Discovery (per Skool’s wording).
+- Discovery basics:
+  - Discovery eligibility depends on meeting Skool’s Discovery requirements (see official Discovery FAQ).
+- Classroom video:
+  - Skool’s help docs reference multiple video hosting partners for Classroom videos: YouTube, Vimeo, Wistia, and Loom.
+  - Operational default: use a supported external video host (YouTube/Vimeo/Wistia/Loom) and embed into Classroom rather than depending on a direct-file upload path.
+
+## Unverified specs (need direct Skool confirmation)
+
+- Cover image:
+  - Working community standard we use: `1084 x 576` (PNG).
+  - Still need an official Skool help-center link for exact dimensions and supported file types.
+- Group icon:
+  - Working community standard we use: `128 x 128` (PNG).
+  - Still need an official Skool help-center link for exact dimensions and supported file types.
+- About text:
+  - Need official constraints: max length, link behavior, and whether images/embeds are allowed.
+- Discovery keywords:
+  - Need official constraints: max keywords, weighting, and edit frequency limits (if any).
+- Pinned post behavior:
+  - Need official constraints: whether pinning differs for public vs private, and whether pins impact Discovery ranking.
+
 ## Verification TODO (when web access is available)
 
 - Record official Skool help-center links for:
   - cover image dimensions + file types
   - profile/group icon dimensions + file types
-  - video limits (duration, size, codecs, aspect ratios)
+  - video limits (duration, size, codecs, aspect ratios) if direct upload exists
   - About text constraints (length, links)
   - discoverability settings and keyword behavior
   - pinned post behavior and any limitations

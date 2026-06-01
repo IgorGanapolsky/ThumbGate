@@ -10,7 +10,7 @@ Guardrail: do not publish posts, send messages, invite members, upload files, cr
 - Send queue + logging commands: `reports/gtm/2026-05-04-money-now/operator-send-now.md`
 - Action-time approval card: `reports/gtm/2026-05-04-money-now/action-time-approval-2026-06-01.md`
 - Course/listing copy: `reports/gtm/2026-05-04-community-course-promo/skool-course-listing-copy-2026-06-01.md`
-- Skool platform requirements (needs official-link verification): `reports/gtm/2026-05-04-community-course-promo/platform-requirements-skool-2026-06-01.md`
+- Skool platform requirements: `reports/gtm/2026-05-04-community-course-promo/platform-requirements-skool-2026-06-01.md`
 - Skool group: https://www.skool.com/thumbgate-operator-lab-6000
 
 ## Next approval-ready money actions (highest ROI first)
@@ -32,6 +32,7 @@ When action-time approved, set:
 - Cover: `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`
 - Icon: `docs/marketing/assets/thumbgate-skool-icon-128x128.png`
 - About/course copy: `reports/gtm/2026-05-04-community-course-promo/skool-course-listing-copy-2026-06-01.md`
+- Classroom outline (text-first): `reports/gtm/2026-05-04-community-course-promo/skool-classroom-outline-2026-06-01.md`
 - “Start Here” router post: `reports/gtm/2026-05-04-community-course-promo/skool-start-here-post-2026-06-01.md`
 - Checklist: `reports/gtm/2026-05-04-community-course-promo/skool-surface-update-checklist-2026-06-01.md`
 
