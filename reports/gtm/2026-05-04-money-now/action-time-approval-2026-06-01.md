@@ -80,3 +80,11 @@ Approval: ☐ YES (update Skool + pin) ☐ NO (defer)
   - `thumbgate-operator-lab-social-landscape.png`
   - `thumbgate-operator-lab-social-square.png`
   - `thumbgate-operator-lab-social-story.png`
+
+## Preview Evidence (no outbound writes)
+
+Local dry-run preview succeeded on 2026-06-01 (America/New_York):
+
+- Command: `npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=linkedin,instagram,threads,bluesky,reddit,youtube`
+- Result: `errors=[]`
+- Media attachments resolved locally (`exists=true`) for every platform preview.
