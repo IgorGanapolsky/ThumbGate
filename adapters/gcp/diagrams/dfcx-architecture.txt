@@ -1,0 +1,27 @@
+Title: ThumbGate Enterprise — Dialogflow CX guardrail architecture
+
+Draw a clean left-to-right architecture diagram of a pre-action safety gate in
+front of Dialogflow CX fulfillment, all inside the customer's Google Cloud tenant.
+
+Nodes (left to right):
+1. "Caller" (a person on a phone/chat) — small user icon.
+2. "Dialogflow CX" (Google conversational agent) — box.
+3. "ThumbGate gate" — a shield/gate box labelled "Cloud Run · customer GCP tenant".
+   This is the focal element; emphasize it.
+4. A decision diamond "allow?".
+5. On the ALLOW branch: "Existing fulfillment (BigQuery / CRM / billing)" — database/box.
+6. On the BLOCK branch: "Safe response — no side-effect" — box with a stop/shield accent.
+7. Below the gate, a dashed optional link to "Vertex AI / Gemini (in-tenant, no data egress)".
+
+Flows:
+- Caller -> Dialogflow CX (solid).
+- Dialogflow CX -> ThumbGate gate, labelled "fulfillment webhook" (solid).
+- ThumbGate gate -> decision diamond.
+- Diamond -> Existing fulfillment, labelled "allow" (green accent).
+- Diamond -> Safe response, labelled "block" (red accent).
+- Existing fulfillment -> back to Dialogflow CX (response).
+- Safe response -> back to Dialogflow CX (response).
+- ThumbGate gate ..dashed.. Vertex AI / Gemini, labelled "optional scoring".
+
+Style: modern, minimal, GCP-blue accents; the gate is the hero; one tagline at the
+bottom: "Block the bad action before the side-effect runs." No clutter.
