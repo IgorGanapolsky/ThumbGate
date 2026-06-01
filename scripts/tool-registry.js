@@ -895,6 +895,56 @@ const TOOLS = [
       },
     },
   }),
+  destructiveTool({
+    name: 'detect_noop',
+    title: 'Detect No-op Action',
+    description: 'Detect whether a tool call was a no-op (state unchanged) or identical to a prior attempt in the session — a cheap repeat-loop signal. Records the action attempt state for repeat detection.',
+    inputSchema: {
+      type: 'object',
+      required: ['actionId'],
+      properties: {
+        actionId: { type: 'string', description: 'Stable identifier for the action being checked (e.g. the file path or command being attempted)' },
+        kind: { type: 'string', enum: ['file', 'command'], description: 'Action kind: file edit/write or command execution' },
+        filePath: { type: 'string', description: 'Path of the file the action targets (file kind)' },
+        beforeContent: { type: 'string', description: 'File content before the action (file kind)' },
+        afterContent: { type: 'string', description: 'File content after the action (file kind)' },
+        exitCode: { type: 'number', description: 'Command exit code (command kind)' },
+        stdout: { type: 'string', description: 'Command stdout (command kind)' },
+        stderr: { type: 'string', description: 'Command stderr (command kind)' },
+        sessionId: { type: 'string', description: 'Optional session id used to scope repeat-attempt detection' },
+      },
+    },
+  }),
+  destructiveTool({
+    name: 'record_action_receipt',
+    title: 'Record Action Receipt',
+    description: 'Pair a tracked tool call with its outcome (diff, exit code, test result) so a promoted lesson encodes "this action -> this outcome", not just a thumbs signal. Appends to the action-receipts log.',
+    inputSchema: {
+      type: 'object',
+      required: ['actionId'],
+      properties: {
+        actionId: { type: 'string', description: 'Identifier of the tracked action this receipt pairs with' },
+        toolName: { type: 'string', description: 'Name of the tool that was invoked' },
+        toolInput: { type: 'object', description: 'Structured input the tool was called with' },
+        diff: { type: 'string', description: 'Optional unified diff or change summary produced by the action' },
+        exitCode: { type: 'number', description: 'Optional command exit code outcome' },
+        testOutcome: { type: 'string', description: 'Optional test outcome (e.g. passed, failed, 12/12)' },
+        stateHash: { type: 'string', description: 'Optional post-action state hash (from detect_noop)' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'get_action_receipts',
+    title: 'Get Action Receipts',
+    description: 'Read outcome-paired action receipts. Returns the receipt for a specific actionId, or the most recent receipts when no actionId is given.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        actionId: { type: 'string', description: 'Optional action id to fetch the matching receipt for' },
+        limit: { type: 'number', description: 'Max number of recent receipts to return when no actionId is given (default 20)' },
+      },
+    },
+  }),
   readOnlyTool({
     name: 'verify_claim',
     description: 'Check whether a claim has enough tracked evidence before the agent asserts it.',
