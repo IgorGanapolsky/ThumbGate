@@ -9,9 +9,11 @@ Guardrail: do not publish posts, send messages, invite members, upload files, cr
 - Close-room scripts + routing: `reports/gtm/2026-05-04-money-now/revenue-close-room.md`
 - Send queue + logging commands: `reports/gtm/2026-05-04-money-now/operator-send-now.md`
 - Action-time approval card: `reports/gtm/2026-05-04-money-now/action-time-approval-2026-06-01.md`
-- Course/listing copy: `reports/gtm/2026-05-04-community-course-promo/skool-course-listing-copy-2026-06-01.md`
-- Skool platform requirements: `reports/gtm/2026-05-04-community-course-promo/platform-requirements-skool-2026-06-01.md`
-- Skool group: https://www.skool.com/thumbgate-operator-lab-6000
+  - Course/listing copy: `reports/gtm/2026-05-04-community-course-promo/skool-course-listing-copy-2026-06-01.md`
+  - Skool platform requirements: `reports/gtm/2026-05-04-community-course-promo/platform-requirements-skool-2026-06-01.md`
+  - Text-first post pack: `reports/gtm/2026-05-04-community-course-promo/operator-lab-post-pack-2026-06-01.md`
+  - Welcome/comment pack: `reports/gtm/2026-05-04-community-course-promo/skool-welcome-comment-pack-2026-06-01.md`
+  - Skool group: https://www.skool.com/thumbgate-operator-lab-6000
 
 ## Next approval-ready money actions (highest ROI first)
 

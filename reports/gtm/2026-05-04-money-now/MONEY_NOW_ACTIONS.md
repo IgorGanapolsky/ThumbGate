@@ -28,6 +28,8 @@ Snapshot (as-of 2026-05-05 baseline; do not treat as commercial proof):
 3. Send the 5 strongest production-rollout sprint messages.
 4. After each send, run that row's `Log after send` command from `operator-send-now.md`.
 5. Only send proof links after the buyer confirms pain.
+6. If you want top-of-funnel volume, run the Skool conversion surface checklist and post pack (approval required):
+   - `reports/gtm/2026-05-04-community-course-promo/acquisition-queue-2026-06-01.md`
 
 Guardrail reminder: do not publish posts, send messages, invite members, upload files, create accounts, change billing, submit forms, or run paid ads without explicit action-time confirmation.
 
