@@ -612,11 +612,14 @@ test('hook runtime forwards subcommands for published-package Claude hooks', () 
   const hookRuntimePath = require.resolve('../scripts/hook-runtime');
   const mcpConfigPath = require.resolve('../scripts/mcp-config');
   const mcpConfig = require(mcpConfigPath);
+  const installShim = require('../scripts/install-shim');
+  const originalShimInstalled = installShim.shimInstalled;
   const originalIsSourceCheckout = mcpConfig.isSourceCheckout;
   const originalPublishedCliAvailable = mcpConfig.publishedCliAvailable;
 
   try {
     delete require.cache[hookRuntimePath];
+    installShim.shimInstalled = () => false;
     mcpConfig.isSourceCheckout = () => false;
     mcpConfig.publishedCliAvailable = () => true;
     const publishedRuntime = require(hookRuntimePath);
@@ -627,6 +630,7 @@ test('hook runtime forwards subcommands for published-package Claude hooks', () 
     assert.match(command, /\|\|.*npm "exec"/);
     assert.match(command, /"--"\s+"thumbgate"\s+"statusline-render"/);
   } finally {
+    installShim.shimInstalled = originalShimInstalled;
     mcpConfig.isSourceCheckout = originalIsSourceCheckout;
     mcpConfig.publishedCliAvailable = originalPublishedCliAvailable;
     delete require.cache[hookRuntimePath];
@@ -637,11 +641,14 @@ test('hook runtime preserves subcommands in external fallback launchers', () => 
   const hookRuntimePath = require.resolve('../scripts/hook-runtime');
   const mcpConfigPath = require.resolve('../scripts/mcp-config');
   const mcpConfig = require(mcpConfigPath);
+  const installShim = require('../scripts/install-shim');
+  const originalShimInstalled = installShim.shimInstalled;
   const originalIsSourceCheckout = mcpConfig.isSourceCheckout;
   const originalPublishedCliAvailable = mcpConfig.publishedCliAvailable;
 
   try {
     delete require.cache[hookRuntimePath];
+    installShim.shimInstalled = () => false;
     mcpConfig.isSourceCheckout = () => false;
     mcpConfig.publishedCliAvailable = () => false;
     const fallbackRuntime = require(hookRuntimePath);
@@ -650,6 +657,7 @@ test('hook runtime preserves subcommands in external fallback launchers', () => 
     assert.match(fallbackRuntime.codexStatuslineCommand(), /thumbgate@latest/);
     assert.match(fallbackRuntime.codexStatuslineCommand(), /node_modules\/\.bin\/thumbgate"\s+"statusline-render"/);
   } finally {
+    installShim.shimInstalled = originalShimInstalled;
     mcpConfig.isSourceCheckout = originalIsSourceCheckout;
     mcpConfig.publishedCliAvailable = originalPublishedCliAvailable;
     delete require.cache[hookRuntimePath];
