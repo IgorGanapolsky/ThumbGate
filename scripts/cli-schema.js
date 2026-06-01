@@ -604,6 +604,17 @@ const CLI_COMMANDS = [
       { name: 'info',    type: 'boolean', description: 'Show Pro feature list' },
     ],
   },
+  {
+    name: 'setup-vertex',
+    description: 'Enterprise: verify a live Gemini key for the Dialogflow CX / Vertex gate',
+    group: 'ops',
+    flags: [
+      { name: 'key',   type: 'string',  description: 'Gemini API key (else read from env or ./.env)' },
+      { name: 'write', type: 'boolean', description: 'Save the verified key to ./.env (chmod 600, gitignored)' },
+      { name: 'model', type: 'string',  description: 'Model to verify against (default gemini-2.5-flash)' },
+      { name: 'json',  type: 'boolean', description: 'Output as JSON' },
+    ],
+  },
 ];
 
 /**
