@@ -21,6 +21,7 @@
 // -----------------------------------------------------------------------------
 
 const http = require('http');
+const path = require('path');
 const { createHttpHandler } = require('./dfcx-webhook-gate');
 
 const UPSTREAM = process.env.THUMBGATE_DFCX_FULFILLMENT_URL || '';
@@ -74,7 +75,9 @@ function createServer() {
   });
 }
 
-if (require.main === module) {
+// Entrypoint guard — use path.resolve(argv[1]) vs __filename per project
+// convention (more robust than require.main under some bundlers/loaders).
+if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
   const port = Number(process.env.PORT) || 8080;
   createServer().listen(port, () => {
     // eslint-disable-next-line no-console

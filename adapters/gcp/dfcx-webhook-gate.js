@@ -196,12 +196,31 @@ async function guardDfcxWebhook(reqBody, fulfill, opts = {}) {
   return { blocked: false, response: annotateAllowed(fulfilled, evaluation), evaluation };
 }
 
-// Read a JSON request body from a Node IncomingMessage stream.
+// Reject bodies larger than this. A DFCX WebhookRequest is small (a few KB); an
+// unbounded reader on an internet-facing endpoint is a memory-exhaustion vector.
+const MAX_BODY_BYTES = 1024 * 1024; // 1 MiB
+
+// Read a JSON request body from a Node IncomingMessage stream, with a hard size
+// cap so a malicious/misconfigured caller cannot exhaust memory.
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
     let raw = '';
-    req.on('data', (chunk) => { raw += chunk; });
+    let bytes = 0;
+    let aborted = false;
+    req.on('data', (chunk) => {
+      if (aborted) return;
+      bytes += chunk.length;
+      if (bytes > MAX_BODY_BYTES) {
+        aborted = true;
+        const err = new Error('request body exceeds ' + MAX_BODY_BYTES + ' bytes');
+        err.statusCode = 413;
+        try { req.destroy(); } catch (_) { /* ignore */ }
+        return reject(err);
+      }
+      raw += chunk;
+    });
     req.on('end', () => {
+      if (aborted) return;
       if (!raw) return resolve({});
       try { resolve(JSON.parse(raw)); } catch (e) { reject(e); }
     });
