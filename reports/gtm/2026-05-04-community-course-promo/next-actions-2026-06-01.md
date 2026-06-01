@@ -35,6 +35,8 @@ When action-time approved, set:
 - Cover: `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`
 - Icon: `docs/marketing/assets/thumbgate-skool-icon-128x128.png`
 - About/course copy: `reports/gtm/2026-05-04-community-course-promo/skool-course-listing-copy-2026-06-01.md`
+  - Group description field: `<= 150` chars
+  - About page description field: `<= 1000` chars
 - Classroom outline (text-first): `reports/gtm/2026-05-04-community-course-promo/skool-classroom-outline-2026-06-01.md`
 - “Start Here” router post: `reports/gtm/2026-05-04-community-course-promo/skool-start-here-post-2026-06-01.md`
 - Checklist: `reports/gtm/2026-05-04-community-course-promo/skool-surface-update-checklist-2026-06-01.md`
