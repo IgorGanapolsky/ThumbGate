@@ -614,11 +614,15 @@ test('hook runtime forwards subcommands for published-package Claude hooks', () 
   const mcpConfig = require(mcpConfigPath);
   const originalIsSourceCheckout = mcpConfig.isSourceCheckout;
   const originalPublishedCliAvailable = mcpConfig.publishedCliAvailable;
+  const installShimPath = require.resolve('../scripts/install-shim');
+  const installShim = require(installShimPath);
+  const originalShimInstalled = installShim.shimInstalled;
 
   try {
     delete require.cache[hookRuntimePath];
     mcpConfig.isSourceCheckout = () => false;
     mcpConfig.publishedCliAvailable = () => true;
+    installShim.shimInstalled = () => false;
     const publishedRuntime = require(hookRuntimePath);
     const command = publishedRuntime.statuslineCommand();
 
@@ -629,6 +633,7 @@ test('hook runtime forwards subcommands for published-package Claude hooks', () 
   } finally {
     mcpConfig.isSourceCheckout = originalIsSourceCheckout;
     mcpConfig.publishedCliAvailable = originalPublishedCliAvailable;
+    installShim.shimInstalled = originalShimInstalled;
     delete require.cache[hookRuntimePath];
   }
 });
@@ -639,11 +644,15 @@ test('hook runtime preserves subcommands in external fallback launchers', () => 
   const mcpConfig = require(mcpConfigPath);
   const originalIsSourceCheckout = mcpConfig.isSourceCheckout;
   const originalPublishedCliAvailable = mcpConfig.publishedCliAvailable;
+  const installShimPath = require.resolve('../scripts/install-shim');
+  const installShim = require(installShimPath);
+  const originalShimInstalled = installShim.shimInstalled;
 
   try {
     delete require.cache[hookRuntimePath];
     mcpConfig.isSourceCheckout = () => false;
     mcpConfig.publishedCliAvailable = () => false;
+    installShim.shimInstalled = () => false;
     const fallbackRuntime = require(hookRuntimePath);
 
     assert.match(fallbackRuntime.statuslineCommand(), /"--"\s+"thumbgate"\s+"statusline-render"/);
@@ -652,6 +661,7 @@ test('hook runtime preserves subcommands in external fallback launchers', () => 
   } finally {
     mcpConfig.isSourceCheckout = originalIsSourceCheckout;
     mcpConfig.publishedCliAvailable = originalPublishedCliAvailable;
+    installShim.shimInstalled = originalShimInstalled;
     delete require.cache[hookRuntimePath];
   }
 });
