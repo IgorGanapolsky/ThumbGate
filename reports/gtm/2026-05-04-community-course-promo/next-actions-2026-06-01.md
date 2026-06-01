@@ -32,6 +32,8 @@ When action-time approved, set:
 - Cover: `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`
 - Icon: `docs/marketing/assets/thumbgate-skool-icon-128x128.png`
 - About/course copy: `reports/gtm/2026-05-04-community-course-promo/skool-course-listing-copy-2026-06-01.md`
+- “Start Here” router post: `reports/gtm/2026-05-04-community-course-promo/skool-start-here-post-2026-06-01.md`
+- Checklist: `reports/gtm/2026-05-04-community-course-promo/skool-surface-update-checklist-2026-06-01.md`
 
 Then publish/pin a “Start Here” post that routes:
 
@@ -48,4 +50,3 @@ Approved-safe preview command (local equivalent):
 `npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=linkedin,instagram,threads,bluesky,reddit,youtube`
 
 Publish/schedule modes remain blocked unless `ZERNIO_API_KEY` is present in GitHub secrets (and action-time approval is granted).
-
