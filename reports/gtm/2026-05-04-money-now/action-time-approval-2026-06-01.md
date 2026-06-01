@@ -83,7 +83,7 @@ Approval: ☐ YES (update Skool + pin) ☐ NO (defer)
 
 ## Preview Evidence (no outbound writes)
 
-Local dry-run preview succeeded on 2026-06-01 (America/New_York):
+Local dry-run preview succeeded on 2026-06-01T13:26:49Z (America/New_York):
 
 - Command: `npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=linkedin,instagram,threads,bluesky,reddit,youtube`
 - Result: `errors=[]`
