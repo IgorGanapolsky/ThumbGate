@@ -55,17 +55,55 @@ function mapDfcxToAction(reqBody) {
   };
 }
 
+// A DFCX webhook is fully untrusted (internet-facing), unlike a local coding
+// agent. These allowlists reject anything that could carry shell/path
+// metacharacters before the action ever reaches the gate engine.
+const SAFE_TOKEN = /^[A-Za-z0-9._-]{1,64}$/; // fulfillment tags, parameter names
+const SAFE_VALUE = /^[\w .,@:+-]{0,512}$/;    // parameter string values
+
 // Evaluate whether a DFCX fulfillment should be allowed to execute.
 // Returns { allowed, decision, gate, message, severity, repeat, risk, action }.
 function evaluateDfcxFulfillment(reqBody, opts = {}) {
-  const action = mapDfcxToAction(reqBody);
+  const raw = mapDfcxToAction(reqBody);
+
+  // 0) Validate the untrusted webhook input and rebuild a SAFE action inline,
+  //    before any value reaches the gate engine. Block on any unsafe token/value
+  //    so attacker-controlled input cannot reach a path/command sink downstream.
+  const blockedUnsafe = (reason) => ({
+    allowed: false,
+    decision: 'deny',
+    gate: 'dfcx-unsafe-input',
+    message: 'The request contained unsafe input and was blocked.',
+    severity: 'critical',
+    repeat: false,
+    risk: null,
+    action: { tag: String(raw.tag), toolName: 'dfcx:unsafe', toolInput: {}, sessionId: raw.sessionId },
+    reason,
+  });
+  const tag = String(raw.tag);
+  if (!SAFE_TOKEN.test(tag)) return blockedUnsafe('unsafe fulfillment tag');
+  const toolName = 'dfcx:' + tag;
+  const toolInput = {};
+  const rawParams = raw.toolInput && typeof raw.toolInput === 'object' ? raw.toolInput : {};
+  for (const key of Object.keys(rawParams)) {
+    if (!SAFE_TOKEN.test(key)) return blockedUnsafe('unsafe parameter name');
+    const value = rawParams[key];
+    if (typeof value === 'string') {
+      if (!SAFE_VALUE.test(value)) return blockedUnsafe('unsafe parameter value');
+      toolInput[key] = value;
+    } else if (typeof value === 'number' || typeof value === 'boolean' || value === null) {
+      toolInput[key] = value;
+    }
+    // non-scalar values are intentionally dropped (never forwarded downstream).
+  }
+  const action = { tag, toolName, toolInput, sessionId: raw.sessionId };
 
   // 1) Configured policy gates. The pilot configures DFCX-relevant gates (e.g.
   //    "block dfcx:process-refund when amount > limit and not approved"). With no
   //    custom config this is simply a no-op (allow).
   let gateResult = null;
   try {
-    gateResult = gates.evaluateGates(action.toolName, action.toolInput, opts.configPath);
+    gateResult = gates.evaluateGates(toolName, toolInput, opts.configPath);
   } catch (_) {
     gateResult = null;
   }

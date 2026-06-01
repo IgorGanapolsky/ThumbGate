@@ -129,6 +129,38 @@ test('createHttpHandler: writes the guarded response to res (Cloud Run / Functio
   assert.equal(parsed.session_info.parameters.thumbgate_blocked, false);
 });
 
+test('unsafe parameter value (shell metacharacters) is blocked before the gate engine', async () => {
+  resetSession();
+  let calls = 0;
+  const fulfill = async () => { calls += 1; return { fulfillment_response: { messages: [] } }; };
+  const { blocked, response, evaluation } = await guardDfcxWebhook(
+    dfcxRequest('process-refund', { account_id: 'A-1; rm -rf /' }),
+    fulfill,
+  );
+  assert.equal(blocked, true);
+  assert.equal(calls, 0, 'fulfillment must NOT run on unsafe input');
+  assert.equal(evaluation.gate, 'dfcx-unsafe-input');
+  assert.equal(evaluation.severity, 'critical');
+  assert.equal(response.session_info.parameters.thumbgate_blocked, true);
+});
+
+test('an unsafe fulfillment tag is blocked', async () => {
+  resetSession();
+  const { blocked, evaluation } = await guardDfcxWebhook(
+    dfcxRequest('refund;reboot', { account_id: 'A-1' }),
+    async () => ({ fulfillment_response: { messages: [] } }),
+  );
+  assert.equal(blocked, true);
+  assert.equal(evaluation.gate, 'dfcx-unsafe-input');
+});
+
+test('ordinary values (ids, amounts, hyphens) are NOT treated as unsafe', () => {
+  resetSession();
+  const r = evaluateDfcxFulfillment(dfcxRequest('lookup-balance', { account_id: 'A-100', amount: 500, name: 'Jane Doe' }));
+  assert.notEqual(r.gate, 'dfcx-unsafe-input');
+  assert.equal(r.allowed, true);
+});
+
 test('evaluateDfcxFulfillment: never throws on a malformed request', () => {
   resetSession();
   const r = evaluateDfcxFulfillment({ fulfillmentInfo: null, sessionInfo: null });
