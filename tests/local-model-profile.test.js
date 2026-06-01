@@ -174,3 +174,32 @@ test('recommendInferenceBackend highlights IndexCache eligibility for long-conte
   assert.equal(recommendation.recommendationClass, 'indexcache_eligible');
   assert.equal(recommendation.backend.indexCacheEligible, true);
 });
+
+test('detectInferenceBackend recognizes Vertex AI provider mode via explicit env', () => {
+  const backend = detectInferenceBackend({
+    THUMBGATE_PROVIDER_MODE: 'vertex',
+  });
+
+  assert.equal(backend.providerMode, 'vertex');
+  assert.equal(backend.id, 'vertex-api');
+  assert.ok(backend.label.includes('Vertex AI'));
+  assert.ok(backend.rationale.includes('compliant enterprise Gemini'));
+});
+
+test('detectInferenceBackend automatically resolves Vertex AI via GCP project env', () => {
+  const backend = detectInferenceBackend({
+    VERTEX_PROJECT_ID: 'enterprise-gcp-project',
+  });
+
+  assert.equal(backend.providerMode, 'vertex');
+  assert.equal(backend.id, 'vertex-api');
+});
+
+test('resolveModelRole maps provider to vertex when Vertex AI is active', () => {
+  const result = resolveModelRole('normal', {
+    THUMBGATE_PROVIDER_MODE: 'vertex',
+  });
+
+  assert.equal(result.provider, 'vertex');
+  assert.equal(result.model, MODEL_ROLES.normal);
+});
