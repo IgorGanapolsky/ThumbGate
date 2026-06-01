@@ -125,8 +125,13 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // orchestration hardening: scripts/install-shim.js, scripts/plan-gate.js, and
   // scripts/trajectory-scorer.js. These are invoked by the published CLI/hooks,
   // so omitting them breaks packaged installs while staying inside public shell.
+  // Bumped 268 → 271 (2026-05-31) to ship the action-loop instrumentation set:
+  // scripts/action-receipts.js, scripts/noop-detect.js, scripts/repeat-metric.js.
+  // These are pure public-shell intelligence features (no Core dependency) wired
+  // into gate_stats/dashboard, track_action, and capture_feedback. Keep in
+  // lockstep with BASELINE_FILE_COUNT in tests/public-bundle-ratchet.test.js.
   const files = npmPackFiles();
-  const CEILING = 268;
+  const CEILING = 271;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

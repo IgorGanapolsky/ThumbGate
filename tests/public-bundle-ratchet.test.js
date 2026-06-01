@@ -64,7 +64,12 @@ const path = require('node:path');
 //            produce session-level path/dropoff summaries in packaged runtime.
 // 265 → 268: scripts/install-shim.js, scripts/plan-gate.js, scripts/trajectory-scorer.js
 //            added for CodeRabbit high-ROI orchestration and install hooks.
-const BASELINE_FILE_COUNT = 268;
+// 268 → 271: scripts/action-receipts.js, scripts/noop-detect.js, scripts/repeat-metric.js
+//            added for the action-loop instrumentation feature set
+//            (repeat-metric, no-op detection, outcome-paired action receipts).
+//            (changeset: action-loop-instrumentation.md). Keep in lockstep with
+//            CEILING in tests/public-core-boundary.test.js.
+const BASELINE_FILE_COUNT = 271;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
