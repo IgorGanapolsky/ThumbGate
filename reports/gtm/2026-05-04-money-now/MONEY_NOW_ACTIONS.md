@@ -33,6 +33,10 @@ Snapshot (as-of 2026-05-05 baseline; do not treat as commercial proof):
 
 Guardrail reminder: do not publish posts, send messages, invite members, upload files, create accounts, change billing, submit forms, or run paid ads without explicit action-time confirmation.
 
+Action-time approval card (single yes/no for outbound actions):
+
+- `reports/gtm/2026-05-04-money-now/action-time-approval-2026-06-01.md`
+
 
 ## Top Send Queue
 
