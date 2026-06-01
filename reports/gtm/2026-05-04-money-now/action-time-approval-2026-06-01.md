@@ -74,6 +74,15 @@ Goal: improve Skool group conversion by aligning cover/icon/About and pinning a 
 
 Approval: ☐ YES (update Skool + pin) ☐ NO (defer)
 
+## Decision F — Publish Skool onboarding drip (outbound writes)
+
+Goal: post 1 text-first onboarding post per day for 7 days to make the offer ladder + Reliability Gateway loop unavoidable to new members.
+
+- Draft pack: `reports/gtm/2026-05-04-community-course-promo/skool-7day-onboarding-drip-2026-06-01.md`
+- Post cadence: Day 1 → Day 7 (one per day), keep Day 0 router post pinned.
+
+Approval: ☐ YES (post drip) ☐ NO (defer)
+
 ## Notes (constraints observed)
 
 - Local Skool media upload remains blocked by the browser/native file picker; treat Skool media updates as action-time tasks.

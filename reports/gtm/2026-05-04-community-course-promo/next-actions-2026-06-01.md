@@ -13,6 +13,7 @@ Guardrail: do not publish posts, send messages, invite members, upload files, cr
   - Skool platform requirements: `reports/gtm/2026-05-04-community-course-promo/platform-requirements-skool-2026-06-01.md`
   - Text-first post pack: `reports/gtm/2026-05-04-community-course-promo/operator-lab-post-pack-2026-06-01.md`
   - Welcome/comment pack: `reports/gtm/2026-05-04-community-course-promo/skool-welcome-comment-pack-2026-06-01.md`
+  - 7-day onboarding drip (text-first): `reports/gtm/2026-05-04-community-course-promo/skool-7day-onboarding-drip-2026-06-01.md`
   - Skool group: https://www.skool.com/thumbgate-operator-lab-6000
 
 ## Next approval-ready money actions (highest ROI first)
