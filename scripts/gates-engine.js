@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { execSync, execFileSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const { loadOptionalModule } = require('./private-core-boundary');
 
 const { isProTier, isInTrialPeriod, FREE_TIER_MAX_GATES, FREE_TIER_DAILY_BLOCKS, todayKey } = require('./rate-limiter');
@@ -30,10 +30,12 @@ function computeExecutableHash(command) {
     const firstWord = command.trim().split(/\s+/)[0];
     if (!firstWord) return null;
 
-    // Resolve absolute path using 'which'
+    // Resolve absolute path using 'which'. Use execFileSync (no shell) and pass
+    // firstWord as an argv element, never interpolated into a command string, so
+    // a hostile `command` value cannot inject shell metacharacters here.
     let fullPath;
     try {
-      fullPath = execSync(`which ${firstWord}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+      fullPath = execFileSync('which', [firstWord], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
     } catch (e) {
       // If 'which' fails, it might be an absolute path or a non-existent command
       fullPath = path.isAbsolute(firstWord) ? firstWord : null;
