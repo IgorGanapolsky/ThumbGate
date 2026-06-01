@@ -3,6 +3,18 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('path');
+const os = require('os');
+const fs = require('fs');
+
+// Isolate the gate's same-session repeat store to a per-file temp path. The
+// default is a single global file (~/.thumbgate/session-actions.json); since
+// `node --test` runs test files concurrently (and coverage re-runs them), a
+// shared store lets unrelated runs contaminate this one and falsely flag a
+// benign turn as a repeat. Override before requiring the server (which pulls in
+// the gate singleton).
+const gates = require(path.join(__dirname, '..', 'scripts', 'gates-engine'));
+gates.SESSION_ACTIONS_PATH = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'tg-dfcx-srv-')), 'session-actions.json');
+if (typeof gates.clearSessionActions === 'function') { try { gates.clearSessionActions(); } catch (_) { /* ignore */ } }
 
 const { createServer } = require(path.join(__dirname, '..', 'adapters', 'gcp', 'server'));
 

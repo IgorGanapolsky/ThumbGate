@@ -3,8 +3,14 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('path');
+const os = require('os');
+const fs = require('fs');
 
 const gates = require(path.join(__dirname, '..', 'scripts', 'gates-engine'));
+// Isolate the same-session repeat store to a per-file temp path so concurrent
+// test files (and coverage re-runs) can't contaminate each other via the global
+// ~/.thumbgate/session-actions.json. See dfcx-gate-server.test.js for rationale.
+gates.SESSION_ACTIONS_PATH = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'tg-dfcx-wh-')), 'session-actions.json');
 const {
   mapDfcxToAction,
   evaluateDfcxFulfillment,
