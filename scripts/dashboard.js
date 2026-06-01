@@ -1613,7 +1613,12 @@ function generateDashboard(feedbackDir, options = {}) {
   const billingSummary = options.billingSummary || getBillingSummary(analyticsWindow);
 
   const approval = computeApprovalStats(entries);
-  const gateStats = computeGateStats();
+  // Surface the "repeat-attempts blocked before execution" metric on the
+  // dashboard JSON and the /v1/dashboard HTTP route. Use the non-mutating
+  // helper (mirrors server-stdio.js) instead of mutating computeGateStats()'s
+  // return value.
+  const { mergeRepeatMetricIntoGateStats } = require('./repeat-metric');
+  const gateStats = mergeRepeatMetricIntoGateStats(computeGateStats());
   const prevention = computePreventionImpact(feedbackDir, gateStats);
   const trend = computeSessionTrend(entries, 10);
   const health = computeSystemHealth(feedbackDir, gateStats);

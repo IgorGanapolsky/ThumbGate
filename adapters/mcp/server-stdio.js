@@ -70,6 +70,20 @@ const {
   verifyClaimEvidence,
   registerClaimGate,
 } = require('../../scripts/gates-engine');
+const { mergeRepeatMetricIntoGateStats } = require('../../scripts/repeat-metric');
+const {
+  detectNoop,
+  computeActionStateHash,
+  recordActionAttempt,
+  isRepeatAttempt,
+} = require('../../scripts/noop-detect');
+const {
+  recordReceipt,
+  getReceiptForAction,
+  getRecentReceipts,
+  pairFeedbackWithReceipt,
+  buildReceiptContextEntries,
+} = require('../../scripts/action-receipts');
 const {
   evaluateOperationalIntegrity,
 } = require('../../scripts/operational-integrity');
@@ -524,6 +538,28 @@ function buildContextPackResponse(args = {}) {
     maxChars: Number(args.maxChars || 6000),
     namespaces,
   });
+  // Feed outcome-paired action receipts into the pack so an action->outcome
+  // history is available alongside lessons/rules. Additive + guarded: a
+  // receipt-store failure must never break context pack construction.
+  try {
+    const receiptEntries = buildReceiptContextEntries(args.query || '', Number(args.maxItems || 8));
+    if (Array.isArray(receiptEntries) && receiptEntries.length && Array.isArray(pack.items)) {
+      for (const entry of receiptEntries) {
+        pack.items.push({
+          id: `action-receipt_${entry && entry.score != null ? entry.score : ''}_${pack.items.length}`,
+          namespace: 'action-receipts',
+          title: 'Action receipt outcome',
+          structuredContext: { rawContent: entry && entry.text ? String(entry.text) : '' },
+          tags: ['action-receipt', 'outcome-paired'],
+          score: entry && typeof entry.score === 'number' ? entry.score : 0,
+        });
+      }
+      if (!Array.isArray(pack.namespaces)) pack.namespaces = [];
+      if (!pack.namespaces.includes('action-receipts')) pack.namespaces.push('action-receipts');
+    }
+  } catch {
+    // ignore receipt enrichment failures
+  }
   return toTextResult(pack);
 }
 
@@ -670,9 +706,13 @@ async function callToolInner(name, args) {
   if (name === 'describe_reliability_entity') name = 'describe_semantic_entity';
 
   switch (name) {
-    case 'capture_feedback':
-
-      return toCaptureFeedbackTextResult(captureFeedback(args));
+    case 'capture_feedback': {
+      // Outcome-paired lessons: enrich the feedback payload with the matching
+      // action receipt (this action -> this outcome) before promotion. Returns
+      // args unchanged when there is no matching receipt (non-breaking).
+      const pairedFeedback = pairFeedbackWithReceipt(args);
+      return toCaptureFeedbackTextResult(captureFeedback(pairedFeedback));
+    }
     case 'feedback_summary':
       return toTextResult(feedbackSummary(Number(args.recent || 20)));
     case 'search_lessons': {
@@ -949,12 +989,49 @@ async function callToolInner(name, args) {
       });
     case 'track_action': {
       const entry = trackAction(args.actionId, args.metadata || {});
-      return toTextResult({
+      const result = {
         tracked: true,
         actionId: args.actionId,
         ...entry,
+      };
+      // No-op / repeat signal: when the caller carries a precomputed state hash
+      // in metadata, surface whether this exact (action, state) was already
+      // attempted this session. Additive flag, non-breaking.
+      const metadataStateHash = args.metadata && args.metadata.stateHash;
+      if (metadataStateHash) {
+        try {
+          result.repeatSignal = isRepeatAttempt(
+            (args.metadata && args.metadata.sessionId) || 'default',
+            args.actionId,
+            metadataStateHash,
+          );
+        } catch {
+          // repeat detection is best-effort
+        }
+      }
+      return toTextResult(result);
+    }
+    case 'detect_noop': {
+      const stateHash = computeActionStateHash(args);
+      const noop = detectNoop(args);
+      const sessionId = args.sessionId || 'default';
+      const repeat = isRepeatAttempt(sessionId, args.actionId, stateHash);
+      recordActionAttempt(sessionId, args.actionId, stateHash);
+      return toTextResult({
+        noop: noop.noop,
+        repeat,
+        reason: noop.reason,
+        stateHash,
       });
     }
+    case 'record_action_receipt':
+      return toTextResult(recordReceipt(args));
+    case 'get_action_receipts':
+      return toTextResult(
+        args.actionId
+          ? getReceiptForAction(args.actionId)
+          : getRecentReceipts(Number(args.limit || 20)),
+      );
     case 'verify_claim':
       return toTextResult(verifyClaimEvidence(args.claim, { goalContract: args.goalContract }));
     case 'require_evidence_for_claim': {
@@ -1084,7 +1161,7 @@ async function callToolInner(name, args) {
     case 'register_claim_gate':
       return toTextResult(registerClaimGate(args.claimPattern, args.requiredActions, args.message));
     case 'gate_stats':
-      return toTextResult(loadGateStats());
+      return toTextResult(mergeRepeatMetricIntoGateStats(loadGateStats()));
     case 'dashboard':
       return toTextResult(generateDashboard(getFeedbackPaths().FEEDBACK_DIR));
     case 'org_dashboard':
