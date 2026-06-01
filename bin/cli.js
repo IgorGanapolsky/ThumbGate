@@ -826,6 +826,51 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
   console.log('Wrote .thumbgate/config.json');
 
+  // Scaffold the "Client Brain" soul files
+  const soulDir = path.join(thumbgateDir, 'brain', 'soul');
+  if (!fs.existsSync(soulDir)) {
+    fs.mkdirSync(soulDir, { recursive: true });
+    console.log('Created .thumbgate/brain/soul/');
+  }
+
+  const neverDoPath = path.join(soulDir, 'never-do.md');
+  if (!fs.existsSync(neverDoPath)) {
+    const neverDoTemplate = `# never-do.md\n\n` +
+      `This is the list of things AI should never propose, never write, and never recommend.\n\n` +
+      `- Brand-level rules: "Never describe the client as an industry leader."\n` +
+      `- Operational boundaries: "Don't suggest content that requires legal/billing approval without explicit confirmation."\n` +
+      `- Strategic constraints: "Don't recommend marketing platforms we do not support yet."\n\n` +
+      `Every "we already discussed this and decided no" should eventually end up here to stop repeating discussions.\n`;
+    fs.writeFileSync(neverDoPath, neverDoTemplate);
+    console.log('Scaffolded .thumbgate/brain/soul/never-do.md');
+  }
+
+  const companyProfilePath = path.join(soulDir, 'company-profile.md');
+  if (!fs.existsSync(companyProfilePath)) {
+    const companyProfileTemplate = `# company-profile.md\n\n` +
+      `The operational version of the client brand, not the polished marketing version.\n\n` +
+      `- **Who is the client?** [Name] is a [category] brand selling [products/services].\n` +
+      `- **Who do they serve?** [Audience] who value [craftsmanship/quality/price] over [alternatives].\n` +
+      `- **What is their differentiator?** [Key advantage/differentiator].\n` +
+      `- **Who are their key competitors?** Compete with [Competitor A] and [Competitor B].\n` +
+      `- **Where do they NOT play?** [Excluded segments/industries].\n`;
+    fs.writeFileSync(companyProfilePath, companyProfileTemplate);
+    console.log('Scaffolded .thumbgate/brain/soul/company-profile.md');
+  }
+
+  const styleGuidePath = path.join(soulDir, 'style-guide.md');
+  if (!fs.existsSync(styleGuidePath)) {
+    const styleGuideTemplate = `# style-guide.md\n\n` +
+      `Concrete rules and directives on voice, style, and tone.\n\n` +
+      `- **Tone Directive**: Concise, precise, professional, and evidence-grounded.\n` +
+      `- **Examples of PASSING output**:\n` +
+      `  * "We increased conversion rate by 14% based on the Q1 A/B tests."\n` +
+      `- **Examples of FAILING output**:\n` +
+      `  * "Our state-of-the-art framework flawlessly boosts conversion rates to absolute perfection." (Avoid empty superlatives).\n`;
+    fs.writeFileSync(styleGuidePath, styleGuideTemplate);
+    console.log('Scaffolded .thumbgate/brain/soul/style-guide.md');
+  }
+
   // Always create .mcp.json (project-level MCP config used by Claude, Codex, Cursor)
   mergeMcpJson(path.join(CWD, '.mcp.json'), 'MCP');
 
