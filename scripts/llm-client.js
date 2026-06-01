@@ -12,19 +12,20 @@ const DEFAULT_MODEL = MODELS.FAST;
 const DEFAULT_MAX_TOKENS = 1024;
 const DEFAULT_CACHE_TTL = '5m';
 
-let _client = null;
+let _anthropicClient = null;
+let _geminiClient = null;
 
 function isAvailable() {
   return Boolean(process.env.ANTHROPIC_API_KEY);
 }
 
 function getClient() {
-  if (_client) return _client;
+  if (_anthropicClient) return _anthropicClient;
   if (!isAvailable()) return null;
   try {
     const Anthropic = require('@anthropic-ai/sdk');
-    _client = new Anthropic();
-    return _client;
+    _anthropicClient = new Anthropic();
+    return _anthropicClient;
   } catch {
     return null;
   }
@@ -145,15 +146,15 @@ async function callGeminiInternal(options = {}) {
 
   try {
     const { GoogleGenAI } = require('@google/genai');
-    if (!_client) {
+    if (!_geminiClient) {
       if (providerMode === 'vertex') {
-        _client = new GoogleGenAI({
+        _geminiClient = new GoogleGenAI({
           enterprise: true,
           project: env.VERTEX_PROJECT_ID || 'ai-revenue28-webhook',
           location: env.VERTEX_LOCATION || 'us-central1',
         });
       } else {
-        _client = new GoogleGenAI({
+        _geminiClient = new GoogleGenAI({
           apiKey: env.GEMINI_API_KEY,
         });
       }
@@ -174,7 +175,7 @@ async function callGeminiInternal(options = {}) {
     const response = await runStep('llm.callGemini', {
       retries: 2,
       logger: (msg) => console.warn(msg),
-    }, async () => _client.models.generateContent({
+    }, async () => _geminiClient.models.generateContent({
       model: options.model,
       contents,
       config,

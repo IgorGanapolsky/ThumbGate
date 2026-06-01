@@ -645,6 +645,12 @@ async function setupVertex() {
   }
   console.log(`  Active Project : \x1b[36m${activeProject}\x1b[0m`);
 
+  // Validate project ID matches GCP format before use in shell
+  if (!/^[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(activeProject)) {
+    console.log('  ⚠️  Invalid GCP project ID format. Aborting.');
+    return;
+  }
+
   // 2. Auto-enable Vertex AI API
   console.log('  ⚙️  Enabling Vertex AI API in your project (this can take a few seconds)...');
   try {
@@ -984,10 +990,11 @@ function capture() {
   // Parse pure positional arguments
   const rawArgv = process.argv.slice(3);
   const positionalArgs = [];
+  const BOOLEAN_FLAGS = new Set(['--json', '--verbose', '--quiet', '--dry-run', '--stats', '--summary', '--no-nudge', '--help']);
   for (let i = 0; i < rawArgv.length; i++) {
     const arg = rawArgv[i];
     if (arg.startsWith('--')) {
-      if (!arg.includes('=')) {
+      if (!arg.includes('=') && !BOOLEAN_FLAGS.has(arg)) {
         i++;
       }
     } else {

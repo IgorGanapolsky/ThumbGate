@@ -1,14 +1,25 @@
 # Skool About + Pinned Post Copy (Operator Lab)
 
-Updated: 2026-05-05
+Updated: 2026-06-01
 
 Guardrail: do not publish posts, invite members, upload files, or send messages without explicit action-time confirmation.
+
+## Field limits (last known; verify in Skool UI if uncertain)
+
+- Icon recommended: `128x128` (repo asset: `docs/marketing/assets/thumbgate-skool-icon-128x128.png`)
+- Cover recommended: `1084x576` (repo asset: `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`)
+- Group description (short): `<=150` characters
+- About page description: `<=1000` characters
 
 ## About Page (paste-ready)
 
 ### Headline
 
 Stop your AI coding agent from repeating the same mistake twice.
+
+### Group description (<=150 chars)
+
+Infrastructure firewall for AI coding agents: turn repeated mistakes into enforceable pre-action gates + proof runs.
 
 ### What this is
 
