@@ -2960,8 +2960,16 @@ function cmdBrain(args = {}) {
   const md = renderBrainMarkdown(model);
   if (args.write) {
     const dir = path.join(CWD, '.thumbgate');
-    try { fs.mkdirSync(dir, { recursive: true }); } catch (_) { /* best-effort */ }
-    fs.writeFileSync(path.join(dir, 'BRAIN.md'), md);
+    const target = path.join(dir, 'BRAIN.md');
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(target, md);
+    } catch (err) {
+      // Surface a clean, actionable error instead of an uncaught stack trace
+      // (e.g. permission denied, read-only filesystem).
+      console.error(`Could not write ${target}: ${err && err.message ? err.message : err}`);
+      return 1;
+    }
     const lt = (model.lessons && model.lessons.total) || 0;
     const rt = (model.rules && model.rules.total) || 0;
     const gt = (model.gates && model.gates.total) || 0;
