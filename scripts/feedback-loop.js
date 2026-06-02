@@ -1309,6 +1309,17 @@ function captureFeedback(params) {
     if (lessonDB) {
       const { upsertLesson, inferCorrectiveActions } = require('./lesson-db');
       upsertLesson(lessonDB, feedbackEvent, memoryRecord);
+      // Team/Enterprise: when a central store is configured, ALSO route the
+      // lesson through the storage adapter so it lands in Postgres + pgvector
+      // (shared org-wide, server-side vector search). Local/free tier never
+      // enters this branch, so behaviour is unchanged. Fire-and-forget +
+      // non-fatal: the local SQLite write above already succeeded.
+      if ((process.env.THUMBGATE_STORAGE || '').toLowerCase() === 'postgres' || process.env.THUMBGATE_DATABASE_URL) {
+        try {
+          Promise.resolve(require('./storage-adapter').upsertLesson(feedbackEvent, memoryRecord))
+            .catch((e) => { try { console.error('thumbgate: central store upsert failed:', e && e.message); } catch (_) { /* ignore */ } });
+        } catch (_) { /* storage adapter unavailable — local write already persisted */ }
+      }
       if (feedbackEvent.signal === 'negative') {
         correctiveActions = inferCorrectiveActions(lessonDB, feedbackEvent, 3);
       }

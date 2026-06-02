@@ -614,6 +614,21 @@ const CLI_COMMANDS = [
       { name: 'json',  type: 'boolean', description: 'Output the structured model as JSON' },
     ],
   },
+  {
+    name: 'migrate-to-postgres',
+    aliases: ['migrate-to-pg', 'enterprise-postgres', 'setup-postgres'],
+    description: 'Team/Enterprise: generate or apply the Postgres + pgvector schema and JSONL migration SQL',
+    group: 'advanced',
+    flags: [
+      { name: 'feedback-dir',  type: 'string',  description: 'Directory with feedback-log.jsonl and memory-log.jsonl' },
+      { name: 'org-id',        type: 'string',  description: 'Enterprise organization id' },
+      { name: 'project-id',    type: 'string',  description: 'Enterprise project id' },
+      { name: 'embedding-dim', type: 'number',  description: 'pgvector embedding dimension (default 768)' },
+      { name: 'out',           type: 'string',  description: 'Write SQL to this file instead of stdout' },
+      { name: 'apply',         type: 'boolean', description: 'Apply SQL using DATABASE_URL' },
+      { name: 'json',          type: 'boolean', description: 'Output as JSON' },
+    ],
+  },
 ];
 
 /**

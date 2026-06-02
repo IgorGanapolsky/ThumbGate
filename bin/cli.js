@@ -2852,6 +2852,9 @@ const SUBCOMMAND_HELP = {
   savings:       'Usage: npx thumbgate savings [--json] [--stats <path>] [--mix \'{"claude-sonnet-4-5":0.8,...}\']\n\nAlias for `thumbgate cost`.',
   'setup-vertex': 'Usage: npx thumbgate setup-vertex\n\nAuto-enable Vertex AI API on GCP and write secure credentials to local .env.',
   brain: 'Usage: npx thumbgate brain [--write] [--json] [--limit=N]\n\nBuild the agent-readable "context brain" — a single artifact consolidating this\nrepo\'s lessons, prevention rules, active gates, and project context for a coding\nagent to read BEFORE acting. --write saves it to .thumbgate/BRAIN.md (versioned,\ndeterministic). --json emits the structured model. --limit caps lessons (default 15).',
+  'migrate-to-postgres': 'Usage: npx thumbgate migrate-to-postgres --feedback-dir=.thumbgate --org-id=ORG --project-id=PROJECT [--out=migration.sql] [--apply] [--json]\n\nGenerate or apply SQL that imports local feedback-log.jsonl and memory-log.jsonl into Team/Enterprise Postgres + pgvector.',
+  'enterprise-postgres': 'Usage: npx thumbgate enterprise-postgres schema|migrate [--json] [--out=file] [--apply]\n\nGenerate or apply the Team/Enterprise Postgres + pgvector schema and JSONL migration SQL.',
+  'setup-postgres': 'Usage: npx thumbgate setup-postgres [--embedding-dim=768] [--out=schema.sql] [--apply] [--json]\n\nGenerate or apply the Team/Enterprise Postgres + pgvector schema (extension, multi-tenant tables, RLS, HNSW index).',
 };
 
 if (_wantsHelp && COMMAND && SUBCOMMAND_HELP[COMMAND]) {
@@ -2981,6 +2984,91 @@ function cmdBrain(args = {}) {
   return 0;
 }
 
+// -----------------------------------------------------------------------------
+// enterprise-postgres / migrate-to-postgres / setup-postgres — generate (or
+// apply via --apply) the Team/Enterprise Postgres + pgvector schema, and the SQL
+// that imports local feedback-log.jsonl / memory-log.jsonl into it.
+// -----------------------------------------------------------------------------
+async function enterprisePostgres() {
+  const args = parseArgs(process.argv.slice(3));
+  const positional = process.argv.slice(3).filter((arg) => !arg.startsWith('--'));
+  const subcommand = COMMAND === 'setup-postgres'
+    ? 'schema'
+    : COMMAND === 'migrate-to-postgres'
+      ? 'migrate'
+      : (positional[0] || 'schema');
+  const {
+    applySql,
+    buildEnterprisePostgresSchema,
+    buildJsonlMigrationSql,
+    guardSqlBatch,
+    writeSqlIfRequested,
+  } = require(path.join(PKG_ROOT, 'scripts', 'enterprise-postgres'));
+
+  try {
+    let sql;
+    if (subcommand === 'schema' || subcommand === 'setup') {
+      sql = buildEnterprisePostgresSchema({
+        embeddingDim: args['embedding-dim'] || args.embeddingDim,
+        enableRls: args.rls !== 'false' && args['no-rls'] !== true,
+      });
+    } else if (subcommand === 'migrate' || subcommand === 'migration') {
+      sql = buildJsonlMigrationSql({
+        feedbackDir: args['feedback-dir'] || args.feedbackDir || CWD,
+        orgId: args['org-id'] || args.orgId,
+        orgName: args['org-name'] || args.orgName,
+        projectId: args['project-id'] || args.projectId,
+        projectSlug: args['project-slug'] || args.projectSlug,
+        agentId: args['agent-id'] || args.agentId,
+      });
+    } else {
+      console.error('Usage: npx thumbgate enterprise-postgres schema|migrate [--json] [--out=file] [--apply]');
+      process.exit(1);
+    }
+
+    const outputPath = writeSqlIfRequested(sql, args.out || args.output);
+    const guard = guardSqlBatch(sql);
+    if (args.apply) {
+      const result = await applySql({
+        sql,
+        databaseUrl: args['database-url'] || args.databaseUrl || process.env.DATABASE_URL,
+      });
+      const payload = { ok: true, applied: true, outputPath, ...result };
+      if (args.json) console.log(JSON.stringify(payload, null, 2));
+      else console.log(`Applied ThumbGate enterprise Postgres ${subcommand} (${result.statementCount} statements)`);
+      return;
+    }
+
+    const payload = {
+      ok: guard.ok,
+      command: COMMAND,
+      subcommand,
+      outputPath,
+      statementCount: guard.statementCount,
+      warnings: guard.warnings,
+      blocks: guard.blocks,
+    };
+    if (args.json) {
+      console.log(JSON.stringify(payload, null, 2));
+      return;
+    }
+    if (outputPath) {
+      console.log(`Wrote ThumbGate enterprise Postgres ${subcommand} SQL: ${outputPath}`);
+      console.log(`Statements: ${guard.statementCount}`);
+      if (guard.warnings.length) console.log(`Warnings: ${guard.warnings.length}`);
+      return;
+    }
+    process.stdout.write(sql);
+  } catch (err) {
+    if (args.json) {
+      console.log(JSON.stringify({ ok: false, error: err.message }, null, 2));
+    } else {
+      console.error(err.message);
+    }
+    process.exit(1);
+  }
+}
+
 switch (COMMAND) {
   case '--version':
   case '-v':
@@ -3076,6 +3164,12 @@ switch (COMMAND) {
   case 'lessons':
   case 'search-lessons':
     lessons();
+    break;
+  case 'setup-postgres':
+  case 'migrate-to-postgres':
+  case 'migrate-to-pg':
+  case 'enterprise-postgres':
+    enterprisePostgres();
     break;
   case 'notes': {
     const { cli: notesCli } = require(path.join(PKG_ROOT, 'scripts', 'implementation-notes'));
