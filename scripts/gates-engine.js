@@ -1321,10 +1321,12 @@ function isSafeLocalCredentialHardeningCommand(toolName, toolInput = {}) {
   if (toolName !== 'Bash') return false;
   const command = String(toolInput.command || '').trim();
   if (!command) return false;
-  // Reject recursive chmod (never auto-allow chmod over a directory tree). Use a
-  // linear token scan instead of a wildcard regex to avoid polynomial backtracking
-  // (ReDoS): `chmod\s+[^&;|]*\s+-R` is ambiguous on whitespace (CodeQL js/polynomial-redos).
-  if (command.split(/\s+/).some((t) => t === '--recursive' || /^-[A-Za-z]*R[A-Za-z]*$/.test(t))) return false;
+  // Reject recursive chmod (never auto-allow chmod over a directory tree). Pure
+  // string ops (no regex) so there's no backtracking (CodeQL js/polynomial-redos):
+  // a short flag token (-…, not --…) containing 'R', or the long --recursive form.
+  if (command.split(/\s+/).some((t) =>
+    t === '--recursive' || (t.startsWith('-') && !t.startsWith('--') && t.includes('R'))
+  )) return false;
   if (/[;&|`$()<>*?[\]{}]/.test(command)) return false;
 
   const match = command.match(/(?:^|\s)chmod\s+(?:-[fv]\s+)?0?([46]00)\s+(['"]?)(\S+)\2\s*$/i);
