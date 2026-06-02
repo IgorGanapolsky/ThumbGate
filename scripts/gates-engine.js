@@ -2329,7 +2329,12 @@ function isStrictKnowledgeConflictMode() {
 
 function isKnowledgeConflictHardBlockAction(toolName, toolInput = {}) {
   if (!isStrictKnowledgeConflictMode()) return false;
-  if (EDIT_LIKE_TOOLS.has(toolName)) return true;
+  if (EDIT_LIKE_TOOLS.has(toolName)) {
+    // Even in opt-in strict mode, never hard-block edits to the gate's own config
+    // (Claude/ThumbGate settings) — the user must always be able to disable or
+    // loosen the gate. Other edits are blocked under strict mode by design.
+    return !isGateEscapeHatchFile(toolInput.file_path || toolInput.path || toolInput.notebook_path || '');
+  }
   if (toolName !== 'Bash') return false;
   return KNOWLEDGE_CONFLICT_STRICT_BASH_PATTERN.test(String(toolInput.command || ''));
 }
