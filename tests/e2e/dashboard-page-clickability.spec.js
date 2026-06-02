@@ -179,4 +179,33 @@ test.describe('/dashboard clickability — non-stat-card surfaces', () => {
     await page.locator('nav a', { hasText: /^Landing Page$/ }).click();
     await page.waitForURL(/\/$/);
   });
+
+  // --- Gemini API Key (save button) ---
+
+  test('clicking "Save" for Gemini API key shows success status', async ({ page }) => {
+    await page.route(/\/v1\/settings\/gemini-key/, async (route) => {
+      if (route.request().method() !== 'POST') return route.continue();
+      // Emulate the actual fix I just shipped
+      const postData = JSON.parse(route.request().postData() || '{}');
+      if (postData.key === 'test-key') {
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ ok: true, message: 'Key saved.' }),
+        });
+      }
+      return route.fulfill({ status: 400, body: JSON.stringify({ ok: false }) });
+    });
+
+    await page.goto('/dashboard');
+    const input = page.locator('#geminiKeyInput');
+    const btn = page.locator('button', { hasText: /^Save$/ });
+
+    await input.fill('test-key');
+    await btn.click();
+
+    // Check success state
+    await expect(input).toHaveAttribute('placeholder', '✓ Key saved to .env', { timeout: 3000 });
+    await expect(page.locator('#chatHint')).toContainText('Gemini API key configured');
+  });
 });
