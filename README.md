@@ -335,7 +335,35 @@ npx thumbgate dashboard  # open local dashboard
 npx thumbgate serve      # start MCP server on stdio
 npx thumbgate bench      # run reliability benchmark
 npx thumbgate bench --programbench-smoke  # include cleanroom whole-repo proof lane
+npx thumbgate break-glass --reason="ThumbGate over-fired"  # short TTL recovery for gate over-fire
 ```
+
+### Recovery if a gate over-fires
+
+ThumbGate should block repeated unsafe actions, not trap the operator. If a noisy rule or stale memory pattern blocks the hook/settings change you need to recover, open a short-lived break-glass window:
+
+```bash
+npx thumbgate break-glass --reason="ThumbGate over-fired and blocked operator recovery"
+```
+
+What this unlocks for up to 5 minutes:
+
+- Edits to `.claude/settings.local.json`, `.claude/settings.json`, `.codex/config.toml`, and the same files inside nested workspaces.
+- The short-lived proof gates used for PR recovery: `pr_create_allowed` and `pr_threads_checked`.
+
+What stays gated:
+
+- Force pushes, protected-branch pushes, broad `rm -rf`, unsafe `chmod`, package publishes/releases, and local-only remote side effects.
+- Arbitrary protected files such as `README.md`, `AGENTS.md`, policy bundles, or credentials.
+
+Verify the recovery window and runtime health before continuing:
+
+```bash
+npx thumbgate break-glass --reason="verify recovery path" --json
+npx thumbgate doctor
+```
+
+If you change MCP or hook settings, restart the affected agent session so Claude Code, Cursor, Codex, or another runtime reloads `.mcp.json` and local settings.
 
 ---
 

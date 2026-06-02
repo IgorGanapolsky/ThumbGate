@@ -12,6 +12,27 @@
 
 That's it. One thumbs-down, never again.
 
+## If a gate over-fires
+
+ThumbGate should protect the operator, not trap the operator. If a noisy rule blocks the hook/settings change you need to recover a Claude session, use the short-lived break-glass command:
+
+```bash
+npx thumbgate break-glass --reason="ThumbGate over-fired and blocked operator recovery"
+```
+
+That grants up to 5 minutes for recovery edits to `.claude/settings.local.json`, `.claude/settings.json`, `.codex/config.toml`, and matching nested workspace files. It also satisfies the temporary `pr_create_allowed` and `pr_threads_checked` gates used to recover a stuck PR flow.
+
+It does not disable the destructive-action protections: force pushes, protected-branch pushes, broad `rm -rf`, unsafe `chmod`, package publishes/releases, local-only remote side effects, arbitrary protected docs, and credentials stay gated.
+
+Verify the state before continuing:
+
+```bash
+npx thumbgate break-glass --reason="verify recovery path" --json
+npx thumbgate doctor
+```
+
+After changing MCP or hook settings, restart Claude Desktop or Claude Code so it reloads `.mcp.json` and local settings.
+
 ## What it does
 
 - **👎 Thumbs down** → captures the mistake → distills a lesson → auto-promotes to a prevention rule → PreToolUse hook blocks the pattern before execution

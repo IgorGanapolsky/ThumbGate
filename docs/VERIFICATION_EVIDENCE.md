@@ -44,6 +44,45 @@ curl -H "Authorization: Bearer YOUR_KEY" \
 
 # Verification log
 
+## June 2, 2026: operator recovery and ThumbGate dogfood hardening
+
+Scope:
+
+- Added the `break-glass` CLI recovery path for cases where gates over-fire and block operator recovery.
+- Restricted break-glass to short-lived hook/settings recovery and PR-flow proof gates while leaving destructive-action protections active.
+- Hardened detection for `gh api repos/.../pulls` PR creation bypasses, so PR creation cannot dodge branch governance by avoiding `gh pr create`.
+- Expanded feedback-signal capture to handle typo variants such as `thubs don` and `thumbss up`.
+- Documented the recovery flow in user-facing README and Claude plugin docs.
+
+Commands and evidence:
+
+```bash
+node --test tests/gates-engine.test.js tests/cli.test.js tests/install-shim.test.js
+node --test tests/gates-hardening.test.js
+node scripts/sync-version.js --check
+node scripts/check-congruence.js
+npm publish --dry-run --access public
+npm publish --access public
+npm view thumbgate version --json
+npm view thumbgate dist.integrity --json
+```
+
+Observed result:
+
+- Targeted gate/CLI/install tests passed: `251/251`.
+- Gate hardening tests passed: `5/5`.
+- Version sync check passed across `32` tracked targets.
+- Congruence check passed across public/package/adapter surfaces.
+- Published package was verified from npm after release: `thumbgate@1.26.6`.
+- Published dist integrity: `sha512-+98HSpPkujOyAfD94QDisBPWFRf/xQtxEmS2HGkSabMQKlp1wvwXcVT5XvOeSL6+LlPfeyRg3YEu1mVtkW362A==`.
+- Runtime dogfood passed against the installed `1.26.5` hook path before this documentation entry was added.
+
+Requirements verified:
+
+- Operators have a documented recovery command for gate over-fire.
+- Recovery does not become a blanket disable switch.
+- PR creation bypass and typo feedback regressions are covered by tests.
+
 ## April 30, 2026: machine-readable buyer-path schema for acquisition and conversion surfaces
 
 Scope:
@@ -1562,7 +1601,7 @@ Evidence artifacts:
 Requirements verified:
 
 - Source checkouts now install canonical MCP entries that launch the local stdio server directly via `node adapters/mcp/server-stdio.js`.
-- Portable docs and adapter examples now use the version-pinned launcher `npx -y thumbgate@1.26.5 serve` instead of an unpinned `npx` call that can be shadowed by stale local installs.
+- Portable docs and adapter examples now use the version-pinned launcher `npx -y thumbgate@1.26.6 serve` instead of an unpinned `npx` call that can be shadowed by stale local installs.
 - Re-running the MCP installer upgrades stale config entries instead of treating them as already configured.
 - Adapter and LanceDB proof cleanup now uses retry-capable recursive removal so ephemeral filesystem contention no longer flakes CI.
 - Transient `.thumbgate` reminder/A2UI/test-run files are now ignored as local runtime state and do not pollute git hygiene during verification.
@@ -2779,7 +2818,7 @@ Scope:
 
 - Added a repo-root Cursor marketplace manifest at `.cursor-plugin/marketplace.json`.
 - Added a dedicated Cursor plugin bundle in `plugins/cursor-marketplace/` with `.cursor-plugin/plugin.json`, `.mcp.json`, README, and committed logo asset.
-- Switched the Cursor launcher to the portable published package entrypoint `npx -y thumbgate@1.26.5 serve` instead of any checkout-local absolute path.
+- Switched the Cursor launcher to the portable published package entrypoint `npx -y thumbgate@1.26.6 serve` instead of any checkout-local absolute path.
 - Removed the stale `.mcp.json.plugin` legacy config file so the repo has one canonical Cursor packaging path.
 - Extended `scripts/sync-version.js` so Cursor manifests and all pinned launcher docs stay version-synced on future releases.
 - Added regression coverage for the repo-level marketplace contract, manifest/version consistency, and MCP launcher safety.

@@ -646,25 +646,29 @@ async function connect(options) {
   var input = document.getElementById('apiKey');
   API_KEY = String(opts.key || input.value || '').trim();
   if (!API_KEY) return;
+  
+  const isEnterprise = API_KEY.startsWith('tg_op_') || API_KEY.startsWith('tg_creator_');
+  const tierName = isEnterprise ? 'Enterprise' : 'Pro';
+
   const status = document.getElementById('authStatus');
   const btn = document.getElementById('connectBtn');
   btn.disabled = true;
   status.className = 'auth-status';
-  status.textContent = opts.localPro ? 'Connecting local dashboard...' : 'Connecting...';
+  status.textContent = opts.localPro ? `Connecting local dashboard...` : 'Connecting...';
   try {
     const res = await fetch('/v1/feedback/stats', { headers: getHeaders() });
     if (!res.ok) throw new Error('Invalid API key');
     const data = await res.json();
     status.className = 'auth-status ok';
-    status.textContent = opts.localPro ? '✓ Local Pro dashboard connected' : '✓ Connected';
+    status.textContent = opts.localPro ? `✓ Local ${tierName} connected` : '✓ Connected';
     document.getElementById('dashboardContent').style.display = 'block';
     if (opts.localPro) {
       input.value = 'local-license';
       input.disabled = true;
-      input.placeholder = 'Local Pro auto-connected';
+      input.placeholder = `Local ${tierName} auto-connected`;
       btn.disabled = true;
       document.getElementById('demoBtn').style.display = 'none';
-      document.getElementById('authHelp').textContent = 'Local Pro is active on this machine. Your personal dashboard is using the saved license key automatically.';
+      document.getElementById('authHelp').textContent = `Local ${tierName} is active on this machine. Your dashboard is using the saved license key automatically.`;
     }
     renderStats(data);
     setSelectedCard('all');
@@ -677,7 +681,7 @@ async function connect(options) {
     status.className = 'auth-status err';
     status.textContent = '✗ ' + e.message;
     if (opts.localPro) {
-      document.getElementById('authHelp').textContent = 'Local Pro bootstrap failed. Paste your THUMBGATE_API_KEY manually or retry the local launcher.';
+      document.getElementById('authHelp').textContent = `Local ${tierName} bootstrap failed. Paste your THUMBGATE_API_KEY manually or retry the local launcher.`;
     }
   }
   if (!opts.localPro) {
