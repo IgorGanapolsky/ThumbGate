@@ -418,34 +418,18 @@ const TRACKED_LINK_TARGETS = Object.freeze({
     },
     allowCustomerEmail: true,
   },
-  // 2026-05-19: Team is intake-led. Keep the tracked shortlink alive for
-  // marketplaces and old outreach, but route it to workflow scope first
-  // instead of blind 3-seat checkout.
+  // 2026-06-02: Teams/Aiventyx deprecated. Redirect legacy links to Pro.
   teams: {
-    path: '/#workflow-sprint-intake',
-    ctaId: 'go_teams',
+    path: '/go/pro?utm_source=legacy_teams&utm_medium=redirect',
+    ctaId: 'go_pro',
     ctaPlacement: 'link_router',
-    eventType: 'team_intake_started',
-    defaults: {
-      utm_source: 'website',
-      utm_medium: 'link_router',
-      utm_campaign: 'team_intake',
-      plan_id: 'team',
-    },
+    eventType: 'cta_click',
   },
-  // Aliases: /go/team → same as /go/teams, /go/checkout → same as /go/pro,
-  // /go/trial → install guide (trial starts on init)
   team: {
-    path: '/#workflow-sprint-intake',
-    ctaId: 'go_team',
+    path: '/go/pro?utm_source=legacy_teams&utm_medium=redirect',
+    ctaId: 'go_pro',
     ctaPlacement: 'link_router',
-    eventType: 'team_intake_started',
-    defaults: {
-      utm_source: 'website',
-      utm_medium: 'link_router',
-      utm_campaign: 'team_intake',
-      plan_id: 'team',
-    },
+    eventType: 'cta_click',
   },
   checkout: {
     path: '/checkout/pro',
@@ -6405,30 +6389,7 @@ ${hidden}
 <h1>Case Studies</h1>
 <p class="lede">Real integrations. No fabricated logos, no aspirational numbers — every claim below is reproducible.</p>
 
-<article>
-<h2>Aiventyx marketplace — Teams listing intake recovery</h2>
-<p class="meta">Integration partner: <a href="https://www.aiventyx.com">Aiventyx</a> · Reported by: Qaiser Mehdi · Verified: 2026-05-13</p>
-
-<h3>The problem</h3>
-<p>Aiventyx is a marketplace for AI tools. ThumbGate's Teams listing was their highest-CTR external surface — <span class="metric">62% CTR</span> (5 clicks on 8 views, May 7–9 window). When their integrator rolled out canonical tracked URLs, every Teams click started landing on:</p>
-<p><code>{"error":"Tracked link not found","allowed":["gpt","pro","install","reddit","linkedin","x","github"]}</code></p>
-<p>The <code>/go/teams</code> slug wasn't registered in our redirector — a 404 was eating every paid-intent click from their strongest external surface.</p>
-
-<h3>The fix</h3>
-<p>Added <code>teams</code> to <code>TRACKED_LINK_TARGETS</code> and now routes it to <code>/?plan_id=team#workflow-sprint-intake</code>. Caller-supplied UTMs flow through to the intake path so the workflow, owner, and proof boundary are explicit before any Team checkout.</p>
-
-<h3>The verification</h3>
-<p>Qaiser's own incognito test, May 13 6:04 AM (full email on record):</p>
-<p><code>https://thumbgate.ai/go/teams?utm_source=aiventyx</code><br>
-→ 302 to the Team workflow intake<br>
-→ pricing source, campaign, and plan metadata preserved<br>
-→ buyer sees the scope-first path before any subscription decision</p>
-
-<h3>What this proves</h3>
-<p>End-to-end attribution from a third-party marketplace through ThumbGate's redirector into the Team intake path, with the caller's UTM chain preserved. Regression tests pin the redirect contract so it can't silently break or regress into a blind Team checkout.</p>
-
-<p><a href="/go/teams?utm_source=case-study">Try the live redirect →</a></p>
-</article>
+<p><em>New case studies for individual Pro operators coming soon.</em></p>
 
 <footer>
 <p>Want to be the next case study? The product is real, the integration is 30 seconds: <code>npx thumbgate init</code>. If you ship something with ThumbGate and want it documented here, email <a href="mailto:igor.ganapolsky@gmail.com">igor.ganapolsky@gmail.com</a>.</p>

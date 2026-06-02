@@ -581,6 +581,16 @@ describe('bin/cli.js', () => {
     }
   });
 
+  test('server commands honor --help without starting long-running processes', () => {
+    for (const cmd of ['serve', 'mcp', 'dashboard', 'start-api']) {
+      const result = runCliSync([cmd, '--help'], { timeoutMs: 2000 });
+      assert.equal(result.status, 0, `${cmd} --help should exit 0:\n${result.stderr}`);
+      assert.match(result.stdout, /Usage: npx thumbgate/, `${cmd} --help should print usage`);
+      assert.doesNotMatch(result.stdout, /Watching .*feedback-log\.jsonl/, `${cmd} --help must not start the watcher`);
+      assert.doesNotMatch(result.stderr, /Watching .*feedback-log\.jsonl/, `${cmd} --help must not start the watcher`);
+    }
+  });
+
   test('brain --json emits a structured context model', () => {
     const result = runCliSync(['brain', '--json']);
     assert.strictEqual(result.status, 0, `Expected exit 0, got ${result.status}\n${result.stderr}`);
@@ -751,6 +761,56 @@ describe('bin/cli.js', () => {
     const cache = JSON.parse(fs.readFileSync(path.join(feedbackDir, 'statusline_cache.json'), 'utf8'));
     assert.equal(cache.thumbs_down, '1');
     assert.equal(cache.total_feedback, '1');
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  });
+
+  test('hook-auto-capture records typo variants from alternate prompt env', () => {
+    const feedbackDir = makeTmpDir();
+    const result = runCliSync(['hook-auto-capture'], {
+      env: {
+        ...process.env,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        CODEX_USER_PROMPT: 'thumbss up evidence-backed verification was clear',
+        THUMBGATE_NO_NUDGE: '1',
+      },
+    });
+
+    assert.equal(result.status, 0, `hook-auto-capture failed:\n${result.stderr}`);
+    assert.match(result.stdout, /Thumbs up recorded/);
+    assert.match(result.stdout, /Feedback ID:/);
+    assert.match(result.stdout, /Memory ID\s+:/);
+
+    const feedbackRows = fs.readFileSync(path.join(feedbackDir, 'feedback-log.jsonl'), 'utf8')
+      .trim()
+      .split(/\r?\n/)
+      .map((line) => JSON.parse(line));
+    assert.equal(feedbackRows.length, 1);
+    assert.equal(feedbackRows[0].signal, 'positive');
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  });
+
+  test('hook-auto-capture records typo variants from stdin', () => {
+    const feedbackDir = makeTmpDir();
+    const result = runCliSync(['hook-auto-capture'], {
+      input: 'thubs don this skipped the required verification',
+      env: {
+        ...process.env,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_NO_NUDGE: '1',
+      },
+    });
+
+    assert.equal(result.status, 0, `hook-auto-capture failed:\n${result.stderr}`);
+    assert.match(result.stdout, /Thumbs down recorded/);
+    assert.match(result.stdout, /Feedback ID:/);
+    assert.match(result.stdout, /Memory ID\s+:/);
+
+    const feedbackRows = fs.readFileSync(path.join(feedbackDir, 'feedback-log.jsonl'), 'utf8')
+      .trim()
+      .split(/\r?\n/)
+      .map((line) => JSON.parse(line));
+    assert.equal(feedbackRows.length, 1);
+    assert.equal(feedbackRows[0].signal, 'negative');
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
 
@@ -930,6 +990,62 @@ describe('bin/cli.js', () => {
 
     assert.match(result.stdout, /ThumbGate Pro dashboard: http:\/\/localhost:\d+\/dashboard/);
     fs.rmSync(homeDir, { recursive: true, force: true });
+  });
+
+  test('pro command keeps local dashboard process alive after printing URL', async () => {
+    const homeDir = makeTmpDir();
+    const licenseDir = path.join(homeDir, '.thumbgate');
+    fs.mkdirSync(licenseDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(licenseDir, 'license.json'),
+      JSON.stringify({ key: 'tg_local_dashboard_lifetime' }, null, 2)
+    );
+
+    const child = spawn(process.execPath, [CLI, 'pro'], {
+      env: {
+        ...process.env,
+        HOME: homeDir,
+        USERPROFILE: homeDir,
+        THUMBGATE_NO_NUDGE: '1',
+        THUMBGATE_API_KEY: '',
+        THUMBGATE_PRO_MODE: '',
+        PORT: '0',
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    let stdout = '';
+    let stderr = '';
+    try {
+      await new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          reject(new Error(`dashboard URL timed out\nstdout=${stdout}\nstderr=${stderr}`));
+        }, 15000);
+
+        child.stdout.on('data', (chunk) => {
+          stdout += String(chunk || '');
+          if (/ThumbGate Pro dashboard: http:\/\/localhost:\d+\/dashboard/.test(stdout)) {
+            clearTimeout(timer);
+            resolve();
+          }
+        });
+        child.stderr.on('data', (chunk) => { stderr += String(chunk || ''); });
+        child.on('exit', (code, signal) => {
+          clearTimeout(timer);
+          reject(new Error(`CLI exited early (code=${code}, signal=${signal})\nstdout=${stdout}\nstderr=${stderr}`));
+        });
+        child.on('error', (err) => {
+          clearTimeout(timer);
+          reject(err);
+        });
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      assert.equal(child.exitCode, null, `dashboard process exited after URL\nstdout=${stdout}\nstderr=${stderr}`);
+    } finally {
+      try { child.kill('SIGKILL'); } catch (_) { /* no-op */ }
+      fs.rmSync(homeDir, { recursive: true, force: true });
+    }
   });
 
   test('pro --info prints local-first offer info even when a license is already saved', () => {
@@ -2563,6 +2679,33 @@ describe('bin/cli.js', () => {
     );
     fs.rmSync(isolatedDir, { recursive: true, force: true });
     assert.notEqual(result.status, 1, `capture should not exit 1:\n${result.stderr}`);
+  });
+
+  test('capture typo thumbs positional arguments route to full engine', () => {
+    const isolatedDir = makeTmpDir();
+    const feedbackDir = makeTmpDir();
+    const result = runCliSync(
+      ['capture', 'thubs', 'don', 'skipped verification proof', '--json'],
+      {
+        cwd: isolatedDir,
+        env: {
+          ...process.env,
+          THUMBGATE_FEEDBACK_DIR: feedbackDir,
+          THUMBGATE_NO_NUDGE: '1',
+        },
+      }
+    );
+    assert.equal(result.status, 0, `capture should accept typo thumbs signal:\n${result.stderr}\n${result.stdout}`);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.signal, 'down');
+    const feedbackRows = fs.readFileSync(path.join(feedbackDir, 'feedback-log.jsonl'), 'utf8')
+      .trim()
+      .split(/\r?\n/)
+      .map((line) => JSON.parse(line));
+    assert.equal(feedbackRows[0].context, 'skipped verification proof');
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
 
   test('import-doc ingests a policy file and returns proposed gates as JSON', () => {

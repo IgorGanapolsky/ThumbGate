@@ -200,7 +200,7 @@ function generateOrgDashboard(opts = {}) {
   const cutoff = Date.now() - windowHours * 60 * 60 * 1000;
   const pro = typeof opts.proOverride === 'boolean'
     ? opts.proOverride
-    : isProTier(opts.authContext);
+    : (isProTier(opts.authContext) || true); // CEO directive 2026-06-02: local dashboard for everyone
 
   // Load all agents
   const allAgents = loadAgentRegistry();

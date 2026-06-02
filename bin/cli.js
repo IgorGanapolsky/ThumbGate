@@ -239,6 +239,21 @@ function parseArgs(argv) {
   return args;
 }
 
+function parseTtlMs(value, fallbackMs = 5 * 60 * 1000) {
+  if (value === undefined || value === null || value === true || value === '') return fallbackMs;
+  const raw = String(value).trim().toLowerCase();
+  const match = raw.match(/^(\d+(?:\.\d+)?)(ms|s|m|h)?$/);
+  if (!match) return fallbackMs;
+  const amount = Number(match[1]);
+  if (!Number.isFinite(amount) || amount <= 0) return fallbackMs;
+  const unit = match[2] || 'ms';
+  const factor = unit === 'h' ? 60 * 60 * 1000
+    : unit === 'm' ? 60 * 1000
+      : unit === 's' ? 1000
+        : 1;
+  return Math.round(amount * factor);
+}
+
 function readStdinText() {
   try {
     return fs.readFileSync(0, 'utf8');
@@ -2375,6 +2390,43 @@ function optimize() {
   doOptimize();
 }
 
+function cleanup() {
+  console.log('Cleaning up ThumbGate processes...');
+  try {
+    const { execSync } = require('child_process');
+    // Kill all 'thumbgate serve' and 'thumbgate dashboard' processes except this one
+    const pids = execSync("ps aux | grep 'thumbgate' | grep -v 'grep' | awk '{print $2}'", { encoding: 'utf8' })
+      .split('\n')
+      .filter(Boolean)
+      .map(Number)
+      .filter(pid => pid !== process.pid);
+
+    if (pids.length > 0) {
+      console.log(`Killing ${pids.length} process(es): ${pids.join(', ')}`);
+      pids.forEach(pid => {
+        try { process.kill(pid, 'SIGTERM'); } catch (_) {}
+      });
+      // Give them a moment to die
+      execSync('sleep 1');
+    } else {
+      console.log('No other ThumbGate processes found.');
+    }
+
+    // Check port 3456 specifically
+    try {
+      const portPid = execSync("lsof -ti :3456", { encoding: 'utf8' }).trim();
+      if (portPid) {
+        console.log(`Killing process ${portPid} holding port 3456`);
+        try { process.kill(Number(portPid), 'SIGKILL'); } catch (_) {}
+      }
+    } catch (_) { /* port already free */ }
+
+    console.log('✅ Cleanup complete. Run "npx thumbgate pro" to restart the dashboard.');
+  } catch (err) {
+    console.error(`Cleanup failed: ${err.message}`);
+  }
+}
+
 function serve() {
   try {
     const { repairCodexHooks } = require(path.join(PKG_ROOT, 'scripts', 'codex-self-heal'));
@@ -2411,11 +2463,21 @@ function install() {
 }
 
 async function gateCheck() {
-  const payload = readStdinText();
-  const input = payload ? JSON.parse(payload) : {};
-  const gatesEngine = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
-  const output = await gatesEngine.runAsync(input);
-  process.stdout.write(output + '\n');
+  try {
+    const payload = readStdinText();
+    const input = payload ? JSON.parse(payload) : {};
+    const gatesEngine = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
+    const output = await gatesEngine.runAsync(input);
+    process.stdout.write(output + '\n');
+  } catch (err) {
+    process.stderr.write(`gate-check error: ${err.message}\n`);
+    process.stdout.write(JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        additionalContext: `[ThumbGate Error] ${err.message}`,
+      }
+    }) + '\n');
+  }
 }
 
 function cacheUpdate() {
@@ -2673,6 +2735,30 @@ function startApi() {
   }
 }
 
+function breakGlass() {
+  const args = parseArgs(process.argv.slice(3));
+  const positionalReason = process.argv.slice(3).find((arg) => !arg.startsWith('--'));
+  const reason = String(args.reason || positionalReason || '').trim();
+  if (!reason) {
+    console.error('Usage: npx thumbgate break-glass --reason "why this recovery is needed" [--ttl=5m] [--json]');
+    process.exit(1);
+  }
+
+  const ttlMs = parseTtlMs(args.ttl, 5 * 60 * 1000);
+  const { breakGlassEmergency } = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
+  const result = breakGlassEmergency({ reason, ttlMs });
+  if (args.json) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  console.log('ThumbGate break-glass active.');
+  console.log(`  Reason     : ${result.reason}`);
+  console.log(`  Expires    : ${result.expiresAt}`);
+  console.log('  Unlocked   : hook settings edits, pr_create_allowed, pr_threads_checked');
+  console.log('  Still gated: local-only scope, force-push, protected branch push, unsafe chmod, broad rm -rf');
+}
+
 function help() {
   const v = pkgVersion();
   const helpArgs = process.argv.slice(3);
@@ -2695,6 +2781,7 @@ function help() {
     console.log('  explore                                           Interactive TUI for lessons, gates, stats');
     console.log('  dashboard                                         Open the local ThumbGate dashboard');
     console.log('  doctor                                            Audit runtime isolation + bootstrap context');
+    console.log('  break-glass --reason="..."                       Short TTL recovery if gates over-fire');
     console.log('  brain [--write]                                   Build the agent-readable context brain (lessons + rules + gates)');
     console.log('  pro                                               ThumbGate Pro (dashboard, exports, sync)');
     console.log('  subscribe <email>                                 Get the 5-min setup guide + weekly tips by email');
@@ -2747,6 +2834,7 @@ function help() {
   console.log('                            default: machine-wide  (~/.claude/settings.json — shared dashboard)');
   console.log('                            --project: per-repo    (<cwd>/.claude/settings.json — isolated dashboard)');
   console.log('                            --no-hooks: MCP only, skip hook wiring');
+  console.log('  break-glass           Short TTL recovery if gates over-fire');
   console.log('  cfo                   Hosted billing summary (local fallback JSON)');
   console.log('  billing:setup         Generate operator key + print Railway setup instructions');
   console.log('  repair-github-marketplace  Repair legacy GitHub Marketplace amount mappings');
@@ -2842,6 +2930,7 @@ const SUBCOMMAND_HELP = {
   lessons:       'Usage: npx thumbgate lessons [--query="..."] [--limit=N]\n\nSearch the lesson database (Pro feature).',
   search:        'Usage: npx thumbgate search <query>\n\nSearch ThumbGate knowledge base (Pro feature).',
   'gate-check':  'Usage: npx thumbgate gate-check\n\nPreToolUse hook interface: reads tool call JSON from stdin, outputs gate verdict.',
+  'break-glass': 'Usage: npx thumbgate break-glass --reason="why" [--ttl=5m] [--json]\n\nShort-lived recovery path for over-firing gates. Allows hook settings edits and satisfies PR-create/thread-check gates without disabling core destructive-action protections.',
   'export-dpo':  'Usage: npx thumbgate export-dpo [--format=jsonl|csv]\n\nExport feedback as DPO training pairs (Pro feature).',
   status:        'Usage: npx thumbgate status\n\nShow ThumbGate system health and active configuration.',
   watch:         'Usage: npx thumbgate watch\n\nWatch for feedback changes and auto-regenerate prevention rules.',
@@ -3003,6 +3092,9 @@ switch (COMMAND) {
   case 'serve':
   case 'mcp':
     serve();
+    break;
+  case 'cleanup':
+    cleanup();
     break;
   case 'gate-check':
     gateCheck().catch((err) => {
@@ -3370,6 +3462,10 @@ switch (COMMAND) {
     break;
   case 'status':
     status();
+    break;
+  case 'break-glass':
+  case 'breakglass':
+    breakGlass();
     break;
   case 'funnel':
     funnel();

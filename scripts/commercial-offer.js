@@ -68,8 +68,6 @@ function buildCaptureReceipt({ signal, feedbackId, memoryId, actionType } = {}) 
     '',
     `  Solo Pro       : ${PRO_PRICE_LABEL} for hosted sync, search, dashboard, and exports`,
     `  Upgrade        : ${trackedProUrl('cli_capture_receipt', actionType || normalizedSignal.toLowerCase())}`,
-    `  Team path      : ${TEAM_PRICE_LABEL}; start with one repeated workflow failure`,
-    '                   https://thumbgate.ai/#workflow-sprint-intake',
     '',
   ];
   return lines.join('\n');
@@ -102,7 +100,6 @@ function buildStatsReceipt(stats = {}) {
   lines.push('  Show the buyer     : npx thumbgate cost');
   lines.push('  Pro sync value     : keep these lessons/rules visible across laptops, CI, containers, and agent runtimes');
   lines.push(`  Solo Pro           : ${trackedProUrl('cli_stats_receipt', 'proof_seen')}`);
-  lines.push('  Team workflow      : https://thumbgate.ai/#workflow-sprint-intake');
   lines.push('');
   return lines.join('\n');
 }

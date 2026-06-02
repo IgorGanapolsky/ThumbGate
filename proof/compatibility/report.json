@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-21T19:08:04.165Z",
+  "generatedAt": "2026-06-02T03:16:25.632Z",
   "checks": [
     {
       "name": "api.healthz",
@@ -73,7 +73,7 @@
       "name": "api.context.construct",
       "passed": true,
       "details": {
-        "packId": "pack_1776798484363_0fjc9o",
+        "packId": "pack_1780370185771_vd4xwc",
         "items": 2
       }
     },
@@ -117,7 +117,7 @@
       "name": "mcp.tools.list",
       "passed": true,
       "details": {
-        "tools": 75
+        "tools": 85
       }
     },
     {
@@ -132,7 +132,7 @@
       "passed": true,
       "details": {
         "rootCauseCategory": "intent_plan_misalignment",
-        "toolSchemaCount": 57
+        "toolSchemaCount": 67
       }
     },
     {
@@ -153,7 +153,7 @@
       "name": "mcp.tools.call.get_business_metrics",
       "passed": true,
       "details": {
-        "generatedAt": "2026-04-21T19:08:06.373Z"
+        "generatedAt": "2026-06-02T03:16:27.833Z"
       }
     },
     {
@@ -236,8 +236,8 @@
       "name": "mcp.policy.profile_differentiation",
       "passed": true,
       "details": {
-        "defaultTools": 61,
-        "lockedTools": 16
+        "defaultTools": 71,
+        "lockedTools": 23
       }
     }
   ],

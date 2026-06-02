@@ -94,9 +94,26 @@ function detectRuntimeIsolation() {
   };
 }
 
-function collectBootstrapFiles(projectRoot = PROJECT_ROOT) {
+function findProjectRoot(startDir = process.cwd()) {
+  try {
+    let curr = path.resolve(startDir);
+    while (true) {
+      const indicators = ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md', '.mcp.json', '.git'];
+      if (indicators.some((f) => fs.existsSync(path.join(curr, f)))) {
+        return curr;
+      }
+      const parent = path.dirname(curr);
+      if (parent === curr) break;
+      curr = parent;
+    }
+  } catch (_) { /* fallback to startDir */ }
+  return startDir;
+}
+
+function collectBootstrapFiles(projectRoot) {
+  const effectiveRoot = projectRoot || findProjectRoot();
   const files = BOOTSTRAP_FILES.map((file) => {
-    const absolutePath = path.join(projectRoot, file.path);
+    const absolutePath = path.join(effectiveRoot, file.path);
     return {
       id: file.id,
       path: file.path,
@@ -118,7 +135,7 @@ function collectBootstrapFiles(projectRoot = PROJECT_ROOT) {
     missingRequired,
     recommendation: missingRequired.length === 0
       ? 'Bootstrap context is present.'
-      : `Add missing bootstrap files: ${missingRequired.join(', ')}`,
+      : `Add missing bootstrap files to project root (${effectiveRoot}): ${missingRequired.join(', ')}`,
   };
 }
 

@@ -77,6 +77,7 @@ const {
   recordActionAttempt,
   isRepeatAttempt,
 } = require('../../scripts/noop-detect');
+const { recordAuditEvent } = require('../../scripts/audit-trail');
 const {
   recordReceipt,
   getReceiptForAction,

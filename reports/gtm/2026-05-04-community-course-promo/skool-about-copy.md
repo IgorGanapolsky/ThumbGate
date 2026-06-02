@@ -1,15 +1,21 @@
 # Skool About + Pinned Post Copy (Operator Lab)
 
-Updated: 2026-06-01
+Updated: 2026-06-02
 
 Guardrail: do not publish posts, invite members, upload files, or send messages without explicit action-time confirmation.
 
-## Field limits (last known; verify in Skool UI if uncertain)
+## Field limits and discovery notes (last known; verify in Skool UI if uncertain)
 
 - Icon recommended: `128x128` (repo asset: `docs/marketing/assets/thumbgate-skool-icon-128x128.png`)
 - Cover recommended: `1084x576` (repo asset: `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`)
 - Group description (short): `<=150` characters
 - About page description: `<=1000` characters
+
+Skool official help re-verified on 2026-06-02:
+
+- Discovery eligibility still depends on cover image, group description, completed About page, at least one post, and invited members for newer groups.
+- Discovery ranking still emphasizes member growth, engagement, retention, artwork/About quality, and active owner behavior.
+- Skool’s help center does not publish the exact minimum member/post/activity thresholds.
 
 ## About Page (paste-ready)
 

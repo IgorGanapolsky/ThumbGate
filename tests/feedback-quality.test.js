@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 
 const {
   GENERIC_PHRASE_RULES,
+  detectFeedbackSignal,
   isGenericFeedbackText,
   assessFeedbackActionability,
   buildClarificationMessage,
@@ -31,6 +32,15 @@ test('isGenericFeedbackText detects bare negative phrases', () => {
 test('isGenericFeedbackText rejects detailed feedback', () => {
   assert.equal(isGenericFeedbackText('The API call failed because the token expired', 'negative'), false);
   assert.equal(isGenericFeedbackText('Great fix for the race condition in the auth flow', 'positive'), false);
+});
+
+test('detectFeedbackSignal handles typo variants of thumbs feedback', () => {
+  assert.equal(detectFeedbackSignal('thumbss up, evidence was clear').signal, 'up');
+  assert.equal(detectFeedbackSignal('thubs don this skipped verification').signal, 'down');
+  assert.equal(detectFeedbackSignal('thums down: wrong claim').signal, 'down');
+  assert.equal(detectFeedbackSignal('👍 verified before claiming done').signal, 'up');
+  assert.equal(detectFeedbackSignal('👎 claimed published without npm proof').signal, 'down');
+  assert.equal(detectFeedbackSignal('please update the docs'), null);
 });
 
 test('assessFeedbackActionability returns promotable for detailed negative', () => {

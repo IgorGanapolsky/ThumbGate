@@ -3,13 +3,12 @@
 /**
  * install-shim.js — Install a stable shim at ~/.thumbgate/bin/thumbgate-hook
  *
- * The shim is a tiny shell script that always resolves thumbgate@latest,
- * so hook commands in settings.local.json never go stale. This is the
- * Volta-style pattern: a version-agnostic indirection layer that survives
- * across thumbgate upgrades.
+ * The shim is a tiny shell script that resolves the cached ThumbGate runtime
+ * first, so hook commands in settings.local.json stay stable across projects
+ * and agent restarts.
  *
  * The shim checks for a cached runtime binary first (fast path), and falls
- * back to `npx --yes thumbgate@latest` (slow path, self-installs).
+ * back to `npx --yes thumbgate@latest` (slow path, first-time self-install).
  */
 
 const fs = require('fs');
@@ -24,9 +23,10 @@ const RUNTIME_BIN = path.join(os.homedir(), '.thumbgate', 'runtime', 'node_modul
  * The shim script. Key design choices:
  * - Uses `exec` to replace the shell process (no zombie processes)
  * - Fast path: if cached runtime binary exists, exec it directly
- * - Slow path: npx --yes thumbgate@latest (auto-installs)
- * - Background upgrade: after the fast path succeeds once, spawn a
- *   detached npm install to refresh the cache for next time
+ * - Slow path: npx --yes thumbgate@latest (first-time auto-installs)
+ * - No default self-mutation: background upgrades are opt-in via
+ *   THUMBGATE_SHIM_AUTO_UPDATE=1 so source checkouts, enterprise pins, and
+ *   dogfood runtimes cannot be overwritten by a hook side effect.
  */
 function shimContent() {
   const escapedRuntimeBin = JSON.stringify(RUNTIME_BIN);
@@ -35,7 +35,7 @@ function shimContent() {
   return `#!/usr/bin/env bash
 # ThumbGate hook shim — DO NOT EDIT
 # Installed by: thumbgate init
-# Purpose: version-agnostic hook entry point that always runs latest ThumbGate
+# Purpose: stable hook entry point that runs the cached ThumbGate runtime
 # Pattern: Volta-style stable shim (see https://volta.sh)
 
 set -euo pipefail
@@ -45,8 +45,11 @@ RUNTIME_DIR=${escapedRuntimeDir}
 
 # Fast path: cached runtime binary exists and is executable
 if [ -x "$RUNTIME_BIN" ]; then
-  # Spawn background upgrade (detached, no stdout/stderr, won't block hook)
-  ( nohup npm install --prefix "$RUNTIME_DIR" --no-save --omit=dev thumbgate@latest >/dev/null 2>&1 & ) 2>/dev/null || true
+  # Optional background upgrade. Disabled by default so hooks never mutate a
+  # source checkout, enterprise pin, or dogfood runtime behind the operator's back.
+  if [ "\${THUMBGATE_SHIM_AUTO_UPDATE:-0}" = "1" ]; then
+    ( nohup npm install --prefix "$RUNTIME_DIR" --no-save --omit=dev thumbgate@latest >/dev/null 2>&1 & ) 2>/dev/null || true
+  fi
   exec "$RUNTIME_BIN" "$@"
 fi
 
