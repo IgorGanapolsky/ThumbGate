@@ -702,6 +702,7 @@ test('formatOutput returns deny JSON for block result', () => {
     message: 'Test block message',
     severity: 'critical',
   }));
+  assert.equal(output.hookSpecificOutput.hookEventName, 'PreToolUse');
   assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
   assert.ok(output.hookSpecificOutput.permissionDecisionReason.includes('test-gate'));
   assert.ok(output.hookSpecificOutput.permissionDecisionReason.includes('Test block message'));
@@ -714,6 +715,7 @@ test('formatOutput returns additionalContext for warn result', () => {
     message: 'Test warn message',
     severity: 'medium',
   }));
+  assert.equal(output.hookSpecificOutput.hookEventName, 'PreToolUse');
   assert.ok(output.hookSpecificOutput.additionalContext.includes('WARNING'));
   assert.ok(output.hookSpecificOutput.additionalContext.includes('Test warn message'));
 });
@@ -725,6 +727,7 @@ test('formatOutput returns deny with approval message for approve result', () =>
     message: 'Production deploy detected. Human approval required.',
     severity: 'high',
   }));
+  assert.equal(output.hookSpecificOutput.hookEventName, 'PreToolUse');
   assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
   assert.ok(output.hookSpecificOutput.permissionDecisionReason.includes('APPROVAL REQUIRED'));
   assert.ok(output.hookSpecificOutput.permissionDecisionReason.includes('Ask the human'));
@@ -757,6 +760,21 @@ test('approval gates fire as approve by default (toggle on)', () => {
   }
 });
 
+test('permission-change approval allows safe local credential chmod hardening', () => {
+  cleanupStateFiles();
+  const result = evaluateGates('Bash', { command: 'chmod 600 ~/.config/gemini/key.json' });
+  assert.equal(result, null);
+  cleanupStateFiles();
+});
+
+test('permission-change approval still catches unsafe chmod commands', () => {
+  cleanupStateFiles();
+  const result = evaluateGates('Bash', { command: 'chmod 777 ~/.config/gemini/key.json' });
+  assert.equal(result.decision, 'approve');
+  assert.equal(result.gate, 'permission-change-approval');
+  cleanupStateFiles();
+});
+
 test('isApprovalGatesEnabled returns true by default', () => {
   const { isApprovalGatesEnabled } = require('../scripts/gates-engine');
   const saved = process.env.THUMBGATE_APPROVAL_GATES;
@@ -771,6 +789,7 @@ test('isApprovalGatesEnabled returns true by default', () => {
 
 test('formatOutput surfaces reminder payloads when context is injected', () => {
   const output = JSON.parse(formatOutput(null, '[ThumbGate] lesson reminder'));
+  assert.equal(output.hookSpecificOutput.hookEventName, 'PreToolUse');
   assert.equal(output.hookSpecificOutput.additionalContext, '[ThumbGate] lesson reminder');
   assert.equal(output.hookSpecificOutput.systemReminder, '[ThumbGate] lesson reminder');
   assert.equal(output.hookSpecificOutput.thumbgateSystemReminder, '[ThumbGate] lesson reminder');
@@ -779,6 +798,88 @@ test('formatOutput surfaces reminder payloads when context is injected', () => {
 test('formatOutput returns empty object for null result', () => {
   const output = JSON.parse(formatOutput(null));
   assert.deepEqual(output, {});
+});
+
+async function withConflictingLessonRetrieval(fn) {
+  const retrieval = require('../scripts/lesson-retrieval');
+  const originalRetrieve = retrieval.retrieveRelevantLessons;
+  const originalRetrieveAsync = retrieval.retrieveRelevantLessonsAsync;
+  const originalEntropy = retrieval.calculateRetrievalEntropy;
+  const lessons = [
+    {
+      id: 'positive-lesson',
+      title: 'ALLOW: Gemini key setup worked',
+      content: 'Past successful setup allowed package install and chmod for Gemini credentials.',
+      signal: 'positive',
+      relevanceScore: 1,
+    },
+    {
+      id: 'negative-lesson',
+      title: 'MISTAKE: unrelated Upwork workflow failed',
+      content: 'How to avoid: do not apply Upwork-specific memory to unrelated setup commands.',
+      signal: 'negative',
+      relevanceScore: 1,
+    },
+  ];
+
+  retrieval.retrieveRelevantLessons = () => lessons;
+  retrieval.retrieveRelevantLessonsAsync = async () => lessons;
+  retrieval.calculateRetrievalEntropy = () => 1;
+  try {
+    return await fn();
+  } finally {
+    retrieval.retrieveRelevantLessons = originalRetrieve;
+    retrieval.retrieveRelevantLessonsAsync = originalRetrieveAsync;
+    retrieval.calculateRetrievalEntropy = originalEntropy;
+  }
+}
+
+test('knowledge conflict warns instead of hard-blocking safe credential chmod', async () => {
+  cleanupStateFiles();
+  await withConflictingLessonRetrieval(() => {
+    const output = JSON.parse(run({
+      tool_name: 'Bash',
+      tool_input: { command: 'chmod 600 ~/.config/gemini/key.json' },
+    }));
+    assert.notEqual(output.hookSpecificOutput.permissionDecision, 'deny');
+    assert.match(output.hookSpecificOutput.additionalContext, /Knowledge conflict warning/);
+    assert.match(output.hookSpecificOutput.additionalContext, /do not stop unrelated work solely because memory is noisy/);
+  });
+  cleanupStateFiles();
+});
+
+test('knowledge conflict warns instead of hard-blocking package setup', async () => {
+  cleanupStateFiles();
+  await withConflictingLessonRetrieval(async () => {
+    const output = JSON.parse(await runAsync({
+      tool_name: 'Bash',
+      tool_input: { command: 'pip install paperbanana' },
+    }));
+    assert.notEqual(output.hookSpecificOutput.permissionDecision, 'deny');
+    assert.match(output.hookSpecificOutput.additionalContext, /Knowledge conflict warning/);
+  });
+  cleanupStateFiles();
+});
+
+test('strict knowledge conflict mode can still block external destructive side effects', async () => {
+  const saved = process.env.THUMBGATE_STRICT_KNOWLEDGE_CONFLICT;
+  process.env.THUMBGATE_STRICT_KNOWLEDGE_CONFLICT = '1';
+  cleanupStateFiles();
+  try {
+    await withConflictingLessonRetrieval(() => {
+      const output = JSON.parse(run({
+        tool_name: 'Bash',
+        tool_input: { command: 'terraform destroy -auto-approve' },
+      }));
+      assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
+      assert.match(output.hookSpecificOutput.permissionDecisionReason, /knowledge-conflict-gate/);
+      assert.match(output.hookSpecificOutput.permissionDecisionReason, /Strict mode is enabled/);
+    });
+  } finally {
+    if (saved === undefined) delete process.env.THUMBGATE_STRICT_KNOWLEDGE_CONFLICT;
+    else process.env.THUMBGATE_STRICT_KNOWLEDGE_CONFLICT = saved;
+    cleanupStateFiles();
+  }
 });
 
 // ---------------------------------------------------------------------------
