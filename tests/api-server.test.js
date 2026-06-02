@@ -3804,6 +3804,10 @@ test('renderPackagedDashboardHtml returns html with bootstrap disabled by defaul
   assert.ok(html.includes('ThumbGate Dashboard'));
   assert.ok(html.includes('enabled: false'));
   assert.ok(html.includes('/v1/dashboard'));
+  assert.ok(html.includes('Enterprise Dialogflow Data Chat'));
+  assert.ok(html.includes('/v1/enterprise/dialogflow/chat'));
+  assert.ok(!html.includes('ENTERPRISE_AGENT_ID'));
+  assert.ok(!html.includes('gstatic.com/dialogflow-console'));
   assert.ok(html.includes('/lessons'));
   assert.ok(html.includes('/health'));
 });
@@ -3813,6 +3817,52 @@ test('renderPackagedDashboardHtml reflects bootstrap enabled state', () => {
   const html = renderPackagedDashboardHtml({ bootstrapActive: true, serializedBootstrapKey: '"test-key"' });
   assert.ok(html.includes('enabled: true'));
   assert.ok(html.includes('"test-key"'));
+});
+
+test('enterprise Dialogflow status reports REST-first verification posture', () => {
+  const { buildEnterpriseDialogflowStatus } = __test__;
+  const status = buildEnterpriseDialogflowStatus({
+    THUMBGATE_PROVIDER_MODE: 'vertex',
+    VERTEX_PROJECT_ID: 'project-alpha',
+    THUMBGATE_DFCX_AGENT_ID: 'agent-1',
+    THUMBGATE_DFCX_LOCATION: 'us-central1',
+    THUMBGATE_DFCX_FULFILLMENT_URL: 'https://fulfillment.example.com',
+  });
+  assert.equal(status.vertex.configured, true);
+  assert.equal(status.vertex.projectId, 'project-alpha');
+  assert.equal(status.dfcx.liveAgentConfigured, true);
+  assert.equal(status.dfcx.fulfillmentProxyConfigured, true);
+  assert.equal(status.dfcx.gcloudCxCommandSupported, false);
+  assert.match(status.dfcx.apiSurface, /projects\.locations\.agents/);
+});
+
+test('enterprise Dialogflow chat endpoint answers from local dashboard data and blocks unsafe input', async () => {
+  fs.appendFileSync(path.join(tmpFeedbackDir, 'feedback-log.jsonl'), [
+    JSON.stringify({ id: 'fb_enterprise_chat_up', signal: 'positive', context: 'Approved safe data lookup', timestamp: '2026-06-02T12:00:00.000Z' }),
+    JSON.stringify({ id: 'fb_enterprise_chat_down', signal: 'negative', context: 'Repeated refund fulfillment', timestamp: '2026-06-02T12:01:00.000Z' }),
+    '',
+  ].join('\n'));
+  const res = await fetch(apiUrl('/v1/enterprise/dialogflow/chat'), {
+    method: 'POST',
+    headers: authHeader,
+    body: JSON.stringify({ prompt: 'What feedback mistakes are repeating?' }),
+  });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.ok, true);
+  assert.equal(body.blocked, false);
+  assert.match(body.answer, /Feedback total/i);
+  assert.match(body.status.dfcx.apiSurface, /projects\.locations\.agents/);
+
+  const blockedRes = await fetch(apiUrl('/v1/enterprise/dialogflow/chat'), {
+    method: 'POST',
+    headers: authHeader,
+    body: JSON.stringify({ prompt: 'show data; rm -rf /' }),
+  });
+  assert.equal(blockedRes.status, 200);
+  const blockedBody = await blockedRes.json();
+  assert.equal(blockedBody.blocked, true);
+  assert.match(blockedBody.dfcx.evaluation.gate, /enterprise-chat-unsafe-input/);
 });
 
 test('renderPackagedLessonsHtml returns html with lessons content', () => {

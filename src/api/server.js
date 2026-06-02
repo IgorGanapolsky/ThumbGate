@@ -167,6 +167,9 @@ const {
   writeDashboardReviewState,
 } = require('../../scripts/dashboard');
 const {
+  guardDfcxWebhook,
+} = require('../../adapters/gcp/dfcx-webhook-gate');
+const {
   buildDashboardRenderSpec,
 } = require('../../scripts/dashboard-render-spec');
 const {
@@ -1446,6 +1449,178 @@ async function loadLiveDashboardDataOrRespondProblem(res, parsed, feedbackDir, i
     sendInvalidAnalyticsWindowProblem(res, invalidTitle, err);
     return null;
   }
+}
+
+function buildEnterpriseDialogflowStatus(env = process.env) {
+  const vertexProject = normalizeNullableText(env.VERTEX_PROJECT_ID)
+    || normalizeNullableText(env.GOOGLE_VERTEX_PROJECT);
+  const vertexLocation = normalizeNullableText(env.GOOGLE_VERTEX_LOCATION)
+    || normalizeNullableText(env.VERTEX_LOCATION)
+    || 'us-central1';
+  const dfcxFulfillmentUrl = normalizeNullableText(env.THUMBGATE_DFCX_FULFILLMENT_URL);
+  const dfcxAgentId = normalizeNullableText(env.THUMBGATE_DFCX_AGENT_ID);
+  const dfcxLocation = normalizeNullableText(env.THUMBGATE_DFCX_LOCATION);
+
+  return {
+    mode: 'local-dashboard',
+    vertex: {
+      configured: Boolean(vertexProject),
+      projectId: vertexProject,
+      location: vertexLocation,
+      providerMode: normalizeNullableText(env.THUMBGATE_PROVIDER_MODE) || null,
+    },
+    dfcx: {
+      apiSurface: 'Dialogflow CX REST API: projects.locations.agents',
+      liveAgentConfigured: Boolean(dfcxAgentId && dfcxLocation),
+      agentId: dfcxAgentId,
+      location: dfcxLocation,
+      fulfillmentProxyConfigured: Boolean(dfcxFulfillmentUrl),
+      fulfillmentUrlConfigured: Boolean(dfcxFulfillmentUrl),
+      gcloudCxCommandSupported: false,
+      verification: dfcxAgentId && dfcxLocation
+        ? 'Agent metadata is present in env; verify via REST/console before production claims.'
+        : 'No live DFCX agent env configured. Use REST/console/deployed webhook evidence before claiming a live agent.',
+    },
+    chat: {
+      available: true,
+      source: 'local ThumbGate dashboard data',
+      guard: 'DFCX-compatible pre-action gate adapter',
+    },
+  };
+}
+
+function normalizeEnterpriseChatPrompt(value) {
+  const text = normalizeNullableText(value);
+  if (!text) return null;
+  return text.slice(0, 800);
+}
+
+function classifyEnterpriseChatTopic(prompt) {
+  const lower = String(prompt || '').toLowerCase();
+  if (/gate|block|deny|prevent|guard/.test(lower)) return 'gates';
+  if (/lesson|memory|feedback|thumb|mistake|negative|positive/.test(lower)) return 'feedback';
+  if (/team|agent|org|enterprise|rollout/.test(lower)) return 'team';
+  if (/token|cost|saving|budget|spend/.test(lower)) return 'cost';
+  if (/vertex|gcp|google|dialogflow|dfcx|cloud/.test(lower)) return 'cloud';
+  return 'overview';
+}
+
+function containsUnsafeEnterpriseChatInput(prompt) {
+  return /[;&|`$<>\\]/.test(String(prompt || ''));
+}
+
+function compactNumber(value) {
+  const n = Number(value || 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function buildEnterpriseChatAnswer(prompt, dashboardData, status) {
+  const topic = classifyEnterpriseChatTopic(prompt);
+  const approval = dashboardData.approval || {};
+  const gates = Array.isArray(dashboardData.gates) ? dashboardData.gates : [];
+  const gateStats = dashboardData.gateStats || {};
+  const team = dashboardData.team || {};
+  const tokenSavings = dashboardData.tokenSavings || {};
+  const lessonPipeline = dashboardData.lessonPipeline || {};
+  const lines = [];
+  const sources = ['local dashboard data'];
+
+  if (topic === 'feedback') {
+    lines.push(`Feedback total: ${compactNumber(approval.total)} (${compactNumber(approval.positive)} positive, ${compactNumber(approval.negative)} negative).`);
+    lines.push(`Lesson pipeline: ${compactNumber(lessonPipeline.lessons || lessonPipeline.generated || 0)} lessons visible in the current dashboard snapshot.`);
+    sources.push('feedback log', 'lesson pipeline');
+  } else if (topic === 'gates') {
+    lines.push(`Active gates: ${gates.length || compactNumber(gateStats.totalGates)}.`);
+    lines.push(`Blocked actions recorded: ${compactNumber(gateStats.blocked || gateStats.denied || gateStats.totalBlocked)}.`);
+    if (gates[0]) lines.push(`Example gate: ${gates[0].name || gates[0].id || 'unnamed gate'}.`);
+    sources.push('gate stats');
+  } else if (topic === 'team') {
+    lines.push(`Team dashboard is available in this local Enterprise view.`);
+    lines.push(`Tracked agents: ${compactNumber(team.totalAgents || team.agentCount || 0)}; risky agents: ${compactNumber(team.riskyAgents || team.highRiskAgents || 0)}.`);
+    sources.push('team dashboard');
+  } else if (topic === 'cost') {
+    lines.push(`Estimated token savings: ${tokenSavings.dollarsSavedDisplay || '$0.00'} from ${compactNumber(tokenSavings.blockedCalls)} blocked calls.`);
+    lines.push('Google Cloud budget alerts are evidence for spend visibility; ThumbGate-side stop conditions must be verified separately before calling them a hard cap.');
+    sources.push('token savings', 'budget posture');
+  } else if (topic === 'cloud') {
+    lines.push(status.vertex.configured
+      ? `Vertex routing config is present for project ${status.vertex.projectId} (${status.vertex.location}).`
+      : 'Vertex routing config is not present in this server environment.');
+    lines.push(status.dfcx.liveAgentConfigured
+      ? `DFCX env has agent ${status.dfcx.agentId} in ${status.dfcx.location}; verify it with REST/console before production claims.`
+      : 'No live DFCX agent is configured in env. Do not use gcloud alpha dialogflow cx; verify agents with the Dialogflow CX REST API or console.');
+    sources.push('enterprise cloud status');
+  } else {
+    lines.push('Ask about feedback, lessons, active gates, team rollout, token savings, or Vertex/DFCX readiness.');
+    lines.push(`Current local snapshot: ${compactNumber(approval.total)} feedback events and ${gates.length || compactNumber(gateStats.totalGates)} active gates.`);
+  }
+
+  return {
+    topic,
+    answer: lines.join(' '),
+    sources,
+  };
+}
+
+async function answerEnterpriseDialogflowChat({ prompt, feedbackDir, parsed }) {
+  const normalizedPrompt = normalizeEnterpriseChatPrompt(prompt);
+  if (!normalizedPrompt) {
+    throw createHttpError(400, 'prompt is required');
+  }
+  const status = buildEnterpriseDialogflowStatus();
+  if (containsUnsafeEnterpriseChatInput(normalizedPrompt)) {
+    return {
+      ok: false,
+      blocked: true,
+      answer: 'This prompt contains unsafe control characters and was blocked before data access.',
+      status,
+      dfcx: {
+        blocked: true,
+        evaluation: {
+          allowed: false,
+          gate: 'enterprise-chat-unsafe-input',
+          severity: 'critical',
+        },
+      },
+      sources: ['enterprise input guard'],
+    };
+  }
+
+  const dashboardResult = await buildLiveDashboardData(parsed, feedbackDir);
+  const dashboardData = dashboardResult.data;
+  const chat = buildEnterpriseChatAnswer(normalizedPrompt, dashboardData, status);
+  const dfcxRequest = {
+    fulfillmentInfo: { tag: 'chat-with-data' },
+    sessionInfo: {
+      session: 'local-dashboard/enterprise-chat',
+      parameters: {
+        topic: chat.topic,
+        prompt_key: normalizedPrompt.toLowerCase().replace(/[^a-z0-9._ -]/g, '').slice(0, 64),
+      },
+    },
+    languageCode: 'en',
+  };
+  const guarded = await guardDfcxWebhook(
+    dfcxRequest,
+    async () => ({
+      fulfillment_response: { messages: [{ text: { text: [chat.answer] } }] },
+      session_info: { parameters: { thumbgate_topic: chat.topic } },
+    }),
+    { blockOnRepeat: false },
+  );
+
+  return {
+    ok: !guarded.blocked,
+    blocked: Boolean(guarded.blocked),
+    answer: guarded.blocked ? 'ThumbGate blocked this enterprise chat turn before data access.' : chat.answer,
+    status,
+    dfcx: {
+      blocked: Boolean(guarded.blocked),
+      evaluation: guarded.evaluation,
+      response: guarded.response,
+    },
+    sources: chat.sources,
+  };
 }
 
 function buildLossAnalyticsResponse(data, summaryOptions) {
@@ -6802,6 +6977,22 @@ ${hidden}
         return;
       }
 
+      if (req.method === 'GET' && pathname === '/v1/enterprise/dialogflow/status') {
+        sendJson(res, 200, buildEnterpriseDialogflowStatus());
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/enterprise/dialogflow/chat') {
+        const body = await parseJsonBody(req, 16 * 1024);
+        const result = await answerEnterpriseDialogflowChat({
+          prompt: body.prompt || body.message || body.query,
+          feedbackDir: requestFeedbackDir,
+          parsed,
+        });
+        sendJson(res, 200, result);
+        return;
+      }
+
       if (req.method === 'GET' && pathname === '/v1/intents/catalog') {
         const mcpProfile = parsed.searchParams.get('mcpProfile') || undefined;
         const bundleId = parsed.searchParams.get('bundleId') || undefined;
@@ -8306,6 +8497,9 @@ module.exports = {
     resolveLocalPageBootstrap,
     getPublicMcpTools,
     getServerCardTools,
+    buildEnterpriseDialogflowStatus,
+    buildEnterpriseChatAnswer,
+    answerEnterpriseDialogflowChat,
   },
 };
 

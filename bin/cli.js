@@ -2408,6 +2408,11 @@ function optimize() {
   doOptimize();
 }
 
+function syncGcp() {
+  const { syncToGcp } = require(path.join(PKG_ROOT, 'adapters', 'gcp', 'sync.js'));
+  syncToGcp();
+}
+
 function cleanup() {
   console.log('Cleaning up ThumbGate processes...');
   try {
@@ -3120,6 +3125,9 @@ switch (COMMAND) {
     break;
   case 'cleanup':
     cleanup();
+    break;
+  case 'sync-gcp':
+    syncGcp();
     break;
   case 'gate-check':
     gateCheck().catch((err) => {

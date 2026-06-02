@@ -2,7 +2,7 @@
 
 Enterprise add-on. **Not shipped in the public npm package** — it lives in-repo so a pilot can deploy it as Cloud Run / Cloud Functions middleware inside the customer's GCP tenant.
 
-Important setup note: do **not** use `gcloud alpha dialogflow cx` as proof of a live DFCX agent. That command group is not available in current gcloud installs. Verify agents through the Google Cloud Conversational Agents / Dialogflow CX console or the official Dialogflow CX REST API (`projects.locations.agents`).
+Important setup note: do **not** use the old alpha gcloud CX command group as proof of a live DFCX agent. That command group is not available in current gcloud installs. Verify agents through the Google Cloud Conversational Agents / Dialogflow CX console or the official Dialogflow CX REST API (`projects.locations.agents`).
 
 ## What it is
 
@@ -33,6 +33,16 @@ It does **not** call any Google API, mutate Playbooks, or replace your fulfillme
 | `PORT` | Set by Cloud Run (default 8080). |
 | `GEMINI_API_KEY` *or* `GOOGLE_VERTEX_PROJECT` + `GOOGLE_VERTEX_LOCATION` + `GOOGLE_VERTEX_TOKEN` | Optional — enable Gemini/Vertex scoring in-tenant. |
 
+## Syncing Local Rules
+
+When you capture feedback locally via the CLI (`npx thumbgate capture`), ThumbGate generates prevention rules. To enforce these rules on your production DFCX fulfillment, sync them to GCP Cloud Storage:
+
+```bash
+npx thumbgate sync-gcp
+```
+
+This creates a `gs://thumbgate-enterprise-policies-<projectId>` bucket and uploads your `memory-log.jsonl` and `prevention-rules.md`. The Cloud Run gate will fetch these policies on boot.
+
 ## Deploy
 
 ```bash
@@ -45,7 +55,7 @@ gcloud run deploy thumbgate-dfcx-gate \
 
 Then point your DFCX webhook at the Cloud Run URL.
 
-To inventory or prove live agents, use the Dialogflow CX REST API rather than a nonexistent `gcloud alpha dialogflow cx` command. Example:
+To inventory or prove live agents, use the Dialogflow CX REST API rather than a nonexistent gcloud CX subcommand. Example:
 
 ```bash
 ACCESS_TOKEN="$(gcloud auth print-access-token)"

@@ -541,7 +541,7 @@ npx thumbgate setup-vertex
 * **Auto-Enablement:** Programmatically enables the Vertex AI API in your project.
 * **Auto-Configuration:** Writes local Vertex routing settings to your `.env` file.
 
-This command does **not** create or verify a live Dialogflow CX agent. On current Google Cloud CLI installs, `gcloud alpha dialogflow cx` is not a valid command group; verify Conversational Agents / Dialogflow CX with the Google Cloud console or the official Dialogflow CX REST API (`projects.locations.agents`) before claiming a live DFCX deployment.
+This command does **not** create or verify a live Dialogflow CX agent. On current Google Cloud CLI installs, the old alpha gcloud CX command group is not available; verify Conversational Agents / Dialogflow CX with the Google Cloud console or the official Dialogflow CX REST API (`projects.locations.agents`) before claiming a live DFCX deployment.
 
 ### Zero-Friction Cost Containment ($10/mo Hard Cap)
 Google Cloud budget alerts are "alert-only" and do not stop API traffic, risking unexpected bill shock. ThumbGate completely resolves this on the client side:

@@ -11,7 +11,6 @@
 <meta name="robots" content="noindex">
 <!-- Privacy-friendly analytics by Plausible -->
 <script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
-<script src="https://www.gstatic.com/dialogflow-console/fast/messenger/bootstrap.js?v=1"></script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -190,11 +189,18 @@
   .settings-card .team-value, .origin-value { font-size: 18px; font-weight: 700; color: var(--text); margin-top: 8px; word-break: break-word; }
   .origin-list, .layer-list, .routing-list { display: flex; flex-direction: column; gap: 12px; }
   .origin-note, .layer-note, .routing-note { font-size: 13px; color: var(--text-muted); line-height: 1.55; }
+  .enterprise-chat-layout { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr); gap: 16px; align-items: start; }
+  .enterprise-chat-box { min-height: 110px; resize: vertical; width: 100%; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; color: var(--text); font-size: 14px; font-family: var(--font); line-height: 1.5; }
+  .enterprise-chat-box:focus { outline: none; border-color: var(--cyan); }
+  .enterprise-answer { margin-top: 14px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 16px; min-height: 92px; font-size: 14px; color: var(--text); line-height: 1.65; }
+  .enterprise-answer.blocked { border-color: rgba(248,113,113,0.45); background: rgba(248,113,113,0.07); }
+  .enterprise-source-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .enterprise-source { font-size: 11px; border: 1px solid var(--border); border-radius: 999px; padding: 4px 9px; color: var(--text-muted); background: var(--bg-card); }
 
   @media (max-width: 700px) {
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
     .search-filters { flex-wrap: wrap; }
-    .team-grid, .template-grid, .team-columns, .settings-grid, .generated-grid, .inventory-grid { grid-template-columns: 1fr; }
+    .team-grid, .template-grid, .team-columns, .settings-grid, .generated-grid, .inventory-grid, .enterprise-chat-layout { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -285,6 +291,7 @@
     <div class="tab active" onclick="switchTab('search')">🔍 Search Memories</div>
     <div class="tab" onclick="switchTab('gates')">🛡️ Active Gates</div>
     <div class="tab" onclick="switchTab('team')">👥 Team</div>
+    <div class="tab" onclick="switchTab('enterprise')">🏢 Enterprise Chat</div>
     <div class="tab" onclick="switchTab('generated')">🧩 Generated Views</div>
     <div class="tab" onclick="switchTab('settings')">⚙️ Policy Origins</div>
     <div class="tab" onclick="switchTab('templates')">🧱 Gate Templates</div>
@@ -383,6 +390,33 @@
             <h3>Latest Replay Artifacts</h3>
             <div class="inventory-sources" id="regulatedProofArtifacts"><div class="loading">Loading replay artifacts...</div></div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ENTERPRISE CHAT TAB -->
+  <div class="tab-content" id="tab-enterprise">
+    <div class="templates-section">
+      <h2>Enterprise Dialogflow Data Chat</h2>
+      <p class="template-summary">Ask questions over local ThumbGate feedback, lessons, gates, team posture, and Vertex/DFCX readiness. This local panel uses ThumbGate's DFCX-compatible guard before data access; it does not claim a live Google Dialogflow CX agent unless deployment evidence is configured.</p>
+      <div class="enterprise-chat-layout">
+        <div class="panel">
+          <h3>Chat With Local ThumbGate Data</h3>
+          <textarea class="enterprise-chat-box" id="enterpriseChatPrompt" placeholder="Ask: What mistakes are recurring? Which gates blocked the most? Is Vertex configured? What is our DFCX readiness?"></textarea>
+          <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap;">
+            <button class="btn" id="enterpriseChatBtn" onclick="sendEnterpriseChat()">Ask ThumbGate</button>
+            <button class="btn-outline" onclick="setEnterprisePrompt('Which gates are blocking risky actions?')">Gates</button>
+            <button class="btn-outline" onclick="setEnterprisePrompt('What feedback mistakes keep repeating?')">Feedback</button>
+            <button class="btn-outline" onclick="setEnterprisePrompt('Is Vertex and DFCX configured?')">Cloud</button>
+          </div>
+          <div class="enterprise-answer" id="enterpriseChatAnswer">Connect your dashboard, then ask about local ThumbGate data.</div>
+          <div class="enterprise-source-list" id="enterpriseChatSources"></div>
+        </div>
+        <div class="panel">
+          <h3>Enterprise Readiness</h3>
+          <div class="inventory-tools" id="enterpriseStatusCards"><div class="loading">Loading enterprise status...</div></div>
+          <div class="template-summary" style="margin-top:14px;margin-bottom:0;">Live DFCX proof must come from the Conversational Agents console, deployed webhook URL, Cloud Run logs, or the Dialogflow CX REST API <code style="font-family:var(--mono);font-size:12px;">projects.locations.agents</code>.</div>
         </div>
       </div>
     </div>
@@ -1079,6 +1113,7 @@ function renderDashboardData(data) {
   renderRegulatedProof(data.regulatedProof || {});
   renderTemplates(data.templateLibrary || {});
   renderInsights(data);
+  loadEnterpriseDialogflowStatus();
 }
 
 function renderGeneratedViewToolbar(spec) {
@@ -1516,6 +1551,83 @@ function renderTemplates(templateLibrary) {
       '</div>';
     }).join('')
     : '<div class="empty">No check templates available</div>';
+}
+
+function renderEnterpriseStatus(status) {
+  var target = document.getElementById('enterpriseStatusCards');
+  if (!target) return;
+  var vertex = status && status.vertex ? status.vertex : {};
+  var dfcx = status && status.dfcx ? status.dfcx : {};
+  var rows = [
+    { name: 'Vertex routing', value: vertex.configured ? 'Configured' : 'Not configured', note: vertex.projectId ? ('Project: ' + vertex.projectId + ' · ' + (vertex.location || '')) : 'Run setup-vertex or set GOOGLE_VERTEX_PROJECT.' },
+    { name: 'DFCX live agent', value: dfcx.liveAgentConfigured ? 'Env present' : 'Not proven', note: dfcx.verification || 'Verify with REST/console evidence.' },
+    { name: 'Fulfillment proxy', value: dfcx.fulfillmentProxyConfigured ? 'Configured' : 'Not configured', note: 'Set THUMBGATE_DFCX_FULFILLMENT_URL for a deployed proxy.' },
+    { name: 'gcloud CX command', value: 'Unsupported', note: 'Do not use the old alpha gcloud CX command group; use REST API or console.' }
+  ];
+  target.innerHTML = rows.map(function(row) {
+    return '<div class="inventory-row"><div><div class="inventory-name">' + escHtml(row.name) + '</div><div class="inventory-subtitle">' + escHtml(row.note) + '</div></div><span class="remediation-action">' + escHtml(row.value) + '</span></div>';
+  }).join('');
+}
+
+async function loadEnterpriseDialogflowStatus() {
+  if (!API_KEY || isDemo) {
+    renderEnterpriseStatus({ vertex: {}, dfcx: { verification: 'Connect to load local status.' } });
+    return;
+  }
+  try {
+    var res = await fetch('/v1/enterprise/dialogflow/status', { headers: getHeaders() });
+    if (!res.ok) throw new Error('status unavailable');
+    renderEnterpriseStatus(await res.json());
+  } catch (err) {
+    var target = document.getElementById('enterpriseStatusCards');
+    if (target) target.innerHTML = '<div class="empty">Enterprise status unavailable.</div>';
+  }
+}
+
+function setEnterprisePrompt(prompt) {
+  var input = document.getElementById('enterpriseChatPrompt');
+  if (input) input.value = prompt;
+}
+
+async function sendEnterpriseChat() {
+  var input = document.getElementById('enterpriseChatPrompt');
+  var answer = document.getElementById('enterpriseChatAnswer');
+  var sources = document.getElementById('enterpriseChatSources');
+  var button = document.getElementById('enterpriseChatBtn');
+  var prompt = input ? input.value.trim() : '';
+  if (!prompt) {
+    answer.textContent = 'Ask a question first.';
+    return;
+  }
+  if (!API_KEY) {
+    answer.textContent = 'Connect your dashboard before using Enterprise Chat.';
+    return;
+  }
+  button.disabled = true;
+  answer.className = 'enterprise-answer';
+  answer.textContent = 'Running the DFCX guard and reading local dashboard data...';
+  sources.innerHTML = '';
+  try {
+    var res = await fetch('/v1/enterprise/dialogflow/chat', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ prompt: prompt })
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.detail || data.error || 'chat failed');
+    answer.className = 'enterprise-answer' + (data.blocked ? ' blocked' : '');
+    answer.textContent = data.answer || 'No answer returned.';
+    var list = Array.isArray(data.sources) ? data.sources : [];
+    sources.innerHTML = list.map(function(source) {
+      return '<span class="enterprise-source">' + escHtml(source) + '</span>';
+    }).join('');
+    renderEnterpriseStatus(data.status || {});
+  } catch (err) {
+    answer.className = 'enterprise-answer blocked';
+    answer.textContent = err.message || 'Enterprise chat failed.';
+  } finally {
+    button.disabled = false;
+  }
 }
 
 document.addEventListener('click', function(event) {
@@ -2104,13 +2216,4 @@ function renderGateAuditChartFromData(gateAudit) {
 }
 </script>
 </body>
-<df-messenger
-  project-id="random-timer-dist-new"
-  agent-id="ENTERPRISE_AGENT_ID"
-  language-code="en"
-  max-query-length="-1">
-  <df-messenger-chat-bubble
-   chat-title="ThumbGate Enterprise Chat">
-  </df-messenger-chat-bubble>
-</df-messenger>
 </html>

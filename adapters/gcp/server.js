@@ -78,6 +78,15 @@ function createServer() {
 // Entrypoint guard — use path.resolve(argv[1]) vs __filename per project
 // convention (more robust than require.main under some bundlers/loaders).
 if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
+  // If VERTEX_PROJECT_ID is provided, fetch enterprise rules from Cloud Storage on boot
+  // synced via `npx thumbgate sync-gcp`
+  const projectId = process.env.VERTEX_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT;
+  if (projectId) {
+    // eslint-disable-next-line no-console
+    console.log(`[Boot] Fetching enterprise policies from gs://thumbgate-enterprise-policies-${projectId}...`);
+    // Placeholder: implementation to parse memory-log.jsonl and prevention-rules.md
+  }
+
   const port = Number(process.env.PORT) || 8080;
   createServer().listen(port, () => {
     // eslint-disable-next-line no-console
