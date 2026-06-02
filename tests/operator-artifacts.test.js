@@ -99,6 +99,44 @@ test('revenue artifact formats structured top traffic channel labels', () => {
   assert.match(artifact.sections.flatMap((section) => section.bullets).join('\n'), /organic \(5\)/);
 });
 
+test('revenue artifact formats array and SEO fallback traffic channels', () => {
+  const arrayArtifact = buildRevenuePulseArtifact({
+    now: NOW,
+    dashboardData: {
+      analytics: {
+        funnel: {
+          visitors: 2,
+          topTrafficChannel: ['partner', 2],
+        },
+        revenue: {
+          paidOrders: 0,
+          bookedRevenueCents: 0,
+        },
+      },
+    },
+  });
+  const seoFallbackArtifact = buildRevenuePulseArtifact({
+    now: NOW,
+    dashboardData: {
+      analytics: {
+        funnel: {
+          visitors: 1,
+        },
+        revenue: {
+          paidOrders: 0,
+          bookedRevenueCents: 0,
+        },
+        seo: {
+          topSurface: { key: 'docs', count: 1 },
+        },
+      },
+    },
+  });
+
+  assert.match(arrayArtifact.decision.nextActions.join('\n'), /partner: 2/);
+  assert.match(seoFallbackArtifact.decision.nextActions.join('\n'), /docs \(1\)/);
+});
+
 test('PR artifact classifies ready, blocked, pending, and draft PRs', async () => {
   const artifact = await buildPrPulseArtifact({
     now: NOW,
