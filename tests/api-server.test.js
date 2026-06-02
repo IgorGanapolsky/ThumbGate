@@ -3738,6 +3738,42 @@ test('dashboard review-state endpoint persists a checkpoint and returns zero del
   assert.match(getBody.reviewDelta.latestFeedback.title, /New issue after review checkpoint/i);
 });
 
+test('dashboard chat endpoint degrades cleanly when Gemini is not configured', async () => {
+  const savedGeminiApiKey = process.env.GEMINI_API_KEY;
+  const savedThumbGateGeminiApiKey = process.env.THUMBGATE_GEMINI_API_KEY;
+  delete process.env.GEMINI_API_KEY;
+  delete process.env.THUMBGATE_GEMINI_API_KEY;
+  fs.appendFileSync(path.join(tmpFeedbackDir, 'feedback-log.jsonl'), [
+    JSON.stringify({
+      id: 'fb_dashboard_chat_1',
+      signal: 'negative',
+      context: 'Dashboard review button failed to fetch before server restart',
+      timestamp: '2026-06-02T13:00:00.000Z',
+    }),
+    '',
+  ].join('\n'));
+
+  try {
+    const res = await fetch(apiUrl('/v1/chat'), {
+      method: 'POST',
+      headers: authHeader,
+      body: JSON.stringify({ question: 'What dashboard mistakes should we avoid?' }),
+    });
+
+    assert.equal(res.status, 503);
+    const body = await res.json();
+    assert.equal(body.ok, false);
+    assert.equal(body.error, 'no_api_key');
+    assert.match(body.message, /GEMINI_API_KEY/);
+    assert.ok(Array.isArray(body.sources));
+  } finally {
+    if (savedGeminiApiKey === undefined) delete process.env.GEMINI_API_KEY;
+    else process.env.GEMINI_API_KEY = savedGeminiApiKey;
+    if (savedThumbGateGeminiApiKey === undefined) delete process.env.THUMBGATE_GEMINI_API_KEY;
+    else process.env.THUMBGATE_GEMINI_API_KEY = savedThumbGateGeminiApiKey;
+  }
+});
+
 test('billing summary includes Stripe-reconciled revenue when live processor events are available', async () => {
   process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON = JSON.stringify([
     {

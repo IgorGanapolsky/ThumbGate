@@ -6923,6 +6923,20 @@ ${hidden}
         return;
       }
 
+      // Chat with your data — RAG over this install's captured lessons, answered
+      // by Gemini grounded only in the retrieved context. Powers the dashboard
+      // "Chat with your data" panel.
+      if (req.method === 'POST' && pathname === '/v1/chat') {
+        const body = await parseJsonBody(req);
+        const { answerDataQuestion } = require('../../scripts/dashboard-chat');
+        const result = await answerDataQuestion(body.question || body.q || body.message, {
+          feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
+          model: typeof body.model === 'string' ? body.model : undefined,
+        });
+        sendJson(res, result.ok ? 200 : (result.error === 'no_api_key' ? 503 : 400), result);
+        return;
+      }
+
       // Server-Sent Events stream of live feedback / rule-regen / gate events.
       // Dashboard clients subscribe once (with the same Bearer auth already
       // required for /v1/feedback/stats) and receive pushed events as they
@@ -8182,7 +8196,12 @@ ${hidden}
 
       // POST /v1/dashboard/review-state -- mark current dashboard state as reviewed
       if (req.method === 'POST' && pathname === '/v1/dashboard/review-state') {
+        const body = await parseJsonBody(req);
         const snapshot = buildReviewSnapshot(requestFeedbackDir);
+        // Override snapshot timestamp with client-provided one if available
+        if (body && body.reviewedAt) {
+          snapshot.reviewedAt = body.reviewedAt;
+        }
         writeDashboardReviewState(requestFeedbackDir, snapshot);
         const data = generateDashboard(requestFeedbackDir, {
           reviewBaseline: snapshot,

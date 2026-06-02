@@ -260,6 +260,19 @@
     <a class="stat-card" data-card-action="gates" onclick="selectCard(this,'gates');return false;" href="#" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view active checks"><div class="stat-label">Active Gates</div><div class="stat-value cyan" id="statGates">—</div></a>
   </div>
 
+  <div class="panel" id="chatPanel" style="margin-bottom:20px;">
+    <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+      <h2 style="margin:0;">💬 Chat with your data</h2>
+      <span style="font-size:13px;color:var(--text-muted);">Ask about your captured lessons, mistakes, and rules — answered by Gemini, grounded only in your data.</span>
+    </div>
+    <div id="chatMessages" style="max-height:360px;overflow-y:auto;margin-bottom:12px;display:none;padding-right:4px;"></div>
+    <div style="display:flex;gap:8px;">
+      <input id="chatInput" class="auth-input" style="flex:1;" placeholder="e.g. What mistakes have we made, and how do we avoid them?" onkeydown="if(event.key==='Enter'){event.preventDefault();sendChat();}" />
+      <button class="btn" id="chatSend" onclick="sendChat()">Ask</button>
+    </div>
+    <div id="chatHint" style="font-size:12px;color:var(--text-muted);margin-top:8px;">Powered by your captured lessons + Gemini. Set <code style="font-family:var(--mono);">GEMINI_API_KEY</code> (<code style="font-family:var(--mono);">npx thumbgate setup-vertex --write</code>) to enable.</div>
+  </div>
+
   <div class="panel" id="reviewDeltaPanel" style="margin-bottom:20px;">
     <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;">
       <div>
@@ -670,6 +683,62 @@ const LOCAL_PRO_BOOTSTRAP = __DASHBOARD_BOOTSTRAP_ENABLED__;
 
 function getHeaders() {
   return { 'Authorization': 'Bearer ' + API_KEY, 'Content-Type': 'application/json' };
+}
+
+// --- Chat with your data ---------------------------------------------------
+function chatEscape(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+function chatAppend(who, text) {
+  var messages = document.getElementById('chatMessages');
+  var row = document.createElement('div');
+  row.style.cssText = 'margin-bottom:14px;';
+  row.innerHTML = '<div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">'
+    + (who === 'you' ? 'You' : 'ThumbGate') + '</div><div class="chat-body" style="line-height:1.5;">' + chatEscape(text) + '</div>';
+  messages.appendChild(row);
+  return row.querySelector('.chat-body');
+}
+function chatRenderAnswer(a) {
+  return chatEscape(a)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\[(\d+)\]/g, '<sup style="color:var(--cyan);font-weight:600;">[$1]</sup>')
+    .replace(/\n/g, '<br>');
+}
+function chatRenderSources(sources) {
+  if (!sources || !sources.length) return '';
+  var items = sources.map(function (s, i) {
+    var label = chatEscape(String(s.title || s.id || '').slice(0, 64));
+    return '<span title="' + label + '" style="display:inline-block;font-size:11px;background:var(--cyan-dim);color:var(--cyan);padding:2px 7px;border-radius:5px;margin:4px 5px 0 0;">[' + (i + 1) + '] ' + label + '</span>';
+  }).join('');
+  return '<div style="margin-top:10px;">' + items + '</div>';
+}
+async function sendChat() {
+  var input = document.getElementById('chatInput');
+  var q = (input.value || '').trim();
+  if (!q) return;
+  var messages = document.getElementById('chatMessages');
+  var sendBtn = document.getElementById('chatSend');
+  messages.style.display = 'block';
+  chatAppend('you', q);
+  input.value = '';
+  sendBtn.disabled = true;
+  var pending = chatAppend('bot', 'Thinking…');
+  try {
+    var res = await fetch('/v1/chat', { method: 'POST', headers: getHeaders(), body: JSON.stringify({ question: q }) });
+    var data = await res.json();
+    if (data && data.ok) {
+      pending.innerHTML = chatRenderAnswer(data.answer) + chatRenderSources(data.sources);
+    } else {
+      pending.innerHTML = '<em style="color:var(--text-muted);">' + chatEscape((data && data.message) || 'Chat is unavailable.') + '</em>';
+    }
+  } catch (e) {
+    pending.innerHTML = '<em style="color:var(--text-muted);">Chat request failed: ' + chatEscape(String((e && e.message) || e)) + '</em>';
+  } finally {
+    sendBtn.disabled = false;
+    messages.scrollTop = messages.scrollHeight;
+  }
 }
 
 function hasBootstrapKey() {
