@@ -7162,6 +7162,20 @@ ${hidden}
         return;
       }
 
+      // Chat with your data — RAG over this install's captured lessons, answered
+      // by Gemini grounded only in the retrieved context. Powers the dashboard
+      // chat panel ("ask your governed data").
+      if (req.method === 'POST' && pathname === '/v1/chat') {
+        const body = await parseJsonBody(req);
+        const { answerDataQuestion } = require('../../scripts/dashboard-chat');
+        const result = await answerDataQuestion(body.question || body.q || body.message, {
+          feedbackDir: requestFeedbackDir,
+          model: typeof body.model === 'string' ? body.model : undefined,
+        });
+        sendJson(res, result.ok ? 200 : (result.error === 'no_api_key' ? 503 : 400), result);
+        return;
+      }
+
       if (req.method === 'POST' && pathname === '/v1/gates/protected-approval') {
         const body = await parseJsonBody(req);
         const approval = approveProtectedAction({
