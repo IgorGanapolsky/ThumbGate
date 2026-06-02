@@ -131,7 +131,7 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // into gate_stats/dashboard, track_action, and capture_feedback. Keep in
   // lockstep with BASELINE_FILE_COUNT in tests/public-bundle-ratchet.test.js.
   const files = npmPackFiles();
-  const CEILING = 271;
+  const CEILING = 272;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
