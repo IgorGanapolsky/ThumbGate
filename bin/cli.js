@@ -626,10 +626,14 @@ function detectAgent(projectDir) {
   return null;
 }
 
-async function setupVertex() {
+async function setupVertex(options = {}) {
   const { execSync } = require('child_process');
+  const dryRun = options.dryRun === true || options['dry-run'] === true;
   console.log(`\nthumbgate setup-vertex v${pkgVersion()}`);
   console.log('  Zero-friction Google Cloud & Vertex AI onboarding...');
+  if (dryRun) {
+    console.log('  Dry run: will detect gcloud account/project, but will not enable services or write .env.');
+  }
   console.log('');
 
   // 1. Detect gcloud CLI
@@ -663,6 +667,14 @@ async function setupVertex() {
   // Validate project ID matches GCP format before use in shell
   if (!/^[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(activeProject)) {
     console.log('  ⚠️  Invalid GCP project ID format. Aborting.');
+    return;
+  }
+
+  if (dryRun) {
+    console.log(`  DRY-RUN would enable Vertex AI API for project: ${activeProject}`);
+    console.log(`  DRY-RUN would write THUMBGATE_PROVIDER_MODE=vertex and VERTEX_PROJECT_ID=${activeProject} to .env.`);
+    console.log('');
+    console.log('  Dry run complete. Re-run without --dry-run to apply these changes.');
     return;
   }
 
@@ -2969,7 +2981,7 @@ const SUBCOMMAND_HELP = {
   suggest:       'Usage: npx thumbgate suggest <gate-id>\n\nSuggest fixes for a specific gate based on lesson history.',
   cost:          'Usage: npx thumbgate cost [--json] [--stats <path>] [--mix \'{"claude-sonnet-4-5":0.8,...}\']\n\nShow cumulative $ and tokens saved by PreToolUse gate blocks. Reads ~/.thumbgate/gate-stats.json.',
   savings:       'Usage: npx thumbgate savings [--json] [--stats <path>] [--mix \'{"claude-sonnet-4-5":0.8,...}\']\n\nAlias for `thumbgate cost`.',
-  'setup-vertex': 'Usage: npx thumbgate setup-vertex\n\nAuto-enable Vertex AI API on GCP and write local Vertex routing config to .env. This does not create or verify a Dialogflow CX agent; use the Dialogflow CX REST API or console for live-agent evidence.',
+  'setup-vertex': 'Usage: npx thumbgate setup-vertex [--dry-run]\n\nAuto-enable Vertex AI API on GCP and write local Vertex routing config to .env. With --dry-run, only detect the active account/project and print the planned changes. This does not create or verify a Dialogflow CX agent; use the Dialogflow CX REST API or console for live-agent evidence.',
   brain: 'Usage: npx thumbgate brain [--write] [--json] [--limit=N]\n\nBuild the agent-readable "context brain" — a single artifact consolidating this\nrepo\'s lessons, prevention rules, active gates, and project context for a coding\nagent to read BEFORE acting. --write saves it to .thumbgate/BRAIN.md (versioned,\ndeterministic). --json emits the structured model. --limit caps lessons (default 15).',
 };
 
@@ -3157,7 +3169,7 @@ switch (COMMAND) {
     feedbackSelfTest();
     break;
   case 'setup-vertex':
-    setupVertex().catch((err) => {
+    setupVertex(parseArgs(process.argv.slice(3))).catch((err) => {
       console.error(err && err.message ? err.message : err);
       process.exit(1);
     });

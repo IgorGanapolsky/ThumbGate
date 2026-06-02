@@ -44,6 +44,47 @@ curl -H "Authorization: Bearer YOUR_KEY" \
 
 # Verification log
 
+## June 2, 2026: dashboard review/chat and setup-vertex dry-run release
+
+Scope:
+
+- Fixed the local dashboard review checkpoint flow so `POST /v1/dashboard/review-state` consumes JSON request bodies and returns a fresh zero-delta checkpoint.
+- Removed the placeholder Dialogflow web messenger injection path from the dashboard so the UI no longer implies a live DFCX widget unless it is actually configured.
+- Added the first-party dashboard "Chat with your data" path backed by `scripts/dashboard-chat.js`, packaged it in npm, and covered the unconfigured Gemini path.
+- Fixed `setup-vertex --dry-run` so it detects the active Google Cloud account/project but does not enable Vertex AI services or write `.env`.
+
+Commands and evidence:
+
+```bash
+node --test tests/cli.test.js tests/api-server.test.js tests/version-metadata.test.js tests/docs-claim-hygiene.test.js tests/dfcx-webhook-gate.test.js tests/dfcx-gate-server.test.js tests/vertex-scorer.test.js
+node scripts/sync-version.js --check
+git diff --check
+npm pack --dry-run --json
+npm publish --access public
+npm view thumbgate version --json
+npm view thumbgate dist.integrity --json
+npx -y thumbgate@1.26.8 --version
+npx -y thumbgate@1.26.8 setup-vertex --dry-run
+npx -y thumbgate@1.26.8 feedback-self-test --help
+```
+
+Observed result:
+
+- Focused release tests passed: `267/267`.
+- Version sync check passed across `32` tracked targets.
+- Package dry run included `public/dashboard.html` and `scripts/dashboard-chat.js`.
+- Published package was verified from npm after release: `thumbgate@1.26.8`.
+- Published dist integrity: `sha512-DKsT53EnZCZTfIXbMg+erbsppyUiNFY+kc8Hnx9XY8vQ6LJfIb84FMN9H0J1zlPhsOzBXm1G9GBVR+BioTyqTg==`.
+- Published `setup-vertex --dry-run` reported active account `ig5973700@gmail.com` and project `gen-lang-client-0559847560`, then printed planned changes without enabling services or writing `.env`.
+- Published `feedback-self-test --help` documented the isolated default test store and `--persist` dogfood mode.
+
+Requirements verified:
+
+- The dashboard review button has a working API contract.
+- The dashboard ships with the packaged data-chat helper it requires.
+- `setup-vertex --dry-run` cannot mutate cloud or local config state.
+- The Dialogflow/Vertex docs and help text do not recommend the nonexistent `gcloud alpha dialogflow cx` command group.
+
 ## June 2, 2026: operator recovery and ThumbGate dogfood hardening
 
 Scope:
@@ -66,8 +107,8 @@ npm publish --access public
 npm view thumbgate version --json
 npm view thumbgate dist.integrity --json
 npm view thumbgate readme | rg -n "Recovery if a gate over-fires|break-glass"
-npx -y thumbgate@1.26.7 help break-glass
-npx -y thumbgate@1.26.7 break-glass --reason="published artifact verification" --json
+npx -y thumbgate@1.26.8 help break-glass
+npx -y thumbgate@1.26.8 break-glass --reason="published artifact verification" --json
 ```
 
 Observed result:
@@ -76,11 +117,11 @@ Observed result:
 - Gate hardening tests passed: `5/5`.
 - Version sync check passed across `32` tracked targets.
 - Congruence check passed across public/package/adapter surfaces.
-- Published package was verified from npm after release: `thumbgate@1.26.7`.
-- Published dist integrity: `sha512-vbDAYQyyA1IrS0PjbSO4pKMRg6eo+CDcYV6zAwGBPO/CCbnq7QmBcQr26SgTpdreVKo8qz/4VfPBjFWgaTiWog==`.
+- Published package was verified from npm after release: `thumbgate@1.26.8`.
+- Published dist integrity: `sha512-DKsT53EnZCZTfIXbMg+erbsppyUiNFY+kc8Hnx9XY8vQ6LJfIb84FMN9H0J1zlPhsOzBXm1G9GBVR+BioTyqTg==`.
 - Published npm README contains the `Recovery if a gate over-fires` section and `break-glass` commands.
-- Published-artifact dogfood passed for `npx -y thumbgate@1.26.7 help break-glass`.
-- Published-artifact dogfood passed for `npx -y thumbgate@1.26.7 break-glass --reason="published artifact verification" --json`, returning a `300000` ms TTL and settings-only recovery globs.
+- Published-artifact dogfood passed for `npx -y thumbgate@1.26.8 help break-glass`.
+- Published-artifact dogfood passed for `npx -y thumbgate@1.26.8 break-glass --reason="published artifact verification" --json`, returning a `300000` ms TTL and settings-only recovery globs.
 - Runtime dogfood passed against the installed `1.26.5` hook path before this documentation entry was added; the published `1.26.6` artifact was then verified with `npx`.
 
 Requirements verified:
@@ -1607,7 +1648,7 @@ Evidence artifacts:
 Requirements verified:
 
 - Source checkouts now install canonical MCP entries that launch the local stdio server directly via `node adapters/mcp/server-stdio.js`.
-- Portable docs and adapter examples now use the version-pinned launcher `npx -y thumbgate@1.26.7 serve` instead of an unpinned `npx` call that can be shadowed by stale local installs.
+- Portable docs and adapter examples now use the version-pinned launcher `npx -y thumbgate@1.26.8 serve` instead of an unpinned `npx` call that can be shadowed by stale local installs.
 - Re-running the MCP installer upgrades stale config entries instead of treating them as already configured.
 - Adapter and LanceDB proof cleanup now uses retry-capable recursive removal so ephemeral filesystem contention no longer flakes CI.
 - Transient `.thumbgate` reminder/A2UI/test-run files are now ignored as local runtime state and do not pollute git hygiene during verification.
@@ -2824,7 +2865,7 @@ Scope:
 
 - Added a repo-root Cursor marketplace manifest at `.cursor-plugin/marketplace.json`.
 - Added a dedicated Cursor plugin bundle in `plugins/cursor-marketplace/` with `.cursor-plugin/plugin.json`, `.mcp.json`, README, and committed logo asset.
-- Switched the Cursor launcher to the portable published package entrypoint `npx -y thumbgate@1.26.7 serve` instead of any checkout-local absolute path.
+- Switched the Cursor launcher to the portable published package entrypoint `npx -y thumbgate@1.26.8 serve` instead of any checkout-local absolute path.
 - Removed the stale `.mcp.json.plugin` legacy config file so the repo has one canonical Cursor packaging path.
 - Extended `scripts/sync-version.js` so Cursor manifests and all pinned launcher docs stay version-synced on future releases.
 - Added regression coverage for the repo-level marketplace contract, manifest/version consistency, and MCP launcher safety.

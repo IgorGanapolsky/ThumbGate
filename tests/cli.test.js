@@ -2856,6 +2856,46 @@ describe('thumbgate audit', () => {
     assert.strictEqual(result.status, 0);
     assert.ok(result.stdout.includes('Google Cloud SDK (gcloud CLI) not detected'));
   });
+
+  test('setup-vertex --dry-run never enables services or writes .env', () => {
+    const dir = makeTmpDir();
+    const binDir = path.join(dir, 'bin');
+    const marker = path.join(dir, 'enabled.marker');
+    fs.mkdirSync(binDir, { recursive: true });
+    const fakeGcloud = path.join(binDir, 'gcloud');
+    fs.writeFileSync(fakeGcloud, `#!/bin/sh
+if [ "$1 $2 $3" = "config get-value account" ]; then
+  echo "dryrun@example.com"
+  exit 0
+fi
+if [ "$1 $2 $3" = "config get-value project" ]; then
+  echo "dryrun-project-123"
+  exit 0
+fi
+if [ "$1 $2" = "services enable" ]; then
+  echo "mutated" > "$THUMBGATE_FAKE_GCLOUD_MARKER"
+  exit 0
+fi
+echo "unexpected gcloud $*" >&2
+exit 1
+`);
+    fs.chmodSync(fakeGcloud, 0o755);
+
+    const result = runCliSync(['setup-vertex', '--dry-run'], {
+      cwd: dir,
+      env: {
+        PATH: binDir,
+        THUMBGATE_FAKE_GCLOUD_MARKER: marker,
+      },
+    });
+
+    assert.strictEqual(result.status, 0, result.stderr);
+    assert.match(result.stdout, /Dry run/i);
+    assert.match(result.stdout, /would enable Vertex AI API/i);
+    assert.equal(fs.existsSync(marker), false);
+    assert.equal(fs.existsSync(path.join(dir, '.env')), false);
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
 });
 
 // ---------------------------------------------------------------------------
