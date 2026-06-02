@@ -62,6 +62,19 @@ function formatCurrency(cents) {
   return `$${(safeNumber(cents) / 100).toFixed(2)}`;
 }
 
+function formatCounterEntry(value) {
+  if (!value) return null;
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return value.filter((part) => part !== undefined && part !== null).join(': ');
+  if (typeof value === 'object') {
+    const key = value.key || value.name || value.channel || value.source || value.label;
+    const count = value.count === undefined || value.count === null ? null : safeNumber(value.count);
+    if (!key) return null;
+    return count === null ? String(key) : `${key} (${count})`;
+  }
+  return String(value);
+}
+
 function compactList(items, limit = 5) {
   return (Array.isArray(items) ? items : []).filter(Boolean).slice(0, limit);
 }
@@ -189,7 +202,8 @@ function buildRevenuePulseArtifact(options = {}) {
   const acquisitionLeads = safeNumber(funnel.acquisitionLeads);
   const paidOrders = safeNumber(revenue.paidOrders, safeNumber(funnel.paidOrders));
   const bookedRevenueCents = safeNumber(revenue.bookedRevenueCents);
-  const topTrafficChannel = funnel.topTrafficChannel || getPath(seo, ['topSurface', 'key'], null);
+  const topTrafficChannel = formatCounterEntry(funnel.topTrafficChannel)
+    || formatCounterEntry(getPath(seo, ['topSurface'], null));
   const topPaidSource = Object.entries(attribution.paidBySource || {})
     .sort((a, b) => safeNumber(b[1]) - safeNumber(a[1]))[0];
 
