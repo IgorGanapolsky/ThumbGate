@@ -37,6 +37,7 @@ const {
   setTaskScope,
   setBranchGovernance,
   approveProtectedAction,
+  breakGlassEmergency,
   getScopeState,
   getBranchGovernanceState,
   trackAction,
@@ -51,6 +52,7 @@ const {
   getLocalOnlyScopeSources,
   isRemoteSideEffectCommand,
   evaluateLocalOnlyRemoteSideEffectGate,
+  isBreakGlassSettingsRecoveryAction,
   PR_THREAD_RESOLUTION_ACTION,
   TTL_MS,
   SESSION_ACTION_TTL_MS,
@@ -339,6 +341,17 @@ test('evaluateGates blocks gh pr create when task scope is local-only', () => {
   assert.equal(result.gate, 'local-only-remote-side-effect');
 });
 
+test('evaluateGates treats gh api pull creation as remote PR creation in local-only scope', () => {
+  cleanupStateFiles();
+  setTaskScope({ summary: 'fix local Android build', allowedPaths: ['**'], localOnly: true });
+  const result = evaluateGates('Bash', {
+    command: 'gh api repos/acme/project/pulls -f title=fix -f head=feat -f base=main',
+  });
+  assert.ok(result);
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.gate, 'local-only-remote-side-effect');
+});
+
 test('evaluateGates blocks remote side effects from local_only constraint alone', () => {
   cleanupStateFiles();
   setConstraint('local_only', true);
@@ -379,6 +392,8 @@ test('getLocalOnlyScopeSources reports every active local-only source', () => {
 test('isRemoteSideEffectCommand recognizes remote release and publish actions only for Bash', () => {
   assert.equal(isRemoteSideEffectCommand('Bash', { command: 'gh release upload v1.2.3 dist.tgz' }), true);
   assert.equal(isRemoteSideEffectCommand('Bash', { command: 'pnpm publish --access public' }), true);
+  assert.equal(isRemoteSideEffectCommand('Bash', { command: 'gh api repos/acme/project/pulls -f title=fix' }), true);
+  assert.equal(isRemoteSideEffectCommand('Bash', { command: 'gh api graphql -f query="{ viewer { login } }"' }), false);
   assert.equal(isRemoteSideEffectCommand('Bash', { command: 'git status --short' }), false);
   assert.equal(isRemoteSideEffectCommand('Write', { command: 'git push origin main' }), false);
 });
@@ -516,6 +531,38 @@ test('approveProtectedAction unlocks approved protected files', () => {
   approveProtectedAction({ pathGlobs: ['AGENTS.md'], reason: 'user approved policy update' });
   const result = evaluateGates('Edit', { file_path: '/AGENTS.md' });
   assert.equal(result, null);
+});
+
+test('breakGlassEmergency unlocks hook settings edits without opening unrelated protected files', () => {
+  cleanupStateFiles();
+  setTaskScope({ summary: 'normal source task', allowedPaths: ['src/**'] });
+
+  const before = evaluateGates('Edit', { file_path: '/Users/test/.claude/settings.local.json' });
+  assert.ok(before);
+  assert.equal(before.gate, 'task-scope-edit-boundary');
+
+  const recovery = breakGlassEmergency({
+    reason: 'ThumbGate hook over-fired and blocked operator recovery',
+    ttlMs: 5 * 60 * 1000,
+  });
+  assert.equal(recovery.ok, true);
+  assert.ok(recovery.settingsGlobs.includes('**/.claude/settings.local.json'));
+
+  assert.equal(isBreakGlassSettingsRecoveryAction('Edit', { file_path: '/Users/test/.claude/settings.local.json' }), true);
+  const settingsEdit = evaluateGates('Edit', {
+    file_path: '/Users/test/.claude/settings.local.json',
+    boostedRisk: {
+      riskScore: 1,
+      exampleCount: 6,
+      highRiskTags: ['settings'],
+    },
+  });
+  assert.equal(settingsEdit, null);
+
+  const protectedDocEdit = evaluateGates('Edit', { file_path: '/repo/README.md' });
+  assert.ok(protectedDocEdit);
+  assert.equal(protectedDocEdit.gate, 'task-scope-edit-boundary');
+  cleanupStateFiles();
 });
 
 // ---------------------------------------------------------------------------
@@ -1702,6 +1749,39 @@ test('evaluateGates blocks gh pr create without branch governance', () => {
   assert.ok(result);
   assert.equal(result.gate, 'branch-governance-required');
   assert.match(result.message, /require explicit branch governance/i);
+});
+
+test('evaluateGates applies pr_create_allowed to gh api pull creation', () => {
+  cleanupStateFiles();
+  setTaskScope({
+    allowedPaths: ['scripts/**'],
+    summary: 'Allow script updates for PR prep.',
+  });
+  setBranchGovernance({
+    branchName: 'feat/thumbgate-hardening',
+    baseBranch: 'main',
+    prRequired: true,
+    releaseVersion: '0.9.11',
+  });
+
+  const command = 'gh api repos/acme/project/pulls -f title=test -f head=feat/thumbgate-hardening -f base=main';
+  const before = evaluateGates('Bash', {
+    command,
+    changed_files: ['scripts/ops.js'],
+  });
+  assert.ok(before);
+  assert.equal(before.gate, 'gh-api-pr-create-restricted');
+
+  breakGlassEmergency({
+    reason: 'Operator approved PR creation after hook over-fire',
+    ttlMs: 5 * 60 * 1000,
+  });
+  const after = evaluateGates('Bash', {
+    command,
+    changed_files: ['scripts/ops.js'],
+  });
+  assert.equal(after, null);
+  cleanupStateFiles();
 });
 
 test('evaluateGates blocks publish when branch governance release version is missing', () => {

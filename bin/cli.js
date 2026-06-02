@@ -1018,10 +1018,21 @@ function capture() {
   }
 
   let signal = (args.feedback || '').toLowerCase();
+  let consumedSignalArgs = 0;
   if (!signal && positionalArgs[0]) {
-    const firstPos = positionalArgs[0].toLowerCase();
-    if (['up', 'down', 'thumbsup', 'thumbsdown', 'thumbs_up', 'thumbs_down', 'positive', 'negative'].some(v => firstPos.includes(v))) {
-      signal = firstPos;
+    const { detectFeedbackSignal } = require(path.join(PKG_ROOT, 'scripts', 'feedback-quality'));
+    const oneWord = positionalArgs[0];
+    const twoWords = positionalArgs.slice(0, 2).join(' ');
+    const detected = detectFeedbackSignal(twoWords) || detectFeedbackSignal(oneWord);
+    if (detected) {
+      signal = detected.signal;
+      consumedSignalArgs = detectFeedbackSignal(twoWords) ? Math.min(2, positionalArgs.length) : 1;
+    } else {
+      const firstPos = positionalArgs[0].toLowerCase();
+      if (['up', 'down', 'thumbsup', 'thumbsdown', 'thumbs_up', 'thumbs_down', 'positive', 'negative'].some(v => firstPos.includes(v))) {
+        signal = firstPos;
+        consumedSignalArgs = 1;
+      }
     }
   }
 
@@ -1041,19 +1052,25 @@ function capture() {
   }
 
   let context = args.context || '';
-  if (!context && positionalArgs[1]) {
+  if (!context && consumedSignalArgs > 0) {
+    context = positionalArgs.slice(consumedSignalArgs).join(' ');
+  } else if (!context && positionalArgs[1]) {
     context = positionalArgs[1];
   }
 
   let whatWentWrong = args['what-went-wrong'];
-  if (!whatWentWrong && positionalArgs[2]) {
+  if (!whatWentWrong && consumedSignalArgs > 0 && positionalArgs.length > consumedSignalArgs + 1) {
+    whatWentWrong = positionalArgs.slice(consumedSignalArgs + 1).join(' ');
+  } else if (!whatWentWrong && positionalArgs[2]) {
     whatWentWrong = positionalArgs[2];
   } else if (!whatWentWrong && normalized === 'down' && context) {
     whatWentWrong = context;
   }
 
   let whatToChange = args['what-to-change'];
-  if (!whatToChange && positionalArgs[3]) {
+  if (!whatToChange && consumedSignalArgs > 0 && positionalArgs.length > consumedSignalArgs + 2) {
+    whatToChange = positionalArgs.slice(consumedSignalArgs + 2).join(' ');
+  } else if (!whatToChange && positionalArgs[3]) {
     whatToChange = positionalArgs[3];
   } else if (!whatToChange && normalized === 'down' && context) {
     whatToChange = `avoid: ${context}`;
@@ -2504,9 +2521,14 @@ function statuslineRender() {
 
 function hookAutoCapture() {
   syncActiveProjectContext();
-  const prompt = process.env.CLAUDE_USER_PROMPT || process.env.THUMBGATE_USER_PROMPT || readStdinText().trim();
+  const prompt = process.env.CLAUDE_USER_PROMPT
+    || process.env.THUMBGATE_USER_PROMPT
+    || process.env.CODEX_USER_PROMPT
+    || process.env.USER_PROMPT
+    || readStdinText().trim();
   const { evaluatePromptGuard } = require(path.join(PKG_ROOT, 'scripts', 'prompt-guard'));
   const { processInlineFeedback, formatCliOutput } = require(path.join(PKG_ROOT, 'scripts', 'cli-feedback'));
+  const { detectFeedbackSignal } = require(path.join(PKG_ROOT, 'scripts', 'feedback-quality'));
   const { loadOptionalModule } = require(path.join(PKG_ROOT, 'scripts', 'private-core-boundary'));
   const { recordConversationEntry, readRecentConversationWindow } = loadOptionalModule(
     path.join(PKG_ROOT, 'scripts', 'feedback-history-distiller'),
@@ -2528,14 +2550,12 @@ function hookAutoCapture() {
     return;
   }
 
-  const lower = prompt.toLowerCase();
-  const isUp = /(thumbs?\s*up|that worked|looks good|nice work|perfect|good job)/i.test(lower);
-  const isDown = /(thumbs?\s*down|that failed|that was wrong|fix this)/i.test(lower);
-  if (!isUp && !isDown) {
+  const detected = detectFeedbackSignal(prompt);
+  if (!detected) {
     return;
   }
 
-  const signal = isDown ? 'down' : 'up';
+  const signal = detected.signal;
   const conversationWindow = readRecentConversationWindow({ limit: 8 });
   const result = processInlineFeedback({
     signal,
@@ -2931,6 +2951,10 @@ const SUBCOMMAND_HELP = {
   search:        'Usage: npx thumbgate search <query>\n\nSearch ThumbGate knowledge base (Pro feature).',
   'gate-check':  'Usage: npx thumbgate gate-check\n\nPreToolUse hook interface: reads tool call JSON from stdin, outputs gate verdict.',
   'break-glass': 'Usage: npx thumbgate break-glass --reason="why" [--ttl=5m] [--json]\n\nShort-lived recovery path for over-firing gates. Allows hook settings edits and satisfies PR-create/thread-check gates without disabling core destructive-action protections.',
+  serve:         'Usage: npx thumbgate serve\n\nStart the MCP stdio server. This is for agent runtimes, not the local HTTP dashboard.',
+  mcp:           'Usage: npx thumbgate mcp\n\nAlias for `thumbgate serve`.',
+  dashboard:     'Usage: npx thumbgate dashboard [--window=today|7d|30d]\n\nPrint the operational dashboard summary. Use `npx thumbgate start-api` for the local HTTP dashboard on :3456.',
+  'start-api':   'Usage: npx thumbgate start-api\n\nStart the local ThumbGate HTTP API/dashboard. Defaults to PORT=8787; use PORT=3456 for statusline localhost links.',
   'export-dpo':  'Usage: npx thumbgate export-dpo [--format=jsonl|csv]\n\nExport feedback as DPO training pairs (Pro feature).',
   status:        'Usage: npx thumbgate status\n\nShow ThumbGate system health and active configuration.',
   watch:         'Usage: npx thumbgate watch\n\nWatch for feedback changes and auto-regenerate prevention rules.',
@@ -3150,7 +3174,7 @@ switch (COMMAND) {
   }
   case 'brain': {
     const brainArgs = parseArgs(process.argv.slice(3));
-    process.exit(cmdBrain(brainArgs));
+    process.exitCode = cmdBrain(brainArgs);
     break;
   }
   case 'billing:setup':

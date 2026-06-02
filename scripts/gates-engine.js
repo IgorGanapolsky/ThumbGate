@@ -109,11 +109,21 @@ const DEFAULT_PROTECTED_FILE_GLOBS = [
 const EDIT_LIKE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
 const HIGH_RISK_BASH_PATTERN = /\b(?:git\s+(?:add|commit|push)|gh\s+pr\s+(?:create|merge)|npm\s+publish|yarn\s+publish|pnpm\s+publish|rm\s+-rf)\b/i;
 const REMOTE_SIDE_EFFECT_BASH_PATTERN = /\b(?:git\s+push\b|gh\s+pr\s+(?:create|merge|close|reopen|ready|edit)\b|gh\s+release\s+(?:create|delete|edit|upload)\b|npm\s+publish\b|yarn\s+publish\b|pnpm\s+publish\b)\b/i;
+const GH_API_PR_CREATE_PATTERN = /\bgh\s+api\b(?=.*(?:\/pulls\b|repos\/[^\s]+\/[^\s]+\/pulls\b))(?=.*(?:-f\b|--field\b|-F\b|--raw-field\b|--method\s+POST\b|-X\s+POST\b))/i;
 const BOOSTED_RISK_BLOCK_SCORE = 0.8;
 const BOOSTED_RISK_MIN_EXAMPLES = 3;
 const PR_THREAD_RESOLUTION_ACTION = 'pr_thread_resolution_verified_after_commit';
 const KNOWLEDGE_ENTROPY_THRESHOLD = 0.7;
 const KNOWLEDGE_CONFLICT_STRICT_BASH_PATTERN = /\b(?:git\s+push\b|gh\s+pr\s+merge\b|gh\s+release\s+(?:create|delete|edit|upload)\b|(?:npm|yarn|pnpm)\s+publish\b|rm\s+-rf\b|git\s+reset\s+--hard\b|git\s+clean\s+-f|railway\s+(?:deploy|up)\b|gcloud\s+(?:run\s+deploy|app\s+deploy)\b|firebase\s+deploy\b|vercel\s+--prod\b|kubectl\s+(?:apply|delete)\b|terraform\s+(?:apply|destroy)\b)\b/i;
+const BREAK_GLASS_CONDITION = 'thumbgate_break_glass';
+const BREAK_GLASS_SETTINGS_GLOBS = [
+  '.claude/settings.local.json',
+  '.claude/settings.json',
+  '**/.claude/settings.local.json',
+  '**/.claude/settings.json',
+  '.codex/config.toml',
+  '**/.codex/config.toml',
+];
 
 function isRuntimePlanGateEnabled() {
   return process.env.THUMBGATE_PLAN_GATE === '1' || process.env.THUMBGATE_PLAN_GATE === 'true';
@@ -360,6 +370,38 @@ function approveProtectedAction(input = {}) {
   state.protectedApprovals.push(entry);
   saveGovernanceState(state);
   return entry;
+}
+
+function breakGlassEmergency(input = {}) {
+  const reason = String(input.reason || '').trim();
+  if (!reason) {
+    throw new Error('reason is required');
+  }
+
+  const ttlMs = Math.min(clampTtlMs(input.ttlMs, TTL_MS), TTL_MS);
+  const evidence = `BREAK GLASS: ${reason}`;
+  const gates = ['pr_create_allowed', 'pr_threads_checked', BREAK_GLASS_CONDITION];
+  const satisfied = {};
+  for (const gateId of gates) {
+    satisfied[gateId] = satisfyCondition(gateId, evidence);
+  }
+
+  const approval = approveProtectedAction({
+    pathGlobs: BREAK_GLASS_SETTINGS_GLOBS,
+    reason: evidence,
+    evidence,
+    ttlMs,
+  });
+
+  return {
+    ok: true,
+    reason,
+    ttlMs,
+    expiresAt: new Date(Date.now() + ttlMs).toISOString(),
+    satisfied,
+    approval,
+    settingsGlobs: BREAK_GLASS_SETTINGS_GLOBS.slice(),
+  };
 }
 
 function setBranchGovernance(input = {}) {
@@ -695,7 +737,7 @@ function extractAffectedFiles(toolName, toolInput = {}) {
       }
     }
 
-    if (/\bgit\s+push\b/i.test(command) || /\bgh\s+pr\s+(?:create|merge)\b/i.test(command)) {
+    if (/\bgit\s+push\b/i.test(command) || /\bgh\s+pr\s+(?:create|merge)\b/i.test(command) || GH_API_PR_CREATE_PATTERN.test(command)) {
       for (const filePath of getBranchDiffFiles(repoRoot)) {
         files.add(normalizePosix(filePath));
       }
@@ -714,6 +756,7 @@ function isHighRiskAction(toolName, toolInput = {}, affectedFiles = []) {
   const command = String(toolInput.command || '');
   // Original high-risk pattern (git writes, publishes, destructive ops)
   if (HIGH_RISK_BASH_PATTERN.test(command)) return true;
+  if (GH_API_PR_CREATE_PATTERN.test(command)) return true;
   // Broadened: any Bash command that modifies files or has side effects.
   // Excludes pure read/analysis commands (node --test, cat, ls, echo, etc.)
   // to avoid false positives on benign operations.
@@ -951,7 +994,8 @@ function getLocalOnlyScopeSources(governanceState = {}, constraints = {}) {
 
 function isRemoteSideEffectCommand(toolName, toolInput = {}) {
   if (toolName !== 'Bash') return false;
-  return REMOTE_SIDE_EFFECT_BASH_PATTERN.test(String(toolInput.command || ''));
+  const command = String(toolInput.command || '');
+  return REMOTE_SIDE_EFFECT_BASH_PATTERN.test(command) || GH_API_PR_CREATE_PATTERN.test(command);
 }
 
 function evaluateLocalOnlyRemoteSideEffectGate(toolName, toolInput = {}, governanceState = {}, constraints = {}) {
@@ -1003,6 +1047,25 @@ function shouldEnforceTaskScope(gate, governanceState, toolName, toolInput = {},
       affectedFiles.length > 0;
   }
   return isScopeEnforcedAction(toolName, toolInput, affectedFiles);
+}
+
+function isAgentHookSettingsFile(filePath) {
+  return matchesAnyGlob(filePath, BREAK_GLASS_SETTINGS_GLOBS);
+}
+
+function isBreakGlassSettingsBypass(gate, affectedFiles) {
+  if (!gate || !['task-scope-edit-boundary', 'protected-file-approval-required'].includes(gate.id)) {
+    return false;
+  }
+  if (!isConditionSatisfied(BREAK_GLASS_CONDITION)) return false;
+  return Array.isArray(affectedFiles) && affectedFiles.length > 0 && affectedFiles.every(isAgentHookSettingsFile);
+}
+
+function isBreakGlassSettingsRecoveryAction(toolName, toolInput = {}) {
+  if (!EDIT_LIKE_TOOLS.has(toolName)) return false;
+  if (!isConditionSatisfied(BREAK_GLASS_CONDITION)) return false;
+  const affectedFiles = extractAffectedFiles(toolName, toolInput).files;
+  return affectedFiles.length > 0 && affectedFiles.every(isAgentHookSettingsFile);
 }
 
 function formatFileList(files, limit = 5) {
@@ -1239,6 +1302,9 @@ function matchGate(gate, toolName, toolInput = {}) {
       if (gate.id === 'permission-change-approval' && isSafeLocalCredentialHardeningCommand(toolName, toolInput)) {
         return { matched: false, matchText, affectedFiles };
       }
+      if (isBreakGlassSettingsBypass(gate, affectedFiles)) {
+        return { matched: false, matchText, affectedFiles };
+      }
     } catch {
       return { matched: false, matchText, affectedFiles };
     }
@@ -1256,6 +1322,9 @@ function matchGate(gate, toolName, toolInput = {}) {
 
   let taskScopeViolation = null;
   if (gate.requireTaskScope) {
+    if (isBreakGlassSettingsBypass(gate, affectedFiles)) {
+      return { matched: false, matchText, affectedFiles };
+    }
     if (!shouldEnforceTaskScope(gate, governanceState, toolName, toolInput, affectedFiles)) {
       return { matched: false, matchText, affectedFiles };
     }
@@ -1265,6 +1334,9 @@ function matchGate(gate, toolName, toolInput = {}) {
 
   let protectedApprovalViolation = null;
   if (gate.requireProtectedApproval) {
+    if (isBreakGlassSettingsBypass(gate, affectedFiles)) {
+      return { matched: false, matchText, affectedFiles };
+    }
     const protectedGlobs = sanitizeGlobList(
       Array.isArray(gate.protectedGlobs) && gate.protectedGlobs.length > 0
         ? gate.protectedGlobs
@@ -1341,7 +1413,10 @@ function evaluateMemoryGuard(toolName, toolInput = {}) {
   }
 
   const command = String(toolInput.command || '');
-  if (toolName === 'Bash' && /\bgh\s+pr\s+create\b/i.test(command) && isConditionSatisfied('pr_create_allowed')) {
+  const isPrCreateCommand = toolName === 'Bash' && (
+    /\bgh\s+pr\s+create\b/i.test(command) || GH_API_PR_CREATE_PATTERN.test(command)
+  );
+  if (isPrCreateCommand && isConditionSatisfied('pr_create_allowed')) {
     const branchGovernanceViolation = buildBranchGovernanceViolation(
       governanceState,
       toolInput,
@@ -1354,7 +1429,10 @@ function evaluateMemoryGuard(toolName, toolInput = {}) {
     }
   }
 
-  if (toolName === 'Bash' && /\b(?:gh\s+pr\s+(?:create|merge)|gh\s+release\s+create|git\s+tag\b|(?:npm|yarn|pnpm)\s+publish\b)\b/i.test(command)) {
+  if (toolName === 'Bash' && (
+    /\b(?:gh\s+pr\s+(?:create|merge)|gh\s+release\s+create|git\s+tag\b|(?:npm|yarn|pnpm)\s+publish\b)\b/i.test(command) ||
+    GH_API_PR_CREATE_PATTERN.test(command)
+  )) {
     const branchGovernanceViolation = buildBranchGovernanceViolation(
       governanceState,
       toolInput,
@@ -1529,6 +1607,18 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
   );
   if (localOnlyRemoteSideEffectGate) {
     return recordStructuralGateBlock(toolName, toolInput, localOnlyRemoteSideEffectGate);
+  }
+  if (isBreakGlassSettingsRecoveryAction(toolName, toolInput)) {
+    recordAuditEvent({
+      toolName,
+      toolInput,
+      decision: 'allow',
+      gateId: BREAK_GLASS_CONDITION,
+      message: 'Break-glass recovery allowed hook settings edit',
+      severity: 'high',
+      source: 'gates-engine',
+    });
+    return null;
   }
 
   const pendingThreadResolutionGate = evaluatePendingPrThreadResolutionGate(toolName, toolInput);
@@ -1743,6 +1833,18 @@ function evaluateGates(toolName, toolInput, configPath) {
   );
   if (localOnlyRemoteSideEffectGate) {
     return recordStructuralGateBlock(toolName, toolInput, localOnlyRemoteSideEffectGate);
+  }
+  if (isBreakGlassSettingsRecoveryAction(toolName, toolInput)) {
+    recordAuditEvent({
+      toolName,
+      toolInput,
+      decision: 'allow',
+      gateId: BREAK_GLASS_CONDITION,
+      message: 'Break-glass recovery allowed hook settings edit',
+      severity: 'high',
+      source: 'gates-engine',
+    });
+    return null;
   }
 
   const pendingThreadResolutionGate = evaluatePendingPrThreadResolutionGate(toolName, toolInput);
@@ -2719,6 +2821,7 @@ module.exports = {
   setTaskScope,
   setBranchGovernance,
   approveProtectedAction,
+  breakGlassEmergency,
   getScopeState,
   getBranchGovernanceState,
   isConditionSatisfied,
@@ -2777,6 +2880,8 @@ module.exports = {
   getLocalOnlyScopeSources,
   isRemoteSideEffectCommand,
   evaluateLocalOnlyRemoteSideEffectGate,
+  isAgentHookSettingsFile,
+  isBreakGlassSettingsRecoveryAction,
   PR_THREAD_RESOLUTION_ACTION,
   buildBlockActionProCta,
   applyDailyBlockCap,
