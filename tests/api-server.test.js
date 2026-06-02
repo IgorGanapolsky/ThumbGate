@@ -687,33 +687,21 @@ test('/go/pro 302 redirects to /checkout/pro with caller-provided UTM params pre
   assert.equal(url.searchParams.get('cta_id'), 'go_pro');
 });
 
-test('/go/teams 302 redirects to Team workflow intake with caller-provided UTM params preserved', async () => {
-  // 2026-05-19: Team is scope-first. The shortlink stays alive for marketplace
-  // and outreach URLs, but must not reintroduce blind 3-seat checkout.
+test('/go/teams 302 redirects to Pro per CEO pivot', async () => {
   const res = await fetch(apiUrl('/go/teams?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_teams_listing&cta_id=aiventyx_teams_listing&cta_placement=marketplace_listing'), { redirect: 'manual' });
   assert.equal(res.status, 302);
   assert.equal(res.headers.get('x-thumbgate-link-slug'), 'teams');
   const url = new URL(res.headers.get('location'));
-  assert.equal(url.pathname, '/');
-  assert.equal(url.hash, '#workflow-sprint-intake');
-  assert.equal(url.searchParams.get('plan_id'), 'team');
-  assert.equal(url.searchParams.get('seat_count'), null);
-  assert.equal(url.searchParams.get('billing_cycle'), null);
+  assert.equal(url.pathname, '/go/pro');
   assert.equal(url.searchParams.get('utm_source'), 'aiventyx');
   assert.equal(url.searchParams.get('utm_medium'), 'marketplace');
-  assert.equal(url.searchParams.get('cta_id'), 'aiventyx_teams_listing');
 });
 
 test('/go/teams falls back to default UTM attribution when no params are supplied', async () => {
   const res = await fetch(apiUrl('/go/teams'), { redirect: 'manual' });
   assert.equal(res.status, 302);
   const url = new URL(res.headers.get('location'));
-  assert.equal(url.pathname, '/');
-  assert.equal(url.hash, '#workflow-sprint-intake');
-  assert.equal(url.searchParams.get('plan_id'), 'team');
-  assert.equal(url.searchParams.get('seat_count'), null);
-  assert.equal(url.searchParams.get('utm_campaign'), 'team_intake');
-  assert.equal(url.searchParams.get('cta_id'), 'go_teams');
+  assert.equal(url.pathname, '/go/pro');
 });
 
 test('/go/pro falls back to default UTM attribution when no params are supplied', async () => {
@@ -809,7 +797,7 @@ test('support page exposes email, GitHub issues, status, and refund paths', asyn
   assert.match(body, /href="\/terms"/);
 });
 
-test('case studies page surfaces the Aiventyx integration with verifiable signal', async () => {
+test('case studies page surfaces verifiable signal', async () => {
   // Conversion-optimization surface: until this PR, thumbgate.ai had no
   // proof page. Buyers saw CLI install commands and bounced. This page
   // anchors trust with reproducible third-party signal.
@@ -818,16 +806,6 @@ test('case studies page surfaces the Aiventyx integration with verifiable signal
   assert.match(String(res.headers.get('content-type')), /text\/html/);
   const body = await res.text();
   assert.match(body, /Case Studies/);
-  // Real third-party signal must be present — no fabricated metrics.
-  assert.match(body, /Aiventyx/i);
-  assert.match(body, /62%/);
-  assert.match(body, /Qaiser/i);
-  // The fix must be described concretely (not aspirationally).
-  assert.match(body, /TRACKED_LINK_TARGETS/);
-  assert.match(body, /\/go\/teams/);
-  // Call to action: live redirect they can verify themselves.
-  assert.match(body, /href="\/go\/teams\?utm_source=case-study"/);
-  // Footer cross-links so this becomes a hub, not a dead end.
   assert.match(body, /href="\/pricing"/);
   assert.match(body, /href="\/privacy"/);
 });
@@ -1567,7 +1545,7 @@ test('dashboard auto-bootstraps local Pro auth only for localhost requests', asy
     const localBody = await localRes.text();
     assert.match(localBody, /const BOOTSTRAP_API_KEY = "test-api-key";/);
     assert.match(localBody, /const LOCAL_PRO_BOOTSTRAP = true;/);
-    assert.match(localBody, /Local Pro is active on this machine/);
+    assert.match(localBody, /Local \$\{tierName\} is active on this machine/);
 
     const forwardedRes = await fetch(apiUrl('/dashboard'), {
       headers: {

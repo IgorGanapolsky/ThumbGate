@@ -252,17 +252,8 @@ async function runPackagedRuntimeSmoke(options = {}) {
     if (/Common commands:|Detect agent and wire ThumbGate hooks/.test(initialStatusline)) {
       throw new Error(`Statusline rendered CLI help instead of compact status: ${initialStatusline.trim()}`);
     }
-    if (/(Dashboard|Dashboard…|Lessons|Lessons…)/.test(initialStatusline)) {
-      throw new Error(`Default statusline should stay compact before boot: ${initialStatusline.trim()}`);
-    }
-
-    const verboseEnv = {
-      ...env,
-      THUMBGATE_STATUSLINE_VERBOSE: '1',
-    };
-    const initialVerboseStatusline = renderStatusline(runtimeBin, projectDir, verboseEnv);
-    if (!/(Dashboard|Dashboard…)/.test(initialVerboseStatusline) || !/(Lessons|Lessons…)/.test(initialVerboseStatusline)) {
-      throw new Error(`Verbose statusline missing dashboard affordances before boot: ${initialVerboseStatusline.trim()}`);
+    if (!/(Dashboard|Dashboard…)/.test(initialStatusline) || !/(Lessons|Lessons…)/.test(initialStatusline)) {
+      throw new Error(`Default statusline missing dashboard affordances before boot: ${initialStatusline.trim()}`);
     }
 
     const health = await waitForHealthy(origin, expectedVersion, Number(options.timeoutMs || DEFAULT_TIMEOUT_MS));
@@ -275,7 +266,7 @@ async function runPackagedRuntimeSmoke(options = {}) {
       throw new Error(`Packaged lessons returned ${lessons.statusCode}`);
     }
 
-    const readyStatusline = renderStatusline(runtimeBin, projectDir, verboseEnv);
+    const readyStatusline = renderStatusline(runtimeBin, projectDir, env);
     if (!/(Dashboard|Dashboard…)/.test(readyStatusline)) {
       throw new Error(`Ready statusline missing dashboard label: ${readyStatusline.trim()}`);
     }

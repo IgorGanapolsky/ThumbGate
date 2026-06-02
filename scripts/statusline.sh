@@ -93,19 +93,17 @@ fi
 LINK_STATE="offline"
 UP_URL=""; DOWN_URL=""; DASHBOARD_URL=""; LESSONS_URL=""
 DASHBOARD_LABEL="Dashboard"; LESSONS_LABEL="Lessons"
-if [[ "$STATUSLINE_VERBOSE" = "1" ]]; then
-  _LINKS_JSON=$(node "${SCRIPT_DIR}/statusline-links.js" 2>/dev/null)
-  if [ -n "$_LINKS_JSON" ]; then
-    eval "$(echo "$_LINKS_JSON" | jq -r '
-      @sh "LINK_STATE=\(.state // "offline")",
-      @sh "UP_URL=\(.upUrl // "")",
-      @sh "DOWN_URL=\(.downUrl // "")",
-      @sh "DASHBOARD_URL=\(.dashboardUrl // "")",
-      @sh "LESSONS_URL=\(.lessonsUrl // "")",
-      @sh "DASHBOARD_LABEL=\(.dashboardLabel // "Dashboard")",
-      @sh "LESSONS_LABEL=\(.lessonsLabel // "Lessons")"
-    ' 2>/dev/null)"
-  fi
+_LINKS_JSON=$(node "${SCRIPT_DIR}/statusline-links.js" 2>/dev/null)
+if [ -n "$_LINKS_JSON" ]; then
+  eval "$(echo "$_LINKS_JSON" | jq -r '
+    @sh "LINK_STATE=\(.state // "offline")",
+    @sh "UP_URL=\(.upUrl // "")",
+    @sh "DOWN_URL=\(.downUrl // "")",
+    @sh "DASHBOARD_URL=\(.dashboardUrl // "")",
+    @sh "LESSONS_URL=\(.lessonsUrl // "")",
+    @sh "DASHBOARD_LABEL=\(.dashboardLabel // "Dashboard")",
+    @sh "LESSONS_LABEL=\(.lessonsLabel // "Lessons")"
+  ' 2>/dev/null)"
 fi
 
 # ── ThumbGate package metadata ────────────────────────────────────────
@@ -120,15 +118,13 @@ fi
 
 # ── Repo context (branch / work item / PR) ───────────────────────────
 BRANCH_NAME=""; WORK_ITEM_LABEL=""; PR_LABEL=""
-if [[ "$STATUSLINE_VERBOSE" = "1" ]]; then
-  _CONTEXT_JSON=$(node "${SCRIPT_DIR}/statusline-context.js" 2>/dev/null)
-  if [[ -n "$_CONTEXT_JSON" ]]; then
-    eval "$(echo "$_CONTEXT_JSON" | jq -r '
-      @sh "BRANCH_NAME=\(.branchName // "")",
-      @sh "WORK_ITEM_LABEL=\(.workItemLabel // "")",
-      @sh "PR_LABEL=\(.prLabel // "")"
-    ' 2>/dev/null)"
-  fi
+_CONTEXT_JSON=$(node "${SCRIPT_DIR}/statusline-context.js" 2>/dev/null)
+if [[ -n "$_CONTEXT_JSON" ]]; then
+  eval "$(echo "$_CONTEXT_JSON" | jq -r '
+    @sh "BRANCH_NAME=\(.branchName // "")",
+    @sh "WORK_ITEM_LABEL=\(.workItemLabel // "")",
+    @sh "PR_LABEL=\(.prLabel // "")"
+  ' 2>/dev/null)"
 fi
 
 # ── Control Tower stats ──────────────────────────────────────────
@@ -144,16 +140,14 @@ fi
 
 # ── Latest lesson (data available for extensions; not rendered in statusbar) ──
 LESSON_TEXT=""; LESSON_ID=""; LESSON_LABEL=""; LESSON_LINK=""
-if [[ "$STATUSLINE_VERBOSE" = "1" ]]; then
-  _LESSON_JSON=$(node "${SCRIPT_DIR}/statusline-lesson.js" 2>/dev/null)
-  if [[ -n "$_LESSON_JSON" ]]; then
-    eval "$(echo "$_LESSON_JSON" | jq -r '
-      @sh "LESSON_TEXT=\(.text // "")",
-      @sh "LESSON_ID=\(.lessonId // "")",
-      @sh "LESSON_LABEL=\(.label // "")",
-      @sh "LESSON_LINK=\(.link // "")"
-    ' 2>/dev/null)"
-  fi
+_LESSON_JSON=$(node "${SCRIPT_DIR}/statusline-lesson.js" 2>/dev/null)
+if [[ -n "$_LESSON_JSON" ]]; then
+  eval "$(echo "$_LESSON_JSON" | jq -r '
+    @sh "LESSON_TEXT=\(.text // "")",
+    @sh "LESSON_ID=\(.lessonId // "")",
+    @sh "LESSON_LABEL=\(.label // "")",
+    @sh "LESSON_LINK=\(.link // "")"
+  ' 2>/dev/null)"
 fi
 
 # ── Colors ────────────────────────────────────────────────────────

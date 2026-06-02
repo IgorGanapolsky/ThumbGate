@@ -434,7 +434,6 @@ test('commercial truth sources stay aligned across public and historical docs', 
   const directoryGuide = readText('docs/marketing/mcp-directories.md');
 
   assert.match(commercialTruth, /Pro at \$19\/mo or \$149\/yr/);
-  assert.match(commercialTruth, /Team pricing anchor is \*\*\$49\/seat\/mo/i);
   assert.match(commercialTruth, /auto-promotion into prevention rules/);
   assert.match(commercialTruth, /Do not treat GitHub stars, watchers, dependents, or npm download counts as customer or revenue proof/);
 
