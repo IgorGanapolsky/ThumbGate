@@ -2220,55 +2220,6 @@ function renderGateAuditChartFromData(gateAudit) {
   });
 }
 
-// Enterprise DFCX Messenger Bootstrapper
-function initDfcxMessenger() {
-  const isEnterprise = API_KEY.startsWith('tg_op_') || API_KEY.startsWith('tg_creator_');
-  if (!isEnterprise) return;
-
-  // Hardcode the demo agent ID for the CEO, or use the placeholder
-  const agentId = window.THUMBGATE_DFCX_AGENT_ID || '117fe92e-3333-479c-bce0-681dc2251a37'; // Public demo agent ID fallback
-  const projectId = window.THUMBGATE_GCP_PROJECT || 'random-timer-dist-new';
-
-  if (!document.getElementById('df-messenger-script')) {
-    const script = document.createElement('script');
-    script.id = 'df-messenger-script';
-    script.src = 'https://www.gstatic.com/dialogflow-console/fast/messenger/bootstrap.js?v=1';
-    document.head.appendChild(script);
-  }
-
-  let messenger = document.querySelector('df-messenger');
-  if (!messenger) {
-    messenger = document.createElement('df-messenger');
-    messenger.setAttribute('project-id', projectId);
-    messenger.setAttribute('agent-id', agentId);
-    messenger.setAttribute('language-code', 'en');
-    messenger.setAttribute('max-query-length', '-1');
-    
-    const bubble = document.createElement('df-messenger-chat-bubble');
-    bubble.setAttribute('chat-title', 'ThumbGate Enterprise Chat');
-    messenger.appendChild(bubble);
-    
-    document.body.appendChild(messenger);
-  }
-}
-
-// Call init when the dashboard loads successfully
-const originalRenderStats = renderStats;
-renderStats = function(data) {
-  originalRenderStats(data);
-  initDfcxMessenger();
-};
 </script>
-<style>
-  df-messenger {
-    --df-messenger-bot-message: #161618;
-    --df-messenger-button-titlebar-color: #22d3ee;
-    --df-messenger-chat-background-color: #0a0a0b;
-    --df-messenger-font-color: #e8e8ec;
-    --df-messenger-send-icon: #22d3ee;
-    --df-messenger-user-message: #22d3ee;
-    z-index: 999;
-  }
-</style>
 </body>
 </html>
