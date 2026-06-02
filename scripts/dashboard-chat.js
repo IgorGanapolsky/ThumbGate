@@ -20,6 +20,23 @@ const DEFAULT_MODEL = 'gemini-2.5-flash';
 const MAX_QUESTION_CHARS = 2000;
 const MAX_CONTEXT_LESSONS = 8;
 
+// Allowlist the model so a user-supplied `model` cannot route the call to an
+// arbitrary / unexpected (or more expensive) endpoint. Anything not on the list
+// falls back to the default.
+const ALLOWED_MODELS = new Set([
+  'gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro',
+  'gemini-2.0-flash', 'gemini-2.0-flash-lite',
+  'gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-pro-latest',
+]);
+
+function resolveModel(requested) {
+  const r = String(requested || '').trim();
+  if (r && ALLOWED_MODELS.has(r)) return r;
+  const envModel = String(process.env.THUMBGATE_GEMINI_MODEL || '').trim();
+  if (envModel && ALLOWED_MODELS.has(envModel)) return envModel;
+  return DEFAULT_MODEL;
+}
+
 function resolveApiKey(opts = {}) {
   return opts.apiKey || process.env.GEMINI_API_KEY || process.env.THUMBGATE_GEMINI_API_KEY || '';
 }
@@ -103,7 +120,7 @@ async function answerDataQuestion(question, opts = {}) {
     };
   }
 
-  const model = opts.model || process.env.THUMBGATE_GEMINI_MODEL || DEFAULT_MODEL;
+  const model = resolveModel(opts.model);
   const prompt = buildChatPrompt(q, lessons);
   const fetchImpl = opts.fetch || globalThis.fetch;
 

@@ -67,6 +67,20 @@ test('answerDataQuestion returns a grounded answer with a mocked Gemini', async 
   assert.ok(Array.isArray(r.sources));
 });
 
+test('answerDataQuestion allowlists the model — junk falls back to default, never routes arbitrarily', async () => {
+  let calledUrl = '';
+  const fakeFetch = async (url) => {
+    calledUrl = url;
+    return { ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }) };
+  };
+  await answerDataQuestion('q', { apiKey: 'k', feedbackDir: '/tmp/x', model: '../../evil-model', fetch: fakeFetch });
+  assert.match(calledUrl, /models\/gemini-2\.5-flash:generateContent$/, 'junk model must fall back to the default');
+  assert.doesNotMatch(calledUrl, /evil-model/);
+
+  await answerDataQuestion('q', { apiKey: 'k', feedbackDir: '/tmp/x', model: 'gemini-2.0-flash', fetch: fakeFetch });
+  assert.match(calledUrl, /models\/gemini-2\.0-flash:generateContent$/, 'an allowlisted model passes through');
+});
+
 test('answerDataQuestion surfaces a Gemini API error cleanly', async () => {
   const fakeFetch = async () => ({
     ok: false,
