@@ -75,6 +75,10 @@ const HYBRID_JSONL_READ_LIMIT = 400;
 function normalize(text) {
   if (!text || typeof text !== 'string') return '';
   return text
+    // Strip ephemeral telemetry key/values (session_id, timestamp, hook_event_name, etc.)
+    .replace(/["']?(session_?id|timestamp|transcript_path|hook_?event_?name|prompt_?id)["']?\s*[:=]\s*["']?[^"',}\s]+["']?/gi, '')
+    // Strip temp paths and volatile user directories
+    .replace(/\/(tmp|var\/folders)\/[^\s"',}]+/g, '/tmp/redacted')
     .replace(/\/Users\/[^\s/]+/g, '/Users/redacted')
     .replace(/:\d{4,5}\b/g, ':PORT')
     .toLowerCase()
