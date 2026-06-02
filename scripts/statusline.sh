@@ -206,10 +206,10 @@ LINE="${LINE:+${LINE} · }ThumbGate v${TG_VERSION} · ${TG_TIER}"
 if [[ "$UP" = "0" && "$DOWN" = "0" ]]; then
   LINE="${D}${LINE}${RST} · no feedback yet"
   [[ -n "$PR_LABEL" ]] && LINE="${LINE} · ${D}${PR_LABEL}${RST}"
-  if [[ "$STATUSLINE_VERBOSE" = "1" ]]; then
-    LINE="${LINE} · ${C}${DASHBOARD_LINK}${RST} · ${M}${LESSONS_LINK}${RST}"
-    [[ -n "$LATEST_LESSON_LINK" ]] && LINE="${LINE} · ${D}${LATEST_LESSON_LINK}${RST}"
-  fi
+  
+  LINE="${LINE} · ${C}${DASHBOARD_LINK}${RST} · ${M}${LESSONS_LINK}${RST}"
+  [[ -n "$LATEST_LESSON_LINK" ]] && LINE="${LINE} · ${D}${LATEST_LESSON_LINK}${RST}"
+  
   printf '%b\n' "$LINE"
 else
   LINE="${LINE} · ${G}${BD}${UP}${RST}${UP_LINK} ${R}${BD}${DOWN}${RST}${DOWN_LINK} ${ARROW}"
@@ -219,10 +219,9 @@ else
   [[ "${AT_RISK:-0}" -gt 0 ]] && LINE="${LINE} ${R}${AT_RISK}⚠${RST}"
   [[ "${ANOMALIES:-0}" -gt 0 ]] && LINE="${LINE} ${R}${ANOMALIES}☠${RST}"
   [[ -n "$PR_LABEL" ]] && LINE="${LINE} · ${D}${PR_LABEL}${RST}"
-  if [[ "$STATUSLINE_VERBOSE" = "1" ]]; then
-    LINE="${LINE} · ${C}${DASHBOARD_LINK}${RST} · ${M}${LESSONS_LINK}${RST}"
-    [[ -n "$LATEST_LESSON_LINK" ]] && LINE="${LINE} · ${D}${LATEST_LESSON_LINK}${RST}"
-  fi
-
+  
+  LINE="${LINE} · ${C}${DASHBOARD_LINK}${RST} · ${M}${LESSONS_LINK}${RST}"
+  [[ -n "$LATEST_LESSON_LINK" ]] && LINE="${LINE} · ${D}${LATEST_LESSON_LINK}${RST}"
+  
   printf '%b\n' "$LINE"
 fi
