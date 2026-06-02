@@ -284,9 +284,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // scripts/noop-detect.js, and scripts/action-receipts.js because
   // adapters/mcp/server-stdio.js and scripts/dashboard.js require them in the
   // packaged runtime (action-loop instrumentation).
+  // Bumped 271 -> 272 (2026-06-02) to ship scripts/dashboard-chat.js, required by
+  // src/api/server.js for the dashboard "chat with your data" /v1/chat endpoint.
   assert.ok(
-    manifest.fileCount <= 271,
-    `npm package should stay <= 271 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 272,
+    `npm package should stay <= 272 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -392,8 +394,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 3.95 MB -> 3.97 MB (2026-06-01) for Vertex AI setup CLI, guides,
   // and enterprise cost-containment HTML/script additions.
   assert.ok(
-    manifest.unpackedSize <= 3_970_000,
-    `npm package should stay <= 3.97 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_000_000,
+    `npm package should stay <= 4.00 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
