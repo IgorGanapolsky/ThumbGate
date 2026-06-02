@@ -1548,7 +1548,7 @@ function buildEnterpriseChatAnswer(prompt, dashboardData, status) {
       : 'Vertex routing config is not present in this server environment.');
     lines.push(status.dfcx.liveAgentConfigured
       ? `DFCX env has agent ${status.dfcx.agentId} in ${status.dfcx.location}; verify it with REST/console before production claims.`
-      : 'No live DFCX agent is configured in env. Do not use gcloud alpha dialogflow cx; verify agents with the Dialogflow CX REST API or console.');
+      : 'No live DFCX agent is configured in env. Do not use the old alpha gcloud CX command group; verify agents with the Dialogflow CX REST API or console.');
     sources.push('enterprise cloud status');
   } else {
     lines.push('Ask about feedback, lessons, active gates, team rollout, token savings, or Vertex/DFCX readiness.');
@@ -2243,6 +2243,7 @@ window.THUMBGATE_DASHBOARD_BOOTSTRAP = { enabled: ${bootstrapActive ? 'true' : '
 <p>This lightweight npm dashboard is bundled without marketing assets, so installs stay small while core feedback, lessons, and API routes remain available.</p>
 <div class="grid">
 <a class="card" href="/v1/dashboard"><strong>Dashboard JSON</strong><span>Inspect feedback totals, lesson counts, and Reliability Gateway health.</span></a>
+<a class="card" href="/v1/enterprise/dialogflow/status"><strong>Enterprise Dialogflow Data Chat</strong><span>Check Vertex/DFCX readiness and use /v1/enterprise/dialogflow/chat to query local ThumbGate data through the DFCX guard.</span></a>
 <a class="card" href="/lessons"><strong>Lessons</strong><span>Review remembered thumbs-up/down lessons and enforcement context.</span></a>
 <a class="card" href="/health"><strong>Health</strong><span>Verify the installed package version and runtime status.</span></a>
 </div>
