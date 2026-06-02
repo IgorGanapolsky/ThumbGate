@@ -988,8 +988,21 @@ function recordStructuralGateBlock(toolName, toolInput, result) {
   return result;
 }
 
+// Escape hatch: edits that ONLY touch the gate's own configuration — Claude
+// settings or ThumbGate config — are never scope-enforced. A governance gate must
+// never trap the user inside its own settings (e.g. a stale task scope blocking the
+// very settings.local.json edit needed to loosen/disable the gate).
+function isGateEscapeHatchFile(filePath) {
+  const p = String(filePath || '').toLowerCase().replace(/\\/g, '/');
+  return /(?:^|\/)\.claude\/settings(?:\.[^/]+)?\.json$/.test(p)
+    || /(?:^|\/)\.thumbgate\/(?:config|settings|gates|governance-state)[^/]*\.json$/.test(p);
+}
+
 function isScopeEnforcedAction(toolName, toolInput = {}, affectedFiles = []) {
-  if (EDIT_LIKE_TOOLS.has(toolName) && affectedFiles.length > 0) return true;
+  if (EDIT_LIKE_TOOLS.has(toolName) && affectedFiles.length > 0) {
+    if (affectedFiles.every(isGateEscapeHatchFile)) return false;
+    return true;
+  }
   if (toolName !== 'Bash') return false;
   const command = String(toolInput.command || '');
   if (!HIGH_RISK_BASH_PATTERN.test(command)) return false;
@@ -1307,7 +1320,11 @@ function matchesGate(gate, toolName, toolInput) {
 function isSafeLocalCredentialHardeningCommand(toolName, toolInput = {}) {
   if (toolName !== 'Bash') return false;
   const command = String(toolInput.command || '').trim();
-  if (!command || /(?:^|\s)chmod\s+[^&;|]*\s+-R\b/i.test(command)) return false;
+  if (!command) return false;
+  // Reject recursive chmod (never auto-allow chmod over a directory tree). Use a
+  // linear token scan instead of a wildcard regex to avoid polynomial backtracking
+  // (ReDoS): `chmod\s+[^&;|]*\s+-R` is ambiguous on whitespace (CodeQL js/polynomial-redos).
+  if (command.split(/\s+/).some((t) => t === '--recursive' || /^-[A-Za-z]*R[A-Za-z]*$/.test(t))) return false;
   if (/[;&|`$()<>*?[\]{}]/.test(command)) return false;
 
   const match = command.match(/(?:^|\s)chmod\s+(?:-[fv]\s+)?0?([46]00)\s+(['"]?)(\S+)\2\s*$/i);
