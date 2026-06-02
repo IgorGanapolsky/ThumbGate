@@ -6937,6 +6937,38 @@ ${hidden}
         return;
       }
 
+      // Save Gemini API key from the dashboard UI
+      if (req.method === 'POST' && pathname === '/v1/settings/gemini-key') {
+        const body = await parseJsonBody(req);
+        const key = String(body.key || '').trim();
+        if (!key) {
+          sendJson(res, 400, { ok: false, error: 'missing_key', message: 'No API key provided.' });
+          return;
+        }
+
+        try {
+          const projectDir = process.env.THUMBGATE_PROJECT_DIR || process.cwd();
+          const envPath = path.join(projectDir, '.env');
+          let content = '';
+          if (fs.existsSync(envPath)) {
+            content = fs.readFileSync(envPath, 'utf8');
+          }
+          const regex = /^GEMINI_API_KEY=.*$/m;
+          if (regex.test(content)) {
+            content = content.replace(regex, `GEMINI_API_KEY=${key}`);
+          } else {
+            content = content.trim() + `\nGEMINI_API_KEY=${key}\n`;
+          }
+          fs.writeFileSync(envPath, content, 'utf8');
+          // Also set it in the current process so it takes effect immediately without restart
+          process.env.GEMINI_API_KEY = key;
+          sendJson(res, 200, { ok: true, message: 'Key saved.' });
+        } catch (e) {
+          sendJson(res, 500, { ok: false, error: 'fs_error', message: 'Failed to write to .env file: ' + e.message });
+        }
+        return;
+      }
+
       // Server-Sent Events stream of live feedback / rule-regen / gate events.
       // Dashboard clients subscribe once (with the same Bearer auth already
       // required for /v1/feedback/stats) and receive pushed events as they

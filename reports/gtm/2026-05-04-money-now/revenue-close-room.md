@@ -1,6 +1,6 @@
 # Revenue Close Room (Money Now)
 
-Updated: 2026-05-05
+Updated: 2026-06-02
 
 This file is the close-room script + truth table for converting warm/high-intent leads into:
 
@@ -24,6 +24,7 @@ Guardrail: do not publish posts, send messages, or invite members without explic
 - Booked: `$149`
 - Signups: 475
 - Sprint leads: 0
+- Live pipeline state on 2026-06-02: `23` active leads, `21` contacted, `1` replied, `2` untouched
 
 ## Offer Routing (fast rules)
 
@@ -68,7 +69,7 @@ Use the `$1500` sprint checkout link from `docs/COMMERCIAL_TRUTH.md` / sprint do
 
 ## Next Money Actions (no auto-send)
 
-1. Send the 4 warm Sprint DMs in `reports/gtm/2026-05-04-money-now/operator-send-now.md`.
+1. Send the 2 untouched Pro leads and the 4 contacted warm Reddit follow-ups in `reports/gtm/2026-05-04-money-now/operator-send-now.md`.
 2. After each send, log the stage movement using `npm run sales:pipeline -- advance ...` (commands are in the send sheet).
-3. When anyone replies with pain, reply with the Diagnostic or Sprint close copy above (then attach proof packet).
-
+3. If a warm lead confirms pain but scope is unclear, use the Diagnostic close first.
+4. If the lead already has one workflow owner plus one repeated failure blocking rollout, use the Sprint close.

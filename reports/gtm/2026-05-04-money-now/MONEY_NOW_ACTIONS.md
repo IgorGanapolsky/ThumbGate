@@ -13,41 +13,53 @@ Action-time approval card for any outbound action:
 - Paid orders: 4
 - Checkout starts: 133
 - Booked: `$149`
+- Live sales pipeline on 2026-06-02: `23` active leads, `21` contacted, `1` replied, `2` still untouched.
 - Pipeline: focus on **Operator Lab** conversion with Pro for self-serve leads and Diagnostic/Sprint for warm pain-first leads.
-- Revenue bottleneck: outbound execution on high-intent individual leads.
+- Revenue bottleneck: follow-up discipline on already-contacted leads plus the last untouched high-intent GitHub leads.
 
 ## Do First
-1. Send the 3 self-serve Pro guide-first messages (individuals building agentic tools).
-2. Send the 2 warm Reddit messages with pain-first routing to **Diagnostic** or **Sprint** once the repeated failure is explicit.
-3. Clear the legacy "Teams" outreach from the queue.
-4. After each send, run that row's `Log after send` command from `operator-send-now.md`.
+1. Send the 2 untouched Pro guide-first messages: `github_easingthemes_dx_aem_flow` and `github_zaxbysauce_opencode_swarm`.
+2. Follow up the 4 already-contacted warm Reddit leads with the pain-confirming Sprint/Diagnostic bump.
+3. Ignore the deprecated Aiventyx thread even though it is the only current `replied` lead in the pipeline.
+4. After each send, run that row's logging command from `operator-send-now.md`.
 
-## Top Send Queue (Individual Focus)
+## Top Send Queue (Individual Focus, 2026-06-02)
 
-### 1. github_agynio_gh_pr_review
-- Contact: https://agyn.io/
+### 1. github_easingthemes_dx_aem_flow
+- Contact: https://www.linkedin.com/in/draganfilipovic/
 - Offer: Pro at $19/mo or $149/yr.
-- Send: Hey @agynio, saw you're building around `gh-pr-review`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
+- Status: still `targeted` in the live pipeline.
+- Send: Your `dx-aem-flow` work looks like a strong fit for the self-serve ThumbGate path. Start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated AI-agent mistake is still slowing the workflow down after that, Pro is the clean next step.
 
-### 2. github_levnikolaevich_claude_code_skills
-- Contact: https://levnikolaevich.com/
+### 2. github_zaxbysauce_opencode_swarm
+- Contact: https://github.com/zaxbysauce
 - Offer: Pro at $19/mo or $149/yr.
-- Send: Hey @levnikolaevich, saw you're building around `claude-code-skills`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
+- Status: still `targeted` in the live pipeline.
+- Send: Your `opencode-swarm` project already lives in the exact risk zone ThumbGate is built for. If you want the self-serve path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
 
-### 3. github_greenpolo_cc_multi_cli_plugin
-- Contact: https://github.com/greenpolo
-- Offer: Pro at $19/mo or $149/yr.
-- Send: Hey @greenpolo, saw you're building around `cc-multi-cli-plugin`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
-
-### 4. reddit_deep_ad1959_r_cursor (Diagnostic/Sprint if pain is confirmed)
+### 3. reddit_deep_ad1959_r_cursor
 - Contact: https://www.reddit.com/user/Deep_Ad1959/
 - Offer: Workflow Hardening Diagnostic (`$499`) -> Sprint (`$1500`) if scope is real.
-- Send: Your question about rollback rates when context changes is exactly the right one. If you have one AI-agent workflow where context drift or rollback risk keeps repeating, I can map the failure, define the gate, and show the proof path. Worth a quick diagnostic on your current setup?
+- Status: already `contacted`; use a follow-up, not the original first touch.
+- Send: Quick follow-up on your rollback-risk question. If one workflow is still repeating the same context-shift failure, I can map the failure, define the gate, and show the proof path. If the scope is still fuzzy, the Workflow Hardening Diagnostic is the clean first step before a Sprint.
 
-### 5. reddit_game_of_kton_r_cursor (Diagnostic/Sprint if pain is confirmed)
+### 4. reddit_game_of_kton_r_cursor
 - Contact: https://www.reddit.com/user/game-of-kton/
 - Offer: Workflow Hardening Diagnostic (`$499`) -> Sprint (`$1500`) if scope is real.
-- Send: Your ACT-R engram work is fascinating. If one recurring failure mode like stale context, opposing facts, or bad handoffs is blocking a real workflow, I can turn that into a gate plan and proof run. Open to a quick diagnostic?
+- Status: already `contacted`; use a follow-up, not the original first touch.
+- Send: Following up on your ACT-R engram thread. If one recurring failure mode like stale context, opposing facts, or bad handoffs is still blocking a real workflow, I can turn that into a gate plan and proof run. Open to a quick diagnostic?
+
+### 5. reddit_leogodin217_r_claudecode
+- Contact: https://www.reddit.com/user/leogodin217/
+- Offer: Workflow Hardening Diagnostic (`$499`) -> Sprint (`$1500`) if scope is real.
+- Status: already `contacted`; use a follow-up, not the original first touch.
+- Send: Your phased arch-create to sprint workflow is still one of the strongest fits I’ve seen for a proof-backed hardening pass. If there is one repeating failure inside that workflow, I can turn it into a concrete gate and proof run.
+
+### 6. reddit_enthu_cutlet_1337_r_claudecode
+- Contact: https://www.reddit.com/user/Enthu-Cutlet-1337/
+- Offer: Workflow Hardening Diagnostic (`$499`) -> Sprint (`$1500`) if scope is real.
+- Status: already `contacted`; use a follow-up, not the original first touch.
+- Send: Circling back on your point about brittle guardrails. If one workflow is still failing when context shifts, I can help turn that failure into an enforceable gate instead of another prompt patch.
 
 ## Deprecated (Forget Teams/Aiventyx)
 - All Aiventyx marketplace listing follow-ups.
