@@ -2,6 +2,8 @@
 
 Enterprise add-on. **Not shipped in the public npm package** — it lives in-repo so a pilot can deploy it as Cloud Run / Cloud Functions middleware inside the customer's GCP tenant.
 
+Important setup note: do **not** use `gcloud alpha dialogflow cx` as proof of a live DFCX agent. That command group is not available in current gcloud installs. Verify agents through the Google Cloud Conversational Agents / Dialogflow CX console or the official Dialogflow CX REST API (`projects.locations.agents`).
+
 ## What it is
 
 A **pre-action gate in front of your existing Dialogflow CX fulfillment.** It runs ThumbGate's gate engine against each fulfillment turn *before* the side-effect (BigQuery / CRM / billing write) executes. If a configured policy gate denies the action — or the action is a same-session repeat — the side-effect is blocked and a safe response is returned instead.
@@ -42,6 +44,14 @@ gcloud run deploy thumbgate-dfcx-gate \
 ```
 
 Then point your DFCX webhook at the Cloud Run URL.
+
+To inventory or prove live agents, use the Dialogflow CX REST API rather than a nonexistent `gcloud alpha dialogflow cx` command. Example:
+
+```bash
+ACCESS_TOKEN="$(gcloud auth print-access-token)"
+curl -sS -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+  "https://dialogflow.googleapis.com/v3/projects/PROJECT_ID/locations/LOCATION_ID/agents"
+```
 
 ## What it does NOT do (yet)
 

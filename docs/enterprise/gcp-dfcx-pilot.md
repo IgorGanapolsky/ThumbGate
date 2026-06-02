@@ -3,6 +3,8 @@
 A scoped, white-glove implementation that puts ThumbGate's pre-action gate in front of your Dialogflow CX fulfillment, so risky or repeat actions are blocked *before* they touch a database, CRM, or billing system — and proves it with hard numbers.
 
 > This is a **design-partner pilot**, not a GA product purchase. You're buying a 2–4 week implementation + the running middleware, deployed in your own GCP tenant.
+>
+> Verification note: `gcloud alpha dialogflow cx` is not a valid command group in current gcloud installs. Live-agent proof must come from the Conversational Agents / Dialogflow CX console, deployed webhook URLs, Cloud Run logs, or the Dialogflow CX REST API (`projects.locations.agents`).
 
 ---
 

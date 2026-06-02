@@ -700,10 +700,11 @@ async function setupVertex() {
   // 4. Print gorgeous success activation box
   console.log('');
   console.log('  ╭──────────────────────────────────────────────────────────╮');
-  console.log('  │  🎉 Vertex AI Setup Complete — ZERO FRICTION!            │');
+  console.log('  │  Vertex AI Setup Complete                                │');
   console.log('  │                                                         │');
-  console.log('  │  ThumbGate is now fully wired to your GCP environment.   │');
-  console.log('  │  All agent checks will route securely via Vertex AI.     │');
+  console.log('  │  ThumbGate wrote local Vertex routing config.            │');
+  console.log('  │  This does not create or verify a Dialogflow CX agent.   │');
+  console.log('  │  Verify DFCX with the console or Dialogflow CX REST API. │');
   console.log('  │                                                         │');
   console.log('  │  Try a test run:                                        │');
   console.log('  │  npx thumbgate feedback-self-test                       │');
@@ -2963,7 +2964,7 @@ const SUBCOMMAND_HELP = {
   suggest:       'Usage: npx thumbgate suggest <gate-id>\n\nSuggest fixes for a specific gate based on lesson history.',
   cost:          'Usage: npx thumbgate cost [--json] [--stats <path>] [--mix \'{"claude-sonnet-4-5":0.8,...}\']\n\nShow cumulative $ and tokens saved by PreToolUse gate blocks. Reads ~/.thumbgate/gate-stats.json.',
   savings:       'Usage: npx thumbgate savings [--json] [--stats <path>] [--mix \'{"claude-sonnet-4-5":0.8,...}\']\n\nAlias for `thumbgate cost`.',
-  'setup-vertex': 'Usage: npx thumbgate setup-vertex\n\nAuto-enable Vertex AI API on GCP and write secure credentials to local .env.',
+  'setup-vertex': 'Usage: npx thumbgate setup-vertex\n\nAuto-enable Vertex AI API on GCP and write local Vertex routing config to .env. This does not create or verify a Dialogflow CX agent; use the Dialogflow CX REST API or console for live-agent evidence.',
   brain: 'Usage: npx thumbgate brain [--write] [--json] [--limit=N]\n\nBuild the agent-readable "context brain" — a single artifact consolidating this\nrepo\'s lessons, prevention rules, active gates, and project context for a coding\nagent to read BEFORE acting. --write saves it to .thumbgate/BRAIN.md (versioned,\ndeterministic). --json emits the structured model. --limit caps lessons (default 15).',
 };
 

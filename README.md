@@ -533,18 +533,20 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 For enterprise subscriptions, ThumbGate natively integrates with Google Cloud Platform and **Vertex AI** to route all agent checks through compliant Gemini models inside your corporate VPC.
 
 ### Zero-Friction Setup
-To instantly wire your local installation to Google Cloud, simply run:
+To wire local ThumbGate scoring to Vertex AI, run:
 ```bash
 npx thumbgate setup-vertex
 ```
 * **Auto-Discovery:** Automatically detects your active authenticated `gcloud` session and active project ID.
 * **Auto-Enablement:** Programmatically enables the Vertex AI API in your project.
-* **Auto-Configuration:** Writes secure billing and project credentials directly to your local `.env` file.
+* **Auto-Configuration:** Writes local Vertex routing settings to your `.env` file.
+
+This command does **not** create or verify a live Dialogflow CX agent. On current Google Cloud CLI installs, `gcloud alpha dialogflow cx` is not a valid command group; verify Conversational Agents / Dialogflow CX with the Google Cloud console or the official Dialogflow CX REST API (`projects.locations.agents`) before claiming a live DFCX deployment.
 
 ### Zero-Friction Cost Containment ($10/mo Hard Cap)
 Google Cloud budget alerts are "alert-only" and do not stop API traffic, risking unexpected bill shock. ThumbGate completely resolves this on the client side:
 * **Instant Shutdown:** ThumbGate maintains a lightweight, local token ledger and instantly halts outgoing API traffic the millisecond your monthly token spending approaches the **$10 limit** (500k tokens of Gemini 1.5 Flash).
-* **Bypasses Console Complexity:** Requires **zero** GCP web console setups, zero Pub/Sub topics, and zero Cloud Functions. Perfect for non-technical managers and teams.
+* **Bypasses extra shutdown plumbing:** Requires no Pub/Sub or Cloud Functions for the local ThumbGate-side stop condition. You still need normal Google Cloud billing/API setup and live-agent verification for DFCX pilots.
 
 ---
 

@@ -11,6 +11,7 @@
 <meta name="robots" content="noindex">
 <!-- Privacy-friendly analytics by Plausible -->
 <script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<script src="https://www.gstatic.com/dialogflow-console/fast/messenger/bootstrap.js?v=1"></script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -2103,4 +2104,13 @@ function renderGateAuditChartFromData(gateAudit) {
 }
 </script>
 </body>
+<df-messenger
+  project-id="random-timer-dist-new"
+  agent-id="ENTERPRISE_AGENT_ID"
+  language-code="en"
+  max-query-length="-1">
+  <df-messenger-chat-bubble
+   chat-title="ThumbGate Enterprise Chat">
+  </df-messenger-chat-bubble>
+</df-messenger>
 </html>
