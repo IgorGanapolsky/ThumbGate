@@ -65,17 +65,23 @@ npm publish --dry-run --access public
 npm publish --access public
 npm view thumbgate version --json
 npm view thumbgate dist.integrity --json
+npm view thumbgate readme | rg -n "Recovery if a gate over-fires|break-glass"
+npx -y thumbgate@1.26.6 help break-glass
+npx -y thumbgate@1.26.6 break-glass --reason="published artifact verification" --json
 ```
 
 Observed result:
 
-- Targeted gate/CLI/install tests passed: `251/251`.
+- Targeted gate/CLI/install tests passed: `256/256`.
 - Gate hardening tests passed: `5/5`.
 - Version sync check passed across `32` tracked targets.
 - Congruence check passed across public/package/adapter surfaces.
 - Published package was verified from npm after release: `thumbgate@1.26.6`.
-- Published dist integrity: `sha512-+98HSpPkujOyAfD94QDisBPWFRf/xQtxEmS2HGkSabMQKlp1wvwXcVT5XvOeSL6+LlPfeyRg3YEu1mVtkW362A==`.
-- Runtime dogfood passed against the installed `1.26.5` hook path before this documentation entry was added.
+- Published dist integrity: `sha512-vbDAYQyyA1IrS0PjbSO4pKMRg6eo+CDcYV6zAwGBPO/CCbnq7QmBcQr26SgTpdreVKo8qz/4VfPBjFWgaTiWog==`.
+- Published npm README contains the `Recovery if a gate over-fires` section and `break-glass` commands.
+- Published-artifact dogfood passed for `npx -y thumbgate@1.26.6 help break-glass`.
+- Published-artifact dogfood passed for `npx -y thumbgate@1.26.6 break-glass --reason="published artifact verification" --json`, returning a `300000` ms TTL and settings-only recovery globs.
+- Runtime dogfood passed against the installed `1.26.5` hook path before this documentation entry was added; the published `1.26.6` artifact was then verified with `npx`.
 
 Requirements verified:
 
