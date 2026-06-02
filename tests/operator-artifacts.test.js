@@ -73,6 +73,32 @@ test('revenue artifact prioritizes acquisition when the system is at zero dollar
   assert.match(artifact.decision.nextActions.join('\n'), /ThumbGate proof chunk/);
 });
 
+test('revenue artifact formats structured top traffic channel labels', () => {
+  const artifact = buildRevenuePulseArtifact({
+    now: NOW,
+    dashboardData: {
+      analytics: {
+        funnel: {
+          visitors: 5,
+          ctaClicks: 0,
+          checkoutStarts: 0,
+          acquisitionLeads: 1,
+          paidOrders: 0,
+          topTrafficChannel: { key: 'organic', count: 5 },
+        },
+        revenue: {
+          paidOrders: 0,
+          bookedRevenueCents: 0,
+        },
+      },
+    },
+  });
+
+  assert.doesNotMatch(artifact.decision.nextActions.join('\n'), /\[object Object\]/);
+  assert.match(artifact.decision.nextActions.join('\n'), /organic \(5\)/);
+  assert.match(artifact.sections.flatMap((section) => section.bullets).join('\n'), /organic \(5\)/);
+});
+
 test('PR artifact classifies ready, blocked, pending, and draft PRs', async () => {
   const artifact = await buildPrPulseArtifact({
     now: NOW,
