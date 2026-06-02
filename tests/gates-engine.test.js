@@ -730,6 +730,50 @@ test('recordStat increments blocked count', () => {
   cleanupStateFiles();
 });
 
+test('recordStat only counts repeats for the same sanitized action', () => {
+  cleanupStateFiles();
+  recordStat('memory-high-risk-default-deny', 'block', null, {
+    toolName: 'Bash',
+    toolInput: { command: 'git status --short' },
+  });
+  recordStat('memory-high-risk-default-deny', 'block', null, {
+    toolName: 'Bash',
+    toolInput: { command: 'npm test' },
+  });
+  let stats = loadStats();
+  assert.equal(stats.blocked, 2);
+  assert.equal(stats.recurringBlocks || 0, 0);
+
+  recordStat('memory-high-risk-default-deny', 'block', null, {
+    toolName: 'Bash',
+    toolInput: { command: 'npm test' },
+  });
+  stats = loadStats();
+  assert.equal(stats.blocked, 3);
+  assert.equal(stats.recurringBlocks, 1);
+  cleanupStateFiles();
+});
+
+test('recordStat ignores hook transport-only payloads for repeat metrics', () => {
+  cleanupStateFiles();
+  recordStat('retrieval_entropy_high', 'warn', null, {
+    toolName: 'UserPromptSubmit',
+    toolInput: {
+      prompt: '{"hookEventName":"UserPromptSubmit","session_id":"019e715b-4574-7731-9c33-e0d2f0000001","transcript_path":"/Users/igorganapolsky/.claude/projects/a/session.jsonl"}',
+    },
+  });
+  recordStat('retrieval_entropy_high', 'warn', null, {
+    toolName: 'UserPromptSubmit',
+    toolInput: {
+      prompt: '{"hookEventName":"UserPromptSubmit","session_id":"019e715b-4574-7731-9c33-e0d2f0000002","transcript_path":"/Users/igorganapolsky/.claude/projects/b/session.jsonl"}',
+    },
+  });
+  const stats = loadStats();
+  assert.equal(stats.warned, 2);
+  assert.equal(stats.recurringBlocks || 0, 0);
+  cleanupStateFiles();
+});
+
 test('loadStats returns defaults when file missing', () => {
   cleanupStateFiles();
   const stats = loadStats();

@@ -20,6 +20,10 @@ const {
   recordDecisionEvaluation,
   recordDecisionOutcome,
 } = require('./decision-journal');
+const {
+  actionFingerprint,
+  sanitizeFeedbackText,
+} = require('./feedback-sanitizer');
 
 /**
  * Computes the SHA-256 hash of an executable binary to prevent path-based bypasses.
@@ -498,7 +502,29 @@ function loadStats() {
 
 function saveStats(stats) { saveJSON(module.exports.STATS_PATH, stats); }
 
-function recordStat(gateId, action, gate) {
+function buildGateActionFingerprint(gateId, options = {}) {
+  if (options.actionFingerprint) return String(options.actionFingerprint);
+  const toolName = options.toolName || options.tool_name || '';
+  const toolInput = options.toolInput || options.tool_input || {};
+  const parts = [toolName];
+  if (typeof toolInput === 'string') {
+    parts.push(toolInput);
+  } else if (toolInput && typeof toolInput === 'object') {
+    parts.push(
+      toolInput.command || '',
+      toolInput.cmd || '',
+      toolInput.file_path || '',
+      toolInput.path || '',
+      toolInput.description || '',
+      toolInput.prompt || '',
+      toolInput.pattern || '',
+    );
+    if (Array.isArray(toolInput.affectedFiles)) parts.push(...toolInput.affectedFiles);
+  }
+  return actionFingerprint(parts);
+}
+
+function recordStat(gateId, action, gate, options = {}) {
   const stats = loadStats();
   if (action === 'block') stats.blocked = (stats.blocked || 0) + 1;
   else if (action === 'warn') stats.warned = (stats.warned || 0) + 1;
@@ -512,16 +538,25 @@ function recordStat(gateId, action, gate) {
   else if (action === 'approve') stats.byGate[gateId].pendingApproval = (stats.byGate[gateId].pendingApproval || 0) + 1;
   else if (action === 'log') stats.byGate[gateId].logged = (stats.byGate[gateId].logged || 0) + 1;
 
-  // Track per-gate recurrence within a session for first-time fix rate
+  // Track same-action recurrence within a session for first-time fix rate.
+  // Gate-only recurrence over-counts noisy gates; repeats require a stable,
+  // sanitized action fingerprint.
   if (action === 'block' || action === 'warn') {
     if (!stats.sessionFiredGates) stats.sessionFiredGates = {};
+    if (!stats.sessionFiredActions) stats.sessionFiredActions = {};
     const sessionKey = `session_${Math.floor(Date.now() / SESSION_ACTION_TTL_MS)}`;
     if (!stats.sessionFiredGates[sessionKey]) stats.sessionFiredGates[sessionKey] = {};
-    if (stats.sessionFiredGates[sessionKey][gateId]) {
-      // Same gate fired again in this session — it's a recurring block
-      stats.recurringBlocks = (stats.recurringBlocks || 0) + 1;
-    } else {
-      stats.sessionFiredGates[sessionKey][gateId] = true;
+    stats.sessionFiredGates[sessionKey][gateId] = true;
+
+    const fingerprint = buildGateActionFingerprint(gateId, options);
+    if (fingerprint) {
+      if (!stats.sessionFiredActions[sessionKey]) stats.sessionFiredActions[sessionKey] = {};
+      if (!stats.sessionFiredActions[sessionKey][gateId]) stats.sessionFiredActions[sessionKey][gateId] = {};
+      if (stats.sessionFiredActions[sessionKey][gateId][fingerprint]) {
+        stats.recurringBlocks = (stats.recurringBlocks || 0) + 1;
+      } else {
+        stats.sessionFiredActions[sessionKey][gateId][fingerprint] = true;
+      }
     }
   }
 
@@ -1018,7 +1053,7 @@ function evaluateLocalOnlyRemoteSideEffectGate(toolName, toolInput = {}, governa
 }
 
 function recordStructuralGateBlock(toolName, toolInput, result) {
-  recordStat(result.gate, 'block');
+  recordStat(result.gate, 'block', null, { toolName, toolInput });
   const auditRecord = recordAuditEvent({
     toolName,
     toolInput,
@@ -1623,7 +1658,7 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
 
   const pendingThreadResolutionGate = evaluatePendingPrThreadResolutionGate(toolName, toolInput);
   if (pendingThreadResolutionGate) {
-    recordStat(pendingThreadResolutionGate.gate, 'block');
+    recordStat(pendingThreadResolutionGate.gate, 'block', null, { toolName, toolInput });
     const auditRecord = recordAuditEvent({
       toolName,
       toolInput,
@@ -1639,7 +1674,7 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
 
   const boostedRiskGuard = evaluateBoostedRiskTagGuard(toolName, toolInput);
   if (boostedRiskGuard) {
-    recordStat(boostedRiskGuard.gate, 'block');
+    recordStat(boostedRiskGuard.gate, 'block', null, { toolName, toolInput });
     const auditRecord = recordAuditEvent({
       toolName,
       toolInput,
@@ -1659,13 +1694,13 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
   if (isRuntimePlanGateEnabled()) {
     const planGate = evaluatePlanGate(toolName, toolInput);
     if (planGate) {
-      recordStat(planGate.gate, planGate.decision === 'deny' ? 'block' : 'warn');
+      recordStat(planGate.gate, planGate.decision === 'deny' ? 'block' : 'warn', null, { toolName, toolInput });
       return planGate;
     }
 
     const trajectory = getTrajectoryScore();
     if (trajectory.isDrifting) {
-      recordStat('strategic-drift', 'block');
+      recordStat('strategic-drift', 'block', null, { toolName, toolInput });
       return { decision: 'deny', gate: 'strategic-drift', message: trajectory.message, severity: 'high' };
     }
   }
@@ -1719,12 +1754,12 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
       // Free-tier daily block cap: after N blocks/day, deny → warn + upgrade CTA
       const cappedResult = applyDailyBlockCap(denyResult);
       if (cappedResult) {
-        recordStat(gate.id, 'warn', gate);
+        recordStat(gate.id, 'warn', gate, { toolName, toolInput });
         const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: cappedResult.message, severity: gate.severity, source: 'gates-engine', dailyBlockCapApplied: true });
         auditToFeedback(auditRecord);
         return cappedResult;
       }
-      recordStat(gate.id, 'block', gate);
+      recordStat(gate.id, 'block', gate, { toolName, toolInput });
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return denyResult;
@@ -1733,13 +1768,13 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
     if (gate.action === 'approve') {
       const approvalEnabled = process.env.THUMBGATE_APPROVAL_GATES !== '0';
       if (approvalEnabled) {
-        recordStat(gate.id, 'approve', gate);
+        recordStat(gate.id, 'approve', gate, { toolName, toolInput });
         const result = { decision: 'approve', gate: gate.id, message, severity: gate.severity, reasoning, requiresApproval: true };
         const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'approve', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
         auditToFeedback(auditRecord);
         return result;
       }
-      recordStat(gate.id, 'warn', gate);
+      recordStat(gate.id, 'warn', gate, { toolName, toolInput });
       const result = { decision: 'warn', gate: gate.id, message: `[approval gate disabled] ${message}`, severity: gate.severity, reasoning };
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
@@ -1747,7 +1782,7 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
     }
 
     if (gate.action === 'log') {
-      recordStat(gate.id, 'log', gate);
+      recordStat(gate.id, 'log', gate, { toolName, toolInput });
       const result = { decision: 'log', gate: gate.id, message, severity: gate.severity, reasoning, logged: true };
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'log', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
@@ -1756,7 +1791,7 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
     }
 
     if (gate.action === 'warn') {
-      recordStat(gate.id, 'warn', gate);
+      recordStat(gate.id, 'warn', gate, { toolName, toolInput });
       const result = { decision: 'warn', gate: gate.id, message, severity: gate.severity, reasoning };
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
@@ -1771,7 +1806,7 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
   const memoryGuard = evaluateMemoryGuard(toolName, toolInput);
   if (memoryGuard) {
     const enrichedMemoryGuard = enrichResultWithSentinel(memoryGuard, sentinelReport);
-    recordStat(enrichedMemoryGuard.gate, 'block');
+    recordStat(enrichedMemoryGuard.gate, 'block', null, { toolName, toolInput });
     recordMemoryGuardDecision(sentinelDecision, enrichedMemoryGuard);
     const auditRecord = recordAuditEvent({
       toolName,
@@ -1788,7 +1823,7 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
 
   if (sentinelReport && sentinelReport.decision !== 'allow') {
     const sentinelResult = buildSentinelGateResult(sentinelReport);
-    recordStat(sentinelResult.gate, sentinelResult.decision === 'deny' ? 'block' : 'warn');
+    recordStat(sentinelResult.gate, sentinelResult.decision === 'deny' ? 'block' : 'warn', null, { toolName, toolInput });
     recordSentinelBlockDecision(sentinelDecision, sentinelResult);
     const auditRecord = recordAuditEvent({
       toolName,
@@ -1849,7 +1884,7 @@ function evaluateGates(toolName, toolInput, configPath) {
 
   const pendingThreadResolutionGate = evaluatePendingPrThreadResolutionGate(toolName, toolInput);
   if (pendingThreadResolutionGate) {
-    recordStat(pendingThreadResolutionGate.gate, 'block');
+    recordStat(pendingThreadResolutionGate.gate, 'block', null, { toolName, toolInput });
     const auditRecord = recordAuditEvent({
       toolName,
       toolInput,
@@ -1865,7 +1900,7 @@ function evaluateGates(toolName, toolInput, configPath) {
 
   const boostedRiskGuard = evaluateBoostedRiskTagGuard(toolName, toolInput);
   if (boostedRiskGuard) {
-    recordStat(boostedRiskGuard.gate, 'block');
+    recordStat(boostedRiskGuard.gate, 'block', null, { toolName, toolInput });
     const auditRecord = recordAuditEvent({
       toolName,
       toolInput,
@@ -1885,13 +1920,13 @@ function evaluateGates(toolName, toolInput, configPath) {
   if (isRuntimePlanGateEnabled()) {
     const planGate = evaluatePlanGate(toolName, toolInput);
     if (planGate) {
-      recordStat(planGate.gate, planGate.decision === 'deny' ? 'block' : 'warn');
+      recordStat(planGate.gate, planGate.decision === 'deny' ? 'block' : 'warn', null, { toolName, toolInput });
       return planGate;
     }
 
     const trajectory = getTrajectoryScore();
     if (trajectory.isDrifting) {
-      recordStat('strategic-drift', 'block');
+      recordStat('strategic-drift', 'block', null, { toolName, toolInput });
       return { decision: 'deny', gate: 'strategic-drift', message: trajectory.message, severity: 'high' };
     }
   }
@@ -1918,12 +1953,12 @@ function evaluateGates(toolName, toolInput, configPath) {
       // Free-tier daily block cap: after N blocks/day, deny → warn + upgrade CTA
       const cappedResult = applyDailyBlockCap(denyResult);
       if (cappedResult) {
-        recordStat(gate.id, 'warn', gate);
+        recordStat(gate.id, 'warn', gate, { toolName, toolInput });
         const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: cappedResult.message, severity: gate.severity, source: 'gates-engine', dailyBlockCapApplied: true });
         auditToFeedback(auditRecord);
         return cappedResult;
       }
-      recordStat(gate.id, 'block', gate);
+      recordStat(gate.id, 'block', gate, { toolName, toolInput });
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return denyResult;
@@ -1932,13 +1967,13 @@ function evaluateGates(toolName, toolInput, configPath) {
     if (gate.action === 'approve') {
       const approvalEnabled = process.env.THUMBGATE_APPROVAL_GATES !== '0';
       if (approvalEnabled) {
-        recordStat(gate.id, 'approve', gate);
+        recordStat(gate.id, 'approve', gate, { toolName, toolInput });
         const result = { decision: 'approve', gate: gate.id, message, severity: gate.severity, reasoning, requiresApproval: true };
         const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'approve', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
         auditToFeedback(auditRecord);
         return result;
       }
-      recordStat(gate.id, 'warn', gate);
+      recordStat(gate.id, 'warn', gate, { toolName, toolInput });
       const result = { decision: 'warn', gate: gate.id, message: `[approval gate disabled] ${message}`, severity: gate.severity, reasoning };
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
@@ -1946,7 +1981,7 @@ function evaluateGates(toolName, toolInput, configPath) {
     }
 
     if (gate.action === 'log') {
-      recordStat(gate.id, 'log', gate);
+      recordStat(gate.id, 'log', gate, { toolName, toolInput });
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'log', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       // 'log' action allows the tool call to proceed — continue to next gate
@@ -1954,7 +1989,7 @@ function evaluateGates(toolName, toolInput, configPath) {
     }
 
     if (gate.action === 'warn') {
-      recordStat(gate.id, 'warn', gate);
+      recordStat(gate.id, 'warn', gate, { toolName, toolInput });
       const result = { decision: 'warn', gate: gate.id, message, severity: gate.severity, reasoning };
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
@@ -1969,7 +2004,7 @@ function evaluateGates(toolName, toolInput, configPath) {
   const memoryGuard = evaluateMemoryGuard(toolName, toolInput);
   if (memoryGuard) {
     const enrichedMemoryGuard = enrichResultWithSentinel(memoryGuard, sentinelReport);
-    recordStat(enrichedMemoryGuard.gate, 'block');
+    recordStat(enrichedMemoryGuard.gate, 'block', null, { toolName, toolInput });
     recordMemoryGuardDecision(sentinelDecision, enrichedMemoryGuard);
     const auditRecord = recordAuditEvent({
       toolName,
@@ -1986,7 +2021,7 @@ function evaluateGates(toolName, toolInput, configPath) {
 
   if (sentinelReport && sentinelReport.decision !== 'allow') {
     const sentinelResult = buildSentinelGateResult(sentinelReport);
-    recordStat(sentinelResult.gate, sentinelResult.decision === 'deny' ? 'block' : 'warn');
+    recordStat(sentinelResult.gate, sentinelResult.decision === 'deny' ? 'block' : 'warn', null, { toolName, toolInput });
     recordSentinelBlockDecision(sentinelDecision, sentinelResult);
     const auditRecord = recordAuditEvent({
       toolName,
@@ -2092,7 +2127,10 @@ function evaluateSecretGuard(input = {}) {
   if (!scanResult.detected) {
     return null;
   }
-  recordStat('secret-exfiltration', 'block');
+  recordStat('secret-exfiltration', 'block', null, {
+    toolName: input.tool_name || input.toolName || 'unknown',
+    toolInput: input.tool_input || {},
+  });
   recordSecretViolation(input, scanResult);
   const result = buildSecretGuardResult(scanResult);
   // Audit trail: record secret guard denial
@@ -2422,7 +2460,7 @@ function buildKnowledgeConflictContext(toolName, toolInput, lessons, entropy) {
   const message = `Knowledge conflict warning: retrieved lessons disagree for this action (entropy ${entropy}). Treat the reminders below as cautionary context, but do not stop unrelated work solely because memory is noisy.`;
 
   if (isKnowledgeConflictHardBlockAction(toolName, toolInput)) {
-    recordStat('retrieval_entropy_high', 'block');
+    recordStat('retrieval_entropy_high', 'block', null, { toolName, toolInput });
     return {
       decision: 'deny',
       gate: 'knowledge-conflict-gate',
@@ -2431,7 +2469,7 @@ function buildKnowledgeConflictContext(toolName, toolInput, lessons, entropy) {
     };
   }
 
-  recordStat('retrieval_entropy_high', 'warn');
+  recordStat('retrieval_entropy_high', 'warn', null, { toolName, toolInput });
   return mergeContextStrings(`[ThumbGate] ${message}`, lessonContext);
 }
 
@@ -2443,7 +2481,7 @@ function extractActionContext(toolName, toolInput) {
   if (toolInput.description) parts.push(String(toolInput.description).slice(0, 200));
   if (toolInput.prompt) parts.push(String(toolInput.prompt).slice(0, 400));
   if (toolInput.pattern) parts.push(String(toolInput.pattern).slice(0, 200));
-  return parts.filter(Boolean).join(' ');
+  return sanitizeFeedbackText(parts.filter(Boolean).join(' ')) || toolName;
 }
 
 function extractAvoidanceAdvice(content) {
