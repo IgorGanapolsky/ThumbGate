@@ -175,7 +175,6 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/dispatch-brief.js',
     'scripts/distribution-surfaces.js',
     'scripts/funnel-analytics.js',
-    'scripts/operational-summary.js',
     'scripts/optimize-context.js',
     'scripts/pulse.js',
     'scripts/session-episode-store.js',
@@ -283,11 +282,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // scripts/noop-detect.js, and scripts/action-receipts.js because
   // adapters/mcp/server-stdio.js and scripts/dashboard.js require them in the
   // packaged runtime (action-loop instrumentation).
-  // Bumped 271 → 272 (2026-06-02) to ship scripts/operational-dashboard.js
-  // because bin/cli.js requires it for the packaged `thumbgate dashboard` CLI.
+  // Bumped 271 → 273 (2026-06-02) to ship scripts/operational-dashboard.js
+  // and scripts/operational-summary.js because bin/cli.js requires them for
+  // the packaged `thumbgate dashboard` CLI.
   assert.ok(
-    manifest.fileCount <= 272,
-    `npm package should stay <= 272 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 273,
+    `npm package should stay <= 273 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
