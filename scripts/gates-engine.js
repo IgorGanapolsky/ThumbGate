@@ -112,6 +112,8 @@ const REMOTE_SIDE_EFFECT_BASH_PATTERN = /\b(?:git\s+push\b|gh\s+pr\s+(?:create|m
 const BOOSTED_RISK_BLOCK_SCORE = 0.8;
 const BOOSTED_RISK_MIN_EXAMPLES = 3;
 const PR_THREAD_RESOLUTION_ACTION = 'pr_thread_resolution_verified_after_commit';
+const KNOWLEDGE_ENTROPY_THRESHOLD = 0.7;
+const KNOWLEDGE_CONFLICT_STRICT_BASH_PATTERN = /\b(?:git\s+push\b|gh\s+pr\s+merge\b|gh\s+release\s+(?:create|delete|edit|upload)\b|(?:npm|yarn|pnpm)\s+publish\b|rm\s+-rf\b|git\s+reset\s+--hard\b|git\s+clean\s+-f|railway\s+(?:deploy|up)\b|gcloud\s+(?:run\s+deploy|app\s+deploy)\b|firebase\s+deploy\b|vercel\s+--prod\b|kubectl\s+(?:apply|delete)\b|terraform\s+(?:apply|destroy)\b)\b/i;
 
 function isRuntimePlanGateEnabled() {
   return process.env.THUMBGATE_PLAN_GATE === '1' || process.env.THUMBGATE_PLAN_GATE === 'true';
@@ -1234,6 +1236,9 @@ function matchGate(gate, toolName, toolInput = {}) {
     try {
       const regex = new RegExp(gate.pattern);
       if (!regex.test(matchText)) return { matched: false, matchText, affectedFiles };
+      if (gate.id === 'permission-change-approval' && isSafeLocalCredentialHardeningCommand(toolName, toolInput)) {
+        return { matched: false, matchText, affectedFiles };
+      }
     } catch {
       return { matched: false, matchText, affectedFiles };
     }
@@ -1297,6 +1302,27 @@ function matchGate(gate, toolName, toolInput = {}) {
 
 function matchesGate(gate, toolName, toolInput) {
   return matchGate(gate, toolName, toolInput).matched;
+}
+
+function isSafeLocalCredentialHardeningCommand(toolName, toolInput = {}) {
+  if (toolName !== 'Bash') return false;
+  const command = String(toolInput.command || '').trim();
+  if (!command || /(?:^|\s)chmod\s+[^&;|]*\s+-R\b/i.test(command)) return false;
+  if (/[;&|`$()<>*?[\]{}]/.test(command)) return false;
+
+  const match = command.match(/(?:^|\s)chmod\s+(?:-[fv]\s+)?0?([46]00)\s+(['"]?)(\S+)\2\s*$/i);
+  if (!match) return false;
+
+  const target = match[3];
+  if (!target || target === '/' || target === '~') return false;
+  if (/^\.\.?(?:\/|$)/.test(target)) return false;
+
+  const normalized = target.replace(/^['"]|['"]$/g, '').toLowerCase();
+  const looksLikeCredentialPath = /(?:^|\/)(?:\.config|\.ssh|\.gnupg|\.aws|\.gcloud|\.gemini|\.resume_secrets|\.thumbgate|secrets?|credentials?)(?:\/|$)/.test(normalized)
+    || /(?:key|secret|token|credential|gemini|gcloud|google|operator).*\.(?:json|pem|key|env)$/i.test(normalized)
+    || /\.(?:pem|key)$/i.test(normalized);
+
+  return looksLikeCredentialPath;
 }
 
 function evaluateMemoryGuard(toolName, toolInput = {}) {
@@ -1989,12 +2015,19 @@ function isApprovalGatesEnabled() {
 // PreToolUse hook interface (stdin/stdout JSON)
 // ---------------------------------------------------------------------------
 
-function buildReminderOutput(context) {
+function buildPreToolUseOutput(fields = {}) {
   return {
+    hookEventName: 'PreToolUse',
+    ...fields,
+  };
+}
+
+function buildReminderOutput(context) {
+  return buildPreToolUseOutput({
     additionalContext: context,
     systemReminder: context,
     thumbgateSystemReminder: context,
-  };
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -2047,6 +2080,7 @@ function formatOutput(result, behavioralContext) {
     const proCta = buildBlockActionProCta() || '';
     return JSON.stringify({
       hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
         ...reminder,
         permissionDecision: 'deny',
         permissionDecisionReason: `[GATE:${result.gate}] ${result.message}${reasoningSuffix}${reminderSuffix}${proCta}`,
@@ -2059,6 +2093,7 @@ function formatOutput(result, behavioralContext) {
     const reminderSuffix = behavioralContext ? `\n\nSystem reminder:\n${behavioralContext}` : '';
     return JSON.stringify({
       hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
         ...reminder,
         permissionDecision: 'deny',
         permissionDecisionReason: `[GATE:${result.gate}] APPROVAL REQUIRED: ${result.message} — Ask the human to confirm this action before proceeding.${reasoningSuffix}${reminderSuffix}`,
@@ -2071,6 +2106,7 @@ function formatOutput(result, behavioralContext) {
     const context = `[GATE:${result.gate}] WARNING: ${result.message}${reasoningSuffix}${extra}`;
     return JSON.stringify({
       hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
         additionalContext: context,
         ...(behavioralContext ? {
           systemReminder: behavioralContext,
@@ -2204,9 +2240,8 @@ function buildRelevantLessonContext(toolName, toolInput) {
     const lessons = retrieveRelevantLessons(toolName, actionContext, { maxResults: 3 });
 
     const entropy = calculateRetrievalEntropy(lessons);
-    if (entropy > 0.7) {
-      recordStat("retrieval_entropy_high", "block");
-      return { decision: "deny", gate: "knowledge-conflict-gate", message: "✗ THUMBGATE: Action blocked due to high Knowledge Entropy (conflicting past lessons).", severity: "high" };
+    if (entropy > KNOWLEDGE_ENTROPY_THRESHOLD) {
+      return buildKnowledgeConflictContext(toolName, toolInput, lessons, entropy);
     }
     return formatNegativeLessonContext(lessons);
   } catch {
@@ -2237,16 +2272,11 @@ async function buildRelevantLessonContextAsync(toolName, toolInput) {
       : retrieveRelevantLessons(toolName, actionContext, { maxResults: 3 });
     
     // Knowledge Conflict Detection: if retrieved lessons have high sentiment entropy,
-    // it indicates conflicting past evidence. Block and require human disambiguation.
+    // it indicates conflicting past evidence. Warn by default; hard-block only in
+    // strict mode for external/destructive side-effect commands.
     const entropy = calculateRetrievalEntropy(lessons);
-    if (entropy > 0.7) {
-      recordStat('retrieval_entropy_high', 'block');
-      return {
-        decision: 'deny',
-        gate: 'knowledge-conflict-gate',
-        message: '✗ THUMBGATE: Action blocked due to high Knowledge Entropy (conflicting past lessons). Please disambiguate your instructions or verify the intended behavior manually.',
-        severity: 'high',
-      };
+    if (entropy > KNOWLEDGE_ENTROPY_THRESHOLD) {
+      return buildKnowledgeConflictContext(toolName, toolInput, lessons, entropy);
     }
 
     return formatNegativeLessonContext(lessons);
@@ -2271,6 +2301,36 @@ function formatNegativeLessonContext(lessons) {
   });
 
   return `[ThumbGate] Past mistakes relevant to this action — read before proceeding:\n${formatted.join('\n')}`;
+}
+
+function isStrictKnowledgeConflictMode() {
+  return process.env.THUMBGATE_STRICT_KNOWLEDGE_CONFLICT === '1'
+    || process.env.THUMBGATE_STRICT_KNOWLEDGE_CONFLICT === 'true';
+}
+
+function isKnowledgeConflictHardBlockAction(toolName, toolInput = {}) {
+  if (!isStrictKnowledgeConflictMode()) return false;
+  if (EDIT_LIKE_TOOLS.has(toolName)) return true;
+  if (toolName !== 'Bash') return false;
+  return KNOWLEDGE_CONFLICT_STRICT_BASH_PATTERN.test(String(toolInput.command || ''));
+}
+
+function buildKnowledgeConflictContext(toolName, toolInput, lessons, entropy) {
+  const lessonContext = formatNegativeLessonContext(lessons);
+  const message = `Knowledge conflict warning: retrieved lessons disagree for this action (entropy ${entropy}). Treat the reminders below as cautionary context, but do not stop unrelated work solely because memory is noisy.`;
+
+  if (isKnowledgeConflictHardBlockAction(toolName, toolInput)) {
+    recordStat('retrieval_entropy_high', 'block');
+    return {
+      decision: 'deny',
+      gate: 'knowledge-conflict-gate',
+      message: `✗ THUMBGATE: ${message} Strict mode is enabled for destructive or external side-effect actions; verify intent or narrow the task before proceeding.`,
+      severity: 'high',
+    };
+  }
+
+  recordStat('retrieval_entropy_high', 'warn');
+  return mergeContextStrings(`[ThumbGate] ${message}`, lessonContext);
 }
 
 function extractActionContext(toolName, toolInput) {
