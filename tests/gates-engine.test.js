@@ -891,6 +891,27 @@ test('permission-change approval still catches unsafe chmod commands', () => {
   cleanupStateFiles();
 });
 
+test('memory-high-risk gate exempts safe credential-hardening chmod (vault key)', () => {
+  cleanupStateFiles();
+  // chmod 600 on a credential path is a hardening (safety) action; it must never be
+  // hard-denied (decision:'deny') by memory-high-risk-default-deny, even when recurring
+  // negative memory would otherwise match. Advisory warns (e.g. workflow-sentinel) are
+  // fine — the action proceeds. Regression guard for the evaluateMemoryGuard exemption.
+  for (const cmd of [
+    'chmod 600 ~/.resume_secrets/stripe.json',
+    'chmod 600 /Users/igorganapolsky/.resume_secrets/stripe.json',
+    'chmod 600 ~/.ssh/id_ed25519',
+  ]) {
+    const result = evaluateGates('Bash', { command: cmd });
+    const denied = result && result.decision === 'deny';
+    assert.ok(!denied, `expected not-denied for: ${cmd} (got ${result && result.gate})`);
+    if (result) {
+      assert.notEqual(result.gate, 'memory-high-risk-default-deny', `must not be memory-denied: ${cmd}`);
+    }
+  }
+  cleanupStateFiles();
+});
+
 test('isApprovalGatesEnabled returns true by default', () => {
   const { isApprovalGatesEnabled } = require('../scripts/gates-engine');
   const saved = process.env.THUMBGATE_APPROVAL_GATES;

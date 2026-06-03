@@ -1460,6 +1460,14 @@ function evaluateMemoryGuard(toolName, toolInput = {}) {
   if (isSafeSecretStorageWrite(toolName, toolInput, process.cwd())) {
     return null;
   }
+  // Hardening a credential file's permissions (chmod 600 on a key/secret path) is
+  // a safety action, not a risk. The same exemption already guards the
+  // permission-change-approval gate; without it here, `chmod 600 ~/.resume_secrets/key`
+  // gets hard-denied by recurring-negative-memory matching — the exact opposite of
+  // the intended behavior, and it breaks the secrets-vault hardening step.
+  if (isSafeLocalCredentialHardeningCommand(toolName, toolInput)) {
+    return null;
+  }
   if (!isHighRiskAction(toolName, toolInput, affectedFiles)) {
     return null;
   }
