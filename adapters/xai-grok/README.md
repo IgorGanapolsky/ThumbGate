@@ -28,7 +28,19 @@ That writes the Claude-compatible config that Grok Build also reads.
 | PreToolUse hook | auto-detected `hooks.preToolUse` (Claude Code shape) |
 | CLAUDE.md / AGENTS.md rules | auto-detected on launch |
 | ThumbGate skills (`skills/thumbgate/SKILL.md`) | auto-detected Anthropic Skills format |
+| Custom slash command (`.claude/commands/thumbgate-dashboard.md`) | auto-detected slash command (`/project:thumbgate-dashboard`) |
 | Feedback capture | runs through the same `gate-check` command path |
+
+## Local Dashboard Access
+
+Grok Build users can quickly launch the local HTTP dashboard scoped to the current project by running:
+```bash
+thumbgate-dashboard
+```
+Or, within the Grok Build CLI, you can trigger it via the custom slash command:
+```bash
+/project:thumbgate-dashboard
+```
 
 ## Verifying it works
 

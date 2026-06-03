@@ -340,7 +340,8 @@ npx thumbgate explore    # terminal explorer for lessons, checks, stats
 npx thumbgate background-governance  # review background-agent run risk
 npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json  # evaluate GPT-5.5 routing
 npx thumbgate native-messaging-audit  # inspect local browser bridges and extension hosts
-npx thumbgate dashboard  # open local dashboard
+npx thumbgate dashboard --open                                  # open local project-scoped dashboard in browser
+thumbgate-dashboard                                             # standalone browser dashboard shortcut (run '/project:thumbgate-dashboard' in Claude/Grok)
 npx thumbgate serve      # start MCP server on stdio
 npx thumbgate bench      # run reliability benchmark
 npx thumbgate bench --programbench-smoke  # include cleanroom whole-repo proof lane
