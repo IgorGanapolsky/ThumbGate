@@ -3846,7 +3846,7 @@ test('renderPackagedDashboardHtml returns html with bootstrap disabled by defaul
   assert.ok(html.includes('ThumbGate Dashboard'));
   assert.ok(html.includes('enabled: false'));
   assert.ok(html.includes('/v1/dashboard'));
-  assert.ok(html.includes('Enterprise Dialogflow Data Chat'));
+  assert.ok(html.includes('Enterprise Data Chat'));
   assert.ok(html.includes('/v1/enterprise/dialogflow/chat'));
   assert.ok(!html.includes('ENTERPRISE_AGENT_ID'));
   assert.ok(!html.includes('gstatic.com/dialogflow-console'));

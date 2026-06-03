@@ -2249,7 +2249,7 @@ window.THUMBGATE_DASHBOARD_BOOTSTRAP = { enabled: ${bootstrapActive ? 'true' : '
 <p>This lightweight npm dashboard is bundled without marketing assets, so installs stay small while core feedback, lessons, and API routes remain available.</p>
 <div class="grid">
 <a class="card" href="/v1/dashboard"><strong>Dashboard JSON</strong><span>Inspect feedback totals, lesson counts, and Reliability Gateway health.</span></a>
-<a class="card" href="/v1/enterprise/dialogflow/status"><strong>Enterprise Dialogflow Data Chat</strong><span>Check Vertex/DFCX readiness and use /v1/enterprise/dialogflow/chat to query local ThumbGate data through the DFCX guard.</span></a>
+<a class="card" href="/v1/enterprise/dialogflow/status"><strong>Enterprise Data Chat</strong><span>Check Vertex/DFCX readiness and use /v1/enterprise/dialogflow/chat to query local ThumbGate data through the data-access guard. This does not claim a live Dialogflow CX agent unless deployment evidence is configured.</span></a>
 <a class="card" href="/lessons"><strong>Lessons</strong><span>Review remembered thumbs-up/down lessons and enforcement context.</span></a>
 <a class="card" href="/health"><strong>Health</strong><span>Verify the installed package version and runtime status.</span></a>
 </div>
