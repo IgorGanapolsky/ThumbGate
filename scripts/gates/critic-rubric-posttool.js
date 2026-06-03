@@ -40,11 +40,20 @@ const RUBRIC_DECISIONS_LOG = path.join(LOG_DIR, 'rubric-decisions.jsonl');
 // Precompiled regex parts for the no-destructive-bash rubric clause. Pulling
 // them out of the inline literal both lowers cognitive complexity (Sonar S5852)
 // and makes intent explicit without escaped slashes (Sonar S6535).
-const DESTRUCTIVE_SYSTEM_RM = /\brm\s+(-[a-z]*r[a-z]*f|--recursive\s+--force)\s+(?!\/tmp|\/var\/folders)\//;
-const FORCE_PUSH_PROTECTED = /\bgit\s+push\s+(?:--force|-f)(?!-with-lease)\b[^\n]*\b(main|master|production)\b/;
-const CURL_PIPE_SHELL = /\b(curl|wget)\b[^|]*\|\s*(sh|bash|zsh)\b/;
-const SECRET_PATH = /(?:^|[/.])(\.env(?:\.[a-z]+)?|secrets?|credentials?|id_rsa)(?:$|[/.])|\.pem$/i;
-const LIVE_SECRET_BODY = /(sk_live_[A-Za-z0-9]{8,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})/;
+//
+// DESTRUCTIVE_RM_FLAGS uses bounded alternation (no nested `*` quantifiers) to
+// avoid ReDoS backtracking (Sonar S5852 hotspot). It recognises rm with both
+// `r` and `f` flags in either order, plus the long-form --recursive --force.
+const DESTRUCTIVE_RM_FLAGS = /(?:-[a-zA-Z]{0,4}r[a-zA-Z]{0,4}f|-[a-zA-Z]{0,4}f[a-zA-Z]{0,4}r|--recursive\s+--force)/;
+const DESTRUCTIVE_SYSTEM_RM = new RegExp(
+  String.raw`\brm\s+` + DESTRUCTIVE_RM_FLAGS.source + String.raw`\s+(?!/tmp|/var/folders)/`,
+);
+// Force-push clause: explicit grouping per alternative to make the
+// negative-lookahead precedence unambiguous (Sonar S5850).
+const FORCE_PUSH_PROTECTED = /\bgit\s+push\s+(?:(?:--force)(?!-with-lease)|(?:-f)(?!-with-lease))\b[^\n]*\b(?:main|master|production)\b/;
+const CURL_PIPE_SHELL = /\b(?:curl|wget)\b[^|]*\|\s*(?:sh|bash|zsh)\b/;
+const SECRET_PATH = /(?:^|[/.])(?:\.env(?:\.[a-z]+)?|secrets?|credentials?|id_rsa)(?:$|[/.])|\.pem$/i;
+const LIVE_SECRET_BODY = /(?:sk_live_[A-Za-z0-9]{8,64}|sk-[A-Za-z0-9]{20,64}|AKIA[0-9A-Z]{16})/;
 
 // ---------------------------------------------------------------------------
 // Default rubric. Operators can extend by writing .thumbgate/rubric.js that
