@@ -709,8 +709,30 @@ let currentGeneratedView = 'team-review';
 const BOOTSTRAP_API_KEY = __DASHBOARD_BOOTSTRAP_KEY__;
 const LOCAL_PRO_BOOTSTRAP = __DASHBOARD_BOOTSTRAP_ENABLED__;
 
+let ACTIVE_PROJECT_DIR = '';
+try {
+  var urlParams = new URLSearchParams(window.location.search);
+  ACTIVE_PROJECT_DIR = urlParams.get('project') || '';
+} catch (e) {}
+
+function preserveProjectQueryParams() {
+  if (!ACTIVE_PROJECT_DIR) return;
+  var links = document.querySelectorAll('a[href^="/dashboard"], a[href^="/lessons"], a[href="/"]');
+  links.forEach(function(link) {
+    try {
+      var url = new URL(link.href, window.location.origin);
+      url.searchParams.set('project', ACTIVE_PROJECT_DIR);
+      link.href = url.pathname + url.search + url.hash;
+    } catch (e) {}
+  });
+}
+
 function getHeaders() {
-  return { 'Authorization': 'Bearer ' + API_KEY, 'Content-Type': 'application/json' };
+  var headers = { 'Authorization': 'Bearer ' + API_KEY, 'Content-Type': 'application/json' };
+  if (ACTIVE_PROJECT_DIR) {
+    headers['x-thumbgate-project-dir'] = ACTIVE_PROJECT_DIR;
+  }
+  return headers;
 }
 
 // --- Chat with your data ---------------------------------------------------
@@ -2100,6 +2122,7 @@ function loadDemo() {
 
 // Auto-load demo on first visit so visitors see the product immediately
 window.addEventListener('DOMContentLoaded', function() {
+  preserveProjectQueryParams();
   if (hasBootstrapKey()) {
     connect({ key: BOOTSTRAP_API_KEY, localPro: true });
     return;

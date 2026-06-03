@@ -385,8 +385,32 @@ const LOCAL_PRO_BOOTSTRAP = __LESSONS_BOOTSTRAP_ENABLED__;
 function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function escAttr(s) { return escHtml(String(s || '')).replace(/"/g, '&quot;'); }
 
+let ACTIVE_PROJECT_DIR = '';
+try {
+  var urlParams = new URLSearchParams(window.location.search);
+  ACTIVE_PROJECT_DIR = urlParams.get('project') || '';
+} catch (e) {}
+
+function preserveProjectQueryParams() {
+  if (!ACTIVE_PROJECT_DIR) return;
+  var links = document.querySelectorAll('a[href^="/dashboard"], a[href^="/lessons"], a[href="/"]');
+  links.forEach(function(link) {
+    try {
+      var url = new URL(link.href, window.location.origin);
+      url.searchParams.set('project', ACTIVE_PROJECT_DIR);
+      link.href = url.pathname + url.search + url.hash;
+    } catch (e) {}
+  });
+}
+
+window.addEventListener('DOMContentLoaded', preserveProjectQueryParams);
+
 function getHeaders() {
-  return { 'Authorization': 'Bearer ' + API_KEY, 'Content-Type': 'application/json' };
+  var headers = { 'Authorization': 'Bearer ' + API_KEY, 'Content-Type': 'application/json' };
+  if (ACTIVE_PROJECT_DIR) {
+    headers['x-thumbgate-project-dir'] = ACTIVE_PROJECT_DIR;
+  }
+  return headers;
 }
 
 function hasBootstrapKey() {
@@ -807,13 +831,19 @@ function cleanLiveTitle(titleText, contextText) {
   if (isJson) {
     try {
       var parsed = JSON.parse(trimmed);
-      if (parsed.prompt) {
+      var promptVal = parsed.prompt;
+      var hookVal = parsed.hook_event_name || parsed.hookEventName;
+      if (promptVal) {
         var dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
-        return prefix + 'Prompt "' + parsed.prompt + '"' + (dirName ? ' inside ' + dirName : '');
+        return prefix + 'Prompt "' + promptVal + '"' + (dirName ? ' inside ' + dirName : '');
       }
-      if (parsed.hook_event_name) {
+      if (hookVal) {
         var dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
-        return prefix + 'Hook event ' + parsed.hook_event_name + (dirName ? ' inside ' + dirName : '');
+        return prefix + 'Hook event ' + hookVal + (dirName ? ' inside ' + dirName : '');
+      }
+      if (parsed.signal) {
+        var dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
+        return prefix + (parsed.signal === 'up' ? 'Thumbs Up' : 'Thumbs Down') + (dirName ? ' inside ' + dirName : '');
       }
     } catch (e) {
       if (contextText) {
@@ -821,13 +851,15 @@ function cleanLiveTitle(titleText, contextText) {
         if (ctxTrimmed.indexOf('{') === 0) {
           try {
             var parsedCtx = JSON.parse(ctxTrimmed);
-            if (parsedCtx.prompt) {
+            var promptValCtx = parsedCtx.prompt;
+            var hookValCtx = parsedCtx.hook_event_name || parsedCtx.hookEventName;
+            if (promptValCtx) {
               var dirName = parsedCtx.cwd ? parsedCtx.cwd.split('/').pop() : '';
-              return prefix + 'Prompt "' + parsedCtx.prompt + '"' + (dirName ? ' inside ' + dirName : '');
+              return prefix + 'Prompt "' + promptValCtx + '"' + (dirName ? ' inside ' + dirName : '');
             }
-            if (parsedCtx.hook_event_name) {
+            if (hookValCtx) {
               var dirName = parsedCtx.cwd ? parsedCtx.cwd.split('/').pop() : '';
-              return prefix + 'Hook event ' + parsedCtx.hook_event_name + (dirName ? ' inside ' + dirName : '');
+              return prefix + 'Hook event ' + hookValCtx + (dirName ? ' inside ' + dirName : '');
             }
           } catch (err) {
             // ignore
@@ -843,7 +875,7 @@ function cleanLiveTitle(titleText, contextText) {
       return prefix + 'Prompt "' + promptMatch[1] + '"' + (dirName ? ' inside ' + dirName : '');
     }
     
-    var hookMatch = rest.match(/"hook_event_name"\s*:\s*"([^"]+)"/) || (contextText && contextText.match(/"hook_event_name"\s*:\s*"([^"]+)"/));
+    var hookMatch = rest.match(/"hook_?event_?name"\s*:\s*"([^"]+)"/i) || (contextText && contextText.match(/"hook_?event_?name"\s*:\s*"([^"]+)"/i));
     if (hookMatch) {
       var cwdMatch = rest.match(/"cwd"\s*:\s*"([^"]+)"/) || (contextText && contextText.match(/"cwd"\s*:\s*"([^"]+)"/));
       var dirName = cwdMatch ? cwdMatch[1].split('/').pop() : '';
@@ -1012,8 +1044,10 @@ async function loadLive() {
     renderTimeline(allTimeline);
     renderInsights(dashboardSnapshot);
     renderImprovementMetrics(stats, dashboardSnapshot);
+    const isEnterprise = API_KEY.startsWith('tg_op_') || API_KEY.startsWith('tg_creator_');
+    const tierName = isEnterprise ? 'Enterprise' : 'Pro';
     document.getElementById('proBadge').style.display = 'none';
-    setMode('Local Pro connected — this lessons view is reading your live rules, feedback timeline, and insights.', false);
+    setMode('Local ' + tierName + ' connected — this lessons view is reading your live rules, feedback timeline, and insights.', false);
   } catch (_err) {
     loadDemo();
   }

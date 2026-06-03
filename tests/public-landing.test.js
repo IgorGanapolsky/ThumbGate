@@ -697,7 +697,7 @@ test('lessons page links to dashboard in nav', () => {
   const html = readLessonsPage();
   assert.match(html, /href="\/dashboard"/);
   assert.match(html, /href="\/lessons"/);
-  assert.match(html, /Local Pro connected/i);
+  assert.match(html, /Local.*connected/i);
   assert.match(html, /__LESSONS_BOOTSTRAP_KEY__/);
   assert.match(html, /\/v1\/lessons\/search/);
   assert.match(html, /Demo preview/i);

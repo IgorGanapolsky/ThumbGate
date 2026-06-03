@@ -2203,7 +2203,7 @@ function resolveLocalPageBootstrap(req, expectedApiKey) {
   const localProBootstrap = process.env.THUMBGATE_PRO_MODE === '1' && Boolean(expectedApiKey) && isLoopbackHost(hostHeader);
   const devOverride = expectedApiKey === null && isLoopbackHost(hostHeader);
   const bootstrapActive = localProBootstrap || devOverride;
-  const serializedBootstrapKey = JSON.stringify(localProBootstrap ? expectedApiKey : devOverride ? 'dev-override' : '').replace(/</g, '\\u003c');
+  const serializedBootstrapKey = JSON.stringify(localProBootstrap ? expectedApiKey : devOverride ? (process.env.THUMBGATE_API_KEY || 'dev-override') : '').replace(/</g, '\\u003c');
 
   return {
     bootstrapActive,
@@ -2361,13 +2361,19 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
     if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
       try {
         const parsed = JSON.parse(trimmed);
-        if (parsed.prompt) {
+        const promptVal = parsed.prompt;
+        const hookVal = parsed.hook_event_name || parsed.hookEventName;
+        if (promptVal) {
           const dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
-          return prefix + `Prompt "${parsed.prompt}"` + (dirName ? ` inside ${dirName}` : '');
+          return prefix + `Prompt "${promptVal}"` + (dirName ? ` inside ${dirName}` : '');
         }
-        if (parsed.hook_event_name) {
+        if (hookVal) {
           const dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
-          return prefix + `Hook event ${parsed.hook_event_name}` + (dirName ? ` inside ${dirName}` : '');
+          return prefix + `Hook event ${hookVal}` + (dirName ? ` inside ${dirName}` : '');
+        }
+        if (parsed.signal) {
+          const dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
+          return prefix + (parsed.signal === 'up' ? 'Thumbs Up' : 'Thumbs Down') + (dirName ? ` inside ${dirName}` : '');
         }
       } catch (e) {
         // ignore
