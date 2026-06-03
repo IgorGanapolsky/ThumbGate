@@ -418,6 +418,20 @@ test('GET /sitemap.xml includes background-agent control layer at priority 0.85'
   assert.match(entry[0], /<priority>0\.85<\/priority>/);
 });
 
+test('GET /sitemap.xml includes enterprise and deterministic workflow learning pages', async () => {
+  const res = await fetch(`${origin}/sitemap.xml`);
+  assert.equal(res.status, 200);
+  const xml = await res.text();
+  for (const slug of [
+    'agentic-enterprise-context-brain',
+    'deterministic-agent-workflows',
+  ]) {
+    const entry = xml.match(new RegExp(`<url>\\s*<loc>[^<]*/learn/${slug}</loc>[\\s\\S]*?</url>`));
+    assert.ok(entry, `${slug} <url> block must exist`);
+    assert.match(entry[0], /<priority>0\.85<\/priority>/);
+  }
+});
+
 test('GET /compare/claude-code-hooks serves the hand-written comparison page', async () => {
   const res = await fetch(`${origin}/compare/claude-code-hooks`);
   assert.equal(res.status, 200);

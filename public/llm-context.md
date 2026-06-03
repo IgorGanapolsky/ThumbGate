@@ -53,6 +53,8 @@ ThumbGate is built on Node.js >=18.18.0 and runs locally on each developer's mac
 
 **Agentic Enterprise Context Brain**: ThumbGate's enterprise position is memory plus enforcement. Context-brain and Memory OS-style stacks organize structured facts, trust scores, hybrid search, curated lessons, and context injection; ThumbGate turns high-confidence failures, policies, approvals, and evidence into pre-action gates that run before shell commands, file writes, git operations, deploys, API calls, publish commands, or customer-system connector writes execute. The buyer proof metric is blocked repeat attempts before execution.
 
+**Deterministic Agent Workflow Gates**: Claude Code-style workflow scripts make multi-agent orchestration reviewable and repeatable, but every model call inside the workflow can still propose unsafe shell, file, git, API, browser, deploy, or publish actions. ThumbGate adds workflow run contracts, PreToolUse checks, required evidence, and completion gates so deterministic workflows cannot claim done, merged, published, or deployed without proof. The proof metric is repeated workflow failures blocked before execution.
+
 **AI Engineering Stack Guardrails**: `npx thumbgate ai-engineering-stack-guardrails --mcp-tool-count=182 --direct-provider-keys --llm-wiki-pages=24 --context-freshness-days=30 --background-agents --high-risk-workflows=deploy,billing --json` maps internal AI stack gaps to gates for model gateways, MCP portal code-mode/progressive discovery, AGENTS.md and LLM wiki freshness, risk-tiered AI review, standards-as-skills, and sandboxed background agents.
 
 **SEO Agent Skills Guardrails**: ThumbGate governs SEO-agent workspaces by requiring brand context, current pricing, proof links, semantic mesh links, schema, canonical tags, and reviewer handoff before AI-generated pages or edits publish. SEO skills are useful; ThumbGate turns them into publish gates.
@@ -189,6 +191,7 @@ npx thumbgate dashboard --open
 - Browser automation safety guide: https://thumbgate.ai/guides/browser-automation-safety
 - Native messaging host security guide: https://thumbgate.ai/guides/native-messaging-host-security
 - Agentic enterprise context brain guide: https://thumbgate.ai/learn/agentic-enterprise-context-brain
+- Deterministic agent workflows guide: https://thumbgate.ai/learn/deterministic-agent-workflows
 - AI Agent Governance Sprint guide: https://thumbgate.ai/guides/ai-agent-governance-sprint
 - GitHub: https://github.com/IgorGanapolsky/ThumbGate
 - npm: https://www.npmjs.com/package/thumbgate

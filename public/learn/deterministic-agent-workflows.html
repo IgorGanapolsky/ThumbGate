@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deterministic Agent Workflows Need Runtime Gates — ThumbGate</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Claude Code dynamic workflows make orchestration scriptable. Production teams still need deterministic run contracts, evidence, and pre-action gates before multi-agent workflows can be trusted.">
+<meta name="keywords" content="Claude Code workflows, deterministic agent workflows, dynamic workflows, multi-agent orchestration, pre-action gates, workflow hardening, AI agent governance, ThumbGate">
+<meta property="og:title" content="Deterministic Agent Workflows Need Runtime Gates">
+<meta property="og:description" content="Scripted workflows are the right direction. ThumbGate adds the missing layer: pre-action gates, evidence, and repeat-failure prevention before each tool call runs.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/deterministic-agent-workflows">
+<link rel="canonical" href="https://thumbgate.ai/learn/deterministic-agent-workflows">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Deterministic Agent Workflows Need Runtime Gates",
+  "description": "Claude Code dynamic workflows make orchestration scriptable. Production teams still need deterministic run contracts, evidence, and pre-action gates before multi-agent workflows can be trusted.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-06-03",
+  "dateModified": "2026-06-03",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/deterministic-agent-workflows",
+  "about": [
+    {"@type": "Thing", "name": "Claude Code workflows"},
+    {"@type": "Thing", "name": "deterministic agent workflows"},
+    {"@type": "Thing", "name": "pre-action gates"},
+    {"@type": "Thing", "name": "multi-agent orchestration"}
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+<style>
+  .matrix { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; }
+  .matrix th, .matrix td { text-align: left; padding: 0.7rem 0.8rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .matrix th { color: var(--cyan); font-weight: 600; }
+  .run-contract { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+  .run-contract code { white-space: pre-wrap; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Deterministic Agent Workflows</div>
+  <h1>Deterministic agent workflows need runtime gates.</h1>
+  <p style="color:var(--muted);">6 min read &middot; For teams moving from one-off Claude Code prompts to repeatable multi-agent runs</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> Claude Code workflows make orchestration more repeatable by moving control flow into scripts. That is a major step forward, but deterministic orchestration is not deterministic safety. ThumbGate adds pre-action gates, proof requirements, and repeat-failure memory around each workflow run.</div>
+
+  <h2>The workflow shift is real</h2>
+  <p>Dynamic workflows move agent orchestration out of a fragile chat transcript and into scriptable control flow. That changes the operating model: teams can review the workflow, commit it to git, rerun it, and hand it to another operator without re-explaining the whole plan.</p>
+  <p>The high-value lesson is simple: use code for control flow and use the model for judgment. The workflow script should decide sequence, fan-out, retries, and handoffs. The model should handle the parts that actually require reasoning.</p>
+
+  <div class="callout">
+    <strong>ThumbGate's angle:</strong> A deterministic workflow still contains nondeterministic agent calls. The control layer has to check every proposed tool action before it mutates state.
+  </div>
+
+  <h2>Where deterministic workflows still fail</h2>
+  <p>A git-committed workflow can make a run repeatable, but it does not automatically make the run safe. The workflow can still:</p>
+  <ul>
+    <li>Run with stale assumptions about branch, environment, credentials, or allowed files.</li>
+    <li>Spawn multiple subagents that repeat a known bad edit in parallel.</li>
+    <li>Claim completion after a plan step without showing test, CI, screenshot, or deploy evidence.</li>
+    <li>Let a subagent call shell, git, browser, or API tools outside the intended scope.</li>
+    <li>Hide failure behind a successful final summary if the proof artifacts are not required.</li>
+  </ul>
+
+  <h2>The missing primitive: a workflow run contract</h2>
+  <p>Before a deterministic workflow starts, define the contract the run must obey. The contract should be versioned next to the workflow and evaluated by gates outside the model.</p>
+
+  <div class="run-contract">
+<pre><code>{
+  "workflow_id": "pricing-surface-fix",
+  "allowed_branches": ["feature/*", "fix/*"],
+  "protected_paths": ["public/pricing.html", "src/api/server.js"],
+  "required_evidence": ["git_diff", "targeted_tests", "link_check"],
+  "blocked_actions": ["git push --force", "npm publish", "deploy production"],
+  "completion_gate": "tests_passed_and_changes_pushed"
+}</code></pre>
+  </div>
+
+  <p>That contract gives the workflow a boundary. ThumbGate turns the boundary into runtime decisions: allow, warn, block, or require approval.</p>
+
+  <table class="matrix">
+    <thead>
+      <tr>
+        <th>Workflow layer</th>
+        <th>What it controls</th>
+        <th>ThumbGate gate</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Plan</td>
+        <td>Which tasks and subagents run.</td>
+        <td>Require scope, branch, allowed paths, and done criteria before tools execute.</td>
+      </tr>
+      <tr>
+        <td>Fan-out</td>
+        <td>How many agents work in parallel.</td>
+        <td>Block repeated known-bad actions across subagents before they amplify.</td>
+      </tr>
+      <tr>
+        <td>Tool calls</td>
+        <td>Shell, file writes, git, browser, API, deploy, publish.</td>
+        <td>Evaluate PreToolUse checks before state changes.</td>
+      </tr>
+      <tr>
+        <td>Merge / publish</td>
+        <td>When the run becomes durable.</td>
+        <td>Require tests, link checks, CI status, PR URL, and no unresolved high-risk gates.</td>
+      </tr>
+      <tr>
+        <td>Learning</td>
+        <td>What the next run remembers.</td>
+        <td>Promote thumbs-downs and failed proof checks into prevention rules.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>The highest-ROI ThumbGate feature from this trend</h2>
+  <p>The feature to sell is not "we run workflows." Claude Code, Cursor, Codex, and other harnesses will all keep improving orchestration. The ThumbGate feature is <strong>workflow proof gating</strong>: before a workflow claims success, it must prove the contract was satisfied.</p>
+
+  <ul>
+    <li><strong>Before run:</strong> validate branch, scope, credentials, allowed paths, and budget.</li>
+    <li><strong>During run:</strong> check every tool call against feedback-derived lessons and policy gates.</li>
+    <li><strong>After run:</strong> require evidence artifacts before "done," "merged," "published," or "deployed" claims.</li>
+    <li><strong>Next run:</strong> use thumbs-downs and failed evidence checks to block repeated mistakes earlier.</li>
+  </ul>
+
+  <div class="callout callout-green">
+    <strong>Buyer demo:</strong> show the same deterministic workflow twice. First run records a blocked risky action. Second run stops the repeat before execution and exports the proof.
+  </div>
+
+  <h2>Implementation checklist</h2>
+  <ol>
+    <li>Commit workflow scripts and run contracts to git.</li>
+    <li>Run workflow agents on feature branches or isolated worktrees.</li>
+    <li>Route all tool calls through ThumbGate PreToolUse checks.</li>
+    <li>Require proof artifacts before completion claims.</li>
+    <li>Track the headline metric: repeated workflow failures blocked before execution.</li>
+  </ol>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Harden one deterministic workflow</h2>
+    <p>Start with one run contract, one repeated failure, and one proof gate.</p>
+    <div class="cta-install">$ npx thumbgate init</div>
+  </div>
+
+  <div class="related">
+    <h3>Related articles</h3>
+    <a href="/learn/background-agent-control-layer">Background Agents Need a Control Layer &rarr;</a>
+    <a href="/learn/agentic-enterprise-context-brain">Agentic Enterprise Context Brain &rarr;</a>
+    <a href="/learn/agent-swarms-shared-gates">Agent Swarms: One Gate Layer, Every Model &rarr;</a>
+    <a href="/learn/mcp-pre-action-checks-explained">MCP Pre-Action Checks Explained &rarr;</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span style="color:var(--muted)">Try it now:</span>
+  <code>npx thumbgate init</code>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+</div>
+</body>
+</html>

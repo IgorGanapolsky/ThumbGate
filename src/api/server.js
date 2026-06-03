@@ -2809,6 +2809,8 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/learn/background-agent-control-layer', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/ac-dc-runtime-enforcement', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/feedback-loop-vs-decision-layer', changefreq: 'weekly', priority: '0.9' },
+    { path: '/learn/agentic-enterprise-context-brain', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/deterministic-agent-workflows', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/claude-code-hooks', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/bumblebee', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/anthropic-containment', changefreq: 'weekly', priority: '0.85' },
