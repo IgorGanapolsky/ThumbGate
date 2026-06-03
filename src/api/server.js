@@ -4485,6 +4485,17 @@ function createApiServer() {
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/.well-known/agentic-verify.txt') {
+      const agenticVerifyPath = path.join(__dirname, '..', '..', '.well-known', 'agentic-verify.txt');
+      try {
+        const content = fs.readFileSync(agenticVerifyPath, 'utf8');
+        sendText(res, 200, content, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=3600' }, { headOnly: isHeadRequest });
+      } catch {
+        sendJson(res, 404, { error: 'agentic verification file not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/sitemap.xml') {
       sendText(res, 200, renderSitemapXml(hostedConfig), {
         'Content-Type': 'application/xml; charset=utf-8',

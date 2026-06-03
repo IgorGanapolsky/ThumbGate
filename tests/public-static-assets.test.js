@@ -137,6 +137,16 @@ test('LLM discovery file is available at root and well-known paths with canonica
   }
 });
 
+test('Agentic.ai domain verification file is publicly accessible without auth', async () => {
+  const res = await fetch(`${origin}/.well-known/agentic-verify.txt`);
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /text\/plain/);
+  assert.equal(
+    (await res.text()).trim(),
+    '3588d0ad8f7b89fd7b9fbf771c1dd7dd09310e88aa6a7ae049b1decfa971650b',
+  );
+});
+
 test('landing page internal links resolve without auth or broken .html aliases', async () => {
   const res = await fetch(`${origin}/`);
   assert.equal(res.status, 200);
