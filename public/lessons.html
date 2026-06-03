@@ -1044,7 +1044,10 @@ async function loadLive() {
     renderTimeline(allTimeline);
     renderInsights(dashboardSnapshot);
     renderImprovementMetrics(stats, dashboardSnapshot);
-    const isEnterprise = API_KEY.startsWith('tg_op_') || API_KEY.startsWith('tg_creator_');
+    var isEnterprise = API_KEY.startsWith('tg_op_') || API_KEY.startsWith('tg_creator_');
+    if (stats.tier) {
+      isEnterprise = (stats.tier === 'Enterprise');
+    }
     const tierName = isEnterprise ? 'Enterprise' : 'Pro';
     document.getElementById('proBadge').style.display = 'none';
     setMode('Local ' + tierName + ' connected — this lessons view is reading your live rules, feedback timeline, and insights.', false);

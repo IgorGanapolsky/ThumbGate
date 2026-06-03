@@ -7007,7 +7007,19 @@ ${hidden}
 
     try {
       if (req.method === 'GET' && pathname === '/v1/feedback/stats') {
-        sendJson(res, 200, analyzeFeedback(requestFeedbackPaths.FEEDBACK_LOG_PATH));
+        const stats = analyzeFeedback(requestFeedbackPaths.FEEDBACK_LOG_PATH);
+        try {
+          const { getStatuslineMeta } = require('../../scripts/statusline-meta');
+          const meta = getStatuslineMeta({ env: process.env });
+          stats.tier = meta.tier;
+        } catch (_) {
+          stats.tier = 'Pro';
+        }
+        stats.geminiConfigured = Boolean(
+          process.env.GEMINI_API_KEY ||
+          process.env.THUMBGATE_GEMINI_API_KEY
+        );
+        sendJson(res, 200, stats);
         return;
       }
 

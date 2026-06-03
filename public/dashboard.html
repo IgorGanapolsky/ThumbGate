@@ -851,8 +851,8 @@ async function connect(options) {
   API_KEY = String(opts.key || input.value || '').trim();
   if (!API_KEY) return;
   
-  const isEnterprise = API_KEY.startsWith('tg_op_') || API_KEY.startsWith('tg_creator_');
-  const tierName = isEnterprise ? 'Enterprise' : 'Pro';
+  var isEnterprise = API_KEY.startsWith('tg_op_') || API_KEY.startsWith('tg_creator_');
+  var tierName = isEnterprise ? 'Enterprise' : 'Pro';
 
   const status = document.getElementById('authStatus');
   const btn = document.getElementById('connectBtn');
@@ -863,6 +863,16 @@ async function connect(options) {
     const res = await fetch('/v1/feedback/stats', { headers: getHeaders() });
     if (!res.ok) throw new Error('Invalid API key');
     const data = await res.json();
+    
+    if (data.tier) {
+      isEnterprise = (data.tier === 'Enterprise');
+      tierName = data.tier;
+    }
+    
+    if (data.geminiConfigured) {
+      document.getElementById('chatHint').innerHTML = '<span style="color:var(--green)">✓ Gemini API key configured. You can now chat with your data.</span>';
+    }
+
     status.className = 'auth-status ok';
     status.textContent = opts.localPro ? `✓ Local ${tierName} connected` : '✓ Connected';
     document.getElementById('dashboardContent').style.display = 'block';
