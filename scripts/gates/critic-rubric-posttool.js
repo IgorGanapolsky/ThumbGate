@@ -48,11 +48,17 @@ const DESTRUCTIVE_RM_FLAGS = /(?:-[a-zA-Z]{0,4}r[a-zA-Z]{0,4}f|-[a-zA-Z]{0,4}f[a
 const DESTRUCTIVE_SYSTEM_RM = new RegExp(
   String.raw`\brm\s+` + DESTRUCTIVE_RM_FLAGS.source + String.raw`\s+(?!/tmp|/var/folders)/`,
 );
-// Force-push clause: explicit grouping per alternative to make the
-// negative-lookahead precedence unambiguous (Sonar S5850).
-const FORCE_PUSH_PROTECTED = /\bgit\s+push\s+(?:(?:--force)(?!-with-lease)|(?:-f)(?!-with-lease))\b[^\n]*\b(?:main|master|production)\b/;
+// Force-push clause: hoist the lookahead so the precedence is unambiguous and
+// the alternation collapses to a single bounded prefix (Sonar S5843 + S5850).
+// Matches `--force`, `-f`, with optional repetition; lookahead applies to the
+// whole prefix (the only quantified part) so there's no precedence ambiguity.
+const FORCE_PUSH_PROTECTED = /\bgit\s+push\s+--?f(?:orce)?(?!-with-lease)\b[^\n]*\b(?:main|master|production)\b/;
 const CURL_PIPE_SHELL = /\b(?:curl|wget)\b[^|]*\|\s*(?:sh|bash|zsh)\b/;
-const SECRET_PATH = /(?:^|[/.])(?:\.env(?:\.[a-z]+)?|secrets?|credentials?|id_rsa)(?:$|[/.])|\.pem$/i;
+// Secret-path detection is split into two simple regexes (Sonar S5843):
+// one for filename segments, one for the `.pem` suffix. Both are anchored to
+// path-separator boundaries rather than relying on outer-level alternation.
+const SECRET_PATH_SEGMENT = /(?:^|[/.])(?:\.env(?:\.[a-z]+)?|secrets?|credentials?|id_rsa)(?:$|[/.])/i;
+const PEM_SUFFIX = /\.pem$/i;
 const LIVE_SECRET_BODY = /(?:sk_live_[A-Za-z0-9]{8,64}|sk-[A-Za-z0-9]{20,64}|AKIA[0-9A-Z]{16})/;
 
 // ---------------------------------------------------------------------------
@@ -67,7 +73,7 @@ const DEFAULT_RUBRIC = [
       if (tool_name !== 'Write' && tool_name !== 'Edit') return { pass: true };
       const target = String(tool_input.file_path || '');
       const content = String(tool_input.content || tool_input.new_string || '');
-      const secretPath = SECRET_PATH.test(target);
+      const secretPath = SECRET_PATH_SEGMENT.test(target) || PEM_SUFFIX.test(target);
       const secretBody = LIVE_SECRET_BODY.test(content);
       if (secretPath && content.length > 0) {
         return { pass: false, reason: `Write to apparent secret path: ${target}` };
