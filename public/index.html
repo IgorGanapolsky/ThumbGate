@@ -1427,6 +1427,8 @@ __GA_BOOTSTRAP__
               <li><strong>Audit-grade decision trail</strong> — every PreToolUse evaluation logged with the rule that fired, ready for SIEM export</li>
               <li><strong>Immutable rule provenance</strong> — each prevention rule traceable to the feedback event that generated it</li>
               <li><strong>Self-managed deployment</strong> — air-gapped or VPC-hosted; no agent state leaves your boundary</li>
+              <li><strong>Dialogflow CX fulfillment guard</strong> — ThumbGate's pre-action gate sits in front of your Dialogflow CX webhook fulfillment, in your own GCP tenant, so risky or repeat turns are blocked before they touch a database, CRM, or billing system (white-glove design-partner pilot)</li>
+              <li><strong>Vertex AI / Gemini scoring, in-tenant</strong> — risk and planning scoring runs on Gemini via Vertex (<code>npx thumbgate setup-vertex</code>); no conversational data leaves your VPC</li>
               <li><strong>DORA / EU AI Act evidence packaging</strong> — machine-readable reports aligned to Article 6, 28, and high-risk provider monitoring obligations</li>
               <li><strong>SSO + role separation</strong> — operator, reviewer, and auditor roles enforced at the gate layer</li>
               <li><strong>Workflow proof plan included</strong> — a scoped review that proves the boundary against one of your real repeated-failure cases before broader rollout</li>
@@ -1551,7 +1553,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Does ThumbGate support enterprise Google Cloud / Vertex AI?</div>
-        <div class="faq-a">Yes! ThumbGate features a zero-friction enterprise setup path via <code>npx thumbgate setup-vertex</code>. This command automatically detects your active gcloud session, enables the Vertex AI API on your Google Cloud project, and configures secure Application Default Credentials (ADC) to route all evaluations within your corporate VPC.</div>
+        <div class="faq-a">Yes. <code>npx thumbgate setup-vertex</code> detects your active gcloud session, enables the Vertex AI API on your Google Cloud project, and configures secure Application Default Credentials (ADC) so evaluations run within your corporate VPC. For Dialogflow CX, the Enterprise pilot puts ThumbGate's pre-action gate in front of your DFCX webhook fulfillment (deployed in your own tenant) so risky or repeat turns are blocked before they touch a database, CRM, or billing system. It's a white-glove design-partner pilot — ThumbGate gates your own Dialogflow CX agent; it does not host a Dialogflow CX agent for you.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How does ThumbGate contain enterprise API costs?</div>
