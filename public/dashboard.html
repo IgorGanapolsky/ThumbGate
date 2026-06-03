@@ -308,7 +308,7 @@
     <div class="tab active" onclick="switchTab('search')">🔍 Search Memories</div>
     <div class="tab" onclick="switchTab('gates')">🛡️ Active Gates</div>
     <div class="tab" onclick="switchTab('team')">👥 Team</div>
-    <div class="tab" onclick="switchTab('enterprise')">🏢 Enterprise Chat</div>
+    <div class="tab" onclick="switchTab('enterprise')">🏢 Enterprise Data Chat</div>
     <div class="tab" onclick="switchTab('ai-inventory')">🧬 AI Inventory</div>
     <div class="tab" onclick="switchTab('generated')">🧩 Generated Views</div>
     <div class="tab" onclick="switchTab('settings')">⚙️ Policy Origins</div>
@@ -416,8 +416,8 @@
   <!-- ENTERPRISE CHAT TAB -->
   <div class="tab-content" id="tab-enterprise">
     <div class="templates-section">
-      <h2>Enterprise Dialogflow Data Chat</h2>
-      <p class="template-summary">Ask questions over local ThumbGate feedback, lessons, gates, team posture, and Vertex/DFCX readiness. This local panel uses ThumbGate's DFCX-compatible guard before data access; it does not claim a live Google Dialogflow CX agent unless deployment evidence is configured.</p>
+      <h2>Enterprise Data Chat</h2>
+      <p class="template-summary">Ask questions over local ThumbGate feedback, lessons, gates, team posture, and Vertex/DFCX readiness. This is a governed local data-query panel with a DFCX-compatible guard before data access; it does not claim a live Google Dialogflow CX agent unless deployment evidence is configured.</p>
       <div class="enterprise-chat-layout">
         <div class="panel">
           <h3>Chat With Local ThumbGate Data</h3>
@@ -434,7 +434,7 @@
         <div class="panel">
           <h3>Enterprise Readiness</h3>
           <div class="inventory-tools" id="enterpriseStatusCards"><div class="loading">Loading enterprise status...</div></div>
-          <div class="template-summary" style="margin-top:14px;margin-bottom:0;">Live DFCX proof must come from the Conversational Agents console, deployed webhook URL, Cloud Run logs, or the Dialogflow CX REST API <code style="font-family:var(--mono);font-size:12px;">projects.locations.agents</code>.</div>
+          <div class="template-summary" style="margin-top:14px;margin-bottom:0;">Live DFCX proof must come from the Conversational Agents console, deployed webhook URL, Cloud Run logs, or the Dialogflow CX REST API <code style="font-family:var(--mono);font-size:12px;">projects.locations.agents</code>. Without that proof, the panel stays local-only.</div>
         </div>
       </div>
     </div>
@@ -1813,7 +1813,11 @@ function renderEnterpriseStatus(status) {
   if (!target) return;
   var vertex = status && status.vertex ? status.vertex : {};
   var dfcx = status && status.dfcx ? status.dfcx : {};
+  var connectionMode = dfcx.liveAgentConfigured
+    ? 'Dialogflow CX configured'
+    : (vertex.configured ? 'Vertex configured' : 'Local-only');
   var rows = [
+    { name: 'Connection mode', value: connectionMode, note: dfcx.liveAgentConfigured ? 'Live DFCX evidence is present in env.' : (vertex.configured ? 'Vertex routing is configured; DFCX still needs live-agent proof.' : 'Local data Q&A only; no cloud agent claim.') },
     { name: 'Vertex routing', value: vertex.configured ? 'Configured' : 'Not configured', note: vertex.projectId ? ('Project: ' + vertex.projectId + ' · ' + (vertex.location || '')) : 'Run setup-vertex or set GOOGLE_VERTEX_PROJECT.' },
     { name: 'DFCX live agent', value: dfcx.liveAgentConfigured ? 'Env present' : 'Not proven', note: dfcx.verification || 'Verify with REST/console evidence.' },
     { name: 'Fulfillment proxy', value: dfcx.fulfillmentProxyConfigured ? 'Configured' : 'Not configured', note: 'Set THUMBGATE_DFCX_FULFILLMENT_URL for a deployed proxy.' },
@@ -1860,7 +1864,7 @@ async function sendEnterpriseChat() {
   }
   button.disabled = true;
   answer.className = 'enterprise-answer';
-  answer.textContent = 'Running the DFCX guard and reading local dashboard data...';
+    answer.textContent = 'Running the data-access guard and reading local dashboard data...';
   sources.innerHTML = '';
   try {
     var res = await fetch('/v1/enterprise/dialogflow/chat', {

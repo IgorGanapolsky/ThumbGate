@@ -3530,6 +3530,47 @@ switch (COMMAND) {
   case 'self-heal':
     selfHeal();
     break;
+  case 'workflow':
+  case 'swarm': {
+    const args = parseArgs(process.argv.slice(3));
+    let objective = args.objective;
+    if (!objective) {
+      const firstPositional = process.argv.slice(3).find((a, idx, arr) => {
+        if (a.startsWith('--')) return false;
+        const prev = arr[idx - 1];
+        if (prev && prev.startsWith('--') && !prev.includes('=')) return false;
+        return true;
+      });
+      if (firstPositional) objective = firstPositional;
+    }
+    if (!objective) {
+      console.error('Error: objective is required. Run with --objective="your objective" or provide it as a positional argument.');
+      process.exit(1);
+    }
+    const { executeWorkflow } = require(path.join(PKG_ROOT, 'scripts', 'parallel-workflow-orchestrator'));
+    const concurrency = args.concurrency ? Number(args.concurrency) : undefined;
+    const timeoutMs = args.timeoutMs ? Number(args.timeoutMs) : undefined;
+    executeWorkflow(objective, { concurrency, timeoutMs, cwd: CWD })
+      .then((res) => {
+        if (args.json) {
+          console.log(JSON.stringify(res, null, 2));
+        } else {
+          console.log(`\n✅ Parallel workflow execution complete.`);
+          console.log(`  Workflow ID: ${res.workflowId}`);
+          console.log(`  Objective  : ${res.objective}`);
+          console.log(`  Duration   : ${(res.durationMs / 1000).toFixed(2)}s`);
+          console.log(`  Report Path: ${res.reportPath}`);
+          console.log(`\nReport Summary:\n`);
+          console.log(fs.readFileSync(res.reportPath, 'utf8'));
+        }
+        process.exit(0);
+      })
+      .catch((err) => {
+        console.error('Workflow execution failed:', err.message);
+        process.exit(1);
+      });
+    break;
+  }
   case 'trial': {
     // Show trial status — connects the 4K monthly npm installers to checkout
     const { isProTier, isInTrialPeriod, trialDaysRemaining, getInstallAgeDays } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));

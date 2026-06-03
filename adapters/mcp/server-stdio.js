@@ -1282,6 +1282,15 @@ async function callToolInner(name, args) {
         },
       });
     }
+    case 'parallel_workflow': {
+      const { executeWorkflow } = require('../../scripts/parallel-workflow-orchestrator');
+      const results = await executeWorkflow(args.objective, {
+        concurrency: args.concurrency,
+        timeoutMs: args.timeoutMs,
+        cwd: resolveWorkspaceCwd(args.cwd),
+      });
+      return toTextResult(results);
+    }
     case 'open_feedback_session':
       return toTextResult(openFeedbackSession(args.feedbackEventId, args.signal, args.initialContext));
     case 'append_feedback_context':
