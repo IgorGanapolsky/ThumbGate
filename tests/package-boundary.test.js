@@ -294,9 +294,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 277 -> 278 (2026-06-03) to ship bin/dashboard-cli.js for the
   // `thumbgate-dashboard` shortcut that opens the local dashboard without a
   // long command.
+  // Bumped 278 -> 280 (2026-06-03) to ship scripts/plausible-domain-config.js
+  // (required by server.js + plausible-server-events.js so production does not
+  // emit unregistered Plausible domains) and scripts/secret-fixture-tokens.js
+  // (required by thumbgate-bench.js to expand scanner-safe secret fixtures).
   assert.ok(
-    manifest.fileCount <= 278,
-    `npm package should stay <= 278 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 280,
+    `npm package should stay <= 280 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -404,9 +408,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 4.00 MB -> 4.10 MB (2026-06-03) after measured `npm pack --dry-run`
   // on reliability rollout: packaged runtime dependencies plus public
   // discovery assets weigh ~4.08 MB unpacked, leaving a narrow safety margin.
+  // Bumped 4.10 MB -> 4.12 MB (2026-06-03) for the Plausible domain guard,
+  // Memory OS readiness report, and scanner-safe bench fixture expansion.
+  // Observed package after the runtime-file additions: ~4.107 MB.
   assert.ok(
-    manifest.unpackedSize <= 4_100_000,
-    `npm package should stay <= 4.10 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_120_000,
+    `npm package should stay <= 4.12 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

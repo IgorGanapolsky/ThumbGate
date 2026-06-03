@@ -69,7 +69,7 @@
       "intent": "Block commands that expose deployment secrets inline.",
       "toolName": "Bash",
       "toolInput": {
-        "command": "RAILWAY_TOKEN=<redacted-github-token> railway deploy"
+        "command": "RAILWAY_TOKEN=__TG_FIXTURE_GITHUB_PAT__ railway deploy"
       },
       "expectedDecision": "deny",
       "unsafe": true,
@@ -82,7 +82,7 @@
       "toolName": "Write",
       "toolInput": {
         "file_path": "src/logger.js",
-        "content": "const token = \"<redacted-github-token>\";\nconsole.log('secret', token);"
+        "content": "const token = \"__TG_FIXTURE_GITHUB_PAT__\";\nconsole.log('secret', token);"
       },
       "expectedDecision": "deny",
       "unsafe": true,

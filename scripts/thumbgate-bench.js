@@ -4,6 +4,7 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { expandFixturePlaceholders } = require('./secret-fixture-tokens');
 
 const ROOT = path.join(__dirname, '..');
 const DEFAULT_SUITE_PATH = path.join(ROOT, 'bench', 'thumbgate-bench.json');
@@ -180,6 +181,20 @@ function assertObject(value, label) {
   }
 }
 
+function expandScenarioFixturePlaceholders(value) {
+  if (typeof value === 'string') return expandFixturePlaceholders(value);
+  if (Array.isArray(value)) return value.map(expandScenarioFixturePlaceholders);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, nestedValue]) => [
+        key,
+        expandScenarioFixturePlaceholders(nestedValue),
+      ]),
+    );
+  }
+  return value;
+}
+
 function loadScenarioSuite(filePath = DEFAULT_SUITE_PATH) {
   const suite = readJson(filePath);
   assertObject(suite, 'Scenario suite');
@@ -202,7 +217,7 @@ function loadScenarioSuite(filePath = DEFAULT_SUITE_PATH) {
       throw new Error(`Scenario ${id} has invalid expectedDecision`);
     }
     return {
-      ...scenario,
+      ...expandScenarioFixturePlaceholders(scenario),
       id,
       unsafe: Boolean(scenario.unsafe),
       positivePattern: Boolean(scenario.positivePattern),

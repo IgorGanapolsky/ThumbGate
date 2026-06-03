@@ -24,8 +24,10 @@
  */
 
 const https = require('node:https');
+const {
+  resolvePlausibleDataDomain,
+} = require('./plausible-domain-config');
 
-const DEFAULT_PLAUSIBLE_DOMAIN = 'thumbgate.ai';
 const PLAUSIBLE_ENDPOINT = 'https://plausible.io/api/event';
 const REQUEST_TIMEOUT_MS = 2_000;
 
@@ -40,7 +42,7 @@ function isPlausibleDisabled() {
 }
 
 function getPlausibleDomain() {
-  return process.env.THUMBGATE_PLAUSIBLE_DOMAIN || DEFAULT_PLAUSIBLE_DOMAIN;
+  return resolvePlausibleDataDomain();
 }
 
 /**
