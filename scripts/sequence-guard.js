@@ -3,9 +3,20 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 
-const SEQUENCE_STATE_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'sequence-state.json');
-const SESSION_ACTIONS_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'session-actions.json');
+function resolveStatePath(filename) {
+  const dir = process.env.THUMBGATE_STATE_DIR || 
+              (process.env.XDG_STATE_HOME ? path.join(process.env.XDG_STATE_HOME, 'thumbgate') : null) ||
+              (process.env.CODEX_SANDBOX ? path.join(require('os').tmpdir(), 'thumbgate') : null) ||
+              path.join(process.env.HOME || '/tmp', '.thumbgate');
+  return path.join(dir, filename);
+}
+
+const SEQUENCE_STATE_PATH = resolveStatePath('sequence-state.json');
+const SESSION_ACTIONS_PATH = resolveStatePath('session-actions.json');
+const GOVERNANCE_STATE_PATH = resolveStatePath('governance-state.json');
+
 const EDIT_LIKE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
 const COMPLETION_BASH_PATTERN = /\b(?:git\s+commit|gh\s+pr\s+merge|npm\s+publish|yarn\s+publish|pnpm\s+publish)\b/i;
 
@@ -14,9 +25,6 @@ function loadState() {
     if (!fs.existsSync(SEQUENCE_STATE_PATH)) return { repos: {} };
     const raw = JSON.parse(fs.readFileSync(SEQUENCE_STATE_PATH, 'utf8'));
     if (raw && typeof raw === 'object' && raw.repos && typeof raw.repos === 'object') return raw;
-    // Legacy flat format ({dirty,lastEditAt}) was a single GLOBAL bucket that caused
-    // cross-repo contamination (an edit in repo A blocked commits in repo B). Drop it
-    // and start per-repo; the worst case is one extra commit allowed, never a wrong block.
     return { repos: {} };
   } catch {
     return { repos: {} };
@@ -30,9 +38,6 @@ function saveState(state) {
   } catch (e) {}
 }
 
-// Resolve which repo an action belongs to, so "edited but not verified" is tracked
-// per-repo instead of one global flag. Walks up from the action's path to the nearest
-// .git; falls back to the base directory when none is found.
 function resolveRepoKey(toolName, toolInput = {}) {
   let base = '';
   if (EDIT_LIKE_TOOLS.has(toolName)) {
@@ -58,12 +63,122 @@ function resolveRepoKey(toolName, toolInput = {}) {
   return base;
 }
 
+function normalizePosix(filePath) {
+  return String(filePath || '')
+    .replace(/\\/g, '/')
+    .replace(/^\.\//, '')
+    .replace(/^\/+/, '')
+    .trim();
+}
+
+function normalizeGlob(glob) {
+  return normalizePosix(glob).replace(/\/+$/, '');
+}
+
+function globToRegExp(glob) {
+  const normalized = normalizeGlob(glob);
+  let pattern = '^';
+  for (let i = 0; i < normalized.length; i++) {
+    const char = normalized[i];
+    const next = normalized[i + 1];
+    if (char === '*') {
+      if (next === '*') {
+        pattern += '.*';
+        i += 1;
+      } else {
+        pattern += '[^/]*';
+      }
+      continue;
+    }
+    if ('\\^$+?.()|{}[]'.includes(char)) {
+      pattern += `\\${char}`;
+      continue;
+    }
+    pattern += char;
+  }
+  pattern += '$';
+  return new RegExp(pattern);
+}
+
+function matchesGlob(filePath, glob) {
+  if (!glob) return false;
+  try {
+    return globToRegExp(glob).test(normalizePosix(filePath));
+  } catch {
+    return false;
+  }
+}
+
+function matchesAnyGlob(filePath, globs) {
+  return Array.isArray(globs) && globs.some((glob) => matchesGlob(filePath, glob));
+}
+
+function getRepoModifiedFiles(repoPath) {
+  const files = new Set();
+  try {
+    if (!fs.existsSync(path.join(repoPath, '.git'))) {
+      return [];
+    }
+    // Staged files
+    const staged = execFileSync('git', ['diff', '--cached', '--name-only'], { cwd: repoPath, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    staged.split('\n').map(f => f.trim()).filter(Boolean).forEach(f => files.add(f));
+
+    // Unstaged files
+    const unstaged = execFileSync('git', ['diff', '--name-only'], { cwd: repoPath, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    unstaged.split('\n').map(f => f.trim()).filter(Boolean).forEach(f => files.add(f));
+
+    // Untracked files
+    const untracked = execFileSync('git', ['ls-files', '--others', '--exclude-standard'], { cwd: repoPath, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    untracked.split('\n').map(f => f.trim()).filter(Boolean).forEach(f => files.add(f));
+  } catch (e) {
+    // Ignore execution failures
+  }
+  return [...files];
+}
+
 function evaluateSequenceState(toolName, toolInput) {
   const state = loadState();
   const now = Date.now();
   const repoKey = resolveRepoKey(toolName, toolInput);
   const entry = state.repos[repoKey] || { dirty: false, lastEditAt: 0 };
 
+  // 1. Task Scope Verification
+  let taskScope = null;
+  try {
+    if (fs.existsSync(GOVERNANCE_STATE_PATH)) {
+      const gov = JSON.parse(fs.readFileSync(GOVERNANCE_STATE_PATH, 'utf8'));
+      if (gov && gov.taskScope && typeof gov.taskScope === 'object') {
+        taskScope = gov.taskScope;
+      }
+    }
+  } catch {}
+
+  if (taskScope && Array.isArray(taskScope.allowedPaths) && taskScope.allowedPaths.length > 0) {
+    // Block file edits immediately if they touch files outside allowed paths
+    if (EDIT_LIKE_TOOLS.has(toolName)) {
+      const fp = toolInput.file_path || toolInput.path || toolInput.filePath || toolInput.target_path;
+      if (fp) {
+        const resolvedFp = path.resolve(String(fp));
+        let repoRelPath = resolvedFp;
+        if (taskScope.repoPath) {
+          const resolvedRepoPath = path.resolve(taskScope.repoPath);
+          if (resolvedFp.startsWith(resolvedRepoPath)) {
+            repoRelPath = path.relative(resolvedRepoPath, resolvedFp);
+          }
+        }
+        if (!matchesAnyGlob(repoRelPath, taskScope.allowedPaths)) {
+          return {
+            decision: 'deny',
+            gate: 'task-scope-violation',
+            message: `✗ THUMBGATE: Action blocked. File edit outside declared task scope: ${repoRelPath}. Allowed paths: ${taskScope.allowedPaths.join(', ')}`,
+            severity: 'critical'
+          };
+        }
+      }
+    }
+  }
+
+  // 2. Dirty check tracking
   if (EDIT_LIKE_TOOLS.has(toolName)) {
     entry.dirty = true;
     entry.lastEditAt = now;
@@ -79,8 +194,7 @@ function evaluateSequenceState(toolName, toolInput) {
     }
   } catch {}
 
-  // tests_passed is a global signal (no repo attribution); treat it as clearing the
-  // dirty flag for any repo whose last edit predates the passing test run.
+  // tests_passed is a global signal; treat it as clearing dirty flag
   if (testsPassedAt > entry.lastEditAt && entry.dirty) {
     entry.dirty = false;
     state.repos[repoKey] = entry;
@@ -90,15 +204,34 @@ function evaluateSequenceState(toolName, toolInput) {
   const isCompletion = (toolName === 'Bash' && COMPLETION_BASH_PATTERN.test(toolInput.command || '')) ||
                        (toolName === 'complete_handoff');
 
-  if (isCompletion && entry.dirty) {
-    return {
-      decision: 'deny',
-      gate: 'workflow-sequence-violation',
-      message: '✗ THUMBGATE: Action blocked. Source edited but not verified.',
-      severity: 'critical'
-    };
+  if (isCompletion) {
+    // Enforce Task Scope during commits / handoffs
+    if (taskScope && Array.isArray(taskScope.allowedPaths) && taskScope.allowedPaths.length > 0) {
+      const repoPath = taskScope.repoPath ? path.resolve(taskScope.repoPath) : repoKey;
+      const modifiedFiles = getRepoModifiedFiles(repoPath);
+      const outsideFiles = modifiedFiles.filter(f => !matchesAnyGlob(f, taskScope.allowedPaths));
+      if (outsideFiles.length > 0) {
+        return {
+          decision: 'deny',
+          gate: 'task-scope-violation',
+          message: `✗ THUMBGATE: Action blocked. Staged or modified files outside declared task scope: ${outsideFiles.join(', ')}. Allowed paths: ${taskScope.allowedPaths.join(', ')}`,
+          severity: 'critical'
+        };
+      }
+    }
+
+    // Verify tests passed
+    if (entry.dirty) {
+      return {
+        decision: 'deny',
+        gate: 'workflow-sequence-violation',
+        message: '✗ THUMBGATE: Action blocked. Source edited but not verified.',
+        severity: 'critical'
+      };
+    }
   }
+
   return null;
 }
 
-module.exports = { evaluateSequenceState, loadState, saveState, resolveRepoKey };
+module.exports = { evaluateSequenceState, loadState, saveState, resolveRepoKey, getRepoModifiedFiles };
