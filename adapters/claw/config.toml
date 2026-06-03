@@ -1,0 +1,19 @@
+# Codex MCP profile: ThumbGate + Claw-style agents (Automation Anywhere EnterpriseClaw / Nvidia OpenShell)
+# Copy into ~/.codex/config.toml or merge. See CLAW.md and adapters/perplexity/HYBRID.md for hybrid+claw synergy.
+[mcp_servers.thumbgate]
+command = "npx"
+args = ["--yes", "--package", "thumbgate@1.26.8", "thumbgate", "serve"]
+
+# Example for claw/orchestration awareness (extend MCP server or use sidecar when available)
+# [mcp_servers.claw]
+# command = "npx"
+# args = ["-y", "some-claw-mcp"]  # placeholder; use OpenShell/AA integration + ThumbGate gates
+
+# Hard PreToolUse hook for Codex - includes claw gates
+[hooks.pre_tool_use]
+command = "npx"
+args = ["--yes", "--package", "thumbgate@1.26.8", "thumbgate", "gate-check"]
+
+# For hybrid claw: combine with Perplexity hybrid MCP for inference routing.
+# Use new gate templates: block-dynamic-tool-creation-without-approval, require-review-for-screen-ui-interaction, etc.
+# See config/gate-templates.json for "Claw-Style Enterprise Agent Governance" category.

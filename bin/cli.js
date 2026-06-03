@@ -2430,7 +2430,7 @@ function cleanup() {
   try {
     const { execSync } = require('child_process');
     // Kill all 'thumbgate serve' and 'thumbgate dashboard' processes except this one
-    const pids = execSync("ps aux | grep 'thumbgate' | grep -v 'grep' | awk '{print $2}'", { encoding: 'utf8' })
+    const pids = execSync("ps aux | grep -E 'thumbgate (serve|dashboard|mcp)' | grep -v 'grep' | grep -v 'cleanup' | awk '{print $2}'", { encoding: 'utf8' })
       .split('\n')
       .filter(Boolean)
       .map(Number)
@@ -2449,11 +2449,15 @@ function cleanup() {
 
     // Check port 3456 specifically
     try {
-      const portPid = execSync("lsof -ti :3456", { encoding: 'utf8' }).trim();
-      if (portPid) {
-        console.log(`Killing process ${portPid} holding port 3456`);
-        try { process.kill(Number(portPid), 'SIGKILL'); } catch (_) {}
-      }
+      const portPids = execSync("lsof -ti :3456", { encoding: 'utf8' })
+        .split('\n')
+        .map(s => s.trim())
+        .filter(Boolean)
+        .map(Number);
+      portPids.forEach(pid => {
+        console.log(`Killing process ${pid} holding port 3456`);
+        try { process.kill(pid, 'SIGKILL'); } catch (_) {}
+      });
     } catch (_) { /* port already free */ }
 
     console.log('✅ Cleanup complete. Run "npx thumbgate pro" to restart the dashboard.');

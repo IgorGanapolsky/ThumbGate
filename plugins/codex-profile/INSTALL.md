@@ -25,6 +25,16 @@ This is the dogfood check: it captures a synthetic thumbs signal and verifies th
 
 Restart Codex after setup. In the Codex app, open **Plugins** or MCP settings and confirm ThumbGate is enabled before expecting tools or hooks to fire.
 
+## Why this matters now
+
+Codex plugins are no longer just a developer convenience. Role-specific plugins, Sites, annotations, and shared workspace installs move Codex into sales, analytics, design, finance, documents, dashboards, and team operating systems. ThumbGate should sit underneath that expansion as the pre-action governance layer:
+
+- role-plugin writes need allowed tool scopes and evidence labels
+- Sites deploys need build proof, audience proof, and secret-handling proof
+- annotated document edits need source-region evidence and document-level invariants
+- Agentic OS files such as skills, MCP config, hooks, and workflow contracts need protected-path checks
+- shared team memory needs client/user/workspace scope before it is queried or promoted into gates
+
 ## Codex Desktop plugin install: what the zip does and does not do
 
 The release zip is not a double-click macOS installer, and it is not a guaranteed one-click Codex Desktop import path. It is a portable Codex plugin folder for review, offline handoff, release assets, and manual marketplace/local-plugin workflows.

@@ -7,7 +7,7 @@
         "npx",
         "--yes",
         "--package",
-        "thumbgate@1.4.1",
+        "thumbgate@1.26.8",
         "thumbgate",
         "serve"
       ],
@@ -25,5 +25,6 @@
       },
       "enabled": true
     }
-  }
+  },
+  "notes": "For Perplexity hybrid local-cloud (Computex 2026 Personal Computer orchestrator): see adapters/perplexity/HYBRID.md. Use perplexity/hybrid-* in model-candidates for routing. Add gates for hybrid routing decisions."
 }

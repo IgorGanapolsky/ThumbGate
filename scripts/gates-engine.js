@@ -1526,7 +1526,7 @@ function isSafeLocalCredentialHardeningCommand(toolName, toolInput = {}) {
 
   const target = match[3];
   if (!target || target === '/' || target === '~') return false;
-  if (/^\.\.?(?:\/|$)/.test(target)) return false;
+  if (target.includes('..')) return false;
 
   const normalized = target.replace(/^['"]|['"]$/g, '').toLowerCase();
   const looksLikeCredentialPath = /(?:^|\/)(?:\.config|\.ssh|\.gnupg|\.aws|\.gcloud|\.gemini|\.resume_secrets|\.thumbgate|secrets?|credentials?)(?:\/|$)/.test(normalized)
@@ -1619,7 +1619,14 @@ function evaluateMemoryGuard(toolName, toolInput = {}) {
     filePath: toolInput.file_path || toolInput.path || null,
     affectedFiles,
   });
-  const guard = hybrid.evaluatePretool(toolName, serializedInput);
+  // Claw/hybrid support: pass context if agent provides claw metadata (for EnterpriseClaw/OpenShell/Perplexity hybrid agents)
+  let guard;
+  if (toolInput && (toolInput.clawContext || toolInput._claw || toolInput.hybridRoute || toolInput.agentId)) {
+    const clawCtx = toolInput.clawContext || toolInput._claw || { actionType: toolInput.actionType || 'unknown', agentId: toolInput.agentId || 'unknown', hybridRoute: toolInput.hybridRoute || 'unknown' };
+    guard = hybrid.evaluateClawPretool ? hybrid.evaluateClawPretool(toolName, serializedInput, clawCtx) : hybrid.evaluatePretool(toolName, serializedInput);
+  } else {
+    guard = hybrid.evaluatePretool(toolName, serializedInput);
+  }
   if (!guard || guard.mode === 'allow') {
     return null;
   }

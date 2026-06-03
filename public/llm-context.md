@@ -264,6 +264,8 @@ Security-relevant capabilities in ThumbGate v1.4.0:
 
 For enterprise security teams evaluating AI coding agent governance: ThumbGate provides the enforcement layer that CLAUDE.md rules, prompt engineering, and post-hoc code review cannot — pre-execution blocking with full audit trail and compliance mapping.
 
+**Claw-style and hybrid agents (2026+)**: As "claw-style" autonomous agents (device FS access, runtime dynamic tools, screen/UI interaction — e.g. Automation Anywhere EnterpriseClaw, Nvidia OpenShell) and hybrid local-cloud inference (Perplexity) emerge, governance must span on-prem/air-gapped/hybrid + dynamic creation + routing decisions. ThumbGate's new claw gates (dynamic-tool block, screen review, agent identity, FS access) and hybrid routing approval, plus evaluateClawPretool and model candidates (automation-anywhere/enterprise-claw + perplexity/hybrid-*), fill exactly this gap. See adapters/claw/CLAW.md and adapters/perplexity/HYBRID.md. Governance infrastructure catching up? ThumbGate leads it.
+
 ## ThumbGate for the Agent Manager Role
 
 In May 2026, Anthropic publicly named the role that owns enterprise Claude Code rollouts: the **Agent Manager** — a hybrid PM/engineer single DRI who owns the CLAUDE.md hierarchy, the plugin marketplace, permissions policy, and which skills ship across the organization. The role's existence resolves the recurring "phase 2 wall" in enterprise rollouts, where the model keeps improving but the setup doesn't because nobody owns it.

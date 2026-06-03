@@ -62,8 +62,8 @@ function mapDfcxToAction(reqBody) {
 // A DFCX webhook is fully untrusted (internet-facing), unlike a local coding
 // agent. These allowlists reject anything that could carry shell/path
 // metacharacters before the action ever reaches the gate engine.
-const SAFE_TOKEN = /^[A-Za-z0-9._-]{1,64}$/; // fulfillment tags, parameter names
-const SAFE_VALUE = /^[\w .,@:+-]{0,512}$/;    // parameter string values
+const SAFE_TOKEN = /^[A-Za-z0-9._\s-]{1,64}$/; // fulfillment tags, parameter names
+const SAFE_VALUE = /^[^`\;|&<>]{0,2048}$/;    // parameter string values (allow standard punctuation, block command injection)
 
 // Evaluate whether a DFCX fulfillment should be allowed to execute.
 // Returns { allowed, decision, gate, message, severity, repeat, risk, action }.

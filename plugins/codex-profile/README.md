@@ -19,6 +19,7 @@ ThumbGate ships a Codex plugin surface, a CLI-first setup path, and a portable r
 - auto-refreshes the Codex MCP/hook runtime from the latest npm release on startup
 - writes the ThumbGate status line target alongside the Codex hook bundle
 - reuses the same local-first MCP runtime as Claude, Cursor, Gemini, Amp, and OpenCode
+- gates role-plugin writes, Sites deploys, and Agentic OS operating-file changes before Codex turns them into durable business actions
 
 ## What's inside the standalone bundle
 

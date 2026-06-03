@@ -460,4 +460,33 @@ describe('buildHybridState', () => {
     assert.doesNotMatch(text, /019e715b/i);
     assert.doesNotMatch(text, /\/Users\/igorganapolsky\/\.claude/);
   });
+
+  it('supports claw-style agent context via evaluateClawPretool', () => {
+    const { evaluateClawPretool } = require('../scripts/hybrid-feedback-context');
+    const result = evaluateClawPretool('Write', { path: '/sensitive/secret.key' }, {
+      actionType: 'file-access',
+      agentId: 'enterprise-claw-001',
+      hybridRoute: 'local',
+      screenInteraction: false,
+      fileAccess: true
+    });
+    assert.ok(result);
+    assert.strictEqual(result.clawContext.actionType, 'file-access');
+    assert.strictEqual(result.clawContext.agentId, 'enterprise-claw-001');
+    // Should attach context even if allow (no matching negative pattern in base test state)
+  });
+
+  it('supports hybrid-claw combined context for routing + claw actions', () => {
+    const { evaluateClawPretool } = require('../scripts/hybrid-feedback-context');
+    const result = evaluateClawPretool('Execute', { cmd: 'create dynamic tool' }, {
+      actionType: 'dynamic-tool-creation',
+      agentId: 'claw-hybrid-002',
+      hybridRoute: 'cloud-escalated',
+      screenInteraction: false,
+      fileAccess: false
+    });
+    assert.ok(result);
+    assert.strictEqual(result.clawContext.actionType, 'dynamic-tool-creation');
+    assert.strictEqual(result.clawContext.hybridRoute, 'cloud-escalated');
+  });
 });

@@ -676,6 +676,29 @@ function evaluatePretool(toolName, toolInput, opts) {
   return evaluatePretoolFromState(state, toolName, toolInput);
 }
 
+// Claw-style agent support (high-ROI for EnterpriseClaw / OpenShell agents from Automation Anywhere / Nvidia)
+// Extends hybrid context for claw_action_type (file, screen, dynamic-tool, orchestration), agent_identity, hybrid_route.
+// Use in evaluatePretool calls from claw-aware MCP/hooks: pass {clawContext: {actionType: 'dynamic-tool-creation', agentId: '...', route: 'local/cloud'}} in opts.
+function evaluateClawPretool(toolName, toolInput, clawContext, opts) {
+  const o = opts || {};
+  const claw = clawContext || {};
+  // Merge claw metadata into toolInput for gate evaluation (so templates like block-dynamic-tool-creation can match)
+  const enrichedInput = {
+    ...(typeof toolInput === 'object' ? toolInput : { raw: toolInput }),
+    _claw: {
+      actionType: claw.actionType || 'unknown',
+      agentId: claw.agentId || 'unknown',
+      hybridRoute: claw.hybridRoute || 'unknown',
+      screenInteraction: !!claw.screenInteraction,
+      fileAccess: !!claw.fileAccess,
+    }
+  };
+  const result = evaluatePretool(toolName, JSON.stringify(enrichedInput), o);
+  // Tag result with claw metadata for logging/feedback
+  result.clawContext = claw;
+  return result;
+}
+
 // ---------------------------------------------------------------------------
 // CLI main()
 // ---------------------------------------------------------------------------
@@ -724,6 +747,7 @@ function main() {
 module.exports = {
   buildHybridState,
   evaluatePretool,
+  evaluateClawPretool,
   compileGuardArtifact,
   writeGuardArtifact,
   readGuardArtifact,
