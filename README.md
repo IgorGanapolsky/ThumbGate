@@ -255,6 +255,15 @@ Open the Codex plugin install page or download the standalone bundle from GitHub
 2. Direct zip: [thumbgate-codex-plugin.zip](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip)
 3. Follow: [plugins/codex-profile/INSTALL.md](plugins/codex-profile/INSTALL.md)
 
+### Install ChatGPT App / GPT Action
+
+ChatGPT is the advice, checkpointing, and typed-feedback surface; ThumbGate's hard enforcement still runs locally in Codex, Claude Code, Cursor, Gemini CLI, Amp, OpenCode, MCP, or CI after install.
+
+1. App page: [thumbgate.ai/chatgpt-app](https://thumbgate.ai/chatgpt-app)
+2. Live GPT: [thumbgate.ai/go/gpt](https://thumbgate.ai/go/gpt?utm_source=github&utm_medium=readme&utm_campaign=chatgpt_app)
+3. GPT Action schema: [thumbgate.ai/openapi.yaml](https://thumbgate.ai/openapi.yaml)
+4. Follow: [adapters/chatgpt/INSTALL.md](adapters/chatgpt/INSTALL.md)
+
 ---
 
 ## How It Works
@@ -499,6 +508,7 @@ Every Changeset is tied to the exact `main` merge commit and generates Verificat
 
 ## Integrations
 
+- **[ChatGPT App / GPT Action](https://thumbgate.ai/chatgpt-app)** — First-class ChatGPT distribution page with the live GPT, public OpenAPI Action schema, and local enforcement install path
 - **[Open ThumbGate GPT](https://thumbgate.ai/go/gpt?utm_source=github&utm_medium=readme&utm_campaign=readme_gpt)** — ThumbGate GPT: start here. Paste agent actions, get advice + checkpointing. No, users do not have to keep chatting inside the ThumbGate GPT to use ThumbGate — the hard enforcement layer still runs where the work happens.
 - **[Claude Desktop Extension](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb)** — One-click install for Claude Desktop
 - **[Codex Plugin](https://thumbgate.ai/codex-plugin)** — Auto-updating standalone bundle and install page for Codex CLI

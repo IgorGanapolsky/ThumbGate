@@ -221,6 +221,7 @@ const PRO_PAGE_PATH = path.resolve(__dirname, '../../public/pro.html');
 const DASHBOARD_PAGE_PATH = path.resolve(__dirname, '../../public/dashboard.html');
 const LESSONS_PAGE_PATH = path.resolve(__dirname, '../../public/lessons.html');
 const GUIDE_PAGE_PATH = path.resolve(__dirname, '../../public/guide.html');
+const CHATGPT_APP_PAGE_PATH = path.resolve(__dirname, '../../public/chatgpt-app.html');
 const CODEX_PLUGIN_PAGE_PATH = path.resolve(__dirname, '../../public/codex-plugin.html');
 const COMPARE_PAGE_PATH = path.resolve(__dirname, '../../public/compare.html');
 const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
@@ -2789,6 +2790,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/pro', changefreq: 'weekly', priority: '0.9' },
     { path: '/agent-manager', changefreq: 'weekly', priority: '0.9' },
     { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
+    { path: '/chatgpt-app', changefreq: 'weekly', priority: '0.85' },
     { path: '/codex-plugin', changefreq: 'weekly', priority: '0.75' },
     { path: '/codex-enterprise', changefreq: 'weekly', priority: '0.85' },
     { path: '/agents-cost-savings', changefreq: 'weekly', priority: '0.85' },
@@ -4789,6 +4791,28 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && (
+      pathname === '/chatgpt-app'
+      || pathname === '/chatgpt-app.html'
+      || pathname === '/chatgpt-plugin'
+      || pathname === '/chatgpt-plugin.html'
+    )) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(CHATGPT_APP_PAGE_PATH, 'utf-8'),
+          extraTelemetry: { pageType: 'chatgpt_app' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'ChatGPT app page not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && (pathname === '/compare' || pathname === '/compare.html')) {
       try {
         const html = fs.readFileSync(COMPARE_PAGE_PATH, 'utf-8');
@@ -5082,7 +5106,7 @@ async function addContext(){
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/ThumbGate',
-          endpoints: ['/health', '/dashboard', '/guide', '/codex-plugin', '/compare', '/learn', '/pricing', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/documents', '/v1/documents/import', '/v1/documents/{documentId}', '/v1/dashboard', '/v1/dashboard/ai-inventory', '/v1/dashboard/render-spec', '/v1/decisions/evaluate', '/v1/decisions/outcome', '/v1/decisions/metrics', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
+          endpoints: ['/health', '/dashboard', '/guide', '/chatgpt-app', '/codex-plugin', '/compare', '/learn', '/pricing', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/documents', '/v1/documents/import', '/v1/documents/{documentId}', '/v1/dashboard', '/v1/dashboard/ai-inventory', '/v1/dashboard/render-spec', '/v1/decisions/evaluate', '/v1/decisions/outcome', '/v1/decisions/metrics', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
         }, {}, {
           headOnly: isHeadRequest,
         });

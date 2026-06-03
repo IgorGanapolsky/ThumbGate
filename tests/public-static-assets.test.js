@@ -169,6 +169,8 @@ test('landing page internal links resolve without auth or broken .html aliases',
 test('public marketing .html aliases remain live for existing indexed links', async () => {
   const paths = [
     '/guide.html',
+    '/chatgpt-app.html',
+    '/chatgpt-plugin.html',
     '/codex-plugin.html',
     '/compare.html',
     '/learn.html',
@@ -184,6 +186,33 @@ test('public marketing .html aliases remain live for existing indexed links', as
     assert.equal(res.status, 200, `${pathname} should resolve`);
     assert.match(res.headers.get('content-type') || '', /text\/html/);
   }
+});
+
+test('GET /chatgpt-app serves the ChatGPT app and GPT Action landing HTML', async () => {
+  const [routeRes, htmlRes, legacyAliasRes] = await Promise.all([
+    fetch(`${origin}/chatgpt-app`),
+    fetch(`${origin}/chatgpt-app.html`),
+    fetch(`${origin}/chatgpt-plugin`),
+  ]);
+
+  for (const res of [routeRes, htmlRes, legacyAliasRes]) {
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-type') || '', /text\/html/);
+    const body = await res.text();
+    assert.match(body, /ThumbGate for ChatGPT/);
+    assert.match(body, /GPT Action schema/);
+    assert.match(body, /Open ThumbGate GPT/);
+    assert.match(body, /native thumbs rating buttons are not the ThumbGate memory path/i);
+    assert.match(body, /npx thumbgate init --agent codex/);
+    assert.match(body, /does not claim official OpenAI marketplace approval/i);
+  }
+});
+
+test('HEAD /chatgpt-app responds 200 with html content-type and no body', async () => {
+  const res = await fetch(`${origin}/chatgpt-app`, { method: 'HEAD' });
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /text\/html/);
+  assert.equal(await res.text(), '');
 });
 
 test('public marketing directory aliases redirect to canonical pages', async () => {
@@ -283,6 +312,16 @@ test('GET /sitemap.xml includes /codex-enterprise at priority 0.85', async () =>
   // The new entry uses priority 0.85 — guards against accidental priority drift.
   const entry = xml.match(/<url>\s*<loc>[^<]*\/codex-enterprise<\/loc>[\s\S]*?<\/url>/);
   assert.ok(entry, 'codex-enterprise <url> block must exist');
+  assert.match(entry[0], /<priority>0\.85<\/priority>/);
+});
+
+test('GET /sitemap.xml includes /chatgpt-app at priority 0.85', async () => {
+  const res = await fetch(`${origin}/sitemap.xml`);
+  assert.equal(res.status, 200);
+  const xml = await res.text();
+  assert.match(xml, /<loc>[^<]*\/chatgpt-app<\/loc>/, 'sitemap must list /chatgpt-app');
+  const entry = xml.match(/<url>\s*<loc>[^<]*\/chatgpt-app<\/loc>[\s\S]*?<\/url>/);
+  assert.ok(entry, 'chatgpt-app <url> block must exist');
   assert.match(entry[0], /<priority>0\.85<\/priority>/);
 });
 
