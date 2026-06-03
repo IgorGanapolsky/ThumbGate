@@ -21,7 +21,7 @@
           "opportunityScore": 89
         },
         {
-          "id": "kw_29_cursor-prevent-repeated-mistakes",
+          "id": "kw_34_cursor-prevent-repeated-mistakes",
           "query": "cursor prevent repeated mistakes",
           "source": "seed",
           "notes": "High-intent Cursor workflow page for developers already feeling repeat-failure pain.",
@@ -37,7 +37,7 @@
           "opportunityScore": 89
         },
         {
-          "id": "kw_30_claude-code-prevent-repeated-mistakes",
+          "id": "kw_35_claude-code-prevent-repeated-mistakes",
           "query": "claude code prevent repeated mistakes",
           "source": "seed",
           "notes": "High-intent pain query for Claude Code buyers.",
@@ -53,7 +53,7 @@
           "opportunityScore": 89
         },
         {
-          "id": "kw_31_codex-cli-guardrails",
+          "id": "kw_36_codex-cli-guardrails",
           "query": "codex cli guardrails",
           "source": "seed",
           "notes": "Guardrail-focused page for Codex CLI buyers who want prevention, not just memory.",
@@ -165,7 +165,71 @@
           "opportunityScore": 83
         },
         {
-          "id": "kw_26_ai-coding-agent-guardrails",
+          "id": "kw_17_background-agent-governance",
+          "query": "background agent governance",
+          "source": "seed",
+          "notes": "New team-buying query for unattended agent PRs where alignment context, isolated execution, risk-tiered review, and audit evidence create immediate ROI.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "commercial",
+          "pillar": "pre-action-checks",
+          "persona": "engineering-lead",
+          "pageType": "guide",
+          "opportunityScore": 83
+        },
+        {
+          "id": "kw_18_ai-agent-governance-sprint",
+          "query": "ai agent governance sprint",
+          "source": "seed",
+          "notes": "Bottom-of-funnel service query that turns background-agent governance demand into a paid 48-hour Team intake and implementation wedge.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 95,
+          "intent": "commercial",
+          "pillar": "pre-action-checks",
+          "persona": "engineering-lead",
+          "pageType": "guide",
+          "opportunityScore": 83
+        },
+        {
+          "id": "kw_26_ai-mode-ads-agent-governance",
+          "query": "ai mode ads agent governance",
+          "source": "seed",
+          "notes": "Conversational Google AI Mode ad demand where ThumbGate can become the cited answer for teams asking how to govern AI-agent actions, not just buy clicks.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "commercial",
+          "pillar": "pre-action-checks",
+          "persona": "engineering-lead",
+          "pageType": "guide",
+          "opportunityScore": 83
+        },
+        {
+          "id": "kw_27_mcp-tool-governance",
+          "query": "mcp tool governance",
+          "source": "seed",
+          "notes": "High-intent MCP buyer query where teams need approval boundaries and audit proof before exposing tools to agents.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 95,
+          "intent": "commercial",
+          "pillar": "pre-action-checks",
+          "persona": "engineering-lead",
+          "pageType": "guide",
+          "opportunityScore": 83
+        },
+        {
+          "id": "kw_31_ai-coding-agent-guardrails",
           "query": "ai coding agent guardrails",
           "source": "seed",
           "notes": "Broader category demand that feeds comparison and guide pages.",
@@ -181,7 +245,7 @@
           "opportunityScore": 83
         },
         {
-          "id": "kw_27_autoresearch-agent-safety",
+          "id": "kw_32_autoresearch-agent-safety",
           "query": "autoresearch agent safety",
           "source": "seed",
           "notes": "Emerging self-improving agent query where ThumbGate can own the safety and proof-control wedge.",
@@ -197,7 +261,7 @@
           "opportunityScore": 83
         },
         {
-          "id": "kw_28_stop-ai-coding-agents-from-repeating-mistakes",
+          "id": "kw_33_stop-ai-coding-agents-from-repeating-mistakes",
           "query": "stop ai coding agents from repeating mistakes",
           "source": "seed",
           "notes": "Problem-led copy that maps to landing-page positioning.",
@@ -229,7 +293,7 @@
           "opportunityScore": 75
         },
         {
-          "id": "kw_19_browser-automation-safety",
+          "id": "kw_21_browser-automation-safety",
           "query": "browser automation safety",
           "source": "seed",
           "notes": "High-intent browser-agent safety query tied to prompt injection, permissions, and cross-app automation risk.",
@@ -245,7 +309,7 @@
           "opportunityScore": 75
         },
         {
-          "id": "kw_20_native-messaging-host-security",
+          "id": "kw_22_native-messaging-host-security",
           "query": "native messaging host security",
           "source": "seed",
           "notes": "Security-led query that maps directly to browser bridge auditing and explicit connector governance.",
@@ -261,7 +325,7 @@
           "opportunityScore": 75
         }
       ],
-      "totalOpportunityScore": 1328,
+      "totalOpportunityScore": 1660,
       "primaryQuery": {
         "id": "kw_14_claude-code-masterclass-guardrails",
         "query": "claude code masterclass guardrails",
@@ -297,6 +361,22 @@
       "pageType": "guide",
       "queries": [
         {
+          "id": "kw_19_ai-deployment-readiness",
+          "query": "ai deployment readiness",
+          "source": "seed",
+          "notes": "Production AI deployment demand maps directly to ThumbGate readiness audits, pre-action gates, rollout proof, and paid workflow hardening services.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 95,
+          "intent": "commercial",
+          "pillar": "ai-agent-reliability",
+          "persona": "ai-engineer",
+          "pageType": "guide",
+          "opportunityScore": 80
+        },
+        {
           "id": "kw_7_prompt-tricks-to-workflow-rules",
           "query": "prompt tricks to workflow rules",
           "source": "seed",
@@ -313,23 +393,7 @@
           "opportunityScore": 72
         },
         {
-          "id": "kw_17_background-agent-governance",
-          "query": "background agent governance",
-          "source": "seed",
-          "notes": "New team-buying query for unattended agent PRs where alignment context, isolated execution, risk-tiered review, and audit evidence create immediate ROI.",
-          "impressions": null,
-          "clicks": null,
-          "ctr": null,
-          "position": null,
-          "businessValue": 94,
-          "intent": "informational",
-          "pillar": "ai-agent-reliability",
-          "persona": "ai-engineer",
-          "pageType": "guide",
-          "opportunityScore": 72
-        },
-        {
-          "id": "kw_18_gpt-5-5-model-evaluation",
+          "id": "kw_20_gpt-5-5-model-evaluation",
           "query": "gpt-5.5 model evaluation",
           "source": "seed",
           "notes": "Fresh frontier-model upgrade query that maps to ThumbGate model candidate benchmarking, dashboard-analysis workloads, and routing governance before teams move expensive work.",
@@ -345,7 +409,7 @@
           "opportunityScore": 72
         },
         {
-          "id": "kw_21_ai-search-topical-presence",
+          "id": "kw_23_ai-search-topical-presence",
           "query": "ai search topical presence",
           "source": "seed",
           "notes": "High-intent GEO query for teams trying to become the obvious recommendation in AI search and agent answers.",
@@ -361,7 +425,7 @@
           "opportunityScore": 72
         },
         {
-          "id": "kw_22_best-tools-to-stop-ai-agents-from-breaking-production",
+          "id": "kw_24_best-tools-to-stop-ai-agents-from-breaking-production",
           "query": "best tools to stop ai agents from breaking production",
           "source": "seed",
           "notes": "Listicle-style answer-engine query that maps directly to buyer prompts about production agent reliability.",
@@ -377,7 +441,7 @@
           "opportunityScore": 72
         },
         {
-          "id": "kw_23_relational-knowledge-ai-recommendations",
+          "id": "kw_25_relational-knowledge-ai-recommendations",
           "query": "relational knowledge ai recommendations",
           "source": "seed",
           "notes": "Captures research-led interest in how AI systems decide which brands and tools to recommend.",
@@ -391,30 +455,47 @@
           "persona": "ai-engineer",
           "pageType": "guide",
           "opportunityScore": 72
+        },
+        {
+          "id": "kw_28_ai-agent-pre-action-approval-gates",
+          "query": "ai agent pre action approval gates",
+          "source": "seed",
+          "notes": "Bottom-of-funnel query for teams ready to add human approval and evidence requirements before AI agents touch risky tools.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 95,
+          "intent": "informational",
+          "pillar": "ai-agent-reliability",
+          "persona": "ai-engineer",
+          "pageType": "guide",
+          "opportunityScore": 72
         }
       ],
-      "totalOpportunityScore": 432,
+      "totalOpportunityScore": 512,
       "primaryQuery": {
-        "id": "kw_7_prompt-tricks-to-workflow-rules",
-        "query": "prompt tricks to workflow rules",
+        "id": "kw_19_ai-deployment-readiness",
+        "query": "ai deployment readiness",
         "source": "seed",
-        "notes": "Fresh prompt-engineering skepticism that maps directly to ThumbGate converting clear instructions, examples, and repeated failures into enforceable local checks.",
+        "notes": "Production AI deployment demand maps directly to ThumbGate readiness audits, pre-action gates, rollout proof, and paid workflow hardening services.",
         "impressions": null,
         "clicks": null,
         "ctr": null,
         "position": null,
-        "businessValue": 94,
-        "intent": "informational",
+        "businessValue": 95,
+        "intent": "commercial",
         "pillar": "ai-agent-reliability",
         "persona": "ai-engineer",
         "pageType": "guide",
-        "opportunityScore": 72
+        "opportunityScore": 80
       },
       "personas": [
         "ai-engineer",
         "growth-engineer"
       ],
       "intents": [
+        "commercial",
         "informational"
       ]
     },
@@ -471,7 +552,7 @@
           "opportunityScore": 100
         },
         {
-          "id": "kw_33_roo-code-alternative-cline",
+          "id": "kw_38_roo-code-alternative-cline",
           "query": "roo code alternative cline",
           "source": "seed",
           "notes": "Time-sensitive migration query for Roo users who need portable lesson memory before the May 15, 2026 shutdown.",
@@ -516,7 +597,7 @@
       "pageType": "integration",
       "queries": [
         {
-          "id": "kw_25_claude-code-feedback-memory",
+          "id": "kw_30_claude-code-feedback-memory",
           "query": "claude code feedback memory",
           "source": "seed",
           "notes": "Agent-specific workflow page with high compatibility intent.",
@@ -532,7 +613,7 @@
           "opportunityScore": 89
         },
         {
-          "id": "kw_32_gemini-cli-feedback-memory",
+          "id": "kw_37_gemini-cli-feedback-memory",
           "query": "gemini cli feedback memory",
           "source": "seed",
           "notes": "Integration page for Gemini CLI users who need memory plus enforcement.",
@@ -548,7 +629,7 @@
           "opportunityScore": 89
         },
         {
-          "id": "kw_24_thumbs-up-thumbs-down-feedback-for-ai-coding-agents",
+          "id": "kw_29_thumbs-up-thumbs-down-feedback-for-ai-coding-agents",
           "query": "thumbs up thumbs down feedback for ai coding agents",
           "source": "seed",
           "notes": "Differentiates the explicit feedback loop and aligns with the brand.",
@@ -566,7 +647,7 @@
       ],
       "totalOpportunityScore": 261,
       "primaryQuery": {
-        "id": "kw_25_claude-code-feedback-memory",
+        "id": "kw_30_claude-code-feedback-memory",
         "query": "claude code feedback memory",
         "source": "seed",
         "notes": "Agent-specific workflow page with high compatibility intent.",
@@ -735,7 +816,7 @@
           "opportunityScore": 89
         },
         {
-          "id": "kw_29_cursor-prevent-repeated-mistakes",
+          "id": "kw_34_cursor-prevent-repeated-mistakes",
           "query": "cursor prevent repeated mistakes",
           "source": "seed",
           "notes": "High-intent Cursor workflow page for developers already feeling repeat-failure pain.",
@@ -751,7 +832,7 @@
           "opportunityScore": 89
         },
         {
-          "id": "kw_30_claude-code-prevent-repeated-mistakes",
+          "id": "kw_35_claude-code-prevent-repeated-mistakes",
           "query": "claude code prevent repeated mistakes",
           "source": "seed",
           "notes": "High-intent pain query for Claude Code buyers.",
@@ -767,7 +848,7 @@
           "opportunityScore": 89
         },
         {
-          "id": "kw_31_codex-cli-guardrails",
+          "id": "kw_36_codex-cli-guardrails",
           "query": "codex cli guardrails",
           "source": "seed",
           "notes": "Guardrail-focused page for Codex CLI buyers who want prevention, not just memory.",
@@ -879,7 +960,71 @@
           "opportunityScore": 83
         },
         {
-          "id": "kw_26_ai-coding-agent-guardrails",
+          "id": "kw_17_background-agent-governance",
+          "query": "background agent governance",
+          "source": "seed",
+          "notes": "New team-buying query for unattended agent PRs where alignment context, isolated execution, risk-tiered review, and audit evidence create immediate ROI.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "commercial",
+          "pillar": "pre-action-checks",
+          "persona": "engineering-lead",
+          "pageType": "guide",
+          "opportunityScore": 83
+        },
+        {
+          "id": "kw_18_ai-agent-governance-sprint",
+          "query": "ai agent governance sprint",
+          "source": "seed",
+          "notes": "Bottom-of-funnel service query that turns background-agent governance demand into a paid 48-hour Team intake and implementation wedge.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 95,
+          "intent": "commercial",
+          "pillar": "pre-action-checks",
+          "persona": "engineering-lead",
+          "pageType": "guide",
+          "opportunityScore": 83
+        },
+        {
+          "id": "kw_26_ai-mode-ads-agent-governance",
+          "query": "ai mode ads agent governance",
+          "source": "seed",
+          "notes": "Conversational Google AI Mode ad demand where ThumbGate can become the cited answer for teams asking how to govern AI-agent actions, not just buy clicks.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 94,
+          "intent": "commercial",
+          "pillar": "pre-action-checks",
+          "persona": "engineering-lead",
+          "pageType": "guide",
+          "opportunityScore": 83
+        },
+        {
+          "id": "kw_27_mcp-tool-governance",
+          "query": "mcp tool governance",
+          "source": "seed",
+          "notes": "High-intent MCP buyer query where teams need approval boundaries and audit proof before exposing tools to agents.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 95,
+          "intent": "commercial",
+          "pillar": "pre-action-checks",
+          "persona": "engineering-lead",
+          "pageType": "guide",
+          "opportunityScore": 83
+        },
+        {
+          "id": "kw_31_ai-coding-agent-guardrails",
           "query": "ai coding agent guardrails",
           "source": "seed",
           "notes": "Broader category demand that feeds comparison and guide pages.",
@@ -895,7 +1040,7 @@
           "opportunityScore": 83
         },
         {
-          "id": "kw_27_autoresearch-agent-safety",
+          "id": "kw_32_autoresearch-agent-safety",
           "query": "autoresearch agent safety",
           "source": "seed",
           "notes": "Emerging self-improving agent query where ThumbGate can own the safety and proof-control wedge.",
@@ -911,7 +1056,7 @@
           "opportunityScore": 83
         },
         {
-          "id": "kw_28_stop-ai-coding-agents-from-repeating-mistakes",
+          "id": "kw_33_stop-ai-coding-agents-from-repeating-mistakes",
           "query": "stop ai coding agents from repeating mistakes",
           "source": "seed",
           "notes": "Problem-led copy that maps to landing-page positioning.",
@@ -943,7 +1088,7 @@
           "opportunityScore": 75
         },
         {
-          "id": "kw_19_browser-automation-safety",
+          "id": "kw_21_browser-automation-safety",
           "query": "browser automation safety",
           "source": "seed",
           "notes": "High-intent browser-agent safety query tied to prompt injection, permissions, and cross-app automation risk.",
@@ -959,7 +1104,7 @@
           "opportunityScore": 75
         },
         {
-          "id": "kw_20_native-messaging-host-security",
+          "id": "kw_22_native-messaging-host-security",
           "query": "native messaging host security",
           "source": "seed",
           "notes": "Security-led query that maps directly to browser bridge auditing and explicit connector governance.",
@@ -975,7 +1120,7 @@
           "opportunityScore": 75
         }
       ],
-      "totalOpportunityScore": 1328,
+      "totalOpportunityScore": 1660,
       "primaryQuery": {
         "id": "kw_14_claude-code-masterclass-guardrails",
         "query": "claude code masterclass guardrails",
@@ -1011,6 +1156,22 @@
       "pageType": "guide",
       "queries": [
         {
+          "id": "kw_19_ai-deployment-readiness",
+          "query": "ai deployment readiness",
+          "source": "seed",
+          "notes": "Production AI deployment demand maps directly to ThumbGate readiness audits, pre-action gates, rollout proof, and paid workflow hardening services.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 95,
+          "intent": "commercial",
+          "pillar": "ai-agent-reliability",
+          "persona": "ai-engineer",
+          "pageType": "guide",
+          "opportunityScore": 80
+        },
+        {
           "id": "kw_7_prompt-tricks-to-workflow-rules",
           "query": "prompt tricks to workflow rules",
           "source": "seed",
@@ -1027,23 +1188,7 @@
           "opportunityScore": 72
         },
         {
-          "id": "kw_17_background-agent-governance",
-          "query": "background agent governance",
-          "source": "seed",
-          "notes": "New team-buying query for unattended agent PRs where alignment context, isolated execution, risk-tiered review, and audit evidence create immediate ROI.",
-          "impressions": null,
-          "clicks": null,
-          "ctr": null,
-          "position": null,
-          "businessValue": 94,
-          "intent": "informational",
-          "pillar": "ai-agent-reliability",
-          "persona": "ai-engineer",
-          "pageType": "guide",
-          "opportunityScore": 72
-        },
-        {
-          "id": "kw_18_gpt-5-5-model-evaluation",
+          "id": "kw_20_gpt-5-5-model-evaluation",
           "query": "gpt-5.5 model evaluation",
           "source": "seed",
           "notes": "Fresh frontier-model upgrade query that maps to ThumbGate model candidate benchmarking, dashboard-analysis workloads, and routing governance before teams move expensive work.",
@@ -1059,7 +1204,7 @@
           "opportunityScore": 72
         },
         {
-          "id": "kw_21_ai-search-topical-presence",
+          "id": "kw_23_ai-search-topical-presence",
           "query": "ai search topical presence",
           "source": "seed",
           "notes": "High-intent GEO query for teams trying to become the obvious recommendation in AI search and agent answers.",
@@ -1075,7 +1220,7 @@
           "opportunityScore": 72
         },
         {
-          "id": "kw_22_best-tools-to-stop-ai-agents-from-breaking-production",
+          "id": "kw_24_best-tools-to-stop-ai-agents-from-breaking-production",
           "query": "best tools to stop ai agents from breaking production",
           "source": "seed",
           "notes": "Listicle-style answer-engine query that maps directly to buyer prompts about production agent reliability.",
@@ -1091,7 +1236,7 @@
           "opportunityScore": 72
         },
         {
-          "id": "kw_23_relational-knowledge-ai-recommendations",
+          "id": "kw_25_relational-knowledge-ai-recommendations",
           "query": "relational knowledge ai recommendations",
           "source": "seed",
           "notes": "Captures research-led interest in how AI systems decide which brands and tools to recommend.",
@@ -1105,30 +1250,47 @@
           "persona": "ai-engineer",
           "pageType": "guide",
           "opportunityScore": 72
+        },
+        {
+          "id": "kw_28_ai-agent-pre-action-approval-gates",
+          "query": "ai agent pre action approval gates",
+          "source": "seed",
+          "notes": "Bottom-of-funnel query for teams ready to add human approval and evidence requirements before AI agents touch risky tools.",
+          "impressions": null,
+          "clicks": null,
+          "ctr": null,
+          "position": null,
+          "businessValue": 95,
+          "intent": "informational",
+          "pillar": "ai-agent-reliability",
+          "persona": "ai-engineer",
+          "pageType": "guide",
+          "opportunityScore": 72
         }
       ],
-      "totalOpportunityScore": 432,
+      "totalOpportunityScore": 512,
       "primaryQuery": {
-        "id": "kw_7_prompt-tricks-to-workflow-rules",
-        "query": "prompt tricks to workflow rules",
+        "id": "kw_19_ai-deployment-readiness",
+        "query": "ai deployment readiness",
         "source": "seed",
-        "notes": "Fresh prompt-engineering skepticism that maps directly to ThumbGate converting clear instructions, examples, and repeated failures into enforceable local checks.",
+        "notes": "Production AI deployment demand maps directly to ThumbGate readiness audits, pre-action gates, rollout proof, and paid workflow hardening services.",
         "impressions": null,
         "clicks": null,
         "ctr": null,
         "position": null,
-        "businessValue": 94,
-        "intent": "informational",
+        "businessValue": 95,
+        "intent": "commercial",
         "pillar": "ai-agent-reliability",
         "persona": "ai-engineer",
         "pageType": "guide",
-        "opportunityScore": 72
+        "opportunityScore": 80
       },
       "personas": [
         "ai-engineer",
         "growth-engineer"
       ],
       "intents": [
+        "commercial",
         "informational"
       ]
     },
@@ -1185,7 +1347,7 @@
           "opportunityScore": 100
         },
         {
-          "id": "kw_33_roo-code-alternative-cline",
+          "id": "kw_38_roo-code-alternative-cline",
           "query": "roo code alternative cline",
           "source": "seed",
           "notes": "Time-sensitive migration query for Roo users who need portable lesson memory before the May 15, 2026 shutdown.",
@@ -1230,7 +1392,7 @@
       "pageType": "integration",
       "queries": [
         {
-          "id": "kw_25_claude-code-feedback-memory",
+          "id": "kw_30_claude-code-feedback-memory",
           "query": "claude code feedback memory",
           "source": "seed",
           "notes": "Agent-specific workflow page with high compatibility intent.",
@@ -1246,7 +1408,7 @@
           "opportunityScore": 89
         },
         {
-          "id": "kw_32_gemini-cli-feedback-memory",
+          "id": "kw_37_gemini-cli-feedback-memory",
           "query": "gemini cli feedback memory",
           "source": "seed",
           "notes": "Integration page for Gemini CLI users who need memory plus enforcement.",
@@ -1262,7 +1424,7 @@
           "opportunityScore": 89
         },
         {
-          "id": "kw_24_thumbs-up-thumbs-down-feedback-for-ai-coding-agents",
+          "id": "kw_29_thumbs-up-thumbs-down-feedback-for-ai-coding-agents",
           "query": "thumbs up thumbs down feedback for ai coding agents",
           "source": "seed",
           "notes": "Differentiates the explicit feedback loop and aligns with the brand.",
@@ -1280,7 +1442,7 @@
       ],
       "totalOpportunityScore": 261,
       "primaryQuery": {
-        "id": "kw_25_claude-code-feedback-memory",
+        "id": "kw_30_claude-code-feedback-memory",
         "query": "claude code feedback memory",
         "source": "seed",
         "notes": "Agent-specific workflow page with high compatibility intent.",
@@ -1322,7 +1484,7 @@
     },
     {
       "pillar": "ai-agent-reliability",
-      "primaryQuery": "prompt tricks to workflow rules",
+      "primaryQuery": "ai deployment readiness",
       "authorityScore": 100,
       "rankPermission": "expand",
       "proofPages": [],
@@ -1615,6 +1777,30 @@
       "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
     },
     {
+      "path": "/guides/background-agent-governance",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/pre-action-checks",
+        "/guides/agent-harness-optimization",
+        "/guides/best-tools-stop-ai-agents-breaking-production"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "needs-links",
+      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
+    },
+    {
+      "path": "/guides/ai-agent-governance-sprint",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/background-agent-governance",
+        "/guides/pre-action-checks",
+        "/guides/best-tools-stop-ai-agents-breaking-production"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "needs-links",
+      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
+    },
+    {
       "path": "/guides/stop-repeated-ai-agent-mistakes",
       "pillar": "pre-action-checks",
       "relatedPaths": [
@@ -1626,6 +1812,30 @@
       "nextStep": "Keep proof and adjacent links fresh."
     },
     {
+      "path": "/guides/ai-mode-ads-agent-governance",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/ai-search-topical-presence",
+        "/guides/pre-action-checks",
+        "/guides/mcp-tool-governance"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "needs-links",
+      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
+    },
+    {
+      "path": "/guides/mcp-tool-governance",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/pre-action-checks",
+        "/guides/ai-mode-ads-agent-governance",
+        "/guides/background-agent-governance"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "needs-links",
+      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
+    },
+    {
       "path": "/guides/autoresearch-agent-safety",
       "pillar": "pre-action-checks",
       "relatedPaths": [
@@ -1635,6 +1845,18 @@
       "hasConversionPath": true,
       "meshStatus": "healthy",
       "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
+      "path": "/guides/ai-deployment-readiness",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/ai-agent-governance-sprint",
+        "/guides/background-agent-governance",
+        "/guides/pre-action-checks"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "needs-links",
+      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
     },
     {
       "path": "/guides/long-running-agent-context-management",
@@ -1671,6 +1893,17 @@
       "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
     },
     {
+      "path": "/guides/ai-coding-agent-zero-trust",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/pre-action-checks",
+        "/guides/agent-harness-optimization"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "needs-links",
+      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
+    },
+    {
       "path": "/guides/best-tools-stop-ai-agents-breaking-production",
       "pillar": "pre-action-checks",
       "relatedPaths": [
@@ -1684,18 +1917,6 @@
     },
     {
       "path": "/guides/prompt-tricks-to-workflow-rules",
-      "pillar": "pre-action-checks",
-      "relatedPaths": [
-        "/guides/pre-action-checks",
-        "/guides/agent-harness-optimization",
-        "/guides/best-tools-stop-ai-agents-breaking-production"
-      ],
-      "hasConversionPath": true,
-      "meshStatus": "needs-links",
-      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
-    },
-    {
-      "path": "/guides/background-agent-governance",
       "pillar": "pre-action-checks",
       "relatedPaths": [
         "/guides/pre-action-checks",
@@ -1739,6 +1960,18 @@
       "hasConversionPath": true,
       "meshStatus": "healthy",
       "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
+      "path": "/guides/ai-agent-pre-action-approval-gates",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/pre-action-checks",
+        "/guides/mcp-tool-governance",
+        "/guides/ai-agent-governance-sprint"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "needs-links",
+      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
     }
   ]
 }

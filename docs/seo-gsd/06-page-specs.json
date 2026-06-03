@@ -1955,6 +1955,206 @@
     "imageAlt": "ThumbGate guide for Stop AI Assistants From Amplifying Supply-Chain Attacks."
   },
   {
+    "path": "/guides/background-agent-governance",
+    "slug": "guides-background-agent-governance",
+    "query": "background agent governance",
+    "pillar": "pre-action-checks",
+    "intent": "commercial",
+    "pageType": "guide",
+    "persona": "engineering-lead",
+    "opportunityScore": 83,
+    "title": "Background Agent Governance | Risk-Tiered Review for Agent PRs",
+    "description": "Background agents can draft changes while humans work elsewhere, but review becomes the bottleneck. ThumbGate adds pre-dispatch checks, run reports, isolated...",
+    "heroTitle": "Background Agent Governance for Agent PRs",
+    "heroSummary": "Background agents can draft changes while humans work elsewhere, but review becomes the bottleneck. ThumbGate adds pre-dispatch checks, run reports, isolated task lanes, and evidence-backed review routing before unattended agent work piles up.",
+    "takeaways": [
+      "Background agents need a real run ledger, not just a pile of PRs.",
+      "The highest ROI control is risk-tiered review: stricter checks for protected branches, high-failure agents, and large blast-radius changes.",
+      "ThumbGate turns CI failures and human review feedback into Pre-Action Checks so the same failed agent pattern gets blocked before the next run."
+    ],
+    "sections": [
+      {
+        "heading": "Why this became urgent",
+        "paragraphs": [
+          "Teams are moving from local agent sessions to unattended background work. That changes the review problem: humans no longer inspect one assistant transcript at a time; they receive a queue of agent-created branches, PRs, and CI failures.",
+          "If context alignment happens in Slack, Linear, Jira, or a planning thread, the agent run also needs a durable record of what was agreed, where it executed, which gates fired, and what evidence came back."
+        ]
+      },
+      {
+        "heading": "What ThumbGate adds",
+        "bullets": [
+          "A background-agent run ledger with agent ID, source, branch, PR number, gate counts, CI outcome, and changed-file count.",
+          "A pre-dispatch governance check for high-failure agents, protected branches, and large blast-radius runs.",
+          "Post-run audit that can convert CI failures into structured thumbs-down feedback and future prevention rules.",
+          "A report command for review queues: npx thumbgate background-governance --json.",
+          "A risk check command for dispatch systems: npx thumbgate background-governance --check --agent-id=builder --branch=main --files-changed=25 --json."
+        ]
+      },
+      {
+        "heading": "Where this creates revenue",
+        "paragraphs": [
+          "This is a clean Workflow Hardening Sprint wedge. The buyer does not need a broad platform migration; they need one background-agent workflow hardened from context intake to isolated execution to risk-tiered review.",
+          "The promise stays honest: ThumbGate does not remove human review. It makes the review queue smaller, better labeled, and backed by evidence before a risky agent PR reaches a reviewer."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "Does ThumbGate replace human review for background agents?",
+        "answer": "No. ThumbGate reduces review load by blocking known bad actions earlier, warning on risky dispatches, and attaching run evidence so humans can focus on high-risk changes."
+      },
+      {
+        "question": "What should teams check before dispatching a background agent?",
+        "answer": "Check recent agent failure rate, prior gate blocks, target branch, expected blast radius, isolated execution environment, CI expectations, and the human context that authorized the task."
+      },
+      {
+        "question": "How does this connect to the Workflow Hardening Sprint?",
+        "answer": "The sprint can harden one background-agent workflow end to end: context intake, pre-dispatch governance, sandbox routing, CI audit, prevention rules, and proof review."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/pre-action-checks",
+        "title": "What Are Pre-Action Checks?"
+      },
+      {
+        "path": "/guides/agent-harness-optimization",
+        "title": "AI Agent Harness Optimization That Blocks Repeat Failures"
+      },
+      {
+        "path": "/guides/best-tools-stop-ai-agents-breaking-production",
+        "title": "Best Tools to Stop AI Agents From Breaking Production"
+      }
+    ],
+    "cta": {
+      "label": "Go Pro — $19/mo",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_background-agent-governance&cta_placement=seo_brief&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "monthly",
+    "priority": "0.8",
+    "keywordCluster": [
+      "claude code masterclass guardrails",
+      "cursor prevent repeated mistakes",
+      "claude code prevent repeated mistakes",
+      "codex cli guardrails"
+    ],
+    "imageAlt": "ThumbGate guide for Background Agent Governance for Agent PRs"
+  },
+  {
+    "path": "/guides/ai-agent-governance-sprint",
+    "slug": "guides-ai-agent-governance-sprint",
+    "query": "ai agent governance sprint",
+    "pillar": "pre-action-checks",
+    "intent": "commercial",
+    "pageType": "guide",
+    "persona": "engineering-lead",
+    "opportunityScore": 83,
+    "title": "AI Agent Governance Sprint | 48-Hour Workflow Hardening",
+    "description": "ThumbGate turns one repeated AI-agent failure into approval boundaries, pre-action checks, rollback safety, and rollout proof in a focused 48-hour Workflow H...",
+    "heroTitle": "AI Agent Governance Sprint for One Risky Workflow",
+    "heroSummary": "ThumbGate turns one repeated AI-agent failure into approval boundaries, pre-action checks, rollback safety, and rollout proof in a focused 48-hour Workflow Hardening Sprint.",
+    "takeaways": [
+      "The fastest paid wedge is not a broad platform migration; it is one repo, one workflow owner, and one repeated failure that already has budget pressure.",
+      "A governance sprint should ship evidence: rule inventory, pre-action checks, review routing, rollback notes, and a buyer-ready proof pack.",
+      "ThumbGate keeps the promise narrow enough to sell quickly while creating the path to Team seats and recurring governance."
+    ],
+    "sections": [
+      {
+        "heading": "Who this is for",
+        "paragraphs": [
+          "The right buyer is already running Claude Code, Codex, Cursor, Gemini, or another agent against real code and has one failure they no longer want to review manually. Examples include unsafe migrations, noisy background-agent PRs, deploy approval bypasses, credential-adjacent commands, and repeated generated-artifact edits.",
+          "The sprint works because it avoids generic AI consulting. The scope is one workflow that can be observed, hardened, and reviewed in front of the buyer before a wider team rollout."
+        ]
+      },
+      {
+        "heading": "What the sprint ships",
+        "bullets": [
+          "Intake: one repo, one owner, one repeated failure, one target rollout date, and the current agent/runtime surface.",
+          "Governance map: approval boundaries, risky commands, protected files, branch rules, review tiers, and rollback expectations.",
+          "Pre-action checks: concrete blocks or warnings for the repeated failure and adjacent high-risk actions.",
+          "Background-agent review routing: npx thumbgate background-governance --check --json to label risk before dispatch or PR review.",
+          "Proof pack: verification evidence, run reports, blocked-repeat examples, and rollout notes the buyer can share internally."
+        ]
+      },
+      {
+        "heading": "Where this creates ROI",
+        "paragraphs": [
+          "This page is the service conversion layer for the governance guides. Readers who already understand background-agent risk need a next step that is smaller than procurement and more concrete than a demo.",
+          "The offer stays defensible: ThumbGate does not claim to make agents autonomous without review. It makes one expensive review failure measurable, enforceable, and easier to roll out across Team seats."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "What is included in the AI Agent Governance Sprint?",
+        "answer": "A focused 48-hour implementation around one workflow: intake, governance mapping, pre-action checks, background-agent risk routing, rollback notes, and a proof pack for the buyer review."
+      },
+      {
+        "question": "How is this different from the Workflow Hardening Sprint?",
+        "answer": "It is the same Team conversion path positioned for buyers searching for AI agent governance. The deliverable remains narrow: one repeated failure hardened with approval boundaries, rollback safety, and rollout proof."
+      },
+      {
+        "question": "Do we need to migrate every agent workflow first?",
+        "answer": "No. Start with one repeated failure that already costs review time or rollout confidence. After it proves value, reuse the checks, lesson database, and proof workflow across Team seats."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/background-agent-governance",
+        "title": "Background Agent Governance for Agent PRs"
+      },
+      {
+        "path": "/guides/pre-action-checks",
+        "title": "What Are Pre-Action Checks?"
+      },
+      {
+        "path": "/guides/best-tools-stop-ai-agents-breaking-production",
+        "title": "Best Tools to Stop AI Agents From Breaking Production"
+      }
+    ],
+    "cta": {
+      "label": "Start the governance sprint",
+      "href": "/?utm_source=website&utm_medium=seo_page&utm_campaign=ai_agent_governance_sprint&cta_placement=seo_brief&plan_id=team#workflow-sprint-intake"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "monthly",
+    "priority": "0.8",
+    "keywordCluster": [
+      "claude code masterclass guardrails",
+      "cursor prevent repeated mistakes",
+      "claude code prevent repeated mistakes",
+      "codex cli guardrails"
+    ],
+    "imageAlt": "ThumbGate guide for AI Agent Governance Sprint for One Risky Workflow"
+  },
+  {
     "path": "/guides/stop-repeated-ai-agent-mistakes",
     "slug": "guides-stop-repeated-ai-agent-mistakes",
     "query": "stop ai coding agents from repeating mistakes",
@@ -2045,6 +2245,204 @@
     "imageAlt": "ThumbGate guide for How to Stop AI Coding Agents From Repeating Mistakes"
   },
   {
+    "path": "/guides/ai-mode-ads-agent-governance",
+    "slug": "guides-ai-mode-ads-agent-governance",
+    "query": "ai mode ads agent governance",
+    "pillar": "pre-action-checks",
+    "intent": "commercial",
+    "pageType": "guide",
+    "persona": "engineering-lead",
+    "opportunityScore": 83,
+    "title": "AI Mode Ads for Agent Governance | Turn Buyer Prompts Into ThumbGate Demand",
+    "description": "Google AI Mode and conversational ad formats shift promotion from click-chasing to answer ownership. ThumbGate should show up when buyers ask how to govern C...",
+    "heroTitle": "AI Mode ads make agent-governance promotion conversational",
+    "heroSummary": "Google AI Mode and conversational ad formats shift promotion from click-chasing to answer ownership. ThumbGate should show up when buyers ask how to govern Claude Code, Cursor, Codex, Gemini, MCP tools, and risky agent actions.",
+    "takeaways": [
+      "Conversational ads reward brands that answer the buyer question directly before the click.",
+      "ThumbGate should own prompts about pre-action gates, MCP tool governance, repeated AI-agent mistakes, and audit proof.",
+      "The best paid-search asset is an answer page with schema, proof links, and a checkout or workflow-intake path."
+    ],
+    "sections": [
+      {
+        "heading": "Why conversational ads change the promotion plan",
+        "paragraphs": [
+          "Search ads are moving toward generated answers and product recommendations inside the search conversation. A buyer may not click ten blue links before forming an opinion; the assistant-like surface may summarize the category, compare options, and mention a vendor in one flow.",
+          "That means ThumbGate promotion has to be answer-shaped. The page must say exactly what ThumbGate is, which agent-risk problem it solves, which tools it supports, and what proof a buyer can verify before starting checkout or a Workflow Hardening Sprint."
+        ]
+      },
+      {
+        "heading": "Buyer prompts ThumbGate should target",
+        "bullets": [
+          "How do I stop Claude Code or Cursor from repeating risky mistakes?",
+          "What is the pre-action approval layer for AI coding agents?",
+          "How do teams govern MCP tools before agents call them?",
+          "How do I audit AI-agent actions before production deploys, payments, or database writes?",
+          "What tool turns thumbs-down feedback into enforceable rules?"
+        ]
+      },
+      {
+        "heading": "How this page should be used",
+        "paragraphs": [
+          "Use this page as the landing asset for AI Mode, Gemini, and high-intent search experiments. Do not send conversational-ad traffic to a generic homepage first. Send it to the answer that mirrors the buyer prompt, then route warm readers to Pro checkout, the install guide, or workflow intake depending on intent."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "How do AI Mode ads help ThumbGate?",
+        "answer": "They favor direct, conversational answers. ThumbGate benefits when it has pages that answer specific buyer prompts about AI-agent governance, MCP tool risk, pre-action approval gates, and repeated failure prevention."
+      },
+      {
+        "question": "Should ThumbGate run broad Google Ads immediately?",
+        "answer": "No. The high-ROI path is to build answer assets first, then test narrow paid search or AI Mode campaigns against exact buyer prompts where the page, schema, proof links, and checkout route all match the question."
+      },
+      {
+        "question": "What is the one-sentence ad answer?",
+        "answer": "ThumbGate is the pre-action execution gate for AI agents: it checks risky tool calls before they run, turns feedback into rules, and gives teams audit proof."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/ai-search-topical-presence",
+        "title": "AI search topical presence decides who gets recommended"
+      },
+      {
+        "path": "/guides/pre-action-checks",
+        "title": "What Are Pre-Action Checks?"
+      },
+      {
+        "path": "/guides/mcp-tool-governance",
+        "title": "MCP tool governance before agents call real systems"
+      }
+    ],
+    "cta": {
+      "label": "Go Pro — $19/mo",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_ai-mode-ads-agent-governance&cta_placement=seo_brief&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "monthly",
+    "priority": "0.8",
+    "keywordCluster": [
+      "claude code masterclass guardrails",
+      "cursor prevent repeated mistakes",
+      "claude code prevent repeated mistakes",
+      "codex cli guardrails"
+    ],
+    "imageAlt": "ThumbGate guide for AI Mode ads make agent-governance promotion conversational"
+  },
+  {
+    "path": "/guides/mcp-tool-governance",
+    "slug": "guides-mcp-tool-governance",
+    "query": "mcp tool governance",
+    "pillar": "pre-action-checks",
+    "intent": "commercial",
+    "pageType": "guide",
+    "persona": "engineering-lead",
+    "opportunityScore": 83,
+    "title": "MCP Tool Governance | Pre-Action Gates Before Agents Call Tools",
+    "description": "MCP makes tools easy for agents to discover and call. ThumbGate adds the missing governance layer: approval boundaries, evidence requirements, and audit logs...",
+    "heroTitle": "MCP tool governance before agents call real systems",
+    "heroSummary": "MCP makes tools easy for agents to discover and call. ThumbGate adds the missing governance layer: approval boundaries, evidence requirements, and audit logs before high-risk MCP tool calls execute.",
+    "takeaways": [
+      "MCP adoption expands what agents can touch, so teams need a tool-call control plane.",
+      "Governance belongs before execution, not only in post-run logs or prompt rules.",
+      "ThumbGate turns feedback, policies, and evidence requirements into enforceable pre-action gates for MCP-compatible agent workflows."
+    ],
+    "sections": [
+      {
+        "heading": "Why MCP changes the risk model",
+        "paragraphs": [
+          "MCP turns databases, file systems, browsers, ticketing systems, cloud APIs, and internal tools into surfaces an agent can call. That is useful, but it also means a bad plan can become a real action faster than a human reviewer can notice.",
+          "The governance question is no longer only which tools exist. It is which agent, workflow, branch, file path, command, customer record, or environment is allowed to use each tool under which proof requirements."
+        ]
+      },
+      {
+        "heading": "What MCP tool governance needs",
+        "bullets": [
+          "Tool inventory: know which tools are exposed to which agents and runtimes.",
+          "Risk tiers: classify destructive, customer-facing, production, payment, and data-export tools differently from read-only tools.",
+          "Pre-action checks: require evidence or approval before risky calls execute.",
+          "Feedback loops: turn thumbs-down reviews and incidents into reusable prevention rules.",
+          "Audit proof: log allowed, blocked, and approved tool calls with enough context for review."
+        ]
+      },
+      {
+        "heading": "Where ThumbGate fits",
+        "paragraphs": [
+          "ThumbGate sits between generated intent and executed action. The agent can still plan and propose MCP tool calls, but ThumbGate checks the call against learned lessons, policy boundaries, evidence requirements, and workflow risk before the tool runs."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "What is MCP tool governance?",
+        "answer": "MCP tool governance is the policy, approval, evidence, and audit layer around tools exposed through Model Context Protocol so agents do not call high-risk systems without the right checks."
+      },
+      {
+        "question": "How is this different from an MCP server allowlist?",
+        "answer": "An allowlist says a tool exists or is available. ThumbGate adds runtime context: tool arguments, branch, path, environment, prior feedback, evidence requirements, and whether this exact action should be allowed now."
+      },
+      {
+        "question": "Can ThumbGate work across multiple MCP-compatible agents?",
+        "answer": "Yes. The same local-first lesson and pre-action gate pattern is designed for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and MCP-compatible workflows."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/pre-action-checks",
+        "title": "What Are Pre-Action Checks?"
+      },
+      {
+        "path": "/guides/ai-mode-ads-agent-governance",
+        "title": "AI Mode ads make agent-governance promotion conversational"
+      },
+      {
+        "path": "/guides/background-agent-governance",
+        "title": "Background Agent Governance for Agent PRs"
+      }
+    ],
+    "cta": {
+      "label": "Go Pro — $19/mo",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_mcp-tool-governance&cta_placement=seo_brief&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "monthly",
+    "priority": "0.8",
+    "keywordCluster": [
+      "claude code masterclass guardrails",
+      "cursor prevent repeated mistakes",
+      "claude code prevent repeated mistakes",
+      "codex cli guardrails"
+    ],
+    "imageAlt": "ThumbGate guide for MCP tool governance before agents call real systems"
+  },
+  {
     "path": "/guides/autoresearch-agent-safety",
     "slug": "guides-autoresearch-agent-safety",
     "query": "autoresearch agent safety",
@@ -2133,6 +2531,106 @@
       "codex cli guardrails"
     ],
     "imageAlt": "ThumbGate guide for Autoresearch Agent Safety for Self-Improving Coding Agents"
+  },
+  {
+    "path": "/guides/ai-deployment-readiness",
+    "slug": "guides-ai-deployment-readiness",
+    "query": "ai deployment readiness",
+    "pillar": "pre-action-checks",
+    "intent": "commercial",
+    "pageType": "guide",
+    "persona": "ai-engineer",
+    "opportunityScore": 80,
+    "title": "AI Deployment Readiness | Production Workflow Gates Before Rollout",
+    "description": "Deployment-company demand proves the buyer problem: teams need help moving AI into real workflows. ThumbGate is the governance and proof layer that makes one...",
+    "heroTitle": "AI Deployment Readiness Before Agents Touch Production",
+    "heroSummary": "Deployment-company demand proves the buyer problem: teams need help moving AI into real workflows. ThumbGate is the governance and proof layer that makes one priority workflow ready for production with pre-action gates, rollout evidence, and paid sprint paths.",
+    "takeaways": [
+      "AI deployment readiness is about workflow controls, not just prompts, demos, or model selection.",
+      "The high-ROI starting point is one priority workflow with mapped tools, data, owners, risky actions, and proof-backed gates.",
+      "ThumbGate turns deployment demand into revenue through a $499 diagnostic, a $1500 Workflow Hardening Sprint, and Team seats at $49/seat/mo."
+    ],
+    "sections": [
+      {
+        "heading": "Why deployment is now the buying category",
+        "paragraphs": [
+          "OpenAI-style deployment companies validate a practical market shift: buyers do not only want a model or chatbot. They want AI systems embedded into messy production workflows where data, tools, approvals, and rollback paths already exist.",
+          "That creates a clean ThumbGate wedge. A forward deployment team can map the workflow and build the automation; ThumbGate defines what the automation is allowed to execute, what evidence must exist before it acts, and what proof the buyer can review after rollout."
+        ]
+      },
+      {
+        "heading": "What ThumbGate adds to AI deployment readiness",
+        "bullets": [
+          "Intake for one workflow owner, one priority workflow, one repeated failure, and one production rollout target.",
+          "A governance map for data access, tools, protected files, risky commands, approval boundaries, review tiers, and rollback expectations.",
+          "Pre-action gates that stop repeated mistakes before the next shell command, PR, release, or production automation step.",
+          "Background-agent risk checks through npx thumbgate background-governance --check --json before unattended work reaches review.",
+          "A proof pack with blocked-repeat examples, run evidence, verification notes, and rollout decisions the buyer can share internally."
+        ]
+      },
+      {
+        "heading": "How this makes money",
+        "paragraphs": [
+          "The page should convert deployment curiosity into concrete buying motion. The $499 Workflow Hardening Diagnostic validates one repeated failure and produces a readiness map. The $1500 sprint implements the first gates and proof pack. Team seats expand the same enforcement path across more repos and workflow owners.",
+          "This keeps the offer honest. ThumbGate does not claim to be the deployment company or a generic AI consultancy. It is the enforcement, governance, and proof layer that lets deployment work survive contact with production."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "Is ThumbGate competing with AI deployment companies?",
+        "answer": "No. Deployment companies help buyers embed AI into real operations. ThumbGate complements that work by adding the governance and proof layer before AI agents or automations touch production systems."
+      },
+      {
+        "question": "What should an AI deployment readiness audit produce?",
+        "answer": "A useful audit should produce one workflow map, named owners, tool and data boundaries, risky actions, approval rules, rollback expectations, pre-action gates, and proof that the first rollout can be reviewed."
+      },
+      {
+        "question": "Can this start before procurement?",
+        "answer": "Yes. Start with one $499 diagnostic or the Workflow Hardening Sprint intake. The point is to prove one workflow before asking a buyer to fund a broad platform rollout."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/ai-agent-governance-sprint",
+        "title": "AI Agent Governance Sprint for One Risky Workflow"
+      },
+      {
+        "path": "/guides/background-agent-governance",
+        "title": "Background Agent Governance for Agent PRs"
+      },
+      {
+        "path": "/guides/pre-action-checks",
+        "title": "What Are Pre-Action Checks?"
+      }
+    ],
+    "cta": {
+      "label": "Start deployment readiness intake",
+      "href": "/?utm_source=website&utm_medium=seo_page&utm_campaign=ai_deployment_readiness&cta_placement=seo_brief&plan_id=team#workflow-sprint-intake"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "monthly",
+    "priority": "0.8",
+    "keywordCluster": [
+      "claude code masterclass guardrails",
+      "cursor prevent repeated mistakes",
+      "claude code prevent repeated mistakes",
+      "codex cli guardrails"
+    ],
+    "imageAlt": "ThumbGate guide for AI Deployment Readiness Before Agents Touch Production"
   },
   {
     "path": "/guides/long-running-agent-context-management",
@@ -2409,6 +2907,97 @@
     "imageAlt": "ThumbGate guide for Native messaging host security for AI browser bridges"
   },
   {
+    "path": "/guides/ai-coding-agent-zero-trust",
+    "slug": "guides-ai-coding-agent-zero-trust",
+    "query": "zero trust for ai coding agents",
+    "pillar": "pre-action-checks",
+    "intent": "informational",
+    "pageType": "guide",
+    "persona": "ai-engineer",
+    "opportunityScore": 72,
+    "title": "Zero Trust for AI Coding Agents | Enforce It at the Tool Call",
+    "description": "Zero trust for agents means never trust, always verify; least privilege; assume breach. ThumbGate is the local-first way to enforce those principles for Clau...",
+    "heroTitle": "Zero Trust for AI Coding Agents, Enforced at the Tool Call",
+    "heroSummary": "Zero trust for agents means never trust, always verify; least privilege; assume breach. ThumbGate is the local-first way to enforce those principles for Claude Code, Cursor, and Codex — blocking dangerous tool calls before they run, and turning every thumbs-down into a prevention rule so the same mistake never repeats.",
+    "takeaways": [
+      "Zero trust for agents means verifying every action at the boundary where it executes — the tool call — instead of trusting the model’s stated intent.",
+      "ThumbGate runs in the PreToolUse hook on your machine: rm -rf, secret writes, off-scope edits, and bad git push are blocked before execution (assume breach, least privilege).",
+      "Unlike static DIY hooks, ThumbGate learns — a thumbs-down becomes an auto-promoted prevention rule that holds across every session, model, and agent."
+    ],
+    "sections": [
+      {
+        "heading": "Why AI coding agents need zero trust at the tool call",
+        "paragraphs": [
+          "A coding agent reads files, runs shell commands, calls APIs, and pushes code with minimal human approval at each step. If it is manipulated, misconfigured, or simply wrong, the blast radius is whatever it can execute — and unlike a human, it does not pause to question a suspicious request.",
+          "Zero-trust security for agents adapts three principles to this reality: never trust, always verify; least privilege; and assume breach. The practical place to apply them is the action boundary — the moment before a tool call runs — not the model’s prompt or its good intentions."
+        ]
+      },
+      {
+        "heading": "ThumbGate vs. rolling your own Claude Code hooks",
+        "bullets": [
+          "Static hooks and community repos do pattern-matching you write and maintain by hand, per machine, per project. ThumbGate ships the same blocking and adds a learning layer on top.",
+          "A thumbs-down on a bad action becomes an auto-promoted prevention rule — the repeat is blocked automatically next time, on every session and every agent, with zero extra config.",
+          "Local-first: enforcement runs in the PreToolUse hook on the developer machine, not a server-side gateway, so it works the moment you npx thumbgate init.",
+          "Works across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode — one rule set, every MCP-compatible agent."
+        ]
+      },
+      {
+        "heading": "How ThumbGate maps to the zero-trust principles",
+        "paragraphs": [
+          "Never trust, always verify: every high-risk tool call is checked against prevention rules and workflow shape before it executes. Least privilege: task scope and approval gates keep an agent inside its declared blast radius. Assume breach: dangerous commands are blocked before they touch the disk, so a compromised or confused agent cannot do damage on the way to being caught.",
+          "This is enforcement, not observability. ThumbGate decides at the tool call whether the action runs — which is exactly where zero-trust controls have to live for autonomous agents."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "Isn’t this just Claude Code’s built-in hooks?",
+        "answer": "Native hooks and community repos do static pattern-matching that you author and maintain per machine. ThumbGate adds the learning layer: a thumbs-down becomes a prevention rule that blocks the repeat automatically, across sessions and agents — the part static hooks cannot do."
+      },
+      {
+        "question": "How does ThumbGate enforce zero trust for AI agents?",
+        "answer": "It applies the core principles at the tool-call boundary on your machine: never trust, always verify (every risky action is checked before it runs), least privilege (task scope and approval gates), and assume breach (dangerous calls are blocked before they touch disk)."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/pre-action-checks",
+        "title": "What Are Pre-Action Checks?"
+      },
+      {
+        "path": "/guides/agent-harness-optimization",
+        "title": "AI Agent Harness Optimization That Blocks Repeat Failures"
+      }
+    ],
+    "cta": {
+      "label": "Go Pro — $19/mo",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_ai-coding-agent-zero-trust&cta_placement=seo_brief&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "monthly",
+    "priority": "0.8",
+    "keywordCluster": [
+      "claude code masterclass guardrails",
+      "cursor prevent repeated mistakes",
+      "claude code prevent repeated mistakes",
+      "codex cli guardrails"
+    ],
+    "imageAlt": "ThumbGate guide for Zero Trust for AI Coding Agents, Enforced at the Tool Call"
+  },
+  {
     "path": "/guides/best-tools-stop-ai-agents-breaking-production",
     "slug": "guides-best-tools-stop-ai-agents-breaking-production",
     "query": "best tools to stop ai agents from breaking production",
@@ -2614,106 +3203,6 @@
       "codex cli guardrails"
     ],
     "imageAlt": "ThumbGate guide for Prompt Tricks Are Table Stakes. Workflow Rules Make Them Pay."
-  },
-  {
-    "path": "/guides/background-agent-governance",
-    "slug": "guides-background-agent-governance",
-    "query": "background agent governance",
-    "pillar": "pre-action-checks",
-    "intent": "informational",
-    "pageType": "guide",
-    "persona": "ai-engineer",
-    "opportunityScore": 72,
-    "title": "Background Agent Governance | Risk-Tiered Review for Agent PRs",
-    "description": "Background agents can draft changes while humans work elsewhere, but review becomes the bottleneck. ThumbGate adds pre-dispatch checks, run reports, isolated...",
-    "heroTitle": "Background Agent Governance for Agent PRs",
-    "heroSummary": "Background agents can draft changes while humans work elsewhere, but review becomes the bottleneck. ThumbGate adds pre-dispatch checks, run reports, isolated task lanes, and evidence-backed review routing before unattended agent work piles up.",
-    "takeaways": [
-      "Background agents need a real run ledger, not just a pile of PRs.",
-      "The highest ROI control is risk-tiered review: stricter checks for protected branches, high-failure agents, and large blast-radius changes.",
-      "ThumbGate turns CI failures and human review feedback into Pre-Action Checks so the same failed agent pattern gets blocked before the next run."
-    ],
-    "sections": [
-      {
-        "heading": "Why this became urgent",
-        "paragraphs": [
-          "Teams are moving from local agent sessions to unattended background work. That changes the review problem: humans no longer inspect one assistant transcript at a time; they receive a queue of agent-created branches, PRs, and CI failures.",
-          "If context alignment happens in Slack, Linear, Jira, or a planning thread, the agent run also needs a durable record of what was agreed, where it executed, which gates fired, and what evidence came back."
-        ]
-      },
-      {
-        "heading": "What ThumbGate adds",
-        "bullets": [
-          "A background-agent run ledger with agent ID, source, branch, PR number, gate counts, CI outcome, and changed-file count.",
-          "A pre-dispatch governance check for high-failure agents, protected branches, and large blast-radius runs.",
-          "Post-run audit that can convert CI failures into structured thumbs-down feedback and future prevention rules.",
-          "A report command for review queues: npx thumbgate background-governance --json.",
-          "A risk check command for dispatch systems: npx thumbgate background-governance --check --agent-id=builder --branch=main --files-changed=25 --json."
-        ]
-      },
-      {
-        "heading": "Where this creates revenue",
-        "paragraphs": [
-          "This is a clean Workflow Hardening Sprint wedge. The buyer does not need a broad platform migration; they need one background-agent workflow hardened from context intake to isolated execution to risk-tiered review.",
-          "The promise stays honest: ThumbGate does not remove human review. It makes the review queue smaller, better labeled, and backed by evidence before a risky agent PR reaches a reviewer."
-        ]
-      }
-    ],
-    "faq": [
-      {
-        "question": "Does ThumbGate replace human review for background agents?",
-        "answer": "No. ThumbGate reduces review load by blocking known bad actions earlier, warning on risky dispatches, and attaching run evidence so humans can focus on high-risk changes."
-      },
-      {
-        "question": "What should teams check before dispatching a background agent?",
-        "answer": "Check recent agent failure rate, prior gate blocks, target branch, expected blast radius, isolated execution environment, CI expectations, and the human context that authorized the task."
-      },
-      {
-        "question": "How does this connect to the Workflow Hardening Sprint?",
-        "answer": "The sprint can harden one background-agent workflow end to end: context intake, pre-dispatch governance, sandbox routing, CI audit, prevention rules, and proof review."
-      }
-    ],
-    "relatedPages": [
-      {
-        "path": "/guides/pre-action-checks",
-        "title": "What Are Pre-Action Checks?"
-      },
-      {
-        "path": "/guides/agent-harness-optimization",
-        "title": "AI Agent Harness Optimization That Blocks Repeat Failures"
-      },
-      {
-        "path": "/guides/best-tools-stop-ai-agents-breaking-production",
-        "title": "Best Tools to Stop AI Agents From Breaking Production"
-      }
-    ],
-    "cta": {
-      "label": "Go Pro — $19/mo",
-      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_background-agent-governance&cta_placement=seo_brief&plan_id=pro"
-    },
-    "proofLinks": [
-      {
-        "label": "Verification evidence",
-        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
-      },
-      {
-        "label": "Automation proof",
-        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
-      },
-      {
-        "label": "GitHub repository",
-        "href": "https://github.com/IgorGanapolsky/ThumbGate"
-      }
-    ],
-    "changefreq": "monthly",
-    "priority": "0.8",
-    "keywordCluster": [
-      "claude code masterclass guardrails",
-      "cursor prevent repeated mistakes",
-      "claude code prevent repeated mistakes",
-      "codex cli guardrails"
-    ],
-    "imageAlt": "ThumbGate guide for Background Agent Governance for Agent PRs"
   },
   {
     "path": "/guides/gpt-5-5-model-evaluation",
@@ -2993,5 +3482,102 @@
       "codex cli guardrails"
     ],
     "imageAlt": "ThumbGate guide for Relational knowledge explains why AI systems recommend some tools and ignore others"
+  },
+  {
+    "path": "/guides/ai-agent-pre-action-approval-gates",
+    "slug": "guides-ai-agent-pre-action-approval-gates",
+    "query": "ai agent pre action approval gates",
+    "pillar": "pre-action-checks",
+    "intent": "informational",
+    "pageType": "guide",
+    "persona": "ai-engineer",
+    "opportunityScore": 72,
+    "title": "AI Agent Pre-Action Approval Gates | Human Review Before Risky Tool Calls",
+    "description": "Human review after the damage lands is too late. ThumbGate adds pre-action approval gates so risky AI-agent commands, deploys, file edits, API calls, and MCP...",
+    "heroTitle": "AI agent pre-action approval gates for risky tool calls",
+    "heroSummary": "Human review after the damage lands is too late. ThumbGate adds pre-action approval gates so risky AI-agent commands, deploys, file edits, API calls, and MCP tool calls can require evidence or explicit approval before execution.",
+    "takeaways": [
+      "Approval gates matter most at the action boundary, where the agent is about to touch files, terminals, APIs, CI, payments, or production systems.",
+      "The right gate can block, pause for approval, or log-and-continue depending on risk.",
+      "ThumbGate converts prior thumbs-downs, workflow policies, and verification expectations into reusable approval rules."
+    ],
+    "sections": [
+      {
+        "heading": "Why approval must happen before execution",
+        "paragraphs": [
+          "Many agent failures are irreversible or expensive by the time a post-run reviewer sees them: force-pushes, destructive SQL, unsafe deploys, leaked secrets, customer-facing messages, and runaway API calls.",
+          "A pre-action approval gate pauses the action while there is still something to decide. The agent keeps its speed on safe work, but risky work requires proof, policy match, or a human yes."
+        ]
+      },
+      {
+        "heading": "Three practical gate outcomes",
+        "bullets": [
+          "Block: deny known-bad actions such as force-pushing protected branches or touching secret files.",
+          "Approve: pause production deploys, schema migrations, payment actions, or customer-facing sends until a human approves.",
+          "Log: allow lower-risk actions while preserving audit evidence for review and future lessons."
+        ]
+      },
+      {
+        "heading": "How ThumbGate turns approvals into learning",
+        "paragraphs": [
+          "Every approval, block, and thumbs-down gives the system better operating context. Repeated failures become prevention rules, accepted safe paths become reinforced lessons, and the audit trail gives teams evidence that the boundary fired before execution."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "What should require a pre-action approval gate?",
+        "answer": "Production deploys, destructive database actions, protected-branch writes, payment or refund actions, customer-facing sends, secret or PII access, high-cost API calls, and any repeated failure pattern the team has already corrected once."
+      },
+      {
+        "question": "Do approval gates slow every agent action down?",
+        "answer": "No. Good gates are risk-tiered. Safe actions can continue, uncertain actions can be logged, risky actions can pause for approval, and known-bad actions can be blocked."
+      },
+      {
+        "question": "How does ThumbGate know what to block?",
+        "answer": "ThumbGate uses explicit feedback, learned lessons, policy templates, command and path context, evidence requirements, and prior gate outcomes to decide whether the proposed action should proceed."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/pre-action-checks",
+        "title": "What Are Pre-Action Checks?"
+      },
+      {
+        "path": "/guides/mcp-tool-governance",
+        "title": "MCP tool governance before agents call real systems"
+      },
+      {
+        "path": "/guides/ai-agent-governance-sprint",
+        "title": "AI Agent Governance Sprint for One Risky Workflow"
+      }
+    ],
+    "cta": {
+      "label": "Go Pro — $19/mo",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_ai-agent-pre-action-approval-gates&cta_placement=seo_brief&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "monthly",
+    "priority": "0.8",
+    "keywordCluster": [
+      "claude code masterclass guardrails",
+      "cursor prevent repeated mistakes",
+      "claude code prevent repeated mistakes",
+      "codex cli guardrails"
+    ],
+    "imageAlt": "ThumbGate guide for AI agent pre-action approval gates for risky tool calls"
   }
 ]

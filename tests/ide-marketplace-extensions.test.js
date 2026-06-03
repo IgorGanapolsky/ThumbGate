@@ -22,6 +22,12 @@ test('VS Code extension registers ThumbGate MCP provider and conversion commands
   assert.equal(manifest.displayName, 'ThumbGate');
   assert.equal(manifest.publisher, 'igorganapolsky');
   assert.equal(manifest.main, './src/extension.js');
+  assert.equal(manifest.galleryBanner.color, '#0f172a');
+  assert.equal(manifest.galleryBanner.theme, 'dark');
+  assert.ok(manifest.categories.includes('Testing'));
+  assert.ok(manifest.categories.includes('Linters'));
+  assert.ok(manifest.keywords.includes('antigravity'));
+  assert.ok(manifest.keywords.includes('cursor'));
   assert.equal(manifest.contributes.mcpServerDefinitionProviders[0].id, 'thumbgate');
   assert.deepEqual(
     manifest.contributes.commands.map((command) => command.command),
@@ -41,8 +47,15 @@ test('VS Code extension registers ThumbGate MCP provider and conversion commands
   assert.doesNotMatch(extension, /--agent', 'vscode/);
   assert.match(readme, /Open VSX/i);
   assert.match(readme, /Antigravity/i);
+  assert.match(readme, /marketplace-hero\.png/);
+  assert.match(readme, /marketplace-flow\.png/);
+  assert.match(readme, /VS Code Marketplace availability until the listing exists/i);
   assert.match(readme, /Do not claim Marketplace installs/i);
   assert.ok(fs.existsSync(licensePath));
+  assert.ok(fs.existsSync(path.join(root, 'plugins/vscode-extension/assets/marketplace-hero.png')));
+  assert.ok(fs.existsSync(path.join(root, 'plugins/vscode-extension/assets/marketplace-flow.png')));
+  assert.ok(fs.existsSync(path.join(root, 'plugins/vscode-extension/assets/marketplace-hero.svg')));
+  assert.ok(fs.existsSync(path.join(root, 'plugins/vscode-extension/assets/marketplace-flow.svg')));
 });
 
 test('VS Code workspace MCP writer creates the official .vscode/mcp.json shape', () => {
@@ -118,6 +131,8 @@ test('README and distribution docs promote IDE marketplaces without claiming pub
   const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
   const distribution = fs.readFileSync(path.join(root, 'docs/PLUGIN_DISTRIBUTION.md'), 'utf8');
   const ideDistribution = fs.readFileSync(path.join(root, 'docs/IDE_MARKETPLACE_DISTRIBUTION.md'), 'utf8');
+  const cursorReadme = fs.readFileSync(path.join(root, 'plugins/cursor-marketplace/README.md'), 'utf8');
+  const publishWorkflow = fs.readFileSync(path.join(root, '.github/workflows/publish-ide-marketplace.yml'), 'utf8');
 
   assert.match(readme, /VS Code \/ Open VSX/);
   assert.match(readme, /JetBrains/);
@@ -125,5 +140,20 @@ test('README and distribution docs promote IDE marketplaces without claiming pub
   assert.match(distribution, /VS Code \/ Open VSX/);
   assert.match(distribution, /JetBrains Marketplace/);
   assert.match(distribution, /Antigravity/);
-  assert.match(ideDistribution, /Status: implementation-ready, not yet proof of marketplace publication/);
+  assert.match(distribution, /Cursor plugin bundle/);
+  assert.match(distribution, /public Cursor Marketplace availability is not yet proven/);
+  assert.match(ideDistribution, /Open VSX has a published ThumbGate listing/);
+  assert.match(ideDistribution, /VS Code Marketplace .* no listing found/);
+  assert.match(ideDistribution, /Cursor plugin bundle/);
+  assert.match(ideDistribution, /Cursor dashboard screenshot from 2026-06-03 shows no installed ThumbGate plugin/);
+  assert.match(cursorReadme, /Cursor Marketplace Status/);
+  assert.match(cursorReadme, /do not claim public Cursor Marketplace availability/);
+  assert.match(cursorReadme, /npx thumbgate init --agent cursor/);
+  assert.doesNotMatch(cursorReadme, /Search for \*\*ThumbGate\*\* in the Cursor marketplace and install/);
+  assert.match(publishWorkflow, /Publish IDE Marketplace Extension/);
+  assert.match(publishWorkflow, /OVSX_PAT/);
+  assert.match(publishWorkflow, /VSCE_PAT/);
+  assert.match(publishWorkflow, /npm run build:vscode-extension/);
+  assert.match(publishWorkflow, /ovsx publish/);
+  assert.match(publishWorkflow, /@vscode\/vsce publish/);
 });

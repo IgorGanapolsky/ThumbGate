@@ -1,13 +1,19 @@
-# ThumbGate for VS Code
+# ThumbGate for VS Code-Compatible IDEs
 
-ThumbGate gives VS Code and Open VSX-compatible IDEs a local MCP server for AI-agent feedback, pre-action checks, and repeated-mistake prevention.
+![ThumbGate blocks risky AI agent actions before they run](assets/marketplace-hero.png)
 
-## What It Adds
+ThumbGate adds a local MCP guardrail layer for AI coding agents. It captures thumbs up/down feedback, turns repeated mistakes into local prevention rules, and checks risky tool calls before they run.
 
-- Registers the ThumbGate MCP server with VS Code's MCP provider API.
-- Installs a workspace `.vscode/mcp.json` fallback for VS Code, Antigravity-style VS Code forks, and Open VSX users.
-- Adds commands for workspace setup, feedback capture, stats, dashboard, and Pro upgrade.
-- Resolves `thumbgate@latest` at runtime so npm fixes reach installed extension users without requiring a Marketplace metadata refresh.
+Works through VS Code's MCP provider API plus a `.vscode/mcp.json` fallback for VS Code-compatible IDEs, including Open VSX and Antigravity-style forks.
+
+## Why Install
+
+- **Block repeat mistakes before tool use** — catch known-bad shell, deploy, publish, and file-edit patterns before they execute.
+- **Capture feedback where the work happens** — use command palette actions for positive and negative feedback.
+- **Keep the runtime fresh** — the extension launches `thumbgate@latest`, so npm runtime fixes can reach installed users without a marketplace metadata refresh.
+- **Stay local-first** — the default MCP server runs locally over stdio.
+
+![ThumbGate feedback-to-gate flow](assets/marketplace-flow.png)
 
 ## Commands
 
@@ -35,10 +41,10 @@ If your editor does not load the extension MCP provider, run `ThumbGate: Init Wo
 
 Then run `MCP: List Servers` and start ThumbGate.
 
-## Publish Targets
+## Distribution Status
 
-- VS Code Marketplace: package with `vsce package`, then publish with `vsce publish`.
-- Open VSX / Antigravity-compatible path: package the same extension and publish with `ovsx publish`.
-- Direct VSIX: attach the generated `.vsix` to a GitHub Release for users in VS Code-compatible IDEs without Marketplace access.
+- **Open VSX / Antigravity-compatible installs:** publish with `ovsx publish` from this extension package.
+- **VS Code Marketplace:** publish separately with `vsce publish`; do not claim VS Code Marketplace availability until the listing exists.
+- **Direct VSIX:** attach the generated `.vsix` to GitHub Releases for users in VS Code-compatible IDEs without marketplace access.
 
-Do not claim Marketplace installs, Open VSX publication, Antigravity support, Pro upgrades, or revenue until the corresponding Marketplace dashboard or billing data proves it.
+Do not claim Marketplace installs, Open VSX freshness, Antigravity first-party listing status, Pro upgrades, or revenue until the corresponding marketplace dashboard or billing data proves it.

@@ -217,6 +217,25 @@ function sanitizeGlobList(globs) {
   return [...new Set(globs.map((glob) => normalizeGlob(glob)).filter(Boolean))];
 }
 
+// Affected files are compared as repo-relative paths (git --name-only output and
+// inline paths are relative to the repo root). A caller who passes an ABSOLUTE
+// allowedPath (e.g. "/Users/me/proj/src/**") therefore declares a glob that can never
+// match — a silent no-op scope. When repoPath is known, rebase absolute globs that
+// live under it to the repo-relative form so the scope actually applies. Globs already
+// relative, or absolute but outside repoPath, are returned unchanged.
+function rebaseGlobsToRepoRoot(globs, repoPath) {
+  const repoRel = normalizePosix(repoPath);
+  if (!repoRel) return globs;
+  return globs.map((glob) => {
+    if (glob === repoRel) return '**';
+    if (glob.startsWith(`${repoRel}/`)) {
+      const rebased = glob.slice(repoRel.length + 1);
+      return rebased || '**';
+    }
+    return glob;
+  });
+}
+
 function globToRegExp(glob) {
   const normalized = normalizeGlob(glob);
   let pattern = '^';
@@ -305,23 +324,24 @@ function setTaskScope(scopeInput = {}) {
     return null;
   }
 
-  const allowedPaths = sanitizeGlobList(scopeInput.allowedPaths);
+  const repoPath = String(scopeInput.repoPath || '').trim() || null;
+  const allowedPaths = rebaseGlobsToRepoRoot(sanitizeGlobList(scopeInput.allowedPaths), repoPath);
   if (allowedPaths.length === 0) {
     throw new Error('allowedPaths must be a non-empty array');
   }
 
-  const protectedPaths = sanitizeGlobList(
+  const protectedPaths = rebaseGlobsToRepoRoot(sanitizeGlobList(
     Array.isArray(scopeInput.protectedPaths) && scopeInput.protectedPaths.length > 0
       ? scopeInput.protectedPaths
       : DEFAULT_PROTECTED_FILE_GLOBS
-  );
+  ), repoPath);
   const taskScope = {
     taskId: String(scopeInput.taskId || '').trim() || null,
     summary: String(scopeInput.summary || '').trim() || null,
     allowedPaths,
     protectedPaths,
     localOnly: scopeInput.localOnly === true,
-    repoPath: String(scopeInput.repoPath || '').trim() || null,
+    repoPath,
     createdAt: new Date().toISOString(),
     timestamp: Date.now(),
   };
@@ -1347,6 +1367,13 @@ function isSafeLocalCredentialHardeningCommand(toolName, toolInput = {}) {
 function evaluateMemoryGuard(toolName, toolInput = {}) {
   const affected = extractAffectedFiles(toolName, toolInput);
   const affectedFiles = affected.files;
+  // Hardening a credential file's permissions (chmod 600 on a key/secret path) is
+  // a safety action, not a risk. The same exemption already guards the
+  // permission-change-approval gate; without it here, `chmod 600 ~/.resume_secrets/key`
+  // gets hard-denied by recurring-negative-memory matching — the opposite of intent.
+  if (isSafeLocalCredentialHardeningCommand(toolName, toolInput)) {
+    return null;
+  }
   if (!isHighRiskAction(toolName, toolInput, affectedFiles)) {
     return null;
   }
