@@ -61,6 +61,8 @@ ThumbGate is the operational harness around AI agents: permissioned routines, ev
 - Split monolithic agents into narrow sub-agent stages.
 - Use runtime-validated structured outputs instead of prompt-only JSON formatting.
 - Replace hardcoded context with refreshed retrieval over indexed source material.
+- Treat enterprise context as an operating layer, not a document dump: connect policies, prior failures, approvals, source systems, and proof artifacts into one reviewable context brain before agents act.
+- Turn context into enforcement: any repeated failure pattern or compliance rule that can be recognized before execution should become a pre-action gate, not another note in a prompt.
 - For hybrid questions across tables, graph relationships, and documents, use a multi-step supervisor that decomposes the query, calls native sources in parallel, reconciles results, and self-corrects empty overlaps.
 - Add new enterprise data sources with plain-language source descriptions and incremental rollout; avoid connecting every source at once.
 - For broad API surfaces, prefer a code-mode MCP pattern: `search` the API catalog, then `execute` bounded code against typed helpers in a sandbox.
@@ -74,4 +76,5 @@ ThumbGate is the operational harness around AI agents: permissioned routines, ev
 - Package the system as a webinar: "Stop AI Agents From Repeating Expensive Mistakes."
 - Put advanced templates behind a metered paywall or paid trial.
 - Use newsletter, LinkedIn, and webinar loops to demonstrate feedback -> gate -> replay blocked -> proof export.
+- Pitch AI publications on the category shift from "agent memory" to "agent memory with enforcement": context systems help agents remember, but ThumbGate blocks the repeated bad action before it runs.
 - Repeat the same entity claims across machine-readable fragments, public context docs, GitHub, npm, social posts, comparison pages, and proof assets so AI search systems can cite ThumbGate consistently.
