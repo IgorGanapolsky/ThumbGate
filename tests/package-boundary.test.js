@@ -282,13 +282,26 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // scripts/gates-engine.js requires them in the packaged runtime.
   // Bumped 268 → 271 (2026-06-01) to ship scripts/repeat-metric.js,
   // scripts/noop-detect.js, and scripts/action-receipts.js because
-  // adapters/mcp/server-stdio.js and scripts/dashboard.js require them in the
+  // adapters/mcp/server-stdio.js, adapters/claw/*, adapters/perplexity/HYBRID.md, and scripts/dashboard.js require them in the
   // packaged runtime (action-loop instrumentation).
   // Bumped 271 -> 272 (2026-06-02) to ship scripts/dashboard-chat.js, required by
   // src/api/server.js for the dashboard "chat with your data" /v1/chat endpoint.
+  // Bumped 272 -> 277 (2026-06-03) after reliability rollout packaging proof:
+  // scripts/gates-engine.js and scripts/hybrid-feedback-context.js require
+  // scripts/feedback-sanitizer.js in packaged runtimes; server.js requires the
+  // DFCX adapter for enterprise dashboard routes; and public .well-known assets
+  // now ship for Agentic.ai / LLM / MCP discovery.
+  // Bumped 277 -> 278 (2026-06-03) to ship bin/dashboard-cli.js for the
+  // `thumbgate-dashboard` shortcut that opens the local dashboard without a
+  // long command.
+  // Bumped 278 -> 280 (2026-06-03) to ship scripts/plausible-domain-config.js
+  // (required by server.js + plausible-server-events.js so production does not
+  // emit unregistered Plausible domains) and scripts/secret-fixture-tokens.js
+  // (required by thumbgate-bench.js to expand scanner-safe secret fixtures).
+  // Bumped 280 -> 285 (2026-06-03) to accommodate newly merged guides and scripts from main.
   assert.ok(
-    manifest.fileCount <= 272,
-    `npm package should stay <= 272 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 285,
+    `npm package should stay <= 285 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -393,9 +406,15 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Observed package after the addition is ~3.937 MB.
   // Bumped 3.95 MB -> 3.97 MB (2026-06-01) for Vertex AI setup CLI, guides,
   // and enterprise cost-containment HTML/script additions.
+  // Bumped 4.00 MB -> 4.10 MB (2026-06-03) after measured `npm pack --dry-run`
+  // on reliability rollout: packaged runtime dependencies plus public
+  // discovery assets weigh ~4.08 MB unpacked, leaving a narrow safety margin.
+  // Bumped 4.15 MB -> 4.18 MB (2026-06-03) for the Plausible domain guard,
+  // Memory OS readiness report, scanner-safe bench fixture expansion, merged main guides, and perplexity hooks restore.
+  // Observed package size: ~4.155 MB.
   assert.ok(
-    manifest.unpackedSize <= 4_000_000,
-    `npm package should stay <= 4.00 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_180_000,
+    `npm package should stay <= 4.18 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

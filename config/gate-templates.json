@@ -326,6 +326,18 @@
       "rollout": "Enable before raising context windows, switching cache implementations, or deploying ShadowRadix-style prefix caching."
     },
     {
+      "id": "require-hybrid-inference-routing-approval",
+      "name": "Require approval for hybrid cloud escalation on sensitive data",
+      "category": "Hybrid Inference Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(hybrid|local-cloud|perplexity.*hybrid|personal computer).*(escalat|cloud|send to cloud|route to server).*(sensitive|secret|pii|customer|confidential|codebase)",
+      "problem": "Hybrid local-cloud orchestrators (e.g. Perplexity Computex 2026) must not silently escalate sensitive context (code, feedback, lessons, PII) to cloud models without explicit approval or local-only enforcement.",
+      "roi": "High: Prevents data exfil in agentic workflows while still allowing hybrid cost/privacy wins. Critical as more agents adopt local-cloud routing (Personal Computer, AI PCs). Captures high-value feedback for custom hybrid rules.",
+      "rollout": "Start as block for paths matching secrets/env/customer data; promote to warn after baseline hybrid agent sessions. Pair with perplexity/hybrid-* model candidates and adapters/perplexity/HYBRID.md."
+    },
+    {
       "id": "checkpoint-speculative-decoding-acceptance",
       "name": "Checkpoint speculative decoding acceptance",
       "category": "Sparse Attention Runtime Safety",
@@ -516,6 +528,54 @@
       "problem": "Requires review before routing or scheduling.",
       "roi": "Prevents bad prospect routing.",
       "rollout": "Start strict; relax after pilot evidence."
+    },
+    {
+      "id": "block-dynamic-tool-creation-without-approval",
+      "name": "Block dynamic tool creation without approval",
+      "category": "Claw-Style Enterprise Agent Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(claw|enterpriseclaw|dynamic tool|runtime tool|create_tool|self.*evolving).*(create|generate|define).*(tool|action|capability|script)",
+      "problem": "Claw-style agents (Automation Anywhere EnterpriseClaw, inspired by Nvidia OpenShell) can create tools at runtime. This must be gated to prevent arbitrary code execution or exfil.",
+      "roi": "High: Prevents one of the most dangerous capabilities of autonomous enterprise agents while allowing safe dynamic extension under governance. Directly addresses the 'governance catching up' gap called out in coverage.",
+      "rollout": "Block by default for claw agents; allowlist specific safe tool patterns after review. Capture feedback on every dynamic creation attempt."
+    },
+    {
+      "id": "require-review-for-screen-ui-interaction",
+      "name": "Require review for screen/UI interaction by agents",
+      "category": "Claw-Style Enterprise Agent Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(claw|screen|ui|computer use|mouse|keyboard|click|type|interact).*(screen|desktop|app|gui|human.*like)",
+      "problem": "Claw-style agents interact directly with computer screens and apps like a human operator. This creates high risk of unintended actions, data leaks via UI, or compliance violations.",
+      "roi": "Prevents agent-driven UI automation from bypassing existing controls. Essential for enterprise RPA + AI agent convergence (Automation Anywhere core).",
+      "rollout": "Require human-in-loop or explicit policy approval for any claw screen interaction on production systems. Log all such actions for audit."
+    },
+    {
+      "id": "enforce-agent-identity-separation",
+      "name": "Enforce separate agent identity and audit trail",
+      "category": "Claw-Style Enterprise Agent Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(agent identity|agent.*credential|human.*credential|impersonat|audit.*agent|agent.*audit).*(missing|no|same as human|not separated)",
+      "problem": "Claw agents (and partners like Okta in EnterpriseClaw) require first-class agent identities separate from humans so actions are auditable as agent actions, not human ones. Using human creds hides responsibility.",
+      "roi": "Critical for compliance, forensics, and feedback loops. Enables proper capture of agent-specific lessons and prevention rules. Matches industry push (Okta, etc.).",
+      "rollout": "Block any claw or autonomous agent action that authenticates as a human user. Require dedicated agent service accounts / identities with scoped permissions."
+    },
+    {
+      "id": "gate-claw-file-system-access",
+      "name": "Gate claw-style agent file system access",
+      "category": "Claw-Style Enterprise Agent Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(claw|file system|fs access|read file|write file|list dir|device access).*(local|shared|on-prem|airgap)",
+      "problem": "Claw agents have broad device-level (local/shared) file system access. Must be strictly gated, especially in on-prem/air-gapped enterprise environments where most data lives.",
+      "roi": "Directly supports the hybrid/on-prem reality emphasized in EnterpriseClaw coverage. Prevents broad access from becoming broad exfil or corruption. Ties to ThumbGate's existing path globs and protected files.",
+      "rollout": "Use existing protected-paths + new claw-specific rules. Start with read-only for most, explicit approval for writes on sensitive dirs."
     }
   ]
 }

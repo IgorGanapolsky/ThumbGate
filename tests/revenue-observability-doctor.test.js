@@ -6,6 +6,7 @@ const assert = require('node:assert/strict');
 const {
   hasAllEnv,
   envPresence,
+  extractPlausibleDataDomains,
   probePublicFunnel,
   buildRevenueObservabilityDoctor,
   formatDoctorReport,
@@ -90,6 +91,14 @@ test('probePublicFunnel fails when service links leak into Pro checkout intersti
   assert.equal(result.checkout.leaksServiceLinks, true);
 });
 
+test('extractPlausibleDataDomains reads every emitted Plausible data-domain', () => {
+  assert.deepEqual(extractPlausibleDataDomains(`
+    <script data-domain="thumbgate.ai"></script>
+    <script data-domain='thumbgate-production.up.railway.app'></script>
+    <script data-domain="thumbgate.ai"></script>
+  `), ['thumbgate.ai', 'thumbgate-production.up.railway.app']);
+});
+
 test('doctor blocks revenue claims when Stripe and hosted auth are missing', async () => {
   const report = await buildRevenueObservabilityDoctor({
     env: {},
@@ -108,6 +117,34 @@ test('doctor blocks revenue claims when Stripe and hosted auth are missing', asy
   assert.equal(report.canProveVisitorBehavior, false);
   assert.ok(report.nextActions.some((line) => /Stripe secret key/.test(line)));
   assert.ok(formatDoctorReport(report).includes('Revenue Observability Doctor: BLOCKED'));
+});
+
+test('doctor blocks when live markup emits thumbgate.ai but Plausible registration only covers Railway', async () => {
+  const report = await buildRevenueObservabilityDoctor({
+    env: {
+      THUMBGATE_OPERATOR_KEY: 'operator',
+      STRIPE_SECRET_KEY: 'sk_live_x',
+      PLAUSIBLE_API_KEY: 'plausible',
+      PLAUSIBLE_SITE_ID: 'thumbgate-production.up.railway.app',
+      POSTHOG_PERSONAL_API_KEY: 'phx',
+      POSTHOG_PROJECT_ID: '123',
+    },
+    appOrigin: 'https://thumbgate.ai',
+    async fetchImpl(url) {
+      const parsed = new URL(String(url));
+      if (parsed.pathname === '/') {
+        return response('<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script><script>fetch("/v1/telemetry/ping")</script>');
+      }
+      return response('Start ThumbGate Pro Pay $19/mo with Stripe Not sure yet? Send the workflow first');
+    },
+  });
+
+  const coverage = report.checks.find((check) => check.id === 'plausible_primary_domain_registered');
+  assert.equal(report.verdict, 'blocked');
+  assert.equal(coverage.ok, false);
+  assert.equal(coverage.evidence.primaryRegistered, false);
+  assert.deepEqual(coverage.evidence.missingEmittedDomains, ['thumbgate.ai']);
+  assert.ok(report.nextActions.some((line) => /Register thumbgate\.ai in Plausible/.test(line)));
 });
 
 test('doctor is ready when proof access and focused public funnel are present', async () => {

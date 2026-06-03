@@ -254,6 +254,12 @@ No CLI automation possible - owner must do:
    - Owner: Install from GitHub Marketplace (1 click)
    - Agent: Verify it's active (runs automatically)
 
+4. **Gitar**
+   - Owner: Install with repository-scoped GitHub access only
+   - Agent: Maintain `.gitar/review/` instructions and `.gitar/config/approve.md`
+   - Pilot stance: advisory/non-blocking until false positives and accepted findings are measured
+   - ThumbGate loop: convert repeated accepted Gitar findings into `npx thumbgate capture` lessons
+
 ### Phase 2: Conditional (Depends on Sentry Setup)
 1. **Sentry**
    - Owner: Create Sentry.io org + project
@@ -294,6 +300,7 @@ gh secret set ANTHROPIC_API_KEY --repo IgorGanapolsky/ThumbGate -b "value"
 | **SonarCloud** | Org creation + GitHub OAuth | Sign up at sonarcloud.io |
 | **Claude Bot** | Marketplace listing + OAuth | Click "Install" on GitHub |
 | **Cursor Bugbot** | Marketplace listing + OAuth | Click "Install" on GitHub |
+| **Gitar** | GitHub App authorization with code/issues/PR comment access | Install with repository-scoped access, keep advisory during pilot |
 | **Sentry** | Org + project creation | Create account at sentry.io |
 | **GitHub Copilot** | Org-level license | Purchase @ github.com/billing |
 

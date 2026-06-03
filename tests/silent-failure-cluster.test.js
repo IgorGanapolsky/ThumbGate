@@ -77,10 +77,10 @@ function synthSuccessGroup({ tool = 'Bash', args, count, baseTime = isoOffset(60
 // ---------------------------------------------------------------------------
 
 test('redactSecrets — strips github personal access token', () => {
-  const input = 'authorization: ghp_0000000000000000000000000000000000000';
+  const input = 'authorization: ghp_123456789012';
   const out = redactSecrets(input);
   assert.match(out, /\[REDACTED\]/);
-  assert.doesNotMatch(out, /ghp_0000/);
+  assert.doesNotMatch(out, /ghp_123456789012/);
 });
 
 test('redactSecrets — strips sk-ant- key', () => {
@@ -245,7 +245,7 @@ test('hasAdjacentFeedback — false when no feedback log', () => {
 // ---------------------------------------------------------------------------
 
 test('argsToSignature — Bash command normalized + redacted', () => {
-  const sig = argsToSignature('Bash', { command: 'curl -H "Authorization: Bearer ghp_0000000000000000000000000000000000000" https://api' });
+  const sig = argsToSignature('Bash', { command: 'curl -H "Authorization: Bearer ghp_123456789012" https://api' });
   assert.match(sig, /^Bash:/);
   assert.match(sig, /\[REDACTED\]/);
 });
@@ -414,7 +414,7 @@ test('generateSilentFailureCandidates — normalized paths in cluster signature 
 test('generateSilentFailureCandidates — secret in args is redacted in emitted candidate', () => {
   const dir = makeTmpDir('secret-redact');
   const logPath = path.join(dir, 'conv.jsonl');
-  const fakeSecret = 'ghp_0000000000000000000000000000000000000';
+  const fakeSecret = 'ghp_123456789012';
   const entries = [
     ...synthFailureGroup({ args: { command: `curl -H "Authorization: Bearer ${fakeSecret}" https://x` }, count: 4 }),
     ...synthSuccessGroup({ args: { command: 'ls' }, count: 60 }),
@@ -429,7 +429,7 @@ test('generateSilentFailureCandidates — secret in args is redacted in emitted 
   assert.ok(result.candidates.length >= 1);
   for (const c of result.candidates) {
     const blob = JSON.stringify(c);
-    assert.doesNotMatch(blob, /ghp_0000/, 'candidate must not contain raw GitHub token');
+    assert.doesNotMatch(blob, /ghp_123456789012/, 'candidate must not contain raw GitHub token');
   }
 });
 

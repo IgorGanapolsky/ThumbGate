@@ -59,12 +59,14 @@ describe('install-shim', () => {
     assert.equal(shimInstalled(), true);
   });
 
-  test('shim contains background upgrade spawn', () => {
+  test('shim makes background upgrades opt-in instead of default self-mutation', () => {
     delete require.cache[require.resolve('../scripts/install-shim')];
     const { shimContent } = require('../scripts/install-shim');
 
     const content = shimContent();
-    assert.ok(content.includes('nohup npm install'), 'should spawn background upgrade');
+    assert.ok(content.includes('THUMBGATE_SHIM_AUTO_UPDATE'), 'should gate background upgrades behind an env toggle');
+    assert.ok(content.includes('nohup npm install'), 'should retain an explicit opt-in upgrade path');
+    assert.doesNotMatch(content, /if \[ -x "\$RUNTIME_BIN" \]; then\n\s*\( nohup npm install/, 'fast path must not upgrade unconditionally');
     assert.ok(content.includes('>/dev/null 2>&1'), 'background upgrade should be silent');
   });
 

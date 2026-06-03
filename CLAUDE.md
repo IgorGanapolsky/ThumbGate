@@ -31,6 +31,23 @@ ThumbGate is the only active source of truth. Use `IgorGanapolsky/ThumbGate`, np
 
 Do not use `mcp-memory-gateway`, `rlhf`, old RLHF-loop paths, or similarly named local worktrees/remotes as active product context. Those strings are legacy migration aliases only when cleanup code or tests intentionally remove old config keys.
 
+## Claw-Style + Hybrid Enterprise Agents (Autonomous High-ROI Continuation)
+
+From recent analysis (Automation Anywhere EnterpriseClaw + Perplexity hybrid local-cloud at Computex 2026):
+- Claw-style agents: device FS access, runtime dynamic tool creation, screen/UI interaction, orchestration (on-prem/air-gapped/hybrid).
+- Governance gap explicit in coverage: "Claw-style AI agents are coming to the enterprise. The governance infrastructure is still catching up."
+- Hybrid inference: autonomous local vs cloud routing for privacy/cost/intel.
+
+**ThumbGate is the governance layer.** Implemented autonomously:
+- Claw gates (dynamic-tool, screen, identity, FS) + hybrid routing approval.
+- Model candidates (claw-style workload + AA/EA + Nvidia/OpenShell + perplexity/hybrid-*).
+- adapters/claw/ (CLAW.md, configs) + adapters/perplexity/HYBRID.md (combined).
+- AGENTS.md + this CLAUDE.md sections.
+- evaluateClawPretool in hybrid-feedback-context.js for agent_id, claw_action_type, hybrid_route.
+- Verifications, doctor, dashboard re-opens, MCP feedback captures (promoted to memory).
+
+Use in AGENTS.md/CLAUDE.md hierarchy: add claw/hybrid tags to contexts. Gate all claw actions (esp. dynamic tools, screen, cloud escalations on sensitive). Capture with claw metadata. Route via hybrid candidates for local-sensitive claw work. Dogfood on any EnterpriseClaw/OpenShell/hybrid PC sessions. See adapters/claw/CLAW.md and previous Perplexity work for details. Continue autonomously on integrations.
+
 ## Distribution Channel Focus
 
 Active outbound channels (2026-04-20 onward): **Reddit, LinkedIn, Threads, Bluesky, Instagram, YouTube.**

@@ -62,6 +62,92 @@ function normalizeFeedbackText(value) {
     .trim();
 }
 
+function editDistance(a, b) {
+  const left = String(a || '');
+  const right = String(b || '');
+  const dp = Array.from({ length: left.length + 1 }, () => Array(right.length + 1).fill(0));
+  for (let i = 0; i <= left.length; i++) dp[i][0] = i;
+  for (let j = 0; j <= right.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= left.length; i++) {
+    for (let j = 1; j <= right.length; j++) {
+      const cost = left[i - 1] === right[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + cost,
+      );
+    }
+  }
+  return dp[left.length][right.length];
+}
+
+function isNearThumbToken(token) {
+  const value = String(token || '');
+  if (value.length < 4) return false;
+  return editDistance(value, 'thumb') <= 1 || editDistance(value, 'thumbs') <= 2;
+}
+
+function isNearUpToken(token) {
+  const value = String(token || '');
+  return value === 'up' || editDistance(value, 'up') <= 1;
+}
+
+function isNearDownToken(token) {
+  const value = String(token || '');
+  if (value.length < 2) return false;
+  return editDistance(value, 'down') <= 1;
+}
+
+function detectFeedbackSignal(value) {
+  const raw = String(value || '');
+  if (/[👎👎🏻👎🏼👎🏽👎🏾👎🏿]/u.test(raw)) return { signal: 'down', confidence: 'emoji', match: '👎' };
+  if (/[👍👍🏻👍🏼👍🏽👍🏾👍🏿]/u.test(raw)) return { signal: 'up', confidence: 'emoji', match: '👍' };
+
+  const normalized = normalizeFeedbackText(raw);
+  if (!normalized) return null;
+
+  const exactDown = [
+    /\bthumbs?\s*down\b/,
+    /\bthumbs?down\b/,
+    /\bthat failed\b/,
+    /\bit failed\b/,
+    /\bthat was wrong\b/,
+    /\bfix this\b/,
+  ];
+  if (exactDown.some((pattern) => pattern.test(normalized))) {
+    return { signal: 'down', confidence: 'exact', match: normalized };
+  }
+
+  const exactUp = [
+    /\bthumbs?\s*up\b/,
+    /\bthumbs?up\b/,
+    /\bthat worked\b/,
+    /\bit worked\b/,
+    /\blooks good\b/,
+    /\bgood job\b/,
+    /\bgood work\b/,
+    /\bnice work\b/,
+    /\bperfect\b/,
+    /\blgtm\b/,
+  ];
+  if (exactUp.some((pattern) => pattern.test(normalized))) {
+    return { signal: 'up', confidence: 'exact', match: normalized };
+  }
+
+  const words = normalized.split(/\s+/).filter(Boolean);
+  for (let i = 0; i < words.length - 1; i++) {
+    if (!isNearThumbToken(words[i])) continue;
+    if (isNearDownToken(words[i + 1])) {
+      return { signal: 'down', confidence: 'fuzzy', match: `${words[i]} ${words[i + 1]}` };
+    }
+    if (isNearUpToken(words[i + 1])) {
+      return { signal: 'up', confidence: 'fuzzy', match: `${words[i]} ${words[i + 1]}` };
+    }
+  }
+
+  return null;
+}
+
 function isGenericFeedbackText(value, signal) {
   const normalized = normalizeFeedbackText(value);
   if (!normalized) return false;
@@ -131,6 +217,7 @@ function buildClarificationMessage(params = {}) {
 
 module.exports = {
   GENERIC_PHRASE_RULES,
+  detectFeedbackSignal,
   normalizeFeedbackSignal,
   normalizeFeedbackText,
   isGenericFeedbackText,

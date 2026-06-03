@@ -5,8 +5,10 @@ const assert = require('node:assert/strict');
 
 const {
   buildMemoriStyleBenchmarkRecords,
+  buildMemoryOsLayerReport,
   buildMemoryScopeReadinessReport,
   isSharedMemory,
+  MEMORY_OS_LAYERS,
   memoryScopeKey,
   missingScopeFields,
   normalizeScope,
@@ -131,4 +133,59 @@ test('buildMemoryScopeReadinessReport returns ready for fully scoped isolated fi
   assert.equal(report.riskLevel, 'low');
   assert.equal(report.unscopedRecords, 0);
   assert.deepEqual(report.crossScopeDuplicates, []);
+});
+
+test('buildMemoryOsLayerReport maps scoped ThumbGate records onto the six-layer Memory OS contract', () => {
+  const report = buildMemoryOsLayerReport(buildMemoriStyleBenchmarkRecords(), {
+    rawStorage: true,
+    semanticSearch: true,
+    structuredFacts: true,
+    autoCuration: true,
+    contextPacks: true,
+    cli: true,
+    mcp: true,
+    hooks: true,
+    dashboard: true,
+  });
+
+  assert.equal(MEMORY_OS_LAYERS.length, 6);
+  assert.equal(report.ready, true);
+  assert.deepEqual(report.missingLayers, []);
+  assert.deepEqual(report.layers.map((layer) => layer.id), [
+    'file_layer',
+    'vector_db_layer',
+    'structured_facts_layer',
+    'auto_curation_layer',
+    'context_layer',
+    'interface_layer',
+  ]);
+  assert.equal(report.layers.find((layer) => layer.id === 'structured_facts_layer').evidence.structuredFactRecords, 1);
+  assert.equal(report.layers.find((layer) => layer.id === 'context_layer').evidence.contextRecords, 1);
+});
+
+test('buildMemoryOsLayerReport flags missing curation, structured facts, and interface exposure', () => {
+  const report = buildMemoryOsLayerReport([
+    {
+      id: 'raw-only-memory',
+      entityId: 'alice',
+      projectId: 'thumbgate',
+      processId: 'agent-a',
+      sessionId: 'session-1',
+      content: 'Raw note with no structured fact or retrieval metadata.',
+    },
+  ], {
+    rawStorage: true,
+  });
+
+  assert.equal(report.ready, false);
+  assert.equal(report.riskLevel, 'high');
+  assert.deepEqual(report.missingLayers, [
+    'vector_db_layer',
+    'structured_facts_layer',
+    'auto_curation_layer',
+    'context_layer',
+    'interface_layer',
+  ]);
+  assert.ok(report.recommendations.some((item) => /typed records/.test(item)));
+  assert.ok(report.recommendations.some((item) => /dedupe/.test(item)));
 });

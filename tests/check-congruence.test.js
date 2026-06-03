@@ -55,7 +55,7 @@ test('README commercial copy stays aligned with current Pro and Team packaging',
   assert.match(readme, /history-aware/i);
   assert.match(readme, /feedback session|open_feedback_session|append_feedback_context|finalize_feedback_session/i);
   assert.match(readme, /unlimited feedback captures/i);
-  assert.match(readme, /5 active auto-promoted prevention rules/i);
+  assert.match(readme, /3 active auto-promoted prevention rules/i);
   assert.match(readme, /lesson/i);
   assert.doesNotMatch(readme, /\$12\/seat\/mo/i);
   assert.doesNotMatch(readme, /shared team DB/i);

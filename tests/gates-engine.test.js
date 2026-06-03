@@ -37,6 +37,7 @@ const {
   setTaskScope,
   setBranchGovernance,
   approveProtectedAction,
+  breakGlassEmergency,
   getScopeState,
   getBranchGovernanceState,
   trackAction,
@@ -51,6 +52,7 @@ const {
   getLocalOnlyScopeSources,
   isRemoteSideEffectCommand,
   evaluateLocalOnlyRemoteSideEffectGate,
+  isBreakGlassSettingsRecoveryAction,
   PR_THREAD_RESOLUTION_ACTION,
   TTL_MS,
   SESSION_ACTION_TTL_MS,
@@ -312,12 +314,13 @@ test('setTaskScope rebases absolute allowedPaths under repoPath to repo-relative
   // Affected files are compared repo-relative, so an absolute allowedPath silently
   // never matches (no-op scope). With repoPath known, absolute globs under it must be
   // rebased to repo-relative; the repoPath itself collapses to '**'.
+  const repoPath = '/Users/me/workspace/proj';
   const scope = setTaskScope({
     summary: 'abs path rebasing',
-    repoPath: '/Users/me/workspace/proj',
+    repoPath,
     allowedPaths: [
       '/Users/me/workspace/proj/src/**',   // absolute under repo -> 'src/**'
-      '/Users/me/workspace/proj',           // repo root itself -> '**'
+      '/Users/me/workspace/proj',           // the repo root itself -> '**'
       'tests/**',                           // already relative -> unchanged
       '/etc/somewhere/**',                  // absolute OUTSIDE repo -> unchanged
     ],
@@ -325,6 +328,7 @@ test('setTaskScope rebases absolute allowedPaths under repoPath to repo-relative
   assert.ok(scope.allowedPaths.includes('src/**'), `got ${JSON.stringify(scope.allowedPaths)}`);
   assert.ok(scope.allowedPaths.includes('**'));
   assert.ok(scope.allowedPaths.includes('tests/**'));
+  // outside-repo absolute glob is left as-is (normalized, slash-stripped)
   assert.ok(scope.allowedPaths.includes('etc/somewhere/**'));
   setTaskScope({ clear: true });
   cleanupStateFiles();
@@ -357,6 +361,17 @@ test('evaluateGates blocks gh pr create when task scope is local-only', () => {
   cleanupStateFiles();
   setTaskScope({ summary: 'fix local Android build', allowedPaths: ['**'], localOnly: true });
   const result = evaluateGates('Bash', { command: 'gh pr create --title fix --body body' });
+  assert.ok(result);
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.gate, 'local-only-remote-side-effect');
+});
+
+test('evaluateGates treats gh api pull creation as remote PR creation in local-only scope', () => {
+  cleanupStateFiles();
+  setTaskScope({ summary: 'fix local Android build', allowedPaths: ['**'], localOnly: true });
+  const result = evaluateGates('Bash', {
+    command: 'gh api repos/acme/project/pulls -f title=fix -f head=feat -f base=main',
+  });
   assert.ok(result);
   assert.equal(result.decision, 'deny');
   assert.equal(result.gate, 'local-only-remote-side-effect');
@@ -402,6 +417,8 @@ test('getLocalOnlyScopeSources reports every active local-only source', () => {
 test('isRemoteSideEffectCommand recognizes remote release and publish actions only for Bash', () => {
   assert.equal(isRemoteSideEffectCommand('Bash', { command: 'gh release upload v1.2.3 dist.tgz' }), true);
   assert.equal(isRemoteSideEffectCommand('Bash', { command: 'pnpm publish --access public' }), true);
+  assert.equal(isRemoteSideEffectCommand('Bash', { command: 'gh api repos/acme/project/pulls -f title=fix' }), true);
+  assert.equal(isRemoteSideEffectCommand('Bash', { command: 'gh api graphql -f query="{ viewer { login } }"' }), false);
   assert.equal(isRemoteSideEffectCommand('Bash', { command: 'git status --short' }), false);
   assert.equal(isRemoteSideEffectCommand('Write', { command: 'git push origin main' }), false);
 });
@@ -541,6 +558,38 @@ test('approveProtectedAction unlocks approved protected files', () => {
   assert.equal(result, null);
 });
 
+test('breakGlassEmergency unlocks hook settings edits without opening unrelated protected files', () => {
+  cleanupStateFiles();
+  setTaskScope({ summary: 'normal source task', allowedPaths: ['src/**'] });
+
+  const before = evaluateGates('Edit', { file_path: '/Users/test/.claude/settings.local.json' });
+  assert.ok(before);
+  assert.equal(before.gate, 'task-scope-edit-boundary');
+
+  const recovery = breakGlassEmergency({
+    reason: 'ThumbGate hook over-fired and blocked operator recovery',
+    ttlMs: 5 * 60 * 1000,
+  });
+  assert.equal(recovery.ok, true);
+  assert.ok(recovery.settingsGlobs.includes('**/.claude/settings.local.json'));
+
+  assert.equal(isBreakGlassSettingsRecoveryAction('Edit', { file_path: '/Users/test/.claude/settings.local.json' }), true);
+  const settingsEdit = evaluateGates('Edit', {
+    file_path: '/Users/test/.claude/settings.local.json',
+    boostedRisk: {
+      riskScore: 1,
+      exampleCount: 6,
+      highRiskTags: ['settings'],
+    },
+  });
+  assert.equal(settingsEdit, null);
+
+  const protectedDocEdit = evaluateGates('Edit', { file_path: '/repo/README.md' });
+  assert.ok(protectedDocEdit);
+  assert.equal(protectedDocEdit.gate, 'task-scope-edit-boundary');
+  cleanupStateFiles();
+});
+
 // ---------------------------------------------------------------------------
 // Unless conditions with TTL
 // ---------------------------------------------------------------------------
@@ -593,6 +642,27 @@ test('setTaskScope persists scope state', () => {
   assert.equal(loadConstraints().local_only.value, true);
 });
 
+test('setTaskScope persists deterministic workflow contract', () => {
+  cleanupStateFiles();
+  setTaskScope({
+    taskId: 'wf_123',
+    summary: 'deterministic workflow proof run',
+    allowedPaths: ['src/**', 'tests/**'],
+    workflowContract: {
+      workflowId: 'pricing-surface-fix',
+      allowedBranches: ['fix/*'],
+      blockedActions: ['npm publish'],
+      requiredEvidence: ['tests', 'link_check'],
+      completionGate: 'tests_passed_and_changes_pushed',
+    },
+  });
+  const state = getScopeState();
+  assert.equal(state.workflowContract.workflowId, 'pricing-surface-fix');
+  assert.deepEqual(state.workflowContract.requiredEvidence, ['tests', 'link_check']);
+  setTaskScope({ clear: true });
+  assert.equal(getScopeState().workflowContract, null);
+});
+
 test('setTaskScope clear removes task scope but preserves approvals', () => {
   cleanupStateFiles();
   setTaskScope({
@@ -606,6 +676,19 @@ test('setTaskScope clear removes task scope but preserves approvals', () => {
   assert.equal(cleared, null);
   assert.equal(state.taskScope, null);
   assert.equal(state.protectedApprovals.length, 1);
+});
+
+test('setTaskScope clear removes stale local_only constraint', () => {
+  cleanupStateFiles();
+  setTaskScope({
+    taskId: '1733520',
+    summary: 'local-only task',
+    allowedPaths: ['**'],
+    localOnly: true,
+  });
+  assert.equal(loadConstraints().local_only.value, true);
+  setTaskScope({ clear: true });
+  assert.equal(loadConstraints().local_only, undefined);
 });
 
 test('setBranchGovernance persists branch governance state', () => {
@@ -642,6 +725,18 @@ test('setBranchGovernance clear removes branch governance but preserves scope', 
   assert.equal(cleared, null);
   assert.equal(state.branchGovernance, null);
   assert.equal(state.taskScope.taskId, '1733520');
+});
+
+test('setBranchGovernance clear removes stale local_only when no task scope remains', () => {
+  cleanupStateFiles();
+  setBranchGovernance({
+    branchName: 'feat/thumbgate-hardening',
+    baseBranch: 'main',
+    localOnly: true,
+  });
+  assert.equal(loadConstraints().local_only.value, true);
+  setBranchGovernance({ clear: true });
+  assert.equal(loadConstraints().local_only, undefined);
 });
 
 test('setTaskScope rejects empty allowedPaths', () => {
@@ -703,6 +798,50 @@ test('recordStat increments blocked count', () => {
   assert.equal(stats.warned, 1);
   assert.equal(stats.byGate['test-gate'].blocked, 2);
   assert.equal(stats.byGate['test-gate'].warned, 1);
+  cleanupStateFiles();
+});
+
+test('recordStat only counts repeats for the same sanitized action', () => {
+  cleanupStateFiles();
+  recordStat('memory-high-risk-default-deny', 'block', null, {
+    toolName: 'Bash',
+    toolInput: { command: 'git status --short' },
+  });
+  recordStat('memory-high-risk-default-deny', 'block', null, {
+    toolName: 'Bash',
+    toolInput: { command: 'npm test' },
+  });
+  let stats = loadStats();
+  assert.equal(stats.blocked, 2);
+  assert.equal(stats.recurringBlocks || 0, 0);
+
+  recordStat('memory-high-risk-default-deny', 'block', null, {
+    toolName: 'Bash',
+    toolInput: { command: 'npm test' },
+  });
+  stats = loadStats();
+  assert.equal(stats.blocked, 3);
+  assert.equal(stats.recurringBlocks, 1);
+  cleanupStateFiles();
+});
+
+test('recordStat ignores hook transport-only payloads for repeat metrics', () => {
+  cleanupStateFiles();
+  recordStat('retrieval_entropy_high', 'warn', null, {
+    toolName: 'UserPromptSubmit',
+    toolInput: {
+      prompt: '{"hookEventName":"UserPromptSubmit","session_id":"019e715b-4574-7731-9c33-e0d2f0000001","transcript_path":"/Users/igorganapolsky/.claude/projects/a/session.jsonl"}',
+    },
+  });
+  recordStat('retrieval_entropy_high', 'warn', null, {
+    toolName: 'UserPromptSubmit',
+    toolInput: {
+      prompt: '{"hookEventName":"UserPromptSubmit","session_id":"019e715b-4574-7731-9c33-e0d2f0000002","transcript_path":"/Users/igorganapolsky/.claude/projects/b/session.jsonl"}',
+    },
+  });
+  const stats = loadStats();
+  assert.equal(stats.warned, 2);
+  assert.equal(stats.recurringBlocks || 0, 0);
   cleanupStateFiles();
 });
 
@@ -801,7 +940,8 @@ test('permission-change approval still catches unsafe chmod commands', () => {
 test('memory-high-risk gate exempts safe credential-hardening chmod (vault key)', () => {
   cleanupStateFiles();
   // chmod 600 on a credential path is a hardening (safety) action; it must never be
-  // hard-denied (decision:'deny') by memory-high-risk-default-deny. Advisory warns are
+  // hard-denied (decision:'deny') by memory-high-risk-default-deny, even when recurring
+  // negative memory would otherwise match. Advisory warns (e.g. workflow-sentinel) are
   // fine — the action proceeds. Regression guard for the evaluateMemoryGuard exemption.
   for (const cmd of [
     'chmod 600 ~/.resume_secrets/stripe.json',
@@ -1026,6 +1166,40 @@ test('run blocks bash commands that expose inline secrets', () => {
 
     assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
     assert.match(output.hookSpecificOutput.permissionDecisionReason, /secret material/i);
+  });
+});
+
+test('run allows writes into private resume secrets vault', () => {
+  withTempFeedbackDir(() => {
+    const stripeKey = buildStripeKey();
+    const output = JSON.parse(run({
+      tool_name: 'Write',
+      tool_input: {
+        file_path: path.join(os.homedir(), '.resume_secrets', 'stripe.json'),
+        content: JSON.stringify({ STRIPE_SECRET_KEY: stripeKey }),
+      },
+    }));
+    assert.deepEqual(output, {});
+  });
+});
+
+test('run still blocks reads from private resume secrets vault', () => {
+  withTempFeedbackDir((tmpFeedbackDir) => {
+    const filePath = path.join(os.homedir(), '.resume_secrets', `thumbgate-test-${process.pid}.json`);
+    const stripeKey = buildStripeKey();
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify({ STRIPE_SECRET_KEY: stripeKey }));
+    try {
+      const output = JSON.parse(run({
+        tool_name: 'Read',
+        tool_input: { file_path: filePath },
+        cwd: tmpFeedbackDir,
+      }));
+      assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
+      assert.match(output.hookSpecificOutput.permissionDecisionReason, /secret material/i);
+    } finally {
+      fs.rmSync(filePath, { force: true });
+    }
   });
 });
 
@@ -1557,6 +1731,41 @@ test('evaluateGatesAsync denies high-risk actions when recurring negative memory
   }
 });
 
+test('evaluateGatesAsync allows private secret-vault writes despite recurring memory', async () => {
+  const tmpConfig = makeTempPath('memory-secret-vault-gates.json');
+  fs.writeFileSync(tmpConfig, JSON.stringify({ version: 1, gates: [] }));
+
+  const feedbackLog = makeTempPath('memory-secret-vault-feedback.jsonl');
+  const attributedFeedback = makeTempPath('memory-secret-vault-attributed.jsonl');
+  const entries = [
+    { id: 'mem-vault-1', signal: 'negative', context: 'Write resume secrets stripe json high risk regression', timestamp: new Date().toISOString() },
+    { id: 'mem-vault-2', signal: 'negative', context: 'Write resume secrets stripe json high risk regression', timestamp: new Date().toISOString() },
+  ];
+  fs.writeFileSync(feedbackLog, entries.map((entry) => JSON.stringify(entry)).join('\n') + '\n');
+  fs.writeFileSync(attributedFeedback, '');
+
+  const originalFeedbackLog = process.env.THUMBGATE_FEEDBACK_LOG;
+  const originalAttributedFeedback = process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
+  process.env.THUMBGATE_FEEDBACK_LOG = feedbackLog;
+  process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = attributedFeedback;
+
+  try {
+    const result = await evaluateGatesAsync('Write', {
+      file_path: path.join(os.homedir(), '.resume_secrets', 'stripe.json'),
+      content: JSON.stringify({ STRIPE_SECRET_KEY: buildStripeKey() }),
+    }, tmpConfig);
+    assert.equal(result, null);
+  } finally {
+    if (originalFeedbackLog === undefined) delete process.env.THUMBGATE_FEEDBACK_LOG;
+    else process.env.THUMBGATE_FEEDBACK_LOG = originalFeedbackLog;
+    if (originalAttributedFeedback === undefined) delete process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
+    else process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = originalAttributedFeedback;
+    fs.rmSync(tmpConfig, { force: true });
+    fs.rmSync(feedbackLog, { force: true });
+    fs.rmSync(attributedFeedback, { force: true });
+  }
+});
+
 test('evaluateGatesAsync allows scoped high-risk actions even when recurring negative memory exists', async () => {
   const tmpConfig = makeTempPath('memory-scope-bypass-gates.json');
   fs.writeFileSync(tmpConfig, JSON.stringify({ version: 1, gates: [] }));
@@ -1747,6 +1956,47 @@ test('evaluateGates blocks gh pr create without branch governance', () => {
   assert.match(result.message, /require explicit branch governance/i);
 });
 
+test('evaluateGates applies pr_create_allowed to gh api pull creation', () => {
+  cleanupStateFiles();
+  const repoPath = createPushTestRepo('scripts/ops.js');
+  setTaskScope({
+    allowedPaths: ['scripts/**'],
+    summary: 'Allow script updates for PR prep.',
+    repoPath,
+  });
+  setBranchGovernance({
+    branchName: 'feat/thumbgate-hardening',
+    baseBranch: 'main',
+    prRequired: true,
+    releaseVersion: '0.9.11',
+  });
+  approveProtectedAction({
+    pathGlobs: ['scripts/ops.js'],
+    reason: 'test isolates PR creation gate after protected-file approval',
+  });
+
+  const command = 'gh api repos/acme/project/pulls -f title=test -f head=feat/thumbgate-hardening -f base=main';
+  const before = evaluateGates('Bash', {
+    command,
+    repoPath,
+    changed_files: ['scripts/ops.js'],
+  });
+  assert.ok(before);
+  assert.equal(before.gate, 'gh-api-pr-create-restricted');
+
+  breakGlassEmergency({
+    reason: 'Operator approved PR creation after hook over-fire',
+    ttlMs: 5 * 60 * 1000,
+  });
+  const after = evaluateGates('Bash', {
+    command,
+    repoPath,
+    changed_files: ['scripts/ops.js'],
+  });
+  assert.equal(after, null);
+  cleanupStateFiles();
+});
+
 test('evaluateGates blocks publish when branch governance release version is missing', () => {
   cleanupStateFiles();
   setBranchGovernance({
@@ -1901,6 +2151,51 @@ test('buildSecretGuardResult builds correct structure', () => {
   assert.equal(result.secretScan.provider, 'heuristic');
   assert.equal(result.secretScan.findings.length, 1);
   assert.equal(result.secretScan.findings[0].id, 'test-finding');
+});
+
+test('secret-exfiltration deny names the safe vault path for a non-vault Write', () => {
+  withTempFeedbackDir(() => {
+    const stripeKey = buildStripeKey();
+    const result = evaluateSecretGuard({
+      tool_name: 'Write',
+      tool_input: { file_path: '/tmp/yst_stripe.json', content: JSON.stringify({ stripe_secret_key: stripeKey }) },
+    });
+    assert.ok(result, 'expected a block');
+    assert.equal(result.gate, 'secret-exfiltration');
+    // The fix: deny message must point the agent at the whitelisted vault,
+    // not leave it to invent a brittle /tmp workaround.
+    assert.match(result.message, /\.resume_secrets/);
+    assert.match(result.remediation, /Write\/Edit tool/);
+    assert.match(result.remediation, /world-readable/);
+  });
+});
+
+test('secret-exfiltration deny tells Bash callers to use the vault, not inline', () => {
+  withTempFeedbackDir(() => {
+    const stripeKey = buildStripeKey();
+    const result = evaluateSecretGuard({
+      tool_name: 'Bash',
+      tool_input: { command: `echo ${stripeKey} > /tmp/x` },
+    });
+    assert.ok(result, 'expected a block');
+    assert.match(result.remediation, /\.resume_secrets/);
+    assert.match(result.remediation, /environment variable|reading that file/);
+  });
+});
+
+test('secret-exfiltration fix does not block legitimate vault writes', () => {
+  withTempFeedbackDir(() => {
+    const os = require('os');
+    const stripeKey = buildStripeKey();
+    const result = evaluateSecretGuard({
+      tool_name: 'Write',
+      tool_input: {
+        file_path: `${os.homedir()}/.resume_secrets/stripe.json`,
+        content: JSON.stringify({ stripe_secret_key: stripeKey }),
+      },
+    });
+    assert.equal(result, null, 'vault writes must remain allowed');
+  });
 });
 
 // ---------------------------------------------------------------------------

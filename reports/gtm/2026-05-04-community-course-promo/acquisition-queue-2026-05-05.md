@@ -1,6 +1,6 @@
 # Acquisition Queue (Operator Lab + Sprint)
 
-Updated: 2026-05-05
+Updated: 2026-06-03
 
 Guardrail: do not publish posts, send messages, invite members, upload files, create accounts, change billing, submit forms, or run paid ads without explicit action-time confirmation.
 
@@ -68,3 +68,20 @@ CTA (Skool-first):
 Paid CTA (only after pain is confirmed):
 
 - Intake: `https://thumbgate-production.up.railway.app/#workflow-sprint-intake`
+
+## Lane D: Public market signals (Skool-first positioning)
+
+Public-page benchmark refresh from `2026-06-03`:
+
+- Free/operator education still dominates the strongest visible AI-adjacent Skool groups that surfaced in public search.
+- `AI Operations Lab` surfaced as `Free` with `763` members.
+- `AI Operator` surfaced as `Free` with `442` members.
+- Paid operator-lab positioning exists, but price only works once the niche and outcome are already obvious:
+  - `LO and Agent Growth Lab` surfaced at `$27/month` with `40` members.
+  - `Ecom Operators Lab` surfaced at `$199/month` with `5` members.
+
+Implication for ThumbGate:
+
+1. Keep Operator Lab free and outcome-first on the public surface.
+2. Use the Skool CTA to collect repeated-failure posts, not to force immediate checkout intent.
+3. Route paid intent into Diagnostic, Sprint, or Pro only after pain is confirmed in comments, DMs, or direct follow-up.

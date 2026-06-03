@@ -355,10 +355,11 @@ describe('compileGuardArtifact + writeGuardArtifact + readGuardArtifact', () => 
 describe('buildHybridState', () => {
   let tmpDir;
   let buildHybridState;
+  let deriveConstraints;
 
   before(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hfc-state-test-'));
-    ({ buildHybridState } = freshModule(tmpDir));
+    ({ buildHybridState, deriveConstraints } = freshModule(tmpDir));
   });
 
   after(() => {
@@ -403,5 +404,89 @@ describe('buildHybridState', () => {
       0,
       `Expected 0 recurring negative patterns when no negatives seeded, got: ${state.recurringNegativePatterns.length}`
     );
+  });
+
+  it('does not promote hook transport payloads into recurring negative patterns', () => {
+    const feedbackLogPath = path.join(tmpDir, 'feedback-log-hook-transport.jsonl');
+    const ts = new Date().toISOString();
+    writeJsonl(feedbackLogPath, [1, 2, 3].map((n) => ({
+      id: `hook-poison-${n}`,
+      signal: 'negative',
+      timestamp: ts,
+      context: JSON.stringify({
+        hookEventName: 'UserPromptSubmit',
+        session_id: `019e715b-4574-7731-9c33-e0d2f000000${n}`,
+        transcript_path: `/Users/igorganapolsky/.claude/projects/-Users-igorganapolsky-workspace-git-igor-Resume/session-${n}.jsonl`,
+        workspaceRoot: '/Users/igorganapolsky/workspace/git/igor/ThumbGate',
+        prompt: 'mission: implement hook auto capture and update AGENTS.md',
+        cwd: '/Users/igorganapolsky/workspace/git/igor/Resume',
+      }),
+    })));
+
+    const state = buildHybridState({
+      feedbackLogPath,
+      attributedFeedbackPath: path.join(tmpDir, 'attributed-feedback-empty.jsonl'),
+    });
+    assert.strictEqual(state.recurringNegativePatterns.length, 0);
+    assert.deepStrictEqual(deriveConstraints(state), []);
+  });
+
+  it('keeps real feedback while stripping volatile hook metadata', () => {
+    const feedbackLogPath = path.join(tmpDir, 'feedback-log-real-plus-hook.jsonl');
+    const ts = new Date().toISOString();
+    writeJsonl(feedbackLogPath, [1, 2, 3].map((n) => ({
+      id: `real-feedback-${n}`,
+      signal: 'negative',
+      timestamp: ts,
+      context: JSON.stringify({
+        hookEventName: 'UserPromptSubmit',
+        session_id: `019e715b-4574-7731-9c33-e0d2f000010${n}`,
+        transcript_path: `/Users/igorganapolsky/.claude/projects/-Users-igorganapolsky-workspace-git-igor-Resume/session-${n}.jsonl`,
+      }),
+      whatWentWrong: 'claimed done without running tests',
+      whatToChange: 'run tests before claiming completion',
+    })));
+
+    const state = buildHybridState({
+      feedbackLogPath,
+      attributedFeedbackPath: path.join(tmpDir, 'attributed-feedback-empty.jsonl'),
+    });
+    assert.ok(state.recurringNegativePatterns.length > 0);
+    const text = state.recurringNegativePatterns[0].text;
+    assert.match(text, /claimed done without running tests/);
+    assert.doesNotMatch(text, /session/i);
+    assert.doesNotMatch(text, /transcript/i);
+    assert.doesNotMatch(text, /UserPromptSubmit/i);
+    assert.doesNotMatch(text, /019e715b/i);
+    assert.doesNotMatch(text, /\/Users\/igorganapolsky\/\.claude/);
+  });
+
+  it('supports claw-style agent context via evaluateClawPretool', () => {
+    const { evaluateClawPretool } = require('../scripts/hybrid-feedback-context');
+    const result = evaluateClawPretool('Write', { path: '/sensitive/secret.key' }, {
+      actionType: 'file-access',
+      agentId: 'enterprise-claw-001',
+      hybridRoute: 'local',
+      screenInteraction: false,
+      fileAccess: true
+    });
+    assert.ok(result);
+    assert.strictEqual(result.clawContext.actionType, 'file-access');
+    assert.strictEqual(result.clawContext.agentId, 'enterprise-claw-001');
+    // Should attach context even if allow (no matching negative pattern in base test state)
+  });
+
+  it('supports hybrid-claw combined context for routing + claw actions', () => {
+    const { evaluateClawPretool } = require('../scripts/hybrid-feedback-context');
+    const result = evaluateClawPretool('Execute', { cmd: 'create dynamic tool' }, {
+      actionType: 'dynamic-tool-creation',
+      agentId: 'claw-hybrid-002',
+      hybridRoute: 'cloud-escalated',
+      screenInteraction: false,
+      fileAccess: false
+    });
+    assert.ok(result);
+    assert.strictEqual(result.clawContext.actionType, 'dynamic-tool-creation');
+    assert.strictEqual(result.clawContext.hybridRoute, 'cloud-escalated');
   });
 });

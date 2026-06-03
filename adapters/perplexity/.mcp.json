@@ -2,20 +2,11 @@
   "mcpServers": {
     "thumbgate": {
       "command": "npx",
-      "args": [
-        "--yes",
-        "--package",
-        "thumbgate@1.4.1",
-        "thumbgate",
-        "serve"
-      ]
+      "args": ["--yes", "--package", "thumbgate@1.26.8", "thumbgate", "serve"]
     },
     "perplexity": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@perplexity-ai/mcp-server"
-      ],
+      "args": ["-y", "@perplexity-ai/mcp-server"],
       "env": {
         "PERPLEXITY_API_KEY": "${PERPLEXITY_API_KEY}"
       }
@@ -27,10 +18,11 @@
       "args": [
         "--yes",
         "--package",
-        "thumbgate@1.4.1",
+        "thumbgate@1.26.8",
         "thumbgate",
         "gate-check"
       ]
     }
-  }
+  },
+  "notes": "Side-by-side for Claude Code. For Perplexity hybrid local-cloud inference (Personal Computer, Computex 2026): see HYBRID.md. Add custom preToolUse gates for cloud-escalation on sensitive paths. Use perplexity/hybrid-* in model routing."
 }

@@ -97,6 +97,9 @@ const {
   recordCheckoutFunnelEvent,
 } = require('../../scripts/plausible-server-events');
 const {
+  resolvePlausibleDataDomain,
+} = require('../../scripts/plausible-domain-config');
+const {
   buildCloudflareSandboxPlan,
 } = require('../../scripts/cloudflare-dynamic-sandbox');
 const {
@@ -167,6 +170,9 @@ const {
   writeDashboardReviewState,
 } = require('../../scripts/dashboard');
 const {
+  guardDfcxWebhook,
+} = require('../../adapters/gcp/dfcx-webhook-gate');
+const {
   buildDashboardRenderSpec,
 } = require('../../scripts/dashboard-render-spec');
 const {
@@ -218,6 +224,7 @@ const PRO_PAGE_PATH = path.resolve(__dirname, '../../public/pro.html');
 const DASHBOARD_PAGE_PATH = path.resolve(__dirname, '../../public/dashboard.html');
 const LESSONS_PAGE_PATH = path.resolve(__dirname, '../../public/lessons.html');
 const GUIDE_PAGE_PATH = path.resolve(__dirname, '../../public/guide.html');
+const CHATGPT_APP_PAGE_PATH = path.resolve(__dirname, '../../public/chatgpt-app.html');
 const CODEX_PLUGIN_PAGE_PATH = path.resolve(__dirname, '../../public/codex-plugin.html');
 const COMPARE_PAGE_PATH = path.resolve(__dirname, '../../public/compare.html');
 const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
@@ -418,34 +425,18 @@ const TRACKED_LINK_TARGETS = Object.freeze({
     },
     allowCustomerEmail: true,
   },
-  // 2026-05-19: Team is intake-led. Keep the tracked shortlink alive for
-  // marketplaces and old outreach, but route it to workflow scope first
-  // instead of blind 3-seat checkout.
+  // 2026-06-02: Teams/Aiventyx deprecated. Redirect legacy links to Pro.
   teams: {
-    path: '/#workflow-sprint-intake',
-    ctaId: 'go_teams',
+    path: '/go/pro?utm_source=legacy_teams&utm_medium=redirect',
+    ctaId: 'go_pro',
     ctaPlacement: 'link_router',
-    eventType: 'team_intake_started',
-    defaults: {
-      utm_source: 'website',
-      utm_medium: 'link_router',
-      utm_campaign: 'team_intake',
-      plan_id: 'team',
-    },
+    eventType: 'cta_click',
   },
-  // Aliases: /go/team → same as /go/teams, /go/checkout → same as /go/pro,
-  // /go/trial → install guide (trial starts on init)
   team: {
-    path: '/#workflow-sprint-intake',
-    ctaId: 'go_team',
+    path: '/go/pro?utm_source=legacy_teams&utm_medium=redirect',
+    ctaId: 'go_pro',
     ctaPlacement: 'link_router',
-    eventType: 'team_intake_started',
-    defaults: {
-      utm_source: 'website',
-      utm_medium: 'link_router',
-      utm_campaign: 'team_intake',
-      plan_id: 'team',
-    },
+    eventType: 'cta_click',
   },
   checkout: {
     path: '/checkout/pro',
@@ -1464,6 +1455,178 @@ async function loadLiveDashboardDataOrRespondProblem(res, parsed, feedbackDir, i
   }
 }
 
+function buildEnterpriseDialogflowStatus(env = process.env) {
+  const vertexProject = normalizeNullableText(env.VERTEX_PROJECT_ID)
+    || normalizeNullableText(env.GOOGLE_VERTEX_PROJECT);
+  const vertexLocation = normalizeNullableText(env.GOOGLE_VERTEX_LOCATION)
+    || normalizeNullableText(env.VERTEX_LOCATION)
+    || 'us-central1';
+  const dfcxFulfillmentUrl = normalizeNullableText(env.THUMBGATE_DFCX_FULFILLMENT_URL);
+  const dfcxAgentId = normalizeNullableText(env.THUMBGATE_DFCX_AGENT_ID);
+  const dfcxLocation = normalizeNullableText(env.THUMBGATE_DFCX_LOCATION);
+
+  return {
+    mode: 'local-dashboard',
+    vertex: {
+      configured: Boolean(vertexProject),
+      projectId: vertexProject,
+      location: vertexLocation,
+      providerMode: normalizeNullableText(env.THUMBGATE_PROVIDER_MODE) || null,
+    },
+    dfcx: {
+      apiSurface: 'Dialogflow CX REST API: projects.locations.agents',
+      liveAgentConfigured: Boolean(dfcxAgentId && dfcxLocation),
+      agentId: dfcxAgentId,
+      location: dfcxLocation,
+      fulfillmentProxyConfigured: Boolean(dfcxFulfillmentUrl),
+      fulfillmentUrlConfigured: Boolean(dfcxFulfillmentUrl),
+      gcloudCxCommandSupported: false,
+      verification: dfcxAgentId && dfcxLocation
+        ? 'Agent metadata is present in env; verify via REST/console before production claims.'
+        : 'No live DFCX agent env configured. Use REST/console/deployed webhook evidence before claiming a live agent.',
+    },
+    chat: {
+      available: true,
+      source: 'local ThumbGate dashboard data',
+      guard: 'DFCX-compatible pre-action gate adapter',
+    },
+  };
+}
+
+function normalizeEnterpriseChatPrompt(value) {
+  const text = normalizeNullableText(value);
+  if (!text) return null;
+  return text.slice(0, 800);
+}
+
+function classifyEnterpriseChatTopic(prompt) {
+  const lower = String(prompt || '').toLowerCase();
+  if (/gate|block|deny|prevent|guard/.test(lower)) return 'gates';
+  if (/lesson|memory|feedback|thumb|mistake|negative|positive/.test(lower)) return 'feedback';
+  if (/team|agent|org|enterprise|rollout/.test(lower)) return 'team';
+  if (/token|cost|saving|budget|spend/.test(lower)) return 'cost';
+  if (/vertex|gcp|google|dialogflow|dfcx|cloud/.test(lower)) return 'cloud';
+  return 'overview';
+}
+
+function containsUnsafeEnterpriseChatInput(prompt) {
+  return /[;&|`$<>\\]/.test(String(prompt || ''));
+}
+
+function compactNumber(value) {
+  const n = Number(value || 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function buildEnterpriseChatAnswer(prompt, dashboardData, status) {
+  const topic = classifyEnterpriseChatTopic(prompt);
+  const approval = dashboardData.approval || {};
+  const gates = Array.isArray(dashboardData.gates) ? dashboardData.gates : [];
+  const gateStats = dashboardData.gateStats || {};
+  const team = dashboardData.team || {};
+  const tokenSavings = dashboardData.tokenSavings || {};
+  const lessonPipeline = dashboardData.lessonPipeline || {};
+  const lines = [];
+  const sources = ['local dashboard data'];
+
+  if (topic === 'feedback') {
+    lines.push(`Feedback total: ${compactNumber(approval.total)} (${compactNumber(approval.positive)} positive, ${compactNumber(approval.negative)} negative).`);
+    lines.push(`Lesson pipeline: ${compactNumber(lessonPipeline.lessons || lessonPipeline.generated || 0)} lessons visible in the current dashboard snapshot.`);
+    sources.push('feedback log', 'lesson pipeline');
+  } else if (topic === 'gates') {
+    lines.push(`Active gates: ${gates.length || compactNumber(gateStats.totalGates)}.`);
+    lines.push(`Blocked actions recorded: ${compactNumber(gateStats.blocked || gateStats.denied || gateStats.totalBlocked)}.`);
+    if (gates[0]) lines.push(`Example gate: ${gates[0].name || gates[0].id || 'unnamed gate'}.`);
+    sources.push('gate stats');
+  } else if (topic === 'team') {
+    lines.push(`Team dashboard is available in this local Enterprise view.`);
+    lines.push(`Tracked agents: ${compactNumber(team.totalAgents || team.agentCount || 0)}; risky agents: ${compactNumber(team.riskyAgents || team.highRiskAgents || 0)}.`);
+    sources.push('team dashboard');
+  } else if (topic === 'cost') {
+    lines.push(`Estimated token savings: ${tokenSavings.dollarsSavedDisplay || '$0.00'} from ${compactNumber(tokenSavings.blockedCalls)} blocked calls.`);
+    lines.push('Google Cloud budget alerts are evidence for spend visibility; ThumbGate-side stop conditions must be verified separately before calling them a hard cap.');
+    sources.push('token savings', 'budget posture');
+  } else if (topic === 'cloud') {
+    lines.push(status.vertex.configured
+      ? `Vertex routing config is present for project ${status.vertex.projectId} (${status.vertex.location}).`
+      : 'Vertex routing config is not present in this server environment.');
+    lines.push(status.dfcx.liveAgentConfigured
+      ? `DFCX env has agent ${status.dfcx.agentId} in ${status.dfcx.location}; verify it with REST/console before production claims.`
+      : 'No live DFCX agent is configured in env. Do not use the old alpha gcloud CX command group; verify agents with the Dialogflow CX REST API or console.');
+    sources.push('enterprise cloud status');
+  } else {
+    lines.push('Ask about feedback, lessons, active gates, team rollout, token savings, or Vertex/DFCX readiness.');
+    lines.push(`Current local snapshot: ${compactNumber(approval.total)} feedback events and ${gates.length || compactNumber(gateStats.totalGates)} active gates.`);
+  }
+
+  return {
+    topic,
+    answer: lines.join(' '),
+    sources,
+  };
+}
+
+async function answerEnterpriseDialogflowChat({ prompt, feedbackDir, parsed }) {
+  const normalizedPrompt = normalizeEnterpriseChatPrompt(prompt);
+  if (!normalizedPrompt) {
+    throw createHttpError(400, 'prompt is required');
+  }
+  const status = buildEnterpriseDialogflowStatus();
+  if (containsUnsafeEnterpriseChatInput(normalizedPrompt)) {
+    return {
+      ok: false,
+      blocked: true,
+      answer: 'This prompt contains unsafe control characters and was blocked before data access.',
+      status,
+      dfcx: {
+        blocked: true,
+        evaluation: {
+          allowed: false,
+          gate: 'enterprise-chat-unsafe-input',
+          severity: 'critical',
+        },
+      },
+      sources: ['enterprise input guard'],
+    };
+  }
+
+  const dashboardResult = await buildLiveDashboardData(parsed, feedbackDir);
+  const dashboardData = dashboardResult.data;
+  const chat = buildEnterpriseChatAnswer(normalizedPrompt, dashboardData, status);
+  const dfcxRequest = {
+    fulfillmentInfo: { tag: 'chat-with-data' },
+    sessionInfo: {
+      session: 'local-dashboard/enterprise-chat',
+      parameters: {
+        topic: chat.topic,
+        prompt_key: normalizedPrompt.toLowerCase().replace(/[^a-z0-9._ -]/g, '').slice(0, 64),
+      },
+    },
+    languageCode: 'en',
+  };
+  const guarded = await guardDfcxWebhook(
+    dfcxRequest,
+    async () => ({
+      fulfillment_response: { messages: [{ text: { text: [chat.answer] } }] },
+      session_info: { parameters: { thumbgate_topic: chat.topic } },
+    }),
+    { blockOnRepeat: false },
+  );
+
+  return {
+    ok: !guarded.blocked,
+    blocked: Boolean(guarded.blocked),
+    answer: guarded.blocked ? 'ThumbGate blocked this enterprise chat turn before data access.' : chat.answer,
+    status,
+    dfcx: {
+      blocked: Boolean(guarded.blocked),
+      evaluation: guarded.evaluation,
+      response: guarded.response,
+    },
+    sources: chat.sources,
+  };
+}
+
 function buildLossAnalyticsResponse(data, summaryOptions) {
   return {
     window: data.analytics.window || summaryOptions,
@@ -1544,7 +1707,8 @@ function buildCheckoutIntentHref(baseUrl, metadata = {}, overrides = {}) {
 }
 
 function renderCheckoutIntentPage() {
-  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Confirm — ThumbGate Pro</title><script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script><script>window.plausible=window.plausible||function(){(window.plausible.q=window.plausible.q||[]).push(arguments)};</script><style>body{background:#0a0a0a;color:#eee;font-family:system-ui,-apple-system,sans-serif;line-height:1.5}main{max-width:520px;margin:8vh auto;padding:0 20px}.brand{display:flex;align-items:center;gap:10px;margin-bottom:24px;font-size:14px;color:#94a3b8}.brand-mark{width:24px;height:24px;background:#22d3ee;border-radius:6px;display:inline-block}h1{font-size:24px;margin:0 0 8px;color:#fff}.price{font-size:32px;font-weight:700;color:#22d3ee;margin:8px 0 4px}.price small{font-size:14px;color:#94a3b8;font-weight:400}p{color:#cbd5e1;margin:8px 0}form{margin:0}input[type=email]{width:100%;box-sizing:border-box;padding:14px 16px;border:1px solid #374151;border-radius:8px;background:#111827;color:#fff;font-size:15px;margin:16px 0 0;outline:none}input[type=email]:focus{border-color:#22d3ee}input[type=email]::placeholder{color:#64748b}button.primary{background:#22d3ee;color:#000;padding:16px;text-align:center;border-radius:8px;font-weight:700;font-size:16px;margin:10px 0;border:none;cursor:pointer;width:100%}a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:#cbd5e1;padding:12px;text-align:center;border-radius:8px;margin:8px 0 0;font-size:14px}.trust{margin:24px 0;padding:16px;border:1px solid #1f2937;border-radius:8px;background:#0f172a}.trust-item{font-size:13px;color:#cbd5e1;padding:4px 0;display:flex;gap:8px}.trust-item::before{content:"✓";color:#22d3ee;font-weight:700}.choice-note{font-size:13px;color:#94a3b8;margin-top:14px}.back{text-align:center;color:#64748b;font-size:12px;margin-top:24px}.back a{color:#64748b;display:inline}.email-note{font-size:12px;color:#64748b;margin:4px 0 0}</style><main><div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div><h1>Start ThumbGate Pro</h1><div class="price">$19<small>/mo</small></div><p>The npm package runs your gates locally. <strong>Pro</strong> is what keeps them working across every machine, every agent runtime, and every breaking-change week.</p><form action="/checkout/pro" method="GET" data-i="pro_checkout_confirmed"><input type="hidden" name="confirm" value="1"><input type="email" name="customer_email" placeholder="you@company.com" required autocomplete="email"><p class="email-note">Pre-fills your Stripe receipt. We only email if you ask.</p><button type="submit" class="primary">Pay $19/mo with Stripe →</button></form><a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a><p class="choice-note">Cancel anytime. 7-day refund, no questions. Diagnostics and sprints have their own pages.</p><div class="trust"><div class="trust-item">Lessons synced across all your machines — no local SQLite to babysit</div><div class="trust-item">Adapter matrix kept current for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — version drift is our problem, not yours</div><div class="trust-item">Hosted dashboard: gate stats, DPO export, org-wide rule library</div><div class="trust-item">24×7 ops on the rule engine — SonarCloud regressions fixed in &lt;24h</div></div><p class="back"><a href="/">← Back to thumbgate.ai</a></p></main><script>document.querySelector('form').addEventListener('submit',e=>{if(navigator.sendBeacon)navigator.sendBeacon('/v1/telemetry/ping',new Blob([JSON.stringify({eventType:'checkout_interstitial_cta_clicked',clientType:'web',page:'/checkout/pro',ctaId:'pro_checkout_confirmed',ctaPlacement:'checkout_interstitial',customerEmail:document.querySelector('input[name=customer_email]').value})],{type:'application/json'}));try{window.plausible&&window.plausible('Checkout Pro Email Submitted',{props:{page:'/checkout/pro',source:'interstitial'}})}catch(_){}})</script></html>`;
+  const plausibleDomain = escapeHtmlAttribute(resolvePlausibleDataDomain({ host: 'thumbgate.ai' }));
+  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Confirm — ThumbGate Pro</title><script defer data-domain="${plausibleDomain}" src="https://plausible.io/js/script.tagged-events.js"></script><script>window.plausible=window.plausible||function(){(window.plausible.q=window.plausible.q||[]).push(arguments)};</script><style>body{background:#0a0a0a;color:#eee;font-family:system-ui,-apple-system,sans-serif;line-height:1.5}main{max-width:520px;margin:8vh auto;padding:0 20px}.brand{display:flex;align-items:center;gap:10px;margin-bottom:24px;font-size:14px;color:#94a3b8}.brand-mark{width:24px;height:24px;background:#22d3ee;border-radius:6px;display:inline-block}h1{font-size:24px;margin:0 0 8px;color:#fff}.price{font-size:32px;font-weight:700;color:#22d3ee;margin:8px 0 4px}.price small{font-size:14px;color:#94a3b8;font-weight:400}p{color:#cbd5e1;margin:8px 0}form{margin:0}input[type=email]{width:100%;box-sizing:border-box;padding:14px 16px;border:1px solid #374151;border-radius:8px;background:#111827;color:#fff;font-size:15px;margin:16px 0 0;outline:none}input[type=email]:focus{border-color:#22d3ee}input[type=email]::placeholder{color:#64748b}button.primary{background:#22d3ee;color:#000;padding:16px;text-align:center;border-radius:8px;font-weight:700;font-size:16px;margin:10px 0;border:none;cursor:pointer;width:100%}a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:#cbd5e1;padding:12px;text-align:center;border-radius:8px;margin:8px 0 0;font-size:14px}.trust{margin:24px 0;padding:16px;border:1px solid #1f2937;border-radius:8px;background:#0f172a}.trust-item{font-size:13px;color:#cbd5e1;padding:4px 0;display:flex;gap:8px}.trust-item::before{content:"✓";color:#22d3ee;font-weight:700}.choice-note{font-size:13px;color:#94a3b8;margin-top:14px}.back{text-align:center;color:#64748b;font-size:12px;margin-top:24px}.back a{color:#64748b;display:inline}.email-note{font-size:12px;color:#64748b;margin:4px 0 0}</style><main><div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div><h1>Start ThumbGate Pro</h1><div class="price">$19<small>/mo</small></div><p>The npm package runs your gates locally. <strong>Pro</strong> is what keeps them working across every machine, every agent runtime, and every breaking-change week.</p><form action="/checkout/pro" method="GET" data-i="pro_checkout_confirmed"><input type="hidden" name="confirm" value="1"><input type="email" name="customer_email" placeholder="you@company.com" required autocomplete="email"><p class="email-note">Pre-fills your Stripe receipt. We only email if you ask.</p><button type="submit" class="primary">Pay $19/mo with Stripe →</button></form><a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a><p class="choice-note">Cancel anytime. 7-day refund, no questions. Diagnostics and sprints have their own pages.</p><div class="trust"><div class="trust-item">Lessons synced across all your machines — no local SQLite to babysit</div><div class="trust-item">Adapter matrix kept current for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — version drift is our problem, not yours</div><div class="trust-item">Hosted dashboard: gate stats, DPO export, org-wide rule library</div><div class="trust-item">24×7 ops on the rule engine — SonarCloud regressions fixed in &lt;24h</div></div><p class="back"><a href="/">← Back to thumbgate.ai</a></p></main><script>document.querySelector('form').addEventListener('submit',e=>{if(navigator.sendBeacon)navigator.sendBeacon('/v1/telemetry/ping',new Blob([JSON.stringify({eventType:'checkout_interstitial_cta_clicked',clientType:'web',page:'/checkout/pro',ctaId:'pro_checkout_confirmed',ctaPlacement:'checkout_interstitial',customerEmail:document.querySelector('input[name=customer_email]').value})],{type:'application/json'}));try{window.plausible&&window.plausible('Checkout Pro Email Submitted',{props:{page:'/checkout/pro',source:'interstitial'}})}catch(_){}})</script></html>`;
 }
 
 function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneyState(req, parsed)) {
@@ -1960,9 +2124,10 @@ function normalizePublicMarketingHtml(html, runtimeConfig) {
   output = output.replaceAll(DEFAULT_PUBLIC_APP_ORIGIN, appOrigin);
   try {
     const host = new URL(appOrigin).host;
+    const plausibleDomain = resolvePlausibleDataDomain({ host });
     output = output.replaceAll(
       'data-domain="thumbgate-production.up.railway.app"',
-      `data-domain="${escapeHtmlAttribute(host)}"`
+      `data-domain="${escapeHtmlAttribute(plausibleDomain)}"`
     );
   } catch {
     // appOrigin is normalized by hosted-config; leave static analytics domains
@@ -2043,7 +2208,7 @@ function resolveLocalPageBootstrap(req, expectedApiKey) {
   const localProBootstrap = process.env.THUMBGATE_PRO_MODE === '1' && Boolean(expectedApiKey) && isLoopbackHost(hostHeader);
   const devOverride = expectedApiKey === null && isLoopbackHost(hostHeader);
   const bootstrapActive = localProBootstrap || devOverride;
-  const serializedBootstrapKey = JSON.stringify(localProBootstrap ? expectedApiKey : devOverride ? 'dev-override' : '').replace(/</g, '\\u003c');
+  const serializedBootstrapKey = JSON.stringify(localProBootstrap ? expectedApiKey : devOverride ? (process.env.THUMBGATE_API_KEY || 'dev-override') : '').replace(/</g, '\\u003c');
 
   return {
     bootstrapActive,
@@ -2084,6 +2249,7 @@ window.THUMBGATE_DASHBOARD_BOOTSTRAP = { enabled: ${bootstrapActive ? 'true' : '
 <p>This lightweight npm dashboard is bundled without marketing assets, so installs stay small while core feedback, lessons, and API routes remain available.</p>
 <div class="grid">
 <a class="card" href="/v1/dashboard"><strong>Dashboard JSON</strong><span>Inspect feedback totals, lesson counts, and Reliability Gateway health.</span></a>
+<a class="card" href="/v1/enterprise/dialogflow/status"><strong>Enterprise Dialogflow Data Chat</strong><span>Check Vertex/DFCX readiness and use /v1/enterprise/dialogflow/chat to query local ThumbGate data through the DFCX guard.</span></a>
 <a class="card" href="/lessons"><strong>Lessons</strong><span>Review remembered thumbs-up/down lessons and enforcement context.</span></a>
 <a class="card" href="/health"><strong>Health</strong><span>Verify the installed package version and runtime status.</span></a>
 </div>
@@ -2181,10 +2347,63 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
   const signal = normalizeLessonSignal(merged.signal);
   const emoji = signal === 'up' ? '👍' : '👎';
   const signalColor = signal === 'up' ? '#4ade80' : '#f87171';
-  const title = merged.title || merged.context || 'Untitled Lesson';
-  const context = merged.context || '';
-  const whatWentWrong = merged.whatWentWrong || '';
-  const whatWorked = merged.whatWorked || '';
+  const rawTitle = merged.title || merged.context || 'Untitled Lesson';
+  const rawContext = merged.context || '';
+  const rawWhatWentWrong = merged.whatWentWrong || '';
+  const rawWhatWorked = merged.whatWorked || '';
+
+  function cleanTitle(titleText) {
+    if (!titleText) return 'Untitled Lesson';
+    let prefix = '';
+    let rest = titleText;
+    const match = titleText.match(/^(MISTAKE|SUCCESS|LEARNING|PREFERENCE):\s*(.*)/i);
+    if (match) {
+      prefix = match[1].toUpperCase() + ': ';
+      rest = match[2];
+    }
+    
+    const trimmed = rest.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        const promptVal = parsed.prompt;
+        const hookVal = parsed.hook_event_name || parsed.hookEventName;
+        if (promptVal) {
+          const dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
+          return prefix + `Prompt "${promptVal}"` + (dirName ? ` inside ${dirName}` : '');
+        }
+        if (hookVal) {
+          const dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
+          return prefix + `Hook event ${hookVal}` + (dirName ? ` inside ${dirName}` : '');
+        }
+        if (parsed.signal) {
+          const dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
+          return prefix + (parsed.signal === 'up' ? 'Thumbs Up' : 'Thumbs Down') + (dirName ? ` inside ${dirName}` : '');
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    return titleText;
+  }
+
+  function formatTextValue(value) {
+    if (!value) return '';
+    const trimmed = String(value).trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        return JSON.stringify(JSON.parse(trimmed), null, 2);
+      } catch (e) {
+        // ignore
+      }
+    }
+    return value;
+  }
+
+  const title = cleanTitle(rawTitle);
+  const context = formatTextValue(rawContext);
+  const whatWentWrong = formatTextValue(rawWhatWentWrong);
+  const whatWorked = formatTextValue(rawWhatWorked);
   const whatToChange = merged.whatToChange || '';
   const tags = Array.isArray(merged.tags) ? merged.tags.join(', ') : (merged.tags || '');
   const timestamp = merged.timestamp ? new Date(merged.timestamp).toLocaleString() : '';
@@ -2582,6 +2801,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/pro', changefreq: 'weekly', priority: '0.9' },
     { path: '/agent-manager', changefreq: 'weekly', priority: '0.9' },
     { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
+    { path: '/chatgpt-app', changefreq: 'weekly', priority: '0.85' },
     { path: '/codex-plugin', changefreq: 'weekly', priority: '0.75' },
     { path: '/codex-enterprise', changefreq: 'weekly', priority: '0.85' },
     { path: '/agents-cost-savings', changefreq: 'weekly', priority: '0.85' },
@@ -2589,6 +2809,11 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/learn/background-agent-control-layer', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/ac-dc-runtime-enforcement', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/feedback-loop-vs-decision-layer', changefreq: 'weekly', priority: '0.9' },
+    { path: '/learn/agentic-enterprise-context-brain', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/deterministic-agent-workflows', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/codex-role-plugins-need-governance', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/agentic-os-team-governance', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/cost-aware-agent-gate-routing', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/claude-code-hooks', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/bumblebee', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/anthropic-containment', changefreq: 'weekly', priority: '0.85' },
@@ -4270,6 +4495,17 @@ function createApiServer() {
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/.well-known/agentic-verify.txt') {
+      const agenticVerifyPath = path.join(__dirname, '..', '..', '.well-known', 'agentic-verify.txt');
+      try {
+        const content = fs.readFileSync(agenticVerifyPath, 'utf8');
+        sendText(res, 200, content, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=3600' }, { headOnly: isHeadRequest });
+      } catch {
+        sendJson(res, 404, { error: 'agentic verification file not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/sitemap.xml') {
       sendText(res, 200, renderSitemapXml(hostedConfig), {
         'Content-Type': 'application/xml; charset=utf-8',
@@ -4582,6 +4818,28 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && (
+      pathname === '/chatgpt-app'
+      || pathname === '/chatgpt-app.html'
+      || pathname === '/chatgpt-plugin'
+      || pathname === '/chatgpt-plugin.html'
+    )) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(CHATGPT_APP_PAGE_PATH, 'utf-8'),
+          extraTelemetry: { pageType: 'chatgpt_app' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'ChatGPT app page not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && (pathname === '/compare' || pathname === '/compare.html')) {
       try {
         const html = fs.readFileSync(COMPARE_PAGE_PATH, 'utf-8');
@@ -4875,7 +5133,7 @@ async function addContext(){
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/ThumbGate',
-          endpoints: ['/health', '/dashboard', '/guide', '/codex-plugin', '/compare', '/learn', '/pricing', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/documents', '/v1/documents/import', '/v1/documents/{documentId}', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/decisions/evaluate', '/v1/decisions/outcome', '/v1/decisions/metrics', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
+          endpoints: ['/health', '/dashboard', '/guide', '/chatgpt-app', '/codex-plugin', '/compare', '/learn', '/pricing', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/documents', '/v1/documents/import', '/v1/documents/{documentId}', '/v1/dashboard', '/v1/dashboard/ai-inventory', '/v1/dashboard/render-spec', '/v1/decisions/evaluate', '/v1/decisions/outcome', '/v1/decisions/metrics', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
         }, {}, {
           headOnly: isHeadRequest,
         });
@@ -6405,30 +6663,7 @@ ${hidden}
 <h1>Case Studies</h1>
 <p class="lede">Real integrations. No fabricated logos, no aspirational numbers — every claim below is reproducible.</p>
 
-<article>
-<h2>Aiventyx marketplace — Teams listing intake recovery</h2>
-<p class="meta">Integration partner: <a href="https://www.aiventyx.com">Aiventyx</a> · Reported by: Qaiser Mehdi · Verified: 2026-05-13</p>
-
-<h3>The problem</h3>
-<p>Aiventyx is a marketplace for AI tools. ThumbGate's Teams listing was their highest-CTR external surface — <span class="metric">62% CTR</span> (5 clicks on 8 views, May 7–9 window). When their integrator rolled out canonical tracked URLs, every Teams click started landing on:</p>
-<p><code>{"error":"Tracked link not found","allowed":["gpt","pro","install","reddit","linkedin","x","github"]}</code></p>
-<p>The <code>/go/teams</code> slug wasn't registered in our redirector — a 404 was eating every paid-intent click from their strongest external surface.</p>
-
-<h3>The fix</h3>
-<p>Added <code>teams</code> to <code>TRACKED_LINK_TARGETS</code> and now routes it to <code>/?plan_id=team#workflow-sprint-intake</code>. Caller-supplied UTMs flow through to the intake path so the workflow, owner, and proof boundary are explicit before any Team checkout.</p>
-
-<h3>The verification</h3>
-<p>Qaiser's own incognito test, May 13 6:04 AM (full email on record):</p>
-<p><code>https://thumbgate.ai/go/teams?utm_source=aiventyx</code><br>
-→ 302 to the Team workflow intake<br>
-→ pricing source, campaign, and plan metadata preserved<br>
-→ buyer sees the scope-first path before any subscription decision</p>
-
-<h3>What this proves</h3>
-<p>End-to-end attribution from a third-party marketplace through ThumbGate's redirector into the Team intake path, with the caller's UTM chain preserved. Regression tests pin the redirect contract so it can't silently break or regress into a blind Team checkout.</p>
-
-<p><a href="/go/teams?utm_source=case-study">Try the live redirect →</a></p>
-</article>
+<p><em>New case studies for individual Pro operators coming soon.</em></p>
 
 <footer>
 <p>Want to be the next case study? The product is real, the integration is 30 seconds: <code>npx thumbgate init</code>. If you ship something with ThumbGate and want it documented here, email <a href="mailto:igor.ganapolsky@gmail.com">igor.ganapolsky@gmail.com</a>.</p>
@@ -6782,7 +7017,154 @@ ${hidden}
 
     try {
       if (req.method === 'GET' && pathname === '/v1/feedback/stats') {
-        sendJson(res, 200, analyzeFeedback(requestFeedbackPaths.FEEDBACK_LOG_PATH));
+        const stats = analyzeFeedback(requestFeedbackPaths.FEEDBACK_LOG_PATH);
+        try {
+          const { getStatuslineMeta } = require('../../scripts/statusline-meta');
+          const meta = getStatuslineMeta({ env: process.env });
+          stats.tier = meta.tier;
+        } catch (_) {
+          stats.tier = 'Pro';
+        }
+
+        let projectGeminiKey = '';
+        let projectPerplexityKey = '';
+        let geminiValidatedAt = null;
+        try {
+          const projectDir = resolveRequestProjectDir(req, parsed);
+          const envPath = path.join(projectDir, '.env');
+          if (fs.existsSync(envPath)) {
+            const content = fs.readFileSync(envPath, 'utf8');
+            const geminiMatch = content.match(/^(?:GEMINI_API_KEY|GOOGLE_API_KEY|THUMBGATE_GEMINI_API_KEY)=(.*)$/m);
+            if (geminiMatch) {
+              projectGeminiKey = geminiMatch[1].trim().replace(/^["']|["']$/g, '');
+            }
+            const perplexityMatch = content.match(/^(?:PERPLEXITY_API_KEY|THUMBGATE_PERPLEXITY_API_KEY)=(.*)$/m);
+            if (perplexityMatch) {
+              projectPerplexityKey = perplexityMatch[1].trim().replace(/^["']|["']$/g, '');
+            }
+          }
+          const statusPath = path.join(projectDir, '.gemini-validated.json');
+          if (fs.existsSync(statusPath)) {
+            const st = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
+            geminiValidatedAt = st.validatedAt || null;
+          }
+        } catch (_) {}
+
+        stats.geminiConfigured = Boolean(
+          projectGeminiKey ||
+          process.env.GEMINI_API_KEY ||
+          process.env.THUMBGATE_GEMINI_API_KEY ||
+          process.env.GOOGLE_API_KEY
+        );
+        stats.perplexityConfigured = Boolean(
+          projectPerplexityKey ||
+          process.env.PERPLEXITY_API_KEY ||
+          process.env.THUMBGATE_PERPLEXITY_API_KEY
+        );
+        stats.geminiValidatedAt = geminiValidatedAt;
+        stats.geminiKeyStatus = geminiValidatedAt ? 'validated' : (projectGeminiKey ? 'present' : 'none');
+        stats.hybridInferenceAvailable = !!(stats.geminiConfigured || stats.perplexityConfigured);
+        sendJson(res, 200, stats);
+        return;
+      }
+
+      // Chat with your data — RAG over this install's captured lessons, answered
+      // by Gemini grounded only in the retrieved context. Powers the dashboard
+      // "Chat with your data" panel.
+      if (req.method === 'POST' && pathname === '/v1/chat') {
+        const body = await parseJsonBody(req);
+        const { answerDataQuestion } = require('../../scripts/dashboard-chat');
+
+        let projectGeminiKey = '';
+        let projectPerplexityKey = '';
+        try {
+          const projectDir = resolveRequestProjectDir(req, parsed);
+          const envPath = path.join(projectDir, '.env');
+          if (fs.existsSync(envPath)) {
+            const content = fs.readFileSync(envPath, 'utf8');
+            const geminiMatch = content.match(/^(?:GEMINI_API_KEY|GOOGLE_API_KEY|THUMBGATE_GEMINI_API_KEY)=(.*)$/m);
+            if (geminiMatch) {
+              projectGeminiKey = geminiMatch[1].trim().replace(/^["']|["']$/g, '');
+            }
+            const perplexityMatch = content.match(/^(?:PERPLEXITY_API_KEY|THUMBGATE_PERPLEXITY_API_KEY)=(.*)$/m);
+            if (perplexityMatch) {
+              projectPerplexityKey = perplexityMatch[1].trim().replace(/^["']|["']$/g, '');
+            }
+          }
+        } catch (_) {}
+
+        const result = await answerDataQuestion(body.question || body.q || body.message, {
+          feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
+          model: typeof body.model === 'string' ? body.model : undefined,
+          apiKey: projectPerplexityKey || projectGeminiKey || process.env.PERPLEXITY_API_KEY || process.env.THUMBGATE_PERPLEXITY_API_KEY || process.env.GEMINI_API_KEY || process.env.THUMBGATE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '',
+        });
+        sendJson(res, result.ok ? 200 : (result.error === 'no_api_key' ? 503 : 400), result);
+        return;
+      }
+
+      // Save Gemini API key from the dashboard UI
+      if (req.method === 'POST' && pathname === '/v1/settings/gemini-key') {
+        const body = await parseJsonBody(req);
+        const key = String(body.key || '').trim();
+        if (!key) {
+          sendJson(res, 400, { ok: false, error: 'missing_key', message: 'No API key provided.' });
+          return;
+        }
+
+        // Validate the candidate key using the *exact* same code path as /v1/chat
+        // (project-scoped .env read + RAG + Gemini call). This prevents saving a
+        // key that will later produce the confusing "API key not valid" error in chat.
+        let validation;
+        try {
+          const { answerDataQuestion } = require('../../scripts/dashboard-chat');
+          validation = await answerDataQuestion('Reply with the single word: PONG', {
+            feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
+            apiKey: key,
+          });
+        } catch (e) {
+          validation = { ok: false, error: 'validation_exception', message: String(e && e.message || e) };
+        }
+
+        if (!validation.ok) {
+          const detail = validation.error === 'gemini_error'
+            ? (validation.message || 'Gemini rejected the key')
+            : (validation.message || validation.error || 'unknown error');
+          sendJson(res, 400, {
+            ok: false,
+            error: 'invalid_key',
+            message: 'Key validation failed: ' + detail + '. Get a fresh key from https://aistudio.google.com/app/apikey (or run `npx thumbgate setup-vertex` for Vertex) and try again.'
+          });
+          return;
+        }
+
+        try {
+          const projectDir = resolveRequestProjectDir(req, parsed);
+          const envPath = path.join(projectDir, '.env');
+          let content = '';
+          if (fs.existsSync(envPath)) {
+            content = fs.readFileSync(envPath, 'utf8');
+          }
+          const regex = /^GEMINI_API_KEY=.*$/m;
+          if (regex.test(content)) {
+            content = content.replace(regex, `GEMINI_API_KEY=${key}`);
+          } else {
+            content = content.trim() + `\nGEMINI_API_KEY=${key}\n`;
+          }
+          fs.writeFileSync(envPath, content, 'utf8');
+          // Also set it in the current process so it takes effect immediately without restart
+          process.env.GEMINI_API_KEY = key;
+          // Persist validation success for reliable "configured" status in stats/hints
+          try {
+            const statusPath = path.join(projectDir, '.gemini-validated.json');
+            fs.writeFileSync(statusPath, JSON.stringify({
+              validatedAt: new Date().toISOString(),
+              validatedBy: 'dashboard-save'
+            }, null, 2));
+          } catch (_) { /* non-fatal */ }
+          sendJson(res, 200, { ok: true, message: 'Key saved and validated.' });
+        } catch (e) {
+          sendJson(res, 500, { ok: false, error: 'fs_error', message: 'Failed to write to .env file: ' + e.message });
+        }
         return;
       }
 
@@ -6838,6 +7220,22 @@ ${hidden}
         req.on('close', cleanup);
         req.on('aborted', cleanup);
         res.on('close', cleanup);
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/v1/enterprise/dialogflow/status') {
+        sendJson(res, 200, buildEnterpriseDialogflowStatus());
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/enterprise/dialogflow/chat') {
+        const body = await parseJsonBody(req, 16 * 1024);
+        const result = await answerEnterpriseDialogflowChat({
+          prompt: body.prompt || body.message || body.query,
+          feedbackDir: requestFeedbackDir,
+          parsed,
+        });
+        sendJson(res, 200, result);
         return;
       }
 
@@ -7125,6 +7523,7 @@ ${hidden}
           summary: body.summary,
           allowedPaths: body.allowedPaths,
           protectedPaths: body.protectedPaths,
+          workflowContract: body.workflowContract,
           repoPath: body.repoPath,
           localOnly: body.localOnly === true,
           clear: body.clear === true,
@@ -7159,20 +7558,6 @@ ${hidden}
 
       if (req.method === 'GET' && pathname === '/v1/gates/branch-governance') {
         sendJson(res, 200, { branchGovernance: getBranchGovernanceState() });
-        return;
-      }
-
-      // Chat with your data — RAG over this install's captured lessons, answered
-      // by Gemini grounded only in the retrieved context. Powers the dashboard
-      // chat panel ("ask your governed data").
-      if (req.method === 'POST' && pathname === '/v1/chat') {
-        const body = await parseJsonBody(req);
-        const { answerDataQuestion } = require('../../scripts/dashboard-chat');
-        const result = await answerDataQuestion(body.question || body.q || body.message, {
-          feedbackDir: requestFeedbackDir,
-          model: typeof body.model === 'string' ? body.model : undefined,
-        });
-        sendJson(res, result.ok ? 200 : (result.error === 'no_api_key' ? 503 : 400), result);
         return;
       }
 
@@ -8027,6 +8412,40 @@ ${hidden}
         return;
       }
 
+      // GET /v1/dashboard/ai-inventory -- Enterprise AI inventory evidence
+      if (req.method === 'GET' && pathname === '/v1/dashboard/ai-inventory') {
+        try {
+          const {
+            scanAiComponents,
+            buildCycloneDxMlBom,
+          } = require('../../scripts/ai-component-inventory');
+          const requestedRoot = parsed.searchParams.get('root');
+          const serverRoot = process.cwd();
+          const rootDir = requestedRoot ? path.resolve(requestedRoot) : serverRoot;
+          const rootRel = path.relative(serverRoot, rootDir);
+          if (rootRel.startsWith('..') || path.isAbsolute(rootRel)) {
+            sendJson(res, 400, {
+              error: 'ai_inventory_root_out_of_scope',
+              message: 'Dashboard AI inventory root must stay within the server working directory. Use the CLI for explicit cross-project scans.',
+            });
+            return;
+          }
+          const inventory = scanAiComponents({
+            rootDir,
+            maxFiles: parsed.searchParams.get('maxFiles') ? Number(parsed.searchParams.get('maxFiles')) : undefined,
+            includeSnippets: parsed.searchParams.get('snippets') !== '0',
+          });
+          const format = String(parsed.searchParams.get('format') || 'json').toLowerCase();
+          sendJson(res, 200, format === 'cyclonedx' ? buildCycloneDxMlBom(inventory, { version: pkg.version }) : inventory);
+        } catch (err) {
+          sendJson(res, 500, {
+            error: 'ai_inventory_failed',
+            message: err && err.message ? err.message : 'Unable to scan AI component inventory.',
+          });
+        }
+        return;
+      }
+
       // GET /v1/dashboard/review-state -- incremental review baseline and deltas
       if (req.method === 'GET' && pathname === '/v1/dashboard/review-state') {
         const reviewState = readDashboardReviewState(requestFeedbackDir);
@@ -8043,7 +8462,12 @@ ${hidden}
 
       // POST /v1/dashboard/review-state -- mark current dashboard state as reviewed
       if (req.method === 'POST' && pathname === '/v1/dashboard/review-state') {
+        const body = await parseJsonBody(req);
         const snapshot = buildReviewSnapshot(requestFeedbackDir);
+        // Override snapshot timestamp with client-provided one if available
+        if (body && body.reviewedAt) {
+          snapshot.reviewedAt = body.reviewedAt;
+        }
         writeDashboardReviewState(requestFeedbackDir, snapshot);
         const data = generateDashboard(requestFeedbackDir, {
           reviewBaseline: snapshot,
@@ -8359,6 +8783,9 @@ module.exports = {
     resolveLocalPageBootstrap,
     getPublicMcpTools,
     getServerCardTools,
+    buildEnterpriseDialogflowStatus,
+    buildEnterpriseChatAnswer,
+    answerEnterpriseDialogflowChat,
   },
 };
 

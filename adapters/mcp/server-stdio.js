@@ -77,6 +77,7 @@ const {
   recordActionAttempt,
   isRepeatAttempt,
 } = require('../../scripts/noop-detect');
+const { recordAuditEvent } = require('../../scripts/audit-trail');
 const {
   recordReceipt,
   getReceiptForAction,
@@ -230,7 +231,7 @@ const {
   finalizeSession: finalizeFeedbackSession,
 } = require('../../scripts/feedback-session');
 
-const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.26.0' };
+const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.26.8' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
@@ -744,6 +745,23 @@ async function callToolInner(name, args) {
         },
       ));
     }
+    case 'ai_component_inventory': {
+      const {
+        scanAiComponents,
+        buildCycloneDxMlBom,
+        formatInventoryText,
+      } = require('../../scripts/ai-component-inventory');
+      const rootDir = args.rootDir ? path.resolve(String(args.rootDir)) : process.cwd();
+      const inventory = scanAiComponents({
+        rootDir,
+        maxFiles: args.maxFiles ? Number(args.maxFiles) : undefined,
+        includeSnippets: args.includeSnippets !== false,
+      });
+      const format = String(args.format || 'summary').toLowerCase();
+      if (format === 'cyclonedx') return toTextResult(buildCycloneDxMlBom(inventory));
+      if (format === 'json') return toTextResult(inventory);
+      return toTextResult(formatInventoryText(inventory));
+    }
     case 'search_thumbgate':
       enforceLimit('search_thumbgate');
       return toTextResult(searchThumbgate({
@@ -951,6 +969,7 @@ async function callToolInner(name, args) {
           summary: args.summary,
           allowedPaths: args.allowedPaths,
           protectedPaths: args.protectedPaths,
+          workflowContract: args.workflowContract,
           repoPath: args.repoPath,
           localOnly: args.localOnly === true,
           clear: args.clear === true,

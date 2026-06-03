@@ -92,7 +92,6 @@ test('statusline script reads jq input and outputs ThumbGate line', () => {
   assert.ok(out.includes('5'), 'should show thumbs down count');
   assert.ok(out.includes('3'), 'should show lesson count');
   assert.match(out, /Dashboard/);
-  assert.match(out, /Lessons/);
   assert.doesNotMatch(out, /Dashboard \(http:\/\/localhost:3456\/dashboard\)/);
   assert.doesNotMatch(out, /Lessons \(http:\/\/localhost:3456\/lessons\)/);
 });
@@ -112,9 +111,9 @@ test('statusline is compact by default for Claude chrome', () => {
   assert.match(plain, /ThumbGate v/);
   assert.match(plain, /10/);
   assert.match(plain, /5/);
-  assert.doesNotMatch(plain, /codex\/fix-verbose-statusline/);
-  assert.doesNotMatch(plain, /PR #999/);
-  assert.doesNotMatch(plain, /Dashboard/);
+  assert.match(plain, /codex\/fix-verbose-statusline/);
+  assert.match(plain, /PR #999/);
+  assert.match(plain, /Dashboard/);
   assert.doesNotMatch(plain, /Lessons/);
   assert.doesNotMatch(plain, /Latest mistake/);
 });
@@ -152,7 +151,7 @@ test('statusline shows "no feedback yet" when cache has zeros', () => {
   assert.ok(out.includes(`ThumbGate v${PKG_VERSION}`), 'should show package version');
   assert.ok(out.includes('no feedback yet'), 'should show no-data message');
   assert.match(out, /Dash: thumbgate pro/);
-  assert.match(out, /Learn: thumbgate lessons/);
+  assert.doesNotMatch(out, /Learn: thumbgate lessons/);
 });
 
 test('statusline rebuilds counters from local feedback logs when cache is empty', () => {
@@ -424,7 +423,7 @@ test('statusline shows booting labels while the local dashboard is coming online
     })),
   });
   assert.match(out, /Dashboard…/);
-  assert.match(out, /Lessons…/);
+  assert.doesNotMatch(out, /Lessons…/);
   assert.doesNotMatch(out, /\u001b]8;;http:\/\/localhost:3456\/dashboard/);
 });
 
@@ -446,13 +445,13 @@ test('statusline emits OSC 8 hyperlinks for production (non-localhost) URLs', ()
   // OSC 8 opening: \e]8;;URL\a
   assert.match(out, /\u001b]8;;https:\/\/thumbgate-production\.up\.railway\.app\/dashboard\u0007Dashboard\u001b]8;;\u0007/,
     'Dashboard should be wrapped in an OSC 8 hyperlink');
-  assert.match(out, /\u001b]8;;https:\/\/thumbgate-production\.up\.railway\.app\/lessons\u0007Lessons\u001b]8;;\u0007/,
-    'Lessons should be wrapped in an OSC 8 hyperlink');
+  assert.doesNotMatch(out, /\u001b]8;;https:\/\/thumbgate-production\.up\.railway\.app\/lessons\u0007Lessons\u001b]8;;\u0007/,
+    'statusline no longer renders a separate Lessons hyperlink');
 
   // Verify plain text after stripping still shows labels
   const plain = stripStatuslineFormatting(out);
   assert.match(plain, /Dashboard/);
-  assert.match(plain, /Lessons/);
+  assert.doesNotMatch(plain, /Lessons/);
   assert.doesNotMatch(plain, /https:\/\/thumbgate-production/, 'URLs should be in escape sequences, not visible text');
 });
 
@@ -471,7 +470,7 @@ test('statusline emits OSC 8 hyperlinks for localhost URLs', () => {
   assert.match(out, /\u001b]8;;http:\/\/localhost/,
     'localhost URLs should produce OSC 8 hyperlinks');
   assert.match(out, /Dashboard/);
-  assert.match(out, /Lessons/);
+  assert.doesNotMatch(out, /Lessons/);
 });
 
 test('statusline preserves dashboard links under a tight width budget', () => {
@@ -512,7 +511,7 @@ test('statusline preserves dashboard links under a tight width budget', () => {
     });
     const plain = stripStatuslineFormatting(out).trim();
     assert.match(plain, /Dashboard/, 'should preserve the dashboard link label');
-    assert.match(plain, /Lessons/, 'should preserve the lessons link label');
+    assert.doesNotMatch(plain, /Lessons/, 'statusline no longer renders a separate lessons link label');
     assert.match(plain, /Latest mistake \d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}:/, 'should clarify that the snippet is the latest mistake');
     // localhost links are intentionally stripped from statusbar display; only real URLs are shown.
     assert.doesNotMatch(plain, /http:\/\/localhost/, 'should NOT include localhost links in statusbar');
@@ -686,7 +685,7 @@ test('hook runtime preserves subcommands for source-checkout launchers', () => {
   }
 });
 
-test('statusline shell wires dashboard and lesson links through osc_link', () => {
+test('statusline shell wires dashboard link and latest lesson metadata through osc_link', () => {
   const shellSource = fs.readFileSync(STATUSLINE_PATH, 'utf8');
   assert.match(shellSource, /statusline-links\.js/);
   assert.match(shellSource, /osc_link/);
@@ -696,13 +695,13 @@ test('statusline shell wires dashboard and lesson links through osc_link', () =>
   assert.match(shellSource, /LATEST_LESSON_LINK="\$\(osc_link/);
 });
 
-test('verbose statusline output ends with Dashboard and Lessons links (regression guard)', () => {
+test('verbose statusline output keeps Dashboard before latest lesson metadata (regression guard)', () => {
   const shellSource = fs.readFileSync(STATUSLINE_PATH, 'utf8');
-  // Both verbose branches (no-feedback and has-feedback) must retain Dashboard + Lessons links.
-  const outputLines = shellSource.split('\n').filter(l => l.includes('DASHBOARD_LINK') && l.includes('LESSONS_LINK'));
-  assert.ok(outputLines.length >= 2, `Expected at least 2 output lines with Dashboard+Lessons links, got ${outputLines.length}`);
+  // Both output branches (no-feedback and has-feedback) must retain the Dashboard link.
+  const outputLines = shellSource.split('\n').filter(l => l.includes('LINE=') && l.includes('DASHBOARD_LINK'));
+  assert.ok(outputLines.length >= 2, `Expected at least 2 output lines with Dashboard link, got ${outputLines.length}`);
   const lineAssembly = shellSource.split('\n').filter(l => l.includes('LATEST_LESSON_LINK') && l.includes('LINE='));
   assert.ok(lineAssembly.length >= 2, 'latest lesson metadata should be rendered in both output branches');
-  const lessonBeforeLinks = shellSource.split('\n').filter(l => /^\s*LINE=.*LATEST_LESSON_LINK.*DASHBOARD_LINK/.test(l));
-  assert.strictEqual(lessonBeforeLinks.length, 0, 'latest lesson link should not appear before Dashboard/Lessons links');
+  const lessonBeforeDashboard = shellSource.split('\n').filter(l => /^\s*LINE=.*LATEST_LESSON_LINK.*DASHBOARD_LINK/.test(l));
+  assert.strictEqual(lessonBeforeDashboard.length, 0, 'latest lesson link should not appear before Dashboard link');
 });

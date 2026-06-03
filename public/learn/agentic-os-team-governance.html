@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic OS Team Governance: Three Tiers Plus Gates — ThumbGate</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="A team-ready Agentic OS needs human-editable knowledge, agent-operating files, git backup, permission mirroring, and memory scoping. ThumbGate adds pre-action gates and audit proof.">
+<meta name="keywords" content="Agentic OS, team AI operating system, Claude Code team setup, AI agent governance, human editable knowledge, RLS memory, pre-action gates, ThumbGate enterprise">
+<meta property="og:title" content="Agentic OS Team Governance: Three Tiers Plus Gates">
+<meta property="og:description" content="Separate human-editable knowledge, agent operating files, and git backup, then enforce permissions and memory scope before agents act.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/agentic-os-team-governance">
+<link rel="canonical" href="https://thumbgate.ai/learn/agentic-os-team-governance">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Agentic OS Team Governance: Three Tiers Plus Gates",
+  "description": "A team-ready Agentic OS needs human-editable knowledge, agent-operating files, git backup, permission mirroring, and memory scoping. ThumbGate adds pre-action gates and audit proof.",
+  "author": { "@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" },
+  "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+  "datePublished": "2026-06-03",
+  "dateModified": "2026-06-03",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/agentic-os-team-governance",
+  "about": [
+    { "@type": "Thing", "name": "Agentic OS" },
+    { "@type": "Thing", "name": "team AI governance" },
+    { "@type": "Thing", "name": "permission-scoped memory" },
+    { "@type": "Thing", "name": "pre-action gates" }
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+<style>
+  .matrix { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; }
+  .matrix th, .matrix td { text-align: left; padding: 0.7rem 0.8rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .matrix th { color: var(--cyan); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Agentic OS Team Governance</div>
+  <h1>A team Agentic OS needs three tiers plus runtime gates.</h1>
+  <p style="color:var(--muted);">7 min read &middot; For founders and platform teams turning agent workflows into shared operating systems</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> A team-ready Agentic OS should separate human-editable source-of-truth files, agent-updated operating files, and git backup. That solves portability and collaboration. ThumbGate adds the missing enforcement: permission-mirrored gates, local overrides, scoped memory, and audit proof before agents execute.</div>
+
+  <h2>The three-tier architecture</h2>
+  <table class="matrix">
+    <thead>
+      <tr><th>Tier</th><th>What lives there</th><th>Governance requirement</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Human source of truth</td><td>Company rules, brand context, operating principles, client context, review standards.</td><td>Non-technical users can edit it, but changes must sync to a versioned backup.</td></tr>
+      <tr><td>Agent operating layer</td><td>Skills, prompts, MCP settings, workflow contracts, hooks, and executable agent instructions.</td><td>Agents can update it, but risky edits need pre-action checks and evidence.</td></tr>
+      <tr><td>Version control</td><td>Markdown exports, config files, skills, generated context packs, policy templates, and auditable changes.</td><td>Git becomes the backup and review trail; humans do not all need to touch it directly.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>ThumbGate's role:</strong> Keep the Agentic OS portable in markdown and folders, then enforce who can use which memory, tools, paths, and client data before any tool call executes.
+  </div>
+
+  <h2>Where teams get hurt</h2>
+  <ul>
+    <li>Shared drive permissions and GitHub permissions drift apart, leaking client or internal context.</li>
+    <li>Agent-updated skills become invisible infrastructure that nobody reviews.</li>
+    <li>Local personal preferences accidentally commit into team instructions.</li>
+    <li>Central memory retrieval returns lessons from the wrong client or user scope.</li>
+    <li>The team has docs, but no runtime gate that stops an agent from breaking the policy anyway.</li>
+  </ul>
+
+  <h2>The ThumbGate implementation pattern</h2>
+  <ol>
+    <li><strong>Mirror permissions:</strong> store expected source-of-truth users, repo users, and client scopes in a machine-readable policy file.</li>
+    <li><strong>Protect local overrides:</strong> allow <code>*.local.md</code> for personal preferences and ensure those files are ignored, never synced or exported.</li>
+    <li><strong>Scope memory:</strong> local-only memory for individuals; shared Postgres or hosted team memory only when row-level scope is explicit.</li>
+    <li><strong>Gate agent-operating files:</strong> edits to skills, MCP config, hooks, workflow contracts, and source-of-truth exports require evidence or approval.</li>
+    <li><strong>Version the OS:</strong> markdown exports, skills, and policies should be git-reviewable even when non-technical teammates edit the upstream source.</li>
+  </ol>
+
+  <h2>Team policy contract</h2>
+  <div class="callout">
+<pre><code>{
+  "client_scope": "acme",
+  "source_of_truth": ["Google Drive", "Notion"],
+  "version_backup": "github.com/company/acme-agentic-os",
+  "local_overrides": ["CLAUDE.local.md", "AGENTS.local.md"],
+  "protected_paths": [".agents/skills/**", ".mcp.json", "AGENTS.md"],
+  "memory_scope": {
+    "mode": "shared",
+    "requires_rls": true,
+    "filter_keys": ["client_id", "user_id", "workspace_id"]
+  },
+  "required_evidence": ["permission_diff", "git_diff", "sync_log"]
+}</code></pre>
+  </div>
+
+  <p>That contract can feed ThumbGate's task scope and workflow gates. If an agent tries to edit a protected operating file, access the wrong client memory, or publish a sync without evidence, the gate blocks or pauses the action before execution.</p>
+
+  <h2>High-ROI product work</h2>
+  <ul>
+    <li><strong>Agentic OS audit command:</strong> inspect markdown tiers, local override ignores, protected agent files, and sync evidence.</li>
+    <li><strong>Permission mirror report:</strong> compare declared drive/editor access to repo and hosted-memory access.</li>
+    <li><strong>Memory-scope gate:</strong> warn on local-only teams trying to share memory; block shared stores without client/user scope.</li>
+    <li><strong>Operating-file gate template:</strong> protect skills, MCP config, hooks, workflow contracts, and source-of-truth exports by default.</li>
+  </ul>
+
+  <div class="callout callout-green">
+    <strong>Enterprise wedge:</strong> "Bring your Notion, Drive, GitHub, and agents. ThumbGate verifies the boundaries before the Agentic OS acts."
+  </div>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Audit one team Agentic OS</h2>
+    <p>Start with one client scope, one source-of-truth folder, and one repo-backed agent operating layer.</p>
+    <div class="cta-install">$ npx thumbgate agentic-os-audit --check</div>
+  </div>
+
+  <div class="related">
+    <h3>Related articles</h3>
+    <a href="/learn/codex-role-plugins-need-governance">Codex Role Plugins Need Pre-Action Governance &rarr;</a>
+    <a href="/learn/agentic-enterprise-context-brain">Agentic Enterprise Context Brain &rarr;</a>
+    <a href="/learn/deterministic-agent-workflows">Deterministic Agent Workflows Need Runtime Gates &rarr;</a>
+    <a href="/learn/mcp-pre-action-checks-explained">MCP Pre-Action Checks Explained &rarr;</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span style="color:var(--muted)">Try it now:</span>
+  <code>npx thumbgate init --team</code>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+</div>
+</body>
+</html>

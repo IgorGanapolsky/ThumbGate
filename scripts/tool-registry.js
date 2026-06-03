@@ -162,6 +162,19 @@ const TOOLS = [
     },
   }),
   readOnlyTool({
+    name: 'ai_component_inventory',
+    description: 'Scan a project for AI/ML provider SDKs, agent frameworks, vector databases, Vertex/Gemini/Dialogflow CX usage, and model artifacts. Returns evidence suitable for enterprise AI inventory and ML-BOM review.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        rootDir: { type: 'string', description: 'Project root to scan. Defaults to the current process working directory.' },
+        format: { type: 'string', enum: ['summary', 'json', 'cyclonedx'], description: 'Response format. summary is compact text; json returns ThumbGate inventory; cyclonedx returns ML-BOM JSON.' },
+        maxFiles: { type: 'number', description: 'Maximum files to scan (default 2500).' },
+        includeSnippets: { type: 'boolean', description: 'Include matched source snippets in evidence. Defaults true.' },
+      },
+    },
+  }),
+  readOnlyTool({
     name: 'search_thumbgate',
     description: 'Search raw ThumbGate state across feedback logs, ContextFS memory, prevention rules, and imported policy documents.',
     inputSchema: {
@@ -817,6 +830,17 @@ const TOOLS = [
           type: 'array',
           items: { type: 'string' },
           description: 'Optional protected-file globs that require explicit approval before editing or publishing',
+        },
+        workflowContract: {
+          type: 'object',
+          description: 'Optional deterministic workflow run contract. Supports workflowId, allowedBranches, blockedActions, requiredEvidence, and completionGate.',
+          properties: {
+            workflowId: { type: 'string' },
+            allowedBranches: { type: 'array', items: { type: 'string' } },
+            blockedActions: { type: 'array', items: { type: 'string' } },
+            requiredEvidence: { type: 'array', items: { type: 'string' } },
+            completionGate: { type: 'string' },
+          },
         },
         repoPath: { type: 'string', description: 'Optional repo root used when evaluating git diff scope' },
         localOnly: { type: 'boolean', description: 'When true, also marks the task as local-only' },

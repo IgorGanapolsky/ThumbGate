@@ -4,8 +4,8 @@
   "workloads": {
     "pretool-gating": {
       "label": "PreTool gating",
-      "summary": "Fast, reliable gate judgments for tool-use and agentic coding decisions before commands run.",
-      "desiredStrengths": ["agentic-coding", "tool-use", "reliability"],
+      "summary": "Fast, reliable gate judgments for tool-use and agentic coding decisions before commands run. Hybrid local-cloud candidates (e.g. perplexity/hybrid-local) excel here for privacy + low latency on sensitive paths.",
+      "desiredStrengths": ["agentic-coding", "tool-use", "reliability", "privacy", "fast-inference"],
       "targetContextWindow": 64000,
       "benchmarkCommands": [
         "npx thumbgate eval --from-feedback --json --min-score=0",
@@ -43,8 +43,8 @@
     },
     "cheap-fast-path": {
       "label": "Cheap fast path",
-      "summary": "Low-cost first-pass model for cheap approval triage before escalating ambiguous work.",
-      "desiredStrengths": ["agentic-coding", "tool-use"],
+      "summary": "Low-cost first-pass model for cheap approval triage before escalating ambiguous work. Perplexity hybrid-local is ideal: on-device for speed/privacy, escalate only when needed via orchestrator.",
+      "desiredStrengths": ["agentic-coding", "tool-use", "fast-inference", "privacy", "cost-efficiency"],
       "targetContextWindow": 32000,
       "benchmarkCommands": [
         "npx thumbgate eval --from-feedback --json --min-score=0",
@@ -60,8 +60,8 @@
     },
     "dashboard-analysis": {
       "label": "Dashboard and dataset analysis",
-      "summary": "Evaluate frontier models for dataset analysis, chart generation, dashboard planning, and proof-backed insight quality before routing expensive analytical work.",
-      "desiredStrengths": ["data-analysis", "dashboard-creation", "charting", "long-context", "reliability"],
+      "summary": "Evaluate frontier models for dataset analysis, chart generation, dashboard planning, and proof-backed insight quality before routing expensive analytical work. Perplexity hybrid excels for sensitive lessons/feedback data (local for privacy, cloud for depth).",
+      "desiredStrengths": ["data-analysis", "dashboard-creation", "charting", "long-context", "reliability", "privacy"],
       "targetContextWindow": 200000,
       "benchmarkCommands": [
         "npx thumbgate eval --from-feedback --json --min-score=0",
@@ -75,6 +75,27 @@
         "longContextReliability",
         "medianLatencyMs",
         "costPerAnalysisUsd"
+      ]
+    },
+    "claw-style-enterprise-agent": {
+      "label": "Claw-style enterprise agent governance",
+      "summary": "Governance, gating, and feedback for autonomous 'claw-style' agents (Automation Anywhere EnterpriseClaw, Nvidia OpenShell-inspired) that have device file system access, runtime dynamic tool creation, screen/UI interaction, and multi-platform orchestration. Especially relevant for on-prem/air-gapped/hybrid enterprise data realities.",
+      "desiredStrengths": ["agentic-coding", "tool-use", "reliability", "security", "orchestration", "audit-trail", "privacy"],
+      "targetContextWindow": 128000,
+      "benchmarkCommands": [
+        "npx thumbgate eval --from-feedback --json --min-score=0",
+        "node scripts/gate-eval.js run",
+        "npx thumbgate bench --json --min-score=90"
+      ],
+      "metrics": [
+        "passRate",
+        "falsePositiveRate",
+        "agentIdentitySeparation",
+        "dynamicToolSafety",
+        "screenInteractionAudit",
+        "orchestrationCompliance",
+        "medianLatencyMs",
+        "costPer1kActionsUsd"
       ]
     },
     "tokenizer-brittleness": {
@@ -214,6 +235,50 @@
       "costClass": "low",
       "strengths": ["agentic-coding", "tool-use", "fast-inference"],
       "notes": "Cheapest Tinker candidate for the fast gate path; use when latency/cost matter most."
+    },
+    {
+      "id": "perplexity/hybrid-local-cloud",
+      "vendor": "Perplexity",
+      "family": "hybrid",
+      "provider": "perplexity",
+      "model": "hybrid-local-cloud-orchestrator",
+      "contextWindow": 200000,
+      "costClass": "variable",
+      "strengths": ["agentic-coding", "tool-use", "privacy", "cost-efficiency", "fast-inference", "long-context", "reliability"],
+      "notes": "Perplexity hybrid local-cloud inference orchestrator (announced Computex 2026, part of Personal Computer). Autonomously routes: sensitive/privacy work to local on-device models, complex reasoning to frontier cloud. High-ROI for pretool-gating (local fast/privacy path), cheap-fast-path, and dashboard-analysis with sensitive data/lessons. Pair with ThumbGate hybrid-routing gates (see adapters/perplexity/HYBRID.md). Coming July 2026 for local inference."
+    },
+    {
+      "id": "perplexity/hybrid-local",
+      "vendor": "Perplexity",
+      "family": "hybrid",
+      "provider": "perplexity",
+      "model": "local-inference",
+      "contextWindow": 128000,
+      "costClass": "low",
+      "strengths": ["fast-inference", "privacy", "tool-use", "reliability"],
+      "notes": "Local-only mode of Perplexity hybrid for on-device pre-action gating, sensitivity classification, and low-latency checks on AI PCs (Intel, NVIDIA). Escalate via orchestrator for full capability. Use for cheap-fast-path and pretool-gating workloads."
+    },
+    {
+      "id": "automation-anywhere/enterprise-claw",
+      "vendor": "Automation Anywhere",
+      "family": "claw-style",
+      "provider": "automation-anywhere",
+      "model": "enterprise-claw",
+      "contextWindow": 200000,
+      "costClass": "variable",
+      "strengths": ["agentic-coding", "tool-use", "orchestration", "audit-trail", "security", "on-prem", "airgap", "dynamic-tool-creation", "screen-interaction"],
+      "notes": "Claw-style autonomous enterprise agents (EnterpriseClaw, inspired by Nvidia OpenShell). Device-level access, runtime tool creation, screen/UI interaction, multi-platform orchestration. Governance infrastructure (ThumbGate) is explicitly called out as catching up. High-ROI for enterprise on-prem/hybrid use cases. Pair with perplexity/hybrid for inference routing. See adapters/claw/CLAW.md and new gate templates."
+    },
+    {
+      "id": "nvidia/openshell-claw",
+      "vendor": "NVIDIA",
+      "family": "claw-style",
+      "provider": "nvidia",
+      "model": "openshell",
+      "contextWindow": 128000,
+      "costClass": "medium",
+      "strengths": ["agentic-coding", "tool-use", "dynamic-tool-creation", "screen-interaction", "on-prem", "self-evolving"],
+      "notes": "Nvidia OpenShell runtime for autonomous self-evolving claw-style agents (basis for Automation Anywhere EnterpriseClaw). Run locally/on-prem. ThumbGate provides the missing governance layer (gates, feedback, rules). Use with hybrid local-cloud for full enterprise deployment."
     }
   ]
 }

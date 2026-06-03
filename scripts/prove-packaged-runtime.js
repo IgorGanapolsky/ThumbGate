@@ -252,17 +252,8 @@ async function runPackagedRuntimeSmoke(options = {}) {
     if (/Common commands:|Detect agent and wire ThumbGate hooks/.test(initialStatusline)) {
       throw new Error(`Statusline rendered CLI help instead of compact status: ${initialStatusline.trim()}`);
     }
-    if (/(Dashboard|Dashboard…|Lessons|Lessons…)/.test(initialStatusline)) {
-      throw new Error(`Default statusline should stay compact before boot: ${initialStatusline.trim()}`);
-    }
-
-    const verboseEnv = {
-      ...env,
-      THUMBGATE_STATUSLINE_VERBOSE: '1',
-    };
-    const initialVerboseStatusline = renderStatusline(runtimeBin, projectDir, verboseEnv);
-    if (!/(Dashboard|Dashboard…)/.test(initialVerboseStatusline) || !/(Lessons|Lessons…)/.test(initialVerboseStatusline)) {
-      throw new Error(`Verbose statusline missing dashboard affordances before boot: ${initialVerboseStatusline.trim()}`);
+    if (!/(Dashboard|Dashboard…)/.test(initialStatusline)) {
+      throw new Error(`Default statusline missing dashboard affordances before boot: ${initialStatusline.trim()}`);
     }
 
     const health = await waitForHealthy(origin, expectedVersion, Number(options.timeoutMs || DEFAULT_TIMEOUT_MS));
@@ -275,24 +266,18 @@ async function runPackagedRuntimeSmoke(options = {}) {
       throw new Error(`Packaged lessons returned ${lessons.statusCode}`);
     }
 
-    const readyStatusline = renderStatusline(runtimeBin, projectDir, verboseEnv);
+    const readyStatusline = renderStatusline(runtimeBin, projectDir, env);
     if (!/(Dashboard|Dashboard…)/.test(readyStatusline)) {
       throw new Error(`Ready statusline missing dashboard label: ${readyStatusline.trim()}`);
     }
-    if (!/(Lessons|Lessons…)/.test(readyStatusline)) {
-      throw new Error(`Ready statusline missing lessons label: ${readyStatusline.trim()}`);
-    }
     // Localhost URLs are intentionally hyperlinked via OSC8 for clickable
-    // dashboard/lessons links in the developer's terminal. Only flag external
+    // dashboard link in the developer's terminal. Only flag external
     // (non-localhost) origins as leaked URLs.
     const isLocalOrigin = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
     if (!isLocalOrigin && readyStatusline.includes(`${origin}/dashboard`)) {
       throw new Error(`Ready statusline leaked dashboard URL: ${readyStatusline.trim()}`);
     }
-    if (!isLocalOrigin && readyStatusline.includes(`${origin}/lessons`)) {
-      throw new Error(`Ready statusline leaked lessons URL: ${readyStatusline.trim()}`);
-    }
-    // Thumbs-up/down icons stay inline while dashboard + lessons remain compact
+    // Thumbs-up/down icons stay inline while dashboard remains compact
     // labels, even after the local API is up.
     if (!readyStatusline.includes('👍')) {
       throw new Error(`Ready statusline missing thumbs-up icon: ${readyStatusline.trim()}`);

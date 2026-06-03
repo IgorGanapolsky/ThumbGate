@@ -64,10 +64,10 @@ test('isPlausibleDisabled honors THUMBGATE_PLAUSIBLE_DISABLE and DO_NOT_TRACK', 
   process.env.THUMBGATE_PLAUSIBLE_DISABLE = '1'; // restore default for other tests
 });
 
-test('getPlausibleDomain falls back to the production domain', () => {
+test('getPlausibleDomain falls back to the known registered production domain', () => {
   const prev = process.env.THUMBGATE_PLAUSIBLE_DOMAIN;
   delete process.env.THUMBGATE_PLAUSIBLE_DOMAIN;
-  assert.equal(getPlausibleDomain(), 'thumbgate.ai');
+  assert.equal(getPlausibleDomain(), 'thumbgate-production.up.railway.app');
   process.env.THUMBGATE_PLAUSIBLE_DOMAIN = 'override.example';
   assert.equal(getPlausibleDomain(), 'override.example');
   if (prev === undefined) delete process.env.THUMBGATE_PLAUSIBLE_DOMAIN;

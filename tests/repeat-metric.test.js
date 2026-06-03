@@ -77,6 +77,50 @@ test('computeRepeatMetric: byGate split marks repeat for a re-fired gate', () =>
   assert.strictEqual(m.byGate['no-force-push'].repeatBlocks, 2);
 });
 
+test('computeRepeatMetric: action fingerprints drive modern byGate split', () => {
+  useStats({
+    blocked: 4,
+    warned: 0,
+    recurringBlocks: 1,
+    sessionFiredActions: {
+      session_1: {
+        'memory-high-risk-default-deny': {
+          action_a: true,
+          action_b: true,
+          action_c: true,
+        },
+      },
+    },
+    byGate: { 'memory-high-risk-default-deny': { blocked: 4, warned: 0 } },
+  });
+  const m = computeRepeatMetric();
+  assert.strictEqual(m.byGate['memory-high-risk-default-deny'].firstBlocks, 3);
+  assert.strictEqual(m.byGate['memory-high-risk-default-deny'].repeatBlocks, 1);
+});
+
+test('computeRepeatMetric: action stats override legacy gate-only recurrence', () => {
+  useStats({
+    blocked: 2,
+    warned: 0,
+    recurringBlocks: 0,
+    sessionFiredGates: {
+      session_1: { 'retrieval_entropy_high': true },
+    },
+    sessionFiredActions: {
+      session_1: {
+        retrieval_entropy_high: {
+          stable_action: true,
+          other_action: true,
+        },
+      },
+    },
+    byGate: { retrieval_entropy_high: { blocked: 2, warned: 0 } },
+  });
+  const m = computeRepeatMetric();
+  assert.strictEqual(m.byGate.retrieval_entropy_high.firstBlocks, 2);
+  assert.strictEqual(m.byGate.retrieval_entropy_high.repeatBlocks, 0);
+});
+
 // (2b) a gate fired across two distinct session buckets but only once each is
 //      all first-blocks, no repeats.
 test('computeRepeatMetric: distinct-session first fires yield zero repeats', () => {

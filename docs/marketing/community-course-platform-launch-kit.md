@@ -1,6 +1,7 @@
 # ThumbGate Community + Course Platform Launch Kit
 
 Generated: 2026-05-04
+Updated: 2026-06-03
 
 This pack turns the "start a free Skool group + course platform expansion" idea into operator-ready copy and launch steps. The operating choice is simple: use Skool as the free member community funnel first, use YouTube and Zernio-backed socials for discovery, and keep paid course platforms as republishing surfaces after the free group has proof.
 
@@ -36,12 +37,24 @@ npx thumbgate init
 - Skool owner plans are recurring subscriptions after the trial. Source: https://help.skool.com/article/227-payment-terms-and-policy
 - Skool categories are configured from Settings > Community > Categories, with up to 10 categories. Source: https://help.skool.com/article/67-how-to-setup-categories
 - Skool logo and cover photo are configured from Settings > General. Source: https://help.skool.com/article/120-how-to-set-up-my-group-logo-and-cover-photo
-- Skool Discovery requires the group description, About page description/images, cover image, and enough real posts/activity before the group becomes visible. Sources: https://help.skool.com/article/123-how-to-set-up-my-group-s-about-page and https://help.skool.com/article/153-discovery-faqs
+- Skool Discovery requires a cover image, group description, completed About page, at least one post, invited members, and a minimum threshold of members/posts/activity before the group becomes visible. Sources: https://help.skool.com/article/151-why-isnt-my-group-visible-in-discovery , https://help.skool.com/article/123-how-to-set-up-my-group-s-about-page , and https://help.skool.com/article/153-discovery-faqs
+- Skool now frames the About page as a landing page that can include embedded media, links, and product/course details, so it is part of conversion copy, not just setup hygiene. Source: https://help.skool.com/article/123-how-to-set-up-my-group-s-about-page
+- Skool analytics now explicitly define About-page conversion and recommend using the direct About URL because redirects and link shorteners collapse attribution into `direct`. Sources: https://help.skool.com/article/216-analytics-definitions and https://help.skool.com/article/226-traffic-sources
+- Skool courses publish from Classroom and can be free or paid inside the group once access/pricing is configured. Sources: https://help.skool.com/article/143-how-to-publish-a-course and https://help.skool.com/article/168-how-to-set-up-one-time-course-purchases
 - The current Skool setup flow asked for audience size. Recommended conservative answer: `Under 10k`, unless a primary social profile is verified above 10,000 followers.
 
-## 2026-05-05 Deep Research Update
+## 2026-06-03 Deep Research Update
 
-Validated against official pricing/help pages on 2026-05-05. Pricing and eligibility are volatile, so re-check the linked source before entering a card, buying ads, or publishing a paid listing.
+Validated against official pricing/help pages on 2026-06-03. Pricing and eligibility are volatile, so re-check the linked source before entering a card, buying ads, or publishing a paid listing.
+
+**Skool-specific requirement refresh:**
+
+1. Discovery remains a community-growth system, not a metadata toggle. The visible prerequisites are still cover, description, About page, at least one post, and invited members. The exact member/activity threshold is still unpublished.
+2. Discovery visibility now states `within two hours` once the unpublished threshold is met, and the latest FAQ still lists off-platform payments as a ranking penalty.
+3. The About page now matters twice: it satisfies Discovery setup and acts like a landing page with media, links, and commerce context.
+4. Skool attribution is last-touch. Direct About-page links preserve source data better than redirects or link-in-bio layers.
+5. Classroom is the course surface. Keep the Operator Lab community free first, then publish the mini-course only after the group has live discussion proof.
+6. One-time course purchases exist natively in Skool, but they should stay dormant until ThumbGate has evidence that a paid course beats the existing owned checkout path for Pro/Diagnostic/Sprint.
 
 **Best autonomous revenue sequence:**
 
@@ -53,14 +66,14 @@ Validated against official pricing/help pages on 2026-05-05. Pricing and eligibi
 
 | Platform | Role now | Monetization posture | Current source-backed note |
 | --- | --- | --- | --- |
-| Skool | Primary free community | Free group first; paid/freemium later only after proof | Skool supports free, subscription, freemium, tiered, and one-time payment groups. Source: https://help.skool.com/article/215-how-to-setup-pricing-for-the-group |
-| Kajabi | Later all-in-one course stack | Do not start paid until the free funnel proves demand | Official pricing page shows Starter at $89/mo monthly or $71/mo annually, 1 product, 250 contacts, 1 website, 1 community; Kajabi Payments rates and third-party provider fees vary by plan. Source: https://www.kajabi.com/pricing |
-| Thinkific | Course-first storefront | Candidate for a free mini-course when owned course UX matters | Official pricing page positions Thinkific around Basic, Start, Grow, and Plus plans; verify the current Start price and payment-processing economics immediately before purchase. Source: https://www.thinkific.com/pricing/ |
-| Teachable | Course storefront and student apps | Lead magnet only until conversion proof exists | Official pricing page lists Starter at $39/mo monthly with a 7.5% transaction fee and 5 products. Source: https://www.teachable.com/pricing |
+| Skool | Primary free community | Free group first; paid/freemium later only after proof | Skool supports free, subscription, freemium, tiered, and one-time payment groups. Discovery ranking is still driven by growth, engagement, and retention. Sources: https://help.skool.com/article/215-how-to-setup-pricing-for-the-group and https://help.skool.com/article/153-discovery-faqs |
+| Kajabi | Later all-in-one course stack | Do not start paid until the free funnel proves demand | Official pricing page now shows `Basic` at `$179/mo` monthly or `$143/mo` billed annually, with 5 products, 2,500 contacts, 1 website, and 1 community. Kajabi also shows its own payment rates plus extra fees when using third-party providers. Source: https://www.kajabi.com/pricing?lang=en |
+| Thinkific | Course-first storefront | Candidate for a free mini-course when owned course UX matters | Official Thinkific FAQ says there is no free plan; paid plans range from `$99/mo` to `$399/mo`, with Grow at `$199/mo`. That keeps Thinkific in the "later" bucket until course demand is proven. Sources: https://www.thinkific.com/thrive/faq/ and https://www.thinkific.com/pricing/ |
+| Teachable | Course storefront and student apps | Lead magnet only until conversion proof exists | Official pricing/help now show Starter at `$39/mo`; current help docs show 7.5% transaction fees on Starter and 0% on Builder/Growth/Advanced, with newer product limits expanding Starter to up to 5 products. Sources: https://support.teachable.com/hc/en-us/articles/220639788-Change-Your-Teachable-Plan , https://support.teachable.com/en/articles/11682553-teachable-fees , and https://support.teachable.com/en/articles/14689187-understanding-usage-fees |
 | Podia | Simple digital product storefront | Good for checklist/download if we need a lightweight owned offer | Official pricing lists Mover at $39/mo monthly or $33/mo annually with a 5% transaction fee; Shaker at $89/mo monthly or $75/mo annually with no Podia transaction fee. Source: https://www.podia.com/pricing |
-| Mighty Networks | Skool alternative | Keep as backup for cohort/community format | Treat as a migration candidate, not a second community to operate in parallel. Source: https://www.mightynetworks.com/pricing |
+| Mighty Networks | Skool alternative | Keep as backup for cohort/community format | Current pricing page shows Launch at `$79/mo` or `$950/yr`, with higher tiers above that. Treat it as materially more expensive than Skool before Operator Lab proves demand. Source: https://www.mightynetworks.com/pricing |
 | Circle | Polished community/events/courses | Upgrade path after Skool proof | Official pricing page lists Professional at $89/mo with a 14-day trial and 2% transaction fee on Professional. Source: https://circle.so/pricing |
-| LearnWorlds | Interactive LMS | Use only if the course becomes the product | Official plan comparison notes a $5 per-course-enrollment fee on Starter and no transaction fee on Pro/Learning Center/Corporate. Source: https://www.learnworlds.com/plans/ |
+| LearnWorlds | Interactive LMS | Use only if the course becomes the product | Official plan comparison still shows a `$5` per-course-enrollment fee on Starter and `0` on Pro Trainer, Learning Center, and Corporate. Source: https://www.learnworlds.com/plans/ |
 | Udemy | Marketplace discovery | Useful without owning the customer relationship | Official instructor revenue share is 97% for instructor-promotion sales and 37% for non-instructor-promotion marketplace sales, after applicable deductions. Source: https://support.udemy.com/hc/en-us/articles/229605008-Instructor-Revenue-Share |
 | Skillshare | Watch-time/referral discovery | Authority channel, not a predictable sales channel | Skillshare allocates approximately 20% of monthly subscription revenue to teacher payments, primarily by minutes watched; 2026 rules also add a 50-follower royalty eligibility requirement. Sources: https://help.skillshare.com/hc/en-us/articles/4415798406285-Earn-From-Your-Teaching and https://help.skillshare.com/hc/en-us/articles/41694886825229-Skillshare-Teacher-Earnings-Update-Effective-January-1-2026 |
 | YouTube paid/subscribe | Public content first, memberships later | Memberships only after eligibility and policy review | Channel memberships require eligibility, location availability, and policy compliance. Source: https://support.google.com/youtube/answer/7636690 |
@@ -83,10 +96,6 @@ Skool is the community home because it supports free groups and can later add pa
 
 **Group type:** Free for members
 
-**Cover asset:** `docs/marketing/assets/thumbgate-skool-cover.png`
-
-**Icon asset:** `docs/marketing/assets/thumbgate-skool-icon.png`
-
 **Discovery-ready asset variants:**
 
 - Cover: `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`
@@ -97,9 +106,23 @@ Skool is the community home because it supports free groups and can later add pa
 - Public group selected.
 - Discovery keywords filled.
 - Sidebar description filled.
-- About page description drafted in the Skool editor and waiting for final public-save confirmation.
+- About page description drafted in the Skool editor, but the current public-save state is not re-verified in this runtime.
 - Cover/icon upload is still blocked by the in-app browser file-picker surface; assets are ready locally.
 - First public post and invites are queued, but require action-time confirmation before posting/sending.
+- A headless Skool read failed on 2026-06-02, and direct unauthenticated fetch returned HTTP `403` from CloudFront in this runtime, so public-page verification still needs a browser-side or approved authenticated check before claiming the live surface is complete.
+
+**Skool course posture right now:**
+
+- Keep the Operator Lab itself free.
+- Treat the mini-course as a Classroom asset or republishing artifact, not the primary monetization lane.
+- Route serious buyers to ThumbGate-owned checkout surfaces first:
+  - Workflow Hardening Diagnostic: `$499`
+  - Workflow Hardening Sprint: `$1500`
+  - Pro: `$19/mo` or `$149/yr`
+- Do not turn on Skool course pricing until at least one of these happens:
+  - `10` useful repeated-failure posts are live in the group.
+  - `3` qualified Diagnostic/Sprint conversations are in the pipeline.
+  - The owned checkout path underperforms a tested course-close hypothesis badly enough to justify a new payment surface.
 
 **About copy:**
 
@@ -187,7 +210,7 @@ Use this same outline everywhere courses are supported.
 
 ### Kajabi
 
-Use only after proof because Kajabi is a heavier owned-course stack. Current official pricing lists Starter at $89/mo monthly or $71/mo annual, with 1 product, 250 contacts, 1 website, and 1 community. Kajabi Payments and third-party payment provider fees vary by plan, so verify checkout economics before selling there. Source: https://www.kajabi.com/pricing
+Use only after proof because Kajabi is a heavier owned-course stack. Current official pricing lists Basic at $179/mo monthly or $143/mo billed annually, with 5 products, 2,500 contacts, 1 website, and 1 community. Kajabi Payments and third-party payment provider fees vary by plan, so verify checkout economics before selling there. Source: https://www.kajabi.com/pricing?lang=en
 
 **Product name:** ThumbGate Workflow Hardening
 
@@ -199,7 +222,7 @@ Use only after proof because Kajabi is a heavier owned-course stack. Current off
 
 ### Thinkific
 
-Use if you want a cleaner course-first storefront without making community the product. Current official pricing is plan-based across Basic, Start, Grow, and Plus; verify the exact Start price and payment-processing economics immediately before purchase. Source: https://www.thinkific.com/pricing/
+Use if you want a cleaner course-first storefront without making community the product. The official Thinkific FAQ now says there is no free plan, paid plans range from `$99/mo` to `$399/mo`, and Grow is `$199/mo`, which is still too expensive for the current proof level. Re-open the live pricing page immediately before purchase because packaging and pricing can change. Sources: https://www.thinkific.com/thrive/faq/ and https://www.thinkific.com/pricing/
 
 **Course name:** Stop AI Coding Agents From Repeating Mistakes
 
@@ -207,7 +230,7 @@ Use if you want a cleaner course-first storefront without making community the p
 
 ### Teachable
 
-Teachable is useful for a course storefront and student apps. Current official pricing lists Starter at $39/mo monthly or $29/mo annual, with a 7.5% transaction fee and 5 products. Source: https://www.teachable.com/pricing
+Teachable is useful for a course storefront and student apps. Current official help pages list Starter at $39/mo, 7.5% transaction fees on Starter, and up to 5 products on Starter after the current usage-limit update. Sources: https://support.teachable.com/hc/en-us/articles/220639788-Change-Your-Teachable-Plan , https://support.teachable.com/en/articles/11682553-teachable-fees , and https://support.teachable.com/en/articles/14689187-understanding-usage-fees
 
 **Free product positioning:** Use as a lead magnet and redirect students into the Skool group.
 
@@ -223,7 +246,7 @@ Use if you want the simplest owned digital product storefront. Current official 
 
 ### Mighty Networks
 
-Mighty is a community-plus-course alternative, with current plans starting around Launch at $79/mo and a 14-day trial. Source: https://www.mightynetworks.com/pricing
+Mighty is a community-plus-course alternative. Current public pricing shows Launch at `$79/mo` or `$950/yr`, with higher tiers above that, so it remains a backup rather than a first paid move for Operator Lab. Source: https://www.mightynetworks.com/pricing
 
 **Use case:** Cohort-based community if Skool is not a fit.
 
@@ -293,7 +316,8 @@ Safe preview:
 gh workflow run thumbgate-creator-platform-promo.yml \
   --repo IgorGanapolsky/ThumbGate \
   -f mode=preview \
-  -f platforms=linkedin,instagram,reddit,tiktok,youtube,twitter
+  -f offer=operator-lab \
+  -f platforms=linkedin,instagram,threads,bluesky,reddit,youtube
 ```
 
 Schedule after operator approval:
@@ -302,7 +326,8 @@ Schedule after operator approval:
 gh workflow run thumbgate-creator-platform-promo.yml \
   --repo IgorGanapolsky/ThumbGate \
   -f mode=schedule \
-  -f platforms=linkedin,instagram,tiktok,youtube \
+  -f offer=operator-lab \
+  -f platforms=linkedin,instagram,threads,bluesky,reddit,youtube \
   -f timezone=America/New_York \
   -f schedule='2026-05-05T10:15:00-04:00'
 ```
@@ -313,7 +338,8 @@ Publish after operator approval:
 gh workflow run thumbgate-creator-platform-promo.yml \
   --repo IgorGanapolsky/ThumbGate \
   -f mode=publish \
-  -f platforms=linkedin,instagram,tiktok,youtube
+  -f offer=operator-lab \
+  -f platforms=linkedin,instagram,threads,bluesky,reddit,youtube
 ```
 
 ## Stop Conditions

@@ -7,10 +7,10 @@
 // does NOT write to disk; it is a pure function over gates-engine.loadStats().
 //
 // The headline number is stats.recurringBlocks — incremented by recordStat()
-// in gates-engine.js every time the SAME gateId fires twice within one session
-// bucket. That is exactly "a pre-action gate fire that stopped a tool call the
-// agent had already been blocked on", i.e. a repeat attempt prevented before it
-// could round-trip and execute.
+// in gates-engine.js every time the same gate blocks/warns the same sanitized
+// action fingerprint within one session bucket. That is "a pre-action gate fire
+// that stopped a tool call the agent had already been blocked on", rather than
+// merely "the same noisy gate fired again."
 // ---------------------------------------------------------------------------
 
 const gatesEngine = require('./gates-engine');
@@ -18,12 +18,12 @@ const gatesEngine = require('./gates-engine');
 /**
  * Derive a per-gate { firstBlocks, repeatBlocks } split from the raw stats.
  *
- * recordStat() records, per session bucket, which gates have fired
- * (stats.sessionFiredGates[sessionKey][gateId] === true). The FIRST fire of a
- * gate in a bucket marks the flag; every subsequent fire in that same bucket
- * increments stats.recurringBlocks. So for each gate:
- *   firstBlocks  = number of distinct session buckets the gate fired in
- *   repeatBlocks = (total block+warn events for the gate) - firstBlocks
+ * Modern stats record, per session bucket, which sanitized action fingerprints
+ * each gate fired on:
+ *   stats.sessionFiredActions[sessionKey][gateId][fingerprint] === true
+ *
+ * firstBlocks is the count of distinct first action fingerprints. Legacy stats
+ * without fingerprints fall back to the old per-session-gate split.
  *
  * total block+warn events come from stats.byGate[id] (blocked + warned), which
  * recordStat() also maintains. repeatBlocks is clamped to >= 0 to stay robust
@@ -34,15 +34,30 @@ const gatesEngine = require('./gates-engine');
  */
 function computeByGateSplit(stats) {
   const byGate = {};
+  const sessionFiredActions = (stats && stats.sessionFiredActions) || {};
   const sessionFiredGates = (stats && stats.sessionFiredGates) || {};
   const rawByGate = (stats && stats.byGate) || {};
 
-  // Count distinct session buckets each gate fired in => firstBlocks.
+  // Count distinct action fingerprints each gate fired on => firstBlocks.
   const firstBlocksByGate = {};
+  const gatesWithActionStats = new Set();
+  for (const sessionKey of Object.keys(sessionFiredActions)) {
+    const fired = sessionFiredActions[sessionKey] || {};
+    for (const gateId of Object.keys(fired)) {
+      const fingerprints = fired[gateId] || {};
+      const count = Object.values(fingerprints).filter(Boolean).length;
+      if (count > 0) {
+        gatesWithActionStats.add(gateId);
+        firstBlocksByGate[gateId] = (firstBlocksByGate[gateId] || 0) + count;
+      }
+    }
+  }
+
+  // Legacy fallback: old stats only tracked gate fired per session bucket.
   for (const sessionKey of Object.keys(sessionFiredGates)) {
     const fired = sessionFiredGates[sessionKey] || {};
     for (const gateId of Object.keys(fired)) {
-      if (fired[gateId]) {
+      if (fired[gateId] && !gatesWithActionStats.has(gateId)) {
         firstBlocksByGate[gateId] = (firstBlocksByGate[gateId] || 0) + 1;
       }
     }
@@ -52,6 +67,7 @@ function computeByGateSplit(stats) {
   const gateIds = new Set([
     ...Object.keys(rawByGate),
     ...Object.keys(firstBlocksByGate),
+    ...Object.keys(sessionFiredActions).flatMap((sessionKey) => Object.keys(sessionFiredActions[sessionKey] || {})),
   ]);
 
   for (const gateId of gateIds) {

@@ -1,101 +1,75 @@
 # Money Now Actions
 
-Updated: 2026-05-18
+Updated: 2026-06-03
 
-Use this as the operator cockpit for the current run. Full copy, follow-ups, CTAs, and logging commands live in `operator-send-now.md`; the pipeline truth table lives in `sales-pipeline.md`.
+Use this as the operator cockpit for the current run. Focus is **individual operator revenue** with the correct offer routing: **Pro ($19/mo or $149/yr)** for self-serve intent, **Workflow Hardening Diagnostic ($499)** when pain is real but scope is unclear, and **Workflow Hardening Sprint ($1500)** when one workflow owner needs proof-backed hardening. Teams and Aiventyx are deprecated per CEO pivot.
 
 Action-time approval card for any outbound action:
-
-- `reports/gtm/2026-05-04-money-now/action-time-approval-2026-06-01.md`
+- `reports/gtm/2026-05-04-money-now/action-time-approval-2026-06-03.md`
 
 ## Current Revenue State
-
-Canonical truth table for today’s run lives in:
-
-- `reports/gtm/2026-05-04-money-now/revenue-close-room.md`
-
-Snapshot (as-of 2026-05-05 baseline; do not treat as commercial proof):
-
 - 30d visitors: 6169
 - Signups: 475
-- Sprint leads: 0
 - Paid orders: 4
 - Checkout starts: 133
 - Booked: `$149`
-- Pipeline: 20 active leads, 0 contacted, 0 replied, 0 paid in the local sales ledger
-- Revenue bottleneck: sending and logging outreach, not more prospect research
+- Live sales pipeline on 2026-06-03: `23` active leads, `21` contacted, `2` targeted, `1` replied, `0` paid.
+- Pipeline: focus on **Operator Lab** conversion with Pro for self-serve leads and Diagnostic/Sprint for warm pain-first leads.
+- Revenue bottleneck: follow-up discipline on already-contacted leads plus the last untouched high-intent GitHub leads.
+- Current promotion/measurement state on 2026-06-03:
+  - local `--offer=operator-lab` dry-run re-verified at `2026-06-03T19:03Z` and still returns `6` previews with all media assets present
+  - local dry-run still shows `accountCount: 0` for every platform in this runtime, so live publish/schedule should stay in GitHub Actions with secrets
+  - dry-run payload still confirms the workflow copy is targeting `offer: operator-lab`
+  - Zernio analytics re-check at `2026-06-03T19:03Z` still shows `0/6` healthy platforms and `0` rows in the last `24h`
+  - local Zernio status still points to the same likely causes: missing/revoked `ZERNIO_API_KEY`, analytics paywall, or disconnected accounts
+  - Skool public-page verification re-check at `2026-06-03T19:03Z` still fails in the headless reader runtime with `[skool-reader] fetch failed`
+  - GitHub queue and run readback are blocked again in this runtime with `error connecting to api.github.com`
 
 ## Do First
-1. Send the 4 warm Reddit Workflow Hardening Sprint DMs.
-2. Send the 3 self-serve Pro guide-first messages.
-3. Send the 5 strongest production-rollout sprint messages.
-4. After each send, run that row's `Log after send` command from `operator-send-now.md`.
-5. Only send proof links after the buyer confirms pain.
+1. Send the 2 untouched Pro guide-first messages: `github_easingthemes_dx_aem_flow` and `github_zaxbysauce_opencode_swarm`.
+2. Follow up the 4 already-contacted warm Reddit leads with the pain-confirming Sprint/Diagnostic bump.
+3. Ignore the deprecated Aiventyx thread even though it is the only current `replied` lead in the pipeline.
+4. After each send, run that row's logging command from `operator-send-now.md`.
 
-Guardrail reminder: do not publish posts, send messages, invite members, upload files, create accounts, change billing, submit forms, or run paid ads without explicit action-time confirmation.
+## Top Send Queue (Individual Focus, 2026-06-02)
 
+### 1. github_easingthemes_dx_aem_flow
+- Contact: https://www.linkedin.com/in/draganfilipovic/
+- Offer: Pro at $19/mo or $149/yr.
+- Status: still `targeted` in the live pipeline.
+- Send: Your `dx-aem-flow` work looks like a strong fit for the self-serve ThumbGate path. Start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated AI-agent mistake is still slowing the workflow down after that, Pro is the clean next step.
 
-## Top Send Queue
+### 2. github_zaxbysauce_opencode_swarm
+- Contact: https://github.com/zaxbysauce
+- Offer: Pro at $19/mo or $149/yr.
+- Status: still `targeted` in the live pipeline.
+- Send: Your `opencode-swarm` project already lives in the exact risk zone ThumbGate is built for. If you want the self-serve path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
 
-### 1. reddit_deep_ad1959_r_cursor
+### 3. reddit_deep_ad1959_r_cursor
 - Contact: https://www.reddit.com/user/Deep_Ad1959/
-- Offer: Workflow Hardening Sprint.
-- Send: Your question about rollback rates when context changes is exactly the right one. I am looking for one AI-agent workflow to harden end-to-end this week: repeated failure, prevention rule, and proof run. If you have one workflow where context drift or rollback risk keeps showing up, I can harden that workflow for you. Worth a 15-minute diagnostic?
+- Offer: Workflow Hardening Diagnostic (`$499`) -> Sprint (`$1500`) if scope is real.
+- Status: already `contacted`; use a follow-up, not the original first touch.
+- Send: Quick follow-up on your rollback-risk question. If one workflow is still repeating the same context-shift failure, I can map the failure, define the gate, and show the proof path. If the scope is still fuzzy, the Workflow Hardening Diagnostic is the clean first step before a Sprint.
 
-### 2. reddit_game_of_kton_r_cursor
+### 4. reddit_game_of_kton_r_cursor
 - Contact: https://www.reddit.com/user/game-of-kton/
-- Offer: Workflow Hardening Sprint.
-- Send: Your ACT-R engram work is fascinating, especially the conflict resolution for opposing facts and the decay model. I am looking for one serious AI-agent workflow to harden end-to-end this week. If your memory system has one recurring failure mode such as stale context, opposing facts, bad handoffs, or unsafe tool calls, I can turn that into a prevention rule and proof run. Open to a 15-minute diagnostic?
+- Offer: Workflow Hardening Diagnostic (`$499`) -> Sprint (`$1500`) if scope is real.
+- Status: already `contacted`; use a follow-up, not the original first touch.
+- Send: Following up on your ACT-R engram thread. If one recurring failure mode like stale context, opposing facts, or bad handoffs is still blocking a real workflow, I can turn that into a gate plan and proof run. Open to a quick diagnostic?
 
-### 3. reddit_leogodin217_r_claudecode
+### 5. reddit_leogodin217_r_claudecode
 - Contact: https://www.reddit.com/user/leogodin217/
-- Offer: Workflow Hardening Sprint.
-- Send: Your arch-create to sprint workflow is one of the most mature agent processes I have seen anyone describe. I am looking for one AI-agent workflow to harden end-to-end this week. Your workflow already has phases, review boundaries, and context risk, so it is a strong fit: pick one repeating failure and I will help turn it into an enforceable Pre-Action Check plus proof run. Worth 15 minutes?
+- Offer: Workflow Hardening Diagnostic (`$499`) -> Sprint (`$1500`) if scope is real.
+- Status: already `contacted`; use a follow-up, not the original first touch.
+- Send: Your phased arch-create to sprint workflow is still one of the strongest fits I’ve seen for a proof-backed hardening pass. If there is one repeating failure inside that workflow, I can turn it into a concrete gate and proof run.
 
-### 4. reddit_enthu_cutlet_1337_r_claudecode
+### 6. reddit_enthu_cutlet_1337_r_claudecode
 - Contact: https://www.reddit.com/user/Enthu-Cutlet-1337/
-- Offer: Workflow Hardening Sprint.
-- Send: Appreciate the kind words on the Thompson Sampling approach. You nailed the core insight: most guardrails are brittle prompt hacks that break when context shifts. I am looking for one AI-agent workflow to harden end-to-end this week: repeated failure, prevention rule, and proof run. If you have a workflow where brittle guardrails keep failing, I can harden that workflow with you. Open to a 15-minute diagnostic?
+- Offer: Workflow Hardening Diagnostic (`$499`) -> Sprint (`$1500`) if scope is real.
+- Status: already `contacted`; use a follow-up, not the original first touch.
+- Send: Circling back on your point about brittle guardrails. If one workflow is still failing when context shifts, I can help turn that failure into an enforceable gate instead of another prompt patch.
 
-### 5. github_agynio_gh_pr_review
-- Contact: https://agyn.io/
-- Offer: Pro at $19/mo or $149/yr.
-- Send: Hey @agynio, saw you're building around `gh-pr-review`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
-
-### 6. github_levnikolaevich_claude_code_skills
-- Contact: https://levnikolaevich.com/
-- Offer: Pro at $19/mo or $149/yr.
-- Send: Hey @levnikolaevich, saw you're building around `claude-code-skills`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
-
-### 7. github_greenpolo_cc_multi_cli_plugin
-- Contact: https://github.com/greenpolo
-- Offer: Pro at $19/mo or $149/yr.
-- Send: Hey @greenpolo, saw you're building around `cc-multi-cli-plugin`. If you want the clean self-serve tool path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
-
-### 8. github_montenegronyc_backporcher
-- Contact: https://numberfortyeight.co/
-- Offer: Workflow Hardening Sprint.
-- Send: Hey @montenegronyc, saw you're shipping `backporcher`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-
-### 9. github_adqui9608_ai_code_review_agent
-- Contact: https://github.com/Adqui9608
-- Offer: Workflow Hardening Sprint.
-- Send: Hey @Adqui9608, saw you're shipping `ai-code-review-agent`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-
-### 10. github_kamaldhingra_ai_agents_qa_automation
-- Contact: https://github.com/kamaldhingra
-- Offer: Workflow Hardening Sprint.
-- Send: Hey @kamaldhingra, saw you're shipping `AI-Agents-QA-Automation`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-
-### 11. github_abhi268170_stagix
-- Contact: https://github.com/Abhi268170
-- Offer: Workflow Hardening Sprint.
-- Send: Hey @Abhi268170, saw you're shipping `Stagix`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-
-### 12. github_dolutech_engine_context
-- Contact: https://dolutech.com/
-- Offer: Workflow Hardening Sprint.
-- Send: Hey @dolutech, saw you're shipping `engine_context`. If one approval, handoff, or rollback step keeps creating trouble, I can harden that workflow for you with a prevention gate and proof run: https://thumbgate-production.up.railway.app/#workflow-sprint-intake
-
-## Exact Tracking Commands
-Use the matching `Log after send`, `Log after pain-confirmed reply`, `Log after checkout started`, and `Log after paid` commands from `operator-send-now.md`. Do not advance a lead unless the external action actually happened.
+## Deprecated (Forget Teams/Aiventyx)
+- All Aiventyx marketplace listing follow-ups.
+- All "Team rollout" or "Multi-seat" pitches.
+- All "Workflow Hardening Sprint" items positioned as team-only entry points.

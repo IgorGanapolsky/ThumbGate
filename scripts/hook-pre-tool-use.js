@@ -503,6 +503,35 @@ function main() {
   const toolName = input.tool_name || process.env.CLAUDE_TOOL_NAME || '';
   const effectiveInput = resolveEffectiveInput(input.tool_input || null);
 
+  // 1. Session and Monetary Budget Enforcement
+  try {
+    const pkgRoot = path.resolve(__dirname, '..');
+    
+    // Evaluate session actions & time limits
+    const { evaluateBudget } = require(path.join(pkgRoot, 'scripts', 'budget-enforcer'));
+    const sessionBlock = evaluateBudget(toolName, effectiveInput);
+    if (sessionBlock) {
+      return block(`✗ THUMBGATE: ${sessionBlock.message}`);
+    }
+
+    // Evaluate monthly spend budget
+    const { getBudgetStatus, addSpend } = require(path.join(pkgRoot, 'scripts', 'budget-guard'));
+    const status = getBudgetStatus();
+    if (status.totalUsd >= status.budgetUsd) {
+      return block(`✗ THUMBGATE: Monthly spend budget exceeded (${status.totalUsd.toFixed(4)}/${status.budgetUsd.toFixed(2)} USD). Tool execution blocked.`);
+    }
+
+    // Accumulate estimated tool call cost in ledger
+    const costEstimate = 0.015; // ~$0.015 per tool call model turn
+    addSpend({
+      amountUsd: costEstimate,
+      source: 'pre-tool-use',
+      note: `${toolName}`
+    });
+  } catch (err) {
+    failOpen(err);
+  }
+
   try {
     trackCurlToProd(toolName, effectiveInput);
   } catch (err) {
@@ -527,6 +556,7 @@ function main() {
 
   return allow();
 }
+
 
 // Only auto-invoke main() when the file is executed directly as a hook.
 // When required from a test, we skip this so exported helpers can be

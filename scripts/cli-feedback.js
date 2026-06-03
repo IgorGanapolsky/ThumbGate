@@ -88,11 +88,13 @@ function formatCliOutput(result) {
   if (result.feedbackResult && result.feedbackResult.accepted !== false) {
     lines.push(`${isDown ? R : G}${BD}${isDown ? '👎 Thumbs down recorded' : '👍 Thumbs up recorded'}${RST}`);
     const feedbackId = (result.feedbackResult.feedbackEvent && result.feedbackResult.feedbackEvent.id) || result.feedbackResult.id;
+    const memoryId = (result.feedbackResult.memoryRecord && result.feedbackResult.memoryRecord.id) || result.feedbackResult.memoryId;
     if (feedbackId) {
-      lines.push(`${D}  ID: ${feedbackId}${RST}`);
+      lines.push(`${D}  Feedback ID: ${feedbackId}${RST}`);
+      if (memoryId) lines.push(`${D}  Memory ID  : ${memoryId}${RST}`);
       // Echo feedback ID to stderr so it's visible directly in the terminal,
       // not hidden behind Claude Code's "ctrl+o to expand" MCP call collapse.
-      process.stderr.write(`✅ Feedback captured (${feedbackId})\n`);
+      process.stderr.write(`✅ Feedback captured (${feedbackId}${memoryId ? `, ${memoryId}` : ''})\n`);
     }
   } else {
     lines.push(`${R}Feedback not accepted: ${(result.feedbackResult && result.feedbackResult.reason) || 'unknown'}${RST}`);

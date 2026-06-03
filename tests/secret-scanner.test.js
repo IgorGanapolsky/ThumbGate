@@ -14,6 +14,7 @@ const {
   scanFile,
   scanBashCommand,
   scanHookInput,
+  isSafeSecretStoragePath,
 } = require('../scripts/secret-scanner');
 
 function buildAnthropicKey() {
@@ -91,5 +92,53 @@ test('scanHookInput detects risky read and edit payloads', () => {
     assert.ok(editResult.findings.some((finding) => finding.id.includes('github')));
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('scanHookInput allows writing secrets into the private resume vault', () => {
+  const stripeKey = buildStripeKey();
+  const filePath = path.join(os.homedir(), '.resume_secrets', 'stripe.json');
+  const result = scanHookInput({
+    tool_name: 'Write',
+    tool_input: {
+      file_path: filePath,
+      content: JSON.stringify({ STRIPE_SECRET_KEY: stripeKey }),
+    },
+  });
+  assert.equal(isSafeSecretStoragePath(filePath), true);
+  assert.equal(result.detected, false);
+});
+
+test('scanHookInput still blocks writing secrets into project files', () => {
+  const stripeKey = buildStripeKey();
+  const result = scanHookInput({
+    tool_name: 'Write',
+    tool_input: {
+      file_path: '/tmp/project/stripe.json',
+      content: JSON.stringify({ STRIPE_SECRET_KEY: stripeKey }),
+    },
+  });
+  assert.equal(result.detected, true);
+  assert.ok(result.findings.some((finding) => finding.id === 'stripe_live_secret'));
+});
+
+test('scanHookInput still blocks reads from the private resume vault', () => {
+  const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-secret-home-'));
+  const prevHome = process.env.HOME;
+  process.env.HOME = tmpHome;
+  const filePath = path.join(tmpHome, '.resume_secrets', 'stripe.json');
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify({ STRIPE_SECRET_KEY: buildStripeKey() }));
+  try {
+    const result = scanHookInput({
+      tool_name: 'Read',
+      tool_input: { file_path: filePath },
+      cwd: tmpHome,
+    });
+    assert.equal(result.detected, true);
+  } finally {
+    if (prevHome === undefined) delete process.env.HOME;
+    else process.env.HOME = prevHome;
+    fs.rmSync(tmpHome, { recursive: true, force: true });
   }
 });

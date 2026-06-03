@@ -8,6 +8,10 @@ const {
   resolveHostedAuditApiKey,
   parseHtmlSignals,
 } = require('./revenue-status');
+const {
+  analyzePlausibleDomainCoverage,
+  getConfiguredRegisteredDomains,
+} = require('./plausible-domain-config');
 
 const DEFAULT_TIMEOUT_MS = 10000;
 const QUERY_ACCESS_KEYS = Object.freeze({
@@ -48,6 +52,17 @@ function hasAllEnv(env, keys) {
 
 function envPresence(env, keys) {
   return Object.fromEntries(keys.map((key) => [key, String(env[key] || '').trim().length > 0]));
+}
+
+function extractPlausibleDataDomains(html = '') {
+  const domains = [];
+  const pattern = /\bdata-domain=["']([^"']+)["']/gi;
+  let match = pattern.exec(String(html || ''));
+  while (match) {
+    domains.push(match[1]);
+    match = pattern.exec(String(html || ''));
+  }
+  return [...new Set(domains)];
 }
 
 async function fetchTextWithTimeout(fetchImpl, url, options = {}, timeoutMs = DEFAULT_TIMEOUT_MS) {
@@ -96,6 +111,10 @@ async function probePublicFunnel({ appOrigin, fetchImpl = globalThis.fetch, time
     ]);
 
     const checkoutBody = checkout.text || '';
+    const emittedPlausibleDomains = [
+      ...extractPlausibleDataDomains(root.text || ''),
+      ...extractPlausibleDataDomains(checkoutBody),
+    ];
     const rootSignals = parseHtmlSignals(root.text || '');
     const checkoutHasFocusedProCta = /Pay \$19\/mo with Stripe/.test(checkoutBody);
     const checkoutHasFallback = /Send the workflow first/.test(checkoutBody);
@@ -107,6 +126,7 @@ async function probePublicFunnel({ appOrigin, fetchImpl = globalThis.fetch, time
         status: root.status,
         ok: root.ok,
         signals: rootSignals,
+        plausibleDomains: extractPlausibleDataDomains(root.text || ''),
       },
       checkout: {
         status: checkout.status,
@@ -114,7 +134,9 @@ async function probePublicFunnel({ appOrigin, fetchImpl = globalThis.fetch, time
         focusedProCta: checkoutHasFocusedProCta,
         workflowFallback: checkoutHasFallback,
         leaksServiceLinks: checkoutLeaksServiceLinks,
+        plausibleDomains: extractPlausibleDataDomains(checkoutBody),
       },
+      plausibleDomains: [...new Set(emittedPlausibleDomains)],
       confirm: {
         // Confirm-path probe disabled 2026-05-19 — was creating zombie Stripe
         // sessions on every healthcheck. Kept the field shape so downstream
@@ -153,6 +175,10 @@ async function buildRevenueObservabilityDoctor({
 } = {}) {
   const hostedApiKey = resolveHostedAuditApiKey(env, { operatorKey: null });
   const publicFunnel = await probePublicFunnel({ appOrigin, fetchImpl, timeoutMs });
+  const plausibleDomainCoverage = analyzePlausibleDomainCoverage({
+    emittedDomains: publicFunnel.plausibleDomains || [],
+    registeredDomains: getConfiguredRegisteredDomains(env),
+  });
   const checks = [
     buildCheck(
       'hosted_operator_auth',
@@ -174,6 +200,13 @@ async function buildRevenueObservabilityDoctor({
       'high',
       'Plausible API key and site id are required to query source, page, and event data from automation.',
       envPresence(env, QUERY_ACCESS_KEYS.plausible)
+    ),
+    buildCheck(
+      'plausible_primary_domain_registered',
+      plausibleDomainCoverage.ok,
+      'critical',
+      'Register thumbgate.ai in Plausible and keep emitted data-domain values aligned with registered site ids; otherwise primary-domain traffic is invisible.',
+      plausibleDomainCoverage
     ),
     buildCheck(
       'posthog_query_access',
@@ -266,6 +299,7 @@ module.exports = {
   hasAllEnv,
   envPresence,
   probePublicFunnel,
+  extractPlausibleDataDomains,
   buildRevenueObservabilityDoctor,
   formatDoctorReport,
 };

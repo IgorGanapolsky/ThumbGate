@@ -18,6 +18,11 @@ const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 const { readJsonl } = require('./fs-utils');
+const {
+  TRANSPORT_WORDS,
+  sanitizeFeedbackText,
+  transportWordsOnly,
+} = require('./feedback-sanitizer');
 
 // ---------------------------------------------------------------------------
 // Paths
@@ -51,6 +56,7 @@ const STOPWORDS = new Set([
   'has', 'had', 'not', 'but', 'they', 'you', 'can', 'will', 'all', 'any',
   'one', 'its', 'our', 'also', 'more', 'very', 'just', 'into', 'been',
   'bash', 'edit', 'write', 'tool', 'hook', 'clear',
+  ...TRANSPORT_WORDS,
 ]);
 
 const NEG = new Set([
@@ -74,7 +80,7 @@ const HYBRID_JSONL_READ_LIMIT = 400;
  */
 function normalize(text) {
   if (!text || typeof text !== 'string') return '';
-  return text
+  return sanitizeFeedbackText(text)
     .replace(/\/Users\/[^\s/]+/g, '/Users/redacted')
     .replace(/:\d{4,5}\b/g, ':PORT')
     .toLowerCase()
@@ -97,7 +103,9 @@ function stripFeedbackPrefix(text) {
  * Compose normalize + stripFeedbackPrefix.
  */
 function normalizePatternText(text) {
-  return normalize(stripFeedbackPrefix(text));
+  const normalized = normalize(stripFeedbackPrefix(text));
+  if (transportWordsOnly(normalized)) return '';
+  return normalized;
 }
 
 /**
@@ -123,6 +131,48 @@ function classify(entry) {
   if (NEG.has(raw)) return 'negative';
   if (POS.has(raw)) return 'positive';
   return 'neutral';
+}
+
+function isHookPromptEnvelope(context) {
+  if (!context || typeof context !== 'string') return false;
+  try {
+    const parsed = JSON.parse(context);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false;
+    return Boolean(
+      parsed.prompt &&
+      (
+        parsed.hookEventName ||
+        parsed.hook_event_name ||
+        parsed.workspaceRoot ||
+        parsed.workspace_root ||
+        parsed.session_id ||
+        parsed.sessionId ||
+        parsed.transcript_path ||
+        parsed.transcriptPath
+      )
+    );
+  } catch (_) {
+    return false;
+  }
+}
+
+function patternContext(entry) {
+  const context = entry && entry.context ? String(entry.context) : '';
+  if (!context) return '';
+  const hasExplicitFeedback = Boolean(
+    entry.whatWentWrong ||
+    entry.what_went_wrong ||
+    entry.whatToChange ||
+    entry.what_to_change ||
+    entry.failureType ||
+    (Array.isArray(entry.tags) && entry.tags.length > 0) ||
+    entry.structuredRule
+  );
+  if (isHookPromptEnvelope(context) && !hasExplicitFeedback) return '';
+  if (isHookPromptEnvelope(context) && hasExplicitFeedback) {
+    return '';
+  }
+  return context;
 }
 
 /**
@@ -218,7 +268,7 @@ function buildHybridState(opts) {
 
       // Build pattern from context / whatWentWrong / what_went_wrong
       const rawText = [
-        entry.context || '',
+        patternContext(entry),
         entry.whatWentWrong || entry.what_went_wrong || '',
         entry.whatToChange || entry.what_to_change || '',
         entry.failureType || '',
@@ -258,7 +308,7 @@ function buildHybridState(opts) {
     toolNegativesAttributed[toolName] = (toolNegativesAttributed[toolName] || 0) + 1;
 
     const rawText = [
-      entry.context || '',
+      patternContext(entry),
       entry.whatWentWrong || entry.what_went_wrong || '',
       ...(Array.isArray(entry.tags) ? entry.tags : []),
       ...(entry.richContext && Array.isArray(entry.richContext.filePaths) ? entry.richContext.filePaths : []),
@@ -626,6 +676,29 @@ function evaluatePretool(toolName, toolInput, opts) {
   return evaluatePretoolFromState(state, toolName, toolInput);
 }
 
+// Claw-style agent support (high-ROI for EnterpriseClaw / OpenShell agents from Automation Anywhere / Nvidia)
+// Extends hybrid context for claw_action_type (file, screen, dynamic-tool, orchestration), agent_identity, hybrid_route.
+// Use in evaluatePretool calls from claw-aware MCP/hooks: pass {clawContext: {actionType: 'dynamic-tool-creation', agentId: '...', route: 'local/cloud'}} in opts.
+function evaluateClawPretool(toolName, toolInput, clawContext, opts) {
+  const o = opts || {};
+  const claw = clawContext || {};
+  // Merge claw metadata into toolInput for gate evaluation (so templates like block-dynamic-tool-creation can match)
+  const enrichedInput = {
+    ...(typeof toolInput === 'object' ? toolInput : { raw: toolInput }),
+    _claw: {
+      actionType: claw.actionType || 'unknown',
+      agentId: claw.agentId || 'unknown',
+      hybridRoute: claw.hybridRoute || 'unknown',
+      screenInteraction: !!claw.screenInteraction,
+      fileAccess: !!claw.fileAccess,
+    }
+  };
+  const result = evaluatePretool(toolName, JSON.stringify(enrichedInput), o);
+  // Tag result with claw metadata for logging/feedback
+  result.clawContext = claw;
+  return result;
+}
+
 // ---------------------------------------------------------------------------
 // CLI main()
 // ---------------------------------------------------------------------------
@@ -674,6 +747,7 @@ function main() {
 module.exports = {
   buildHybridState,
   evaluatePretool,
+  evaluateClawPretool,
   compileGuardArtifact,
   writeGuardArtifact,
   readGuardArtifact,

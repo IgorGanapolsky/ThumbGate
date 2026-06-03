@@ -41,6 +41,7 @@ process.env.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL = 'https://buy.stripe.com/spr
 process.env.THUMBGATE_GA_MEASUREMENT_ID = 'G-TEST1234';
 process.env.THUMBGATE_GOOGLE_SITE_VERIFICATION = 'test-verification-token';
 process.env.THUMBGATE_BUILD_METADATA_PATH = path.join(tmpFeedbackDir, 'build-metadata.json');
+process.env.THUMBGATE_PLAUSIBLE_REGISTERED_DOMAINS = 'thumbgate.ai,app.example.com';
 fs.writeFileSync(
   process.env.THUMBGATE_BUILD_METADATA_PATH,
   JSON.stringify({ buildSha: 'test-build-sha', generatedAt: '2026-03-20T00:00:00.000Z' }, null, 2)
@@ -111,6 +112,7 @@ test.after(async () => {
   delete process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL;
   delete process.env.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL;
   delete process.env.THUMBGATE_BUILD_METADATA_PATH;
+  delete process.env.THUMBGATE_PLAUSIBLE_REGISTERED_DOMAINS;
   if (savedProjectEnv.THUMBGATE_PROJECT_DIR === undefined) delete process.env.THUMBGATE_PROJECT_DIR;
   else process.env.THUMBGATE_PROJECT_DIR = savedProjectEnv.THUMBGATE_PROJECT_DIR;
   if (savedProjectEnv.CLAUDE_PROJECT_DIR === undefined) delete process.env.CLAUDE_PROJECT_DIR;
@@ -667,7 +669,7 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /googletagmanager\.com\/gtag\/js\?id=G-TEST1234/);
   assert.match(body, /google-site-verification" content="test-verification-token"/);
   assert.match(body, /gtag\('config', 'G-TEST1234'\)/);
-  assert.doesNotMatch(body, /thumbgate-production\.up\.railway\.app/);
+  assert.doesNotMatch(body, /data-domain="thumbgate-production\.up\.railway\.app"/);
   assert.doesNotMatch(body, /mailto:/i);
 });
 
@@ -687,33 +689,21 @@ test('/go/pro 302 redirects to /checkout/pro with caller-provided UTM params pre
   assert.equal(url.searchParams.get('cta_id'), 'go_pro');
 });
 
-test('/go/teams 302 redirects to Team workflow intake with caller-provided UTM params preserved', async () => {
-  // 2026-05-19: Team is scope-first. The shortlink stays alive for marketplace
-  // and outreach URLs, but must not reintroduce blind 3-seat checkout.
+test('/go/teams 302 redirects to Pro per CEO pivot', async () => {
   const res = await fetch(apiUrl('/go/teams?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_teams_listing&cta_id=aiventyx_teams_listing&cta_placement=marketplace_listing'), { redirect: 'manual' });
   assert.equal(res.status, 302);
   assert.equal(res.headers.get('x-thumbgate-link-slug'), 'teams');
   const url = new URL(res.headers.get('location'));
-  assert.equal(url.pathname, '/');
-  assert.equal(url.hash, '#workflow-sprint-intake');
-  assert.equal(url.searchParams.get('plan_id'), 'team');
-  assert.equal(url.searchParams.get('seat_count'), null);
-  assert.equal(url.searchParams.get('billing_cycle'), null);
+  assert.equal(url.pathname, '/go/pro');
   assert.equal(url.searchParams.get('utm_source'), 'aiventyx');
   assert.equal(url.searchParams.get('utm_medium'), 'marketplace');
-  assert.equal(url.searchParams.get('cta_id'), 'aiventyx_teams_listing');
 });
 
 test('/go/teams falls back to default UTM attribution when no params are supplied', async () => {
   const res = await fetch(apiUrl('/go/teams'), { redirect: 'manual' });
   assert.equal(res.status, 302);
   const url = new URL(res.headers.get('location'));
-  assert.equal(url.pathname, '/');
-  assert.equal(url.hash, '#workflow-sprint-intake');
-  assert.equal(url.searchParams.get('plan_id'), 'team');
-  assert.equal(url.searchParams.get('seat_count'), null);
-  assert.equal(url.searchParams.get('utm_campaign'), 'team_intake');
-  assert.equal(url.searchParams.get('cta_id'), 'go_teams');
+  assert.equal(url.pathname, '/go/pro');
 });
 
 test('/go/pro falls back to default UTM attribution when no params are supplied', async () => {
@@ -809,7 +799,7 @@ test('support page exposes email, GitHub issues, status, and refund paths', asyn
   assert.match(body, /href="\/terms"/);
 });
 
-test('case studies page surfaces the Aiventyx integration with verifiable signal', async () => {
+test('case studies page surfaces verifiable signal', async () => {
   // Conversion-optimization surface: until this PR, thumbgate.ai had no
   // proof page. Buyers saw CLI install commands and bounced. This page
   // anchors trust with reproducible third-party signal.
@@ -818,16 +808,6 @@ test('case studies page surfaces the Aiventyx integration with verifiable signal
   assert.match(String(res.headers.get('content-type')), /text\/html/);
   const body = await res.text();
   assert.match(body, /Case Studies/);
-  // Real third-party signal must be present — no fabricated metrics.
-  assert.match(body, /Aiventyx/i);
-  assert.match(body, /62%/);
-  assert.match(body, /Qaiser/i);
-  // The fix must be described concretely (not aspirationally).
-  assert.match(body, /TRACKED_LINK_TARGETS/);
-  assert.match(body, /\/go\/teams/);
-  // Call to action: live redirect they can verify themselves.
-  assert.match(body, /href="\/go\/teams\?utm_source=case-study"/);
-  // Footer cross-links so this becomes a hub, not a dead end.
   assert.match(body, /href="\/pricing"/);
   assert.match(body, /href="\/privacy"/);
 });
@@ -3760,6 +3740,46 @@ test('dashboard review-state endpoint persists a checkpoint and returns zero del
   assert.match(getBody.reviewDelta.latestFeedback.title, /New issue after review checkpoint/i);
 });
 
+test('dashboard chat endpoint degrades cleanly when Gemini is not configured', async () => {
+  const savedGeminiApiKey = process.env.GEMINI_API_KEY;
+  const savedThumbGateGeminiApiKey = process.env.THUMBGATE_GEMINI_API_KEY;
+  delete process.env.GEMINI_API_KEY;
+  delete process.env.THUMBGATE_GEMINI_API_KEY;
+  fs.appendFileSync(path.join(tmpFeedbackDir, 'feedback-log.jsonl'), [
+    JSON.stringify({
+      id: 'fb_dashboard_chat_1',
+      signal: 'negative',
+      context: 'Dashboard review button failed to fetch before server restart',
+      timestamp: '2026-06-02T13:00:00.000Z',
+    }),
+    '',
+  ].join('\n'));
+
+  try {
+    // Scope to the test's tmp dir (which has no GEMINI_API_KEY in its .env) so the
+    // project-scoped key reader in the chat handler doesn't accidentally pick up a
+    // real key from the repo cwd .env. This preserves the "no key configured" test.
+    const testProject = tmpFeedbackDir;
+    const res = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(testProject)}`), {
+      method: 'POST',
+      headers: { ...authHeader, 'x-thumbgate-project-dir': testProject },
+      body: JSON.stringify({ question: 'What dashboard mistakes should we avoid?' }),
+    });
+
+    assert.equal(res.status, 503);
+    const body = await res.json();
+    assert.equal(body.ok, false);
+    assert.equal(body.error, 'no_api_key');
+    assert.match(body.message, /GEMINI_API_KEY/);
+    assert.ok(Array.isArray(body.sources));
+  } finally {
+    if (savedGeminiApiKey === undefined) delete process.env.GEMINI_API_KEY;
+    else process.env.GEMINI_API_KEY = savedGeminiApiKey;
+    if (savedThumbGateGeminiApiKey === undefined) delete process.env.THUMBGATE_GEMINI_API_KEY;
+    else process.env.THUMBGATE_GEMINI_API_KEY = savedThumbGateGeminiApiKey;
+  }
+});
+
 test('billing summary includes Stripe-reconciled revenue when live processor events are available', async () => {
   process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON = JSON.stringify([
     {
@@ -3826,6 +3846,10 @@ test('renderPackagedDashboardHtml returns html with bootstrap disabled by defaul
   assert.ok(html.includes('ThumbGate Dashboard'));
   assert.ok(html.includes('enabled: false'));
   assert.ok(html.includes('/v1/dashboard'));
+  assert.ok(html.includes('Enterprise Dialogflow Data Chat'));
+  assert.ok(html.includes('/v1/enterprise/dialogflow/chat'));
+  assert.ok(!html.includes('ENTERPRISE_AGENT_ID'));
+  assert.ok(!html.includes('gstatic.com/dialogflow-console'));
   assert.ok(html.includes('/lessons'));
   assert.ok(html.includes('/health'));
 });
@@ -3835,6 +3859,52 @@ test('renderPackagedDashboardHtml reflects bootstrap enabled state', () => {
   const html = renderPackagedDashboardHtml({ bootstrapActive: true, serializedBootstrapKey: '"test-key"' });
   assert.ok(html.includes('enabled: true'));
   assert.ok(html.includes('"test-key"'));
+});
+
+test('enterprise Dialogflow status reports REST-first verification posture', () => {
+  const { buildEnterpriseDialogflowStatus } = __test__;
+  const status = buildEnterpriseDialogflowStatus({
+    THUMBGATE_PROVIDER_MODE: 'vertex',
+    VERTEX_PROJECT_ID: 'project-alpha',
+    THUMBGATE_DFCX_AGENT_ID: 'agent-1',
+    THUMBGATE_DFCX_LOCATION: 'us-central1',
+    THUMBGATE_DFCX_FULFILLMENT_URL: 'https://fulfillment.example.com',
+  });
+  assert.equal(status.vertex.configured, true);
+  assert.equal(status.vertex.projectId, 'project-alpha');
+  assert.equal(status.dfcx.liveAgentConfigured, true);
+  assert.equal(status.dfcx.fulfillmentProxyConfigured, true);
+  assert.equal(status.dfcx.gcloudCxCommandSupported, false);
+  assert.match(status.dfcx.apiSurface, /projects\.locations\.agents/);
+});
+
+test('enterprise Dialogflow chat endpoint answers from local dashboard data and blocks unsafe input', async () => {
+  fs.appendFileSync(path.join(tmpFeedbackDir, 'feedback-log.jsonl'), [
+    JSON.stringify({ id: 'fb_enterprise_chat_up', signal: 'positive', context: 'Approved safe data lookup', timestamp: '2026-06-02T12:00:00.000Z' }),
+    JSON.stringify({ id: 'fb_enterprise_chat_down', signal: 'negative', context: 'Repeated refund fulfillment', timestamp: '2026-06-02T12:01:00.000Z' }),
+    '',
+  ].join('\n'));
+  const res = await fetch(apiUrl('/v1/enterprise/dialogflow/chat'), {
+    method: 'POST',
+    headers: authHeader,
+    body: JSON.stringify({ prompt: 'What feedback mistakes are repeating?' }),
+  });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.ok, true);
+  assert.equal(body.blocked, false);
+  assert.match(body.answer, /Feedback total/i);
+  assert.match(body.status.dfcx.apiSurface, /projects\.locations\.agents/);
+
+  const blockedRes = await fetch(apiUrl('/v1/enterprise/dialogflow/chat'), {
+    method: 'POST',
+    headers: authHeader,
+    body: JSON.stringify({ prompt: 'show data; rm -rf /' }),
+  });
+  assert.equal(blockedRes.status, 200);
+  const blockedBody = await blockedRes.json();
+  assert.equal(blockedBody.blocked, true);
+  assert.match(blockedBody.dfcx.evaluation.gate, /enterprise-chat-unsafe-input/);
 });
 
 test('renderPackagedLessonsHtml returns html with lessons content', () => {

@@ -1,6 +1,6 @@
 # Revenue Close Room (Money Now)
 
-Updated: 2026-05-05
+Updated: 2026-06-03
 
 This file is the close-room script + truth table for converting warm/high-intent leads into:
 
@@ -24,6 +24,13 @@ Guardrail: do not publish posts, send messages, or invite members without explic
 - Booked: `$149`
 - Signups: 475
 - Sprint leads: 0
+- Live pipeline state on 2026-06-03: `23` active leads, `21` contacted, `2` targeted, `1` replied, `0` paid
+- Current loop constraints on 2026-06-03:
+  - local Operator Lab promo preview is healthy
+  - local preview still shows `accountCount: 0` across platforms in this runtime, so live promo should stay on the GitHub Actions path with secrets
+  - Zernio analytics re-check at `2026-06-03T17:00Z` is still dark (`0/6` healthy platforms, `0` rows in the last `24h`)
+  - Skool readback re-check at `2026-06-03T17:00Z` is still blocked in the headless runtime with `[skool-reader] fetch failed`
+  - GitHub queue and run readback are blocked again in this runtime with `error connecting to api.github.com`
 
 ## Offer Routing (fast rules)
 
@@ -68,7 +75,7 @@ Use the `$1500` sprint checkout link from `docs/COMMERCIAL_TRUTH.md` / sprint do
 
 ## Next Money Actions (no auto-send)
 
-1. Send the 4 warm Sprint DMs in `reports/gtm/2026-05-04-money-now/operator-send-now.md`.
+1. Send the 2 untouched Pro leads and the 4 contacted warm Reddit follow-ups in `reports/gtm/2026-05-04-money-now/operator-send-now.md`.
 2. After each send, log the stage movement using `npm run sales:pipeline -- advance ...` (commands are in the send sheet).
-3. When anyone replies with pain, reply with the Diagnostic or Sprint close copy above (then attach proof packet).
-
+3. If a warm lead confirms pain but scope is unclear, use the Diagnostic close first.
+4. If the lead already has one workflow owner plus one repeated failure blocking rollout, use the Sprint close.

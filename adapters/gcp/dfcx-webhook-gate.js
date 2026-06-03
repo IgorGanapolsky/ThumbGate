@@ -14,9 +14,9 @@
 // function — it decides whether that function is allowed to run. It does not
 // replace it, mutate Playbooks, or call any Google API itself.
 //
-// This is enterprise add-on code and is intentionally NOT part of the published
-// npm bundle (not listed in package.json "files"). It lives in-repo so the pilot
-// implementation can deploy it as Cloud Run / Cloud Functions middleware.
+// This enterprise adapter is also listed in package.json "files" because
+// src/api/server.js loads it for the local enterprise Dialogflow dashboard routes.
+// The same module can still be deployed as Cloud Run / Cloud Functions middleware.
 // -----------------------------------------------------------------------------
 
 const path = require('path');
@@ -43,23 +43,27 @@ function stableStringify(value) {
 
 // Map a DFCX WebhookRequest into a ThumbGate (toolName, toolInput) action.
 // DFCX fulfillment tag -> toolName ("dfcx:<tag>"); session parameters -> toolInput.
+// Supports both camelCase (standard DFCX) and snake_case (legacy/internal) formatting.
 function mapDfcxToAction(reqBody) {
   const body = reqBody || {};
-  const tag = (body.fulfillmentInfo && body.fulfillmentInfo.tag) || 'unknown';
-  const params = (body.sessionInfo && body.sessionInfo.parameters) || {};
+  const fulfillmentInfo = body.fulfillmentInfo || body.fulfillment_info || {};
+  const tag = fulfillmentInfo.tag || 'unknown';
+  const sessionInfo = body.sessionInfo || body.session_info || {};
+  const params = sessionInfo.parameters || {};
+  const sessionId = sessionInfo.session || '';
   return {
     tag,
     toolName: 'dfcx:' + tag,
     toolInput: params,
-    sessionId: (body.sessionInfo && body.sessionInfo.session) || '',
+    sessionId,
   };
 }
 
 // A DFCX webhook is fully untrusted (internet-facing), unlike a local coding
 // agent. These allowlists reject anything that could carry shell/path
 // metacharacters before the action ever reaches the gate engine.
-const SAFE_TOKEN = /^[A-Za-z0-9._-]{1,64}$/; // fulfillment tags, parameter names
-const SAFE_VALUE = /^[\w .,@:+-]{0,512}$/;    // parameter string values
+const SAFE_TOKEN = /^[A-Za-z0-9._\s-]{1,64}$/; // fulfillment tags, parameter names
+const SAFE_VALUE = /^[^`\;|&<>]{0,2048}$/;    // parameter string values (allow standard punctuation, block command injection)
 
 // Evaluate whether a DFCX fulfillment should be allowed to execute.
 // Returns { allowed, decision, gate, message, severity, repeat, risk, action }.
@@ -151,11 +155,13 @@ function evaluateDfcxFulfillment(reqBody, opts = {}) {
 }
 
 // Build a DFCX WebhookResponse that safely halts the turn without side-effects.
+// Supports both camelCase (standard DFCX) and snake_case (legacy/internal) formatting.
 function buildBlockResponse(evaluation, opts = {}) {
   const message = opts.blockedMessage
     || 'This request was held by a safety policy and was not completed. A team member may follow up.';
-  return {
+  const payload = {
     fulfillment_response: { messages: [{ text: { text: [message] } }] },
+    fulfillmentResponse: { messages: [{ text: { text: [message] } }] },
     session_info: {
       parameters: {
         thumbgate_blocked: true,
@@ -163,23 +169,47 @@ function buildBlockResponse(evaluation, opts = {}) {
         thumbgate_severity: evaluation.severity || null,
       },
     },
+    sessionInfo: {
+      parameters: {
+        thumbgate_blocked: true,
+        thumbgate_gate: evaluation.gate || null,
+        thumbgate_severity: evaluation.severity || null,
+      },
+    },
   };
+  return payload;
 }
 
 // Annotate an allowed (passed-through) response so downstream flows can observe
 // that ThumbGate evaluated and permitted the turn. Never throws on odd shapes.
+// Populates both camelCase and snake_case variants to ensure compatibility.
 function annotateAllowed(response, evaluation) {
   const base = response && typeof response === 'object' ? response : {};
-  const sessionInfo = base.session_info && typeof base.session_info === 'object' ? base.session_info : {};
+  
+  const sessionInfo = base.sessionInfo || base.session_info || {};
   const params = sessionInfo.parameters && typeof sessionInfo.parameters === 'object' ? sessionInfo.parameters : {};
-  return Object.assign({}, base, {
-    session_info: Object.assign({}, sessionInfo, {
-      parameters: Object.assign({}, params, {
-        thumbgate_blocked: false,
-        thumbgate_risk: evaluation.risk,
-      }),
-    }),
+  
+  const updatedParams = Object.assign({}, params, {
+    thumbgate_blocked: false,
+    thumbgate_risk: evaluation.risk,
   });
+  
+  const updatedSessionInfo = Object.assign({}, sessionInfo, {
+    parameters: updatedParams,
+  });
+  
+  const updated = Object.assign({}, base, {
+    session_info: updatedSessionInfo,
+    sessionInfo: updatedSessionInfo,
+  });
+  
+  if (base.fulfillment_response) {
+    updated.fulfillmentResponse = base.fulfillment_response;
+  } else if (base.fulfillmentResponse) {
+    updated.fulfillment_response = base.fulfillmentResponse;
+  }
+  
+  return updated;
 }
 
 // Guard a DFCX webhook: run the gate; only invoke the real fulfillment when

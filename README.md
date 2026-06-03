@@ -24,7 +24,7 @@ The product is a self-improving enforcement layer: thumbs-down feedback, prompt 
 npx thumbgate init   # auto-detects your agent, wires hooks, 30 seconds
 ```
 
-Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and any MCP-compatible agent. Free tier: unlimited feedback captures and 5 active auto-promoted prevention rules. [Pro: $19/mo or $149/yr](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme) — unlimited rules, history-aware lessons, feedback sessions, dashboard, DPO export. Team is $49/seat/mo with a shared hosted lesson DB and org dashboard.
+Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and any MCP-compatible agent. Free tier: 5 feedback captures/day, 25 total captures, and 3 active auto-promoted prevention rules. [Pro: $19/mo or $149/yr](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme) — unlimited feedback captures, unlimited rules, history-aware lessons, feedback sessions, dashboard, DPO export. Team is $49/seat/mo with a shared hosted lesson DB and org dashboard.
 
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
@@ -255,6 +255,15 @@ Open the Codex plugin install page or download the standalone bundle from GitHub
 2. Direct zip: [thumbgate-codex-plugin.zip](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip)
 3. Follow: [plugins/codex-profile/INSTALL.md](plugins/codex-profile/INSTALL.md)
 
+### Install ChatGPT App / GPT Action
+
+ChatGPT is the advice, checkpointing, and typed-feedback surface; ThumbGate's hard enforcement still runs locally in Codex, Claude Code, Cursor, Gemini CLI, Amp, OpenCode, MCP, or CI after install.
+
+1. App page: [thumbgate.ai/chatgpt-app](https://thumbgate.ai/chatgpt-app)
+2. Live GPT: [thumbgate.ai/go/gpt](https://thumbgate.ai/go/gpt?utm_source=github&utm_medium=readme&utm_campaign=chatgpt_app)
+3. GPT Action schema: [thumbgate.ai/openapi.yaml](https://thumbgate.ai/openapi.yaml)
+4. Follow: [adapters/chatgpt/INSTALL.md](adapters/chatgpt/INSTALL.md)
+
 ---
 
 ## How It Works
@@ -331,11 +340,40 @@ npx thumbgate explore    # terminal explorer for lessons, checks, stats
 npx thumbgate background-governance  # review background-agent run risk
 npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json  # evaluate GPT-5.5 routing
 npx thumbgate native-messaging-audit  # inspect local browser bridges and extension hosts
-npx thumbgate dashboard  # open local dashboard
+npx thumbgate dashboard --open                                  # open local project-scoped dashboard in browser
+thumbgate-dashboard                                             # standalone browser dashboard shortcut (run '/project:thumbgate-dashboard' in Claude/Grok)
 npx thumbgate serve      # start MCP server on stdio
 npx thumbgate bench      # run reliability benchmark
 npx thumbgate bench --programbench-smoke  # include cleanroom whole-repo proof lane
+npx thumbgate break-glass --reason="ThumbGate over-fired"  # short TTL recovery for gate over-fire
 ```
+
+### Recovery if a gate over-fires
+
+ThumbGate should block repeated unsafe actions, not trap the operator. If a noisy rule or stale memory pattern blocks the hook/settings change you need to recover, open a short-lived break-glass window:
+
+```bash
+npx thumbgate break-glass --reason="ThumbGate over-fired and blocked operator recovery"
+```
+
+What this unlocks for up to 5 minutes:
+
+- Edits to `.claude/settings.local.json`, `.claude/settings.json`, `.codex/config.toml`, and the same files inside nested workspaces.
+- The short-lived proof gates used for PR recovery: `pr_create_allowed` and `pr_threads_checked`.
+
+What stays gated:
+
+- Force pushes, protected-branch pushes, broad `rm -rf`, unsafe `chmod`, package publishes/releases, and local-only remote side effects.
+- Arbitrary protected files such as `README.md`, `AGENTS.md`, policy bundles, or credentials.
+
+Verify the recovery window and runtime health before continuing:
+
+```bash
+npx thumbgate break-glass --reason="verify recovery path" --json
+npx thumbgate doctor
+```
+
+If you change MCP or hook settings, restart the affected agent session so Claude Code, Cursor, Codex, or another runtime reloads `.mcp.json` and local settings.
 
 ---
 
@@ -344,8 +382,8 @@ npx thumbgate bench --programbench-smoke  # include cleanroom whole-repo proof l
 | | Free | Pro ($19/mo) | Team ($49/seat/mo) | Enterprise |
 |---|---|---|---|---|
 | Local CLI + enforced checks | ✅ | ✅ | ✅ | ✅ |
-| Feedback captures (lifetime) | 3 | Unlimited | Unlimited | Unlimited |
-| Auto-promoted prevention rules | 1 | Unlimited | Unlimited | Unlimited |
+| Feedback captures | 5/day, 25 total | Unlimited | Unlimited | Unlimited |
+| Auto-promoted prevention rules | 3 active | Unlimited | Unlimited | Unlimited |
 | MCP agent integrations | All | All | All | All |
 | Personal dashboard | — | ✅ | ✅ | ✅ |
 | DPO export (model fine-tuning) | — | ✅ | ✅ | ✅ |
@@ -358,7 +396,7 @@ npx thumbgate bench --programbench-smoke  # include cleanroom whole-repo proof l
 | Compliance audit export | — | — | — | ✅ |
 | Dedicated onboarding + SLA | — | — | — | ✅ |
 
-The free tier gives you unlimited feedback captures and up to 5 active auto-promoted prevention rules — generous enough to make ThumbGate part of your daily flow. MCP integrations for all agents (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode) ship free.
+The free tier gives you 5 feedback captures/day, 25 total captures, and up to 3 active auto-promoted prevention rules — enough to prove the loop before buying. MCP integrations for all agents (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode) ship free.
 
 Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recall, lesson search, DPO export, and a personal dashboard. Team ($49/seat/mo) adds a shared hosted lesson DB, org dashboard, and shared enforcement across the org. Enterprise adds regulatory gate templates (legal intake, financial compliance, healthcare), custom policy layers scoped to firm/practice-area, compliance audit export, and dedicated onboarding with SLA.
 
@@ -449,7 +487,7 @@ curl -X POST http://localhost:3456/v1/dpo/export \
 | Layer | Technology |
 |-------|-----------|
 | **Storage** | SQLite + FTS5, LanceDB vectors, JSONL logs |
-| **Capture** | Unlimited feedback captures (free + Pro) |
+| **Capture** | 5/day, 25 total on Free; unlimited on Pro, Team, and Enterprise |
 | **Intelligence** | MemAlign dual recall, Thompson Sampling |
 | **Enforcement** | PreToolUse hook engine, Checks config |
 | **Interfaces** | MCP stdio, HTTP API, CLI (Node.js >=18) |
@@ -471,6 +509,7 @@ Every Changeset is tied to the exact `main` merge commit and generates Verificat
 
 ## Integrations
 
+- **[ChatGPT App / GPT Action](https://thumbgate.ai/chatgpt-app)** — First-class ChatGPT distribution page with the live GPT, public OpenAPI Action schema, and local enforcement install path
 - **[Open ThumbGate GPT](https://thumbgate.ai/go/gpt?utm_source=github&utm_medium=readme&utm_campaign=readme_gpt)** — ThumbGate GPT: start here. Paste agent actions, get advice + checkpointing. No, users do not have to keep chatting inside the ThumbGate GPT to use ThumbGate — the hard enforcement layer still runs where the work happens.
 - **[Claude Desktop Extension](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb)** — One-click install for Claude Desktop
 - **[Codex Plugin](https://thumbgate.ai/codex-plugin)** — Auto-updating standalone bundle and install page for Codex CLI
@@ -505,18 +544,20 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 For enterprise subscriptions, ThumbGate natively integrates with Google Cloud Platform and **Vertex AI** to route all agent checks through compliant Gemini models inside your corporate VPC.
 
 ### Zero-Friction Setup
-To instantly wire your local installation to Google Cloud, simply run:
+To wire local ThumbGate scoring to Vertex AI, run:
 ```bash
 npx thumbgate setup-vertex
 ```
 * **Auto-Discovery:** Automatically detects your active authenticated `gcloud` session and active project ID.
 * **Auto-Enablement:** Programmatically enables the Vertex AI API in your project.
-* **Auto-Configuration:** Writes secure billing and project credentials directly to your local `.env` file.
+* **Auto-Configuration:** Writes local Vertex routing settings to your `.env` file.
+
+This command does **not** create or verify a live Dialogflow CX agent. On current Google Cloud CLI installs, the old alpha gcloud CX command group is not available; verify Conversational Agents / Dialogflow CX with the Google Cloud console or the official Dialogflow CX REST API (`projects.locations.agents`) before claiming a live DFCX deployment.
 
 ### Zero-Friction Cost Containment ($10/mo Hard Cap)
 Google Cloud budget alerts are "alert-only" and do not stop API traffic, risking unexpected bill shock. ThumbGate completely resolves this on the client side:
 * **Instant Shutdown:** ThumbGate maintains a lightweight, local token ledger and instantly halts outgoing API traffic the millisecond your monthly token spending approaches the **$10 limit** (500k tokens of Gemini 1.5 Flash).
-* **Bypasses Console Complexity:** Requires **zero** GCP web console setups, zero Pub/Sub topics, and zero Cloud Functions. Perfect for non-technical managers and teams.
+* **Bypasses extra shutdown plumbing:** Requires no Pub/Sub or Cloud Functions for the local ThumbGate-side stop condition. You still need normal Google Cloud billing/API setup and live-agent verification for DFCX pilots.
 
 ---
 
@@ -532,7 +573,7 @@ Those are suggestions the agent can ignore. ThumbGate checks are enforced — th
 If it supports MCP or pre-action hooks, yes. Claude Code, Claude Desktop, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode all work out of the box.
 
 **Is it free?**
-The free tier gives you unlimited feedback captures and up to 5 active auto-promoted prevention rules — generous enough for solo devs to use daily. MCP integrations ship free for every agent.
+The free tier gives you 5 feedback captures/day, 25 total captures, and up to 3 active auto-promoted prevention rules — enough for solo devs to prove a blocked repeat before upgrading. MCP integrations ship free for every agent.
 
 Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recall, lesson search, and a personal dashboard. Team ($49/seat/mo) adds a shared hosted lesson DB, org dashboard, and shared enforcement.
 

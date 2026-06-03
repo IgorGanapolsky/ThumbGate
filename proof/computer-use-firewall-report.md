@@ -62,7 +62,7 @@ The Computer-Use Action Firewall gates browser, shell, file, and system actions 
 |---|---|
 | `(?i)(api[_-]?key\|secret\|token\|password\|credential\|auth)\s*[:=]` | `API_KEY=sk-1234...` |
 | `(?i)bearer\s+[a-zA-Z0-9._-]+` | `Bearer eyJhbGci...` |
-| `ghp_[a-zA-Z0-9]{36}` | `ghp_abc...xyz123` |
+| `ghp_[a-zA-Z0-9]{36}` | `<redacted-github-token>...xyz123` |
 | `sk-[a-zA-Z0-9]{48}` | `sk-abcdef...` |
 
 ## Dangerous Shell Pattern Detection

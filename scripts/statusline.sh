@@ -93,19 +93,17 @@ fi
 LINK_STATE="offline"
 UP_URL=""; DOWN_URL=""; DASHBOARD_URL=""; LESSONS_URL=""
 DASHBOARD_LABEL="Dashboard"; LESSONS_LABEL="Lessons"
-if [[ "$STATUSLINE_VERBOSE" = "1" ]]; then
-  _LINKS_JSON=$(node "${SCRIPT_DIR}/statusline-links.js" 2>/dev/null)
-  if [ -n "$_LINKS_JSON" ]; then
-    eval "$(echo "$_LINKS_JSON" | jq -r '
-      @sh "LINK_STATE=\(.state // "offline")",
-      @sh "UP_URL=\(.upUrl // "")",
-      @sh "DOWN_URL=\(.downUrl // "")",
-      @sh "DASHBOARD_URL=\(.dashboardUrl // "")",
-      @sh "LESSONS_URL=\(.lessonsUrl // "")",
-      @sh "DASHBOARD_LABEL=\(.dashboardLabel // "Dashboard")",
-      @sh "LESSONS_LABEL=\(.lessonsLabel // "Lessons")"
-    ' 2>/dev/null)"
-  fi
+_LINKS_JSON=$(node "${SCRIPT_DIR}/statusline-links.js" 2>/dev/null)
+if [ -n "$_LINKS_JSON" ]; then
+  eval "$(echo "$_LINKS_JSON" | jq -r '
+    @sh "LINK_STATE=\(.state // "offline")",
+    @sh "UP_URL=\(.upUrl // "")",
+    @sh "DOWN_URL=\(.downUrl // "")",
+    @sh "DASHBOARD_URL=\(.dashboardUrl // "")",
+    @sh "LESSONS_URL=\(.lessonsUrl // "")",
+    @sh "DASHBOARD_LABEL=\(.dashboardLabel // "Dashboard")",
+    @sh "LESSONS_LABEL=\(.lessonsLabel // "Lessons")"
+  ' 2>/dev/null)"
 fi
 
 # ── ThumbGate package metadata ────────────────────────────────────────
@@ -120,15 +118,13 @@ fi
 
 # ── Repo context (branch / work item / PR) ───────────────────────────
 BRANCH_NAME=""; WORK_ITEM_LABEL=""; PR_LABEL=""
-if [[ "$STATUSLINE_VERBOSE" = "1" ]]; then
-  _CONTEXT_JSON=$(node "${SCRIPT_DIR}/statusline-context.js" 2>/dev/null)
-  if [[ -n "$_CONTEXT_JSON" ]]; then
-    eval "$(echo "$_CONTEXT_JSON" | jq -r '
-      @sh "BRANCH_NAME=\(.branchName // "")",
-      @sh "WORK_ITEM_LABEL=\(.workItemLabel // "")",
-      @sh "PR_LABEL=\(.prLabel // "")"
-    ' 2>/dev/null)"
-  fi
+_CONTEXT_JSON=$(node "${SCRIPT_DIR}/statusline-context.js" 2>/dev/null)
+if [[ -n "$_CONTEXT_JSON" ]]; then
+  eval "$(echo "$_CONTEXT_JSON" | jq -r '
+    @sh "BRANCH_NAME=\(.branchName // "")",
+    @sh "WORK_ITEM_LABEL=\(.workItemLabel // "")",
+    @sh "PR_LABEL=\(.prLabel // "")"
+  ' 2>/dev/null)"
 fi
 
 # ── Control Tower stats ──────────────────────────────────────────
@@ -144,16 +140,14 @@ fi
 
 # ── Latest lesson (data available for extensions; not rendered in statusbar) ──
 LESSON_TEXT=""; LESSON_ID=""; LESSON_LABEL=""; LESSON_LINK=""
-if [[ "$STATUSLINE_VERBOSE" = "1" ]]; then
-  _LESSON_JSON=$(node "${SCRIPT_DIR}/statusline-lesson.js" 2>/dev/null)
-  if [[ -n "$_LESSON_JSON" ]]; then
-    eval "$(echo "$_LESSON_JSON" | jq -r '
-      @sh "LESSON_TEXT=\(.text // "")",
-      @sh "LESSON_ID=\(.lessonId // "")",
-      @sh "LESSON_LABEL=\(.label // "")",
-      @sh "LESSON_LINK=\(.link // "")"
-    ' 2>/dev/null)"
-  fi
+_LESSON_JSON=$(node "${SCRIPT_DIR}/statusline-lesson.js" 2>/dev/null)
+if [[ -n "$_LESSON_JSON" ]]; then
+  eval "$(echo "$_LESSON_JSON" | jq -r '
+    @sh "LESSON_TEXT=\(.text // "")",
+    @sh "LESSON_ID=\(.lessonId // "")",
+    @sh "LESSON_LABEL=\(.label // "")",
+    @sh "LESSON_LINK=\(.link // "")"
+  ' 2>/dev/null)"
 fi
 
 # ── Colors ────────────────────────────────────────────────────────
@@ -206,10 +200,10 @@ LINE="${LINE:+${LINE} · }ThumbGate v${TG_VERSION} · ${TG_TIER}"
 if [[ "$UP" = "0" && "$DOWN" = "0" ]]; then
   LINE="${D}${LINE}${RST} · no feedback yet"
   [[ -n "$PR_LABEL" ]] && LINE="${LINE} · ${D}${PR_LABEL}${RST}"
-  if [[ "$STATUSLINE_VERBOSE" = "1" ]]; then
-    LINE="${LINE} · ${C}${DASHBOARD_LINK}${RST} · ${M}${LESSONS_LINK}${RST}"
-    [[ -n "$LATEST_LESSON_LINK" ]] && LINE="${LINE} · ${D}${LATEST_LESSON_LINK}${RST}"
-  fi
+  
+  LINE="${LINE} · ${C}${DASHBOARD_LINK}${RST}"
+  [[ -n "$LATEST_LESSON_LINK" ]] && LINE="${LINE} · ${D}${LATEST_LESSON_LINK}${RST}"
+  
   printf '%b\n' "$LINE"
 else
   LINE="${LINE} · ${G}${BD}${UP}${RST}${UP_LINK} ${R}${BD}${DOWN}${RST}${DOWN_LINK} ${ARROW}"
@@ -219,10 +213,9 @@ else
   [[ "${AT_RISK:-0}" -gt 0 ]] && LINE="${LINE} ${R}${AT_RISK}⚠${RST}"
   [[ "${ANOMALIES:-0}" -gt 0 ]] && LINE="${LINE} ${R}${ANOMALIES}☠${RST}"
   [[ -n "$PR_LABEL" ]] && LINE="${LINE} · ${D}${PR_LABEL}${RST}"
-  if [[ "$STATUSLINE_VERBOSE" = "1" ]]; then
-    LINE="${LINE} · ${C}${DASHBOARD_LINK}${RST} · ${M}${LESSONS_LINK}${RST}"
-    [[ -n "$LATEST_LESSON_LINK" ]] && LINE="${LINE} · ${D}${LATEST_LESSON_LINK}${RST}"
-  fi
-
+  
+  LINE="${LINE} · ${C}${DASHBOARD_LINK}${RST}"
+  [[ -n "$LATEST_LESSON_LINK" ]] && LINE="${LINE} · ${D}${LATEST_LESSON_LINK}${RST}"
+  
   printf '%b\n' "$LINE"
 fi

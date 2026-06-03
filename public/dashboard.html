@@ -189,11 +189,18 @@
   .settings-card .team-value, .origin-value { font-size: 18px; font-weight: 700; color: var(--text); margin-top: 8px; word-break: break-word; }
   .origin-list, .layer-list, .routing-list { display: flex; flex-direction: column; gap: 12px; }
   .origin-note, .layer-note, .routing-note { font-size: 13px; color: var(--text-muted); line-height: 1.55; }
+  .enterprise-chat-layout { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr); gap: 16px; align-items: start; }
+  .enterprise-chat-box { min-height: 110px; resize: vertical; width: 100%; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; color: var(--text); font-size: 14px; font-family: var(--font); line-height: 1.5; }
+  .enterprise-chat-box:focus { outline: none; border-color: var(--cyan); }
+  .enterprise-answer { margin-top: 14px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 16px; min-height: 92px; font-size: 14px; color: var(--text); line-height: 1.65; }
+  .enterprise-answer.blocked { border-color: rgba(248,113,113,0.45); background: rgba(248,113,113,0.07); }
+  .enterprise-source-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .enterprise-source { font-size: 11px; border: 1px solid var(--border); border-radius: 999px; padding: 4px 9px; color: var(--text-muted); background: var(--bg-card); }
 
   @media (max-width: 700px) {
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
     .search-filters { flex-wrap: wrap; }
-    .team-grid, .template-grid, .team-columns, .settings-grid, .generated-grid, .inventory-grid { grid-template-columns: 1fr; }
+    .team-grid, .template-grid, .team-columns, .settings-grid, .generated-grid, .inventory-grid, .enterprise-chat-layout { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -263,7 +270,11 @@
       <input id="chatInput" class="auth-input" style="flex:1;" placeholder="e.g. What mistakes have we made, and how do we avoid them?" onkeydown="if(event.key==='Enter'){event.preventDefault();sendChat();}" />
       <button class="btn" id="chatSend" onclick="sendChat()">Ask</button>
     </div>
-    <div id="chatHint" style="font-size:12px;color:var(--text-muted);margin-top:8px;">Powered by your captured lessons + Gemini. Set <code style="font-family:var(--mono);">GEMINI_API_KEY</code> (<code style="font-family:var(--mono);">npx thumbgate setup-vertex --write</code>) to enable.</div>
+    <div id="chatHint" style="font-size:12px;color:var(--text-muted);margin-top:8px;display:flex;align-items:center;gap:8px;">
+      <span>Powered by your captured lessons + Gemini/Perplexity hybrid (local-cloud).</span>
+      <input type="password" id="geminiKeyInput" placeholder="Set GEMINI_API_KEY..." style="background:var(--bg-raised); border:1px solid var(--border); border-radius:4px; padding:4px 8px; color:var(--text); font-family:var(--mono); font-size:11px; flex:1; max-width: 250px;" onkeydown="if(event.key==='Enter'){event.preventDefault();saveGeminiKey();}" />
+      <button class="btn-outline" style="padding:4px 10px;font-size:11px;border-radius:4px;" onclick="saveGeminiKey()">Save</button>
+    </div>
   </div>
 
   <div class="panel" id="reviewDeltaPanel" style="margin-bottom:20px;">
@@ -297,6 +308,8 @@
     <div class="tab active" onclick="switchTab('search')">🔍 Search Memories</div>
     <div class="tab" onclick="switchTab('gates')">🛡️ Active Gates</div>
     <div class="tab" onclick="switchTab('team')">👥 Team</div>
+    <div class="tab" onclick="switchTab('enterprise')">🏢 Enterprise Chat</div>
+    <div class="tab" onclick="switchTab('ai-inventory')">🧬 AI Inventory</div>
     <div class="tab" onclick="switchTab('generated')">🧩 Generated Views</div>
     <div class="tab" onclick="switchTab('settings')">⚙️ Policy Origins</div>
     <div class="tab" onclick="switchTab('templates')">🧱 Gate Templates</div>
@@ -395,6 +408,56 @@
             <h3>Latest Replay Artifacts</h3>
             <div class="inventory-sources" id="regulatedProofArtifacts"><div class="loading">Loading replay artifacts...</div></div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ENTERPRISE CHAT TAB -->
+  <div class="tab-content" id="tab-enterprise">
+    <div class="templates-section">
+      <h2>Enterprise Dialogflow Data Chat</h2>
+      <p class="template-summary">Ask questions over local ThumbGate feedback, lessons, gates, team posture, and Vertex/DFCX readiness. This local panel uses ThumbGate's DFCX-compatible guard before data access; it does not claim a live Google Dialogflow CX agent unless deployment evidence is configured.</p>
+      <div class="enterprise-chat-layout">
+        <div class="panel">
+          <h3>Chat With Local ThumbGate Data</h3>
+          <textarea class="enterprise-chat-box" id="enterpriseChatPrompt" placeholder="Ask: What mistakes are recurring? Which gates blocked the most? Is Vertex configured? What is our DFCX readiness?"></textarea>
+          <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap;">
+            <button class="btn" id="enterpriseChatBtn" onclick="sendEnterpriseChat()">Ask ThumbGate</button>
+            <button class="btn-outline" onclick="setEnterprisePrompt('Which gates are blocking risky actions?')">Gates</button>
+            <button class="btn-outline" onclick="setEnterprisePrompt('What feedback mistakes keep repeating?')">Feedback</button>
+            <button class="btn-outline" onclick="setEnterprisePrompt('Is Vertex and DFCX configured?')">Cloud</button>
+          </div>
+          <div class="enterprise-answer" id="enterpriseChatAnswer">Connect your dashboard, then ask about local ThumbGate data.</div>
+          <div class="enterprise-source-list" id="enterpriseChatSources"></div>
+        </div>
+        <div class="panel">
+          <h3>Enterprise Readiness</h3>
+          <div class="inventory-tools" id="enterpriseStatusCards"><div class="loading">Loading enterprise status...</div></div>
+          <div class="template-summary" style="margin-top:14px;margin-bottom:0;">Live DFCX proof must come from the Conversational Agents console, deployed webhook URL, Cloud Run logs, or the Dialogflow CX REST API <code style="font-family:var(--mono);font-size:12px;">projects.locations.agents</code>.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI INVENTORY TAB -->
+  <div class="tab-content" id="tab-ai-inventory">
+    <div class="templates-section">
+      <h2>AI Component Inventory</h2>
+      <p class="template-summary">Enterprise evidence for AI/ML usage: provider SDKs, agent frameworks, vector databases, Vertex/Gemini/Dialogflow CX references, and local model artifacts. Export this as ML-BOM proof before claiming an AI system is production-ready.</p>
+      <div class="inventory-grid" id="aiInventorySummaryCards"><div class="loading">Scanning AI inventory...</div></div>
+      <div class="team-columns" style="margin-top:16px;">
+        <div class="panel">
+          <h3>Detected Components</h3>
+          <div class="inventory-tools" id="aiInventoryComponents"><div class="loading">Scanning components...</div></div>
+        </div>
+        <div class="panel">
+          <h3>Export Evidence</h3>
+          <div class="template-summary" style="margin-bottom:12px;">CLI export:</div>
+          <pre style="white-space:pre-wrap;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;color:var(--text);">npx thumbgate ai-inventory --format=cyclonedx --output=.thumbgate/ai-mlbom.json</pre>
+          <div class="template-summary" style="margin-top:12px;">API export:</div>
+          <pre style="white-space:pre-wrap;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;color:var(--text);">GET /v1/dashboard/ai-inventory?format=cyclonedx</pre>
+          <div id="aiInventoryExportNote" class="template-summary" style="margin-top:12px;margin-bottom:0;">Waiting for inventory evidence...</div>
         </div>
       </div>
     </div>
@@ -646,8 +709,30 @@ let currentGeneratedView = 'team-review';
 const BOOTSTRAP_API_KEY = __DASHBOARD_BOOTSTRAP_KEY__;
 const LOCAL_PRO_BOOTSTRAP = __DASHBOARD_BOOTSTRAP_ENABLED__;
 
+let ACTIVE_PROJECT_DIR = '';
+try {
+  var urlParams = new URLSearchParams(window.location.search);
+  ACTIVE_PROJECT_DIR = urlParams.get('project') || '';
+} catch (e) {}
+
+function preserveProjectQueryParams() {
+  if (!ACTIVE_PROJECT_DIR) return;
+  var links = document.querySelectorAll('a[href^="/dashboard"], a[href^="/lessons"], a[href="/"]');
+  links.forEach(function(link) {
+    try {
+      var url = new URL(link.href, window.location.origin);
+      url.searchParams.set('project', ACTIVE_PROJECT_DIR);
+      link.href = url.pathname + url.search + url.hash;
+    } catch (e) {}
+  });
+}
+
 function getHeaders() {
-  return { 'Authorization': 'Bearer ' + API_KEY, 'Content-Type': 'application/json' };
+  var headers = { 'Authorization': 'Bearer ' + API_KEY, 'Content-Type': 'application/json' };
+  if (ACTIVE_PROJECT_DIR) {
+    headers['x-thumbgate-project-dir'] = ACTIVE_PROJECT_DIR;
+  }
+  return headers;
 }
 
 // --- Chat with your data ---------------------------------------------------
@@ -671,13 +756,32 @@ function chatRenderAnswer(a) {
     .replace(/\[(\d+)\]/g, '<sup style="color:var(--cyan);font-weight:600;">[$1]</sup>')
     .replace(/\n/g, '<br>');
 }
-function chatRenderSources(sources) {
+function chatRenderSources(sources, answerText) {
   if (!sources || !sources.length) return '';
+  var citedNums = new Set();
+  var regex = /\[(\d+)\]/g;
+  var match;
+  while ((match = regex.exec(answerText || '')) !== null) {
+    citedNums.add(parseInt(match[1], 10));
+  }
+
   var items = sources.map(function (s, i) {
+    var num = i + 1;
+    var isCited = citedNums.has(num);
     var label = chatEscape(String(s.title || s.id || '').slice(0, 64));
-    return '<span title="' + label + '" style="display:inline-block;font-size:11px;background:var(--cyan-dim);color:var(--cyan);padding:2px 7px;border-radius:5px;margin:4px 5px 0 0;">[' + (i + 1) + '] ' + label + '</span>';
+    
+    var bg = isCited ? 'var(--cyan-dim)' : 'var(--bg-raised)';
+    var color = isCited ? 'var(--cyan)' : 'var(--text-muted)';
+    var border = isCited ? '1px solid var(--cyan)' : '1px solid var(--border)';
+    var weight = isCited ? '600' : 'normal';
+
+    return '<span title="' + label + '" style="display:inline-block;font-size:11px;background:' + bg + ';color:' + color + ';border:' + border + ';font-weight:' + weight + ';padding:2px 7px;border-radius:5px;margin:4px 5px 0 0;">[' + num + '] ' + label + '</span>';
   }).join('');
-  return '<div style="margin-top:10px;">' + items + '</div>';
+
+  return '<div style="margin-top:12px;border-top:1px dashed var(--border);padding-top:10px;">' +
+         '<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;font-weight:600;">Database logs analyzed to answer your question:</div>' +
+         items +
+         '</div>';
 }
 async function sendChat() {
   var input = document.getElementById('chatInput');
@@ -691,14 +795,13 @@ async function sendChat() {
   sendBtn.disabled = true;
   var pending = chatAppend('bot', 'Thinking…');
   try {
-    var res = await fetch('/v1/chat', {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify({ question: q })
-    });
+    var res = await fetch('/v1/chat', { method: 'POST', headers: getHeaders(), body: JSON.stringify({ question: q }) });
     var data = await res.json();
     if (data && data.ok) {
-      pending.innerHTML = chatRenderAnswer(data.answer) + chatRenderSources(data.sources);
+      pending.innerHTML = chatRenderAnswer(data.answer) + chatRenderSources(data.sources, data.answer);
+    } else if (data && data.error === 'gemini_error') {
+      pending.innerHTML = '<em style="color:#f87171;">Gemini rejected the key: ' + chatEscape(data.message || 'invalid') +
+        '<br>Fix: paste a valid key in the "Set GEMINI_API_KEY..." box below (get one at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#67e8f9;">AI Studio</a>) and click Save.</em>';
     } else {
       pending.innerHTML = '<em style="color:var(--text-muted);">' + chatEscape((data && data.message) || 'Chat is unavailable.') + '</em>';
     }
@@ -707,6 +810,37 @@ async function sendChat() {
   } finally {
     sendBtn.disabled = false;
     messages.scrollTop = messages.scrollHeight;
+  }
+}
+
+async function saveGeminiKey() {
+  var input = document.getElementById('geminiKeyInput');
+  var val = (input.value || '').trim();
+  if (!val) return;
+  var oldPlaceholder = input.placeholder;
+  input.disabled = true;
+  input.placeholder = 'Saving...';
+  try {
+    var res = await fetch('/v1/settings/gemini-key', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ key: val })
+    });
+    var data = await res.json();
+    if (data && data.ok) {
+      input.value = '';
+      input.placeholder = '✓ Key saved to .env';
+      setTimeout(function() {
+        document.getElementById('chatHint').innerHTML = '<span style="color:var(--green)">✓ Key validated. Hybrid (Perplexity/Gemini) supported for chat with your data.</span>';
+      }, 2000);
+    } else {
+      input.placeholder = '✗ Failed: ' + (data.message || data.error || 'Unknown error');
+    }
+  } catch (e) {
+    input.placeholder = '✗ Network error';
+  } finally {
+    input.disabled = false;
+    setTimeout(function() { if (input.placeholder.startsWith('✗')) input.placeholder = oldPlaceholder; }, 3000);
   }
 }
 
@@ -719,25 +853,46 @@ async function connect(options) {
   var input = document.getElementById('apiKey');
   API_KEY = String(opts.key || input.value || '').trim();
   if (!API_KEY) return;
+  
+  var isEnterprise = API_KEY.startsWith('tg_op_') || API_KEY.startsWith('tg_creator_');
+  var tierName = isEnterprise ? 'Enterprise' : 'Pro';
+
   const status = document.getElementById('authStatus');
   const btn = document.getElementById('connectBtn');
   btn.disabled = true;
   status.className = 'auth-status';
-  status.textContent = opts.localPro ? 'Connecting local dashboard...' : 'Connecting...';
+  status.textContent = opts.localPro ? `Connecting local dashboard...` : 'Connecting...';
   try {
     const res = await fetch('/v1/feedback/stats', { headers: getHeaders() });
     if (!res.ok) throw new Error('Invalid API key');
     const data = await res.json();
+    
+    if (data.tier) {
+      isEnterprise = (data.tier === 'Enterprise');
+      tierName = data.tier;
+    }
+    
+    if (data.geminiKeyStatus === 'validated' || data.geminiValidatedAt) {
+      var when = data.geminiValidatedAt ? ' (validated ' + new Date(data.geminiValidatedAt).toLocaleTimeString() + ')' : '';
+      document.getElementById('chatHint').innerHTML = '<span style="color:var(--green)">✓ Gemini API key validated' + when + '. You can now chat with your data.</span>';
+    } else if (data.perplexityConfigured) {
+      document.getElementById('chatHint').innerHTML = '<span style="color:var(--green)">✓ Perplexity hybrid (local-cloud) key present. Supports hybrid inference for chat with your data.</span>';
+    } else if (data.geminiConfigured) {
+      document.getElementById('chatHint').innerHTML = '<span style="color:#f59e0b">⚠ Gemini key present in .env (click Save below to validate it). Perplexity hybrid also supported for cost/privacy.</span>';
+    }
+
     status.className = 'auth-status ok';
-    status.textContent = opts.localPro ? '✓ Local Pro dashboard connected' : '✓ Connected';
+    status.textContent = opts.localPro ? `✓ Local ${tierName} connected` : '✓ Connected';
     document.getElementById('dashboardContent').style.display = 'block';
     if (opts.localPro) {
+      const localProActiveMessage = 'Local Pro is active on this machine. Your dashboard is using the saved license key automatically.';
+      const localEnterpriseActiveMessage = 'Local Enterprise is active on this machine. Your dashboard is using the saved license key automatically.';
       input.value = 'local-license';
       input.disabled = true;
-      input.placeholder = 'Local Pro auto-connected';
+      input.placeholder = `Local ${tierName} auto-connected`;
       btn.disabled = true;
       document.getElementById('demoBtn').style.display = 'none';
-      document.getElementById('authHelp').textContent = 'Local Pro is active on this machine. Your personal dashboard is using the saved license key automatically.';
+      document.getElementById('authHelp').textContent = isEnterprise ? localEnterpriseActiveMessage : localProActiveMessage;
     }
     renderStats(data);
     setSelectedCard('all');
@@ -750,7 +905,7 @@ async function connect(options) {
     status.className = 'auth-status err';
     status.textContent = '✗ ' + e.message;
     if (opts.localPro) {
-      document.getElementById('authHelp').textContent = 'Local Pro bootstrap failed. Paste your THUMBGATE_API_KEY manually or retry the local launcher.';
+      document.getElementById('authHelp').textContent = `Local ${tierName} bootstrap failed. Paste your THUMBGATE_API_KEY manually or retry the local launcher.`;
     }
   }
   if (!opts.localPro) {
@@ -936,11 +1091,11 @@ function switchTab(name) {
 /**
  * Resolve deep-link tab target from URL hash or query string.
  * Supports: /dashboard#insights, /dashboard?tab=gates, /dashboard#tab-export.
- * Valid targets match tab-content ids (search, gates, team, generated,
- * settings, templates, insights, export).
+ * Valid targets match tab-content ids (search, gates, team, enterprise,
+ * ai-inventory, generated, settings, templates, insights, export).
  */
 function getDeepLinkTab() {
-  var valid = ['search', 'gates', 'team', 'generated', 'settings', 'templates', 'insights', 'export'];
+  var valid = ['search', 'gates', 'team', 'enterprise', 'ai-inventory', 'generated', 'settings', 'templates', 'insights', 'export'];
   var raw = (window.location.hash || '').replace(/^#/, '').replace(/^tab-/, '');
   if (!raw) {
     try {
@@ -1107,9 +1262,14 @@ async function markReviewed() {
   try {
     var res = await fetch('/v1/dashboard/review-state', {
       method: 'POST',
-      headers: getHeaders()
+      headers: getHeaders(),
+      body: JSON.stringify({ reviewedAt: new Date().toISOString() })
     });
-    if (!res.ok) throw new Error('Failed to save review checkpoint');
+    if (!res.ok) {
+      var errText = '';
+      try { errText = await res.text(); } catch (_) { errText = ''; }
+      throw new Error(errText || 'Failed to save review checkpoint');
+    }
     var body = await res.json();
     renderReviewDelta(body.reviewDelta || {});
   } catch (e) {
@@ -1147,6 +1307,68 @@ function renderDashboardData(data) {
   renderRegulatedProof(data.regulatedProof || {});
   renderTemplates(data.templateLibrary || {});
   renderInsights(data);
+  loadAiInventory();
+  loadEnterpriseDialogflowStatus();
+}
+
+async function loadAiInventory() {
+  var summaryEl = document.getElementById('aiInventorySummaryCards');
+  var componentsEl = document.getElementById('aiInventoryComponents');
+  var exportEl = document.getElementById('aiInventoryExportNote');
+  if (!summaryEl || !componentsEl) return;
+
+  try {
+    var res = await fetch('/v1/dashboard/ai-inventory', { headers: getHeaders() });
+    if (!res.ok) {
+      var text = await res.text();
+      throw new Error(text || 'Failed to load AI inventory');
+    }
+    var inventory = await res.json();
+    renderAiInventory(inventory);
+  } catch (e) {
+    var message = e && e.message ? e.message : 'Failed to load AI inventory';
+    setMessageState(summaryEl, 'empty', message);
+    setMessageState(componentsEl, 'empty', message);
+    if (exportEl) exportEl.textContent = message;
+  }
+}
+
+function renderAiInventory(inventory) {
+  var summaryEl = document.getElementById('aiInventorySummaryCards');
+  var componentsEl = document.getElementById('aiInventoryComponents');
+  var exportEl = document.getElementById('aiInventoryExportNote');
+  var components = Array.isArray(inventory.components) ? inventory.components : [];
+  var byCategory = inventory.summary && inventory.summary.byCategory ? inventory.summary.byCategory : {};
+  var modelArtifacts = byCategory.model_artifact || 0;
+  var vectorDbs = byCategory.vector_database || 0;
+
+  summaryEl.innerHTML = [
+    '<div class="team-card"><div class="team-kicker">Files scanned</div><div class="team-value">' + escHtml(String(inventory.filesScanned || 0)) + '</div><div class="team-note">source, manifests, model artifacts</div></div>',
+    '<div class="team-card"><div class="team-kicker">AI components</div><div class="team-value">' + escHtml(String(inventory.componentCount || components.length)) + '</div><div class="team-note">inventory evidence items</div></div>',
+    '<div class="team-card"><div class="team-kicker">Vector stores</div><div class="team-value">' + escHtml(String(vectorDbs)) + '</div><div class="team-note">retrieval governance surface</div></div>',
+    '<div class="team-card"><div class="team-kicker">Model artifacts</div><div class="team-value">' + escHtml(String(modelArtifacts)) + '</div><div class="team-note">local ML-BOM artifacts</div></div>'
+  ].join('');
+
+  if (!components.length) {
+    componentsEl.innerHTML = '<div class="empty">No AI/ML components detected in this project root.</div>';
+  } else {
+    componentsEl.innerHTML = components.map(function(item) {
+      var evidence = Array.isArray(item.evidence) ? item.evidence.slice(0, 4) : [];
+      var evidenceHtml = evidence.map(function(e) {
+        var loc = e.line ? (e.file + ':' + e.line) : e.file;
+        return '<li><code>' + escHtml(loc || 'unknown') + '</code> <span style="color:var(--text-muted);">[' + escHtml(e.kind || 'evidence') + ']</span></li>';
+      }).join('');
+      return '<div class="tool-card">' +
+        '<div class="tool-title">' + escHtml(item.name || item.id || 'AI component') + '</div>' +
+        '<div class="tool-meta">' + escHtml(item.category || 'unknown') + ' · ' + escHtml(item.ecosystem || 'unknown') + '</div>' +
+        '<ul style="margin:8px 0 0 18px;padding:0;">' + evidenceHtml + '</ul>' +
+      '</div>';
+    }).join('');
+  }
+
+  if (exportEl) {
+    exportEl.textContent = 'Ready: export ' + String(inventory.componentCount || components.length) + ' component(s) as CycloneDX ML-BOM evidence.';
+  }
 }
 
 function renderGeneratedViewToolbar(spec) {
@@ -1586,6 +1808,83 @@ function renderTemplates(templateLibrary) {
     : '<div class="empty">No check templates available</div>';
 }
 
+function renderEnterpriseStatus(status) {
+  var target = document.getElementById('enterpriseStatusCards');
+  if (!target) return;
+  var vertex = status && status.vertex ? status.vertex : {};
+  var dfcx = status && status.dfcx ? status.dfcx : {};
+  var rows = [
+    { name: 'Vertex routing', value: vertex.configured ? 'Configured' : 'Not configured', note: vertex.projectId ? ('Project: ' + vertex.projectId + ' · ' + (vertex.location || '')) : 'Run setup-vertex or set GOOGLE_VERTEX_PROJECT.' },
+    { name: 'DFCX live agent', value: dfcx.liveAgentConfigured ? 'Env present' : 'Not proven', note: dfcx.verification || 'Verify with REST/console evidence.' },
+    { name: 'Fulfillment proxy', value: dfcx.fulfillmentProxyConfigured ? 'Configured' : 'Not configured', note: 'Set THUMBGATE_DFCX_FULFILLMENT_URL for a deployed proxy.' },
+    { name: 'gcloud CX command', value: 'Unsupported', note: 'Do not use the old alpha gcloud CX command group; use REST API or console.' }
+  ];
+  target.innerHTML = rows.map(function(row) {
+    return '<div class="inventory-row"><div><div class="inventory-name">' + escHtml(row.name) + '</div><div class="inventory-subtitle">' + escHtml(row.note) + '</div></div><span class="remediation-action">' + escHtml(row.value) + '</span></div>';
+  }).join('');
+}
+
+async function loadEnterpriseDialogflowStatus() {
+  if (!API_KEY || isDemo) {
+    renderEnterpriseStatus({ vertex: {}, dfcx: { verification: 'Connect to load local status.' } });
+    return;
+  }
+  try {
+    var res = await fetch('/v1/enterprise/dialogflow/status', { headers: getHeaders() });
+    if (!res.ok) throw new Error('status unavailable');
+    renderEnterpriseStatus(await res.json());
+  } catch (err) {
+    var target = document.getElementById('enterpriseStatusCards');
+    if (target) target.innerHTML = '<div class="empty">Enterprise status unavailable.</div>';
+  }
+}
+
+function setEnterprisePrompt(prompt) {
+  var input = document.getElementById('enterpriseChatPrompt');
+  if (input) input.value = prompt;
+}
+
+async function sendEnterpriseChat() {
+  var input = document.getElementById('enterpriseChatPrompt');
+  var answer = document.getElementById('enterpriseChatAnswer');
+  var sources = document.getElementById('enterpriseChatSources');
+  var button = document.getElementById('enterpriseChatBtn');
+  var prompt = input ? input.value.trim() : '';
+  if (!prompt) {
+    answer.textContent = 'Ask a question first.';
+    return;
+  }
+  if (!API_KEY) {
+    answer.textContent = 'Connect your dashboard before using Enterprise Chat.';
+    return;
+  }
+  button.disabled = true;
+  answer.className = 'enterprise-answer';
+  answer.textContent = 'Running the DFCX guard and reading local dashboard data...';
+  sources.innerHTML = '';
+  try {
+    var res = await fetch('/v1/enterprise/dialogflow/chat', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ prompt: prompt })
+    });
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.detail || data.error || 'chat failed');
+    answer.className = 'enterprise-answer' + (data.blocked ? ' blocked' : '');
+    answer.textContent = data.answer || 'No answer returned.';
+    var list = Array.isArray(data.sources) ? data.sources : [];
+    sources.innerHTML = list.map(function(source) {
+      return '<span class="enterprise-source">' + escHtml(source) + '</span>';
+    }).join('');
+    renderEnterpriseStatus(data.status || {});
+  } catch (err) {
+    answer.className = 'enterprise-answer blocked';
+    answer.textContent = err.message || 'Enterprise chat failed.';
+  } finally {
+    button.disabled = false;
+  }
+}
+
 document.addEventListener('click', function(event) {
   var tagButton = event.target.closest('.tag[data-tag]');
   if (!tagButton) return;
@@ -1862,6 +2161,7 @@ function loadDemo() {
 
 // Auto-load demo on first visit so visitors see the product immediately
 window.addEventListener('DOMContentLoaded', function() {
+  preserveProjectQueryParams();
   if (hasBootstrapKey()) {
     connect({ key: BOOTSTRAP_API_KEY, localPro: true });
     return;
@@ -2170,6 +2470,7 @@ function renderGateAuditChartFromData(gateAudit) {
     },
   });
 }
+
 </script>
 </body>
 </html>

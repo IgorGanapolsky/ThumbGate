@@ -352,6 +352,19 @@ const CLI_COMMANDS = [
     ],
   }),
   discoveryCommand({
+    name: 'ai-inventory',
+    aliases: ['ai-component-inventory', 'ml-bom', 'mlbom'],
+    description: 'Scan AI/ML components and export enterprise ML-BOM evidence',
+    mcpTool: 'ai_component_inventory',
+    flags: [
+      jsonFlag(),
+      { name: 'root', type: 'string', description: 'Project root to scan' },
+      { name: 'format', type: 'string', description: 'summary, json, or cyclonedx' },
+      { name: 'output', type: 'string', description: 'Write evidence to this path' },
+      { name: 'max-files', type: 'number', description: 'Maximum files to scan' },
+    ],
+  }),
+  discoveryCommand({
     name: 'long-running-agent-context-guardrails',
     aliases: ['agent-context-guardrails', 'slack-context-guardrails'],
     description: 'Map long-running agent context risks to director-journal and critic-review gates',

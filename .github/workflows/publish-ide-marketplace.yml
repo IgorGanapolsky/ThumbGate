@@ -51,6 +51,23 @@ jobs:
             echo "name=thumbgate-${version}.vsix"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Verify marketplace publishing credentials
+        run: |
+          missing=()
+          if [ -z "$OVSX_PAT" ]; then missing+=("OVSX_PAT"); fi
+          if [ -z "$VSCE_PAT" ]; then missing+=("VSCE_PAT"); fi
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::Missing marketplace publish secrets: ${missing[*]}"
+            {
+              echo "## IDE Marketplace Publish Blocked"
+              echo
+              echo "Missing required GitHub Actions secrets: ${missing[*]}"
+              echo
+              echo "The workflow intentionally fails here so a packaged VSIX is not mistaken for a live Open VSX or VS Code Marketplace publication."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v7
         with:
@@ -73,14 +90,12 @@ jobs:
         run: |
           gh release upload "v${VERSION}" "${{ steps.vsix.outputs.path }}" --clobber
 
-      - name: Publish to Open VSX when token exists
-        if: env.OVSX_PAT != ''
+      - name: Publish to Open VSX
         run: |
           cd plugins/vscode-extension
           npx --yes ovsx publish "${{ steps.vsix.outputs.name }}" --pat "$OVSX_PAT"
 
-      - name: Publish to VS Code Marketplace when token exists
-        if: env.VSCE_PAT != ''
+      - name: Publish to VS Code Marketplace
         run: |
           cd plugins/vscode-extension
           npx --yes @vscode/vsce publish --packagePath "${{ steps.vsix.outputs.name }}" -p "$VSCE_PAT"

@@ -32,6 +32,7 @@ ThumbGate is the operational harness around AI agents: permissioned routines, ev
 - Fork one isolated Artifact/worktree per task.
 - Run agents with `read`, `write`, `run_tests`, and `commit` tools.
 - Review fork diffs, tests, logs, and decision-journal entries before merging.
+- Commit deterministic workflow scripts and run contracts to git, then gate each workflow phase with branch scope, allowed paths, required evidence, and completion proof.
 
 ## Managed Memory
 
@@ -61,7 +62,10 @@ ThumbGate is the operational harness around AI agents: permissioned routines, ev
 - Split monolithic agents into narrow sub-agent stages.
 - Use runtime-validated structured outputs instead of prompt-only JSON formatting.
 - Replace hardcoded context with refreshed retrieval over indexed source material.
+- Treat enterprise context as an operating layer, not a document dump: connect policies, prior failures, approvals, source systems, and proof artifacts into one reviewable context brain before agents act.
+- Turn context into enforcement: any repeated failure pattern or compliance rule that can be recognized before execution should become a pre-action gate, not another note in a prompt.
 - For hybrid questions across tables, graph relationships, and documents, use a multi-step supervisor that decomposes the query, calls native sources in parallel, reconciles results, and self-corrects empty overlaps.
+- For claw-style and hybrid inference agents (e.g. EnterpriseClaw + Perplexity hybrid local-cloud): use ThumbGate's claw gates (dynamic tool block, screen review, agent identity, FS access, hybrid routing approval), evaluateClawPretool, and model candidates (automation-anywhere/enterprise-claw + perplexity/hybrid-*) to govern device access, runtime tools, screen interaction, and local/cloud routing. See adapters/claw/CLAW.md + adapters/perplexity/HYBRID.md. Capture with claw_action_type, agent_identity, hybrid_route for lessons. Essential for on-prem/air-gapped/hybrid enterprise where governance is catching up.
 - Add new enterprise data sources with plain-language source descriptions and incremental rollout; avoid connecting every source at once.
 - For broad API surfaces, prefer a code-mode MCP pattern: `search` the API catalog, then `execute` bounded code against typed helpers in a sandbox.
 - Keep code-mode execution isolated: no filesystem, no exposed environment variables, explicit outbound handlers only, and idempotency keys for writes.
@@ -74,4 +78,7 @@ ThumbGate is the operational harness around AI agents: permissioned routines, ev
 - Package the system as a webinar: "Stop AI Agents From Repeating Expensive Mistakes."
 - Put advanced templates behind a metered paywall or paid trial.
 - Use newsletter, LinkedIn, and webinar loops to demonstrate feedback -> gate -> replay blocked -> proof export.
+- Use low-cost indexed business directories such as Skip as secondary entity surfaces: publish the business profile, one workflow-hardening product/service showcase, and weekly posts that point back to owned proof guides with UTM tags.
+- Publish and discuss deterministic-workflow content around Claude Code workflows: scripted orchestration is the setup, ThumbGate is the proof gate that stops repeated bad actions inside the run.
+- Pitch AI publications on the category shift from "agent memory" to "agent memory with enforcement": context systems help agents remember, but ThumbGate blocks the repeated bad action before it runs.
 - Repeat the same entity claims across machine-readable fragments, public context docs, GitHub, npm, social posts, comparison pages, and proof assets so AI search systems can cite ThumbGate consistently.

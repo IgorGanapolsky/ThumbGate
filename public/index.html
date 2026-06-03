@@ -20,7 +20,7 @@ __GOOGLE_SITE_VERIFICATION_META__
 <meta property="og:image" content="https://thumbgate.ai/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://thumbgate.ai/og.png">
-<meta name="thumbgate-version" content="1.26.0">
+<meta name="thumbgate-version" content="1.26.8">
 <meta name="keywords" content="ThumbGate, thumbgate, AI agent orchestration, AI experience orchestration, agentic development cycle, AC/DC framework, Guide Generate Verify Solve, agent enforcement layer, save LLM tokens, reduce Claude API cost, reduce OpenAI cost, AI agent token savings, prevent LLM retries, prevent hallucination retries, stop AI token waste, pre-action checks, agent governance, Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, workflow hardening, context engineering, AI authenticity, brand authenticity AI">
 <link rel="canonical" href="__APP_ORIGIN__/">
 <link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
@@ -574,6 +574,15 @@ __GA_BOOTSTRAP__
   .price-card li { font-size: 14px; color: var(--text-muted); padding: 6px 0; display: flex; align-items: flex-start; gap: 8px; }
   .price-card li::before { content: "✓"; color: var(--cyan); font-weight: 700; flex-shrink: 0; }
   .price-card.pro li::before { color: var(--cyan); }
+  .pricing-matrix { max-width: 1080px; margin: 24px auto 0; overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-card); }
+  .pricing-matrix table { width: 100%; min-width: 760px; border-collapse: collapse; }
+  .pricing-matrix caption { text-align: left; padding: 18px 18px 0; color: var(--text); font-weight: 800; font-size: 16px; }
+  .pricing-matrix th,
+  .pricing-matrix td { padding: 13px 16px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; font-size: 13px; line-height: 1.45; color: var(--text-muted); }
+  .pricing-matrix th { color: var(--cyan); background: rgba(34,211,238,0.06); font-weight: 800; }
+  .pricing-matrix tr:last-child td { border-bottom: 0; }
+  .pricing-matrix strong { color: var(--text); }
+  .pricing-note { max-width: 880px; margin: 14px auto 0; color: var(--text-muted); font-size: 12px; line-height: 1.55; text-align: center; }
   .btn-free,
   .btn-demo-link { display: block; text-align: center; padding: 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); text-decoration: none; font-size: 14px; font-weight: 500; transition: border-color 0.15s; }
   .btn-free:hover,
@@ -764,6 +773,11 @@ __GA_BOOTSTRAP__
     <figure style="max-width:760px;margin:32px auto 0;padding:20px 24px;border-left:3px solid var(--cyan);background:rgba(34,211,238,0.04);border-radius:0 8px 8px 0;">
       <blockquote style="margin:0;font-size:18px;line-height:1.5;color:var(--text);font-style:italic;">&ldquo;A better dashboard doesn&rsquo;t make the agents more reliable. The hard part isn&rsquo;t visibility. It&rsquo;s trust.&rdquo;</blockquote>
       <figcaption style="margin-top:12px;font-size:13px;color:var(--text-muted);">— Rob May, CEO &amp; co-founder, Neurometric AI, in <a href="https://thenewstack.io/claude-code-agent-view/" target="_blank" rel="noopener" style="color:var(--cyan);">The New Stack</a> on Anthropic&rsquo;s Claude Code Agent View (May 2026). ThumbGate is the open-source layer that makes the trust part real: PreToolUse gates, thumbs-down to rule, audit trail on every interception.</figcaption>
+    </figure>
+    <figure style="max-width:760px;margin:24px auto 0;padding:20px 24px;border-left:3px solid var(--cyan);background:rgba(34,211,238,0.04);border-radius:0 8px 8px 0;">
+      <p style="margin:0 0 8px;font-size:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;">Local-first is the new default</p>
+      <blockquote style="margin:0;font-size:16px;line-height:1.55;color:var(--text);">Perplexity demoed a Personal Computer agent at Computex 2026 that <strong>asks the user before sending sensitive content to the cloud</strong>. Automation Anywhere shipped EnterpriseClaw with Cisco, NVIDIA, Okta, and OpenAI — <strong>central policy, locally enforced, audit reported back</strong>. The architectural debate is settled. ThumbGate runs the same pattern for the coding agent already on your laptop.</blockquote>
+      <figcaption style="margin-top:12px;font-size:13px;color:var(--text-muted);">Sources: Perplexity at Intel Computex keynote (2026-06-02), Automation Anywhere EnterpriseClaw launch (Imagine 2026), <a href="https://thenewstack.io/automation-anywhere-enterpriseclaw-ai-agents/" target="_blank" rel="noopener" style="color:var(--cyan);">The New Stack coverage</a>.</figcaption>
     </figure>
     <div class="first-check-card" id="first-check">
       <div class="section-label" style="text-align:left;margin-bottom:8px;">First-Dollar Activation Path</div>
@@ -1364,7 +1378,7 @@ __GA_BOOTSTRAP__
       <div class="price-card pro" data-price-dollars="19">
         <div class="tier">Pro</div>
         <div class="price">$19<span style="font-size:16px;color:var(--text-dim)">/mo</span></div>
-        <div class="price-sub"><strong>The free npm package runs your gates locally and never expires.</strong> Pro is what we operate for you: hosted lesson sync across all your machines, adapter matrix kept current as agent runtimes ship breaking changes, and a dashboard you don't have to babysit.</div>
+        <div class="price-sub"><strong>Don't buy a tool — buy hosted sync + compatibility insurance.</strong> The free CLI runs your gates locally, but Pro is what we operate for you: secure SQLite sync across all your machines (saving you from managing database migrations manually across developer boxes) and active adapter maintenance to stay compatible with weekly breaking updates in Claude Code, Cursor, and Cline.</div>
         <ul>
           <li><strong>Block every repeat mistake</strong> — unlimited feedback captures and prevention rules (Free caps at 3 active rules)</li>
           <li><strong>Never re-explain a correction</strong> — lesson recall and search across sessions on every agent surface</li>
@@ -1402,6 +1416,65 @@ __GA_BOOTSTRAP__
         <p style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;">Team is $49/seat/mo with a 3-seat minimum, but team rollouts start through intake so the workflow, shared rules, and rollout proof are explicit before checkout.</p>
       </div>
     </div>
+    <div class="pricing-matrix" aria-label="Plan capability comparison">
+      <table>
+        <caption>Compare plans at a glance</caption>
+        <thead>
+          <tr>
+            <th scope="col">Capability</th>
+            <th scope="col">Free</th>
+            <th scope="col">Pro</th>
+            <th scope="col">Team</th>
+            <th scope="col">Regulated</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Best for</strong></td>
+            <td>Solo proof that a repeat mistake can be blocked</td>
+            <td>One operator who wants hosted sync, dashboard proof, and exports</td>
+            <td>Teams that need one person's correction to protect every seat</td>
+            <td>Banking, insurance, healthcare, public sector, or audited workflows</td>
+          </tr>
+          <tr>
+            <td><strong>Price</strong></td>
+            <td>$0</td>
+            <td>$19/mo or $149/yr</td>
+            <td>$49/seat/mo after scope, 3-seat minimum</td>
+            <td>Scoped after regulated intake</td>
+          </tr>
+          <tr>
+            <td><strong>Feedback captures</strong></td>
+            <td>5/day, 25 total</td>
+            <td>Unlimited</td>
+            <td>Unlimited shared across seats</td>
+            <td>Custom retention and evidence policy</td>
+          </tr>
+          <tr>
+            <td><strong>Active prevention rules</strong></td>
+            <td>3 active rules</td>
+            <td>Unlimited personal rules</td>
+            <td>Shared org rules plus per-seat rules</td>
+            <td>Policy templates, approvals, and audit export</td>
+          </tr>
+          <tr>
+            <td><strong>Dashboard and proof</strong></td>
+            <td>Local CLI evidence</td>
+            <td>Personal dashboard, check debugger, DPO/HF exports</td>
+            <td>Org dashboard, hosted review views, workflow rollout proof</td>
+            <td>SIEM-ready decision trail and compliance evidence package</td>
+          </tr>
+          <tr>
+            <td><strong>How to start</strong></td>
+            <td><code>npx thumbgate init</code></td>
+            <td>Self-serve Stripe checkout</td>
+            <td>Send one repeated workflow failure first</td>
+            <td>Start regulated workflow review</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="pricing-note">Free proves the enforcement loop. Pro removes solo limits. Team and Regulated plans start through intake because shared rules, permissions, rollback paths, and rollout proof must be explicit before checkout.</p>
     <div style="max-width:1080px;margin:24px auto 0;">
       <div class="price-card regulated" style="border:1px solid var(--cyan);background:linear-gradient(180deg, rgba(34,211,238,0.04), transparent);padding:24px 28px;">
         <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:24px;justify-content:space-between;">
@@ -1594,7 +1667,7 @@ __GA_BOOTSTRAP__
       <a href="https://www.linkedin.com/in/igorganapolsky" target="_blank" rel="noopener">LinkedIn</a>
       <a href="/blog">Blog</a>
     </div>
-    <span class="footer-copy">© 2026 ThumbGate · MIT License · npm v1.26.0</span>
+    <span class="footer-copy">© 2026 ThumbGate · MIT License · npm v1.26.8</span>
   </div>
 </footer>
 

@@ -205,6 +205,109 @@ test('workflow sentinel checkpoints background customer-system actions', () => {
   assert.ok(report.remediations.some((entry) => entry.id === 'customer_system_guardrail'));
 });
 
+test('workflow sentinel denies deterministic workflow blocked actions', () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-contract-block-'));
+  const report = evaluateWorkflowSentinel('Bash', {
+    command: 'npm publish --access public',
+    changed_files: ['package.json'],
+  }, {
+    feedbackDir,
+    repoPath: process.cwd(),
+    governanceState: {
+      taskScope: {
+        summary: 'deterministic release workflow',
+        allowedPaths: ['**'],
+        protectedPaths: [],
+      },
+      protectedApprovals: [],
+      branchGovernance: {
+        baseBranch: 'main',
+        prRequired: true,
+      },
+      workflowContract: {
+        workflowId: 'release-proof-run',
+        blockedActions: ['npm publish'],
+        requiredEvidence: ['tests', 'link_check'],
+      },
+    },
+    memoryGuard: { mode: 'allow', reason: '' },
+  });
+
+  assert.equal(report.decision, 'deny');
+  assert.equal(report.workflowContract.mode, 'block');
+  assert.equal(report.workflowContract.violations[0].code, 'blocked_action');
+  assert.equal(report.decisionControl.executionMode, 'blocked');
+  assert.ok(report.remediations.some((entry) => entry.id === 'remove_blocked_workflow_action'));
+});
+
+test('workflow sentinel blocks workflow completion without required evidence', () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-contract-evidence-'));
+  const report = evaluateWorkflowSentinel('Bash', {
+    command: 'git push origin HEAD',
+    changed_files: ['src/api/server.js'],
+    evidence: ['tests'],
+  }, {
+    feedbackDir,
+    repoPath: process.cwd(),
+    governanceState: {
+      taskScope: {
+        summary: 'deterministic implementation workflow',
+        allowedPaths: ['src/**'],
+        protectedPaths: [],
+      },
+      protectedApprovals: [],
+      branchGovernance: {
+        baseBranch: 'main',
+        prRequired: true,
+      },
+      workflowContract: {
+        workflowId: 'pricing-surface-fix',
+        requiredEvidence: ['tests', 'link_check'],
+      },
+    },
+    memoryGuard: { mode: 'allow', reason: '' },
+  });
+
+  assert.equal(report.decision, 'deny');
+  assert.equal(report.workflowContract.mode, 'block');
+  assert.equal(report.workflowContract.violations[0].code, 'missing_required_evidence');
+  assert.deepEqual(report.workflowContract.violations[0].missingEvidence, ['link_check']);
+  assert.ok(report.remediations.some((entry) => entry.id === 'attach_workflow_evidence'));
+});
+
+test('workflow sentinel warns when current branch is outside workflow contract', () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-contract-branch-'));
+  const report = evaluateWorkflowSentinel('Bash', {
+    command: 'node scripts/check.js',
+    changed_files: ['src/api/server.js'],
+  }, {
+    feedbackDir,
+    repoPath: process.cwd(),
+    governanceState: {
+      taskScope: {
+        summary: 'deterministic implementation workflow',
+        allowedPaths: ['src/**'],
+        protectedPaths: [],
+      },
+      protectedApprovals: [],
+      branchGovernance: {
+        baseBranch: 'main',
+        prRequired: true,
+      },
+      workflowContract: {
+        workflowId: 'mainline-only-proof',
+        allowedBranches: ['main'],
+      },
+    },
+    memoryGuard: { mode: 'allow', reason: '' },
+  });
+
+  assert.equal(report.decision, 'warn');
+  assert.equal(report.workflowContract.mode, 'warn');
+  assert.ok(report.workflowContract.violations.some((entry) => entry.code === 'branch_outside_contract'));
+  assert.ok(report.remediations.some((entry) => entry.id === 'switch_to_contract_branch'));
+});
+
 test('workflow sentinel treats explicit changed files as authoritative for PR handoff', () => {
   const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-empty-'));
   const report = evaluateWorkflowSentinel('Bash', {

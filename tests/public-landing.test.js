@@ -591,10 +591,20 @@ test('public Codex plugin page explains install, direct download, and latest run
   assert.match(codexPage, /thumbgate@latest/);
   assert.match(codexPage, /npx thumbgate init --agent codex/);
   assert.match(codexPage, /thumbgate-codex-plugin\.zip/);
+  assert.match(codexPage, /Install with CLI setup/);
+  assert.match(codexPage, /Download zip for review/);
+  assert.match(codexPage, /not a double-click installer/i);
+  assert.match(codexPage, /Desktop install reality/);
+  assert.match(codexPage, /Built by OpenAI/);
+  assert.match(codexPage, /\.agents\/plugins\/marketplace\.json/);
+  assert.match(codexPage, /plugins\/codex-profile/);
+  assert.match(codexPage, /default <code>plugins\/codex<\/code> sparse path/i);
+  assert.match(codexPage, /I searched Plugins for ThumbGate/i);
   assert.match(codexPage, /plugins\/codex-profile\/INSTALL\.md/);
   assert.match(codexPage, /Pre-Action Checks/);
   assert.match(codexPage, /Codex settings/);
   assert.match(codexPage, /Bare "thumbs down" is intentionally too vague/);
+  assert.doesNotMatch(codexPage, />Download Codex plugin</);
 });
 
 test('public landing page FAQ defaults first item open for credibility', () => {
@@ -697,7 +707,7 @@ test('lessons page links to dashboard in nav', () => {
   const html = readLessonsPage();
   assert.match(html, /href="\/dashboard"/);
   assert.match(html, /href="\/lessons"/);
-  assert.match(html, /Local Pro connected/i);
+  assert.match(html, /Local.*connected/i);
   assert.match(html, /__LESSONS_BOOTSTRAP_KEY__/);
   assert.match(html, /\/v1\/lessons\/search/);
   assert.match(html, /Demo preview/i);

@@ -239,6 +239,21 @@ function parseArgs(argv) {
   return args;
 }
 
+function parseTtlMs(value, fallbackMs = 5 * 60 * 1000) {
+  if (value === undefined || value === null || value === true || value === '') return fallbackMs;
+  const raw = String(value).trim().toLowerCase();
+  const match = raw.match(/^(\d+(?:\.\d+)?)(ms|s|m|h)?$/);
+  if (!match) return fallbackMs;
+  const amount = Number(match[1]);
+  if (!Number.isFinite(amount) || amount <= 0) return fallbackMs;
+  const unit = match[2] || 'ms';
+  const factor = unit === 'h' ? 60 * 60 * 1000
+    : unit === 'm' ? 60 * 1000
+      : unit === 's' ? 1000
+        : 1;
+  return Math.round(amount * factor);
+}
+
 function readStdinText() {
   try {
     return fs.readFileSync(0, 'utf8');
@@ -611,10 +626,14 @@ function detectAgent(projectDir) {
   return null;
 }
 
-async function setupVertex() {
+async function setupVertex(options = {}) {
   const { execSync } = require('child_process');
+  const dryRun = options.dryRun === true || options['dry-run'] === true;
   console.log(`\nthumbgate setup-vertex v${pkgVersion()}`);
   console.log('  Zero-friction Google Cloud & Vertex AI onboarding...');
+  if (dryRun) {
+    console.log('  Dry run: will detect gcloud account/project, but will not enable services or write .env.');
+  }
   console.log('');
 
   // 1. Detect gcloud CLI
@@ -648,6 +667,14 @@ async function setupVertex() {
   // Validate project ID matches GCP format before use in shell
   if (!/^[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(activeProject)) {
     console.log('  ⚠️  Invalid GCP project ID format. Aborting.');
+    return;
+  }
+
+  if (dryRun) {
+    console.log(`  DRY-RUN would enable Vertex AI API for project: ${activeProject}`);
+    console.log(`  DRY-RUN would write THUMBGATE_PROVIDER_MODE=vertex and VERTEX_PROJECT_ID=${activeProject} to .env.`);
+    console.log('');
+    console.log('  Dry run complete. Re-run without --dry-run to apply these changes.');
     return;
   }
 
@@ -685,10 +712,11 @@ async function setupVertex() {
   // 4. Print gorgeous success activation box
   console.log('');
   console.log('  ╭──────────────────────────────────────────────────────────╮');
-  console.log('  │  🎉 Vertex AI Setup Complete — ZERO FRICTION!            │');
+  console.log('  │  Vertex AI Setup Complete                                │');
   console.log('  │                                                         │');
-  console.log('  │  ThumbGate is now fully wired to your GCP environment.   │');
-  console.log('  │  All agent checks will route securely via Vertex AI.     │');
+  console.log('  │  ThumbGate wrote local Vertex routing config.            │');
+  console.log('  │  This does not create or verify a Dialogflow CX agent.   │');
+  console.log('  │  Verify DFCX with the console or Dialogflow CX REST API. │');
   console.log('  │                                                         │');
   console.log('  │  Try a test run:                                        │');
   console.log('  │  npx thumbgate feedback-self-test                       │');
@@ -1003,10 +1031,21 @@ function capture() {
   }
 
   let signal = (args.feedback || '').toLowerCase();
+  let consumedSignalArgs = 0;
   if (!signal && positionalArgs[0]) {
-    const firstPos = positionalArgs[0].toLowerCase();
-    if (['up', 'down', 'thumbsup', 'thumbsdown', 'thumbs_up', 'thumbs_down', 'positive', 'negative'].some(v => firstPos.includes(v))) {
-      signal = firstPos;
+    const { detectFeedbackSignal } = require(path.join(PKG_ROOT, 'scripts', 'feedback-quality'));
+    const oneWord = positionalArgs[0];
+    const twoWords = positionalArgs.slice(0, 2).join(' ');
+    const detected = detectFeedbackSignal(twoWords) || detectFeedbackSignal(oneWord);
+    if (detected) {
+      signal = detected.signal;
+      consumedSignalArgs = detectFeedbackSignal(twoWords) ? Math.min(2, positionalArgs.length) : 1;
+    } else {
+      const firstPos = positionalArgs[0].toLowerCase();
+      if (['up', 'down', 'thumbsup', 'thumbsdown', 'thumbs_up', 'thumbs_down', 'positive', 'negative'].some(v => firstPos.includes(v))) {
+        signal = firstPos;
+        consumedSignalArgs = 1;
+      }
     }
   }
 
@@ -1026,19 +1065,25 @@ function capture() {
   }
 
   let context = args.context || '';
-  if (!context && positionalArgs[1]) {
+  if (!context && consumedSignalArgs > 0) {
+    context = positionalArgs.slice(consumedSignalArgs).join(' ');
+  } else if (!context && positionalArgs[1]) {
     context = positionalArgs[1];
   }
 
   let whatWentWrong = args['what-went-wrong'];
-  if (!whatWentWrong && positionalArgs[2]) {
+  if (!whatWentWrong && consumedSignalArgs > 0 && positionalArgs.length > consumedSignalArgs + 1) {
+    whatWentWrong = positionalArgs.slice(consumedSignalArgs + 1).join(' ');
+  } else if (!whatWentWrong && positionalArgs[2]) {
     whatWentWrong = positionalArgs[2];
   } else if (!whatWentWrong && normalized === 'down' && context) {
     whatWentWrong = context;
   }
 
   let whatToChange = args['what-to-change'];
-  if (!whatToChange && positionalArgs[3]) {
+  if (!whatToChange && consumedSignalArgs > 0 && positionalArgs.length > consumedSignalArgs + 2) {
+    whatToChange = positionalArgs.slice(consumedSignalArgs + 2).join(' ');
+  } else if (!whatToChange && positionalArgs[3]) {
     whatToChange = positionalArgs[3];
   } else if (!whatToChange && normalized === 'down' && context) {
     whatToChange = `avoid: ${context}`;
@@ -2375,6 +2420,52 @@ function optimize() {
   doOptimize();
 }
 
+function syncGcp() {
+  const { syncToGcp } = require(path.join(PKG_ROOT, 'adapters', 'gcp', 'sync.js'));
+  syncToGcp();
+}
+
+function cleanup() {
+  console.log('Cleaning up ThumbGate processes...');
+  try {
+    const { execSync } = require('child_process');
+    // Kill all 'thumbgate serve' and 'thumbgate dashboard' processes except this one
+    const pids = execSync("ps aux | grep -E 'thumbgate (serve|dashboard|mcp)' | grep -v 'grep' | grep -v 'cleanup' | awk '{print $2}'", { encoding: 'utf8' })
+      .split('\n')
+      .filter(Boolean)
+      .map(Number)
+      .filter(pid => pid !== process.pid);
+
+    if (pids.length > 0) {
+      console.log(`Killing ${pids.length} process(es): ${pids.join(', ')}`);
+      pids.forEach(pid => {
+        try { process.kill(pid, 'SIGTERM'); } catch (_) {}
+      });
+      // Give them a moment to die
+      execSync('sleep 1');
+    } else {
+      console.log('No other ThumbGate processes found.');
+    }
+
+    // Check port 3456 specifically
+    try {
+      const portPids = execSync("lsof -ti :3456", { encoding: 'utf8' })
+        .split('\n')
+        .map(s => s.trim())
+        .filter(Boolean)
+        .map(Number);
+      portPids.forEach(pid => {
+        console.log(`Killing process ${pid} holding port 3456`);
+        try { process.kill(pid, 'SIGKILL'); } catch (_) {}
+      });
+    } catch (_) { /* port already free */ }
+
+    console.log('✅ Cleanup complete. Run "npx thumbgate pro" to restart the dashboard.');
+  } catch (err) {
+    console.error(`Cleanup failed: ${err.message}`);
+  }
+}
+
 function serve() {
   try {
     const { repairCodexHooks } = require(path.join(PKG_ROOT, 'scripts', 'codex-self-heal'));
@@ -2411,11 +2502,21 @@ function install() {
 }
 
 async function gateCheck() {
-  const payload = readStdinText();
-  const input = payload ? JSON.parse(payload) : {};
-  const gatesEngine = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
-  const output = await gatesEngine.runAsync(input);
-  process.stdout.write(output + '\n');
+  try {
+    const payload = readStdinText();
+    const input = payload ? JSON.parse(payload) : {};
+    const gatesEngine = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
+    const output = await gatesEngine.runAsync(input);
+    process.stdout.write(output + '\n');
+  } catch (err) {
+    process.stderr.write(`gate-check error: ${err.message}\n`);
+    process.stdout.write(JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        additionalContext: `[ThumbGate Error] ${err.message}`,
+      }
+    }) + '\n');
+  }
 }
 
 function cacheUpdate() {
@@ -2442,9 +2543,14 @@ function statuslineRender() {
 
 function hookAutoCapture() {
   syncActiveProjectContext();
-  const prompt = process.env.CLAUDE_USER_PROMPT || process.env.THUMBGATE_USER_PROMPT || readStdinText().trim();
+  const prompt = process.env.CLAUDE_USER_PROMPT
+    || process.env.THUMBGATE_USER_PROMPT
+    || process.env.CODEX_USER_PROMPT
+    || process.env.USER_PROMPT
+    || readStdinText().trim();
   const { evaluatePromptGuard } = require(path.join(PKG_ROOT, 'scripts', 'prompt-guard'));
   const { processInlineFeedback, formatCliOutput } = require(path.join(PKG_ROOT, 'scripts', 'cli-feedback'));
+  const { detectFeedbackSignal } = require(path.join(PKG_ROOT, 'scripts', 'feedback-quality'));
   const { loadOptionalModule } = require(path.join(PKG_ROOT, 'scripts', 'private-core-boundary'));
   const { recordConversationEntry, readRecentConversationWindow } = loadOptionalModule(
     path.join(PKG_ROOT, 'scripts', 'feedback-history-distiller'),
@@ -2466,14 +2572,12 @@ function hookAutoCapture() {
     return;
   }
 
-  const lower = prompt.toLowerCase();
-  const isUp = /(thumbs?\s*up|that worked|looks good|nice work|perfect|good job)/i.test(lower);
-  const isDown = /(thumbs?\s*down|that failed|that was wrong|fix this)/i.test(lower);
-  if (!isUp && !isDown) {
+  const detected = detectFeedbackSignal(prompt);
+  if (!detected) {
     return;
   }
 
-  const signal = isDown ? 'down' : 'up';
+  const signal = detected.signal;
   const conversationWindow = readRecentConversationWindow({ limit: 8 });
   const result = processInlineFeedback({
     signal,
@@ -2554,6 +2658,32 @@ function installMcp() {
 
 function dashboard() {
   const args = parseArgs(process.argv.slice(3));
+  if (args.open || args.web) {
+    const { exec } = require('child_process');
+    const { resolveProjectDir } = require(path.join(PKG_ROOT, 'scripts', 'feedback-paths'));
+    const projectDir = resolveProjectDir({ cwd: process.cwd(), env: process.env });
+    const port = process.env.PORT || 3456;
+    const url = `http://localhost:${port}/dashboard?project=${encodeURIComponent(projectDir)}`;
+    
+    console.log(`Opening browser to: ${url}`);
+    let command;
+    if (process.platform === 'darwin') {
+      command = `open "${url}"`;
+    } else if (process.platform === 'win32') {
+      command = `start "" "${url}"`;
+    } else {
+      command = `xdg-open "${url}"`;
+    }
+    
+    exec(command, (err) => {
+      if (err) {
+        console.error('Failed to open browser:', err.message);
+      }
+      process.exit(err ? 1 : 0);
+    });
+    return;
+  }
+
   const { printDashboard } = require(path.join(PKG_ROOT, 'scripts', 'dashboard'));
   const { getOperationalDashboard } = require(path.join(PKG_ROOT, 'scripts', 'operational-dashboard'));
 
@@ -2673,6 +2803,64 @@ function startApi() {
   }
 }
 
+function breakGlass() {
+  const args = parseArgs(process.argv.slice(3));
+  const positionalReason = process.argv.slice(3).find((arg) => !arg.startsWith('--'));
+  const reason = String(args.reason || positionalReason || '').trim();
+  if (!reason) {
+    console.error('Usage: npx thumbgate break-glass --reason "why this recovery is needed" [--ttl=5m] [--json]');
+    process.exit(1);
+  }
+
+  const ttlMs = parseTtlMs(args.ttl, 5 * 60 * 1000);
+  const { breakGlassEmergency } = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
+  const result = breakGlassEmergency({ reason, ttlMs });
+  if (args.json) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+
+  console.log('ThumbGate break-glass active.');
+  console.log(`  Reason     : ${result.reason}`);
+  console.log(`  Expires    : ${result.expiresAt}`);
+  console.log('  Unlocked   : hook settings edits, pr_create_allowed, pr_threads_checked');
+  console.log('  Still gated: local-only scope, force-push, protected branch push, unsafe chmod, broad rm -rf');
+}
+
+function aiInventory() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    scanAiComponents,
+    buildCycloneDxMlBom,
+    formatInventoryText,
+    writeOutput,
+  } = require(path.join(PKG_ROOT, 'scripts', 'ai-component-inventory'));
+  const rootDir = path.resolve(String(args.root || args.cwd || CWD));
+  const format = String(args.format || (args.json ? 'json' : 'summary')).toLowerCase();
+  const inventory = scanAiComponents({
+    rootDir,
+    maxFiles: args['max-files'] ? Number(args['max-files']) : undefined,
+    includeSnippets: args.snippets !== false,
+  });
+
+  let payload;
+  if (format === 'cyclonedx' || format === 'ml-bom' || format === 'mlbom') {
+    payload = JSON.stringify(buildCycloneDxMlBom(inventory, { version: pkgVersion() }), null, 2);
+  } else if (format === 'json') {
+    payload = JSON.stringify(inventory, null, 2);
+  } else {
+    payload = formatInventoryText(inventory);
+  }
+
+  if (args.output) {
+    writeOutput(path.resolve(String(args.output)), `${payload}\n`);
+    console.log(`Wrote AI inventory evidence to ${path.resolve(String(args.output))}`);
+    return;
+  }
+
+  console.log(payload);
+}
+
 function help() {
   const v = pkgVersion();
   const helpArgs = process.argv.slice(3);
@@ -2694,7 +2882,9 @@ function help() {
     console.log('  lessons [query]                                   Search promoted lessons');
     console.log('  explore                                           Interactive TUI for lessons, gates, stats');
     console.log('  dashboard                                         Open the local ThumbGate dashboard');
+    console.log('  ai-inventory                                      Scan AI/ML components and export ML-BOM evidence');
     console.log('  doctor                                            Audit runtime isolation + bootstrap context');
+    console.log('  break-glass --reason="..."                       Short TTL recovery if gates over-fire');
     console.log('  brain [--write]                                   Build the agent-readable context brain (lessons + rules + gates)');
     console.log('  pro                                               ThumbGate Pro (dashboard, exports, sync)');
     console.log('  subscribe <email>                                 Get the 5-min setup guide + weekly tips by email');
@@ -2747,6 +2937,7 @@ function help() {
   console.log('                            default: machine-wide  (~/.claude/settings.json — shared dashboard)');
   console.log('                            --project: per-repo    (<cwd>/.claude/settings.json — isolated dashboard)');
   console.log('                            --no-hooks: MCP only, skip hook wiring');
+  console.log('  break-glass           Short TTL recovery if gates over-fire');
   console.log('  cfo                   Hosted billing summary (local fallback JSON)');
   console.log('  billing:setup         Generate operator key + print Railway setup instructions');
   console.log('  repair-github-marketplace  Repair legacy GitHub Marketplace amount mappings');
@@ -2767,6 +2958,7 @@ function help() {
   console.log('  proxy-pointer-rag-guardrails Map visual document RAG signals to Document RAG Safety gates');
   console.log('  rag-precision-guardrails Map retrieval tuning regressions to Document RAG Safety gates');
   console.log('  ai-engineering-stack-guardrails Map gateway, MCP, AGENTS.md, LLM wiki, reviewer, and sandbox gaps to stack gates');
+  console.log('  ai-inventory          Scan AI/ML components and export JSON or CycloneDX ML-BOM evidence');
   console.log('  upstream-contributions Find dependency issues worth fixing without promotional PRs');
   console.log('  long-running-agent-context-guardrails Map structured-memory gaps to long-running agent gates');
   console.log('  reasoning-efficiency-guardrails Map reasoning compression signals to efficiency gates');
@@ -2801,6 +2993,7 @@ function help() {
   console.log('  npx thumbgate proxy-pointer-rag-guardrails --tree-path=.rag/tree.json --image-pointers=paper-1/figures/fig2.png --documents=paper-1 --visual-claims --json');
   console.log('  npx thumbgate rag-precision-guardrails --baseline-recall=0.86 --new-recall=0.72 --threshold-change --agentic --structural-near-misses --json');
   console.log('  npx thumbgate ai-engineering-stack-guardrails --mcp-tool-count=182 --direct-provider-keys --llm-wiki-pages=24 --context-freshness-days=30 --background-agents --json');
+  console.log('  npx thumbgate ai-inventory --format=cyclonedx --output=.thumbgate/ai-mlbom.json');
   console.log('  npx thumbgate long-running-agent-context-guardrails --request-count=80 --output-mb=3 --raw-chat-only --json');
   console.log('  npx thumbgate reasoning-efficiency-guardrails --baseline-tokens=1200 --compressed-tokens=980 --baseline-accuracy=0.84 --compressed-accuracy=0.85 --verifier --json');
   console.log('  npx thumbgate deepseek-v4-runtime-guardrails --context-tokens=900000 --hybrid-attention --speculative-decoding --accept-length=1.4 --precision-mode=fp8 --json');
@@ -2842,6 +3035,11 @@ const SUBCOMMAND_HELP = {
   lessons:       'Usage: npx thumbgate lessons [--query="..."] [--limit=N]\n\nSearch the lesson database (Pro feature).',
   search:        'Usage: npx thumbgate search <query>\n\nSearch ThumbGate knowledge base (Pro feature).',
   'gate-check':  'Usage: npx thumbgate gate-check\n\nPreToolUse hook interface: reads tool call JSON from stdin, outputs gate verdict.',
+  'break-glass': 'Usage: npx thumbgate break-glass --reason="why" [--ttl=5m] [--json]\n\nShort-lived recovery path for over-firing gates. Allows hook settings edits and satisfies PR-create/thread-check gates without disabling core destructive-action protections.',
+  serve:         'Usage: npx thumbgate serve\n\nStart the MCP stdio server. This is for agent runtimes, not the local HTTP dashboard.',
+  mcp:           'Usage: npx thumbgate mcp\n\nAlias for `thumbgate serve`.',
+  dashboard:     'Usage: npx thumbgate dashboard [--window=today|7d|30d] [--open]\n\nPrint the operational dashboard summary or open the browser HTTP dashboard (use --open). Defaults to PORT=3456.',
+  'start-api':   'Usage: npx thumbgate start-api\n\nStart the local ThumbGate HTTP API/dashboard. Defaults to PORT=8787; use PORT=3456 for statusline localhost links.',
   'export-dpo':  'Usage: npx thumbgate export-dpo [--format=jsonl|csv]\n\nExport feedback as DPO training pairs (Pro feature).',
   status:        'Usage: npx thumbgate status\n\nShow ThumbGate system health and active configuration.',
   watch:         'Usage: npx thumbgate watch\n\nWatch for feedback changes and auto-regenerate prevention rules.',
@@ -2850,7 +3048,8 @@ const SUBCOMMAND_HELP = {
   suggest:       'Usage: npx thumbgate suggest <gate-id>\n\nSuggest fixes for a specific gate based on lesson history.',
   cost:          'Usage: npx thumbgate cost [--json] [--stats <path>] [--mix \'{"claude-sonnet-4-5":0.8,...}\']\n\nShow cumulative $ and tokens saved by PreToolUse gate blocks. Reads ~/.thumbgate/gate-stats.json.',
   savings:       'Usage: npx thumbgate savings [--json] [--stats <path>] [--mix \'{"claude-sonnet-4-5":0.8,...}\']\n\nAlias for `thumbgate cost`.',
-  'setup-vertex': 'Usage: npx thumbgate setup-vertex\n\nAuto-enable Vertex AI API on GCP and write secure credentials to local .env.',
+  'setup-vertex': 'Usage: npx thumbgate setup-vertex [--dry-run]\n\nAuto-enable Vertex AI API on GCP and write local Vertex routing config to .env. With --dry-run, only detect the active account/project and print the planned changes. This does not create or verify a Dialogflow CX agent; use the Dialogflow CX REST API or console for live-agent evidence.',
+  'ai-inventory': 'Usage: npx thumbgate ai-inventory [--root <dir>] [--format=summary|json|cyclonedx] [--output <path>] [--max-files=N]\n\nScan source/manifests/model artifacts for AI, ML, agent-framework, vector DB, Vertex, Gemini, and Dialogflow CX components. Use --format=cyclonedx to produce exportable ML-BOM evidence for enterprise reviews.',
   brain: 'Usage: npx thumbgate brain [--write] [--json] [--limit=N]\n\nBuild the agent-readable "context brain" — a single artifact consolidating this\nrepo\'s lessons, prevention rules, active gates, and project context for a coding\nagent to read BEFORE acting. --write saves it to .thumbgate/BRAIN.md (versioned,\ndeterministic). --json emits the structured model. --limit caps lessons (default 15).',
 };
 
@@ -3004,6 +3203,12 @@ switch (COMMAND) {
   case 'mcp':
     serve();
     break;
+  case 'cleanup':
+    cleanup();
+    break;
+  case 'sync-gcp':
+    syncGcp();
+    break;
   case 'gate-check':
     gateCheck().catch((err) => {
       console.error(err && err.message ? err.message : err);
@@ -3032,7 +3237,7 @@ switch (COMMAND) {
     feedbackSelfTest();
     break;
   case 'setup-vertex':
-    setupVertex().catch((err) => {
+    setupVertex(parseArgs(process.argv.slice(3))).catch((err) => {
       console.error(err && err.message ? err.message : err);
       process.exit(1);
     });
@@ -3058,7 +3263,7 @@ switch (COMMAND) {
   }
   case 'brain': {
     const brainArgs = parseArgs(process.argv.slice(3));
-    process.exit(cmdBrain(brainArgs));
+    process.exitCode = cmdBrain(brainArgs);
     break;
   }
   case 'billing:setup':
@@ -3255,6 +3460,12 @@ switch (COMMAND) {
   case 'llm-wiki-guardrails':
     aiEngineeringStackGuardrails();
     break;
+  case 'ai-inventory':
+  case 'ai-component-inventory':
+  case 'ml-bom':
+  case 'mlbom':
+    aiInventory();
+    break;
   case 'deepseek-v4-runtime-guardrails':
   case 'deepseek-runtime-guardrails':
   case 'sparse-attention-runtime-guardrails':
@@ -3370,6 +3581,10 @@ switch (COMMAND) {
     break;
   case 'status':
     status();
+    break;
+  case 'break-glass':
+  case 'breakglass':
+    breakGlass();
     break;
   case 'funnel':
     funnel();

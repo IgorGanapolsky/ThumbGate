@@ -107,3 +107,21 @@ test('commercial truth labels local enforcement and hosted telemetry boundaries'
   assert.match(truth, /do not silently call provider APIs/i);
   assert.match(truth, /should not claim sub-processor coverage/i);
 });
+
+test('enterprise Google docs do not recommend nonexistent Dialogflow CX gcloud command group', () => {
+  const checkedFiles = [
+    'README.md',
+    'adapters/gcp/README.md',
+    'docs/enterprise/gcp-dfcx-pilot.md',
+    'bin/cli.js',
+  ];
+
+  for (const relativePath of checkedFiles) {
+    const text = fs.readFileSync(path.join(projectRoot, relativePath), 'utf8');
+    assert.doesNotMatch(
+      text,
+      /gcloud\s+(?:alpha|beta)?\s*dialogflow\s+cx/i,
+      `${relativePath} must not suggest gcloud alpha dialogflow cx; use REST API or console evidence instead`,
+    );
+  }
+});

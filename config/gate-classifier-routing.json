@@ -1,0 +1,98 @@
+{
+  "version": 1,
+  "defaultLane": "local_classical",
+  "lanes": {
+    "deterministic": {
+      "description": "Regex, allow/deny lists, protected paths, branch rules, and exact policy checks. Always runs first.",
+      "maxLatencyMs": 25,
+      "cloudAllowed": false,
+      "useFor": [
+        "secret patterns",
+        "force-push",
+        "destructive SQL",
+        "protected operating files",
+        "known repeated command signatures"
+      ]
+    },
+    "semantic_cache": {
+      "description": "Cached decision for semantically equivalent repeats where wording or PII changed but action meaning did not.",
+      "maxLatencyMs": 50,
+      "cloudAllowed": false,
+      "requiresProvenance": true,
+      "useFor": [
+        "semantic repeat blocks",
+        "cached approvals",
+        "prompt variants with same action meaning",
+        "PII-normalized duplicate checks"
+      ]
+    },
+    "local_classical": {
+      "description": "Fast local text routing for high-volume, low-ambiguity feedback and gate labels.",
+      "maxLatencyMs": 250,
+      "cloudAllowed": false,
+      "minExamples": 40,
+      "useFor": [
+        "routine feedback triage",
+        "known error classes",
+        "low-risk support labels",
+        "bulk import classification"
+      ]
+    },
+    "local_semantic": {
+      "description": "Local semantic/FTS recall for near-miss lessons, fuzzy duplicates, and low-data labels.",
+      "maxLatencyMs": 750,
+      "cloudAllowed": false,
+      "useFor": [
+        "near-duplicate lessons",
+        "sparse labels",
+        "cross-session recurrence",
+        "similar command intent"
+      ]
+    },
+    "llm_judge": {
+      "description": "Budget-capped LLM review for ambiguous, high-value decisions where semantics matter.",
+      "maxLatencyMs": 10000,
+      "cloudAllowed": true,
+      "requiresEvidence": true,
+      "useFor": [
+        "ambiguous policy mapping",
+        "multi-document evidence review",
+        "rubric critique",
+        "structured dataset provenance review"
+      ]
+    },
+    "rubric_gate": {
+      "description": "Completion blocker for failed rubrics, missing evidence, and loop-until-done harness caps.",
+      "maxLatencyMs": 500,
+      "cloudAllowed": false,
+      "requiresEvidence": true,
+      "useFor": [
+        "failed rubric criteria",
+        "missing done evidence",
+        "critic review failure",
+        "workflow completion claims"
+      ]
+    },
+    "human_review": {
+      "description": "Stop and ask for approval when the action is high-risk, private, or too ambiguous for automated routing.",
+      "maxLatencyMs": null,
+      "cloudAllowed": false,
+      "requiresEvidence": true,
+      "useFor": [
+        "production credentials",
+        "customer data",
+        "regulated workflows",
+        "unbounded external posting",
+        "payment or refund changes"
+      ]
+    }
+  },
+  "thresholds": {
+    "classicalMinExamples": 40,
+    "lowLatencyBudgetMs": 300,
+    "llmMinLatencyBudgetMs": 2000,
+    "highRiskAmbiguity": 0.65,
+    "mediumAmbiguity": 0.35,
+    "largeBatchRows": 50
+  }
+}

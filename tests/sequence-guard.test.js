@@ -7,8 +7,14 @@ const os = require('os');
 const path = require('path');
 const { evaluateSequenceState } = require('../scripts/sequence-guard');
 
-const SEQUENCE_STATE_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'sequence-state.json');
-const SESSION_ACTIONS_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'session-actions.json');
+const STATE_DIR = process.env.THUMBGATE_STATE_DIR || 
+                  (process.env.XDG_STATE_HOME ? path.join(process.env.XDG_STATE_HOME, 'thumbgate') : null) ||
+                  (process.env.CODEX_SANDBOX ? path.join(os.tmpdir(), 'thumbgate') : null) ||
+                  path.join(process.env.HOME || '/tmp', '.thumbgate');
+
+const SEQUENCE_STATE_PATH = path.join(STATE_DIR, 'sequence-state.json');
+const SESSION_ACTIONS_PATH = path.join(STATE_DIR, 'session-actions.json');
+const GOVERNANCE_STATE_PATH = path.join(STATE_DIR, 'governance-state.json');
 
 function resetSequenceState() {
   try { fs.rmSync(SEQUENCE_STATE_PATH, { force: true }); } catch { /* ignore */ }
@@ -24,13 +30,17 @@ function clearTestsPassed() {
   } catch { /* ignore */ }
 }
 
-// process.cwd() during `node --test` is the repo root, which is a real git repo, so
-// edits + commits here resolve to the same repo key.
+function resetGovernanceState() {
+  try { fs.rmSync(GOVERNANCE_STATE_PATH, { force: true }); } catch { /* ignore */ }
+}
+
 const REPO = process.cwd();
 
 test('sequence-guard - edit then unverified commit in the same repo is blocked', () => {
   resetSequenceState();
   clearTestsPassed();
+  resetGovernanceState();
+
   const edit = evaluateSequenceState('Edit', { file_path: path.join(REPO, 'src/api/server.js') });
   assert.equal(edit, null);
   const commit = evaluateSequenceState('Bash', { command: 'git commit -m "fixed"', repoPath: REPO });
@@ -42,12 +52,15 @@ test('sequence-guard - edit then unverified commit in the same repo is blocked',
 
 test('sequence-guard - allows commit after tests_passed clears the repo', () => {
   resetSequenceState();
+  resetGovernanceState();
+
   evaluateSequenceState('Edit', { file_path: path.join(REPO, 'src/api/server.js') });
   const actions = fs.existsSync(SESSION_ACTIONS_PATH)
     ? JSON.parse(fs.readFileSync(SESSION_ACTIONS_PATH, 'utf8'))
     : {};
   actions.tests_passed = { timestamp: Date.now() + 1000, metadata: {} };
   fs.writeFileSync(SESSION_ACTIONS_PATH, JSON.stringify(actions));
+
   const result = evaluateSequenceState('Bash', { command: 'git commit -m "verified"', repoPath: REPO });
   assert.equal(result, null);
   resetSequenceState();
@@ -57,11 +70,72 @@ test('sequence-guard - allows commit after tests_passed clears the repo', () => 
 test('sequence-guard - edit in one repo does NOT block a commit in another (per-repo isolation)', () => {
   resetSequenceState();
   clearTestsPassed();
+  resetGovernanceState();
+
   // Edit a file in this repo (marks THIS repo dirty)...
   evaluateSequenceState('Edit', { file_path: path.join(REPO, 'src/api/server.js') });
   // ...then commit in an unrelated path. Previously the global dirty flag blocked this.
   const otherRepo = os.tmpdir();
   const commit = evaluateSequenceState('Bash', { command: 'git commit -m wip', repoPath: otherRepo });
   assert.equal(commit, null, 'a commit in an unrelated repo must not be blocked by this repo\'s edits');
+
   resetSequenceState();
+});
+
+test('sequence-guard - task scope active - edit outside allowedPaths is blocked', () => {
+  resetSequenceState();
+  clearTestsPassed();
+
+  // Set up active task scope allowing only files under src/api
+  fs.mkdirSync(STATE_DIR, { recursive: true });
+  fs.writeFileSync(GOVERNANCE_STATE_PATH, JSON.stringify({
+    taskScope: {
+      allowedPaths: ['src/api/**'],
+      repoPath: REPO
+    }
+  }));
+
+  // Editing a file inside allowedPaths -> should be allowed (returns null)
+  const allowedEdit = evaluateSequenceState('Edit', { file_path: path.join(REPO, 'src/api/server.js') });
+  assert.equal(allowedEdit, null);
+
+  // Editing a file outside allowedPaths -> should be blocked
+  const blockedEdit = evaluateSequenceState('Edit', { file_path: path.join(REPO, 'tests/sequence-guard.test.js') });
+  assert.ok(blockedEdit);
+  assert.equal(blockedEdit.decision, 'deny');
+  assert.equal(blockedEdit.gate, 'task-scope-violation');
+
+  resetSequenceState();
+  resetGovernanceState();
+});
+
+test('sequence-guard - task scope active - commit/complete with modified files outside allowedPaths is blocked', () => {
+  resetSequenceState();
+  clearTestsPassed();
+
+  // Write a temporary untracked file to ensure there is a modified file outside allowedPaths
+  const tempFile = path.join(REPO, 'tests/temp-test-file.txt');
+  fs.writeFileSync(tempFile, 'temp content', 'utf8');
+
+  try {
+    // Mock task scope allowing files under 'dummy'
+    fs.mkdirSync(STATE_DIR, { recursive: true });
+    fs.writeFileSync(GOVERNANCE_STATE_PATH, JSON.stringify({
+      taskScope: {
+        allowedPaths: ['dummy/**'],
+        repoPath: REPO
+      }
+    }));
+
+    // Commit attempt should fail since we have a modified file that doesn't match 'dummy/**'
+    const commit = evaluateSequenceState('Bash', { command: 'git commit -m "wip"', repoPath: REPO });
+    assert.ok(commit);
+    assert.equal(commit.decision, 'deny');
+    assert.equal(commit.gate, 'task-scope-violation');
+  } finally {
+    try { fs.unlinkSync(tempFile); } catch {}
+  }
+
+  resetSequenceState();
+  resetGovernanceState();
 });

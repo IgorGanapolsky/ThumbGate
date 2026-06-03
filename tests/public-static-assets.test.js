@@ -103,6 +103,19 @@ test('landing page does not render empty revenue links', async () => {
   assert.match(html, /Team checkout happens after scope\./);
 });
 
+test('landing pricing section compares plan capabilities and limits clearly', async () => {
+  const res = await fetch(`${origin}/`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+
+  assert.match(html, /Compare plans at a glance/);
+  assert.match(html, /5\/day, 25 total/);
+  assert.match(html, /3 active rules/);
+  assert.match(html, /\$19\/mo or \$149\/yr/);
+  assert.match(html, /\$49\/seat\/mo after scope, 3-seat minimum/);
+  assert.match(html, /Team and Regulated plans start through intake/);
+});
+
 test('homepage and pricing surfaces expose canonical and LLM context links', async () => {
   const pages = [
     ['/', `${origin}/`, `${origin}/llm-context.md`],
@@ -137,6 +150,16 @@ test('LLM discovery file is available at root and well-known paths with canonica
   }
 });
 
+test('Agentic.ai domain verification file is publicly accessible without auth', async () => {
+  const res = await fetch(`${origin}/.well-known/agentic-verify.txt`);
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /text\/plain/);
+  assert.equal(
+    (await res.text()).trim(),
+    '3588d0ad8f7b89fd7b9fbf771c1dd7dd09310e88aa6a7ae049b1decfa971650b',
+  );
+});
+
 test('landing page internal links resolve without auth or broken .html aliases', async () => {
   const res = await fetch(`${origin}/`);
   assert.equal(res.status, 200);
@@ -169,6 +192,8 @@ test('landing page internal links resolve without auth or broken .html aliases',
 test('public marketing .html aliases remain live for existing indexed links', async () => {
   const paths = [
     '/guide.html',
+    '/chatgpt-app.html',
+    '/chatgpt-plugin.html',
     '/codex-plugin.html',
     '/compare.html',
     '/learn.html',
@@ -184,6 +209,33 @@ test('public marketing .html aliases remain live for existing indexed links', as
     assert.equal(res.status, 200, `${pathname} should resolve`);
     assert.match(res.headers.get('content-type') || '', /text\/html/);
   }
+});
+
+test('GET /chatgpt-app serves the ChatGPT app and GPT Action landing HTML', async () => {
+  const [routeRes, htmlRes, legacyAliasRes] = await Promise.all([
+    fetch(`${origin}/chatgpt-app`),
+    fetch(`${origin}/chatgpt-app.html`),
+    fetch(`${origin}/chatgpt-plugin`),
+  ]);
+
+  for (const res of [routeRes, htmlRes, legacyAliasRes]) {
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-type') || '', /text\/html/);
+    const body = await res.text();
+    assert.match(body, /ThumbGate for ChatGPT/);
+    assert.match(body, /GPT Action schema/);
+    assert.match(body, /Open ThumbGate GPT/);
+    assert.match(body, /native thumbs rating buttons are not the ThumbGate memory path/i);
+    assert.match(body, /npx thumbgate init --agent codex/);
+    assert.match(body, /does not claim official OpenAI marketplace approval/i);
+  }
+});
+
+test('HEAD /chatgpt-app responds 200 with html content-type and no body', async () => {
+  const res = await fetch(`${origin}/chatgpt-app`, { method: 'HEAD' });
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /text\/html/);
+  assert.equal(await res.text(), '');
 });
 
 test('public marketing directory aliases redirect to canonical pages', async () => {
@@ -286,6 +338,16 @@ test('GET /sitemap.xml includes /codex-enterprise at priority 0.85', async () =>
   assert.match(entry[0], /<priority>0\.85<\/priority>/);
 });
 
+test('GET /sitemap.xml includes /chatgpt-app at priority 0.85', async () => {
+  const res = await fetch(`${origin}/sitemap.xml`);
+  assert.equal(res.status, 200);
+  const xml = await res.text();
+  assert.match(xml, /<loc>[^<]*\/chatgpt-app<\/loc>/, 'sitemap must list /chatgpt-app');
+  const entry = xml.match(/<url>\s*<loc>[^<]*\/chatgpt-app<\/loc>[\s\S]*?<\/url>/);
+  assert.ok(entry, 'chatgpt-app <url> block must exist');
+  assert.match(entry[0], /<priority>0\.85<\/priority>/);
+});
+
 test('GET /agents-cost-savings serves the FinOps-for-AI landing HTML', async () => {
   const [routeRes, htmlRes] = await Promise.all([
     fetch(`${origin}/agents-cost-savings`),
@@ -367,6 +429,20 @@ test('GET /sitemap.xml includes background-agent control layer at priority 0.85'
   const entry = xml.match(/<url>\s*<loc>[^<]*\/learn\/background-agent-control-layer<\/loc>[\s\S]*?<\/url>/);
   assert.ok(entry, 'background-agent-control-layer <url> block must exist');
   assert.match(entry[0], /<priority>0\.85<\/priority>/);
+});
+
+test('GET /sitemap.xml includes enterprise and deterministic workflow learning pages', async () => {
+  const res = await fetch(`${origin}/sitemap.xml`);
+  assert.equal(res.status, 200);
+  const xml = await res.text();
+  for (const slug of [
+    'agentic-enterprise-context-brain',
+    'deterministic-agent-workflows',
+  ]) {
+    const entry = xml.match(new RegExp(`<url>\\s*<loc>[^<]*/learn/${slug}</loc>[\\s\\S]*?</url>`));
+    assert.ok(entry, `${slug} <url> block must exist`);
+    assert.match(entry[0], /<priority>0\.85<\/priority>/);
+  }
 });
 
 test('GET /compare/claude-code-hooks serves the hand-written comparison page', async () => {

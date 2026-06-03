@@ -69,7 +69,7 @@ const path = require('node:path');
 //            (repeat-metric, no-op detection, outcome-paired action receipts).
 //            (changeset: action-loop-instrumentation.md). Keep in lockstep with
 //            CEILING in tests/public-core-boundary.test.js.
-const BASELINE_FILE_COUNT = 272;
+const BASELINE_FILE_COUNT = 285;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

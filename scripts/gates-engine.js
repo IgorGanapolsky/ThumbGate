@@ -20,6 +20,10 @@ const {
   recordDecisionEvaluation,
   recordDecisionOutcome,
 } = require('./decision-journal');
+const {
+  actionFingerprint,
+  sanitizeFeedbackText,
+} = require('./feedback-sanitizer');
 
 /**
  * Computes the SHA-256 hash of an executable binary to prevent path-based bypasses.
@@ -54,6 +58,8 @@ const {
   scanHookInput,
   buildSafeSummary,
   redactText,
+  isSafeSecretStorageWrite,
+  SAFE_SECRET_STORAGE_DIRS,
 } = require('./secret-scanner');
 const {
   evaluateSecurityScan,
@@ -109,17 +115,81 @@ const DEFAULT_PROTECTED_FILE_GLOBS = [
 const EDIT_LIKE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
 const HIGH_RISK_BASH_PATTERN = /\b(?:git\s+(?:add|commit|push)|gh\s+pr\s+(?:create|merge)|npm\s+publish|yarn\s+publish|pnpm\s+publish|rm\s+-rf)\b/i;
 const REMOTE_SIDE_EFFECT_BASH_PATTERN = /\b(?:git\s+push\b|gh\s+pr\s+(?:create|merge|close|reopen|ready|edit)\b|gh\s+release\s+(?:create|delete|edit|upload)\b|npm\s+publish\b|yarn\s+publish\b|pnpm\s+publish\b)\b/i;
+const MAX_COMMAND_SCAN_CHARS = 20000;
 const BOOSTED_RISK_BLOCK_SCORE = 0.8;
 const BOOSTED_RISK_MIN_EXAMPLES = 3;
 const PR_THREAD_RESOLUTION_ACTION = 'pr_thread_resolution_verified_after_commit';
 const KNOWLEDGE_ENTROPY_THRESHOLD = 0.7;
 const KNOWLEDGE_CONFLICT_STRICT_BASH_PATTERN = /\b(?:git\s+push\b|gh\s+pr\s+merge\b|gh\s+release\s+(?:create|delete|edit|upload)\b|(?:npm|yarn|pnpm)\s+publish\b|rm\s+-rf\b|git\s+reset\s+--hard\b|git\s+clean\s+-f|railway\s+(?:deploy|up)\b|gcloud\s+(?:run\s+deploy|app\s+deploy)\b|firebase\s+deploy\b|vercel\s+--prod\b|kubectl\s+(?:apply|delete)\b|terraform\s+(?:apply|destroy)\b)\b/i;
+const BREAK_GLASS_CONDITION = 'thumbgate_break_glass';
+const BREAK_GLASS_SETTINGS_GLOBS = [
+  '.claude/settings.local.json',
+  '.claude/settings.json',
+  '**/.claude/settings.local.json',
+  '**/.claude/settings.json',
+  '.codex/config.toml',
+  '**/.codex/config.toml',
+];
 
 function isRuntimePlanGateEnabled() {
   return process.env.THUMBGATE_PLAN_GATE === '1' || process.env.THUMBGATE_PLAN_GATE === 'true';
 }
 const PR_THREAD_RESOLUTION_CLAIM_PATTERN = '(?:thread|review|comment).*?(?:resolved|verified|checked|addressed|fixed)|(?:resolved|verified|checked|addressed|fixed).*?(?:thread|review|comment)';
 const PR_THREAD_RESOLUTION_REQUIRED_ACTIONS = ['pr_threads_checked', 'thread_resolution_verified'];
+
+function commandScanText(command) {
+  return String(command || '').slice(0, MAX_COMMAND_SCAN_CHARS);
+}
+
+function commandWords(command) {
+  return commandScanText(command).toLowerCase().split(/\s+/).filter(Boolean);
+}
+
+function commandContainsSequence(words, sequence) {
+  if (!Array.isArray(words) || !Array.isArray(sequence) || sequence.length === 0) return false;
+  for (let i = 0; i <= words.length - sequence.length; i += 1) {
+    let matched = true;
+    for (let j = 0; j < sequence.length; j += 1) {
+      if (words[i + j] !== sequence[j]) {
+        matched = false;
+        break;
+      }
+    }
+    if (matched) return true;
+  }
+  return false;
+}
+
+function commandHasPostMethod(words) {
+  for (let i = 0; i < words.length; i += 1) {
+    const word = words[i];
+    if ((word === '-x' || word === '--method') && words[i + 1] === 'post') return true;
+    if (word === '--method=post' || word === '-xpost') return true;
+  }
+  return false;
+}
+
+function isGhApiPrCreateCommand(command) {
+  const words = commandWords(command);
+  if (!commandContainsSequence(words, ['gh', 'api'])) return false;
+  const hasPullsEndpoint = words.some((word) => word === '/pulls' || word.endsWith('/pulls'));
+  if (!hasPullsEndpoint) return false;
+  const fieldFlags = new Set(['-f', '--field', '--raw-field']);
+  const hasFieldWrite = words.some((word) => (
+    fieldFlags.has(word) ||
+    word.startsWith('-f=') ||
+    word.startsWith('--field=') ||
+    word.startsWith('--raw-field=')
+  ));
+  return hasFieldWrite || commandHasPostMethod(words);
+}
+
+function isRecursiveChmodCommand(command) {
+  const words = commandWords(command);
+  const chmodIndex = words.indexOf('chmod');
+  if (chmodIndex === -1) return false;
+  return words.slice(chmodIndex + 1).includes('-r') || words.slice(chmodIndex + 1).some((word) => word.includes('r') && word.startsWith('-'));
+}
 
 // ---------------------------------------------------------------------------
 // Config loading
@@ -291,6 +361,9 @@ function loadGovernanceState() {
     branchGovernance: raw && raw.branchGovernance && typeof raw.branchGovernance === 'object'
       ? raw.branchGovernance
       : null,
+    workflowContract: raw && raw.workflowContract && typeof raw.workflowContract === 'object'
+      ? raw.workflowContract
+      : null,
   };
   const now = Date.now();
   const activeApprovals = state.protectedApprovals.filter((entry) => {
@@ -310,6 +383,7 @@ function saveGovernanceState(state) {
     taskScope: state && state.taskScope ? state.taskScope : null,
     protectedApprovals: Array.isArray(state && state.protectedApprovals) ? state.protectedApprovals : [],
     branchGovernance: state && state.branchGovernance ? state.branchGovernance : null,
+    workflowContract: state && state.workflowContract ? state.workflowContract : null,
   };
   saveJSON(module.exports.GOVERNANCE_STATE_PATH, next);
 }
@@ -321,8 +395,10 @@ function setTaskScope(scopeInput = {}) {
       taskScope: null,
       protectedApprovals: currentState.protectedApprovals,
       branchGovernance: currentState.branchGovernance,
+      workflowContract: null,
     };
     saveGovernanceState(cleared);
+    refreshLocalOnlyConstraint(cleared);
     return null;
   }
 
@@ -349,6 +425,9 @@ function setTaskScope(scopeInput = {}) {
   };
   const state = loadGovernanceState();
   state.taskScope = taskScope;
+  state.workflowContract = scopeInput.workflowContract && typeof scopeInput.workflowContract === 'object'
+    ? scopeInput.workflowContract
+    : null;
   saveGovernanceState(state);
   if (taskScope.localOnly) {
     setConstraint('local_only', true);
@@ -384,11 +463,44 @@ function approveProtectedAction(input = {}) {
   return entry;
 }
 
+function breakGlassEmergency(input = {}) {
+  const reason = String(input.reason || '').trim();
+  if (!reason) {
+    throw new Error('reason is required');
+  }
+
+  const ttlMs = Math.min(clampTtlMs(input.ttlMs, TTL_MS), TTL_MS);
+  const evidence = `BREAK GLASS: ${reason}`;
+  const gates = ['pr_create_allowed', 'pr_threads_checked', BREAK_GLASS_CONDITION];
+  const satisfied = {};
+  for (const gateId of gates) {
+    satisfied[gateId] = satisfyCondition(gateId, evidence);
+  }
+
+  const approval = approveProtectedAction({
+    pathGlobs: BREAK_GLASS_SETTINGS_GLOBS,
+    reason: evidence,
+    evidence,
+    ttlMs,
+  });
+
+  return {
+    ok: true,
+    reason,
+    ttlMs,
+    expiresAt: new Date(Date.now() + ttlMs).toISOString(),
+    satisfied,
+    approval,
+    settingsGlobs: BREAK_GLASS_SETTINGS_GLOBS.slice(),
+  };
+}
+
 function setBranchGovernance(input = {}) {
   if (input && input.clear === true) {
     const state = loadGovernanceState();
     state.branchGovernance = null;
     saveGovernanceState(state);
+    refreshLocalOnlyConstraint(state);
     return null;
   }
 
@@ -439,6 +551,24 @@ function setConstraint(key, value) {
   return constraints[key];
 }
 
+function clearConstraint(key) {
+  const constraints = loadConstraints();
+  delete constraints[key];
+  saveConstraints(constraints);
+}
+
+function refreshLocalOnlyConstraint(governanceState = loadGovernanceState()) {
+  const localOnlyActive = Boolean(
+    (governanceState.taskScope && governanceState.taskScope.localOnly) ||
+    (governanceState.branchGovernance && governanceState.branchGovernance.localOnly)
+  );
+  if (localOnlyActive) {
+    setConstraint('local_only', true);
+  } else {
+    clearConstraint('local_only');
+  }
+}
+
 function isConditionSatisfied(conditionId) {
   const state = loadState();
   const entry = state[conditionId];
@@ -478,7 +608,29 @@ function loadStats() {
 
 function saveStats(stats) { saveJSON(module.exports.STATS_PATH, stats); }
 
-function recordStat(gateId, action, gate) {
+function buildGateActionFingerprint(gateId, options = {}) {
+  if (options.actionFingerprint) return String(options.actionFingerprint);
+  const toolName = options.toolName || options.tool_name || '';
+  const toolInput = options.toolInput || options.tool_input || {};
+  const parts = [toolName];
+  if (typeof toolInput === 'string') {
+    parts.push(toolInput);
+  } else if (toolInput && typeof toolInput === 'object') {
+    parts.push(
+      toolInput.command || '',
+      toolInput.cmd || '',
+      toolInput.file_path || '',
+      toolInput.path || '',
+      toolInput.description || '',
+      toolInput.prompt || '',
+      toolInput.pattern || '',
+    );
+    if (Array.isArray(toolInput.affectedFiles)) parts.push(...toolInput.affectedFiles);
+  }
+  return actionFingerprint(parts);
+}
+
+function recordStat(gateId, action, gate, options = {}) {
   const stats = loadStats();
   if (action === 'block') stats.blocked = (stats.blocked || 0) + 1;
   else if (action === 'warn') stats.warned = (stats.warned || 0) + 1;
@@ -492,16 +644,25 @@ function recordStat(gateId, action, gate) {
   else if (action === 'approve') stats.byGate[gateId].pendingApproval = (stats.byGate[gateId].pendingApproval || 0) + 1;
   else if (action === 'log') stats.byGate[gateId].logged = (stats.byGate[gateId].logged || 0) + 1;
 
-  // Track per-gate recurrence within a session for first-time fix rate
+  // Track same-action recurrence within a session for first-time fix rate.
+  // Gate-only recurrence over-counts noisy gates; repeats require a stable,
+  // sanitized action fingerprint.
   if (action === 'block' || action === 'warn') {
     if (!stats.sessionFiredGates) stats.sessionFiredGates = {};
+    if (!stats.sessionFiredActions) stats.sessionFiredActions = {};
     const sessionKey = `session_${Math.floor(Date.now() / SESSION_ACTION_TTL_MS)}`;
     if (!stats.sessionFiredGates[sessionKey]) stats.sessionFiredGates[sessionKey] = {};
-    if (stats.sessionFiredGates[sessionKey][gateId]) {
-      // Same gate fired again in this session — it's a recurring block
-      stats.recurringBlocks = (stats.recurringBlocks || 0) + 1;
-    } else {
-      stats.sessionFiredGates[sessionKey][gateId] = true;
+    stats.sessionFiredGates[sessionKey][gateId] = true;
+
+    const fingerprint = buildGateActionFingerprint(gateId, options);
+    if (fingerprint) {
+      if (!stats.sessionFiredActions[sessionKey]) stats.sessionFiredActions[sessionKey] = {};
+      if (!stats.sessionFiredActions[sessionKey][gateId]) stats.sessionFiredActions[sessionKey][gateId] = {};
+      if (stats.sessionFiredActions[sessionKey][gateId][fingerprint]) {
+        stats.recurringBlocks = (stats.recurringBlocks || 0) + 1;
+      } else {
+        stats.sessionFiredActions[sessionKey][gateId][fingerprint] = true;
+      }
     }
   }
 
@@ -717,7 +878,7 @@ function extractAffectedFiles(toolName, toolInput = {}) {
       }
     }
 
-    if (/\bgit\s+push\b/i.test(command) || /\bgh\s+pr\s+(?:create|merge)\b/i.test(command)) {
+    if (/\bgit\s+push\b/i.test(command) || /\bgh\s+pr\s+(?:create|merge)\b/i.test(command) || isGhApiPrCreateCommand(command)) {
       for (const filePath of getBranchDiffFiles(repoRoot)) {
         files.add(normalizePosix(filePath));
       }
@@ -736,6 +897,7 @@ function isHighRiskAction(toolName, toolInput = {}, affectedFiles = []) {
   const command = String(toolInput.command || '');
   // Original high-risk pattern (git writes, publishes, destructive ops)
   if (HIGH_RISK_BASH_PATTERN.test(command)) return true;
+  if (isGhApiPrCreateCommand(command)) return true;
   // Broadened: any Bash command that modifies files or has side effects.
   // Excludes pure read/analysis commands (node --test, cat, ls, echo, etc.)
   // to avoid false positives on benign operations.
@@ -973,7 +1135,8 @@ function getLocalOnlyScopeSources(governanceState = {}, constraints = {}) {
 
 function isRemoteSideEffectCommand(toolName, toolInput = {}) {
   if (toolName !== 'Bash') return false;
-  return REMOTE_SIDE_EFFECT_BASH_PATTERN.test(String(toolInput.command || ''));
+  const command = String(toolInput.command || '');
+  return REMOTE_SIDE_EFFECT_BASH_PATTERN.test(command) || isGhApiPrCreateCommand(command);
 }
 
 function evaluateLocalOnlyRemoteSideEffectGate(toolName, toolInput = {}, governanceState = {}, constraints = {}) {
@@ -996,7 +1159,7 @@ function evaluateLocalOnlyRemoteSideEffectGate(toolName, toolInput = {}, governa
 }
 
 function recordStructuralGateBlock(toolName, toolInput, result) {
-  recordStat(result.gate, 'block');
+  recordStat(result.gate, 'block', null, { toolName, toolInput });
   const auditRecord = recordAuditEvent({
     toolName,
     toolInput,
@@ -1010,21 +1173,8 @@ function recordStructuralGateBlock(toolName, toolInput, result) {
   return result;
 }
 
-// Escape hatch: edits that ONLY touch the gate's own configuration — Claude
-// settings or ThumbGate config — are never scope-enforced. A governance gate must
-// never trap the user inside its own settings (e.g. a stale task scope blocking the
-// very settings.local.json edit needed to loosen/disable the gate).
-function isGateEscapeHatchFile(filePath) {
-  const p = String(filePath || '').toLowerCase().replace(/\\/g, '/');
-  return /(?:^|\/)\.claude\/settings(?:\.[^/]+)?\.json$/.test(p)
-    || /(?:^|\/)\.thumbgate\/(?:config|settings|gates|governance-state)[^/]*\.json$/.test(p);
-}
-
 function isScopeEnforcedAction(toolName, toolInput = {}, affectedFiles = []) {
-  if (EDIT_LIKE_TOOLS.has(toolName) && affectedFiles.length > 0) {
-    if (affectedFiles.every(isGateEscapeHatchFile)) return false;
-    return true;
-  }
+  if (EDIT_LIKE_TOOLS.has(toolName) && affectedFiles.length > 0) return true;
   if (toolName !== 'Bash') return false;
   const command = String(toolInput.command || '');
   if (!HIGH_RISK_BASH_PATTERN.test(command)) return false;
@@ -1038,6 +1188,25 @@ function shouldEnforceTaskScope(gate, governanceState, toolName, toolInput = {},
       affectedFiles.length > 0;
   }
   return isScopeEnforcedAction(toolName, toolInput, affectedFiles);
+}
+
+function isAgentHookSettingsFile(filePath) {
+  return matchesAnyGlob(filePath, BREAK_GLASS_SETTINGS_GLOBS);
+}
+
+function isBreakGlassSettingsBypass(gate, affectedFiles) {
+  if (!gate || !['task-scope-edit-boundary', 'protected-file-approval-required'].includes(gate.id)) {
+    return false;
+  }
+  if (!isConditionSatisfied(BREAK_GLASS_CONDITION)) return false;
+  return Array.isArray(affectedFiles) && affectedFiles.length > 0 && affectedFiles.every(isAgentHookSettingsFile);
+}
+
+function isBreakGlassSettingsRecoveryAction(toolName, toolInput = {}) {
+  if (!EDIT_LIKE_TOOLS.has(toolName)) return false;
+  if (!isConditionSatisfied(BREAK_GLASS_CONDITION)) return false;
+  const affectedFiles = extractAffectedFiles(toolName, toolInput).files;
+  return affectedFiles.length > 0 && affectedFiles.every(isAgentHookSettingsFile);
 }
 
 function formatFileList(files, limit = 5) {
@@ -1274,6 +1443,9 @@ function matchGate(gate, toolName, toolInput = {}) {
       if (gate.id === 'permission-change-approval' && isSafeLocalCredentialHardeningCommand(toolName, toolInput)) {
         return { matched: false, matchText, affectedFiles };
       }
+      if (isBreakGlassSettingsBypass(gate, affectedFiles)) {
+        return { matched: false, matchText, affectedFiles };
+      }
     } catch {
       return { matched: false, matchText, affectedFiles };
     }
@@ -1291,6 +1463,9 @@ function matchGate(gate, toolName, toolInput = {}) {
 
   let taskScopeViolation = null;
   if (gate.requireTaskScope) {
+    if (isBreakGlassSettingsBypass(gate, affectedFiles)) {
+      return { matched: false, matchText, affectedFiles };
+    }
     if (!shouldEnforceTaskScope(gate, governanceState, toolName, toolInput, affectedFiles)) {
       return { matched: false, matchText, affectedFiles };
     }
@@ -1300,6 +1475,9 @@ function matchGate(gate, toolName, toolInput = {}) {
 
   let protectedApprovalViolation = null;
   if (gate.requireProtectedApproval) {
+    if (isBreakGlassSettingsBypass(gate, affectedFiles)) {
+      return { matched: false, matchText, affectedFiles };
+    }
     const protectedGlobs = sanitizeGlobList(
       Array.isArray(gate.protectedGlobs) && gate.protectedGlobs.length > 0
         ? gate.protectedGlobs
@@ -1342,13 +1520,7 @@ function matchesGate(gate, toolName, toolInput) {
 function isSafeLocalCredentialHardeningCommand(toolName, toolInput = {}) {
   if (toolName !== 'Bash') return false;
   const command = String(toolInput.command || '').trim();
-  if (!command) return false;
-  // Reject recursive chmod (never auto-allow chmod over a directory tree). Pure
-  // string ops (no regex) so there's no backtracking (CodeQL js/polynomial-redos):
-  // a short flag token (-…, not --…) containing 'R', or the long --recursive form.
-  if (command.split(/\s+/).some((t) =>
-    t === '--recursive' || (t.startsWith('-') && !t.startsWith('--') && t.includes('R'))
-  )) return false;
+  if (!command || isRecursiveChmodCommand(command)) return false;
   if (/[;&|`$()<>*?[\]{}]/.test(command)) return false;
 
   const match = command.match(/(?:^|\s)chmod\s+(?:-[fv]\s+)?0?([46]00)\s+(['"]?)(\S+)\2\s*$/i);
@@ -1356,7 +1528,7 @@ function isSafeLocalCredentialHardeningCommand(toolName, toolInput = {}) {
 
   const target = match[3];
   if (!target || target === '/' || target === '~') return false;
-  if (/^\.\.?(?:\/|$)/.test(target)) return false;
+  if (target.includes('..')) return false;
 
   const normalized = target.replace(/^['"]|['"]$/g, '').toLowerCase();
   const looksLikeCredentialPath = /(?:^|\/)(?:\.config|\.ssh|\.gnupg|\.aws|\.gcloud|\.gemini|\.resume_secrets|\.thumbgate|secrets?|credentials?)(?:\/|$)/.test(normalized)
@@ -1369,6 +1541,9 @@ function isSafeLocalCredentialHardeningCommand(toolName, toolInput = {}) {
 function evaluateMemoryGuard(toolName, toolInput = {}) {
   const affected = extractAffectedFiles(toolName, toolInput);
   const affectedFiles = affected.files;
+  if (isSafeSecretStorageWrite(toolName, toolInput, process.cwd())) {
+    return null;
+  }
   // Hardening a credential file's permissions (chmod 600 on a key/secret path) is
   // a safety action, not a risk. The same exemption already guards the
   // permission-change-approval gate; without it here, `chmod 600 ~/.resume_secrets/key`
@@ -1389,7 +1564,10 @@ function evaluateMemoryGuard(toolName, toolInput = {}) {
   }
 
   const command = String(toolInput.command || '');
-  if (toolName === 'Bash' && /\bgh\s+pr\s+create\b/i.test(command) && isConditionSatisfied('pr_create_allowed')) {
+  const isPrCreateCommand = toolName === 'Bash' && (
+    /\bgh\s+pr\s+create\b/i.test(command) || isGhApiPrCreateCommand(command)
+  );
+  if (isPrCreateCommand && isConditionSatisfied('pr_create_allowed')) {
     const branchGovernanceViolation = buildBranchGovernanceViolation(
       governanceState,
       toolInput,
@@ -1402,7 +1580,10 @@ function evaluateMemoryGuard(toolName, toolInput = {}) {
     }
   }
 
-  if (toolName === 'Bash' && /\b(?:gh\s+pr\s+(?:create|merge)|gh\s+release\s+create|git\s+tag\b|(?:npm|yarn|pnpm)\s+publish\b)\b/i.test(command)) {
+  if (toolName === 'Bash' && (
+    /\b(?:gh\s+pr\s+(?:create|merge)|gh\s+release\s+create|git\s+tag\b|(?:npm|yarn|pnpm)\s+publish\b)\b/i.test(command) ||
+    isGhApiPrCreateCommand(command)
+  )) {
     const branchGovernanceViolation = buildBranchGovernanceViolation(
       governanceState,
       toolInput,
@@ -1440,7 +1621,14 @@ function evaluateMemoryGuard(toolName, toolInput = {}) {
     filePath: toolInput.file_path || toolInput.path || null,
     affectedFiles,
   });
-  const guard = hybrid.evaluatePretool(toolName, serializedInput);
+  // Claw/hybrid support: pass context if agent provides claw metadata (for EnterpriseClaw/OpenShell/Perplexity hybrid agents)
+  let guard;
+  if (toolInput && (toolInput.clawContext || toolInput._claw || toolInput.hybridRoute || toolInput.agentId)) {
+    const clawCtx = toolInput.clawContext || toolInput._claw || { actionType: toolInput.actionType || 'unknown', agentId: toolInput.agentId || 'unknown', hybridRoute: toolInput.hybridRoute || 'unknown' };
+    guard = hybrid.evaluateClawPretool ? hybrid.evaluateClawPretool(toolName, serializedInput, clawCtx) : hybrid.evaluatePretool(toolName, serializedInput);
+  } else {
+    guard = hybrid.evaluatePretool(toolName, serializedInput);
+  }
   if (!guard || guard.mode === 'allow') {
     return null;
   }
@@ -1578,10 +1766,22 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
   if (localOnlyRemoteSideEffectGate) {
     return recordStructuralGateBlock(toolName, toolInput, localOnlyRemoteSideEffectGate);
   }
+  if (isBreakGlassSettingsRecoveryAction(toolName, toolInput)) {
+    recordAuditEvent({
+      toolName,
+      toolInput,
+      decision: 'allow',
+      gateId: BREAK_GLASS_CONDITION,
+      message: 'Break-glass recovery allowed hook settings edit',
+      severity: 'high',
+      source: 'gates-engine',
+    });
+    return null;
+  }
 
   const pendingThreadResolutionGate = evaluatePendingPrThreadResolutionGate(toolName, toolInput);
   if (pendingThreadResolutionGate) {
-    recordStat(pendingThreadResolutionGate.gate, 'block');
+    recordStat(pendingThreadResolutionGate.gate, 'block', null, { toolName, toolInput });
     const auditRecord = recordAuditEvent({
       toolName,
       toolInput,
@@ -1597,7 +1797,7 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
 
   const boostedRiskGuard = evaluateBoostedRiskTagGuard(toolName, toolInput);
   if (boostedRiskGuard) {
-    recordStat(boostedRiskGuard.gate, 'block');
+    recordStat(boostedRiskGuard.gate, 'block', null, { toolName, toolInput });
     const auditRecord = recordAuditEvent({
       toolName,
       toolInput,
@@ -1617,13 +1817,13 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
   if (isRuntimePlanGateEnabled()) {
     const planGate = evaluatePlanGate(toolName, toolInput);
     if (planGate) {
-      recordStat(planGate.gate, planGate.decision === 'deny' ? 'block' : 'warn');
+      recordStat(planGate.gate, planGate.decision === 'deny' ? 'block' : 'warn', null, { toolName, toolInput });
       return planGate;
     }
 
     const trajectory = getTrajectoryScore();
     if (trajectory.isDrifting) {
-      recordStat('strategic-drift', 'block');
+      recordStat('strategic-drift', 'block', null, { toolName, toolInput });
       return { decision: 'deny', gate: 'strategic-drift', message: trajectory.message, severity: 'high' };
     }
   }
@@ -1677,12 +1877,12 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
       // Free-tier daily block cap: after N blocks/day, deny → warn + upgrade CTA
       const cappedResult = applyDailyBlockCap(denyResult);
       if (cappedResult) {
-        recordStat(gate.id, 'warn', gate);
+        recordStat(gate.id, 'warn', gate, { toolName, toolInput });
         const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: cappedResult.message, severity: gate.severity, source: 'gates-engine', dailyBlockCapApplied: true });
         auditToFeedback(auditRecord);
         return cappedResult;
       }
-      recordStat(gate.id, 'block', gate);
+      recordStat(gate.id, 'block', gate, { toolName, toolInput });
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return denyResult;
@@ -1691,13 +1891,13 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
     if (gate.action === 'approve') {
       const approvalEnabled = process.env.THUMBGATE_APPROVAL_GATES !== '0';
       if (approvalEnabled) {
-        recordStat(gate.id, 'approve', gate);
+        recordStat(gate.id, 'approve', gate, { toolName, toolInput });
         const result = { decision: 'approve', gate: gate.id, message, severity: gate.severity, reasoning, requiresApproval: true };
         const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'approve', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
         auditToFeedback(auditRecord);
         return result;
       }
-      recordStat(gate.id, 'warn', gate);
+      recordStat(gate.id, 'warn', gate, { toolName, toolInput });
       const result = { decision: 'warn', gate: gate.id, message: `[approval gate disabled] ${message}`, severity: gate.severity, reasoning };
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
@@ -1705,7 +1905,7 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
     }
 
     if (gate.action === 'log') {
-      recordStat(gate.id, 'log', gate);
+      recordStat(gate.id, 'log', gate, { toolName, toolInput });
       const result = { decision: 'log', gate: gate.id, message, severity: gate.severity, reasoning, logged: true };
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'log', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
@@ -1714,7 +1914,7 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
     }
 
     if (gate.action === 'warn') {
-      recordStat(gate.id, 'warn', gate);
+      recordStat(gate.id, 'warn', gate, { toolName, toolInput });
       const result = { decision: 'warn', gate: gate.id, message, severity: gate.severity, reasoning };
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
@@ -1722,14 +1922,15 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
     }
   }
 
-  const sentinelReport = evaluateWorkflowSentinel(toolName, toolInput, {
+  const skipAdvisoryGuards = isSafeSecretStorageWrite(toolName, toolInput, process.cwd());
+  const sentinelReport = skipAdvisoryGuards ? null : evaluateWorkflowSentinel(toolName, toolInput, {
     governanceState,
   });
   const sentinelDecision = recordSentinelDecision(sentinelReport, toolName, toolInput);
   const memoryGuard = evaluateMemoryGuard(toolName, toolInput);
   if (memoryGuard) {
     const enrichedMemoryGuard = enrichResultWithSentinel(memoryGuard, sentinelReport);
-    recordStat(enrichedMemoryGuard.gate, 'block');
+    recordStat(enrichedMemoryGuard.gate, 'block', null, { toolName, toolInput });
     recordMemoryGuardDecision(sentinelDecision, enrichedMemoryGuard);
     const auditRecord = recordAuditEvent({
       toolName,
@@ -1746,7 +1947,7 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
 
   if (sentinelReport && sentinelReport.decision !== 'allow') {
     const sentinelResult = buildSentinelGateResult(sentinelReport);
-    recordStat(sentinelResult.gate, sentinelResult.decision === 'deny' ? 'block' : 'warn');
+    recordStat(sentinelResult.gate, sentinelResult.decision === 'deny' ? 'block' : 'warn', null, { toolName, toolInput });
     recordSentinelBlockDecision(sentinelDecision, sentinelResult);
     const auditRecord = recordAuditEvent({
       toolName,
@@ -1792,10 +1993,22 @@ function evaluateGates(toolName, toolInput, configPath) {
   if (localOnlyRemoteSideEffectGate) {
     return recordStructuralGateBlock(toolName, toolInput, localOnlyRemoteSideEffectGate);
   }
+  if (isBreakGlassSettingsRecoveryAction(toolName, toolInput)) {
+    recordAuditEvent({
+      toolName,
+      toolInput,
+      decision: 'allow',
+      gateId: BREAK_GLASS_CONDITION,
+      message: 'Break-glass recovery allowed hook settings edit',
+      severity: 'high',
+      source: 'gates-engine',
+    });
+    return null;
+  }
 
   const pendingThreadResolutionGate = evaluatePendingPrThreadResolutionGate(toolName, toolInput);
   if (pendingThreadResolutionGate) {
-    recordStat(pendingThreadResolutionGate.gate, 'block');
+    recordStat(pendingThreadResolutionGate.gate, 'block', null, { toolName, toolInput });
     const auditRecord = recordAuditEvent({
       toolName,
       toolInput,
@@ -1811,7 +2024,7 @@ function evaluateGates(toolName, toolInput, configPath) {
 
   const boostedRiskGuard = evaluateBoostedRiskTagGuard(toolName, toolInput);
   if (boostedRiskGuard) {
-    recordStat(boostedRiskGuard.gate, 'block');
+    recordStat(boostedRiskGuard.gate, 'block', null, { toolName, toolInput });
     const auditRecord = recordAuditEvent({
       toolName,
       toolInput,
@@ -1831,13 +2044,13 @@ function evaluateGates(toolName, toolInput, configPath) {
   if (isRuntimePlanGateEnabled()) {
     const planGate = evaluatePlanGate(toolName, toolInput);
     if (planGate) {
-      recordStat(planGate.gate, planGate.decision === 'deny' ? 'block' : 'warn');
+      recordStat(planGate.gate, planGate.decision === 'deny' ? 'block' : 'warn', null, { toolName, toolInput });
       return planGate;
     }
 
     const trajectory = getTrajectoryScore();
     if (trajectory.isDrifting) {
-      recordStat('strategic-drift', 'block');
+      recordStat('strategic-drift', 'block', null, { toolName, toolInput });
       return { decision: 'deny', gate: 'strategic-drift', message: trajectory.message, severity: 'high' };
     }
   }
@@ -1864,12 +2077,12 @@ function evaluateGates(toolName, toolInput, configPath) {
       // Free-tier daily block cap: after N blocks/day, deny → warn + upgrade CTA
       const cappedResult = applyDailyBlockCap(denyResult);
       if (cappedResult) {
-        recordStat(gate.id, 'warn', gate);
+        recordStat(gate.id, 'warn', gate, { toolName, toolInput });
         const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: cappedResult.message, severity: gate.severity, source: 'gates-engine', dailyBlockCapApplied: true });
         auditToFeedback(auditRecord);
         return cappedResult;
       }
-      recordStat(gate.id, 'block', gate);
+      recordStat(gate.id, 'block', gate, { toolName, toolInput });
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return denyResult;
@@ -1878,13 +2091,13 @@ function evaluateGates(toolName, toolInput, configPath) {
     if (gate.action === 'approve') {
       const approvalEnabled = process.env.THUMBGATE_APPROVAL_GATES !== '0';
       if (approvalEnabled) {
-        recordStat(gate.id, 'approve', gate);
+        recordStat(gate.id, 'approve', gate, { toolName, toolInput });
         const result = { decision: 'approve', gate: gate.id, message, severity: gate.severity, reasoning, requiresApproval: true };
         const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'approve', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
         auditToFeedback(auditRecord);
         return result;
       }
-      recordStat(gate.id, 'warn', gate);
+      recordStat(gate.id, 'warn', gate, { toolName, toolInput });
       const result = { decision: 'warn', gate: gate.id, message: `[approval gate disabled] ${message}`, severity: gate.severity, reasoning };
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
@@ -1892,7 +2105,7 @@ function evaluateGates(toolName, toolInput, configPath) {
     }
 
     if (gate.action === 'log') {
-      recordStat(gate.id, 'log', gate);
+      recordStat(gate.id, 'log', gate, { toolName, toolInput });
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'log', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       // 'log' action allows the tool call to proceed — continue to next gate
@@ -1900,7 +2113,7 @@ function evaluateGates(toolName, toolInput, configPath) {
     }
 
     if (gate.action === 'warn') {
-      recordStat(gate.id, 'warn', gate);
+      recordStat(gate.id, 'warn', gate, { toolName, toolInput });
       const result = { decision: 'warn', gate: gate.id, message, severity: gate.severity, reasoning };
       const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
@@ -1908,14 +2121,15 @@ function evaluateGates(toolName, toolInput, configPath) {
     }
   }
 
-  const sentinelReport = evaluateWorkflowSentinel(toolName, toolInput, {
+  const skipAdvisoryGuards = isSafeSecretStorageWrite(toolName, toolInput, process.cwd());
+  const sentinelReport = skipAdvisoryGuards ? null : evaluateWorkflowSentinel(toolName, toolInput, {
     governanceState,
   });
   const sentinelDecision = recordSentinelDecision(sentinelReport, toolName, toolInput);
   const memoryGuard = evaluateMemoryGuard(toolName, toolInput);
   if (memoryGuard) {
     const enrichedMemoryGuard = enrichResultWithSentinel(memoryGuard, sentinelReport);
-    recordStat(enrichedMemoryGuard.gate, 'block');
+    recordStat(enrichedMemoryGuard.gate, 'block', null, { toolName, toolInput });
     recordMemoryGuardDecision(sentinelDecision, enrichedMemoryGuard);
     const auditRecord = recordAuditEvent({
       toolName,
@@ -1932,7 +2146,7 @@ function evaluateGates(toolName, toolInput, configPath) {
 
   if (sentinelReport && sentinelReport.decision !== 'allow') {
     const sentinelResult = buildSentinelGateResult(sentinelReport);
-    recordStat(sentinelResult.gate, sentinelResult.decision === 'deny' ? 'block' : 'warn');
+    recordStat(sentinelResult.gate, sentinelResult.decision === 'deny' ? 'block' : 'warn', null, { toolName, toolInput });
     recordSentinelBlockDecision(sentinelDecision, sentinelResult);
     const auditRecord = recordAuditEvent({
       toolName,
@@ -1952,14 +2166,43 @@ function evaluateGates(toolName, toolInput, configPath) {
   return null;
 }
 
-function buildSecretGuardResult(scanResult) {
+// Turn a secret-exfiltration block into actionable guidance that names the
+// safe path, instead of a dead-end that drives agents toward brittle
+// workarounds (e.g. writing secrets to /tmp). The vault dirs referenced here
+// are the SAME constant the scanner whitelists, so the hint can never drift
+// from enforcement.
+function buildSecretRemediation(toolName = '', toolInput = {}) {
+  const vaultDirs = (SAFE_SECRET_STORAGE_DIRS || []).map((dir) => `~/${dir}`);
+  const primaryVault = vaultDirs[0] || '~/.resume_secrets';
+  const vaultList = vaultDirs.join(', ') || primaryVault;
+
+  if (EDIT_LIKE_TOOLS && EDIT_LIKE_TOOLS.has(toolName)) {
+    const target = toolInput.file_path || toolInput.path || toolInput.filePath || toolInput.target_path;
+    const where = target ? ` (you targeted ${redactText(String(target))})` : '';
+    return `To store this secret safely, write it with the Write/Edit tool to a file under ${vaultList}${where}. `
+      + `Those locations are whitelisted for secret storage and will NOT be blocked. `
+      + `Do not route around this by writing to /tmp or another path — that leaves the secret in a world-readable location and does not make it safe.`;
+  }
+
+  if (toolName === 'Bash') {
+    return `Do not inline a live secret literal into a shell command — it leaks into shell history and process args. `
+      + `Instead, store the value with the Write tool to a file under ${vaultList}, then reference it via an environment variable or by reading that file at runtime.`;
+  }
+
+  return `Store secrets in the whitelisted vault (${vaultList}) using the Write tool rather than passing the literal through this action.`;
+}
+
+function buildSecretGuardResult(scanResult, context = {}) {
+  const remediation = buildSecretRemediation(context.toolName, context.toolInput || {});
+  const summary = buildSafeSummary(
+    scanResult.findings,
+    'Blocked because the action appears to expose secret material'
+  );
   return {
     decision: 'deny',
     gate: 'secret-exfiltration',
-    message: buildSafeSummary(
-      scanResult.findings,
-      'Blocked because the action appears to expose secret material'
-    ),
+    message: `${summary}. ${remediation}`,
+    remediation,
     severity: 'critical',
     secretScan: {
       provider: scanResult.provider,
@@ -2038,9 +2281,15 @@ function evaluateSecretGuard(input = {}) {
   if (!scanResult.detected) {
     return null;
   }
-  recordStat('secret-exfiltration', 'block');
+  recordStat('secret-exfiltration', 'block', null, {
+    toolName: input.tool_name || input.toolName || 'unknown',
+    toolInput: input.tool_input || {},
+  });
   recordSecretViolation(input, scanResult);
-  const result = buildSecretGuardResult(scanResult);
+  const result = buildSecretGuardResult(scanResult, {
+    toolName: input.tool_name || input.toolName,
+    toolInput: input.tool_input || {},
+  });
   // Audit trail: record secret guard denial
   const auditRecord = recordAuditEvent({
     toolName: input.tool_name || input.toolName || 'unknown',
@@ -2358,12 +2607,7 @@ function isStrictKnowledgeConflictMode() {
 
 function isKnowledgeConflictHardBlockAction(toolName, toolInput = {}) {
   if (!isStrictKnowledgeConflictMode()) return false;
-  if (EDIT_LIKE_TOOLS.has(toolName)) {
-    // Even in opt-in strict mode, never hard-block edits to the gate's own config
-    // (Claude/ThumbGate settings) — the user must always be able to disable or
-    // loosen the gate. Other edits are blocked under strict mode by design.
-    return !isGateEscapeHatchFile(toolInput.file_path || toolInput.path || toolInput.notebook_path || '');
-  }
+  if (EDIT_LIKE_TOOLS.has(toolName)) return true;
   if (toolName !== 'Bash') return false;
   return KNOWLEDGE_CONFLICT_STRICT_BASH_PATTERN.test(String(toolInput.command || ''));
 }
@@ -2373,7 +2617,7 @@ function buildKnowledgeConflictContext(toolName, toolInput, lessons, entropy) {
   const message = `Knowledge conflict warning: retrieved lessons disagree for this action (entropy ${entropy}). Treat the reminders below as cautionary context, but do not stop unrelated work solely because memory is noisy.`;
 
   if (isKnowledgeConflictHardBlockAction(toolName, toolInput)) {
-    recordStat('retrieval_entropy_high', 'block');
+    recordStat('retrieval_entropy_high', 'block', null, { toolName, toolInput });
     return {
       decision: 'deny',
       gate: 'knowledge-conflict-gate',
@@ -2382,7 +2626,7 @@ function buildKnowledgeConflictContext(toolName, toolInput, lessons, entropy) {
     };
   }
 
-  recordStat('retrieval_entropy_high', 'warn');
+  recordStat('retrieval_entropy_high', 'warn', null, { toolName, toolInput });
   return mergeContextStrings(`[ThumbGate] ${message}`, lessonContext);
 }
 
@@ -2394,7 +2638,7 @@ function extractActionContext(toolName, toolInput) {
   if (toolInput.description) parts.push(String(toolInput.description).slice(0, 200));
   if (toolInput.prompt) parts.push(String(toolInput.prompt).slice(0, 400));
   if (toolInput.pattern) parts.push(String(toolInput.pattern).slice(0, 200));
-  return parts.filter(Boolean).join(' ');
+  return sanitizeFeedbackText(parts.filter(Boolean).join(' ')) || toolName;
 }
 
 function extractAvoidanceAdvice(content) {
@@ -2423,6 +2667,7 @@ async function runAsync(input) {
 
   const toolName = input.tool_name || '';
   const toolInput = input.tool_input || {};
+  const safeSecretStorageWrite = isSafeSecretStorageWrite(toolName, toolInput, process.cwd());
 
   const sequenceGuard = evaluateSequenceState(toolName, toolInput);
   if (sequenceGuard && sequenceGuard.decision === 'deny') {
@@ -2442,8 +2687,8 @@ async function runAsync(input) {
   }
 
   
-  const behavioralContext = buildBehavioralContext();
-  const lessonContext = await buildRelevantLessonContextAsync(toolName, toolInput);
+  const behavioralContext = safeSecretStorageWrite ? null : buildBehavioralContext();
+  const lessonContext = safeSecretStorageWrite ? null : await buildRelevantLessonContextAsync(toolName, toolInput);
   
   if (lessonContext && lessonContext.decision === "deny") {
     return formatOutput(lessonContext);
@@ -2469,6 +2714,7 @@ function run(input) {
 
   const toolName = input.tool_name || '';
   const toolInput = input.tool_input || {};
+  const safeSecretStorageWrite = isSafeSecretStorageWrite(toolName, toolInput, process.cwd());
 
   const sequenceGuard = evaluateSequenceState(toolName, toolInput);
   if (sequenceGuard && sequenceGuard.decision === 'deny') {
@@ -2488,8 +2734,8 @@ function run(input) {
   }
 
   
-  const behavioralContext = buildBehavioralContext();
-  const lessonContext = buildRelevantLessonContext(toolName, toolInput);
+  const behavioralContext = safeSecretStorageWrite ? null : buildBehavioralContext();
+  const lessonContext = safeSecretStorageWrite ? null : buildRelevantLessonContext(toolName, toolInput);
   
   if (lessonContext && lessonContext.decision === "deny") {
     return formatOutput(lessonContext);
@@ -2772,6 +3018,7 @@ module.exports = {
   setTaskScope,
   setBranchGovernance,
   approveProtectedAction,
+  breakGlassEmergency,
   getScopeState,
   getBranchGovernanceState,
   isConditionSatisfied,
@@ -2830,6 +3077,8 @@ module.exports = {
   getLocalOnlyScopeSources,
   isRemoteSideEffectCommand,
   evaluateLocalOnlyRemoteSideEffectGate,
+  isAgentHookSettingsFile,
+  isBreakGlassSettingsRecoveryAction,
   PR_THREAD_RESOLUTION_ACTION,
   buildBlockActionProCta,
   applyDailyBlockCap,

@@ -385,8 +385,32 @@ const LOCAL_PRO_BOOTSTRAP = __LESSONS_BOOTSTRAP_ENABLED__;
 function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function escAttr(s) { return escHtml(String(s || '')).replace(/"/g, '&quot;'); }
 
+let ACTIVE_PROJECT_DIR = '';
+try {
+  var urlParams = new URLSearchParams(window.location.search);
+  ACTIVE_PROJECT_DIR = urlParams.get('project') || '';
+} catch (e) {}
+
+function preserveProjectQueryParams() {
+  if (!ACTIVE_PROJECT_DIR) return;
+  var links = document.querySelectorAll('a[href^="/dashboard"], a[href^="/lessons"], a[href="/"]');
+  links.forEach(function(link) {
+    try {
+      var url = new URL(link.href, window.location.origin);
+      url.searchParams.set('project', ACTIVE_PROJECT_DIR);
+      link.href = url.pathname + url.search + url.hash;
+    } catch (e) {}
+  });
+}
+
+window.addEventListener('DOMContentLoaded', preserveProjectQueryParams);
+
 function getHeaders() {
-  return { 'Authorization': 'Bearer ' + API_KEY, 'Content-Type': 'application/json' };
+  var headers = { 'Authorization': 'Bearer ' + API_KEY, 'Content-Type': 'application/json' };
+  if (ACTIVE_PROJECT_DIR) {
+    headers['x-thumbgate-project-dir'] = ACTIVE_PROJECT_DIR;
+  }
+  return headers;
 }
 
 function hasBootstrapKey() {
@@ -791,14 +815,107 @@ function deriveSeverity(lesson) {
   return 'info';
 }
 
+function cleanLiveTitle(titleText, contextText) {
+  if (!titleText) return 'Lesson';
+  var prefix = '';
+  var rest = titleText;
+  var match = titleText.match(/^(MISTAKE|SUCCESS|LEARNING|PREFERENCE):\s*(.*)/i);
+  if (match) {
+    prefix = match[1].toUpperCase() + ': ';
+    rest = match[2];
+  }
+  
+  var trimmed = rest.trim();
+  var isJson = trimmed.indexOf('{') === 0;
+  
+  if (isJson) {
+    try {
+      var parsed = JSON.parse(trimmed);
+      var promptVal = parsed.prompt;
+      var hookVal = parsed.hook_event_name || parsed.hookEventName;
+      if (promptVal) {
+        var dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
+        return prefix + 'Prompt "' + promptVal + '"' + (dirName ? ' inside ' + dirName : '');
+      }
+      if (hookVal) {
+        var dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
+        return prefix + 'Hook event ' + hookVal + (dirName ? ' inside ' + dirName : '');
+      }
+      if (parsed.signal) {
+        var dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
+        return prefix + (parsed.signal === 'up' ? 'Thumbs Up' : 'Thumbs Down') + (dirName ? ' inside ' + dirName : '');
+      }
+    } catch (e) {
+      if (contextText) {
+        var ctxTrimmed = contextText.trim();
+        if (ctxTrimmed.indexOf('{') === 0) {
+          try {
+            var parsedCtx = JSON.parse(ctxTrimmed);
+            var promptValCtx = parsedCtx.prompt;
+            var hookValCtx = parsedCtx.hook_event_name || parsedCtx.hookEventName;
+            if (promptValCtx) {
+              var dirName = parsedCtx.cwd ? parsedCtx.cwd.split('/').pop() : '';
+              return prefix + 'Prompt "' + promptValCtx + '"' + (dirName ? ' inside ' + dirName : '');
+            }
+            if (hookValCtx) {
+              var dirName = parsedCtx.cwd ? parsedCtx.cwd.split('/').pop() : '';
+              return prefix + 'Hook event ' + hookValCtx + (dirName ? ' inside ' + dirName : '');
+            }
+          } catch (err) {
+            // ignore
+          }
+        }
+      }
+    }
+    
+    var promptMatch = rest.match(/"prompt"\s*:\s*"([^"]+)"/) || (contextText && contextText.match(/"prompt"\s*:\s*"([^"]+)"/));
+    if (promptMatch) {
+      var cwdMatch = rest.match(/"cwd"\s*:\s*"([^"]+)"/) || (contextText && contextText.match(/"cwd"\s*:\s*"([^"]+)"/));
+      var dirName = cwdMatch ? cwdMatch[1].split('/').pop() : '';
+      return prefix + 'Prompt "' + promptMatch[1] + '"' + (dirName ? ' inside ' + dirName : '');
+    }
+    
+    var hookMatch = rest.match(/"hook_?event_?name"\s*:\s*"([^"]+)"/i) || (contextText && contextText.match(/"hook_?event_?name"\s*:\s*"([^"]+)"/i));
+    if (hookMatch) {
+      var cwdMatch = rest.match(/"cwd"\s*:\s*"([^"]+)"/) || (contextText && contextText.match(/"cwd"\s*:\s*"([^"]+)"/));
+      var dirName = cwdMatch ? cwdMatch[1].split('/').pop() : '';
+      return prefix + 'Hook event ' + hookMatch[1] + (dirName ? ' inside ' + dirName : '');
+    }
+  }
+  return titleText;
+}
+
+function cleanLiveContext(contextText) {
+  if (!contextText) return '';
+  var trimmed = contextText.trim();
+  if (trimmed.indexOf('{') === 0 && trimmed.indexOf('}') === trimmed.length - 1) {
+    try {
+      var parsed = JSON.parse(trimmed);
+      if (parsed.prompt) {
+        var dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
+        var parts = [];
+        parts.push('Prompt: "' + parsed.prompt + '"');
+        if (parsed.cwd) parts.push('Working dir: ' + parsed.cwd);
+        if (parsed.hook_event_name) parts.push('Hook event: ' + parsed.hook_event_name);
+        return parts.join(' · ');
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+  return contextText;
+}
+
 function mapLiveRules(payload) {
   return (payload.results || []).map(function(result) {
     var linkedGate = (((result.systemResponse || {}).linkedAutoGates) || [])[0] || null;
     var sourceFeedback = ((result.systemResponse || {}).sourceFeedback) || null;
+    var rawTitle = result.title || ((result.lesson || {}).summary) || 'Lesson';
+    var rawContext = ((result.lesson || {}).howToAvoid) || ((result.lesson || {}).summary) || (sourceFeedback && sourceFeedback.context) || '';
     return {
       id: result.id,
-      title: result.title || ((result.lesson || {}).summary) || 'Lesson',
-      context: ((result.lesson || {}).howToAvoid) || ((result.lesson || {}).summary) || (sourceFeedback && sourceFeedback.context) || '',
+      title: cleanLiveTitle(rawTitle, rawContext),
+      context: cleanLiveContext(rawContext),
       occurrences: linkedGate && linkedGate.occurrences ? linkedGate.occurrences : 1,
       severity: deriveSeverity(result),
       tags: Array.isArray(result.tags) ? result.tags : [],
@@ -812,13 +929,14 @@ function mapTimelineItems(payload, lessonMap) {
   return (payload.results || []).map(function(entry) {
     var linkedLesson = lessonMap.get(entry.id) || null;
     var timestamp = entry.timestamp || null;
+    var rawContext = entry.context || entry.title || '';
     return {
       signal: normalizeSignal(entry.signal || entry.feedback),
-      context: entry.context || entry.title || '',
+      context: cleanLiveContext(rawContext),
       date: formatDate(entry.timestamp),
       timestamp: timestamp,
       dayKey: toDayKey(timestamp),
-      learned: linkedLesson ? linkedLesson.title : '',
+      learned: linkedLesson ? cleanLiveTitle(linkedLesson.title, rawContext) : '',
       feedbackId: entry.id || ''
     };
   });
@@ -926,8 +1044,13 @@ async function loadLive() {
     renderTimeline(allTimeline);
     renderInsights(dashboardSnapshot);
     renderImprovementMetrics(stats, dashboardSnapshot);
+    var isEnterprise = API_KEY.startsWith('tg_op_') || API_KEY.startsWith('tg_creator_');
+    if (stats.tier) {
+      isEnterprise = (stats.tier === 'Enterprise');
+    }
+    const tierName = isEnterprise ? 'Enterprise' : 'Pro';
     document.getElementById('proBadge').style.display = 'none';
-    setMode('Local Pro connected — this lessons view is reading your live rules, feedback timeline, and insights.', false);
+    setMode('Local ' + tierName + ' connected — this lessons view is reading your live rules, feedback timeline, and insights.', false);
   } catch (_err) {
     loadDemo();
   }

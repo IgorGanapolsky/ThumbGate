@@ -28,6 +28,21 @@ This project uses a local-first **Reliability Gateway** operational loop.
   - npm package: `thumbgate`
   - Production API: `https://thumbgate-production.up.railway.app`
 - Do not cite `mcp-memory-gateway`, `rlhf`, or old RLHF-loop paths as active product, repo, remote, package, analytics, Smithery, or publishing surfaces.
+
+## Claw-Style Enterprise Agents (High-ROI Opportunity)
+
+Claw-style autonomous agents (Automation Anywhere EnterpriseClaw, Nvidia OpenShell-inspired) feature device file system access, runtime dynamic tool creation, screen/UI interaction, and multi-platform orchestration — often in on-prem/air-gapped/hybrid environments.
+
+**Governance infrastructure is still catching up** (per industry coverage). ThumbGate is the pre-action enforcement, feedback capture (thumbs → lessons → prevention rules), proof, and orchestration governance layer for these agents.
+
+- Use new gate templates in "Claw-Style Enterprise Agent Governance" category (block dynamic tool creation, require review for screen interaction, enforce agent identity separation, gate file system access).
+- Combine with Perplexity hybrid local-cloud (see adapters/perplexity/HYBRID.md + adapters/claw/CLAW.md): local for sensitive claw actions, cloud for heavy reasoning, ThumbGate gates the routing + actions.
+- Capture feedback with `claw_action_type`, `agent_identity`, `hybrid_route` tags.
+- Model candidates: automation-anywhere/enterprise-claw, nvidia/openshell-claw (for claw-style workloads).
+- Position: ThumbGate as the "Switzerland" multi-vendor governance for claw agents across AA, custom, Perplexity PC hybrid, etc.
+- High-ROI: Directly fills the gap for enterprise (healthcare, finance, manufacturing) where most data isn't cloud-native. Amplifies need for our local-first MCP/hooks + hybrid work.
+
+Autonomously implemented: gates, candidates, adapters/claw/, docs, feedback capture. Dogfood on any claw-style agent sessions.
 - Legacy names may appear only inside migration cleanup code or tests that remove old config keys. Public docs, GPT Actions guidance, launch copy, outreach, and PR text must be ThumbGate-only.
 
 ## Local Memory Only

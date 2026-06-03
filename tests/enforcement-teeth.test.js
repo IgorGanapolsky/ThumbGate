@@ -640,3 +640,83 @@ test('hook-pre-tool-use does NOT register auto-gate on non-commit Bash commands 
     assert.doesNotMatch(ctx, /auto-registered claim gate/);
   }
 });
+
+test('hook-pre-tool-use blocks when budget session action limit is exceeded', () => {
+  const tempStatePath = path.join(require('os').tmpdir(), `tg-budget-test-${Date.now()}.json`);
+  const origMax = process.env.THUMBGATE_MAX_ACTIONS;
+  const origState = process.env.THUMBGATE_BUDGET_STATE_PATH;
+  
+  process.env.THUMBGATE_MAX_ACTIONS = '2';
+  process.env.THUMBGATE_BUDGET_STATE_PATH = tempStatePath;
+  fs.writeFileSync(tempStatePath, JSON.stringify({ action_count: 2, session_start: new Date().toISOString() }));
+
+  try {
+    const res = runHook({
+      input: {
+        session_id: 'test',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Bash',
+        tool_input: { command: 'echo blocking-actions' },
+      },
+      env: {
+        THUMBGATE_MAX_ACTIONS: '2',
+        THUMBGATE_BUDGET_STATE_PATH: tempStatePath,
+      }
+    });
+
+    assert.equal(res.status, 0);
+    assert.equal(res.parsed.decision, 'block');
+    assert.match(res.parsed.reason, /Budget exceeded.*actions/);
+  } finally {
+    if (origMax) process.env.THUMBGATE_MAX_ACTIONS = origMax;
+    else delete process.env.THUMBGATE_MAX_ACTIONS;
+    if (origState) process.env.THUMBGATE_BUDGET_STATE_PATH = origState;
+    else delete process.env.THUMBGATE_BUDGET_STATE_PATH;
+    try { fs.unlinkSync(tempStatePath); } catch {}
+  }
+});
+
+test('hook-pre-tool-use blocks when monetary budget spend limit is exceeded', () => {
+  const tempDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'tg-feedback-test-'));
+  const tempLedger = path.join(tempDir, 'budget-ledger.json');
+  
+  const now = new Date();
+  const monthKey = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+  fs.writeFileSync(tempLedger, JSON.stringify({
+    months: {
+      [monthKey]: {
+        totalUsd: 10.05,
+        entries: [{ ts: new Date().toISOString(), source: 'test', amountUsd: 10.05 }]
+      }
+    }
+  }));
+
+  const origBudget = process.env.THUMBGATE_MONTHLY_BUDGET_USD;
+  const origFeedback = process.env.THUMBGATE_FEEDBACK_DIR;
+
+  try {
+    const res = runHook({
+      input: {
+        session_id: 'test',
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Bash',
+        tool_input: { command: 'echo blocking-spend' },
+      },
+      env: {
+        THUMBGATE_MONTHLY_BUDGET_USD: '10',
+        THUMBGATE_FEEDBACK_DIR: tempDir,
+      }
+    });
+
+    assert.equal(res.status, 0);
+    assert.equal(res.parsed.decision, 'block');
+    assert.match(res.parsed.reason, /Monthly spend budget exceeded/);
+  } finally {
+    if (origBudget) process.env.THUMBGATE_MONTHLY_BUDGET_USD = origBudget;
+    else delete process.env.THUMBGATE_MONTHLY_BUDGET_USD;
+    if (origFeedback) process.env.THUMBGATE_FEEDBACK_DIR = origFeedback;
+    else delete process.env.THUMBGATE_FEEDBACK_DIR;
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+

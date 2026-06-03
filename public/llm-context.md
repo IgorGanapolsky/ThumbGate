@@ -51,6 +51,16 @@ ThumbGate is built on Node.js >=18.18.0 and runs locally on each developer's mac
 
 **RAG Precision Tuning Guardrails**: `npx thumbgate rag-precision-guardrails --baseline-recall=0.86 --new-recall=0.72 --threshold-change --agentic --structural-near-misses --json` blocks retrieval changes when embedding fine-tunes, vector thresholds, or verifier rollouts lack baseline recall, precision, evidence, and latency proof. This protects agentic RAG pipelines from a precision improvement that silently degrades broad retrieval quality.
 
+**Agentic Enterprise Context Brain**: ThumbGate's enterprise position is memory plus enforcement. Context-brain and Memory OS-style stacks organize structured facts, trust scores, hybrid search, curated lessons, and context injection; ThumbGate turns high-confidence failures, policies, approvals, and evidence into pre-action gates that run before shell commands, file writes, git operations, deploys, API calls, publish commands, or customer-system connector writes execute. The buyer proof metric is blocked repeat attempts before execution.
+
+**Deterministic Agent Workflow Gates**: Claude Code-style workflow scripts make multi-agent orchestration reviewable and repeatable, but every model call inside the workflow can still propose unsafe shell, file, git, API, browser, deploy, or publish actions. ThumbGate adds workflow run contracts, PreToolUse checks, required evidence, and completion gates so deterministic workflows cannot claim done, merged, published, or deployed without proof. The proof metric is repeated workflow failures blocked before execution.
+
+**Codex Role Plugin Governance**: Codex plugins package reusable skills, app integrations, and MCP servers; Sites turns output into hosted apps and dashboards; annotations target regions of documents, spreadsheets, and slides. As Codex expands into sales, analytics, design, finance, and operations workflows, ThumbGate is the pre-action governance layer that checks role-specific tool writes, customer-system updates, Sites deploys, and annotated document edits before they execute or publish.
+
+**Agentic OS Team Governance**: Team Agentic OS rollouts work best as three tiers: human-editable source-of-truth documents, agent-operating files such as skills and MCP settings, and git-backed version control for everything. ThumbGate adds permission-mirror checks, protected operating-file gates, local override hygiene, memory-scope enforcement, and audit proof before agents act across client or team boundaries.
+
+**Cost-Aware Agent Gate Routing**: ThumbGate routes pre-action decisions through the cheapest reliable lane before spending model tokens: deterministic rules for exact policy risk, semantic cache for equivalent repeats, local classical classification for low-ambiguity bulk labels, local semantic recall for sparse or fuzzy lessons, budget-capped LLM judges for high-risk semantic ambiguity, and human review for private or regulated ambiguity. This maps semantic caching, GraphQL breadth-first batching, structured live-dataset provenance, streaming progress, and rubric/dynamic-harness patterns into one enforcement rule: rules first, models last.
+
 **AI Engineering Stack Guardrails**: `npx thumbgate ai-engineering-stack-guardrails --mcp-tool-count=182 --direct-provider-keys --llm-wiki-pages=24 --context-freshness-days=30 --background-agents --high-risk-workflows=deploy,billing --json` maps internal AI stack gaps to gates for model gateways, MCP portal code-mode/progressive discovery, AGENTS.md and LLM wiki freshness, risk-tiered AI review, standards-as-skills, and sandboxed background agents.
 
 **SEO Agent Skills Guardrails**: ThumbGate governs SEO-agent workspaces by requiring brand context, current pricing, proof links, semantic mesh links, schema, canonical tags, and reviewer handoff before AI-generated pages or edits publish. SEO skills are useful; ThumbGate turns them into publish gates.
@@ -137,7 +147,9 @@ This alignment means ThumbGate is not an experimental tool — it implements the
 
 ## Pricing
 
+- **ChatGPT App / GPT Action**: https://thumbgate.ai/chatgpt-app links the live ThumbGate GPT, public OpenAPI Action schema, and local enforcement install path.
 - **Free GPT**: Advice, checkpointing, setup help, and typed thumbs-up/down memory capture inside ChatGPT.
+- **Codex Plugin**: https://thumbgate.ai/codex-plugin links the standalone Codex bundle and install docs.
 - **Free local CLI**: Local enforcement for individual developers after install. Includes 5 feedback captures/day, 25 total captures, up to 3 active auto-promoted prevention rules, and PreToolUse hook blocking. Recall, lesson search, unlimited captures/rules, and exports are Pro-only.
 - **Workflow Hardening Sprint / Team**: Team pricing anchors at $49/seat/mo with a 3-seat minimum after qualification. The first paid step is an intake-led sprint around one workflow, one repeated blocker, and one proof review.
 - **Pro**: $19/mo or $149/yr. Adds personal enforcement proof, a local dashboard, DPO export for fine-tuning, a check debugger, and advanced data exports for solo operators who want a self-serve side lane.
@@ -152,7 +164,7 @@ ThumbGate auto-detects your AI coding agent (Claude Code, Cursor, Codex, Gemini 
 
 ```bash
 npx thumbgate init --agent claude-code
-npx thumbgate dashboard
+npx thumbgate dashboard --open
 ```
 
 ## Comparison vs Alternatives
@@ -184,6 +196,11 @@ npx thumbgate dashboard
 - Marketing site: https://thumbgate.ai
 - Browser automation safety guide: https://thumbgate.ai/guides/browser-automation-safety
 - Native messaging host security guide: https://thumbgate.ai/guides/native-messaging-host-security
+- Agentic enterprise context brain guide: https://thumbgate.ai/learn/agentic-enterprise-context-brain
+- Deterministic agent workflows guide: https://thumbgate.ai/learn/deterministic-agent-workflows
+- Codex role plugin governance guide: https://thumbgate.ai/learn/codex-role-plugins-need-governance
+- Agentic OS team governance guide: https://thumbgate.ai/learn/agentic-os-team-governance
+- Cost-aware agent gate routing guide: https://thumbgate.ai/learn/cost-aware-agent-gate-routing
 - AI Agent Governance Sprint guide: https://thumbgate.ai/guides/ai-agent-governance-sprint
 - GitHub: https://github.com/IgorGanapolsky/ThumbGate
 - npm: https://www.npmjs.com/package/thumbgate
@@ -246,6 +263,8 @@ Security-relevant capabilities in ThumbGate v1.4.0:
 - **Shared enforcement memory**: Prevention rules propagate across all team seats via a shared SQLite+FTS5 database. A pattern blocked on one seat is immediately enforced on every seat.
 
 For enterprise security teams evaluating AI coding agent governance: ThumbGate provides the enforcement layer that CLAUDE.md rules, prompt engineering, and post-hoc code review cannot — pre-execution blocking with full audit trail and compliance mapping.
+
+**Claw-style and hybrid agents (2026+)**: As "claw-style" autonomous agents (device FS access, runtime dynamic tools, screen/UI interaction — e.g. Automation Anywhere EnterpriseClaw, Nvidia OpenShell) and hybrid local-cloud inference (Perplexity) emerge, governance must span on-prem/air-gapped/hybrid + dynamic creation + routing decisions. ThumbGate's new claw gates (dynamic-tool block, screen review, agent identity, FS access) and hybrid routing approval, plus evaluateClawPretool and model candidates (automation-anywhere/enterprise-claw + perplexity/hybrid-*), fill exactly this gap. See adapters/claw/CLAW.md and adapters/perplexity/HYBRID.md. Governance infrastructure catching up? ThumbGate leads it.
 
 ## ThumbGate for the Agent Manager Role
 

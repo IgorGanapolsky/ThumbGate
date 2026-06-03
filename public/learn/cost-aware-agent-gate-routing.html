@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cost-Aware Agent Gate Routing — ThumbGate</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="How ThumbGate routes agent checks through deterministic rules, semantic cache, local classifiers, LLM judges, and human review so teams avoid unnecessary latency, tokens, and provider calls.">
+<meta name="keywords" content="AI agent gate routing, LLM classifier, semantic caching, agent governance, pre-action checks, workflow harness, structured data provenance, ThumbGate">
+<meta property="og:title" content="Cost-Aware Agent Gate Routing">
+<meta property="og:description" content="Use deterministic checks, semantic cache, local classifiers, and LLM judges in the right order before an agent action runs.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/cost-aware-agent-gate-routing">
+<link rel="canonical" href="https://thumbgate.ai/learn/cost-aware-agent-gate-routing">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Cost-Aware Agent Gate Routing",
+  "description": "How ThumbGate routes agent checks through deterministic rules, semantic cache, local classifiers, LLM judges, and human review so teams avoid unnecessary latency, tokens, and provider calls.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-06-03",
+  "dateModified": "2026-06-03",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/cost-aware-agent-gate-routing",
+  "about": [
+    {"@type": "Thing", "name": "pre-action checks"},
+    {"@type": "Thing", "name": "semantic caching"},
+    {"@type": "Thing", "name": "LLM classifiers"},
+    {"@type": "Thing", "name": "agent workflows"}
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+<style>
+  .matrix { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; }
+  .matrix th, .matrix td { text-align: left; padding: 0.7rem 0.8rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .matrix th { color: var(--cyan); font-weight: 600; }
+  .command { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin: 1rem 0; overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Cost-Aware Gate Routing</div>
+  <h1>Cost-aware agent gates: rules first, models last.</h1>
+  <p style="color:var(--muted);">7 min read &middot; For teams trying to make agent governance fast enough to stay on by default</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> The expensive part of agent governance should not run on every action. ThumbGate should route checks through deterministic rules, semantic cache, local text classifiers, and local semantic recall before using an LLM judge. High-risk private ambiguity should stop for human review instead of calling a cloud model.</div>
+
+  <h2>The pattern across the latest agent infrastructure work</h2>
+  <p>The same lesson keeps showing up in different forms. Semantic caching cuts repeated LLM calls. Traditional text classifiers beat LLMs on speed and cost when labels are clear. Breadth-first query execution batches similar work instead of walking one branch at a time. Structured live dataset agents only become trustworthy when every row has source provenance. Streaming output removes dead air. Dynamic harnesses work best when critic, tournament, loop, and fan-out patterns are selected deliberately.</p>
+  <p>For ThumbGate, these are not separate product bets. They collapse into one control-plane rule: <strong>choose the cheapest reliable gate before the action runs.</strong></p>
+
+  <h2>The routing ladder</h2>
+  <table class="matrix">
+    <thead>
+      <tr>
+        <th>Lane</th>
+        <th>Use when</th>
+        <th>Why it is high ROI</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Deterministic</td>
+        <td>Secrets, force-push, destructive SQL, protected files, known repeated commands.</td>
+        <td>Near-zero latency, no tokens, no provider call. This is the default for exact policy risk.</td>
+      </tr>
+      <tr>
+        <td>Semantic cache</td>
+        <td>A prompt or action is semantically equivalent to a prior rejected or approved pattern.</td>
+        <td>Returns the cached decision without rerunning the judge. This is the AISG-style buyer message applied to pre-action checks.</td>
+      </tr>
+      <tr>
+        <td>Rubric gate</td>
+        <td>A critic/rubric loop failed a criterion, hit its cap, or lacks done evidence.</td>
+        <td>Turns LangChain-style rubric iteration into an enforcement event: block completion claims until the missing proof exists.</td>
+      </tr>
+      <tr>
+        <td>Local classical classifier</td>
+        <td>High-volume labels with enough examples and low ambiguity.</td>
+        <td>Fast and cheap for routine feedback triage, import classification, and known error families.</td>
+      </tr>
+      <tr>
+        <td>Local semantic recall</td>
+        <td>Few examples, fuzzy near-misses, or cross-session recurrence.</td>
+        <td>Keeps private context local while catching cases regex and keyword routing miss.</td>
+      </tr>
+      <tr>
+        <td>LLM judge</td>
+        <td>High-risk semantic ambiguity with explicit cloud permission and a budget cap.</td>
+        <td>Useful for critic/rubric review, multi-document evidence review, and structured provenance checks, but not for every action.</td>
+      </tr>
+      <tr>
+        <td>Human review</td>
+        <td>Private, regulated, payment, credential, customer-data, or unbounded external-posting risk.</td>
+        <td>Prevents automation from laundering a risky decision through a model call.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>What changed in ThumbGate</h2>
+  <p>ThumbGate now has a small, testable routing primitive that makes this policy explicit:</p>
+  <div class="command"><code>node scripts/classifier-routing.js --risk=high --ambiguity=0.82 --allow-cloud --latency-ms=5000</code></div>
+  <p>That command returns an evidence-requiring LLM judge lane. Add <code>--semantic-cache-hit</code>, and it reuses the prior decision without a provider call. Add <code>--rubric-failed</code> or <code>--structured-dataset --missing-provenance</code>, and it blocks completion through the rubric gate. Change the same high-risk ambiguous input to <code>--privacy-sensitive</code> without <code>--allow-cloud</code>, and it routes to human review instead.</p>
+
+  <h2>How the newer signals map to product work</h2>
+  <ul>
+    <li><strong>Scikit-LLM vs traditional classifiers:</strong> do not spend LLM calls on low-ambiguity bulk labels.</li>
+    <li><strong>Semantic proxy caching:</strong> reuse a prior decision when prompt meaning has not changed.</li>
+    <li><strong>LangChain-style rubrics:</strong> turn failed criteria into completion blockers instead of post-hoc scores.</li>
+    <li><strong>Shopify Cardinal BFS:</strong> batch and evaluate similar gate scopes together instead of repeatedly traversing the same nested context.</li>
+    <li><strong>BigSet-style dataset agents:</strong> require structured rows, source URLs, and retrieval traces before accepting live web data.</li>
+    <li><strong>Streaming agent output:</strong> stream progress events during long gate reviews so users know the gate is working.</li>
+    <li><strong>Dynamic harness patterns:</strong> use critic/rubric for correctness, tournament for ranking, loop-until-done for open-ended work, and fan-out/synthesize for parallel research.</li>
+  </ul>
+
+  <div class="callout callout-green">
+    <strong>Buyer proof:</strong> show the same risky action going through three routes: exact repeat blocked instantly, fuzzy repeat caught locally, and genuinely ambiguous production change paused for evidence or human review.
+  </div>
+
+  <h2>Implementation checklist</h2>
+  <ol>
+    <li>Put exact denials and approval boundaries in deterministic checks.</li>
+    <li>Cache semantically equivalent gate decisions with provenance and expiry.</li>
+    <li>Use local text classification for routine high-volume feedback labels.</li>
+    <li>Use local semantic recall for sparse, fuzzy, or cross-session lessons.</li>
+    <li>Treat failed rubrics and missing source provenance as gate failures, not just evaluation notes.</li>
+    <li>Reserve LLM judges for ambiguous high-value decisions with evidence requirements.</li>
+    <li>Stream progress for long reviews and record every routed decision in the audit trail.</li>
+  </ol>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Try the routing primitive</h2>
+    <p>Check the gate lane before spending tokens on a risky decision.</p>
+    <div class="cta-install">$ node scripts/classifier-routing.js --hard-rule --risk=critical</div>
+  </div>
+
+  <div class="related">
+    <h3>Related articles</h3>
+    <a href="/learn/deterministic-agent-workflows">Deterministic Agent Workflows Need Runtime Gates &rarr;</a>
+    <a href="/learn/agentic-os-team-governance">Agentic OS Team Governance &rarr;</a>
+    <a href="/learn/agentic-enterprise-context-brain">Agentic Enterprise Context Brain &rarr;</a>
+    <a href="/learn/mcp-pre-action-checks-explained">MCP Pre-Action Checks Explained &rarr;</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span style="color:var(--muted)">Install:</span>
+  <code>npx thumbgate init</code>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+</div>
+</body>
+</html>

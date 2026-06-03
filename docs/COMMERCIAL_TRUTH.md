@@ -9,12 +9,11 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 - The open-source `thumbgate` package is free and MIT licensed.
 - The local CLI is the adoption wedge; it is not the primary monetization story.
-- The primary commercial motion is the **Workflow Hardening Sprint** for one workflow, followed by Team expansion when shared enforcement, approval boundaries, and auditability matter across operators.
-- The current public self-serve commercial offer is **Pro at $19/mo or $149/yr** via Stripe checkout.
-- Legacy one-time Stripe links are retained only for past buyers and are not a current public offer.
-- The current Team pricing anchor is **$49/seat/mo with a 3-seat minimum**, and the public Team path remains an **intake-led pilot for the first workflow** until hosted rollout scope is qualified.
+- The primary commercial offer is **Pro at $19/mo or $149/yr** via Stripe checkout.
+- For high-stakes environments, we offer **Enterprise Pilots** (e.g., GCP/DFCX guardrails) with custom setup and support.
+- Legacy Team pricing ($49/seat/mo) is no longer a public focus; we prioritize individual Operator hardening and scoped Enterprise pilots.
 - The open-source runtime now supports history-aware lesson distillation from up to 8 prior recorded entries in the current Claude auto-capture path, linked 60-second feedback sessions, and reflector rule proposals across CLI, hosted API, Cursor, and Claude Desktop surfaces.
-- The runtime now supports Workflow Sentinel blast-radius scoring plus Docker Sandboxes routing guidance for high-risk local actions, and the hosted path supports signed sandbox dispatch for isolated team automations.
+- The runtime now supports Workflow Sentinel blast-radius scoring plus Docker Sandboxes routing guidance for high-risk local actions, and the hosted path supports signed sandbox dispatch for isolated automations.
 - Package publishing is governed by Changesets, SemVer, version-sync checks, and verification evidence; release claims should stay inspectable instead of being inferred from a diff.
 - Verified cumulative booked revenue through March 19, 2026 is **$20.00** from `2` reconciled Stripe charges tied to the current product; there is no evidence of any additional same-day booked charge beyond that cumulative total.
 - Engineering verification is strong and should be cited through `docs/VERIFICATION_EVIDENCE.md` and machine-readable proof reports.
@@ -35,20 +34,18 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 - Personal local dashboard
 - DPO export and advanced data exports
-- Review-ready workflow support for the first risky flow
 - Unlimited captures and custom checks with auto-promotion into prevention rules
-- Secondary self-serve lane for solo operators, not the default enterprise pitch
+- **The standard lane for solo operators and independent developers.**
 
-### Team ($49/seat/mo, min 3, hosted rollout intake-first)
+### Enterprise Pilot (Custom)
 
-- Workflow hardening sprint as the first paid step
+- Scoped implementation (e.g., GCP/DFCX guardrails)
 - Shared hosted lesson database
-- Generated hosted review views for team, incident, and rollout operations
+- Generated hosted review views for incident and rollout operations
 - Org dashboard with active agents, check hit rates, and risk agents
 - Curated check template library
-- Isolated execution guidance for risky local autonomy and signed hosted sandbox dispatch for team workflows
-- Workflow hardening sprint intake and rollout support
-- Team-wide sharing of prevention rules and proof artifacts
+- Isolated execution guidance for risky local autonomy
+- Hands-on workflow hardening and pilot support
 
 ## Data Processing & Telemetry Boundaries
 
