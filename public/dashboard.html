@@ -756,13 +756,32 @@ function chatRenderAnswer(a) {
     .replace(/\[(\d+)\]/g, '<sup style="color:var(--cyan);font-weight:600;">[$1]</sup>')
     .replace(/\n/g, '<br>');
 }
-function chatRenderSources(sources) {
+function chatRenderSources(sources, answerText) {
   if (!sources || !sources.length) return '';
+  var citedNums = new Set();
+  var regex = /\[(\d+)\]/g;
+  var match;
+  while ((match = regex.exec(answerText || '')) !== null) {
+    citedNums.add(parseInt(match[1], 10));
+  }
+
   var items = sources.map(function (s, i) {
+    var num = i + 1;
+    var isCited = citedNums.has(num);
     var label = chatEscape(String(s.title || s.id || '').slice(0, 64));
-    return '<span title="' + label + '" style="display:inline-block;font-size:11px;background:var(--cyan-dim);color:var(--cyan);padding:2px 7px;border-radius:5px;margin:4px 5px 0 0;">[' + (i + 1) + '] ' + label + '</span>';
+    
+    var bg = isCited ? 'var(--cyan-dim)' : 'var(--bg-raised)';
+    var color = isCited ? 'var(--cyan)' : 'var(--text-muted)';
+    var border = isCited ? '1px solid var(--cyan)' : '1px solid var(--border)';
+    var weight = isCited ? '600' : 'normal';
+
+    return '<span title="' + label + '" style="display:inline-block;font-size:11px;background:' + bg + ';color:' + color + ';border:' + border + ';font-weight:' + weight + ';padding:2px 7px;border-radius:5px;margin:4px 5px 0 0;">[' + num + '] ' + label + '</span>';
   }).join('');
-  return '<div style="margin-top:10px;">' + items + '</div>';
+
+  return '<div style="margin-top:12px;border-top:1px dashed var(--border);padding-top:10px;">' +
+         '<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;font-weight:600;">Database logs analyzed to answer your question:</div>' +
+         items +
+         '</div>';
 }
 async function sendChat() {
   var input = document.getElementById('chatInput');
@@ -779,7 +798,7 @@ async function sendChat() {
     var res = await fetch('/v1/chat', { method: 'POST', headers: getHeaders(), body: JSON.stringify({ question: q }) });
     var data = await res.json();
     if (data && data.ok) {
-      pending.innerHTML = chatRenderAnswer(data.answer) + chatRenderSources(data.sources);
+      pending.innerHTML = chatRenderAnswer(data.answer) + chatRenderSources(data.sources, data.answer);
     } else {
       pending.innerHTML = '<em style="color:var(--text-muted);">' + chatEscape((data && data.message) || 'Chat is unavailable.') + '</em>';
     }
