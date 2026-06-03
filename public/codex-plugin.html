@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ThumbGate for Codex - Auto-Updating MCP Plugin</title>
+<title>ThumbGate for Codex - CLI Setup and Plugin Bundle</title>
 <script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
-<meta name="description" content="Install ThumbGate for Codex with an auto-updating MCP plugin, Pre-Action Checks, thumbs-up/down feedback memory, and a local-first Reliability Gateway.">
+<meta name="description" content="Install ThumbGate for Codex with CLI setup first, plus a portable Codex plugin bundle for review, marketplace, and offline workflows. Includes Pre-Action Checks and thumbs-up/down feedback memory.">
 <meta name="keywords" content="ThumbGate Codex plugin, Codex MCP server, Codex pre-action checks, Codex guardrails, thumbgate latest, AI coding agent reliability">
 <meta property="og:title" content="ThumbGate for Codex">
-<meta property="og:description" content="Auto-updating MCP and hook launcher for Codex. One install, then ThumbGate resolves the latest npm runtime when Codex starts.">
+<meta property="og:description" content="CLI-first Codex setup with auto-updating MCP, hooks, and a portable plugin bundle for review or marketplace workflows.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://thumbgate.ai/codex-plugin">
 <link rel="canonical" href="https://thumbgate.ai/codex-plugin">
@@ -21,7 +21,7 @@
   "name": "ThumbGate for Codex",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "macOS, Linux, Windows with Node.js",
-  "description": "ThumbGate for Codex installs an MCP server and hook launcher that resolves thumbgate@latest at startup, captures thumbs-up/down feedback, and enforces Pre-Action Checks before risky agent actions run.",
+  "description": "ThumbGate for Codex installs an MCP server and hook launcher that resolves thumbgate@latest at startup, captures thumbs-up/down feedback, and enforces Pre-Action Checks before risky agent actions run. The supported fast path is npx thumbgate init --agent codex; the zip is a portable plugin bundle, not a double-click desktop installer.",
   "url": "https://thumbgate.ai/codex-plugin",
   "downloadUrl": "https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip",
   "installUrl": "https://thumbgate.ai/codex-plugin",
@@ -71,7 +71,15 @@
       "name": "What is the fastest Codex install path?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Run npx thumbgate init --agent codex for the automatic local setup, or use the standalone Codex plugin bundle if you want a portable plugin surface."
+        "text": "Run npx thumbgate init --agent codex for the automatic local setup. Use the standalone Codex plugin bundle only when you want a portable plugin folder for review, marketplace wiring, offline handoff, or a Codex build that exposes local plugin import."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does the release zip install itself in Codex Desktop?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. The zip is not a double-click installer. Extract it and install the folder through a Codex plugin directory or marketplace flow if your Codex build exposes one. Otherwise use npx thumbgate init --agent codex."
       }
     }
   ]
@@ -220,9 +228,9 @@
       <p class="sub" style="font-size:13px;opacity:0.85;">Updated: <time datetime="2026-04-20">2026-04-20</time> · by <a href="https://github.com/IgorGanapolsky" style="color:inherit;">Igor Ganapolsky</a></p>
       <p class="sub">ThumbGate wires Codex into local-first feedback memory, MCP tools, and hook enforcement. The launcher resolves <code>thumbgate@latest</code> when Codex starts, so published npm fixes reach your active MCP server after a restart.</p>
       <div class="actions">
-        <a class="button primary" href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" target="_blank" rel="noopener" onclick="if(typeof plausible==='function')plausible('codex_plugin_download')">Download Codex plugin</a>
+        <a class="button primary" href="/guide" onclick="if(typeof plausible==='function')plausible('codex_cli_setup')">Install with CLI setup</a>
         <a class="button secondary" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/plugins/codex-profile/INSTALL.md" target="_blank" rel="noopener">Read install docs</a>
-        <a class="button secondary" href="/guide">Use CLI setup</a>
+        <a class="button secondary" href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" target="_blank" rel="noopener" onclick="if(typeof plausible==='function')plausible('codex_plugin_download')">Download zip for review</a>
       </div>
       <nav class="proof-bar" aria-label="Codex proof and conversion links">
         <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
@@ -231,8 +239,9 @@
         <a href="/?utm_source=codex&utm_medium=plugin_page&utm_campaign=codex_team_follow_on&utm_content=workflow_sprint&campaign_variant=teams_follow_on&offer_code=CODEX-TEAMS_FOLLOW_ON&cta_id=codex_team_follow_on&cta_placement=plugin_page&surface=codex_plugin#workflow-sprint-intake">Team workflow sprint</a>
       </nav>
       <pre class="terminal">$ npx thumbgate init --agent codex
+$ npx thumbgate feedback-self-test
 # Writes ~/.codex/config.toml and ~/.codex/config.json
-# MCP + hooks install thumbgate@latest before serving or checking gates</pre>
+# Restart Codex, then confirm ThumbGate is enabled in Plugins or MCP settings</pre>
     </div>
   </section>
 
@@ -255,7 +264,7 @@
     <div>
       <div class="eyebrow">What Codex gets</div>
       <h2>MCP memory, hook checks, and a dashboard lane in the same install path.</h2>
-      <p>Use the standalone plugin when you want a portable Codex bundle. Use <code>npx thumbgate init --agent codex</code> when you want the shortest path on this machine. Both paths point at the same Reliability Gateway and the same npm runtime.</p>
+      <p>Use <code>npx thumbgate init --agent codex</code> when you want the shortest path on this machine. Use the standalone zip only when you need a portable plugin folder for audit, offline handoff, marketplace wiring, or a Codex build that exposes local plugin import.</p>
       <p class="status">The Codex launcher checks npm on startup. Restart Codex after a ThumbGate publish to let the MCP server and hook bundle pick up the latest runtime.</p>
     </div>
     <figure class="proof">
@@ -273,12 +282,31 @@
         <p>Run <code>npx thumbgate init --agent codex</code>. ThumbGate writes the MCP server block and hook bundle into your Codex config files.</p>
       </div>
       <div class="step">
-        <h3>2. Standalone plugin</h3>
-        <p>Use the release bundle when Codex loads plugin surfaces directly. The bundle includes the manifest, MCP config, marketplace entry, and install docs.</p>
+        <h3>2. Plugin directory</h3>
+        <p>For a true plugin install, use Codex Plugins or a marketplace source. A marketplace points Codex at the extracted plugin folder and then Codex installs it from the directory.</p>
       </div>
       <div class="step">
-        <h3>3. Verify in Codex</h3>
-        <p>Open Codex settings, confirm <code>thumbgate</code> is toggled on, then restart Codex after npm releases to pick up the latest runtime.</p>
+        <h3>3. Zip for review</h3>
+        <p>The zip is a portable folder, not a double-click installer. Extract it, inspect <code>.codex-plugin/plugin.json</code>, and use CLI setup when local plugin import is unavailable.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap">
+    <div class="eyebrow">Desktop install reality</div>
+    <h2>Do not make users guess what to do with a zip.</h2>
+    <div class="steps">
+      <div class="step">
+        <h3>Use first</h3>
+        <p><code>npx thumbgate init --agent codex</code> is the supported self-serve path. It configures MCP, hooks, and the status line without asking the user to understand plugin internals.</p>
+      </div>
+      <div class="step">
+        <h3>Use when available</h3>
+        <p>If Codex shows Plugins, open the directory, install ThumbGate from a marketplace or shared plugin entry, then start a new thread after install.</p>
+      </div>
+      <div class="step">
+        <h3>Use for operators</h3>
+        <p>Download the zip only for security review, offline delivery, or manual marketplace wiring. The user selects the extracted folder, never the compressed file.</p>
       </div>
     </div>
   </section>
@@ -312,7 +340,7 @@
       </div>
       <div class="faq">
         <h3>Where is the direct asset?</h3>
-        <p>The standalone zip remains available at <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" target="_blank" rel="noopener">GitHub Releases</a>. This page is the human install surface so users do not land on an unexplained file download.</p>
+        <p>The standalone zip remains available at <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" target="_blank" rel="noopener">GitHub Releases</a>. It is for review, offline delivery, and manual marketplace workflows. It is not a double-click Codex Desktop installer.</p>
       </div>
     </div>
   </section>

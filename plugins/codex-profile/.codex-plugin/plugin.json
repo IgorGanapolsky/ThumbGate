@@ -29,8 +29,8 @@
       "Interactive",
       "Write"
     ],
-    "websiteURL": "https://thumbgate-production.up.railway.app",
-    "privacyPolicyURL": "https://thumbgate-production.up.railway.app/privacy",
+    "websiteURL": "https://thumbgate.ai",
+    "privacyPolicyURL": "https://thumbgate.ai/privacy",
     "termsOfServiceURL": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/LICENSE",
     "defaultPrompt": [
       "Load ThumbGate skill packs before a risky Codex task.",

@@ -1,8 +1,53 @@
 # ThumbGate for Codex
 
-ThumbGate now ships a standalone Codex plugin bundle, a repo-local Codex app plugin surface, and an auto-updating Codex MCP profile.
+ThumbGate now ships an auto-updating Codex MCP profile, a repo-local Codex app plugin surface, and a standalone plugin bundle.
 
-## Option 1: Use the standalone release bundle
+## Fastest supported path: CLI setup
+
+Use this path first. It is the current supported install path for Codex Desktop users because it writes the Codex MCP and hook config directly.
+
+```bash
+npx thumbgate init --agent codex
+```
+
+That installs:
+
+- the ThumbGate MCP server in `~/.codex/config.toml`
+- Codex hooks plus the ThumbGate status line target in `~/.codex/config.json`
+
+Immediately verify the feedback loop:
+
+```bash
+npx thumbgate feedback-self-test
+```
+
+This is the dogfood check: it captures a synthetic thumbs signal and verifies the local feedback + lesson files. Use `npx thumbgate feedback-self-test --persist` only when you want the self-test stored in the active ThumbGate project memory.
+
+Restart Codex after setup. In the Codex app, open **Plugins** or MCP settings and confirm ThumbGate is enabled before expecting tools or hooks to fire.
+
+## Codex Desktop plugin install: what the zip does and does not do
+
+The release zip is not a double-click macOS installer, and it is not a guaranteed one-click Codex Desktop import path. It is a portable Codex plugin folder for review, offline handoff, release assets, and manual marketplace/local-plugin workflows.
+
+If your Codex Desktop build exposes a local plugin install flow:
+
+1. Download and unzip the release bundle.
+2. Select the extracted `thumbgate-codex-plugin/` folder, not the zip file.
+3. Confirm the selected folder contains `.codex-plugin/plugin.json`.
+4. Install or enable ThumbGate from the Codex plugin directory.
+5. Restart Codex and run `npx thumbgate feedback-self-test`.
+
+If your Codex Desktop build does not expose a local plugin import flow, use `npx thumbgate init --agent codex`. Do not double-click the zip and expect Codex to install it.
+
+For CLI or repo-based plugin distribution, use a Codex marketplace:
+
+```bash
+codex plugin marketplace add ./path/to/thumbgate-codex-plugin
+```
+
+Then restart Codex, open the plugin directory, choose the marketplace source, and install ThumbGate from there.
+
+## Portable release bundle
 
 Download the latest bundle:
 
@@ -23,35 +68,16 @@ After extracting `thumbgate-codex-plugin.zip`, the folder already contains:
 
 The bundled marketplace catalog points at `./`, so the extracted directory is a self-contained plugin root instead of a repo-relative stub.
 
-## Option 2: Use the repo-local plugin files
+## Repo-local plugin files
 
 ## Shipped plugin files
 
 - Codex plugin manifest: `plugins/codex-profile/.codex-plugin/plugin.json`
 - Codex MCP config: `plugins/codex-profile/.mcp.json`
 - Codex marketplace entry: `.agents/plugins/marketplace.json`
-- Manual install profile: `adapters/codex/config.toml`
+- Manual MCP install profile: `adapters/codex/config.toml`
 
-## Option 3: Manual Codex install
-
-Preferred path:
-
-```bash
-npx thumbgate init --agent codex
-```
-
-That now installs:
-
-- the ThumbGate MCP server in `~/.codex/config.toml`
-- Codex hooks plus the ThumbGate status line target in `~/.codex/config.json`
-
-Immediately verify the feedback loop:
-
-```bash
-npx thumbgate feedback-self-test
-```
-
-This is the dogfood check: it captures a synthetic thumbs signal and verifies the local feedback + lesson files. Use `npx thumbgate feedback-self-test --persist` only when you want the self-test stored in the active ThumbGate project memory.
+## Manual MCP install
 
 If you only want the MCP server block manually, add it to your Codex config:
 

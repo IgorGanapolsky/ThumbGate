@@ -302,6 +302,8 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.equal(claudeCodexBridge.homepage, CANONICAL_APP_ORIGIN);
   assert.equal(claudeCodexBridge.repository, CURRENT_REPOSITORY_URL);
   assert.equal(codexPlugin.homepage, CANONICAL_APP_ORIGIN);
+  assert.equal(codexPlugin.interface.websiteURL, CANONICAL_APP_ORIGIN);
+  assert.equal(codexPlugin.interface.privacyPolicyURL, `${CANONICAL_APP_ORIGIN}/privacy`);
   assert.equal(codexPlugin.repository, CURRENT_REPOSITORY_URL);
   assert.doesNotMatch(claudeReadme, /github\.com\/IgorGanapolsky\/thumbgate/);
 

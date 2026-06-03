@@ -4,7 +4,16 @@
 
 - Codex install page: human install and trust-building surface
 - Proof-backed setup guide: self-serve activation surface after install intent
-- GitHub release bundle: portable plugin distribution surface
+- Codex marketplace or plugin directory: actual Codex plugin install surface
+- GitHub release bundle: portable plugin review, offline handoff, and manual marketplace surface
+
+## June 2026 install policy
+
+- Primary CTA: `npx thumbgate init --agent codex`
+- Secondary CTA: Codex Plugins or marketplace install when a user's Codex build exposes it
+- Tertiary CTA: download the zip for review, offline delivery, or manual marketplace wiring
+
+Do not present the release zip as a one-click Codex Desktop installer. A user must extract the folder and install or enable it through Codex Plugins, a Codex marketplace source, or the CLI setup path.
 
 ## Canonical identity
 
@@ -25,13 +34,15 @@
 1. Merge the version bump to `main`; the release workflows publish the npm package and the matching GitHub release asset.
 2. Verify the latest package is available with `npm view thumbgate version`.
 3. Verify the latest direct bundle is available at `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip`.
-4. Refresh the install page, setup guide, and release-bundle positioning when proof links or offer order change.
+4. Verify the install page leads with CLI setup before the zip download.
+5. Refresh the install page, setup guide, and release-bundle positioning when proof links or offer order change.
 
 ## Positioning rules
 
 - Lead with one repeated Codex workflow mistake before architecture.
 - Use the install page first when the buyer needs trust, screenshots, or context before download.
-- Use the setup guide after the buyer wants the tool path.
+- Use the setup guide after the buyer wants the tool path; keep it as the primary self-serve install path.
+- Use the zip link only after the user understands it is an extracted plugin folder, not an installer.
 - Keep proof near the paid motion by linking [VERIFICATION_EVIDENCE.md](./VERIFICATION_EVIDENCE.md).
 - Keep pricing and traction claims aligned with [COMMERCIAL_TRUTH.md](./COMMERCIAL_TRUTH.md).
 - Do not claim installs, revenue, or marketplace approval without command evidence.
@@ -43,8 +54,8 @@ Auto-updating MCP plugin and hook launcher for Codex with Pre-Action Checks, thu
 ## Suggested manual submission fields
 
 - Name: `ThumbGate`
-- Install page: `https://thumbgate-production.up.railway.app/codex-plugin`
-- Setup guide: `https://thumbgate-production.up.railway.app/guide`
+- Install page: `https://thumbgate.ai/codex-plugin`
+- Setup guide: `https://thumbgate.ai/guide`
 - Direct bundle: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip`
 - Repository URL: `https://github.com/IgorGanapolsky/ThumbGate`
 - Revenue pack: `node scripts/codex-plugin-revenue-pack.js --write-docs`

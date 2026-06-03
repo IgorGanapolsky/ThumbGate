@@ -591,10 +591,15 @@ test('public Codex plugin page explains install, direct download, and latest run
   assert.match(codexPage, /thumbgate@latest/);
   assert.match(codexPage, /npx thumbgate init --agent codex/);
   assert.match(codexPage, /thumbgate-codex-plugin\.zip/);
+  assert.match(codexPage, /Install with CLI setup/);
+  assert.match(codexPage, /Download zip for review/);
+  assert.match(codexPage, /not a double-click installer/i);
+  assert.match(codexPage, /Desktop install reality/);
   assert.match(codexPage, /plugins\/codex-profile\/INSTALL\.md/);
   assert.match(codexPage, /Pre-Action Checks/);
   assert.match(codexPage, /Codex settings/);
   assert.match(codexPage, /Bare "thumbs down" is intentionally too vague/);
+  assert.doesNotMatch(codexPage, />Download Codex plugin</);
 });
 
 test('public landing page FAQ defaults first item open for credibility', () => {

@@ -56,6 +56,8 @@ test('codex plugin manifest uses ThumbGate branding and local MCP config', () =>
   assert.equal(plugin.name, 'codex-profile');
   assert.equal(plugin.interface.displayName, 'ThumbGate for Codex');
   assert.equal(plugin.homepage, 'https://thumbgate.ai');
+  assert.equal(plugin.interface.websiteURL, 'https://thumbgate.ai');
+  assert.equal(plugin.interface.privacyPolicyURL, 'https://thumbgate.ai/privacy');
   assert.equal(plugin.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
   assert.equal(plugin.mcpServers, './.mcp.json');
   assertCodexLatestShellEntry(mcpConfig.mcpServers.thumbgate);
@@ -67,7 +69,28 @@ test('codex plugin manifest uses ThumbGate branding and local MCP config', () =>
   assert.match(install, /thumbgate-codex-plugin\.zip/i);
   assert.match(install, /build:codex-plugin/i);
   assert.match(install, /thumbgate@latest/i);
+  assert.match(install, /Fastest supported path: CLI setup/i);
+  assert.match(install, /not a double-click macOS installer/i);
+  assert.match(install, /not a guaranteed one-click Codex Desktop import path/i);
+  assert.match(install, /codex plugin marketplace add/i);
+  assert.match(install, /Do not double-click the zip/i);
   assert.match(install, /marketplace catalog points at `\.\/`/i);
+});
+
+test('codex plugin install UX research keeps CLI first and zip last', () => {
+  const research = fs.readFileSync(path.join(root, 'docs/CODEX_PLUGIN_INSTALL_UX_RESEARCH_2026_06.md'), 'utf-8');
+  const operations = fs.readFileSync(path.join(root, 'docs/CODEX_PLUGIN_OPERATIONS.md'), 'utf-8');
+
+  assert.match(research, /Date: 2026-06-03/);
+  assert.match(research, /npx thumbgate init --agent codex/);
+  assert.match(research, /The zip is a portable plugin folder, not a double-click installer/i);
+  assert.match(research, /https:\/\/developers\.openai\.com\/codex\/plugins/);
+  assert.match(research, /https:\/\/developers\.openai\.com\/codex\/plugins\/build/);
+  assert.match(research, /https:\/\/developers\.openai\.com\/codex\/mcp/);
+  assert.match(operations, /Primary CTA: `npx thumbgate init --agent codex`/);
+  assert.match(operations, /Do not present the release zip as a one-click Codex Desktop installer/i);
+  assert.match(operations, /Install page: `https:\/\/thumbgate\.ai\/codex-plugin`/);
+  assert.match(operations, /Setup guide: `https:\/\/thumbgate\.ai\/guide`/);
 });
 
 test('root README promotes the Codex plugin as a first-class install path', () => {
@@ -120,7 +143,8 @@ test('codex plugin staging writes a standalone bundle with self-contained market
     assert.match(readme, /build:codex-plugin/i);
     assert.match(readme, /self-contained plugin root/i);
     assert.match(readme, /auto-updating manual MCP profile/i);
-    assert.match(install, /standalone release bundle/i);
+    assert.match(install, /Portable release bundle/i);
+    assert.match(install, /not a double-click macOS installer/i);
     assert.match(configToml, /thumbgate@latest/);
     assert.doesNotMatch(configToml, /\[ -x /);
   } finally {
