@@ -309,6 +309,31 @@ test('matchesGate handles missing tool_input fields', () => {
 // Block action
 // ---------------------------------------------------------------------------
 
+test('setTaskScope rebases absolute allowedPaths under repoPath to repo-relative', () => {
+  cleanupStateFiles();
+  // Affected files are compared repo-relative, so an absolute allowedPath silently
+  // never matches (no-op scope). With repoPath known, absolute globs under it must be
+  // rebased to repo-relative; the repoPath itself collapses to '**'.
+  const repoPath = '/Users/me/workspace/proj';
+  const scope = setTaskScope({
+    summary: 'abs path rebasing',
+    repoPath,
+    allowedPaths: [
+      '/Users/me/workspace/proj/src/**',   // absolute under repo -> 'src/**'
+      '/Users/me/workspace/proj',           // the repo root itself -> '**'
+      'tests/**',                           // already relative -> unchanged
+      '/etc/somewhere/**',                  // absolute OUTSIDE repo -> unchanged
+    ],
+  });
+  assert.ok(scope.allowedPaths.includes('src/**'), `got ${JSON.stringify(scope.allowedPaths)}`);
+  assert.ok(scope.allowedPaths.includes('**'));
+  assert.ok(scope.allowedPaths.includes('tests/**'));
+  // outside-repo absolute glob is left as-is (normalized, slash-stripped)
+  assert.ok(scope.allowedPaths.includes('etc/somewhere/**'));
+  setTaskScope({ clear: true });
+  cleanupStateFiles();
+});
+
 test('evaluateGates returns deny for git push', () => {
   cleanupStateFiles();
   const repoPath = createPushTestRepo();
