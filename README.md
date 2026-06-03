@@ -6,9 +6,9 @@
   </a>
 </p>
 
-**AI agents repeat mistakes. In regulated industries, one wrong action is a liability event.**
+**AI coding agents repeat mistakes — and one wrong tool call can wipe a directory, leak a key, or push broken code.**
 
-ThumbGate is deterministic pre-action governance for AI agents. From developer workflows to legal intake to financial compliance — one rule blocks unauthorized actions before they execute, across every session, every agent, every model.
+ThumbGate is the local-first firewall for AI coding agents. It runs in the PreToolUse hook on your machine and blocks dangerous tool calls — `rm -rf`, secret exfiltration, off-scope edits, a bad `git push` — before they execute, across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode. No server, no gateway. (Regulated-industry policy templates — legal intake, financial compliance, healthcare — build on the same engine.)
 
 The product is a self-improving enforcement layer: thumbs-down feedback, prompt evaluation, and proof from prior runs become prevention rules that permanently stop repeated failures before the next tool call.
 
