@@ -2654,6 +2654,32 @@ function installMcp() {
 
 function dashboard() {
   const args = parseArgs(process.argv.slice(3));
+  if (args.open || args.web) {
+    const { exec } = require('child_process');
+    const { resolveProjectDir } = require(path.join(PKG_ROOT, 'scripts', 'feedback-paths'));
+    const projectDir = resolveProjectDir({ cwd: process.cwd(), env: process.env });
+    const port = process.env.PORT || 3456;
+    const url = `http://localhost:${port}/dashboard?project=${encodeURIComponent(projectDir)}`;
+    
+    console.log(`Opening browser to: ${url}`);
+    let command;
+    if (process.platform === 'darwin') {
+      command = `open "${url}"`;
+    } else if (process.platform === 'win32') {
+      command = `start "" "${url}"`;
+    } else {
+      command = `xdg-open "${url}"`;
+    }
+    
+    exec(command, (err) => {
+      if (err) {
+        console.error('Failed to open browser:', err.message);
+      }
+      process.exit(err ? 1 : 0);
+    });
+    return;
+  }
+
   const { printDashboard } = require(path.join(PKG_ROOT, 'scripts', 'dashboard'));
   const { getOperationalDashboard } = require(path.join(PKG_ROOT, 'scripts', 'operational-dashboard'));
 
@@ -3008,7 +3034,7 @@ const SUBCOMMAND_HELP = {
   'break-glass': 'Usage: npx thumbgate break-glass --reason="why" [--ttl=5m] [--json]\n\nShort-lived recovery path for over-firing gates. Allows hook settings edits and satisfies PR-create/thread-check gates without disabling core destructive-action protections.',
   serve:         'Usage: npx thumbgate serve\n\nStart the MCP stdio server. This is for agent runtimes, not the local HTTP dashboard.',
   mcp:           'Usage: npx thumbgate mcp\n\nAlias for `thumbgate serve`.',
-  dashboard:     'Usage: npx thumbgate dashboard [--window=today|7d|30d]\n\nPrint the operational dashboard summary. Use `npx thumbgate start-api` for the local HTTP dashboard on :3456.',
+  dashboard:     'Usage: npx thumbgate dashboard [--window=today|7d|30d] [--open]\n\nPrint the operational dashboard summary or open the browser HTTP dashboard (use --open). Defaults to PORT=3456.',
   'start-api':   'Usage: npx thumbgate start-api\n\nStart the local ThumbGate HTTP API/dashboard. Defaults to PORT=8787; use PORT=3456 for statusline localhost links.',
   'export-dpo':  'Usage: npx thumbgate export-dpo [--format=jsonl|csv]\n\nExport feedback as DPO training pairs (Pro feature).',
   status:        'Usage: npx thumbgate status\n\nShow ThumbGate system health and active configuration.',

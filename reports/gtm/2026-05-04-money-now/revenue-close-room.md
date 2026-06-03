@@ -28,8 +28,8 @@ Guardrail: do not publish posts, send messages, or invite members without explic
 - Current loop constraints on 2026-06-03:
   - local Operator Lab promo preview is healthy
   - local preview still shows `accountCount: 0` across platforms in this runtime, so live promo should stay on the GitHub Actions path with secrets
-  - Zernio analytics re-check at `2026-06-03T16:00Z` is still dark (`0/6` healthy platforms, `0` rows in the last `24h`)
-  - Skool readback re-check at `2026-06-03T16:00Z` is still blocked in the headless runtime with `[skool-reader] fetch failed`
+  - Zernio analytics re-check at `2026-06-03T17:00Z` is still dark (`0/6` healthy platforms, `0` rows in the last `24h`)
+  - Skool readback re-check at `2026-06-03T17:00Z` is still blocked in the headless runtime with `[skool-reader] fetch failed`
   - GitHub queue and run readback are blocked again in this runtime with `error connecting to api.github.com`
 
 ## Offer Routing (fast rules)

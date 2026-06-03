@@ -17,11 +17,11 @@ Action-time approval card for any outbound action:
 - Pipeline: focus on **Operator Lab** conversion with Pro for self-serve leads and Diagnostic/Sprint for warm pain-first leads.
 - Revenue bottleneck: follow-up discipline on already-contacted leads plus the last untouched high-intent GitHub leads.
 - Current promotion/measurement state on 2026-06-03:
-  - local `--offer=operator-lab` dry-run re-verified at `2026-06-03T16:00Z` and still returns `6` previews with all media assets present
+  - local `--offer=operator-lab` dry-run re-verified at `2026-06-03T17:00Z` and still returns `6` previews with all media assets present
   - local dry-run still shows `accountCount: 0` for every platform in this runtime, so live publish/schedule should stay in GitHub Actions with secrets
-  - Zernio analytics re-check at `2026-06-03T16:00Z` still shows `0/6` healthy platforms and `0` rows in the last `24h`
+  - Zernio analytics re-check at `2026-06-03T17:00Z` still shows `0/6` healthy platforms and `0` rows in the last `24h`
   - local Zernio status still points to the same likely causes: missing/revoked `ZERNIO_API_KEY`, analytics paywall, or disconnected accounts
-  - Skool public-page verification re-check at `2026-06-03T16:00Z` still fails in the headless reader runtime with `[skool-reader] fetch failed`
+  - Skool public-page verification re-check at `2026-06-03T17:00Z` still fails in the headless reader runtime with `[skool-reader] fetch failed`
   - GitHub queue and run readback are blocked again in this runtime with `error connecting to api.github.com`
 
 ## Do First
