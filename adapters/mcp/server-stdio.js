@@ -745,6 +745,23 @@ async function callToolInner(name, args) {
         },
       ));
     }
+    case 'ai_component_inventory': {
+      const {
+        scanAiComponents,
+        buildCycloneDxMlBom,
+        formatInventoryText,
+      } = require('../../scripts/ai-component-inventory');
+      const rootDir = args.rootDir ? path.resolve(String(args.rootDir)) : process.cwd();
+      const inventory = scanAiComponents({
+        rootDir,
+        maxFiles: args.maxFiles ? Number(args.maxFiles) : undefined,
+        includeSnippets: args.includeSnippets !== false,
+      });
+      const format = String(args.format || 'summary').toLowerCase();
+      if (format === 'cyclonedx') return toTextResult(buildCycloneDxMlBom(inventory));
+      if (format === 'json') return toTextResult(inventory);
+      return toTextResult(formatInventoryText(inventory));
+    }
     case 'search_thumbgate':
       enforceLimit('search_thumbgate');
       return toTextResult(searchThumbgate({

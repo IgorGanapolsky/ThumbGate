@@ -162,6 +162,19 @@ const TOOLS = [
     },
   }),
   readOnlyTool({
+    name: 'ai_component_inventory',
+    description: 'Scan a project for AI/ML provider SDKs, agent frameworks, vector databases, Vertex/Gemini/Dialogflow CX usage, and model artifacts. Returns evidence suitable for enterprise AI inventory and ML-BOM review.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        rootDir: { type: 'string', description: 'Project root to scan. Defaults to the current process working directory.' },
+        format: { type: 'string', enum: ['summary', 'json', 'cyclonedx'], description: 'Response format. summary is compact text; json returns ThumbGate inventory; cyclonedx returns ML-BOM JSON.' },
+        maxFiles: { type: 'number', description: 'Maximum files to scan (default 2500).' },
+        includeSnippets: { type: 'boolean', description: 'Include matched source snippets in evidence. Defaults true.' },
+      },
+    },
+  }),
+  readOnlyTool({
     name: 'search_thumbgate',
     description: 'Search raw ThumbGate state across feedback logs, ContextFS memory, prevention rules, and imported policy documents.',
     inputSchema: {

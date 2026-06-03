@@ -2797,6 +2797,40 @@ function breakGlass() {
   console.log('  Still gated: local-only scope, force-push, protected branch push, unsafe chmod, broad rm -rf');
 }
 
+function aiInventory() {
+  const args = parseArgs(process.argv.slice(3));
+  const {
+    scanAiComponents,
+    buildCycloneDxMlBom,
+    formatInventoryText,
+    writeOutput,
+  } = require(path.join(PKG_ROOT, 'scripts', 'ai-component-inventory'));
+  const rootDir = path.resolve(String(args.root || args.cwd || CWD));
+  const format = String(args.format || (args.json ? 'json' : 'summary')).toLowerCase();
+  const inventory = scanAiComponents({
+    rootDir,
+    maxFiles: args['max-files'] ? Number(args['max-files']) : undefined,
+    includeSnippets: args.snippets !== false,
+  });
+
+  let payload;
+  if (format === 'cyclonedx' || format === 'ml-bom' || format === 'mlbom') {
+    payload = JSON.stringify(buildCycloneDxMlBom(inventory, { version: pkgVersion() }), null, 2);
+  } else if (format === 'json') {
+    payload = JSON.stringify(inventory, null, 2);
+  } else {
+    payload = formatInventoryText(inventory);
+  }
+
+  if (args.output) {
+    writeOutput(path.resolve(String(args.output)), `${payload}\n`);
+    console.log(`Wrote AI inventory evidence to ${path.resolve(String(args.output))}`);
+    return;
+  }
+
+  console.log(payload);
+}
+
 function help() {
   const v = pkgVersion();
   const helpArgs = process.argv.slice(3);
@@ -2818,6 +2852,7 @@ function help() {
     console.log('  lessons [query]                                   Search promoted lessons');
     console.log('  explore                                           Interactive TUI for lessons, gates, stats');
     console.log('  dashboard                                         Open the local ThumbGate dashboard');
+    console.log('  ai-inventory                                      Scan AI/ML components and export ML-BOM evidence');
     console.log('  doctor                                            Audit runtime isolation + bootstrap context');
     console.log('  break-glass --reason="..."                       Short TTL recovery if gates over-fire');
     console.log('  brain [--write]                                   Build the agent-readable context brain (lessons + rules + gates)');
@@ -2893,6 +2928,7 @@ function help() {
   console.log('  proxy-pointer-rag-guardrails Map visual document RAG signals to Document RAG Safety gates');
   console.log('  rag-precision-guardrails Map retrieval tuning regressions to Document RAG Safety gates');
   console.log('  ai-engineering-stack-guardrails Map gateway, MCP, AGENTS.md, LLM wiki, reviewer, and sandbox gaps to stack gates');
+  console.log('  ai-inventory          Scan AI/ML components and export JSON or CycloneDX ML-BOM evidence');
   console.log('  upstream-contributions Find dependency issues worth fixing without promotional PRs');
   console.log('  long-running-agent-context-guardrails Map structured-memory gaps to long-running agent gates');
   console.log('  reasoning-efficiency-guardrails Map reasoning compression signals to efficiency gates');
@@ -2927,6 +2963,7 @@ function help() {
   console.log('  npx thumbgate proxy-pointer-rag-guardrails --tree-path=.rag/tree.json --image-pointers=paper-1/figures/fig2.png --documents=paper-1 --visual-claims --json');
   console.log('  npx thumbgate rag-precision-guardrails --baseline-recall=0.86 --new-recall=0.72 --threshold-change --agentic --structural-near-misses --json');
   console.log('  npx thumbgate ai-engineering-stack-guardrails --mcp-tool-count=182 --direct-provider-keys --llm-wiki-pages=24 --context-freshness-days=30 --background-agents --json');
+  console.log('  npx thumbgate ai-inventory --format=cyclonedx --output=.thumbgate/ai-mlbom.json');
   console.log('  npx thumbgate long-running-agent-context-guardrails --request-count=80 --output-mb=3 --raw-chat-only --json');
   console.log('  npx thumbgate reasoning-efficiency-guardrails --baseline-tokens=1200 --compressed-tokens=980 --baseline-accuracy=0.84 --compressed-accuracy=0.85 --verifier --json');
   console.log('  npx thumbgate deepseek-v4-runtime-guardrails --context-tokens=900000 --hybrid-attention --speculative-decoding --accept-length=1.4 --precision-mode=fp8 --json');
@@ -2982,6 +3019,7 @@ const SUBCOMMAND_HELP = {
   cost:          'Usage: npx thumbgate cost [--json] [--stats <path>] [--mix \'{"claude-sonnet-4-5":0.8,...}\']\n\nShow cumulative $ and tokens saved by PreToolUse gate blocks. Reads ~/.thumbgate/gate-stats.json.',
   savings:       'Usage: npx thumbgate savings [--json] [--stats <path>] [--mix \'{"claude-sonnet-4-5":0.8,...}\']\n\nAlias for `thumbgate cost`.',
   'setup-vertex': 'Usage: npx thumbgate setup-vertex [--dry-run]\n\nAuto-enable Vertex AI API on GCP and write local Vertex routing config to .env. With --dry-run, only detect the active account/project and print the planned changes. This does not create or verify a Dialogflow CX agent; use the Dialogflow CX REST API or console for live-agent evidence.',
+  'ai-inventory': 'Usage: npx thumbgate ai-inventory [--root <dir>] [--format=summary|json|cyclonedx] [--output <path>] [--max-files=N]\n\nScan source/manifests/model artifacts for AI, ML, agent-framework, vector DB, Vertex, Gemini, and Dialogflow CX components. Use --format=cyclonedx to produce exportable ML-BOM evidence for enterprise reviews.',
   brain: 'Usage: npx thumbgate brain [--write] [--json] [--limit=N]\n\nBuild the agent-readable "context brain" — a single artifact consolidating this\nrepo\'s lessons, prevention rules, active gates, and project context for a coding\nagent to read BEFORE acting. --write saves it to .thumbgate/BRAIN.md (versioned,\ndeterministic). --json emits the structured model. --limit caps lessons (default 15).',
 };
 
@@ -3391,6 +3429,12 @@ switch (COMMAND) {
   case 'internal-ai-stack-guardrails':
   case 'llm-wiki-guardrails':
     aiEngineeringStackGuardrails();
+    break;
+  case 'ai-inventory':
+  case 'ai-component-inventory':
+  case 'ml-bom':
+  case 'mlbom':
+    aiInventory();
     break;
   case 'deepseek-v4-runtime-guardrails':
   case 'deepseek-runtime-guardrails':

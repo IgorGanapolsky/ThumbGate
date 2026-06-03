@@ -5035,7 +5035,7 @@ async function addContext(){
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/ThumbGate',
-          endpoints: ['/health', '/dashboard', '/guide', '/codex-plugin', '/compare', '/learn', '/pricing', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/documents', '/v1/documents/import', '/v1/documents/{documentId}', '/v1/dashboard', '/v1/dashboard/render-spec', '/v1/decisions/evaluate', '/v1/decisions/outcome', '/v1/decisions/metrics', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
+          endpoints: ['/health', '/dashboard', '/guide', '/codex-plugin', '/compare', '/learn', '/pricing', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/documents', '/v1/documents/import', '/v1/documents/{documentId}', '/v1/dashboard', '/v1/dashboard/ai-inventory', '/v1/dashboard/render-spec', '/v1/decisions/evaluate', '/v1/decisions/outcome', '/v1/decisions/metrics', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
         }, {}, {
           headOnly: isHeadRequest,
         });
@@ -8209,6 +8209,40 @@ ${hidden}
         const { data } = dashboardResult;
 
         sendJson(res, 200, data);
+        return;
+      }
+
+      // GET /v1/dashboard/ai-inventory -- Enterprise AI inventory evidence
+      if (req.method === 'GET' && pathname === '/v1/dashboard/ai-inventory') {
+        try {
+          const {
+            scanAiComponents,
+            buildCycloneDxMlBom,
+          } = require('../../scripts/ai-component-inventory');
+          const requestedRoot = parsed.searchParams.get('root');
+          const serverRoot = process.cwd();
+          const rootDir = requestedRoot ? path.resolve(requestedRoot) : serverRoot;
+          const rootRel = path.relative(serverRoot, rootDir);
+          if (rootRel.startsWith('..') || path.isAbsolute(rootRel)) {
+            sendJson(res, 400, {
+              error: 'ai_inventory_root_out_of_scope',
+              message: 'Dashboard AI inventory root must stay within the server working directory. Use the CLI for explicit cross-project scans.',
+            });
+            return;
+          }
+          const inventory = scanAiComponents({
+            rootDir,
+            maxFiles: parsed.searchParams.get('maxFiles') ? Number(parsed.searchParams.get('maxFiles')) : undefined,
+            includeSnippets: parsed.searchParams.get('snippets') !== '0',
+          });
+          const format = String(parsed.searchParams.get('format') || 'json').toLowerCase();
+          sendJson(res, 200, format === 'cyclonedx' ? buildCycloneDxMlBom(inventory, { version: pkg.version }) : inventory);
+        } catch (err) {
+          sendJson(res, 500, {
+            error: 'ai_inventory_failed',
+            message: err && err.message ? err.message : 'Unable to scan AI component inventory.',
+          });
+        }
         return;
       }
 

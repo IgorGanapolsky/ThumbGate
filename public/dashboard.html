@@ -309,6 +309,7 @@
     <div class="tab" onclick="switchTab('gates')">🛡️ Active Gates</div>
     <div class="tab" onclick="switchTab('team')">👥 Team</div>
     <div class="tab" onclick="switchTab('enterprise')">🏢 Enterprise Chat</div>
+    <div class="tab" onclick="switchTab('ai-inventory')">🧬 AI Inventory</div>
     <div class="tab" onclick="switchTab('generated')">🧩 Generated Views</div>
     <div class="tab" onclick="switchTab('settings')">⚙️ Policy Origins</div>
     <div class="tab" onclick="switchTab('templates')">🧱 Gate Templates</div>
@@ -434,6 +435,29 @@
           <h3>Enterprise Readiness</h3>
           <div class="inventory-tools" id="enterpriseStatusCards"><div class="loading">Loading enterprise status...</div></div>
           <div class="template-summary" style="margin-top:14px;margin-bottom:0;">Live DFCX proof must come from the Conversational Agents console, deployed webhook URL, Cloud Run logs, or the Dialogflow CX REST API <code style="font-family:var(--mono);font-size:12px;">projects.locations.agents</code>.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI INVENTORY TAB -->
+  <div class="tab-content" id="tab-ai-inventory">
+    <div class="templates-section">
+      <h2>AI Component Inventory</h2>
+      <p class="template-summary">Enterprise evidence for AI/ML usage: provider SDKs, agent frameworks, vector databases, Vertex/Gemini/Dialogflow CX references, and local model artifacts. Export this as ML-BOM proof before claiming an AI system is production-ready.</p>
+      <div class="inventory-grid" id="aiInventorySummaryCards"><div class="loading">Scanning AI inventory...</div></div>
+      <div class="team-columns" style="margin-top:16px;">
+        <div class="panel">
+          <h3>Detected Components</h3>
+          <div class="inventory-tools" id="aiInventoryComponents"><div class="loading">Scanning components...</div></div>
+        </div>
+        <div class="panel">
+          <h3>Export Evidence</h3>
+          <div class="template-summary" style="margin-bottom:12px;">CLI export:</div>
+          <pre style="white-space:pre-wrap;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;color:var(--text);">npx thumbgate ai-inventory --format=cyclonedx --output=.thumbgate/ai-mlbom.json</pre>
+          <div class="template-summary" style="margin-top:12px;">API export:</div>
+          <pre style="white-space:pre-wrap;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:12px;color:var(--text);">GET /v1/dashboard/ai-inventory?format=cyclonedx</pre>
+          <div id="aiInventoryExportNote" class="template-summary" style="margin-top:12px;margin-bottom:0;">Waiting for inventory evidence...</div>
         </div>
       </div>
     </div>
@@ -1006,11 +1030,11 @@ function switchTab(name) {
 /**
  * Resolve deep-link tab target from URL hash or query string.
  * Supports: /dashboard#insights, /dashboard?tab=gates, /dashboard#tab-export.
- * Valid targets match tab-content ids (search, gates, team, generated,
- * settings, templates, insights, export).
+ * Valid targets match tab-content ids (search, gates, team, enterprise,
+ * ai-inventory, generated, settings, templates, insights, export).
  */
 function getDeepLinkTab() {
-  var valid = ['search', 'gates', 'team', 'generated', 'settings', 'templates', 'insights', 'export'];
+  var valid = ['search', 'gates', 'team', 'enterprise', 'ai-inventory', 'generated', 'settings', 'templates', 'insights', 'export'];
   var raw = (window.location.hash || '').replace(/^#/, '').replace(/^tab-/, '');
   if (!raw) {
     try {
@@ -1222,7 +1246,68 @@ function renderDashboardData(data) {
   renderRegulatedProof(data.regulatedProof || {});
   renderTemplates(data.templateLibrary || {});
   renderInsights(data);
+  loadAiInventory();
   loadEnterpriseDialogflowStatus();
+}
+
+async function loadAiInventory() {
+  var summaryEl = document.getElementById('aiInventorySummaryCards');
+  var componentsEl = document.getElementById('aiInventoryComponents');
+  var exportEl = document.getElementById('aiInventoryExportNote');
+  if (!summaryEl || !componentsEl) return;
+
+  try {
+    var res = await fetch('/v1/dashboard/ai-inventory', { headers: getHeaders() });
+    if (!res.ok) {
+      var text = await res.text();
+      throw new Error(text || 'Failed to load AI inventory');
+    }
+    var inventory = await res.json();
+    renderAiInventory(inventory);
+  } catch (e) {
+    var message = e && e.message ? e.message : 'Failed to load AI inventory';
+    setMessageState(summaryEl, 'empty', message);
+    setMessageState(componentsEl, 'empty', message);
+    if (exportEl) exportEl.textContent = message;
+  }
+}
+
+function renderAiInventory(inventory) {
+  var summaryEl = document.getElementById('aiInventorySummaryCards');
+  var componentsEl = document.getElementById('aiInventoryComponents');
+  var exportEl = document.getElementById('aiInventoryExportNote');
+  var components = Array.isArray(inventory.components) ? inventory.components : [];
+  var byCategory = inventory.summary && inventory.summary.byCategory ? inventory.summary.byCategory : {};
+  var modelArtifacts = byCategory.model_artifact || 0;
+  var vectorDbs = byCategory.vector_database || 0;
+
+  summaryEl.innerHTML = [
+    '<div class="team-card"><div class="team-kicker">Files scanned</div><div class="team-value">' + escHtml(String(inventory.filesScanned || 0)) + '</div><div class="team-note">source, manifests, model artifacts</div></div>',
+    '<div class="team-card"><div class="team-kicker">AI components</div><div class="team-value">' + escHtml(String(inventory.componentCount || components.length)) + '</div><div class="team-note">inventory evidence items</div></div>',
+    '<div class="team-card"><div class="team-kicker">Vector stores</div><div class="team-value">' + escHtml(String(vectorDbs)) + '</div><div class="team-note">retrieval governance surface</div></div>',
+    '<div class="team-card"><div class="team-kicker">Model artifacts</div><div class="team-value">' + escHtml(String(modelArtifacts)) + '</div><div class="team-note">local ML-BOM artifacts</div></div>'
+  ].join('');
+
+  if (!components.length) {
+    componentsEl.innerHTML = '<div class="empty">No AI/ML components detected in this project root.</div>';
+  } else {
+    componentsEl.innerHTML = components.map(function(item) {
+      var evidence = Array.isArray(item.evidence) ? item.evidence.slice(0, 4) : [];
+      var evidenceHtml = evidence.map(function(e) {
+        var loc = e.line ? (e.file + ':' + e.line) : e.file;
+        return '<li><code>' + escHtml(loc || 'unknown') + '</code> <span style="color:var(--text-muted);">[' + escHtml(e.kind || 'evidence') + ']</span></li>';
+      }).join('');
+      return '<div class="tool-card">' +
+        '<div class="tool-title">' + escHtml(item.name || item.id || 'AI component') + '</div>' +
+        '<div class="tool-meta">' + escHtml(item.category || 'unknown') + ' · ' + escHtml(item.ecosystem || 'unknown') + '</div>' +
+        '<ul style="margin:8px 0 0 18px;padding:0;">' + evidenceHtml + '</ul>' +
+      '</div>';
+    }).join('');
+  }
+
+  if (exportEl) {
+    exportEl.textContent = 'Ready: export ' + String(inventory.componentCount || components.length) + ' component(s) as CycloneDX ML-BOM evidence.';
+  }
 }
 
 function renderGeneratedViewToolbar(spec) {
