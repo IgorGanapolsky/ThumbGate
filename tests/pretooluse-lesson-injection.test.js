@@ -54,7 +54,7 @@ describe('extractActionContext', () => {
   });
 
   test('includes file_path for Edit tool', () => {
-    const ctx = extractActionContext('Edit', { file_path: '/tmp/foo.js' });
+    const ctx = extractActionContext('Edit', { file_path: '/var/src/foo.js' });
     assert.match(ctx, /foo\.js/);
   });
 

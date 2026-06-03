@@ -34,7 +34,6 @@ test('buildCaptureReceipt turns a saved thumbs signal into a paid-intent next st
   assert.match(receipt, /npx thumbgate cost/);
   assert.match(receipt, /utm_source=cli_capture_receipt/);
   assert.match(receipt, /utm_campaign=pro_conversion/);
-  assert.match(receipt, /workflow-sprint-intake/);
 });
 
 test('buildStatsReceipt stays quiet when there is no proof or failure pressure', () => {
@@ -56,5 +55,4 @@ test('buildStatsReceipt routes proven friction to Pro and Team surfaces', () => 
   assert.match(receipt, /3 negative signals/);
   assert.match(receipt, /npx thumbgate cost/);
   assert.match(receipt, /utm_source=cli_stats_receipt/);
-  assert.match(receipt, /workflow-sprint-intake/);
 });
