@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.27.1
+
+### Patch Changes
+
+- a6cd753: Fix tool-level lockout loop by excluding automated gate blocks/warnings from negative feedback counts and ensuring only negative signal entries from attributed feedback are processed.
+
 ## 1.27.0
 
 ### Minor Changes
