@@ -288,11 +288,11 @@ function sanitizeGlobList(globs) {
 }
 
 // Affected files are compared as repo-relative paths (git --name-only output and
-// inline paths are all relative to the repo root). A caller who passes an ABSOLUTE
+// inline paths are relative to the repo root). A caller who passes an ABSOLUTE
 // allowedPath (e.g. "/Users/me/proj/src/**") therefore declares a glob that can never
-// match — it silently produces a no-op scope. When repoPath is known, rebase absolute
-// globs that live under it to the repo-relative form so the scope actually applies.
-// Globs already relative, or absolute but outside repoPath, are returned unchanged.
+// match — a silent no-op scope. When repoPath is known, rebase absolute globs that
+// live under it to the repo-relative form so the scope actually applies. Globs already
+// relative, or absolute but outside repoPath, are returned unchanged.
 function rebaseGlobsToRepoRoot(globs, repoPath) {
   const repoRel = normalizePosix(repoPath);
   if (!repoRel) return globs;
@@ -1537,8 +1537,7 @@ function evaluateMemoryGuard(toolName, toolInput = {}) {
   // Hardening a credential file's permissions (chmod 600 on a key/secret path) is
   // a safety action, not a risk. The same exemption already guards the
   // permission-change-approval gate; without it here, `chmod 600 ~/.resume_secrets/key`
-  // gets hard-denied by recurring-negative-memory matching — the exact opposite of
-  // the intended behavior, and it breaks the secrets-vault hardening step.
+  // gets hard-denied by recurring-negative-memory matching — the opposite of intent.
   if (isSafeLocalCredentialHardeningCommand(toolName, toolInput)) {
     return null;
   }

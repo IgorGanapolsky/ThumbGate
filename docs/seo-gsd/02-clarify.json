@@ -1,13 +1,13 @@
 {
   "intents": {
     "comparison": 4,
-    "commercial": 20,
+    "commercial": 25,
     "informational": 9
   },
   "personas": {
     "tool-evaluator": 4,
-    "engineering-lead": 5,
-    "ai-engineer": 10,
+    "engineering-lead": 9,
+    "ai-engineer": 11,
     "growth-engineer": 3,
     "rag-engineer": 2,
     "claude-code-builder": 3,
@@ -19,7 +19,7 @@
   },
   "pageTypes": {
     "comparison": 4,
-    "guide": 23,
+    "guide": 28,
     "integration": 6
   },
   "contextGovernance": {
