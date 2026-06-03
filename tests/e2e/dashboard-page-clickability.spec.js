@@ -206,6 +206,6 @@ test.describe('/dashboard clickability — non-stat-card surfaces', () => {
 
     // Check success state
     await expect(input).toHaveAttribute('placeholder', '✓ Key saved to .env', { timeout: 3000 });
-    await expect(page.locator('#chatHint')).toContainText('Gemini API key configured');
+    await expect(page.locator('#chatHint')).toContainText('Key validated');
   });
 });
