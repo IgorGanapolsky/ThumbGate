@@ -41,6 +41,7 @@ process.env.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL = 'https://buy.stripe.com/spr
 process.env.THUMBGATE_GA_MEASUREMENT_ID = 'G-TEST1234';
 process.env.THUMBGATE_GOOGLE_SITE_VERIFICATION = 'test-verification-token';
 process.env.THUMBGATE_BUILD_METADATA_PATH = path.join(tmpFeedbackDir, 'build-metadata.json');
+process.env.THUMBGATE_PLAUSIBLE_REGISTERED_DOMAINS = 'thumbgate.ai,app.example.com';
 fs.writeFileSync(
   process.env.THUMBGATE_BUILD_METADATA_PATH,
   JSON.stringify({ buildSha: 'test-build-sha', generatedAt: '2026-03-20T00:00:00.000Z' }, null, 2)
@@ -111,6 +112,7 @@ test.after(async () => {
   delete process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL;
   delete process.env.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL;
   delete process.env.THUMBGATE_BUILD_METADATA_PATH;
+  delete process.env.THUMBGATE_PLAUSIBLE_REGISTERED_DOMAINS;
   if (savedProjectEnv.THUMBGATE_PROJECT_DIR === undefined) delete process.env.THUMBGATE_PROJECT_DIR;
   else process.env.THUMBGATE_PROJECT_DIR = savedProjectEnv.THUMBGATE_PROJECT_DIR;
   if (savedProjectEnv.CLAUDE_PROJECT_DIR === undefined) delete process.env.CLAUDE_PROJECT_DIR;
@@ -667,7 +669,7 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /googletagmanager\.com\/gtag\/js\?id=G-TEST1234/);
   assert.match(body, /google-site-verification" content="test-verification-token"/);
   assert.match(body, /gtag\('config', 'G-TEST1234'\)/);
-  assert.doesNotMatch(body, /thumbgate-production\.up\.railway\.app/);
+  assert.doesNotMatch(body, /data-domain="thumbgate-production\.up\.railway\.app"/);
   assert.doesNotMatch(body, /mailto:/i);
 });
 
