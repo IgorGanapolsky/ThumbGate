@@ -60,8 +60,27 @@ test('codex plugin manifest uses ThumbGate branding and local MCP config', () =>
   assert.equal(plugin.interface.privacyPolicyURL, 'https://thumbgate.ai/privacy');
   assert.equal(plugin.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
   assert.equal(plugin.mcpServers, './.mcp.json');
+  assert.match(plugin.description, /thumbs-down/i);
+  assert.match(plugin.description, /repeat-blocking pre-action check/i);
+  assert.match(plugin.interface.shortDescription, /repeat-blocking pre-action check/i);
+  assert.match(plugin.interface.longDescription, /risky commands, edits, deploys, publishes, and PR actions/i);
+  assert.match(plugin.interface.longDescription, /future sessions/i);
+  assert.doesNotMatch(plugin.description, /82%/);
+  assert.doesNotMatch(plugin.interface.shortDescription, /82%/);
+  assert.doesNotMatch(plugin.interface.longDescription, /82%/);
+  assert.ok(
+    plugin.interface.defaultPrompt.some((prompt) => /feedback self-test/i.test(prompt)),
+    'default prompts should dogfood the feedback self-test'
+  );
+  assert.ok(
+    plugin.interface.defaultPrompt.some((prompt) => /prevention gates/i.test(prompt)),
+    'default prompts should advertise prevention-gate checks'
+  );
   assertCodexLatestShellEntry(mcpConfig.mcpServers.thumbgate);
-  assert.match(readme, /standalone Codex plugin bundle/i);
+  assert.match(readme, /CLI-first setup path/i);
+  assert.match(readme, /Fastest supported path: CLI setup/i);
+  assert.match(readme, /Codex plugin directory or marketplace/i);
+  assert.match(readme, /not a double-click macOS installer/i);
   assert.match(readme, /auto-refreshes the Codex MCP\/hook runtime/i);
   assert.match(readme, new RegExp(getCodexPluginLatestDownloadUrl(root).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(readme, /build:codex-plugin/i);
@@ -143,6 +162,7 @@ test('codex plugin staging writes a standalone bundle with self-contained market
     assert.match(readme, /build:codex-plugin/i);
     assert.match(readme, /self-contained plugin root/i);
     assert.match(readme, /auto-updating manual MCP profile/i);
+    assert.match(readme, /CLI setup path for normal users/i);
     assert.match(install, /Portable release bundle/i);
     assert.match(install, /not a double-click macOS installer/i);
     assert.match(configToml, /thumbgate@latest/);
