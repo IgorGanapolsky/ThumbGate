@@ -1,11 +1,11 @@
 # Money Now Actions
 
-Updated: 2026-06-02
+Updated: 2026-06-03
 
 Use this as the operator cockpit for the current run. Focus is **individual operator revenue** with the correct offer routing: **Pro ($19/mo or $149/yr)** for self-serve intent, **Workflow Hardening Diagnostic ($499)** when pain is real but scope is unclear, and **Workflow Hardening Sprint ($1500)** when one workflow owner needs proof-backed hardening. Teams and Aiventyx are deprecated per CEO pivot.
 
 Action-time approval card for any outbound action:
-- `reports/gtm/2026-05-04-money-now/action-time-approval-2026-06-02.md`
+- `reports/gtm/2026-05-04-money-now/action-time-approval-2026-06-03.md`
 
 ## Current Revenue State
 - 30d visitors: 6169
@@ -13,9 +13,14 @@ Action-time approval card for any outbound action:
 - Paid orders: 4
 - Checkout starts: 133
 - Booked: `$149`
-- Live sales pipeline on 2026-06-02: `23` active leads, `21` contacted, `1` replied, `2` still untouched.
+- Live sales pipeline on 2026-06-03: `23` active leads, `21` contacted, `2` targeted, `1` replied, `0` paid.
 - Pipeline: focus on **Operator Lab** conversion with Pro for self-serve leads and Diagnostic/Sprint for warm pain-first leads.
 - Revenue bottleneck: follow-up discipline on already-contacted leads plus the last untouched high-intent GitHub leads.
+- Current promotion/measurement state on 2026-06-03:
+  - local `--offer=operator-lab` dry-run still returns `6` previews with all media assets present
+  - Zernio analytics still shows `0/6` healthy platforms and `0` rows in the last `24h`
+  - Skool public-page verification still fails in the headless reader runtime
+  - GitHub queue and run readback are blocked again in this runtime with `error connecting to api.github.com`
 
 ## Do First
 1. Send the 2 untouched Pro guide-first messages: `github_easingthemes_dx_aem_flow` and `github_zaxbysauce_opencode_swarm`.

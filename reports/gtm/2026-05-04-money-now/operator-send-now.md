@@ -1,6 +1,6 @@
 # Revenue Operator Send-Now Sheet
 
-Updated: 2026-06-02T12:31:25-04:00
+Updated: 2026-06-03T07:55:00-04:00
 
 This is the flat batch-send layer for the current revenue loop. Use it when you want the message, CTA, and logging commands in one place without re-reading the full GTM report.
 
@@ -23,7 +23,7 @@ Pair this file with `operator-priority-handoff.md` when you need deeper account 
 - Keep the offer split honest: sprint rows get one workflow-hardening offer; self-serve rows get the guide-to-Pro lane unless pain is confirmed.
 - Qualify the offer split: Use Pro after one blocked repeat or explicit self-serve install intent. Use the Workflow Hardening Sprint when one workflow owner needs approval boundaries, rollback safety, and proof before wider rollout.
 - Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) and [COMMERCIAL_TRUTH.md](../COMMERCIAL_TRUTH.md) only after the buyer confirms pain.
-- Current live pipeline on 2026-06-02: `23` active leads, `21` contacted, `1` replied, `2` untouched. Ignore the replied Aiventyx thread because that lane is deprecated.
+- Current live pipeline on 2026-06-03: `23` active leads, `21` contacted, `1` replied, `2` untouched. This was re-verified from `scripts/sales-pipeline.js` against `.thumbgate/sales-pipeline.jsonl` on `2026-06-03T11:55Z`. Ignore the replied Aiventyx thread because that lane is deprecated.
 
 ```bash
 npm run sales:pipeline -- import --source docs/marketing/gtm-revenue-loop.json
@@ -33,7 +33,7 @@ npm run sales:pipeline -- import --source docs/marketing/gtm-revenue-loop.json
 
 ### 1. @Deep_Ad1959 - r/cursor
 - Channel: reddit / reddit_dm
-- Pipeline stage: targeted
+- Pipeline stage: contacted
 - Pipeline lead id: reddit_deep_ad1959_r_cursor
 - Next operator step: Send a short follow-up, not the original first-touch draft, and log the outreach in the sales pipeline.
 - Evidence score: 10
@@ -65,7 +65,7 @@ Checkout close draft:
 
 ### 2. @game-of-kton - r/cursor
 - Channel: reddit / reddit_dm
-- Pipeline stage: targeted
+- Pipeline stage: contacted
 - Pipeline lead id: reddit_game_of_kton_r_cursor
 - Next operator step: Send a short follow-up, not the original first-touch draft, and log the outreach in the sales pipeline.
 - Evidence score: 9
@@ -127,9 +127,9 @@ Checkout close draft:
 
 ### 3. @leogodin217 - r/ClaudeCode
 - Channel: reddit / reddit_dm
-- Pipeline stage: targeted
+- Pipeline stage: contacted
 - Pipeline lead id: reddit_leogodin217_r_claudecode
-- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Next operator step: Send a short follow-up, not the original first-touch draft, and log the outreach in the sales pipeline.
 - Evidence score: 9
 - Motion: Workflow Hardening Sprint
 - Why now: Warm Reddit engager already described a mature workflow, so the next step is a targeted diagnostic on one failure mode.
@@ -145,8 +145,8 @@ Checkout close draft:
 - Log after sprint intake: `npm run sales:pipeline -- advance --lead 'reddit_leogodin217_r_claudecode' --channel 'reddit_dm' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for review boundaries and context risk.'`
 - Log after paid: `npm run sales:pipeline -- advance --lead 'reddit_leogodin217_r_claudecode' --channel 'reddit_dm' --stage 'paid' --note 'Closed Workflow Hardening Sprint and booked revenue after resolving review boundaries and context risk.'`
 
-First-touch draft:
-> Your arch-create to sprint workflow is one of the most mature agent processes I have seen anyone describe. I am looking for one AI-agent workflow to harden end-to-end this week. Your workflow already has phases, review boundaries, and context risk, so it is a strong fit: pick one repeating failure and I will help turn it into an enforceable Pre-Action Check plus proof run. Worth 15 minutes?
+Follow-up draft:
+> Your arch-create to sprint workflow is still one of the strongest fits I have seen for a proof-backed hardening pass. If one repeated failure is still showing up inside that workflow, I can help turn it into a concrete gate and proof run.
 
 Pain-confirmed follow-up:
 > If your workflow really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
@@ -159,9 +159,9 @@ Checkout close draft:
 
 ### 4. @Enthu-Cutlet-1337 - r/ClaudeCode
 - Channel: reddit / reddit_dm
-- Pipeline stage: targeted
+- Pipeline stage: contacted
 - Pipeline lead id: reddit_enthu_cutlet_1337_r_claudecode
-- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Next operator step: Send a short follow-up, not the original first-touch draft, and log the outreach in the sales pipeline.
 - Evidence score: 8
 - Motion: Workflow Hardening Sprint
 - Why now: Warm Reddit engager already understands the adaptive-gate thesis, so offer one concrete workflow hardening diagnostic.
@@ -177,8 +177,8 @@ Checkout close draft:
 - Log after sprint intake: `npm run sales:pipeline -- advance --lead 'reddit_enthu_cutlet_1337_r_claudecode' --channel 'reddit_dm' --stage 'sprint_intake' --note 'Buyer moved into Workflow Hardening Sprint intake for brittle guardrails.'`
 - Log after paid: `npm run sales:pipeline -- advance --lead 'reddit_enthu_cutlet_1337_r_claudecode' --channel 'reddit_dm' --stage 'paid' --note 'Closed Workflow Hardening Sprint and booked revenue after resolving brittle guardrails.'`
 
-First-touch draft:
-> Appreciate the kind words on the Thompson Sampling approach. You nailed the core insight: most guardrails are brittle prompt hacks that break when context shifts. I am looking for one AI-agent workflow to harden end-to-end this week: repeated failure, prevention rule, and proof run. If you have a workflow where brittle guardrails keep failing, I can harden that workflow with you. Open to a 15-minute diagnostic?
+Follow-up draft:
+> Circling back on your point about brittle guardrails. If one workflow is still failing when context shifts, I can help turn that failure into an enforceable gate instead of another prompt patch.
 
 Pain-confirmed follow-up:
 > If your workflow really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md

@@ -1,6 +1,6 @@
 # Revenue Close Room (Money Now)
 
-Updated: 2026-06-02
+Updated: 2026-06-03
 
 This file is the close-room script + truth table for converting warm/high-intent leads into:
 
@@ -24,7 +24,12 @@ Guardrail: do not publish posts, send messages, or invite members without explic
 - Booked: `$149`
 - Signups: 475
 - Sprint leads: 0
-- Live pipeline state on 2026-06-02: `23` active leads, `21` contacted, `1` replied, `2` untouched
+- Live pipeline state on 2026-06-03: `23` active leads, `21` contacted, `2` targeted, `1` replied, `0` paid
+- Current loop constraints on 2026-06-03:
+  - local Operator Lab promo preview is healthy
+  - Zernio analytics readback is still dark (`0/6` healthy platforms)
+  - Skool readback is still blocked in the headless runtime
+  - GitHub queue and run readback are blocked again in this runtime with `error connecting to api.github.com`
 
 ## Offer Routing (fast rules)
 

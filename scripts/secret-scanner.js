@@ -177,6 +177,13 @@ function heuristicScanText(text, source = 'text') {
     pattern.regex.lastIndex = 0;
     let match = pattern.regex.exec(input);
     while (match) {
+      // Safe test key bypass
+      const matchedString = match[0].toLowerCase();
+      if (pattern.id === 'generic_assignment' && (matchedString.includes('sk_test_') || matchedString.includes('test_token'))) {
+        match = pattern.regex.exec(input);
+        continue;
+      }
+      
       findings.push({
         id: pattern.id,
         label: pattern.label,

@@ -1,7 +1,7 @@
 # ThumbGate Community + Course Promo Operator Handoff
 
 Generated: 2026-05-04
-Updated: 2026-06-02
+Updated: 2026-06-03
 
 ## Live Assets
 
@@ -32,6 +32,9 @@ Current blockers:
 - The first post and invite steps still require action-time confirmation before publication/sending.
 - A headless read of the public Skool URL failed in this environment on 2026-06-02, so the live public page content still needs browser-side verification before claiming the surface is fully updated.
 - Direct unauthenticated `curl -I -L https://www.skool.com/thumbgate-operator-lab-6000` returned HTTP `403` from CloudFront on 2026-06-02, so a headless anonymous verification path is not currently reliable from this runtime.
+- Skool’s current Discovery FAQ lists `off-platform payments` as a ranking penalty, so external paid links on public Skool surfaces should be treated as a deliberate tradeoff instead of a default conversion step.
+- `gh pr list --state open --limit 20` succeeded on `2026-06-03` and showed `17` open PRs, while `npm run pr:manage` still failed with `error connecting to api.github.com`, so direct GitHub queue readback is available but the higher-level manager script is still blocked in this runtime.
+- Skool Growth-tab metrics have not been read back in a browser-authenticated session yet, so About-page conversion and traffic-source truth are still unknown.
 
 Workaround for the in-app file picker:
 
@@ -106,22 +109,26 @@ Zernio analytics polling is blocked by the Analytics add-on paywall. Treat Zerni
 
 The `thumbgate-creator-platform-promo.yml` workflow now passes `--offer=operator-lab`, so previews/schedules/publishes from that workflow promote the free Skool Operator Lab instead of the older first-customer launch copy.
 
-As of 2026-06-02, local dry-runs still preview the Operator Lab campaign without Zernio credentials and include the planned media attachments in the preview JSON:
+As of 2026-06-03, local dry-runs still preview the Operator Lab campaign without Zernio credentials and include the planned media attachments in the preview JSON:
 
 `npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=linkedin,instagram,threads,bluesky,reddit,youtube`
 
-Current dry-run facts from 2026-06-02:
+Current dry-run facts from 2026-06-03:
 
 - The preview renders six platform-specific posts for `linkedin,instagram,threads,bluesky,reddit,youtube`.
 - Each preview references a repo-backed media asset and reports `exists: true`.
 - Local `accountCount` was `0` across platforms in this runtime, which is acceptable for preview but means live publish/schedule should stay in GitHub Actions with repo secrets.
+- `npm run social:zernio:status` still reports `0/6` healthy platforms and `0` rows in the last `24h`, so Zernio remains a publish pipe only until analytics readback is restored.
 
 ## Classroom / Course Surface
 
 - Approval-ready course copy now lives in:
   - `reports/gtm/2026-05-04-community-course-promo/skool-classroom-listing-copy.md`
+- Approval-ready Skool measurement/readback brief now lives in:
+  - `reports/gtm/2026-05-04-community-course-promo/skool-growth-readback-2026-06-02.md`
 - Recommended posture:
   - keep the group free
   - use one free Classroom starter course
-  - keep paid conversion on ThumbGate-owned checkout/intake
+  - keep Skool’s public Discovery-facing copy value-first
+  - keep paid conversion on ThumbGate-owned checkout/intake only after direct follow-up or pain confirmation
   - do not enable Skool one-time pricing or paid tiers yet

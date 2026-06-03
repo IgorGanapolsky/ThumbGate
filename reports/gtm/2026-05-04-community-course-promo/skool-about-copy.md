@@ -15,7 +15,15 @@ Skool official help re-verified on 2026-06-02:
 
 - Discovery eligibility still depends on cover image, group description, completed About page, at least one post, and invited members for newer groups.
 - Discovery ranking still emphasizes member growth, engagement, retention, artwork/About quality, and active owner behavior.
+- Discovery FAQ now says visibility usually appears within `2` hours once the threshold is hit.
+- Discovery FAQ also lists `off-platform payments` as a ranking penalty.
 - Skool’s help center does not publish the exact minimum member/post/activity thresholds.
+- For attribution accuracy, Skool recommends using the direct About page link instead of redirect layers.
+
+## Discovery-safe posture
+
+- Keep the About page focused on the free community outcome and the repeated-failure posting format.
+- Treat paid offers as follow-up actions after pain is confirmed, not as the main public About-page CTA, unless you are intentionally trading Discovery rank for direct monetization.
 
 ## About Page (paste-ready)
 
@@ -55,7 +63,7 @@ Bring one repeated failure from one real workflow. We turn it into an enforceabl
 5. What you’ve tried already:
 6. What would make you trust the fix (proof):
 
-### Optional next step (paid, if you want it)
+### Optional next step (paid, if you want it, after pain is confirmed)
 
 If you have one workflow owner and one repeated failure that blocks rollout, the next step is a **Workflow Hardening Diagnostic** (`$499`) or **Workflow Hardening Sprint** (`$1500`) depending on scope.
 

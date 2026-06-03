@@ -1,7 +1,7 @@
 # ThumbGate Community + Course Platform Launch Kit
 
 Generated: 2026-05-04
-Updated: 2026-06-02
+Updated: 2026-06-03
 
 This pack turns the "start a free Skool group + course platform expansion" idea into operator-ready copy and launch steps. The operating choice is simple: use Skool as the free member community funnel first, use YouTube and Zernio-backed socials for discovery, and keep paid course platforms as republishing surfaces after the free group has proof.
 
@@ -39,19 +39,22 @@ npx thumbgate init
 - Skool logo and cover photo are configured from Settings > General. Source: https://help.skool.com/article/120-how-to-set-up-my-group-logo-and-cover-photo
 - Skool Discovery requires a cover image, group description, completed About page, at least one post, invited members, and a minimum threshold of members/posts/activity before the group becomes visible. Sources: https://help.skool.com/article/151-why-isnt-my-group-visible-in-discovery , https://help.skool.com/article/123-how-to-set-up-my-group-s-about-page , and https://help.skool.com/article/153-discovery-faqs
 - Skool now frames the About page as a landing page that can include embedded media, links, and product/course details, so it is part of conversion copy, not just setup hygiene. Source: https://help.skool.com/article/123-how-to-set-up-my-group-s-about-page
-- Skool courses publish from Classroom and can be free or paid inside the group once access/pricing is configured. Sources: https://help.skool.com/article/217-how-to-publish-a-course and https://help.skool.com/article/218-how-to-set-up-one-time-course-purchases
+- Skool analytics now explicitly define About-page conversion and recommend using the direct About URL because redirects and link shorteners collapse attribution into `direct`. Sources: https://help.skool.com/article/216-analytics-definitions and https://help.skool.com/article/226-traffic-sources
+- Skool courses publish from Classroom and can be free or paid inside the group once access/pricing is configured. Sources: https://help.skool.com/article/143-how-to-publish-a-course and https://help.skool.com/article/168-how-to-set-up-one-time-course-purchases
 - The current Skool setup flow asked for audience size. Recommended conservative answer: `Under 10k`, unless a primary social profile is verified above 10,000 followers.
 
-## 2026-06-02 Deep Research Update
+## 2026-06-03 Deep Research Update
 
-Validated against official pricing/help pages on 2026-06-02. Pricing and eligibility are volatile, so re-check the linked source before entering a card, buying ads, or publishing a paid listing.
+Validated against official pricing/help pages on 2026-06-03. Pricing and eligibility are volatile, so re-check the linked source before entering a card, buying ads, or publishing a paid listing.
 
 **Skool-specific requirement refresh:**
 
 1. Discovery remains a community-growth system, not a metadata toggle. The visible prerequisites are still cover, description, About page, at least one post, and invited members. The exact member/activity threshold is still unpublished.
-2. The About page now matters twice: it satisfies Discovery setup and acts like a landing page with media, links, and commerce context.
-3. Classroom is the course surface. Keep the Operator Lab community free first, then publish the mini-course only after the group has live discussion proof.
-4. One-time course purchases exist natively in Skool, but they should stay dormant until ThumbGate has evidence that a paid course beats the existing owned checkout path for Pro/Diagnostic/Sprint.
+2. Discovery visibility now states `within two hours` once the unpublished threshold is met, and the latest FAQ still lists off-platform payments as a ranking penalty.
+3. The About page now matters twice: it satisfies Discovery setup and acts like a landing page with media, links, and commerce context.
+4. Skool attribution is last-touch. Direct About-page links preserve source data better than redirects or link-in-bio layers.
+5. Classroom is the course surface. Keep the Operator Lab community free first, then publish the mini-course only after the group has live discussion proof.
+6. One-time course purchases exist natively in Skool, but they should stay dormant until ThumbGate has evidence that a paid course beats the existing owned checkout path for Pro/Diagnostic/Sprint.
 
 **Best autonomous revenue sequence:**
 
@@ -68,7 +71,7 @@ Validated against official pricing/help pages on 2026-06-02. Pricing and eligibi
 | Thinkific | Course-first storefront | Candidate for a free mini-course when owned course UX matters | Official pricing/help now emphasize Basic/Start/Grow/Expand/Plus structure, built-in Thinkific Payments, and third-party gateway fees that vary by plan. Support docs pin third-party gateway fees at 5% on Basic, 2% on Start, 1% on Grow, 0.5% on Expand, and no fee on Plus. Sources: https://www.thinkific.com/pricing/ and https://support.thinkific.com/hc/en-us/articles/360030721393-How-much-does-Thinkific-cost |
 | Teachable | Course storefront and student apps | Lead magnet only until conversion proof exists | Official pricing/help now show Starter at `$39/mo`; current help docs show 7.5% transaction fees on Starter and 0% on Builder/Growth/Advanced, with newer product limits expanding Starter to up to 5 products. Sources: https://support.teachable.com/hc/en-us/articles/220639788-Change-Your-Teachable-Plan , https://support.teachable.com/en/articles/11682553-teachable-fees , and https://support.teachable.com/en/articles/14689187-understanding-usage-fees |
 | Podia | Simple digital product storefront | Good for checklist/download if we need a lightweight owned offer | Official pricing lists Mover at $39/mo monthly or $33/mo annually with a 5% transaction fee; Shaker at $89/mo monthly or $75/mo annually with no Podia transaction fee. Source: https://www.podia.com/pricing |
-| Mighty Networks | Skool alternative | Keep as backup for cohort/community format | Current docs describe Explore, Launch, Scale, and Growth, with a free 14-day Growth trial. Payments run through Stripe; transaction fees are 2% on Launch, 1% on Scale, and 0.5% on Growth. Sources: https://docs.mightynetworks.com/for-hosts/meet-mighty/which-mighty-network-plan-is-right-for-you and https://docs.mightynetworks.com/en/articles/9140682-does-mighty-networks-charge-a-transaction-fee |
+| Mighty Networks | Skool alternative | Keep as backup for cohort/community format | Current pricing page shows Launch at `$79/mo` or `$950/yr`, with higher tiers above that. Treat it as materially more expensive than Skool before Operator Lab proves demand. Source: https://www.mightynetworks.com/pricing |
 | Circle | Polished community/events/courses | Upgrade path after Skool proof | Official pricing page lists Professional at $89/mo with a 14-day trial and 2% transaction fee on Professional. Source: https://circle.so/pricing |
 | LearnWorlds | Interactive LMS | Use only if the course becomes the product | Official plan comparison still shows a `$5` per-course-enrollment fee on Starter and `0` on Pro Trainer, Learning Center, and Corporate. Source: https://www.learnworlds.com/plans/ |
 | Udemy | Marketplace discovery | Useful without owning the customer relationship | Official instructor revenue share is 97% for instructor-promotion sales and 37% for non-instructor-promotion marketplace sales, after applicable deductions. Source: https://support.udemy.com/hc/en-us/articles/229605008-Instructor-Revenue-Share |
@@ -243,7 +246,7 @@ Use if you want the simplest owned digital product storefront. Current official 
 
 ### Mighty Networks
 
-Mighty is a community-plus-course alternative. Current docs describe a free 14-day Growth trial and plan-specific transaction fees of 2% on Launch, 1% on Scale, and 0.5% on Growth. Sources: https://docs.mightynetworks.com/for-hosts/meet-mighty/which-mighty-network-plan-is-right-for-you and https://docs.mightynetworks.com/en/articles/9140682-does-mighty-networks-charge-a-transaction-fee
+Mighty is a community-plus-course alternative. Current public pricing shows Launch at `$79/mo` or `$950/yr`, with higher tiers above that, so it remains a backup rather than a first paid move for Operator Lab. Source: https://www.mightynetworks.com/pricing
 
 **Use case:** Cohort-based community if Skool is not a fit.
 
