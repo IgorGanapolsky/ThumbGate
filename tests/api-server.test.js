@@ -1545,7 +1545,7 @@ test('dashboard auto-bootstraps local Pro auth only for localhost requests', asy
     const localBody = await localRes.text();
     assert.match(localBody, /const BOOTSTRAP_API_KEY = "test-api-key";/);
     assert.match(localBody, /const LOCAL_PRO_BOOTSTRAP = true;/);
-    assert.match(localBody, /Local \$\{tierName\} is active on this machine/);
+    assert.match(localBody, /Local Pro is active on this machine/);
 
     const forwardedRes = await fetch(apiUrl('/dashboard'), {
       headers: {
