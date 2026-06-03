@@ -59,6 +59,7 @@ const {
   buildSafeSummary,
   redactText,
   isSafeSecretStorageWrite,
+  SAFE_SECRET_STORAGE_DIRS,
 } = require('./secret-scanner');
 const {
   evaluateSecurityScan,
@@ -2067,14 +2068,43 @@ function evaluateGates(toolName, toolInput, configPath) {
   return null;
 }
 
-function buildSecretGuardResult(scanResult) {
+// Turn a secret-exfiltration block into actionable guidance that names the
+// safe path, instead of a dead-end that drives agents toward brittle
+// workarounds (e.g. writing secrets to /tmp). The vault dirs referenced here
+// are the SAME constant the scanner whitelists, so the hint can never drift
+// from enforcement.
+function buildSecretRemediation(toolName = '', toolInput = {}) {
+  const vaultDirs = (SAFE_SECRET_STORAGE_DIRS || []).map((dir) => `~/${dir}`);
+  const primaryVault = vaultDirs[0] || '~/.resume_secrets';
+  const vaultList = vaultDirs.join(', ') || primaryVault;
+
+  if (EDIT_LIKE_TOOLS && EDIT_LIKE_TOOLS.has(toolName)) {
+    const target = toolInput.file_path || toolInput.path || toolInput.filePath || toolInput.target_path;
+    const where = target ? ` (you targeted ${redactText(String(target))})` : '';
+    return `To store this secret safely, write it with the Write/Edit tool to a file under ${vaultList}${where}. `
+      + `Those locations are whitelisted for secret storage and will NOT be blocked. `
+      + `Do not route around this by writing to /tmp or another path — that leaves the secret in a world-readable location and does not make it safe.`;
+  }
+
+  if (toolName === 'Bash') {
+    return `Do not inline a live secret literal into a shell command — it leaks into shell history and process args. `
+      + `Instead, store the value with the Write tool to a file under ${vaultList}, then reference it via an environment variable or by reading that file at runtime.`;
+  }
+
+  return `Store secrets in the whitelisted vault (${vaultList}) using the Write tool rather than passing the literal through this action.`;
+}
+
+function buildSecretGuardResult(scanResult, context = {}) {
+  const remediation = buildSecretRemediation(context.toolName, context.toolInput || {});
+  const summary = buildSafeSummary(
+    scanResult.findings,
+    'Blocked because the action appears to expose secret material'
+  );
   return {
     decision: 'deny',
     gate: 'secret-exfiltration',
-    message: buildSafeSummary(
-      scanResult.findings,
-      'Blocked because the action appears to expose secret material'
-    ),
+    message: `${summary}. ${remediation}`,
+    remediation,
     severity: 'critical',
     secretScan: {
       provider: scanResult.provider,
@@ -2158,7 +2188,10 @@ function evaluateSecretGuard(input = {}) {
     toolInput: input.tool_input || {},
   });
   recordSecretViolation(input, scanResult);
-  const result = buildSecretGuardResult(scanResult);
+  const result = buildSecretGuardResult(scanResult, {
+    toolName: input.tool_name || input.toolName,
+    toolInput: input.tool_input || {},
+  });
   // Audit trail: record secret guard denial
   const auditRecord = recordAuditEvent({
     toolName: input.tool_name || input.toolName || 'unknown',

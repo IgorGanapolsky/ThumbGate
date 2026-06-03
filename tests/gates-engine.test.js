@@ -2078,6 +2078,51 @@ test('buildSecretGuardResult builds correct structure', () => {
   assert.equal(result.secretScan.findings[0].id, 'test-finding');
 });
 
+test('secret-exfiltration deny names the safe vault path for a non-vault Write', () => {
+  withTempFeedbackDir(() => {
+    const stripeKey = buildStripeKey();
+    const result = evaluateSecretGuard({
+      tool_name: 'Write',
+      tool_input: { file_path: '/tmp/yst_stripe.json', content: JSON.stringify({ stripe_secret_key: stripeKey }) },
+    });
+    assert.ok(result, 'expected a block');
+    assert.equal(result.gate, 'secret-exfiltration');
+    // The fix: deny message must point the agent at the whitelisted vault,
+    // not leave it to invent a brittle /tmp workaround.
+    assert.match(result.message, /\.resume_secrets/);
+    assert.match(result.remediation, /Write\/Edit tool/);
+    assert.match(result.remediation, /world-readable/);
+  });
+});
+
+test('secret-exfiltration deny tells Bash callers to use the vault, not inline', () => {
+  withTempFeedbackDir(() => {
+    const stripeKey = buildStripeKey();
+    const result = evaluateSecretGuard({
+      tool_name: 'Bash',
+      tool_input: { command: `echo ${stripeKey} > /tmp/x` },
+    });
+    assert.ok(result, 'expected a block');
+    assert.match(result.remediation, /\.resume_secrets/);
+    assert.match(result.remediation, /environment variable|reading that file/);
+  });
+});
+
+test('secret-exfiltration fix does not block legitimate vault writes', () => {
+  withTempFeedbackDir(() => {
+    const os = require('os');
+    const stripeKey = buildStripeKey();
+    const result = evaluateSecretGuard({
+      tool_name: 'Write',
+      tool_input: {
+        file_path: `${os.homedir()}/.resume_secrets/stripe.json`,
+        content: JSON.stringify({ stripe_secret_key: stripeKey }),
+      },
+    });
+    assert.equal(result, null, 'vault writes must remain allowed');
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Session action tracking
 // ---------------------------------------------------------------------------

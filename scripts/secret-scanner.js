@@ -430,6 +430,8 @@ function buildSafeSummary(findings, prefix) {
 module.exports = {
   SECRET_PATTERNS,
   SECRET_FILE_PATTERNS,
+  SAFE_SECRET_STORAGE_DIRS,
+  EDIT_LIKE_TOOLS,
   redactText,
   resolveProvider,
   scanText,
