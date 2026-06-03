@@ -446,6 +446,65 @@ function buildZeroTrustGuide() {
   });
 }
 
+const GOVERN_CLAUDE_FOR_LEGAL_GUIDE_SPEC = Object.freeze({
+  slug: 'govern-claude-for-legal-agents',
+  meta: {
+    query: 'govern claude for legal agents',
+    title: 'Govern Claude for Legal Agents | A Gate Before They Act',
+    heroTitle: 'Govern Claude for Legal’s 90+ Agents at the Tool Call',
+    heroSummary: 'Claude for Legal ships 90+ named agents that review contracts, answer DSARs, and run continuously on document and email streams. Anthropic’s own guidance is that there must be a gate before anything is filed, sent, or relied on. ThumbGate is that gate — it checks each agent action at the tool-call boundary, in your tenant, and logs every decision for the record.',
+  },
+  takeaways: [
+    'Claude for Legal’s agents take real side effects — sending a DSAR response, filing a document, writing to a system of record. ThumbGate gates the action before the side effect runs, not after, on a dashboard.',
+    'Intent-agnostic: whether an agent is wrong, prompt-injected, or off-playbook, ThumbGate blocks the same way and records the rule that fired. The risk is not a “rogue” agent — it is an ordinary one acting at volume.',
+    'Every gated decision is logged with its source rule — a SIEM-exportable audit trail your ethics, risk, and conflicts owners can query.',
+  ],
+  sections: [
+    ['paragraphs', 'Why 90+ legal agents need a gate before the side effect', [
+      'A firm running Claude for Legal now has dozens of agents acting on ongoing document and email streams — vendor-agreement review, termination review, DSAR responses, claim charts. No one can review every action by hand. The risk is not malice; it is an ordinary agent that sends the wrong response, files against the wrong playbook, or surfaces a privileged document.',
+      'Anthropic’s own framing names the control: an explicit gate before anything is filed, sent, or relied on. ThumbGate implements that gate at the tool-call boundary — the moment before the action executes — instead of trusting the agent’s stated intent.',
+    ]],
+    ['bullets', 'What ThumbGate gates for legal agents', [
+      'The send/file/write action itself — e.g. a DSAR or client response before it leaves, a filing before it goes out, a write to a conflicted matter — held or blocked at the boundary.',
+      'Playbook deviations — an action that departs from the firm’s approved workflow is stopped for review rather than executed.',
+      'Privileged-document exposure — flagged before an agent surfaces or forwards it.',
+      'Continuous runs — one rule set covers every agent and every scheduled run, so coverage scales with agent count, not headcount.',
+    ]],
+    ['paragraphs', 'Enforcement in your tenant, with an audit trail', [
+      'ThumbGate runs as a pre-action gate in front of agent fulfillment, including a Dialogflow CX webhook gate deployed in your own GCP tenant, so matter content does not leave your boundary. Risk and planning scoring can run on Gemini via Vertex, in-tenant. This is a white-glove design-partner pilot, not a turnkey product purchase.',
+      'Every gated detection is logged with the rule that fired and the feedback event that generated it. That decision trail is the evidence a firm needs for malpractice defense and bar-compliance review — queryable, exportable, and tied to a named owner.',
+    ]],
+    ['paragraphs', 'ThumbGate complements Claude for Legal — it does not replace it', [
+      'Claude for Legal decides what the work is. ThumbGate decides what is allowed to execute. Use both: keep the 90+ agents doing the legal work, and put a gate between each agent and its next side effect. A thumbs-down on a bad action becomes a prevention rule, so the same mistake is blocked across every agent and matter next time.',
+    ]],
+  ],
+  faq: [
+    [
+      'Does ThumbGate replace Claude for Legal?',
+      'No. Claude for Legal’s agents do the legal work; ThumbGate governs what they are allowed to execute — a gate before anything is filed, sent, or relied on. You run both.',
+    ],
+    [
+      'Where does the gate run?',
+      'In your tenant. ThumbGate gates agent fulfillment locally or via a Dialogflow CX webhook gate in your own GCP project; matter content does not leave your boundary, and Vertex/Gemini scoring runs in-tenant. It is a white-glove design-partner pilot, not a turnkey purchase.',
+    ],
+    [
+      'What proof does a firm get?',
+      'Every gated decision is logged with the rule that fired and the feedback that generated it — a SIEM-exportable audit trail for ethics, risk, and conflicts owners.',
+    ],
+  ],
+  relatedPaths: ['/guides/ai-coding-agent-zero-trust', '/guides/pre-action-checks'],
+});
+
+function buildGovernClaudeForLegalGuide() {
+  return preActionGuide(GOVERN_CLAUDE_FOR_LEGAL_GUIDE_SPEC.slug, {
+    ...GOVERN_CLAUDE_FOR_LEGAL_GUIDE_SPEC.meta,
+    takeaways: GOVERN_CLAUDE_FOR_LEGAL_GUIDE_SPEC.takeaways,
+    sections: GOVERN_CLAUDE_FOR_LEGAL_GUIDE_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: GOVERN_CLAUDE_FOR_LEGAL_GUIDE_SPEC.faq.map(([question, text]) => answer(question, text)),
+    relatedPaths: GOVERN_CLAUDE_FOR_LEGAL_GUIDE_SPEC.relatedPaths,
+  });
+}
+
 const PROXY_POINTER_RAG_GUARDRAILS_SPEC = Object.freeze({
   slug: 'proxy-pointer-rag-guardrails',
   meta: {
@@ -1589,6 +1648,7 @@ const PAGE_BLUEPRINTS = [
   },
   buildSemanticPseoGuide(),
   buildZeroTrustGuide(),
+  buildGovernClaudeForLegalGuide(),
   buildProxyPointerRagGuide(),
   buildRagPrecisionTuningGuide(),
   buildAiEngineeringStackGuide(),
