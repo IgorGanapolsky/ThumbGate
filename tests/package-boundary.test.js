@@ -286,9 +286,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // packaged runtime (action-loop instrumentation).
   // Bumped 271 -> 272 (2026-06-02) to ship scripts/dashboard-chat.js, required by
   // src/api/server.js for the dashboard "chat with your data" /v1/chat endpoint.
+  // Bumped 272 -> 277 (2026-06-03) after reliability rollout packaging proof:
+  // scripts/gates-engine.js and scripts/hybrid-feedback-context.js require
+  // scripts/feedback-sanitizer.js in packaged runtimes; server.js requires the
+  // DFCX adapter for enterprise dashboard routes; and public .well-known assets
+  // now ship for Agentic.ai / LLM / MCP discovery.
   assert.ok(
-    manifest.fileCount <= 272,
-    `npm package should stay <= 272 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 277,
+    `npm package should stay <= 277 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -393,9 +398,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Observed package after the addition is ~3.937 MB.
   // Bumped 3.95 MB -> 3.97 MB (2026-06-01) for Vertex AI setup CLI, guides,
   // and enterprise cost-containment HTML/script additions.
+  // Bumped 4.00 MB -> 4.10 MB (2026-06-03) after measured `npm pack --dry-run`
+  // on reliability rollout: packaged runtime dependencies plus public
+  // discovery assets weigh ~4.08 MB unpacked, leaving a narrow safety margin.
   assert.ok(
-    manifest.unpackedSize <= 4_000_000,
-    `npm package should stay <= 4.00 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_100_000,
+    `npm package should stay <= 4.10 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

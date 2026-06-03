@@ -14,9 +14,9 @@
 // function — it decides whether that function is allowed to run. It does not
 // replace it, mutate Playbooks, or call any Google API itself.
 //
-// This is enterprise add-on code and is intentionally NOT part of the published
-// npm bundle (not listed in package.json "files"). It lives in-repo so the pilot
-// implementation can deploy it as Cloud Run / Cloud Functions middleware.
+// This enterprise adapter is also listed in package.json "files" because
+// src/api/server.js loads it for the local enterprise Dialogflow dashboard routes.
+// The same module can still be deployed as Cloud Run / Cloud Functions middleware.
 // -----------------------------------------------------------------------------
 
 const path = require('path');
