@@ -799,6 +799,9 @@ async function sendChat() {
     var data = await res.json();
     if (data && data.ok) {
       pending.innerHTML = chatRenderAnswer(data.answer) + chatRenderSources(data.sources, data.answer);
+    } else if (data && data.error === 'gemini_error') {
+      pending.innerHTML = '<em style="color:#f87171;">Gemini rejected the key: ' + chatEscape(data.message || 'invalid') +
+        '<br>Fix: paste a valid key in the "Set GEMINI_API_KEY..." box below (get one at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#67e8f9;">AI Studio</a>) and click Save.</em>';
     } else {
       pending.innerHTML = '<em style="color:var(--text-muted);">' + chatEscape((data && data.message) || 'Chat is unavailable.') + '</em>';
     }

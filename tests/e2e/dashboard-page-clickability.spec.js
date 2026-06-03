@@ -191,7 +191,7 @@ test.describe('/dashboard clickability — non-stat-card surfaces', () => {
         return route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ ok: true, message: 'Key saved.' }),
+          body: JSON.stringify({ ok: true, message: 'Key saved and validated.' }),
         });
       }
       return route.fulfill({ status: 400, body: JSON.stringify({ ok: false }) });

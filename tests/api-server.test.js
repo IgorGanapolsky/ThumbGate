@@ -3756,9 +3756,13 @@ test('dashboard chat endpoint degrades cleanly when Gemini is not configured', a
   ].join('\n'));
 
   try {
-    const res = await fetch(apiUrl('/v1/chat'), {
+    // Scope to the test's tmp dir (which has no GEMINI_API_KEY in its .env) so the
+    // project-scoped key reader in the chat handler doesn't accidentally pick up a
+    // real key from the repo cwd .env. This preserves the "no key configured" test.
+    const testProject = tmpFeedbackDir;
+    const res = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(testProject)}`), {
       method: 'POST',
-      headers: authHeader,
+      headers: { ...authHeader, 'x-thumbgate-project-dir': testProject },
       body: JSON.stringify({ question: 'What dashboard mistakes should we avoid?' }),
     });
 

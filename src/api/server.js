@@ -7081,6 +7081,32 @@ ${hidden}
           return;
         }
 
+        // Validate the candidate key using the *exact* same code path as /v1/chat
+        // (project-scoped .env read + RAG + Gemini call). This prevents saving a
+        // key that will later produce the confusing "API key not valid" error in chat.
+        let validation;
+        try {
+          const { answerDataQuestion } = require('../../scripts/dashboard-chat');
+          validation = await answerDataQuestion('Reply with the single word: PONG', {
+            feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
+            apiKey: key,
+          });
+        } catch (e) {
+          validation = { ok: false, error: 'validation_exception', message: String(e && e.message || e) };
+        }
+
+        if (!validation.ok) {
+          const detail = validation.error === 'gemini_error'
+            ? (validation.message || 'Gemini rejected the key')
+            : (validation.message || validation.error || 'unknown error');
+          sendJson(res, 400, {
+            ok: false,
+            error: 'invalid_key',
+            message: 'Key validation failed: ' + detail + '. Get a fresh key from https://aistudio.google.com/app/apikey (or run `npx thumbgate setup-vertex` for Vertex) and try again.'
+          });
+          return;
+        }
+
         try {
           const projectDir = resolveRequestProjectDir(req, parsed);
           const envPath = path.join(projectDir, '.env');
@@ -7097,7 +7123,7 @@ ${hidden}
           fs.writeFileSync(envPath, content, 'utf8');
           // Also set it in the current process so it takes effect immediately without restart
           process.env.GEMINI_API_KEY = key;
-          sendJson(res, 200, { ok: true, message: 'Key saved.' });
+          sendJson(res, 200, { ok: true, message: 'Key saved and validated.' });
         } catch (e) {
           sendJson(res, 500, { ok: false, error: 'fs_error', message: 'Failed to write to .env file: ' + e.message });
         }

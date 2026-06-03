@@ -118,7 +118,7 @@ async function answerDataQuestion(question, opts = {}) {
     return {
       ok: false,
       error: 'no_api_key',
-      message: 'Chat is not configured. Set GEMINI_API_KEY (e.g. `npx thumbgate setup-vertex --write`) to enable "chat with your data".',
+      message: 'Chat is not configured. Set a valid GEMINI_API_KEY (paste in the dashboard chat panel or put GEMINI_API_KEY=... in the project .env; get one at https://aistudio.google.com/app/apikey).',
       sources,
     };
   }
