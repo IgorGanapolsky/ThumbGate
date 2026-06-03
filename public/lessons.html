@@ -791,14 +791,99 @@ function deriveSeverity(lesson) {
   return 'info';
 }
 
+function cleanLiveTitle(titleText, contextText) {
+  if (!titleText) return 'Lesson';
+  var prefix = '';
+  var rest = titleText;
+  var match = titleText.match(/^(MISTAKE|SUCCESS|LEARNING|PREFERENCE):\s*(.*)/i);
+  if (match) {
+    prefix = match[1].toUpperCase() + ': ';
+    rest = match[2];
+  }
+  
+  var trimmed = rest.trim();
+  var isJson = trimmed.indexOf('{') === 0;
+  
+  if (isJson) {
+    try {
+      var parsed = JSON.parse(trimmed);
+      if (parsed.prompt) {
+        var dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
+        return prefix + 'Prompt "' + parsed.prompt + '"' + (dirName ? ' inside ' + dirName : '');
+      }
+      if (parsed.hook_event_name) {
+        var dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
+        return prefix + 'Hook event ' + parsed.hook_event_name + (dirName ? ' inside ' + dirName : '');
+      }
+    } catch (e) {
+      if (contextText) {
+        var ctxTrimmed = contextText.trim();
+        if (ctxTrimmed.indexOf('{') === 0) {
+          try {
+            var parsedCtx = JSON.parse(ctxTrimmed);
+            if (parsedCtx.prompt) {
+              var dirName = parsedCtx.cwd ? parsedCtx.cwd.split('/').pop() : '';
+              return prefix + 'Prompt "' + parsedCtx.prompt + '"' + (dirName ? ' inside ' + dirName : '');
+            }
+            if (parsedCtx.hook_event_name) {
+              var dirName = parsedCtx.cwd ? parsedCtx.cwd.split('/').pop() : '';
+              return prefix + 'Hook event ' + parsedCtx.hook_event_name + (dirName ? ' inside ' + dirName : '');
+            }
+          } catch (err) {
+            // ignore
+          }
+        }
+      }
+    }
+    
+    var promptMatch = rest.match(/"prompt"\s*:\s*"([^"]+)"/) || (contextText && contextText.match(/"prompt"\s*:\s*"([^"]+)"/));
+    if (promptMatch) {
+      var cwdMatch = rest.match(/"cwd"\s*:\s*"([^"]+)"/) || (contextText && contextText.match(/"cwd"\s*:\s*"([^"]+)"/));
+      var dirName = cwdMatch ? cwdMatch[1].split('/').pop() : '';
+      return prefix + 'Prompt "' + promptMatch[1] + '"' + (dirName ? ' inside ' + dirName : '');
+    }
+    
+    var hookMatch = rest.match(/"hook_event_name"\s*:\s*"([^"]+)"/) || (contextText && contextText.match(/"hook_event_name"\s*:\s*"([^"]+)"/));
+    if (hookMatch) {
+      var cwdMatch = rest.match(/"cwd"\s*:\s*"([^"]+)"/) || (contextText && contextText.match(/"cwd"\s*:\s*"([^"]+)"/));
+      var dirName = cwdMatch ? cwdMatch[1].split('/').pop() : '';
+      return prefix + 'Hook event ' + hookMatch[1] + (dirName ? ' inside ' + dirName : '');
+    }
+  }
+  return titleText;
+}
+
+function cleanLiveContext(contextText) {
+  if (!contextText) return '';
+  var trimmed = contextText.trim();
+  if (trimmed.indexOf('{') === 0 && trimmed.indexOf('}') === trimmed.length - 1) {
+    try {
+      var parsed = JSON.parse(trimmed);
+      if (parsed.prompt) {
+        var dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
+        var parts = [];
+        parts.push('Prompt: "' + parsed.prompt + '"');
+        if (parsed.cwd) parts.push('Working dir: ' + parsed.cwd);
+        if (parsed.hook_event_name) parts.push('Hook event: ' + parsed.hook_event_name);
+        return parts.join(' · ');
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+  return contextText;
+}
+
 function mapLiveRules(payload) {
   return (payload.results || []).map(function(result) {
     var linkedGate = (((result.systemResponse || {}).linkedAutoGates) || [])[0] || null;
     var sourceFeedback = ((result.systemResponse || {}).sourceFeedback) || null;
+    var rawTitle = result.title || ((result.lesson || {}).summary) || 'Lesson';
+    var rawContext = ((result.lesson || {}).howToAvoid) || ((result.lesson || {}).summary) || (sourceFeedback && sourceFeedback.context) || '';
     return {
       id: result.id,
-      title: result.title || ((result.lesson || {}).summary) || 'Lesson',
-      context: ((result.lesson || {}).howToAvoid) || ((result.lesson || {}).summary) || (sourceFeedback && sourceFeedback.context) || '',
+      title: cleanLiveTitle(rawTitle, rawContext),
+      context: cleanLiveContext(rawContext),
       occurrences: linkedGate && linkedGate.occurrences ? linkedGate.occurrences : 1,
       severity: deriveSeverity(result),
       tags: Array.isArray(result.tags) ? result.tags : [],
@@ -812,13 +897,14 @@ function mapTimelineItems(payload, lessonMap) {
   return (payload.results || []).map(function(entry) {
     var linkedLesson = lessonMap.get(entry.id) || null;
     var timestamp = entry.timestamp || null;
+    var rawContext = entry.context || entry.title || '';
     return {
       signal: normalizeSignal(entry.signal || entry.feedback),
-      context: entry.context || entry.title || '',
+      context: cleanLiveContext(rawContext),
       date: formatDate(entry.timestamp),
       timestamp: timestamp,
       dayKey: toDayKey(timestamp),
-      learned: linkedLesson ? linkedLesson.title : '',
+      learned: linkedLesson ? cleanLiveTitle(linkedLesson.title, rawContext) : '',
       feedbackId: entry.id || ''
     };
   });

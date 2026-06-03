@@ -2341,10 +2341,57 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
   const signal = normalizeLessonSignal(merged.signal);
   const emoji = signal === 'up' ? '👍' : '👎';
   const signalColor = signal === 'up' ? '#4ade80' : '#f87171';
-  const title = merged.title || merged.context || 'Untitled Lesson';
-  const context = merged.context || '';
-  const whatWentWrong = merged.whatWentWrong || '';
-  const whatWorked = merged.whatWorked || '';
+  const rawTitle = merged.title || merged.context || 'Untitled Lesson';
+  const rawContext = merged.context || '';
+  const rawWhatWentWrong = merged.whatWentWrong || '';
+  const rawWhatWorked = merged.whatWorked || '';
+
+  function cleanTitle(titleText) {
+    if (!titleText) return 'Untitled Lesson';
+    let prefix = '';
+    let rest = titleText;
+    const match = titleText.match(/^(MISTAKE|SUCCESS|LEARNING|PREFERENCE):\s*(.*)/i);
+    if (match) {
+      prefix = match[1].toUpperCase() + ': ';
+      rest = match[2];
+    }
+    
+    const trimmed = rest.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed.prompt) {
+          const dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
+          return prefix + `Prompt "${parsed.prompt}"` + (dirName ? ` inside ${dirName}` : '');
+        }
+        if (parsed.hook_event_name) {
+          const dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
+          return prefix + `Hook event ${parsed.hook_event_name}` + (dirName ? ` inside ${dirName}` : '');
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    return titleText;
+  }
+
+  function formatTextValue(value) {
+    if (!value) return '';
+    const trimmed = String(value).trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        return JSON.stringify(JSON.parse(trimmed), null, 2);
+      } catch (e) {
+        // ignore
+      }
+    }
+    return value;
+  }
+
+  const title = cleanTitle(rawTitle);
+  const context = formatTextValue(rawContext);
+  const whatWentWrong = formatTextValue(rawWhatWentWrong);
+  const whatWorked = formatTextValue(rawWhatWorked);
   const whatToChange = merged.whatToChange || '';
   const tags = Array.isArray(merged.tags) ? merged.tags.join(', ') : (merged.tags || '');
   const timestamp = merged.timestamp ? new Date(merged.timestamp).toLocaleString() : '';
