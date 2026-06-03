@@ -291,9 +291,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // scripts/feedback-sanitizer.js in packaged runtimes; server.js requires the
   // DFCX adapter for enterprise dashboard routes; and public .well-known assets
   // now ship for Agentic.ai / LLM / MCP discovery.
+  // Bumped 277 -> 278 (2026-06-03) to ship bin/dashboard-cli.js for the
+  // `thumbgate-dashboard` shortcut that opens the local dashboard without a
+  // long command.
   assert.ok(
-    manifest.fileCount <= 277,
-    `npm package should stay <= 277 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 278,
+    `npm package should stay <= 278 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
