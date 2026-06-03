@@ -642,6 +642,27 @@ test('setTaskScope persists scope state', () => {
   assert.equal(loadConstraints().local_only.value, true);
 });
 
+test('setTaskScope persists deterministic workflow contract', () => {
+  cleanupStateFiles();
+  setTaskScope({
+    taskId: 'wf_123',
+    summary: 'deterministic workflow proof run',
+    allowedPaths: ['src/**', 'tests/**'],
+    workflowContract: {
+      workflowId: 'pricing-surface-fix',
+      allowedBranches: ['fix/*'],
+      blockedActions: ['npm publish'],
+      requiredEvidence: ['tests', 'link_check'],
+      completionGate: 'tests_passed_and_changes_pushed',
+    },
+  });
+  const state = getScopeState();
+  assert.equal(state.workflowContract.workflowId, 'pricing-surface-fix');
+  assert.deepEqual(state.workflowContract.requiredEvidence, ['tests', 'link_check']);
+  setTaskScope({ clear: true });
+  assert.equal(getScopeState().workflowContract, null);
+});
+
 test('setTaskScope clear removes task scope but preserves approvals', () => {
   cleanupStateFiles();
   setTaskScope({

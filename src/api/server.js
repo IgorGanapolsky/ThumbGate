@@ -7487,6 +7487,7 @@ ${hidden}
           summary: body.summary,
           allowedPaths: body.allowedPaths,
           protectedPaths: body.protectedPaths,
+          workflowContract: body.workflowContract,
           repoPath: body.repoPath,
           localOnly: body.localOnly === true,
           clear: body.clear === true,

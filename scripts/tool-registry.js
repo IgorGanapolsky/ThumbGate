@@ -831,6 +831,17 @@ const TOOLS = [
           items: { type: 'string' },
           description: 'Optional protected-file globs that require explicit approval before editing or publishing',
         },
+        workflowContract: {
+          type: 'object',
+          description: 'Optional deterministic workflow run contract. Supports workflowId, allowedBranches, blockedActions, requiredEvidence, and completionGate.',
+          properties: {
+            workflowId: { type: 'string' },
+            allowedBranches: { type: 'array', items: { type: 'string' } },
+            blockedActions: { type: 'array', items: { type: 'string' } },
+            requiredEvidence: { type: 'array', items: { type: 'string' } },
+            completionGate: { type: 'string' },
+          },
+        },
         repoPath: { type: 'string', description: 'Optional repo root used when evaluating git diff scope' },
         localOnly: { type: 'boolean', description: 'When true, also marks the task as local-only' },
         clear: { type: 'boolean', description: 'Clear the current task scope instead of setting one' },

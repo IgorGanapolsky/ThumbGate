@@ -359,6 +359,9 @@ function loadGovernanceState() {
     branchGovernance: raw && raw.branchGovernance && typeof raw.branchGovernance === 'object'
       ? raw.branchGovernance
       : null,
+    workflowContract: raw && raw.workflowContract && typeof raw.workflowContract === 'object'
+      ? raw.workflowContract
+      : null,
   };
   const now = Date.now();
   const activeApprovals = state.protectedApprovals.filter((entry) => {
@@ -378,6 +381,7 @@ function saveGovernanceState(state) {
     taskScope: state && state.taskScope ? state.taskScope : null,
     protectedApprovals: Array.isArray(state && state.protectedApprovals) ? state.protectedApprovals : [],
     branchGovernance: state && state.branchGovernance ? state.branchGovernance : null,
+    workflowContract: state && state.workflowContract ? state.workflowContract : null,
   };
   saveJSON(module.exports.GOVERNANCE_STATE_PATH, next);
 }
@@ -389,6 +393,7 @@ function setTaskScope(scopeInput = {}) {
       taskScope: null,
       protectedApprovals: currentState.protectedApprovals,
       branchGovernance: currentState.branchGovernance,
+      workflowContract: null,
     };
     saveGovernanceState(cleared);
     refreshLocalOnlyConstraint(cleared);
@@ -418,6 +423,9 @@ function setTaskScope(scopeInput = {}) {
   };
   const state = loadGovernanceState();
   state.taskScope = taskScope;
+  state.workflowContract = scopeInput.workflowContract && typeof scopeInput.workflowContract === 'object'
+    ? scopeInput.workflowContract
+    : null;
   saveGovernanceState(state);
   if (taskScope.localOnly) {
     setConstraint('local_only', true);

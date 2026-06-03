@@ -969,6 +969,7 @@ async function callToolInner(name, args) {
           summary: args.summary,
           allowedPaths: args.allowedPaths,
           protectedPaths: args.protectedPaths,
+          workflowContract: args.workflowContract,
           repoPath: args.repoPath,
           localOnly: args.localOnly === true,
           clear: args.clear === true,
