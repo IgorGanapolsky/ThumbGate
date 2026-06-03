@@ -1587,6 +1587,82 @@ const PAGE_BLUEPRINTS = [
     ],
     relatedPaths: ['/compare/speclock', '/guides/claude-code-feedback'],
   },
+  {
+    query: 'claude code hooks vs thumbgate',
+    path: '/compare/claude-code-hooks',
+    pageType: 'comparison',
+    pillar: 'comparison',
+    title: 'ThumbGate vs Claude Code Hooks | Static Rules vs Self-Learning Enforcement',
+    heroTitle: 'ThumbGate vs Native Claude Code Hooks (and Free Community Repos)',
+    heroSummary: 'Claude Code’s native PreToolUse hooks and free community repos like claude-code-hooks-mastery already block dangerous tool calls today, and they cost nothing — a great place to start. The difference: those rules are static config you write and maintain by hand. ThumbGate runs in the same hook and adds a learning layer, turning a thumbs-down into a prevention rule that blocks the repeat automatically across every session, model, and agent.',
+    takeaways: [
+      'Native Claude Code hooks already block tool calls before they run (exit code 2 or a deny decision). For obvious destructive patterns like rm -rf they are free and effective — start there.',
+      'The gap is maintenance: hooks are static configuration you author per machine and per project. When an agent finds a new way to break something, you have to notice it and hand-write another rule.',
+      'ThumbGate runs in the same PreToolUse hook locally but learns from feedback — a thumbs-down is distilled into an auto-promoted prevention rule, so the same class of mistake is blocked next time with no extra config, across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode.',
+    ],
+    sections: [
+      {
+        heading: 'What native hooks and community repos already do well',
+        paragraphs: [
+          'Claude Code ships a capable hook system. A PreToolUse hook receives the tool call on stdin and can block it before execution — either by exiting with code 2 or by returning a permissionDecision of "deny". Popular free repos such as disler/claude-code-hooks-mastery (3.7k+ stars) package ready-to-copy examples that block patterns like rm -rf and sudo rm, alongside logging and workflow hooks. For many developers that is genuinely enough, and it is free.',
+        ],
+        bullets: [
+          'Block destructive shell commands (rm -rf, force-push, curl | sh) before they execute.',
+          'Allow, deny, or ask decisions per tool, configured in settings.json with matchers.',
+          'A rich event model (PreToolUse, PostToolUse, SessionStart, and more) for custom automation.',
+        ],
+      },
+      {
+        heading: 'Where static hooks hit a wall',
+        paragraphs: [
+          'Hooks are configuration you write and maintain by hand. Each new failure mode is a new rule you have to notice, encode, and copy to every machine and project. There is no memory — the system does not learn from the mistakes it already saw, so the same class of error can recur until you go author another pattern.',
+          'There are sharp edges too. Across most hook events only exit code 2 blocks; a hook that exits 1 (the conventional Unix failure code) is treated as a non-blocking error and the action proceeds anyway. Hand-written scripts make that easy to get wrong silently.',
+        ],
+      },
+      {
+        heading: 'What ThumbGate adds on top of the same hook',
+        paragraphs: [
+          'ThumbGate installs into the same PreToolUse boundary (npx thumbgate init), so you keep local-first enforcement on your own machine. What it adds is the feedback-to-prevention loop that static hooks cannot do.',
+        ],
+        bullets: [
+          'A thumbs-down on a bad action is distilled into a prevention rule and auto-promoted, so the repeat is blocked automatically on the next session with no config edit.',
+          'Learned rules carry across sessions, models, and every supported agent — one rule set, not per-project copies you sync by hand.',
+          'Verification evidence and automation reports back the reliability claim instead of relying on hand-audited scripts.',
+        ],
+      },
+      {
+        heading: 'Choose native Claude Code hooks when',
+        bullets: [
+          'Your needs are a short, stable list of patterns to block and you are happy maintaining the config yourself.',
+          'You want zero dependencies and full control over every line of the hook.',
+          'You work with a single agent on a single machine.',
+        ],
+      },
+      {
+        heading: 'Choose ThumbGate when',
+        bullets: [
+          'The same class of mistake keeps coming back and you do not want to hand-write a new rule each time.',
+          'You run more than one agent (Claude Code, Cursor, Codex, Gemini, and others) and want one learned rule set across all of them.',
+          'You want prevention rules to persist and improve from feedback instead of staying frozen in a config file.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Do I even need ThumbGate if Claude Code already has hooks?',
+        answer: 'If a short, static list of blocked patterns covers you and you do not mind maintaining it, native hooks are enough — use them. ThumbGate earns its place when the same mistakes recur and you want them blocked automatically from feedback, across sessions and multiple agents, without hand-editing config each time.',
+      },
+      {
+        question: 'Is ThumbGate a replacement for claude-code-hooks-mastery?',
+        answer: 'No — it is complementary. That repo is an excellent free way to learn and copy static hooks. ThumbGate runs in the same PreToolUse boundary and adds the learning layer on top: thumbs-down feedback becomes an auto-promoted prevention rule. You can run both.',
+      },
+      {
+        question: 'Does ThumbGate run locally like native hooks?',
+        answer: 'Yes. Enforcement runs in the PreToolUse hook on your machine, so no code leaves the device. A hosted Pro tier adds cross-machine sync, a dashboard, and exports, but the core enforcement is local-first.',
+      },
+    ],
+    relatedPaths: ['/guides/ai-coding-agent-zero-trust', '/compare/speclock', '/guides/pre-action-checks'],
+  },
   buildSemanticPseoGuide(),
   buildZeroTrustGuide(),
   buildProxyPointerRagGuide(),
