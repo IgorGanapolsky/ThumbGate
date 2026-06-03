@@ -84,7 +84,7 @@ test('public landing page exposes above-fold paid Pro CTA with canonical revenue
   assert.match(heroBlock, /aria-label="Choose the right ThumbGate path"/);
   assert.match(heroBlock, /Solo operator: Start Pro/);
   assert.match(heroBlock, /data-cta-id="router_start_pro"/);
-  assert.match(heroBlock, /Team workflow: Start with intake/);
+  assert.match(heroBlock, /Enterprise: Start with intake/);
   assert.match(heroBlock, /Still evaluating: Free CLI/);
   assert.match(landingPage, /function trackRevenueCta/);
   assert.match(landingPage, /plausible\('pricing_cta_click'/);
@@ -123,17 +123,18 @@ test('public landing page keeps optional GA4 and Search Console hooks available 
   assert.match(landingPage, /sendGa4Event\('begin_checkout'/);
 });
 
-test('public landing page includes pricing section with Free, Pro, and Team tiers', () => {
+test('public landing page includes pricing section with Free, Pro, and Enterprise tiers', () => {
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /class="price-card/);
   assert.match(landingPage, /class="price-card pro"/);
-  assert.match(landingPage, /class="price-card team"/);
+  assert.match(landingPage, /class="price-card enterprise"/);
   assert.match(landingPage, /\$0/);
   assert.match(landingPage, /\$19/);
   assert.match(landingPage, /\/mo/);
-  assert.match(landingPage, /\$49/);
-  assert.match(landingPage, /\/seat\/mo/);
+  // Enterprise is contact-sales with custom pricing — no seat price ladder.
+  assert.match(landingPage, /<div class="tier"[^>]*>Enterprise<\/div>/);
+  assert.doesNotMatch(landingPage, /\$49\s*<span[^>]*>\s*\/seat\/mo/);
   // Free tier is intentionally capped so the npm package proves value without
   // cannibalizing Pro.
   assert.match(landingPage, /Block repeated mistakes daily/);
@@ -150,7 +151,23 @@ test('public landing page includes pricing section with Free, Pro, and Team tier
   assert.match(landingPage, /Start Workflow Hardening Sprint/);
 });
 
-test('public landing page keeps Team services intake-led instead of exposing a paid-service price ladder', () => {
+test('public landing page shows an at-a-glance plan comparison matrix with consistent, enforced free-tier limits', () => {
+  const landingPage = readLandingPage();
+
+  // The matrix must exist so buyers see plan differences without parsing cards.
+  assert.match(landingPage, /class="plan-matrix"/);
+  // Headers cover all three tiers.
+  assert.match(landingPage, /Free<br>/);
+  assert.match(landingPage, /Pro<br>/);
+  assert.match(landingPage, /Enterprise<br>/);
+  // Free-tier numbers must match what scripts/rate-limiter.js actually enforces
+  // (5 captures/day, 25 total, 3 active rules) — drift guard against README/card skew.
+  assert.match(landingPage, /5\/day \(25 total\)/);
+  // Enterprise is contact-sales; no seat price ladder anywhere on the page.
+  assert.doesNotMatch(landingPage, /\$49\s*\/\s*seat\s*\/\s*mo/);
+});
+
+test('public landing page keeps services intake-led instead of exposing a paid-service price ladder', () => {
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /Have one AI-agent failure that keeps repeating\?/);
@@ -398,23 +415,23 @@ test('public landing page Pro tier uses outcome-framed bullets that justify upgr
   assert.match(landingPage, /HuggingFace dataset export/i);
 });
 
-test('public landing page includes an explicit Team rollout lane with shared workflow intake', () => {
+test('public landing page includes an explicit Enterprise rollout lane with shared workflow intake', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /<div class="tier">Team<\/div>/);
+  assert.match(landingPage, /<div class="tier"[^>]*>Enterprise<\/div>/);
   assert.match(landingPage, /Shared enforcement memory/i);
-  assert.match(landingPage, /Hosted review views/i);
+  assert.match(landingPage, /Shared lesson database/i);
   assert.match(landingPage, /Org dashboard/i);
-  assert.match(landingPage, /Check template library/i);
+  assert.match(landingPage, /Audit-grade decision trail/i);
   assert.match(landingPage, /workflow-sprint-intake/);
-  assert.match(landingPage, /Start Team Pilot Intake/i);
+  assert.match(landingPage, /Start Enterprise Pilot Intake/i);
   assert.match(landingPage, /id="team-pilot-intake-form"/);
   assert.match(landingPage, /data-team-intake-form/);
   assert.match(landingPage, /name="ctaPlacement" value="team_visible_intake"/);
   assert.match(landingPage, /name="utmMedium" value="visible_team_intake"/);
   assert.match(landingPage, /name="planId" value="team"/);
   assert.match(landingPage, /name="ctaId" value="workflow_sprint_intake"/);
-  assert.match(landingPage, /Team checkout happens after scope\./);
+  assert.match(landingPage, /Enterprise checkout happens after scope\./);
   assert.match(landingPage, /team_workflow_sprint_recovery_intake/);
   assert.match(landingPage, /scope_first/);
   assert.match(landingPage, /workflow_sprint_intake_started/);
@@ -737,13 +754,14 @@ test('public landing page includes pay-now Pro path and email capture gate', () 
   assert.doesNotMatch(landingPage, /props:\s*\{\s*email:/);
 });
 
-test('public landing page Team card is intake-led without a blind team checkout or free trial claim', () => {
+test('public landing page Enterprise card is intake-led without a blind checkout or free trial claim', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /Send team workflow first/);
-  assert.match(landingPage, /pricing_team_intake/);
-  assert.match(landingPage, /Team is \$49\/seat\/mo with a 3-seat minimum/);
-  assert.match(landingPage, /team rollouts start through intake/i);
+  assert.match(landingPage, /Start enterprise intake/i);
+  assert.match(landingPage, /pricing_enterprise_intake/);
+  assert.match(landingPage, /custom pricing/i);
+  assert.match(landingPage, /scoped after intake/i);
+  assert.doesNotMatch(landingPage, /\$49\s*\/\s*seat\s*\/\s*mo/);
   assert.doesNotMatch(landingPage, /Start 3-seat Team — \$147\/mo/);
   assert.doesNotMatch(landingPage, /pricing_team_self_serve/);
   assert.doesNotMatch(landingPage, /team_self_serve_checkout_started/);

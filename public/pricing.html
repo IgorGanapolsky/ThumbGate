@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 __GOOGLE_SITE_VERIFICATION_META__
 <title>Pricing — ThumbGate</title>
-<meta name="description" content="ThumbGate pricing: free CLI forever, $19/mo Pro dashboard, and intake-led Team enforcement at $49/seat after scope. One clear subscription path.">
+<meta name="description" content="ThumbGate pricing: free CLI forever, $19/mo Pro dashboard, and custom Enterprise enforcement scoped after intake. One clear subscription path.">
 <meta property="og:title" content="Pricing — ThumbGate">
-<meta property="og:description" content="Free CLI, Pro self-serve, and Team after workflow scope. No mixed consulting checkout maze.">
+<meta property="og:description" content="Free CLI, Pro self-serve, and Enterprise after workflow scope. No mixed consulting checkout maze.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="__APP_ORIGIN__/pricing">
 <meta property="og:image" content="/og.png">
@@ -51,9 +51,9 @@ __GA_BOOTSTRAP__
   "@type": "FAQPage",
   "mainEntity": [
     { "@type": "Question", "name": "What does Pro add over the free CLI?", "acceptedAnswer": { "@type": "Answer", "text": "Free gives you 5 captures/day and 3 active rules, running entirely on your machine. Pro is the hosted layer: unlimited captures, unlimited rules, lesson sync across machines, a dashboard without self-hosting, managed adapter updates, and DPO export. You're paying for infrastructure we run, not features we hide." } },
-    { "@type": "Question", "name": "Does ThumbGate send my code to the cloud?", "acceptedAnswer": { "@type": "Answer", "text": "No. The CLI is local-first — no data leaves your machine. Pro and Team add hosted sync for dashboards and shared lessons, but your source code stays local." } },
-    { "@type": "Question", "name": "When should I pick Team over Pro?", "acceptedAnswer": { "@type": "Answer", "text": "When one engineer's correction should protect the whole team. Team shares the lesson database across seats so a fix in one repo prevents the same mistake in every repo." } },
-    { "@type": "Question", "name": "Can I cancel anytime?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Pro and Team are month-to-month with a 7-day refund window on the first charge. Cancel from the billing portal and your subscription ends at the period close." } }
+    { "@type": "Question", "name": "Does ThumbGate send my code to the cloud?", "acceptedAnswer": { "@type": "Answer", "text": "No. The CLI is local-first — no data leaves your machine. Pro and Enterprise add hosted sync for dashboards and shared lessons, but your source code stays local." } },
+    { "@type": "Question", "name": "When should I pick Enterprise over Pro?", "acceptedAnswer": { "@type": "Answer", "text": "When one engineer's correction should protect the whole team. Enterprise shares the lesson database across the org so a fix in one repo prevents the same mistake in every repo." } },
+    { "@type": "Question", "name": "Can I cancel anytime?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Pro and Enterprise are month-to-month with a 7-day refund window on the first charge. Cancel from the billing portal and your subscription ends at the period close." } }
   ]
 }
 </script>
@@ -267,36 +267,23 @@ __GA_BOOTSTRAP__
       <p class="btn-sub">or $149/year (save 35%)</p>
     </div>
 
-    <div class="price-card team-card" id="team">
-      <div class="tier">Team</div>
-      <div class="price">$49<span>/seat/mo</span></div>
-      <div class="price-sub">Shared enforcement memory for the whole team. One engineer's save protects every agent.</div>
+    <div class="price-card enterprise-card" id="enterprise">
+      <div class="tier">Enterprise</div>
+      <div class="price">Custom<span> / scoped after intake</span></div>
+      <div class="price-sub">Shared enforcement for the whole team and regulated workflows. One engineer's save protects every agent.</div>
       <ul>
-        <li>Everything in Pro for each seat</li>
+        <li>Everything in Pro, for every developer and agent</li>
         <li><strong>Shared lesson database</strong> — one engineer's fix protects every agent on the team</li>
         <li><strong>Org dashboard</strong> — visibility across all agent surfaces and developers</li>
-        <li>Check template library for deploys, publish, and DB operations</li>
-        <li>Email support during pilot rollout</li>
-        <li>3-seat minimum after scope; rollout starts only after workflow and proof review are explicit</li>
-      </ul>
-      <a class="btn-team" href="/?utm_source=pricing&utm_medium=team_card&utm_campaign=team_intake&cta_id=pricing_team_intake&cta_placement=pricing&plan_id=team#workflow-sprint-intake" onclick="try{posthog.capture('pricing_cta_click',{cta:'team_intake',tier:'team',placement:'pricing_page',price:0})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'team_intake',tier:'team'}})}catch(_){}">Send team workflow first</a>
-      <p class="btn-sub">Rollout starts through intake so the workflow is scoped before checkout.</p>
-    </div>
-
-  </div>
-
-  <div class="enterprise-band" style="max-width:920px;margin:0 auto 8px;padding:24px 28px;border:1px solid rgba(34,211,238,0.24);border-radius:10px;background:#090d12;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;">
-    <div style="flex:1 1 460px;text-align:left;">
-      <div class="tier" style="color:var(--cyan);">Enterprise</div>
-      <div class="price-sub" style="margin:4px 0 10px;">For regulated teams that need agent checks routed through their own cloud — talk to us.</div>
-      <ul style="margin:0;padding-left:18px;font-size:13px;color:var(--text-muted);line-height:1.7;">
-        <li><strong>Vertex AI / VPC gating</strong> — route agent checks through Gemini models in your Google Cloud project (<code>npx thumbgate setup-vertex</code>)</li>
+        <li><strong>Vertex AI / VPC gating</strong> — route agent checks through Gemini in your own Google Cloud project (<code>npx thumbgate setup-vertex</code>)</li>
         <li><strong>Regulatory gate templates</strong> — legal intake, financial compliance, healthcare</li>
-        <li>Custom policy layers scoped to firm / practice area</li>
-        <li>Compliance audit export + dedicated onboarding with SLA</li>
+        <li>Custom policy layers, compliance audit export, approval boundaries, SSO, and dedicated onboarding with SLA</li>
+        <li>Rollout starts only after workflow and proof review are explicit</li>
       </ul>
+      <a class="btn-team" href="/?utm_source=pricing&utm_medium=enterprise_card&utm_campaign=enterprise_intake&cta_id=pricing_enterprise_intake&cta_placement=pricing&plan_id=enterprise#workflow-sprint-intake" onclick="try{posthog.capture('pricing_cta_click',{cta:'enterprise_intake',tier:'enterprise',placement:'pricing_page',price:0})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'enterprise_intake',tier:'enterprise'}})}catch(_){}">Talk to us</a>
+      <p class="btn-sub">Custom pricing, scoped through intake so the workflow is explicit before checkout.</p>
     </div>
-    <a class="btn-team" style="white-space:nowrap;" href="/?utm_source=pricing&utm_medium=enterprise_band&utm_campaign=enterprise_intake&cta_id=pricing_enterprise&cta_placement=pricing&plan_id=enterprise#workflow-sprint-intake" onclick="try{posthog.capture('pricing_cta_click',{cta:'enterprise_intake',tier:'enterprise',placement:'pricing_page',price:0})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'enterprise_intake',tier:'enterprise'}})}catch(_){}">Talk to us</a>
+
   </div>
 
   <div style="text-align:center;margin:32px 0;color:var(--text-muted);font-size:14px;">
@@ -319,15 +306,15 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q">Does ThumbGate send my code to the cloud?</div>
-        <div class="faq-a">No. The CLI is local-first and no source code leaves your machine. Pro and Team add hosted sync for dashboards and shared lessons, but your code stays local.</div>
+        <div class="faq-a">No. The CLI is local-first and no source code leaves your machine. Pro and Enterprise add hosted sync for dashboards and shared lessons, but your code stays local.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q">When should I pick Team over Pro?</div>
-        <div class="faq-a">When one engineer's correction should protect the whole team. Team shares the lesson database across seats so a fix in one repo prevents the same mistake in every repo.</div>
+        <div class="faq-q">When should I pick Enterprise over Pro?</div>
+        <div class="faq-a">When one engineer's correction should protect the whole team. Enterprise shares the lesson database across the org so a fix in one repo prevents the same mistake in every repo.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q">Can I cancel anytime?</div>
-        <div class="faq-a">Yes. Pro and Team are month-to-month with a 7-day refund window on the first charge. Cancel from the billing portal and your subscription ends at the period close.</div>
+        <div class="faq-a">Yes. Pro and Enterprise are month-to-month with a 7-day refund window on the first charge. Cancel from the billing portal and your subscription ends at the period close.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q">What happens if I stop paying?</div>

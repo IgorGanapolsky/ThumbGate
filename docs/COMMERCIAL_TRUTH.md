@@ -9,10 +9,10 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 - The open-source `thumbgate` package is free and MIT licensed.
 - The local CLI is the adoption wedge; it is not the primary monetization story.
-- The primary commercial motion is the **Workflow Hardening Sprint** for one workflow, followed by Team expansion when shared enforcement, approval boundaries, and auditability matter across operators.
+- The primary commercial motion is the **Workflow Hardening Sprint** for one workflow, followed by Enterprise expansion when shared enforcement, approval boundaries, and auditability matter across operators.
 - The current public self-serve commercial offer is **Pro at $19/mo or $149/yr** via Stripe checkout.
 - Legacy one-time Stripe links are retained only for past buyers and are not a current public offer.
-- The current Team pricing anchor is **$49/seat/mo with a 3-seat minimum**, and the public Team path remains an **intake-led pilot for the first workflow** until hosted rollout scope is qualified.
+- Enterprise is the contact-sales tier: **custom pricing, scoped after intake**, and the public Enterprise path remains an **intake-led pilot for the first workflow** until hosted rollout scope is qualified. The former Team seat tier is retired.
 - The open-source runtime now supports history-aware lesson distillation from up to 8 prior recorded entries in the current Claude auto-capture path, linked 60-second feedback sessions, and reflector rule proposals across CLI, hosted API, Cursor, and Claude Desktop surfaces.
 - The runtime now supports Workflow Sentinel blast-radius scoring plus Docker Sandboxes routing guidance for high-risk local actions, and the hosted path supports signed sandbox dispatch for isolated team automations.
 - Package publishing is governed by Changesets, SemVer, version-sync checks, and verification evidence; release claims should stay inspectable instead of being inferred from a diff.
@@ -39,7 +39,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 - Unlimited captures and custom checks with auto-promotion into prevention rules
 - Secondary self-serve lane for solo operators, not the default enterprise pitch
 
-### Team ($49/seat/mo, min 3, hosted rollout intake-first)
+### Enterprise (custom pricing, scoped after intake)
 
 - Workflow hardening sprint as the first paid step
 - Shared hosted lesson database
@@ -56,7 +56,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 - CLI telemetry is anonymous, best-effort product telemetry for command usage and runtime health. It uses a random local install ID, does not include raw feedback context, and can be disabled with `THUMBGATE_NO_TELEMETRY=1` or `DO_NOT_TRACK=1`.
 - The public website uses first-party telemetry endpoints plus configured analytics surfaces for page views, CTA events, checkout starts, intake submissions, and newsletter signups. Treat those as hosted product analytics, not local enforcement data.
 - Hosted checkout, newsletter, intake, team sync, and API-key flows may process account, billing, email, and workflow-intake data through the hosted Railway/API path and configured payment or analytics providers.
-- Team/shared deployments should treat connector writes, customer-data workflows, telemetry exports, and shared lesson databases as approval-gated data-processing surfaces.
+- Enterprise/shared deployments should treat connector writes, customer-data workflows, telemetry exports, and shared lesson databases as approval-gated data-processing surfaces.
 - Model candidate catalogs and routing guides, including GPT-5.5 evaluation, are benchmark and planning surfaces. They do not silently call provider APIs, change runtime defaults, or imply OpenAI account availability without customer credentials and an explicit integration path.
 - ThumbGate should not claim sub-processor coverage, SOC 2 status, HIPAA eligibility, GDPR DPA terms, or enterprise data residency until those legal/compliance artifacts are actually in place.
 

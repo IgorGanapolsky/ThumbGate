@@ -22,7 +22,7 @@ const { isProTier } = require('./rate-limiter');
 const {
   PRO_MONTHLY_PAYMENT_LINK,
   PRO_PRICE_LABEL,
-  TEAM_PRICE_LABEL,
+  ENTERPRISE_PRICE_LABEL,
 } = require('./commercial-offer');
 
 // ---------------------------------------------------------------------------
@@ -259,7 +259,7 @@ function generateOrgDashboard(opts = {}) {
   };
 
   if (!pro) {
-    summary.upgradeMessage = `Pro checkout: ${PRO_PRICE_LABEL} — ${PRO_MONTHLY_PAYMENT_LINK} | Team: ${TEAM_PRICE_LABEL} after workflow qualification.`;
+    summary.upgradeMessage = `Pro checkout: ${PRO_PRICE_LABEL} — ${PRO_MONTHLY_PAYMENT_LINK} | Enterprise: ${ENTERPRISE_PRICE_LABEL} after workflow qualification.`;
   }
 
   return summary;
