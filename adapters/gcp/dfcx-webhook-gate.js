@@ -151,11 +151,13 @@ function evaluateDfcxFulfillment(reqBody, opts = {}) {
 }
 
 // Build a DFCX WebhookResponse that safely halts the turn without side-effects.
+// Supports both camelCase (standard DFCX) and snake_case (legacy/internal) formatting.
 function buildBlockResponse(evaluation, opts = {}) {
   const message = opts.blockedMessage
     || 'This request was held by a safety policy and was not completed. A team member may follow up.';
-  return {
+  const payload = {
     fulfillment_response: { messages: [{ text: { text: [message] } }] },
+    fulfillmentResponse: { messages: [{ text: { text: [message] } }] },
     session_info: {
       parameters: {
         thumbgate_blocked: true,
@@ -163,23 +165,47 @@ function buildBlockResponse(evaluation, opts = {}) {
         thumbgate_severity: evaluation.severity || null,
       },
     },
+    sessionInfo: {
+      parameters: {
+        thumbgate_blocked: true,
+        thumbgate_gate: evaluation.gate || null,
+        thumbgate_severity: evaluation.severity || null,
+      },
+    },
   };
+  return payload;
 }
 
 // Annotate an allowed (passed-through) response so downstream flows can observe
 // that ThumbGate evaluated and permitted the turn. Never throws on odd shapes.
+// Populates both camelCase and snake_case variants to ensure compatibility.
 function annotateAllowed(response, evaluation) {
   const base = response && typeof response === 'object' ? response : {};
-  const sessionInfo = base.session_info && typeof base.session_info === 'object' ? base.session_info : {};
+  
+  const sessionInfo = base.sessionInfo || base.session_info || {};
   const params = sessionInfo.parameters && typeof sessionInfo.parameters === 'object' ? sessionInfo.parameters : {};
-  return Object.assign({}, base, {
-    session_info: Object.assign({}, sessionInfo, {
-      parameters: Object.assign({}, params, {
-        thumbgate_blocked: false,
-        thumbgate_risk: evaluation.risk,
-      }),
-    }),
+  
+  const updatedParams = Object.assign({}, params, {
+    thumbgate_blocked: false,
+    thumbgate_risk: evaluation.risk,
   });
+  
+  const updatedSessionInfo = Object.assign({}, sessionInfo, {
+    parameters: updatedParams,
+  });
+  
+  const updated = Object.assign({}, base, {
+    session_info: updatedSessionInfo,
+    sessionInfo: updatedSessionInfo,
+  });
+  
+  if (base.fulfillment_response) {
+    updated.fulfillmentResponse = base.fulfillment_response;
+  } else if (base.fulfillmentResponse) {
+    updated.fulfillment_response = base.fulfillmentResponse;
+  }
+  
+  return updated;
 }
 
 // Guard a DFCX webhook: run the gate; only invoke the real fulfillment when

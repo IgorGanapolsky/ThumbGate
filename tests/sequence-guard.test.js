@@ -115,20 +115,28 @@ test('sequence-guard - task scope active - commit/complete with modified files o
   resetSequenceState();
   clearTestsPassed();
 
-  // Mock task scope allowing files under 'dummy' but we have real modified files in the repo (like test-normalize.js, tests/...)
-  fs.mkdirSync(STATE_DIR, { recursive: true });
-  fs.writeFileSync(GOVERNANCE_STATE_PATH, JSON.stringify({
-    taskScope: {
-      allowedPaths: ['dummy/**'],
-      repoPath: REPO
-    }
-  }));
+  // Write a temporary untracked file to ensure there is a modified file outside allowedPaths
+  const tempFile = path.join(REPO, 'tests/temp-test-file.txt');
+  fs.writeFileSync(tempFile, 'temp content', 'utf8');
 
-  // Commit attempt should fail since we have modified files (e.g. package.json, src/, tests/) that don't match 'dummy/**'
-  const commit = evaluateSequenceState('Bash', { command: 'git commit -m "wip"', repoPath: REPO });
-  assert.ok(commit);
-  assert.equal(commit.decision, 'deny');
-  assert.equal(commit.gate, 'task-scope-violation');
+  try {
+    // Mock task scope allowing files under 'dummy'
+    fs.mkdirSync(STATE_DIR, { recursive: true });
+    fs.writeFileSync(GOVERNANCE_STATE_PATH, JSON.stringify({
+      taskScope: {
+        allowedPaths: ['dummy/**'],
+        repoPath: REPO
+      }
+    }));
+
+    // Commit attempt should fail since we have a modified file that doesn't match 'dummy/**'
+    const commit = evaluateSequenceState('Bash', { command: 'git commit -m "wip"', repoPath: REPO });
+    assert.ok(commit);
+    assert.equal(commit.decision, 'deny');
+    assert.equal(commit.gate, 'task-scope-violation');
+  } finally {
+    try { fs.unlinkSync(tempFile); } catch {}
+  }
 
   resetSequenceState();
   resetGovernanceState();
