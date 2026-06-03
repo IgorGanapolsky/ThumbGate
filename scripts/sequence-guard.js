@@ -33,17 +33,23 @@ function saveState(state) {
 // Resolve which repo an action belongs to, so "edited but not verified" is tracked
 // per-repo instead of one global flag. Walks up from the action's path to the nearest
 // .git; falls back to the base directory when none is found.
+function expandHome(p) {
+  return String(p || '').replace(/^~(?=\/|$)/, process.env.HOME || '');
+}
+
 function resolveRepoKey(toolName, toolInput = {}) {
   let base = '';
   if (EDIT_LIKE_TOOLS.has(toolName)) {
     const fp = toolInput.file_path || toolInput.path || toolInput.filePath || toolInput.target_path;
-    if (fp) base = path.dirname(path.resolve(String(fp)));
+    if (fp) base = path.dirname(path.resolve(expandHome(String(fp))));
   } else if (toolName === 'Bash') {
     const cmd = String(toolInput.command || '');
-    const m = cmd.match(/\bcd\s+(['"]?)([^&;|'"]+)\1/);
-    if (m) base = path.resolve(m[2].trim());
+    // honor both `cd <path>` and `git -C <path>` — both set the effective repo dir
+    const m = cmd.match(/\bcd\s+(['"]?)([^&;|'"]+)\1/)
+      || cmd.match(/\bgit\b[^&;|]*?\s-C\s+(['"]?)([^&;|'"\s]+)\1/);
+    if (m) base = path.resolve(expandHome(m[2].trim()));
   }
-  if (!base && toolInput.repoPath) base = path.resolve(String(toolInput.repoPath));
+  if (!base && toolInput.repoPath) base = path.resolve(expandHome(String(toolInput.repoPath)));
   if (!base) base = process.cwd();
 
   let dir = base;
