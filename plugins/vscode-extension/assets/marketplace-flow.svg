@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="560" viewBox="0 0 1280 560" role="img" aria-labelledby="title desc">
+  <title id="title">ThumbGate agent safety flow</title>
+  <desc id="desc">ThumbGate captures feedback, stores lessons, checks proposed tool calls, and blocks repeated mistakes before execution.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2 2 L10 6 L2 10 Z" fill="#38bdf8"/>
+    </marker>
+  </defs>
+  <rect width="1280" height="560" fill="#0a0a0b"/>
+  <text x="70" y="72" fill="#f8fafc" font-family="Helvetica" font-size="38" font-weight="800">How ThumbGate stops repeat agent mistakes</text>
+  <text x="70" y="112" fill="#94a3b8" font-family="Helvetica" font-size="22">Transparent local feedback and deterministic checks before tools run.</text>
+  <g font-family="Helvetica">
+    <g transform="translate(70 190)">
+      <rect width="230" height="170" rx="18" fill="#111827" stroke="#334155"/>
+      <text x="24" y="44" fill="#e2e8f0" font-size="22" font-weight="800">1. Feedback</text>
+      <text x="24" y="86" fill="#94a3b8" font-size="18">Capture thumbs up/down</text>
+      <text x="24" y="116" fill="#94a3b8" font-size="18">from Codex, Claude Code,</text>
+      <text x="24" y="146" fill="#94a3b8" font-size="18">Cursor, or VS Code forks.</text>
+    </g>
+    <path d="M320 275 H430" stroke="#38bdf8" stroke-width="4" marker-end="url(#arrow)"/>
+    <g transform="translate(450 190)">
+      <rect width="230" height="170" rx="18" fill="#111827" stroke="#334155"/>
+      <text x="24" y="44" fill="#e2e8f0" font-size="22" font-weight="800">2. Memory</text>
+      <text x="24" y="86" fill="#94a3b8" font-size="18">Store lessons locally.</text>
+      <text x="24" y="116" fill="#94a3b8" font-size="18">Search prior corrections.</text>
+      <text x="24" y="146" fill="#94a3b8" font-size="18">Export audit trails.</text>
+    </g>
+    <path d="M700 275 H810" stroke="#38bdf8" stroke-width="4" marker-end="url(#arrow)"/>
+    <g transform="translate(830 190)">
+      <rect width="230" height="170" rx="18" fill="#111827" stroke="#334155"/>
+      <text x="24" y="44" fill="#e2e8f0" font-size="22" font-weight="800">3. Gate</text>
+      <text x="24" y="86" fill="#94a3b8" font-size="18">Check each proposed</text>
+      <text x="24" y="116" fill="#94a3b8" font-size="18">tool call against rules</text>
+      <text x="24" y="146" fill="#94a3b8" font-size="18">before execution.</text>
+    </g>
+    <g transform="translate(1080 190)">
+      <rect width="130" height="54" rx="12" fill="#7f1d1d" stroke="#f87171"/>
+      <text x="24" y="35" fill="#fee2e2" font-size="18" font-weight="800">BLOCK</text>
+    </g>
+    <g transform="translate(1080 310)">
+      <rect width="130" height="54" rx="12" fill="#064e3b" stroke="#22c55e"/>
+      <text x="31" y="35" fill="#dcfce7" font-size="18" font-weight="800">ALLOW</text>
+    </g>
+  </g>
+</svg>

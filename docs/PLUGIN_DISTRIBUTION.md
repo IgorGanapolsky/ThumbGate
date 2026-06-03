@@ -107,9 +107,10 @@ The standalone Codex bundle ships `.codex-plugin/plugin.json`, `.mcp.json`, `.ag
 - Plugin source directory: `plugins/cursor-marketplace/`
 - Plugin manifest: `plugins/cursor-marketplace/.cursor-plugin/plugin.json`
 - Transport: local stdio MCP server launched via `npx -y thumbgate@latest serve`
-- Submission path: `https://cursor.com/marketplace/publish`
+- Public submission path: `https://cursor.com/dashboard/plugins`
 - Team fallback: import the GitHub repo through `Dashboard -> Settings -> Plugins -> Team Marketplaces`
 - Cursor Directory: treat as a discovery surface, not the install/update surface
+- Current evidence: the 2026-06-03 Cursor dashboard screenshot shows no installed ThumbGate plugin in the account, so public Cursor Marketplace availability is not yet proven.
 
 Cursor update rules:
 
@@ -117,6 +118,7 @@ Cursor update rules:
 2. `npm publish` does not update marketplace metadata, screenshots, README copy, or directory descriptions.
 3. Republish or refresh the plugin bundle when marketplace-facing assets change.
 4. For repo-backed Team Marketplaces, enable Auto Refresh when the Cursor admin UI exposes it.
+5. Say "Cursor plugin bundle" or "Cursor Team Marketplace import path" until a public listing is visibly live.
 
 Promotion and release operations are tracked in [CURSOR_PLUGIN_OPERATIONS.md](CURSOR_PLUGIN_OPERATIONS.md).
 
@@ -130,7 +132,8 @@ Promotion and release operations are tracked in [CURSOR_PLUGIN_OPERATIONS.md](CU
 - Build command: `npm run build:vscode-extension`
 - Marketplace command: `cd plugins/vscode-extension && npx --yes @vscode/vsce publish`
 - Open VSX command: `cd plugins/vscode-extension && npx --yes ovsx publish *.vsix`
-- Promotion rule: do not claim VS Code Marketplace or Open VSX installs until the listing dashboard proves them.
+- Current evidence: Open VSX has `igorganapolsky/thumbgate` at `1.16.22`; it is stale relative to repo metadata and needs republishing from `plugins/vscode-extension/`.
+- Promotion rule: do not claim VS Code Marketplace availability or fresh Open VSX metadata until the listing dashboard proves them.
 
 ## Antigravity-compatible VSIX
 
