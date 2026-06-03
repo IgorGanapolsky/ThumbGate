@@ -100,7 +100,7 @@ test('landing page does not render empty revenue links', async () => {
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/28E00j3Uge1E2dzgWL3sI2J/);
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/6oU00j8aw2iWdWh9uj3sI2K/);
   assert.match(html, /#workflow-sprint-intake/);
-  assert.match(html, /Team checkout happens after scope\./);
+  assert.match(html, /Enterprise checkout happens after scope\./);
 });
 
 test('homepage and pricing surfaces expose canonical and LLM context links', async () => {

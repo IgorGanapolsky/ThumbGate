@@ -779,8 +779,8 @@ test('pricing page is the single source of truth for what ThumbGate sells', asyn
   assert.match(body, /ThumbGate Pro/i);
   assert.match(body, /\$19/);
   assert.match(body, /\$149/);
-  assert.match(body, /ThumbGate Team/i);
-  assert.match(body, /\$49/);
+  assert.match(body, /ThumbGate Enterprise|<div class="tier">Enterprise/i);
+  assert.doesNotMatch(body, /\$49\b[\s\S]{0,40}seat/i);
   assert.doesNotMatch(body, /Workflow Hardening Sprint/i);
   assert.doesNotMatch(body, /\$499|\$1,500|\$97/);
   assert.doesNotMatch(body, /buy\.stripe\.com/);
@@ -789,7 +789,7 @@ test('pricing page is the single source of truth for what ThumbGate sells', asyn
   // CTAs route to the canonical paths.
   assert.match(body, /href="\/go\/install/);
   assert.match(body, /href="\/checkout\/pro/);
-  assert.match(body, /pricing_team_intake/);
+  assert.match(body, /pricing_enterprise_intake/);
   assert.match(body, /#workflow-sprint-intake/);
   // Cross-links so it's a navigation hub, not a dead end.
   assert.match(body, /href="\/support"/);
