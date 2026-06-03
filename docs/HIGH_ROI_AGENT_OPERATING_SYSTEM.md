@@ -76,5 +76,6 @@ ThumbGate is the operational harness around AI agents: permissioned routines, ev
 - Package the system as a webinar: "Stop AI Agents From Repeating Expensive Mistakes."
 - Put advanced templates behind a metered paywall or paid trial.
 - Use newsletter, LinkedIn, and webinar loops to demonstrate feedback -> gate -> replay blocked -> proof export.
+- Use low-cost indexed business directories such as Skip as secondary entity surfaces: publish the business profile, one workflow-hardening product/service showcase, and weekly posts that point back to owned proof guides with UTM tags.
 - Pitch AI publications on the category shift from "agent memory" to "agent memory with enforcement": context systems help agents remember, but ThumbGate blocks the repeated bad action before it runs.
 - Repeat the same entity claims across machine-readable fragments, public context docs, GitHub, npm, social posts, comparison pages, and proof assets so AI search systems can cite ThumbGate consistently.
