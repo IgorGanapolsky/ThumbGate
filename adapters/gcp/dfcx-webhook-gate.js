@@ -43,15 +43,19 @@ function stableStringify(value) {
 
 // Map a DFCX WebhookRequest into a ThumbGate (toolName, toolInput) action.
 // DFCX fulfillment tag -> toolName ("dfcx:<tag>"); session parameters -> toolInput.
+// Supports both camelCase (standard DFCX) and snake_case (legacy/internal) formatting.
 function mapDfcxToAction(reqBody) {
   const body = reqBody || {};
-  const tag = (body.fulfillmentInfo && body.fulfillmentInfo.tag) || 'unknown';
-  const params = (body.sessionInfo && body.sessionInfo.parameters) || {};
+  const fulfillmentInfo = body.fulfillmentInfo || body.fulfillment_info || {};
+  const tag = fulfillmentInfo.tag || 'unknown';
+  const sessionInfo = body.sessionInfo || body.session_info || {};
+  const params = sessionInfo.parameters || {};
+  const sessionId = sessionInfo.session || '';
   return {
     tag,
     toolName: 'dfcx:' + tag,
     toolInput: params,
-    sessionId: (body.sessionInfo && body.sessionInfo.session) || '',
+    sessionId,
   };
 }
 

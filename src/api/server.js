@@ -7027,23 +7027,43 @@ ${hidden}
         }
 
         let projectGeminiKey = '';
+        let projectPerplexityKey = '';
+        let geminiValidatedAt = null;
         try {
           const projectDir = resolveRequestProjectDir(req, parsed);
           const envPath = path.join(projectDir, '.env');
           if (fs.existsSync(envPath)) {
             const content = fs.readFileSync(envPath, 'utf8');
-            const match = content.match(/^GEMINI_API_KEY=(.*)$/m);
-            if (match) {
-              projectGeminiKey = match[1].trim().replace(/^["']|["']$/g, '');
+            const geminiMatch = content.match(/^(?:GEMINI_API_KEY|GOOGLE_API_KEY|THUMBGATE_GEMINI_API_KEY)=(.*)$/m);
+            if (geminiMatch) {
+              projectGeminiKey = geminiMatch[1].trim().replace(/^["']|["']$/g, '');
             }
+            const perplexityMatch = content.match(/^(?:PERPLEXITY_API_KEY|THUMBGATE_PERPLEXITY_API_KEY)=(.*)$/m);
+            if (perplexityMatch) {
+              projectPerplexityKey = perplexityMatch[1].trim().replace(/^["']|["']$/g, '');
+            }
+          }
+          const statusPath = path.join(projectDir, '.gemini-validated.json');
+          if (fs.existsSync(statusPath)) {
+            const st = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
+            geminiValidatedAt = st.validatedAt || null;
           }
         } catch (_) {}
 
         stats.geminiConfigured = Boolean(
           projectGeminiKey ||
           process.env.GEMINI_API_KEY ||
-          process.env.THUMBGATE_GEMINI_API_KEY
+          process.env.THUMBGATE_GEMINI_API_KEY ||
+          process.env.GOOGLE_API_KEY
         );
+        stats.perplexityConfigured = Boolean(
+          projectPerplexityKey ||
+          process.env.PERPLEXITY_API_KEY ||
+          process.env.THUMBGATE_PERPLEXITY_API_KEY
+        );
+        stats.geminiValidatedAt = geminiValidatedAt;
+        stats.geminiKeyStatus = geminiValidatedAt ? 'validated' : (projectGeminiKey ? 'present' : 'none');
+        stats.hybridInferenceAvailable = !!(stats.geminiConfigured || stats.perplexityConfigured);
         sendJson(res, 200, stats);
         return;
       }
@@ -7056,14 +7076,19 @@ ${hidden}
         const { answerDataQuestion } = require('../../scripts/dashboard-chat');
 
         let projectGeminiKey = '';
+        let projectPerplexityKey = '';
         try {
           const projectDir = resolveRequestProjectDir(req, parsed);
           const envPath = path.join(projectDir, '.env');
           if (fs.existsSync(envPath)) {
             const content = fs.readFileSync(envPath, 'utf8');
-            const match = content.match(/^GEMINI_API_KEY=(.*)$/m);
-            if (match) {
-              projectGeminiKey = match[1].trim().replace(/^["']|["']$/g, '');
+            const geminiMatch = content.match(/^(?:GEMINI_API_KEY|GOOGLE_API_KEY|THUMBGATE_GEMINI_API_KEY)=(.*)$/m);
+            if (geminiMatch) {
+              projectGeminiKey = geminiMatch[1].trim().replace(/^["']|["']$/g, '');
+            }
+            const perplexityMatch = content.match(/^(?:PERPLEXITY_API_KEY|THUMBGATE_PERPLEXITY_API_KEY)=(.*)$/m);
+            if (perplexityMatch) {
+              projectPerplexityKey = perplexityMatch[1].trim().replace(/^["']|["']$/g, '');
             }
           }
         } catch (_) {}
@@ -7071,7 +7096,7 @@ ${hidden}
         const result = await answerDataQuestion(body.question || body.q || body.message, {
           feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
           model: typeof body.model === 'string' ? body.model : undefined,
-          apiKey: projectGeminiKey || process.env.GEMINI_API_KEY || process.env.THUMBGATE_GEMINI_API_KEY || '',
+          apiKey: projectPerplexityKey || projectGeminiKey || process.env.PERPLEXITY_API_KEY || process.env.THUMBGATE_PERPLEXITY_API_KEY || process.env.GEMINI_API_KEY || process.env.THUMBGATE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '',
         });
         sendJson(res, result.ok ? 200 : (result.error === 'no_api_key' ? 503 : 400), result);
         return;
@@ -7128,6 +7153,14 @@ ${hidden}
           fs.writeFileSync(envPath, content, 'utf8');
           // Also set it in the current process so it takes effect immediately without restart
           process.env.GEMINI_API_KEY = key;
+          // Persist validation success for reliable "configured" status in stats/hints
+          try {
+            const statusPath = path.join(projectDir, '.gemini-validated.json');
+            fs.writeFileSync(statusPath, JSON.stringify({
+              validatedAt: new Date().toISOString(),
+              validatedBy: 'dashboard-save'
+            }, null, 2));
+          } catch (_) { /* non-fatal */ }
           sendJson(res, 200, { ok: true, message: 'Key saved and validated.' });
         } catch (e) {
           sendJson(res, 500, { ok: false, error: 'fs_error', message: 'Failed to write to .env file: ' + e.message });

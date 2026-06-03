@@ -50,6 +50,18 @@ test('mapDfcxToAction: tolerates a missing/empty body', () => {
   assert.deepEqual(a.toolInput, {});
 });
 
+test('mapDfcxToAction: extracts tag + params when request uses snake_case keys', () => {
+  const req = {
+    fulfillment_info: { tag: 'process-refund' },
+    session_info: { session: 'projects/p/locations/l/agents/a/sessions/s1', parameters: { account_id: '42' } }
+  };
+  const a = mapDfcxToAction(req);
+  assert.equal(a.tag, 'process-refund');
+  assert.equal(a.toolName, 'dfcx:process-refund');
+  assert.deepEqual(a.toolInput, { account_id: '42' });
+  assert.equal(a.sessionId, 'projects/p/locations/l/agents/a/sessions/s1');
+});
+
 test('stableStringify: order-independent for repeat keying', () => {
   assert.equal(stableStringify({ b: 1, a: 2 }), stableStringify({ a: 2, b: 1 }));
   assert.notEqual(stableStringify({ a: 1 }), stableStringify({ a: 2 }));

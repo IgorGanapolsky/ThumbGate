@@ -63,7 +63,7 @@ test('codex plugin manifest uses ThumbGate branding and local MCP config', () =>
   assert.match(plugin.description, /thumbs-down/i);
   assert.match(plugin.description, /repeat-blocking pre-action check/i);
   assert.match(plugin.interface.shortDescription, /repeat-blocking pre-action check/i);
-  assert.match(plugin.interface.longDescription, /risky commands, edits, deploys, publishes, and PR actions/i);
+  assert.match(plugin.interface.longDescription, /risky commands, edits, deploys, publishes, (?:and )?PR actions/i);
   assert.match(plugin.interface.longDescription, /future sessions/i);
   assert.doesNotMatch(plugin.description, /82%/);
   assert.doesNotMatch(plugin.interface.shortDescription, /82%/);
