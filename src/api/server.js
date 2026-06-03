@@ -7020,7 +7020,22 @@ ${hidden}
         } catch (_) {
           stats.tier = 'Pro';
         }
+
+        let projectGeminiKey = '';
+        try {
+          const projectDir = resolveRequestProjectDir(req, parsed);
+          const envPath = path.join(projectDir, '.env');
+          if (fs.existsSync(envPath)) {
+            const content = fs.readFileSync(envPath, 'utf8');
+            const match = content.match(/^GEMINI_API_KEY=(.*)$/m);
+            if (match) {
+              projectGeminiKey = match[1].trim().replace(/^["']|["']$/g, '');
+            }
+          }
+        } catch (_) {}
+
         stats.geminiConfigured = Boolean(
+          projectGeminiKey ||
           process.env.GEMINI_API_KEY ||
           process.env.THUMBGATE_GEMINI_API_KEY
         );
@@ -7034,9 +7049,24 @@ ${hidden}
       if (req.method === 'POST' && pathname === '/v1/chat') {
         const body = await parseJsonBody(req);
         const { answerDataQuestion } = require('../../scripts/dashboard-chat');
+
+        let projectGeminiKey = '';
+        try {
+          const projectDir = resolveRequestProjectDir(req, parsed);
+          const envPath = path.join(projectDir, '.env');
+          if (fs.existsSync(envPath)) {
+            const content = fs.readFileSync(envPath, 'utf8');
+            const match = content.match(/^GEMINI_API_KEY=(.*)$/m);
+            if (match) {
+              projectGeminiKey = match[1].trim().replace(/^["']|["']$/g, '');
+            }
+          }
+        } catch (_) {}
+
         const result = await answerDataQuestion(body.question || body.q || body.message, {
           feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
           model: typeof body.model === 'string' ? body.model : undefined,
+          apiKey: projectGeminiKey || process.env.GEMINI_API_KEY || process.env.THUMBGATE_GEMINI_API_KEY || '',
         });
         sendJson(res, result.ok ? 200 : (result.error === 'no_api_key' ? 503 : 400), result);
         return;
@@ -7052,7 +7082,7 @@ ${hidden}
         }
 
         try {
-          const projectDir = process.env.THUMBGATE_PROJECT_DIR || process.cwd();
+          const projectDir = resolveRequestProjectDir(req, parsed);
           const envPath = path.join(projectDir, '.env');
           let content = '';
           if (fs.existsSync(envPath)) {
@@ -7463,20 +7493,6 @@ ${hidden}
 
       if (req.method === 'GET' && pathname === '/v1/gates/branch-governance') {
         sendJson(res, 200, { branchGovernance: getBranchGovernanceState() });
-        return;
-      }
-
-      // Chat with your data — RAG over this install's captured lessons, answered
-      // by Gemini grounded only in the retrieved context. Powers the dashboard
-      // chat panel ("ask your governed data").
-      if (req.method === 'POST' && pathname === '/v1/chat') {
-        const body = await parseJsonBody(req);
-        const { answerDataQuestion } = require('../../scripts/dashboard-chat');
-        const result = await answerDataQuestion(body.question || body.q || body.message, {
-          feedbackDir: requestFeedbackDir,
-          model: typeof body.model === 'string' ? body.model : undefined,
-        });
-        sendJson(res, result.ok ? 200 : (result.error === 'no_api_key' ? 503 : 400), result);
         return;
       }
 
