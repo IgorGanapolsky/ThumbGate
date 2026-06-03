@@ -19,14 +19,14 @@
 //
 // Decision policy:
 //   - If the tool is a known cloud-egress surface AND the payload references
-//     a repo-local file path, return decision=block with a permission prompt.
-//   - If the operator has pre-approved via env (THUMBGATE_CLOUD_EGRESS_OK=1)
-//     or via an explicit prevention rule, allow.
+//     a repo-local file path, return decision=ask with a permission prompt.
+//   - If the operator has pre-approved via env (THUMBGATE_CLOUD_EGRESS_OK=1),
+//     allow.
 //   - Logs every decision to .thumbgate/cloud-egress.jsonl for audit.
 // -----------------------------------------------------------------------------
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const REPO_ROOT = process.env.THUMBGATE_PROJECT_DIR || process.cwd();
 const LOG_DIR = path.join(REPO_ROOT, '.thumbgate');
@@ -44,87 +44,135 @@ function readToolUse() {
   let raw = '';
   try {
     raw = fs.readFileSync(0, 'utf8');
-  } catch (_) {
-    return null;
+  } catch (err) {
+    // No stdin or non-readable — gate runs in pass-through mode.
+    return { _readError: err.message };
   }
   if (!raw) return null;
-  try { return JSON.parse(raw); } catch (_) { return null; }
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    return { _parseError: err.message };
+  }
 }
 
 function isEgress(toolName, toolInput) {
   if (!toolName) return false;
-  if (EGRESS_MATCHERS.some((re) => re.test(toolName))) {
-    if (toolName === 'Bash') {
-      const cmd = String(toolInput && toolInput.command || '');
-      return /\b(curl|wget|http[s]?ie|httpx)\b/i.test(cmd) &&
-             /https?:\/\//i.test(cmd);
-    }
-    return true;
+  if (!EGRESS_MATCHERS.some((re) => re.test(toolName))) return false;
+  if (toolName === 'Bash') {
+    const cmd = String(toolInput?.command || '');
+    return /\b(curl|wget|httpie|httpx)\b/i.test(cmd) &&
+           /https?:\/\//i.test(cmd);
   }
-  return false;
+  return true;
 }
 
 function referencesLocalFile(toolInput) {
   const blob = JSON.stringify(toolInput || {});
   // Heuristic: any path that looks repo-local
-  return /(["'])(\.\/|\/Users\/|\/home\/|src\/|\.env|secrets?|credentials?)/i.test(blob);
+  return /["'](\.\/|\/Users\/|\/home\/|src\/|\.env|secrets?|credentials?)/i.test(blob);
 }
 
 function logDecision(entry) {
   try {
     if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
     fs.appendFileSync(LOG_PATH, JSON.stringify(entry) + '\n');
-  } catch (_) { /* never block on logging */ }
+  } catch (err) {
+    // Logging is best-effort. Surface to stderr but never block the agent.
+    process.stderr.write(`[cloud-egress-confirm] log write failed: ${err.message}\n`);
+  }
 }
 
-function approve(reason) {
-  console.log(JSON.stringify({
-    hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', permissionDecisionReason: reason },
-  }));
-  process.exit(0);
+function approveOutput(reason) {
+  return {
+    hookSpecificOutput: {
+      hookEventName: 'PreToolUse',
+      permissionDecision: 'allow',
+      permissionDecisionReason: reason,
+    },
+  };
 }
 
-function block(reason) {
-  console.log(JSON.stringify({
+function askOutput(reason) {
+  return {
     hookSpecificOutput: {
       hookEventName: 'PreToolUse',
       permissionDecision: 'ask',
       permissionDecisionReason: reason,
     },
-  }));
-  process.exit(0);
+  };
+}
+
+// Pure decision function — exported for tests. No I/O.
+function decide({ env = {}, payload }) {
+  if (env.THUMBGATE_CLOUD_EGRESS_OK === '1') {
+    return {
+      decision: 'allow',
+      reason: 'Pre-approved via THUMBGATE_CLOUD_EGRESS_OK=1',
+      output: approveOutput('Pre-approved via THUMBGATE_CLOUD_EGRESS_OK=1'),
+    };
+  }
+  if (!payload || payload._readError || payload._parseError) {
+    return {
+      decision: 'allow',
+      reason: 'No hook payload available; pass-through.',
+      output: approveOutput('No hook payload available; pass-through.'),
+    };
+  }
+  const toolName = payload.tool_name || payload.toolName || '';
+  const toolInput = payload.tool_input || payload.toolInput || {};
+  if (!isEgress(toolName, toolInput)) {
+    return {
+      decision: 'allow',
+      reason: 'Not a cloud-egress tool call.',
+      output: approveOutput('Not a cloud-egress tool call.'),
+    };
+  }
+  if (!referencesLocalFile(toolInput)) {
+    return {
+      decision: 'allow',
+      reason: 'Cloud egress without local file reference — allowed.',
+      output: approveOutput('Cloud egress without local file reference — allowed.'),
+      tool: toolName,
+    };
+  }
+  const reason = `ThumbGate: about to send local repo content via ${toolName}. Approve cloud egress?`;
+  return {
+    decision: 'ask',
+    reason,
+    output: askOutput(reason),
+    tool: toolName,
+  };
 }
 
 function main() {
-  if (process.env.THUMBGATE_CLOUD_EGRESS_OK === '1') {
-    logDecision({ ts: new Date().toISOString(), decision: 'allow', reason: 'env-override' });
-    return approve('Pre-approved via THUMBGATE_CLOUD_EGRESS_OK=1');
-  }
-
   const payload = readToolUse();
-  if (!payload) return approve('No hook payload available; pass-through.');
-
-  const toolName = payload.tool_name || payload.toolName || '';
-  const toolInput = payload.tool_input || payload.toolInput || {};
-
-  if (!isEgress(toolName, toolInput)) {
-    return approve('Not a cloud-egress tool call.');
+  const result = decide({ env: process.env, payload });
+  if (result.tool || result.decision !== 'allow') {
+    logDecision({
+      ts: new Date().toISOString(),
+      tool: result.tool || null,
+      decision: result.decision,
+      reason: result.reason,
+    });
   }
-
-  if (!referencesLocalFile(toolInput)) {
-    logDecision({ ts: new Date().toISOString(), tool: toolName, decision: 'allow', reason: 'no-local-payload' });
-    return approve('Cloud egress without local file reference — allowed.');
-  }
-
-  const reason = `ThumbGate: about to send local repo content via ${toolName}. Approve cloud egress?`;
-  logDecision({ ts: new Date().toISOString(), tool: toolName, decision: 'ask', reason });
-  return block(reason);
+  process.stdout.write(JSON.stringify(result.output) + '\n');
+  process.exit(0);
 }
 
-try {
-  main();
-} catch (err) {
-  // Never block the agent on a gate bug.
-  console.error('[cloud-egress-confirm] internal error:', err && err.message);
-  approve('Gate internal error; failing open.');
+module.exports = {
+  decide,
+  isEgress,
+  referencesLocalFile,
+  EGRESS_MATCHERS,
+};
+
+if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
+  try {
+    main();
+  } catch (err) {
+    process.stderr.write(`[cloud-egress-confirm] internal error: ${err.message}\n`);
+    process.stdout.write(JSON.stringify(approveOutput('Gate internal error; failing open.')) + '\n');
+    process.exit(0);
+  }
 }
