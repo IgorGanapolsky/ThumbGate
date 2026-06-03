@@ -11,10 +11,15 @@ const COMPLETION_BASH_PATTERN = /\b(?:git\s+commit|gh\s+pr\s+merge|npm\s+publish
 
 function loadState() {
   try {
-    if (!fs.existsSync(SEQUENCE_STATE_PATH)) return { dirty: false, lastEditAt: 0 };
-    return JSON.parse(fs.readFileSync(SEQUENCE_STATE_PATH, 'utf8'));
+    if (!fs.existsSync(SEQUENCE_STATE_PATH)) return { repos: {} };
+    const raw = JSON.parse(fs.readFileSync(SEQUENCE_STATE_PATH, 'utf8'));
+    if (raw && typeof raw === 'object' && raw.repos && typeof raw.repos === 'object') return raw;
+    // Legacy flat format ({dirty,lastEditAt}) was a single GLOBAL bucket that caused
+    // cross-repo contamination (an edit in repo A blocked commits in repo B). Drop it
+    // and start per-repo; the worst case is one extra commit allowed, never a wrong block.
+    return { repos: {} };
   } catch {
-    return { dirty: false, lastEditAt: 0 };
+    return { repos: {} };
   }
 }
 
@@ -25,13 +30,50 @@ function saveState(state) {
   } catch (e) {}
 }
 
+// Resolve which repo an action belongs to, so "edited but not verified" is tracked
+// per-repo instead of one global flag. Walks up from the action's path to the nearest
+// .git; falls back to the base directory when none is found.
+function expandHome(p) {
+  return String(p || '').replace(/^~(?=\/|$)/, process.env.HOME || '');
+}
+
+function resolveRepoKey(toolName, toolInput = {}) {
+  let base = '';
+  if (EDIT_LIKE_TOOLS.has(toolName)) {
+    const fp = toolInput.file_path || toolInput.path || toolInput.filePath || toolInput.target_path;
+    if (fp) base = path.dirname(path.resolve(expandHome(String(fp))));
+  } else if (toolName === 'Bash') {
+    const cmd = String(toolInput.command || '');
+    // honor both `cd <path>` and `git -C <path>` — both set the effective repo dir
+    const m = cmd.match(/\bcd\s+(['"]?)([^&;|'"]+)\1/)
+      || cmd.match(/\bgit\b[^&;|]*?\s-C\s+(['"]?)([^&;|'"\s]+)\1/);
+    if (m) base = path.resolve(expandHome(m[2].trim()));
+  }
+  if (!base && toolInput.repoPath) base = path.resolve(expandHome(String(toolInput.repoPath)));
+  if (!base) base = process.cwd();
+
+  let dir = base;
+  for (let i = 0; i < 40; i++) {
+    try {
+      if (fs.existsSync(path.join(dir, '.git'))) return dir;
+    } catch { /* ignore */ }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return base;
+}
+
 function evaluateSequenceState(toolName, toolInput) {
   const state = loadState();
   const now = Date.now();
+  const repoKey = resolveRepoKey(toolName, toolInput);
+  const entry = state.repos[repoKey] || { dirty: false, lastEditAt: 0 };
 
   if (EDIT_LIKE_TOOLS.has(toolName)) {
-    state.dirty = true;
-    state.lastEditAt = now;
+    entry.dirty = true;
+    entry.lastEditAt = now;
+    state.repos[repoKey] = entry;
     saveState(state);
   }
 
@@ -43,15 +85,18 @@ function evaluateSequenceState(toolName, toolInput) {
     }
   } catch {}
 
-  if (testsPassedAt > state.lastEditAt) {
-    state.dirty = false;
+  // tests_passed is a global signal (no repo attribution); treat it as clearing the
+  // dirty flag for any repo whose last edit predates the passing test run.
+  if (testsPassedAt > entry.lastEditAt && entry.dirty) {
+    entry.dirty = false;
+    state.repos[repoKey] = entry;
     saveState(state);
   }
 
   const isCompletion = (toolName === 'Bash' && COMPLETION_BASH_PATTERN.test(toolInput.command || '')) ||
                        (toolName === 'complete_handoff');
 
-  if (isCompletion && state.dirty) {
+  if (isCompletion && entry.dirty) {
     return {
       decision: 'deny',
       gate: 'workflow-sequence-violation',
@@ -62,4 +107,4 @@ function evaluateSequenceState(toolName, toolInput) {
   return null;
 }
 
-module.exports = { evaluateSequenceState, loadState, saveState };
+module.exports = { evaluateSequenceState, loadState, saveState, resolveRepoKey };
