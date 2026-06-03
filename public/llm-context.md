@@ -154,7 +154,7 @@ ThumbGate auto-detects your AI coding agent (Claude Code, Cursor, Codex, Gemini 
 
 ```bash
 npx thumbgate init --agent claude-code
-npx thumbgate dashboard
+npx thumbgate dashboard --open
 ```
 
 ## Comparison vs Alternatives
