@@ -29,13 +29,22 @@
 // feedback → memory → prevention-rule pipeline picks up.
 // -----------------------------------------------------------------------------
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const REPO_ROOT = process.env.THUMBGATE_PROJECT_DIR || process.cwd();
 const LOG_DIR = path.join(REPO_ROOT, '.thumbgate');
 const AUTO_FEEDBACK_LOG = path.join(LOG_DIR, 'auto-feedback.jsonl');
 const RUBRIC_DECISIONS_LOG = path.join(LOG_DIR, 'rubric-decisions.jsonl');
+
+// Precompiled regex parts for the no-destructive-bash rubric clause. Pulling
+// them out of the inline literal both lowers cognitive complexity (Sonar S5852)
+// and makes intent explicit without escaped slashes (Sonar S6535).
+const DESTRUCTIVE_SYSTEM_RM = /\brm\s+(-[a-z]*r[a-z]*f|--recursive\s+--force)\s+(?!\/tmp|\/var\/folders)\//;
+const FORCE_PUSH_PROTECTED = /\bgit\s+push\s+(?:--force|-f)(?!-with-lease)\b[^\n]*\b(main|master|production)\b/;
+const CURL_PIPE_SHELL = /\b(curl|wget)\b[^|]*\|\s*(sh|bash|zsh)\b/;
+const SECRET_PATH = /(?:^|[/.])(\.env(?:\.[a-z]+)?|secrets?|credentials?|id_rsa)(?:$|[/.])|\.pem$/i;
+const LIVE_SECRET_BODY = /(sk_live_[A-Za-z0-9]{8,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})/;
 
 // ---------------------------------------------------------------------------
 // Default rubric. Operators can extend by writing .thumbgate/rubric.js that
@@ -49,8 +58,8 @@ const DEFAULT_RUBRIC = [
       if (tool_name !== 'Write' && tool_name !== 'Edit') return { pass: true };
       const target = String(tool_input.file_path || '');
       const content = String(tool_input.content || tool_input.new_string || '');
-      const secretPath = /(?:^|[\/\\.])(\.env(?:\.[a-z]+)?|secrets?|credentials?|id_rsa)(?:$|[\/\\.])|\.pem$/i.test(target);
-      const secretBody = /(sk_live_[A-Za-z0-9]{8,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})/.test(content);
+      const secretPath = SECRET_PATH.test(target);
+      const secretBody = LIVE_SECRET_BODY.test(content);
       if (secretPath && content.length > 0) {
         return { pass: false, reason: `Write to apparent secret path: ${target}` };
       }
@@ -66,10 +75,10 @@ const DEFAULT_RUBRIC = [
     check: ({ tool_name, tool_input }) => {
       if (tool_name !== 'Bash') return { pass: true };
       const cmd = String(tool_input.command || '');
-      if (/\brm\s+(-[a-z]*r[a-z]*f|--recursive\s+--force)\s+\/(?!tmp|var\/folders)/.test(cmd)) {
+      if (DESTRUCTIVE_SYSTEM_RM.test(cmd)) {
         return { pass: false, reason: `Recursive rm against system path: ${cmd.slice(0, 120)}` };
       }
-      if (/\bgit\s+push\s+(--force|-f)(?!\-with\-lease)\b.*\b(main|master|production)\b/.test(cmd)) {
+      if (FORCE_PUSH_PROTECTED.test(cmd)) {
         return { pass: false, reason: `Force push to protected branch without --force-with-lease` };
       }
       return { pass: true };
@@ -81,7 +90,7 @@ const DEFAULT_RUBRIC = [
     check: ({ tool_name, tool_input }) => {
       if (tool_name !== 'Bash') return { pass: true };
       const cmd = String(tool_input.command || '');
-      if (/\b(curl|wget)\b[^|]*\|\s*(sh|bash|zsh)\b/.test(cmd)) {
+      if (CURL_PIPE_SHELL.test(cmd)) {
         return { pass: false, reason: `Piping remote content to a shell: ${cmd.slice(0, 120)}` };
       }
       return { pass: true };
@@ -121,14 +130,33 @@ function appendLog(file, entry) {
   try {
     if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
     fs.appendFileSync(file, JSON.stringify(entry) + '\n');
-  } catch (_) { /* never block */ }
+  } catch (err) {
+    // Logging is best-effort. Surface to stderr; never block the agent loop.
+    process.stderr.write(`[critic-rubric-posttool] log write failed: ${err.message}\n`);
+  }
 }
 
 function readPayload() {
   let raw = '';
-  try { raw = fs.readFileSync(0, 'utf8'); } catch (_) { return null; }
+  try {
+    raw = fs.readFileSync(0, 'utf8');
+  } catch (err) {
+    return { _readError: err.message };
+  }
   if (!raw) return null;
-  try { return JSON.parse(raw); } catch (_) { return null; }
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    return { _parseError: err.message };
+  }
+}
+
+// Lift the nested ternary used to compute aggregate severity into an explicit
+// function (Sonar S3358). Pure — exported for tests.
+function aggregateSeverity(failures) {
+  if (failures.some((f) => f.severity === 'critical')) return 'critical';
+  if (failures.some((f) => f.severity === 'high')) return 'high';
+  return 'medium';
 }
 
 function evaluateRubric(payload) {
@@ -142,7 +170,9 @@ function evaluateRubric(payload) {
   for (const clause of rubric) {
     if (!clause || typeof clause.check !== 'function') continue;
     let r;
-    try { r = clause.check(ctx); } catch (err) {
+    try {
+      r = clause.check(ctx);
+    } catch (err) {
       appendLog(RUBRIC_DECISIONS_LOG, {
         ts: new Date().toISOString(),
         level: 'warn',
@@ -152,14 +182,18 @@ function evaluateRubric(payload) {
       continue;
     }
     if (!r || r.pass === false) {
-      failures.push({ id: clause.id, severity: clause.severity || 'medium', reason: r && r.reason });
+      failures.push({ id: clause.id, severity: clause.severity || 'medium', reason: r?.reason });
     }
   }
   return { ctx, failures };
 }
 
 function captureAutoFeedback({ ctx, failures }) {
-  if (failures.length === 0) return;
+  if (failures.length === 0) return null;
+  const rawResult = ctx.tool_result;
+  const resultExcerpt = typeof rawResult === 'string'
+    ? rawResult.slice(0, 800)
+    : JSON.stringify(rawResult || '').slice(0, 800);
   const entry = {
     ts: new Date().toISOString(),
     source: 'critic-rubric-posttool',
@@ -168,13 +202,9 @@ function captureAutoFeedback({ ctx, failures }) {
     failures,
     context: {
       tool_input: ctx.tool_input,
-      tool_result: typeof ctx.tool_result === 'string'
-        ? ctx.tool_result.slice(0, 800)
-        : JSON.stringify(ctx.tool_result || '').slice(0, 800),
+      tool_result: resultExcerpt,
     },
-    severity: failures.some((f) => f.severity === 'critical') ? 'critical'
-      : failures.some((f) => f.severity === 'high') ? 'high'
-      : 'medium',
+    severity: aggregateSeverity(failures),
   };
   appendLog(AUTO_FEEDBACK_LOG, entry);
   return entry;
@@ -182,7 +212,9 @@ function captureAutoFeedback({ ctx, failures }) {
 
 function main() {
   const payload = readPayload();
-  if (!payload) { process.exit(0); }
+  if (!payload || payload._readError || payload._parseError) {
+    process.exit(0);
+  }
 
   const { ctx, failures } = evaluateRubric(payload);
   appendLog(RUBRIC_DECISIONS_LOG, {
@@ -196,29 +228,32 @@ function main() {
   }
 
   const entry = captureAutoFeedback({ ctx, failures });
-
-  // PostToolUse hooks can return structured output to surface a warning back
-  // to the agent (Anthropic's hook protocol). This is advisory — the action
-  // already happened — but it adds a visible breadcrumb in the agent loop.
   const summary = failures.map((f) => `[${f.severity}] ${f.id}: ${f.reason || 'failed'}`).join('; ');
-  console.log(JSON.stringify({
+  process.stdout.write(JSON.stringify({
     hookSpecificOutput: {
       hookEventName: 'PostToolUse',
       additionalContext: `ThumbGate critic-rubric flagged this tool call: ${summary}. Auto-thumbs-down captured (severity=${entry.severity}). See .thumbgate/auto-feedback.jsonl.`,
     },
-  }));
+  }) + '\n');
   process.exit(0);
 }
 
 // Exported for unit tests. main() runs only when this file is the entry point —
 // not when required from a test.
-module.exports = { DEFAULT_RUBRIC, evaluateRubric };
+module.exports = {
+  DEFAULT_RUBRIC,
+  evaluateRubric,
+  aggregateSeverity,
+  readPayload,
+  captureAutoFeedback,
+  appendLog,
+};
 
-if (require('path').resolve(process.argv[1] || '') === require('path').resolve(__filename)) {
+if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
   try {
     main();
   } catch (err) {
-    console.error('[critic-rubric-posttool] internal error:', err && err.message);
+    process.stderr.write(`[critic-rubric-posttool] internal error: ${err.message}\n`);
     process.exit(0); // never block the agent on a gate bug
   }
 }
