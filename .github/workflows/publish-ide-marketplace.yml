@@ -1,0 +1,86 @@
+name: Publish IDE Marketplace Extension
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'plugins/vscode-extension/**'
+      - '.github/workflows/publish-ide-marketplace.yml'
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-ide-marketplace-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    env:
+      OVSX_PAT: ${{ secrets.OVSX_PAT }}
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - run: node scripts/sync-version.js --check
+
+      - run: node --test tests/ide-marketplace-extensions.test.js
+
+      - run: npm run build:vscode-extension
+
+      - name: Resolve VSIX path
+        id: vsix
+        run: |
+          version="$(node -p "require('./plugins/vscode-extension/package.json').version")"
+          path="plugins/vscode-extension/thumbgate-${version}.vsix"
+          test -f "$path"
+          {
+            echo "version=$version"
+            echo "path=$path"
+            echo "name=thumbgate-${version}.vsix"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: thumbgate-vscode-open-vsx-vsix
+          path: ${{ steps.vsix.outputs.path }}
+
+      - name: Ensure GitHub Release exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.vsix.outputs.version }}
+        run: |
+          if ! gh release view "v${VERSION}" >/dev/null 2>&1; then
+            gh release create "v${VERSION}" --title "v${VERSION}" --generate-notes
+          fi
+
+      - name: Upload VSIX to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.vsix.outputs.version }}
+        run: |
+          gh release upload "v${VERSION}" "${{ steps.vsix.outputs.path }}" --clobber
+
+      - name: Publish to Open VSX when token exists
+        if: env.OVSX_PAT != ''
+        run: |
+          cd plugins/vscode-extension
+          npx --yes ovsx publish "${{ steps.vsix.outputs.name }}" --pat "$OVSX_PAT"
+
+      - name: Publish to VS Code Marketplace when token exists
+        if: env.VSCE_PAT != ''
+        run: |
+          cd plugins/vscode-extension
+          npx --yes @vscode/vsce publish --packagePath "${{ steps.vsix.outputs.name }}" -p "$VSCE_PAT"

@@ -1,12 +1,13 @@
 # IDE Marketplace Distribution
 
-Status: implementation-ready, not yet proof of marketplace publication.
+Status: implementation-ready. Open VSX has a published ThumbGate listing, but the verified listing is stale until it is republished from the current extension package. VS Code Marketplace and public Cursor Marketplace availability must not be claimed without live listing proof.
 
 ## Priority
 
-1. VS Code Marketplace
-2. Open VSX / direct VSIX for Antigravity-compatible installs
-3. JetBrains Marketplace
+1. Open VSX refresh for Antigravity-compatible installs
+2. Cursor public/team marketplace proof
+3. VS Code Marketplace
+4. JetBrains Marketplace
 
 ## VS Code / Open VSX
 
@@ -22,7 +23,12 @@ Status: implementation-ready, not yet proof of marketplace publication.
   - `ThumbGate: Open Dashboard`
   - `ThumbGate: Upgrade to Pro`
 
-Publish once the Marketplace assets are reviewed:
+Verified state on 2026-06-03:
+
+- Open VSX `igorganapolsky/thumbgate`: published, version `1.16.22`, stale relative to repo package metadata.
+- VS Code Marketplace `igorganapolsky.thumbgate`: no listing found through the public gallery API.
+
+Publish or refresh once the Marketplace assets are reviewed:
 
 ```bash
 cd plugins/vscode-extension
@@ -35,7 +41,18 @@ npx --yes ovsx publish *.vsix
 
 - Install doc: `plugins/antigravity-extension/INSTALL.md`
 - Current path: Open VSX or direct VSIX.
+- Current evidence: Antigravity's extension search can surface the Open VSX listing, but that listing must be refreshed from `plugins/vscode-extension/`.
 - Claim discipline: do not call it an Antigravity Marketplace listing until a first-party listing is live.
+
+## Cursor
+
+- Plugin source: `plugins/cursor-marketplace/`
+- Manifest: `plugins/cursor-marketplace/.cursor-plugin/plugin.json`
+- Runtime: `npx --yes --package thumbgate@latest thumbgate serve`
+- Public submission path: `https://cursor.com/dashboard/plugins`
+- Team fallback: import this repository through `Dashboard -> Settings -> Plugins -> Team Marketplaces`
+- Current evidence: the user-provided Cursor dashboard screenshot from 2026-06-03 shows no installed ThumbGate plugin in that account.
+- Claim discipline: say "Cursor plugin bundle" or "Cursor Team Marketplace import path" until a public Cursor Marketplace listing is visibly live.
 
 ## JetBrains
 
