@@ -283,7 +283,7 @@ $ npx thumbgate feedback-self-test
       </div>
       <div class="step">
         <h3>2. Plugin directory</h3>
-        <p>For a true plugin install, use Codex Plugins or a marketplace source. A marketplace points Codex at the extracted plugin folder and then Codex installs it from the directory.</p>
+        <p>For a true plugin install, use Codex Plugins or a marketplace source. In the Add marketplace dialog, do not keep Codex's default <code>plugins/codex</code> sparse path for this repo; use <code>.agents/plugins/marketplace.json</code> and <code>plugins/codex-profile</code>, or leave sparse paths blank for a local checkout.</p>
       </div>
       <div class="step">
         <h3>3. Zip for review</h3>
@@ -302,7 +302,7 @@ $ npx thumbgate feedback-self-test
       </div>
       <div class="step">
         <h3>Use when available</h3>
-        <p>If Codex shows Plugins, open the directory, install ThumbGate from a marketplace or shared plugin entry, then start a new thread after install.</p>
+        <p>If Codex shows Plugins, open the directory, clear restrictive filters like <code>Built by OpenAI</code>, install ThumbGate from a marketplace or shared plugin entry, then start a new thread after install.</p>
       </div>
       <div class="step">
         <h3>Use for operators</h3>
@@ -341,6 +341,10 @@ $ npx thumbgate feedback-self-test
       <div class="faq">
         <h3>Where is the direct asset?</h3>
         <p>The standalone zip remains available at <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip" target="_blank" rel="noopener">GitHub Releases</a>. It is for review, offline delivery, and manual marketplace workflows. It is not a double-click Codex Desktop installer.</p>
+      </div>
+      <div class="faq">
+        <h3>I searched Plugins for ThumbGate. Why is it missing?</h3>
+        <p>First clear the <code>Built by OpenAI</code> filter. ThumbGate is a local or third-party marketplace plugin, so an OpenAI-only filter hides it. Then confirm the marketplace includes <code>.agents/plugins/marketplace.json</code> and <code>plugins/codex-profile</code>; the default <code>plugins/codex</code> sparse path will miss this repo.</p>
       </div>
     </div>
   </section>

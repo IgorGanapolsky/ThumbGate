@@ -47,6 +47,29 @@ codex plugin marketplace add ./path/to/thumbgate-codex-plugin
 
 Then restart Codex, open the plugin directory, choose the marketplace source, and install ThumbGate from there.
 
+## Codex Desktop marketplace modal fields
+
+If you are using the Codex Desktop **Add marketplace** dialog, the default sparse path shown by Codex may not match this repository. Use one of these working configurations instead.
+
+### Local checkout
+
+- Source: `/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo`
+- Git ref: leave blank for the local checkout
+- Sparse paths: leave blank
+
+### GitHub repo
+
+- Source: `https://github.com/IgorGanapolsky/ThumbGate`
+- Git ref: `main` for the latest public release, or the active PR branch when testing unreleased changes
+- Sparse paths:
+
+```text
+.agents/plugins/marketplace.json
+plugins/codex-profile
+```
+
+After adding the marketplace, clear restrictive filters such as **Built by OpenAI**. ThumbGate is a local or third-party marketplace plugin, so it will not appear while the plugin directory is filtered to OpenAI-built plugins only.
+
 ## Portable release bundle
 
 Download the latest bundle:

@@ -92,6 +92,11 @@ test('codex plugin manifest uses ThumbGate branding and local MCP config', () =>
   assert.match(install, /not a double-click macOS installer/i);
   assert.match(install, /not a guaranteed one-click Codex Desktop import path/i);
   assert.match(install, /codex plugin marketplace add/i);
+  assert.match(install, /Codex Desktop marketplace modal fields/i);
+  assert.match(install, /Sparse paths/i);
+  assert.match(install, /\.agents\/plugins\/marketplace\.json/i);
+  assert.match(install, /plugins\/codex-profile/i);
+  assert.match(install, /Built by OpenAI/i);
   assert.match(install, /Do not double-click the zip/i);
   assert.match(install, /marketplace catalog points at `\.\/`/i);
 });

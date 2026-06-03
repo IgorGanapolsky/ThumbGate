@@ -595,6 +595,11 @@ test('public Codex plugin page explains install, direct download, and latest run
   assert.match(codexPage, /Download zip for review/);
   assert.match(codexPage, /not a double-click installer/i);
   assert.match(codexPage, /Desktop install reality/);
+  assert.match(codexPage, /Built by OpenAI/);
+  assert.match(codexPage, /\.agents\/plugins\/marketplace\.json/);
+  assert.match(codexPage, /plugins\/codex-profile/);
+  assert.match(codexPage, /default <code>plugins\/codex<\/code> sparse path/i);
+  assert.match(codexPage, /I searched Plugins for ThumbGate/i);
   assert.match(codexPage, /plugins\/codex-profile\/INSTALL\.md/);
   assert.match(codexPage, /Pre-Action Checks/);
   assert.match(codexPage, /Codex settings/);

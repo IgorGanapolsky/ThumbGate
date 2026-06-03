@@ -60,6 +60,8 @@ codex plugin list
 
 That is the install route that makes "ThumbGate for Codex" appear in Codex Desktop's Plugins screen. After installation, open Codex Desktop, go to Plugins, clear restrictive filters such as "Built by OpenAI", and search for "ThumbGate".
 
+If you use Codex Desktop's **Add marketplace** modal directly, do not keep the default `plugins/codex` sparse path. The repo marketplace needs `.agents/plugins/marketplace.json` plus `plugins/codex-profile`, or a local checkout source with sparse paths left blank.
+
 ### Portable release bundle
 
 Download the latest `thumbgate-codex-plugin.zip`, unzip it, and point Codex at the extracted `thumbgate-codex-plugin/` directory when you need a standalone plugin release surface. This zip is not a double-click macOS installer and should not be the primary CTA.
