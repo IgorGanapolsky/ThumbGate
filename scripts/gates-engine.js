@@ -115,7 +115,7 @@ const DEFAULT_PROTECTED_FILE_GLOBS = [
 const EDIT_LIKE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
 const HIGH_RISK_BASH_PATTERN = /\b(?:git\s+(?:add|commit|push)|gh\s+pr\s+(?:create|merge)|npm\s+publish|yarn\s+publish|pnpm\s+publish|rm\s+-rf)\b/i;
 const REMOTE_SIDE_EFFECT_BASH_PATTERN = /\b(?:git\s+push\b|gh\s+pr\s+(?:create|merge|close|reopen|ready|edit)\b|gh\s+release\s+(?:create|delete|edit|upload)\b|npm\s+publish\b|yarn\s+publish\b|pnpm\s+publish\b)\b/i;
-const GH_API_PR_CREATE_PATTERN = /\bgh\s+api\b(?=.*(?:\/pulls\b|repos\/[^\s]+\/[^\s]+\/pulls\b))(?=.*(?:-f\b|--field\b|-F\b|--raw-field\b|--method\s+POST\b|-X\s+POST\b))/i;
+const MAX_COMMAND_SCAN_CHARS = 20000;
 const BOOSTED_RISK_BLOCK_SCORE = 0.8;
 const BOOSTED_RISK_MIN_EXAMPLES = 3;
 const PR_THREAD_RESOLUTION_ACTION = 'pr_thread_resolution_verified_after_commit';
@@ -136,6 +136,60 @@ function isRuntimePlanGateEnabled() {
 }
 const PR_THREAD_RESOLUTION_CLAIM_PATTERN = '(?:thread|review|comment).*?(?:resolved|verified|checked|addressed|fixed)|(?:resolved|verified|checked|addressed|fixed).*?(?:thread|review|comment)';
 const PR_THREAD_RESOLUTION_REQUIRED_ACTIONS = ['pr_threads_checked', 'thread_resolution_verified'];
+
+function commandScanText(command) {
+  return String(command || '').slice(0, MAX_COMMAND_SCAN_CHARS);
+}
+
+function commandWords(command) {
+  return commandScanText(command).toLowerCase().split(/\s+/).filter(Boolean);
+}
+
+function commandContainsSequence(words, sequence) {
+  if (!Array.isArray(words) || !Array.isArray(sequence) || sequence.length === 0) return false;
+  for (let i = 0; i <= words.length - sequence.length; i += 1) {
+    let matched = true;
+    for (let j = 0; j < sequence.length; j += 1) {
+      if (words[i + j] !== sequence[j]) {
+        matched = false;
+        break;
+      }
+    }
+    if (matched) return true;
+  }
+  return false;
+}
+
+function commandHasPostMethod(words) {
+  for (let i = 0; i < words.length; i += 1) {
+    const word = words[i];
+    if ((word === '-x' || word === '--method') && words[i + 1] === 'post') return true;
+    if (word === '--method=post' || word === '-xpost') return true;
+  }
+  return false;
+}
+
+function isGhApiPrCreateCommand(command) {
+  const words = commandWords(command);
+  if (!commandContainsSequence(words, ['gh', 'api'])) return false;
+  const hasPullsEndpoint = words.some((word) => word === '/pulls' || word.endsWith('/pulls'));
+  if (!hasPullsEndpoint) return false;
+  const fieldFlags = new Set(['-f', '--field', '--raw-field']);
+  const hasFieldWrite = words.some((word) => (
+    fieldFlags.has(word) ||
+    word.startsWith('-f=') ||
+    word.startsWith('--field=') ||
+    word.startsWith('--raw-field=')
+  ));
+  return hasFieldWrite || commandHasPostMethod(words);
+}
+
+function isRecursiveChmodCommand(command) {
+  const words = commandWords(command);
+  const chmodIndex = words.indexOf('chmod');
+  if (chmodIndex === -1) return false;
+  return words.slice(chmodIndex + 1).includes('-r') || words.slice(chmodIndex + 1).some((word) => word.includes('r') && word.startsWith('-'));
+}
 
 // ---------------------------------------------------------------------------
 // Config loading
@@ -814,7 +868,7 @@ function extractAffectedFiles(toolName, toolInput = {}) {
       }
     }
 
-    if (/\bgit\s+push\b/i.test(command) || /\bgh\s+pr\s+(?:create|merge)\b/i.test(command) || GH_API_PR_CREATE_PATTERN.test(command)) {
+    if (/\bgit\s+push\b/i.test(command) || /\bgh\s+pr\s+(?:create|merge)\b/i.test(command) || isGhApiPrCreateCommand(command)) {
       for (const filePath of getBranchDiffFiles(repoRoot)) {
         files.add(normalizePosix(filePath));
       }
@@ -833,7 +887,7 @@ function isHighRiskAction(toolName, toolInput = {}, affectedFiles = []) {
   const command = String(toolInput.command || '');
   // Original high-risk pattern (git writes, publishes, destructive ops)
   if (HIGH_RISK_BASH_PATTERN.test(command)) return true;
-  if (GH_API_PR_CREATE_PATTERN.test(command)) return true;
+  if (isGhApiPrCreateCommand(command)) return true;
   // Broadened: any Bash command that modifies files or has side effects.
   // Excludes pure read/analysis commands (node --test, cat, ls, echo, etc.)
   // to avoid false positives on benign operations.
@@ -1072,7 +1126,7 @@ function getLocalOnlyScopeSources(governanceState = {}, constraints = {}) {
 function isRemoteSideEffectCommand(toolName, toolInput = {}) {
   if (toolName !== 'Bash') return false;
   const command = String(toolInput.command || '');
-  return REMOTE_SIDE_EFFECT_BASH_PATTERN.test(command) || GH_API_PR_CREATE_PATTERN.test(command);
+  return REMOTE_SIDE_EFFECT_BASH_PATTERN.test(command) || isGhApiPrCreateCommand(command);
 }
 
 function evaluateLocalOnlyRemoteSideEffectGate(toolName, toolInput = {}, governanceState = {}, constraints = {}) {
@@ -1456,7 +1510,7 @@ function matchesGate(gate, toolName, toolInput) {
 function isSafeLocalCredentialHardeningCommand(toolName, toolInput = {}) {
   if (toolName !== 'Bash') return false;
   const command = String(toolInput.command || '').trim();
-  if (!command || /(?:^|\s)chmod\s+[^&;|]*\s+-R\b/i.test(command)) return false;
+  if (!command || isRecursiveChmodCommand(command)) return false;
   if (/[;&|`$()<>*?[\]{}]/.test(command)) return false;
 
   const match = command.match(/(?:^|\s)chmod\s+(?:-[fv]\s+)?0?([46]00)\s+(['"]?)(\S+)\2\s*$/i);
@@ -1502,7 +1556,7 @@ function evaluateMemoryGuard(toolName, toolInput = {}) {
 
   const command = String(toolInput.command || '');
   const isPrCreateCommand = toolName === 'Bash' && (
-    /\bgh\s+pr\s+create\b/i.test(command) || GH_API_PR_CREATE_PATTERN.test(command)
+    /\bgh\s+pr\s+create\b/i.test(command) || isGhApiPrCreateCommand(command)
   );
   if (isPrCreateCommand && isConditionSatisfied('pr_create_allowed')) {
     const branchGovernanceViolation = buildBranchGovernanceViolation(
@@ -1519,7 +1573,7 @@ function evaluateMemoryGuard(toolName, toolInput = {}) {
 
   if (toolName === 'Bash' && (
     /\b(?:gh\s+pr\s+(?:create|merge)|gh\s+release\s+create|git\s+tag\b|(?:npm|yarn|pnpm)\s+publish\b)\b/i.test(command) ||
-    GH_API_PR_CREATE_PATTERN.test(command)
+    isGhApiPrCreateCommand(command)
   )) {
     const branchGovernanceViolation = buildBranchGovernanceViolation(
       governanceState,

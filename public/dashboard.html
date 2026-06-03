@@ -848,12 +848,14 @@ async function connect(options) {
     status.textContent = opts.localPro ? `✓ Local ${tierName} connected` : '✓ Connected';
     document.getElementById('dashboardContent').style.display = 'block';
     if (opts.localPro) {
+      const localProActiveMessage = 'Local Pro is active on this machine. Your dashboard is using the saved license key automatically.';
+      const localEnterpriseActiveMessage = 'Local Enterprise is active on this machine. Your dashboard is using the saved license key automatically.';
       input.value = 'local-license';
       input.disabled = true;
       input.placeholder = `Local ${tierName} auto-connected`;
       btn.disabled = true;
       document.getElementById('demoBtn').style.display = 'none';
-      document.getElementById('authHelp').textContent = `Local ${tierName} is active on this machine. Your dashboard is using the saved license key automatically.`;
+      document.getElementById('authHelp').textContent = isEnterprise ? localEnterpriseActiveMessage : localProActiveMessage;
     }
     renderStats(data);
     setSelectedCard('all');
