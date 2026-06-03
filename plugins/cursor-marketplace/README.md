@@ -63,13 +63,23 @@ How it works:
 
 ## Install
 
-### Cursor Marketplace
+### Cursor Marketplace Status
 
-Search for **ThumbGate** in the Cursor marketplace and install.
+ThumbGate has a Cursor plugin bundle in this repo, but do not claim public Cursor Marketplace availability until the Cursor dashboard shows the listing live. The screenshot-verified current state on 2026-06-03 is that this account's Cursor Plugins page shows no installed ThumbGate plugin.
+
+Use this path when publishing or refreshing the public listing:
+
+1. Open `https://cursor.com/dashboard/plugins`.
+2. Click **Add Plugin** or **Browse Marketplace**.
+3. Submit/import `plugins/cursor-marketplace/`.
+4. Use `ThumbGate` as the display name and `thumbgate` as the slug.
+5. Verify the listing appears in the dashboard before saying "available in the Cursor Marketplace."
 
 ### Team Marketplace
 
 Cursor Teams and Enterprise can import this repository through `Dashboard -> Settings -> Plugins -> Team Marketplaces`. If Cursor exposes `Enable Auto Refresh`, turn it on so repo-backed plugin updates refresh automatically.
+
+This is the most honest install path for a buyer before public marketplace approval: repo-backed, controlled by the team admin, and easy to refresh after ThumbGate releases.
 
 ### Cursor Directory
 
@@ -82,7 +92,7 @@ If a manual submission form asks for `Name`, use `ThumbGate` instead of the slug
 Use the existing project bootstrap:
 
 ```bash
-npx thumbgate init
+npx thumbgate init --agent cursor
 ```
 
 Or copy the plugin MCP config into `.cursor/mcp.json`:
