@@ -294,7 +294,9 @@ function sanitizeGlobList(globs) {
 // live under it to the repo-relative form so the scope actually applies. Globs already
 // relative, or absolute but outside repoPath, are returned unchanged.
 function rebaseGlobsToRepoRoot(globs, repoPath) {
-  const repoRel = normalizePosix(repoPath);
+  // normalizeGlob strips both leading AND trailing slashes, so a repoPath with a
+  // trailing slash ("/Users/me/proj/") still matches the repo-relative globs.
+  const repoRel = normalizeGlob(repoPath);
   if (!repoRel) return globs;
   return globs.map((glob) => {
     if (glob === repoRel) return '**';

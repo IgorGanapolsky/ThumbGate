@@ -133,6 +133,48 @@ function classify(entry) {
   return 'neutral';
 }
 
+function isHookPromptEnvelope(context) {
+  if (!context || typeof context !== 'string') return false;
+  try {
+    const parsed = JSON.parse(context);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false;
+    return Boolean(
+      parsed.prompt &&
+      (
+        parsed.hookEventName ||
+        parsed.hook_event_name ||
+        parsed.workspaceRoot ||
+        parsed.workspace_root ||
+        parsed.session_id ||
+        parsed.sessionId ||
+        parsed.transcript_path ||
+        parsed.transcriptPath
+      )
+    );
+  } catch (_) {
+    return false;
+  }
+}
+
+function patternContext(entry) {
+  const context = entry && entry.context ? String(entry.context) : '';
+  if (!context) return '';
+  const hasExplicitFeedback = Boolean(
+    entry.whatWentWrong ||
+    entry.what_went_wrong ||
+    entry.whatToChange ||
+    entry.what_to_change ||
+    entry.failureType ||
+    (Array.isArray(entry.tags) && entry.tags.length > 0) ||
+    entry.structuredRule
+  );
+  if (isHookPromptEnvelope(context) && !hasExplicitFeedback) return '';
+  if (isHookPromptEnvelope(context) && hasExplicitFeedback) {
+    return '';
+  }
+  return context;
+}
+
 /**
  * Check if the feedback entry is an automated enforcement log (e.g. from gates engine)
  * rather than real developer/user feedback.
