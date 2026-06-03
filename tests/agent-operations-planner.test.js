@@ -171,7 +171,7 @@ test('buildNetworkEgressFirewallPlan blocks unknown outbound agent targets', () 
   });
 
   assert.equal(plan.status, 'block-unknown-egress');
-  assert.ok(plan.unknownRequests.includes('https://unknown.example/upload'));
+  assert.ok(plan.unknownRequests.some((r) => r === 'https://unknown.example/upload'));
   assert.match(plan.dashboard, /live request table/);
 });
 
