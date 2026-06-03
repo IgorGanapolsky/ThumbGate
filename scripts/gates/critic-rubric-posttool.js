@@ -48,11 +48,12 @@ const DESTRUCTIVE_RM_FLAGS = /(?:-[a-zA-Z]{0,4}r[a-zA-Z]{0,4}f|-[a-zA-Z]{0,4}f[a
 const DESTRUCTIVE_SYSTEM_RM = new RegExp(
   String.raw`\brm\s+` + DESTRUCTIVE_RM_FLAGS.source + String.raw`\s+(?!/tmp|/var/folders)/`,
 );
-// Force-push clause: hoist the lookahead so the precedence is unambiguous and
-// the alternation collapses to a single bounded prefix (Sonar S5843 + S5850).
-// Matches `--force`, `-f`, with optional repetition; lookahead applies to the
-// whole prefix (the only quantified part) so there's no precedence ambiguity.
-const FORCE_PUSH_PROTECTED = /\bgit\s+push\s+--?f(?:orce)?(?!-with-lease)\b[^\n]*\b(?:main|master|production)\b/;
+// Force-push detection is decomposed into three simple regexes (Sonar S5843
+// — single inline pattern was complexity 25/20). Combined in code with
+// boolean AND/NOT; no nested lookaheads in any single pattern.
+const GIT_PUSH_FORCE = /\bgit\s+push\b[^\n]*\s(?:--force\b|-f\b)/;
+const GIT_PUSH_WITH_LEASE = /--force-with-lease\b/;
+const PROTECTED_BRANCH = /\b(?:main|master|production)\b/;
 const CURL_PIPE_SHELL = /\b(?:curl|wget)\b[^|]*\|\s*(?:sh|bash|zsh)\b/;
 // Secret-path detection is split into two simple regexes (Sonar S5843):
 // one for filename segments, one for the `.pem` suffix. Both are anchored to
@@ -93,7 +94,11 @@ const DEFAULT_RUBRIC = [
       if (DESTRUCTIVE_SYSTEM_RM.test(cmd)) {
         return { pass: false, reason: `Recursive rm against system path: ${cmd.slice(0, 120)}` };
       }
-      if (FORCE_PUSH_PROTECTED.test(cmd)) {
+      if (
+        GIT_PUSH_FORCE.test(cmd)
+        && !GIT_PUSH_WITH_LEASE.test(cmd)
+        && PROTECTED_BRANCH.test(cmd)
+      ) {
         return { pass: false, reason: `Force push to protected branch without --force-with-lease` };
       }
       return { pass: true };
