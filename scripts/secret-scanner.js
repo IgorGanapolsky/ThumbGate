@@ -55,6 +55,11 @@ const BASH_SECRET_READ_PREFIXES = [
 ];
 
 const EDIT_LIKE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
+const SAFE_SECRET_STORAGE_DIRS = [
+  '.resume_secrets',
+  '.thumbgate/secrets',
+  '.config/thumbgate',
+];
 
 function redactText(text) {
   if (!text) return '';
@@ -295,6 +300,26 @@ function resolvePathToken(token, cwd) {
   return path.join(cwd || process.cwd(), normalized);
 }
 
+function normalizePathForPolicy(filePath) {
+  return path.resolve(String(filePath || '').replace(/^~(?=\/|$)/, os.homedir()));
+}
+
+function isSafeSecretStoragePath(filePath) {
+  if (!filePath) return false;
+  const normalized = normalizePathForPolicy(filePath);
+  const home = normalizePathForPolicy(os.homedir());
+  return SAFE_SECRET_STORAGE_DIRS.some((dir) => {
+    const allowedRoot = path.join(home, dir);
+    return normalized === allowedRoot || normalized.startsWith(`${allowedRoot}${path.sep}`);
+  });
+}
+
+function isSafeSecretStorageWrite(toolName, toolInput = {}, cwd = process.cwd()) {
+  if (!EDIT_LIKE_TOOLS.has(toolName)) return false;
+  const paths = getToolInputPaths(toolInput, cwd);
+  return paths.length > 0 && paths.every((filePath) => isSafeSecretStoragePath(filePath));
+}
+
 function scanBashCommand(command, options = {}) {
   const cwd = options.cwd || process.cwd();
   const findings = [];
@@ -347,6 +372,7 @@ function scanHookInput(input = {}, options = {}) {
   let provider = resolveProvider(options.provider);
   let commandHash = null;
   let fileHashes = [];
+  const safeSecretStorageWrite = isSafeSecretStorageWrite(toolName, toolInput, cwd);
 
   const contentFields = [
     toolInput.content,
@@ -376,11 +402,13 @@ function scanHookInput(input = {}, options = {}) {
     }
   }
 
-  for (const content of contentFields) {
-    const result = scanText(content, { provider, source: 'tool_input' });
-    if (result.detected) {
-      provider = result.provider;
-      findings.push(...result.findings);
+  if (!safeSecretStorageWrite) {
+    for (const content of contentFields) {
+      const result = scanText(content, { provider, source: 'tool_input' });
+      if (result.detected) {
+        provider = result.provider;
+        findings.push(...result.findings);
+      }
     }
   }
 
@@ -409,6 +437,8 @@ module.exports = {
   scanBashCommand,
   scanHookInput,
   classifySecretPath,
+  isSafeSecretStoragePath,
+  isSafeSecretStorageWrite,
   buildSafeSummary,
   tokenizeCommand,
 };

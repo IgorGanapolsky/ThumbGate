@@ -632,6 +632,19 @@ test('setTaskScope clear removes task scope but preserves approvals', () => {
   assert.equal(state.protectedApprovals.length, 1);
 });
 
+test('setTaskScope clear removes stale local_only constraint', () => {
+  cleanupStateFiles();
+  setTaskScope({
+    taskId: '1733520',
+    summary: 'local-only task',
+    allowedPaths: ['**'],
+    localOnly: true,
+  });
+  assert.equal(loadConstraints().local_only.value, true);
+  setTaskScope({ clear: true });
+  assert.equal(loadConstraints().local_only, undefined);
+});
+
 test('setBranchGovernance persists branch governance state', () => {
   cleanupStateFiles();
   const governance = setBranchGovernance({
@@ -666,6 +679,18 @@ test('setBranchGovernance clear removes branch governance but preserves scope', 
   assert.equal(cleared, null);
   assert.equal(state.branchGovernance, null);
   assert.equal(state.taskScope.taskId, '1733520');
+});
+
+test('setBranchGovernance clear removes stale local_only when no task scope remains', () => {
+  cleanupStateFiles();
+  setBranchGovernance({
+    branchName: 'feat/thumbgate-hardening',
+    baseBranch: 'main',
+    localOnly: true,
+  });
+  assert.equal(loadConstraints().local_only.value, true);
+  setBranchGovernance({ clear: true });
+  assert.equal(loadConstraints().local_only, undefined);
 });
 
 test('setTaskScope rejects empty allowedPaths', () => {
@@ -1074,6 +1099,40 @@ test('run blocks bash commands that expose inline secrets', () => {
 
     assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
     assert.match(output.hookSpecificOutput.permissionDecisionReason, /secret material/i);
+  });
+});
+
+test('run allows writes into private resume secrets vault', () => {
+  withTempFeedbackDir(() => {
+    const stripeKey = buildStripeKey();
+    const output = JSON.parse(run({
+      tool_name: 'Write',
+      tool_input: {
+        file_path: path.join(os.homedir(), '.resume_secrets', 'stripe.json'),
+        content: JSON.stringify({ STRIPE_SECRET_KEY: stripeKey }),
+      },
+    }));
+    assert.deepEqual(output, {});
+  });
+});
+
+test('run still blocks reads from private resume secrets vault', () => {
+  withTempFeedbackDir((tmpFeedbackDir) => {
+    const filePath = path.join(os.homedir(), '.resume_secrets', `thumbgate-test-${process.pid}.json`);
+    const stripeKey = buildStripeKey();
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify({ STRIPE_SECRET_KEY: stripeKey }));
+    try {
+      const output = JSON.parse(run({
+        tool_name: 'Read',
+        tool_input: { file_path: filePath },
+        cwd: tmpFeedbackDir,
+      }));
+      assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
+      assert.match(output.hookSpecificOutput.permissionDecisionReason, /secret material/i);
+    } finally {
+      fs.rmSync(filePath, { force: true });
+    }
   });
 });
 
@@ -1594,6 +1653,41 @@ test('evaluateGatesAsync denies high-risk actions when recurring negative memory
     assert.equal(result.decision, 'deny');
     assert.equal(result.gate, 'memory-high-risk-default-deny');
     assert.match(result.message, /Recurring negative memory matched/i);
+  } finally {
+    if (originalFeedbackLog === undefined) delete process.env.THUMBGATE_FEEDBACK_LOG;
+    else process.env.THUMBGATE_FEEDBACK_LOG = originalFeedbackLog;
+    if (originalAttributedFeedback === undefined) delete process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
+    else process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = originalAttributedFeedback;
+    fs.rmSync(tmpConfig, { force: true });
+    fs.rmSync(feedbackLog, { force: true });
+    fs.rmSync(attributedFeedback, { force: true });
+  }
+});
+
+test('evaluateGatesAsync allows private secret-vault writes despite recurring memory', async () => {
+  const tmpConfig = makeTempPath('memory-secret-vault-gates.json');
+  fs.writeFileSync(tmpConfig, JSON.stringify({ version: 1, gates: [] }));
+
+  const feedbackLog = makeTempPath('memory-secret-vault-feedback.jsonl');
+  const attributedFeedback = makeTempPath('memory-secret-vault-attributed.jsonl');
+  const entries = [
+    { id: 'mem-vault-1', signal: 'negative', context: 'Write resume secrets stripe json high risk regression', timestamp: new Date().toISOString() },
+    { id: 'mem-vault-2', signal: 'negative', context: 'Write resume secrets stripe json high risk regression', timestamp: new Date().toISOString() },
+  ];
+  fs.writeFileSync(feedbackLog, entries.map((entry) => JSON.stringify(entry)).join('\n') + '\n');
+  fs.writeFileSync(attributedFeedback, '');
+
+  const originalFeedbackLog = process.env.THUMBGATE_FEEDBACK_LOG;
+  const originalAttributedFeedback = process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
+  process.env.THUMBGATE_FEEDBACK_LOG = feedbackLog;
+  process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = attributedFeedback;
+
+  try {
+    const result = await evaluateGatesAsync('Write', {
+      file_path: path.join(os.homedir(), '.resume_secrets', 'stripe.json'),
+      content: JSON.stringify({ STRIPE_SECRET_KEY: buildStripeKey() }),
+    }, tmpConfig);
+    assert.equal(result, null);
   } finally {
     if (originalFeedbackLog === undefined) delete process.env.THUMBGATE_FEEDBACK_LOG;
     else process.env.THUMBGATE_FEEDBACK_LOG = originalFeedbackLog;

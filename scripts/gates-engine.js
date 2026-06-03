@@ -58,6 +58,7 @@ const {
   scanHookInput,
   buildSafeSummary,
   redactText,
+  isSafeSecretStorageWrite,
 } = require('./secret-scanner');
 const {
   evaluateSecurityScan,
@@ -316,6 +317,7 @@ function setTaskScope(scopeInput = {}) {
       branchGovernance: currentState.branchGovernance,
     };
     saveGovernanceState(cleared);
+    refreshLocalOnlyConstraint(cleared);
     return null;
   }
 
@@ -413,6 +415,7 @@ function setBranchGovernance(input = {}) {
     const state = loadGovernanceState();
     state.branchGovernance = null;
     saveGovernanceState(state);
+    refreshLocalOnlyConstraint(state);
     return null;
   }
 
@@ -461,6 +464,24 @@ function setConstraint(key, value) {
   };
   saveConstraints(constraints);
   return constraints[key];
+}
+
+function clearConstraint(key) {
+  const constraints = loadConstraints();
+  delete constraints[key];
+  saveConstraints(constraints);
+}
+
+function refreshLocalOnlyConstraint(governanceState = loadGovernanceState()) {
+  const localOnlyActive = Boolean(
+    (governanceState.taskScope && governanceState.taskScope.localOnly) ||
+    (governanceState.branchGovernance && governanceState.branchGovernance.localOnly)
+  );
+  if (localOnlyActive) {
+    setConstraint('local_only', true);
+  } else {
+    clearConstraint('local_only');
+  }
 }
 
 function isConditionSatisfied(conditionId) {
@@ -1435,6 +1456,9 @@ function isSafeLocalCredentialHardeningCommand(toolName, toolInput = {}) {
 function evaluateMemoryGuard(toolName, toolInput = {}) {
   const affected = extractAffectedFiles(toolName, toolInput);
   const affectedFiles = affected.files;
+  if (isSafeSecretStorageWrite(toolName, toolInput, process.cwd())) {
+    return null;
+  }
   if (!isHighRiskAction(toolName, toolInput, affectedFiles)) {
     return null;
   }
@@ -1799,7 +1823,8 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
     }
   }
 
-  const sentinelReport = evaluateWorkflowSentinel(toolName, toolInput, {
+  const skipAdvisoryGuards = isSafeSecretStorageWrite(toolName, toolInput, process.cwd());
+  const sentinelReport = skipAdvisoryGuards ? null : evaluateWorkflowSentinel(toolName, toolInput, {
     governanceState,
   });
   const sentinelDecision = recordSentinelDecision(sentinelReport, toolName, toolInput);
@@ -1997,7 +2022,8 @@ function evaluateGates(toolName, toolInput, configPath) {
     }
   }
 
-  const sentinelReport = evaluateWorkflowSentinel(toolName, toolInput, {
+  const skipAdvisoryGuards = isSafeSecretStorageWrite(toolName, toolInput, process.cwd());
+  const sentinelReport = skipAdvisoryGuards ? null : evaluateWorkflowSentinel(toolName, toolInput, {
     governanceState,
   });
   const sentinelDecision = recordSentinelDecision(sentinelReport, toolName, toolInput);
@@ -2510,6 +2536,7 @@ async function runAsync(input) {
 
   const toolName = input.tool_name || '';
   const toolInput = input.tool_input || {};
+  const safeSecretStorageWrite = isSafeSecretStorageWrite(toolName, toolInput, process.cwd());
 
   const sequenceGuard = evaluateSequenceState(toolName, toolInput);
   if (sequenceGuard && sequenceGuard.decision === 'deny') {
@@ -2529,8 +2556,8 @@ async function runAsync(input) {
   }
 
   
-  const behavioralContext = buildBehavioralContext();
-  const lessonContext = await buildRelevantLessonContextAsync(toolName, toolInput);
+  const behavioralContext = safeSecretStorageWrite ? null : buildBehavioralContext();
+  const lessonContext = safeSecretStorageWrite ? null : await buildRelevantLessonContextAsync(toolName, toolInput);
   
   if (lessonContext && lessonContext.decision === "deny") {
     return formatOutput(lessonContext);
@@ -2556,6 +2583,7 @@ function run(input) {
 
   const toolName = input.tool_name || '';
   const toolInput = input.tool_input || {};
+  const safeSecretStorageWrite = isSafeSecretStorageWrite(toolName, toolInput, process.cwd());
 
   const sequenceGuard = evaluateSequenceState(toolName, toolInput);
   if (sequenceGuard && sequenceGuard.decision === 'deny') {
@@ -2575,8 +2603,8 @@ function run(input) {
   }
 
   
-  const behavioralContext = buildBehavioralContext();
-  const lessonContext = buildRelevantLessonContext(toolName, toolInput);
+  const behavioralContext = safeSecretStorageWrite ? null : buildBehavioralContext();
+  const lessonContext = safeSecretStorageWrite ? null : buildRelevantLessonContext(toolName, toolInput);
   
   if (lessonContext && lessonContext.decision === "deny") {
     return formatOutput(lessonContext);
