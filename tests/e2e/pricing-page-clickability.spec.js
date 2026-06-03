@@ -89,7 +89,7 @@ test.describe('/pricing clickability — full CTA coverage', () => {
     await expect(link).toHaveAttribute('href', /#workflow-sprint-intake$/);
   });
 
-  // --- FAQ accordion (5 items, vanilla addEventListener — no IIFE issue) ---
+  // --- FAQ accordion (6 items, vanilla addEventListener — no IIFE issue) ---
 
   test('FAQ has 6 items, all closed on initial load', async ({ page }) => {
     await page.goto('/pricing');
