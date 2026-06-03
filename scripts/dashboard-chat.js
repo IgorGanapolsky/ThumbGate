@@ -38,6 +38,9 @@ function resolveModel(requested) {
 }
 
 function resolveApiKey(opts = {}) {
+  if (Object.prototype.hasOwnProperty.call(opts, 'apiKey')) {
+    return opts.apiKey || '';
+  }
   return opts.apiKey || process.env.GEMINI_API_KEY || process.env.THUMBGATE_GEMINI_API_KEY || '';
 }
 

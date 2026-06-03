@@ -1937,9 +1937,11 @@ test('evaluateGates blocks gh pr create without branch governance', () => {
 
 test('evaluateGates applies pr_create_allowed to gh api pull creation', () => {
   cleanupStateFiles();
+  const repoPath = createPushTestRepo('scripts/ops.js');
   setTaskScope({
     allowedPaths: ['scripts/**'],
     summary: 'Allow script updates for PR prep.',
+    repoPath,
   });
   setBranchGovernance({
     branchName: 'feat/thumbgate-hardening',
@@ -1947,10 +1949,15 @@ test('evaluateGates applies pr_create_allowed to gh api pull creation', () => {
     prRequired: true,
     releaseVersion: '0.9.11',
   });
+  approveProtectedAction({
+    pathGlobs: ['scripts/ops.js'],
+    reason: 'test isolates PR creation gate after protected-file approval',
+  });
 
   const command = 'gh api repos/acme/project/pulls -f title=test -f head=feat/thumbgate-hardening -f base=main';
   const before = evaluateGates('Bash', {
     command,
+    repoPath,
     changed_files: ['scripts/ops.js'],
   });
   assert.ok(before);
@@ -1962,6 +1969,7 @@ test('evaluateGates applies pr_create_allowed to gh api pull creation', () => {
   });
   const after = evaluateGates('Bash', {
     command,
+    repoPath,
     changed_files: ['scripts/ops.js'],
   });
   assert.equal(after, null);
