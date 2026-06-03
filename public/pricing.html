@@ -285,6 +285,20 @@ __GA_BOOTSTRAP__
 
   </div>
 
+  <div class="enterprise-band" style="max-width:920px;margin:0 auto 8px;padding:24px 28px;border:1px solid rgba(34,211,238,0.24);border-radius:10px;background:#090d12;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;">
+    <div style="flex:1 1 460px;text-align:left;">
+      <div class="tier" style="color:var(--cyan);">Enterprise</div>
+      <div class="price-sub" style="margin:4px 0 10px;">For regulated teams that need agent checks routed through their own cloud — talk to us.</div>
+      <ul style="margin:0;padding-left:18px;font-size:13px;color:var(--text-muted);line-height:1.7;">
+        <li><strong>Vertex AI / VPC gating</strong> — route agent checks through Gemini models in your Google Cloud project (<code>npx thumbgate setup-vertex</code>)</li>
+        <li><strong>Regulatory gate templates</strong> — legal intake, financial compliance, healthcare</li>
+        <li>Custom policy layers scoped to firm / practice area</li>
+        <li>Compliance audit export + dedicated onboarding with SLA</li>
+      </ul>
+    </div>
+    <a class="btn-team" style="white-space:nowrap;" href="/?utm_source=pricing&utm_medium=enterprise_band&utm_campaign=enterprise_intake&cta_id=pricing_enterprise&cta_placement=pricing&plan_id=enterprise#workflow-sprint-intake" onclick="try{posthog.capture('pricing_cta_click',{cta:'enterprise_intake',tier:'enterprise',placement:'pricing_page',price:0})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'enterprise_intake',tier:'enterprise'}})}catch(_){}">Talk to us</a>
+  </div>
+
   <div style="text-align:center;margin:32px 0;color:var(--text-muted);font-size:14px;">
     Need founder help? Do not buy a blind diagnostic from a pricing table.
     <a href="/?utm_source=pricing&utm_medium=scope_first&utm_campaign=team_intake&cta_id=pricing_scope_first&cta_placement=pricing_note&plan_id=team#workflow-sprint-intake" style="color:var(--cyan);text-decoration:none;font-weight:600;" onclick="try{posthog.capture('pricing_cta_click',{cta:'scope_first',tier:'team',price:0})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'scope_first',tier:'team'}})}catch(_){}">Send the workflow first</a> — then we scope the smallest paid rollout that can prove one repeated failure is blocked.
