@@ -307,6 +307,29 @@ test('matchesGate handles missing tool_input fields', () => {
 // Block action
 // ---------------------------------------------------------------------------
 
+test('setTaskScope rebases absolute allowedPaths under repoPath to repo-relative', () => {
+  cleanupStateFiles();
+  // Affected files are compared repo-relative, so an absolute allowedPath silently
+  // never matches (no-op scope). With repoPath known, absolute globs under it must be
+  // rebased to repo-relative; the repoPath itself collapses to '**'.
+  const scope = setTaskScope({
+    summary: 'abs path rebasing',
+    repoPath: '/Users/me/workspace/proj',
+    allowedPaths: [
+      '/Users/me/workspace/proj/src/**',   // absolute under repo -> 'src/**'
+      '/Users/me/workspace/proj',           // repo root itself -> '**'
+      'tests/**',                           // already relative -> unchanged
+      '/etc/somewhere/**',                  // absolute OUTSIDE repo -> unchanged
+    ],
+  });
+  assert.ok(scope.allowedPaths.includes('src/**'), `got ${JSON.stringify(scope.allowedPaths)}`);
+  assert.ok(scope.allowedPaths.includes('**'));
+  assert.ok(scope.allowedPaths.includes('tests/**'));
+  assert.ok(scope.allowedPaths.includes('etc/somewhere/**'));
+  setTaskScope({ clear: true });
+  cleanupStateFiles();
+});
+
 test('evaluateGates returns deny for git push', () => {
   cleanupStateFiles();
   const repoPath = createPushTestRepo();
@@ -772,6 +795,26 @@ test('permission-change approval still catches unsafe chmod commands', () => {
   const result = evaluateGates('Bash', { command: 'chmod 777 ~/.config/gemini/key.json' });
   assert.equal(result.decision, 'approve');
   assert.equal(result.gate, 'permission-change-approval');
+  cleanupStateFiles();
+});
+
+test('memory-high-risk gate exempts safe credential-hardening chmod (vault key)', () => {
+  cleanupStateFiles();
+  // chmod 600 on a credential path is a hardening (safety) action; it must never be
+  // hard-denied (decision:'deny') by memory-high-risk-default-deny. Advisory warns are
+  // fine — the action proceeds. Regression guard for the evaluateMemoryGuard exemption.
+  for (const cmd of [
+    'chmod 600 ~/.resume_secrets/stripe.json',
+    'chmod 600 /Users/igorganapolsky/.resume_secrets/stripe.json',
+    'chmod 600 ~/.ssh/id_ed25519',
+  ]) {
+    const result = evaluateGates('Bash', { command: cmd });
+    const denied = result && result.decision === 'deny';
+    assert.ok(!denied, `expected not-denied for: ${cmd} (got ${result && result.gate})`);
+    if (result) {
+      assert.notEqual(result.gate, 'memory-high-risk-default-deny', `must not be memory-denied: ${cmd}`);
+    }
+  }
   cleanupStateFiles();
 });
 
