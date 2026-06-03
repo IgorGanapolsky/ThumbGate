@@ -47,7 +47,6 @@ test('sequence-guard - edit then unverified commit in the same repo is blocked',
   assert.ok(commit, 'expected a block');
   assert.equal(commit.decision, 'deny');
   assert.equal(commit.gate, 'workflow-sequence-violation');
-
   resetSequenceState();
 });
 
@@ -64,7 +63,6 @@ test('sequence-guard - allows commit after tests_passed clears the repo', () => 
 
   const result = evaluateSequenceState('Bash', { command: 'git commit -m "verified"', repoPath: REPO });
   assert.equal(result, null);
-
   resetSequenceState();
   clearTestsPassed();
 });
