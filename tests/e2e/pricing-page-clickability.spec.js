@@ -91,11 +91,11 @@ test.describe('/pricing clickability — full CTA coverage', () => {
 
   // --- FAQ accordion (5 items, vanilla addEventListener — no IIFE issue) ---
 
-  test('FAQ has 5 items, all closed on initial load', async ({ page }) => {
+  test('FAQ has 6 items, all closed on initial load', async ({ page }) => {
     await page.goto('/pricing');
     const items = page.locator('.faq-item');
-    await expect(items).toHaveCount(5);
-    for (let i = 0; i < 5; i++) {
+    await expect(items).toHaveCount(6);
+    for (let i = 0; i < 6; i++) {
       await expect(items.nth(i)).not.toHaveClass(/(^|\s)open(\s|$)/);
     }
   });
