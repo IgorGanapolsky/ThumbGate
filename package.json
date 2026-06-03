@@ -12,7 +12,8 @@
   },
   "main": "src/index.js",
   "bin": {
-    "thumbgate": "bin/cli.js"
+    "thumbgate": "bin/cli.js",
+    "thumbgate-dashboard": "bin/dashboard-cli.js"
   },
   "files": [
     "scripts/access-anomaly-detector.js",
@@ -231,6 +232,7 @@
     "bench/prompt-eval-suite.json",
     "bench/thumbgate-bench.json",
     "bin/cli.js",
+    "bin/dashboard-cli.js",
     "bin/postinstall.js",
     "config/",
     "openapi/",
