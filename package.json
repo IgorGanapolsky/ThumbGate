@@ -45,6 +45,7 @@
     "scripts/bot-detection.js",
     "scripts/bot-detector.js",
     "scripts/build-metadata.js",
+    "scripts/classifier-routing.js",
     "scripts/chatgpt-ads-readiness-pack.js",
     "scripts/claude-feedback-sync.js",
     "scripts/cli-demo.js",

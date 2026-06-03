@@ -16,13 +16,17 @@
     "pre-action-gates",
     "feedback",
     "mcp",
-    "agent-reliability"
+    "agent-reliability",
+    "codex-sites",
+    "role-plugins",
+    "agentic-os",
+    "workflow-governance"
   ],
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "ThumbGate for Codex",
     "shortDescription": "Turn one thumbs-down into a repeat-blocking pre-action check.",
-    "longDescription": "Adds a local ThumbGate MCP server to Codex so explicit thumbs-up/down feedback can become prevention rules. Check risky commands, edits, deploys, publishes, and PR actions before they run, then reuse the lesson across future sessions instead of relying on prompt memory alone.",
+    "longDescription": "Adds a local ThumbGate MCP server to Codex so explicit thumbs-up/down feedback can become prevention rules. Check risky commands, edits, deploys, publishes, PR actions, Sites deploys, role-plugin writes, and Agentic OS operating-file changes before they run, then reuse the lesson across future sessions instead of relying on prompt memory alone.",
     "developerName": "Igor Ganapolsky",
     "category": "Developer Tools",
     "capabilities": [

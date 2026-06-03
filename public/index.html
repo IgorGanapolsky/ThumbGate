@@ -574,6 +574,15 @@ __GA_BOOTSTRAP__
   .price-card li { font-size: 14px; color: var(--text-muted); padding: 6px 0; display: flex; align-items: flex-start; gap: 8px; }
   .price-card li::before { content: "✓"; color: var(--cyan); font-weight: 700; flex-shrink: 0; }
   .price-card.pro li::before { color: var(--cyan); }
+  .pricing-matrix { max-width: 1080px; margin: 24px auto 0; overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-card); }
+  .pricing-matrix table { width: 100%; min-width: 760px; border-collapse: collapse; }
+  .pricing-matrix caption { text-align: left; padding: 18px 18px 0; color: var(--text); font-weight: 800; font-size: 16px; }
+  .pricing-matrix th,
+  .pricing-matrix td { padding: 13px 16px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; font-size: 13px; line-height: 1.45; color: var(--text-muted); }
+  .pricing-matrix th { color: var(--cyan); background: rgba(34,211,238,0.06); font-weight: 800; }
+  .pricing-matrix tr:last-child td { border-bottom: 0; }
+  .pricing-matrix strong { color: var(--text); }
+  .pricing-note { max-width: 880px; margin: 14px auto 0; color: var(--text-muted); font-size: 12px; line-height: 1.55; text-align: center; }
   .btn-free,
   .btn-demo-link { display: block; text-align: center; padding: 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); text-decoration: none; font-size: 14px; font-weight: 500; transition: border-color 0.15s; }
   .btn-free:hover,
@@ -1402,6 +1411,65 @@ __GA_BOOTSTRAP__
         <p style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;">Team is $49/seat/mo with a 3-seat minimum, but team rollouts start through intake so the workflow, shared rules, and rollout proof are explicit before checkout.</p>
       </div>
     </div>
+    <div class="pricing-matrix" aria-label="Plan capability comparison">
+      <table>
+        <caption>Compare plans at a glance</caption>
+        <thead>
+          <tr>
+            <th scope="col">Capability</th>
+            <th scope="col">Free</th>
+            <th scope="col">Pro</th>
+            <th scope="col">Team</th>
+            <th scope="col">Regulated</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Best for</strong></td>
+            <td>Solo proof that a repeat mistake can be blocked</td>
+            <td>One operator who wants hosted sync, dashboard proof, and exports</td>
+            <td>Teams that need one person's correction to protect every seat</td>
+            <td>Banking, insurance, healthcare, public sector, or audited workflows</td>
+          </tr>
+          <tr>
+            <td><strong>Price</strong></td>
+            <td>$0</td>
+            <td>$19/mo or $149/yr</td>
+            <td>$49/seat/mo after scope, 3-seat minimum</td>
+            <td>Scoped after regulated intake</td>
+          </tr>
+          <tr>
+            <td><strong>Feedback captures</strong></td>
+            <td>5/day, 25 total</td>
+            <td>Unlimited</td>
+            <td>Unlimited shared across seats</td>
+            <td>Custom retention and evidence policy</td>
+          </tr>
+          <tr>
+            <td><strong>Active prevention rules</strong></td>
+            <td>3 active rules</td>
+            <td>Unlimited personal rules</td>
+            <td>Shared org rules plus per-seat rules</td>
+            <td>Policy templates, approvals, and audit export</td>
+          </tr>
+          <tr>
+            <td><strong>Dashboard and proof</strong></td>
+            <td>Local CLI evidence</td>
+            <td>Personal dashboard, check debugger, DPO/HF exports</td>
+            <td>Org dashboard, hosted review views, workflow rollout proof</td>
+            <td>SIEM-ready decision trail and compliance evidence package</td>
+          </tr>
+          <tr>
+            <td><strong>How to start</strong></td>
+            <td><code>npx thumbgate init</code></td>
+            <td>Self-serve Stripe checkout</td>
+            <td>Send one repeated workflow failure first</td>
+            <td>Start regulated workflow review</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="pricing-note">Free proves the enforcement loop. Pro removes solo limits. Team and Regulated plans start through intake because shared rules, permissions, rollback paths, and rollout proof must be explicit before checkout.</p>
     <div style="max-width:1080px;margin:24px auto 0;">
       <div class="price-card regulated" style="border:1px solid var(--cyan);background:linear-gradient(180deg, rgba(34,211,238,0.04), transparent);padding:24px 28px;">
         <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:24px;justify-content:space-between;">

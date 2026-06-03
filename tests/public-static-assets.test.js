@@ -103,6 +103,19 @@ test('landing page does not render empty revenue links', async () => {
   assert.match(html, /Team checkout happens after scope\./);
 });
 
+test('landing pricing section compares plan capabilities and limits clearly', async () => {
+  const res = await fetch(`${origin}/`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+
+  assert.match(html, /Compare plans at a glance/);
+  assert.match(html, /5\/day, 25 total/);
+  assert.match(html, /3 active rules/);
+  assert.match(html, /\$19\/mo or \$149\/yr/);
+  assert.match(html, /\$49\/seat\/mo after scope, 3-seat minimum/);
+  assert.match(html, /Team and Regulated plans start through intake/);
+});
+
 test('homepage and pricing surfaces expose canonical and LLM context links', async () => {
   const pages = [
     ['/', `${origin}/`, `${origin}/llm-context.md`],

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Codex Role Plugins Need Pre-Action Governance — ThumbGate</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Codex plugins, Sites, and annotations move AI work from code into sales, analytics, design, finance, and documents. Teams need pre-action governance before those workflows publish, share, or modify business systems.">
+<meta name="keywords" content="Codex plugins, Codex Sites, Codex annotations, ChatGPT Codex, role-specific AI agents, pre-action governance, Codex plugin governance, ThumbGate">
+<meta property="og:title" content="Codex Role Plugins Need Pre-Action Governance">
+<meta property="og:description" content="As Codex expands beyond coding into role-specific plugins, ThumbGate is the evidence and policy layer before AI work touches business systems.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/codex-role-plugins-need-governance">
+<link rel="canonical" href="https://thumbgate.ai/learn/codex-role-plugins-need-governance">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Codex Role Plugins Need Pre-Action Governance",
+  "description": "Codex plugins, Sites, and annotations move AI work from code into sales, analytics, design, finance, and documents. Teams need pre-action governance before those workflows publish, share, or modify business systems.",
+  "author": { "@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" },
+  "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+  "datePublished": "2026-06-03",
+  "dateModified": "2026-06-03",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/codex-role-plugins-need-governance",
+  "about": [
+    { "@type": "Thing", "name": "Codex plugins" },
+    { "@type": "Thing", "name": "Codex Sites" },
+    { "@type": "Thing", "name": "role-specific AI agents" },
+    { "@type": "Thing", "name": "pre-action governance" }
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+<style>
+  .matrix { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; }
+  .matrix th, .matrix td { text-align: left; padding: 0.7rem 0.8rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .matrix th { color: var(--cyan); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Codex Role Plugin Governance</div>
+  <h1>Codex role plugins need a governance layer before they touch business systems.</h1>
+  <p style="color:var(--muted);">6 min read &middot; For teams adopting Codex plugins, Sites, annotations, and non-developer AI workflows</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> Codex is becoming a cross-functional work surface, not only a coding tool. OpenAI's Codex docs describe plugins as installable bundles of skills, app integrations, and MCP servers, plus Sites for hosted apps and dashboards. That makes ThumbGate's job sharper: enforce policy, evidence, and feedback-derived blocks before role-specific agents publish, share, edit, deploy, or write into customer systems.</div>
+
+  <h2>The product shift</h2>
+  <p>Codex plugins package skills, app integrations, and MCP servers into reusable workflows. Sites can turn Codex output into hosted websites, apps, dashboards, and games. Annotations let a user select part of a document, spreadsheet, or slide and ask Codex to work on that selected region.</p>
+  <p>That is powerful because non-developers can now use the same inspect, edit, verify, report loop on business artifacts. It is risky for the same reason: the action surface expands from code to CRM records, revenue dashboards, design assets, finance decks, sales sequences, and hosted internal tools.</p>
+
+  <div class="callout">
+    <strong>ThumbGate's wedge:</strong> The more Codex becomes a role-specific operating layer, the more every team needs a pre-action policy layer outside the prompt.
+  </div>
+
+  <h2>What can go wrong without gates</h2>
+  <ul>
+    <li>A sales plugin drafts or updates outreach from stale positioning after a thumbs-down already rejected that claim.</li>
+    <li>A data plugin publishes a dashboard before the source query, date window, and metric definition are proven.</li>
+    <li>A Sites workflow deploys a public prototype before access mode, secrets, and intended audience are checked.</li>
+    <li>A document annotation updates one selected section while breaking a compliance statement elsewhere in the same deck.</li>
+    <li>A non-developer approves a tool action without knowing it writes to production systems.</li>
+  </ul>
+
+  <h2>The governance map</h2>
+  <table class="matrix">
+    <thead>
+      <tr><th>Codex surface</th><th>Why it matters</th><th>ThumbGate gate</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Role plugin</td><td>Bundles repeatable work for sales, analytics, design, finance, and operations.</td><td>Require role-specific allowed tools, scopes, and blocked action patterns before execution.</td></tr>
+      <tr><td>App integration</td><td>Lets Codex read or write external systems.</td><td>Route CRM, email, billing, data warehouse, and file-share writes through approval and audit checks.</td></tr>
+      <tr><td>MCP server</td><td>Adds custom tools and shared information.</td><td>Inventory tools, tag high-risk writes, and block unauthorized tool calls before the model invokes them.</td></tr>
+      <tr><td>Sites</td><td>Turns output into shareable hosted apps and dashboards.</td><td>Require build proof, access mode, secret handling, and deployment evidence before publish.</td></tr>
+      <tr><td>Annotations</td><td>Targets exact regions of documents, spreadsheets, and slides.</td><td>Require source-region evidence and prevent partial edits from bypassing whole-document policy.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>High-ROI implementation</h2>
+  <ol>
+    <li><strong>Ship role-specific gate templates:</strong> sales, analytics, design, finance, legal, and customer-support templates with allowed actions and evidence labels.</li>
+    <li><strong>Make plugin install prove itself:</strong> every Codex plugin install path should end with <code>npx thumbgate feedback-self-test</code> and one real gate check.</li>
+    <li><strong>Gate Sites deploys:</strong> block public deploy or access widening until build, audience, and secret-handling proof are attached.</li>
+    <li><strong>Gate annotated edits:</strong> require the selected artifact region, intended edit, and document-level invariant before saving or exporting.</li>
+    <li><strong>Measure the new buyer metric:</strong> role-workflow repeats blocked before execution, split by role and tool surface.</li>
+  </ol>
+
+  <div class="callout callout-green">
+    <strong>Sales wedge:</strong> "Codex plugins make every team faster. ThumbGate makes every team safer before the plugin writes, shares, deploys, or publishes."
+  </div>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Add gates to one role workflow</h2>
+    <p>Start with the role, the write surface, and the evidence required before that role's agent can claim success.</p>
+    <div class="cta-install">$ npx thumbgate init --agent codex</div>
+  </div>
+
+  <div class="related">
+    <h3>Related articles</h3>
+    <a href="/codex-plugin">ThumbGate for Codex &rarr;</a>
+    <a href="/learn/deterministic-agent-workflows">Deterministic Agent Workflows Need Runtime Gates &rarr;</a>
+    <a href="/learn/agentic-os-team-governance">Agentic OS Team Governance &rarr;</a>
+    <a href="/learn/background-agent-control-layer">Background Agents Need a Control Layer &rarr;</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span style="color:var(--muted)">Try it now:</span>
+  <code>npx thumbgate init --agent codex</code>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+</div>
+</body>
+</html>
