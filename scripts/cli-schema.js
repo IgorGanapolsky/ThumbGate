@@ -627,6 +627,19 @@ const CLI_COMMANDS = [
       { name: 'json',  type: 'boolean', description: 'Output the structured model as JSON' },
     ],
   },
+  {
+    name: 'workflow',
+    aliases: ['swarm'],
+    description: 'Execute a dynamic parallel workflow for security audit, benchmarking, or exploration',
+    group: 'ops',
+    mcpTool: 'parallel_workflow',
+    flags: [
+      { name: 'objective',   type: 'string',  required: true,  description: 'The objective to plan and execute (e.g. security audit, performance benchmark)' },
+      { name: 'concurrency', type: 'number',  description: 'Maximum parallel subtasks (default 3)' },
+      { name: 'timeoutMs',   type: 'number',  description: 'Timeout in milliseconds (default 60000)' },
+      { name: 'json',        type: 'boolean', description: 'Output results as JSON' },
+    ],
+  },
 ];
 
 /**

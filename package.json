@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "1.26.8",
+  "version": "1.27.2",
   "description": "ThumbGate self-improving agent governance: thumbs-up/down turns every mistake into a prevention rule and blocks repeat patterns. 36 pre-action checks, budget enforcement, and self-protection for Claude Code, Cursor, Codex, Gemini CLI, and Amp.",
   "homepage": "https://thumbgate.ai",
   "repository": {
@@ -24,6 +24,7 @@
     "scripts/agent-memory-lifecycle.js",
     "scripts/agent-readiness-plan.js",
     "scripts/agent-readiness.js",
+    "scripts/agent-operations-planner.js",
     "scripts/agent-reasoning-traces.js",
     "scripts/agent-reward-model.js",
     "scripts/agent-stack-survival-audit.js",
@@ -143,6 +144,7 @@
     "scripts/operational-integrity.js",
     "scripts/oss-pr-opportunity-scout.js",
     "scripts/otel-declarative-config.js",
+    "scripts/parallel-workflow-orchestrator.js",
     "scripts/perplexity-client.js",
     "scripts/plan-gate.js",
     "scripts/plausible-domain-config.js",
@@ -160,6 +162,7 @@
     "scripts/prompting-operating-system.js",
     "scripts/provider-action-normalizer.js",
     "scripts/proxy-pointer-rag-guardrails.js",
+    "scripts/qa-scenario-planner.js",
     "scripts/published-cli.js",
     "scripts/rag-precision-guardrails.js",
     "scripts/rate-limiter.js",
@@ -468,14 +471,14 @@
     "test:training-export": "node --test tests/training-export.test.js tests/databricks-export.test.js",
     "test:deployment": "node --test tests/deployment.test.js tests/deploy-policy.test.js tests/publish-decision.test.js tests/changeset-check.test.js tests/release-notes.test.js tests/sonarcloud-workflow.test.js tests/package-boundary.test.js tests/public-package-boundary.test.js tests/revenue-observability-workflow.test.js",
     "test:operational-integrity": "node --test tests/operational-integrity.test.js tests/sync-branch-protection.test.js",
-    "test:workflow": "node --test tests/workflow-contract.test.js tests/social-marketing-assets.test.js tests/social-pipeline.test.js tests/positioning-contract.test.js tests/docs-claim-hygiene.test.js tests/thumbgate-scope.test.js tests/workflow-runs.test.js tests/workflow-sprint-intake.test.js tests/gtm-revenue-loop.test.js tests/may-2026-revenue-machine.test.js tests/customer-discovery-sprint.test.js tests/revenue-pack-utils.test.js tests/aiventyx-marketplace-plan.test.js tests/cursor-marketplace-revenue-pack.test.js tests/codex-marketplace-revenue-pack.test.js tests/codex-plugin-revenue-pack.test.js tests/gemini-cli-demand-pack.test.js tests/roo-sunset-demand-pack.test.js tests/linkedin-workflow-hardening-pack.test.js tests/chatgpt-gpt-revenue-pack.test.js tests/mcp-directory-revenue-pack.test.js tests/money-marketplace-distribution-pack.test.js tests/autonomous-sales-agent.test.js tests/reddit-dm-workflow-hardening-pack.test.js tests/sales-pipeline.test.js tests/reddit-dm-outreach.test.js tests/github-outreach.test.js tests/enterprise-story.test.js tests/ralph-loop.test.js tests/ralph-mode-ci.test.js tests/guide-conversion-path.test.js tests/roo-sunset-marketing.test.js",
+    "test:workflow": "node --test tests/parallel-workflow.test.js tests/workflow-contract.test.js tests/social-marketing-assets.test.js tests/social-pipeline.test.js tests/positioning-contract.test.js tests/docs-claim-hygiene.test.js tests/thumbgate-scope.test.js tests/workflow-runs.test.js tests/workflow-sprint-intake.test.js tests/gtm-revenue-loop.test.js tests/may-2026-revenue-machine.test.js tests/customer-discovery-sprint.test.js tests/revenue-pack-utils.test.js tests/aiventyx-marketplace-plan.test.js tests/cursor-marketplace-revenue-pack.test.js tests/codex-marketplace-revenue-pack.test.js tests/codex-plugin-revenue-pack.test.js tests/gemini-cli-demand-pack.test.js tests/roo-sunset-demand-pack.test.js tests/linkedin-workflow-hardening-pack.test.js tests/chatgpt-gpt-revenue-pack.test.js tests/mcp-directory-revenue-pack.test.js tests/money-marketplace-distribution-pack.test.js tests/autonomous-sales-agent.test.js tests/reddit-dm-workflow-hardening-pack.test.js tests/sales-pipeline.test.js tests/reddit-dm-outreach.test.js tests/github-outreach.test.js tests/enterprise-story.test.js tests/ralph-loop.test.js tests/ralph-mode-ci.test.js tests/guide-conversion-path.test.js tests/roo-sunset-marketing.test.js",
     "test:sales-pipeline": "node --test tests/sales-pipeline.test.js",
     "test:billing": "node --test tests/billing.test.js tests/stripe-sync-product-images.test.js",
     "test:cli": "node --test tests/analytics-report.test.js tests/agent-design-governance.test.js tests/codex-self-heal.test.js tests/creator-campaigns.test.js tests/cli.test.js tests/codex-bridge-script.test.js tests/dependabot-changeset.test.js tests/dispatch-brief.test.js tests/feedback-normalize.test.js tests/install-mcp.test.js tests/install-scope-docs.test.js tests/pr-manager.test.js tests/pro-local-dashboard.test.js tests/published-cli.test.js tests/revenue-status.test.js tests/stripe-live-status.test.js tests/creator-dev-and-prune.test.js",
     "test:evolution": "node --test tests/workspace-evolver.test.js",
     "test:watcher": "node --test tests/jsonl-watcher.test.js",
     "test:autoresearch": "node --test tests/autoresearch.test.js",
-    "test:ops": "node --test tests/adk-consolidator.test.js tests/anthropic-partner-strategy.test.js tests/auto-promote-gates.test.js tests/auto-wire-hooks.test.js tests/claude-skill.test.js tests/codegraph-context.test.js tests/commercial-signals.test.js tests/decision-journal.test.js tests/delegation-runtime.test.js tests/disagreement-mining.test.js tests/failure-diagnostics.test.js tests/gate-stats.test.js tests/gates-engine-upgrade-cta.test.js tests/git-hook-installer.test.js tests/github-billing.test.js tests/intervention-policy.test.js tests/markdown-escape.test.js tests/mcp-tools-gates.test.js tests/native-messaging-audit.test.js tests/project-bayes-e2e.test.js tests/project-bayes.test.js tests/rate-limiter.test.js tests/schedule-manager.test.js tests/session-handoff.test.js tests/skill-generator.test.js tests/smart-learning.test.js tests/spike-and-sink.test.js tests/stripe-revenue.test.js tests/stripe-webhook-route.test.js tests/stripe-webhook-rotation.test.js tests/train-from-feedback.test.js tests/workflow-hardening-sprint.test.js tests/workflow-sentinel.test.js tests/test-suite-parity.test.js tests/a2ui-engine.test.js tests/webhook-delivery.test.js tests/auto-context-packs.test.js tests/daily-block-cap.test.js",
+    "test:ops": "node --test tests/qa-scenario-planner.test.js tests/adk-consolidator.test.js tests/anthropic-partner-strategy.test.js tests/auto-promote-gates.test.js tests/auto-wire-hooks.test.js tests/claude-skill.test.js tests/codegraph-context.test.js tests/commercial-signals.test.js tests/decision-journal.test.js tests/delegation-runtime.test.js tests/disagreement-mining.test.js tests/failure-diagnostics.test.js tests/gate-stats.test.js tests/gates-engine-upgrade-cta.test.js tests/git-hook-installer.test.js tests/github-billing.test.js tests/intervention-policy.test.js tests/markdown-escape.test.js tests/mcp-tools-gates.test.js tests/native-messaging-audit.test.js tests/project-bayes-e2e.test.js tests/project-bayes.test.js tests/rate-limiter.test.js tests/schedule-manager.test.js tests/session-handoff.test.js tests/skill-generator.test.js tests/smart-learning.test.js tests/spike-and-sink.test.js tests/stripe-revenue.test.js tests/stripe-webhook-route.test.js tests/stripe-webhook-rotation.test.js tests/train-from-feedback.test.js tests/workflow-hardening-sprint.test.js tests/workflow-sentinel.test.js tests/test-suite-parity.test.js tests/a2ui-engine.test.js tests/webhook-delivery.test.js tests/auto-context-packs.test.js tests/daily-block-cap.test.js",
     "test:session-analyzer": "node --test tests/session-analyzer.test.js",
     "test:tessl": "node --test tests/tessl-export.test.js",
     "test:gates": "node --test tests/gate-templates.test.js tests/gates-engine.test.js tests/claim-verification.test.js tests/secret-scanner.test.js tests/secret-fixture-safety.test.js tests/prompt-guard.test.js tests/audit-trail.test.js tests/profile-router.test.js tests/workflow-sentinel.test.js tests/docker-sandbox-planner.test.js tests/mcp-tools-suggest-fix.test.js",
@@ -665,7 +668,7 @@
     "test:ai-engineering-stack-guardrails": "node --test tests/ai-engineering-stack-guardrails.test.js",
     "test:ai-component-inventory": "node --test tests/ai-component-inventory.test.js",
     "test:interaction-model": "node --test tests/interaction-model.test.js tests/interaction-model-e2e.test.js",
-    "test:high-roi": "node --test tests/high-roi.test.js tests/model-candidates.test.js tests/autonomous-workflow.test.js tests/high-roi-agent-workflows.test.js tests/interaction-model.test.js tests/interaction-model-e2e.test.js tests/code-graph-guardrails.test.js tests/proxy-pointer-rag-guardrails.test.js tests/rag-precision-guardrails.test.js tests/ai-engineering-stack-guardrails.test.js tests/long-running-agent-context-guardrails.test.js tests/reasoning-efficiency-guardrails.test.js tests/deepseek-v4-runtime-guardrails.test.js tests/upstream-contribution-engine.test.js tests/proactive-agent-eval-guardrails.test.js tests/reward-hacking-guardrails.test.js tests/chatgpt-ads-readiness-pack.test.js tests/oss-pr-opportunity-scout.test.js tests/agent-design-governance.test.js tests/gemini-embedding-policy.test.js tests/openclaw-agent-governance-kit.test.js",
+    "test:high-roi": "node --test tests/high-roi.test.js tests/model-candidates.test.js tests/autonomous-workflow.test.js tests/high-roi-agent-workflows.test.js tests/interaction-model.test.js tests/interaction-model-e2e.test.js tests/code-graph-guardrails.test.js tests/proxy-pointer-rag-guardrails.test.js tests/rag-precision-guardrails.test.js tests/ai-engineering-stack-guardrails.test.js tests/long-running-agent-context-guardrails.test.js tests/reasoning-efficiency-guardrails.test.js tests/deepseek-v4-runtime-guardrails.test.js tests/upstream-contribution-engine.test.js tests/proactive-agent-eval-guardrails.test.js tests/reward-hacking-guardrails.test.js tests/chatgpt-ads-readiness-pack.test.js tests/oss-pr-opportunity-scout.test.js tests/agent-design-governance.test.js tests/gemini-embedding-policy.test.js tests/openclaw-agent-governance-kit.test.js tests/agent-operations-planner.test.js",
     "test:public-static-assets": "node --test tests/public-static-assets.test.js",
     "test:token-savings": "node --test tests/token-savings.test.js",
     "test:cost-cli": "node --test tests/cost-cli.test.js tests/conversion-receipt.test.js",
@@ -795,5 +798,6 @@
     "@playwright/test": "^1.60.0",
     "c8": "^11.0.0",
     "undici": "^8.2.0"
-  }
+  },
+  "hotfix": "gate-check-bypass-2026-06-03"
 }

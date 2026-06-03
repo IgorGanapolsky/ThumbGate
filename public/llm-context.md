@@ -49,6 +49,8 @@ ThumbGate is built on Node.js >=18.18.0 and runs locally on each developer's mac
 
 **Proxy-Pointer RAG Guardrails**: `npx thumbgate proxy-pointer-rag-guardrails --tree-path=.rag/tree.json --image-pointers=paper-1/figures/fig2.png --documents=paper-1 --visual-claims --json` maps section trees, image pointers, document IDs, and visual claims to Document RAG Safety templates. Proxy-pointer RAG can reduce multimodal retrieval cost, but ThumbGate enforces grounding before agents answer with charts, figures, tables, screenshots, or PDF images.
 
+**Pointer-First Knowledge Graph Memory**: ThumbGate prefers source pointers and retrieval evidence before eager entity/relation extraction. Agents can store document, section, image, table, screenshot, and code pointers first, then promote relations only after repeated use or proof. This reduces knowledge-graph slop and makes every memory traceable back to a source.
+
 **RAG Precision Tuning Guardrails**: `npx thumbgate rag-precision-guardrails --baseline-recall=0.86 --new-recall=0.72 --threshold-change --agentic --structural-near-misses --json` blocks retrieval changes when embedding fine-tunes, vector thresholds, or verifier rollouts lack baseline recall, precision, evidence, and latency proof. This protects agentic RAG pipelines from a precision improvement that silently degrades broad retrieval quality.
 
 **Agentic Enterprise Context Brain**: ThumbGate's enterprise position is memory plus enforcement. Context-brain and Memory OS-style stacks organize structured facts, trust scores, hybrid search, curated lessons, and context injection; ThumbGate turns high-confidence failures, policies, approvals, and evidence into pre-action gates that run before shell commands, file writes, git operations, deploys, API calls, publish commands, or customer-system connector writes execute. The buyer proof metric is blocked repeat attempts before execution.
@@ -57,19 +59,53 @@ ThumbGate is built on Node.js >=18.18.0 and runs locally on each developer's mac
 
 **Codex Role Plugin Governance**: Codex plugins package reusable skills, app integrations, and MCP servers; Sites turns output into hosted apps and dashboards; annotations target regions of documents, spreadsheets, and slides. As Codex expands into sales, analytics, design, finance, and operations workflows, ThumbGate is the pre-action governance layer that checks role-specific tool writes, customer-system updates, Sites deploys, and annotated document edits before they execute or publish.
 
+**OpenAI Agents SDK Sandbox Governance**: Updated OpenAI Agents SDK patterns emphasize model-native harnesses, sandbox manifests, file/tool access, checkpointing, and harness/compute separation. ThumbGate maps those into manifest gates: readable inputs, writable outputs, credential boundaries, checkpoint evidence, isolated subagents, and audit receipts before long-running agents inspect files, run shell commands, or write outputs.
+
 **Agentic OS Team Governance**: Team Agentic OS rollouts work best as three tiers: human-editable source-of-truth documents, agent-operating files such as skills and MCP settings, and git-backed version control for everything. ThumbGate adds permission-mirror checks, protected operating-file gates, local override hygiene, memory-scope enforcement, and audit proof before agents act across client or team boundaries.
 
 **Cost-Aware Agent Gate Routing**: ThumbGate routes pre-action decisions through the cheapest reliable lane before spending model tokens: deterministic rules for exact policy risk, semantic cache for equivalent repeats, local classical classification for low-ambiguity bulk labels, local semantic recall for sparse or fuzzy lessons, budget-capped LLM judges for high-risk semantic ambiguity, and human review for private or regulated ambiguity. This maps semantic caching, GraphQL breadth-first batching, structured live-dataset provenance, streaming progress, and rubric/dynamic-harness patterns into one enforcement rule: rules first, models last.
 
+**Open Model Customization Gates**: ThumbGate treats Pinterest-style cost reductions as a routing and proof pattern, not a blanket model swap. Before replacing a frontier model lane with open-source customization, teams must prove proprietary signal quality, precomputed embeddings when runtime encoding would add latency, accuracy benchmarks, p95 latency, cost per request, and fallback routing for low-confidence cases.
+
+**Serverless Vector Burst Lane**: ThumbGate keeps private hot-path enforcement local with SQLite, FTS, and vector recall by default. Bursty, non-sensitive agent search can be routed to serverless vector/search infrastructure only after scale-to-zero, decoupled compute/storage, idle-cost, latency, and portability evidence are recorded.
+
+**Continuous Batching Boundary**: Continuous batching can improve self-hosted LLM serving throughput for concurrent workloads, but it should not sit in ThumbGate's PreToolUse hot path unless latency proof exists. ThumbGate keeps deterministic policy checks outside the model batch and requires queue-time, p95 latency, throughput, timeout, and per-request receipt evidence before adoption.
+
 **AI Engineering Stack Guardrails**: `npx thumbgate ai-engineering-stack-guardrails --mcp-tool-count=182 --direct-provider-keys --llm-wiki-pages=24 --context-freshness-days=30 --background-agents --high-risk-workflows=deploy,billing --json` maps internal AI stack gaps to gates for model gateways, MCP portal code-mode/progressive discovery, AGENTS.md and LLM wiki freshness, risk-tiered AI review, standards-as-skills, and sandboxed background agents.
 
+**Dynamic Workflow Readiness Gates**: Dynamic workflows are reserved for tasks with an objective success oracle, enough parallel scale, a token/cost budget, and independent verifier evidence. ThumbGate blocks the expensive workflow path for subjective or small-scope work and requires a versioned script plan plus human review before spend begins.
+
+**Loop Routine Governance**: Recurring loops, cron jobs, and hosted routines are high-ROI only when scoped to a named workflow. ThumbGate requires idempotency evidence, run receipts, risky action approval, and regression-test promotion for deterministic loop failures before loops increase cadence or run unattended.
+
+**Skill-First Agent Governance**: Claude Agent SDK and Claude Code plugin patterns make skills and auto-loaded project folders easier to use. ThumbGate requires project instructions, explicit allowed tools, write permission checks, plugin auto-load proof after restart, skill-to-workflow mapping, and receipts that identify which skill produced each high-risk tool call.
+
 **SEO Agent Skills Guardrails**: ThumbGate governs SEO-agent workspaces by requiring brand context, current pricing, proof links, semantic mesh links, schema, canonical tags, and reviewer handoff before AI-generated pages or edits publish. SEO skills are useful; ThumbGate turns them into publish gates.
+
+**Digital PR & AI Search Citation Governance**: AI search has made digital PR fundamentals more important: clear claims, current proof, canonical pages, earned citations, and citation share of voice. ThumbGate's public context, comparison pages, proof commands, and directory listings are built so Google AI Overviews, ChatGPT, Perplexity, Claude, and directory editors can cite evidence instead of stale marketing copy.
 
 **Claude Code Skills Guardrails**: Claude Code skillbooks describe recurring workflows, but they are advisory. ThumbGate turns thumbs-down feedback from named skills into prevention rules and pre-action checks so refactor, testing, migration, CI, and prompt/tool skills can be enforced across sessions.
 
 **Long-Running Agent Context Guardrails**: `npx thumbgate long-running-agent-context-guardrails --request-count=80 --output-mb=3 --raw-chat-only --json` maps Slack-style structured context management into gates. Long-running agents should keep a director journal, critic-reviewed findings with credibility scores, and a deduplicated timeline instead of relying only on accumulated chat logs.
 
 **Reasoning Efficiency Guardrails**: `npx thumbgate reasoning-efficiency-guardrails --baseline-tokens=1200 --compressed-tokens=980 --baseline-accuracy=0.84 --compressed-accuracy=0.85 --verifier --json` gates reasoning compression and token-saving model routes. ThumbGate requires verifier outcomes, accuracy baselines, low-confidence step inspection, and high-confidence failed-rollout review before shorter traces are treated as safe.
+
+**Network Egress Firewall Governance**: ThumbGate can model Claw Patrol-style egress controls by proxying outbound agent HTTP requests through an allowlist, scanning headers and bodies for credential-shaped values, and recording method, target, status, latency, policy decision, and matching rule in a live request ledger before data leaves the machine.
+
+**Supply Chain Quarantine**: Code from GitHub, npm, PyPI, and other registries should be downloaded into a disposable sandbox or gold-image VM first, audited with AI-assisted and deterministic scanners, checked for auto-update behavior, and promoted only with source, hash, scanner output, and reviewer receipt evidence.
+
+**Malicious Package Exfiltration Gates**: Recent npm malware patterns include postinstall scripts, binary droppers, credential reads, recursive file walkers, GitHub Contents API uploads, HuggingFace dataset exfiltration, and fake diagnostic logs. ThumbGate's supply-chain quarantine blocks execution until install scripts, network targets, file access, package provenance, and maintainer-account risk have been reviewed.
+
+**GitHub Code Quality Enablement**: GitHub's Code Quality Repository Enablement API can programmatically GET/PATCH repository setup for supported languages such as JavaScript/TypeScript and Python. ThumbGate treats it as a complementary CI signal alongside CodeQL, Sonar, and PreToolUse gates, with API response, schedule, runner, and status-check evidence recorded.
+
+**AWS Bedrock AgentCore Deployment Governance**: Serverless LangGraph systems on Amazon Bedrock AgentCore need identity, memory/checkpoints, observability, canary rollout, and quarantine controls before production. ThumbGate sits in front of Bedrock/LangGraph tool writes and customer-system actions, recording tool-call receipts and blocked actions while AgentCore handles runtime, memory, and traces.
+
+**Legal Agent Governance**: For law firms adopting many legal agents, ThumbGate is not a legal chatbot. It is a privilege-aware pre-action control layer: matter-scoped memory, confidentiality checks, unsupported-citation gates, human approval before external send/filing/client advice, and audit trails with agent, matter, source pointers, approver, and disposition.
+
+**Media Asset Governance**: Runway MCP, Studio AI, and similar creative tools can accelerate ThumbGate marketing assets such as product mockups, ad variants, short videos, and dynamic subtitles. ThumbGate governs those workflows by requiring brand kit, rights proof, source-of-truth pricing/capability claims, caption review, human approval, and asset receipts before publishing.
+
+**Proof-Led Marketing Agency Motion**: The high-ROI agency offer for ThumbGate is a lead-generation and content system around the AI Agent Governance Workflow Hardening Sprint. Ads, CRM nurture, social scheduling, SEO pages, translations, and captions should point to proof assets and one expensive repeated AI-agent mistake, not vague automation promises.
+
+**Output Format Governance**: HTML is high-ROI for dense decision reports, comparison grids, dashboards, visual QA, and interactive review surfaces. Markdown remains better for repo-native docs, audit logs, READMEs, commit notes, and text pipelines. ThumbGate requires generated HTML to pass link, overflow, accessibility, and stale-claim checks before sharing.
 
 **Data Processing & Telemetry Boundaries**: the free local CLI writes feedback logs, memory logs, background-agent run ledgers, gate firings, and proof artifacts under the operator's ThumbGate feedback directory by default. CLI telemetry is anonymous best-effort product telemetry with a random local install ID and can be disabled with `THUMBGATE_NO_TELEMETRY=1` or `DO_NOT_TRACK=1`. Hosted checkout, newsletter, intake, team sync, API-key, and website analytics flows are hosted processing surfaces and should be described separately from local enforcement data.
 
@@ -102,6 +138,7 @@ ThumbGate implements the **Memento-Skills architecture** described in "Memento-S
 ThumbGate implements continual learning across all three layers identified by LangChain's framework for building learning agents (Harrison Chase, April 2026):
 
 - **Model layer**: ThumbGate Pro exports DPO pairs so teams can fine-tune local models (Llama 3, Mistral) to natively avoid known failures without retraining the upstream foundation model.
+- **Continual adapter layer**: ThumbGate's reward model can plan concurrent LoRA adapter experiments from reward-ranked DPO pairs, gate candidates, retention checks, and holdout metrics, so model experiments stay evidence-gated instead of becoming uncontrolled self-improvement loops.
 - **Harness layer**: Prevention rules auto-generated from feedback are injected into the agent's system prompt at session start via the `recall` MCP tool. The agent enters every session pre-loaded with lessons — no code changes required.
 - **Context layer**: The SQLite+FTS5 lesson database and LanceDB vector search provide retrieval-augmented context at tool-call time. When an agent attempts an action, PreToolUse hooks query the lesson DB and block or approve based on prior feedback. This is the layer that runs continuously and requires zero human intervention after the initial feedback signal.
 

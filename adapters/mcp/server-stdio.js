@@ -231,7 +231,7 @@ const {
   finalizeSession: finalizeFeedbackSession,
 } = require('../../scripts/feedback-session');
 
-const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.26.8' };
+const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.27.2' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
@@ -1281,6 +1281,15 @@ async function callToolInner(name, args) {
           maxTimeoutMs: 600000,
         },
       });
+    }
+    case 'parallel_workflow': {
+      const { executeWorkflow } = require('../../scripts/parallel-workflow-orchestrator');
+      const results = await executeWorkflow(args.objective, {
+        concurrency: args.concurrency,
+        timeoutMs: args.timeoutMs,
+        cwd: resolveWorkspaceCwd(args.cwd),
+      });
+      return toTextResult(results);
     }
     case 'open_feedback_session':
       return toTextResult(openFeedbackSession(args.feedbackEventId, args.signal, args.initialContext));

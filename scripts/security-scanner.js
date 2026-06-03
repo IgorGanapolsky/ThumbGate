@@ -146,6 +146,14 @@ const VULN_PATTERNS = [
     regex: /(?:unserialize|yaml\.load\s*\((?!.*Loader\s*=\s*yaml\.SafeLoader)|pickle\.loads?|Marshal\.load)/g,
     fileTypes: ['.js', '.ts', '.py', '.rb'],
   },
+  {
+    id: 'badhost-url-confusion',
+    category: 'host-header',
+    severity: 'high',
+    label: 'Potential BadHost-style host or URL confusion in AI service',
+    regex: /\b(?:request\.url(?:\.path)?|url_for\s*\([^)]*_external\s*=\s*True|headers\s*\[\s*['"](?:host|x-forwarded-host)['"]\s*\])/gi,
+    fileTypes: ['.py'],
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -228,6 +236,22 @@ function scanCode(content, filePath = '') {
   return {
     detected: findings.length > 0,
     findings,
+  };
+}
+
+/**
+ * Scan Python / AI-service code for BadHost-style URL and host-header confusion.
+ * This is deliberately narrow and evidence-oriented: it does not claim a CVE,
+ * it flags code that should prove canonical host handling before deployment.
+ * @param {string} content
+ * @param {string} filePath
+ * @returns {{ detected: boolean, findings: Array<Object> }}
+ */
+function scanBadHostExposure(content, filePath = '') {
+  const result = scanCode(content, filePath);
+  return {
+    detected: result.findings.some((finding) => finding.id === 'badhost-url-confusion'),
+    findings: result.findings.filter((finding) => finding.id === 'badhost-url-confusion'),
   };
 }
 
@@ -503,6 +527,60 @@ function scanGitDiff(diffContent) {
   };
 }
 
+function buildThreatDefensePlaybook(scanResult = {}, options = {}) {
+  const findings = Array.isArray(scanResult.findings)
+    ? scanResult.findings
+    : (scanResult.securityScan && Array.isArray(scanResult.securityScan.findings) ? scanResult.securityScan.findings : []);
+  const critical = findings.filter((finding) => finding.severity === 'critical');
+  const high = findings.filter((finding) => finding.severity === 'high');
+  const categories = Array.from(new Set(findings.map((finding) => finding.category).filter(Boolean)));
+  const hasFindings = findings.length > 0;
+  const hasPatchEvidence = Boolean(options.patchEvidence || options.testEvidence || options.ciEvidence);
+
+  return {
+    name: 'thumbgate-ai-threat-defense-playbook',
+    status: critical.length > 0 ? 'block' : high.length > 0 ? 'remediate' : 'monitor',
+    phases: [
+      {
+        id: 'prepare',
+        action: 'harden-foundation',
+        evidence: ['gate templates enabled', 'protected files configured', 'rollback path documented'],
+        required: true,
+      },
+      {
+        id: 'scan-prioritize',
+        action: hasFindings ? 'prioritize detected security findings by severity and exploit surface' : 'keep posture scan active',
+        evidence: categories.length ? categories : ['clean scan'],
+        required: true,
+      },
+      {
+        id: 'remediate',
+        action: hasFindings ? 'patch, run focused tests, and re-scan before allowing risky agent actions' : 'no remediation required from current scan',
+        evidence: hasPatchEvidence ? ['patch evidence present'] : ['patch diff', 'focused test output', 'repeat scan'],
+        required: hasFindings,
+      },
+      {
+        id: 'monitor',
+        action: 'record audit event and keep continuous detection enabled for future tool calls',
+        evidence: ['audit trail event', 'gate stats', 'review checkpoint'],
+        required: true,
+      },
+    ],
+    priority: {
+      critical: critical.length,
+      high: high.length,
+      total: findings.length,
+      categories,
+    },
+    gateDecision: critical.length > 0 ? 'deny' : high.length > 0 ? 'warn' : 'allow',
+    nextActions: critical.length > 0
+      ? ['Block the action', 'Patch the critical finding', 'Run focused tests', 'Re-scan the diff before retry']
+      : high.length > 0
+        ? ['Warn the operator', 'Create a remediation task', 'Run focused tests', 'Monitor for repeat findings']
+        : ['Keep continuous scan enabled', 'Review checkpoint metrics after the next session'],
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
@@ -512,7 +590,9 @@ module.exports = {
   VULN_PATTERNS,
   SUPPLY_CHAIN_PATTERNS,
   scanCode,
+  scanBadHostExposure,
   scanDependencyChange,
   evaluateSecurityScan,
   scanGitDiff,
+  buildThreatDefensePlaybook,
 };

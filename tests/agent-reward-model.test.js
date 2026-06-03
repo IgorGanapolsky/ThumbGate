@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 
 const {
   allocateTestTimeCompute,
+  buildContinualAdapterTrainingPlan,
   buildPreferencePairFromEpisodes,
   buildPreferencePairs,
   buildRewardReport,
@@ -206,4 +207,55 @@ test('buildRewardReport summarizes rewards, preference pairs, and gate candidate
   assert.equal(report.preferencePairs.length, 2);
   assert.ok(report.gateCandidates.some((candidate) => candidate.key === 'error:forgot to verify deploy'));
   assert.equal(report.computePolicy.xhigh, 'payments, secrets, deploy-prod, data-loss, force-push-main');
+  assert.equal(report.continualAdapterPlan.trainingStack, 'multi-lora-continual-learning');
+});
+
+test('buildContinualAdapterTrainingPlan batches reward-ranked LoRA candidates with retention gates', () => {
+  const plan = buildContinualAdapterTrainingPlan([
+    makeEpisode({
+      sessionId: 'bad_a',
+      score: 12,
+      grade: 'critical',
+      negativeCount: 2,
+      positiveCount: 0,
+      errorFingerprints: ['forgot to verify deploy'],
+      tags: ['deploy-prod'],
+    }),
+    makeEpisode({
+      sessionId: 'bad_b',
+      score: 20,
+      grade: 'critical',
+      negativeCount: 1,
+      positiveCount: 0,
+      errorFingerprints: ['forgot to verify deploy'],
+      tags: ['deploy-prod'],
+    }),
+    makeEpisode({
+      sessionId: 'bad_c',
+      score: 18,
+      grade: 'critical',
+      negativeCount: 1,
+      positiveCount: 0,
+      errorFingerprints: ['posted public reply without approval'],
+      tags: ['public-post'],
+    }),
+    makeEpisode({
+      sessionId: 'bad_d',
+      score: 25,
+      grade: 'critical',
+      negativeCount: 1,
+      positiveCount: 0,
+      errorFingerprints: ['posted public reply without approval'],
+      tags: ['public-post'],
+    }),
+    makeEpisode({ sessionId: 'good_a', score: 98, grade: 'healthy', positiveCount: 2 }),
+    makeEpisode({ sessionId: 'good_b', score: 94, grade: 'healthy', positiveCount: 2 }),
+  ], { maxAdapters: 3 });
+
+  assert.equal(plan.status, 'ready');
+  assert.equal(plan.trainingStack, 'multi-lora-continual-learning');
+  assert.equal(plan.scheduling, 'batch adapters concurrently when they share the same frozen base');
+  assert.ok(plan.adapters.length >= 2);
+  assert.ok(plan.adapters.every((adapter) => adapter.trainingMode === 'concurrent-lora'));
+  assert.match(plan.retentionGate, /retention checks pass/);
 });

@@ -409,12 +409,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 4.00 MB -> 4.10 MB (2026-06-03) after measured `npm pack --dry-run`
   // on reliability rollout: packaged runtime dependencies plus public
   // discovery assets weigh ~4.08 MB unpacked, leaving a narrow safety margin.
-  // Bumped 4.15 MB -> 4.18 MB (2026-06-03) for the Plausible domain guard,
-  // Memory OS readiness report, scanner-safe bench fixture expansion, merged main guides, and perplexity hooks restore.
-  // Observed package size: ~4.155 MB.
+  // Bumped 4.18 MB -> 4.25 MB (2026-06-03) for the parallel workflow orchestrator.
   assert.ok(
-    manifest.unpackedSize <= 4_180_000,
-    `npm package should stay <= 4.18 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_250_000,
+    `npm package should stay <= 4.25 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

@@ -1484,6 +1484,19 @@ const TOOLS = [
       },
     },
   }),
+  destructiveTool({
+    name: 'parallel_workflow',
+    description: 'Execute a parallel, multi-step subtask workflow to resolve an objective like a security audit, performance benchmark, or repository inspection.',
+    inputSchema: {
+      type: 'object',
+      required: ['objective'],
+      properties: {
+        objective: { type: 'string', description: 'The objective to plan and execute (e.g. security audit, performance benchmark)' },
+        concurrency: { type: 'number', description: 'Maximum parallel subtasks (default 3)' },
+        timeoutMs: { type: 'number', description: 'Timeout in milliseconds (default 60000)' },
+      },
+    },
+  }),
 ];
 
 // Normalize at export: guarantee EVERY tool carries a human-readable title and a

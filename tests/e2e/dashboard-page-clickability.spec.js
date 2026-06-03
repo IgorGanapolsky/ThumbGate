@@ -204,11 +204,7 @@ test.describe('/dashboard clickability — non-stat-card surfaces', () => {
     await input.fill('test-key');
     await btn.click();
 
-    // Check success state. The chatHint banner was reworded in the
-    // Perplexity-hybrid dashboard update — the validated-key success now
-    // reads "✓ Key validated. Hybrid (Perplexity/Gemini) supported for chat
-    // with your data." Match the stable substring "Key validated" so future
-    // copy tweaks within that banner don't re-break the test.
+    // Check success state
     await expect(input).toHaveAttribute('placeholder', '✓ Key saved to .env', { timeout: 3000 });
     await expect(page.locator('#chatHint')).toContainText(/Key validated|Gemini API key configured/);
   });
