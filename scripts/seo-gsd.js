@@ -394,6 +394,58 @@ function buildSemanticPseoGuide() {
   });
 }
 
+const ZERO_TRUST_GUIDE_SPEC = Object.freeze({
+  slug: 'ai-coding-agent-zero-trust',
+  meta: {
+    query: 'zero trust for ai coding agents',
+    title: 'Zero Trust for AI Coding Agents | Enforce It at the Tool Call',
+    heroTitle: 'Zero Trust for AI Coding Agents, Enforced at the Tool Call',
+    heroSummary: 'Zero trust for agents means never trust, always verify; least privilege; assume breach. ThumbGate is the local-first way to enforce those principles for Claude Code, Cursor, and Codex — blocking dangerous tool calls before they run, and turning every thumbs-down into a prevention rule so the same mistake never repeats.',
+  },
+  takeaways: [
+    'Zero trust for agents means verifying every action at the boundary where it executes — the tool call — instead of trusting the model’s stated intent.',
+    'ThumbGate runs in the PreToolUse hook on your machine: rm -rf, secret writes, off-scope edits, and bad git push are blocked before execution (assume breach, least privilege).',
+    'Unlike static DIY hooks, ThumbGate learns — a thumbs-down becomes an auto-promoted prevention rule that holds across every session, model, and agent.',
+  ],
+  sections: [
+    ['paragraphs', 'Why AI coding agents need zero trust at the tool call', [
+      'A coding agent reads files, runs shell commands, calls APIs, and pushes code with minimal human approval at each step. If it is manipulated, misconfigured, or simply wrong, the blast radius is whatever it can execute — and unlike a human, it does not pause to question a suspicious request.',
+      'Zero-trust security for agents adapts three principles to this reality: never trust, always verify; least privilege; and assume breach. The practical place to apply them is the action boundary — the moment before a tool call runs — not the model’s prompt or its good intentions.',
+    ]],
+    ['bullets', 'ThumbGate vs. rolling your own Claude Code hooks', [
+      'Static hooks and community repos do pattern-matching you write and maintain by hand, per machine, per project. ThumbGate ships the same blocking and adds a learning layer on top.',
+      'A thumbs-down on a bad action becomes an auto-promoted prevention rule — the repeat is blocked automatically next time, on every session and every agent, with zero extra config.',
+      'Local-first: enforcement runs in the PreToolUse hook on the developer machine, not a server-side gateway, so it works the moment you npx thumbgate init.',
+      'Works across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode — one rule set, every MCP-compatible agent.',
+    ]],
+    ['paragraphs', 'How ThumbGate maps to the zero-trust principles', [
+      'Never trust, always verify: every high-risk tool call is checked against prevention rules and workflow shape before it executes. Least privilege: task scope and approval gates keep an agent inside its declared blast radius. Assume breach: dangerous commands are blocked before they touch the disk, so a compromised or confused agent cannot do damage on the way to being caught.',
+      'This is enforcement, not observability. ThumbGate decides at the tool call whether the action runs — which is exactly where zero-trust controls have to live for autonomous agents.',
+    ]],
+  ],
+  faq: [
+    [
+      'Isn’t this just Claude Code’s built-in hooks?',
+      'Native hooks and community repos do static pattern-matching that you author and maintain per machine. ThumbGate adds the learning layer: a thumbs-down becomes a prevention rule that blocks the repeat automatically, across sessions and agents — the part static hooks cannot do.',
+    ],
+    [
+      'How does ThumbGate enforce zero trust for AI agents?',
+      'It applies the core principles at the tool-call boundary on your machine: never trust, always verify (every risky action is checked before it runs), least privilege (task scope and approval gates), and assume breach (dangerous calls are blocked before they touch disk).',
+    ],
+  ],
+  relatedPaths: ['/guides/pre-action-checks', '/guides/agent-harness-optimization'],
+});
+
+function buildZeroTrustGuide() {
+  return preActionGuide(ZERO_TRUST_GUIDE_SPEC.slug, {
+    ...ZERO_TRUST_GUIDE_SPEC.meta,
+    takeaways: ZERO_TRUST_GUIDE_SPEC.takeaways,
+    sections: ZERO_TRUST_GUIDE_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: ZERO_TRUST_GUIDE_SPEC.faq.map(([question, text]) => answer(question, text)),
+    relatedPaths: ZERO_TRUST_GUIDE_SPEC.relatedPaths,
+  });
+}
+
 const PROXY_POINTER_RAG_GUARDRAILS_SPEC = Object.freeze({
   slug: 'proxy-pointer-rag-guardrails',
   meta: {
@@ -1536,6 +1588,7 @@ const PAGE_BLUEPRINTS = [
     relatedPaths: ['/compare/speclock', '/guides/claude-code-feedback'],
   },
   buildSemanticPseoGuide(),
+  buildZeroTrustGuide(),
   buildProxyPointerRagGuide(),
   buildRagPrecisionTuningGuide(),
   buildAiEngineeringStackGuide(),
