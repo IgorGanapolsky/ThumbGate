@@ -121,6 +121,63 @@ const BOOSTED_RISK_MIN_EXAMPLES = 3;
 const PR_THREAD_RESOLUTION_ACTION = 'pr_thread_resolution_verified_after_commit';
 const KNOWLEDGE_ENTROPY_THRESHOLD = 0.7;
 const KNOWLEDGE_CONFLICT_STRICT_BASH_PATTERN = /\b(?:git\s+push\b|gh\s+pr\s+merge\b|gh\s+release\s+(?:create|delete|edit|upload)\b|(?:npm|yarn|pnpm)\s+publish\b|rm\s+-rf\b|git\s+reset\s+--hard\b|git\s+clean\s+-f|railway\s+(?:deploy|up)\b|gcloud\s+(?:run\s+deploy|app\s+deploy)\b|firebase\s+deploy\b|vercel\s+--prod\b|kubectl\s+(?:apply|delete)\b|terraform\s+(?:apply|destroy)\b)\b/i;
+
+// ---------------------------------------------------------------------------
+// Enforcement posture (CEO decision 2026-06-04): warn-by-default.
+// The firewall ALWAYS fires and logs every decision, but most gates WARN rather
+// than hard-block — only TRULY CATASTROPHIC, irreversible actions hard-block:
+//   - secret exfiltration (handled on its own deny path; never downgraded)
+//   - security-vulnerability / supply-chain denies (own deny path; not downgraded)
+//   - irreversibly destructive filesystem commands (rm -rf class, mkfs, dd to disk,
+//     fork bomb) — kept as hard deny via DESTRUCTIVE_FS_PATTERN below.
+// Everything else (memory-high-risk, workflow-sequence, off-scope, git push, deploy,
+// approval gates) downgrades deny/approve -> warn so legitimate work is never blocked.
+// Opt back into full hard enforcement with THUMBGATE_STRICT_ENFORCEMENT=1.
+// Irreversible, catastrophic commands that hard-block even in warn-by-default mode.
+// Kept tight: only unambiguous data/system destruction that is never part of normal
+// dev flow. (NOT git push/-f, which is routine — that downgrades to warn.)
+const CATASTROPHIC_CMD_PATTERN = /\brm\s+-[a-z]*r[a-z]*f[a-z]*\b|\brm\s+-[a-z]*f[a-z]*r[a-z]*\b|\bmkfs\b|\bdd\s+if=|--no-preserve-root|:\(\)\s*\{\s*:|>\s*\/dev\/(?:sd|nvme|disk|hd)|\bterraform\s+destroy\b/i;
+
+// IMPORTANT: only inspect the EXECUTED command (Bash command/cmd/script). Never
+// match file-write payloads (content/new_string) — writing or editing a file that
+// merely *mentions* "rm -rf" (a doc, test, or script) must NOT be hard-blocked.
+function enforcementCommandText(toolInput) {
+  if (!toolInput || typeof toolInput !== 'object') return '';
+  return [toolInput.command, toolInput.cmd, toolInput.script]
+    .filter((v) => typeof v === 'string')
+    .join(' ')
+    .slice(0, MAX_COMMAND_SCAN_CHARS);
+}
+
+function applyEnforcementPosture(result, toolInput) {
+  const strict = process.env.THUMBGATE_STRICT_ENFORCEMENT === '1';
+  // Catastrophic FLOOR: irreversibly destructive commands ALWAYS hard-block, even in
+  // warn-by-default mode and even if no other gate matched (the "hard-block rm -rf" rule).
+  if (CATASTROPHIC_CMD_PATTERN.test(enforcementCommandText(toolInput))) {
+    return {
+      decision: 'deny',
+      gate: (result && result.gate) || 'catastrophic-command',
+      message: (result && result.message)
+        ? result.message
+        : 'BLOCKED: irreversibly destructive command (rm -rf / mkfs / dd-to-disk / fork bomb / terraform destroy). This stays hard-blocked even in warn-by-default mode.',
+      severity: 'critical',
+      reasoning: result ? result.reasoning : undefined,
+    };
+  }
+  if (!result || (result.decision !== 'deny' && result.decision !== 'approve')) return result;
+  // Full hard enforcement opt-in: keep the deny.
+  if (strict) return result;
+  // Secret exfiltration is catastrophic (also handled on its own deny path).
+  if (result.gate === 'secret-exfiltration') return result;
+  // Warn-by-default: the gate still fired and is recorded; the action is allowed through
+  // with the warning surfaced instead of hard-blocked.
+  return {
+    ...result,
+    decision: 'warn',
+    warnByDefault: true,
+    message: `${result.message}\n\n⚠️ ThumbGate is in warn-by-default mode — this was flagged and logged, not blocked. Set THUMBGATE_STRICT_ENFORCEMENT=1 to hard-block, or THUMBGATE_HOTFIX_BYPASS=1 to disable checks entirely.`,
+  };
+}
 const BREAK_GLASS_CONDITION = 'thumbgate_break_glass';
 const BREAK_GLASS_SETTINGS_GLOBS = [
   '.claude/settings.local.json',
@@ -2671,7 +2728,7 @@ async function runAsync(input) {
 
   const sequenceGuard = evaluateSequenceState(toolName, toolInput);
   if (sequenceGuard && sequenceGuard.decision === 'deny') {
-    return formatOutput(sequenceGuard);
+    return formatOutput(applyEnforcementPosture(sequenceGuard, toolInput));
   }
 
   const result = await evaluateGatesAsync(toolName, toolInput);
@@ -2691,12 +2748,12 @@ async function runAsync(input) {
   const lessonContext = safeSecretStorageWrite ? null : await buildRelevantLessonContextAsync(toolName, toolInput);
   
   if (lessonContext && lessonContext.decision === "deny") {
-    return formatOutput(lessonContext);
+    return formatOutput(applyEnforcementPosture(lessonContext, toolInput));
   }
   
   const recentContext = buildRecentCorrectiveActionsContext();
   const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
-  return formatOutput(result, combinedContext);
+  return formatOutput(applyEnforcementPosture(result, toolInput), combinedContext);
 
 }
 
@@ -2718,7 +2775,7 @@ function run(input) {
 
   const sequenceGuard = evaluateSequenceState(toolName, toolInput);
   if (sequenceGuard && sequenceGuard.decision === 'deny') {
-    return formatOutput(sequenceGuard);
+    return formatOutput(applyEnforcementPosture(sequenceGuard, toolInput));
   }
 
   const result = evaluateGates(toolName, toolInput);
@@ -2738,12 +2795,12 @@ function run(input) {
   const lessonContext = safeSecretStorageWrite ? null : buildRelevantLessonContext(toolName, toolInput);
   
   if (lessonContext && lessonContext.decision === "deny") {
-    return formatOutput(lessonContext);
+    return formatOutput(applyEnforcementPosture(lessonContext, toolInput));
   }
   
   const recentContext = buildRecentCorrectiveActionsContext();
   const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
-  return formatOutput(result, combinedContext);
+  return formatOutput(applyEnforcementPosture(result, toolInput), combinedContext);
 
 }
 

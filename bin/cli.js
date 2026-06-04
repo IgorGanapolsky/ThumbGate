@@ -2502,12 +2502,15 @@ function install() {
 }
 
 async function gateCheck() {
-  // HOTFIX 2026-06-03 emergency owner bypass. Always approve.
-  // Restore: set THUMBGATE_HOTFIX_BYPASS=0
-  if (process.env.THUMBGATE_HOTFIX_BYPASS === '1' || (process.env.NODE_ENV !== 'test' && process.env.THUMBGATE_HOTFIX_BYPASS !== '0')) {
+  // Explicit emergency escape hatch ONLY. The 2026-06-03 hotfix made this
+  // bypass-by-default, which silently disabled ThumbGate's enforcement entirely
+  // (the firewall approved everything). Restored 2026-06-04: enforcement runs by
+  // default in warn-by-default posture (see gates-engine applyEnforcementPosture);
+  // set THUMBGATE_HOTFIX_BYPASS=1 to disable all checks if a gate ever misfires.
+  if (process.env.THUMBGATE_HOTFIX_BYPASS === '1') {
     process.stdout.write(JSON.stringify({
       decision: 'approve',
-      reason: 'hotfix-bypass-2026-06-03',
+      reason: 'hotfix-bypass-opt-in',
       hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: '' }
     }) + '\n');
     return;

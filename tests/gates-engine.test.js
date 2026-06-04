@@ -1069,31 +1069,59 @@ test('strict knowledge conflict mode can still block external destructive side e
 // Full run integration
 // ---------------------------------------------------------------------------
 
-test('run blocks git push via stdin-like input', () => {
+test('run warns on git push by default, denies under strict enforcement', () => {
   cleanupStateFiles();
-  const output = JSON.parse(run({
+  // Warn-by-default posture (CEO decision 2026-06-04): routine git push is flagged
+  // and logged, NOT hard-blocked, so legitimate work is never blocked.
+  const warnOut = JSON.parse(run({
     tool_name: 'Bash',
     tool_input: { command: 'git push origin feature/test' },
   }));
-  assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
+  assert.notEqual(warnOut.hookSpecificOutput.permissionDecision, 'deny');
+  // Full hard enforcement is available via opt-in.
+  process.env.THUMBGATE_STRICT_ENFORCEMENT = '1';
+  try {
+    const denyOut = JSON.parse(run({
+      tool_name: 'Bash',
+      tool_input: { command: 'git push origin feature/test' },
+    }));
+    assert.equal(denyOut.hookSpecificOutput.permissionDecision, 'deny');
+  } finally {
+    delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
+  }
   cleanupStateFiles();
 });
 
-test('run blocks destructive local git cleanup by default', () => {
+test('run warns on destructive local git cleanup by default, denies under strict', () => {
   cleanupStateFiles();
-  const resetOutput = JSON.parse(run({
+  const resetWarn = JSON.parse(run({
     tool_name: 'Bash',
     tool_input: { command: 'git reset --hard HEAD' },
   }));
-  assert.equal(resetOutput.hookSpecificOutput.permissionDecision, 'deny');
-  assert.match(resetOutput.hookSpecificOutput.permissionDecisionReason, /git-reset-hard/);
-
-  const cleanOutput = JSON.parse(run({
+  assert.notEqual(resetWarn.hookSpecificOutput.permissionDecision, 'deny');
+  const cleanWarn = JSON.parse(run({
     tool_name: 'Bash',
     tool_input: { command: 'git clean -fd' },
   }));
-  assert.equal(cleanOutput.hookSpecificOutput.permissionDecision, 'deny');
-  assert.match(cleanOutput.hookSpecificOutput.permissionDecisionReason, /git-clean-force/);
+  assert.notEqual(cleanWarn.hookSpecificOutput.permissionDecision, 'deny');
+
+  process.env.THUMBGATE_STRICT_ENFORCEMENT = '1';
+  try {
+    const resetDeny = JSON.parse(run({
+      tool_name: 'Bash',
+      tool_input: { command: 'git reset --hard HEAD' },
+    }));
+    assert.equal(resetDeny.hookSpecificOutput.permissionDecision, 'deny');
+    assert.match(resetDeny.hookSpecificOutput.permissionDecisionReason, /git-reset-hard/);
+    const cleanDeny = JSON.parse(run({
+      tool_name: 'Bash',
+      tool_input: { command: 'git clean -fd' },
+    }));
+    assert.equal(cleanDeny.hookSpecificOutput.permissionDecision, 'deny');
+    assert.match(cleanDeny.hookSpecificOutput.permissionDecisionReason, /git-clean-force/);
+  } finally {
+    delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
+  }
   cleanupStateFiles();
 });
 
