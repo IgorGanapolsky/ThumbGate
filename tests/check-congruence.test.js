@@ -46,16 +46,19 @@ test('GitHub About config keeps a rich landing description and a valid GitHub de
   assert.ok(about.githubDescription.length <= MAX_GITHUB_DESCRIPTION_LENGTH);
 });
 
-test('README commercial copy stays aligned with current Pro and Team packaging', () => {
+test('README commercial copy stays aligned with current Pro and Enterprise packaging', () => {
   const readme = execSync('sed -n \'1,320p\' README.md', { cwd: ROOT, encoding: 'utf-8' });
   assert.match(readme, /\$19\/mo or \$149\/yr/);
-  assert.match(readme, /\$49\/seat\/mo/);
+  assert.match(readme, /Enterprise \(custom pricing, scoped after intake\)/);
+  assert.doesNotMatch(readme, /\$49\/seat\/mo/);
   assert.match(readme, /shared hosted lesson DB/i);
   assert.match(readme, /org dashboard/i);
   assert.match(readme, /history-aware/i);
   assert.match(readme, /feedback session|open_feedback_session|append_feedback_context|finalize_feedback_session/i);
-  assert.match(readme, /unlimited feedback captures/i);
-  assert.match(readme, /3 active auto-promoted prevention rules/i);
+  // Free-tier copy must match what scripts/rate-limiter.js enforces (no "unlimited" lie).
+  assert.match(readme, /5 feedback captures\/day \(25 total\)/i);
+  assert.match(readme, /up to 3 active auto-promoted prevention rules/i);
+  assert.doesNotMatch(readme, /unlimited feedback captures/i);
   assert.match(readme, /lesson/i);
   assert.doesNotMatch(readme, /\$12\/seat\/mo/i);
   assert.doesNotMatch(readme, /shared team DB/i);

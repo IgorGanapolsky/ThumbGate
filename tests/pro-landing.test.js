@@ -50,7 +50,7 @@ test('pro landing page keeps the pricing section focused on the $19 Pro checkout
   assert.match(pricingSection, /Start Pro Now/);
   assert.match(pricingSection, /billed today/i);
   assert.match(pricingSection, /Restart|Start|Choose annual/);
-  assert.match(pricingSection, /Book a Team Pilot Call/);
+  assert.match(pricingSection, /Book an Enterprise Pilot Call/);
   assert.doesNotMatch(pricingSection, /<h3>ThumbGate Team/);
 });
 
@@ -96,7 +96,7 @@ test('pro landing page keeps services out of the Pro buyer path', () => {
   const proPage = readProPage();
 
   assert.match(proPage, /Team diagnostics and custom services are handled through intake, not this buyer path/);
-  assert.match(proPage, /Book a Team Pilot Call/);
+  assert.match(proPage, /Book an Enterprise Pilot Call/);
   assert.doesNotMatch(proPage, /data-pro-paid-recovery/);
   assert.doesNotMatch(proPage, /data-first-rule-link/);
   assert.doesNotMatch(proPage, /data-quick-read-link/);

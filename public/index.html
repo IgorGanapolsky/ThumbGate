@@ -116,10 +116,9 @@ __GA_BOOTSTRAP__
     },
     {
       "@type": "Offer",
-      "name": "Team",
-      "price": "49",
+      "name": "Enterprise",
       "priceCurrency": "USD",
-      "description": "Intake-led team rollout with a workflow hardening sprint, shared enforcement memory, org dashboard visibility, approval boundaries, release confidence, Docker Sandboxes guidance for risky local autonomy, and pilot support for teams shipping AI-generated changes",
+      "description": "Contact-sales tier with custom pricing scoped after intake: a workflow hardening sprint, shared hosted lesson database, org dashboard visibility, shared enforcement, approval boundaries, audit-grade decision trail, regulatory gate templates, Docker Sandboxes guidance for risky local autonomy, and dedicated onboarding for teams shipping AI-generated changes",
       "url": "https://thumbgate.ai/#workflow-sprint-intake"
     },
     {
@@ -752,9 +751,9 @@ __GA_BOOTSTRAP__
         <a href="/checkout/pro?utm_source=website&utm_medium=offer_router&cta_id=router_start_pro&cta_placement=offer_router&plan_id=pro" data-revenue-cta data-cta-id="router_start_pro" data-cta-placement="offer_router" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);">Pay $19/mo with Stripe →</a>
       </div>
       <div class="offer-route">
-        <strong>Team workflow: Start with intake</strong>
-        <p>Proof before rollout.</p>
-        <a href="#workflow-sprint-intake" onclick="sendFirstPartyTelemetry('workflow_sprint_intake_started',{ctaId:'router_workflow_sprint',ctaPlacement:'offer_router',offer:'workflow_sprint'});">Send the workflow first →</a>
+        <strong>Enterprise: Start with intake</strong>
+        <p>Shared enforcement, scoped.</p>
+        <a href="#workflow-sprint-intake" onclick="sendFirstPartyTelemetry('workflow_sprint_intake_started',{ctaId:'router_workflow_sprint',ctaPlacement:'offer_router',offer:'workflow_sprint'});">Talk to us →</a>
       </div>
       <div class="offer-route">
         <strong>Still evaluating: Free CLI</strong>
@@ -828,7 +827,7 @@ __GA_BOOTSTRAP__
       <div hidden aria-hidden="true" data-thumbgate-test-anchors style="display:none">
         <span data-cta="hero_workflow_sprint_intake">ctaId: 'hero_workflow_sprint' ctaId: 'hero_workflow_sprint_recovery_intake' workflow_sprint_intake_started workflow_sprint_recovery_intake_clicked hero_workflow_sprint_recovery_intake</span>
         <span data-anchor="dashboard-preview">dashboard-preview What your Pro dashboard looks like check:no-force-push</span>
-        <span data-anchor="team-intake-form">Start Team Pilot Intake id="team-pilot-intake-form" data-team-intake-form name="ctaPlacement" value="team_visible_intake" name="utmMedium" value="visible_team_intake" name="planId" value="team" name="ctaId" value="workflow_sprint_intake" Team checkout happens after scope. team_workflow_sprint_recovery_intake scope_first workflow_sprint_intake_started workflow_sprint_intake_submit_attempted pricing_team_intake team_intake_started</span>
+        <span data-anchor="team-intake-form">Start Enterprise Pilot Intake id="team-pilot-intake-form" data-team-intake-form name="ctaPlacement" value="team_visible_intake" name="utmMedium" value="visible_team_intake" name="planId" value="team" name="ctaId" value="workflow_sprint_intake" Enterprise checkout happens after scope. team_workflow_sprint_recovery_intake scope_first workflow_sprint_intake_started workflow_sprint_intake_submit_attempted pricing_team_intake team_intake_started</span>
         <span data-anchor="chatgpt-context">No, you do not have to chat inside the GPT forever. ChatGPT is the discovery and memory surface. Do not rely on ChatGPT's native rating buttons for ThumbGate memory. Explore GPTs choose the GPT by Igor Ganapolsky Programming Do I have to chat inside the ThumbGate GPT for enforcement? capture thumbs-up/down lessons Real blocking for coding agents still runs locally adapters/chatgpt/INSTALL.md Native ChatGPT rating buttons are not the ThumbGate capture path. thumbs up: this review named exact files, commands, and tests. thumbs down: the answer ignored my request.</span>
       </div>
     </div>
@@ -1353,6 +1352,33 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="section-label">Pricing</div>
     <h2 class="section-title">Stop paying for agent mistakes you already fixed.</h2>
+
+    <!-- At-a-glance comparison so buyers see plan differences without parsing the cards below. -->
+    <div class="plan-matrix-wrap" style="max-width:1080px;margin:8px auto 28px;overflow-x:auto;">
+      <table class="plan-matrix" style="width:100%;border-collapse:collapse;font-size:14px;min-width:640px;">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:12px 14px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);"></th>
+            <th style="text-align:center;padding:12px 14px;border-bottom:1px solid var(--border);">Free<br><span style="font-size:12px;color:var(--text-muted);font-weight:400;">$0 forever</span></th>
+            <th style="text-align:center;padding:12px 14px;border-bottom:1px solid var(--border);color:var(--cyan);">Pro<br><span style="font-size:12px;color:var(--text-muted);font-weight:400;">$19/mo or $149/yr</span></th>
+            <th style="text-align:center;padding:12px 14px;border-bottom:1px solid var(--border);color:var(--cyan);">Enterprise<br><span style="font-size:12px;color:var(--text-muted);font-weight:400;">Custom — scoped after intake</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Local PreToolUse enforcement (all agents)</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
+          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Feedback captures</td><td style="text-align:center;border-bottom:1px solid var(--border);">5/day (25 total)</td><td style="text-align:center;border-bottom:1px solid var(--border);">Unlimited</td><td style="text-align:center;border-bottom:1px solid var(--border);">Unlimited</td></tr>
+          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Active auto-promoted prevention rules</td><td style="text-align:center;border-bottom:1px solid var(--border);">3</td><td style="text-align:center;border-bottom:1px solid var(--border);">Unlimited</td><td style="text-align:center;border-bottom:1px solid var(--border);">Unlimited</td></tr>
+          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Lesson recall + search across sessions</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
+          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Personal dashboard + DPO export</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
+          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Hosted sync across machines</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
+          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Shared lesson database + org dashboard</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
+          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Org-wide shared enforcement + approval boundaries</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
+          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Audit trail, SSO, regulatory gate templates</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
+          <tr><td style="padding:10px 14px;color:var(--text-muted);">Best for</td><td style="text-align:center;color:var(--text-muted);">One developer</td><td style="text-align:center;color:var(--text-muted);">Solo operators</td><td style="text-align:center;color:var(--text-muted);">Teams &amp; regulated orgs</td></tr>
+        </tbody>
+      </table>
+    </div>
+
     <div class="pricing-grid">
       <div class="price-card free-highlight" style="border-color:var(--cyan);box-shadow:0 0 40px var(--cyan-dim), inset 0 1px 0 rgba(34,211,238,0.15);position:relative;">
         <div class="tier" style="color:var(--cyan);">Free</div>
@@ -1399,23 +1425,6 @@ __GA_BOOTSTRAP__
         <p style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;">Billed today · cancel anytime.</p>
         <input type="email" id="pro-email" data-buyer-email placeholder="you@company.com" style="margin-top:10px;width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-raised);color:var(--text);font-size:14px;">
       </div>
-      <div class="price-card team">
-        <div class="tier">Team</div>
-        <div class="price">$49<span style="font-size:16px;color:var(--text-dim)">/seat/mo</span></div>
-        <div class="price-sub">Shared enforcement memory for one team workflow first.</div>
-        <ul>
-          <li>Everything in Pro for each seat</li>
-          <li>Shared lesson database for Team seats, with export/import and shared workflow rules</li>
-          <li>Org dashboard visibility across agent surfaces</li>
-          <li>Enterprise Data Chat over local ThumbGate lessons, gates, and rollout readiness; Dialogflow CX / Vertex integration is enabled only when deployment evidence is configured</li>
-          <li>Hosted review views for team verification evidence</li>
-          <li>Check template library for deploys, publish, refunds, and DB work</li>
-          <li>Workflow hardening sprint intake for approval boundaries and rollback safety</li>
-          <li>Email support during pilot rollout</li>
-        </ul>
-        <a href="#workflow-sprint-intake" onclick="try{posthog.capture('team_intake_click',{cta:'team_intake',seats:3,price:0})}catch(_){};sendFirstPartyTelemetry('team_intake_started',{ctaId:'pricing_team_intake',ctaPlacement:'pricing',planId:'team',seatCount:3,price:0});sendGa4Event('generate_lead',{currency:'USD',value:0,method:'team_workflow_intake'});" class="btn-team" style="display:block;text-align:center;">Send team workflow first →</a>
-        <p style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;">Team is $49/seat/mo with a 3-seat minimum, but team rollouts start through intake so the workflow, shared rules, and rollout proof are explicit before checkout.</p>
-      </div>
     </div>
     <div class="pricing-matrix" aria-label="Plan capability comparison">
       <table>
@@ -1425,8 +1434,7 @@ __GA_BOOTSTRAP__
             <th scope="col">Capability</th>
             <th scope="col">Free</th>
             <th scope="col">Pro</th>
-            <th scope="col">Team</th>
-            <th scope="col">Regulated</th>
+            <th scope="col">Enterprise</th>
           </tr>
         </thead>
         <tbody>
@@ -1434,60 +1442,59 @@ __GA_BOOTSTRAP__
             <td><strong>Best for</strong></td>
             <td>Solo proof that a repeat mistake can be blocked</td>
             <td>One operator who wants hosted sync, dashboard proof, and exports</td>
-            <td>Teams that need one person's correction to protect every seat</td>
-            <td>Banking, insurance, healthcare, public sector, or audited workflows</td>
+            <td>Teams &amp; regulated orgs — one person's correction protects every seat; banking, insurance, healthcare, public sector, audited workflows</td>
           </tr>
           <tr>
             <td><strong>Price</strong></td>
             <td>$0</td>
             <td>$19/mo or $149/yr</td>
-            <td>$49/seat/mo after scope, 3-seat minimum</td>
-            <td>Scoped after regulated intake</td>
+            <td>Custom — scoped after intake</td>
           </tr>
           <tr>
             <td><strong>Feedback captures</strong></td>
             <td>5/day, 25 total</td>
             <td>Unlimited</td>
-            <td>Unlimited shared across seats</td>
-            <td>Custom retention and evidence policy</td>
+            <td>Unlimited, shared across the org; custom retention and evidence policy</td>
           </tr>
           <tr>
             <td><strong>Active prevention rules</strong></td>
             <td>3 active rules</td>
             <td>Unlimited personal rules</td>
-            <td>Shared org rules plus per-seat rules</td>
-            <td>Policy templates, approvals, and audit export</td>
+            <td>Shared org rules, policy templates, approvals, and audit export</td>
           </tr>
           <tr>
             <td><strong>Dashboard and proof</strong></td>
             <td>Local CLI evidence</td>
             <td>Personal dashboard, check debugger, DPO/HF exports</td>
-            <td>Org dashboard, hosted review views, workflow rollout proof</td>
-            <td>SIEM-ready decision trail and compliance evidence package</td>
+            <td>Org dashboard, hosted review views, rollout proof, SIEM-ready decision trail and compliance evidence</td>
           </tr>
           <tr>
             <td><strong>How to start</strong></td>
             <td><code>npx thumbgate init</code></td>
             <td>Self-serve Stripe checkout</td>
-            <td>Send one repeated workflow failure first</td>
-            <td>Start regulated workflow review</td>
+            <td>Send one repeated workflow failure first — intake before checkout</td>
           </tr>
         </tbody>
       </table>
     </div>
-    <p class="pricing-note">Free proves the enforcement loop. Pro removes solo limits. Team and Regulated plans start through intake because shared rules, permissions, rollback paths, and rollout proof must be explicit before checkout.</p>
+    <p class="pricing-note">Free proves the enforcement loop. Pro removes solo limits. Enterprise plans start through intake because shared rules, permissions, rollback paths, and rollout proof must be explicit before checkout.</p>
     <div style="max-width:1080px;margin:24px auto 0;">
-      <div class="price-card regulated" style="border:1px solid var(--cyan);background:linear-gradient(180deg, rgba(34,211,238,0.04), transparent);padding:24px 28px;">
+      <div class="price-card enterprise" style="border:1px solid var(--cyan);background:linear-gradient(180deg, rgba(34,211,238,0.04), transparent);padding:24px 28px;">
         <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:24px;justify-content:space-between;">
           <div style="flex:1 1 420px;min-width:280px;">
-            <div class="tier" style="color:var(--cyan);">Regulated</div>
-            <div style="font-size:14px;color:var(--text-muted);margin:4px 0 12px;letter-spacing:0.04em;text-transform:uppercase;">Banking · Insurance · Healthcare · Public sector</div>
-            <div style="font-size:18px;color:var(--text);margin-bottom:6px;font-weight:700;">Regulated workflow review</div>
-            <div class="price-sub" style="margin-bottom:14px;">For teams operating AI coding agents under DORA, the EU AI Act, HIPAA, or comparable audit pressure. Pricing is scoped after intake because the buyer needs evidence, deployment boundaries, and approval ownership before checkout.</div>
+            <div class="tier" style="color:var(--cyan);">Enterprise</div>
+            <div style="font-size:14px;color:var(--text-muted);margin:4px 0 12px;letter-spacing:0.04em;text-transform:uppercase;">Engineering teams · Banking · Insurance · Healthcare · Public sector</div>
+            <div style="font-size:18px;color:var(--text);margin-bottom:6px;font-weight:700;">Shared enforcement for teams &amp; regulated workflows — custom pricing</div>
+            <div class="price-sub" style="margin-bottom:14px;">For teams that need one correction to protect every developer and agent across shared repos, CI, and approval policies — including teams operating under DORA, the EU AI Act, HIPAA, or comparable audit pressure. Pricing is scoped after intake because the buyer needs evidence, deployment boundaries, and approval ownership before checkout.</div>
             <ul style="margin-bottom:0;">
+              <li><strong>Shared lesson database</strong> — one hosted, shared lesson DB so one team member's correction becomes every developer's prevention rule across the org</li>
+              <li><strong>Org dashboard</strong> — active agents, check hit-rates, and risk surfaces across the whole team</li>
+              <li><strong>Shared enforcement memory</strong> — approval boundaries and rollback safety applied org-wide, not per machine</li>
               <li><strong>Audit-grade decision trail</strong> — every PreToolUse evaluation logged with the rule that fired, ready for SIEM export</li>
               <li><strong>Immutable rule provenance</strong> — each prevention rule traceable to the feedback event that generated it</li>
               <li><strong>Self-managed deployment</strong> — air-gapped or VPC-hosted; no agent state leaves your boundary</li>
+              <li><strong>Dialogflow CX fulfillment guard</strong> — ThumbGate's pre-action gate sits in front of your Dialogflow CX webhook fulfillment, in your own GCP tenant, so risky or repeat turns are blocked before they touch a database, CRM, or billing system (white-glove design-partner pilot)</li>
+              <li><strong>Vertex AI / Gemini scoring, in-tenant</strong> — risk and planning scoring runs on Gemini via Vertex (<code>npx thumbgate setup-vertex</code>); no conversational data leaves your VPC</li>
               <li><strong>DORA / EU AI Act evidence packaging</strong> — machine-readable reports aligned to Article 6, 28, and high-risk provider monitoring obligations</li>
               <li><strong>SSO + role separation</strong> — operator, reviewer, and auditor roles enforced at the gate layer</li>
               <li><strong>Enterprise Data Chat</strong> — local ThumbGate data Q&amp;A with Dialogflow CX / Vertex-ready governance; live cloud-agent claims require deployment evidence first</li>
@@ -1496,7 +1503,7 @@ __GA_BOOTSTRAP__
             </ul>
           </div>
           <div style="flex:0 0 260px;min-width:240px;display:flex;flex-direction:column;gap:10px;">
-            <a href="/?tier=regulated#workflow-sprint-intake" onclick="try{posthog.capture('regulated_intake_click',{cta:'regulated_contact_sales',placement:'pricing'})}catch(_){};sendFirstPartyTelemetry('regulated_intake_started',{ctaId:'pricing_regulated_intake',ctaPlacement:'pricing',planId:'regulated'});" class="btn-team" style="display:block;text-align:center;background:var(--cyan);color:#06121a;font-weight:800;">Start regulated intake →</a>
+            <a href="/?tier=enterprise#workflow-sprint-intake" onclick="try{posthog.capture('enterprise_intake_click',{cta:'enterprise_contact_sales',placement:'pricing'})}catch(_){};sendFirstPartyTelemetry('enterprise_intake_started',{ctaId:'pricing_enterprise_intake',ctaPlacement:'pricing',planId:'enterprise'});" class="btn-team" style="display:block;text-align:center;background:var(--cyan);color:#06121a;font-weight:800;">Start enterprise intake →</a>
             <a href="/learn/regulated-agent-execution-boundary" style="display:block;text-align:center;padding:10px 14px;font-size:13px;color:var(--cyan);border:1px solid var(--cyan);border-radius:8px;text-decoration:none;">Read the build-vs-buy thesis first</a>
             <p style="font-size:11px;color:var(--text-muted);margin:0;text-align:center;line-height:1.5;">Pricing is workflow-scoped and shared after the intake call. Annual pre-pay available.</p>
           </div>
@@ -1508,21 +1515,21 @@ __GA_BOOTSTRAP__
 
 <section class="compatibility" id="workflow-sprint-intake">
   <div class="container">
-    <div class="section-label">Team Pilot</div>
+    <div class="section-label">Enterprise Pilot</div>
     <h2 class="section-title">Start the AI Agent Governance Sprint with one repeat failure</h2>
     <p style="color:var(--text-dim);max-width:720px;margin:0 auto 16px;">This is the fastest path to first paid value for teams. Start with one repo, one workflow owner, and one blocker. The intake is designed to prove that ThumbGate reduces review churn, rollout risk, or repeated agent mistakes before a wider rollout.</p>
     <div class="team-intake-panel">
       <div class="team-intake-panel-head">
         <div>
           <h3>Tell us the workflow. Get a proof plan.</h3>
-          <p>The highest-fit Team buyer is already feeling one repeated failure. Send the workflow first so the next step is scoped around the real blocker instead of a blind checkout.</p>
+          <p>The highest-fit Enterprise buyer is already feeling one repeated failure. Send the workflow first so the next step is scoped around the real blocker instead of a blind checkout.</p>
         </div>
         <span class="team-intake-badge">30-minute intake</span>
       </div>
       <div class="team-intake-recovery" aria-label="Checkout recovery path for workflow sprint buyers">
         <div>
-          <strong>Team checkout happens after scope.</strong>
-          <span>Send the workflow first. We will qualify the blocker, confirm whether Pro, Team, or a scoped rollout is the right next step, and keep the purchase path tied to real evidence.</span>
+          <strong>Enterprise checkout happens after scope.</strong>
+          <span>Send the workflow first. We will qualify the blocker, confirm whether Pro or a scoped Enterprise rollout is the right next step, and keep the purchase path tied to real evidence.</span>
         </div>
         <a href="#team-pilot-intake-form" onclick="sendFirstPartyTelemetry('workflow_sprint_recovery_intake_clicked',{ctaId:'team_workflow_sprint_recovery_intake',ctaPlacement:'team_intake_recovery',planId:'team',offer:'workflow_hardening_sprint',reason:'scope_first'});sendGa4Event('generate_lead',{currency:'USD',value:0,method:'workflow_sprint_recovery_intake'});">Send workflow first</a>
       </div>
@@ -1542,7 +1549,7 @@ __GA_BOOTSTRAP__
         <textarea class="full" name="blocker" placeholder="What repeat mistake, rollout blocker, or team handoff failure keeps happening?" required></textarea>
         <textarea class="full" name="note" placeholder="Optional context: team size, repos involved, target rollout date, or what you need to prove internally."></textarea>
         <div class="full">
-          <button type="submit" class="btn-team">Start Team Pilot Intake</button>
+          <button type="submit" class="btn-team">Start Enterprise Pilot Intake</button>
         </div>
       </form>
     </div>
@@ -1609,11 +1616,11 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What does Pro cost?</div>
-        <div class="faq-a">Pro is $19/mo or $149/yr for individual operators and bills immediately through Stripe. Team is $49/seat/mo with a 3-seat minimum and starts through the workflow intake so scope, shared rules, and rollout proof are explicit before a team rollout.</div>
+        <div class="faq-a">Pro is $19/mo or $149/yr for individual operators and bills immediately through Stripe. Enterprise is custom pricing, scoped after intake, and starts through the workflow intake so scope, shared rules, and rollout proof are explicit before a rollout.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Does ThumbGate support enterprise Google Cloud / Vertex AI?</div>
-        <div class="faq-a">Yes! ThumbGate features a zero-friction enterprise setup path via <code>npx thumbgate setup-vertex</code>. This command automatically detects your active gcloud session, enables the Vertex AI API on your Google Cloud project, and configures secure Application Default Credentials (ADC) to route all evaluations within your corporate VPC.</div>
+        <div class="faq-a">Yes. <code>npx thumbgate setup-vertex</code> detects your active gcloud session, enables the Vertex AI API on your Google Cloud project, and configures secure Application Default Credentials (ADC) so evaluations run within your corporate VPC. For Dialogflow CX, the Enterprise pilot puts ThumbGate's pre-action gate in front of your DFCX webhook fulfillment (deployed in your own tenant) so risky or repeat turns are blocked before they touch a database, CRM, or billing system. It's a white-glove design-partner pilot — ThumbGate gates your own Dialogflow CX agent; it does not host a Dialogflow CX agent for you.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How does ThumbGate contain enterprise API costs?</div>
