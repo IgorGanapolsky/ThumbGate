@@ -242,6 +242,7 @@
     "bin/postinstall.js",
     "config/",
     "openapi/",
+    "public/about.html",
     "public/agent-manager.html",
     "public/blog.html",
     "public/codex-enterprise.html",

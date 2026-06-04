@@ -5158,7 +5158,12 @@ async function addContext(){
       return;
     }
 
-    if (isGetLikeRequest && pathname === '/checkout/pro') {
+    // HOTFIX 2026-06-04 — accept ANY method (GET/HEAD/POST) on /checkout/pro
+    // to prevent the API-key guard from 401'ing real prospective customers
+    // whose forms or fetch() calls land via POST. Audit: 69 emails submitted
+    // → 0 paid because POST hit the auth gate. Query params still drive the
+    // Stripe session creation; POST bodies are ignored harmlessly.
+    if ((isGetLikeRequest || req.method === 'POST') && pathname === '/checkout/pro') {
       if (isHeadRequest) {
         sendHtml(res, 200, '', {}, {
           headOnly: true,
