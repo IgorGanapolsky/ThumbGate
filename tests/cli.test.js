@@ -699,25 +699,32 @@ describe('bin/cli.js', () => {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
 
-  test('gate-check blocks high-risk git writes without task scope', () => {
+  test('gate-check warns on high-risk git writes by default, denies under strict enforcement', () => {
     const feedbackDir = makeTmpDir();
-    const result = runCliSync(['gate-check'], {
-      env: {
-        ...process.env,
-        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+    const input = JSON.stringify({
+      tool_name: 'Bash',
+      tool_input: {
+        command: 'git push origin feature/x',
+        changed_files: ['src/app.js'],
       },
-      input: JSON.stringify({
-        tool_name: 'Bash',
-        tool_input: {
-          command: 'git push origin feature/x',
-          changed_files: ['src/app.js'],
-        },
-      }),
     });
-    assert.equal(result.status, 0, `gate-check failed:\n${result.stderr}`);
-    const payload = JSON.parse(result.stdout);
-    assert.equal(payload.hookSpecificOutput.permissionDecision, 'deny');
-    assert.match(payload.hookSpecificOutput.permissionDecisionReason, /task-scope-required/);
+    // Warn-by-default posture (CEO decision 2026-06-04): high-risk git writes are
+    // flagged + logged, not hard-blocked, so legitimate work is never blocked.
+    const warnRes = runCliSync(['gate-check'], {
+      env: { ...process.env, THUMBGATE_FEEDBACK_DIR: feedbackDir, THUMBGATE_STRICT_ENFORCEMENT: '0' },
+      input,
+    });
+    assert.equal(warnRes.status, 0, `gate-check failed:\n${warnRes.stderr}`);
+    const warnPayload = JSON.parse(warnRes.stdout);
+    assert.notEqual(warnPayload.hookSpecificOutput.permissionDecision, 'deny');
+    // Strict mode restores hard enforcement.
+    const denyRes = runCliSync(['gate-check'], {
+      env: { ...process.env, THUMBGATE_FEEDBACK_DIR: feedbackDir, THUMBGATE_STRICT_ENFORCEMENT: '1' },
+      input,
+    });
+    const denyPayload = JSON.parse(denyRes.stdout);
+    assert.equal(denyPayload.hookSpecificOutput.permissionDecision, 'deny');
+    assert.match(denyPayload.hookSpecificOutput.permissionDecisionReason, /task-scope-required/);
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
 
