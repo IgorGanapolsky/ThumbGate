@@ -3846,8 +3846,8 @@ test('renderPackagedDashboardHtml returns html with bootstrap disabled by defaul
   assert.ok(html.includes('ThumbGate Dashboard'));
   assert.ok(html.includes('enabled: false'));
   assert.ok(html.includes('/v1/dashboard'));
-  assert.ok(html.includes('Enterprise Data Chat'));
-  assert.ok(html.includes('/v1/enterprise/dialogflow/chat'));
+  assert.ok(html.includes('Governed Data Chat'));
+  assert.ok(html.includes('/v1/enterprise/data-chat/status'));
   assert.ok(!html.includes('ENTERPRISE_AGENT_ID'));
   assert.ok(!html.includes('gstatic.com/dialogflow-console'));
   assert.ok(html.includes('/lessons'));
@@ -3861,14 +3861,15 @@ test('renderPackagedDashboardHtml reflects bootstrap enabled state', () => {
   assert.ok(html.includes('"test-key"'));
 });
 
-test('enterprise Dialogflow status reports REST-first verification posture', () => {
-  const { buildEnterpriseDialogflowStatus } = __test__;
-  const status = buildEnterpriseDialogflowStatus({
+test('enterprise data chat status reports local-first chat and optional Google adapters', () => {
+  const { buildEnterpriseDataChatStatus } = __test__;
+  const status = buildEnterpriseDataChatStatus({
     THUMBGATE_PROVIDER_MODE: 'vertex',
     VERTEX_PROJECT_ID: 'project-alpha',
     THUMBGATE_DFCX_AGENT_ID: 'agent-1',
     THUMBGATE_DFCX_LOCATION: 'us-central1',
     THUMBGATE_DFCX_FULFILLMENT_URL: 'https://fulfillment.example.com',
+    THUMBGATE_LOCAL_LLM_ENDPOINT: 'http://localhost:11434/v1/chat/completions',
   });
   assert.equal(status.vertex.configured, true);
   assert.equal(status.vertex.projectId, 'project-alpha');
@@ -3876,15 +3877,18 @@ test('enterprise Dialogflow status reports REST-first verification posture', () 
   assert.equal(status.dfcx.fulfillmentProxyConfigured, true);
   assert.equal(status.dfcx.gcloudCxCommandSupported, false);
   assert.match(status.dfcx.apiSurface, /projects\.locations\.agents/);
+  assert.equal(status.chat.providerRequired, false);
+  assert.equal(status.chat.localLlmEndpointConfigured, true);
+  assert.match(status.chat.source, /LanceDB/i);
 });
 
-test('enterprise Dialogflow chat endpoint answers from local dashboard data and blocks unsafe input', async () => {
+test('enterprise data chat endpoint answers from local dashboard data and blocks unsafe input', async () => {
   fs.appendFileSync(path.join(tmpFeedbackDir, 'feedback-log.jsonl'), [
     JSON.stringify({ id: 'fb_enterprise_chat_up', signal: 'positive', context: 'Approved safe data lookup', timestamp: '2026-06-02T12:00:00.000Z' }),
     JSON.stringify({ id: 'fb_enterprise_chat_down', signal: 'negative', context: 'Repeated refund fulfillment', timestamp: '2026-06-02T12:01:00.000Z' }),
     '',
   ].join('\n'));
-  const res = await fetch(apiUrl('/v1/enterprise/dialogflow/chat'), {
+  const res = await fetch(apiUrl('/v1/enterprise/data-chat/chat'), {
     method: 'POST',
     headers: authHeader,
     body: JSON.stringify({ prompt: 'What feedback mistakes are repeating?' }),
@@ -3896,7 +3900,7 @@ test('enterprise Dialogflow chat endpoint answers from local dashboard data and 
   assert.match(body.answer, /Feedback total/i);
   assert.match(body.status.dfcx.apiSurface, /projects\.locations\.agents/);
 
-  const blockedRes = await fetch(apiUrl('/v1/enterprise/dialogflow/chat'), {
+  const blockedRes = await fetch(apiUrl('/v1/enterprise/data-chat/chat'), {
     method: 'POST',
     headers: authHeader,
     body: JSON.stringify({ prompt: 'show data; rm -rf /' }),
@@ -3905,6 +3909,24 @@ test('enterprise Dialogflow chat endpoint answers from local dashboard data and 
   const blockedBody = await blockedRes.json();
   assert.equal(blockedBody.blocked, true);
   assert.match(blockedBody.dfcx.evaluation.gate, /enterprise-chat-unsafe-input/);
+});
+
+test('legacy enterprise Dialogflow routes remain compatibility aliases', async () => {
+  const statusRes = await fetch(apiUrl('/v1/enterprise/dialogflow/status'), { headers: authHeader });
+  assert.equal(statusRes.status, 200);
+  const status = await statusRes.json();
+  assert.equal(status.chat.providerRequired, false);
+  assert.match(status.chat.source, /local ThumbGate dashboard data/i);
+
+  const chatRes = await fetch(apiUrl('/v1/enterprise/dialogflow/chat'), {
+    method: 'POST',
+    headers: authHeader,
+    body: JSON.stringify({ prompt: 'Which gates are blocking risky actions?' }),
+  });
+  assert.equal(chatRes.status, 200);
+  const chat = await chatRes.json();
+  assert.equal(chat.ok, true);
+  assert.match(chat.answer, /Active gates/i);
 });
 
 test('renderPackagedLessonsHtml returns html with lessons content', () => {

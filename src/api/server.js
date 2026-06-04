@@ -1455,7 +1455,7 @@ async function loadLiveDashboardDataOrRespondProblem(res, parsed, feedbackDir, i
   }
 }
 
-function buildEnterpriseDialogflowStatus(env = process.env) {
+function buildEnterpriseDataChatStatus(env = process.env) {
   const vertexProject = normalizeNullableText(env.VERTEX_PROJECT_ID)
     || normalizeNullableText(env.GOOGLE_VERTEX_PROJECT);
   const vertexLocation = normalizeNullableText(env.GOOGLE_VERTEX_LOCATION)
@@ -1487,11 +1487,15 @@ function buildEnterpriseDialogflowStatus(env = process.env) {
     },
     chat: {
       available: true,
-      source: 'local ThumbGate dashboard data',
-      guard: 'DFCX-compatible pre-action gate adapter',
+      source: 'local ThumbGate dashboard data with LanceDB-backed retrieval',
+      guard: 'local data-access guard; DFCX adapter optional for customer Dialogflow deployments',
+      providerRequired: false,
+      localLlmEndpointConfigured: Boolean(normalizeNullableText(env.THUMBGATE_LOCAL_LLM_ENDPOINT)),
     },
   };
 }
+
+const buildEnterpriseDialogflowStatus = buildEnterpriseDataChatStatus;
 
 function normalizeEnterpriseChatPrompt(value) {
   const text = normalizeNullableText(value);
@@ -1566,12 +1570,12 @@ function buildEnterpriseChatAnswer(prompt, dashboardData, status) {
   };
 }
 
-async function answerEnterpriseDialogflowChat({ prompt, feedbackDir, parsed }) {
+async function answerEnterpriseDataChat({ prompt, feedbackDir, parsed }) {
   const normalizedPrompt = normalizeEnterpriseChatPrompt(prompt);
   if (!normalizedPrompt) {
     throw createHttpError(400, 'prompt is required');
   }
-  const status = buildEnterpriseDialogflowStatus();
+  const status = buildEnterpriseDataChatStatus();
   if (containsUnsafeEnterpriseChatInput(normalizedPrompt)) {
     return {
       ok: false,
@@ -1592,6 +1596,11 @@ async function answerEnterpriseDialogflowChat({ prompt, feedbackDir, parsed }) {
 
   const dashboardResult = await buildLiveDashboardData(parsed, feedbackDir);
   const dashboardData = dashboardResult.data;
+
+  // This guarded stats endpoint stays deterministic for API compatibility.
+  // The dashboard's real local/open-source chatbot turn goes through /v1/chat,
+  // which uses lesson retrieval + optional LanceDB vector search + the user's
+  // configured local or BYO model.
   const chat = buildEnterpriseChatAnswer(normalizedPrompt, dashboardData, status);
   const dfcxRequest = {
     fulfillmentInfo: { tag: 'chat-with-data' },
@@ -1626,6 +1635,8 @@ async function answerEnterpriseDialogflowChat({ prompt, feedbackDir, parsed }) {
     sources: chat.sources,
   };
 }
+
+const answerEnterpriseDialogflowChat = answerEnterpriseDataChat;
 
 function buildLossAnalyticsResponse(data, summaryOptions) {
   return {
@@ -2249,7 +2260,7 @@ window.THUMBGATE_DASHBOARD_BOOTSTRAP = { enabled: ${bootstrapActive ? 'true' : '
 <p>This lightweight npm dashboard is bundled without marketing assets, so installs stay small while core feedback, lessons, and API routes remain available.</p>
 <div class="grid">
 <a class="card" href="/v1/dashboard"><strong>Dashboard JSON</strong><span>Inspect feedback totals, lesson counts, and Reliability Gateway health.</span></a>
-<a class="card" href="/v1/enterprise/dialogflow/status"><strong>Enterprise Data Chat</strong><span>Check Vertex/DFCX readiness and use /v1/enterprise/dialogflow/chat to query local ThumbGate data through the data-access guard. This does not claim a live Dialogflow CX agent unless deployment evidence is configured.</span></a>
+<a class="card" href="/v1/enterprise/data-chat/status"><strong>Governed Data Chat</strong><span>Local RAG (LanceDB vectors + lessons) over your data plus your LLM. Guard simulation is available; Dialogflow/Vertex are optional adapters for customer-owned agent deployments.</span></a>
 <a class="card" href="/lessons"><strong>Lessons</strong><span>Review remembered thumbs-up/down lessons and enforcement context.</span></a>
 <a class="card" href="/health"><strong>Health</strong><span>Verify the installed package version and runtime status.</span></a>
 </div>
@@ -7083,6 +7094,8 @@ ${hidden}
 
         let projectGeminiKey = '';
         let projectPerplexityKey = '';
+        let projectLocalEndpoint = '';
+        let projectLocalModel = '';
         try {
           const projectDir = resolveRequestProjectDir(req, parsed);
           const envPath = path.join(projectDir, '.env');
@@ -7096,6 +7109,14 @@ ${hidden}
             if (perplexityMatch) {
               projectPerplexityKey = perplexityMatch[1].trim().replace(/^["']|["']$/g, '');
             }
+            const endpointMatch = content.match(/^THUMBGATE_LOCAL_LLM_ENDPOINT=(.*)$/m);
+            if (endpointMatch) {
+              projectLocalEndpoint = endpointMatch[1].trim().replace(/^["']|["']$/g, '');
+            }
+            const modelMatch = content.match(/^THUMBGATE_LOCAL_LLM_MODEL=(.*)$/m);
+            if (modelMatch) {
+              projectLocalModel = modelMatch[1].trim().replace(/^["']|["']$/g, '');
+            }
           }
         } catch (_) {}
 
@@ -7103,6 +7124,8 @@ ${hidden}
           feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
           model: typeof body.model === 'string' ? body.model : undefined,
           apiKey: projectPerplexityKey || projectGeminiKey || process.env.PERPLEXITY_API_KEY || process.env.THUMBGATE_PERPLEXITY_API_KEY || process.env.GEMINI_API_KEY || process.env.THUMBGATE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '',
+          localEndpoint: projectLocalEndpoint || process.env.THUMBGATE_LOCAL_LLM_ENDPOINT || '',
+          localModel: projectLocalModel || process.env.THUMBGATE_LOCAL_LLM_MODEL || '',
         });
         sendJson(res, result.ok ? 200 : (result.error === 'no_api_key' ? 503 : 400), result);
         return;
@@ -7229,14 +7252,20 @@ ${hidden}
         return;
       }
 
-      if (req.method === 'GET' && pathname === '/v1/enterprise/dialogflow/status') {
-        sendJson(res, 200, buildEnterpriseDialogflowStatus());
+      if (req.method === 'GET' && (
+        pathname === '/v1/enterprise/data-chat/status'
+        || pathname === '/v1/enterprise/dialogflow/status'
+      )) {
+        sendJson(res, 200, buildEnterpriseDataChatStatus());
         return;
       }
 
-      if (req.method === 'POST' && pathname === '/v1/enterprise/dialogflow/chat') {
+      if (req.method === 'POST' && (
+        pathname === '/v1/enterprise/data-chat/chat'
+        || pathname === '/v1/enterprise/dialogflow/chat'
+      )) {
         const body = await parseJsonBody(req, 16 * 1024);
-        const result = await answerEnterpriseDialogflowChat({
+        const result = await answerEnterpriseDataChat({
           prompt: body.prompt || body.message || body.query,
           feedbackDir: requestFeedbackDir,
           parsed,
@@ -8789,8 +8818,10 @@ module.exports = {
     resolveLocalPageBootstrap,
     getPublicMcpTools,
     getServerCardTools,
+    buildEnterpriseDataChatStatus,
     buildEnterpriseDialogflowStatus,
     buildEnterpriseChatAnswer,
+    answerEnterpriseDataChat,
     answerEnterpriseDialogflowChat,
   },
 };
