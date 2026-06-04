@@ -7,6 +7,7 @@ const assert = require('node:assert/strict');
 const os = require('node:os');
 const path = require('node:path');
 const fs = require('node:fs');
+const { execFileSync } = require('node:child_process');
 
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-deploy-test-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
@@ -23,12 +24,54 @@ process.env.THUMBGATE_ALLOW_INSECURE = 'true';
 const { createApiServer, startServer } = require('../src/api/server');
 const pkg = require('../package.json');
 const PROJECT_ROOT = path.join(__dirname, '..');
+const DEPLOY_SCOPE_SCRIPT = path.join(PROJECT_ROOT, 'scripts', 'deploy-scope.sh');
 
 let handle;
 let deployOrigin = '';
 
 function deployUrl(pathname = '/') {
   return new URL(pathname, deployOrigin).toString();
+}
+
+function runDeployScopeFixture(changePath, eventName = 'push', beforeShaOverride = null) {
+  const repoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-deploy-scope-'));
+  const githubOutput = path.join(repoDir, 'github-output.txt');
+  const jsonOutput = path.join(repoDir, 'deploy-scope.json');
+
+  try {
+    execFileSync('git', ['init'], { cwd: repoDir, stdio: 'ignore' });
+    execFileSync('git', ['config', 'user.email', 'deploy-scope@example.test'], { cwd: repoDir });
+    execFileSync('git', ['config', 'user.name', 'Deploy Scope Test'], { cwd: repoDir });
+
+    fs.writeFileSync(path.join(repoDir, 'README.md'), 'initial\n');
+    execFileSync('git', ['add', '.'], { cwd: repoDir });
+    execFileSync('git', ['commit', '-m', 'initial'], { cwd: repoDir, stdio: 'ignore' });
+    const beforeSha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repoDir, encoding: 'utf8' }).trim();
+
+    const fullChangePath = path.join(repoDir, changePath);
+    fs.mkdirSync(path.dirname(fullChangePath), { recursive: true });
+    fs.writeFileSync(fullChangePath, 'changed\n');
+    execFileSync('git', ['add', '.'], { cwd: repoDir });
+    execFileSync('git', ['commit', '-m', `change ${changePath}`], { cwd: repoDir, stdio: 'ignore' });
+    const headSha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repoDir, encoding: 'utf8' }).trim();
+
+    execFileSync('bash', [DEPLOY_SCOPE_SCRIPT], {
+      cwd: repoDir,
+      env: {
+        ...process.env,
+        BEFORE_SHA: beforeShaOverride || beforeSha,
+        HEAD_SHA: headSha,
+        EVENT_NAME: eventName,
+        GITHUB_OUTPUT: githubOutput,
+        DEPLOY_SCOPE_OUTPUT_JSON: jsonOutput,
+      },
+      stdio: 'pipe',
+    });
+
+    return JSON.parse(fs.readFileSync(jsonOutput, 'utf8'));
+  } finally {
+    fs.rmSync(repoDir, { recursive: true, force: true });
+  }
 }
 
 test.before(async () => {
@@ -251,7 +294,8 @@ test('Deploy to Railway workflow is the single authoritative Railway deploy lane
   assert.match(workflow, /RAILWAY_VARIABLE_SYNC_REQUIRED/);
   assert.match(workflow, /RAILWAY_VARIABLE_COMMAND_TIMEOUT_SECONDS/);
   assert.match(workflow, /RAILWAY_DEPLOY_COMMAND_TIMEOUT_SECONDS/);
-  assert.match(workflow, /DEPLOYABLE_PATTERN=.*\\\.github\/workflows\/deploy-railway\\\.yml/);
+  assert.match(workflow, /bash scripts\/deploy-scope\.sh/);
+  assert.match(workflow, /Upload deploy scope evidence/);
   assert.match(workflow, /secrets\.THUMBGATE_API_KEY/);
   assert.match(workflow, /RESEND_API_KEY:\s*\$\{\{\s*secrets\.RESEND_API_KEY\s*\}\}/);
   assert.match(workflow, /THUMBGATE_TRIAL_EMAIL_FROM:\s*\$\{\{\s*secrets\.THUMBGATE_TRIAL_EMAIL_FROM\s*\|\|\s*vars\.THUMBGATE_TRIAL_EMAIL_FROM\s*\}\}/);
@@ -380,34 +424,83 @@ test('Deploy to Railway workflow retries transient Railway CLI failures before f
 
 test('Deploy to Railway workflow skips non-runtime pushes and only deploys when runtime-serving files changed', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
+  const scopeScript = fs.readFileSync(path.join(PROJECT_ROOT, 'scripts', 'deploy-scope.sh'), 'utf8');
 
   assert.match(workflow, /fetch-depth:\s*2/);
   assert.match(workflow, /name: Detect deployable changes/);
   assert.match(workflow, /BEFORE_SHA='\$\{\{\s*github\.event\.before\s*\}\}'/);
-  assert.match(workflow, /git diff --name-only "\$BEFORE_SHA" "\$GITHUB_SHA"/);
-  assert.match(workflow, /DEPLOYABLE_PATTERN='.*src\/.*public\/.*Dockerfile\$/);
+  assert.match(workflow, /HEAD_SHA="\$GITHUB_SHA"/);
+  assert.match(workflow, /DEPLOY_SCOPE_OUTPUT_JSON='deploy-scope\.json'/);
+  assert.match(scopeScript, /git diff --name-only "\$BEFORE_SHA" "\$HEAD_SHA"/);
+  assert.match(scopeScript, /DEPLOYABLE_PATTERN='.*src\/.*public\/.*Dockerfile\$/);
   assert.ok(
-    workflow.includes('scripts/.*\\.(js|mjs|cjs)$'),
-    'workflow should only treat runtime JS script modules as deployable',
+    scopeScript.includes('scripts/.*\\.(js|mjs|cjs)$'),
+    'scope script should only treat runtime JS script modules as deployable',
   );
   assert.ok(
-    workflow.includes('adapters/.*\\.(js|mjs|cjs|json|ya?ml|toml)$'),
-    'workflow should only treat runtime adapter files as deployable',
+    scopeScript.includes('adapters/.*\\.(js|mjs|cjs|json|ya?ml|toml)$'),
+    'scope script should only treat runtime adapter files as deployable',
   );
   assert.ok(
-    !workflow.includes("DEPLOYABLE_PATTERN='^(src/|scripts/|"),
-    'workflow should not treat every scripts/ path as deployable',
+    !scopeScript.includes("DEPLOYABLE_PATTERN='^(src/|scripts/|"),
+    'scope script should not treat every scripts/ path as deployable',
   );
   assert.ok(
-    !workflow.includes('|adapters/|'),
-    'workflow should not treat adapter Markdown docs as deployable',
+    !scopeScript.includes('|adapters/|'),
+    'scope script should not treat adapter Markdown docs as deployable',
   );
-  assert.match(workflow, /! printf '%s\\n' "\$CHANGED_FILES" \| grep -Eq "\$DEPLOYABLE_PATTERN"/);
-  assert.match(workflow, /should_deploy=\$SHOULD_DEPLOY/);
-  assert.match(workflow, /SHOULD_DEPLOY=true/);
-  assert.match(workflow, /SHOULD_DEPLOY=false/);
-  assert.match(workflow, /Railway deploy skipped: no runtime-serving files changed on this commit\./);
+  assert.match(scopeScript, /! printf '%s\\n' "\$CHANGED_FILES" \| grep -Eq "\$DEPLOYABLE_PATTERN"/);
+  assert.match(scopeScript, /should_deploy=\$SHOULD_DEPLOY/);
+  assert.match(scopeScript, /SHOULD_DEPLOY=true/);
+  assert.match(scopeScript, /SHOULD_DEPLOY=false/);
+  assert.match(workflow, /Railway deploy skipped: no runtime-serving files changed in this push range\./);
   assert.doesNotMatch(workflow, /Railway deploy skipped: deploy-scope disabled this run\./);
+});
+
+test('deploy-scope script decides from the actual push range and writes reusable evidence', () => {
+  const docsOnly = runDeployScopeFixture('docs/release-note.md');
+  assert.equal(docsOnly.shouldDeploy, false);
+  assert.equal(docsOnly.scopeReason, 'non_runtime_changes');
+  assert.deepEqual(docsOnly.changedFiles, ['docs/release-note.md']);
+
+  const runtimeChange = runDeployScopeFixture('src/runtime-change.js');
+  assert.equal(runtimeChange.shouldDeploy, true);
+  assert.equal(runtimeChange.scopeReason, 'deployable_changes');
+  assert.deepEqual(runtimeChange.changedFiles, ['src/runtime-change.js']);
+
+  const manualDeploy = runDeployScopeFixture('docs/manual-note.md', 'workflow_dispatch');
+  assert.equal(manualDeploy.shouldDeploy, true);
+  assert.equal(manualDeploy.scopeReason, 'workflow_dispatch');
+
+  const unreachableBefore = runDeployScopeFixture(
+    'docs/unreachable-note.md',
+    'push',
+    '0000000000000000000000000000000000000001'
+  );
+  assert.equal(unreachableBefore.shouldDeploy, true);
+  assert.equal(unreachableBefore.scopeReason, 'before_sha_unreachable');
+});
+
+test('Deploy verification comment does not require a build SHA change for non-runtime merges', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'verify-deploy-comment.yml'), 'utf8');
+
+  assert.match(workflow, /name: Detect whether Railway deploy was required/);
+  assert.match(workflow, /id: deploy-scope/);
+  assert.match(workflow, /gh run download "\$\{\{\s*github\.event\.workflow_run\.id\s*\}\}" --name deploy-scope --dir deploy-scope/);
+  assert.match(workflow, /artifact_missing_conservative_verify/);
+  assert.match(workflow, /scope\.shouldDeploy === false/);
+  assert.match(workflow, /deploy_required=\$\{scope\.shouldDeploy === false \? 'false' : 'true'\}/);
+  assert.match(workflow, /name: Capture current production health for skipped deploys/);
+  assert.match(workflow, /build_match=not_required/);
+  assert.match(
+    workflow,
+    /name: Wait for Railway to settle the new build\n\s+if: steps\.find-pr\.outputs\.pr != '' && steps\.deploy-scope\.outputs\.deploy_required == 'true'/,
+  );
+  assert.match(workflow, /Deploy not required for non-runtime merge/);
+  assert.match(workflow, /Railway deploy required:/);
+  assert.match(workflow, /Public-route probes/);
+  assert.doesNotMatch(workflow, /DEPLOYABLE_PATTERN='/);
+  assert.doesNotMatch(workflow, /git diff --name-only "\$\{MERGE_SHA\}~1" "\$\{MERGE_SHA\}"/);
 });
 
 test('Deploy to Railway workflow stamps runtime deployment env metadata before health verification', () => {
@@ -553,7 +646,7 @@ test('CodeQL workflow supports merge queue and cancels stale non-main runs', () 
   assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.ref != 'refs\/heads\/main'\s*\}\}/);
 });
 
-test('SonarCloud workflow refreshes main and stamps scans with the package version', () => {
+test('SonarCloud workflow gates PRs and keeps main refresh non-blocking', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'sonarcloud.yml'), 'utf8');
 
   assert.match(workflow, /^name:\s*SonarCloud/m);
@@ -574,7 +667,8 @@ test('SonarCloud workflow refreshes main and stamps scans with the package versi
   assert.match(workflow, /Read package version[\s\S]*?require\("\.\/package\.json"\)\.version/);
   assert.match(workflow, /Build Sonar mainline analysis version[\s\S]*?sha\.\$SHORT_SHA/);
   assert.match(workflow, /Run SonarCloud scan \(default branch refresh\)[\s\S]*?github\.event_name == 'push' \|\| github\.event_name == 'workflow_dispatch'/);
-  assert.match(workflow, /-Dsonar\.projectVersion=\$\{\{\s*steps\.sonar-mainline-version\.outputs\.value\s*\}\}/);
+  assert.match(workflow, /Skipping default-branch Sonar scanner refresh/);
+  assert.match(workflow, /mainline_version=\$\{\{\s*steps\.sonar-mainline-version\.outputs\.value\s*\}\}/);
 });
 
 test('SonarCloud workflow polls quality gates only for PR and merge-queue scans', () => {

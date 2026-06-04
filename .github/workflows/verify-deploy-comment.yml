@@ -13,6 +13,7 @@ on:
     branches: [main]
 
 permissions:
+  actions: read
   contents: read
   pull-requests: write
 
@@ -49,8 +50,55 @@ jobs:
             echo "pr=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Wait for Railway to settle the new build
+      - name: Detect whether Railway deploy was required
+        id: deploy-scope
         if: steps.find-pr.outputs.pr != ''
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+        run: |
+          set -eu
+          mkdir -p deploy-scope
+          if gh run download "${{ github.event.workflow_run.id }}" --name deploy-scope --dir deploy-scope; then
+            echo "Loaded deploy-scope artifact from Deploy to Railway run ${{ github.event.workflow_run.id }}."
+          else
+            echo "::warning::Deploy scope artifact missing; conservatively requiring buildSha verification."
+          fi
+
+          node - <<'NODE' >> "$GITHUB_OUTPUT"
+const fs = require('fs');
+const artifactPath = 'deploy-scope/deploy-scope.json';
+let scope = null;
+try {
+  scope = JSON.parse(fs.readFileSync(artifactPath, 'utf8'));
+} catch {
+  scope = {
+    shouldDeploy: true,
+    scopeReason: 'artifact_missing_conservative_verify',
+    changedFiles: [],
+  };
+}
+
+const changedFiles = Array.isArray(scope.changedFiles) ? scope.changedFiles : [];
+console.log('changed_files<<EOF');
+console.log(changedFiles.join('\n'));
+console.log('EOF');
+console.log(`deploy_required=${scope.shouldDeploy === false ? 'false' : 'true'}`);
+console.log(`scope_reason=${scope.scopeReason || 'unknown'}`);
+NODE
+
+      - name: Capture current production health for skipped deploys
+        if: steps.find-pr.outputs.pr != '' && steps.deploy-scope.outputs.deploy_required == 'false'
+        run: |
+          HEALTH_JSON="$(curl -sS --max-time 10 "${PROD_URL}/health" || echo '{}')"
+          ACTUAL_SHA="$(node -e "try { const data = JSON.parse(process.argv[1]); process.stdout.write(String(data.buildSha || '')); } catch {}" "$HEALTH_JSON")"
+          {
+            echo "actual_sha=${ACTUAL_SHA:-unknown}"
+            echo "build_match=not_required"
+            echo "health_json=${HEALTH_JSON:-{}}"
+          } >> "$GITHUB_ENV"
+
+      - name: Wait for Railway to settle the new build
+        if: steps.find-pr.outputs.pr != '' && steps.deploy-scope.outputs.deploy_required == 'true'
         run: |
           # Railway typically settles within 2-5 minutes of deploy-railway
           # finishing. Poll /health for up to 8 minutes for the buildSha to
@@ -61,11 +109,13 @@ jobs:
           MATCH=0
           while [ "$ATTEMPTS" -lt "$MAX_ATTEMPTS" ]; do
             HEALTH_JSON="$(curl -sS --max-time 10 "${PROD_URL}/health" || echo '{}')"
-            ACTUAL_SHA="$(printf '%s' "$HEALTH_JSON" | sed -n 's/.*"buildSha":"\([a-f0-9]*\)".*/\1/p')"
+            ACTUAL_SHA="$(node -e "try { const data = JSON.parse(process.argv[1]); process.stdout.write(String(data.buildSha || '')); } catch {}" "$HEALTH_JSON")"
             if [ -n "$ACTUAL_SHA" ] && [ "${ACTUAL_SHA}" = "${MERGE_SHA}" ]; then
-              echo "actual_sha=${ACTUAL_SHA}" >> "$GITHUB_ENV"
-              echo "build_match=true" >> "$GITHUB_ENV"
-              echo "health_json=${HEALTH_JSON}" >> "$GITHUB_ENV"
+              {
+                echo "actual_sha=${ACTUAL_SHA}"
+                echo "build_match=true"
+                echo "health_json=${HEALTH_JSON}"
+              } >> "$GITHUB_ENV"
               MATCH=1
               break
             fi
@@ -73,9 +123,11 @@ jobs:
             sleep 10
           done
           if [ "$MATCH" -ne 1 ]; then
-            echo "actual_sha=${ACTUAL_SHA:-unknown}" >> "$GITHUB_ENV"
-            echo "build_match=false" >> "$GITHUB_ENV"
-            echo "health_json=${HEALTH_JSON:-{}}" >> "$GITHUB_ENV"
+            {
+              echo "actual_sha=${ACTUAL_SHA:-unknown}"
+              echo "build_match=false"
+              echo "health_json=${HEALTH_JSON:-{}}"
+            } >> "$GITHUB_ENV"
           fi
 
       - name: Probe required public routes
@@ -122,7 +174,12 @@ jobs:
         run: |
           BUILD_OK="${build_match:-false}"
           ROUTES_OK="${routes_clean:-false}"
-          if [ "$BUILD_OK" = "true" ] && [ "$ROUTES_OK" = "true" ]; then
+          DEPLOY_REQUIRED="${{ steps.deploy-scope.outputs.deploy_required }}"
+          if [ "$DEPLOY_REQUIRED" = "false" ] && [ "$ROUTES_OK" = "true" ]; then
+            STATUS="ℹ️ Deploy not required for non-runtime merge"
+          elif [ "$DEPLOY_REQUIRED" = "false" ] && [ "$ROUTES_OK" = "false" ]; then
+            STATUS="⚠️ Deploy not required, but route probe found failures"
+          elif [ "$BUILD_OK" = "true" ] && [ "$ROUTES_OK" = "true" ]; then
             STATUS="✅ Deploy verified"
           elif [ "$BUILD_OK" = "true" ] && [ "$ROUTES_OK" = "false" ]; then
             STATUS="⚠️ Deployed but route probe found failures"
@@ -138,6 +195,7 @@ jobs:
           **Merge commit:** \`${MERGE_SHA}\`
           **Production buildSha:** \`${actual_sha:-unknown}\`
           **buildSha match:** ${BUILD_OK}
+          **Railway deploy required:** ${DEPLOY_REQUIRED}
 
           **/health snapshot:**
           \`\`\`json
