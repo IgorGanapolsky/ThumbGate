@@ -293,6 +293,36 @@ function runCliSync(args, options = {}) {
   });
 }
 
+function getFreePort() {
+  return new Promise((resolve, reject) => {
+    const server = http.createServer();
+    server.listen(0, '127.0.0.1', () => {
+      const { port } = server.address();
+      server.close(() => resolve(port));
+    });
+    server.on('error', reject);
+  });
+}
+
+function fetchLocal(port, pathname) {
+  return new Promise((resolve, reject) => {
+    const req = http.request(
+      { hostname: '127.0.0.1', port, path: pathname, method: 'GET', timeout: 5000 },
+      (res) => {
+        let body = '';
+        res.on('data', (chunk) => { body += chunk; });
+        res.on('end', () => resolve({ status: res.statusCode, body }));
+      }
+    );
+    req.on('error', reject);
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('timeout'));
+    });
+    req.end();
+  });
+}
+
 function unlicensedProEnv(homeDir, overrides = {}) {
   return {
     ...process.env,
@@ -590,6 +620,46 @@ describe('bin/cli.js', () => {
       assert.match(result.stdout, /Usage: npx thumbgate/, `${cmd} --help should print usage`);
       assert.doesNotMatch(result.stdout, /Watching .*feedback-log\.jsonl/, `${cmd} --help must not start the watcher`);
       assert.doesNotMatch(result.stderr, /Watching .*feedback-log\.jsonl/, `${cmd} --help must not start the watcher`);
+    }
+  });
+
+  test('dashboard --open starts the local HTTP dashboard before returning its URL', async () => {
+    const homeDir = makeTmpDir();
+    const feedbackDir = makeTmpDir();
+    const projectDir = makeTmpDir();
+    const port = await getFreePort();
+
+    const result = runCliSync(['dashboard', '--open'], {
+      cwd: projectDir,
+      timeoutMs: 15000,
+      env: {
+        HOME: homeDir,
+        USERPROFILE: homeDir,
+        PORT: String(port),
+        THUMBGATE_DASHBOARD_NO_OPEN: '1',
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_ALLOW_INSECURE: 'true',
+        THUMBGATE_API_KEY: '',
+        THUMBGATE_PRO_MODE: '',
+      },
+    });
+
+    const pidMatch = result.stdout.match(/pid (\d+)/);
+    try {
+      assert.equal(result.status, 0, `dashboard --open should exit 0:\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`);
+      assert.match(result.stdout, new RegExp(`http://127\\.0\\.0\\.1:${port}/dashboard\\?project=`));
+      assert.ok(pidMatch, 'dashboard --open should report the detached server pid when it starts one');
+
+      const dashboard = await fetchLocal(port, `/dashboard?project=${encodeURIComponent(projectDir)}`);
+      assert.equal(dashboard.status, 200, 'started dashboard should serve /dashboard');
+      assert.match(dashboard.body, /ThumbGate Dashboard/, 'served page should be the ThumbGate dashboard');
+    } finally {
+      if (pidMatch) {
+        try { process.kill(Number(pidMatch[1]), 'SIGTERM'); } catch {}
+      }
+      try { fs.rmSync(homeDir, { recursive: true, force: true }); } catch {}
+      try { fs.rmSync(feedbackDir, { recursive: true, force: true }); } catch {}
+      try { fs.rmSync(projectDir, { recursive: true, force: true }); } catch {}
     }
   });
 
