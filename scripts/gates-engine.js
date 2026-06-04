@@ -121,6 +121,67 @@ const BOOSTED_RISK_MIN_EXAMPLES = 3;
 const PR_THREAD_RESOLUTION_ACTION = 'pr_thread_resolution_verified_after_commit';
 const KNOWLEDGE_ENTROPY_THRESHOLD = 0.7;
 const KNOWLEDGE_CONFLICT_STRICT_BASH_PATTERN = /\b(?:git\s+push\b|gh\s+pr\s+merge\b|gh\s+release\s+(?:create|delete|edit|upload)\b|(?:npm|yarn|pnpm)\s+publish\b|rm\s+-rf\b|git\s+reset\s+--hard\b|git\s+clean\s+-f|railway\s+(?:deploy|up)\b|gcloud\s+(?:run\s+deploy|app\s+deploy)\b|firebase\s+deploy\b|vercel\s+--prod\b|kubectl\s+(?:apply|delete)\b|terraform\s+(?:apply|destroy)\b)\b/i;
+
+// ---------------------------------------------------------------------------
+// Enforcement posture (CEO decision 2026-06-04): warn-by-default.
+// The firewall ALWAYS fires and logs every decision, but most gates WARN rather
+// than hard-block — only TRULY CATASTROPHIC, irreversible actions hard-block:
+//   - secret exfiltration (handled on its own deny path; never downgraded)
+//   - security-vulnerability / supply-chain denies (own deny path; not downgraded)
+//   - irreversibly destructive filesystem commands (rm -rf class, mkfs, dd to disk,
+//     fork bomb) — kept as hard deny via DESTRUCTIVE_FS_PATTERN below.
+// Everything else (memory-high-risk, workflow-sequence, off-scope, git push, deploy,
+// approval gates) downgrades deny/approve -> warn so legitimate work is never blocked.
+// Opt back into full hard enforcement with THUMBGATE_STRICT_ENFORCEMENT=1.
+// Catastrophic floor: `rm -rf` targeting / ~ or $HOME ALWAYS hard-blocks, even in
+// warn-by-default mode and regardless of gate-evaluation order (a non-catastrophic gate
+// can match first and would otherwise shadow + downgrade the rm-rf gate). This mirrors the
+// SMART matcher of config/gates/default.json's `rm-rf-home-or-root`: it requires rm -rf at
+// command start or after a shell separator AND a root/home target, so it does NOT match
+// benign mentions (echo / grep / git commit -m "...rm -rf...") or rm -rf of build dirs.
+const CATASTROPHIC_RM_PATTERN = /(?:^|[;&|]\s*)rm\s+-(?=[^\s]*r)(?=[^\s]*f)[^\s]+\s+(?:\/|\/\*|~(?:\/[^\s]*)?|\$HOME(?:\/[^\s]*)?)(?:\s|$)/;
+// Gates that stay hard-deny even in warn-by-default mode. (secret-exfiltration and the
+// security-vulnerability scan also hard-deny on their own paths before this runs.)
+const CATASTROPHIC_GATE_IDS = new Set(['rm-rf-home-or-root', 'secret-exfiltration']);
+
+// Only inspect the EXECUTED command (Bash command/cmd/script) — never file-write payloads
+// (content/new_string), so writing/editing a file that mentions rm -rf is not blocked.
+function enforcementCommandText(toolInput) {
+  if (!toolInput || typeof toolInput !== 'object') return '';
+  return [toolInput.command, toolInput.cmd, toolInput.script]
+    .filter((v) => typeof v === 'string')
+    .join(' ')
+    .slice(0, MAX_COMMAND_SCAN_CHARS);
+}
+
+function applyEnforcementPosture(result, toolInput) {
+  // Catastrophic floor first — guarantees rm -rf /,~,$HOME hard-blocks regardless of mode
+  // or which gate matched first.
+  if (CATASTROPHIC_RM_PATTERN.test(enforcementCommandText(toolInput))) {
+    if (result && result.decision === 'deny') return result;
+    return {
+      decision: 'deny',
+      gate: 'rm-rf-home-or-root',
+      message: 'Broad rm -rf against root or home is blocked. Use a narrow, reviewed path and explicit approval for destructive deletes.',
+      severity: 'critical',
+    };
+  }
+  if (!result || (result.decision !== 'deny' && result.decision !== 'approve')) return result;
+  // Full hard enforcement opt-in: keep every deny.
+  if (process.env.THUMBGATE_STRICT_ENFORCEMENT === '1') return result;
+  // Keep deny only for inherently-catastrophic gates.
+  if (CATASTROPHIC_GATE_IDS.has(result.gate)) return result;
+  // Honor the explicit strict-knowledge-conflict opt-in for that gate.
+  if (process.env.THUMBGATE_STRICT_KNOWLEDGE_CONFLICT === '1' && result.gate === 'knowledge-conflict-gate') return result;
+  // Warn-by-default: the gate still fired and is recorded; the action is allowed through
+  // with the warning surfaced instead of hard-blocked, so legitimate work is never blocked.
+  return {
+    ...result,
+    decision: 'warn',
+    warnByDefault: true,
+    message: `${result.message}\n\n⚠️ ThumbGate is in warn-by-default mode — this was flagged and logged, not blocked. Set THUMBGATE_STRICT_ENFORCEMENT=1 to hard-block, or THUMBGATE_HOTFIX_BYPASS=1 to disable checks entirely.`,
+  };
+}
 const BREAK_GLASS_CONDITION = 'thumbgate_break_glass';
 const BREAK_GLASS_SETTINGS_GLOBS = [
   '.claude/settings.local.json',
@@ -2671,7 +2732,7 @@ async function runAsync(input) {
 
   const sequenceGuard = evaluateSequenceState(toolName, toolInput);
   if (sequenceGuard && sequenceGuard.decision === 'deny') {
-    return formatOutput(sequenceGuard);
+    return formatOutput(applyEnforcementPosture(sequenceGuard, toolInput));
   }
 
   const result = await evaluateGatesAsync(toolName, toolInput);
@@ -2691,12 +2752,12 @@ async function runAsync(input) {
   const lessonContext = safeSecretStorageWrite ? null : await buildRelevantLessonContextAsync(toolName, toolInput);
   
   if (lessonContext && lessonContext.decision === "deny") {
-    return formatOutput(lessonContext);
+    return formatOutput(applyEnforcementPosture(lessonContext, toolInput));
   }
   
   const recentContext = buildRecentCorrectiveActionsContext();
   const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
-  return formatOutput(result, combinedContext);
+  return formatOutput(applyEnforcementPosture(result, toolInput), combinedContext);
 
 }
 
@@ -2718,7 +2779,7 @@ function run(input) {
 
   const sequenceGuard = evaluateSequenceState(toolName, toolInput);
   if (sequenceGuard && sequenceGuard.decision === 'deny') {
-    return formatOutput(sequenceGuard);
+    return formatOutput(applyEnforcementPosture(sequenceGuard, toolInput));
   }
 
   const result = evaluateGates(toolName, toolInput);
@@ -2738,12 +2799,12 @@ function run(input) {
   const lessonContext = safeSecretStorageWrite ? null : buildRelevantLessonContext(toolName, toolInput);
   
   if (lessonContext && lessonContext.decision === "deny") {
-    return formatOutput(lessonContext);
+    return formatOutput(applyEnforcementPosture(lessonContext, toolInput));
   }
   
   const recentContext = buildRecentCorrectiveActionsContext();
   const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
-  return formatOutput(result, combinedContext);
+  return formatOutput(applyEnforcementPosture(result, toolInput), combinedContext);
 
 }
 
