@@ -65,26 +65,26 @@ jobs:
           fi
 
           node - <<'NODE' >> "$GITHUB_OUTPUT"
-const fs = require('fs');
-const artifactPath = 'deploy-scope/deploy-scope.json';
-let scope = null;
-try {
-  scope = JSON.parse(fs.readFileSync(artifactPath, 'utf8'));
-} catch {
-  scope = {
-    shouldDeploy: true,
-    scopeReason: 'artifact_missing_conservative_verify',
-    changedFiles: [],
-  };
-}
+          const fs = require('fs');
+          const artifactPath = 'deploy-scope/deploy-scope.json';
+          let scope = null;
+          try {
+            scope = JSON.parse(fs.readFileSync(artifactPath, 'utf8'));
+          } catch {
+            scope = {
+              shouldDeploy: true,
+              scopeReason: 'artifact_missing_conservative_verify',
+              changedFiles: [],
+            };
+          }
 
-const changedFiles = Array.isArray(scope.changedFiles) ? scope.changedFiles : [];
-console.log('changed_files<<EOF');
-console.log(changedFiles.join('\n'));
-console.log('EOF');
-console.log(`deploy_required=${scope.shouldDeploy === false ? 'false' : 'true'}`);
-console.log(`scope_reason=${scope.scopeReason || 'unknown'}`);
-NODE
+          const changedFiles = Array.isArray(scope.changedFiles) ? scope.changedFiles : [];
+          console.log('changed_files<<EOF');
+          console.log(changedFiles.join('\n'));
+          console.log('EOF');
+          console.log(`deploy_required=${scope.shouldDeploy === false ? 'false' : 'true'}`);
+          console.log(`scope_reason=${scope.scopeReason || 'unknown'}`);
+          NODE
 
       - name: Capture current production health for skipped deploys
         if: steps.find-pr.outputs.pr != '' && steps.deploy-scope.outputs.deploy_required == 'false'

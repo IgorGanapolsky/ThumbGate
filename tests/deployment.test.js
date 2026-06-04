@@ -503,6 +503,26 @@ test('Deploy verification comment does not require a build SHA change for non-ru
   assert.doesNotMatch(workflow, /git diff --name-only "\$\{MERGE_SHA\}~1" "\$\{MERGE_SHA\}"/);
 });
 
+test('Deploy verification workflow keeps embedded heredoc scripts valid YAML', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'verify-deploy-comment.yml'), 'utf8');
+  const lines = workflow.split('\n');
+  const startIndex = lines.findIndex((line) => line.includes("node - <<'NODE' >> \"$GITHUB_OUTPUT\""));
+  const endIndex = lines.findIndex((line, index) => index > startIndex && line.trim() === 'NODE');
+
+  assert.notEqual(startIndex, -1, 'expected deploy-scope heredoc start');
+  assert.notEqual(endIndex, -1, 'expected deploy-scope heredoc terminator');
+
+  for (const [offset, line] of lines.slice(startIndex + 1, endIndex + 1).entries()) {
+    if (!line.trim()) continue;
+    assert.match(
+      line,
+      /^\s{10,}\S/,
+      `heredoc line ${startIndex + offset + 2} must stay indented inside the YAML block`
+    );
+  }
+  assert.doesNotMatch(workflow, /^const fs = require\('fs'\);$/m);
+});
+
 test('Deploy to Railway workflow stamps runtime deployment env metadata before health verification', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
 
