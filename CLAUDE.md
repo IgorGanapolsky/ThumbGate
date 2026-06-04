@@ -177,6 +177,8 @@ npm run self-heal:check     # overall status must be HEALTHY
 - Feature-detect Node test coverage include/exclude flags before passing them to `node --test`; supported LTS runtimes do not expose identical coverage CLI surfaces.
 - Tests for Pro-gated features must inject the gate predicate or stub it directly. Do not couple CI to an operator's saved local Pro license.
 - Treat `.claude/context-engine/quality-log.json` as disposable runtime output. Keep it ignored and out of tracked history.
+- Branch-sensitive tests must inject the branch they assert through explicit inputs such as `currentBranch`. Do not rely on the CI checkout branch or a developer's local branch name.
+- Packaging proof and external publication are separate. Marketplace workflows should still build/upload artifacts without publish tokens, then skip external publish steps unless a required-publish flag is set.
 
 For deployment changes, also run:
 
