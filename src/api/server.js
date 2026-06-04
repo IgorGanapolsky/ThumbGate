@@ -7156,22 +7156,83 @@ ${hidden}
         return;
       }
 
-      // Chat with your data — RAG over this install's captured lessons, answered
-      // by Gemini grounded only in the retrieved context. Powers the dashboard
-      // "Chat with your data" panel.
+      // Chat with your data — LOCAL-FIRST. Powers the dashboard "Chat with your
+      // data" panel. Factual/metric questions (gates, blocks, feedback, token
+      // savings, team) are answered DETERMINISTICALLY from this install's own
+      // dashboard data — no cloud, no LLM, no API key (the local-first thesis).
+      // Only open-ended/qualitative questions fall through to lesson retrieval +
+      // the user's configured LOCAL model (a BYO cloud key is optional, not required).
       if (req.method === 'POST' && pathname === '/v1/chat') {
         const body = await parseJsonBody(req);
+        const question = body.question || body.q || body.message;
+        const normalizedChatPrompt = normalizeEnterpriseChatPrompt(question);
+
+        if (
+          normalizedChatPrompt
+          && !containsUnsafeEnterpriseChatInput(normalizedChatPrompt)
+          && classifyEnterpriseChatTopic(normalizedChatPrompt) !== 'overview'
+        ) {
+          try {
+            const dashboardResult = await buildLiveDashboardData(parsed, requestFeedbackPaths.FEEDBACK_DIR);
+            const localChat = buildEnterpriseChatAnswer(
+              normalizedChatPrompt,
+              dashboardResult.data,
+              buildEnterpriseDataChatStatus(),
+            );
+            sendJson(res, 200, {
+              ok: true,
+              answer: localChat.answer,
+              sources: (localChat.sources || []).map((title) => ({ title })),
+              topic: localChat.topic,
+              provider: 'local-data',
+              llm: 'none',
+              grounded: true,
+            });
+            return;
+          } catch (_) {
+            // Fall through to retrieval if local snapshot is unavailable.
+          }
+        }
+
         const { answerDataQuestion } = require('../../scripts/dashboard-chat');
 
         const projectChatSettings = readProjectChatSettings(req, parsed);
 
-        const result = await answerDataQuestion(body.question || body.q || body.message, {
+        const result = await answerDataQuestion(question, {
           feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
           model: typeof body.model === 'string' ? body.model : undefined,
           apiKey: projectChatSettings.perplexityKey || projectChatSettings.geminiKey || process.env.PERPLEXITY_API_KEY || process.env.THUMBGATE_PERPLEXITY_API_KEY || process.env.GEMINI_API_KEY || process.env.THUMBGATE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '',
           localEndpoint: projectChatSettings.localEndpoint || process.env.THUMBGATE_LOCAL_LLM_ENDPOINT || '',
           localModel: projectChatSettings.localModel || process.env.THUMBGATE_LOCAL_LLM_MODEL || '',
         });
+
+        // Local-first guarantee: if no model is configured (no local endpoint, no
+        // BYO key), never hard-fail with "no_api_key" — fall back to a deterministic
+        // local answer grounded in this install's dashboard data. No question
+        // requires the cloud.
+        if (!result.ok && (result.error === 'no_api_key' || result.error === 'no_model')) {
+          try {
+            const dashboardResult = await buildLiveDashboardData(parsed, requestFeedbackPaths.FEEDBACK_DIR);
+            const localChat = buildEnterpriseChatAnswer(
+              normalizedChatPrompt || question,
+              dashboardResult.data,
+              buildEnterpriseDataChatStatus(),
+            );
+            sendJson(res, 200, {
+              ok: true,
+              answer: `${localChat.answer} (Connect a local model via THUMBGATE_LOCAL_LLM_ENDPOINT for open-ended analysis over your lessons.)`,
+              sources: (localChat.sources || []).map((title) => ({ title })),
+              topic: localChat.topic,
+              provider: 'local-data',
+              llm: 'none',
+              grounded: true,
+            });
+            return;
+          } catch (_) {
+            // fall through to the original error response below
+          }
+        }
+
         sendJson(res, result.ok ? 200 : (result.error === 'no_api_key' ? 503 : 400), result);
         return;
       }
