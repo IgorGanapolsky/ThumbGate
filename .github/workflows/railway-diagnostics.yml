@@ -96,6 +96,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
+          retention-days: 7
           name: railway-diagnostics-${{ github.run_id }}
           path: |
             railway-diagnostics/
