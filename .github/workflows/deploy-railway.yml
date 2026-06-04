@@ -55,38 +55,17 @@ jobs:
       - name: Detect deployable changes
         id: deploy-scope
         run: |
-          BEFORE_SHA='${{ github.event.before }}'
-          CHANGED_FILES=''
-          SHOULD_DEPLOY=true
-          DEPLOYABLE_PATTERN='^(src/|scripts/.*\.(js|mjs|cjs)$|config/|adapters/.*\.(js|mjs|cjs|json|ya?ml|toml)$|public/|\.well-known/|openapi/|workers/|\.github/workflows/deploy-railway\.yml$|Dockerfile$|railway\.json$|package\.json$|package-lock\.json$)'
-
-          # workflow_dispatch always deploys — no scope filter
-          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
-            echo "workflow_dispatch: deploying unconditionally"
-            SHOULD_DEPLOY=true
-          elif [ "$GITHUB_EVENT_NAME" = "push" ] && [ -n "$BEFORE_SHA" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
-            # Verify BEFORE_SHA exists in the shallow clone; if not, deploy unconditionally
-            # (this prevents the false-positive "skip" when the SHA is unreachable)
-            if git cat-file -e "$BEFORE_SHA" 2>/dev/null; then
-              CHANGED_FILES="$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" | sed '/^$/d')"
-              if [ -n "$CHANGED_FILES" ] && ! printf '%s\n' "$CHANGED_FILES" | grep -Eq "$DEPLOYABLE_PATTERN"; then
-                SHOULD_DEPLOY=false
-              fi
-            else
-              echo "::warning::BEFORE_SHA ($BEFORE_SHA) not reachable in shallow clone — deploying unconditionally"
-            fi
-          fi
-
-          echo "before_sha=${BEFORE_SHA:-<none>}"
-          echo 'changed_files:'
-          printf '%s\n' "${CHANGED_FILES:-<none>}"
-          echo "deployable_pattern=$DEPLOYABLE_PATTERN"
-          echo "should_deploy=$SHOULD_DEPLOY"
-
-          echo "changed_files<<EOF" >> "$GITHUB_OUTPUT"
-          printf '%s\n' "$CHANGED_FILES" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
-          echo "should_deploy=$SHOULD_DEPLOY" >> "$GITHUB_OUTPUT"
+          BEFORE_SHA='${{ github.event.before }}' \
+          HEAD_SHA="$GITHUB_SHA" \
+          EVENT_NAME="$GITHUB_EVENT_NAME" \
+          DEPLOY_SCOPE_OUTPUT_JSON='deploy-scope.json' \
+          bash scripts/deploy-scope.sh
+      - name: Upload deploy scope evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: deploy-scope
+          path: deploy-scope.json
       - uses: actions/setup-node@v6
         with:
           node-version: 20
@@ -95,7 +74,7 @@ jobs:
         run: |
           if [ "${{ steps.deploy-scope.outputs.should_deploy }}" != "true" ]; then
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "Railway deploy skipped: no runtime-serving files changed on this commit."
+            echo "Railway deploy skipped: no runtime-serving files changed in this push range."
             exit 0
           fi
 
