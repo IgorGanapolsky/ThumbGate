@@ -100,7 +100,7 @@ test('landing page does not render empty revenue links', async () => {
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/28E00j3Uge1E2dzgWL3sI2J/);
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/6oU00j8aw2iWdWh9uj3sI2K/);
   assert.match(html, /#workflow-sprint-intake/);
-  assert.match(html, /Team checkout happens after scope\./);
+  assert.match(html, /Enterprise checkout happens after scope\./);
 });
 
 test('landing pricing section compares plan capabilities and limits clearly', async () => {
@@ -112,8 +112,8 @@ test('landing pricing section compares plan capabilities and limits clearly', as
   assert.match(html, /5\/day, 25 total/);
   assert.match(html, /3 active rules/);
   assert.match(html, /\$19\/mo or \$149\/yr/);
-  assert.match(html, /\$49\/seat\/mo after scope, 3-seat minimum/);
-  assert.match(html, /Team and Regulated plans start through intake/);
+  assert.match(html, /Custom — scoped after intake/);
+  assert.match(html, /Enterprise plans start through intake/);
 });
 
 test('homepage and pricing surfaces expose canonical and LLM context links', async () => {
