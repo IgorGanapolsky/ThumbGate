@@ -52,6 +52,8 @@ test('SonarCloud workflow polls quality gates only for PR and merge-queue scans'
     /if:\s*steps\.sonar-scope\.outputs\.scan == 'true' && !\(github\.event_name == 'pull_request' && github\.event\.pull_request\.user\.login == 'dependabot\[bot\]'\) && \(github\.event_name == 'push' \|\| github\.event_name == 'workflow_dispatch'\)/,
   );
   assert.match(refreshSection, /-Dsonar\.projectVersion=\$\{\{\s*steps\.sonar-mainline-version\.outputs\.value\s*\}\}/);
+  assert.match(refreshSection, /timeout-minutes:\s*8/);
+  assert.match(refreshSection, /continue-on-error:\s*true/);
   assert.doesNotMatch(refreshSection, /-Dsonar\.qualitygate\.wait=true/);
   assert.doesNotMatch(refreshSection, /-Dsonar\.qualitygate\.timeout=600/);
 });
