@@ -280,6 +280,7 @@ test('workflow sentinel warns when current branch is outside workflow contract',
   const report = evaluateWorkflowSentinel('Bash', {
     command: 'node scripts/check.js',
     changed_files: ['src/api/server.js'],
+    currentBranch: 'feat/outside-contract',
   }, {
     feedbackDir,
     repoPath: process.cwd(),
