@@ -3766,11 +3766,15 @@ test('dashboard chat endpoint degrades cleanly when Gemini is not configured', a
       body: JSON.stringify({ question: 'What dashboard mistakes should we avoid?' }),
     });
 
-    assert.equal(res.status, 503);
+    // Local-first: with no Gemini key configured, the chat no longer fails with
+    // "no_api_key" — it answers the data question (topic: feedback/"mistakes")
+    // deterministically from this install's own dashboard data. No cloud required.
+    assert.equal(res.status, 200);
     const body = await res.json();
-    assert.equal(body.ok, false);
-    assert.equal(body.error, 'no_api_key');
-    assert.match(body.message, /GEMINI_API_KEY/);
+    assert.equal(body.ok, true);
+    assert.equal(body.provider, 'local-data');
+    assert.equal(body.llm, 'none');
+    assert.match(body.answer, /feedback|lesson|mistake/i);
     assert.ok(Array.isArray(body.sources));
   } finally {
     if (savedGeminiApiKey === undefined) delete process.env.GEMINI_API_KEY;
@@ -3909,6 +3913,36 @@ test('enterprise data chat endpoint answers from local dashboard data and blocks
   const blockedBody = await blockedRes.json();
   assert.equal(blockedBody.blocked, true);
   assert.match(blockedBody.dfcx.evaluation.gate, /enterprise-chat-unsafe-input/);
+});
+
+test('dashboard /v1/chat answers data questions LOCALLY with no cloud/LLM/API key', async () => {
+  // Factual question → deterministic local answer from this install's own data.
+  const res = await fetch(apiUrl('/v1/chat'), {
+    method: 'POST',
+    headers: authHeader,
+    body: JSON.stringify({ question: 'how many mistakes were blocked today?' }),
+  });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.ok, true);
+  assert.equal(body.provider, 'local-data', 'data questions must be answered locally, not via cloud');
+  assert.equal(body.llm, 'none', 'no LLM should be invoked for a metric question');
+  assert.equal(body.topic, 'gates');
+  assert.match(body.answer, /gates|blocked/i);
+  // No Gemini key is set in this test env — proving the local-first path needs no cloud.
+
+  // Open-ended question with no model configured must STILL return a local answer,
+  // never a hard "no_api_key" failure and never a forced cloud call.
+  const open = await fetch(apiUrl('/v1/chat'), {
+    method: 'POST',
+    headers: authHeader,
+    body: JSON.stringify({ question: 'what is our philosophy of work?' }),
+  });
+  assert.equal(open.status, 200);
+  const openBody = await open.json();
+  assert.equal(openBody.ok, true);
+  assert.equal(openBody.provider, 'local-data');
+  assert.equal(openBody.llm, 'none');
 });
 
 test('legacy enterprise Dialogflow routes remain compatibility aliases', async () => {

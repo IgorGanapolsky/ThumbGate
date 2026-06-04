@@ -410,9 +410,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // on reliability rollout: packaged runtime dependencies plus public
   // discovery assets weigh ~4.08 MB unpacked, leaving a narrow safety margin.
   // Bumped 4.18 MB -> 4.25 MB (2026-06-03) for the parallel workflow orchestrator.
+  // Bumped 4.25 MB -> 4.30 MB (2026-06-04) for the local-first dashboard chat:
+  // /v1/chat now answers data questions deterministically from local dashboard data
+  // (src/api/server.js) instead of Gemini RAG. Observed ~4.251 MB after the addition;
+  // the bump restores a one-normal-PR headroom buffer.
   assert.ok(
-    manifest.unpackedSize <= 4_250_000,
-    `npm package should stay <= 4.25 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_300_000,
+    `npm package should stay <= 4.30 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
