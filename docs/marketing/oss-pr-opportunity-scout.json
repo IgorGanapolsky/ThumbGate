@@ -1,18 +1,18 @@
 {
   "name": "thumbgate-oss-pr-opportunity-scout",
-  "packagePath": "/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/package.json",
-  "generatedAt": "2026-05-04T17:30:53.755Z",
+  "packagePath": "/private/tmp/tg-oss/package.json",
+  "generatedAt": "2026-06-04T18:55:21.558Z",
   "status": "ready_to_scout",
   "summary": {
-    "dependencyCount": 14,
+    "dependencyCount": 17,
     "mappedRepos": 12,
     "includeBounties": true,
     "topRepos": [
+      "modelcontextprotocol/typescript-sdk",
+      "modelcontextprotocol/servers",
       "anthropics/anthropic-sdk-typescript",
       "googleapis/js-genai",
-      "huggingface/transformers.js",
-      "microsoft/playwright",
-      "stripe/stripe-node"
+      "huggingface/transformers.js"
     ]
   },
   "searchProtocol": {
@@ -40,6 +40,82 @@
     "promotionRule": "Mention ThumbGate only as the toolchain context or proof discipline, not as unrelated advertising."
   },
   "opportunities": [
+    {
+      "id": "modelcontextprotocol-sdk-modelcontextprotocol-typescript-sdk",
+      "dependency": "@modelcontextprotocol/sdk",
+      "repo": "modelcontextprotocol/typescript-sdk",
+      "repoUrl": "https://github.com/modelcontextprotocol/typescript-sdk",
+      "score": 77,
+      "reasons": [
+        "known upstream repository",
+        "high product adjacency for agent tooling",
+        "large ecosystem visibility",
+        "ThumbGate's own protocol surface — buyers are MCP authors",
+        "bounty search enabled"
+      ],
+      "issueSearchQueries": [
+        "repo:modelcontextprotocol/typescript-sdk is:issue is:open label:\"good first issue\"",
+        "repo:modelcontextprotocol/typescript-sdk is:issue is:open label:\"help wanted\"",
+        "repo:modelcontextprotocol/typescript-sdk is:issue is:open bounty OR \"bug bounty\"",
+        "repo:modelcontextprotocol/typescript-sdk is:issue is:open regression test failure"
+      ],
+      "bountyQueries": [
+        "repo:modelcontextprotocol/typescript-sdk is:issue is:open \"bug bounty\"",
+        "repo:modelcontextprotocol/typescript-sdk is:issue is:open bounty security"
+      ],
+      "safeFixLanes": [
+        "reproduce issue locally before claiming it is fixed",
+        "prefer docs, tests, typed edge cases, and minimal bug fixes",
+        "open one focused PR per issue after reading contribution guidelines",
+        "include ThumbGate only as a transparent proof note when relevant, never as hidden promotion"
+      ],
+      "prReadinessGates": [
+        "issue linked or maintainer pain clearly documented",
+        "local reproduction or failing test captured",
+        "fix is minimal and scoped to the issue",
+        "tests or verification output attached",
+        "no bounty, security, or maintainer-policy claim without source link"
+      ],
+      "outreachDraft": "I found this while building ThumbGate as an MCP server against the Model Context Protocol spec. I reproduced the issue, added a minimal fix with tests, and kept the PR scoped to the maintainer's issue."
+    },
+    {
+      "id": "modelcontextprotocol-servers-modelcontextprotocol-servers",
+      "dependency": "modelcontextprotocol/servers",
+      "repo": "modelcontextprotocol/servers",
+      "repoUrl": "https://github.com/modelcontextprotocol/servers",
+      "score": 77,
+      "reasons": [
+        "known upstream repository",
+        "high product adjacency for agent tooling",
+        "large ecosystem visibility",
+        "ThumbGate's own protocol surface — buyers are MCP authors",
+        "bounty search enabled"
+      ],
+      "issueSearchQueries": [
+        "repo:modelcontextprotocol/servers is:issue is:open label:\"good first issue\"",
+        "repo:modelcontextprotocol/servers is:issue is:open label:\"help wanted\"",
+        "repo:modelcontextprotocol/servers is:issue is:open bounty OR \"bug bounty\"",
+        "repo:modelcontextprotocol/servers is:issue is:open regression test failure"
+      ],
+      "bountyQueries": [
+        "repo:modelcontextprotocol/servers is:issue is:open \"bug bounty\"",
+        "repo:modelcontextprotocol/servers is:issue is:open bounty security"
+      ],
+      "safeFixLanes": [
+        "reproduce issue locally before claiming it is fixed",
+        "prefer docs, tests, typed edge cases, and minimal bug fixes",
+        "open one focused PR per issue after reading contribution guidelines",
+        "include ThumbGate only as a transparent proof note when relevant, never as hidden promotion"
+      ],
+      "prReadinessGates": [
+        "issue linked or maintainer pain clearly documented",
+        "local reproduction or failing test captured",
+        "fix is minimal and scoped to the issue",
+        "tests or verification output attached",
+        "no bounty, security, or maintainer-policy claim without source link"
+      ],
+      "outreachDraft": "I found this while building and testing ThumbGate as an MCP server alongside the reference MCP servers. I reproduced the issue, added a minimal fix with tests, and kept the PR scoped to the maintainer's issue."
+    },
     {
       "id": "anthropic-ai-sdk-anthropics-anthropic-sdk-typescript",
       "dependency": "@anthropic-ai/sdk",
@@ -405,77 +481,6 @@
         "no bounty, security, or maintainer-policy claim without source link"
       ],
       "outreachDraft": "I found this while using c8 in ThumbGate. I reproduced the issue, added a minimal fix with tests, and kept the PR scoped to the maintainer's issue."
-    },
-    {
-      "id": "dotenv-motdotla-dotenv",
-      "dependency": "dotenv",
-      "repo": "motdotla/dotenv",
-      "repoUrl": "https://github.com/motdotla/dotenv",
-      "score": 38,
-      "reasons": [
-        "known upstream repository",
-        "bounty search enabled",
-        "lower-risk contribution surface"
-      ],
-      "issueSearchQueries": [
-        "repo:motdotla/dotenv is:issue is:open label:\"good first issue\"",
-        "repo:motdotla/dotenv is:issue is:open label:\"help wanted\"",
-        "repo:motdotla/dotenv is:issue is:open bounty OR \"bug bounty\"",
-        "repo:motdotla/dotenv is:issue is:open regression test failure"
-      ],
-      "bountyQueries": [
-        "repo:motdotla/dotenv is:issue is:open \"bug bounty\"",
-        "repo:motdotla/dotenv is:issue is:open bounty security"
-      ],
-      "safeFixLanes": [
-        "reproduce issue locally before claiming it is fixed",
-        "prefer docs, tests, typed edge cases, and minimal bug fixes",
-        "open one focused PR per issue after reading contribution guidelines",
-        "include ThumbGate only as a transparent proof note when relevant, never as hidden promotion"
-      ],
-      "prReadinessGates": [
-        "issue linked or maintainer pain clearly documented",
-        "local reproduction or failing test captured",
-        "fix is minimal and scoped to the issue",
-        "tests or verification output attached",
-        "no bounty, security, or maintainer-policy claim without source link"
-      ],
-      "outreachDraft": "I found this while using dotenv in ThumbGate. I reproduced the issue, added a minimal fix with tests, and kept the PR scoped to the maintainer's issue."
-    },
-    {
-      "id": "changesets-cli-changesets-changesets",
-      "dependency": "@changesets/cli",
-      "repo": "changesets/changesets",
-      "repoUrl": "https://github.com/changesets/changesets",
-      "score": 30,
-      "reasons": [
-        "known upstream repository",
-        "bounty search enabled"
-      ],
-      "issueSearchQueries": [
-        "repo:changesets/changesets is:issue is:open label:\"good first issue\"",
-        "repo:changesets/changesets is:issue is:open label:\"help wanted\"",
-        "repo:changesets/changesets is:issue is:open bounty OR \"bug bounty\"",
-        "repo:changesets/changesets is:issue is:open regression test failure"
-      ],
-      "bountyQueries": [
-        "repo:changesets/changesets is:issue is:open \"bug bounty\"",
-        "repo:changesets/changesets is:issue is:open bounty security"
-      ],
-      "safeFixLanes": [
-        "reproduce issue locally before claiming it is fixed",
-        "prefer docs, tests, typed edge cases, and minimal bug fixes",
-        "open one focused PR per issue after reading contribution guidelines",
-        "include ThumbGate only as a transparent proof note when relevant, never as hidden promotion"
-      ],
-      "prReadinessGates": [
-        "issue linked or maintainer pain clearly documented",
-        "local reproduction or failing test captured",
-        "fix is minimal and scoped to the issue",
-        "tests or verification output attached",
-        "no bounty, security, or maintainer-policy claim without source link"
-      ],
-      "outreachDraft": "I found this while using @changesets/cli in ThumbGate. I reproduced the issue, added a minimal fix with tests, and kept the PR scoped to the maintainer's issue."
     }
   ],
   "automationCommands": [

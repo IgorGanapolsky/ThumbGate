@@ -8,6 +8,7 @@ const DEFAULT_PACKAGE_PATH = path.join(__dirname, '..', 'package.json');
 const DEFAULT_OUTPUT_DIR = path.join(__dirname, '..', 'docs', 'marketing');
 const KNOWN_REPOS = Object.freeze({
   '@anthropic-ai/sdk': 'anthropics/anthropic-sdk-typescript',
+  '@modelcontextprotocol/sdk': 'modelcontextprotocol/typescript-sdk',
   '@google/genai': 'googleapis/js-genai',
   '@huggingface/transformers': 'huggingface/transformers.js',
   '@lancedb/lancedb': 'lancedb/lancedb',
@@ -21,6 +22,24 @@ const KNOWN_REPOS = Object.freeze({
   '@changesets/cli': 'changesets/changesets',
   c8: 'bcoe/c8',
   undici: 'nodejs/undici',
+});
+
+// Communities where ThumbGate's buyers live even though they are not npm
+// dependencies. ThumbGate ships an MCP server, so the Model Context Protocol
+// repos are the single highest-ROI ecosystem to contribute to — but the
+// dependency-scan above would never surface them. These are always scouted on
+// the default (no explicit --dependencies) path, de-duped against package.json.
+const STRATEGIC_DEPENDENCIES = Object.freeze([
+  '@modelcontextprotocol/sdk', // MCP TypeScript SDK — the protocol ThumbGate implements
+  'modelcontextprotocol/servers', // MCP servers ecosystem — where MCP authors (our buyers) collaborate
+]);
+
+// Honest, repo-accurate framing for the outreach draft. ThumbGate does not
+// `import` these — it implements the protocol — so the generic "while using X"
+// line would be a false claim. Keep drafts truthful (CEO honesty rule).
+const RELATIONSHIP_OVERRIDES = Object.freeze({
+  '@modelcontextprotocol/sdk': 'building ThumbGate as an MCP server against the Model Context Protocol spec',
+  'modelcontextprotocol/servers': 'building and testing ThumbGate as an MCP server alongside the reference MCP servers',
 });
 
 const BOUNTY_KEYWORDS = [
@@ -70,7 +89,10 @@ function dependencyNames(pkg = {}) {
 }
 
 function repoFromDependency(name) {
-  return KNOWN_REPOS[name] || '';
+  if (KNOWN_REPOS[name]) return KNOWN_REPOS[name];
+  // A strategic identifier may itself be an "owner/repo" slug (not an npm name).
+  if (!name.startsWith('@') && /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(name)) return name;
+  return '';
 }
 
 function buildIssueSearchQueries(repo) {
@@ -89,13 +111,17 @@ function scoreOpportunity(depName, repo, options = {}) {
     score += 20;
     reasons.push('known upstream repository');
   }
-  if (/sdk|genai|stripe|playwright|lancedb|transformers|sqlite|undici/i.test(depName)) {
+  if (/sdk|genai|stripe|playwright|lancedb|transformers|sqlite|undici|mcp|modelcontext/i.test(depName)) {
     score += 20;
     reasons.push('high product adjacency for agent tooling');
   }
-  if (/anthropic|google|huggingface|stripe|microsoft|nodejs/i.test(repo)) {
+  if (/anthropic|google|huggingface|stripe|microsoft|nodejs|modelcontextprotocol/i.test(repo)) {
     score += 15;
     reasons.push('large ecosystem visibility');
+  }
+  if (/modelcontext|mcp/i.test(depName) || /modelcontextprotocol/i.test(repo)) {
+    score += 12;
+    reasons.push("ThumbGate's own protocol surface — buyers are MCP authors");
   }
   if (options.includeBounties) {
     score += 10;
@@ -138,7 +164,7 @@ function buildOpportunity(depName, options = {}) {
       'no bounty, security, or maintainer-policy claim without source link',
     ],
     outreachDraft: repo
-      ? `I found this while using ${depName} in ThumbGate. I reproduced the issue, added a minimal fix with tests, and kept the PR scoped to the maintainer's issue.`
+      ? `I found this while ${RELATIONSHIP_OVERRIDES[depName] || `using ${depName} in ThumbGate`}. I reproduced the issue, added a minimal fix with tests, and kept the PR scoped to the maintainer's issue.`
       : '',
   };
 }
@@ -149,7 +175,9 @@ function buildOssPrOpportunityScoutPlan(rawOptions = {}) {
   const explicitDeps = splitList(rawOptions.dependencies || rawOptions.deps);
   const includeBounties = rawOptions.includeBounties !== false && rawOptions['include-bounties'] !== false;
   const maxRepos = Math.max(1, Number.parseInt(String(rawOptions.maxRepos || rawOptions['max-repos'] || 12), 10) || 12);
-  const deps = explicitDeps.length ? explicitDeps : dependencyNames(pkg);
+  const deps = explicitDeps.length
+    ? explicitDeps
+    : [...new Set([...dependencyNames(pkg), ...STRATEGIC_DEPENDENCIES])];
   const opportunities = deps
     .map((dep) => buildOpportunity(dep, { includeBounties }))
     .filter((opportunity) => opportunity.repo)
@@ -223,6 +251,8 @@ function writeOssPrOpportunityScoutPack(outputDir = DEFAULT_OUTPUT_DIR, options 
 
 module.exports = {
   KNOWN_REPOS,
+  STRATEGIC_DEPENDENCIES,
+  RELATIONSHIP_OVERRIDES,
   buildIssueSearchQueries,
   buildOpportunity,
   buildOssPrOpportunityScoutPlan,
