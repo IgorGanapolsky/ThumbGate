@@ -678,6 +678,51 @@ function resolveRequestProjectDir(req, parsed) {
   });
 }
 
+function debugApiFallback(label, error) {
+  if (process.env.THUMBGATE_DEBUG_API !== '1') return;
+  console.warn(`[api] ${label}: ${error?.message || String(error)}`);
+}
+
+function stripEnvQuotes(value) {
+  return String(value || '').trim().replace(/^["']|["']$/g, '');
+}
+
+function extractEnvValue(content, names) {
+  const pattern = new RegExp(`^(?:${names.join('|')})=(.*)$`, 'm');
+  const match = pattern.exec(content);
+  return match ? stripEnvQuotes(match[1]) : '';
+}
+
+function readProjectChatSettings(req, parsed) {
+  const settings = {
+    geminiKey: '',
+    perplexityKey: '',
+    localEndpoint: '',
+    localModel: '',
+    geminiValidatedAt: null,
+  };
+  try {
+    const projectDir = resolveRequestProjectDir(req, parsed);
+    const envPath = path.join(projectDir, '.env');
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, 'utf8');
+      settings.geminiKey = extractEnvValue(content, ['GEMINI_API_KEY', 'GOOGLE_API_KEY', 'THUMBGATE_GEMINI_API_KEY']);
+      settings.perplexityKey = extractEnvValue(content, ['PERPLEXITY_API_KEY', 'THUMBGATE_PERPLEXITY_API_KEY']);
+      settings.localEndpoint = extractEnvValue(content, ['THUMBGATE_LOCAL_LLM_ENDPOINT']);
+      settings.localModel = extractEnvValue(content, ['THUMBGATE_LOCAL_LLM_MODEL']);
+    }
+
+    const statusPath = path.join(projectDir, '.gemini-validated.json');
+    if (fs.existsSync(statusPath)) {
+      const status = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
+      settings.geminiValidatedAt = status.validatedAt || null;
+    }
+  } catch (error) {
+    debugApiFallback('project chat settings unavailable', error);
+  }
+  return settings;
+}
+
 function shouldPreferProjectScopedFeedback(req, parsed) {
   const explicitProject = getEffectiveRequestedProjectSelection(req, parsed);
   if (explicitProject) return true;
@@ -1455,7 +1500,7 @@ async function loadLiveDashboardDataOrRespondProblem(res, parsed, feedbackDir, i
   }
 }
 
-function buildEnterpriseDialogflowStatus(env = process.env) {
+function buildEnterpriseDataChatStatus(env = process.env) {
   const vertexProject = normalizeNullableText(env.VERTEX_PROJECT_ID)
     || normalizeNullableText(env.GOOGLE_VERTEX_PROJECT);
   const vertexLocation = normalizeNullableText(env.GOOGLE_VERTEX_LOCATION)
@@ -1487,11 +1532,15 @@ function buildEnterpriseDialogflowStatus(env = process.env) {
     },
     chat: {
       available: true,
-      source: 'local ThumbGate dashboard data',
-      guard: 'DFCX-compatible pre-action gate adapter',
+      source: 'local ThumbGate dashboard data with LanceDB-backed retrieval',
+      guard: 'local data-access guard; DFCX adapter optional for customer Dialogflow deployments',
+      providerRequired: false,
+      localLlmEndpointConfigured: Boolean(normalizeNullableText(env.THUMBGATE_LOCAL_LLM_ENDPOINT)),
     },
   };
 }
+
+const buildEnterpriseDialogflowStatus = buildEnterpriseDataChatStatus;
 
 function normalizeEnterpriseChatPrompt(value) {
   const text = normalizeNullableText(value);
@@ -1518,60 +1567,89 @@ function compactNumber(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
-function buildEnterpriseChatAnswer(prompt, dashboardData, status) {
-  const topic = classifyEnterpriseChatTopic(prompt);
+function buildEnterpriseChatSection(topic, dashboardData, status) {
   const approval = dashboardData.approval || {};
   const gates = Array.isArray(dashboardData.gates) ? dashboardData.gates : [];
   const gateStats = dashboardData.gateStats || {};
   const team = dashboardData.team || {};
   const tokenSavings = dashboardData.tokenSavings || {};
   const lessonPipeline = dashboardData.lessonPipeline || {};
-  const lines = [];
-  const sources = ['local dashboard data'];
 
   if (topic === 'feedback') {
-    lines.push(`Feedback total: ${compactNumber(approval.total)} (${compactNumber(approval.positive)} positive, ${compactNumber(approval.negative)} negative).`);
-    lines.push(`Lesson pipeline: ${compactNumber(lessonPipeline.lessons || lessonPipeline.generated || 0)} lessons visible in the current dashboard snapshot.`);
-    sources.push('feedback log', 'lesson pipeline');
-  } else if (topic === 'gates') {
-    lines.push(`Active gates: ${gates.length || compactNumber(gateStats.totalGates)}.`);
-    lines.push(`Blocked actions recorded: ${compactNumber(gateStats.blocked || gateStats.denied || gateStats.totalBlocked)}.`);
-    if (gates[0]) lines.push(`Example gate: ${gates[0].name || gates[0].id || 'unnamed gate'}.`);
-    sources.push('gate stats');
-  } else if (topic === 'team') {
-    lines.push(`Team dashboard is available in this local Enterprise view.`);
-    lines.push(`Tracked agents: ${compactNumber(team.totalAgents || team.agentCount || 0)}; risky agents: ${compactNumber(team.riskyAgents || team.highRiskAgents || 0)}.`);
-    sources.push('team dashboard');
-  } else if (topic === 'cost') {
-    lines.push(`Estimated token savings: ${tokenSavings.dollarsSavedDisplay || '$0.00'} from ${compactNumber(tokenSavings.blockedCalls)} blocked calls.`);
-    lines.push('Google Cloud budget alerts are evidence for spend visibility; ThumbGate-side stop conditions must be verified separately before calling them a hard cap.');
-    sources.push('token savings', 'budget posture');
-  } else if (topic === 'cloud') {
-    lines.push(status.vertex.configured
-      ? `Vertex routing config is present for project ${status.vertex.projectId} (${status.vertex.location}).`
-      : 'Vertex routing config is not present in this server environment.');
-    lines.push(status.dfcx.liveAgentConfigured
-      ? `DFCX env has agent ${status.dfcx.agentId} in ${status.dfcx.location}; verify it with REST/console before production claims.`
-      : 'No live DFCX agent is configured in env. Do not use the old alpha gcloud CX command group; verify agents with the Dialogflow CX REST API or console.');
-    sources.push('enterprise cloud status');
-  } else {
-    lines.push('Ask about feedback, lessons, active gates, team rollout, token savings, or Vertex/DFCX readiness.');
-    lines.push(`Current local snapshot: ${compactNumber(approval.total)} feedback events and ${gates.length || compactNumber(gateStats.totalGates)} active gates.`);
+    return {
+      lines: [
+        `Feedback total: ${compactNumber(approval.total)} (${compactNumber(approval.positive)} positive, ${compactNumber(approval.negative)} negative).`,
+        `Lesson pipeline: ${compactNumber(lessonPipeline.lessons || lessonPipeline.generated || 0)} lessons visible in the current dashboard snapshot.`,
+      ],
+      sources: ['feedback log', 'lesson pipeline'],
+    };
   }
-
+  if (topic === 'gates') {
+    return {
+      lines: [
+        `Active gates: ${gates.length || compactNumber(gateStats.totalGates)}.`,
+        `Blocked actions recorded: ${compactNumber(gateStats.blocked || gateStats.denied || gateStats.totalBlocked)}.`,
+        gates[0] ? `Example gate: ${gates[0].name || gates[0].id || 'unnamed gate'}.` : '',
+      ].filter(Boolean),
+      sources: ['gate stats'],
+    };
+  }
+  if (topic === 'team') {
+    return {
+      lines: [
+        'Team dashboard is available in this local Enterprise view.',
+        `Tracked agents: ${compactNumber(team.totalAgents || team.agentCount || 0)}; risky agents: ${compactNumber(team.riskyAgents || team.highRiskAgents || 0)}.`,
+      ],
+      sources: ['team dashboard'],
+    };
+  }
+  if (topic === 'cost') {
+    return {
+      lines: [
+        `Estimated token savings: ${tokenSavings.dollarsSavedDisplay || '$0.00'} from ${compactNumber(tokenSavings.blockedCalls)} blocked calls.`,
+        'Google Cloud budget alerts are evidence for spend visibility; ThumbGate-side stop conditions must be verified separately before calling them a hard cap.',
+      ],
+      sources: ['token savings', 'budget posture'],
+    };
+  }
+  if (topic === 'cloud') {
+    const vertexLine = status.vertex.configured
+      ? `Vertex routing config is present for project ${status.vertex.projectId} (${status.vertex.location}).`
+      : 'Vertex routing config is not present in this server environment.';
+    const dfcxLine = status.dfcx.liveAgentConfigured
+      ? `DFCX env has agent ${status.dfcx.agentId} in ${status.dfcx.location}; verify it with REST/console before production claims.`
+      : 'No live DFCX agent is configured in env. Do not use the old alpha gcloud CX command group; verify agents with the Dialogflow CX REST API or console.';
+    return {
+      lines: [vertexLine, dfcxLine],
+      sources: ['enterprise cloud status'],
+    };
+  }
   return {
-    topic,
-    answer: lines.join(' '),
-    sources,
+    lines: [
+      'Ask about feedback, lessons, active gates, team rollout, token savings, or Vertex/DFCX readiness.',
+      `Current local snapshot: ${compactNumber(approval.total)} feedback events and ${gates.length || compactNumber(gateStats.totalGates)} active gates.`,
+    ],
+    sources: [],
   };
 }
 
-async function answerEnterpriseDialogflowChat({ prompt, feedbackDir, parsed }) {
+function buildEnterpriseChatAnswer(prompt, dashboardData, status) {
+  const topic = classifyEnterpriseChatTopic(prompt);
+  const section = buildEnterpriseChatSection(topic, dashboardData, status);
+
+  return {
+    topic,
+    answer: section.lines.join(' '),
+    sources: ['local dashboard data', ...section.sources],
+  };
+}
+
+async function answerEnterpriseDataChat({ prompt, feedbackDir, parsed }) {
   const normalizedPrompt = normalizeEnterpriseChatPrompt(prompt);
   if (!normalizedPrompt) {
     throw createHttpError(400, 'prompt is required');
   }
-  const status = buildEnterpriseDialogflowStatus();
+  const status = buildEnterpriseDataChatStatus();
   if (containsUnsafeEnterpriseChatInput(normalizedPrompt)) {
     return {
       ok: false,
@@ -1592,6 +1670,11 @@ async function answerEnterpriseDialogflowChat({ prompt, feedbackDir, parsed }) {
 
   const dashboardResult = await buildLiveDashboardData(parsed, feedbackDir);
   const dashboardData = dashboardResult.data;
+
+  // This guarded stats endpoint stays deterministic for API compatibility.
+  // The dashboard's real local/open-source chatbot turn goes through /v1/chat,
+  // which uses lesson retrieval + optional LanceDB vector search + the user's
+  // configured local or BYO model.
   const chat = buildEnterpriseChatAnswer(normalizedPrompt, dashboardData, status);
   const dfcxRequest = {
     fulfillmentInfo: { tag: 'chat-with-data' },
@@ -1626,6 +1709,8 @@ async function answerEnterpriseDialogflowChat({ prompt, feedbackDir, parsed }) {
     sources: chat.sources,
   };
 }
+
+const answerEnterpriseDialogflowChat = answerEnterpriseDataChat;
 
 function buildLossAnalyticsResponse(data, summaryOptions) {
   return {
@@ -2200,6 +2285,10 @@ function readOptionalPublicTemplate(filePath) {
   }
 }
 
+function escapeJsonForInlineScript(value) {
+  return JSON.stringify(value).replaceAll('<', String.raw`\u003c`);
+}
+
 function resolveLocalPageBootstrap(req, expectedApiKey) {
   const forwardedHost = req.headers['x-forwarded-host'];
   const hostHeader = Array.isArray(forwardedHost)
@@ -2208,7 +2297,13 @@ function resolveLocalPageBootstrap(req, expectedApiKey) {
   const localProBootstrap = process.env.THUMBGATE_PRO_MODE === '1' && Boolean(expectedApiKey) && isLoopbackHost(hostHeader);
   const devOverride = expectedApiKey === null && isLoopbackHost(hostHeader);
   const bootstrapActive = localProBootstrap || devOverride;
-  const serializedBootstrapKey = JSON.stringify(localProBootstrap ? expectedApiKey : devOverride ? (process.env.THUMBGATE_API_KEY || 'dev-override') : '').replace(/</g, '\\u003c');
+  let bootstrapKey = '';
+  if (localProBootstrap) {
+    bootstrapKey = expectedApiKey;
+  } else if (devOverride) {
+    bootstrapKey = process.env.THUMBGATE_API_KEY || 'dev-override';
+  }
+  const serializedBootstrapKey = escapeJsonForInlineScript(bootstrapKey);
 
   return {
     bootstrapActive,
@@ -2249,7 +2344,7 @@ window.THUMBGATE_DASHBOARD_BOOTSTRAP = { enabled: ${bootstrapActive ? 'true' : '
 <p>This lightweight npm dashboard is bundled without marketing assets, so installs stay small while core feedback, lessons, and API routes remain available.</p>
 <div class="grid">
 <a class="card" href="/v1/dashboard"><strong>Dashboard JSON</strong><span>Inspect feedback totals, lesson counts, and Reliability Gateway health.</span></a>
-<a class="card" href="/v1/enterprise/dialogflow/status"><strong>Enterprise Data Chat</strong><span>Check Vertex/DFCX readiness and use /v1/enterprise/dialogflow/chat to query local ThumbGate data through the data-access guard. This does not claim a live Dialogflow CX agent unless deployment evidence is configured.</span></a>
+<a class="card" href="/v1/enterprise/data-chat/status"><strong>Governed Data Chat</strong><span>Local RAG (LanceDB vectors + lessons) over your data plus your LLM. Guard simulation is available; Dialogflow/Vertex are optional adapters for customer-owned agent deployments.</span></a>
 <a class="card" href="/lessons"><strong>Lessons</strong><span>Review remembered thumbs-up/down lessons and enforcement context.</span></a>
 <a class="card" href="/health"><strong>Health</strong><span>Verify the installed package version and runtime status.</span></a>
 </div>
@@ -2329,6 +2424,53 @@ function normalizeLessonSignal(signal) {
   return 'down';
 }
 
+function splitLessonTitlePrefix(titleText) {
+  const prefixMatch = /^(MISTAKE|SUCCESS|LEARNING|PREFERENCE):\s*(.*)/i.exec(titleText);
+  if (!prefixMatch) return { prefix: '', rest: titleText };
+  return {
+    prefix: `${prefixMatch[1].toUpperCase()}: `,
+    rest: prefixMatch[2],
+  };
+}
+
+function maybeParseJsonObject(value) {
+  const trimmed = String(value || '').trim();
+  if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return null;
+  try {
+    return JSON.parse(trimmed);
+  } catch (error) {
+    debugApiFallback('lesson JSON parse skipped', error);
+    return null;
+  }
+}
+
+function formatLessonJsonTitle(prefix, parsed) {
+  const dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
+  const suffix = dirName ? ` inside ${dirName}` : '';
+  if (parsed.prompt) return `${prefix}Prompt "${parsed.prompt}"${suffix}`;
+  const hookVal = parsed.hook_event_name || parsed.hookEventName;
+  if (hookVal) return `${prefix}Hook event ${hookVal}${suffix}`;
+  if (parsed.signal) return `${prefix}${parsed.signal === 'up' ? 'Thumbs Up' : 'Thumbs Down'}${suffix}`;
+  return '';
+}
+
+function cleanLessonTitle(titleText) {
+  if (!titleText) return 'Untitled Lesson';
+  const { prefix, rest } = splitLessonTitlePrefix(titleText);
+  const parsed = maybeParseJsonObject(rest);
+  if (parsed) {
+    const jsonTitle = formatLessonJsonTitle(prefix, parsed);
+    if (jsonTitle) return jsonTitle;
+  }
+  return titleText;
+}
+
+function formatLessonTextValue(value) {
+  if (!value) return '';
+  const parsed = maybeParseJsonObject(value);
+  return parsed ? JSON.stringify(parsed, null, 2) : value;
+}
+
 function renderLessonDetailHtml(record, lessonId) {
   if (!record) {
     return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Lesson Not Found</title>
@@ -2352,58 +2494,10 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
   const rawWhatWentWrong = merged.whatWentWrong || '';
   const rawWhatWorked = merged.whatWorked || '';
 
-  function cleanTitle(titleText) {
-    if (!titleText) return 'Untitled Lesson';
-    let prefix = '';
-    let rest = titleText;
-    const match = titleText.match(/^(MISTAKE|SUCCESS|LEARNING|PREFERENCE):\s*(.*)/i);
-    if (match) {
-      prefix = match[1].toUpperCase() + ': ';
-      rest = match[2];
-    }
-    
-    const trimmed = rest.trim();
-    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-      try {
-        const parsed = JSON.parse(trimmed);
-        const promptVal = parsed.prompt;
-        const hookVal = parsed.hook_event_name || parsed.hookEventName;
-        if (promptVal) {
-          const dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
-          return prefix + `Prompt "${promptVal}"` + (dirName ? ` inside ${dirName}` : '');
-        }
-        if (hookVal) {
-          const dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
-          return prefix + `Hook event ${hookVal}` + (dirName ? ` inside ${dirName}` : '');
-        }
-        if (parsed.signal) {
-          const dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
-          return prefix + (parsed.signal === 'up' ? 'Thumbs Up' : 'Thumbs Down') + (dirName ? ` inside ${dirName}` : '');
-        }
-      } catch (e) {
-        // ignore
-      }
-    }
-    return titleText;
-  }
-
-  function formatTextValue(value) {
-    if (!value) return '';
-    const trimmed = String(value).trim();
-    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-      try {
-        return JSON.stringify(JSON.parse(trimmed), null, 2);
-      } catch (e) {
-        // ignore
-      }
-    }
-    return value;
-  }
-
-  const title = cleanTitle(rawTitle);
-  const context = formatTextValue(rawContext);
-  const whatWentWrong = formatTextValue(rawWhatWentWrong);
-  const whatWorked = formatTextValue(rawWhatWorked);
+  const title = cleanLessonTitle(rawTitle);
+  const context = formatLessonTextValue(rawContext);
+  const whatWentWrong = formatLessonTextValue(rawWhatWentWrong);
+  const whatWorked = formatLessonTextValue(rawWhatWorked);
   const whatToChange = merged.whatToChange || '';
   const tags = Array.isArray(merged.tags) ? merged.tags.join(', ') : (merged.tags || '');
   const timestamp = merged.timestamp ? new Date(merged.timestamp).toLocaleString() : '';
@@ -4295,7 +4389,10 @@ function createApiServer() {
           });
           sendJson(res, 200, result);
         } catch (e) {
-          sendJson(res, 500, { error: 'feedback submission failed' });
+          sendJson(res, 500, {
+            error: 'feedback submission failed',
+            message: e?.message || 'Unable to submit dashboard feedback.',
+          });
         }
       });
       return;
@@ -7028,47 +7125,32 @@ ${hidden}
           const { getStatuslineMeta } = require('../../scripts/statusline-meta');
           const meta = getStatuslineMeta({ env: process.env });
           stats.tier = meta.tier;
-        } catch (_) {
+        } catch (error) {
+          debugApiFallback('statusline meta unavailable', error);
           stats.tier = 'Pro';
         }
 
-        let projectGeminiKey = '';
-        let projectPerplexityKey = '';
-        let geminiValidatedAt = null;
-        try {
-          const projectDir = resolveRequestProjectDir(req, parsed);
-          const envPath = path.join(projectDir, '.env');
-          if (fs.existsSync(envPath)) {
-            const content = fs.readFileSync(envPath, 'utf8');
-            const geminiMatch = content.match(/^(?:GEMINI_API_KEY|GOOGLE_API_KEY|THUMBGATE_GEMINI_API_KEY)=(.*)$/m);
-            if (geminiMatch) {
-              projectGeminiKey = geminiMatch[1].trim().replace(/^["']|["']$/g, '');
-            }
-            const perplexityMatch = content.match(/^(?:PERPLEXITY_API_KEY|THUMBGATE_PERPLEXITY_API_KEY)=(.*)$/m);
-            if (perplexityMatch) {
-              projectPerplexityKey = perplexityMatch[1].trim().replace(/^["']|["']$/g, '');
-            }
-          }
-          const statusPath = path.join(projectDir, '.gemini-validated.json');
-          if (fs.existsSync(statusPath)) {
-            const st = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
-            geminiValidatedAt = st.validatedAt || null;
-          }
-        } catch (_) {}
+        const projectChatSettings = readProjectChatSettings(req, parsed);
 
         stats.geminiConfigured = Boolean(
-          projectGeminiKey ||
+          projectChatSettings.geminiKey ||
           process.env.GEMINI_API_KEY ||
           process.env.THUMBGATE_GEMINI_API_KEY ||
           process.env.GOOGLE_API_KEY
         );
         stats.perplexityConfigured = Boolean(
-          projectPerplexityKey ||
+          projectChatSettings.perplexityKey ||
           process.env.PERPLEXITY_API_KEY ||
           process.env.THUMBGATE_PERPLEXITY_API_KEY
         );
-        stats.geminiValidatedAt = geminiValidatedAt;
-        stats.geminiKeyStatus = geminiValidatedAt ? 'validated' : (projectGeminiKey ? 'present' : 'none');
+        stats.geminiValidatedAt = projectChatSettings.geminiValidatedAt;
+        stats.geminiKeyStatus = 'none';
+        if (projectChatSettings.geminiKey) {
+          stats.geminiKeyStatus = 'present';
+        }
+        if (projectChatSettings.geminiValidatedAt) {
+          stats.geminiKeyStatus = 'validated';
+        }
         stats.hybridInferenceAvailable = !!(stats.geminiConfigured || stats.perplexityConfigured);
         sendJson(res, 200, stats);
         return;
@@ -7081,28 +7163,14 @@ ${hidden}
         const body = await parseJsonBody(req);
         const { answerDataQuestion } = require('../../scripts/dashboard-chat');
 
-        let projectGeminiKey = '';
-        let projectPerplexityKey = '';
-        try {
-          const projectDir = resolveRequestProjectDir(req, parsed);
-          const envPath = path.join(projectDir, '.env');
-          if (fs.existsSync(envPath)) {
-            const content = fs.readFileSync(envPath, 'utf8');
-            const geminiMatch = content.match(/^(?:GEMINI_API_KEY|GOOGLE_API_KEY|THUMBGATE_GEMINI_API_KEY)=(.*)$/m);
-            if (geminiMatch) {
-              projectGeminiKey = geminiMatch[1].trim().replace(/^["']|["']$/g, '');
-            }
-            const perplexityMatch = content.match(/^(?:PERPLEXITY_API_KEY|THUMBGATE_PERPLEXITY_API_KEY)=(.*)$/m);
-            if (perplexityMatch) {
-              projectPerplexityKey = perplexityMatch[1].trim().replace(/^["']|["']$/g, '');
-            }
-          }
-        } catch (_) {}
+        const projectChatSettings = readProjectChatSettings(req, parsed);
 
         const result = await answerDataQuestion(body.question || body.q || body.message, {
           feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
           model: typeof body.model === 'string' ? body.model : undefined,
-          apiKey: projectPerplexityKey || projectGeminiKey || process.env.PERPLEXITY_API_KEY || process.env.THUMBGATE_PERPLEXITY_API_KEY || process.env.GEMINI_API_KEY || process.env.THUMBGATE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '',
+          apiKey: projectChatSettings.perplexityKey || projectChatSettings.geminiKey || process.env.PERPLEXITY_API_KEY || process.env.THUMBGATE_PERPLEXITY_API_KEY || process.env.GEMINI_API_KEY || process.env.THUMBGATE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '',
+          localEndpoint: projectChatSettings.localEndpoint || process.env.THUMBGATE_LOCAL_LLM_ENDPOINT || '',
+          localModel: projectChatSettings.localModel || process.env.THUMBGATE_LOCAL_LLM_MODEL || '',
         });
         sendJson(res, result.ok ? 200 : (result.error === 'no_api_key' ? 503 : 400), result);
         return;
@@ -7128,7 +7196,7 @@ ${hidden}
             apiKey: key,
           });
         } catch (e) {
-          validation = { ok: false, error: 'validation_exception', message: String(e && e.message || e) };
+          validation = { ok: false, error: 'validation_exception', message: String(e?.message || e) };
         }
 
         if (!validation.ok) {
@@ -7166,7 +7234,9 @@ ${hidden}
               validatedAt: new Date().toISOString(),
               validatedBy: 'dashboard-save'
             }, null, 2));
-          } catch (_) { /* non-fatal */ }
+          } catch (error) {
+            debugApiFallback('Gemini validation marker unavailable', error);
+          }
           sendJson(res, 200, { ok: true, message: 'Key saved and validated.' });
         } catch (e) {
           sendJson(res, 500, { ok: false, error: 'fs_error', message: 'Failed to write to .env file: ' + e.message });
@@ -7229,14 +7299,20 @@ ${hidden}
         return;
       }
 
-      if (req.method === 'GET' && pathname === '/v1/enterprise/dialogflow/status') {
-        sendJson(res, 200, buildEnterpriseDialogflowStatus());
+      if (req.method === 'GET' && (
+        pathname === '/v1/enterprise/data-chat/status'
+        || pathname === '/v1/enterprise/dialogflow/status'
+      )) {
+        sendJson(res, 200, buildEnterpriseDataChatStatus());
         return;
       }
 
-      if (req.method === 'POST' && pathname === '/v1/enterprise/dialogflow/chat') {
+      if (req.method === 'POST' && (
+        pathname === '/v1/enterprise/data-chat/chat'
+        || pathname === '/v1/enterprise/dialogflow/chat'
+      )) {
         const body = await parseJsonBody(req, 16 * 1024);
-        const result = await answerEnterpriseDialogflowChat({
+        const result = await answerEnterpriseDataChat({
           prompt: body.prompt || body.message || body.query,
           feedbackDir: requestFeedbackDir,
           parsed,
@@ -8446,7 +8522,7 @@ ${hidden}
         } catch (err) {
           sendJson(res, 500, {
             error: 'ai_inventory_failed',
-            message: err && err.message ? err.message : 'Unable to scan AI component inventory.',
+            message: err?.message || 'Unable to scan AI component inventory.',
           });
         }
         return;
@@ -8471,7 +8547,7 @@ ${hidden}
         const body = await parseJsonBody(req);
         const snapshot = buildReviewSnapshot(requestFeedbackDir);
         // Override snapshot timestamp with client-provided one if available
-        if (body && body.reviewedAt) {
+        if (body?.reviewedAt) {
           snapshot.reviewedAt = body.reviewedAt;
         }
         writeDashboardReviewState(requestFeedbackDir, snapshot);
@@ -8789,8 +8865,10 @@ module.exports = {
     resolveLocalPageBootstrap,
     getPublicMcpTools,
     getServerCardTools,
+    buildEnterpriseDataChatStatus,
     buildEnterpriseDialogflowStatus,
     buildEnterpriseChatAnswer,
+    answerEnterpriseDataChat,
     answerEnterpriseDialogflowChat,
   },
 };
