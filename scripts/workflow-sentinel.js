@@ -1408,6 +1408,10 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     baseBranch,
     command: normalizedToolInput.command,
     changedFiles: affectedFiles,
+    currentBranch: options.currentBranch
+      || normalizedToolInput.currentBranch
+      || normalizedToolInput.branchName
+      || normalizedToolInput.branch,
     headSha: options.headSha || toolInput.headSha,
     requirePrForReleaseSensitive: options.requirePrForReleaseSensitive === true,
     requireVersionNotBehindBase: options.requireVersionNotBehindBase === true,
