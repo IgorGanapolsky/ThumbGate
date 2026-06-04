@@ -269,6 +269,12 @@ jobs:
 
       - name: Run SonarCloud scan (default branch refresh)
         if: steps.sonar-scope.outputs.scan == 'true' && !(github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        # PR and merge-queue scans are the blocking quality gate. The mainline
+        # refresh only updates SonarCloud's default-branch baseline, so external
+        # scanner download stalls or SonarCloud service hiccups should not leave
+        # an already-verified merge red on main.
+        timeout-minutes: 8
+        continue-on-error: true
         uses: SonarSource/sonarqube-scan-action@v8.0.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
