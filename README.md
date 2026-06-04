@@ -539,11 +539,13 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 
 ---
 
-## Enterprise Gating (Vertex AI & Google Cloud)
+## Enterprise Data Chat and Optional Google Adapters
 
-For enterprise subscriptions, ThumbGate natively integrates with Google Cloud Platform and **Vertex AI** to route all agent checks through compliant Gemini models inside your corporate VPC.
+The Enterprise dashboard chat is local/open-source first: it answers over local ThumbGate data using lesson retrieval, LanceDB-backed vectors, and your configured LLM. Set `THUMBGATE_LOCAL_LLM_ENDPOINT` to an OpenAI-compatible local endpoint (Ollama, llama.cpp, vLLM, LM Studio, etc.) when you want generated answers without sending dashboard data to Google.
 
-### Zero-Friction Setup
+Google Cloud is an optional regulated-enterprise adapter, not a dashboard chatbot requirement. If a buyer already standardizes on Vertex AI or Dialogflow CX, ThumbGate can verify that posture and deploy guard adapters in their tenancy.
+
+### Optional Vertex Setup
 To wire local ThumbGate scoring to Vertex AI, run:
 ```bash
 npx thumbgate setup-vertex
@@ -552,7 +554,7 @@ npx thumbgate setup-vertex
 * **Auto-Enablement:** Programmatically enables the Vertex AI API in your project.
 * **Auto-Configuration:** Writes local Vertex routing settings to your `.env` file.
 
-This command does **not** create or verify a live Dialogflow CX agent. On current Google Cloud CLI installs, the old alpha gcloud CX command group is not available; verify Conversational Agents / Dialogflow CX with the Google Cloud console or the official Dialogflow CX REST API (`projects.locations.agents`) before claiming a live DFCX deployment.
+This command does **not** create or verify a live Dialogflow CX agent. Dialogflow is only relevant when a customer wants ThumbGate guard adapters in front of their own production DFCX agents. On current Google Cloud CLI installs, the old alpha gcloud CX command group is not available; verify Conversational Agents / Dialogflow CX with the Google Cloud console or the official Dialogflow CX REST API (`projects.locations.agents`) before claiming a live DFCX deployment.
 
 ### Zero-Friction Cost Containment ($10/mo Hard Cap)
 Google Cloud budget alerts are "alert-only" and do not stop API traffic, risking unexpected bill shock. ThumbGate completely resolves this on the client side:
