@@ -49,8 +49,40 @@ jobs:
             echo "pr=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Wait for Railway to settle the new build
+      - name: Detect whether Railway deploy was required
+        id: deploy-scope
         if: steps.find-pr.outputs.pr != ''
+        run: |
+          set -eu
+          DEPLOYABLE_PATTERN='^(src/|scripts/.*\.(js|mjs|cjs)$|config/|adapters/.*\.(js|mjs|cjs|json|ya?ml|toml)$|public/|\.well-known/|openapi/|workers/|\.github/workflows/deploy-railway\.yml$|Dockerfile$|railway\.json$|package\.json$|package-lock\.json$)'
+          CHANGED_FILES="$(git diff --name-only "${MERGE_SHA}~1" "${MERGE_SHA}" | sed '/^$/d')"
+          {
+            echo "changed_files<<EOF"
+            printf '%s\n' "$CHANGED_FILES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "deploy_required=true" >> "$GITHUB_OUTPUT"
+          elif printf '%s\n' "$CHANGED_FILES" | grep -Eq "$DEPLOYABLE_PATTERN"; then
+            echo "deploy_required=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy_required=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Capture current production health for skipped deploys
+        if: steps.find-pr.outputs.pr != '' && steps.deploy-scope.outputs.deploy_required == 'false'
+        run: |
+          HEALTH_JSON="$(curl -sS --max-time 10 "${PROD_URL}/health" || echo '{}')"
+          ACTUAL_SHA="$(printf '%s' "$HEALTH_JSON" | sed -n 's/.*"buildSha":"\([^"]*\)".*/\1/p')"
+          {
+            echo "actual_sha=${ACTUAL_SHA:-unknown}"
+            echo "build_match=not_required"
+            echo "health_json=${HEALTH_JSON:-{}}"
+          } >> "$GITHUB_ENV"
+
+      - name: Wait for Railway to settle the new build
+        if: steps.find-pr.outputs.pr != '' && steps.deploy-scope.outputs.deploy_required == 'true'
         run: |
           # Railway typically settles within 2-5 minutes of deploy-railway
           # finishing. Poll /health for up to 8 minutes for the buildSha to
@@ -63,9 +95,11 @@ jobs:
             HEALTH_JSON="$(curl -sS --max-time 10 "${PROD_URL}/health" || echo '{}')"
             ACTUAL_SHA="$(printf '%s' "$HEALTH_JSON" | sed -n 's/.*"buildSha":"\([a-f0-9]*\)".*/\1/p')"
             if [ -n "$ACTUAL_SHA" ] && [ "${ACTUAL_SHA}" = "${MERGE_SHA}" ]; then
-              echo "actual_sha=${ACTUAL_SHA}" >> "$GITHUB_ENV"
-              echo "build_match=true" >> "$GITHUB_ENV"
-              echo "health_json=${HEALTH_JSON}" >> "$GITHUB_ENV"
+              {
+                echo "actual_sha=${ACTUAL_SHA}"
+                echo "build_match=true"
+                echo "health_json=${HEALTH_JSON}"
+              } >> "$GITHUB_ENV"
               MATCH=1
               break
             fi
@@ -73,9 +107,11 @@ jobs:
             sleep 10
           done
           if [ "$MATCH" -ne 1 ]; then
-            echo "actual_sha=${ACTUAL_SHA:-unknown}" >> "$GITHUB_ENV"
-            echo "build_match=false" >> "$GITHUB_ENV"
-            echo "health_json=${HEALTH_JSON:-{}}" >> "$GITHUB_ENV"
+            {
+              echo "actual_sha=${ACTUAL_SHA:-unknown}"
+              echo "build_match=false"
+              echo "health_json=${HEALTH_JSON:-{}}"
+            } >> "$GITHUB_ENV"
           fi
 
       - name: Probe required public routes
@@ -122,7 +158,12 @@ jobs:
         run: |
           BUILD_OK="${build_match:-false}"
           ROUTES_OK="${routes_clean:-false}"
-          if [ "$BUILD_OK" = "true" ] && [ "$ROUTES_OK" = "true" ]; then
+          DEPLOY_REQUIRED="${{ steps.deploy-scope.outputs.deploy_required }}"
+          if [ "$DEPLOY_REQUIRED" = "false" ] && [ "$ROUTES_OK" = "true" ]; then
+            STATUS="ℹ️ Deploy not required for non-runtime merge"
+          elif [ "$DEPLOY_REQUIRED" = "false" ] && [ "$ROUTES_OK" = "false" ]; then
+            STATUS="⚠️ Deploy not required, but route probe found failures"
+          elif [ "$BUILD_OK" = "true" ] && [ "$ROUTES_OK" = "true" ]; then
             STATUS="✅ Deploy verified"
           elif [ "$BUILD_OK" = "true" ] && [ "$ROUTES_OK" = "false" ]; then
             STATUS="⚠️ Deployed but route probe found failures"
@@ -138,6 +179,7 @@ jobs:
           **Merge commit:** \`${MERGE_SHA}\`
           **Production buildSha:** \`${actual_sha:-unknown}\`
           **buildSha match:** ${BUILD_OK}
+          **Railway deploy required:** ${DEPLOY_REQUIRED}
 
           **/health snapshot:**
           \`\`\`json

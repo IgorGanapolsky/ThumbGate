@@ -410,6 +410,25 @@ test('Deploy to Railway workflow skips non-runtime pushes and only deploys when 
   assert.doesNotMatch(workflow, /Railway deploy skipped: deploy-scope disabled this run\./);
 });
 
+test('Deploy verification comment does not require a build SHA change for non-runtime merges', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'verify-deploy-comment.yml'), 'utf8');
+
+  assert.match(workflow, /name: Detect whether Railway deploy was required/);
+  assert.match(workflow, /id: deploy-scope/);
+  assert.match(workflow, /DEPLOYABLE_PATTERN='.*src\/.*public\/.*Dockerfile\$/);
+  assert.match(workflow, /git diff --name-only "\$\{MERGE_SHA\}~1" "\$\{MERGE_SHA\}"/);
+  assert.match(workflow, /deploy_required=false/);
+  assert.match(workflow, /name: Capture current production health for skipped deploys/);
+  assert.match(workflow, /build_match=not_required/);
+  assert.match(
+    workflow,
+    /name: Wait for Railway to settle the new build\n\s+if: steps\.find-pr\.outputs\.pr != '' && steps\.deploy-scope\.outputs\.deploy_required == 'true'/,
+  );
+  assert.match(workflow, /Deploy not required for non-runtime merge/);
+  assert.match(workflow, /Railway deploy required:/);
+  assert.match(workflow, /Public-route probes/);
+});
+
 test('Deploy to Railway workflow stamps runtime deployment env metadata before health verification', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
 
@@ -553,7 +572,7 @@ test('CodeQL workflow supports merge queue and cancels stale non-main runs', () 
   assert.match(workflow, /cancel-in-progress:\s*\$\{\{\s*github\.ref != 'refs\/heads\/main'\s*\}\}/);
 });
 
-test('SonarCloud workflow refreshes main and stamps scans with the package version', () => {
+test('SonarCloud workflow gates PRs and keeps main refresh non-blocking', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'sonarcloud.yml'), 'utf8');
 
   assert.match(workflow, /^name:\s*SonarCloud/m);
@@ -574,7 +593,8 @@ test('SonarCloud workflow refreshes main and stamps scans with the package versi
   assert.match(workflow, /Read package version[\s\S]*?require\("\.\/package\.json"\)\.version/);
   assert.match(workflow, /Build Sonar mainline analysis version[\s\S]*?sha\.\$SHORT_SHA/);
   assert.match(workflow, /Run SonarCloud scan \(default branch refresh\)[\s\S]*?github\.event_name == 'push' \|\| github\.event_name == 'workflow_dispatch'/);
-  assert.match(workflow, /-Dsonar\.projectVersion=\$\{\{\s*steps\.sonar-mainline-version\.outputs\.value\s*\}\}/);
+  assert.match(workflow, /Skipping default-branch Sonar scanner refresh/);
+  assert.match(workflow, /mainline_version=\$\{\{\s*steps\.sonar-mainline-version\.outputs\.value\s*\}\}/);
 });
 
 test('SonarCloud workflow polls quality gates only for PR and merge-queue scans', () => {
