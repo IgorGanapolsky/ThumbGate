@@ -32,7 +32,8 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
-const { execSync, execFileSync } = require('child_process');
+const http = require('http');
+const { execSync, execFileSync, execFile, spawn } = require('child_process');
 const {
   codexAutoUpdateCliEntry,
   codexAutoUpdateMcpEntry,
@@ -237,6 +238,58 @@ function parseArgs(argv) {
     args[key] = true;
   });
   return args;
+}
+
+function probeDash(port) {
+  return new Promise((resolve) => {
+    const req = http.get({ hostname: '127.0.0.1', port, path: '/health', timeout: 750 }, (res) => {
+      res.resume();
+      resolve(res.statusCode >= 200 && res.statusCode < 500);
+    });
+    req.on('error', () => resolve(false));
+    req.on('timeout', () => { req.destroy(); resolve(false); });
+  });
+}
+
+async function waitDash(port, timeoutMs = 8000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await probeDash(port)) return true;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  return false;
+}
+
+async function ensureDash(port) {
+  if (await probeDash(port)) {
+    return { started: false, pid: null };
+  }
+
+  const serverPath = path.join(PKG_ROOT, 'src', 'api', 'server.js');
+  const child = spawn(process.execPath, [serverPath], {
+    cwd: PKG_ROOT,
+    detached: true,
+    env: { ...process.env, PORT: String(port), THUMBGATE_ALLOW_INSECURE: process.env.THUMBGATE_ALLOW_INSECURE || 'true' },
+    stdio: 'ignore',
+  });
+  child.unref();
+
+  if (!(await waitDash(port))) {
+    throw new Error('Dashboard API timeout');
+  }
+
+  return { started: true, pid: child.pid };
+}
+
+function openBrowser(url) {
+  if (process.env.THUMBGATE_DASHBOARD_NO_OPEN === '1') {
+    console.log(`Ready: ${url}`);
+    return Promise.resolve();
+  }
+  const [command, args] = ({ darwin: ['open', [url]], win32: ['cmd', ['/c', 'start', '', url]] }[process.platform] || ['xdg-open', [url]]);
+  return new Promise((resolve, reject) => {
+    execFile(command, args, (err) => (err ? reject(err) : resolve()));
+  });
 }
 
 function parseTtlMs(value, fallbackMs = 5 * 60 * 1000) {
@@ -2672,28 +2725,23 @@ function installMcp() {
 function dashboard() {
   const args = parseArgs(process.argv.slice(3));
   if (args.open || args.web) {
-    const { exec } = require('child_process');
     const { resolveProjectDir } = require(path.join(PKG_ROOT, 'scripts', 'feedback-paths'));
     const projectDir = resolveProjectDir({ cwd: process.cwd(), env: process.env });
     const port = process.env.PORT || 3456;
-    const url = `http://localhost:${port}/dashboard?project=${encodeURIComponent(projectDir)}`;
-    
-    console.log(`Opening browser to: ${url}`);
-    let command;
-    if (process.platform === 'darwin') {
-      command = `open "${url}"`;
-    } else if (process.platform === 'win32') {
-      command = `start "" "${url}"`;
-    } else {
-      command = `xdg-open "${url}"`;
-    }
-    
-    exec(command, (err) => {
-      if (err) {
-        console.error('Failed to open browser:', err.message);
-      }
-      process.exit(err ? 1 : 0);
-    });
+    const url = `http://127.0.0.1:${port}/dashboard?project=${encodeURIComponent(projectDir)}`;
+
+    ensureDash(Number(port))
+      .then((server) => {
+        if (server.started) {
+          console.log(`API ${port} pid ${server.pid}`);
+        }
+        return openBrowser(url);
+      })
+      .then(() => process.exit(0))
+      .catch((err) => {
+        console.error(err && err.message ? err.message : err);
+        process.exit(1);
+      });
     return;
   }
 
