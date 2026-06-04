@@ -64,12 +64,12 @@ function loadJson(filePath) {
 function loadGovernanceState() {
   const raw = loadJson(GOVERNANCE_STATE_PATH);
   return {
-    taskScope: raw && raw.taskScope && typeof raw.taskScope === 'object' ? raw.taskScope : null,
-    protectedApprovals: Array.isArray(raw && raw.protectedApprovals) ? raw.protectedApprovals : [],
-    branchGovernance: raw && raw.branchGovernance && typeof raw.branchGovernance === 'object'
+    taskScope: raw?.taskScope && typeof raw.taskScope === 'object' ? raw.taskScope : null,
+    protectedApprovals: Array.isArray(raw?.protectedApprovals) ? raw.protectedApprovals : [],
+    branchGovernance: raw?.branchGovernance && typeof raw.branchGovernance === 'object'
       ? raw.branchGovernance
       : null,
-    workflowContract: raw && raw.workflowContract && typeof raw.workflowContract === 'object'
+    workflowContract: raw?.workflowContract && typeof raw.workflowContract === 'object'
       ? raw.workflowContract
       : null,
   };
@@ -391,9 +391,18 @@ function commandMatchesPattern(command, pattern) {
   }
 }
 
+const COMPLETION_ACTION_PATTERNS = [
+  /\bgit\s+(?:commit|push)\b/i,
+  /\bgh\s+pr\s+(?:create|merge)\b/i,
+  /\bgh\s+release\s+create\b/i,
+  /\bnpm\s+publish\b/i,
+  /\byarn\s+publish\b/i,
+  /\bpnpm\s+publish\b/i,
+];
+
 function isCompletionLikeAction(command) {
-  return /\b(?:git\s+(?:commit|push)|gh\s+pr\s+(?:create|merge)|gh\s+release\s+create|npm\s+publish|yarn\s+publish|pnpm\s+publish)\b/i
-    .test(String(command || ''));
+  const text = String(command || '');
+  return COMPLETION_ACTION_PATTERNS.some((pattern) => pattern.test(text));
 }
 
 function collectEvidenceLabels(toolInput = {}, options = {}) {
@@ -466,11 +475,17 @@ function evaluateWorkflowContract(contractInput, context = {}) {
   }
 
   const hasBlock = violations.some((violation) => violation.severity === 'block');
+  let mode = 'allow';
+  if (hasBlock) {
+    mode = 'block';
+  } else if (violations.length > 0) {
+    mode = 'warn';
+  }
   return {
     active: true,
     contract,
     violations,
-    mode: hasBlock ? 'block' : violations.length > 0 ? 'warn' : 'allow',
+    mode,
   };
 }
 
@@ -704,18 +719,18 @@ function scoreRisk({
       );
     }
   }
-  if (workflowContract && workflowContract.active && workflowContract.violations.length > 0) {
+  if (workflowContract?.active && workflowContract.violations.length > 0) {
     for (const violation of workflowContract.violations) {
       addDriver(
         drivers,
         `workflow_contract_${violation.code}`,
         violation.severity === 'block' ? 0.38 : 0.18,
         violation.message,
-        { workflowId: workflowContract.contract && workflowContract.contract.workflowId }
+        { workflowId: workflowContract.contract?.workflowId }
       );
     }
   }
-  if (memoryGuard && memoryGuard.mode && memoryGuard.mode !== 'allow') {
+  if (memoryGuard?.mode && memoryGuard.mode !== 'allow') {
     addDriver(
       drivers,
       'memory_recurrence',
@@ -724,7 +739,7 @@ function scoreRisk({
       { mode: memoryGuard.mode }
     );
   }
-  if (learnedPolicy && learnedPolicy.enabled && learnedPolicy.prediction) {
+  if (learnedPolicy?.enabled && learnedPolicy.prediction) {
     const confidence = learnedPolicy.prediction.confidence || 0;
     const label = learnedPolicy.prediction.label;
     if (label === 'deny' && confidence >= 0.6) {
@@ -809,19 +824,17 @@ function buildEvidence({
       evidence.push(`Workflow control ${workflowControl.mode}: ${workflowControl.reasons.join(' ')}`);
     }
   }
-  if (workflowContract && workflowContract.active) {
-    const workflowId = workflowContract.contract && workflowContract.contract.workflowId
-      ? workflowContract.contract.workflowId
-      : 'unnamed';
+  if (workflowContract?.active) {
+    const workflowId = workflowContract.contract?.workflowId || 'unnamed';
     evidence.push(`Workflow contract active: ${workflowId}.`);
     for (const violation of workflowContract.violations.slice(0, 3)) {
       evidence.push(`Workflow contract ${violation.severity}: ${violation.message}`);
     }
   }
-  if (actionProfile && actionProfile.backgroundAgent) {
+  if (actionProfile?.backgroundAgent) {
     evidence.push('Background or scheduled agent context detected for this action.');
   }
-  if (actionProfile && actionProfile.economicAction) {
+  if (actionProfile?.economicAction) {
     evidence.push('Economic action keywords detected (billing, refunds, payouts, invoices, or subscriptions).');
   }
   if (actionProfile && actionProfile.customerSystemAction) {
@@ -1031,7 +1044,7 @@ function buildRemediations({
       'Isolated execution limits host damage when a high-risk local action goes wrong.'
     );
   }
-  if (costControl && costControl.mode && costControl.mode !== 'allow') {
+  if (costControl?.mode && costControl.mode !== 'allow') {
     push(
       'reduce_model_budget',
       'Reduce model budget before execution',
@@ -1039,7 +1052,7 @@ function buildRemediations({
       'High token or cost estimates should be reviewed before the model/tool loop continues.'
     );
   }
-  if (workflowContract && workflowContract.active && workflowContract.violations.length > 0) {
+  if (workflowContract?.active && workflowContract.violations.length > 0) {
     const codes = new Set(workflowContract.violations.map((violation) => violation.code));
     if (codes.has('missing_required_evidence')) {
       push(
@@ -1241,13 +1254,13 @@ function buildDecisionControl({
     protectedSurface,
     actionProfile,
   });
-  const hasOperationalBlockers = Boolean(integrity && Array.isArray(integrity.blockers) && integrity.blockers.length > 0);
-  const hasCostWarning = Boolean(costControl && costControl.mode === 'warn');
-  const hasCostBlock = Boolean(costControl && costControl.mode === 'block');
-  const hasWorkflowWarning = Boolean(workflowControl && workflowControl.mode === 'warn');
-  const hasWorkflowBlock = Boolean(workflowControl && workflowControl.mode === 'block');
-  const hasContractWarning = Boolean(workflowContract && workflowContract.mode === 'warn');
-  const hasContractBlock = Boolean(workflowContract && workflowContract.mode === 'block');
+  const hasOperationalBlockers = Boolean(integrity?.blockers?.length);
+  const hasCostWarning = costControl?.mode === 'warn';
+  const hasCostBlock = costControl?.mode === 'block';
+  const hasWorkflowWarning = workflowControl?.mode === 'warn';
+  const hasWorkflowBlock = workflowControl?.mode === 'block';
+  const hasContractWarning = workflowContract?.mode === 'warn';
+  const hasContractBlock = workflowContract?.mode === 'block';
   const requiresCheckpoint = decision === 'warn'
     || (decision === 'allow' && (reversibility !== 'two_way_door' || hasOperationalBlockers || hasCostWarning || hasWorkflowWarning || hasContractWarning));
   const executionMode = decision === 'deny'
@@ -1291,49 +1304,51 @@ function buildDecisionControl({
   };
 }
 
-function chooseDecision({ riskScore, integrity, memoryGuard, learnedPolicy, blastRadius, command, costControl, workflowControl, workflowContract, actionProfile }) {
-  const hasOperationalBlockers = Boolean(integrity && Array.isArray(integrity.blockers) && integrity.blockers.length > 0);
-  if (costControl && costControl.mode === 'block') {
-    return 'deny';
-  }
-  if (workflowControl && workflowControl.mode === 'block') {
-    return 'deny';
-  }
-  if (workflowContract && workflowContract.mode === 'block') {
-    return 'deny';
-  }
-  const destructiveBypass = /\bgit\s+push\b.*(?:--force|-f)\b/i.test(command) || /\bgh\s+pr\s+merge\b.*--admin\b/i.test(command);
-  const learnedPrediction = learnedPolicy && learnedPolicy.enabled ? learnedPolicy.prediction : null;
-  const learnedHardStop = Boolean(
-    learnedPrediction
-      && learnedPrediction.label === 'deny'
-      && learnedPrediction.confidence >= 0.7
+function isDestructiveBypass(command) {
+  return /\bgit\s+push\b.*(?:--force|-f)\b/i.test(command)
+    || /\bgh\s+pr\s+merge\b.*--admin\b/i.test(command);
+}
+
+function getLearnedPrediction(learnedPolicy) {
+  return learnedPolicy?.enabled ? learnedPolicy.prediction : null;
+}
+
+function learnedPredictionMatches(prediction, labels, minConfidence) {
+  return Boolean(
+    prediction
+      && labels.includes(prediction.label)
+      && prediction.confidence >= minConfidence
   );
-  const learnedWarning = Boolean(
-    learnedPrediction
-      && ['warn', 'verify', 'deny'].includes(learnedPrediction.label)
-      && learnedPrediction.confidence >= 0.3
-  );
-  const learnedRecall = Boolean(
-    learnedPrediction
-      && learnedPrediction.label === 'recall'
-      && learnedPrediction.confidence >= 0.3
-  );
-  const lowBlastRadius = blastRadius.fileCount <= 1
+}
+
+function isLowBlastRadius(blastRadius) {
+  return blastRadius.fileCount <= 1
     && blastRadius.surfaceCount <= 1
     && blastRadius.releaseSensitiveFiles.length === 0
     && blastRadius.unapprovedProtectedFiles === 0;
-  const lowRiskHandoff = /\bgit\s+push\b|\bgh\s+pr\s+(?:create|merge)\b/i.test(command)
+}
+
+function isLowRiskHandoff({
+  command,
+  destructiveBypass,
+  learnedHardStop,
+  blastRadius,
+  hasOperationalBlockers,
+  memoryGuard,
+  riskScore,
+}) {
+  return /\bgit\s+push\b|\bgh\s+pr\s+(?:create|merge)\b/i.test(command)
     && !destructiveBypass
     && !learnedHardStop
-    && lowBlastRadius
+    && isLowBlastRadius(blastRadius)
     && !hasOperationalBlockers
-    && memoryGuard
-    && memoryGuard.mode !== 'allow'
+    && memoryGuard?.mode !== 'allow'
     && riskScore <= 0.62;
-  const repeatedHighBlast = Boolean(
-    memoryGuard
-      && memoryGuard.mode === 'block'
+}
+
+function isRepeatedHighBlast(memoryGuard, blastRadius) {
+  return Boolean(
+    memoryGuard?.mode === 'block'
       && (
         blastRadius.severity === 'high'
         || blastRadius.severity === 'critical'
@@ -1341,25 +1356,49 @@ function chooseDecision({ riskScore, integrity, memoryGuard, learnedPolicy, blas
         || blastRadius.unapprovedProtectedFiles > 0
       )
   );
-  const economicAction = Boolean(actionProfile && actionProfile.economicAction);
-  const backgroundAgent = Boolean(actionProfile && actionProfile.backgroundAgent);
-  const customerSystemAction = Boolean(actionProfile && actionProfile.customerSystemAction);
+}
 
-  if (lowRiskHandoff) {
+function hasSoftControlWarning({ workflowContract, workflowControl, costControl, riskScore, learnedWarning, learnedRecall }) {
+  return workflowContract?.mode === 'warn'
+    || workflowControl?.mode === 'warn'
+    || costControl?.mode === 'warn'
+    || riskScore >= 0.45
+    || (learnedWarning && riskScore >= 0.3)
+    || (learnedRecall && riskScore >= 0.34);
+}
+
+function chooseDecision({ riskScore, integrity, memoryGuard, learnedPolicy, blastRadius, command, costControl, workflowControl, workflowContract, actionProfile }) {
+  if (costControl?.mode === 'block' || workflowControl?.mode === 'block' || workflowContract?.mode === 'block') {
+    return 'deny';
+  }
+
+  const hasOperationalBlockers = Boolean(integrity?.blockers?.length);
+  const destructiveBypass = isDestructiveBypass(command);
+  const learnedPrediction = getLearnedPrediction(learnedPolicy);
+  const learnedHardStop = learnedPredictionMatches(learnedPrediction, ['deny'], 0.7);
+  const learnedWarning = learnedPredictionMatches(learnedPrediction, ['warn', 'verify', 'deny'], 0.3);
+  const learnedRecall = learnedPredictionMatches(learnedPrediction, ['recall'], 0.3);
+
+  if (isLowRiskHandoff({ command, destructiveBypass, learnedHardStop, blastRadius, hasOperationalBlockers, memoryGuard, riskScore })) {
     return 'allow';
   }
+
   // Background customer-system actions checkpoint (warn), never hard-deny.
   // The checkpoint IS the mitigation — blocking outright prevents legitimate work.
-  if (backgroundAgent && customerSystemAction) {
+  if (actionProfile?.backgroundAgent && actionProfile?.customerSystemAction) {
     return 'warn';
   }
+
+  const repeatedHighBlast = isRepeatedHighBlast(memoryGuard, blastRadius);
   if (destructiveBypass || learnedHardStop || repeatedHighBlast || (hasOperationalBlockers && riskScore >= 0.72) || riskScore >= 0.86) {
     return 'deny';
   }
-  if (economicAction || (backgroundAgent && riskScore >= 0.3)) {
+
+  if (actionProfile?.economicAction || (actionProfile?.backgroundAgent && riskScore >= 0.3)) {
     return 'warn';
   }
-  if ((workflowContract && workflowContract.mode === 'warn') || (workflowControl && workflowControl.mode === 'warn') || (costControl && costControl.mode === 'warn') || riskScore >= 0.45 || (learnedWarning && riskScore >= 0.3) || (learnedRecall && riskScore >= 0.34)) {
+
+  if (hasSoftControlWarning({ workflowContract, workflowControl, costControl, riskScore, learnedWarning, learnedRecall })) {
     return 'warn';
   }
   return 'allow';
@@ -1408,6 +1447,10 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     baseBranch,
     command: normalizedToolInput.command,
     changedFiles: affectedFiles,
+    currentBranch: options.currentBranch
+      || normalizedToolInput.currentBranch
+      || normalizedToolInput.branchName
+      || normalizedToolInput.branch,
     headSha: options.headSha || toolInput.headSha,
     requirePrForReleaseSensitive: options.requirePrForReleaseSensitive === true,
     requireVersionNotBehindBase: options.requireVersionNotBehindBase === true,
