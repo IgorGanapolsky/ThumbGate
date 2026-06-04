@@ -34,4 +34,4 @@ messages, or internal notes.
 **Never overclaim.** ThumbGate is pre-revenue and honesty is the brand. No
 fabricated traction ("trusted by N teams"), no benchmark claims without a cited
 source, no "live" integration we don't ship. Honest-and-specific beats
-impressive-and-vague every time. See [[feedback_no_overclaiming]].
+impressive-and-vague every time.

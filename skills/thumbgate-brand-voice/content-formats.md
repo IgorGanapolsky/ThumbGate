@@ -12,7 +12,7 @@ YouTube. X is retired.
 
 ## LinkedIn
 - Amplify: quietly confident, technically precise. Recede: jargon, hustle-bro energy.
-- One insight, one mechanism, no hash16-hashtag wall. Engineer-credible, not thought-leader-y.
+- One insight, one mechanism, no hashtag wall. Engineer-credible, not thought-leader-y.
 - ✅ "Zero-trust for agents has to be enforced at the tool call, not the prompt. Here's the boundary where it actually happens."
 - 🚫 "🚀 Excited to share how AI is REVOLUTIONIZING developer security! #AI #ML #Security #Innovation"
 
