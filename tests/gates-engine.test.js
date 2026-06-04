@@ -1125,29 +1125,28 @@ test('run warns on destructive local git cleanup by default, denies under strict
   cleanupStateFiles();
 });
 
-test('run blocks broad rm -rf against root or home by default', () => {
+test('run warns on broad rm -rf by default, denies under strict enforcement', () => {
   cleanupStateFiles();
-  const rootOutput = JSON.parse(run({
-    tool_name: 'Bash',
-    tool_input: { command: 'rm -rf /' },
-  }));
-  assert.equal(rootOutput.hookSpecificOutput.permissionDecision, 'deny');
-  assert.match(rootOutput.hookSpecificOutput.permissionDecisionReason, /rm-rf-home-or-root/);
-
-  const homeOutput = JSON.parse(run({
-    tool_name: 'Bash',
-    tool_input: { command: 'rm -rf $HOME/tmp' },
-  }));
-  assert.equal(homeOutput.hookSpecificOutput.permissionDecision, 'deny');
-  assert.match(homeOutput.hookSpecificOutput.permissionDecisionReason, /rm-rf-home-or-root/);
+  // Warn+audit posture (CEO decision 2026-06-04): even rm -rf / is flagged + logged, NOT
+  // hard-blocked, by default — we do not pretend a regex can reliably catch destructive
+  // commands (sudo/bash -c/find -exec all evade it). Hard enforcement is the strict opt-in.
+  const warnOut = JSON.parse(run({ tool_name: 'Bash', tool_input: { command: 'rm -rf /' } }));
+  assert.notEqual(warnOut.hookSpecificOutput.permissionDecision, 'deny');
+  process.env.THUMBGATE_STRICT_ENFORCEMENT = '1';
+  try {
+    const denyOut = JSON.parse(run({ tool_name: 'Bash', tool_input: { command: 'rm -rf /' } }));
+    assert.equal(denyOut.hookSpecificOutput.permissionDecision, 'deny');
+  } finally {
+    delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
+  }
   cleanupStateFiles();
 });
 
-test('warn-by-default never hard-blocks benign commands that merely mention rm -rf', () => {
+test('warn+audit default never hard-blocks benign commands that merely mention rm -rf', () => {
   cleanupStateFiles();
-  // Regression: a crude command regex once hard-denied any command containing the
-  // substring "rm -rf" — echo, grep, even git commit messages, and routine
-  // `rm -rf node_modules`. None of these must be a hard deny.
+  // Regression: a crude command regex once hard-denied any command containing the substring
+  // "rm -rf" — echo, grep, git commit messages, and routine `rm -rf node_modules`. None of
+  // these is a destructive root/home delete, so none must be hard-blocked in default posture.
   const benign = [
     'echo "do not run rm -rf /"',
     'grep -r "rm -rf" scripts/',
@@ -1160,16 +1159,7 @@ test('warn-by-default never hard-blocks benign commands that merely mention rm -
     assert.notEqual(
       out.hookSpecificOutput.permissionDecision,
       'deny',
-      `benign command must not be hard-blocked: ${command}`,
-    );
-  }
-  // But the genuinely catastrophic targets still hard-deny, regardless of gate order.
-  for (const command of ['rm -rf /', 'rm -rf $HOME/work', 'deploy && rm -rf ~']) {
-    const out = JSON.parse(run({ tool_name: 'Bash', tool_input: { command } }));
-    assert.equal(
-      out.hookSpecificOutput.permissionDecision,
-      'deny',
-      `catastrophic rm -rf must hard-block: ${command}`,
+      `benign command must not be hard-blocked by default: ${command}`,
     );
   }
   cleanupStateFiles();
