@@ -2,15 +2,15 @@
 
 // scripts/dashboard-chat.js
 // -----------------------------------------------------------------------------
-// "Chat with your data" — the dashboard chat backend. Answers a natural-language
-// question about THIS install's ThumbGate data (captured lessons + prevention
-// rules) by retrieving the most relevant lessons and asking Gemini to answer
-// grounded ONLY in that retrieved context (RAG). No data leaves the box except
-// the retrieved snippets + the question, sent to the configured Gemini endpoint.
+// "Chat with your data" — the dashboard chat backend. Local-first RAG over
+// this install's ThumbGate data (lessons, raw feedback memories via LanceDB
+// vectors, receipts, gate stats). Retrieval is local (lesson search + optional
+// vector-store.searchSimilar). Generation uses your configured LLM: a local
+// OpenAI-compatible endpoint first, then Gemini or Perplexity when explicitly
+// configured.
 //
-// Enterprise framing: this is the in-product "chat with your governed data"
-// experience. (The Dialogflow CX messenger widget is the separate path where a
-// customer connects their own DFCX agent + the ThumbGate webhook gate.)
+// Dialogflow/Google is not the dashboard chatbot brain. It remains an optional
+// guard-adapter path for buyers who already run their own Google agent tenancy.
 // -----------------------------------------------------------------------------
 
 const path = require('path');
@@ -49,31 +49,63 @@ function resolveApiKey(opts = {}) {
   return key.trim().replace(/^["']|["']$/g, '');
 }
 
-// Retrieve the most relevant stored lessons for the question.
-function retrieveContext(question, opts = {}) {
+// Retrieve relevant stored lessons and optional raw feedback vector matches.
+async function retrieveContext(question, opts = {}) {
+  const contextItems = [];
   let searchLessons;
   try {
     ({ searchLessons } = require(path.join(__dirname, 'lesson-search')));
-  } catch (_) {
-    return [];
+  } catch (_) {}
+  if (searchLessons) {
+    try {
+      const res = searchLessons(String(question || ''), {
+        limit: MAX_CONTEXT_LESSONS,
+        feedbackDir: opts.feedbackDir,
+      });
+      const rows = (res && (res.results || res.lessons)) || [];
+      for (const l of rows.slice(0, MAX_CONTEXT_LESSONS)) {
+        contextItems.push({
+          id: l.id,
+          signal: l.signal || l.feedback || '',
+          title: (l.title || '').replace(/^(?:MISTAKE|SUCCESS):\s*/i, '').slice(0, 160),
+          content: String(l.content || l.context || '').replace(/\s+/g, ' ').trim().slice(0, 600),
+          tags: l.tags || [],
+          source: 'lessons',
+        });
+      }
+    } catch (_) {}
   }
-  let res;
-  try {
-    res = searchLessons(String(question || ''), {
-      limit: MAX_CONTEXT_LESSONS,
-      feedbackDir: opts.feedbackDir,
-    });
-  } catch (_) {
-    return [];
+
+  if (opts.useVectorSearch !== false) {
+    try {
+      const vectorStore = require(path.join(__dirname, 'vector-store'));
+      const vecResults = vectorStore.searchSimilar
+        ? await vectorStore.searchSimilar(String(question || ''), opts.vectorLimit || 4)
+        : [];
+      for (const v of vecResults) {
+        if (!v || !v.text) continue;
+        contextItems.push({
+          id: v.id || `vec-${contextItems.length}`,
+          signal: v.signal || '',
+          title: String(v.context || v.text || '').slice(0, 100),
+          content: v.text || v.context || '',
+          tags: v.tags ? String(v.tags).split(',').filter(Boolean) : [],
+          source: 'lancedb-vector',
+        });
+      }
+    } catch (_) {
+      // Graceful fallback: no vector DB or embedder means lesson-only chat.
+    }
   }
-  const rows = (res && (res.results || res.lessons)) || [];
-  return rows.slice(0, MAX_CONTEXT_LESSONS).map((l) => ({
-    id: l.id,
-    signal: l.signal || l.feedback || '',
-    title: (l.title || '').replace(/^(?:MISTAKE|SUCCESS):\s*/i, '').slice(0, 160),
-    content: String(l.content || l.context || '').replace(/\s+/g, ' ').trim().slice(0, 600),
-    tags: l.tags || [],
-  })).filter((l) => l.content || l.title);
+
+  const seen = new Set();
+  return contextItems.filter((item) => {
+    if (!(item.content || item.title)) return false;
+    const key = item.id || item.content.slice(0, 80);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, MAX_CONTEXT_LESSONS + 3);
 }
 
 // Build a grounded RAG prompt. Pure function (testable).
@@ -115,15 +147,17 @@ async function answerDataQuestion(question, opts = {}) {
     return { ok: false, error: 'question_too_long', message: `Question exceeds ${MAX_QUESTION_CHARS} characters.` };
   }
 
+  const localEndpoint = opts.localEndpoint || process.env.THUMBGATE_LOCAL_LLM_ENDPOINT || '';
+  const localModel = opts.localModel || process.env.THUMBGATE_LOCAL_LLM_MODEL || 'llama3';
   const apiKey = resolveApiKey(opts);
-  const lessons = retrieveContext(q, opts);
+  const lessons = await retrieveContext(q, opts);
   const sources = lessons.map((l) => ({ id: l.id, title: l.title, signal: l.signal }));
 
-  if (!apiKey) {
+  if (!apiKey && !localEndpoint) {
     return {
       ok: false,
       error: 'no_api_key',
-      message: 'Chat is not configured. Set a valid GEMINI_API_KEY or PERPLEXITY_API_KEY (for hybrid local-cloud) in the project .env or via dashboard Save. See adapters/perplexity/HYBRID.md.',
+      message: 'Chat is not configured. Set a valid GEMINI_API_KEY, PERPLEXITY_API_KEY, or THUMBGATE_LOCAL_LLM_ENDPOINT in the project .env.',
       sources,
     };
   }
@@ -131,10 +165,35 @@ async function answerDataQuestion(question, opts = {}) {
   const model = resolveModel(opts.model);
   const prompt = buildChatPrompt(q, lessons);
   const fetchImpl = opts.fetch || globalThis.fetch;
-  const isPerplexity = apiKey.startsWith('pplx-') || apiKey.includes('perplexity');
+  const isPerplexity = apiKey && (apiKey.startsWith('pplx-') || apiKey.includes('perplexity'));
 
   try {
-    if (isPerplexity) {
+    if (localEndpoint) {
+      let url = localEndpoint;
+      if (!url.includes('/chat/completions')) {
+        url = url.replace(/\/+$/, '') + '/chat/completions';
+      }
+      const res = await fetchImpl(url, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'Authorization': `Bearer ${apiKey || 'local'}`
+        },
+        body: JSON.stringify({
+          model: localModel,
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.2,
+          max_tokens: 1024,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = (json && json.error && json.error.message) ? String(json.error.message).split('\n')[0] : `HTTP ${res.status}`;
+        return { ok: false, error: 'local_llm_error', status: res.status, message: msg, sources };
+      }
+      const answer = (json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content) || '';
+      return { ok: true, answer: answer.trim() || '(no answer returned)', sources, model: json.model || localModel };
+    } else if (isPerplexity) {
       // Use Perplexity hybrid-capable API (OpenAI compatible) for RAG chat with your data
       const res = await fetchImpl(PERPLEXITY_ENDPOINT, {
         method: 'POST',
