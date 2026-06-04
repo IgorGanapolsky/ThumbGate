@@ -133,44 +133,20 @@ const KNOWLEDGE_CONFLICT_STRICT_BASH_PATTERN = /\b(?:git\s+push\b|gh\s+pr\s+merg
 // Everything else (memory-high-risk, workflow-sequence, off-scope, git push, deploy,
 // approval gates) downgrades deny/approve -> warn so legitimate work is never blocked.
 // Opt back into full hard enforcement with THUMBGATE_STRICT_ENFORCEMENT=1.
-// Catastrophic floor: `rm -rf` targeting / ~ or $HOME ALWAYS hard-blocks, even in
-// warn-by-default mode and regardless of gate-evaluation order (a non-catastrophic gate
-// can match first and would otherwise shadow + downgrade the rm-rf gate). This mirrors the
-// SMART matcher of config/gates/default.json's `rm-rf-home-or-root`: it requires rm -rf at
-// command start or after a shell separator AND a root/home target, so it does NOT match
-// benign mentions (echo / grep / git commit -m "...rm -rf...") or rm -rf of build dirs.
-const CATASTROPHIC_RM_PATTERN = /(?:^|[;&|]\s*)rm\s+-(?=[^\s]*r)(?=[^\s]*f)[^\s]+\s+(?:\/|\/\*|~(?:\/[^\s]*)?|\$HOME(?:\/[^\s]*)?)(?:\s|$)/;
-// Gates that stay hard-deny even in warn-by-default mode. (secret-exfiltration and the
-// security-vulnerability scan also hard-deny on their own paths before this runs.)
-const CATASTROPHIC_GATE_IDS = new Set(['rm-rf-home-or-root', 'secret-exfiltration']);
-
-// Only inspect the EXECUTED command (Bash command/cmd/script) — never file-write payloads
-// (content/new_string), so writing/editing a file that mentions rm -rf is not blocked.
-function enforcementCommandText(toolInput) {
-  if (!toolInput || typeof toolInput !== 'object') return '';
-  return [toolInput.command, toolInput.cmd, toolInput.script]
-    .filter((v) => typeof v === 'string')
-    .join(' ')
-    .slice(0, MAX_COMMAND_SCAN_CHARS);
-}
-
-function applyEnforcementPosture(result, toolInput) {
-  // Catastrophic floor first — guarantees rm -rf /,~,$HOME hard-blocks regardless of mode
-  // or which gate matched first.
-  if (CATASTROPHIC_RM_PATTERN.test(enforcementCommandText(toolInput))) {
-    if (result && result.decision === 'deny') return result;
-    return {
-      decision: 'deny',
-      gate: 'rm-rf-home-or-root',
-      message: 'Broad rm -rf against root or home is blocked. Use a narrow, reviewed path and explicit approval for destructive deletes.',
-      severity: 'critical',
-    };
-  }
+// Enforcement posture (CEO decision 2026-06-04): WARN + AUDIT by default.
+// The firewall fires and LOGS every decision, but downgrades deny/approve -> warn so
+// legitimate work is never hard-blocked. We deliberately do NOT try to hard-block
+// arbitrary destructive commands here: a regex "catastrophic floor" is unwinnable
+// (sudo / bash -c / find -exec / eval / base64|sh all evade it) and gives false confidence.
+// HARD enforcement is an explicit opt-in via THUMBGATE_STRICT_ENFORCEMENT=1, which keeps
+// the engine's FULL gate set (its high-risk-command gates catch prefixed/obfuscated forms
+// far better than any single regex). Secret exfiltration and the security-vulnerability
+// scan hard-deny on their OWN paths before this runs, so irreversible data-leak / supply
+// chain risks stay blocked regardless of posture.
+function applyEnforcementPosture(result) {
   if (!result || (result.decision !== 'deny' && result.decision !== 'approve')) return result;
   // Full hard enforcement opt-in: keep every deny.
   if (process.env.THUMBGATE_STRICT_ENFORCEMENT === '1') return result;
-  // Keep deny only for inherently-catastrophic gates.
-  if (CATASTROPHIC_GATE_IDS.has(result.gate)) return result;
   // Honor the explicit strict-knowledge-conflict opt-in for that gate.
   if (process.env.THUMBGATE_STRICT_KNOWLEDGE_CONFLICT === '1' && result.gate === 'knowledge-conflict-gate') return result;
   // Warn-by-default: the gate still fired and is recorded; the action is allowed through
@@ -2732,7 +2708,7 @@ async function runAsync(input) {
 
   const sequenceGuard = evaluateSequenceState(toolName, toolInput);
   if (sequenceGuard && sequenceGuard.decision === 'deny') {
-    return formatOutput(applyEnforcementPosture(sequenceGuard, toolInput));
+    return formatOutput(applyEnforcementPosture(sequenceGuard));
   }
 
   const result = await evaluateGatesAsync(toolName, toolInput);
@@ -2752,12 +2728,12 @@ async function runAsync(input) {
   const lessonContext = safeSecretStorageWrite ? null : await buildRelevantLessonContextAsync(toolName, toolInput);
   
   if (lessonContext && lessonContext.decision === "deny") {
-    return formatOutput(applyEnforcementPosture(lessonContext, toolInput));
+    return formatOutput(applyEnforcementPosture(lessonContext));
   }
   
   const recentContext = buildRecentCorrectiveActionsContext();
   const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
-  return formatOutput(applyEnforcementPosture(result, toolInput), combinedContext);
+  return formatOutput(applyEnforcementPosture(result), combinedContext);
 
 }
 
@@ -2779,7 +2755,7 @@ function run(input) {
 
   const sequenceGuard = evaluateSequenceState(toolName, toolInput);
   if (sequenceGuard && sequenceGuard.decision === 'deny') {
-    return formatOutput(applyEnforcementPosture(sequenceGuard, toolInput));
+    return formatOutput(applyEnforcementPosture(sequenceGuard));
   }
 
   const result = evaluateGates(toolName, toolInput);
@@ -2799,12 +2775,12 @@ function run(input) {
   const lessonContext = safeSecretStorageWrite ? null : buildRelevantLessonContext(toolName, toolInput);
   
   if (lessonContext && lessonContext.decision === "deny") {
-    return formatOutput(applyEnforcementPosture(lessonContext, toolInput));
+    return formatOutput(applyEnforcementPosture(lessonContext));
   }
   
   const recentContext = buildRecentCorrectiveActionsContext();
   const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
-  return formatOutput(applyEnforcementPosture(result, toolInput), combinedContext);
+  return formatOutput(applyEnforcementPosture(result), combinedContext);
 
 }
 
