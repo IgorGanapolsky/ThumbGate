@@ -1143,6 +1143,38 @@ test('run blocks broad rm -rf against root or home by default', () => {
   cleanupStateFiles();
 });
 
+test('warn-by-default never hard-blocks benign commands that merely mention rm -rf', () => {
+  cleanupStateFiles();
+  // Regression: a crude command regex once hard-denied any command containing the
+  // substring "rm -rf" — echo, grep, even git commit messages, and routine
+  // `rm -rf node_modules`. None of these must be a hard deny.
+  const benign = [
+    'echo "do not run rm -rf /"',
+    'grep -r "rm -rf" scripts/',
+    'git commit -m "removed rm -rf from setup script"',
+    'rm -rf node_modules',
+    'rm -rf ./build/cache',
+  ];
+  for (const command of benign) {
+    const out = JSON.parse(run({ tool_name: 'Bash', tool_input: { command } }));
+    assert.notEqual(
+      out.hookSpecificOutput.permissionDecision,
+      'deny',
+      `benign command must not be hard-blocked: ${command}`,
+    );
+  }
+  // But the genuinely catastrophic targets still hard-deny, regardless of gate order.
+  for (const command of ['rm -rf /', 'rm -rf $HOME/work', 'deploy && rm -rf ~']) {
+    const out = JSON.parse(run({ tool_name: 'Bash', tool_input: { command } }));
+    assert.equal(
+      out.hookSpecificOutput.permissionDecision,
+      'deny',
+      `catastrophic rm -rf must hard-block: ${command}`,
+    );
+  }
+  cleanupStateFiles();
+});
+
 test('run passes through non-matching commands', () => {
   const output = JSON.parse(run({
     tool_name: 'Bash',

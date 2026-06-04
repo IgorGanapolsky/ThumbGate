@@ -133,14 +133,19 @@ const KNOWLEDGE_CONFLICT_STRICT_BASH_PATTERN = /\b(?:git\s+push\b|gh\s+pr\s+merg
 // Everything else (memory-high-risk, workflow-sequence, off-scope, git push, deploy,
 // approval gates) downgrades deny/approve -> warn so legitimate work is never blocked.
 // Opt back into full hard enforcement with THUMBGATE_STRICT_ENFORCEMENT=1.
-// Irreversible, catastrophic commands that hard-block even in warn-by-default mode.
-// Kept tight: only unambiguous data/system destruction that is never part of normal
-// dev flow. (NOT git push/-f, which is routine — that downgrades to warn.)
-const CATASTROPHIC_CMD_PATTERN = /\brm\s+-[a-z]*r[a-z]*f[a-z]*\b|\brm\s+-[a-z]*f[a-z]*r[a-z]*\b|\bmkfs\b|\bdd\s+if=|--no-preserve-root|:\(\)\s*\{\s*:|>\s*\/dev\/(?:sd|nvme|disk|hd)|\bterraform\s+destroy\b/i;
+// Catastrophic floor: `rm -rf` targeting / ~ or $HOME ALWAYS hard-blocks, even in
+// warn-by-default mode and regardless of gate-evaluation order (a non-catastrophic gate
+// can match first and would otherwise shadow + downgrade the rm-rf gate). This mirrors the
+// SMART matcher of config/gates/default.json's `rm-rf-home-or-root`: it requires rm -rf at
+// command start or after a shell separator AND a root/home target, so it does NOT match
+// benign mentions (echo / grep / git commit -m "...rm -rf...") or rm -rf of build dirs.
+const CATASTROPHIC_RM_PATTERN = /(?:^|[;&|]\s*)rm\s+-(?=[^\s]*r)(?=[^\s]*f)[^\s]+\s+(?:\/|\/\*|~(?:\/[^\s]*)?|\$HOME(?:\/[^\s]*)?)(?:\s|$)/;
+// Gates that stay hard-deny even in warn-by-default mode. (secret-exfiltration and the
+// security-vulnerability scan also hard-deny on their own paths before this runs.)
+const CATASTROPHIC_GATE_IDS = new Set(['rm-rf-home-or-root', 'secret-exfiltration']);
 
-// IMPORTANT: only inspect the EXECUTED command (Bash command/cmd/script). Never
-// match file-write payloads (content/new_string) — writing or editing a file that
-// merely *mentions* "rm -rf" (a doc, test, or script) must NOT be hard-blocked.
+// Only inspect the EXECUTED command (Bash command/cmd/script) — never file-write payloads
+// (content/new_string), so writing/editing a file that mentions rm -rf is not blocked.
 function enforcementCommandText(toolInput) {
   if (!toolInput || typeof toolInput !== 'object') return '';
   return [toolInput.command, toolInput.cmd, toolInput.script]
@@ -150,27 +155,26 @@ function enforcementCommandText(toolInput) {
 }
 
 function applyEnforcementPosture(result, toolInput) {
-  const strict = process.env.THUMBGATE_STRICT_ENFORCEMENT === '1';
-  // Catastrophic FLOOR: irreversibly destructive commands ALWAYS hard-block, even in
-  // warn-by-default mode and even if no other gate matched (the "hard-block rm -rf" rule).
-  if (CATASTROPHIC_CMD_PATTERN.test(enforcementCommandText(toolInput))) {
+  // Catastrophic floor first — guarantees rm -rf /,~,$HOME hard-blocks regardless of mode
+  // or which gate matched first.
+  if (CATASTROPHIC_RM_PATTERN.test(enforcementCommandText(toolInput))) {
+    if (result && result.decision === 'deny') return result;
     return {
       decision: 'deny',
-      gate: (result && result.gate) || 'catastrophic-command',
-      message: (result && result.message)
-        ? result.message
-        : 'BLOCKED: irreversibly destructive command (rm -rf / mkfs / dd-to-disk / fork bomb / terraform destroy). This stays hard-blocked even in warn-by-default mode.',
+      gate: 'rm-rf-home-or-root',
+      message: 'Broad rm -rf against root or home is blocked. Use a narrow, reviewed path and explicit approval for destructive deletes.',
       severity: 'critical',
-      reasoning: result ? result.reasoning : undefined,
     };
   }
   if (!result || (result.decision !== 'deny' && result.decision !== 'approve')) return result;
-  // Full hard enforcement opt-in: keep the deny.
-  if (strict) return result;
-  // Secret exfiltration is catastrophic (also handled on its own deny path).
-  if (result.gate === 'secret-exfiltration') return result;
+  // Full hard enforcement opt-in: keep every deny.
+  if (process.env.THUMBGATE_STRICT_ENFORCEMENT === '1') return result;
+  // Keep deny only for inherently-catastrophic gates.
+  if (CATASTROPHIC_GATE_IDS.has(result.gate)) return result;
+  // Honor the explicit strict-knowledge-conflict opt-in for that gate.
+  if (process.env.THUMBGATE_STRICT_KNOWLEDGE_CONFLICT === '1' && result.gate === 'knowledge-conflict-gate') return result;
   // Warn-by-default: the gate still fired and is recorded; the action is allowed through
-  // with the warning surfaced instead of hard-blocked.
+  // with the warning surfaced instead of hard-blocked, so legitimate work is never blocked.
   return {
     ...result,
     decision: 'warn',
