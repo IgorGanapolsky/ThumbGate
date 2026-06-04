@@ -273,7 +273,10 @@ jobs:
         # refresh used to call the external scanner again on main, but that made
         # already-verified merges depend on scanner downloads/service health a
         # second time. Keep the main workflow green and rely on the required
-        # PR/merge-queue scan above for enforcement.
+        # PR/merge-queue scan above for enforcement. This is an explicit
+        # tradeoff: SonarCloud default-branch baselines can lag until the next
+        # full scanner run, so this step is intentionally informational instead
+        # of a quality gate.
         run: |
-          echo "::notice::Skipping default-branch Sonar scanner refresh; PR and merge-queue scans are the blocking quality gate."
+          echo "::notice::Skipping default-branch Sonar scanner refresh; PR and merge-queue scans are the blocking quality gate. Default-branch baseline may lag until a full scanner run."
           echo "mainline_version=${{ steps.sonar-mainline-version.outputs.value }}"

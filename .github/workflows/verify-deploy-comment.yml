@@ -13,6 +13,7 @@ on:
     branches: [main]
 
 permissions:
+  actions: read
   contents: read
   pull-requests: write
 
@@ -52,29 +53,44 @@ jobs:
       - name: Detect whether Railway deploy was required
         id: deploy-scope
         if: steps.find-pr.outputs.pr != ''
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
         run: |
           set -eu
-          DEPLOYABLE_PATTERN='^(src/|scripts/.*\.(js|mjs|cjs)$|config/|adapters/.*\.(js|mjs|cjs|json|ya?ml|toml)$|public/|\.well-known/|openapi/|workers/|\.github/workflows/deploy-railway\.yml$|Dockerfile$|railway\.json$|package\.json$|package-lock\.json$)'
-          CHANGED_FILES="$(git diff --name-only "${MERGE_SHA}~1" "${MERGE_SHA}" | sed '/^$/d')"
-          {
-            echo "changed_files<<EOF"
-            printf '%s\n' "$CHANGED_FILES"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
-          if [ -z "$CHANGED_FILES" ]; then
-            echo "deploy_required=true" >> "$GITHUB_OUTPUT"
-          elif printf '%s\n' "$CHANGED_FILES" | grep -Eq "$DEPLOYABLE_PATTERN"; then
-            echo "deploy_required=true" >> "$GITHUB_OUTPUT"
+          mkdir -p deploy-scope
+          if gh run download "${{ github.event.workflow_run.id }}" --name deploy-scope --dir deploy-scope; then
+            echo "Loaded deploy-scope artifact from Deploy to Railway run ${{ github.event.workflow_run.id }}."
           else
-            echo "deploy_required=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Deploy scope artifact missing; conservatively requiring buildSha verification."
           fi
+
+          node - <<'NODE' >> "$GITHUB_OUTPUT"
+const fs = require('fs');
+const artifactPath = 'deploy-scope/deploy-scope.json';
+let scope = null;
+try {
+  scope = JSON.parse(fs.readFileSync(artifactPath, 'utf8'));
+} catch {
+  scope = {
+    shouldDeploy: true,
+    scopeReason: 'artifact_missing_conservative_verify',
+    changedFiles: [],
+  };
+}
+
+const changedFiles = Array.isArray(scope.changedFiles) ? scope.changedFiles : [];
+console.log('changed_files<<EOF');
+console.log(changedFiles.join('\n'));
+console.log('EOF');
+console.log(`deploy_required=${scope.shouldDeploy === false ? 'false' : 'true'}`);
+console.log(`scope_reason=${scope.scopeReason || 'unknown'}`);
+NODE
 
       - name: Capture current production health for skipped deploys
         if: steps.find-pr.outputs.pr != '' && steps.deploy-scope.outputs.deploy_required == 'false'
         run: |
           HEALTH_JSON="$(curl -sS --max-time 10 "${PROD_URL}/health" || echo '{}')"
-          ACTUAL_SHA="$(printf '%s' "$HEALTH_JSON" | sed -n 's/.*"buildSha":"\([^"]*\)".*/\1/p')"
+          ACTUAL_SHA="$(node -e "try { const data = JSON.parse(process.argv[1]); process.stdout.write(String(data.buildSha || '')); } catch {}" "$HEALTH_JSON")"
           {
             echo "actual_sha=${ACTUAL_SHA:-unknown}"
             echo "build_match=not_required"
@@ -93,7 +109,7 @@ jobs:
           MATCH=0
           while [ "$ATTEMPTS" -lt "$MAX_ATTEMPTS" ]; do
             HEALTH_JSON="$(curl -sS --max-time 10 "${PROD_URL}/health" || echo '{}')"
-            ACTUAL_SHA="$(printf '%s' "$HEALTH_JSON" | sed -n 's/.*"buildSha":"\([a-f0-9]*\)".*/\1/p')"
+            ACTUAL_SHA="$(node -e "try { const data = JSON.parse(process.argv[1]); process.stdout.write(String(data.buildSha || '')); } catch {}" "$HEALTH_JSON")"
             if [ -n "$ACTUAL_SHA" ] && [ "${ACTUAL_SHA}" = "${MERGE_SHA}" ]; then
               {
                 echo "actual_sha=${ACTUAL_SHA}"
