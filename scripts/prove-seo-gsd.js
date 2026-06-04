@@ -143,6 +143,7 @@ async function run() {
           '/guides/relational-knowledge-ai-recommendations',
           '/guides/claude-code-feedback',
           '/guides/autoresearch-agent-safety',
+          '/guides/govern-claude-for-legal-agents',
         ]) {
           const loc = pathname === '/'
             ? '<loc>https://app.example.com/</loc>'
