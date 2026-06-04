@@ -179,10 +179,18 @@ function parseModelError(json, status) {
   return json?.error?.message ? String(json.error.message).split('\n')[0] : `HTTP ${status}`;
 }
 
+function trimTrailingSlashes(value) {
+  let text = String(value || '');
+  while (text.endsWith('/')) {
+    text = text.slice(0, -1);
+  }
+  return text;
+}
+
 async function callLocalOpenAiEndpoint({ endpoint, apiKey, model, prompt, fetchImpl, sources }) {
   const url = endpoint.includes('/chat/completions')
     ? endpoint
-    : endpoint.replace(/\/+$/, '') + '/chat/completions';
+    : `${trimTrailingSlashes(endpoint)}/chat/completions`;
   const res = await fetchImpl(url, {
     method: 'POST',
     headers: {
