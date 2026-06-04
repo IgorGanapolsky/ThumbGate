@@ -46,6 +46,7 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
+          retention-days: 7
           name: upstream-contribution-engine
           path: |
             upstream-contribution-engine.json
