@@ -28,7 +28,7 @@ test.describe('/ landing page clickability — comprehensive E2E coverage', () =
     await expect(page.locator('.hero-pro', { hasText: /Workflow Hardening Sprint/ })).toBeVisible();
     await expect(page.locator('.offer-router')).toBeVisible();
     await expect(page.locator('.offer-route', { hasText: /Solo operator/ })).toBeVisible();
-    await expect(page.locator('.offer-route', { hasText: /Team workflow/ })).toBeVisible();
+    await expect(page.locator('.offer-route', { hasText: /Enterprise/ })).toBeVisible();
     await expect(page.locator('.offer-route', { hasText: /Still evaluating/ })).toBeVisible();
   });
 
