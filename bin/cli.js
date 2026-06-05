@@ -910,6 +910,26 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
   // Always create .mcp.json (project-level MCP config used by Claude, Codex, Cursor)
   mergeMcpJson(path.join(CWD, '.mcp.json'), 'MCP');
 
+  // Copy custom slash commands (.claude/commands/*.md) to the project's .claude/commands/ directory
+  const projectCommandsDir = path.join(CWD, '.claude', 'commands');
+  const pkgCommandsDir = path.join(PKG_ROOT, '.claude', 'commands');
+  if (fs.existsSync(pkgCommandsDir)) {
+    if (!fs.existsSync(projectCommandsDir)) {
+      fs.mkdirSync(projectCommandsDir, { recursive: true });
+    }
+    try {
+      const files = fs.readdirSync(pkgCommandsDir);
+      for (const file of files) {
+        if (file.endsWith('.md')) {
+          fs.copyFileSync(path.join(pkgCommandsDir, file), path.join(projectCommandsDir, file));
+        }
+      }
+      console.log('Scaffolded .claude/commands/ for custom slash commands');
+    } catch (err) {
+      console.log(`  Failed to copy custom commands: ${err.message}`);
+    }
+  }
+
   // Auto-detect and configure platform-specific locations
   console.log('');
   console.log('Detecting platforms...');
@@ -3323,8 +3343,13 @@ switch (COMMAND) {
     break;
   }
   case 'brain': {
-    const brainArgs = parseArgs(process.argv.slice(3));
-    process.exitCode = cmdBrain(brainArgs);
+    const sub = process.argv.slice(3).find((arg) => !arg.startsWith('--'));
+    if (sub && ['init', 'context', 'remember', 'check', 'cleanup', 'status'].includes(sub)) {
+      brain();
+    } else {
+      const brainArgs = parseArgs(process.argv.slice(3));
+      process.exitCode = cmdBrain(brainArgs);
+    }
     break;
   }
   case 'billing:setup':
