@@ -1,14 +1,14 @@
 # Sales Pipeline
 
-Updated: 2026-06-05T22:17:21.587Z
+Updated: 2026-06-05T22:32:45.553Z
 
 This is the first-dollar truth table. Posts are not sales; only stage movement counts.
 
 ## Summary
-- Total leads: 23
-- Active leads: 23
-- Contacted: 23
-- Replied: 1
+- Total leads: 24
+- Active leads: 24
+- Contacted: 24
+- Replied: 2
 - Calls booked: 0
 - Paid: 0
 - Booked revenue: $0.00
@@ -16,7 +16,7 @@ This is the first-dollar truth table. Posts are not sales; only stage movement c
 ## Stage Counts
 - targeted: 0
 - contacted: 22
-- replied: 1
+- replied: 2
 - call_booked: 0
 - checkout_started: 0
 - sprint_intake: 0
@@ -253,3 +253,13 @@ This is the first-dollar truth table. Posts are not sales; only stage movement c
 - Proof rule: Use proof pack only after the buyer confirms pain.
 - Outreach draft: Hey @zaxbysauce, I see your `opencode-swarm` focuses on robust agentic orchestration for SME consultation and code generation. ThumbGate's agent hardening capabilities on the Pro plan could ensure your agents perform reliably; our setup guide gets you going quickly.
 - Pain-confirmed follow-up: If you want the self-serve path for `opencode-swarm`, here is the live Pro checkout: https://thumbgate.ai/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+### skool_aymen_khatir
+- Stage: replied
+- Offer: workflow_hardening_sprint
+- Repo/account: n/a
+- Contact: @aymen-khatir-2760
+- Concrete offer: Audit French market leads and harden their payment checkout workflows
+- Proof rule: Use proof pack only after the buyer confirms pain.
+- Outreach draft: n/a
+- Pain-confirmed follow-up: n/a
