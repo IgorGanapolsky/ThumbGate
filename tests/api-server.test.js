@@ -1724,6 +1724,10 @@ test('checkout interstitial: GET without confirm=1 (human UA) renders the inters
   assert.doesNotMatch(body, /data-domain="thumbgate-production\.up\.railway\.app"/);
   // Form must carry confirm=1 hidden input so submission triggers the Stripe path
   assert.match(body, /name="confirm" value="1"/);
+  assert.match(body, /name="plan_id" value="pro"/, 'human interstitial should preserve checkout attribution through submit');
+  assert.match(body, /name="billing_cycle" value="monthly"/, 'human interstitial should preserve billing cycle through submit');
+  assert.doesNotMatch(body, /name="customer_email"[^>]*required/, 'email should be optional because Stripe collects it');
+  assert.match(body, /Stripe can collect your email/);
   assert.match(body, /Not sure yet\? Send the workflow first/);
   assert.doesNotMatch(body, /Pay \$1 first rule/);
   assert.doesNotMatch(body, /Pay \$99 teardown/);
