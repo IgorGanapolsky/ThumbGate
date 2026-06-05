@@ -240,6 +240,8 @@ describe('/checkout/pro bot guard', () => {
     assert.match(body, /<form action="\/checkout\/pro"/);
     assert.match(body, /name="confirm" value="1"/);
     assert.match(body, /name="customer_email"/);
+    assert.doesNotMatch(body, /name="customer_email"[^>]*required/);
+    assert.match(body, /Stripe can collect your email/);
     assert.doesNotMatch(body, /<a[^>]+confirm=1/, 'confirm=1 must not be in a crawlable anchor');
   });
 

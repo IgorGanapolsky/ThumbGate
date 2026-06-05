@@ -1978,8 +1978,17 @@ function buildCheckoutIntentHref(baseUrl, metadata = {}, overrides = {}) {
   });
 }
 
-function renderCheckoutIntentPage(prefilledEmail = '') {
+function renderCheckoutIntentPage(prefilledEmail = '', parsed = null, options = {}) {
   const plausibleDomain = escapeHtmlAttribute(resolvePlausibleDataDomain({ host: 'thumbgate.ai' }));
+  const includeHiddenAttribution = options.includeHiddenAttribution === true;
+  let hiddenInputs = '';
+  if (includeHiddenAttribution && parsed?.searchParams) {
+    for (const [key, value] of parsed.searchParams.entries()) {
+      if (key !== 'confirm' && key !== 'customer_email') {
+        hiddenInputs += `<input type="hidden" name="${escapeHtmlAttribute(key)}" value="${escapeHtmlAttribute(value)}">`;
+      }
+    }
+  }
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -2016,9 +2025,10 @@ a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:
 <div class="price">$19<small>/mo</small></div>
 <p>The npm package runs your gates locally. <strong>Pro</strong> is what keeps them working across every machine, every agent runtime, and every breaking-change week.</p>
 <form action="/checkout/pro" method="GET" data-i="pro_checkout_confirmed">
+${hiddenInputs}
 <input type="hidden" name="confirm" value="1">
-<input type="email" name="customer_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" required autocomplete="email">
-<p class="email-note">Pre-fills your Stripe receipt. We only email if you ask.</p>
+<input type="email" name="customer_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email">
+<p class="email-note">Optional. Stripe can collect your email on the secure checkout page.</p>
 <button type="submit" class="primary">Pay $19/mo with Stripe →</button>
 </form>
 <a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
@@ -5751,7 +5761,9 @@ async function addContext(){
           reason: botClassification.reason,
         }, req.headers, eventType);
         const prefilledEmail = parsed?.searchParams?.get('customer_email') || '';
-        const html = renderCheckoutIntentPage(prefilledEmail);
+        const html = renderCheckoutIntentPage(prefilledEmail, parsed, {
+          includeHiddenAttribution: !botClassification.isBot,
+        });
         sendHtml(res, 200, html, responseHeaders);
         return;
       }
