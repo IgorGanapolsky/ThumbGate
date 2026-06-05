@@ -130,8 +130,10 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // These are pure public-shell intelligence features (no Core dependency) wired
   // into gate_stats/dashboard, track_action, and capture_feedback. Keep in
   // lockstep with BASELINE_FILE_COUNT in tests/public-bundle-ratchet.test.js.
+  // Bumped 271 -> 285 to accommodate new guides and scripts from main.
+  // Bumped 285 -> 290 (2026-06-04) to ship scripts/upstream-contribution-engine.js for dependency contribution scouting.
   const files = npmPackFiles();
-  const CEILING = 285;
+  const CEILING = 290;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

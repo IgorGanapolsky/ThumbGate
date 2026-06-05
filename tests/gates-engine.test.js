@@ -2782,3 +2782,68 @@ test('approve gate blocks before log gate fires on same input', () => {
     cleanupStateFiles();
   }
 });
+
+// === Claw-Style Enterprise Agent Governance ===
+test('evaluateGates matches block-dynamic-tool-creation-without-approval gate template', () => {
+  cleanupStateFiles();
+  const tmpConfig = makeTempPath('claw-test.json');
+  fs.writeFileSync(tmpConfig, JSON.stringify({
+    version: 1,
+    gates: [
+      {
+        id: "block-dynamic-tool-creation-without-approval",
+        pattern: "(claw|enterpriseclaw|dynamic tool|runtime tool|create_tool|self.*evolving).*(create|generate|define).*(tool|action|capability|script)",
+        action: "block",
+        message: "Dynamic tool creation blocked",
+        severity: "critical"
+      }
+    ]
+  }));
+
+  try {
+    const result = evaluateGates('Bash', {
+      _claw: {
+        actionType: 'dynamic-tool-creation',
+        agentId: 'enterprise-claw-42'
+      }
+    }, tmpConfig);
+    assert.ok(result);
+    assert.equal(result.decision, 'deny');
+    assert.equal(result.gate, 'block-dynamic-tool-creation-without-approval');
+  } finally {
+    fs.rmSync(tmpConfig, { force: true });
+    cleanupStateFiles();
+  }
+});
+
+test('evaluateGates matches require-review-for-screen-ui-interaction template', () => {
+  cleanupStateFiles();
+  const tmpConfig = makeTempPath('claw-screen-test.json');
+  fs.writeFileSync(tmpConfig, JSON.stringify({
+    version: 1,
+    gates: [
+      {
+        id: "require-review-for-screen-ui-interaction",
+        pattern: "(claw|screen|ui|computer use|mouse|keyboard|click|type|interact).*(screen|desktop|app|gui|human.*like)",
+        action: "approve",
+        message: "Screen interaction requires review",
+        severity: "high"
+      }
+    ]
+  }));
+
+  try {
+    const result = evaluateGates('Bash', {
+      _claw: {
+        actionType: 'screen-interaction',
+        agentId: 'openshell-claw-7'
+      }
+    }, tmpConfig);
+    assert.ok(result);
+    assert.equal(result.decision, 'approve');
+    assert.equal(result.gate, 'require-review-for-screen-ui-interaction');
+  } finally {
+    fs.rmSync(tmpConfig, { force: true });
+    cleanupStateFiles();
+  }
+});

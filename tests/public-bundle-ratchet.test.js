@@ -69,7 +69,12 @@ const path = require('node:path');
 //            (repeat-metric, no-op detection, outcome-paired action receipts).
 //            (changeset: action-loop-instrumentation.md). Keep in lockstep with
 //            CEILING in tests/public-core-boundary.test.js.
-const BASELINE_FILE_COUNT = 285;
+// 271 → 277: 2026-06-03 features.
+// 277 → 278: 2026-06-03 features.
+// 278 → 280: 2026-06-03 features.
+// 280 → 285: 2026-06-03 features.
+// 285 → 290: 2026-06-04 scripts/upstream-contribution-engine.js added for dependency contributions.
+const BASELINE_FILE_COUNT = 290;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

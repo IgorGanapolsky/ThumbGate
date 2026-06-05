@@ -5360,6 +5360,52 @@ async function addContext(){
       // creating an un-recoverable Stripe session.
       const isConfirmedCheckout = (req.method === 'POST' && hasCustomerEmailHint)
         || (hasConfirmFlag && botShouldBypass);
+      // 2026-06-05 revenue bypass: env-gated direct-to-Stripe redirect.
+      // Live 30d billing showed 254 interstitial views → 1 Stripe click-through
+      // → 0 paid. When THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS=1 is set we
+      // route raw /checkout/pro GETs (no confirm=1, no POST) straight to the
+      // pro Stripe Payment Link, preserving UTM + attribution metadata via
+      // buildCheckoutFallbackUrl. Default-off; bot-deflection still applies
+      // (bot + no email hint still falls through to the existing interstitial).
+      const interstitialBypassEnabled = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS === '1';
+      if (
+        !isConfirmedCheckout
+        && interstitialBypassEnabled
+        && req.method !== 'POST'
+        && botShouldBypass
+      ) {
+        // Always target the pro Stripe Payment Link directly. The
+        // hostedConfig.checkoutFallbackUrl (e.g. https://thumbgate.ai/go/pro)
+        // is a router that 302s back to /checkout/pro, which would create a
+        // redirect loop when bypass is on. Env override via
+        // THUMBGATE_CHECKOUT_PRO_STRIPE_URL is supported for future
+        // price-link rotation without a redeploy.
+        const bypassTarget = process.env.THUMBGATE_CHECKOUT_PRO_STRIPE_URL
+          || FIRST_FAILURE_RULE_CHECKOUT_URL;
+        appendBestEffortTelemetry(FEEDBACK_DIR, {
+          eventType: 'checkout_interstitial_bypass_redirect',
+          clientType: 'web',
+          traceId,
+          acquisitionId: analyticsMetadata.acquisitionId,
+          visitorId: analyticsMetadata.visitorId,
+          sessionId: analyticsMetadata.sessionId,
+          utmSource: analyticsMetadata.utmSource,
+          utmMedium: analyticsMetadata.utmMedium,
+          utmCampaign: analyticsMetadata.utmCampaign,
+          utmContent: analyticsMetadata.utmContent,
+          utmTerm: analyticsMetadata.utmTerm,
+          referrer: analyticsMetadata.referrer,
+          referrerHost: analyticsMetadata.referrerHost,
+          page: '/checkout/pro',
+          planId: analyticsMetadata.planId,
+        }, req.headers, 'checkout_interstitial_bypass_redirect');
+        res.writeHead(302, {
+          ...responseHeaders,
+          Location: buildCheckoutFallbackUrl(bypassTarget, analyticsMetadata),
+        });
+        res.end();
+        return;
+      }
       // Plausible funnel event #1 of 3: page view. Fired before interstitial
       // deflection so we get the full top-of-funnel count, with isBot as a
       // prop so the dashboard can filter human vs. crawler traffic. Fire-and-forget.

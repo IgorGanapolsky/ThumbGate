@@ -19,7 +19,7 @@ The goal is to make one Claude-first workflow safer to ship, easier to defend, a
 
 - It qualifies a real workflow before anyone tries to sell a broad platform story.
 - It gives the buyer a proof review, not just a feature demo.
-- It leads naturally into the Team rollout once shared enforcement, org visibility, and approval boundaries matter.
+- It leads naturally into Enterprise expansion once shared enforcement, org visibility, and approval boundaries matter.
 - It stays honest: booked pilots and named pilot agreements count as commercial proof, while generic awareness does not.
 
 ## Best Fit
@@ -54,7 +54,7 @@ Only move forward when the buyer has:
 
 - This is a pilot-by-request service offer, not a new public self-serve subscription tier.
 - The public self-serve offer remains Pro at `$19/mo or $149/yr` per [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md).
-- Team pricing currently anchors at `$49/seat/mo` with a `3`-seat minimum, but the public Team path is still intake-first.
+- Enterprise scope and pricing remain intake-first after the initial workflow is qualified.
 - Use booked pilots, paid orders, or named pilot agreements as commercial proof.
 - Same-day next step after a qualified call: send the sprint brief, the proof pack, and the proposed buyer review path.
 
