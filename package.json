@@ -656,6 +656,7 @@
     "test:openclaw-governance-kit": "node --test tests/openclaw-agent-governance-kit.test.js",
     "test:perplexity": "node --test tests/perplexity-client.test.js tests/perplexity-command-center.test.js tests/perplexity-adapter.test.js",
     "perplexity:visibility": "node scripts/perplexity-command-center.js visibility",
+    "gsc:genai:pmf": "node scripts/ai-search-visibility.js --import-gsc-genai",
     "perplexity:leads": "node scripts/perplexity-command-center.js leads",
     "perplexity:brief": "node scripts/perplexity-command-center.js brief",
     "perplexity:full": "node scripts/perplexity-command-center.js full",
