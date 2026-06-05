@@ -2119,19 +2119,12 @@ function sendText(res, statusCode, text, extraHeaders = {}, options = {}) {
 
 function sendHtml(res, statusCode, html, extraHeaders = {}, options = {}) {
   const { headOnly = false } = options;
-  // Strip Plausible tracker on loopback hosts so dev sessions don't pollute prod analytics.
-  // res.req is the http.IncomingMessage that produced this response.
-  let body = html;
-  const reqHost = res?.req?.headers?.host;
-  if (reqHost && isLoopbackHost(reqHost) && typeof body === 'string' && body.includes('plausible.io') && !process.env.NODE_TEST_CONTEXT && process.env.NODE_ENV !== 'test') {
-    body = body.replace(/<script[^>]*src=["']https:\/\/plausible\.io\/js\/[^"']+["'][^>]*><\/script>/g, '');
-  }
   res.writeHead(statusCode, {
     'Content-Type': 'text/html; charset=utf-8',
-    'Content-Length': Buffer.byteLength(body),
+    'Content-Length': Buffer.byteLength(html),
     ...extraHeaders,
   });
-  res.end(headOnly ? '' : body);
+  res.end(headOnly ? '' : html);
 }
 
 function getPublicBillingHeaders(traceId = '') {
