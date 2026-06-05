@@ -3986,7 +3986,9 @@ test('legacy enterprise Dialogflow routes remain compatibility aliases', async (
   assert.equal(chatRes.status, 200);
   const chat = await chatRes.json();
   assert.equal(chat.ok, true);
-  assert.match(chat.answer, /Active gates/i);
+  // "Which gates are blocking…" is a list-intent question → the answerer lists the
+  // gates that fired (or the empty-state), not a generic "Active gates: N" template.
+  assert.match(chat.answer, /blocked across|Most-blocked|No actions have been blocked|gates are configured/i);
 });
 
 test('renderPackagedLessonsHtml returns html with lessons content', () => {
