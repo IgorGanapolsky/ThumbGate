@@ -1576,6 +1576,31 @@ function parseChatIntent(prompt) {
 
 // Read recent feedback entries (signal-filtered, time-filtered) directly from
 // the feedback log. Bounded + best-effort — never throws into the chat handler.
+// Treat short/placeholder context values as "no real description" so we don't
+// surface `"thumbs down"` × 3 as a useful list. Real feedback always has a
+// concrete sentence somewhere (whatWentWrong, distillation, whatToChange) —
+// pick the longest informative one.
+const PLACEHOLDER_CONTEXT = /^\s*(?:thumbs?\s*(?:up|down)|good|bad|ok|nice|verify(?:ication)?(?:\s.*)?|test|test ?ing|verifies?|gsd\s.*)\.?\s*$/i;
+
+function isPlaceholder(text) {
+  const t = String(text || '').trim();
+  return !t || t.length < 20 || PLACEHOLDER_CONTEXT.test(t);
+}
+
+function bestFeedbackDescription(row) {
+  const candidates = [row.whatWentWrong, row.distillation, row.context, row.whatToChange, row.whatWorked, row.reasoning];
+  // Prefer the longest non-placeholder candidate.
+  const informative = candidates
+    .map((c) => String(c || '').trim())
+    .filter((c) => c && !isPlaceholder(c));
+  if (informative.length) {
+    return informative.reduce((a, b) => (b.length > a.length ? b : a)).slice(0, 220);
+  }
+  // Fall back to any non-empty value so the entry isn't blank — caller may drop it.
+  const fallback = candidates.map((c) => String(c || '').trim()).find(Boolean);
+  return fallback ? fallback.slice(0, 220) : '';
+}
+
 function readRecentFeedbackEntries(feedbackDir, signal, windowMs, limit = 5, opts = {}) {
   try {
     if (!feedbackDir) return [];
@@ -1586,7 +1611,7 @@ function readRecentFeedbackEntries(feedbackDir, signal, windowMs, limit = 5, opt
     const { readJsonl } = require('../../scripts/fs-utils');
     const rows = readJsonl(logPath) || [];
     const cutoff = windowMs ? Date.now() - windowMs : 0;
-    return rows
+    const filtered = rows
       .filter((r) => !signal || r.signal === signal)
       .filter((r) => {
         if (!cutoff) return true;
@@ -1594,15 +1619,17 @@ function readRecentFeedbackEntries(feedbackDir, signal, windowMs, limit = 5, opt
         return Number.isFinite(t) && t >= cutoff;
       })
       .reverse()
-      .slice(0, limit)
       .map((r) => {
-        const out = {
-          timestamp: r.timestamp,
-          context: String(r.context || r.whatWentWrong || r.whatWorked || '').slice(0, 200),
-        };
+        const out = { timestamp: r.timestamp, context: bestFeedbackDescription(r) };
         if (opts.includeSignal) out.signal = r.signal;
         return out;
       });
+    // For list display, drop entries with no real description so the list is useful,
+    // not three "thumbs down" placeholders. For count-only (high limit), keep all.
+    const useful = opts.skipPlaceholders === false || limit > 50
+      ? filtered
+      : filtered.filter((e) => e.context && !isPlaceholder(e.context));
+    return useful.slice(0, limit);
   } catch (_) {
     return [];
   }
@@ -1635,11 +1662,16 @@ const FEEDBACK_LIST_LABELS = Object.freeze({
 function buildFeedbackSection({ ctx, intent, feedbackDir, approval, lessonPipeline }) {
   const signal = detectFeedbackSignalFromPrompt(ctx.prompt);
 
-  // One read of the time-windowed log, then in-memory counts + (optional) signal-filtered list.
+  // One read of the time-windowed log, then in-memory counts + (signal-filtered,
+  // placeholder-stripped) list. Counts include ALL entries (so "Feedback today: 5"
+  // matches the dashboard tile); the list drops vague entries like literal "thumbs
+  // down" / "good" so it surfaces only entries with real, actionable description.
   const windowed = readRecentFeedbackEntries(feedbackDir, null, intent.windowMs, 10000, { includeSignal: true });
   const windowPos = windowed.filter((r) => r.signal === 'positive').length;
   const windowNeg = windowed.filter((r) => r.signal === 'negative').length;
-  const entries = (signal ? windowed.filter((r) => r.signal === signal) : windowed).slice(0, 5);
+  const entries = (signal ? windowed.filter((r) => r.signal === signal) : windowed)
+    .filter((r) => r.context && !isPlaceholder(r.context))
+    .slice(0, 5);
 
   const lines = [];
   lines.push(intent.windowMs
