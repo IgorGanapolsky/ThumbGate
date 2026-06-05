@@ -1773,6 +1773,70 @@ const PAGE_BLUEPRINTS = [
     ],
     relatedPaths: ['/guides/code-knowledge-graph-guardrails', '/guides/agent-harness-optimization', '/guides/pre-action-checks'],
   },
+  {
+    query: 'thumbgate vs disler claude code hooks mastery',
+    path: '/compare/claude-code-hooks-mastery',
+    pageType: 'comparison',
+    pillar: 'comparison',
+    title: 'ThumbGate vs disler/claude-code-hooks-mastery | When to Pick the OSS Tool',
+    heroTitle: 'ThumbGate vs disler/claude-code-hooks-mastery',
+    heroSummary: 'disler/claude-code-hooks-mastery is the most-starred community repo for Claude Code hooks — a comprehensive, free, MIT-licensed example library you can copy-paste into your own .claude/ config. ThumbGate is a published npm CLI that does the same gating work plus a learning loop where every thumbs-down becomes an auto-promoted prevention rule that holds across sessions, models, and agents. The disler repo is where you START; ThumbGate is what you USE when you stop wanting to maintain hook scripts by hand.',
+    takeaways: [
+      'disler/claude-code-hooks-mastery is a free reference repo of hook examples — you copy them into .claude/, edit, and maintain per-machine, per-project.',
+      'ThumbGate ships the same gating engine as one `npx thumbgate init` install — versioned config, cross-session prevention rules, dashboard, audit trail.',
+      'The right path: start with the disler repo to learn what is possible; move to ThumbGate when you find yourself maintaining hook scripts in three projects.',
+    ],
+    sections: [
+      {
+        heading: 'The product difference in one sentence',
+        paragraphs: [
+          'disler/claude-code-hooks-mastery is a GitHub repository of high-quality example hooks you read, learn from, and copy into your own setup. ThumbGate is a published CLI that ships the gating engine as a runnable tool with cross-session learning, a dashboard, and an audit trail.',
+          'Both are MIT-licensed. Both run locally. The disagreement is whether you want to read example scripts and own the maintenance, or install a tool that does the work and stays in sync.',
+        ],
+      },
+      {
+        heading: 'Choose disler/claude-code-hooks-mastery when',
+        bullets: [
+          'You want to learn how Claude Code hooks actually work by reading well-written examples.',
+          'You are happy maintaining your own .claude/ config per project and per machine.',
+          'You only need static pattern-matching — no need for cross-session learning, dashboard, or audit history.',
+          'You explicitly do not want any installed dependency beyond what you author yourself.',
+        ],
+      },
+      {
+        heading: 'Choose ThumbGate when',
+        bullets: [
+          'You want PreToolUse gating working in 30 seconds via `npx thumbgate init` — no copy-paste, no per-machine setup.',
+          'You want the learning loop: a thumbs-down on a blocked action becomes an auto-promoted prevention rule that holds across every session and every agent on the install.',
+          'You want a dashboard showing what was blocked, why, and which feedback became which rule — auditable evidence, not just hook scripts on disk.',
+          'You want one gate engine that works across Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and OpenCode — not a separate copy-paste exercise per agent.',
+          'You operate on more than one project and do not want to maintain N copies of the same hook scripts.',
+        ],
+      },
+      {
+        heading: 'What the disler repo does brilliantly',
+        paragraphs: [
+          'It is the best public reference for what a Claude Code PreToolUse hook can do — clear examples, real patterns, MIT-licensed code you can read end-to-end in an afternoon. If you are evaluating the category, that repo is required reading. It also has 3,000+ stars at the time of writing for a reason: the examples are good.',
+          'ThumbGate is not trying to replace that learning resource. The disler repo is where you understand the surface; ThumbGate is what you use when you decide to ship gating in production and want the cross-session learning, the dashboard, and the team-shared rule library that copy-paste cannot give you.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Why pay $19/mo for ThumbGate Pro when disler hooks are free?',
+        answer: 'Free disler hooks are static patterns you maintain per machine — re-copying them when they change, debugging false positives alone, and re-applying them in every new project. ThumbGate Pro adds the learning loop (thumbs-down → cross-session prevention rule), the dashboard, hosted sync across machines, and adapter maintenance across the weekly breaking-change cycle of Claude Code, Cursor, and Cline. Free disler is the right answer if you only ever work in one project on one machine and never want to learn from past mistakes. Pro is the right answer when those assumptions stop holding.',
+      },
+      {
+        question: 'Is ThumbGate just a packaged version of disler/claude-code-hooks-mastery?',
+        answer: 'No. ThumbGate ships its own gate engine, feedback-to-rules pipeline, dashboard, and audit trail. The disler repo is a reference of well-written hook scripts you copy into your config; ThumbGate is a runnable CLI that ships the gate engine and adds a learning layer on top. Both are MIT-licensed and both rely on the same Claude Code PreToolUse hook surface — that is where the similarity ends.',
+      },
+      {
+        question: 'Should I start with disler or ThumbGate?',
+        answer: 'If you want to understand the category, read the disler repo first — it is the best public reference for what hooks can do. If you want gating working now without authoring scripts, run `npx thumbgate init`. Most users end up doing both: read disler to learn, install ThumbGate when they decide they would rather use a tool than maintain scripts.',
+      },
+    ],
+    relatedPaths: ['/guides/claude-code-pretooluse-hook', '/compare/cycode', '/guides/pre-action-checks'],
+  },
   buildClaudeCodeSkillsGuide(),
   buildLongRunningAgentContextGuide(),
   buildReasoningCompressionGuide(),
