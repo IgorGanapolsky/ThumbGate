@@ -2951,7 +2951,7 @@ function renderSitemapXml(runtimeConfig) {
   // seo-gsd specs), which keep their explicit priorities.
   const declaredPaths = new Set(entries.map((entry) => entry.path));
   try {
-    const compareFiles = fs.readdirSync(path.join(PUBLIC_DIR, 'compare')).sort();
+    const compareFiles = fs.readdirSync(path.join(PUBLIC_DIR, 'compare')).sort((a, b) => a.localeCompare(b));
     for (const file of compareFiles) {
       if (!file.endsWith('.html')) continue;
       const comparePath = `/compare/${file.replace(/\.html$/, '')}`;
