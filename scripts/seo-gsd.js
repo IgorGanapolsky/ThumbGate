@@ -1773,6 +1773,72 @@ const PAGE_BLUEPRINTS = [
     ],
     relatedPaths: ['/guides/code-knowledge-graph-guardrails', '/guides/agent-harness-optimization', '/guides/pre-action-checks'],
   },
+  {
+    query: 'thumbgate vs cycode ai coding agent guardrails',
+    path: '/compare/cycode',
+    pageType: 'comparison',
+    pillar: 'comparison',
+    title: 'ThumbGate vs Cycode | Local-First MIT Alternative for AI Agent Guardrails',
+    heroTitle: 'ThumbGate vs Cycode',
+    heroSummary: 'Cycode ships IDE-native security guardrails for enterprise AppSec teams — agent-time scanning, beforeMCPExecution / beforeReadFile / beforeSubmitPrompt hooks, and integration with their broader code-security platform. ThumbGate is the local-first, MIT-licensed CLI that ships the same PreToolUse / MCP-tool-call gating surface as an open-source npm install — and adds a learning loop where every thumbs-down becomes an auto-promoted prevention rule the team shares.',
+    takeaways: [
+      'Cycode is enterprise IDE security: agent-time scanning + hook interception + platform integration with their broader AppSec suite.',
+      'ThumbGate ships the same PreToolUse / beforeMCPExecution surface as an MIT-licensed CLI you install in 30 seconds — no platform contract, no procurement cycle.',
+      'The decision is mostly company-shape: enterprise security teams take Cycode; solo devs, OSS maintainers, and small teams take ThumbGate. The learning-loop (thumbs-down → prevention rule across sessions) is something Cycode does not advertise.',
+    ],
+    sections: [
+      {
+        heading: 'The product difference in one sentence',
+        paragraphs: [
+          'Cycode is "IDE security for the enterprise" — its February 2026 announcement positions the agent-time hooks (beforeSubmitPrompt, beforeReadFile, beforeMCPExecution) as one module of a broader AppSec platform that also covers secrets, SAST, SCA, and supply chain.',
+          'ThumbGate is a single-purpose, open-source, local-first CLI for the same hook surface. The lexicon is the same; the buyer is different. ThumbGate optimizes for a developer who can `npx thumbgate init` and have working PreToolUse gating before lunch.',
+        ],
+      },
+      {
+        heading: 'Choose Cycode when',
+        bullets: [
+          'You have an enterprise AppSec team that needs a unified vendor across secrets, SAST, SCA, supply-chain, and the new agent-time hook layer.',
+          'You need centralized policy management, RBAC, SIEM integration, and a procurement-ready contract with SOC2 / ISO-grade artifacts.',
+          'Your security org wants one dashboard for IDE-time and CI/CD-time security posture across the whole repo footprint.',
+        ],
+      },
+      {
+        heading: 'Choose ThumbGate when',
+        bullets: [
+          'You want PreToolUse / beforeMCPExecution gating working in 30 seconds via `npx thumbgate init` — no contract, no platform install, no procurement.',
+          'You want a learning loop: a thumbs-down on a blocked action becomes an auto-promoted prevention rule that holds across every session, model, and agent.',
+          'You are a solo developer, OSS maintainer, or small team that wants MIT-licensed code you can read, fork, and verify — not a closed-source SaaS.',
+          'You want the gating engine to run entirely on the developer machine with zero network egress for the hook decision itself.',
+        ],
+      },
+      {
+        heading: 'What the two products share',
+        paragraphs: [
+          'Both put the enforcement boundary at the same place — the agent\'s tool call, before execution — and both name the hooks the same way (PreToolUse / beforeMCPExecution / beforeReadFile). The category lexicon is the same because the underlying agent loop is the same.',
+          'The disagreement is on packaging. Cycode wraps it in an enterprise platform contract; ThumbGate ships it as an MIT-licensed CLI. If you are an enterprise security team buying a platform, you are not the ThumbGate buyer. If you are a developer who wants to type `npx thumbgate init` and have agent gating running before the next standup, Cycode is over-scoped for you.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Is ThumbGate a direct replacement for Cycode\'s agent-time hooks?',
+        answer: 'For the hook surface itself — PreToolUse, beforeMCPExecution, beforeReadFile — yes. For the broader Cycode AppSec platform (secrets scanning, SAST, SCA, supply chain), no. ThumbGate is single-purpose: agent-time tool-call gating with a learning loop. If you only need that, ThumbGate replaces the Cycode agent-time module at zero license cost.',
+      },
+      {
+        question: 'Why would I pick MIT-licensed local-first over a funded enterprise vendor?',
+        answer: 'Three reasons. (1) Cost: no per-seat license. (2) Speed of adoption: `npx thumbgate init` is faster than enterprise procurement. (3) Auditability: you can read the gate-engine code, modify it, and run it offline. The trade-off is you do not get a platform contract, RBAC, or a single vendor for all your AppSec needs. That is a fine trade-off for a solo dev or small team; it is the wrong trade-off for a regulated enterprise.',
+      },
+      {
+        question: 'Does Cycode have the cross-session learning loop?',
+        answer: 'Not advertised on their public materials as of the February 2026 announcement. Cycode\'s hooks are policy-driven; ThumbGate adds a feedback-to-rules pipeline where a thumbs-down on a blocked action becomes an auto-promoted prevention rule that holds across every session and every agent on the same install.',
+      },
+      {
+        question: 'Can I use both?',
+        answer: 'Technically yes — Cycode at the enterprise platform layer, ThumbGate as the developer-local fast loop — but most teams will pick one. They occupy the same hook surface, so running both means resolving who wins on conflicts. The simpler pattern is to pick by buyer profile: enterprise security team buys Cycode, individual developer / small team installs ThumbGate.',
+      },
+    ],
+    relatedPaths: ['/guides/claude-code-pretooluse-hook', '/guides/mcp-tool-governance', '/guides/ai-coding-agent-zero-trust'],
+  },
   buildClaudeCodeSkillsGuide(),
   buildLongRunningAgentContextGuide(),
   buildReasoningCompressionGuide(),
