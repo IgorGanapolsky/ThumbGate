@@ -449,9 +449,13 @@ function computeGateAuditSeries(feedbackDir, options = {}) {
     const dayKey = toLocalDayKey(entry.timestamp);
     if (!dayKey) continue;
     if (!countsByDay.has(dayKey)) {
-      countsByDay.set(dayKey, { allow: 0, deny: 0, warn: 0 });
+      countsByDay.set(dayKey, { allow: 0, deny: 0, warn: 0, byGate: {} });
     }
-    countsByDay.get(dayKey)[entry.decision] += 1;
+    const bucket = countsByDay.get(dayKey);
+    bucket[entry.decision] += 1;
+    if ((entry.decision === 'deny' || entry.decision === 'warn') && entry.gateId) {
+      bucket.byGate[entry.gateId] = (bucket.byGate[entry.gateId] || 0) + 1;
+    }
   }
 
   const days = [];
@@ -461,7 +465,7 @@ function computeGateAuditSeries(feedbackDir, options = {}) {
     const day = new Date(today);
     day.setDate(today.getDate() - offset);
     const dayKey = toLocalDayKey(day);
-    const record = countsByDay.get(dayKey) || { allow: 0, deny: 0, warn: 0 };
+    const record = countsByDay.get(dayKey) || { allow: 0, deny: 0, warn: 0, byGate: {} };
     const intercepted = record.deny + record.warn;
     const total = intercepted + record.allow;
     const summary = {
@@ -471,6 +475,7 @@ function computeGateAuditSeries(feedbackDir, options = {}) {
       warn: record.warn,
       intercepted,
       total,
+      byGate: record.byGate || {},
     };
     totals.allow += record.allow;
     totals.deny += record.deny;
@@ -525,7 +530,14 @@ function computePreventionImpact(feedbackDir, gateStats) {
   // Last auto-promotion
   const autoGates = readJsonFile(autoGatesPath);
   let lastPromotion = null;
+  let promotionsToday = 0;
+  let promotionIdsToday = [];
   if (autoGates && Array.isArray(autoGates.promotionLog) && autoGates.promotionLog.length > 0) {
+    const todayKey = toLocalDayKey(new Date());
+    promotionIdsToday = autoGates.promotionLog
+      .filter((p) => p && p.timestamp && toLocalDayKey(p.timestamp) === todayKey)
+      .map((p) => p.gateId || p.id || 'unknown');
+    promotionsToday = promotionIdsToday.length;
     const sorted = autoGates.promotionLog
       .filter((p) => p.timestamp)
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -540,6 +552,8 @@ function computePreventionImpact(feedbackDir, gateStats) {
     estimatedHoursSaved,
     ruleCount,
     lastPromotion,
+    promotionsToday,
+    promotionIdsToday: promotionIdsToday.slice(0, 5),
   };
 }
 

@@ -110,6 +110,62 @@ test('sync-version covers codex plugin manifests', serial, () => {
   );
 });
 
+test('sync-version detects and repairs Codex marketplace pack versioned bundle URLs', serial, () => {
+  const { syncVersion } = require('../scripts/sync-version');
+  const { version } = require('../package.json');
+  const markdownPath = path.join(ROOT, 'docs', 'marketing', 'codex-marketplace-revenue-pack.md');
+  const jsonPath = path.join(ROOT, 'docs', 'marketing', 'codex-marketplace-revenue-pack.json');
+  const originalMarkdown = fs.readFileSync(markdownPath, 'utf8');
+  const originalJson = fs.readFileSync(jsonPath, 'utf8');
+  const driftedUrl = 'https://github.com/IgorGanapolsky/ThumbGate/releases/download/v0.0.1/thumbgate-codex-plugin-v0.0.1.zip';
+  const expectedUrl = `https://github.com/IgorGanapolsky/ThumbGate/releases/download/v${version}/thumbgate-codex-plugin-v${version}.zip`;
+
+  try {
+    fs.writeFileSync(
+      markdownPath,
+      originalMarkdown.replace(/https:\/\/github\.com\/IgorGanapolsky\/ThumbGate\/releases\/download\/v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?\/thumbgate-codex-plugin-v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?\.zip/g, driftedUrl)
+    );
+    fs.writeFileSync(
+      jsonPath,
+      originalJson.replace(/https:\/\/github\.com\/IgorGanapolsky\/ThumbGate\/releases\/download\/v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?\/thumbgate-codex-plugin-v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?\.zip/g, driftedUrl)
+    );
+
+    const checkResult = syncVersion({ checkOnly: true });
+    assert.ok(
+      checkResult.targets.includes('docs/marketing/codex-marketplace-revenue-pack.md'),
+      'Codex marketplace markdown pack should be a sync target'
+    );
+    assert.ok(
+      checkResult.targets.includes('docs/marketing/codex-marketplace-revenue-pack.json'),
+      'Codex marketplace JSON pack should be a sync target'
+    );
+    assert.ok(
+      checkResult.drifted.some((entry) => entry.file === 'docs/marketing/codex-marketplace-revenue-pack.md' && entry.field === 'codex-versioned-bundle-url'),
+      `expected markdown Codex bundle URL drift, found: ${JSON.stringify(checkResult.drifted)}`
+    );
+    assert.ok(
+      checkResult.drifted.some((entry) => entry.file === 'docs/marketing/codex-marketplace-revenue-pack.json' && entry.field === 'codex-versioned-bundle-url'),
+      `expected JSON Codex bundle URL drift, found: ${JSON.stringify(checkResult.drifted)}`
+    );
+
+    const repairResult = syncVersion({ checkOnly: false });
+    assert.ok(
+      repairResult.drifted.some((entry) => entry.file === 'docs/marketing/codex-marketplace-revenue-pack.md' && entry.field === 'codex-versioned-bundle-url'),
+      `expected markdown repair drift, found: ${JSON.stringify(repairResult.drifted)}`
+    );
+    assert.ok(
+      repairResult.drifted.some((entry) => entry.file === 'docs/marketing/codex-marketplace-revenue-pack.json' && entry.field === 'codex-versioned-bundle-url'),
+      `expected JSON repair drift, found: ${JSON.stringify(repairResult.drifted)}`
+    );
+
+    assert.ok(fs.readFileSync(markdownPath, 'utf8').includes(expectedUrl), 'markdown pack should use the package version');
+    assert.ok(fs.readFileSync(jsonPath, 'utf8').includes(expectedUrl), 'JSON pack should use the package version');
+  } finally {
+    fs.writeFileSync(markdownPath, originalMarkdown);
+    fs.writeFileSync(jsonPath, originalJson);
+  }
+});
+
 test('sync-version detects landing page hero badge drift without relying on trailing punctuation', serial, () => {
   const { syncVersion } = require('../scripts/sync-version');
   const landingPath = path.join(ROOT, 'public', 'index.html');

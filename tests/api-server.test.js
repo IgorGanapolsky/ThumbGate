@@ -3930,23 +3930,67 @@ test('dashboard /v1/chat answers data questions LOCALLY with no cloud/LLM/API ke
 
   // Factual question → deterministic local answer from this install's own data.
   try {
-    for (const question of [
-      'how many mistakes were blocked today?',
-      'how many mistakes were prevented today?',
-    ]) {
-      const res = await fetch(apiUrl('/v1/chat'), {
-        method: 'POST',
-        headers: authHeader,
-        body: JSON.stringify({ question }),
-      });
-      assert.equal(res.status, 200);
-      const body = await res.json();
-      assert.equal(body.ok, true);
-      assert.equal(body.provider, 'local-data', `${question} must be answered locally, not via cloud`);
-      assert.equal(body.llm, 'none', 'no LLM should be invoked for a metric question');
-      assert.equal(body.topic, 'gates');
-      assert.match(body.answer, /gates|blocked/i);
-    }
+    fs.appendFileSync(path.join(tmpFeedbackDir, 'audit-trail.jsonl'), [
+      JSON.stringify({
+        id: 'audit_chat_today_deny',
+        timestamp: new Date().toISOString(),
+        toolName: 'Write',
+        decision: 'deny',
+        gateId: 'local-only-git-writes',
+        source: 'gates-engine',
+      }),
+      JSON.stringify({
+        id: 'audit_chat_today_warn',
+        timestamp: new Date().toISOString(),
+        toolName: 'Bash',
+        decision: 'warn',
+        gateId: 'claim-verifier',
+        source: 'gates-engine',
+      }),
+      '',
+    ].join('\n'));
+
+    const blockedRes = await fetch(apiUrl('/v1/chat'), {
+      method: 'POST',
+      headers: authHeader,
+      body: JSON.stringify({ question: 'how many mistakes were blocked today?' }),
+    });
+    assert.equal(blockedRes.status, 200);
+    const blockedBody = await blockedRes.json();
+    assert.equal(blockedBody.ok, true);
+    assert.equal(blockedBody.provider, 'local-data');
+    assert.equal(blockedBody.llm, 'none', 'no LLM should be invoked for a metric question');
+    assert.equal(blockedBody.topic, 'gates');
+    assert.match(blockedBody.answer, /Mistakes blocked today: \d+ deny decisions/i);
+    assert.doesNotMatch(blockedBody.answer, /^Active gates:/i);
+
+    const preventedRes = await fetch(apiUrl('/v1/chat'), {
+      method: 'POST',
+      headers: authHeader,
+      body: JSON.stringify({ question: 'how many mistakes were prevented today?' }),
+    });
+    assert.equal(preventedRes.status, 200);
+    const preventedBody = await preventedRes.json();
+    assert.equal(preventedBody.ok, true);
+    assert.equal(preventedBody.provider, 'local-data');
+    assert.equal(preventedBody.llm, 'none');
+    assert.equal(preventedBody.topic, 'gates');
+    assert.match(preventedBody.answer, /Mistakes prevented today: \d+ interventions/i);
+    assert.match(preventedBody.answer, /blocked, \d+ warned/i);
+
+    const whatRes = await fetch(apiUrl('/v1/chat'), {
+      method: 'POST',
+      headers: authHeader,
+      body: JSON.stringify({ question: 'what mistakes were blocked today?' }),
+    });
+    assert.equal(whatRes.status, 200);
+    const whatBody = await whatRes.json();
+    assert.equal(whatBody.ok, true);
+    assert.equal(whatBody.provider, 'local-data');
+    assert.equal(whatBody.llm, 'none');
+    assert.equal(whatBody.topic, 'gates');
+    assert.match(whatBody.answer, /Top blocked\/warned gates today/i);
+    assert.match(whatBody.answer, /local-only-git-writes|claim-verifier/);
 
     // Open-ended question with no model configured must STILL return a local
     // answer, never a hard "no_api_key" failure and never a forced cloud call.
