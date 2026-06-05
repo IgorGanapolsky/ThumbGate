@@ -1480,6 +1480,19 @@ function startStdioServer() {
   acquireLock();
 
   process.stdin.resume();
+
+  // Self-terminate when the client disconnects (stdin EOF/close). A stdio MCP
+  // server must not outlive its parent: clients spawn it over stdin/stdout and
+  // a well-behaved server exits when that pipe closes. Without this, children
+  // abandoned by a client that exits without killing them linger forever and
+  // accumulate. WHY: on 2026-06-05, 117 orphaned `thumbgate serve` processes
+  // (spawned by a Codex app-server over ~4 days, never reaped) piled up and
+  // helped exhaust a 24GB host. The existing exit handlers (cleanupLock /
+  // cleanupSessionLock registered on 'exit') run via process.exit(0).
+  const exitOnDisconnect = () => process.exit(0);
+  process.stdin.on('end', exitOnDisconnect);
+  process.stdin.on('close', exitOnDisconnect);
+
   let buffer = Buffer.alloc(0);
   // Auto-detect transport from first request and lock it for the session.
   // mcp-proxy (Glama) sends NDJSON and expects NDJSON back.
