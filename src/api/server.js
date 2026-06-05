@@ -1980,7 +1980,139 @@ function buildCheckoutIntentHref(baseUrl, metadata = {}, overrides = {}) {
 
 function renderCheckoutIntentPage(prefilledEmail = '') {
   const plausibleDomain = escapeHtmlAttribute(resolvePlausibleDataDomain({ host: 'thumbgate.ai' }));
-  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Confirm — ThumbGate Pro</title><script defer data-domain="${plausibleDomain}" src="https://plausible.io/js/script.tagged-events.js"></script><script>window.plausible=window.plausible||function(){(window.plausible.q=window.plausible.q||[]).push(arguments)};</script><style>body{background:#0a0a0a;color:#eee;font-family:system-ui,-apple-system,sans-serif;line-height:1.5}main{max-width:520px;margin:8vh auto;padding:0 20px}.brand{display:flex;align-items:center;gap:10px;margin-bottom:24px;font-size:14px;color:#94a3b8}.brand-mark{width:24px;height:24px;background:#22d3ee;border-radius:6px;display:inline-block}h1{font-size:24px;margin:0 0 8px;color:#fff}.price{font-size:32px;font-weight:700;color:#22d3ee;margin:8px 0 4px}.price small{font-size:14px;color:#94a3b8;font-weight:400}p{color:#cbd5e1;margin:8px 0}form{margin:0}input[type=email]{width:100%;box-sizing:border-box;padding:14px 16px;border:1px solid #374151;border-radius:8px;background:#111827;color:#fff;font-size:15px;margin:16px 0 0;outline:none}input[type=email]:focus{border-color:#22d3ee}input[type=email]::placeholder{color:#64748b}button.primary{background:#22d3ee;color:#000;padding:16px;text-align:center;border-radius:8px;font-weight:700;font-size:16px;margin:10px 0;border:none;cursor:pointer;width:100%}a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:#cbd5e1;padding:12px;text-align:center;border-radius:8px;margin:8px 0 0;font-size:14px}.trust{margin:24px 0;padding:16px;border:1px solid #1f2937;border-radius:8px;background:#0f172a}.trust-item{font-size:13px;color:#cbd5e1;padding:4px 0;display:flex;gap:8px}.trust-item::before{content:"✓";color:#22d3ee;font-weight:700}.choice-note{font-size:13px;color:#94a3b8;margin-top:14px}.back{text-align:center;color:#64748b;font-size:12px;margin-top:24px}.back a{color:#64748b;display:inline}.email-note{font-size:12px;color:#64748b;margin:4px 0 0}</style><main><div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div><h1>Start ThumbGate Pro</h1><div class="price">$19<small>/mo</small></div><p>The npm package runs your gates locally. <strong>Pro</strong> is what keeps them working across every machine, every agent runtime, and every breaking-change week.</p><form action="/checkout/pro" method="GET" data-i="pro_checkout_confirmed"><input type="hidden" name="confirm" value="1"><input type="email" name="customer_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" required autocomplete="email"><p class="email-note">Pre-fills your Stripe receipt. We only email if you ask.</p><button type="submit" class="primary">Pay $19/mo with Stripe →</button></form><a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a><p class="choice-note">Cancel anytime. 7-day refund, no questions. Diagnostics and sprints have their own pages.</p><div class="trust"><div class="trust-item">Lessons synced across all your machines — no local SQLite to babysit</div><div class="trust-item">Adapter matrix kept current for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — version drift is our problem, not yours</div><div class="trust-item">Hosted dashboard: gate stats, DPO export, org-wide rule library</div><div class="trust-item">24×7 ops on the rule engine — SonarCloud regressions fixed in &lt;24h</div></div><p class="back"><a href="/">← Back to thumbgate.ai</a></p></main><script>document.querySelector('form').addEventListener('submit',e=>{if(navigator.sendBeacon)navigator.sendBeacon('/v1/telemetry/ping',new Blob([JSON.stringify({eventType:'checkout_interstitial_cta_clicked',clientType:'web',page:'/checkout/pro',ctaId:'pro_checkout_confirmed',ctaPlacement:'checkout_interstitial',customerEmail:document.querySelector('input[name=customer_email]').value})],{type:'application/json'}));try{window.plausible&&window.plausible('Checkout Pro Email Submitted',{props:{page:'/checkout/pro',source:'interstitial'}})}catch(_){}})</script></html>`;
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Confirm - ThumbGate Pro</title>
+<script defer data-domain="${plausibleDomain}" src="https://plausible.io/js/script.tagged-events.js"></script>
+<script>window.plausible=window.plausible||function(){(window.plausible.q=window.plausible.q||[]).push(arguments)};</script>
+<style>
+body{background:#0a0a0a;color:#eee;font-family:system-ui,-apple-system,sans-serif;line-height:1.5}
+main{max-width:520px;margin:8vh auto;padding:0 20px}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:24px;font-size:14px;color:#94a3b8}
+.brand-mark{width:24px;height:24px;background:#22d3ee;border-radius:6px;display:inline-block}
+h1{font-size:24px;margin:0 0 8px;color:#fff}.price{font-size:32px;font-weight:700;color:#22d3ee;margin:8px 0 4px}.price small{font-size:14px;color:#94a3b8;font-weight:400}
+p{color:#cbd5e1;margin:8px 0}form{margin:0}
+input[type=email]{width:100%;box-sizing:border-box;padding:14px 16px;border:1px solid #374151;border-radius:8px;background:#111827;color:#fff;font-size:15px;margin:16px 0 0;outline:none}
+input[type=email]:focus{border-color:#22d3ee}input[type=email]::placeholder{color:#64748b}
+button.primary{background:#22d3ee;color:#000;padding:16px;text-align:center;border-radius:8px;font-weight:700;font-size:16px;margin:10px 0;border:none;cursor:pointer;width:100%}
+a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:#cbd5e1;padding:12px;text-align:center;border-radius:8px;margin:8px 0 0;font-size:14px}
+.trust,.objection-box{margin:24px 0;padding:16px;border:1px solid #1f2937;border-radius:8px;background:#0f172a}
+.trust-item{font-size:13px;color:#cbd5e1;padding:4px 0;display:flex;gap:8px}.trust-item::before{content:"✓";color:#22d3ee;font-weight:700}
+.choice-note,.email-note,.objection-note{font-size:13px;color:#94a3b8;margin-top:10px}
+.objection-grid{display:grid;gap:8px;margin-top:12px}
+.objection-grid button{border:1px solid #374151;background:#111827;color:#e5e7eb;border-radius:8px;padding:10px 12px;text-align:left;cursor:pointer}
+.objection-grid button:hover,.objection-grid button:focus{border-color:#22d3ee;outline:none}
+.feedback-saved{display:none;color:#22d3ee;font-size:13px;margin-top:10px}
+.back{text-align:center;color:#64748b;font-size:12px;margin-top:24px}.back a{color:#64748b;display:inline}
+</style>
+</head>
+<body>
+<main>
+<div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div>
+<h1>Start ThumbGate Pro</h1>
+<div class="price">$19<small>/mo</small></div>
+<p>The npm package runs your gates locally. <strong>Pro</strong> is what keeps them working across every machine, every agent runtime, and every breaking-change week.</p>
+<form action="/checkout/pro" method="GET" data-i="pro_checkout_confirmed">
+<input type="hidden" name="confirm" value="1">
+<input type="email" name="customer_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" required autocomplete="email">
+<p class="email-note">Pre-fills your Stripe receipt. We only email if you ask.</p>
+<button type="submit" class="primary">Pay $19/mo with Stripe →</button>
+</form>
+<a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
+<p class="choice-note">Cancel anytime. 7-day refund, no questions. Diagnostics and sprints have their own pages.</p>
+<div class="objection-box" aria-label="Checkout feedback">
+<strong>Not buying today?</strong>
+<p class="objection-note">Tap one reason so we know what to fix. This does not sign you up.</p>
+<div class="objection-grid">
+<button type="button" data-reason="price_unclear">Price or scope is unclear</button>
+<button type="button" data-reason="need_more_proof">Need more proof first</button>
+<button type="button" data-reason="need_team_plan">Need a team/workflow plan instead</button>
+<button type="button" data-reason="not_urgent">Not urgent right now</button>
+</div>
+<div class="feedback-saved" id="feedback-saved">Feedback saved.</div>
+</div>
+<div class="trust"><div class="trust-item">Lessons synced across all your machines — no local SQLite to babysit</div><div class="trust-item">Adapter matrix kept current for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — version drift is our problem, not yours</div><div class="trust-item">Hosted dashboard: gate stats, DPO export, org-wide rule library</div><div class="trust-item">24×7 ops on the rule engine — SonarCloud regressions fixed in &lt;24h</div></div>
+<p class="back"><a href="/">← Back to thumbgate.ai</a></p>
+</main>
+<script>
+(function(){
+  var params = new URLSearchParams(window.location.search);
+  var submitted = false;
+  var feedbackSent = false;
+  function pick(key, fallback) { return params.get(key) || fallback || null; }
+  function sendTelemetry(eventType, extra) {
+    var payload = Object.assign({
+      eventType: eventType,
+      clientType: 'web',
+      page: '/checkout/pro',
+      traceId: pick('trace_id'),
+      acquisitionId: pick('acquisition_id'),
+      visitorId: pick('visitor_id'),
+      sessionId: pick('visitor_session_id') || pick('session_id'),
+      installId: pick('install_id'),
+      source: pick('utm_source') || pick('source') || 'website',
+      utmSource: pick('utm_source') || pick('source') || 'website',
+      utmMedium: pick('utm_medium') || 'checkout_interstitial',
+      utmCampaign: pick('utm_campaign') || 'pro_pack',
+      utmContent: pick('utm_content'),
+      utmTerm: pick('utm_term'),
+      creator: pick('creator') || pick('creator_handle'),
+      community: pick('community') || pick('subreddit'),
+      postId: pick('post_id'),
+      commentId: pick('comment_id'),
+      campaignVariant: pick('campaign_variant'),
+      offerCode: pick('offer_code'),
+      ctaId: pick('cta_id') || 'pricing_pro',
+      ctaPlacement: pick('cta_placement') || 'checkout_interstitial',
+      planId: pick('plan_id') || 'pro',
+      billingCycle: pick('billing_cycle') || 'monthly',
+      landingPath: pick('landing_path') || '/',
+      referrerHost: pick('referrer_host'),
+      referrer: document.referrer || null
+    }, extra || {});
+    var body = JSON.stringify(payload);
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon('/v1/telemetry/ping', new Blob([body], { type: 'application/json' }));
+      return;
+    }
+    fetch('/v1/telemetry/ping', { method:'POST', headers:{ 'content-type':'application/json' }, body: body, keepalive: true }).catch(function(){});
+  }
+  document.querySelector('form').addEventListener('submit', function(){
+    submitted = true;
+    var emailInput = document.querySelector('input[name=customer_email]');
+    sendTelemetry('checkout_interstitial_cta_clicked', {
+      ctaId: 'pro_checkout_confirmed',
+      ctaPlacement: 'checkout_interstitial',
+      customerEmail: emailInput ? emailInput.value : null
+    });
+    try { window.plausible && window.plausible('Checkout Pro Email Submitted', { props: { page:'/checkout/pro', source:'interstitial' } }); } catch(_) {}
+  });
+  document.querySelectorAll('[data-reason]').forEach(function(button) {
+    button.addEventListener('click', function(){
+      var reason = button.getAttribute('data-reason');
+      feedbackSent = true;
+      sendTelemetry('reason_not_buying', {
+        reasonCode: reason,
+        ctaId: 'checkout_interstitial_reason_' + reason,
+        ctaPlacement: 'checkout_interstitial_feedback'
+      });
+      try { window.plausible && window.plausible('Checkout Pro Reason Not Buying', { props: { page:'/checkout/pro', reasonCode: reason } }); } catch(_) {}
+      var saved = document.getElementById('feedback-saved');
+      if (saved) saved.style.display = 'block';
+    });
+  });
+  window.addEventListener('pagehide', function(){
+    if (!submitted && !feedbackSent) {
+      sendTelemetry('checkout_interstitial_abandoned', { reasonCode: 'left_without_confirming' });
+    }
+  });
+})();
+</script>
+</body>
+</html>`;
 }
 
 function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneyState(req, parsed)) {
