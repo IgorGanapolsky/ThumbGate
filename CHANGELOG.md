@@ -1,5 +1,148 @@
 # Changelog
 
+## 1.27.3
+
+### Patch Changes
+
+- [#2447](https://github.com/IgorGanapolsky/ThumbGate/pull/2447) [`cb824a6`](https://github.com/IgorGanapolsky/ThumbGate/commit/cb824a660e4a7db2e48d8b65ba5358b598b4cd96) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a public Agentic.ai ownership verification route so ThumbGate can be submitted to the Agentic.ai directory and measured with UTM-tagged referral traffic.
+
+- [#2476](https://github.com/IgorGanapolsky/ThumbGate/pull/2476) [`7f927a4`](https://github.com/IgorGanapolsky/ThumbGate/commit/7f927a48b7f8c75736e17cbfde70561c6514ecec) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix /checkout/pro 401 leak: extend route guard to accept POST in addition to GET/HEAD so prospective customers whose forms or fetch() calls land via POST no longer hit the API-key auth gate. Plausible audit (2026-06-04) showed 270 "Checkout Pro Viewed" → 69 "Email Submitted" → 0 paid because POST returned HTTP 401 to every non-API-key visitor. Query params still drive Stripe session creation; POST bodies are ignored harmlessly.
+
+  Also ship a public /about page with schema.org/Person JSON-LD and sameAs links (GitHub, LinkedIn, dev.to, Upwork, Hugging Face, X) to close the LLM-discoverability gap identified in the 2026-06-04 GEO audit — thumbgate.ai has crawl authority but Igor was previously footer-only on his own primary domain.
+
+- [#2499](https://github.com/IgorGanapolsky/ThumbGate/pull/2499) [`5097dbb`](https://github.com/IgorGanapolsky/ThumbGate/commit/5097dbbbfcc3d4b7120a72b06973d83242c67ca0) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - ci: cap Actions artifact retention at 7 days
+
+  14 workflows uploaded CI artifacts (proof reports, coverage, bundles, deploy
+  logs, release notes) with no `retention-days`, so they kept GitHub's 90-day
+  default. Combined with high push/PR/merge-queue velocity, that filled the
+  account's 0.5 GB Actions storage. Set `retention-days: 7` on every artifact
+  upload so storage no longer accumulates. CI/PR debugging keeps a week of
+  artifacts; nothing else changes.
+
+- [#2447](https://github.com/IgorGanapolsky/ThumbGate/pull/2447) [`cb824a6`](https://github.com/IgorGanapolsky/ThumbGate/commit/cb824a660e4a7db2e48d8b65ba5358b598b4cd96) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Document the exact Codex Desktop marketplace modal fields for the ThumbGate plugin and explain why OpenAI-only filtering hides third-party marketplace entries.
+
+- [#2447](https://github.com/IgorGanapolsky/ThumbGate/pull/2447) [`cb824a6`](https://github.com/IgorGanapolsky/ThumbGate/commit/cb824a660e4a7db2e48d8b65ba5358b598b4cd96) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Clarify the Codex plugin install UX: make CLI setup the primary path, label the release zip as a review/offline/manual marketplace artifact, and document the Codex Desktop plugin install caveat.
+
+- [#2447](https://github.com/IgorGanapolsky/ThumbGate/pull/2447) [`cb824a6`](https://github.com/IgorGanapolsky/ThumbGate/commit/cb824a660e4a7db2e48d8b65ba5358b598b4cd96) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Tighten the Codex plugin listing around the repeat-blocking thumbs-down workflow and keep CLI-first install guidance ahead of the portable zip bundle.
+
+- [#2498](https://github.com/IgorGanapolsky/ThumbGate/pull/2498) [`d978bef`](https://github.com/IgorGanapolsky/ThumbGate/commit/d978bef234263ea01a4eeb36c858c133b61c3efe) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Make `thumbgate-dashboard` and `thumbgate dashboard --open` start the local dashboard API before opening the browser.
+
+- [#2501](https://github.com/IgorGanapolsky/ThumbGate/pull/2501) [`081454f`](https://github.com/IgorGanapolsky/ThumbGate/commit/081454fbcedb2920b46abc6e5e18dff675f52dc0) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - dashboard: "Chat with your data" is local-first, not Gemini
+
+  The dashboard chat panel routed every question through Gemini RAG over lessons
+  only — so it depended on the cloud (contradicting ThumbGate's local-first thesis)
+  and couldn't answer factual questions like "how many mistakes were blocked
+  today?" (block counts live in gate/feedback telemetry, not lessons).
+
+  `/v1/chat` now answers data/metric questions (gates, blocks, feedback, token
+  savings, team) DETERMINISTICALLY from this install's own dashboard data — no
+  cloud, no LLM, no API key. Only open-ended questions fall through to lesson
+  retrieval + the user's configured LOCAL model; a BYO cloud key is optional. When
+  no model is configured, open-ended questions still get a local answer instead of
+  a hard "no_api_key" failure. Dashboard subtitle updated to say answers are local.
+
+- [#2495](https://github.com/IgorGanapolsky/ThumbGate/pull/2495) [`dd16fd0`](https://github.com/IgorGanapolsky/ThumbGate/commit/dd16fd0ab2587afd66928d6e25f2cf94403dce9e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Remove a regex hotspot from local Governed Data Chat endpoint normalization.
+
+- [#2475](https://github.com/IgorGanapolsky/ThumbGate/pull/2475) [`aa9ae35`](https://github.com/IgorGanapolsky/ThumbGate/commit/aa9ae35a4e56efb97d35b73a0a968796948266e8) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Share deploy-scope evidence between the Railway deploy workflow and the post-merge verifier so non-runtime skips cannot mask a deploy that actually ran.
+
+- [#2469](https://github.com/IgorGanapolsky/ThumbGate/pull/2469) [`0e00194`](https://github.com/IgorGanapolsky/ThumbGate/commit/0e001941b84d1dccb1ee2b249534c757013478c5) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix Playwright E2E: `dashboard-page-clickability` expected `'Gemini API key configured'` but the Perplexity-hybrid dashboard reworded the success banner to `'✓ Key validated. Hybrid (Perplexity/Gemini) supported for chat with your data.'` Test now matches the stable `'Key validated'` substring (with fallback to the old copy) so future banner tweaks don't break it. Unblocks PR [#2463](https://github.com/IgorGanapolsky/ThumbGate/issues/2463) + [#2464](https://github.com/IgorGanapolsky/ThumbGate/issues/2464) from the pre-existing E2E failure on main.
+
+- [#2447](https://github.com/IgorGanapolsky/ThumbGate/pull/2447) [`cb824a6`](https://github.com/IgorGanapolsky/ThumbGate/commit/cb824a660e4a7db2e48d8b65ba5358b598b4cd96) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix Codex CI blockers by restoring the literal Local Pro dashboard bootstrap message and replacing risky `gh api` PR-create regex detection with bounded token parsing.
+
+- [#2447](https://github.com/IgorGanapolsky/ThumbGate/pull/2447) [`cb824a6`](https://github.com/IgorGanapolsky/ThumbGate/commit/cb824a660e4a7db2e48d8b65ba5358b598b4cd96) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a non-blocking Gitar review pilot configuration: ThumbGate-specific `.gitar/review/` rules, an approval policy that prevents Gitar-only auto-approval on high-risk surfaces, a pilot runbook, and regression tests that keep the review-to-ThumbGate lesson loop documented.
+
+- [#2468](https://github.com/IgorGanapolsky/ThumbGate/pull/2468) [`f46d76b`](https://github.com/IgorGanapolsky/ThumbGate/commit/f46d76b574287cb3b55add4fbd999ddfa533df41) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - content(seo): add /guides/govern-claude-for-legal-agents
+
+  Buyer-intent guide riding Anthropic's "Claude for Legal has 90+ agents" launch.
+  Positions ThumbGate as the governance layer that gates those agents' side effects
+  (send/file/write) at the tool-call boundary, in the firm's own tenant, with a
+  SIEM-exportable audit trail. Complementary framing (governs, does not replace);
+  no overclaim (design-partner pilot, not turnkey). Server-rendered via seo-gsd
+  spec; linked from the landing compare-guides section.
+
+- [#2488](https://github.com/IgorGanapolsky/ThumbGate/pull/2488) [`9b1f7d3`](https://github.com/IgorGanapolsky/ThumbGate/commit/9b1f7d3c37ddaf1050f88d397068d782f754a7d0) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - site: landing-page plan clarity + retire Team from the primary buyer surfaces (Free / Pro / Enterprise)
+
+  The landing page made buyers infer plan differences from long cards, still sold a
+  retired Team tier, and the README contradicted the enforced free-tier limits.
+
+  - **Landing page comparison matrix** — adds an at-a-glance Free / Pro / Enterprise
+    table to `public/index.html` so buyers see plan differences without parsing cards.
+  - **Free / Pro / Enterprise** — retires the Team tier across the primary buyer
+    surfaces (landing page, `/pricing`, guide, compare, pro, README, COMMERCIAL_TRUTH,
+    product-hunt kit, docs landing) and the CLI/dashboard upgrade messaging
+    (`commercial-offer`, `rate-limiter`, `pro-features`, `org-dashboard`). "Regulated"
+    folds into the Enterprise contact-sales tier (audit trail, VPC/SSO, regulatory
+    templates + shared lesson DB / org dashboard / shared enforcement).
+  - **Consistent, truthful free-tier limits** — README/cards/matrix now all state what
+    `scripts/rate-limiter.js` actually enforces (5 captures/day, 25 total, 3 active
+    rules), replacing stale "unlimited captures / 5 rules" copy.
+  - **Drift guards** — `check-congruence` now requires Enterprise + forbids the retired
+    `$49/seat` anchor on buyer surfaces (regex tightened to catch markup-split prices);
+    a new `public-landing` test pins the matrix + enforced free-tier numbers.
+
+  Deliberately scoped: the dormant Team Stripe price ID / seat-checkout plumbing
+  (`billing.js`, `metered-billing.js`) and a long tail of deep content pages
+  (`public/guides/*`, `public/learn/*`, `llm-context.md`, `compare/agentix-labs.html`)
+  still reference Team and are a separate follow-up — they are invisible to the primary
+  pricing flow and do not break CI.
+
+- [#2489](https://github.com/IgorGanapolsky/ThumbGate/pull/2489) [`204f084`](https://github.com/IgorGanapolsky/ThumbGate/commit/204f084bb97cf564fc6c2a4f80fa7f36de408e92) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Move the Enterprise dashboard chatbot away from Dialogflow-first framing to a local/open-source Governed Data Chat path. `/v1/chat` now accepts `THUMBGATE_LOCAL_LLM_ENDPOINT` / `THUMBGATE_LOCAL_LLM_MODEL` for OpenAI-compatible local models, augments lesson retrieval with optional LanceDB vector matches, and exposes `/v1/enterprise/data-chat/*` as the primary enterprise status/chat API while retaining legacy `/dialogflow/*` aliases.
+
+- [#2494](https://github.com/IgorGanapolsky/ThumbGate/pull/2494) [`1f3622f`](https://github.com/IgorGanapolsky/ThumbGate/commit/1f3622f12c87d4d3021b53e7db7ab7cbb6304a61) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - gtm: OSS PR opportunity scout now covers the MCP ecosystem (our [#1](https://github.com/IgorGanapolsky/ThumbGate/issues/1) community)
+
+  The scout mapped only npm dependencies to upstream repos, so it structurally
+  missed the Model Context Protocol — even though ThumbGate _is_ an MCP server and
+  MCP authors are its exact buyers. Added a strategic-ecosystem path that always
+  scouts `modelcontextprotocol/typescript-sdk` and `modelcontextprotocol/servers`
+  (de-duped against package.json), scores them as a top opportunity, and uses a
+  truthful outreach line ("building ThumbGate as an MCP server") instead of falsely
+  claiming we import the SDK. Regenerated the committed opportunity plan.
+
+- [#2455](https://github.com/IgorGanapolsky/ThumbGate/pull/2455) [`3425330`](https://github.com/IgorGanapolsky/ThumbGate/commit/3425330f5287e17869fb3ef44c53e38c656f11c2) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Surface the Enterprise tier on the pricing page. The README + adapters/gcp already promise Enterprise (Vertex AI / VPC gating, regulatory gate templates, audit export, SLA) but pricing.html only showed Free/Pro/Team. Adds a full-width Enterprise contact-sales band below the three self-serve tiers (layout-safe). Copy is scoped to what ships — Vertex routing via `npx thumbgate setup-vertex` — and deliberately does not claim a live Dialogflow CX agent.
+
+- [#2460](https://github.com/IgorGanapolsky/ThumbGate/pull/2460) [`96650c4`](https://github.com/IgorGanapolsky/ThumbGate/commit/96650c47d99adf60eb7ee656d489b79c8c4be05d) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - fix(gates): rebaseGlobsToRepoRoot handles repoPath with a trailing slash
+
+  `rebaseGlobsToRepoRoot` used `normalizePosix(repoPath)`, which preserved a
+  trailing slash and produced malformed rebased globs (e.g. `repo//**`) when a
+  task scope was set with a `repoPath` ending in `/`. Switched to
+  `normalizeGlob(repoPath)` so task-scope edit-boundary globs resolve correctly
+  regardless of trailing slash. (Addresses the edge case flagged on [#2454](https://github.com/IgorGanapolsky/ThumbGate/issues/2454).)
+
+- [#2477](https://github.com/IgorGanapolsky/ThumbGate/pull/2477) [`e47a36b`](https://github.com/IgorGanapolsky/ThumbGate/commit/e47a36ba983a7dcfb4e324e691d2367c66b5247b) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - fix(enforcement): restore the firewall — warn+audit by default, strict opt-in for hard-block
+
+  The 2026-06-03 hotfix bypassed ALL enforcement by default (gate-check approved every
+  action, shipped to npm), so the firewall never fired. Restored with an honest posture
+  (CEO decision 2026-06-04):
+
+  - `bin/cli.js`: the blanket bypass is now an explicit escape hatch only
+    (`THUMBGATE_HOTFIX_BYPASS=1`); enforcement runs by default.
+  - `gates-engine.js` `applyEnforcementPosture`: WARN + AUDIT by default — every gate still
+    fires and is logged, but deny/approve downgrade to `warn` so legitimate work is never
+    hard-blocked. We deliberately do NOT use a regex "catastrophic floor" to hard-block
+    destructive commands: it is unwinnable (sudo / bash -c / find -exec / eval / base64|sh
+    all evade it) and gives false confidence.
+  - HARD enforcement is the explicit opt-in `THUMBGATE_STRICT_ENFORCEMENT=1`, which keeps the
+    engine's FULL gate set — its high-risk-command gates catch prefixed/obfuscated forms
+    (e.g. `sudo rm -rf /`) far better than any single regex.
+  - Secret exfiltration and the security-vulnerability scan hard-deny on their own paths
+    before this runs, so irreversible data-leak / supply-chain risks stay blocked regardless.
+
+  Verified by real gate-check: default → `rm -rf /`, `sudo rm -rf /`, git-commit-mentioning-
+  rm-rf all WARN (none hard-blocked); `THUMBGATE_STRICT_ENFORCEMENT=1` → `rm -rf /` AND
+  `sudo rm -rf /` DENY; `THUMBGATE_HOTFIX_BYPASS=1` → approve. Suites: gates-engine 168/0,
+  cli 93/0, enforcement-teeth 38/0.
+
+- [#2470](https://github.com/IgorGanapolsky/ThumbGate/pull/2470) [`375f821`](https://github.com/IgorGanapolsky/ThumbGate/commit/375f82176265bf086ceb323313ed3a11503f0f67) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Stabilize the workflow sentinel branch-contract path and make IDE marketplace publishing skip external publication when optional marketplace tokens are absent, while preserving packaged VSIX proof.
+
+- [#2467](https://github.com/IgorGanapolsky/ThumbGate/pull/2467) [`1904f32`](https://github.com/IgorGanapolsky/ThumbGate/commit/1904f32e0e1a534851974c2d44f8a0c53c1c6a78) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - skill: add thumbgate-brand-voice authoring skill
+
+  Repo-internal skill (not bundled to npm) that makes ThumbGate-facing copy
+  on-brand: direct, technical, honest, anti-hype. Adapts the contrast-based
+  "Claude brand skill" method (good / too-far / too-flat rewrites) into
+  brand-foundation, voice-and-tone, content-formats, and a SKILL.md orchestrator.
+  Codifies the no-overclaim rule and the "mistakes not malice" reframe so social,
+  landing, README, and outreach copy stop sounding generic.
+
 ## 1.27.1
 
 ### Patch Changes
