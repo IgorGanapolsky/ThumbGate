@@ -508,10 +508,38 @@ function syncVersion(opts) {
     targets.push(vscodeExtensionPath);
   }
 
+  // Post-sync generators: targets whose content embeds the version but isn't a
+  // simple string replacement — they have their own generator. Run AFTER the
+  // simple sync so the package.json is at the new version when the generator
+  // reads it. Each entry is { script, label } that gets `node <script>` invoked.
+  // Failures are logged but never fail the version sync — they're picked up by
+  // the per-generator test (e.g. tests/codex-marketplace-revenue-pack.test.js).
+  const POST_SYNC_GENERATORS = [
+    { script: 'scripts/codex-marketplace-revenue-pack.js', args: ['--write-docs'], label: 'codex marketplace pack' },
+  ];
+  const generatorResults = [];
+  if (!checkOnly) {
+    const { execFileSync } = require('node:child_process');
+    for (const gen of POST_SYNC_GENERATORS) {
+      const scriptPath = path.join(PROJECT_ROOT, gen.script);
+      if (!fs.existsSync(scriptPath)) continue;
+      try {
+        execFileSync(process.execPath, [scriptPath, ...gen.args], {
+          cwd: PROJECT_ROOT, stdio: ['ignore', 'pipe', 'pipe'],
+        });
+        generatorResults.push({ label: gen.label, ok: true });
+      } catch (err) {
+        // Surface as a warning, not a failure — the per-generator test catches drift.
+        generatorResults.push({ label: gen.label, ok: false, error: String(err && err.message || err).slice(0, 200) });
+      }
+    }
+  }
+
   return {
     version,
     targets,
     drifted,
+    generators: generatorResults,
     synced: !checkOnly && drifted.length > 0,
     allInSync: drifted.length === 0,
   };
@@ -541,6 +569,10 @@ if (require.main === module) {
   console.log(`✔ Synced ${result.drifted.length} targets to v${result.version}:`);
   result.drifted.forEach((d) => {
     console.log(`  ${d.file} [${d.field}]: ${d.current} → ${result.version}`);
+  });
+  (result.generators || []).forEach((g) => {
+    if (g.ok) console.log(`  ✔ regenerated: ${g.label}`);
+    else console.warn(`  ✗ generator failed: ${g.label} — ${g.error}`);
   });
 }
 
