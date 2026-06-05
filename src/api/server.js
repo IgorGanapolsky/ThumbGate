@@ -231,6 +231,7 @@ const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
 const NUMBERS_PAGE_PATH = path.resolve(__dirname, '../../public/numbers.html');
 const FEDERAL_PAGE_PATH = path.resolve(__dirname, '../../public/federal.html');
 const PRICING_PAGE_PATH = path.resolve(__dirname, '../../public/pricing.html');
+const ABOUT_PAGE_PATH = path.resolve(__dirname, '../../public/about.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
 const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
@@ -355,6 +356,7 @@ function serveStaticFile(res, filePath, { headOnly = false, cacheSeconds = 86400
   res.setHeader('Content-Type', contentType);
   res.setHeader('Content-Length', stat.size);
   res.setHeader('Cache-Control', `public, max-age=${cacheSeconds}, immutable`);
+  res.setHeader('Referrer-Policy', 'same-origin');
   if (headOnly) {
     res.end();
     return;
@@ -2059,12 +2061,19 @@ function sendText(res, statusCode, text, extraHeaders = {}, options = {}) {
 
 function sendHtml(res, statusCode, html, extraHeaders = {}, options = {}) {
   const { headOnly = false } = options;
+  // Strip Plausible tracker on loopback hosts so dev sessions don't pollute prod analytics.
+  // res.req is the http.IncomingMessage that produced this response.
+  let body = html;
+  const reqHost = res?.req?.headers?.host;
+  if (reqHost && isLoopbackHost(reqHost) && typeof body === 'string' && body.includes('plausible.io')) {
+    body = body.replace(/<script[^>]*src=["']https:\/\/plausible\.io\/js\/[^"']+["'][^>]*><\/script>/g, '');
+  }
   res.writeHead(statusCode, {
     'Content-Type': 'text/html; charset=utf-8',
-    'Content-Length': Buffer.byteLength(html),
+    'Content-Length': Buffer.byteLength(body),
     ...extraHeaders,
   });
-  res.end(headOnly ? '' : html);
+  res.end(headOnly ? '' : body);
 }
 
 function getPublicBillingHeaders(traceId = '') {
@@ -2274,6 +2283,10 @@ function loadProPageHtml(runtimeConfig, pageContext = {}) {
 
 function loadPricingPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(PRICING_PAGE_PATH, runtimeConfig, pageContext);
+}
+
+function loadAboutPageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(ABOUT_PAGE_PATH, runtimeConfig, pageContext);
 }
 
 function readOptionalPublicTemplate(filePath) {
@@ -4895,6 +4908,25 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && (pathname === '/about' || pathname === '/about.html')) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadAboutPageHtml,
+          extraTelemetry: {
+            pageType: 'about',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'About page unavailable');
+      }
+      return;
+    }
+
     if (isGetLikeRequest && (pathname === '/guide' || pathname === '/guide.html')) {
       try {
         const html = fs.readFileSync(GUIDE_PAGE_PATH, 'utf-8');
@@ -5293,7 +5325,13 @@ async function addContext(){
       // because no real crawler appends customer_email to discovered URLs.
       const hasCustomerEmailHint = !!parsed?.searchParams?.has('customer_email');
       const botShouldBypass = !botClassification.isBot || hasCustomerEmailHint;
-      const isConfirmedCheckout = req.method === 'POST'
+      // 2026-06-04 audit: after the POST-401 fix, 3 of 4 fresh /checkout/pro
+      // sessions had customer_email=null in Stripe (zombie sessions with no
+      // recovery surface). Root cause: POSTs were auto-confirmed regardless of
+      // whether the email query param was present. Require email on POSTs too
+      // so emails-less POSTs fall through to the interstitial form instead of
+      // creating an un-recoverable Stripe session.
+      const isConfirmedCheckout = (req.method === 'POST' && hasCustomerEmailHint)
         || (hasConfirmFlag && botShouldBypass);
       // Plausible funnel event #1 of 3: page view. Fired before interstitial
       // deflection so we get the full top-of-funnel count, with isBot as a
