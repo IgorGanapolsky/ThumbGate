@@ -3983,11 +3983,14 @@ test('dashboard /v1/chat answers data questions LOCALLY with no cloud/LLM/API ke
 test('dashboard /v1/chat is intent-aware: "what" returns a LIST, "how many" returns a COUNT', async () => {
   // Seed two negative entries dated today so the time filter has something to find.
   const today = new Date().toISOString();
-  fs.appendFileSync(path.join(tmpFeedbackDir, 'feedback-log.jsonl'), [
+  const content = [
     JSON.stringify({ id: 'iaw_n1', signal: 'negative', context: 'Agent ran an unsafe migration', timestamp: today }),
     JSON.stringify({ id: 'iaw_n2', signal: 'negative', context: 'Hallucinated a deprecated API call', timestamp: today }),
     '',
-  ].join('\n'));
+  ].join('\n');
+  fs.appendFileSync(path.join(tmpFeedbackDir, 'feedback-log.jsonl'), content);
+  fs.mkdirSync(path.join(tmpFeedbackDir, '.thumbgate'), { recursive: true });
+  fs.appendFileSync(path.join(tmpFeedbackDir, '.thumbgate', 'feedback-log.jsonl'), content);
 
   const listRes = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(tmpFeedbackDir)}`), {
     method: 'POST',
