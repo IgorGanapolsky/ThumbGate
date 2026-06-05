@@ -168,6 +168,7 @@ const {
   buildReviewSnapshot,
   readDashboardReviewState,
   writeDashboardReviewState,
+  collectAllFeedbackEntries,
 } = require('../../scripts/dashboard');
 const {
   guardDfcxWebhook,
@@ -1569,13 +1570,42 @@ function compactNumber(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
-function buildEnterpriseChatSection(topic, dashboardData, status) {
+function buildEnterpriseChatSection(topic, dashboardData, status, feedbackDir, prompt) {
   const approval = dashboardData.approval || {};
   const gates = Array.isArray(dashboardData.gates) ? dashboardData.gates : [];
   const gateStats = dashboardData.gateStats || {};
   const team = dashboardData.team || {};
   const tokenSavings = dashboardData.tokenSavings || {};
   const lessonPipeline = dashboardData.lessonPipeline || {};
+
+  const lowerPrompt = String(prompt || '').toLowerCase();
+  const isListOrDetailQuery = /what|list|show|recent|detail|why|which|explain/.test(lowerPrompt);
+
+  let negativeEntries = [];
+  if (feedbackDir) {
+    try {
+      negativeEntries = collectAllFeedbackEntries(feedbackDir)
+        .filter((e) => ['down', 'negative', 'thumbs_down'].includes(String(e.signal || e.feedback || '').toLowerCase()));
+    } catch (_) {}
+  }
+
+  if (topic === 'feedback' || topic === 'gates') {
+    if (isListOrDetailQuery && negativeEntries.length > 0) {
+      const recentNegatives = negativeEntries.slice(-5).reverse();
+      const lines = [
+        `Here are the most recent recorded mistakes and blocked actions:`,
+        ...recentNegatives.map((e, i) => {
+          const dateStr = e.timestamp ? `[${new Date(e.timestamp).toLocaleDateString()}] ` : '';
+          const desc = e.whatWentWrong || e.context || 'Unknown governance violation';
+          return `${i + 1}. ${dateStr}${desc}`;
+        })
+      ];
+      return {
+        lines,
+        sources: ['feedback log'],
+      };
+    }
+  }
 
   if (topic === 'feedback') {
     return {
@@ -1635,9 +1665,9 @@ function buildEnterpriseChatSection(topic, dashboardData, status) {
   };
 }
 
-function buildEnterpriseChatAnswer(prompt, dashboardData, status) {
+function buildEnterpriseChatAnswer(prompt, dashboardData, status, feedbackDir) {
   const topic = classifyEnterpriseChatTopic(prompt);
-  const section = buildEnterpriseChatSection(topic, dashboardData, status);
+  const section = buildEnterpriseChatSection(topic, dashboardData, status, feedbackDir, prompt);
 
   return {
     topic,
@@ -1657,6 +1687,7 @@ async function trySendLocalDashboardChat(res, parsed, feedbackDir, prompt, suffi
       prompt,
       dashboardResult.data,
       buildEnterpriseDataChatStatus(),
+      feedbackDir,
     );
     sendJson(res, 200, {
       ok: true,
@@ -1704,7 +1735,7 @@ async function answerEnterpriseDataChat({ prompt, feedbackDir, parsed }) {
   // The dashboard's real local/open-source chatbot turn goes through /v1/chat,
   // which uses lesson retrieval + optional LanceDB vector search + the user's
   // configured local or BYO model.
-  const chat = buildEnterpriseChatAnswer(normalizedPrompt, dashboardData, status);
+  const chat = buildEnterpriseChatAnswer(normalizedPrompt, dashboardData, status, feedbackDir);
   const dfcxRequest = {
     fulfillmentInfo: { tag: 'chat-with-data' },
     sessionInfo: {
