@@ -19,12 +19,19 @@ const HOOK_PATH = path.join(REPO_ROOT, 'scripts', 'hook-pre-tool-use.js');
 const SERVER_PATH = path.join(REPO_ROOT, 'adapters', 'mcp', 'server-stdio.js');
 
 function runHook({ input, env = {} }) {
+  const os = require('node:os');
+  const tempStatePath = path.join(os.tmpdir(), `tg-test-budget-state-${Math.random().toString(36).substring(2)}.json`);
   const result = spawnSync(process.execPath, [HOOK_PATH], {
     input: JSON.stringify(input),
-    env: { ...process.env, ...env },
+    env: {
+      ...process.env,
+      THUMBGATE_BUDGET_STATE_PATH: tempStatePath,
+      ...env,
+    },
     encoding: 'utf8',
     cwd: REPO_ROOT,
   });
+  try { fs.rmSync(tempStatePath, { force: true }); } catch {}
   let parsed = null;
   try { parsed = JSON.parse(result.stdout || '{}'); } catch { /* not json */ }
   return {
