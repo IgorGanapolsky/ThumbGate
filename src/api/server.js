@@ -1567,7 +1567,7 @@ function compactNumber(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
-function buildEnterpriseChatSection(topic, dashboardData, status) {
+function buildEnterpriseChatSection(topic, dashboardData, status, prompt = '') {
   const approval = dashboardData.approval || {};
   const gates = Array.isArray(dashboardData.gates) ? dashboardData.gates : [];
   const gateStats = dashboardData.gateStats || {};
@@ -1575,21 +1575,58 @@ function buildEnterpriseChatSection(topic, dashboardData, status) {
   const tokenSavings = dashboardData.tokenSavings || {};
   const lessonPipeline = dashboardData.lessonPipeline || {};
 
+  // Intent: does the question want a LIST ("what/which was blocked") or a COUNT
+  // ("how many")? This is why two different questions must not return the same
+  // canned line.
+  const q = String(prompt || '').toLowerCase();
+  const wantsList = /\b(what|which|list|show|examples?|kinds?|types?|details?|breakdown|top)\b/.test(q);
+  const mentionsToday = /\b(today|now|currently|this (week|month|day))\b/.test(q);
+  // Gate occurrence counts are cumulative for this install, not per-day — be
+  // honest rather than implying a "today" figure we don't compute yet.
+  const scopeNote = mentionsToday
+    ? ' (cumulative for this install — per-day scoping isn\'t in chat yet)'
+    : '';
+
+  // Real "what was blocked" data: the per-gate blocked breakdown.
+  const byGate = gateStats.byGate && typeof gateStats.byGate === 'object' ? gateStats.byGate : {};
+  const blockedGates = Object.entries(byGate)
+    .map(([id, counts]) => ({ id, blocked: Number((counts && counts.blocked) || 0) }))
+    .filter((g) => g.blocked > 0)
+    .sort((a, b) => b.blocked - a.blocked);
+  const configuredGates = gates.length || compactNumber(gateStats.totalGates);
+  const totalBlocked = compactNumber(gateStats.blocked != null ? gateStats.blocked : (gateStats.totalBlocked || 0));
+  const totalWarned = compactNumber(gateStats.warned != null ? gateStats.warned : (gateStats.totalWarned || 0));
+
   if (topic === 'feedback') {
     return {
       lines: [
-        `Feedback total: ${compactNumber(approval.total)} (${compactNumber(approval.positive)} positive, ${compactNumber(approval.negative)} negative).`,
-        `Lesson pipeline: ${compactNumber(lessonPipeline.lessons || lessonPipeline.generated || 0)} lessons visible in the current dashboard snapshot.`,
+        `Feedback total: ${compactNumber(approval.total)} (${compactNumber(approval.positive)} positive, ${compactNumber(approval.negative)} negative)${scopeNote}.`,
+        `${compactNumber(lessonPipeline.lessons || lessonPipeline.generated || 0)} lessons promoted from that feedback.`,
       ],
       sources: ['feedback log', 'lesson pipeline'],
     };
   }
   if (topic === 'gates') {
+    // "what / which mistakes were blocked" -> list the actual gates that fired.
+    if (wantsList) {
+      if (blockedGates.length === 0) {
+        return {
+          lines: [`No actions have been blocked yet${scopeNote} — ${configuredGates} gates are configured and watching.`],
+          sources: ['gate stats'],
+        };
+      }
+      const top = blockedGates.slice(0, 6).map((g) => `${g.id} (${g.blocked}x)`).join(', ');
+      return {
+        lines: [`${totalBlocked} action(s) blocked across ${blockedGates.length} gate(s)${scopeNote}. Most-blocked: ${top}.`],
+        sources: ['gate stats (per-gate breakdown)'],
+      };
+    }
+    // "how many" -> distinguish configured vs actually-fired vs actions blocked.
     return {
       lines: [
-        `Active gates: ${gates.length || compactNumber(gateStats.totalGates)}.`,
-        `Blocked actions recorded: ${compactNumber(gateStats.blocked || gateStats.denied || gateStats.totalBlocked)}.`,
-        gates[0] ? `Example gate: ${gates[0].name || gates[0].id || 'unnamed gate'}.` : '',
+        `${configuredGates} gates are configured (active and watching); ${blockedGates.length} have actually fired.`,
+        `They've blocked ${totalBlocked} action(s) and warned on ${totalWarned}${scopeNote}.`,
+        gateStats.topBlocked ? `Most-blocked: ${gateStats.topBlocked} (${compactNumber(gateStats.topBlockedCount)}x).` : '',
       ].filter(Boolean),
       sources: ['gate stats'],
     };
@@ -1626,16 +1663,16 @@ function buildEnterpriseChatSection(topic, dashboardData, status) {
   }
   return {
     lines: [
-      'Ask about feedback, lessons, active gates, team rollout, token savings, or Vertex/DFCX readiness.',
-      `Current local snapshot: ${compactNumber(approval.total)} feedback events and ${gates.length || compactNumber(gateStats.totalGates)} active gates.`,
+      `Snapshot: ${compactNumber(approval.total)} feedback (${compactNumber(approval.positive)} positive / ${compactNumber(approval.negative)} negative), ${configuredGates} gates configured, ${totalBlocked} action(s) blocked.`,
+      'Ask "what was blocked", "how many gates fired", "how much feedback", or "token savings" for specifics.',
     ],
-    sources: [],
+    sources: ['local dashboard data'],
   };
 }
 
 function buildEnterpriseChatAnswer(prompt, dashboardData, status) {
   const topic = classifyEnterpriseChatTopic(prompt);
-  const section = buildEnterpriseChatSection(topic, dashboardData, status);
+  const section = buildEnterpriseChatSection(topic, dashboardData, status, prompt);
 
   return {
     topic,

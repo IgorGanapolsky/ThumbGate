@@ -3945,6 +3945,32 @@ test('dashboard /v1/chat answers data questions LOCALLY with no cloud/LLM/API ke
   assert.equal(openBody.llm, 'none');
 });
 
+test('dashboard chat gives DIFFERENT, intent-aware answers (list vs count), not one canned template', async () => {
+  // The exact bug: "what mistakes were blocked" and "how many gates" used to
+  // return the identical "Active gates: N. Blocked actions recorded: M." line.
+  const ask = async (question) => {
+    const res = await fetch(apiUrl('/v1/chat'), {
+      method: 'POST', headers: authHeader, body: JSON.stringify({ question }),
+    });
+    assert.equal(res.status, 200);
+    return res.json();
+  };
+
+  const listAns = await ask('what mistakes were blocked?');   // LIST intent
+  const countAns = await ask('how many gates are configured?'); // COUNT intent
+
+  assert.equal(listAns.topic, 'gates');
+  assert.equal(countAns.topic, 'gates');
+  // The two answers must NOT be identical (the whole complaint).
+  assert.notEqual(listAns.answer, countAns.answer);
+  // List branch surfaces the per-gate breakdown phrasing (or the empty-state).
+  assert.match(listAns.answer, /blocked across|No actions have been blocked|Most-blocked/i);
+  // Count branch distinguishes configured gates from ones that actually fired.
+  assert.match(countAns.answer, /configured \(active and watching\)/i);
+  // It must not regress to the old conflated single-line template.
+  assert.doesNotMatch(countAns.answer, /^Active gates: \d+\. Blocked actions recorded/);
+});
+
 test('legacy enterprise Dialogflow routes remain compatibility aliases', async () => {
   const statusRes = await fetch(apiUrl('/v1/enterprise/dialogflow/status'), { headers: authHeader });
   assert.equal(statusRes.status, 200);
