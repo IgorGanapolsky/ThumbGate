@@ -910,24 +910,30 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
   // Always create .mcp.json (project-level MCP config used by Claude, Codex, Cursor)
   mergeMcpJson(path.join(CWD, '.mcp.json'), 'MCP');
 
-  // Copy custom slash commands (.claude/commands/*.md) to the project's .claude/commands/ directory
-  const projectCommandsDir = path.join(CWD, '.claude', 'commands');
+  // Copy custom slash commands (.claude/commands/*.md) to the project's config directories
   const pkgCommandsDir = path.join(PKG_ROOT, '.claude', 'commands');
   if (fs.existsSync(pkgCommandsDir)) {
-    if (!fs.existsSync(projectCommandsDir)) {
-      fs.mkdirSync(projectCommandsDir, { recursive: true });
-    }
-    try {
-      const files = fs.readdirSync(pkgCommandsDir);
-      for (const file of files) {
-        if (file.endsWith('.md')) {
-          fs.copyFileSync(path.join(pkgCommandsDir, file), path.join(projectCommandsDir, file));
-        }
+    const targets = [
+      path.join(CWD, '.claude', 'commands'),
+      path.join(CWD, '.gemini', 'commands'),
+      path.join(CWD, '.antigravitycli', 'commands')
+    ];
+    for (const projectCommandsDir of targets) {
+      if (!fs.existsSync(projectCommandsDir)) {
+        fs.mkdirSync(projectCommandsDir, { recursive: true });
       }
-      console.log('Scaffolded .claude/commands/ for custom slash commands');
-    } catch (err) {
-      console.log(`  Failed to copy custom commands: ${err.message}`);
+      try {
+        const files = fs.readdirSync(pkgCommandsDir);
+        for (const file of files) {
+          if (file.endsWith('.md')) {
+            fs.copyFileSync(path.join(pkgCommandsDir, file), path.join(projectCommandsDir, file));
+          }
+        }
+      } catch (err) {
+        console.log(`  Failed to copy custom commands to ${path.relative(CWD, projectCommandsDir)}: ${err.message}`);
+      }
     }
+    console.log('Scaffolded custom slash commands directories (.claude, .gemini, .antigravitycli)');
   }
 
   // Auto-detect and configure platform-specific locations
