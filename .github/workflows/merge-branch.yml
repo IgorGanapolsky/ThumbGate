@@ -69,18 +69,24 @@ jobs:
             PR_NUMBER="$(gh pr view "$PR_URL" --json number --jq '.number')"
 
             if [ "${THUMBGATE_MAIN_MERGE_PROVIDER}" = "trunk" ]; then
-              existing_comment_id="$(
+              if ! existing_comment_id="$(
                 gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
                   --jq '.[] | select(.user.login == "github-actions[bot]" and .body == "/trunk merge") | .id' \
                   | head -n 1
-              )"
+              )"; then
+                echo "Merge request deferred: GitHub API was rate-limited or unavailable"
+                exit 0
+              fi
 
               if [ -n "${existing_comment_id:-}" ]; then
                 echo "Trunk merge request already exists for $PR_URL"
               else
-                gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+                if ! gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
                   --method POST \
-                  -f body='/trunk merge' >/dev/null
+                  -f body='/trunk merge' >/dev/null; then
+                  echo "Merge request deferred: GitHub API was rate-limited or unavailable"
+                  exit 0
+                fi
                 echo "Requested Trunk merge for $PR_URL"
               fi
             else

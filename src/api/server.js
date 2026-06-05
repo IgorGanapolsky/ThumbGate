@@ -1646,6 +1646,33 @@ function buildEnterpriseChatAnswer(prompt, dashboardData, status) {
   };
 }
 
+// Answer the dashboard "Chat with your data" panel LOCALLY (deterministic, no
+// cloud/LLM) from this install's own per-project dashboard data. Returns true if
+// it sent a response; false if the local snapshot was unavailable (caller then
+// falls through). Shared by the local-first path and the no-model fallback.
+async function trySendLocalDashboardChat(res, parsed, feedbackDir, prompt, suffix) {
+  try {
+    const dashboardResult = await buildLiveDashboardData(parsed, feedbackDir);
+    const localChat = buildEnterpriseChatAnswer(
+      prompt,
+      dashboardResult.data,
+      buildEnterpriseDataChatStatus(),
+    );
+    sendJson(res, 200, {
+      ok: true,
+      answer: suffix ? `${localChat.answer} ${suffix}` : localChat.answer,
+      sources: (localChat.sources || []).map((title) => ({ title })),
+      topic: localChat.topic,
+      provider: 'local-data',
+      llm: 'none',
+      grounded: true,
+    });
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 async function answerEnterpriseDataChat({ prompt, feedbackDir, parsed }) {
   const normalizedPrompt = normalizeEnterpriseChatPrompt(prompt);
   if (!normalizedPrompt) {
@@ -7197,22 +7224,51 @@ ${hidden}
         return;
       }
 
-      // Chat with your data — RAG over this install's captured lessons, answered
-      // by Gemini grounded only in the retrieved context. Powers the dashboard
-      // "Chat with your data" panel.
+      // Chat with your data — LOCAL-FIRST. Powers the dashboard "Chat with your
+      // data" panel. Factual/metric questions (gates, blocks, feedback, token
+      // savings, team) are answered DETERMINISTICALLY from this install's own
+      // dashboard data — no cloud, no LLM, no API key (the local-first thesis).
+      // Only open-ended/qualitative questions fall through to lesson retrieval +
+      // the user's configured LOCAL model (a BYO cloud key is optional, not required).
       if (req.method === 'POST' && pathname === '/v1/chat') {
         const body = await parseJsonBody(req);
+        const question = body.question || body.q || body.message;
+        const normalizedChatPrompt = normalizeEnterpriseChatPrompt(question);
+        const chatFeedbackDir = requestFeedbackPaths.FEEDBACK_DIR;
+
+        // Local-first: factual/metric questions (gates, blocks, feedback, cost,
+        // team) are answered deterministically from local data — no cloud/LLM/key.
+        if (
+          normalizedChatPrompt
+          && !containsUnsafeEnterpriseChatInput(normalizedChatPrompt)
+          && classifyEnterpriseChatTopic(normalizedChatPrompt) !== 'overview'
+          && await trySendLocalDashboardChat(res, parsed, chatFeedbackDir, normalizedChatPrompt)
+        ) {
+          return;
+        }
+
         const { answerDataQuestion } = require('../../scripts/dashboard-chat');
 
         const projectChatSettings = readProjectChatSettings(req, parsed);
 
-        const result = await answerDataQuestion(body.question || body.q || body.message, {
-          feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
+        const result = await answerDataQuestion(question, {
+          feedbackDir: chatFeedbackDir,
           model: typeof body.model === 'string' ? body.model : undefined,
           apiKey: projectChatSettings.perplexityKey || projectChatSettings.geminiKey || process.env.PERPLEXITY_API_KEY || process.env.THUMBGATE_PERPLEXITY_API_KEY || process.env.GEMINI_API_KEY || process.env.THUMBGATE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '',
           localEndpoint: projectChatSettings.localEndpoint || process.env.THUMBGATE_LOCAL_LLM_ENDPOINT || '',
           localModel: projectChatSettings.localModel || process.env.THUMBGATE_LOCAL_LLM_MODEL || '',
         });
+
+        // Local-first guarantee: if no model is configured, never hard-fail with
+        // "no_api_key" — fall back to a deterministic local answer. No cloud required.
+        if (
+          !result.ok
+          && (result.error === 'no_api_key' || result.error === 'no_model')
+          && await trySendLocalDashboardChat(res, parsed, chatFeedbackDir, normalizedChatPrompt || question, '(Connect a local model via THUMBGATE_LOCAL_LLM_ENDPOINT for open-ended analysis over your lessons.)')
+        ) {
+          return;
+        }
+
         sendJson(res, result.ok ? 200 : (result.error === 'no_api_key' ? 503 : 400), result);
         return;
       }
