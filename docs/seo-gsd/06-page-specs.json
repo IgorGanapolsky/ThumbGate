@@ -370,6 +370,106 @@
     "imageAlt": "ThumbGate guide for Roo Code Alternative: Migrate to Cline Without Losing Agent Memory"
   },
   {
+    "path": "/guides/claude-code-pretooluse-hook",
+    "slug": "guides-claude-code-pretooluse-hook",
+    "query": "claude code pretooluse hook block mcp tool calls",
+    "pillar": "pre-action-checks",
+    "intent": "commercial",
+    "pageType": "guide",
+    "persona": "claude-code-builder",
+    "opportunityScore": 89,
+    "title": "Claude Code PreToolUse Hook | Block MCP Tool Calls Before They Run",
+    "description": "The PreToolUse hook is the boundary where you intercept what a Claude Code, Cursor, or Codex agent is about to do — before the rm -rf, before the bad git pus...",
+    "heroTitle": "Claude Code PreToolUse Hook: Block MCP Tool Calls Before They Run",
+    "heroSummary": "The PreToolUse hook is the boundary where you intercept what a Claude Code, Cursor, or Codex agent is about to do — before the rm -rf, before the bad git push, before the destructive SQL. ThumbGate is the local-first, MIT-licensed CLI that ships production-grade PreToolUse, beforeMCPExecution, and beforeReadFile gating with one npx command, and learns from every thumbs-down so the same mistake never reaches the tool call twice.",
+    "takeaways": [
+      "PreToolUse is the only hook point where you can stop a destructive agent action — by the time PostToolUse fires, the damage is done.",
+      "ThumbGate ships PreToolUse, beforeMCPExecution, and beforeReadFile gates out of the box for Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and any MCP-compatible agent — no hand-written hook scripts to maintain per machine.",
+      "A thumbs-down on a blocked action becomes an auto-promoted prevention rule that holds across every session, model, and agent — the part DIY hook repos cannot do."
+    ],
+    "sections": [
+      {
+        "heading": "What the PreToolUse hook actually is",
+        "paragraphs": [
+          "In the Model Context Protocol agent loop, every tool the model calls — Bash, Edit, Write, a custom MCP server method — flows through a PreToolUse phase before execution. That phase is the only place where an external policy can intercept the call, inspect its arguments, and decide whether to allow, modify, warn, or deny it. PostToolUse fires after the side effect has already happened, which is too late for destructive actions.",
+          "beforeMCPExecution, beforeReadFile, and beforeSubmitPrompt are the same idea applied at the MCP and IDE layers. Cycode's February 2026 IDE-security blog popularized this naming for enterprise customers; ThumbGate ships the same hook surface as an open-source CLI you can install in 30 seconds."
+        ]
+      },
+      {
+        "heading": "What ThumbGate blocks at PreToolUse out of the box",
+        "bullets": [
+          "Catastrophic shell: rm -rf at home/root, sudo wrapping a dangerous command, find -delete on sensitive paths.",
+          "Secret exfiltration: writes that contain API keys, tokens, or .env contents heading to the wrong directory.",
+          "Workflow-scope violations: edits outside the declared task scope, off-branch git push, accidental main commits.",
+          "Repeated mistakes from this team: anything you've already given a thumbs-down in a past session — auto-promoted to a hard prevention rule.",
+          "MCP tool calls flagged by your project's gate config — pattern, severity, or learned-from-feedback rules."
+        ]
+      },
+      {
+        "heading": "Why DIY PreToolUse scripts stop working past week two",
+        "paragraphs": [
+          "A hand-rolled hook script starts simple: a regex on the Bash command, a list of forbidden paths. By week two it has six edge cases, no test coverage, and lives in one machine's .claude directory — invisible to the rest of the team. By week four someone deletes it because it false-positived once on a legitimate command and nobody documented why.",
+          "ThumbGate ships the rules as a versioned config, the feedback loop as a CLI, the learning as cross-session prevention rules, and the proof as an audit trail your dashboard renders. The work you would do by hand on hooks, done once and shared."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "Is the PreToolUse hook the same as beforeMCPExecution?",
+        "answer": "Conceptually yes — both are the pre-execution interception point. PreToolUse is the Claude Code / Anthropic CLI term for the hook in the agent loop. beforeMCPExecution (and beforeReadFile, beforeSubmitPrompt) is the IDE-security framing popularized by Cycode for the same boundary at the MCP layer. ThumbGate implements all of them as one local-first gate engine."
+      },
+      {
+        "question": "Do I need this if Claude Code already has native hooks?",
+        "answer": "Native hooks give you the hook point. They do not give you the rule set, the cross-session learning, the team-wide rule sharing, or the audit trail. ThumbGate ships those on top of the hook so you stop maintaining bespoke scripts and start blocking the repeat mistakes specifically your agents make."
+      },
+      {
+        "question": "Does this run locally or call a cloud service?",
+        "answer": "Local-first. The PreToolUse decision happens in the hook process on your machine in milliseconds — no network round-trip, no cloud dependency, no data leaving the laptop. Optional hosted sync exists for teams that want to share rules across seats."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/mcp-tool-governance",
+        "title": "MCP tool governance before agents call real systems"
+      },
+      {
+        "path": "/guides/ai-agent-pre-action-approval-gates",
+        "title": "AI agent pre-action approval gates for risky tool calls"
+      },
+      {
+        "path": "/guides/ai-coding-agent-zero-trust",
+        "title": "Zero Trust for AI Coding Agents, Enforced at the Tool Call"
+      }
+    ],
+    "cta": {
+      "label": "Go Pro — $19/mo",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_claude-code-pretooluse-hook&cta_placement=seo_brief&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "monthly",
+    "priority": "0.8",
+    "keywordCluster": [
+      "claude code masterclass guardrails",
+      "cursor prevent repeated mistakes",
+      "claude code prevent repeated mistakes",
+      "codex cli guardrails"
+    ],
+    "imageAlt": "ThumbGate guide for Claude Code PreToolUse Hook: Block MCP Tool Calls Before They Run"
+  },
+  {
     "path": "/guides/claude-code-skills-guardrails",
     "slug": "guides-claude-code-skills-guardrails",
     "query": "claude code masterclass guardrails",
@@ -2996,6 +3096,107 @@
       "codex cli guardrails"
     ],
     "imageAlt": "ThumbGate guide for Zero Trust for AI Coding Agents, Enforced at the Tool Call"
+  },
+  {
+    "path": "/guides/govern-claude-for-legal-agents",
+    "slug": "guides-govern-claude-for-legal-agents",
+    "query": "govern claude for legal agents",
+    "pillar": "pre-action-checks",
+    "intent": "informational",
+    "pageType": "guide",
+    "persona": "ai-engineer",
+    "opportunityScore": 72,
+    "title": "Govern Claude for Legal Agents | A Gate Before They Act",
+    "description": "Claude for Legal ships 90+ named agents that review contracts, answer DSARs, and run continuously on document and email streams. Anthropic’s own guidance is...",
+    "heroTitle": "Govern Claude for Legal’s 90+ Agents at the Tool Call",
+    "heroSummary": "Claude for Legal ships 90+ named agents that review contracts, answer DSARs, and run continuously on document and email streams. Anthropic’s own guidance is that there must be a gate before anything is filed, sent, or relied on. ThumbGate is that gate — it checks each agent action at the tool-call boundary, in your tenant, and logs every decision for the record.",
+    "takeaways": [
+      "Claude for Legal’s agents take real side effects — sending a DSAR response, filing a document, writing to a system of record. ThumbGate gates the action before the side effect runs, not after, on a dashboard.",
+      "Intent-agnostic: whether an agent is wrong, prompt-injected, or off-playbook, ThumbGate blocks the same way and records the rule that fired. The risk is not a “rogue” agent — it is an ordinary one acting at volume.",
+      "Every gated decision is logged with its source rule — a SIEM-exportable audit trail your ethics, risk, and conflicts owners can query."
+    ],
+    "sections": [
+      {
+        "heading": "Why 90+ legal agents need a gate before the side effect",
+        "paragraphs": [
+          "A firm running Claude for Legal now has dozens of agents acting on ongoing document and email streams — vendor-agreement review, termination review, DSAR responses, claim charts. No one can review every action by hand. The risk is not malice; it is an ordinary agent that sends the wrong response, files against the wrong playbook, or surfaces a privileged document.",
+          "Anthropic’s own framing names the control: an explicit gate before anything is filed, sent, or relied on. ThumbGate implements that gate at the tool-call boundary — the moment before the action executes — instead of trusting the agent’s stated intent."
+        ]
+      },
+      {
+        "heading": "What ThumbGate gates for legal agents",
+        "bullets": [
+          "The send/file/write action itself — e.g. a DSAR or client response before it leaves, a filing before it goes out, a write to a conflicted matter — held or blocked at the boundary.",
+          "Playbook deviations — an action that departs from the firm’s approved workflow is stopped for review rather than executed.",
+          "Privileged-document exposure — flagged before an agent surfaces or forwards it.",
+          "Continuous runs — one rule set covers every agent and every scheduled run, so coverage scales with agent count, not headcount."
+        ]
+      },
+      {
+        "heading": "Enforcement in your tenant, with an audit trail",
+        "paragraphs": [
+          "ThumbGate runs as a pre-action gate in front of agent fulfillment, including a Dialogflow CX webhook gate deployed in your own GCP tenant, so matter content does not leave your boundary. Risk and planning scoring can run on Gemini via Vertex, in-tenant. This is a white-glove design-partner pilot, not a turnkey product purchase.",
+          "Every gated detection is logged with the rule that fired and the feedback event that generated it. That decision trail is the evidence a firm needs for malpractice defense and bar-compliance review — queryable, exportable, and tied to a named owner."
+        ]
+      },
+      {
+        "heading": "ThumbGate complements Claude for Legal — it does not replace it",
+        "paragraphs": [
+          "Claude for Legal decides what the work is. ThumbGate decides what is allowed to execute. Use both: keep the 90+ agents doing the legal work, and put a gate between each agent and its next side effect. A thumbs-down on a bad action becomes a prevention rule, so the same mistake is blocked across every agent and matter next time."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "Does ThumbGate replace Claude for Legal?",
+        "answer": "No. Claude for Legal’s agents do the legal work; ThumbGate governs what they are allowed to execute — a gate before anything is filed, sent, or relied on. You run both."
+      },
+      {
+        "question": "Where does the gate run?",
+        "answer": "In your tenant. ThumbGate gates agent fulfillment locally or via a Dialogflow CX webhook gate in your own GCP project; matter content does not leave your boundary, and Vertex/Gemini scoring runs in-tenant. It is a white-glove design-partner pilot, not a turnkey purchase."
+      },
+      {
+        "question": "What proof does a firm get?",
+        "answer": "Every gated decision is logged with the rule that fired and the feedback that generated it — a SIEM-exportable audit trail for ethics, risk, and conflicts owners."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/ai-coding-agent-zero-trust",
+        "title": "Zero Trust for AI Coding Agents, Enforced at the Tool Call"
+      },
+      {
+        "path": "/guides/pre-action-checks",
+        "title": "What Are Pre-Action Checks?"
+      }
+    ],
+    "cta": {
+      "label": "Go Pro — $19/mo",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_govern-claude-for-legal-agents&cta_placement=seo_brief&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "monthly",
+    "priority": "0.8",
+    "keywordCluster": [
+      "claude code masterclass guardrails",
+      "cursor prevent repeated mistakes",
+      "claude code prevent repeated mistakes",
+      "codex cli guardrails"
+    ],
+    "imageAlt": "ThumbGate guide for Govern Claude for Legal’s 90+ Agents at the Tool Call"
   },
   {
     "path": "/guides/best-tools-stop-ai-agents-breaking-production",

@@ -144,6 +144,7 @@ async function run() {
           '/guides/claude-code-feedback',
           '/guides/autoresearch-agent-safety',
           '/guides/govern-claude-for-legal-agents',
+          '/guides/claude-code-pretooluse-hook',
         ]) {
           const loc = pathname === '/'
             ? '<loc>https://app.example.com/</loc>'
