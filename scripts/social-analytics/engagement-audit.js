@@ -60,7 +60,21 @@ function readJson(filePath, fallback) {
   }
 }
 
+function isValidDate(date) {
+  if (date === null || date === undefined || date === '') {
+    return false;
+  }
+  if (typeof date === 'boolean') {
+    return false;
+  }
+  const parsed = new Date(date);
+  return !isNaN(parsed.getTime());
+}
+
 function formatDateInTimezone(date, timezone = DEFAULT_TIMEZONE) {
+  if (!isValidDate(date)) {
+    return '';
+  }
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: timezone,
     year: 'numeric',
@@ -107,6 +121,7 @@ function buildEngagementAudit(options = {}) {
   for (const entry of Object.values(replyState.repliedTo || {})) {
     const platform = String(entry.platform || '').trim().toLowerCase();
     if (!platforms[platform]) continue;
+    if (!isValidDate(entry.at)) continue;
     if (formatDateInTimezone(entry.at, timezone) !== targetDate) continue;
     platforms[platform].checked += 1;
     if (entry.drafted) {
@@ -129,6 +144,7 @@ function buildEngagementAudit(options = {}) {
   for (const draft of drafts) {
     const platform = String(draft.platform || '').trim().toLowerCase();
     if (!platforms[platform]) continue;
+    if (!isValidDate(draft.draftedAt)) continue;
     if (formatDateInTimezone(draft.draftedAt, timezone) !== targetDate) continue;
     platforms[platform].drafted += 1;
   }
@@ -180,6 +196,7 @@ module.exports = {
   PLATFORM_CAPABILITIES,
   buildEngagementAudit,
   formatDateInTimezone,
+  isValidDate,
   parseArgs,
   readJsonl,
 };
