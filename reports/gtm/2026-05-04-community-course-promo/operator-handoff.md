@@ -1,7 +1,7 @@
 # ThumbGate Community + Course Promo Operator Handoff
 
 Generated: 2026-05-04
-Updated: 2026-06-05T16:01:19Z
+Updated: 2026-06-05T22:12:00Z
 
 ## Live Assets
 
@@ -30,13 +30,13 @@ Current blockers:
 - The public-save state for the About page is still not re-verified in this runtime.
 - Cover/icon uploads remain blocked by the in-app browser file-picker surface, but local assets are ready.
 - The first post and invite steps still require action-time confirmation before publication/sending.
-- A headless read of the public Skool URL failed again in this environment on 2026-06-05, so the live public page content still needs browser-side verification before claiming the surface is fully updated.
+- A headless read of the public Skool URL failed again in this environment at `2026-06-05T22:07:35Z`, so the live public page content still needs browser-side verification before claiming the surface is fully updated.
 - Direct unauthenticated `curl -I -L https://www.skool.com/thumbgate-operator-lab-6000` previously returned HTTP `403` from CloudFront, so a headless anonymous verification path is not currently reliable from this runtime.
 - Skool’s current Discovery FAQ lists `off-platform payments` as a ranking penalty, so external paid links on public Skool surfaces should be treated as a deliberate tradeoff instead of a default conversion step.
-- GitHub visibility is split again in this runtime at `2026-06-05T16:01:19Z`: `gh pr list --state open --limit 5` succeeds and currently shows open PRs `#2507`, `#2506`, `#2505`, `#2503`, and `#2464`, while `gh run list --branch main --limit 5` fails with GitHub API rate limiting and `npm run pr:manage` still fails with `error connecting to api.github.com`.
+- GitHub visibility remains unstable in this runtime: the most recent partial snapshot is still the earlier `2026-06-05T20:06:59Z` read where `gh pr list --state open --limit 10` succeeded and showed open PRs `#2511`, `#2509`, `#2503`, `#2464`, `#2463`, `#2461`, `#2445`, `#2444`, `#2439`, and `#2438`, but the latest combined PR/Actions probe failed at `2026-06-05T22:07:35Z` with `error connecting to api.github.com`.
 - Skool Growth-tab metrics have not been read back in a browser-authenticated session yet, so About-page conversion and traffic-source truth are still unknown.
-- Zernio analytics are still dark in this runtime on 2026-06-05 (`0/6` healthy platforms, `0` rows in the last `24h`).
-- The latest local sales-pipeline summary at `2026-06-05T16:01:19Z` still shows `23` active leads with only `2` untouched and `0` paid, so warm outbound follow-up remains the fastest revenue path.
+- Zernio analytics are still dark in this runtime on 2026-06-05 (`0/6` healthy platforms, `0` rows in the last `24h` at `2026-06-05T22:07:35Z`).
+- The latest local sales-pipeline summary at `2026-06-05T22:07:35Z` still shows `23` active leads with only `2` untouched and `0` paid, so warm outbound follow-up remains the fastest revenue path.
 - Current local GitHub readback is only partially available; PR listing is readable, but Actions readback and `npm run pr:manage` are not reliable from this shell right now.
 
 Workaround for the in-app file picker:
@@ -99,6 +99,8 @@ Skool official sources (re-verified 2026-06-05):
   - https://help.skool.com/article/143-how-to-publish-a-course
 - Course access modes: Open, Level unlock, Buy now, Time unlock, and Private.
   - https://help.skool.com/article/23-how-to-set-permissions-for-a-course
+- Points/levels remain group-local and still use the documented ladder of `0`, `5`, `20`, `65`, `155`, `515`, `2,015`, `8,015`, and `33,015` points for levels `1` through `9`.
+  - https://help.skool.com/article/183-how-do-points-and-level-work
 - Native video in courses/posts: direct upload is supported, English captions auto-generate for videos with sound, and each course can have up to `200` pages.
   - https://help.skool.com/article/58-video
 - Course-page extras: pages can add transcripts, resource files, resource links, and pinned community posts, so the first free course can double as both onboarding and proof surface.
@@ -147,11 +149,11 @@ Zernio analytics polling is blocked by the Analytics add-on paywall. Treat Zerni
 
 The `thumbgate-creator-platform-promo.yml` workflow now passes `--offer=operator-lab`, so previews/schedules/publishes from that workflow promote the free Skool Operator Lab instead of the older first-customer launch copy.
 
-As of 2026-06-05T16:01:18Z, local dry-runs still preview the Operator Lab campaign without Zernio credentials and include the planned media attachments in the preview JSON:
+As of 2026-06-05T22:07:35Z, local dry-runs still preview the Operator Lab campaign without Zernio credentials and include the planned media attachments in the preview JSON:
 
 `npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=linkedin,instagram,threads,bluesky,reddit,youtube`
 
-Current dry-run facts from 2026-06-05T16:01:19Z:
+Current dry-run facts from 2026-06-05T22:07:35Z:
 
 - The preview renders six platform-specific posts for `linkedin,instagram,threads,bluesky,reddit,youtube`.
 - Each preview references a repo-backed media asset and reports `exists: true`.

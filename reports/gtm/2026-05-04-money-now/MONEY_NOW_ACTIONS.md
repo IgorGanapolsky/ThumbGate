@@ -1,11 +1,11 @@
 # Money Now Actions
 
-Updated: 2026-06-05T16:01:19Z
+Updated: 2026-06-05T22:12:00Z
 
 Use this as the operator cockpit for the current run. Focus is **individual operator revenue** with the correct offer routing: **Pro ($19/mo or $149/yr)** for self-serve intent, **Workflow Hardening Diagnostic ($499)** when pain is real but scope is unclear, and **Workflow Hardening Sprint ($1500)** when one workflow owner needs proof-backed hardening. Teams and Aiventyx are deprecated per CEO pivot.
 
 Action-time approval card for any outbound action:
-- `reports/gtm/2026-05-04-money-now/action-time-approval-2026-06-03.md`
+- `reports/gtm/2026-05-04-money-now/action-time-approval-2026-06-05.md`
 
 ## Current Revenue State
 - 30d visitors: 6169
@@ -13,20 +13,19 @@ Action-time approval card for any outbound action:
 - Paid orders: 4
 - Checkout starts: 133
 - Booked: `$149`
-- Live sales pipeline re-verified at `2026-06-05T16:01:19Z`: `23` active leads, `21` contacted, `2` targeted, `1` replied, `0` paid.
+- Live sales pipeline re-verified at `2026-06-05T22:07:35Z`: `23` active leads, `21` contacted, `2` targeted, `1` replied, `0` paid.
 - Pipeline: focus on **Operator Lab** conversion with Pro for self-serve leads and Diagnostic/Sprint for warm pain-first leads.
 - Revenue bottleneck: follow-up discipline on already-contacted leads plus the last untouched high-intent GitHub leads.
 - Current promotion/measurement state on 2026-06-05:
-  - local `--offer=operator-lab` dry-run re-verified at `2026-06-05T16:01:18Z` and still returns `6` previews with all media assets present
+  - local `--offer=operator-lab` dry-run re-verified at `2026-06-05T22:07:35Z` and still returns `6` previews with all media assets present
   - local dry-run still shows `accountCount: 0` for every platform in this runtime, so live publish/schedule should stay in GitHub Actions with secrets
   - dry-run payload still confirms the workflow copy is targeting `offer: operator-lab`
-  - local shell still has no `ZERNIO_API_KEY` loaded at `2026-06-05T16:01:19Z`, so this runtime remains preview-only for Zernio-backed publishing
-  - Zernio analytics re-check at `2026-06-05T16:01:18Z` still shows `0/6` healthy platforms and `0` rows in the last `24h`
+  - local shell still has no `ZERNIO_API_KEY` loaded at `2026-06-05T22:07:35Z`, so this runtime remains preview-only for Zernio-backed publishing
+  - Zernio analytics re-check at `2026-06-05T22:07:35Z` still shows `0/6` healthy platforms and `0` rows in the last `24h`
   - local Zernio status still points to the same likely causes: missing/revoked `ZERNIO_API_KEY`, analytics paywall, or disconnected accounts
-  - Skool public-page verification remains blocked in the headless reader runtime with `[skool-reader] fetch failed` at `2026-06-05T16:01:19Z`
-  - GitHub promo workflow readback in the last verified shell session still shows the latest visible successful run as `2026-05-13T16:05:29Z` (`run 25811081349`)
-  - GitHub visibility is split in this shell at `2026-06-05T16:01:19Z`: `gh pr list --state open --limit 5` succeeds and currently shows open PRs `#2507`, `#2506`, `#2505`, `#2503`, and `#2464`, while `gh run list --branch main --limit 5` fails with GitHub API rate limiting and `npm run pr:manage` still fails with `error connecting to api.github.com`
-  - official Skool help re-verified in this run still supports the current free-group posture: Discovery FAQ updated `April 8, 2026`, discovery checklist updated `April 15, 2026`, Classroom updated `May 29, 2026`, Analytics definitions last updated `November 24, 2025`, Payments FAQ updated `April 22, 2026`, and payout-status guidance updated `May 5, 2026`
+  - Skool public-page verification remains blocked in the headless reader runtime with `[skool-reader] fetch failed` at `2026-06-05T22:07:35Z`
+  - GitHub promo workflow readback is still blocked from this shell; the latest combined PR/Actions probe failed at `2026-06-05T22:07:35Z` with `error connecting to api.github.com`, so the most recent partial visibility snapshot remains the earlier `2026-06-05T20:06:59Z` read
+  - official Skool help re-verified in this run still supports the current free-group posture: Discovery FAQ updated `April 8, 2026`, discovery checklist updated `April 15, 2026`, Classroom updated `May 29, 2026`, course permissions updated `November 10, 2025`, membership questions updated `September 19, 2025`, Analytics definitions updated `November 24, 2025`, Payments FAQ updated `April 22, 2026`, and payout-status guidance updated `May 5, 2026`
 
 ## Do First
 1. Follow up the 4 already-contacted warm Reddit leads with the pain-confirming Diagnostic/Sprint bump.

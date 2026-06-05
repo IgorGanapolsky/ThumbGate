@@ -1,6 +1,6 @@
 # Revenue Close Room (Money Now)
 
-Updated: 2026-06-05T16:01:19Z
+Updated: 2026-06-05T22:12:00Z
 
 This file is the close-room script + truth table for converting warm/high-intent leads into:
 
@@ -24,15 +24,15 @@ Guardrail: do not publish posts, send messages, or invite members without explic
 - Booked: `$149`
 - Signups: 475
 - Sprint leads: 0
-- Live pipeline state re-verified at `2026-06-05T16:01:19Z`: `23` active leads, `21` contacted, `2` targeted, `1` replied, `0` paid
+- Live pipeline state re-verified at `2026-06-05T22:07:35Z`: `23` active leads, `21` contacted, `2` targeted, `1` replied, `0` paid
 - Current loop constraints on 2026-06-05:
-  - local Operator Lab promo preview is healthy as of `2026-06-05T16:01:18Z`
+  - local Operator Lab promo preview is healthy as of `2026-06-05T22:07:35Z`
   - local preview still shows `accountCount: 0` across platforms in this runtime, so live promo should stay on the GitHub Actions path with secrets
-  - local shell still has no `ZERNIO_API_KEY` loaded as of `2026-06-05T16:01:19Z`, so local runs should remain preview-only for media-backed publishing
-  - Zernio analytics re-check at `2026-06-05T16:01:18Z` is still dark (`0/6` healthy platforms, `0` rows in the last `24h`)
-  - Skool readback re-check at `2026-06-05T16:01:19Z` is still blocked in the headless runtime with `[skool-reader] fetch failed`
-  - GitHub visibility is split in this shell as of `2026-06-05T16:01:19Z`; `gh pr list --state open --limit 5` works, but `gh run list --branch main --limit 5` is rate-limited and `npm run pr:manage` still fails with `error connecting to api.github.com`
-  - official Skool help still supports the current value-first free-group posture: Discovery FAQ updated `April 8, 2026`, discovery checklist updated `April 15, 2026`, Classroom updated `May 29, 2026`, Analytics definitions last updated `November 24, 2025`, Payments FAQ updated `April 22, 2026`, and payout-status guidance updated `May 5, 2026`
+  - local shell still has no `ZERNIO_API_KEY` loaded as of `2026-06-05T22:07:35Z`, so local runs should remain preview-only for media-backed publishing
+  - Zernio analytics re-check at `2026-06-05T22:07:35Z` is still dark (`0/6` healthy platforms, `0` rows in the last `24h`)
+  - Skool readback re-check at `2026-06-05T22:07:35Z` is still blocked in the headless runtime with `[skool-reader] fetch failed`
+  - latest GitHub readback attempt in this shell failed at `2026-06-05T22:07:35Z` with `error connecting to api.github.com`; the most recent partial visibility snapshot remains the earlier `2026-06-05T20:06:59Z` read where PR listing worked but Actions readback failed
+  - official Skool help still supports the current value-first free-group posture: Discovery FAQ updated `April 8, 2026`, discovery checklist updated `April 15, 2026`, Classroom updated `May 29, 2026`, course permissions updated `November 10, 2025`, membership questions updated `September 19, 2025`, Analytics definitions updated `November 24, 2025`, Payments FAQ updated `April 22, 2026`, and payout-status guidance updated `May 5, 2026`
 
 ## Offer Routing (fast rules)
 
