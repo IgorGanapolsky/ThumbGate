@@ -693,7 +693,9 @@ describe('billing.js — funnel ledger', () => {
 
   test('stripe webhook provisions and reports skipped activation email when provider is missing', async () => {
     const savedWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const savedAllowUnsigned = process.env.THUMBGATE_ALLOW_UNSIGNED_STRIPE_WEBHOOKS;
     process.env.STRIPE_WEBHOOK_SECRET = '';
+    process.env.THUMBGATE_ALLOW_UNSIGNED_STRIPE_WEBHOOKS = '1';
     const billing = requireFreshBilling('sk_test_webhook');
     try {
       const result = await billing.handleWebhook(Buffer.from(JSON.stringify({
@@ -733,6 +735,31 @@ describe('billing.js — funnel ledger', () => {
     } finally {
       if (savedWebhookSecret === undefined) delete process.env.STRIPE_WEBHOOK_SECRET;
       else process.env.STRIPE_WEBHOOK_SECRET = savedWebhookSecret;
+      if (savedAllowUnsigned === undefined) delete process.env.THUMBGATE_ALLOW_UNSIGNED_STRIPE_WEBHOOKS;
+      else process.env.THUMBGATE_ALLOW_UNSIGNED_STRIPE_WEBHOOKS = savedAllowUnsigned;
+    }
+  });
+
+  test('stripe webhook fails closed when live billing lacks a webhook secret', async () => {
+    const savedWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const savedAllowUnsigned = process.env.THUMBGATE_ALLOW_UNSIGNED_STRIPE_WEBHOOKS;
+    process.env.STRIPE_WEBHOOK_SECRET = '';
+    delete process.env.THUMBGATE_ALLOW_UNSIGNED_STRIPE_WEBHOOKS;
+    const billing = requireFreshBilling('sk_test_missing_webhook_secret');
+    try {
+      assert.equal(billing.verifyWebhookSignature(Buffer.from('{"id":"evt_forged"}'), ''), false);
+      const result = await billing.handleWebhook(Buffer.from(JSON.stringify({
+        type: 'checkout.session.completed',
+        data: { object: { id: 'cs_forged', customer_details: { email: 'forged@example.com' } } },
+      })), '');
+      assert.equal(result.handled, false);
+      assert.equal(result.reason, 'invalid_signature');
+      assert.match(result.error, /STRIPE_WEBHOOK_SECRET is required/i);
+    } finally {
+      if (savedWebhookSecret === undefined) delete process.env.STRIPE_WEBHOOK_SECRET;
+      else process.env.STRIPE_WEBHOOK_SECRET = savedWebhookSecret;
+      if (savedAllowUnsigned === undefined) delete process.env.THUMBGATE_ALLOW_UNSIGNED_STRIPE_WEBHOOKS;
+      else process.env.THUMBGATE_ALLOW_UNSIGNED_STRIPE_WEBHOOKS = savedAllowUnsigned;
     }
   });
 
