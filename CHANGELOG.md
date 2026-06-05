@@ -1,5 +1,44 @@
 # Changelog
 
+## 1.27.6
+
+### Patch Changes
+
+- [#2505](https://github.com/IgorGanapolsky/ThumbGate/pull/2505) [`4c24b82`](https://github.com/IgorGanapolsky/ThumbGate/commit/4c24b820862606f854e3998c475ec71a34e47b43) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix /checkout/pro zombie sessions: require customer_email on POSTs. The earlier 401 fix unblocked POST traffic, but 3 of 4 fresh POST-flow sessions then reached Stripe with customer_email=null, creating un-recoverable zombie sessions (no email = no recovery campaign possible). Now POSTs without a customer_email query param fall through to the email-capture interstitial instead of auto-confirming. GET-with-confirm=1 behavior is unchanged.
+
+- [#2510](https://github.com/IgorGanapolsky/ThumbGate/pull/2510) [`1d51f56`](https://github.com/IgorGanapolsky/ThumbGate/commit/1d51f560793d05b441510c62284dab174ebb1200) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - dashboard: make "Chat with your data" intent-aware (lists, time windows, real listings)
+
+  The local-first chat ([#2501](https://github.com/IgorGanapolsky/ThumbGate/issues/2501)) routed every question to one of 5 canned per-topic
+  paragraphs — so "how many gates are activated today?" and "what mistakes were
+  blocked today?" both returned the same `Active gates: N. Blocked: M.` line.
+  Two underlying bugs:
+
+  1. Classifier order — `/block/` hijacked "what **mistakes were blocked** today" into
+     the gates topic. Feedback-specific words ("mistake", "lesson", "feedback",
+     "thumbs", "negative", "positive", "wins", "what went wrong") now run FIRST.
+  2. Section answers ignored intent — "what" got the same line as "how many", and
+     "today" was never filtered. Now the section builder parses intent
+     (`wantsList` vs count, `windowMs`: today/yesterday/this-week/this-month) and
+     reads the feedback log directly to list real mistakes/wins for the requested
+     window, instead of a canned all-time count.
+
+  Examples that now answer distinctly (all still local, no cloud):
+
+  - "how many mistakes today?" → `Feedback today: 3 (1 positive, 2 negative).`
+  - "what mistakes today?" → enumerated list of today's negative contexts.
+  - "show me wins this week" → enumerated list of positive entries from 7d.
+  - "what gates do we have?" → enumerated list of active gates with severity.
+
+- [#2505](https://github.com/IgorGanapolsky/ThumbGate/pull/2505) [`4c24b82`](https://github.com/IgorGanapolsky/ThumbGate/commit/4c24b820862606f854e3998c475ec71a34e47b43) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix dashboard "Chat with your data" for keyless local installs: the exact metric question "how many mistakes were prevented today?" is now covered by the local-data regression test with every cloud/model env var removed, and the dashboard copy no longer implies Gemini/Perplexity keys are required for local answers.
+
+- [#2505](https://github.com/IgorGanapolsky/ThumbGate/pull/2505) [`4c24b82`](https://github.com/IgorGanapolsky/ThumbGate/commit/4c24b820862606f854e3998c475ec71a34e47b43) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Improve local-first dashboard chatbot to answer specific queries like "what mistakes did I make?" or "what mistakes were blocked today?" by scanning the local feedback log and listing the 5 most recent mistakes/actions instead of returning a generic summary.
+
+- [#2507](https://github.com/IgorGanapolsky/ThumbGate/pull/2507) [`3e6ccb4`](https://github.com/IgorGanapolsky/ThumbGate/commit/3e6ccb4349511346611c29c979974989626cd3f1) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - fix(mcp): stdio server self-exits on stdin EOF/close
+
+  stdio MCP server (adapters/mcp/server-stdio.js) now listens to stdin 'end' and 'close' events to exit the process with code 0 when the client disconnects. This prevents orphaned serve processes from accumulating on the host system.
+
+- [#2512](https://github.com/IgorGanapolsky/ThumbGate/pull/2512) [`deb3355`](https://github.com/IgorGanapolsky/ThumbGate/commit/deb3355ea3a2a86444e335c686014a022c3a7f98) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fail closed when live Stripe webhook processing is enabled without `STRIPE_WEBHOOK_SECRET`; unsigned webhook parsing is now test-only opt-in.
+
 ## 1.27.3
 
 ### Patch Changes
