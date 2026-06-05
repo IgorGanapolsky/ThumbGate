@@ -3922,9 +3922,9 @@ test('enterprise data chat endpoint answers from local dashboard data and blocks
 
 test('dashboard /v1/chat answers data questions LOCALLY with no cloud/LLM/API key', async () => {
   // Factual question → deterministic local answer from this install's own data.
-  const res = await fetch(apiUrl('/v1/chat'), {
+  const res = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(tmpFeedbackDir)}`), {
     method: 'POST',
-    headers: authHeader,
+    headers: { ...authHeader, 'x-thumbgate-project-dir': tmpFeedbackDir },
     body: JSON.stringify({ question: 'how many mistakes were blocked today?' }),
   });
   assert.equal(res.status, 200);
@@ -3938,9 +3938,9 @@ test('dashboard /v1/chat answers data questions LOCALLY with no cloud/LLM/API ke
 
   // Open-ended question with no model configured must STILL return a local answer,
   // never a hard "no_api_key" failure and never a forced cloud call.
-  const open = await fetch(apiUrl('/v1/chat'), {
+  const open = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(tmpFeedbackDir)}`), {
     method: 'POST',
-    headers: authHeader,
+    headers: { ...authHeader, 'x-thumbgate-project-dir': tmpFeedbackDir },
     body: JSON.stringify({ question: 'what is our philosophy of work?' }),
   });
   assert.equal(open.status, 200);
