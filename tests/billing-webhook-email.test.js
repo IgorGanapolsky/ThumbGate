@@ -28,6 +28,7 @@ const savedEnv = {
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
   STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID,
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+  THUMBGATE_ALLOW_UNSIGNED_STRIPE_WEBHOOKS: process.env.THUMBGATE_ALLOW_UNSIGNED_STRIPE_WEBHOOKS,
   THUMBGATE_PLAUSIBLE_DISABLE: process.env.THUMBGATE_PLAUSIBLE_DISABLE,
 };
 
@@ -41,7 +42,8 @@ function primeEnv(suffix) {
   process.env.STRIPE_SECRET_KEY = 'sk_test_fake_for_webhook_test';
   process.env.STRIPE_PRICE_ID = '';
   process.env.THUMBGATE_PLAUSIBLE_DISABLE = '1';
-  // No webhook secret → constructEvent path skipped; raw body is JSON-parsed.
+  // Test-only unsigned path exercises mailer side effects without real Stripe keys.
+  process.env.THUMBGATE_ALLOW_UNSIGNED_STRIPE_WEBHOOKS = '1';
   delete process.env.STRIPE_WEBHOOK_SECRET;
 }
 
