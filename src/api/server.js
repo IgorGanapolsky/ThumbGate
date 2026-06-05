@@ -1570,6 +1570,68 @@ function compactNumber(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function isTodayScopedPrompt(prompt) {
+  return /\btoday\b|\bthis day\b|\blast 24\b|\b24 hours\b/i.test(String(prompt || ''));
+}
+
+function getTodayGateAudit(gateAudit) {
+  const days = gateAudit && Array.isArray(gateAudit.days) ? gateAudit.days : [];
+  return days.length > 0 ? days[days.length - 1] : null;
+}
+
+function formatGateBuckets(byGate) {
+  return Object.entries(byGate || {})
+    .filter(([, count]) => compactNumber(count) > 0)
+    .sort((a, b) => compactNumber(b[1]) - compactNumber(a[1]))
+    .slice(0, 3)
+    .map(([gateId, count]) => `${gateId} (${compactNumber(count)}x)`);
+}
+
+function buildTodayGateAnswer(prompt, dashboardData, gateStats, gates) {
+  if (!isTodayScopedPrompt(prompt)) return null;
+  const lower = String(prompt || '').toLowerCase();
+  const gateAudit = dashboardData.gateAudit || {};
+  const prevention = dashboardData.prevention || {};
+  const today = getTodayGateAudit(gateAudit) || { deny: 0, warn: 0, intercepted: 0, byGate: {} };
+  const activeGateCount = gates.length || compactNumber(gateStats.totalGates);
+
+  if (/\b(activated|promoted|created|enabled)\b/.test(lower)) {
+    const promotionsToday = compactNumber(prevention.promotionsToday);
+    const promotedIds = Array.isArray(prevention.promotionIdsToday) ? prevention.promotionIdsToday.filter(Boolean) : [];
+    return [
+      `Gates activated today: ${promotionsToday}.`,
+      `Active gates now: ${activeGateCount}.`,
+      promotedIds.length > 0 ? `Promoted today: ${promotedIds.slice(0, 3).join(', ')}.` : '',
+    ].filter(Boolean);
+  }
+
+  if (/\b(what|which)\b/.test(lower) && /\b(mistake|mistakes|block|blocked|prevent|prevented)\b/.test(lower)) {
+    const gateBuckets = formatGateBuckets(today.byGate);
+    return [
+      `Today: ${compactNumber(today.deny)} blocked actions and ${compactNumber(today.warn)} warning checkpoints.`,
+      gateBuckets.length > 0
+        ? `Top blocked/warned gates today: ${gateBuckets.join(', ')}.`
+        : 'No per-gate blocked mistake names are present in today\'s local audit snapshot.',
+    ];
+  }
+
+  if (/\b(prevent|prevented|intercept|intercepted)\b/.test(lower)) {
+    return [
+      `Mistakes prevented today: ${compactNumber(today.intercepted)} interventions (${compactNumber(today.deny)} blocked, ${compactNumber(today.warn)} warned).`,
+      `All-time blocked actions recorded: ${compactNumber(gateStats.blocked || gateStats.denied || gateStats.totalBlocked)}.`,
+    ];
+  }
+
+  if (/\b(block|blocked|deny|denied)\b/.test(lower)) {
+    return [
+      `Mistakes blocked today: ${compactNumber(today.deny)} deny decisions.`,
+      `Warnings today: ${compactNumber(today.warn)}; all-time blocked actions recorded: ${compactNumber(gateStats.blocked || gateStats.denied || gateStats.totalBlocked)}.`,
+    ];
+  }
+
+  return null;
+}
+
 function buildEnterpriseChatSection(topic, dashboardData, status, feedbackDir, prompt) {
   const approval = dashboardData.approval || {};
   const gates = Array.isArray(dashboardData.gates) ? dashboardData.gates : [];
@@ -1577,6 +1639,16 @@ function buildEnterpriseChatSection(topic, dashboardData, status, feedbackDir, p
   const team = dashboardData.team || {};
   const tokenSavings = dashboardData.tokenSavings || {};
   const lessonPipeline = dashboardData.lessonPipeline || {};
+
+  if (topic === 'gates') {
+    const todayGateAnswer = buildTodayGateAnswer(prompt, dashboardData, gateStats, gates);
+    if (todayGateAnswer) {
+      return {
+        lines: todayGateAnswer,
+        sources: ['gate audit', 'gate stats'],
+      };
+    }
+  }
 
   const lowerPrompt = String(prompt || '').toLowerCase();
   const isListOrDetailQuery = /list\s+mistakes?|show\s+mistakes?|recent\s+mistakes?|what\s+mistakes?\s+(?:were|was|did|are|have)/.test(lowerPrompt);

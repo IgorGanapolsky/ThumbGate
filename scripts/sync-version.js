@@ -60,6 +60,7 @@ function syncVersion(opts) {
   const version = pkg.version;
   const homepageUrl = pkg.homepage;
   const repositoryUrl = pkg.repository && pkg.repository.url ? String(pkg.repository.url).replace(/\.git$/, '') : '';
+  const codexPluginVersionedUrl = `${repositoryUrl}/releases/download/v${version}/thumbgate-codex-plugin-v${version}.zip`;
 
   const targets = [];
   const drifted = [];
@@ -339,7 +340,31 @@ function syncVersion(opts) {
     targets.push(relPath);
   }
 
-  // 11. docs/landing-page.html — hero badge + JSON snippet
+  // 11. Codex marketplace revenue pack versioned bundle URL
+  const codexMarketplacePackTargets = [
+    'docs/marketing/codex-marketplace-revenue-pack.md',
+    'docs/marketing/codex-marketplace-revenue-pack.json',
+  ];
+  const codexVersionedBundlePattern = new RegExp(
+    `${repositoryUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\/releases\\/download\\/v${VERSION_PATTERN}\\/thumbgate-codex-plugin-v${VERSION_PATTERN}\\.zip`,
+    'g'
+  );
+  for (const relPath of codexMarketplacePackTargets) {
+    const filePath = path.join(PROJECT_ROOT, relPath);
+    if (!fs.existsSync(filePath)) continue;
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const matches = content.match(codexVersionedBundlePattern) || [];
+    const hasDrift = matches.some((match) => match !== codexPluginVersionedUrl);
+    if (hasDrift) {
+      drifted.push({ file: relPath, field: 'codex-versioned-bundle-url', current: matches.join(', ') });
+      if (!checkOnly) {
+        fs.writeFileSync(filePath, content.replace(codexVersionedBundlePattern, codexPluginVersionedUrl));
+      }
+    }
+    targets.push(relPath);
+  }
+
+  // 12. docs/landing-page.html — hero badge + JSON snippet
   const landingPath = 'docs/landing-page.html';
   if (fs.existsSync(path.join(PROJECT_ROOT, landingPath))) {
     const landingContent = fs.readFileSync(path.join(PROJECT_ROOT, landingPath), 'utf-8');
@@ -362,7 +387,7 @@ function syncVersion(opts) {
     targets.push(landingPath);
   }
 
-  // 12. docs/mcp-hub-submission.md
+  // 13. docs/mcp-hub-submission.md
   const mcpSubmPath = 'docs/mcp-hub-submission.md';
   if (fs.existsSync(path.join(PROJECT_ROOT, mcpSubmPath))) {
     const mcpContent = fs.readFileSync(path.join(PROJECT_ROOT, mcpSubmPath), 'utf-8');
@@ -376,7 +401,7 @@ function syncVersion(opts) {
     targets.push(mcpSubmPath);
   }
 
-  // 13. public/index.html — static landing proof/version markers + footer version
+  // 14. public/index.html — static landing proof/version markers + footer version
   const publicIndexPath = 'public/index.html';
   if (fs.existsSync(path.join(PROJECT_ROOT, publicIndexPath))) {
     const publicIndexFile = path.join(PROJECT_ROOT, publicIndexPath);
@@ -421,7 +446,7 @@ function syncVersion(opts) {
     targets.push(publicIndexPath);
   }
 
-  // 14. public/numbers.html — generated proof snapshot version markers
+  // 15. public/numbers.html — generated proof snapshot version markers
   const publicNumbersPath = 'public/numbers.html';
   if (fs.existsSync(path.join(PROJECT_ROOT, publicNumbersPath))) {
     const publicNumbersFile = path.join(PROJECT_ROOT, publicNumbersPath);
@@ -458,7 +483,7 @@ function syncVersion(opts) {
     targets.push(publicNumbersPath);
   }
 
-  // 15. adapters/mcp/server-stdio.js — MCP server metadata
+  // 16. adapters/mcp/server-stdio.js — MCP server metadata
   const serverStdioPath = 'adapters/mcp/server-stdio.js';
   const serverStdioFile = path.join(PROJECT_ROOT, serverStdioPath);
   if (fs.existsSync(serverStdioFile)) {
@@ -476,7 +501,7 @@ function syncVersion(opts) {
     targets.push(serverStdioPath);
   }
 
-  // 16. mcpize.yaml
+  // 17. mcpize.yaml
   const mcpizePath = 'mcpize.yaml';
   const mcpizeFile = path.join(PROJECT_ROOT, mcpizePath);
   if (fs.existsSync(mcpizeFile)) {
@@ -493,7 +518,7 @@ function syncVersion(opts) {
   }
 
 
-  // 17. plugins/vscode-extension/package.json
+  // 18. plugins/vscode-extension/package.json
   const vscodeExtensionPath = "plugins/vscode-extension/package.json";
   if (fs.existsSync(path.join(PROJECT_ROOT, vscodeExtensionPath))) {
     const vscodeExt = readJson(vscodeExtensionPath);
