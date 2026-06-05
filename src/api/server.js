@@ -1580,25 +1580,27 @@ function parseChatIntent(prompt) {
 // surface `"thumbs down"` × 3 as a useful list. Real feedback always has a
 // concrete sentence somewhere (whatWentWrong, distillation, whatToChange) —
 // pick the longest informative one.
-const PLACEHOLDER_CONTEXT = /^\s*(?:thumbs?\s*(?:up|down)|good|bad|ok|nice|verify(?:ication)?(?:\s.*)?|test|test ?ing|verifies?|gsd\s.*)\.?\s*$/i;
+// Short tokens that mean "no real description" — kept as a plain Set, not a
+// big regex, to keep complexity low and easy to extend.
+const PLACEHOLDER_TOKENS = new Set([
+  'thumbs down', 'thumbs up', 'thumb down', 'thumb up',
+  'good', 'bad', 'ok', 'nice', 'verify', 'verifies', 'verification', 'test', 'testing',
+]);
 
 function isPlaceholder(text) {
   const t = String(text || '').trim();
-  return !t || t.length < 20 || PLACEHOLDER_CONTEXT.test(t);
+  if (!t || t.length < 20) return true;
+  return PLACEHOLDER_TOKENS.has(t.toLowerCase().replace(/\.$/, ''));
 }
 
 function bestFeedbackDescription(row) {
-  const candidates = [row.whatWentWrong, row.distillation, row.context, row.whatToChange, row.whatWorked, row.reasoning];
-  // Prefer the longest non-placeholder candidate.
-  const informative = candidates
-    .map((c) => String(c || '').trim())
-    .filter((c) => c && !isPlaceholder(c));
-  if (informative.length) {
-    return informative.reduce((a, b) => (b.length > a.length ? b : a)).slice(0, 220);
-  }
-  // Fall back to any non-empty value so the entry isn't blank — caller may drop it.
-  const fallback = candidates.map((c) => String(c || '').trim()).find(Boolean);
-  return fallback ? fallback.slice(0, 220) : '';
+  const candidates = [row.whatWentWrong, row.distillation, row.context, row.whatToChange, row.whatWorked, row.reasoning]
+    .map((c) => String(c || '').trim());
+  // Prefer the longest non-placeholder candidate; fall back to any non-empty.
+  const informative = candidates.filter((c) => c && !isPlaceholder(c));
+  const fallback = candidates.find(Boolean) || '';
+  const best = informative.reduce((a, b) => (b.length > a.length ? b : a), '') || fallback;
+  return best.slice(0, 220);
 }
 
 function readRecentFeedbackEntries(feedbackDir, signal, windowMs, limit = 5, opts = {}) {
@@ -1615,7 +1617,7 @@ function readRecentFeedbackEntries(feedbackDir, signal, windowMs, limit = 5, opt
       .filter((r) => !signal || r.signal === signal)
       .filter((r) => {
         if (!cutoff) return true;
-        const t = r.timestamp ? Date.parse(r.timestamp) : NaN;
+        const t = r.timestamp ? Date.parse(r.timestamp) : Number.NaN;
         return Number.isFinite(t) && t >= cutoff;
       })
       .reverse()
@@ -1630,7 +1632,7 @@ function readRecentFeedbackEntries(feedbackDir, signal, windowMs, limit = 5, opt
       ? filtered
       : filtered.filter((e) => e.context && !isPlaceholder(e.context));
     return useful.slice(0, limit);
-  } catch (_) {
+  } catch {
     return [];
   }
 }
@@ -1693,6 +1695,35 @@ function buildFeedbackSection({ ctx, intent, feedbackDir, approval, lessonPipeli
   return { lines, sources: ['feedback log', intent.wantsList ? 'feedback contexts' : 'lesson pipeline'] };
 }
 
+const GATE_EVENTS_REGEX = /activat|fired|trigger|block|denied|prevent|enforce|hit/;
+
+function describeGate(g) {
+  return `${g.name || g.id || 'unnamed'}${g.severity ? ' [' + g.severity + ']' : ''}`;
+}
+
+function buildGatesSection({ ctx, intent, gates, gateStats }) {
+  const asksEvents = GATE_EVENTS_REGEX.test(String(ctx.prompt || '').toLowerCase());
+  const totalActive = gates.length || compactNumber(gateStats.totalGates);
+  const totalBlocked = compactNumber(gateStats.blocked || gateStats.denied || gateStats.totalBlocked);
+
+  const lines = [];
+  if (asksEvents) {
+    lines.push(`Blocked actions recorded (all time): ${totalBlocked}.`);
+    if (intent.windowMs) {
+      lines.push(`(Per-${intent.windowLabel} block-event breakdown isn't tracked in the local dashboard snapshot — only the running total. Filter the gate-events log directly for a precise window.)`);
+    }
+  } else {
+    lines.push(`Active gates: ${totalActive}.`);
+  }
+  if (intent.wantsList && gates.length) {
+    lines.push('Active gates:');
+    for (const g of gates.slice(0, 8)) lines.push(`  • ${describeGate(g)}`);
+  } else if (gates[0] && !intent.wantsList) {
+    lines.push(`Example gate: ${describeGate(gates[0])}.`);
+  }
+  return { lines, sources: ['gate stats'] };
+}
+
 function buildEnterpriseChatSection(topic, dashboardData, status, ctx = {}) {
   const approval = dashboardData.approval || {};
   const gates = Array.isArray(dashboardData.gates) ? dashboardData.gates : [];
@@ -1707,32 +1738,7 @@ function buildEnterpriseChatSection(topic, dashboardData, status, ctx = {}) {
     return buildFeedbackSection({ ctx, intent, feedbackDir, approval, lessonPipeline });
   }
   if (topic === 'gates') {
-    const lower = String(ctx.prompt || '').toLowerCase();
-    // Distinguish "active" (currently defined) from "activated/fired/blocked" (events).
-    const asksEvents = /activat|fired|trigger|block|denied|prevent|enforce|hit/.test(lower);
-    const totalActive = gates.length || compactNumber(gateStats.totalGates);
-    const totalBlocked = compactNumber(gateStats.blocked || gateStats.denied || gateStats.totalBlocked);
-
-    const lines = [];
-    if (asksEvents) {
-      // Time-filtered block events would need a gate-events log; surface the
-      // total honestly and note the all-time scope rather than fake a "today".
-      lines.push(`Blocked actions recorded (all time): ${totalBlocked}.`);
-      if (intent.windowMs) {
-        lines.push(`(Per-${intent.windowLabel} block-event breakdown isn't tracked in the local dashboard snapshot — only the running total. Filter the gate-events log directly for a precise window.)`);
-      }
-    } else {
-      lines.push(`Active gates: ${totalActive}.`);
-    }
-    if (intent.wantsList && gates.length) {
-      lines.push('Active gates:');
-      for (const g of gates.slice(0, 8)) {
-        lines.push(`  • ${g.name || g.id || 'unnamed'}${g.severity ? ' [' + g.severity + ']' : ''}`);
-      }
-    } else if (gates[0] && !intent.wantsList) {
-      lines.push(`Example gate: ${gates[0].name || gates[0].id || 'unnamed gate'}.`);
-    }
-    return { lines, sources: ['gate stats'] };
+    return buildGatesSection({ ctx, intent, gates, gateStats });
   }
   if (topic === 'team') {
     return {
@@ -1816,7 +1822,7 @@ async function trySendLocalDashboardChat(res, parsed, feedbackDir, prompt, suffi
       grounded: true,
     });
     return true;
-  } catch (_) {
+  } catch {
     return false;
   }
 }
@@ -2292,7 +2298,7 @@ function appendBestEffortTelemetry(feedbackDir, payload, headers, context) {
           evidence: [err?.message ? err.message : 'unknown_error'],
         },
       });
-    } catch (_) {}
+    } catch {}
     return false;
   }
 }
@@ -3504,7 +3510,7 @@ function renderCheckoutSuccessPage(runtimeConfig) {
         if (window.sessionStorage) {
           window.sessionStorage.setItem(marker, '1');
         }
-      } catch (_) {
+      } catch {
         sendTelemetry(eventType, extra);
       }
     }
@@ -6163,7 +6169,7 @@ ${hidden}
               evidence: [err?.message ? err.message : 'unknown_error'],
             },
           });
-        } catch (_) {
+        } catch {
           // Telemetry is best-effort and must never fail the caller.
         }
       }
@@ -6530,7 +6536,7 @@ ${hidden}
               context: 'failed to persist install-email capture to ledger',
               metadata: { error: err?.message || 'unknown' },
             });
-          } catch (_) {}
+          } catch {}
         }
 
         // Privacy-clean telemetry ping for funnel attribution (no email).
@@ -8007,7 +8013,7 @@ ${hidden}
               feedbackDir: getSafeDataDir(),
               limit: 10,
             });
-          } catch (_) { /* best-effort — conversation window is optional */ }
+          } catch { /* best-effort — conversation window is optional */ }
         }
         const result = captureFeedback({
           signal: body.signal,
