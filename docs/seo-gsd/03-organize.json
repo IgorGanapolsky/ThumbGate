@@ -1474,11 +1474,11 @@
       "authorityScore": 100,
       "rankPermission": "expand",
       "proofPages": [
+        "/guides/claude-code-pretooluse-hook",
         "/guides/reasoning-compression-guardrails",
         "/guides/deepseek-v4-runtime-guardrails",
         "/guides/pre-action-checks",
-        "/guides/agent-harness-optimization",
-        "/guides/code-knowledge-graph-guardrails"
+        "/guides/agent-harness-optimization"
       ],
       "nextAction": "Publish semantic variants with proof-backed internal links."
     },
@@ -1578,6 +1578,18 @@
       "hasConversionPath": true,
       "meshStatus": "healthy",
       "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
+      "path": "/guides/claude-code-pretooluse-hook",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/mcp-tool-governance",
+        "/guides/ai-agent-pre-action-approval-gates",
+        "/guides/ai-coding-agent-zero-trust"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "needs-links",
+      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
     },
     {
       "path": "/guides/claude-code-skills-guardrails",
@@ -1898,6 +1910,17 @@
       "relatedPaths": [
         "/guides/pre-action-checks",
         "/guides/agent-harness-optimization"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "needs-links",
+      "nextStep": "Add pillar, adjacent-guide, and conversion links before publish."
+    },
+    {
+      "path": "/guides/govern-claude-for-legal-agents",
+      "pillar": "pre-action-checks",
+      "relatedPaths": [
+        "/guides/ai-coding-agent-zero-trust",
+        "/guides/pre-action-checks"
       ],
       "hasConversionPath": true,
       "meshStatus": "needs-links",
