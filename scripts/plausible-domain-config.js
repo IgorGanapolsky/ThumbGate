@@ -49,6 +49,17 @@ function resolvePlausibleDataDomain({ host = '', env = process.env } = {}) {
     return normalizedHost;
   }
 
+  // Prevent local/loopback traffic from mapping to the production Plausible site domain
+  const isLocal = normalizedHost === 'localhost' ||
+                  normalizedHost === '127.0.0.1' ||
+                  normalizedHost === '::1' ||
+                  normalizedHost.endsWith('.local') ||
+                  normalizedHost.startsWith('192.168.') ||
+                  normalizedHost.startsWith('10.');
+  if (isLocal) {
+    return 'localhost';
+  }
+
   return FALLBACK_REGISTERED_PLAUSIBLE_DOMAIN;
 }
 

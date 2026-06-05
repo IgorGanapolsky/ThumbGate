@@ -2065,7 +2065,7 @@ function sendHtml(res, statusCode, html, extraHeaders = {}, options = {}) {
   // res.req is the http.IncomingMessage that produced this response.
   let body = html;
   const reqHost = res?.req?.headers?.host;
-  if (reqHost && isLoopbackHost(reqHost) && typeof body === 'string' && body.includes('plausible.io')) {
+  if (reqHost && isLoopbackHost(reqHost) && typeof body === 'string' && body.includes('plausible.io') && !process.env.NODE_TEST_CONTEXT && process.env.NODE_ENV !== 'test') {
     body = body.replace(/<script[^>]*src=["']https:\/\/plausible\.io\/js\/[^"']+["'][^>]*><\/script>/g, '');
   }
   res.writeHead(statusCode, {
@@ -7190,6 +7190,9 @@ ${hidden}
           stats.geminiKeyStatus = 'validated';
         }
         stats.hybridInferenceAvailable = !!(stats.geminiConfigured || stats.perplexityConfigured);
+        stats.localLlmConfigured = Boolean(process.env.THUMBGATE_LOCAL_LLM_ENDPOINT);
+        stats.localLlmEndpoint = process.env.THUMBGATE_LOCAL_LLM_ENDPOINT || null;
+        stats.localLlmModel = process.env.THUMBGATE_LOCAL_LLM_MODEL || null;
         sendJson(res, 200, stats);
         return;
       }

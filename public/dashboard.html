@@ -9,6 +9,7 @@
 <link rel="icon" type="image/png" href="/thumbgate-icon.png">
 <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
 <meta name="robots" content="noindex">
+<meta name="referrer" content="same-origin">
 <!-- Privacy-friendly analytics by Plausible -->
 <script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
 <script type="application/ld+json">
@@ -263,7 +264,7 @@
   <div class="panel" id="chatPanel" style="margin-bottom:20px;">
     <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
       <h2 style="margin:0;">💬 Chat with your data</h2>
-      <span style="font-size:13px;color:var(--text-muted);">Ask about your captured lessons, mistakes, and rules — answered by Gemini, grounded only in your data.</span>
+      <span style="font-size:13px;color:var(--text-muted);">Ask about your captured lessons, mistakes, and rules — answered by your configured local LLM, grounded only in your data.</span>
     </div>
     <div id="chatMessages" style="max-height:360px;overflow-y:auto;margin-bottom:12px;display:none;padding-right:4px;"></div>
     <div style="display:flex;gap:8px;">
@@ -872,7 +873,10 @@ async function connect(options) {
       tierName = data.tier;
     }
     
-    if (data.geminiKeyStatus === 'validated' || data.geminiValidatedAt) {
+    if (data.localLlmConfigured) {
+      var modelLabel = data.localLlmModel ? ' (' + data.localLlmModel + ')' : '';
+      document.getElementById('chatHint').innerHTML = '<span style="color:var(--green)">✓ Local LLM' + modelLabel + ' ready. Chat answers are generated locally — no cloud calls.</span>';
+    } else if (data.geminiKeyStatus === 'validated' || data.geminiValidatedAt) {
       var when = data.geminiValidatedAt ? ' (validated ' + new Date(data.geminiValidatedAt).toLocaleTimeString() + ')' : '';
       document.getElementById('chatHint').innerHTML = '<span style="color:var(--green)">✓ Gemini API key validated' + when + '. You can now chat with your data.</span>';
     } else if (data.perplexityConfigured) {
