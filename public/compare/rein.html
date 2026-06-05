@@ -35,6 +35,47 @@
 }
 </script>
 
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What's the difference between Rein and ThumbGate?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Both intercept an agent's action before it fires — that's the shared category. Rein is a generic in-process Python decorator aimed at production apps in regulated domains (trading, healthcare, legal), where each decision is high-stakes and policies are authored by hand. ThumbGate is the coding-agent specialist for Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode: it intercepts at the out-of-process PreToolUse hook boundary and learns from thumbs-down corrections, auto-promoting them into prevention rules that persist across sessions. Same pre-action thesis, different target user."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I use Rein and ThumbGate together?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. They don't conflict and they aren't direct alternatives. Rein governs a production application's agent at the decorated-function boundary; ThumbGate governs your engineering team's coding agents at the PreToolUse boundary. A team running both a regulated production agent and an AI coding workflow can use Rein for the first and ThumbGate for the second."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does ThumbGate require code changes like Rein's decorator?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Rein integrates as a Python decorator you wrap around each tool function. ThumbGate installs with npx thumbgate init, which auto-detects the agent and wires the PreToolUse hooks with zero workflow change. It runs out-of-process at the agent runtime boundary, so dangerous calls are caught before the agent's process even attempts them."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is ThumbGate open source like Rein?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ThumbGate's CLI and hook layer are MIT licensed — open-core, not viral — with commercial licensing for Pro and Team features. Rein's exact license should be confirmed at reinai.io before you make a distribution decision; a secondary source summarized it as AGPL, but we have not independently verified that, so check the primary source."
+      }
+    }
+  ]
+}
+</script>
+
 <link rel="stylesheet" href="/learn/learn.css">
 <style>
   .matrix { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.95rem; }
