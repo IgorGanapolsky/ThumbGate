@@ -1567,8 +1567,20 @@ function classifyEnterpriseChatTopic(prompt) {
 // today?" with an actual filtered list instead of a canned total.
 function parseChatIntent(prompt) {
   const lower = String(prompt || '').toLowerCase();
-  const wantsList = /\bwhat\b|\bwhich\b|\blist\b|\bshow\b|\bexamples?\b|\btell me about\b/.test(lower) ||
-    /list\s+(?:blocked?|prevented?|mistakes?)|show\s+(?:blocked?|prevented?|mistakes?)|recent\s+mistakes?|(?:what|which)\s+(?:actions?|mistakes?)?\s*(?:were|was|did|are|have|got|prevented|blocked)|(?:what|which)\s+(?:was|were|is|are|got|did)\s+(?:you\s+)?(?:blocked?|prevented?)/.test(lower);
+  const listIntentPatterns = [
+    /\bwhat\b/,
+    /\bwhich\b/,
+    /\blist\b/,
+    /\bshow\b/,
+    /\bexamples?\b/,
+    /\btell me about\b/,
+    /list\s+(?:blocked?|prevented?|mistakes?)/,
+    /show\s+(?:blocked?|prevented?|mistakes?)/,
+    /recent\s+mistakes?/,
+    /(?:what|which)\s+(?:actions?|mistakes?)?\s*(?:were|was|did|are|have|got|prevented|blocked)/,
+    /(?:what|which)\s+(?:was|were|is|are|got|did)\s+(?:you\s+)?(?:blocked?|prevented?)/,
+  ];
+  const wantsList = listIntentPatterns.some((pattern) => pattern.test(lower));
   let windowMs = null;
   let windowLabel = 'across all time';
   if (/\btoday\b/.test(lower)) { windowMs = 24 * 60 * 60 * 1000; windowLabel = 'today'; }
