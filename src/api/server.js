@@ -1579,7 +1579,7 @@ function buildEnterpriseChatSection(topic, dashboardData, status, feedbackDir, p
   const lessonPipeline = dashboardData.lessonPipeline || {};
 
   const lowerPrompt = String(prompt || '').toLowerCase();
-  const isListOrDetailQuery = /list\s+mistakes?|show\s+mistakes?|recent\s+mistakes?|what\s+mistakes?\s+(?:were|was|did|are|have)/.test(lowerPrompt);
+  const isListOrDetailQuery = /list\s+(?:blocked?|prevented?|mistakes?)|show\s+(?:blocked?|prevented?|mistakes?)|recent\s+mistakes?|(?:what|which)\s+(?:actions?|mistakes?)?\s*(?:were|was|did|are|have|got|prevented|blocked)|(?:what|which)\s+(?:was|were|is|are|got|did)\s+(?:you\s+)?(?:blocked?|prevented?)/.test(lowerPrompt);
 
   let negativeEntries = [];
   if (feedbackDir) {
@@ -2979,6 +2979,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/learn/codex-role-plugins-need-governance', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/agentic-os-team-governance', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/cost-aware-agent-gate-routing', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/pretix-stripe-connect-marketplaces', changefreq: 'weekly', priority: '0.9' },
     { path: '/compare/claude-code-hooks', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/bumblebee', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/anthropic-containment', changefreq: 'weekly', priority: '0.85' },
