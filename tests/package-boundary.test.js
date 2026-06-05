@@ -412,9 +412,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // discovery assets weigh ~4.08 MB unpacked, leaving a narrow safety margin.
   // Bumped 4.18 MB -> 4.25 MB (2026-06-03) for the parallel workflow orchestrator.
   // Bumped 4.25 MB -> 4.30 MB (2026-06-04) for local-first dashboard chat and scripts/upstream-contribution-engine.js.
+  // Bumped 4.30 MB -> 4.35 MB (2026-06-05) for buyer-intent comparison pages
+  // (/compare/cycode, /compare/claude-code-hooks-mastery) and the canonical
+  // /guides/claude-code-pretooluse-hook LLM-citation-targeted SEO content from
+  // the 2026-06-05 LLM-citability deep-research action plan. Measured combined
+  // queue bundle ~4.302 MB; bump restores a one-normal-PR headroom buffer.
   assert.ok(
-    manifest.unpackedSize <= 4_300_000,
-    `npm package should stay <= 4.30 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_350_000,
+    `npm package should stay <= 4.35 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
