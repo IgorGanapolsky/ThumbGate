@@ -3971,6 +3971,52 @@ test('dashboard chat gives DIFFERENT, intent-aware answers (list vs count), not 
   assert.doesNotMatch(countAns.answer, /^Active gates: \d+\. Blocked actions recorded/);
 });
 
+test('chat answerer unit: every branch returns grounded, distinct answers', () => {
+  const { buildEnterpriseChatAnswer } = __test__;
+  const status = { vertex: { configured: false }, dfcx: { liveAgentConfigured: false } };
+  const data = {
+    approval: { total: 10, positive: 6, negative: 4 },
+    gates: Array.from({ length: 37 }, (_, i) => ({ id: `g${i}` })),
+    gateStats: {
+      totalGates: 37, blocked: 8, warned: 5,
+      topBlocked: 'rm-rf-home-or-root', topBlockedCount: 5,
+      byGate: { 'rm-rf-home-or-root': { blocked: 5 }, 'force-push': { blocked: 3 } },
+    },
+    lessonPipeline: { lessons: 7 },
+    tokenSavings: { dollarsSavedDisplay: '$1.50', blockedCalls: 8 },
+    team: { totalAgents: 3, riskyAgents: 1 },
+  };
+
+  // gates LIST (populated) — lists the actual fired gates
+  const list = buildEnterpriseChatAnswer('what mistakes were blocked?', data, status);
+  assert.equal(list.topic, 'gates');
+  assert.match(list.answer, /blocked across 2 gate\(s\)/);
+  assert.match(list.answer, /Most-blocked: rm-rf-home-or-root \(5x\), force-push \(3x\)/);
+
+  // gates COUNT — configured vs fired vs blocked, distinct from the list answer
+  const count = buildEnterpriseChatAnswer('how many gates are configured?', data, status);
+  assert.match(count.answer, /37 gates are configured \(active and watching\); 2 have actually fired/);
+  assert.match(count.answer, /blocked 8 action\(s\) and warned on 5/);
+  assert.notEqual(list.answer, count.answer);
+
+  // gates LIST empty-state
+  const empty = buildEnterpriseChatAnswer('what was blocked?', { ...data, gateStats: { totalGates: 37, byGate: {} } }, status);
+  assert.match(empty.answer, /No actions have been blocked yet/);
+
+  // "today" -> honest cumulative scope note
+  assert.match(buildEnterpriseChatAnswer('what was blocked today?', data, status).answer, /cumulative for this install/);
+
+  // feedback
+  const fb = buildEnterpriseChatAnswer('how much feedback do we have?', data, status);
+  assert.equal(fb.topic, 'feedback');
+  assert.match(fb.answer, /Feedback total: 10 \(6 positive, 4 negative\)/);
+  assert.match(fb.answer, /7 lessons promoted/);
+
+  // cost + overview branches
+  assert.match(buildEnterpriseChatAnswer('what are our token savings?', data, status).answer, /token savings/i);
+  assert.match(buildEnterpriseChatAnswer('give me a general summary', data, status).answer, /Snapshot:/);
+});
+
 test('legacy enterprise Dialogflow routes remain compatibility aliases', async () => {
   const statusRes = await fetch(apiUrl('/v1/enterprise/dialogflow/status'), { headers: authHeader });
   assert.equal(statusRes.status, 200);

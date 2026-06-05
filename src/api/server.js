@@ -1567,6 +1567,32 @@ function compactNumber(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
+// "what was blocked" (list the fired gates) vs "how many" (configured vs fired
+// vs blocked) — kept as its own helper so the section dispatcher stays flat.
+function buildGatesChatSection({ wantsList, blockedGates, configuredGates, totalBlocked, totalWarned, gateStats, scopeNote }) {
+  if (wantsList) {
+    if (blockedGates.length === 0) {
+      return {
+        lines: [`No actions have been blocked yet${scopeNote} — ${configuredGates} gates are configured and watching.`],
+        sources: ['gate stats'],
+      };
+    }
+    const top = blockedGates.slice(0, 6).map((g) => `${g.id} (${g.blocked}x)`).join(', ');
+    return {
+      lines: [`${totalBlocked} action(s) blocked across ${blockedGates.length} gate(s)${scopeNote}. Most-blocked: ${top}.`],
+      sources: ['gate stats (per-gate breakdown)'],
+    };
+  }
+  const lines = [
+    `${configuredGates} gates are configured (active and watching); ${blockedGates.length} have actually fired.`,
+    `They've blocked ${totalBlocked} action(s) and warned on ${totalWarned}${scopeNote}.`,
+  ];
+  if (gateStats.topBlocked) {
+    lines.push(`Most-blocked: ${gateStats.topBlocked} (${compactNumber(gateStats.topBlockedCount)}x).`);
+  }
+  return { lines, sources: ['gate stats'] };
+}
+
 function buildEnterpriseChatSection(topic, dashboardData, status, prompt = '') {
   const approval = dashboardData.approval || {};
   const gates = Array.isArray(dashboardData.gates) ? dashboardData.gates : [];
@@ -1607,29 +1633,7 @@ function buildEnterpriseChatSection(topic, dashboardData, status, prompt = '') {
     };
   }
   if (topic === 'gates') {
-    // "what / which mistakes were blocked" -> list the actual gates that fired.
-    if (wantsList) {
-      if (blockedGates.length === 0) {
-        return {
-          lines: [`No actions have been blocked yet${scopeNote} — ${configuredGates} gates are configured and watching.`],
-          sources: ['gate stats'],
-        };
-      }
-      const top = blockedGates.slice(0, 6).map((g) => `${g.id} (${g.blocked}x)`).join(', ');
-      return {
-        lines: [`${totalBlocked} action(s) blocked across ${blockedGates.length} gate(s)${scopeNote}. Most-blocked: ${top}.`],
-        sources: ['gate stats (per-gate breakdown)'],
-      };
-    }
-    // "how many" -> distinguish configured vs actually-fired vs actions blocked.
-    return {
-      lines: [
-        `${configuredGates} gates are configured (active and watching); ${blockedGates.length} have actually fired.`,
-        `They've blocked ${totalBlocked} action(s) and warned on ${totalWarned}${scopeNote}.`,
-        gateStats.topBlocked ? `Most-blocked: ${gateStats.topBlocked} (${compactNumber(gateStats.topBlockedCount)}x).` : '',
-      ].filter(Boolean),
-      sources: ['gate stats'],
-    };
+    return buildGatesChatSection({ wantsList, blockedGates, configuredGates, totalBlocked, totalWarned, gateStats, scopeNote });
   }
   if (topic === 'team') {
     return {
@@ -8943,6 +8947,9 @@ module.exports = {
   createApiServer,
   startServer,
   __test__: {
+    buildEnterpriseChatAnswer,
+    buildEnterpriseChatSection,
+    classifyEnterpriseChatTopic,
     buildCheckoutFallbackUrl,
     createPrivateCoreUnavailableError,
     buildPosthogProxyRequestOptions,
