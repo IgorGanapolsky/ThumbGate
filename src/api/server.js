@@ -1550,12 +1550,58 @@ function normalizeEnterpriseChatPrompt(value) {
 
 function classifyEnterpriseChatTopic(prompt) {
   const lower = String(prompt || '').toLowerCase();
-  if (/gate|block|deny|prevent|guard/.test(lower)) return 'gates';
-  if (/lesson|memory|feedback|thumb|mistake|negative|positive/.test(lower)) return 'feedback';
+  // Feedback-specific words run FIRST: "what mistakes were blocked today" is a
+  // feedback question, not a gates question — must not be hijacked by /block/.
+  if (/mistake|lesson|memory|feedback|thumb|negative|positive|what (?:went )?wrong|fail|win|success|worked|good/.test(lower)) return 'feedback';
+  if (/gate|block|deny|prevent|guard|enforce/.test(lower)) return 'gates';
   if (/team|agent|org|enterprise|rollout/.test(lower)) return 'team';
   if (/token|cost|saving|budget|spend/.test(lower)) return 'cost';
   if (/vertex|gcp|google|dialogflow|dfcx|cloud/.test(lower)) return 'cloud';
   return 'overview';
+}
+
+// Parse intent: LIST vs COUNT, and time window. Lets us answer "what mistakes
+// today?" with an actual filtered list instead of a canned total.
+function parseChatIntent(prompt) {
+  const lower = String(prompt || '').toLowerCase();
+  const wantsList = /\bwhat\b|\bwhich\b|\blist\b|\bshow me\b|\bexamples?\b|\btell me about\b/.test(lower);
+  let windowMs = null;
+  let windowLabel = 'across all time';
+  if (/\btoday\b/.test(lower)) { windowMs = 24 * 60 * 60 * 1000; windowLabel = 'today'; }
+  else if (/\byesterday\b/.test(lower)) { windowMs = 48 * 60 * 60 * 1000; windowLabel = 'yesterday'; }
+  else if (/\bthis week\b|\b7 ?d(ay)?s?\b|\blast week\b/.test(lower)) { windowMs = 7 * 24 * 60 * 60 * 1000; windowLabel = 'the last 7 days'; }
+  else if (/\bthis month\b|\b30 ?d(ay)?s?\b|\blast month\b/.test(lower)) { windowMs = 30 * 24 * 60 * 60 * 1000; windowLabel = 'the last 30 days'; }
+  return { wantsList, windowMs, windowLabel };
+}
+
+// Read recent feedback entries (signal-filtered, time-filtered) directly from
+// the feedback log. Bounded + best-effort — never throws into the chat handler.
+function readRecentFeedbackEntries(feedbackDir, signal, windowMs, limit = 5) {
+  try {
+    if (!feedbackDir) return [];
+    const fsLocal = require('node:fs');
+    const pathLocal = require('node:path');
+    const logPath = pathLocal.join(feedbackDir, 'feedback-log.jsonl');
+    if (!fsLocal.existsSync(logPath)) return [];
+    const { readJsonl } = require('../../scripts/fs-utils');
+    const rows = readJsonl(logPath) || [];
+    const cutoff = windowMs ? Date.now() - windowMs : 0;
+    return rows
+      .filter((r) => !signal || r.signal === signal)
+      .filter((r) => {
+        if (!cutoff) return true;
+        const t = r.timestamp ? Date.parse(r.timestamp) : NaN;
+        return Number.isFinite(t) && t >= cutoff;
+      })
+      .reverse()
+      .slice(0, limit)
+      .map((r) => ({
+        timestamp: r.timestamp,
+        context: String(r.context || r.whatWentWrong || r.whatWorked || '').slice(0, 200),
+      }));
+  } catch (_) {
+    return [];
+  }
 }
 
 function containsUnsafeEnterpriseChatInput(prompt) {
@@ -1567,32 +1613,82 @@ function compactNumber(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
-function buildEnterpriseChatSection(topic, dashboardData, status) {
+function buildEnterpriseChatSection(topic, dashboardData, status, ctx = {}) {
   const approval = dashboardData.approval || {};
   const gates = Array.isArray(dashboardData.gates) ? dashboardData.gates : [];
   const gateStats = dashboardData.gateStats || {};
   const team = dashboardData.team || {};
   const tokenSavings = dashboardData.tokenSavings || {};
   const lessonPipeline = dashboardData.lessonPipeline || {};
+  const intent = ctx.intent || { wantsList: false, windowMs: null, windowLabel: 'across all time' };
+  const feedbackDir = ctx.feedbackDir || null;
 
   if (topic === 'feedback') {
-    return {
-      lines: [
-        `Feedback total: ${compactNumber(approval.total)} (${compactNumber(approval.positive)} positive, ${compactNumber(approval.negative)} negative).`,
-        `Lesson pipeline: ${compactNumber(lessonPipeline.lessons || lessonPipeline.generated || 0)} lessons visible in the current dashboard snapshot.`,
-      ],
-      sources: ['feedback log', 'lesson pipeline'],
-    };
+    // Detect signal preference from the original prompt.
+    const lower = String(ctx.prompt || '').toLowerCase();
+    const wantsNegative = /mistake|wrong|fail|negative|thumbs? *down|block/.test(lower);
+    const wantsPositive = /positive|thumbs? *up|worked|success|wins?\b|good/.test(lower);
+    const signal = wantsNegative && !wantsPositive ? 'negative'
+      : wantsPositive && !wantsNegative ? 'positive'
+      : null;
+    const entries = readRecentFeedbackEntries(feedbackDir, signal, intent.windowMs, 5);
+
+    // Per-window counts so "how many today" can answer with a real today number.
+    const windowAll = readRecentFeedbackEntries(feedbackDir, null, intent.windowMs, 10000);
+    const windowNeg = windowAll.filter(() => true).length === 0 ? 0
+      : readRecentFeedbackEntries(feedbackDir, 'negative', intent.windowMs, 10000).length;
+    const windowPos = windowAll.length === 0 ? 0
+      : readRecentFeedbackEntries(feedbackDir, 'positive', intent.windowMs, 10000).length;
+
+    const lines = [];
+    if (intent.windowMs) {
+      lines.push(`Feedback ${intent.windowLabel}: ${windowAll.length} (${windowPos} positive, ${windowNeg} negative).`);
+    } else {
+      lines.push(`Feedback total: ${compactNumber(approval.total)} (${compactNumber(approval.positive)} positive, ${compactNumber(approval.negative)} negative).`);
+    }
+    if (intent.wantsList && entries.length) {
+      const label = signal === 'negative' ? 'Recent mistakes'
+        : signal === 'positive' ? 'Recent wins'
+        : 'Recent feedback';
+      lines.push(`${label} (${intent.windowLabel}):`);
+      for (const e of entries) {
+        const date = (e.timestamp || '').slice(0, 10);
+        lines.push(`  • ${date} — ${e.context}`);
+      }
+    } else if (intent.wantsList) {
+      lines.push(`No ${signal || 'feedback'} entries found ${intent.windowLabel}.`);
+    } else {
+      lines.push(`Lesson pipeline: ${compactNumber(lessonPipeline.lessons || lessonPipeline.generated || 0)} lessons visible in the current dashboard snapshot.`);
+    }
+    return { lines, sources: ['feedback log', intent.wantsList ? 'feedback contexts' : 'lesson pipeline'] };
   }
   if (topic === 'gates') {
-    return {
-      lines: [
-        `Active gates: ${gates.length || compactNumber(gateStats.totalGates)}.`,
-        `Blocked actions recorded: ${compactNumber(gateStats.blocked || gateStats.denied || gateStats.totalBlocked)}.`,
-        gates[0] ? `Example gate: ${gates[0].name || gates[0].id || 'unnamed gate'}.` : '',
-      ].filter(Boolean),
-      sources: ['gate stats'],
-    };
+    const lower = String(ctx.prompt || '').toLowerCase();
+    // Distinguish "active" (currently defined) from "activated/fired/blocked" (events).
+    const asksEvents = /activat|fired|trigger|block|denied|prevent|enforce|hit/.test(lower);
+    const totalActive = gates.length || compactNumber(gateStats.totalGates);
+    const totalBlocked = compactNumber(gateStats.blocked || gateStats.denied || gateStats.totalBlocked);
+
+    const lines = [];
+    if (asksEvents) {
+      // Time-filtered block events would need a gate-events log; surface the
+      // total honestly and note the all-time scope rather than fake a "today".
+      lines.push(`Blocked actions recorded (all time): ${totalBlocked}.`);
+      if (intent.windowMs) {
+        lines.push(`(Per-${intent.windowLabel} block-event breakdown isn't tracked in the local dashboard snapshot — only the running total. Filter the gate-events log directly for a precise window.)`);
+      }
+    } else {
+      lines.push(`Active gates: ${totalActive}.`);
+    }
+    if (intent.wantsList && gates.length) {
+      lines.push('Active gates:');
+      for (const g of gates.slice(0, 8)) {
+        lines.push(`  • ${g.name || g.id || 'unnamed'}${g.severity ? ' [' + g.severity + ']' : ''}`);
+      }
+    } else if (gates[0] && !intent.wantsList) {
+      lines.push(`Example gate: ${gates[0].name || gates[0].id || 'unnamed gate'}.`);
+    }
+    return { lines, sources: ['gate stats'] };
   }
   if (topic === 'team') {
     return {
@@ -1633,13 +1729,22 @@ function buildEnterpriseChatSection(topic, dashboardData, status) {
   };
 }
 
-function buildEnterpriseChatAnswer(prompt, dashboardData, status) {
+function buildEnterpriseChatAnswer(prompt, dashboardData, status, opts = {}) {
   const topic = classifyEnterpriseChatTopic(prompt);
-  const section = buildEnterpriseChatSection(topic, dashboardData, status);
+  const intent = parseChatIntent(prompt);
+  const section = buildEnterpriseChatSection(topic, dashboardData, status, {
+    intent,
+    feedbackDir: opts.feedbackDir,
+    prompt,
+  });
+
+  // List-style answers want newlines; single-line answers join with space.
+  const hasList = section.lines.some((l) => /^\s*•/.test(l));
+  const answer = hasList ? section.lines.join('\n') : section.lines.join(' ');
 
   return {
     topic,
-    answer: section.lines.join(' '),
+    answer,
     sources: ['local dashboard data', ...section.sources],
   };
 }
@@ -1655,6 +1760,7 @@ async function trySendLocalDashboardChat(res, parsed, feedbackDir, prompt, suffi
       prompt,
       dashboardResult.data,
       buildEnterpriseDataChatStatus(),
+      { feedbackDir },
     );
     sendJson(res, 200, {
       ok: true,
@@ -1702,7 +1808,7 @@ async function answerEnterpriseDataChat({ prompt, feedbackDir, parsed }) {
   // The dashboard's real local/open-source chatbot turn goes through /v1/chat,
   // which uses lesson retrieval + optional LanceDB vector search + the user's
   // configured local or BYO model.
-  const chat = buildEnterpriseChatAnswer(normalizedPrompt, dashboardData, status);
+  const chat = buildEnterpriseChatAnswer(normalizedPrompt, dashboardData, status, { feedbackDir });
   const dfcxRequest = {
     fulfillmentInfo: { tag: 'chat-with-data' },
     sessionInfo: {
