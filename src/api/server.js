@@ -1576,7 +1576,7 @@ function parseChatIntent(prompt) {
 
 // Read recent feedback entries (signal-filtered, time-filtered) directly from
 // the feedback log. Bounded + best-effort — never throws into the chat handler.
-function readRecentFeedbackEntries(feedbackDir, signal, windowMs, limit = 5) {
+function readRecentFeedbackEntries(feedbackDir, signal, windowMs, limit = 5, opts = {}) {
   try {
     if (!feedbackDir) return [];
     const fsLocal = require('node:fs');
@@ -1595,10 +1595,14 @@ function readRecentFeedbackEntries(feedbackDir, signal, windowMs, limit = 5) {
       })
       .reverse()
       .slice(0, limit)
-      .map((r) => ({
-        timestamp: r.timestamp,
-        context: String(r.context || r.whatWentWrong || r.whatWorked || '').slice(0, 200),
-      }));
+      .map((r) => {
+        const out = {
+          timestamp: r.timestamp,
+          context: String(r.context || r.whatWentWrong || r.whatWorked || '').slice(0, 200),
+        };
+        if (opts.includeSignal) out.signal = r.signal;
+        return out;
+      });
   } catch (_) {
     return [];
   }
@@ -1613,6 +1617,50 @@ function compactNumber(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
+// Pick a signal preference from the prompt. Returns 'negative' | 'positive' | null.
+function detectFeedbackSignalFromPrompt(prompt) {
+  const lower = String(prompt || '').toLowerCase();
+  const wantsNeg = /mistake|wrong|fail|negative|thumbs? *down|block/.test(lower);
+  const wantsPos = /positive|thumbs? *up|worked|success|wins?\b|good/.test(lower);
+  if (wantsNeg && !wantsPos) return 'negative';
+  if (wantsPos && !wantsNeg) return 'positive';
+  return null;
+}
+
+const FEEDBACK_LIST_LABELS = Object.freeze({
+  negative: 'Recent mistakes',
+  positive: 'Recent wins',
+});
+
+function buildFeedbackSection({ ctx, intent, feedbackDir, approval, lessonPipeline }) {
+  const signal = detectFeedbackSignalFromPrompt(ctx.prompt);
+
+  // One read of the time-windowed log, then in-memory counts + (optional) signal-filtered list.
+  const windowed = readRecentFeedbackEntries(feedbackDir, null, intent.windowMs, 10000, { includeSignal: true });
+  const windowPos = windowed.filter((r) => r.signal === 'positive').length;
+  const windowNeg = windowed.filter((r) => r.signal === 'negative').length;
+  const entries = (signal ? windowed.filter((r) => r.signal === signal) : windowed).slice(0, 5);
+
+  const lines = [];
+  lines.push(intent.windowMs
+    ? `Feedback ${intent.windowLabel}: ${windowed.length} (${windowPos} positive, ${windowNeg} negative).`
+    : `Feedback total: ${compactNumber(approval.total)} (${compactNumber(approval.positive)} positive, ${compactNumber(approval.negative)} negative).`);
+
+  if (intent.wantsList) {
+    if (entries.length) {
+      lines.push(`${FEEDBACK_LIST_LABELS[signal] || 'Recent feedback'} (${intent.windowLabel}):`);
+      for (const e of entries) {
+        lines.push(`  • ${(e.timestamp || '').slice(0, 10)} — ${e.context}`);
+      }
+    } else {
+      lines.push(`No ${signal || 'feedback'} entries found ${intent.windowLabel}.`);
+    }
+  } else {
+    lines.push(`Lesson pipeline: ${compactNumber(lessonPipeline.lessons || lessonPipeline.generated || 0)} lessons visible in the current dashboard snapshot.`);
+  }
+  return { lines, sources: ['feedback log', intent.wantsList ? 'feedback contexts' : 'lesson pipeline'] };
+}
+
 function buildEnterpriseChatSection(topic, dashboardData, status, ctx = {}) {
   const approval = dashboardData.approval || {};
   const gates = Array.isArray(dashboardData.gates) ? dashboardData.gates : [];
@@ -1624,43 +1672,7 @@ function buildEnterpriseChatSection(topic, dashboardData, status, ctx = {}) {
   const feedbackDir = ctx.feedbackDir || null;
 
   if (topic === 'feedback') {
-    // Detect signal preference from the original prompt.
-    const lower = String(ctx.prompt || '').toLowerCase();
-    const wantsNegative = /mistake|wrong|fail|negative|thumbs? *down|block/.test(lower);
-    const wantsPositive = /positive|thumbs? *up|worked|success|wins?\b|good/.test(lower);
-    const signal = wantsNegative && !wantsPositive ? 'negative'
-      : wantsPositive && !wantsNegative ? 'positive'
-      : null;
-    const entries = readRecentFeedbackEntries(feedbackDir, signal, intent.windowMs, 5);
-
-    // Per-window counts so "how many today" can answer with a real today number.
-    const windowAll = readRecentFeedbackEntries(feedbackDir, null, intent.windowMs, 10000);
-    const windowNeg = windowAll.filter(() => true).length === 0 ? 0
-      : readRecentFeedbackEntries(feedbackDir, 'negative', intent.windowMs, 10000).length;
-    const windowPos = windowAll.length === 0 ? 0
-      : readRecentFeedbackEntries(feedbackDir, 'positive', intent.windowMs, 10000).length;
-
-    const lines = [];
-    if (intent.windowMs) {
-      lines.push(`Feedback ${intent.windowLabel}: ${windowAll.length} (${windowPos} positive, ${windowNeg} negative).`);
-    } else {
-      lines.push(`Feedback total: ${compactNumber(approval.total)} (${compactNumber(approval.positive)} positive, ${compactNumber(approval.negative)} negative).`);
-    }
-    if (intent.wantsList && entries.length) {
-      const label = signal === 'negative' ? 'Recent mistakes'
-        : signal === 'positive' ? 'Recent wins'
-        : 'Recent feedback';
-      lines.push(`${label} (${intent.windowLabel}):`);
-      for (const e of entries) {
-        const date = (e.timestamp || '').slice(0, 10);
-        lines.push(`  • ${date} — ${e.context}`);
-      }
-    } else if (intent.wantsList) {
-      lines.push(`No ${signal || 'feedback'} entries found ${intent.windowLabel}.`);
-    } else {
-      lines.push(`Lesson pipeline: ${compactNumber(lessonPipeline.lessons || lessonPipeline.generated || 0)} lessons visible in the current dashboard snapshot.`);
-    }
-    return { lines, sources: ['feedback log', intent.wantsList ? 'feedback contexts' : 'lesson pipeline'] };
+    return buildFeedbackSection({ ctx, intent, feedbackDir, approval, lessonPipeline });
   }
   if (topic === 'gates') {
     const lower = String(ctx.prompt || '').toLowerCase();
