@@ -783,3 +783,39 @@ test('GET /docs/connectors/ (trailing slash) also resolves', async () => {
   const res = await fetch(`${origin}/docs/connectors/`);
   assert.equal(res.status, 200);
 });
+
+// Regression guard: every hand-written comparison page must appear in the sitemap.
+// Root cause this prevents: compare pages were enumerated in a hand-maintained list,
+// so new public/compare/*.html files silently fell out of /sitemap.xml and became
+// undiscoverable by crawlers and AI answer engines (Google AI Overviews/AI Mode,
+// ChatGPT, Perplexity) on their buyer-intent queries. renderSitemapXml now derives
+// these from the filesystem; this test pins that contract so it can't drift again.
+test('GET /sitemap.xml lists every public/compare/*.html page', async () => {
+  const comparePages = fs
+    .readdirSync(path.join(publicDir, 'compare'))
+    .filter((file) => file.endsWith('.html'))
+    .map((file) => `/compare/${file.replace(/\.html$/, '')}`);
+
+  assert.ok(comparePages.length >= 13, `expected the full compare catalog, got ${comparePages.length}`);
+
+  const res = await fetch(`${origin}/sitemap.xml`);
+  assert.equal(res.status, 200);
+  const xml = await res.text();
+
+  const missing = comparePages.filter(
+    (p) => !new RegExp(`<loc>[^<]*${p.replace(/[/-]/g, (c) => `\\${c}`)}</loc>`).test(xml),
+  );
+  assert.deepEqual(missing, [], `comparison pages missing from sitemap: ${missing.join(', ')}`);
+});
+
+// GEO: comparison and high-intent landing pages carry FAQPage structured data so they
+// are eligible to be pulled into AI Overviews / AI Mode on their category queries.
+test('comparison and key landing pages expose FAQPage structured data', async () => {
+  for (const pagePath of ['/compare/rein', '/agent-manager']) {
+    const res = await fetch(`${origin}${pagePath}`);
+    assert.equal(res.status, 200, `${pagePath} must serve`);
+    const body = await res.text();
+    assert.match(body, /"@type":\s*"FAQPage"/, `${pagePath} must declare FAQPage schema`);
+    assert.match(body, /"@type":\s*"Question"/, `${pagePath} must include at least one Question`);
+  }
+});

@@ -28,6 +28,46 @@
   ]
 }
 </script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is the Agent Manager role?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Anthropic named it: the Agent Manager is a hybrid PM/engineer single DRI who owns the Claude Code configuration every developer in the org actually feels — the CLAUDE.md hierarchy, the plugin marketplace, the permissions policy, and which skills ship — and is responsible for keeping them current. Without that role, enterprise Claude Code rollouts stall in phase two; with it, the model improving is no longer the bottleneck."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does ThumbGate help the Agent Manager?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ThumbGate is the pre-action enforcement layer underneath what the role owns. It runs PreToolUse hooks at the tool-call boundary, auto-distills prevention rules from real thumbs-down feedback and writes them into CLAUDE.md, provides an org-wide rule library and hosted dashboard, and keeps an adapter matrix current as Claude Code, Cursor, and Codex change — so the role does not have to be the operator themselves. Each block carries the rule that fired and the evidence that triggered it, so the agent can choose a safer plan."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is ThumbGate free for the Agent Manager to start?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. npx thumbgate init in one repo is free and MIT licensed, and the gates work locally without a hosted account. The paid tier adds the hosted dashboard, the org-wide rule library, DPO/HuggingFace export, and 24x7 ops on the adapter matrix — the operational work the role would otherwise have to do itself."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which AI coding agents does ThumbGate cover for an enterprise rollout?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode. One install wires every supported agent, and each adapter is version-pinned and CI-checked against the upstream runtime, so a breaking change to a hook or plugin API does not stall the rollout for a quarter."
+      }
+    }
+  ]
+}
+</script>
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
   :root { --bg:#0a0a0b; --card:#161618; --border:#222225; --text:#e8e8ec; --muted:#8b8b94; --cyan:#22d3ee; }
