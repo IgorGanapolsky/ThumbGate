@@ -139,6 +139,10 @@ const IS_TEST = !!(
   process.env.NODE_ENV === 'test'
 );
 
+function allowUnsignedStripeWebhooks() {
+  return IS_TEST && process.env.THUMBGATE_ALLOW_UNSIGNED_STRIPE_WEBHOOKS === '1';
+}
+
 function shouldMergeLegacyBillingData() {
   return process.env._TEST_INCLUDE_LEGACY_BILLING_DATA === '1'
     || process.env.THUMBGATE_INCLUDE_LEGACY_BILLING_DATA === '1';
@@ -2901,7 +2905,7 @@ function disableCustomerKeys(customerId) {
 }
 
 function verifyWebhookSignature(rawBody, signature) {
-  if (!CONFIG.STRIPE_WEBHOOK_SECRET) return true;
+  if (!CONFIG.STRIPE_WEBHOOK_SECRET) return allowUnsignedStripeWebhooks();
   if (!signature || !rawBody) return false;
 
   // Stripe signature format: t=<timestamp>,v1=<hmac>,...
@@ -2931,6 +2935,13 @@ function verifyWebhookSignature(rawBody, signature) {
 
 async function handleWebhook(rawBody, signature) {
   if (LOCAL_MODE()) return { handled: false, reason: 'local_mode' };
+  if (!CONFIG.STRIPE_WEBHOOK_SECRET && !allowUnsignedStripeWebhooks()) {
+    return {
+      handled: false,
+      reason: 'invalid_signature',
+      error: 'STRIPE_WEBHOOK_SECRET is required before Stripe webhooks can be processed.',
+    };
+  }
   let event;
   try {
     if (CONFIG.STRIPE_WEBHOOK_SECRET) {

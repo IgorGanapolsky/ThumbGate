@@ -3934,23 +3934,31 @@ test('dashboard /v1/chat answers data questions LOCALLY with no cloud/LLM/API ke
   for (const name of keyEnvNames) delete process.env[name];
 
   try {
-    for (const question of [
-      'how many mistakes were blocked today?',
-      'how many mistakes were prevented today?',
-    ]) {
-      const res = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(tmpFeedbackDir)}`), {
-        method: 'POST',
-        headers: { ...authHeader, 'x-thumbgate-project-dir': tmpFeedbackDir },
-        body: JSON.stringify({ question }),
-      });
-      assert.equal(res.status, 200);
-      const body = await res.json();
-      assert.equal(body.ok, true);
-      assert.equal(body.provider, 'local-data', `${question} must be answered locally, not via cloud`);
-      assert.equal(body.llm, 'none', 'no LLM should be invoked for a metric question');
-      assert.equal(body.topic, 'gates');
-      assert.match(body.answer, /gates|blocked/i);
-    }
+    // Factual question → deterministic local answer from this install's own data.
+    const res = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(tmpFeedbackDir)}`), {
+      method: 'POST',
+      headers: { ...authHeader, 'x-thumbgate-project-dir': tmpFeedbackDir },
+      body: JSON.stringify({ question: 'how many mistakes were blocked today?' }),
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.ok, true);
+    assert.equal(body.provider, 'local-data', 'data questions must be answered locally, not via cloud');
+    assert.equal(body.llm, 'none', 'no LLM should be invoked for a metric question');
+    assert.equal(body.topic, 'feedback');
+    assert.match(body.answer, /feedback|mistake|negative|positive/i);
+
+    // Intent-aware: a GATES question must reach the gates topic with a clean count.
+    const gatesQ = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(tmpFeedbackDir)}`), {
+      method: 'POST',
+      headers: { ...authHeader, 'x-thumbgate-project-dir': tmpFeedbackDir },
+      body: JSON.stringify({ question: 'how many gates are active?' }),
+    });
+    const gatesBody = await gatesQ.json();
+    assert.equal(gatesBody.ok, true);
+    assert.equal(gatesBody.provider, 'local-data');
+    assert.equal(gatesBody.topic, 'gates');
+    assert.match(gatesBody.answer, /active gates/i);
 
     // Open-ended question with no model configured must STILL return a local
     // answer, never a hard "no_api_key" failure and never a forced cloud call.
@@ -3970,6 +3978,39 @@ test('dashboard /v1/chat answers data questions LOCALLY with no cloud/LLM/API ke
       else process.env[name] = value;
     }
   }
+});
+
+test('dashboard /v1/chat is intent-aware: "what" returns a LIST, "how many" returns a COUNT', async () => {
+  // Seed two negative entries dated today so the time filter has something to find.
+  const today = new Date().toISOString();
+  fs.appendFileSync(path.join(tmpFeedbackDir, 'feedback-log.jsonl'), [
+    JSON.stringify({ id: 'iaw_n1', signal: 'negative', context: 'Agent ran an unsafe migration', timestamp: today }),
+    JSON.stringify({ id: 'iaw_n2', signal: 'negative', context: 'Hallucinated a deprecated API call', timestamp: today }),
+    '',
+  ].join('\n'));
+
+  const listRes = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(tmpFeedbackDir)}`), {
+    method: 'POST',
+    headers: { ...authHeader, 'x-thumbgate-project-dir': tmpFeedbackDir },
+    body: JSON.stringify({ question: 'what mistakes were blocked today?' }),
+  });
+  const listBody = await listRes.json();
+  assert.equal(listBody.ok, true);
+  assert.equal(listBody.topic, 'feedback');
+  // "what" → enumerated list, not the canned count line.
+  assert.match(listBody.answer, /recent mistakes/i);
+  assert.match(listBody.answer, /•/);
+
+  const countRes = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(tmpFeedbackDir)}`), {
+    method: 'POST',
+    headers: { ...authHeader, 'x-thumbgate-project-dir': tmpFeedbackDir },
+    body: JSON.stringify({ question: 'how many mistakes today?' }),
+  });
+  const countBody = await countRes.json();
+  assert.equal(countBody.ok, true);
+  assert.equal(countBody.topic, 'feedback');
+  // "how many" → count line, NOT the recent-mistakes list.
+  assert.doesNotMatch(countBody.answer, /recent mistakes/i);
 });
 
 test('legacy enterprise Dialogflow routes remain compatibility aliases', async () => {
