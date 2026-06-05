@@ -56,6 +56,90 @@ const {
 
 const AUDIT_TRAIL_TAG = 'audit-trail';
 
+/**
+ * Anonymous fire-and-forget CLI feedback telemetry.
+ *
+ * Pings the hosted /v1/telemetry/ping endpoint exactly once per successful
+ * local feedback capture so the dashboard can measure CLI-side lesson volume.
+ *
+ * Hard contract (do NOT widen without explicit approval):
+ *   - ONE event type: `feedback_captured`
+ *   - Payload: { installId, signal: 'up'|'down', tier, ts } only.
+ *     No context strings, tags, file paths, or content of any kind.
+ *   - Opt-out: THUMBGATE_DISABLE_TELEMETRY=1 (or 'true') short-circuits
+ *     immediately. Legacy THUMBGATE_NO_TELEMETRY=1 / DO_NOT_TRACK=1 are
+ *     also honored for parity with cli-telemetry.js.
+ *   - Fire-and-forget: NEVER await this call. Errors are swallowed.
+ *   - 2-second timeout via AbortSignal.timeout.
+ */
+function emitAnonymousFeedbackPing(signal) {
+  try {
+    const env = process.env || {};
+    if (
+      env.THUMBGATE_DISABLE_TELEMETRY === '1' ||
+      env.THUMBGATE_DISABLE_TELEMETRY === 'true' ||
+      env.THUMBGATE_NO_TELEMETRY === '1' ||
+      env.DO_NOT_TRACK === '1'
+    ) {
+      return;
+    }
+
+    const normalizedSignal = signal === 'positive' ? 'up' : signal === 'negative' ? 'down' : null;
+    if (!normalizedSignal) return;
+
+    // Reuse the canonical installId from cli-telemetry.js (persisted at
+    // ~/.thumbgate/install-id). Falls back to a fresh UUID if that module
+    // is unavailable — better to ship an event we can dedup on the server
+    // than to drop the ping entirely.
+    let installId = null;
+    try {
+      const { getInstallId } = require('./cli-telemetry');
+      installId = getInstallId();
+    } catch (_) { /* fall through */ }
+    if (!installId) {
+      try {
+        installId = require('crypto').randomUUID();
+      } catch (_) {
+        return; // no crypto, no install id → drop silently
+      }
+    }
+
+    let tier = 'free';
+    try {
+      const { getStatuslineMeta } = require('./statusline-meta');
+      const meta = getStatuslineMeta({ env });
+      const rawTier = String(meta && meta.tier ? meta.tier : 'free').toLowerCase();
+      if (rawTier === 'pro' || rawTier === 'enterprise' || rawTier === 'free') {
+        tier = rawTier;
+      }
+    } catch (_) { /* default to 'free' */ }
+
+    const base = env.THUMBGATE_PUBLIC_APP_ORIGIN
+      || env.THUMBGATE_API_URL
+      || 'https://thumbgate-production.up.railway.app';
+
+    const body = JSON.stringify({
+      eventType: 'feedback_captured',
+      clientType: 'cli',
+      installId,
+      signal: normalizedSignal,
+      tier,
+      ts: new Date().toISOString(),
+    });
+
+    // Fire-and-forget. No await. AbortSignal.timeout enforces the 2s cap.
+    if (typeof fetch !== 'function' || typeof AbortSignal === 'undefined' || typeof AbortSignal.timeout !== 'function') {
+      return;
+    }
+    fetch(`${base.replace(/\/+$/, '')}/v1/telemetry/ping`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      signal: AbortSignal.timeout(2000),
+    }).catch(() => { /* fire-and-forget */ });
+  } catch (_) { /* telemetry must never disrupt CLI */ }
+}
+
 function isAuditTrailEntry(entry = {}) {
   return Array.isArray(entry.tags) && entry.tags.includes(AUDIT_TRAIL_TAG);
 }
@@ -1113,6 +1197,7 @@ function captureFeedback(params) {
     summary.lastUpdated = now;
     saveSummary(summary);
     appendJSONL(FEEDBACK_LOG_PATH, feedbackEvent);
+    emitAnonymousFeedbackPing(signal);
     try { appendRejectionLedger(feedbackEvent, action.reason); } catch { /* non-critical */ }
     try {
       appendSequence(historyEntries, feedbackEvent, getFeedbackPaths(), { accepted: false });
@@ -1154,6 +1239,7 @@ function captureFeedback(params) {
       ...feedbackEvent,
       validationIssues: prepared.issues,
     });
+    emitAnonymousFeedbackPing(signal);
     try { appendRejectionLedger(feedbackEvent, `Schema validation failed: ${prepared.issues.join('; ')}`); } catch { /* non-critical */ }
     try {
       appendSequence(historyEntries, feedbackEvent, getFeedbackPaths(), { accepted: false });
@@ -1228,6 +1314,7 @@ function captureFeedback(params) {
   }
 
   appendJSONL(FEEDBACK_LOG_PATH, feedbackEvent);
+  emitAnonymousFeedbackPing(signal);
 
   // Synthesis: merge similar lessons instead of creating duplicates
   let synthesisResult = null;

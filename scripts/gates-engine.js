@@ -1463,7 +1463,42 @@ function checkWhenClause(when, constraints) {
 }
 
 function matchGate(gate, toolName, toolInput = {}) {
-  const matchText = toolInput.command || toolInput.file_path || toolInput.path || '';
+  let matchText = toolInput.command || toolInput.file_path || toolInput.path || '';
+
+  // Claw/hybrid support: enrich matchText with claw metadata (for EnterpriseClaw/OpenShell/Perplexity hybrid agents)
+  const clawCtx = toolInput.clawContext || toolInput._claw || (toolInput.agentId ? {
+    actionType: toolInput.actionType || 'unknown',
+    agentId: toolInput.agentId || 'unknown',
+    hybridRoute: toolInput.hybridRoute || 'unknown',
+    screenInteraction: !!toolInput.screenInteraction,
+    fileAccess: !!toolInput.fileAccess,
+  } : null);
+
+  if (clawCtx) {
+    const actionType = clawCtx.actionType || clawCtx.claw_action_type || 'unknown';
+    const parts = [
+      matchText,
+      `claw_style: true`,
+      `agent_identity: ${clawCtx.agentId || 'unknown'}`,
+      `claw_action_type: ${actionType}`,
+      `hybrid_route: ${clawCtx.hybridRoute || 'unknown'}`,
+    ];
+
+    if (clawCtx.screenInteraction || actionType.includes('screen')) {
+      parts.push('screen_interaction');
+      parts.push('interact screen');
+    }
+    if (clawCtx.fileAccess || actionType.includes('file') || actionType.includes('fs')) {
+      parts.push('file_system_access');
+      parts.push('local device file system access');
+    }
+    if (actionType === 'dynamic-tool-creation' || actionType.includes('create-tool') || actionType.includes('define-tool')) {
+      parts.push('create tool');
+    }
+
+    matchText = parts.filter(Boolean).join(' | ');
+  }
+
   const affected = extractAffectedFiles(toolName, toolInput);
   const affectedFiles = affected.files;
   const repoRoot = affected.repoRoot;

@@ -9,6 +9,7 @@
 <link rel="icon" type="image/png" href="/thumbgate-icon.png">
 <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
 <meta name="robots" content="noindex">
+<meta name="referrer" content="same-origin">
 <!-- Privacy-friendly analytics by Plausible -->
 <script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
 <script type="application/ld+json">
@@ -271,8 +272,8 @@
       <button class="btn" id="chatSend" onclick="sendChat()">Ask</button>
     </div>
     <div id="chatHint" style="font-size:12px;color:var(--text-muted);margin-top:8px;display:flex;align-items:center;gap:8px;">
-      <span>Powered by your captured lessons + Gemini/Perplexity hybrid (local-cloud).</span>
-      <input type="password" id="geminiKeyInput" placeholder="Set GEMINI_API_KEY..." style="background:var(--bg-raised); border:1px solid var(--border); border-radius:4px; padding:4px 8px; color:var(--text); font-family:var(--mono); font-size:11px; flex:1; max-width: 250px;" onkeydown="if(event.key==='Enter'){event.preventDefault();saveGeminiKey();}" />
+      <span>Powered by local dashboard data. Optional Gemini/Perplexity keys only expand open-ended analysis.</span>
+      <input type="password" id="geminiKeyInput" placeholder="Optional GEMINI_API_KEY..." style="background:var(--bg-raised); border:1px solid var(--border); border-radius:4px; padding:4px 8px; color:var(--text); font-family:var(--mono); font-size:11px; flex:1; max-width: 250px;" onkeydown="if(event.key==='Enter'){event.preventDefault();saveGeminiKey();}" />
       <button class="btn-outline" style="padding:4px 10px;font-size:11px;border-radius:4px;" onclick="saveGeminiKey()">Save</button>
     </div>
   </div>
@@ -872,7 +873,10 @@ async function connect(options) {
       tierName = data.tier;
     }
     
-    if (data.geminiKeyStatus === 'validated' || data.geminiValidatedAt) {
+    if (data.localLlmConfigured) {
+      var modelLabel = data.localLlmModel ? ' (' + data.localLlmModel + ')' : '';
+      document.getElementById('chatHint').innerHTML = '<span style="color:var(--green)">✓ Local LLM' + modelLabel + ' ready. Chat answers are generated locally — no cloud calls.</span>';
+    } else if (data.geminiKeyStatus === 'validated' || data.geminiValidatedAt) {
       var when = data.geminiValidatedAt ? ' (validated ' + new Date(data.geminiValidatedAt).toLocaleTimeString() + ')' : '';
       document.getElementById('chatHint').innerHTML = '<span style="color:var(--green)">✓ Gemini API key validated' + when + '. You can now chat with your data.</span>';
     } else if (data.perplexityConfigured) {

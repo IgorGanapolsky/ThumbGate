@@ -565,6 +565,20 @@ function setupCodex() {
 }
 
 function setupGemini() {
+  // Try to import custom commands as a Gemini plugin if the CLI is installed
+  const { execSync } = require('child_process');
+  let pluginImported = false;
+  for (const binName of ['agy', 'gemini']) {
+    try {
+      execSync(`${binName} plugin import "${PKG_ROOT}" --force`, { stdio: 'ignore' });
+      console.log(`  Gemini: imported thumbgate plugin via ${binName}`);
+      pluginImported = true;
+      break;
+    } catch (err) {
+      // ignore errors if command doesn't exist or fails
+    }
+  }
+
   const settingsPath = path.join(HOME, '.gemini', 'settings.json');
   if (fs.existsSync(settingsPath)) {
     const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
@@ -585,13 +599,14 @@ function setupGemini() {
       }
     }
 
-    if (!changed) return false;
+    if (!changed) return pluginImported;
     fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
     console.log('  Gemini: updated ~/.gemini/settings.json');
     return true;
   }
   // Fallback: project-level .gemini/settings.json
-  return mergeMcpJson(path.join(CWD, '.gemini', 'settings.json'), 'Gemini', 'project');
+  const mcpChanged = mergeMcpJson(path.join(CWD, '.gemini', 'settings.json'), 'Gemini', 'project');
+  return pluginImported || mcpChanged;
 }
 
 function setupAmp() {
@@ -909,6 +924,32 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
 
   // Always create .mcp.json (project-level MCP config used by Claude, Codex, Cursor)
   mergeMcpJson(path.join(CWD, '.mcp.json'), 'MCP');
+
+  // Copy custom slash commands (.claude/commands/*.md) to the project's config directories
+  const pkgCommandsDir = path.join(PKG_ROOT, '.claude', 'commands');
+  if (fs.existsSync(pkgCommandsDir)) {
+    const targets = [
+      path.join(CWD, '.claude', 'commands'),
+      path.join(CWD, '.gemini', 'commands'),
+      path.join(CWD, '.antigravitycli', 'commands')
+    ];
+    for (const projectCommandsDir of targets) {
+      if (!fs.existsSync(projectCommandsDir)) {
+        fs.mkdirSync(projectCommandsDir, { recursive: true });
+      }
+      try {
+        const files = fs.readdirSync(pkgCommandsDir);
+        for (const file of files) {
+          if (file.endsWith('.md')) {
+            fs.copyFileSync(path.join(pkgCommandsDir, file), path.join(projectCommandsDir, file));
+          }
+        }
+      } catch (err) {
+        console.log(`  Failed to copy custom commands to ${path.relative(CWD, projectCommandsDir)}: ${err.message}`);
+      }
+    }
+    console.log('Scaffolded custom slash commands directories (.claude, .gemini, .antigravitycli)');
+  }
 
   // Auto-detect and configure platform-specific locations
   console.log('');
@@ -3323,8 +3364,13 @@ switch (COMMAND) {
     break;
   }
   case 'brain': {
-    const brainArgs = parseArgs(process.argv.slice(3));
-    process.exitCode = cmdBrain(brainArgs);
+    const sub = process.argv.slice(3).find((arg) => !arg.startsWith('--'));
+    if (sub && ['init', 'context', 'remember', 'check', 'cleanup', 'status'].includes(sub)) {
+      brain();
+    } else {
+      const brainArgs = parseArgs(process.argv.slice(3));
+      process.exitCode = cmdBrain(brainArgs);
+    }
     break;
   }
   case 'billing:setup':

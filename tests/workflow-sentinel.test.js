@@ -63,6 +63,7 @@ test('workflow sentinel warns on multi-surface release-sensitive blast radius', 
     repoPath: process.cwd(),
     feedbackDir: isolatedFeedbackDir,
     feedbackOptions: { feedbackDir: isolatedFeedbackDir },
+    memoryGuard: { mode: 'allow', reason: '' },
     governanceState: {
       taskScope: {
         summary: 'sentinel dry run',

@@ -23,6 +23,11 @@ const savedProjectEnv = {
 delete process.env.THUMBGATE_PROJECT_DIR;
 delete process.env.CLAUDE_PROJECT_DIR;
 delete process.env.INIT_CWD;
+delete process.env.GEMINI_API_KEY;
+delete process.env.THUMBGATE_GEMINI_API_KEY;
+delete process.env.PERPLEXITY_API_KEY;
+delete process.env.THUMBGATE_PERPLEXITY_API_KEY;
+delete process.env.GOOGLE_API_KEY;
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 process.env.THUMBGATE_PROOF_DIR = tmpProofDir;
 process.env.THUMBGATE_API_KEY = 'test-api-key';
@@ -3916,33 +3921,55 @@ test('enterprise data chat endpoint answers from local dashboard data and blocks
 });
 
 test('dashboard /v1/chat answers data questions LOCALLY with no cloud/LLM/API key', async () => {
-  // Factual question → deterministic local answer from this install's own data.
-  const res = await fetch(apiUrl('/v1/chat'), {
-    method: 'POST',
-    headers: authHeader,
-    body: JSON.stringify({ question: 'how many mistakes were blocked today?' }),
-  });
-  assert.equal(res.status, 200);
-  const body = await res.json();
-  assert.equal(body.ok, true);
-  assert.equal(body.provider, 'local-data', 'data questions must be answered locally, not via cloud');
-  assert.equal(body.llm, 'none', 'no LLM should be invoked for a metric question');
-  assert.equal(body.topic, 'gates');
-  assert.match(body.answer, /gates|blocked/i);
-  // No Gemini key is set in this test env — proving the local-first path needs no cloud.
+  const keyEnvNames = [
+    'GEMINI_API_KEY',
+    'THUMBGATE_GEMINI_API_KEY',
+    'GOOGLE_API_KEY',
+    'PERPLEXITY_API_KEY',
+    'THUMBGATE_PERPLEXITY_API_KEY',
+    'THUMBGATE_LOCAL_LLM_ENDPOINT',
+    'THUMBGATE_LOCAL_LLM_MODEL',
+  ];
+  const savedEnv = Object.fromEntries(keyEnvNames.map((name) => [name, process.env[name]]));
+  for (const name of keyEnvNames) delete process.env[name];
 
-  // Open-ended question with no model configured must STILL return a local answer,
-  // never a hard "no_api_key" failure and never a forced cloud call.
-  const open = await fetch(apiUrl('/v1/chat'), {
-    method: 'POST',
-    headers: authHeader,
-    body: JSON.stringify({ question: 'what is our philosophy of work?' }),
-  });
-  assert.equal(open.status, 200);
-  const openBody = await open.json();
-  assert.equal(openBody.ok, true);
-  assert.equal(openBody.provider, 'local-data');
-  assert.equal(openBody.llm, 'none');
+  try {
+    for (const question of [
+      'how many mistakes were blocked today?',
+      'how many mistakes were prevented today?',
+    ]) {
+      const res = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(tmpFeedbackDir)}`), {
+        method: 'POST',
+        headers: { ...authHeader, 'x-thumbgate-project-dir': tmpFeedbackDir },
+        body: JSON.stringify({ question }),
+      });
+      assert.equal(res.status, 200);
+      const body = await res.json();
+      assert.equal(body.ok, true);
+      assert.equal(body.provider, 'local-data', `${question} must be answered locally, not via cloud`);
+      assert.equal(body.llm, 'none', 'no LLM should be invoked for a metric question');
+      assert.equal(body.topic, 'gates');
+      assert.match(body.answer, /gates|blocked/i);
+    }
+
+    // Open-ended question with no model configured must STILL return a local
+    // answer, never a hard "no_api_key" failure and never a forced cloud call.
+    const open = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(tmpFeedbackDir)}`), {
+      method: 'POST',
+      headers: { ...authHeader, 'x-thumbgate-project-dir': tmpFeedbackDir },
+      body: JSON.stringify({ question: 'what is our philosophy of work?' }),
+    });
+    assert.equal(open.status, 200);
+    const openBody = await open.json();
+    assert.equal(openBody.ok, true);
+    assert.equal(openBody.provider, 'local-data');
+    assert.equal(openBody.llm, 'none');
+  } finally {
+    for (const [name, value] of Object.entries(savedEnv)) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  }
 });
 
 test('legacy enterprise Dialogflow routes remain compatibility aliases', async () => {

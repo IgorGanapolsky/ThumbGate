@@ -129,6 +129,45 @@ async function retrieveVectorContext(question, opts = {}) {
   }
 }
 
+// Live numeric snapshot from gate-stats + feedback analyzer. Always injected
+// (~120 tokens) so the LLM can answer count/quantity questions like
+// "how many were blocked today" without hallucinating.
+function retrieveMetricsContext() {
+  const snapshot = {};
+  try {
+    const gs = require(path.join(__dirname, 'gate-stats'));
+    const s = gs.calculateStats();
+    snapshot.gates = {
+      total: s.totalGates,
+      blockRules: s.blockGates,
+      warnRules: s.warnGates,
+      totalBlockedEvents: s.totalBlocked,
+      totalWarnedEvents: s.totalWarned,
+      estimatedHoursSaved: s.estimatedHoursSaved,
+      topBlockedTrigger: s.topBlocked?.trigger || null,
+      topBlockedOccurrences: s.topBlocked?.occurrences || 0,
+    };
+  } catch (err) {
+    debugChatFallback('gate-stats unavailable', err);
+  }
+  try {
+    const fl = require(path.join(__dirname, 'feedback-loop'));
+    const a = fl.analyzeFeedback();
+    snapshot.feedback = {
+      total: a.total,
+      positive: a.totalPositive,
+      negative: a.totalNegative,
+      approvalRate: a.approvalRate,
+      last7d: a.windows?.['7d'],
+      last30d: a.windows?.['30d'],
+      trend: a.trend,
+    };
+  } catch (err) {
+    debugChatFallback('feedback-loop analyze unavailable', err);
+  }
+  return snapshot;
+}
+
 // Retrieve relevant stored lessons and optional raw feedback vector matches.
 async function retrieveContext(question, opts = {}) {
   const lessons = retrieveLessonContext(question, opts);
@@ -137,7 +176,7 @@ async function retrieveContext(question, opts = {}) {
 }
 
 // Build a grounded RAG prompt. Pure function (testable).
-function buildChatPrompt(question, lessons) {
+function buildChatPrompt(question, lessons, metrics) {
   const q = String(question || '').slice(0, MAX_QUESTION_CHARS).trim();
   const context = (lessons || []).map((l, i) => {
     const mark = /pos|up/i.test(l.signal) ? 'WORKED' : (/neg|down/i.test(l.signal) ? 'MISTAKE' : 'NOTE');
@@ -145,14 +184,19 @@ function buildChatPrompt(question, lessons) {
     return `(${i + 1}) [${mark}] ${l.title || ''}${tags}\n    ${l.content}`;
   }).join('\n');
 
+  const metricsBlock = metrics && Object.keys(metrics).length
+    ? `\n=== Live numeric snapshot (your data, current) ===\n${JSON.stringify(metrics, null, 2)}\n`
+    : '';
+
   const system = [
     'You are ThumbGate\'s "chat with your data" assistant. Answer the user\'s question',
-    'using ONLY the captured lessons below (this team\'s real feedback history).',
-    'Be concise and specific. Cite the lesson numbers you used like [1], [3].',
-    'If the lessons do not contain the answer, say so plainly — do not invent facts.',
+    'using ONLY the captured lessons and the live numeric snapshot below (this team\'s real data).',
+    'For count/quantity questions ("how many X", "what\'s our rate"), use the numeric snapshot.',
+    'For pattern/why questions, cite the lesson numbers like [1], [3].',
+    'If neither source contains the answer, say so plainly — do not invent facts.',
   ].join(' ');
 
-  return `${system}\n\n=== Captured lessons (your data) ===\n${context || '(no relevant lessons found)'}\n\n=== Question ===\n${q}`;
+  return `${system}\n\n=== Captured lessons (your data) ===\n${context || '(no relevant lessons found)'}\n${metricsBlock}\n=== Question ===\n${q}`;
 }
 
 // Parse the Gemini generateContent response into plain text. Pure (testable).
@@ -263,7 +307,8 @@ async function answerDataQuestion(question, opts = {}) {
   }
 
   const model = resolveModel(opts.model);
-  const prompt = buildChatPrompt(q, lessons);
+  const metrics = retrieveMetricsContext();
+  const prompt = buildChatPrompt(q, lessons, metrics);
   const fetchImpl = opts.fetch || globalThis.fetch;
   const isPerplexity = apiKey && (apiKey.startsWith('pplx-') || apiKey.includes('perplexity'));
 

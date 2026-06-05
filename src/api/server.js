@@ -168,6 +168,7 @@ const {
   buildReviewSnapshot,
   readDashboardReviewState,
   writeDashboardReviewState,
+  collectAllFeedbackEntries,
 } = require('../../scripts/dashboard');
 const {
   guardDfcxWebhook,
@@ -231,6 +232,7 @@ const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
 const NUMBERS_PAGE_PATH = path.resolve(__dirname, '../../public/numbers.html');
 const FEDERAL_PAGE_PATH = path.resolve(__dirname, '../../public/federal.html');
 const PRICING_PAGE_PATH = path.resolve(__dirname, '../../public/pricing.html');
+const ABOUT_PAGE_PATH = path.resolve(__dirname, '../../public/about.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
 const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
@@ -355,6 +357,7 @@ function serveStaticFile(res, filePath, { headOnly = false, cacheSeconds = 86400
   res.setHeader('Content-Type', contentType);
   res.setHeader('Content-Length', stat.size);
   res.setHeader('Cache-Control', `public, max-age=${cacheSeconds}, immutable`);
+  res.setHeader('Referrer-Policy', 'same-origin');
   if (headOnly) {
     res.end();
     return;
@@ -1567,13 +1570,42 @@ function compactNumber(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
-function buildEnterpriseChatSection(topic, dashboardData, status) {
+function buildEnterpriseChatSection(topic, dashboardData, status, feedbackDir, prompt) {
   const approval = dashboardData.approval || {};
   const gates = Array.isArray(dashboardData.gates) ? dashboardData.gates : [];
   const gateStats = dashboardData.gateStats || {};
   const team = dashboardData.team || {};
   const tokenSavings = dashboardData.tokenSavings || {};
   const lessonPipeline = dashboardData.lessonPipeline || {};
+
+  const lowerPrompt = String(prompt || '').toLowerCase();
+  const isListOrDetailQuery = /list\s+(?:blocked?|prevented?|mistakes?)|show\s+(?:blocked?|prevented?|mistakes?)|recent\s+mistakes?|(?:what|which)\s+(?:actions?|mistakes?)?\s*(?:were|was|did|are|have|got|prevented|blocked)|(?:what|which)\s+(?:was|were|is|are|got|did)\s+(?:you\s+)?(?:blocked?|prevented?)/.test(lowerPrompt);
+
+  let negativeEntries = [];
+  if (feedbackDir) {
+    try {
+      negativeEntries = collectAllFeedbackEntries(feedbackDir)
+        .filter((e) => ['down', 'negative', 'thumbs_down'].includes(String(e.signal || e.feedback || '').toLowerCase()));
+    } catch (_) {}
+  }
+
+  if (topic === 'feedback' || topic === 'gates') {
+    if (isListOrDetailQuery && negativeEntries.length > 0) {
+      const recentNegatives = negativeEntries.slice(-5).reverse();
+      const lines = [
+        `Here are the most recent recorded mistakes and blocked actions:`,
+        ...recentNegatives.map((e, i) => {
+          const dateStr = e.timestamp ? `[${new Date(e.timestamp).toLocaleDateString()}] ` : '';
+          const desc = e.whatWentWrong || e.context || 'Unknown governance violation';
+          return `${i + 1}. ${dateStr}${desc}`;
+        })
+      ];
+      return {
+        lines,
+        sources: ['feedback log'],
+      };
+    }
+  }
 
   if (topic === 'feedback') {
     return {
@@ -1633,9 +1665,9 @@ function buildEnterpriseChatSection(topic, dashboardData, status) {
   };
 }
 
-function buildEnterpriseChatAnswer(prompt, dashboardData, status) {
+function buildEnterpriseChatAnswer(prompt, dashboardData, status, feedbackDir) {
   const topic = classifyEnterpriseChatTopic(prompt);
-  const section = buildEnterpriseChatSection(topic, dashboardData, status);
+  const section = buildEnterpriseChatSection(topic, dashboardData, status, feedbackDir, prompt);
 
   return {
     topic,
@@ -1655,6 +1687,7 @@ async function trySendLocalDashboardChat(res, parsed, feedbackDir, prompt, suffi
       prompt,
       dashboardResult.data,
       buildEnterpriseDataChatStatus(),
+      feedbackDir,
     );
     sendJson(res, 200, {
       ok: true,
@@ -1702,7 +1735,7 @@ async function answerEnterpriseDataChat({ prompt, feedbackDir, parsed }) {
   // The dashboard's real local/open-source chatbot turn goes through /v1/chat,
   // which uses lesson retrieval + optional LanceDB vector search + the user's
   // configured local or BYO model.
-  const chat = buildEnterpriseChatAnswer(normalizedPrompt, dashboardData, status);
+  const chat = buildEnterpriseChatAnswer(normalizedPrompt, dashboardData, status, feedbackDir);
   const dfcxRequest = {
     fulfillmentInfo: { tag: 'chat-with-data' },
     sessionInfo: {
@@ -2301,6 +2334,10 @@ function loadProPageHtml(runtimeConfig, pageContext = {}) {
 
 function loadPricingPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(PRICING_PAGE_PATH, runtimeConfig, pageContext);
+}
+
+function loadAboutPageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(ABOUT_PAGE_PATH, runtimeConfig, pageContext);
 }
 
 function readOptionalPublicTemplate(filePath) {
@@ -2935,6 +2972,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/learn/codex-role-plugins-need-governance', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/agentic-os-team-governance', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/cost-aware-agent-gate-routing', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/pretix-stripe-connect-marketplaces', changefreq: 'weekly', priority: '0.9' },
     { path: '/compare/claude-code-hooks', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/bumblebee', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/anthropic-containment', changefreq: 'weekly', priority: '0.85' },
@@ -4922,6 +4960,25 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && (pathname === '/about' || pathname === '/about.html')) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadAboutPageHtml,
+          extraTelemetry: {
+            pageType: 'about',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'About page unavailable');
+      }
+      return;
+    }
+
     if (isGetLikeRequest && (pathname === '/guide' || pathname === '/guide.html')) {
       try {
         const html = fs.readFileSync(GUIDE_PAGE_PATH, 'utf-8');
@@ -5320,8 +5377,60 @@ async function addContext(){
       // because no real crawler appends customer_email to discovered URLs.
       const hasCustomerEmailHint = !!parsed?.searchParams?.has('customer_email');
       const botShouldBypass = !botClassification.isBot || hasCustomerEmailHint;
-      const isConfirmedCheckout = req.method === 'POST'
+      // 2026-06-04 audit: after the POST-401 fix, 3 of 4 fresh /checkout/pro
+      // sessions had customer_email=null in Stripe (zombie sessions with no
+      // recovery surface). Root cause: POSTs were auto-confirmed regardless of
+      // whether the email query param was present. Require email on POSTs too
+      // so emails-less POSTs fall through to the interstitial form instead of
+      // creating an un-recoverable Stripe session.
+      const isConfirmedCheckout = (req.method === 'POST' && hasCustomerEmailHint)
         || (hasConfirmFlag && botShouldBypass);
+      // 2026-06-05 revenue bypass: env-gated direct-to-Stripe redirect.
+      // Live 30d billing showed 254 interstitial views → 1 Stripe click-through
+      // → 0 paid. When THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS=1 is set we
+      // route raw /checkout/pro GETs (no confirm=1, no POST) straight to the
+      // pro Stripe Payment Link, preserving UTM + attribution metadata via
+      // buildCheckoutFallbackUrl. Default-off; bot-deflection still applies
+      // (bot + no email hint still falls through to the existing interstitial).
+      const interstitialBypassEnabled = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS === '1';
+      if (
+        !isConfirmedCheckout
+        && interstitialBypassEnabled
+        && req.method !== 'POST'
+        && botShouldBypass
+      ) {
+        // Always target the pro Stripe Payment Link directly. The
+        // hostedConfig.checkoutFallbackUrl (e.g. https://thumbgate.ai/go/pro)
+        // is a router that 302s back to /checkout/pro, which would create a
+        // redirect loop when bypass is on. Env override via
+        // THUMBGATE_CHECKOUT_PRO_STRIPE_URL is supported for future
+        // price-link rotation without a redeploy.
+        const bypassTarget = process.env.THUMBGATE_CHECKOUT_PRO_STRIPE_URL
+          || FIRST_FAILURE_RULE_CHECKOUT_URL;
+        appendBestEffortTelemetry(FEEDBACK_DIR, {
+          eventType: 'checkout_interstitial_bypass_redirect',
+          clientType: 'web',
+          traceId,
+          acquisitionId: analyticsMetadata.acquisitionId,
+          visitorId: analyticsMetadata.visitorId,
+          sessionId: analyticsMetadata.sessionId,
+          utmSource: analyticsMetadata.utmSource,
+          utmMedium: analyticsMetadata.utmMedium,
+          utmCampaign: analyticsMetadata.utmCampaign,
+          utmContent: analyticsMetadata.utmContent,
+          utmTerm: analyticsMetadata.utmTerm,
+          referrer: analyticsMetadata.referrer,
+          referrerHost: analyticsMetadata.referrerHost,
+          page: '/checkout/pro',
+          planId: analyticsMetadata.planId,
+        }, req.headers, 'checkout_interstitial_bypass_redirect');
+        res.writeHead(302, {
+          ...responseHeaders,
+          Location: buildCheckoutFallbackUrl(bypassTarget, analyticsMetadata),
+        });
+        res.end();
+        return;
+      }
       // Plausible funnel event #1 of 3: page view. Fired before interstitial
       // deflection so we get the full top-of-funnel count, with isBot as a
       // prop so the dashboard can filter human vs. crawler traffic. Fire-and-forget.
@@ -7179,6 +7288,9 @@ ${hidden}
           stats.geminiKeyStatus = 'validated';
         }
         stats.hybridInferenceAvailable = !!(stats.geminiConfigured || stats.perplexityConfigured);
+        stats.localLlmConfigured = Boolean(process.env.THUMBGATE_LOCAL_LLM_ENDPOINT);
+        stats.localLlmEndpoint = process.env.THUMBGATE_LOCAL_LLM_ENDPOINT || null;
+        stats.localLlmModel = process.env.THUMBGATE_LOCAL_LLM_MODEL || null;
         sendJson(res, 200, stats);
         return;
       }

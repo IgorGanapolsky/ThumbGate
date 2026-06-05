@@ -299,9 +299,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // emit unregistered Plausible domains) and scripts/secret-fixture-tokens.js
   // (required by thumbgate-bench.js to expand scanner-safe secret fixtures).
   // Bumped 280 -> 285 (2026-06-03) to accommodate newly merged guides and scripts from main.
+  // Bumped 285 -> 290 (2026-06-04) to ship scripts/upstream-contribution-engine.js for dependency contribution scouting.
   assert.ok(
-    manifest.fileCount <= 285,
-    `npm package should stay <= 285 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 290,
+    `npm package should stay <= 290 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -410,10 +411,7 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // on reliability rollout: packaged runtime dependencies plus public
   // discovery assets weigh ~4.08 MB unpacked, leaving a narrow safety margin.
   // Bumped 4.18 MB -> 4.25 MB (2026-06-03) for the parallel workflow orchestrator.
-  // Bumped 4.25 MB -> 4.30 MB (2026-06-04) for the local-first dashboard chat:
-  // /v1/chat now answers data questions deterministically from local dashboard data
-  // (src/api/server.js) instead of Gemini RAG. Observed ~4.251 MB after the addition;
-  // the bump restores a one-normal-PR headroom buffer.
+  // Bumped 4.25 MB -> 4.30 MB (2026-06-04) for local-first dashboard chat and scripts/upstream-contribution-engine.js.
   assert.ok(
     manifest.unpackedSize <= 4_300_000,
     `npm package should stay <= 4.30 MB unpacked, got ${manifest.unpackedSize}`

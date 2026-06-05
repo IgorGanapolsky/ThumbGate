@@ -2082,6 +2082,7 @@ module.exports = {
   computeObservabilityStats,
   readJSONL,
   readJsonFile,
+  collectAllFeedbackEntries,
 };
 
 if (require.main === module) {
