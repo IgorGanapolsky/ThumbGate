@@ -1,3 +1,8 @@
+---
+name: dashboard
+description: Open the local HTTP dashboard for the current project in your web browser.
+---
+
 # Open Dashboard
 
 Open the local HTTP dashboard for the current project in your web browser.
@@ -7,3 +12,4 @@ Execute the following command in the project directory to open the browser dashb
 ```bash
 thumbgate-dashboard
 ```
+

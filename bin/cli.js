@@ -565,6 +565,20 @@ function setupCodex() {
 }
 
 function setupGemini() {
+  // Try to import custom commands as a Gemini plugin if the CLI is installed
+  const { execSync } = require('child_process');
+  let pluginImported = false;
+  for (const binName of ['agy', 'gemini']) {
+    try {
+      execSync(`${binName} plugin import "${PKG_ROOT}" --force`, { stdio: 'ignore' });
+      console.log(`  Gemini: imported thumbgate plugin via ${binName}`);
+      pluginImported = true;
+      break;
+    } catch (err) {
+      // ignore errors if command doesn't exist or fails
+    }
+  }
+
   const settingsPath = path.join(HOME, '.gemini', 'settings.json');
   if (fs.existsSync(settingsPath)) {
     const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
@@ -585,13 +599,14 @@ function setupGemini() {
       }
     }
 
-    if (!changed) return false;
+    if (!changed) return pluginImported;
     fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
     console.log('  Gemini: updated ~/.gemini/settings.json');
     return true;
   }
   // Fallback: project-level .gemini/settings.json
-  return mergeMcpJson(path.join(CWD, '.gemini', 'settings.json'), 'Gemini', 'project');
+  const mcpChanged = mergeMcpJson(path.join(CWD, '.gemini', 'settings.json'), 'Gemini', 'project');
+  return pluginImported || mcpChanged;
 }
 
 function setupAmp() {

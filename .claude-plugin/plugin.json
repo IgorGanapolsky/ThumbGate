@@ -28,6 +28,7 @@
     "memory"
   ],
   "skills": "./skills/",
+  "commands": "./.claude/commands/",
   "mcpServers": {
     "thumbgate": {
       "command": "npx",

@@ -23,6 +23,11 @@ const savedProjectEnv = {
 delete process.env.THUMBGATE_PROJECT_DIR;
 delete process.env.CLAUDE_PROJECT_DIR;
 delete process.env.INIT_CWD;
+delete process.env.GEMINI_API_KEY;
+delete process.env.THUMBGATE_GEMINI_API_KEY;
+delete process.env.PERPLEXITY_API_KEY;
+delete process.env.THUMBGATE_PERPLEXITY_API_KEY;
+delete process.env.GOOGLE_API_KEY;
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 process.env.THUMBGATE_PROOF_DIR = tmpProofDir;
 process.env.THUMBGATE_API_KEY = 'test-api-key';
