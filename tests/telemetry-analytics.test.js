@@ -91,6 +91,8 @@ test('sanitizeTelemetryPayload normalizes modern web payloads', () => {
     ctaPlacement: 'pricing',
     planId: 'pro',
     page: '/',
+    interstitialSampled: 'true',
+    interstitialSampleRate: 0.25,
   }, {
     referer: 'https://search.example',
     'user-agent': 'browser-test',
@@ -105,6 +107,8 @@ test('sanitizeTelemetryPayload normalizes modern web payloads', () => {
   assert.equal(entry.referrer, 'https://search.example');
   assert.equal(entry.referrerHost, 'search.example');
   assert.equal(entry.ctaPlacement, 'pricing');
+  assert.equal(entry.interstitialSampled, 'true');
+  assert.equal(entry.interstitialSampleRate, 0.25);
   assert.equal(entry.userAgent, 'browser-test');
   assert.equal(entry.attributionTagged, true);
 });
