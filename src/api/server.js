@@ -1579,7 +1579,7 @@ function buildEnterpriseChatSection(topic, dashboardData, status, feedbackDir, p
   const lessonPipeline = dashboardData.lessonPipeline || {};
 
   const lowerPrompt = String(prompt || '').toLowerCase();
-  const isListOrDetailQuery = /what|list|show|recent|detail|why|which|explain/.test(lowerPrompt);
+  const isListOrDetailQuery = /list\s+mistakes?|show\s+mistakes?|recent\s+mistakes?|what\s+mistakes?\s+(?:were|was|did|are|have)/.test(lowerPrompt);
 
   let negativeEntries = [];
   if (feedbackDir) {
