@@ -84,6 +84,12 @@ describe('/checkout/pro bot guard', () => {
     assert.match(body, /Not sure yet\? Send the workflow first/);
     assert.match(body, /href="\/#workflow-sprint-intake"/);
     assert.match(body, /checkout_interstitial_cta_clicked/);
+    assert.match(body, /aria-label="Checkout feedback"/);
+    assert.match(body, /data-reason="price_unclear"/);
+    assert.match(body, /data-reason="need_more_proof"/);
+    assert.match(body, /data-reason="need_team_plan"/);
+    assert.match(body, /reason_not_buying/);
+    assert.match(body, /checkout_interstitial_abandoned/);
     assert.match(body, /name="confirm" value="1"/);
     assert.doesNotMatch(body, /Pay \$1 first rule/);
     assert.doesNotMatch(body, /Pay \$19 quick read/);
