@@ -1567,20 +1567,10 @@ function classifyEnterpriseChatTopic(prompt) {
 // today?" with an actual filtered list instead of a canned total.
 function parseChatIntent(prompt) {
   const lower = String(prompt || '').toLowerCase();
-  const listIntentPatterns = [
-    /\bwhat\b/,
-    /\bwhich\b/,
-    /\blist\b/,
-    /\bshow\b/,
-    /\bexamples?\b/,
-    /\btell me about\b/,
-    /list\s+(?:blocked?|prevented?|mistakes?)/,
-    /show\s+(?:blocked?|prevented?|mistakes?)/,
-    /recent\s+mistakes?/,
-    /(?:what|which)\s+(?:actions?|mistakes?)?\s*(?:were|was|did|are|have|got|prevented|blocked)/,
-    /(?:what|which)\s+(?:was|were|is|are|got|did)\s+(?:you\s+)?(?:blocked?|prevented?)/,
-  ];
-  const wantsList = listIntentPatterns.some((pattern) => pattern.test(lower));
+  const terms = lower.split(/[^a-z0-9]+/).filter(Boolean);
+  const hasTerm = (term) => terms.includes(term);
+  const wantsList = lower.includes('tell me about') ||
+    ['what', 'which', 'list', 'show', 'example', 'examples'].some(hasTerm);
   let windowMs = null;
   let windowLabel = 'across all time';
   if (/\btoday\b/.test(lower)) { windowMs = 24 * 60 * 60 * 1000; windowLabel = 'today'; }
