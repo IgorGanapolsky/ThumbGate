@@ -730,6 +730,7 @@ function evaluatePretool(toolName, toolInput, opts) {
 
   // Slow path: build live state (also used when compiled guards are stale)
   const state = buildHybridState({
+    feedbackDir: o.feedbackDir,
     feedbackLogPath: o.feedbackLogPath,
     attributedFeedbackPath: o.attributedFeedbackPath,
   });
