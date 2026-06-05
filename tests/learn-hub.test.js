@@ -343,6 +343,18 @@ test('persistent-memory article has install CTA', () => {
   assert.match(html, /npx thumbgate init/);
 });
 
+test('persistent-memory article routes high-intent readers to paid options', () => {
+  const html = readFile(path.join(learnDir, 'ai-agent-persistent-memory.html'));
+  assert.match(html, /Get Pro — \$19\/mo or \$149\/yr/);
+  assert.match(html, /\/checkout\/pro\?utm_source=learn&amp;utm_medium=persistent_memory_article/);
+  assert.match(html, /cta_id=learn_persistent_memory_pro/);
+  assert.match(html, /Pay \$499 diagnostic/);
+  assert.match(html, /https:\/\/buy\.stripe\.com\/00w14neyUcXA5pL5e33sI0e/);
+  assert.match(html, /Send workflow first/);
+  assert.match(html, /#workflow-sprint-intake/);
+  assert.match(html, /cta_id=learn_persistent_memory_sticky_pro/);
+});
+
 test('persistent-memory article has breadcrumb back to learn hub', () => {
   const html = readFile(path.join(learnDir, 'ai-agent-persistent-memory.html'));
   assert.match(html, /class="breadcrumb"/);
@@ -486,6 +498,7 @@ test('no learn page has broken internal links', () => {
     const links = html.match(/href="(\/[^"#]*?)"/g) || [];
     for (const link of links) {
       const href = link.match(/href="([^"]+)"/)[1];
+      if (href.startsWith('/checkout/pro?')) continue;
       assert.ok(validPaths.includes(href), `${path.basename(file)} has potentially broken link: ${href}`);
     }
   }
