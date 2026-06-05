@@ -1,6 +1,6 @@
 # Codex Operator Revenue Pack
 
-Updated: 2026-06-05T18:44:50.160Z
+Updated: 2026-06-05T21:13:51.793Z
 
 This is a sales operator artifact. It is not proof of installs, revenue, or marketplace approval by itself.
 
