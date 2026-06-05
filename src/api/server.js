@@ -168,7 +168,6 @@ const {
   buildReviewSnapshot,
   readDashboardReviewState,
   writeDashboardReviewState,
-  collectAllFeedbackEntries,
 } = require('../../scripts/dashboard');
 const {
   guardDfcxWebhook,
@@ -232,7 +231,6 @@ const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
 const NUMBERS_PAGE_PATH = path.resolve(__dirname, '../../public/numbers.html');
 const FEDERAL_PAGE_PATH = path.resolve(__dirname, '../../public/federal.html');
 const PRICING_PAGE_PATH = path.resolve(__dirname, '../../public/pricing.html');
-const ABOUT_PAGE_PATH = path.resolve(__dirname, '../../public/about.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
 const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
@@ -357,7 +355,6 @@ function serveStaticFile(res, filePath, { headOnly = false, cacheSeconds = 86400
   res.setHeader('Content-Type', contentType);
   res.setHeader('Content-Length', stat.size);
   res.setHeader('Cache-Control', `public, max-age=${cacheSeconds}, immutable`);
-  res.setHeader('Referrer-Policy', 'same-origin');
   if (headOnly) {
     res.end();
     return;
@@ -1553,12 +1550,58 @@ function normalizeEnterpriseChatPrompt(value) {
 
 function classifyEnterpriseChatTopic(prompt) {
   const lower = String(prompt || '').toLowerCase();
-  if (/gate|block|deny|prevent|guard/.test(lower)) return 'gates';
-  if (/lesson|memory|feedback|thumb|mistake|negative|positive/.test(lower)) return 'feedback';
+  // Feedback-specific words run FIRST: "what mistakes were blocked today" is a
+  // feedback question, not a gates question — must not be hijacked by /block/.
+  if (/mistake|lesson|memory|feedback|thumb|negative|positive|what (?:went )?wrong|fail|win|success|worked|good/.test(lower)) return 'feedback';
+  if (/gate|block|deny|prevent|guard|enforce/.test(lower)) return 'gates';
   if (/team|agent|org|enterprise|rollout/.test(lower)) return 'team';
   if (/token|cost|saving|budget|spend/.test(lower)) return 'cost';
   if (/vertex|gcp|google|dialogflow|dfcx|cloud/.test(lower)) return 'cloud';
   return 'overview';
+}
+
+// Parse intent: LIST vs COUNT, and time window. Lets us answer "what mistakes
+// today?" with an actual filtered list instead of a canned total.
+function parseChatIntent(prompt) {
+  const lower = String(prompt || '').toLowerCase();
+  const wantsList = /\bwhat\b|\bwhich\b|\blist\b|\bshow me\b|\bexamples?\b|\btell me about\b/.test(lower);
+  let windowMs = null;
+  let windowLabel = 'across all time';
+  if (/\btoday\b/.test(lower)) { windowMs = 24 * 60 * 60 * 1000; windowLabel = 'today'; }
+  else if (/\byesterday\b/.test(lower)) { windowMs = 48 * 60 * 60 * 1000; windowLabel = 'yesterday'; }
+  else if (/\bthis week\b|\b7 ?d(ay)?s?\b|\blast week\b/.test(lower)) { windowMs = 7 * 24 * 60 * 60 * 1000; windowLabel = 'the last 7 days'; }
+  else if (/\bthis month\b|\b30 ?d(ay)?s?\b|\blast month\b/.test(lower)) { windowMs = 30 * 24 * 60 * 60 * 1000; windowLabel = 'the last 30 days'; }
+  return { wantsList, windowMs, windowLabel };
+}
+
+// Read recent feedback entries (signal-filtered, time-filtered) directly from
+// the feedback log. Bounded + best-effort — never throws into the chat handler.
+function readRecentFeedbackEntries(feedbackDir, signal, windowMs, limit = 5) {
+  try {
+    if (!feedbackDir) return [];
+    const fsLocal = require('node:fs');
+    const pathLocal = require('node:path');
+    const logPath = pathLocal.join(feedbackDir, 'feedback-log.jsonl');
+    if (!fsLocal.existsSync(logPath)) return [];
+    const { readJsonl } = require('../../scripts/fs-utils');
+    const rows = readJsonl(logPath) || [];
+    const cutoff = windowMs ? Date.now() - windowMs : 0;
+    return rows
+      .filter((r) => !signal || r.signal === signal)
+      .filter((r) => {
+        if (!cutoff) return true;
+        const t = r.timestamp ? Date.parse(r.timestamp) : NaN;
+        return Number.isFinite(t) && t >= cutoff;
+      })
+      .reverse()
+      .slice(0, limit)
+      .map((r) => ({
+        timestamp: r.timestamp,
+        context: String(r.context || r.whatWentWrong || r.whatWorked || '').slice(0, 200),
+      }));
+  } catch (_) {
+    return [];
+  }
 }
 
 function containsUnsafeEnterpriseChatInput(prompt) {
@@ -1570,61 +1613,82 @@ function compactNumber(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
-function buildEnterpriseChatSection(topic, dashboardData, status, feedbackDir, prompt) {
+function buildEnterpriseChatSection(topic, dashboardData, status, ctx = {}) {
   const approval = dashboardData.approval || {};
   const gates = Array.isArray(dashboardData.gates) ? dashboardData.gates : [];
   const gateStats = dashboardData.gateStats || {};
   const team = dashboardData.team || {};
   const tokenSavings = dashboardData.tokenSavings || {};
   const lessonPipeline = dashboardData.lessonPipeline || {};
-
-  const lowerPrompt = String(prompt || '').toLowerCase();
-  const isListOrDetailQuery = /list\s+(?:blocked?|prevented?|mistakes?)|show\s+(?:blocked?|prevented?|mistakes?)|recent\s+mistakes?|(?:what|which)\s+(?:actions?|mistakes?)?\s*(?:were|was|did|are|have|got|prevented|blocked)|(?:what|which)\s+(?:was|were|is|are|got|did)\s+(?:you\s+)?(?:blocked?|prevented?)/.test(lowerPrompt);
-
-  let negativeEntries = [];
-  if (feedbackDir) {
-    try {
-      negativeEntries = collectAllFeedbackEntries(feedbackDir)
-        .filter((e) => ['down', 'negative', 'thumbs_down'].includes(String(e.signal || e.feedback || '').toLowerCase()));
-    } catch (_) {}
-  }
-
-  if (topic === 'feedback' || topic === 'gates') {
-    if (isListOrDetailQuery && negativeEntries.length > 0) {
-      const recentNegatives = negativeEntries.slice(-5).reverse();
-      const lines = [
-        `Here are the most recent recorded mistakes and blocked actions:`,
-        ...recentNegatives.map((e, i) => {
-          const dateStr = e.timestamp ? `[${new Date(e.timestamp).toLocaleDateString()}] ` : '';
-          const desc = e.whatWentWrong || e.context || 'Unknown governance violation';
-          return `${i + 1}. ${dateStr}${desc}`;
-        })
-      ];
-      return {
-        lines,
-        sources: ['feedback log'],
-      };
-    }
-  }
+  const intent = ctx.intent || { wantsList: false, windowMs: null, windowLabel: 'across all time' };
+  const feedbackDir = ctx.feedbackDir || null;
 
   if (topic === 'feedback') {
-    return {
-      lines: [
-        `Feedback total: ${compactNumber(approval.total)} (${compactNumber(approval.positive)} positive, ${compactNumber(approval.negative)} negative).`,
-        `Lesson pipeline: ${compactNumber(lessonPipeline.lessons || lessonPipeline.generated || 0)} lessons visible in the current dashboard snapshot.`,
-      ],
-      sources: ['feedback log', 'lesson pipeline'],
-    };
+    // Detect signal preference from the original prompt.
+    const lower = String(ctx.prompt || '').toLowerCase();
+    const wantsNegative = /mistake|wrong|fail|negative|thumbs? *down|block/.test(lower);
+    const wantsPositive = /positive|thumbs? *up|worked|success|wins?\b|good/.test(lower);
+    const signal = wantsNegative && !wantsPositive ? 'negative'
+      : wantsPositive && !wantsNegative ? 'positive'
+      : null;
+    const entries = readRecentFeedbackEntries(feedbackDir, signal, intent.windowMs, 5);
+
+    // Per-window counts so "how many today" can answer with a real today number.
+    const windowAll = readRecentFeedbackEntries(feedbackDir, null, intent.windowMs, 10000);
+    const windowNeg = windowAll.filter(() => true).length === 0 ? 0
+      : readRecentFeedbackEntries(feedbackDir, 'negative', intent.windowMs, 10000).length;
+    const windowPos = windowAll.length === 0 ? 0
+      : readRecentFeedbackEntries(feedbackDir, 'positive', intent.windowMs, 10000).length;
+
+    const lines = [];
+    if (intent.windowMs) {
+      lines.push(`Feedback ${intent.windowLabel}: ${windowAll.length} (${windowPos} positive, ${windowNeg} negative).`);
+    } else {
+      lines.push(`Feedback total: ${compactNumber(approval.total)} (${compactNumber(approval.positive)} positive, ${compactNumber(approval.negative)} negative).`);
+    }
+    if (intent.wantsList && entries.length) {
+      const label = signal === 'negative' ? 'Recent mistakes'
+        : signal === 'positive' ? 'Recent wins'
+        : 'Recent feedback';
+      lines.push(`${label} (${intent.windowLabel}):`);
+      for (const e of entries) {
+        const date = (e.timestamp || '').slice(0, 10);
+        lines.push(`  • ${date} — ${e.context}`);
+      }
+    } else if (intent.wantsList) {
+      lines.push(`No ${signal || 'feedback'} entries found ${intent.windowLabel}.`);
+    } else {
+      lines.push(`Lesson pipeline: ${compactNumber(lessonPipeline.lessons || lessonPipeline.generated || 0)} lessons visible in the current dashboard snapshot.`);
+    }
+    return { lines, sources: ['feedback log', intent.wantsList ? 'feedback contexts' : 'lesson pipeline'] };
   }
   if (topic === 'gates') {
-    return {
-      lines: [
-        `Active gates: ${gates.length || compactNumber(gateStats.totalGates)}.`,
-        `Blocked actions recorded: ${compactNumber(gateStats.blocked || gateStats.denied || gateStats.totalBlocked)}.`,
-        gates[0] ? `Example gate: ${gates[0].name || gates[0].id || 'unnamed gate'}.` : '',
-      ].filter(Boolean),
-      sources: ['gate stats'],
-    };
+    const lower = String(ctx.prompt || '').toLowerCase();
+    // Distinguish "active" (currently defined) from "activated/fired/blocked" (events).
+    const asksEvents = /activat|fired|trigger|block|denied|prevent|enforce|hit/.test(lower);
+    const totalActive = gates.length || compactNumber(gateStats.totalGates);
+    const totalBlocked = compactNumber(gateStats.blocked || gateStats.denied || gateStats.totalBlocked);
+
+    const lines = [];
+    if (asksEvents) {
+      // Time-filtered block events would need a gate-events log; surface the
+      // total honestly and note the all-time scope rather than fake a "today".
+      lines.push(`Blocked actions recorded (all time): ${totalBlocked}.`);
+      if (intent.windowMs) {
+        lines.push(`(Per-${intent.windowLabel} block-event breakdown isn't tracked in the local dashboard snapshot — only the running total. Filter the gate-events log directly for a precise window.)`);
+      }
+    } else {
+      lines.push(`Active gates: ${totalActive}.`);
+    }
+    if (intent.wantsList && gates.length) {
+      lines.push('Active gates:');
+      for (const g of gates.slice(0, 8)) {
+        lines.push(`  • ${g.name || g.id || 'unnamed'}${g.severity ? ' [' + g.severity + ']' : ''}`);
+      }
+    } else if (gates[0] && !intent.wantsList) {
+      lines.push(`Example gate: ${gates[0].name || gates[0].id || 'unnamed gate'}.`);
+    }
+    return { lines, sources: ['gate stats'] };
   }
   if (topic === 'team') {
     return {
@@ -1665,13 +1729,22 @@ function buildEnterpriseChatSection(topic, dashboardData, status, feedbackDir, p
   };
 }
 
-function buildEnterpriseChatAnswer(prompt, dashboardData, status, feedbackDir) {
+function buildEnterpriseChatAnswer(prompt, dashboardData, status, opts = {}) {
   const topic = classifyEnterpriseChatTopic(prompt);
-  const section = buildEnterpriseChatSection(topic, dashboardData, status, feedbackDir, prompt);
+  const intent = parseChatIntent(prompt);
+  const section = buildEnterpriseChatSection(topic, dashboardData, status, {
+    intent,
+    feedbackDir: opts.feedbackDir,
+    prompt,
+  });
+
+  // List-style answers want newlines; single-line answers join with space.
+  const hasList = section.lines.some((l) => /^\s*•/.test(l));
+  const answer = hasList ? section.lines.join('\n') : section.lines.join(' ');
 
   return {
     topic,
-    answer: section.lines.join(' '),
+    answer,
     sources: ['local dashboard data', ...section.sources],
   };
 }
@@ -1687,7 +1760,7 @@ async function trySendLocalDashboardChat(res, parsed, feedbackDir, prompt, suffi
       prompt,
       dashboardResult.data,
       buildEnterpriseDataChatStatus(),
-      feedbackDir,
+      { feedbackDir },
     );
     sendJson(res, 200, {
       ok: true,
@@ -1735,7 +1808,7 @@ async function answerEnterpriseDataChat({ prompt, feedbackDir, parsed }) {
   // The dashboard's real local/open-source chatbot turn goes through /v1/chat,
   // which uses lesson retrieval + optional LanceDB vector search + the user's
   // configured local or BYO model.
-  const chat = buildEnterpriseChatAnswer(normalizedPrompt, dashboardData, status, feedbackDir);
+  const chat = buildEnterpriseChatAnswer(normalizedPrompt, dashboardData, status, { feedbackDir });
   const dfcxRequest = {
     fulfillmentInfo: { tag: 'chat-with-data' },
     sessionInfo: {
@@ -2334,10 +2407,6 @@ function loadProPageHtml(runtimeConfig, pageContext = {}) {
 
 function loadPricingPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(PRICING_PAGE_PATH, runtimeConfig, pageContext);
-}
-
-function loadAboutPageHtml(runtimeConfig, pageContext = {}) {
-  return loadPublicMarketingTemplateHtml(ABOUT_PAGE_PATH, runtimeConfig, pageContext);
 }
 
 function readOptionalPublicTemplate(filePath) {
@@ -2972,7 +3041,6 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/learn/codex-role-plugins-need-governance', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/agentic-os-team-governance', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/cost-aware-agent-gate-routing', changefreq: 'weekly', priority: '0.85' },
-    { path: '/learn/pretix-stripe-connect-marketplaces', changefreq: 'weekly', priority: '0.9' },
     { path: '/compare/claude-code-hooks', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/bumblebee', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/anthropic-containment', changefreq: 'weekly', priority: '0.85' },
@@ -4960,25 +5028,6 @@ async function addContext(){
       return;
     }
 
-    if (isGetLikeRequest && (pathname === '/about' || pathname === '/about.html')) {
-      try {
-        servePublicMarketingPage({
-          req,
-          res,
-          parsed,
-          hostedConfig,
-          isHeadRequest,
-          renderHtml: loadAboutPageHtml,
-          extraTelemetry: {
-            pageType: 'about',
-          },
-        });
-      } catch (err) {
-        sendText(res, 500, err.message || 'About page unavailable');
-      }
-      return;
-    }
-
     if (isGetLikeRequest && (pathname === '/guide' || pathname === '/guide.html')) {
       try {
         const html = fs.readFileSync(GUIDE_PAGE_PATH, 'utf-8');
@@ -5377,60 +5426,8 @@ async function addContext(){
       // because no real crawler appends customer_email to discovered URLs.
       const hasCustomerEmailHint = !!parsed?.searchParams?.has('customer_email');
       const botShouldBypass = !botClassification.isBot || hasCustomerEmailHint;
-      // 2026-06-04 audit: after the POST-401 fix, 3 of 4 fresh /checkout/pro
-      // sessions had customer_email=null in Stripe (zombie sessions with no
-      // recovery surface). Root cause: POSTs were auto-confirmed regardless of
-      // whether the email query param was present. Require email on POSTs too
-      // so emails-less POSTs fall through to the interstitial form instead of
-      // creating an un-recoverable Stripe session.
-      const isConfirmedCheckout = (req.method === 'POST' && hasCustomerEmailHint)
+      const isConfirmedCheckout = req.method === 'POST'
         || (hasConfirmFlag && botShouldBypass);
-      // 2026-06-05 revenue bypass: env-gated direct-to-Stripe redirect.
-      // Live 30d billing showed 254 interstitial views → 1 Stripe click-through
-      // → 0 paid. When THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS=1 is set we
-      // route raw /checkout/pro GETs (no confirm=1, no POST) straight to the
-      // pro Stripe Payment Link, preserving UTM + attribution metadata via
-      // buildCheckoutFallbackUrl. Default-off; bot-deflection still applies
-      // (bot + no email hint still falls through to the existing interstitial).
-      const interstitialBypassEnabled = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS === '1';
-      if (
-        !isConfirmedCheckout
-        && interstitialBypassEnabled
-        && req.method !== 'POST'
-        && botShouldBypass
-      ) {
-        // Always target the pro Stripe Payment Link directly. The
-        // hostedConfig.checkoutFallbackUrl (e.g. https://thumbgate.ai/go/pro)
-        // is a router that 302s back to /checkout/pro, which would create a
-        // redirect loop when bypass is on. Env override via
-        // THUMBGATE_CHECKOUT_PRO_STRIPE_URL is supported for future
-        // price-link rotation without a redeploy.
-        const bypassTarget = process.env.THUMBGATE_CHECKOUT_PRO_STRIPE_URL
-          || FIRST_FAILURE_RULE_CHECKOUT_URL;
-        appendBestEffortTelemetry(FEEDBACK_DIR, {
-          eventType: 'checkout_interstitial_bypass_redirect',
-          clientType: 'web',
-          traceId,
-          acquisitionId: analyticsMetadata.acquisitionId,
-          visitorId: analyticsMetadata.visitorId,
-          sessionId: analyticsMetadata.sessionId,
-          utmSource: analyticsMetadata.utmSource,
-          utmMedium: analyticsMetadata.utmMedium,
-          utmCampaign: analyticsMetadata.utmCampaign,
-          utmContent: analyticsMetadata.utmContent,
-          utmTerm: analyticsMetadata.utmTerm,
-          referrer: analyticsMetadata.referrer,
-          referrerHost: analyticsMetadata.referrerHost,
-          page: '/checkout/pro',
-          planId: analyticsMetadata.planId,
-        }, req.headers, 'checkout_interstitial_bypass_redirect');
-        res.writeHead(302, {
-          ...responseHeaders,
-          Location: buildCheckoutFallbackUrl(bypassTarget, analyticsMetadata),
-        });
-        res.end();
-        return;
-      }
       // Plausible funnel event #1 of 3: page view. Fired before interstitial
       // deflection so we get the full top-of-funnel count, with isBot as a
       // prop so the dashboard can filter human vs. crawler traffic. Fire-and-forget.
@@ -7288,9 +7285,6 @@ ${hidden}
           stats.geminiKeyStatus = 'validated';
         }
         stats.hybridInferenceAvailable = !!(stats.geminiConfigured || stats.perplexityConfigured);
-        stats.localLlmConfigured = Boolean(process.env.THUMBGATE_LOCAL_LLM_ENDPOINT);
-        stats.localLlmEndpoint = process.env.THUMBGATE_LOCAL_LLM_ENDPOINT || null;
-        stats.localLlmModel = process.env.THUMBGATE_LOCAL_LLM_MODEL || null;
         sendJson(res, 200, stats);
         return;
       }
