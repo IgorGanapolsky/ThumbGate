@@ -49,6 +49,10 @@ const {
   readDecisionLog,
 } = require('./decision-journal');
 const { analyzeFeedback } = require('./feedback-loop');
+const {
+  collectAggregateLogEntries,
+  shouldAggregateFeedback,
+} = require('./feedback-aggregate');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_GATES_PATH = path.join(PROJECT_ROOT, 'config', 'gates', 'default.json');
@@ -1545,6 +1549,10 @@ function resolveTeamWindowHours(analyticsWindow) {
 // ---------------------------------------------------------------------------
 
 function collectAllFeedbackEntries(feedbackDir) {
+  if (shouldAggregateFeedback()) {
+    return collectAggregateLogEntries('feedback-log.jsonl', { feedbackDir }).entries;
+  }
+
   const entries = [];
   const seen = new Set();
 
