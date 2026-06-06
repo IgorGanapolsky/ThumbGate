@@ -191,6 +191,7 @@
     "scripts/skill-rag-router.js",
     "scripts/slo-alert-engine.js",
     "scripts/spec-gate.js",
+    "scripts/statusline-cache-read.js",
     "scripts/statusline-cache-path.js",
     "scripts/statusline-context.js",
     "scripts/statusline-lesson.js",
