@@ -159,13 +159,6 @@ test('isCliInvocation identifies only the Medium weekly script path', () => {
   assert.equal(isCliInvocation(['node']), false);
 });
 
-test('GitHub workflow generates Medium visibility kit without claiming publication', () => {
-  const workflowPath = path.join(__dirname, '..', '.github', 'workflows', 'medium-weekly-visibility.yml');
-  const workflow = fs.readFileSync(workflowPath, 'utf8');
-
-  assert.match(workflow, /medium-weekly-visibility/);
-  assert.match(workflow, /npm run medium:weekly:draft/);
-  assert.match(workflow, /npm run test:medium-weekly/);
-  assert.match(workflow, /docs\/marketing\/medium\/published\.csv/);
-  assert.doesNotMatch(workflow, /MEDIUM_API_TOKEN|medium publish/i);
-});
+// REMOVED 2026-06-06: .github/workflows/medium-weekly-visibility.yml was
+// deleted in the post-Reddit credibility cleanup. The medium-weekly.js
+// drafting library + its 10 other tests in this file are preserved.
