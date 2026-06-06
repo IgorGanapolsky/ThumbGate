@@ -15,6 +15,7 @@
 - CLAUDE.md and .cursorrules files are suggestions agents can ignore
 - No memory between sessions means no learning from corrections
 - Teams have no shared safety rules across developers
+- AI crawlers and agents create machine traffic without proving buyer intent; teams need AI-discoverable proof plus runtime gates before internal agents act
 
 ## How it works
 
@@ -63,6 +64,7 @@ npx thumbgate init --agent claude-code
 - Agent discovery: https://thumbgate.ai/.well-known/mcp.json
 - Progressive tool index: https://thumbgate.ai/.well-known/mcp/tools.json
 - Context footprint report: https://thumbgate.ai/.well-known/mcp/footprint.json
+- Agentic web governance: https://thumbgate.ai/guides/agentic-web-governance
 - AI Mode ads and agent governance: https://thumbgate.ai/guides/ai-mode-ads-agent-governance
 - MCP tool governance: https://thumbgate.ai/guides/mcp-tool-governance
 - AI agent pre-action approval gates: https://thumbgate.ai/guides/ai-agent-pre-action-approval-gates

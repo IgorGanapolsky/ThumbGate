@@ -83,6 +83,8 @@ ThumbGate is built on Node.js >=18.18.0 and runs locally on each developer's mac
 
 **Digital PR & AI Search Citation Governance**: AI search has made digital PR fundamentals more important: clear claims, current proof, canonical pages, earned citations, and citation share of voice. ThumbGate's public context, comparison pages, proof commands, and directory listings are built so Google AI Overviews, ChatGPT, Perplexity, Claude, and directory editors can cite evidence instead of stale marketing copy.
 
+**Agentic Web Governance**: June 2026 reporting on Cloudflare traffic data put automated HTML requests at roughly 57.3% of measured requests versus 42.7% human requests. That does not mean bot traffic is buyer intent. It means ThumbGate should be easy for legitimate AI crawlers and answer engines to understand while the product gates risky internal agent actions before code, deploys, secrets, money, data, or customer systems change. ThumbGate's strategy is allow AI discovery through canonical guides, schema, sitemap, and llms.txt; enforce pre-action checks when agents try to act.
+
 **Claude Code Skills Guardrails**: Claude Code skillbooks describe recurring workflows, but they are advisory. ThumbGate turns thumbs-down feedback from named skills into prevention rules and pre-action checks so refactor, testing, migration, CI, and prompt/tool skills can be enforced across sessions.
 
 **Long-Running Agent Context Guardrails**: `npx thumbgate long-running-agent-context-guardrails --request-count=80 --output-mb=3 --raw-chat-only --json` maps Slack-style structured context management into gates. Long-running agents should keep a director journal, critic-reviewed findings with credibility scores, and a deduplicated timeline instead of relying only on accumulated chat logs.
@@ -243,6 +245,7 @@ npx thumbgate dashboard --open
 - npm: https://www.npmjs.com/package/thumbgate
 - Documentation: https://thumbgate.ai/guide
 - AI search topical presence guide: https://thumbgate.ai/guides/ai-search-topical-presence
+- Agentic web governance guide: https://thumbgate.ai/guides/agentic-web-governance
 - GPT-5.5 model evaluation guide: https://thumbgate.ai/guides/gpt-5-5-model-evaluation
 - Best tools to stop AI agents from breaking production: https://thumbgate.ai/guides/best-tools-stop-ai-agents-breaking-production
 - Relational knowledge guide: https://thumbgate.ai/guides/relational-knowledge-ai-recommendations
@@ -265,6 +268,7 @@ That means the highest-ROI acquisition surfaces are:
 - listicle-style pages that answer long-tail buyer prompts such as "best tools to stop AI agents from breaking production"
 - conversational-ad answer pages that mirror buyer prompts such as "how do I govern MCP tools before agents call them?"
 - approval-gate pages that explain when an AI agent should block, pause for approval, or log a risky action
+- agentic-web pages that connect bot-majority traffic to pre-action governance before agents touch tools, repos, data, or customer systems
 - comparison pages that clarify why memory-only or spec-only alternatives do not solve repeated tool-call failures
 - machine-readable evidence, pricing, and supported-agent compatibility that make the recommendation easy for LLMs to quote
 

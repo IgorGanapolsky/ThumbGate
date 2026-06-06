@@ -283,6 +283,226 @@
     "imageAlt": "ThumbGate guide for ThumbGate vs Fallow"
   },
   {
+    "path": "/compare/cycode",
+    "slug": "compare-cycode",
+    "query": "thumbgate vs cycode ai coding agent guardrails",
+    "pillar": "comparison",
+    "intent": "comparison",
+    "pageType": "comparison",
+    "persona": "tool-evaluator",
+    "opportunityScore": 100,
+    "title": "ThumbGate vs Cycode | Local-First MIT Alternative for AI Agent Guardrails",
+    "description": "Cycode ships IDE-native security guardrails for enterprise AppSec teams — agent-time scanning, beforeMCPExecution / beforeReadFile / beforeSubmitPrompt hooks...",
+    "heroTitle": "ThumbGate vs Cycode",
+    "heroSummary": "Cycode ships IDE-native security guardrails for enterprise AppSec teams — agent-time scanning, beforeMCPExecution / beforeReadFile / beforeSubmitPrompt hooks, and integration with their broader code-security platform. ThumbGate is the local-first, MIT-licensed CLI that ships the same PreToolUse / MCP-tool-call gating surface as an open-source npm install — and adds a learning loop where every thumbs-down becomes an auto-promoted prevention rule the team shares.",
+    "takeaways": [
+      "Cycode is enterprise IDE security: agent-time scanning + hook interception + platform integration with their broader AppSec suite.",
+      "ThumbGate ships the same PreToolUse / beforeMCPExecution surface as an MIT-licensed CLI you install in 30 seconds — no platform contract, no procurement cycle.",
+      "The decision is mostly company-shape: enterprise security teams take Cycode; solo devs, OSS maintainers, and small teams take ThumbGate. The learning-loop (thumbs-down → prevention rule across sessions) is something Cycode does not advertise."
+    ],
+    "sections": [
+      {
+        "heading": "The product difference in one sentence",
+        "paragraphs": [
+          "Cycode is \"IDE security for the enterprise\" — its February 2026 announcement positions the agent-time hooks (beforeSubmitPrompt, beforeReadFile, beforeMCPExecution) as one module of a broader AppSec platform that also covers secrets, SAST, SCA, and supply chain.",
+          "ThumbGate is a single-purpose, open-source, local-first CLI for the same hook surface. The lexicon is the same; the buyer is different. ThumbGate optimizes for a developer who can `npx thumbgate init` and have working PreToolUse gating before lunch."
+        ]
+      },
+      {
+        "heading": "Choose Cycode when",
+        "bullets": [
+          "You have an enterprise AppSec team that needs a unified vendor across secrets, SAST, SCA, supply-chain, and the new agent-time hook layer.",
+          "You need centralized policy management, RBAC, SIEM integration, and a procurement-ready contract with SOC2 / ISO-grade artifacts.",
+          "Your security org wants one dashboard for IDE-time and CI/CD-time security posture across the whole repo footprint."
+        ]
+      },
+      {
+        "heading": "Choose ThumbGate when",
+        "bullets": [
+          "You want PreToolUse / beforeMCPExecution gating working in 30 seconds via `npx thumbgate init` — no contract, no platform install, no procurement.",
+          "You want a learning loop: a thumbs-down on a blocked action becomes an auto-promoted prevention rule that holds across every session, model, and agent.",
+          "You are a solo developer, OSS maintainer, or small team that wants MIT-licensed code you can read, fork, and verify — not a closed-source SaaS.",
+          "You want the gating engine to run entirely on the developer machine with zero network egress for the hook decision itself."
+        ]
+      },
+      {
+        "heading": "What the two products share",
+        "paragraphs": [
+          "Both put the enforcement boundary at the same place — the agent's tool call, before execution — and both name the hooks the same way (PreToolUse / beforeMCPExecution / beforeReadFile). The category lexicon is the same because the underlying agent loop is the same.",
+          "The disagreement is on packaging. Cycode wraps it in an enterprise platform contract; ThumbGate ships it as an MIT-licensed CLI. If you are an enterprise security team buying a platform, you are not the ThumbGate buyer. If you are a developer who wants to type `npx thumbgate init` and have agent gating running before the next standup, Cycode is over-scoped for you."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "Is ThumbGate a direct replacement for Cycode's agent-time hooks?",
+        "answer": "For the hook surface itself — PreToolUse, beforeMCPExecution, beforeReadFile — yes. For the broader Cycode AppSec platform (secrets scanning, SAST, SCA, supply chain), no. ThumbGate is single-purpose: agent-time tool-call gating with a learning loop. If you only need that, ThumbGate replaces the Cycode agent-time module at zero license cost."
+      },
+      {
+        "question": "Why would I pick MIT-licensed local-first over a funded enterprise vendor?",
+        "answer": "Three reasons. (1) Cost: no per-seat license. (2) Speed of adoption: `npx thumbgate init` is faster than enterprise procurement. (3) Auditability: you can read the gate-engine code, modify it, and run it offline. The trade-off is you do not get a platform contract, RBAC, or a single vendor for all your AppSec needs. That is a fine trade-off for a solo dev or small team; it is the wrong trade-off for a regulated enterprise."
+      },
+      {
+        "question": "Does Cycode have the cross-session learning loop?",
+        "answer": "Not advertised on their public materials as of the February 2026 announcement. Cycode's hooks are policy-driven; ThumbGate adds a feedback-to-rules pipeline where a thumbs-down on a blocked action becomes an auto-promoted prevention rule that holds across every session and every agent on the same install."
+      },
+      {
+        "question": "Can I use both?",
+        "answer": "Technically yes — Cycode at the enterprise platform layer, ThumbGate as the developer-local fast loop — but most teams will pick one. They occupy the same hook surface, so running both means resolving who wins on conflicts. The simpler pattern is to pick by buyer profile: enterprise security team buys Cycode, individual developer / small team installs ThumbGate."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/claude-code-pretooluse-hook",
+        "title": "Claude Code PreToolUse Hook: Block MCP Tool Calls Before They Run"
+      },
+      {
+        "path": "/guides/mcp-tool-governance",
+        "title": "MCP tool governance before agents call real systems"
+      },
+      {
+        "path": "/guides/ai-coding-agent-zero-trust",
+        "title": "Zero Trust for AI Coding Agents, Enforced at the Tool Call"
+      }
+    ],
+    "cta": {
+      "label": "Go Pro — $19/mo",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=compare_cycode&cta_placement=seo_brief&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "weekly",
+    "priority": "0.9",
+    "keywordCluster": [
+      "thumbgate vs speclock",
+      "thumbgate vs mem0",
+      "thumbgate vs fallow",
+      "roo code alternative cline"
+    ],
+    "imageAlt": "ThumbGate guide for ThumbGate vs Cycode"
+  },
+  {
+    "path": "/compare/claude-code-hooks-mastery",
+    "slug": "compare-claude-code-hooks-mastery",
+    "query": "thumbgate vs disler claude code hooks mastery",
+    "pillar": "comparison",
+    "intent": "comparison",
+    "pageType": "comparison",
+    "persona": "claude-code-builder",
+    "opportunityScore": 100,
+    "title": "ThumbGate vs disler/claude-code-hooks-mastery | When to Pick the OSS Tool",
+    "description": "disler/claude-code-hooks-mastery is the most-starred community repo for Claude Code hooks — a comprehensive, free, MIT-licensed example library you can copy-...",
+    "heroTitle": "ThumbGate vs disler/claude-code-hooks-mastery",
+    "heroSummary": "disler/claude-code-hooks-mastery is the most-starred community repo for Claude Code hooks — a comprehensive, free, MIT-licensed example library you can copy-paste into your own .claude/ config. ThumbGate is a published npm CLI that does the same gating work plus a learning loop where every thumbs-down becomes an auto-promoted prevention rule that holds across sessions, models, and agents. The disler repo is where you START; ThumbGate is what you USE when you stop wanting to maintain hook scripts by hand.",
+    "takeaways": [
+      "disler/claude-code-hooks-mastery is a free reference repo of hook examples — you copy them into .claude/, edit, and maintain per-machine, per-project.",
+      "ThumbGate ships the same gating engine as one `npx thumbgate init` install — versioned config, cross-session prevention rules, dashboard, audit trail.",
+      "The right path: start with the disler repo to learn what is possible; move to ThumbGate when you find yourself maintaining hook scripts in three projects."
+    ],
+    "sections": [
+      {
+        "heading": "The product difference in one sentence",
+        "paragraphs": [
+          "disler/claude-code-hooks-mastery is a GitHub repository of high-quality example hooks you read, learn from, and copy into your own setup. ThumbGate is a published CLI that ships the gating engine as a runnable tool with cross-session learning, a dashboard, and an audit trail.",
+          "Both are MIT-licensed. Both run locally. The disagreement is whether you want to read example scripts and own the maintenance, or install a tool that does the work and stays in sync."
+        ]
+      },
+      {
+        "heading": "Choose disler/claude-code-hooks-mastery when",
+        "bullets": [
+          "You want to learn how Claude Code hooks actually work by reading well-written examples.",
+          "You are happy maintaining your own .claude/ config per project and per machine.",
+          "You only need static pattern-matching — no need for cross-session learning, dashboard, or audit history.",
+          "You explicitly do not want any installed dependency beyond what you author yourself."
+        ]
+      },
+      {
+        "heading": "Choose ThumbGate when",
+        "bullets": [
+          "You want PreToolUse gating working in 30 seconds via `npx thumbgate init` — no copy-paste, no per-machine setup.",
+          "You want the learning loop: a thumbs-down on a blocked action becomes an auto-promoted prevention rule that holds across every session and every agent on the install.",
+          "You want a dashboard showing what was blocked, why, and which feedback became which rule — auditable evidence, not just hook scripts on disk.",
+          "You want one gate engine that works across Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and OpenCode — not a separate copy-paste exercise per agent.",
+          "You operate on more than one project and do not want to maintain N copies of the same hook scripts."
+        ]
+      },
+      {
+        "heading": "What the disler repo does brilliantly",
+        "paragraphs": [
+          "It is the best public reference for what a Claude Code PreToolUse hook can do — clear examples, real patterns, MIT-licensed code you can read end-to-end in an afternoon. If you are evaluating the category, that repo is required reading. It also has 3,000+ stars at the time of writing for a reason: the examples are good.",
+          "ThumbGate is not trying to replace that learning resource. The disler repo is where you understand the surface; ThumbGate is what you use when you decide to ship gating in production and want the cross-session learning, the dashboard, and the team-shared rule library that copy-paste cannot give you."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "Why pay $19/mo for ThumbGate Pro when disler hooks are free?",
+        "answer": "Free disler hooks are static patterns you maintain per machine — re-copying them when they change, debugging false positives alone, and re-applying them in every new project. ThumbGate Pro adds the learning loop (thumbs-down → cross-session prevention rule), the dashboard, hosted sync across machines, and adapter maintenance across the weekly breaking-change cycle of Claude Code, Cursor, and Cline. Free disler is the right answer if you only ever work in one project on one machine and never want to learn from past mistakes. Pro is the right answer when those assumptions stop holding."
+      },
+      {
+        "question": "Is ThumbGate just a packaged version of disler/claude-code-hooks-mastery?",
+        "answer": "No. ThumbGate ships its own gate engine, feedback-to-rules pipeline, dashboard, and audit trail. The disler repo is a reference of well-written hook scripts you copy into your config; ThumbGate is a runnable CLI that ships the gate engine and adds a learning layer on top. Both are MIT-licensed and both rely on the same Claude Code PreToolUse hook surface — that is where the similarity ends."
+      },
+      {
+        "question": "Should I start with disler or ThumbGate?",
+        "answer": "If you want to understand the category, read the disler repo first — it is the best public reference for what hooks can do. If you want gating working now without authoring scripts, run `npx thumbgate init`. Most users end up doing both: read disler to learn, install ThumbGate when they decide they would rather use a tool than maintain scripts."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/claude-code-pretooluse-hook",
+        "title": "Claude Code PreToolUse Hook: Block MCP Tool Calls Before They Run"
+      },
+      {
+        "path": "/compare/cycode",
+        "title": "ThumbGate vs Cycode"
+      },
+      {
+        "path": "/guides/pre-action-checks",
+        "title": "What Are Pre-Action Checks?"
+      }
+    ],
+    "cta": {
+      "label": "Go Pro — $19/mo",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=compare_claude-code-hooks-mastery&cta_placement=seo_brief&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "weekly",
+    "priority": "0.9",
+    "keywordCluster": [
+      "thumbgate vs speclock",
+      "thumbgate vs mem0",
+      "thumbgate vs fallow",
+      "roo code alternative cline"
+    ],
+    "imageAlt": "ThumbGate guide for ThumbGate vs disler/claude-code-hooks-mastery"
+  },
+  {
     "path": "/guides/roo-code-alternative-cline",
     "slug": "guides-roo-code-alternative-cline",
     "query": "roo code alternative cline",
@@ -2543,6 +2763,119 @@
     "imageAlt": "ThumbGate guide for MCP tool governance before agents call real systems"
   },
   {
+    "path": "/guides/agentic-web-governance",
+    "slug": "guides-agentic-web-governance",
+    "query": "agentic web governance",
+    "pillar": "pre-action-checks",
+    "intent": "commercial",
+    "pageType": "guide",
+    "persona": "engineering-lead",
+    "opportunityScore": 83,
+    "title": "Agentic Web Governance | Pre-Action Checks When Bots Outnumber Humans",
+    "description": "Cloudflare says automated requests now make up the majority of HTML traffic. ThumbGate turns that agentic-web shift into a buyer-ready governance story: mach...",
+    "heroTitle": "Bots already outnumber humans on the web. AI agents need pre-action governance.",
+    "heroSummary": "Cloudflare says automated requests now make up the majority of HTML traffic. ThumbGate turns that agentic-web shift into a buyer-ready governance story: machine-readable proof for AI search and pre-action checks before agents touch real systems.",
+    "takeaways": [
+      "The promotion hook is immediate: the web is becoming agent-first, so AI-agent actions need governance before execution.",
+      "AI search and AI browsers reward machine-readable, authoritative, proof-backed pages instead of vague product copy.",
+      "ThumbGate should own the bridge between agentic traffic, MCP tool calls, and pre-action checks for code, deploys, data, money, and customer systems."
+    ],
+    "sections": [
+      {
+        "heading": "Why the bot-majority milestone matters",
+        "paragraphs": [
+          "Search Engine Land reported on June 5, 2026 that Cloudflare data showed automated traffic at about 57.3% of worldwide HTTP requests to HTML content, versus 42.7% for humans. That is not the same as human attention, but it is a real signal that AI agents and bots are becoming the default way the web is requested, summarized, and acted on.",
+          "For ThumbGate promotion, the lesson is not \"get more bot traffic.\" The lesson is that every company will need controls for agent actions that happen before a human click, before a dashboard session, and before a normal attribution path records intent."
+        ]
+      },
+      {
+        "heading": "The buyer problem this creates",
+        "bullets": [
+          "AI crawlers and agents can visit far more pages than a human researcher, increasing load without creating normal referral or checkout signals.",
+          "Agentic search can summarize the answer before the buyer ever lands on the site, so content must be structured enough for LLMs to cite accurately.",
+          "Internal AI agents can also multiply actions: file edits, shell commands, API calls, database reads, deploy attempts, and customer-system writes.",
+          "More agent actions without a pre-action boundary means more repeated mistakes, more hidden cost, and weaker auditability."
+        ]
+      },
+      {
+        "heading": "Where ThumbGate fits the agentic web",
+        "paragraphs": [
+          "ThumbGate is the pre-action governance layer for the same agentic shift. The public website gives AI systems machine-readable context, proof links, FAQ schema, and canonical pages. The product then gives engineering teams runtime gates before agents act.",
+          "That lets the promotion story stay concrete: bots and AI agents already outnumber humans in web requests; ThumbGate makes sure your own AI agents do not behave like unmanaged bots inside your repo, browser, database, CI, payment flow, or customer systems."
+        ],
+        "bullets": [
+          "Use /llm-context.md and /.well-known/llms.txt to make ThumbGate easy for ChatGPT, Claude, Perplexity, Gemini, Grok, and Google AI features to summarize.",
+          "Use pre-action checks to govern MCP tool calls, browser automation, database writes, publish commands, and payment/customer-system actions.",
+          "Use feedback capture so a thumbs-down on one bad agent pattern becomes a repeat-blocking rule across the next session and team workflow."
+        ]
+      },
+      {
+        "heading": "High-ROI promotion moves",
+        "bullets": [
+          "Publish this page as the canonical \"agentic web governance\" explainer and link it from the homepage, learn hub, llms.txt, and sitemap.",
+          "Pitch the line: \"Bots already outnumber humans on the web. ThumbGate keeps AI agents from acting like unmanaged bots in your codebase.\"",
+          "Target buyer prompts such as \"how do I govern AI agents before they call tools?\", \"AI crawler visibility for developer tools\", and \"pre-action checks for MCP tools.\"",
+          "Measure success in Search Console AI reports, first-party landing events, and checkout/intake paths instead of raw traffic alone."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "What is agentic web governance?",
+        "answer": "Agentic web governance is the content, policy, approval, and runtime-control layer needed when AI agents browse, summarize, and act on behalf of users or teams. For ThumbGate, it means machine-readable public proof plus pre-action checks before internal agents touch real systems."
+      },
+      {
+        "question": "Does bot traffic mean ThumbGate should block AI crawlers?",
+        "answer": "No. For promotion, ThumbGate should allow legitimate AI discovery while publishing clear llms.txt, schema, canonical pages, and proof links. The product should block risky internal agent actions, not useful AI-search discovery."
+      },
+      {
+        "question": "How does this create revenue?",
+        "answer": "It gives ThumbGate a timely category narrative for buyers: as agent actions multiply, teams need pre-action controls before code, data, deploys, payments, or customers are touched. The page routes that demand into Pro checkout and the Team workflow hardening sprint."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/ai-search-topical-presence",
+        "title": "AI search topical presence decides who gets recommended"
+      },
+      {
+        "path": "/guides/mcp-tool-governance",
+        "title": "MCP tool governance before agents call real systems"
+      },
+      {
+        "path": "/guides/ai-agent-pre-action-approval-gates",
+        "title": "AI agent pre-action approval gates for risky tool calls"
+      }
+    ],
+    "cta": {
+      "label": "Go Pro — $19/mo",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_agentic-web-governance&cta_placement=seo_brief&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "monthly",
+    "priority": "0.8",
+    "keywordCluster": [
+      "claude code masterclass guardrails",
+      "cursor prevent repeated mistakes",
+      "claude code prevent repeated mistakes",
+      "codex cli guardrails"
+    ],
+    "imageAlt": "ThumbGate guide for Bots already outnumber humans on the web. AI agents need pre-action governance."
+  },
+  {
     "path": "/guides/autoresearch-agent-safety",
     "slug": "guides-autoresearch-agent-safety",
     "query": "autoresearch agent safety",
@@ -3305,6 +3638,113 @@
       "codex cli guardrails"
     ],
     "imageAlt": "ThumbGate guide for Best Tools to Stop AI Agents From Breaking Production"
+  },
+  {
+    "path": "/guides/database-agent-safety",
+    "slug": "guides-database-agent-safety",
+    "query": "database safety for ai agents",
+    "pillar": "pre-action-checks",
+    "intent": "informational",
+    "pageType": "guide",
+    "persona": "ai-engineer",
+    "opportunityScore": 72,
+    "title": "Database Safety for AI Agents | ThumbGate Guide",
+    "description": "AI agents can write code quickly, but database actions need stricter gates: a hallucinated SQL write, migration, role grant, or production config change can...",
+    "heroTitle": "Database Safety for AI Agents",
+    "heroSummary": "AI agents can write code quickly, but database actions need stricter gates: a hallucinated SQL write, migration, role grant, or production config change can destroy data before review.",
+    "takeaways": [
+      "Databases are the highest-blast-radius tool surface for autonomous coding agents.",
+      "The winning pattern is not an AI DBA autopilot alone; it is a pre-action approval boundary before SQL, migrations, and privilege changes run.",
+      "ThumbGate turns repeated database mistakes into rules that block or pause the next risky query before execution."
+    ],
+    "sections": [
+      {
+        "heading": "Why database work is the final boss for agents",
+        "paragraphs": [
+          "A bad UI component is visible and usually reversible. A bad production query can delete rows, lock writes, leak data, or change privileges before anyone reviews the pull request.",
+          "That is why database-agent safety belongs at the tool-call boundary. The agent should be stopped before it runs DROP, TRUNCATE, unbounded UPDATE/DELETE, production migrations, or role grants."
+        ]
+      },
+      {
+        "heading": "The high-ROI gate pack",
+        "bullets": [
+          "Block DROP, TRUNCATE, DROP DATABASE, and DROP SCHEMA unless human approval and rollback evidence are attached.",
+          "Block UPDATE and DELETE without a restrictive WHERE clause, including WHERE 1=1 and WHERE TRUE.",
+          "Require backup, snapshot, or reversible migration proof before production schema changes.",
+          "Require dry-run or EXPLAIN evidence before production writes and migrations.",
+          "Warn on CREATE INDEX without CONCURRENTLY and CROSS JOINs that can create performance incidents.",
+          "Block role creation, role alteration, and broad grants from autonomous agents."
+        ]
+      },
+      {
+        "heading": "Where ThumbGate fits",
+        "paragraphs": [
+          "ThumbGate is not trying to replace Postgres, MySQL, Prisma, Rails migrations, or a DBA. It is the pre-action control plane that checks the agent before those tools execute.",
+          "The feedback loop matters: when a human gives a thumbs-down on an unsafe migration or query, ThumbGate can promote the failure pattern into a prevention rule so the next agent run cannot repeat it silently."
+        ]
+      },
+      {
+        "heading": "First workflow to gate",
+        "paragraphs": [
+          "Start with one production migration path. Require the agent to show target environment, dry-run output, backup or snapshot evidence, rollback plan, and human approval before it can run the command. That single workflow makes the value visible to engineering leaders immediately."
+        ]
+      }
+    ],
+    "faq": [
+      {
+        "question": "Should AI agents be allowed to run production database migrations?",
+        "answer": "Only behind an approval gate. Production migrations should require target verification, dry-run output, backup or snapshot evidence, rollback plan, and human approval before the command executes."
+      },
+      {
+        "question": "What database actions should be blocked by default?",
+        "answer": "DROP, TRUNCATE, DROP DATABASE, DROP SCHEMA, role or grant changes, unbounded UPDATE or DELETE, and production migrations without rollback and dry-run evidence should be blocked or paused before execution."
+      },
+      {
+        "question": "Is this an AI DBA replacement?",
+        "answer": "No. ThumbGate is the governance layer before an agent touches database tooling. It blocks known-bad actions and requires proof for risky actions; DBAs and platform teams still own database design and operations."
+      }
+    ],
+    "relatedPages": [
+      {
+        "path": "/guides/pre-action-checks",
+        "title": "What Are Pre-Action Checks?"
+      },
+      {
+        "path": "/guides/ai-agent-pre-action-approval-gates",
+        "title": "AI agent pre-action approval gates for risky tool calls"
+      },
+      {
+        "path": "/guides/best-tools-stop-ai-agents-breaking-production",
+        "title": "Best Tools to Stop AI Agents From Breaking Production"
+      }
+    ],
+    "cta": {
+      "label": "Go Pro — $19/mo",
+      "href": "/checkout/pro?utm_source=website&utm_medium=seo_page&utm_campaign=guides_database-agent-safety&cta_placement=seo_brief&plan_id=pro"
+    },
+    "proofLinks": [
+      {
+        "label": "Verification evidence",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md"
+      },
+      {
+        "label": "Automation proof",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json"
+      },
+      {
+        "label": "GitHub repository",
+        "href": "https://github.com/IgorGanapolsky/ThumbGate"
+      }
+    ],
+    "changefreq": "monthly",
+    "priority": "0.8",
+    "keywordCluster": [
+      "claude code masterclass guardrails",
+      "cursor prevent repeated mistakes",
+      "claude code prevent repeated mistakes",
+      "codex cli guardrails"
+    ],
+    "imageAlt": "ThumbGate guide for Database Safety for AI Agents"
   },
   {
     "path": "/guides/prompt-tricks-to-workflow-rules",
