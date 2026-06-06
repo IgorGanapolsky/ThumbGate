@@ -24,9 +24,7 @@ const ROOT = path.join(__dirname, '..');
 const FORBIDDEN_DIRS = [
   '.claude/implementation-notes',
   '.claude/ralph',
-  'docs/marketing/reddit-posts',
-  'docs/marketing/hn-posts',
-  'docs/marketing/discord-posts',
+  'docs/marketing',
 ];
 
 const FORBIDDEN_FILE_PATTERNS = [
@@ -72,15 +70,32 @@ function listAllFiles(dir, base = dir) {
 }
 
 test('no internal-orchestration directories are tracked', () => {
+  // Use `git ls-files` so that locally-gitignored scratchpads (e.g. a
+  // dev's `.claude/implementation-notes/foo.md`) don't trip the assertion.
+  // The test is about the public tree, not the local working copy.
+  let tracked = '';
+  try {
+    tracked = require('node:child_process')
+      .execSync('git ls-files', { cwd: ROOT })
+      .toString();
+  } catch {
+    /* not a git checkout — fall back to fs walk */
+    for (const dir of FORBIDDEN_DIRS) {
+      const abs = path.join(ROOT, dir);
+      if (!fs.existsSync(abs)) continue;
+      const files = listAllFiles(abs, ROOT);
+      assert.equal(files.length, 0, `Internal-orchestration directory "${dir}" must not contain files. Found: ${files.join(', ')}.`);
+    }
+    return;
+  }
+  const trackedFiles = tracked.split('\n').filter(Boolean);
   for (const dir of FORBIDDEN_DIRS) {
-    const abs = path.join(ROOT, dir);
-    if (!fs.existsSync(abs)) continue;
-    const files = listAllFiles(abs, ROOT);
-    assert.equal(
-      files.length,
-      0,
+    const offenders = trackedFiles.filter((f) => f.startsWith(dir + '/'));
+    assert.deepEqual(
+      offenders,
+      [],
       `Internal-orchestration directory "${dir}" must not contain tracked files. ` +
-        `Found: ${files.join(', ')}. ` +
+        `Found: ${offenders.join(', ')}. ` +
         `See Reddit r/devops 2026-06-06 incident. ` +
         `Add to .gitignore and delete from the tree.`
     );

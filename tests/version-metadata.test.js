@@ -90,7 +90,7 @@ test('public docs render the current package version', () => {
   const codexPluginInstall = readText('plugins/codex-profile/INSTALL.md');
   const distributionDoc = readText('docs/PLUGIN_DISTRIBUTION.md');
   const claudeDesktopPacket = readText('docs/CLAUDE_DESKTOP_EXTENSION.md');
-  const productHuntKit = readText('docs/marketing/product-hunt-launch.md');
+  // const productHuntKit = ...; // docs/marketing/product-hunt-launch.md removed 2026-06-06
 
   assert.match(readme, /Open ThumbGate GPT/);
   assert.match(readme, /https:\/\/thumbgate\.ai\/go\/gpt\?utm_source=github/);
@@ -227,8 +227,7 @@ test('public docs render the current package version', () => {
   assert.match(claudeDesktopPacket, new RegExp(getClaudePluginReviewLatestDownloadUrl(PROJECT_ROOT).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.match(claudeDesktopPacket, /Tool safety annotations/i);
   assert.match(claudeDesktopPacket, /Do not claim directory approval/i);
-  assert.ok(productHuntKit.includes(PRODUCTHUNT_URL));
-  assert.match(productHuntKit, /Claude plugin bundle/i);
+  // Two productHuntKit assertions removed 2026-06-06 with the docs/marketing/ deletion.
   assert.doesNotMatch(landingPage, /billingIncrement/);
   assert.doesNotMatch(landingPage, /P1M/);
   assert.match(mcpSubmission, new RegExp(`## Version\\s+${packageJson.version}`));
@@ -269,7 +268,7 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   const codexPlugin = readJson('plugins/codex-profile/.codex-plugin/plugin.json');
   const publicLanding = readText('public/index.html');
   const serverSource = readText('src/api/server.js');
-  const twitterThread = readText('docs/marketing/twitter-thread.md');
+  // const twitterThread = ...; // docs/marketing/twitter-thread.md removed 2026-06-06
 
   assert.equal(packageJson.homepage, CANONICAL_APP_ORIGIN);
   assert.equal(serverManifest.websiteUrl, CANONICAL_APP_ORIGIN);
@@ -307,9 +306,7 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.equal(codexPlugin.repository, CURRENT_REPOSITORY_URL);
   assert.doesNotMatch(claudeReadme, /github\.com\/IgorGanapolsky\/thumbgate/);
 
-  assert.match(twitterThread, /Hosted demo: thumbgate-production\.up\.railway\.app/);
-  assert.match(twitterThread, /engineering validation, not customer proof/i);
-  assert.doesNotMatch(twitterThread, /us-central1\.run\.app/);
+  // 3 twitterThread assertions removed 2026-06-06 with the docs/marketing/ deletion.
 });
 
 test('runtime hosted billing config defaults to the live pro price label', () => {
@@ -408,10 +405,11 @@ test('active GTM scripts and reports point to the canonical offer without foundi
   const outreachTargets = readText('docs/OUTREACH_TARGETS.md');
   const xAutomationReport = readText('docs/X_AUTOMATION_REPORT.md');
   const githubOutreach = readText('scripts/github-outreach.js');
-  const xAutomation = readText('scripts/x-autonomous-marketing.js');
+  // const xAutomation removed 2026-06-06: scripts/x-autonomous-marketing.js
+  // was deleted (X/Twitter retired from active distribution 2026-04-20).
   const autonomousSales = readText('scripts/autonomous-sales-agent.js');
 
-  for (const artifact of [outreachTargets, xAutomationReport, githubOutreach, xAutomation, autonomousSales]) {
+  for (const artifact of [outreachTargets, xAutomationReport, githubOutreach, autonomousSales]) {
     assert.doesNotMatch(artifact, /buy\.stripe\.com/);
     assert.doesNotMatch(artifact, /founding users today/i);
     assert.ok(
@@ -433,7 +431,7 @@ test('commercial truth sources stay aligned across public and historical docs', 
   const anthropicStrategy = readText('docs/ANTHROPIC_MARKETPLACE_STRATEGY.md');
   const workflowSprint = readText('docs/WORKFLOW_HARDENING_SPRINT.md');
   const xStrategy = readText('docs/X_AUTOMATION_STRATEGY.md');
-  const directoryGuide = readText('docs/marketing/mcp-directories.md');
+  // const directoryGuide = ...; // docs/marketing/mcp-directories.md removed 2026-06-06
 
   assert.match(commercialTruth, /Pro at \$19\/mo or \$149\/yr/);
   assert.match(commercialTruth, /Enterprise is the contact-sales tier: \*\*custom pricing, scoped after intake/i);
@@ -461,7 +459,7 @@ test('commercial truth sources stay aligned across public and historical docs', 
   assert.match(workflowSprint, /VERIFICATION_EVIDENCE\.md/);
   assert.doesNotMatch(workflowSprint, /^We are an official Anthropic partner\b/m);
 
-  assert.doesNotMatch(directoryGuide, /30k\+ stars|18k\+ servers listed/i);
+  // directoryGuide assertion removed 2026-06-06 with the docs/marketing/ deletion.
 });
 
 test('public repo documents the ThumbGate-Core private boundary', () => {
