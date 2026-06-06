@@ -301,11 +301,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // (required by thumbgate-bench.js to expand scanner-safe secret fixtures).
   // Bumped 280 -> 285 (2026-06-03) to accommodate newly merged guides and scripts from main.
   // Bumped 285 -> 290 (2026-06-04) to ship scripts/upstream-contribution-engine.js for dependency contribution scouting.
-  // Bumped 290 -> 291 (2026-06-06) to ship scripts/statusline-cache-read.js,
-  // required by the packaged statusline to aggregate per-folder caches.
+  // Bumped 290 -> 292 (2026-06-06) to ship scripts/feedback-aggregate-stats.js
+  // and scripts/statusline-cache-read.js, required by packaged statusline
+  // installs to aggregate cross-store feedback and per-folder caches.
   assert.ok(
-    manifest.fileCount <= 291,
-    `npm package should stay <= 291 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 292,
+    `npm package should stay <= 292 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
