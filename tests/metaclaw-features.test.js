@@ -94,12 +94,18 @@ test('createDailyDigestSchedule works', () => {
 });
 
 // === Skill Packs ===
-test('3 built-in packs', () => { assert.ok(packs.BUILTIN_PACKS['stripe-integration']); assert.ok(packs.BUILTIN_PACKS['railway-deploy']); assert.ok(packs.BUILTIN_PACKS['database-migration']); });
+test('4 built-in packs include database agent safety', () => {
+  assert.ok(packs.BUILTIN_PACKS['stripe-integration']);
+  assert.ok(packs.BUILTIN_PACKS['railway-deploy']);
+  assert.ok(packs.BUILTIN_PACKS['database-migration']);
+  assert.ok(packs.BUILTIN_PACKS['database-agent-safety']);
+});
 test('listSkillPacks', () => { const l = packs.listSkillPacks(); assert.ok(l.length >= 3); l.forEach((p) => assert.ok(p.ruleCount > 0)); });
 test('getSkillPack by name', () => { assert.ok(packs.getSkillPack('stripe-integration')); });
 test('getSkillPack null for unknown', () => { assert.equal(packs.getSkillPack('nope'), null); });
 test('matchSkillPacks stripe', () => { assert.equal(packs.matchSkillPacks('stripe payment')[0].name, 'stripe-integration'); });
 test('matchSkillPacks railway', () => { assert.equal(packs.matchSkillPacks('deploy railway')[0].name, 'railway-deploy'); });
+test('matchSkillPacks database safety', () => { assert.equal(packs.matchSkillPacks('production database drop table')[0].name, 'database-agent-safety'); });
 test('matchSkillPacks empty for unrelated', () => { assert.equal(packs.matchSkillPacks('quantum physics').length, 0); });
 test('registerSkillPack persists', () => { packs.registerSkillPack({ name: 'test-pack', triggers: ['test'], rules: ['Rule 1'] }); assert.ok(fs.existsSync(path.join(packs.SKILL_PACKS_DIR, 'test-pack.json'))); });
 test('registerSkillPack validates name', () => { assert.throws(() => packs.registerSkillPack({ rules: ['x'] }), /name/); });

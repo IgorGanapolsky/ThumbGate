@@ -170,6 +170,11 @@ const HIGH_ROI_QUERY_SEEDS = [
     95,
     'Bottom-of-funnel query for teams ready to add human approval and evidence requirements before AI agents touch risky tools.',
   ),
+  querySeed(
+    'database safety for ai agents',
+    96,
+    'Fresh database-agent risk query from the 2026 DB/AI conversation: agents can hallucinate UI, but SQL writes, migrations, and role grants can destroy production data.',
+  ),
   {
     query: 'thumbs up thumbs down feedback for ai coding agents',
     businessValue: 95,
@@ -2018,6 +2023,68 @@ const PAGE_BLUEPRINTS = [
       },
     ],
     relatedPaths: ['/guides/pre-action-checks', '/guides/agent-harness-optimization', '/guides/ai-search-topical-presence'],
+  },
+  {
+    query: 'database safety for ai agents',
+    path: '/guides/database-agent-safety',
+    pageType: 'guide',
+    pillar: 'pre-action-checks',
+    title: 'Database Safety for AI Agents | ThumbGate Guide',
+    heroTitle: 'Database Safety for AI Agents',
+    heroSummary: 'AI agents can write code quickly, but database actions need stricter gates: a hallucinated SQL write, migration, role grant, or production config change can destroy data before review.',
+    takeaways: [
+      'Databases are the highest-blast-radius tool surface for autonomous coding agents.',
+      'The winning pattern is not an AI DBA autopilot alone; it is a pre-action approval boundary before SQL, migrations, and privilege changes run.',
+      'ThumbGate turns repeated database mistakes into rules that block or pause the next risky query before execution.',
+    ],
+    sections: [
+      {
+        heading: 'Why database work is the final boss for agents',
+        paragraphs: [
+          'A bad UI component is visible and usually reversible. A bad production query can delete rows, lock writes, leak data, or change privileges before anyone reviews the pull request.',
+          'That is why database-agent safety belongs at the tool-call boundary. The agent should be stopped before it runs DROP, TRUNCATE, unbounded UPDATE/DELETE, production migrations, or role grants.',
+        ],
+      },
+      {
+        heading: 'The high-ROI gate pack',
+        bullets: [
+          'Block DROP, TRUNCATE, DROP DATABASE, and DROP SCHEMA unless human approval and rollback evidence are attached.',
+          'Block UPDATE and DELETE without a restrictive WHERE clause, including WHERE 1=1 and WHERE TRUE.',
+          'Require backup, snapshot, or reversible migration proof before production schema changes.',
+          'Require dry-run or EXPLAIN evidence before production writes and migrations.',
+          'Warn on CREATE INDEX without CONCURRENTLY and CROSS JOINs that can create performance incidents.',
+          'Block role creation, role alteration, and broad grants from autonomous agents.',
+        ],
+      },
+      {
+        heading: 'Where ThumbGate fits',
+        paragraphs: [
+          'ThumbGate is not trying to replace Postgres, MySQL, Prisma, Rails migrations, or a DBA. It is the pre-action control plane that checks the agent before those tools execute.',
+          'The feedback loop matters: when a human gives a thumbs-down on an unsafe migration or query, ThumbGate can promote the failure pattern into a prevention rule so the next agent run cannot repeat it silently.',
+        ],
+      },
+      {
+        heading: 'First workflow to gate',
+        paragraphs: [
+          'Start with one production migration path. Require the agent to show target environment, dry-run output, backup or snapshot evidence, rollback plan, and human approval before it can run the command. That single workflow makes the value visible to engineering leaders immediately.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Should AI agents be allowed to run production database migrations?',
+        answer: 'Only behind an approval gate. Production migrations should require target verification, dry-run output, backup or snapshot evidence, rollback plan, and human approval before the command executes.',
+      },
+      {
+        question: 'What database actions should be blocked by default?',
+        answer: 'DROP, TRUNCATE, DROP DATABASE, DROP SCHEMA, role or grant changes, unbounded UPDATE or DELETE, and production migrations without rollback and dry-run evidence should be blocked or paused before execution.',
+      },
+      {
+        question: 'Is this an AI DBA replacement?',
+        answer: 'No. ThumbGate is the governance layer before an agent touches database tooling. It blocks known-bad actions and requires proof for risky actions; DBAs and platform teams still own database design and operations.',
+      },
+    ],
+    relatedPaths: ['/guides/pre-action-checks', '/guides/ai-agent-pre-action-approval-gates', '/guides/best-tools-stop-ai-agents-breaking-production'],
   },
   buildHarnessOptimizationGuide(),
   buildCodeKnowledgeGraphGuardrailsGuide(),

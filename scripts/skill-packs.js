@@ -8,6 +8,25 @@ const BUILTIN_PACKS = {
   'stripe-integration': { name: 'stripe-integration', description: 'Stripe API best practices', triggers: ['stripe', 'payment', 'checkout', 'subscription', 'webhook signature'], rules: ['ALWAYS use idempotency keys on PaymentIntent creation to prevent duplicate charges.', 'NEVER log or store raw card numbers — use Stripe tokens or PaymentMethod IDs.', 'ALWAYS verify webhook signatures with stripe.webhooks.constructEvent() before processing.', 'Use Checkout Sessions instead of raw PaymentIntents for new integrations.', 'ALWAYS handle payment_intent.succeeded AND payment_intent.payment_failed webhooks.'], packTemplate: { namespaces: ['memoryError', 'memoryLearning', 'rules'], maxItems: 8, maxChars: 6000, queryPrefix: 'stripe payment checkout webhook idempotency' } },
   'railway-deploy': { name: 'railway-deploy', description: 'Railway deployment best practices', triggers: ['railway', 'deploy', 'dockerfile', 'health check'], rules: ['ALWAYS verify /health endpoint returns new version after deploy.', 'NEVER say "deployed" without curling the health endpoint and showing version match.', 'ALWAYS check Railway build logs for warnings even when deploy succeeds.', 'Use RAILWAY_VOLUME_MOUNT_PATH for persistent data.', 'ALWAYS wait 2-5 minutes after merge before verifying.'], packTemplate: { namespaces: ['memoryError', 'memoryLearning', 'rules'], maxItems: 8, maxChars: 6000, queryPrefix: 'railway deploy health version dockerfile' } },
   'database-migration': { name: 'database-migration', description: 'Database migration best practices', triggers: ['migration', 'prisma', 'sqlite', 'schema', 'alter table'], rules: ['ALWAYS back up the database before running destructive migrations.', 'NEVER drop columns in production without verifying no code references them.', 'ALWAYS run migrations against a test database first.', 'Use reversible migrations — every up() should have a corresponding down().', 'ALWAYS check for pending migrations before deploying new code.'], packTemplate: { namespaces: ['memoryError', 'rules'], maxItems: 6, maxChars: 5000, queryPrefix: 'migration database schema prisma sqlite' } },
+  'database-agent-safety': {
+    name: 'database-agent-safety',
+    description: 'Pre-action checks for AI agents before they touch production databases.',
+    triggers: ['database', 'postgres', 'mysql', 'sql', 'migration', 'prisma', 'rails db:migrate', 'drop table', 'truncate', 'production database'],
+    rules: [
+      'NEVER allow an autonomous agent to run DROP, TRUNCATE, DROP SCHEMA, or DROP DATABASE without explicit human approval and rollback evidence.',
+      'ALWAYS require a backup, snapshot, or reversible rollback plan before production schema migrations.',
+      'NEVER run UPDATE or DELETE without a restrictive WHERE clause; WHERE 1=1 and WHERE TRUE are not restrictive.',
+      'ALWAYS require dry-run or EXPLAIN evidence before production writes, migrations, or high-cardinality queries.',
+      'NEVER let agents create roles, alter roles, or grant broad privileges in a live database.',
+      'ALWAYS treat database work as a pre-action approval boundary, not a post-hoc review item.',
+    ],
+    packTemplate: {
+      namespaces: ['memoryError', 'memoryLearning', 'rules'],
+      maxItems: 8,
+      maxChars: 6000,
+      queryPrefix: 'database postgres mysql sql migration production drop truncate rollback backup explain',
+    },
+  },
 };
 const registry = new Map(); for (const [id, p] of Object.entries(BUILTIN_PACKS)) registry.set(id, p);
 function ensurePacksDir() { if (!fs.existsSync(SKILL_PACKS_DIR)) fs.mkdirSync(SKILL_PACKS_DIR, { recursive: true }); }
