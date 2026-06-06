@@ -78,20 +78,9 @@ test('product hunt launch kit links the live listing and the Claude plugin bundl
   assert.match(productHuntKit, /Claude plugin guide/i);
 });
 
-test('active launch playbooks retire X and route the operator to current channels', () => {
-  const launchPlan = read('LAUNCH.md');
-  const launchPosts = read('LAUNCH_POSTS.md');
-  const battlePlan = read('FIRST_CUSTOMER_BATTLE_PLAN.md');
-
-  assert.match(launchPlan, /X\/Twitter is retired from active distribution/i);
-  assert.match(launchPlan, /utm_source=bluesky/i);
-  assert.doesNotMatch(launchPosts, /utm_source=x/i);
-  assert.match(launchPosts, /LinkedIn Founder Post/i);
-  assert.match(launchPosts, /utm_source=linkedin/i);
-  assert.match(battlePlan, /Do not use X\/Twitter/i);
-  assert.match(battlePlan, /LinkedIn Founder Post/i);
-  assert.match(battlePlan, /Deep_Ad1959/i);
-});
+// REMOVED 2026-06-06: this test pinned LAUNCH.md, LAUNCH_POSTS.md, and
+// FIRST_CUSTOMER_BATTLE_PLAN.md — all deleted in the post-Reddit credibility
+// cleanup as launch-theater that broadcast bot-like cadence.
 
 test('private local SVG assets exist for LinkedIn carousel and X card', () => {
   const assetDir = path.join(repoRoot, 'docs/marketing/assets');

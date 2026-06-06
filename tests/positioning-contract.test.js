@@ -217,17 +217,9 @@ test('launch-content variants align with reliability-over-orchestration position
   assert.doesNotMatch(launchContent, /persistent memory layer that fixes this/i);
 });
 
-test('launch-now playbook stays discovery-first and avoids retired broadcast channels', () => {
-  const launchNow = readText('LAUNCH_NOW.md');
-
-  assert.match(launchNow, /npm run gtm:revenue-loop/i);
-  assert.match(launchNow, /sales:pipeline -- import/i);
-  assert.match(launchNow, /Workflow Hardening Sprint/i);
-  assert.match(launchNow, /X\/Twitter is retired/i);
-  assert.match(launchNow, /Do not lead with Pro/i);
-  assert.doesNotMatch(launchNow, /Show HN/i);
-  assert.doesNotMatch(launchNow, /X\/Twitter thread/i);
-});
+// REMOVED 2026-06-06: this test pinned LAUNCH_NOW.md which was deleted as
+// part of the post-Reddit credibility cleanup (file admitted "$0 revenue"
+// publicly and read as launch-theater).
 
 test('public landing copy stays vendor-neutral and honest about editor support', () => {
   const congruence = readText(path.join('docs', 'MARKETING_COPY_CONGRUENCE.md'));
