@@ -67,16 +67,12 @@ jobs:
           cp ".artifacts/claude-desktop/${{ steps.assets.outputs.versioned_review }}" \
             ".artifacts/claude-desktop/${{ steps.assets.outputs.channel_review }}"
 
-      - name: Upload Claude plugin artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: claude-plugin-assets
-          path: |
-            .artifacts/claude-desktop/${{ steps.assets.outputs.versioned_bundle }}
-            .artifacts/claude-desktop/${{ steps.assets.outputs.channel_bundle }}
-            .artifacts/claude-desktop/${{ steps.assets.outputs.versioned_review }}
-            .artifacts/claude-desktop/${{ steps.assets.outputs.channel_review }}
-
+      # NOTE: the plugin bundle is attached to the GitHub Release below via
+      # `gh release upload` (release-asset storage, which does NOT count against
+      # the 0.5 GB Actions artifact quota). It used to ALSO be uploaded here as a
+      # ~858 MB `claude-plugin-assets` Actions artifact on every run — pure
+      # redundancy that single-handedly blew the storage cap (12 copies ≈ 10 GB,
+      # 2026-06). No later job consumes it (single-job workflow), so it's removed.
       - name: Ensure GitHub Release exists
         env:
           GH_TOKEN: ${{ github.token }}

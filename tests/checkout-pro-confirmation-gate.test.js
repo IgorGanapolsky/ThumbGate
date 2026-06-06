@@ -86,6 +86,8 @@ describe('/checkout/pro confirmation gate (closes 0/50 conversion leak)', () => 
     assert.match(body, /Start ThumbGate Pro/);
     assert.match(body, /Pay \$19\/mo with Stripe/);
     assert.match(body, /name="confirm" value="1"/, 'interstitial must include the confirm field as the primary CTA');
+    assert.doesNotMatch(body, /name="customer_email"[^>]*required/, 'email must be optional; Stripe should collect it if absent');
+    assert.match(body, /Stripe can collect your email/);
     assert.match(body, /Not sure yet\? Send the workflow first/);
     assert.doesNotMatch(body, /Pay \$1 first rule/);
     assert.doesNotMatch(body, /Pay \$99 teardown/);

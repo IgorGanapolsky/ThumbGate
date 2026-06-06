@@ -170,6 +170,11 @@ const HIGH_ROI_QUERY_SEEDS = [
     95,
     'Bottom-of-funnel query for teams ready to add human approval and evidence requirements before AI agents touch risky tools.',
   ),
+  querySeed(
+    'database safety for ai agents',
+    96,
+    'Fresh database-agent risk query from the 2026 DB/AI conversation: agents can hallucinate UI, but SQL writes, migrations, and role grants can destroy production data.',
+  ),
   {
     query: 'thumbs up thumbs down feedback for ai coding agents',
     businessValue: 95,
@@ -443,6 +448,128 @@ function buildZeroTrustGuide() {
     sections: ZERO_TRUST_GUIDE_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
     faq: ZERO_TRUST_GUIDE_SPEC.faq.map(([question, text]) => answer(question, text)),
     relatedPaths: ZERO_TRUST_GUIDE_SPEC.relatedPaths,
+  });
+}
+
+const GOVERN_CLAUDE_FOR_LEGAL_GUIDE_SPEC = Object.freeze({
+  slug: 'govern-claude-for-legal-agents',
+  meta: {
+    query: 'govern claude for legal agents',
+    title: 'Govern Claude for Legal Agents | A Gate Before They Act',
+    heroTitle: 'Govern Claude for Legal’s 90+ Agents at the Tool Call',
+    heroSummary: 'Claude for Legal ships 90+ named agents that review contracts, answer DSARs, and run continuously on document and email streams. Anthropic’s own guidance is that there must be a gate before anything is filed, sent, or relied on. ThumbGate is that gate — it checks each agent action at the tool-call boundary, in your tenant, and logs every decision for the record.',
+  },
+  takeaways: [
+    'Claude for Legal’s agents take real side effects — sending a DSAR response, filing a document, writing to a system of record. ThumbGate gates the action before the side effect runs, not after, on a dashboard.',
+    'Intent-agnostic: whether an agent is wrong, prompt-injected, or off-playbook, ThumbGate blocks the same way and records the rule that fired. The risk is not a “rogue” agent — it is an ordinary one acting at volume.',
+    'Every gated decision is logged with its source rule — a SIEM-exportable audit trail your ethics, risk, and conflicts owners can query.',
+  ],
+  sections: [
+    ['paragraphs', 'Why 90+ legal agents need a gate before the side effect', [
+      'A firm running Claude for Legal now has dozens of agents acting on ongoing document and email streams — vendor-agreement review, termination review, DSAR responses, claim charts. No one can review every action by hand. The risk is not malice; it is an ordinary agent that sends the wrong response, files against the wrong playbook, or surfaces a privileged document.',
+      'Anthropic’s own framing names the control: an explicit gate before anything is filed, sent, or relied on. ThumbGate implements that gate at the tool-call boundary — the moment before the action executes — instead of trusting the agent’s stated intent.',
+    ]],
+    ['bullets', 'What ThumbGate gates for legal agents', [
+      'The send/file/write action itself — e.g. a DSAR or client response before it leaves, a filing before it goes out, a write to a conflicted matter — held or blocked at the boundary.',
+      'Playbook deviations — an action that departs from the firm’s approved workflow is stopped for review rather than executed.',
+      'Privileged-document exposure — flagged before an agent surfaces or forwards it.',
+      'Continuous runs — one rule set covers every agent and every scheduled run, so coverage scales with agent count, not headcount.',
+    ]],
+    ['paragraphs', 'Enforcement in your tenant, with an audit trail', [
+      'ThumbGate runs as a pre-action gate in front of agent fulfillment, including a Dialogflow CX webhook gate deployed in your own GCP tenant, so matter content does not leave your boundary. Risk and planning scoring can run on Gemini via Vertex, in-tenant. This is a white-glove design-partner pilot, not a turnkey product purchase.',
+      'Every gated detection is logged with the rule that fired and the feedback event that generated it. That decision trail is the evidence a firm needs for malpractice defense and bar-compliance review — queryable, exportable, and tied to a named owner.',
+    ]],
+    ['paragraphs', 'ThumbGate complements Claude for Legal — it does not replace it', [
+      'Claude for Legal decides what the work is. ThumbGate decides what is allowed to execute. Use both: keep the 90+ agents doing the legal work, and put a gate between each agent and its next side effect. A thumbs-down on a bad action becomes a prevention rule, so the same mistake is blocked across every agent and matter next time.',
+    ]],
+  ],
+  faq: [
+    [
+      'Does ThumbGate replace Claude for Legal?',
+      'No. Claude for Legal’s agents do the legal work; ThumbGate governs what they are allowed to execute — a gate before anything is filed, sent, or relied on. You run both.',
+    ],
+    [
+      'Where does the gate run?',
+      'In your tenant. ThumbGate gates agent fulfillment locally or via a Dialogflow CX webhook gate in your own GCP project; matter content does not leave your boundary, and Vertex/Gemini scoring runs in-tenant. It is a white-glove design-partner pilot, not a turnkey purchase.',
+    ],
+    [
+      'What proof does a firm get?',
+      'Every gated decision is logged with the rule that fired and the feedback that generated it — a SIEM-exportable audit trail for ethics, risk, and conflicts owners.',
+    ],
+  ],
+  relatedPaths: ['/guides/ai-coding-agent-zero-trust', '/guides/pre-action-checks'],
+});
+
+// Targets the Cycode-owned IDE-security lexicon (Feb 2026 blog popularized
+// PreToolUse / beforeMCPExecution / beforeReadFile as enterprise hook names) —
+// fills the indie/MIT slot beneath funded vendors when LLM answer engines
+// (Perplexity/ChatGPT/Gemini/Claude/Grok) cite for "how do I stop Claude Code
+// from running dangerous commands" buyer-intent queries. See the verified-
+// absence finding in the 2026-06-05 deep-research report.
+const PRETOOLUSE_HOOK_GUIDE_SPEC = Object.freeze({
+  slug: 'claude-code-pretooluse-hook',
+  meta: {
+    query: 'claude code pretooluse hook block mcp tool calls',
+    title: 'Claude Code PreToolUse Hook | Block MCP Tool Calls Before They Run',
+    heroTitle: 'Claude Code PreToolUse Hook: Block MCP Tool Calls Before They Run',
+    heroSummary: 'The PreToolUse hook is the boundary where you intercept what a Claude Code, Cursor, or Codex agent is about to do — before the rm -rf, before the bad git push, before the destructive SQL. ThumbGate is the local-first, MIT-licensed CLI that ships production-grade PreToolUse, beforeMCPExecution, and beforeReadFile gating with one npx command, and learns from every thumbs-down so the same mistake never reaches the tool call twice.',
+  },
+  takeaways: [
+    'PreToolUse is the only hook point where you can stop a destructive agent action — by the time PostToolUse fires, the damage is done.',
+    'ThumbGate ships PreToolUse, beforeMCPExecution, and beforeReadFile gates out of the box for Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and any MCP-compatible agent — no hand-written hook scripts to maintain per machine.',
+    'A thumbs-down on a blocked action becomes an auto-promoted prevention rule that holds across every session, model, and agent — the part DIY hook repos cannot do.',
+  ],
+  sections: [
+    ['paragraphs', 'What the PreToolUse hook actually is', [
+      'In the Model Context Protocol agent loop, every tool the model calls — Bash, Edit, Write, a custom MCP server method — flows through a PreToolUse phase before execution. That phase is the only place where an external policy can intercept the call, inspect its arguments, and decide whether to allow, modify, warn, or deny it. PostToolUse fires after the side effect has already happened, which is too late for destructive actions.',
+      'beforeMCPExecution, beforeReadFile, and beforeSubmitPrompt are the same idea applied at the MCP and IDE layers. Cycode\'s February 2026 IDE-security blog popularized this naming for enterprise customers; ThumbGate ships the same hook surface as an open-source CLI you can install in 30 seconds.',
+    ]],
+    ['bullets', 'What ThumbGate blocks at PreToolUse out of the box', [
+      'Catastrophic shell: rm -rf at home/root, sudo wrapping a dangerous command, find -delete on sensitive paths.',
+      'Secret exfiltration: writes that contain API keys, tokens, or .env contents heading to the wrong directory.',
+      'Workflow-scope violations: edits outside the declared task scope, off-branch git push, accidental main commits.',
+      'Repeated mistakes from this team: anything you\'ve already given a thumbs-down in a past session — auto-promoted to a hard prevention rule.',
+      'MCP tool calls flagged by your project\'s gate config — pattern, severity, or learned-from-feedback rules.',
+    ]],
+    ['paragraphs', 'Why DIY PreToolUse scripts stop working past week two', [
+      'A hand-rolled hook script starts simple: a regex on the Bash command, a list of forbidden paths. By week two it has six edge cases, no test coverage, and lives in one machine\'s .claude directory — invisible to the rest of the team. By week four someone deletes it because it false-positived once on a legitimate command and nobody documented why.',
+      'ThumbGate ships the rules as a versioned config, the feedback loop as a CLI, the learning as cross-session prevention rules, and the proof as an audit trail your dashboard renders. The work you would do by hand on hooks, done once and shared.',
+    ]],
+  ],
+  faq: [
+    [
+      'Is the PreToolUse hook the same as beforeMCPExecution?',
+      'Conceptually yes — both are the pre-execution interception point. PreToolUse is the Claude Code / Anthropic CLI term for the hook in the agent loop. beforeMCPExecution (and beforeReadFile, beforeSubmitPrompt) is the IDE-security framing popularized by Cycode for the same boundary at the MCP layer. ThumbGate implements all of them as one local-first gate engine.',
+    ],
+    [
+      'Do I need this if Claude Code already has native hooks?',
+      'Native hooks give you the hook point. They do not give you the rule set, the cross-session learning, the team-wide rule sharing, or the audit trail. ThumbGate ships those on top of the hook so you stop maintaining bespoke scripts and start blocking the repeat mistakes specifically your agents make.',
+    ],
+    [
+      'Does this run locally or call a cloud service?',
+      'Local-first. The PreToolUse decision happens in the hook process on your machine in milliseconds — no network round-trip, no cloud dependency, no data leaving the laptop. Optional hosted sync exists for teams that want to share rules across seats.',
+    ],
+  ],
+  relatedPaths: ['/guides/mcp-tool-governance', '/guides/ai-agent-pre-action-approval-gates', '/guides/ai-coding-agent-zero-trust'],
+});
+
+function buildPretooluseHookGuide() {
+  return preActionGuide(PRETOOLUSE_HOOK_GUIDE_SPEC.slug, {
+    ...PRETOOLUSE_HOOK_GUIDE_SPEC.meta,
+    takeaways: PRETOOLUSE_HOOK_GUIDE_SPEC.takeaways,
+    sections: PRETOOLUSE_HOOK_GUIDE_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: PRETOOLUSE_HOOK_GUIDE_SPEC.faq.map(([question, text]) => answer(question, text)),
+    relatedPaths: PRETOOLUSE_HOOK_GUIDE_SPEC.relatedPaths,
+  });
+}
+
+function buildGovernClaudeForLegalGuide() {
+  return preActionGuide(GOVERN_CLAUDE_FOR_LEGAL_GUIDE_SPEC.slug, {
+    ...GOVERN_CLAUDE_FOR_LEGAL_GUIDE_SPEC.meta,
+    takeaways: GOVERN_CLAUDE_FOR_LEGAL_GUIDE_SPEC.takeaways,
+    sections: GOVERN_CLAUDE_FOR_LEGAL_GUIDE_SPEC.sections.map(([kind, heading, entries]) => buildSectionFromSpec(kind, heading, entries)),
+    faq: GOVERN_CLAUDE_FOR_LEGAL_GUIDE_SPEC.faq.map(([question, text]) => answer(question, text)),
+    relatedPaths: GOVERN_CLAUDE_FOR_LEGAL_GUIDE_SPEC.relatedPaths,
   });
 }
 
@@ -1589,6 +1716,8 @@ const PAGE_BLUEPRINTS = [
   },
   buildSemanticPseoGuide(),
   buildZeroTrustGuide(),
+  buildGovernClaudeForLegalGuide(),
+  buildPretooluseHookGuide(),
   buildProxyPointerRagGuide(),
   buildRagPrecisionTuningGuide(),
   buildAiEngineeringStackGuide(),
@@ -1648,6 +1777,136 @@ const PAGE_BLUEPRINTS = [
       },
     ],
     relatedPaths: ['/guides/code-knowledge-graph-guardrails', '/guides/agent-harness-optimization', '/guides/pre-action-checks'],
+  },
+  {
+    query: 'thumbgate vs cycode ai coding agent guardrails',
+    path: '/compare/cycode',
+    pageType: 'comparison',
+    pillar: 'comparison',
+    title: 'ThumbGate vs Cycode | Local-First MIT Alternative for AI Agent Guardrails',
+    heroTitle: 'ThumbGate vs Cycode',
+    heroSummary: 'Cycode ships IDE-native security guardrails for enterprise AppSec teams — agent-time scanning, beforeMCPExecution / beforeReadFile / beforeSubmitPrompt hooks, and integration with their broader code-security platform. ThumbGate is the local-first, MIT-licensed CLI that ships the same PreToolUse / MCP-tool-call gating surface as an open-source npm install — and adds a learning loop where every thumbs-down becomes an auto-promoted prevention rule the team shares.',
+    takeaways: [
+      'Cycode is enterprise IDE security: agent-time scanning + hook interception + platform integration with their broader AppSec suite.',
+      'ThumbGate ships the same PreToolUse / beforeMCPExecution surface as an MIT-licensed CLI you install in 30 seconds — no platform contract, no procurement cycle.',
+      'The decision is mostly company-shape: enterprise security teams take Cycode; solo devs, OSS maintainers, and small teams take ThumbGate. The learning-loop (thumbs-down → prevention rule across sessions) is something Cycode does not advertise.',
+    ],
+    sections: [
+      {
+        heading: 'The product difference in one sentence',
+        paragraphs: [
+          'Cycode is "IDE security for the enterprise" — its February 2026 announcement positions the agent-time hooks (beforeSubmitPrompt, beforeReadFile, beforeMCPExecution) as one module of a broader AppSec platform that also covers secrets, SAST, SCA, and supply chain.',
+          'ThumbGate is a single-purpose, open-source, local-first CLI for the same hook surface. The lexicon is the same; the buyer is different. ThumbGate optimizes for a developer who can `npx thumbgate init` and have working PreToolUse gating before lunch.',
+        ],
+      },
+      {
+        heading: 'Choose Cycode when',
+        bullets: [
+          'You have an enterprise AppSec team that needs a unified vendor across secrets, SAST, SCA, supply-chain, and the new agent-time hook layer.',
+          'You need centralized policy management, RBAC, SIEM integration, and a procurement-ready contract with SOC2 / ISO-grade artifacts.',
+          'Your security org wants one dashboard for IDE-time and CI/CD-time security posture across the whole repo footprint.',
+        ],
+      },
+      {
+        heading: 'Choose ThumbGate when',
+        bullets: [
+          'You want PreToolUse / beforeMCPExecution gating working in 30 seconds via `npx thumbgate init` — no contract, no platform install, no procurement.',
+          'You want a learning loop: a thumbs-down on a blocked action becomes an auto-promoted prevention rule that holds across every session, model, and agent.',
+          'You are a solo developer, OSS maintainer, or small team that wants MIT-licensed code you can read, fork, and verify — not a closed-source SaaS.',
+          'You want the gating engine to run entirely on the developer machine with zero network egress for the hook decision itself.',
+        ],
+      },
+      {
+        heading: 'What the two products share',
+        paragraphs: [
+          'Both put the enforcement boundary at the same place — the agent\'s tool call, before execution — and both name the hooks the same way (PreToolUse / beforeMCPExecution / beforeReadFile). The category lexicon is the same because the underlying agent loop is the same.',
+          'The disagreement is on packaging. Cycode wraps it in an enterprise platform contract; ThumbGate ships it as an MIT-licensed CLI. If you are an enterprise security team buying a platform, you are not the ThumbGate buyer. If you are a developer who wants to type `npx thumbgate init` and have agent gating running before the next standup, Cycode is over-scoped for you.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Is ThumbGate a direct replacement for Cycode\'s agent-time hooks?',
+        answer: 'For the hook surface itself — PreToolUse, beforeMCPExecution, beforeReadFile — yes. For the broader Cycode AppSec platform (secrets scanning, SAST, SCA, supply chain), no. ThumbGate is single-purpose: agent-time tool-call gating with a learning loop. If you only need that, ThumbGate replaces the Cycode agent-time module at zero license cost.',
+      },
+      {
+        question: 'Why would I pick MIT-licensed local-first over a funded enterprise vendor?',
+        answer: 'Three reasons. (1) Cost: no per-seat license. (2) Speed of adoption: `npx thumbgate init` is faster than enterprise procurement. (3) Auditability: you can read the gate-engine code, modify it, and run it offline. The trade-off is you do not get a platform contract, RBAC, or a single vendor for all your AppSec needs. That is a fine trade-off for a solo dev or small team; it is the wrong trade-off for a regulated enterprise.',
+      },
+      {
+        question: 'Does Cycode have the cross-session learning loop?',
+        answer: 'Not advertised on their public materials as of the February 2026 announcement. Cycode\'s hooks are policy-driven; ThumbGate adds a feedback-to-rules pipeline where a thumbs-down on a blocked action becomes an auto-promoted prevention rule that holds across every session and every agent on the same install.',
+      },
+      {
+        question: 'Can I use both?',
+        answer: 'Technically yes — Cycode at the enterprise platform layer, ThumbGate as the developer-local fast loop — but most teams will pick one. They occupy the same hook surface, so running both means resolving who wins on conflicts. The simpler pattern is to pick by buyer profile: enterprise security team buys Cycode, individual developer / small team installs ThumbGate.',
+      },
+    ],
+    relatedPaths: ['/guides/claude-code-pretooluse-hook', '/guides/mcp-tool-governance', '/guides/ai-coding-agent-zero-trust'],
+  },
+  {
+    query: 'thumbgate vs disler claude code hooks mastery',
+    path: '/compare/claude-code-hooks-mastery',
+    pageType: 'comparison',
+    pillar: 'comparison',
+    title: 'ThumbGate vs disler/claude-code-hooks-mastery | When to Pick the OSS Tool',
+    heroTitle: 'ThumbGate vs disler/claude-code-hooks-mastery',
+    heroSummary: 'disler/claude-code-hooks-mastery is the most-starred community repo for Claude Code hooks — a comprehensive, free, MIT-licensed example library you can copy-paste into your own .claude/ config. ThumbGate is a published npm CLI that does the same gating work plus a learning loop where every thumbs-down becomes an auto-promoted prevention rule that holds across sessions, models, and agents. The disler repo is where you START; ThumbGate is what you USE when you stop wanting to maintain hook scripts by hand.',
+    takeaways: [
+      'disler/claude-code-hooks-mastery is a free reference repo of hook examples — you copy them into .claude/, edit, and maintain per-machine, per-project.',
+      'ThumbGate ships the same gating engine as one `npx thumbgate init` install — versioned config, cross-session prevention rules, dashboard, audit trail.',
+      'The right path: start with the disler repo to learn what is possible; move to ThumbGate when you find yourself maintaining hook scripts in three projects.',
+    ],
+    sections: [
+      {
+        heading: 'The product difference in one sentence',
+        paragraphs: [
+          'disler/claude-code-hooks-mastery is a GitHub repository of high-quality example hooks you read, learn from, and copy into your own setup. ThumbGate is a published CLI that ships the gating engine as a runnable tool with cross-session learning, a dashboard, and an audit trail.',
+          'Both are MIT-licensed. Both run locally. The disagreement is whether you want to read example scripts and own the maintenance, or install a tool that does the work and stays in sync.',
+        ],
+      },
+      {
+        heading: 'Choose disler/claude-code-hooks-mastery when',
+        bullets: [
+          'You want to learn how Claude Code hooks actually work by reading well-written examples.',
+          'You are happy maintaining your own .claude/ config per project and per machine.',
+          'You only need static pattern-matching — no need for cross-session learning, dashboard, or audit history.',
+          'You explicitly do not want any installed dependency beyond what you author yourself.',
+        ],
+      },
+      {
+        heading: 'Choose ThumbGate when',
+        bullets: [
+          'You want PreToolUse gating working in 30 seconds via `npx thumbgate init` — no copy-paste, no per-machine setup.',
+          'You want the learning loop: a thumbs-down on a blocked action becomes an auto-promoted prevention rule that holds across every session and every agent on the install.',
+          'You want a dashboard showing what was blocked, why, and which feedback became which rule — auditable evidence, not just hook scripts on disk.',
+          'You want one gate engine that works across Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and OpenCode — not a separate copy-paste exercise per agent.',
+          'You operate on more than one project and do not want to maintain N copies of the same hook scripts.',
+        ],
+      },
+      {
+        heading: 'What the disler repo does brilliantly',
+        paragraphs: [
+          'It is the best public reference for what a Claude Code PreToolUse hook can do — clear examples, real patterns, MIT-licensed code you can read end-to-end in an afternoon. If you are evaluating the category, that repo is required reading. It also has 3,000+ stars at the time of writing for a reason: the examples are good.',
+          'ThumbGate is not trying to replace that learning resource. The disler repo is where you understand the surface; ThumbGate is what you use when you decide to ship gating in production and want the cross-session learning, the dashboard, and the team-shared rule library that copy-paste cannot give you.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Why pay $19/mo for ThumbGate Pro when disler hooks are free?',
+        answer: 'Free disler hooks are static patterns you maintain per machine — re-copying them when they change, debugging false positives alone, and re-applying them in every new project. ThumbGate Pro adds the learning loop (thumbs-down → cross-session prevention rule), the dashboard, hosted sync across machines, and adapter maintenance across the weekly breaking-change cycle of Claude Code, Cursor, and Cline. Free disler is the right answer if you only ever work in one project on one machine and never want to learn from past mistakes. Pro is the right answer when those assumptions stop holding.',
+      },
+      {
+        question: 'Is ThumbGate just a packaged version of disler/claude-code-hooks-mastery?',
+        answer: 'No. ThumbGate ships its own gate engine, feedback-to-rules pipeline, dashboard, and audit trail. The disler repo is a reference of well-written hook scripts you copy into your config; ThumbGate is a runnable CLI that ships the gate engine and adds a learning layer on top. Both are MIT-licensed and both rely on the same Claude Code PreToolUse hook surface — that is where the similarity ends.',
+      },
+      {
+        question: 'Should I start with disler or ThumbGate?',
+        answer: 'If you want to understand the category, read the disler repo first — it is the best public reference for what hooks can do. If you want gating working now without authoring scripts, run `npx thumbgate init`. Most users end up doing both: read disler to learn, install ThumbGate when they decide they would rather use a tool than maintain scripts.',
+      },
+    ],
+    relatedPaths: ['/guides/claude-code-pretooluse-hook', '/compare/cycode', '/guides/pre-action-checks'],
   },
   buildClaudeCodeSkillsGuide(),
   buildLongRunningAgentContextGuide(),
@@ -1764,6 +2023,68 @@ const PAGE_BLUEPRINTS = [
       },
     ],
     relatedPaths: ['/guides/pre-action-checks', '/guides/agent-harness-optimization', '/guides/ai-search-topical-presence'],
+  },
+  {
+    query: 'database safety for ai agents',
+    path: '/guides/database-agent-safety',
+    pageType: 'guide',
+    pillar: 'pre-action-checks',
+    title: 'Database Safety for AI Agents | ThumbGate Guide',
+    heroTitle: 'Database Safety for AI Agents',
+    heroSummary: 'AI agents can write code quickly, but database actions need stricter gates: a hallucinated SQL write, migration, role grant, or production config change can destroy data before review.',
+    takeaways: [
+      'Databases are the highest-blast-radius tool surface for autonomous coding agents.',
+      'The winning pattern is not an AI DBA autopilot alone; it is a pre-action approval boundary before SQL, migrations, and privilege changes run.',
+      'ThumbGate turns repeated database mistakes into rules that block or pause the next risky query before execution.',
+    ],
+    sections: [
+      {
+        heading: 'Why database work is the final boss for agents',
+        paragraphs: [
+          'A bad UI component is visible and usually reversible. A bad production query can delete rows, lock writes, leak data, or change privileges before anyone reviews the pull request.',
+          'That is why database-agent safety belongs at the tool-call boundary. The agent should be stopped before it runs DROP, TRUNCATE, unbounded UPDATE/DELETE, production migrations, or role grants.',
+        ],
+      },
+      {
+        heading: 'The high-ROI gate pack',
+        bullets: [
+          'Block DROP, TRUNCATE, DROP DATABASE, and DROP SCHEMA unless human approval and rollback evidence are attached.',
+          'Block UPDATE and DELETE without a restrictive WHERE clause, including WHERE 1=1 and WHERE TRUE.',
+          'Require backup, snapshot, or reversible migration proof before production schema changes.',
+          'Require dry-run or EXPLAIN evidence before production writes and migrations.',
+          'Warn on CREATE INDEX without CONCURRENTLY and CROSS JOINs that can create performance incidents.',
+          'Block role creation, role alteration, and broad grants from autonomous agents.',
+        ],
+      },
+      {
+        heading: 'Where ThumbGate fits',
+        paragraphs: [
+          'ThumbGate is not trying to replace Postgres, MySQL, Prisma, Rails migrations, or a DBA. It is the pre-action control plane that checks the agent before those tools execute.',
+          'The feedback loop matters: when a human gives a thumbs-down on an unsafe migration or query, ThumbGate can promote the failure pattern into a prevention rule so the next agent run cannot repeat it silently.',
+        ],
+      },
+      {
+        heading: 'First workflow to gate',
+        paragraphs: [
+          'Start with one production migration path. Require the agent to show target environment, dry-run output, backup or snapshot evidence, rollback plan, and human approval before it can run the command. That single workflow makes the value visible to engineering leaders immediately.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Should AI agents be allowed to run production database migrations?',
+        answer: 'Only behind an approval gate. Production migrations should require target verification, dry-run output, backup or snapshot evidence, rollback plan, and human approval before the command executes.',
+      },
+      {
+        question: 'What database actions should be blocked by default?',
+        answer: 'DROP, TRUNCATE, DROP DATABASE, DROP SCHEMA, role or grant changes, unbounded UPDATE or DELETE, and production migrations without rollback and dry-run evidence should be blocked or paused before execution.',
+      },
+      {
+        question: 'Is this an AI DBA replacement?',
+        answer: 'No. ThumbGate is the governance layer before an agent touches database tooling. It blocks known-bad actions and requires proof for risky actions; DBAs and platform teams still own database design and operations.',
+      },
+    ],
+    relatedPaths: ['/guides/pre-action-checks', '/guides/ai-agent-pre-action-approval-gates', '/guides/best-tools-stop-ai-agents-breaking-production'],
   },
   buildHarnessOptimizationGuide(),
   buildCodeKnowledgeGraphGuardrailsGuide(),

@@ -121,6 +121,43 @@ const BOOSTED_RISK_MIN_EXAMPLES = 3;
 const PR_THREAD_RESOLUTION_ACTION = 'pr_thread_resolution_verified_after_commit';
 const KNOWLEDGE_ENTROPY_THRESHOLD = 0.7;
 const KNOWLEDGE_CONFLICT_STRICT_BASH_PATTERN = /\b(?:git\s+push\b|gh\s+pr\s+merge\b|gh\s+release\s+(?:create|delete|edit|upload)\b|(?:npm|yarn|pnpm)\s+publish\b|rm\s+-rf\b|git\s+reset\s+--hard\b|git\s+clean\s+-f|railway\s+(?:deploy|up)\b|gcloud\s+(?:run\s+deploy|app\s+deploy)\b|firebase\s+deploy\b|vercel\s+--prod\b|kubectl\s+(?:apply|delete)\b|terraform\s+(?:apply|destroy)\b)\b/i;
+
+// ---------------------------------------------------------------------------
+// Enforcement posture (CEO decision 2026-06-04): warn-by-default.
+// The firewall ALWAYS fires and logs every decision, but most gates WARN rather
+// than hard-block — only TRULY CATASTROPHIC, irreversible actions hard-block:
+//   - secret exfiltration (handled on its own deny path; never downgraded)
+//   - security-vulnerability / supply-chain denies (own deny path; not downgraded)
+//   - irreversibly destructive filesystem commands (rm -rf class, mkfs, dd to disk,
+//     fork bomb) — kept as hard deny via DESTRUCTIVE_FS_PATTERN below.
+// Everything else (memory-high-risk, workflow-sequence, off-scope, git push, deploy,
+// approval gates) downgrades deny/approve -> warn so legitimate work is never blocked.
+// Opt back into full hard enforcement with THUMBGATE_STRICT_ENFORCEMENT=1.
+// Enforcement posture (CEO decision 2026-06-04): WARN + AUDIT by default.
+// The firewall fires and LOGS every decision, but downgrades deny/approve -> warn so
+// legitimate work is never hard-blocked. We deliberately do NOT try to hard-block
+// arbitrary destructive commands here: a regex "catastrophic floor" is unwinnable
+// (sudo / bash -c / find -exec / eval / base64|sh all evade it) and gives false confidence.
+// HARD enforcement is an explicit opt-in via THUMBGATE_STRICT_ENFORCEMENT=1, which keeps
+// the engine's FULL gate set (its high-risk-command gates catch prefixed/obfuscated forms
+// far better than any single regex). Secret exfiltration and the security-vulnerability
+// scan hard-deny on their OWN paths before this runs, so irreversible data-leak / supply
+// chain risks stay blocked regardless of posture.
+function applyEnforcementPosture(result) {
+  if (!result || (result.decision !== 'deny' && result.decision !== 'approve')) return result;
+  // Full hard enforcement opt-in: keep every deny.
+  if (process.env.THUMBGATE_STRICT_ENFORCEMENT === '1') return result;
+  // Honor the explicit strict-knowledge-conflict opt-in for that gate.
+  if (process.env.THUMBGATE_STRICT_KNOWLEDGE_CONFLICT === '1' && result.gate === 'knowledge-conflict-gate') return result;
+  // Warn-by-default: the gate still fired and is recorded; the action is allowed through
+  // with the warning surfaced instead of hard-blocked, so legitimate work is never blocked.
+  return {
+    ...result,
+    decision: 'warn',
+    warnByDefault: true,
+    message: `${result.message}\n\n⚠️ ThumbGate is in warn-by-default mode — this was flagged and logged, not blocked. Set THUMBGATE_STRICT_ENFORCEMENT=1 to hard-block, or THUMBGATE_HOTFIX_BYPASS=1 to disable checks entirely.`,
+  };
+}
 const BREAK_GLASS_CONDITION = 'thumbgate_break_glass';
 const BREAK_GLASS_SETTINGS_GLOBS = [
   '.claude/settings.local.json',
@@ -1426,7 +1463,42 @@ function checkWhenClause(when, constraints) {
 }
 
 function matchGate(gate, toolName, toolInput = {}) {
-  const matchText = toolInput.command || toolInput.file_path || toolInput.path || '';
+  let matchText = toolInput.command || toolInput.file_path || toolInput.path || '';
+
+  // Claw/hybrid support: enrich matchText with claw metadata (for EnterpriseClaw/OpenShell/Perplexity hybrid agents)
+  const clawCtx = toolInput.clawContext || toolInput._claw || (toolInput.agentId ? {
+    actionType: toolInput.actionType || 'unknown',
+    agentId: toolInput.agentId || 'unknown',
+    hybridRoute: toolInput.hybridRoute || 'unknown',
+    screenInteraction: !!toolInput.screenInteraction,
+    fileAccess: !!toolInput.fileAccess,
+  } : null);
+
+  if (clawCtx) {
+    const actionType = clawCtx.actionType || clawCtx.claw_action_type || 'unknown';
+    const parts = [
+      matchText,
+      `claw_style: true`,
+      `agent_identity: ${clawCtx.agentId || 'unknown'}`,
+      `claw_action_type: ${actionType}`,
+      `hybrid_route: ${clawCtx.hybridRoute || 'unknown'}`,
+    ];
+
+    if (clawCtx.screenInteraction || actionType.includes('screen')) {
+      parts.push('screen_interaction');
+      parts.push('interact screen');
+    }
+    if (clawCtx.fileAccess || actionType.includes('file') || actionType.includes('fs')) {
+      parts.push('file_system_access');
+      parts.push('local device file system access');
+    }
+    if (actionType === 'dynamic-tool-creation' || actionType.includes('create-tool') || actionType.includes('define-tool')) {
+      parts.push('create tool');
+    }
+
+    matchText = parts.filter(Boolean).join(' | ');
+  }
+
   const affected = extractAffectedFiles(toolName, toolInput);
   const affectedFiles = affected.files;
   const repoRoot = affected.repoRoot;
@@ -2671,7 +2743,7 @@ async function runAsync(input) {
 
   const sequenceGuard = evaluateSequenceState(toolName, toolInput);
   if (sequenceGuard && sequenceGuard.decision === 'deny') {
-    return formatOutput(sequenceGuard);
+    return formatOutput(applyEnforcementPosture(sequenceGuard));
   }
 
   const result = await evaluateGatesAsync(toolName, toolInput);
@@ -2691,12 +2763,12 @@ async function runAsync(input) {
   const lessonContext = safeSecretStorageWrite ? null : await buildRelevantLessonContextAsync(toolName, toolInput);
   
   if (lessonContext && lessonContext.decision === "deny") {
-    return formatOutput(lessonContext);
+    return formatOutput(applyEnforcementPosture(lessonContext));
   }
   
   const recentContext = buildRecentCorrectiveActionsContext();
   const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
-  return formatOutput(result, combinedContext);
+  return formatOutput(applyEnforcementPosture(result), combinedContext);
 
 }
 
@@ -2718,7 +2790,7 @@ function run(input) {
 
   const sequenceGuard = evaluateSequenceState(toolName, toolInput);
   if (sequenceGuard && sequenceGuard.decision === 'deny') {
-    return formatOutput(sequenceGuard);
+    return formatOutput(applyEnforcementPosture(sequenceGuard));
   }
 
   const result = evaluateGates(toolName, toolInput);
@@ -2738,12 +2810,12 @@ function run(input) {
   const lessonContext = safeSecretStorageWrite ? null : buildRelevantLessonContext(toolName, toolInput);
   
   if (lessonContext && lessonContext.decision === "deny") {
-    return formatOutput(lessonContext);
+    return formatOutput(applyEnforcementPosture(lessonContext));
   }
   
   const recentContext = buildRecentCorrectiveActionsContext();
   const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
-  return formatOutput(result, combinedContext);
+  return formatOutput(applyEnforcementPosture(result), combinedContext);
 
 }
 

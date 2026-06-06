@@ -64,6 +64,7 @@ jobs:
       - name: Upload Codex plugin artifact
         uses: actions/upload-artifact@v7
         with:
+          retention-days: 7
           name: codex-plugin-zip
           path: |
             .artifacts/codex-plugin/${{ steps.assets.outputs.versioned_asset }}

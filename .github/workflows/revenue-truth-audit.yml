@@ -97,5 +97,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
+          retention-days: 7
           name: revenue-truth-audit-${{ github.run_id }}
           path: reports/revenue/

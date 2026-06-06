@@ -24,7 +24,7 @@ The product is a self-improving enforcement layer: thumbs-down feedback, prompt 
 npx thumbgate init   # auto-detects your agent, wires hooks, 30 seconds
 ```
 
-Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and any MCP-compatible agent. Free tier: 5 feedback captures/day, 25 total captures, and 3 active auto-promoted prevention rules. [Pro: $19/mo or $149/yr](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme) — unlimited feedback captures, unlimited rules, history-aware lessons, feedback sessions, dashboard, DPO export. Team is $49/seat/mo with a shared hosted lesson DB and org dashboard.
+Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and any MCP-compatible agent. Free tier: 5 feedback captures/day (25 total) and up to 3 active auto-promoted prevention rules. [Pro: $19/mo or $149/yr](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme) — unlimited rules, history-aware lessons, feedback sessions, dashboard, DPO export. Enterprise (custom pricing, scoped after intake) adds a shared hosted lesson DB, org dashboard, and shared org-wide enforcement.
 
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
@@ -379,26 +379,26 @@ If you change MCP or hook settings, restart the affected agent session so Claude
 
 ## Pricing
 
-| | Free | Pro ($19/mo) | Team ($49/seat/mo) | Enterprise |
-|---|---|---|---|---|
-| Local CLI + enforced checks | ✅ | ✅ | ✅ | ✅ |
-| Feedback captures | 5/day, 25 total | Unlimited | Unlimited | Unlimited |
-| Auto-promoted prevention rules | 3 active | Unlimited | Unlimited | Unlimited |
-| MCP agent integrations | All | All | All | All |
-| Personal dashboard | — | ✅ | ✅ | ✅ |
-| DPO export (model fine-tuning) | — | ✅ | ✅ | ✅ |
-| Team lesson export/import | — | ✅ | ✅ | ✅ |
-| Shared hosted lesson DB | — | — | ✅ | ✅ |
-| Org-wide dashboard | — | — | ✅ | ✅ |
-| Approval + audit proof | — | — | ✅ | ✅ |
-| Regulatory gate templates | — | — | — | ✅ |
-| Custom policy layers (firm/practice-area) | — | — | — | ✅ |
-| Compliance audit export | — | — | — | ✅ |
-| Dedicated onboarding + SLA | — | — | — | ✅ |
+| | Free | Pro ($19/mo) | Enterprise |
+|---|---|---|---|
+| Local CLI + enforced checks | ✅ | ✅ | ✅ |
+| Feedback captures | 5/day (25 total) | Unlimited | Unlimited |
+| Active auto-promoted prevention rules | 3 | Unlimited | Unlimited |
+| MCP agent integrations | All | All | All |
+| Personal dashboard | — | ✅ | ✅ |
+| DPO export (model fine-tuning) | — | ✅ | ✅ |
+| Lesson export/import | — | ✅ | ✅ |
+| Shared hosted lesson DB | — | — | ✅ |
+| Org-wide dashboard | — | — | ✅ |
+| Approval + audit proof | — | — | ✅ |
+| Regulatory gate templates | — | — | ✅ |
+| Custom policy layers (firm/practice-area) | — | — | ✅ |
+| Compliance audit export | — | — | ✅ |
+| Dedicated onboarding + SLA | — | — | ✅ |
 
-The free tier gives you 5 feedback captures/day, 25 total captures, and up to 3 active auto-promoted prevention rules — enough to prove the loop before buying. MCP integrations for all agents (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode) ship free.
+The free tier gives you 5 feedback captures/day (25 total) and up to 3 active auto-promoted prevention rules — enough to make ThumbGate part of your daily flow before you upgrade. MCP integrations for all agents (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode) ship free.
 
-Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recall, lesson search, DPO export, and a personal dashboard. Team ($49/seat/mo) adds a shared hosted lesson DB, org dashboard, and shared enforcement across the org. Enterprise adds regulatory gate templates (legal intake, financial compliance, healthcare), custom policy layers scoped to firm/practice-area, compliance audit export, and dedicated onboarding with SLA.
+Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recall, lesson search, DPO export, and a personal dashboard. Enterprise (custom pricing, scoped after intake) adds a shared hosted lesson DB, org dashboard, and shared enforcement across the org, plus regulatory gate templates (legal intake, financial compliance, healthcare), custom policy layers scoped to firm/practice-area, compliance audit export, and dedicated onboarding with SLA.
 
 **Best first paid motion for teams:** the **Workflow Hardening Sprint** — qualify one repeated failure before committing to a full rollout. **[Start intake →](https://thumbgate.ai/?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake)**
 
@@ -539,11 +539,13 @@ Free and self-hosted users can invoke `search_lessons` directly through MCP, and
 
 ---
 
-## Enterprise Gating (Vertex AI & Google Cloud)
+## Enterprise Data Chat and Optional Google Adapters
 
-For enterprise subscriptions, ThumbGate natively integrates with Google Cloud Platform and **Vertex AI** to route all agent checks through compliant Gemini models inside your corporate VPC.
+The Enterprise dashboard chat is local/open-source first: it answers over local ThumbGate data using lesson retrieval, LanceDB-backed vectors, and your configured LLM. Set `THUMBGATE_LOCAL_LLM_ENDPOINT` to an OpenAI-compatible local endpoint (Ollama, llama.cpp, vLLM, LM Studio, etc.) when you want generated answers without sending dashboard data to Google.
 
-### Zero-Friction Setup
+Google Cloud is an optional regulated-enterprise adapter, not a dashboard chatbot requirement. If a buyer already standardizes on Vertex AI or Dialogflow CX, ThumbGate can verify that posture and deploy guard adapters in their tenancy.
+
+### Optional Vertex Setup
 To wire local ThumbGate scoring to Vertex AI, run:
 ```bash
 npx thumbgate setup-vertex
@@ -552,7 +554,7 @@ npx thumbgate setup-vertex
 * **Auto-Enablement:** Programmatically enables the Vertex AI API in your project.
 * **Auto-Configuration:** Writes local Vertex routing settings to your `.env` file.
 
-This command does **not** create or verify a live Dialogflow CX agent. On current Google Cloud CLI installs, the old alpha gcloud CX command group is not available; verify Conversational Agents / Dialogflow CX with the Google Cloud console or the official Dialogflow CX REST API (`projects.locations.agents`) before claiming a live DFCX deployment.
+This command does **not** create or verify a live Dialogflow CX agent. Dialogflow is only relevant when a customer wants ThumbGate guard adapters in front of their own production DFCX agents. On current Google Cloud CLI installs, the old alpha gcloud CX command group is not available; verify Conversational Agents / Dialogflow CX with the Google Cloud console or the official Dialogflow CX REST API (`projects.locations.agents`) before claiming a live DFCX deployment.
 
 ### Zero-Friction Cost Containment ($10/mo Hard Cap)
 Google Cloud budget alerts are "alert-only" and do not stop API traffic, risking unexpected bill shock. ThumbGate completely resolves this on the client side:
@@ -575,7 +577,7 @@ If it supports MCP or pre-action hooks, yes. Claude Code, Claude Desktop, Cursor
 **Is it free?**
 The free tier gives you 5 feedback captures/day, 25 total captures, and up to 3 active auto-promoted prevention rules — enough for solo devs to prove a blocked repeat before upgrading. MCP integrations ship free for every agent.
 
-Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recall, lesson search, and a personal dashboard. Team ($49/seat/mo) adds a shared hosted lesson DB, org dashboard, and shared enforcement.
+Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recall, lesson search, and a personal dashboard. Enterprise (custom pricing, scoped after intake) adds a shared hosted lesson DB, org dashboard, and shared enforcement.
 
 ---
 

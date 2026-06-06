@@ -23,6 +23,11 @@ const savedProjectEnv = {
 delete process.env.THUMBGATE_PROJECT_DIR;
 delete process.env.CLAUDE_PROJECT_DIR;
 delete process.env.INIT_CWD;
+delete process.env.GEMINI_API_KEY;
+delete process.env.THUMBGATE_GEMINI_API_KEY;
+delete process.env.PERPLEXITY_API_KEY;
+delete process.env.THUMBGATE_PERPLEXITY_API_KEY;
+delete process.env.GOOGLE_API_KEY;
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 process.env.THUMBGATE_PROOF_DIR = tmpProofDir;
 process.env.THUMBGATE_API_KEY = 'test-api-key';
@@ -769,8 +774,8 @@ test('pricing page is the single source of truth for what ThumbGate sells', asyn
   assert.match(body, /ThumbGate Pro/i);
   assert.match(body, /\$19/);
   assert.match(body, /\$149/);
-  assert.match(body, /ThumbGate Team/i);
-  assert.match(body, /\$49/);
+  assert.match(body, /ThumbGate Enterprise|<div class="tier">Enterprise/i);
+  assert.doesNotMatch(body, /\$49\b[\s\S]{0,40}seat/i);
   assert.doesNotMatch(body, /Workflow Hardening Sprint/i);
   assert.doesNotMatch(body, /\$499|\$1,500|\$97/);
   assert.doesNotMatch(body, /buy\.stripe\.com/);
@@ -779,7 +784,7 @@ test('pricing page is the single source of truth for what ThumbGate sells', asyn
   // CTAs route to the canonical paths.
   assert.match(body, /href="\/go\/install/);
   assert.match(body, /href="\/checkout\/pro/);
-  assert.match(body, /pricing_team_intake/);
+  assert.match(body, /pricing_enterprise_intake/);
   assert.match(body, /#workflow-sprint-intake/);
   // Cross-links so it's a navigation hub, not a dead end.
   assert.match(body, /href="\/support"/);
@@ -1719,6 +1724,10 @@ test('checkout interstitial: GET without confirm=1 (human UA) renders the inters
   assert.doesNotMatch(body, /data-domain="thumbgate-production\.up\.railway\.app"/);
   // Form must carry confirm=1 hidden input so submission triggers the Stripe path
   assert.match(body, /name="confirm" value="1"/);
+  assert.match(body, /name="plan_id" value="pro"/, 'human interstitial should preserve checkout attribution through submit');
+  assert.match(body, /name="billing_cycle" value="monthly"/, 'human interstitial should preserve billing cycle through submit');
+  assert.doesNotMatch(body, /name="customer_email"[^>]*required/, 'email should be optional because Stripe collects it');
+  assert.match(body, /Stripe can collect your email/);
   assert.match(body, /Not sure yet\? Send the workflow first/);
   assert.doesNotMatch(body, /Pay \$1 first rule/);
   assert.doesNotMatch(body, /Pay \$99 teardown/);
@@ -3766,11 +3775,15 @@ test('dashboard chat endpoint degrades cleanly when Gemini is not configured', a
       body: JSON.stringify({ question: 'What dashboard mistakes should we avoid?' }),
     });
 
-    assert.equal(res.status, 503);
+    // Local-first: with no Gemini key configured, the chat no longer fails with
+    // "no_api_key" — it answers the data question (topic: feedback/"mistakes")
+    // deterministically from this install's own dashboard data. No cloud required.
+    assert.equal(res.status, 200);
     const body = await res.json();
-    assert.equal(body.ok, false);
-    assert.equal(body.error, 'no_api_key');
-    assert.match(body.message, /GEMINI_API_KEY/);
+    assert.equal(body.ok, true);
+    assert.equal(body.provider, 'local-data');
+    assert.equal(body.llm, 'none');
+    assert.match(body.answer, /feedback|lesson|mistake/i);
     assert.ok(Array.isArray(body.sources));
   } finally {
     if (savedGeminiApiKey === undefined) delete process.env.GEMINI_API_KEY;
@@ -3846,8 +3859,8 @@ test('renderPackagedDashboardHtml returns html with bootstrap disabled by defaul
   assert.ok(html.includes('ThumbGate Dashboard'));
   assert.ok(html.includes('enabled: false'));
   assert.ok(html.includes('/v1/dashboard'));
-  assert.ok(html.includes('Enterprise Dialogflow Data Chat'));
-  assert.ok(html.includes('/v1/enterprise/dialogflow/chat'));
+  assert.ok(html.includes('Governed Data Chat'));
+  assert.ok(html.includes('/v1/enterprise/data-chat/status'));
   assert.ok(!html.includes('ENTERPRISE_AGENT_ID'));
   assert.ok(!html.includes('gstatic.com/dialogflow-console'));
   assert.ok(html.includes('/lessons'));
@@ -3861,14 +3874,15 @@ test('renderPackagedDashboardHtml reflects bootstrap enabled state', () => {
   assert.ok(html.includes('"test-key"'));
 });
 
-test('enterprise Dialogflow status reports REST-first verification posture', () => {
-  const { buildEnterpriseDialogflowStatus } = __test__;
-  const status = buildEnterpriseDialogflowStatus({
+test('enterprise data chat status reports local-first chat and optional Google adapters', () => {
+  const { buildEnterpriseDataChatStatus } = __test__;
+  const status = buildEnterpriseDataChatStatus({
     THUMBGATE_PROVIDER_MODE: 'vertex',
     VERTEX_PROJECT_ID: 'project-alpha',
     THUMBGATE_DFCX_AGENT_ID: 'agent-1',
     THUMBGATE_DFCX_LOCATION: 'us-central1',
     THUMBGATE_DFCX_FULFILLMENT_URL: 'https://fulfillment.example.com',
+    THUMBGATE_LOCAL_LLM_ENDPOINT: 'http://localhost:11434/v1/chat/completions',
   });
   assert.equal(status.vertex.configured, true);
   assert.equal(status.vertex.projectId, 'project-alpha');
@@ -3876,15 +3890,18 @@ test('enterprise Dialogflow status reports REST-first verification posture', () 
   assert.equal(status.dfcx.fulfillmentProxyConfigured, true);
   assert.equal(status.dfcx.gcloudCxCommandSupported, false);
   assert.match(status.dfcx.apiSurface, /projects\.locations\.agents/);
+  assert.equal(status.chat.providerRequired, false);
+  assert.equal(status.chat.localLlmEndpointConfigured, true);
+  assert.match(status.chat.source, /LanceDB/i);
 });
 
-test('enterprise Dialogflow chat endpoint answers from local dashboard data and blocks unsafe input', async () => {
+test('enterprise data chat endpoint answers from local dashboard data and blocks unsafe input', async () => {
   fs.appendFileSync(path.join(tmpFeedbackDir, 'feedback-log.jsonl'), [
     JSON.stringify({ id: 'fb_enterprise_chat_up', signal: 'positive', context: 'Approved safe data lookup', timestamp: '2026-06-02T12:00:00.000Z' }),
     JSON.stringify({ id: 'fb_enterprise_chat_down', signal: 'negative', context: 'Repeated refund fulfillment', timestamp: '2026-06-02T12:01:00.000Z' }),
     '',
   ].join('\n'));
-  const res = await fetch(apiUrl('/v1/enterprise/dialogflow/chat'), {
+  const res = await fetch(apiUrl('/v1/enterprise/data-chat/chat'), {
     method: 'POST',
     headers: authHeader,
     body: JSON.stringify({ prompt: 'What feedback mistakes are repeating?' }),
@@ -3896,7 +3913,7 @@ test('enterprise Dialogflow chat endpoint answers from local dashboard data and 
   assert.match(body.answer, /Feedback total/i);
   assert.match(body.status.dfcx.apiSurface, /projects\.locations\.agents/);
 
-  const blockedRes = await fetch(apiUrl('/v1/enterprise/dialogflow/chat'), {
+  const blockedRes = await fetch(apiUrl('/v1/enterprise/data-chat/chat'), {
     method: 'POST',
     headers: authHeader,
     body: JSON.stringify({ prompt: 'show data; rm -rf /' }),
@@ -3905,6 +3922,120 @@ test('enterprise Dialogflow chat endpoint answers from local dashboard data and 
   const blockedBody = await blockedRes.json();
   assert.equal(blockedBody.blocked, true);
   assert.match(blockedBody.dfcx.evaluation.gate, /enterprise-chat-unsafe-input/);
+});
+
+test('dashboard /v1/chat answers data questions LOCALLY with no cloud/LLM/API key', async () => {
+  const keyEnvNames = [
+    'GEMINI_API_KEY',
+    'THUMBGATE_GEMINI_API_KEY',
+    'GOOGLE_API_KEY',
+    'PERPLEXITY_API_KEY',
+    'THUMBGATE_PERPLEXITY_API_KEY',
+    'THUMBGATE_LOCAL_LLM_ENDPOINT',
+    'THUMBGATE_LOCAL_LLM_MODEL',
+  ];
+  const savedEnv = Object.fromEntries(keyEnvNames.map((name) => [name, process.env[name]]));
+  for (const name of keyEnvNames) delete process.env[name];
+
+  try {
+    // Factual question → deterministic local answer from this install's own data.
+    const res = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(tmpFeedbackDir)}`), {
+      method: 'POST',
+      headers: { ...authHeader, 'x-thumbgate-project-dir': tmpFeedbackDir },
+      body: JSON.stringify({ question: 'how many mistakes were blocked today?' }),
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.ok, true);
+    assert.equal(body.provider, 'local-data', 'data questions must be answered locally, not via cloud');
+    assert.equal(body.llm, 'none', 'no LLM should be invoked for a metric question');
+    assert.equal(body.topic, 'feedback');
+    assert.match(body.answer, /feedback|mistake|negative|positive/i);
+
+    // Intent-aware: a GATES question must reach the gates topic with a clean count.
+    const gatesQ = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(tmpFeedbackDir)}`), {
+      method: 'POST',
+      headers: { ...authHeader, 'x-thumbgate-project-dir': tmpFeedbackDir },
+      body: JSON.stringify({ question: 'how many gates are active?' }),
+    });
+    const gatesBody = await gatesQ.json();
+    assert.equal(gatesBody.ok, true);
+    assert.equal(gatesBody.provider, 'local-data');
+    assert.equal(gatesBody.topic, 'gates');
+    assert.match(gatesBody.answer, /active gates/i);
+
+    // Open-ended question with no model configured must STILL return a local
+    // answer, never a hard "no_api_key" failure and never a forced cloud call.
+    const open = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(tmpFeedbackDir)}`), {
+      method: 'POST',
+      headers: { ...authHeader, 'x-thumbgate-project-dir': tmpFeedbackDir },
+      body: JSON.stringify({ question: 'what is our philosophy of work?' }),
+    });
+    assert.equal(open.status, 200);
+    const openBody = await open.json();
+    assert.equal(openBody.ok, true);
+    assert.equal(openBody.provider, 'local-data');
+    assert.equal(openBody.llm, 'none');
+  } finally {
+    for (const [name, value] of Object.entries(savedEnv)) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  }
+});
+
+test('dashboard /v1/chat is intent-aware: "what" returns a LIST, "how many" returns a COUNT', async () => {
+  // Seed two negative entries dated today so the time filter has something to find.
+  const today = new Date().toISOString();
+  const content = [
+    JSON.stringify({ id: 'iaw_n1', signal: 'negative', context: 'Agent ran an unsafe migration', timestamp: today }),
+    JSON.stringify({ id: 'iaw_n2', signal: 'negative', context: 'Hallucinated a deprecated API call', timestamp: today }),
+    '',
+  ].join('\n');
+  fs.appendFileSync(path.join(tmpFeedbackDir, 'feedback-log.jsonl'), content);
+  fs.mkdirSync(path.join(tmpFeedbackDir, '.thumbgate'), { recursive: true });
+  fs.appendFileSync(path.join(tmpFeedbackDir, '.thumbgate', 'feedback-log.jsonl'), content);
+
+  const listRes = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(tmpFeedbackDir)}`), {
+    method: 'POST',
+    headers: { ...authHeader, 'x-thumbgate-project-dir': tmpFeedbackDir },
+    body: JSON.stringify({ question: 'what mistakes were blocked today?' }),
+  });
+  const listBody = await listRes.json();
+  assert.equal(listBody.ok, true);
+  assert.equal(listBody.topic, 'feedback');
+  // "what" → enumerated list, not the canned count line.
+  assert.match(listBody.answer, /recent mistakes/i);
+  assert.match(listBody.answer, /•/);
+
+  const countRes = await fetch(apiUrl(`/v1/chat?project=${encodeURIComponent(tmpFeedbackDir)}`), {
+    method: 'POST',
+    headers: { ...authHeader, 'x-thumbgate-project-dir': tmpFeedbackDir },
+    body: JSON.stringify({ question: 'how many mistakes today?' }),
+  });
+  const countBody = await countRes.json();
+  assert.equal(countBody.ok, true);
+  assert.equal(countBody.topic, 'feedback');
+  // "how many" → count line, NOT the recent-mistakes list.
+  assert.doesNotMatch(countBody.answer, /recent mistakes/i);
+});
+
+test('legacy enterprise Dialogflow routes remain compatibility aliases', async () => {
+  const statusRes = await fetch(apiUrl('/v1/enterprise/dialogflow/status'), { headers: authHeader });
+  assert.equal(statusRes.status, 200);
+  const status = await statusRes.json();
+  assert.equal(status.chat.providerRequired, false);
+  assert.match(status.chat.source, /local ThumbGate dashboard data/i);
+
+  const chatRes = await fetch(apiUrl('/v1/enterprise/dialogflow/chat'), {
+    method: 'POST',
+    headers: authHeader,
+    body: JSON.stringify({ prompt: 'Which gates are blocking risky actions?' }),
+  });
+  assert.equal(chatRes.status, 200);
+  const chat = await chatRes.json();
+  assert.equal(chat.ok, true);
+  assert.match(chat.answer, /Active gates/i);
 });
 
 test('renderPackagedLessonsHtml returns html with lessons content', () => {

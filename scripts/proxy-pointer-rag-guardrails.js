@@ -39,9 +39,23 @@ function normalizeOptions(options = {}) {
     ...splitCsv(options.documents),
     ...splitCsv(options['document-ids']),
   ]);
+  const sourcePointers = unique([
+    ...splitCsv(options['source-pointers']),
+    ...splitCsv(options.pointers),
+    ...splitCsv(options.sources),
+  ]);
   const candidateImages = Number.isFinite(Number(options['candidate-images']))
     ? Number(options['candidate-images'])
     : null;
+  const extractedEntities = Number.isFinite(Number(options['extracted-entities']))
+    ? Number(options['extracted-entities'])
+    : 0;
+  const extractedRelations = Number.isFinite(Number(options['extracted-relations']))
+    ? Number(options['extracted-relations'])
+    : 0;
+  const promotionThreshold = Number.isFinite(Number(options['promotion-threshold']))
+    ? Number(options['promotion-threshold'])
+    : 3;
 
   return {
     ragTool: String(options['rag-tool'] || options.tool || 'proxy-pointer-rag').trim() || 'proxy-pointer-rag',
@@ -49,10 +63,15 @@ function normalizeOptions(options = {}) {
     sectionIds,
     imagePointers,
     documentIds,
+    sourcePointers,
     candidateImages,
+    extractedEntities,
+    extractedRelations,
+    promotionThreshold,
     crossDocumentPolicy: String(options['cross-doc-policy'] || options['cross-document-policy'] || '').trim().toLowerCase(),
     visionFilter: normalizeBoolean(options['vision-filter']),
     visualClaims: normalizeBoolean(options['visual-claims']),
+    pointerFirst: normalizeBoolean(options['pointer-first']) || normalizeBoolean(options['proxy-pointer']),
   };
 }
 
@@ -70,6 +89,14 @@ function gateApplicability(template, options) {
     return options.visualClaims || options.visionFilter || (options.candidateImages !== null && options.candidateImages > 0);
   }
   return false;
+}
+
+function hasExtractionSprawl(options) {
+  const extractedFacts = options.extractedEntities + options.extractedRelations;
+  if (extractedFacts === 0) return false;
+  if (options.pointerFirst) return true;
+  if (options.sourcePointers.length === 0) return true;
+  return extractedFacts > options.sourcePointers.length * Math.max(2, options.promotionThreshold);
 }
 
 function buildSignalSummary(options) {
@@ -110,6 +137,19 @@ function buildSignalSummary(options) {
       risk: 'answers that describe image content may need a vision-model sanity check',
     });
   }
+  if (hasExtractionSprawl(options)) {
+    signals.push({
+      id: 'entity_relation_sprawl',
+      label: 'Entity/relation extraction sprawl',
+      values: unique([
+        `${options.extractedEntities} extracted entities`,
+        `${options.extractedRelations} extracted relations`,
+        `${options.sourcePointers.length} source pointers`,
+        `promotion threshold ${options.promotionThreshold}`,
+      ]),
+      risk: 'eager graph extraction can create stale aliases, weak edges, and unauditable memory; keep source pointers first and promote relations only after repeated retrieval value',
+    });
+  }
   return signals;
 }
 
@@ -139,11 +179,12 @@ function buildProxyPointerRagGuardrailsPlan(rawOptions = {}, templatesPath) {
     templates: recommendedTemplates,
     nextActions: [
       'Preserve document hierarchy, section IDs, and image file paths during ingestion.',
+      'Store source pointers before extracting entities or relations; promote a relation only after repeated retrieval value and source verification.',
       'Pass section-tree and image-pointer metadata into the agent before it answers with visuals.',
       'Enable the recommended Document RAG Safety templates as pre-action gates.',
       'Use a vision filter only for high-impact answers that make claims about visual content.',
     ],
-    exampleCommand: 'npx thumbgate proxy-pointer-rag-guardrails --tree-path=.rag/tree.json --image-pointers=paper-1/figures/fig2.png --documents=paper-1 --visual-claims --json',
+    exampleCommand: 'npx thumbgate proxy-pointer-rag-guardrails --tree-path=.rag/tree.json --source-pointers=lesson/fb_123,tool/run_456 --extracted-entities=120 --extracted-relations=80 --pointer-first --json',
   };
 }
 

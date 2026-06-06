@@ -44,6 +44,8 @@ test('findClaim matches "is live" / "deployed" / "fixed" wording', () => {
   assert.ok(findClaim('Deployed to production.'));
   assert.ok(findClaim('Everything is working.'));
   assert.ok(findClaim('Production-ready.'));
+  assert.ok(findClaim('GitHub About metadata has been updated and verified.'));
+  assert.ok(findClaim('The topics now match the GitHub repository metadata.'));
 });
 
 test('findClaim ignores benign phrasing', () => {
@@ -75,6 +77,28 @@ test('hook emits reminder when claim has no proof in same turn', () => {
   const { stdout } = runHook(transcript);
   assert.match(stdout, /anti-claim gate/i);
   assert.match(stdout, /is\s+live|now\s+live/i);
+});
+
+test('hook emits reminder for GitHub metadata verification claim with no proof', () => {
+  const transcript = writeTranscript({
+    content: [
+      { type: 'text', text: 'GitHub About metadata has been updated and verified.' },
+    ],
+  });
+  const { stdout } = runHook(transcript);
+  assert.match(stdout, /anti-claim gate/i);
+  assert.match(stdout, /GitHub About metadata/i);
+});
+
+test('hook stays silent when GitHub metadata claim has gh api proof in the same turn', () => {
+  const transcript = writeTranscript({
+    content: [
+      { type: 'text', text: 'GitHub About metadata has been updated and verified.' },
+      { type: 'tool_use', name: 'Bash', input: { command: 'gh api repos/IgorGanapolsky/ThumbGate --jq .description' } },
+    ],
+  });
+  const { stdout } = runHook(transcript);
+  assert.equal(stdout.trim(), '');
 });
 
 test('hook stays silent when claim is backed by a curl tool call in the same turn', () => {

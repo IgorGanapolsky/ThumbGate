@@ -6,7 +6,7 @@ const path = require('path');
 const {
   PRO_MONTHLY_PAYMENT_LINK,
   PRO_PRICE_LABEL,
-  TEAM_PRICE_LABEL,
+  ENTERPRISE_PRICE_LABEL,
 } = require('./commercial-offer');
 
 const USAGE_FILE = path.join(process.env.HOME || '/tmp', '.thumbgate', 'usage-limits.json');
@@ -31,7 +31,7 @@ const FREE_TIER_LIMITS = {
 const FREE_TIER_MAX_GATES = 3; // 3 active prevention rules on free; Pro is unlimited
 const FREE_TIER_DAILY_BLOCKS = 3; // 3 gate blocks/day on free; after limit, deny → warn + upgrade CTA
 
-const UPGRADE_MESSAGE = `Pro: ${PRO_PRICE_LABEL} — unlimited rules, recall, lesson search, dashboard, and exports: ${PRO_MONTHLY_PAYMENT_LINK}\n  Team: ${TEAM_PRICE_LABEL} after workflow qualification.`;
+const UPGRADE_MESSAGE = `Pro: ${PRO_PRICE_LABEL} — unlimited rules, recall, lesson search, dashboard, and exports: ${PRO_MONTHLY_PAYMENT_LINK}\n  Enterprise: ${ENTERPRISE_PRICE_LABEL} after workflow qualification.`;
 
 const PAYWALL_MESSAGES = {
   capture_feedback: 'Free tier: 5 captures/day (25 total). Your feedback is stored locally — upgrade to capture unlimited.',

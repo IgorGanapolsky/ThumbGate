@@ -18,7 +18,7 @@ test.describe('/pricing clickability — full CTA coverage', () => {
     await expect(cards).toHaveCount(3);
     await expect(page.locator('.price-card').nth(0).locator('.price')).toHaveText('$0');
     await expect(page.locator('#pro .price')).toContainText('$19');
-    await expect(page.locator('#team .price')).toContainText('$49');
+    await expect(page.locator('#enterprise .price')).toContainText('Custom');
   });
 
   // --- nav (5 anchors) ---
@@ -72,12 +72,12 @@ test.describe('/pricing clickability — full CTA coverage', () => {
     await expect(cta).toHaveAttribute('href', /utm_medium=hero_card/);
   });
 
-  test('Team card CTA "Send team workflow first" links to / with #workflow-sprint-intake', async ({ page }) => {
+  test('Enterprise card CTA "Talk to us" links to / with #workflow-sprint-intake', async ({ page }) => {
     await page.goto('/pricing');
-    const cta = page.locator('#team a.btn-team');
-    await expect(cta).toContainText('Send team workflow first');
+    const cta = page.locator('#enterprise a.btn-team');
+    await expect(cta).toContainText('Talk to us');
     await expect(cta).toHaveAttribute('href', /#workflow-sprint-intake$/);
-    await expect(cta).toHaveAttribute('href', /utm_medium=team_card/);
+    await expect(cta).toHaveAttribute('href', /utm_medium=enterprise_card/);
   });
 
   test('scope-first link below the grid links to #workflow-sprint-intake', async ({ page }) => {

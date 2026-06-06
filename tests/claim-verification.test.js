@@ -142,6 +142,36 @@ test('verifyClaimEvidence reports missing actions for matching claims', () => {
   }
 });
 
+test('verifyClaimEvidence blocks GitHub About verification claims without metadata evidence', () => {
+  const backups = backupRuntimeState();
+  try {
+    resetRuntimeState();
+    const result = verifyClaimEvidence('GitHub About metadata has been updated and verified');
+    assert.equal(result.verified, false);
+    const metadataCheck = result.checks.find((check) => check.missing.includes('github_metadata_verified'));
+    assert.ok(metadataCheck);
+    assert.equal(metadataCheck.passed, false);
+  } finally {
+    restoreRuntimeState(backups);
+  }
+});
+
+test('verifyClaimEvidence accepts GitHub About claims after metadata evidence is tracked', () => {
+  const backups = backupRuntimeState();
+  try {
+    resetRuntimeState();
+    trackAction('github_metadata_verified', {
+      source: 'gh api repos/IgorGanapolsky/ThumbGate plus rendered GitHub HTML',
+    });
+    const result = verifyClaimEvidence('repo topics now match GitHub metadata');
+    assert.equal(result.verified, true);
+    assert.equal(result.checks.length, 1);
+    assert.equal(result.checks[0].passed, true);
+  } finally {
+    restoreRuntimeState(backups);
+  }
+});
+
 test('verifyClaimEvidence ignores non-matching claims', () => {
   const backups = backupRuntimeState();
   try {
@@ -161,4 +191,5 @@ test('default claim verification config ships expected gates', () => {
   assert.ok(patterns.some((pattern) => pattern.includes('tests? pass')));
   assert.ok(patterns.some((pattern) => pattern.includes('ready to merge')));
   assert.ok(patterns.some((pattern) => pattern.includes('verified on device')));
+  assert.ok(patterns.some((pattern) => pattern.includes('github|repo|repository')));
 });

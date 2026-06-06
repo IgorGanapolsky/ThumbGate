@@ -5,9 +5,11 @@ const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 const {
   scanCode,
+  scanBadHostExposure,
   scanDependencyChange,
   evaluateSecurityScan,
   scanGitDiff,
+  buildThreatDefensePlaybook,
 } = require('../scripts/security-scanner');
 
 // ---------------------------------------------------------------------------
@@ -86,6 +88,22 @@ describe('scanCode — SSRF detection', () => {
     const result = scanCode(code, 'proxy.js');
     assert.equal(result.detected, true);
     assert.ok(result.findings.some(f => f.category === 'ssrf'));
+  });
+});
+
+describe('scanCode — BadHost host-header and URL confusion detection', () => {
+  it('detects request.url use in Python AI service handlers', () => {
+    const result = scanCode('return {"next": request.url.path}', 'agent_gateway.py');
+
+    assert.equal(result.detected, true);
+    assert.ok(result.findings.some((finding) => finding.id === 'badhost-url-confusion'));
+  });
+
+  it('exposes a focused BadHost scan helper for gate evidence', () => {
+    const result = scanBadHostExposure('callback = url_for("agent", _external=True)', 'app.py');
+
+    assert.equal(result.detected, true);
+    assert.equal(result.findings[0].category, 'host-header');
   });
 });
 
@@ -288,6 +306,41 @@ diff --git a/server.js b/server.js
   it('returns clean for empty diff', () => {
     assert.deepEqual(scanGitDiff(''), { clean: true, findings: [] });
     assert.deepEqual(scanGitDiff(null), { clean: true, findings: [] });
+  });
+});
+
+describe('buildThreatDefensePlaybook — prepare scan remediate monitor loop', () => {
+  it('turns critical findings into a deny-and-remediate playbook', () => {
+    const scan = scanCode('const out = execSync(`ls ${req.query.dir}`);', 'handler.js');
+    const playbook = buildThreatDefensePlaybook(scan);
+
+    assert.equal(playbook.name, 'thumbgate-ai-threat-defense-playbook');
+    assert.equal(playbook.status, 'block');
+    assert.equal(playbook.gateDecision, 'deny');
+    assert.deepEqual(playbook.phases.map((phase) => phase.id), [
+      'prepare',
+      'scan-prioritize',
+      'remediate',
+      'monitor',
+    ]);
+    assert.ok(playbook.nextActions.some((action) => /Re-scan/.test(action)));
+  });
+
+  it('keeps clean scans in monitor mode with continuous detection evidence', () => {
+    const playbook = buildThreatDefensePlaybook({ findings: [] });
+
+    assert.equal(playbook.status, 'monitor');
+    assert.equal(playbook.gateDecision, 'allow');
+    assert.ok(playbook.phases.some((phase) => phase.id === 'monitor' && phase.required));
+  });
+
+  it('routes BadHost-style host confusion to remediation before deployment', () => {
+    const scan = scanCode('return request.url.path', 'agent_gateway.py');
+    const playbook = buildThreatDefensePlaybook(scan);
+
+    assert.equal(playbook.status, 'remediate');
+    assert.equal(playbook.gateDecision, 'warn');
+    assert.ok(playbook.priority.categories.includes('host-header'));
   });
 });
 

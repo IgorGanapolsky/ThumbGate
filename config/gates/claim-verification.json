@@ -24,6 +24,12 @@
       "requiredActions": ["on_device_verified"],
       "message": "You claimed on-device verification without evidence. Capture the proof first, then call track_action('on_device_verified').",
       "createdAt": 1774972800000
+    },
+    {
+      "pattern": "(github|repo|repository).*(about|metadata|description|topics?).*(updated|verified|fixed|match(?:es|ed)?)|(about|metadata|description|topics?).*(updated|verified|fixed|match(?:es|ed)?).*(github|repo|repository)",
+      "requiredActions": ["github_metadata_verified"],
+      "message": "You claimed GitHub repository metadata was updated or verified without source-of-truth evidence. Read it back with gh api/gh repo view and rendered HTML, then call track_action('github_metadata_verified').",
+      "createdAt": 1780677400000
     }
   ]
 }

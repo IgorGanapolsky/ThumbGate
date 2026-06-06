@@ -20,6 +20,10 @@ test('normalizeOptions extracts proxy-pointer RAG signals from CLI flags', () =>
     'tree-path': '.rag/tree.json',
     'section-ids': 'paper-1:methods,paper-1:results',
     'image-pointers': 'paper-1/figures/fig2.png,paper-1/tables/table1.png',
+    'source-pointers': 'lesson/fb_123,tool/run_456',
+    'extracted-entities': '120',
+    'extracted-relations': '80',
+    'promotion-threshold': '4',
     documents: 'paper-1,paper-2',
     'candidate-images': '6',
     'cross-doc-policy': 'strict',
@@ -31,11 +35,29 @@ test('normalizeOptions extracts proxy-pointer RAG signals from CLI flags', () =>
   assert.equal(options.treePath, '.rag/tree.json');
   assert.deepEqual(options.sectionIds, ['paper-1:methods', 'paper-1:results']);
   assert.deepEqual(options.imagePointers, ['paper-1/figures/fig2.png', 'paper-1/tables/table1.png']);
+  assert.deepEqual(options.sourcePointers, ['lesson/fb_123', 'tool/run_456']);
+  assert.equal(options.extractedEntities, 120);
+  assert.equal(options.extractedRelations, 80);
+  assert.equal(options.promotionThreshold, 4);
   assert.deepEqual(options.documentIds, ['paper-1', 'paper-2']);
   assert.equal(options.candidateImages, 6);
   assert.equal(options.crossDocumentPolicy, 'strict');
   assert.equal(options.visionFilter, true);
   assert.equal(options.visualClaims, true);
+});
+
+test('buildProxyPointerRagGuardrailsPlan flags eager entity relation extraction sprawl', () => {
+  const report = buildProxyPointerRagGuardrailsPlan({
+    'source-pointers': 'lesson/fb_123,tool/run_456',
+    'extracted-entities': '120',
+    'extracted-relations': '80',
+    'promotion-threshold': '3',
+  });
+
+  assert.equal(report.status, 'ready');
+  assert.equal(report.summary.signalCount, 1);
+  assert.ok(report.signals.some((signal) => signal.id === 'entity_relation_sprawl'));
+  assert.match(report.nextActions.join('\n'), /Store source pointers before extracting entities or relations/);
 });
 
 test('buildProxyPointerRagGuardrailsPlan recommends all concrete Document RAG Safety gates', () => {
@@ -72,6 +94,7 @@ test('formatProxyPointerRagGuardrailsPlan gives operator-readable rollout steps'
   assert.match(text, /ThumbGate Proxy-Pointer RAG Guardrails/);
   assert.match(text, /require-section-tree-before-multimodal-answer/);
   assert.match(text, /Enable the recommended Document RAG Safety templates/);
+  assert.match(text, /Store source pointers before extracting entities or relations/);
   assert.match(text, /npx thumbgate proxy-pointer-rag-guardrails/);
 });
 

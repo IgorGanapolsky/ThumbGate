@@ -244,6 +244,15 @@ async function runPackagedRuntimeSmoke(options = {}) {
       THUMBGATE_API_KEY: 'tg_packaged_runtime_smoke',
       NO_COLOR: '1',
     };
+    for (const key of Object.keys(env)) {
+      if (
+        (key.startsWith('THUMBGATE_') && key !== 'THUMBGATE_PROJECT_DIR' && key !== 'THUMBGATE_LOCAL_API_ORIGIN' && key !== 'THUMBGATE_API_KEY') ||
+        key === 'CLAUDE_PROJECT_DIR' ||
+        key.startsWith('_TEST_')
+      ) {
+        delete env[key];
+      }
+    }
 
     const initialStatusline = renderStatusline(runtimeBin, projectDir, env);
     if (!initialStatusline.includes(`ThumbGate v${expectedVersion}`)) {

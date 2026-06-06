@@ -1,6 +1,6 @@
 # Sales Pipeline
 
-Updated: 2026-06-02T12:31:25-04:00
+Updated: 2026-06-05T14:59:56Z
 
 This is the first-dollar truth table. Posts are not sales; only stage movement counts.
 
@@ -23,13 +23,14 @@ This is the first-dollar truth table. Posts are not sales; only stage movement c
 - paid: 0
 - lost: 0
 
-## Current Operator Queue (2026-06-02)
+## Current Operator Queue (2026-06-05)
 
 - Untouched self-serve leads: `github_easingthemes_dx_aem_flow`, `github_zaxbysauce_opencode_swarm`
 - Contacted warm Reddit follow-ups: `reddit_deep_ad1959_r_cursor`, `reddit_game_of_kton_r_cursor`, `reddit_leogodin217_r_claudecode`, `reddit_enthu_cutlet_1337_r_claudecode`
 - Deprecated replied lead: `aiventyx_qaiser_marketplace_listings` should not be worked further after the CEO pivot away from Aiventyx.
+- Highest-ROI next step: send the four warm Reddit follow-ups before touching new Skool setup work or lower-intent GitHub targets.
 
-Note: the live stage source is `.thumbgate/sales-pipeline.jsonl`. The lead blocks below remain the campaign pool, but the top summary and operator queue above are the current action layer for June 2, 2026.
+Note: the live stage source is `.thumbgate/sales-pipeline.jsonl`. The lead blocks below remain the campaign pool, but the top summary and operator queue above are the current action layer for June 5, 2026.
 
 ## Lead Queue
 ### reddit_deep_ad1959_r_cursor

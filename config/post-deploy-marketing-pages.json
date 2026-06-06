@@ -51,6 +51,11 @@
       "route": "/sitemap.xml",
       "sentinel": "<urlset",
       "description": "XML sitemap for search-engine discoverability"
+    },
+    {
+      "route": "/about",
+      "sentinel": "Igor Ganapolsky",
+      "description": "About page for GEO discoverability"
     }
   ]
 }

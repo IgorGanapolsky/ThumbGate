@@ -34,10 +34,10 @@ const REQUEST_TIMEOUT_MS = 2_000;
 function isPlausibleDisabled() {
   if (process.env.THUMBGATE_PLAUSIBLE_DISABLE === '1') return true;
   if (process.env.DO_NOT_TRACK === '1') return true;
-  // NODE_ENV-based detection was tried and dropped: `node --test` does not
-  // set NODE_ENV automatically, so the check produced surprising behavior
-  // in test vs. production. Tests must opt out explicitly via the dedicated
-  // THUMBGATE_PLAUSIBLE_DISABLE flag.
+  // Automatically disable Plausible events in local development unless explicitly overridden in tests
+  if (process.env.THUMBGATE_PLAUSIBLE_DISABLE !== '0' && process.env.NODE_ENV !== 'production') {
+    return true;
+  }
   return false;
 }
 

@@ -299,9 +299,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // emit unregistered Plausible domains) and scripts/secret-fixture-tokens.js
   // (required by thumbgate-bench.js to expand scanner-safe secret fixtures).
   // Bumped 280 -> 285 (2026-06-03) to accommodate newly merged guides and scripts from main.
+  // Bumped 285 -> 290 (2026-06-04) to ship scripts/upstream-contribution-engine.js for dependency contribution scouting.
   assert.ok(
-    manifest.fileCount <= 285,
-    `npm package should stay <= 285 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 290,
+    `npm package should stay <= 290 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -409,12 +410,16 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 4.00 MB -> 4.10 MB (2026-06-03) after measured `npm pack --dry-run`
   // on reliability rollout: packaged runtime dependencies plus public
   // discovery assets weigh ~4.08 MB unpacked, leaving a narrow safety margin.
-  // Bumped 4.15 MB -> 4.18 MB (2026-06-03) for the Plausible domain guard,
-  // Memory OS readiness report, scanner-safe bench fixture expansion, merged main guides, and perplexity hooks restore.
-  // Observed package size: ~4.155 MB.
+  // Bumped 4.18 MB -> 4.25 MB (2026-06-03) for the parallel workflow orchestrator.
+  // Bumped 4.25 MB -> 4.30 MB (2026-06-04) for local-first dashboard chat and scripts/upstream-contribution-engine.js.
+  // Bumped 4.30 MB -> 4.35 MB (2026-06-05) for buyer-intent comparison pages
+  // (/compare/cycode, /compare/claude-code-hooks-mastery) and the canonical
+  // /guides/claude-code-pretooluse-hook LLM-citation-targeted SEO content from
+  // the 2026-06-05 LLM-citability deep-research action plan. Measured combined
+  // queue bundle ~4.302 MB; bump restores a one-normal-PR headroom buffer.
   assert.ok(
-    manifest.unpackedSize <= 4_180_000,
-    `npm package should stay <= 4.18 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_350_000,
+    `npm package should stay <= 4.35 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
