@@ -128,7 +128,9 @@ function aggregateFeedbackStats(options = {}) {
   };
 }
 
-if (require.main === module) {
+// Path-based entrypoint check: `require.main === module` is flagged by SonarCloud
+// S3403 (see CLAUDE.md). Use the portable path-resolve form instead.
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
   process.stdout.write(JSON.stringify(aggregateFeedbackStats(), null, 2));
 }
 
