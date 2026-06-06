@@ -23,8 +23,11 @@ sub-agents — see https://www.anthropic.com/engineering/effective-context-engin
 ## The rule
 
 For any task with 3+ steps or that crosses a turn, the FIRST action is to create
-or open a ledger at `.claude/implementation-notes/<date>-<task>.md` (this is
-already mandated by CLAUDE.md — actually do it). It is the single source of truth.
+or open a ledger at `.thumbgate/implementation-notes.md` or a task-specific
+gitignored `.thumbgate/implementation-notes/<date>-<task>.md`. Do not write
+operator scratchpads under tracked `.claude/implementation-notes/`; those are
+private working notes, not product documentation. The ledger is the single
+source of truth.
 
 ## Ledger format (keep it short — it's a dashboard, not a diary)
 

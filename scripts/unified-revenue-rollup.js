@@ -30,6 +30,7 @@
  *   STRIPE_SECRET_KEY    — live Stripe key, for cash + checkout completion
  *   PLAUSIBLE_API_KEY    — Plausible analytics token
  *   PLAUSIBLE_SITE_ID    — Plausible site id (defaults to thumbgate.ai)
+ *   GOOGLE_SEARCH_CONSOLE_SITE_URL — optional verified Search Console property
  */
 
 'use strict';
@@ -48,6 +49,8 @@ const REVENUE_SURFACES = [
 ];
 
 const PLAUSIBLE_BASE = 'https://plausible.io/api/v1';
+const SEARCH_CONSOLE_AI_REPORT_URL =
+  'https://developers.google.com/search/blog/2026/06/gen-ai-performance-reports';
 
 function parseArgs(argv = []) {
   return {
@@ -120,6 +123,36 @@ async function gatherPlausible({ period = '1d', fetchImpl = fetch, env = process
   }
 }
 
+function gatherSearchConsoleAiVisibility({ env = process.env } = {}) {
+  const siteUrl = env.GOOGLE_SEARCH_CONSOLE_SITE_URL ||
+    env.SEARCH_CONSOLE_SITE_URL ||
+    env.GSC_SITE_URL ||
+    '';
+  const hasServiceAccount = Boolean(
+    env.GOOGLE_APPLICATION_CREDENTIALS ||
+    env.GOOGLE_CLIENT_EMAIL ||
+    env.GOOGLE_SERVICE_ACCOUNT_JSON
+  );
+  const hasOauth = Boolean(env.GOOGLE_SEARCH_CONSOLE_REFRESH_TOKEN || env.GOOGLE_OAUTH_REFRESH_TOKEN);
+  const credentialMode = hasServiceAccount ? 'service_account' : (hasOauth ? 'oauth' : null);
+
+  return {
+    configured: Boolean(siteUrl && credentialMode),
+    siteUrl: siteUrl || null,
+    credentialMode,
+    report: {
+      name: 'Search Generative AI performance reports',
+      source: SEARCH_CONSOLE_AI_REPORT_URL,
+      surfaces: ['AI Overviews', 'AI Mode', 'Discover generative AI features'],
+      metrics: ['impressions', 'pages', 'countries', 'devices', 'dates'],
+    },
+    gap: siteUrl
+      ? (credentialMode ? null : 'Google Search Console credentials are not configured for automation readback')
+      : 'GOOGLE_SEARCH_CONSOLE_SITE_URL is not set',
+    note: 'Google announced dedicated generative AI visibility reports in Search Console on 2026-06-03; this rollup records readiness and should ingest report exports/API data once available for the property.',
+  };
+}
+
 async function gatherStripe({ liveStatusModule = null } = {}) {
   let stripeLiveStatus = liveStatusModule;
   if (!stripeLiveStatus) {
@@ -167,7 +200,7 @@ function joinSurfaceTraffic(plausible) {
   });
 }
 
-function diagnoseFunnel(stripe, surfaces) {
+function diagnoseFunnel(stripe, surfaces, searchConsoleAi = null) {
   const diagnostics = [];
   const pricingHits = surfaces.find((s) => s.surface === '/pricing')?.visitors || 0;
   const caseStudyHits = surfaces.find((s) => s.surface === '/case-studies')?.visitors || 0;
@@ -202,6 +235,13 @@ function diagnoseFunnel(stripe, surfaces) {
       severity: 'warning',
       signal: 'stripe_unconfigured',
       message: stripe?.gap || 'Stripe API unavailable — cash truth unknown.',
+    });
+  }
+  if (searchConsoleAi && !searchConsoleAi.configured) {
+    diagnostics.push({
+      severity: 'warning',
+      signal: 'search_console_ai_visibility_unconfigured',
+      message: `${searchConsoleAi.gap}. We cannot prove whether ThumbGate appears in Google AI Overviews / AI Mode yet.`,
     });
   }
   return diagnostics;
@@ -265,6 +305,19 @@ function renderMarkdown(snapshot) {
     }
     lines.push('');
   }
+  lines.push('## AI Search Visibility');
+  lines.push('');
+  if (snapshot.searchConsoleAi?.configured) {
+    lines.push(`- Search Console property: ${snapshot.searchConsoleAi.siteUrl}`);
+    lines.push(`- Credential mode: ${snapshot.searchConsoleAi.credentialMode}`);
+    lines.push(`- Report source: ${snapshot.searchConsoleAi.report.source}`);
+    lines.push(`- Surfaces: ${snapshot.searchConsoleAi.report.surfaces.join(', ')}`);
+    lines.push(`- Metrics to track: ${snapshot.searchConsoleAi.report.metrics.join(', ')}`);
+  } else {
+    lines.push(`- Search Console AI readback: NOT CONFIGURED — ${snapshot.searchConsoleAi?.gap || 'missing status'}`);
+    lines.push(`- Report source: ${SEARCH_CONSOLE_AI_REPORT_URL}`);
+  }
+  lines.push('');
   lines.push('## Diagnostics');
   lines.push('');
   if (snapshot.diagnostics.length > 0) {
@@ -279,6 +332,7 @@ function renderMarkdown(snapshot) {
   lines.push('');
   lines.push('- This rollup never claims revenue without a Stripe-API balance check.');
   lines.push('- Plausible counts unique visitors / pageviews — not buyers. Conversion is inferred only when Stripe charges arrive.');
+  lines.push('- Search Console AI reports prove generative-search visibility, not revenue. Join them to first-party checkout/intake events before calling them demand.');
   lines.push('- First-party telemetry-pings.jsonl + funnel-events.jsonl live on the Railway container and are not joined here.');
   lines.push('  Hooking them in requires a persistent-volume export step.');
   return lines.join('\n') + '\n';
@@ -290,13 +344,15 @@ async function buildSnapshot({ argv = [], env = process.env, fetchImpl = fetch, 
     gatherPlausible({ period: args.period, fetchImpl, env }),
     gatherStripe({ liveStatusModule }),
   ]);
+  const searchConsoleAi = gatherSearchConsoleAiVisibility({ env });
   const surfaces = joinSurfaceTraffic(plausible);
-  const diagnostics = diagnoseFunnel(stripe, surfaces);
+  const diagnostics = diagnoseFunnel(stripe, surfaces, searchConsoleAi);
   return {
     generatedAt: now.toISOString(),
     period: args.period,
     stripe,
     plausible,
+    searchConsoleAi,
     surfaces,
     diagnostics,
   };
@@ -337,6 +393,7 @@ module.exports = {
   parseArgs,
   gatherPlausible,
   gatherStripe,
+  gatherSearchConsoleAiVisibility,
   joinSurfaceTraffic,
   diagnoseFunnel,
   renderMarkdown,
