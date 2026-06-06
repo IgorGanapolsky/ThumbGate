@@ -207,27 +207,12 @@ test('continuity guide frames the gateway as downstream reliability, not a new o
   assert.match(guide, /Do not add an orchestration layer unless it improves output enough to justify the handoff overhead\./);
 });
 
-test('launch-content variants align with reliability-over-orchestration positioning', () => {
-  const launchContent = readText(path.join('docs', 'marketing', 'launch-content.md'));
+// REMOVED 2026-06-06: this test read docs/marketing/launch-content.md,
+// deleted with the docs/marketing/ directory in the credibility cleanup.
 
-  assert.match(launchContent, /ThumbGate/i);
-  assert.match(launchContent, /Pre-Action Checks/i);
-  assert.match(launchContent, /repeating known mistakes|block tool calls/i);
-  assert.doesNotMatch(launchContent, /Agentic Feedback Studio/i);
-  assert.doesNotMatch(launchContent, /persistent memory layer that fixes this/i);
-});
-
-test('launch-now playbook stays discovery-first and avoids retired broadcast channels', () => {
-  const launchNow = readText('LAUNCH_NOW.md');
-
-  assert.match(launchNow, /npm run gtm:revenue-loop/i);
-  assert.match(launchNow, /sales:pipeline -- import/i);
-  assert.match(launchNow, /Workflow Hardening Sprint/i);
-  assert.match(launchNow, /X\/Twitter is retired/i);
-  assert.match(launchNow, /Do not lead with Pro/i);
-  assert.doesNotMatch(launchNow, /Show HN/i);
-  assert.doesNotMatch(launchNow, /X\/Twitter thread/i);
-});
+// REMOVED 2026-06-06: this test pinned LAUNCH_NOW.md which was deleted as
+// part of the post-Reddit credibility cleanup (file admitted "$0 revenue"
+// publicly and read as launch-theater).
 
 test('public landing copy stays vendor-neutral and honest about editor support', () => {
   const congruence = readText(path.join('docs', 'MARKETING_COPY_CONGRUENCE.md'));
@@ -280,13 +265,5 @@ test('first dollar playbook keeps the sales motion sprint-first and proof-backed
   assert.match(playbook, /RELEASE_CONFIDENCE\.md/);
 });
 
-test('customer discovery sprint turns the GTM recommendation into a concrete interview loop', () => {
-  const discovery = readText(path.join('docs', 'CUSTOMER_DISCOVERY_SPRINT.md'));
-  const outreach = readText(path.join('docs', 'marketing', 'team-outreach-messages.md'));
-
-  assert.match(discovery, /Pause broad posting for 7 days/i);
-  assert.match(discovery, /3-5 people/i);
-  assert.match(discovery, /Workflow Hardening Sprint/i);
-  assert.match(discovery, /team agent governance|enterprise-first/i);
-  assert.match(outreach, /CUSTOMER_DISCOVERY_SPRINT\.md/);
-});
+// REMOVED 2026-06-06: this test read docs/marketing/team-outreach-messages.md
+// which was deleted with the entire docs/marketing/ directory.

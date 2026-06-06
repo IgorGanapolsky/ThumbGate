@@ -278,15 +278,9 @@ test('linkedin publisher can soft-fail revoked or missing credentials only when 
   assert.equal(linkedin.shouldWarnOnCredentialError(badPayload, { LINKEDIN_AUTH_FAILURE_MODE: 'warn' }), false);
 });
 
-test('linkedin dispatch workflow warns on auth failure without hiding content bugs', () => {
-  const workflow = fs.readFileSync(
-    path.join(__dirname, '..', '.github', 'workflows', 'linkedin-post-dispatch.yml'),
-    'utf8'
-  );
-
-  assert.match(workflow, /LINKEDIN_AUTH_FAILURE_MODE:\s*warn/);
-  assert.doesNotMatch(workflow, /continue-on-error:\s*true/);
-});
+// REMOVED 2026-06-06: .github/workflows/linkedin-post-dispatch.yml was
+// deleted in the post-Reddit credibility cleanup (orchestration-cadence
+// evidence).
 
 test('threads publisher module exposes postTextThread, not publishPost', () => {
   // Regression guard for the 2026-04-22 discovery: threads.publishPost({text})
@@ -335,39 +329,6 @@ test('postEverywhere applies the requested campaign to tracked URLs', async () =
   }
 });
 
-test('marketing-autopilot workflow generates a post file before invoking post-everywhere', () => {
-  const workflow = fs.readFileSync(
-    path.join(__dirname, '..', '.github', 'workflows', 'marketing-autopilot.yml'),
-    'utf8'
-  );
-
-  assert.match(
-    workflow,
-    /POST_FILE="scripts\/marketing-output\/autopilot-paid-sprint-\$WEEK-h\$HOUR\.md"/,
-    'marketing-autopilot must create a concrete post file for post-everywhere'
-  );
-  assert.match(
-    workflow,
-    /node scripts\/post-everywhere\.js\s+\\\n\s+"\$POST_FILE"/,
-    'post-everywhere requires the post file as its first CLI argument'
-  );
-
-  for (const platform of ['linkedin', 'threads', 'bluesky', 'instagram']) {
-    assert.match(
-      workflow,
-      new RegExp(`default:\\s*['"][^'"]*${platform}`),
-      `marketing-autopilot workflow must include ${platform} in its default platform list`
-    );
-  }
-
-  assert.doesNotMatch(
-    workflow,
-    /default:\s*['"][^'"]*youtube/,
-    'marketing-autopilot text step must not default to YouTube because YouTube posts require video content'
-  );
-  assert.doesNotMatch(
-    workflow,
-    /default:\s*['"][^'"]*twitter/,
-    'marketing-autopilot workflow must not default to twitter — X retired 2026-04-20'
-  );
-});
+// REMOVED 2026-06-06: .github/workflows/marketing-autopilot.yml was
+// deleted in the post-Reddit credibility cleanup. The whole test block
+// (workflow file read + 6 assertions) is retired with its target.

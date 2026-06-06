@@ -427,18 +427,9 @@ describe('zernio publisher', () => {
     assert.match(publishedBodies[0].content, /utm_campaign=voice_agent_reliability_diagnostic/);
   });
 
-  it('Zernio offer dispatch workflow validates CTA and passes campaign inputs to CLI', () => {
-    const workflowPath = path.join(__dirname, '..', '.github', 'workflows', 'zernio-offer-dispatch.yml');
-    const workflow = fs.readFileSync(workflowPath, 'utf8');
-
-    assert.match(workflow, /workflow_dispatch:/);
-    assert.match(workflow, /ZERNIO_API_KEY: \$\{\{ secrets\.ZERNIO_API_KEY \}\}/);
-    assert.match(workflow, /thumbgate\\\.ai\|buy\\\.stripe\\\.com/);
-    assert.match(workflow, /default: 'threads,bluesky'/);
-    assert.match(workflow, /--platforms="\$OFFER_PLATFORMS"/);
-    assert.match(workflow, /--campaign="\$OFFER_CAMPAIGN"/);
-    assert.match(workflow, /--medium="\$OFFER_MEDIUM"/);
-  });
+  // REMOVED 2026-06-06: workflow .github/workflows/zernio-offer-dispatch.yml
+  // was deleted in the post-Reddit credibility cleanup (bot-cadence
+  // orchestration evidence).
 
   it('schedulePost includes scheduledFor and timezone in body', async () => {
     let capturedBody;
