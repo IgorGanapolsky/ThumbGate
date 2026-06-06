@@ -1,23 +1,34 @@
 'use strict';
 
+// This file used to test a cache-layer aggregator that summed thumbs_up/down
+// across every per-folder statusline_cache.json. That implementation
+// double-counted, because the global aggregate cache at
+// ~/.thumbgate/statusline_cache.json is itself written as the cross-store sum
+// (by feedback-aggregate.js / hook-thumbgate-cache-updater.js). Summing the
+// aggregate plus the per-folder caches produced bogus totals like 1152↑/747↓
+// when the true cross-store total was 727/600.
+//
+// The fix: statusline-cache-read.js now only resolves the highest-priority
+// existing cache file and returns its content unchanged. These tests pin that
+// non-summing behavior so the double-count bug cannot return.
+
 const { test } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const {
-  aggregateStatuslineCaches,
-  getAggregationCandidates,
-  readResolvedStatuslineCache,
-} = require('../scripts/statusline-cache-read');
+const { readResolvedStatuslineCache } = require('../scripts/statusline-cache-read');
 
 function makeSandbox() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-statusline-agg-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-statusline-cache-read-'));
   const home = path.join(root, 'home');
   const projects = path.join(home, '.thumbgate', 'projects');
+  const projectDir = path.join(root, 'project');
+  const feedbackDir = path.join(projectDir, '.claude', 'memory', 'feedback');
   fs.mkdirSync(projects, { recursive: true });
-  return { root, home, projects };
+  fs.mkdirSync(feedbackDir, { recursive: true });
+  return { root, home, projects, projectDir, feedbackDir };
 }
 
 function writeCache(dir, payload) {
@@ -27,21 +38,27 @@ function writeCache(dir, payload) {
   return target;
 }
 
-function withHome(home, fn) {
+function withSandbox(sandbox, fn) {
   const prev = {
     HOME: process.env.HOME,
     USERPROFILE: process.env.USERPROFILE,
     THUMBGATE_PROJECT_DIR: process.env.THUMBGATE_PROJECT_DIR,
+    CLAUDE_PROJECT_DIR: process.env.CLAUDE_PROJECT_DIR,
     THUMBGATE_FEEDBACK_DIR: process.env.THUMBGATE_FEEDBACK_DIR,
+    THUMBGATE_FALLBACK_FEEDBACK_DIR: process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR,
+    _TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR: process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR,
     THUMBGATE_STATUSLINE_AGGREGATE: process.env.THUMBGATE_STATUSLINE_AGGREGATE,
-    INIT_CWD: process.env.INIT_CWD,
+    THUMBGATE_AGGREGATE_FEEDBACK: process.env.THUMBGATE_AGGREGATE_FEEDBACK,
   };
-  process.env.HOME = home;
-  process.env.USERPROFILE = home;
-  delete process.env.THUMBGATE_PROJECT_DIR;
-  delete process.env.THUMBGATE_FEEDBACK_DIR;
+  process.env.HOME = sandbox.home;
+  process.env.USERPROFILE = sandbox.home;
+  process.env.THUMBGATE_PROJECT_DIR = sandbox.projectDir;
+  process.env.CLAUDE_PROJECT_DIR = sandbox.projectDir;
+  process.env.THUMBGATE_FEEDBACK_DIR = sandbox.feedbackDir;
+  process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR = sandbox.feedbackDir;
+  process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR = sandbox.feedbackDir;
   delete process.env.THUMBGATE_STATUSLINE_AGGREGATE;
-  delete process.env.INIT_CWD;
+  delete process.env.THUMBGATE_AGGREGATE_FEEDBACK;
   try {
     return fn();
   } finally {
@@ -52,124 +69,87 @@ function withHome(home, fn) {
   }
 }
 
-test('aggregateStatuslineCaches sums per-folder caches and recomputes approval rate', () => {
-  const { root, home, projects } = makeSandbox();
+test('readResolvedStatuslineCache returns the canonical aggregate cache verbatim, never sums', () => {
+  const sandbox = makeSandbox();
+  const { home, projectDir } = sandbox;
+  // The canonical global aggregate — this is what feedback-aggregate.js writes.
   writeCache(path.join(home, '.thumbgate'), {
-    thumbs_up: '49',
-    thumbs_down: '188',
-    lessons: '0',
-    total_feedback: '237',
-    updated_at: '1780763504',
+    thumbs_up: '727',
+    thumbs_down: '600',
+    approval_rate: '54.8',
+    trend: 'degrading',
+    total_feedback: '1327',
+    updated_at: '1780777800',
+  });
+  // Per-folder snapshots — must NOT be summed into the result. The 424 here is
+  // a subset already included in the 727 above.
+  writeCache(path.join(home, '.thumbgate', 'projects', 'demo'), {
+    thumbs_up: '424',
+    thumbs_down: '146',
+    updated_at: '1780766800',
+  });
+  writeCache(sandbox.feedbackDir, {
+    thumbs_up: '50',
+    thumbs_down: '50',
+    updated_at: '1780760000',
+  });
+
+  const resolved = withSandbox(sandbox, () => {
+    // The aggregate path is suppressed when THUMBGATE_FEEDBACK_DIR is under
+    // os.tmpdir() (test-isolation guard). For THIS test we are exercising
+    // production semantics, so unset that env to allow the aggregate to win.
+    delete process.env.THUMBGATE_FEEDBACK_DIR;
+    delete process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR;
+    delete process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR;
+    return readResolvedStatuslineCache({ cwd: projectDir });
+  });
+  assert.ok(resolved, 'expected a resolved cache');
+  assert.equal(resolved.thumbs_up, '727', 'must return canonical aggregate value, NOT the sum');
+  assert.equal(resolved.thumbs_down, '600');
+  assert.equal(resolved.trend, 'degrading');
+  assert.equal(resolved.approval_rate, '54.8');
+  assert.equal(resolved.source, path.join(home, '.thumbgate', 'statusline_cache.json'));
+});
+
+test('readResolvedStatuslineCache falls back to project cache when no canonical aggregate exists', () => {
+  const sandbox = makeSandbox();
+  const { projectDir, feedbackDir } = sandbox;
+  // Only a per-project cache, no global aggregate file.
+  writeCache(feedbackDir, {
+    thumbs_up: '12',
+    thumbs_down: '3',
     trend: 'stable',
-  });
-  writeCache(path.join(projects, 'demo'), {
-    thumbs_up: '23',
-    thumbs_down: '40',
-    lessons: '1',
-    total_feedback: '63',
-    updated_at: '1780764139',
-    trend: 'up',
-    last_lesson: { summary: 'most recent lesson' },
-  });
-  writeCache(path.join(projects, 'other'), {
-    thumbs_up: 8,
-    thumbs_down: 0,
-    lessons: 0,
-    total_feedback: 8,
-    updated_at: '1780700000',
-    trend: 'flat',
+    updated_at: '1780760000',
   });
 
-  const result = withHome(home, () => aggregateStatuslineCaches({ cwd: root }));
-  assert.ok(result, 'expected aggregated payload');
-  assert.equal(result.thumbs_up, '80');
-  assert.equal(result.thumbs_down, '228');
-  assert.equal(result.lessons, '1');
-  assert.equal(result.total_feedback, '308');
-  assert.equal(result.approval_rate, '26');
-  assert.equal(result.trend, 'up');
-  assert.equal(result.updated_at, '1780764139');
-  assert.deepEqual(result.last_lesson, { summary: 'most recent lesson' });
-  assert.equal(result.aggregated, true);
-  assert.equal(result.sources_count, 3);
+  const resolved = withSandbox(sandbox, () => readResolvedStatuslineCache({ cwd: projectDir }));
+  assert.ok(resolved);
+  assert.equal(resolved.thumbs_up, '12');
+  assert.equal(resolved.thumbs_down, '3');
 });
 
-test('aggregateStatuslineCaches skips archive paths', () => {
-  const { root, home } = makeSandbox();
-  writeCache(path.join(home, '.thumbgate'), { thumbs_up: '10', thumbs_down: '0', updated_at: '1' });
-  const archiveDir = path.join(home, '.tg-archive-12345');
-  writeCache(archiveDir, { thumbs_up: '999', thumbs_down: '999', updated_at: '2' });
-  writeCache(path.join(archiveDir, 'projects', 'demo'), { thumbs_up: '999', thumbs_down: '999', updated_at: '3' });
-
-  const candidates = withHome(home, () => getAggregationCandidates({ cwd: root }));
-  for (const candidate of candidates) {
-    assert.ok(!candidate.includes('.tg-archive-'), `archive path leaked into candidates: ${candidate}`);
-  }
-  const result = withHome(home, () => aggregateStatuslineCaches({ cwd: root }));
-  assert.equal(result.thumbs_up, '10', 'archive caches must not contribute to totals');
-  assert.equal(result.thumbs_down, '0');
-});
-
-test('aggregateStatuslineCaches returns null when no caches exist', () => {
-  const { root, home } = makeSandbox();
-  const result = withHome(home, () => aggregateStatuslineCaches({ cwd: root }));
+test('readResolvedStatuslineCache returns null when no cache exists', () => {
+  const sandbox = makeSandbox();
+  const result = withSandbox(sandbox, () => readResolvedStatuslineCache({ cwd: sandbox.projectDir }));
   assert.equal(result, null);
 });
 
-test('aggregateStatuslineCaches handles unparseable files without throwing', () => {
-  const { root, home } = makeSandbox();
-  const globalDir = path.join(home, '.thumbgate');
-  fs.mkdirSync(globalDir, { recursive: true });
-  fs.writeFileSync(path.join(globalDir, 'statusline_cache.json'), '{not json');
-  const projDir = path.join(home, '.thumbgate', 'projects', 'demo');
-  writeCache(projDir, { thumbs_up: '5', thumbs_down: '5', updated_at: '100' });
-
-  const result = withHome(home, () => aggregateStatuslineCaches({ cwd: root }));
-  assert.ok(result, 'should still aggregate from parseable file');
-  assert.equal(result.thumbs_up, '5');
-  assert.equal(result.approval_rate, '50');
-});
-
-test('approval_rate is "0" when no feedback has been captured', () => {
-  const { root, home } = makeSandbox();
-  writeCache(path.join(home, '.thumbgate'), { thumbs_up: '0', thumbs_down: '0', updated_at: '1' });
-  const result = withHome(home, () => aggregateStatuslineCaches({ cwd: root }));
-  assert.equal(result.approval_rate, '0');
-});
-
-test('readResolvedStatuslineCache prefers aggregation by default', () => {
-  const { root, home } = makeSandbox();
-  writeCache(path.join(home, '.thumbgate'), { thumbs_up: '10', thumbs_down: '0', updated_at: '1' });
-  writeCache(path.join(home, '.thumbgate', 'projects', 'demo'), {
-    thumbs_up: '5',
-    thumbs_down: '5',
-    updated_at: '2',
+test('readResolvedStatuslineCache skips unparseable files and uses next candidate', () => {
+  const sandbox = makeSandbox();
+  const { home, projectDir, feedbackDir } = sandbox;
+  // Broken canonical aggregate cache.
+  const broken = path.join(home, '.thumbgate', 'statusline_cache.json');
+  fs.mkdirSync(path.dirname(broken), { recursive: true });
+  fs.writeFileSync(broken, '{not json');
+  // Valid project cache as fallback.
+  writeCache(feedbackDir, {
+    thumbs_up: '99',
+    thumbs_down: '1',
+    updated_at: '1780760000',
   });
-  const resolved = withHome(home, () => readResolvedStatuslineCache({ cwd: root }));
-  assert.equal(resolved.aggregated, true);
-  assert.equal(resolved.thumbs_up, '15');
-  assert.equal(resolved.thumbs_down, '5');
-});
 
-test('readResolvedStatuslineCache honors THUMBGATE_STATUSLINE_AGGREGATE=0', () => {
-  const { root, home } = makeSandbox();
-  writeCache(path.join(home, '.thumbgate'), { thumbs_up: '10', thumbs_down: '0', updated_at: '1' });
-  writeCache(path.join(home, '.thumbgate', 'projects', 'demo'), {
-    thumbs_up: '5',
-    thumbs_down: '5',
-    updated_at: '2',
-  });
-  // Aggregation-off falls back to the project-scoped candidate set, so we
-  // point the project feedback dir at the home cache so something resolves.
-  const feedbackDir = path.join(home, '.thumbgate');
-
-  const resolved = withHome(home, () => {
-    process.env.THUMBGATE_STATUSLINE_AGGREGATE = '0';
-    process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
-    return readResolvedStatuslineCache({ cwd: root });
-  });
-  assert.ok(resolved, 'expected a resolved (non-aggregated) cache');
-  assert.equal(resolved.aggregated, false);
-  assert.equal(resolved.sources_count, 1);
-  assert.equal(resolved.thumbs_up, '10', 'should NOT have summed across folders');
+  const resolved = withSandbox(sandbox, () => readResolvedStatuslineCache({ cwd: projectDir }));
+  assert.ok(resolved, 'should fall through to the next valid candidate');
+  assert.equal(resolved.thumbs_up, '99');
+  assert.equal(resolved.thumbs_down, '1');
 });
