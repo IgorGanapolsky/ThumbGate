@@ -42,17 +42,8 @@ test('supply chain safety templates ship as concrete local execution gates', () 
   assert.ok(templates.some((template) => template.pattern.includes('docker\\/config')));
 });
 
-test('supply chain engagement pack is technical and avoids fake partnerships', () => {
-  const pack = read('docs', 'marketing', 'supply-chain-security-engagement-pack.md');
-
-  assert.match(pack, /Secrets scanners find leaks\. ThumbGate blocks the agent behavior that creates or amplifies them\./);
-  assert.match(pack, /Technical Reply/);
-  assert.match(pack, /package lifecycle scripts/);
-  assert.match(pack, /utm_campaign=supply_chain_guardrails/);
-  assert.match(pack, /Do not claim ThumbGate replaces GitGuardian/i);
-  assert.match(pack, /Do not claim a partnership/i);
-  assert.doesNotMatch(pack, /guaranteed revenue|official partner|approved integration/i);
-});
+// REMOVED 2026-06-06: docs/marketing/supply-chain-security-engagement-pack.md
+// was deleted in the post-Reddit credibility cleanup.
 
 test('landing page exposes developer-machine supply chain guide for AEO discovery', () => {
   const landingPage = read('public', 'index.html');

@@ -17,18 +17,9 @@ const activeSurfaces = [
   'docs/chatgpt-gpt-instructions.md',
   'docs/gpt-store-submission.md',
   'docs/landing-page.html',
-  'docs/marketing/product-hunt-launch.md',
-  'docs/marketing/launch-content.md',
-  'docs/marketing/reddit-seeding-posts.md',
-  'docs/marketing/reddit-posts/r-claudeai.md',
-  'docs/marketing/reddit-posts/r-locallama.md',
-  'docs/marketing/reddit-posts/r-node.md',
-  'docs/marketing/reddit-posts/r-webdev.md',
-  'docs/marketing/show-hn.md',
   'public/index.html',
   'public/compare.html',
   'public/llm-context.md',
-  'scripts/ralph-mode-ci.js',
 ];
 
 test('active launch and GPT surfaces are ThumbGate-only', () => {

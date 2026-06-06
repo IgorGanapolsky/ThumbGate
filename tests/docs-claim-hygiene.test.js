@@ -20,13 +20,11 @@ const activeDocs = [
   'docs/geo-strategy-for-ai-agents.md',
   'docs/pitch/agentic-commerce.md',
   'docs/pitch/agentic-commerce-thread.txt',
-  'docs/marketing/devto-reliability-post.md',
-  'docs/marketing/devto-article.md',
-  'docs/marketing/product-hunt-launch.md',
-  'docs/marketing/twitter-thread-formatted.md',
   'public/index.html',
 ];
 
+// docs/marketing/* removed from this list 2026-06-06 — entire directory
+// deleted in the post-Reddit credibility cleanup.
 const freeTierTruthFiles = [
   'docs/COMMERCIAL_TRUTH.md',
   'public/index.html',
@@ -34,9 +32,6 @@ const freeTierTruthFiles = [
   'public/compare.html',
   'public/llm-context.md',
   'docs/landing-page.html',
-  'docs/marketing/product-hunt-launch-kit.md',
-  'docs/marketing/show-hn.md',
-  'docs/marketing/email-nurture-sequence.md',
 ];
 
 const staleFreeTierPatterns = [
@@ -86,14 +81,10 @@ test('active commercial surfaces avoid stale free-tier limit claims', () => {
   }
 });
 
-test('pricing comparison keeps free-tier pro features out of the free column', () => {
-  const pricing = fs.readFileSync(path.join(projectRoot, 'docs/marketing/pricing-comparison.md'), 'utf8');
-
-  assert.match(pricing, /\|\s*Feedback capture\s*\|\s*5\/day, 25 total\s*\|\s*Unlimited\s*\|/i);
-  assert.match(pricing, /\|\s*Prevention rules\s*\|\s*Up to 3 active\s*\|\s*Unlimited\s*\|/i);
-  assert.match(pricing, /\|\s*Recall \+ lesson search\s*\|\s*No\s*\|\s*Yes\s*\|/i);
-  assert.match(pricing, /\|\s*DPO\/KTO export\s*\|\s*No\s*\|\s*Yes\s*\|/i);
-});
+// REMOVED 2026-06-06: pricing comparison lived in docs/marketing/, deleted
+// in the post-Reddit credibility cleanup. The current pricing matrix lives
+// in public/pricing.html and public/compare.html, which are still pinned
+// by the public-package-parity test.
 
 test('commercial truth labels local enforcement and hosted telemetry boundaries', () => {
   const truth = fs.readFileSync(path.join(projectRoot, 'docs/COMMERCIAL_TRUTH.md'), 'utf8');

@@ -76,3 +76,32 @@ plugins/vscode-extension/*.vsix
 .thumbgate/implementation-notes.md
 .thumbgate/implementation-notes.jsonl
 node_modules
+
+# Internal AI orchestration — never commit (Reddit leak 2026-06-06):
+# implementation-notes, ralph attempts, ready-to-post drafts, and AI loop
+# workflows expose decision/postmortem state, founder sentiment, and bot-like
+# posting cadence. Treat as confidential drafts. Add a pre-commit guard too.
+.claude/implementation-notes/
+.claude/ralph/
+docs/marketing/reddit-posts/
+docs/marketing/hn-posts/
+docs/marketing/discord-posts/
+.github/workflows/ralph-*.yml
+.github/workflows/social-engagement-hourly.yml
+.github/workflows/social-engagement-*.yml
+
+# Ralph Loop scratchpad — local-only, never committed
+.ralph/
+
+# Marketing/launch theater — never commit (Reddit r/devops leak 2026-06-06)
+LAUNCH.md
+LAUNCH_NOW.md
+LAUNCH_POSTS.md
+FIRST_CUSTOMER_BATTLE_PLAN.md
+ALL_ENHANCEMENTS_COMPLETE.md
+TEST_EVIDENCE_E2E_HYBRID_CLAW.md
+*_BATTLE_PLAN.md
+*_COMPLETE.md
+TEST_EVIDENCE_*.md
+LAUNCH_*.md
+undefined/

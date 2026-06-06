@@ -65,25 +65,8 @@ test('README commercial copy stays aligned with current Pro and Enterprise packa
   assert.doesNotMatch(readme, /\/mo\$19/i);
 });
 
-test('launch content commercial copy stays aligned with the current free and Pro packaging', () => {
-  const launchContent = execSync('sed -n \'1,260p\' docs/marketing/launch-content.md', { cwd: ROOT, encoding: 'utf-8' });
-
-  assert.match(launchContent, /Pro \(\$19\/mo or \$149\/yr\)/);
-  assert.match(launchContent, /No cloud account required/i);
-  assert.doesNotMatch(launchContent, /Fully free and unlimited/i);
-  assert.doesNotMatch(launchContent, /No limits\./i);
-  assert.doesNotMatch(launchContent, /Cloud sync \(optional\)/i);
-});
-
-test('launch content uses tracked landing links for community distribution', () => {
-  const launchContent = execSync('sed -n \'1,260p\' docs/marketing/launch-content.md', { cwd: ROOT, encoding: 'utf-8' });
-
-  assert.match(launchContent, /thumbgate-production\.up\.railway\.app\/\?utm_source=reddit/i);
-  assert.match(launchContent, /thumbgate-production\.up\.railway\.app\/\?utm_source=hackernews/i);
-  assert.match(launchContent, /thumbgate-production\.up\.railway\.app\/\?utm_source=linkedin/i);
-  assert.doesNotMatch(launchContent, /utm_source=x/i);
-  assert.doesNotMatch(launchContent, /buy\.stripe\.com/i);
-});
+// 2 launch-content tests removed 2026-06-06 — docs/marketing/launch-content.md
+// was deleted in the post-Reddit credibility cleanup.
 
 test('GitHub About comparison normalizes topic order and flags real drift', () => {
   const about = loadGitHubAboutConfig(ROOT);
