@@ -34,6 +34,23 @@ const FORBIDDEN_FILE_PATTERNS = [
   /^\.github\/workflows\/social-engagement-.*\.ya?ml$/,
 ];
 
+// Root-level marketing/launch-theater markdown — read as vibe-coded AI hype.
+// Second wave embarrassment after the initial Reddit thread.
+const FORBIDDEN_ROOT_FILES = new Set([
+  'LAUNCH.md',
+  'LAUNCH_NOW.md',
+  'LAUNCH_POSTS.md',
+  'FIRST_CUSTOMER_BATTLE_PLAN.md',
+  'ALL_ENHANCEMENTS_COMPLETE.md',
+  'TEST_EVIDENCE_E2E_HYBRID_CLAW.md',
+]);
+const FORBIDDEN_ROOT_PATTERNS = [
+  /^.+_BATTLE_PLAN\.md$/,
+  /^ALL_ENHANCEMENTS.*\.md$/,
+  /^TEST_EVIDENCE_.*\.md$/,
+  /^LAUNCH_.*\.md$/,
+];
+
 function listAllFiles(dir, base = dir) {
   const out = [];
   let entries;
@@ -86,5 +103,25 @@ test('no ralph-*/social-engagement-* GitHub workflows are tracked', () => {
     `Forbidden workflow files present: ${offenders.join(', ')}. ` +
       `These reveal AI-orchestration cadence and were called out publicly on ` +
       `2026-06-06. Delete and rely on private CI.`
+  );
+});
+
+test('no marketing/launch-theater markdown is tracked at repo root', () => {
+  const offenders = fs
+    .readdirSync(ROOT, { withFileTypes: true })
+    .filter((e) => e.isFile() && e.name.endsWith('.md'))
+    .map((e) => e.name)
+    .filter(
+      (name) =>
+        FORBIDDEN_ROOT_FILES.has(name) ||
+        FORBIDDEN_ROOT_PATTERNS.some((pat) => pat.test(name))
+    );
+  assert.deepEqual(
+    offenders,
+    [],
+    `Marketing/launch-theater markdown found at repo root: ${offenders.join(', ')}. ` +
+      `These read as vibe-coded AI output and damage public credibility. ` +
+      `If a real launch/runbook is needed, keep it private or under docs/runbooks/ ` +
+      `with a sober, dated, evidence-grounded format.`
   );
 });

@@ -29,11 +29,18 @@ has_staged() {
 FORBIDDEN_PATTERNS=(
   '^\.claude/implementation-notes/'
   '^\.claude/ralph/'
+  '^\.ralph/'
   '^docs/marketing/reddit-posts/'
   '^docs/marketing/hn-posts/'
   '^docs/marketing/discord-posts/'
   '^\.github/workflows/ralph-'
   '^\.github/workflows/social-engagement-'
+  '^LAUNCH(_NOW|_POSTS)?\.md$'
+  '^FIRST_CUSTOMER.*\.md$'
+  '^ALL_ENHANCEMENTS.*\.md$'
+  '^TEST_EVIDENCE_.*\.md$'
+  '^.*_BATTLE_PLAN\.md$'
+  '^undefined/'
 )
 LEAKED=""
 for pat in "${FORBIDDEN_PATTERNS[@]}"; do
