@@ -1,6 +1,6 @@
 # Skool About + Pinned Post Copy (Operator Lab)
 
-Updated: 2026-06-02
+Updated: 2026-06-05
 
 Guardrail: do not publish posts, invite members, upload files, or send messages without explicit action-time confirmation.
 
@@ -11,14 +11,15 @@ Guardrail: do not publish posts, invite members, upload files, or send messages 
 - Group description (short): `<=150` characters
 - About page description: `<=1000` characters
 
-Skool official help re-verified on 2026-06-02:
+Skool official help re-verified on 2026-06-05:
 
 - Discovery eligibility still depends on cover image, group description, completed About page, at least one post, and invited members for newer groups.
 - Discovery ranking still emphasizes member growth, engagement, retention, artwork/About quality, and active owner behavior.
-- Discovery FAQ now says visibility usually appears within `2` hours once the threshold is hit.
+- Discovery FAQ now says visibility appears within `2` hours once the threshold is hit, while the unlisted-group checklist still says "within an hour," so same-day visibility is likely but not instant.
 - Discovery FAQ also lists `off-platform payments` as a ranking penalty.
 - Skool’s help center does not publish the exact minimum member/post/activity thresholds.
 - For attribution accuracy, Skool recommends using the direct About page link instead of redirect layers.
+- Classroom guidance was refreshed on `May 29, 2026`, and the About page help still frames this page as the landing/checkout surface.
 
 ## Discovery-safe posture
 

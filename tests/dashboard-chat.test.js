@@ -42,6 +42,7 @@ test('answerDataQuestion reports a clear message when no API key is configured',
   assert.equal(r.ok, false);
   assert.equal(r.error, 'no_api_key');
   assert.match(r.message, /GEMINI_API_KEY/);
+  assert.match(r.message, /THUMBGATE_LOCAL_LLM_ENDPOINT/);
 });
 
 test('answerDataQuestion returns a grounded answer with a mocked Gemini', async () => {
@@ -92,4 +93,64 @@ test('answerDataQuestion surfaces a Gemini API error cleanly', async () => {
   assert.equal(r.error, 'gemini_error');
   assert.equal(r.status, 429);
   assert.match(r.message, /RESOURCE_EXHAUSTED/);
+});
+
+test('answerDataQuestion routes to a local OpenAI-compatible endpoint', async () => {
+  let calledUrl = '';
+  let calledHeaders = {};
+  let calledBody = null;
+  const fakeFetch = async (url, init) => {
+    calledUrl = url;
+    calledHeaders = init.headers;
+    calledBody = JSON.parse(init.body);
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        choices: [{ message: { content: 'local LLM grounded response' } }],
+        model: 'local-model-id',
+      }),
+    };
+  };
+
+  const r = await answerDataQuestion('how to configure gates?', {
+    apiKey: 'dummy-local-key',
+    localEndpoint: 'http://localhost:11434/v1/chat/completions',
+    localModel: 'llama-local',
+    feedbackDir: '/tmp/does-not-exist-xyz',
+    fetch: fakeFetch,
+  });
+
+  assert.equal(r.ok, true);
+  assert.equal(r.answer, 'local LLM grounded response');
+  assert.equal(r.model, 'local-model-id');
+  assert.equal(calledUrl, 'http://localhost:11434/v1/chat/completions');
+  assert.equal(calledHeaders.Authorization, 'Bearer dummy-local-key');
+  assert.equal(calledBody.model, 'llama-local');
+  assert.match(calledBody.messages[0].content, /how to configure gates\?/);
+});
+
+test('answerDataQuestion can use a local endpoint without an API key', async () => {
+  let calledHeaders = {};
+  const fakeFetch = async (url, init) => {
+    calledHeaders = init.headers;
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        choices: [{ message: { content: 'response without apiKey' } }],
+      }),
+    };
+  };
+
+  const r = await answerDataQuestion('how to configure gates?', {
+    apiKey: '',
+    localEndpoint: 'http://localhost:11434/v1',
+    feedbackDir: '/tmp/does-not-exist-xyz',
+    fetch: fakeFetch,
+  });
+
+  assert.equal(r.ok, true);
+  assert.equal(r.answer, 'response without apiKey');
+  assert.equal(calledHeaders.Authorization, 'Bearer local');
 });

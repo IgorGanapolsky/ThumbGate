@@ -231,7 +231,7 @@ const {
   finalizeSession: finalizeFeedbackSession,
 } = require('../../scripts/feedback-session');
 
-const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.26.8' };
+const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.27.6' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
@@ -1282,6 +1282,15 @@ async function callToolInner(name, args) {
         },
       });
     }
+    case 'parallel_workflow': {
+      const { executeWorkflow } = require('../../scripts/parallel-workflow-orchestrator');
+      const results = await executeWorkflow(args.objective, {
+        concurrency: args.concurrency,
+        timeoutMs: args.timeoutMs,
+        cwd: resolveWorkspaceCwd(args.cwd),
+      });
+      return toTextResult(results);
+    }
     case 'open_feedback_session':
       return toTextResult(openFeedbackSession(args.feedbackEventId, args.signal, args.initialContext));
     case 'append_feedback_context':
@@ -1471,6 +1480,19 @@ function startStdioServer() {
   acquireLock();
 
   process.stdin.resume();
+
+  // Self-terminate when the client disconnects (stdin EOF/close). A stdio MCP
+  // server must not outlive its parent: clients spawn it over stdin/stdout and
+  // a well-behaved server exits when that pipe closes. Without this, children
+  // abandoned by a client that exits without killing them linger forever and
+  // accumulate. WHY: on 2026-06-05, 117 orphaned `thumbgate serve` processes
+  // (spawned by a Codex app-server over ~4 days, never reaped) piled up and
+  // helped exhaust a 24GB host. The existing exit handlers (cleanupLock /
+  // cleanupSessionLock registered on 'exit') run via process.exit(0).
+  const exitOnDisconnect = () => process.exit(0);
+  process.stdin.on('end', exitOnDisconnect);
+  process.stdin.on('close', exitOnDisconnect);
+
   let buffer = Buffer.alloc(0);
   // Auto-detect transport from first request and lock it for the session.
   // mcp-proxy (Glama) sends NDJSON and expects NDJSON back.

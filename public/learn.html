@@ -22,7 +22,7 @@
   "name": "ThumbGate Learning Hub",
   "description": "Practical guides for AI coding agent safety, pre-action checks, and vibe coding guardrails.",
   "url": "https://thumbgate.ai/learn",
-  "dateModified": "2026-04-20",
+  "dateModified": "2026-06-06",
   "author": {
     "@type": "Person",
     "name": "Igor Ganapolsky",
@@ -114,6 +114,12 @@
       },
       {
         "@type": "ListItem",
+        "position": 13,
+        "url": "https://thumbgate.ai/learn/pretix-stripe-connect-marketplaces",
+        "name": "Building a Pretix + Stripe Connect Plugin for Live-Music Venues"
+      },
+      {
+        "@type": "ListItem",
         "position": 7,
         "url": "https://thumbgate.ai/guides/stop-repeated-ai-agent-mistakes",
         "name": "How to Stop AI Coding Agents From Repeating Mistakes"
@@ -171,6 +177,12 @@
         "position": 15,
         "url": "https://thumbgate.ai/guides/ai-deployment-readiness",
         "name": "AI Deployment Readiness Before Production Rollout"
+      },
+      {
+        "@type": "ListItem",
+        "position": 16,
+        "url": "https://thumbgate.ai/guides/database-agent-safety",
+        "name": "Database Safety for AI Agents"
       }
     ]
   }
@@ -404,11 +416,27 @@
       <span class="article-tag">Indie SaaS</span>
       <span class="article-tag">Shipping in Public</span>
     </a>
+
+    <a href="/learn/pretix-stripe-connect-marketplaces" class="article-card">
+      <h3>Building a Pretix + Stripe Connect Plugin for Live-Music Venues</h3>
+      <p>How to design a multi-venue Stripe Connect ticketing plugin on Pretix, keeping venues as Merchant of Record without messy platform-fee tax reporting.</p>
+      <span class="article-tag">Stripe Connect</span>
+      <span class="article-tag">Pretix</span>
+      <span class="article-tag">Case Study</span>
+    </a>
   </div>
 
   <h2>Popular buyer questions</h2>
   <p class="section-intro">These are the high-intent guides for buyers who already know the pain and want to understand where ThumbGate fits fast.</p>
   <div class="article-grid">
+    <a href="/guides/database-agent-safety" class="article-card">
+      <h3>Database Safety for AI Agents</h3>
+      <p>Block hallucinated SQL writes, migrations, role grants, and production database changes before an agent can touch live data.</p>
+      <span class="article-tag">Database</span>
+      <span class="article-tag">SQL</span>
+      <span class="article-tag">Production Safety</span>
+    </a>
+
     <a href="/guides/ai-deployment-readiness" class="article-card">
       <h3>AI Deployment Readiness Before Production Rollout</h3>
       <p>Use one priority workflow to map tools, data, controls, pre-action gates, and proof before an AI deployment team ships into production.</p>
@@ -505,5 +533,6 @@
   </div>
 </div>
 
+<script src="/js/buyer-intent.js"></script>
 </body>
 </html>

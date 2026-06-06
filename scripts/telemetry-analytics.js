@@ -75,6 +75,13 @@ function normalizeInteger(value) {
   return Number.isFinite(parsed) ? Math.trunc(parsed) : null;
 }
 
+function normalizeRate(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return null;
+  return Math.max(0, Math.min(parsed, 1));
+}
+
 function safeRate(num, den) {
   if (!den) return 0;
   return Number((num / den).toFixed(4));
@@ -480,6 +487,8 @@ function sanitizeTelemetryPayload(payload = {}, headers = {}) {
     httpStatus: normalizeInteger(raw.httpStatus),
     userAgent: pickFirstText(raw.userAgent, headers['user-agent']),
     isBot: pickFirstText(raw.isBot),
+    interstitialSampled: pickFirstText(raw.interstitialSampled),
+    interstitialSampleRate: normalizeRate(raw.interstitialSampleRate),
     attributionTagged: Boolean(
       pickFirstText(raw.utmSource, raw.utmMedium, raw.utmCampaign, raw.utmContent, raw.utmTerm)
     ),

@@ -331,6 +331,55 @@ function buildRewardReport(episodes = [], options = {}) {
       deep: 'destructive, public, or production-adjacent work',
       xhigh: 'payments, secrets, deploy-prod, data-loss, force-push-main',
     },
+    continualAdapterPlan: buildContinualAdapterTrainingPlan(episodes, options),
+  };
+}
+
+function buildContinualAdapterTrainingPlan(episodes = [], options = {}) {
+  const maxAdapters = Math.max(1, Number(options.maxAdapters || 4));
+  const minExamples = Math.max(1, Number(options.minExamples || 2));
+  const pairs = buildPreferencePairs(episodes, { ...options, maxPairs: Number(options.maxPairs || 24) });
+  const candidates = rankGateCandidatesByReward(episodes, {
+    ...options,
+    minOccurrences: minExamples,
+    maxGateCandidates: maxAdapters,
+  }).slice(0, maxAdapters);
+
+  const adapters = candidates.map((candidate, index) => ({
+    id: `lora_${candidate.gateId || `adapter_${index + 1}`}`.slice(0, 96),
+    source: candidate.key,
+    trainingMode: 'concurrent-lora',
+    examples: candidate.occurrences,
+    priorityScore: candidate.priorityScore,
+    targetBehavior: candidate.recommendation,
+    retentionChecks: [
+      'baseline gate pass-rate must not regress',
+      'previous adapter reward must stay within tolerance',
+      'new adapter must improve blocked-repeat or verification reward on held-out episodes',
+    ],
+  }));
+
+  const enoughData = pairs.length >= minExamples && adapters.length > 0;
+  return {
+    status: enoughData ? 'ready' : 'needs_more_feedback',
+    trainingStack: 'multi-lora-continual-learning',
+    baseModelPolicy: 'freeze base model; train small adapters from reward-ranked DPO pairs',
+    scheduling: adapters.length > 1 ? 'batch adapters concurrently when they share the same frozen base' : 'train serially until at least two adapter candidates exist',
+    adapters,
+    dpoPairsAvailable: pairs.length,
+    retentionGate: 'ship no adapter unless reward, regression, and prior-domain retention checks pass',
+    nextActions: enoughData
+      ? [
+          'Export reward-ranked DPO pairs.',
+          'Train candidate LoRA adapters concurrently on the same frozen base.',
+          'Evaluate each adapter against held-out negative episodes and prior positive episodes.',
+          'Promote only the adapter that improves reward without retention regression.',
+        ]
+      : [
+          'Capture more thumbs-up/down outcomes before training.',
+          'Promote deterministic gates first when examples are sparse.',
+          'Use local semantic recall until enough reward-ranked pairs exist for adapter training.',
+        ],
   };
 }
 
@@ -419,8 +468,10 @@ if (isCliInvocation()) {
     console.log(JSON.stringify(buildPreferencePairs(episodes), null, 2));
   } else if (args.command === 'gates') {
     console.log(JSON.stringify(rankGateCandidatesByReward(episodes), null, 2));
+  } else if (args.command === 'adapters') {
+    console.log(JSON.stringify(buildContinualAdapterTrainingPlan(episodes), null, 2));
   } else {
-    console.error(`Unknown command: ${args.command}. Use: report, pairs, gates`);
+    console.error(`Unknown command: ${args.command}. Use: report, pairs, gates, adapters`);
     process.exit(1);
   }
 }
@@ -428,6 +479,7 @@ if (isCliInvocation()) {
 module.exports = {
   HIGH_RISK_TAGS,
   allocateTestTimeCompute,
+  buildContinualAdapterTrainingPlan,
   buildPreferencePairFromEpisodes,
   buildPreferencePairs,
   buildRewardReport,

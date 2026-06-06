@@ -26,3 +26,7 @@ test('guide explains when to use Pro versus the workflow hardening sprint', () =
   assert.match(GUIDE_HTML, /Send workflow first/);
   assert.match(GUIDE_HTML, /#workflow-sprint-intake/);
 });
+
+test('guide loads shared buyer intent conversion assist', () => {
+  assert.match(GUIDE_HTML, /\/js\/buyer-intent\.js/);
+});

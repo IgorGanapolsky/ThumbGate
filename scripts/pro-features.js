@@ -3,7 +3,7 @@ const { isProLicensed } = require('./license');
 const {
   PRO_MONTHLY_PAYMENT_LINK,
   PRO_PRICE_LABEL,
-  TEAM_PRICE_LABEL,
+  ENTERPRISE_PRICE_LABEL,
 } = require('./commercial-offer');
 
 const PRO_URL = PRO_MONTHLY_PAYMENT_LINK;
@@ -32,7 +32,7 @@ function requirePro(
   write(
     `\n  🔒 Pro Feature Required: ${desc}\n` +
     `     Pro: ${PRO_PRICE_LABEL} — ${PRO_URL}\n` +
-    `     Team: ${TEAM_PRICE_LABEL} after workflow qualification\n` +
+    `     Enterprise: ${ENTERPRISE_PRICE_LABEL} after workflow qualification\n` +
     `     Or run: npx thumbgate pro\n\n`
   );
   return false;

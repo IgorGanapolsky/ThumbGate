@@ -112,21 +112,18 @@ On explicit user preference signals (`up/down`, `correct/wrong`, or subjective "
 - Maintain 100% reliability in the feedback-to-enforcement pipeline.
 - Archive or delete stale local-only branches after verifying whether they still carry unique commits.
 
-## Product Architecture Split
+## Moat Reality
 
-ThumbGate is a two-repo product. The public shell stays thin; the private core holds the intelligence.
-
-- **Public shell** (`IgorGanapolsky/ThumbGate`, npm `thumbgate`): CLI, hook installer, adapter configs, local gate runner, public schemas, marketing. Seen by installers and competitors — keep it thin.
-- **Private core** (`IgorGanapolsky/ThumbGate-Core`): lesson ranking, policy synthesis, orchestration, billing intelligence, org visibility, licensed exports. Never published to npm, never required by public CI.
+ThumbGate is not defended by a meaningful closed-source intelligence split today. The strict 2026-05-18 audit in `MOAT.md` found that 212 of 216 private Core scripts also shipped publicly, so the real moat is hosted operation, adapter compatibility, dashboard/DPO export, and workflow-hardening expertise.
 
 Rules:
-1. Intelligence features go into Core. The public shell gets only thin client stubs.
-2. Public code talks to Core over HTTP / gRPC / licensed binary — never direct `require`.
-3. Public CI must pass with Core absent; integration suites are opt-in.
-4. Use `worktrees/public-*` and `worktrees/core-*` — never co-mingle in one branch.
-5. Never claim the split is "complete". Only report measurable deltas (files removed from public, boundary tests added, bundle size delta, empty Core import graph).
+1. Do not describe the public repo as a thin shell or claim private Core holds the intelligence unless a fresh audit proves that boundary exists.
+2. Public code is permissive on purpose. New ranking, synthesis, and adaptive-gate intelligence may land in the public repo when that keeps the product honest and installable.
+3. Public CI must still pass with Core absent; `tests/public-core-boundary.test.js` protects this correctness property, not a secrecy moat.
+4. Pricing and GTM copy must sell hosted sync, managed adapter maintenance, dashboard/export workflows, and expert support — not "private features you can't see."
+5. Re-evaluate the moat only with measurable evidence: public bundle file-count deltas, private-only capability inventory, competitor traction, and buyer conversion data.
 
-Violations block merge. Pin fixes with regression tests in `tests/public-core-boundary.test.js`.
+Violations block merge because stale moat fiction directly causes pricing-page incoherence.
 
 ## Session Directive: PR Management & System Hygiene
 

@@ -176,6 +176,62 @@ function patternContext(entry) {
 }
 
 /**
+ * Check if the feedback entry is an automated enforcement log (e.g. from gates engine)
+ * rather than real developer/user feedback.
+ */
+function isAutomatedFeedback(entry) {
+  const tags = entry.tags || [];
+  if (tags.includes('auto-capture') || tags.includes('gates-engine') || tags.includes('audit-trail')) {
+    return true;
+  }
+  const context = String(entry.context || entry.whatWentWrong || '').toLowerCase();
+  return context.includes('gate "') || context.includes('blocked tool') || context.includes('warned tool');
+}
+
+
+function isHookPromptEnvelope(context) {
+  if (!context || typeof context !== 'string') return false;
+  try {
+    const parsed = JSON.parse(context);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false;
+    return Boolean(
+      parsed.prompt &&
+      (
+        parsed.hookEventName ||
+        parsed.hook_event_name ||
+        parsed.workspaceRoot ||
+        parsed.workspace_root ||
+        parsed.session_id ||
+        parsed.sessionId ||
+        parsed.transcript_path ||
+        parsed.transcriptPath
+      )
+    );
+  } catch (_) {
+    return false;
+  }
+}
+
+function patternContext(entry) {
+  const context = entry && entry.context ? String(entry.context) : '';
+  if (!context) return '';
+  const hasExplicitFeedback = Boolean(
+    entry.whatWentWrong ||
+    entry.what_went_wrong ||
+    entry.whatToChange ||
+    entry.what_to_change ||
+    entry.failureType ||
+    (Array.isArray(entry.tags) && entry.tags.length > 0) ||
+    entry.structuredRule
+  );
+  if (isHookPromptEnvelope(context) && !hasExplicitFeedback) return '';
+  if (isHookPromptEnvelope(context) && hasExplicitFeedback) {
+    return '';
+  }
+  return context;
+}
+
+/**
  * Extract ms from a timestamp value. Returns 0 on failure.
  */
 function getTimestampMs(value) {
@@ -262,9 +318,11 @@ function buildHybridState(opts) {
     if (cls === 'positive') positive++;
     if (cls === 'negative') {
       negative++;
-      // Track tool-level negative counts
-      const toolName = inferToolName(entry.toolName || entry.tool_name || 'unknown', entry.context || '');
-      toolNegatives[toolName] = (toolNegatives[toolName] || 0) + 1;
+      // Track tool-level negative counts (exclude automated gate logs)
+      if (!isAutomatedFeedback(entry)) {
+        const toolName = inferToolName(entry.toolName || entry.tool_name || 'unknown', entry.context || '');
+        toolNegatives[toolName] = (toolNegatives[toolName] || 0) + 1;
+      }
 
       // Build pattern from context / whatWentWrong / what_went_wrong
       const rawText = [
@@ -304,6 +362,8 @@ function buildHybridState(opts) {
 
   // Process attributed feedback separately to track attributed tool counts
   for (const entry of attributedEntries) {
+    if (classify(entry) !== 'negative') continue; // skip pruned/positive
+    if (isAutomatedFeedback(entry)) continue; // skip automated gate blocks
     const toolName = inferToolName(entry.toolName || entry.tool_name || entry.attributed_tool || 'unknown', entry.context || '');
     toolNegativesAttributed[toolName] = (toolNegativesAttributed[toolName] || 0) + 1;
 
@@ -670,6 +730,7 @@ function evaluatePretool(toolName, toolInput, opts) {
 
   // Slow path: build live state (also used when compiled guards are stale)
   const state = buildHybridState({
+    feedbackDir: o.feedbackDir,
     feedbackLogPath: o.feedbackLogPath,
     attributedFeedbackPath: o.attributedFeedbackPath,
   });

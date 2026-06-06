@@ -65,6 +65,7 @@ test('learn hub links to core articles and high-intent buyer guides', () => {
   assert.match(html, /\/guides\/browser-automation-safety/);
   assert.match(html, /\/guides\/native-messaging-host-security/);
   assert.match(html, /\/guides\/autoresearch-agent-safety/);
+  assert.match(html, /\/guides\/database-agent-safety/);
 });
 
 test('learn hub has article cards with titles, descriptions, tags, and a buyer-question section', () => {
@@ -87,6 +88,7 @@ test('learn hub has article cards with titles, descriptions, tags, and a buyer-q
   assert.match(html, /Browser Automation Safety for AI Agents/);
   assert.match(html, /Native Messaging Host Security/);
   assert.match(html, /Autoresearch Agent Safety for Self-Improving Coding Agents/);
+  assert.match(html, /Database Safety for AI Agents/);
 });
 
 test('learn hub has CTA with npx install command', () => {
@@ -343,6 +345,18 @@ test('persistent-memory article has install CTA', () => {
   assert.match(html, /npx thumbgate init/);
 });
 
+test('persistent-memory article routes high-intent readers to paid options', () => {
+  const html = readFile(path.join(learnDir, 'ai-agent-persistent-memory.html'));
+  assert.match(html, /Get Pro — \$19\/mo or \$149\/yr/);
+  assert.match(html, /\/checkout\/pro\?utm_source=learn&amp;utm_medium=persistent_memory_article/);
+  assert.match(html, /cta_id=learn_persistent_memory_pro/);
+  assert.match(html, /Pay \$499 diagnostic/);
+  assert.match(html, /https:\/\/buy\.stripe\.com\/00w14neyUcXA5pL5e33sI0e/);
+  assert.match(html, /Send workflow first/);
+  assert.match(html, /#workflow-sprint-intake/);
+  assert.match(html, /cta_id=learn_persistent_memory_sticky_pro/);
+});
+
 test('persistent-memory article has breadcrumb back to learn hub', () => {
   const html = readFile(path.join(learnDir, 'ai-agent-persistent-memory.html'));
   assert.match(html, /class="breadcrumb"/);
@@ -480,12 +494,13 @@ test('no learn page references version numbers (evergreen content)', () => {
 
 test('no learn page has broken internal links', () => {
   const allFiles = [learnHubPath, ...fs.readdirSync(learnDir).filter(f => f.endsWith('.html')).map(f => path.join(learnDir, f))];
-  const validPaths = ['/learn', '/guide', '/dashboard', '/', '/pricing', '/case-studies', '/compare/rein', '/ai-malpractice-prevention', '/learn/spec-driven-development', '/learn/ai-agent-governance', '/learn/mcp-pre-action-checks-explained', '/learn/vibe-coding-safety-net', '/checkout/pro?utm_source=blog&amp;utm_medium=prototype_to_production&amp;utm_campaign=build_log', '/learn/stop-ai-agent-force-push', '/learn/vibe-coding-safety-net', '/learn/mcp-pre-action-checks-explained', '/learn/agent-harness-pattern', '/learn/agent-swarms-shared-gates', '/learn/background-agent-control-layer', '/learn/claude-code-goal-with-rubrics', '/learn/ai-agent-persistent-memory', '/learn/from-prototype-to-production', '/learn/regulated-agent-execution-boundary', '/learn/ac-dc-runtime-enforcement', '/learn/feedback-loop-vs-decision-layer', '/compare/anthropic-containment', '/learn/learn.css', '/favicon.svg', '/thumbgate-icon.png', '/og.png', '/assets/brand/thumbgate-mark.svg', '/assets/brand/thumbgate-mark-inline.svg', '/guides/stop-repeated-ai-agent-mistakes', '/guides/ai-deployment-readiness', '/guides/browser-automation-safety', '/guides/native-messaging-host-security', '/guides/ai-search-topical-presence', '/guides/relational-knowledge-ai-recommendations', '/guides/cursor-agent-guardrails', '/guides/codex-cli-guardrails', '/guides/gemini-cli-feedback-memory', '/guides/roo-code-alternative-cline', '/guides/autoresearch-agent-safety', '/learn/agentic-enterprise-context-brain', '/learn/deterministic-agent-workflows', '/learn/agentic-os-team-governance', '/learn/codex-role-plugins-need-governance', '/learn/cost-aware-agent-gate-routing', '/codex-plugin'];
+  const validPaths = ['/learn', '/guide', '/dashboard', '/', '/pricing', '/case-studies', '/compare/rein', '/ai-malpractice-prevention', '/learn/spec-driven-development', '/learn/ai-agent-governance', '/learn/mcp-pre-action-checks-explained', '/learn/vibe-coding-safety-net', '/checkout/pro?utm_source=blog&amp;utm_medium=prototype_to_production&amp;utm_campaign=build_log', '/learn/stop-ai-agent-force-push', '/learn/vibe-coding-safety-net', '/learn/mcp-pre-action-checks-explained', '/learn/agent-harness-pattern', '/learn/agent-swarms-shared-gates', '/learn/background-agent-control-layer', '/learn/claude-code-goal-with-rubrics', '/learn/ai-agent-persistent-memory', '/learn/from-prototype-to-production', '/learn/regulated-agent-execution-boundary', '/learn/ac-dc-runtime-enforcement', '/learn/feedback-loop-vs-decision-layer', '/compare/anthropic-containment', '/learn/learn.css', '/favicon.svg', '/thumbgate-icon.png', '/og.png', '/assets/brand/thumbgate-mark.svg', '/assets/brand/thumbgate-mark-inline.svg', '/guides/stop-repeated-ai-agent-mistakes', '/guides/ai-deployment-readiness', '/guides/database-agent-safety', '/guides/browser-automation-safety', '/guides/native-messaging-host-security', '/guides/ai-search-topical-presence', '/guides/relational-knowledge-ai-recommendations', '/guides/cursor-agent-guardrails', '/guides/codex-cli-guardrails', '/guides/gemini-cli-feedback-memory', '/guides/roo-code-alternative-cline', '/guides/autoresearch-agent-safety', '/learn/agentic-enterprise-context-brain', '/learn/deterministic-agent-workflows', '/learn/agentic-os-team-governance', '/learn/codex-role-plugins-need-governance', '/learn/cost-aware-agent-gate-routing', '/codex-plugin', '/learn/pretix-stripe-connect-marketplaces'];
   for (const file of allFiles) {
     const html = readFile(file);
     const links = html.match(/href="(\/[^"#]*?)"/g) || [];
     for (const link of links) {
       const href = link.match(/href="([^"]+)"/)[1];
+      if (href.startsWith('/checkout/pro?')) continue;
       assert.ok(validPaths.includes(href), `${path.basename(file)} has potentially broken link: ${href}`);
     }
   }

@@ -19,9 +19,7 @@ const {
   getClaudePluginLatestDownloadUrl,
 } = require('./distribution-surfaces');
 const {
-  TEAM_MIN_SEATS,
-  TEAM_MONTHLY_PRICE_DOLLARS,
-  TEAM_PRICE_LABEL,
+  ENTERPRISE_PRICE_LABEL,
 } = require('./commercial-offer');
 
 const ROOT = path.join(__dirname, '..');
@@ -123,8 +121,13 @@ async function main() {
   const claudePluginReadme = read('.claude-plugin/README.md') || '';
   const claudeDesktopPacket = read('docs/CLAUDE_DESKTOP_EXTENSION.md') || '';
   const latestClaudePluginUrl = getClaudePluginLatestDownloadUrl(ROOT);
-  const teamSeatPrice = `$${TEAM_MONTHLY_PRICE_DOLLARS}/seat/mo`;
-  const teamSeatPricePattern = new RegExp(`\\$${TEAM_MONTHLY_PRICE_DOLLARS}/seat/mo`, 'i');
+  // Enterprise is the contact-sales tier (Free / Pro / Enterprise). The former
+  // Team tier is retired: it must NOT be advertised as a customer-facing tier on
+  // any buyer surface, and Enterprise must be present in its place.
+  const enterpriseTierPattern = /Enterprise/i;
+  // Catch the retired Team seat price even when markup (e.g. a <span>) splits
+  // "$49" from "/seat", or when it appears without a trailing "/mo".
+  const retiredTeamSeatPattern = /\$49\b[\s\S]{0,40}seat/i;
   const pricingSurfaceFiles = PRICING_SURFACE_ROOTS.flatMap(listTextFiles);
   const legacyPricingHits = [];
   for (const rel of pricingSurfaceFiles) {
@@ -223,28 +226,24 @@ async function main() {
     'public/guide.html must advertise the current Pro monthly and annual pricing'
   );
   check(
-    TEAM_MONTHLY_PRICE_DOLLARS === 49 && TEAM_MIN_SEATS === 3,
-    'scripts/commercial-offer.js must anchor Team at $49/seat/mo with a 3-seat minimum'
-  );
-  check(
-    TEAM_PRICE_LABEL.includes(teamSeatPrice),
-    'scripts/commercial-offer.js Team label must match the canonical Team seat price'
+    enterpriseTierPattern.test(ENTERPRISE_PRICE_LABEL),
+    'scripts/commercial-offer.js ENTERPRISE_PRICE_LABEL must describe the Enterprise tier'
   );
   check(
     legacyPricingHits.length === 0,
     `Legacy ThumbGate pricing found in public pricing surfaces: ${legacyPricingHits.join(', ')}`
   );
   check(
-    teamSeatPricePattern.test(guideHtml),
-    'public/guide.html must advertise the current Team pricing anchor'
+    enterpriseTierPattern.test(guideHtml),
+    'public/guide.html must advertise the Enterprise tier (Free / Pro / Enterprise)'
   );
   check(
     /Pro at \$19\/mo or \$149\/yr/i.test(commercialTruth),
     'docs/COMMERCIAL_TRUTH.md must record the current Pro offer'
   );
   check(
-    teamSeatPricePattern.test(commercialTruth),
-    'docs/COMMERCIAL_TRUTH.md must record the current Team pricing anchor'
+    enterpriseTierPattern.test(commercialTruth),
+    'docs/COMMERCIAL_TRUTH.md must record the Enterprise tier'
   );
   check(
     /shared lessons and org visibility/i.test(githubAbout.metaDescription),
@@ -255,28 +254,38 @@ async function main() {
     'README.md must advertise the current Pro monthly and annual pricing'
   );
   check(
-    teamSeatPricePattern.test(readmeMd),
-    'README.md must advertise the current Team pricing anchor'
+    enterpriseTierPattern.test(readmeMd),
+    'README.md must advertise the Enterprise tier'
   );
+  // Free / Pro / Enterprise must be the visible model everywhere a buyer looks,
+  // and the retired Team seat price must NOT reappear on any buyer surface.
   for (const [surface, text] of Object.entries({
     'public/index.html': landingHtml,
     'public/compare.html': compareHtml,
     'public/pro.html': proHtml,
+    'public/pricing.html': read('public/pricing.html') || '',
     'docs/landing-page.html': docsLandingHtml,
     'docs/marketing/product-hunt-launch-kit.md': productHuntLaunchKit,
+    'README.md': readmeMd,
+    'public/guide.html': guideHtml,
+    'docs/COMMERCIAL_TRUTH.md': commercialTruth,
   })) {
     check(
-      teamSeatPricePattern.test(text),
-      `${surface} must advertise the current Team pricing anchor`
+      enterpriseTierPattern.test(text),
+      `${surface} must advertise the Enterprise tier (Free / Pro / Enterprise)`
+    );
+    check(
+      !retiredTeamSeatPattern.test(text),
+      `${surface} must not advertise the retired Team tier ($49/seat/mo)`
     );
   }
   check(
     /shared hosted lesson db/i.test(readmeMd),
-    'README.md must describe the shared hosted Team lesson database'
+    'README.md must describe the shared hosted Enterprise lesson database'
   );
   check(
     /org dashboard/i.test(readmeMd),
-    'README.md must describe the Team org dashboard'
+    'README.md must describe the Enterprise org dashboard'
   );
   check(
     /history-aware/i.test(readmeMd),
@@ -313,15 +322,15 @@ async function main() {
   );
   check(
     /workflow-sprint-intake/.test(landingHtml),
-    'public/index.html must expose the team workflow intake path'
+    'public/index.html must expose the Enterprise workflow intake path'
   );
   check(
     /shared lesson db|shared lesson database/i.test(landingHtml),
-    'public/index.html must describe the shared Team lesson database'
+    'public/index.html must describe the shared Enterprise lesson database'
   );
   check(
     /org dashboard/i.test(landingHtml),
-    'public/index.html must describe the Team org dashboard'
+    'public/index.html must describe the Enterprise org dashboard'
   );
   check(
     /personal local dashboard/i.test(landingHtml),

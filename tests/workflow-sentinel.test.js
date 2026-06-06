@@ -63,6 +63,7 @@ test('workflow sentinel warns on multi-surface release-sensitive blast radius', 
     repoPath: process.cwd(),
     feedbackDir: isolatedFeedbackDir,
     feedbackOptions: { feedbackDir: isolatedFeedbackDir },
+    memoryGuard: { mode: 'allow', reason: '' },
     governanceState: {
       taskScope: {
         summary: 'sentinel dry run',
@@ -280,6 +281,7 @@ test('workflow sentinel warns when current branch is outside workflow contract',
   const report = evaluateWorkflowSentinel('Bash', {
     command: 'node scripts/check.js',
     changed_files: ['src/api/server.js'],
+    currentBranch: 'feat/outside-contract',
   }, {
     feedbackDir,
     repoPath: process.cwd(),

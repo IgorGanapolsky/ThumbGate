@@ -168,6 +168,7 @@ const {
   buildReviewSnapshot,
   readDashboardReviewState,
   writeDashboardReviewState,
+  collectAllFeedbackEntries,
 } = require('../../scripts/dashboard');
 const {
   guardDfcxWebhook,
@@ -231,6 +232,7 @@ const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
 const NUMBERS_PAGE_PATH = path.resolve(__dirname, '../../public/numbers.html');
 const FEDERAL_PAGE_PATH = path.resolve(__dirname, '../../public/federal.html');
 const PRICING_PAGE_PATH = path.resolve(__dirname, '../../public/pricing.html');
+const ABOUT_PAGE_PATH = path.resolve(__dirname, '../../public/about.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
 const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
@@ -355,6 +357,7 @@ function serveStaticFile(res, filePath, { headOnly = false, cacheSeconds = 86400
   res.setHeader('Content-Type', contentType);
   res.setHeader('Content-Length', stat.size);
   res.setHeader('Cache-Control', `public, max-age=${cacheSeconds}, immutable`);
+  res.setHeader('Referrer-Policy', 'same-origin');
   if (headOnly) {
     res.end();
     return;
@@ -676,6 +679,51 @@ function resolveRequestProjectDir(req, parsed) {
     projectDir: explicitProject,
     env: process.env,
   });
+}
+
+function debugApiFallback(label, error) {
+  if (process.env.THUMBGATE_DEBUG_API !== '1') return;
+  console.warn(`[api] ${label}: ${error?.message || String(error)}`);
+}
+
+function stripEnvQuotes(value) {
+  return String(value || '').trim().replace(/^["']|["']$/g, '');
+}
+
+function extractEnvValue(content, names) {
+  const pattern = new RegExp(`^(?:${names.join('|')})=(.*)$`, 'm');
+  const match = pattern.exec(content);
+  return match ? stripEnvQuotes(match[1]) : '';
+}
+
+function readProjectChatSettings(req, parsed) {
+  const settings = {
+    geminiKey: '',
+    perplexityKey: '',
+    localEndpoint: '',
+    localModel: '',
+    geminiValidatedAt: null,
+  };
+  try {
+    const projectDir = resolveRequestProjectDir(req, parsed);
+    const envPath = path.join(projectDir, '.env');
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, 'utf8');
+      settings.geminiKey = extractEnvValue(content, ['GEMINI_API_KEY', 'GOOGLE_API_KEY', 'THUMBGATE_GEMINI_API_KEY']);
+      settings.perplexityKey = extractEnvValue(content, ['PERPLEXITY_API_KEY', 'THUMBGATE_PERPLEXITY_API_KEY']);
+      settings.localEndpoint = extractEnvValue(content, ['THUMBGATE_LOCAL_LLM_ENDPOINT']);
+      settings.localModel = extractEnvValue(content, ['THUMBGATE_LOCAL_LLM_MODEL']);
+    }
+
+    const statusPath = path.join(projectDir, '.gemini-validated.json');
+    if (fs.existsSync(statusPath)) {
+      const status = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
+      settings.geminiValidatedAt = status.validatedAt || null;
+    }
+  } catch (error) {
+    debugApiFallback('project chat settings unavailable', error);
+  }
+  return settings;
 }
 
 function shouldPreferProjectScopedFeedback(req, parsed) {
@@ -1455,7 +1503,7 @@ async function loadLiveDashboardDataOrRespondProblem(res, parsed, feedbackDir, i
   }
 }
 
-function buildEnterpriseDialogflowStatus(env = process.env) {
+function buildEnterpriseDataChatStatus(env = process.env) {
   const vertexProject = normalizeNullableText(env.VERTEX_PROJECT_ID)
     || normalizeNullableText(env.GOOGLE_VERTEX_PROJECT);
   const vertexLocation = normalizeNullableText(env.GOOGLE_VERTEX_LOCATION)
@@ -1487,11 +1535,15 @@ function buildEnterpriseDialogflowStatus(env = process.env) {
     },
     chat: {
       available: true,
-      source: 'local ThumbGate dashboard data',
-      guard: 'DFCX-compatible pre-action gate adapter',
+      source: 'local ThumbGate dashboard data with LanceDB-backed retrieval',
+      guard: 'local data-access guard; DFCX adapter optional for customer Dialogflow deployments',
+      providerRequired: false,
+      localLlmEndpointConfigured: Boolean(normalizeNullableText(env.THUMBGATE_LOCAL_LLM_ENDPOINT)),
     },
   };
 }
+
+const buildEnterpriseDialogflowStatus = buildEnterpriseDataChatStatus;
 
 function normalizeEnterpriseChatPrompt(value) {
   const text = normalizeNullableText(value);
@@ -1501,12 +1553,94 @@ function normalizeEnterpriseChatPrompt(value) {
 
 function classifyEnterpriseChatTopic(prompt) {
   const lower = String(prompt || '').toLowerCase();
-  if (/gate|block|deny|prevent|guard/.test(lower)) return 'gates';
-  if (/lesson|memory|feedback|thumb|mistake|negative|positive/.test(lower)) return 'feedback';
+  // Feedback-specific words run FIRST: "what mistakes were blocked today" is a
+  // feedback question, not a gates question — must not be hijacked by /block/.
+  if (/mistake|lesson|memory|feedback|thumb|negative|positive|what (?:went )?wrong|fail|win|success|worked|good/.test(lower)) return 'feedback';
+  if (/gate|block|deny|prevent|guard|enforce/.test(lower)) return 'gates';
   if (/team|agent|org|enterprise|rollout/.test(lower)) return 'team';
   if (/token|cost|saving|budget|spend/.test(lower)) return 'cost';
   if (/vertex|gcp|google|dialogflow|dfcx|cloud/.test(lower)) return 'cloud';
   return 'overview';
+}
+
+// Parse intent: LIST vs COUNT, and time window. Lets us answer "what mistakes
+// today?" with an actual filtered list instead of a canned total.
+function parseChatIntent(prompt) {
+  const lower = String(prompt || '').toLowerCase();
+  const terms = new Set(lower.split(/[^a-z0-9]+/).filter(Boolean));
+  const hasTerm = (term) => terms.has(term);
+  const wantsList = lower.includes('tell me about') ||
+    ['what', 'which', 'list', 'show', 'example', 'examples'].some(hasTerm);
+  let windowMs = null;
+  let windowLabel = 'across all time';
+  if (/\btoday\b/.test(lower)) { windowMs = 24 * 60 * 60 * 1000; windowLabel = 'today'; }
+  else if (/\byesterday\b/.test(lower)) { windowMs = 48 * 60 * 60 * 1000; windowLabel = 'yesterday'; }
+  else if (/\bthis week\b|\b7 ?d(ay)?s?\b|\blast week\b/.test(lower)) { windowMs = 7 * 24 * 60 * 60 * 1000; windowLabel = 'the last 7 days'; }
+  else if (/\bthis month\b|\b30 ?d(ay)?s?\b|\blast month\b/.test(lower)) { windowMs = 30 * 24 * 60 * 60 * 1000; windowLabel = 'the last 30 days'; }
+  return { wantsList, windowMs, windowLabel };
+}
+
+// Read recent feedback entries (signal-filtered, time-filtered) directly from
+// the feedback log. Bounded + best-effort — never throws into the chat handler.
+// Treat short/placeholder context values as "no real description" so we don't
+// surface `"thumbs down"` × 3 as a useful list. Real feedback always has a
+// concrete sentence somewhere (whatWentWrong, distillation, whatToChange) —
+// pick the longest informative one.
+// Short tokens that mean "no real description" — kept as a plain Set, not a
+// big regex, to keep complexity low and easy to extend.
+const PLACEHOLDER_TOKENS = new Set([
+  'thumbs down', 'thumbs up', 'thumb down', 'thumb up',
+  'good', 'bad', 'ok', 'nice', 'verify', 'verifies', 'verification', 'test', 'testing',
+]);
+
+function isPlaceholder(text) {
+  const t = String(text || '').trim();
+  if (!t || t.length < 20) return true;
+  return PLACEHOLDER_TOKENS.has(t.toLowerCase().replace(/\.$/, ''));
+}
+
+function bestFeedbackDescription(row) {
+  const candidates = [row.whatWentWrong, row.distillation, row.context, row.whatToChange, row.whatWorked, row.reasoning]
+    .map((c) => String(c || '').trim());
+  // Prefer the longest non-placeholder candidate; fall back to any non-empty.
+  const informative = candidates.filter((c) => c && !isPlaceholder(c));
+  const fallback = candidates.find(Boolean) || '';
+  const best = informative.reduce((a, b) => (b.length > a.length ? b : a), '') || fallback;
+  return best.slice(0, 220);
+}
+
+function readRecentFeedbackEntries(feedbackDir, signal, windowMs, limit = 5, opts = {}) {
+  try {
+    if (!feedbackDir) return [];
+    const fsLocal = require('node:fs');
+    const pathLocal = require('node:path');
+    const logPath = pathLocal.join(feedbackDir, 'feedback-log.jsonl');
+    if (!fsLocal.existsSync(logPath)) return [];
+    const { readJsonl } = require('../../scripts/fs-utils');
+    const rows = readJsonl(logPath) || [];
+    const cutoff = windowMs ? Date.now() - windowMs : 0;
+    const filtered = rows
+      .filter((r) => !signal || r.signal === signal)
+      .filter((r) => {
+        if (!cutoff) return true;
+        const t = r.timestamp ? Date.parse(r.timestamp) : Number.NaN;
+        return Number.isFinite(t) && t >= cutoff;
+      })
+      .reverse()
+      .map((r) => {
+        const out = { timestamp: r.timestamp, context: bestFeedbackDescription(r) };
+        if (opts.includeSignal) out.signal = r.signal;
+        return out;
+      });
+    // For list display, drop entries with no real description so the list is useful,
+    // not three "thumbs down" placeholders. For count-only (high limit), keep all.
+    const useful = opts.skipPlaceholders === false || limit > 50
+      ? filtered
+      : filtered.filter((e) => e.context && !isPlaceholder(e.context));
+    return useful.slice(0, limit);
+  } catch {
+    return [];
+  }
 }
 
 function containsUnsafeEnterpriseChatInput(prompt) {
@@ -1518,60 +1652,193 @@ function compactNumber(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
-function buildEnterpriseChatAnswer(prompt, dashboardData, status) {
-  const topic = classifyEnterpriseChatTopic(prompt);
+// Pick a signal preference from the prompt. Returns 'negative' | 'positive' | null.
+function detectFeedbackSignalFromPrompt(prompt) {
+  const lower = String(prompt || '').toLowerCase();
+  const wantsNeg = /mistake|wrong|fail|negative|thumbs? *down|block/.test(lower);
+  const wantsPos = /positive|thumbs? *up|worked|success|wins?\b|good/.test(lower);
+  if (wantsNeg && !wantsPos) return 'negative';
+  if (wantsPos && !wantsNeg) return 'positive';
+  return null;
+}
+
+const FEEDBACK_LIST_LABELS = Object.freeze({
+  negative: 'Recent mistakes',
+  positive: 'Recent wins',
+});
+
+function buildFeedbackSection({ ctx, intent, feedbackDir, approval, lessonPipeline }) {
+  const signal = detectFeedbackSignalFromPrompt(ctx.prompt);
+
+  // One read of the time-windowed log, then in-memory counts + (signal-filtered,
+  // placeholder-stripped) list. Counts include ALL entries (so "Feedback today: 5"
+  // matches the dashboard tile); the list drops vague entries like literal "thumbs
+  // down" / "good" so it surfaces only entries with real, actionable description.
+  const windowed = readRecentFeedbackEntries(feedbackDir, null, intent.windowMs, 10000, { includeSignal: true });
+  const windowPos = windowed.filter((r) => r.signal === 'positive').length;
+  const windowNeg = windowed.filter((r) => r.signal === 'negative').length;
+  const entries = (signal ? windowed.filter((r) => r.signal === signal) : windowed)
+    .filter((r) => r.context && !isPlaceholder(r.context))
+    .slice(0, 5);
+
+  const lines = [];
+  lines.push(intent.windowMs
+    ? `Feedback ${intent.windowLabel}: ${windowed.length} (${windowPos} positive, ${windowNeg} negative).`
+    : `Feedback total: ${compactNumber(approval.total)} (${compactNumber(approval.positive)} positive, ${compactNumber(approval.negative)} negative).`);
+
+  if (intent.wantsList) {
+    if (entries.length) {
+      lines.push(`${FEEDBACK_LIST_LABELS[signal] || 'Recent feedback'} (${intent.windowLabel}):`);
+      for (const e of entries) {
+        lines.push(`  • ${(e.timestamp || '').slice(0, 10)} — ${e.context}`);
+      }
+    } else {
+      lines.push(`No ${signal || 'feedback'} entries found ${intent.windowLabel}.`);
+    }
+  } else {
+    lines.push(`Lesson pipeline: ${compactNumber(lessonPipeline.lessons || lessonPipeline.generated || 0)} lessons visible in the current dashboard snapshot.`);
+  }
+  return { lines, sources: ['feedback log', intent.wantsList ? 'feedback contexts' : 'lesson pipeline'] };
+}
+
+const GATE_EVENTS_REGEX = /activat|fired|trigger|block|denied|prevent|enforce|hit/;
+
+function describeGate(g) {
+  return `${g.name || g.id || 'unnamed'}${g.severity ? ' [' + g.severity + ']' : ''}`;
+}
+
+function buildGatesSection({ ctx, intent, gates, gateStats }) {
+  const asksEvents = GATE_EVENTS_REGEX.test(String(ctx.prompt || '').toLowerCase());
+  const totalActive = gates.length || compactNumber(gateStats.totalGates);
+  const totalBlocked = compactNumber(gateStats.blocked || gateStats.denied || gateStats.totalBlocked);
+
+  const lines = [];
+  if (asksEvents) {
+    lines.push(`Blocked actions recorded (all time): ${totalBlocked}.`);
+    if (intent.windowMs) {
+      lines.push(`(Per-${intent.windowLabel} block-event breakdown isn't tracked in the local dashboard snapshot — only the running total. Filter the gate-events log directly for a precise window.)`);
+    }
+  } else {
+    lines.push(`Active gates: ${totalActive}.`);
+  }
+  if (intent.wantsList && gates.length) {
+    lines.push('Active gates:');
+    for (const g of gates.slice(0, 8)) lines.push(`  • ${describeGate(g)}`);
+  } else if (gates[0] && !intent.wantsList) {
+    lines.push(`Example gate: ${describeGate(gates[0])}.`);
+  }
+  return { lines, sources: ['gate stats'] };
+}
+
+function buildEnterpriseChatSection(topic, dashboardData, status, ctx = {}) {
   const approval = dashboardData.approval || {};
   const gates = Array.isArray(dashboardData.gates) ? dashboardData.gates : [];
   const gateStats = dashboardData.gateStats || {};
   const team = dashboardData.team || {};
   const tokenSavings = dashboardData.tokenSavings || {};
   const lessonPipeline = dashboardData.lessonPipeline || {};
-  const lines = [];
-  const sources = ['local dashboard data'];
+  const intent = ctx.intent || { wantsList: false, windowMs: null, windowLabel: 'across all time' };
+  const feedbackDir = ctx.feedbackDir || null;
 
   if (topic === 'feedback') {
-    lines.push(`Feedback total: ${compactNumber(approval.total)} (${compactNumber(approval.positive)} positive, ${compactNumber(approval.negative)} negative).`);
-    lines.push(`Lesson pipeline: ${compactNumber(lessonPipeline.lessons || lessonPipeline.generated || 0)} lessons visible in the current dashboard snapshot.`);
-    sources.push('feedback log', 'lesson pipeline');
-  } else if (topic === 'gates') {
-    lines.push(`Active gates: ${gates.length || compactNumber(gateStats.totalGates)}.`);
-    lines.push(`Blocked actions recorded: ${compactNumber(gateStats.blocked || gateStats.denied || gateStats.totalBlocked)}.`);
-    if (gates[0]) lines.push(`Example gate: ${gates[0].name || gates[0].id || 'unnamed gate'}.`);
-    sources.push('gate stats');
-  } else if (topic === 'team') {
-    lines.push(`Team dashboard is available in this local Enterprise view.`);
-    lines.push(`Tracked agents: ${compactNumber(team.totalAgents || team.agentCount || 0)}; risky agents: ${compactNumber(team.riskyAgents || team.highRiskAgents || 0)}.`);
-    sources.push('team dashboard');
-  } else if (topic === 'cost') {
-    lines.push(`Estimated token savings: ${tokenSavings.dollarsSavedDisplay || '$0.00'} from ${compactNumber(tokenSavings.blockedCalls)} blocked calls.`);
-    lines.push('Google Cloud budget alerts are evidence for spend visibility; ThumbGate-side stop conditions must be verified separately before calling them a hard cap.');
-    sources.push('token savings', 'budget posture');
-  } else if (topic === 'cloud') {
-    lines.push(status.vertex.configured
-      ? `Vertex routing config is present for project ${status.vertex.projectId} (${status.vertex.location}).`
-      : 'Vertex routing config is not present in this server environment.');
-    lines.push(status.dfcx.liveAgentConfigured
-      ? `DFCX env has agent ${status.dfcx.agentId} in ${status.dfcx.location}; verify it with REST/console before production claims.`
-      : 'No live DFCX agent is configured in env. Do not use the old alpha gcloud CX command group; verify agents with the Dialogflow CX REST API or console.');
-    sources.push('enterprise cloud status');
-  } else {
-    lines.push('Ask about feedback, lessons, active gates, team rollout, token savings, or Vertex/DFCX readiness.');
-    lines.push(`Current local snapshot: ${compactNumber(approval.total)} feedback events and ${gates.length || compactNumber(gateStats.totalGates)} active gates.`);
+    return buildFeedbackSection({ ctx, intent, feedbackDir, approval, lessonPipeline });
   }
-
+  if (topic === 'gates') {
+    return buildGatesSection({ ctx, intent, gates, gateStats });
+  }
+  if (topic === 'team') {
+    return {
+      lines: [
+        'Team dashboard is available in this local Enterprise view.',
+        `Tracked agents: ${compactNumber(team.totalAgents || team.agentCount || 0)}; risky agents: ${compactNumber(team.riskyAgents || team.highRiskAgents || 0)}.`,
+      ],
+      sources: ['team dashboard'],
+    };
+  }
+  if (topic === 'cost') {
+    return {
+      lines: [
+        `Estimated token savings: ${tokenSavings.dollarsSavedDisplay || '$0.00'} from ${compactNumber(tokenSavings.blockedCalls)} blocked calls.`,
+        'Google Cloud budget alerts are evidence for spend visibility; ThumbGate-side stop conditions must be verified separately before calling them a hard cap.',
+      ],
+      sources: ['token savings', 'budget posture'],
+    };
+  }
+  if (topic === 'cloud') {
+    const vertexLine = status.vertex.configured
+      ? `Vertex routing config is present for project ${status.vertex.projectId} (${status.vertex.location}).`
+      : 'Vertex routing config is not present in this server environment.';
+    const dfcxLine = status.dfcx.liveAgentConfigured
+      ? `DFCX env has agent ${status.dfcx.agentId} in ${status.dfcx.location}; verify it with REST/console before production claims.`
+      : 'No live DFCX agent is configured in env. Do not use the old alpha gcloud CX command group; verify agents with the Dialogflow CX REST API or console.';
+    return {
+      lines: [vertexLine, dfcxLine],
+      sources: ['enterprise cloud status'],
+    };
+  }
   return {
-    topic,
-    answer: lines.join(' '),
-    sources,
+    lines: [
+      'Ask about feedback, lessons, active gates, team rollout, token savings, or Vertex/DFCX readiness.',
+      `Current local snapshot: ${compactNumber(approval.total)} feedback events and ${gates.length || compactNumber(gateStats.totalGates)} active gates.`,
+    ],
+    sources: [],
   };
 }
 
-async function answerEnterpriseDialogflowChat({ prompt, feedbackDir, parsed }) {
+function buildEnterpriseChatAnswer(prompt, dashboardData, status, opts = {}) {
+  const topic = classifyEnterpriseChatTopic(prompt);
+  const intent = parseChatIntent(prompt);
+  const section = buildEnterpriseChatSection(topic, dashboardData, status, {
+    intent,
+    feedbackDir: opts.feedbackDir,
+    prompt,
+  });
+
+  // List-style answers want newlines; single-line answers join with space.
+  const hasList = section.lines.some((l) => /^\s*•/.test(l));
+  const answer = hasList ? section.lines.join('\n') : section.lines.join(' ');
+
+  return {
+    topic,
+    answer,
+    sources: ['local dashboard data', ...section.sources],
+  };
+}
+
+// Answer the dashboard "Chat with your data" panel LOCALLY (deterministic, no
+// cloud/LLM) from this install's own per-project dashboard data. Returns true if
+// it sent a response; false if the local snapshot was unavailable (caller then
+// falls through). Shared by the local-first path and the no-model fallback.
+async function trySendLocalDashboardChat(res, parsed, feedbackDir, prompt, suffix) {
+  try {
+    const dashboardResult = await buildLiveDashboardData(parsed, feedbackDir);
+    const localChat = buildEnterpriseChatAnswer(
+      prompt,
+      dashboardResult.data,
+      buildEnterpriseDataChatStatus(),
+      { feedbackDir },
+    );
+    sendJson(res, 200, {
+      ok: true,
+      answer: suffix ? `${localChat.answer} ${suffix}` : localChat.answer,
+      sources: (localChat.sources || []).map((title) => ({ title })),
+      topic: localChat.topic,
+      provider: 'local-data',
+      llm: 'none',
+      grounded: true,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function answerEnterpriseDataChat({ prompt, feedbackDir, parsed }) {
   const normalizedPrompt = normalizeEnterpriseChatPrompt(prompt);
   if (!normalizedPrompt) {
     throw createHttpError(400, 'prompt is required');
   }
-  const status = buildEnterpriseDialogflowStatus();
+  const status = buildEnterpriseDataChatStatus();
   if (containsUnsafeEnterpriseChatInput(normalizedPrompt)) {
     return {
       ok: false,
@@ -1592,7 +1859,12 @@ async function answerEnterpriseDialogflowChat({ prompt, feedbackDir, parsed }) {
 
   const dashboardResult = await buildLiveDashboardData(parsed, feedbackDir);
   const dashboardData = dashboardResult.data;
-  const chat = buildEnterpriseChatAnswer(normalizedPrompt, dashboardData, status);
+
+  // This guarded stats endpoint stays deterministic for API compatibility.
+  // The dashboard's real local/open-source chatbot turn goes through /v1/chat,
+  // which uses lesson retrieval + optional LanceDB vector search + the user's
+  // configured local or BYO model.
+  const chat = buildEnterpriseChatAnswer(normalizedPrompt, dashboardData, status, { feedbackDir });
   const dfcxRequest = {
     fulfillmentInfo: { tag: 'chat-with-data' },
     sessionInfo: {
@@ -1627,6 +1899,8 @@ async function answerEnterpriseDialogflowChat({ prompt, feedbackDir, parsed }) {
   };
 }
 
+const answerEnterpriseDialogflowChat = answerEnterpriseDataChat;
+
 function buildLossAnalyticsResponse(data, summaryOptions) {
   return {
     window: data.analytics.window || summaryOptions,
@@ -1645,6 +1919,43 @@ function buildLossAnalyticsResponse(data, summaryOptions) {
 
 function createJourneyId(prefix) {
   return createTraceId(prefix).replace(/^trace_/, `${prefix}_`);
+}
+
+function normalizeCheckoutInterstitialSampleRate(value) {
+  const parsed = Number.parseFloat(String(value || '').trim());
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 0;
+  }
+  if (parsed > 1) {
+    return Math.min(parsed / 100, 1);
+  }
+  return Math.min(parsed, 1);
+}
+
+function stableUnitInterval(value) {
+  const text = String(value || '');
+  let hash = 2166136261;
+  for (const character of text) {
+    hash ^= character.codePointAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0) / 4294967296;
+}
+
+function shouldSampleCheckoutInterstitial({ sampleRate, traceId, analyticsMetadata }) {
+  if (sampleRate <= 0) {
+    return false;
+  }
+  if (sampleRate >= 1) {
+    return true;
+  }
+  const seed = [
+    analyticsMetadata?.visitorId,
+    analyticsMetadata?.sessionId,
+    analyticsMetadata?.acquisitionId,
+    traceId,
+  ].filter(Boolean).join(':');
+  return stableUnitInterval(seed || traceId) < sampleRate;
 }
 
 function appendQueryParam(url, key, value) {
@@ -1706,9 +2017,151 @@ function buildCheckoutIntentHref(baseUrl, metadata = {}, overrides = {}) {
   });
 }
 
-function renderCheckoutIntentPage() {
+function renderCheckoutIntentPage(prefilledEmail = '', parsed = null, options = {}) {
   const plausibleDomain = escapeHtmlAttribute(resolvePlausibleDataDomain({ host: 'thumbgate.ai' }));
-  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Confirm — ThumbGate Pro</title><script defer data-domain="${plausibleDomain}" src="https://plausible.io/js/script.tagged-events.js"></script><script>window.plausible=window.plausible||function(){(window.plausible.q=window.plausible.q||[]).push(arguments)};</script><style>body{background:#0a0a0a;color:#eee;font-family:system-ui,-apple-system,sans-serif;line-height:1.5}main{max-width:520px;margin:8vh auto;padding:0 20px}.brand{display:flex;align-items:center;gap:10px;margin-bottom:24px;font-size:14px;color:#94a3b8}.brand-mark{width:24px;height:24px;background:#22d3ee;border-radius:6px;display:inline-block}h1{font-size:24px;margin:0 0 8px;color:#fff}.price{font-size:32px;font-weight:700;color:#22d3ee;margin:8px 0 4px}.price small{font-size:14px;color:#94a3b8;font-weight:400}p{color:#cbd5e1;margin:8px 0}form{margin:0}input[type=email]{width:100%;box-sizing:border-box;padding:14px 16px;border:1px solid #374151;border-radius:8px;background:#111827;color:#fff;font-size:15px;margin:16px 0 0;outline:none}input[type=email]:focus{border-color:#22d3ee}input[type=email]::placeholder{color:#64748b}button.primary{background:#22d3ee;color:#000;padding:16px;text-align:center;border-radius:8px;font-weight:700;font-size:16px;margin:10px 0;border:none;cursor:pointer;width:100%}a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:#cbd5e1;padding:12px;text-align:center;border-radius:8px;margin:8px 0 0;font-size:14px}.trust{margin:24px 0;padding:16px;border:1px solid #1f2937;border-radius:8px;background:#0f172a}.trust-item{font-size:13px;color:#cbd5e1;padding:4px 0;display:flex;gap:8px}.trust-item::before{content:"✓";color:#22d3ee;font-weight:700}.choice-note{font-size:13px;color:#94a3b8;margin-top:14px}.back{text-align:center;color:#64748b;font-size:12px;margin-top:24px}.back a{color:#64748b;display:inline}.email-note{font-size:12px;color:#64748b;margin:4px 0 0}</style><main><div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div><h1>Start ThumbGate Pro</h1><div class="price">$19<small>/mo</small></div><p>The npm package runs your gates locally. <strong>Pro</strong> is what keeps them working across every machine, every agent runtime, and every breaking-change week.</p><form action="/checkout/pro" method="GET" data-i="pro_checkout_confirmed"><input type="hidden" name="confirm" value="1"><input type="email" name="customer_email" placeholder="you@company.com" required autocomplete="email"><p class="email-note">Pre-fills your Stripe receipt. We only email if you ask.</p><button type="submit" class="primary">Pay $19/mo with Stripe →</button></form><a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a><p class="choice-note">Cancel anytime. 7-day refund, no questions. Diagnostics and sprints have their own pages.</p><div class="trust"><div class="trust-item">Lessons synced across all your machines — no local SQLite to babysit</div><div class="trust-item">Adapter matrix kept current for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — version drift is our problem, not yours</div><div class="trust-item">Hosted dashboard: gate stats, DPO export, org-wide rule library</div><div class="trust-item">24×7 ops on the rule engine — SonarCloud regressions fixed in &lt;24h</div></div><p class="back"><a href="/">← Back to thumbgate.ai</a></p></main><script>document.querySelector('form').addEventListener('submit',e=>{if(navigator.sendBeacon)navigator.sendBeacon('/v1/telemetry/ping',new Blob([JSON.stringify({eventType:'checkout_interstitial_cta_clicked',clientType:'web',page:'/checkout/pro',ctaId:'pro_checkout_confirmed',ctaPlacement:'checkout_interstitial',customerEmail:document.querySelector('input[name=customer_email]').value})],{type:'application/json'}));try{window.plausible&&window.plausible('Checkout Pro Email Submitted',{props:{page:'/checkout/pro',source:'interstitial'}})}catch(_){}})</script></html>`;
+  const includeHiddenAttribution = options.includeHiddenAttribution === true;
+  let hiddenInputs = '';
+  if (includeHiddenAttribution && parsed?.searchParams) {
+    for (const [key, value] of parsed.searchParams.entries()) {
+      if (key !== 'confirm' && key !== 'customer_email') {
+        hiddenInputs += `<input type="hidden" name="${escapeHtmlAttribute(key)}" value="${escapeHtmlAttribute(value)}">`;
+      }
+    }
+  }
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Confirm - ThumbGate Pro</title>
+<script defer data-domain="${plausibleDomain}" src="https://plausible.io/js/script.tagged-events.js"></script>
+<script>window.plausible=window.plausible||function(){(window.plausible.q=window.plausible.q||[]).push(arguments)};</script>
+<style>
+body{background:#0a0a0a;color:#eee;font-family:system-ui,-apple-system,sans-serif;line-height:1.5}
+main{max-width:520px;margin:8vh auto;padding:0 20px}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:24px;font-size:14px;color:#94a3b8}
+.brand-mark{width:24px;height:24px;background:#22d3ee;border-radius:6px;display:inline-block}
+h1{font-size:24px;margin:0 0 8px;color:#fff}.price{font-size:32px;font-weight:700;color:#22d3ee;margin:8px 0 4px}.price small{font-size:14px;color:#94a3b8;font-weight:400}
+p{color:#cbd5e1;margin:8px 0}form{margin:0}
+input[type=email]{width:100%;box-sizing:border-box;padding:14px 16px;border:1px solid #374151;border-radius:8px;background:#111827;color:#fff;font-size:15px;margin:16px 0 0;outline:none}
+input[type=email]:focus{border-color:#22d3ee}input[type=email]::placeholder{color:#64748b}
+button.primary{background:#22d3ee;color:#000;padding:16px;text-align:center;border-radius:8px;font-weight:700;font-size:16px;margin:10px 0;border:none;cursor:pointer;width:100%}
+a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:#cbd5e1;padding:12px;text-align:center;border-radius:8px;margin:8px 0 0;font-size:14px}
+.trust,.objection-box{margin:24px 0;padding:16px;border:1px solid #1f2937;border-radius:8px;background:#0f172a}
+.trust-item{font-size:13px;color:#cbd5e1;padding:4px 0;display:flex;gap:8px}.trust-item::before{content:"✓";color:#22d3ee;font-weight:700}
+.choice-note,.email-note,.objection-note{font-size:13px;color:#94a3b8;margin-top:10px}
+.objection-grid{display:grid;gap:8px;margin-top:12px}
+.objection-grid button{border:1px solid #374151;background:#111827;color:#e5e7eb;border-radius:8px;padding:10px 12px;text-align:left;cursor:pointer}
+.objection-grid button:hover,.objection-grid button:focus{border-color:#22d3ee;outline:none}
+.feedback-saved{display:none;color:#22d3ee;font-size:13px;margin-top:10px}
+.back{text-align:center;color:#64748b;font-size:12px;margin-top:24px}.back a{color:#64748b;display:inline}
+</style>
+</head>
+<body>
+<main>
+<div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div>
+<h1>Start ThumbGate Pro</h1>
+<div class="price">$19<small>/mo</small></div>
+<p>The npm package runs your gates locally. <strong>Pro</strong> is what keeps them working across every machine, every agent runtime, and every breaking-change week.</p>
+<form action="/checkout/pro" method="GET" data-i="pro_checkout_confirmed">
+${hiddenInputs}
+<input type="hidden" name="confirm" value="1">
+<input type="email" name="customer_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email">
+<p class="email-note">Optional. Stripe can collect your email on the secure checkout page.</p>
+<button type="submit" class="primary">Pay $19/mo with Stripe →</button>
+</form>
+<a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
+<p class="choice-note">Cancel anytime. 7-day refund, no questions. Diagnostics and sprints have their own pages.</p>
+<div class="objection-box" aria-label="Checkout feedback">
+<strong>Not buying today?</strong>
+<p class="objection-note">Tap one reason so we know what to fix. This does not sign you up.</p>
+<div class="objection-grid">
+<button type="button" data-reason="price_unclear">Price or scope is unclear</button>
+<button type="button" data-reason="need_more_proof">Need more proof first</button>
+<button type="button" data-reason="need_team_plan">Need a team/workflow plan instead</button>
+<button type="button" data-reason="not_urgent">Not urgent right now</button>
+</div>
+<div class="feedback-saved" id="feedback-saved">Feedback saved.</div>
+</div>
+<div class="trust"><div class="trust-item">Lessons synced across all your machines — no local SQLite to babysit</div><div class="trust-item">Adapter matrix kept current for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — version drift is our problem, not yours</div><div class="trust-item">Hosted dashboard: gate stats, DPO export, org-wide rule library</div><div class="trust-item">24×7 ops on the rule engine — SonarCloud regressions fixed in &lt;24h</div></div>
+<p class="back"><a href="/">← Back to thumbgate.ai</a></p>
+</main>
+<script>
+(function(){
+  var params = new URLSearchParams(window.location.search);
+  var submitted = false;
+  var feedbackSent = false;
+  function pick(key, fallback) { return params.get(key) || fallback || null; }
+  function sendTelemetry(eventType, extra) {
+    var payload = Object.assign({
+      eventType: eventType,
+      clientType: 'web',
+      page: '/checkout/pro',
+      traceId: pick('trace_id'),
+      acquisitionId: pick('acquisition_id'),
+      visitorId: pick('visitor_id'),
+      sessionId: pick('visitor_session_id') || pick('session_id'),
+      installId: pick('install_id'),
+      source: pick('utm_source') || pick('source') || 'website',
+      utmSource: pick('utm_source') || pick('source') || 'website',
+      utmMedium: pick('utm_medium') || 'checkout_interstitial',
+      utmCampaign: pick('utm_campaign') || 'pro_pack',
+      utmContent: pick('utm_content'),
+      utmTerm: pick('utm_term'),
+      creator: pick('creator') || pick('creator_handle'),
+      community: pick('community') || pick('subreddit'),
+      postId: pick('post_id'),
+      commentId: pick('comment_id'),
+      campaignVariant: pick('campaign_variant'),
+      offerCode: pick('offer_code'),
+      ctaId: pick('cta_id') || 'pricing_pro',
+      ctaPlacement: pick('cta_placement') || 'checkout_interstitial',
+      planId: pick('plan_id') || 'pro',
+      billingCycle: pick('billing_cycle') || 'monthly',
+      landingPath: pick('landing_path') || '/',
+      referrerHost: pick('referrer_host'),
+      referrer: document.referrer || null
+    }, extra || {});
+    var body = JSON.stringify(payload);
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon('/v1/telemetry/ping', new Blob([body], { type: 'application/json' }));
+      return;
+    }
+    fetch('/v1/telemetry/ping', { method:'POST', headers:{ 'content-type':'application/json' }, body: body, keepalive: true }).catch(function(){});
+  }
+  document.querySelector('form').addEventListener('submit', function(){
+    submitted = true;
+    var emailInput = document.querySelector('input[name=customer_email]');
+    sendTelemetry('checkout_interstitial_cta_clicked', {
+      ctaId: 'pro_checkout_confirmed',
+      ctaPlacement: 'checkout_interstitial',
+      customerEmail: emailInput ? emailInput.value : null
+    });
+    try { window.plausible && window.plausible('Checkout Pro Email Submitted', { props: { page:'/checkout/pro', source:'interstitial' } }); } catch(_) {}
+  });
+  document.querySelectorAll('[data-reason]').forEach(function(button) {
+    button.addEventListener('click', function(){
+      var reason = button.getAttribute('data-reason');
+      feedbackSent = true;
+      sendTelemetry('reason_not_buying', {
+        reasonCode: reason,
+        ctaId: 'checkout_interstitial_reason_' + reason,
+        ctaPlacement: 'checkout_interstitial_feedback'
+      });
+      try { window.plausible && window.plausible('Checkout Pro Reason Not Buying', { props: { page:'/checkout/pro', reasonCode: reason } }); } catch(_) {}
+      var saved = document.getElementById('feedback-saved');
+      if (saved) saved.style.display = 'block';
+    });
+  });
+  window.addEventListener('pagehide', function(){
+    if (!submitted && !feedbackSent) {
+      sendTelemetry('checkout_interstitial_abandoned', { reasonCode: 'left_without_confirming' });
+    }
+  });
+})();
+</script>
+</body>
+</html>`;
 }
 
 function buildCheckoutBootstrapBody(parsed, req, journeyState = resolveJourneyState(req, parsed)) {
@@ -2030,7 +2483,7 @@ function appendBestEffortTelemetry(feedbackDir, payload, headers, context) {
           evidence: [err?.message ? err.message : 'unknown_error'],
         },
       });
-    } catch (_) {}
+    } catch {}
     return false;
   }
 }
@@ -2191,6 +2644,10 @@ function loadPricingPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(PRICING_PAGE_PATH, runtimeConfig, pageContext);
 }
 
+function loadAboutPageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(ABOUT_PAGE_PATH, runtimeConfig, pageContext);
+}
+
 function readOptionalPublicTemplate(filePath) {
   try {
     return fs.readFileSync(filePath, 'utf-8');
@@ -2198,6 +2655,10 @@ function readOptionalPublicTemplate(filePath) {
     if (error?.code === 'ENOENT') return null;
     throw error;
   }
+}
+
+function escapeJsonForInlineScript(value) {
+  return JSON.stringify(value).replaceAll('<', String.raw`\u003c`);
 }
 
 function resolveLocalPageBootstrap(req, expectedApiKey) {
@@ -2208,7 +2669,13 @@ function resolveLocalPageBootstrap(req, expectedApiKey) {
   const localProBootstrap = process.env.THUMBGATE_PRO_MODE === '1' && Boolean(expectedApiKey) && isLoopbackHost(hostHeader);
   const devOverride = expectedApiKey === null && isLoopbackHost(hostHeader);
   const bootstrapActive = localProBootstrap || devOverride;
-  const serializedBootstrapKey = JSON.stringify(localProBootstrap ? expectedApiKey : devOverride ? (process.env.THUMBGATE_API_KEY || 'dev-override') : '').replace(/</g, '\\u003c');
+  let bootstrapKey = '';
+  if (localProBootstrap) {
+    bootstrapKey = expectedApiKey;
+  } else if (devOverride) {
+    bootstrapKey = process.env.THUMBGATE_API_KEY || 'dev-override';
+  }
+  const serializedBootstrapKey = escapeJsonForInlineScript(bootstrapKey);
 
   return {
     bootstrapActive,
@@ -2249,7 +2716,7 @@ window.THUMBGATE_DASHBOARD_BOOTSTRAP = { enabled: ${bootstrapActive ? 'true' : '
 <p>This lightweight npm dashboard is bundled without marketing assets, so installs stay small while core feedback, lessons, and API routes remain available.</p>
 <div class="grid">
 <a class="card" href="/v1/dashboard"><strong>Dashboard JSON</strong><span>Inspect feedback totals, lesson counts, and Reliability Gateway health.</span></a>
-<a class="card" href="/v1/enterprise/dialogflow/status"><strong>Enterprise Dialogflow Data Chat</strong><span>Check Vertex/DFCX readiness and use /v1/enterprise/dialogflow/chat to query local ThumbGate data through the DFCX guard.</span></a>
+<a class="card" href="/v1/enterprise/data-chat/status"><strong>Governed Data Chat</strong><span>Local RAG (LanceDB vectors + lessons) over your data plus your LLM. Guard simulation is available; Dialogflow/Vertex are optional adapters for customer-owned agent deployments.</span></a>
 <a class="card" href="/lessons"><strong>Lessons</strong><span>Review remembered thumbs-up/down lessons and enforcement context.</span></a>
 <a class="card" href="/health"><strong>Health</strong><span>Verify the installed package version and runtime status.</span></a>
 </div>
@@ -2329,6 +2796,53 @@ function normalizeLessonSignal(signal) {
   return 'down';
 }
 
+function splitLessonTitlePrefix(titleText) {
+  const prefixMatch = /^(MISTAKE|SUCCESS|LEARNING|PREFERENCE):\s*(.*)/i.exec(titleText);
+  if (!prefixMatch) return { prefix: '', rest: titleText };
+  return {
+    prefix: `${prefixMatch[1].toUpperCase()}: `,
+    rest: prefixMatch[2],
+  };
+}
+
+function maybeParseJsonObject(value) {
+  const trimmed = String(value || '').trim();
+  if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return null;
+  try {
+    return JSON.parse(trimmed);
+  } catch (error) {
+    debugApiFallback('lesson JSON parse skipped', error);
+    return null;
+  }
+}
+
+function formatLessonJsonTitle(prefix, parsed) {
+  const dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
+  const suffix = dirName ? ` inside ${dirName}` : '';
+  if (parsed.prompt) return `${prefix}Prompt "${parsed.prompt}"${suffix}`;
+  const hookVal = parsed.hook_event_name || parsed.hookEventName;
+  if (hookVal) return `${prefix}Hook event ${hookVal}${suffix}`;
+  if (parsed.signal) return `${prefix}${parsed.signal === 'up' ? 'Thumbs Up' : 'Thumbs Down'}${suffix}`;
+  return '';
+}
+
+function cleanLessonTitle(titleText) {
+  if (!titleText) return 'Untitled Lesson';
+  const { prefix, rest } = splitLessonTitlePrefix(titleText);
+  const parsed = maybeParseJsonObject(rest);
+  if (parsed) {
+    const jsonTitle = formatLessonJsonTitle(prefix, parsed);
+    if (jsonTitle) return jsonTitle;
+  }
+  return titleText;
+}
+
+function formatLessonTextValue(value) {
+  if (!value) return '';
+  const parsed = maybeParseJsonObject(value);
+  return parsed ? JSON.stringify(parsed, null, 2) : value;
+}
+
 function renderLessonDetailHtml(record, lessonId) {
   if (!record) {
     return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Lesson Not Found</title>
@@ -2352,58 +2866,10 @@ a{color:#22d3ee;text-decoration:none}</style></head><body>
   const rawWhatWentWrong = merged.whatWentWrong || '';
   const rawWhatWorked = merged.whatWorked || '';
 
-  function cleanTitle(titleText) {
-    if (!titleText) return 'Untitled Lesson';
-    let prefix = '';
-    let rest = titleText;
-    const match = titleText.match(/^(MISTAKE|SUCCESS|LEARNING|PREFERENCE):\s*(.*)/i);
-    if (match) {
-      prefix = match[1].toUpperCase() + ': ';
-      rest = match[2];
-    }
-    
-    const trimmed = rest.trim();
-    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-      try {
-        const parsed = JSON.parse(trimmed);
-        const promptVal = parsed.prompt;
-        const hookVal = parsed.hook_event_name || parsed.hookEventName;
-        if (promptVal) {
-          const dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
-          return prefix + `Prompt "${promptVal}"` + (dirName ? ` inside ${dirName}` : '');
-        }
-        if (hookVal) {
-          const dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
-          return prefix + `Hook event ${hookVal}` + (dirName ? ` inside ${dirName}` : '');
-        }
-        if (parsed.signal) {
-          const dirName = parsed.cwd ? parsed.cwd.split('/').pop() : '';
-          return prefix + (parsed.signal === 'up' ? 'Thumbs Up' : 'Thumbs Down') + (dirName ? ` inside ${dirName}` : '');
-        }
-      } catch (e) {
-        // ignore
-      }
-    }
-    return titleText;
-  }
-
-  function formatTextValue(value) {
-    if (!value) return '';
-    const trimmed = String(value).trim();
-    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-      try {
-        return JSON.stringify(JSON.parse(trimmed), null, 2);
-      } catch (e) {
-        // ignore
-      }
-    }
-    return value;
-  }
-
-  const title = cleanTitle(rawTitle);
-  const context = formatTextValue(rawContext);
-  const whatWentWrong = formatTextValue(rawWhatWentWrong);
-  const whatWorked = formatTextValue(rawWhatWorked);
+  const title = cleanLessonTitle(rawTitle);
+  const context = formatLessonTextValue(rawContext);
+  const whatWentWrong = formatLessonTextValue(rawWhatWentWrong);
+  const whatWorked = formatLessonTextValue(rawWhatWorked);
   const whatToChange = merged.whatToChange || '';
   const tags = Array.isArray(merged.tags) ? merged.tags.join(', ') : (merged.tags || '');
   const timestamp = merged.timestamp ? new Date(merged.timestamp).toLocaleString() : '';
@@ -2814,6 +3280,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/learn/codex-role-plugins-need-governance', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/agentic-os-team-governance', changefreq: 'weekly', priority: '0.85' },
     { path: '/learn/cost-aware-agent-gate-routing', changefreq: 'weekly', priority: '0.85' },
+    { path: '/learn/pretix-stripe-connect-marketplaces', changefreq: 'weekly', priority: '0.9' },
     { path: '/compare/claude-code-hooks', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/bumblebee', changefreq: 'weekly', priority: '0.85' },
     { path: '/compare/anthropic-containment', changefreq: 'weekly', priority: '0.85' },
@@ -2822,6 +3289,25 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/compare/anthropic-claude-for-legal', changefreq: 'weekly', priority: '0.9' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
   ];
+  // Auto-include every hand-written comparison page so /sitemap.xml can never
+  // drift out of sync with public/compare/*.html. Crawlers and AI answer engines
+  // (Google AI Overviews/AI Mode, ChatGPT, Perplexity) only surface pages they can
+  // discover, so a comparison page missing from the sitemap is invisible on its
+  // buyer-intent query. De-duped against entries already declared above (e.g. the
+  // seo-gsd specs), which keep their explicit priorities.
+  const declaredPaths = new Set(entries.map((entry) => entry.path));
+  try {
+    const compareFiles = fs.readdirSync(path.join(PUBLIC_DIR, 'compare')).sort((a, b) => a.localeCompare(b));
+    for (const file of compareFiles) {
+      if (!file.endsWith('.html')) continue;
+      const comparePath = `/compare/${file.replace(/\.html$/, '')}`;
+      if (declaredPaths.has(comparePath)) continue;
+      declaredPaths.add(comparePath);
+      entries.push({ path: comparePath, changefreq: 'weekly', priority: '0.85' });
+    }
+  } catch {
+    // public/compare absent in a stripped bundle — fall back to the static entries.
+  }
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
@@ -3233,7 +3719,7 @@ function renderCheckoutSuccessPage(runtimeConfig) {
         if (window.sessionStorage) {
           window.sessionStorage.setItem(marker, '1');
         }
-      } catch (_) {
+      } catch {
         sendTelemetry(eventType, extra);
       }
     }
@@ -4295,7 +4781,10 @@ function createApiServer() {
           });
           sendJson(res, 200, result);
         } catch (e) {
-          sendJson(res, 500, { error: 'feedback submission failed' });
+          sendJson(res, 500, {
+            error: 'feedback submission failed',
+            message: e?.message || 'Unable to submit dashboard feedback.',
+          });
         }
       });
       return;
@@ -4798,6 +5287,25 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && (pathname === '/about' || pathname === '/about.html')) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadAboutPageHtml,
+          extraTelemetry: {
+            pageType: 'about',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'About page unavailable');
+      }
+      return;
+    }
+
     if (isGetLikeRequest && (pathname === '/guide' || pathname === '/guide.html')) {
       try {
         const html = fs.readFileSync(GUIDE_PAGE_PATH, 'utf-8');
@@ -5158,7 +5666,12 @@ async function addContext(){
       return;
     }
 
-    if (isGetLikeRequest && pathname === '/checkout/pro') {
+    // HOTFIX 2026-06-04 — accept ANY method (GET/HEAD/POST) on /checkout/pro
+    // to prevent the API-key guard from 401'ing real prospective customers
+    // whose forms or fetch() calls land via POST. Audit: 69 emails submitted
+    // → 0 paid because POST hit the auth gate. Query params still drive the
+    // Stripe session creation; POST bodies are ignored harmlessly.
+    if ((isGetLikeRequest || req.method === 'POST') && pathname === '/checkout/pro') {
       if (isHeadRequest) {
         sendHtml(res, 200, '', {}, {
           headOnly: true,
@@ -5191,8 +5704,70 @@ async function addContext(){
       // because no real crawler appends customer_email to discovered URLs.
       const hasCustomerEmailHint = !!parsed?.searchParams?.has('customer_email');
       const botShouldBypass = !botClassification.isBot || hasCustomerEmailHint;
-      const isConfirmedCheckout = req.method === 'POST'
+      // 2026-06-04 audit: after the POST-401 fix, 3 of 4 fresh /checkout/pro
+      // sessions had customer_email=null in Stripe (zombie sessions with no
+      // recovery surface). Root cause: POSTs were auto-confirmed regardless of
+      // whether the email query param was present. Require email on POSTs too
+      // so emails-less POSTs fall through to the interstitial form instead of
+      // creating an un-recoverable Stripe session.
+      const isConfirmedCheckout = (req.method === 'POST' && hasCustomerEmailHint)
         || (hasConfirmFlag && botShouldBypass);
+      // 2026-06-05 revenue bypass: env-gated direct-to-Stripe redirect.
+      // Live 30d billing showed 254 interstitial views → 1 Stripe click-through
+      // → 0 paid. When THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS=1 is set we
+      // route raw /checkout/pro GETs (no confirm=1, no POST) straight to the
+      // pro Stripe Payment Link, preserving UTM + attribution metadata via
+      // buildCheckoutFallbackUrl. Default-off; bot-deflection still applies
+      // (bot + no email hint still falls through to the existing interstitial).
+      const interstitialBypassEnabled = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS === '1';
+      const interstitialSampleRate = normalizeCheckoutInterstitialSampleRate(
+        process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE
+      );
+      const interstitialSampled = shouldSampleCheckoutInterstitial({
+        sampleRate: interstitialSampleRate,
+        traceId,
+        analyticsMetadata,
+      });
+      if (
+        !isConfirmedCheckout
+        && interstitialBypassEnabled
+        && req.method !== 'POST'
+        && botShouldBypass
+        && !interstitialSampled
+      ) {
+        // Always target the pro Stripe Payment Link directly. The
+        // hostedConfig.checkoutFallbackUrl (e.g. https://thumbgate.ai/go/pro)
+        // is a router that 302s back to /checkout/pro, which would create a
+        // redirect loop when bypass is on. Env override via
+        // THUMBGATE_CHECKOUT_PRO_STRIPE_URL is supported for future
+        // price-link rotation without a redeploy.
+        const bypassTarget = process.env.THUMBGATE_CHECKOUT_PRO_STRIPE_URL
+          || FIRST_FAILURE_RULE_CHECKOUT_URL;
+        appendBestEffortTelemetry(FEEDBACK_DIR, {
+          eventType: 'checkout_interstitial_bypass_redirect',
+          clientType: 'web',
+          traceId,
+          acquisitionId: analyticsMetadata.acquisitionId,
+          visitorId: analyticsMetadata.visitorId,
+          sessionId: analyticsMetadata.sessionId,
+          utmSource: analyticsMetadata.utmSource,
+          utmMedium: analyticsMetadata.utmMedium,
+          utmCampaign: analyticsMetadata.utmCampaign,
+          utmContent: analyticsMetadata.utmContent,
+          utmTerm: analyticsMetadata.utmTerm,
+          referrer: analyticsMetadata.referrer,
+          referrerHost: analyticsMetadata.referrerHost,
+          page: '/checkout/pro',
+          planId: analyticsMetadata.planId,
+          interstitialSampleRate,
+        }, req.headers, 'checkout_interstitial_bypass_redirect');
+        res.writeHead(302, {
+          ...responseHeaders,
+          Location: buildCheckoutFallbackUrl(bypassTarget, analyticsMetadata),
+        });
+        res.end();
+        return;
+      }
       // Plausible funnel event #1 of 3: page view. Fired before interstitial
       // deflection so we get the full top-of-funnel count, with isBot as a
       // prop so the dashboard can filter human vs. crawler traffic. Fire-and-forget.
@@ -5251,9 +5826,14 @@ async function addContext(){
           billingCycle: analyticsMetadata.billingCycle,
           landingPath: analyticsMetadata.landingPath,
           isBot: botClassification.isBot ? 'true' : 'false',
+          interstitialSampled: interstitialSampled ? 'true' : 'false',
+          interstitialSampleRate,
           reason: botClassification.reason,
         }, req.headers, eventType);
-        const html = renderCheckoutIntentPage();
+        const prefilledEmail = parsed?.searchParams?.get('customer_email') || '';
+        const html = renderCheckoutIntentPage(prefilledEmail, parsed, {
+          includeHiddenAttribution: !botClassification.isBot,
+        });
         sendHtml(res, 200, html, responseHeaders);
         return;
       }
@@ -5883,7 +6463,7 @@ ${hidden}
               evidence: [err?.message ? err.message : 'unknown_error'],
             },
           });
-        } catch (_) {
+        } catch {
           // Telemetry is best-effort and must never fail the caller.
         }
       }
@@ -6250,7 +6830,7 @@ ${hidden}
               context: 'failed to persist install-email capture to ledger',
               metadata: { error: err?.message || 'unknown' },
             });
-          } catch (_) {}
+          } catch {}
         }
 
         // Privacy-clean telemetry ping for funnel attribution (no email).
@@ -7022,82 +7602,85 @@ ${hidden}
           const { getStatuslineMeta } = require('../../scripts/statusline-meta');
           const meta = getStatuslineMeta({ env: process.env });
           stats.tier = meta.tier;
-        } catch (_) {
+        } catch (error) {
+          debugApiFallback('statusline meta unavailable', error);
           stats.tier = 'Pro';
         }
 
-        let projectGeminiKey = '';
-        let projectPerplexityKey = '';
-        let geminiValidatedAt = null;
-        try {
-          const projectDir = resolveRequestProjectDir(req, parsed);
-          const envPath = path.join(projectDir, '.env');
-          if (fs.existsSync(envPath)) {
-            const content = fs.readFileSync(envPath, 'utf8');
-            const geminiMatch = content.match(/^(?:GEMINI_API_KEY|GOOGLE_API_KEY|THUMBGATE_GEMINI_API_KEY)=(.*)$/m);
-            if (geminiMatch) {
-              projectGeminiKey = geminiMatch[1].trim().replace(/^["']|["']$/g, '');
-            }
-            const perplexityMatch = content.match(/^(?:PERPLEXITY_API_KEY|THUMBGATE_PERPLEXITY_API_KEY)=(.*)$/m);
-            if (perplexityMatch) {
-              projectPerplexityKey = perplexityMatch[1].trim().replace(/^["']|["']$/g, '');
-            }
-          }
-          const statusPath = path.join(projectDir, '.gemini-validated.json');
-          if (fs.existsSync(statusPath)) {
-            const st = JSON.parse(fs.readFileSync(statusPath, 'utf8'));
-            geminiValidatedAt = st.validatedAt || null;
-          }
-        } catch (_) {}
+        const projectChatSettings = readProjectChatSettings(req, parsed);
 
         stats.geminiConfigured = Boolean(
-          projectGeminiKey ||
+          projectChatSettings.geminiKey ||
           process.env.GEMINI_API_KEY ||
           process.env.THUMBGATE_GEMINI_API_KEY ||
           process.env.GOOGLE_API_KEY
         );
         stats.perplexityConfigured = Boolean(
-          projectPerplexityKey ||
+          projectChatSettings.perplexityKey ||
           process.env.PERPLEXITY_API_KEY ||
           process.env.THUMBGATE_PERPLEXITY_API_KEY
         );
-        stats.geminiValidatedAt = geminiValidatedAt;
-        stats.geminiKeyStatus = geminiValidatedAt ? 'validated' : (projectGeminiKey ? 'present' : 'none');
+        stats.geminiValidatedAt = projectChatSettings.geminiValidatedAt;
+        stats.geminiKeyStatus = 'none';
+        if (projectChatSettings.geminiKey) {
+          stats.geminiKeyStatus = 'present';
+        }
+        if (projectChatSettings.geminiValidatedAt) {
+          stats.geminiKeyStatus = 'validated';
+        }
         stats.hybridInferenceAvailable = !!(stats.geminiConfigured || stats.perplexityConfigured);
+        stats.localLlmConfigured = Boolean(process.env.THUMBGATE_LOCAL_LLM_ENDPOINT);
+        stats.localLlmEndpoint = process.env.THUMBGATE_LOCAL_LLM_ENDPOINT || null;
+        stats.localLlmModel = process.env.THUMBGATE_LOCAL_LLM_MODEL || null;
         sendJson(res, 200, stats);
         return;
       }
 
-      // Chat with your data — RAG over this install's captured lessons, answered
-      // by Gemini grounded only in the retrieved context. Powers the dashboard
-      // "Chat with your data" panel.
+      // Chat with your data — LOCAL-FIRST. Powers the dashboard "Chat with your
+      // data" panel. Factual/metric questions (gates, blocks, feedback, token
+      // savings, team) are answered DETERMINISTICALLY from this install's own
+      // dashboard data — no cloud, no LLM, no API key (the local-first thesis).
+      // Only open-ended/qualitative questions fall through to lesson retrieval +
+      // the user's configured LOCAL model (a BYO cloud key is optional, not required).
       if (req.method === 'POST' && pathname === '/v1/chat') {
         const body = await parseJsonBody(req);
+        const question = body.question || body.q || body.message;
+        const normalizedChatPrompt = normalizeEnterpriseChatPrompt(question);
+        const chatFeedbackDir = requestFeedbackPaths.FEEDBACK_DIR;
+
+        // Local-first: factual/metric questions (gates, blocks, feedback, cost,
+        // team) are answered deterministically from local data — no cloud/LLM/key.
+        if (
+          normalizedChatPrompt
+          && !containsUnsafeEnterpriseChatInput(normalizedChatPrompt)
+          && classifyEnterpriseChatTopic(normalizedChatPrompt) !== 'overview'
+          && await trySendLocalDashboardChat(res, parsed, chatFeedbackDir, normalizedChatPrompt)
+        ) {
+          return;
+        }
+
         const { answerDataQuestion } = require('../../scripts/dashboard-chat');
 
-        let projectGeminiKey = '';
-        let projectPerplexityKey = '';
-        try {
-          const projectDir = resolveRequestProjectDir(req, parsed);
-          const envPath = path.join(projectDir, '.env');
-          if (fs.existsSync(envPath)) {
-            const content = fs.readFileSync(envPath, 'utf8');
-            const geminiMatch = content.match(/^(?:GEMINI_API_KEY|GOOGLE_API_KEY|THUMBGATE_GEMINI_API_KEY)=(.*)$/m);
-            if (geminiMatch) {
-              projectGeminiKey = geminiMatch[1].trim().replace(/^["']|["']$/g, '');
-            }
-            const perplexityMatch = content.match(/^(?:PERPLEXITY_API_KEY|THUMBGATE_PERPLEXITY_API_KEY)=(.*)$/m);
-            if (perplexityMatch) {
-              projectPerplexityKey = perplexityMatch[1].trim().replace(/^["']|["']$/g, '');
-            }
-          }
-        } catch (_) {}
+        const projectChatSettings = readProjectChatSettings(req, parsed);
 
-        const result = await answerDataQuestion(body.question || body.q || body.message, {
-          feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
+        const result = await answerDataQuestion(question, {
+          feedbackDir: chatFeedbackDir,
           model: typeof body.model === 'string' ? body.model : undefined,
-          apiKey: projectPerplexityKey || projectGeminiKey || process.env.PERPLEXITY_API_KEY || process.env.THUMBGATE_PERPLEXITY_API_KEY || process.env.GEMINI_API_KEY || process.env.THUMBGATE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '',
+          apiKey: projectChatSettings.perplexityKey || projectChatSettings.geminiKey || process.env.PERPLEXITY_API_KEY || process.env.THUMBGATE_PERPLEXITY_API_KEY || process.env.GEMINI_API_KEY || process.env.THUMBGATE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '',
+          localEndpoint: projectChatSettings.localEndpoint || process.env.THUMBGATE_LOCAL_LLM_ENDPOINT || '',
+          localModel: projectChatSettings.localModel || process.env.THUMBGATE_LOCAL_LLM_MODEL || '',
         });
+
+        // Local-first guarantee: if no model is configured, never hard-fail with
+        // "no_api_key" — fall back to a deterministic local answer. No cloud required.
+        if (
+          !result.ok
+          && (result.error === 'no_api_key' || result.error === 'no_model')
+          && await trySendLocalDashboardChat(res, parsed, chatFeedbackDir, normalizedChatPrompt || question, '(Connect a local model via THUMBGATE_LOCAL_LLM_ENDPOINT for open-ended analysis over your lessons.)')
+        ) {
+          return;
+        }
+
         sendJson(res, result.ok ? 200 : (result.error === 'no_api_key' ? 503 : 400), result);
         return;
       }
@@ -7122,7 +7705,7 @@ ${hidden}
             apiKey: key,
           });
         } catch (e) {
-          validation = { ok: false, error: 'validation_exception', message: String(e && e.message || e) };
+          validation = { ok: false, error: 'validation_exception', message: String(e?.message || e) };
         }
 
         if (!validation.ok) {
@@ -7160,7 +7743,9 @@ ${hidden}
               validatedAt: new Date().toISOString(),
               validatedBy: 'dashboard-save'
             }, null, 2));
-          } catch (_) { /* non-fatal */ }
+          } catch (error) {
+            debugApiFallback('Gemini validation marker unavailable', error);
+          }
           sendJson(res, 200, { ok: true, message: 'Key saved and validated.' });
         } catch (e) {
           sendJson(res, 500, { ok: false, error: 'fs_error', message: 'Failed to write to .env file: ' + e.message });
@@ -7223,14 +7808,20 @@ ${hidden}
         return;
       }
 
-      if (req.method === 'GET' && pathname === '/v1/enterprise/dialogflow/status') {
-        sendJson(res, 200, buildEnterpriseDialogflowStatus());
+      if (req.method === 'GET' && (
+        pathname === '/v1/enterprise/data-chat/status'
+        || pathname === '/v1/enterprise/dialogflow/status'
+      )) {
+        sendJson(res, 200, buildEnterpriseDataChatStatus());
         return;
       }
 
-      if (req.method === 'POST' && pathname === '/v1/enterprise/dialogflow/chat') {
+      if (req.method === 'POST' && (
+        pathname === '/v1/enterprise/data-chat/chat'
+        || pathname === '/v1/enterprise/dialogflow/chat'
+      )) {
         const body = await parseJsonBody(req, 16 * 1024);
-        const result = await answerEnterpriseDialogflowChat({
+        const result = await answerEnterpriseDataChat({
           prompt: body.prompt || body.message || body.query,
           feedbackDir: requestFeedbackDir,
           parsed,
@@ -7719,7 +8310,7 @@ ${hidden}
               feedbackDir: getSafeDataDir(),
               limit: 10,
             });
-          } catch (_) { /* best-effort — conversation window is optional */ }
+          } catch { /* best-effort — conversation window is optional */ }
         }
         const result = captureFeedback({
           signal: body.signal,
@@ -8440,7 +9031,7 @@ ${hidden}
         } catch (err) {
           sendJson(res, 500, {
             error: 'ai_inventory_failed',
-            message: err && err.message ? err.message : 'Unable to scan AI component inventory.',
+            message: err?.message || 'Unable to scan AI component inventory.',
           });
         }
         return;
@@ -8465,7 +9056,7 @@ ${hidden}
         const body = await parseJsonBody(req);
         const snapshot = buildReviewSnapshot(requestFeedbackDir);
         // Override snapshot timestamp with client-provided one if available
-        if (body && body.reviewedAt) {
+        if (body?.reviewedAt) {
           snapshot.reviewedAt = body.reviewedAt;
         }
         writeDashboardReviewState(requestFeedbackDir, snapshot);
@@ -8783,8 +9374,10 @@ module.exports = {
     resolveLocalPageBootstrap,
     getPublicMcpTools,
     getServerCardTools,
+    buildEnterpriseDataChatStatus,
     buildEnterpriseDialogflowStatus,
     buildEnterpriseChatAnswer,
+    answerEnterpriseDataChat,
     answerEnterpriseDialogflowChat,
   },
 };

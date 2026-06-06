@@ -9,6 +9,7 @@
 <link rel="icon" type="image/png" href="/thumbgate-icon.png">
 <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
 <meta name="robots" content="noindex">
+<meta name="referrer" content="same-origin">
 <!-- Privacy-friendly analytics by Plausible -->
 <script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
 <script type="application/ld+json">
@@ -263,7 +264,7 @@
   <div class="panel" id="chatPanel" style="margin-bottom:20px;">
     <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
       <h2 style="margin:0;">💬 Chat with your data</h2>
-      <span style="font-size:13px;color:var(--text-muted);">Ask about your captured lessons, mistakes, and rules — answered by Gemini, grounded only in your data.</span>
+      <span style="font-size:13px;color:var(--text-muted);">Ask about your gates, blocks, feedback, and lessons — answered <strong>locally from your own data</strong>, no cloud. (An optional BYO model only kicks in for open-ended questions.)</span>
     </div>
     <div id="chatMessages" style="max-height:360px;overflow-y:auto;margin-bottom:12px;display:none;padding-right:4px;"></div>
     <div style="display:flex;gap:8px;">
@@ -271,8 +272,8 @@
       <button class="btn" id="chatSend" onclick="sendChat()">Ask</button>
     </div>
     <div id="chatHint" style="font-size:12px;color:var(--text-muted);margin-top:8px;display:flex;align-items:center;gap:8px;">
-      <span>Powered by your captured lessons + Gemini/Perplexity hybrid (local-cloud).</span>
-      <input type="password" id="geminiKeyInput" placeholder="Set GEMINI_API_KEY..." style="background:var(--bg-raised); border:1px solid var(--border); border-radius:4px; padding:4px 8px; color:var(--text); font-family:var(--mono); font-size:11px; flex:1; max-width: 250px;" onkeydown="if(event.key==='Enter'){event.preventDefault();saveGeminiKey();}" />
+      <span>Powered by local dashboard data. Optional Gemini/Perplexity keys only expand open-ended analysis.</span>
+      <input type="password" id="geminiKeyInput" placeholder="Optional GEMINI_API_KEY..." style="background:var(--bg-raised); border:1px solid var(--border); border-radius:4px; padding:4px 8px; color:var(--text); font-family:var(--mono); font-size:11px; flex:1; max-width: 250px;" onkeydown="if(event.key==='Enter'){event.preventDefault();saveGeminiKey();}" />
       <button class="btn-outline" style="padding:4px 10px;font-size:11px;border-radius:4px;" onclick="saveGeminiKey()">Save</button>
     </div>
   </div>
@@ -308,7 +309,7 @@
     <div class="tab active" onclick="switchTab('search')">🔍 Search Memories</div>
     <div class="tab" onclick="switchTab('gates')">🛡️ Active Gates</div>
     <div class="tab" onclick="switchTab('team')">👥 Team</div>
-    <div class="tab" onclick="switchTab('enterprise')">🏢 Enterprise Chat</div>
+    <div class="tab" onclick="switchTab('enterprise')">🏢 Governed Data Chat</div>
     <div class="tab" onclick="switchTab('ai-inventory')">🧬 AI Inventory</div>
     <div class="tab" onclick="switchTab('generated')">🧩 Generated Views</div>
     <div class="tab" onclick="switchTab('settings')">⚙️ Policy Origins</div>
@@ -416,25 +417,25 @@
   <!-- ENTERPRISE CHAT TAB -->
   <div class="tab-content" id="tab-enterprise">
     <div class="templates-section">
-      <h2>Enterprise Dialogflow Data Chat</h2>
-      <p class="template-summary">Ask questions over local ThumbGate feedback, lessons, gates, team posture, and Vertex/DFCX readiness. This local panel uses ThumbGate's DFCX-compatible guard before data access; it does not claim a live Google Dialogflow CX agent unless deployment evidence is configured.</p>
+      <h2>Governed Data Chat</h2>
+      <p class="template-summary">Ask questions over your local ThumbGate data (lessons, raw feedback via LanceDB vectors, gate stats, receipts). Uses local retrieval plus your configured LLM, including open-source/local endpoints through <code>THUMBGATE_LOCAL_LLM_ENDPOINT</code>. Dialogflow is not the chatbot layer; DFCX/Vertex cards are optional deployment-readiness checks for buyers who run their own Google agent stack.</p>
       <div class="enterprise-chat-layout">
         <div class="panel">
           <h3>Chat With Local ThumbGate Data</h3>
-          <textarea class="enterprise-chat-box" id="enterpriseChatPrompt" placeholder="Ask: What mistakes are recurring? Which gates blocked the most? Is Vertex configured? What is our DFCX readiness?"></textarea>
+          <textarea class="enterprise-chat-box" id="enterpriseChatPrompt" placeholder="Ask: What mistakes are recurring? Which gates blocked the most? Are we running local-only or cloud-integrated?"></textarea>
           <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap;">
             <button class="btn" id="enterpriseChatBtn" onclick="sendEnterpriseChat()">Ask ThumbGate</button>
             <button class="btn-outline" onclick="setEnterprisePrompt('Which gates are blocking risky actions?')">Gates</button>
             <button class="btn-outline" onclick="setEnterprisePrompt('What feedback mistakes keep repeating?')">Feedback</button>
-            <button class="btn-outline" onclick="setEnterprisePrompt('Is Vertex and DFCX configured?')">Cloud</button>
+            <button class="btn-outline" onclick="setEnterprisePrompt('Are we running local-only or cloud-integrated?')">Runtime</button>
           </div>
           <div class="enterprise-answer" id="enterpriseChatAnswer">Connect your dashboard, then ask about local ThumbGate data.</div>
           <div class="enterprise-source-list" id="enterpriseChatSources"></div>
         </div>
         <div class="panel">
-          <h3>Enterprise Readiness</h3>
+          <h3>Runtime Readiness</h3>
           <div class="inventory-tools" id="enterpriseStatusCards"><div class="loading">Loading enterprise status...</div></div>
-          <div class="template-summary" style="margin-top:14px;margin-bottom:0;">Live DFCX proof must come from the Conversational Agents console, deployed webhook URL, Cloud Run logs, or the Dialogflow CX REST API <code style="font-family:var(--mono);font-size:12px;">projects.locations.agents</code>.</div>
+          <div class="template-summary" style="margin-top:14px;margin-bottom:0;">The chat itself is local RAG plus your LLM. Open-source/local models are the default enterprise path; DFCX/Vertex readiness is optional evidence for teams that already operate Google agents in their own tenancy.</div>
         </div>
       </div>
     </div>
@@ -872,7 +873,10 @@ async function connect(options) {
       tierName = data.tier;
     }
     
-    if (data.geminiKeyStatus === 'validated' || data.geminiValidatedAt) {
+    if (data.localLlmConfigured) {
+      var modelLabel = data.localLlmModel ? ' (' + data.localLlmModel + ')' : '';
+      document.getElementById('chatHint').innerHTML = '<span style="color:var(--green)">✓ Local LLM' + modelLabel + ' ready. Chat answers are generated locally — no cloud calls.</span>';
+    } else if (data.geminiKeyStatus === 'validated' || data.geminiValidatedAt) {
       var when = data.geminiValidatedAt ? ' (validated ' + new Date(data.geminiValidatedAt).toLocaleTimeString() + ')' : '';
       document.getElementById('chatHint').innerHTML = '<span style="color:var(--green)">✓ Gemini API key validated' + when + '. You can now chat with your data.</span>';
     } else if (data.perplexityConfigured) {
@@ -1308,7 +1312,7 @@ function renderDashboardData(data) {
   renderTemplates(data.templateLibrary || {});
   renderInsights(data);
   loadAiInventory();
-  loadEnterpriseDialogflowStatus();
+  loadEnterpriseDataChatStatus();
 }
 
 async function loadAiInventory() {
@@ -1813,24 +1817,29 @@ function renderEnterpriseStatus(status) {
   if (!target) return;
   var vertex = status && status.vertex ? status.vertex : {};
   var dfcx = status && status.dfcx ? status.dfcx : {};
+  var localLlm = status && status.chat ? status.chat.localLlmEndpointConfigured : false;
+  var connectionMode = localLlm
+    ? 'Local/open-source LLM configured'
+    : (dfcx.liveAgentConfigured ? 'Google agent guard configured' : (vertex.configured ? 'Vertex routing configured' : 'Local deterministic fallback'));
   var rows = [
-    { name: 'Vertex routing', value: vertex.configured ? 'Configured' : 'Not configured', note: vertex.projectId ? ('Project: ' + vertex.projectId + ' · ' + (vertex.location || '')) : 'Run setup-vertex or set GOOGLE_VERTEX_PROJECT.' },
-    { name: 'DFCX live agent', value: dfcx.liveAgentConfigured ? 'Env present' : 'Not proven', note: dfcx.verification || 'Verify with REST/console evidence.' },
-    { name: 'Fulfillment proxy', value: dfcx.fulfillmentProxyConfigured ? 'Configured' : 'Not configured', note: 'Set THUMBGATE_DFCX_FULFILLMENT_URL for a deployed proxy.' },
-    { name: 'gcloud CX command', value: 'Unsupported', note: 'Do not use the old alpha gcloud CX command group; use REST API or console.' }
+    { name: 'Chat runtime', value: connectionMode, note: localLlm ? 'Using THUMBGATE_LOCAL_LLM_ENDPOINT for local/open-source inference.' : 'Local deterministic summaries work without cloud credentials; configure a local LLM for generated answers.' },
+    { name: 'Data boundary', value: 'Local by default', note: 'Dashboard answers are grounded in local ThumbGate data and do not require Google Cloud.' },
+    { name: 'Vertex adapter', value: vertex.configured ? 'Configured' : 'Optional', note: vertex.projectId ? ('Project: ' + vertex.projectId + ' · ' + (vertex.location || '')) : 'Only needed when the buyer chooses Google-hosted routing.' },
+    { name: 'Dialogflow guard adapter', value: dfcx.liveAgentConfigured ? 'Configured' : 'Optional', note: dfcx.verification || 'Only needed for customer-owned Dialogflow CX agent deployments.' },
+    { name: 'Legacy gcloud CX command', value: 'Unsupported', note: 'Do not use the old alpha gcloud CX command group; use REST API or console for DFCX proof.' }
   ];
   target.innerHTML = rows.map(function(row) {
     return '<div class="inventory-row"><div><div class="inventory-name">' + escHtml(row.name) + '</div><div class="inventory-subtitle">' + escHtml(row.note) + '</div></div><span class="remediation-action">' + escHtml(row.value) + '</span></div>';
   }).join('');
 }
 
-async function loadEnterpriseDialogflowStatus() {
+async function loadEnterpriseDataChatStatus() {
   if (!API_KEY || isDemo) {
     renderEnterpriseStatus({ vertex: {}, dfcx: { verification: 'Connect to load local status.' } });
     return;
   }
   try {
-    var res = await fetch('/v1/enterprise/dialogflow/status', { headers: getHeaders() });
+    var res = await fetch('/v1/enterprise/data-chat/status', { headers: getHeaders() });
     if (!res.ok) throw new Error('status unavailable');
     renderEnterpriseStatus(await res.json());
   } catch (err) {
@@ -1860,26 +1869,27 @@ async function sendEnterpriseChat() {
   }
   button.disabled = true;
   answer.className = 'enterprise-answer';
-  answer.textContent = 'Running the DFCX guard and reading local dashboard data...';
+  answer.textContent = 'Local RAG (LanceDB + lessons) plus your LLM...';
   sources.innerHTML = '';
   try {
-    var res = await fetch('/v1/enterprise/dialogflow/chat', {
+    var res = await fetch('/v1/chat', {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify({ prompt: prompt })
+      body: JSON.stringify({ question: prompt })
     });
     var data = await res.json();
-    if (!res.ok) throw new Error(data.detail || data.error || 'chat failed');
-    answer.className = 'enterprise-answer' + (data.blocked ? ' blocked' : '');
-    answer.textContent = data.answer || 'No answer returned.';
+    if (!res.ok) throw new Error(data.detail || data.error || data.message || 'chat failed');
+    answer.className = 'enterprise-answer';
+    answer.textContent = data.answer || data.message || 'No answer returned.';
     var list = Array.isArray(data.sources) ? data.sources : [];
     sources.innerHTML = list.map(function(source) {
-      return '<span class="enterprise-source">' + escHtml(source) + '</span>';
+      var label = typeof source === 'string' ? source : (source && (source.title || source.id || ''));
+      return '<span class="enterprise-source">' + escHtml(label) + '</span>';
     }).join('');
-    renderEnterpriseStatus(data.status || {});
+    loadEnterpriseDataChatStatus();
   } catch (err) {
     answer.className = 'enterprise-answer blocked';
-    answer.textContent = err.message || 'Enterprise chat failed.';
+    answer.textContent = err.message || 'Chat failed. Configure a local LLM endpoint or API key for RAG.';
   } finally {
     button.disabled = false;
   }
@@ -2472,5 +2482,6 @@ function renderGateAuditChartFromData(gateAudit) {
 }
 
 </script>
+<script src="/js/buyer-intent.js"></script>
 </body>
 </html>

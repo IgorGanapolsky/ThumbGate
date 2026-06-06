@@ -41,6 +41,8 @@ const CLAIM_PATTERNS = [
   /\b(?:is|are|it'?s)\s+(?:now\s+)?(?:fully\s+)?(?:fixed|resolved|merged|shipped)\b/i,
   /\bproduction[-\s]ready\b/i,
   /\beverything\s+(?:is\s+)?(?:done|working|ready)\b/i,
+  /\b(?:github|repo|repository)\s+(?:about|metadata|description|topics?)\b.*\b(?:updated|verified|fixed|match(?:es|ed)?)\b/i,
+  /\b(?:about|metadata|description|topics?)\b.*\b(?:updated|verified|fixed|match(?:es|ed)?)\b.*\b(?:github|repo|repository)\b/i,
 ];
 
 // Proof-of-verification patterns. If the SAME turn included one of these

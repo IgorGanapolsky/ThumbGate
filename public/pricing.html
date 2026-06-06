@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 __GOOGLE_SITE_VERIFICATION_META__
 <title>Pricing — ThumbGate</title>
-<meta name="description" content="ThumbGate pricing: free CLI forever, $19/mo Pro dashboard, and intake-led Team enforcement at $49/seat after scope. One clear subscription path.">
+<meta name="description" content="ThumbGate pricing: free CLI forever, $19/mo Pro dashboard, and custom Enterprise enforcement scoped after intake. One clear subscription path.">
 <meta property="og:title" content="Pricing — ThumbGate">
-<meta property="og:description" content="Free CLI, Pro self-serve, and Team after workflow scope. No mixed consulting checkout maze.">
+<meta property="og:description" content="Free CLI, Pro self-serve, and Enterprise after workflow scope. No mixed consulting checkout maze.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="__APP_ORIGIN__/pricing">
 <meta property="og:image" content="/og.png">
@@ -28,6 +28,57 @@ __GA_BOOTSTRAP__
   const proPriceDollars = Number('__PRO_PRICE_DOLLARS__') || 19;
 </script>
 
+<script>
+  window.thumbgatePricingTelemetry = window.thumbgatePricingTelemetry || {};
+  window.trackPricingTelemetry = function(eventType, data) {
+    const params = new URLSearchParams(window.location.search);
+    const payload = Object.assign({
+      eventType,
+      clientType: 'web',
+      page: '/pricing',
+      source: params.get('utm_source') || 'pricing',
+      utmSource: params.get('utm_source') || 'pricing',
+      utmMedium: params.get('utm_medium') || 'pricing_page',
+      utmCampaign: params.get('utm_campaign') || 'pricing_page',
+      utmContent: params.get('utm_content') || null,
+      utmTerm: params.get('utm_term') || null,
+      traceId: params.get('trace_id') || null,
+      acquisitionId: params.get('acquisition_id') || serverAcquisitionId || null,
+      visitorId: params.get('visitor_id') || serverVisitorId || null,
+      sessionId: params.get('visitor_session_id') || params.get('session_id') || serverSessionId || null,
+      referrer: document.referrer || null,
+      landingPath: '/pricing'
+    }, data || {});
+    const body = JSON.stringify(payload);
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon('/v1/telemetry/ping', new Blob([body], { type: 'application/json' }));
+      return;
+    }
+    fetch('/v1/telemetry/ping', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body,
+      keepalive: true
+    }).catch(function(){});
+  };
+  document.addEventListener('DOMContentLoaded', function() {
+    trackPricingTelemetry('pricing_page_view', { serverTelemetryCaptured });
+    document.querySelectorAll('[data-pricing-cta]').forEach(function(link) {
+      link.addEventListener('click', function() {
+        trackPricingTelemetry('pricing_cta_click', {
+          ctaId: link.getAttribute('data-cta-id') || null,
+          ctaPlacement: link.getAttribute('data-cta-placement') || 'pricing',
+          tier: link.getAttribute('data-tier') || null,
+          planId: link.getAttribute('data-plan-id') || null,
+          billingCycle: link.getAttribute('data-billing-cycle') || null,
+          price: link.getAttribute('data-price') || null,
+          href: link.getAttribute('href') || null
+        });
+      });
+    });
+  });
+</script>
+
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -38,9 +89,9 @@ __GA_BOOTSTRAP__
   "url": "__APP_ORIGIN__/pricing",
   "offers": [
     { "@type": "Offer", "name": "ThumbGate CLI (Free)", "price": "0", "priceCurrency": "USD" },
-    { "@type": "Offer", "name": "ThumbGate Pro Monthly", "price": "__PRO_PRICE_DOLLARS__", "priceCurrency": "USD", "url": "__APP_ORIGIN__/checkout/pro?plan_id=pro&billing_cycle=monthly&landing_path=%2Fpricing" },
-    { "@type": "Offer", "name": "ThumbGate Pro Annual", "price": "149", "priceCurrency": "USD", "url": "__APP_ORIGIN__/checkout/pro?plan_id=pro&billing_cycle=annual&landing_path=%2Fpricing" },
-    { "@type": "Offer", "name": "ThumbGate Team", "price": "49", "priceCurrency": "USD", "url": "__APP_ORIGIN__/#workflow-sprint-intake" }
+    { "@type": "Offer", "name": "ThumbGate Pro Monthly", "price": "__PRO_PRICE_DOLLARS__", "priceCurrency": "USD", "url": "__APP_ORIGIN__/checkout/pro?confirm=1&plan_id=pro&billing_cycle=monthly&landing_path=%2Fpricing" },
+    { "@type": "Offer", "name": "ThumbGate Pro Annual", "price": "149", "priceCurrency": "USD", "url": "__APP_ORIGIN__/checkout/pro?confirm=1&plan_id=pro&billing_cycle=annual&landing_path=%2Fpricing" },
+    { "@type": "Offer", "name": "ThumbGate Enterprise", "priceCurrency": "USD", "url": "__APP_ORIGIN__/#workflow-sprint-intake" }
   ]
 }
 </script>
@@ -51,9 +102,9 @@ __GA_BOOTSTRAP__
   "@type": "FAQPage",
   "mainEntity": [
     { "@type": "Question", "name": "What does Pro add over the free CLI?", "acceptedAnswer": { "@type": "Answer", "text": "Free gives you 5 captures/day and 3 active rules, running entirely on your machine. Pro is the hosted layer: unlimited captures, unlimited rules, lesson sync across machines, a dashboard without self-hosting, managed adapter updates, and DPO export. You're paying for infrastructure we run, not features we hide." } },
-    { "@type": "Question", "name": "Does ThumbGate send my code to the cloud?", "acceptedAnswer": { "@type": "Answer", "text": "No. The CLI is local-first — no data leaves your machine. Pro and Team add hosted sync for dashboards and shared lessons, but your source code stays local." } },
-    { "@type": "Question", "name": "When should I pick Team over Pro?", "acceptedAnswer": { "@type": "Answer", "text": "When one engineer's correction should protect the whole team. Team shares the lesson database across seats so a fix in one repo prevents the same mistake in every repo." } },
-    { "@type": "Question", "name": "Can I cancel anytime?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Pro and Team are month-to-month with a 7-day refund window on the first charge. Cancel from the billing portal and your subscription ends at the period close." } }
+    { "@type": "Question", "name": "Does ThumbGate send my code to the cloud?", "acceptedAnswer": { "@type": "Answer", "text": "No. The CLI is local-first — no data leaves your machine. Pro and Enterprise add hosted sync for dashboards and shared lessons, but your source code stays local." } },
+    { "@type": "Question", "name": "When should I pick Enterprise over Pro?", "acceptedAnswer": { "@type": "Answer", "text": "When one engineer's correction should protect the whole team. Enterprise shares the lesson database across the org so a fix in one repo prevents the same mistake in every repo." } },
+    { "@type": "Question", "name": "Can I cancel anytime?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Pro and Enterprise are month-to-month with a 7-day refund window on the first charge. Cancel from the billing portal and your subscription ends at the period close." } }
   ]
 }
 </script>
@@ -218,7 +269,7 @@ __GA_BOOTSTRAP__
       <a href="/pricing" style="color:var(--text);">Pricing</a>
       <a href="/guide">Guide</a>
       <a href="/dashboard">Dashboard</a>
-      <a class="nav-cta" href="/checkout/pro?utm_source=pricing&utm_medium=nav&utm_campaign=pricing_page&plan_id=pro&landing_path=%2Fpricing">Start Pro</a>
+      <a class="nav-cta" href="/checkout/pro?confirm=1&utm_source=pricing&utm_medium=nav&utm_campaign=pricing_page&cta_id=pricing_nav_start_pro&cta_placement=nav&plan_id=pro&landing_path=%2Fpricing" data-pricing-cta data-cta-id="pricing_nav_start_pro" data-cta-placement="nav" data-tier="pro" data-plan-id="pro" data-billing-cycle="monthly" data-price="19">Start Pro</a>
     </div>
   </div>
 </nav>
@@ -244,7 +295,7 @@ __GA_BOOTSTRAP__
         <li>PreToolUse hook blocking with built-in safety checks</li>
         <li>Runs 100% local — no account, no signup, no data leaves your machine</li>
       </ul>
-      <a class="btn-install" href="/go/install?utm_source=pricing&utm_medium=free_card" onclick="try{posthog.capture('pricing_cta_click',{cta:'install_free',tier:'free',placement:'pricing_page'})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'install_free',tier:'free'}})}catch(_){}">Install free</a>
+      <a class="btn-install" href="/go/install?utm_source=pricing&utm_medium=free_card&cta_id=pricing_install_free&cta_placement=free_card" data-pricing-cta data-cta-id="pricing_install_free" data-cta-placement="free_card" data-tier="free" data-plan-id="free" data-price="0" onclick="try{posthog.capture('pricing_cta_click',{cta:'install_free',tier:'free',placement:'pricing_page'})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'install_free',tier:'free'}})}catch(_){}">Install free</a>
     </div>
 
     <div class="price-card highlight" id="pro">
@@ -262,45 +313,33 @@ __GA_BOOTSTRAP__
         <li><strong>Auto-connect</strong> — new agent surfaces appear automatically after setup</li>
         <li>7-day refund window. Cancel anytime.</li>
       </ul>
-      <a class="btn-pro" href="/checkout/pro?utm_source=pricing&utm_medium=hero_card&utm_campaign=pricing_page&plan_id=pro&landing_path=%2Fpricing" onclick="try{posthog.capture('pricing_cta_click',{cta:'start_pro',tier:'pro',placement:'pricing_page',price:19})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'start_pro',tier:'pro'}})}catch(_){}">Start Pro — $19/mo</a>
+      <a class="btn-pro" href="/checkout/pro?confirm=1&utm_source=pricing&utm_medium=hero_card&utm_campaign=pricing_page&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&billing_cycle=monthly&landing_path=%2Fpricing" data-pricing-cta data-cta-id="pricing_pro" data-cta-placement="pricing" data-tier="pro" data-plan-id="pro" data-billing-cycle="monthly" data-price="19" onclick="try{posthog.capture('pricing_cta_click',{cta:'start_pro',tier:'pro',placement:'pricing_page',price:19})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'start_pro',tier:'pro'}})}catch(_){}">Start Pro — $19/mo</a>
       <p class="btn-sub">or $149/year (save 35%)</p>
     </div>
 
-    <div class="price-card team-card" id="team">
-      <div class="tier">Team</div>
-      <div class="price">$49<span>/seat/mo</span></div>
-      <div class="price-sub">Shared enforcement memory for the whole team. One engineer's save protects every agent.</div>
+    <div class="price-card enterprise-card" id="enterprise">
+      <div class="tier">Enterprise</div>
+      <div class="price">Custom<span> / scoped after intake</span></div>
+      <div class="price-sub">Shared enforcement for the whole team and regulated workflows. One engineer's save protects every agent.</div>
       <ul>
-        <li>Everything in Pro for each seat</li>
+        <li>Everything in Pro, for every developer and agent</li>
         <li><strong>Shared lesson database</strong> — one engineer's fix protects every agent on the team</li>
         <li><strong>Org dashboard</strong> — visibility across all agent surfaces and developers</li>
-        <li>Check template library for deploys, publish, and DB operations</li>
-        <li>Email support during pilot rollout</li>
-        <li>3-seat minimum after scope; rollout starts only after workflow and proof review are explicit</li>
-      </ul>
-      <a class="btn-team" href="/?utm_source=pricing&utm_medium=team_card&utm_campaign=team_intake&cta_id=pricing_team_intake&cta_placement=pricing&plan_id=team#workflow-sprint-intake" onclick="try{posthog.capture('pricing_cta_click',{cta:'team_intake',tier:'team',placement:'pricing_page',price:0})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'team_intake',tier:'team'}})}catch(_){}">Send team workflow first</a>
-      <p class="btn-sub">Rollout starts through intake so the workflow is scoped before checkout.</p>
-    </div>
-
-  </div>
-
-  <div class="enterprise-band" style="max-width:920px;margin:0 auto 8px;padding:24px 28px;border:1px solid rgba(34,211,238,0.24);border-radius:10px;background:#090d12;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;">
-    <div style="flex:1 1 460px;text-align:left;">
-      <div class="tier" style="color:var(--cyan);">Enterprise</div>
-      <div class="price-sub" style="margin:4px 0 10px;">For regulated teams that need agent checks routed through their own cloud — talk to us.</div>
-      <ul style="margin:0;padding-left:18px;font-size:13px;color:var(--text-muted);line-height:1.7;">
-        <li><strong>Vertex AI / VPC gating</strong> — route agent checks through Gemini models in your Google Cloud project (<code>npx thumbgate setup-vertex</code>)</li>
+        <li><strong>Dialogflow CX fulfillment guard</strong> — put ThumbGate's pre-action gate in front of your Dialogflow CX webhook fulfillment, in your own GCP tenant, so risky or repeat turns are blocked before they touch a DB, CRM, or billing system (white-glove design-partner pilot)</li>
+        <li><strong>Vertex AI / VPC gating</strong> — route agent checks through Gemini in your own Google Cloud project (<code>npx thumbgate setup-vertex</code>)</li>
         <li><strong>Regulatory gate templates</strong> — legal intake, financial compliance, healthcare</li>
-        <li>Custom policy layers scoped to firm / practice area</li>
-        <li>Compliance audit export + dedicated onboarding with SLA</li>
+        <li>Custom policy layers, compliance audit export, approval boundaries, SSO, and dedicated onboarding with SLA</li>
+        <li>Rollout starts only after workflow and proof review are explicit</li>
       </ul>
+      <a class="btn-team" href="/?utm_source=pricing&utm_medium=enterprise_card&utm_campaign=enterprise_intake&cta_id=pricing_enterprise_intake&cta_placement=pricing&plan_id=enterprise#workflow-sprint-intake" data-pricing-cta data-cta-id="pricing_enterprise_intake" data-cta-placement="pricing" data-tier="enterprise" data-plan-id="enterprise" data-price="0" onclick="try{posthog.capture('pricing_cta_click',{cta:'enterprise_intake',tier:'enterprise',placement:'pricing_page',price:0})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'enterprise_intake',tier:'enterprise'}})}catch(_){}">Talk to us</a>
+      <p class="btn-sub">Custom pricing, scoped through intake so the workflow is explicit before checkout.</p>
     </div>
-    <a class="btn-team" style="white-space:nowrap;" href="/?utm_source=pricing&utm_medium=enterprise_band&utm_campaign=enterprise_intake&cta_id=pricing_enterprise&cta_placement=pricing&plan_id=enterprise#workflow-sprint-intake" onclick="try{posthog.capture('pricing_cta_click',{cta:'enterprise_intake',tier:'enterprise',placement:'pricing_page',price:0})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'enterprise_intake',tier:'enterprise'}})}catch(_){}">Talk to us</a>
+
   </div>
 
   <div style="text-align:center;margin:32px 0;color:var(--text-muted);font-size:14px;">
     Need founder help? Do not buy a blind diagnostic from a pricing table.
-    <a href="/?utm_source=pricing&utm_medium=scope_first&utm_campaign=team_intake&cta_id=pricing_scope_first&cta_placement=pricing_note&plan_id=team#workflow-sprint-intake" style="color:var(--cyan);text-decoration:none;font-weight:600;" onclick="try{posthog.capture('pricing_cta_click',{cta:'scope_first',tier:'team',price:0})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'scope_first',tier:'team'}})}catch(_){}">Send the workflow first</a> — then we scope the smallest paid rollout that can prove one repeated failure is blocked.
+    <a href="/?utm_source=pricing&utm_medium=scope_first&utm_campaign=enterprise_intake&cta_id=pricing_scope_first&cta_placement=pricing_note&plan_id=enterprise#workflow-sprint-intake" data-pricing-cta data-cta-id="pricing_scope_first" data-cta-placement="pricing_note" data-tier="enterprise" data-plan-id="enterprise" data-price="0" style="color:var(--cyan);text-decoration:none;font-weight:600;" onclick="try{posthog.capture('pricing_cta_click',{cta:'scope_first',tier:'enterprise',price:0})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'scope_first',tier:'enterprise'}})}catch(_){}">Send the workflow first</a> — then we scope the smallest paid rollout that can prove one repeated failure is blocked.
   </div>
 </section>
 
@@ -318,15 +357,15 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q">Does ThumbGate send my code to the cloud?</div>
-        <div class="faq-a">No. The CLI is local-first and no source code leaves your machine. Pro and Team add hosted sync for dashboards and shared lessons, but your code stays local.</div>
+        <div class="faq-a">No. The CLI is local-first and no source code leaves your machine. Pro and Enterprise add hosted sync for dashboards and shared lessons, but your code stays local.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q">When should I pick Team over Pro?</div>
-        <div class="faq-a">When one engineer's correction should protect the whole team. Team shares the lesson database across seats so a fix in one repo prevents the same mistake in every repo.</div>
+        <div class="faq-q">When should I pick Enterprise over Pro?</div>
+        <div class="faq-a">When one engineer's correction should protect the whole team. Enterprise shares the lesson database across the org so a fix in one repo prevents the same mistake in every repo.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q">Can I cancel anytime?</div>
-        <div class="faq-a">Yes. Pro and Team are month-to-month with a 7-day refund window on the first charge. Cancel from the billing portal and your subscription ends at the period close.</div>
+        <div class="faq-a">Yes. Pro and Enterprise are month-to-month with a 7-day refund window on the first charge. Cancel from the billing portal and your subscription ends at the period close.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q">What happens if I stop paying?</div>

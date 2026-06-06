@@ -32,7 +32,8 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
-const { execSync, execFileSync } = require('child_process');
+const http = require('http');
+const { execSync, execFileSync, execFile, spawn } = require('child_process');
 const {
   codexAutoUpdateCliEntry,
   codexAutoUpdateMcpEntry,
@@ -237,6 +238,58 @@ function parseArgs(argv) {
     args[key] = true;
   });
   return args;
+}
+
+function probeDash(port) {
+  return new Promise((resolve) => {
+    const req = http.get({ hostname: '127.0.0.1', port, path: '/health', timeout: 750 }, (res) => {
+      res.resume();
+      resolve(res.statusCode >= 200 && res.statusCode < 500);
+    });
+    req.on('error', () => resolve(false));
+    req.on('timeout', () => { req.destroy(); resolve(false); });
+  });
+}
+
+async function waitDash(port, timeoutMs = 8000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await probeDash(port)) return true;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  return false;
+}
+
+async function ensureDash(port) {
+  if (await probeDash(port)) {
+    return { started: false, pid: null };
+  }
+
+  const serverPath = path.join(PKG_ROOT, 'src', 'api', 'server.js');
+  const child = spawn(process.execPath, [serverPath], {
+    cwd: PKG_ROOT,
+    detached: true,
+    env: { ...process.env, PORT: String(port), THUMBGATE_ALLOW_INSECURE: process.env.THUMBGATE_ALLOW_INSECURE || 'true' },
+    stdio: 'ignore',
+  });
+  child.unref();
+
+  if (!(await waitDash(port))) {
+    throw new Error('Dashboard API timeout');
+  }
+
+  return { started: true, pid: child.pid };
+}
+
+function openBrowser(url) {
+  if (process.env.THUMBGATE_DASHBOARD_NO_OPEN === '1') {
+    console.log(`Ready: ${url}`);
+    return Promise.resolve();
+  }
+  const [command, args] = ({ darwin: ['open', [url]], win32: ['cmd', ['/c', 'start', '', url]] }[process.platform] || ['xdg-open', [url]]);
+  return new Promise((resolve, reject) => {
+    execFile(command, args, (err) => (err ? reject(err) : resolve()));
+  });
 }
 
 function parseTtlMs(value, fallbackMs = 5 * 60 * 1000) {
@@ -512,6 +565,20 @@ function setupCodex() {
 }
 
 function setupGemini() {
+  // Try to import custom commands as a Gemini plugin if the CLI is installed
+  const { execSync } = require('child_process');
+  let pluginImported = false;
+  for (const binName of ['agy', 'gemini']) {
+    try {
+      execSync(`${binName} plugin import "${PKG_ROOT}" --force`, { stdio: 'ignore' });
+      console.log(`  Gemini: imported thumbgate plugin via ${binName}`);
+      pluginImported = true;
+      break;
+    } catch (err) {
+      // ignore errors if command doesn't exist or fails
+    }
+  }
+
   const settingsPath = path.join(HOME, '.gemini', 'settings.json');
   if (fs.existsSync(settingsPath)) {
     const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
@@ -532,13 +599,14 @@ function setupGemini() {
       }
     }
 
-    if (!changed) return false;
+    if (!changed) return pluginImported;
     fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
     console.log('  Gemini: updated ~/.gemini/settings.json');
     return true;
   }
   // Fallback: project-level .gemini/settings.json
-  return mergeMcpJson(path.join(CWD, '.gemini', 'settings.json'), 'Gemini', 'project');
+  const mcpChanged = mergeMcpJson(path.join(CWD, '.gemini', 'settings.json'), 'Gemini', 'project');
+  return pluginImported || mcpChanged;
 }
 
 function setupAmp() {
@@ -856,6 +924,32 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
 
   // Always create .mcp.json (project-level MCP config used by Claude, Codex, Cursor)
   mergeMcpJson(path.join(CWD, '.mcp.json'), 'MCP');
+
+  // Copy custom slash commands (.claude/commands/*.md) to the project's config directories
+  const pkgCommandsDir = path.join(PKG_ROOT, '.claude', 'commands');
+  if (fs.existsSync(pkgCommandsDir)) {
+    const targets = [
+      path.join(CWD, '.claude', 'commands'),
+      path.join(CWD, '.gemini', 'commands'),
+      path.join(CWD, '.antigravitycli', 'commands')
+    ];
+    for (const projectCommandsDir of targets) {
+      if (!fs.existsSync(projectCommandsDir)) {
+        fs.mkdirSync(projectCommandsDir, { recursive: true });
+      }
+      try {
+        const files = fs.readdirSync(pkgCommandsDir);
+        for (const file of files) {
+          if (file.endsWith('.md')) {
+            fs.copyFileSync(path.join(pkgCommandsDir, file), path.join(projectCommandsDir, file));
+          }
+        }
+      } catch (err) {
+        console.log(`  Failed to copy custom commands to ${path.relative(CWD, projectCommandsDir)}: ${err.message}`);
+      }
+    }
+    console.log('Scaffolded custom slash commands directories (.claude, .gemini, .antigravitycli)');
+  }
 
   // Auto-detect and configure platform-specific locations
   console.log('');
@@ -2502,6 +2596,19 @@ function install() {
 }
 
 async function gateCheck() {
+  // Explicit emergency escape hatch ONLY. The 2026-06-03 hotfix made this
+  // bypass-by-default, which silently disabled ThumbGate's enforcement entirely
+  // (the firewall approved everything). Restored 2026-06-04: enforcement runs by
+  // default in warn-by-default posture (see gates-engine applyEnforcementPosture);
+  // set THUMBGATE_HOTFIX_BYPASS=1 to disable all checks if a gate ever misfires.
+  if (process.env.THUMBGATE_HOTFIX_BYPASS === '1') {
+    process.stdout.write(JSON.stringify({
+      decision: 'approve',
+      reason: 'hotfix-bypass-opt-in',
+      hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: '' }
+    }) + '\n');
+    return;
+  }
   try {
     const payload = readStdinText();
     const input = payload ? JSON.parse(payload) : {};
@@ -2659,28 +2766,23 @@ function installMcp() {
 function dashboard() {
   const args = parseArgs(process.argv.slice(3));
   if (args.open || args.web) {
-    const { exec } = require('child_process');
     const { resolveProjectDir } = require(path.join(PKG_ROOT, 'scripts', 'feedback-paths'));
     const projectDir = resolveProjectDir({ cwd: process.cwd(), env: process.env });
     const port = process.env.PORT || 3456;
-    const url = `http://localhost:${port}/dashboard?project=${encodeURIComponent(projectDir)}`;
-    
-    console.log(`Opening browser to: ${url}`);
-    let command;
-    if (process.platform === 'darwin') {
-      command = `open "${url}"`;
-    } else if (process.platform === 'win32') {
-      command = `start "" "${url}"`;
-    } else {
-      command = `xdg-open "${url}"`;
-    }
-    
-    exec(command, (err) => {
-      if (err) {
-        console.error('Failed to open browser:', err.message);
-      }
-      process.exit(err ? 1 : 0);
-    });
+    const url = `http://127.0.0.1:${port}/dashboard?project=${encodeURIComponent(projectDir)}`;
+
+    ensureDash(Number(port))
+      .then((server) => {
+        if (server.started) {
+          console.log(`API ${port} pid ${server.pid}`);
+        }
+        return openBrowser(url);
+      })
+      .then(() => process.exit(0))
+      .catch((err) => {
+        console.error(err && err.message ? err.message : err);
+        process.exit(1);
+      });
     return;
   }
 
@@ -3262,8 +3364,13 @@ switch (COMMAND) {
     break;
   }
   case 'brain': {
-    const brainArgs = parseArgs(process.argv.slice(3));
-    process.exitCode = cmdBrain(brainArgs);
+    const sub = process.argv.slice(3).find((arg) => !arg.startsWith('--'));
+    if (sub && ['init', 'context', 'remember', 'check', 'cleanup', 'status'].includes(sub)) {
+      brain();
+    } else {
+      const brainArgs = parseArgs(process.argv.slice(3));
+      process.exitCode = cmdBrain(brainArgs);
+    }
     break;
   }
   case 'billing:setup':
@@ -3530,6 +3637,47 @@ switch (COMMAND) {
   case 'self-heal':
     selfHeal();
     break;
+  case 'workflow':
+  case 'swarm': {
+    const args = parseArgs(process.argv.slice(3));
+    let objective = args.objective;
+    if (!objective) {
+      const firstPositional = process.argv.slice(3).find((a, idx, arr) => {
+        if (a.startsWith('--')) return false;
+        const prev = arr[idx - 1];
+        if (prev && prev.startsWith('--') && !prev.includes('=')) return false;
+        return true;
+      });
+      if (firstPositional) objective = firstPositional;
+    }
+    if (!objective) {
+      console.error('Error: objective is required. Run with --objective="your objective" or provide it as a positional argument.');
+      process.exit(1);
+    }
+    const { executeWorkflow } = require(path.join(PKG_ROOT, 'scripts', 'parallel-workflow-orchestrator'));
+    const concurrency = args.concurrency ? Number(args.concurrency) : undefined;
+    const timeoutMs = args.timeoutMs ? Number(args.timeoutMs) : undefined;
+    executeWorkflow(objective, { concurrency, timeoutMs, cwd: CWD })
+      .then((res) => {
+        if (args.json) {
+          console.log(JSON.stringify(res, null, 2));
+        } else {
+          console.log(`\n✅ Parallel workflow execution complete.`);
+          console.log(`  Workflow ID: ${res.workflowId}`);
+          console.log(`  Objective  : ${res.objective}`);
+          console.log(`  Duration   : ${(res.durationMs / 1000).toFixed(2)}s`);
+          console.log(`  Report Path: ${res.reportPath}`);
+          console.log(`\nReport Summary:\n`);
+          console.log(fs.readFileSync(res.reportPath, 'utf8'));
+        }
+        process.exit(0);
+      })
+      .catch((err) => {
+        console.error('Workflow execution failed:', err.message);
+        process.exit(1);
+      });
+    break;
+  }
   case 'trial': {
     // Show trial status — connects the 4K monthly npm installers to checkout
     const { isProTier, isInTrialPeriod, trialDaysRemaining, getInstallAgeDays } = require(path.join(PKG_ROOT, 'scripts', 'rate-limiter'));

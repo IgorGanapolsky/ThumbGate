@@ -100,7 +100,7 @@ test('landing page does not render empty revenue links', async () => {
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/28E00j3Uge1E2dzgWL3sI2J/);
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/6oU00j8aw2iWdWh9uj3sI2K/);
   assert.match(html, /#workflow-sprint-intake/);
-  assert.match(html, /Team checkout happens after scope\./);
+  assert.match(html, /Enterprise checkout happens after scope\./);
 });
 
 test('landing pricing section compares plan capabilities and limits clearly', async () => {
@@ -112,8 +112,8 @@ test('landing pricing section compares plan capabilities and limits clearly', as
   assert.match(html, /5\/day, 25 total/);
   assert.match(html, /3 active rules/);
   assert.match(html, /\$19\/mo or \$149\/yr/);
-  assert.match(html, /\$49\/seat\/mo after scope, 3-seat minimum/);
-  assert.match(html, /Team and Regulated plans start through intake/);
+  assert.match(html, /Custom — scoped after intake/);
+  assert.match(html, /Enterprise plans start through intake/);
 });
 
 test('homepage and pricing surfaces expose canonical and LLM context links', async () => {
@@ -782,4 +782,63 @@ test('GET /docs/connectors serves the MCP connector documentation (PRM resource_
 test('GET /docs/connectors/ (trailing slash) also resolves', async () => {
   const res = await fetch(`${origin}/docs/connectors/`);
   assert.equal(res.status, 200);
+});
+
+// Regression guard: every hand-written comparison page must appear in the sitemap.
+// Root cause this prevents: compare pages were enumerated in a hand-maintained list,
+// so new public/compare/*.html files silently fell out of /sitemap.xml and became
+// undiscoverable by crawlers and AI answer engines (Google AI Overviews/AI Mode,
+// ChatGPT, Perplexity) on their buyer-intent queries. renderSitemapXml now derives
+// these from the filesystem; this test pins that contract so it can't drift again.
+test('GET /sitemap.xml lists every public/compare/*.html page', async () => {
+  const comparePages = fs
+    .readdirSync(path.join(publicDir, 'compare'))
+    .filter((file) => file.endsWith('.html'))
+    .map((file) => `/compare/${file.replace(/\.html$/, '')}`);
+
+  assert.ok(comparePages.length >= 13, `expected the full compare catalog, got ${comparePages.length}`);
+
+  const res = await fetch(`${origin}/sitemap.xml`);
+  assert.equal(res.status, 200);
+  const xml = await res.text();
+
+  const missing = comparePages.filter(
+    (p) => !new RegExp(`<loc>[^<]*${p.replace(/[/-]/g, (c) => `\\${c}`)}</loc>`).test(xml),
+  );
+  assert.deepEqual(missing, [], `comparison pages missing from sitemap: ${missing.join(', ')}`);
+});
+
+// Root cause this prevents: the /compare hub linked to a hand-maintained subset of the
+// catalog (4 of 13 pages), so flagship buyer-intent comparisons (claude-code-hooks, arcjet,
+// bumblebee, anthropic-containment, ...) were live and in the sitemap but unreachable from
+// the hub whose entire job is to list them — and the homepage strip had the same drift.
+// This test pins the contract: the hub must link to every public/compare/*.html page.
+test('GET /compare hub links to every public/compare/*.html page', async () => {
+  const comparePages = fs
+    .readdirSync(path.join(publicDir, 'compare'))
+    .filter((file) => file.endsWith('.html'))
+    .map((file) => `/compare/${file.replace(/\.html$/, '')}`);
+
+  assert.ok(comparePages.length >= 13, `expected the full compare catalog, got ${comparePages.length}`);
+
+  const res = await fetch(`${origin}/compare`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+
+  const missing = comparePages.filter(
+    (p) => !new RegExp(`href="${p.replace(/[/-]/g, (c) => `\\${c}`)}"`).test(html),
+  );
+  assert.deepEqual(missing, [], `comparison pages missing from the /compare hub: ${missing.join(', ')}`);
+});
+
+// GEO: comparison and high-intent landing pages carry FAQPage structured data so they
+// are eligible to be pulled into AI Overviews / AI Mode on their category queries.
+test('comparison and key landing pages expose FAQPage structured data', async () => {
+  for (const pagePath of ['/compare/rein', '/agent-manager']) {
+    const res = await fetch(`${origin}${pagePath}`);
+    assert.equal(res.status, 200, `${pagePath} must serve`);
+    const body = await res.text();
+    assert.match(body, /"@type":\s*"FAQPage"/, `${pagePath} must declare FAQPage schema`);
+    assert.match(body, /"@type":\s*"Question"/, `${pagePath} must include at least one Question`);
+  }
 });

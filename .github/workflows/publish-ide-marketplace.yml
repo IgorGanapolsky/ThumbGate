@@ -23,6 +23,7 @@ jobs:
     env:
       OVSX_PAT: ${{ secrets.OVSX_PAT }}
       VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      PUBLISH_IDE_MARKETPLACE_REQUIRED: ${{ vars.PUBLISH_IDE_MARKETPLACE_REQUIRED || '0' }}
     steps:
       - uses: actions/checkout@v6
 
@@ -52,25 +53,33 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Verify marketplace publishing credentials
+        id: marketplace-credentials
         run: |
           missing=()
           if [ -z "$OVSX_PAT" ]; then missing+=("OVSX_PAT"); fi
           if [ -z "$VSCE_PAT" ]; then missing+=("VSCE_PAT"); fi
           if [ "${#missing[@]}" -gt 0 ]; then
-            echo "::error::Missing marketplace publish secrets: ${missing[*]}"
+            echo "publish_ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Missing marketplace publish secrets: ${missing[*]}"
             {
-              echo "## IDE Marketplace Publish Blocked"
+              echo "## IDE Marketplace Publish Skipped"
               echo
               echo "Missing required GitHub Actions secrets: ${missing[*]}"
               echo
-              echo "The workflow intentionally fails here so a packaged VSIX is not mistaken for a live Open VSX or VS Code Marketplace publication."
+              echo "The workflow still packages and uploads the VSIX artifact, but it does not claim a live Open VSX or VS Code Marketplace publication."
             } >> "$GITHUB_STEP_SUMMARY"
-            exit 1
+            if [ "$PUBLISH_IDE_MARKETPLACE_REQUIRED" = "1" ] || [ "$PUBLISH_IDE_MARKETPLACE_REQUIRED" = "true" ]; then
+              echo "::error::Marketplace publishing is required for this run."
+              exit 1
+            fi
+            exit 0
           fi
+          echo "publish_ready=true" >> "$GITHUB_OUTPUT"
 
       - name: Upload VSIX artifact
         uses: actions/upload-artifact@v7
         with:
+          retention-days: 7
           name: thumbgate-vscode-open-vsx-vsix
           path: ${{ steps.vsix.outputs.path }}
 
@@ -91,11 +100,13 @@ jobs:
           gh release upload "v${VERSION}" "${{ steps.vsix.outputs.path }}" --clobber
 
       - name: Publish to Open VSX
+        if: steps.marketplace-credentials.outputs.publish_ready == 'true'
         run: |
           cd plugins/vscode-extension
           npx --yes ovsx publish "${{ steps.vsix.outputs.name }}" --pat "$OVSX_PAT"
 
       - name: Publish to VS Code Marketplace
+        if: steps.marketplace-credentials.outputs.publish_ready == 'true'
         run: |
           cd plugins/vscode-extension
           npx --yes @vscode/vsce publish --packagePath "${{ steps.vsix.outputs.name }}" -p "$VSCE_PAT"

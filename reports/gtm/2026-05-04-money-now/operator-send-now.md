@@ -1,6 +1,6 @@
 # Revenue Operator Send-Now Sheet
 
-Updated: 2026-06-03T07:55:00-04:00
+Updated: 2026-06-05T14:59:56Z
 
 This is the flat batch-send layer for the current revenue loop. Use it when you want the message, CTA, and logging commands in one place without re-reading the full GTM report.
 
@@ -12,7 +12,7 @@ Pair this file with `operator-priority-handoff.md` when you need deeper account 
 - Billing verification: Live hosted billing summary verified for this run.
 - Paid orders: 4
 - Checkout starts: 133
-- Active follow-ups: 5
+- Active follow-ups: 4
 - Warm targets ready now: 4 contacted Reddit follow-ups
 - Self-serve closes ready now: 2 untouched GitHub Pro leads
 - Production-rollout targets ready now: 0 untouched; use follow-ups instead
@@ -23,7 +23,13 @@ Pair this file with `operator-priority-handoff.md` when you need deeper account 
 - Keep the offer split honest: sprint rows get one workflow-hardening offer; self-serve rows get the guide-to-Pro lane unless pain is confirmed.
 - Qualify the offer split: Use Pro after one blocked repeat or explicit self-serve install intent. Use the Workflow Hardening Sprint when one workflow owner needs approval boundaries, rollback safety, and proof before wider rollout.
 - Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) and [COMMERCIAL_TRUTH.md](../COMMERCIAL_TRUTH.md) only after the buyer confirms pain.
-- Current live pipeline on 2026-06-03: `23` active leads, `21` contacted, `1` replied, `2` untouched. This was re-verified from `scripts/sales-pipeline.js` against `.thumbgate/sales-pipeline.jsonl` on `2026-06-03T11:55Z`. Ignore the replied Aiventyx thread because that lane is deprecated.
+- Current live pipeline on 2026-06-05: `23` active leads, `21` contacted, `1` replied, `2` untouched. This was re-verified from `scripts/sales-pipeline.js` against `.thumbgate/sales-pipeline.jsonl` on `2026-06-05T14:59:56Z`. Ignore the replied Aiventyx thread because that lane is deprecated.
+
+## Next Approval Action
+
+- A1 only: send the four warm Reddit follow-ups first.
+- A2 next: send the two untouched GitHub Pro leads after A1.
+- Do not touch the longer cold/prod queue until either A1 or A2 moves a lead forward.
 
 ```bash
 npm run sales:pipeline -- import --source docs/marketing/gtm-revenue-loop.json

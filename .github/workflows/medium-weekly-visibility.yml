@@ -43,6 +43,7 @@ jobs:
       - name: Upload Medium visibility kit
         uses: actions/upload-artifact@v7
         with:
+          retention-days: 7
           name: medium-weekly-visibility-kit
           path: docs/marketing/medium/
           if-no-files-found: error

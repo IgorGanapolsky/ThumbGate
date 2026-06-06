@@ -1069,49 +1069,99 @@ test('strict knowledge conflict mode can still block external destructive side e
 // Full run integration
 // ---------------------------------------------------------------------------
 
-test('run blocks git push via stdin-like input', () => {
+test('run warns on git push by default, denies under strict enforcement', () => {
   cleanupStateFiles();
-  const output = JSON.parse(run({
+  // Warn-by-default posture (CEO decision 2026-06-04): routine git push is flagged
+  // and logged, NOT hard-blocked, so legitimate work is never blocked.
+  const warnOut = JSON.parse(run({
     tool_name: 'Bash',
     tool_input: { command: 'git push origin feature/test' },
   }));
-  assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
+  assert.notEqual(warnOut.hookSpecificOutput.permissionDecision, 'deny');
+  // Full hard enforcement is available via opt-in.
+  process.env.THUMBGATE_STRICT_ENFORCEMENT = '1';
+  try {
+    const denyOut = JSON.parse(run({
+      tool_name: 'Bash',
+      tool_input: { command: 'git push origin feature/test' },
+    }));
+    assert.equal(denyOut.hookSpecificOutput.permissionDecision, 'deny');
+  } finally {
+    delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
+  }
   cleanupStateFiles();
 });
 
-test('run blocks destructive local git cleanup by default', () => {
+test('run warns on destructive local git cleanup by default, denies under strict', () => {
   cleanupStateFiles();
-  const resetOutput = JSON.parse(run({
+  const resetWarn = JSON.parse(run({
     tool_name: 'Bash',
     tool_input: { command: 'git reset --hard HEAD' },
   }));
-  assert.equal(resetOutput.hookSpecificOutput.permissionDecision, 'deny');
-  assert.match(resetOutput.hookSpecificOutput.permissionDecisionReason, /git-reset-hard/);
-
-  const cleanOutput = JSON.parse(run({
+  assert.notEqual(resetWarn.hookSpecificOutput.permissionDecision, 'deny');
+  const cleanWarn = JSON.parse(run({
     tool_name: 'Bash',
     tool_input: { command: 'git clean -fd' },
   }));
-  assert.equal(cleanOutput.hookSpecificOutput.permissionDecision, 'deny');
-  assert.match(cleanOutput.hookSpecificOutput.permissionDecisionReason, /git-clean-force/);
+  assert.notEqual(cleanWarn.hookSpecificOutput.permissionDecision, 'deny');
+
+  process.env.THUMBGATE_STRICT_ENFORCEMENT = '1';
+  try {
+    const resetDeny = JSON.parse(run({
+      tool_name: 'Bash',
+      tool_input: { command: 'git reset --hard HEAD' },
+    }));
+    assert.equal(resetDeny.hookSpecificOutput.permissionDecision, 'deny');
+    assert.match(resetDeny.hookSpecificOutput.permissionDecisionReason, /git-reset-hard/);
+    const cleanDeny = JSON.parse(run({
+      tool_name: 'Bash',
+      tool_input: { command: 'git clean -fd' },
+    }));
+    assert.equal(cleanDeny.hookSpecificOutput.permissionDecision, 'deny');
+    assert.match(cleanDeny.hookSpecificOutput.permissionDecisionReason, /git-clean-force/);
+  } finally {
+    delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
+  }
   cleanupStateFiles();
 });
 
-test('run blocks broad rm -rf against root or home by default', () => {
+test('run warns on broad rm -rf by default, denies under strict enforcement', () => {
   cleanupStateFiles();
-  const rootOutput = JSON.parse(run({
-    tool_name: 'Bash',
-    tool_input: { command: 'rm -rf /' },
-  }));
-  assert.equal(rootOutput.hookSpecificOutput.permissionDecision, 'deny');
-  assert.match(rootOutput.hookSpecificOutput.permissionDecisionReason, /rm-rf-home-or-root/);
+  // Warn+audit posture (CEO decision 2026-06-04): even rm -rf / is flagged + logged, NOT
+  // hard-blocked, by default — we do not pretend a regex can reliably catch destructive
+  // commands (sudo/bash -c/find -exec all evade it). Hard enforcement is the strict opt-in.
+  const warnOut = JSON.parse(run({ tool_name: 'Bash', tool_input: { command: 'rm -rf /' } }));
+  assert.notEqual(warnOut.hookSpecificOutput.permissionDecision, 'deny');
+  process.env.THUMBGATE_STRICT_ENFORCEMENT = '1';
+  try {
+    const denyOut = JSON.parse(run({ tool_name: 'Bash', tool_input: { command: 'rm -rf /' } }));
+    assert.equal(denyOut.hookSpecificOutput.permissionDecision, 'deny');
+  } finally {
+    delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
+  }
+  cleanupStateFiles();
+});
 
-  const homeOutput = JSON.parse(run({
-    tool_name: 'Bash',
-    tool_input: { command: 'rm -rf $HOME/tmp' },
-  }));
-  assert.equal(homeOutput.hookSpecificOutput.permissionDecision, 'deny');
-  assert.match(homeOutput.hookSpecificOutput.permissionDecisionReason, /rm-rf-home-or-root/);
+test('warn+audit default never hard-blocks benign commands that merely mention rm -rf', () => {
+  cleanupStateFiles();
+  // Regression: a crude command regex once hard-denied any command containing the substring
+  // "rm -rf" — echo, grep, git commit messages, and routine `rm -rf node_modules`. None of
+  // these is a destructive root/home delete, so none must be hard-blocked in default posture.
+  const benign = [
+    'echo "do not run rm -rf /"',
+    'grep -r "rm -rf" scripts/',
+    'git commit -m "removed rm -rf from setup script"',
+    'rm -rf node_modules',
+    'rm -rf ./build/cache',
+  ];
+  for (const command of benign) {
+    const out = JSON.parse(run({ tool_name: 'Bash', tool_input: { command } }));
+    assert.notEqual(
+      out.hookSpecificOutput.permissionDecision,
+      'deny',
+      `benign command must not be hard-blocked by default: ${command}`,
+    );
+  }
   cleanupStateFiles();
 });
 
@@ -2727,6 +2777,71 @@ test('approve gate blocks before log gate fires on same input', () => {
     assert.ok(result);
     assert.equal(result.decision, 'approve');
     assert.equal(result.gate, 'approve-first');
+  } finally {
+    fs.rmSync(tmpConfig, { force: true });
+    cleanupStateFiles();
+  }
+});
+
+// === Claw-Style Enterprise Agent Governance ===
+test('evaluateGates matches block-dynamic-tool-creation-without-approval gate template', () => {
+  cleanupStateFiles();
+  const tmpConfig = makeTempPath('claw-test.json');
+  fs.writeFileSync(tmpConfig, JSON.stringify({
+    version: 1,
+    gates: [
+      {
+        id: "block-dynamic-tool-creation-without-approval",
+        pattern: "(claw|enterpriseclaw|dynamic tool|runtime tool|create_tool|self.*evolving).*(create|generate|define).*(tool|action|capability|script)",
+        action: "block",
+        message: "Dynamic tool creation blocked",
+        severity: "critical"
+      }
+    ]
+  }));
+
+  try {
+    const result = evaluateGates('Bash', {
+      _claw: {
+        actionType: 'dynamic-tool-creation',
+        agentId: 'enterprise-claw-42'
+      }
+    }, tmpConfig);
+    assert.ok(result);
+    assert.equal(result.decision, 'deny');
+    assert.equal(result.gate, 'block-dynamic-tool-creation-without-approval');
+  } finally {
+    fs.rmSync(tmpConfig, { force: true });
+    cleanupStateFiles();
+  }
+});
+
+test('evaluateGates matches require-review-for-screen-ui-interaction template', () => {
+  cleanupStateFiles();
+  const tmpConfig = makeTempPath('claw-screen-test.json');
+  fs.writeFileSync(tmpConfig, JSON.stringify({
+    version: 1,
+    gates: [
+      {
+        id: "require-review-for-screen-ui-interaction",
+        pattern: "(claw|screen|ui|computer use|mouse|keyboard|click|type|interact).*(screen|desktop|app|gui|human.*like)",
+        action: "approve",
+        message: "Screen interaction requires review",
+        severity: "high"
+      }
+    ]
+  }));
+
+  try {
+    const result = evaluateGates('Bash', {
+      _claw: {
+        actionType: 'screen-interaction',
+        agentId: 'openshell-claw-7'
+      }
+    }, tmpConfig);
+    assert.ok(result);
+    assert.equal(result.decision, 'approve');
+    assert.equal(result.gate, 'require-review-for-screen-ui-interaction');
   } finally {
     fs.rmSync(tmpConfig, { force: true });
     cleanupStateFiles();
