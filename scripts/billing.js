@@ -2234,6 +2234,28 @@ function getBusinessAnalytics(options = {}) {
     newsletterSignups: newsletterSubscribers.length,
   };
 
+  // Bot-excluded human funnel (the honest view) + the WHY-buyers-bail breakdown.
+  // Additive on purpose: trafficMetrics above is left unchanged so existing
+  // consumers/tests don't break; qualifiedTraffic exposes the bot/internal/test-
+  // filtered counts (telemetry.qualified === trafficQuality.external), and
+  // objections surfaces the reason_not_buying breakdown that was captured but
+  // never reported (price_unclear / need_more_proof / need_team_plan / not_urgent).
+  const qualifiedTraffic = {
+    visitors: telemetry.qualified ? telemetry.qualified.uniqueVisitors || 0 : 0,
+    sessions: telemetry.qualified ? telemetry.qualified.uniqueSessions || 0 : 0,
+    pageViews: telemetry.qualified ? telemetry.qualified.pageViews || 0 : 0,
+    checkoutStarts: telemetry.qualified ? telemetry.qualified.checkoutStarts || 0 : 0,
+    uniqueCheckoutStarters: telemetry.qualified ? telemetry.qualified.uniqueCheckoutStarters || 0 : 0,
+    botEvents: telemetry.trafficQuality ? telemetry.trafficQuality.botEvents || 0 : 0,
+    excludedEvents: telemetry.trafficQuality ? telemetry.trafficQuality.excludedEvents || 0 : 0,
+  };
+
+  const objections = {
+    totalSignals: telemetry.buyerLoss ? telemetry.buyerLoss.totalSignals || 0 : 0,
+    byReason: telemetry.buyerLoss ? telemetry.buyerLoss.reasonsByCode || {} : {},
+    topReason: telemetry.buyerLoss ? telemetry.buyerLoss.topReason || null : null,
+  };
+
   const operatorGeneratedAcquisition = {
     totalEvents: acquisitionEvents.filter(isOperatorGeneratedAcquisitionEntry).length,
     uniqueLeads: operatorGeneratedAcquisitionLeadKeys.size,
@@ -2383,6 +2405,8 @@ function getBusinessAnalytics(options = {}) {
       conversionByOfferCode,
     },
     trafficMetrics,
+    qualifiedTraffic,
+    objections,
     ctas: telemetry.ctas || {},
     operatorGeneratedAcquisition,
     dataQuality,
@@ -2470,6 +2494,8 @@ function getBillingSummary(options = {}) {
     newsletter: business.newsletter,
     attribution: business.attribution,
     trafficMetrics: business.trafficMetrics,
+    qualifiedTraffic: business.qualifiedTraffic,
+    objections: business.objections,
     ctas: business.ctas,
     operatorGeneratedAcquisition: business.operatorGeneratedAcquisition,
     dataQuality: business.dataQuality,

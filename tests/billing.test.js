@@ -1380,6 +1380,60 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(summary.keys.windowed, false);
   });
 
+  test('getBillingSummary surfaces objection breakdown and bot-excluded qualifiedTraffic', () => {
+    const billing = require('../scripts/billing');
+    const telemetryPath = path.join(testFeedbackDir, 'telemetry-pings.jsonl');
+    fs.mkdirSync(testFeedbackDir, { recursive: true });
+    fs.writeFileSync(telemetryPath, [
+      JSON.stringify({
+        receivedAt: '2026-03-19T09:50:00.000Z',
+        eventType: 'landing_page_view',
+        clientType: 'web',
+        acquisitionId: 'acq_obj',
+        visitorId: 'visitor_obj',
+        sessionId: 'session_obj',
+        source: 'website',
+        page: '/pro',
+      }),
+      JSON.stringify({
+        receivedAt: '2026-03-19T09:58:00.000Z',
+        eventType: 'reason_not_buying',
+        clientType: 'web',
+        acquisitionId: 'acq_obj',
+        visitorId: 'visitor_obj',
+        sessionId: 'session_obj',
+        reasonCode: 'price_unclear',
+      }),
+      JSON.stringify({
+        receivedAt: '2026-03-19T09:59:00.000Z',
+        eventType: 'reason_not_buying',
+        clientType: 'web',
+        acquisitionId: 'acq_obj2',
+        visitorId: 'visitor_obj2',
+        sessionId: 'session_obj2',
+        reasonCode: 'need_more_proof',
+      }),
+      '',
+    ].join('\n'));
+
+    const summary = billing.getBillingSummary({
+      window: 'today',
+      timeZone: 'UTC',
+      now: '2026-03-19T18:00:00.000Z',
+    });
+
+    // Objection breakdown: the WHY-buyers-bail data, previously captured but never surfaced.
+    assert.ok(summary.objections, 'objections block must be present');
+    assert.equal(summary.objections.byReason.price_unclear, 1);
+    assert.equal(summary.objections.byReason.need_more_proof, 1);
+    assert.ok(summary.objections.totalSignals >= 2, 'totalSignals counts the loss signals');
+
+    // Bot-excluded human funnel view exists with numeric fields (additive; trafficMetrics untouched).
+    assert.ok(summary.qualifiedTraffic, 'qualifiedTraffic block must be present');
+    assert.ok(summary.qualifiedTraffic.visitors >= 1, 'human visitor counted in qualifiedTraffic');
+    assert.equal(typeof summary.qualifiedTraffic.botEvents, 'number');
+  });
+
   test('getBillingSummaryLive includes Stripe-reconciled historical revenue without claiming money today', async () => {
     process.env._TEST_STRIPE_RECONCILED_REVENUE_EVENTS_JSON = JSON.stringify([
       {

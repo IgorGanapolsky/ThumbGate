@@ -133,6 +133,8 @@ function normalizeWindowSummary(status, payload = {}) {
   return {
     status,
     trafficMetrics: payload.trafficMetrics || {},
+    qualifiedTraffic: payload.qualifiedTraffic || {},
+    objections: payload.objections || {},
     ctas: payload.ctas || {},
     signups: payload.signups || {},
     revenue: payload.revenue || {},
@@ -146,6 +148,8 @@ function windowSnapshot(summary = {}) {
   return {
     status: summary.status,
     trafficMetrics: summary.trafficMetrics || {},
+    qualifiedTraffic: summary.qualifiedTraffic || {},
+    objections: summary.objections || {},
     ctas: summary.ctas || {},
     signups: summary.signups || {},
     revenue: summary.revenue || {},
@@ -251,8 +255,23 @@ function formatWindowBlock(label, summary = {}) {
     ? `, checkoutIntent views ${interstitialViews}, clicks ${interstitialClicks}, stripeConfirms ${proConfirms}, intakeClicks ${workflowClicks}, teamPathClicks ${teamPathClicks}, diagnosticClicks ${diagnosticClicks}, sprintCheckoutClicks ${sprintCheckoutClicks}, botDeflections ${botDeflections}`
     : '';
 
+  // Bot-excluded human funnel (the honest number) — the headline `visitors` above is
+  // bot-inflated; this shows what's left after bot/internal/test exclusion.
+  const qualified = summary.qualifiedTraffic || {};
+  const qualifiedSuffix = (qualified.visitors || qualified.checkoutStarts || qualified.botEvents)
+    ? `, humans(bot-excl) visitors ${qualified.visitors || 0}, checkoutStarts ${qualified.checkoutStarts || 0}, botEvents ${qualified.botEvents || 0}`
+    : '';
+
+  // WHY buyers bail — the reason_not_buying breakdown, previously captured but never shown.
+  const objectionPairs = Object.entries((summary.objections || {}).byReason || {})
+    .filter(([, n]) => Number(n) > 0)
+    .sort((a, b) => Number(b[1]) - Number(a[1]));
+  const objectionsSuffix = objectionPairs.length
+    ? `, objections {${objectionPairs.map(([k, n]) => `${k} ${n}`).join(', ')}}`
+    : '';
+
   return [
-    `${label}: visitors ${traffic.visitors || 0}, pageViews ${traffic.pageViews || 0}, checkoutStarts ${traffic.checkoutStarts || 0}, paidOrders ${revenue.paidOrders || 0}, bookedRevenue ${centsToDollars(revenue.bookedRevenueCents || 0)}, sprintLeads ${sprintLeads.total || 0}, signups ${signups.uniqueLeads || 0}${intentSuffix}`,
+    `${label}: visitors ${traffic.visitors || 0}, pageViews ${traffic.pageViews || 0}, checkoutStarts ${traffic.checkoutStarts || 0}, paidOrders ${revenue.paidOrders || 0}, bookedRevenue ${centsToDollars(revenue.bookedRevenueCents || 0)}, sprintLeads ${sprintLeads.total || 0}, signups ${signups.uniqueLeads || 0}${intentSuffix}${qualifiedSuffix}${objectionsSuffix}`,
   ];
 }
 
