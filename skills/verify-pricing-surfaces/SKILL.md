@@ -21,11 +21,20 @@ curl -sL https://thumbgate.ai/ | grep -oE 'plausible|posthog|gtag' | sort -u
 
 # Pricing page — all 3 analytics + correct prices
 curl -sL https://thumbgate.ai/pricing | grep -oE '\$[0-9]+' | sort -u
-# Expected: $0, $19, $49, $149
+# Expected: $0, $19, $149   (Free / Pro monthly / Pro annual; Enterprise is "Custom")
 
-# Checkout interstitial — all 3 analytics
+# Checkout interstitial — plausible + first-party telemetry ONLY (by design)
 curl -sL https://thumbgate.ai/checkout/pro | grep -oE 'plausible|posthog|gtag' | sort -u
-# Expected: gtag, plausible, posthog
+# Expected: plausible
+# NOTE: the /checkout/pro confirmation interstitial is a deliberately-minimal, sampled,
+# bot-protected page (renderCheckoutIntentPage in src/api/server.js). It is instrumented
+# with plausible custom events + first-party server telemetry (checkout_interstitial_view /
+# _cta_clicked), NOT gtag/posthog page-view scripts. Do NOT "fix" it by adding gtag/posthog —
+# that adds latency to the fast checkout path. gtag+posthog belong on /pricing and homepage only.
+
+# Checkout actually redirects to live Stripe (this is the real health signal):
+curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' "https://thumbgate.ai/checkout/pro?confirm=1&customer_email=test@test.com"
+# Expected: 302 https://checkout.stripe.com/c/pay/cs_live_...
 
 # Health check
 curl -sf https://thumbgate.ai/health | python3 -c "import sys,json; d=json.load(sys.stdin); print(f'v{d[\"version\"]} up={d[\"uptime\"]:.0f}s ok={d[\"status\"]}')"

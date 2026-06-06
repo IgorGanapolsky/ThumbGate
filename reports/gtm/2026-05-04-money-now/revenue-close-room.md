@@ -1,6 +1,6 @@
 # Revenue Close Room (Money Now)
 
-Updated: 2026-06-05T16:01:19Z
+Updated: 2026-06-06T19:18:17Z
 
 This file is the close-room script + truth table for converting warm/high-intent leads into:
 
@@ -24,15 +24,16 @@ Guardrail: do not publish posts, send messages, or invite members without explic
 - Booked: `$149`
 - Signups: 475
 - Sprint leads: 0
-- Live pipeline state re-verified at `2026-06-05T16:01:19Z`: `23` active leads, `21` contacted, `2` targeted, `1` replied, `0` paid
+- Live pipeline state re-verified at `2026-06-06T19:18:17Z`: `24` active leads, `22` contacted, `2` replied, `0` paid
 - Current loop constraints on 2026-06-05:
-  - local Operator Lab promo preview is healthy as of `2026-06-05T16:01:18Z`
+  - local Operator Lab promo preview is healthy in this run
   - local preview still shows `accountCount: 0` across platforms in this runtime, so live promo should stay on the GitHub Actions path with secrets
-  - local shell still has no `ZERNIO_API_KEY` loaded as of `2026-06-05T16:01:19Z`, so local runs should remain preview-only for media-backed publishing
-  - Zernio analytics re-check at `2026-06-05T16:01:18Z` is still dark (`0/6` healthy platforms, `0` rows in the last `24h`)
-  - Skool readback re-check at `2026-06-05T16:01:19Z` is still blocked in the headless runtime with `[skool-reader] fetch failed`
-  - GitHub visibility is split in this shell as of `2026-06-05T16:01:19Z`; `gh pr list --state open --limit 5` works, but `gh run list --branch main --limit 5` is rate-limited and `npm run pr:manage` still fails with `error connecting to api.github.com`
-  - official Skool help still supports the current value-first free-group posture: Discovery FAQ updated `April 8, 2026`, discovery checklist updated `April 15, 2026`, Classroom updated `May 29, 2026`, Analytics definitions last updated `November 24, 2025`, Payments FAQ updated `April 22, 2026`, and payout-status guidance updated `May 5, 2026`
+  - local shell still has no `ZERNIO_API_KEY` loaded as of `2026-06-06T19:18:17Z`, so local runs should remain preview-only for media-backed publishing
+  - Zernio analytics re-check at `2026-06-06T19:17:44Z` is still dark (`0/6` healthy platforms, `0` rows in the last `24h`)
+  - Skool readback remains blocked in the headless runtime, so live public-page claims still need browser-authenticated verification
+  - `.github/workflows/thumbgate-creator-platform-promo.yml` still defaults to `--offer=operator-lab`
+  - official Skool help still supports the current value-first free-group posture: Discovery FAQ updated `April 8, 2026`, pricing updated `October 28, 2025`, About page updated `December 9, 2025`, Analytics definitions updated `November 24, 2025`, Payments FAQ updated `April 22, 2026`, and payouts setup updated `January 22, 2026`
+  - refreshed platform brief now lives in `reports/gtm/2026-05-04-community-course-promo/skool-platform-requirements-2026-06-06.md`
 
 ## Offer Routing (fast rules)
 
@@ -78,7 +79,7 @@ Use the `$1500` sprint checkout link from `docs/COMMERCIAL_TRUTH.md` / sprint do
 ## Next Money Actions (no auto-send)
 
 1. Send the 4 contacted warm Reddit follow-ups first from `reports/gtm/2026-05-04-money-now/operator-send-now.md`.
-2. Send the 2 untouched Pro leads second after the warm Reddit batch is approved/sent.
+2. There is no untouched Pro batch left in the latest-per-lead pipeline state; wait for reply movement or create a new ranked batch before sending colder outreach.
 3. After each send, log the stage movement using `npm run sales:pipeline -- advance ...` (commands are in the send sheet).
 4. If a warm lead confirms pain but scope is unclear, use the Diagnostic close first.
 5. If the lead already has one workflow owner plus one repeated failure blocking rollout, use the Sprint close.
