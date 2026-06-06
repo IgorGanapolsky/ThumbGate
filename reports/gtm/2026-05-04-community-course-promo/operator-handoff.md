@@ -1,7 +1,7 @@
 # ThumbGate Community + Course Promo Operator Handoff
 
 Generated: 2026-05-04
-Updated: 2026-06-05T16:01:19Z
+Updated: 2026-06-06T19:18:17Z
 
 ## Live Assets
 
@@ -33,10 +33,10 @@ Current blockers:
 - A headless read of the public Skool URL failed again in this environment on 2026-06-05, so the live public page content still needs browser-side verification before claiming the surface is fully updated.
 - Direct unauthenticated `curl -I -L https://www.skool.com/thumbgate-operator-lab-6000` previously returned HTTP `403` from CloudFront, so a headless anonymous verification path is not currently reliable from this runtime.
 - Skool’s current Discovery FAQ lists `off-platform payments` as a ranking penalty, so external paid links on public Skool surfaces should be treated as a deliberate tradeoff instead of a default conversion step.
-- GitHub visibility is split again in this runtime at `2026-06-05T16:01:19Z`: `gh pr list --state open --limit 5` succeeds and currently shows open PRs `#2507`, `#2506`, `#2505`, `#2503`, and `#2464`, while `gh run list --branch main --limit 5` fails with GitHub API rate limiting and `npm run pr:manage` still fails with `error connecting to api.github.com`.
+- GitHub visibility remains partial in this runtime as of `2026-06-06T19:18:17Z`: `gh pr list --state open --limit 5` works and currently shows open PRs `#2550`, `#2541`, `#2540`, `#2511`, and `#2503`, while `npm run pr:manage` still fails with `error connecting to api.github.com`.
 - Skool Growth-tab metrics have not been read back in a browser-authenticated session yet, so About-page conversion and traffic-source truth are still unknown.
-- Zernio analytics are still dark in this runtime on 2026-06-05 (`0/6` healthy platforms, `0` rows in the last `24h`).
-- The latest local sales-pipeline summary at `2026-06-05T16:01:19Z` still shows `23` active leads with only `2` untouched and `0` paid, so warm outbound follow-up remains the fastest revenue path.
+- Zernio analytics are still dark in this runtime on 2026-06-06 (`0/6` healthy platforms, `0` rows in the last `24h`).
+- The latest pipeline truth at `2026-06-06T19:18:17Z` shows `24` active leads, `22` in `contacted`, `2` in `replied`, `0` paid, and no untouched self-serve A2 batch left, so warm outbound follow-up remains the fastest revenue path.
 - Current local GitHub readback is only partially available; PR listing is readable, but Actions readback and `npm run pr:manage` are not reliable from this shell right now.
 
 Workaround for the in-app file picker:
@@ -73,7 +73,7 @@ The best first win is narrow: one mistake, one rule, one blocked repeat.
 
 ## Research Notes
 
-Skool official sources (re-verified 2026-06-05):
+Skool official sources (re-verified 2026-06-06):
 
 - Pricing models supported: free, subscription, freemium, tiered pricing, and one-time payment.
   - https://help.skool.com/article/215-how-to-setup-pricing-for-the-group
@@ -136,6 +136,8 @@ Skool official sources (re-verified 2026-06-05):
   - Paid groups use a Stripe Express connection owned by Skool.
   - Current fees are `2.9% + 30c` up to `$899` and `3.9% + 30c` above `$900` on Pro, or `10% + 30c` on Hobby.
   - https://help.skool.com/article/86-subscriptions-faq
+- Consolidated requirements brief for this run:
+  - `reports/gtm/2026-05-04-community-course-promo/skool-platform-requirements-2026-06-06.md`
 
 ## Zernio Status
 
@@ -147,17 +149,17 @@ Zernio analytics polling is blocked by the Analytics add-on paywall. Treat Zerni
 
 The `thumbgate-creator-platform-promo.yml` workflow now passes `--offer=operator-lab`, so previews/schedules/publishes from that workflow promote the free Skool Operator Lab instead of the older first-customer launch copy.
 
-As of 2026-06-05T16:01:18Z, local dry-runs still preview the Operator Lab campaign without Zernio credentials and include the planned media attachments in the preview JSON:
+As of 2026-06-06T19:18:17Z, local dry-runs still preview the Operator Lab campaign without Zernio credentials and include the planned media attachments in the preview JSON:
 
 `npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=linkedin,instagram,threads,bluesky,reddit,youtube`
 
-Current dry-run facts from 2026-06-05T16:01:19Z:
+Current dry-run facts from 2026-06-06T19:18:17Z:
 
 - The preview renders six platform-specific posts for `linkedin,instagram,threads,bluesky,reddit,youtube`.
 - Each preview references a repo-backed media asset and reports `exists: true`.
 - Local `accountCount` was `0` across platforms in this runtime, which is acceptable for preview but means live publish/schedule should stay in GitHub Actions with repo secrets.
 - `npm run social:zernio:status` still reports `0/6` healthy platforms and `0` rows in the last `24h`, so Zernio remains a publish pipe only until analytics readback is restored.
-- GitHub readback is currently split in this runtime: PR listing works, but Actions readback is rate-limited and `npm run pr:manage` still fails.
+- GitHub readback is currently split in this runtime: PR listing works, but `npm run pr:manage` still fails against `api.github.com`.
 
 ## Classroom / Course Surface
 

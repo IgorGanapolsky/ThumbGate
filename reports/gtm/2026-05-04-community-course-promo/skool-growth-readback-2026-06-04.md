@@ -1,21 +1,19 @@
 # Skool Growth Readback Brief
 
-Updated: 2026-06-05T17:02:39Z
+Updated: 2026-06-06T19:18:17Z
 
 Guardrail: do not change the live Skool group, publish posts, upload media, or submit forms without action-time confirmation.
 
 ## Verified in this run
 
-- Headless Skool readback remains blocked in this runtime as of `2026-06-05T17:02:39Z`: `node scripts/skool-reader.js --url https://www.skool.com/thumbgate-operator-lab-6000 --signals --format markdown` still exits with `[skool-reader] fetch failed`.
-- Local promo preview for `--offer=operator-lab` is still healthy as of `2026-06-05T17:02:38Z` and returns `6` previews for `linkedin,instagram,threads,bluesky,reddit,youtube`.
+- Headless Skool readback remains blocked in this runtime as of `2026-06-06T19:18:17Z`: `node scripts/skool-reader.js --url https://www.skool.com/thumbgate-operator-lab-6000 --signals --format markdown` still exits with `[skool-reader] fetch failed`.
+- Local promo preview for `--offer=operator-lab` is still healthy as of `2026-06-06T19:18:17Z` and returns `6` previews for `linkedin,instagram,threads,bluesky,reddit,youtube`.
 - Every previewed media asset still resolves to a local file with `exists: true`.
 - Preview-mode `accountCount` is still `0` for each platform in this runtime, so publish/schedule should stay on the GitHub Actions workflow with secrets.
-- `npm run social:zernio:status` still reports `0/6` healthy platforms and `0` rows in the last `24h` as of `2026-06-05T17:02:38Z`.
-- GitHub visibility remains split in this runtime as of `2026-06-05T17:02:39Z`:
-  - `gh pr list --state open --limit 5` succeeds and currently shows open PRs `#2509`, `#2505`, `#2503`, `#2464`, and `#2463`
-  - `gh run list --branch main --limit 5` now succeeds and shows `CI` for `chore(release): 1.27.3 (#2506)` still `in_progress` as of `2026-06-05T16:53:28Z`
-  - `npm run pr:manage` still fails with `error connecting to api.github.com`
-  - direct `gh pr view <number>` calls in this shell still fail with `error connecting to api.github.com`
+- `npm run social:zernio:status` still reports `0/6` healthy platforms and `0` rows in the last `24h` as of `2026-06-06T19:17:44Z`.
+- GitHub visibility remains partial in this runtime as of `2026-06-06T19:18:17Z`:
+  - `gh pr list --state open --limit 5` succeeds and currently shows open PRs `#2550`, `#2541`, `#2540`, `#2511`, and `#2503`
+  - deeper Actions and PR-manager readback were not re-verified in this run
 
 ## Current Skool analytics cadence from official help
 
@@ -54,5 +52,5 @@ Reference:
 - Skool's current Discovery FAQ still lists off-platform payments as a ranking penalty, so public Skool surfaces should stay value-first and route paid closes only after direct follow-up or pain confirmation.
 - Promo workflow readiness is good for preview, but not for local publish.
 - PR/CI hygiene is only partially readable from this shell right now: open PR listing and `main` workflow rows are readable again, but PR-manager and per-PR detail readback still fail against `api.github.com`.
-- Current highest-ROI bottleneck is still outbound follow-up on the six-lead queue, not new platform setup work.
-- Latest approval-ready money action remains the same: send the first four warm Reddit follow-ups before doing more Skool surface work.
+- Current highest-ROI bottleneck is still outbound follow-up on the four warm Reddit rows, not new platform setup work.
+- Latest approval-ready money action remains the same: send the first four warm Reddit follow-ups before doing more Skool surface work or inventing a colder batch.
