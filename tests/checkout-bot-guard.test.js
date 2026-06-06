@@ -262,6 +262,150 @@ describe('/checkout/pro bot guard', () => {
     }
   });
 
+  it('keeps direct-to-Stripe bypass for unsampled human traffic when bypass is enabled', async () => {
+    const previousBypass = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS;
+    const previousSampleRate = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE;
+    const previousProStripeUrl = process.env.THUMBGATE_CHECKOUT_PRO_STRIPE_URL;
+    process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS = '1';
+    process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE = '0';
+    process.env.THUMBGATE_CHECKOUT_PRO_STRIPE_URL = 'https://buy.stripe.com/test-pro';
+
+    try {
+      try { fs.unlinkSync(path.join(ENV.THUMBGATE_FEEDBACK_DIR, 'telemetry-pings.jsonl')); } catch {}
+      const res = await fetch(`${origin}/checkout/pro?visitor_id=visitor_unsampled`, {
+        redirect: 'manual',
+        headers: {
+          'user-agent': BROWSER_UA,
+          accept: BROWSER_ACCEPT,
+        },
+      });
+      assert.equal(res.status, 302);
+      assert.match(res.headers.get('location') || '', /^https:\/\/buy\.stripe\.com\/test-pro/);
+
+      const events = readFunnelEvents();
+      const event = events.find((entry) =>
+        entry.eventType === 'checkout_interstitial_bypass_redirect' &&
+        entry.visitorId === 'visitor_unsampled'
+      );
+      assert.ok(event, 'expected bypass redirect telemetry for unsampled human traffic');
+      assert.equal(event.interstitialSampleRate, 0);
+    } finally {
+      if (previousBypass === undefined) delete process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS;
+      else process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS = previousBypass;
+      if (previousSampleRate === undefined) delete process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE;
+      else process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE = previousSampleRate;
+      if (previousProStripeUrl === undefined) delete process.env.THUMBGATE_CHECKOUT_PRO_STRIPE_URL;
+      else process.env.THUMBGATE_CHECKOUT_PRO_STRIPE_URL = previousProStripeUrl;
+    }
+  });
+
+  it('samples human bypass traffic into the checkout feedback interstitial', async () => {
+    const previousBypass = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS;
+    const previousSampleRate = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE;
+    process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS = '1';
+    process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE = '1';
+
+    try {
+      try { fs.unlinkSync(path.join(ENV.THUMBGATE_FEEDBACK_DIR, 'telemetry-pings.jsonl')); } catch {}
+      const res = await fetch(`${origin}/checkout/pro?visitor_id=visitor_sampled`, {
+        redirect: 'manual',
+        headers: {
+          'user-agent': BROWSER_UA,
+          accept: BROWSER_ACCEPT,
+        },
+      });
+      assert.equal(res.status, 200);
+      const body = await res.text();
+      assert.match(body, /aria-label="Checkout feedback"/);
+      assert.match(body, /data-reason="price_unclear"/);
+      assert.match(body, /reason_not_buying/);
+
+      const events = readFunnelEvents();
+      const event = events.find((entry) =>
+        entry.eventType === 'checkout_interstitial_view' &&
+        entry.visitorId === 'visitor_sampled'
+      );
+      assert.ok(event, 'expected interstitial telemetry for sampled human traffic');
+      assert.equal(event.interstitialSampled, 'true');
+      assert.equal(event.interstitialSampleRate, 1);
+    } finally {
+      if (previousBypass === undefined) delete process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS;
+      else process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS = previousBypass;
+      if (previousSampleRate === undefined) delete process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE;
+      else process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE = previousSampleRate;
+    }
+  });
+
+  it('accepts percentage syntax for checkout interstitial sampling', async () => {
+    const previousBypass = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS;
+    const previousSampleRate = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE;
+    process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS = '1';
+    process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE = '100';
+
+    try {
+      try { fs.unlinkSync(path.join(ENV.THUMBGATE_FEEDBACK_DIR, 'telemetry-pings.jsonl')); } catch {}
+      const res = await fetch(`${origin}/checkout/pro?visitor_id=visitor_percent_sampled`, {
+        redirect: 'manual',
+        headers: {
+          'user-agent': BROWSER_UA,
+          accept: BROWSER_ACCEPT,
+        },
+      });
+      assert.equal(res.status, 200);
+
+      const events = readFunnelEvents();
+      const event = events.find((entry) =>
+        entry.eventType === 'checkout_interstitial_view' &&
+        entry.visitorId === 'visitor_percent_sampled'
+      );
+      assert.ok(event, 'expected interstitial telemetry for percent sampling');
+      assert.equal(event.interstitialSampled, 'true');
+      assert.equal(event.interstitialSampleRate, 1);
+    } finally {
+      if (previousBypass === undefined) delete process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS;
+      else process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS = previousBypass;
+      if (previousSampleRate === undefined) delete process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE;
+      else process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE = previousSampleRate;
+    }
+  });
+
+  it('treats invalid checkout interstitial sample rates as zero', async () => {
+    const previousBypass = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS;
+    const previousSampleRate = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE;
+    const previousProStripeUrl = process.env.THUMBGATE_CHECKOUT_PRO_STRIPE_URL;
+    process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS = '1';
+    process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE = 'not-a-rate';
+    process.env.THUMBGATE_CHECKOUT_PRO_STRIPE_URL = 'https://buy.stripe.com/test-pro';
+
+    try {
+      try { fs.unlinkSync(path.join(ENV.THUMBGATE_FEEDBACK_DIR, 'telemetry-pings.jsonl')); } catch {}
+      const res = await fetch(`${origin}/checkout/pro?visitor_id=visitor_invalid_sample_rate`, {
+        redirect: 'manual',
+        headers: {
+          'user-agent': BROWSER_UA,
+          accept: BROWSER_ACCEPT,
+        },
+      });
+      assert.equal(res.status, 302);
+      assert.match(res.headers.get('location') || '', /^https:\/\/buy\.stripe\.com\/test-pro/);
+
+      const events = readFunnelEvents();
+      const event = events.find((entry) =>
+        entry.eventType === 'checkout_interstitial_bypass_redirect' &&
+        entry.visitorId === 'visitor_invalid_sample_rate'
+      );
+      assert.ok(event, 'expected bypass telemetry for invalid sampling');
+      assert.equal(event.interstitialSampleRate, 0);
+    } finally {
+      if (previousBypass === undefined) delete process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS;
+      else process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS = previousBypass;
+      if (previousSampleRate === undefined) delete process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE;
+      else process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE = previousSampleRate;
+      if (previousProStripeUrl === undefined) delete process.env.THUMBGATE_CHECKOUT_PRO_STRIPE_URL;
+      else process.env.THUMBGATE_CHECKOUT_PRO_STRIPE_URL = previousProStripeUrl;
+    }
+  });
+
   it('shows real browsers the intent interstitial before checkout session creation', async () => {
     try { fs.unlinkSync(path.join(ENV.THUMBGATE_FEEDBACK_DIR, 'telemetry-pings.jsonl')); } catch {}
     const res = await fetch(`${origin}/checkout/pro`, {

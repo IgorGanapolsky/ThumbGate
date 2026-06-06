@@ -1567,7 +1567,10 @@ function classifyEnterpriseChatTopic(prompt) {
 // today?" with an actual filtered list instead of a canned total.
 function parseChatIntent(prompt) {
   const lower = String(prompt || '').toLowerCase();
-  const wantsList = /\bwhat\b|\bwhich\b|\blist\b|\bshow\b|\bexamples?\b|\btell me about\b/.test(lower) ||
+  const terms = new Set(lower.split(/[^a-z0-9]+/).filter(Boolean));
+  const hasTerm = (term) => terms.has(term);
+  const wantsList = lower.includes('tell me about') ||
+    ['what', 'which', 'list', 'show', 'example', 'examples'].some(hasTerm) ||
     /list\s+(?:blocked?|prevented?|mistakes?)|show\s+(?:blocked?|prevented?|mistakes?)|recent\s+mistakes?|(?:what|which)\s+(?:actions?|mistakes?)?\s*(?:were|was|did|are|have|got|prevented|blocked)|(?:what|which)\s+(?:was|were|is|are|got|did)\s+(?:you\s+)?(?:blocked?|prevented?)/.test(lower);
   let windowMs = null;
   let windowLabel = 'across all time';
@@ -1917,6 +1920,43 @@ function buildLossAnalyticsResponse(data, summaryOptions) {
 
 function createJourneyId(prefix) {
   return createTraceId(prefix).replace(/^trace_/, `${prefix}_`);
+}
+
+function normalizeCheckoutInterstitialSampleRate(value) {
+  const parsed = Number.parseFloat(String(value || '').trim());
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 0;
+  }
+  if (parsed > 1) {
+    return Math.min(parsed / 100, 1);
+  }
+  return Math.min(parsed, 1);
+}
+
+function stableUnitInterval(value) {
+  const text = String(value || '');
+  let hash = 2166136261;
+  for (const character of text) {
+    hash ^= character.codePointAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0) / 4294967296;
+}
+
+function shouldSampleCheckoutInterstitial({ sampleRate, traceId, analyticsMetadata }) {
+  if (sampleRate <= 0) {
+    return false;
+  }
+  if (sampleRate >= 1) {
+    return true;
+  }
+  const seed = [
+    analyticsMetadata?.visitorId,
+    analyticsMetadata?.sessionId,
+    analyticsMetadata?.acquisitionId,
+    traceId,
+  ].filter(Boolean).join(':');
+  return stableUnitInterval(seed || traceId) < sampleRate;
 }
 
 function appendQueryParam(url, key, value) {
@@ -3250,6 +3290,25 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/compare/anthropic-claude-for-legal', changefreq: 'weekly', priority: '0.9' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
   ];
+  // Auto-include every hand-written comparison page so /sitemap.xml can never
+  // drift out of sync with public/compare/*.html. Crawlers and AI answer engines
+  // (Google AI Overviews/AI Mode, ChatGPT, Perplexity) only surface pages they can
+  // discover, so a comparison page missing from the sitemap is invisible on its
+  // buyer-intent query. De-duped against entries already declared above (e.g. the
+  // seo-gsd specs), which keep their explicit priorities.
+  const declaredPaths = new Set(entries.map((entry) => entry.path));
+  try {
+    const compareFiles = fs.readdirSync(path.join(PUBLIC_DIR, 'compare')).sort((a, b) => a.localeCompare(b));
+    for (const file of compareFiles) {
+      if (!file.endsWith('.html')) continue;
+      const comparePath = `/compare/${file.replace(/\.html$/, '')}`;
+      if (declaredPaths.has(comparePath)) continue;
+      declaredPaths.add(comparePath);
+      entries.push({ path: comparePath, changefreq: 'weekly', priority: '0.85' });
+    }
+  } catch {
+    // public/compare absent in a stripped bundle — fall back to the static entries.
+  }
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
@@ -5662,11 +5721,20 @@ async function addContext(){
       // buildCheckoutFallbackUrl. Default-off; bot-deflection still applies
       // (bot + no email hint still falls through to the existing interstitial).
       const interstitialBypassEnabled = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS === '1';
+      const interstitialSampleRate = normalizeCheckoutInterstitialSampleRate(
+        process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE
+      );
+      const interstitialSampled = shouldSampleCheckoutInterstitial({
+        sampleRate: interstitialSampleRate,
+        traceId,
+        analyticsMetadata,
+      });
       if (
         !isConfirmedCheckout
         && interstitialBypassEnabled
         && req.method !== 'POST'
         && botShouldBypass
+        && !interstitialSampled
       ) {
         // Always target the pro Stripe Payment Link directly. The
         // hostedConfig.checkoutFallbackUrl (e.g. https://thumbgate.ai/go/pro)
@@ -5692,6 +5760,7 @@ async function addContext(){
           referrerHost: analyticsMetadata.referrerHost,
           page: '/checkout/pro',
           planId: analyticsMetadata.planId,
+          interstitialSampleRate,
         }, req.headers, 'checkout_interstitial_bypass_redirect');
         res.writeHead(302, {
           ...responseHeaders,
@@ -5758,6 +5827,8 @@ async function addContext(){
           billingCycle: analyticsMetadata.billingCycle,
           landingPath: analyticsMetadata.landingPath,
           isBot: botClassification.isBot ? 'true' : 'false',
+          interstitialSampled: interstitialSampled ? 'true' : 'false',
+          interstitialSampleRate,
           reason: botClassification.reason,
         }, req.headers, eventType);
         const prefilledEmail = parsed?.searchParams?.get('customer_email') || '';
