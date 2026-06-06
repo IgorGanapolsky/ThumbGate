@@ -171,6 +171,11 @@ const HIGH_ROI_QUERY_SEEDS = [
     'Bottom-of-funnel query for teams ready to add human approval and evidence requirements before AI agents touch risky tools.',
   ),
   querySeed(
+    'agentic web governance',
+    94,
+    'Fresh Cloudflare bot-majority demand: buyers need machine-readable pages and pre-action governance now that AI agents can create more web actions than humans.',
+  ),
+  querySeed(
     'database safety for ai agents',
     96,
     'Fresh database-agent risk query from the 2026 DB/AI conversation: agents can hallucinate UI, but SQL writes, migrations, and role grants can destroy production data.',
@@ -2491,6 +2496,74 @@ const PAGE_BLUEPRINTS = [
       },
     ],
     relatedPaths: ['/guides/pre-action-checks', '/guides/mcp-tool-governance', '/guides/ai-agent-governance-sprint'],
+  },
+  {
+    query: 'agentic web governance',
+    path: '/guides/agentic-web-governance',
+    pageType: 'guide',
+    pillar: 'pre-action-checks',
+    title: 'Agentic Web Governance | Pre-Action Checks When Bots Outnumber Humans',
+    heroTitle: 'Bots already outnumber humans on the web. AI agents need pre-action governance.',
+    heroSummary: 'Cloudflare says automated requests now make up the majority of HTML traffic. ThumbGate turns that agentic-web shift into a buyer-ready governance story: machine-readable proof for AI search and pre-action checks before agents touch real systems.',
+    takeaways: [
+      'The promotion hook is immediate: the web is becoming agent-first, so AI-agent actions need governance before execution.',
+      'AI search and AI browsers reward machine-readable, authoritative, proof-backed pages instead of vague product copy.',
+      'ThumbGate should own the bridge between agentic traffic, MCP tool calls, and pre-action checks for code, deploys, data, money, and customer systems.',
+    ],
+    sections: [
+      {
+        heading: 'Why the bot-majority milestone matters',
+        paragraphs: [
+          'Search Engine Land reported on June 5, 2026 that Cloudflare data showed automated traffic at about 57.3% of worldwide HTTP requests to HTML content, versus 42.7% for humans. That is not the same as human attention, but it is a real signal that AI agents and bots are becoming the default way the web is requested, summarized, and acted on.',
+          'For ThumbGate promotion, the lesson is not "get more bot traffic." The lesson is that every company will need controls for agent actions that happen before a human click, before a dashboard session, and before a normal attribution path records intent.',
+        ],
+      },
+      {
+        heading: 'The buyer problem this creates',
+        bullets: [
+          'AI crawlers and agents can visit far more pages than a human researcher, increasing load without creating normal referral or checkout signals.',
+          'Agentic search can summarize the answer before the buyer ever lands on the site, so content must be structured enough for LLMs to cite accurately.',
+          'Internal AI agents can also multiply actions: file edits, shell commands, API calls, database reads, deploy attempts, and customer-system writes.',
+          'More agent actions without a pre-action boundary means more repeated mistakes, more hidden cost, and weaker auditability.',
+        ],
+      },
+      {
+        heading: 'Where ThumbGate fits the agentic web',
+        paragraphs: [
+          'ThumbGate is the pre-action governance layer for the same agentic shift. The public website gives AI systems machine-readable context, proof links, FAQ schema, and canonical pages. The product then gives engineering teams runtime gates before agents act.',
+          'That lets the promotion story stay concrete: bots and AI agents already outnumber humans in web requests; ThumbGate makes sure your own AI agents do not behave like unmanaged bots inside your repo, browser, database, CI, payment flow, or customer systems.',
+        ],
+        bullets: [
+          'Use /llm-context.md and /.well-known/llms.txt to make ThumbGate easy for ChatGPT, Claude, Perplexity, Gemini, Grok, and Google AI features to summarize.',
+          'Use pre-action checks to govern MCP tool calls, browser automation, database writes, publish commands, and payment/customer-system actions.',
+          'Use feedback capture so a thumbs-down on one bad agent pattern becomes a repeat-blocking rule across the next session and team workflow.',
+        ],
+      },
+      {
+        heading: 'High-ROI promotion moves',
+        bullets: [
+          'Publish this page as the canonical "agentic web governance" explainer and link it from the homepage, learn hub, llms.txt, and sitemap.',
+          'Pitch the line: "Bots already outnumber humans on the web. ThumbGate keeps AI agents from acting like unmanaged bots in your codebase."',
+          'Target buyer prompts such as "how do I govern AI agents before they call tools?", "AI crawler visibility for developer tools", and "pre-action checks for MCP tools."',
+          'Measure success in Search Console AI reports, first-party landing events, and checkout/intake paths instead of raw traffic alone.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'What is agentic web governance?',
+        answer: 'Agentic web governance is the content, policy, approval, and runtime-control layer needed when AI agents browse, summarize, and act on behalf of users or teams. For ThumbGate, it means machine-readable public proof plus pre-action checks before internal agents touch real systems.',
+      },
+      {
+        question: 'Does bot traffic mean ThumbGate should block AI crawlers?',
+        answer: 'No. For promotion, ThumbGate should allow legitimate AI discovery while publishing clear llms.txt, schema, canonical pages, and proof links. The product should block risky internal agent actions, not useful AI-search discovery.',
+      },
+      {
+        question: 'How does this create revenue?',
+        answer: 'It gives ThumbGate a timely category narrative for buyers: as agent actions multiply, teams need pre-action controls before code, data, deploys, payments, or customers are touched. The page routes that demand into Pro checkout and the Team workflow hardening sprint.',
+      },
+    ],
+    relatedPaths: ['/guides/ai-search-topical-presence', '/guides/mcp-tool-governance', '/guides/ai-agent-pre-action-approval-gates'],
   },
   guideBlueprint({
     query: 'autoresearch agent safety',
