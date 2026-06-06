@@ -79,6 +79,11 @@ const {
 } = require('../../scripts/noop-detect');
 const { recordAuditEvent } = require('../../scripts/audit-trail');
 const {
+  claimWork,
+  releaseWork,
+  listClaims,
+} = require('../../scripts/agent-work-lock');
+const {
   recordReceipt,
   getReceiptForAction,
   getRecentReceipts,
@@ -1005,6 +1010,19 @@ async function callToolInner(name, args) {
           taskId: args.taskId,
           ttlMs: args.ttlMs,
         }),
+      });
+    case 'claim_work':
+      return toTextResult(claimWork(args.key, {
+        agentId: args.agentId,
+        ttlMs: args.ttlMs,
+      }));
+    case 'release_work':
+      return toTextResult(releaseWork(args.key, args.agentId, {
+        force: args.force === true,
+      }));
+    case 'list_work_claims':
+      return toTextResult({
+        claims: listClaims({ includeStale: args.includeStale !== false }),
       });
     case 'track_action': {
       const entry = trackAction(args.actionId, args.metadata || {});

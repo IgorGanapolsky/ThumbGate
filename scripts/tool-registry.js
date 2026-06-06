@@ -920,6 +920,45 @@ const TOOLS = [
     },
   }),
   destructiveTool({
+    name: 'claim_work',
+    title: 'Claim Work Unit',
+    description: 'Atomically claim a unit of work before doing it so other concurrent agents (Claude Code, Codex, Antigravity) skip or wait — preventing duplicate/conflicting work on the same repo. Returns acquired:false plus heldBy when a live, non-expired claim already exists.',
+    inputSchema: {
+      type: 'object',
+      required: ['key'],
+      properties: {
+        key: { type: 'string', description: 'Logical work-unit identifier, e.g. "fix:statusline-aggregate" or an issue/PR id.' },
+        agentId: { type: 'string', description: 'Caller identity. Defaults to THUMBGATE_AGENT_ID or agent-<pid>.' },
+        ttlMs: { type: 'number', description: 'Claim lifetime in milliseconds. Defaults to 30 minutes; an older claim is reclaimable.' },
+      },
+    },
+  }),
+  destructiveTool({
+    name: 'release_work',
+    title: 'Release Work Claim',
+    description: 'Release a work claim so other agents can pick it up. Only succeeds if held by the given agentId, unless force is set.',
+    inputSchema: {
+      type: 'object',
+      required: ['key', 'agentId'],
+      properties: {
+        key: { type: 'string', description: 'The work-unit identifier to release.' },
+        agentId: { type: 'string', description: 'Identity that holds the claim. Required unless force is true.' },
+        force: { type: 'boolean', description: 'Release regardless of holder. Use only to clear a stuck claim.' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'list_work_claims',
+    title: 'List Work Claims',
+    description: 'List active work claims across concurrent agents. Reclaimable (expired or dead-process) claims are reported with live:false so callers can see what is takeable.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        includeStale: { type: 'boolean', description: 'Include reclaimable (expired/dead-pid) claims. Defaults to true.' },
+      },
+    },
+  }),
+  destructiveTool({
     name: 'detect_noop',
     title: 'Detect No-op Action',
     description: 'Detect whether a tool call was a no-op (state unchanged) or identical to a prior attempt in the session — a cheap repeat-loop signal. Records the action attempt state for repeat detection.',
