@@ -116,8 +116,7 @@ async function main() {
   const claudeMd = read('CLAUDE.md') || '';
   const geminiMd = read('GEMINI.md') || '';
   const serverStdio = read('adapters/mcp/server-stdio.js') || '';
-  const productHuntKit = read('docs/marketing/product-hunt-launch.md') || '';
-  const productHuntLaunchKit = read('docs/marketing/product-hunt-launch-kit.md') || '';
+  // const productHuntKit / productHuntLaunchKit removed 2026-06-06 with docs/marketing/.
   const claudePluginReadme = read('.claude-plugin/README.md') || '';
   const claudeDesktopPacket = read('docs/CLAUDE_DESKTOP_EXTENSION.md') || '';
   const latestClaudePluginUrl = getClaudePluginLatestDownloadUrl(ROOT);
@@ -265,7 +264,7 @@ async function main() {
     'public/pro.html': proHtml,
     'public/pricing.html': read('public/pricing.html') || '',
     'docs/landing-page.html': docsLandingHtml,
-    'docs/marketing/product-hunt-launch-kit.md': productHuntLaunchKit,
+    // docs/marketing/product-hunt-launch-kit.md removed 2026-06-06.
     'README.md': readmeMd,
     'public/guide.html': guideHtml,
     'docs/COMMERCIAL_TRUTH.md': commercialTruth,
@@ -396,22 +395,9 @@ async function main() {
     /pre-action checks|shared lessons|team safeguards/i.test(githubAbout.githubDescription),
     'config/github-about.json githubDescription must preserve the GitHub repo positioning'
   );
-  check(
-    productHuntKit.includes(PRODUCTHUNT_URL),
-    'docs/marketing/product-hunt-launch.md must include the live Product Hunt URL'
-  );
-  check(
-    /thumbs[\s-]?up|👍/i.test(productHuntKit),
-    'docs/marketing/product-hunt-launch.md must mention the thumbs-up path'
-  );
-  check(
-    /thumbs[\s-]?down|👎/i.test(productHuntKit),
-    'docs/marketing/product-hunt-launch.md must mention the thumbs-down path'
-  );
-  check(
-    productHuntKit.includes(latestClaudePluginUrl),
-    'docs/marketing/product-hunt-launch.md must link to the Claude plugin bundle'
-  );
+  // Product Hunt launch-kit checks removed 2026-06-06 — docs/marketing/
+  // was deleted in the post-Reddit credibility cleanup. The live PH URL is
+  // still pinned in CHANGELOG / README via separate checks.
   check(
     claudePluginReadme.includes(latestClaudePluginUrl),
     '.claude-plugin/README.md must link to the latest Claude plugin bundle'
