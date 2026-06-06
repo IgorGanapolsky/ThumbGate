@@ -149,7 +149,9 @@ function readResolvedStatuslineCache(options = {}) {
   return null;
 }
 
-if (require.main === module) {
+const _invokedDirectly =
+  process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename);
+if (_invokedDirectly) {
   const resolved = readResolvedStatuslineCache();
   if (resolved) {
     process.stdout.write(JSON.stringify(resolved));
