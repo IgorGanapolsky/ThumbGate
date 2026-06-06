@@ -46,7 +46,12 @@ jobs:
           fi
 
           git diff --name-only "$BASE_SHA" "$HEAD_SHA" > /tmp/sonar-changed-files.txt
-          awk '/^(src|scripts|bin)\// { print }' /tmp/sonar-changed-files.txt > /tmp/sonar-changed-source-files.txt
+          # Only scan files that still EXIST in the working tree; deleted files
+          # are present in `git diff --name-only` output but the Sonar scanner
+          # exits with "folder X does not exist" if we hand them over.
+          awk '/^(src|scripts|bin)\// { print }' /tmp/sonar-changed-files.txt \
+            | while IFS= read -r f; do [ -e "$f" ] && echo "$f"; done \
+            > /tmp/sonar-changed-source-files.txt
           if [[ -s /tmp/sonar-changed-source-files.txt ]]; then
             SOURCE_PATHS=$(paste -sd, /tmp/sonar-changed-source-files.txt)
           else
