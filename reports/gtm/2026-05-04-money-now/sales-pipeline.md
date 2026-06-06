@@ -1,6 +1,6 @@
 # Sales Pipeline
 
-Updated: 2026-06-05T23:01:07.482Z
+Updated: 2026-06-06T13:23:51.900Z
 
 This is the first-dollar truth table. Posts are not sales; only stage movement counts.
 

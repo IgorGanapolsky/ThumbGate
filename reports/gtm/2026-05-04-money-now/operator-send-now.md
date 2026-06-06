@@ -1,6 +1,6 @@
 # Revenue Operator Send-Now Sheet
 
-Updated: 2026-06-05T14:59:56Z
+Updated: 2026-06-06T13:11:16Z
 
 This is the flat batch-send layer for the current revenue loop. Use it when you want the message, CTA, and logging commands in one place without re-reading the full GTM report.
 
@@ -12,9 +12,9 @@ Pair this file with `operator-priority-handoff.md` when you need deeper account 
 - Billing verification: Live hosted billing summary verified for this run.
 - Paid orders: 4
 - Checkout starts: 133
-- Active follow-ups: 4
+- Active follow-ups: 6
 - Warm targets ready now: 4 contacted Reddit follow-ups
-- Self-serve closes ready now: 2 untouched GitHub Pro leads
+- Self-serve closes ready now: 2 already-contacted GitHub Pro close follow-ups
 - Production-rollout targets ready now: 0 untouched; use follow-ups instead
 - Cold GitHub targets ready next: 0 until the current queue moves
 
@@ -23,12 +23,12 @@ Pair this file with `operator-priority-handoff.md` when you need deeper account 
 - Keep the offer split honest: sprint rows get one workflow-hardening offer; self-serve rows get the guide-to-Pro lane unless pain is confirmed.
 - Qualify the offer split: Use Pro after one blocked repeat or explicit self-serve install intent. Use the Workflow Hardening Sprint when one workflow owner needs approval boundaries, rollback safety, and proof before wider rollout.
 - Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) and [COMMERCIAL_TRUTH.md](../COMMERCIAL_TRUTH.md) only after the buyer confirms pain.
-- Current live pipeline on 2026-06-05: `23` active leads, `21` contacted, `1` replied, `2` untouched. This was re-verified from `scripts/sales-pipeline.js` against `.thumbgate/sales-pipeline.jsonl` on `2026-06-05T14:59:56Z`. Ignore the replied Aiventyx thread because that lane is deprecated.
+- Current live pipeline on 2026-06-06: `24` active leads, `22` stage-count `contacted`, `2` replied, `24` aggregate contacted, `0` targeted, and `0` paid. This was re-verified from `scripts/sales-pipeline.js` against `.thumbgate/sales-pipeline.jsonl` on `2026-06-06T13:11:16Z`. Ignore the replied Aiventyx thread because that lane is deprecated.
 
 ## Next Approval Action
 
 - A1 only: send the four warm Reddit follow-ups first.
-- A2 next: send the two untouched GitHub Pro leads after A1.
+- A2 next: send the two GitHub Pro close-follow-ups after A1.
 - Do not touch the longer cold/prod queue until either A1 or A2 moves a lead forward.
 
 ```bash
@@ -92,35 +92,37 @@ Checkout close draft:
 Follow-up draft:
 > Following up on your ACT-R engram thread. If one recurring failure mode like stale context, opposing facts, or bad handoffs is still blocking a real workflow, I can turn that into a gate plan and proof run. Open to a quick diagnostic?
 
-## Send Now: Untouched Pro Leads
+## Backlog Copy: Pro Close Follow-Ups
+
+These two close-follow-up rows are still the correct A2 copy, but they are not the immediate action because A1 remains the warm Reddit four-pack.
 
 ### 1. @easingthemes - dx-aem-flow
 - Channel: github / direct
-- Pipeline stage: targeted
+- Pipeline stage: contacted
 - Pipeline lead id: github_easingthemes_dx_aem_flow
-- Next operator step: Send the first-touch guide-first draft and log the outreach in the sales pipeline.
+- Next operator step: Send a short Pro close-follow-up and log the outreach in the sales pipeline.
 - Evidence score: 7
 - Motion: Pro self-serve
-- Why now: One of only two untouched leads left in the live pipeline.
+- Why now: One of only two self-serve leads left after first touch already went out.
 - Contact surface: https://www.linkedin.com/in/draganfilipovic/
-- CTA: https://thumbgate-production.up.railway.app/guide
-- Log after send: `npm run sales:pipeline -- advance --lead 'github_easingthemes_dx_aem_flow' --channel 'github' --stage 'contacted' --note 'Sent guide-first Pro outreach to dx-aem-flow.'`
+- CTA: https://thumbgate-production.up.railway.app/checkout/pro
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_easingthemes_dx_aem_flow' --channel 'github' --stage 'contacted' --note 'Sent Pro close-follow-up to dx-aem-flow after the guide-first first touch.'`
 - Outreach draft:
-> Your `dx-aem-flow` work looks like a strong fit for the self-serve ThumbGate path. Start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated AI-agent mistake is still slowing the workflow down after that, Pro is the clean next step.
+> Following up on `dx-aem-flow`: if the proof-backed setup guide looked close but you still want the evidence/export lane, Pro is the clean next step: https://thumbgate-production.up.railway.app/checkout/pro. If one repeated AI-agent mistake is still blocking rollout, I can route you into the Diagnostic/Sprint lane instead.
 
 ### 2. @zaxbysauce - opencode-swarm
 - Channel: github / direct
-- Pipeline stage: targeted
+- Pipeline stage: contacted
 - Pipeline lead id: github_zaxbysauce_opencode_swarm
-- Next operator step: Send the first-touch guide-first draft and log the outreach in the sales pipeline.
+- Next operator step: Send a short Pro close-follow-up and log the outreach in the sales pipeline.
 - Evidence score: 8
 - Motion: Pro self-serve
-- Why now: One of only two untouched leads left in the live pipeline.
+- Why now: One of only two self-serve leads left after first touch already went out.
 - Contact surface: https://github.com/zaxbysauce
-- CTA: https://thumbgate-production.up.railway.app/guide
-- Log after send: `npm run sales:pipeline -- advance --lead 'github_zaxbysauce_opencode_swarm' --channel 'github' --stage 'contacted' --note 'Sent guide-first Pro outreach to opencode-swarm.'`
+- CTA: https://thumbgate-production.up.railway.app/checkout/pro
+- Log after send: `npm run sales:pipeline -- advance --lead 'github_zaxbysauce_opencode_swarm' --channel 'github' --stage 'contacted' --note 'Sent Pro close-follow-up to opencode-swarm after the guide-first first touch.'`
 - Outreach draft:
-> Your `opencode-swarm` project already lives in the exact risk zone ThumbGate is built for. If you want the self-serve path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
+> Following up on `opencode-swarm`: if you want the self-serve lane, the live Pro checkout is here: https://thumbgate-production.up.railway.app/checkout/pro. If the blocker is bigger than tooling and one repeated agent mistake is still slowing the workflow down, I can shift you into the Diagnostic/Sprint path.
 
 Pain-confirmed follow-up:
 > If your workflow really has one repeated workflow failure blocking rollout, I can send the Workflow Hardening Sprint brief plus the commercial truth and verification evidence: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md

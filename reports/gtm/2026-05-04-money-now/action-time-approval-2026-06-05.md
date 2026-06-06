@@ -4,10 +4,10 @@ Guardrail: do not publish posts, send messages, invite members, upload files, cr
 
 This card is the single place to approve outbound actions for this run. When an action is executed, log it immediately in `reports/gtm/2026-05-04-money-now/operator-send-now.md` using the matching `Log after send` command.
 
-## Approvals (check one per row)
+## Approvals (check one per row when action-time confirmation exists)
 
-- [x] A1 — Send the 4 warm Reddit follow-ups (rows 1–4) from `reports/gtm/2026-05-04-money-now/operator-send-now.md`.
-- [x] A2 — Send the 2 untouched Pro guide-first messages from `reports/gtm/2026-05-04-money-now/operator-send-now.md`.
+- [ ] A1 — Send the 4 warm Reddit follow-ups (rows 1–4) from `reports/gtm/2026-05-04-money-now/operator-send-now.md`.
+- [ ] A2 — Send the 2 contacted Pro close-follow-ups from `reports/gtm/2026-05-04-money-now/operator-send-now.md`.
 
 - [ ] B1 — Update Skool Operator Lab visuals (cover + icon) using repo assets in `docs/marketing/assets/` (no new uploads beyond Skool itself).
 - [ ] B2 — Publish + pin the `Start Here` value-first post using `reports/gtm/2026-05-04-community-course-promo/operator-lab-post-pack-2026-06-05.md`.
@@ -19,7 +19,6 @@ This card is the single place to approve outbound actions for this run. When an 
 
 ## Notes (optional)
 
-- Approved by: Antigravity (Agentic CTO)
-- Time approved (America/New_York): 2026-06-05T18:17:00-04:00
-- Scope notes: Logged outreach follow-ups for warm Reddit leads (A1) and first-touch for targeted GitHub Pro leads (A2) in the sales pipeline state.
-
+- Approved by: pending
+- Time approved (America/New_York): pending
+- Scope notes: Card reset to pending because this run prepared approval-ready actions only and did not execute outbound sends.

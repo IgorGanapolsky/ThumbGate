@@ -1,7 +1,7 @@
 # ThumbGate Community + Course Promo Operator Handoff
 
 Generated: 2026-05-04
-Updated: 2026-06-05T22:12:00Z
+Updated: 2026-06-06T12:10:30Z
 
 ## Live Assets
 
@@ -30,14 +30,14 @@ Current blockers:
 - The public-save state for the About page is still not re-verified in this runtime.
 - Cover/icon uploads remain blocked by the in-app browser file-picker surface, but local assets are ready.
 - The first post and invite steps still require action-time confirmation before publication/sending.
-- A headless read of the public Skool URL failed again in this environment at `2026-06-05T22:07:35Z`, so the live public page content still needs browser-side verification before claiming the surface is fully updated.
+- A headless read of the public Skool URL failed again in this environment in this run, so the live public page content still needs browser-side verification before claiming the surface is fully updated.
 - Direct unauthenticated `curl -I -L https://www.skool.com/thumbgate-operator-lab-6000` previously returned HTTP `403` from CloudFront, so a headless anonymous verification path is not currently reliable from this runtime.
 - Skool’s current Discovery FAQ lists `off-platform payments` as a ranking penalty, so external paid links on public Skool surfaces should be treated as a deliberate tradeoff instead of a default conversion step.
-- GitHub visibility remains unstable in this runtime: the most recent partial snapshot is still the earlier `2026-06-05T20:06:59Z` read where `gh pr list --state open --limit 10` succeeded and showed open PRs `#2511`, `#2509`, `#2503`, `#2464`, `#2463`, `#2461`, `#2445`, `#2444`, `#2439`, and `#2438`, but the latest combined PR/Actions probe failed at `2026-06-05T22:07:35Z` with `error connecting to api.github.com`.
+- GitHub visibility is only partially healthy in this runtime: `gh pr list --state open --limit 10` and `gh run list --branch main --limit 5` both succeed again in this run, but `npm run pr:manage` still fails with `error connecting to api.github.com`.
 - Skool Growth-tab metrics have not been read back in a browser-authenticated session yet, so About-page conversion and traffic-source truth are still unknown.
-- Zernio analytics are still dark in this runtime on 2026-06-05 (`0/6` healthy platforms, `0` rows in the last `24h` at `2026-06-05T22:07:35Z`).
-- The latest local sales-pipeline summary at `2026-06-05T22:07:35Z` still shows `23` active leads with only `2` untouched and `0` paid, so warm outbound follow-up remains the fastest revenue path.
-- Current local GitHub readback is only partially available; PR listing is readable, but Actions readback and `npm run pr:manage` are not reliable from this shell right now.
+- Zernio analytics are still dark in this runtime on 2026-06-06 (`0/6` healthy platforms, `0` rows in the last `24h`; generated `2026-06-06T12:10:30.128Z`).
+- The latest local sales-pipeline summary at `2026-06-06T12:10:30Z` still shows `24` active leads, `22` stage-count contacted, `2` replied, `24` aggregate contacted, `0` paid, and `bookedRevenueCents: 0`, so warm outbound follow-up remains the fastest revenue path.
+- Current local GitHub readback is partially reliable again in this shell; direct `gh` list/run reads work, but `npm run pr:manage` remains the flaky path.
 
 Workaround for the in-app file picker:
 
@@ -73,11 +73,9 @@ The best first win is narrow: one mistake, one rule, one blocked repeat.
 
 ## Research Notes
 
-Skool official sources (re-verified 2026-06-05):
+Skool official sources (re-verified 2026-06-06):
 
-- Pricing models supported: free, subscription, freemium, tiered pricing, and one-time payment.
-  - https://help.skool.com/article/215-how-to-setup-pricing-for-the-group
-- Skool Payments FAQs: current transaction fees and payout behavior for paid memberships inside Skool.
+- Skool Payments FAQs: current transaction fees, non-refundable processing fees, current `$100,000` per-charge limit, and payout behavior for paid memberships inside Skool.
   - https://help.skool.com/article/86-subscriptions-faq
 - Payout status: payouts are initiated weekly on Wednesdays, with first payout availability taking roughly `8` to `14` days.
   - https://help.skool.com/article/85-how-to-check-the-skool-subscriptions-payout
@@ -89,20 +87,26 @@ Skool official sources (re-verified 2026-06-05):
   - https://help.skool.com/article/120-how-to-set-up-my-group-logo-and-cover-photo
 - Membership questions live under Plugins and still allow up to `3` questions with only `1` email-type field.
   - https://help.skool.com/article/57-how-to-set-up-membership-questions
+- Pricing models supported: free, subscription, freemium, tiered pricing, and one-time payment.
+  - https://help.skool.com/article/215-how-to-setup-pricing-for-the-group
 - About page: must be completed for Discovery eligibility and supports uploading images/videos in the editor.
   - https://help.skool.com/article/123-how-to-set-up-my-group-s-about-page
 - About page role: Skool explicitly frames the About page as a landing/checkout surface, which makes value-first copy and strong visual proof more important than extra product detail.
   - https://help.skool.com/article/123-how-to-set-up-my-group-s-about-page
 - Classroom basics: courses are created in Classroom and pages can be published as lessons.
   - https://help.skool.com/article/166-what-is-classroom
-- Course publishing: a new course needs a name, description, cover photo, and access setting; courses are published by default.
+- Course publishing: a new course needs a name, description, cover photo, and access setting; individual pages only become visible after they are toggled to `published` and saved.
   - https://help.skool.com/article/143-how-to-publish-a-course
 - Course access modes: Open, Level unlock, Buy now, Time unlock, and Private.
   - https://help.skool.com/article/23-how-to-set-permissions-for-a-course
 - Points/levels remain group-local and still use the documented ladder of `0`, `5`, `20`, `65`, `155`, `515`, `2,015`, `8,015`, and `33,015` points for levels `1` through `9`.
   - https://help.skool.com/article/183-how-do-points-and-level-work
 - Native video in courses/posts: direct upload is supported, English captions auto-generate for videos with sound, and each course can have up to `200` pages.
-  - https://help.skool.com/article/58-video
+  - https://help.skool.com/article/58-video-link-tips
+- Traffic-source attribution:
+  - direct About/community links preserve source attribution better than redirects or link shorteners
+  - redirects, link-in-bio tools, and URL shorteners collapse into `Direct`, so promo posts should keep the raw Skool URL with UTMs
+  - https://help.skool.com/article/226-traffic-sources
 - Course-page extras: pages can add transcripts, resource files, resource links, and pinned community posts, so the first free course can double as both onboarding and proof surface.
   - https://help.skool.com/article/166-what-is-classroom
 - Public group-card links: available on the Pro plan, with up to `3` links.
@@ -115,13 +119,15 @@ Skool official sources (re-verified 2026-06-05):
   - https://help.skool.com/article/64-how-to-set-up-autodm
 - Membership questions: maximum `3`, with only one email-type question allowed.
   - https://help.skool.com/article/57-how-to-set-up-membership-questions
+- Membership Questions plugin guidance now explicitly suggests using the slots for fit, contact capture, and source attribution, which matches the current three-question pack.
+  - https://help.skool.com/article/176-how-to-use-plugins
 - Discovery eligibility + ranking:
   - Discovery FAQ now explicitly notes "Updates coming to the Discovery algorithm in Q2 of 2026."
   - Eligibility needs: minimum threshold of members, posts, and activity plus group description, About page description/images, and cover image. (Threshold values are not published.)
   - Visibility timing: Skool currently says "usually within an hour" on the unlisted-checklist page and "within two hours" on the FAQ page, so treat same-day visibility as likely but not instant.
   - Ranking boosts: high-quality artwork/about page, authentic engagement, active owner/admin behavior.
   - Ranking penalties: bots/fake accounts, spam or low-quality engagement, low-quality artwork/about page, off-platform payments, bad customer support, inactive owner.
-  - Latest official help updates observed in this run: Discovery FAQ updated `April 8, 2026`; unlisted/discovery checklist updated `April 15, 2026`; Classroom updated `May 29, 2026`; Payments FAQ updated `April 22, 2026`; payout-status guidance updated `May 5, 2026`; About page setup updated `December 9, 2025`; Analytics definitions updated `November 24, 2025`.
+  - Latest official help updates observed in this run: Discovery FAQ updated `April 8, 2026`; unlisted/discovery checklist updated `April 15, 2026`; Classroom updated `May 29, 2026`; video guidance updated `February 12, 2026`; Payments FAQ updated `April 22, 2026`; payout-status guidance updated `May 5, 2026`; About page setup updated `December 9, 2025`; Analytics definitions updated `November 24, 2025`.
   - https://help.skool.com/article/153-discovery-faqs
   - https://help.skool.com/article/151-why-isnt-my-group-visible-in-discovery
 - Discovery “unlisted” checklist (new groups):
@@ -149,17 +155,18 @@ Zernio analytics polling is blocked by the Analytics add-on paywall. Treat Zerni
 
 The `thumbgate-creator-platform-promo.yml` workflow now passes `--offer=operator-lab`, so previews/schedules/publishes from that workflow promote the free Skool Operator Lab instead of the older first-customer launch copy.
 
-As of 2026-06-05T22:07:35Z, local dry-runs still preview the Operator Lab campaign without Zernio credentials and include the planned media attachments in the preview JSON:
+As of 2026-06-06T12:10:30Z, local dry-runs still preview the Operator Lab campaign without Zernio credentials and include the planned media attachments in the preview JSON:
 
 `npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=linkedin,instagram,threads,bluesky,reddit,youtube`
 
-Current dry-run facts from 2026-06-05T22:07:35Z:
+Current dry-run facts from 2026-06-06T12:10:30Z:
 
 - The preview renders six platform-specific posts for `linkedin,instagram,threads,bluesky,reddit,youtube`.
 - Each preview references a repo-backed media asset and reports `exists: true`.
 - Local `accountCount` was `0` across platforms in this runtime, which is acceptable for preview but means live publish/schedule should stay in GitHub Actions with repo secrets.
+- The canonical local preview entrypoint is still `npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=linkedin,instagram,threads,bluesky,reddit,youtube`; the older `creator:platform:promo` alias is not present in this checkout.
 - `npm run social:zernio:status` still reports `0/6` healthy platforms and `0` rows in the last `24h`, so Zernio remains a publish pipe only until analytics readback is restored.
-- GitHub readback is currently split in this runtime: PR listing works, but Actions readback is rate-limited and `npm run pr:manage` still fails.
+- GitHub readback is partially healthy again in this runtime; direct PR/run reads succeed, but `npm run pr:manage` still fails against `api.github.com`.
 
 ## Classroom / Course Surface
 

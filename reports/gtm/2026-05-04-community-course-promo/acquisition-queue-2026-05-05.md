@@ -1,6 +1,6 @@
 # Acquisition Queue (Operator Lab + Sprint)
 
-Updated: 2026-06-05T16:01:19Z
+Updated: 2026-06-06T03:09:35Z
 
 Guardrail: do not publish posts, send messages, invite members, upload files, create accounts, change billing, submit forms, or run paid ads without explicit action-time confirmation.
 
@@ -24,18 +24,18 @@ Approval-ready steps (no auto-send):
 1. Send the first 4 warm Sprint DMs (the Reddit rows at the top of `operator-send-now.md`).
 2. After each send, run that row’s `Log after send` command.
 3. Only after pain is confirmed, reply with Diagnostic/Sprint close copy and include proof links.
-4. Send the 2 untouched GitHub Pro rows only after the warm Reddit batch is approved/sent.
+4. Send the 2 already-contacted GitHub Pro close-follow-ups only after the warm Reddit batch is approved/sent.
 
-Current verified queue on 2026-06-05:
+Current verified queue on 2026-06-06:
 
-- Live pipeline: `23` active leads, `21` contacted, `2` targeted, `1` replied, `0` paid
+- Live pipeline: `24` active leads, `24` contacted, `2` replied, `0` targeted, `0` paid
 - A1 first: `reddit_deep_ad1959_r_cursor`, `reddit_game_of_kton_r_cursor`, `reddit_leogodin217_r_claudecode`, `reddit_enthu_cutlet_1337_r_claudecode`
 - A2 second: `github_easingthemes_dx_aem_flow`, `github_zaxbysauce_opencode_swarm`
-- Re-verified priority on `2026-06-05T16:01:19Z`: keep A1 first; no current Skool/platform task has higher expected revenue than working the four warm Reddit follow-ups.
+- Re-verified priority in this run: keep A1 first; no current Skool/platform task has higher expected revenue than working the four warm Reddit follow-ups.
 
 ## Lane B: Skool Discovery eligibility (unblocker)
 
-Skool Discovery requires (Skool official help, re-verified 2026-06-05):
+Skool Discovery requires (Skool official help, re-verified 2026-06-06):
 
 - Cover image
 - Group description
@@ -81,12 +81,12 @@ Paid CTA (only after pain is confirmed):
 
 - Intake: `https://thumbgate-production.up.railway.app/#workflow-sprint-intake`
 
-Current workflow readiness on 2026-06-05:
+Current workflow readiness on 2026-06-06:
 
-- Local `--offer=operator-lab` preview re-ran successfully at `2026-06-05T16:01:18Z` and still returns `6` previews.
+- Local `--offer=operator-lab` preview re-ran successfully at `2026-06-06T02:08:06Z` and still returns `6` previews.
 - Every referenced media asset still exists locally.
 - Preview-mode `accountCount` is still `0` on every platform in this runtime, so live publish/schedule should stay on the GitHub Actions path with secrets.
-- Local shell still has no `ZERNIO_API_KEY` at `2026-06-05T16:01:19Z`, so do not treat this runtime as publish-ready.
+- Local shell still has no `ZERNIO_API_KEY` at `2026-06-06T02:08:06Z`, so do not treat this runtime as publish-ready.
 
 ## Lane D: Public market signals (Skool-first positioning)
 
@@ -106,4 +106,4 @@ Implication for ThumbGate:
 1. Keep Operator Lab free and outcome-first on the public surface.
 2. Use the Skool CTA to collect repeated-failure posts, not to force immediate checkout intent.
 3. Route paid intent into Diagnostic, Sprint, or Pro only after pain is confirmed in comments, DMs, or direct follow-up.
-4. Do not spend another cycle polishing Skool before the warm six-lead queue is worked.
+4. Do not spend another cycle polishing Skool before the warm four-pack and the two Pro close-follow-ups are worked.

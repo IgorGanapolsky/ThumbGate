@@ -1,6 +1,6 @@
 # Skool Classroom Listing Copy
 
-Updated: 2026-06-05T10:54:47Z
+Updated: 2026-06-06T08:11:06Z
 
 Guardrail: do not publish or edit the live Classroom without action-time confirmation.
 
@@ -8,14 +8,16 @@ Use this for the first free Operator Lab course so the public Skool surface can 
 
 ## Current Skool course facts
 
-- Skool says courses are created from the Classroom tab and are published by default.
+- Skool says courses are created from the Classroom tab.
 - A new course should include a name, description, cover image, and access setting.
+- New courses are published by default; use the green toggle to move a course back to draft if needed.
 - Course access modes currently include `Open`, `Level unlock`, `Buy now`, `Time unlock`, and `Private`.
+- Classroom pages can be organized into folders, and pages support add-ons like resource links, resource files, transcripts, and pinned community posts.
 - Skool currently allows unlimited courses, with up to `200` pages per course.
 - Native video uploads are supported in course pages, and English closed captions are automatically generated for videos with sound.
-- Course pages can also carry transcripts, resource files, resource links, and pinned community posts.
+- Skool's current native video help was re-verified in this run and is updated `February 12, 2026`.
+- Course pages can also carry timestamps/chapters, and the page body can hold the transcript plus resource links.
 - Classroom pages only become visible after the page is toggled to `published` and saved.
-- Video transcripts make the lesson content searchable inside the group.
 - The Classroom tab itself can be shown or hidden at the group level, so verify the tab is visible before treating the course as live.
 
 Official references:
@@ -53,7 +55,7 @@ Best fit:
 
 - Primary asset when the file-picker path is available: `docs/marketing/assets/thumbgate-operator-lab-explainer.mp4`
 - Fallback if native upload stays blocked: use a supported YouTube, Vimeo, Loom, or Wistia embed instead of stalling the course launch
-- Searchability add-on: paste the transcript under the video so the lesson becomes searchable inside Skool
+- Searchability add-on: paste the transcript under the video so the lesson text is visible on the page and easier to reuse in follow-up posts
 
 ## First lesson body
 

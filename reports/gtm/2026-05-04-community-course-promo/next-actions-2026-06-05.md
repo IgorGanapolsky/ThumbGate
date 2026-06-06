@@ -1,4 +1,4 @@
-# Next Actions — Skool Operator Lab (2026-06-05)
+# Next Actions — Skool Operator Lab (2026-06-06)
 
 Guardrail: do not publish posts, send messages, invite members, upload files, create accounts, change billing, submit forms, or run paid ads without explicit action-time confirmation.
 
@@ -23,27 +23,34 @@ Latest verification addenda:
 
 ## Current evidence snapshot
 
-- Local `--offer=operator-lab` dry-run re-verified at `2026-06-05T22:07:35Z`: `6` previews rendered for `linkedin,instagram,threads,bluesky,reddit,youtube`.
+- Local `--offer=operator-lab` dry-run re-verified in this run via `npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=linkedin,instagram,threads,bluesky,reddit,youtube`: `6` previews rendered for `linkedin,instagram,threads,bluesky,reddit,youtube`.
 - Every referenced media asset in the preview still resolves with `exists: true`.
 - Local preview still shows `accountCount: 0` for every platform, so this shell is still preview-only for social publishing.
-- `npm run social:zernio:status` re-verified at `2026-06-05T22:07:35Z`: `0/6` healthy platforms and `0` analytics rows in the last `24h`.
-- Headless Skool readback still fails at `2026-06-05T22:07:35Z` with `[skool-reader] fetch failed`.
-- GitHub visibility is unstable:
-  - the most recent partial snapshot remains the earlier `2026-06-05T20:06:59Z` read where `gh pr list --state open --limit 10` succeeded and showed `#2511`, `#2509`, `#2503`, `#2464`, `#2463`, `#2461`, `#2445`, `#2444`, `#2439`, and `#2438`
-  - the latest combined PR/Actions probe failed at `2026-06-05T22:07:35Z` with `error connecting to api.github.com`
-  - `npm run pr:manage` and direct `gh pr view` calls remain unreliable from this shell
+- `npm run social:zernio:status` re-verified in this run: `0/6` healthy platforms and `0` analytics rows in the last `24h` (`Generated: 2026-06-06T13:11:16.606Z`).
+- Headless Skool readback still fails in this run with `[skool-reader] fetch failed`.
+- `npm run sales:pipeline -- summary` re-verified in this run: `24` active leads, `22` stage-count `contacted`, `2` `replied`, `24` aggregate contacted, `0` targeted, `0` paid.
+- GitHub visibility is degraded again in this run:
+  - the latest direct probe failed with `error connecting to api.github.com`
+  - the last trustworthy shell snapshot still shows successful `main` deploy/verify rows through `2026-06-06T06:43:02Z`
+  - `npm run pr:manage` remains unreliable from this shell with the same `api.github.com` error
 - Official Skool help re-confirmed in this run:
   - Discovery FAQ updated `April 8, 2026`
   - Discovery checklist updated `April 15, 2026`
+  - About page setup updated `December 9, 2025`
   - Classroom basics updated `May 29, 2026`
+  - Course publishing updated `March 13, 2025`, and new courses are published by default until toggled back to draft
   - Points and levels updated `January 24, 2025`
   - Course permissions updated `November 10, 2025`
   - Membership questions updated `September 19, 2025`
-  - Video uploads updated `February 12, 2026`
+  - Pricing models updated `October 28, 2025`
+  - Video guidance updated `February 12, 2026`
   - Course permissions guidance still shows `Open`, `Level unlock`, `Buy now`, `Time unlock`, and `Private`
   - Membership questions guidance still limits joins to `3` questions with `1` email answer field
+  - Membership Questions plugin guidance recommends using the question slots for fit, contact capture, and source attribution
   - Analytics definitions updated `November 24, 2025`, and About-page conversion refreshes every `8` hours
+  - Traffic Sources updated `February 17, 2026` and explicitly warns that redirects, link shorteners, and link-in-bio tools collapse attribution into `Direct`, so promo should keep using direct Skool URLs with UTMs
   - Payments FAQ updated `April 22, 2026`
+  - Payments FAQ now also states transaction fees are non-refundable and the current per-charge limit is up to `$100,000`
   - Payout-status guidance updated `May 5, 2026`
 
 ## Next approval-ready money actions
@@ -60,12 +67,12 @@ Latest verification addenda:
 - Why first: this is still the highest-intent queue and the fastest path to booked revenue; nothing in the current Skool or social readback outranks it.
 - After each send, run the exact `Log after send` command from `operator-send-now.md`.
 
-### 2) A2 second: untouched Pro guide-first leads
+### 2) A2 second: contacted Pro close-follow-ups
 
 - Rows:
   - `github_easingthemes_dx_aem_flow`
   - `github_zaxbysauce_opencode_swarm`
-- Offer path: guide-first self-serve, then Pro at `$19/mo` or `$149/yr` if the install/evidence lane fits.
+- Offer path: already-contacted self-serve close-follow-up, then Pro at `$19/mo` or `$149/yr` if the install/evidence lane fits.
 - Only work this batch after A1 is approved/sent.
 
 ### 3) B-lane: Skool conversion surface
@@ -87,6 +94,7 @@ Latest verification addenda:
 - Workflow: `.github/workflows/thumbgate-creator-platform-promo.yml`
 - Current target is still `--offer=operator-lab`.
 - Safe local command:
+- Measurement rule: keep the direct Skool URL in each post. Do not replace it with a redirect or link-in-bio wrapper if Skool attribution matters.
 
 ```bash
 npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=linkedin,instagram,threads,bluesky,reddit,youtube
@@ -102,5 +110,5 @@ npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=link
 ## What not to spend the next cycle on
 
 - Do not invent a new offer ladder.
-- Do not spend another cycle polishing Skool copy while the warm six-lead queue is untouched.
+- Do not spend another cycle polishing Skool copy while the warm four-pack is still waiting on follow-up.
 - Do not attempt local live publish from this shell.
