@@ -449,7 +449,39 @@
       "opportunityScore": 72
     },
     {
-      "id": "kw_29_thumbs-up-thumbs-down-feedback-for-ai-coding-agents",
+      "id": "kw_29_agentic-web-governance",
+      "query": "agentic web governance",
+      "source": "seed",
+      "notes": "Fresh Cloudflare bot-majority demand: buyers need machine-readable pages and pre-action governance now that AI agents can create more web actions than humans.",
+      "impressions": null,
+      "clicks": null,
+      "ctr": null,
+      "position": null,
+      "businessValue": 94,
+      "intent": "commercial",
+      "pillar": "pre-action-checks",
+      "persona": "engineering-lead",
+      "pageType": "guide",
+      "opportunityScore": 83
+    },
+    {
+      "id": "kw_30_database-safety-for-ai-agents",
+      "query": "database safety for ai agents",
+      "source": "seed",
+      "notes": "Fresh database-agent risk query from the 2026 DB/AI conversation: agents can hallucinate UI, but SQL writes, migrations, and role grants can destroy production data.",
+      "impressions": null,
+      "clicks": null,
+      "ctr": null,
+      "position": null,
+      "businessValue": 96,
+      "intent": "informational",
+      "pillar": "ai-agent-reliability",
+      "persona": "ai-engineer",
+      "pageType": "guide",
+      "opportunityScore": 72
+    },
+    {
+      "id": "kw_31_thumbs-up-thumbs-down-feedback-for-ai-coding-agents",
       "query": "thumbs up thumbs down feedback for ai coding agents",
       "source": "seed",
       "notes": "Differentiates the explicit feedback loop and aligns with the brand.",
@@ -465,7 +497,7 @@
       "opportunityScore": 83
     },
     {
-      "id": "kw_30_claude-code-feedback-memory",
+      "id": "kw_32_claude-code-feedback-memory",
       "query": "claude code feedback memory",
       "source": "seed",
       "notes": "Agent-specific workflow page with high compatibility intent.",
@@ -481,7 +513,7 @@
       "opportunityScore": 89
     },
     {
-      "id": "kw_31_ai-coding-agent-guardrails",
+      "id": "kw_33_ai-coding-agent-guardrails",
       "query": "ai coding agent guardrails",
       "source": "seed",
       "notes": "Broader category demand that feeds comparison and guide pages.",
@@ -497,7 +529,7 @@
       "opportunityScore": 83
     },
     {
-      "id": "kw_32_autoresearch-agent-safety",
+      "id": "kw_34_autoresearch-agent-safety",
       "query": "autoresearch agent safety",
       "source": "seed",
       "notes": "Emerging self-improving agent query where ThumbGate can own the safety and proof-control wedge.",
@@ -513,7 +545,7 @@
       "opportunityScore": 83
     },
     {
-      "id": "kw_33_stop-ai-coding-agents-from-repeating-mistakes",
+      "id": "kw_35_stop-ai-coding-agents-from-repeating-mistakes",
       "query": "stop ai coding agents from repeating mistakes",
       "source": "seed",
       "notes": "Problem-led copy that maps to landing-page positioning.",
@@ -529,7 +561,7 @@
       "opportunityScore": 83
     },
     {
-      "id": "kw_34_cursor-prevent-repeated-mistakes",
+      "id": "kw_36_cursor-prevent-repeated-mistakes",
       "query": "cursor prevent repeated mistakes",
       "source": "seed",
       "notes": "High-intent Cursor workflow page for developers already feeling repeat-failure pain.",
@@ -545,7 +577,7 @@
       "opportunityScore": 89
     },
     {
-      "id": "kw_35_claude-code-prevent-repeated-mistakes",
+      "id": "kw_37_claude-code-prevent-repeated-mistakes",
       "query": "claude code prevent repeated mistakes",
       "source": "seed",
       "notes": "High-intent pain query for Claude Code buyers.",
@@ -561,7 +593,7 @@
       "opportunityScore": 89
     },
     {
-      "id": "kw_36_codex-cli-guardrails",
+      "id": "kw_38_codex-cli-guardrails",
       "query": "codex cli guardrails",
       "source": "seed",
       "notes": "Guardrail-focused page for Codex CLI buyers who want prevention, not just memory.",
@@ -577,7 +609,7 @@
       "opportunityScore": 89
     },
     {
-      "id": "kw_37_gemini-cli-feedback-memory",
+      "id": "kw_39_gemini-cli-feedback-memory",
       "query": "gemini cli feedback memory",
       "source": "seed",
       "notes": "Integration page for Gemini CLI users who need memory plus enforcement.",
@@ -593,7 +625,7 @@
       "opportunityScore": 89
     },
     {
-      "id": "kw_38_roo-code-alternative-cline",
+      "id": "kw_40_roo-code-alternative-cline",
       "query": "roo code alternative cline",
       "source": "seed",
       "notes": "Time-sensitive migration query for Roo users who need portable lesson memory before the May 15, 2026 shutdown.",
@@ -609,5 +641,5 @@
       "opportunityScore": 99
     }
   ],
-  "totalKeywords": 38
+  "totalKeywords": 40
 }
