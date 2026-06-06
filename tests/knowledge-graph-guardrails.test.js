@@ -40,14 +40,5 @@ test('knowledge graph safety templates ship as concrete pre-action gates', () =>
   assert.ok(templates.some((template) => template.pattern.includes('layers_touched')));
 });
 
-test('engagement pack is useful without inventing a partnership or hard-selling', () => {
-  const pack = read('docs', 'marketing', 'knowledge-graph-engagement-pack.md');
-
-  assert.match(pack, /Code knowledge graphs are context infrastructure\. ThumbGate is execution governance\./);
-  assert.match(pack, /Technical Reply/);
-  assert.match(pack, /central file edit -> require diff impact/);
-  assert.match(pack, /utm_campaign=knowledge_graph_guardrails/);
-  assert.match(pack, /Do not claim a partnership/i);
-  assert.match(pack, /Do not lead with pricing/i);
-  assert.doesNotMatch(pack, /guaranteed revenue|official partner|approved integration/i);
-});
+// REMOVED 2026-06-06: docs/marketing/knowledge-graph-engagement-pack.md
+// was deleted in the post-Reddit credibility cleanup.
