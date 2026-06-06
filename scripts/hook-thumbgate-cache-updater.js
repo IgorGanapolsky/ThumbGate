@@ -7,10 +7,26 @@
  */
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const {
+  getAggregateStatuslineCachePath,
+  shouldAggregateFeedback,
+} = require('./feedback-aggregate');
 
 function getCachePath() {
+  const explicitFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  if (shouldAggregateFeedback() && explicitFeedbackDir) {
+    try {
+      if (path.resolve(explicitFeedbackDir).startsWith(path.resolve(os.tmpdir()) + path.sep)) {
+        return path.join(resolveFeedbackDir(), 'statusline_cache.json');
+      }
+    } catch {
+      return path.join(resolveFeedbackDir(), 'statusline_cache.json');
+    }
+  }
+  if (shouldAggregateFeedback()) return getAggregateStatuslineCachePath();
   return path.join(resolveFeedbackDir(), 'statusline_cache.json');
 }
 
