@@ -31,6 +31,7 @@ const GUIDE_FILES = [
   'guides/native-messaging-host-security.html',
   'guides/ai-search-topical-presence.html',
   'guides/best-tools-stop-ai-agents-breaking-production.html',
+  'guides/database-agent-safety.html',
   'guides/relational-knowledge-ai-recommendations.html',
   'guides/ai-mode-ads-agent-governance.html',
   'guides/mcp-tool-governance.html',
@@ -396,5 +397,18 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(mcpGovernance.includes('Tool inventory'), 'MCP guide should describe governance requirements');
     assert.ok(approvalGates.includes('pre-action approval gates for risky tool calls'), 'approval-gates guide should lead with the buyer phrase');
     assert.ok(approvalGates.includes('Block: deny known-bad actions'), 'approval-gates guide should describe gate outcomes');
+  });
+
+  it('database agent safety guide routes database-agent risk into pre-action checks', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/database-agent-safety.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('Database Safety for AI Agents'));
+    assert.ok(html.includes('DROP, TRUNCATE'));
+    assert.ok(html.includes('UPDATE and DELETE without a restrictive WHERE clause'));
+    assert.ok(html.includes('dry-run or EXPLAIN evidence'));
+    assert.ok(html.includes('role creation, role alteration, and broad grants'));
   });
 });
