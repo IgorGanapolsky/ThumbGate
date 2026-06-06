@@ -15,7 +15,8 @@
  * - NO Reddit auto-posting (ban risk). Reddit engagement via reply-monitor only.
  * - NO Dev.to auto-posting (counterproductive at high volume).
  *
- * Runs daily via CI (.github/workflows/social-engagement-hourly.yml at 2pm UTC).
+ * Manual/operator-run only. Do not add public scheduled social-post workflows;
+ * keep outbound publishing behind explicit human approval and private ops state.
  *
  * Usage:
  *   node scripts/social-post-hourly.js            # publish for real

@@ -233,7 +233,7 @@ test('Ralph workflows are manual, stateful, and split outbound from reply engage
   const ralph = fs.readFileSync(path.join(workflowsDir, 'ralph-loop.yml'), 'utf8');
   const ralphMode = fs.readFileSync(path.join(workflowsDir, 'ralph-mode.yml'), 'utf8');
   const replyMonitor = fs.readFileSync(path.join(workflowsDir, 'reply-monitor.yml'), 'utf8');
-  const socialEngagement = fs.readFileSync(path.join(workflowsDir, 'social-engagement-hourly.yml'), 'utf8');
+  const socialEngagementPath = path.join(workflowsDir, 'social-engagement-hourly.yml');
 
   assert.match(ralph, /name: Ralph Loop Audience Engagement/);
   assert.match(ralph, /workflow_dispatch:/);
@@ -260,6 +260,5 @@ test('Ralph workflows are manual, stateful, and split outbound from reply engage
   assert.match(replyMonitor, /bluesky/);
   assert.match(replyMonitor, /scripts\/social-reply-monitor-bluesky\.js/);
   assert.doesNotMatch(replyMonitor, /^\s*schedule:/m);
-  assert.doesNotMatch(socialEngagement, /^\s*schedule:/m);
-  assert.doesNotMatch(socialEngagement, /0 9,13,17,21 \* \* \*/);
+  assert.equal(fs.existsSync(socialEngagementPath), false, 'public social-engagement workflow should not exist; manual operator runs belong in private ops state');
 });
