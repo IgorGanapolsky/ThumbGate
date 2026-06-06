@@ -17,6 +17,37 @@ has_staged() {
   git diff --cached --name-only --diff-filter=ACMR | grep -qE "$1"
 }
 
+# 0. HARD BLOCK — internal AI-orchestration files must never be committed to a
+# public repo. On 2026-06-06 a Reddit r/devops thread picked up:
+#   - .claude/implementation-notes/2026-05-20-high-roi-items.md (founder
+#     sentiment + revenue state)
+#   - .claude/ralph/ATTEMPTS.md ("Task 4: ready-to-post for Reddit, HN, Discord")
+#   - .github/workflows/social-engagement-hourly.yml (bot-cadence evidence)
+# The combined leak read as "vibe-coded bot farm." This guard refuses to stage
+# anything matching the same path family. .gitignore covers the untracked case;
+# this catches anything someone tries to `git add -f` past the ignore.
+FORBIDDEN_PATTERNS=(
+  '^\.claude/implementation-notes/'
+  '^\.claude/ralph/'
+  '^docs/marketing/reddit-posts/'
+  '^docs/marketing/hn-posts/'
+  '^docs/marketing/discord-posts/'
+  '^\.github/workflows/ralph-'
+  '^\.github/workflows/social-engagement-'
+)
+LEAKED=""
+for pat in "${FORBIDDEN_PATTERNS[@]}"; do
+  hits=$(git diff --cached --name-only --diff-filter=ACMR | grep -E "$pat" || true)
+  [ -n "$hits" ] && LEAKED+="$hits"$'\n'
+done
+if [ -n "$LEAKED" ]; then
+  echo -e "${RED}✗ ThumbGate pre-commit: refusing to commit internal-orchestration paths${NC}"
+  echo -e "${YELLOW}These paths are .gitignored for good reason — see Reddit incident 2026-06-06:${NC}"
+  printf '%s' "$LEAKED" | sed 's/^/  /'
+  echo -e "${YELLOW}If you really need to commit one of these, edit .githooks/pre-commit FORBIDDEN_PATTERNS.${NC}"
+  exit 1
+fi
+
 # 1. Block commits if packaging references missing files OR HTML not in whitelist.
 # This catches the 1.5.0/1.5.1/1.5.3 regression class (HTML not in package.json "files").
 if has_staged '(package\.json|public/.*\.html|scripts/.*\.js)$'; then
