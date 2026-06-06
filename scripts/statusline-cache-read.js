@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 const { getStatuslineCacheCandidates } = require('./statusline-cache-path');
 const { getHomeDir } = require('./feedback-paths');
 
@@ -110,7 +110,7 @@ function aggregateStatuslineCaches(options = {}) {
     thumbs_down: String(down),
     lessons: String(lessons),
     approval_rate: String(approvalRate),
-    trend: (latestRecord && latestRecord.trend) || '?',
+    trend: latestRecord?.trend || '?',
     total_feedback: String(totalFeedback),
     updated_at: String(latestTs || Math.floor(Date.now() / 1000)),
     aggregated: true,
@@ -118,7 +118,7 @@ function aggregateStatuslineCaches(options = {}) {
     sources,
   };
 
-  if (latestRecord && latestRecord.last_lesson) {
+  if (latestRecord?.last_lesson) {
     aggregated.last_lesson = latestRecord.last_lesson;
   }
   if (latestRecordSource) {
@@ -149,7 +149,7 @@ function readResolvedStatuslineCache(options = {}) {
   return null;
 }
 
-if (require.main === module) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
   const resolved = readResolvedStatuslineCache();
   if (resolved) {
     process.stdout.write(JSON.stringify(resolved));

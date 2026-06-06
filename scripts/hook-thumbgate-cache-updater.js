@@ -6,9 +6,9 @@
  * Also used directly by the CLI to refresh statusline counters after feedback capture.
  */
 
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 const {
   getAggregateStatuslineCachePath,

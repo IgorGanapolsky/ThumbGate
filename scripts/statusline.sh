@@ -49,7 +49,7 @@ UP="0"; DOWN="0"; LESSONS="0"; TREND="?"; CACHE_TS="0"
 # reflects true totals, not whichever folder happens to be cwd. Writes still
 # target $THUMBGATE_CACHE (per-folder), so attribution is preserved.
 _RESOLVED_CACHE_JSON=$(node "${SCRIPT_DIR}/statusline-cache-read.js" 2>/dev/null)
-if [ -n "$_RESOLVED_CACHE_JSON" ]; then
+if [[ -n "$_RESOLVED_CACHE_JSON" ]]; then
   eval "$(echo "$_RESOLVED_CACHE_JSON" | jq -r '
     @sh "UP=\(.thumbs_up // "0")",
     @sh "DOWN=\(.thumbs_down // "0")",
@@ -57,7 +57,7 @@ if [ -n "$_RESOLVED_CACHE_JSON" ]; then
     @sh "TREND=\(.trend // "?")",
     @sh "CACHE_TS=\(.updated_at // "0")"
   ' 2>/dev/null)"
-elif [ -f "$THUMBGATE_CACHE" ]; then
+elif [[ -f "$THUMBGATE_CACHE" ]]; then
   eval "$(jq -r '
     @sh "UP=\(.thumbs_up // "0")",
     @sh "DOWN=\(.thumbs_down // "0")",

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 'use strict';
 
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
-const crypto = require('crypto');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const crypto = require('node:crypto');
 const {
   getFallbackFeedbackDir,
   getGlobalFeedbackDir,
@@ -76,9 +76,11 @@ function ancestorProjectFeedbackDirs(projectDir, options = {}) {
   const dirs = [];
   let cursor = start;
   while (cursor && cursor !== path.dirname(cursor)) {
-    dirs.push(path.join(cursor, '.thumbgate'));
-    dirs.push(path.join(cursor, '.thumbgate-compat'));
-    dirs.push(path.join(cursor, '.claude', 'memory', 'feedback'));
+    dirs.push(
+      path.join(cursor, '.thumbgate'),
+      path.join(cursor, '.thumbgate-compat'),
+      path.join(cursor, '.claude', 'memory', 'feedback')
+    );
     if (home && cursor === home) break;
     const next = path.dirname(cursor);
     if (next === cursor) break;
@@ -175,9 +177,7 @@ function collectAggregateLogEntries(fileName, options = {}) {
   };
 }
 
-function computeAggregateFeedbackStats(options = {}) {
-  const { entries, stores } = collectAggregateLogEntries(FEEDBACK_LOG, options);
-  const memory = collectAggregateLogEntries(MEMORY_LOG, options);
+function summarizeFeedbackEntries(entries) {
   let totalPositive = 0;
   let totalNegative = 0;
   let rubricSamples = 0;
@@ -188,42 +188,64 @@ function computeAggregateFeedbackStats(options = {}) {
     if (entry.rubric && entry.rubric.weightedScore != null) rubricSamples += 1;
   }
 
-  const total = totalPositive + totalNegative;
-  const approvalRate = total > 0 ? Math.round((totalPositive / total) * 1000) / 1000 : 0;
-  const now = Date.now();
-  const sevenDays = 7 * 24 * 60 * 60 * 1000;
-  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-  const windows = {
+  return { totalPositive, totalNegative, rubricSamples };
+}
+
+function createRateWindows(total, totalPositive, approvalRate) {
+  return {
     '7d': { total: 0, positive: 0, rate: 0 },
     '30d': { total: 0, positive: 0, rate: 0 },
     lifetime: { total, positive: totalPositive, rate: approvalRate },
   };
+}
+
+function applyEntryToRateWindow(window, entry) {
+  window.total += 1;
+  if (entry.signal === 'positive') window.positive += 1;
+}
+
+function updateRateWindows(windows, entries, now = Date.now()) {
+  const sevenDays = 7 * 24 * 60 * 60 * 1000;
+  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
 
   for (const entry of entries) {
     const ts = entry.timestamp ? Date.parse(entry.timestamp) : Number.NaN;
     if (!Number.isFinite(ts)) continue;
     const age = now - ts;
-    if (age <= sevenDays) {
-      windows['7d'].total += 1;
-      if (entry.signal === 'positive') windows['7d'].positive += 1;
-    }
-    if (age <= thirtyDays) {
-      windows['30d'].total += 1;
-      if (entry.signal === 'positive') windows['30d'].positive += 1;
-    }
+    if (age <= sevenDays) applyEntryToRateWindow(windows['7d'], entry);
+    if (age <= thirtyDays) applyEntryToRateWindow(windows['30d'], entry);
   }
+}
 
+function finalizeRateWindows(windows) {
   for (const key of ['7d', '30d']) {
-    windows[key].rate = windows[key].total > 0
-      ? Math.round((windows[key].positive / windows[key].total) * 1000) / 1000
-      : 0;
+    const window = windows[key];
+    window.rate = 0;
+    if (window.total > 0) {
+      window.rate = Math.round((window.positive / window.total) * 1000) / 1000;
+    }
   }
+}
 
+function trendFromRateWindows(windows) {
   const hasTrendData = windows['7d'].total > 0 && windows['30d'].total > 0;
-  const trend = !hasTrendData ? 'stable'
-    : windows['7d'].rate > windows['30d'].rate + 0.05 ? 'improving'
-      : windows['7d'].rate < windows['30d'].rate - 0.05 ? 'degrading'
-        : 'stable';
+  if (hasTrendData) {
+    if (windows['7d'].rate > windows['30d'].rate + 0.05) return 'improving';
+    if (windows['7d'].rate < windows['30d'].rate - 0.05) return 'degrading';
+  }
+  return 'stable';
+}
+
+function computeAggregateFeedbackStats(options = {}) {
+  const { entries, stores } = collectAggregateLogEntries(FEEDBACK_LOG, options);
+  const memory = collectAggregateLogEntries(MEMORY_LOG, options);
+  const { totalPositive, totalNegative, rubricSamples } = summarizeFeedbackEntries(entries);
+  const total = totalPositive + totalNegative;
+  const approvalRate = total > 0 ? Math.round((totalPositive / total) * 1000) / 1000 : 0;
+  const windows = createRateWindows(total, totalPositive, approvalRate);
+  updateRateWindows(windows, entries);
+  finalizeRateWindows(windows);
+  const trend = trendFromRateWindows(windows);
 
   return {
     total,

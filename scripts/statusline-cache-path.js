@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
-const path = require('path');
-const os = require('os');
+const path = require('node:path');
+const os = require('node:os');
 const {
   getAggregateStatuslineCachePath,
   shouldAggregateFeedback,
@@ -38,7 +38,7 @@ function getStatuslineCacheCandidates(options = {}) {
   ]);
 }
 
-if (require.main === module) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
   process.stdout.write(JSON.stringify({ candidates: getStatuslineCacheCandidates() }));
 }
 
