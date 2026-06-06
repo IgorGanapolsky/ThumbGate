@@ -132,8 +132,10 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // lockstep with BASELINE_FILE_COUNT in tests/public-bundle-ratchet.test.js.
   // Bumped 271 -> 285 to accommodate new guides and scripts from main.
   // Bumped 285 -> 290 (2026-06-04) to ship scripts/upstream-contribution-engine.js for dependency contribution scouting.
+  // Bumped 290 -> 291 (2026-06-06) to ship scripts/statusline-cache-read.js,
+  // required by the packaged statusline to aggregate per-folder caches.
   const files = npmPackFiles();
-  const CEILING = 290;
+  const CEILING = 291;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
