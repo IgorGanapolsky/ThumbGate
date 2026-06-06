@@ -13,6 +13,10 @@ function readRevenueTruthWorkflow() {
   return fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'revenue-truth-audit.yml'), 'utf8');
 }
 
+function readStripeDiagnosticWorkflow() {
+  return fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'audit-stripe-checkout-diagnostic.yml'), 'utf8');
+}
+
 test('daily revenue loop audits hosted revenue truth before reporting', () => {
   const workflow = readWorkflow();
 
@@ -52,4 +56,18 @@ test('manual revenue truth audit produces hosted and owner-filtered artifacts', 
   assert.match(workflow, /Real non-owner paying customers lifetime/);
   assert.match(workflow, /actions\/upload-artifact@v7/);
   assert.match(workflow, /revenue-truth-audit-\$\{\{ github\.run_id \}\}/);
+});
+
+test('Stripe checkout diagnostic is runnable from main-path changes and manual dispatch', () => {
+  const workflow = readStripeDiagnosticWorkflow();
+
+  assert.match(workflow, /branches:\s*\[main\]/);
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.doesNotMatch(workflow, /schedule:/);
+  assert.match(workflow, /scripts\/stripe-checkout-diagnostic\.js/);
+  assert.match(workflow, /STRIPE_SECRET_KEY:\s*\$\{\{\s*secrets\.STRIPE_SECRET_KEY\s*\}\}/);
+  assert.match(workflow, /stripe-checkout-diagnostic\.md/);
+  assert.match(workflow, /stripe-checkout-diagnostic\.json/);
+  assert.match(workflow, /actions\/upload-artifact@v7/);
+  assert.match(workflow, /stripe-checkout-diagnostic-\$\{\{ github\.run_id \}\}/);
 });

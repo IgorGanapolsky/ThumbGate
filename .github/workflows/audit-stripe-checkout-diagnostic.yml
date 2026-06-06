@@ -1,9 +1,14 @@
 name: Stripe Checkout Diagnostic
 on:
   push:
-    branches: [audit/stripe-checkout-diagnostic-2026-05-19]
+    branches: [main]
     paths:
       - '.github/workflows/audit-stripe-checkout-diagnostic.yml'
+      - 'scripts/stripe-checkout-diagnostic.js'
+      - 'scripts/stripe-live-status.js'
+      - 'scripts/billing.js'
+      - 'src/api/server.js'
+      - 'tests/stripe-checkout-diagnostic.test.js'
   workflow_dispatch:
 jobs:
   diag:
@@ -16,4 +21,13 @@ jobs:
       - name: Run stripe-checkout-diagnostic
         env:
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-        run: node scripts/stripe-checkout-diagnostic.js
+        run: |
+          mkdir -p reports/revenue
+          node scripts/stripe-checkout-diagnostic.js | tee reports/revenue/stripe-checkout-diagnostic.md
+          node scripts/stripe-checkout-diagnostic.js --json > reports/revenue/stripe-checkout-diagnostic.json
+      - name: Upload diagnostic artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: stripe-checkout-diagnostic-${{ github.run_id }}
+          path: reports/revenue/
+          retention-days: 14
