@@ -74,7 +74,10 @@ const path = require('node:path');
 // 278 → 280: 2026-06-03 features.
 // 280 → 285: 2026-06-03 features.
 // 285 → 290: 2026-06-04 scripts/upstream-contribution-engine.js added for dependency contributions.
-const BASELINE_FILE_COUNT = 290;
+// 290 → 292: 2026-06-06 scripts/feedback-aggregate-stats.js and
+// scripts/statusline-cache-read.js added so packaged statusline installs can
+// aggregate cross-store feedback and per-folder caches.
+const BASELINE_FILE_COUNT = 292;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
