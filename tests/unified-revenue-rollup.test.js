@@ -11,6 +11,7 @@ const {
   buildSnapshot,
   gatherPlausible,
   gatherStripe,
+  gatherSearchConsoleAiVisibility,
 } = require('../scripts/unified-revenue-rollup');
 
 test('REVENUE_SURFACES includes every public surface shipped through 2026-05-15', () => {
@@ -82,6 +83,18 @@ test('diagnoseFunnel emits funnel-leak signals when traffic is present but cash 
   assert.ok(caseSignal, 'case-study leak signal must fire when /case-studies has traffic but 0 checkouts');
 });
 
+test('diagnoseFunnel warns when Search Console AI visibility readback is missing', () => {
+  const stripe = { configured: true, balance: { available: 0, pending: 0 }, checkout: { completed: 0 } };
+  const diagnostics = diagnoseFunnel(stripe, [], {
+    configured: false,
+    gap: 'GOOGLE_SEARCH_CONSOLE_SITE_URL is not set',
+  });
+  const signal = diagnostics.find((d) => d.signal === 'search_console_ai_visibility_unconfigured');
+  assert.ok(signal);
+  assert.equal(signal.severity, 'warning');
+  assert.match(signal.message, /AI Overviews/);
+});
+
 test('diagnoseFunnel surfaces Stripe-unconfigured as a warning, not silently zero', () => {
   const stripe = { configured: false, gap: 'STRIPE_SECRET_KEY is not set' };
   const diagnostics = diagnoseFunnel(stripe, []);
@@ -108,6 +121,16 @@ test('renderMarkdown produces a well-formed report that includes cash, surfaces,
       aggregate: { visitors: { value: 42 }, pageviews: { value: 78 }, bounce_rate: { value: 51 }, visit_duration: { value: 38 } },
       sources: [{ source: 'reddit.com', visitors: 12 }, { source: 'Direct', visitors: 30 }],
     },
+    searchConsoleAi: {
+      configured: true,
+      siteUrl: 'sc-domain:thumbgate.ai',
+      credentialMode: 'service_account',
+      report: {
+        source: 'https://developers.google.com/search/blog/2026/06/gen-ai-performance-reports',
+        surfaces: ['AI Overviews', 'AI Mode'],
+        metrics: ['impressions', 'pages'],
+      },
+    },
     surfaces: [
       { surface: '/', visitors: 30, pageviews: 60, live: true },
       { surface: '/pricing', visitors: 4, pageviews: 6, live: true },
@@ -122,6 +145,8 @@ test('renderMarkdown produces a well-formed report that includes cash, surfaces,
   assert.match(md, /Visitors: 42/);
   assert.match(md, /\/pricing/);
   assert.match(md, /reddit\.com/);
+  assert.match(md, /AI Search Visibility/);
+  assert.match(md, /sc-domain:thumbgate\.ai/);
   assert.match(md, /pricing_traffic_no_cash/);
   assert.match(md, /## Honest Limits/);
 });
@@ -132,11 +157,33 @@ test('renderMarkdown gracefully describes unconfigured Stripe and unconfigured P
     period: '1d',
     stripe: { configured: false, gap: 'STRIPE_SECRET_KEY is not set' },
     plausible: { configured: false, gap: 'PLAUSIBLE_API_KEY is not set' },
+    searchConsoleAi: { configured: false, gap: 'GOOGLE_SEARCH_CONSOLE_SITE_URL is not set' },
     surfaces: [],
     diagnostics: [],
   });
   assert.match(md, /Stripe: NOT CONFIGURED.*STRIPE_SECRET_KEY/);
   assert.match(md, /Plausible: NOT CONFIGURED.*PLAUSIBLE_API_KEY/);
+});
+
+test('gatherSearchConsoleAiVisibility reports missing site property honestly', () => {
+  const result = gatherSearchConsoleAiVisibility({ env: {} });
+  assert.equal(result.configured, false);
+  assert.equal(result.siteUrl, null);
+  assert.match(result.gap, /GOOGLE_SEARCH_CONSOLE_SITE_URL/);
+  assert.match(result.report.source, /gen-ai-performance-reports/);
+});
+
+test('gatherSearchConsoleAiVisibility is configured with site property and credentials', () => {
+  const result = gatherSearchConsoleAiVisibility({
+    env: {
+      GOOGLE_SEARCH_CONSOLE_SITE_URL: 'sc-domain:thumbgate.ai',
+      GOOGLE_APPLICATION_CREDENTIALS: '/tmp/gsc.json',
+    },
+  });
+  assert.equal(result.configured, true);
+  assert.equal(result.siteUrl, 'sc-domain:thumbgate.ai');
+  assert.equal(result.credentialMode, 'service_account');
+  assert.deepEqual(result.report.surfaces, ['AI Overviews', 'AI Mode', 'Discover generative AI features']);
 });
 
 test('gatherPlausible returns a gap object when PLAUSIBLE_API_KEY is missing', async () => {
@@ -222,6 +269,8 @@ test('buildSnapshot wires gather + join + diagnose into one object', async () =>
   assert.equal(snapshot.period, '1d');
   assert.equal(snapshot.stripe.configured, false);
   assert.equal(snapshot.plausible.configured, false);
+  assert.equal(snapshot.searchConsoleAi.configured, false);
   assert.deepEqual(snapshot.surfaces, []);
   assert.ok(snapshot.diagnostics.find((d) => d.signal === 'stripe_unconfigured'));
+  assert.ok(snapshot.diagnostics.find((d) => d.signal === 'search_console_ai_visibility_unconfigured'));
 });
