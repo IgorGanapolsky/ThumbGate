@@ -171,6 +171,11 @@ const {
   collectAllFeedbackEntries,
 } = require('../../scripts/dashboard');
 const {
+  collectAggregateLogEntries,
+  computeAggregateFeedbackStats,
+  shouldAggregateFeedback,
+} = require('../../scripts/feedback-aggregate');
+const {
   guardDfcxWebhook,
 } = require('../../adapters/gcp/dfcx-webhook-gate');
 const {
@@ -1612,12 +1617,16 @@ function bestFeedbackDescription(row) {
 function readRecentFeedbackEntries(feedbackDir, signal, windowMs, limit = 5, opts = {}) {
   try {
     if (!feedbackDir) return [];
-    const fsLocal = require('node:fs');
-    const pathLocal = require('node:path');
-    const logPath = pathLocal.join(feedbackDir, 'feedback-log.jsonl');
-    if (!fsLocal.existsSync(logPath)) return [];
-    const { readJsonl } = require('../../scripts/fs-utils');
-    const rows = readJsonl(logPath) || [];
+    const rows = shouldAggregateFeedback()
+      ? collectAggregateLogEntries('feedback-log.jsonl', { feedbackDir }).entries
+      : (() => {
+          const fsLocal = require('node:fs');
+          const pathLocal = require('node:path');
+          const logPath = pathLocal.join(feedbackDir, 'feedback-log.jsonl');
+          if (!fsLocal.existsSync(logPath)) return [];
+          const { readJsonl } = require('../../scripts/fs-utils');
+          return readJsonl(logPath) || [];
+        })();
     const cutoff = windowMs ? Date.now() - windowMs : 0;
     const filtered = rows
       .filter((r) => !signal || r.signal === signal)
@@ -7597,7 +7606,9 @@ ${hidden}
 
     try {
       if (req.method === 'GET' && pathname === '/v1/feedback/stats') {
-        const stats = analyzeFeedback(requestFeedbackPaths.FEEDBACK_LOG_PATH);
+        const stats = shouldAggregateFeedback()
+          ? computeAggregateFeedbackStats({ feedbackDir: requestFeedbackPaths.FEEDBACK_DIR })
+          : analyzeFeedback(requestFeedbackPaths.FEEDBACK_LOG_PATH);
         try {
           const { getStatuslineMeta } = require('../../scripts/statusline-meta');
           const meta = getStatuslineMeta({ env: process.env });

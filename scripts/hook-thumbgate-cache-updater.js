@@ -6,11 +6,27 @@
  * Also used directly by the CLI to refresh statusline counters after feedback capture.
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const {
+  getAggregateStatuslineCachePath,
+  shouldAggregateFeedback,
+} = require('./feedback-aggregate');
 
 function getCachePath() {
+  const explicitFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  if (shouldAggregateFeedback() && explicitFeedbackDir) {
+    try {
+      if (path.resolve(explicitFeedbackDir).startsWith(path.resolve(os.tmpdir()) + path.sep)) {
+        return path.join(resolveFeedbackDir(), 'statusline_cache.json');
+      }
+    } catch {
+      return path.join(resolveFeedbackDir(), 'statusline_cache.json');
+    }
+  }
+  if (shouldAggregateFeedback()) return getAggregateStatuslineCachePath();
   return path.join(resolveFeedbackDir(), 'statusline_cache.json');
 }
 
