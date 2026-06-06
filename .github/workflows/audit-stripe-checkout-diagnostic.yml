@@ -9,8 +9,6 @@ on:
       - 'scripts/billing.js'
       - 'src/api/server.js'
       - 'tests/stripe-checkout-diagnostic.test.js'
-  schedule:
-    - cron: '17 14 * * *'
   workflow_dispatch:
 jobs:
   diag:

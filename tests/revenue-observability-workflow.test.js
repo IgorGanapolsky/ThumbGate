@@ -58,12 +58,12 @@ test('manual revenue truth audit produces hosted and owner-filtered artifacts', 
   assert.match(workflow, /revenue-truth-audit-\$\{\{ github\.run_id \}\}/);
 });
 
-test('Stripe checkout diagnostic is runnable on main, schedule, and manual dispatch', () => {
+test('Stripe checkout diagnostic is runnable from main-path changes and manual dispatch', () => {
   const workflow = readStripeDiagnosticWorkflow();
 
   assert.match(workflow, /branches:\s*\[main\]/);
   assert.match(workflow, /workflow_dispatch:/);
-  assert.match(workflow, /schedule:/);
+  assert.doesNotMatch(workflow, /schedule:/);
   assert.match(workflow, /scripts\/stripe-checkout-diagnostic\.js/);
   assert.match(workflow, /STRIPE_SECRET_KEY:\s*\$\{\{\s*secrets\.STRIPE_SECRET_KEY\s*\}\}/);
   assert.match(workflow, /stripe-checkout-diagnostic\.md/);
