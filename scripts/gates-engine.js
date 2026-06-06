@@ -119,8 +119,16 @@ const MAX_COMMAND_SCAN_CHARS = 20000;
 const BOOSTED_RISK_BLOCK_SCORE = 0.8;
 const BOOSTED_RISK_MIN_EXAMPLES = 3;
 const PR_THREAD_RESOLUTION_ACTION = 'pr_thread_resolution_verified_after_commit';
+const HELPER_BYPASS_ACTION = 'helper_script_modified';
 const KNOWLEDGE_ENTROPY_THRESHOLD = 0.7;
 const KNOWLEDGE_CONFLICT_STRICT_BASH_PATTERN = /\b(?:git\s+push\b|gh\s+pr\s+merge\b|gh\s+release\s+(?:create|delete|edit|upload)\b|(?:npm|yarn|pnpm)\s+publish\b|rm\s+-rf\b|git\s+reset\s+--hard\b|git\s+clean\s+-f|railway\s+(?:deploy|up)\b|gcloud\s+(?:run\s+deploy|app\s+deploy)\b|firebase\s+deploy\b|vercel\s+--prod\b|kubectl\s+(?:apply|delete)\b|terraform\s+(?:apply|destroy)\b)\b/i;
+const HELPER_SCRIPT_FILE_PATTERN = /(?:^|\/)(?:scripts|bin|tools|tasks|\.githooks|\.github\/workflows)\/|(?:^|\/)(?:package\.json|Makefile|justfile|Taskfile\.ya?ml)$|\.(?:sh|bash|zsh|fish|js|mjs|cjs|ts|tsx|py|rb|pl|ps1|yml|yaml)$/i;
+const PACKAGE_RUN_PATTERN = /\b(?:npm|yarn|pnpm)\s+run\s+([:@./\w-]+)\b/i;
+const HELPER_EXEC_PATTERN = /(?:^|[;&|]\s*|\b(?:bash|sh|zsh|node|python3?|ruby|perl|tsx|ts-node)\s+)(?:(?:\.?\.?\/)?(?:scripts|bin|tools|tasks|tmp|build|dist|\.tmp|\.cache)\/[^\s;&|]+|\.\/[^\s;&|]+\.(?:sh|bash|zsh|js|mjs|cjs|ts|py|rb|pl|ps1))\b/i;
+const HELPER_WRITE_PATTERN = /\b(?:cat|printf|echo|tee|npm\s+pkg\s+set|jq|node\s+-e|python3?\s+-c)\b[\s\S]{0,300}(?:>|--field|scripts\.|package\.json|(?:scripts|bin|tools|tasks|tmp|build|dist|\.tmp|\.cache)\/[^\s;&|]+|\.(?:sh|js|mjs|cjs|ts|py|rb|pl|ps1))\b/i;
+const NETWORK_OR_PROCESS_BOUNDARY_PATTERN = /\b(?:curl|wget|nc|ncat|socat|ssh|scp|rsync|ftp|python3?\s+-m\s+http\.server|node\s+-e|python3?\s+-c|perl\s+-e|ruby\s+-e|bash\s+-c|sh\s+-c|osascript|open)\b/i;
+const DOWNLOAD_EXEC_CHAIN_PATTERN = /\b(?:curl|wget)\b[\s\S]{0,400}(?:\|\s*(?:bash|sh|zsh)|&&[\s\S]{0,200}\bchmod\s+\+x\b[\s\S]{0,200}&&[\s\S]{0,120}(?:\.\/|bash|sh|node|python3?))/i;
+const DESTRUCTIVE_OR_PRIVILEGE_BOUNDARY_PATTERN = /\b(?:rm\s+-rf|chmod\s+(?:\+x|777)|chown\b|sudo\b|dd\s+if=|mkfs|git\s+reset\s+--hard|git\s+clean\s+-f|kubectl\s+(?:apply|delete)|terraform\s+(?:apply|destroy)|railway\s+(?:deploy|up)|gcloud\s+(?:run\s+deploy|app\s+deploy)|vercel\s+--prod|firebase\s+deploy)\b/i;
 
 // ---------------------------------------------------------------------------
 // Enforcement posture (CEO decision 2026-06-04): warn-by-default.
@@ -834,9 +842,26 @@ function toRepoRelativePath(filePath, repoRoot) {
   const value = String(filePath || '').trim();
   if (!value) return '';
   if (repoRoot && path.isAbsolute(value)) {
-    const relative = path.relative(repoRoot, value);
-    if (!relative.startsWith('..') && !path.isAbsolute(relative)) {
-      return normalizePosix(relative);
+    const candidates = [[path.resolve(repoRoot), path.resolve(value)]];
+    try {
+      const rootReal = fs.realpathSync.native(repoRoot);
+      let valueReal = null;
+      try {
+        valueReal = fs.realpathSync.native(value);
+      } catch {
+        const parentReal = fs.realpathSync.native(path.dirname(value));
+        valueReal = path.join(parentReal, path.basename(value));
+      }
+      candidates.push([rootReal, valueReal]);
+    } catch {
+      // Fall back to lexical path comparison below.
+    }
+
+    for (const [rootCandidate, valueCandidate] of candidates) {
+      const relative = path.relative(rootCandidate, valueCandidate);
+      if (!relative.startsWith('..') && !path.isAbsolute(relative)) {
+        return normalizePosix(relative);
+      }
     }
   }
   return normalizePosix(value);
@@ -1193,6 +1218,125 @@ function evaluateLocalOnlyRemoteSideEffectGate(toolName, toolInput = {}, governa
       'Remote side effects are denied before configurable gates so wrapped commands cannot bypass local-only work boundaries',
     ],
   };
+}
+
+function helperRiskReasons(text) {
+  const value = String(text || '');
+  const reasons = [];
+  if (DOWNLOAD_EXEC_CHAIN_PATTERN.test(value)) reasons.push('download-then-execute chain');
+  if (NETWORK_OR_PROCESS_BOUNDARY_PATTERN.test(value)) reasons.push('network/process boundary');
+  if (DESTRUCTIVE_OR_PRIVILEGE_BOUNDARY_PATTERN.test(value)) reasons.push('destructive/privileged side effect');
+  if (/\b(?:child_process|spawn\(|exec\(|execFile\(|subprocess|ProcessBuilder)\b/i.test(value)) {
+    reasons.push('process spawn');
+  }
+  return [...new Set(reasons)];
+}
+
+function readPackageScript(repoRoot, scriptName) {
+  if (!repoRoot || !scriptName) return '';
+  try {
+    const packagePath = path.join(repoRoot, 'package.json');
+    if (!fs.existsSync(packagePath)) return '';
+    const { scripts = {} } = JSON.parse(fs.readFileSync(packagePath, 'utf8')) || {};
+    return typeof scripts[scriptName] === 'string' ? scripts[scriptName] : '';
+  } catch {
+    return '';
+  }
+}
+
+function recordHelperScriptWrite(toolName, toolInput = {}) {
+  if (process.env.THUMBGATE_HELPER_BYPASS_GUARD === '0') return null;
+
+  const affected = extractAffectedFiles(toolName, toolInput);
+  const affectedFiles = affected.files || [];
+  const command = String(toolInput.command || '');
+  const actionContext = extractActionContext(toolName, toolInput);
+  const helperFiles = affectedFiles.filter((filePath) => HELPER_SCRIPT_FILE_PATTERN.test(normalizePosix(filePath)));
+  const packageScriptTouched = affectedFiles.some((filePath) => normalizePosix(filePath) === 'package.json') || /\bpackage\.json\b|\bscripts\./i.test(actionContext);
+  const commandWrite = toolName === 'Bash' && HELPER_WRITE_PATTERN.test(command);
+
+  if (helperFiles.length === 0 && !packageScriptTouched && !commandWrite) return null;
+
+  const riskText = [
+    actionContext,
+    command,
+    helperFiles.join(' '),
+    packageScriptTouched ? 'package.json scripts' : '',
+  ].filter(Boolean).join('\n');
+  const reasons = helperRiskReasons(riskText);
+
+  const metadata = {
+    repoRoot: affected.repoRoot || resolveRepoRoot(toolInput) || null,
+    helperFiles,
+    packageScriptTouched,
+    reasons,
+  };
+  trackAction(HELPER_BYPASS_ACTION, metadata);
+  return metadata;
+}
+
+function evaluateStatefulHelperBypassGate(toolName, toolInput = {}) {
+  if (process.env.THUMBGATE_HELPER_BYPASS_GUARD === '0') return null;
+  if (toolName !== 'Bash') {
+    recordHelperScriptWrite(toolName, toolInput);
+    return null;
+  }
+
+  const command = String(toolInput.command || '').trim();
+  if (!command) return null;
+
+  if (DOWNLOAD_EXEC_CHAIN_PATTERN.test(command)) {
+    return {
+      decision: 'deny',
+      gate: 'stateful-helper-script-bypass',
+      message: 'Download-then-execute chains are blocked before the real action moves below the visible tool call.',
+      severity: 'critical',
+      reasoning: [
+        `Command matched download/execute chain: ${command.slice(0, 180)}`,
+        'PreToolUse must review the whole action chain, not only the first low-risk command',
+      ],
+    };
+  }
+
+  const writeMetadata = recordHelperScriptWrite(toolName, toolInput);
+  const actions = listSessionActions();
+  const recentWrite = actions[HELPER_BYPASS_ACTION];
+  const recentMetadata = recentWrite && recentWrite.metadata && typeof recentWrite.metadata === 'object'
+    ? recentWrite.metadata
+    : null;
+
+  const scriptMatch = command.match(PACKAGE_RUN_PATTERN);
+  const scriptName = scriptMatch ? scriptMatch[1] : '';
+  const repoRoot = resolveRepoRoot(toolInput);
+  const packageScript = scriptName ? readPackageScript(repoRoot, scriptName) : '';
+  const commandBoundaryReasons = helperRiskReasons(`${command}\n${packageScript}`);
+  const executesRecentHelper = HELPER_EXEC_PATTERN.test(command);
+  const runsRecentPackageScript = Boolean(scriptName && recentMetadata && recentMetadata.packageScriptTouched);
+  const recentReasons = recentMetadata && Array.isArray(recentMetadata.reasons) ? recentMetadata.reasons : [];
+  const writeRiskReasons = writeMetadata && Array.isArray(writeMetadata.reasons) ? writeMetadata.reasons : [];
+  const correlatedReasons = [...new Set([...recentReasons, ...writeRiskReasons, ...commandBoundaryReasons])];
+
+  if (
+    (executesRecentHelper || runsRecentPackageScript) &&
+    (recentMetadata || writeMetadata) &&
+    correlatedReasons.length > 0
+  ) {
+    const target = scriptName ? `package script "${scriptName}"` : 'recent helper script';
+    return {
+      decision: 'deny',
+      gate: 'stateful-helper-script-bypass',
+      message: `A recently modified ${target} now crosses a risky boundary. Review it or constrain cwd, network, process, and writable paths before execution.`,
+      severity: 'critical',
+      reasoning: [
+        `Recent helper/package modification: ${(recentMetadata && recentMetadata.helperFiles || []).join(', ') || (recentMetadata && recentMetadata.packageScriptTouched ? 'package.json scripts' : 'current command write')}`,
+        `Execution command: ${command.slice(0, 180)}`,
+        `Risk reasons: ${correlatedReasons.join(', ')}`,
+        'This blocks the helper-script/package-script bypass class raised in external review',
+      ],
+    };
+  }
+
+  return null;
 }
 
 function recordStructuralGateBlock(toolName, toolInput, result) {
@@ -1838,6 +1982,10 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
   if (localOnlyRemoteSideEffectGate) {
     return recordStructuralGateBlock(toolName, toolInput, localOnlyRemoteSideEffectGate);
   }
+  const statefulHelperBypassGate = evaluateStatefulHelperBypassGate(toolName, toolInput);
+  if (statefulHelperBypassGate) {
+    return recordStructuralGateBlock(toolName, toolInput, statefulHelperBypassGate);
+  }
   if (isBreakGlassSettingsRecoveryAction(toolName, toolInput)) {
     recordAuditEvent({
       toolName,
@@ -2064,6 +2212,10 @@ function evaluateGates(toolName, toolInput, configPath) {
   );
   if (localOnlyRemoteSideEffectGate) {
     return recordStructuralGateBlock(toolName, toolInput, localOnlyRemoteSideEffectGate);
+  }
+  const statefulHelperBypassGate = evaluateStatefulHelperBypassGate(toolName, toolInput);
+  if (statefulHelperBypassGate) {
+    return recordStructuralGateBlock(toolName, toolInput, statefulHelperBypassGate);
   }
   if (isBreakGlassSettingsRecoveryAction(toolName, toolInput)) {
     recordAuditEvent({
@@ -2707,6 +2859,9 @@ function extractActionContext(toolName, toolInput) {
   const parts = [toolName];
   if (toolInput.command) parts.push(String(toolInput.command).slice(0, 400));
   if (toolInput.file_path) parts.push(String(toolInput.file_path));
+  if (toolInput.content) parts.push(String(toolInput.content).slice(0, 600));
+  if (toolInput.new_string) parts.push(String(toolInput.new_string).slice(0, 600));
+  if (toolInput.old_string) parts.push(String(toolInput.old_string).slice(0, 240));
   if (toolInput.description) parts.push(String(toolInput.description).slice(0, 200));
   if (toolInput.prompt) parts.push(String(toolInput.prompt).slice(0, 400));
   if (toolInput.pattern) parts.push(String(toolInput.pattern).slice(0, 200));
@@ -3149,9 +3304,12 @@ module.exports = {
   getLocalOnlyScopeSources,
   isRemoteSideEffectCommand,
   evaluateLocalOnlyRemoteSideEffectGate,
+  recordHelperScriptWrite,
+  evaluateStatefulHelperBypassGate,
   isAgentHookSettingsFile,
   isBreakGlassSettingsRecoveryAction,
   PR_THREAD_RESOLUTION_ACTION,
+  HELPER_BYPASS_ACTION,
   buildBlockActionProCta,
   applyDailyBlockCap,
   getTodayBlockCount,
