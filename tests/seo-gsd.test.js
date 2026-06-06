@@ -491,6 +491,27 @@ test('AI agent production listicle is discoverable and commercially classified',
   });
 });
 
+test('database agent safety page is discoverable and commercially classified', () => {
+  const page = findSeoPageByPath('/guides/database-agent-safety');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/database-agent-safety');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'database safety for ai agents');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-checks');
+  assert.match(html, /Database Safety for AI Agents/);
+  assert.match(html, /DROP, TRUNCATE/);
+  assert.match(html, /production migrations/i);
+  assert.match(html, /dry-run or EXPLAIN evidence/i);
+  assert.match(html, /role grants/i);
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/database-agent-safety',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
 test('native messaging host security page is discoverable and commercially classified', () => {
   const page = findSeoPageByPath('/guides/native-messaging-host-security');
   const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/native-messaging-host-security');
