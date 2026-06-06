@@ -1,36 +1,37 @@
 # Sales Pipeline
 
-Updated: 2026-06-05T14:59:56Z
+Updated: 2026-06-06T19:18:17Z
 
 This is the first-dollar truth table. Posts are not sales; only stage movement counts.
 
 ## Summary
-- Total leads: 23
-- Active leads: 23
-- Contacted: 21
-- Replied: 1
+- Total leads: 24
+- Active leads: 24
+- Contacted: 22
+- Replied: 2
 - Calls booked: 0
 - Paid: 0
 - Booked revenue: $0.00
 
 ## Stage Counts
-- targeted: 2
-- contacted: 20
-- replied: 1
+- targeted: 0
+- contacted: 22
+- replied: 2
 - call_booked: 0
 - checkout_started: 0
 - sprint_intake: 0
 - paid: 0
 - lost: 0
 
-## Current Operator Queue (2026-06-05)
+## Current Operator Queue (2026-06-06)
 
-- Untouched self-serve leads: `github_easingthemes_dx_aem_flow`, `github_zaxbysauce_opencode_swarm`
+- Untouched self-serve leads: none in the latest-per-lead pipeline state
 - Contacted warm Reddit follow-ups: `reddit_deep_ad1959_r_cursor`, `reddit_game_of_kton_r_cursor`, `reddit_leogodin217_r_claudecode`, `reddit_enthu_cutlet_1337_r_claudecode`
+- Replied non-deprecated lead: `skool_aymen_khatir`
 - Deprecated replied lead: `aiventyx_qaiser_marketplace_listings` should not be worked further after the CEO pivot away from Aiventyx.
 - Highest-ROI next step: send the four warm Reddit follow-ups before touching new Skool setup work or lower-intent GitHub targets.
 
-Note: the live stage source is `.thumbgate/sales-pipeline.jsonl`. The lead blocks below remain the campaign pool, but the top summary and operator queue above are the current action layer for June 5, 2026.
+Note: the live stage source is `.thumbgate/sales-pipeline.jsonl`. Use the latest event per `leadId` as the truth source because the ledger is append-only and older rows remain in place. `npm run sales:pipeline -- summary` still exposes a top-level `contacted` count of `24`, so treat the `byStage` mix (`22` contacted, `2` replied) as the actionable truth. The lead blocks below remain the campaign pool, but the top summary and operator queue above are the current action layer for June 6, 2026.
 
 ## Lead Queue
 ### reddit_deep_ad1959_r_cursor

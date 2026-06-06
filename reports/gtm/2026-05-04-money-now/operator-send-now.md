@@ -1,6 +1,6 @@
 # Revenue Operator Send-Now Sheet
 
-Updated: 2026-06-05T14:59:56Z
+Updated: 2026-06-06T20:19:00Z
 
 This is the flat batch-send layer for the current revenue loop. Use it when you want the message, CTA, and logging commands in one place without re-reading the full GTM report.
 
@@ -14,7 +14,7 @@ Pair this file with `operator-priority-handoff.md` when you need deeper account 
 - Checkout starts: 133
 - Active follow-ups: 4
 - Warm targets ready now: 4 contacted Reddit follow-ups
-- Self-serve closes ready now: 2 untouched GitHub Pro leads
+- Self-serve closes ready now: 0 untouched leads in the latest-per-lead pipeline state
 - Production-rollout targets ready now: 0 untouched; use follow-ups instead
 - Cold GitHub targets ready next: 0 until the current queue moves
 
@@ -23,13 +23,13 @@ Pair this file with `operator-priority-handoff.md` when you need deeper account 
 - Keep the offer split honest: sprint rows get one workflow-hardening offer; self-serve rows get the guide-to-Pro lane unless pain is confirmed.
 - Qualify the offer split: Use Pro after one blocked repeat or explicit self-serve install intent. Use the Workflow Hardening Sprint when one workflow owner needs approval boundaries, rollback safety, and proof before wider rollout.
 - Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) and [COMMERCIAL_TRUTH.md](../COMMERCIAL_TRUTH.md) only after the buyer confirms pain.
-- Current live pipeline on 2026-06-05: `23` active leads, `21` contacted, `1` replied, `2` untouched. This was re-verified from `scripts/sales-pipeline.js` against `.thumbgate/sales-pipeline.jsonl` on `2026-06-05T14:59:56Z`. Ignore the replied Aiventyx thread because that lane is deprecated.
+- Current live pipeline on 2026-06-06: `24` active leads, `22` contacted, `2` replied, `0` untouched. This was re-verified from `scripts/sales-pipeline.js` and by collapsing `.thumbgate/sales-pipeline.jsonl` to the latest event per `leadId` on `2026-06-06T19:18:17Z`. Ignore the replied Aiventyx thread because that lane is deprecated.
 
 ## Next Approval Action
 
 - A1 only: send the four warm Reddit follow-ups first.
-- A2 next: send the two untouched GitHub Pro leads after A1.
-- Do not touch the longer cold/prod queue until either A1 or A2 moves a lead forward.
+- There is no A2 untouched-Pro batch left right now.
+- Do not touch the longer cold/prod queue until A1 moves a lead forward or a fresh ranked batch is generated.
 
 ```bash
 npm run sales:pipeline -- import --source docs/marketing/gtm-revenue-loop.json
@@ -92,34 +92,36 @@ Checkout close draft:
 Follow-up draft:
 > Following up on your ACT-R engram thread. If one recurring failure mode like stale context, opposing facts, or bad handoffs is still blocking a real workflow, I can turn that into a gate plan and proof run. Open to a quick diagnostic?
 
-## Send Now: Untouched Pro Leads
+## Historical Follow-Up Candidates (Not Approval-Ready Now)
+
+These rows were contacted on 2026-06-05 and are preserved for copy reuse only. They are not the current send-now batch.
 
 ### 1. @easingthemes - dx-aem-flow
 - Channel: github / direct
-- Pipeline stage: targeted
+- Pipeline stage: contacted
 - Pipeline lead id: github_easingthemes_dx_aem_flow
-- Next operator step: Send the first-touch guide-first draft and log the outreach in the sales pipeline.
+- Next operator step: Re-rank before any follow-up; do not send as part of the current A1 batch.
 - Evidence score: 7
 - Motion: Pro self-serve
-- Why now: One of only two untouched leads left in the live pipeline.
+- Why parked: Guide-first Pro outreach already went out on 2026-06-05.
 - Contact surface: https://www.linkedin.com/in/draganfilipovic/
 - CTA: https://thumbgate-production.up.railway.app/guide
-- Log after send: `npm run sales:pipeline -- advance --lead 'github_easingthemes_dx_aem_flow' --channel 'github' --stage 'contacted' --note 'Sent guide-first Pro outreach to dx-aem-flow.'`
-- Outreach draft:
+- Re-open log if a fresh follow-up is approved later: `npm run sales:pipeline -- advance --lead 'github_easingthemes_dx_aem_flow' --channel 'github' --stage 'contacted' --note 'Sent follow-up Pro outreach to dx-aem-flow after re-ranking the queue.'`
+- Follow-up draft if re-opened later:
 > Your `dx-aem-flow` work looks like a strong fit for the self-serve ThumbGate path. Start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated AI-agent mistake is still slowing the workflow down after that, Pro is the clean next step.
 
 ### 2. @zaxbysauce - opencode-swarm
 - Channel: github / direct
-- Pipeline stage: targeted
+- Pipeline stage: contacted
 - Pipeline lead id: github_zaxbysauce_opencode_swarm
-- Next operator step: Send the first-touch guide-first draft and log the outreach in the sales pipeline.
+- Next operator step: Re-rank before any follow-up; do not send as part of the current A1 batch.
 - Evidence score: 8
 - Motion: Pro self-serve
-- Why now: One of only two untouched leads left in the live pipeline.
+- Why parked: Guide-first Pro outreach already went out on 2026-06-05.
 - Contact surface: https://github.com/zaxbysauce
 - CTA: https://thumbgate-production.up.railway.app/guide
-- Log after send: `npm run sales:pipeline -- advance --lead 'github_zaxbysauce_opencode_swarm' --channel 'github' --stage 'contacted' --note 'Sent guide-first Pro outreach to opencode-swarm.'`
-- Outreach draft:
+- Re-open log if a fresh follow-up is approved later: `npm run sales:pipeline -- advance --lead 'github_zaxbysauce_opencode_swarm' --channel 'github' --stage 'contacted' --note 'Sent follow-up Pro outreach to opencode-swarm after re-ranking the queue.'`
+- Follow-up draft if re-opened later:
 > Your `opencode-swarm` project already lives in the exact risk zone ThumbGate is built for. If you want the self-serve path first, start with the proof-backed setup guide: https://thumbgate-production.up.railway.app/guide. If one repeated agent mistake is still slowing the workflow down after that, Pro is the clean next step.
 
 Pain-confirmed follow-up:
@@ -130,6 +132,8 @@ Tool-path follow-up:
 
 Checkout close draft:
 > If you are already comparing close options for your workflow, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
+
+## Send Now: Warm Discovery Follow-Ups (continued)
 
 ### 3. @leogodin217 - r/ClaudeCode
 - Channel: reddit / reddit_dm
@@ -195,16 +199,18 @@ Tool-path follow-up:
 Checkout close draft:
 > If you are already comparing close options for your workflow, the primary path is Workflow Hardening Sprint: https://thumbgate-production.up.railway.app/#workflow-sprint-intake Self-serve Pro: https://thumbgate-production.up.railway.app/checkout/pro Commercial truth: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md
 
-## Close Now: Self-Serve Pro
+## Cold Self-Serve Pool (Re-Rank After A1)
+
+These rows are preserved for future ranking work. They are not approval-ready while the warm Reddit follow-up batch is still the highest-ROI queue.
 
 ### 1. @agynio - gh-pr-review
 - Channel: github / github
 - Pipeline stage: targeted
 - Pipeline lead id: github_agynio_gh_pr_review
-- Next operator step: Send the first-touch draft and log the outreach in the sales pipeline.
+- Next operator step: Keep parked until A1 moves or a fresh ranking pass promotes it.
 - Evidence score: 15
 - Motion: Pro at $19/mo or $149/yr
-- Why now: Target looks like a local hook, plugin, or config surface, so start with the setup guide and Pro follow-on before pitching a sprint.
+- Why parked: Cold self-serve lead; current queue discipline says do not open a new GitHub batch before the warm Reddit follow-ups move.
 - Proof rule: Use proof pack only after the buyer confirms pain.
 - Contact surface: https://agyn.io/
 - Contact surfaces: Website: https://agyn.io/; GitHub profile: https://github.com/agynio; Repository: https://github.com/agynio/gh-pr-review
