@@ -32,6 +32,7 @@ const GUIDE_FILES = [
   'guides/ai-search-topical-presence.html',
   'guides/best-tools-stop-ai-agents-breaking-production.html',
   'guides/database-agent-safety.html',
+  'guides/agentic-web-governance.html',
   'guides/relational-knowledge-ai-recommendations.html',
   'guides/ai-mode-ads-agent-governance.html',
   'guides/mcp-tool-governance.html',
@@ -371,6 +372,10 @@ describe('SEO guide and comparison pages', () => {
       path.join(PUBLIC_DIR, 'guides/relational-knowledge-ai-recommendations.html'),
       'utf-8'
     );
+    const agenticWeb = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/agentic-web-governance.html'),
+      'utf-8'
+    );
     const aiModeAds = fs.readFileSync(
       path.join(PUBLIC_DIR, 'guides/ai-mode-ads-agent-governance.html'),
       'utf-8'
@@ -391,6 +396,9 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(productionListicle.includes('Environment inspection requirements'), 'production listicle should mention environment inspection');
     assert.ok(relationalKnowledge.includes('Relational knowledge'), 'relational knowledge guide should mention relational knowledge');
     assert.ok(relationalKnowledge.includes('pre-action checks'), 'relational knowledge guide should tie the topic back to ThumbGate');
+    assert.ok(agenticWeb.includes('Bots already outnumber humans on the web'), 'agentic web guide should lead with the Cloudflare bot-majority hook');
+    assert.ok(agenticWeb.includes('57.3%'), 'agentic web guide should include the bot-majority stat');
+    assert.ok(agenticWeb.includes('AI agents do not behave like unmanaged bots'), 'agentic web guide should tie promotion back to ThumbGate governance');
     assert.ok(aiModeAds.includes('AI Mode ads make agent-governance promotion conversational'), 'AI Mode guide should answer the conversational-ad prompt');
     assert.ok(aiModeAds.includes('Buyer prompts ThumbGate should target'), 'AI Mode guide should include prompt targets');
     assert.ok(mcpGovernance.includes('MCP tool governance before agents call real systems'), 'MCP guide should lead with tool governance');

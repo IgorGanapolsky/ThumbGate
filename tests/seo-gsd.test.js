@@ -76,6 +76,7 @@ test('renderPlanMarkdown names all five GSD stages and page briefs', () => {
   assert.match(markdown, /AI Search Topical Presence \| Become the Obvious Recommendation/);
   assert.match(markdown, /Best Tools to Stop AI Agents From Breaking Production \| ThumbGate Listicle/);
   assert.match(markdown, /Relational Knowledge in AI Recommendations \| Why Brands Get Picked/);
+  assert.match(markdown, /Agentic Web Governance \| Pre-Action Checks When Bots Outnumber Humans/);
   assert.match(markdown, /How to Stop AI Coding Agents From Repeating Mistakes \| ThumbGate/);
   assert.match(markdown, /Cursor Agent Guardrails \| Stop Repeated Mistakes with ThumbGate/);
   assert.match(markdown, /Roo Code Alternative: Migrating to Cline with Portable Lesson Memory/);
@@ -447,6 +448,28 @@ test('AI search topical presence page is discoverable and commercially classifie
   });
 });
 
+test('agentic web governance page converts bot-majority news into promotion demand', () => {
+  const page = findSeoPageByPath('/guides/agentic-web-governance');
+  const sitemapEntry = THUMBGATE_SEO_SITEMAP_ENTRIES.find((entry) => entry.path === '/guides/agentic-web-governance');
+  const html = renderSeoPageHtml(page, { appOrigin: 'https://app.example.com' });
+
+  assert.ok(page);
+  assert.equal(page.query, 'agentic web governance');
+  assert.equal(page.intent, 'commercial');
+  assert.equal(page.pageType, 'guide');
+  assert.equal(page.pillar, 'pre-action-checks');
+  assert.match(html, /57\.3%/);
+  assert.match(html, /42\.7%/);
+  assert.match(html, /Bots already outnumber humans on the web/);
+  assert.match(html, /AI agents do not behave like unmanaged bots/);
+  assert.match(html, /llms\.txt/);
+  assert.deepEqual(sitemapEntry, {
+    path: '/guides/agentic-web-governance',
+    changefreq: 'monthly',
+    priority: '0.8',
+  });
+});
+
 test('AI Mode conversational-ad answer assets are discoverable and commercially classified', () => {
   const aiModeAds = findSeoPageByPath('/guides/ai-mode-ads-agent-governance');
   const mcpGovernance = findSeoPageByPath('/guides/mcp-tool-governance');
@@ -576,6 +599,7 @@ test('writePlanOutputs persists machine-readable GSD artifacts', () => {
     assert.ok(pages.some((page) => page.path === '/guides/ai-search-topical-presence'));
     assert.ok(pages.some((page) => page.path === '/guides/best-tools-stop-ai-agents-breaking-production'));
     assert.ok(pages.some((page) => page.path === '/guides/relational-knowledge-ai-recommendations'));
+    assert.ok(pages.some((page) => page.path === '/guides/agentic-web-governance'));
     assert.ok(pages.some((page) => page.path === '/guides/codex-cli-guardrails'));
     assert.ok(pages.some((page) => page.path === '/guides/gemini-cli-feedback-memory'));
     assert.ok(pages.some((page) => page.path === '/guides/roo-code-alternative-cline'));
