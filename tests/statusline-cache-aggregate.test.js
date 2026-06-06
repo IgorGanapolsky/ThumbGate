@@ -34,12 +34,14 @@ function withHome(home, fn) {
     THUMBGATE_PROJECT_DIR: process.env.THUMBGATE_PROJECT_DIR,
     THUMBGATE_FEEDBACK_DIR: process.env.THUMBGATE_FEEDBACK_DIR,
     THUMBGATE_STATUSLINE_AGGREGATE: process.env.THUMBGATE_STATUSLINE_AGGREGATE,
+    INIT_CWD: process.env.INIT_CWD,
   };
   process.env.HOME = home;
   process.env.USERPROFILE = home;
   delete process.env.THUMBGATE_PROJECT_DIR;
   delete process.env.THUMBGATE_FEEDBACK_DIR;
   delete process.env.THUMBGATE_STATUSLINE_AGGREGATE;
+  delete process.env.INIT_CWD;
   try {
     return fn();
   } finally {
