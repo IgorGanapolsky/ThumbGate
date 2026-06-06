@@ -144,7 +144,231 @@
   function trackEvent(eventName, props) {
     if (typeof global.plausible === 'function') {
       global.plausible(eventName, { props: props || {} });
+      return;
     }
+    global.plausible = global.plausible || function() {
+      (global.plausible.q = global.plausible.q || []).push(arguments);
+    };
+    if (typeof global.plausible === 'function') {
+      global.plausible(eventName, { props: props || {} });
+    }
+  }
+
+  function getCurrentPathname() {
+    return global.location && global.location.pathname
+      ? global.location.pathname.replace(/\/$/, '') || '/'
+      : '/';
+  }
+
+  function normalizePlacement(pathname) {
+    return String(pathname || '/')
+      .replace(/\.html$/, '')
+      .replace(/^\//, '')
+      .replace(/[^a-z0-9]+/gi, '_')
+      .replace(/^_+|_+$/g, '')
+      .toLowerCase() || 'home';
+  }
+
+  function isRevenueAssistEligible(pathname) {
+    var path = String(pathname || '/');
+    if (path === '/checkout/pro' || path.indexOf('/go/pro') === 0) return false;
+    if (path === '/' || path === '/guide' || path === '/guide.html') return true;
+    if (path === '/dashboard' || path === '/dashboard.html') return true;
+    if (path === '/learn' || path === '/learn.html' || path.indexOf('/learn/') === 0) return true;
+    if (path === '/lessons' || path === '/lessons.html') return true;
+    if (path === '/ai-malpractice-prevention' || path === '/ai-malpractice-prevention.html') return true;
+    if (path.indexOf('/guides/') === 0) return true;
+    return false;
+  }
+
+  function appendCampaignParams(href, params) {
+    var origin = global.location && global.location.origin
+      ? global.location.origin
+      : 'https://thumbgate.ai';
+    var url = new URL(href, origin);
+    Object.keys(params || {}).forEach(function(key) {
+      if (params[key] !== null && params[key] !== undefined) {
+        url.searchParams.set(key, params[key]);
+      }
+    });
+    return url.toString();
+  }
+
+  function injectRevenueAssistStyles() {
+    if (!global.document || global.document.getElementById('thumbgate-revenue-assist-style')) {
+      return;
+    }
+    var style = global.document.createElement('style');
+    style.id = 'thumbgate-revenue-assist-style';
+    style.textContent = [
+      '[data-thumbgate-revenue-assist]{position:fixed;right:18px;bottom:18px;z-index:2147483000;width:min(360px,calc(100vw - 32px));background:#0f172a;color:#f8fafc;border:1px solid rgba(148,163,184,.35);border-radius:8px;box-shadow:0 20px 60px rgba(2,6,23,.38);font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:14px}',
+      '[data-thumbgate-revenue-assist] strong{display:block;font-size:15px;margin:0 0 5px}',
+      '[data-thumbgate-revenue-assist] p{margin:0 0 10px;color:#cbd5e1}',
+      '[data-thumbgate-revenue-assist] nav{display:flex;gap:8px;flex-wrap:wrap}',
+      '[data-thumbgate-revenue-assist] a,[data-thumbgate-revenue-assist] button{border-radius:6px;border:1px solid rgba(148,163,184,.45);padding:8px 10px;font-weight:700;text-decoration:none;cursor:pointer}',
+      '[data-thumbgate-revenue-assist] a:first-child{background:#22d3ee;color:#082f49;border-color:#22d3ee}',
+      '[data-thumbgate-revenue-assist] a:nth-child(2){background:#f8fafc;color:#0f172a;border-color:#f8fafc}',
+      '[data-thumbgate-revenue-assist] button{background:transparent;color:#cbd5e1}',
+      '[data-thumbgate-abandon-survey]{position:fixed;right:18px;bottom:18px;z-index:2147483001;width:min(380px,calc(100vw - 32px));background:#111827;color:#f9fafb;border:1px solid rgba(148,163,184,.4);border-radius:8px;box-shadow:0 20px 60px rgba(2,6,23,.42);font:14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:14px}',
+      '[data-thumbgate-abandon-survey] strong{display:block;font-size:15px;margin-bottom:8px}',
+      '[data-thumbgate-abandon-survey] div{display:grid;gap:7px}',
+      '[data-thumbgate-abandon-survey] button{border-radius:6px;border:1px solid rgba(148,163,184,.45);background:#1f2937;color:#f9fafb;padding:8px 10px;text-align:left;cursor:pointer}',
+      '@media (max-width:640px){[data-thumbgate-revenue-assist],[data-thumbgate-abandon-survey]{right:12px;bottom:12px;width:calc(100vw - 24px)}}'
+    ].join('');
+    global.document.head.appendChild(style);
+  }
+
+  function initializeRevenueAssist(options) {
+    var settings = options || {};
+    if (!global.document || typeof global.document.querySelector !== 'function') return null;
+    if (global.document.querySelector('[data-revenue-assist="off"]')) return null;
+    if (global.document.querySelector('[data-thumbgate-revenue-assist]')) return null;
+
+    var pathname = settings.pathname || getCurrentPathname();
+    if (!isRevenueAssistEligible(pathname)) return null;
+
+    injectRevenueAssistStyles();
+
+    var placement = settings.placement || normalizePlacement(pathname);
+    var campaign = settings.campaign || 'high_traffic_pages';
+    var proHref = appendCampaignParams(settings.proHref || '/checkout/pro', {
+      confirm: '1',
+      utm_source: 'owned_site',
+      utm_medium: 'sticky_cta',
+      utm_campaign: campaign,
+      cta_id: 'assist_pro_checkout',
+      cta_placement: placement,
+      plan_id: 'pro',
+    });
+    var diagnosticHref = appendCampaignParams(settings.diagnosticHref || 'https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e', {
+      utm_source: 'owned_site',
+      utm_medium: 'sticky_cta',
+      utm_campaign: campaign,
+      cta_id: 'assist_workflow_diagnostic',
+      cta_placement: placement,
+      client_reference_id: 'thumbgate_assist_' + placement,
+    });
+
+    var panel = global.document.createElement('aside');
+    panel.setAttribute('data-thumbgate-revenue-assist', placement);
+    panel.setAttribute('aria-label', 'ThumbGate paid help');
+    panel.innerHTML = [
+      '<strong>Stop the repeated agent failure?</strong>',
+      '<p>Use Pro for self-serve proof, or buy the diagnostic when one workflow is already costing time.</p>',
+      '<nav>',
+      '<a data-assist-cta="assist_pro_checkout" href="' + proHref + '">Get Pro</a>',
+      '<a data-assist-cta="assist_workflow_diagnostic" href="' + diagnosticHref + '" target="_blank" rel="nofollow noopener noreferrer">Pay $499 diagnostic</a>',
+      '<button type="button" data-assist-dismiss>Not now</button>',
+      '</nav>'
+    ].join('');
+
+    panel.querySelectorAll('[data-assist-cta]').forEach(function(link) {
+      link.addEventListener('click', function() {
+        try {
+          global.sessionStorage.setItem('thumbgateRevenueAssistCheckoutSeen', '1');
+        } catch (_error) {}
+        trackEvent('assist_cta_click', {
+          ctaId: link.getAttribute('data-assist-cta'),
+          ctaPlacement: placement,
+          page: pathname,
+        });
+      });
+    });
+
+    var dismissButton = panel.querySelector('[data-assist-dismiss]');
+    if (dismissButton) {
+      dismissButton.addEventListener('click', function() {
+        trackEvent('assist_cta_dismiss', {
+          ctaPlacement: placement,
+          page: pathname,
+        });
+        panel.remove();
+        showAbandonSurvey('cta_dismiss');
+      });
+    }
+
+    global.document.body.appendChild(panel);
+    trackEvent('assist_cta_impression', {
+      ctaPlacement: placement,
+      page: pathname,
+    });
+
+    function wasSurveyShown() {
+      try {
+        return global.sessionStorage.getItem('thumbgateRevenueAssistSurveyShown') === '1';
+      } catch (_error) {
+        return false;
+      }
+    }
+
+    function markSurveyShown() {
+      try {
+        global.sessionStorage.setItem('thumbgateRevenueAssistSurveyShown', '1');
+      } catch (_error) {}
+    }
+
+    function checkoutWasSeen() {
+      try {
+        return global.sessionStorage.getItem('thumbgateRevenueAssistCheckoutSeen') === '1';
+      } catch (_error) {
+        return false;
+      }
+    }
+
+    function showAbandonSurvey(trigger) {
+      if (wasSurveyShown() || checkoutWasSeen() || global.document.querySelector('[data-thumbgate-abandon-survey]')) {
+        return;
+      }
+      markSurveyShown();
+      var survey = global.document.createElement('aside');
+      survey.setAttribute('data-thumbgate-abandon-survey', trigger || 'unknown');
+      survey.setAttribute('aria-label', 'ThumbGate checkout feedback');
+      survey.innerHTML = [
+        '<strong>What stopped you from buying today?</strong>',
+        '<div>',
+        '<button type="button" data-abandon-reason="fit_unclear">Not sure it fits my agent stack</button>',
+        '<button type="button" data-abandon-reason="need_proof">Need proof before paying</button>',
+        '<button type="button" data-abandon-reason="price_scope_unclear">Price or scope is unclear</button>',
+        '<button type="button" data-abandon-reason="researching">Just researching</button>',
+        '</div>'
+      ].join('');
+      survey.querySelectorAll('[data-abandon-reason]').forEach(function(button) {
+        button.addEventListener('click', function() {
+          trackEvent('checkout_abandon_reason', {
+            reason: button.getAttribute('data-abandon-reason'),
+            trigger: trigger || 'unknown',
+            ctaPlacement: placement,
+            page: pathname,
+          });
+          survey.remove();
+        });
+      });
+      global.document.body.appendChild(survey);
+      trackEvent('checkout_abandon_prompt', {
+        trigger: trigger || 'unknown',
+        ctaPlacement: placement,
+        page: pathname,
+      });
+    }
+
+    if (global.setTimeout) {
+      global.setTimeout(function() {
+        showAbandonSurvey('dwell_45s');
+      }, settings.surveyDelayMs || 45000);
+    }
+    if (global.document && global.document.addEventListener) {
+      global.document.addEventListener('mouseleave', function(event) {
+        if (event && event.clientY <= 0) {
+          showAbandonSurvey('exit_intent');
+        }
+      });
+    }
+
+    return {
+      panel: panel,
+      showAbandonSurvey: showAbandonSurvey,
+      placement: placement,
+    };
   }
 
   function normalizeInteger(value) {
@@ -428,9 +652,21 @@
     submitNewsletterSignup: submitNewsletterSignup,
     initializeBuyerIntent: initializeBuyerIntent,
     initializeEmailCheckoutButtons: initializeEmailCheckoutButtons,
+    initializeRevenueAssist: initializeRevenueAssist,
+    isRevenueAssistEligible: isRevenueAssistEligible,
     trackEvent: trackEvent,
     initializeBehaviorAnalytics: initializeBehaviorAnalytics,
     bucketDwellMs: bucketDwellMs,
     bucketScrollPercent: bucketScrollPercent,
   };
+
+  if (global.document) {
+    if (global.document.readyState === 'loading') {
+      global.document.addEventListener('DOMContentLoaded', function() {
+        initializeRevenueAssist();
+      });
+    } else {
+      initializeRevenueAssist();
+    }
+  }
 })(globalThis);
