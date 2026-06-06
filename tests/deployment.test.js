@@ -913,8 +913,10 @@ test('GitHub Actions workflows never use bare npm ci for onnxruntime installs', 
     );
   }
 
-  const gtmWorkflow = fs.readFileSync(path.join(workflowsDir, 'gtm-autonomous-loop.yml'), 'utf8');
-  assert.match(gtmWorkflow, /npm ci --onnxruntime-node-install-cuda=skip/);
+  // The previous hardcoded check for gtm-autonomous-loop.yml's
+  // onnxruntime-node-install-cuda=skip flag was retired with the workflow
+  // itself on 2026-06-06 (post-Reddit credibility cleanup). The generic
+  // bare-npm-ci loop above still guards every remaining workflow.
 });
 
 test('.env.example documents the active operator and analytics variables without stale one-time Stripe or xAI keys', () => {
