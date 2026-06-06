@@ -808,6 +808,29 @@ test('GET /sitemap.xml lists every public/compare/*.html page', async () => {
   assert.deepEqual(missing, [], `comparison pages missing from sitemap: ${missing.join(', ')}`);
 });
 
+// Root cause this prevents: the /compare hub linked to a hand-maintained subset of the
+// catalog (4 of 13 pages), so flagship buyer-intent comparisons (claude-code-hooks, arcjet,
+// bumblebee, anthropic-containment, ...) were live and in the sitemap but unreachable from
+// the hub whose entire job is to list them — and the homepage strip had the same drift.
+// This test pins the contract: the hub must link to every public/compare/*.html page.
+test('GET /compare hub links to every public/compare/*.html page', async () => {
+  const comparePages = fs
+    .readdirSync(path.join(publicDir, 'compare'))
+    .filter((file) => file.endsWith('.html'))
+    .map((file) => `/compare/${file.replace(/\.html$/, '')}`);
+
+  assert.ok(comparePages.length >= 13, `expected the full compare catalog, got ${comparePages.length}`);
+
+  const res = await fetch(`${origin}/compare`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+
+  const missing = comparePages.filter(
+    (p) => !new RegExp(`href="${p.replace(/[/-]/g, (c) => `\\${c}`)}"`).test(html),
+  );
+  assert.deepEqual(missing, [], `comparison pages missing from the /compare hub: ${missing.join(', ')}`);
+});
+
 // GEO: comparison and high-intent landing pages carry FAQPage structured data so they
 // are eligible to be pulled into AI Overviews / AI Mode on their category queries.
 test('comparison and key landing pages expose FAQPage structured data', async () => {
