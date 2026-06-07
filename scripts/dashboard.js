@@ -1544,6 +1544,19 @@ function resolveTeamWindowHours(analyticsWindow) {
   return 24;
 }
 
+function resolveProjectFeedbackDirForDashboard(feedbackDir) {
+  const homeThumbgate = path.join(process.env.HOME || '/tmp', '.thumbgate');
+  const projectLocalDir = path.join(PROJECT_ROOT, '.thumbgate');
+  if (
+    path.resolve(feedbackDir) === path.resolve(homeThumbgate) &&
+    projectLocalDir !== feedbackDir &&
+    fs.existsSync(projectLocalDir)
+  ) {
+    return projectLocalDir;
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Full dashboard data
 // ---------------------------------------------------------------------------
@@ -1583,13 +1596,8 @@ function collectAllFeedbackEntries(feedbackDir) {
   // Also check the project root's .thumbgate if feedbackDir is global
   // The MCP server often resolves to PROJECT_ROOT/.thumbgate for project-scoped feedback
   // Skip this merge when feedbackDir is a temp/test directory (not ~/.thumbgate)
-  const homeThumbgate = path.join(process.env.HOME || '/tmp', '.thumbgate');
-  const projectLocalDir = path.join(PROJECT_ROOT, '.thumbgate');
-  if (
-    path.resolve(feedbackDir) === path.resolve(homeThumbgate) &&
-    projectLocalDir !== feedbackDir &&
-    fs.existsSync(projectLocalDir)
-  ) {
+  const projectLocalDir = resolveProjectFeedbackDirForDashboard(feedbackDir);
+  if (projectLocalDir) {
     mergeFrom(path.join(projectLocalDir, 'feedback-log.jsonl'));
   }
 
@@ -1732,6 +1740,20 @@ function generateDashboard(feedbackDir, options = {}) {
     });
   } catch { /* module missing — skip */ }
 
+  let tokenBurn = null;
+  try {
+    const {
+      collectTokenBurnEvents,
+      computeTokenBurnDashboard,
+    } = require('./token-burn');
+    tokenBurn = computeTokenBurnDashboard(collectTokenBurnEvents(feedbackDir, {
+      projectFeedbackDir: resolveProjectFeedbackDirForDashboard(feedbackDir),
+    }), {
+      tokenSavings,
+      windowDays: 30,
+    });
+  } catch { /* module missing — skip */ }
+
   // Merge lesson counts into feedbackTimeSeries days
   for (const day of feedbackTimeSeries.days) {
     day.lessons = lessonPipeline.lessonsByDay.get(day.dayKey) || 0;
@@ -1791,6 +1813,7 @@ function generateDashboard(feedbackDir, options = {}) {
     reviewDelta,
     feedbackTimeSeries,
     tokenSavings,
+    tokenBurn,
     lessonPipeline: {
       stages: lessonPipeline.stages,
       rates: lessonPipeline.rates,

@@ -1745,6 +1745,7 @@ function buildEnterpriseChatSection(topic, dashboardData, status, ctx = {}) {
   const gateStats = dashboardData.gateStats || {};
   const team = dashboardData.team || {};
   const tokenSavings = dashboardData.tokenSavings || {};
+  const tokenBurn = dashboardData.tokenBurn || {};
   const lessonPipeline = dashboardData.lessonPipeline || {};
   const intent = ctx.intent || { wantsList: false, windowMs: null, windowLabel: 'across all time' };
   const feedbackDir = ctx.feedbackDir || null;
@@ -1765,12 +1766,16 @@ function buildEnterpriseChatSection(topic, dashboardData, status, ctx = {}) {
     };
   }
   if (topic === 'cost') {
+    const burnLine = tokenBurn && typeof tokenBurn.estimatedCostDisplay === 'string'
+      ? `Estimated token burn: ${tokenBurn.estimatedCostDisplay} across ${compactNumber(tokenBurn.trackedEvents || 0)} tracked events in the last ${compactNumber(tokenBurn.windowDays || 30)} days.`
+      : 'Estimated token burn: unavailable until provider/token usage traces are written locally.';
     return {
       lines: [
         `Estimated token savings: ${tokenSavings.dollarsSavedDisplay || '$0.00'} from ${compactNumber(tokenSavings.blockedCalls)} blocked calls.`,
+        burnLine,
         'Google Cloud budget alerts are evidence for spend visibility; ThumbGate-side stop conditions must be verified separately before calling them a hard cap.',
       ],
-      sources: ['token savings', 'budget posture'],
+      sources: ['token savings', 'token burn', 'budget posture'],
     };
   }
   if (topic === 'cloud') {

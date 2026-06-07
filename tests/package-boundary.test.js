@@ -128,6 +128,7 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/statusline-meta.js',
     'scripts/tool-registry.js',
     'scripts/trajectory-scorer.js',
+    'scripts/token-burn.js',
     'skills/thumbgate/SKILL.md',
     'config/pro/constraints-pro.json',
     'config/pro/prevention-rules-pro.md',
@@ -304,9 +305,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 290 -> 292 (2026-06-06) to ship scripts/feedback-aggregate-stats.js
   // and scripts/statusline-cache-read.js, required by packaged statusline
   // installs to aggregate cross-store feedback and per-folder caches.
+  // Bumped 292 -> 293 (2026-06-07) to ship scripts/token-burn.js because
+  // scripts/dashboard.js imports it for the packaged dashboard's token burn
+  // and delegated-agent review panel. Omitting it breaks `thumbgate-dashboard`
+  // / `thumbgate serve` from npm installs.
   assert.ok(
-    manifest.fileCount <= 292,
-    `npm package should stay <= 292 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 293,
+    `npm package should stay <= 293 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -421,9 +426,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // /guides/claude-code-pretooluse-hook LLM-citation-targeted SEO content from
   // the 2026-06-05 LLM-citability deep-research action plan. Measured combined
   // queue bundle ~4.302 MB; bump restores a one-normal-PR headroom buffer.
+  // Bumped 4.35 MB -> 4.40 MB (2026-06-07) for the token burn dashboard panel
+  // in public/dashboard.html plus scripts/token-burn.js, a required packaged
+  // runtime dependency of scripts/dashboard.js. Measured unpacked size after
+  // shipping the dependency is ~4.369 MB; the ceiling keeps narrow headroom.
   assert.ok(
-    manifest.unpackedSize <= 4_350_000,
-    `npm package should stay <= 4.35 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_400_000,
+    `npm package should stay <= 4.40 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

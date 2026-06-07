@@ -77,7 +77,10 @@ const path = require('node:path');
 // 290 → 292: 2026-06-06 scripts/feedback-aggregate-stats.js and
 // scripts/statusline-cache-read.js added so packaged statusline installs can
 // aggregate cross-store feedback and per-folder caches.
-const BASELINE_FILE_COUNT = 292;
+// 292 → 293: 2026-06-07 scripts/token-burn.js added because the packaged
+// dashboard runtime imports it for the token burn and delegated-agent review
+// panel; omitting it breaks npm-installed dashboards.
+const BASELINE_FILE_COUNT = 293;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

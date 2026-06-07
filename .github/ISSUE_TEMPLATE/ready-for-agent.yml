@@ -13,12 +13,108 @@ body:
     validations:
       required: true
 
+  - type: dropdown
+    id: use_case_bucket
+    attributes:
+      label: Use-case bucket
+      description: Choose the product/business lane this issue advances.
+      options:
+        - revenue-truth
+        - agent-reliability
+        - governance
+        - distribution
+        - enterprise-pilot
+        - operator-productivity
+    validations:
+      required: true
+
+  - type: input
+    id: milestone
+    attributes:
+      label: Milestone
+      description: Name the measurable milestone this issue belongs to.
+      placeholder: Exact observability — token burn and saved retry spend are visible in the dashboard.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Phase
+      description: Current lifecycle phase for this issue.
+      options:
+        - discover
+        - design
+        - build
+        - verify
+        - release
+        - observe
+    validations:
+      required: true
+
+  - type: dropdown
+    id: agent_lane
+    attributes:
+      label: Agent lane
+      description: Who or what should execute the implementation.
+      options:
+        - codex
+        - copilot
+        - cursor
+        - claude
+        - human
+        - mixed
+    validations:
+      required: true
+
+  - type: dropdown
+    id: risk_tier
+    attributes:
+      label: Risk tier
+      description: Highest-risk surface this issue can touch.
+      options:
+        - P0 production/revenue/security
+        - P1 user-facing
+        - P2 internal
+        - P3 docs/test
+    validations:
+      required: true
+
   - type: textarea
     id: problem
     attributes:
       label: Problem to solve
       description: State the failure mode, missing capability, or bottleneck in concrete terms.
       placeholder: The current flow provisions a key, but the repo lacks a reusable agent-run contract and proof gate for deterministic execution.
+    validations:
+      required: true
+
+  - type: textarea
+    id: telemetry_expected
+    attributes:
+      label: Telemetry expected after release
+      description: Name the metric, log, dashboard field, or live smoke that should move after this lands.
+      placeholder: |
+        - /v1/dashboard.tokenBurn.trackedEvents increases when token-usage.jsonl has provider usage
+        - Cost chat answers cite both token savings and token burn
+    validations:
+      required: true
+
+  - type: textarea
+    id: rollback_path
+    attributes:
+      label: Rollback path
+      description: Explain how to safely revert or disable the change if verification fails.
+      placeholder: Revert the PR; the dashboard ignores missing tokenBurn and continues to render tokenSavings.
+    validations:
+      required: true
+
+  - type: input
+    id: token_cost_budget
+    attributes:
+      label: Token/cost budget
+      description: Estimate model/tool budget for the agent run, or state why it is not model-backed.
+      placeholder: <= 120k tokens; no cloud model calls in tests.
     validations:
       required: true
 

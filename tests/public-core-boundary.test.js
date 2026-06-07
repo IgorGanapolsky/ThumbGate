@@ -135,8 +135,11 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // Bumped 290 -> 292 (2026-06-06) to ship scripts/feedback-aggregate-stats.js
   // and scripts/statusline-cache-read.js, required by packaged statusline
   // installs to aggregate cross-store feedback and per-folder caches.
+  // Bumped 292 -> 293 (2026-06-07) to ship scripts/token-burn.js because the
+  // packaged dashboard imports it for the token burn / delegated-agent review
+  // panel. This stays inside public shell scope: dashboard + observability.
   const files = npmPackFiles();
-  const CEILING = 292;
+  const CEILING = 293;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

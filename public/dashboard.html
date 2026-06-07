@@ -197,11 +197,20 @@
   .enterprise-answer.blocked { border-color: rgba(248,113,113,0.45); background: rgba(248,113,113,0.07); }
   .enterprise-source-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
   .enterprise-source { font-size: 11px; border: 1px solid var(--border); border-radius: 999px; padding: 4px 9px; color: var(--text-muted); background: var(--bg-card); }
+  .token-burn-grid { display: grid; grid-template-columns: repeat(15, 12px); grid-auto-rows: 12px; gap: 5px; align-items: center; }
+  .token-burn-dot { width: 12px; height: 12px; border-radius: 3px; background: rgba(139,139,150,0.22); border: 1px solid rgba(255,255,255,0.04); }
+  .token-burn-dot[data-intensity="1"] { background: rgba(34,211,238,0.22); }
+  .token-burn-dot[data-intensity="2"] { background: rgba(34,211,238,0.42); }
+  .token-burn-dot[data-intensity="3"] { background: rgba(74,222,128,0.58); }
+  .token-burn-dot[data-intensity="4"] { background: rgba(74,222,128,0.9); }
+  .token-burn-row { display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-top:1px solid var(--border); font-size:12px; color:var(--text-muted); }
+  .token-burn-row:first-child { border-top:none; }
 
   @media (max-width: 700px) {
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
     .search-filters { flex-wrap: wrap; }
     .team-grid, .template-grid, .team-columns, .settings-grid, .generated-grid, .inventory-grid, .enterprise-chat-layout { grid-template-columns: 1fr; }
+    .token-burn-grid { grid-template-columns: repeat(10, 12px); }
   }
 </style>
 </head>
@@ -525,6 +534,41 @@
           </div>
         </div>
         <div id="tokenSavingsSource" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--text-muted);line-height:1.6;"></div>
+      </div>
+
+      <!-- Token Burn — computed from local provider/delegation/budget traces -->
+      <div class="panel" id="tokenBurnPanel" style="margin-bottom:24px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;margin-bottom:16px;">
+          <div style="flex:1;min-width:260px;">
+            <h3 style="margin-bottom:6px;">Token burn &amp; delegation review</h3>
+            <div id="tokenBurnSummary" style="font-size:12px;color:var(--text-muted);line-height:1.55;">Loading token burn telemetry...</div>
+          </div>
+          <div style="text-align:right;min-width:190px;">
+            <div id="tokenBurnCost" style="font-size:34px;font-weight:800;color:var(--cyan);letter-spacing:-0.02em;line-height:1;">—</div>
+            <div id="tokenBurnTotal" style="font-size:13px;color:var(--text-muted);margin-top:6px;">— tokens</div>
+          </div>
+        </div>
+        <div class="team-columns">
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Daily burn, log scale</div>
+            <div class="token-burn-grid" id="tokenBurnDotGrid"></div>
+            <div id="tokenBurnMethodology" style="font-size:11px;color:var(--text-muted);line-height:1.55;margin-top:12px;"></div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Top usage days</div>
+            <div id="tokenBurnTopDays"></div>
+          </div>
+        </div>
+        <div class="team-columns" style="margin-top:16px;">
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Model distribution</div>
+            <div id="tokenBurnModels"></div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Weekly review queue</div>
+            <div id="tokenBurnRecommendations"></div>
+          </div>
+        </div>
       </div>
 
       <!-- Pipeline Flow -->
@@ -2213,6 +2257,7 @@ var gateAuditChart = null;
 
 function renderInsights(data) {
   renderTokenSavings(data.tokenSavings, data.gateStats || {});
+  renderTokenBurn(data.tokenBurn || {});
   renderPipeline(data.lessonPipeline || {});
   renderFeedbackTrendChart(data.feedbackTimeSeries || {});
   renderLessonTrendChart(data.feedbackTimeSeries || {});
@@ -2270,6 +2315,74 @@ function renderTokenSavings(savings, gateStats) {
     'Methodology: blended ' + mixParts.join(' / ') +
     ' at $' + blend.input.toFixed(2) + '/1M input + $' + blend.output.toFixed(2) + '/1M output. ' +
     'Data source: actual blocked count from gate-stats.json. No sample numbers.';
+}
+
+function renderTokenBurn(burn) {
+  var panel = document.getElementById('tokenBurnPanel');
+  if (!panel) return;
+  var summaryEl = document.getElementById('tokenBurnSummary');
+  var costEl = document.getElementById('tokenBurnCost');
+  var totalEl = document.getElementById('tokenBurnTotal');
+  var gridEl = document.getElementById('tokenBurnDotGrid');
+  var topDaysEl = document.getElementById('tokenBurnTopDays');
+  var modelsEl = document.getElementById('tokenBurnModels');
+  var recommendationsEl = document.getElementById('tokenBurnRecommendations');
+  var methodologyEl = document.getElementById('tokenBurnMethodology');
+
+  if (!burn || !burn.available) {
+    summaryEl.textContent = 'No local provider token/cost traces found yet. Emit usage.input_tokens/output_tokens, tokenEstimate, or costUsd into token-usage.jsonl to turn this into a weekly behavior review.';
+    costEl.textContent = '$0.00';
+    totalEl.textContent = '0 tokens';
+    gridEl.innerHTML = Array.from({ length: 30 }).map(function(_, i) {
+      return '<span class="token-burn-dot" data-intensity="0" title="No token burn telemetry day ' + (i + 1) + '"></span>';
+    }).join('');
+    topDaysEl.innerHTML = '<div class="empty" style="padding:16px 0;text-align:left;">No top days yet.</div>';
+    modelsEl.innerHTML = '<div class="empty" style="padding:16px 0;text-align:left;">No model mix yet.</div>';
+    recommendationsEl.innerHTML = '<div class="token-burn-row"><span>Instrument provider token usage</span><strong style="color:var(--cyan);">High ROI</strong></div>';
+    methodologyEl.textContent = '';
+    return;
+  }
+
+  summaryEl.textContent = burn.weeklyReview && burn.weeklyReview.summary
+    ? burn.weeklyReview.summary
+    : ('Tracked ' + (burn.trackedEvents || 0) + ' token/cost event(s) in the last ' + (burn.windowDays || 30) + ' days.');
+  costEl.textContent = burn.estimatedCostDisplay || '$0.00';
+  totalEl.textContent = (burn.totalTokensDisplay || '0') + ' tokens';
+  gridEl.innerHTML = (burn.days || []).map(function(day) {
+    return '<span class="token-burn-dot" data-intensity="' + escAttr(String(day.intensity || 0)) + '" title="' + escAttr(day.dayKey + ': ' + (day.tokensDisplay || '0') + ' tokens, ' + (day.costDisplay || '$0.00')) + '"></span>';
+  }).join('');
+  topDaysEl.innerHTML = renderTokenBurnRows((burn.topDays || []).map(function(day) {
+    return {
+      label: day.dayKey,
+      value: (day.tokensDisplay || '0') + ' · ' + (day.costDisplay || '$0.00'),
+    };
+  }), 'No top days yet.');
+  modelsEl.innerHTML = renderTokenBurnRows((burn.modelDistribution || []).slice(0, 6).map(function(model) {
+    return {
+      label: model.model || 'unknown',
+      value: Math.round((model.share || 0) * 100) + '% · ' + (model.tokensDisplay || '0'),
+    };
+  }), 'No model mix yet.');
+  var recs = burn.weeklyReview && Array.isArray(burn.weeklyReview.recommendations)
+    ? burn.weeklyReview.recommendations
+    : [];
+  recommendationsEl.innerHTML = renderTokenBurnRows(recs.slice(0, 4).map(function(rec) {
+    return {
+      label: rec.action || 'Review workflow',
+      value: rec.severity || 'review',
+      title: rec.rationale || '',
+    };
+  }), 'No review items.');
+  methodologyEl.textContent = burn.methodology || '';
+}
+
+function renderTokenBurnRows(rows, emptyText) {
+  if (!rows.length) {
+    return '<div class="empty" style="padding:16px 0;text-align:left;">' + escHtml(emptyText) + '</div>';
+  }
+  return rows.map(function(row) {
+    return '<div class="token-burn-row" title="' + escAttr(row.title || '') + '"><span>' + escHtml(row.label) + '</span><strong style="color:var(--text);text-align:right;">' + escHtml(row.value) + '</strong></div>';
+  }).join('');
 }
 
 function renderPipeline(pipeline) {
