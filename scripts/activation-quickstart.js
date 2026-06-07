@@ -14,7 +14,7 @@
 // invocations print a one-line hint and exit 0 without prompting or hanging.
 // ---------------------------------------------------------------------------
 
-const path = require('path');
+const path = require('node:path');
 
 const PKG_ROOT = path.join(__dirname, '..');
 const PRO_URL = 'https://thumbgate.ai';
@@ -23,13 +23,14 @@ const PRO_URL = 'https://thumbgate.ai';
 // escape regex metacharacters so arbitrary user input can never produce an
 // invalid or runaway regex inside the gates engine.
 function escapeRegex(text) {
-  return String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return String(text).replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }
 
 function pkgVersion() {
   try {
     return require(path.join(PKG_ROOT, 'package.json')).version;
-  } catch (_) {
+  } catch {
+    // Version is cosmetic in the banner; fall back if package.json is unreadable.
     return '0.0.0';
   }
 }
@@ -60,7 +61,7 @@ async function runActivationFlow({ ask, out, isTTY, deps = {} }) {
   if (captureFeedback === undefined) {
     try {
       ({ captureFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop')));
-    } catch (_) {
+    } catch {
       // Feedback capture is a nice-to-have here; the rule + block is the aha.
       captureFeedback = null;
     }
@@ -93,7 +94,7 @@ async function runActivationFlow({ ask, out, isTTY, deps = {} }) {
         tags: 'quickstart,activation,first-rule',
         gateAction: 'block',
       });
-    } catch (_) {
+    } catch {
       // Capture failure should not abort the activation aha.
     }
   }
@@ -120,8 +121,8 @@ async function runActivationFlow({ ask, out, isTTY, deps = {} }) {
     else process.env.THUMBGATE_STRICT_ENFORCEMENT = priorStrict;
   }
 
-  const decision = verdict && (verdict.decision
-    || (verdict.hookSpecificOutput && verdict.hookSpecificOutput.permissionDecision));
+  const decision = verdict?.decision
+    || verdict?.hookSpecificOutput?.permissionDecision;
   const blocked = decision === 'block' || decision === 'deny';
 
   out('');
@@ -143,7 +144,7 @@ async function runActivationFlow({ ask, out, isTTY, deps = {} }) {
   out(`  so the block you just saw follows your whole team. ${PRO_URL}/pricing`);
   out('');
 
-  try { trackEvent('cli_quickstart_activated', { command: 'quickstart', blocked }); } catch (_) { /* telemetry best-effort */ }
+  try { trackEvent('cli_quickstart_activated', { command: 'quickstart', blocked }); } catch { /* telemetry best-effort */ }
 
   return {
     interactive: true,
@@ -162,7 +163,7 @@ function quickstart() {
   const out = (line = '') => console.log(line);
 
   const trackEvent = (() => {
-    try { return require(path.join(PKG_ROOT, 'scripts', 'cli-telemetry')).trackEvent; } catch (_) { return () => {}; }
+    try { return require(path.join(PKG_ROOT, 'scripts', 'cli-telemetry')).trackEvent; } catch { return () => {}; }
   })();
 
   if (!isTTY) {
@@ -171,13 +172,13 @@ function quickstart() {
     return runActivationFlow({ ask: async () => '', out, isTTY: false, deps: { trackEvent } });
   }
 
-  const readline = require('readline');
+  const readline = require('node:readline');
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   const ask = (q) => new Promise((resolve) => rl.question(q, resolve));
 
   return runActivationFlow({ ask, out, isTTY: true, deps: { trackEvent } })
     .catch((err) => {
-      console.error(`quickstart error: ${err && err.message ? err.message : err}`);
+      console.error(`quickstart error: ${err?.message ?? err}`);
       process.exitCode = 1;
     })
     .finally(() => rl.close());

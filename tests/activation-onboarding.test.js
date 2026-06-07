@@ -78,15 +78,20 @@ test('quickstart in a non-TTY run never prompts, exits 0, and writes no rule sta
 test('quickstart exits 0 in non-TTY mode (does not block automation)', () => {
   const tmp = makeTmpDir();
   try {
-    // execFileSync throws on non-zero exit; reaching the assert means exit 0.
-    execFileSync(process.execPath, [CLI_PATH, 'quickstart'], {
+    // execFileSync throws on non-zero exit; capturing stdout lets us assert the
+    // non-interactive branch actually printed its hint (not just exited 0).
+    const out = execFileSync(process.execPath, [CLI_PATH, 'quickstart'], {
       cwd: tmp,
       env: isolatedEnv(tmp),
       input: '',
       timeout: 15000,
       encoding: 'utf8',
     });
-    assert.ok(true, 'non-TTY quickstart exited 0');
+    assert.match(
+      out,
+      /interactive walkthrough|run it in a terminal/,
+      'non-TTY quickstart should print the interactive-only hint'
+    );
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
