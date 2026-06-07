@@ -852,6 +852,14 @@ function quickStart() {
   console.log('');
 }
 
+// Activation walkthrough (guided first rule + live demonstrated block).
+// Implementation lives in scripts/activation-quickstart.js so it can be unit
+// tested without executing the CLI's top-level command switch. `init` is
+// deliberately untouched — this is an additive, separate command.
+function quickstart() {
+  return require(path.join(PKG_ROOT, 'scripts', 'activation-quickstart')).quickstart();
+}
+
 function init(cliArgs = parseArgs(process.argv.slice(3))) {
   const args = { ...cliArgs };
   if (args.help || args.h) {
@@ -3291,6 +3299,10 @@ switch (COMMAND) {
   case 'init':
     init();
     upgradeNudge();
+    break;
+  case 'quickstart':
+  case 'first-rule':
+    quickstart();
     break;
   case 'quick-start':
     quickStart();

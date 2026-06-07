@@ -135,8 +135,10 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // Bumped 290 -> 292 (2026-06-06) to ship scripts/feedback-aggregate-stats.js
   // and scripts/statusline-cache-read.js, required by packaged statusline
   // installs to aggregate cross-store feedback and per-folder caches.
+  // Bumped 292 -> 293 (2026-06-06) to ship scripts/activation-quickstart.js,
+  // the guided first-rule activation walkthrough behind `thumbgate quickstart`.
   const files = npmPackFiles();
-  const CEILING = 292;
+  const CEILING = 293;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

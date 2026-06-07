@@ -304,9 +304,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 290 -> 292 (2026-06-06) to ship scripts/feedback-aggregate-stats.js
   // and scripts/statusline-cache-read.js, required by packaged statusline
   // installs to aggregate cross-store feedback and per-folder caches.
+  // Bumped 292 -> 293 (2026-06-07) to ship scripts/activation-quickstart.js,
+  // the runtime behind `thumbgate quickstart` guided first-rule onboarding
+  // (bin/cli.js requires it for the activation walkthrough).
   assert.ok(
-    manifest.fileCount <= 292,
-    `npm package should stay <= 292 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 293,
+    `npm package should stay <= 293 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -421,9 +424,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // /guides/claude-code-pretooluse-hook LLM-citation-targeted SEO content from
   // the 2026-06-05 LLM-citability deep-research action plan. Measured combined
   // queue bundle ~4.302 MB; bump restores a one-normal-PR headroom buffer.
+  // Bumped 4.35 MB -> 4.40 MB (2026-06-07) for scripts/activation-quickstart.js
+  // (the `thumbgate quickstart` onboarding runtime). Measured ~4.356 MB.
   assert.ok(
-    manifest.unpackedSize <= 4_350_000,
-    `npm package should stay <= 4.35 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_400_000,
+    `npm package should stay <= 4.40 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
