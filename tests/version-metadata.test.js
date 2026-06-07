@@ -244,7 +244,9 @@ test('distribution surfaces reserve a separate prerelease Claude asset alias', (
 
 test('landing page keeps GTM and schema assets wired', () => {
   const landingPage = readText('docs/landing-page.html');
-  const gtmPlan = readText('docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md');
+  // docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md removed 2026-06-07 (dated
+  // launch-theater); schema/asset wiring on the landing page is what
+  // production depends on.
 
   assert.match(landingPage, /"@type": "SoftwareApplication"/);
   assert.match(landingPage, /"@type": "FAQPage"/);
@@ -252,9 +254,6 @@ test('landing page keeps GTM and schema assets wired', () => {
   assert.match(landingPage, /__GTM_PLAN_URL__/);
   assert.match(landingPage, /__COMPATIBILITY_REPORT_URL__/);
   assert.match(landingPage, /__AUTOMATION_REPORT_URL__/);
-  assert.match(gtmPlan, /"Outcome-Based" Memory Packages/);
-  assert.match(gtmPlan, /\*\*\"Success-Based Memory Credits\.\"\*\*/);
-  assert.match(gtmPlan, /"Mistake-Free" Credits/i);
 });
 
 test('hosted origin and repository metadata stay canonical across live-facing artifacts', () => {
@@ -403,13 +402,13 @@ test('runtime hosted billing config accepts valid analytics tracking identifiers
 
 test('active GTM scripts and reports point to the canonical offer without founding-language drift', () => {
   const outreachTargets = readText('docs/OUTREACH_TARGETS.md');
-  const xAutomationReport = readText('docs/X_AUTOMATION_REPORT.md');
+  // docs/X_AUTOMATION_REPORT.md removed 2026-06-07 (X retired 2026-04-20).
   const githubOutreach = readText('scripts/github-outreach.js');
   // const xAutomation removed 2026-06-06: scripts/x-autonomous-marketing.js
   // was deleted (X/Twitter retired from active distribution 2026-04-20).
   const autonomousSales = readText('scripts/autonomous-sales-agent.js');
 
-  for (const artifact of [outreachTargets, xAutomationReport, githubOutreach, autonomousSales]) {
+  for (const artifact of [outreachTargets, githubOutreach, autonomousSales]) {
     assert.doesNotMatch(artifact, /buy\.stripe\.com/);
     assert.doesNotMatch(artifact, /founding users today/i);
     assert.ok(
@@ -430,7 +429,7 @@ test('commercial truth sources stay aligned across public and historical docs', 
   const revenueSprint = readText('docs/REVENUE_SPRINT_MAR2026.md');
   const anthropicStrategy = readText('docs/ANTHROPIC_MARKETPLACE_STRATEGY.md');
   const workflowSprint = readText('docs/WORKFLOW_HARDENING_SPRINT.md');
-  const xStrategy = readText('docs/X_AUTOMATION_STRATEGY.md');
+  // docs/X_AUTOMATION_STRATEGY.md removed 2026-06-07 (X retired 2026-04-20).
   // const directoryGuide = ...; // docs/marketing/mcp-directories.md removed 2026-06-06
 
   assert.match(commercialTruth, /Pro at \$19\/mo or \$149\/yr/);
@@ -441,7 +440,7 @@ test('commercial truth sources stay aligned across public and historical docs', 
   assert.match(readme, /Commercial Truth/);
   assert.doesNotMatch(readme, /500\+ agentic sessions|battle-tested/i);
 
-  for (const historicalDoc of [crisisReport, packagingPlan, revenueSprint, xStrategy]) {
+  for (const historicalDoc of [crisisReport, packagingPlan, revenueSprint]) {
     assert.match(historicalDoc, /Historical .*note|Historical .*archived|Historical .*hypothesis/i);
     assert.match(historicalDoc, /COMMERCIAL_TRUTH\.md/);
   }
