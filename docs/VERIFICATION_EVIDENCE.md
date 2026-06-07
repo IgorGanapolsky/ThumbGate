@@ -233,7 +233,7 @@ Scope:
 - Hardened `scripts/multi-hop-recall.js`, `scripts/synthetic-dpo.js`, `tests/license.test.js`, `tests/multi-hop-recall.test.js`, and `tests/synthetic-dpo.test.js` so the unlicensed path stays deterministic in CI.
 - Added `npm run budget:status` and `npm run test:coverage` to `.github/workflows/ci.yml`, with `tests/deployment.test.js` enforcing that workflow contract.
 - Removed the tracked runtime artifact `.claude/context-engine/quality-log.json` and kept it ignored via `.gitignore`.
-- Updated `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, and `docs/TECHNICAL_DEBT_AUDIT.md` with the new prevention rules and audit evidence.
+- Updated `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, and *TECHNICAL_DEBT_AUDIT (retired 2026-06-07)* with the new prevention rules and audit evidence.
 
 Commands run in the dedicated worktree at `/Users/ganapolsky_i/workspace/git/igor/audit-worktrees/thumbgate-audit-20260406c`:
 
@@ -1696,7 +1696,7 @@ Requirements verified:
 
 - Public-facing GTM surfaces now lead with one workflow outcome instead of generic agent infrastructure.
 - The landing page preserves `SoftwareApplication` and `FAQPage` JSON-LD while adding buyer-facing FAQ and comparison content.
-- The GTM plan link referenced by the landing page now resolves to `docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md`.
+- The GTM plan link referenced by the landing page now resolves to *GO_TO_MARKET_REVENUE_WEDGE_2026-03 (retired 2026-06-07)*.
 - The ADK consolidator and spike/anchor coverage path is deterministic again and no longer blocks the proof gate.
 
 ## March 9, 2026: Symphony workflow contract and hermetic coverage
@@ -2497,7 +2497,7 @@ Observed final results:
 
 Artifacts updated:
 
-- `docs/TECHNICAL_DEBT_AUDIT.md`
+- *TECHNICAL_DEBT_AUDIT (retired 2026-06-07)*
 
 ## 2026-03-20 Hosted North Star + Sprint Pipeline Verification
 
@@ -3011,7 +3011,7 @@ Scope:
 
 - Added first-party Reddit campaign attribution across the live landing page, hosted checkout bootstrap, fallback checkout URLs, billing funnel events, and telemetry analytics.
 - Preserved semantic SEO/GEO structure while introducing Reddit-specific campaign messaging and subreddit-aware attribution logic on the public landing page.
-- Added operator documentation for Reddit distribution in `docs/REDDIT_GTM_PLAYBOOK.md`.
+- Added operator documentation for Reddit distribution in *REDDIT_GTM_PLAYBOOK (retired 2026-06-07)*.
 - Expanded business analytics so Reddit community, post, comment, campaign-variant, and offer-code performance can be measured end-to-end instead of inferred from raw visit counts.
 
 Commands run:
@@ -3057,7 +3057,7 @@ Behavioral proof points:
 
 Artifacts updated:
 
-- `docs/REDDIT_GTM_PLAYBOOK.md`
+- *REDDIT_GTM_PLAYBOOK (retired 2026-06-07)*
 
 ## 2026-03-17 Agent Readiness Diagnostics Verification
 
