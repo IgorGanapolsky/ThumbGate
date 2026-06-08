@@ -30,12 +30,17 @@ FORBIDDEN_PATTERNS=(
   '^\.claude/implementation-notes/'
   '^\.claude/ralph/'
   '^\.ralph/'
-  '^docs/marketing/reddit-posts/'
-  '^docs/marketing/hn-posts/'
-  '^docs/marketing/discord-posts/'
+  # docs/marketing/ was nuked entirely 2026-06-07 (PR #2570) — block ANY path,
+  # not just the three sub-families known at the time of the original cleanup.
+  # The golden test verification/golden_tests/post-reddit-credibility-cleanup/
+  # caught this hole when it tried to stage docs/marketing/golden-redteam-*.md
+  # and the hook allowed it.
+  '^docs/marketing/'
   '^\.github/workflows/ralph-'
   '^\.github/workflows/social-engagement-'
-  '^LAUNCH(_NOW|_POSTS)?\.md$'
+  # Match any LAUNCH-prefix MD, not just LAUNCH.md / LAUNCH_NOW.md / LAUNCH_POSTS.md.
+  # Wave-2 deleted those three by exact name, but the family is the issue.
+  '^LAUNCH.*\.md$'
   '^FIRST_CUSTOMER.*\.md$'
   '^ALL_ENHANCEMENTS.*\.md$'
   '^TEST_EVIDENCE_.*\.md$'
