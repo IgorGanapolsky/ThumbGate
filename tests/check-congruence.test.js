@@ -56,7 +56,7 @@ test('README commercial copy stays aligned with current Pro and Enterprise packa
   assert.match(readme, /history-aware/i);
   assert.match(readme, /feedback session|open_feedback_session|append_feedback_context|finalize_feedback_session/i);
   // Free-tier copy must match what scripts/rate-limiter.js enforces (no "unlimited" lie).
-  assert.match(readme, /5 feedback captures\/day \(25 total\)/i);
+  assert.match(readme, /2 feedback captures\/day \(25 total\)/i);
   assert.match(readme, /up to 3 active auto-promoted prevention rules/i);
   assert.doesNotMatch(readme, /unlimited feedback captures/i);
   assert.match(readme, /lesson/i);

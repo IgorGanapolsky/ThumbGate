@@ -189,7 +189,7 @@ This alignment means ThumbGate is not an experimental tool — it implements the
 - **ChatGPT App / GPT Action**: https://thumbgate.ai/chatgpt-app links the live ThumbGate GPT, public OpenAPI Action schema, and local enforcement install path.
 - **Free GPT**: Advice, checkpointing, setup help, and typed thumbs-up/down memory capture inside ChatGPT.
 - **Codex Plugin**: https://thumbgate.ai/codex-plugin links the standalone Codex bundle and install docs.
-- **Free local CLI**: Local enforcement for individual developers after install. Includes 5 feedback captures/day, 25 total captures, up to 3 active auto-promoted prevention rules, and PreToolUse hook blocking. Recall, lesson search, unlimited captures/rules, and exports are Pro-only.
+- **Free local CLI**: Local enforcement for individual developers after install. Includes 2 feedback captures/day, 25 total captures, up to 3 active auto-promoted prevention rules, and PreToolUse hook blocking. Recall, lesson search, unlimited captures/rules, and exports are Pro-only.
 - **Workflow Hardening Sprint / Team**: Team pricing anchors at $49/seat/mo with a 3-seat minimum after qualification. The first paid step is an intake-led sprint around one workflow, one repeated blocker, and one proof review.
 - **Pro**: $19/mo or $149/yr. Adds personal enforcement proof, a local dashboard, DPO export for fine-tuning, a check debugger, and advanced data exports for solo operators who want a self-serve side lane.
 

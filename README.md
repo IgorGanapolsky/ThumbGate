@@ -28,7 +28,7 @@ The product is a self-improving enforcement layer: thumbs-down feedback, prompt 
 npx thumbgate init   # auto-detects your agent, wires hooks, 30 seconds
 ```
 
-Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and any MCP-compatible agent. Free tier: 5 feedback captures/day (25 total) and up to 3 active auto-promoted prevention rules. [Pro: $19/mo or $149/yr](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme) — unlimited rules, history-aware lessons, feedback sessions, dashboard, DPO export. Enterprise (custom pricing, scoped after intake) adds a shared hosted lesson DB, org dashboard, and shared org-wide enforcement.
+Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and any MCP-compatible agent. Free tier: 2 feedback captures/day (25 total) and up to 3 active auto-promoted prevention rules. [Pro: $19/mo or $149/yr](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme) — unlimited rules, history-aware lessons, feedback sessions, dashboard, DPO export. Enterprise (custom pricing, scoped after intake) adds a shared hosted lesson DB, org dashboard, and shared org-wide enforcement.
 
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
@@ -400,7 +400,7 @@ If you change MCP or hook settings, restart the affected agent session so Claude
 | Compliance audit export | — | — | ✅ |
 | Dedicated onboarding + SLA | — | — | ✅ |
 
-The free tier gives you 5 feedback captures/day (25 total) and up to 3 active auto-promoted prevention rules — enough to make ThumbGate part of your daily flow before you upgrade. MCP integrations for all agents (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode) ship free.
+The free tier gives you 2 feedback captures/day (25 total) and up to 3 active auto-promoted prevention rules — enough to make ThumbGate part of your daily flow before you upgrade. MCP integrations for all agents (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode) ship free.
 
 Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recall, lesson search, DPO export, and a personal dashboard. Enterprise (custom pricing, scoped after intake) adds a shared hosted lesson DB, org dashboard, and shared enforcement across the org, plus regulatory gate templates (legal intake, financial compliance, healthcare), custom policy layers scoped to firm/practice-area, compliance audit export, and dedicated onboarding with SLA.
 
@@ -579,7 +579,7 @@ Those are suggestions the agent can ignore. ThumbGate checks are enforced — th
 If it supports MCP or pre-action hooks, yes. Claude Code, Claude Desktop, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode all work out of the box.
 
 **Is it free?**
-The free tier gives you 5 feedback captures/day, 25 total captures, and up to 3 active auto-promoted prevention rules — enough for solo devs to prove a blocked repeat before upgrading. MCP integrations ship free for every agent.
+The free tier gives you 2 feedback captures/day, 25 total captures, and up to 3 active auto-promoted prevention rules — enough for solo devs to prove a blocked repeat before upgrading. MCP integrations ship free for every agent.
 
 Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recall, lesson search, and a personal dashboard. Enterprise (custom pricing, scoped after intake) adds a shared hosted lesson DB, org dashboard, and shared enforcement.
 

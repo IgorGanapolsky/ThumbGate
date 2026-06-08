@@ -61,14 +61,19 @@ const TRIAL_DAYS = 7;
 
 function checkoutUrlFor(source, content) {
   try {
-    const url = new URL(PRO_CHECKOUT_URL);
+    const base = content === 'capture_feedback'
+      ? 'https://buy.stripe.com/7sYfZhaiE1eSbO99uj3sI0d'
+      : PRO_CHECKOUT_URL;
+    const url = new URL(base);
     url.searchParams.set('utm_source', source || 'cli');
     url.searchParams.set('utm_medium', 'cli');
     url.searchParams.set('utm_campaign', 'pro_conversion');
     if (content) url.searchParams.set('utm_content', content);
     return url.toString();
   } catch (_) {
-    return PRO_CHECKOUT_URL;
+    return content === 'capture_feedback'
+      ? 'https://buy.stripe.com/7sYfZhaiE1eSbO99uj3sI0d'
+      : PRO_CHECKOUT_URL;
   }
 }
 
