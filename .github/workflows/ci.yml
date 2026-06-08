@@ -106,7 +106,11 @@ jobs:
         run: node scripts/sync-version.js --check
 
       - name: Check changeset coverage for release-relevant PRs
-        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        # Dependabot PRs don't write changesets; auto-merge is the documented
+        # path (.github/workflows/dependabot-automerge.yml). Skip changeset:check
+        # for those so they're not stuck BLOCKED on `test`. 2026-06-08: surfaced
+        # by #2582-#2585 all failing this exact step.
+        if: (github.event_name == 'pull_request' || github.event_name == 'merge_group') && github.actor != 'dependabot[bot]' && github.event.pull_request.user.login != 'dependabot[bot]'
         run: npm run changeset:check
 
       - name: Run budget status gate
