@@ -314,13 +314,13 @@
       "urlCount": 10,
       "sampleUrls": [
         "https://eclatparis.com/sitemap_agentic_discovery.xml",
-        "https://eclatparis.com/sitemap_products_1.xml?from=8490284613918&amp;to=15935864406398",
-        "https://eclatparis.com/sitemap_products_2.xml?from=15935867552126&amp;to=15945570124158",
+        "https://eclatparis.com/sitemap_products_1.xml?from=8490284613918&amp;to=15935869059454",
+        "https://eclatparis.com/sitemap_products_2.xml?from=15943404552574&amp;to=15945570124158",
         "https://eclatparis.com/sitemap_pages_1.xml?from=121197003038&amp;to=688311075198",
         "https://eclatparis.com/sitemap_collections_1.xml?from=452485841182&amp;to=746447798654",
         "https://eclatparis.com/sitemap_blogs_1.xml",
-        "https://eclatparis.com/en/sitemap_products_1.xml?from=8490284613918&amp;to=15935864406398",
-        "https://eclatparis.com/en/sitemap_products_2.xml?from=15935867552126&amp;to=15945570124158",
+        "https://eclatparis.com/en/sitemap_products_1.xml?from=8490284613918&amp;to=15935869059454",
+        "https://eclatparis.com/en/sitemap_products_2.xml?from=15943404552574&amp;to=15945570124158",
         "https://eclatparis.com/en/sitemap_pages_1.xml?from=121197003038&amp;to=688311075198",
         "https://eclatparis.com/en/sitemap_collections_1.xml?from=452485841182&amp;to=746447798654"
       ]
@@ -338,15 +338,15 @@
         "redirected": false
       },
       {
-        "url": "https://eclatparis.com/sitemap_products_1.xml?from=8490284613918&amp;to=15935864406398",
+        "url": "https://eclatparis.com/sitemap_products_1.xml?from=8490284613918&amp;to=15935869059454",
         "status": 200,
-        "finalUrl": "https://eclatparis.com/sitemap_products_1.xml?from=8490284613918&amp;to=15935864406398",
+        "finalUrl": "https://eclatparis.com/sitemap_products_1.xml?from=8490284613918&amp;to=15935869059454",
         "redirected": false
       },
       {
-        "url": "https://eclatparis.com/sitemap_products_2.xml?from=15935867552126&amp;to=15945570124158",
+        "url": "https://eclatparis.com/sitemap_products_2.xml?from=15943404552574&amp;to=15945570124158",
         "status": 200,
-        "finalUrl": "https://eclatparis.com/sitemap_products_2.xml?from=15935867552126&amp;to=15945570124158",
+        "finalUrl": "https://eclatparis.com/sitemap_products_2.xml?from=15943404552574&amp;to=15945570124158",
         "redirected": false
       }
     ],

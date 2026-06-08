@@ -262,23 +262,52 @@ async function scanTarget(targetUrl) {
 async function run() {
   console.log('Starting ThumbGate Sitemap & Redirect Leak Scan...');
   console.log(`Scan Date: ${new Date().toISOString().split('T')[0]}`);
-  console.log('Targets:', TARGETS);
+  
+  let targets = TARGETS;
+  const fileArgIndex = process.argv.indexOf('--file');
+  if (fileArgIndex > -1 && process.argv[fileArgIndex + 1]) {
+    const filePath = path.resolve(process.argv[fileArgIndex + 1]);
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, 'utf8');
+      targets = content
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line && !line.startsWith('#'));
+      targets = targets.map(t => t.startsWith('http') ? t : `https://${t}`);
+    } else {
+      console.error(`File not found: ${filePath}`);
+      process.exit(1);
+    }
+  }
+
+  const concurrencyArgIndex = process.argv.indexOf('--concurrency');
+  let concurrencyLimit = 10;
+  if (concurrencyArgIndex > -1 && process.argv[concurrencyArgIndex + 1]) {
+    concurrencyLimit = parseInt(process.argv[concurrencyArgIndex + 1], 10) || 10;
+  }
+
+  console.log('Targets Count:', targets.length);
+  console.log('Concurrency Limit:', concurrencyLimit);
   console.log('--------------------------------------------------');
 
   const results = [];
-  for (const target of TARGETS) {
-    try {
-      const res = await scanTarget(target);
-      results.push(res);
-    } catch (err) {
-      console.error(`Error scanning ${target}:`, err);
-      results.push({
-        targetUrl: target,
-        domain: new URL(target).hostname,
-        error: err.message,
-        anomalies: [`Scan execution failed: ${err.message}`]
-      });
-    }
+  for (let i = 0; i < targets.length; i += concurrencyLimit) {
+    const chunk = targets.slice(i, i + concurrencyLimit);
+    const promises = chunk.map(async (target) => {
+      try {
+        return await scanTarget(target);
+      } catch (err) {
+        console.error(`Error scanning ${target}:`, err);
+        return {
+          targetUrl: target,
+          domain: new URL(target).hostname,
+          error: err.message,
+          anomalies: [`Scan execution failed: ${err.message}`]
+        };
+      }
+    });
+    const chunkResults = await Promise.all(promises);
+    results.push(...chunkResults);
   }
 
   // Write results to JSON

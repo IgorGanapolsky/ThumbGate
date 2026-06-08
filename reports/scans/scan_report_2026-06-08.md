@@ -104,8 +104,8 @@
 #### Sitemap URL Verification (Sample Checks)
 
   - `https://eclatparis.com/sitemap_agentic_discovery.xml` ➔ Direct resolve (Status: 200)
-  - `https://eclatparis.com/sitemap_products_1.xml?from=8490284613918&amp;to=15935864406398` ➔ Direct resolve (Status: 200)
-  - `https://eclatparis.com/sitemap_products_2.xml?from=15935867552126&amp;to=15945570124158` ➔ Direct resolve (Status: 200)
+  - `https://eclatparis.com/sitemap_products_1.xml?from=8490284613918&amp;to=15935869059454` ➔ Direct resolve (Status: 200)
+  - `https://eclatparis.com/sitemap_products_2.xml?from=15943404552574&amp;to=15945570124158` ➔ Direct resolve (Status: 200)
 
 #### Detected Anomalies & Leaks
 
