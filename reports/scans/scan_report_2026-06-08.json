@@ -1,0 +1,454 @@
+[
+  {
+    "domain": "luzaka.com",
+    "targetUrl": "https://www.luzaka.com",
+    "redirects": {
+      "httpToHttps": {
+        "startUrl": "http://luzaka.com",
+        "chain": [
+          {
+            "url": "http://luzaka.com",
+            "status": 301
+          },
+          {
+            "url": "https://luzaka.com/",
+            "status": 301
+          },
+          {
+            "url": "https://www.luzaka.com/",
+            "status": 200
+          }
+        ],
+        "finalUrl": "https://www.luzaka.com/",
+        "status": 200,
+        "error": null,
+        "httpsReady": true,
+        "wwwConsistent": false
+      },
+      "nonWwwToWww": {
+        "startUrl": "https://luzaka.com",
+        "chain": [
+          {
+            "url": "https://luzaka.com",
+            "status": 301
+          },
+          {
+            "url": "https://www.luzaka.com/",
+            "status": 200
+          }
+        ],
+        "finalUrl": "https://www.luzaka.com/",
+        "status": 200,
+        "error": null,
+        "httpsReady": true,
+        "wwwConsistent": false
+      },
+      "finalUrlCheck": {
+        "startUrl": "https://www.luzaka.com",
+        "chain": [
+          {
+            "url": "https://www.luzaka.com",
+            "status": 200
+          }
+        ],
+        "finalUrl": "https://www.luzaka.com",
+        "status": 200,
+        "error": null,
+        "httpsReady": true,
+        "wwwConsistent": true
+      }
+    },
+    "sitemap": {
+      "found": false,
+      "sitemapUrl": null,
+      "urlCount": 0,
+      "sampleUrls": []
+    },
+    "stripe": {
+      "hasStripe": false,
+      "indicators": [],
+      "leaks": []
+    },
+    "sitemapUrlsChecked": [],
+    "anomalies": [
+      "Missing sitemap: no sitemap.xml found in robots.txt or standard paths"
+    ],
+    "pageFetchedSuccessfully": true,
+    "fetchError": null
+  },
+  {
+    "domain": "parissima.com",
+    "targetUrl": "https://www.parissima.com",
+    "redirects": {
+      "httpToHttps": {
+        "startUrl": "http://parissima.com",
+        "chain": [
+          {
+            "url": "http://parissima.com",
+            "status": 301
+          },
+          {
+            "url": "https://www.parissima.com/fr/",
+            "status": 200
+          }
+        ],
+        "finalUrl": "https://www.parissima.com/fr/",
+        "status": 200,
+        "error": null,
+        "httpsReady": true,
+        "wwwConsistent": false
+      },
+      "nonWwwToWww": {
+        "startUrl": "https://parissima.com",
+        "chain": [
+          {
+            "url": "https://parissima.com",
+            "status": 301
+          },
+          {
+            "url": "https://www.parissima.com/fr/",
+            "status": 200
+          }
+        ],
+        "finalUrl": "https://www.parissima.com/fr/",
+        "status": 200,
+        "error": null,
+        "httpsReady": true,
+        "wwwConsistent": false
+      },
+      "finalUrlCheck": {
+        "startUrl": "https://www.parissima.com",
+        "chain": [
+          {
+            "url": "https://www.parissima.com",
+            "status": 302
+          },
+          {
+            "url": "https://www.parissima.com/fr/",
+            "status": 200
+          }
+        ],
+        "finalUrl": "https://www.parissima.com/fr/",
+        "status": 200,
+        "error": null,
+        "httpsReady": true,
+        "wwwConsistent": true
+      }
+    },
+    "sitemap": {
+      "found": true,
+      "sitemapUrl": "https://www.parissima.com/1_index_sitemap.xml",
+      "urlCount": 1,
+      "sampleUrls": [
+        "https://www.parissima.com/1_fr_0_sitemap.xml"
+      ]
+    },
+    "stripe": {
+      "hasStripe": false,
+      "indicators": [],
+      "leaks": []
+    },
+    "sitemapUrlsChecked": [
+      {
+        "url": "https://www.parissima.com/1_fr_0_sitemap.xml",
+        "status": 200,
+        "finalUrl": "https://www.parissima.com/1_fr_0_sitemap.xml",
+        "redirected": false
+      }
+    ],
+    "anomalies": [],
+    "pageFetchedSuccessfully": true,
+    "fetchError": null
+  },
+  {
+    "domain": "boutique-artisans-du-monde.com",
+    "targetUrl": "https://boutique-artisans-du-monde.com",
+    "redirects": {
+      "httpToHttps": {
+        "startUrl": "http://boutique-artisans-du-monde.com",
+        "chain": [
+          {
+            "url": "http://boutique-artisans-du-monde.com",
+            "status": 301
+          },
+          {
+            "url": "https://boutique-artisans-du-monde.com/",
+            "status": 200
+          }
+        ],
+        "finalUrl": "https://boutique-artisans-du-monde.com/",
+        "status": 200,
+        "error": null,
+        "httpsReady": true,
+        "wwwConsistent": true
+      },
+      "nonWwwToWww": {
+        "startUrl": "https://boutique-artisans-du-monde.com",
+        "chain": [
+          {
+            "url": "https://boutique-artisans-du-monde.com",
+            "status": 200
+          }
+        ],
+        "finalUrl": "https://boutique-artisans-du-monde.com",
+        "status": 200,
+        "error": null,
+        "httpsReady": true,
+        "wwwConsistent": true
+      },
+      "finalUrlCheck": {
+        "startUrl": "https://boutique-artisans-du-monde.com",
+        "chain": [
+          {
+            "url": "https://boutique-artisans-du-monde.com",
+            "status": 200
+          }
+        ],
+        "finalUrl": "https://boutique-artisans-du-monde.com",
+        "status": 200,
+        "error": null,
+        "httpsReady": true,
+        "wwwConsistent": true
+      }
+    },
+    "sitemap": {
+      "found": true,
+      "sitemapUrl": "https://boutique-artisans-du-monde.com/sitemap.xml",
+      "urlCount": 10,
+      "sampleUrls": [
+        "https://boutique-artisans-du-monde.com/post-sitemap.xml",
+        "https://boutique-artisans-du-monde.com/page-sitemap.xml",
+        "https://boutique-artisans-du-monde.com/product-sitemap.xml",
+        "https://boutique-artisans-du-monde.com/product-sitemap2.xml",
+        "https://boutique-artisans-du-monde.com/producers-sitemap.xml",
+        "https://boutique-artisans-du-monde.com/faq-sitemap.xml",
+        "https://boutique-artisans-du-monde.com/category-sitemap.xml",
+        "https://boutique-artisans-du-monde.com/product_brand-sitemap.xml",
+        "https://boutique-artisans-du-monde.com/product_cat-sitemap.xml",
+        "https://boutique-artisans-du-monde.com/product_tag-sitemap.xml"
+      ]
+    },
+    "stripe": {
+      "hasStripe": false,
+      "indicators": [],
+      "leaks": []
+    },
+    "sitemapUrlsChecked": [
+      {
+        "url": "https://boutique-artisans-du-monde.com/post-sitemap.xml",
+        "status": 200,
+        "finalUrl": "https://boutique-artisans-du-monde.com/post-sitemap.xml",
+        "redirected": false
+      },
+      {
+        "url": "https://boutique-artisans-du-monde.com/page-sitemap.xml",
+        "status": 200,
+        "finalUrl": "https://boutique-artisans-du-monde.com/page-sitemap.xml",
+        "redirected": false
+      },
+      {
+        "url": "https://boutique-artisans-du-monde.com/product-sitemap.xml",
+        "status": 200,
+        "finalUrl": "https://boutique-artisans-du-monde.com/product-sitemap.xml",
+        "redirected": false
+      }
+    ],
+    "anomalies": [],
+    "pageFetchedSuccessfully": true,
+    "fetchError": null
+  },
+  {
+    "domain": "eclatparis.com",
+    "targetUrl": "https://eclatparis.com",
+    "redirects": {
+      "httpToHttps": {
+        "startUrl": "http://eclatparis.com",
+        "chain": [
+          {
+            "url": "http://eclatparis.com",
+            "status": 301
+          },
+          {
+            "url": "https://eclatparis.com/",
+            "status": 200
+          }
+        ],
+        "finalUrl": "https://eclatparis.com/",
+        "status": 200,
+        "error": null,
+        "httpsReady": true,
+        "wwwConsistent": true
+      },
+      "nonWwwToWww": {
+        "startUrl": "https://eclatparis.com",
+        "chain": [
+          {
+            "url": "https://eclatparis.com",
+            "status": 200
+          }
+        ],
+        "finalUrl": "https://eclatparis.com",
+        "status": 200,
+        "error": null,
+        "httpsReady": true,
+        "wwwConsistent": true
+      },
+      "finalUrlCheck": {
+        "startUrl": "https://eclatparis.com",
+        "chain": [
+          {
+            "url": "https://eclatparis.com",
+            "status": 200
+          }
+        ],
+        "finalUrl": "https://eclatparis.com",
+        "status": 200,
+        "error": null,
+        "httpsReady": true,
+        "wwwConsistent": true
+      }
+    },
+    "sitemap": {
+      "found": true,
+      "sitemapUrl": "https://eclatparis.com/sitemap.xml",
+      "urlCount": 10,
+      "sampleUrls": [
+        "https://eclatparis.com/sitemap_agentic_discovery.xml",
+        "https://eclatparis.com/sitemap_products_1.xml?from=8490284613918&amp;to=15935864406398",
+        "https://eclatparis.com/sitemap_products_2.xml?from=15935867552126&amp;to=15945570124158",
+        "https://eclatparis.com/sitemap_pages_1.xml?from=121197003038&amp;to=688311075198",
+        "https://eclatparis.com/sitemap_collections_1.xml?from=452485841182&amp;to=746447798654",
+        "https://eclatparis.com/sitemap_blogs_1.xml",
+        "https://eclatparis.com/en/sitemap_products_1.xml?from=8490284613918&amp;to=15935864406398",
+        "https://eclatparis.com/en/sitemap_products_2.xml?from=15935867552126&amp;to=15945570124158",
+        "https://eclatparis.com/en/sitemap_pages_1.xml?from=121197003038&amp;to=688311075198",
+        "https://eclatparis.com/en/sitemap_collections_1.xml?from=452485841182&amp;to=746447798654"
+      ]
+    },
+    "stripe": {
+      "hasStripe": false,
+      "indicators": [],
+      "leaks": []
+    },
+    "sitemapUrlsChecked": [
+      {
+        "url": "https://eclatparis.com/sitemap_agentic_discovery.xml",
+        "status": 200,
+        "finalUrl": "https://eclatparis.com/sitemap_agentic_discovery.xml",
+        "redirected": false
+      },
+      {
+        "url": "https://eclatparis.com/sitemap_products_1.xml?from=8490284613918&amp;to=15935864406398",
+        "status": 200,
+        "finalUrl": "https://eclatparis.com/sitemap_products_1.xml?from=8490284613918&amp;to=15935864406398",
+        "redirected": false
+      },
+      {
+        "url": "https://eclatparis.com/sitemap_products_2.xml?from=15935867552126&amp;to=15945570124158",
+        "status": 200,
+        "finalUrl": "https://eclatparis.com/sitemap_products_2.xml?from=15935867552126&amp;to=15945570124158",
+        "redirected": false
+      }
+    ],
+    "anomalies": [],
+    "pageFetchedSuccessfully": true,
+    "fetchError": null
+  },
+  {
+    "domain": "aliexfantaisies.com",
+    "targetUrl": "https://aliexfantaisies.com",
+    "redirects": {
+      "httpToHttps": {
+        "startUrl": "http://aliexfantaisies.com",
+        "chain": [
+          {
+            "url": "http://aliexfantaisies.com",
+            "status": 302
+          },
+          {
+            "url": "https://aliexfantaisies.com/",
+            "status": 200
+          }
+        ],
+        "finalUrl": "https://aliexfantaisies.com/",
+        "status": 200,
+        "error": null,
+        "httpsReady": true,
+        "wwwConsistent": true
+      },
+      "nonWwwToWww": {
+        "startUrl": "https://aliexfantaisies.com",
+        "chain": [
+          {
+            "url": "https://aliexfantaisies.com",
+            "status": 200
+          }
+        ],
+        "finalUrl": "https://aliexfantaisies.com",
+        "status": 200,
+        "error": null,
+        "httpsReady": true,
+        "wwwConsistent": true
+      },
+      "finalUrlCheck": {
+        "startUrl": "https://aliexfantaisies.com",
+        "chain": [
+          {
+            "url": "https://aliexfantaisies.com",
+            "status": 200
+          }
+        ],
+        "finalUrl": "https://aliexfantaisies.com",
+        "status": 200,
+        "error": null,
+        "httpsReady": true,
+        "wwwConsistent": true
+      }
+    },
+    "sitemap": {
+      "found": true,
+      "sitemapUrl": "https://aliexfantaisies.com/sitemap.xml",
+      "urlCount": 10,
+      "sampleUrls": [
+        "https://aliexfantaisies.com/",
+        "https://aliexfantaisies.com/amp-aliexfantaisies.php",
+        "https://aliexfantaisies.com/apropos.php",
+        "https://aliexfantaisies.com/amp-apropos.php",
+        "https://aliexfantaisies.com/importateur-de-bijoux-en-afrique-maghreb.php",
+        "https://aliexfantaisies.com/de/Modischer-Edelstahl-Schmuck-vom-Großhändler-Aliex-in-Paris-Aubervilliers.php",
+        "https://aliexfantaisies.com/en/Wholesale-Stainless-Steel-Jewelry-in-Paris-France.php",
+        "https://aliexfantaisies.com/Importateur-de-Costume-homme-en-Afrique-Maghreb.php",
+        "https://aliexfantaisies.com/de/Grobhandler-fur-Modeschmuck-aus-Edelstahl-in-Paris-France.php",
+        "https://aliexfantaisies.com/se/Paris-Aliex-fantasi-grossist-av-rostfria-smycken.php"
+      ]
+    },
+    "stripe": {
+      "hasStripe": false,
+      "indicators": [],
+      "leaks": []
+    },
+    "sitemapUrlsChecked": [
+      {
+        "url": "https://aliexfantaisies.com/",
+        "status": 200,
+        "finalUrl": "https://aliexfantaisies.com/",
+        "redirected": false
+      },
+      {
+        "url": "https://aliexfantaisies.com/amp-aliexfantaisies.php",
+        "status": 200,
+        "finalUrl": "https://aliexfantaisies.com",
+        "redirected": true
+      },
+      {
+        "url": "https://aliexfantaisies.com/apropos.php",
+        "status": 200,
+        "finalUrl": "https://aliexfantaisies.com/apropos.php",
+        "redirected": false
+      }
+    ],
+    "anomalies": [],
+    "pageFetchedSuccessfully": true,
+    "fetchError": null
+  }
+]
