@@ -12,6 +12,10 @@ ThumbGate is the local-first firewall for AI coding agents. It runs in the PreTo
 
 The product is a self-improving enforcement layer: thumbs-down feedback, prompt evaluation, and proof from prior runs become prevention rules that permanently stop repeated failures before the next tool call.
 
+<p align="center">
+  <img src="docs/media/thumbgate-demo.gif" alt="ThumbGate blocking an AI agent's dangerous commands (rm -rf, force-push, chmod 777) in real time, while letting safe commands through" width="820" />
+</p>
+
 ```
   Agent tries:   rm -rf tests/
   ThumbGate:     ⛔ BLOCKED — "Never delete test directories"
