@@ -80,7 +80,8 @@ const path = require('node:path');
 // 292 → 293: 2026-06-06 scripts/activation-quickstart.js added so the
 // `thumbgate quickstart` guided first-rule activation walkthrough works from
 // npm installs (changeset: activation-first-rule-onboarding.md).
-const BASELINE_FILE_COUNT = 293;
+// 293 → 310: 2026-06-08 brand assets, icons, SVGs, and buyer intent scripts added for dashboard and local parity.
+const BASELINE_FILE_COUNT = 310;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

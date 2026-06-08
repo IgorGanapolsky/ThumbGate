@@ -137,8 +137,10 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // installs to aggregate cross-store feedback and per-folder caches.
   // Bumped 292 -> 293 (2026-06-06) to ship scripts/activation-quickstart.js,
   // the guided first-rule activation walkthrough behind `thumbgate quickstart`.
+  // Bumped 293 -> 310 (2026-06-08) to ship brand assets, icons, SVGs, and buyer intent scripts
+  // required for dashboard visual assets and local parity.
   const files = npmPackFiles();
-  const CEILING = 293;
+  const CEILING = 310;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

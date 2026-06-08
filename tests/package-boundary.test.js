@@ -146,7 +146,6 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'public/pricing.html',
   ];
   const forbiddenPrefixes = [
-    'public/js/',
     'public/learn/',
     'public/guides/',
     'public/compare/',
@@ -307,9 +306,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 292 -> 293 (2026-06-07) to ship scripts/activation-quickstart.js,
   // the runtime behind `thumbgate quickstart` guided first-rule onboarding
   // (bin/cli.js requires it for the activation walkthrough).
+  // Bumped 293 -> 310 (2026-06-08) to ship brand assets, icons, SVGs, and buyer intent scripts
+  // required for dashboard visual assets and local parity.
   assert.ok(
-    manifest.fileCount <= 293,
-    `npm package should stay <= 293 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 310,
+    `npm package should stay <= 310 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -426,9 +427,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // queue bundle ~4.302 MB; bump restores a one-normal-PR headroom buffer.
   // Bumped 4.35 MB -> 4.40 MB (2026-06-07) for scripts/activation-quickstart.js
   // (the `thumbgate quickstart` onboarding runtime). Measured ~4.356 MB.
+  // Bumped 4.40 MB -> 4.60 MB (2026-06-08) for dashboard visual assets, icons, SVGs, and buyer intent scripts.
   assert.ok(
-    manifest.unpackedSize <= 4_400_000,
-    `npm package should stay <= 4.40 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_600_000,
+    `npm package should stay <= 4.60 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
