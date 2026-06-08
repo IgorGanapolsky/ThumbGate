@@ -158,6 +158,76 @@ test('guided activation flow promotes a first rule and the demo block fires', as
   }
 });
 
+// ---------------------------------------------------------------------------
+// (c) Branch coverage via dependency injection (hermetic — no real gates engine).
+// ---------------------------------------------------------------------------
+test('escapeRegex turns metacharacters into literal matches', () => {
+  const { escapeRegex } = require(ACTIVATION_MODULE);
+  assert.equal(escapeRegex('rm -rf /a.b*c?'), 'rm -rf /a\\.b\\*c\\?');
+  // The escaped string must be a valid, literal-matching regex.
+  const re = new RegExp(escapeRegex('a.b'));
+  assert.equal(re.test('a.b'), true);
+  assert.equal(re.test('axb'), false, 'the dot must be literal, not any-char');
+});
+
+test('guided flow reports a FLAGGED (warn) verdict when the gate does not block', async () => {
+  const { runActivationFlow } = require(ACTIVATION_MODULE);
+  const lines = [];
+  const result = await runActivationFlow({
+    ask: async () => 'edit .env directly',
+    out: (line) => lines.push(line),
+    isTTY: true,
+    deps: {
+      forcePromote: () => ({ gateId: 'gate_warn_1', totalGates: 1 }),
+      runGate: async () => JSON.stringify({ decision: 'allow' }),
+      captureFeedback: () => {},
+      trackEvent: () => {},
+    },
+  });
+  assert.equal(result.promoted, true);
+  assert.equal(result.blocked, false, 'allow verdict => not blocked');
+  assert.match(lines.join('\n'), /flagged it/i, 'warn posture must be reported honestly');
+  assert.match(lines.join('\n'), /THUMBGATE_STRICT_ENFORCEMENT=1/, 'tells the user how to hard-block');
+});
+
+test('guided flow falls back to a starter example when the user enters nothing', async () => {
+  const { runActivationFlow } = require(ACTIVATION_MODULE);
+  const lines = [];
+  let promotedPattern = null;
+  const result = await runActivationFlow({
+    ask: async () => '   ', // whitespace-only => treated as empty
+    out: (line) => lines.push(line),
+    isTTY: true,
+    deps: {
+      forcePromote: (pattern) => { promotedPattern = pattern; return { gateId: 'g1', totalGates: 1 }; },
+      runGate: async () => JSON.stringify({ hookSpecificOutput: { permissionDecision: 'deny' } }),
+      captureFeedback: () => {},
+      trackEvent: () => {},
+    },
+  });
+  assert.equal(result.blocked, true, 'deny via hookSpecificOutput counts as blocked');
+  assert.match(lines.join('\n'), /starter example/i);
+  assert.ok(promotedPattern && promotedPattern.length > 0, 'a non-empty pattern is still promoted');
+});
+
+test('guided flow swallows a capture-feedback error without aborting the aha', async () => {
+  const { runActivationFlow } = require(ACTIVATION_MODULE);
+  const lines = [];
+  const result = await runActivationFlow({
+    ask: async () => 'rm -rf node_modules',
+    out: (line) => lines.push(line),
+    isTTY: true,
+    deps: {
+      forcePromote: () => ({ gateId: 'g2', totalGates: 2 }),
+      runGate: async () => JSON.stringify({ decision: 'block' }),
+      captureFeedback: () => { throw new Error('capture backend down'); },
+      trackEvent: () => { throw new Error('telemetry down'); },
+    },
+  });
+  assert.equal(result.promoted, true, 'capture/telemetry failures must not block promotion');
+  assert.equal(result.blocked, true);
+});
+
 test('runActivationFlow returns inert result for a non-TTY caller', async () => {
   const { runActivationFlow } = require(ACTIVATION_MODULE);
   const lines = [];
