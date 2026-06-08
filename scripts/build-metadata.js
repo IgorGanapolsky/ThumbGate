@@ -5,6 +5,11 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 const DEFAULT_BUILD_METADATA_PATH = path.join(PROJECT_ROOT, 'config', 'build-metadata.json');
 const BUILD_SHA_ENV_KEY = 'THUMBGATE_BUILD_SHA';
 const BUILD_GENERATED_AT_ENV_KEY = 'THUMBGATE_BUILD_GENERATED_AT';
+// Railway injects this automatically for GitHub-connected deployments: the git
+// SHA of the commit that triggered the deploy. It is the ground truth for what
+// code is actually live, and unlike THUMBGATE_BUILD_SHA it cannot drift (Railway
+// sets it per deploy). https://docs.railway.com/reference/variables
+const RAILWAY_GIT_COMMIT_SHA_ENV_KEY = 'RAILWAY_GIT_COMMIT_SHA';
 
 function normalizeNullableText(value) {
   if (typeof value !== 'string') {
@@ -28,6 +33,7 @@ function resolveBuildMetadata({ env = process.env, filePath } = {}) {
     normalizeNullableText(env.THUMBGATE_BUILD_METADATA_PATH) ||
     DEFAULT_BUILD_METADATA_PATH;
   const envBuildSha = normalizeNullableText(env[BUILD_SHA_ENV_KEY]);
+  const railwayGitSha = normalizeNullableText(env[RAILWAY_GIT_COMMIT_SHA_ENV_KEY]);
   const envGeneratedAt = normalizeNullableText(env[BUILD_GENERATED_AT_ENV_KEY]);
 
   let fileBuildSha = null;
@@ -48,9 +54,23 @@ function resolveBuildMetadata({ env = process.env, filePath } = {}) {
     };
   }
 
-  // No SHA in the file — fall back to env only if an explicit SHA is set.
-  // (Previously a bare GENERATED_AT with no SHA could short-circuit and return
-  // { buildSha: null }, losing both signals; now we require the SHA.)
+  // No SHA baked into the image. Prefer Railway's own per-deploy commit SHA over
+  // THUMBGATE_BUILD_SHA: the latter is set out-of-band by the deploy workflow and
+  // has drifted in prod (stuck reporting an old commit while newer code was live,
+  // because RAILWAY_SYNC_VARIABLES is off and `railway up` stamping is unreliable).
+  // RAILWAY_GIT_COMMIT_SHA is injected by Railway per deploy, so it always matches
+  // the code actually serving traffic on a GitHub-connected service.
+  if (railwayGitSha) {
+    return {
+      path: resolvedPath,
+      buildSha: railwayGitSha,
+      generatedAt: envGeneratedAt,
+    };
+  }
+
+  // Last resort: the workflow-managed env var. Only trust it when an explicit SHA
+  // is set. (Previously a bare GENERATED_AT with no SHA could short-circuit and
+  // return { buildSha: null }, losing both signals; now we require the SHA.)
   if (envBuildSha) {
     return {
       path: resolvedPath,
@@ -124,6 +144,7 @@ if (require.main === module) {
 module.exports = {
   BUILD_GENERATED_AT_ENV_KEY,
   BUILD_SHA_ENV_KEY,
+  RAILWAY_GIT_COMMIT_SHA_ENV_KEY,
   DEFAULT_BUILD_METADATA_PATH,
   resolveBuildMetadata,
   writeBuildMetadataFile,
