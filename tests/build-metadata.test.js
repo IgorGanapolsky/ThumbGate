@@ -7,6 +7,7 @@ const os = require('os');
 const {
   BUILD_GENERATED_AT_ENV_KEY,
   BUILD_SHA_ENV_KEY,
+  RAILWAY_GIT_COMMIT_SHA_ENV_KEY,
   resolveBuildMetadata,
   writeBuildMetadataFile,
 } = require('../scripts/build-metadata');
@@ -82,6 +83,45 @@ describe('build-metadata', () => {
     });
     assert.strictEqual(result.buildSha, 'env-only-sha');
     assert.strictEqual(result.generatedAt, '2026-04-08T14:20:00Z');
+  });
+
+  // Railway drift fix (2026-06-08): on the GitHub-connected service the baked
+  // file is the committed null placeholder and RAILWAY_SYNC_VARIABLES is off, so
+  // THUMBGATE_BUILD_SHA never updates and /health reported an old commit while
+  // newer code was live. RAILWAY_GIT_COMMIT_SHA is injected by Railway per deploy
+  // and is the ground truth, so it must beat the drift-prone THUMBGATE_BUILD_SHA.
+  it('resolveBuildMetadata prefers RAILWAY_GIT_COMMIT_SHA over the drift-prone THUMBGATE_BUILD_SHA', () => {
+    const result = resolveBuildMetadata({
+      filePath: '/tmp/nonexistent-build-meta.json',
+      env: {
+        [RAILWAY_GIT_COMMIT_SHA_ENV_KEY]: 'railway-live-sha',
+        [BUILD_SHA_ENV_KEY]: 'stale-workflow-sha',
+        [BUILD_GENERATED_AT_ENV_KEY]: '2026-04-08T14:20:00Z',
+      },
+    });
+    assert.strictEqual(result.buildSha, 'railway-live-sha', 'Railway per-deploy SHA is ground truth');
+  });
+
+  it('resolveBuildMetadata still lets a baked file SHA win over RAILWAY_GIT_COMMIT_SHA', () => {
+    const tmpFile = path.join(os.tmpdir(), `build-meta-railway-vs-file-${Date.now()}.json`);
+    try {
+      writeBuildMetadataFile({ sha: 'file-sha', outputPath: tmpFile, generatedAt: '2026-01-01T00:00:00Z' });
+      const result = resolveBuildMetadata({
+        filePath: tmpFile,
+        env: { [RAILWAY_GIT_COMMIT_SHA_ENV_KEY]: 'railway-live-sha' },
+      });
+      assert.strictEqual(result.buildSha, 'file-sha', 'baked image artifact still wins when present');
+    } finally {
+      fs.unlinkSync(tmpFile);
+    }
+  });
+
+  it('resolveBuildMetadata uses RAILWAY_GIT_COMMIT_SHA when it is the only source', () => {
+    const result = resolveBuildMetadata({
+      filePath: '/tmp/nonexistent-build-meta.json',
+      env: { [RAILWAY_GIT_COMMIT_SHA_ENV_KEY]: 'railway-only-sha' },
+    });
+    assert.strictEqual(result.buildSha, 'railway-only-sha');
   });
 
   it('resolveBuildMetadata does NOT short-circuit to a null SHA when only generatedAt env is set', () => {
