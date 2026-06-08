@@ -264,6 +264,12 @@
     "public/numbers.html",
     "public/pricing.html",
     "public/pro.html",
+    "public/assets/brand/",
+    "public/assets/claude-thumbgate-statusbar.svg",
+    "public/assets/codex-thumbgate-statusbar-test.svg",
+    "public/assets/legal-intake-control-flow.svg",
+    "public/brand/",
+    "public/js/",
     "skills/thumbgate/SKILL.md",
     "src/"
   ],
