@@ -198,6 +198,19 @@
   .enterprise-source-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
   .enterprise-source { font-size: 11px; border: 1px solid var(--border); border-radius: 999px; padding: 4px 9px; color: var(--text-muted); background: var(--bg-card); }
 
+  .quick-nav-link {
+    cursor: pointer;
+    transition: opacity 0.15s ease, color 0.15s ease;
+  }
+  .quick-nav-link:hover {
+    color: var(--cyan);
+    opacity: 0.95;
+  }
+  .quick-nav-link:hover strong {
+    color: var(--cyan) !important;
+    text-decoration: underline;
+  }
+
   @media (max-width: 700px) {
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
     .search-filters { flex-wrap: wrap; }
@@ -241,10 +254,10 @@
     <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Updated: <time datetime="2026-04-20">2026-04-20</time> · by <a href="https://github.com/IgorGanapolsky" style="color:inherit;">Igor Ganapolsky</a></p>
     <p style="font-size:14px;color:var(--text-muted);line-height:1.6;max-width:700px;">What's happening right now? Search memories, inspect active checks, manage your team, and export training data. <span style="color:var(--cyan);font-weight:600;">This is your control plane for AI agent behavior.</span></p>
     <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text-muted);">
-      <span>🔍 <strong style="color:var(--text);">Search</strong> — find any memory</span>
-      <span>🛡️ <strong style="color:var(--text);">Gates</strong> — what's blocking</span>
-      <span>👥 <strong style="color:var(--text);">Team</strong> — org metrics</span>
-      <span>📤 <strong style="color:var(--text);">Export</strong> — DPO training data</span>
+      <span class="quick-nav-link" onclick="switchTab('search')">🔍 <strong style="color:var(--text);">Search</strong> — find any memory</span>
+      <span class="quick-nav-link" onclick="switchTab('gates')">🛡️ <strong style="color:var(--text);">Gates</strong> — what's blocking</span>
+      <span class="quick-nav-link" onclick="switchTab('team')">👥 <strong style="color:var(--text);">Team</strong> — org metrics</span>
+      <span class="quick-nav-link" onclick="switchTab('export')">📤 <strong style="color:var(--text);">Export</strong> — DPO training data</span>
     </div>
   </div>
 
