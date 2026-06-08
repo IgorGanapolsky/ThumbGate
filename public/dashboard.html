@@ -222,7 +222,7 @@
 <div class="auth-bar">
   <div class="container">
     <div style="margin-bottom:10px;">
-      <span style="font-size:14px;font-weight:600;">Connect your API key</span>
+      <span id="authTitle" style="font-size:14px;font-weight:600;">Connect your API key</span>
       <span id="authHelp" style="font-size:13px;color:var(--text-muted);margin-left:8px;">Pro auto-connects locally when you launch with <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx thumbgate pro</code>. Otherwise paste your <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">THUMBGATE_API_KEY</code> manually.</span>
     </div>
     <div style="display:flex;gap:12px;align-items:center;">
@@ -887,6 +887,10 @@ async function connect(options) {
 
     status.className = 'auth-status ok';
     status.textContent = opts.localPro ? `✓ Local ${tierName} connected` : '✓ Connected';
+    const titleEl = document.getElementById('authTitle');
+    if (titleEl) {
+      titleEl.textContent = opts.localPro ? `${tierName} License Active` : 'API Key Connected';
+    }
     document.getElementById('dashboardContent').style.display = 'block';
     if (opts.localPro) {
       const localProActiveMessage = 'Local Pro is active on this machine. Your dashboard is using the saved license key automatically.';
@@ -908,6 +912,10 @@ async function connect(options) {
   } catch (e) {
     status.className = 'auth-status err';
     status.textContent = '✗ ' + e.message;
+    const titleEl = document.getElementById('authTitle');
+    if (titleEl) {
+      titleEl.textContent = 'Connect your API key';
+    }
     if (opts.localPro) {
       document.getElementById('authHelp').textContent = `Local ${tierName} bootstrap failed. Paste your THUMBGATE_API_KEY manually or retry the local launcher.`;
     }
