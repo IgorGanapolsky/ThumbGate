@@ -2590,6 +2590,9 @@ function normalizePublicMarketingHtml(html, runtimeConfig) {
     output = output.replaceAll(
       'data-domain="thumbgate-production.up.railway.app"',
       `data-domain="${escapeHtmlAttribute(plausibleDomain)}"`
+    ).replaceAll(
+      'data-domain="thumbgate.ai"',
+      `data-domain="${escapeHtmlAttribute(plausibleDomain)}"`
     );
   } catch {
     // appOrigin is normalized by hosted-config; leave static analytics domains
@@ -8238,11 +8241,13 @@ ${hidden}
         const signal = parsed.searchParams.get('signal') || null;
         let results;
         try {
+          const requestFeedbackPaths = getRequestFeedbackPaths(req, parsed);
           results = searchThumbgate({
             query,
             limit: Number.isFinite(limit) ? limit : 10,
             source,
             signal,
+            feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
           });
         } catch (err) {
           throw createHttpError(400, err.message || 'Invalid ThumbGate search request');
@@ -8260,11 +8265,13 @@ ${hidden}
         const body = await parseJsonBody(req);
         let results;
         try {
+          const requestFeedbackPaths = getRequestFeedbackPaths(req, parsed);
           results = searchThumbgate({
             query: body.query || body.q || '',
             limit: body.limit,
             source: body.source,
             signal: body.signal,
+            feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
           });
         } catch (err) {
           throw createHttpError(400, err.message || 'Invalid ThumbGate search request');

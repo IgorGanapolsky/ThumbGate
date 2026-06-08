@@ -53,8 +53,29 @@ function listJsonFiles(dirPath) {
   return results;
 }
 
+const STOPWORDS = new Set([
+  'a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and', 'any', 'are', 'arent', 'as', 'at',
+  'be', 'because', 'been', 'before', 'being', 'below', 'between', 'both', 'but', 'by',
+  'cant', 'cannot', 'could', 'couldnt', 'did', 'didnt', 'do', 'does', 'doesnt', 'doing', 'dont', 'down', 'during',
+  'each', 'few', 'for', 'from', 'further', 'had', 'hadnt', 'has', 'hasnt', 'have', 'havent', 'having',
+  'he', 'hed', 'hell', 'hes', 'her', 'here', 'heres', 'hers', 'herself', 'him', 'himself', 'his',
+  'how', 'hows', 'i', 'id', 'ill', 'im', 'ive', 'if', 'in', 'into', 'is', 'isnt', 'it', 'its', 'itself',
+  'lets', 'me', 'more', 'most', 'mustnt', 'my', 'myself',
+  'no', 'nor', 'not', 'of', 'off', 'on', 'once', 'only', 'or', 'other', 'ought', 'our', 'ours', 'ourselves', 'out', 'over', 'own',
+  'same', 'shant', 'she', 'shed', 'shell', 'shes', 'should', 'shouldnt', 'so', 'some', 'such',
+  'than', 'that', 'thats', 'the', 'their', 'theirs', 'them', 'themselves', 'then', 'there', 'theres', 'these', 'they', 'theyd', 'theyll', 'theyre', 'theyve', 'this', 'those', 'through', 'to', 'too', 'under', 'until', 'up', 'very',
+  'was', 'wasnt', 'we', 'wed', 'well', 'were', 'weve', 'werent', 'what', 'whats', 'when', 'whens', 'where', 'wheres', 'which', 'while', 'who', 'whos', 'whom', 'why', 'whys',
+  'with', 'wont', 'would', 'wouldnt', 'you', 'youd', 'youll', 'youre', 'youve', 'your', 'yours', 'yourself', 'yourselves'
+]);
+
 function tokenize(text) {
   return String(text || '').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+}
+
+function getSearchTokens(queryText) {
+  const allTokens = tokenize(queryText);
+  const contentTokens = allTokens.filter(t => !STOPWORDS.has(t));
+  return contentTokens.length > 0 ? contentTokens : allTokens;
 }
 
 function unique(arr) {
@@ -82,7 +103,7 @@ function substringBoost(query, text) {
   const q = query.toLowerCase();
   const t = text.toLowerCase();
   if (t.includes(q)) return 0.3;
-  const words = q.split(/\s+/).filter((w) => w.length > 2);
+  const words = q.split(/\s+/).filter((w) => w.length > 2 && !STOPWORDS.has(w));
   const matched = words.filter((w) => t.includes(w)).length;
   return words.length > 0 ? (matched / words.length) * 0.2 : 0;
 }
@@ -117,8 +138,12 @@ function scoreRecord(queryTokens, queryText, record) {
   const recency = recencyScore(record.timestamp);
   const signalBoost = record.signal === 'down' ? 0.05 : 0;
 
+  const matchScore = jaccard + substr;
+  const isWildcard = !queryText || queryText === '*';
+  const score = isWildcard ? (recency + signalBoost || 0.01) : (matchScore > 0 ? matchScore + recency + signalBoost : 0);
+
   return {
-    score: jaccard + substr + recency + signalBoost,
+    score: Number(score.toFixed(4)),
     record,
     matchedTokens: unique(queryTokens).filter((t) => new Set(recordTokens).has(t)),
   };
@@ -129,7 +154,7 @@ function scoreRecord(queryTokens, queryText, record) {
 // ---------------------------------------------------------------------------
 
 function searchFeedbackLog(queryText, limit = 5, options = {}) {
-  const logPath = path.join(getFeedbackDir(), 'feedback-log.jsonl');
+  const logPath = path.join(options.feedbackDir || getFeedbackDir(), 'feedback-log.jsonl');
   let records = readJsonl(logPath);
 
   // SQLite fallback: if JSONL is empty/tiny, pull records from the lesson DB
@@ -156,7 +181,7 @@ function searchFeedbackLog(queryText, limit = 5, options = {}) {
 
   // Wildcard query: return all records sorted by recency
   const isWildcard = queryText === '*' || queryText === '';
-  const queryTokens = isWildcard ? [] : tokenize(queryText);
+  const queryTokens = isWildcard ? [] : getSearchTokens(queryText);
 
   let scored = isWildcard
     ? records.map((r) => ({ score: recencyScore(r.timestamp) || 0.01, record: r, matchedTokens: [] }))
@@ -186,9 +211,9 @@ function searchFeedbackLog(queryText, limit = 5, options = {}) {
 }
 
 function searchContextFs(queryText, limit = 5, options = {}) {
-  const contextDir = getContextFsDir();
+  const contextDir = options.contextDir || (options.feedbackDir ? path.join(options.feedbackDir, 'contextfs') : getContextFsDir());
   const namespaces = options.namespaces || ['memory/error', 'memory/learning', 'rules', 'raw_history'];
-  const queryTokens = tokenize(queryText);
+  const queryTokens = getSearchTokens(queryText);
   const scored = [];
 
   for (const ns of namespaces) {
@@ -221,12 +246,12 @@ function searchContextFs(queryText, limit = 5, options = {}) {
     }));
 }
 
-function searchPreventionRules(queryText, limit = 5) {
-  const rulesPath = path.join(getFeedbackDir(), 'prevention-rules.md');
+function searchPreventionRules(queryText, limit = 5, options = {}) {
+  const rulesPath = path.join(options.feedbackDir || getFeedbackDir(), 'prevention-rules.md');
   if (!fs.existsSync(rulesPath)) return [];
 
   const content = fs.readFileSync(rulesPath, 'utf-8');
-  const queryTokens = tokenize(queryText);
+  const queryTokens = getSearchTokens(queryText);
   const blocks = content.split(/^#{1,3}\s+/m).filter(Boolean);
 
   return blocks
@@ -252,7 +277,7 @@ function searchPreventionRules(queryText, limit = 5) {
 function searchAll(queryText, limit = 10, options = {}) {
   const feedbackResults = searchFeedbackLog(queryText, limit, options);
   const contextResults = searchContextFs(queryText, limit, options);
-  const ruleResults = searchPreventionRules(queryText, limit);
+  const ruleResults = searchPreventionRules(queryText, limit, options);
 
   const merged = [
     ...feedbackResults.map((r) => ({ ...r, _source_type: 'feedback' })),

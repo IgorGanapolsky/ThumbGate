@@ -395,4 +395,16 @@ async function run() {
   console.log(`Saved Markdown report to ${reportPathMd}`);
 }
 
-run().catch(console.error);
+const isMain = typeof require !== 'undefined' && require.main && (path.resolve(process.argv[1]) === path.resolve(__filename));
+if (isMain) {
+  run().catch(console.error);
+}
+
+module.exports = {
+  checkRedirect,
+  fetchPage,
+  checkSitemap,
+  checkStripeLeak,
+  scanTarget,
+  run
+};

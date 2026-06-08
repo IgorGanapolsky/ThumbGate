@@ -11,7 +11,7 @@
 <meta name="robots" content="noindex">
 <meta name="referrer" content="same-origin">
 <!-- Privacy-friendly analytics by Plausible -->
-<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -1175,10 +1175,14 @@ function renderResult(r) {
   let signal = r.signal || r.type || '';
 
   if (contextText && contextText.trim().startsWith('{')) {
+    const originalText = contextText;
     try {
       let cleanText = contextText.trim();
       if (cleanText.endsWith('…')) {
         cleanText = cleanText.slice(0, -1);
+      }
+      if (cleanText.endsWith(',...')) {
+        cleanText = cleanText.slice(0, -4);
       }
       let parsed = null;
       try {
@@ -1186,19 +1190,35 @@ function renderResult(r) {
       } catch (_) {
         try { parsed = JSON.parse(cleanText + '"}'); } catch (_) {}
         try { parsed = JSON.parse(cleanText + '}'); } catch (_) {}
+        try { parsed = JSON.parse(cleanText + '"} }'); } catch (_) {}
       }
-      if (parsed && parsed.context) {
-        contextText = parsed.context;
+      if (parsed && (parsed.context || parsed.text || parsed.content || parsed.message)) {
+        contextText = parsed.context || parsed.text || parsed.content || parsed.message;
       } else {
-        const contextMatch = contextText.match(/"context"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-        if (contextMatch) {
-          contextText = contextMatch[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+        let contextMatch = originalText.match(/"context"\s*:\s*"((?:[^"\\]|\\.)*?)"/);
+        if (!contextMatch) {
+          contextMatch = originalText.match(/"context"\s*:\s*"((?:[^"\\]|\\.)*)/);
+        }
+        if (!contextMatch || !contextMatch[1]) {
+          let otherMatch = originalText.match(/"(?:text|content|message)"\s*:\s*"((?:[^"\\]|\\.)*?)"/);
+          if (!otherMatch) {
+            otherMatch = originalText.match(/"(?:text|content|message)"\s*:\s*"((?:[^"\\]|\\.)*)/);
+          }
+          if (otherMatch && otherMatch[1]) {
+            contextMatch = otherMatch;
+          }
+        }
+        if (contextMatch && contextMatch[1]) {
+          let val = contextMatch[1];
+          val = val.replace(/(?:"\s*,\s*"[^"]*"\s*:?|"\s*,\s*|"\s*\}?\s*|\s*,\s*|\s*\}?\s*)$/, '');
+          val = val.replace(/(?:\.\.\.|…|",\.\.\.|",…|"\s*,\s*\.\.\.|"\s*,\s*…)$/, '');
+          contextText = val.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
         }
       }
-      if (parsed && parsed.signal && !signal) {
+      if (parsed && parsed.signal) {
         signal = parsed.signal;
       } else {
-        const signalMatch = contextText.match(/"signal"\s*:\s*"([^"]+)"/);
+        const signalMatch = originalText.match(/"signal"\s*:\s*"([^"]+)"/);
         if (signalMatch && !signal) {
           signal = signalMatch[1];
         }
@@ -1211,7 +1231,7 @@ function renderResult(r) {
   const signalClass = isUp ? 'up' : isDown ? 'down' : '';
   const signalLabel = isUp ? '👍 Positive' : isDown ? '👎 Negative' : signal;
 
-  let displayTitle = r.title || r.context || r.text || '';
+  let displayTitle = r.title || contextText || '';
   if (displayTitle && displayTitle.startsWith('feedback_')) {
     const parts = displayTitle.split('_');
     if (parts.length >= 3) {
