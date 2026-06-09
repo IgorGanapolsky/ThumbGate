@@ -9,7 +9,11 @@ This page documents the interop: **ThumbGate's deterministic block gates export 
 
 ## The generated policy
 
-[`thumbgate-policy.rego`](./thumbgate-policy.rego) in this directory is generated from ThumbGate's shipped gate configs (`config/gates/*.json`). It is a real, loadable OPA policy:
+[`thumbgate-policy.rego`](./thumbgate-policy.rego) in this directory is generated from ThumbGate's shipped gate configs (`config/gates/*.json`).
+
+> ⚠️ **Generated draft — not yet validated against the OPA toolchain.** It is modeled on OPA's Rego grammar but has **not** been run through `opa check` here. Validate it before relying on it (see below). Also: the keyword imports target pre-1.0 OPA; for **OPA 1.0+** you likely want `import rego.v1` instead of `import future.keywords.*`. Treat this as a starting point a prospect validates, not a turnkey policy.
+
+Shape of the generated policy:
 
 ```rego
 package thumbgate.authz
@@ -35,9 +39,13 @@ deny contains msg if {
 
 **Decision:** `allow` is `false` whenever any `deny` rule matches; the `deny` set carries the human-readable reasons.
 
-### Try it
+### Validate it, then try it
 
 ```bash
+# 1) validate it actually compiles — do this FIRST; the file is a generated draft
+opa check docs/integrations/thumbgate-policy.rego
+
+# 2) then evaluate a sample input
 opa eval -d docs/integrations/thumbgate-policy.rego \
   -i <(echo '{"tool":"Bash","command":"git push --force origin main"}') \
   'data.thumbgate.authz'

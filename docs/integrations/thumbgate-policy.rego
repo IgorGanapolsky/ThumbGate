@@ -1,4 +1,6 @@
 # Generated from ThumbGate gate configs (config/gates/*.json). Do not edit by hand.
+# DRAFT — NOT yet validated with `opa check`. For OPA 1.0+, prefer `import rego.v1`
+#         over the future.keywords imports below.
 # Input shape: { "tool": "Bash", "command": "rm -rf /" }
 # allow == false whenever any deny rule matches; the deny set carries the reasons.
 # NOTE: OPA uses RE2 regex — ThumbGate patterns using PCRE lookaround (?!,(?=) or
