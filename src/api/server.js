@@ -2576,7 +2576,7 @@ function stripTrailingSlashes(value) {
   return input.slice(0, end);
 }
 
-function normalizePublicMarketingHtml(html, runtimeConfig) {
+function normalizePublicMarketingHtml(html, runtimeConfig, requestHost) {
   const appOrigin = runtimeConfig?.appOrigin
     ? stripTrailingSlashes(runtimeConfig.appOrigin)
     : '';
@@ -2585,7 +2585,7 @@ function normalizePublicMarketingHtml(html, runtimeConfig) {
   let output = String(html);
   output = output.replaceAll(DEFAULT_PUBLIC_APP_ORIGIN, appOrigin);
   try {
-    const host = new URL(appOrigin).host;
+    const host = requestHost || new URL(appOrigin).host;
     const plausibleDomain = resolvePlausibleDataDomain({ host });
     output = output.replaceAll(
       'data-domain="thumbgate-production.up.railway.app"',
@@ -2641,7 +2641,7 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
     '__GTM_PLAN_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md',
     '__GITHUB_URL__': 'https://github.com/IgorGanapolsky/ThumbGate',
     '__POSTHOG_API_KEY__': runtimeConfig.posthogApiKey || '',
-  }), runtimeConfig);
+  }), runtimeConfig, pageContext.requestHost);
 }
 
 function loadLandingPageHtml(runtimeConfig, pageContext = {}) {
@@ -3445,11 +3445,13 @@ function servePublicMarketingPage({
     }, req.headers, 'seo_landing_view');
   }
 
+  const requestHost = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
   const html = renderHtml(hostedConfig, {
     serverVisitorId: journeyState.visitorId,
     serverSessionId: journeyState.sessionId,
     serverAcquisitionId: journeyState.acquisitionId,
     serverTelemetryCaptured: landingTelemetryCaptured,
+    requestHost,
   });
 
   sendHtml(
@@ -6108,12 +6110,13 @@ async function addContext(){
       // Public-facing broker lead-flow audit landing page. Wedge for the
       // real-estate broker outreach. Static HTML served from src/api/static.
       try {
+        const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
         const html = normalizePublicMarketingHtml(fillTemplate(fs.readFileSync(
           path.resolve(__dirname, '../../assets/static/broker-audit.html'),
           'utf8'
         ), {
           '__POSTHOG_API_KEY__': hostedConfig.posthogApiKey || '',
-        }), hostedConfig);
+        }), hostedConfig, host);
         if (isHeadRequest) {
           sendHtml(res, 200, html, {}, { headOnly: true });
           return;
