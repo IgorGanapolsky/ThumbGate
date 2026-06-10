@@ -28,6 +28,13 @@
 
 const REDACTED = (id) => `[REDACTED:${id}]`;
 
+// Identifier names that denote a credential, used by the generic `key = value` pattern. Kept as
+// two small matchers (instead of one mega-alternation) so the assignment regex stays simple.
+const SECRET_KEY_NAME = /(?:api[_-]?key|secret|token|password|passwd|credential|private[_-]?key|access[_-]?token|client[_-]?secret)/i;
+// Public identifiers whose values are not secrets (e.g. Stripe publishable `pk_*` keys). Excluded
+// so `publishable_key = pk_live_…` is preserved verbatim.
+const PUBLIC_KEY_NAME = /publishable|public/i;
+
 /**
  * Ordered list of redaction patterns. Order matters: the most specific provider patterns run
  * before the broad `key=value` fallback so a known secret keeps its precise label. Every regex
@@ -51,13 +58,13 @@ const SECRET_REDACTION_PATTERNS = [
   { id: 'stripe_webhook_secret', label: 'Stripe webhook signing secret', regex: /\bwhsec_[A-Za-z0-9]{8,}/g },
 
   // Anthropic / OpenAI. Run before the legacy `sk-` pattern so the precise label wins.
-  { id: 'anthropic_api_key', label: 'Anthropic API key', regex: /\bsk-ant-[A-Za-z0-9_-]{16,}/gi },
+  { id: 'anthropic_api_key', label: 'Anthropic API key', regex: /\bsk-ant-[A-Za-z0-9_-]{16,}/g },
   { id: 'openai_project_key', label: 'OpenAI project key', regex: /\bsk-proj-[A-Za-z0-9_-]{16,}/g },
   { id: 'openai_api_key', label: 'OpenAI API key', regex: /\bsk-[A-Za-z0-9]{20,}/g },
 
   // GitHub tokens.
   { id: 'github_pat', label: 'GitHub personal access token', regex: /\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{16,}/g },
-  { id: 'github_fine_grained_pat', label: 'GitHub fine-grained token', regex: /\bgithub_pat_[A-Za-z0-9_]{20,}/g },
+  { id: 'github_fine_grained_pat', label: 'GitHub fine-grained token', regex: /\bgithub_pat_\w{20,}/g },
 
   // Slack tokens.
   { id: 'slack_token', label: 'Slack token', regex: /\bxox[abprs]-[A-Za-z0-9-]{10,}/g },
@@ -79,18 +86,22 @@ const SECRET_REDACTION_PATTERNS = [
   {
     id: 'bearer_token',
     label: 'Bearer token',
-    regex: /\b(Bearer|Token)\s+[A-Za-z0-9._~+/=-]{16,}/gi,
+    regex: /\b(Bearer|Token)\s+[a-z0-9._~+/=-]{16,}/gi,
     replace: (_m, scheme) => `${scheme} ${REDACTED('bearer_token')}`,
   },
 
-  // Generic `secretish_key = <value>` / `secretish_key: "<value>"` assignment. The value must be
-  // 16+ chars with no whitespace, and the key must be a credential-ish name (never a bare
-  // `publishable_key`). Runs last so provider-specific labels are preferred.
+  // Generic `<name> = <value>` / `<name>: "<value>"` assignment with a 16+ char whitespace-free
+  // value. A simple matcher finds every assignment; the replace fn redacts only when the name is a
+  // credential (SECRET_KEY_NAME) and not a public identifier (PUBLIC_KEY_NAME), so `publishable_key`
+  // is preserved. Runs last so provider-specific labels are preferred.
   {
     id: 'secret_assignment',
     label: 'Secret assignment',
-    regex: /\b(api[_-]?key|secret(?:[_-]?key)?|access[_-]?token|auth[_-]?token|client[_-]?secret|private[_-]?key|password|passwd|token)\b(\s*[:=]\s*)["']?[A-Za-z0-9_.\/+=~-]{16,}["']?/gi,
-    replace: (_m, key, sep) => `${key}${sep}${REDACTED('secret_assignment')}`,
+    regex: /\b([\w.-]{2,40})(\s*[:=]\s*["']?)([A-Za-z0-9._+=~/-]{16,})(["']?)/g,
+    replace: (match, key, pre, _value, post) =>
+      (SECRET_KEY_NAME.test(key) && !PUBLIC_KEY_NAME.test(key))
+        ? `${key}${pre}${REDACTED('secret_assignment')}${post}`
+        : match,
   },
 ];
 

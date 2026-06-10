@@ -44,7 +44,6 @@ const {
 } = require('./failure-diagnostics');
 const { getEffectiveSetting } = require('./evolution-state');
 const { ensureDir } = require('./fs-utils');
-const { redactSecretsDeep } = require('./secret-redaction');
 const {
   buildFeedbackPathsFromDir,
   getFeedbackPaths: resolveFeedbackPaths,
@@ -321,6 +320,7 @@ function appendJSONL(filePath, record) {
   ensureDir(path.dirname(filePath));
   // Redact secrets before persisting — feedback/memory records can embed conversationWindow
   // content slices that captured a pasted credential. See scripts/secret-redaction.js.
+  const { redactSecretsDeep } = require('./secret-redaction');
   fs.appendFileSync(filePath, `${JSON.stringify(redactSecretsDeep(record))}\n`);
 }
 
@@ -2145,6 +2145,7 @@ function compactMemories() {
   const deduped = [...seen.values()].reverse();
   ensureDir(path.dirname(MEMORY_LOG_PATH));
   // Redact on rewrite too, so any pre-existing un-redacted rows are cleaned during dedup/migration.
+  const { redactSecretsDeep } = require('./secret-redaction');
   fs.writeFileSync(MEMORY_LOG_PATH, deduped.map((r) => JSON.stringify(redactSecretsDeep(r))).join('\n') + (deduped.length ? '\n' : ''));
 
   return {
