@@ -1620,6 +1620,68 @@ function buildAiRecommendationVisibilityGuide(spec) {
 
 const PAGE_BLUEPRINTS = [
   {
+    query: 'snowflake cortex agent governance vs local coding agent guardrails',
+    path: '/compare/snowflake-cortex-agent-governance',
+    pageType: 'comparison',
+    pillar: 'comparison',
+    title: 'ThumbGate vs Snowflake Cortex Agent Governance | Two Different Layers',
+    heroTitle: 'ThumbGate vs Snowflake Cortex Agent Governance',
+    heroSummary: 'At Snowflake Summit 2026, agent governance became headline infrastructure: Cortex CoCo runs under your existing RBAC inside Snowflake\'s perimeter, and the Natoma acquisition adds a permission gateway built to freeze out rogue agents. That is the right model for agents operating inside the data cloud. But the coding agent in your terminal acts earlier and lower in the stack: Claude Code, Cursor, and Codex run rm -rf, force-push to main, and write secrets to disk on your own machine, under your own credentials, before any platform RBAC ever sees the request. ThumbGate is the local-first PreToolUse layer for exactly that surface. They are not competitors — they are different layers of the same defense.',
+    takeaways: [
+      'Snowflake Cortex and Natoma govern what an agent does inside the enterprise data perimeter — server-side, under RBAC, with a full audit trail. The right tool when the agent\'s actions are SQL and data access inside Snowflake.',
+      'ThumbGate governs what a coding agent does on the developer\'s machine — rm -rf, force-push, secret writes, off-scope edits — in the PreToolUse hook, before execution, before any platform sees the request.',
+      'The two compose. A coding agent that force-pushes broken code or leaks a key never reached Snowflake\'s perimeter to be governed there; that failure happens in the dev loop, which is the layer ThumbGate owns.',
+    ],
+    sections: [
+      {
+        heading: 'The boundary in one sentence',
+        paragraphs: [
+          'Snowflake Cortex governs what an agent is allowed to do once it is operating inside Snowflake — querying tables, accessing data, taking actions under your RBAC, with prompt-injection guardrails and an audit trail. Natoma extends that to a permission gateway across enterprise apps.',
+          'ThumbGate governs what a coding agent does on the developer\'s machine, in the PreToolUse hook, before the tool call executes — the rm -rf, the git push --force, the secret written to disk. That happens in the terminal, under the developer\'s own credentials, before any platform boundary exists to enforce it.',
+        ],
+      },
+      {
+        heading: 'Choose Snowflake Cortex / Natoma governance when',
+        bullets: [
+          'Your agents operate inside the Snowflake data cloud and the risk you manage is data access and SQL under enterprise RBAC.',
+          'You need centralized, server-side policy and audit across enterprise applications and identities.',
+          'Your buyer is a data or platform team standardizing agent access at the organization level.',
+        ],
+      },
+      {
+        heading: 'Choose ThumbGate when',
+        bullets: [
+          'Your risk is a coding agent on a developer\'s machine — Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — running destructive shell, git, or filesystem actions.',
+          'You want enforcement in the PreToolUse hook, before execution, with zero server and zero rollout — npx thumbgate init in 30 seconds.',
+          'You want a learning loop: a thumbs-down on a blocked action becomes an auto-promoted prevention rule that holds across every session and every agent.',
+          'You want least-privilege task scope and a local audit trail of every blocked action — not only inside one platform\'s perimeter.',
+        ],
+      },
+      {
+        heading: 'Why the two layers do not overlap',
+        paragraphs: [
+          'Snowflake validated the thesis the whole category now agrees on: agents need a control layer that decides what they can do before they do it, not an audit log after the damage. At Summit 2026 they made it headline infrastructure and acquired Natoma to enforce it across the enterprise.',
+          'But platform governance can only act on requests that reach the platform. A coding agent that force-pushes broken code, deletes a directory, or commits a secret has already done the damage on the developer\'s machine — that action never traveled to Snowflake to be governed. ThumbGate is the enforcement point for that earlier, lower layer. If you run AI coding agents and AI inside your data cloud, you want both: ThumbGate at the dev loop, platform governance at the data layer.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Is ThumbGate an alternative to Snowflake Cortex agent governance?',
+        answer: 'Not exactly — they govern different layers. Snowflake Cortex and Natoma govern agents operating inside the enterprise data cloud under RBAC. ThumbGate governs coding agents on the developer\'s machine in the PreToolUse hook, before any action reaches a platform. If your risk is a coding agent running rm -rf or force-pushing to main, ThumbGate is the right layer; if your risk is data access inside Snowflake, Cortex is. Most teams running both AI coding agents and AI in their data cloud want both.',
+      },
+      {
+        question: 'Does ThumbGate require a server or enterprise rollout like Natoma?',
+        answer: 'No. ThumbGate is local-first: npx thumbgate init wires the PreToolUse hook on your machine in about 30 seconds, with no server, no gateway, and no platform rollout. Natoma is a server-side permission gateway for enterprise applications; ThumbGate runs entirely in the developer\'s local agent loop. That is the deliberate difference in surface.',
+      },
+      {
+        question: 'Snowflake says agentic security needs a fundamentally different approach. Does ThumbGate agree?',
+        answer: 'Yes — and ThumbGate has been built on that premise from day one. The shared thesis is that you enforce before the action, not after: a deterministic pre-action gate, not a model reviewing its own output. Snowflake applies that inside the data perimeter; ThumbGate applies it at the coding-agent layer on the developer\'s machine. The agreement on the model is exactly why the two compose rather than compete.',
+      },
+    ],
+    relatedPaths: ['/compare/claude-code-hooks-mastery', '/guides/ai-agent-pre-action-approval-gates', '/guides/background-agent-governance'],
+  },
+  {
     query: 'thumbgate vs speclock',
     path: '/compare/speclock',
     pageType: 'comparison',
