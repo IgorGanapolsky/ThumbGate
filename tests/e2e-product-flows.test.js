@@ -404,7 +404,11 @@ test('E2E: vague thumbs-down distills a lesson and preserves linked follow-up co
 test('E2E: learn hub and article pages serve live over HTTP', async (t) => {
   const { port } = await startIsolatedServer(t, 'thumbgate-e2e-learn-');
 
-  const learnRes = await fetch(apiUrl(port, '/learn'));
+  const learnRes = await fetch(apiUrl(port, '/learn'), {
+    headers: {
+      'x-forwarded-host': 'thumbgate-production.up.railway.app',
+    },
+  });
   assert.equal(learnRes.status, 200);
   const learnHtml = await learnRes.text();
   assert.match(learnHtml, /CollectionPage/);

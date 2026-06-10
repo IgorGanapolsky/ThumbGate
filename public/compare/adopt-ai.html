@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ThumbGate vs Adopt AI | Managing AI Blast Radius in Production</title>
+  <meta name="description" content="Vijay Sagar Gullapalli and Sarat Mahavratayajula proposed an evals-first architecture to manage AI blast radius. ThumbGate implements this pre-execution firewall at the developer machine layer, gating outbound tool calls before they run." />
+  <meta property="og:title" content="ThumbGate vs Adopt AI | Managing AI Blast Radius in Production" />
+  <meta property="og:description" content="Compare the evals-first testing pipeline proposed by Adopt AI's Vijay Sagar Gullapalli with ThumbGate's pre-execution firewall. Learn how to combine offline evals with runtime gating." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/compare/adopt-ai" />
+  <link rel="canonical" href="https://thumbgate.ai/compare/adopt-ai" />
+  <link rel="llm-context" href="/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root { --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #161618; --line: #222225; --text: #e8e8ec; --muted: #8b8b96; --cyan: #22d3ee; --green: #4ade80; --amber: #fbbf24; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); background: rgba(10, 10, 11, 0.88); border-bottom: 1px solid var(--line); }
+    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; padding-bottom: 14px; }
+    .brand { font-weight: 700; color: var(--text); display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(34, 211, 238, 0.22); background: rgba(34, 211, 238, 0.1); color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
+    h1 { font-size: clamp(34px, 5vw, 56px); line-height: 1.06; letter-spacing: -0.04em; margin: 16px 0; max-width: 860px; }
+    .hero p { max-width: 760px; color: var(--muted); font-size: 18px; }
+    .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 24px; padding-bottom: 72px; }
+    .card, .detail-section, .sidebar-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px; }
+    .card { padding: 24px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p, .detail-section li, .sidebar-card p { color: var(--muted); }
+    .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+    .comparison-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+    .comparison-table th, .comparison-table td { border: 1px solid var(--line); padding: 12px; text-align: left; vertical-align: top; }
+    .comparison-table th { background: var(--bg-raised); color: var(--cyan); }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+    .pill { border: 1px solid var(--line); background: var(--bg-raised); border-radius: 999px; padding: 10px 14px; font-size: 14px; font-weight: 650; }
+    .pill.good { color: #b8f7c8; border-color: rgba(74, 222, 128, 0.28); background: rgba(74, 222, 128, 0.1); }
+    .pill.warn { color: #ffe2a4; border-color: rgba(251, 191, 36, 0.28); background: rgba(251, 191, 36, 0.1); }
+    .sidebar { display: flex; flex-direction: column; gap: 18px; }
+    .sidebar-card { padding: 20px; }
+    .sidebar-card:first-child { position: sticky; top: 84px; max-height: calc(100vh - 104px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .cta-button { display: inline-flex; align-items: center; justify-content: center; margin-top: 18px; padding: 12px 16px; border-radius: 10px; background: var(--cyan); color: #071116; font-weight: 700; text-decoration: none; }
+    .related-card { display: block; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg-raised); margin-top: 12px; color: var(--text); }
+    .related-label { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .faq-item { border-top: 1px solid var(--line); padding: 14px 0; }
+    .faq-item summary { cursor: pointer; font-weight: 600; }
+    .faq-item p { color: var(--muted); }
+    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } .sidebar-card:first-child { position: static; max-height: none; overflow: visible; } }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "ThumbGate vs Adopt AI: Managing AI Blast Radius in Production",
+    "description": "An architectural comparison of Adopt AI's evals-first framework for production AI pipelines and ThumbGate's pre-execution firewall at the IDE-agent level. Learn how to manage the infinite blast radius of model upgrades.",
+    "about": ["managing AI blast radius", "ThumbGate vs Adopt AI", "evals-first architecture", "structured output validation"],
+    "url": "https://thumbgate.ai/compare/adopt-ai",
+    "citation": "https://venturebeat.com/orchestration/when-claude-changed-everything-changed-managing-ai-blast-radius-in-production",
+    "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+    "mainEntityOfPage": "https://thumbgate.ai/compare/adopt-ai"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is the 'infinite blast radius' problem in AI?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The infinite blast radius problem refers to how routine upgrades in frontier language models (e.g., Claude 3.5 to 3.7 or 4.5) can introduce silent, non-deterministic formatting deviations in structured output. Because the model's output boundary meets critical internal APIs, these formatting drifts (like inserting curl commands in JSON descriptions or returning clarifying questions) bypass traditional software test suites and break downstream applications in production."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How does ThumbGate align with Adopt AI's proposed 'evals-first' architecture?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Adopt AI advocates for an 'evals-first' workflow, where prompt updates and model upgrades are gated through automated evaluation suites derived from production traffic. ThumbGate complements this by acting as the active, local-first runtime gate (PreToolUse firewall). Instead of waiting for offline CI/CD test passes, ThumbGate intercepts dangerous, non-deterministic tool actions on developer machines and in local pipelines, converting human feedback directly into runtime check rules."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How does ThumbGate handle structured schema validation drift?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "ThumbGate uses structured adapters with self-healing capabilities to intercept LLM responses at the boundary of downstream integrations. If an upgrade introduces parameter deviations, ThumbGate's adapters automatically attempt key-mapping alignment, type coercion, and schema sanitization, logging telemetry warnings rather than throwing fatal application crashes."
+        }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="container">
+      <a href="/" class="brand">
+        <svg class="logo-mark" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="16" cy="16" r="14" fill="#161618" stroke="#22d3ee" stroke-width="2"/>
+          <path d="M16 8V24M8 16H24" stroke="#22d3ee" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span>ThumbGate</span>
+      </a>
+      <a href="/pricing.html" style="font-size: 14px; font-weight: 600;">Pricing</a>
+    </div>
+  </div>
+
+  <div class="container hero">
+    <div class="eyebrow">Production Safety</div>
+    <h1>ThumbGate vs Adopt AI</h1>
+    <p>Managing the infinite blast radius of non-deterministic LLMs in production: Combining evals-first gating with pre-execution firewalls.</p>
+  </div>
+
+  <div class="container">
+    <div class="grid">
+      <div class="main-content">
+        <div class="detail-section">
+          <h2>The Seam Where AI Breaks Downstream APIs</h2>
+          <p>
+            In the recent VentureBeat article <em>"When Claude changed, everything changed: managing AI blast radius in production"</em>, Sarat Mahavratayajula (Sherwin-Williams) and Vijay Sagar Gullapalli (Adopt AI) identified a fundamental operational vulnerability. In systems translating natural language to API calls, model updates (like Claude Sonnet 3.5 to 3.7 or 4.5) introduce silent formatting drifts.
+          </p>
+          <p>
+            Because LLMs operate non-deterministically, they can violate strict JSON contracts by wrapping responses in markdown backticks, placing parameters in description fields, or returning conversational questions. Traditional unit tests cannot predict these failure shapes, resulting in an "infinite blast radius" across your backend.
+          </p>
+        </div>
+
+        <div class="detail-section">
+          <h2>Comparison Matrix</h2>
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th>Capability</th>
+                <th>Evals-First Philosophy (Adopt AI)</th>
+                <th>ThumbGate Framework</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Primary Mechanism</strong></td>
+                <td>Offline evaluation suites gating CI/CD pull requests.</td>
+                <td>Active PreToolUse runtime gate blocking actions before execution.</td>
+              </tr>
+              <tr>
+                <td><strong>Seam Validation</strong></td>
+                <td>Strict JSON schema adherence validation post-generation.</td>
+                <td>Self-healing structured adapters with fallback parsing and alignment.</td>
+              </tr>
+              <tr>
+                <td><strong>Rule Generation</strong></td>
+                <td>Manual prompt refining and gold-standard evaluation sets.</td>
+                <td>Auto-promotes thumbs-down feedback into local regex & semantic rules.</td>
+              </tr>
+              <tr>
+                <td><strong>Execution Layer</strong></td>
+                <td>Application-level orchestration.</td>
+                <td>IDE agent level (Cursor, Claude Code, Codex, Gemini, Cline).</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="detail-section">
+          <h2>High-ROI Integration: Dual-Layer Perimeter</h2>
+          <p>
+            To successfully contain AI blast radius, enterprises must adopt a dual-layer approach:
+          </p>
+          <ul>
+            <li><strong>CI/CD Gate (Adopt AI style):</strong> Treat prompt edits and model versions as pull requests. Validate them against production-traffic test cases using automated evaluation suites.</li>
+            <li><strong>Runtime Firewall (ThumbGate style):</strong> Run local, pre-execution checks on developer machines. When a model drifts and outputs a destructive command or invalid call, block it at the terminal hook before it touches the operating system or database.</li>
+          </ul>
+        </div>
+
+        <div class="detail-section">
+          <h2>Frequently Asked Questions</h2>
+          <details class="faq-item">
+            <summary>Is Adopt AI a ThumbGate competitor?</summary>
+            <p>No. Adopt AI and its founders focus on prompt telemetry and evaluation-driven CI gates. ThumbGate operates at the local IDE agent hook layer. By deploying both, engineering teams evaluate model performance offline while enforcing hard safety boundaries in real-time execution.</p>
+          </details>
+          <details class="faq-item">
+            <summary>How do self-healing structured adapters work?</summary>
+            <p>If an LLM update changes output format (e.g. returning strings instead of floats or nesting lists), the structured adapter catches the validation error, coerces types, maps alternate names, and sanitizes the output rather than letting the downstream application crash.</p>
+          </details>
+        </div>
+      </div>
+
+      <div class="sidebar">
+        <div class="sidebar-card">
+          <h3>Contain the Radius</h3>
+          <p>Install the local PreToolUse gate to shield your database and git history from agent drift.</p>
+          <a href="/pricing.html" class="cta-button">Get ThumbGate Pro</a>
+          
+          <div style="margin-top: 24px;">
+            <span class="related-label">Related Comparisons</span>
+            <a href="/compare/anthropic-containment.html" class="related-card">
+              <strong>vs Anthropic Containment</strong>
+              <span style="font-size: 12px; color: var(--muted); display: block;">gVisor vs local PreToolUse</span>
+            </a>
+            <a href="/compare/arcjet.html" class="related-card">
+              <strong>vs Arcjet</strong>
+              <span style="font-size: 12px; color: var(--muted); display: block;">Inbound HTTP vs Outbound hooks</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

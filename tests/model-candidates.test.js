@@ -278,3 +278,116 @@ test('model-candidates CLI supports tokenizer brittleness workload', () => {
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   }
 });
+
+test('recommendCandidates supports custom workload file', () => {
+  const tmpWorkloadPath = path.join(os.tmpdir(), `custom-workload-${Date.now()}.json`);
+  const customWorkload = {
+    id: 'custom-data-analysis',
+    label: 'Custom Data Analysis Workload',
+    summary: 'A custom rubric focused on data-analysis and charting.',
+    desiredStrengths: ['data-analysis', 'charting'],
+    targetContextWindow: 128000,
+    benchmarkCommands: ['npx thumbgate bench --custom'],
+    metrics: ['chartSpecValidity']
+  };
+
+  fs.writeFileSync(tmpWorkloadPath, JSON.stringify(customWorkload, null, 2));
+
+  try {
+    const report = recommendCandidates({
+      workloadFile: tmpWorkloadPath,
+      provider: 'openai',
+      maxCandidates: 1
+    });
+
+    assert.equal(report.workloadId, 'custom-data-analysis');
+    assert.equal(report.recommended[0].id, 'openai/gpt-5.5');
+    assert.ok(report.recommended[0].matchedStrengths.includes('data-analysis'));
+    assert.equal(report.recommended[0].benchmarkPlan.commands[0].command, 'npx thumbgate bench --custom');
+  } finally {
+    fs.rmSync(tmpWorkloadPath, { force: true });
+  }
+});
+
+test('model-candidates CLI supports custom workload file via --workload-file', () => {
+  const isolatedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-model-custom-cli-'));
+  const feedbackDir = path.join(isolatedDir, 'feedback');
+  const tmpWorkloadPath = path.join(isolatedDir, 'custom-workload.json');
+
+  const customWorkload = {
+    id: 'custom-tool-gating',
+    label: 'Custom Tool Gating Workload',
+    summary: 'Custom rubric for pretool gating.',
+    desiredStrengths: ['agentic-coding', 'tool-use'],
+    targetContextWindow: 64000,
+    benchmarkCommands: ['npx thumbgate bench --custom-gating'],
+    metrics: ['passRate']
+  };
+
+  fs.writeFileSync(tmpWorkloadPath, JSON.stringify(customWorkload, null, 2));
+
+  try {
+    const stdout = execFileSync(
+      process.execPath,
+      ['bin/cli.js', 'model-candidates', `--workload-file=${tmpWorkloadPath}`, '--provider=openai-compatible', '--gateway=tinker', '--json'],
+      {
+        cwd: path.join(__dirname, '..'),
+        env: {
+          ...process.env,
+          THUMBGATE_FEEDBACK_DIR: feedbackDir,
+          THUMBGATE_NO_NUDGE: '1',
+        },
+        encoding: 'utf8',
+      },
+    );
+    const payload = JSON.parse(stdout);
+
+    assert.equal(payload.report.workload.id, 'custom-tool-gating');
+    assert.equal(payload.report.recommended[0].id, 'tinker/qwen3.6-35b-a3b');
+    assert.ok(payload.report.recommended[0].matchedStrengths.includes('agentic-coding'));
+    assert.equal(payload.report.recommended[0].benchmarkPlan.commands[0].command, 'npx thumbgate bench --custom-gating');
+  } finally {
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+  }
+});
+
+test('model-candidates CLI supports custom workload file via --workloadFile', () => {
+  const isolatedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-model-custom-cli-camel-'));
+  const feedbackDir = path.join(isolatedDir, 'feedback');
+  const tmpWorkloadPath = path.join(isolatedDir, 'custom-workload.json');
+
+  const customWorkload = {
+    id: 'custom-tool-gating-camel',
+    label: 'Custom Tool Gating Camel Workload',
+    summary: 'Custom rubric for pretool gating.',
+    desiredStrengths: ['agentic-coding', 'tool-use'],
+    targetContextWindow: 64000,
+    benchmarkCommands: ['npx thumbgate bench --custom-gating-camel'],
+    metrics: ['passRate']
+  };
+
+  fs.writeFileSync(tmpWorkloadPath, JSON.stringify(customWorkload, null, 2));
+
+  try {
+    const stdout = execFileSync(
+      process.execPath,
+      ['bin/cli.js', 'model-candidates', '--workloadFile', tmpWorkloadPath, '--provider=openai-compatible', '--gateway=tinker', '--json'],
+      {
+        cwd: path.join(__dirname, '..'),
+        env: {
+          ...process.env,
+          THUMBGATE_FEEDBACK_DIR: feedbackDir,
+          THUMBGATE_NO_NUDGE: '1',
+        },
+        encoding: 'utf8',
+      },
+    );
+    const payload = JSON.parse(stdout);
+
+    assert.equal(payload.report.workload.id, 'custom-tool-gating-camel');
+    assert.equal(payload.report.recommended[0].id, 'tinker/qwen3.6-35b-a3b');
+  } finally {
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
+  }
+});
+

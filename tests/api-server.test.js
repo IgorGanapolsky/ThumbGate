@@ -651,7 +651,11 @@ test('admin API persists branch governance and exposes operational integrity ove
 });
 
 test('root serves the landing page by default', async () => {
-  const res = await fetch(apiUrl('/'));
+  const res = await fetch(apiUrl('/'), {
+    headers: {
+      'x-forwarded-host': 'app.example.com',
+    },
+  });
   assert.equal(res.status, 200);
   assert.match(String(res.headers.get('content-type')), /text\/html/);
 

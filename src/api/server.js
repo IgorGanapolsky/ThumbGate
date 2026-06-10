@@ -2660,6 +2660,14 @@ function loadAboutPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(ABOUT_PAGE_PATH, runtimeConfig, pageContext);
 }
 
+function loadGuidePageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(GUIDE_PAGE_PATH, runtimeConfig, pageContext);
+}
+
+function loadLearnPageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(LEARN_PAGE_PATH, runtimeConfig, pageContext);
+}
+
 function readOptionalPublicTemplate(filePath) {
   try {
     return fs.readFileSync(filePath, 'utf-8');
@@ -5322,10 +5330,19 @@ async function addContext(){
 
     if (isGetLikeRequest && (pathname === '/guide' || pathname === '/guide.html')) {
       try {
-        const html = fs.readFileSync(GUIDE_PAGE_PATH, 'utf-8');
-        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
-      } catch {
-        sendJson(res, 404, { error: 'Guide page not found' });
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadGuidePageHtml,
+          extraTelemetry: {
+            pageType: 'guide',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Guide page unavailable');
       }
       return;
     }
@@ -5385,10 +5402,19 @@ async function addContext(){
 
     if (isGetLikeRequest && (pathname === '/learn' || pathname === '/learn.html')) {
       try {
-        const html = fs.readFileSync(LEARN_PAGE_PATH, 'utf-8');
-        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
-      } catch {
-        sendJson(res, 404, { error: 'Learn page not found' });
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadLearnPageHtml,
+          extraTelemetry: {
+            pageType: 'learn',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Learn page unavailable');
       }
       return;
     }
@@ -5585,7 +5611,8 @@ async function addContext(){
           sendJson(res, 403, { error: 'Forbidden' });
           return;
         }
-        const html = fs.readFileSync(articlePath, 'utf-8');
+        const requestHost = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+        const html = normalizePublicMarketingHtml(fs.readFileSync(articlePath, 'utf-8'), hostedConfig, requestHost);
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch {
         sendJson(res, 404, { error: 'Article not found' });
@@ -5598,7 +5625,8 @@ async function addContext(){
         const slug = normalizePublicPageSlug(pathname.replace('/guides/', ''));
         const guidePath = path.join(GUIDES_DIR, `${slug}.html`);
         if (!guidePath.startsWith(GUIDES_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
-        const html = fs.readFileSync(guidePath, 'utf-8');
+        const requestHost = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+        const html = normalizePublicMarketingHtml(fs.readFileSync(guidePath, 'utf-8'), hostedConfig, requestHost);
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch { sendJson(res, 404, { error: 'Guide not found' }); }
       return;
@@ -5609,7 +5637,8 @@ async function addContext(){
         const slug = normalizePublicPageSlug(pathname.replace('/compare/', ''));
         const comparePath = path.join(COMPARE_DIR, `${slug}.html`);
         if (!comparePath.startsWith(COMPARE_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
-        const html = fs.readFileSync(comparePath, 'utf-8');
+        const requestHost = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+        const html = normalizePublicMarketingHtml(fs.readFileSync(comparePath, 'utf-8'), hostedConfig, requestHost);
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch { sendJson(res, 404, { error: 'Comparison not found' }); }
       return;
@@ -5620,7 +5649,8 @@ async function addContext(){
         const slug = normalizePublicPageSlug(pathname.replace('/use-cases/', ''));
         const useCasePath = path.join(USE_CASES_DIR, `${slug}.html`);
         if (!useCasePath.startsWith(USE_CASES_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
-        const html = fs.readFileSync(useCasePath, 'utf-8');
+        const requestHost = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+        const html = normalizePublicMarketingHtml(fs.readFileSync(useCasePath, 'utf-8'), hostedConfig, requestHost);
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch { sendJson(res, 404, { error: 'Use case not found' }); }
       return;
