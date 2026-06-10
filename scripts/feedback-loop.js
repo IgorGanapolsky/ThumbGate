@@ -1499,6 +1499,17 @@ function captureFeedback(params) {
             totalGates: promoteResult.totalGates,
           });
         } catch { /* activation telemetry is non-critical */ }
+
+        // Trigger Self-Harness Optimizer to propagate the new rules to prompt files & validate
+        try {
+          const { fork } = require('child_process');
+          const optimizerPath = path.join(__dirname, 'self-harness-optimizer.js');
+          if (fs.existsSync(optimizerPath)) {
+            fork(optimizerPath, [], { stdio: 'ignore', detached: true }).unref();
+          }
+        } catch (err) {
+          console.error('Failed to trigger self-harness optimizer:', err);
+        }
       }
     } catch { /* Gate promotion is non-critical */ }
   }
