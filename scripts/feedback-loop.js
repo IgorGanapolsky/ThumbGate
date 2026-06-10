@@ -1503,9 +1503,13 @@ function captureFeedback(params) {
         // Trigger Self-Harness Optimizer to propagate the new rules to prompt files & validate
         try {
           const { fork } = require('child_process');
-          const optimizerPath = path.join(__dirname, 'self-harness-optimizer.js');
-          if (fs.existsSync(optimizerPath)) {
-            fork(optimizerPath, [], { stdio: 'ignore', detached: true }).unref();
+          const localOptimizerPath = path.join(process.cwd(), 'scripts', 'self-harness-optimizer.js');
+          const packageOptimizerPath = path.join(__dirname, 'self-harness-optimizer.js');
+          
+          if (fs.existsSync(localOptimizerPath)) {
+            fork(localOptimizerPath, [], { stdio: 'ignore', detached: true }).unref();
+          } else if (fs.existsSync(packageOptimizerPath)) {
+            fork(packageOptimizerPath, [], { stdio: 'ignore', detached: true }).unref();
           }
         } catch (err) {
           console.error('Failed to trigger self-harness optimizer:', err);
