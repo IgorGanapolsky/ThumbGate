@@ -591,12 +591,15 @@ function findOpenPrForBranch({ branchName, runner = runGh, env = process.env } =
   try {
     const owner = repository.split('/')[0];
     const url = `https://api.github.com/repos/${repository}/pulls?head=${encodeURIComponent(owner + ':' + normalizedBranch)}&state=open`;
+    const curlConfig = `header = "Authorization: token ${token}"\nheader = "User-Agent: ThumbGate-CI"`;
     const curlResult = spawnSync('curl', [
       '-s',
-      '-H', `Authorization: token ${token}`,
-      '-H', 'User-Agent: ThumbGate-CI',
+      '-K', '-',
       url
-    ], { encoding: 'utf8' });
+    ], {
+      encoding: 'utf8',
+      input: curlConfig
+    });
 
     if (curlResult && curlResult.status === 0) {
       const prs = JSON.parse(curlResult.stdout || '[]');
