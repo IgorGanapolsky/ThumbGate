@@ -9,6 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const { traceForDpoPair, aggregateTraces } = require('./code-reasoning');
 const { resolveFeedbackDir } = require('./feedback-paths');
+const { redactSecretsDeep } = require('./secret-redaction');
 
 const DEFAULT_LOCAL_MEMORY_LOG = path.join(resolveFeedbackDir(), 'memory-log.jsonl');
 
@@ -201,14 +202,18 @@ function exportDpoFromMemories(memories) {
     },
   }));
 
+  // Redact secrets before the pairs leave this module — they are derived from memory content and
+  // are shipped to disk here AND consumed by export-hf-dataset.js. See scripts/secret-redaction.js.
+  const redactedPairs = pairsWithTraces.map((pair) => redactSecretsDeep(pair));
+
   return {
-    pairs: pairsWithTraces,
+    pairs: redactedPairs,
     unpairedErrors: result.unpairedErrors,
     unpairedLearnings: result.unpairedLearnings,
     errors,
     learnings,
     reasoning,
-    jsonl: toJSONL(pairsWithTraces),
+    jsonl: toJSONL(redactedPairs),
   };
 }
 

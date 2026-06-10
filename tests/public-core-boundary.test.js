@@ -139,8 +139,12 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // the guided first-rule activation walkthrough behind `thumbgate quickstart`.
   // Bumped 293 -> 310 (2026-06-08) to ship brand assets, icons, SVGs, and buyer intent scripts
   // required for dashboard visual assets and local parity.
+  // Bumped 310 -> 311 (2026-06-10) to ship scripts/secret-redaction.js, the
+  // canonical secret-redaction helper required at runtime by the capture path
+  // (feedback-loop/lesson-inference/feedback-history-distiller/self-distill) and
+  // the DPO + Databricks exporters. Public-shell security fix, no Core dependency.
   const files = npmPackFiles();
-  const CEILING = 310;
+  const CEILING = 311;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

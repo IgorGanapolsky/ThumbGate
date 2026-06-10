@@ -308,9 +308,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // (bin/cli.js requires it for the activation walkthrough).
   // Bumped 293 -> 310 (2026-06-08) to ship brand assets, icons, SVGs, and buyer intent scripts
   // required for dashboard visual assets and local parity.
+  // Bumped 310 -> 311 (2026-06-10) to ship scripts/secret-redaction.js, the
+  // canonical secret-redaction helper wired into the capture path and the
+  // DPO + Databricks exporters (security fix; no Core dependency).
   assert.ok(
-    manifest.fileCount <= 310,
-    `npm package should stay <= 310 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 311,
+    `npm package should stay <= 311 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

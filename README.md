@@ -189,6 +189,26 @@ Hand-rolled hooks are the right tool for a small, static denylist you maintain b
 
 Prompt engineering still matters, but it is only the starting point. ThumbGate adds prompt evaluation on top: proof lanes, benchmarks, and self-heal checks tell you whether your prompt and workflow actually held up under execution instead of leaving you to guess from vibes. Run `npx thumbgate eval --from-feedback --write-report=.thumbgate/prompt-eval-proof.md` to turn real thumbs-up/down feedback into reusable eval cases and a buyer-ready proof report.
 
+### Retrieval & latency: local-first, zero network hops
+
+ThumbGate's latency advantage is structural, not a tuned cloud cluster: there is no retrieval service and no model on the enforcement path, so the gate decision never leaves your machine.
+
+```mermaid
+flowchart LR
+    A["Agent about to run<br/>a tool call"] --> B{"Literal / AST match<br/>on an active rule?"}
+    B -- "exact match" --> D["Deterministic gate decision<br/>(no model, on-device)"]
+    B -- "no exact match, but<br/>semantically near a<br/>blocked pattern" --> C["Local CPU embeddings<br/>bge-small via LanceDB<br/>(no external API)"]
+    C --> D
+    D -- "known-bad" --> E["⛔ BLOCK before execution"]
+    D -- "safe" --> F["✓ Allow"]
+```
+
+- **Deterministic first.** Most decisions are a literal or AST pattern match against your active rules — sub-millisecond, on-device, no embeddings.
+- **Local semantic fallback.** When an action isn't on the literal block list but is semantically near one you've blocked before, ThumbGate searches the rule corpus with CPU-only `bge-small` embeddings via LanceDB — still local, still no external API call.
+- **No LLM on the enforcement path.** The gate never calls a model to decide block/allow. Thompson Sampling only tunes soft-rule confidence weights; hard rules always fire deterministically (see Layer 2).
+
+The fastest network round-trip is the one you never make: enforcement is fully local, so it adds negligible latency to the agent loop — no cloud retrieval, no inference hop, no data leaving the machine.
+
 ### Managed model benchmark lane
 
 When a new managed model drops, do not swap ThumbGate over on vendor claims alone. Rank it against the actual ThumbGate workload first:
