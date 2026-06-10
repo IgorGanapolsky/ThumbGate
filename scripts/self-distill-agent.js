@@ -26,6 +26,7 @@ const { resolveFeedbackDir } = require('./feedback-paths');
 const { createLesson, inferStructuredLesson } = require('./lesson-inference');
 const { buildStableId } = require('./conversation-context');
 const { ensureParentDir, readJsonl } = require('./fs-utils');
+const { redactSecretsDeep } = require('./secret-redaction');
 
 const HOME = process.env.HOME || process.env.USERPROFILE || os.homedir() || '';
 const SELF_DISTILL_RUNS_PATH = path.join(HOME, '.thumbgate', 'self-distill-runs.jsonl');
@@ -383,7 +384,8 @@ async function generateLlmLessons(conversationWindow, model) {
 
 function writeRunManifest(manifest) {
   ensureParentDir(SELF_DISTILL_RUNS_PATH);
-  fs.appendFileSync(SELF_DISTILL_RUNS_PATH, JSON.stringify(manifest) + '\n');
+  // Redact secrets — the manifest embeds lesson triggers/actions distilled from conversation text.
+  fs.appendFileSync(SELF_DISTILL_RUNS_PATH, JSON.stringify(redactSecretsDeep(manifest)) + '\n');
 }
 
 function readRunManifests() {
