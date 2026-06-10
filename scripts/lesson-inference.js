@@ -18,6 +18,7 @@ const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 const { ensureParentDir, readJsonl } = require('./fs-utils');
+const { redactSecretsDeep } = require('./secret-redaction');
 const {
   buildStableId,
   extractFilePaths,
@@ -137,15 +138,19 @@ function createLesson({ feedbackId, signal, inferredLesson, triggerMessage, prio
   // Stable link: dashboard deep-link to this lesson
   lesson.link = `${getLessonBaseUrl()}/lessons#${lesson.id}`;
 
+  // Redact secrets before persisting — lesson text is derived from conversation content that may
+  // have captured a pasted credential. See scripts/secret-redaction.js.
+  const redactedLesson = redactSecretsDeep(lesson);
+
   const lessonsPath = getLessonsPath();
   ensureParentDir(lessonsPath);
-  fs.appendFileSync(lessonsPath, JSON.stringify(lesson) + '\n');
+  fs.appendFileSync(lessonsPath, JSON.stringify(redactedLesson) + '\n');
 
   // Update recent lesson for statusbar
   const recentPath = getRecentLessonPath();
-  fs.writeFileSync(recentPath, JSON.stringify(lesson, null, 2) + '\n');
+  fs.writeFileSync(recentPath, JSON.stringify(redactedLesson, null, 2) + '\n');
 
-  return lesson;
+  return redactedLesson;
 }
 
 /**

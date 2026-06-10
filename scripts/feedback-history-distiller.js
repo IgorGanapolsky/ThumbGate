@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir: resolveSharedFeedbackDir } = require('./feedback-paths');
 const { readJsonlTail } = require('./fs-utils');
+const { redactSecretsDeep } = require('./secret-redaction');
 
 const DEFAULT_HISTORY_LIMIT = 10;
 
@@ -60,7 +61,9 @@ function truncate(value, max = 180) {
 
 function appendJsonl(filePath, record) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.appendFileSync(filePath, `${JSON.stringify(record)}\n`);
+  // Redact secrets before any conversation turn touches disk — conversation-window.jsonl was the
+  // 2026-06-10 sk_live_ leak vector. See scripts/secret-redaction.js.
+  fs.appendFileSync(filePath, `${JSON.stringify(redactSecretsDeep(record))}\n`);
 }
 
 function resolveFeedbackDir(feedbackDir) {

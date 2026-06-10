@@ -307,9 +307,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 292 -> 293 (2026-06-07) to ship scripts/activation-quickstart.js,
   // the runtime behind `thumbgate quickstart` guided first-rule onboarding
   // (bin/cli.js requires it for the activation walkthrough).
+  // Bumped 293 -> 294 (2026-06-10) to ship scripts/secret-redaction.js, the
+  // canonical secret-redaction helper wired into the capture path and the
+  // DPO + Databricks exporters (security fix; no Core dependency).
   assert.ok(
-    manifest.fileCount <= 293,
-    `npm package should stay <= 293 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 294,
+    `npm package should stay <= 294 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
