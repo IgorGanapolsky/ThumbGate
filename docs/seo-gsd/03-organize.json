@@ -1659,6 +1659,18 @@
       "nextStep": "Keep proof and adjacent links fresh."
     },
     {
+      "path": "/compare/snowflake-cortex-agent-governance",
+      "pillar": "comparison",
+      "relatedPaths": [
+        "/compare/claude-code-hooks-mastery",
+        "/guides/ai-agent-pre-action-approval-gates",
+        "/guides/background-agent-governance"
+      ],
+      "hasConversionPath": true,
+      "meshStatus": "healthy",
+      "nextStep": "Keep proof and adjacent links fresh."
+    },
+    {
       "path": "/guides/roo-code-alternative-cline",
       "pillar": "agent-workflows",
       "relatedPaths": [
