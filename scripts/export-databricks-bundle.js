@@ -6,6 +6,7 @@ const path = require('path');
 
 const { getFeedbackPaths } = require('./feedback-loop');
 const { ensureDir } = require('./fs-utils');
+const { redactSecretsDeep } = require('./secret-redaction');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_PROOF_DIR = process.env.THUMBGATE_PROOF_DIR
@@ -47,7 +48,10 @@ function readJSON(filePath) {
 }
 
 function writeJSONL(filePath, rows) {
-  const content = rows.map((row) => JSON.stringify(row)).join('\n');
+  // Redact secrets from every bundle row — this is the single choke point for all bundle tables
+  // (feedback_events, memory_records, sequences, attributions, proof_reports). A shared/published
+  // dataset must never ship a captured credential. See scripts/secret-redaction.js.
+  const content = rows.map((row) => JSON.stringify(redactSecretsDeep(row))).join('\n');
   fs.writeFileSync(filePath, content ? `${content}\n` : '');
 }
 
