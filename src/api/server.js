@@ -1637,7 +1637,11 @@ function readRecentFeedbackEntries(feedbackDir, signal, windowMs, limit = 5, opt
       })
       .reverse()
       .map((r) => {
-        const out = { timestamp: r.timestamp, context: bestFeedbackDescription(r) };
+        const out = {
+          timestamp: r.timestamp,
+          context: bestFeedbackDescription(r),
+          tags: Array.isArray(r.tags) ? r.tags : []
+        };
         if (opts.includeSignal) out.signal = r.signal;
         return out;
       });
@@ -1676,6 +1680,24 @@ const FEEDBACK_LIST_LABELS = Object.freeze({
   positive: 'Recent wins',
 });
 
+function formatChatTimestamp(isoString) {
+  if (!isoString) return 'unknown time';
+  try {
+    const d = new Date(isoString);
+    if (Number.isNaN(d.getTime())) return isoString;
+    const pad = (n) => String(n).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const min = pad(d.getMinutes());
+    const ss = pad(d.getSeconds());
+    return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+  } catch {
+    return isoString;
+  }
+}
+
 function buildFeedbackSection({ ctx, intent, feedbackDir, approval, lessonPipeline }) {
   const signal = detectFeedbackSignalFromPrompt(ctx.prompt);
 
@@ -1699,7 +1721,13 @@ function buildFeedbackSection({ ctx, intent, feedbackDir, approval, lessonPipeli
     if (entries.length) {
       lines.push(`${FEEDBACK_LIST_LABELS[signal] || 'Recent feedback'} (${intent.windowLabel}):`);
       for (const e of entries) {
-        lines.push(`  • ${(e.timestamp || '').slice(0, 10)} — ${e.context}`);
+        const tsFormatted = formatChatTimestamp(e.timestamp);
+        const signalLabel = e.signal ? ` [${e.signal}]` : '';
+        const tagsList = Array.isArray(e.tags)
+          ? e.tags.filter(t => !['audit-trail', 'auto-capture'].includes(t))
+          : [];
+        const tagsStr = tagsList.length ? ` (${tagsList.join(', ')})` : '';
+        lines.push(`  • ${tsFormatted}${signalLabel}${tagsStr} — ${e.context}`);
       }
     } else {
       lines.push(`No ${signal || 'feedback'} entries found ${intent.windowLabel}.`);
