@@ -5695,6 +5695,18 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && pathname.startsWith('/media/')) {
+      const rel = pathname.slice('/media/'.length);
+      const mediaDir = path.join(PUBLIC_DIR, 'media');
+      const resolved = path.resolve(mediaDir, rel);
+      if (!resolved.startsWith(mediaDir + path.sep) && resolved !== mediaDir) {
+        sendJson(res, 403, { error: 'Forbidden' });
+        return;
+      }
+      serveStaticFile(res, resolved, { headOnly: isHeadRequest });
+      return;
+    }
+
     if (isGetLikeRequest && (
       pathname === '/favicon.ico'
       || pathname === '/thumbgate-logo.png'
