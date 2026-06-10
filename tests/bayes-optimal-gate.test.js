@@ -440,7 +440,7 @@ test('loss matrix: every expanded-family tag returns a bounded finite cost', () 
     'deploy-unverified', 'deploy-skip-ci', 'deploy-publish-without-test',
     'deploy-version-drift', 'deploy-env-secret-exposure',
     'production-change', 'schema-migration', 'permission-change',
-    'supply-chain', 'supply-chain-add', 'unverified-skill', 'blocked-npx',
+    'supply-chain', 'supply-chain-add', 'blocked-npx',
     'network-egress', 'unauthorized-egress',
     'env-file-edit', 'env-override',
     'pr-scope-violation', 'admin-merge-bypass', 'loop-abuse',

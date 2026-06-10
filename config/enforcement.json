@@ -46,7 +46,6 @@
 
       "supply-chain": 200.0,
       "supply-chain-add": 200.0,
-      "unverified-skill": 160.0,
       "blocked-npx": 180.0,
       "network-egress": 250.0,
       "unauthorized-egress": 250.0,
