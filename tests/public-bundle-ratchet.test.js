@@ -80,7 +80,14 @@ const path = require('node:path');
 // 292 → 293: 2026-06-06 scripts/activation-quickstart.js added so the
 // `thumbgate quickstart` guided first-rule activation walkthrough works from
 // npm installs (changeset: activation-first-rule-onboarding.md).
-const BASELINE_FILE_COUNT = 293;
+// 293 → 298: 2026-06-10 five discoverable /thumbgate-* slash-commands added to
+// .claude/commands/ (guard, rules, blocked, protect, doctor) so ThumbGate's
+// enforcement value is browsable in the agent command palette like GSD's
+// /gsd-* commands, instead of hidden behind MCP tools. These ship + install via
+// `thumbgate init`. They wrap existing MCP tools/CLI — no new logic.
+// (changeset: discoverable-slash-commands.md). Keep in lockstep with CEILING in
+// tests/public-core-boundary.test.js.
+const BASELINE_FILE_COUNT = 298;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
