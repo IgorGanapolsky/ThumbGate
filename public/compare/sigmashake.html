@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThumbGate vs SigmaShake — AI Agent Guardrail Comparison (2026)</title>
+<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="SigmaShake alternative? Honest comparison of ThumbGate, SigmaShake, APort, and agent-guardrails for gating AI coding agents. ThumbGate learns rules from your thumbs-down; SigmaShake ships a large ruleset hub and FORCE-substitution. Pick by what you need.">
+<meta name="keywords" content="SigmaShake alternative, AI agent guardrail comparison, PreToolUse gating, Claude Code guardrails, Cursor agent safety, ThumbGate vs SigmaShake, APort, agent-guardrails, AI agent firewall">
+<meta property="og:title" content="ThumbGate vs SigmaShake — AI Agent Guardrail Comparison (2026)">
+<meta property="og:description" content="Four ways to gate an AI coding agent before it acts. SigmaShake is the polished ruleset-hub product; ThumbGate learns the rule from your correction. Honest side-by-side.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/compare/sigmashake">
+<link rel="canonical" href="https://thumbgate.ai/compare/sigmashake">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ThumbGate vs SigmaShake — AI Agent Guardrail Comparison (2026)",
+  "description": "Side-by-side comparison of four pre-action gating tools for AI coding agents: ThumbGate, SigmaShake, APort, and roboticforce/agent-guardrails. Honest about where each is ahead.",
+  "author": { "@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" },
+  "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+  "datePublished": "2026-06-09",
+  "dateModified": "2026-06-09",
+  "mainEntityOfPage": "https://thumbgate.ai/compare/sigmashake"
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What's the difference between ThumbGate and SigmaShake?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Both gate an AI coding agent's tool calls before they run, across Claude Code, Cursor, Codex and others. The core difference is where the rules come from. SigmaShake gives you a hub of ready-made signed community rulesets and a three-tier enforcement model (DENY / ASK / FORCE-substitute-a-safe-command). ThumbGate generates the rule from your own correction: one thumbs-down on a mistake auto-writes the rule that blocks that exact mistake from then on, synced across your machines and team. SigmaShake is the broader, more mature catalog; ThumbGate is the learning loop for the mistakes no catalog has a rule for yet."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is ThumbGate a good SigmaShake alternative?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It depends what you're optimizing for. If you want a large library of ready-made signed rules and the ability to auto-substitute a safe command instead of just blocking, SigmaShake is genuinely strong and we won't pretend otherwise. If you keep hitting team-specific or codebase-specific mistakes that no generic ruleset covers, ThumbGate's edge is that it learns those rules from your thumbs-down instead of asking you to author or find them. Many teams could run both."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can ThumbGate substitute a safe command like SigmaShake's FORCE mode?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Not today. SigmaShake's FORCE tier rewrites a dangerous command into a safe equivalent before it runs — a real capability ThumbGate doesn't yet match. ThumbGate's enforcement blocks the call and returns a structured error plus a path back to the spec; it does not auto-rewrite the command. If safe-command substitution is a hard requirement, SigmaShake is ahead here."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+<style>
+  .matrix { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.9rem; }
+  .matrix th, .matrix td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .matrix th { background: var(--bg-card); font-weight: 600; }
+  .matrix td:first-child { font-weight: 600; }
+  .yes { color: var(--green); }
+  .no { color: var(--red); }
+  .partial { color: #fbbf24; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 1.5rem 0; }
+  .pair > div { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+  @media (max-width: 700px) { .pair { grid-template-columns: 1fr; } .matrix { font-size: 0.82rem; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/pricing">Pricing</a>
+  <a href="/compare">Compare</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/compare">Compare</a> / ThumbGate vs SigmaShake</div>
+  <h1>ThumbGate vs SigmaShake (and APort, and agent-guardrails)</h1>
+  <p style="color:var(--muted);">For developers and teams choosing a pre-action gate for their AI coding agents</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> Four tools gate an AI coding agent before it acts. <strong>SigmaShake</strong> is the most polished: a hub of ready-made signed rulesets, three-tier DENY/ASK/FORCE enforcement (including auto-substituting a safe command), a desktop app, and a tamper-evident audit log. <strong>ThumbGate</strong>'s one differentiator is the learning loop — a single thumbs-down auto-writes the rule that blocks that exact mistake forever, synced across machines and team, instead of asking you to find or author one. <strong>APort</strong> is the org-identity layer (agent "passports," central policy). <strong>agent-guardrails</strong> is a free MIT starting point. We're honest below about where SigmaShake is ahead.</div>
+
+  <h2>The shared category</h2>
+  <p>All four start from the same fact: prompt-level rules in <code>CLAUDE.md</code> or <code>.cursorrules</code> are suggestions the model can ignore under context pressure. To actually stop a force-push to main or a <code>DROP TABLE</code>, you need a gate that fires <em>before</em> the tool call executes — not a reviewer after the PR, not a git revert after the damage. ThumbGate, SigmaShake, and agent-guardrails all hook the PreToolUse boundary. APort sits one layer up, as an identity/authorization layer for organizations.</p>
+
+  <p>This page is not a hit piece. SigmaShake in particular is well-built software with a real lead on catalog breadth and enforcement modes. We'll tell you where it wins and where ThumbGate's learning loop is the better fit.</p>
+
+  <h2>Feature matrix</h2>
+  <table class="matrix">
+    <thead>
+      <tr>
+        <th style="width:22%;">Capability</th>
+        <th style="width:21%;">ThumbGate</th>
+        <th style="width:21%;">SigmaShake</th>
+        <th style="width:18%;">APort</th>
+        <th style="width:18%;">agent-guardrails</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Pre-action gating (blocks before execution)</td>
+        <td class="yes">Yes — PreToolUse hooks</td>
+        <td class="yes">Yes — PreToolUse</td>
+        <td class="partial">Authz layer, not a tool-call gate</td>
+        <td class="yes">Yes — PreToolUse hooks</td>
+      </tr>
+      <tr>
+        <td>Learns rules from your corrections</td>
+        <td class="yes">Yes — one thumbs-down auto-writes the rule</td>
+        <td class="no">No — rules installed or authored</td>
+        <td class="no">No — policy authored</td>
+        <td class="no">No — hand-written deny rules</td>
+      </tr>
+      <tr>
+        <td>Pre-built ruleset library</td>
+        <td class="partial">Domain skill packs (Stripe, Railway, DB migrations)</td>
+        <td class="yes">Large signed community ruleset hub</td>
+        <td class="no">N/A</td>
+        <td class="partial">Built-in deny rules (terraform/db/k8s/cloud/git)</td>
+      </tr>
+      <tr>
+        <td>Enforcement modes</td>
+        <td class="partial">Block + structured error (no auto-substitute)</td>
+        <td class="yes">DENY / ASK / FORCE (safe-command substitute)</td>
+        <td class="partial">Allow/deny by scoped permission</td>
+        <td class="partial">Deny / ask</td>
+      </tr>
+      <tr>
+        <td>Multi-agent support</td>
+        <td class="yes">Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode</td>
+        <td class="yes">Claude Code, Cursor, Codex, Copilot, Gemini</td>
+        <td class="yes">Claude, LangChain, CrewAI, Cursor</td>
+        <td class="partial">Claude Code (settings.json hooks)</td>
+      </tr>
+      <tr>
+        <td>Team / cross-machine sync of learned rules</td>
+        <td class="yes">Yes — hosted sync (Pro)</td>
+        <td class="partial">Local-first; optional cloud</td>
+        <td class="yes">Yes — central org policy</td>
+        <td class="no">No</td>
+      </tr>
+      <tr>
+        <td>Org identity / agent permissions</td>
+        <td class="no">Not the focus</td>
+        <td class="partial">Local rulesets, not identity</td>
+        <td class="yes">Yes — agent "passport" + scoped perms</td>
+        <td class="no">No</td>
+      </tr>
+      <tr>
+        <td>License / source</td>
+        <td class="partial">MIT core + hosted commercial layer</td>
+        <td class="no">Commercial, closed-source</td>
+        <td class="no">Commercial</td>
+        <td class="yes">Free, MIT</td>
+      </tr>
+      <tr>
+        <td>Pricing</td>
+        <td>Free tier; Pro $19/mo or $149/yr</td>
+        <td>Commercial paid tier (see their site)</td>
+        <td>No public pricing (design-partner)</td>
+        <td>Free</td>
+      </tr>
+      <tr>
+        <td>Maturity</td>
+        <td class="partial">Newer; learning loop is the bet</td>
+        <td class="yes">Polished, broad catalog</td>
+        <td class="partial">Early / design-partner stage</td>
+        <td class="partial">Minimal adoption</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Where SigmaShake is genuinely ahead</h2>
+  <p>Saying this plainly builds more trust than pretending otherwise:</p>
+  <ul>
+    <li><strong>FORCE-substitution.</strong> SigmaShake can rewrite a dangerous command into a safe equivalent before it runs. ThumbGate blocks and explains; it doesn't auto-rewrite. If you want the gate to fix the command rather than stop it, SigmaShake wins.</li>
+    <li><strong>A large signed ruleset hub out of the box.</strong> For common, well-known footguns, SigmaShake means you're protected on install with zero authoring. ThumbGate ships a handful of domain skill packs and expects to <em>learn</em> the rest from your corrections — great for novel mistakes, slower for day-one coverage of the obvious ones.</li>
+    <li><strong>Maturity and polish.</strong> Desktop app, tamper-evident audit log, low-latency daemon, broad agent coverage including Copilot. SigmaShake is further along as a product.</li>
+  </ul>
+
+  <h2>Where ThumbGate is the better fit</h2>
+  <ul>
+    <li><strong>The mistakes no catalog has a rule for.</strong> Every team has codebase-specific footguns ("never edit the generated client," "this repo deploys from <code>release</code> not <code>main</code>"). No community hub ships those. ThumbGate writes the rule the first time you thumbs-down the mistake.</li>
+    <li><strong>Zero rule-authoring overhead.</strong> SigmaShake and agent-guardrails both ask you to install or write rules. ThumbGate's primary input is a thumbs-down — the correction <em>is</em> the rule authoring.</li>
+    <li><strong>MIT core.</strong> The CLI and hook layer are MIT; the hosted sync is the paid part. SigmaShake and APort are closed-source.</li>
+    <li><strong>Learned rules sync across the team.</strong> One engineer's thumbs-down becomes everyone's prevention rule.</li>
+  </ul>
+
+  <h2>And APort and agent-guardrails?</h2>
+  <p><strong>APort</strong> isn't really a head-to-head. It's an organizational authorization layer — agent "passports," scoped permissions, central policy and audit across Claude, LangChain, CrewAI, and Cursor. It positions as an <em>additional</em> authz layer for orgs and is at design-partner stage. If your problem is "which agents in my org are allowed to do what," APort solves a different problem than a tool-call gate. You could run APort for identity and ThumbGate for behavior.</p>
+  <p><strong>roboticforce/agent-guardrails</strong> is a free, MIT set of hand-written deny rules plus PreToolUse hooks for terraform/db/k8s/cloud/git. A fine zero-cost starting point. No dashboard, audit, team management, or learning — if you outgrow a static deny list, that's the moment to look at ThumbGate or SigmaShake.</p>
+
+  <h2>When to pick which</h2>
+  <div class="pair">
+    <div>
+      <h3 style="margin-top:0;">Pick <strong>SigmaShake</strong> if</h3>
+      <ul>
+        <li>You want day-one coverage from a large library of ready-made rules</li>
+        <li>Safe-command substitution (FORCE) is a requirement, not a nice-to-have</li>
+        <li>You want a mature desktop app and a tamper-evident audit log now</li>
+        <li>Closed-source commercial software is acceptable</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="margin-top:0;">Pick <strong>ThumbGate</strong> if</h3>
+      <ul>
+        <li>Your pain is repeat, team-specific mistakes no generic ruleset covers</li>
+        <li>You'd rather thumbs-down a mistake than hunt for or author a rule</li>
+        <li>You want learned rules to sync across machines and teammates</li>
+        <li>You want an MIT-licensed core you can read and embed</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout callout-green">
+    <strong>Honest framing:</strong> SigmaShake is the broader, more polished catalog-and-enforcement product today. ThumbGate's bet is narrower and sharper — the gate that learns the rule from your correction. They overlap, but optimize for different things, and running both is reasonable.
+  </div>
+
+  <h2>Adoption in two minutes (ThumbGate)</h2>
+  <ol>
+    <li><strong>Install:</strong> <code>npx thumbgate init</code> — detects your agent, wires PreToolUse hooks, no workflow change.</li>
+    <li><strong>Thumbs-down when the agent is wrong:</strong> a correction with context becomes a structured failure record.</li>
+    <li><strong>The rule writes itself:</strong> ThumbGate auto-promotes a prevention rule from the correction.</li>
+    <li><strong>Next time, it's blocked:</strong> the PreToolUse hook intercepts the call before it runs and points the agent back to the spec.</li>
+  </ol>
+
+  <div class="cta-box">
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Tired of correcting the same mistake twice?</h2>
+    <p>SigmaShake gives you a catalog. ThumbGate writes the rule from your thumbs-down. Free tier, MIT core, two-minute install.</p>
+    <div class="cta-install">$ npx thumbgate init</div>
+  </div>
+
+  <div class="related">
+    <h3>Related comparisons</h3>
+    <a href="/compare/claude-code-hooks">ThumbGate vs claude-code-hooks &rarr;</a>
+    <a href="/compare">All comparisons &rarr;</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span style="color:var(--muted)">Try it now:</span>
+  <code>npx thumbgate init</code>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub &rarr;</a>
+</div>
+</body>
+</html>
