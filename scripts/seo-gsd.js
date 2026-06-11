@@ -235,6 +235,12 @@ const HIGH_ROI_QUERY_SEEDS = [
     notes: 'Integration page for Gemini CLI users who need memory plus enforcement.',
   },
   {
+    query: 'hermes agent guardrails',
+    businessValue: 84,
+    source: 'seed',
+    notes: 'Integration page for Hermes Agent users who need pre-action gates around persistent memory, generated skills, messaging gateways, scheduled automations, and sandboxed execution.',
+  },
+  {
     query: 'roo code alternative cline',
     businessValue: 83,
     source: 'seed',
@@ -2401,6 +2407,61 @@ const PAGE_BLUEPRINTS = [
       },
     ],
     relatedPaths: ['/compare/mem0', '/guides/stop-repeated-ai-agent-mistakes'],
+  },
+  {
+    query: 'hermes agent guardrails',
+    path: '/guides/hermes-agent-guardrails',
+    pageType: 'integration',
+    pillar: 'agent-workflows',
+    title: 'Hermes Agent Guardrails | Firewall for Self-Improving Agents',
+    heroTitle: 'Hermes Agent can grow with you. ThumbGate keeps the growing agent safe.',
+    heroSummary: 'Hermes Agent points at the next wave: persistent memory, generated skills, messaging gateways, scheduled automations, and sandboxed execution. ThumbGate is the enforcement layer those workflows need before a remembered mistake becomes another real tool call.',
+    takeaways: [
+      'Hermes validates the market shift toward long-running, self-improving agents.',
+      'Memory and generated skills increase leverage, but they also increase the blast radius of repeated mistakes.',
+      'ThumbGate should be positioned as the local-first pre-action firewall for Hermes-style agents, not as a general agent clone.',
+    ],
+    sections: [
+      {
+        heading: 'Why Hermes-style agents need a separate execution gate',
+        paragraphs: [
+          'A persistent agent can remember projects, generate its own skills, run scheduled automations, and accept instructions from messaging gateways. That is powerful, but it also means one bad habit can persist longer and reach more surfaces.',
+          'The safety problem is not only whether the agent remembers. It is whether remembered lessons can stop the next risky shell command, git action, database write, deploy, browser click, or payment workflow before execution.',
+        ],
+      },
+      {
+        heading: 'What ThumbGate adds to Hermes-style workflows',
+        bullets: [
+          'Pre-action checks before risky tool calls execute.',
+          'Thumbs-down feedback that becomes explicit prevention rules.',
+          'Evidence requirements for deploys, migrations, API calls, and production-facing changes.',
+          'Audit trails that show which lesson, rule, and workflow context allowed or blocked the action.',
+          'A local-first path for teams that want agent memory without handing every correction to a hosted black box.',
+        ],
+      },
+      {
+        heading: 'The buyer message',
+        paragraphs: [
+          'Hermes can be the agent that grows with you. ThumbGate is the firewall that makes sure growth does not mean repeating expensive mistakes faster across more surfaces.',
+          'For teams evaluating persistent agents, the practical first step is not another prompt. It is one enforced rule from one real failure, proven locally, then expanded into Pro or a workflow hardening sprint when the risk is recurring.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Does ThumbGate replace Hermes Agent?',
+        answer: 'No. Hermes is a general self-improving agent surface. ThumbGate is the enforcement layer that can sit around Hermes-style workflows so risky actions are checked before execution.',
+      },
+      {
+        question: 'What Hermes features create the biggest need for guardrails?',
+        answer: 'Persistent memory, generated skills, messaging gateways, scheduled automations, browser and tool control, and sandbox backends all increase the value of pre-action gates because the agent can act longer, faster, and from more entry points.',
+      },
+      {
+        question: 'What should teams implement first?',
+        answer: 'Start with one repeated failure pattern: force-push, destructive SQL, unsafe deploy, risky browser action, or off-scope file edit. Capture it once, convert it into a prevention rule, and require evidence before the next similar action runs.',
+      },
+    ],
+    relatedPaths: ['/guides/long-running-agent-context-management', '/guides/background-agent-governance', '/guides/browser-automation-safety'],
   },
   {
     query: 'roo code alternative cline',

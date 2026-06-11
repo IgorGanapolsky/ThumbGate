@@ -692,6 +692,25 @@ test('GET /sitemap.xml includes /learn/feedback-loop-vs-decision-layer at priori
   assert.match(entry[0], /<priority>0\.9<\/priority>/);
 });
 
+test('GET /guides/hermes-agent-guardrails serves the Hermes positioning guide and lists it in sitemap', async () => {
+  const [guideRes, sitemapRes] = await Promise.all([
+    fetch(`${origin}/guides/hermes-agent-guardrails`),
+    fetch(`${origin}/sitemap.xml`),
+  ]);
+
+  assert.equal(guideRes.status, 200);
+  assert.match(String(guideRes.headers.get('content-type')), /text\/html/);
+  const html = await guideRes.text();
+  assert.match(html, /Hermes Agent Guardrails/);
+  assert.match(html, /ThumbGate keeps the growing agent safe/);
+  assert.match(html, /persistent memory, generated skills, messaging gateways, scheduled automations, and sandboxed execution/);
+  assert.match(html, /Go Pro|Start intake|Pay \$499 diagnostic/);
+
+  assert.equal(sitemapRes.status, 200);
+  const sitemap = await sitemapRes.text();
+  assert.match(sitemap, /<loc>[^<]*\/guides\/hermes-agent-guardrails<\/loc>/);
+});
+
 test('background-agent-control-layer links to feedback-loop-vs-decision-layer for discovery', async () => {
   const html = await fetch(`${origin}/learn/background-agent-control-layer`).then((r) => r.text());
   assert.match(html, /href="\/learn\/feedback-loop-vs-decision-layer"/);
