@@ -500,6 +500,9 @@ test('public landing page includes compatibility section for AI agent surfaces',
   assert.match(landingPage, /Editor workflows/i);
   assert.match(landingPage, /Claude Code Skill/i);
   assert.match(landingPage, /Google Data Agent Kit/i);
+  assert.match(landingPage, /Hermes Agent guardrails/i);
+  assert.match(landingPage, /\/guides\/hermes-agent-guardrails/);
+  assert.match(landingPage, /persistent memory, generated skills, messaging gateways, scheduled automations, and sandboxed execution/i);
   assert.match(landingPage, /\/guides\/gcp-mcp-guardrails/);
   assert.match(landingPage, /\/thumbgate/);
   assert.match(landingPage, /compatibility-grid/);
