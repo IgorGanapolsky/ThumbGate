@@ -315,9 +315,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // so enforcement value is browsable in the agent command palette like GSD's
   // /gsd-*. Thin wrappers over existing MCP tools/CLI — no new logic, no Core dep.
   // Keep in lockstep with public-bundle-ratchet + public-core-boundary ceilings.
+  // Bumped 298 → 299 (2026-06-11) for scripts/sync-telemetry-from-prod.js, which
+  // syncs the operator-gated prod telemetry export into the local store so
+  // get_business_metrics reflects the real funnel (changeset: sync-prod-telemetry.md).
   assert.ok(
-    manifest.fileCount <= 298,
-    `npm package should stay <= 298 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 299,
+    `npm package should stay <= 299 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -434,9 +437,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // queue bundle ~4.302 MB; bump restores a one-normal-PR headroom buffer.
   // Bumped 4.35 MB -> 4.40 MB (2026-06-07) for scripts/activation-quickstart.js
   // (the `thumbgate quickstart` onboarding runtime). Measured ~4.356 MB.
+  // Bumped 4.40 MB -> 4.45 MB (2026-06-11) for scripts/sync-telemetry-from-prod.js.
+  // Measured ~4.393 MB — restores one-normal-PR rebase-flap headroom (prior bump
+  // left only ~7 KB). No file-count change beyond the 298 -> 299 bump above.
   assert.ok(
-    manifest.unpackedSize <= 4_400_000,
-    `npm package should stay <= 4.40 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_450_000,
+    `npm package should stay <= 4.45 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
