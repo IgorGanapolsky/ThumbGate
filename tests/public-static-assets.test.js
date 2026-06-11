@@ -711,6 +711,28 @@ test('GET /guides/hermes-agent-guardrails serves the Hermes positioning guide an
   assert.match(sitemap, /<loc>[^<]*\/guides\/hermes-agent-guardrails<\/loc>/);
 });
 
+test('GET /guides/agent-context-governance serves context governance guide and lists it in sitemap', async () => {
+  const [guideRes, sitemapRes] = await Promise.all([
+    fetch(`${origin}/guides/agent-context-governance`),
+    fetch(`${origin}/sitemap.xml`),
+  ]);
+
+  assert.equal(guideRes.status, 200);
+  assert.match(String(guideRes.headers.get('content-type')), /text\/html/);
+  const html = await guideRes.text();
+  assert.match(html, /Agent Context Governance/);
+  assert.match(html, /More Context Is Not Governance/);
+  assert.match(html, /MCP config integrity gate/);
+  assert.match(html, /Customer-response draft gate/);
+  assert.match(html, /Tool lockdown gate/);
+  assert.match(html, /AI-authored code gate/);
+  assert.match(html, /Go Pro|Start intake|Pay \$499 diagnostic/);
+
+  assert.equal(sitemapRes.status, 200);
+  const sitemap = await sitemapRes.text();
+  assert.match(sitemap, /<loc>[^<]*\/guides\/agent-context-governance<\/loc>/);
+});
+
 test('background-agent-control-layer links to feedback-loop-vs-decision-layer for discovery', async () => {
   const html = await fetch(`${origin}/learn/background-agent-control-layer`).then((r) => r.text());
   assert.match(html, /href="\/learn\/feedback-loop-vs-decision-layer"/);
