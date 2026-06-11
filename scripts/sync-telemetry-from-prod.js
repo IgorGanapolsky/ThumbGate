@@ -109,13 +109,24 @@ function resolveOperatorConfig(options = {}) {
   return { apiKey, keySource, baseUrl };
 }
 
+// Deterministic, LOCALE-INDEPENDENT key comparator (UTF-16 code-unit order).
+// Do NOT switch this to String.prototype.localeCompare (what SonarCloud S2871
+// suggests): localeCompare is locale-sensitive, so it would make the canonical
+// serialization — and therefore the dedupe hash below — differ across machines
+// and CI runners, silently breaking cross-environment dedupe.
+function compareKeys(a, b) {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+
 // Recursively sort object keys so structurally-identical rows serialize
 // identically regardless of original key order.
 function canonicalize(value) {
   if (Array.isArray(value)) return value.map(canonicalize);
   if (value && typeof value === 'object') {
     const out = {};
-    for (const key of Object.keys(value).sort()) out[key] = canonicalize(value[key]);
+    for (const key of Object.keys(value).sort(compareKeys)) out[key] = canonicalize(value[key]);
     return out;
   }
   return value;
