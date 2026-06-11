@@ -31,6 +31,15 @@ test('buyer intent script exposes paid CTA and abandon reason observability', ()
   assert.match(BUYER_INTENT, /researching/);
 });
 
+test('paid diagnostic assist opens checkout in the current tab', () => {
+  const diagnosticLinkTemplate = BUYER_INTENT.match(/<a data-assist-cta="assist_workflow_diagnostic"[^;]+Pay \$499 diagnostic<\/a>/);
+
+  assert.ok(diagnosticLinkTemplate, 'diagnostic CTA template should exist');
+  assert.match(diagnosticLinkTemplate[0], /href="'\s*\+\s*diagnosticHref\s*\+\s*'"/);
+  assert.doesNotMatch(diagnosticLinkTemplate[0], /target="_blank"/);
+  assert.doesNotMatch(diagnosticLinkTemplate[0], /noopener|noreferrer/);
+});
+
 test('paid revenue assist does not inject on checkout routes', () => {
   assert.match(BUYER_INTENT, /path === '\/checkout\/pro'/);
   assert.match(BUYER_INTENT, /path\.indexOf\('\/go\/pro'\) === 0/);
