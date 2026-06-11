@@ -58,6 +58,47 @@ function readJSONL(filePath) {
   }).filter(Boolean);
 }
 
+// --- Self-Harness stage 3: regression-gated promotion -----------------------
+// Inspired by "Self-Harness: Harnesses That Improve Themselves" (arXiv 2606.09498).
+// Stages 1-2 (weakness mining -> rule extraction) already exist via lesson
+// inference + this promoter. Stage 3 — accept a harness change only after
+// regression-testing it does not degrade behavior — was missing: a noisy 3x
+// capture could hard-block an over-broad pattern with no check that it wouldn't
+// have wrongly blocked actions that were previously ALLOWED. This replays a
+// candidate BLOCK rule against the audit trail's prior `allow` decisions; if it
+// would have blocked safe actions, the caller quarantines it to `warn` instead.
+const REGRESSION_FALSE_BLOCK_LIMIT = 0; // any prior safe action it would block => quarantine
+
+function getAuditTrailPath() {
+  return path.join(path.dirname(getFeedbackLogPath()), 'audit-trail.jsonl');
+}
+
+// Returns { falseBlocks, allowSampleSize } or null when there is no history /
+// matcher available — in which case the caller promotes as usual (fail-open to
+// existing behavior, since regression gating is an enhancement, not a hard gate).
+function regressionCheck(gate, options = {}) {
+  const auditPath = options.auditTrailPath || getAuditTrailPath();
+  const entries = readJSONL(auditPath);
+  if (!entries.length) return null;
+  // Lazy-require to avoid the gates-engine <-> auto-promote-gates require cycle.
+  let matchesGate;
+  try { ({ matchesGate } = require('./gates-engine')); } catch { return null; }
+  if (typeof matchesGate !== 'function') return null;
+  const allowed = entries.filter((e) => e && e.decision === 'allow' && e.toolName);
+  if (!allowed.length) return null;
+  let falseBlocks = 0;
+  for (const e of allowed) {
+    try {
+      if (matchesGate(gate, e.toolName, e.toolInput || {})) falseBlocks += 1;
+    } catch { /* a bad pattern/entry never counts as a false block */ }
+  }
+  return { falseBlocks, allowSampleSize: allowed.length };
+}
+
+function safeRegressionCheck(gate, options) {
+  try { return regressionCheck(gate, options); } catch { return null; }
+}
+
 function loadAutoGates() {
   const autoGatesPath = getAutoGatesPath();
   if (!fs.existsSync(autoGatesPath)) {
@@ -358,9 +399,16 @@ function promote(feedbackLogPath, options) {
       const existing = data.gates[existingIdx];
       const newAction = group.count >= BLOCK_THRESHOLD ? 'block' : 'warn';
       if (existing.action !== newAction && newAction === 'block') {
-        // Upgrade from warn to block
-        data.gates[existingIdx] = { ...existing, action: 'block', severity: 'critical', occurrences: group.count, upgradedAt: new Date().toISOString() };
-        promotions.push({ type: 'upgrade', gateId, from: existing.action, to: 'block', occurrences: group.count });
+        // Self-Harness stage 3: regression-test before upgrading warn -> block.
+        const regression = opts.skipRegression ? null : safeRegressionCheck(buildGateRule(group, 'block'), opts);
+        if (regression && regression.falseBlocks > REGRESSION_FALSE_BLOCK_LIMIT) {
+          // Would block prior safe actions — hold at warn instead of upgrading.
+          promotions.push({ type: 'upgrade-quarantined', gateId, from: existing.action, occurrences: group.count, falseBlocks: regression.falseBlocks });
+        } else {
+          // Upgrade from warn to block
+          data.gates[existingIdx] = { ...existing, action: 'block', severity: 'critical', occurrences: group.count, upgradedAt: new Date().toISOString() };
+          promotions.push({ type: 'upgrade', gateId, from: existing.action, to: 'block', occurrences: group.count });
+        }
       }
       // Update occurrence count even if no action change
       data.gates[existingIdx].occurrences = group.count;
@@ -370,6 +418,20 @@ function promote(feedbackLogPath, options) {
     // New gate — respect explicit gateAction override (e.g. 'approve' for human-approval rules)
     const gate = buildGateRule(group, opts.gateAction);
 
+    // Self-Harness stage 3: before a feedback rule goes live as a hard block,
+    // regression-test it against prior allowed actions. If it would have blocked
+    // safe actions, quarantine it to `warn` instead of `block`.
+    let regression = null;
+    if (gate.action === 'block' && !opts.gateAction && !opts.skipRegression) {
+      regression = safeRegressionCheck(gate, opts);
+      if (regression && regression.falseBlocks > REGRESSION_FALSE_BLOCK_LIMIT) {
+        gate.action = 'warn';
+        gate.severity = 'medium';
+        gate.quarantined = true;
+        gate.regression = regression;
+      }
+    }
+
     // Enforce max limit — rotate oldest
     if (data.gates.length >= MAX_AUTO_GATES) {
       const removed = data.gates.shift();
@@ -377,7 +439,13 @@ function promote(feedbackLogPath, options) {
     }
 
     data.gates.push(gate);
-    promotions.push({ type: 'new', gateId: gate.id, action: gate.action, occurrences: group.count });
+    promotions.push({
+      type: gate.quarantined ? 'new-quarantined' : 'new',
+      gateId: gate.id,
+      action: gate.action,
+      occurrences: group.count,
+      ...(gate.quarantined ? { falseBlocks: regression.falseBlocks, allowSampleSize: regression.allowSampleSize } : {}),
+    });
   }
 
   // Log promotions
@@ -438,6 +506,9 @@ module.exports = {
   groupNegativeFeedback,
   patternToGateId,
   buildGateRule,
+  regressionCheck,
+  getAuditTrailPath,
+  REGRESSION_FALSE_BLOCK_LIMIT,
   extractPatternKey,
   normalizeCommandSignature,
   isNegative,
