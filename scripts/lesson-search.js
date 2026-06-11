@@ -2,6 +2,7 @@
 
 const path = require('node:path');
 const { readJSONL, getFeedbackPaths } = require('./feedback-loop');
+const { buildMemoryLifecycleView, scoreHybridMemoryMatch } = require('./agent-memory-lifecycle');
 const { loadOptionalModule } = require('./private-core-boundary');
 
 const HIGH_RISK_TAGS = new Set([
@@ -411,7 +412,8 @@ function scoreLesson(queryText, memory, parsed, sourceFeedback) {
   const score = jaccardSimilarity(queryTokens, lessonTokens)
     + substringBoost(queryText, lessonText)
     + recencyScore(memory.timestamp)
-    + (memory.category === 'error' ? 0.05 : 0);
+    + (memory.category === 'error' ? 0.05 : 0)
+    + Math.min(0.2, scoreHybridMemoryMatch(queryText, memory).score * 0.1);
 
   return {
     score,
@@ -427,6 +429,7 @@ function buildLessonResult(memory, sourceFeedback, options = {}) {
   const { score, matchedTokens } = scoreLesson(options.query || '', memory, parsed, sourceFeedback);
   const harnessRecommendations = buildHarnessRecommendations(memory, parsed, sourceFeedback, ruleMatches, gateMatches);
   const lifecycle = buildLifecycle(memory, parsed, sourceFeedback, ruleMatches, gateMatches, harnessRecommendations);
+  const memoryLifecycle = buildMemoryLifecycleView(memory, { query: options.query || '' });
 
   return {
     id: memory.id,
@@ -452,6 +455,7 @@ function buildLessonResult(memory, sourceFeedback, options = {}) {
     systemResponse: {
       promotedToMemory: true,
       lifecycle,
+      memoryLifecycle,
       diagnosis: memory.diagnosis || null,
       sourceFeedback: sourceFeedback
         ? {
@@ -589,6 +593,14 @@ function tryFts5Search(query, options) {
         tags: row.tags,
         importance: row.importance,
         timestamp: row.timestamp,
+        memoryLifecycle: buildMemoryLifecycleView({
+          title: row.context,
+          content: [row.whatWentWrong, row.whatToChange, row.whatWorked].filter(Boolean).join('\n'),
+          domain: row.domain,
+          tags: row.tags,
+          importance: row.importance,
+          timestamp: row.timestamp,
+        }, { query: query || '' }),
       })),
       backend: 'sqlite-fts5',
     };
@@ -618,6 +630,10 @@ function formatLessonSearchResults(payload) {
   payload.results.forEach((result, index) => {
     lines.push(`${index + 1}. ${result.title}`);
     lines.push(`   Category: ${result.category} | Tags: ${result.tags.join(', ') || 'none'} | Score: ${result.score}`);
+    if (result.systemResponse.memoryLifecycle) {
+      const memoryLifecycle = result.systemResponse.memoryLifecycle;
+      lines.push(`   Memory: scope=${memoryLifecycle.scope} | decay=${memoryLifecycle.decay.state} | hybrid=${memoryLifecycle.retrievalHints.hybridScore}`);
+    }
     if (result.lesson.summary) {
       lines.push(`   Lesson: ${result.lesson.summary}`);
     }

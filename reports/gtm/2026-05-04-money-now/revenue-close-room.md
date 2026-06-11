@@ -1,6 +1,6 @@
 # Revenue Close Room (Money Now)
 
-Updated: 2026-06-11T15:42:13Z
+Updated: 2026-06-11T18:45:35Z
 
 This file is the close-room script + truth table for converting warm/high-intent leads into:
 
@@ -24,13 +24,14 @@ Guardrail: do not publish posts, send messages, or invite members without explic
 - Booked: `$149`
 - Signups: 475
 - Sprint leads: 0
-- Live pipeline state re-verified at `2026-06-11T15:42:13Z`: `24` active leads, `22` contacted, `2` replied, `0` paid
+- Live pipeline state re-verified at `2026-06-11T18:45:22Z` via `scripts/sales-pipeline.js`: `24` active leads, `22` in `contacted`, `2` in `replied`, `0` paid
 - Current loop constraints on 2026-06-11:
   - local Operator Lab promo preview still runs cleanly, but it is not healthy as a media-backed path in this checkout
   - local preview still shows `accountCount: 0` across platforms in this runtime, so live promo should stay on the GitHub Actions path with secrets
-  - local shell still has no `ZERNIO_API_KEY` loaded as of `2026-06-11T15:42:13Z`, so local runs should remain preview-only for media-backed publishing
-  - Zernio analytics re-check at `2026-06-11T15:41:45Z` is still dark (`0/6` healthy platforms, `0` rows in the last `24h`)
+  - local shell still has no `ZERNIO_API_KEY` loaded as of `2026-06-11T18:45:22Z`, so local runs should remain preview-only for media-backed publishing
+  - Zernio analytics re-check at `2026-06-11T18:45:22Z` is still dark (`0/6` healthy platforms, `0` rows in the last `24h`)
   - Skool readback remains blocked in the headless runtime, so live public-page claims still need browser-authenticated verification
+  - direct web-reader access to `https://www.skool.com/thumbgate-operator-lab-6000` also failed in this run, reinforcing that browser-authenticated verification is still required
   - `.github/workflows/thumbgate-creator-platform-promo.yml` still defaults to `--offer=operator-lab`
   - official Skool help still supports the current value-first free-group posture: Discovery FAQ updated `April 8, 2026` and now flags upcoming `Q2 2026` algorithm changes; pricing updated `October 28, 2025`, About page updated `December 9, 2025`, Analytics definitions updated `November 24, 2025`, Payments FAQ updated `April 22, 2026`, and payouts setup updated `January 22, 2026`
   - the current checkout does not contain `docs/marketing/assets/`, so the local promo preview is copy-only until those asset files are restored

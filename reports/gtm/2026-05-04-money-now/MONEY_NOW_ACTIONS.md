@@ -1,6 +1,6 @@
 # Money Now Actions
 
-Updated: 2026-06-11T16:45:00Z
+Updated: 2026-06-11T18:45:35Z
 
 Use this as the operator cockpit for the current run. Focus is **individual operator revenue** with the correct offer routing: **Pro ($19/mo or $149/yr)** for self-serve intent, **Workflow Hardening Diagnostic ($499)** when pain is real but scope is unclear, and **Workflow Hardening Sprint ($1500)** when one workflow owner needs proof-backed hardening. Teams and Aiventyx are deprecated per CEO pivot.
 
@@ -13,7 +13,7 @@ Action-time approval card for any outbound action:
 - Paid orders: 4
 - Checkout starts: 133
 - Booked: `$149`
-- Live sales pipeline re-verified at `2026-06-11T16:43:55Z`: `24` active leads, `22` contacted, `2` replied, `0` paid.
+- Live sales pipeline re-verified at `2026-06-11T18:45:22Z` via `scripts/sales-pipeline.js`: `24` active leads, `22` in `contacted`, `2` in `replied`, `0` paid.
 - Pipeline: focus on **Operator Lab** conversion with Pro for self-serve leads and Diagnostic/Sprint for warm pain-first leads.
 - Revenue bottleneck: follow-up discipline on already-contacted warm leads; there is no untouched self-serve batch left in the latest-per-lead state.
 - Current promotion/measurement state on 2026-06-11:
@@ -21,10 +21,12 @@ Action-time approval card for any outbound action:
   - local dry-run still shows `accountCount: 0` for every platform in this runtime, so live publish/schedule should stay in GitHub Actions with secrets
   - dry-run payload still confirms the workflow copy is targeting `offer: operator-lab`
   - the current checkout still does not contain `docs/marketing/assets/`, so the local promo path is copy-preview-only until those assets are restored
-  - local shell still has no `ZERNIO_API_KEY` loaded at `2026-06-11T16:42:34Z`, so this runtime remains preview-only for Zernio-backed publishing
-  - Zernio analytics re-check at `2026-06-11T16:42:34Z` still shows `0/6` healthy platforms and `0` rows in the last `24h`
+  - local shell still has no `ZERNIO_API_KEY` loaded in this runtime as of `2026-06-11T18:45:22Z`, so local runs remain preview-only for Zernio-backed publishing
+  - Zernio analytics re-check at `2026-06-11T18:45:22Z` still shows `0/6` healthy platforms and `0` rows in the last `24h`
+  - pipeline counts should be derived from `scripts/sales-pipeline.js` snapshots, not from ad hoc JSONL `ts` collapse logic; the warm Reddit four-pack still resolves to `contacted`
   - local Zernio status still points to the same likely causes: missing/revoked `ZERNIO_API_KEY`, analytics paywall, or disconnected accounts
   - Skool public-page verification remains blocked in the headless reader runtime; `node scripts/skool-reader.js --community thumbgate-operator-lab-6000 --limit 5 --format markdown` still fails with `[skool-reader] fetch failed`
+  - direct web-reader access to `https://www.skool.com/thumbgate-operator-lab-6000` also failed in this run, so browser-authenticated verification is still the only trustworthy live page check
   - GitHub promo workflow file still defaults to `offer: operator-lab`
   - official Skool help re-verified in this run still supports the current free-group posture: Discovery FAQ updated `April 8, 2026`, discovery visibility checklist updated `April 15, 2026`, pricing updated `October 28, 2025`, About page updated `December 9, 2025`, Payments FAQ updated `April 22, 2026`, payouts setup updated `January 22, 2026`, and payout status updated `May 5, 2026`
   - refreshed requirements brief: `reports/gtm/2026-05-04-community-course-promo/skool-platform-requirements-2026-06-11.md`

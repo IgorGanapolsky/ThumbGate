@@ -54,7 +54,7 @@ test('searchLessons returns linked corrective actions, prevention rules, and gat
         title: 'MISTAKE: Published without verification proof',
         content: [
           'What went wrong: Published without verification proof',
-          'How to avoid: Run npm test and attach the output before publishing',
+          'How to avoid: Run `npm test` and attach the output before publishing',
           'Reasoning: The release state changed during verification',
         ].join('\n'),
         category: 'error',
@@ -92,12 +92,15 @@ test('searchLessons returns linked corrective actions, prevention rules, and gat
 
     assert.equal(result.returned, 1);
     assert.equal(result.results[0].id, 'mem_publish');
-    assert.equal(result.results[0].lesson.howToAvoid, 'Run npm test and attach the output before publishing');
+    assert.equal(result.results[0].lesson.howToAvoid, 'Run `npm test` and attach the output before publishing');
     assert.equal(result.results[0].systemResponse.sourceFeedback.id, 'fb_publish');
     assert.equal(result.results[0].systemResponse.linkedPreventionRules[0].title, 'Verify before publishing');
     assert.equal(result.results[0].systemResponse.linkedAutoGates[0].id, 'auto-verification-release');
     assert.equal(result.results[0].systemResponse.lifecycle.enforcementState, 'blocking');
     assert.equal(result.results[0].systemResponse.lifecycle.stage, 'enforced');
+    assert.equal(result.results[0].systemResponse.memoryLifecycle.scope, 'project');
+    assert.equal(result.results[0].systemResponse.memoryLifecycle.decay.state, 'sticky');
+    assert.ok(result.results[0].systemResponse.memoryLifecycle.entities.some((entity) => entity.name === 'npm test'));
     assert.ok(result.results[0].systemResponse.correctiveActions.some((action) => action.type === 'avoid_repeat'));
     assert.ok(result.results[0].systemResponse.correctiveActions.some((action) => action.type === 'pre_action_block'));
     assert.equal(result.results[0].systemResponse.harnessRecommendations.length, 0);

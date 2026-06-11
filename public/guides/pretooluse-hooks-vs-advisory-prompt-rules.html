@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ThumbGate vs Mem0 | Enforcement vs Persistent Memory for AI Agents</title>
-  <meta name="description" content="Mem0 is persistent memory for AI agents. ThumbGate adapts scoped memory, entity-linked recall, and lifecycle pruning, then adds pre-action enforcement that blocks repeated mistakes." />
-  <meta property="og:title" content="ThumbGate vs Mem0 | Enforcement vs Persistent Memory for AI Agents" />
-  <meta property="og:description" content="Mem0 is persistent memory for AI agents. ThumbGate adapts scoped memory, entity-linked recall, and lifecycle pruning, then adds pre-action enforcement that blocks repeated mistakes." />
+  <title>PreToolUse Hooks vs Advisory Prompt Rules: Secure AI Coding Agents | ThumbGate</title>
+  <meta name="description" content="Prompt files like .cursorrules or CLAUDE.md are advisory guidelines that agents can ignore or bypass. Learn why PreToolUse hooks provide deterministic security." />
+  <meta property="og:title" content="PreToolUse Hooks vs Advisory Prompt Rules: Secure AI Coding Agents | ThumbGate" />
+  <meta property="og:description" content="Prompt files like .cursorrules or CLAUDE.md are advisory guidelines that agents can ignore or bypass. Learn why PreToolUse hooks provide deterministic security." />
   <meta property="og:type" content="article" />
-  <meta property="og:url" content="https://thumbgate.ai/compare/mem0" />
-  <link rel="canonical" href="https://thumbgate.ai/compare/mem0" />
+  <meta property="og:url" content="https://thumbgate.ai/guides/pretooluse-hooks-vs-advisory-prompt-rules" />
+  <link rel="canonical" href="https://thumbgate.ai/guides/pretooluse-hooks-vs-advisory-prompt-rules" />
   <link rel="llm-context" href="/llm-context.md" type="text/markdown" />
   <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
   <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
@@ -140,9 +140,6 @@
     .sidebar-card {
       padding: 20px;
     }
-    /* Only the first sidebar card sticks. Stacking multiple stickies at the
-       same top offset makes them overlap each other on scroll. The related-
-       pages card flows normally below. */
     .sidebar-card:first-child {
       position: sticky;
       top: 84px;
@@ -211,21 +208,21 @@
 {
   "@context": "https://schema.org",
   "@type": "TechArticle",
-  "headline": "ThumbGate vs Mem0",
-  "description": "Mem0 is persistent memory for AI agents. ThumbGate adapts scoped memory, entity-linked recall, and lifecycle pruning, then adds pre-action enforcement that blocks repeated mistakes.",
+  "headline": "PreToolUse Hooks vs Advisory Prompt Rules: Secure AI Coding Agents",
+  "description": "Prompt files like .cursorrules or CLAUDE.md are advisory guidelines that agents can ignore or bypass. Learn why PreToolUse hooks provide deterministic security.",
   "about": [
-    "thumbgate vs speclock",
-    "thumbgate vs mem0",
-    "thumbgate vs fallow",
-    "roo code alternative cline"
+    "pretooluse hooks vs advisory prompt rules",
+    "claude code security",
+    "cursor rules bypass",
+    "mcp security"
   ],
-  "url": "https://thumbgate.ai/compare/mem0",
+  "url": "https://thumbgate.ai/guides/pretooluse-hooks-vs-advisory-prompt-rules",
   "publisher": {
     "@type": "Organization",
     "name": "ThumbGate",
     "url": "https://thumbgate.ai"
   },
-  "mainEntityOfPage": "https://thumbgate.ai/compare/mem0"
+  "mainEntityOfPage": "https://thumbgate.ai/guides/pretooluse-hooks-vs-advisory-prompt-rules"
 }
   </script>
   <script type="application/ld+json">
@@ -235,18 +232,18 @@
   "mainEntity": [
     {
       "@type": "Question",
-      "name": "Does ThumbGate still include memory?",
+      "name": "Why are CLAUDE.md and .cursorrules files insufficient for security?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. ThumbGate keeps local-first memory, ContextFS packs, lesson search, and recall, but adds pre-action enforcement when memory alone is insufficient."
+        "text": "They are advisory prompt-level files. The agent can ignore them, overwrite them, suffer from context drift, or be jailbroken into bypassing them since they are not enforced at the runtime level."
       }
     },
     {
       "@type": "Question",
-      "name": "Why compare Mem0 at all?",
+      "name": "How does a PreToolUse hook protect the codebase?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Because buyers often start with memory tooling and only later realize they also need enforcement. This page makes that upgrade path explicit."
+        "text": "PreToolUse hooks intercept tool calls at the protocol layer before they are executed. If a command matches a blocked pattern, the hook denies execution, making safety deterministic rather than probabilistic."
       }
     }
   ]
@@ -263,12 +260,12 @@
 
   <main class="container">
     <section class="hero">
-      <div class="eyebrow">comparison | thumbgate vs mem0</div>
-      <h1>ThumbGate vs Mem0</h1>
-      <p>Mem0 is persistent memory for AI agents. ThumbGate uses the same high-value pattern, scoped recall over prior interactions, but narrows it to corrective memory that can become an enforceable pre-action gate.</p>
+      <div class="eyebrow">guide | pretooluse hooks vs advisory prompt rules</div>
+      <h1>PreToolUse Hooks vs Advisory Prompt Rules</h1>
+      <p>Why files like .cursorrules and CLAUDE.md cannot protect your codebase from high-risk agent operations, and how protocol-level PreToolUse hooks enforce deterministic safety.</p>
       <div class="signal-row">
-        <div class="signal-pill up">👍 Thumbs up reinforces good behavior</div>
-        <div class="signal-pill down">👎 Thumbs down blocks repeated mistakes</div>
+        <div class="signal-pill up">👍 PreToolUse: Deterministic Protocol Blocking</div>
+        <div class="signal-pill down">👎 Prompt Rules: Easily Ignored or Jailbroken</div>
       </div>
     </section>
 
@@ -276,64 +273,67 @@
       <div>
         <div class="card">
           <h2>Why this page exists</h2>
-          <ul><li>Mem0 is useful when you mainly need persistent personalization, user preferences, and cross-session context.</li><li>ThumbGate is useful when the memory is about a risky action that must be stopped before execution.</li><li>The highest-ROI buyer story is not "we remember more." It is "we remember the mistake, retrieve the right lesson, and block the repeat attempt with proof."</li></ul>
+          <ul>
+            <li>Advisory files like CLAUDE.md are hints that the model can choose to ignore under pressure.</li>
+            <li>Real security requires blocking unsafe operations before they hit the terminal or file system.</li>
+            <li>PreToolUse hooks provide protocol-level enforcement that cannot be bypassed by agent reasoning.</li>
+          </ul>
         </div>
 
-      <section class="detail-section">
-        <h2>What Mem0 gets right</h2>
-        <p>Mem0's public positioning makes the correct bet: agents need an external memory layer so they can remember across sessions without dumping every old transcript back into the prompt.</p>
-        <ul><li>Scoped memory: different recall for a user, session, project, or organization.</li><li>Hybrid retrieval: combine keyword matching with entity-aware or semantic recall.</li><li>Lifecycle hygiene: prune or consolidate stale memories so context does not become prompt bloat.</li><li>Measured value: show token, latency, and quality impact instead of vague "better memory" claims.</li></ul>
-      </section>
-      <section class="detail-section">
-        <h2>What ThumbGate adds</h2>
-        <p>ThumbGate now applies the same memory-layer ideas to enforcement memory. Lessons are classified by scope, linked to concrete entities such as Stripe, GitHub, files, and commands, and marked active, sticky, review, or archive-candidate before recall.</p>
-        <ul><li>Thumbs up reinforces good behavior.</li><li>Thumbs down creates corrective memory with source and outcome evidence.</li><li>High-risk memories stay sticky until explicitly retired.</li><li>Repeated failures can promote from lesson search into prevention rules and PreToolUse gates.</li><li>Verification evidence and automation reports back up the reliability claim.</li></ul>
-      </section>
-      <section class="detail-section">
-        <h2>When to use each</h2>
-        <p>Use Mem0-style memory when the goal is personalization or long-lived assistant context. Use ThumbGate when the remembered item is operational risk: force-pushes, destructive SQL, bad checkout links, deploy shortcuts, missing proof, leaked secrets, or repeated workflow failures.</p>
-        <p>Memory helps the agent know. Enforcement decides what the agent is allowed to do next.</p>
-      </section>
+        <section class="detail-section">
+          <h2>The Vulnerability of Prompt-Level Rules</h2>
+          <p>Files like <code>.cursorrules</code>, <code>CLAUDE.md</code>, or custom prompt instructions are simply part of the model's context window. They instruct the model on how it <em>should</em> behave. However, this model suffers from structural weaknesses:</p>
+          <ul>
+            <li><strong>Context Drift:</strong> As conversations grow, early prompt instructions are deprioritized or pushed out of attention.</li>
+            <li><strong>Jailbreaking:</strong> The user prompt or an external file read can override instructions, forcing the agent to bypass its own rules.</li>
+            <li><strong>Self-Modification:</strong> Agents with file-writing privileges can edit or delete <code>.cursorrules</code> files to bypass constraints.</li>
+          </ul>
+        </section>
+
+        <section class="detail-section">
+          <h2>Deterministic PreToolUse Hook Enforcement</h2>
+          <p>A <code>PreToolUse</code> hook intercepts execution at the Model Context Protocol (MCP) or platform layer. When the agent attempts to run a bash command, modify a file, or query a database, the call is evaluated by a local policy engine before execution.</p>
+          <p>If the action matches a known-bad pattern or violates a policy, the hook blocks it and returns a structured error response. The agent is physically stopped, preserving the system state and preventing the error before it can happen.</p>
+        </section>
+
         <div class="detail-section">
           <h2>FAQ</h2>
-
-      <details class="faq-item">
-        <summary>Does ThumbGate still include memory?</summary>
-        <p>Yes. ThumbGate keeps local-first memory, ContextFS packs, lesson search, and recall, but adds pre-action enforcement when memory alone is insufficient.</p>
-      </details>
-      <details class="faq-item">
-        <summary>Why compare Mem0 at all?</summary>
-        <p>Because buyers often start with memory tooling and only later realize they also need enforcement. This page makes that upgrade path explicit.</p>
-      </details>
+          <details class="faq-item">
+            <summary>Why are CLAUDE.md and .cursorrules files insufficient for security?</summary>
+            <p>They are advisory prompt-level files. The agent can ignore them, overwrite them, suffer from context drift, or be jailbroken into bypassing them since they are not enforced at the runtime level.</p>
+          </details>
+          <details class="faq-item">
+            <summary>How does a PreToolUse hook protect the codebase?</summary>
+            <p>PreToolUse hooks intercept tool calls at the protocol layer before they are executed. If a command matches a blocked pattern, the hook denies execution, making safety deterministic rather than probabilistic.</p>
+          </details>
         </div>
       </div>
 
       <aside class="sidebar">
-
-
-
-
         <div class="sidebar-card">
           <h2>GSD execution brief</h2>
-          <p>This page was prioritized because persistent AI memory is becoming a default buyer expectation. ThumbGate uses those patterns for corrective recall, then sells the harder outcome: blocked repeat mistakes before execution.</p>
-          <p><strong>Opportunity score:</strong> 100</p>
-          <p><strong>Primary persona:</strong> tool-evaluator</p>
-          <p><strong>Keyword cluster:</strong> thumbgate vs speclock, thumbgate vs mem0, thumbgate vs fallow, roo code alternative cline</p>
+          <p>This guide explains the structural boundary between prompt-level guidelines and protocol-level pre-action gates to help teams move from advisory rules to hard enforcement.</p>
+          <p><strong>Opportunity score:</strong> 92</p>
+          <p><strong>Primary persona:</strong> security-engineer</p>
+          <p><strong>Keyword cluster:</strong> pretooluse hooks vs advisory prompt rules, claude code security, cursor rules bypass, mcp security</p>
           <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
-          <div class="proof-links"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json" target="_blank" rel="noopener">Automation proof</a><a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub repository</a></div>
-          <a class="cta-button" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=compare_mem0&amp;cta_placement=seo_brief&amp;plan_id=pro" target="_blank" rel="noopener">Go Pro — $19/mo</a>
+          <div class="proof-links">
+            <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+            <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json" target="_blank" rel="noopener">Automation proof</a>
+            <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub repository</a>
+          </div>
+          <a class="cta-button" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_pretooluse-hooks-vs-advisory-prompt-rules&amp;cta_placement=seo_brief&amp;plan_id=pro" target="_blank" rel="noopener">Go Pro — $19/mo</a>
         </div>
         <div class="sidebar-card">
           <h2>Related pages</h2>
-
-        <a class="related-card" href="/compare/speclock">
-          <span class="related-label">Related page</span>
-          <strong>ThumbGate vs SpecLock</strong>
-        </a>
-        <a class="related-card" href="/guides/claude-code-feedback">
-          <span class="related-label">Related page</span>
-          <strong>Claude Code Feedback Memory That Actually Enforces</strong>
-        </a>
+          <a class="related-card" href="/guides/pre-action-checks">
+            <span class="related-label">Related page</span>
+            <strong>What Are Pre-Action Checks?</strong>
+          </a>
+          <a class="related-card" href="/guides/claude-code-feedback">
+            <span class="related-label">Related page</span>
+            <strong>Claude Code Feedback Memory That Enforces</strong>
+          </a>
         </div>
       </aside>
     </section>

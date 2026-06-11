@@ -53,7 +53,7 @@ describe('Free tier bullets: extraction', () => {
 });
 
 describe('Free tier bullets: code-backed claims', () => {
-  test('"5 feedback captures/day" matches FREE_TIER_LIMITS.capture_feedback', () => {
+  test('"2 feedback captures/day" matches FREE_TIER_LIMITS.capture_feedback', () => {
     const { FREE_TIER_LIMITS } = require(path.join(ROOT, 'scripts', 'rate-limiter.js'));
     assert.equal(FREE_TIER_LIMITS.capture_feedback.daily, 2,
       'free tier daily captures must match the public pricing page');
@@ -61,7 +61,7 @@ describe('Free tier bullets: code-backed claims', () => {
       'free tier lifetime captures must match the public pricing page');
     assert.ok(
       FREE_BULLETS.some((b) => /2 feedback captures\/day/i.test(b)),
-      'Landing page must claim "5 feedback captures/day"',
+      'Landing page must claim "2 feedback captures/day"',
     );
   });
 

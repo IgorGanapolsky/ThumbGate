@@ -98,6 +98,16 @@ test('parseHtmlSignals detects telemetry and tracking hooks', () => {
   assert.equal(signals.workflowSprintIntake, true);
 });
 
+test('parseHtmlSignals detects Plausible tagged-events script variant', () => {
+  const signals = parseHtmlSignals(`
+    <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script>
+    <script>fetch('/v1/telemetry/ping', { method: 'POST' });</script>
+  `);
+
+  assert.equal(signals.plausibleScript, true);
+  assert.equal(signals.telemetryEndpoint, true);
+});
+
 test('buildDiagnosis prioritizes GA4 runtime config over stale local fallback labels', () => {
   const diagnosis = buildDiagnosis({
     publicProbe: {

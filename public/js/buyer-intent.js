@@ -240,11 +240,11 @@
       cta_placement: placement,
       plan_id: 'pro',
     });
-    var diagnosticHref = appendCampaignParams(settings.diagnosticHref || 'https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e', {
+    var intakeHref = appendCampaignParams(settings.intakeHref || '/#workflow-sprint-intake', {
       utm_source: 'owned_site',
       utm_medium: 'sticky_cta',
       utm_campaign: campaign,
-      cta_id: 'assist_workflow_diagnostic',
+      cta_id: 'assist_workflow_intake',
       cta_placement: placement,
       client_reference_id: 'thumbgate_assist_' + placement,
     });
@@ -254,10 +254,10 @@
     panel.setAttribute('aria-label', 'ThumbGate paid help');
     panel.innerHTML = [
       '<strong>Stop the repeated agent failure?</strong>',
-      '<p>Use Pro for self-serve proof, or buy the diagnostic when one workflow is already costing time.</p>',
+      '<p>Use Pro for self-serve proof, or send the workflow first when one failure is already costing time.</p>',
       '<nav>',
       '<a data-assist-cta="assist_pro_checkout" href="' + proHref + '">Get Pro</a>',
-      '<a data-assist-cta="assist_workflow_diagnostic" href="' + diagnosticHref + '" rel="nofollow">Pay $499 diagnostic</a>',
+      '<a data-assist-cta="assist_workflow_intake" href="' + intakeHref + '">Send workflow first</a>',
       '<button type="button" data-assist-dismiss>Not now</button>',
       '</nav>'
     ].join('');

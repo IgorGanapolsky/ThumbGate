@@ -1,6 +1,6 @@
 # Revenue Operator Send-Now Sheet
 
-Updated: 2026-06-11T16:45:00Z
+Updated: 2026-06-11T18:45:35Z
 
 This is the flat batch-send layer for the current revenue loop. Use it when you want the message, CTA, and logging commands in one place without re-reading the full GTM report.
 
@@ -23,7 +23,7 @@ Pair this file with `operator-priority-handoff.md` when you need deeper account 
 - Keep the offer split honest: sprint rows get one workflow-hardening offer; self-serve rows get the guide-to-Pro lane unless pain is confirmed.
 - Qualify the offer split: Use Pro after one blocked repeat or explicit self-serve install intent. Use the Workflow Hardening Sprint when one workflow owner needs approval boundaries, rollback safety, and proof before wider rollout.
 - Use [VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md) and [COMMERCIAL_TRUTH.md](../COMMERCIAL_TRUTH.md) only after the buyer confirms pain.
-- Current live pipeline on 2026-06-11: `24` active leads, `22` contacted, `2` replied, `0` untouched. This was re-verified by collapsing `.thumbgate/sales-pipeline.jsonl` to the latest event per `leadId` on `2026-06-11T16:43:55Z`. Ignore the replied Aiventyx thread because that lane is deprecated.
+- Current live pipeline on 2026-06-11: `24` active leads, `22` in `contacted`, `2` in `replied`, `0` untouched. This was re-verified via `scripts/sales-pipeline.js` on `2026-06-11T18:45:22Z`. Ignore the replied Aiventyx thread because that lane is deprecated.
 - Promo constraint in this run: local Operator Lab dry-run still returns `6` previews and `0` errors, but every media file under `docs/marketing/assets/*` resolves as missing and every platform preview shows `accountCount: 0`. Treat A2 as approval-only workflow dispatch, not locally provable live promotion.
 
 ## Next Approval Action

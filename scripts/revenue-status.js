@@ -111,7 +111,7 @@ function parseGhVariableList(stdout = '') {
 function parseHtmlSignals(html = '') {
   const body = String(html);
   return {
-    plausibleScript: /plausible\.io\/js\/script\.js|\/js\/analytics\.js/.test(body),
+    plausibleScript: /plausible\.io\/js\/script(?:\.[a-z-]+)?\.js|\/js\/analytics\.js/.test(body),
     gaLoaderScript: body.includes('googletagmanager.com/gtag/js'),
     gaEventHook: body.includes('window.gtag('),
     gaPlaceholderPresent: body.includes('__GA_MEASUREMENT_ID__'),

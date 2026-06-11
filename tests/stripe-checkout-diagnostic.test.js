@@ -6,6 +6,7 @@ const {
   parseArgs,
   bucketSessions,
   bucketPaymentIntentErrors,
+  classifyCheckoutFunnel,
   runDiagnostic,
   renderMarkdown,
 } = require('../scripts/stripe-checkout-diagnostic');
@@ -56,6 +57,28 @@ test('bucketPaymentIntentErrors counts last_payment_error by code, type, and dec
   assert.equal(buckets.byDeclineCode.insufficient_funds, 1);
   assert.equal(buckets.byDeclineCode.generic_decline, 1);
   assert.equal(buckets.byDeclineCode.no_decline_code, 1);
+});
+
+test('classifyCheckoutFunnel distinguishes pre-payment abandonment from Stripe account blocks', () => {
+  const abandoned = classifyCheckoutFunnel({
+    sessions: Array.from({ length: 30 }, (_, i) => ({
+      status: i % 2 ? 'expired' : 'open',
+      payment_status: 'unpaid',
+    })),
+    paymentIntents: [],
+    account: { configured: true, chargesEnabled: true },
+  });
+  assert.equal(abandoned.primaryDiagnosis, 'pre_payment_abandonment');
+  assert.equal(abandoned.checkoutConversionRate, 0);
+  assert.equal(abandoned.paymentIntentsTotal, 0);
+  assert.match(abandoned.recommendation, /Simplify the offer/);
+
+  const blocked = classifyCheckoutFunnel({
+    sessions: [{ status: 'expired', payment_status: 'unpaid' }],
+    paymentIntents: [],
+    account: { configured: true, chargesEnabled: false },
+  });
+  assert.equal(blocked.primaryDiagnosis, 'stripe_account_blocked');
 });
 
 // runDiagnostic with an injected fake Stripe client ----------------------
@@ -189,4 +212,6 @@ test('renderMarkdown emits the abandonment diagnosis when there are no PI errors
   const md = renderMarkdown(report);
   // Uniform-expiry diagnosis fires when 0 completions and >50 non-complete sessions
   assert.match(md, /uniformly expiring or staying open/);
+  assert.match(md, /Primary diagnosis: `pre_payment_abandonment`/);
+  assert.match(md, /Checkout completion rate: 0\.00%/);
 });

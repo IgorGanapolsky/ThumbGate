@@ -5,16 +5,16 @@ Guardrail: do not publish posts, send messages, invite members, upload files, su
 ## Command evidence from this run
 
 - `npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=linkedin,instagram,threads,bluesky,reddit,youtube`
-  - Run time: `2026-06-11T15:41:45Z`
+  - Run time: `2026-06-11T18:45:22Z`
   - Result: `6` previews, `0` errors, `0` published, `0` scheduled
   - Media proof: all `6` previews resolved `docs/marketing/assets/*` media paths, and every asset reported `exists: false`
   - Constraint: every preview still showed `accountCount: 0`, so this runtime remains preview-only
 - `npm run social:zernio:status`
-  - Run time: `2026-06-11T15:41:45Z`
+  - Run time: `2026-06-11T18:45:22Z`
   - Result: `0/6` healthy platforms, `0` rows in the last `24h`
   - Immediate interpretation: Zernio is not giving useful analytics readback in this runtime today
 - `node scripts/skool-reader.js --community thumbgate-operator-lab-6000 --limit 5 --format markdown`
-  - Run time: `2026-06-11T14:41:05Z`
+  - Run time: `2026-06-11T18:45:22Z`
   - Result: failed with `[skool-reader] fetch failed`
   - Immediate interpretation: public Skool readback is still blocked in the headless path
 
@@ -34,8 +34,7 @@ Re-checked Skool help-center guidance on `2026-06-11`:
 
 ## Asset truth in this checkout
 
-- `public/assets/skool/thumbgate-skool-cover-1084x576.png` exists only as a symlink to `docs/marketing/assets/thumbgate-skool-cover-1084x576.png`.
-- `public/assets/skool/thumbgate-skool-icon-128x128.png` exists only as a symlink to `docs/marketing/assets/thumbgate-skool-icon-128x128.png`.
+- `public/assets/skool/` is absent in this checkout, so there is no local fallback layer for the missing `docs/marketing/assets/*` files.
 - `docs/marketing/assets/` is missing from this checkout, so the underlying cover/icon files do not currently exist.
 - `find docs/marketing -maxdepth 3 -type f` currently returns only `codex-marketplace-revenue-pack.json`, `codex-marketplace-revenue-pack.md`, and `codex-operator-queue.csv`.
 - The operator prompt says the Skool media assets should exist locally, so this is a verified repo-vs-memory mismatch rather than just a bad preview path.
@@ -47,6 +46,7 @@ Implication: today’s local promo path is copy-preview-only. It is not a health
 
 - The workflow-backed preview path present in this checkout is `npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=linkedin,instagram,threads,bluesky,reddit,youtube`.
 - `.github/scripts/creator-platform-promo.js` is not present locally, so any older note that cites that path as runnable evidence should be treated as stale.
+- Direct public-page verification is still unavailable in this runtime: opening `https://www.skool.com/thumbgate-operator-lab-6000` through the web reader returned an internal error instead of a readable page, so authenticated browser readback remains the only trustworthy public-surface check.
 
 ## Next approval-ready action
 

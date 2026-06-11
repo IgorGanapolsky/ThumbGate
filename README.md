@@ -424,7 +424,7 @@ If you change MCP or hook settings, restart the affected agent session so Claude
 | | Free | Pro ($19/mo) | Enterprise |
 |---|---|---|---|
 | Local CLI + enforced checks | ✅ | ✅ | ✅ |
-| Feedback captures | 5/day (25 total) | Unlimited | Unlimited |
+| Feedback captures | 2/day (25 total) | Unlimited | Unlimited |
 | Active auto-promoted prevention rules | 3 | Unlimited | Unlimited |
 | MCP agent integrations | All | All | All |
 | Personal dashboard | — | ✅ | ✅ |
@@ -529,7 +529,7 @@ curl -X POST http://localhost:3456/v1/dpo/export \
 | Layer | Technology |
 |-------|-----------|
 | **Storage** | SQLite + FTS5, LanceDB vectors, JSONL logs |
-| **Capture** | 5/day, 25 total on Free; unlimited on Pro, Team, and Enterprise |
+| **Capture** | 2/day, 25 total on Free; unlimited on Pro, Team, and Enterprise |
 | **Intelligence** | MemAlign dual recall, Thompson Sampling |
 | **Enforcement** | PreToolUse hook engine, Checks config |
 | **Interfaces** | MCP stdio, HTTP API, CLI (Node.js >=18) |

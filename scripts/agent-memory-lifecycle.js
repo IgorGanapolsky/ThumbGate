@@ -2,6 +2,40 @@
 'use strict';
 
 const MEMORY_TYPES = new Set(['episodic', 'semantic', 'procedural', 'preference', 'working']);
+const MEMORY_SCOPES = new Set(['task', 'session', 'user', 'project', 'org']);
+const HIGH_RISK_TERMS = new Set([
+  'billing',
+  'checkout',
+  'compliance',
+  'credential',
+  'data-loss',
+  'deploy',
+  'deployment',
+  'git',
+  'payment',
+  'production',
+  'release',
+  'secret',
+  'security',
+  'stripe',
+  'verification',
+]);
+const KNOWN_ENTITY_PATTERNS = [
+  ['Claude Code', /\bclaude\s+code\b/i, 'agent'],
+  ['Codex', /\bcodex\b/i, 'agent'],
+  ['Cursor', /\bcursor\b/i, 'agent'],
+  ['Gemini CLI', /\bgemini\s+cli\b/i, 'agent'],
+  ['MCP', /\bmcp\b/i, 'protocol'],
+  ['Stripe', /\bstripe\b/i, 'service'],
+  ['GitHub', /\bgithub\b|\bgh\s+/i, 'service'],
+  ['Railway', /\brailway\b/i, 'service'],
+  ['Plausible', /\bplausible\b/i, 'service'],
+  ['PostHog', /\bposthog\b/i, 'service'],
+  ['SQLite', /\bsqlite\b|\bfts5\b/i, 'storage'],
+  ['LanceDB', /\blancedb\b/i, 'storage'],
+  ['Docker', /\bdocker\b/i, 'runtime'],
+  ['npm', /\bnpm\b|\bnpx\b/i, 'runtime'],
+];
 
 function normalizeText(value) {
   if (value === undefined || value === null) return '';
@@ -11,6 +45,178 @@ function normalizeText(value) {
 function normalizeMemoryType(value) {
   const normalized = normalizeText(value).toLowerCase();
   return MEMORY_TYPES.has(normalized) ? normalized : 'episodic';
+}
+
+function tokenize(value) {
+  return normalizeText(value)
+    .toLowerCase()
+    .split(/[^a-z0-9_.:/-]+/)
+    .filter(Boolean);
+}
+
+function uniqueByName(entities) {
+  const seen = new Set();
+  return entities.filter((entity) => {
+    const key = normalizeText(entity.name).toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function collectMemoryText(memory = {}) {
+  return [
+    memory.title,
+    memory.content,
+    memory.context,
+    memory.whatWentWrong,
+    memory.whatToChange,
+    memory.whatWorked,
+    memory.domain,
+    memory.skill,
+    Array.isArray(memory.tags) ? memory.tags.join(' ') : memory.tags,
+  ].filter(Boolean).join(' ');
+}
+
+function extractMemoryEntities(memory = {}) {
+  const text = collectMemoryText(memory);
+  const entities = [];
+
+  for (const [name, pattern, type] of KNOWN_ENTITY_PATTERNS) {
+    if (pattern.test(text)) entities.push({ name, type });
+  }
+
+  const commandMatches = text.match(/`([^`]+)`/g) || [];
+  for (const match of commandMatches) {
+    const command = match.slice(1, -1).trim();
+    if (/^(git|npm|npx|node|gh|curl|docker|python|pytest|stripe)\b/i.test(command)) {
+      entities.push({ name: command, type: 'command' });
+    } else if (/[./-]/.test(command)) {
+      entities.push({ name: command, type: 'path' });
+    }
+  }
+
+  const pathMatches = text.match(/\b(?:[a-z0-9_-]+\/)+[a-z0-9_.-]+\b/gi) || [];
+  for (const filePath of pathMatches.slice(0, 8)) {
+    entities.push({ name: filePath, type: 'path' });
+  }
+
+  return uniqueByName(entities).slice(0, 16);
+}
+
+function inferMemoryScope(memory = {}) {
+  const explicit = normalizeText(memory.scope || memory.memoryScope).toLowerCase();
+  if (MEMORY_SCOPES.has(explicit)) return explicit;
+
+  const text = collectMemoryText(memory).toLowerCase();
+  const tags = new Set(Array.isArray(memory.tags) ? memory.tags.map((tag) => normalizeText(tag).toLowerCase()) : []);
+
+  if (tags.has('preference') || /\b(prefer|style|tone|my preference|user preference)\b/.test(text)) return 'user';
+  if (tags.has('org') || tags.has('team') || /\b(enterprise|seat|team|shared|org|compliance|policy|approval)\b/.test(text)) return 'org';
+  if (tags.has('repo') || tags.has('project') || tags.has('release') || tags.has('deployment')
+    || /\b(repo|repository|branch|ci|pull request|github|deploy|production|release|publish)\b/.test(text)) return 'project';
+  if (tags.has('session') || /\b(this session|current session|today|right now)\b/.test(text)) return 'session';
+  return 'task';
+}
+
+function scoreMemoryDecay(memory = {}, options = {}) {
+  const nowMs = options.now ? new Date(options.now).getTime() : Date.now();
+  const timestampMs = memory.timestamp ? new Date(memory.timestamp).getTime() : NaN;
+  const ageDays = Number.isFinite(timestampMs)
+    ? Math.max(0, (nowMs - timestampMs) / (1000 * 60 * 60 * 24))
+    : null;
+  const textTokens = new Set(tokenize(collectMemoryText(memory)));
+  const tags = Array.isArray(memory.tags) ? memory.tags.map((tag) => normalizeText(tag).toLowerCase()) : [];
+  const highRisk = tags.some((tag) => HIGH_RISK_TERMS.has(tag))
+    || [...textTokens].some((token) => HIGH_RISK_TERMS.has(token))
+    || ['critical', 'high'].includes(normalizeText(memory.importance).toLowerCase());
+
+  if (highRisk) {
+    return {
+      state: 'sticky',
+      ageDays,
+      score: 1,
+      reason: 'high-risk memories stay retrievable until explicitly retired',
+    };
+  }
+  if (ageDays === null) {
+    return {
+      state: 'review',
+      ageDays,
+      score: 0.6,
+      reason: 'memory has no timestamp, so it needs review before durable promotion',
+    };
+  }
+  if (ageDays > 180) {
+    return {
+      state: 'archive_candidate',
+      ageDays,
+      score: 0.2,
+      reason: 'old low-risk memory should be consolidated or archived',
+    };
+  }
+  if (ageDays > 60) {
+    return {
+      state: 'review',
+      ageDays,
+      score: 0.55,
+      reason: 'older low-risk memory should be refreshed before it dominates recall',
+    };
+  }
+  return {
+    state: 'active',
+    ageDays,
+    score: 0.85,
+    reason: 'recent memory remains eligible for recall',
+  };
+}
+
+function scoreHybridMemoryMatch(query, memory = {}, options = {}) {
+  const queryTokens = new Set(tokenize(query));
+  const memoryTokens = new Set(tokenize(collectMemoryText(memory)));
+  const queryText = normalizeText(query).toLowerCase();
+  const memoryText = collectMemoryText(memory).toLowerCase();
+  const memoryEntities = extractMemoryEntities(memory);
+  const queryEntityNames = extractMemoryEntities({ content: query }).map((entity) => entity.name.toLowerCase());
+
+  let lexicalMatches = 0;
+  for (const token of queryTokens) {
+    if (memoryTokens.has(token)) lexicalMatches++;
+  }
+  const lexicalScore = queryTokens.size > 0 ? lexicalMatches / queryTokens.size : 0;
+  const phraseScore = queryText && memoryText.includes(queryText) ? 0.35 : 0;
+  const entityMatches = memoryEntities.filter((entity) => queryEntityNames.includes(entity.name.toLowerCase()));
+  const entityScore = queryEntityNames.length > 0 ? entityMatches.length / queryEntityNames.length : 0;
+  const decay = scoreMemoryDecay(memory, options);
+  const lifecycleScore = decay.state === 'archive_candidate' ? -0.15 : decay.state === 'sticky' ? 0.12 : 0;
+  const score = lexicalScore + phraseScore + (entityScore * 0.45) + lifecycleScore;
+
+  return {
+    score: Number(Math.max(0, score).toFixed(4)),
+    lexicalScore: Number(lexicalScore.toFixed(4)),
+    entityScore: Number(entityScore.toFixed(4)),
+    matchedEntities: entityMatches,
+    decayState: decay.state,
+  };
+}
+
+function buildMemoryLifecycleView(memory = {}, options = {}) {
+  const scope = inferMemoryScope(memory);
+  const entities = extractMemoryEntities(memory);
+  const decay = scoreMemoryDecay(memory, options);
+  const retrieval = scoreHybridMemoryMatch(options.query || '', memory, options);
+
+  return {
+    scope,
+    entities,
+    decay,
+    retrievalHints: {
+      hybridScore: retrieval.score,
+      lexicalScore: retrieval.lexicalScore,
+      entityScore: retrieval.entityScore,
+      matchedEntities: retrieval.matchedEntities,
+    },
+  };
 }
 
 function buildMemoryLifecyclePolicy(input = {}) {
@@ -91,6 +297,11 @@ function evaluateMemoryPromotion(memory = {}, policy = buildMemoryLifecyclePolic
 
 module.exports = {
   buildMemoryLifecyclePolicy,
+  buildMemoryLifecycleView,
   evaluateMemoryPromotion,
+  extractMemoryEntities,
+  inferMemoryScope,
   normalizeMemoryType,
+  scoreHybridMemoryMatch,
+  scoreMemoryDecay,
 };

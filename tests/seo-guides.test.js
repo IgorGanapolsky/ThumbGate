@@ -9,6 +9,7 @@ const PUBLIC_DIR = path.resolve(__dirname, '..', 'public');
 
 const GUIDE_FILES = [
   'guides/pre-action-checks.html',
+  'guides/pretooluse-hooks-vs-advisory-prompt-rules.html',
   'guides/agent-harness-optimization.html',
   'guides/code-knowledge-graph-guardrails.html',
   'guides/developer-machine-supply-chain-guardrails.html',

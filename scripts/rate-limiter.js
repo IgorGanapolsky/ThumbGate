@@ -18,7 +18,7 @@ const USAGE_FILE = path.join(process.env.HOME || '/tmp', '.thumbgate', 'usage-li
 // ──────────────────────────────────────────────────────────
 const FREE_TIER_LIMITS = {
   capture_feedback:   { daily: 2,        lifetime: 25,       label: 'feedback captures (2/day, 25 total on free)' },
-  prevention_rules:   { daily: 2,        lifetime: 6,        label: 'prevention rules generated (2/day on free)' },
+  prevention_rules:   { daily: 2,        lifetime: 3,        label: 'prevention rules generated (2/day on free)' },
   recall:             { daily: 0,        lifetime: 0,        label: 'recall queries (Pro only)' },
   search_lessons:     { daily: 0,        lifetime: 0,        label: 'lesson searches (Pro only)' },
   search_thumbgate:   { daily: 0,        lifetime: 0,        label: 'ThumbGate searches (Pro only)' },
