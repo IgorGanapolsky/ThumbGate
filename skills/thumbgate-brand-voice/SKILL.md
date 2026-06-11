@@ -1,6 +1,6 @@
 ---
 name: ThumbGate Brand Voice
-description: Make any ThumbGate-facing copy (landing pages, README, Reddit/LinkedIn/Bluesky posts, comparison pages, docs, outreach drafts) sound like ThumbGate — direct, technical, honest, anti-hype. Use BEFORE writing or editing any customer-facing or marketing text for ThumbGate.
+description: Make any ThumbGate-facing copy — landing/pricing/compare/guide pages, README, postinstall banners, CLI receipts, Reddit/LinkedIn/Bluesky/Threads posts, docs, outreach drafts, blog/launch content — sound like ThumbGate: direct, technical, honest, anti-hype. Use BEFORE writing or editing customer-facing or marketing text, and when the user says "write a landing page", "draft a Reddit/LinkedIn post", "write the README", "make this on-brand", "punch up this copy", or "review this copy for voice". Do NOT use for code comments, commit messages, internal notes, or non-ThumbGate copy — and never to add fabricated traction or unsupported claims (honesty is the brand).
 ---
 
 # ThumbGate Brand Voice
