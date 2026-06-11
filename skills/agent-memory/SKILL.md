@@ -1,6 +1,6 @@
 ---
 name: Agent Memory
-description: Recall past mistakes and capture feedback so your agent stops repeating errors. Works locally via MCP server — no API key needed.
+description: Give your agent persistent cross-session memory — recall what went wrong on similar tasks before starting, then capture whether the work succeeded or failed so repeated mistakes auto-promote into prevention rules. Runs locally via the ThumbGate MCP server (recall, capture_feedback, prevention_rules, feedback_stats) — no API key needed. Use when the user says "recall", "what went wrong last time", "remember this for next time", "capture feedback", "thumbs up/down on that", or at the start of a new task or session. Do NOT use when the user wants to force one specific mistake into an enforced block gate (use the thumbgate-guard skill), to list rules that already exist (thumbgate-rules), or to check ThumbGate wiring (thumbgate-doctor).
 ---
 
 # Agent Memory
