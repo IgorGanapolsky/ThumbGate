@@ -1518,6 +1518,25 @@ function captureFeedback(params) {
     } catch { /* Gate promotion is non-critical */ }
   }
 
+  // Auto-export to Obsidian if configured (deferred but tracked)
+  if (process.env.THUMBGATE_OBSIDIAN_VAULT_PATH) {
+    const exportPromise = new Promise((resolve) => {
+      setImmediate(() => {
+        try {
+          const { exportAll } = require('./obsidian-export');
+          exportAll({
+            feedbackDir: FEEDBACK_DIR,
+            outputDir: process.env.THUMBGATE_OBSIDIAN_VAULT_PATH,
+          });
+        } catch (_err) {
+          // Non-critical, do not crash feedback loop
+        }
+        resolve();
+      });
+    });
+    trackBackgroundSideEffect(exportPromise);
+  }
+
   // --- Deferred side-effects (contextFs, RLAIF — non-critical, potentially slow) ---
   setImmediate(() => {
     try {
