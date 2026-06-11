@@ -87,7 +87,13 @@ const path = require('node:path');
 // `thumbgate init`. They wrap existing MCP tools/CLI — no new logic.
 // (changeset: discoverable-slash-commands.md). Keep in lockstep with CEILING in
 // tests/public-core-boundary.test.js.
-const BASELINE_FILE_COUNT = 298;
+// 298 → 299: 2026-06-11 scripts/sync-telemetry-from-prod.js added so the local
+// agentic data pipeline (get_business_metrics) can pull the real web funnel from
+// the operator-gated /v1/telemetry/export endpoint instead of reading an empty
+// local store (changeset: sync-prod-telemetry.md). Keep in lockstep with CEILING
+// in tests/public-core-boundary.test.js and the fileCount ceiling in
+// tests/package-boundary.test.js.
+const BASELINE_FILE_COUNT = 299;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
