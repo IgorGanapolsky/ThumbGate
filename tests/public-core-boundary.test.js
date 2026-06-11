@@ -143,8 +143,13 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // canonical secret-redaction helper required at runtime by the capture path
   // (feedback-loop/lesson-inference/feedback-history-distiller/self-distill) and
   // the DPO + Databricks exporters. Public-shell security fix, no Core dependency.
+  // Bumped 294 -> 298 (2026-06-10) to ship five discoverable /thumbgate-*
+  // slash-commands in .claude/commands/ (guard, rules, blocked, protect, doctor)
+  // so enforcement value is browsable in the agent command palette like GSD's
+  // /gsd-*. Thin wrappers over existing MCP tools/CLI, no Core dependency, no new
+  // logic. Keep in lockstep with BASELINE_FILE_COUNT in public-bundle-ratchet.test.js.
   const files = npmPackFiles();
-  const CEILING = 311;
+  const CEILING = 315;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

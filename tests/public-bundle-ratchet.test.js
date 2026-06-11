@@ -81,7 +81,8 @@ const path = require('node:path');
 // `thumbgate quickstart` guided first-rule activation walkthrough works from
 // npm installs (changeset: activation-first-rule-onboarding.md).
 // 293 → 310: 2026-06-08 brand assets, icons, SVGs, and buyer intent scripts added for dashboard and local parity.
-const BASELINE_FILE_COUNT = 310;
+// 310 → 315: 2026-06-10 five discoverable /thumbgate-* slash-commands added to .claude/commands/ and scripts/secret-redaction.js.
+const BASELINE_FILE_COUNT = 315;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

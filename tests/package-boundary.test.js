@@ -311,9 +311,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 310 -> 311 (2026-06-10) to ship scripts/secret-redaction.js, the
   // canonical secret-redaction helper wired into the capture path and the
   // DPO + Databricks exporters (security fix; no Core dependency).
+  // Bumped 294 -> 298 (2026-06-10) to ship five discoverable /thumbgate-*
+  // slash-commands in .claude/commands/ (guard, rules, blocked, protect, doctor)
+  // so enforcement value is browsable in the agent command palette like GSD's
+  // /gsd-*. Thin wrappers over existing MCP tools/CLI — no new logic, no Core dep.
+  // Keep in lockstep with public-bundle-ratchet + public-core-boundary ceilings.
   assert.ok(
-    manifest.fileCount <= 311,
-    `npm package should stay <= 311 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 315,
+    `npm package should stay <= 315 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

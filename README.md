@@ -57,6 +57,24 @@ In that stack, ThumbGate is the pre-action gate between generated intent and exe
 
 ---
 
+## Discoverable slash-commands — the guardrail layer for spec-driven agents
+
+Spec-driven agent frameworks like **GSD** (get-shit-done) and **GitHub Spec Kit** are great at *planning and generating* work — they expose dozens of discoverable `/gsd-*` / `/specify` commands in the agent command palette. ThumbGate is the **guardrail layer for spec-driven agents**: it sits *after* the plan, on the boundary between a generated tool call and its execution. It works **alongside GSD / Spec-Kit, not instead of them** — they decide *what* to build; ThumbGate enforces *what the agent must never do while building it*.
+
+`npx thumbgate init` installs these commands into your agent's palette (`.claude/commands/`, `.gemini/commands/`, `.antigravitycli/commands/`) so the enforcement layer is as browsable as the planning layer:
+
+| Command | What it does | Wraps (existing capability) |
+|---------|--------------|------------------------------|
+| `/thumbgate-guard` | Turn the last agent mistake into a hard prevention rule | `capture_feedback` + `thumbgate force-gate` |
+| `/thumbgate-rules` | List the active prevention rules + lessons guarding this repo | `prevention_rules`, `get_reliability_rules`, `search_lessons` |
+| `/thumbgate-blocked` | Show what's actually been blocked — gate stats + enforcement matrix | `gate_stats`, `enforcement_matrix` |
+| `/thumbgate-protect` | Show branch/release governance; grant a scoped, expiring approval | `get_branch_governance`, `approve_protected_action` |
+| `/thumbgate-doctor` | Health-check the wiring (hooks, MCP, agent-readiness) | `thumbgate doctor` |
+
+Each is a thin wrapper over an existing MCP tool or CLI command — **no new enforcement logic, just discoverability**.
+
+---
+
 ## 🎬 90-second demo
 
 Watch the force-push scenario: agent tries to `git push --force`, one thumbs-down, next session it's blocked — zero tokens spent on the repeat.
