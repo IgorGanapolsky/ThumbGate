@@ -496,12 +496,12 @@ __GA_BOOTSTRAP__
   /* COMPATIBILITY */
   .compatibility { padding: 0 0 80px; }
   .compatibility-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-  .compat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; text-decoration: none; color: inherit; display: block; transition: border-color 0.2s, transform 0.15s; cursor: pointer; }
-  .compat-card:hover { border-color: rgba(34,211,238,0.3); transform: translateY(-2px); }
-  .compat-card h3 { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 10px; }
-  .compat-card .card-arrow { font-size: 13px; color: var(--cyan); margin-top: 12px; font-weight: 500; }
-  .compat-card p { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
-  .compat-card code { font-family: var(--mono); font-size: 12px; background: rgba(34,211,238,0.08); color: var(--cyan); padding: 2px 6px; border-radius: 4px; }
+  .compat-card, .cycle-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; text-decoration: none; color: inherit; display: block; transition: border-color 0.2s, transform 0.15s; cursor: pointer; }
+  .compat-card:hover, .cycle-card:hover { border-color: rgba(34,211,238,0.3); transform: translateY(-2px); }
+  .compat-card h3, .cycle-card h3 { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 10px; }
+  .compat-card .card-arrow, .cycle-card .card-arrow { font-size: 13px; color: var(--cyan); margin-top: 12px; font-weight: 500; }
+  .compat-card p, .cycle-card p { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+  .compat-card code, .cycle-card code { font-family: var(--mono); font-size: 12px; background: rgba(34,211,238,0.08); color: var(--cyan); padding: 2px 6px; border-radius: 4px; }
 
   /* CHATGPT GPT PATH */
   .gpt-path { padding: 0 0 80px; }
@@ -755,9 +755,9 @@ __GA_BOOTSTRAP__
 <!-- HERO -->
 <section class="hero">
   <div class="container">
-    <div class="hero-badge">👍 👎 The Firewall for AI Agents</div>
+    <div class="hero-badge">👍 👎 Local-first · open-source</div>
     <h1>The Infrastructure Firewall for AI Coding Agents.</h1>
-    <p class="hero-lede">AI agents will always hallucinate and break things — we make their mistakes harmless. ThumbGate runs in the PreToolUse hook on your machine and blocks the dangerous tool call — rm -rf, leaked keys, off-scope edits, a bad git push — before it executes. No server, no gateway, no waiting on an enterprise rollout.</p>
+    <p class="hero-lede">When your coding agent tries to run <strong>rm -rf</strong>, force-push to main, leak an API key, or DROP a production table, ThumbGate blocks that exact tool call in the PreToolUse hook — on your machine, before the shell runs it. Thumbs-down a mistake once and it becomes a prevention rule, so the agent stops repeating it. No server, no gateway, no waiting on an enterprise rollout.</p>
 
     <div class="hero-proof-card" aria-label="ThumbGate blocking dangerous AI agent commands in real time">
       <img src="/media/thumbgate-demo.gif" alt="ThumbGate blocking an AI agent's rm -rf, git push --force, and chmod 777 in real time, while letting safe commands through" style="width:100%;display:block;border-radius:8px;" loading="lazy" />
@@ -872,23 +872,27 @@ __GA_BOOTSTRAP__
     <div class="section-label">Agentic Development Cycle</div>
     <h2 class="section-title">Guide, Generate, Verify, Solve still needs an execution gate.</h2>
     <p style="text-align:center;font-size:16px;color:var(--text-muted);max-width:900px;margin:0 auto 28px;line-height:1.7;">The market is converging on agentic development as a control loop, not a code-generation trick. <a href="https://thenewstack.io/agentic-development-cycle-framework/" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:underline;">The New Stack's May 2026 AC/DC framing</a> names the core stages: Guide, Generate, Verify, and Solve. ThumbGate gives that loop a hard pre-action boundary so agent work is governed before it touches files, terminals, CI, payments, or production systems.</p>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;max-width:1080px;margin:0 auto;">
-      <div class="compat-card" style="cursor:default;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;max-width:1080px;margin:0 auto;" aria-label="Agentic development cycle stages">
+      <a class="cycle-card" href="/learn/feedback-loop-vs-decision-layer" rel="noopener" aria-label="Learn how Guide turns feedback into enforceable rules" onclick="try{posthog.capture('agentic_cycle_card_click',{stage:'guide'})}catch(_){}">
         <h3>Guide</h3>
         <p>Rules, standards, past thumbs-downs, workflow boundaries, and approval policies are loaded as concrete operating context instead of vague prompt advice.</p>
-      </div>
-      <div class="compat-card" style="cursor:default;">
+        <div class="card-arrow">See how feedback becomes rules →</div>
+      </a>
+      <a class="cycle-card" href="/guide" rel="noopener" aria-label="Open the setup guide for AI agents that generate plans edits and tool calls" onclick="try{posthog.capture('agentic_cycle_card_click',{stage:'generate'})}catch(_){}">
         <h3>Generate</h3>
         <p>Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and MCP-compatible agents keep generating plans, edits, and tool calls.</p>
-      </div>
-      <div class="compat-card" style="cursor:default;">
+        <div class="card-arrow">Open the agent setup guide →</div>
+      </a>
+      <a class="cycle-card" href="/learn/ac-dc-runtime-enforcement" rel="noopener" aria-label="Read the AC/DC mapping framework article" onclick="try{posthog.capture('agentic_cycle_card_click',{stage:'verify'})}catch(_){}">
         <h3>Verify</h3>
         <p>Pre-Action Checks require inspection evidence, tests, CI, screenshots, API responses, or human approval before high-risk actions proceed.</p>
-      </div>
-      <div class="compat-card" style="cursor:default;">
+        <div class="card-arrow">Read the AC/DC map →</div>
+      </a>
+      <a class="cycle-card" href="/lessons" rel="noopener" aria-label="Explore the lessons library and generated rules" onclick="try{posthog.capture('agentic_cycle_card_click',{stage:'solve'})}catch(_){}">
         <h3>Solve</h3>
         <p>Blocked failures and accepted fixes become lessons, shared rules, DPO exports, and audit events so the same mistake is not paid for again.</p>
-      </div>
+        <div class="card-arrow">Explore the lessons →</div>
+      </a>
     </div>
     <div style="max-width:900px;margin:22px auto 0;padding:16px 18px;border:1px solid rgba(74,222,128,0.28);border-radius:8px;background:rgba(74,222,128,0.07);">
       <strong style="display:block;color:var(--green);margin-bottom:6px;">ThumbGate's role: the pre-action gate between generated intent and executed action.</strong>
@@ -1040,7 +1044,7 @@ __GA_BOOTSTRAP__
     <div class="compatibility-grid">
       <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" target="_blank" rel="noopener" onclick="if(typeof posthog!=='undefined')posthog.capture('compat_claude_desktop_click',{cta:'download_claude_desktop'})" style="border-color:rgba(217,119,6,0.3);background:linear-gradient(135deg, rgba(217,119,6,0.06) 0%, var(--bg-card) 100%);">
         <h3>🧩 Claude Desktop Extension</h3>
-        <p>Install the published Claude Desktop plugin <code>.mcpb</code> bundle today. Claude Code users can add the repo marketplace immediately with <code>/plugin marketplace add</code>. No waiting for directory approval. <a href="/guide" style="color:var(--text-muted);text-decoration:underline;" onclick="event.stopPropagation();">60-second setup guide →</a></p>
+        <p>Install the published Claude Desktop plugin <code>.mcpb</code> bundle today. Claude Code users can add the repo marketplace immediately with <code>/plugin marketplace add</code>. No waiting for directory approval.</p>
         <div class="card-arrow" style="color:#d97706;">Download .mcpb bundle →</div>
       </a>
       <a class="compat-card seo-card" href="/guides/claude-code-prevent-repeated-mistakes" rel="noopener">

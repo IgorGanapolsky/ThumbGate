@@ -121,14 +121,14 @@ const BOOSTED_RISK_MIN_EXAMPLES = 3;
 const PR_THREAD_RESOLUTION_ACTION = 'pr_thread_resolution_verified_after_commit';
 const HELPER_BYPASS_ACTION = 'helper_script_modified';
 const KNOWLEDGE_ENTROPY_THRESHOLD = 0.7;
-const KNOWLEDGE_CONFLICT_STRICT_BASH_PATTERN = /\b(?:git\s+push\b|gh\s+pr\s+merge\b|gh\s+release\s+(?:create|delete|edit|upload)\b|(?:npm|yarn|pnpm)\s+publish\b|rm\s+-rf\b|git\s+reset\s+--hard\b|git\s+clean\s+-f|railway\s+(?:deploy|up)\b|gcloud\s+(?:run\s+deploy|app\s+deploy)\b|firebase\s+deploy\b|vercel\s+--prod\b|kubectl\s+(?:apply|delete)\b|terraform\s+(?:apply|destroy)\b)\b/i;
+const KNOWLEDGE_CONFLICT_STRICT_BASH_PATTERN = /\b(?:git\s+push\b|gh\s+pr\s+merge\b|gh\s+release\s+(?:create|delete|edit|upload)\b|(?:npm|yarn|pnpm)\s+publish\b|rm\s+-rf\b|git\s+reset\s+--hard\b|git\s+clean\s+-f[a-z]*|railway\s+(?:deploy|up)\b|gcloud\s+(?:run\s+deploy|app\s+deploy)\b|firebase\s+deploy\b|vercel\s+--prod\b|kubectl\s+(?:apply|delete)\b|terraform\s+(?:apply|destroy)\b)\b/i;
 const HELPER_SCRIPT_FILE_PATTERN = /(?:^|\/)(?:scripts|bin|tools|tasks|\.githooks|\.github\/workflows)\/|(?:^|\/)(?:package\.json|Makefile|justfile|Taskfile\.ya?ml)$|\.(?:sh|bash|zsh|fish|js|mjs|cjs|ts|tsx|py|rb|pl|ps1|yml|yaml)$/i;
 const PACKAGE_RUN_PATTERN = /\b(?:npm|yarn|pnpm)\s+run\s+([:@./\w-]+)\b/i;
 const HELPER_EXEC_PATTERN = /(?:^|[;&|]\s*|\b(?:bash|sh|zsh|node|python3?|ruby|perl|tsx|ts-node)\s+)(?:(?:\.?\.?\/)?(?:scripts|bin|tools|tasks|tmp|build|dist|\.tmp|\.cache)\/[^\s;&|]+|\.\/[^\s;&|]+\.(?:sh|bash|zsh|js|mjs|cjs|ts|py|rb|pl|ps1))\b/i;
 const HELPER_WRITE_PATTERN = /\b(?:cat|printf|echo|tee|npm\s+pkg\s+set|jq|node\s+-e|python3?\s+-c)\b[\s\S]{0,300}(?:>|--field|scripts\.|package\.json|(?:scripts|bin|tools|tasks|tmp|build|dist|\.tmp|\.cache)\/[^\s;&|]+|\.(?:sh|js|mjs|cjs|ts|py|rb|pl|ps1))\b/i;
 const NETWORK_OR_PROCESS_BOUNDARY_PATTERN = /\b(?:curl|wget|nc|ncat|socat|ssh|scp|rsync|ftp|python3?\s+-m\s+http\.server|node\s+-e|python3?\s+-c|perl\s+-e|ruby\s+-e|bash\s+-c|sh\s+-c|osascript|open)\b/i;
 const DOWNLOAD_EXEC_CHAIN_PATTERN = /\b(?:curl|wget)\b[\s\S]{0,400}(?:\|\s*(?:bash|sh|zsh)|&&[\s\S]{0,200}\bchmod\s+\+x\b[\s\S]{0,200}&&[\s\S]{0,120}(?:\.\/|bash|sh|node|python3?))/i;
-const DESTRUCTIVE_OR_PRIVILEGE_BOUNDARY_PATTERN = /\b(?:rm\s+-rf|chmod\s+(?:\+x|777)|chown\b|sudo\b|dd\s+if=|mkfs|git\s+reset\s+--hard|git\s+clean\s+-f|kubectl\s+(?:apply|delete)|terraform\s+(?:apply|destroy)|railway\s+(?:deploy|up)|gcloud\s+(?:run\s+deploy|app\s+deploy)|vercel\s+--prod|firebase\s+deploy)\b/i;
+const DESTRUCTIVE_OR_PRIVILEGE_BOUNDARY_PATTERN = /\b(?:rm\s+-rf|chmod\s+(?:\+x|777)|chown\b|sudo\b|dd\s+if=|mkfs|git\s+reset\s+--hard|git\s+clean\s+-f[a-z]*|kubectl\s+(?:apply|delete)|terraform\s+(?:apply|destroy)|railway\s+(?:deploy|up)|gcloud\s+(?:run\s+deploy|app\s+deploy)|vercel\s+--prod|firebase\s+deploy)\b/i;
 
 // ---------------------------------------------------------------------------
 // Enforcement posture (CEO decision 2026-06-04): warn-by-default.

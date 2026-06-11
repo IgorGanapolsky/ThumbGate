@@ -861,3 +861,21 @@ test('comparison and key landing pages expose FAQPage structured data', async ()
     assert.match(body, /"@type":\s*"Question"/, `${pagePath} must include at least one Question`);
   }
 });
+
+test('GET /media/thumbgate-demo.gif serves the animated demo GIF without an API key', async () => {
+  const res = await fetch(`${origin}/media/thumbgate-demo.gif`);
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get('content-type'), 'image/gif');
+  assert.ok(Number(res.headers.get('content-length')) > 0);
+});
+
+test('GET /media/does-not-exist.gif returns 404', async () => {
+  const res = await fetch(`${origin}/media/does-not-exist.gif`);
+  assert.equal(res.status, 404);
+});
+
+test('GET /media/../server.js is rejected (no path traversal)', async () => {
+  const res = await fetch(`${origin}/media/..%2fapi%2fserver.js`);
+  assert.ok([403, 404].includes(res.status));
+  assert.notEqual(res.status, 200);
+});

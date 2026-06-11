@@ -316,9 +316,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // so enforcement value is browsable in the agent command palette like GSD's
   // /gsd-*. Thin wrappers over existing MCP tools/CLI — no new logic, no Core dep.
   // Keep in lockstep with public-bundle-ratchet + public-core-boundary ceilings.
+  // Bumped 298 → 299 (2026-06-11) for scripts/sync-telemetry-from-prod.js, which
+  // syncs the operator-gated prod telemetry export into the local store so
+  // get_business_metrics reflects the real funnel (changeset: sync-prod-telemetry.md).
   assert.ok(
-    manifest.fileCount <= 315,
-    `npm package should stay <= 315 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 316,
+    `npm package should stay <= 316 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

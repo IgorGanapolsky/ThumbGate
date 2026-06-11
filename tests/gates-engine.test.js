@@ -1,6 +1,7 @@
 'use strict';
 
 process.env.THUMBGATE_PRO_MODE = '1';
+process.env.THUMBGATE_NO_RATE_LIMIT = '1';
 
 const { test, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
