@@ -8,6 +8,7 @@
 - Managed agents and background coding agents need receipts: which action was blocked, what evidence was required, and why it was allowed or denied.
 - Token-spend pressure makes unlimited-context dumping less attractive; ThumbGate sells scoped recall, search, context gating, and proof exports.
 - AI-authored production code raises audit expectations; ThumbGate maps corrections to rules and records enforcement evidence.
+- Memory-first runtimes such as Letta and Mem0 create more durable agents; ThumbGate complements them with scoped corrective memory, entity-linked recall, lifecycle decay, and pre-action enforcement.
 
 ## Core
 
