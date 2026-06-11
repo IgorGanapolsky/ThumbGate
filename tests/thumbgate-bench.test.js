@@ -1,5 +1,7 @@
 'use strict';
 
+process.env.THUMBGATE_NO_RATE_LIMIT = '1';
+
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
