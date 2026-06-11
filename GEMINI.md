@@ -231,3 +231,4 @@ Adopted 2026-05-12 after a full PR/branch sweep. Persisted here so every future 
 - **Rule [auto-autonomy-full-authority-lost-state-pr-management-r]**: Auto-promoted repeated pattern: "CEO: 'you idiot... why do you keep forgetting?' during a PR-management + hygiene directive. I re-inventoried the same op" (1 occurrences in 30 days)
 - **Rule [auto-promoted-mq5kff5l-0]**: NEVER MISTAKE: This is a test failure
 - **Rule [auto-test-failure]**: Auto-promoted repeated pattern: "test failure" (1 occurrences in 30 days)
+- **Rule [auto-promoted-mq9ksgcf-0]**: NEVER repeated problem context string
