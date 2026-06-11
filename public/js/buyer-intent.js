@@ -257,7 +257,7 @@
       '<p>Use Pro for self-serve proof, or buy the diagnostic when one workflow is already costing time.</p>',
       '<nav>',
       '<a data-assist-cta="assist_pro_checkout" href="' + proHref + '">Get Pro</a>',
-      '<a data-assist-cta="assist_workflow_diagnostic" href="' + diagnosticHref + '" target="_blank" rel="nofollow noopener noreferrer">Pay $499 diagnostic</a>',
+      '<a data-assist-cta="assist_workflow_diagnostic" href="' + diagnosticHref + '" rel="nofollow">Pay $499 diagnostic</a>',
       '<button type="button" data-assist-dismiss>Not now</button>',
       '</nav>'
     ].join('');
