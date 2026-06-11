@@ -199,7 +199,6 @@ Adopted 2026-05-12 after a full PR/branch sweep. Persisted here so every future 
 > The following rules were automatically derived from execution failures and thumbs-down feedback.
 > You MUST follow these constraints strictly to prevent repeated errors.
 
-- **Rule [auto-promoted-mq5bhu63-0]**: NEVER repeated problem context string
 - **Rule [auto-absolute-rule-git-flow-never-force-push-main-pr-fl]**: Auto-promoted repeated pattern: "CEO fury re: force-push to main + git-flow. Believes I force-pushed main." (1 occurrences in 30 days)
 - **Rule [auto-entity-customer]**: Auto-promoted repeated pattern: "PR hygiene lesson 2026-06-04: GitHub workflow YAML changes need actionlint plus YAML parser checks before merge; heredoc" (4 occurrences in 30 days)
 - **Rule [auto-setup-vertex-dry-run-was-accepted-but-ignored-it-e]**: Auto-promoted repeated pattern: "setup-vertex --dry-run was accepted but ignored; it enabled Vertex AI and wrote .env. Dry-run flags must never mutate cl" (1 occurrences in 30 days)
@@ -240,3 +239,4 @@ Adopted 2026-05-12 after a full PR/branch sweep. Persisted here so every future 
 - **Rule [auto-autonomy-drafts-only-override-entity-customer-exec]**: Auto-promoted repeated pattern: "CEO thumbs-down: 'why do you keep stopping?' — I kept ending turns with 'say the word and I'll do X', deferring to stand" (1 occurrences in 30 days)
 - **Rule [auto-autonomy-full-authority-lost-state-pr-management-r]**: Auto-promoted repeated pattern: "CEO: 'you idiot... why do you keep forgetting?' during a PR-management + hygiene directive. I re-inventoried the same op" (1 occurrences in 30 days)
 - **Rule [auto-promoted-mq5kff5l-0]**: NEVER MISTAKE: This is a test failure
+- **Rule [auto-test-failure]**: Auto-promoted repeated pattern: "test failure" (1 occurrences in 30 days)
