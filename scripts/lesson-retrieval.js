@@ -156,14 +156,14 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
     }
     const rule = candidate.structuredRule;
     if (rule) {
-      const cond = (rule.trigger?.condition || rule.if || '').toLowerCase();
-      if (cond && actionContext.toLowerCase().includes(cond)) {
-        conclusive = true;
-        break;
-      }
-      if (cond.startsWith('/') && cond.endsWith('/')) {
+      const cond = String(rule.trigger?.condition || rule.if || '').trim().toLowerCase();
+      if (cond.length >= 3) {
+        if (actionContext.toLowerCase().includes(cond)) {
+          conclusive = true;
+          break;
+        }
         try {
-          const regex = new RegExp(cond.slice(1, -1), 'i');
+          const regex = new RegExp(cond, 'i');
           if (regex.test(actionContext)) {
             conclusive = true;
             break;
