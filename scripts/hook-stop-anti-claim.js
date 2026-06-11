@@ -43,6 +43,21 @@ const CLAIM_PATTERNS = [
   /\beverything\s+(?:is\s+)?(?:done|working|ready)\b/i,
   /\b(?:github|repo|repository)\s+(?:about|metadata|description|topics?)\b.*\b(?:updated|verified|fixed|match(?:es|ed)?)\b/i,
   /\b(?:about|metadata|description|topics?)\b.*\b(?:updated|verified|fixed|match(?:es|ed)?)\b.*\b(?:github|repo|repository)\b/i,
+  // Added 2026-06-11 after a cross-project failure analysis: these completion
+  // claims ("all green / stable / verified / race over / tests pass") were
+  // asserted without proof and slipped past the original set. The proof-gate
+  // below suppresses them whenever the SAME turn ran a verification tool, so a
+  // "verified" claim backed by a test/curl/Read stays silent.
+  /\ball\s+(?:the\s+)?(?:tests?\s+|checks?\s+)?(?:are\s+)?green\b/i,
+  /\b(?:all\s+)?(?:tests?|checks?|ci)\s+(?:are\s+)?(?:now\s+)?passing\b/i,
+  /\ball\s+(?:tests?|checks?)\s+pass(?:ed)?\b/i,
+  /\bverified\b/i,
+  /\bconfirmed\b/i,
+  /\b(?:is|are|it'?s|now)\s+stable\b/i,
+  /\ball\s+clear\b/i,
+  /\bgood\s+to\s+go\b/i,
+  /\brace\s+(?:is\s+)?over\b/i,
+  /\bno\s+longer\s+racing\b/i,
 ];
 
 // Proof-of-verification patterns. If the SAME turn included one of these
@@ -158,12 +173,22 @@ function main() {
   const proofText = `${text}\n${toolUseSummary}`;
   if (hasProof(proofText)) return; // claim backed by proof in same turn
 
-  // Surface a system reminder for the NEXT turn. Do not hard-block.
+  // Strict mode (THUMBGATE_STRICT_ENFORCEMENT=1): hard-block the stop. Emit a
+  // Stop-hook block decision so Claude Code does NOT end the turn — the agent
+  // must run the verification (or retract) before it can stop. Default mode
+  // stays soft (a reminder for the next turn) so we don't break existing wiring.
+  if (process.env.THUMBGATE_STRICT_ENFORCEMENT === '1') {
+    const reason = `ThumbGate anti-claim gate (strict): you claimed completion ("${claim}") without a proof tool call in the same message. Run the verification (curl / grep / test / Read) and restate with the proof, or retract — do not end the turn on an unverified claim.`;
+    process.stdout.write(JSON.stringify({ decision: 'block', reason }) + '\n');
+    return;
+  }
+
+  // Default (soft): surface a system reminder for the NEXT turn. Do not hard-block.
   const reminder = [
     '⚠️ ThumbGate anti-claim gate: previous turn claimed completion',
     `   ("${claim}") without a proof tool call in the same message.`,
-    '   Per CLAUDE.md anti-lying: never claim "done / live / deployed / fixed"',
-    '   without curl / grep / test output in the SAME turn.',
+    '   Per CLAUDE.md anti-lying: never claim "done / live / deployed / fixed /',
+    '   verified / all green / stable" without curl / grep / test output in the SAME turn.',
     '   If the work really is verified, re-state the claim with the proof.',
     '   If not, retract and run the verification before re-asserting.',
   ].join('\n');
