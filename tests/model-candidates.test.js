@@ -32,6 +32,21 @@ test('model candidate catalog includes Kimi K2.6 and Qwen3.6 variants', () => {
   assert.ok(ids.has('self-hosted/deepseek-v4-flash-sglang'));
   assert.ok(ids.has('self-hosted/deepseek-v4-pro-sglang'));
   assert.ok(ids.has('research/fast-byte-latent-transformer'));
+  assert.ok(ids.has('nousresearch/hermes-3-llama-3.1-70b'));
+  assert.ok(ids.has('anthropic/claude-opus-4-8'));
+  assert.ok(ids.has('google/gemini-3.1-pro-preview'));
+});
+
+test('recommendCandidates prefers Nous Research Hermes for skill synthesis', () => {
+  const report = recommendCandidates({
+    workload: 'self-improving-agent-skill-synthesis',
+    provider: 'openrouter',
+    maxCandidates: 2,
+  });
+
+  assert.equal(report.recommended[0].id, 'nousresearch/hermes-3-llama-3.1-70b');
+  assert.ok(report.recommended[0].matchedStrengths.includes('self-evolving'));
+  assert.ok(report.recommended[0].matchedStrengths.includes('skill-synthesis'));
 });
 
 test('recommendCandidates prefers GPT-5.5 for dashboard analysis', () => {

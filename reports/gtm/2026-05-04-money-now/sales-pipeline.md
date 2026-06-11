@@ -1,6 +1,6 @@
 # Sales Pipeline
 
-Updated: 2026-06-06T19:18:17Z
+Updated: 2026-06-11T16:43:55Z
 
 This is the first-dollar truth table. Posts are not sales; only stage movement counts.
 
@@ -23,7 +23,7 @@ This is the first-dollar truth table. Posts are not sales; only stage movement c
 - paid: 0
 - lost: 0
 
-## Current Operator Queue (2026-06-06)
+## Current Operator Queue (2026-06-11)
 
 - Untouched self-serve leads: none in the latest-per-lead pipeline state
 - Contacted warm Reddit follow-ups: `reddit_deep_ad1959_r_cursor`, `reddit_game_of_kton_r_cursor`, `reddit_leogodin217_r_claudecode`, `reddit_enthu_cutlet_1337_r_claudecode`
@@ -31,7 +31,7 @@ This is the first-dollar truth table. Posts are not sales; only stage movement c
 - Deprecated replied lead: `aiventyx_qaiser_marketplace_listings` should not be worked further after the CEO pivot away from Aiventyx.
 - Highest-ROI next step: send the four warm Reddit follow-ups before touching new Skool setup work or lower-intent GitHub targets.
 
-Note: the live stage source is `.thumbgate/sales-pipeline.jsonl`. Use the latest event per `leadId` as the truth source because the ledger is append-only and older rows remain in place. `npm run sales:pipeline -- summary` still exposes a top-level `contacted` count of `24`, so treat the `byStage` mix (`22` contacted, `2` replied) as the actionable truth. The lead blocks below remain the campaign pool, but the top summary and operator queue above are the current action layer for June 6, 2026.
+Note: the live stage source is `.thumbgate/sales-pipeline.jsonl`. Use the latest event per `leadId` as the truth source because the ledger is append-only and older rows remain in place. `npm run sales:pipeline -- summary` still exposes a top-level `contacted` count of `24`, so treat the `byStage` mix (`22` contacted, `2` replied) as the actionable truth. The lead blocks below remain the campaign pool, but the top summary and operator queue above are the current action layer for June 11, 2026.
 
 ## Lead Queue
 ### reddit_deep_ad1959_r_cursor

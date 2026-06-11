@@ -158,6 +158,18 @@
       "rollout": "Use with incident-response runbooks and secrets scanner output from GitGuardian or internal tooling."
     },
     {
+      "id": "require-local-dependency-vulnerability-scan",
+      "name": "Require local dependency vulnerability scan before installation",
+      "category": "Supply Chain Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(npm install|pnpm add|yarn add|bun add|npm i|pnpm i|yarn i).*(vulnerable|cve|high|critical|osv|cve-lite)",
+      "problem": "Blocks package installations that introduce dependencies containing known high-severity or critical vulnerabilities (CVEs) before they are written to the lockfile.",
+      "roi": "Prevents AI agents from introducing vulnerable packages into the workspace. Complements zero-egress local-first scanning toolings (like OWASP CVE Lite CLI) directly at the terminal level.",
+      "rollout": "Enable on every repo where agents can install dependencies or modify lockfiles."
+    },
+    {
       "id": "require-section-tree-before-multimodal-answer",
       "name": "Require section tree before multimodal answers",
       "category": "Document RAG Safety",
@@ -576,6 +588,78 @@
       "problem": "Claw agents have broad device-level (local/shared) file system access. Must be strictly gated, especially in on-prem/air-gapped enterprise environments where most data lives.",
       "roi": "Directly supports the hybrid/on-prem reality emphasized in EnterpriseClaw coverage. Prevents broad access from becoming broad exfil or corruption. Ties to ThumbGate's existing path globs and protected files.",
       "rollout": "Use existing protected-paths + new claw-specific rules. Start with read-only for most, explicit approval for writes on sensitive dirs."
+    },
+    {
+      "id": "block-unauthorized-multi-channel-posts",
+      "name": "Block unauthorized multi-channel posts by Hermes Agent",
+      "category": "Nous Research Hermes Agent Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(slack|telegram|discord|signal|whatsapp|send_message|post_message|channel_post).*(credentials|api_key|token|auth|password|unreviewed|unapproved)",
+      "problem": "Hermes Agent can post directly to messaging platforms. This gate prevents leaked credentials or unapproved messages from being posted publicly.",
+      "roi": "High: Prevents public-facing compliance violations, credential leaks, and messaging spam across Telegram, Slack, and Discord.",
+      "rollout": "Enable by default for agents connected to external communication channels."
+    },
+    {
+      "id": "prevent-infinite-skill-synthesis-loops",
+      "name": "Prevent infinite skill synthesis loops",
+      "category": "Nous Research Hermes Agent Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "medium",
+      "pattern": "(hermes|skill synthesis|write skill|synthesize skill|evolve skill|self-improve).*(loop|repeated|stuck|regenerate|no progress)",
+      "problem": "Hermes Agent can get stuck repeatedly rewriting or generating the same skills in Markdown format without resolving the user's core task.",
+      "roi": "Reduces token burn and infinite loop execution loops by gating repeated skill write attempts.",
+      "rollout": "Warn/block when skill edits occur more than 3 times within the same session context."
+    },
+    {
+      "id": "validate-synthesized-skills-against-rules",
+      "name": "Validate synthesized skills against prevention rules",
+      "category": "Nous Research Hermes Agent Governance",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(write skill|synthesize skill|create skill|update skill).*(override|bypass|ignore|violate).*(prevention rule|gate|thumbgate)",
+      "problem": "Hermes Agent's self-improvement loop can write new skills that conflict with or attempt to bypass established ThumbGate prevention rules.",
+      "roi": "Preserves security invariants by ensuring that synthesized skills never write code patterns blocked by active ThumbGate rules.",
+      "rollout": "Scan synthesized skill markdown content for pattern overlap with active prevention rules before writing to the skills directory."
+    },
+    {
+      "id": "require-human-in-the-loop-pause",
+      "name": "Enforce Human-in-the-Loop pause for critical decisions",
+      "category": "AI Engineering Stack Safety",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "(agent_sdk|openrouter_sdk|human_in_loop|auto_resolve).*(auto_resolve|bypass|skip_pause|critical_action)",
+      "problem": "Prevents autonomous agents using the Agent SDK from auto-resolving critical decisions (such as model migration, credential rotations, or financial transactions) without pausing for explicit human approval.",
+      "roi": "Ensures human oversight remains functional on highest-risk actions, preventing the agent from acting entirely unsupervised on critical gates.",
+      "rollout": "Turn on for all production deployments utilizing OpenRouter or other Agent SDKs with auto-resolve capabilities."
+    },
+    {
+      "id": "careful-mode",
+      "name": "Enforce careful mode for destructive commands",
+      "category": "On-Demand Dynamic Gating",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "critical",
+      "pattern": "(rm\\s+-rf|drop\\s+table|force-push|git\\s+push\\s+-[fF]|git\\s+push\\s+--force|kubectl\\s+delete)",
+      "problem": "Blocks dangerous or destructive command sequences (rm -rf, DROP TABLE, force-push, kubectl delete) during sessions where careful mode is activated.",
+      "roi": "Protects production environments and main branches from accidental destructive commands executed by autonomous agents.",
+      "rollout": "Enable dynamically on-demand using /careful or env overrides when executing in sensitive or production workspaces."
+    },
+    {
+      "id": "freeze-mode",
+      "name": "Freeze directory edits",
+      "category": "On-Demand Dynamic Gating",
+      "signal": "👎",
+      "defaultAction": "block",
+      "severity": "high",
+      "pattern": "^freeze_edit_outside_path.*",
+      "problem": "Blocks any file edit or write tool call that is not within a specified active/target directory.",
+      "roi": "Restricts agent edits to a controlled workspace, preventing scope drift, accidental modification of configuration or source files, and unwanted global refactors during focused task debugging.",
+      "rollout": "Enable dynamically on-demand using /freeze to specify the only path(s) the agent is allowed to write to during the session."
     }
   ]
 }

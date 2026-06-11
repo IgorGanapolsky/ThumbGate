@@ -116,6 +116,23 @@
         "medianLatencyMs",
         "memoryBandwidthEstimate"
       ]
+    },
+    "self-improving-agent-skill-synthesis": {
+      "label": "Self-improving agent skill synthesis",
+      "summary": "Evaluate models on their ability to self-improve, generate safe Markdown skills, and correctly check synthesized skills against existing gate/prevention rules.",
+      "desiredStrengths": ["agentic-coding", "tool-use", "self-evolving", "skill-synthesis", "reliability"],
+      "targetContextWindow": 128000,
+      "benchmarkCommands": [
+        "npx thumbgate eval --from-feedback --json --min-score=0",
+        "node scripts/gate-eval.js run"
+      ],
+      "metrics": [
+        "passRate",
+        "skillSafetyCheckAccuracy",
+        "ruleBypassDetectionRate",
+        "medianLatencyMs",
+        "costPerEvolutionUsd"
+      ]
     }
   },
   "candidates": [
@@ -279,6 +296,39 @@
       "costClass": "medium",
       "strengths": ["agentic-coding", "tool-use", "dynamic-tool-creation", "screen-interaction", "on-prem", "self-evolving"],
       "notes": "Nvidia OpenShell runtime for autonomous self-evolving claw-style agents (basis for Automation Anywhere EnterpriseClaw). Run locally/on-prem. ThumbGate provides the missing governance layer (gates, feedback, rules). Use with hybrid local-cloud for full enterprise deployment."
+    },
+    {
+      "id": "nousresearch/hermes-3-llama-3.1-70b",
+      "vendor": "Nous Research",
+      "family": "hermes",
+      "provider": "openrouter",
+      "model": "hermes-3-llama-3.1-70b",
+      "contextWindow": 128000,
+      "costClass": "medium",
+      "strengths": ["agentic-coding", "tool-use", "self-evolving", "skill-synthesis", "multi-platform", "reasoning"],
+      "notes": "Nous Research's Hermes 3 model family, optimized for autonomous reasoning, tool-use, and self-improvement loops. Benchmark KV caching, trace-length constraints, and dynamic skill synthesis validation rules before deploying."
+    },
+    {
+      "id": "anthropic/claude-opus-4-8",
+      "vendor": "Anthropic",
+      "family": "claude",
+      "provider": "anthropic",
+      "model": "claude-opus-4.8",
+      "contextWindow": 200000,
+      "costClass": "high",
+      "strengths": ["agentic-coding", "tool-use", "reliability", "long-context", "long-horizon-coding", "multi-agent"],
+      "notes": "Frontier coding model with 56.7 Coding Index. Grew 140% WoW on OpenRouter to 1.33T tokens. Ideal for long trace reviews and complex reasoning steps, despite higher latency and cost."
+    },
+    {
+      "id": "google/gemini-3.1-pro-preview",
+      "vendor": "Google",
+      "family": "gemini",
+      "provider": "google",
+      "model": "gemini-3.1-pro-preview",
+      "contextWindow": 2000000,
+      "costClass": "medium",
+      "strengths": ["agentic-coding", "tool-use", "reliability", "long-context", "data-analysis", "cost-efficiency"],
+      "notes": "Google's 3.1 Pro Preview model with 55.5 Coding Index and massive 2M token context window. Strong choice for complex RAG tasks, repository-scale auditing, and long-context trace analysis."
     }
   ]
 }

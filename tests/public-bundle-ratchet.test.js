@@ -83,7 +83,8 @@ const path = require('node:path');
 // 293 → 310: 2026-06-08 brand assets, icons, SVGs, and buyer intent scripts added for dashboard and local parity.
 // 310 → 315: 2026-06-10 five discoverable /thumbgate-* slash-commands added to .claude/commands/ and scripts/secret-redaction.js.
 // 315 → 316: 2026-06-11 scripts/sync-telemetry-from-prod.js added.
-const BASELINE_FILE_COUNT = 316;
+// 316 → 317: 2026-06-11 scripts/tool-contract-validator.js added.
+const BASELINE_FILE_COUNT = 317;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

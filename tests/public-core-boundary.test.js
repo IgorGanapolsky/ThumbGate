@@ -152,10 +152,9 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // which pulls the real web funnel from the operator-gated /v1/telemetry/export
   // into the local store so get_business_metrics stops reading an empty ledger.
   // Public-shell observability tool, no Core dependency. Keep in lockstep with
-  // BASELINE_FILE_COUNT in public-bundle-ratchet.test.js and the fileCount
-  // ceiling in package-boundary.test.js.
+  // Bumped 316 -> 317 (2026-06-11) to ship scripts/tool-contract-validator.js.
   const files = npmPackFiles();
-  const CEILING = 316;
+  const CEILING = 317;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

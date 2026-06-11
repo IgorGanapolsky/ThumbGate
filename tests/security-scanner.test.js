@@ -121,6 +121,13 @@ describe('scanCode — crypto weakness detection', () => {
     assert.equal(result.detected, true);
     assert.ok(result.findings.some(f => f.id === 'hardcoded-secret'));
   });
+
+  it('includes remediation advice in findings', () => {
+    const code = `eval(req.body.code);`;
+    const result = scanCode(code, 'server.js');
+    assert.equal(result.detected, true);
+    assert.ok(result.findings[0].remediation.includes('JSON.parse'));
+  });
 });
 
 describe('scanCode — file type filtering', () => {
@@ -148,7 +155,11 @@ describe('scanDependencyChange — new dependency detection', () => {
     const newPkg = JSON.stringify({ dependencies: { 'evil-pkg': '*' } });
     const result = scanDependencyChange(oldPkg, newPkg);
     assert.equal(result.detected, true);
-    assert.ok(result.findings.some(f => f.id === 'dep-version-wildcard'));
+    const finding = result.findings.find(f => f.id === 'dep-version-wildcard');
+    assert.ok(finding);
+    assert.ok(finding.remediation);
+    assert.equal(typeof finding.reachable, 'boolean');
+    assert.ok(['imported', 'unimported'].includes(finding.reachability));
   });
 
   it('detects latest version in new dependency', () => {

@@ -18,6 +18,7 @@ test('gate template library exposes curated templates with shared rollout metada
   assert.ok(templates.some((template) => template.id === 'require-diff-impact-before-central-edit'));
   assert.ok(templates.some((template) => template.category === 'Knowledge Graph Safety'));
   assert.ok(templates.some((template) => template.id === 'block-package-lifecycle-secret-harvest'));
+  assert.ok(templates.some((template) => template.id === 'require-local-dependency-vulnerability-scan'));
   assert.ok(templates.some((template) => template.category === 'Supply Chain Safety'));
   assert.ok(templates.some((template) => template.category === 'Document RAG Safety'));
   assert.ok(templates.some((template) => template.id === 'require-image-pointer-grounding'));
@@ -26,6 +27,12 @@ test('gate template library exposes curated templates with shared rollout metada
   assert.ok(templates.some((template) => template.category === 'AI Engineering Stack Safety'));
   assert.ok(templates.some((template) => template.id === 'require-ai-gateway-control-plane'));
   assert.ok(templates.some((template) => template.id === 'require-agent-context-freshness'));
+  assert.ok(templates.some((template) => template.id === 'require-human-in-the-loop-pause'));
+  assert.ok(templates.some((template) => template.category === 'Nous Research Hermes Agent Governance'));
+  assert.ok(templates.some((template) => template.id === 'block-unauthorized-multi-channel-posts'));
+  assert.ok(templates.some((template) => template.id === 'careful-mode'));
+  assert.ok(templates.some((template) => template.id === 'freeze-mode'));
+  assert.ok(templates.some((template) => template.category === 'On-Demand Dynamic Gating'));
   assert.ok(templates.every((template) => template.category));
   assert.ok(templates.every((template) => template.problem));
   assert.ok(templates.every((template) => template.roi));
@@ -40,10 +47,11 @@ test('gate template library summary groups templates by category and action', ()
   assert.equal(summary.categories['Git Safety'], 1);
   assert.equal(summary.categories['Verification'], 1);
   assert.equal(summary.categories['Knowledge Graph Safety'], 3);
-  assert.equal(summary.categories['Supply Chain Safety'], 4);
+  assert.equal(summary.categories['Supply Chain Safety'], 5);
   assert.equal(summary.categories['Document RAG Safety'], 7);
   assert.equal(summary.categories['Sparse Attention Runtime Safety'], 6);
-  assert.equal(summary.categories['AI Engineering Stack Safety'], 5);
+  assert.equal(summary.categories['AI Engineering Stack Safety'], 6);
+  assert.equal(summary.categories['On-Demand Dynamic Gating'], 2);
   assert.equal(summary.byAction.block, templates.filter((template) => template.defaultAction === 'block').length);
   assert.equal(summary.byAction.warn, templates.filter((template) => template.defaultAction === 'warn').length);
   assert.equal(summary.byAction.allow, 1);

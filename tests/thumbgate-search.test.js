@@ -307,7 +307,7 @@ test('MCP search_thumbgate rejects a missing query', async () => {
         arguments: {},
       },
     }),
-    /query is required/
+    /query/
   );
 });
 

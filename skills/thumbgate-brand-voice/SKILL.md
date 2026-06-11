@@ -25,7 +25,10 @@ messages, or internal notes.
    too-flat rewrites. Match the "good" column; never the other two.
 3. Read [`content-formats.md`](./content-formats.md) — which traits amplify or
    recede per channel, with on/off-brand examples per channel.
-4. Draft. Then **stress-test**: reread your draft against the "what we aren't"
+4. Read [`voice_profile.md`](./voice_profile.md) — for specific pacing, tone, and vocabulary guidelines.
+5. Read [`body_of_work.md`](./body_of_work.md) — to anchor the core technical thesis and foundational opinions of ThumbGate.
+6. Consult [`tokens.json`](./tokens.json) — for color palettes, typography, and styling constraints when generating assets.
+7. Draft. Then **stress-test**: reread your draft against the "what we aren't"
    list and the channel rules. If a sentence could appear verbatim on a generic
    "AI governance platform" site, rewrite it until it could only be ThumbGate.
 

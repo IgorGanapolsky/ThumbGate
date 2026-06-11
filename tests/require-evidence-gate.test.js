@@ -177,5 +177,5 @@ test('session_report windowHours clamps invalid input to defaults', async () => 
 });
 
 test('require_evidence_for_claim rejects non-string claim', async () => {
-  await assert.rejects(() => callTool('require_evidence_for_claim', { claim: 123 }), /claim is required/);
+  await assert.rejects(() => callTool('require_evidence_for_claim', { claim: 123 }), /claim/);
 });

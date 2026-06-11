@@ -674,6 +674,21 @@ function buildEstimateUncertaintyResponse(args = {}) {
 
 async function callTool(name, args = {}) {
   assertToolAllowed(name, getActiveMcpProfile());
+
+  // Validate tool input contract against schema
+  const { TOOLS } = require('../../scripts/tool-registry');
+  const toolDef = TOOLS.find(t => t.name === name);
+  if (toolDef && toolDef.inputSchema) {
+    const { validateToolContract } = require('../../scripts/tool-contract-validator');
+    const validation = validateToolContract(toolDef.inputSchema, args);
+    if (!validation.valid) {
+      const err = new Error(`Tool contract violation on '${name}': ${validation.errors.join('; ')}`);
+      err.errorCategory = 'contract';
+      err.isRetryable = false;
+      throw err;
+    }
+  }
+
   if (name !== 'workflow_sentinel' && process.env.THUMBGATE_DISABLE_MCP_FIREWALL !== '1') {
     const firewallResult = (await evaluateGatesAsync(name, args)) || evaluateSecretGuard({ tool_name: name, tool_input: args });
     if (firewallResult && firewallResult.decision === 'deny') {

@@ -777,6 +777,10 @@ async function runProof(options = {}) {
         'plugins/codex-profile/.mcp.json',
         '.agents/plugins/marketplace.json',
         'adapters/amp/skills/thumbgate-feedback/SKILL.md',
+        'adapters/hermes/HERMES.md',
+        'adapters/hermes/.mcp.json',
+        'adapters/hermes/config.toml',
+        'adapters/hermes/opencode.json',
       ];
       mustExist.forEach((file) => {
         check(fs.existsSync(path.join(ROOT, file)), `missing adapter file: ${file}`);

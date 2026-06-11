@@ -126,6 +126,7 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/statusline-cache-read.js',
     'scripts/statusline.sh',
     'scripts/statusline-meta.js',
+    'scripts/tool-contract-validator.js',
     'scripts/tool-registry.js',
     'scripts/trajectory-scorer.js',
     'skills/thumbgate/SKILL.md',
@@ -319,9 +320,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 298 → 299 (2026-06-11) for scripts/sync-telemetry-from-prod.js, which
   // syncs the operator-gated prod telemetry export into the local store so
   // get_business_metrics reflects the real funnel (changeset: sync-prod-telemetry.md).
+  // Bumped 316 -> 317 (2026-06-11) to ship scripts/tool-contract-validator.js.
   assert.ok(
-    manifest.fileCount <= 316,
-    `npm package should stay <= 316 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 317,
+    `npm package should stay <= 317 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -439,9 +441,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 4.35 MB -> 4.40 MB (2026-06-07) for scripts/activation-quickstart.js
   // (the `thumbgate quickstart` onboarding runtime). Measured ~4.356 MB.
   // Bumped 4.40 MB -> 4.60 MB (2026-06-08) for dashboard visual assets, icons, SVGs, and buyer intent scripts.
+  // Bumped 4.60 MB -> 4.65 MB (2026-06-11) for tool contract validator.
   assert.ok(
-    manifest.unpackedSize <= 4_600_000,
-    `npm package should stay <= 4.60 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_650_000,
+    `npm package should stay <= 4.65 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

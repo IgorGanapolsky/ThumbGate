@@ -1,11 +1,11 @@
 # Money Now Actions
 
-Updated: 2026-06-06T20:19:00Z
+Updated: 2026-06-11T16:45:00Z
 
 Use this as the operator cockpit for the current run. Focus is **individual operator revenue** with the correct offer routing: **Pro ($19/mo or $149/yr)** for self-serve intent, **Workflow Hardening Diagnostic ($499)** when pain is real but scope is unclear, and **Workflow Hardening Sprint ($1500)** when one workflow owner needs proof-backed hardening. Teams and Aiventyx are deprecated per CEO pivot.
 
 Action-time approval card for any outbound action:
-- `reports/gtm/2026-05-04-money-now/action-time-approval-2026-06-03.md`
+- `reports/gtm/2026-05-04-money-now/action-time-approval-2026-06-11.md`
 
 ## Current Revenue State
 - 30d visitors: 6169
@@ -13,20 +13,21 @@ Action-time approval card for any outbound action:
 - Paid orders: 4
 - Checkout starts: 133
 - Booked: `$149`
-- Live sales pipeline re-verified at `2026-06-06T19:18:17Z`: `24` active leads, `22` contacted, `2` replied, `0` paid.
+- Live sales pipeline re-verified at `2026-06-11T16:43:55Z`: `24` active leads, `22` contacted, `2` replied, `0` paid.
 - Pipeline: focus on **Operator Lab** conversion with Pro for self-serve leads and Diagnostic/Sprint for warm pain-first leads.
 - Revenue bottleneck: follow-up discipline on already-contacted warm leads; there is no untouched self-serve batch left in the latest-per-lead state.
-- Current promotion/measurement state on 2026-06-06:
-  - local `--offer=operator-lab` dry-run re-verified in this run and still returns `6` previews with all media assets present
+- Current promotion/measurement state on 2026-06-11:
+  - local `--offer=operator-lab` dry-run re-verified in this run and still returns `6` previews with `0` errors, but every preview points at missing `docs/marketing/assets/*` media files
   - local dry-run still shows `accountCount: 0` for every platform in this runtime, so live publish/schedule should stay in GitHub Actions with secrets
   - dry-run payload still confirms the workflow copy is targeting `offer: operator-lab`
-  - local shell still has no `ZERNIO_API_KEY` loaded at `2026-06-06T19:18:17Z`, so this runtime remains preview-only for Zernio-backed publishing
-  - Zernio analytics re-check at `2026-06-06T19:17:44Z` still shows `0/6` healthy platforms and `0` rows in the last `24h`
+  - the current checkout still does not contain `docs/marketing/assets/`, so the local promo path is copy-preview-only until those assets are restored
+  - local shell still has no `ZERNIO_API_KEY` loaded at `2026-06-11T16:42:34Z`, so this runtime remains preview-only for Zernio-backed publishing
+  - Zernio analytics re-check at `2026-06-11T16:42:34Z` still shows `0/6` healthy platforms and `0` rows in the last `24h`
   - local Zernio status still points to the same likely causes: missing/revoked `ZERNIO_API_KEY`, analytics paywall, or disconnected accounts
-  - Skool public-page verification remains blocked in the headless reader runtime, so public-surface claims still require browser-authenticated readback
+  - Skool public-page verification remains blocked in the headless reader runtime; `node scripts/skool-reader.js --community thumbgate-operator-lab-6000 --limit 5 --format markdown` still fails with `[skool-reader] fetch failed`
   - GitHub promo workflow file still defaults to `offer: operator-lab`
-  - official Skool help re-verified in this run still supports the current free-group posture: Discovery FAQ updated `April 8, 2026`, pricing updated `October 28, 2025`, About page updated `December 9, 2025`, Analytics definitions updated `November 24, 2025`, Payments FAQ updated `April 22, 2026`, and payouts setup updated `January 22, 2026`
-  - refreshed requirements brief: `reports/gtm/2026-05-04-community-course-promo/skool-platform-requirements-2026-06-06.md`
+  - official Skool help re-verified in this run still supports the current free-group posture: Discovery FAQ updated `April 8, 2026`, discovery visibility checklist updated `April 15, 2026`, pricing updated `October 28, 2025`, About page updated `December 9, 2025`, Payments FAQ updated `April 22, 2026`, payouts setup updated `January 22, 2026`, and payout status updated `May 5, 2026`
+  - refreshed requirements brief: `reports/gtm/2026-05-04-community-course-promo/skool-platform-requirements-2026-06-11.md`
 
 ## Do First
 1. Follow up the 4 already-contacted warm Reddit leads with the pain-confirming Diagnostic/Sprint bump.
@@ -36,7 +37,7 @@ Action-time approval card for any outbound action:
 5. After each send, run that row's logging command from `operator-send-now.md`.
 6. Treat the warm Reddit four-pack as A1 because it is still the highest-intent queue and the fastest path to either Diagnostic (`$499`) or Sprint (`$1500`).
 
-## Top Send Queue (Individual Focus, 2026-06-06)
+## Top Send Queue (Individual Focus, 2026-06-11)
 
 ### 1. reddit_deep_ad1959_r_cursor
 - Contact: https://www.reddit.com/user/Deep_Ad1959/

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "thumbgate": {
+      "type": "local",
+      "command": [
+        "npx",
+        "--yes",
+        "--package",
+        "thumbgate@1.26.8",
+        "thumbgate",
+        "serve"
+      ],
+      "enabled": true
+    }
+  },
+  "notes": "For Nous Research Hermes Agent: enable ThumbGate gates for multi-channel posts safety, infinite skill synthesis loops, and skill validation. See adapters/hermes/HERMES.md. Use new model candidates (nousresearch/hermes-3-llama-3.1-70b) and workloads (self-improving-agent-skill-synthesis) with gate templates in 'Nous Research Hermes Agent Governance' category."
+}
