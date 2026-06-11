@@ -321,9 +321,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // syncs the operator-gated prod telemetry export into the local store so
   // get_business_metrics reflects the real funnel (changeset: sync-prod-telemetry.md).
   // Bumped 316 -> 317 (2026-06-11) to ship scripts/tool-contract-validator.js.
+  // Bumped 317 -> 321 (2026-06-11) to ship Letta adapter, async-eval-observability,
+  // eval-rag, agent-memory-lifecycle, and stripe-checkout-diagnostic.
   assert.ok(
-    manifest.fileCount <= 317,
-    `npm package should stay <= 317 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 321,
+    `npm package should stay <= 321 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -440,11 +442,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // queue bundle ~4.302 MB; bump restores a one-normal-PR headroom buffer.
   // Bumped 4.35 MB -> 4.40 MB (2026-06-07) for scripts/activation-quickstart.js
   // (the `thumbgate quickstart` onboarding runtime). Measured ~4.356 MB.
-  // Bumped 4.40 MB -> 4.60 MB (2026-06-08) for dashboard visual assets, icons, SVGs, and buyer intent scripts.
   // Bumped 4.60 MB -> 4.65 MB (2026-06-11) for tool contract validator.
+  // Bumped 4.65 MB -> 4.70 MB (2026-06-11) for Letta adapter and evaluation scripts.
   assert.ok(
-    manifest.unpackedSize <= 4_650_000,
-    `npm package should stay <= 4.65 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_700_000,
+    `npm package should stay <= 4.70 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

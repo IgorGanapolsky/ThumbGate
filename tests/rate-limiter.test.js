@@ -53,7 +53,7 @@ describe('rate-limiter', () => {
 
   it('allows 2 capture_feedback events per day on free tier, then nudges Pro', () => {
     assert.equal(rateLimiter.FREE_TIER_LIMITS.capture_feedback.daily, 2);
-    assert.equal(rateLimiter.FREE_TIER_LIMITS.capture_feedback.lifetime, 25);
+    assert.equal(rateLimiter.FREE_TIER_LIMITS.capture_feedback.lifetime, 10);
     for (let i = 0; i < 2; i++) {
       const result = rateLimiter.checkLimit('capture_feedback');
       assert.equal(result.allowed, true, `call ${i + 1} should be allowed`);
@@ -62,7 +62,7 @@ describe('rate-limiter', () => {
     assert.equal(blocked.allowed, false, 'call 3 should be blocked on the free daily limit');
     assert.equal(blocked.limitType, 'daily');
     assert.match(blocked.message, /Daily limit reached/i);
-    assert.match(blocked.message, /2 captures\/day \(25 total\)/i);
+    assert.match(blocked.message, /2 captures\/day \(10 total\)/i);
     assert.match(blocked.message, /Upgrade|Pro/i);
   });
 

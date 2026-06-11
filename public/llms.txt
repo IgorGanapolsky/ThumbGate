@@ -13,7 +13,7 @@
 ## Core
 
 - [Pretix + Stripe Connect Marketplaces (Hilltown case study)](https://thumbgate.ai/learn/pretix-stripe-connect-marketplaces): How a multi-venue Stripe Connect plugin was shipped on Pretix with venues as Merchant of Record. M1 $1,350 net + M2 $900 net + M3 $1,500 escrow funded.
-- [Pricing](https://thumbgate.ai/pricing): Free local CLI with 2 captures/day, 25 total captures, and 3 active rules; Pro $19/mo or $149/yr; Workflow Hardening Sprint is intake-led and custom-scoped.
+- [Pricing](https://thumbgate.ai/pricing): Free local CLI with 2 captures/day, 10 total captures, and 3 active rules; Pro $19/mo or $149/yr; Workflow Hardening Sprint is intake-led and custom-scoped.
 - [Pro checkout](https://thumbgate.ai/checkout/pro): Personal enforcement proof, recall, hosted sync, local dashboard, DPO export.
 - [Workflow Hardening Sprint](https://thumbgate.ai/#workflow-sprint-intake): Intake-led offer for one repeated AI-agent failure, one workflow owner, and one proof plan.
 - [Setup guide](https://thumbgate.ai/guide): `npx thumbgate init` for Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode.

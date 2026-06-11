@@ -128,7 +128,7 @@ test('landing pricing section compares plan capabilities and limits clearly', as
   const html = await res.text();
 
   assert.match(html, /Compare plans at a glance/);
-  assert.match(html, /2\/day, 25 total/);
+  assert.match(html, /2\/day, 10 total/);
   assert.match(html, /3 active rules/);
   assert.match(html, /\$19\/mo or \$149\/yr/);
   assert.match(html, /Custom — scoped after intake/);

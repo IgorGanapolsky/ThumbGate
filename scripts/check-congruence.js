@@ -344,8 +344,8 @@ async function main() {
     'public/index.html must mention the linked feedback session flow'
   );
   check(
-    /2 captures\/day/i.test(landingHtml) && /25 total/i.test(landingHtml),
-    'public/index.html must advertise the truthful free-tier capture limits (5/day, 25 total)'
+    /2 captures\/day/i.test(landingHtml) && /10 total/i.test(landingHtml),
+    'public/index.html must advertise the truthful free-tier capture limits (2/day, 10 total)'
   );
   check(
     /3 (active )?(auto-promoted )?prevention rules/i.test(landingHtml),

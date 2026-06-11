@@ -84,7 +84,8 @@ const path = require('node:path');
 // 310 → 315: 2026-06-10 five discoverable /thumbgate-* slash-commands added to .claude/commands/ and scripts/secret-redaction.js.
 // 315 → 316: 2026-06-11 scripts/sync-telemetry-from-prod.js added.
 // 316 → 317: 2026-06-11 scripts/tool-contract-validator.js added.
-const BASELINE_FILE_COUNT = 317;
+// 317 → 321: 2026-06-11 Letta adapter, async-eval-observability, eval-rag, agent-memory-lifecycle, and stripe-checkout-diagnostic added.
+const BASELINE_FILE_COUNT = 321;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

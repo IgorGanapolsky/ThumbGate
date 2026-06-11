@@ -33,9 +33,9 @@ Use this card when requesting confirmation for any revenue or promo action from 
   - `timezone=America/New_York`
 - Current evidence:
   - local dry-run re-verified in this run and returns `6` previews plus `0` errors
-  - asset resolution currently points at missing `docs/marketing/assets/*` files through `public/assets/skool/*` symlinks
+  - asset resolution currently points at missing `docs/marketing/assets/*` files, and this checkout also lacks `public/assets/skool/` as a fallback layer
   - local runtime still shows `accountCount: 0` on all `6` platform previews
-  - Zernio analytics status re-verified at `2026-06-11T14:41:05Z` and is still dark at `0/6` healthy platforms
+  - Zernio analytics status re-verified at `2026-06-11T18:45:22Z` and is still dark at `0/6` healthy platforms
   - headless Skool readback failed again in this run with `[skool-reader] fetch failed`
 - Confirmation needed because: publish/schedule changes third-party state
 

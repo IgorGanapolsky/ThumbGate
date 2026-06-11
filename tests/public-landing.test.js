@@ -172,8 +172,8 @@ test('public landing page shows an at-a-glance plan comparison matrix with consi
   assert.match(landingPage, /Pro<br>/);
   assert.match(landingPage, /Enterprise<br>/);
   // Free-tier numbers must match what scripts/rate-limiter.js actually enforces
-  // (2 captures/day, 25 total, 3 active rules) — drift guard against README/card skew.
-  assert.match(landingPage, /2\/day \(25 total\)/);
+  // (2 captures/day, 10 total, 3 active rules) — drift guard against README/card skew.
+  assert.match(landingPage, /2\/day \(10 total\)/);
   // Enterprise is contact-sales; no seat price ladder anywhere on the page.
   assert.doesNotMatch(landingPage, /\$49\s*\/\s*seat\s*\/\s*mo/);
 });

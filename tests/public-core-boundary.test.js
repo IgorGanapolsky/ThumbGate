@@ -153,8 +153,10 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // into the local store so get_business_metrics stops reading an empty ledger.
   // Public-shell observability tool, no Core dependency. Keep in lockstep with
   // Bumped 316 -> 317 (2026-06-11) to ship scripts/tool-contract-validator.js.
+  // Bumped 317 -> 321 (2026-06-11) to ship Letta adapter, async-eval-observability,
+  // eval-rag, agent-memory-lifecycle, and stripe-checkout-diagnostic.
   const files = npmPackFiles();
-  const CEILING = 317;
+  const CEILING = 321;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

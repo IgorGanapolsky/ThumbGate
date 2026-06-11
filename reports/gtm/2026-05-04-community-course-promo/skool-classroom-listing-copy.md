@@ -1,6 +1,6 @@
 # Skool Classroom Listing Copy
 
-Updated: 2026-06-05T10:54:47Z
+Updated: 2026-06-11T19:10:00Z
 
 Guardrail: do not publish or edit the live Classroom without action-time confirmation.
 
@@ -33,6 +33,12 @@ Official references:
 - Access rationale: keep the first course `Open` so Discovery traffic can convert into the repeated-mistake posting loop without a paywall or unlock friction.
 - Publish rule: after pasting the copy, confirm the page toggle is `published` and the Classroom tab is visible to everyone.
 
+## Current asset truth
+
+- This checkout does not currently contain `docs/marketing/assets/`, so the older cover/icon/video paths referenced in prior notes are not locally present right now.
+- Treat the listed media paths as the intended asset targets, not as verified files in this checkout.
+- If action-time confirmation is granted for a live Skool edit before the asset set is restored locally, use existing Skool-hosted media or a supported hosted video embed instead of blocking on this checkout.
+
 ## Course description
 
 Start here if your AI coding agent keeps repeating the same mistake.
@@ -53,6 +59,7 @@ Best fit:
 
 - Primary asset when the file-picker path is available: `docs/marketing/assets/thumbgate-operator-lab-explainer.mp4`
 - Fallback if native upload stays blocked: use a supported YouTube, Vimeo, Loom, or Wistia embed instead of stalling the course launch
+- Current checkout constraint: the MP4 path above is not present locally in this repo snapshot, so do not treat it as a ready-to-upload local file without re-checking first
 - Searchability add-on: paste the transcript under the video so the lesson becomes searchable inside Skool
 
 ## First lesson body

@@ -57,7 +57,7 @@ describe('Free tier bullets: code-backed claims', () => {
     const { FREE_TIER_LIMITS } = require(path.join(ROOT, 'scripts', 'rate-limiter.js'));
     assert.equal(FREE_TIER_LIMITS.capture_feedback.daily, 2,
       'free tier daily captures must match the public pricing page');
-    assert.equal(FREE_TIER_LIMITS.capture_feedback.lifetime, 25,
+    assert.equal(FREE_TIER_LIMITS.capture_feedback.lifetime, 10,
       'free tier lifetime captures must match the public pricing page');
     assert.ok(
       FREE_BULLETS.some((b) => /2 feedback captures\/day/i.test(b)),
