@@ -193,3 +193,81 @@ test('document vectors are cached and reused across calls', async () => {
 test('isEmbedderAvailable returns a boolean without loading a model', () => {
   assert.equal(typeof isEmbedderAvailable(), 'boolean');
 });
+
+// --- hybrid pre-filtering / short-circuiting & WHERE-clause pruning -------
+
+test('hybrid retrieval short-circuits (skips embedding) when exact/regex match decides', async () => {
+  const tmp = mkTmp();
+  const now = new Date().toISOString();
+  writeJsonl(path.join(tmp, 'memory-log.jsonl'), [
+    {
+      id: 'sc-1',
+      title: 'exact match bash warning',
+      content: 'never use force-push without confirmation',
+      tags: ['negative'],
+      structuredRule: { if: 'git push', then: 'verify first' },
+      timestamp: now,
+    },
+  ]);
+
+  let embedderCalled = false;
+  const spyEmbedder = async (text, opts = {}) => {
+    embedderCalled = true;
+    return conceptEmbedder(text);
+  };
+
+  const results = await retrieveRelevantLessonsAsync('Bash', 'git push to main', {
+    feedbackDir: tmp,
+    embedder: spyEmbedder,
+    maxResults: 3,
+  });
+
+  assert.equal(results.length, 1);
+  assert.equal(results[0].id, 'sc-1');
+  assert.equal(embedderCalled, false, 'Should have short-circuited and skipped embedding call');
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test('hybrid retrieval performs WHERE-clause pruning before vector search', async () => {
+  const tmp = mkTmp();
+  const now = new Date().toISOString();
+  writeJsonl(path.join(tmp, 'memory-log.jsonl'), [
+    {
+      id: 'prune-1',
+      title: 'relevant bash mistake',
+      content: 'avoid rm -rf',
+      tags: ['negative'],
+      metadata: { toolsUsed: ['Bash'] },
+      timestamp: now,
+    },
+    {
+      id: 'prune-2',
+      title: 'unrelated database mistake',
+      content: 'drop table prod',
+      tags: ['negative'],
+      metadata: { toolsUsed: ['SQL'] },
+      timestamp: now,
+    },
+  ]);
+
+  const embeddedDocs = [];
+  const spyEmbedder = async (text, opts = {}) => {
+    if (opts.kind === 'document') {
+      embeddedDocs.push(text);
+    }
+    return conceptEmbedder(text);
+  };
+
+  const results = await retrieveRelevantLessonsAsync('Bash', 'run rm -rf', {
+    feedbackDir: tmp,
+    embedder: spyEmbedder,
+    maxResults: 3,
+  });
+
+  // Verify that prune-2 was excluded from embedding generation completely
+  assert.ok(embeddedDocs.some(t => t.includes('avoid rm -rf')), 'Should embed relevant document');
+  assert.ok(!embeddedDocs.some(t => t.includes('drop table')), 'Should prune unrelated document before vector search');
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
