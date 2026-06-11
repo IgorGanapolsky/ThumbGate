@@ -57,12 +57,23 @@ test('public landing page routes Pro buyers through the hosted checkout surface'
 
 test('public landing page maps agentic development cycle to pre-action execution gate', () => {
   const landingPage = readLandingPage();
+  const sectionStart = landingPage.indexOf('id="agentic-development-cycle"');
+  const sectionEnd = landingPage.indexOf('<!-- CODE EXAMPLE', sectionStart);
+  const cycleSection = landingPage.slice(sectionStart, sectionEnd);
 
   assert.match(landingPage, /Agentic Development Cycle/);
   assert.match(landingPage, /Guide, Generate, Verify, Solve still needs an execution gate/);
   assert.match(landingPage, /The New Stack's May 2026 AC\/DC framing/);
   assert.match(landingPage, /ThumbGate's role: the pre-action gate between generated intent and executed action/);
   assert.match(landingPage, /How does ThumbGate fit the agentic development cycle\?/);
+  assert.ok(sectionStart > -1);
+  assert.ok(sectionEnd > sectionStart);
+  assert.match(cycleSection, /<a class="cycle-card" href="\/learn\/feedback-loop-vs-decision-layer"[^>]*>\s*<h3>Guide<\/h3>/);
+  assert.match(cycleSection, /<a class="cycle-card" href="\/guide"[^>]*>\s*<h3>Generate<\/h3>/);
+  assert.match(cycleSection, /<a class="cycle-card" href="\/learn\/ac-dc-runtime-enforcement"[^>]*>\s*<h3>Verify<\/h3>/);
+  assert.match(cycleSection, /<a class="cycle-card" href="\/lessons"[^>]*>\s*<h3>Solve<\/h3>/);
+  assert.doesNotMatch(cycleSection, /class="compat-card" style="cursor:default;"/);
+  assert.match(cycleSection, /agentic_cycle_card_click/);
 });
 
 test('public landing page exposes above-fold paid Pro CTA with canonical revenue analytics', () => {
@@ -474,6 +485,11 @@ test('public landing page includes FAQ section with accordion interaction', () =
 
 test('public landing page includes compatibility section for AI agent surfaces', () => {
   const landingPage = readLandingPage();
+  const claudeTrackingStart = landingPage.indexOf('compat_claude_desktop_click');
+  const claudeCardStart = landingPage.lastIndexOf('<a class="compat-card"', claudeTrackingStart);
+  const claudeCardEnd = landingPage.indexOf('</a>', claudeCardStart);
+  const claudeCard = landingPage.slice(claudeCardStart, claudeCardEnd);
+  const claudeCardBody = claudeCard.slice(claudeCard.indexOf('>') + 1);
 
   assert.match(landingPage, /id="compatibility"/);
   assert.match(landingPage, /AI CLIs/i);
@@ -492,6 +508,11 @@ test('public landing page includes compatibility section for AI agent surfaces',
   // Desktop install action. Download-verbed arrows satisfy this.
   assert.match(landingPage, /(View|Open|Read) (the )?setup guide|setup guide →/i);
   assert.match(landingPage, /(Get|Download) (the )?(Claude plugin|\.mcpb bundle|Claude Extension)/i);
+  assert.ok(claudeCardStart > -1);
+  assert.ok(claudeCardEnd > claudeCardStart);
+  assert.doesNotMatch(claudeCardBody, /<a\s/i);
+  assert.match(claudeCard, /thumbgate-claude-desktop\.mcpb/);
+  assert.match(claudeCard, /Download \.mcpb bundle/);
   assert.match(landingPage, /thumbgate-marketplace/);
   assert.match(landingPage, /\/plugin marketplace add IgorGanapolsky\/ThumbGate/);
   assert.match(landingPage, /ChatGPT GPT Actions/);
