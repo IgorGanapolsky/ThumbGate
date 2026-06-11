@@ -1,0 +1,5 @@
+---
+"thumbgate": minor
+---
+
+Add `scripts/sync-telemetry-from-prod.js` so the local agentic data pipeline reflects the real web funnel. `get_business_metrics` (semantic-layer → agentic-data-pipeline → telemetry-analytics) reads the LOCAL `telemetry-pings.jsonl`, which is empty on dev machines, so it reported `uniqueVisitors:0 / checkoutStarts:0` even while prod traffic flowed. The real funnel lives on the prod Railway volume and is exposed only via the operator-gated `GET /v1/telemetry/export`. The new sync pulls that export and merges/dedupes the `telemetry` rows (and, with `--funnel`, the `funnel` rows) into the same feedback dir the pipeline reads. Dedupe is a stable sha256 of the canonical row so repeat runs never double-count. Auth uses `Authorization: Bearer <key>` (the header the server's `extractApiKey` actually reads); the key is resolved from `THUMBGATE_OPERATOR_KEY`/`THUMBGATE_API_KEY`/`~/.config/thumbgate/operator.json` and never printed. Hermetic unit tests inject `fetchImpl` (no network, no secret).

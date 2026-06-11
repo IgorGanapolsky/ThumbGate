@@ -146,8 +146,14 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // so enforcement value is browsable in the agent command palette like GSD's
   // /gsd-*. Thin wrappers over existing MCP tools/CLI, no Core dependency, no new
   // logic. Keep in lockstep with BASELINE_FILE_COUNT in public-bundle-ratchet.test.js.
+  // Bumped 298 -> 299 (2026-06-11) to ship scripts/sync-telemetry-from-prod.js,
+  // which pulls the real web funnel from the operator-gated /v1/telemetry/export
+  // into the local store so get_business_metrics stops reading an empty ledger.
+  // Public-shell observability tool, no Core dependency. Keep in lockstep with
+  // BASELINE_FILE_COUNT in public-bundle-ratchet.test.js and the fileCount
+  // ceiling in package-boundary.test.js.
   const files = npmPackFiles();
-  const CEILING = 298;
+  const CEILING = 299;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
