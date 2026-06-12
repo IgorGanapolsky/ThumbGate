@@ -14,6 +14,7 @@ const {
   createManufacturingRetriever,
   localHybridRerank,
   packRetrievedContext,
+  polishConversationalAnswer,
   planMetadataFilters,
   planRetrieval,
 } = require('../prototypes/manufacturing-copilot/middleware/graph');
@@ -1176,7 +1177,13 @@ test('manufacturing copilot answers conversational PLC Modbus questions with pro
     const result = await executeRAGPipeline('Explain to me about our PLC modbus', {
       supervisor: { role: 'floor_supervisor' },
       vectorSearch: async () => [],
-      chat: async () => 'Modbus is the protocol our PLC telemetry adapter uses to read coils and holding registers.'
+      chat: async () => [
+        'Certainly! Based on the approved documentation, here is the procedure for Modbus TCP PLC Context:',
+        '',
+        'Modbus is the protocol our PLC telemetry adapter uses to read coils and holding registers.',
+        '',
+        'Let me know if you need further clarification or help with this process.'
+      ].join('\n')
     });
 
     assert.equal(result.status, 'pass');
@@ -1184,6 +1191,8 @@ test('manufacturing copilot answers conversational PLC Modbus questions with pro
     assert.match(result.answer, /Modbus/i);
     assert.match(result.answer, /PLC|coils|holding registers/i);
     assert.match(result.answer, /MODBUS Application Protocol Specification V1\.1b3, p\. 5/);
+    assert.doesNotMatch(result.answer, /procedure for Modbus TCP PLC Context/i);
+    assert.doesNotMatch(result.answer, /Let me know if you need further clarification/i);
     assert.ok(result.gates.some(gate => gate.gate === 'retrieval_confidence' && gate.status === 'pass'));
     assert.equal(result.retrievedChunks[0].title, 'Modbus TCP PLC Context');
     assert.ok(result.retrievedChunks.some(chunk => chunk.source === 'Modbus TCP Telemetry'));
@@ -1197,4 +1206,19 @@ test('manufacturing copilot answers conversational PLC Modbus questions with pro
     delete process.env.MODBUS_PORT;
     await stopModbusServer();
   }
+});
+
+test('manufacturing answer polish keeps PLC Modbus explanations conversational', () => {
+  const answer = polishConversationalAnswer([
+    'Certainly! Based on the approved documentation, here is the procedure for Modbus TCP PLC Context:',
+    '',
+    'Modbus TCP lets the copilot read PLC coils and holding registers.',
+    '',
+    'Let me know if you need further clarification or help with this process.'
+  ].join('\n'), 'Explain to me about our PLC modbus');
+
+  assert.match(answer, /here is how our PLC Modbus telemetry works/i);
+  assert.match(answer, /read PLC coils and holding registers/i);
+  assert.doesNotMatch(answer, /procedure for Modbus TCP PLC Context/i);
+  assert.doesNotMatch(answer, /Let me know/i);
 });

@@ -89,7 +89,7 @@ status changes.
 - DONE: `middleware/guardrails.js` (chatbot-owned guardrail functions, updated `safetyCitationGate` to support boolean route arguments).
 - DONE: `middleware/vector-db.js` ingestion quarantine + `getIngestionReport()`.
 - DONE: `middleware/graph.js` LangGraph StateGraph + `rag.js` facade rewrite; server endpoints are fully wired up.
-- DONE: `tests/manufacturing-copilot.test.js` (unit) + `tests/manufacturing-copilot-e2e.test.js` (e2e instrumentation) with 100% test pass rates (**57/57 tests passing**, verified 2026-06-12).
+- DONE: `tests/manufacturing-copilot.test.js` (unit) + `tests/manufacturing-copilot-e2e.test.js` (e2e instrumentation) with 100% focused manufacturing test pass rates (**58/58 tests passing**, verified 2026-06-12).
 - DONE: Outbound response sanitization (PII + secret redaction) implemented and verified in the RAG execution path.
 - DONE: Saved and organized LangSmith API credentials in git-ignored `.env` for the supervisor trace dashboard.
 - DONE: Frontend (`index.html`) updated to always show thumbs up/down voting controls for all responses (including blocks) to capture feedback on firewall decisions.
@@ -208,6 +208,8 @@ Location: `prototypes/manufacturing-copilot/`
   - output PII/secret redaction
   - feedback capture
   - human-readable trace UI labels
+  - conversational PLC/Modbus answers that do not mislabel protocol
+    explanations as procedures
 - E2E instrumentation coverage for:
   - `GET /`
   - `GET /api/health`

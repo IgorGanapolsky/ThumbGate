@@ -257,18 +257,43 @@ const ROLE_CLEARANCES = {
 };
 
 /**
- * Enforces Role-Based Access Control (RBAC) on informational queries.
- * Prevents lower-clearance users from querying sensitive manuals or instructions:
- * - Level 0 (Operator): Blocked from Confined Space (SP-102) & Safety Overrides (SP-110).
- * - Level 1 (Supervisor): Allowed Confined Space (SP-102), but blocked from Safety Overrides (SP-110) & Shutdown procedures.
- * - Level 2 (Plant Manager / EHS): Has clearance to query all procedures (but still blocked from physical override actions).
+ * @typedef {Object} ClearanceGateResult
+ * @property {'clearance_gate'} gate Stable gate identifier used by LangGraph
+ * traces and the front-end guardrail panel.
+ * @property {'pass'|'block'} status Whether this role may continue to retrieval.
+ * @property {string} detail Human-readable reason shown in the demo response
+ * and LangSmith trace.
+ */
+
+/**
+ * Chatbot-owned read-access gate for manufacturing procedure questions.
  *
- * @param {string} question - The user's query text.
- * @param {string} role - The user's role (e.g. 'operator', 'floor_supervisor', 'plant_manager').
- * @returns {Object} Access control validation result.
- * @returns {string} Result.gate - Gate identifier ('clearance_gate').
- * @returns {'pass'|'block'} Result.status - 'pass' if permitted, 'block' if denied.
- * @returns {string} Result.detail - Specific reason or clearance log.
+ * `clearanceGate` answers this question before RAG retrieval runs:
+ * "Is this role allowed to read this class of procedure or instruction?"
+ *
+ * It is deliberately separate from ThumbGate. ThumbGate blocks outbound
+ * physical tool calls before they can touch PLCs or plant systems. This gate is
+ * earlier in the chatbot workflow and only controls whether sensitive
+ * informational content can be retrieved and shown to the user.
+ *
+ * Clearance model used by the prototype:
+ * - Level 0: `operator` can read ordinary approved procedures and machine
+ *   state, but not confined-space or safety-override instructions.
+ * - Level 1: `floor_supervisor` / `supervisor` can read confined-space
+ *   guidance, but not safety override or shutdown instructions.
+ * - Level 2: `plant_manager` / `ehs_incident_commander` can read higher
+ *   clearance procedures, but they are still not allowed to bypass safety
+ *   interlocks. Physical actions are checked later by ThumbGate.
+ *
+ * The matcher is conservative and keyword based because this is an interview
+ * prototype: it catches known demo policy classes such as SP-102 confined
+ * space, SP-110 safety overrides, and plant/equipment shutdown instructions.
+ *
+ * @param {string} question User's sanitized question text.
+ * @param {string} role User role from the front-end supervisor context.
+ * Supported values include `operator`, `floor_supervisor`, `supervisor`,
+ * `plant_manager`, and `ehs_incident_commander`.
+ * @returns {ClearanceGateResult} Pass/block decision for read access.
  */
 function clearanceGate(question, role) {
   const userRole = String(role || 'operator').toLowerCase();

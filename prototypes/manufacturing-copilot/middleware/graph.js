@@ -18,6 +18,8 @@ const { redactSecrets } = require('../../../scripts/secret-redaction');
 const SYSTEM_PROMPT = `You are a plant assistant for Acme Fabrication Plant 7 floor supervisors.
 Answer operational questions accurately based on the provided reference documentation.
 For safety procedures or manual citations, you MUST cite the specific manual title and page number (e.g. "[Safety Procedures Manual, Page 12]") in your answer.
+If the user asks for an explanation, overview, or definition, answer conversationally. Do not call it a procedure unless the cited source is actually a procedure.
+Do not end with generic offers such as "let me know if you need more help"; finish with the useful answer.
 Keep your answer concise and reference the safety procedure code (like SP-xxx or MM-xxx) if available.`;
 
 let langchainRuntimePromise;
@@ -195,6 +197,20 @@ function appendCitations(answer, chunks) {
   if (!citations.length) return answer;
   if (/^Sources:/m.test(answer)) return answer;
   return `${answer}\n\nSources:\n${citations.map((citation) => `- ${citation}`).join('\n')}`;
+}
+
+function polishConversationalAnswer(answer, question) {
+  let polished = String(answer || '');
+  if (isModbusExplanationQuestion(question)) {
+    polished = polished.replace(
+      /here is the procedure for Modbus TCP PLC Context:/i,
+      'here is how our PLC Modbus telemetry works:'
+    );
+  }
+  return polished
+    .replace(/\n*Let me know if you need further clarification or help with this process\.?/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 function createManufacturingGraph({
@@ -543,6 +559,16 @@ function createManufacturingGraph({
                 return 'Hello! I checked the manuals but couldn\'t find a matching safety procedure. Please escalate this query to your supervisor or the control room.';
               }
               const citation = citationForChunk(top);
+              if (isModbusExplanationQuestion(state.sanitizedQuestion)) {
+                const protocol = state.retrievedChunks.find((chunk) => chunk.title === 'Modbus TCP PLC Context') || top;
+                const telemetry = state.retrievedChunks.find((chunk) => chunk.source === 'Modbus TCP Telemetry');
+                return [
+                  'Here is how our PLC Modbus telemetry works:',
+                  '',
+                  cleanChunkText(protocol.text),
+                  telemetry ? `\nCurrent live PLC status:\n${cleanChunkText(telemetry.text)}` : '',
+                ].filter(Boolean).join('\n');
+              }
               if (top.source === 'Modbus TCP Telemetry') {
                 return `Here is the current live PLC status from the Modbus TCP simulator:\n\n${cleanChunkText(top.text)}\n\nIs there a specific manual procedure you need help with?`;
               }
@@ -565,7 +591,7 @@ function createManufacturingGraph({
           modelResponse = `${actionText}\n\n${modelResponse}`;
         }
 
-        let answer = redactSecrets(redactPii(modelResponse));
+        let answer = polishConversationalAnswer(redactSecrets(redactPii(modelResponse)), state.sanitizedQuestion);
 
         // Append source citations to the answer for transparency
         if (state.retrievedChunks && state.retrievedChunks.length > 0) {
@@ -722,6 +748,7 @@ module.exports = {
   isTelemetryQuestion,
   localHybridRerank,
   packRetrievedContext,
+  polishConversationalAnswer,
   appendCitations,
   cleanChunkText,
   citationForChunk,
