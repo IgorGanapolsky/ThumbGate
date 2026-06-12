@@ -91,6 +91,8 @@
         
         <!-- Governing Documentation Citations -->
         <div id="response-references" style="display: none; margin-bottom: 1.5rem; padding: 1.2rem; background: rgba(255, 255, 255, 0.01); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px;">
+          <h4 style="font-size: 0.8rem; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.5px; margin-bottom: 0.6rem; font-weight: 600;">Answer Grounded In</h4>
+          <div id="source-category-summary" class="source-category-summary"></div>
           <h4 style="font-size: 0.8rem; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.5px; margin-bottom: 0.6rem; font-weight: 600;">Governing Documentation & Citations</h4>
           <div id="references-list" style="display: flex; flex-direction: column; gap: 0.6rem;"></div>
         </div>
@@ -233,6 +235,26 @@
     let currentQuestion = '';
     let currentAnswer = '';
 
+    function getCategoryBadgeStyle(categoryOrSource) {
+      const cat = String(categoryOrSource || '').toLowerCase();
+      if (cat.includes('safety')) {
+        return 'background: #991b1b; color: #fee2e2; border: 1px solid #f87171;'; // Crimson Red
+      }
+      if (cat.includes('maintenance')) {
+        return 'background: #1e3a8a; color: #dbeafe; border: 1px solid #60a5fa;'; // Cobalt Blue
+      }
+      if (cat.includes('quality')) {
+        return 'background: #14532d; color: #dcfce7; border: 1px solid #4ade80;'; // Forest Green
+      }
+      if (cat.includes('protocol')) {
+        return 'background: #312e81; color: #e0e7ff; border: 1px solid #818cf8;'; // Indigo
+      }
+      if (cat.includes('telemetry')) {
+        return 'background: #115e59; color: #ccfbf1; border: 1px solid #2dd4bf;'; // Teal
+      }
+      return 'background: #374151; color: #d1d5db; border: 1px solid #9ca3af;'; // Default Slate/Grey
+    }
+
     function runScenario(type) {
       document.getElementById('operator-query').value = presets[type];
       submitQuery();
@@ -326,9 +348,9 @@
           item.style.alignItems = 'center';
           item.style.gap = '0.6rem';
           const pageLabel = chunk.sourcePage ? `Page ${chunk.sourcePage}` : 'Live';
-          const categoryLabel = chunk.sourceCategory || chunk.source
-            ? `<span class="span-category-badge span-category-rag" style="font-size: 0.65rem; padding: 0.1rem 0.3rem; background: #475569; color: #cbd5e1; margin-right: 0.2rem;">${chunk.sourceCategory || chunk.source}</span>`
-            : '';
+          const categoryName = chunk.sourceCategory || chunk.source || 'Manual';
+          const categoryStyle = getCategoryBadgeStyle(categoryName);
+          const categoryLabel = `<span class="span-category-badge span-category-rag" style="font-size: 0.65rem; padding: 0.15rem 0.35rem; ${categoryStyle} margin-right: 0.2rem; border-radius: 3px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">${categoryName}</span>`;
           const sourceLabel = chunk.sourceTitle || chunk.source || chunk.fileName || 'Source';
           const sourceText = chunk.sourceUrl
             ? `<a href="${chunk.sourceUrl}" target="_blank" rel="noreferrer" style="font-weight: 500; color: #38bdf8;">${sourceLabel}</a>`
@@ -336,7 +358,7 @@
           
           item.innerHTML = `
             ${categoryLabel}
-            <span class="span-category-badge span-category-rag" style="font-size: 0.65rem; padding: 0.1rem 0.3rem;">${pageLabel}</span>
+            <span class="span-category-badge span-category-rag" style="font-size: 0.65rem; padding: 0.15rem 0.35rem; background: #334155; color: #cbd5e1; border: 1px solid #475569; border-radius: 3px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">${pageLabel}</span>
             ${sourceText}
             <span style="color: #94a3b8;">—</span>
             <span style="color: #cbd5e1;">${chunk.title}</span>
