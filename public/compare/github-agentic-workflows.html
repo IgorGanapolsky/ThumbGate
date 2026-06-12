@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ThumbGate vs GitHub Agentic Workflows | CI Governance vs Local Dev-Loop Enforcement</title>
+  <meta name="description" content="GitHub Agentic Workflows runs coding agents inside GitHub Actions, behind the Agent Workflow Firewall, read-only by default. ThumbGate gates the coding agent on your machine in the PreToolUse hook, before any PR or CI exists. Two layers of the same defense — honest head-to-head." />
+  <meta property="og:title" content="ThumbGate vs GitHub Agentic Workflows | Two Layers, Not Competitors" />
+  <meta property="og:description" content="GitHub governs agents in CI, after a PR exists. ThumbGate governs the coding agent on your laptop, before the rm -rf or force-push ever runs. Different layers of the same defense." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/compare/github-agentic-workflows" />
+  <link rel="canonical" href="https://thumbgate.ai/compare/github-agentic-workflows" />
+  <link rel="llm-context" href="/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root { --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #161618; --line: #222225; --text: #e8e8ec; --muted: #8b8b96; --cyan: #22d3ee; --green: #4ade80; --amber: #fbbf24; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); background: rgba(10, 10, 11, 0.88); border-bottom: 1px solid var(--line); }
+    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; padding-bottom: 14px; }
+    .brand { font-weight: 700; color: var(--text); display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(34, 211, 238, 0.22); background: rgba(34, 211, 238, 0.1); color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
+    h1 { font-size: clamp(34px, 5vw, 56px); line-height: 1.06; letter-spacing: -0.04em; margin: 16px 0; max-width: 820px; }
+    .hero p { max-width: 760px; color: var(--muted); font-size: 18px; }
+    .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 24px; padding-bottom: 72px; }
+    .card, .detail-section, .sidebar-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px; }
+    .card { padding: 24px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p, .detail-section li, .sidebar-card p { color: var(--muted); }
+    .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+    .comparison-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+    .comparison-table th, .comparison-table td { border: 1px solid var(--line); padding: 12px; text-align: left; vertical-align: top; }
+    .comparison-table th { background: var(--bg-raised); color: var(--cyan); }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+    .pill { border: 1px solid var(--line); background: var(--bg-raised); border-radius: 999px; padding: 10px 14px; font-size: 14px; font-weight: 650; }
+    .pill.good { color: #b8f7c8; border-color: rgba(74, 222, 128, 0.28); background: rgba(74, 222, 128, 0.1); }
+    .pill.warn { color: #ffe2a4; border-color: rgba(251, 191, 36, 0.28); background: rgba(251, 191, 36, 0.1); }
+    .sidebar { display: flex; flex-direction: column; gap: 18px; }
+    .sidebar-card { padding: 20px; }
+    .sidebar-card:first-child { position: sticky; top: 84px; max-height: calc(100vh - 104px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .cta-button { display: inline-flex; align-items: center; justify-content: center; margin-top: 18px; padding: 12px 16px; border-radius: 10px; background: var(--cyan); color: #071116; font-weight: 700; text-decoration: none; }
+    .related-card { display: block; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg-raised); margin-top: 12px; color: var(--text); }
+    .related-label { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .faq-item { border-top: 1px solid var(--line); padding: 14px 0; }
+    .faq-item summary { cursor: pointer; font-weight: 600; }
+    .faq-item p { color: var(--muted); }
+    blockquote { border-left: 3px solid var(--cyan); margin: 16px 0; padding: 4px 0 4px 16px; color: var(--text); font-style: italic; }
+    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } .sidebar-card:first-child { position: static; max-height: none; overflow: visible; } }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ThumbGate vs GitHub Agentic Workflows",
+  "description": "GitHub Agentic Workflows runs coding agents inside GitHub Actions behind the Agent Workflow Firewall, governing what they do in CI after a workflow runs. ThumbGate governs what a coding agent does on the developer's machine, in the PreToolUse hook, before any action reaches GitHub. Side-by-side comparison of two layers of the same defense.",
+  "about": ["thumbgate vs github agentic workflows", "AI coding agent governance", "PreToolUse hook vs CI agent firewall", "local-first agent enforcement", "GitHub Agent Workflow Firewall"],
+  "url": "https://thumbgate.ai/compare/github-agentic-workflows",
+  "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+  "mainEntityOfPage": "https://thumbgate.ai/compare/github-agentic-workflows"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is ThumbGate an alternative to GitHub Agentic Workflows?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Not exactly — they govern different layers. GitHub Agentic Workflows runs and governs coding agents inside GitHub Actions for reasoning tasks like issue triage, CI failure analysis, and docs updates, in a sandboxed container behind the Agent Workflow Firewall, read-only by default, with a threat-detection job that scans proposed changes before they are applied. ThumbGate governs what a coding agent does on the developer's machine, in the PreToolUse hook, before any action reaches GitHub. If your risk is an agent running rm -rf, force-pushing to main, or writing a secret locally, ThumbGate is the right layer; if you want agents automating work inside GitHub Actions, Agentic Workflows is. Most teams running both want both."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can ThumbGate run inside GitHub Agentic Workflows too?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It can. GitHub Agentic Workflows compile from natural-language Markdown into standard Actions YAML, and ThumbGate's gate engine exposes a stdin/stdout hook interface (npx thumbgate gate-check reads a tool-call JSON and returns allow or block), so a ThumbGate gate step fits inside a runner. But ThumbGate's primary surface is local: it gates the agent before it acts on your machine, before CI ever sees the action. The two compose — local PreToolUse enforcement plus CI-side governance."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is GitHub's Agent Workflow Firewall enough governance on its own?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "For the CI layer it is strong — sandboxed execution, read-only permissions by default, safe-outputs validation, and a dedicated threat-detection job that scans proposed changes before they are applied. But platform governance can only act on actions that reach the platform. A coding agent that deletes a directory, force-pushes broken code, or commits a secret on the developer's machine has already done the damage before any workflow runs or any PR exists. That earlier, lower layer — the local dev loop — is the surface ThumbGate enforces."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What does GitHub Agentic Workflows cost, and what does ThumbGate cost?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "GitHub Agentic Workflows entered public preview on June 11, 2026; GitHub has not announced standalone pricing. ThumbGate's local CLI is free and MIT licensed — npx thumbgate init gives PreToolUse blocking across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and Claude Desktop, with 10 captures/day and 3 active rules. Pro is $19/mo for unlimited captures and rules, hosted sync, and the dashboard."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="container">
+      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+    </div>
+  </div>
+
+  <section class="hero">
+    <div class="container">
+      <span class="eyebrow">ThumbGate vs GitHub Agentic Workflows</span>
+      <h1>GitHub governs agents in CI. ThumbGate governs the agent on your machine — before the PR exists.</h1>
+      <p><strong>GitHub Agentic Workflows</strong> (public preview, June 2026) automates reasoning tasks — issue triage, CI failure analysis, docs updates — by running coding agents inside GitHub Actions, in a sandboxed container behind the <strong>Agent Workflow Firewall</strong>, read-only by default. That is the right model for governing agents in CI. <strong>ThumbGate</strong> is the local-first PreToolUse layer for the surface that comes earlier: the coding agent in your terminal — Claude Code, Cursor, Codex — that runs <code>rm -rf</code>, force-pushes to main, or writes a secret to disk on your own machine, before any workflow runs or any PR exists. They are not competitors; they are different layers of the same defense.</p>
+      <div class="pill-row">
+        <span class="pill">GitHub: CI / Actions layer</span>
+        <span class="pill">ThumbGate: local dev-loop layer</span>
+        <span class="pill good">They compose</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="container grid">
+    <main>
+      <article class="detail-section">
+        <h2>The boundary in one sentence</h2>
+        <p>GitHub Agentic Workflows governs what an agent does once it is running inside GitHub Actions — proposing repo changes that are scanned by a threat-detection job and validated through the safe-outputs process before they are applied, reusing your existing runner groups and policy constraints.</p>
+        <p>ThumbGate governs what a coding agent does on the developer's machine, in the PreToolUse hook, before the tool call executes — the <code>rm -rf</code>, the <code>git push --force</code>, the secret written to disk, the skill file silently overwritten. That happens in the terminal, under the developer's own credentials, before any platform boundary exists to enforce it.</p>
+        <blockquote>"Getting an agent to open a pull request was never the hard part. Trusting it enough to merge is." — GitHub, on Agentic Workflows. That trust gap is exactly what a pre-action gate closes.</blockquote>
+      </article>
+
+      <article class="detail-section">
+        <h2>Side-by-side comparison</h2>
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Dimension</th>
+              <th>GitHub Agentic Workflows</th>
+              <th>ThumbGate</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Where it runs</td>
+              <td>Inside GitHub Actions — a sandboxed container behind the Agent Workflow Firewall</td>
+              <td>On the developer's machine, inside the agent's PreToolUse hook</td>
+            </tr>
+            <tr>
+              <td>When it acts</td>
+              <td>In CI, on a workflow run; changes are scanned before they are applied to the repo</td>
+              <td>Before each tool call executes — before the destructive command, force-push, or secret write ever happens</td>
+            </tr>
+            <tr>
+              <td>What it governs</td>
+              <td>An agentic workflow's proposed changes (issue triage, CI analysis, docs) inside GitHub</td>
+              <td>Any coding agent's tool calls locally — Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, Hermes</td>
+            </tr>
+            <tr>
+              <td>Definition</td>
+              <td>Natural-language Markdown compiled to standard Actions YAML</td>
+              <td><code>npx thumbgate init</code> — JSON gates plus prevention rules auto-promoted from thumbs-down feedback</td>
+            </tr>
+            <tr>
+              <td>Default posture</td>
+              <td>Read-only by default; threat-detection job scans proposed changes; safe-outputs validation</td>
+              <td>Gates every matched tool call; a thumbs-down becomes a reversible prevention rule plus a local audit entry</td>
+            </tr>
+            <tr>
+              <td>Surface</td>
+              <td>One repository's GitHub Actions</td>
+              <td>Every machine and every agent the developer runs</td>
+            </tr>
+            <tr>
+              <td>Setup</td>
+              <td>GitHub-hosted; reuses existing runner groups and policy constraints</td>
+              <td>Local-first, zero server — <code>npx thumbgate init</code> in about 30 seconds</td>
+            </tr>
+            <tr>
+              <td>Availability</td>
+              <td>Public preview (June 11, 2026); pricing not yet announced</td>
+              <td>Free MIT CLI; Pro $19/mo or $149/yr for sync + dashboard; Team $49/seat/mo for shared enforcement</td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+
+      <article class="detail-section">
+        <h2>Choose GitHub Agentic Workflows when</h2>
+        <ul>
+          <li>You want to automate reasoning tasks — issue triage, CI failure analysis, documentation updates — with agents running inside GitHub Actions.</li>
+          <li>The risk you manage is what an agent proposes to the repository, governed server-side in CI with a threat-detection scan before changes are applied.</li>
+          <li>You are standardizing agent automation on GitHub's platform and want its firewall, runner groups, and policy constraints.</li>
+        </ul>
+        <p>GitHub Agentic Workflows is a genuinely strong CI-layer governance model, and its read-only-by-default, sandbox, and threat-detection design is the right approach for the surface it owns. Nothing here is a knock on it — it is scoped to a different layer than ThumbGate.</p>
+      </article>
+
+      <article class="detail-section">
+        <h2>Choose ThumbGate when</h2>
+        <ul>
+          <li>Your risk is a coding agent on a developer's machine running destructive shell, git, or filesystem actions — before any PR or CI run exists.</li>
+          <li>You want enforcement in the PreToolUse hook, before execution, with zero server and zero rollout.</li>
+          <li>You want the same rule to fire across every agent you use, not only GitHub-hosted workflows.</li>
+          <li>You want a reversible learning loop — a thumbs-down on a blocked action becomes an auto-promoted prevention rule — and a local audit trail of every blocked action.</li>
+        </ul>
+      </article>
+
+      <article class="detail-section">
+        <h2>Can I use both?</h2>
+        <p>Yes — they are different layers of the same defense, and they compose. GitHub Agentic Workflows governs what an agent does in CI; ThumbGate governs what a coding agent does on the laptop before the workflow or PR ever exists. A coding agent that force-pushes broken code or commits a secret on the developer's machine never reached GitHub's Agent Workflow Firewall to be caught — that failure happens in the dev loop, the layer ThumbGate owns.</p>
+        <p>And because GitHub Agentic Workflows compile to standard Actions YAML, you can also run a ThumbGate gate step inside the runner (<code>npx thumbgate gate-check</code> reads a tool-call JSON on stdin and returns allow or block). The common pattern: ThumbGate at the developer's local PreToolUse boundary, GitHub Agentic Workflows governing the CI layer above it.</p>
+      </article>
+
+      <article class="detail-section">
+        <h2>FAQ</h2>
+        <details class="faq-item" open>
+          <summary>Is ThumbGate competing with GitHub Agentic Workflows?</summary>
+          <p>No — different layers. GitHub runs and governs agents inside GitHub Actions, after a workflow is dispatched and before changes are applied to the repo. ThumbGate governs coding agents on the developer's machine in the PreToolUse hook, before any action reaches GitHub. If your risk is a local agent running rm -rf or force-pushing, ThumbGate is the layer; if you want agents automating work in CI, Agentic Workflows is. Teams running both want both.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Does ThumbGate run in GitHub Actions?</summary>
+          <p>It can — <code>npx thumbgate gate-check</code> reads a tool-call JSON on stdin and returns an allow/block verdict, so a gate step fits inside a runner. But ThumbGate's primary surface is local: before the agent acts on your machine, before CI ever sees the action.</p>
+        </details>
+        <details class="faq-item">
+          <summary>GitHub already has a threat-detection job — why add a local gate?</summary>
+          <p>Because the threat-detection job scans proposed changes inside GitHub; it cannot see a destructive command an agent ran in your terminal an hour earlier. Deleting a directory, leaking a key, or force-pushing happens locally, before anything reaches GitHub. A pre-action gate on the machine is the only layer positioned to stop it before it happens.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Where do I start?</summary>
+          <p>For the local layer: <code>npx thumbgate init</code> wires the PreToolUse hook across every supported agent in about 30 seconds. For the CI layer: enable GitHub Agentic Workflows in your repo. They are complementary, not either/or.</p>
+        </details>
+      </article>
+    </main>
+
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <h3 style="margin: 0 0 8px;">Install ThumbGate free</h3>
+        <p>10 captures/day, 3 active rules, PreToolUse blocking across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, Claude Desktop.</p>
+        <pre style="background: var(--bg-raised); border: 1px solid var(--line); border-radius: 8px; padding: 12px; font-size: 13px; overflow: auto;">npx thumbgate init</pre>
+        <a class="cta-button" href="/pricing">See Pro pricing →</a>
+        <p style="font-size: 12px; margin-top: 16px;">MIT licensed. No telemetry without explicit opt-in. <code>THUMBGATE_NO_TELEMETRY=1</code> to disable.</p>
+      </div>
+
+      <div class="sidebar-card">
+        <span class="related-label">Related comparisons</span>
+        <a class="related-card" href="/compare/claude-code-hooks">
+          <strong>ThumbGate vs claude-code-hooks</strong><br>
+          <span style="color: var(--muted); font-size: 13px;">Hosted sync &amp; learning on top of local shell-script hooks</span>
+        </a>
+        <a class="related-card" href="/compare/anthropic-containment">
+          <strong>ThumbGate vs Anthropic's Claude Containment</strong><br>
+          <span style="color: var(--muted); font-size: 13px;">IDE-agent extension of Anthropic's published architecture</span>
+        </a>
+        <a class="related-card" href="/compare/arcjet">
+          <strong>ThumbGate vs Arcjet</strong><br>
+          <span style="color: var(--muted); font-size: 13px;">Agent-outbound gate pairs with an app-inbound firewall</span>
+        </a>
+        <a class="related-card" href="/compare/oak-and-sparrow-gatekeeper">
+          <strong>ThumbGate vs Gatekeeper (Oak &amp; Sparrow)</strong><br>
+          <span style="color: var(--muted); font-size: 13px;">Agent-action gate pairs with a workforce-input gate</span>
+        </a>
+      </div>
+
+      <div class="sidebar-card">
+        <span class="related-label">Sources</span>
+        <p style="font-size: 13px;">Comparison data from GitHub's <a href="https://github.blog/changelog/2026-06-11-github-agentic-workflows-is-now-in-public-preview/" target="_blank" rel="noopener">Agentic Workflows public-preview changelog</a> (June 11, 2026) and ThumbGate's <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">VERIFICATION_EVIDENCE.md</a>. If anything here misrepresents GitHub Agentic Workflows, open an issue at <a href="https://github.com/IgorGanapolsky/ThumbGate/issues" target="_blank" rel="noopener">our repo</a> and we'll correct it.</p>
+      </div>
+    </aside>
+  </div>
+</body>
+</html>

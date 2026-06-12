@@ -50,6 +50,7 @@ const COMPARE_FILES = [
   'compare/mem0.html',
   'compare/fallow.html',
   'compare/agentix-labs.html',
+  'compare/github-agentic-workflows.html',
 ];
 
 const ALL_FILES = [...GUIDE_FILES, ...COMPARE_FILES];
