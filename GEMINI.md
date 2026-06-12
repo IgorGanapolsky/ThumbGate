@@ -21,3 +21,4 @@ Key: Always dogfood the latest local changes before publishing.
 > You MUST follow these constraints strictly to prevent repeated errors.
 
 - **Rule [auto-promoted-mqbalamc-0]**: NEVER repeated problem context string
+- **Rule [auto-manual-ingest-markdown-migration]**: Auto-promoted repeated pattern: "MISTAKE: This is a test failure" (1 occurrences in 30 days)
