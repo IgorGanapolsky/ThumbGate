@@ -105,7 +105,7 @@ function quarantineRetrievedContext(chunks) {
 // procedure-code, keyword, and source evidence. The default is calibrated for
 // the interview fixture and can be raised with env config.
 
-function confidenceGate(chunks, minScore = Number(process.env.CONFIDENCE_MIN_SCORE || 0.60)) {
+function confidenceGate(chunks, minScore = Number(process.env.CONFIDENCE_MIN_SCORE || 0.50)) {
   const top = chunks[0]?.confidenceScore ?? chunks[0]?.score ?? 0;
   const scoreLabel = chunks[0]?.confidenceScore !== undefined ? 'hybrid confidence score' : 'vector score';
   return {

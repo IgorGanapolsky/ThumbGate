@@ -167,7 +167,7 @@ function packRetrievedContext(chunks, maxTokens) {
 }
 
 function isTelemetryQuestion(question) {
-  return /\b(status|state|temperature|running|speed|active|armed|power|coil|register|telemetry|working|normal|normally|tripped|stopped|bypassed)\b/i.test(question);
+  return /\b(status|state|temperature|running|speed|active|armed|power|coil|coils|register|registers|reg|regs|telemetry|working|normal|normally|tripped|stopped|bypassed|plc|modbus)\b/i.test(question);
 }
 
 function citationForChunk(chunk) {
@@ -512,10 +512,13 @@ function createManufacturingGraph({
             if (offline) {
               const top = state.retrievedChunks[0];
               if (!top) {
-                return 'No matching manual procedures found. Escalate to your supervisor.';
+                return 'Hello! I checked the manuals but couldn\'t find a matching safety procedure. Please escalate this query to your supervisor or the control room.';
               }
               const citation = citationForChunk(top);
-              return `Per ${top.title} [${citation}]:\n\n${cleanChunkText(top.text)}`;
+              if (top.source === 'Modbus TCP Telemetry') {
+                return `Here is the current live PLC status from the Modbus TCP simulator:\n\n${cleanChunkText(top.text)}\n\nIs there a specific manual procedure you need help with?`;
+              }
+              return `Certainly! Based on the approved documentation [${citation}], here is the procedure for ${top.title}:\n\n${cleanChunkText(top.text)}\n\nLet me know if you need further clarification or help with this process.`;
             }
             return chat(state.messages, { temperature: 0 });
           }
