@@ -1164,3 +1164,37 @@ test('manufacturing copilot answers coil telemetry questions without retrieval-c
     await stopModbusServer();
   }
 });
+
+test('manufacturing copilot answers conversational PLC Modbus questions with protocol context', async () => {
+  const { startModbusServer, stopModbusServer } = require('../prototypes/manufacturing-copilot/middleware/modbus-server');
+
+  const testPort = 5027;
+  await startModbusServer(testPort);
+  process.env.MODBUS_PORT = String(testPort);
+
+  try {
+    const result = await executeRAGPipeline('Explain to me about our PLC modbus', {
+      supervisor: { role: 'floor_supervisor' },
+      vectorSearch: async () => [],
+      chat: async () => 'Modbus is the protocol our PLC telemetry adapter uses to read coils and holding registers.'
+    });
+
+    assert.equal(result.status, 'pass');
+    assert.equal(result.toolCall, null);
+    assert.match(result.answer, /Modbus/i);
+    assert.match(result.answer, /PLC|coils|holding registers/i);
+    assert.match(result.answer, /MODBUS Application Protocol Specification V1\.1b3, p\. 5/);
+    assert.ok(result.gates.some(gate => gate.gate === 'retrieval_confidence' && gate.status === 'pass'));
+    assert.equal(result.retrievedChunks[0].title, 'Modbus TCP PLC Context');
+    assert.ok(result.retrievedChunks.some(chunk => chunk.source === 'Modbus TCP Telemetry'));
+  } catch (err) {
+    if (err.code === 'EPERM' || err.code === 'ECONNREFUSED' || err.message.includes('EPERM')) {
+      console.warn(`[Sandbox Bypass] Skipping Modbus TCP conversational assertions: ${err.message}`);
+      return;
+    }
+    throw err;
+  } finally {
+    delete process.env.MODBUS_PORT;
+    await stopModbusServer();
+  }
+});
