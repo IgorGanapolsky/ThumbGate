@@ -16,7 +16,9 @@ function normalizeDomain(value) {
   try {
     return new URL(input.includes('://') ? input : `https://${input}`).hostname.toLowerCase();
   } catch {
-    return input.replace(/^https?:\/\//i, '').replace(/\/.*$/, '').toLowerCase().split(':')[0];
+    const withoutProtocol = input.replace(/^https?:\/\//i, '');
+    const hostnameAndPort = withoutProtocol.split('/')[0];
+    return hostnameAndPort.toLowerCase().split(':')[0];
   }
 }
 

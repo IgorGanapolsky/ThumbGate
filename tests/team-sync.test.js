@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { execSync } = require('node:child_process');
+const { execSync, execFileSync } = require('node:child_process');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const CLI_PATH = path.join(PROJECT_ROOT, 'bin', 'cli.js');
@@ -56,7 +56,7 @@ test('team-sync commits local prevention rules and pulls/pushes successfully', (
       THUMBGATE_NO_TELEMETRY: '1',
     };
     
-    const output = execSync(`${process.execPath} "${CLI_PATH}" team-sync`, {
+    const output = execFileSync(process.execPath, [CLI_PATH, 'team-sync'], {
       cwd: clientDir,
       env,
       encoding: 'utf8',

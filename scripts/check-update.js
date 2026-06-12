@@ -20,7 +20,11 @@ function getLocalVersion() {
 
 function httpsGetJson(url) {
   const headers = { 'User-Agent': 'thumbgate-updater' };
-  if (url.includes('api.github.com') && process.env.GITHUB_TOKEN) {
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(url);
+  } catch (_) {}
+  if (parsedUrl && parsedUrl.hostname === 'api.github.com' && process.env.GITHUB_TOKEN) {
     headers['Authorization'] = `token ${process.env.GITHUB_TOKEN}`;
   }
   return new Promise((resolve, reject) => {

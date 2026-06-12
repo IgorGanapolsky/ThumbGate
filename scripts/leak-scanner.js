@@ -164,7 +164,7 @@ async function checkStripeLeak(html) {
   const indicators = [];
   const leaks = [];
 
-  if (html.includes('js.stripe.com')) {
+  if (/https?:\/\/js\.stripe\.com\b/.test(html)) {
     indicators.push('Stripe.js library loaded');
   }
   if (html.includes('Stripe(')) {

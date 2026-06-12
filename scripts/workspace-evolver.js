@@ -155,6 +155,12 @@ function runCommand(command, {
   const args = parseCommandLine(command);
   const exec = args.shift();
 
+  const execBase = require('node:path').basename(exec).toLowerCase();
+  const allowed = ['node', 'node.exe', 'npm', 'npm.cmd', 'python3', 'python', 'pytest'];
+  if (!allowed.includes(execBase) && exec !== process.execPath) {
+    throw new Error(`Binary ${exec} is not authorized for workspace evolution.`);
+  }
+
   const result = spawnSync(exec, args, {
     cwd,
     env,
