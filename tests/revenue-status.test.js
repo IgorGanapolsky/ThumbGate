@@ -540,78 +540,86 @@ test('getHostedAuditViaHttp carries hosted runtime presence when exposed', async
 });
 
 test('generateRevenueStatusReport prefers hosted HTTP API when THUMBGATE_API_KEY is available', async () => {
-  const runCalls = [];
-  const report = await generateRevenueStatusReport({
-    repo: 'IgorGanapolsky/ThumbGate',
-    timeZone: 'America/New_York',
-    apiKey: 'tg_test_key',
-    runCommandFn(command, args) {
-      runCalls.push([command, ...args]);
-      if (command === 'gh') {
-        return {
-          status: 0,
-          stdout: 'THUMBGATE_PUBLIC_APP_ORIGIN\thttps://example.com\t2026-04-14T00:00:00Z\n',
-          stderr: '',
-          error: null,
-        };
-      }
-      throw new Error(`Unexpected command: ${command}`);
-    },
-    fetchImpl: async () => ({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        trafficMetrics: {
-          visitors: 9,
-          pageViews: 7,
-          checkoutStarts: 2,
+  const oldStripeKey = process.env.STRIPE_SECRET_KEY;
+  delete process.env.STRIPE_SECRET_KEY;
+  try {
+    const runCalls = [];
+    const report = await generateRevenueStatusReport({
+      repo: 'IgorGanapolsky/ThumbGate',
+      timeZone: 'America/New_York',
+      apiKey: 'tg_test_key',
+      runCommandFn(command, args) {
+        runCalls.push([command, ...args]);
+        if (command === 'gh') {
+          return {
+            status: 0,
+            stdout: 'THUMBGATE_PUBLIC_APP_ORIGIN\thttps://example.com\t2026-04-14T00:00:00Z\n',
+            stderr: '',
+            error: null,
+          };
+        }
+        throw new Error(`Unexpected command: ${command}`);
+      },
+      fetchImpl: async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          trafficMetrics: {
+            visitors: 9,
+            pageViews: 7,
+            checkoutStarts: 2,
+          },
+          signups: {
+            uniqueLeads: 1,
+          },
+          revenue: {
+            paidOrders: 1,
+            bookedRevenueCents: 4900,
+          },
+          pipeline: {
+            workflowSprintLeads: {
+              total: 1,
+            },
+          },
+          dataQuality: {
+            attributionCoverage: 1,
+            telemetryCoverage: 1,
+          },
+        }),
+      }),
+      fetchPublicProbe: async () => ({
+        health: {
+          status: 200,
+          version: '1.5.0',
         },
-        signups: {
-          uniqueLeads: 1,
-        },
-        revenue: {
-          paidOrders: 1,
-          bookedRevenueCents: 4900,
-        },
-        pipeline: {
-          workflowSprintLeads: {
-            total: 1,
+        root: {
+          status: 200,
+          signals: {
+            plausibleScript: true,
+            telemetryEndpoint: true,
+            gaLoaderScript: true,
+            gaEventHook: true,
           },
         },
-        dataQuality: {
-          attributionCoverage: 1,
-          telemetryCoverage: 1,
+        telemetryPing: {
+          status: 204,
         },
       }),
-    }),
-    fetchPublicProbe: async () => ({
-      health: {
-        status: 200,
-        version: '1.5.0',
-      },
-      root: {
-        status: 200,
-        signals: {
-          plausibleScript: true,
-          telemetryEndpoint: true,
-          gaLoaderScript: true,
-          gaEventHook: true,
-        },
-      },
-      telemetryPing: {
-        status: 204,
-      },
-    }),
-  });
+    });
 
-  assert.equal(report.source, 'hosted-http-api');
-  assert.equal(report.diagnosis.hostedSummaryWorking, true);
-  assert.equal(report.diagnosis.runtimePresenceKnown, false);
-  assert.equal(report.hostedAudit.summaries.today.revenue.bookedRevenueCents, 4900);
-  assert.equal(report.externalCustomerAudit.configured, false);
-  assert.ok(!runCalls.some((call) => call[0] === 'railway'));
-  assert.match(formatReport(report), /Railway runtime inspected: no/);
-  assert.match(formatReport(report), /External customer audit: unavailable \(STRIPE_SECRET_KEY is not set\)/);
+    assert.equal(report.source, 'hosted-http-api');
+    assert.equal(report.diagnosis.hostedSummaryWorking, true);
+    assert.equal(report.diagnosis.runtimePresenceKnown, false);
+    assert.equal(report.hostedAudit.summaries.today.revenue.bookedRevenueCents, 4900);
+    assert.equal(report.externalCustomerAudit.configured, false);
+    assert.ok(!runCalls.some((call) => call[0] === 'railway'));
+    assert.match(formatReport(report), /Railway runtime inspected: no/);
+    assert.match(formatReport(report), /External customer audit: unavailable \(STRIPE_SECRET_KEY is not set\)/);
+  } finally {
+    if (oldStripeKey !== undefined) {
+      process.env.STRIPE_SECRET_KEY = oldStripeKey;
+    }
+  }
 });
 
 test('generateRevenueStatusReport augments hosted HTTP summary with Railway external customer audit', async () => {
