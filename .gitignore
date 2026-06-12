@@ -108,3 +108,7 @@ undefined/
 
 # Manufacturing copilot prototype runtime artifacts
 prototypes/manufacturing-copilot/db/
+
+# Sandbox for tests
+tests/proof-test-sandbox/
+

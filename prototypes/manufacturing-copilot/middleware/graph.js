@@ -3,6 +3,13 @@
 const { Trace } = require('./langsmith');
 const llm = require('./llm');
 const { queryVectorDB } = require('./vector-db');
+const {
+  sanitizeInput,
+  scanForInjection,
+  confidenceGate,
+  unsafeOutputGate,
+  safetyCitationGate,
+} = require('./guardrails');
 const { redactPii } = require('../../../scripts/pii-scanner');
 const { redactSecrets } = require('../../../scripts/secret-redaction');
 
@@ -48,6 +55,16 @@ function safetyResponseForBlockedTool(toolCall, gateResult) {
   return `[ThumbGate Firewall Blocked Action]\nTool: ${toolCall.toolName}\nReason: ${gateResult.reason}`;
 }
 
+function chatbotGuardrailBlock(gateResult) {
+  return `[Chatbot Guardrail Blocked Response]\nGate: ${gateResult.gate}\nReason: ${gateResult.detail}`;
+}
+
+function classifyQuestionRoute(question) {
+  return /\b(loto|lockout|tagout|safety|interlock|guard|shutdown|emergency|press|cnc|conveyor)\b/i.test(question)
+    ? 'safety'
+    : 'general';
+}
+
 function createManufacturingGraph({
   detectProposedToolCall,
   evaluatePreToolUseGate,
@@ -62,6 +79,8 @@ function createManufacturingGraph({
   return loadLangchainRuntime().then(({ Annotation, END, START, StateGraph, ChatPromptTemplate }) => {
     const GraphState = Annotation.Root({
       question: Annotation(),
+      sanitizedQuestion: Annotation(),
+      route: Annotation(),
       supervisor: Annotation(),
       machineState: Annotation(),
       proposedToolCall: Annotation(),
@@ -82,19 +101,50 @@ function createManufacturingGraph({
     ]);
 
     const graph = new StateGraph(GraphState)
+      .addNode('sanitize_input', async (state) => {
+        const gateResult = await trace.span(
+          'sanitize_input',
+          'chain',
+          { question: state.question },
+          async () => sanitizeInput(state.question)
+        );
+        return {
+          sanitizedQuestion: gateResult.sanitized,
+          gates: gateResult.status === 'sanitized' ? [gateResult] : [],
+          graphNodes: ['sanitize_input'],
+        };
+      })
+      .addNode('scan_input_injection', async (state) => {
+        const gateResult = await trace.span(
+          'scan_input_injection',
+          'chain',
+          { question: state.sanitizedQuestion },
+          async () => scanForInjection(state.sanitizedQuestion, 'input')
+        );
+        return {
+          gates: gateResult.status === 'pass' ? state.gates : [...state.gates, gateResult],
+          graphNodes: [...state.graphNodes, 'scan_input_injection'],
+          ...(gateResult.status === 'block'
+            ? {
+                status: 'blocked',
+                answer: chatbotGuardrailBlock(gateResult),
+              }
+            : {}),
+        };
+      })
       .addNode('inspect_request', async (state) => {
         const proposedToolCall = await trace.span(
           'inspect_request',
           'chain',
-          { question: state.question },
-          async () => detectProposedToolCall(state.question)
+          { question: state.sanitizedQuestion },
+          async () => detectProposedToolCall(state.sanitizedQuestion)
         );
         return {
           proposedToolCall,
+          route: classifyQuestionRoute(state.sanitizedQuestion),
           supervisor: state.supervisor || { authenticated: false, role: 'operator' },
           machineState: state.machineState || { anomalyDetected: false, source: 'demo-default' },
-          gates: [],
-          graphNodes: ['inspect_request'],
+          graphNodes: [...state.graphNodes, 'inspect_request'],
           langchainComponents: ['ChatPromptTemplate', 'ManufacturingRetriever'],
         };
       })
@@ -128,12 +178,30 @@ function createManufacturingGraph({
         const retrievedChunks = await trace.span(
           'retrieve_manual_context',
           'retriever',
-          { query: state.question },
-          async () => retriever.invoke(state.question, { topK: 2 })
+          { query: state.sanitizedQuestion },
+          async () => retriever.invoke(state.sanitizedQuestion, { topK: 2 })
         );
         return {
           retrievedChunks,
           graphNodes: [...state.graphNodes, 'retrieve_manual_context'],
+        };
+      })
+      .addNode('check_retrieval_confidence', async (state) => {
+        const gateResult = await trace.span(
+          'check_retrieval_confidence',
+          'chain',
+          { chunkCount: state.retrievedChunks.length },
+          async () => confidenceGate(state.retrievedChunks)
+        );
+        return {
+          gates: [...state.gates, gateResult],
+          graphNodes: [...state.graphNodes, 'check_retrieval_confidence'],
+          ...(gateResult.status === 'block'
+            ? {
+                status: 'blocked',
+                answer: chatbotGuardrailBlock(gateResult),
+              }
+            : {}),
         };
       })
       .addNode('compose_langchain_prompt', async (state) => {
@@ -144,7 +212,7 @@ function createManufacturingGraph({
           'compose_langchain_prompt',
           'prompt',
           { question: state.question, chunkCount: state.retrievedChunks.length },
-          async () => prompt.invoke({ context, question: state.question })
+          async () => prompt.invoke({ context, question: state.sanitizedQuestion })
         );
         return {
           messages: toLangChainMessages(promptValue),
@@ -173,16 +241,63 @@ function createManufacturingGraph({
           graphNodes: [...state.graphNodes, 'generate_answer'],
         };
       })
+      .addNode('check_output_safety', async (state) => {
+        const gateResult = await trace.span(
+          'check_output_safety',
+          'chain',
+          { status: state.status },
+          async () => unsafeOutputGate(state.answer)
+        );
+        return {
+          gates: gateResult.status === 'pass' ? state.gates : [...state.gates, gateResult],
+          graphNodes: [...state.graphNodes, 'check_output_safety'],
+          ...(gateResult.status === 'block'
+            ? {
+                status: 'blocked',
+                answer: chatbotGuardrailBlock(gateResult),
+              }
+            : {}),
+        };
+      })
+      .addNode('check_safety_citation', async (state) => {
+        const gateResult = await trace.span(
+          'check_safety_citation',
+          'chain',
+          { route: state.route },
+          async () => safetyCitationGate(state.answer, state.route)
+        );
+        return {
+          gates: gateResult.status === 'pass' ? state.gates : [...state.gates, gateResult],
+          graphNodes: [...state.graphNodes, 'check_safety_citation'],
+          ...(gateResult.status === 'block'
+            ? {
+                status: 'blocked',
+                answer: chatbotGuardrailBlock(gateResult),
+              }
+            : {}),
+        };
+      })
+      .addConditionalEdges('scan_input_injection', (state) => (
+        state.status === 'blocked' ? END : 'inspect_request'
+      ))
       .addConditionalEdges('inspect_request', (state) => (
         state.proposedToolCall ? 'thumbgate_tool_firewall' : 'retrieve_manual_context'
       ))
       .addConditionalEdges('thumbgate_tool_firewall', (state) => (
         state.toolGate?.allowed ? 'retrieve_manual_context' : END
       ))
-      .addEdge(START, 'inspect_request')
-      .addEdge('retrieve_manual_context', 'compose_langchain_prompt')
+      .addConditionalEdges('check_retrieval_confidence', (state) => (
+        state.status === 'blocked' ? END : 'compose_langchain_prompt'
+      ))
+      .addConditionalEdges('check_output_safety', (state) => (
+        state.status === 'blocked' ? END : 'check_safety_citation'
+      ))
+      .addEdge(START, 'sanitize_input')
+      .addEdge('sanitize_input', 'scan_input_injection')
+      .addEdge('retrieve_manual_context', 'check_retrieval_confidence')
       .addEdge('compose_langchain_prompt', 'generate_answer')
-      .addEdge('generate_answer', END)
+      .addEdge('generate_answer', 'check_output_safety')
+      .addEdge('check_safety_citation', END)
       .compile();
 
     return graph;

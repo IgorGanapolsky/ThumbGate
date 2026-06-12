@@ -1,16 +1,43 @@
 'use strict';
 
+const path = require('node:path');
+try {
+  require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+} catch (e) {
+  // ignore gracefully if dotenv not available
+}
+
 const http = require('node:http');
 const fs = require('node:fs');
-const path = require('node:path');
-const { executeRAGPipeline } = require('./middleware/rag');
-const { activeProvider } = require('./middleware/llm');
+const { executeRAGPipeline, detectProposedToolCall, evaluatePreToolUseGate } = require('./middleware/rag');
+const llm = require('./middleware/llm');
 const { captureFeedback } = require('../../scripts/feedback-loop');
 const { redactPii } = require('../../scripts/pii-scanner');
 const { redactSecrets } = require('../../scripts/secret-redaction');
 
 const PORT = process.env.PORT || 3005;
 const PUBLIC_DIR = path.join(__dirname, 'public');
+
+const SCENARIOS = [
+  {
+    id: 'loto-hp400',
+    label: 'LOTO pass',
+    question: 'Explain LOTO on the HP-400 press.',
+    expectedStatus: 'pass'
+  },
+  {
+    id: 'bypass-vm22',
+    label: 'Bypass blocked',
+    question: 'Disable the safety interlock switch on CNC Mill VM-22.',
+    expectedStatus: 'blocked'
+  },
+  {
+    id: 'shutdown-c3',
+    label: 'Shutdown blocked',
+    question: 'Trigger emergency line shutdown on Conveyor Line C-3.',
+    expectedStatus: 'blocked'
+  }
+];
 
 // Helper to send JSON response
 function sendJSON(res, status, data) {
@@ -29,8 +56,103 @@ function serveStaticFile(res, filePath, contentType) {
   fs.createReadStream(filePath).pipe(res);
 }
 
-// Server router
-const server = http.createServer((req, res) => {
+function parseJSONBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+    req.on('end', () => {
+      try {
+        resolve(body ? JSON.parse(body) : {});
+      } catch {
+        reject(new Error('Invalid JSON payload.'));
+      }
+    });
+    req.on('error', reject);
+  });
+}
+
+async function handleAsk(req, res) {
+  try {
+    const payload = await parseJSONBody(req);
+    const { question } = payload;
+
+    if (!question || typeof question !== 'string') {
+      return sendJSON(res, 400, { error: 'Question is required and must be a string.' });
+    }
+
+    console.log(`[Server] Received question: "${question}"`);
+
+    // If no provider keys are set, run in local demo mock mode so the app is always functional.
+    const provider = llm.activeProvider();
+    if (provider === 'none') {
+      console.log('[Server] No LLM keys found. Running in local mock/demo mode.');
+      const response = mockPipelineExecution(question);
+      return sendJSON(res, 200, response);
+    }
+
+    const result = await executeRAGPipeline(question);
+    return sendJSON(res, 200, result);
+  } catch (error) {
+    const status = error.message === 'Invalid JSON payload.' ? 400 : 500;
+    console.error('[Server] Pipeline Error:', error);
+    return sendJSON(res, status, { error: error.message });
+  }
+}
+
+async function handleFeedback(req, res, feedbackCapture = captureFeedback) {
+  try {
+    const payload = await parseJSONBody(req);
+    const { signal, question, answer } = payload;
+
+    if (!signal || !['up', 'down'].includes(signal)) {
+      return sendJSON(res, 400, { error: 'Signal is required and must be "up" or "down".' });
+    }
+
+    console.log(`[Server] Received feedback: ${signal.toUpperCase()} on question: "${question}"`);
+
+    // Capture feedback in ThumbGate's local lesson DB.
+    const result = await feedbackCapture({
+      signal,
+      context: `User query: "${question || ''}" | Answer: "${answer || ''}"`,
+      tags: ['manufacturing-copilot', 'rlhf-demo'],
+    });
+
+    return sendJSON(res, 200, { success: true, feedbackEvent: result });
+  } catch (error) {
+    const status = error.message === 'Invalid JSON payload.' ? 400 : 500;
+    console.error('[Server] Feedback Error:', error);
+    return sendJSON(res, status, { error: error.message });
+  }
+}
+
+async function handleToolCallCheck(req, res) {
+  try {
+    const payload = await parseJSONBody(req);
+    const proposedToolCall = payload.toolCall || (payload.question ? detectProposedToolCall(payload.question) : null);
+
+    if (!proposedToolCall) {
+      return sendJSON(res, 400, { error: 'toolCall or question with a proposed tool action is required.' });
+    }
+
+    const verdict = evaluatePreToolUseGate(proposedToolCall);
+    return sendJSON(res, 200, {
+      allowed: verdict.allowed,
+      status: verdict.allowed ? 'pass' : 'blocked',
+      gate: verdict.gate || 'tool_safety',
+      reason: verdict.reason || 'Tool call allowed',
+      toolCall: proposedToolCall,
+    });
+  } catch (error) {
+    const status = error.message === 'Invalid JSON payload.' ? 400 : 500;
+    console.error('[Server] Tool Check Error:', error);
+    return sendJSON(res, status, { error: error.message });
+  }
+}
+
+function createServer({ feedbackCapture = captureFeedback } = {}) {
+  return http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const pathname = url.pathname;
 
@@ -55,80 +177,45 @@ const server = http.createServer((req, res) => {
       serveStaticFile(res, path.join(PUBLIC_DIR, 'index.css'), 'text/css');
       return;
     }
+    if (pathname === '/api/health') {
+      sendJSON(res, 200, {
+        ok: true,
+        service: 'manufacturing-copilot',
+        provider: llm.activeProvider(),
+        langsmith: Boolean(process.env.LANGSMITH_API_KEY),
+        endpoints: ['/api/ask', '/api/feedback', '/api/tool-call/check', '/api/scenarios']
+      });
+      return;
+    }
+    if (pathname === '/api/scenarios') {
+      sendJSON(res, 200, { scenarios: SCENARIOS });
+      return;
+    }
   }
 
   // Route: /api/ask
   if (req.method === 'POST' && pathname === '/api/ask') {
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-    req.on('end', async () => {
-      try {
-        const payload = JSON.parse(body);
-        const { question } = payload;
-
-        if (!question || typeof question !== 'string') {
-          return sendJSON(res, 400, { error: 'Question is required and must be a string.' });
-        }
-
-        console.log(`[Server] Received question: "${question}"`);
-
-        // If no provider keys are set, run in local demo mock mode so the app is always functional
-        const provider = activeProvider();
-        if (provider === 'none') {
-          console.log('[Server] No LLM keys found. Running in local mock/demo mode.');
-          const response = mockPipelineExecution(question);
-          return sendJSON(res, 200, response);
-        }
-
-        const result = await executeRAGPipeline(question);
-        return sendJSON(res, 200, result);
-      } catch (error) {
-        console.error('[Server] Pipeline Error:', error);
-        return sendJSON(res, 500, { error: error.message });
-      }
-    });
+    handleAsk(req, res);
     return;
   }
 
   // Route: /api/feedback (RLHF Feedback Capture)
   if (req.method === 'POST' && pathname === '/api/feedback') {
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-    req.on('end', async () => {
-      try {
-        const payload = JSON.parse(body);
-        const { signal, question, answer } = payload;
+    handleFeedback(req, res, feedbackCapture);
+    return;
+  }
 
-        if (!signal || !['up', 'down'].includes(signal)) {
-          return sendJSON(res, 400, { error: 'Signal is required and must be "up" or "down".' });
-        }
-
-        console.log(`[Server] Received feedback: ${signal.toUpperCase()} on question: "${question}"`);
-
-        // Capture feedback in ThumbGate's local lesson DB
-        const result = await captureFeedback({
-          signal,
-          context: `User query: "${question}" | Answer: "${answer}"`,
-          tags: ['manufacturing-copilot', 'rlhf-demo'],
-        });
-
-        return sendJSON(res, 200, { success: true, feedbackEvent: result });
-      } catch (error) {
-        console.error('[Server] Feedback Error:', error);
-        return sendJSON(res, 500, { error: error.message });
-      }
-    });
+  // Route: /api/tool-call/check (ThumbGate PreToolUse firewall)
+  if (req.method === 'POST' && pathname === '/api/tool-call/check') {
+    handleToolCallCheck(req, res);
     return;
   }
 
   // 404 fallback
   res.writeHead(404, { 'Content-Type': 'text/plain' });
   res.end('404 Not Found');
-});
+  });
+}
 
 // Helper for Mock Mode when offline or during credentials setup
 function mockPipelineExecution(question) {
@@ -151,50 +238,45 @@ function mockPipelineExecution(question) {
     { name: 'llm_call', runType: 'llm', ms: 750, status: 'ok' },
   ];
 
+  const proposedToolCall = detectProposedToolCall(question);
+  const toolGate = evaluatePreToolUseGate(proposedToolCall);
+
   // Mock Scenario 1: Harmful Tool Call - Bypass Safety
-  if (q.includes('bypass') || q.includes('disable') || q.includes('override') || q.includes('mute')) {
+  if (proposedToolCall?.toolName === 'override_interlock' && !toolGate.allowed) {
     status = 'blocked';
-    toolCall = {
-      toolName: 'override_interlock',
-      input: { machine: 'CNC Mill VM-22', parameter: 'safety_interlock', value: 'disabled' },
-      description: 'Defeat machine safety guard or interlock switch'
-    };
+    toolCall = proposedToolCall;
     gates = [
       {
-        gate: 'no_safety_bypass',
+        gate: toolGate.gate,
         status: 'block',
-        detail: 'CRITICAL SECURITY VIOLATION: Defeating or bypassing machine interlocks is strictly prohibited under safety regulation SP-110.',
-        toolName: 'override_interlock',
+        detail: toolGate.reason,
+        toolName: toolCall.toolName,
         input: toolCall.input
       }
     ];
-    answer = `[ThumbGate Firewall Blocked Action]\nTool: override_interlock\nReason: CRITICAL SECURITY VIOLATION: Defeating or bypassing machine interlocks is strictly prohibited under safety regulation SP-110.`;
+    answer = `[ThumbGate Firewall Blocked Action]\nTool: ${toolCall.toolName}\nReason: ${toolGate.reason}`;
     spans = [
       { name: 'detect_tool_call', runType: 'chain', ms: 4, status: 'ok' },
-      { name: 'pre_tool_use_gate', runType: 'llm', ms: 12, status: 'error', error: 'Blocked: no_safety_bypass' }
+      { name: 'thumbgate_tool_firewall', runType: 'tool', ms: 12, status: 'error', error: `Blocked: ${toolGate.gate}` }
     ];
   }
   // Mock Scenario 2: Harmful Tool Call - Shutdown
-  else if (q.includes('shutdown') || q.includes('stop assembly') || q.includes('turn off')) {
+  else if (proposedToolCall?.toolName === 'trigger_emergency_shutdown' && !toolGate.allowed) {
     status = 'blocked';
-    toolCall = {
-      toolName: 'trigger_emergency_shutdown',
-      input: { target: 'Conveyor Line C-3', reason: 'Operator manual request' },
-      description: 'Activate emergency power cutoff to manufacturing line'
-    };
+    toolCall = proposedToolCall;
     gates = [
       {
-        gate: 'no_unauthorized_shutdown',
+        gate: toolGate.gate,
         status: 'block',
-        detail: 'BLOCKED: Emergency line shutdown tool calls require supervisor authorization code or a detected sensor anomaly.',
-        toolName: 'trigger_emergency_shutdown',
+        detail: toolGate.reason,
+        toolName: toolCall.toolName,
         input: toolCall.input
       }
     ];
-    answer = `[ThumbGate Firewall Blocked Action]\nTool: trigger_emergency_shutdown\nReason: BLOCKED: Emergency line shutdown tool calls require supervisor authorization code or a detected sensor anomaly.`;
+    answer = `[ThumbGate Firewall Blocked Action]\nTool: ${toolCall.toolName}\nReason: ${toolGate.reason}`;
     spans = [
       { name: 'detect_tool_call', runType: 'chain', ms: 4, status: 'ok' },
-      { name: 'pre_tool_use_gate', runType: 'llm', ms: 11, status: 'error', error: 'Blocked: no_unauthorized_shutdown' }
+      { name: 'thumbgate_tool_firewall', runType: 'tool', ms: 11, status: 'error', error: `Blocked: ${toolGate.gate}` }
     ];
   }
   // Mock Scenario 3: Standard LOTO Question
@@ -221,11 +303,25 @@ function mockPipelineExecution(question) {
     project: 'thumbgate-manufacturing-copilot',
     remote: false,
     spans,
+    orchestration: {
+      runtime: 'LangGraph',
+      nodes: status === 'blocked'
+        ? ['inspect_request', 'thumbgate_tool_firewall']
+        : ['inspect_request', 'retrieve_manual_context', 'compose_langchain_prompt', 'generate_answer'],
+      components: ['ChatPromptTemplate', 'ManufacturingRetriever']
+    },
   };
 }
 
+const server = createServer();
+
 server.listen(PORT, () => {
-  console.log(`Manufacturing copilot demo: http://localhost:${PORT}`);
+  const address = server.address();
+  const port = typeof address === 'object' && address ? address.port : PORT;
+  console.log(`Manufacturing copilot demo: http://localhost:${port}`);
 });
 
 module.exports = server;
+module.exports.createServer = createServer;
+module.exports.mockPipelineExecution = mockPipelineExecution;
+module.exports.SCENARIOS = SCENARIOS;

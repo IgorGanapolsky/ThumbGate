@@ -103,7 +103,7 @@ function unsafeOutputGate(answer) {
 // --- Safety answers must cite the procedure ---------------------------------
 
 function safetyCitationGate(answer, route) {
-  if (route !== 'safety') {
+  if (route !== 'safety' && route !== true) {
     return { gate: 'safety_citation', status: 'pass', detail: 'Not a safety-routed answer; citation not required' };
   }
   const cited = /\bSP-\d{3}\b/.test(answer);

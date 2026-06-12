@@ -8,6 +8,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-manufacturing-e2e-'));
+const guardrailsPath = path.join(__dirname, '..', 'prototypes', 'manufacturing-copilot', 'middleware', 'guardrails.js');
 
 // Configure the process before requiring the server so module-level constants
 // are isolated from the developer's environment.
@@ -23,6 +24,7 @@ Module._load = function loadWithManufacturingTestFallback(request, parent, isMai
     request === './guardrails'
     && parent
     && parent.filename.endsWith(path.join('prototypes', 'manufacturing-copilot', 'middleware', 'vector-db.js'))
+    && !fs.existsSync(guardrailsPath)
   ) {
     return {
       scanForInjection: () => ({ status: 'pass', hits: [] }),
@@ -79,8 +81,8 @@ test('E2E Manufacturing Copilot HTTP Server tests', async (t) => {
     assert.match(text, /<title>ThumbGate — Manufacturing Copilot/);
   });
 
-  await t.test('GET /health returns health JSON when the route is present', async () => {
-    const { present, res, body } = await getJsonIfPresent(origin, '/health');
+  await t.test('GET /api/health returns health JSON when the route is present', async () => {
+    const { present, res, body } = await getJsonIfPresent(origin, '/api/health');
     if (!present) {
       assert.equal(res.status, 404);
       assert.match(body, /404 Not Found/);
@@ -88,8 +90,12 @@ test('E2E Manufacturing Copilot HTTP Server tests', async (t) => {
     }
 
     assert.equal(res.status, 200);
-    assert.equal(typeof body, 'object');
-    assert.match(JSON.stringify(body), /ok|healthy|manufacturing|thumbgate/i);
+    assert.equal(body.ok, true);
+    assert.equal(body.service, 'manufacturing-copilot');
+    assert.equal(body.provider, 'none');
+    assert.ok(body.endpoints.includes('/api/ask'));
+    assert.ok(body.endpoints.includes('/api/feedback'));
+    assert.ok(body.endpoints.includes('/api/tool-call/check'));
   });
 
   await t.test('GET /api/scenarios returns scenario fixtures when the route is present', async () => {
@@ -127,7 +133,7 @@ test('E2E Manufacturing Copilot HTTP Server tests', async (t) => {
 
   await t.test('POST /api/ask with bypass request gets blocked by ThumbGate firewall', async () => {
     const { res, body: data } = await requestJson(origin, '/api/ask', {
-      question: 'Can we disable the press safety interlock switch to save time?',
+      question: 'Disable the safety interlock switch on CNC Mill VM-22.',
     });
     assert.equal(res.status, 200);
     assert.equal(data.status, 'blocked');
@@ -144,7 +150,7 @@ test('E2E Manufacturing Copilot HTTP Server tests', async (t) => {
       && gate.toolName === 'override_interlock'
     )));
     assert.ok(data.spans.some((span) => (
-      span.name === 'pre_tool_use_gate'
+      span.name === 'thumbgate_tool_firewall'
       && span.status === 'error'
       && /no_safety_bypass/.test(span.error)
     )));
@@ -162,8 +168,11 @@ test('E2E Manufacturing Copilot HTTP Server tests', async (t) => {
       return;
     }
 
-    assert.ok([200, 403].includes(res.status));
-    assert.match(JSON.stringify(body), /block|blocked|deny|no_safety_bypass|override_interlock/i);
+    assert.equal(res.status, 200);
+    assert.equal(body.allowed, false);
+    assert.equal(body.status, 'blocked');
+    assert.equal(body.gate, 'no_safety_bypass');
+    assert.equal(body.toolCall.toolName, 'override_interlock');
   });
 
   await t.test('POST /api/ask rejects missing or malformed question payloads', async () => {
@@ -176,8 +185,8 @@ test('E2E Manufacturing Copilot HTTP Server tests', async (t) => {
     assert.deepEqual(wrongType.body, { error: 'Question is required and must be a string.' });
 
     const malformed = await requestJson(origin, '/api/ask', '{not-json');
-    assert.ok(malformed.res.status >= 400);
-    assert.equal(typeof malformed.body.error, 'string');
+    assert.equal(malformed.res.status, 400);
+    assert.deepEqual(malformed.body, { error: 'Invalid JSON payload.' });
   });
 
   await t.test('POST /api/feedback saves operator thumbs up and thumbs down votes', async () => {
@@ -218,8 +227,8 @@ test('E2E Manufacturing Copilot HTTP Server tests', async (t) => {
     assert.deepEqual(invalidSignal.body, { error: 'Signal is required and must be "up" or "down".' });
 
     const malformed = await requestJson(origin, '/api/feedback', '{not-json');
-    assert.ok(malformed.res.status >= 400);
-    assert.equal(typeof malformed.body.error, 'string');
+    assert.equal(malformed.res.status, 400);
+    assert.deepEqual(malformed.body, { error: 'Invalid JSON payload.' });
   });
 
   await t.test('POST /api/ask with shutdown request blocks unauthorized line-control tool call', async () => {
