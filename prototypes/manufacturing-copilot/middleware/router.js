@@ -9,8 +9,8 @@ const { chat, activeProvider } = require('./llm');
 const ROUTES = ['safety', 'maintenance', 'quality'];
 
 const KEYWORDS = {
-  safety: ['lockout', 'tagout', 'loto', 'confined space', 'spill', 'ppe', 'permit', 'evacuation', 'guard', 'interlock', 'safe', 'safety', 'hazard'],
-  maintenance: ['maintenance', 'repair', 'replace', 'bearing', 'filter', 'belt', 'tracking', 'spindle', 'compressor', 'lubric', 'torque', 'service', 'pm '],
+  safety: ['lockout', 'tagout', 'loto', 'confined space', 'spill', 'ppe', 'permit', 'evacuation', 'guard', 'interlock', 'safe', 'safety', 'hazard', 'bypass'],
+  maintenance: ['maintenance', 'repair', 'replace', 'bearing', 'filter', 'belt', 'tracking', 'spindle', 'compressor', 'lubric', 'torque', 'service', 'pm ', 'press', 'hydraulic', 'manual'],
   quality: ['quality', 'inspection', 'tolerance', 'gauge', 'ncr', 'nonconform', 'defect', 'weld', 'coating', 'thickness', 'sample', 'spec'],
 };
 

@@ -1,7 +1,7 @@
 'use strict';
 
 // Tiny retrieval layer: markdown sections as chunks, keyword-overlap scoring.
-// Deliberately simple — the demo's point is the governance around retrieval,
+// Deliberately simple: the demo's point is the governance around retrieval,
 // not the retriever. Swappable for LanceDB/embeddings in production.
 
 const fs = require('node:fs');

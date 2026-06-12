@@ -86,7 +86,7 @@ class Trace {
     }
   }
 
-  end(outputs) {
+  end(outputs = {}) {
     if (enabled()) {
       post(`/runs/${this.id}`, { end_time: nowIso(), outputs }, 'PATCH');
     }
