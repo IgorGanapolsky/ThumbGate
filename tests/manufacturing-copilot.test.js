@@ -305,17 +305,61 @@ test('manufacturing retrieval planner asks for scope before generic machine setu
   ]);
 });
 
-test('manufacturing retrieval planner routes coil questions to telemetry and protocol specifications', () => {
+test('manufacturing retrieval planner keeps maintenance coil questions out of telemetry and unrelated manuals', () => {
   assert.equal(isTelemetryQuestion('is coil 3 working normally now?'), true);
-  assert.equal(isTelemetryQuestion('Explain to me maintenance procedures for coils'), true);
+  assert.equal(isTelemetryQuestion('Explain to me maintenance procedures for coils'), false);
 
   const maintenancePlan = planRetrieval('Explain to me maintenance procedures for coils', 'general');
   assert.deepEqual(planMetadataFilters(maintenancePlan), {
-    sourcePreference: ['Maintenance Manual', 'Protocol Specification', 'Live PLC Telemetry'],
+    sourcePreference: ['Maintenance Manual'],
     procedureCode: null,
     machine: null,
     role: 'floor_supervisor',
   });
+});
+
+test('manufacturing copilot explains maintenance and safety coil procedure requests without live telemetry', async () => {
+  const result = await executeRAGPipeline('Explain to me maintenance and safety procedures for coils', {
+    vectorSearch: async () => [
+      {
+        title: 'Live PLC Status',
+        text: 'Coil 3 is tripped now.',
+        score: 9.5,
+        source: 'Modbus TCP Telemetry',
+        fileName: 'modbus_telemetry.raw'
+      },
+      {
+        title: 'OSHA-3170: Hazardous Maintenance Activities',
+        text: 'Machine setup, inspection, cleaning, lubrication, and maintenance can present amputation hazards.',
+        score: 1.1,
+        source: 'Maintenance Manual',
+        fileName: 'maintenance-manual.md',
+        sourceTitle: 'OSHA 3170 Safeguarding Equipment and Protecting Employees from Amputations',
+        sourceUrl: 'https://www.osha.gov/sites/default/files/publications/OSHA3170.pdf',
+        sourcePage: '11',
+      },
+      {
+        title: 'OSHA-3120: Energy Control Procedures',
+        text: 'Energy-control procedures must clearly outline the scope, purpose, authorization, rules, and techniques for controlling hazardous energy.',
+        score: 1.0,
+        source: 'Safety Procedures Manual',
+        fileName: 'safety-procedures.md',
+        sourceTitle: 'OSHA 3120 Control of Hazardous Energy Lockout/Tagout',
+        sourceUrl: 'https://www.osha.gov/sites/default/files/publications/OSHA3120.pdf',
+        sourcePage: '13',
+      },
+    ],
+  });
+
+  assert.equal(result.status, 'pass');
+  assert.match(result.answer, /coil-specific OEM maintenance manual/i);
+  assert.match(result.answer, /Maintenance Manual: OSHA-3170/);
+  assert.match(result.answer, /Safety Procedures Manual: OSHA-3120/);
+  assert.doesNotMatch(result.answer, /current live PLC status/i);
+  assert.deepEqual(result.retrievedChunks.map(chunk => chunk.sourceCategory), [
+    'Maintenance Manual',
+    'Safety Procedures Manual',
+  ]);
 });
 
 test('manufacturing local hybrid rerank prefers exact procedure and source matches over raw vector order', () => {

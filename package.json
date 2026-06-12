@@ -270,7 +270,7 @@
     "src/"
   ],
   "scripts": {
-    "postinstall": "node bin/postinstall.js || true",
+    "postinstall": "node bin/postinstall.js && npm --prefix prototypes/manufacturing-copilot ci || true",
     "start": "node src/api/server.js",
     "demo:manufacturing": "node prototypes/manufacturing-copilot/server.js",
     "numbers:generate": "node scripts/generate-numbers-page.js",

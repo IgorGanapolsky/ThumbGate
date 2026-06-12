@@ -258,14 +258,15 @@
     function getCategoryName(chunkOrString) {
       if (!chunkOrString) return 'Unknown';
       const source = typeof chunkOrString === 'string'
-        ? chunkOrString.toLowerCase()
-        : String(chunkOrString.source || chunkOrString.sourceCategory || '').toLowerCase();
-      if (source.includes('telemetry')) return 'Telemetry';
-      if (source.includes('maintenance')) return 'Maintenance';
-      if (source.includes('safety')) return 'Safety';
-      if (source.includes('quality')) return 'Quality';
-      if (source.includes('protocol')) return 'Protocol';
-      return typeof chunkOrString === 'string' ? chunkOrString : (chunkOrString.source || 'Other');
+        ? chunkOrString
+        : (chunkOrString.sourceCategory || chunkOrString.source || 'Other');
+      const sLower = source.toLowerCase();
+      if (sLower.includes('telemetry')) return 'Live PLC Telemetry';
+      if (sLower.includes('maintenance')) return 'Maintenance Manual';
+      if (sLower.includes('safety')) return 'Safety Procedures Manual';
+      if (sLower.includes('quality')) return 'Quality Standards Manual';
+      if (sLower.includes('protocol')) return 'Protocol Specification';
+      return source;
     }
 
     function runScenario(type) {

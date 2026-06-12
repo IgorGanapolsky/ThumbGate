@@ -76,6 +76,16 @@ status changes.
 - DONE: Answer citations and the UI reference panel now expose document/manual
   category labels such as Safety Procedures Manual, Maintenance Manual,
   Quality Standards Manual, Protocol Specification, and Live PLC Telemetry.
+- DONE: Broad setup questions no longer fan out across unrelated manuals.
+  Generic prompts such as "Explain to me machine setup" stop before retrieval
+  and ask for category, machine, or procedure scope. Category-specific prompts
+  such as "Explain maintenance procedures for coils" now apply document-type
+  metadata filters before HNSW/FTS evidence selection, so the answer is not
+  falsely marked as grounded in Safety, Quality, or Live PLC telemetry.
+- DONE: Coil wording is disambiguated. Live PLC telemetry is used for live
+  coil/status/value questions such as "is coil 3 working normally now?", while
+  maintenance/safety procedure questions about coils retrieve maintenance and
+  safety documents only and synthesize both categories in the answer.
 - DONE: Make hallucination prevention explicit in the production RAG path: added
   answer-grounding checks (`hallucinationGroundingGate`) that compare generated
   claims against retrieved chunks, require source-category citations on all
@@ -106,7 +116,7 @@ status changes.
 - DONE: `middleware/guardrails.js` (chatbot-owned guardrail functions, updated `safetyCitationGate` to support boolean route arguments).
 - DONE: `middleware/vector-db.js` ingestion quarantine + `getIngestionReport()`.
 - DONE: `middleware/graph.js` LangGraph StateGraph + `rag.js` facade rewrite; server endpoints are fully wired up.
-- DONE: `tests/manufacturing-copilot.test.js` (unit) + `tests/manufacturing-copilot-e2e.test.js` (e2e instrumentation) with 100% focused manufacturing test pass rates (**59/59 tests passing**, verified 2026-06-12).
+- DONE: `tests/manufacturing-copilot.test.js` (unit) + `tests/manufacturing-copilot-e2e.test.js` (e2e instrumentation) with 100% focused manufacturing test pass rates (**63/63 tests passing**, verified 2026-06-12).
 - DONE: Outbound response sanitization (PII + secret redaction) implemented and verified in the RAG execution path.
 - DONE: Saved and organized LangSmith API credentials in git-ignored `.env` for the supervisor trace dashboard.
 - DONE: Frontend (`index.html`) updated to always show thumbs up/down voting controls for all responses (including blocks) to capture feedback on firewall decisions.

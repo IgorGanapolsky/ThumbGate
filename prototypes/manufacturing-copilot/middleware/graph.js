@@ -101,7 +101,8 @@ function inferSourcePreferenceFromQuestion(question, route) {
   if (/\b(safety|loto|lockout|tagout|interlock|guard|guarding|hazard|hazcom|confined space|emergency)\b/.test(q) || route === 'safety') {
     preferences.push('Safety Procedures Manual');
   }
-  if (/\b(modbus|plc|register|registers|coil|coils|telemetry|tcp)\b/i.test(q)) {
+  if (/\b(modbus|plc|register|registers|telemetry|tcp)\b/i.test(q)
+    || (/\b(coil|coils)\b/i.test(q) && /\b(status|state|current|live|now|value|read|working|normal|normally|tripped|stopped|bypassed)\b/i.test(q))) {
     preferences.push('Protocol Specification');
   }
   if (isTelemetryQuestion(question)) {
@@ -159,16 +160,18 @@ function planRetrieval(question, route, role) {
     : /\bc-3\b|conveyor/i.test(question)
     ? 'Conveyor Line C-3'
     : null;
+  const sourcePreference = inferSourcePreferenceFromQuestion(question, route);
+  const prefsCount = sourcePreference.length || 1;
   return {
     route,
     procedureCode,
     machine,
     role: userRole,
-    topK: 2,
-    candidateK: procedureCode ? 6 : 5,
-    maxContextTokens: route === 'safety' ? 900 : 650,
+    topK: Math.max(2, prefsCount),
+    candidateK: Math.max(procedureCode ? 6 : 5, prefsCount * 3),
+    maxContextTokens: route === 'safety' ? Math.max(900, prefsCount * 300) : Math.max(650, prefsCount * 250),
     queryTerms: tokenize(question),
-    sourcePreference: inferSourcePreferenceFromQuestion(question, route),
+    sourcePreference,
   };
 }
 
@@ -222,6 +225,31 @@ function localHybridRerank(question, chunks, metadataFilters = {}) {
     .sort((a, b) => b.rerank.finalScore - a.rerank.finalScore);
 }
 
+function selectDiverseEvidence(rankedChunks, topK, metadataFilters = {}) {
+  const preferences = metadataFilters.sourcePreference || [];
+  if (preferences.length <= 1) return rankedChunks.slice(0, topK);
+
+  const selected = [];
+  const selectedIndexes = new Set();
+  for (const preference of preferences) {
+    const index = rankedChunks.findIndex((chunk, candidateIndex) => (
+      !selectedIndexes.has(candidateIndex)
+      && sourceMatchesPreference(`${chunk.source || ''} ${chunk.sourceTitle || ''} ${chunk.title || ''}`, preference)
+    ));
+    if (index >= 0) {
+      selected.push(rankedChunks[index]);
+      selectedIndexes.add(index);
+    }
+    if (selected.length >= topK) return selected;
+  }
+
+  for (let index = 0; index < rankedChunks.length && selected.length < topK; index += 1) {
+    if (!selectedIndexes.has(index)) selected.push(rankedChunks[index]);
+  }
+
+  return selected;
+}
+
 function estimateTokens(text) {
   return Math.ceil(String(text || '').length / 4);
 }
@@ -240,13 +268,19 @@ function packRetrievedContext(chunks, maxTokens) {
 
 function isTelemetryQuestion(question) {
   const q = String(question || '');
-  if (/\b(telemetry|plc|modbus|register|registers|reg|regs|coil|coils)\b/i.test(q)) return true;
+  if (/\b(telemetry|plc|modbus|register|registers|reg|regs)\b/i.test(q)) return true;
+  if (/\b(coil|coils)\b/i.test(q)) {
+    return /\b(status|state|current|live|now|value|read|working|normal|normally|tripped|stopped|bypassed)\b/i.test(q);
+  }
   return /\b(status|state|temperature|running|speed|active|armed|power|working|normal|normally|tripped|stopped|bypassed)\b/i.test(q)
     && /\b(machine|line|press|conveyor|furnace|equipment)\b/i.test(q);
 }
 
 function isModbusExplanationQuestion(question) {
-  return /\b(plc|modbus|coil|coils|register|registers)\b/i.test(question)
+  const q = String(question || '');
+  const hasTelemetrySubject = /\b(plc|modbus|register|registers)\b/i.test(q)
+    || (/\b(coil|coils)\b/i.test(q) && /\b(status|state|current|live|now|value|read|working|normal|normally|tripped|stopped|bypassed)\b/i.test(q));
+  return hasTelemetrySubject
     && /\b(explain|what|about|describe|overview|how|why)\b/i.test(question);
 }
 
@@ -278,6 +312,30 @@ function appendCitations(answer, chunks) {
     return `${answer.trim()}\n\nDocument categories:\n${citations.map((citation) => `- ${citation}`).join('\n')}`;
   }
   return `${answer}\n\nSources:\n${citations.map((citation) => `- ${citation}`).join('\n')}`;
+}
+
+function extractiveMultiSourceAnswer(question, chunks, metadataFilters = {}) {
+  const preferences = metadataFilters.sourcePreference || [];
+  if (preferences.length <= 1 || chunks.length <= 1) return null;
+
+  const categories = [...new Set(chunks.map(sourceCategoryForChunk))];
+  if (categories.length <= 1) return null;
+
+  const scopeNote = /\bcoil|coils\b/i.test(question)
+    ? 'I do not have a coil-specific OEM maintenance manual in the approved evidence set. The closest approved sources cover machine maintenance hazards and hazardous-energy safety controls that apply before servicing equipment.'
+    : 'The approved evidence spans more than one document category, so I am separating the guidance by source type.';
+
+  return [
+    'Here is the approved guidance I found.',
+    '',
+    scopeNote,
+    '',
+    ...chunks.map((chunk) => [
+      `${sourceCategoryForChunk(chunk)}: ${chunk.title}`,
+      citationForChunk(chunk),
+      cleanChunkText(chunk.text),
+    ].join('\n')),
+  ].join('\n\n');
 }
 
 function polishConversationalAnswer(answer, question) {
@@ -571,8 +629,10 @@ function createManufacturingGraph({
             candidateCount: state.candidateChunks.length,
             metadataFilters: state.metadataFilters,
           },
-          async () => localHybridRerank(state.sanitizedQuestion, state.candidateChunks, state.metadataFilters)
-            .slice(0, state.retrievalPlan.topK)
+          async () => {
+            const ranked = localHybridRerank(state.sanitizedQuestion, state.candidateChunks, state.metadataFilters);
+            return selectDiverseEvidence(ranked, state.retrievalPlan.topK, state.metadataFilters);
+          }
         );
         return {
           retrievedChunks,
@@ -664,6 +724,8 @@ function createManufacturingGraph({
               if (!top) {
                 return 'Hello! I checked the manuals but couldn\'t find a matching safety procedure. Please escalate this query to your supervisor or the control room.';
               }
+              const multiSourceAnswer = extractiveMultiSourceAnswer(state.sanitizedQuestion, state.retrievedChunks, state.metadataFilters);
+              if (multiSourceAnswer) return multiSourceAnswer;
               const citation = citationForChunk(top);
               if (isModbusExplanationQuestion(state.sanitizedQuestion)) {
                 const protocol = state.retrievedChunks.find((chunk) => chunk.title === 'Modbus TCP PLC Context') || top;
