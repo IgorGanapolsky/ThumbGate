@@ -3,7 +3,6 @@
 const { Trace } = require('./langsmith');
 const { chat } = require('./llm');
 const { queryVectorDB } = require('./vector-db');
-
 /**
  * Checks if the user request implies executing a physical plant action (tool call).
  * Returns the proposed tool call object or null.
@@ -147,4 +146,8 @@ Keep your answer concise and reference the safety procedure code (like SP-xxx or
   }
 }
 
-module.exports = { executeRAGPipeline };
+module.exports = {
+  executeRAGPipeline,
+  detectProposedToolCall,
+  evaluatePreToolUseGate
+};

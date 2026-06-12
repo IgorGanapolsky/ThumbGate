@@ -1,7 +1,7 @@
 {
   "name": "manufacturing-copilot",
   "version": "1.0.0",
-  "description": "Prototype for the manufacturing scenario: floor supervisors ask operational questions; the system routes each question to the right documentation source (safety procedures, maintenance manuals, quality standards) and answers from approved context only — with ThumbGate enforcing safety, data sanitization, and prompt-injection defense at every stage.",
+  "description": "Prototype for the manufacturing scenario: floor supervisors ask questions, chatbot generates answers using SQL/HNSW vector search, and ThumbGate provides the RLHF feedback layer and harmful tool-call firewall.",
   "main": "retrieval.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

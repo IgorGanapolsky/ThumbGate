@@ -91,6 +91,7 @@ class Trace {
       post(`/runs/${this.id}`, { end_time: nowIso(), outputs }, 'PATCH');
     }
     return {
+      ...outputs,
       traceId: this.id,
       project: LANGSMITH_PROJECT,
       remote: enabled(),

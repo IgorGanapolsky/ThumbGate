@@ -1,59 +1,33 @@
 # Manufacturing Supervisor Copilot — AI Prototype Challenge
 
-Prototype for the manufacturing scenario: floor supervisors ask operational
-questions; the system routes each question to the right documentation source
-(safety procedures, maintenance manuals, quality standards) and answers from
-approved context only — with ThumbGate enforcing safety, data sanitization, and
-prompt-injection defense at every stage.
+Prototype for the manufacturing scenario: floor supervisors ask operational questions; the chatbot itself handles SQL/HNSW vector search over documentation to generate answers. ThumbGate is integrated as the governance layer around the chatbot.
 
-## Three layers
+## Core ThumbGate Roles
 
-| Layer | Where | What it does |
-|-------|-------|--------------|
-| Front-end | `public/index.html` | Chat UI with live gate-chain panel, LangSmith trace view, retrieval evidence, demo scenario buttons |
-| Middleware (LangSmith) | `middleware/` | ThumbGate gate chain (`gates.js`), question router (`router.js`), LangSmith tracing (`langsmith.js`), LLM client (`llm.js`) |
-| Backend / cloud | `server.js`, `backend/cloud.js` | HTTP API, simulated cloud document stores + retrieval over `data/` |
+1. **RLHF feedback layer** (thumbs-up / thumbs-down buttons) - captures operator votes on answer quality directly into the local SQLite memory/lessons database.
+2. **Harmful proposed tool-call firewall** (PreToolUse interception) - prevents dangerous commands (like disabling safety interlocks or triggering unauthorized shutdowns) from executing.
 
-## ThumbGate gate chain (runs on every question)
-
-1. **input_sanitization** — redacts PII (employee IDs, emails, phones, SSNs) and
-   secrets (via ThumbGate's `secret-redaction`) before the question reaches the
-   model, logs, or traces.
-2. **injection_scan_input** — blocks direct prompt-injection/jailbreak attempts.
-3. **injection_scan_context** — scans retrieved chunks; quarantines poisoned
-   documents (the maintenance manual ships with a planted injection payload in
-   MM-205 to demo this live).
-4. **retrieval_confidence** — refuses rather than hallucinates when the
-   documentation doesn't cover the question.
-5. **unsafe_output_scan** — blocks any answer that recommends defeating an
-   interlock, guard, light curtain, or skipping LOTO.
-6. **safety_citation** — safety answers must cite the governing SP-xxx procedure.
+ThumbGate does **not** handle RAG retrieval, SQL filters, or token pack planning in this prototype.
 
 ## Run
 
 ```bash
 node prototypes/manufacturing-copilot/server.js
-# open http://localhost:4173
+# open http://localhost:3005
 ```
 
-Works with zero credentials (deterministic extractive answers + local trace
-mirror) so the live demo cannot die on a network blip. Optional env:
+Works with zero credentials (local deterministic fallback answers) so the demo can run offline. Optional env:
 
 ```bash
-PORTKEY_API_KEY=...       # interview Portkey gateway (claude-sonnet-4.5)
-PORTKEY_BASE_URL=https://portkeygateway.perficient.com/v1
-ANTHROPIC_API_KEY=...     # fallback provider
-LANGSMITH_API_KEY=...     # send traces to LangSmith (else local mirror)
+PORTKEY_API_KEY=...       # Portkey gateway (claude-sonnet-4.5)
+PORTKEY_BASE_URL=...      # Portkey base URL
+ANTHROPIC_API_KEY=...     # Fallback Claude provider
+LANGSMITH_API_KEY=...     # Tracing (falls back to local timeline trace if missing)
 LANGSMITH_PROJECT=thumbgate-manufacturing-copilot
 ```
 
-## Demo script (live interview)
+## Demo Scenarios
 
-1. **Happy path** — LOTO question routes to safety, answer cites SP-101.
-2. **Poisoned manual** — HP-400 question retrieves MM-205, which contains an
-   embedded "ignore previous instructions / bypass the interlock" payload; the
-   quarantine gate strips it and the answer is built from clean chunks only.
-3. **Direct jailbreak** — "Ignore all previous instructions…" blocked at input.
-4. **PII** — employee ID + email are redacted before the model or logs see them.
-5. **Out of scope** — wifi-password question is refused (low retrieval
-   confidence) instead of hallucinated.
+1. **Standard RAG Answer & Feedback** — supervisor asks about LOTO press procedures. RAG retrieves and answers. The operator can vote thumbs-up or thumbs-down to capture feedback.
+2. **Safety Bypass Attempt** — user requests disabling the safety interlocks on CNC Mill VM-22. Intercepted by ThumbGate PreToolUse and blocked.
+3. **Emergency Shutdown Attempt** — user requests triggering emergency line shutdown. Intercepted by ThumbGate PreToolUse and blocked.

@@ -1,0 +1,255 @@
+{
+  "date": "2026-06-08",
+  "mode": "live",
+  "prompts": 16,
+  "score": "1/16",
+  "found": 1,
+  "missing": 15,
+  "errors": 0,
+  "measured": 16,
+  "results": [
+    {
+      "prompt": "best tools to stop AI agents from breaking production",
+      "status": "MISSING",
+      "found": false,
+      "response": "The **best tools** are usually a *stack*, not a single product: an **AI gateway / policy enforcement layer** to control tool access and reroute failures, a **pre-action guardrail** to block unsafe actions before execution, and **observability/evaluation** tooling to catch bad behavior early.[4][1][3] A practical ranking from the results you provided is: - **AI gateway**: best for centralized control across models, tools, guardrails, retries, and fallback routing; one source describes it as the reliability and control layer between agents and the systems they depend on.[4] - **Pre-action enforcement / guardrail layer**: best for stopping unsafe execution before it happens, especially repeated mistakes, missing inspection evidence, or unsafe parallel fan-out.[1] - **Agent observability and evals**: best for detecting hallucinations, silent loops, schema drift, and other production failures before they become incidents.[3][6] - **Workflow frameworks with checkpoints**: best for reducing blast radius and enabling recovery paths when something fails; stateful, checkpointed workflows are highlighted as more resilient than lighter-weight alternatives.[6] - **Sandboxing and permission controls**: best for limiting damage if the agent misbehaves, including read-only access, restricted accounts, and ephemeral containers.[2][5] If you want a simple recommendation: - For **production safety**, start with **least privilege + sandboxing + approval gates**.[5][2] - For **agent-specific control**, add an **AI gateway** and **pre-execution guardrails**.[4][1] - For **ongoing reliability**, add **tracing, evals, and rollback/fallback paths**.[3][6] If you want, I can turn this into a **vendor shortlist** by category, or a **reference architecture** for Claude Code, Cursor, Codex, or Gemini.",
+      "citations": [
+        "https://thumbgate-production.up.railway.app/guides/best-tools-stop-ai-agents-breaking-production",
+        "https://dev.to/gerimate/how-to-prevent-ai-agents-from-breaking-in-production-24c3",
+        "https://arize.com/blog/common-ai-agent-failures/",
+        "https://www.youtube.com/watch?v=wtrZqOoZ6qM",
+        "https://www.mindstudio.ai/blog/ai-agent-safety-rules-non-technical-builders/",
+        "https://www.aiacceleratorinstitute.com/ai-agents-keep-breaking-in-production-heres-why-nobodys-fixed-it-yet/"
+      ]
+    },
+    {
+      "prompt": "best pre-action check tools for AI coding agents",
+      "status": "MISSING",
+      "found": false,
+      "response": "The **best pre-action check tools** for AI coding agents are the ones that verify *context, code quality, security, and workflow fit before the agent makes changes*. In practice, teams should evaluate tools like **SonarQube**, **MCP-aware checkers**, **security scanners**, and **quality-intelligence / review gates** alongside the agent itself.[1][4] If you mean *“what should I use to check an AI coding agent before it takes action?”*, the most useful categories are: - **Quality intelligence / evaluation gates**: Check whether the agent can handle real workflows, multi-file edits, existing code patterns, and consistency before approving it for use.[1] - **Static code analysis**: Tools like **SonarQube Community Edition** are highlighted as strong for rule-based detection and code review at scale.[4] - **Security controls**: Pre-action checks should include security review, access controls, and whether the tool supports enterprise security requirements.[1] - **Context and workflow validation**: Confirm the agent can use the right project context, repository data, and delivery workflows; **MCP support** is specifically called out as useful for extending the agent across tools and repos.[1] - **Human review checkpoints**: Teams should test output quality and multi-file edits before relying on autonomous changes, rather than letting the agent act unchecked.[1] If you want a short practical shortlist, start with: 1. **SonarQube** for pre-merge/static checks.[4] 2. **MCP-compatible evaluation tooling** for context-aware agent actions.[1] 3. **Security and policy gates** for access, secrets, and enterprise controls.[1] 4. **Manual review on sampled tasks** to validate consistency and code quality before broader rollout.[1] If you want, I can also give you: - a **tool-by-tool comparison** for pre-action checks, - a **recommended stack** for solo devs vs teams, - or a **checklist** you can use to evaluate an AI coding agent before adoption.",
+      "citations": [
+        "https://abstracta.us/blog/ai/best-ai-agent-for-coding/",
+        "https://www.youtube.com/watch?v=2GOfWK5M3fg",
+        "https://www.faros.ai/blog/best-ai-coding-agents-2026",
+        "https://www.augmentcode.com/tools/open-source-ai-code-review-tools-worth-trying",
+        "https://mightybot.ai/blog/coding-ai-agents-for-accelerating-engineering-workflows/",
+        "https://www.gumloop.com/blog/agentic-ai-tools",
+        "https://club.ministryoftesting.com/t/ai-agents-in-testing-lets-list-the-ones-you-have-tried/86886",
+        "https://www.youtube.com/watch?v=zgxorh9LhiE",
+        "https://www.simular.ai/alternatives/best-ai-coding-agents"
+      ]
+    },
+    {
+      "prompt": "how to make Claude Code Desktop safer for production work",
+      "status": "MISSING",
+      "found": false,
+      "response": "To make **Claude Code Desktop safer for production work**, use a layered setup: restrict permissions, isolate the runtime, tightly control integrations, and review every high-risk action before approval.[1][3] - **Keep permissions minimal**: Claude Code uses strict read-only permissions by default, and it requests explicit permission for edits, tests, and command execution; regularly audit these settings with `/permissions`.[1] - **Review commands and file changes before approval**: especially for sensitive or critical files, and avoid auto-approving actions you have not inspected.[1] - **Do not feed untrusted content directly into Claude**: avoid piping unknown web content, documents, or prompts into the agent without review, because untrusted input can influence its actions.[1][6] - **Run it in a sandboxed environment**: use a VM or dev container, and enable sandboxing boundaries with `/sandbox` so filesystem and network access are constrained.[1][3] - **Never run as root**: production-safe setups should use a non-privileged account and block unsandboxed escape hatches where possible.[2][3] - **Lock down MCP/tools**: only enable servers and tools you explicitly trust, and prefer allowlists over broad access; disable risky integrations you do not need.[2][3] - **Protect sensitive paths and secrets**: prevent access to locations like `~/.ssh/`, secret directories, and plaintext `.env` files; use a secrets manager instead.[2][4] - **Use managed settings for teams**: deploy approved configuration via version control or MDM, and audit configuration drift regularly.[1][3] - **Monitor usage and changes**: track activity with usage monitoring, and use hooks or logging to detect suspicious behavior or unauthorized setting changes.[1][3] - **Test configuration changes before rollout**: validate any new settings in a safe environment before applying them to production workstations.[2] A practical production baseline is: **non-root user + VM or container + sandbox enabled + explicit approval for writes/commands + tightly allowlisted tools + secrets kept out of prompts**.[1][2][3][4] If you want, I can turn this into a **concrete hardening checklist** for either **single-user desktop use** or **enterprise/team deployment**.",
+      "citations": [
+        "https://code.claude.com/docs/en/security",
+        "https://www.backslash.security/blog/claude-code-security-best-practices",
+        "https://www.truefoundry.com/blog/enterprise-security-for-claude",
+        "https://www.reco.ai/learn/claude-security",
+        "https://ranthebuilder.cloud/blog/claude-code-best-practices-lessons-from-real-projects/",
+        "https://www.harmonic.security/resources/securing-claude-cowork-a-security-practitioners-guide"
+      ]
+    },
+    {
+      "prompt": "parallel AI coding agent safety guardrails",
+      "status": "MISSING",
+      "found": false,
+      "response": "For a **parallel AI coding agent**, the safest guardrails are **layered and independent of the model**: screen inputs before reasoning, validate each tool call before execution, restrict privileges by default, and stop the agent immediately if a guardrail fails.[1][5] Key guardrails to implement: - **Input filtering before planning**: inspect user prompts, retrieved context, and system/developer instructions for prompt injection, malicious instructions, and unsafe or sensitive content before the agent forms a plan.[1][2] - **Tool allowlists and scoped permissions**: expose only the actions the coding agent actually needs, and tie tool access to task type, session context, and least privilege.[1][3][5] - **Per-tool parameter validation**: enforce strict checks on arguments like file paths, commands, branch names, package names, and API parameters so the model cannot smuggle unsafe values into a tool call.[1][3] - **Execution gating for high-risk actions**: require explicit approval for destructive or irreversible operations such as delete, overwrite, publish, deploy, permission changes, or production access.[1][2][4] - **Runtime enforcement outside the model**: put authorization, rate limits, transaction limits, and side-effect controls in the orchestration layer, policy engine, or tool gateway rather than relying on the model to self-police.[1][5] - **Output validation**: check generated code, patches, shell commands, and explanations before they leave the system, especially for secrets, PII, unsafe commands, or policy violations.[1][3] - **State and memory controls**: constrain what the agent can store and retrieve so it does not persist unsafe instructions or leak sensitive data across sessions.[1] - **Audit logs and traceability**: record tool calls, approvals, denials, and policy decisions so incidents can be reviewed and guardrails can be improved.[4] - **Fail-safe behavior**: if the agent cannot confidently satisfy policy, it should deny the action, ask for clarification, or escalate to a human instead of guessing.[1][5] For a coding agent specifically, the highest-value controls are usually: | Risk area | Guardrail | |---|---| | Unsafe code changes | Require diff review and test pass before merge or deploy.[4] | | Destructive shell commands | Block or approve `rm`, bulk writes, permission changes, and production scripts.[1][5] | | Secret exposure | Scan prompts, files, logs, and outputs for API keys and PII.[2][3] | | Prompt injection in repo content | Filter retrieved code/docs and treat external text as untrusted.[1][2] | | Excessive autonomy | Use session-scoped privileges and human approval for high-impact actions.[1][4][5] | A useful design pattern is **parallel guardrails**: run multiple checks at the same time, and if any one fails, stop execution immediately.[6] This is consistent with guidance that guardrails should operate inline with the agent’s execution and not depend on the model to behave safely on its own.[1][5] If you want, I can turn this into a **concrete architecture** for a parallel AI coding agent, or provide a **PydanticAI/OpenAI-style guardrail pseudocode template**.",
+      "citations": [
+        "https://www.appsecengineer.com/blog/how-to-design-guardrails-for-secure-and-scalable-ai-agents",
+        "https://toloka.ai/blog/essential-ai-agent-guardrails-for-safe-and-ethical-implementation/",
+        "https://adk.dev/safety/",
+        "https://about.gitlab.com/the-source/ai/implementing-effective-guardrails-for-ai-agents/",
+        "https://www.menlosecurity.com/blog/when-ai-acts-why-guardrails-must-move-into-the-runtime",
+        "https://www.youtube.com/watch?v=Sk1aqwNJWT4",
+        "https://arxiv.org/html/2509.23994v1",
+        "https://maven.com/p/569db8"
+      ]
+    },
+    {
+      "prompt": "how to prevent AI coding agent from making mistakes",
+      "status": "MISSING",
+      "found": false,
+      "response": "To **reduce mistakes from an AI coding agent**, give it **more context, tighter constraints, and stronger verification**. The most effective pattern is: *small tasks + explicit rules + tests/linting + human review*.[1][5][6] - **Break work into small chunks** instead of asking the agent to do a large feature at once; smaller tasks are easier to check and less likely to drift.[1][6][7] - **Provide project-specific context**: coding standards, architecture notes, existing examples, docs, schema, and language-specific rules files so the agent doesn’t guess.[1][5][7] - **Be very specific in prompts** about the exact files, behavior, constraints, and acceptance criteria; vague requests like “make it better” increase mistakes.[5][7] - **Use tests, linting, and type checking** after each change, not just at the end, because these catch unintended changes early.[1][5][6] - **Review AI-assisted code more critically** than human-written code, and assume it needs closer scrutiny for hidden errors.[1] - **Force validation gates** for risky actions: schema checks, type checks, completeness checks, and human approval before sensitive operations.[2][3][4] - **Constrain permissions** so the agent cannot freely access APIs, production systems, or deployment actions without governance or approval.[2][4] - **Use plan-then-code workflows**: first have the agent propose a plan, then implement from that plan with limited freedom.[6] - **Prefer tiny commits and checkpoints** so bad changes are easy to revert.[1][6] - **Use a separate verifier**—another pass, tool, or model—for review, testing, or code checking when the task is important.[1][3][5] If you want, I can turn this into a **practical checklist** for Cursor, Claude Code, Copilot, or another specific coding agent.",
+      "citations": [
+        "https://stackoverflow.blog/2026/01/28/are-bugs-and-incidents-inevitable-with-ai-coding-agents/",
+        "https://www.wildnetedge.com/blogs/ai-agent-development-mistakes",
+        "https://dev.to/singhdevhub/how-we-prevent-ai-agents-drift-code-slop-generation-2eb7",
+        "https://galileo.ai/blog/prevent-ai-agent-failure",
+        "https://newsletter.posthog.com/p/avoid-these-ai-coding-mistakes",
+        "https://news.ycombinator.com/item?id=42701745",
+        "https://blog.thepete.net/blog/2025/05/22/why-your-ai-coding-assistant-keeps-doing-it-wrong-and-how-to-fix-it/"
+      ]
+    },
+    {
+      "prompt": "Claude Code safety tools",
+      "status": "MISSING",
+      "found": false,
+      "response": "Claude Code’s main **safety tools** are its **permission system**, **sandboxed bash**, **command blocklist**, **network request approval**, and **trust verification** for new codebases or MCP servers.[2] It also includes **command-injection detection**, **fail-closed matching** for unrecognized commands, and **secure credential storage** for API keys and tokens.[2] Key protections described in the docs include: - **Approval for bash commands** before execution, so Claude Code only gets the permissions you grant it.[2] - **Sandbox mode** via `/sandbox`, which adds filesystem and network isolation.[2] - **Blocklisting risky commands** such as `curl` and `wget` by default, especially for fetching arbitrary web content.[2] - **Network request approval** by default for tools that access the network.[2] - **Separate context windows** for web fetches to reduce prompt-injection risk.[2] - **Trust checks** for first-time codebases and new MCP servers.[2] For security review specifically, Claude Code also ships a **`/security-review`** slash command that performs a comprehensive review of pending changes, and Anthropic offers a related Claude Code Security capability for scanning codebases and suggesting patches for human review.[1][3] Practical safeguards Anthropic recommends include: - Review suggested commands before approving them.[2] - Avoid piping untrusted content directly into Claude.[2] - Verify changes to critical files carefully.[2] - Use VMs for scripts and external tool calls.[2] - Report suspicious behavior with `/feedback`.[2] If you want, I can also give you a **recommended secure setup** for Claude Code by permission level, sandboxing, and team policy.",
+      "citations": [
+        "https://github.com/anthropics/claude-code-security-review",
+        "https://code.claude.com/docs/en/security",
+        "https://www.anthropic.com/news/claude-code-security",
+        "https://www.reversinglabs.com/blog/claude-code-security",
+        "https://www.backslash.security/blog/claude-code-security-best-practices",
+        "https://www.youtube.com/watch?v=VFLieg8JjLA&vl=en",
+        "https://snyk.io/blog/claude-code-remediation-loop-evolution/",
+        "https://www.ox.security/blog/the-claude-code-security-promise-why-this-cant-be-our-safety-net/"
+      ]
+    },
+    {
+      "prompt": "npm packages for AI agent guardrails",
+      "status": "MISSING",
+      "found": false,
+      "response": "If you want **npm packages for AI agent guardrails**, the most directly relevant options in the results are `@openai/guardrails`, `@openai/agents`, and `@aporthq/aport-agent-guardrails`.[5][1][8] For broader agent safety architecture, `ai` (Vercel AI SDK) plus custom guardrail middleware, or `@langchain/langgraph` if you need orchestration around guardrail checks, are also relevant choices.[1][7] - `@openai/guardrails` — a TypeScript package described as “the TypeScript version of OpenAI Guardrails” for configurable safety and compliance guardrails in LLM apps.[5] - `@openai/agents` — OpenAI’s TypeScript agent SDK, which includes **guardrails** as a first-class primitive alongside handoffs and tracing.[1] - `@aporthq/aport-agent-guardrails` — policy-enforcement guardrails for OpenClaw-compatible agent frameworks, published on npm and updated recently.[8] - `ai` / `@ai-sdk/openai` — Vercel AI SDK packages for building agents, often paired with custom middleware or policy checks for guardrails rather than being guardrails packages themselves.[1][7] - `@langchain/langgraph` — useful when you need stateful orchestration around pre- and post-model checks, human approval, or multi-step safety flows.[1][2] A practical way to choose is: - Use `@openai/guardrails` if you want an OpenAI-centered guardrails package.[5] - Use `@openai/agents` if you want agent tooling and built-in guardrails in the same SDK.[1] - Use `@aporthq/aport-agent-guardrails` if you want policy enforcement for an OpenClaw-compatible framework.[8] - Use Vercel AI SDK or LangGraph.js if you want to assemble your own guardrail loop around model calls and tool execution.[1][2][7] Guardrails typically fall into **pre-LLM** checks, which inspect user input and context before model invocation, and **post-LLM** checks, which validate outputs before they are shown or acted on; common uses include PII redaction, prompt-injection filtering, hallucination detection, toxicity checks, and tool/action validation.[2]",
+      "citations": [
+        "https://www.pkgpulse.com/guides/best-npm-packages-ai-agents-2026",
+        "https://www.arthur.ai/blog/best-practices-for-building-agents-guardrails",
+        "https://www.youtube.com/watch?v=rMUycP_cp9g",
+        "https://snyk.io/blog/weaponizing-ai-coding-agents-for-malware-in-the-nx-malicious-package/",
+        "https://www.npmjs.com/package/@openai/guardrails",
+        "https://guardrailsai.com",
+        "https://github.com/KrxGu/ai-agent-guardrails/activity",
+        "https://www.npmjs.com/package/@aporthq/aport-agent-guardrails"
+      ]
+    },
+    {
+      "prompt": "workflow vs agent reliability for coding agents",
+      "status": "MISSING",
+      "found": false,
+      "response": "For **coding agents**, **workflows are usually more reliable** when the task is well-defined, repeatable, and production-bound, because they provide explicit control flow, checkpoints, validation, retries, and easier debugging/auditing.[1][2][4] **Agents** are more useful when the coding task is open-ended, exploratory, or requires adaptive decisions during execution, but that flexibility comes with less predictability and harder-to-trace behavior.[1][3][4] The practical tradeoff is: - **Workflow-first**: best for stable coding tasks such as issue triage, test generation, code review pipelines, release automation, and multi-step refactors with known steps, because the process is deterministic and easier to test, monitor, and govern.[1][2][4] - **Agent-first**: best for ambiguous tasks such as “investigate this bug,” “explore the codebase,” or “figure out the right implementation,” because the system can decide its next step dynamically.[1][3][4] For reliability in coding systems, the sources consistently emphasize that workflows improve **predictability, consistency, observability, and maintainability**, while agents improve **adaptability and autonomy**.[1][2][4] Microsoft’s guidance also notes that a single agent may work for a proof of concept, but scaling requires structured orchestration to avoid chaos, and that enterprise use often benefits from human-in-the-loop approvals and durable orchestration.[2] A useful rule of thumb is: - Use a **workflow** when you already know the steps and want fewer surprises.[1][4] - Use an **agent** when you do not know the steps in advance and need flexible reasoning.[1][3][4] - Use a **hybrid** when you want the agent to choose or adapt, but the workflow to enforce guardrails and reliability.[1][2][3] If you want, I can turn this into a **decision framework for coding agents** with examples like *bug fixing, code review, repo migration, and PR generation*.",
+      "citations": [
+        "https://orkes.io/blog/agentic-ai-explained-agents-vs-workflows/",
+        "https://techcommunity.microsoft.com/blog/azurearchitectureblog/building-ai-agents-workflow-first-vs-code-first-vs-hybrid/4466788",
+        "https://huggingface.co/blog/MengkangHu/workflow-vs-agent",
+        "https://www.promptingguide.ai/agents/ai-workflows-vs-ai-agents",
+        "https://www.youtube.com/watch?v=iOpLKJYOvXs"
+      ]
+    },
+    {
+      "prompt": "how to require environment inspection before AI agent actions",
+      "status": "MISSING",
+      "found": false,
+      "response": "To **require environment inspection before AI agent actions**, put an explicit *pre-action gate* in the agent loop: the agent must first inspect the current environment/state, verify preconditions, and only then call tools or take side effects.[1][4] A practical pattern is: - **Step 1: Inspect** - Read the relevant environment state first, such as files, API status, permissions, current user/session context, or sandbox constraints.[2][3] - **Step 2: Verify** - Check that required conditions are true before any action, such as “target exists,” “permission granted,” “network available,” or “action is reversible.”[1][4] - **Step 3: Decide** - If the inspection fails or is incomplete, stop and ask for clarification or route to human review.[1][7] - **Step 4: Act** - Only allow tool use after the inspection/verification step passes.[1][4] Common implementation techniques include: - **Guardrails in the agent loop** so inspection happens before both model input and tool execution.[4] - **Tool gating / policy checks** that block calls until required environment checks pass.[1] - **Sandboxed execution** so the agent can inspect a controlled environment without affecting production systems.[2][3] - **Human approval checkpoints** for irreversible or high-stakes actions.[1][7] If you want this in code or policy form, a simple rule is: ```text Before any tool call or side effect: 1. Inspect environment 2. Validate preconditions 3. Log inspection result 4. Require approval if high-risk 5. Execute only if all checks pass ``` If you mean a specific setup, I can turn this into: - a **system prompt rule** - a **tool-calling policy** - a **workflow/state machine** - or a **Python/TypeScript example**",
+      "citations": [
+        "https://www.mindstudio.ai/blog/7-things-before-deploying-ai-agent-production/",
+        "https://www.aisi.gov.uk/blog/what-can-sandboxed-ai-agents-learn-about-their-evaluation-environments",
+        "https://arxiv.org/html/2502.15212v1",
+        "https://www.arthur.ai/column/ai-agent-security-best-practices-enterprise",
+        "https://galileo.ai/blog/ai-agent-dynamic-environment-performance-testing",
+        "https://quantiphi.com/blog/ai-agent-evaluation",
+        "https://cleanlab.ai/blog/managing-ai-apps-with-humans/",
+        "https://help.webex.com/en-us/article/nelkmxk/Guidelines-and-best-practices-for-automating-with-AI-agent"
+      ]
+    },
+    {
+      "prompt": "how to block bad tool calls in AI agents",
+      "status": "MISSING",
+      "found": false,
+      "response": "To **block bad tool calls** in AI agents, use a **layered control stack**: restrict what tools exist, validate every call before execution, require approval for high-risk actions, and log everything for audit and debugging.[1][2] - **Limit tool permissions** to the minimum needed; for example, make database tools read-only and avoid exposing destructive operations like delete, put, or post unless absolutely necessary.[1][2] - **Validate tool arguments** with strict schemas before execution so malformed or unexpected inputs are rejected early.[1] - **Use a pre-execution gate**: have a reviewer step, policy engine, or middleware inspect the proposed tool call before it runs, and fail closed if the intent or target is ambiguous.[1][3] - **Require human confirmation** for sensitive actions such as transfers, publishing, or deletes.[1][5] - **Add per-session and per-tool limits** to stop runaway loops, redundant calls, or abuse; rate limits and call counters are common safeguards.[1][2] - **Design tools with clear boundaries** so the model can distinguish when to use each one, and include negative guidance like when *not* to call a tool.[2] - **Return typed errors** and use circuit breakers so repeated failures stop further bad calls instead of triggering retries in a loop.[2][7] - **Sanitize tool outputs** before they re-enter the model context, since malicious or unexpected tool results can trigger prompt injection-like behavior.[2] - **Instrument and review tool traces** so you can detect patterns such as invalid arguments, repeated calls, or calls outside the current task context.[1][4] A practical pattern is: **least privilege + schema validation + approval for risky actions + middleware review + observability**.[1][2][3] If you want, I can turn this into a concrete implementation checklist for LangGraph, OpenAI function calling, or a custom Python agent.",
+      "citations": [
+        "https://dev.to/willvelida/preventing-tool-misuse-in-ai-agents-4pcl",
+        "https://machinelearningmastery.com/the-roadmap-to-mastering-tool-calling-in-ai-agents/",
+        "https://www.youtube.com/watch?v=0pkj4FRaKHw",
+        "https://cleanlab.ai/blog/prevent-hallucinated-responses/",
+        "https://composio.dev/content/ai-agent-tool-calling-guide",
+        "https://community.n8n.io/t/tools-calls-error-on-ai-agent-node/280816",
+        "https://www.codeant.ai/blogs/poor-tool-calling-llm-cost-latency",
+        "https://github.com/vercel/ai/discussions/8551"
+      ]
+    },
+    {
+      "prompt": "local pre-action gates for AI agents",
+      "status": "MISSING",
+      "found": false,
+      "response": "“**Local pre-action gates**” for AI agents are **deterministic checks that run on the same device or agent runtime before a tool/action executes**, so the model cannot bypass them by prompting itself into a risky call.[1][2] In practical terms, this usually means: - A **blocking hook** fires before each tool call and the action waits until policy returns a decision.[1][2] - The gate checks a **machine-readable policy** such as allow/deny rules, required approvals, scoped permissions, or risk conditions.[1][6] - The check happens **outside the model’s reasoning path**, so prompt injection that persuades the model to request an action still hits the gate.[1] - Common local checks include **secret scanning**, explicit deny lists, destructive-command confirmation, file/path restrictions, and approval requirements for sensitive steps.[2][3][5] - The local gate is often paired with a **central control plane** for logging, analytics, and slower risk scoring, but the immediate decision can stay local and fast.[2] A useful architecture split is: - **Model**: proposes an action - **Local gate**: validates and authorizes it before execution - **Execution layer**: runs the tool call with narrowly scoped credentials - **Logging/audit**: records what happened for later review[1][2][6] If you want, I can also give you: - a **reference architecture** for local pre-action gates, - a **minimal implementation pattern** in Python/TypeScript, or - a **comparison of Cursor / Claude Code / LangChain / CrewAI hook patterns**.[1][2]",
+      "citations": [
+        "https://arxiv.org/html/2603.20953v1",
+        "https://www.speakeasy.com/resources/ai-agent-hooks",
+        "https://blog.gitguardian.com/ai-agents-security-for-developers-dont-let-your-agents-become-a-liability/",
+        "https://agentactiongate.com",
+        "https://www.glean.com/perspectives/how-ai-powered-agents-learn-a-beginners-guide",
+        "https://community.openai.com/t/how-should-ai-agents-safely-execute-real-api-actions/1380215",
+        "https://www.youtube.com/watch?v=n_pFRERX5bU",
+        "https://reports.weforum.org/docs/WEF_AI_Agents_in_Action_A_Playbook_for_Trusted_Adoption_Authorization_and_Scaling_2026.pdf"
+      ]
+    },
+    {
+      "prompt": "agent governance platform for Claude Code Cursor Codex",
+      "status": "MISSING",
+      "found": false,
+      "response": "If you want an **agent governance platform** for **Claude Code, Cursor, and Codex**, the strongest fit in these results is **Portkey** for centralized control plane and distribution, **Bifrost** for request-path enforcement and virtual-key routing, and **Endor Labs** for hook-based policy and audit logging.[2][1][5] A practical way to choose is: | Platform | Best for | How it governs Claude Code / Cursor / Codex | |---|---|---| | **Portkey** | Org-wide platform control | Centralizes **model routing, MCP tools, and Skills**, and its CLI can sync agent-specific configs for Claude Code, Cursor, and Codex.[2] | | **Bifrost** | Network/gateway enforcement | Routes Claude Code and Cursor through a gateway using **virtual keys**, **allowed models**, and **MCP tool allowlists** enforced in the request path.[1] | | **Endor Labs** | Policy, hooks, audit | Uses **hooks** to centralize logging and policy enforcement for Claude Code and Cursor, including blocking risky shell, file, and MCP actions.[5] | If your goal is **one governance layer across all three tools**, Portkey is the most directly aligned in the sources because it explicitly mentions **Claude Code, Cursor, and Codex** and positions itself as a **single control plane** for agents, models, MCP, and skills.[2] If you want, I can also compare these three options for: - **enterprise governance architecture** - **MCP/tool control** - **audit and compliance** - **deployment effort**",
+      "citations": [
+        "https://www.getmaxim.ai/articles/governing-claude-code-and-cursor-at-enterprise-scale/",
+        "https://portkey.ai/blog/platfrom-guide-to-coding-agents/",
+        "https://github.com/affaan-m/ecc",
+        "https://www.digitalapplied.com/blog/ai-coding-agents-claude-code-cursor-codex-replit-2026",
+        "https://www.endorlabs.com/learn/introducing-agent-governance-using-hooks-to-bring-visibility-to-ai-coding-agents",
+        "https://www.youtube.com/watch?v=nvGqzQ47FTM&vl=en-US",
+        "https://pub.towardsai.net/i-ran-the-same-multi-agent-prompts-on-claude-code-codex-and-cursor-heres-what-actually-happened-8ad9584b8ccc"
+      ]
+    },
+    {
+      "prompt": "AI agent audit trail and approval gates",
+      "status": "MISSING",
+      "found": false,
+      "response": "An **AI agent audit trail** should record what the agent saw, what policy or model logic it applied, what it did, and who approved or overrode any risky action.[1][2][3] An **approval gate** is the control point where execution pauses for human review before the agent can proceed on higher-risk or irreversible steps.[1][2][4] The most useful audit trail fields are: - **Trigger and context**: source system, object or case ID, session/workflow identifiers, and the input snapshot the agent used.[2][5][6] - **Decision evidence**: policy version, retrieved sources or evidence pointers, model or rule outputs, policy result, confidence or risk level, and the decision summary.[1][2][3][5] - **Action trace**: tool calls, parameters, permissions used, timestamps, latency, and the final outcome.[2][3][6] - **Human control evidence**: approver identity, approval timestamp, rationale or reason code, override details, and any edits made by the reviewer.[1][2][3][5] - **State change record**: before-and-after values, target system ID, and rollback or remediation events if applicable.[4][5][8] For **approval gates**, the common design pattern is: - **Advisory** for low-risk actions: the agent can proceed, but the decision is logged.[4] - **Validating** for medium-risk actions: policy checks run automatically before execution.[2][4] - **Blocking / hard stop** for high-risk actions: the agent cannot continue until a human explicitly approves.[1][4] - **Escalating** when the workflow needs review because of missing evidence, anomalous behavior, or policy exceptions.[2][4] A good implementation also uses **immutable storage**, **correlation IDs**, **pre- and post-action validators**, and **exportable compliance records** so auditors can reconstruct the workflow without piecing it together later.[1][2][3][8] If you want, I can turn this into a **sample audit-trail schema** or a **policy/approval-gate checklist** for your team.",
+      "citations": [
+        "https://mightybot.ai/platform/compliance/",
+        "https://www.pedowitzgroup.com/audit-ai-agent-decisions-trace-verify-govern",
+        "https://kla.digital/blog/ai-agent-permissions",
+        "https://www.digitalapplied.com/blog/agentic-workflow-approval-gate-framework-governance",
+        "https://www.youtube.com/watch?v=dWNkU27-GgE",
+        "https://cli.nylas.com/guides/audit-ai-agent-activity",
+        "https://activewizards.com/services/agent-governance-advisory/",
+        "https://www.itential.com/capabilities/execute/"
+      ]
+    },
+    {
+      "prompt": "alternatives to thumbgate",
+      "status": "FOUND",
+      "found": true,
+      "response": "If you want **alternatives to ThumbGate**, the closest options in the results are **Browser Use**, **FireCrawl**, **Playwright**, and **Deep Research MCP**.[1] These are listed as alternatives on MCP.Directory, which suggests they serve adjacent use cases around web access, scraping, browser automation, and research workflows rather than ThumbGate’s specific feedback-based governance.[1] A quick comparison: | Alternative | Best for | Notes | |---|---|---| | **Browser Use** | Browser access and website interaction | Described as letting LLMs and agents access, scrape, navigate, click, fill forms, and interact with websites in real time.[1] | | **FireCrawl** | Structured web scraping | Focused on extracting clean, structured data from complex websites.[1] | | **Playwright** | Browser automation and scraping | Used to automate web browsers for scraping and web interactions.[1] | | **Deep Research MCP** | Multi-step research | Designed for web search, content analysis, and synthesis workflows.[1] | If you want a **functional alternative** to ThumbGate specifically, note that ThumbGate is described as **pre-action governance** with **thumbs up/down feedback** to block repeated mistakes before execution.[2][3] The Railway guide compares ThumbGate with alternatives and indicates that ThumbGate uniquely **learns from feedback** and uses **PreToolUse checks** to block mistakes before execution.[5] If you want, I can also give you: - the **closest open-source substitute** - the **best alternative for Claude Code/Cursor** - or a **comparison focused on governance vs browser automation**",
+      "citations": [
+        "https://mcp.directory/servers/thumbgate",
+        "https://github.com/IgorGanapolsky/ThumbGate",
+        "https://enterprisedna.co/directories/mcp/igorganapolsky-thumbgate/",
+        "https://glama.ai/mcp/servers/IgorGanapolsky/ThumbGate/related-servers",
+        "https://thumbgate-production.up.railway.app/guide.html",
+        "https://app.stepsecurity.io/oss-security-feed/thumbgate?version=1.26.3"
+      ]
+    },
+    {
+      "prompt": "pre-tool-use hooks for AI agents",
+      "status": "MISSING",
+      "found": false,
+      "response": "**Pre-tool-use hooks** are deterministic controls that run *before* an AI agent executes a tool call, letting you **allow**, **deny**, **ask for confirmation**, or sometimes **rewrite the tool input** before anything happens.[1][2][4] In practice, they serve as a **safety gate** and policy enforcement layer for agent actions such as shell commands, file edits, or other tool calls.[1][2][3] Common uses include: - **Blocking dangerous commands** or protected file access before execution.[1][2][3] - **Requiring human approval** for high-risk actions.[1][2][4] - **Auto-approving trusted tools or patterns** to reduce repetitive prompts.[3] - **Modifying tool input** to normalize or constrain what the agent is about to do.[4] - **Injecting context or policy feedback** so the agent can adapt after a denial.[4] A useful mental model is that the agent loop has **intercept points**; `PreToolUse` is the point *right before* a tool runs, while `PostToolUse` happens after execution and is better for validation, logging, or feedback.[1][2][6] If you want, I can also show: - a **minimal hook example**, - **how pre-tool-use hooks differ in Claude Code vs. Cursor vs. VS Code**, or - **design patterns for using them in AI agents**.",
+      "citations": [
+        "https://code.visualstudio.com/docs/copilot/customization/hooks",
+        "https://dotzlaw.com/insights/claude-hooks/",
+        "https://code.claude.com/docs/en/agent-sdk/hooks",
+        "https://www.endorlabs.com/learn/introducing-agent-governance-using-hooks-to-bring-visibility-to-ai-coding-agents",
+        "https://www.youtube.com/watch?v=03CfGf9iw_U",
+        "https://circleci.com/blog/test-hooks-ai-development/"
+      ]
+    },
+    {
+      "prompt": "AI coding agent memory and learning",
+      "status": "MISSING",
+      "found": false,
+      "response": "AI coding agent **memory** is the mechanism that lets an agent retain useful information across turns or sessions, so it can keep context, reuse prior decisions, and adapt over time instead of treating every prompt as independent.[1][2] In practice, this is what makes an agent feel like it is *learning*, even when the underlying model is not retrained.[1][2] For coding agents, the most useful framing is that memory is usually split into several types:[1][6] - **Working memory**: the current context window or active task state.[6] - **Semantic memory**: facts, rules, conventions, documentation, and product knowledge.[1][6] - **Procedural memory**: skills, workflows, tool use, and learned action sequences.[1][2][6] - **Episodic memory**: records of past interactions, decisions, and outcomes that can be reused later.[1][2][6] The key idea behind *learning* in these systems is usually not model weight updates, but *memory write-back*: the agent extracts useful facts from interactions, stores them externally, and retrieves them later when relevant.[1][2][3] IBM describes this as retaining context, recognizing patterns over time, and adapting based on past interactions, while Oracle’s agent-memory material emphasizes persistent memory stores, consolidation, and self-updating loops.[1][2] A common implementation pattern is:[2][3][5] - Capture useful signals from a session. - Summarize or structure them into memory entries. - Deduplicate and consolidate similar memories. - Retrieve only the most relevant memories for the next task. - Update memory when outcomes show that a prior decision was useful or stale. For AI coding agents specifically, the main practical constraint is that **context windows are finite and sessions do not persist**, so the agent needs external storage if you want it to remember preferences, project conventions, or recurring decisions.[3] That is why many systems rely on files, memory banks, vector stores, or knowledge graphs rather than expecting the model to “just remember.”[2][3][6] There is also an important design tradeoff: too little memory makes the agent forgetful, but too much or too-vague memory can pollute context and hurt retrieval quality.[4][5] As one practitioner account notes, memory works best when it stores *small, atomic pieces of knowledge* like decisions, constraints, and recurring principles, while humans still control what deserves to persist.[4][5] If you want, I can also turn this into: - a **design blueprint** for memory in an AI coding agent, - a **comparison of memory architectures** like files vs vector DBs vs knowledge graphs, - or a **practical implementation plan** for a coding agent that “learns” over time.",
+      "citations": [
+        "https://www.ibm.com/think/topics/ai-agent-memory",
+        "https://blogs.oracle.com/developers/oracle-and-deeplearning-ai-launch-new-agent-memory-course-for-ai-developers",
+        "https://grahammann.net/blog/memory-and-task-systems-giving-your-ai-agent-a-brain",
+        "https://news.ycombinator.com/item?id=46742800",
+        "https://dev.to/ksankar/what-i-learned-adding-memory-to-ai-agents-1eh2",
+        "https://www.youtube.com/watch?v=BacJ6sEhqMo",
+        "https://github.com/rohitg00/agentmemory"
+      ]
+    }
+  ]
+}

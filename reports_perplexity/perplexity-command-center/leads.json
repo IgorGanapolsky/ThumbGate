@@ -1,0 +1,224 @@
+{
+  "date": "2026-06-08",
+  "mode": "live",
+  "queryCount": 5,
+  "leadCount": 8,
+  "queries": [
+    {
+      "label": "agent reliability pain",
+      "query": "AI coding agent repeats mistakes Claude Code Cursor Codex MCP guardrails",
+      "status": "OK",
+      "resultCount": 8
+    },
+    {
+      "label": "pre-action check demand",
+      "query": "pre tool use hook block bad tool calls AI agent safety developer workflow",
+      "status": "OK",
+      "resultCount": 8
+    },
+    {
+      "label": "team workflow hardening",
+      "query": "AI coding agent broke production migration force push guardrail team workflow",
+      "status": "OK",
+      "resultCount": 8
+    },
+    {
+      "label": "memory and feedback loop",
+      "query": "thumbs down feedback memory AI coding agents DPO preference learning developer tools",
+      "status": "OK",
+      "resultCount": 5
+    },
+    {
+      "label": "marketplace placement",
+      "query": "Claude Code plugins MCP memory guardrails AI developer tools",
+      "status": "OK",
+      "resultCount": 8
+    }
+  ],
+  "leads": [
+    {
+      "rank": 7,
+      "title": "Agentic coding guardrails for teams - Codex Workshop",
+      "url": "https://www.codexworkshop.com/research/agentic-coding-governance-20260515-1119",
+      "snippet": "I tried it in Codex, Claude Code, and Codex, and here is what happened: the agent touched the wrong files, repeated old mistakes, and made review harder instead of easier.\n...\n**The actual thesis:** agentic coding governance works when instructions, tools, and review boundaries are explicit, scoped, and repeatable.\n...\n**Failure one: the model inherits the whole repo and nobody knows what it is allowed to trust.** If you have shipped AI code, you have hit this in Codex, Claude Code, and Codex: the agent finds a plausible path, but not the right one.\n...\nNamed fix: **Scope First Rules**.\nPut durable instructions in the smallest file that matches the work: scoped Codex rules in `.cursor/rules/*.mdc`, project memory in `CLAUDE.md`, and nested `AGENTS.md` in Codex repos.\n```\n# AGENTS.md\n- Prefer small diffs over broad refactors.\n- Do not edit generated files unless the task says so.\n- Ask before changing auth, billing, or deployment paths.\n- Run the repo verification command before proposing a PR.\n```\n...\n**Failure two: every tool boundary is treated like a prompt, so external systems become a free-for-all.** If you have shipped AI code, you have hit this in Claude Code, Codex, and Codex too: the agent can reach GitHub, Slack, Jira, or a database, but nobody reviewed the blast radius.\n...\nNamed fix: **MCP Permission Review**.\nBefore enabling a connector, write down what data it can read, what it can write, and what human approval is required.\n|Connector|Read scope|Write scope|Human gate|\n|--|--|--|--|\n|GitHub|repo metadata, PRs|comments, branches|required for merges|\n|Jira|issue titles, status|ticket updates|required for status changes|\n|Database|selected tables only|none by default|required for writes|\n...\nNamed fix: **Memory Ladder**.\nPut stable team rules in project memory, file-type rules in scoped rule files, and task-specific prompts only in the session.\nFor Claude Code, that means a concise `CLAUDE.md` plus selective rules.\nFor Codex, it means moving from one bloated `.cursorrules` file to a small `.cursor/rules/` tree.\nFor Codex, it means nesting `AGENTS.md` and using override files only when the exception is temporary.\n...\nNamed fix: **Verify Before Trust**.\nMake the agent run the project’s test or lint command, then require a short summary of what passed and what failed.\n```\n# verification loop\n1. make test\n2. make lint\n3. report failures with file names only\n4. stop if a command exits non-zero\n```\n...\nNamed fix: **Agent Review Gate**.\nAsk reviewers to check three things only: scope, tool use, and verification evidence.\n- Did the change stay inside the requested files?\n- Did it use approved tools and connectors only?\n- Did it show a passing verification loop or explain why not?\nCodex teams can pair this with background-agent PR policy.\nClaude teams can pair it with hooks and a review checklist.\nCodex teams can pair it with `AGENTS.md` plus the CLI verification loop.\n...\n**Synthesis:** narrow the instructions, narrow the tools, narrow the review surface.\n...\nOne practical methodology reflection: in the **Review** step, link the agent’s output to our methodology and require the same three questions every time: scope, tools, verification.",
+      "source": "",
+      "date": "2026-05-15",
+      "queryLabel": "agent reliability pain",
+      "query": "AI coding agent repeats mistakes Claude Code Cursor Codex MCP guardrails",
+      "queryLabels": [
+        "agent reliability pain"
+      ],
+      "score": 15,
+      "reasons": [
+        "AI-agent context",
+        "target ecosystem",
+        "clear pain signal",
+        "team workflow angle",
+        "commercial intent",
+        "recent result"
+      ],
+      "outreachAngle": "Lead with repeated-agent-mistake prevention and offer a concrete before/after gate example."
+    },
+    {
+      "rank": 2,
+      "title": "ai - A PreToolUse Hook System for Claude Code",
+      "url": "https://dev.to/mikelane/building-guardrails-for-ai-coding-assistants-a-pretooluse-hook-system-for-claude-code-ilj",
+      "snippet": "Claude Code's PreToolUse hook system intercepts tool calls before execution, blocks dangerous operations, and injects contextual guidance.\n...\nA PreToolUse hook is an executable that receives JSON on stdin and communicates via exit codes and stdout/stderr:\n```\n# Input (stdin)\n{\n\"tool_name\": \"Bash\",\n\"tool_input\": {\"command\": \"git reset --hard HEAD~3\"}\n}\n# Exit code 0: Allow (stdout parsed for additionalContext)\n# Exit code 2: Block (stderr displayed to user)\n```\nThe hook output format for allowing with context injection:\n```\n{\n\"hookSpecificOutput\": {\n\"hookEventName\": \"PreToolUse\",\n\"permissionDecision\": \"allow\",\n\"additionalContext\": \"Your reminder or context here\"\n}\n}\n...\nThe first hook blocks destructive operations before they execute.\n```\nBLOCKING_RULES: list[SafetyRule] = [\nSafetyRule(\npattern=r\"git\\s+reset\\s+--hard\",\naction=\"block\",\nmessage=\"BLOCKED: Use `git stash` or `git rebase` instead.\n\"\n\"`git reset --hard` destroys uncommitted work.\",\n),\nSafetyRule(\npattern=r\"--no-gpg-sign\",\naction=\"block\",\nmessage=\"BLOCKED: GPG signing is mandatory.\nFix GPG issues, don't bypass.\",\n),\nSafetyRule(\npattern=r\"git\\s+(?:add\\s+)?(?:-A|--all|\\.\\s*$)\",\naction=\"block\",\nmessage=\"BLOCKED: Explicitly stage files to avoid committing unwanted files.\",\n),\n]\n```\n...\nWARNING_RULES: list[SafetyRule] = [\nSafetyRule(\npattern=r\"git\\s+push\\s+--force(?!\\s*-with-lease)\",\n...\nmessage=\"WARNING: Use `--force-with-lease` for safer force push.\",\n...\nSafetyRule(\npattern=r\"\\.env\",\naction=\"warn\",\nmessage=\"WARNING: This file may contain secrets.\nNever commit .env files.\",\n...\nThe context injection hook injects repository metadata whenever Claude uses GitHub MCP tools:\n...\nSome workflow rules cannot be enforced by linters: TDD discipline, worktree usage, commit signing.\nThis hook surfaces reminders at relevant moments without blocking operations:\n```\nGPG_REMINDER = WorkflowReminder(\nmessage=\"GPG REMINDER: Never use `--no-gpg-sign`.\nIf GPG fails, check sandbox mode.\"\n)\n...\nThe skill suggestion hook maps file patterns to relevant skills, prompting Claude to load domain-specific guidance before proceeding.\n...\nHooks cannot modify tool inputs, only allow, block, or inject context.",
+      "source": "",
+      "date": "2026-01-18",
+      "queryLabel": "pre-action check demand",
+      "query": "pre tool use hook block bad tool calls AI agent safety developer workflow",
+      "queryLabels": [
+        "pre-action check demand"
+      ],
+      "score": 15,
+      "reasons": [
+        "AI-agent context",
+        "target ecosystem",
+        "clear pain signal",
+        "team workflow angle",
+        "commercial intent",
+        "recent result"
+      ],
+      "outreachAngle": "Lead with repeated-agent-mistake prevention and offer a concrete before/after gate example."
+    },
+    {
+      "rank": 3,
+      "title": "AI agent hooks: the interface for governing AI agents | Speakeasy",
+      "url": "https://www.speakeasy.com/resources/ai-agent-hooks",
+      "snippet": "A user-defined handler, whether a script, an HTTP endpoint, an MCP tool, or a small LLM prompt, that fires at a specific point in an AI agent’s lifecycle.\nHooks see structured data about what is about to happen and can observe, log, modify, or block before execution proceeds.\n...\n**Hooks** are user-defined handlers built into the AI agent itself.\nThey fire at specific points in the agent loop, and have access to the full context of a chat session.\nHooks can observe, log, modify, or block model interactions before execution proceeds.\n...\nAn AI agent hook is a user-defined handler that the agent invokes at a specific point in its lifecycle.\nThe agent passes the hook structured JSON about what is about to happen: the prompt text, the tool name and arguments, the file path, the shell command.\nThe hook does whatever it wants with that input and returns a JSON response that the agent acts on.\nAllow.\nDeny.\nModify the input.\nInject context.\nContinue silently and just log the event somewhere central.\n...\nfilters narrow it down.\nIf both match, the hook command runs and decides the outcome.\nIf either does not, the hook is skipped and the tool proceeds.\n...\n**Real-time policy enforcement.** Exactly what form this takes is specific to an organization.\nCommon use cases include: block destructive shell commands before they run, deny tool calls that would write to a production database, strip secrets from prompts before they reach the model, and stop a coding agent from committing code with hardcoded credentials.\nThe pattern is the same across all of these: a\n```\nPreToolUse\n```\n…\nhook evaluates the input against a rule set and returns a deny decision when it matches.\nThe action never happens.\n**Observability and audit.** Capture every prompt, every tool call, every response into a central store.\nThe data that was previously trapped on individual laptops becomes a unified feed that security, platform, and finance teams can all query.\n...\n**Code safety.** Hooks fire on file edits and shell executions, which makes them the natural place to wire in code-quality and security tooling.\nRun Semgrep or Corridor against generated code on every\n…\n...\n. The agent gets immediate, structured feedback and can regenerate the offending code in the same turn.\n...\nThe right pattern for an enterprise is usually a layered one. Put the cheap, deterministic checks (gitleaks-style secret-detection regex, an explicit deny list) in a local script so they run sub-millisecond and work offline. Forward the structured event to a central HTTP endpoint for everything else: telemetry, slower LLM-based classification, cross-session pattern matching. The local script is the policy gate. The central endpoint is the observability and analytics layer.\n...\n** Fires when a user submits a prompt to the agent. This is the chokepoint for inbound data. A hook here can scan the prompt for secrets pasted out of a UserPromptSubmit.**\n…\n...\n** Fires before any tool the agent calls. This is the chokepoint for outbound actions. A hook here sees the tool name ( PreToolUse.**\n…\n), the arguments, and the working directory. Almost every real-time policy enforcement use case lives here: deny dangerous shell commands, scope file writes to allowed directories, gate MCP tool calls behind an approval flow, strip credentials out of HTTP requests before the tool issues them.\n** Fires after a tool returns. This is where tool PostToolUse.**",
+      "source": "",
+      "date": "2026-05-06",
+      "queryLabel": "pre-action check demand",
+      "query": "pre tool use hook block bad tool calls AI agent safety developer workflow",
+      "queryLabels": [
+        "pre-action check demand"
+      ],
+      "score": 15,
+      "reasons": [
+        "AI-agent context",
+        "target ecosystem",
+        "clear pain signal",
+        "team workflow angle",
+        "commercial intent",
+        "recent result"
+      ],
+      "outreachAngle": "Lead with repeated-agent-mistake prevention and offer a concrete before/after gate example."
+    },
+    {
+      "rank": 8,
+      "title": "AI Coding Agents: Benchmark Gaming & Production Risks ...",
+      "url": "https://modelslab.com/blog/api/ai-coding-agents-benchmark-gaming-production-risks-2026",
+      "snippet": "On February 19th, a developer gave Claude Code access to their Railway production database.\nClaude Code autonomously ran `drizzle-kit push --force` — a destructive schema migration — wiping every record.\n...\nA developer was using Claude Code to help with a schema migration.\nThe agent, running autonomously in a separate terminal session, decided the right move was to force-push schema changes directly to the production database on Railway.\nThe failure was not purely Claude's fault — and that's the point.\nSeveral safety layers were missing:\n- No `deletion_protection` flag set on the Railway database\n- No staging environment to test destructive migrations\n- No manual gate on production changes\n- Production credentials accessible in the same environment as development\n- No offline backups for the last 24 hours\nWhen you strip every human checkpoint out of a workflow and hand the keys to an autonomous agent, you get autonomous action.\nThat's not a Claude bug — it's a systems design problem.\n...\nNever give an agent production credentials when it only needs development access.\nThis sounds obvious, but the convenience of a single `.env` file kills this discipline fast.\nUse separate credential sets.\nIf the agent doesn't need to touch production, it literally cannot — independent of what it decides to do.\n...\nAny action matching `terraform destroy`, `DROP TABLE`, `drizzle-kit push --force`, `rm -rf`, or any API call tagged as irreversible should require explicit human confirmation.\nBuild this into your agent scaffolding, not just into agent prompts (prompts can be overridden; scaffolding cannot).\n...\nGiven the multi-agent deception risk, replace agent status reports with verifiable state checks.\nInstead of \"Agent says task is complete,\" ask: does the output artifact exist?\nDoes the test suite pass independently?\nDid the API call return 200?\n...\nBuild state verification as a first-class step in any autonomous pipeline, not an afterthought.\n...\nWhen evaluating agents, run your own benchmarks on problems representative of your codebase.\nThe SWE-bench Verified → SWE-bench Pro gap suggests that leaderboard performance doesn't transfer directly.\nAllocate 2-3 days to build a small internal eval set before committing to a tool for production use.\n...\nUntil it does, the discipline is simple: sandbox everything, gate the destructive actions, and verify state rather than trusting status.",
+      "source": "",
+      "date": "2026-03-07",
+      "queryLabel": "team workflow hardening",
+      "query": "AI coding agent broke production migration force push guardrail team workflow",
+      "queryLabels": [
+        "team workflow hardening"
+      ],
+      "score": 15,
+      "reasons": [
+        "AI-agent context",
+        "target ecosystem",
+        "clear pain signal",
+        "team workflow angle",
+        "commercial intent",
+        "recent result"
+      ],
+      "outreachAngle": "Lead with repeated-agent-mistake prevention and offer a concrete before/after gate example."
+    },
+    {
+      "rank": 7,
+      "title": "context-please - Claude Code MCP Server | ClaudePluginHub",
+      "url": "https://www.claudepluginhub.com/plugins/pleaseai-context-please",
+      "snippet": "Index your local codebase with a Node-based MCP server to automatically supply relevant code context and resources to Claude Code, enabling more accurate AI-assisted coding, debugging, and analysis without manual context selection.\nSupports multi-platform projects via stdio subprocess.\n...\nPrecise local semantic code search via MCP.\nIndexes your codebase with Go AST parsing, embeds with Ollama or LM Studio, and exposes vector search to Claude through an MCP server — no cloud, no npm.\nOpen-source, local-first Claude Code plugin for token reduction, context compression, and cost optimization using hybrid RAG retrieval (BM25 + vector search), reranking, AST-aware chunking, and compact context packets.\nCodeAlive context engine for semantic code search and AI-powered codebase Q&A.\nEnables AI coding agents to understand entire codebases beyond just open files — search across all indexed repositories, trace cross-service dependencies, discover usage patterns, and get synthesized answers to architectural questions.\nIncludes a lightweight code exploration subagent, authentication hooks, and multiple search modes (fast lexical, semantic, and deep cross-cutting).\nWorks standalone or alongside the CodeAlive MCP server for direct tool access via the Model Context Protocol.\nEnrich coding agent prompts with codebase context using a local LLM\nCommands for loading context and priming Claude for specific tasks\n(Alpha) Persistent memory, architectural decisions, and safety guardrails for Claude Code.\nYour agent starts every session with full project context — stack, decisions, patterns, safety rules, and a handoff from the previous session.\nTossPayments payment integration guide - access official documentation for payment widget, checkout, and API integration\n...\nTurborepo monorepo build system guidance for task pipelines, caching, CI optimization, and the turbo CLI\n...\nNuxt i18n internationalization module for locale routing, lazy-loaded translations, SEO, browser detection, and multi-domain setups.\nUse when working with @nuxtjs/i18n, locale switching, translated routes, or i18n composables.",
+      "source": "",
+      "date": "2026-05-07",
+      "queryLabel": "marketplace placement",
+      "query": "Claude Code plugins MCP memory guardrails AI developer tools",
+      "queryLabels": [
+        "marketplace placement"
+      ],
+      "score": 15,
+      "reasons": [
+        "AI-agent context",
+        "target ecosystem",
+        "clear pain signal",
+        "team workflow angle",
+        "commercial intent",
+        "recent result"
+      ],
+      "outreachAngle": "Lead with repeated-agent-mistake prevention and offer a concrete before/after gate example."
+    },
+    {
+      "rank": 8,
+      "title": "Guardrails.md - Safety Protocol for Autonomous Agents",
+      "url": "https://guardrails.md",
+      "snippet": "Once the context fills with pollution, the agent prioritizes recent failures over original instructions.\nIt enters a recursive loop, repeating the same mistakes.\n**This state is \"The Gutter.\"**\n...\n**Core issue:** Agents have no persistent memory.\nEach reset wipes lessons learned.\nWithout externalized state, they repeat failures indefinitely.\n...\n1. **Persistent storage:** Lives in project repository\n2. **Force-read on init:** Agent must read at start of every iteration\n3. **Append-only learning:** New failures append new guardrails\n4. **Human-readable:** Developers can audit and edit\n### When it's created\nGenerated dynamically when the agent detects failure patterns:\n- Repeated identical errors (3+ times)\n- Circular tool call loops\n- Context pollution threshold exceeded\n- Manual \"escape hatch\" by developer\n...\nA \"Sign\" is a discrete unit of learned safety constraint.\nEach must contain:\n|Component|Purpose|\n|--|--|\n|**Trigger**|Context that precedes the error|\n|**Instruction**|Deterministic command to prevent it|\n|**Reason**|Why this guardrail exists|\n|**Provenance**|When/how it was added|\n...\n### For Claude Code\n1. Create `GUARDRAILS.md` in your project root\n2. Claude Code automatically reads context files - the agent will see it\n3. Optionally, reference it explicitly in your `.claude/instructions.md`:\n```\n## Safety\nYou MUST read and follow all constraints in GUARDRAILS.md.\nThese are lessons learned from past failures.\nNever violate a SIGN without explicit human approval.\n```\n### For Google Antigravity\n1. Create `GUARDRAILS.md` in project root\n2. In `AGENTS.md` or `GEMINI.md`, add:\n```\n## Critical Instructions\nYou MUST read GUARDRAILS.md at start of every task.\nTreat all SIGNS as immutable constraints.\nIf you violate a SIGN, stop and report.\n```\n3. Configure agent approval for violations\n...\nGUARDRAILS.md is a file-based safety protocol for autonomous AI coding agents.\nIt's a persistent document that captures lessons from failures and acts as the agent's memory across context resets, preventing the same mistakes from recurring.\n...\nWithout persistent memory, agents repeat mistakes across sessions.\nGUARDRAILS.md provides that memory.\n...\nYes.\nWhile it originated in the Ralph Loop methodology, the concept works with Claude Code, Google Antigravity, Cursor, or any agentic system where you can inject persistent context.\nThe implementation details vary by platform.\n...\nThe four universal patterns are: (1) Artifact Verification — human approval before destructive operations, (2) Context Rotation — periodic resets to prevent pollution, (3) Privilege Boundaries — explicit access controls, and (4) Rate Limiting — preventing runaway loops.",
+      "source": "",
+      "date": "2026-01-28",
+      "queryLabel": "agent reliability pain",
+      "query": "AI coding agent repeats mistakes Claude Code Cursor Codex MCP guardrails",
+      "queryLabels": [
+        "agent reliability pain"
+      ],
+      "score": 15,
+      "reasons": [
+        "AI-agent context",
+        "target ecosystem",
+        "clear pain signal",
+        "team workflow angle",
+        "commercial intent",
+        "recent result"
+      ],
+      "outreachAngle": "Lead with repeated-agent-mistake prevention and offer a concrete before/after gate example."
+    },
+    {
+      "rank": 6,
+      "title": "Hooks: How to Put Guardrails on Your AI Coding Assistant",
+      "url": "https://dev.to/rajeshroyal/hooks-how-to-put-guardrails-on-your-ai-coding-assistant-4gak",
+      "snippet": "Enter **Hooks** — Claude Code's answer to the age-old question: \"How do I trust an AI with my terminal?\"\nHooks let you define shell commands that run at specific points in Claude's workflow, giving you deterministic control over an otherwise probabilistic system.\nThink of hooks as your personal security guard, notification system, and workflow automation layer — all rolled into one.\n...\nHooks are shell commands that execute at predetermined lifecycle events in Claude Code.\nThey're your programmable intervention layer between \"Claude wants to do this\" and \"Claude actually does this.\"\n...\nGetting started with hooks is straightforward.\nRun the `/hooks` command in Claude Code to see your options, or configure them directly in `.claude/settings.json`:\n```\n{\n\"hooks\": {\n\"PreToolUse\": [\n{\n\"matcher\": \"Bash\",\n\"hooks\": [\n{\n\"type\": \"command\",\n\"command\": \"python3 ~/.claude/scripts/validate-command.py \\\"$CLAUDE_TOOL_INPUT\\\"\"\n}\n]\n}\n],\n\"PostToolUse\": [\n{\n\"matcher\": \".*\",\n\"hooks\": [\n{\n\"type\": \"command\",\n\"command\": \"~/.claude/scripts/notify-complete.sh\"\n}\n]\n}\n]\n}\n}\n```\n...\nThe hook lifecycle events include:\n- **PreToolUse**: Before Claude executes any tool (perfect for validation)\n- **PostToolUse**: After a tool completes (great for notifications or logging)\n- **Notification**: When Claude wants to notify you of something\n- **Stop**: When Claude completes a session\n...\n🔒 **Layer your defenses**: Combine hooks with Claude's built-in permission system.\nHooks handle the automated blocking; permissions handle the interactive approval.\n📱 **Mobile notifications**: Use hooks to send push notifications via services like Pushover or ntfy when long-running tasks complete:\n...\n📊 **Audit everything**: Create a PostToolUse hook that logs all Claude actions to a file.\nInvaluable for debugging and compliance.\n🎯 **Use matchers wisely**: The `matcher` field accepts regex patterns.\nMatch specific tools (`Bash`), all tools (`.*`), or complex patterns (`Write|Edit`).",
+      "source": "",
+      "date": "2026-01-20",
+      "queryLabel": "team workflow hardening",
+      "query": "AI coding agent broke production migration force push guardrail team workflow",
+      "queryLabels": [
+        "team workflow hardening"
+      ],
+      "score": 15,
+      "reasons": [
+        "AI-agent context",
+        "target ecosystem",
+        "clear pain signal",
+        "team workflow angle",
+        "commercial intent",
+        "recent result"
+      ],
+      "outreachAngle": "Lead with repeated-agent-mistake prevention and offer a concrete before/after gate example."
+    },
+    {
+      "rank": 6,
+      "title": "Inside Claude Code, The Architecture Behind Tools, Memory, Hooks ...",
+      "url": "https://www.penligent.ai/hackinglabs/tr/inside-claude-code-the-architecture-behind-tools-memory-hooks-and-mcp",
+      "snippet": "The official docs show a layered system instead.\nClaude runs an agentic loop, chooses tools based on the task, accumulates context from files and tool outputs, manages long sessions through compaction, and exposes safety boundaries through permission modes, checkpoints, sandboxing, trust verification, and managed settings.\nThe system is deliberately modular: memory, hooks, skills, subagents, plugins, and MCP all change what the model sees or can do, but they do not do it in the same way.\n(Claude)\n...\n|Governance and safety|What Claude is allowed to attempt|Permission modes, allow and deny rules, hooks, sandboxing, trust verification, managed settings|This is the real control plane for production use|\n|Extensibility|How new capabilities arrive|Skills, plugins, MCP servers, MCP prompts, Agent SDK|This is where flexibility and supply-chain risk both increase|\n...\nThey are architectural behaviors.\nA tool can be denied.\nA subagent can get its own context window.\nA hook can deny or defer an action.\nA sandbox can block a subprocess at the OS level even if the model wants to run it.\nAn MCP server can add an entire new capability surface.\nThose are system properties, not prompt decorations.\n...\nThe tool system is also the grammar that other Claude Code features reuse.\nPermission rules refer to tool names.\nSubagent allowlists and denylists refer to tool names.\nHook matchers refer to tool names.\nMCP tools are surfaced as tools.\nThat means the tool namespace is not just a developer-facing API detail.\nIt is the vocabulary of governance.\n...\nare session controls and operational helpers.\nMCP prompts can also appear as commands in the form\n…\n, which is a useful reminder that extension points in Claude Code are not limited to one mechanism.\nA capability may arrive as a tool, a prompt, a skill, a plugin bundle, or a configuration policy, and those paths have different security and context consequences.\n(Claude)\n...\nand auto memory.\nThe same page is careful to say that Claude treats both as context, not as enforced configuration.\nThat line is easy to skip and incredibly important.\nIt means memory influences behavior, but it is not a hard policy engine.\nHard policy lives elsewhere.\n(Claude API Dokümanları)\nThe distinction between the two systems is sharp enough to matter in daily engineering work:\n|System|Who writes it|Kapsam|What it is for|\n...\n|CLAUDE.md|You|Project, user, or org|Stable rules, architecture notes, workflows, coding standards|\n|Auto memory|Claude|Per working tree|Learned build commands, debugging patterns, preferences, recurring corrections|\nAnthropic also documents loading limits for auto memory and says subagents can maintain their own auto memory as well.\n...\nThis is why many “Claude drifted” complaints are really context-budget complaints. Anthropic says the context window holds your conversation history, file contents,\n…\n, auto memory, loaded skills, and system instructions. As that fills up, Claude compacts automatically. The docs say older tool outputs are cleared first, then the conversation is summarized if needed. If you want persistent instructions to survive long sessions, the official recommendation is explicit: put them in\n...\nThey are not the same. Anthropic says checkpointing snapshots file state before each edit, persists across sessions, and lets you restore code, conversation, or both. “Summarize from here” compresses the conversation to free context but does not change files on disk. The docs also document an important limitation: Bash-driven file modifications are not tracked by checkpoint rewind.",
+      "source": "",
+      "date": "2026-04-02",
+      "queryLabel": "marketplace placement",
+      "query": "Claude Code plugins MCP memory guardrails AI developer tools",
+      "queryLabels": [
+        "marketplace placement"
+      ],
+      "score": 15,
+      "reasons": [
+        "AI-agent context",
+        "target ecosystem",
+        "clear pain signal",
+        "team workflow angle",
+        "commercial intent",
+        "recent result"
+      ],
+      "outreachAngle": "Lead with repeated-agent-mistake prevention and offer a concrete before/after gate example."
+    }
+  ]
+}
