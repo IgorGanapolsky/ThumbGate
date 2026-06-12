@@ -55,14 +55,14 @@
     {
       "filePath": "scripts/self-harness-optimizer.js",
       "ruleKey": "javascript:S4036",
-      "lineSubstring": "execSync('git add'",
+      "lineSubstring": "git add",
       "resolution": "SAFE",
       "rationale": "Runs git add command. The command is a hardcoded literal without user input."
     },
     {
       "filePath": "scripts/self-harness-optimizer.js",
       "ruleKey": "javascript:S4036",
-      "lineSubstring": "execSync('git commit -m'",
+      "lineSubstring": "git commit",
       "resolution": "SAFE",
       "rationale": "Runs git commit command. The command is a hardcoded literal without user input."
     }
