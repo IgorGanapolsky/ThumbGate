@@ -72,7 +72,7 @@ class Trace {
     }
     try {
       const outputs = await fn();
-      this.spans.push({ name, runType, ms: Date.now() - startedAt, status: 'ok' });
+      this.spans.push({ name, runType, ms: Date.now() - startedAt, status: 'ok', outputs });
       if (enabled()) {
         post(`/runs/${id}`, { end_time: nowIso(), outputs: { output: outputs } }, 'PATCH');
       }

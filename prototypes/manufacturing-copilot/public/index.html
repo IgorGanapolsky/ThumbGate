@@ -255,6 +255,17 @@
       return 'background: #374151; color: #d1d5db; border: 1px solid #9ca3af;'; // Default Slate/Grey
     }
 
+    function getCategoryName(chunk) {
+      if (!chunk) return 'Unknown';
+      const source = String(chunk.source || chunk.sourceCategory || '').toLowerCase();
+      if (source.includes('telemetry')) return 'Telemetry';
+      if (source.includes('maintenance')) return 'Maintenance';
+      if (source.includes('safety')) return 'Safety';
+      if (source.includes('quality')) return 'Quality';
+      if (source.includes('protocol')) return 'Protocol';
+      return chunk.source || 'Other';
+    }
+
     function runScenario(type) {
       document.getElementById('operator-query').value = presets[type];
       submitQuery();
@@ -337,9 +348,39 @@
       // 1.5. Render References
       const refCard = document.getElementById('response-references');
       const refList = document.getElementById('references-list');
+      const sourceCategorySummary = document.getElementById('source-category-summary');
       refList.innerHTML = '';
+      sourceCategorySummary.innerHTML = '';
       
       if (data.retrievedChunks && data.retrievedChunks.length > 0) {
+        const categories = [...new Set(data.retrievedChunks
+          .map(chunk => chunk.sourceCategory || chunk.source || 'Source Document')
+          .filter(Boolean))];
+        const usedCategoryText = categories.join(' ').toLowerCase();
+        const evidenceCategories = [
+          'Safety Procedures Manual',
+          'Maintenance Manual',
+          'Quality Standards Manual',
+          'Protocol Specification',
+          'Live PLC Telemetry'
+        ];
+        evidenceCategories.forEach(category => {
+          const used = category.toLowerCase().split(/\s+/).some(term => (
+            term.length > 4 && usedCategoryText.includes(term)
+          ));
+          const row = document.createElement('div');
+          row.className = `source-category-row ${used ? 'used' : 'unused'}`;
+          const name = document.createElement('span');
+          name.className = 'source-category-name';
+          name.style.cssText = used ? getCategoryBadgeStyle(category) : '';
+          name.textContent = category;
+          const state = document.createElement('span');
+          state.className = 'source-category-state';
+          state.textContent = used ? 'Used in answer' : 'Not used';
+          row.append(name, state);
+          sourceCategorySummary.appendChild(row);
+        });
+
         data.retrievedChunks.forEach(chunk => {
           const item = document.createElement('div');
           item.style.fontSize = '0.85rem';
@@ -349,16 +390,8 @@
           item.style.gap = '0.6rem';
           const pageLabel = chunk.sourcePage ? `Page ${chunk.sourcePage}` : 'Live';
           const categoryName = chunk.sourceCategory || chunk.source || 'Manual';
-          let displayName = categoryName;
-          const catLower = categoryName.toLowerCase();
-          if (catLower.includes('safety')) displayName = 'Safety';
-          else if (catLower.includes('maintenance')) displayName = 'Maintenance';
-          else if (catLower.includes('quality')) displayName = 'Quality';
-          else if (catLower.includes('protocol')) displayName = 'Protocol';
-          else if (catLower.includes('telemetry')) displayName = 'Telemetry';
-
           const categoryStyle = getCategoryBadgeStyle(categoryName);
-          const categoryLabel = `<span class="span-category-badge span-category-rag" style="font-size: 0.65rem; padding: 0.15rem 0.35rem; ${categoryStyle} margin-right: 0.2rem; border-radius: 3px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">${displayName}</span>`;
+          const categoryLabel = `<span class="reference-type"><span>Document type</span><strong style="${categoryStyle}">${categoryName}</strong></span>`;
           const sourceLabel = chunk.sourceTitle || chunk.source || chunk.fileName || 'Source';
           const sourceText = chunk.sourceUrl
             ? `<a href="${chunk.sourceUrl}" target="_blank" rel="noreferrer" style="font-weight: 500; color: #38bdf8;">${sourceLabel}</a>`
@@ -515,18 +548,67 @@
       if (data.spans && data.spans.length > 0) {
         data.spans.forEach((span, index) => {
           const row = document.createElement('div');
-          row.className = `span-row ${span.status === 'error' ? 'error' : 'ok'}`;
+          
+          let isError = span.status === 'error';
+          let isWarning = false;
+          let displayStatus = span.status === 'error' ? 'Blocked' : 'Passed';
 
-          let statusBadge = `<span class="span-status-badge ok">✓ Passed</span>`;
-          if (span.status === 'error') {
-            statusBadge = `<span class="span-status-badge error">✗ Blocked</span>`;
+          if (span.outputs) {
+            if (span.outputs.status === 'block' || span.outputs.status === 'blocked' || span.outputs.allowed === false) {
+              isError = true;
+              displayStatus = 'Blocked';
+            } else if (span.outputs.status === 'warning') {
+              isWarning = true;
+              displayStatus = 'Warning';
+            }
           }
+
+          let rowClass = 'ok';
+          let statusBadge = `<span class="span-status-badge ok">✓ Passed</span>`;
+          if (isError) {
+            rowClass = 'error';
+            statusBadge = `<span class="span-status-badge error">✗ Blocked</span>`;
+          } else if (isWarning) {
+            rowClass = 'warning';
+            statusBadge = `<span class="span-status-badge warning">⚠ Warning</span>`;
+          }
+
+          row.className = `span-row ${rowClass}`;
 
           const meta = spanMeta[span.name] || {
             title: formatGateName(span.name),
             desc: "Execution step in the LangGraph pipeline",
             type: runTypeLabels[span.runType] || 'Workflow'
           };
+
+          // Dynamically override description based on output details/categories
+          if (span.name === 'plan_metadata_filters') {
+            if (span.outputs && Array.isArray(span.outputs.sourcePreference)) {
+              if (span.outputs.sourcePreference.length > 0) {
+                meta.desc = `Active retrieval filters computed: ${span.outputs.sourcePreference.join(', ')}`;
+              } else {
+                meta.desc = `No specific manual filters computed; searching all manuals.`;
+              }
+            }
+          } else if (span.name === 'retrieve_manual_context') {
+            if (Array.isArray(span.outputs) && span.outputs.length > 0) {
+              const categories = [...new Set(span.outputs.map(getCategoryName))];
+              meta.desc = `Retrieved matching passages from: ${categories.join(', ')}`;
+            } else {
+              meta.desc = `No passages retrieved from manuals.`;
+            }
+          } else if (span.name === 'fusion_rerank') {
+            if (Array.isArray(span.outputs) && span.outputs.length > 0) {
+              const titles = span.outputs.map(chunk => chunk.title || 'Untitled');
+              const categories = [...new Set(span.outputs.map(getCategoryName))];
+              meta.desc = `Promoted top chunks (${categories.join(', ')}): ${titles.join(', ')}`;
+            }
+          } else if (span.outputs && span.outputs.detail) {
+            meta.desc = span.outputs.detail;
+          } else if (span.outputs && span.outputs.reason) {
+            meta.desc = span.outputs.reason;
+          }
+
           const typeLabel = meta.type || runTypeLabels[span.runType] || 'Workflow';
           const typeClass = typeLabel.toLowerCase();
           const duration = span.ms < 1 ? '<1ms' : `${span.ms}ms`;

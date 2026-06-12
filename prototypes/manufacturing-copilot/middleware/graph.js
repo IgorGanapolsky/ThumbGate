@@ -192,7 +192,7 @@ function citationForChunk(chunk) {
   if (!chunk) return null;
   const category = sourceCategoryForChunk(chunk);
   const sourceName = chunk.sourceTitle || chunk.source || chunk.title || chunk.fileName;
-  const page = chunk.sourcePage ? `, p. ${chunk.sourcePage}` : '';
+  const page = chunk.sourcePage ? `, p. ${chunk.sourcePage}` : (category === 'Live PLC Telemetry' ? ', Live' : '');
   const url = chunk.sourceUrl ? ` — ${chunk.sourceUrl}` : '';
   return `Source type: ${category} — ${sourceName}${page}${url}`;
 }
