@@ -148,7 +148,7 @@ async function seedVectorDatabase() {
 /**
  * Searches the LanceDB database using HNSW approximate nearest neighbor (ANN) vector matching.
  */
-async function queryVectorDB(query, topK = 2) {
+async function queryVectorDB(query, topK = 2, options = {}) {
   let table = await getTable();
   if (!table) {
     console.log('[VectorDB] Table not initialized. Seeding database first...');
@@ -160,19 +160,51 @@ async function queryVectorDB(query, topK = 2) {
   const embeddingVector = await _deps.embed(query);
   
   // Query LanceDB using cosine similarity vector search
-  // Retrieve a candidate pool for hybrid procedure code boosting/reranking only when a code is queried
-  const candidateLimit = codeMatch ? Math.max(topK, 5) : topK;
+  // Retrieve a candidate pool for hybrid procedure code boosting/reranking or fusion reranking
+  const shouldRerank = options.rerank === true;
+  const candidateLimit = shouldRerank 
+    ? Math.max(topK * 3, 10) 
+    : (codeMatch ? Math.max(topK, 5) : topK);
+
   const results = await table
     .search(embeddingVector)
     .distanceType('cosine')
     .limit(candidateLimit)
     .toArray();
 
+  let finalResults = results;
+
+  // Hybrid Fusion / Rerank Stage:
+  // Blend semantic cosine score with token-overlap/keyword matching score
+  if (shouldRerank) {
+    const queryTerms = query.toLowerCase().split(/\W+/).filter(t => t.length > 2);
+    const scored = results.map(row => {
+      const docText = (row.title + ' ' + row.text).toLowerCase();
+      let matches = 0;
+      for (const term of queryTerms) {
+        if (docText.includes(term)) {
+          matches++;
+        }
+      }
+      const overlapScore = queryTerms.length > 0 ? matches / queryTerms.length : 0;
+      const semanticScore = 2.0 - row._distance; // 2.0 is max score when distance is 0
+      // 50% semantic vector score, 50% keyword term overlap
+      const score = semanticScore * 0.5 + overlapScore * 0.5;
+      return {
+        ...row,
+        _blendedScore: Number(score.toFixed(6))
+      };
+    });
+    // Sort candidates by the blended fusion score descending
+    scored.sort((a, b) => b._blendedScore - a._blendedScore);
+    finalResults = scored;
+  }
+
   // Keyword/Code boosting (hybrid RAG reranker):
   // If query contains a procedure ID like SP-101 or MM-201, bubble matching document to the top
   if (codeMatch) {
     const code = codeMatch[0].toUpperCase();
-    results.sort((a, b) => {
+    finalResults.sort((a, b) => {
       const aHas = (a.title + ' ' + a.text).toUpperCase().includes(code);
       const bHas = (b.title + ' ' + b.text).toUpperCase().includes(code);
       if (aHas && !bHas) return -1;
@@ -182,10 +214,10 @@ async function queryVectorDB(query, topK = 2) {
   }
 
   // Slice to requested topK and map results
-  return results.slice(0, topK).map(row => ({
+  return finalResults.slice(0, topK).map(row => ({
     title: row.title,
     text: row.text,
-    score: 2.0 - row._distance, // Convert distance metric to a confidence score where higher is better
+    score: row._blendedScore !== undefined ? row._blendedScore : (2.0 - row._distance),
     source: row.source,
     fileName: row.fileName
   }));

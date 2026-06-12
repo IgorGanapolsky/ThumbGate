@@ -53,13 +53,49 @@ const INJECTION_PATTERNS = [
 
 function scanForInjection(text, source) {
   const hits = INJECTION_PATTERNS.filter((re) => re.test(text)).map((re) => re.source.slice(0, 40));
+  const gateName = source === 'input'
+    ? 'injection_scan_input'
+    : source === 'ingestion'
+    ? 'injection_scan_ingestion'
+    : 'injection_scan_retrieved';
   return {
-    gate: source === 'input' ? 'injection_scan_input' : 'injection_scan_ingestion',
+    gate: gateName,
     status: hits.length ? 'block' : 'pass',
     detail: hits.length
       ? `Prompt-injection signature detected in ${source}: ${hits.length} pattern(s)`
       : `No injection patterns in ${source}`,
     hits,
+  };
+}
+
+// --- Retrieved-context injection quarantine ---------------------------------
+
+function quarantineRetrievedContext(chunks) {
+  const cleanChunks = [];
+  const quarantined = [];
+
+  for (const chunk of chunks) {
+    const scan = scanForInjection(chunk.text || '', 'retrieved_context');
+    if (scan.status === 'block') {
+      quarantined.push({
+        title: chunk.title,
+        source: chunk.source,
+        fileName: chunk.fileName,
+        hits: scan.hits,
+      });
+    } else {
+      cleanChunks.push(chunk);
+    }
+  }
+
+  return {
+    gate: 'retrieved_context_quarantine',
+    status: quarantined.length > 0 ? 'warning' : 'pass',
+    detail: quarantined.length > 0
+      ? `Quarantined ${quarantined.length} chunk(s) from retrieved context due to indirect prompt-injection signatures`
+      : 'All retrieved chunks passed quarantine check',
+    cleanChunks,
+    quarantined,
   };
 }
 
@@ -120,6 +156,7 @@ function safetyCitationGate(answer, route) {
 module.exports = {
   sanitizeInput,
   scanForInjection,
+  quarantineRetrievedContext,
   confidenceGate,
   unsafeOutputGate,
   safetyCitationGate,

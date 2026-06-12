@@ -6,6 +6,7 @@ const { queryVectorDB } = require('./vector-db');
 const {
   sanitizeInput,
   scanForInjection,
+  quarantineRetrievedContext,
   confidenceGate,
   unsafeOutputGate,
   safetyCitationGate,
