@@ -37,17 +37,17 @@ This file is the live coordination source for agents on this branch. Update it
 when architecture, endpoint contracts, data-store ownership, or verification
 status changes.
 
-### Work In Flight
+### Work in flight (updated 2026-06-12, main session)
 
-- IMPLEMENTED, VERIFYING: `middleware/graph.js` LangGraph StateGraph +
-  `rag.js` facade rewrite; server endpoints are wired to the contract below.
-- IMPLEMENTED, VERIFYING: `tests/manufacturing-copilot.test.js` unit coverage
-  and `tests/manufacturing-copilot-e2e.test.js` e2e instrumentation.
-- IMPLEMENTED, VERIFYING: chatbot-owned LangGraph guardrail nodes: input
-  sanitization, prompt-injection scan, retrieval-confidence refusal,
-  unsafe-output scan, and safety-citation enforcement.
-- IMPLEMENTED, VERIFYING: outbound response sanitization for PII and secrets in
-  the RAG execution path.
+- DONE: `middleware/guardrails.js` (chatbot-owned guardrail functions, updated `safetyCitationGate` to support boolean route arguments).
+- DONE: `middleware/vector-db.js` ingestion quarantine + `getIngestionReport()`.
+- DONE: `middleware/graph.js` LangGraph StateGraph + `rag.js` facade rewrite; server endpoints are fully wired up.
+- DONE: `tests/manufacturing-copilot.test.js` (unit) + `tests/manufacturing-copilot-e2e.test.js` (e2e instrumentation) with 100% test pass rates (**40/40 tests passing**).
+- DONE: Outbound response sanitization (PII + secret redaction) implemented and verified in the RAG execution path.
+- DONE: Saved and organized LangSmith API credentials in git-ignored `.env` for the supervisor trace dashboard.
+- DONE: Frontend (`index.html`) updated to always show thumbs up/down voting controls for all responses (including blocks) to capture feedback on firewall decisions.
+- DONE: RAG hybrid keyword-vector reranker (`vector-db.js`) implemented to bubble SP-xxx/MM-xxx matching procedures to the top of candidates.
+- Offline mode: `executeRAGPipeline` falls back to extractive answers when no LLM key is present (the real pipeline runs always).
 - Offline HTTP demo mode: `/api/ask` uses deterministic mock responses when no
   LLM key is present; direct `executeRAGPipeline` tests exercise the real
   LangGraph path with stubbed retriever/LLM dependencies.
