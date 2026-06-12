@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "thumbgate": {
+      "command": "npx",
+      "args": ["--yes", "--package", "thumbgate@1.26.8", "thumbgate", "serve"]
+    }
+  },
+  "hooks": {
+    "preToolUse": {
+      "command": "npx",
+      "args": [
+        "--yes",
+        "--package",
+        "thumbgate@1.26.8",
+        "thumbgate",
+        "gate-check"
+      ]
+    }
+  },
+  "notes": "Claude Code config with ThumbGate. For Nous Research Hermes Agent: see HERMES.md. Add preToolUse gates for skill-synthesis validation and multi-channel post safety."
+}
