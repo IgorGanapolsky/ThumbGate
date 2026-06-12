@@ -603,6 +603,7 @@ test('writePlanOutputs persists machine-readable GSD artifacts', () => {
     assert.ok(pages.some((page) => page.path === '/guides/codex-cli-guardrails'));
     assert.ok(pages.some((page) => page.path === '/guides/gemini-cli-feedback-memory'));
     assert.ok(pages.some((page) => page.path === '/guides/hermes-agent-guardrails'));
+    assert.ok(pages.some((page) => page.path === '/guides/safe-self-evolution'));
     assert.ok(pages.some((page) => page.path === '/guides/agent-context-governance'));
     assert.ok(pages.some((page) => page.path === '/guides/roo-code-alternative-cline'));
     assert.ok(pages.some((page) => page.path === '/guides/browser-automation-safety'));

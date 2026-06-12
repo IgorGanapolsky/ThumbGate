@@ -44,6 +44,8 @@
     "/guides/background-agent-governance",
     "/guides/ai-agent-governance-sprint",
     "/guides/stop-repeated-ai-agent-mistakes",
+    "/guides/hermes-agent-guardrails",
+    "/guides/agent-context-governance",
     "/guides/ai-mode-ads-agent-governance",
     "/guides/mcp-tool-governance",
     "/guides/agentic-web-governance",
@@ -58,6 +60,7 @@
     "/guides/database-agent-safety",
     "/guides/prompt-tricks-to-workflow-rules",
     "/guides/gpt-5-5-model-evaluation",
+    "/guides/safe-self-evolution",
     "/guides/ai-search-topical-presence",
     "/guides/relational-knowledge-ai-recommendations",
     "/guides/ai-agent-pre-action-approval-gates"

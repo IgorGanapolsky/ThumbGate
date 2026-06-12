@@ -2469,6 +2469,62 @@ const PAGE_BLUEPRINTS = [
     relatedPaths: ['/guides/long-running-agent-context-management', '/guides/background-agent-governance', '/guides/browser-automation-safety'],
   },
   {
+    query: 'safe self evolution',
+    path: '/guides/safe-self-evolution',
+    pageType: 'guide',
+    pillar: 'agent-workflows',
+    title: 'Safe Self-Evolution | Autonomous Prompt Optimization without Regression',
+    heroTitle: 'Self-Evolution is Polarizing. Make It Safe with Execution Gates.',
+    heroSummary: 'Hermes-style autonomous agents learn by observing their own execution failures and automatically rewriting their skills or instructions. But critics warn that blind self-evolution can overwrite stable patterns and introduce silent regressions. ThumbGate introduces the Safe Self-Evolution loop: weakness mining from explicit thumbs-down feedback, automated prompt optimization, local verification suites, and atomic git rollbacks.',
+    takeaways: [
+      'Self-improving agents need execution guardrails so a synthesized skill cannot bypass safety constraints.',
+      'Blind self-evolution is unstable; ThumbGate ensures prompt changes are verified against a local holdout suite before committing.',
+      'Rollback capability is mandatory: if validation fails, the evolution engine immediately reverts prompts to the last known-good state.',
+      'Explicit feedback is the anchor: optimize based on real thumbs-down signals, not hallucinatory failure guesses.'
+    ],
+    sections: [
+      {
+        heading: 'The self-evolution dilemma',
+        paragraphs: [
+          'Nous Research’s Hermes Agent points at a future where developers do not write static instructions like CLAUDE.md. Instead, the agent learns from its execution failures and modifies its own SKILL.md files in real-time. This dynamic adaptation yields massive speedups and handles custom codebase quirks autonomously.',
+          'However, the critics are correct: when an agent has the power to edit its own rules without a verification gate, it will eventually overwrite a perfectly stable skill. This introduces regressions, makes debugging impossible, and can lead to security loops where the agent modifies its own guardrails to make a failing task pass.'
+        ]
+      },
+      {
+        heading: 'Safe self-evolution with ThumbGate',
+        paragraphs: [
+          'ThumbGate implements a Safe Self-Evolution loop (based on the Self-Harness paradigm) that gives you the speed of self-improving agents without the instability:',
+          '1. Explicit Weakness Mining: ThumbGate captures structured thumbs-up/down signals on agent actions and compiles them into a JSON log, avoiding random self-diagnosis.',
+          '2. Harness Proposal: The self-harness-optimizer automatically formats these rules and injects them directly into the agent’s prompt instructions (AGENTS.md, GEMINI.md).',
+          '3. Verification Gate: Before the updated prompts are committed, the optimizer runs a local quick verification suite and holdout tests.',
+          '4. Atomic Rollback: If any test fails, the optimizer instantly reverts the workspace prompts and restores the previous snapshot. If they pass, it commits the update to Git.'
+        ]
+      },
+      {
+        heading: 'Competing with blind self-improvement',
+        paragraphs: [
+          'To compete with agents like Hermes, you do not need to give up control of your codebase. You need a pre-action firewall and a prompt optimizer that treats rule generation as code changes—complete with tests, verification, and rollbacks.',
+          'This keeps your agent fast, keeps your instructions dynamic, and ensures your production-facing surfaces remain secure.'
+        ]
+      }
+    ],
+    faq: [
+      {
+        question: 'Does ThumbGate prevent the agent from changing its own rules?',
+        answer: 'Yes. ThumbGate scans newly generated skills and prompt updates against established rules to prevent the agent from bypassing safety gates or deleting security constraints.'
+      },
+      {
+        question: 'How does the rollback mechanism work?',
+        answer: 'When the self-harness optimizer proposes new prompt sections, it saves a snapshot of the current prompt files. It then runs the verification commands. If the status is non-zero, it restores the backup files.'
+      },
+      {
+        question: 'Is this compatible with Hermes Agent?',
+        answer: 'Yes. You can use ThumbGate as the pre-action gate around a Hermes Agent deployment to secure the skills it generates and the messaging channels it posts to.'
+      }
+    ],
+    relatedPaths: ['/guides/hermes-agent-guardrails', '/guides/agent-context-governance', '/guides/stop-repeated-ai-agent-mistakes'],
+  },
+  {
     query: 'agent context governance',
     path: '/guides/agent-context-governance',
     pageType: 'guide',

@@ -34,6 +34,7 @@ const GUIDE_FILES = [
   'guides/best-tools-stop-ai-agents-breaking-production.html',
   'guides/database-agent-safety.html',
   'guides/agentic-web-governance.html',
+  'guides/safe-self-evolution.html',
   'guides/relational-knowledge-ai-recommendations.html',
   'guides/ai-mode-ads-agent-governance.html',
   'guides/mcp-tool-governance.html',
