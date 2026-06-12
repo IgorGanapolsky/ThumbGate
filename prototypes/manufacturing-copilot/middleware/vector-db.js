@@ -10,6 +10,16 @@ const { scanForInjection } = require('./guardrails');
 const LANCE_DIR = process.env.MANUFACTURING_LANCE_DIR || path.join(__dirname, '../db/lancedb');
 const TABLE_NAME = 'manufacturing_chunks';
 
+function extractSectionMetadata(section, file) {
+  const value = (key) => section.match(new RegExp(`^<!--\\s*${key}:\\s*([^\\n]+?)\\s*-->`, 'mi'))?.[1]?.trim() || null;
+  return {
+    sourceTitle: value('source_title') || file.source,
+    sourceUrl: value('source_url') || '',
+    sourcePage: value('source_page') || '',
+    sourcePdf: value('source_pdf') || '',
+  };
+}
+
 let _db = null;
 let _table = null;
 let _quarantined = [];
@@ -110,15 +120,25 @@ async function seedVectorDatabase() {
         continue;
       }
 
+      const metadata = extractSectionMetadata(sec, file);
+      // Strip citation metadata HTML comments from the stored/quoted text so
+      // they never leak into answers; metadata is preserved in columns below.
+      const cleanText = sec.replace(/<!--[\s\S]*?-->/g, '').replace(/\n{3,}/g, '\n\n').trim();
       console.log(`[VectorDB] Generating embedding for chunk: "${title}" (${file.source})`);
-      const vector = await _deps.embed(sec.trim());
+      const vector = await _deps.embed(cleanText);
 
       records.push({
         vector,
-        text: sec.trim(),
+        text: cleanText,
         title,
         source: file.source,
-        fileName: file.name
+        fileName: file.name,
+        // Coalesce nulls to '' so LanceDB/Arrow can infer string columns even
+        // when the first chunk lacks citation metadata.
+        sourceTitle: metadata.sourceTitle || '',
+        sourceUrl: metadata.sourceUrl || '',
+        sourcePage: metadata.sourcePage || '',
+        sourcePdf: metadata.sourcePdf || ''
       });
     }
   }
@@ -145,6 +165,34 @@ async function seedVectorDatabase() {
   }
 }
 
+const CLEARANCE_LEVELS = {
+  operator: 0,
+  supervisor: 1,
+  plant_manager: 2,
+};
+
+function getChunkRequiredClearance(row) {
+  const title = (row.title || '').toUpperCase();
+  const text = (row.text || '').toUpperCase();
+
+  // Rule 1: Safety System Bypasses / SP-110 require Plant Manager (Clearance 2)
+  if (title.includes('SP-110') || title.includes('GUARDING') || text.includes('SP-110')) {
+    return 2;
+  }
+
+  // Rule 2: Confined Space Entry SP-102 requires Supervisor (Clearance 1)
+  if (title.includes('SP-102') || title.includes('CONFINED') || text.includes('SP-102')) {
+    return 1;
+  }
+
+  // MM-201 and MM-210 require Supervisor (Clearance 1)
+  if (title.includes('MM-201') || title.includes('MM-210') || text.includes('MM-201') || text.includes('MM-210')) {
+    return 1;
+  }
+
+  return 0;
+}
+
 /**
  * Searches the LanceDB database using HNSW approximate nearest neighbor (ANN) vector matching.
  */
@@ -156,7 +204,7 @@ async function queryVectorDB(query, topK = 2, options = {}) {
     table = await getTable();
   }
 
-  const codeMatch = query.match(/\b(SP|MM)-\d{3}\b/i);
+  const codeMatch = query.match(/\b(SP|MM|QC)-\d{3}\b/i);
   const embeddingVector = await _deps.embed(query);
   
   // Query LanceDB using cosine similarity vector search
@@ -164,7 +212,7 @@ async function queryVectorDB(query, topK = 2, options = {}) {
   const shouldRerank = options.rerank === true;
   const candidateLimit = shouldRerank 
     ? Math.max(topK * 3, 10) 
-    : (codeMatch ? Math.max(topK, 5) : topK);
+    : (codeMatch ? Math.max(topK, 15) : topK);
 
   const results = await table
     .search(embeddingVector)
@@ -172,13 +220,22 @@ async function queryVectorDB(query, topK = 2, options = {}) {
     .limit(candidateLimit)
     .toArray();
 
-  let finalResults = results;
+  // Filter candidates by user role clearance level
+  const userRole = options.metadataFilters?.role || options.role || 'operator';
+  const userClearance = CLEARANCE_LEVELS[userRole] ?? 0;
+
+  const clearedResults = results.filter(row => {
+    const reqClearance = getChunkRequiredClearance(row);
+    return userClearance >= reqClearance;
+  });
+
+  let finalResults = clearedResults;
 
   // Hybrid Fusion / Rerank Stage:
   // Blend semantic cosine score with token-overlap/keyword matching score
   if (shouldRerank) {
     const queryTerms = query.toLowerCase().split(/\W+/).filter(t => t.length > 2);
-    const scored = results.map(row => {
+    const scored = clearedResults.map(row => {
       const docText = (row.title + ' ' + row.text).toLowerCase();
       let matches = 0;
       for (const term of queryTerms) {
@@ -214,13 +271,20 @@ async function queryVectorDB(query, topK = 2, options = {}) {
   }
 
   // Slice to requested topK and map results
-  return finalResults.slice(0, topK).map(row => ({
-    title: row.title,
-    text: row.text,
-    score: row._blendedScore !== undefined ? row._blendedScore : (2.0 - row._distance),
-    source: row.source,
-    fileName: row.fileName
-  }));
+  return finalResults.slice(0, topK).map(row => {
+    const mapped = {
+      title: row.title,
+      text: row.text,
+      score: row._blendedScore !== undefined ? row._blendedScore : (2.0 - row._distance),
+      source: row.source,
+      fileName: row.fileName,
+      page: row.page || row.sourcePage || null
+    };
+    for (const key of ['sourceTitle', 'sourceUrl', 'sourcePage', 'sourcePdf']) {
+      if (row[key] !== undefined && row[key] !== null) mapped[key] = row[key];
+    }
+    return mapped;
+  });
 }
 
 module.exports = {
