@@ -108,14 +108,54 @@ function parseCommandScore(output = '', status = 0, approvalRate = 0.5) {
   };
 }
 
+function parseCommandLine(cmdString) {
+  const args = [];
+  let current = '';
+  let inDoubleQuote = false;
+  let inSingleQuote = false;
+  let escaped = false;
+
+  for (let i = 0; i < cmdString.length; i++) {
+    const char = cmdString[i];
+
+    if (escaped) {
+      current += char;
+      escaped = false;
+    } else if (char === '\\') {
+      if (inSingleQuote) {
+        current += char;
+      } else {
+        escaped = true;
+      }
+    } else if (char === '"' && !inSingleQuote) {
+      inDoubleQuote = !inDoubleQuote;
+    } else if (char === "'" && !inDoubleQuote) {
+      inSingleQuote = !inSingleQuote;
+    } else if (char === ' ' && !inDoubleQuote && !inSingleQuote) {
+      if (current) {
+        args.push(current);
+        current = '';
+      }
+    } else {
+      current += char;
+    }
+  }
+  if (current) {
+    args.push(current);
+  }
+  return args;
+}
+
 function runCommand(command, {
   cwd = process.cwd(),
   env = process.env,
   timeoutMs = DEFAULT_TIMEOUT_MS,
 } = {}) {
   const startedAt = Date.now();
-  const result = spawnSync(command, [], {
-    shell: true,
+  const args = parseCommandLine(command);
+  const exec = args.shift();
+
+  const result = spawnSync(exec, args, {
     cwd,
     env,
     encoding: 'utf8',

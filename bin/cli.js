@@ -2188,6 +2188,26 @@ function pulse() {
   });
 }
 
+function checkUpdateCmd() {
+  const { checkUpdate } = require(path.join(PKG_ROOT, 'scripts', 'check-update'));
+  const args = parseArgs(process.argv.slice(3));
+  checkUpdate({ verbose: !args.json, force: args.force }).then((res) => {
+    if (args.json) {
+      console.log(JSON.stringify(res, null, 2));
+    }
+    process.exit(0);
+  }).catch((err) => {
+    console.error(err && err.message ? err.message : err);
+    process.exit(1);
+  });
+}
+
+function selfUpdateCmd() {
+  const { selfUpdate } = require(path.join(PKG_ROOT, 'scripts', 'check-update'));
+  const success = selfUpdate();
+  process.exit(success ? 0 : 1);
+}
+
 function dispatchBrief() {
   const args = parseArgs(process.argv.slice(3));
   const {
@@ -3841,6 +3861,14 @@ switch (COMMAND) {
     break;
   case 'pulse':
     pulse();
+    break;
+  case 'check-update':
+  case 'upgrade-check':
+    checkUpdateCmd();
+    break;
+  case 'self-update':
+  case 'upgrade-cli':
+    selfUpdateCmd();
     break;
   case 'dispatch':
   case 'dispatch-brief':

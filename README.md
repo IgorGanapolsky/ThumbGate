@@ -384,6 +384,8 @@ npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai -
 npx thumbgate native-messaging-audit  # inspect local browser bridges and extension hosts
 npx thumbgate dashboard --open                                  # open local project-scoped dashboard in browser
 thumbgate-dashboard                                             # standalone browser dashboard shortcut (run '/project:thumbgate-dashboard' in Claude/Grok)
+npx thumbgate check-update                                      # check if a new version is available on npm/GitHub
+npx thumbgate self-update                                       # update ThumbGate to the latest version globally
 npx thumbgate serve      # start MCP server on stdio
 npx thumbgate bench      # run reliability benchmark
 npx thumbgate bench --programbench-smoke  # include cleanroom whole-repo proof lane

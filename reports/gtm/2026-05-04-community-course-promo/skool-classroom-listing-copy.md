@@ -59,6 +59,7 @@ Best fit:
 
 - Primary asset when the file-picker path is available: `docs/marketing/assets/thumbgate-operator-lab-explainer.mp4`
 - Fallback if native upload stays blocked: use a supported YouTube, Vimeo, Loom, or Wistia embed instead of stalling the course launch
+- Current Skool guidance still supports direct Loom links in Classroom pages, and the current best practice is to disable Loom comments and emoji reactions for cleaner playback on member devices
 - Current checkout constraint: the MP4 path above is not present locally in this repo snapshot, so do not treat it as a ready-to-upload local file without re-checking first
 - Searchability add-on: paste the transcript under the video so the lesson becomes searchable inside Skool
 

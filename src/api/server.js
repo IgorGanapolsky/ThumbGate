@@ -4566,6 +4566,15 @@ function normalizeJobIdFromPath(pathname, suffix = '') {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function normalizeDocumentIdFromPath(pathname) {
   const match = pathname.match(/^\/v1\/documents\/([^/]+)$/);
   return match ? decodeURIComponent(match[1]) : null;
@@ -8370,11 +8379,14 @@ ${hidden}
       {
         const documentId = normalizeDocumentIdFromPath(pathname);
         if (req.method === 'GET' && documentId) {
+          if (!/^[a-zA-Z0-9-_]+$/.test(documentId)) {
+            throw createHttpError(400, 'Invalid document ID format');
+          }
           const document = readImportedDocument(documentId, {
             feedbackDir: requestFeedbackDir,
           });
           if (!document) {
-            throw createHttpError(404, `Imported document not found: ${documentId}`);
+            throw createHttpError(404, `Imported document not found: ${escapeHtml(documentId)}`);
           }
           sendJson(res, 200, { document });
           return;

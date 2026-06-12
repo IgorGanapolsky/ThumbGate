@@ -317,7 +317,8 @@ async function answerDataQuestion(question, opts = {}) {
     if (isPerplexity) return await callPerplexityEndpoint({ apiKey, prompt, fetchImpl, sources });
     return await callGeminiEndpoint({ apiKey, model, prompt, fetchImpl, sources });
   } catch (err) {
-    return { ok: false, error: 'network', message: err?.message || String(err), sources };
+    const safeMessage = (err && err.message) ? String(err.message).split('\n')[0].slice(0, 100) : 'An unexpected error occurred.';
+    return { ok: false, error: 'network', message: safeMessage, sources };
   }
 }
 

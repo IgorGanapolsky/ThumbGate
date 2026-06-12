@@ -95,7 +95,7 @@ test('public landing page exposes above-fold paid Pro CTA with canonical revenue
   assert.match(heroBlock, /aria-label="Choose the right ThumbGate path"/);
   assert.match(heroBlock, /Solo operator: Start Pro/);
   assert.match(heroBlock, /data-cta-id="router_start_pro"/);
-  assert.match(heroBlock, /Team workflow: Start with intake/);
+  assert.match(heroBlock, /Enterprise workflow: Start with intake/);
   assert.match(heroBlock, /Still evaluating: Free CLI/);
   assert.match(landingPage, /function trackRevenueCta/);
   assert.match(landingPage, /plausible\('pricing_cta_click'/);

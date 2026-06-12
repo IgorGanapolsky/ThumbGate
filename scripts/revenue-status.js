@@ -142,6 +142,39 @@ function normalizeWindowSummary(status, payload = {}) {
   };
 }
 
+function normalizeExternalCustomerAudit(report = {}) {
+  if (!report || typeof report !== 'object') {
+    return {
+      configured: false,
+      gap: 'external customer audit unavailable',
+    };
+  }
+  if (!report.configured) {
+    return {
+      configured: false,
+      gap: report.gap || 'external customer audit not configured',
+      ownerEmails: report.ownerEmails || [],
+    };
+  }
+  return {
+    configured: true,
+    generatedAt: report.generatedAt || null,
+    ownerEmails: report.ownerEmails || [],
+    externalNetRevenueCents: Number(report.charges?.external?.netCents || 0),
+    externalGrossRevenueCents: Number(report.charges?.external?.grossCents || 0),
+    externalChargeCount: Number(report.charges?.external?.chargeCount || 0),
+    externalUniqueCustomerCount: Number(report.charges?.external?.uniqueCustomerCount || 0),
+    ownerNetRevenueCents: Number(report.charges?.owner?.netCents || 0),
+    ownerChargeCount: Number(report.charges?.owner?.chargeCount || 0),
+    activeExternalSubscriptions: Number(report.subscriptions?.activeExternal || 0),
+    activeOwnerSubscriptions: Number(report.subscriptions?.activeOwner || 0),
+    externalMrrCents: Number(report.subscriptions?.mrrExternalCents || 0),
+    checkoutCompletedExternal: Number(report.checkout?.completedExternal || 0),
+    checkoutExternalSessions: Number(report.checkout?.externalSessions || 0),
+    checkoutCompletionRateExternal: Number(report.checkout?.completionRateExternal || 0),
+  };
+}
+
 function windowSnapshot(summary = {}) {
   return {
     status: summary.status,
@@ -155,7 +188,7 @@ function windowSnapshot(summary = {}) {
   };
 }
 
-function buildDiagnosis({ publicProbe, hostedAudit }) {
+function buildDiagnosis({ publicProbe, hostedAudit, externalCustomerAudit = null }) {
   const today = hostedAudit?.summaries?.today || null;
   const trailing30 = hostedAudit?.summaries?.['30d'] || null;
   const runtimePresence = hostedAudit?.runtimePresence || {};
@@ -171,6 +204,18 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
   const hostedSummaryWorking = Boolean(today?.status === 200 && trailing30?.status === 200);
   const hostedTrafficObserved = Number(traffic30.visitors || 0) > 0 || Number(traffic30.pageViews || 0) > 0;
   const hostedRevenueObserved = Number(revenue30.paidOrders || 0) > 0 || Number(revenue30.bookedRevenueCents || 0) > 0;
+  const externalAuditConfigured = Boolean(externalCustomerAudit?.configured);
+  const externalCustomerRevenueObserved = externalAuditConfigured && (
+    Number(externalCustomerAudit.externalUniqueCustomerCount || 0) > 0 ||
+    Number(externalCustomerAudit.externalNetRevenueCents || 0) > 0 ||
+    Number(externalCustomerAudit.activeExternalSubscriptions || 0) > 0
+  );
+  const ownerOnlyRevenueObserved = externalAuditConfigured
+    && !externalCustomerRevenueObserved
+    && (
+      Number(externalCustomerAudit.ownerNetRevenueCents || 0) > 0 ||
+      Number(externalCustomerAudit.activeOwnerSubscriptions || 0) > 0
+    );
   const gaRuntimeMissing = runtimePresenceKnown && !runtimePresence.THUMBGATE_GA_MEASUREMENT_ID;
   const sprintCheckoutRuntimeMissing = runtimePresenceKnown && (
     !runtimePresence.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL ||
@@ -183,6 +228,8 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
       primaryIssue = 'ga4_runtime_config_gap';
     } else if (sprintCheckoutRuntimeMissing) {
       primaryIssue = 'paid_sprint_checkout_config_gap';
+    } else if (ownerOnlyRevenueObserved) {
+      primaryIssue = 'owner_test_revenue_only';
     } else if (hostedRevenueObserved) {
       primaryIssue = 'hosted_revenue_observed';
     } else {
@@ -225,11 +272,82 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
     hostedSummaryWorking,
     hostedTrafficObserved,
     hostedRevenueObserved,
+    externalCustomerRevenueObserved,
+    ownerOnlyRevenueObserved,
     runtimePresenceKnown,
     hostedAuditMethod: hostedAudit?.auditMethod || 'unknown',
     primaryIssue,
     gaps,
   };
+}
+
+async function getExternalCustomerAudit({ auditFn = null } = {}) {
+  try {
+    const resolvedAuditFn = auditFn || require('./external-customer-audit').runAudit;
+    return normalizeExternalCustomerAudit(await resolvedAuditFn());
+  } catch (error) {
+    return normalizeExternalCustomerAudit({
+      configured: false,
+      gap: error?.message || String(error),
+    });
+  }
+}
+
+function getExternalCustomerAuditViaRailway({
+  projectId,
+  environmentId,
+  service = DEFAULT_RAILWAY_SERVICE,
+  runCommandFn = runCommand,
+  commandTimeoutMs = DEFAULT_COMMAND_TIMEOUT_MS,
+} = {}) {
+  const stdout = requireCommandSuccess(
+    'railway run external-customer-audit',
+    runCommandFn('railway', [
+      'run',
+      '-p',
+      projectId,
+      '-e',
+      environmentId,
+      '-s',
+      service,
+      '--',
+      'node',
+      'scripts/external-customer-audit.js',
+      '--json',
+    ], { timeout: commandTimeoutMs })
+  );
+  return normalizeExternalCustomerAudit(JSON.parse(stdout));
+}
+
+async function resolveExternalCustomerAudit({
+  repoVars = {},
+  runCommandFn = runCommand,
+  commandTimeoutMs = DEFAULT_COMMAND_TIMEOUT_MS,
+  externalCustomerAuditFn = null,
+} = {}) {
+  const localAudit = await getExternalCustomerAudit({
+    auditFn: externalCustomerAuditFn,
+  });
+  if (localAudit.configured || externalCustomerAuditFn) {
+    return localAudit;
+  }
+  if (!repoVars.RAILWAY_PROJECT_ID || !repoVars.RAILWAY_ENVIRONMENT_ID) {
+    return localAudit;
+  }
+  try {
+    return getExternalCustomerAuditViaRailway({
+      projectId: repoVars.RAILWAY_PROJECT_ID,
+      environmentId: repoVars.RAILWAY_ENVIRONMENT_ID,
+      service: repoVars.RAILWAY_SERVICE || DEFAULT_RAILWAY_SERVICE,
+      runCommandFn,
+      commandTimeoutMs,
+    });
+  } catch (error) {
+    return {
+      ...localAudit,
+      railwayGap: error?.message || String(error),
+    };
+  }
 }
 
 function formatWindowBlock(label, summary = {}) {
@@ -273,6 +391,7 @@ function formatRuntimeFlags(report) {
 }
 
 function formatReport(report) {
+  const externalAudit = report.externalCustomerAudit || {};
   const lines = [
     `Revenue Status @ ${report.generatedAt}`,
     `Source: ${report.source}`,
@@ -282,6 +401,7 @@ function formatReport(report) {
     `Hosted summary working: ${report.diagnosis.hostedSummaryWorking ? 'yes' : 'no'}`,
     `Hosted traffic observed: ${report.diagnosis.hostedTrafficObserved ? 'yes' : 'no'}`,
     `Hosted revenue observed: ${report.diagnosis.hostedRevenueObserved ? 'yes' : 'no'}`,
+    `External customer revenue observed: ${report.diagnosis.externalCustomerRevenueObserved ? 'yes' : 'no'}`,
     `Hosted audit method: ${report.diagnosis.hostedAuditMethod}`,
     `Railway runtime inspected: ${report.diagnosis.runtimePresenceKnown ? 'yes' : 'no'}`,
     '',
@@ -293,9 +413,16 @@ function formatReport(report) {
     ...formatWindowBlock('30d', report.hostedAudit.summaries['30d']),
     ...formatWindowBlock('Lifetime', report.hostedAudit.summaries.lifetime),
     '',
+    externalAudit.configured
+      ? `External customers: ${externalAudit.externalUniqueCustomerCount}, external net revenue ${centsToDollars(externalAudit.externalNetRevenueCents)}, external MRR ${centsToDollars(externalAudit.externalMrrCents)}`
+      : `External customer audit: unavailable (${externalAudit.railwayGap || externalAudit.gap || 'not configured'})`,
+    externalAudit.configured
+      ? `Owner/test filtered: ${externalAudit.ownerChargeCount} charge(s), ${centsToDollars(externalAudit.ownerNetRevenueCents)} net, active owner subscriptions ${externalAudit.activeOwnerSubscriptions}`
+      : null,
+    '',
     `30d attribution coverage: ${formatRatio(report.hostedAudit.summaries['30d'].dataQuality.attributionCoverage)}`,
     `30d telemetry coverage: ${formatRatio(report.hostedAudit.summaries['30d'].dataQuality.telemetryCoverage)}`,
-  ];
+  ].filter((line) => line !== null);
 
   if (report.diagnosis.gaps.length) {
     lines.push('');
@@ -456,12 +583,23 @@ function buildRailwayAuditSnippet({
           dataQuality: payload.dataQuality || {},
         };
       }
+      let externalCustomerAudit = null;
+      try {
+        const { runAudit } = require('./scripts/external-customer-audit');
+        externalCustomerAudit = await runAudit();
+      } catch (error) {
+        externalCustomerAudit = {
+          configured: false,
+          gap: error && error.message ? error.message : String(error),
+        };
+      }
 
       console.log(JSON.stringify({
         auditMethod: 'railway-env',
         runtimePresenceKnown: true,
         runtimePresence,
         summaries,
+        externalCustomerAudit,
       }, null, 2));
     })().catch((error) => {
       console.error(error && error.stack ? error.stack : error);
@@ -574,6 +712,7 @@ async function generateRevenueStatusReport({
   fetchTimeoutMs = DEFAULT_FETCH_TIMEOUT_MS,
   commandTimeoutMs = DEFAULT_COMMAND_TIMEOUT_MS,
   localFallbackFn = getLocalFallback,
+  externalCustomerAuditFn = null,
 } = {}) {
   let repoVars = {};
   let repoVarError = null;
@@ -618,6 +757,12 @@ async function generateRevenueStatusReport({
       fetchImpl,
       timeoutMs: fetchTimeoutMs,
     });
+    const externalCustomerAudit = await resolveExternalCustomerAudit({
+      repoVars,
+      runCommandFn,
+      commandTimeoutMs,
+      externalCustomerAuditFn,
+    });
 
     return {
       generatedAt: new Date().toISOString(),
@@ -632,9 +777,11 @@ async function generateRevenueStatusReport({
       },
       publicProbe,
       hostedAudit,
+      externalCustomerAudit,
       diagnosis: buildDiagnosis({
         publicProbe,
         hostedAudit,
+        externalCustomerAudit,
       }),
     };
   } catch (error) {
@@ -656,6 +803,9 @@ async function generateRevenueStatusReport({
       runCommandFn,
       commandTimeoutMs,
     });
+    const externalCustomerAudit = normalizeExternalCustomerAudit(
+      hostedAudit.externalCustomerAudit
+    );
 
     return {
       generatedAt: new Date().toISOString(),
@@ -670,9 +820,11 @@ async function generateRevenueStatusReport({
       },
       publicProbe,
       hostedAudit,
+      externalCustomerAudit,
       diagnosis: buildDiagnosis({
         publicProbe,
         hostedAudit,
+        externalCustomerAudit,
       }),
     };
   } catch (error) {
@@ -712,12 +864,20 @@ async function generateRevenueStatusReport({
         },
         error: error.message,
       },
+      externalCustomerAudit: await resolveExternalCustomerAudit({
+        repoVars,
+        runCommandFn,
+        commandTimeoutMs,
+        externalCustomerAuditFn,
+      }),
       diagnosis: {
         trackingImplemented: Boolean(publicProbe.root?.signals?.telemetryEndpoint),
         telemetryIngressWorking: Boolean(publicProbe.telemetryPing?.status === 204),
         hostedSummaryWorking: false,
         hostedTrafficObserved: false,
         hostedRevenueObserved: false,
+        externalCustomerRevenueObserved: false,
+        ownerOnlyRevenueObserved: false,
         runtimePresenceKnown: true,
         hostedAuditMethod: 'local-fallback',
         primaryIssue: 'hosted_summary_access_or_config_gap',
@@ -763,9 +923,13 @@ module.exports = {
   resolveHostedAuditApiKey,
   parseGhVariableList,
   parseHtmlSignals,
+  normalizeExternalCustomerAudit,
   centsToDollars,
   fetchWithTimeout,
   buildDiagnosis,
+  getExternalCustomerAudit,
+  getExternalCustomerAuditViaRailway,
+  resolveExternalCustomerAudit,
   formatReport,
   buildRailwayAuditSnippet,
   getHostedAuditViaHttp,
