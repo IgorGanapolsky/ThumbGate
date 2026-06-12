@@ -323,6 +323,18 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(claudeSkills.includes('skillbook'));
   });
 
+  it('Hermes guide positions ThumbGate as safe self-evolution guardrails', () => {
+    const hermesGuide = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/hermes-agent-guardrails.html'),
+      'utf-8'
+    );
+
+    assert.ok(hermesGuide.includes('stable <code>SKILL.md</code>'));
+    assert.ok(hermesGuide.includes('reviewed change path'));
+    assert.ok(hermesGuide.includes('Skill and rule-change proposals'));
+    assert.ok(hermesGuide.includes('silently drifting stable skills'));
+  });
+
   it('long-running context and reasoning guides expose new research-backed CLI gates', () => {
     const contextGuide = fs.readFileSync(
       path.join(PUBLIC_DIR, 'guides/long-running-agent-context-management.html'),

@@ -8,11 +8,12 @@ const {
   parseArgs,
   parseGhVariableList,
   parseHtmlSignals,
-  normalizeExternalCustomerAudit,
   resolveHostedAuditApiKey,
   fetchWithTimeout,
+  normalizeExternalCustomerAudit,
   buildDiagnosis,
   formatReport,
+  resolveExternalCustomerAudit,
   getHostedAuditViaHttp,
   generateRevenueStatusReport,
 } = require('../scripts/revenue-status');
@@ -99,14 +100,142 @@ test('parseHtmlSignals detects telemetry and tracking hooks', () => {
   assert.equal(signals.workflowSprintIntake, true);
 });
 
-test('parseHtmlSignals detects Plausible tagged-events script variant', () => {
-  const signals = parseHtmlSignals(`
-    <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script>
-    <script>fetch('/v1/telemetry/ping', { method: 'POST' });</script>
-  `);
+test('normalizeExternalCustomerAudit summarizes real customers separately from owner/test activity', () => {
+  const normalized = normalizeExternalCustomerAudit({
+    configured: true,
+    ownerEmails: ['owner@example.com'],
+    charges: {
+      all: { chargeCount: 3, uniqueCustomerCount: 1, netCents: 16900 },
+      owner: { chargeCount: 3, uniqueCustomerCount: 1, netCents: 16900 },
+      external: { chargeCount: 0, uniqueCustomerCount: 0, netCents: 0 },
+    },
+    subscriptions: {
+      activeOwner: 1,
+      activeExternal: 0,
+      mrrExternalCents: 0,
+    },
+    checkout: {
+      externalSessions: 2358,
+      completedExternal: 1,
+    },
+  });
 
-  assert.equal(signals.plausibleScript, true);
-  assert.equal(signals.telemetryEndpoint, true);
+  assert.equal(normalized.configured, true);
+  assert.equal(normalized.externalCustomerCount, 0);
+  assert.equal(normalized.externalNetRevenueCents, 0);
+  assert.equal(normalized.ownerChargeCount, 3);
+  assert.equal(normalized.ownerNetRevenueCents, 16900);
+  assert.equal(normalized.activeOwnerSubscriptions, 1);
+});
+
+test('buildDiagnosis reports owner/test-only revenue instead of treating raw lifetime revenue as first-dollar proof', () => {
+  const diagnosis = buildDiagnosis({
+    publicProbe: {
+      root: {
+        signals: {
+          telemetryEndpoint: true,
+          plausibleScript: true,
+          gaLoaderScript: true,
+        },
+      },
+      telemetryPing: {
+        status: 204,
+      },
+    },
+    hostedAudit: {
+      runtimePresence: {
+        THUMBGATE_GA_MEASUREMENT_ID: true,
+        THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL: true,
+        THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL: true,
+      },
+      externalCustomerAudit: {
+        configured: true,
+        charges: {
+          owner: { chargeCount: 3, netCents: 16900 },
+          external: { chargeCount: 0, uniqueCustomerCount: 0, netCents: 0 },
+        },
+        subscriptions: {
+          activeOwner: 1,
+          activeExternal: 0,
+          mrrExternalCents: 0,
+        },
+      },
+      summaries: {
+        today: { status: 200 },
+        '30d': {
+          status: 200,
+          trafficMetrics: { visitors: 102, pageViews: 83 },
+          revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+        },
+        lifetime: {
+          status: 200,
+          revenue: { paidOrders: 6, bookedRevenueCents: 16900 },
+        },
+      },
+    },
+  });
+
+  assert.equal(diagnosis.primaryIssue, 'owner_test_revenue_only');
+  assert.equal(diagnosis.hostedRevenueObserved, false);
+  assert.equal(diagnosis.externalCustomerRevenueObserved, false);
+  assert.equal(diagnosis.ownerTestRevenueOnly, true);
+});
+
+test('buildDiagnosis treats hosted funnel telemetry as implemented tracking even when root script detection is incomplete', () => {
+  const diagnosis = buildDiagnosis({
+    publicProbe: {
+      root: {
+        signals: {
+          telemetryEndpoint: false,
+          plausibleScript: false,
+        },
+      },
+      telemetryPing: {
+        status: 204,
+      },
+    },
+    hostedAudit: {
+      runtimePresence: {
+        THUMBGATE_GA_MEASUREMENT_ID: true,
+        THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL: true,
+        THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL: true,
+      },
+      summaries: {
+        today: { status: 200 },
+        '30d': {
+          status: 200,
+          trafficMetrics: { visitors: 127, pageViews: 109, checkoutStarts: 2 },
+          ctas: {
+            checkoutIntent: { views: 2, clicks: 0 },
+          },
+          revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+          dataQuality: {
+            attributionCoverage: 1,
+            telemetryCoverage: 0.9937,
+          },
+        },
+        lifetime: {
+          status: 200,
+          revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+        },
+      },
+    },
+  });
+
+  assert.equal(diagnosis.trackingImplemented, true);
+  assert.equal(diagnosis.primaryIssue, 'conversion_or_pricing_gap');
+});
+
+test('resolveExternalCustomerAudit returns a visible unavailable marker when Railway vars are missing', () => {
+  const audit = resolveExternalCustomerAudit({
+    repoVars: {},
+    runCommandFn() {
+      throw new Error('should not call Railway without ids');
+    },
+  });
+
+  assert.equal(audit.configured, false);
+  assert.match(audit.gap, /Railway project\/environment variables are unavailable/);
 });
 
 test('buildDiagnosis prioritizes GA4 runtime config over stale local fallback labels', () => {
@@ -161,99 +290,6 @@ test('buildDiagnosis prioritizes GA4 runtime config over stale local fallback la
   assert.ok(diagnosis.gaps.includes('Workflow Hardening Sprint payment link env is missing in Railway'));
 });
 
-test('normalizeExternalCustomerAudit exposes external revenue separately from owner/test revenue', () => {
-  const audit = normalizeExternalCustomerAudit({
-    configured: true,
-    generatedAt: '2026-06-12T18:33:48.600Z',
-    ownerEmails: ['owner@example.com'],
-    charges: {
-      owner: {
-        chargeCount: 3,
-        uniqueCustomerCount: 1,
-        grossCents: 16900,
-        netCents: 16900,
-      },
-      external: {
-        chargeCount: 0,
-        uniqueCustomerCount: 0,
-        grossCents: 0,
-        netCents: 0,
-      },
-    },
-    subscriptions: {
-      activeExternal: 0,
-      activeOwner: 1,
-      mrrExternalCents: 0,
-    },
-    checkout: {
-      completedExternal: 1,
-      externalSessions: 2358,
-      completionRateExternal: 0.000424,
-    },
-  });
-
-  assert.equal(audit.configured, true);
-  assert.equal(audit.externalUniqueCustomerCount, 0);
-  assert.equal(audit.externalNetRevenueCents, 0);
-  assert.equal(audit.ownerNetRevenueCents, 16900);
-  assert.equal(audit.activeOwnerSubscriptions, 1);
-  assert.equal(audit.checkoutCompletedExternal, 1);
-});
-
-test('buildDiagnosis labels owner/test-only Stripe revenue as not real customer revenue', () => {
-  const diagnosis = buildDiagnosis({
-    publicProbe: {
-      root: {
-        signals: {
-          telemetryEndpoint: true,
-          plausibleScript: true,
-          gaLoaderScript: true,
-        },
-      },
-      telemetryPing: {
-        status: 204,
-      },
-    },
-    hostedAudit: {
-      runtimePresence: {
-        THUMBGATE_GA_MEASUREMENT_ID: true,
-        THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL: true,
-        THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL: true,
-        THUMBGATE_PUBLIC_APP_ORIGIN: true,
-        THUMBGATE_BILLING_API_BASE_URL: true,
-      },
-      summaries: {
-        today: {
-          status: 200,
-        },
-        '30d': {
-          status: 200,
-          trafficMetrics: {
-            visitors: 51,
-            pageViews: 39,
-          },
-          revenue: {
-            paidOrders: 0,
-            bookedRevenueCents: 0,
-          },
-        },
-      },
-    },
-    externalCustomerAudit: {
-      configured: true,
-      externalUniqueCustomerCount: 0,
-      externalNetRevenueCents: 0,
-      activeExternalSubscriptions: 0,
-      ownerNetRevenueCents: 16900,
-      activeOwnerSubscriptions: 1,
-    },
-  });
-
-  assert.equal(diagnosis.primaryIssue, 'owner_test_revenue_only');
-  assert.equal(diagnosis.externalCustomerRevenueObserved, false);
-  assert.equal(diagnosis.ownerOnlyRevenueObserved, true);
-});
-
 test('generateRevenueStatusReport uses hosted railway audit when available', async () => {
   const runCalls = [];
   const report = await generateRevenueStatusReport({
@@ -282,31 +318,6 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
         return {
           status: 0,
           stdout: JSON.stringify({
-            externalCustomerAudit: {
-              configured: true,
-              charges: {
-                owner: {
-                  chargeCount: 3,
-                  netCents: 16900,
-                },
-                external: {
-                  chargeCount: 0,
-                  uniqueCustomerCount: 0,
-                  grossCents: 0,
-                  netCents: 0,
-                },
-              },
-              subscriptions: {
-                activeExternal: 0,
-                activeOwner: 1,
-                mrrExternalCents: 0,
-              },
-              checkout: {
-                completedExternal: 1,
-                externalSessions: 2358,
-                completionRateExternal: 0.000424,
-              },
-            },
             runtimePresence: {
               THUMBGATE_FEEDBACK_DIR: true,
               THUMBGATE_API_KEY: true,
@@ -440,8 +451,6 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
 
   assert.equal(report.source, 'hosted-via-railway-env');
   assert.equal(report.diagnosis.primaryIssue, 'ga4_runtime_config_gap');
-  assert.equal(report.externalCustomerAudit.externalUniqueCustomerCount, 0);
-  assert.equal(report.externalCustomerAudit.ownerNetRevenueCents, 16900);
   assert.equal(report.hostedAudit.summaries['30d'].revenue.bookedRevenueCents, 2000);
   assert.ok(runCalls.some((call) => call[0] === 'railway' && call.includes('run')));
   assert.ok(
@@ -453,8 +462,6 @@ test('generateRevenueStatusReport uses hosted railway audit when available', asy
   assert.match(formatted, /Today: visitors 6, pageViews 4, checkoutStarts 2.*checkoutIntent views 3, clicks 2, stripeConfirms 1, intakeClicks 1, teamPathClicks 0, diagnosticClicks 1, sprintCheckoutClicks 0, botDeflections 4/);
   assert.match(formatted, /30d: visitors 21, pageViews 15, checkoutStarts 9, paidOrders 2, bookedRevenue \$20.00/);
   assert.match(formatted, /30d: .*checkoutIntent views 12, clicks 5, stripeConfirms 3, intakeClicks 1, teamPathClicks 1, diagnosticClicks 2, sprintCheckoutClicks 1, botDeflections 7/);
-  assert.match(formatted, /External customers: 0, external net revenue \$0.00, external MRR \$0.00/);
-  assert.match(formatted, /Owner\/test filtered: 3 charge\(s\), \$169.00 net, active owner subscriptions 1/);
 });
 
 test('getHostedAuditViaHttp reads hosted billing summary without Railway CLI', async () => {
@@ -528,10 +535,6 @@ test('getHostedAuditViaHttp carries hosted runtime presence when exposed', async
         },
       }),
     }),
-    externalCustomerAuditFn: async () => ({
-      configured: false,
-      gap: 'STRIPE_SECRET_KEY is not set',
-    }),
   });
 
   assert.equal(hostedAudit.runtimePresenceKnown, true);
@@ -540,89 +543,6 @@ test('getHostedAuditViaHttp carries hosted runtime presence when exposed', async
 });
 
 test('generateRevenueStatusReport prefers hosted HTTP API when THUMBGATE_API_KEY is available', async () => {
-  const oldStripeKey = process.env.STRIPE_SECRET_KEY;
-  delete process.env.STRIPE_SECRET_KEY;
-  try {
-    const runCalls = [];
-    const report = await generateRevenueStatusReport({
-      repo: 'IgorGanapolsky/ThumbGate',
-      timeZone: 'America/New_York',
-      apiKey: 'tg_test_key',
-      runCommandFn(command, args) {
-        runCalls.push([command, ...args]);
-        if (command === 'gh') {
-          return {
-            status: 0,
-            stdout: 'THUMBGATE_PUBLIC_APP_ORIGIN\thttps://example.com\t2026-04-14T00:00:00Z\n',
-            stderr: '',
-            error: null,
-          };
-        }
-        throw new Error(`Unexpected command: ${command}`);
-      },
-      fetchImpl: async () => ({
-        ok: true,
-        status: 200,
-        json: async () => ({
-          trafficMetrics: {
-            visitors: 9,
-            pageViews: 7,
-            checkoutStarts: 2,
-          },
-          signups: {
-            uniqueLeads: 1,
-          },
-          revenue: {
-            paidOrders: 1,
-            bookedRevenueCents: 4900,
-          },
-          pipeline: {
-            workflowSprintLeads: {
-              total: 1,
-            },
-          },
-          dataQuality: {
-            attributionCoverage: 1,
-            telemetryCoverage: 1,
-          },
-        }),
-      }),
-      fetchPublicProbe: async () => ({
-        health: {
-          status: 200,
-          version: '1.5.0',
-        },
-        root: {
-          status: 200,
-          signals: {
-            plausibleScript: true,
-            telemetryEndpoint: true,
-            gaLoaderScript: true,
-            gaEventHook: true,
-          },
-        },
-        telemetryPing: {
-          status: 204,
-        },
-      }),
-    });
-
-    assert.equal(report.source, 'hosted-http-api');
-    assert.equal(report.diagnosis.hostedSummaryWorking, true);
-    assert.equal(report.diagnosis.runtimePresenceKnown, false);
-    assert.equal(report.hostedAudit.summaries.today.revenue.bookedRevenueCents, 4900);
-    assert.equal(report.externalCustomerAudit.configured, false);
-    assert.ok(!runCalls.some((call) => call[0] === 'railway'));
-    assert.match(formatReport(report), /Railway runtime inspected: no/);
-    assert.match(formatReport(report), /External customer audit: unavailable \(STRIPE_SECRET_KEY is not set\)/);
-  } finally {
-    if (oldStripeKey !== undefined) {
-      process.env.STRIPE_SECRET_KEY = oldStripeKey;
-    }
-  }
-});
-
-test('generateRevenueStatusReport augments hosted HTTP summary with Railway external customer audit', async () => {
   const runCalls = [];
   const report = await generateRevenueStatusReport({
     repo: 'IgorGanapolsky/ThumbGate',
@@ -633,47 +553,7 @@ test('generateRevenueStatusReport augments hosted HTTP summary with Railway exte
       if (command === 'gh') {
         return {
           status: 0,
-          stdout: [
-            'RAILWAY_PROJECT_ID\tproj_123\t2026-03-20T00:00:00Z',
-            'RAILWAY_ENVIRONMENT_ID\tenv_456\t2026-03-20T00:00:00Z',
-            'RAILWAY_SERVICE\tthumbgate\t2026-03-20T00:00:00Z',
-            'THUMBGATE_PUBLIC_APP_ORIGIN\thttps://example.com\t2026-04-14T00:00:00Z',
-          ].join('\n'),
-          stderr: '',
-          error: null,
-        };
-      }
-      if (command === 'railway') {
-        return {
-          status: 0,
-          stdout: JSON.stringify({
-            configured: true,
-            ownerEmails: ['owner@example.com'],
-            charges: {
-              owner: {
-                chargeCount: 3,
-                uniqueCustomerCount: 1,
-                grossCents: 16900,
-                netCents: 16900,
-              },
-              external: {
-                chargeCount: 0,
-                uniqueCustomerCount: 0,
-                grossCents: 0,
-                netCents: 0,
-              },
-            },
-            subscriptions: {
-              activeExternal: 0,
-              activeOwner: 1,
-              mrrExternalCents: 0,
-            },
-            checkout: {
-              completedExternal: 1,
-              externalSessions: 2358,
-              completionRateExternal: 0.000424,
-            },
-          }),
+          stdout: 'THUMBGATE_PUBLIC_APP_ORIGIN\thttps://example.com\t2026-04-14T00:00:00Z\n',
           stderr: '',
           error: null,
         };
@@ -689,9 +569,17 @@ test('generateRevenueStatusReport augments hosted HTTP summary with Railway exte
           pageViews: 7,
           checkoutStarts: 2,
         },
+        signups: {
+          uniqueLeads: 1,
+        },
         revenue: {
-          paidOrders: 0,
-          bookedRevenueCents: 0,
+          paidOrders: 1,
+          bookedRevenueCents: 4900,
+        },
+        pipeline: {
+          workflowSprintLeads: {
+            total: 1,
+          },
         },
         dataQuality: {
           attributionCoverage: 1,
@@ -710,6 +598,7 @@ test('generateRevenueStatusReport augments hosted HTTP summary with Railway exte
           plausibleScript: true,
           telemetryEndpoint: true,
           gaLoaderScript: true,
+          gaEventHook: true,
         },
       },
       telemetryPing: {
@@ -719,12 +608,11 @@ test('generateRevenueStatusReport augments hosted HTTP summary with Railway exte
   });
 
   assert.equal(report.source, 'hosted-http-api');
-  assert.equal(report.externalCustomerAudit.configured, true);
-  assert.equal(report.externalCustomerAudit.externalUniqueCustomerCount, 0);
-  assert.equal(report.externalCustomerAudit.ownerNetRevenueCents, 16900);
-  assert.ok(runCalls.some((call) => call[0] === 'railway' && call.includes('scripts/external-customer-audit.js')));
-  assert.match(formatReport(report), /External customers: 0, external net revenue \$0.00, external MRR \$0.00/);
-  assert.match(formatReport(report), /Owner\/test filtered: 3 charge\(s\), \$169.00 net, active owner subscriptions 1/);
+  assert.equal(report.diagnosis.hostedSummaryWorking, true);
+  assert.equal(report.diagnosis.runtimePresenceKnown, false);
+  assert.equal(report.hostedAudit.summaries.today.revenue.bookedRevenueCents, 4900);
+  assert.ok(!runCalls.some((call) => call[0] === 'railway'));
+  assert.match(formatReport(report), /Railway runtime inspected: no/);
 });
 
 test('generateRevenueStatusReport degrades when local fallback summary is unavailable', async () => {
