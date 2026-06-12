@@ -3,6 +3,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+const vectorIndex = require('./vector-index');
+
 const DATA_DIR = path.join(__dirname, '../data');
 
 const SOURCES = {
@@ -73,23 +75,51 @@ function tokenize(text) {
   );
 }
 
-function retrieve(route, question, limit = 3) {
+function keywordScore(chunk, questionTokens, routeBoosts, question) {
+  const chunkTokens = tokenize(chunk.text);
+  let score = 0;
+  for (const token of questionTokens) {
+    if (chunkTokens.has(token)) score += 1;
+    if (routeBoosts.has(token)) score += 1;
+  }
+  if (chunk.text.toLowerCase().includes('loto') && /\b(lockout|tagout|loto|press|bypass)\b/i.test(question)) score += 3;
+  if (chunk.text.toLowerCase().includes('interlock') && /\b(interlock|guard|bypass)\b/i.test(question)) score += 3;
+  return score;
+}
+
+// Hybrid retrieval: HNSW cosine similarity (semantic) + keyword overlap
+// (exact part numbers / procedure IDs). Vector signal is scaled so the
+// downstream confidence gate threshold (2) keeps its meaning; when the vector
+// layer is unavailable the keyword score alone preserves old behavior.
+const VECTOR_WEIGHT = 6;
+
+async function retrieve(route, question, limit = 3) {
   const questionTokens = tokenize(question);
   const routeBoosts = new Set(ROUTE_SYNONYMS[route] || []);
-  return chunkMarkdown(route)
+  const chunks = chunkMarkdown(route);
+  const sims = await vectorIndex.search(route, chunks, question);
+  return chunks
     .map((chunk) => {
-      const chunkTokens = tokenize(chunk.text);
-      let score = 0;
-      for (const token of questionTokens) {
-        if (chunkTokens.has(token)) score += 1;
-        if (routeBoosts.has(token)) score += 1;
-      }
-      if (chunk.text.toLowerCase().includes('loto') && /\b(lockout|tagout|loto|press|bypass)\b/i.test(question)) score += 3;
-      if (chunk.text.toLowerCase().includes('interlock') && /\b(interlock|guard|bypass)\b/i.test(question)) score += 3;
-      return { ...chunk, score };
+      const keyword = keywordScore(chunk, questionTokens, routeBoosts, question);
+      const sim = sims ? sims.get(chunk.id) ?? 0 : null;
+      const score = Number((keyword + (sim !== null ? sim * VECTOR_WEIGHT : 0)).toFixed(2));
+      return {
+        ...chunk,
+        score,
+        keywordScore: keyword,
+        vectorSim: sim === null ? null : Number(sim.toFixed(3)),
+        retrievalMode: sims ? 'hybrid-hnsw' : 'keyword',
+      };
     })
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
+}
+
+function warmupVectorIndex() {
+  const chunksByRoute = Object.fromEntries(
+    Object.keys(SOURCES).map((route) => [route, chunkMarkdown(route)])
+  );
+  return vectorIndex.warmup(chunksByRoute);
 }
 
 function buildCloudStatus() {
@@ -98,6 +128,7 @@ function buildCloudStatus() {
     storage: Object.fromEntries(
       Object.entries(SOURCES).map(([route, source]) => [route, source.id])
     ),
+    retrieval: vectorIndex.status(),
     policyEngine: 'ThumbGate gate chain',
     observability: process.env.LANGSMITH_API_KEY ? 'LangSmith remote traces enabled' : 'LangSmith local trace mirror',
   };
@@ -106,5 +137,6 @@ function buildCloudStatus() {
 module.exports = {
   SOURCES,
   retrieve,
+  warmupVectorIndex,
   buildCloudStatus,
 };

@@ -342,6 +342,81 @@ body {
   line-height: 1.6;
   white-space: pre-wrap;
   color: hsl(var(--text-main));
+  margin-bottom: 1.5rem;
+}
+
+/* RLHF Layer Styles */
+.rlhf-layer {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--glass-border);
+  border-radius: 8px;
+  margin-top: 1.5rem;
+}
+
+.rlhf-prompt {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: hsl(var(--text-muted));
+  display: block;
+  margin-bottom: 0.8rem;
+}
+
+.rlhf-actions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.btn-vote {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
+  color: hsl(var(--text-main));
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.btn-vote:hover {
+  transform: translateY(-1px);
+}
+
+.btn-vote-up:hover {
+  background: hsla(var(--success-glow));
+  border-color: hsl(var(--success));
+  color: hsl(var(--success));
+}
+
+.btn-vote-down:hover {
+  background: hsla(var(--danger-glow));
+  border-color: hsl(var(--danger));
+  color: hsl(var(--danger));
+}
+
+.btn-vote:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.rlhf-success-msg {
+  font-size: 0.8rem;
+  color: hsl(var(--success));
+  font-weight: 500;
+  margin-top: 0.5rem;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Gates list */
@@ -370,11 +445,6 @@ body {
 .gate-item.block {
   border-left: 3px solid hsl(var(--danger));
   background: hsla(var(--danger-glow));
-}
-
-.gate-item.sanitized {
-  border-left: 3px solid hsl(var(--warning));
-  background: hsla(var(--warning-glow));
 }
 
 .gate-header {
