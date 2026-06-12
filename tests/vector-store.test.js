@@ -287,7 +287,9 @@ describe('vector-store — Core AI embedding provider', () => {
   it('calls Core AI local service and returns vector when coreai provider is enabled', async () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-test-coreai-'));
     const originalFetch = global.fetch;
+    const originalPlatform = process.platform;
     try {
+      Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true });
       process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
       process.env.THUMBGATE_EMBED_PROVIDER = 'coreai';
       delete process.env.THUMBGATE_VECTOR_STUB_EMBED;
@@ -318,6 +320,7 @@ describe('vector-store — Core AI embedding provider', () => {
       assert.equal(profile.source, 'local-coreai');
       assert.equal(profile.activeProfile.id, 'coreai');
     } finally {
+      Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
       global.fetch = originalFetch;
       delete process.env.THUMBGATE_EMBED_PROVIDER;
       delete require.cache[require.resolve('../scripts/vector-store')];
