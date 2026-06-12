@@ -204,13 +204,23 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
   const runtimePresenceKnown = Boolean(hostedAudit?.runtimePresenceKnown !== false);
   const traffic30 = trailing30?.trafficMetrics || {};
   const revenue30 = trailing30?.revenue || {};
+  const ctas30 = trailing30?.ctas || {};
+  const dataQuality30 = trailing30?.dataQuality || {};
   const lifetimeRevenue = lifetime?.revenue || {};
   const externalCustomerAudit = normalizeExternalCustomerAudit(hostedAudit?.externalCustomerAudit || null);
 
-  const trackingImplemented = Boolean(
+  const publicTrackingDetected = Boolean(
     publicProbe?.root?.signals?.telemetryEndpoint &&
     publicProbe.root.signals.plausibleScript
   );
+  const hostedTrackingDetected = Boolean(
+    Number(dataQuality30.telemetryCoverage || 0) > 0 ||
+    Number(dataQuality30.attributionCoverage || 0) > 0 ||
+    Number(traffic30.checkoutStarts || 0) > 0 ||
+    Number(ctas30.checkoutIntent?.views || 0) > 0 ||
+    Number(ctas30.checkoutIntent?.clicks || 0) > 0
+  );
+  const trackingImplemented = publicTrackingDetected || hostedTrackingDetected;
   const telemetryIngressWorking = Boolean(publicProbe?.telemetryPing?.status === 204);
   const hostedSummaryWorking = Boolean(today?.status === 200 && trailing30?.status === 200);
   const hostedTrafficObserved = Number(traffic30.visitors || 0) > 0 || Number(traffic30.pageViews || 0) > 0;
