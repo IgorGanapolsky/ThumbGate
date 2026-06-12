@@ -61,6 +61,15 @@ describe('gemini-embedding-policy', () => {
     assert.equal(config.fallbackToLocal, true);
   });
 
+  it('resolves the coreai provider for Apple Silicon native embeddings', () => {
+    const config = resolveGeminiEmbeddingConfig({
+      THUMBGATE_EMBED_PROVIDER: 'coreai',
+    });
+
+    assert.equal(config.enabled, false);
+    assert.equal(config.provider, 'coreai');
+  });
+
   it('builds a rollout plan with modality limits and batch economics', () => {
     const plan = buildGeminiEmbeddingRolloutPlan({
       corpusItems: 1200,

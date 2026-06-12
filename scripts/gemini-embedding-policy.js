@@ -122,7 +122,7 @@ function resolveGeminiEmbeddingConfig(env = process.env) {
 
   return {
     enabled,
-    provider: enabled ? 'gemini' : 'local',
+    provider: provider === 'coreai' ? 'coreai' : (enabled ? 'gemini' : 'local'),
     model: String(env.THUMBGATE_GEMINI_EMBED_MODEL || GEMINI_EMBEDDING_2_MODEL).trim() || GEMINI_EMBEDDING_2_MODEL,
     apiKey,
     apiBaseUrl: trimTrailingSlashes(env.THUMBGATE_GEMINI_API_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta'),
@@ -171,6 +171,7 @@ function buildGeminiEmbeddingRolloutPlan(args = {}) {
     },
     rolloutSteps: [
       'Keep local embeddings as the default offline path.',
+      'For Apple Silicon developers, route local queries through Core AI (AOT compiled models) to bypass CPU overhead.',
       'Enable Gemini Embedding 2 only when a Gemini API key is present.',
       'Use task-specific query/document prefixes at index and retrieval time.',
       'Start at 768 dimensions, then benchmark 1536 only if recall misses show up.',
