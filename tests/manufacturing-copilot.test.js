@@ -482,6 +482,9 @@ test('manufacturing chatbot-owned guardrails cover sanitization and safety branc
   assert.equal(guardrails.unsafeOutputGate('Follow the approved LOTO checklist.').status, 'pass');
 
   assert.equal(guardrails.safetyCitationGate('Follow SP-101.', true).status, 'pass');
+  assert.equal(guardrails.safetyCitationGate('Follow the cited checklist.\n\nSources:\n- Source type: Maintenance Manual — OSHA 3170 Safeguarding Equipment and Protecting Employees from Amputations, p. 24 — https://www.osha.gov/sites/default/files/publications/OSHA3170.pdf', true).status, 'pass');
+  assert.equal(guardrails.safetyCitationGate('Review the cited protocol.\n\nSources:\n- Source type: Protocol Specification — MODBUS Application Protocol Specification V1.1b3, p. 5 — https://www.modbus.org/file/secure/modbusprotocolspecification.pdf', true).status, 'pass');
+  assert.equal(guardrails.safetyCitationGate('The PLC says the line is stopped.\n\nSources:\n- Source type: Live PLC Telemetry — Modbus TCP Telemetry', true).status, 'block');
   assert.equal(guardrails.safetyCitationGate('Follow the checklist.', true).status, 'block');
   assert.equal(guardrails.safetyCitationGate('General production note.', false).status, 'pass');
 
