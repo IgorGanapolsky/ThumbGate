@@ -10,8 +10,10 @@ const {
   parseHtmlSignals,
   resolveHostedAuditApiKey,
   fetchWithTimeout,
+  normalizeExternalCustomerAudit,
   buildDiagnosis,
   formatReport,
+  resolveExternalCustomerAudit,
   getHostedAuditViaHttp,
   generateRevenueStatusReport,
 } = require('../scripts/revenue-status');
@@ -96,6 +98,99 @@ test('parseHtmlSignals detects telemetry and tracking hooks', () => {
   assert.equal(signals.gaEventHook, true);
   assert.equal(signals.telemetryEndpoint, true);
   assert.equal(signals.workflowSprintIntake, true);
+});
+
+test('normalizeExternalCustomerAudit summarizes real customers separately from owner/test activity', () => {
+  const normalized = normalizeExternalCustomerAudit({
+    configured: true,
+    ownerEmails: ['owner@example.com'],
+    charges: {
+      all: { chargeCount: 3, uniqueCustomerCount: 1, netCents: 16900 },
+      owner: { chargeCount: 3, uniqueCustomerCount: 1, netCents: 16900 },
+      external: { chargeCount: 0, uniqueCustomerCount: 0, netCents: 0 },
+    },
+    subscriptions: {
+      activeOwner: 1,
+      activeExternal: 0,
+      mrrExternalCents: 0,
+    },
+    checkout: {
+      externalSessions: 2358,
+      completedExternal: 1,
+    },
+  });
+
+  assert.equal(normalized.configured, true);
+  assert.equal(normalized.externalCustomerCount, 0);
+  assert.equal(normalized.externalNetRevenueCents, 0);
+  assert.equal(normalized.ownerChargeCount, 3);
+  assert.equal(normalized.ownerNetRevenueCents, 16900);
+  assert.equal(normalized.activeOwnerSubscriptions, 1);
+});
+
+test('buildDiagnosis reports owner/test-only revenue instead of treating raw lifetime revenue as first-dollar proof', () => {
+  const diagnosis = buildDiagnosis({
+    publicProbe: {
+      root: {
+        signals: {
+          telemetryEndpoint: true,
+          plausibleScript: true,
+          gaLoaderScript: true,
+        },
+      },
+      telemetryPing: {
+        status: 204,
+      },
+    },
+    hostedAudit: {
+      runtimePresence: {
+        THUMBGATE_GA_MEASUREMENT_ID: true,
+        THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL: true,
+        THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL: true,
+      },
+      externalCustomerAudit: {
+        configured: true,
+        charges: {
+          owner: { chargeCount: 3, netCents: 16900 },
+          external: { chargeCount: 0, uniqueCustomerCount: 0, netCents: 0 },
+        },
+        subscriptions: {
+          activeOwner: 1,
+          activeExternal: 0,
+          mrrExternalCents: 0,
+        },
+      },
+      summaries: {
+        today: { status: 200 },
+        '30d': {
+          status: 200,
+          trafficMetrics: { visitors: 102, pageViews: 83 },
+          revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+        },
+        lifetime: {
+          status: 200,
+          revenue: { paidOrders: 6, bookedRevenueCents: 16900 },
+        },
+      },
+    },
+  });
+
+  assert.equal(diagnosis.primaryIssue, 'owner_test_revenue_only');
+  assert.equal(diagnosis.hostedRevenueObserved, false);
+  assert.equal(diagnosis.externalCustomerRevenueObserved, false);
+  assert.equal(diagnosis.ownerTestRevenueOnly, true);
+});
+
+test('resolveExternalCustomerAudit returns a visible unavailable marker when Railway vars are missing', () => {
+  const audit = resolveExternalCustomerAudit({
+    repoVars: {},
+    runCommandFn() {
+      throw new Error('should not call Railway without ids');
+    },
+  });
+
+  assert.equal(audit.configured, false);
+  assert.match(audit.gap, /Railway project\/environment variables are unavailable/);
 });
 
 test('buildDiagnosis prioritizes GA4 runtime config over stale local fallback labels', () => {

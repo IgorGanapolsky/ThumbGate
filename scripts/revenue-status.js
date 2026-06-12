@@ -142,6 +142,47 @@ function normalizeWindowSummary(status, payload = {}) {
   };
 }
 
+function normalizeExternalCustomerAudit(payload = null) {
+  if (!payload || typeof payload !== 'object') {
+    return {
+      configured: false,
+      gap: 'external customer audit was not run',
+    };
+  }
+  if (!payload.configured) {
+    return {
+      configured: false,
+      gap: payload.gap || 'external customer audit is not configured',
+      ownerEmails: Array.isArray(payload.ownerEmails) ? payload.ownerEmails : [],
+    };
+  }
+
+  const charges = payload.charges || {};
+  const subscriptions = payload.subscriptions || {};
+  const externalCharges = charges.external || {};
+  const ownerCharges = charges.owner || {};
+
+  return {
+    configured: true,
+    generatedAt: payload.generatedAt || null,
+    ownerEmails: Array.isArray(payload.ownerEmails) ? payload.ownerEmails : [],
+    charges: {
+      all: charges.all || {},
+      owner: ownerCharges,
+      external: externalCharges,
+    },
+    subscriptions,
+    checkout: payload.checkout || {},
+    externalCustomerCount: Number(externalCharges.uniqueCustomerCount || 0),
+    externalNetRevenueCents: Number(externalCharges.netCents || 0),
+    externalMrrCents: Number(subscriptions.mrrExternalCents || 0),
+    activeExternalSubscriptions: Number(subscriptions.activeExternal || 0),
+    ownerChargeCount: Number(ownerCharges.chargeCount || 0),
+    ownerNetRevenueCents: Number(ownerCharges.netCents || 0),
+    activeOwnerSubscriptions: Number(subscriptions.activeOwner || 0),
+  };
+}
+
 function windowSnapshot(summary = {}) {
   return {
     status: summary.status,
@@ -158,10 +199,13 @@ function windowSnapshot(summary = {}) {
 function buildDiagnosis({ publicProbe, hostedAudit }) {
   const today = hostedAudit?.summaries?.today || null;
   const trailing30 = hostedAudit?.summaries?.['30d'] || null;
+  const lifetime = hostedAudit?.summaries?.lifetime || null;
   const runtimePresence = hostedAudit?.runtimePresence || {};
   const runtimePresenceKnown = Boolean(hostedAudit?.runtimePresenceKnown !== false);
   const traffic30 = trailing30?.trafficMetrics || {};
   const revenue30 = trailing30?.revenue || {};
+  const lifetimeRevenue = lifetime?.revenue || {};
+  const externalCustomerAudit = normalizeExternalCustomerAudit(hostedAudit?.externalCustomerAudit || null);
 
   const trackingImplemented = Boolean(
     publicProbe?.root?.signals?.telemetryEndpoint &&
@@ -171,6 +215,25 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
   const hostedSummaryWorking = Boolean(today?.status === 200 && trailing30?.status === 200);
   const hostedTrafficObserved = Number(traffic30.visitors || 0) > 0 || Number(traffic30.pageViews || 0) > 0;
   const hostedRevenueObserved = Number(revenue30.paidOrders || 0) > 0 || Number(revenue30.bookedRevenueCents || 0) > 0;
+  const rawLifetimeRevenueObserved = Number(lifetimeRevenue.paidOrders || 0) > 0 || Number(lifetimeRevenue.bookedRevenueCents || 0) > 0;
+  const externalCustomerRevenueObserved = Boolean(
+    externalCustomerAudit.configured && (
+      externalCustomerAudit.externalCustomerCount > 0 ||
+      externalCustomerAudit.externalNetRevenueCents > 0 ||
+      externalCustomerAudit.activeExternalSubscriptions > 0 ||
+      externalCustomerAudit.externalMrrCents > 0
+    )
+  );
+  const ownerTestRevenueOnly = Boolean(
+    externalCustomerAudit.configured &&
+    rawLifetimeRevenueObserved &&
+    !externalCustomerRevenueObserved &&
+    (
+      externalCustomerAudit.ownerChargeCount > 0 ||
+      externalCustomerAudit.ownerNetRevenueCents > 0 ||
+      externalCustomerAudit.activeOwnerSubscriptions > 0
+    )
+  );
   const gaRuntimeMissing = runtimePresenceKnown && !runtimePresence.THUMBGATE_GA_MEASUREMENT_ID;
   const sprintCheckoutRuntimeMissing = runtimePresenceKnown && (
     !runtimePresence.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL ||
@@ -183,6 +246,8 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
       primaryIssue = 'ga4_runtime_config_gap';
     } else if (sprintCheckoutRuntimeMissing) {
       primaryIssue = 'paid_sprint_checkout_config_gap';
+    } else if (ownerTestRevenueOnly) {
+      primaryIssue = 'owner_test_revenue_only';
     } else if (hostedRevenueObserved) {
       primaryIssue = 'hosted_revenue_observed';
     } else {
@@ -225,6 +290,8 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
     hostedSummaryWorking,
     hostedTrafficObserved,
     hostedRevenueObserved,
+    externalCustomerRevenueObserved,
+    ownerTestRevenueOnly,
     runtimePresenceKnown,
     hostedAuditMethod: hostedAudit?.auditMethod || 'unknown',
     primaryIssue,
@@ -273,6 +340,7 @@ function formatRuntimeFlags(report) {
 }
 
 function formatReport(report) {
+  const externalAudit = normalizeExternalCustomerAudit(report.hostedAudit.externalCustomerAudit || null);
   const lines = [
     `Revenue Status @ ${report.generatedAt}`,
     `Source: ${report.source}`,
@@ -282,6 +350,7 @@ function formatReport(report) {
     `Hosted summary working: ${report.diagnosis.hostedSummaryWorking ? 'yes' : 'no'}`,
     `Hosted traffic observed: ${report.diagnosis.hostedTrafficObserved ? 'yes' : 'no'}`,
     `Hosted revenue observed: ${report.diagnosis.hostedRevenueObserved ? 'yes' : 'no'}`,
+    `External customer revenue observed: ${report.diagnosis.externalCustomerRevenueObserved ? 'yes' : 'no'}`,
     `Hosted audit method: ${report.diagnosis.hostedAuditMethod}`,
     `Railway runtime inspected: ${report.diagnosis.runtimePresenceKnown ? 'yes' : 'no'}`,
     '',
@@ -292,10 +361,22 @@ function formatReport(report) {
     ...formatWindowBlock('Today', report.hostedAudit.summaries.today),
     ...formatWindowBlock('30d', report.hostedAudit.summaries['30d']),
     ...formatWindowBlock('Lifetime', report.hostedAudit.summaries.lifetime),
+  ];
+
+  if (externalAudit.configured) {
+    lines.push(
+      `External customers: ${externalAudit.externalCustomerCount}, external net revenue ${centsToDollars(externalAudit.externalNetRevenueCents)}, external MRR ${centsToDollars(externalAudit.externalMrrCents)}`,
+      `Owner/test filtered: ${externalAudit.ownerChargeCount} charge(s), ${centsToDollars(externalAudit.ownerNetRevenueCents)} net, active owner subscriptions ${externalAudit.activeOwnerSubscriptions}`,
+    );
+  } else {
+    lines.push(`External customer audit: unavailable (${externalAudit.gap})`);
+  }
+
+  lines.push(
     '',
     `30d attribution coverage: ${formatRatio(report.hostedAudit.summaries['30d'].dataQuality.attributionCoverage)}`,
     `30d telemetry coverage: ${formatRatio(report.hostedAudit.summaries['30d'].dataQuality.telemetryCoverage)}`,
-  ];
+  );
 
   if (report.diagnosis.gaps.length) {
     lines.push('');
@@ -505,6 +586,60 @@ function getHostedAuditViaRailway({
   };
 }
 
+function getExternalCustomerAuditViaRailway({
+  projectId,
+  environmentId,
+  service = DEFAULT_RAILWAY_SERVICE,
+  runCommandFn = runCommand,
+  commandTimeoutMs = DEFAULT_COMMAND_TIMEOUT_MS,
+} = {}) {
+  const stdout = requireCommandSuccess(
+    'railway external customer audit',
+    runCommandFn('railway', [
+      'run',
+      '-p',
+      projectId,
+      '-e',
+      environmentId,
+      '-s',
+      service,
+      '--',
+      'node',
+      'scripts/external-customer-audit.js',
+      '--json',
+    ], { timeout: commandTimeoutMs })
+  );
+  return normalizeExternalCustomerAudit(JSON.parse(stdout));
+}
+
+function resolveExternalCustomerAudit({
+  repoVars = {},
+  runCommandFn = runCommand,
+  commandTimeoutMs = DEFAULT_COMMAND_TIMEOUT_MS,
+} = {}) {
+  if (!repoVars.RAILWAY_PROJECT_ID || !repoVars.RAILWAY_ENVIRONMENT_ID) {
+    return normalizeExternalCustomerAudit({
+      configured: false,
+      gap: 'Railway project/environment variables are unavailable',
+    });
+  }
+
+  try {
+    return getExternalCustomerAuditViaRailway({
+      projectId: repoVars.RAILWAY_PROJECT_ID,
+      environmentId: repoVars.RAILWAY_ENVIRONMENT_ID,
+      service: repoVars.RAILWAY_SERVICE || DEFAULT_RAILWAY_SERVICE,
+      runCommandFn,
+      commandTimeoutMs,
+    });
+  } catch (error) {
+    return normalizeExternalCustomerAudit({
+      configured: false,
+      gap: error?.message || String(error),
+    });
+  }
+}
+
 async function getHostedAuditViaHttp({
   appOrigin = DEFAULT_PUBLIC_APP_ORIGIN,
   apiKey = resolveHostedAuditApiKey(),
@@ -618,6 +753,11 @@ async function generateRevenueStatusReport({
       fetchImpl,
       timeoutMs: fetchTimeoutMs,
     });
+    hostedAudit.externalCustomerAudit = resolveExternalCustomerAudit({
+      repoVars,
+      runCommandFn,
+      commandTimeoutMs,
+    });
 
     return {
       generatedAt: new Date().toISOString(),
@@ -653,6 +793,11 @@ async function generateRevenueStatusReport({
       appOrigin: hostedApiOrigin,
       timeZone,
       fetchTimeoutMs,
+      runCommandFn,
+      commandTimeoutMs,
+    });
+    hostedAudit.externalCustomerAudit = resolveExternalCustomerAudit({
+      repoVars,
       runCommandFn,
       commandTimeoutMs,
     });
@@ -718,6 +863,8 @@ async function generateRevenueStatusReport({
         hostedSummaryWorking: false,
         hostedTrafficObserved: false,
         hostedRevenueObserved: false,
+        externalCustomerRevenueObserved: false,
+        ownerTestRevenueOnly: false,
         runtimePresenceKnown: true,
         hostedAuditMethod: 'local-fallback',
         primaryIssue: 'hosted_summary_access_or_config_gap',
@@ -764,10 +911,13 @@ module.exports = {
   parseGhVariableList,
   parseHtmlSignals,
   centsToDollars,
+  normalizeExternalCustomerAudit,
   fetchWithTimeout,
   buildDiagnosis,
   formatReport,
   buildRailwayAuditSnippet,
+  getExternalCustomerAuditViaRailway,
+  resolveExternalCustomerAudit,
   getHostedAuditViaHttp,
   generateRevenueStatusReport,
 };
