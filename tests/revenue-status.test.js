@@ -181,6 +181,51 @@ test('buildDiagnosis reports owner/test-only revenue instead of treating raw lif
   assert.equal(diagnosis.ownerTestRevenueOnly, true);
 });
 
+test('buildDiagnosis treats hosted funnel telemetry as implemented tracking even when root script detection is incomplete', () => {
+  const diagnosis = buildDiagnosis({
+    publicProbe: {
+      root: {
+        signals: {
+          telemetryEndpoint: false,
+          plausibleScript: false,
+        },
+      },
+      telemetryPing: {
+        status: 204,
+      },
+    },
+    hostedAudit: {
+      runtimePresence: {
+        THUMBGATE_GA_MEASUREMENT_ID: true,
+        THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL: true,
+        THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL: true,
+      },
+      summaries: {
+        today: { status: 200 },
+        '30d': {
+          status: 200,
+          trafficMetrics: { visitors: 127, pageViews: 109, checkoutStarts: 2 },
+          ctas: {
+            checkoutIntent: { views: 2, clicks: 0 },
+          },
+          revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+          dataQuality: {
+            attributionCoverage: 1,
+            telemetryCoverage: 0.9937,
+          },
+        },
+        lifetime: {
+          status: 200,
+          revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+        },
+      },
+    },
+  });
+
+  assert.equal(diagnosis.trackingImplemented, true);
+  assert.equal(diagnosis.primaryIssue, 'conversion_or_pricing_gap');
+});
+
 test('resolveExternalCustomerAudit returns a visible unavailable marker when Railway vars are missing', () => {
   const audit = resolveExternalCustomerAudit({
     repoVars: {},
