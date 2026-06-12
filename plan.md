@@ -21,11 +21,16 @@ ThumbGate is **not** doing input sanitization, prompt-injection defense,
 retrieval confidence checks, citation requirements, HNSW, SQL, or RAG in this
 chatbot. It is purely the feedback loop and pre-action tool-use firewall.
 
-**The chatbot itself owns the other guardrails**: sanitization and injection
-defense are required as chatbot-owned LangGraph nodes in `middleware/graph.js`,
-backed by `middleware/guardrails.js`. These include input sanitization,
-prompt-injection scan on user input, retrieval-confidence refusal,
-unsafe-output scan, and safety-citation enforcement.
+**The chatbot itself owns the other retrieval-flow guardrails**: sanitization, injection
+defense, and reranking are implemented as chatbot-owned LangGraph nodes/stages in `middleware/graph.js`
+backed by `middleware/guardrails.js` and `middleware/vector-db.js`. These include:
+- **Input sanitization**: Redacts PII and secrets on user input before it hits logs or traces.
+- **Direct prompt-injection scan**: Evaluates user input against prompt-injection signatures.
+- **Hybrid fusion/rerank**: Blends HNSW vector similarity search with term-overlap/keyword matching.
+- **Retrieved-context injection quarantine**: Scans retrieved database chunks for indirect prompt-injections before prompt assembly.
+- **Retrieval-confidence refusal**: Blocks and escalates queries if retrieval confidence falls below threshold.
+- **Unsafe-output scan**: Intercepts generated assistant output containing unsafe instructions (e.g. bypassing interlocks).
+- **Safety-citation gate**: Enforces safety-related answers to cite governing SP-xxx safety codes.
 
 **Truth-grounded vector store**: all content in the LanceDB index must be
 grounded in truth. `middleware/vector-db.js` scans chunks at ingestion time and
@@ -47,10 +52,13 @@ status changes.
 - DONE: Saved and organized LangSmith API credentials in git-ignored `.env` for the supervisor trace dashboard.
 - DONE: Frontend (`index.html`) updated to always show thumbs up/down voting controls for all responses (including blocks) to capture feedback on firewall decisions.
 - DONE: RAG hybrid keyword-vector reranker (`vector-db.js`) implemented to bubble SP-xxx/MM-xxx matching procedures to the top of candidates.
-- Offline mode: `executeRAGPipeline` falls back to extractive answers when no LLM key is present (the real pipeline runs always).
-- Offline HTTP demo mode: `/api/ask` uses deterministic mock responses when no
-  LLM key is present; direct `executeRAGPipeline` tests exercise the real
-  LangGraph path with stubbed retriever/LLM dependencies.
+- IN PROGRESS: full target retrieval flow adds retrieval planning, metadata
+  filter planning, HNSW candidate retrieval, local hybrid fusion/rerank, token
+  packing, and retrieved-context injection quarantine as traceable LangGraph
+  nodes. This is chatbot-owned RAG work, not ThumbGate.
+- Offline mode: `/api/ask` runs the real LangGraph pipeline. When no LLM key is
+  present, the graph uses extractive answers after retrieval and guardrails; it
+  does not use mock responses.
 
 ## Three-Layer Architecture
 
@@ -67,9 +75,10 @@ Location: `prototypes/manufacturing-copilot/middleware/`
 - `graph.js`: LangGraph state machine for chatbot workflow, including
   chatbot-owned guardrails.
 - `rag.js`: Public pipeline facade and ThumbGate tool-firewall helpers.
-- `guardrails.js`: Chatbot-owned sanitization, injection, confidence, output,
-  and citation checks. These are not ThumbGate features.
-- `vector-db.js`: LanceDB vector storage for manufacturing manual chunks.
+- `guardrails.js`: Chatbot-owned sanitization, input injection scan, retrieved-context
+  quarantine, output safety check, and citation enforcement.
+- `vector-db.js`: LanceDB vector storage for manual chunks, featuring HNSW Ann search and
+  a hybrid fusion/reranker blending cosine vector scores and term-overlap keyword scores.
 - `langsmith.js`: Local-first tracing, mirrored to LangSmith when
   `LANGSMITH_API_KEY` is set.
 - LangGraph owns state and orchestration: supervisor auth state, machine-state
@@ -80,6 +89,26 @@ Location: `prototypes/manufacturing-copilot/middleware/`
 - LangSmith is observability/logging only: root run, node spans, timing, status,
   and errors. LangSmith does not make safety, retrieval, orchestration, policy,
   or tool-execution decisions.
+
+## Target Retrieval Flow
+
+Question
+-> input sanitization
+-> direct prompt-injection scan
+-> retrieval planner
+-> SQL/metadata filter planning
+-> HNSW semantic vector search
+-> local hybrid fusion/rerank
+-> token packer
+-> retrieved-context injection quarantine
+-> LLM answer generation
+-> unsafe-output and citation gates
+-> response + trace evidence
+
+Rerank is needed. For this prototype it stays local-first: Cohere rerank is the
+pattern, but we are not adding a Cohere dependency or another API key. The local
+reranker combines vector score, exact procedure-code matches, keyword overlap,
+and source weighting.
 
 ### Layer 3: Backend / Cloud Boundary
 Location: `prototypes/manufacturing-copilot/`
@@ -113,6 +142,8 @@ Location: `prototypes/manufacturing-copilot/`
   - ThumbGate firewall decisions
   - LangGraph blocked-tool path
   - LangGraph retrieval/LLM path
+  - retrieval planning, metadata filter planning, local fusion/rerank, token
+    packing, and retrieved-context quarantine
   - LangGraph chatbot-owned guardrail nodes
   - LangChain prompt/retriever adapter behavior
   - output PII/secret redaction

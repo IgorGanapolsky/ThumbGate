@@ -66,6 +66,100 @@ function classifyQuestionRoute(question) {
     : 'general';
 }
 
+const STOPWORDS = new Set([
+  'a', 'an', 'and', 'are', 'as', 'at', 'be', 'for', 'from', 'how', 'i', 'in',
+  'is', 'it', 'of', 'on', 'or', 'the', 'to', 'what', 'with',
+]);
+
+function tokenize(text) {
+  return String(text || '')
+    .toLowerCase()
+    .match(/[a-z0-9-]+/g)
+    ?.filter((token) => token.length > 2 && !STOPWORDS.has(token)) || [];
+}
+
+function planRetrieval(question, route) {
+  const procedureCode = question.match(/\b(?:SP|MM|QC)-\d{3}\b/i)?.[0]?.toUpperCase() || null;
+  const machine = /vm-22/i.test(question)
+    ? 'CNC Mill VM-22'
+    : /hp-400|hydraulic press|press/i.test(question)
+    ? 'Hydraulic Press HP-400'
+    : /c-3|conveyor/i.test(question)
+    ? 'Conveyor Line C-3'
+    : null;
+  return {
+    route,
+    procedureCode,
+    machine,
+    topK: 2,
+    candidateK: procedureCode ? 6 : 5,
+    maxContextTokens: route === 'safety' ? 900 : 650,
+    queryTerms: tokenize(question),
+  };
+}
+
+function planMetadataFilters(retrievalPlan) {
+  const sourcePreference = [];
+  if (retrievalPlan.procedureCode?.startsWith('SP-') || retrievalPlan.route === 'safety') {
+    sourcePreference.push('Safety Procedures Manual');
+  }
+  if (retrievalPlan.procedureCode?.startsWith('MM-') || retrievalPlan.machine) {
+    sourcePreference.push('Maintenance Manual');
+  }
+  if (retrievalPlan.procedureCode?.startsWith('QC-')) {
+    sourcePreference.push('Quality Control Standards');
+  }
+  return {
+    sourcePreference: [...new Set(sourcePreference)],
+    procedureCode: retrievalPlan.procedureCode,
+    machine: retrievalPlan.machine,
+  };
+}
+
+function localHybridRerank(question, chunks, metadataFilters = {}) {
+  const queryTerms = new Set(tokenize(question));
+  const procedureCode = metadataFilters.procedureCode;
+
+  return chunks
+    .map((chunk, index) => {
+      const haystack = `${chunk.title || ''} ${chunk.text || ''}`.toLowerCase();
+      const overlap = [...queryTerms].filter((term) => haystack.includes(term)).length;
+      const codeBoost = procedureCode && haystack.toUpperCase().includes(procedureCode) ? 1.5 : 0;
+      const sourceBoost = metadataFilters.sourcePreference?.includes(chunk.source) ? 0.35 : 0;
+      const machineBoost = metadataFilters.machine && haystack.includes(metadataFilters.machine.toLowerCase()) ? 0.45 : 0;
+      const vectorScore = Number(chunk.score || 0);
+      return {
+        ...chunk,
+        rerank: {
+          vectorScore,
+          keywordOverlap: overlap,
+          codeBoost,
+          sourceBoost,
+          machineBoost,
+          finalScore: vectorScore + (overlap * 0.08) + codeBoost + sourceBoost + machineBoost,
+        },
+        originalRank: index + 1,
+      };
+    })
+    .sort((a, b) => b.rerank.finalScore - a.rerank.finalScore);
+}
+
+function estimateTokens(text) {
+  return Math.ceil(String(text || '').length / 4);
+}
+
+function packRetrievedContext(chunks, maxTokens) {
+  const packed = [];
+  let usedTokens = 0;
+  for (const chunk of chunks) {
+    const tokenEstimate = estimateTokens(`${chunk.title}\n${chunk.text}`);
+    if (packed.length > 0 && usedTokens + tokenEstimate > maxTokens) continue;
+    packed.push({ ...chunk, tokenEstimate });
+    usedTokens += tokenEstimate;
+  }
+  return { chunks: packed, usedTokens, maxTokens };
+}
+
 function createManufacturingGraph({
   detectProposedToolCall,
   evaluatePreToolUseGate,
@@ -87,7 +181,11 @@ function createManufacturingGraph({
       proposedToolCall: Annotation(),
       toolGate: Annotation(),
       gates: Annotation(),
+      retrievalPlan: Annotation(),
+      metadataFilters: Annotation(),
       retrievedChunks: Annotation(),
+      candidateChunks: Annotation(),
+      tokenPack: Annotation(),
       messages: Annotation(),
       answer: Annotation(),
       status: Annotation(),
@@ -149,6 +247,30 @@ function createManufacturingGraph({
           langchainComponents: ['ChatPromptTemplate', 'ManufacturingRetriever'],
         };
       })
+      .addNode('plan_retrieval', async (state) => {
+        const retrievalPlan = await trace.span(
+          'plan_retrieval',
+          'chain',
+          { question: state.sanitizedQuestion, route: state.route },
+          async () => planRetrieval(state.sanitizedQuestion, state.route)
+        );
+        return {
+          retrievalPlan,
+          graphNodes: [...state.graphNodes, 'plan_retrieval'],
+        };
+      })
+      .addNode('plan_metadata_filters', async (state) => {
+        const metadataFilters = await trace.span(
+          'plan_metadata_filters',
+          'chain',
+          { retrievalPlan: state.retrievalPlan },
+          async () => planMetadataFilters(state.retrievalPlan)
+        );
+        return {
+          metadataFilters,
+          graphNodes: [...state.graphNodes, 'plan_metadata_filters'],
+        };
+      })
       .addNode('thumbgate_tool_firewall', async (state) => {
         const toolGate = await trace.span(
           'thumbgate_tool_firewall',
@@ -176,15 +298,64 @@ function createManufacturingGraph({
         };
       })
       .addNode('retrieve_manual_context', async (state) => {
-        const retrievedChunks = await trace.span(
+        const candidateChunks = await trace.span(
           'retrieve_manual_context',
           'retriever',
-          { query: state.sanitizedQuestion },
-          async () => retriever.invoke(state.sanitizedQuestion, { topK: 2 })
+          { query: state.sanitizedQuestion, retrievalPlan: state.retrievalPlan, metadataFilters: state.metadataFilters },
+          async () => retriever.invoke(state.sanitizedQuestion, { topK: state.retrievalPlan.candidateK, metadataFilters: state.metadataFilters })
+        );
+        return {
+          candidateChunks,
+          graphNodes: [...state.graphNodes, 'retrieve_manual_context'],
+        };
+      })
+      .addNode('fusion_rerank', async (state) => {
+        const retrievedChunks = await trace.span(
+          'fusion_rerank',
+          'chain',
+          {
+            candidateCount: state.candidateChunks.length,
+            metadataFilters: state.metadataFilters,
+          },
+          async () => localHybridRerank(state.sanitizedQuestion, state.candidateChunks, state.metadataFilters)
+            .slice(0, state.retrievalPlan.topK)
         );
         return {
           retrievedChunks,
-          graphNodes: [...state.graphNodes, 'retrieve_manual_context'],
+          graphNodes: [...state.graphNodes, 'fusion_rerank'],
+        };
+      })
+      .addNode('pack_context_tokens', async (state) => {
+        const tokenPack = await trace.span(
+          'pack_context_tokens',
+          'chain',
+          {
+            chunkCount: state.retrievedChunks.length,
+            maxContextTokens: state.retrievalPlan.maxContextTokens,
+          },
+          async () => packRetrievedContext(state.retrievedChunks, state.retrievalPlan.maxContextTokens)
+        );
+        return {
+          tokenPack,
+          retrievedChunks: tokenPack.chunks,
+          graphNodes: [...state.graphNodes, 'pack_context_tokens'],
+        };
+      })
+      .addNode('quarantine_retrieved_context', async (state) => {
+        const gateResult = await trace.span(
+          'quarantine_retrieved_context',
+          'chain',
+          { chunkCount: state.retrievedChunks.length },
+          async () => quarantineRetrievedContext(state.retrievedChunks)
+        );
+        return {
+          retrievedChunks: gateResult.cleanChunks,
+          gates: [...state.gates, {
+            gate: gateResult.gate,
+            status: gateResult.status === 'warning' ? 'warning' : 'pass',
+            detail: gateResult.detail
+          }],
+          graphNodes: [...state.graphNodes, 'quarantine_retrieved_context'],
         };
       })
       .addNode('check_retrieval_confidence', async (state) => {
@@ -295,10 +466,10 @@ function createManufacturingGraph({
         state.status === 'blocked' ? END : 'inspect_request'
       ))
       .addConditionalEdges('inspect_request', (state) => (
-        state.proposedToolCall ? 'thumbgate_tool_firewall' : 'retrieve_manual_context'
+        state.proposedToolCall ? 'thumbgate_tool_firewall' : 'plan_retrieval'
       ))
       .addConditionalEdges('thumbgate_tool_firewall', (state) => (
-        state.toolGate?.allowed ? 'retrieve_manual_context' : END
+        state.toolGate?.allowed ? 'plan_retrieval' : END
       ))
       .addConditionalEdges('check_retrieval_confidence', (state) => (
         state.status === 'blocked' ? END : 'compose_langchain_prompt'
@@ -308,7 +479,12 @@ function createManufacturingGraph({
       ))
       .addEdge(START, 'sanitize_input')
       .addEdge('sanitize_input', 'scan_input_injection')
-      .addEdge('retrieve_manual_context', 'check_retrieval_confidence')
+      .addEdge('plan_retrieval', 'plan_metadata_filters')
+      .addEdge('plan_metadata_filters', 'retrieve_manual_context')
+      .addEdge('retrieve_manual_context', 'fusion_rerank')
+      .addEdge('fusion_rerank', 'pack_context_tokens')
+      .addEdge('pack_context_tokens', 'quarantine_retrieved_context')
+      .addEdge('quarantine_retrieved_context', 'check_retrieval_confidence')
       .addEdge('compose_langchain_prompt', 'generate_answer')
       .addEdge('generate_answer', 'check_output_safety')
       .addEdge('check_safety_citation', END)
@@ -327,6 +503,7 @@ async function executeManufacturingGraph(question, deps = {}) {
       question,
       gates: [],
       retrievedChunks: [],
+      candidateChunks: [],
       graphNodes: [],
       langchainComponents: [],
     });
@@ -346,6 +523,9 @@ async function executeManufacturingGraph(question, deps = {}) {
         runtime: 'LangGraph',
         nodes: state.graphNodes || [],
         components: state.langchainComponents || [],
+        retrievalPlan: state.retrievalPlan,
+        metadataFilters: state.metadataFilters,
+        tokenPack: state.tokenPack,
       },
     });
   } catch (error) {
@@ -368,4 +548,8 @@ module.exports = {
   createManufacturingGraph,
   createManufacturingRetriever,
   executeManufacturingGraph,
+  localHybridRerank,
+  packRetrievedContext,
+  planMetadataFilters,
+  planRetrieval,
 };
