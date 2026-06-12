@@ -1250,3 +1250,58 @@ test('manufacturing citations add document categories when model already wrote s
   assert.match(answer, /Source type: Protocol Specification/);
   assert.match(answer, /Source type: Live PLC Telemetry/);
 });
+
+test('manufacturing vector DB hybrid search retrieves and merges FTS and vector results', async (t) => {
+  t.after(() => {
+    vectorDB.resetVectorDBForTest();
+  });
+
+  const fakeTable = {
+    search() {
+      return {
+        distanceType() { return this; },
+        limit() { return this; },
+        async toArray() {
+          return [
+            {
+              title: 'Vector Only Match',
+              text: 'This is only in vector DB.',
+              _distance: 0.2,
+              source: 'Maintenance Manual',
+              fileName: 'maintenance-manual.md',
+            }
+          ];
+        }
+      };
+    }
+  };
+
+  vectorDB.configureVectorDBForTest({
+    embed: async () => [0.1, 0.2, 0.3],
+    importLanceDB: async () => ({
+      connect: async () => ({
+        openTable: async () => fakeTable,
+        createTable: async () => fakeTable,
+      })
+    }),
+    fs: {
+      mkdirSync() {},
+      existsSync() { return true; },
+      readFileSync() {
+        return '\n## FTS Only Match\nThis is only in SQLite FTS5.';
+      }
+    },
+  });
+
+  // Seed so SQLite has the FTS only match chunk
+  await vectorDB.seedVectorDatabase();
+
+  // Query with enableFtsForTest to trigger hybrid merge
+  const results = await vectorDB.queryVectorDB('SQLite FTS5', 5, { enableFtsForTest: true });
+
+  assert.equal(results.length, 2);
+  // Ensure both vector-only match and FTS-only match are returned
+  const titles = results.map(r => r.title);
+  assert.ok(titles.includes('Vector Only Match'));
+  assert.ok(titles.includes('FTS Only Match'));
+});

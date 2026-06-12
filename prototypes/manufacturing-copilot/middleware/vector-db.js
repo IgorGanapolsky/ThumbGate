@@ -2,13 +2,42 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const Database = require('better-sqlite3');
 const { embed } = require('../../../scripts/vector-store');
 const { scanForInjection } = require('./guardrails');
 
 // Env override lets each test process use an isolated index dir, so e2e
 // stub-embedding runs can never poison the dev/demo vector store.
 const LANCE_DIR = process.env.MANUFACTURING_LANCE_DIR || path.join(__dirname, '../db/lancedb');
+let _ftsDbPath = process.env.MANUFACTURING_FTS_PATH || path.join(__dirname, '../db/fts.sqlite');
 const TABLE_NAME = 'manufacturing_chunks';
+
+let _ftsDb = null;
+
+function getFtsDb() {
+  if (_ftsDb) return _ftsDb;
+  if (_ftsDbPath !== ':memory:') {
+    const dbDir = path.dirname(_ftsDbPath);
+    _deps.fs.mkdirSync(dbDir, { recursive: true });
+  }
+  _ftsDb = new Database(_ftsDbPath);
+  if (_ftsDbPath !== ':memory:') {
+    _ftsDb.pragma('journal_mode = WAL');
+  }
+  _ftsDb.exec(`
+    CREATE VIRTUAL TABLE IF NOT EXISTS documents_fts USING fts5(
+      title,
+      text,
+      source UNINDEXED,
+      fileName UNINDEXED,
+      sourceTitle UNINDEXED,
+      sourceUrl UNINDEXED,
+      sourcePage UNINDEXED,
+      sourcePdf UNINDEXED
+    );
+  `);
+  return _ftsDb;
+}
 
 function extractSectionMetadata(section, file) {
   const value = (key) => section.match(new RegExp(`^<!--\\s*${key}:\\s*([^\\n]+?)\\s*-->`, 'mi'))?.[1]?.trim() || null;
@@ -36,6 +65,11 @@ function configureVectorDBForTest(overrides = {}) {
   _deps = { ..._deps, ...overrides };
   _db = null;
   _table = null;
+  _ftsDbPath = ':memory:';
+  if (_ftsDb) {
+    try { _ftsDb.close(); } catch {}
+    _ftsDb = null;
+  }
   _quarantined = [];
   _seedPromise = null;
 }
@@ -50,6 +84,11 @@ function resetVectorDBForTest() {
   };
   _db = null;
   _table = null;
+  _ftsDbPath = process.env.MANUFACTURING_FTS_PATH || path.join(__dirname, '../db/fts.sqlite');
+  if (_ftsDb) {
+    try { _ftsDb.close(); } catch {}
+    _ftsDb = null;
+  }
   _quarantined = [];
   _seedPromise = null;
 }
@@ -159,6 +198,34 @@ async function seedVectorDatabaseOnce() {
   if (records.length > 0) {
     _table = await db.createTable(TABLE_NAME, records, { mode: 'overwrite', overwrite: true });
     console.log(`[VectorDB] Successfully indexed ${records.length} chunks into LanceDB table "${TABLE_NAME}".`);
+
+    // Populate SQLite FTS5 database
+    try {
+      const ftsDb = getFtsDb();
+      ftsDb.exec('DELETE FROM documents_fts');
+      const insertStmt = ftsDb.prepare(`
+        INSERT INTO documents_fts (title, text, source, fileName, sourceTitle, sourceUrl, sourcePage, sourcePdf)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      const insertMany = ftsDb.transaction((rows) => {
+        for (const r of rows) {
+          insertStmt.run(
+            r.title,
+            r.text,
+            r.source,
+            r.fileName,
+            r.sourceTitle || '',
+            r.sourceUrl || '',
+            r.sourcePage || '',
+            r.sourcePdf || ''
+          );
+        }
+      });
+      insertMany(records);
+      console.log(`[VectorDB] Successfully indexed ${records.length} chunks into SQLite FTS5 database.`);
+    } catch (err) {
+      console.warn('[VectorDB] SQLite FTS5 seeding failed:', err.message);
+    }
     
     // Create an HNSW vector index for maximum speed and accuracy.
     // On a corpus this small LanceDB may refuse to train the index
@@ -244,11 +311,66 @@ async function queryVectorDB(query, topK = 2, options = {}) {
       .toArray();
   }
 
+  // Retrieve FTS candidates from SQLite FTS5 table to combine for hybrid search
+  let ftsResults = [];
+  if (_ftsDbPath !== ':memory:' || options.enableFtsForTest) {
+    try {
+      const ftsDb = getFtsDb();
+      const terms = query
+        .replace(/[^a-zA-Z0-9\s]/g, ' ')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+      if (terms.length > 0) {
+        const matchQuery = terms.map(t => `${t}*`).join(' OR ');
+        ftsResults = ftsDb.prepare(`
+          SELECT title, text, source, fileName, sourceTitle, sourceUrl, sourcePage, sourcePdf
+          FROM documents_fts
+          WHERE documents_fts MATCH ?
+          LIMIT ?
+        `).all(matchQuery, candidateLimit);
+      }
+    } catch (err) {
+      console.warn('[VectorDB] SQLite FTS5 query failed:', err.message);
+      // Fallback to LIKE query
+      try {
+        const ftsDb = getFtsDb();
+        ftsResults = ftsDb.prepare(`
+          SELECT title, text, source, fileName, sourceTitle, sourceUrl, sourcePage, sourcePdf
+          FROM documents_fts
+          WHERE title LIKE ? OR text LIKE ?
+          LIMIT ?
+        `).all(`%${query}%`, `%${query}%`, candidateLimit);
+      } catch (fallbackErr) {
+        console.warn('[VectorDB] SQLite FTS5 fallback query failed:', fallbackErr.message);
+      }
+    }
+  }
+
+  // Merge results and ftsResults (deduplicating by title + text)
+  const candidateMap = new Map();
+  results.forEach(r => {
+    const key = `${r.title}::${r.text}`;
+    candidateMap.set(key, { ...r });
+  });
+
+  ftsResults.forEach(r => {
+    const key = `${r.title}::${r.text}`;
+    if (!candidateMap.has(key)) {
+      candidateMap.set(key, {
+        ...r,
+        _distance: 1.0, // Default distance for FTS-only matches (middle score range)
+      });
+    }
+  });
+
+  const combinedCandidates = Array.from(candidateMap.values());
+
   // Filter candidates by user role clearance level
   const userRole = options.metadataFilters?.role || options.role || 'operator';
   const userClearance = CLEARANCE_LEVELS[userRole] ?? 0;
 
-  const clearedResults = results.filter(row => {
+  const clearedResults = combinedCandidates.filter(row => {
     const reqClearance = getChunkRequiredClearance(row);
     return userClearance >= reqClearance;
   });
