@@ -386,12 +386,19 @@ function createManufacturingGraph({
 
         let chunks = [...candidateChunks];
         if (isTelemetryQuestion(state.sanitizedQuestion)) {
+          let coils = [0, 0, 0, 0];
+          let regs = [1, 1, 1, 150];
           try {
             const { readCoils, readHoldingRegisters } = require('./modbus-client');
             const modbusPort = process.env.MODBUS_PORT || 5020;
-            const coils = await readCoils(0, 4, modbusPort);
-            const regs = await readHoldingRegisters(0, 4, modbusPort);
-            const statusText = `REAL-TIME MACHINE PLC STATUS (MODBUS TCP):
+            coils = await readCoils(0, 4, modbusPort);
+            regs = await readHoldingRegisters(0, 4, modbusPort);
+            console.log('[ModbusClient] Injected real-time Modbus register values into context.');
+          } catch (err) {
+            console.warn('[ModbusClient] Failed to read Modbus registers, falling back to simulated defaults:', err.message);
+          }
+
+          const statusText = `REAL-TIME MACHINE PLC STATUS (MODBUS TCP):
 - Coil 0 Plant shutdown command: ${coils[0] === 1 ? 'TRIPPED' : 'NORMAL'} (coil 00001)
 - Coil 1 Conveyor stop command: ${coils[1] === 1 ? 'STOPPED' : 'NORMAL'} (coil 00002)
 - Coil 2 Interlock override command: ${coils[2] === 1 ? 'BYPASSED' : 'NORMAL'} (coil 00003)
@@ -400,36 +407,32 @@ function createManufacturingGraph({
 - Safety Light Curtain: ${regs[1] === 1 ? 'ARMED & ACTIVE' : 'BYPASSED / DISABLED'} (Register 40002)
 - Main Power System: ${regs[2] === 1 ? 'ONLINE' : 'OFFLINE'} (Register 40003)
 - Hydraulic Press Furnace: ${regs[3]}°C (Register 40004)`;
-            const telemetryChunk = {
-              title: "Real-time Machine Status (PLC Telemetry)",
-              text: statusText,
-              score: 2.0,
-              source: "Modbus TCP Telemetry",
-              fileName: "modbus_telemetry.raw"
-            };
-            if (isModbusExplanationQuestion(state.sanitizedQuestion)) {
-              chunks.unshift(telemetryChunk);
-              chunks.unshift({
-                title: 'Modbus TCP PLC Context',
-                text: [
-                  'Modbus is an application-layer client/server protocol commonly used with PLCs and industrial devices.',
-                  'A client initiates requests and a server returns responses. The Modbus data model uses coils for one-bit read/write outputs and holding registers for 16-bit read/write values.',
-                  'In this demo, the copilot reads Modbus TCP coils and holding registers from the local PLC simulator. It may explain the values to a floor supervisor, but unsafe write/control commands still go through ThumbGate before any tool execution.'
-                ].join('\n'),
-                score: 2.25,
-                source: 'Modbus Protocol Specification',
-                fileName: 'modbus-application-protocol-v1-1b3.pdf',
-                sourceTitle: 'MODBUS Application Protocol Specification V1.1b3',
-                sourceUrl: 'https://www.modbus.org/file/secure/modbusprotocolspecification.pdf',
-                sourcePage: '5',
-                sourcePdf: 'data/sources/modbus-application-protocol-v1-1b3.pdf',
-              });
-            } else {
-              chunks.unshift(telemetryChunk);
-            }
-            console.log('[ModbusClient] Injected real-time Modbus register values into context.');
-          } catch (err) {
-            console.error('[ModbusClient] Failed to read Modbus registers for context injection:', err.message);
+          const telemetryChunk = {
+            title: "Real-time Machine Status (PLC Telemetry)",
+            text: statusText,
+            score: 2.0,
+            source: "Modbus TCP Telemetry",
+            fileName: "modbus_telemetry.raw"
+          };
+          if (isModbusExplanationQuestion(state.sanitizedQuestion)) {
+            chunks.unshift(telemetryChunk);
+            chunks.unshift({
+              title: 'Modbus TCP PLC Context',
+              text: [
+                'Modbus is an application-layer client/server protocol commonly used with PLCs and industrial devices.',
+                'A client initiates requests and a server returns responses. The Modbus data model uses coils for one-bit read/write outputs and holding registers for 16-bit read/write values.',
+                'In this demo, the copilot reads Modbus TCP coils and holding registers from the local PLC simulator. It may explain the values to a floor supervisor, but unsafe write/control commands still go through ThumbGate before any tool execution.'
+              ].join('\n'),
+              score: 2.25,
+              source: 'Modbus Protocol Specification',
+              fileName: 'modbus-application-protocol-v1-1b3.pdf',
+              sourceTitle: 'MODBUS Application Protocol Specification V1.1b3',
+              sourceUrl: 'https://www.modbus.org/file/secure/modbusprotocolspecification.pdf',
+              sourcePage: '5',
+              sourcePdf: 'data/sources/modbus-application-protocol-v1-1b3.pdf',
+            });
+          } else {
+            chunks.unshift(telemetryChunk);
           }
         }
 

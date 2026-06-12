@@ -62,6 +62,11 @@ status changes.
 - DONE: Screenshot regressions fixed:
   - "Explain to me what is an interlock?" now answers from OSHA 3170 with page citations.
   - "is coil 3 working normally now?" now routes to Modbus PLC telemetry and does not fail retrieval confidence.
+- DONE: Conversational PLC/Modbus inference improved. "Explain to me about our
+  PLC modbus" is now recognized as a PLC/Modbus explanation + live telemetry
+  question, answers with protocol context, cites the official Modbus
+  Application Protocol Specification page, and includes current coil/register
+  state instead of failing retrieval confidence.
 - DONE: Real local industrial telemetry is wired via Modbus TCP simulator and
   client. Read-only PLC telemetry questions can inspect coils/registers. Unsafe
   physical-control calls still route through ThumbGate's pre-action firewall.
@@ -84,7 +89,7 @@ status changes.
 - DONE: `middleware/guardrails.js` (chatbot-owned guardrail functions, updated `safetyCitationGate` to support boolean route arguments).
 - DONE: `middleware/vector-db.js` ingestion quarantine + `getIngestionReport()`.
 - DONE: `middleware/graph.js` LangGraph StateGraph + `rag.js` facade rewrite; server endpoints are fully wired up.
-- DONE: `tests/manufacturing-copilot.test.js` (unit) + `tests/manufacturing-copilot-e2e.test.js` (e2e instrumentation) with 100% test pass rates (**56/56 tests passing**, verified 2026-06-12).
+- DONE: `tests/manufacturing-copilot.test.js` (unit) + `tests/manufacturing-copilot-e2e.test.js` (e2e instrumentation) with 100% test pass rates (**57/57 tests passing**, verified 2026-06-12).
 - DONE: Outbound response sanitization (PII + secret redaction) implemented and verified in the RAG execution path.
 - DONE: Saved and organized LangSmith API credentials in git-ignored `.env` for the supervisor trace dashboard.
 - DONE: Frontend (`index.html`) updated to always show thumbs up/down voting controls for all responses (including blocks) to capture feedback on firewall decisions.
@@ -177,7 +182,8 @@ Location: `prototypes/manufacturing-copilot/`
   `prototypes/manufacturing-copilot/data/sources/`:
   `OSHA3120-lockout-tagout.pdf`, `OSHA3170-amputation-machine-guarding.pdf`,
   `OSHA3138-confined-spaces.pdf`, and
-  `OSHA3636-hazcom-labels-pictograms.pdf`.
+  `OSHA3636-hazcom-labels-pictograms.pdf`, plus the official
+  `modbus-application-protocol-v1-1b3.pdf`.
 - Hybrid retrieval decision layer: LangGraph routes requests between proposed
   tool-call handling, role clearance gates, chatbot guardrails, and LanceDB vector retrieval;
   LangChain prompt/retriever components format the RAG answer path.

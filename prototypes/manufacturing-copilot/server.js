@@ -251,6 +251,13 @@ server.close = function(cb) {
   });
 };
 
+const { seedVectorDatabase } = require('./middleware/vector-db');
+seedVectorDatabase().then(() => {
+  console.log('[Server] Vector database seeded and ready.');
+}).catch(err => {
+  console.error('[Server] Failed to seed vector database on startup:', err);
+});
+
 server.listen(PORT, () => {
   const address = server.address();
   const port = typeof address === 'object' && address ? address.port : PORT;

@@ -325,10 +325,15 @@
           item.style.display = 'flex';
           item.style.alignItems = 'center';
           item.style.gap = '0.6rem';
+          const pageLabel = chunk.sourcePage ? `Page ${chunk.sourcePage}` : 'Live';
+          const sourceLabel = chunk.sourceTitle || chunk.source || chunk.fileName || 'Source';
+          const sourceText = chunk.sourceUrl
+            ? `<a href="${chunk.sourceUrl}" target="_blank" rel="noreferrer" style="font-weight: 500; color: #38bdf8;">${sourceLabel}</a>`
+            : `<span style="font-weight: 500; color: #38bdf8;">${sourceLabel}</span>`;
           
           item.innerHTML = `
-            <span class="span-category-badge span-category-rag" style="font-size: 0.65rem; padding: 0.1rem 0.3rem;">Page ${chunk.page || 1}</span>
-            <span style="font-weight: 500; color: #38bdf8;">${chunk.source}</span>
+            <span class="span-category-badge span-category-rag" style="font-size: 0.65rem; padding: 0.1rem 0.3rem;">${pageLabel}</span>
+            ${sourceText}
             <span style="color: #94a3b8;">—</span>
             <span style="color: #cbd5e1;">${chunk.title}</span>
           `;

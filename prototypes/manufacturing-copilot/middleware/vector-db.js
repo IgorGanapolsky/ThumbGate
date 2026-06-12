@@ -157,7 +157,7 @@ async function seedVectorDatabaseOnce() {
 
   // Create or overwrite the LanceDB table
   if (records.length > 0) {
-    _table = await db.createTable(TABLE_NAME, records, { overwrite: true });
+    _table = await db.createTable(TABLE_NAME, records, { mode: 'overwrite', overwrite: true });
     console.log(`[VectorDB] Successfully indexed ${records.length} chunks into LanceDB table "${TABLE_NAME}".`);
     
     // Create an HNSW vector index for maximum speed and accuracy.
@@ -234,7 +234,7 @@ async function queryVectorDB(query, topK = 2, options = {}) {
       .limit(candidateLimit)
       .toArray();
   } catch (err) {
-    console.warn('[VectorDB] Query failed, database schema might be mismatch or corrupted. Re-seeding...', err.message);
+    console.warn('[VectorDB] Query failed, attempting to repair table by re-seeding:', err.message);
     await seedVectorDatabase();
     table = await getTable();
     results = await table
