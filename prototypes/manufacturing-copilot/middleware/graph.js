@@ -193,7 +193,10 @@ function citationForChunk(chunk) {
   const sourceName = chunk.sourceTitle || chunk.source || chunk.title || chunk.fileName;
   const page = chunk.sourcePage ? `, p. ${chunk.sourcePage}` : '';
   const url = chunk.sourceUrl ? ` — ${chunk.sourceUrl}` : '';
-  return `Source type: ${category} — ${sourceName}${page}${url}`;
+  if (category && category !== sourceName) {
+    return `[${category}] ${sourceName}${page}${url}`;
+  }
+  return `[${sourceName}]${page}${url}`;
 }
 
 function cleanChunkText(text) {
