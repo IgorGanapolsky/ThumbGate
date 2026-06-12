@@ -503,6 +503,8 @@ test('public landing page includes compatibility section for AI agent surfaces',
   assert.match(landingPage, /Hermes Agent guardrails/i);
   assert.match(landingPage, /\/guides\/hermes-agent-guardrails/);
   assert.match(landingPage, /persistent memory, generated skills, messaging gateways, scheduled automations, and sandboxed execution/i);
+  assert.match(landingPage, /safer self-evolution loop/i);
+  assert.match(landingPage, /overwrites stable instructions/i);
   assert.match(landingPage, /Context and tool governance/i);
   assert.match(landingPage, /\/guides\/agent-context-governance/);
   assert.match(landingPage, /cleaner working context, approved model routes, isolated execution, tool lockdown, direct pushback, and evidence/i);
