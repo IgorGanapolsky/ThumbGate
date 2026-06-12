@@ -1,10 +1,12 @@
 'use strict';
 
-// Chatbot-owned guardrails. These run as LangGraph nodes/edges inside the
-// pipeline — they are NOT ThumbGate features. ThumbGate's two roles in this
-// prototype are the RLHF feedback loop and the PreToolUse firewall on tool
-// execution edges; everything in this file is the chatbot protecting its own
-// input, its vector store, and its output.
+/**
+ * Chatbot-owned guardrails. These run as LangGraph nodes/edges inside the
+ * pipeline — they are NOT ThumbGate features. ThumbGate's two roles in this
+ * prototype are the RLHF feedback loop and the PreToolUse firewall on tool
+ * execution edges; everything in this file is the chatbot protecting its own
+ * input, its vector store, and its output.
+ */
 
 const path = require('node:path');
 const { redactSecrets } = require(path.join(__dirname, '../../../scripts/secret-redaction.js'));
@@ -18,6 +20,17 @@ const PII_PATTERNS = [
   { id: 'ssn', re: /\b\d{3}-\d{2}-\d{4}\b/g, replacement: '[SSN]' },
 ];
 
+/**
+ * Sanitizes user input by redacting PII (emails, phone numbers, SSNs, employee IDs)
+ * and active API keys/secrets before they reach model inference or logs.
+ *
+ * @param {string} text - The raw user input text to sanitize.
+ * @returns {Object} Result object.
+ * @returns {string} Result.gate - The name of the gate ('input_sanitization').
+ * @returns {string} Result.status - 'pass' if clean, or 'sanitized' if redactions occurred.
+ * @returns {string} Result.detail - Summary of detected/redacted info.
+ * @returns {string} Result.sanitized - The sanitized text payload.
+ */
 function sanitizeInput(text) {
   let sanitized = redactSecrets(String(text || ''));
   const redactions = [];
@@ -49,8 +62,21 @@ const INJECTION_PATTERNS = [
   /do\s+not\s+mention\s+(lockout|tagout|safety|loto)/i,
   /reveal\s+(your\s+)?(system\s+prompt|instructions|api\s+key)/i,
   /\bDAN\b|jailbreak/i,
+  /<\/s>|\[\/sys\]|\[inst\]/i,
 ];
 
+/**
+ * Scans a string for prompt injection payloads or safety disregard patterns.
+ * Used to protect user input, document ingestion, and retrieved chunks.
+ *
+ * @param {string} text - The text to scan.
+ * @param {'input'|'ingestion'|'retrieved_context'} source - The context of the text being scanned.
+ * @returns {Object} Result object.
+ * @returns {string} Result.gate - The context-specific gate name.
+ * @returns {'pass'|'block'} Result.status - Whether the check passed or blocked the text.
+ * @returns {string} Result.detail - A descriptive message of the scan outcome.
+ * @returns {string[]} Result.hits - Array of regex patterns that matched the text.
+ */
 function scanForInjection(text, source) {
   const hits = INJECTION_PATTERNS.filter((re) => re.test(text)).map((re) => re.source.slice(0, 40));
   const gateName = source === 'input'
@@ -70,6 +96,18 @@ function scanForInjection(text, source) {
 
 // --- Retrieved-context injection quarantine ---------------------------------
 
+/**
+ * Evaluates retrieved context chunks, quarantining any that contain potential indirect prompt injection attacks.
+ * Clean chunks are allowed through to prompt packaging, while quarantined chunks are filtered out.
+ *
+ * @param {Object[]} chunks - Retrieved vector database chunks.
+ * @returns {Object} Quarantine report.
+ * @returns {string} report.gate - Gate identifier ('retrieved_context_quarantine').
+ * @returns {'pass'|'warning'} report.status - 'pass' if all clean, 'warning' if chunks were quarantined.
+ * @returns {string} report.detail - Narrative summary of quarantined chunks.
+ * @returns {Object[]} report.cleanChunks - Safe chunks allowed to proceed.
+ * @returns {Object[]} report.quarantined - The list of quarantined/unsafe chunks.
+ */
 function quarantineRetrievedContext(chunks) {
   const cleanChunks = [];
   const quarantined = [];
@@ -99,12 +137,16 @@ function quarantineRetrievedContext(chunks) {
   };
 }
 
-// --- Retrieval confidence -----------------------------------------------------
-// LanceDB cosine: score = 2 - distance (higher is better). After hybrid
-// fusion/rerank, chunks can also carry confidenceScore, which includes exact
-// procedure-code, keyword, and source evidence. The default is calibrated for
-// the interview fixture and can be raised with env config.
+// --- Retrieval confidence ---------------------------------
 
+/**
+ * Assesses the confidence score of the top retrieved context chunk.
+ * If the top score falls below the required threshold, the query is refused.
+ *
+ * @param {Object[]} chunks - The list of retrieved and reranked context chunks.
+ * @param {number} [minScore=0.50] - The minimum score threshold.
+ * @returns {Object} Confidence check result.
+ */
 function confidenceGate(chunks, minScore = Number(process.env.CONFIDENCE_MIN_SCORE || 0.50)) {
   const top = chunks[0]?.confidenceScore ?? chunks[0]?.score ?? 0;
   const scoreLabel = chunks[0]?.confidenceScore !== undefined ? 'hybrid confidence score' : 'vector score';
@@ -128,6 +170,12 @@ const UNSAFE_OUTPUT_PATTERNS = [
   /shortcut\s+approved/i,
 ];
 
+/**
+ * Checks draft assistant output for unsafe work practices (e.g. bypassing safety interlocks).
+ *
+ * @param {string} answer - Assistant generated answer text.
+ * @returns {Object} Output gate result.
+ */
 function unsafeOutputGate(answer) {
   const hits = UNSAFE_OUTPUT_PATTERNS.filter((re) => re.test(answer));
   return {
@@ -141,6 +189,14 @@ function unsafeOutputGate(answer) {
 
 // --- Safety answers must cite the procedure ---------------------------------
 
+/**
+ * Enforces citation rules on answers classified as safety-critical.
+ * Checks for either procedure codes (SP-xxx) or OSHA page references in the draft response.
+ *
+ * @param {string} answer - Assistant generated answer text.
+ * @param {string|boolean} route - The route classification ('safety', 'general', or true).
+ * @returns {Object} Citation validation result.
+ */
 function safetyCitationGate(answer, route) {
   if (route !== 'safety' && route !== true) {
     return { gate: 'safety_citation', status: 'pass', detail: 'Not a safety-routed answer; citation not required' };
@@ -200,6 +256,20 @@ const ROLE_CLEARANCES = {
   ehs_incident_commander: 2,
 };
 
+/**
+ * Enforces Role-Based Access Control (RBAC) on informational queries.
+ * Prevents lower-clearance users from querying sensitive manuals or instructions:
+ * - Level 0 (Operator): Blocked from Confined Space (SP-102) & Safety Overrides (SP-110).
+ * - Level 1 (Supervisor): Allowed Confined Space (SP-102), but blocked from Safety Overrides (SP-110) & Shutdown procedures.
+ * - Level 2 (Plant Manager / EHS): Has clearance to query all procedures (but still blocked from physical override actions).
+ *
+ * @param {string} question - The user's query text.
+ * @param {string} role - The user's role (e.g. 'operator', 'floor_supervisor', 'plant_manager').
+ * @returns {Object} Access control validation result.
+ * @returns {string} Result.gate - Gate identifier ('clearance_gate').
+ * @returns {'pass'|'block'} Result.status - 'pass' if permitted, 'block' if denied.
+ * @returns {string} Result.detail - Specific reason or clearance log.
+ */
 function clearanceGate(question, role) {
   const userRole = String(role || 'operator').toLowerCase();
   const userClearance = ROLE_CLEARANCES[userRole] ?? 0;
