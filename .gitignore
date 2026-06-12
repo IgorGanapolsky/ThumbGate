@@ -105,3 +105,6 @@ TEST_EVIDENCE_E2E_HYBRID_CLAW.md
 TEST_EVIDENCE_*.md
 LAUNCH_*.md
 undefined/
+
+# Manufacturing copilot prototype runtime artifacts
+prototypes/manufacturing-copilot/db/

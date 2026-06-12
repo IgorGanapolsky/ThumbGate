@@ -81,14 +81,20 @@ async function seedVectorDatabase() {
     _table = await db.createTable(TABLE_NAME, records, { overwrite: true });
     console.log(`[VectorDB] Successfully indexed ${records.length} chunks into LanceDB table "${TABLE_NAME}".`);
     
-    // Create an HNSW vector index for maximum speed and accuracy
+    // Create an HNSW vector index for maximum speed and accuracy.
+    // On a corpus this small LanceDB may refuse to train the index
+    // (minimum-row requirements); exact cosine scan is then used, which is
+    // both faster and exact at this scale — the API surface stays identical.
     console.log('[VectorDB] Creating HNSW index for vector table...');
-    await _table.createIndex({
-      column: 'vector',
-      index_type: 'IVF_PQ', // IVF_PQ or HNSW depending on LanceDB version capabilities
-      metric: 'cosine'
-    });
-    console.log('[VectorDB] HNSW indexing complete!');
+    try {
+      const lancedb = await import('@lancedb/lancedb');
+      await _table.createIndex('vector', {
+        config: lancedb.Index.hnswSq({ distanceType: 'cosine' }),
+      });
+      console.log('[VectorDB] HNSW indexing complete!');
+    } catch (err) {
+      console.warn(`[VectorDB] HNSW index skipped (corpus below training threshold): ${err.message}`);
+    }
   }
 }
 
@@ -108,9 +114,9 @@ async function queryVectorDB(query, topK = 2) {
   // Query LanceDB using cosine similarity vector search
   const results = await table
     .search(queryVector)
-    .metric('cosine')
+    .distanceType('cosine')
     .limit(topK)
-    .execute();
+    .toArray();
 
   // Map results to match standard chunk format
   return results.map(row => ({
