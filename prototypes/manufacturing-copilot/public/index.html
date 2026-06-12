@@ -349,8 +349,16 @@
           item.style.gap = '0.6rem';
           const pageLabel = chunk.sourcePage ? `Page ${chunk.sourcePage}` : 'Live';
           const categoryName = chunk.sourceCategory || chunk.source || 'Manual';
+          let displayName = categoryName;
+          const catLower = categoryName.toLowerCase();
+          if (catLower.includes('safety')) displayName = 'Safety';
+          else if (catLower.includes('maintenance')) displayName = 'Maintenance';
+          else if (catLower.includes('quality')) displayName = 'Quality';
+          else if (catLower.includes('protocol')) displayName = 'Protocol';
+          else if (catLower.includes('telemetry')) displayName = 'Telemetry';
+
           const categoryStyle = getCategoryBadgeStyle(categoryName);
-          const categoryLabel = `<span class="span-category-badge span-category-rag" style="font-size: 0.65rem; padding: 0.15rem 0.35rem; ${categoryStyle} margin-right: 0.2rem; border-radius: 3px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">${categoryName}</span>`;
+          const categoryLabel = `<span class="span-category-badge span-category-rag" style="font-size: 0.65rem; padding: 0.15rem 0.35rem; ${categoryStyle} margin-right: 0.2rem; border-radius: 3px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">${displayName}</span>`;
           const sourceLabel = chunk.sourceTitle || chunk.source || chunk.fileName || 'Source';
           const sourceText = chunk.sourceUrl
             ? `<a href="${chunk.sourceUrl}" target="_blank" rel="noreferrer" style="font-weight: 500; color: #38bdf8;">${sourceLabel}</a>`
