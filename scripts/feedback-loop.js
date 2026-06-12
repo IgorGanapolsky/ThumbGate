@@ -1499,8 +1499,42 @@ function captureFeedback(params) {
             totalGates: promoteResult.totalGates,
           });
         } catch { /* activation telemetry is non-critical */ }
+
+        // Trigger Self-Harness Optimizer to propagate the new rules to prompt files & validate
+        try {
+          const { fork } = require('child_process');
+          const localOptimizerPath = path.join(process.cwd(), 'scripts', 'self-harness-optimizer.js');
+          const packageOptimizerPath = path.join(__dirname, 'self-harness-optimizer.js');
+          
+          if (fs.existsSync(localOptimizerPath)) {
+            fork(localOptimizerPath, [], { stdio: 'ignore', detached: true }).unref();
+          } else if (fs.existsSync(packageOptimizerPath)) {
+            fork(packageOptimizerPath, [], { stdio: 'ignore', detached: true }).unref();
+          }
+        } catch (err) {
+          console.error('Failed to trigger self-harness optimizer:', err);
+        }
       }
     } catch { /* Gate promotion is non-critical */ }
+  }
+
+  // Auto-export to Obsidian if configured (deferred but tracked)
+  if (process.env.THUMBGATE_OBSIDIAN_VAULT_PATH) {
+    const exportPromise = new Promise((resolve) => {
+      setImmediate(() => {
+        try {
+          const { exportAll } = require('./obsidian-export');
+          exportAll({
+            feedbackDir: FEEDBACK_DIR,
+            outputDir: process.env.THUMBGATE_OBSIDIAN_VAULT_PATH,
+          });
+        } catch (_err) {
+          // Non-critical, do not crash feedback loop
+        }
+        resolve();
+      });
+    });
+    trackBackgroundSideEffect(exportPromise);
   }
 
   // --- Deferred side-effects (contextFs, RLAIF — non-critical, potentially slow) ---

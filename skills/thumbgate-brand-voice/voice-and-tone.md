@@ -15,7 +15,7 @@ all three.
 - 💤 Too flat: "It integrates with your tools to provide protection."
 
 ## Honest / anti-hype
-- ✅ "Free tier: 5 captures/day, 25 total, 3 active rules. Pro removes the caps. That's the actual difference."
+- ✅ "Free tier: 2 captures/day, 10 total, 3 active rules. Pro removes the caps. That's the actual difference."
 - 🚫 Too far: "Unlimited everything, trusted by the world's best engineering teams."
 - 💤 Too flat: "Flexible plans to fit teams of every size."
 

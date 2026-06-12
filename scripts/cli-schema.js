@@ -656,6 +656,22 @@ const CLI_COMMANDS = [
       { name: 'json',        type: 'boolean', description: 'Output results as JSON' },
     ],
   },
+  {
+    name: 'check-update',
+    aliases: ['upgrade-check'],
+    description: 'Check for newer versions of ThumbGate from npm or GitHub',
+    group: 'ops',
+    flags: [
+      { name: 'json', type: 'boolean', description: 'Output results as JSON' },
+    ],
+  },
+  {
+    name: 'self-update',
+    aliases: ['upgrade-cli'],
+    description: 'Automatically install the latest version of ThumbGate globally',
+    group: 'ops',
+    flags: [],
+  },
 ];
 
 /**

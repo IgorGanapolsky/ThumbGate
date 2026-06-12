@@ -816,3 +816,56 @@ test('Idempotent: running export twice produces same output', () => {
     cleanDir(tmpDir);
   }
 });
+
+// ---------------------------------------------------------------------------
+// Tests: Auto-export integration on feedback capture
+// ---------------------------------------------------------------------------
+
+test('Auto-export: captureFeedback triggers exportAll automatically when THUMBGATE_OBSIDIAN_VAULT_PATH is set', async () => {
+  const tmpDir = makeTmpDir();
+  const feedbackDir = path.join(tmpDir, 'feedback');
+  const outputDir = path.join(tmpDir, 'vault');
+
+  const savedFeedbackDirEnv = process.env.THUMBGATE_FEEDBACK_DIR;
+  const savedVaultEnv = process.env.THUMBGATE_OBSIDIAN_VAULT_PATH;
+
+  process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
+  process.env.THUMBGATE_OBSIDIAN_VAULT_PATH = outputDir;
+
+  // Clear require cache for feedback-loop to ensure env vars are picked up correctly
+  delete require.cache[require.resolve('../scripts/feedback-loop')];
+  const { captureFeedback, waitForBackgroundSideEffects } = require('../scripts/feedback-loop');
+
+  try {
+    const res = captureFeedback({
+      signal: 'up',
+      context: 'Ran tests successfully and everything passed.',
+      whatWorked: 'Integration and unit tests pass',
+      tags: ['auto-export-test'],
+    });
+
+    assert.ok(res.accepted, 'Feedback should be accepted');
+
+    // Wait for the background export promise to complete
+    await waitForBackgroundSideEffects();
+
+    const masterIndex = path.join(outputDir, 'ThumbGate.md');
+    assert.ok(fs.existsSync(masterIndex), 'ThumbGate.md master index should be exported automatically');
+    
+    const feedbackNoteDir = path.join(outputDir, 'Feedback');
+    assert.ok(fs.existsSync(feedbackNoteDir), 'Feedback directory should exist in Obsidian vault');
+    const files = fs.readdirSync(feedbackNoteDir);
+    assert.ok(files.length > 0, 'Should have exported at least one feedback note');
+  } finally {
+    // Restore env
+    if (savedFeedbackDirEnv === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+    else process.env.THUMBGATE_FEEDBACK_DIR = savedFeedbackDirEnv;
+
+    if (savedVaultEnv === undefined) delete process.env.THUMBGATE_OBSIDIAN_VAULT_PATH;
+    else process.env.THUMBGATE_OBSIDIAN_VAULT_PATH = savedVaultEnv;
+
+    cleanDir(tmpDir);
+    delete require.cache[require.resolve('../scripts/feedback-loop')];
+  }
+});
+

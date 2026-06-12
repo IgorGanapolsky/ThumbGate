@@ -580,17 +580,51 @@ function resolveGitHubRepository(env = process.env) {
 function findOpenPrForBranch({ branchName, runner = runGh, env = process.env } = {}) {
   const normalizedBranch = String(branchName || '').trim();
   if (!normalizedBranch) return null;
-  if (!env.GH_TOKEN && !env.GITHUB_TOKEN) {
+  const token = env.GH_TOKEN || env.GITHUB_TOKEN;
+  if (!token) {
     return null;
   }
-  const args = ['pr', 'list'];
   const repository = resolveGitHubRepository(env);
-  if (repository) {
-    args.push('--repo', repository);
+  if (!repository) return null;
+
+  // Try REST API first as it is much more robust and doesn't rely on gh CLI's GraphQL auth
+  try {
+    const owner = repository.split('/')[0];
+    const url = `https://api.github.com/repos/${repository}/pulls?head=${encodeURIComponent(owner + ':' + normalizedBranch)}&state=open`;
+    const curlConfig = `header = "Authorization: token ${token}"\nheader = "User-Agent: ThumbGate-CI"`;
+    const curlResult = spawnSync('curl', [
+      '-s',
+      '-K', '-',
+      url
+    ], {
+      encoding: 'utf8',
+      input: curlConfig
+    });
+
+    if (curlResult && curlResult.status === 0) {
+      const prs = JSON.parse(curlResult.stdout || '[]');
+      if (Array.isArray(prs) && prs.length > 0) {
+        return {
+          number: prs[0].number,
+          state: prs[0].state,
+          isDraft: prs[0].draft || false,
+          url: prs[0].html_url
+        };
+      }
+    }
+  } catch (err) {
+    console.warn(`[findOpenPrForBranch] REST fallback failed: ${err.message}`);
   }
-  args.push('--head', normalizedBranch, '--state', 'open', '--json', 'number,state,isDraft,url');
+
+  // Fall back to gh CLI
+  const args = ['pr', 'list', '--repo', repository, '--head', normalizedBranch, '--state', 'open', '--json', 'number,state,isDraft,url'];
   const result = runner(args);
   if (!result || result.status !== 0) {
+    if (result) {
+      console.warn(`[findOpenPrForBranch] gh command failed with status ${result.status}. Stderr: ${result.stderr || ''}`);
+    } else {
+      console.warn(`[findOpenPrForBranch] gh command failed to spawn.`);
+    }
     return null;
   }
   try {

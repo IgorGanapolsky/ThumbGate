@@ -14,9 +14,11 @@ function normalizeDomain(value) {
   const input = String(value || '').trim();
   if (!input) return '';
   try {
-    return new URL(input.includes('://') ? input : `https://${input}`).host.toLowerCase();
+    return new URL(input.includes('://') ? input : `https://${input}`).hostname.toLowerCase();
   } catch {
-    return input.replace(/^https?:\/\//i, '').replace(/\/.*$/, '').toLowerCase();
+    const withoutProtocol = input.replace(/^https?:\/\//i, '');
+    const hostnameAndPort = withoutProtocol.split('/')[0];
+    return hostnameAndPort.toLowerCase().split(':')[0];
   }
 }
 

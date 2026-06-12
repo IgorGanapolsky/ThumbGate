@@ -47,3 +47,15 @@ At session start, run:
 npm run feedback:summary
 npm run feedback:rules
 ```
+
+## Gotchas
+
+- **Prompt / Context Bloat**: Over-capturing very specific or minor feedback patterns can cause rule congestion. Group similar failures under broader rules instead of creating duplicate gates.
+- **Clarification Prompts**: Central auto-capture triggers will prompt for a one-sentence explanation for vague feedback (like a simple "👎"). Do not skip or bypass this prompt; accurate context is required to synthesize clean prevention rules.
+- **Self-Protection Triggers**: Prevention rules that target edits to `.claude/settings.json` or `config/gates/` will trigger ThumbGate's self-protection hooks. Always verify hook configuration changes manually rather than letting the agent auto-write rules targeting those files.
+- **Auto-Capture Environment**: If natural language feedback signals (e.g. "that worked", "that failed") are not triggering capture, verify that the `THUMBGATE_AUTO_CAPTURE` env variable is not set to `0` or disabled in settings.
+
+## References
+
+For deeper context and feedback workflows, see [best-practices.md](file:///Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/skills/thumbgate-feedback/references/best-practices.md) in this skill's folder.
+

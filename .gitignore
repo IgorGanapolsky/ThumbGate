@@ -50,6 +50,16 @@ test-vault-*/
 coverage/
 undefined/
 
+# Local agent/planning runtimes and scratch artifacts
+.agent/
+.planning/
+scratch/
+tests/proof-test-sandbox/
+cfo_report.json
+docs/marketing/codex-marketplace-revenue-pack.json
+docs/marketing/codex-marketplace-revenue-pack.md
+docs/marketing/codex-operator-queue.csv
+
 # Generated explainer-video artifacts (regenerable via scripts/render-demo-video/*)
 scripts/render-demo-video/narration.mp3
 

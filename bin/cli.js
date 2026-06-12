@@ -61,14 +61,19 @@ const TRIAL_DAYS = 7;
 
 function checkoutUrlFor(source, content) {
   try {
-    const url = new URL(PRO_CHECKOUT_URL);
+    const base = content === 'capture_feedback'
+      ? 'https://buy.stripe.com/7sYfZhaiE1eSbO99uj3sI0d'
+      : PRO_CHECKOUT_URL;
+    const url = new URL(base);
     url.searchParams.set('utm_source', source || 'cli');
     url.searchParams.set('utm_medium', 'cli');
     url.searchParams.set('utm_campaign', 'pro_conversion');
     if (content) url.searchParams.set('utm_content', content);
     return url.toString();
   } catch (_) {
-    return PRO_CHECKOUT_URL;
+    return content === 'capture_feedback'
+      ? 'https://buy.stripe.com/7sYfZhaiE1eSbO99uj3sI0d'
+      : PRO_CHECKOUT_URL;
   }
 }
 
@@ -1864,6 +1869,7 @@ function modelCandidatesCmd() {
   const maxCandidates = args.max ? Number(args.max) : undefined;
   const { reportPath, report } = writeModelCandidatesReport(undefined, {
     workload: args.workload,
+    workloadFile: args['workload-file'] || args.workloadFile,
     provider: args.provider,
     family: args.family,
     gateway: args.gateway,
@@ -2180,6 +2186,26 @@ function pulse() {
   }).then(() => {
     process.exit(0);
   });
+}
+
+function checkUpdateCmd() {
+  const { checkUpdate } = require(path.join(PKG_ROOT, 'scripts', 'check-update'));
+  const args = parseArgs(process.argv.slice(3));
+  checkUpdate({ verbose: !args.json, force: args.force }).then((res) => {
+    if (args.json) {
+      console.log(JSON.stringify(res, null, 2));
+    }
+    process.exit(0);
+  }).catch((err) => {
+    console.error(err && err.message ? err.message : err);
+    process.exit(1);
+  });
+}
+
+function selfUpdateCmd() {
+  const { selfUpdate } = require(path.join(PKG_ROOT, 'scripts', 'check-update'));
+  const success = selfUpdate();
+  process.exit(success ? 0 : 1);
 }
 
 function dispatchBrief() {
@@ -3162,6 +3188,7 @@ const SUBCOMMAND_HELP = {
   'setup-vertex': 'Usage: npx thumbgate setup-vertex [--dry-run]\n\nAuto-enable Vertex AI API on GCP and write local Vertex routing config to .env. With --dry-run, only detect the active account/project and print the planned changes. This does not create or verify a Dialogflow CX agent; use the Dialogflow CX REST API or console for live-agent evidence.',
   'ai-inventory': 'Usage: npx thumbgate ai-inventory [--root <dir>] [--format=summary|json|cyclonedx] [--output <path>] [--max-files=N]\n\nScan source/manifests/model artifacts for AI, ML, agent-framework, vector DB, Vertex, Gemini, and Dialogflow CX components. Use --format=cyclonedx to produce exportable ML-BOM evidence for enterprise reviews.',
   brain: 'Usage: npx thumbgate brain [--write] [--json] [--limit=N]\n\nBuild the agent-readable "context brain" — a single artifact consolidating this\nrepo\'s lessons, prevention rules, active gates, and project context for a coding\nagent to read BEFORE acting. --write saves it to .thumbgate/BRAIN.md (versioned,\ndeterministic). --json emits the structured model. --limit caps lessons (default 15).',
+  'team-sync': 'Usage: npx thumbgate team-sync\n\nSynchronize prevention rules and context brain with your team\'s git repository (git pull --rebase & git push), then auto-rebuild the local brain.',
 };
 
 if (_wantsHelp && COMMAND && SUBCOMMAND_HELP[COMMAND]) {
@@ -3291,7 +3318,90 @@ function cmdBrain(args = {}) {
   return 0;
 }
 
+async function teamSync() {
+  const { execSync } = require('child_process');
+
+  // Verify we are in a Git repo
+  try {
+    execSync('git rev-parse --is-inside-work-tree', { stdio: 'ignore', cwd: CWD });
+  } catch (err) {
+    console.error('❌ Error: The current directory is not a Git repository.');
+    process.exit(1);
+  }
+
+  console.log('🔄 Checking shared prevention rules status...');
+
+  const rulesRelative = '.thumbgate/prevention-rules.md';
+  const brainRelative = '.thumbgate/BRAIN.md';
+  const rulesPath = path.join(CWD, rulesRelative);
+
+  if (!fs.existsSync(rulesPath)) {
+    console.log('⚠️  No local prevention rules file found to sync.');
+  }
+
+  let statusOutput = '';
+  try {
+    statusOutput = execSync('git status --porcelain', { encoding: 'utf8', cwd: CWD }) || '';
+  } catch (_) {}
+  const hasLocalChanges = statusOutput.includes(rulesRelative) || statusOutput.includes(brainRelative) || statusOutput.includes('.thumbgate/');
+
+  if (hasLocalChanges) {
+    console.log('📝 Local changes detected in prevention rules. Committing locally...');
+    try {
+      const filesToAdd = [rulesRelative, brainRelative].filter(f => fs.existsSync(path.join(CWD, f)));
+      if (filesToAdd.length > 0) {
+        const filesStr = filesToAdd.map(f => `"${f}"`).join(' ');
+        execSync(`git add -f ${filesStr}`, { cwd: CWD });
+        execSync('git commit -m "chore(thumbgate): update shared prevention rules [skip ci]"', { cwd: CWD });
+        console.log('✅ Local rules committed successfully.');
+      } else {
+        console.log('✨ No local rules files exist to commit.');
+      }
+    } catch (e) {
+      console.log('✨ No changes to commit (already staged/clean).');
+    }
+  } else {
+    console.log('✨ No local rules changes to commit.');
+  }
+
+  // Pull from remote
+  console.log('📥 Pulling rules from teammate remote (git pull --rebase)...');
+  try {
+    execSync('git pull --rebase', { stdio: 'inherit', cwd: CWD });
+  } catch (pullErr) {
+    console.error('❌ Git pull failed. Please resolve conflicts manually.');
+    process.exit(1);
+  }
+
+  // Push to remote
+  console.log('📤 Pushing rules to teammate remote (git push)...');
+  try {
+    execSync('git push', { stdio: 'inherit', cwd: CWD });
+  } catch (pushErr) {
+    console.error('❌ Git push failed. You may need to run git push manually.');
+    process.exit(1);
+  }
+
+  // Rebuild the context brain (.thumbgate/BRAIN.md) from the newly merged rules
+  console.log('🧠 Rebuilding local context brain from merged rules...');
+  try {
+    const brainArgs = { write: true };
+    cmdBrain(brainArgs);
+  } catch (brainErr) {
+    console.warn(`⚠️  Failed to rebuild context brain: ${brainErr.message}`);
+  }
+
+  console.log('\n🚀 Team rules synchronization complete! Your agents now share team-wide learning.');
+}
+
 switch (COMMAND) {
+  case 'team-sync':
+  case 'git-sync':
+    teamSync().catch((err) => {
+      console.error(err && err.message ? err.message : err);
+      process.exit(1);
+    });
+    break;
   case '--version':
   case '-v':
   case 'version':
@@ -3752,6 +3862,14 @@ switch (COMMAND) {
     break;
   case 'pulse':
     pulse();
+    break;
+  case 'check-update':
+  case 'upgrade-check':
+    checkUpdateCmd();
+    break;
+  case 'self-update':
+  case 'upgrade-cli':
+    selfUpdateCmd();
     break;
   case 'dispatch':
   case 'dispatch-brief':

@@ -16,7 +16,7 @@ __GOOGLE_SITE_VERIFICATION_META__
 <link rel="icon" type="image/png" href="/thumbgate-icon.png">
 <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
 
-<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.tagged-events.js"></script>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script>
 __GA_BOOTSTRAP__
 
 <script>
@@ -101,7 +101,7 @@ __GA_BOOTSTRAP__
   "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
-    { "@type": "Question", "name": "What does Pro add over the free CLI?", "acceptedAnswer": { "@type": "Answer", "text": "Free gives you 5 captures/day and 3 active rules, running entirely on your machine. Pro is the hosted layer: unlimited captures, unlimited rules, lesson sync across machines, a dashboard without self-hosting, managed adapter updates, and DPO export. You're paying for infrastructure we run, not features we hide." } },
+    { "@type": "Question", "name": "What does Pro add over the free CLI?", "acceptedAnswer": { "@type": "Answer", "text": "Free gives you 2 captures/day and 3 active rules, running entirely on your machine. Pro is the hosted layer: unlimited captures, unlimited rules, lesson sync across machines, a dashboard without self-hosting, managed adapter updates, and DPO export. You're paying for infrastructure we run, not features we hide." } },
     { "@type": "Question", "name": "Does ThumbGate send my code to the cloud?", "acceptedAnswer": { "@type": "Answer", "text": "No. The CLI is local-first — no data leaves your machine. Pro and Enterprise add hosted sync for dashboards and shared lessons, but your source code stays local." } },
     { "@type": "Question", "name": "When should I pick Enterprise over Pro?", "acceptedAnswer": { "@type": "Answer", "text": "When one engineer's correction should protect the whole team. Enterprise shares the lesson database across the org so a fix in one repo prevents the same mistake in every repo." } },
     { "@type": "Question", "name": "Can I cancel anytime?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Pro and Enterprise are month-to-month with a 7-day refund window on the first charge. Cancel from the billing portal and your subscription ends at the period close." } }
@@ -286,7 +286,7 @@ __GA_BOOTSTRAP__
       <div class="price">$0</div>
       <div class="price-sub">Block repeated mistakes daily. Forever free for solo devs.</div>
       <ul>
-        <li>5 feedback captures/day (25 total) — enough to see the value</li>
+        <li>2 feedback captures/day (10 total) — enough to see the value</li>
         <li>Up to 3 active prevention rules</li>
         <li>All MCP integrations (Claude Code, Cursor, Codex, Gemini, Amp)</li>
         <li>PreToolUse hook blocking with built-in safety checks</li>
@@ -311,7 +311,7 @@ __GA_BOOTSTRAP__
         <li>7-day refund window. Cancel anytime.</li>
       </ul>
       <a class="btn-pro" href="/checkout/pro?confirm=1&utm_source=pricing&utm_medium=hero_card&utm_campaign=pricing_page&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&billing_cycle=monthly&landing_path=%2Fpricing" data-pricing-cta data-cta-id="pricing_pro" data-cta-placement="pricing" data-tier="pro" data-plan-id="pro" data-billing-cycle="monthly" data-price="19" onclick="try{posthog.capture('pricing_cta_click',{cta:'start_pro',tier:'pro',placement:'pricing_page',price:19})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'start_pro',tier:'pro'}})}catch(_){}">Start Pro — $19/mo</a>
-      <p class="btn-sub">or $149/year (save 35%)</p>
+      <p class="btn-sub">or <a href="/checkout/pro?confirm=1&utm_source=pricing&utm_medium=hero_card_annual&utm_campaign=pricing_page&cta_id=pricing_pro_annual&cta_placement=pricing&plan_id=pro&billing_cycle=annual&landing_path=%2Fpricing" data-pricing-cta data-cta-id="pricing_pro_annual" data-cta-placement="pricing" data-tier="pro" data-plan-id="pro" data-billing-cycle="annual" data-price="149" onclick="try{posthog.capture('pricing_cta_click',{cta:'start_pro_annual',tier:'pro',placement:'pricing_page',price:149})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'start_pro_annual',tier:'pro'}})}catch(_){}" style="color:var(--cyan);text-decoration:none;font-weight:600;">$149/year (save 35%) →</a></p>
     </div>
 
     <div class="price-card enterprise-card" id="enterprise">
@@ -346,7 +346,7 @@ __GA_BOOTSTRAP__
     <div class="faq-list">
       <div class="faq-item">
         <div class="faq-q">What does Pro add over the free CLI?</div>
-        <div class="faq-a">Free gives you 5 captures/day and 3 active rules, running entirely on your machine. Pro is the hosted layer: unlimited captures, unlimited rules, lesson sync across machines, a dashboard without self-hosting, managed adapter updates, and DPO export. You're paying for infrastructure we run, not features we hide.</div>
+        <div class="faq-a">Free gives you 2 captures/day and 3 active rules, running entirely on your machine. Pro is the hosted layer: unlimited captures, unlimited rules, lesson sync across machines, a dashboard without self-hosting, managed adapter updates, and DPO export. You're paying for infrastructure we run, not features we hide.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q">Why not just use an enterprise AI control plane?</div>

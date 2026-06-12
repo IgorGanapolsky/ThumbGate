@@ -108,14 +108,74 @@ function parseCommandScore(output = '', status = 0, approvalRate = 0.5) {
   };
 }
 
+function parseCommandLine(cmdString) {
+  const args = [];
+  let current = '';
+  let inDoubleQuote = false;
+  let inSingleQuote = false;
+  let escaped = false;
+
+  for (let i = 0; i < cmdString.length; i++) {
+    const char = cmdString[i];
+
+    if (escaped) {
+      current += char;
+      escaped = false;
+    } else if (char === '\\') {
+      if (inSingleQuote) {
+        current += char;
+      } else {
+        escaped = true;
+      }
+    } else if (char === '"' && !inSingleQuote) {
+      inDoubleQuote = !inDoubleQuote;
+    } else if (char === "'" && !inDoubleQuote) {
+      inSingleQuote = !inSingleQuote;
+    } else if (char === ' ' && !inDoubleQuote && !inSingleQuote) {
+      if (current) {
+        args.push(current);
+        current = '';
+      }
+    } else {
+      current += char;
+    }
+  }
+  if (current) {
+    args.push(current);
+  }
+  return args;
+}
+
 function runCommand(command, {
   cwd = process.cwd(),
   env = process.env,
   timeoutMs = DEFAULT_TIMEOUT_MS,
 } = {}) {
   const startedAt = Date.now();
-  const result = spawnSync(command, [], {
-    shell: true,
+  const args = parseCommandLine(command);
+  const exec = args.shift();
+
+  const execBase = require('node:path').basename(exec).toLowerCase();
+  let safeExec;
+  if (exec === process.execPath) {
+    safeExec = process.execPath;
+  } else if (execBase === 'node' || execBase === 'node.exe') {
+    safeExec = process.execPath;
+  } else if (execBase === 'npm') {
+    safeExec = 'npm';
+  } else if (execBase === 'npm.cmd') {
+    safeExec = 'npm.cmd';
+  } else if (execBase === 'python3') {
+    safeExec = 'python3';
+  } else if (execBase === 'python') {
+    safeExec = 'python';
+  } else if (execBase === 'pytest') {
+    safeExec = 'pytest';
+  } else {
+    throw new Error(`Binary ${exec} is not authorized for workspace evolution.`);
+  }
+
+  const result = spawnSync(safeExec, args, {
     cwd,
     env,
     encoding: 'utf8',

@@ -282,3 +282,49 @@ describe('vector-store — fallback profile', () => {
     }
   });
 });
+
+describe('vector-store — Core AI embedding provider', () => {
+  it('calls Core AI local service and returns vector when coreai provider is enabled', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-test-coreai-'));
+    const originalFetch = global.fetch;
+    const originalPlatform = process.platform;
+    try {
+      Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true });
+      process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+      process.env.THUMBGATE_EMBED_PROVIDER = 'coreai';
+      delete process.env.THUMBGATE_VECTOR_STUB_EMBED;
+      delete require.cache[require.resolve('../scripts/vector-store')];
+      const vectorStore = require('../scripts/vector-store');
+
+      global.fetch = async (url) => {
+        if (url.includes('/embed')) {
+          return {
+            ok: true,
+            json: async () => ({ embedding: Array(384).fill(0.1) }),
+          };
+        }
+        return { ok: false };
+      };
+
+      vectorStore.setLanceLoaderForTests(async () => ({
+        connect: async () => ({
+          tableNames: async () => [],
+          createTable: async () => ({
+            add: async () => {},
+          }),
+        }),
+      }));
+
+      await vectorStore.upsertFeedback(makeFeedbackEvent('fb_coreai', 'coreai text'));
+      const profile = vectorStore.getLastEmbeddingProfile();
+      assert.equal(profile.source, 'local-coreai');
+      assert.equal(profile.activeProfile.id, 'coreai');
+    } finally {
+      Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
+      global.fetch = originalFetch;
+      delete process.env.THUMBGATE_EMBED_PROVIDER;
+      delete require.cache[require.resolve('../scripts/vector-store')];
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+});

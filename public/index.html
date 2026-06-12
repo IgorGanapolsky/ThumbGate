@@ -11,8 +11,8 @@ __GOOGLE_SITE_VERIFICATION_META__
 <link rel="alternate icon" type="image/svg+xml" href="/assets/brand/thumbgate-mark.svg">
 <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
 <meta property="og:image" content="/og.png">
-<title>ThumbGate — Stop paying for the same AI mistake twice</title>
-<meta name="description" content="Stop paying for the same AI mistake twice. ThumbGate is machine-speed pre-action defense for AI coding agents and vibe coding workflows: 👍 thumbs up and 👎 thumbs down become history-aware lessons, shared lessons and org visibility, actionable remediations, agent surface inventory, and Pre-Action Checks that block repeat mistakes before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode.">
+<title>ThumbGate — Pre-action checks for AI coding agents</title>
+<meta name="description" content="Stripe Connect integration engineering for ticketing and marketplace platforms — Pretix plugin shipped to Hilltown Media. ThumbGate is also the pre-action governance runtime for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI): 👍 thumbs up and 👎 thumbs down feedback become history-aware lessons, shared lessons and org visibility, and PreToolUse checks that block repeated mistakes before code, money, or customer systems change. Perfect for vibe coding and human-in-the-loop workflows.">
 <meta property="og:title" content="ThumbGate — Stop paying for the same AI mistake twice">
 <meta property="og:description" content="Frontier LLMs are expensive, opaque, and unreliable in production. ThumbGate gates risky agent actions before they run: workflow shape, inspection evidence, token budget, and repeated-failure memory in one pre-action check.">
 <meta property="og:type" content="website">
@@ -27,7 +27,7 @@ __GOOGLE_SITE_VERIFICATION_META__
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
 <!-- Privacy-friendly analytics by Plausible -->
-<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.tagged-events.js"></script>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script>
 __GA_BOOTSTRAP__
 
 <script>
@@ -37,6 +37,33 @@ __GA_BOOTSTRAP__
   const serverAcquisitionId = '__SERVER_ACQUISITION_ID__';
   const serverTelemetryCaptured = '__SERVER_TELEMETRY_CAPTURED__' === 'true';
   const proPriceDollars = Number('__PRO_PRICE_DOLLARS__') || 19;
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Igor Ganapolsky",
+  "url": "https://github.com/IgorGanapolsky",
+  "jobTitle": "Senior Mobile & AI Engineer; Stripe Connect specialist",
+  "worksFor": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "knowsAbout": [
+    "Stripe Connect",
+    "Pretix plugin engineering",
+    "Marketplace payments architecture",
+    "AI agent governance",
+    "Pre-action checks for AI coding agents"
+  ],
+  "sameAs": [
+    "https://github.com/IgorGanapolsky",
+    "https://www.npmjs.com/package/thumbgate"
+  ],
+  "mainEntityOfPage": "https://thumbgate.ai/learn/pretix-stripe-connect-marketplaces"
+}
 </script>
 
 <script type="application/ld+json">
@@ -728,9 +755,16 @@ __GA_BOOTSTRAP__
 <!-- HERO -->
 <section class="hero">
   <div class="container">
-    <div class="hero-badge">👍 👎 Local-first · open-source</div>
-    <h1>The Infrastructure Firewall for AI Coding Agents.</h1>
-    <p class="hero-lede">When your coding agent tries to run <strong>rm -rf</strong>, force-push to main, leak an API key, or DROP a production table, ThumbGate blocks that exact tool call in the PreToolUse hook — on your machine, before the shell runs it. Thumbs-down a mistake once and it becomes a prevention rule, so the agent stops repeating it. No server, no gateway, no waiting on an enterprise rollout.</p>
+    <div class="hero-badge">👍 👎 Local-first · open-source · Pro proof when it matters</div>
+    <h1>Stop AI agents before they spend money, leak secrets, or break production.</h1>
+    <p class="hero-lede">Claude Code, Cursor, Codex, Gemini CLI, and MCP tools now touch terminals, repos, databases, SaaS APIs, and cloud systems. ThumbGate checks the next tool call before it runs, blocks repeated failures from your thumbs-down feedback, and gives paid operators proof, sync, recall, and exports when local rules become business-critical.</p>
+
+    <div class="hero-signals" aria-label="June 2026 buyer signals">
+      <a class="signal-pill signal-down" href="#june-2026-proof">MCP tool risk</a>
+      <a class="signal-pill" href="#june-2026-proof">Managed-agent rollout</a>
+      <a class="signal-pill" href="#june-2026-proof">Token spend pressure</a>
+      <a class="signal-pill signal-up" href="#pricing">Free wedge, paid proof</a>
+    </div>
 
     <div class="hero-proof-card" aria-label="ThumbGate blocking dangerous AI agent commands in real time">
       <img src="/media/thumbgate-demo.gif" alt="ThumbGate blocking an AI agent's rm -rf, git push --force, and chmod 777 in real time, while letting safe commands through" style="width:100%;display:block;border-radius:8px;" loading="lazy" />
@@ -738,24 +772,24 @@ __GA_BOOTSTRAP__
 
     <div class="hero-actions">
       <a href="/checkout/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_upgrade&cta_id=hero_start_pro&cta_placement=hero&plan_id=pro&landing_path=%2F" data-revenue-cta data-cta-id="hero_start_pro" data-cta-placement="hero" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);try{posthog.capture('hero_pro_checkout_click',{cta:'hero_start_pro',tier:'pro',price:19})}catch(_){}" class="btn-pro-page hero-pro hero-pro-primary">Start Pro — $19/mo</a>
-      <a href="#workflow-sprint-intake" onclick="try{posthog.capture('hero_sprint_click',{cta:'sprint_intake'})}catch(_){};sendFirstPartyTelemetry('hero_sprint_intake_started',{ctaId:'hero_workflow_sprint',ctaPlacement:'hero',offer:'workflow_sprint'});" class="btn-pro-page hero-pro">Talk to me — Workflow Hardening Sprint →</a>
-      <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="event.preventDefault(); navigator.clipboard.writeText('npx thumbgate init'); this.textContent='Copied ✓ — paste in your repo'; setTimeout(()=>{this.textContent='Install Free CLI'},2000); try{posthog.capture('hero_install_click',{cta:'install_cli'})}catch(_){}" class="btn-gpt-page btn-install-hero" title="Click to copy: npx thumbgate init">Install Free CLI</a>
+      <a href="#workflow-sprint-intake" onclick="try{posthog.capture('hero_sprint_click',{cta:'sprint_intake'})}catch(_){};sendFirstPartyTelemetry('hero_sprint_intake_started',{ctaId:'hero_workflow_sprint',ctaPlacement:'hero',offer:'workflow_sprint'});" class="btn-pro-page hero-pro">Workflow Hardening Sprint →</a>
+      <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="event.preventDefault(); navigator.clipboard.writeText('npx thumbgate init'); this.textContent='Copied ✓ — paste in your repo'; setTimeout(()=>{this.textContent='Install Free CLI'},2000); try{posthog.capture('hero_install_click',{cta:'install_cli'})}catch(_){}" class="btn-free btn-install-hero" title="Click to copy: npx thumbgate init">Install Free CLI</a>
     </div>
 
     <div class="offer-router" aria-label="Choose the right ThumbGate path">
       <div class="offer-route primary">
         <strong>Solo operator: Start Pro</strong>
-        <p>Sync, proof, exports.</p>
+        <p>Unlimited rules, recall, sync, proof, exports.</p>
         <a href="/checkout/pro?utm_source=website&utm_medium=offer_router&cta_id=router_start_pro&cta_placement=offer_router&plan_id=pro" data-revenue-cta data-cta-id="router_start_pro" data-cta-placement="offer_router" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);">Pay $19/mo with Stripe →</a>
       </div>
       <div class="offer-route">
-        <strong>Enterprise: Start with intake</strong>
-        <p>Shared enforcement, scoped.</p>
+        <strong>Enterprise workflow: Start with intake</strong>
+        <p>One repeated failure, one owner, one proof plan.</p>
         <a href="#workflow-sprint-intake" onclick="sendFirstPartyTelemetry('workflow_sprint_intake_started',{ctaId:'router_workflow_sprint',ctaPlacement:'offer_router',offer:'workflow_sprint'});">Talk to us →</a>
       </div>
       <div class="offer-route">
         <strong>Still evaluating: Free CLI</strong>
-        <p>Local proof first.</p>
+        <p>2 captures/day, 3 active rules. Enough to prove one blocked repeat.</p>
         <button data-router-install onclick="copyInstall(this)"><span class="copy-hint">Copy npx thumbgate init</span></button>
       </div>
     </div>
@@ -837,6 +871,35 @@ __GA_BOOTSTRAP__
     <h2>“Why not just write my own PreToolUse hooks?”</h2>
     <p class="hero-lede" style="max-width:760px;margin:0 auto 18px;">You can — on one machine, for one agent, until the next breaking change. ThumbGate is that idea, maintained: a 👎 becomes a rule that <strong>propagates across every agent</strong> — Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — and every machine, with adapters kept current so you’re not patching shell scripts each release. Hand-written hooks don’t learn, don’t sync, and don’t survive a teammate’s laptop.</p>
     <p><a href="/compare/claude-code-hooks">See ThumbGate vs. hand-written hooks →</a></p>
+  </div>
+</section>
+
+<section class="compatibility" id="june-2026-proof">
+  <div class="container">
+    <div class="section-label">June 2026 Market Signal</div>
+    <h2 class="section-title">The market moved from “agents can code” to “who is allowed to let agents act?”</h2>
+    <p style="text-align:center;font-size:16px;color:var(--text-muted);max-width:900px;margin:0 auto 26px;line-height:1.7;">The high-ROI buyer story is not another chatbot memory claim. June 2026 coverage is pushing the same pattern from multiple directions: tool lockdown, MCP security, managed agents, context budgets, and agent-authored production code all need pre-action governance at the execution boundary.</p>
+    <div class="agent-grid">
+      <div class="agent-card">
+        <h3>MCP and tool lockdown</h3>
+        <p>As MCP servers and hosted tools spread, the failure mode is no longer just a bad answer. It is an agent calling the wrong tool with real developer permissions. ThumbGate sells the local allow/block layer before the tool call executes.</p>
+      </div>
+      <div class="agent-card">
+        <h3>Managed agents need receipts</h3>
+        <p>Managed background agents can multiply output, but every extra autonomous run needs evidence, rollback boundaries, and approval rules. ThumbGate turns “agent did work” into “this exact risky action was allowed or blocked for this reason.”</p>
+      </div>
+      <div class="agent-card">
+        <h3>Tokenmaxxing backlash</h3>
+        <p>Long-context agents are expensive when they repeatedly reload irrelevant history. ThumbGate keeps paid value above the free wedge with recall, search, context gating, and proof exports instead of dumping everything into every prompt.</p>
+      </div>
+      <div class="agent-card">
+        <h3>Production code by AI</h3>
+        <p>When teams claim most new production code is AI-authored, the real enterprise question becomes auditability. ThumbGate maps corrections to prevention rules, then records the enforcement evidence reviewers need.</p>
+      </div>
+    </div>
+    <div style="margin:22px auto 0;max-width:900px;border:1px solid rgba(74,222,128,0.26);border-radius:8px;background:rgba(74,222,128,0.07);padding:16px 18px;color:var(--text-muted);">
+      <strong style="color:var(--green);">Data-science posture:</strong> use the free CLI as acquisition, treat Pro checkout starts and workflow-intake submissions as intent, and promote only the offer whose lower credible conversion bound beats zero. With the current low-traffic data, the next experiment should optimize clarity and qualified intake before scaling paid traffic.
+    </div>
   </div>
 </section>
 
@@ -923,6 +986,7 @@ __GA_BOOTSTRAP__
       <ul style="margin:0;padding-left:20px;color:var(--text-muted);line-height:1.7;">
         <li><strong>Agent security is now mainstream risk.</strong> Coding agents run shell commands, write files, query databases, and chain actions with developer permissions, so unattended autonomy needs a local policy boundary.</li>
         <li><strong>MCP adoption is accelerating.</strong> More tools are becoming agent-callable through shared protocols, which means one cross-agent governance layer beats one-off prompt rules per app.</li>
+        <li><strong>Managed-agent output needs audit evidence.</strong> Background agents, subagents, and workflow runners can ship more work, but buyers need receipts for what was blocked, approved, and verified.</li>
         <li><strong>Repeated failures waste cash and trust.</strong> Every repeat burns tokens, review time, and release confidence. ThumbGate turns the first correction into a reusable prevention check.</li>
       </ul>
       <p style="margin:12px 0 0;font-size:13px;color:var(--text-dim);">Sources to verify the market timing: <a href="https://www.docker.com/blog/ai-coding-agent-horror-stories-security-risks/" target="_blank" rel="noopener" style="color:var(--cyan);">Docker on AI coding agent security risks</a>, <a href="https://www.techradar.com/pro/how-ai-agents-are-wrecking-havoc-in-legacy-security-setups-and-enterprises-are-catching-up" target="_blank" rel="noopener" style="color:var(--cyan);">TechRadar on enterprise agent security pressure</a>, and <a href="https://www.techradar.com/pro/zendesk-becomes-the-latest-to-adopt-mcp-to-futureproof-customers-in-the-ai-first-era" target="_blank" rel="noopener" style="color:var(--cyan);">current MCP adoption coverage</a>.</p>
@@ -1398,7 +1462,7 @@ __GA_BOOTSTRAP__
         </thead>
         <tbody>
           <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Local PreToolUse enforcement (all agents)</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
-          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Feedback captures</td><td style="text-align:center;border-bottom:1px solid var(--border);">5/day (25 total)</td><td style="text-align:center;border-bottom:1px solid var(--border);">Unlimited</td><td style="text-align:center;border-bottom:1px solid var(--border);">Unlimited</td></tr>
+          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Feedback captures</td><td style="text-align:center;border-bottom:1px solid var(--border);">2/day (10 total)</td><td style="text-align:center;border-bottom:1px solid var(--border);">Unlimited</td><td style="text-align:center;border-bottom:1px solid var(--border);">Unlimited</td></tr>
           <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Active auto-promoted prevention rules</td><td style="text-align:center;border-bottom:1px solid var(--border);">3</td><td style="text-align:center;border-bottom:1px solid var(--border);">Unlimited</td><td style="text-align:center;border-bottom:1px solid var(--border);">Unlimited</td></tr>
           <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Lesson recall + search across sessions</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
           <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Personal dashboard + DPO export</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
@@ -1416,9 +1480,9 @@ __GA_BOOTSTRAP__
         <div class="tier" style="color:var(--cyan);">Free</div>
         <div class="price">$0</div>
         <div class="price-sub">Block repeated mistakes daily. Forever free for solo devs.</div>
-        <p style="font-size:13px;color:#aaa;margin-bottom:16px;">5 captures/day, 3 active rules. Enough to see the value — upgrade when you need more.</p>
+        <p style="font-size:13px;color:#aaa;margin-bottom:16px;">2 captures/day, 3 active rules. Enough to see the value — upgrade when you need more.</p>
         <ul>
-          <li><strong>5 feedback captures/day</strong> — 25 total on Free, then Pro for unlimited</li>
+          <li><strong>2 feedback captures/day</strong> — 10 total on Free, then Pro for unlimited</li>
           <li>Up to 3 active auto-promoted prevention rules</li>
           <li>No recall or lesson search</li>
           <li>No exports (DPO, Databricks, HuggingFace)</li>
@@ -1484,7 +1548,7 @@ __GA_BOOTSTRAP__
           </tr>
           <tr>
             <td><strong>Feedback captures</strong></td>
-            <td>5/day, 25 total</td>
+            <td>2/day, 10 total</td>
             <td>Unlimited</td>
             <td>Unlimited, shared across the org; custom retention and evidence policy</td>
           </tr>
@@ -1628,11 +1692,11 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How do we trust a new package release?</div>
-        <div class="faq-a">ThumbGate does not rely on vibes. Release-relevant PRs need a Changeset, SemVer rules keep version bumps honest, sync checks keep manifests aligned, proof lanes run before merge, and the exact main-branch merge commit is verified before the work is called done.</div>
+        <div class="faq-a">ThumbGate does not rely on vibes, making it the safety net for vibe coding. Release-relevant PRs need a Changeset, SemVer rules keep version bumps honest, sync checks keep manifests aligned, proof lanes run before merge, and the exact main-branch merge commit is verified before the work is called done.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Do I need a cloud account?</div>
-        <div class="faq-a">No. Free keeps local enforcement on your machine with 5 feedback captures/day, up to 3 active auto-promoted prevention rules, built-in safety checks, and hook blocking. Recall, lesson search, unlimited rules, unlimited captures, and exports open up on Pro. No cloud account is required. The business starts when a team wants shared rules, approval boundaries, hosted review views, org dashboard visibility, and proof that survives handoffs. Pro is the optional solo side lane for a personal dashboard, DPO export, and team lesson export/import — share lessons across projects so one team's mistakes become every team's prevention rules.</div>
+        <div class="faq-a">No. Free keeps local enforcement on your machine with 2 feedback captures/day, up to 3 active auto-promoted prevention rules, built-in safety checks, and hook blocking. Recall, lesson search, unlimited rules, unlimited captures, and exports open up on Pro. No cloud account is required. The business starts when a team wants shared rules, approval boundaries, hosted review views, org dashboard visibility, and proof that survives handoffs. Pro is the optional solo side lane for a personal dashboard, DPO export, and team lesson export/import — share lessons across projects so one team's mistakes become every team's prevention rules.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What if my thumbs-down is vague?</div>
@@ -1714,7 +1778,7 @@ __GA_BOOTSTRAP__
 
 <!-- STICKY BOTTOM CTA -->
 <div class="sticky-cta" id="sticky-cta">
-  <span class="sticky-cta-text"><strong>npx thumbgate init</strong> — free CLI, zero friction</span>
+  <span class="sticky-cta-text"><strong>Pro unlocks recall, sync, exports</strong> — free CLI is capped at 2 captures/day</span>
   <div class="hero-install" onclick="copyInstall(this)" title="Click to copy" style="margin-bottom:0;padding:8px 16px;font-size:13px;">
     <span class="prompt">$</span>
     <span class="cmd">npx thumbgate init</span>

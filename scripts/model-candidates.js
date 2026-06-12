@@ -251,10 +251,22 @@ function buildReadinessNotes(candidate, workloadId) {
 
 function recommendCandidates(options = {}) {
   const catalog = options.catalog || loadCatalog(options.catalogPath);
-  const workloadId = normalizeSlug(options.workload, DEFAULT_WORKLOAD);
-  const workload = catalog.workloads[workloadId];
-  if (!workload) {
-    throw new Error(`Unknown workload "${workloadId}". Valid workloads: ${Object.keys(catalog.workloads).join(', ')}`);
+  let workload;
+  let workloadId;
+
+  if (options.workloadFile && fs.existsSync(options.workloadFile)) {
+    try {
+      workload = JSON.parse(fs.readFileSync(options.workloadFile, 'utf8'));
+      workloadId = workload.id || 'custom-workload';
+    } catch (err) {
+      throw new Error(`Failed to parse custom workload file: ${err.message}`);
+    }
+  } else {
+    workloadId = normalizeSlug(options.workload, DEFAULT_WORKLOAD);
+    workload = catalog.workloads[workloadId];
+    if (!workload) {
+      throw new Error(`Unknown workload "${workloadId}". Valid workloads: ${Object.keys(catalog.workloads).join(', ')}`);
+    }
   }
 
   const scopedCandidates = listCandidates({
@@ -295,6 +307,7 @@ function buildModelCandidatesReport(options = {}) {
   const recommendation = recommendCandidates({
     catalog,
     workload: options.workload,
+    workloadFile: options.workloadFile,
     provider: options.provider,
     family: options.family,
     gateway: options.gateway,

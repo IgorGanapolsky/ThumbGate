@@ -2848,3 +2848,114 @@ test('evaluateGates matches require-review-for-screen-ui-interaction template', 
     cleanupStateFiles();
   }
 });
+
+test('evaluateGates matches on-demand-careful-mode when careful_mode constraint or env is set', () => {
+  cleanupStateFiles();
+  const tmpConfig = makeTempPath('careful-test.json');
+  fs.writeFileSync(tmpConfig, JSON.stringify({
+    version: 1,
+    gates: [
+      {
+        id: "on-demand-careful-mode",
+        layer: "Execution",
+        toolNames: ["Bash"],
+        pattern: "(rm\\s+-rf|drop\\s+table|force-push|git\\s+push\\s+-[fF]|git\\s+push\\s+--force|kubectl\\s+delete)",
+        action: "block",
+        when: { "constraints": { "careful_mode": true } },
+        message: "Careful mode is active. Dangerous command is blocked.",
+        severity: "critical"
+      }
+    ]
+  }));
+
+  const originalEnvVal = process.env.THUMBGATE_CAREFUL_MODE;
+  try {
+    // 1. Without env or constraint: allow (no deny)
+    let result = evaluateGates('Bash', { command: 'rm -rf /some/path' }, tmpConfig);
+    assert.ok(!result || result.decision !== 'deny');
+
+    // 2. With env set: block
+    process.env.THUMBGATE_CAREFUL_MODE = 'true';
+    result = evaluateGates('Bash', { command: 'rm -rf /some/path' }, tmpConfig);
+    assert.ok(result);
+    assert.equal(result.decision, 'deny');
+    assert.equal(result.gate, 'on-demand-careful-mode');
+
+    // 3. With env set to non-destructive command: allow (no deny)
+    result = evaluateGates('Bash', { command: 'ls -la' }, tmpConfig);
+    assert.ok(!result || result.decision !== 'deny');
+
+    // 4. With env unset, but constraint set: block
+    delete process.env.THUMBGATE_CAREFUL_MODE;
+    setConstraint('careful_mode', true);
+    result = evaluateGates('Bash', { command: 'rm -rf /some/path' }, tmpConfig);
+    assert.ok(result);
+    assert.equal(result.decision, 'deny');
+  } finally {
+    if (originalEnvVal !== undefined) {
+      process.env.THUMBGATE_CAREFUL_MODE = originalEnvVal;
+    } else {
+      delete process.env.THUMBGATE_CAREFUL_MODE;
+    }
+    fs.rmSync(tmpConfig, { force: true });
+    cleanupStateFiles();
+  }
+});
+
+test('evaluateGates matches on-demand-freeze-mode when freeze_mode or env is set', () => {
+  cleanupStateFiles();
+  const tmpConfig = makeTempPath('freeze-test.json');
+  fs.writeFileSync(tmpConfig, JSON.stringify({
+    version: 1,
+    gates: [
+      {
+        id: "on-demand-freeze-mode",
+        layer: "Decisions",
+        toolNames: ["Edit", "Write", "MultiEdit"],
+        pattern: ".*",
+        action: "block",
+        when: { "constraints": { "freeze_mode": true } },
+        message: "Freeze mode is active. Edits outside the frozen directory are blocked.",
+        severity: "high"
+      }
+    ]
+  }));
+
+  const originalEnvVal = process.env.THUMBGATE_FREEZE_PATHS;
+  try {
+    // 1. Without env or constraint: allow edit (no deny)
+    let result = evaluateGates('Edit', { file_path: 'src/main.js', old_string: 'foo', new_string: 'bar' }, tmpConfig);
+    assert.ok(!result || result.decision !== 'deny');
+
+    // 2. With env set (freeze to tests/ only) and edit is in src/: block
+    process.env.THUMBGATE_FREEZE_PATHS = 'tests/**';
+    result = evaluateGates('Edit', { file_path: 'src/main.js', old_string: 'foo', new_string: 'bar' }, tmpConfig);
+    assert.ok(result);
+    assert.equal(result.decision, 'deny');
+    assert.equal(result.gate, 'on-demand-freeze-mode');
+
+    // 3. With env set (freeze to tests/ only) and edit is in tests/: allow (no deny)
+    result = evaluateGates('Edit', { file_path: 'tests/main.test.js', old_string: 'foo', new_string: 'bar' }, tmpConfig);
+    assert.ok(!result || result.decision !== 'deny');
+
+    // 4. With env unset, but constraint set (freeze to src/): block edit to tests/
+    delete process.env.THUMBGATE_FREEZE_PATHS;
+    setConstraint('freeze_mode', 'src/**');
+    result = evaluateGates('Edit', { file_path: 'tests/main.test.js', old_string: 'foo', new_string: 'bar' }, tmpConfig);
+    assert.ok(result);
+    assert.equal(result.decision, 'deny');
+
+    // 5. With constraint set (freeze to src/): allow edit to src/ (no deny)
+    result = evaluateGates('Edit', { file_path: 'src/main.js', old_string: 'foo', new_string: 'bar' }, tmpConfig);
+    assert.ok(!result || result.decision !== 'deny');
+  } finally {
+    if (originalEnvVal !== undefined) {
+      process.env.THUMBGATE_FREEZE_PATHS = originalEnvVal;
+    } else {
+      delete process.env.THUMBGATE_FREEZE_PATHS;
+    }
+    fs.rmSync(tmpConfig, { force: true });
+    cleanupStateFiles();
+  }
+});
+

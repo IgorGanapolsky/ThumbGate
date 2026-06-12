@@ -1637,7 +1637,11 @@ function readRecentFeedbackEntries(feedbackDir, signal, windowMs, limit = 5, opt
       })
       .reverse()
       .map((r) => {
-        const out = { timestamp: r.timestamp, context: bestFeedbackDescription(r) };
+        const out = {
+          timestamp: r.timestamp,
+          context: bestFeedbackDescription(r),
+          tags: Array.isArray(r.tags) ? r.tags : []
+        };
         if (opts.includeSignal) out.signal = r.signal;
         return out;
       });
@@ -1676,6 +1680,24 @@ const FEEDBACK_LIST_LABELS = Object.freeze({
   positive: 'Recent wins',
 });
 
+function formatChatTimestamp(isoString) {
+  if (!isoString) return 'unknown time';
+  try {
+    const d = new Date(isoString);
+    if (Number.isNaN(d.getTime())) return isoString;
+    const pad = (n) => String(n).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const min = pad(d.getMinutes());
+    const ss = pad(d.getSeconds());
+    return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+  } catch {
+    return isoString;
+  }
+}
+
 function buildFeedbackSection({ ctx, intent, feedbackDir, approval, lessonPipeline }) {
   const signal = detectFeedbackSignalFromPrompt(ctx.prompt);
 
@@ -1699,7 +1721,13 @@ function buildFeedbackSection({ ctx, intent, feedbackDir, approval, lessonPipeli
     if (entries.length) {
       lines.push(`${FEEDBACK_LIST_LABELS[signal] || 'Recent feedback'} (${intent.windowLabel}):`);
       for (const e of entries) {
-        lines.push(`  • ${(e.timestamp || '').slice(0, 10)} — ${e.context}`);
+        const tsFormatted = formatChatTimestamp(e.timestamp);
+        const signalLabel = e.signal ? ` [${e.signal}]` : '';
+        const tagsList = Array.isArray(e.tags)
+          ? e.tags.filter(t => !['audit-trail', 'auto-capture'].includes(t))
+          : [];
+        const tagsStr = tagsList.length ? ` (${tagsList.join(', ')})` : '';
+        lines.push(`  • ${tsFormatted}${signalLabel}${tagsStr} — ${e.context}`);
       }
     } else {
       lines.push(`No ${signal || 'feedback'} entries found ${intent.windowLabel}.`);
@@ -2576,7 +2604,7 @@ function stripTrailingSlashes(value) {
   return input.slice(0, end);
 }
 
-function normalizePublicMarketingHtml(html, runtimeConfig) {
+function normalizePublicMarketingHtml(html, runtimeConfig, requestHost) {
   const appOrigin = runtimeConfig?.appOrigin
     ? stripTrailingSlashes(runtimeConfig.appOrigin)
     : '';
@@ -2585,10 +2613,13 @@ function normalizePublicMarketingHtml(html, runtimeConfig) {
   let output = String(html);
   output = output.replaceAll(DEFAULT_PUBLIC_APP_ORIGIN, appOrigin);
   try {
-    const host = new URL(appOrigin).host;
+    const host = requestHost || new URL(appOrigin).host;
     const plausibleDomain = resolvePlausibleDataDomain({ host });
     output = output.replaceAll(
       'data-domain="thumbgate-production.up.railway.app"',
+      `data-domain="${escapeHtmlAttribute(plausibleDomain)}"`
+    ).replaceAll(
+      'data-domain="thumbgate.ai"',
       `data-domain="${escapeHtmlAttribute(plausibleDomain)}"`
     );
   } catch {
@@ -2638,7 +2669,7 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
     '__GTM_PLAN_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md',
     '__GITHUB_URL__': 'https://github.com/IgorGanapolsky/ThumbGate',
     '__POSTHOG_API_KEY__': runtimeConfig.posthogApiKey || '',
-  }), runtimeConfig);
+  }), runtimeConfig, pageContext.requestHost);
 }
 
 function loadLandingPageHtml(runtimeConfig, pageContext = {}) {
@@ -2655,6 +2686,14 @@ function loadPricingPageHtml(runtimeConfig, pageContext = {}) {
 
 function loadAboutPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(ABOUT_PAGE_PATH, runtimeConfig, pageContext);
+}
+
+function loadGuidePageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(GUIDE_PAGE_PATH, runtimeConfig, pageContext);
+}
+
+function loadLearnPageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(LEARN_PAGE_PATH, runtimeConfig, pageContext);
 }
 
 function readOptionalPublicTemplate(filePath) {
@@ -3442,11 +3481,13 @@ function servePublicMarketingPage({
     }, req.headers, 'seo_landing_view');
   }
 
+  const requestHost = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
   const html = renderHtml(hostedConfig, {
     serverVisitorId: journeyState.visitorId,
     serverSessionId: journeyState.sessionId,
     serverAcquisitionId: journeyState.acquisitionId,
     serverTelemetryCaptured: landingTelemetryCaptured,
+    requestHost,
   });
 
   sendHtml(
@@ -4525,6 +4566,15 @@ function normalizeJobIdFromPath(pathname, suffix = '') {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function normalizeDocumentIdFromPath(pathname) {
   const match = pathname.match(/^\/v1\/documents\/([^/]+)$/);
   return match ? decodeURIComponent(match[1]) : null;
@@ -5317,10 +5367,19 @@ async function addContext(){
 
     if (isGetLikeRequest && (pathname === '/guide' || pathname === '/guide.html')) {
       try {
-        const html = fs.readFileSync(GUIDE_PAGE_PATH, 'utf-8');
-        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
-      } catch {
-        sendJson(res, 404, { error: 'Guide page not found' });
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadGuidePageHtml,
+          extraTelemetry: {
+            pageType: 'guide',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Guide page unavailable');
       }
       return;
     }
@@ -5380,10 +5439,19 @@ async function addContext(){
 
     if (isGetLikeRequest && (pathname === '/learn' || pathname === '/learn.html')) {
       try {
-        const html = fs.readFileSync(LEARN_PAGE_PATH, 'utf-8');
-        sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
-      } catch {
-        sendJson(res, 404, { error: 'Learn page not found' });
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadLearnPageHtml,
+          extraTelemetry: {
+            pageType: 'learn',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Learn page unavailable');
       }
       return;
     }
@@ -5580,7 +5648,8 @@ async function addContext(){
           sendJson(res, 403, { error: 'Forbidden' });
           return;
         }
-        const html = fs.readFileSync(articlePath, 'utf-8');
+        const requestHost = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+        const html = normalizePublicMarketingHtml(fs.readFileSync(articlePath, 'utf-8'), hostedConfig, requestHost);
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch {
         sendJson(res, 404, { error: 'Article not found' });
@@ -5593,7 +5662,8 @@ async function addContext(){
         const slug = normalizePublicPageSlug(pathname.replace('/guides/', ''));
         const guidePath = path.join(GUIDES_DIR, `${slug}.html`);
         if (!guidePath.startsWith(GUIDES_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
-        const html = fs.readFileSync(guidePath, 'utf-8');
+        const requestHost = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+        const html = normalizePublicMarketingHtml(fs.readFileSync(guidePath, 'utf-8'), hostedConfig, requestHost);
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch { sendJson(res, 404, { error: 'Guide not found' }); }
       return;
@@ -5604,7 +5674,8 @@ async function addContext(){
         const slug = normalizePublicPageSlug(pathname.replace('/compare/', ''));
         const comparePath = path.join(COMPARE_DIR, `${slug}.html`);
         if (!comparePath.startsWith(COMPARE_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
-        const html = fs.readFileSync(comparePath, 'utf-8');
+        const requestHost = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+        const html = normalizePublicMarketingHtml(fs.readFileSync(comparePath, 'utf-8'), hostedConfig, requestHost);
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch { sendJson(res, 404, { error: 'Comparison not found' }); }
       return;
@@ -5615,7 +5686,8 @@ async function addContext(){
         const slug = normalizePublicPageSlug(pathname.replace('/use-cases/', ''));
         const useCasePath = path.join(USE_CASES_DIR, `${slug}.html`);
         if (!useCasePath.startsWith(USE_CASES_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
-        const html = fs.readFileSync(useCasePath, 'utf-8');
+        const requestHost = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+        const html = normalizePublicMarketingHtml(fs.readFileSync(useCasePath, 'utf-8'), hostedConfig, requestHost);
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch { sendJson(res, 404, { error: 'Use case not found' }); }
       return;
@@ -6117,12 +6189,13 @@ async function addContext(){
       // Public-facing broker lead-flow audit landing page. Wedge for the
       // real-estate broker outreach. Static HTML served from src/api/static.
       try {
+        const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
         const html = normalizePublicMarketingHtml(fillTemplate(fs.readFileSync(
           path.resolve(__dirname, '../../assets/static/broker-audit.html'),
           'utf8'
         ), {
           '__POSTHOG_API_KEY__': hostedConfig.posthogApiKey || '',
-        }), hostedConfig);
+        }), hostedConfig, host);
         if (isHeadRequest) {
           sendHtml(res, 200, html, {}, { headOnly: true });
           return;
@@ -8250,11 +8323,13 @@ ${hidden}
         const signal = parsed.searchParams.get('signal') || null;
         let results;
         try {
+          const requestFeedbackPaths = getRequestFeedbackPaths(req, parsed);
           results = searchThumbgate({
             query,
             limit: Number.isFinite(limit) ? limit : 10,
             source,
             signal,
+            feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
           });
         } catch (err) {
           throw createHttpError(400, err.message || 'Invalid ThumbGate search request');
@@ -8272,11 +8347,13 @@ ${hidden}
         const body = await parseJsonBody(req);
         let results;
         try {
+          const requestFeedbackPaths = getRequestFeedbackPaths(req, parsed);
           results = searchThumbgate({
             query: body.query || body.q || '',
             limit: body.limit,
             source: body.source,
             signal: body.signal,
+            feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
           });
         } catch (err) {
           throw createHttpError(400, err.message || 'Invalid ThumbGate search request');
@@ -8302,11 +8379,14 @@ ${hidden}
       {
         const documentId = normalizeDocumentIdFromPath(pathname);
         if (req.method === 'GET' && documentId) {
+          if (!/^[a-zA-Z0-9-_]+$/.test(documentId)) {
+            throw createHttpError(400, 'Invalid document ID format');
+          }
           const document = readImportedDocument(documentId, {
             feedbackDir: requestFeedbackDir,
           });
           if (!document) {
-            throw createHttpError(404, `Imported document not found: ${documentId}`);
+            throw createHttpError(404, `Imported document not found: ${escapeHtml(documentId)}`);
           }
           sendJson(res, 200, { document });
           return;

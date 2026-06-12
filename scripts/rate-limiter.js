@@ -17,8 +17,8 @@ const USAGE_FILE = path.join(process.env.HOME || '/tmp', '.thumbgate', 'usage-li
 // hit the wall within the first week, not the first quarter.
 // ──────────────────────────────────────────────────────────
 const FREE_TIER_LIMITS = {
-  capture_feedback:   { daily: 5,        lifetime: 25,       label: 'feedback captures (5/day, 25 total on free)' },
-  prevention_rules:   { daily: 2,        lifetime: 6,        label: 'prevention rules generated (2/day on free)' },
+  capture_feedback:   { daily: 2,        lifetime: 10,       label: 'feedback captures (2/day, 10 total on free)' },
+  prevention_rules:   { daily: 2,        lifetime: 3,        label: 'prevention rules generated (2/day on free)' },
   recall:             { daily: 0,        lifetime: 0,        label: 'recall queries (Pro only)' },
   search_lessons:     { daily: 0,        lifetime: 0,        label: 'lesson searches (Pro only)' },
   search_thumbgate:   { daily: 0,        lifetime: 0,        label: 'ThumbGate searches (Pro only)' },
@@ -29,12 +29,12 @@ const FREE_TIER_LIMITS = {
 };
 
 const FREE_TIER_MAX_GATES = 3; // 3 active prevention rules on free; Pro is unlimited
-const FREE_TIER_DAILY_BLOCKS = 3; // 3 gate blocks/day on free; after limit, deny → warn + upgrade CTA
+const FREE_TIER_DAILY_BLOCKS = 2; // 3 gate blocks/day on free; after limit, deny → warn + upgrade CTA
 
 const UPGRADE_MESSAGE = `Pro: ${PRO_PRICE_LABEL} — unlimited rules, recall, lesson search, dashboard, and exports: ${PRO_MONTHLY_PAYMENT_LINK}\n  Enterprise: ${ENTERPRISE_PRICE_LABEL} after workflow qualification.`;
 
 const PAYWALL_MESSAGES = {
-  capture_feedback: 'Free tier: 5 captures/day (25 total). Your feedback is stored locally — upgrade to capture unlimited.',
+  capture_feedback: 'Free tier: 2 captures/day (10 total). Your feedback is stored locally — upgrade to capture unlimited.',
   prevention_rules: 'Free tier includes 3 active prevention rules and 2 rule generations/day. Upgrade to Pro for unlimited rules.',
   recall: 'Recall is a Pro feature. Your past feedback is stored locally — upgrade to search and reuse it.',
   search_lessons: 'Lesson search is a Pro feature. Upgrade to find patterns in your agent\'s mistakes.',
@@ -153,12 +153,18 @@ function checkLimit(action, authContext) {
   const dailyCurrent = usage.counts[action] || 0;
   const lifetimeCurrent = usage.lifetime[action] || 0;
 
+  const isCapture = action === 'capture_feedback';
+  const monthlyLink = isCapture
+    ? 'https://buy.stripe.com/7sYfZhaiE1eSbO99uj3sI0d'
+    : PRO_MONTHLY_PAYMENT_LINK;
+  const upgradeMessage = `Pro: ${PRO_PRICE_LABEL} — unlimited rules, recall, lesson search, dashboard, and exports: ${monthlyLink}\n  Enterprise: ${ENTERPRISE_PRICE_LABEL} after workflow qualification.`;
+
   // Check lifetime limit first (the hard wall)
   if (lifetimeLimit !== Infinity && lifetimeCurrent >= lifetimeLimit) {
     const paywallMsg = PAYWALL_MESSAGES[action] || PAYWALL_MESSAGES.default;
     return {
       allowed: false,
-      message: `${paywallMsg}\n\n${UPGRADE_MESSAGE}`,
+      message: `${paywallMsg}\n\n${upgradeMessage}`,
       used: lifetimeCurrent,
       limit: lifetimeLimit,
       limitType: 'lifetime',
@@ -170,7 +176,7 @@ function checkLimit(action, authContext) {
     const paywallMsg = PAYWALL_MESSAGES[action] || PAYWALL_MESSAGES.default;
     return {
       allowed: false,
-      message: `Daily limit reached. ${paywallMsg}\n\n${UPGRADE_MESSAGE}`,
+      message: `Daily limit reached. ${paywallMsg}\n\n${upgradeMessage}`,
       used: dailyCurrent,
       limit: dailyLimit,
       limitType: 'daily',

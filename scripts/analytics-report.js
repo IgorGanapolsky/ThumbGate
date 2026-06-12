@@ -14,8 +14,16 @@ const PLAUSIBLE_URL = 'https://plausible.io/thumbgate-production.up.railway.app'
 const LANDING_PAGE = 'https://thumbgate-production.up.railway.app';
 
 function httpsGet(url) {
+  const headers = { 'User-Agent': 'thumbgate-analytics' };
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(url);
+  } catch (_) {}
+  if (parsedUrl && parsedUrl.hostname === 'api.github.com' && process.env.GITHUB_TOKEN) {
+    headers['Authorization'] = `token ${process.env.GITHUB_TOKEN}`;
+  }
   return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': 'thumbgate-analytics' } }, (res) => {
+    https.get(url, { headers }, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {

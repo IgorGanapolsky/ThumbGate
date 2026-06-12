@@ -12,6 +12,10 @@ ThumbGate is the local-first firewall for AI coding agents. It runs in the PreTo
 
 The product is a self-improving enforcement layer: thumbs-down feedback, prompt evaluation, and proof from prior runs become prevention rules that permanently stop repeated failures before the next tool call.
 
+<p align="center">
+  <img src="docs/media/thumbgate-demo.gif" alt="ThumbGate blocking an AI agent's dangerous commands (rm -rf, force-push, chmod 777) in real time, while letting safe commands through" width="820" />
+</p>
+
 ```
   Agent tries:   rm -rf tests/
   ThumbGate:     ⛔ BLOCKED — "Never delete test directories"
@@ -24,7 +28,7 @@ The product is a self-improving enforcement layer: thumbs-down feedback, prompt 
 npx thumbgate init   # auto-detects your agent, wires hooks, 30 seconds
 ```
 
-Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and any MCP-compatible agent. Free tier: 5 feedback captures/day (25 total) and up to 3 active auto-promoted prevention rules. [Pro: $19/mo or $149/yr](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme) — unlimited rules, history-aware lessons, feedback sessions, dashboard, DPO export. Enterprise (custom pricing, scoped after intake) adds a shared hosted lesson DB, org dashboard, and shared org-wide enforcement.
+Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and any MCP-compatible agent. Free tier: 2 feedback captures/day (10 total) and up to 3 active auto-promoted prevention rules. [Pro: $19/mo or $149/yr](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme) — unlimited rules, history-aware lessons, feedback sessions, dashboard, DPO export. Enterprise (custom pricing, scoped after intake) adds a shared hosted lesson DB, org dashboard, and shared org-wide enforcement.
 
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/thumbgate)](https://www.npmjs.com/package/thumbgate)
@@ -380,6 +384,8 @@ npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai -
 npx thumbgate native-messaging-audit  # inspect local browser bridges and extension hosts
 npx thumbgate dashboard --open                                  # open local project-scoped dashboard in browser
 thumbgate-dashboard                                             # standalone browser dashboard shortcut (run '/project:thumbgate-dashboard' in Claude/Grok)
+npx thumbgate check-update                                      # check if a new version is available on npm/GitHub
+npx thumbgate self-update                                       # update ThumbGate to the latest version globally
 npx thumbgate serve      # start MCP server on stdio
 npx thumbgate bench      # run reliability benchmark
 npx thumbgate bench --programbench-smoke  # include cleanroom whole-repo proof lane
@@ -420,7 +426,7 @@ If you change MCP or hook settings, restart the affected agent session so Claude
 | | Free | Pro ($19/mo) | Enterprise |
 |---|---|---|---|
 | Local CLI + enforced checks | ✅ | ✅ | ✅ |
-| Feedback captures | 5/day (25 total) | Unlimited | Unlimited |
+| Feedback captures | 2/day (10 total) | Unlimited | Unlimited |
 | Active auto-promoted prevention rules | 3 | Unlimited | Unlimited |
 | MCP agent integrations | All | All | All |
 | Personal dashboard | — | ✅ | ✅ |
@@ -434,7 +440,7 @@ If you change MCP or hook settings, restart the affected agent session so Claude
 | Compliance audit export | — | — | ✅ |
 | Dedicated onboarding + SLA | — | — | ✅ |
 
-The free tier gives you 5 feedback captures/day (25 total) and up to 3 active auto-promoted prevention rules — enough to make ThumbGate part of your daily flow before you upgrade. MCP integrations for all agents (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode) ship free.
+The free tier gives you 2 feedback captures/day (10 total) and up to 3 active auto-promoted prevention rules — enough to make ThumbGate part of your daily flow before you upgrade. MCP integrations for all agents (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode) ship free.
 
 Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recall, lesson search, DPO export, and a personal dashboard. Enterprise (custom pricing, scoped after intake) adds a shared hosted lesson DB, org dashboard, and shared enforcement across the org, plus regulatory gate templates (legal intake, financial compliance, healthcare), custom policy layers scoped to firm/practice-area, compliance audit export, and dedicated onboarding with SLA.
 
@@ -525,7 +531,7 @@ curl -X POST http://localhost:3456/v1/dpo/export \
 | Layer | Technology |
 |-------|-----------|
 | **Storage** | SQLite + FTS5, LanceDB vectors, JSONL logs |
-| **Capture** | 5/day, 25 total on Free; unlimited on Pro, Team, and Enterprise |
+| **Capture** | 2/day, 10 total on Free; unlimited on Pro, Team, and Enterprise |
 | **Intelligence** | MemAlign dual recall, Thompson Sampling |
 | **Enforcement** | PreToolUse hook engine, Checks config |
 | **Interfaces** | MCP stdio, HTTP API, CLI (Node.js >=18) |
@@ -613,7 +619,7 @@ Those are suggestions the agent can ignore. ThumbGate checks are enforced — th
 If it supports MCP or pre-action hooks, yes. Claude Code, Claude Desktop, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode all work out of the box.
 
 **Is it free?**
-The free tier gives you 5 feedback captures/day, 25 total captures, and up to 3 active auto-promoted prevention rules — enough for solo devs to prove a blocked repeat before upgrading. MCP integrations ship free for every agent.
+The free tier gives you 2 feedback captures/day, 10 total captures, and up to 3 active auto-promoted prevention rules — enough for solo devs to prove a blocked repeat before upgrading. MCP integrations ship free for every agent.
 
 Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recall, lesson search, and a personal dashboard. Enterprise (custom pricing, scoped after intake) adds a shared hosted lesson DB, org dashboard, and shared enforcement.
 

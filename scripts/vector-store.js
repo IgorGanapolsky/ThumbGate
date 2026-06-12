@@ -172,6 +172,30 @@ async function embedWithGemini(text, options = {}) {
   return values.map(Number);
 }
 
+async function embedWithCoreAI(text, options = {}) {
+  if (process.platform !== 'darwin') {
+    throw new Error('Core AI is only supported on macOS');
+  }
+  const endpoint = process.env.THUMBGATE_COREAI_ENDPOINT || 'http://localhost:8088';
+  try {
+    const res = await fetch(`${endpoint}/embed`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, options }),
+      signal: AbortSignal.timeout(2000),
+    });
+    if (res.ok) {
+      const payload = await res.json();
+      if (Array.isArray(payload.embedding)) {
+        return payload.embedding.map(Number);
+      }
+    }
+  } catch (err) {
+    throw new Error(`Core AI local service unavailable: ${err.message}`);
+  }
+  throw new Error('Core AI local service did not return a valid embedding');
+}
+
 async function embed(text, options = {}) {
   if (process.env.THUMBGATE_VECTOR_STUB_EMBED === 'true') {
     // Deterministic 384-dim unit vector: first element = 1.0, rest = 0.0
@@ -180,6 +204,26 @@ async function embed(text, options = {}) {
     return stub;
   }
   const geminiConfig = resolveGeminiEmbeddingConfig();
+  if (geminiConfig.provider === 'coreai') {
+    try {
+      const vector = await embedWithCoreAI(text, options);
+      _lastEmbeddingProfile = {
+        generatedAt: new Date().toISOString(),
+        source: 'local-coreai',
+        activeProfile: {
+          id: 'coreai',
+          model: 'Core AI local model',
+          outputDimensionality: vector.length,
+          task: options.task || 'code retrieval',
+          rationale: 'Local Core AI Apple Silicon accelerated path.',
+        },
+        fallbackUsed: false,
+      };
+      return vector;
+    } catch (coreaiError) {
+      console.warn(`Core AI embedding failed, falling back to local: ${coreaiError.message}`);
+    }
+  }
   if (geminiConfig.enabled) {
     try {
       const vector = await embedWithGemini(text, options);

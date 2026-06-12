@@ -377,6 +377,26 @@
       "message": "Self-protection: agent cannot modify hook registrations.",
       "severity": "critical",
       "compliance": ["NIST-AC-3", "OWASP-A01", "SOC2-CC6.1"]
+    },
+    {
+      "id": "on-demand-careful-mode",
+      "layer": "Execution",
+      "toolNames": ["Bash"],
+      "pattern": "(rm\\s+-rf|drop\\s+table|force-push|git\\s+push\\s+-[fF]|git\\s+push\\s+--force|kubectl\\s+delete)",
+      "action": "block",
+      "when": { "constraints": { "careful_mode": true } },
+      "message": "Careful mode is active. Dangerous command is blocked.",
+      "severity": "critical"
+    },
+    {
+      "id": "on-demand-freeze-mode",
+      "layer": "Decisions",
+      "toolNames": ["Edit", "Write", "MultiEdit"],
+      "pattern": ".*",
+      "action": "block",
+      "when": { "constraints": { "freeze_mode": true } },
+      "message": "Freeze mode is active. Edits outside the frozen directory are blocked.",
+      "severity": "high"
     }
   ]
 }

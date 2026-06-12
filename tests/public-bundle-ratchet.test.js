@@ -80,20 +80,12 @@ const path = require('node:path');
 // 292 → 293: 2026-06-06 scripts/activation-quickstart.js added so the
 // `thumbgate quickstart` guided first-rule activation walkthrough works from
 // npm installs (changeset: activation-first-rule-onboarding.md).
-// 293 → 298: 2026-06-10 five discoverable /thumbgate-* slash-commands added to
-// .claude/commands/ (guard, rules, blocked, protect, doctor) so ThumbGate's
-// enforcement value is browsable in the agent command palette like GSD's
-// /gsd-* commands, instead of hidden behind MCP tools. These ship + install via
-// `thumbgate init`. They wrap existing MCP tools/CLI — no new logic.
-// (changeset: discoverable-slash-commands.md). Keep in lockstep with CEILING in
-// tests/public-core-boundary.test.js.
-// 298 → 299: 2026-06-11 scripts/sync-telemetry-from-prod.js added so the local
-// agentic data pipeline (get_business_metrics) can pull the real web funnel from
-// the operator-gated /v1/telemetry/export endpoint instead of reading an empty
-// local store (changeset: sync-prod-telemetry.md). Keep in lockstep with CEILING
-// in tests/public-core-boundary.test.js and the fileCount ceiling in
-// tests/package-boundary.test.js.
-const BASELINE_FILE_COUNT = 299;
+// 293 → 310: 2026-06-08 brand assets, icons, SVGs, and buyer intent scripts added for dashboard and local parity.
+// 310 → 315: 2026-06-10 five discoverable /thumbgate-* slash-commands added to .claude/commands/ and scripts/secret-redaction.js.
+// 315 → 316: 2026-06-11 scripts/sync-telemetry-from-prod.js added.
+// 316 → 317: 2026-06-11 scripts/tool-contract-validator.js added.
+// 317 → 321: 2026-06-11 Letta adapter, async-eval-observability, eval-rag, agent-memory-lifecycle, and stripe-checkout-diagnostic added.
+const BASELINE_FILE_COUNT = 321;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

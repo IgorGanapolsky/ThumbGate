@@ -118,6 +118,60 @@ function bucketPaymentIntentErrors(intents) {
   };
 }
 
+function safeRate(numerator, denominator) {
+  return denominator > 0 ? numerator / denominator : 0;
+}
+
+function classifyCheckoutFunnel({ sessions = [], paymentIntents = [], account = {} } = {}) {
+  const buckets = bucketSessions(sessions);
+  const total = sessions.length;
+  const complete = buckets.byStatus.complete || 0;
+  const expired = buckets.byStatus.expired || 0;
+  const open = buckets.byStatus.open || 0;
+  const paid = buckets.byPaymentStatus.paid || 0;
+  const piErrors = bucketPaymentIntentErrors(paymentIntents);
+  const conversionRate = safeRate(complete, total);
+  const paidRate = safeRate(paid, total);
+  const abandonmentRate = safeRate(expired + open, total);
+
+  let primaryDiagnosis = 'insufficient_data';
+  let recommendation = 'Collect more checkout sessions before changing the offer.';
+
+  if (account.configured && account.chargesEnabled === false) {
+    primaryDiagnosis = 'stripe_account_blocked';
+    recommendation = 'Resolve Stripe account requirements before changing landing-page copy.';
+  } else if (piErrors.intentsWithError > 0) {
+    primaryDiagnosis = 'payment_attempt_failures';
+    recommendation = 'Fix the payment-method or decline-code pattern shown in PaymentIntent errors.';
+  } else if (total >= 20 && complete === 0 && paymentIntents.length === 0 && abandonmentRate >= 0.8) {
+    primaryDiagnosis = 'pre_payment_abandonment';
+    recommendation = 'Buyers are leaving before a payment attempt. Simplify the offer, reduce competing CTAs, and move proof closer to checkout.';
+  } else if (total >= 20 && conversionRate < 0.01 && abandonmentRate >= 0.8) {
+    primaryDiagnosis = 'severe_checkout_abandonment';
+    recommendation = 'Checkout is mechanically reachable, but trust/price/offer clarity is failing before purchase.';
+  } else if (complete > 0 && paid === 0) {
+    primaryDiagnosis = 'post_checkout_payment_or_webhook_gap';
+    recommendation = 'Inspect payment status and webhook provisioning because sessions complete without paid confirmation.';
+  } else if (complete > 0) {
+    primaryDiagnosis = 'checkout_can_convert';
+    recommendation = 'Checkout can convert. Attribute the converting source and scale that segment cautiously.';
+  }
+
+  return {
+    totalSessions: total,
+    completedSessions: complete,
+    paidSessions: paid,
+    expiredOrOpenSessions: expired + open,
+    checkoutConversionRate: conversionRate,
+    paidSessionRate: paidRate,
+    abandonmentRate,
+    paymentIntentsTotal: paymentIntents.length,
+    paymentIntentsWithError: piErrors.intentsWithError,
+    primaryDiagnosis,
+    recommendation,
+  };
+}
+
 async function getAccountHealth(stripe) {
   try {
     const account = await stripe.accounts.retrieve();
@@ -237,6 +291,12 @@ async function runDiagnostic({
     })
   );
 
+  const funnelDiagnosis = classifyCheckoutFunnel({
+    sessions,
+    paymentIntents,
+    account,
+  });
+
   return {
     configured: true,
     generatedAt: new Date().toISOString(),
@@ -244,6 +304,7 @@ async function runDiagnostic({
     paymentIntentsExamined: paymentIntents.length,
     sessionBuckets: bucketSessions(sessions),
     paymentIntentErrors: bucketPaymentIntentErrors(paymentIntents),
+    funnelDiagnosis,
     account,
     webhooks,
     recentSessions: recentSessionDetail,
@@ -263,6 +324,12 @@ function renderMarkdown(report) {
   lines.push('## Headline question: why are checkout sessions not completing?');
   lines.push('');
   lines.push(`Examined ${report.sessionsExamined} checkout sessions and ${report.paymentIntentsExamined} payment intents.`);
+  if (report.funnelDiagnosis) {
+    lines.push('');
+    lines.push(`**Primary diagnosis: \`${report.funnelDiagnosis.primaryDiagnosis}\`**`);
+    lines.push(`Recommendation: ${report.funnelDiagnosis.recommendation}`);
+    lines.push(`Checkout completion rate: ${(report.funnelDiagnosis.checkoutConversionRate * 100).toFixed(2)}%; paid-session rate: ${(report.funnelDiagnosis.paidSessionRate * 100).toFixed(2)}%; expired/open rate: ${(report.funnelDiagnosis.abandonmentRate * 100).toFixed(2)}%.`);
+  }
   lines.push('');
   lines.push('### Checkout session status breakdown');
   lines.push('');
@@ -402,6 +469,7 @@ module.exports = {
   parseArgs,
   bucketSessions,
   bucketPaymentIntentErrors,
+  classifyCheckoutFunnel,
   runDiagnostic,
   renderMarkdown,
 };

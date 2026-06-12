@@ -11,7 +11,7 @@
 <meta name="robots" content="noindex">
 <meta name="referrer" content="same-origin">
 <!-- Privacy-friendly analytics by Plausible -->
-<script defer data-domain="thumbgate-production.up.railway.app" src="https://plausible.io/js/script.js"></script>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -103,7 +103,7 @@
   .result-tags { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
   .tag { font-size: 11px; background: var(--cyan-dim); color: var(--cyan); padding: 2px 8px; border-radius: 4px; cursor: pointer; transition: background 0.15s, transform 0.1s; border: none; font-family: inherit; }
   .tag:hover { background: rgba(34,211,238,0.25); transform: translateY(-1px); }
-  mark { background: rgba(34,211,238,0.25); color: var(--cyan); border-radius: 2px; padding: 0 2px; }
+  mark { background: #fbbf24; color: #000000; font-weight: bold; border-radius: 2px; padding: 0 3px; }
 
   /* GATES */
   .gates-section { margin-bottom: 32px; }
@@ -179,6 +179,74 @@
   .demo-banner a { color: var(--cyan); text-decoration: none; font-weight: 600; }
   .demo-banner a:hover { text-decoration: underline; }
 
+  /* Tooltips styling */
+  .tooltip-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--border);
+    color: var(--text-muted);
+    font-size: 9px;
+    font-weight: bold;
+    cursor: help;
+    margin-left: 6px;
+    position: relative;
+    vertical-align: middle;
+    user-select: none;
+  }
+  .tooltip-trigger:hover {
+    background: var(--cyan);
+    color: var(--bg);
+  }
+  .tooltip-trigger .tooltip-content {
+    visibility: hidden;
+    opacity: 0;
+    width: 220px;
+    background-color: #161618;
+    color: #e8e8ec;
+    text-align: left;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    position: absolute;
+    z-index: 1000;
+    bottom: 130%;
+    left: 50%;
+    transform: translateX(-50%);
+    transition: opacity 0.15s, visibility 0.15s;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+    font-weight: normal;
+    font-size: 11px;
+    line-height: 1.4;
+    white-space: normal;
+    pointer-events: none;
+    font-family: var(--font);
+    text-transform: none;
+    letter-spacing: normal;
+  }
+  .tooltip-trigger .tooltip-content::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: #161618 transparent transparent transparent;
+  }
+  .tooltip-trigger:hover .tooltip-content {
+    visibility: visible;
+    opacity: 1;
+  }
+  #disconnectBtn:hover {
+    background: rgba(248,113,113,0.1) !important;
+    border-color: #f87171 !important;
+    color: #f87171 !important;
+  }
+
   .empty { text-align: center; padding: 48px; color: var(--text-muted); font-size: 15px; }
   .loading { text-align: center; padding: 24px; color: var(--text-muted); }
   h2 { font-size: 20px; font-weight: 700; margin-bottom: 16px; letter-spacing: -0.02em; }
@@ -197,6 +265,19 @@
   .enterprise-answer.blocked { border-color: rgba(248,113,113,0.45); background: rgba(248,113,113,0.07); }
   .enterprise-source-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
   .enterprise-source { font-size: 11px; border: 1px solid var(--border); border-radius: 999px; padding: 4px 9px; color: var(--text-muted); background: var(--bg-card); }
+
+  .quick-nav-link {
+    cursor: pointer;
+    transition: opacity 0.15s ease, color 0.15s ease;
+  }
+  .quick-nav-link:hover {
+    color: var(--cyan);
+    opacity: 0.95;
+  }
+  .quick-nav-link:hover strong {
+    color: var(--cyan) !important;
+    text-decoration: underline;
+  }
 
   @media (max-width: 700px) {
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -222,13 +303,14 @@
 <div class="auth-bar">
   <div class="container">
     <div style="margin-bottom:10px;">
-      <span style="font-size:14px;font-weight:600;">Connect your API key</span>
+      <span id="authTitle" style="font-size:14px;font-weight:600;">Connect your API key</span>
       <span id="authHelp" style="font-size:13px;color:var(--text-muted);margin-left:8px;">Pro auto-connects locally when you launch with <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx thumbgate pro</code>. Otherwise paste your <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">THUMBGATE_API_KEY</code> manually.</span>
     </div>
     <div style="display:flex;gap:12px;align-items:center;">
       <input type="password" class="auth-input" id="apiKey" placeholder="Paste your API key here (THUMBGATE_API_KEY or THUMBGATE_PRO_KEY)..." />
       <button class="btn" id="connectBtn" onclick="connect()">Connect</button>
        <button class="btn-outline" id="demoBtn" onclick="loadDemo()">Try Demo</button>
+       <button class="btn-outline" id="disconnectBtn" onclick="disconnectKey()" style="display:none; border-color:#f87171; color:#f87171;">Disconnect Key</button>
        <span class="auth-status" id="authStatus"></span>
     </div>
   </div>
@@ -241,10 +323,10 @@
     <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Updated: <time datetime="2026-04-20">2026-04-20</time> · by <a href="https://github.com/IgorGanapolsky" style="color:inherit;">Igor Ganapolsky</a></p>
     <p style="font-size:14px;color:var(--text-muted);line-height:1.6;max-width:700px;">What's happening right now? Search memories, inspect active checks, manage your team, and export training data. <span style="color:var(--cyan);font-weight:600;">This is your control plane for AI agent behavior.</span></p>
     <div style="display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--text-muted);">
-      <span>🔍 <strong style="color:var(--text);">Search</strong> — find any memory</span>
-      <span>🛡️ <strong style="color:var(--text);">Gates</strong> — what's blocking</span>
-      <span>👥 <strong style="color:var(--text);">Team</strong> — org metrics</span>
-      <span>📤 <strong style="color:var(--text);">Export</strong> — DPO training data</span>
+      <span class="quick-nav-link" onclick="switchTab('search')">🔍 <strong style="color:var(--text);">Search</strong> — find any memory</span>
+      <span class="quick-nav-link" onclick="switchTab('gates')">🛡️ <strong style="color:var(--text);">Gates</strong> — what's blocking</span>
+      <span class="quick-nav-link" onclick="switchTab('team')">👥 <strong style="color:var(--text);">Team</strong> — org metrics</span>
+      <span class="quick-nav-link" onclick="switchTab('export')">📤 <strong style="color:var(--text);">Export</strong> — DPO training data</span>
     </div>
   </div>
 
@@ -255,10 +337,10 @@
 
   <!-- STATS -->
   <div class="stats-grid" id="statsGrid">
-    <a class="stat-card" data-card-action="all" onclick="selectCard(this,'all')" href="/lessons?signal=all" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view all feedback → Lessons page"><div class="stat-label">Total Feedback</div><div class="stat-value cyan" id="statTotal">—</div></a>
-    <a class="stat-card" data-card-action="up" onclick="selectCard(this,'up')" href="/lessons?signal=up" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view positive feedback → Lessons page"><div class="stat-label">👍 Positive</div><div class="stat-value green" id="statPositive">—</div></a>
-    <a class="stat-card" data-card-action="down" onclick="selectCard(this,'down')" href="/lessons?signal=down" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view negative feedback → Lessons page"><div class="stat-label">👎 Negative</div><div class="stat-value red" id="statNegative">—</div></a>
-    <a class="stat-card" data-card-action="gates" onclick="selectCard(this,'gates');return false;" href="#" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view active checks"><div class="stat-label">Active Gates</div><div class="stat-value cyan" id="statGates">—</div></a>
+    <a class="stat-card" data-card-action="all" onclick="selectCard(this,'all')" href="/lessons?signal=all" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view all feedback → Lessons page"><div class="stat-label">Total Feedback <span class="tooltip-trigger" onclick="event.stopPropagation(); event.preventDefault();">?<span class="tooltip-content">Total thumbs-up and thumbs-down signals captured from your AI agent interactions.</span></span></div><div class="stat-value cyan" id="statTotal">—</div></a>
+    <a class="stat-card" data-card-action="up" onclick="selectCard(this,'up')" href="/lessons?signal=up" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view positive feedback → Lessons page"><div class="stat-label">👍 Positive <span class="tooltip-trigger" onclick="event.stopPropagation(); event.preventDefault();">?<span class="tooltip-content">Successful outcomes where the agent's work met expectations (thumbs-up).</span></span></div><div class="stat-value green" id="statPositive">—</div></a>
+    <a class="stat-card" data-card-action="down" onclick="selectCard(this,'down')" href="/lessons?signal=down" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view negative feedback → Lessons page"><div class="stat-label">👎 Negative <span class="tooltip-trigger" onclick="event.stopPropagation(); event.preventDefault();">?<span class="tooltip-content">Unsuccessful runs or errors that we need to learn from to prevent repeat failures (thumbs-down).</span></span></div><div class="stat-value red" id="statNegative">—</div></a>
+    <a class="stat-card" data-card-action="gates" onclick="selectCard(this,'gates');return false;" href="#" style="cursor:pointer;text-decoration:none;color:inherit;display:block;" title="Click to view active checks"><div class="stat-label">Active Gates <span class="tooltip-trigger" onclick="event.stopPropagation(); event.preventDefault();">?<span class="tooltip-content">Pre-action checks actively monitoring and blocking known-bad tool calls before they run.</span></span></div><div class="stat-value cyan" id="statGates">—</div></a>
   </div>
 
   <div class="panel" id="chatPanel" style="margin-bottom:20px;">
@@ -281,7 +363,7 @@
   <div class="panel" id="reviewDeltaPanel" style="margin-bottom:20px;">
     <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;">
       <div>
-        <h3 style="margin:0 0 8px 0;font-size:14px;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);">🆕 Since Last Review</h3>
+        <h3 style="margin:0 0 8px 0;font-size:14px;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);display:inline-flex;align-items:center;">🆕 Since Last Review <span class="tooltip-trigger" onclick="event.stopPropagation(); event.preventDefault();">?<span class="tooltip-content">Shows new feedback, negative signals, lessons, and blocks registered since your last baseline checkpoint.</span></span></h3>
         <p class="template-summary" id="reviewDeltaHeadline" style="margin-bottom:0;">No review checkpoint yet. Mark the current dashboard as reviewed to start seeing only new changes.</p>
       </div>
       <button class="btn-outline" id="reviewCheckpointBtn" onclick="markReviewed()">Mark Current Dashboard Reviewed</button>
@@ -320,6 +402,12 @@
 
   <!-- SEARCH TAB -->
   <div class="tab-content active" id="tab-search">
+    <div class="panel" style="margin-bottom:24px;">
+      <h3 style="margin-top:0;">📈 Feedback Trend (Last 30 Days)</h3>
+      <div style="position:relative;height:180px;margin-top:12px;">
+        <canvas id="feedbackTrendChart"></canvas>
+      </div>
+    </div>
     <div class="search-section">
       <div class="search-bar">
         <input type="text" class="search-input" id="searchQuery" placeholder="Search memories... (try: git, test, deploy, secrets, database)" onkeydown="if(event.key==='Enter')search()" />
@@ -341,6 +429,74 @@
   <div class="tab-content" id="tab-gates">
     <div class="gates-section">
       <h2>Active Pre-Action Checks</h2>
+
+      <!-- Interactive Gating Workflow Diagram -->
+      <details class="flow-details" style="margin-bottom: 24px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); padding: 16px;" open>
+        <summary style="font-weight: 600; cursor: pointer; color: var(--cyan); display: flex; align-items: center; gap: 8px; user-select: none;">
+          <span>🛡️ How Pre-Action Gating Works (Interactive Flow Diagram)</span>
+        </summary>
+        <div style="margin-top:20px; text-align:center;">
+          <svg viewBox="0 0 800 220" width="100%" height="auto" style="max-width: 800px; font-family: var(--font); font-size: 11px;">
+            <style>
+              .flow-node { fill: #1c1c1f; stroke: var(--border); stroke-width: 1.5; rx: 8px; transition: stroke 0.2s, fill 0.2s; }
+              .flow-node:hover { fill: rgba(34,211,238,0.06); stroke: var(--cyan); cursor: help; }
+              .flow-text { fill: var(--text); font-weight: 600; pointer-events: none; }
+              .flow-subtext { fill: var(--text-muted); font-size: 10px; pointer-events: none; }
+              .flow-arrow { fill: none; stroke: var(--border); stroke-width: 1.5; marker-end: url(#arrow-head); }
+            </style>
+            
+            <defs>
+              <marker id="arrow-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="#8b8b96" />
+              </marker>
+            </defs>
+
+            <!-- Step 1: Tool Call -->
+            <g>
+              <rect x="10" y="80" width="130" height="60" class="flow-node" />
+              <text x="75" y="105" text-anchor="middle" class="flow-text">1. Tool Call</text>
+              <text x="75" y="125" text-anchor="middle" class="flow-subtext">Agent requests action</text>
+            </g>
+
+            <path d="M 140 110 L 190 110" class="flow-arrow" />
+
+            <!-- Step 2: Hook Intercept -->
+            <g>
+              <rect x="200" y="80" width="140" height="60" class="flow-node" />
+              <text x="270" y="105" text-anchor="middle" class="flow-text">2. PreToolUse Hook</text>
+              <text x="270" y="125" text-anchor="middle" class="flow-subtext">Intercepts tool execution</text>
+            </g>
+
+            <path d="M 340 110 L 390 110" class="flow-arrow" />
+
+            <!-- Step 3: Policy / DB Lookup -->
+            <g>
+              <rect x="400" y="80" width="150" height="60" class="flow-node" />
+              <text x="475" y="105" text-anchor="middle" class="flow-text">3. Gate Evaluation</text>
+              <text x="475" y="125" text-anchor="middle" class="flow-subtext">Validates matching rules</text>
+            </g>
+
+            <!-- Branch Arrows -->
+            <path d="M 550 100 L 640 55" class="flow-arrow" />
+            <path d="M 550 120 L 640 165" class="flow-arrow" />
+
+            <!-- Step 4a: Block -->
+            <g>
+              <rect x="650" y="20" width="130" height="60" class="flow-node" style="stroke:#ef4444;" />
+              <text x="715" y="45" text-anchor="middle" class="flow-text" style="fill:#ef4444;">❌ BLOCK</text>
+              <text x="715" y="65" text-anchor="middle" class="flow-subtext">Matches rule -> aborted</text>
+            </g>
+
+            <!-- Step 4b: Allow -->
+            <g>
+              <rect x="650" y="140" width="130" height="60" class="flow-node" style="stroke:#22c55e;" />
+              <text x="715" y="165" text-anchor="middle" class="flow-text" style="fill:#22c55e;">✅ ALLOW</text>
+              <text x="715" y="185" text-anchor="middle" class="flow-subtext">Runs safely & logs</text>
+            </g>
+          </svg>
+        </div>
+      </details>
+
       <div id="gatesList"><div class="loading">Loading gates...</div></div>
     </div>
   </div>
@@ -537,13 +693,7 @@
       </div>
 
       <!-- Charts -->
-      <div class="team-columns" style="margin-bottom:24px;">
-        <div class="panel">
-          <h3>Feedback Trend (30 days)</h3>
-          <div style="position:relative;height:260px;margin-top:12px;">
-            <canvas id="feedbackTrendChart"></canvas>
-          </div>
-        </div>
+      <div style="margin-bottom:24px;">
         <div class="panel">
           <h3>Lessons Generated (30 days)</h3>
           <div style="position:relative;height:260px;margin-top:12px;">
@@ -849,6 +999,37 @@ function hasBootstrapKey() {
   return LOCAL_PRO_BOOTSTRAP && Boolean(BOOTSTRAP_API_KEY);
 }
 
+async function checkLocalLlmReachable(url) {
+  try {
+    var controller = new AbortController();
+    var timeout = setTimeout(function() { controller.abort(); }, 400);
+    // Use no-cors mode to bypass CORS block (only care if network request succeeds/fails)
+    await fetch(url, { method: 'GET', signal: controller.signal, mode: 'no-cors' });
+    clearTimeout(timeout);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function disconnectKey() {
+  API_KEY = '';
+  isDemo = false;
+  var input = document.getElementById('apiKey');
+  input.value = '';
+  input.disabled = false;
+  input.placeholder = "Paste your API key here (THUMBGATE_API_KEY or THUMBGATE_PRO_KEY)...";
+  var btn = document.getElementById('connectBtn');
+  btn.disabled = false;
+  document.getElementById('demoBtn').style.display = 'inline-block';
+  document.getElementById('disconnectBtn').style.display = 'none';
+  document.getElementById('authStatus').className = 'auth-status';
+  document.getElementById('authStatus').textContent = 'Disconnected';
+  document.getElementById('authTitle').textContent = 'Connect your API key';
+  document.getElementById('authHelp').innerHTML = 'Pro auto-connects locally when you launch with <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">npx thumbgate pro</code>. Otherwise paste your <code style="font-family:var(--mono);font-size:12px;background:var(--cyan-dim);color:var(--cyan);padding:2px 6px;border-radius:4px;">THUMBGATE_API_KEY</code> manually.';
+  document.getElementById('dashboardContent').style.display = 'none';
+}
+
 async function connect(options) {
   var opts = options || {};
   var input = document.getElementById('apiKey');
@@ -875,7 +1056,15 @@ async function connect(options) {
     
     if (data.localLlmConfigured) {
       var modelLabel = data.localLlmModel ? ' (' + data.localLlmModel + ')' : '';
-      document.getElementById('chatHint').innerHTML = '<span style="color:var(--green)">✓ Local LLM' + modelLabel + ' ready. Chat answers are generated locally — no cloud calls.</span>';
+      var llmUrl = data.localLlmEndpoint || 'http://localhost:11434/v1';
+      document.getElementById('chatHint').innerHTML = '<span style="color:var(--text-muted)">Checking local LLM reachability...</span>';
+      checkLocalLlmReachable(llmUrl.replace(/\/v1$/, '')).then(function(reachable) {
+        if (reachable) {
+          document.getElementById('chatHint').innerHTML = '<span style="color:var(--green)">✓ Local LLM' + modelLabel + ' ready. Chat answers are generated locally — no cloud calls.</span>';
+        } else {
+          document.getElementById('chatHint').innerHTML = '<span style="color:#f59e0b">⚠ Ollama is offline. Launch it to chat locally: <code style="font-family:var(--mono);font-size:12px;background:rgba(245,158,11,0.1);color:#f59e0b;padding:2px 6px;border-radius:4px;">ollama run qwen2.5-coder:14b</code></span>';
+        }
+      });
     } else if (data.geminiKeyStatus === 'validated' || data.geminiValidatedAt) {
       var when = data.geminiValidatedAt ? ' (validated ' + new Date(data.geminiValidatedAt).toLocaleTimeString() + ')' : '';
       document.getElementById('chatHint').innerHTML = '<span style="color:var(--green)">✓ Gemini API key validated' + when + '. You can now chat with your data.</span>';
@@ -887,10 +1076,15 @@ async function connect(options) {
 
     status.className = 'auth-status ok';
     status.textContent = opts.localPro ? `✓ Local ${tierName} connected` : '✓ Connected';
+    document.getElementById('disconnectBtn').style.display = 'inline-block';
+    const titleEl = document.getElementById('authTitle');
+    if (titleEl) {
+      titleEl.textContent = opts.localPro ? `${tierName} License Active` : 'API Key Connected';
+    }
     document.getElementById('dashboardContent').style.display = 'block';
     if (opts.localPro) {
       const localProActiveMessage = 'Local Pro is active on this machine. Your dashboard is using the saved license key automatically.';
-      const localEnterpriseActiveMessage = 'Local Enterprise is active on this machine. Your dashboard is using the saved license key automatically.';
+      const localEnterpriseActiveMessage = 'Local Enterprise is active on this machine. Your dashboard is using the saved license key automatically. Click Disconnect to switch keys.';
       input.value = 'local-license';
       input.disabled = true;
       input.placeholder = `Local ${tierName} auto-connected`;
@@ -908,6 +1102,10 @@ async function connect(options) {
   } catch (e) {
     status.className = 'auth-status err';
     status.textContent = '✗ ' + e.message;
+    const titleEl = document.getElementById('authTitle');
+    if (titleEl) {
+      titleEl.textContent = 'Connect your API key';
+    }
     if (opts.localPro) {
       document.getElementById('authHelp').textContent = `Local ${tierName} bootstrap failed. Paste your THUMBGATE_API_KEY manually or retry the local launcher.`;
     }
@@ -973,24 +1171,88 @@ async function search() {
 }
 
 function renderResult(r) {
-  const signal = r.signal || r.type || '';
+  let contextText = r.context || r.text || r.content || '';
+  let signal = r.signal || r.type || '';
+
+  if (contextText && contextText.trim().startsWith('{')) {
+    const originalText = contextText;
+    try {
+      let cleanText = contextText.trim();
+      if (cleanText.endsWith('…')) {
+        cleanText = cleanText.slice(0, -1);
+      }
+      if (cleanText.endsWith(',...')) {
+        cleanText = cleanText.slice(0, -4);
+      }
+      let parsed = null;
+      try {
+        parsed = JSON.parse(cleanText);
+      } catch (_) {
+        try { parsed = JSON.parse(cleanText + '"}'); } catch (_) {}
+        try { parsed = JSON.parse(cleanText + '}'); } catch (_) {}
+        try { parsed = JSON.parse(cleanText + '"} }'); } catch (_) {}
+      }
+      if (parsed && (parsed.context || parsed.text || parsed.content || parsed.message)) {
+        contextText = parsed.context || parsed.text || parsed.content || parsed.message;
+      } else {
+        let contextMatch = originalText.match(/"context"\s*:\s*"((?:[^"\\]|\\.)*?)"/);
+        if (!contextMatch) {
+          contextMatch = originalText.match(/"context"\s*:\s*"((?:[^"\\]|\\.)*)/);
+        }
+        if (!contextMatch || !contextMatch[1]) {
+          let otherMatch = originalText.match(/"(?:text|content|message)"\s*:\s*"((?:[^"\\]|\\.)*?)"/);
+          if (!otherMatch) {
+            otherMatch = originalText.match(/"(?:text|content|message)"\s*:\s*"((?:[^"\\]|\\.)*)/);
+          }
+          if (otherMatch && otherMatch[1]) {
+            contextMatch = otherMatch;
+          }
+        }
+        if (contextMatch && contextMatch[1]) {
+          let val = contextMatch[1];
+          val = val.replace(/(?:"\s*,\s*"[^"]*"\s*:?|"\s*,\s*|"\s*\}?\s*|\s*,\s*|\s*\}?\s*)$/, '');
+          val = val.replace(/(?:\.\.\.|…|",\.\.\.|",…|"\s*,\s*\.\.\.|"\s*,\s*…)$/, '');
+          contextText = val.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+        }
+      }
+      if (parsed && parsed.signal) {
+        signal = parsed.signal;
+      } else {
+        const signalMatch = originalText.match(/"signal"\s*:\s*"([^"]+)"/);
+        if (signalMatch && !signal) {
+          signal = signalMatch[1];
+        }
+      }
+    } catch (_) {}
+  }
+
   const isUp = signal === 'up' || signal === 'positive' || signal === 'thumbs_up';
   const isDown = signal === 'down' || signal === 'negative' || signal === 'thumbs_down';
   const signalClass = isUp ? 'up' : isDown ? 'down' : '';
   const signalLabel = isUp ? '👍 Positive' : isDown ? '👎 Negative' : signal;
-  const title = r.title || r.context || r.text || '';
-  const context = r.context || r.text || r.content || '';
+
+  let displayTitle = r.title || contextText || '';
+  if (displayTitle && displayTitle.startsWith('feedback_')) {
+    const parts = displayTitle.split('_');
+    if (parts.length >= 3) {
+      const type = parts[1];
+      const id = parts.slice(2).join('_');
+      displayTitle = (type === 'positive' ? '👍' : '👎') + ' Feedback (' + id + ')';
+    }
+  }
+
   const tags = r.tags || [];
   const date = r.timestamp ? new Date(r.timestamp).toLocaleDateString() : '';
+
   return '<div class="result-card">' +
     '<div class="result-header">' +
       (signalLabel ? '<span class="result-signal ' + signalClass + '">' + signalLabel + '</span>' : '<span></span>') +
       '<span class="result-date">' + date + '</span>' +
     '</div>' +
-    (title ? '<div class="result-title">' + highlightText(title) + '</div>' : '') +
-    (context && context !== title ? '<div class="result-context">' + highlightText(context.slice(0, 300)) + '</div>' : '') +
+    (displayTitle ? '<div class="result-title">' + highlightText(displayTitle) + '</div>' : '') +
+    (contextText && contextText !== displayTitle ? '<div class="result-context">' + highlightText(contextText.slice(0, 300)) + '</div>' : '') +
     (tags.length ? '<div class="result-tags">' + tags.map(function(t) {
-      return '<button type="button" class="tag" data-tag="' + encodeURIComponent(String(t)) + '" title="' + escAttr('Search for ' + t) + '">' + escHtml(t) + '</button>';
+      return '<button type="button" class="tag" data-tag="' + encodeURIComponent(String(t)) + '" title="' + escAttr('Search for ' + t) + '">' + highlightText(t) + '</button>';
     }).join('') + '</div>' : '') +
   '</div>';
 }
@@ -1828,9 +2090,28 @@ function renderEnterpriseStatus(status) {
     { name: 'Dialogflow guard adapter', value: dfcx.liveAgentConfigured ? 'Configured' : 'Optional', note: dfcx.verification || 'Only needed for customer-owned Dialogflow CX agent deployments.' },
     { name: 'Legacy gcloud CX command', value: 'Unsupported', note: 'Do not use the old alpha gcloud CX command group; use REST API or console for DFCX proof.' }
   ];
-  target.innerHTML = rows.map(function(row) {
-    return '<div class="inventory-row"><div><div class="inventory-name">' + escHtml(row.name) + '</div><div class="inventory-subtitle">' + escHtml(row.note) + '</div></div><span class="remediation-action">' + escHtml(row.value) + '</span></div>';
-  }).join('');
+
+  function draw() {
+    target.innerHTML = rows.map(function(row) {
+      return '<div class="inventory-row"><div><div class="inventory-name">' + escHtml(row.name) + '</div><div class="inventory-subtitle">' + escHtml(row.note) + '</div></div><span class="remediation-action">' + escHtml(row.value) + '</span></div>';
+    }).join('');
+  }
+
+  draw();
+
+  if (localLlm) {
+    var llmUrl = 'http://localhost:11434/v1';
+    checkLocalLlmReachable(llmUrl).then(function(reachable) {
+      if (reachable) {
+        rows[0].value = '✓ Local LLM Online';
+        draw();
+      } else {
+        rows[0].value = '⚠ Local LLM Offline';
+        rows[0].note = 'Ollama is offline. Launch it to chat locally: ollama run qwen2.5-coder:14b';
+        draw();
+      }
+    });
+  }
 }
 
 async function loadEnterpriseDataChatStatus() {

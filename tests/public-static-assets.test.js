@@ -84,6 +84,25 @@ test('GET /assets/../server.js is rejected (no path traversal)', async () => {
   assert.notEqual(res.status, 200);
 });
 
+test('GET /media/thumbgate-demo.gif serves the animated demo GIF without an API key', async () => {
+  const res = await fetch(`${origin}/media/thumbgate-demo.gif`);
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get('content-type'), 'image/gif');
+  assert.ok(Number(res.headers.get('content-length')) > 0);
+});
+
+test('GET /media/does-not-exist.gif returns 404', async () => {
+  const res = await fetch(`${origin}/media/does-not-exist.gif`);
+  assert.equal(res.status, 404);
+});
+
+test('GET /media/../server.js is rejected (no path traversal)', async () => {
+  const res = await fetch(`${origin}/media/..%2fapi%2fserver.js`);
+  assert.ok([403, 404].includes(res.status), `expected 403 or 404, got ${res.status}`);
+  assert.notEqual(res.status, 200);
+});
+
+
 test('packaged well-known MCP server card is valid JSON', () => {
   const payload = JSON.parse(fs.readFileSync(path.join(root, '.well-known/mcp/server-card.json'), 'utf8'));
   assert.equal(payload.name, 'thumbgate');
@@ -109,7 +128,7 @@ test('landing pricing section compares plan capabilities and limits clearly', as
   const html = await res.text();
 
   assert.match(html, /Compare plans at a glance/);
-  assert.match(html, /5\/day, 25 total/);
+  assert.match(html, /2\/day, 10 total/);
   assert.match(html, /3 active rules/);
   assert.match(html, /\$19\/mo or \$149\/yr/);
   assert.match(html, /Custom — scoped after intake/);

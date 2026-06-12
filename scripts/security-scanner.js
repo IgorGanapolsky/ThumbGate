@@ -37,6 +37,7 @@ const VULN_PATTERNS = [
     label: 'Command injection via unsanitized input',
     regex: /\bexec(?:Sync)?\s*\(\s*(?:`[^`]*\$\{|['"][^'"]*['"]\s*\+\s*(?:req\.|input|args|params|query|body|user))/g,
     fileTypes: ['.js', '.ts', '.mjs', '.cjs'],
+    remediation: 'Avoid passing unsanitized input to child_process.exec/execSync. Use execFile or spawn with args passed as an array.',
   },
   {
     id: 'shell-interpolation',
@@ -45,6 +46,7 @@ const VULN_PATTERNS = [
     label: 'Shell command with string interpolation',
     regex: /\bexec(?:Sync)?\s*\(\s*`[^`]*\$\{[^}]*(?:req\.|input|args|params|query|body|user|process\.env)/g,
     fileTypes: ['.js', '.ts', '.mjs', '.cjs'],
+    remediation: 'Use child_process.execFile or child_process.spawn with an array of arguments to avoid shell command interpolation.',
   },
   {
     id: 'sql-injection',
@@ -53,6 +55,7 @@ const VULN_PATTERNS = [
     label: 'Potential SQL injection via string concatenation',
     regex: /(?:query|execute|run|all|get)\s*\(\s*(?:`[^`]*\$\{|['"][^'"]*['"]\s*\+\s*(?:req\.|input|args|params|query|body|user))/g,
     fileTypes: ['.js', '.ts', '.mjs', '.cjs', '.py'],
+    remediation: 'Use parameterized queries or prepared statements instead of dynamic SQL string concatenation.',
   },
   {
     id: 'eval-usage',
@@ -61,6 +64,7 @@ const VULN_PATTERNS = [
     label: 'Dynamic code execution (eval/Function constructor)',
     regex: /\b(?:eval|new\s+Function)\s*\([^)]*(?:req\.|input|args|params|query|body|user)/g,
     fileTypes: ['.js', '.ts', '.mjs', '.cjs'],
+    remediation: 'Use JSON.parse() or a safe parser library instead of eval() or dynamic Function constructors.',
   },
 
   // XSS
@@ -71,6 +75,7 @@ const VULN_PATTERNS = [
     label: 'Potential XSS via innerHTML assignment',
     regex: /\.innerHTML\s*=\s*(?!['"]<(?:div|span|p|br|hr)\s*\/?>['"])/g,
     fileTypes: ['.js', '.ts', '.jsx', '.tsx', '.mjs'],
+    remediation: 'Use element.textContent or element.innerText instead of innerHTML to prevent cross-site scripting (XSS).',
   },
   {
     id: 'xss-dangerously-set',
@@ -79,6 +84,7 @@ const VULN_PATTERNS = [
     label: 'React dangerouslySetInnerHTML with dynamic content',
     regex: /dangerouslySetInnerHTML\s*=\s*\{\s*\{\s*__html\s*:\s*(?!['"])/g,
     fileTypes: ['.jsx', '.tsx', '.js', '.ts'],
+    remediation: 'Ensure dynamic content passed to dangerouslySetInnerHTML is sanitized using DOMPurify or equivalent.',
   },
 
   // Path traversal
@@ -89,6 +95,7 @@ const VULN_PATTERNS = [
     label: 'Path traversal via unsanitized user input',
     regex: /path\.(?:join|resolve)\s*\([^)]*(?:req\.|input|args|params|query|body|user)/g,
     fileTypes: ['.js', '.ts', '.mjs', '.cjs'],
+    remediation: 'Sanitize path input using path.basename() or validate the path against an explicit list of allowed directories.',
   },
   {
     id: 'path-traversal-direct',
@@ -97,6 +104,7 @@ const VULN_PATTERNS = [
     label: 'Direct file read with user-controlled path',
     regex: /fs\.(?:readFile(?:Sync)?|createReadStream)\s*\(\s*(?:req\.|input|args|params|query|body|user)/g,
     fileTypes: ['.js', '.ts', '.mjs', '.cjs'],
+    remediation: 'Validate input paths and restrict file system access to a sandboxed directory.',
   },
 
   // Prototype pollution
@@ -107,6 +115,7 @@ const VULN_PATTERNS = [
     label: 'Potential prototype pollution via recursive merge',
     regex: /(?:__proto__|constructor\s*\[\s*['"]prototype['"]\s*\]|Object\.assign\s*\(\s*\{\s*\})/g,
     fileTypes: ['.js', '.ts', '.mjs', '.cjs'],
+    remediation: 'Avoid recursive object mergers without checking for __proto__ or constructor keys, or use Object.create(null).',
   },
 
   // Insecure crypto
@@ -117,6 +126,7 @@ const VULN_PATTERNS = [
     label: 'Weak hash algorithm (MD5/SHA1) for security use',
     regex: /createHash\s*\(\s*['"](?:md5|sha1)['"]\s*\)/gi,
     fileTypes: ['.js', '.ts', '.mjs', '.cjs'],
+    remediation: 'Use SHA-256 or SHA-512 (e.g. crypto.createHash("sha256")) instead of MD5 or SHA-1 for security use cases.',
   },
   {
     id: 'hardcoded-secret',
@@ -125,6 +135,7 @@ const VULN_PATTERNS = [
     label: 'Hardcoded secret/password in source code',
     regex: /(?:password|secret|apiKey|api_key|token)\s*[:=]\s*['"][A-Za-z0-9+/=_-]{12,}['"]/g,
     fileTypes: ['.js', '.ts', '.mjs', '.cjs', '.py', '.go', '.java'],
+    remediation: 'Move hardcoded secrets to environment variables or use a secure secrets manager.',
   },
 
   // SSRF
@@ -135,6 +146,7 @@ const VULN_PATTERNS = [
     label: 'Potential SSRF via user-controlled URL',
     regex: /(?:fetch|axios|got|request|https?\.(?:get|request))\s*\(\s*(?:`[^`]*\$\{|(?:req\.|input|args|params|query|body|user))/g,
     fileTypes: ['.js', '.ts', '.mjs', '.cjs'],
+    remediation: 'Validate the destination host against a strict whitelist of allowed domains and block requests to internal IPs.',
   },
 
   // Insecure deserialization
@@ -145,6 +157,7 @@ const VULN_PATTERNS = [
     label: 'Unsafe deserialization of untrusted data',
     regex: /(?:unserialize|yaml\.load\s*\((?!.*Loader\s*=\s*yaml\.SafeLoader)|pickle\.loads?|Marshal\.load)/g,
     fileTypes: ['.js', '.ts', '.py', '.rb'],
+    remediation: 'Use safe parsing libraries or options (such as yaml.safeLoad) instead of unsafe deserialization/eval-like loaders.',
   },
   {
     id: 'badhost-url-confusion',
@@ -153,6 +166,7 @@ const VULN_PATTERNS = [
     label: 'Potential BadHost-style host or URL confusion in AI service',
     regex: /\b(?:request\.url(?:\.path)?|url_for\s*\([^)]*_external\s*=\s*True|headers\s*\[\s*['"](?:host|x-forwarded-host)['"]\s*\])/gi,
     fileTypes: ['.py'],
+    remediation: 'Verify Host and X-Forwarded-Host headers against an approved whitelist before using them for routing or URL generation.',
   },
 ];
 
@@ -166,6 +180,7 @@ const SUPPLY_CHAIN_PATTERNS = [
     category: 'supply-chain',
     severity: 'high',
     label: 'Potentially typosquatted package name',
+    remediation: 'Verify spelling and authenticity of package name. If typosquatted, run: npm uninstall <package>.',
     // Common typosquat indicators: single-char substitutions of popular packages
     knownSafe: new Set([
       'express', 'lodash', 'axios', 'react', 'vue', 'angular', 'moment',
@@ -179,6 +194,7 @@ const SUPPLY_CHAIN_PATTERNS = [
     category: 'supply-chain',
     severity: 'critical',
     label: 'Suspicious install script in package.json',
+    remediation: 'Remove the pre/postinstall script, or run package installation with --ignore-scripts.',
     regex: /["'](?:pre|post)?install["']\s*:\s*["'](?:.*(?:curl|wget|nc\s|bash\s|sh\s|eval|exec|child_process))/g,
   },
   {
@@ -186,9 +202,78 @@ const SUPPLY_CHAIN_PATTERNS = [
     category: 'supply-chain',
     severity: 'medium',
     label: 'Wildcard or latest version in dependency',
+    remediation: 'Specify a concrete version constraint (e.g., "^1.0.0") instead of a wildcard or latest.',
     regex: /["'](?:dependencies|devDependencies|peerDependencies)["'][\s\S]{0,500}?["'][^"']+["']\s*:\s*["'](?:\*|latest|>=)/g,
   },
 ];
+
+/**
+ * Simple static analysis check (reachability/usage check) to see if a package is imported.
+ * @param {string} pkg - The package name to search for
+ * @param {string} rootDir - Root directory to walk
+ * @returns {boolean}
+ */
+function isPackageImported(pkg, rootDir = process.cwd()) {
+  const IGNORED_DIRS = new Set([
+    'node_modules', '.git', 'dist', 'coverage', '.planning', '.artifacts', '.gemini', '.antigravitycli'
+  ]);
+  const FILE_EXTS = new Set(['.js', '.ts', '.jsx', '.tsx', '.mjs', '.cjs', '.py']);
+  
+  // Escape package name for regex
+  const escapedPkg = pkg.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  const importRegex = new RegExp(
+    `(?:require\\s*\\(\\s*['"]${escapedPkg}['"]\\s*\\)|from\\s*['"]${escapedPkg}['"]|import\\s*\\(\\s*['"]${escapedPkg}['"]\\s*\\)|import\\s+['"]${escapedPkg}['"])`,
+    'i'
+  );
+
+  let found = false;
+  let fileCount = 0;
+  const maxFiles = 200; // safety limit to keep it fast (<50ms)
+
+  function walk(dir) {
+    if (found || fileCount >= maxFiles) return;
+    let files;
+    try {
+      files = fs.readdirSync(dir);
+    } catch {
+      return;
+    }
+
+    for (const file of files) {
+      if (found || fileCount >= maxFiles) return;
+      const fullPath = path.join(dir, file);
+      let stat;
+      try {
+        stat = fs.statSync(fullPath);
+      } catch {
+        continue;
+      }
+
+      if (stat.isDirectory()) {
+        if (!IGNORED_DIRS.has(file)) {
+          walk(fullPath);
+        }
+      } else if (stat.isFile()) {
+        const ext = path.extname(file).toLowerCase();
+        if (FILE_EXTS.has(ext)) {
+          fileCount++;
+          try {
+            const content = fs.readFileSync(fullPath, 'utf8');
+            if (importRegex.test(content)) {
+              found = true;
+              return;
+            }
+          } catch {
+            // ignore read errors
+          }
+        }
+      }
+    }
+  }
+
+  walk(rootDir);
+  return found;
+}
 
 // ---------------------------------------------------------------------------
 // Core scanning functions
@@ -227,6 +312,7 @@ function scanCode(content, filePath = '') {
         line: lineNumber,
         match: match[0].slice(0, 120),
         path: filePath,
+        remediation: pattern.remediation,
       });
       // Only report first match per pattern per file to avoid noise
       break;
@@ -287,6 +373,10 @@ function scanDependencyChange(oldContent, newContent) {
 
     for (const [pkg, version] of Object.entries(newDeps)) {
       if (!oldDeps[pkg]) {
+        // Run usage check (reachability)
+        const reachable = isPackageImported(pkg);
+        const reachability = reachable ? 'imported' : 'unimported';
+
         // New dependency added — check for red flags
         if (version === '*' || version === 'latest' || version.startsWith('>=')) {
           findings.push({
@@ -295,6 +385,9 @@ function scanDependencyChange(oldContent, newContent) {
             severity: 'medium',
             label: `Wildcard version for new dependency: ${pkg}@${version}`,
             path: 'package.json',
+            remediation: `Specify a concrete version constraint (e.g., "^${version === '*' || version === 'latest' ? '1.0.0' : version}") instead of a wildcard.`,
+            reachable,
+            reachability,
           });
         }
 
@@ -306,6 +399,9 @@ function scanDependencyChange(oldContent, newContent) {
             severity: 'high',
             label: `Suspiciously short package name: "${pkg}"`,
             path: 'package.json',
+            remediation: 'Double-check spelling and verify this package is not a typosquatting attempt.',
+            reachable,
+            reachability,
           });
         }
 
@@ -318,6 +414,9 @@ function scanDependencyChange(oldContent, newContent) {
             severity: slopsquatFinding.severity,
             label: slopsquatFinding.label,
             path: 'package.json',
+            remediation: `Verify spelling and authenticity of package "${pkg}". If typosquatted, run: npm uninstall ${pkg}.`,
+            reachable,
+            reachability,
           });
         }
       }
@@ -335,6 +434,7 @@ function scanDependencyChange(oldContent, newContent) {
         severity: 'critical',
         label: `Suspicious install script: ${name} → ${cmd.slice(0, 80)}`,
         path: 'package.json',
+        remediation: 'Remove the suspicious pre/postinstall script, or run package installation with --ignore-scripts.',
       });
     }
   }

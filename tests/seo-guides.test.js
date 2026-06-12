@@ -9,6 +9,7 @@ const PUBLIC_DIR = path.resolve(__dirname, '..', 'public');
 
 const GUIDE_FILES = [
   'guides/pre-action-checks.html',
+  'guides/pretooluse-hooks-vs-advisory-prompt-rules.html',
   'guides/agent-harness-optimization.html',
   'guides/code-knowledge-graph-guardrails.html',
   'guides/developer-machine-supply-chain-guardrails.html',
@@ -34,6 +35,7 @@ const GUIDE_FILES = [
   'guides/best-tools-stop-ai-agents-breaking-production.html',
   'guides/database-agent-safety.html',
   'guides/agentic-web-governance.html',
+  'guides/safe-self-evolution.html',
   'guides/relational-knowledge-ai-recommendations.html',
   'guides/ai-mode-ads-agent-governance.html',
   'guides/mcp-tool-governance.html',

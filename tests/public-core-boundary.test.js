@@ -137,7 +137,9 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // installs to aggregate cross-store feedback and per-folder caches.
   // Bumped 292 -> 293 (2026-06-06) to ship scripts/activation-quickstart.js,
   // the guided first-rule activation walkthrough behind `thumbgate quickstart`.
-  // Bumped 293 -> 294 (2026-06-10) to ship scripts/secret-redaction.js, the
+  // Bumped 293 -> 310 (2026-06-08) to ship brand assets, icons, SVGs, and buyer intent scripts
+  // required for dashboard visual assets and local parity.
+  // Bumped 310 -> 311 (2026-06-10) to ship scripts/secret-redaction.js, the
   // canonical secret-redaction helper required at runtime by the capture path
   // (feedback-loop/lesson-inference/feedback-history-distiller/self-distill) and
   // the DPO + Databricks exporters. Public-shell security fix, no Core dependency.
@@ -150,10 +152,11 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // which pulls the real web funnel from the operator-gated /v1/telemetry/export
   // into the local store so get_business_metrics stops reading an empty ledger.
   // Public-shell observability tool, no Core dependency. Keep in lockstep with
-  // BASELINE_FILE_COUNT in public-bundle-ratchet.test.js and the fileCount
-  // ceiling in package-boundary.test.js.
+  // Bumped 316 -> 317 (2026-06-11) to ship scripts/tool-contract-validator.js.
+  // Bumped 317 -> 321 (2026-06-11) to ship Letta adapter, async-eval-observability,
+  // eval-rag, agent-memory-lifecycle, and stripe-checkout-diagnostic.
   const files = npmPackFiles();
-  const CEILING = 299;
+  const CEILING = 321;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

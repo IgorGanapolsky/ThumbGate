@@ -2,7 +2,7 @@
 'use strict';
 
 const path = require('path');
-const { isProLicensed } = require('./license');
+const { isProLicensed, isValidKey } = require('./license');
 
 function getStatuslineMeta(options = {}) {
   const pkg = require(path.join(__dirname, '..', 'package.json'));
@@ -11,7 +11,10 @@ function getStatuslineMeta(options = {}) {
   const fs = require('fs');
   
   // Enterprise detection based on key prefix
-  let apiKey = env.THUMBGATE_API_KEY || env.THUMBGATE_OPERATOR_KEY || '';
+  let apiKey = env.THUMBGATE_OPERATOR_KEY || env.THUMBGATE_API_KEY || '';
+  if (apiKey && !isValidKey(apiKey)) {
+    apiKey = '';
+  }
   
   // Fallback to reading from disk if not in env
   if (!apiKey) {

@@ -1,0 +1,177 @@
+{
+  "generatedAt": "2026-06-11T19:16:02.271Z",
+  "mode": "async-post-generation",
+  "total": 2,
+  "passed": 2,
+  "failed": 0,
+  "passRate": 100,
+  "aggregate": {
+    "faithfulness": 1,
+    "answerRelevance": 0.7857,
+    "contextPrecision": 1
+  },
+  "passedThreshold": true,
+  "metrics": [
+    "faithfulness",
+    "answerRelevance",
+    "contextPrecision"
+  ],
+  "sinks": {
+    "ci": true,
+    "langsmithCompatible": true,
+    "ragasCompatible": true
+  },
+  "results": [
+    {
+      "id": "checkout-link-grounding",
+      "traceId": "trace_checkout_001",
+      "passed": true,
+      "scores": {
+        "faithfulness": 1,
+        "answerRelevance": 1,
+        "contextPrecision": 1
+      },
+      "thresholds": {
+        "faithfulness": 0.72,
+        "answerRelevance": 0.45,
+        "contextPrecision": 0.5
+      },
+      "details": {
+        "faithfulness": {
+          "score": 1,
+          "supportedClaims": 1,
+          "totalClaims": 1
+        },
+        "answerRelevance": {
+          "score": 1,
+          "matchedQuestionTerms": [
+            "the",
+            "pro",
+            "checkout",
+            "link",
+            "working"
+          ]
+        },
+        "contextPrecision": {
+          "score": 1,
+          "relevantContexts": 2,
+          "totalContexts": 2
+        }
+      }
+    },
+    {
+      "id": "letta-tool-gate",
+      "traceId": "trace_letta_001",
+      "passed": true,
+      "scores": {
+        "faithfulness": 1,
+        "answerRelevance": 0.5714,
+        "contextPrecision": 1
+      },
+      "thresholds": {
+        "faithfulness": 0.72,
+        "answerRelevance": 0.45,
+        "contextPrecision": 0.5
+      },
+      "details": {
+        "faithfulness": {
+          "score": 1,
+          "supportedClaims": 1,
+          "totalClaims": 1
+        },
+        "answerRelevance": {
+          "score": 0.5714,
+          "matchedQuestionTerms": [
+            "letta",
+            "force",
+            "push",
+            "tool"
+          ]
+        },
+        "contextPrecision": {
+          "score": 1,
+          "relevantContexts": 2,
+          "totalContexts": 2
+        }
+      }
+    }
+  ],
+  "ragasDataset": [
+    {
+      "user_input": "Is the Pro checkout link working?",
+      "response": "The Pro checkout link is working because the checkout diagnostic confirms Stripe Pro checkout is reachable.",
+      "retrieved_contexts": [
+        "Stripe Pro checkout diagnostic confirms the Pro checkout link is reachable and returns a valid checkout target.",
+        "The workflow sprint checkout is intake-led and should not expose a stale payment link."
+      ],
+      "reference": "The Pro checkout link is reachable when the Stripe diagnostic passes."
+    },
+    {
+      "user_input": "Should Letta execute a force push tool call?",
+      "response": "ThumbGate blocks force push before execution for Letta tool calls.",
+      "retrieved_contexts": [
+        "ThumbGate's Letta adapter wraps Letta tool calls and runs gate-check before the executor is called.",
+        "Force push to main is a blocked high-risk git action."
+      ],
+      "reference": "ThumbGate blocks high-risk Letta tool calls before execution."
+    }
+  ],
+  "langsmithRuns": [
+    {
+      "id": "trace_checkout_001",
+      "name": "thumbgate_async_rag_eval",
+      "inputs": {
+        "question": "Is the Pro checkout link working?"
+      },
+      "outputs": {
+        "response": "The Pro checkout link is working because the checkout diagnostic confirms Stripe Pro checkout is reachable."
+      },
+      "metadata": {
+        "evaluator": "thumbgate-async-eval-observability",
+        "caseId": "checkout-link-grounding"
+      },
+      "feedback": [
+        {
+          "key": "faithfulness",
+          "score": 1
+        },
+        {
+          "key": "answerRelevance",
+          "score": 1
+        },
+        {
+          "key": "contextPrecision",
+          "score": 1
+        }
+      ]
+    },
+    {
+      "id": "trace_letta_001",
+      "name": "thumbgate_async_rag_eval",
+      "inputs": {
+        "question": "Should Letta execute a force push tool call?"
+      },
+      "outputs": {
+        "response": "ThumbGate blocks force push before execution for Letta tool calls."
+      },
+      "metadata": {
+        "evaluator": "thumbgate-async-eval-observability",
+        "caseId": "letta-tool-gate"
+      },
+      "feedback": [
+        {
+          "key": "faithfulness",
+          "score": 1
+        },
+        {
+          "key": "answerRelevance",
+          "score": 0.5714
+        },
+        {
+          "key": "contextPrecision",
+          "score": 1
+        }
+      ]
+    }
+  ]
+}

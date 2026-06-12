@@ -31,7 +31,7 @@ process.stderr.write(`
   │  Start now:  npx thumbgate init                     │
   │  Updates:    npx thumbgate subscribe you@company.com│
   │                                                     │
-  │  Free after trial: 3 rules, 5 captures/day.        │
+  │  Free after trial: 3 rules, 2 captures/day.        │
   │  Pro ($19/mo): unlimited everything.                │
   ╰─────────────────────────────────────────────────────╯
 

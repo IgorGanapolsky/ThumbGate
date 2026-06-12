@@ -1011,7 +1011,7 @@ test('private-core MCP tools return availability markers when private modules ar
     { name: 'list_intents', arguments: {} },
     { name: 'plan_intent', arguments: { intentId: 'improve_response_quality', context: 'Need a plan' } },
     { name: 'start_handoff', arguments: { intentId: 'improve_response_quality', context: 'Delegate safely' } },
-    { name: 'complete_handoff', arguments: { handoffId: 'handoff_123', outcome: 'success' } },
+    { name: 'complete_handoff', arguments: { handoffId: 'handoff_123', outcome: 'accepted' } },
     { name: 'distribute_context_to_agents', arguments: { prompt: 'distribute context', agents: ['reviewer'] } },
     { name: 'session_report', arguments: { windowHours: 24 } },
     { name: 'generate_operator_artifact', arguments: { artifactType: 'reliability_pulse' } },
@@ -1407,4 +1407,20 @@ test('construct_context_pack rejects invalid namespaces', async () => {
 
 test('safe data dir resolves inside test feedback root', () => {
   assert.equal(SAFE_DATA_DIR.startsWith(tmpFeedbackDir), true);
+});
+
+test('MCP tools/call rejects invalid tool contract schemas', async () => {
+  await assert.rejects(async () => {
+    await handleRequest({
+      jsonrpc: '2.0',
+      id: 31,
+      method: 'tools/call',
+      params: {
+        name: 'capture_feedback',
+        arguments: {
+          signal: 'maybe', // Invalid enum value!
+        },
+      },
+    });
+  }, /Tool contract violation on 'capture_feedback': Parameter 'signal' must be one of/);
 });

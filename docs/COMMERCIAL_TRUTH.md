@@ -23,7 +23,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 ### Free (local, `npx thumbgate serve`)
 
-- 5 feedback captures/day, 25 total captures
+- 2 feedback captures/day, 10 total captures
 - Up to 3 active auto-promoted prevention rules
 - No recall or lesson search
 - No exports (DPO, Databricks, HuggingFace)

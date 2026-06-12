@@ -147,17 +147,71 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
     .sort((a, b) => b.relevanceScore - a.relevanceScore);
   const lexicalRanked = lexicalScored.slice(0, RERANK_CANDIDATE_POOL).map((m) => m.id);
 
-  // Dense: rank the full corpus by embedding similarity (cached vectors).
+  // Check if any lexical match is conclusive (exact/regex match on structured rule or high relevance)
+  let conclusive = false;
+  for (const candidate of lexicalScored) {
+    if (candidate.relevanceScore >= 0.85) {
+      conclusive = true;
+      break;
+    }
+    const rule = candidate.structuredRule;
+    if (rule) {
+      const cond = String(rule.trigger?.condition || rule.if || '').trim().toLowerCase();
+      if (cond.length >= 3) {
+        if (actionContext.toLowerCase().includes(cond)) {
+          conclusive = true;
+          break;
+        }
+        try {
+          const regex = new RegExp(cond, 'i');
+          if (regex.test(actionContext)) {
+            conclusive = true;
+            break;
+          }
+        } catch {}
+      }
+    }
+  }
+
+  if (conclusive) {
+    // Short-circuit: skip embedding/dense search completely
+    const { rerankLessons } = require('./lesson-reranker');
+    const reranked = rerankLessons(actionContext, lexicalScored.slice(0, RERANK_CANDIDATE_POOL), { topK: maxResults, toolName });
+    return reranked.map(shapeLesson);
+  }
+
+  // WHERE-clause pruning: filter memories before vector search to only include
+  // memories relevant to the current toolName or context.
+  const prunedMemories = memories.filter((mem) => {
+    // 1. If lexical score is non-trivial, keep it.
+    const score = scoreRelevance(mem, toolName, actionContext, actionSig);
+    if (score > 0.1) return true;
+
+    // 2. Otherwise, check tool compatibility: if toolsUsed is specified, it must contain our tool
+    const memTools = mem.metadata?.toolsUsed || [];
+    if (memTools.length > 0 && !memTools.some(t => t.toLowerCase() === toolName.toLowerCase())) {
+      return false;
+    }
+    const ruleTools = mem.structuredRule?.metadata?.toolsUsed || [];
+    if (ruleTools.length > 0 && !ruleTools.some(t => t.toLowerCase() === toolName.toLowerCase())) {
+      return false;
+    }
+    return true;
+  });
+
+  // Dense: rank the pruned corpus by embedding similarity (cached vectors).
   let semanticRanked = [];
-  try {
-    const dense = await embeddingIndex.semanticRank(actionContext, memories, {
-      feedbackDir,
-      embedder: options.embedder,
-    });
-    semanticRanked = dense.slice(0, RERANK_CANDIDATE_POOL).map((d) => d.id);
-  } catch {
-    // Embedding failed at runtime → fall back to pure lexical.
-    return retrieveRelevantLessons(toolName, actionContext, options);
+  if (prunedMemories.length > 0) {
+    try {
+      const dense = await embeddingIndex.semanticRank(actionContext, prunedMemories, {
+        feedbackDir,
+        embedder: options.embedder,
+      });
+      semanticRanked = dense.slice(0, RERANK_CANDIDATE_POOL).map((d) => d.id);
+    } catch {
+      // Embedding failed at runtime → fall back to pure lexical.
+      return retrieveRelevantLessons(toolName, actionContext, options);
+    }
   }
 
   // Fuse. Candidate pool is the union — dense can introduce lessons lexical missed.

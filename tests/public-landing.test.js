@@ -95,7 +95,7 @@ test('public landing page exposes above-fold paid Pro CTA with canonical revenue
   assert.match(heroBlock, /aria-label="Choose the right ThumbGate path"/);
   assert.match(heroBlock, /Solo operator: Start Pro/);
   assert.match(heroBlock, /data-cta-id="router_start_pro"/);
-  assert.match(heroBlock, /Enterprise: Start with intake/);
+  assert.match(heroBlock, /Enterprise workflow: Start with intake/);
   assert.match(heroBlock, /Still evaluating: Free CLI/);
   assert.match(landingPage, /function trackRevenueCta/);
   assert.match(landingPage, /plausible\('pricing_cta_click'/);
@@ -149,8 +149,8 @@ test('public landing page includes pricing section with Free, Pro, and Enterpris
   // Free tier is intentionally capped so the npm package proves value without
   // cannibalizing Pro.
   assert.match(landingPage, /Block repeated mistakes daily/);
-  assert.match(landingPage, /5 captures\/day, 3 active rules/i);
-  assert.match(landingPage, /5 feedback captures\/day/i);
+  assert.match(landingPage, /2 captures\/day, 3 active rules/i);
+  assert.match(landingPage, /2 feedback captures\/day/i);
   assert.match(landingPage, /Up to 3 active auto-promoted prevention rules/i);
   assert.doesNotMatch(landingPage, /3 captures.*1 rule.*1 agent/i);
   assert.doesNotMatch(landingPage, /3 captures total/i);
@@ -172,8 +172,8 @@ test('public landing page shows an at-a-glance plan comparison matrix with consi
   assert.match(landingPage, /Pro<br>/);
   assert.match(landingPage, /Enterprise<br>/);
   // Free-tier numbers must match what scripts/rate-limiter.js actually enforces
-  // (5 captures/day, 25 total, 3 active rules) — drift guard against README/card skew.
-  assert.match(landingPage, /5\/day \(25 total\)/);
+  // (2 captures/day, 10 total, 3 active rules) — drift guard against README/card skew.
+  assert.match(landingPage, /2\/day \(10 total\)/);
   // Enterprise is contact-sales; no seat price ladder anywhere on the page.
   assert.doesNotMatch(landingPage, /\$49\s*\/\s*seat\s*\/\s*mo/);
 });
@@ -206,7 +206,7 @@ test('public landing page keeps services intake-led instead of exposing a paid-s
   // Services are no longer exposed as competing direct checkout paths on the
   // homepage.
   assert.doesNotMatch(landingPage, /Pay \$499 diagnostic/);
-  assert.match(landingPage, /Talk to me — Workflow Hardening Sprint/);
+  assert.match(landingPage, /Start the AI Agent Governance Sprint/);
   assert.doesNotMatch(landingPage, /Pay \$1500 sprint/);
   assert.doesNotMatch(landingPage, /Reliable AI Agent Governance Setup/);
   assert.doesNotMatch(landingPage, /\$3,997/);
@@ -245,6 +245,23 @@ test('public landing page includes Plausible analytics and search engine proof b
   assert.match(landingPage, /Proof-backed CI/i);
   assert.doesNotMatch(landingPage, /CI and proof lanes/i);
   assert.match(landingPage, /Claude Code · Cursor · Codex · Gemini · Amp · Cline · OpenCode/i);
+});
+
+test('public landing page reflects June 2026 agent-governance buying triggers', () => {
+  const landingPage = readLandingPage();
+  const sectionStart = landingPage.indexOf('id="june-2026-proof"');
+  const sectionEnd = landingPage.indexOf('id="agentic-development-cycle"', sectionStart);
+  const section = landingPage.slice(sectionStart, sectionEnd);
+
+  assert.ok(sectionStart > -1, 'June 2026 proof section missing');
+  assert.ok(sectionEnd > sectionStart, 'June 2026 proof section should precede AC/DC section');
+  assert.match(section, /MCP and tool lockdown/);
+  assert.match(section, /Managed agents need receipts/);
+  assert.match(section, /Tokenmaxxing backlash/);
+  assert.match(section, /Production code by AI/);
+  assert.match(section, /lower credible conversion bound beats zero/);
+  assert.match(landingPage, /Pro unlocks recall, sync, exports/);
+  assert.doesNotMatch(landingPage, /free CLI, zero friction/);
 });
 
 test('public landing page routes PostHog through same-origin ingest proxy and captures pageviews', () => {

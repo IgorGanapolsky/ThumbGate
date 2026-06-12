@@ -12,6 +12,7 @@ const {
 } = require('../scripts/ai-org-governance');
 const {
   buildMemoryLifecyclePolicy,
+  buildMemoryLifecycleView,
   evaluateMemoryPromotion,
 } = require('../scripts/agent-memory-lifecycle');
 const {
@@ -429,6 +430,45 @@ test('agent memory lifecycle policy gates promotion by type, source, outcome, an
   assert.equal(held.decision, 'hold');
   assert.ok(held.issues.includes('secret_like_content'));
   assert.ok(held.issues.includes('preference_without_explicit_signal'));
+});
+
+test('agent memory lifecycle classifies scoped sticky memories and entity-linked recall', () => {
+  const memory = {
+    title: 'MISTAKE: Stripe checkout payment link broke on the landing page',
+    content: 'How to avoid: run `node scripts/stripe-checkout-diagnostic.js` before claiming checkout is fixed.',
+    category: 'error',
+    importance: 'high',
+    tags: ['billing', 'checkout', 'verification'],
+    timestamp: '2026-01-01T00:00:00.000Z',
+  };
+
+  const view = buildMemoryLifecycleView(memory, {
+    query: 'Stripe payment checkout is broken',
+    now: '2026-06-11T00:00:00.000Z',
+  });
+
+  assert.equal(view.scope, 'task');
+  assert.equal(view.decay.state, 'sticky');
+  assert.ok(view.entities.some((entity) => entity.name === 'Stripe'));
+  assert.ok(view.entities.some((entity) => entity.name === 'node scripts/stripe-checkout-diagnostic.js'));
+  assert.ok(view.retrievalHints.hybridScore > 0.3);
+  assert.ok(view.retrievalHints.matchedEntities.some((entity) => entity.name === 'Stripe'));
+});
+
+test('agent memory lifecycle marks old low-risk lessons for consolidation instead of prompt bloat', () => {
+  const view = buildMemoryLifecycleView({
+    title: 'STYLE: Prefer shorter headings',
+    content: 'What worked: concise copy in one campaign.',
+    tags: ['copy'],
+    timestamp: '2025-01-01T00:00:00.000Z',
+  }, {
+    query: 'deployment verification',
+    now: '2026-06-11T00:00:00.000Z',
+  });
+
+  assert.equal(view.scope, 'user');
+  assert.equal(view.decay.state, 'archive_candidate');
+  assert.equal(view.retrievalHints.hybridScore, 0);
 });
 
 test('model access eligibility blocks platform setup claims before gated approval', () => {

@@ -122,7 +122,7 @@ test('LLM context keeps team pricing and CLI-first positioning aligned with comm
   const context = readText(path.join('public', 'llm-context.md'));
 
   assert.match(context, /Workflow Hardening Sprint/i);
-  assert.match(context, /\$49\/seat\/mo/i);
+  assert.match(context, /custom and scoped/i);
   assert.match(context, /Autoresearch Safety Pack/i);
   assert.match(context, /native-messaging-audit/i);
   assert.match(context, /background-governance/i);

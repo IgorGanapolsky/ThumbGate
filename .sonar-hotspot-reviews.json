@@ -23,6 +23,48 @@
       "lineSubstring": "execSync('git diff --name-only HEAD'",
       "resolution": "SAFE",
       "rationale": "Trajectory scoring needs a local git diff to compare changed files against the user's primer. The command is a fixed literal, cwd is the project root, and no user-controlled text is interpolated into the shell command. Reviewed 2026-05-31 for the v1.26.0 orchestration release."
+    },
+    {
+      "filePath": "scripts/feedback-loop.js",
+      "ruleKey": "javascript:S5852",
+      "lineSubstring": "base.replace",
+      "resolution": "SAFE",
+      "rationale": "Simple trailing slash trimmer regex matches only slashes at the end of the string. Not vulnerable to catastrophic backtracking."
+    },
+    {
+      "filePath": "scripts/check-update.js",
+      "ruleKey": "javascript:S4036",
+      "lineSubstring": "execSync('npm install -g thumbgate@latest'",
+      "resolution": "SAFE",
+      "rationale": "Runs global npm install for self-update. The command is a hardcoded literal and doesn't use user-provided input."
+    },
+    {
+      "filePath": "scripts/operational-integrity.js",
+      "ruleKey": "javascript:S4036",
+      "lineSubstring": "spawnSync('curl'",
+      "resolution": "SAFE",
+      "rationale": "Spawns curl with hardcoded command and array args to perform safe REST API fallback request. Prevents shell injection."
+    },
+    {
+      "filePath": "scripts/self-harness-optimizer.js",
+      "ruleKey": "javascript:S4036",
+      "lineSubstring": "execSync('npm run verify:quick'",
+      "resolution": "SAFE",
+      "rationale": "Runs local validation suite. The command is a hardcoded literal without user input."
+    },
+    {
+      "filePath": "scripts/self-harness-optimizer.js",
+      "ruleKey": "javascript:S4036",
+      "lineSubstring": "git add",
+      "resolution": "SAFE",
+      "rationale": "Runs git add command. The command is a hardcoded literal without user input."
+    },
+    {
+      "filePath": "scripts/self-harness-optimizer.js",
+      "ruleKey": "javascript:S4036",
+      "lineSubstring": "git commit",
+      "resolution": "SAFE",
+      "rationale": "Runs git commit command. The command is a hardcoded literal without user input."
     }
   ]
 

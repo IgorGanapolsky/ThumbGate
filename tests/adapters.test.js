@@ -33,6 +33,8 @@ test('adapter files exist', () => {
     'adapters/opencode/opencode.json',
     'adapters/amp/skills/thumbgate-feedback/SKILL.md',
     'adapters/forge/forge.yaml',
+    'adapters/letta/README.md',
+    'adapters/letta/thumbgate-letta-adapter.js',
     'opencode.json',
     '.opencode/instructions/thumbgate-workflow.md',
     '.opencode/agents/thumbgate-review.md',

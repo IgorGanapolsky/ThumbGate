@@ -1,0 +1,85 @@
+# ThumbGate
+
+> ThumbGate is the local-first pre-action governance runtime for AI coding agents: Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and MCP-compatible tools. Thumbs-down feedback becomes history-aware lessons and PreToolUse checks that block repeated mistakes before the next tool call. Stripe Connect marketplace engineering is a founder proof point, not the primary product category.
+
+## June 2026 Buyer Signal
+
+- MCP and hosted tool adoption make agent actions more dangerous because a bad response can become a real shell, file, database, payment, or cloud action.
+- Managed agents and background coding agents need receipts: which action was blocked, what evidence was required, and why it was allowed or denied.
+- Token-spend pressure makes unlimited-context dumping less attractive; ThumbGate sells scoped recall, search, context gating, and proof exports.
+- AI-authored production code raises audit expectations; ThumbGate maps corrections to rules and records enforcement evidence.
+- Memory-first runtimes such as Letta and Mem0 create more durable agents; ThumbGate complements them with scoped corrective memory, entity-linked recall, lifecycle decay, and pre-action enforcement.
+
+## Core
+
+- [Pretix + Stripe Connect Marketplaces (Hilltown case study)](https://thumbgate.ai/learn/pretix-stripe-connect-marketplaces): How a multi-venue Stripe Connect plugin was shipped on Pretix with venues as Merchant of Record. M1 $1,350 net + M2 $900 net + M3 $1,500 escrow funded.
+- [Pricing](https://thumbgate.ai/pricing): Free local CLI with 2 captures/day, 10 total captures, and 3 active rules; Pro $19/mo or $149/yr; Workflow Hardening Sprint is intake-led and custom-scoped.
+- [Pro checkout](https://thumbgate.ai/checkout/pro): Personal enforcement proof, recall, hosted sync, local dashboard, DPO export.
+- [Workflow Hardening Sprint](https://thumbgate.ai/#workflow-sprint-intake): Intake-led offer for one repeated AI-agent failure, one workflow owner, and one proof plan.
+- [Setup guide](https://thumbgate.ai/guide): `npx thumbgate init` for Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode.
+- [Comparison](https://thumbgate.ai/compare): vs CLAUDE.md, ESLint, manual code review, Mem0, SpecLock.
+- [About](https://thumbgate.ai/about): Founder context and positioning.
+- [Full LLM context](https://thumbgate.ai/llm-context.md): Long-form machine-readable description.
+
+## Stripe Connect & Marketplace Engineering
+
+- [Pretix + Stripe Connect plugin (Hilltown case study)](https://thumbgate.ai/learn/pretix-stripe-connect-marketplaces): Direct Charges, application_fee_amount, multi-venue MoR architecture.
+
+## AI Agent Governance Learn Articles
+
+- [Agentic enterprise context brain](https://thumbgate.ai/learn/agentic-enterprise-context-brain)
+- [Deterministic agent workflows](https://thumbgate.ai/learn/deterministic-agent-workflows)
+- [Cost-aware agent gate routing](https://thumbgate.ai/learn/cost-aware-agent-gate-routing)
+- [Codex role plugins need governance](https://thumbgate.ai/learn/codex-role-plugins-need-governance)
+- [Agentic OS team governance](https://thumbgate.ai/learn/agentic-os-team-governance)
+- [Agent harness pattern](https://thumbgate.ai/learn/agent-harness-pattern)
+- [Agent swarms shared gates](https://thumbgate.ai/learn/agent-swarms-shared-gates)
+- [AI agent governance](https://thumbgate.ai/learn/ai-agent-governance)
+- [AI agent persistent memory](https://thumbgate.ai/learn/ai-agent-persistent-memory)
+- [Background agent control layer](https://thumbgate.ai/learn/background-agent-control-layer)
+- [Claude Code goal with rubrics](https://thumbgate.ai/learn/claude-code-goal-with-rubrics)
+- [Feedback loop vs decision layer](https://thumbgate.ai/learn/feedback-loop-vs-decision-layer)
+- [From prototype to production](https://thumbgate.ai/learn/from-prototype-to-production)
+- [MCP pre-action checks explained](https://thumbgate.ai/learn/mcp-pre-action-checks-explained)
+- [Regulated agent execution boundary](https://thumbgate.ai/learn/regulated-agent-execution-boundary)
+- [Spec-driven development](https://thumbgate.ai/learn/spec-driven-development)
+- [Stop AI agent force-push](https://thumbgate.ai/learn/stop-ai-agent-force-push)
+- [Vibe coding safety net](https://thumbgate.ai/learn/vibe-coding-safety-net)
+- [AC/DC runtime enforcement](https://thumbgate.ai/learn/ac-dc-runtime-enforcement)
+
+## Guides
+
+- [AI agent pre-action approval gates](https://thumbgate.ai/guides/ai-agent-pre-action-approval-gates)
+- [Agentic web governance](https://thumbgate.ai/guides/agentic-web-governance)
+- [MCP tool governance](https://thumbgate.ai/guides/mcp-tool-governance)
+- [Best tools to stop AI agents from breaking production](https://thumbgate.ai/guides/best-tools-stop-ai-agents-breaking-production)
+- [AI agent governance sprint](https://thumbgate.ai/guides/ai-agent-governance-sprint)
+- [Browser automation safety](https://thumbgate.ai/guides/browser-automation-safety)
+- [Claude Code prevent repeated mistakes](https://thumbgate.ai/guides/claude-code-prevent-repeated-mistakes)
+- [Cursor agent guardrails](https://thumbgate.ai/guides/cursor-agent-guardrails)
+- [Codex CLI guardrails](https://thumbgate.ai/guides/codex-cli-guardrails)
+- [Autoresearch agent safety](https://thumbgate.ai/guides/autoresearch-agent-safety)
+- [AI search topical presence](https://thumbgate.ai/guides/ai-search-topical-presence)
+
+## Use Cases
+
+- [Platform teams](https://thumbgate.ai/use-cases/platform-teams)
+- [Regulated workflows](https://thumbgate.ai/use-cases/regulated-workflows)
+
+## Optional
+
+- [Agent discovery manifest](https://thumbgate.ai/.well-known/mcp.json)
+- [Progressive MCP tool index](https://thumbgate.ai/.well-known/mcp/tools.json)
+- [Agent skills](https://thumbgate.ai/.well-known/mcp/skills.json)
+- [MCP applications](https://thumbgate.ai/.well-known/mcp/applications.json)
+- [Dashboard](https://thumbgate.ai/dashboard)
+- [Blog](https://thumbgate.ai/blog)
+- [Federal / public-sector context](https://thumbgate.ai/federal)
+- [Codex plugin](https://thumbgate.ai/codex-plugin)
+- [ChatGPT App](https://thumbgate.ai/chatgpt-app)
+
+## About
+
+- Founder: [Igor Ganapolsky](https://github.com/IgorGanapolsky) — Senior Mobile & AI Engineer; Stripe Connect specialist on ticketing and marketplace platforms.
+- GitHub: https://github.com/IgorGanapolsky/ThumbGate
+- npm: https://www.npmjs.com/package/thumbgate

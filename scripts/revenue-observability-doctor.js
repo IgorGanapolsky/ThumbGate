@@ -105,9 +105,10 @@ async function probePublicFunnel({ appOrigin, fetchImpl = globalThis.fetch, time
     // get past the interstitial and the confirm path is broken, that's a
     // post-deflection regression separately covered by checkout-bot-guard
     // integration tests, not by this prod healthcheck.
+    const headers = { 'User-Agent': 'thumbgate-bot-healthcheck' };
     const [root, checkout] = await Promise.all([
-      fetchTextWithTimeout(fetchImpl, rootUrl, {}, timeoutMs),
-      fetchTextWithTimeout(fetchImpl, checkoutUrl, {}, timeoutMs),
+      fetchTextWithTimeout(fetchImpl, rootUrl, { headers }, timeoutMs),
+      fetchTextWithTimeout(fetchImpl, checkoutUrl, { headers }, timeoutMs),
     ]);
 
     const checkoutBody = checkout.text || '';

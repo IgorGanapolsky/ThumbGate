@@ -38,6 +38,7 @@ test('revenue assist routes workflow help through intake, not blind diagnostic c
   assert.match(intakeLinkTemplate[0], /href="'\s*\+\s*intakeHref\s*\+\s*'"/);
   assert.doesNotMatch(BUYER_INTENT, /Pay \$499 diagnostic/);
   assert.doesNotMatch(BUYER_INTENT, /assist_workflow_diagnostic/);
+  assert.doesNotMatch(BUYER_INTENT, /https:\/\/buy\.stripe\.com\/00w14neyUcXA5pL5e33sI0e/);
 });
 
 test('paid revenue assist does not inject on checkout routes', () => {

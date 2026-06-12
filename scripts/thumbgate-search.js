@@ -151,8 +151,67 @@ function sortResults(results) {
   });
 }
 
-function getFeedbackResults(query, limit, signal) {
-  const results = searchFeedbackLog(query, Math.max(limit * 3, limit));
+function extractFeedbackId(str) {
+  if (!str) return null;
+  const match = str.match(/fb[_-]\d+[_-][a-z0-9]+/i);
+  return match ? match[0].replace(/-/g, '_').toLowerCase() : null;
+}
+
+function deduplicateResults(results) {
+  const bestByFeedbackId = new Map();
+
+  for (const r of results) {
+    const feedId = extractFeedbackId(r.id || r.title || r.file || '');
+    if (feedId) {
+      const existing = bestByFeedbackId.get(feedId);
+      if (!existing) {
+        bestByFeedbackId.set(feedId, r);
+      } else {
+        const sourceOrder = { feedback: 4, contextfs: 3, prevention_rule: 2, document: 1 };
+        const existingOrder = sourceOrder[existing.source] || 0;
+        const currentOrder = sourceOrder[r.source] || 0;
+        if (currentOrder > existingOrder) {
+          bestByFeedbackId.set(feedId, r);
+        } else if (currentOrder === existingOrder && (r.score || 0) > (existing.score || 0)) {
+          bestByFeedbackId.set(feedId, r);
+        }
+      }
+    }
+  }
+
+  const finalResults = [];
+  const seenContent = new Set();
+  const seenIds = new Set();
+
+  for (const r of results) {
+    const feedId = extractFeedbackId(r.id || r.title || r.file || '');
+    let recordToUse = r;
+    if (feedId) {
+      recordToUse = bestByFeedbackId.get(feedId);
+      if (seenIds.has(recordToUse.id)) continue;
+    } else {
+      if (r.id && r.id !== 'null' && String(r.id).trim() !== '') {
+        if (seenIds.has(r.id)) continue;
+      }
+    }
+
+    const normTitle = String(recordToUse.title || '').trim().toLowerCase();
+    const normContext = String(recordToUse.context || '').trim().toLowerCase();
+    const contentKey = `${normTitle}|${normContext}`;
+    if (seenContent.has(contentKey)) continue;
+
+    if (recordToUse.id && recordToUse.id !== 'null' && String(recordToUse.id).trim() !== '') {
+      seenIds.add(recordToUse.id);
+    }
+    seenContent.add(contentKey);
+    finalResults.push(recordToUse);
+  }
+
+  return finalResults;
+}
+
+function getFeedbackResults(query, limit, signal, feedbackDir) {
+  const results = searchFeedbackLog(query, Math.max(limit * 3, limit), { feedbackDir });
   const normalizedSignal = normalizeSignal(signal);
   const filtered = normalizedSignal
     ? results.filter((record) => normalizeRecordSignal(record.signal) === normalizedSignal)
@@ -160,19 +219,19 @@ function getFeedbackResults(query, limit, signal) {
   return filtered.slice(0, limit).map(mapFeedbackResult);
 }
 
-function getContextResults(query, limit) {
-  return searchContextFs(query, limit).map(mapContextResult);
+function getContextResults(query, limit, feedbackDir) {
+  return searchContextFs(query, limit, { feedbackDir }).map(mapContextResult);
 }
 
-function getRuleResults(query, limit) {
-  return searchPreventionRulesSync(query, limit).map(mapRuleResult);
+function getRuleResults(query, limit, feedbackDir) {
+  return searchPreventionRulesSync(query, limit, { feedbackDir }).map(mapRuleResult);
 }
 
-function getDocumentResults(query, limit) {
-  return searchImportedDocuments({ query, limit }).map(mapDocumentResult);
+function getDocumentResults(query, limit, feedbackDir) {
+  return searchImportedDocuments({ query, limit, feedbackDir }).map(mapDocumentResult);
 }
 
-function searchThumbgate({ query, source = 'all', limit = 10, signal = null } = {}) {
+function searchThumbgate({ query, source = 'all', limit = 10, signal = null, feedbackDir = null } = {}) {
   const trimmedQuery = String(query || '').trim();
   if (!trimmedQuery) {
     throw new Error('query is required');
@@ -182,22 +241,29 @@ function searchThumbgate({ query, source = 'all', limit = 10, signal = null } = 
   const normalizedSignal = normalizeSignal(signal);
   const normalizedLimit = normalizeLimit(limit);
 
+  const fetchLimit = Math.max(100, normalizedLimit * 5);
+
   let results = [];
   if (normalizedSource === 'feedback') {
-    results = getFeedbackResults(trimmedQuery, normalizedLimit, normalizedSignal);
+    const raw = getFeedbackResults(trimmedQuery, fetchLimit, normalizedSignal, feedbackDir);
+    results = deduplicateResults(raw).slice(0, normalizedLimit);
   } else if (normalizedSource === 'context') {
-    results = getContextResults(trimmedQuery, normalizedLimit);
+    const raw = getContextResults(trimmedQuery, fetchLimit, feedbackDir);
+    results = deduplicateResults(raw).slice(0, normalizedLimit);
   } else if (normalizedSource === 'rules') {
-    results = getRuleResults(trimmedQuery, normalizedLimit);
+    const raw = getRuleResults(trimmedQuery, fetchLimit, feedbackDir);
+    results = deduplicateResults(raw).slice(0, normalizedLimit);
   } else if (normalizedSource === 'documents') {
-    results = getDocumentResults(trimmedQuery, normalizedLimit);
+    const raw = getDocumentResults(trimmedQuery, fetchLimit, feedbackDir);
+    results = deduplicateResults(raw).slice(0, normalizedLimit);
   } else {
-    results = sortResults([
-      ...getFeedbackResults(trimmedQuery, normalizedLimit, normalizedSignal),
-      ...getContextResults(trimmedQuery, normalizedLimit),
-      ...getRuleResults(trimmedQuery, normalizedLimit),
-      ...getDocumentResults(trimmedQuery, normalizedLimit),
-    ]).slice(0, normalizedLimit);
+    const combined = [
+      ...getFeedbackResults(trimmedQuery, fetchLimit, normalizedSignal, feedbackDir),
+      ...getContextResults(trimmedQuery, fetchLimit, feedbackDir),
+      ...getRuleResults(trimmedQuery, fetchLimit, feedbackDir),
+      ...getDocumentResults(trimmedQuery, fetchLimit, feedbackDir),
+    ];
+    results = deduplicateResults(sortResults(combined)).slice(0, normalizedLimit);
   }
 
   return {

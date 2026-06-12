@@ -32,6 +32,7 @@ test('supply chain safety templates ship as concrete local execution gates', () 
     'review-untrusted-cli-before-execution',
     'checkpoint-dependency-bot-autofix',
     'require-credential-exposure-assessment',
+    'require-local-dependency-vulnerability-scan',
   ]);
   assert.ok(templates.every((template) => template.problem));
   assert.ok(templates.every((template) => template.roi));

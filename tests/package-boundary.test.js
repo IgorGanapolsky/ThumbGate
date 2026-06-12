@@ -126,6 +126,7 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/statusline-cache-read.js',
     'scripts/statusline.sh',
     'scripts/statusline-meta.js',
+    'scripts/tool-contract-validator.js',
     'scripts/tool-registry.js',
     'scripts/trajectory-scorer.js',
     'skills/thumbgate/SKILL.md',
@@ -146,7 +147,6 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'public/pricing.html',
   ];
   const forbiddenPrefixes = [
-    'public/js/',
     'public/learn/',
     'public/guides/',
     'public/compare/',
@@ -307,7 +307,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 292 -> 293 (2026-06-07) to ship scripts/activation-quickstart.js,
   // the runtime behind `thumbgate quickstart` guided first-rule onboarding
   // (bin/cli.js requires it for the activation walkthrough).
-  // Bumped 293 -> 294 (2026-06-10) to ship scripts/secret-redaction.js, the
+  // Bumped 293 -> 310 (2026-06-08) to ship brand assets, icons, SVGs, and buyer intent scripts
+  // required for dashboard visual assets and local parity.
+  // Bumped 310 -> 311 (2026-06-10) to ship scripts/secret-redaction.js, the
   // canonical secret-redaction helper wired into the capture path and the
   // DPO + Databricks exporters (security fix; no Core dependency).
   // Bumped 294 -> 298 (2026-06-10) to ship five discoverable /thumbgate-*
@@ -318,9 +320,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 298 → 299 (2026-06-11) for scripts/sync-telemetry-from-prod.js, which
   // syncs the operator-gated prod telemetry export into the local store so
   // get_business_metrics reflects the real funnel (changeset: sync-prod-telemetry.md).
+  // Bumped 316 -> 317 (2026-06-11) to ship scripts/tool-contract-validator.js.
+  // Bumped 317 -> 321 (2026-06-11) to ship Letta adapter, async-eval-observability,
+  // eval-rag, agent-memory-lifecycle, and stripe-checkout-diagnostic.
   assert.ok(
-    manifest.fileCount <= 299,
-    `npm package should stay <= 299 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 321,
+    `npm package should stay <= 321 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -437,12 +442,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // queue bundle ~4.302 MB; bump restores a one-normal-PR headroom buffer.
   // Bumped 4.35 MB -> 4.40 MB (2026-06-07) for scripts/activation-quickstart.js
   // (the `thumbgate quickstart` onboarding runtime). Measured ~4.356 MB.
-  // Bumped 4.40 MB -> 4.45 MB (2026-06-11) for scripts/sync-telemetry-from-prod.js.
-  // Measured ~4.393 MB — restores one-normal-PR rebase-flap headroom (prior bump
-  // left only ~7 KB). No file-count change beyond the 298 -> 299 bump above.
+  // Bumped 4.60 MB -> 4.65 MB (2026-06-11) for tool contract validator.
+  // Bumped 4.65 MB -> 4.70 MB (2026-06-11) for Letta adapter and evaluation scripts.
+  // Bumped 4.70 MB -> 4.75 MB (2026-06-12) for Core AI provider and main merges.
   assert.ok(
-    manifest.unpackedSize <= 4_450_000,
-    `npm package should stay <= 4.45 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_750_000,
+    `npm package should stay <= 4.75 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

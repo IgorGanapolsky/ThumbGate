@@ -1598,8 +1598,19 @@ function checkWhenClause(when, constraints) {
   if (!when || !when.constraints) return true;
   
   for (const [key, expectedValue] of Object.entries(when.constraints)) {
-    const constraint = constraints[key];
-    if (!constraint || constraint.value !== expectedValue) {
+    let value;
+    if (key === 'careful_mode') {
+      const isEnvTrue = process.env.THUMBGATE_CAREFUL_MODE === '1' || 
+                       String(process.env.THUMBGATE_CAREFUL_MODE).toLowerCase() === 'true';
+      value = isEnvTrue || (constraints[key] && constraints[key].value === expectedValue);
+    } else if (key === 'freeze_mode') {
+      value = Boolean(process.env.THUMBGATE_FREEZE_PATHS) || 
+              (constraints[key] && constraints[key].value !== false && constraints[key].value !== null && constraints[key].value !== undefined);
+    } else {
+      const constraint = constraints[key];
+      value = constraint && constraint.value === expectedValue;
+    }
+    if (!value) {
       return false;
     }
   }
@@ -1647,6 +1658,29 @@ function matchGate(gate, toolName, toolInput = {}) {
   const affectedFiles = affected.files;
   const repoRoot = affected.repoRoot;
   const governanceState = loadGovernanceState();
+  const constraints = loadConstraints();
+
+  if (gate.id === 'on-demand-freeze-mode' || (gate.when && gate.when.constraints && gate.when.constraints.freeze_mode)) {
+    let freezePaths = [];
+    if (process.env.THUMBGATE_FREEZE_PATHS) {
+      freezePaths = process.env.THUMBGATE_FREEZE_PATHS.split(',').map(p => p.trim()).filter(Boolean);
+    } else if (constraints.freeze_mode && typeof constraints.freeze_mode.value === 'string') {
+      freezePaths = constraints.freeze_mode.value.split(',').map(p => p.trim()).filter(Boolean);
+    } else if (constraints.freeze_mode && Array.isArray(constraints.freeze_mode.value)) {
+      freezePaths = constraints.freeze_mode.value;
+    } else if (governanceState.taskScope && Array.isArray(governanceState.taskScope.allowedPaths)) {
+      freezePaths = governanceState.taskScope.allowedPaths;
+    }
+
+    if (freezePaths.length > 0) {
+      const outsideFiles = affectedFiles.filter((filePath) => !matchesAnyGlob(filePath, freezePaths));
+      if (outsideFiles.length > 0) {
+        return { matched: true, matchText, affectedFiles };
+      } else {
+        return { matched: false, matchText, affectedFiles };
+      }
+    }
+  }
 
   if (Array.isArray(gate.toolNames) && gate.toolNames.length > 0 && !gate.toolNames.includes(toolName)) {
     return { matched: false, matchText, affectedFiles };
