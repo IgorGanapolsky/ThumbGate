@@ -12,6 +12,7 @@ const {
   unsafeOutputGate,
   safetyCitationGate,
 } = require('./gates');
+const { queryVectorDB } = require('./vector-db');
 
 const DATA_DIR = path.join(__dirname, '../data');
 
@@ -196,9 +197,9 @@ async function executeRAGPipeline(question) {
       return routeQuery(sanitizedQuestion);
     });
 
-    // --- CHUNK RETRIEVAL ---
+    // --- CHUNK RETRIEVAL (HNSW Vector Search) ---
     const retrievedChunks = await trace.span('retrieval', 'retriever', { query: sanitizedQuestion, route }, async () => {
-      return retrieveChunks(sanitizedQuestion, route);
+      return await queryVectorDB(sanitizedQuestion, 2);
     });
 
     // --- GATE 4: Retrieval Confidence Gate ---
