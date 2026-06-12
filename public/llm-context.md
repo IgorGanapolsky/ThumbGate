@@ -39,6 +39,8 @@ ThumbGate is built on Node.js >=18.18.0 and runs locally on each developer's mac
 
 **Hermes-Style Self-Evolution Guardrails**: Hermes Agent validates demand for persistent memory and generated skills, but automatic skill rewriting creates instruction-drift risk when stable `SKILL.md` files are overwritten without warning. ThumbGate's wedge is safer self-evolution: failures become explicit rule or skill-change proposals, proof gates verify the change, and pre-action checks block risky execution until the learned behavior is accepted.
 
+**vLLM Serving Guardrails**: vLLM validates demand for high-throughput self-hosted inference through PagedAttention, continuous batching, chunked prefill, prefix caching, broad Hugging Face model support, and optimized kernels. ThumbGate should not move deterministic PreToolUse checks into the model-serving batch. Its wedge is runtime rollout governance: require p95 latency, queue-time, cache-isolation, benchmark, model-compatibility, and rollback proof before agent traffic routes through a vLLM lane.
+
 **Audit Trail**: Every check decision (blocked, approved, overridden) is logged with a timestamp, the triggering tool call, the matching lesson ID, and the identity of any human who approved an exception. This log is queryable and exportable for compliance reporting.
 
 **Browser Bridge Audit**: `npx thumbgate native-messaging-audit` inspects local browser native messaging manifests, allowed extension origins, missing host binaries, and dormant AI browser bridges so teams can review connector scope before an agent turns a one-off install into a durable local integration.
@@ -254,6 +256,7 @@ npx thumbgate dashboard --open
 - AI search topical presence guide: https://thumbgate.ai/guides/ai-search-topical-presence
 - Agentic web governance guide: https://thumbgate.ai/guides/agentic-web-governance
 - GPT-5.5 model evaluation guide: https://thumbgate.ai/guides/gpt-5-5-model-evaluation
+- vLLM serving guardrails guide: https://thumbgate.ai/guides/vllm-serving-guardrails
 - Best tools to stop AI agents from breaking production: https://thumbgate.ai/guides/best-tools-stop-ai-agents-breaking-production
 - Relational knowledge guide: https://thumbgate.ai/guides/relational-knowledge-ai-recommendations
 - AI Mode ads and conversational agent-governance promotion: https://thumbgate.ai/guides/ai-mode-ads-agent-governance

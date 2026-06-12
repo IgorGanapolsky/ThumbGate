@@ -3171,6 +3171,7 @@ const SUBCOMMAND_HELP = {
   lessons:       'Usage: npx thumbgate lessons [--query="..."] [--limit=N]\n\nSearch the lesson database (Pro feature).',
   search:        'Usage: npx thumbgate search <query>\n\nSearch ThumbGate knowledge base (Pro feature).',
   'gate-check':  'Usage: npx thumbgate gate-check\n\nPreToolUse hook interface: reads tool call JSON from stdin, outputs gate verdict.',
+  'hermes-gate': 'Usage: npx thumbgate hermes-gate\n\nNous Research Hermes Agent pre_tool_call shell hook: reads Hermes tool-call JSON from stdin, runs the ThumbGate gate pipeline (strict by default), and outputs {"decision":"block","reason":...} to veto or {} to allow. Gates terminal/patch/skill_manage etc. See adapters/hermes/config.yaml.',
   'break-glass': 'Usage: npx thumbgate break-glass --reason="why" [--ttl=5m] [--json]\n\nShort-lived recovery path for over-firing gates. Allows hook settings edits and satisfies PR-create/thread-check gates without disabling core destructive-action protections.',
   serve:         'Usage: npx thumbgate serve\n\nStart the MCP stdio server. This is for agent runtimes, not the local HTTP dashboard.',
   mcp:           'Usage: npx thumbgate mcp\n\nAlias for `thumbgate serve`.',
@@ -3889,6 +3890,53 @@ switch (COMMAND) {
         process.exit(0);
       } catch (err) {
         process.stderr.write(`gate-check error: ${err.message}\n`);
+        process.stdout.write(JSON.stringify({}) + '\n');
+        process.exit(0);
+      }
+    });
+    break;
+  }
+  case 'hermes-gate': {
+    // Nous Research Hermes Agent `pre_tool_call` shell hook.
+    // Hermes pipes each pending tool call as JSON to stdin and reads a decision from stdout;
+    // {"decision":"block","reason":...} vetoes the call. We reuse the SAME gate pipeline as
+    // `gate-check` (runAsync → secret guard, security scan, force-push / skill_manage / learned
+    // prevention rules) and translate the verdict into Hermes's format.
+    //
+    // Hermes `pre_tool_call` is binary (block or allow) with no warn channel, and the whole point
+    // of wiring it is to gate, so we run STRICT enforcement by default — otherwise ThumbGate's
+    // warn-by-default posture would pass every deny through and the hook would block nothing.
+    // Opt out with THUMBGATE_HERMES_WARN_ONLY=1; THUMBGATE_HOTFIX_BYPASS=1 still disables checks.
+    // Wire it in ~/.hermes/config.yaml — see adapters/hermes/config.yaml.
+    if (process.env.THUMBGATE_HERMES_WARN_ONLY !== '1' && process.env.THUMBGATE_HOTFIX_BYPASS !== '1') {
+      process.env.THUMBGATE_STRICT_ENFORCEMENT = '1';
+    }
+    const { runAsync: hermesGateRun } = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
+    let hermesStdin = '';
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', (chunk) => { hermesStdin += chunk; });
+    process.stdin.on('end', async () => {
+      try {
+        const payload = JSON.parse(hermesStdin);
+        // Hermes sends snake_case tool_name/tool_input — gates-engine reads these directly.
+        const verdict = await hermesGateRun({ tool_name: payload.tool_name, tool_input: payload.tool_input });
+        let parsed = {};
+        try { parsed = JSON.parse(verdict); } catch (_e) { parsed = {}; }
+        const hso = parsed.hookSpecificOutput || {};
+        if (hso.permissionDecision === 'deny') {
+          process.stdout.write(JSON.stringify({
+            decision: 'block',
+            reason: hso.permissionDecisionReason || 'Blocked by ThumbGate prevention rule.',
+          }) + '\n');
+        } else {
+          // warn / no match → allow. The gate engine already logged the decision.
+          process.stdout.write(JSON.stringify({}) + '\n');
+        }
+        process.exit(0);
+      } catch (err) {
+        // Hermes hooks fail OPEN on error/timeout — emit an explicit allow so a gate fault
+        // never wedges the agent (reliability ≈ enforcement; keep this fast).
+        process.stderr.write(`hermes-gate error: ${err.message}\n`);
         process.stdout.write(JSON.stringify({}) + '\n');
         process.exit(0);
       }

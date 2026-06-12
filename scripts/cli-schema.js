@@ -506,6 +506,12 @@ const CLI_COMMANDS = [
     flags: [],
   },
   {
+    name: 'hermes-gate',
+    description: 'Hermes Agent pre_tool_call hook: gate runtime tool calls (incl. skill_manage) before they run',
+    group: 'gates',
+    flags: [],
+  },
+  {
     name: 'force-gate',
     description: 'Immediately create a blocking gate from a pattern string',
     group: 'gates',

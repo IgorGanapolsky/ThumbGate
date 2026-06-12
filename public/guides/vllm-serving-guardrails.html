@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>vLLM Serving Guardrails | Gate Self-Hosted LLM Runtime Changes</title>
+  <meta name="description" content="vLLM improves LLM serving throughput with PagedAttention, continuous batching, chunked prefill, prefix caching, and optimized kernels. ThumbGate turns those runtime changes into evidence-gated rollout decisions." />
+  <meta property="og:title" content="vLLM Serving Guardrails | Gate Self-Hosted LLM Runtime Changes" />
+  <meta property="og:description" content="vLLM improves LLM serving throughput with PagedAttention, continuous batching, chunked prefill, prefix caching, and optimized kernels. ThumbGate turns those runtime changes into evidence-gated rollout decisions." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/guides/vllm-serving-guardrails" />
+  <link rel="canonical" href="https://thumbgate.ai/guides/vllm-serving-guardrails" />
+  <link rel="llm-context" href="/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --bg-raised: #111113;
+      --bg-card: #161618;
+      --line: #222225;
+      --text: #e8e8ec;
+      --muted: #8b8b96;
+      --cyan: #22d3ee;
+      --green: #4ade80;
+      --red: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(12px);
+      background: rgba(10, 10, 11, 0.88);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
+    .brand {
+      font-weight: 700;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 211, 238, 0.22);
+      background: rgba(34, 211, 238, 0.1);
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    h1 {
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.06;
+      letter-spacing: -0.04em;
+      margin: 16px 0;
+      max-width: 780px;
+    }
+    .hero p {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .signal-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 28px 0 0;
+    }
+    .signal-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .signal-pill.up {
+      border-color: rgba(74, 222, 128, 0.28);
+      color: #b8f7c8;
+      background: rgba(74, 222, 128, 0.1);
+    }
+    .signal-pill.down {
+      border-color: rgba(248, 113, 113, 0.28);
+      color: #ffc0c0;
+      background: rgba(248, 113, 113, 0.1);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+      gap: 24px;
+      padding-bottom: 72px;
+    }
+    .card, .detail-section, .sidebar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .card { padding: 24px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p { color: var(--muted); }
+    .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
+    .card h2 { margin-top: 0; }
+    .sidebar { display: flex; flex-direction: column; gap: 18px; }
+    .sidebar-card { padding: 20px; }
+    .sidebar-card:first-child {
+      position: sticky;
+      top: 84px;
+      max-height: calc(100vh - 104px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .proof-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 18px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: var(--cyan);
+      color: #071116;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .faq-item { border-top: 1px solid var(--line); padding: 14px 0; }
+    .faq-item summary { cursor: pointer; font-weight: 600; }
+    .faq-item p { color: var(--muted); }
+    .related-card {
+      display: block;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      margin-top: 12px;
+      color: var(--text);
+    }
+    .related-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+      .sidebar-card:first-child { position: static; max-height: none; overflow: visible; }
+    }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "vLLM Serving Guardrails for Self-Hosted Agent Runtimes",
+  "description": "vLLM improves LLM serving throughput with PagedAttention, continuous batching, chunked prefill, prefix caching, and optimized kernels. ThumbGate turns those runtime changes into evidence-gated rollout decisions.",
+  "about": [
+    "vLLM guardrails",
+    "LLM serving governance",
+    "self-hosted model routing",
+    "agent runtime safety"
+  ],
+  "url": "https://thumbgate.ai/guides/vllm-serving-guardrails",
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "mainEntityOfPage": "https://thumbgate.ai/guides/vllm-serving-guardrails"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Should ThumbGate put vLLM in the PreToolUse hot path?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Deterministic policy checks should stay outside the model-serving batch. Use vLLM for optional local judges, evaluation workers, and model-routing experiments only after p95 latency, queue time, timeout, and fallback proof exist."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What vLLM features create governance risk?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "PagedAttention, continuous batching, chunked prefill, prefix caching, model swaps, and optimized kernels can all change latency, memory pressure, routing behavior, and answer quality. ThumbGate gates those changes with benchmark and rollback evidence."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="container">
+      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+    </div>
+  </div>
+
+  <main class="container">
+    <section class="hero">
+      <div class="eyebrow">guide | vllm serving guardrails</div>
+      <h1>vLLM Serving Needs Runtime Guardrails Before Agent Routing</h1>
+      <p>vLLM is useful because it makes self-hosted inference cheaper and higher-throughput through PagedAttention, continuous batching, chunked prefill, prefix caching, and optimized kernels. ThumbGate keeps those runtime optimizations from becoming unverified production routing changes.</p>
+      <div class="signal-row">
+        <div class="signal-pill up">Throughput gains become benchmark evidence</div>
+        <div class="signal-pill down">Unsafe routing changes get blocked</div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div>
+        <div class="card">
+          <h2>Why this page exists</h2>
+          <ul>
+            <li>The high-ROI move is not to become an inference company; it is to govern the teams adopting self-hosted inference.</li>
+            <li>vLLM's PagedAttention and prefix caching make cost and latency optimization attractive, but cache reuse and batching can hide per-request risk.</li>
+            <li>ThumbGate can be the policy and proof layer above vLLM, LiteLLM, SGLang, and hosted-model routers.</li>
+          </ul>
+        </div>
+
+        <section class="detail-section">
+          <h2>How this helps ThumbGate</h2>
+          <p>vLLM buyers are the exact infrastructure persona ThumbGate wants: teams running enough agent work that model-serving cost, latency, cache behavior, and routing quality matter. They do not need another prompt rule. They need proof that a runtime optimization will not silently route unsafe agent work, leak context through cache reuse, or slow PreToolUse decisions.</p>
+          <p>The product wedge is a runtime rollout gate: before enabling a vLLM lane, require a benchmark receipt, latency budget, cache-isolation proof, model compatibility record, and rollback path. Then attach that proof to the agent action that changes routing.</p>
+        </section>
+
+        <section class="detail-section">
+          <h2>High-ROI runtime gates</h2>
+          <ul>
+            <li>Require PagedAttention memory-capacity evidence before raising concurrent agent limits.</li>
+            <li>Require continuous batching p95 latency and queue-time proof before putting any judge model near PreToolUse decisions.</li>
+            <li>Require prefix-cache isolation checks before reusing prompts that may contain repo, customer, secret, or regulated context.</li>
+            <li>Require chunked-prefill correctness and timeout receipts before allowing long-context evaluation jobs.</li>
+            <li>Require model-architecture compatibility, tokenizer parity, and fallback routing before switching from a hosted model to a Hugging Face vLLM lane.</li>
+            <li>CLI path: <code>npx thumbgate model-runtime-guardrails --runtime=vllm --paged-attention --continuous-batching --prefix-cache --p95-ms=250 --json</code>.</li>
+          </ul>
+        </section>
+
+        <section class="detail-section">
+          <h2>Where this creates revenue</h2>
+          <p>This gives ThumbGate an enterprise infrastructure story that is not dependent on one model vendor. The paid motion is a Workflow Hardening Sprint for one model-routing lane: prove the vLLM deployment, gate the risky runtime switches, and make the agent show evidence before it routes production work through a cheaper or faster model path.</p>
+        </section>
+
+        <div class="detail-section">
+          <h2>FAQ</h2>
+          <details class="faq-item">
+            <summary>Should ThumbGate put vLLM in the PreToolUse hot path?</summary>
+            <p>No. Deterministic policy checks should stay outside the model-serving batch. Use vLLM for optional local judges, evaluation workers, and model-routing experiments only after p95 latency, queue time, timeout, and fallback proof exist.</p>
+          </details>
+          <details class="faq-item">
+            <summary>What vLLM features create governance risk?</summary>
+            <p>PagedAttention, continuous batching, chunked prefill, prefix caching, model swaps, and optimized kernels can all change latency, memory pressure, routing behavior, and answer quality. ThumbGate gates those changes with benchmark and rollback evidence.</p>
+          </details>
+        </div>
+      </div>
+
+      <aside class="sidebar">
+        <div class="sidebar-card">
+          <h2>GSD execution brief</h2>
+          <p>This page was prioritized because it captures high-intent demand around vLLM serving guardrails and feeds directly into ThumbGate's proof-led conversion path.</p>
+          <p><strong>Opportunity score:</strong> 82</p>
+          <p><strong>Primary persona:</strong> platform-engineering-lead</p>
+          <p><strong>Keyword cluster:</strong> vllm guardrails, llm serving governance, self-hosted model routing, agent runtime safety</p>
+          <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
+          <div class="proof-links"><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a><a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json" target="_blank" rel="noopener">Automation proof</a><a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub repository</a></div>
+          <a class="cta-button" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_vllm-serving-guardrails&amp;cta_placement=seo_brief&amp;plan_id=pro" target="_blank" rel="noopener">Go Pro - $19/mo</a>
+        </div>
+        <div class="sidebar-card">
+          <h2>Related pages</h2>
+          <a class="related-card" href="/guides/deepseek-v4-runtime-guardrails">
+            <span class="related-label">Related page</span>
+            <strong>DeepSeek-V4 Needs Runtime Guardrails Before Production Routing</strong>
+          </a>
+          <a class="related-card" href="/guides/gpt-5-5-model-evaluation">
+            <span class="related-label">Related page</span>
+            <strong>Evaluate GPT-5.5 Before You Route Production Agent Work</strong>
+          </a>
+          <a class="related-card" href="/learn/cost-aware-agent-gate-routing">
+            <span class="related-label">Related page</span>
+            <strong>Cost-Aware Agent Gate Routing</strong>
+          </a>
+        </div>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>

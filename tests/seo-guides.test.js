@@ -23,6 +23,7 @@ const GUIDE_FILES = [
   'guides/long-running-agent-context-management.html',
   'guides/reasoning-compression-guardrails.html',
   'guides/deepseek-v4-runtime-guardrails.html',
+  'guides/vllm-serving-guardrails.html',
   'guides/background-agent-governance.html',
   'guides/ai-agent-workflow-migration-checklist.html',
   'guides/ai-agent-governance-sprint.html',
@@ -360,6 +361,21 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('DeepSeek V4 Runtime Guardrails'));
     assert.ok(html.includes('npx thumbgate deepseek-v4-runtime-guardrails'));
     assert.ok(html.includes('Hybrid sparse attention'));
+  });
+
+  it('vLLM serving guide routes throughput optimization into runtime rollout gates', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/vllm-serving-guardrails.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('vLLM Serving Guardrails'));
+    assert.ok(html.includes('PagedAttention'));
+    assert.ok(html.includes('continuous batching'));
+    assert.ok(html.includes('prefix caching'));
+    assert.ok(html.includes('npx thumbgate model-runtime-guardrails --runtime=vllm'));
+    assert.ok(html.includes('cache-isolation proof'));
+    assert.ok(html.includes('Pro $19/mo or $149/yr. Team $49/seat/mo.'));
   });
 
   it('Fallow comparison positions static analysis as complementary context', () => {

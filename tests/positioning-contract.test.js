@@ -128,6 +128,9 @@ test('LLM context keeps team pricing and CLI-first positioning aligned with comm
   assert.match(context, /background-governance/i);
   assert.match(context, /GPT-5\.5 Model Evaluation/i);
   assert.match(context, /model-candidates --workload=dashboard-analysis --provider=openai --json/i);
+  assert.match(context, /vLLM Serving Guardrails/i);
+  assert.match(context, /PagedAttention/i);
+  assert.match(context, /cache-isolation/i);
   assert.match(context, /Data Processing & Telemetry Boundaries/i);
   assert.match(context, /THUMBGATE_NO_TELEMETRY=1/i);
   assert.match(context, /reward-hacking failures/i);
