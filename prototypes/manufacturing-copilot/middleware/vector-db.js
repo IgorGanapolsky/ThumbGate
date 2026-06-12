@@ -3,12 +3,19 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { embed } = require('../../../scripts/vector-store');
+const { scanForInjection } = require('./guardrails');
 
 const LANCE_DIR = path.join(__dirname, '../db/lancedb');
 const TABLE_NAME = 'manufacturing_chunks';
 
 let _db = null;
 let _table = null;
+let _quarantined = [];
+
+// Report of chunks rejected at ingestion (for the UI / API surface).
+function getIngestionReport() {
+  return { quarantined: _quarantined };
+}
 
 async function getDB() {
   if (!_db) {
@@ -46,6 +53,7 @@ async function seedVectorDatabase() {
   ];
 
   const records = [];
+  _quarantined = [];
 
   for (const file of dataFiles) {
     const filePath = path.join(__dirname, '../data', file.name);
@@ -62,6 +70,16 @@ async function seedVectorDatabase() {
 
       const headerMatch = sec.match(/##\s+([^\n]+)/);
       const title = headerMatch ? headerMatch[1].trim() : 'General Header';
+
+      // Ingestion-time defense: a poisoned document never becomes "ground
+      // truth". Chunks carrying injection payloads are quarantined here, so
+      // the vector DB only ever contains clean, truthful content.
+      const scan = scanForInjection(sec, 'ingestion');
+      if (scan.status === 'block') {
+        console.warn(`[VectorDB] QUARANTINED chunk "${title}" (${file.source}): ${scan.detail}`);
+        _quarantined.push({ title, source: file.source, fileName: file.name, hits: scan.hits });
+        continue;
+      }
 
       console.log(`[VectorDB] Generating embedding for chunk: "${title}" (${file.source})`);
       const vector = await embed(sec.trim());
@@ -128,4 +146,4 @@ async function queryVectorDB(query, topK = 2) {
   }));
 }
 
-module.exports = { seedVectorDatabase, queryVectorDB };
+module.exports = { seedVectorDatabase, queryVectorDB, getIngestionReport };
