@@ -326,12 +326,16 @@
           item.style.alignItems = 'center';
           item.style.gap = '0.6rem';
           const pageLabel = chunk.sourcePage ? `Page ${chunk.sourcePage}` : 'Live';
+          const categoryLabel = chunk.sourceCategory || chunk.source
+            ? `<span class="span-category-badge span-category-rag" style="font-size: 0.65rem; padding: 0.1rem 0.3rem; background: #475569; color: #cbd5e1; margin-right: 0.2rem;">${chunk.sourceCategory || chunk.source}</span>`
+            : '';
           const sourceLabel = chunk.sourceTitle || chunk.source || chunk.fileName || 'Source';
           const sourceText = chunk.sourceUrl
             ? `<a href="${chunk.sourceUrl}" target="_blank" rel="noreferrer" style="font-weight: 500; color: #38bdf8;">${sourceLabel}</a>`
             : `<span style="font-weight: 500; color: #38bdf8;">${sourceLabel}</span>`;
           
           item.innerHTML = `
+            ${categoryLabel}
             <span class="span-category-badge span-category-rag" style="font-size: 0.65rem; padding: 0.1rem 0.3rem;">${pageLabel}</span>
             ${sourceText}
             <span style="color: #94a3b8;">—</span>

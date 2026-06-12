@@ -67,6 +67,12 @@ status changes.
   question, answers with protocol context, cites the official Modbus
   Application Protocol Specification page, and includes current coil/register
   state instead of failing retrieval confidence.
+- DONE: Developer-facing JSDoc clarified the safety boundary: `clearanceGate`
+  is a chatbot-owned read-access/RBAC gate before retrieval, while
+  `evaluatePreToolUseGate` is ThumbGate's outbound physical tool-call firewall.
+- DONE: Answer citations and the UI reference panel now expose document/manual
+  category labels such as Safety Procedures Manual, Maintenance Manual,
+  Quality Standards Manual, Protocol Specification, and Live PLC Telemetry.
 - DONE: Real local industrial telemetry is wired via Modbus TCP simulator and
   client. Read-only PLC telemetry questions can inspect coils/registers. Unsafe
   physical-control calls still route through ThumbGate's pre-action firewall.

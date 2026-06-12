@@ -25,8 +25,26 @@ function actorRole(actor = {}) {
 }
 
 /**
- * Checks if the user request implies executing a physical plant action (tool call).
- * Returns the proposed tool call object or null.
+ * @typedef {Object} ProposedToolCall
+ * @property {'override_interlock'|'trigger_emergency_shutdown'|'plant_wide_shutdown'} toolName
+ * Internal tool name the graph would execute if ThumbGate allows it.
+ * @property {Object} input Tool arguments derived from the user request.
+ * @property {string} description Human-readable summary for trace/debug UI.
+ */
+
+/**
+ * Classifies whether a user request is asking the agent to perform a physical
+ * plant action.
+ *
+ * This is intentionally narrower than the chatbot's read-access guardrails.
+ * Informational questions such as "explain interlocks" or "show the LOTO
+ * procedure" return `null` so they can continue into LangGraph retrieval.
+ * Direct commands such as "shut down the plant" or "disable the interlock"
+ * become proposed tool calls and are sent to ThumbGate's PreToolUse firewall.
+ *
+ * @param {string} query Sanitized user request text.
+ * @returns {ProposedToolCall|null} Proposed physical action, or `null` for
+ * normal read-only chatbot questions.
  */
 function detectProposedToolCall(query) {
   const q = query.toLowerCase();
@@ -74,8 +92,34 @@ function detectProposedToolCall(query) {
 }
 
 /**
- * ThumbGate PreAction Firewall: Evaluates tool calls against deterministic safety rules.
- * Returns { allowed: boolean, reason: string, gate: string }
+ * @typedef {Object} PreToolUseGateResult
+ * @property {boolean} allowed Whether the physical tool call may execute.
+ * @property {string} [gate] Stable policy identifier for blocked actions.
+ * @property {string} [actorRole] Role that requested the action.
+ * @property {string} [requiredRole] Role required for the action, when
+ * applicable.
+ * @property {string} [reason] Human-readable block reason.
+ */
+
+/**
+ * ThumbGate PreToolUse firewall for outbound physical plant actions.
+ *
+ * This is the only place in the chatbot request path where ThumbGate makes a
+ * safety/governance decision. It receives a proposed tool call after
+ * `detectProposedToolCall` identifies an action intent, then blocks known
+ * harmful or unauthorized plant-control actions before they can reach Modbus,
+ * PLCs, CMMS, or other backend tools.
+ *
+ * Keep this separate from `clearanceGate` in `guardrails.js`:
+ * - `clearanceGate` controls whether a user can read sensitive procedure
+ *   content.
+ * - `evaluatePreToolUseGate` controls whether an agent can execute a physical
+ *   tool call.
+ *
+ * @param {ProposedToolCall|null} toolCall Proposed physical action from
+ * `detectProposedToolCall`.
+ * @param {{ role?: string }} [actor={}] Authenticated user/supervisor context.
+ * @returns {PreToolUseGateResult} Tool execution decision.
  */
 function evaluatePreToolUseGate(toolCall, actor = {}) {
   if (!toolCall) return { allowed: true };

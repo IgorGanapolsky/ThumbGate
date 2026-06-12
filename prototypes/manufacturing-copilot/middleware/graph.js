@@ -177,12 +177,23 @@ function isModbusExplanationQuestion(question) {
     && /\b(explain|what|about|describe|overview|how|why)\b/i.test(question);
 }
 
+function sourceCategoryForChunk(chunk) {
+  const source = String(chunk?.source || '').toLowerCase();
+  if (source.includes('telemetry')) return 'Live PLC Telemetry';
+  if (source.includes('maintenance')) return 'Maintenance Manual';
+  if (source.includes('safety')) return 'Safety Procedures Manual';
+  if (source.includes('quality')) return 'Quality Standards Manual';
+  if (source.includes('protocol')) return 'Protocol Specification';
+  return chunk?.source || 'Source Document';
+}
+
 function citationForChunk(chunk) {
   if (!chunk) return null;
-  const title = chunk.sourceTitle || chunk.source || chunk.title || chunk.fileName;
+  const category = sourceCategoryForChunk(chunk);
+  const sourceName = chunk.sourceTitle || chunk.source || chunk.title || chunk.fileName;
   const page = chunk.sourcePage ? `, p. ${chunk.sourcePage}` : '';
   const url = chunk.sourceUrl ? ` — ${chunk.sourceUrl}` : '';
-  return `${title}${page}${url}`;
+  return `Source type: ${category} — ${sourceName}${page}${url}`;
 }
 
 function cleanChunkText(text) {
@@ -528,7 +539,7 @@ function createManufacturingGraph({
         const context = state.retrievedChunks.length
           ? state.retrievedChunks.map((chunk) => {
               const citation = citationForChunk(chunk);
-              return `${chunk.title}\nCitation: ${citation || 'source metadata unavailable'}\n${cleanChunkText(chunk.text)}`;
+              return `${chunk.title}\n${citation || 'Source metadata unavailable'}\n${cleanChunkText(chunk.text)}`;
             }).join('\n\n---\n\n')
           : 'No matching manual procedures found.';
         const promptValue = await trace.span(
@@ -572,7 +583,7 @@ function createManufacturingGraph({
               if (top.source === 'Modbus TCP Telemetry') {
                 return `Here is the current live PLC status from the Modbus TCP simulator:\n\n${cleanChunkText(top.text)}\n\nIs there a specific manual procedure you need help with?`;
               }
-              return `Certainly! Based on the approved documentation [${citation}], here is the procedure for ${top.title}:\n\n${cleanChunkText(top.text)}\n\nLet me know if you need further clarification or help with this process.`;
+              return `Certainly! Based on the approved documentation ${citation}, here is the procedure for ${top.title}:\n\n${cleanChunkText(top.text)}\n\nLet me know if you need further clarification or help with this process.`;
             }
             return chat(state.messages, { temperature: 0 });
           }
@@ -708,6 +719,7 @@ async function executeManufacturingGraph(question, deps = {}) {
         const mapped = {
           title: chunk.title,
           source: chunk.source,
+          sourceCategory: sourceCategoryForChunk(chunk),
           score: chunk.score,
           fileName: chunk.fileName,
         };
@@ -752,6 +764,7 @@ module.exports = {
   appendCitations,
   cleanChunkText,
   citationForChunk,
+  sourceCategoryForChunk,
   planMetadataFilters,
   planRetrieval,
 };
