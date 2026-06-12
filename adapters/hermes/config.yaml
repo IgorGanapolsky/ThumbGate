@@ -1,0 +1,51 @@
+# ThumbGate ⇄ Nous Research Hermes Agent — local-first PreToolUse governance
+# =============================================================================
+# Merge this into ~/.hermes/config.yaml. It does two independent things:
+#
+#   1. Exposes ThumbGate's recall / feedback tools to Hermes over MCP (optional).
+#   2. Gates Hermes's runtime tool calls BEFORE they execute (the governance layer)
+#      via Hermes's documented `pre_tool_call` shell hook.
+#
+# How the gate works: Hermes pipes each pending tool call to the hook command's
+# stdin as JSON — {"hook_event_name":"pre_tool_call","tool_name":"terminal",
+# "tool_input":{"command":"..."},"session_id":"...","cwd":"..."} — and reads the
+# decision from stdout. ThumbGate returns {"decision":"block","reason":"..."} to
+# veto the call, or {} to allow it. This is the same gate pipeline ThumbGate uses
+# for Claude Code (secret guard, security scan, force-push / destructive / learned
+# prevention rules) — now governing Hermes.
+# -----------------------------------------------------------------------------
+
+# 1) ThumbGate tools available to Hermes (recall lessons, capture thumbs feedback).
+#    MCP only EXPOSES tools to Hermes; it does NOT gate — gating is the hook below.
+mcp_servers:
+  thumbgate:
+    command: "npx"
+    args: ["--yes", "--package", "thumbgate", "thumbgate", "serve"]
+    enabled: true
+
+# 2) Gate every risky tool call before it runs.
+#    matcher is a regex over the tool name. The set below covers the action-bearing
+#    Hermes tools: terminal/process (shell), patch/write_file (file edits),
+#    skill_manage (the SKILL.md self-evolution loop — this is what stops a skill
+#    being silently overwritten), and execute_code.
+hooks:
+  pre_tool_call:
+    - matcher: "terminal|process|patch|write_file|skill_manage|execute_code"
+      command: "npx --yes --package thumbgate thumbgate hermes-gate"
+      timeout: 5
+
+# Require the model/human to see hook decisions rather than auto-accepting them.
+hooks_auto_accept: false
+
+# -----------------------------------------------------------------------------
+# Enforcement note (important):
+#   ThumbGate ships warn-by-default. Because Hermes's pre_tool_call hook is binary
+#   (block or allow) with no "warn-with-context" channel, `thumbgate hermes-gate`
+#   runs in STRICT enforcement by default so that a deny actually blocks. To make
+#   the gate advisory only (never block, just log), set THUMBGATE_HERMES_WARN_ONLY=1
+#   in the hook's environment. THUMBGATE_HOTFIX_BYPASS=1 disables checks entirely.
+#
+# Reliability note: Hermes hooks FAIL OPEN — if the hook errors or exceeds `timeout`,
+# the tool proceeds. Keep the gate fast (the 5s timeout above is the ceiling) so a
+# slow gate never silently disables enforcement.
+# -----------------------------------------------------------------------------
