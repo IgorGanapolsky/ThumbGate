@@ -214,6 +214,7 @@ test('manufacturing copilot LangGraph success path uses LangChain prompt and ret
     'scan_input_injection',
     'inspect_request',
     'evaluate_clearance',
+    'clarify_retrieval_scope',
     'plan_retrieval',
     'plan_metadata_filters',
     'retrieve_manual_context',
