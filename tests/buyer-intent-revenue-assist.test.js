@@ -31,13 +31,14 @@ test('buyer intent script exposes paid CTA and abandon reason observability', ()
   assert.match(BUYER_INTENT, /researching/);
 });
 
-test('paid diagnostic assist opens checkout in the current tab', () => {
-  const diagnosticLinkTemplate = BUYER_INTENT.match(/<a data-assist-cta="assist_workflow_diagnostic"[^;]+Pay \$499 diagnostic<\/a>/);
+test('revenue assist routes workflow help through intake, not blind diagnostic checkout', () => {
+  const intakeLinkTemplate = BUYER_INTENT.match(/<a data-assist-cta="assist_workflow_intake"[^;]+Send workflow first<\/a>/);
 
-  assert.ok(diagnosticLinkTemplate, 'diagnostic CTA template should exist');
-  assert.match(diagnosticLinkTemplate[0], /href="'\s*\+\s*diagnosticHref\s*\+\s*'"/);
-  assert.doesNotMatch(diagnosticLinkTemplate[0], /target="_blank"/);
-  assert.doesNotMatch(diagnosticLinkTemplate[0], /noopener|noreferrer/);
+  assert.ok(intakeLinkTemplate, 'workflow intake CTA template should exist');
+  assert.match(intakeLinkTemplate[0], /href="'\s*\+\s*intakeHref\s*\+\s*'"/);
+  assert.doesNotMatch(BUYER_INTENT, /Pay \$499 diagnostic/);
+  assert.doesNotMatch(BUYER_INTENT, /assist_workflow_diagnostic/);
+  assert.doesNotMatch(BUYER_INTENT, /https:\/\/buy\.stripe\.com\/00w14neyUcXA5pL5e33sI0e/);
 });
 
 test('paid revenue assist does not inject on checkout routes', () => {
