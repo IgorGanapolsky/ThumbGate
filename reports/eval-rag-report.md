@@ -1,6 +1,6 @@
 # RAG Precision & Evaluation Report (Ragas Metrics)
 
-**Timestamp**: 2026-06-12T19:13:34.825Z
+**Timestamp**: 2026-06-12T21:16:25.594Z
 **Average Context Recall**: 0.0%
 **Average Context Precision**: 0.0%
 **API Key Available**: No (Fallback to deterministic keyword eval)

@@ -444,9 +444,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // (the `thumbgate quickstart` onboarding runtime). Measured ~4.356 MB.
   // Bumped 4.60 MB -> 4.65 MB (2026-06-11) for tool contract validator.
   // Bumped 4.65 MB -> 4.70 MB (2026-06-11) for Letta adapter and evaluation scripts.
+  // Bumped 4.70 MB -> 4.75 MB (2026-06-12) for Core AI provider and main merges.
   assert.ok(
-    manifest.unpackedSize <= 4_700_000,
-    `npm package should stay <= 4.70 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_750_000,
+    `npm package should stay <= 4.75 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
