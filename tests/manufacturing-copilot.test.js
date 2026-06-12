@@ -38,6 +38,29 @@ test('manufacturing copilot executeRAGPipeline returns blocked response for harm
   assert.equal(result.gates[0].status, 'block');
 });
 
+test('manufacturing copilot PII redaction handles emails and keys', async (t) => {
+  const llm = require('../prototypes/manufacturing-copilot/middleware/llm');
+  const originalChat = llm.chat;
+  const originalActiveProvider = llm.activeProvider;
+
+  llm.activeProvider = () => 'anthropic';
+  llm.chat = async () => {
+    return 'Operator jane.supervisor@acme.com requested support using API key sk-ant-1234567890abcdef.';
+  };
+  
+  t.after(() => {
+    llm.chat = originalChat;
+    llm.activeProvider = originalActiveProvider;
+  });
+
+  const result = await executeRAGPipeline('How do I perform LOTO on the press?');
+  assert.ok(result.answer);
+  assert.doesNotMatch(result.answer, /jane\.supervisor@acme\.com/);
+  assert.match(result.answer, /\[REDACTED:email\]/);
+  assert.doesNotMatch(result.answer, /sk-ant-1234567890abcdef/);
+  assert.match(result.answer, /\[REDACTED:anthropic_api_key\]/);
+});
+
 test('feedback loop can capture thumbs up/down signal', async () => {
   const resultUp = await captureFeedback({
     signal: 'up',
@@ -57,3 +80,4 @@ test('feedback loop can capture thumbs up/down signal', async () => {
   assert.ok(resultDown);
   assert.equal(resultDown.feedbackEvent.signal, 'negative');
 });
+

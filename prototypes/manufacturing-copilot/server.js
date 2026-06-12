@@ -6,6 +6,8 @@ const path = require('node:path');
 const { executeRAGPipeline } = require('./middleware/rag');
 const { activeProvider } = require('./middleware/llm');
 const { captureFeedback } = require('../../scripts/feedback-loop');
+const { redactPii } = require('../../scripts/pii-scanner');
+const { redactSecrets } = require('../../scripts/secret-redaction');
 
 const PORT = process.env.PORT || 3005;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -211,7 +213,7 @@ function mockPipelineExecution(question) {
   }
 
   return {
-    answer,
+    answer: redactSecrets(redactPii(answer)),
     status,
     toolCall,
     gates,
@@ -225,3 +227,5 @@ function mockPipelineExecution(question) {
 server.listen(PORT, () => {
   console.log(`Manufacturing copilot demo: http://localhost:${PORT}`);
 });
+
+module.exports = server;

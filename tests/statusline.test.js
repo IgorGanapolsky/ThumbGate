@@ -1,4 +1,12 @@
 'use strict';
+// Clean up developer/creator bypass env variables to prevent test failures on developer machines
+delete process.env.THUMBGATE_API_KEY;
+delete process.env.THUMBGATE_DEV_SECRET;
+delete process.env.THUMBGATE_DEV_BYPASS;
+delete process.env.THUMBGATE_DEV_KEY;
+delete process.env.THUMBGATE_PRO_MODE;
+delete process.env.THUMBGATE_NO_RATE_LIMIT;
+
 const { test } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');

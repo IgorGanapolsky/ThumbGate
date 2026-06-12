@@ -1,8 +1,11 @@
 'use strict';
 
+const path = require('node:path');
 const { Trace } = require('./langsmith');
-const { chat } = require('./llm');
+const llm = require('./llm');
 const { queryVectorDB } = require('./vector-db');
+const { redactPii } = require('../../../scripts/pii-scanner');
+const { redactSecrets } = require('../../../scripts/secret-redaction');
 /**
  * Checks if the user request implies executing a physical plant action (tool call).
  * Returns the proposed tool call object or null.
@@ -116,11 +119,13 @@ Keep your answer concise and reference the safety procedure code (like SP-xxx or
     ];
 
     const modelResponse = await trace.span('llm_call', 'llm', { messages }, async () => {
-      return await chat(messages, { temperature: 0 });
+      return await llm.chat(messages, { temperature: 0 });
     });
 
+    const sanitizedAnswer = redactSecrets(redactPii(modelResponse));
+
     const successOutput = {
-      answer: modelResponse,
+      answer: sanitizedAnswer,
       status: 'pass',
       toolCall: null,
       gates: [
