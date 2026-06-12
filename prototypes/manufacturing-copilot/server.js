@@ -84,12 +84,11 @@ async function handleAsk(req, res) {
 
     console.log(`[Server] Received question: "${question}"`);
 
-    // If no provider keys are set, run in local demo mock mode so the app is always functional.
-    const provider = llm.activeProvider();
-    if (provider === 'none') {
-      console.log('[Server] No LLM keys found. Running in local mock/demo mode.');
-      const response = mockPipelineExecution(question);
-      return sendJSON(res, 200, response);
+    // The real LangGraph pipeline runs ALWAYS — with no LLM keys the
+    // generate_answer node falls back to extractive answers, so guardrails,
+    // LanceDB retrieval, the ThumbGate firewall, and tracing are never mocked.
+    if (llm.activeProvider() === 'none') {
+      console.log('[Server] No LLM keys found: pipeline runs with extractive offline answers.');
     }
 
     const result = await executeRAGPipeline(question);
@@ -217,102 +216,6 @@ function createServer({ feedbackCapture = captureFeedback } = {}) {
   });
 }
 
-// Helper for Mock Mode when offline or during credentials setup
-function mockPipelineExecution(question) {
-  const q = question.toLowerCase();
-  
-  let answer = '';
-  let status = 'pass';
-  let toolCall = null;
-  let gates = [
-    {
-      gate: 'rlhf_feedback_layer',
-      status: 'pass',
-      detail: 'Answer generated. Operator feedback thumbs-up/down requested.'
-    }
-  ];
-
-  let spans = [
-    { name: 'detect_tool_call', runType: 'chain', ms: 5, status: 'ok' },
-    { name: 'retrieval', runType: 'retriever', ms: 120, status: 'ok' },
-    { name: 'llm_call', runType: 'llm', ms: 750, status: 'ok' },
-  ];
-
-  const proposedToolCall = detectProposedToolCall(question);
-  const toolGate = evaluatePreToolUseGate(proposedToolCall);
-
-  // Mock Scenario 1: Harmful Tool Call - Bypass Safety
-  if (proposedToolCall?.toolName === 'override_interlock' && !toolGate.allowed) {
-    status = 'blocked';
-    toolCall = proposedToolCall;
-    gates = [
-      {
-        gate: toolGate.gate,
-        status: 'block',
-        detail: toolGate.reason,
-        toolName: toolCall.toolName,
-        input: toolCall.input
-      }
-    ];
-    answer = `[ThumbGate Firewall Blocked Action]\nTool: ${toolCall.toolName}\nReason: ${toolGate.reason}`;
-    spans = [
-      { name: 'detect_tool_call', runType: 'chain', ms: 4, status: 'ok' },
-      { name: 'thumbgate_tool_firewall', runType: 'tool', ms: 12, status: 'error', error: `Blocked: ${toolGate.gate}` }
-    ];
-  }
-  // Mock Scenario 2: Harmful Tool Call - Shutdown
-  else if (proposedToolCall?.toolName === 'trigger_emergency_shutdown' && !toolGate.allowed) {
-    status = 'blocked';
-    toolCall = proposedToolCall;
-    gates = [
-      {
-        gate: toolGate.gate,
-        status: 'block',
-        detail: toolGate.reason,
-        toolName: toolCall.toolName,
-        input: toolCall.input
-      }
-    ];
-    answer = `[ThumbGate Firewall Blocked Action]\nTool: ${toolCall.toolName}\nReason: ${toolGate.reason}`;
-    spans = [
-      { name: 'detect_tool_call', runType: 'chain', ms: 4, status: 'ok' },
-      { name: 'thumbgate_tool_firewall', runType: 'tool', ms: 11, status: 'error', error: `Blocked: ${toolGate.gate}` }
-    ];
-  }
-  // Mock Scenario 3: Standard LOTO Question
-  else if (q.includes('loto') || q.includes('lockout') || q.includes('tagout')) {
-    answer = `To perform Lockout/Tagout (LOTO) on the Hydraulic Press Line per SP-101:
-1. Notify affected employees.
-2. Shut down the press from the console.
-3. Isolate main electrical disconnect (Panel E-7) and hydraulic accumulator bleed valve (V-12).
-4. Apply personal lock and tag to each point.
-5. Cycle bleed valve until pressure reads 0 PSI.
-[Cited: SP-101]`;
-  }
-  // General response
-  else {
-    answer = `Acme Plant 7 Operational Copilot. Ask a question regarding LOTO or maintenance procedures, or submit a request to operate line systems.`;
-  }
-
-  return {
-    answer: redactSecrets(redactPii(answer)),
-    status,
-    toolCall,
-    gates,
-    traceId: `mock-trace-${Date.now()}`,
-    project: 'thumbgate-manufacturing-copilot',
-    remote: false,
-    spans,
-    orchestration: {
-      runtime: 'LangGraph',
-      nodes: status === 'blocked'
-        ? ['inspect_request', 'thumbgate_tool_firewall']
-        : ['inspect_request', 'retrieve_manual_context', 'compose_langchain_prompt', 'generate_answer'],
-      components: ['ChatPromptTemplate', 'ManufacturingRetriever']
-    },
-  };
-}
-
 const server = createServer();
 
 server.listen(PORT, () => {
@@ -323,5 +226,4 @@ server.listen(PORT, () => {
 
 module.exports = server;
 module.exports.createServer = createServer;
-module.exports.mockPipelineExecution = mockPipelineExecution;
 module.exports.SCENARIOS = SCENARIOS;

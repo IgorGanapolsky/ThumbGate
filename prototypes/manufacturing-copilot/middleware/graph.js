@@ -220,11 +220,24 @@ function createManufacturingGraph({
         };
       })
       .addNode('generate_answer', async (state) => {
+        // Offline extractive fallback: when no LLM provider is configured and
+        // no test double was injected, quote the top retrieved procedure
+        // verbatim so the REAL graph (guardrails, LanceDB, tracing) still runs
+        // end-to-end with zero credentials — no mock data path.
+        const offline = chat === llm.chat && llm.activeProvider() === 'none';
         const modelResponse = await trace.span(
           'generate_answer',
           'llm',
-          { messages: state.messages },
-          async () => chat(state.messages, { temperature: 0 })
+          { messages: state.messages, mode: offline ? 'extractive-offline' : 'llm' },
+          async () => {
+            if (offline) {
+              const top = state.retrievedChunks[0];
+              return top
+                ? `Per ${top.title}:\n\n${top.text}`
+                : 'No matching manual procedures found. Escalate to your supervisor.';
+            }
+            return chat(state.messages, { temperature: 0 });
+          }
         );
         const answer = redactSecrets(redactPii(modelResponse));
         return {

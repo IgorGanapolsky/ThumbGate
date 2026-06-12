@@ -5,12 +5,41 @@ const path = require('node:path');
 const { embed } = require('../../../scripts/vector-store');
 const { scanForInjection } = require('./guardrails');
 
-const LANCE_DIR = path.join(__dirname, '../db/lancedb');
+// Env override lets each test process use an isolated index dir, so e2e
+// stub-embedding runs can never poison the dev/demo vector store.
+const LANCE_DIR = process.env.MANUFACTURING_LANCE_DIR || path.join(__dirname, '../db/lancedb');
 const TABLE_NAME = 'manufacturing_chunks';
 
 let _db = null;
 let _table = null;
 let _quarantined = [];
+let _deps = {
+  fs,
+  embed,
+  importLanceDB: () => import('@lancedb/lancedb'),
+  dataDir: path.join(__dirname, '../data'),
+  scanForInjection,
+};
+
+function configureVectorDBForTest(overrides = {}) {
+  _deps = { ..._deps, ...overrides };
+  _db = null;
+  _table = null;
+  _quarantined = [];
+}
+
+function resetVectorDBForTest() {
+  _deps = {
+    fs,
+    embed,
+    importLanceDB: () => import('@lancedb/lancedb'),
+    dataDir: path.join(__dirname, '../data'),
+    scanForInjection,
+  };
+  _db = null;
+  _table = null;
+  _quarantined = [];
+}
 
 // Report of chunks rejected at ingestion (for the UI / API surface).
 function getIngestionReport() {
@@ -19,8 +48,8 @@ function getIngestionReport() {
 
 async function getDB() {
   if (!_db) {
-    const lancedb = await import('@lancedb/lancedb');
-    fs.mkdirSync(LANCE_DIR, { recursive: true });
+    const lancedb = await _deps.importLanceDB();
+    _deps.fs.mkdirSync(LANCE_DIR, { recursive: true });
     _db = await lancedb.connect(LANCE_DIR);
   }
   return _db;
@@ -56,13 +85,13 @@ async function seedVectorDatabase() {
   _quarantined = [];
 
   for (const file of dataFiles) {
-    const filePath = path.join(__dirname, '../data', file.name);
-    if (!fs.existsSync(filePath)) {
+    const filePath = path.join(_deps.dataDir, file.name);
+    if (!_deps.fs.existsSync(filePath)) {
       console.warn(`[VectorDB] Warning: File not found ${filePath}`);
       continue;
     }
 
-    const text = fs.readFileSync(filePath, 'utf-8');
+    const text = _deps.fs.readFileSync(filePath, 'utf-8');
     const sections = text.split(/(?=\n##\s+)/);
 
     for (const sec of sections) {
@@ -74,7 +103,7 @@ async function seedVectorDatabase() {
       // Ingestion-time defense: a poisoned document never becomes "ground
       // truth". Chunks carrying injection payloads are quarantined here, so
       // the vector DB only ever contains clean, truthful content.
-      const scan = scanForInjection(sec, 'ingestion');
+      const scan = _deps.scanForInjection(sec, 'ingestion');
       if (scan.status === 'block') {
         console.warn(`[VectorDB] QUARANTINED chunk "${title}" (${file.source}): ${scan.detail}`);
         _quarantined.push({ title, source: file.source, fileName: file.name, hits: scan.hits });
@@ -82,7 +111,7 @@ async function seedVectorDatabase() {
       }
 
       console.log(`[VectorDB] Generating embedding for chunk: "${title}" (${file.source})`);
-      const vector = await embed(sec.trim());
+      const vector = await _deps.embed(sec.trim());
 
       records.push({
         vector,
@@ -105,7 +134,7 @@ async function seedVectorDatabase() {
     // both faster and exact at this scale — the API surface stays identical.
     console.log('[VectorDB] Creating HNSW index for vector table...');
     try {
-      const lancedb = await import('@lancedb/lancedb');
+      const lancedb = await _deps.importLanceDB();
       await _table.createIndex('vector', {
         config: lancedb.Index.hnswSq({ distanceType: 'cosine' }),
       });
@@ -127,17 +156,33 @@ async function queryVectorDB(query, topK = 2) {
     table = await getTable();
   }
 
-  const queryVector = await embed(query);
+  const codeMatch = query.match(/\b(SP|MM)-\d{3}\b/i);
+  const embeddingVector = await _deps.embed(query);
   
   // Query LanceDB using cosine similarity vector search
+  // Retrieve a candidate pool for hybrid procedure code boosting/reranking only when a code is queried
+  const candidateLimit = codeMatch ? Math.max(topK, 5) : topK;
   const results = await table
-    .search(queryVector)
+    .search(embeddingVector)
     .distanceType('cosine')
-    .limit(topK)
+    .limit(candidateLimit)
     .toArray();
 
-  // Map results to match standard chunk format
-  return results.map(row => ({
+  // Keyword/Code boosting (hybrid RAG reranker):
+  // If query contains a procedure ID like SP-101 or MM-201, bubble matching document to the top
+  if (codeMatch) {
+    const code = codeMatch[0].toUpperCase();
+    results.sort((a, b) => {
+      const aHas = (a.title + ' ' + a.text).toUpperCase().includes(code);
+      const bHas = (b.title + ' ' + b.text).toUpperCase().includes(code);
+      if (aHas && !bHas) return -1;
+      if (!aHas && bHas) return 1;
+      return 0;
+    });
+  }
+
+  // Slice to requested topK and map results
+  return results.slice(0, topK).map(row => ({
     title: row.title,
     text: row.text,
     score: 2.0 - row._distance, // Convert distance metric to a confidence score where higher is better
@@ -146,4 +191,10 @@ async function queryVectorDB(query, topK = 2) {
   }));
 }
 
-module.exports = { seedVectorDatabase, queryVectorDB, getIngestionReport };
+module.exports = {
+  seedVectorDatabase,
+  queryVectorDB,
+  getIngestionReport,
+  configureVectorDBForTest,
+  resetVectorDBForTest,
+};

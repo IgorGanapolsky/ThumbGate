@@ -200,12 +200,13 @@
       
       if (data.status === 'pass') {
         respBadge.classList.add('badge-success');
-        // Show RLHF voting buttons only for successful text responses
-        document.getElementById('rlhf-layer').style.display = 'block';
       } else if (data.status === 'blocked') {
         respBadge.classList.add('badge-danger');
       } else {
         respBadge.classList.add('badge-warning');
+      }
+      if (data.answer) {
+        document.getElementById('rlhf-layer').style.display = 'block';
       }
       respCard.style.display = 'block';
 
@@ -279,8 +280,14 @@
     }
 
     async function sendFeedback(signal) {
+      if (!currentAnswer) {
+        alert('Run a query before submitting feedback.');
+        return;
+      }
+
       document.getElementById('btn-vote-up').disabled = true;
       document.getElementById('btn-vote-down').disabled = true;
+      document.getElementById('rlhf-success-msg').style.display = 'none';
 
       try {
         const res = await fetch('/api/feedback', {
@@ -294,6 +301,8 @@
         });
 
         if (res.ok) {
+          const label = signal === 'up' ? 'Thumbs up' : 'Thumbs down';
+          document.getElementById('rlhf-success-msg').textContent = `${label} submitted to ThumbGate SQLite memory database.`;
           document.getElementById('rlhf-success-msg').style.display = 'block';
         } else {
           alert('Failed to submit feedback.');
