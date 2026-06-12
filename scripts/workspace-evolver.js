@@ -156,12 +156,26 @@ function runCommand(command, {
   const exec = args.shift();
 
   const execBase = require('node:path').basename(exec).toLowerCase();
-  const allowed = ['node', 'node.exe', 'npm', 'npm.cmd', 'python3', 'python', 'pytest'];
-  if (!allowed.includes(execBase) && exec !== process.execPath) {
+  let safeExec;
+  if (exec === process.execPath) {
+    safeExec = process.execPath;
+  } else if (execBase === 'node' || execBase === 'node.exe') {
+    safeExec = process.execPath;
+  } else if (execBase === 'npm') {
+    safeExec = 'npm';
+  } else if (execBase === 'npm.cmd') {
+    safeExec = 'npm.cmd';
+  } else if (execBase === 'python3') {
+    safeExec = 'python3';
+  } else if (execBase === 'python') {
+    safeExec = 'python';
+  } else if (execBase === 'pytest') {
+    safeExec = 'pytest';
+  } else {
     throw new Error(`Binary ${exec} is not authorized for workspace evolution.`);
   }
 
-  const result = spawnSync(exec, args, {
+  const result = spawnSync(safeExec, args, {
     cwd,
     env,
     encoding: 'utf8',
