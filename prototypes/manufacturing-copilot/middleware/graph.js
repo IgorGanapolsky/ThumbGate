@@ -11,6 +11,7 @@ const {
   unsafeOutputGate,
   safetyCitationGate,
   clearanceGate,
+  hallucinationGroundingGate,
 } = require('./guardrails');
 const { redactPii } = require('../../../scripts/pii-scanner');
 const { redactSecrets } = require('../../../scripts/secret-redaction');
@@ -644,6 +645,24 @@ function createManufacturingGraph({
             : {}),
         };
       })
+      .addNode('check_hallucination_grounding', async (state) => {
+        const gateResult = await trace.span(
+          'check_hallucination_grounding',
+          'chain',
+          { chunkCount: state.retrievedChunks.length },
+          async () => hallucinationGroundingGate(state.answer, state.retrievedChunks)
+        );
+        return {
+          gates: gateResult.status === 'pass' ? state.gates : [...state.gates, gateResult],
+          graphNodes: [...state.graphNodes, 'check_hallucination_grounding'],
+          ...(gateResult.status === 'block'
+            ? {
+                status: 'blocked',
+                answer: chatbotGuardrailBlock(gateResult),
+              }
+            : {}),
+        };
+      })
       .addNode('check_safety_citation', async (state) => {
         const gateResult = await trace.span(
           'check_safety_citation',
@@ -678,6 +697,9 @@ function createManufacturingGraph({
         state.status === 'blocked' ? END : 'compose_langchain_prompt'
       ))
       .addConditionalEdges('check_output_safety', (state) => (
+        state.status === 'blocked' ? END : 'check_hallucination_grounding'
+      ))
+      .addConditionalEdges('check_hallucination_grounding', (state) => (
         state.status === 'blocked' ? END : 'check_safety_citation'
       ))
       .addEdge(START, 'sanitize_input')

@@ -224,6 +224,7 @@ test('manufacturing copilot LangGraph success path uses LangChain prompt and ret
     'compose_langchain_prompt',
     'generate_answer',
     'check_output_safety',
+    'check_hallucination_grounding',
     'check_safety_citation'
   ]);
   assert.deepEqual(result.orchestration.components, ['ChatPromptTemplate', 'ManufacturingRetriever']);

@@ -34,6 +34,9 @@ backed by `middleware/guardrails.js` and `middleware/vector-db.js`. These includ
 - **Unsafe-output scan**: Intercepts generated assistant output containing unsafe instructions (e.g. bypassing interlocks).
 - **Safety-citation gate**: Enforces safety-related answers to cite governing
   public OSHA sources with page numbers.
+- **Hallucination controls**: Requires answers to be grounded in retrieved
+  manual/telemetry evidence, show source categories, refuse or escalate when
+  evidence is missing, and block unsupported safety claims before display.
 
 **Truth-grounded vector store**: the LanceDB index is now grounded in public
 OSHA source PDFs stored under `prototypes/manufacturing-copilot/data/sources/`.
@@ -73,6 +76,14 @@ status changes.
 - DONE: Answer citations and the UI reference panel now expose document/manual
   category labels such as Safety Procedures Manual, Maintenance Manual,
   Quality Standards Manual, Protocol Specification, and Live PLC Telemetry.
+- DONE: Make hallucination prevention explicit in the production RAG path: added
+  answer-grounding checks (`hallucinationGroundingGate`) that compare generated
+  claims against retrieved chunks, require source-category citations on all
+  answers, and added regression tests for unsupported claims and missing evidence.
+- DONE: Upgrade manufacturing retrieval to a separate production-grade hybrid store:
+  manufacturing-owned SQLite/FTS5 for exact terms, metadata, document categories,
+  ACL filters, and procedure codes plus LanceDB/HNSW for semantic search. This is
+  completely separate from ThumbGate's feedback SQLite/memory.
 - DONE: Real local industrial telemetry is wired via Modbus TCP simulator and
   client. Read-only PLC telemetry questions can inspect coils/registers. Unsafe
   physical-control calls still route through ThumbGate's pre-action firewall.
@@ -95,7 +106,7 @@ status changes.
 - DONE: `middleware/guardrails.js` (chatbot-owned guardrail functions, updated `safetyCitationGate` to support boolean route arguments).
 - DONE: `middleware/vector-db.js` ingestion quarantine + `getIngestionReport()`.
 - DONE: `middleware/graph.js` LangGraph StateGraph + `rag.js` facade rewrite; server endpoints are fully wired up.
-- DONE: `tests/manufacturing-copilot.test.js` (unit) + `tests/manufacturing-copilot-e2e.test.js` (e2e instrumentation) with 100% focused manufacturing test pass rates (**58/58 tests passing**, verified 2026-06-12).
+- DONE: `tests/manufacturing-copilot.test.js` (unit) + `tests/manufacturing-copilot-e2e.test.js` (e2e instrumentation) with 100% focused manufacturing test pass rates (**59/59 tests passing**, verified 2026-06-12).
 - DONE: Outbound response sanitization (PII + secret redaction) implemented and verified in the RAG execution path.
 - DONE: Saved and organized LangSmith API credentials in git-ignored `.env` for the supervisor trace dashboard.
 - DONE: Frontend (`index.html`) updated to always show thumbs up/down voting controls for all responses (including blocks) to capture feedback on firewall decisions.
@@ -154,11 +165,13 @@ Question
 -> role clearance check for read-only procedure requests
 -> retrieval planner
 -> SQL/metadata filter planning
+-> SQLite/FTS5 exact keyword + procedure-code retrieval
 -> HNSW semantic vector search
 -> local hybrid fusion/rerank
 -> token packer
 -> retrieved-context injection quarantine
 -> LLM answer generation
+-> answer-grounding / hallucination check
 -> unsafe-output and citation gates
 -> response + trace evidence
 
@@ -181,9 +194,14 @@ Location: `prototypes/manufacturing-copilot/`
 
 ## Data Stores And Documents
 
-- Chatbot retrieval store: local LanceDB table under
-  `prototypes/manufacturing-copilot/db/lancedb`, populated from real public
-  OSHA source chunks in `prototypes/manufacturing-copilot/data/*.md`.
+- Chatbot retrieval stores:
+  - Manufacturing-owned SQLite/FTS5 under
+    `prototypes/manufacturing-copilot/db/sqlite/` for exact keyword search,
+    procedure-code lookup, metadata filters, document categories, ACL filters,
+    and deterministic joins.
+  - LanceDB/HNSW table under `prototypes/manufacturing-copilot/db/lancedb`
+    for semantic nearest-neighbor retrieval over embedded manual chunks.
+  These are manufacturing chatbot stores, not ThumbGate memory.
 - Real manual/PDF sources: local copies under
   `prototypes/manufacturing-copilot/data/sources/`:
   `OSHA3120-lockout-tagout.pdf`, `OSHA3170-amputation-machine-guarding.pdf`,
@@ -191,12 +209,39 @@ Location: `prototypes/manufacturing-copilot/`
   `OSHA3636-hazcom-labels-pictograms.pdf`, plus the official
   `modbus-application-protocol-v1-1b3.pdf`.
 - Hybrid retrieval decision layer: LangGraph routes requests between proposed
-  tool-call handling, role clearance gates, chatbot guardrails, and LanceDB vector retrieval;
+  tool-call handling, role clearance gates, chatbot guardrails, SQLite/FTS5
+  retrieval, and LanceDB/HNSW vector retrieval;
   LangChain prompt/retriever components format the RAG answer path.
 - ThumbGate feedback store: ThumbGate's SQLite/FTS5/LanceDB lesson loop captures
   answer votes and promotes lessons/rules outside the chatbot retrieval path.
 - Answers must cite retrieved source title, page number, and OSHA URL. Do not
   reintroduce synthetic manuals or fake page maps.
+
+## Hallucination Control Plan
+
+Hallucination prevention is a chatbot-owned production requirement, not a
+ThumbGate responsibility. The graph must treat the manuals, source PDFs,
+metadata, and live telemetry chunks as the evidence boundary.
+
+Required controls:
+- Grounded-only answer generation: prompt instructions must require the model
+  to answer only from retrieved chunks or live telemetry.
+- Evidence sufficiency: if retrieval returns no relevant source, low confidence,
+  or no allowed document for the user's role, the graph refuses or escalates
+  instead of guessing.
+- Source-category citations: each answer must include the manual/data category
+  (Safety Procedures Manual, Maintenance Manual, Quality Standards Manual,
+  Protocol Specification, Live PLC Telemetry), source title, page number where
+  available, and URL where available.
+- Unsupported-claim gate: generated answers must be checked against the
+  retrieved context for safety-critical claims, procedure codes, equipment
+  names, register/coil values, and source references. Unsupported claims block
+  or force regeneration.
+- Traceability: LangSmith trace must show retrieval evidence, grounding verdict,
+  citation verdict, and whether the answer was generated, refused, or escalated.
+- Regression tests: add tests for unsupported procedure claims, missing page
+  citations, invented equipment/register values, and answers that cite a source
+  category not present in retrieved chunks.
 
 ## Test Coverage Target
 
@@ -209,6 +254,8 @@ Location: `prototypes/manufacturing-copilot/`
   - LangGraph retrieval/LLM path
   - retrieval planning, metadata filter planning, local fusion/rerank, token
     packing, and retrieved-context quarantine
+  - SQLite/FTS5 exact-match retrieval and SQL metadata/ACL filtering
+  - hallucination/unsupported-claim gates
   - LangGraph chatbot-owned guardrail nodes
   - LangChain prompt/retriever adapter behavior
   - output PII/secret redaction

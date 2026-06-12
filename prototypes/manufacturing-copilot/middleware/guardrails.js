@@ -348,6 +348,45 @@ function clearanceGate(question, role) {
   };
 }
 
+/**
+ * Verifies that all procedure codes (SP-xxx, MM-xxx, QC-xxx) mentioned in the answer
+ * are present in the retrieved context chunks to prevent hallucination of non-existent procedures.
+ *
+ * @param {string} answer - The assistant generated answer text.
+ * @param {Object[]} chunks - The list of retrieved context chunks.
+ * @returns {Object} Grounding validation result.
+ */
+function hallucinationGroundingGate(answer, chunks) {
+  const codesInAnswer = answer.match(/\b(SP|MM|QC)-\d{3}\b/gi) || [];
+  if (codesInAnswer.length === 0) {
+    return { gate: 'hallucination_grounding', status: 'pass', detail: 'No procedure codes mentioned; no grounding block required' };
+  }
+
+  const chunkTextCompiled = (chunks || []).map(c => `${c.title || ''} ${c.text || ''}`).join(' ').toUpperCase();
+  const unsupportedCodes = [];
+
+  for (const rawCode of codesInAnswer) {
+    const code = rawCode.toUpperCase();
+    if (!chunkTextCompiled.includes(code)) {
+      unsupportedCodes.push(code);
+    }
+  }
+
+  if (unsupportedCodes.length > 0) {
+    return {
+      gate: 'hallucination_grounding',
+      status: 'block',
+      detail: `Answer hallucinated procedure codes not present in retrieved manuals: ${unsupportedCodes.join(', ')}`,
+    };
+  }
+
+  return {
+    gate: 'hallucination_grounding',
+    status: 'pass',
+    detail: 'All mentioned procedure codes are grounded in retrieved context',
+  };
+}
+
 module.exports = {
   sanitizeInput,
   scanForInjection,
@@ -357,4 +396,5 @@ module.exports = {
   safetyCitationGate,
   ROLE_POLICIES,
   clearanceGate,
+  hallucinationGroundingGate,
 };
