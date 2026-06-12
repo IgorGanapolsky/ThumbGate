@@ -204,8 +204,8 @@ function safetyCitationGate(answer, route) {
   const cited =
     /\bSP-\d{3}\b/.test(answer) ||
     /\bOSHA\b[\s\S]{0,120}\bp\.\s*\d+\b/i.test(answer) ||
-    /\[(Safety Procedures Manual|Maintenance Manual|Quality Control Standards|OSHA\s*\d*),\s*Page\s*\d+\]/i.test(answer) ||
-    /\b(Safety Procedures Manual|Maintenance Manual|Quality Control Standards)\b[\s\S]{0,100}\bp(g|age)?\.\s*\d+/i.test(answer);
+    /\[(Safety Procedures Manual|Maintenance Manual|Quality Control Standards|Quality Standards Manual|Protocol Specification|Live PLC Telemetry|OSHA\s*\d*),\s*(Page\s*\d+|[Ll]ive)\]/i.test(answer) ||
+    /\b(Safety Procedures Manual|Maintenance Manual|Quality Control Standards|Quality Standards Manual|Protocol Specification|Live PLC Telemetry)\b[\s\S]{0,100}\b(p(g|age)?\.\s*\d+|p\.\s*\d+|[Pp]age\s*\d+|[Ll]ive)/i.test(answer);
   return {
     gate: 'safety_citation',
     status: cited ? 'pass' : 'block',
