@@ -170,6 +170,8 @@ async function main() {
     const match = reviews.find((r) => matchesReview(hs, r, sourceText));
     if (!match) {
       skipped += 1;
+      const file = (hs.component || '').split(':').pop();
+      log(`unmatched hotspot: file=${file} line=${hs.line} rule=${hs.ruleKey} message="${hs.message || ''}"`);
       continue;
     }
     const file = (hs.component || '').split(':').pop();
