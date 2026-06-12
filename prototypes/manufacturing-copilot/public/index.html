@@ -354,30 +354,35 @@
       refList.innerHTML = '';
       sourceCategorySummary.innerHTML = '';
       
+      const retrievedMapped = (data.retrievedChunks || []).map(getCategoryName);
+      const evidenceCategories = [
+        'Safety Procedures Manual',
+        'Maintenance Manual',
+        'Quality Standards Manual',
+        'Protocol Specification',
+        'Live PLC Telemetry'
+      ];
+      evidenceCategories.forEach(category => {
+        const mappedCat = getCategoryName(category);
+        const used = retrievedMapped.includes(mappedCat);
+        const row = document.createElement('div');
+        row.className = `source-category-row ${used ? 'used' : 'unused'}`;
+        const name = document.createElement('span');
+        name.className = 'source-category-name';
+        name.style.cssText = used ? getCategoryBadgeStyle(category) : '';
+        name.textContent = category;
+        const state = document.createElement('span');
+        state.className = 'source-category-state';
+        state.textContent = used ? 'Used in answer' : 'Not used';
+        row.append(name, state);
+        sourceCategorySummary.appendChild(row);
+      });
+
+      const citationsHeader = refCard.querySelector('h4:nth-of-type(2)');
+
       if (data.retrievedChunks && data.retrievedChunks.length > 0) {
-        const retrievedMapped = data.retrievedChunks.map(getCategoryName);
-        const evidenceCategories = [
-          'Safety Procedures Manual',
-          'Maintenance Manual',
-          'Quality Standards Manual',
-          'Protocol Specification',
-          'Live PLC Telemetry'
-        ];
-        evidenceCategories.forEach(category => {
-          const mappedCat = getCategoryName(category);
-          const used = retrievedMapped.includes(mappedCat);
-          const row = document.createElement('div');
-          row.className = `source-category-row ${used ? 'used' : 'unused'}`;
-          const name = document.createElement('span');
-          name.className = 'source-category-name';
-          name.style.cssText = used ? getCategoryBadgeStyle(category) : '';
-          name.textContent = category;
-          const state = document.createElement('span');
-          state.className = 'source-category-state';
-          state.textContent = used ? 'Used in answer' : 'Not used';
-          row.append(name, state);
-          sourceCategorySummary.appendChild(row);
-        });
+        if (citationsHeader) citationsHeader.style.display = 'block';
+        refList.style.display = 'flex';
 
         data.retrievedChunks.forEach(chunk => {
           const item = document.createElement('div');
@@ -404,10 +409,11 @@
           `;
           refList.appendChild(item);
         });
-        refCard.style.display = 'block';
       } else {
-        refCard.style.display = 'none';
+        if (citationsHeader) citationsHeader.style.display = 'none';
+        refList.style.display = 'none';
       }
+      refCard.style.display = 'block';
 
       // 2. Render Gates List (PreToolUse Firewall Interceptions)
       const gatesList = document.getElementById('gates-list');

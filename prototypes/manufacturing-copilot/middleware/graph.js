@@ -71,6 +71,46 @@ function classifyQuestionRoute(question) {
     : 'general';
 }
 
+function normalizeSourceCategory(source) {
+  const value = String(source || '').toLowerCase();
+  if (value.includes('confined space') || value.includes('osha 3138') || value.includes('hazard communication') || value.includes('osha 3636')) {
+    return 'Safety Procedures Manual';
+  }
+  if (value.includes('telemetry')) return 'Live PLC Telemetry';
+  if (value.includes('maintenance')) return 'Maintenance Manual';
+  if (value.includes('safety')) return 'Safety Procedures Manual';
+  if (value.includes('quality')) return 'Quality Standards Manual';
+  if (value.includes('protocol')) return 'Protocol Specification';
+  return String(source || 'Source Document');
+}
+
+function sourceMatchesPreference(source, preference) {
+  return normalizeSourceCategory(source) === normalizeSourceCategory(preference);
+}
+
+function inferSourcePreferenceFromQuestion(question, route) {
+  const q = String(question || '').toLowerCase();
+  const preferences = [];
+
+  if (/\b(maintenance|maintain|service|servicing|repair|lubricat(?:e|ion)|preventive maintenance|pm|procedure|procedures)\b/.test(q)) {
+    preferences.push('Maintenance Manual');
+  }
+  if (/\b(quality|inspection|inspect|acceptance|defect|tolerance|standard|standards|qc)\b/.test(q)) {
+    preferences.push('Quality Standards Manual');
+  }
+  if (/\b(safety|loto|lockout|tagout|interlock|guard|guarding|hazard|hazcom|confined space|emergency)\b/.test(q) || route === 'safety') {
+    preferences.push('Safety Procedures Manual');
+  }
+  if (/\b(modbus|plc|register|registers|coil|coils|telemetry|tcp)\b/i.test(q)) {
+    preferences.push('Protocol Specification');
+  }
+  if (isTelemetryQuestion(question)) {
+    preferences.push('Live PLC Telemetry');
+  }
+
+  return [...new Set(preferences.map(normalizeSourceCategory))];
+}
+
 function needsRetrievalScopeClarification(question) {
   const q = String(question || '').toLowerCase();
   const asksSetup = /\b(machine|equipment|line|plant)\s+(setup|set\s*up|start\s*up|startup|configuration|configure)\b/.test(q)
@@ -128,11 +168,12 @@ function planRetrieval(question, route, role) {
     candidateK: procedureCode ? 6 : 5,
     maxContextTokens: route === 'safety' ? 900 : 650,
     queryTerms: tokenize(question),
+    sourcePreference: inferSourcePreferenceFromQuestion(question, route),
   };
 }
 
 function planMetadataFilters(retrievalPlan) {
-  const sourcePreference = [];
+  const sourcePreference = [...(retrievalPlan.sourcePreference || [])];
   if (retrievalPlan.procedureCode?.startsWith('SP-') || retrievalPlan.route === 'safety') {
     sourcePreference.push('Safety Procedures Manual');
   }
@@ -140,10 +181,10 @@ function planMetadataFilters(retrievalPlan) {
     sourcePreference.push('Maintenance Manual');
   }
   if (retrievalPlan.procedureCode?.startsWith('QC-')) {
-    sourcePreference.push('Quality Control Standards');
+    sourcePreference.push('Quality Standards Manual');
   }
   return {
-    sourcePreference: [...new Set(sourcePreference)],
+    sourcePreference: [...new Set(sourcePreference.map(normalizeSourceCategory))],
     procedureCode: retrievalPlan.procedureCode,
     machine: retrievalPlan.machine,
     role: retrievalPlan.role,
@@ -159,7 +200,9 @@ function localHybridRerank(question, chunks, metadataFilters = {}) {
       const haystack = `${chunk.title || ''} ${chunk.text || ''}`.toLowerCase();
       const overlap = [...queryTerms].filter((term) => haystack.includes(term)).length;
       const codeBoost = procedureCode && haystack.toUpperCase().includes(procedureCode) ? 1.5 : 0;
-      const sourceBoost = metadataFilters.sourcePreference?.includes(chunk.source) ? 0.35 : 0;
+      const sourceBoost = metadataFilters.sourcePreference?.some((preference) => (
+        sourceMatchesPreference(`${chunk.source || ''} ${chunk.sourceTitle || ''} ${chunk.title || ''}`, preference)
+      )) ? 0.85 : 0;
       const machineBoost = metadataFilters.machine && haystack.includes(metadataFilters.machine.toLowerCase()) ? 0.45 : 0;
       const vectorScore = Number(chunk.score || 0);
       return {
@@ -196,22 +239,19 @@ function packRetrievedContext(chunks, maxTokens) {
 }
 
 function isTelemetryQuestion(question) {
-  return /\b(status|state|temperature|running|speed|active|armed|power|coil|coils|register|registers|reg|regs|telemetry|working|normal|normally|tripped|stopped|bypassed|plc|modbus)\b/i.test(question);
+  const q = String(question || '');
+  if (/\b(telemetry|plc|modbus|register|registers|reg|regs|coil|coils)\b/i.test(q)) return true;
+  return /\b(status|state|temperature|running|speed|active|armed|power|working|normal|normally|tripped|stopped|bypassed)\b/i.test(q)
+    && /\b(machine|line|press|conveyor|furnace|equipment)\b/i.test(q);
 }
 
 function isModbusExplanationQuestion(question) {
-  return /\b(plc|modbus)\b/i.test(question)
+  return /\b(plc|modbus|coil|coils|register|registers)\b/i.test(question)
     && /\b(explain|what|about|describe|overview|how|why)\b/i.test(question);
 }
 
 function sourceCategoryForChunk(chunk) {
-  const source = String(chunk?.source || '').toLowerCase();
-  if (source.includes('telemetry')) return 'Live PLC Telemetry';
-  if (source.includes('maintenance')) return 'Maintenance Manual';
-  if (source.includes('safety')) return 'Safety Procedures Manual';
-  if (source.includes('quality')) return 'Quality Standards Manual';
-  if (source.includes('protocol')) return 'Protocol Specification';
-  return chunk?.source || 'Source Document';
+  return normalizeSourceCategory(`${chunk?.source || ''} ${chunk?.sourceTitle || ''} ${chunk?.title || ''}`);
 }
 
 function citationForChunk(chunk) {

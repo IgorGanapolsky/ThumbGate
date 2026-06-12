@@ -18,6 +18,8 @@ const {
   polishConversationalAnswer,
   planMetadataFilters,
   planRetrieval,
+  needsRetrievalScopeClarification,
+  isTelemetryQuestion,
 } = require('../prototypes/manufacturing-copilot/middleware/graph');
 const guardrails = require('../prototypes/manufacturing-copilot/middleware/guardrails');
 const llm = require('../prototypes/manufacturing-copilot/middleware/llm');
@@ -269,8 +271,48 @@ test('manufacturing retrieval planner derives metadata filters for safety and ma
   const qualityPlan = planRetrieval('Show QC-301 inspection criteria.', 'general');
   assert.equal(qualityPlan.procedureCode, 'QC-301');
   assert.deepEqual(planMetadataFilters(qualityPlan), {
-    sourcePreference: ['Quality Control Standards'],
+    sourcePreference: ['Quality Standards Manual'],
     procedureCode: 'QC-301',
+    machine: null,
+    role: 'floor_supervisor',
+  });
+});
+
+test('manufacturing retrieval planner asks for scope before generic machine setup fan-out', async () => {
+  assert.equal(needsRetrievalScopeClarification('Explain to me machine setup'), true);
+  assert.equal(needsRetrievalScopeClarification('Explain machine setup for HP-400'), false);
+  assert.equal(needsRetrievalScopeClarification('Explain machine setup from the Maintenance Manual'), false);
+
+  const result = await executeRAGPipeline('Explain to me machine setup', {
+    vectorSearch: async () => {
+      assert.fail('retrieval should not run for ambiguous setup');
+    },
+    chat: async () => {
+      assert.fail('chat should not run for ambiguous setup');
+    }
+  });
+
+  assert.equal(result.status, 'needs_clarification');
+  assert.match(result.answer, /Which evidence category should I use/);
+  assert.deepEqual(result.retrievedChunks, []);
+  assert.ok(result.gates.some(gate => gate.gate === 'retrieval_scope' && gate.status === 'warning'));
+  assert.deepEqual(result.orchestration.nodes, [
+    'sanitize_input',
+    'scan_input_injection',
+    'inspect_request',
+    'evaluate_clearance',
+    'clarify_retrieval_scope'
+  ]);
+});
+
+test('manufacturing retrieval planner routes coil questions to telemetry and protocol specifications', () => {
+  assert.equal(isTelemetryQuestion('is coil 3 working normally now?'), true);
+  assert.equal(isTelemetryQuestion('Explain to me maintenance procedures for coils'), true);
+
+  const maintenancePlan = planRetrieval('Explain to me maintenance procedures for coils', 'general');
+  assert.deepEqual(planMetadataFilters(maintenancePlan), {
+    sourcePreference: ['Maintenance Manual', 'Protocol Specification', 'Live PLC Telemetry'],
+    procedureCode: null,
     machine: null,
     role: 'floor_supervisor',
   });
@@ -301,7 +343,7 @@ test('manufacturing local hybrid rerank prefers exact procedure and source match
   assert.equal(ranked[0].title, 'SP-101 Lockout Tagout');
   assert.equal(ranked[0].originalRank, 2);
   assert.equal(ranked[0].rerank.codeBoost, 1.5);
-  assert.equal(ranked[0].rerank.sourceBoost, 0.35);
+  assert.equal(ranked[0].rerank.sourceBoost, 0.85);
   assert.equal(ranked[0].confidenceScore, ranked[0].rerank.finalScore);
   assert.ok(ranked[0].rerank.finalScore > ranked[1].rerank.finalScore);
 });

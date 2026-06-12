@@ -246,9 +246,32 @@ async function seedVectorDatabaseOnce() {
 
 const CLEARANCE_LEVELS = {
   operator: 0,
+  floor_supervisor: 1,
   supervisor: 1,
+  ehs_incident_commander: 2,
   plant_manager: 2,
 };
+
+function normalizeSourceCategory(source) {
+  const value = String(source || '').toLowerCase();
+  if (value.includes('confined space') || value.includes('osha 3138') || value.includes('hazard communication') || value.includes('osha 3636')) {
+    return 'Safety Procedures Manual';
+  }
+  if (value.includes('telemetry')) return 'Live PLC Telemetry';
+  if (value.includes('maintenance')) return 'Maintenance Manual';
+  if (value.includes('safety')) return 'Safety Procedures Manual';
+  if (value.includes('quality')) return 'Quality Standards Manual';
+  if (value.includes('protocol')) return 'Protocol Specification';
+  return String(source || 'Source Document');
+}
+
+function sourceMatchesPreference(source, preference) {
+  return normalizeSourceCategory(source) === normalizeSourceCategory(preference);
+}
+
+function rowMatchesSourcePreference(row, preference) {
+  return normalizeSourceCategory(`${row.source || ''} ${row.sourceTitle || ''} ${row.title || ''}`) === normalizeSourceCategory(preference);
+}
 
 function getChunkRequiredClearance(row) {
   const title = (row.title || '').toUpperCase();
@@ -289,9 +312,10 @@ async function queryVectorDB(query, topK = 2, options = {}) {
   // Query LanceDB using cosine similarity vector search
   // Retrieve a candidate pool for hybrid procedure code boosting/reranking or fusion reranking
   const shouldRerank = options.rerank === true;
+  const sourcePreference = options.metadataFilters?.sourcePreference || [];
   const candidateLimit = shouldRerank 
     ? Math.max(topK * 3, 10) 
-    : (codeMatch ? Math.max(topK, 15) : topK);
+    : (codeMatch || sourcePreference.length ? Math.max(topK * 8, 20) : topK);
 
   let results;
   try {
@@ -375,13 +399,17 @@ async function queryVectorDB(query, topK = 2, options = {}) {
     return userClearance >= reqClearance;
   });
 
-  let finalResults = clearedResults;
+  const sourceFilteredResults = sourcePreference.length
+    ? clearedResults.filter(row => sourcePreference.some(preference => rowMatchesSourcePreference(row, preference)))
+    : clearedResults;
+
+  let finalResults = sourceFilteredResults;
 
   // Hybrid Fusion / Rerank Stage:
   // Blend semantic cosine score with token-overlap/keyword matching score
   if (shouldRerank) {
     const queryTerms = query.toLowerCase().split(/\W+/).filter(t => t.length > 2);
-    const scored = clearedResults.map(row => {
+    const scored = sourceFilteredResults.map(row => {
       const docText = (row.title + ' ' + row.text).toLowerCase();
       let matches = 0;
       for (const term of queryTerms) {
@@ -437,6 +465,7 @@ module.exports = {
   seedVectorDatabase,
   queryVectorDB,
   getIngestionReport,
+  normalizeSourceCategory,
   configureVectorDBForTest,
   resetVectorDBForTest,
 };
