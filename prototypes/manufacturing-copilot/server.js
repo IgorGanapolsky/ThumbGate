@@ -76,7 +76,7 @@ function parseJSONBody(req) {
 async function handleAsk(req, res) {
   try {
     const payload = await parseJSONBody(req);
-    const { question } = payload;
+    const { question, supervisor, machineState } = payload;
 
     if (!question || typeof question !== 'string') {
       return sendJSON(res, 400, { error: 'Question is required and must be a string.' });
@@ -91,7 +91,7 @@ async function handleAsk(req, res) {
       console.log('[Server] No LLM keys found: pipeline runs with extractive offline answers.');
     }
 
-    const result = await executeRAGPipeline(question);
+    const result = await executeRAGPipeline(question, { supervisor, machineState });
     return sendJSON(res, 200, result);
   } catch (error) {
     const status = error.message === 'Invalid JSON payload.' ? 400 : 500;

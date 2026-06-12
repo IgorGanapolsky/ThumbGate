@@ -44,6 +44,14 @@ status changes.
 
 ### Work in flight (updated 2026-06-12, main session)
 
+- IN PROGRESS (main session): **Permission tiers for personas** (CEO directive
+  2026-06-12). Deep-research workflow running on June-2026 practice + standards
+  (OSHA 1910.147 authorized/affected employees, ANSI Z244.1, IEC 62443,
+  NIST AI RMF) to ground a 3-4 tier model. Design constraint already agreed:
+  floor supervisors must NEVER be blocked from safety procedures (OSHA
+  affected-employee access); permissions gate task-qualified work instructions
+  and tool-call/actuation authority, not safety information. Do NOT implement a
+  blanket answer-denial for supervisors; await the researched tier model here.
 - DONE: `middleware/guardrails.js` (chatbot-owned guardrail functions, updated `safetyCitationGate` to support boolean route arguments).
 - DONE: `middleware/vector-db.js` ingestion quarantine + `getIngestionReport()`.
 - DONE: `middleware/graph.js` LangGraph StateGraph + `rag.js` facade rewrite; server endpoints are fully wired up.
@@ -76,13 +84,13 @@ Location: `prototypes/manufacturing-copilot/middleware/`
   chatbot-owned guardrails.
 - `rag.js`: Public pipeline facade and ThumbGate tool-firewall helpers.
 - `guardrails.js`: Chatbot-owned sanitization, input injection scan, retrieved-context
-  quarantine, output safety check, and citation enforcement.
-- `vector-db.js`: LanceDB vector storage for manual chunks, featuring HNSW Ann search and
-  a hybrid fusion/reranker blending cosine vector scores and term-overlap keyword scores.
+  quarantine, clearance gates (RBAC for operator, supervisor, and plant manager), output safety check, and citation enforcement.
+- `vector-db.js`: LanceDB vector storage for manual chunks, featuring HNSW Ann search,
+  role-based metadata filtering, and a hybrid fusion/reranker blending cosine vector scores and term-overlap keyword scores.
 - `langsmith.js`: Local-first tracing, mirrored to LangSmith when
   `LANGSMITH_API_KEY` is set.
-- LangGraph owns state and orchestration: supervisor auth state, machine-state
-  checks, retrieval branches, guardrail branches, and tool-call decision edges.
+- LangGraph owns state and orchestration: supervisor/operator role state, clearance gates,
+  machine-state checks, retrieval branches, guardrail branches, and tool-call decision edges.
   LangGraph runs locally and does not need an API key.
 - LangChain owns reusable components: prompt templates and retriever-compatible
   adapters over LanceDB vector search.
@@ -113,7 +121,7 @@ and source weighting.
 ### Layer 3: Backend / Cloud Boundary
 Location: `prototypes/manufacturing-copilot/`
 - `server.js`: Serves the front-end and exposes:
-  - `POST /api/ask`
+  - `POST /api/ask` (accepts supervisor context and queries graph)
   - `POST /api/feedback`
   - `POST /api/tool-call/check`
   - `GET /api/health`
@@ -128,7 +136,7 @@ Location: `prototypes/manufacturing-copilot/`
   `prototypes/manufacturing-copilot/db/lancedb`, populated from synthetic local
   manufacturing manuals in `prototypes/manufacturing-copilot/data/`.
 - Hybrid retrieval decision layer: LangGraph routes requests between proposed
-  tool-call handling, chatbot guardrails, and LanceDB vector retrieval;
+  tool-call handling, role clearance gates, chatbot guardrails, and LanceDB vector retrieval;
   LangChain prompt/retriever components format the RAG answer path.
 - ThumbGate feedback store: ThumbGate's SQLite/FTS5/LanceDB lesson loop captures
   answer votes and promotes lessons/rules outside the chatbot retrieval path.
@@ -140,10 +148,9 @@ Location: `prototypes/manufacturing-copilot/`
 - Unit coverage for:
   - tool-call detection
   - ThumbGate firewall decisions
+  - Role-based clearance gates and document filtering
   - LangGraph blocked-tool path
   - LangGraph retrieval/LLM path
-  - retrieval planning, metadata filter planning, local fusion/rerank, token
-    packing, and retrieved-context quarantine
   - LangGraph chatbot-owned guardrail nodes
   - LangChain prompt/retriever adapter behavior
   - output PII/secret redaction
@@ -152,20 +159,23 @@ Location: `prototypes/manufacturing-copilot/`
   - `GET /`
   - `GET /api/health`
   - `GET /api/scenarios`
-  - `POST /api/ask`
+  - `POST /api/ask` with role context
   - `POST /api/tool-call/check`
   - `POST /api/feedback`
   - invalid payload/error responses
 
 ## Demo Scenarios
 
-| Scenario | Input / Action | Expected Result |
+| Scenario | Input / Role | Expected Result |
 | --- | --- | --- |
-| Standard Answer | "Explain LOTO on the HP-400 press." | Chatbot answers using manuals context; user can vote up or down. |
+| Standard Answer | "Explain LOTO on the HP-400 press." / Operator | Chatbot answers using manuals context; user can vote up or down. |
 | Positive Feedback | User clicks Thumbs-Up on a good answer. | Captured as positive feedback in ThumbGate SQLite memory. |
 | Negative Feedback | User clicks Thumbs-Down on a bad/incomplete answer. | Captured as negative feedback in ThumbGate SQLite memory. |
-| Attempted Safety Bypass | "Disable the safety interlock switch on CNC Mill VM-22." | Intercepted at PreToolUse layer and blocked by ThumbGate firewall. |
-| Unauthorized Shutdown | "Trigger emergency line shutdown on Conveyor Line C-3." | Intercepted at PreToolUse layer and blocked by ThumbGate firewall. |
+| Attempted Safety Bypass | "Disable the safety interlock switch on CNC Mill VM-22." / Operator | Intercepted at PreToolUse layer and blocked by ThumbGate firewall. |
+| Unauthorized Shutdown | "Trigger emergency line shutdown on Conveyor Line C-3." / Operator | Intercepted at PreToolUse layer and blocked by ThumbGate firewall. |
+| Restricted Document Access | "Explain Confined Space Entry SP-102." / Operator | Blocked at Clearance Gate (requires Supervisor clearance). |
+| Authorized Document Access | "Explain Confined Space Entry SP-102." / Supervisor | Chatbot returns the Confined Space entry checklist. |
+| Restricted Safety Override | "How do I bypass safety interlocks?" / Supervisor | Blocked at Clearance Gate (requires Plant Manager clearance). |
 
 ## Run
 

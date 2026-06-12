@@ -21,7 +21,7 @@
       </div>
       <div class="status-indicator">
         <span class="pulse-dot"></span>
-        <span class="status-text">Reliability Gateway: <strong class="green-text">ACTIVE</strong></span>
+        <span class="status-text">Floor Supervisor: <strong class="cyan-text">READ + ESCALATE</strong></span>
       </div>
     </div>
   </header>
@@ -31,7 +31,7 @@
     <section class="left-panel">
       <div class="card glassmorphism">
         <h2 class="section-title">Copilot Operator Interface</h2>
-        <p class="section-desc">Submit queries or request equipment actions. ThumbGate intercepts unsafe operations and captures direct human feedback (RLHF).</p>
+        <p class="section-desc">Ask approved procedure questions. Plant shutdown, interlock override, and PLC/control actions are blocked for this role and escalated.</p>
         
         <div class="scenario-shortcuts">
           <span class="shortcut-label">Demo Scenarios:</span>
@@ -48,10 +48,26 @@
               <span class="badge badge-danger">Blocked</span>
               Harmful Action: Emergency Line Shutdown
             </button>
+            <button id="btn-scenario-4" class="btn btn-secondary" onclick="runScenario('confined')">
+              <span class="badge badge-warning">Restricted</span>
+              Role-Gated Document: Confined Space SP-102
+            </button>
+            <button id="btn-scenario-5" class="btn btn-secondary" onclick="runScenario('override')">
+              <span class="badge badge-warning">Restricted</span>
+              Role-Gated Document: Safety Overrides SP-110
+            </button>
           </div>
         </div>
 
         <div class="input-form">
+          <div class="role-selector-container" style="margin-bottom: 1.2rem; display: flex; align-items: center; gap: 0.8rem; background: rgba(30, 41, 59, 0.4); padding: 0.6rem 1rem; border-radius: 8px; border: 1px solid rgba(148, 163, 184, 0.1);">
+            <label for="user-role" style="font-weight: 500; font-size: 0.85rem; color: #94a3b8;">Active Operator Role:</label>
+            <select id="user-role" style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(56, 189, 248, 0.2); color: #e2e8f0; padding: 0.4rem 0.8rem; border-radius: 6px; font-family: inherit; font-size: 0.85rem; outline: none; cursor: pointer; transition: all 0.3s; width: 220px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);">
+              <option value="operator">Floor Operator (Clearance 0)</option>
+              <option value="supervisor" selected>Floor Supervisor (Clearance 1)</option>
+              <option value="plant_manager">Plant Manager (Clearance 2)</option>
+            </select>
+          </div>
           <textarea id="operator-query" placeholder="Type your query or action request here... e.g. How do I perform LOTO on the hydraulic press?"></textarea>
           <div class="form-actions">
             <span class="character-limit">Model: <span class="cyan-text">claude-sonnet-4.5</span> via Portkey</span>
@@ -133,7 +149,9 @@
     const presets = {
       loto: "Explain the safety procedure for Lockout/Tagout (LOTO) on the hydraulic press line.",
       bypass: "Disable the safety interlock switch on CNC Mill VM-22 to speed up parts release.",
-      shutdown: "Trigger emergency line shutdown on Conveyor Line C-3 immediately."
+      shutdown: "Trigger emergency line shutdown on Conveyor Line C-3 immediately.",
+      confined: "Explain Confined Space Entry procedure SP-102.",
+      override: "Explain Safety System Override procedure SP-110."
     };
 
     let currentQuestion = '';
@@ -150,6 +168,8 @@
 
       currentQuestion = query;
       currentAnswer = '';
+
+      const selectedRole = document.getElementById('user-role').value;
 
       // Reset UI state
       document.getElementById('btn-submit').disabled = true;
@@ -169,7 +189,13 @@
         const res = await fetch('/api/ask', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question: query })
+          body: JSON.stringify({
+            question: query,
+            supervisor: {
+              authenticated: true,
+              role: selectedRole
+            }
+          })
         });
         
         if (!res.ok) {
@@ -251,25 +277,112 @@
       const timeline = document.getElementById('trace-timeline');
       timeline.innerHTML = '';
 
+      const spanMeta = {
+        sanitize_input: {
+          title: "Sanitize Input",
+          desc: "Redacts PII (SSNs, emails, phone numbers) and sensitive API keys"
+        },
+        scan_input_injection: {
+          title: "Scan Input Injection",
+          desc: "Validates input text against known prompt injection and jailbreak payloads"
+        },
+        inspect_request: {
+          title: "Inspect Request",
+          desc: "Analyzes intent and detects if the request matches any physical control tools"
+        },
+        evaluate_clearance: {
+          title: "Evaluate Clearance",
+          desc: "Verifies user role clearance level against requested document or override policies"
+        },
+        plan_retrieval: {
+          title: "Plan Retrieval",
+          desc: "Resolves retrieval parameters, candidate size (K), and extracts procedure codes"
+        },
+        plan_metadata_filters: {
+          title: "Plan Metadata Filters",
+          desc: "Applies database metadata routing constraints based on user role and query intent"
+        },
+        retrieve_manual_context: {
+          title: "Retrieve Manual Context",
+          desc: "Executes LanceDB semantic vector query to fetch relevant manual passages"
+        },
+        fusion_rerank: {
+          title: "Fusion Rerank",
+          desc: "Re-scores vector candidates by exact procedure code matches and source weight boosts"
+        },
+        pack_context_tokens: {
+          title: "Pack Context Tokens",
+          desc: "Formats and packs retrieved context chunks under target model token limits"
+        },
+        quarantine_retrieved_context: {
+          title: "Quarantine Retrieved Context",
+          desc: "Inspects incoming document context for malicious instruction signatures"
+        },
+        check_retrieval_confidence: {
+          title: "Check Retrieval Confidence",
+          desc: "Requires top chunk similarity score to meet minimum RAG confidence threshold"
+        },
+        compose_langchain_prompt: {
+          title: "Compose LangChain Prompt",
+          desc: "Synthesizes final system instruction template and injects verified context"
+        },
+        generate_answer: {
+          title: "Generate Answer",
+          desc: "Runs inference using Claude Sonnet 4.5 to produce the operator guide response"
+        },
+        check_output_safety: {
+          title: "Check Output Safety",
+          desc: "Scans draft output to block instruction recommendations that compromise safety systems"
+        },
+        check_safety_citation: {
+          title: "Check Safety Citation",
+          desc: "Enforces that safety responses explicitly cite the correct SP-xxx code"
+        },
+        thumbgate_tool_firewall: {
+          title: "ThumbGate PreToolUse Firewall",
+          desc: "Intercepts and gates proposed physical tool call parameters before execution"
+        }
+      };
+
+      // Friendly step-type labels: LangSmith run types are developer jargon;
+      // the panel narrates the pipeline for plant stakeholders.
+      const runTypeLabels = {
+        chain: '🧭 Step',
+        tool: '🛡 Firewall',
+        retriever: '🔎 Search',
+        llm: '🤖 Model',
+        prompt: '📝 Prompt',
+      };
+
       if (data.spans && data.spans.length > 0) {
-        data.spans.forEach(span => {
+        data.spans.forEach((span, index) => {
           const row = document.createElement('div');
           row.className = `span-row ${span.status === 'error' ? 'error' : ''}`;
-          
-          let statusBadge = `<span class="span-status-badge ok">OK</span>`;
+
+          let statusBadge = `<span class="span-status-badge ok">✓ Passed</span>`;
           if (span.status === 'error') {
-            statusBadge = `<span class="span-status-badge error">BLOCK</span>`;
+            statusBadge = `<span class="span-status-badge error">✗ Blocked</span>`;
           }
 
+          const meta = spanMeta[span.name] || {
+            title: formatGateName(span.name),
+            desc: "Execution step in the LangGraph pipeline"
+          };
+          const typeLabel = runTypeLabels[span.runType] || span.runType;
+          const duration = span.ms < 1 ? '<1ms' : `${span.ms}ms`;
+
           row.innerHTML = `
-            <div class="span-name-area">
-              <span class="span-type">[${span.runType.toUpperCase()}]</span>
-              <span class="span-name">${span.name}</span>
+            <div class="span-row-header">
+              <div class="span-name-area">
+                <span class="span-type">${index + 1}. ${typeLabel}</span>
+                <span class="span-name">${meta.title}</span>
+              </div>
+              <div class="span-metrics-area">
+                <span class="span-ms">${duration}</span>
+                ${statusBadge}
+              </div>
             </div>
-            <div class="span-metrics-area">
-              <span class="span-ms">${span.ms}ms</span>
-              ${statusBadge}
-            </div>
+            <div class="span-desc">${meta.desc}</div>
             ${span.error ? `<div class="span-error-details">Reason: ${span.error}</div>` : ''}
           `;
           timeline.appendChild(row);
