@@ -193,10 +193,7 @@ function citationForChunk(chunk) {
   const sourceName = chunk.sourceTitle || chunk.source || chunk.title || chunk.fileName;
   const page = chunk.sourcePage ? `, p. ${chunk.sourcePage}` : '';
   const url = chunk.sourceUrl ? ` — ${chunk.sourceUrl}` : '';
-  if (category && category !== sourceName) {
-    return `[${category}] ${sourceName}${page}${url}`;
-  }
-  return `[${sourceName}]${page}${url}`;
+  return `Source type: ${category} — ${sourceName}${page}${url}`;
 }
 
 function cleanChunkText(text) {
@@ -209,7 +206,10 @@ function cleanChunkText(text) {
 function appendCitations(answer, chunks) {
   const citations = [...new Set((chunks || []).map(citationForChunk).filter(Boolean))];
   if (!citations.length) return answer;
-  if (/^Sources:/m.test(answer)) return answer;
+  if (/^Sources:/m.test(answer)) {
+    if (/Source type:/i.test(answer)) return answer;
+    return `${answer.trim()}\n\nDocument categories:\n${citations.map((citation) => `- ${citation}`).join('\n')}`;
+  }
   return `${answer}\n\nSources:\n${citations.map((citation) => `- ${citation}`).join('\n')}`;
 }
 

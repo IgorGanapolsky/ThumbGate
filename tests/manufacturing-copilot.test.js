@@ -12,6 +12,7 @@ const {
 const {
   createManufacturingGraph,
   createManufacturingRetriever,
+  appendCitations,
   localHybridRerank,
   packRetrievedContext,
   polishConversationalAnswer,
@@ -149,7 +150,7 @@ test('manufacturing copilot answers explanatory interlock questions with OSHA pa
   assert.equal(result.status, 'pass');
   assert.equal(result.toolCall, null);
   assert.match(result.answer, /interlock is a safety-control interface/i);
-  assert.match(result.answer, /\[Safety Procedures Manual\]/i);
+  assert.match(result.answer, /Source type: Safety Procedures Manual/i);
   assert.match(result.answer, /OSHA 3170 Safeguarding Equipment and Protecting Employees from Amputations, p\. 13/);
   assert.doesNotMatch(result.answer, /source_title/);
   assert.ok(!result.spans.some(span => span.name === 'thumbgate_tool_firewall'));
@@ -343,7 +344,7 @@ test('manufacturing copilot LangGraph has credential-free extractive offline mod
 
   assert.equal(result.status, 'pass');
   assert.match(result.answer, /here is the procedure for SP-101 Lockout/i);
-  assert.match(result.answer, /\[Safety Procedures Manual\]/);
+  assert.match(result.answer, /Source type: Safety Procedures Manual/);
   assert.match(result.answer, /hydraulic bleed-down/);
   assert.ok(result.spans.some(span => span.name === 'generate_answer'));
 });
@@ -1192,8 +1193,8 @@ test('manufacturing copilot answers conversational PLC Modbus questions with pro
     assert.equal(result.toolCall, null);
     assert.match(result.answer, /Modbus/i);
     assert.match(result.answer, /PLC|coils|holding registers/i);
-    assert.match(result.answer, /\[Protocol Specification\]/i);
-    assert.match(result.answer, /\[Live PLC Telemetry\]/i);
+    assert.match(result.answer, /Source type: Protocol Specification/i);
+    assert.match(result.answer, /Source type: Live PLC Telemetry/i);
     assert.match(result.answer, /MODBUS Application Protocol Specification V1\.1b3, p\. 5/);
     assert.doesNotMatch(result.answer, /procedure for Modbus TCP PLC Context/i);
     assert.doesNotMatch(result.answer, /Let me know if you need further clarification/i);
@@ -1227,4 +1228,25 @@ test('manufacturing answer polish keeps PLC Modbus explanations conversational',
   assert.match(answer, /read PLC coils and holding registers/i);
   assert.doesNotMatch(answer, /procedure for Modbus TCP PLC Context/i);
   assert.doesNotMatch(answer, /Let me know/i);
+});
+
+test('manufacturing citations add document categories when model already wrote sources', () => {
+  const answer = appendCitations('PLC summary.\n\nSources:\n- MODBUS Application Protocol Specification V1.1b3', [
+    {
+      title: 'Modbus TCP PLC Context',
+      source: 'Modbus Protocol Specification',
+      sourceTitle: 'MODBUS Application Protocol Specification V1.1b3',
+      sourcePage: '5',
+      sourceUrl: 'https://www.modbus.org/file/secure/modbusprotocolspecification.pdf',
+    },
+    {
+      title: 'Real-time Machine Status (PLC Telemetry)',
+      source: 'Modbus TCP Telemetry',
+    },
+  ]);
+
+  assert.match(answer, /Sources:/);
+  assert.match(answer, /Document categories:/);
+  assert.match(answer, /Source type: Protocol Specification/);
+  assert.match(answer, /Source type: Live PLC Telemetry/);
 });
