@@ -1,29 +1,52 @@
-# Quality Control Standards — Acme Fabrication Plant 7
+# Public OSHA Hazard Communication Source Index
 
-## QC-301: Stamped Bracket B-77 — Dimensional Inspection
+These chunks use real public OSHA hazard communication guidance in place of
+synthetic quality-control material. Page references use PDF page numbers from
+the local OSHA file under `data/sources/`.
 
-- Sample plan: 5 parts per hour per press, per ANSI/ASQ Z1.4 level II.
-- Hole diameter: 12.00 mm ±0.05. Gauge: plug gauge PG-12.
-- Flange angle: 90° ±0.5°. Gauge: angle fixture AF-3.
-- Burr height: max 0.1 mm. Reject and quarantine the lot if two consecutive
-  samples fail.
+## OSHA-3636: Hazard Communication Labels
+<!-- source_title: OSHA 3636 Hazard Communication Standard: Labels and Pictograms -->
+<!-- source_url: https://www.osha.gov/sites/default/files/publications/OSHA3636.pdf -->
+<!-- source_pdf: data/sources/OSHA3636-hazcom-labels-pictograms.pdf -->
+<!-- source_page: 1 -->
 
-## QC-305: Weld Inspection — Frame Assembly F-12
+OSHA explains that revised hazard communication labeling requirements improve
+quality and consistency in chemical classification and labeling and support
+worker comprehension. Chemical-related answers should ground guidance in label,
+pictogram, signal-word, hazard-statement, and precautionary-statement
+information rather than plant-specific assumptions.
 
-- Visual inspection per AWS D1.1 on 100% of welds.
-- Fillet size: 6 mm ±1 mm, measured with fillet gauge.
-- Magnetic particle test on 10% of frames per shift; any crack indication
-  quarantines the shift's production pending engineering disposition (form Q-44).
+## OSHA-3636: Label Elements
+<!-- source_title: OSHA 3636 Hazard Communication Standard: Labels and Pictograms -->
+<!-- source_url: https://www.osha.gov/sites/default/files/publications/OSHA3636.pdf -->
+<!-- source_pdf: data/sources/OSHA3636-hazcom-labels-pictograms.pdf -->
+<!-- source_page: 2 -->
 
-## QC-310: Paint Line — Coating Thickness
+Hazard communication labels include a product identifier, signal word, hazard
+statement, precautionary statement, pictogram, and responsible-party contact
+information. A floor supervisor can ask for help interpreting these elements,
+but chemical handling instructions should stay within the cited label/SDS
+source material and escalate uncertainty.
 
-- Dry film thickness: 60–90 µm, measured at 5 points per panel with gauge DFT-2.
-- Cross-hatch adhesion test: class 4B minimum, once per color change.
-- Record all readings in the QMS within 1 hour of measurement.
+## OSHA-3138: Permit-Required Confined Spaces Overview
+<!-- source_title: OSHA 3138 Permit-Required Confined Spaces -->
+<!-- source_url: https://www.osha.gov/sites/default/files/publications/OSHA3138.pdf -->
+<!-- source_pdf: data/sources/OSHA3138-confined-spaces.pdf -->
+<!-- source_page: 5 -->
 
-## QC-320: Nonconforming Material
+OSHA explains that confined spaces can hinder employee entry, work, or exit and
+can expose workers to serious hazards including entrapment, engulfment, and
+hazardous atmospheres. Supervisor answers may summarize the concept and
+escalation need, but must not invent entry authorization.
 
-1. Tag nonconforming parts with a red NCR tag and move them to the quarantine cage.
-2. Open an NCR in the QMS within 4 hours; reference the work order and lot number.
-3. Disposition (use-as-is, rework, scrap) requires quality engineer signature.
-   Use-as-is additionally requires customer approval for safety-critical parts.
+## OSHA-3138: Permit-Space Written Program
+<!-- source_title: OSHA 3138 Permit-Required Confined Spaces -->
+<!-- source_url: https://www.osha.gov/sites/default/files/publications/OSHA3138.pdf -->
+<!-- source_pdf: data/sources/OSHA3138-confined-spaces.pdf -->
+<!-- source_page: 8 -->
+
+OSHA describes written permit-space programs as including measures to prevent
+unauthorized entry, identify and evaluate hazards, test atmospheric conditions,
+and control the space before entry. Answers about confined-space entry should
+cite the permit-program requirement and escalate to the responsible entry
+supervisor.

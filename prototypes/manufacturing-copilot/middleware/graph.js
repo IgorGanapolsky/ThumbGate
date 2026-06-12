@@ -10,12 +10,14 @@ const {
   confidenceGate,
   unsafeOutputGate,
   safetyCitationGate,
+  clearanceGate,
 } = require('./guardrails');
 const { redactPii } = require('../../../scripts/pii-scanner');
 const { redactSecrets } = require('../../../scripts/secret-redaction');
 
 const SYSTEM_PROMPT = `You are a plant assistant for Acme Fabrication Plant 7 floor supervisors.
 Answer operational questions accurately based on the provided reference documentation.
+For safety procedures or manual citations, you MUST cite the specific manual title and page number (e.g. "[Safety Procedures Manual, Page 12]") in your answer.
 Keep your answer concise and reference the safety procedure code (like SP-xxx or MM-xxx) if available.`;
 
 let langchainRuntimePromise;
@@ -40,7 +42,7 @@ function createManufacturingRetriever({ vectorSearch = queryVectorDB } = {}) {
   return {
     lc_namespace: ['thumbgate', 'manufacturing-copilot', 'retriever'],
     async invoke(query, options = {}) {
-      return vectorSearch(query, options.topK || 2);
+      return vectorSearch(query, options.topK || 2, options);
     },
   };
 }
@@ -57,11 +59,11 @@ function safetyResponseForBlockedTool(toolCall, gateResult) {
 }
 
 function chatbotGuardrailBlock(gateResult) {
-  return `[Chatbot Guardrail Blocked Response]\nGate: ${gateResult.gate}\nReason: ${gateResult.detail}`;
+  return `[Access/Safety Blocked]\nGate: ${gateResult.gate}\nReason: ${gateResult.detail}`;
 }
 
 function classifyQuestionRoute(question) {
-  return /\b(loto|lockout|tagout|safety|interlock|guard|shutdown|emergency|press|cnc|conveyor)\b/i.test(question)
+  return /\b(loto|lockout|tagout|safety|interlocks?|guards?|guarding|shutdown|emergency|press(es)?|cnc|conveyors?)\b/i.test(question)
     ? 'safety'
     : 'general';
 }
@@ -78,19 +80,21 @@ function tokenize(text) {
     ?.filter((token) => token.length > 2 && !STOPWORDS.has(token)) || [];
 }
 
-function planRetrieval(question, route) {
+function planRetrieval(question, route, role) {
+  const userRole = role || 'floor_supervisor';
   const procedureCode = question.match(/\b(?:SP|MM|QC)-\d{3}\b/i)?.[0]?.toUpperCase() || null;
   const machine = /vm-22/i.test(question)
     ? 'CNC Mill VM-22'
     : /hp-400|hydraulic press|press/i.test(question)
     ? 'Hydraulic Press HP-400'
-    : /c-3|conveyor/i.test(question)
+    : /\bc-3\b|conveyor/i.test(question)
     ? 'Conveyor Line C-3'
     : null;
   return {
     route,
     procedureCode,
     machine,
+    role: userRole,
     topK: 2,
     candidateK: procedureCode ? 6 : 5,
     maxContextTokens: route === 'safety' ? 900 : 650,
@@ -113,6 +117,7 @@ function planMetadataFilters(retrievalPlan) {
     sourcePreference: [...new Set(sourcePreference)],
     procedureCode: retrievalPlan.procedureCode,
     machine: retrievalPlan.machine,
+    role: retrievalPlan.role,
   };
 }
 
@@ -136,8 +141,9 @@ function localHybridRerank(question, chunks, metadataFilters = {}) {
           codeBoost,
           sourceBoost,
           machineBoost,
-          finalScore: vectorScore + (overlap * 0.08) + codeBoost + sourceBoost + machineBoost,
+          finalScore: vectorScore + (overlap * 0.15) + codeBoost + sourceBoost + machineBoost,
         },
+        confidenceScore: vectorScore + (overlap * 0.15) + codeBoost + sourceBoost + machineBoost,
         originalRank: index + 1,
       };
     })
@@ -158,6 +164,32 @@ function packRetrievedContext(chunks, maxTokens) {
     usedTokens += tokenEstimate;
   }
   return { chunks: packed, usedTokens, maxTokens };
+}
+
+function isTelemetryQuestion(question) {
+  return /\b(status|state|temperature|running|speed|active|armed|power|coil|register|telemetry|working|normal|normally|tripped|stopped|bypassed)\b/i.test(question);
+}
+
+function citationForChunk(chunk) {
+  if (!chunk) return null;
+  const title = chunk.sourceTitle || chunk.source || chunk.title || chunk.fileName;
+  const page = chunk.sourcePage ? `, p. ${chunk.sourcePage}` : '';
+  const url = chunk.sourceUrl ? ` — ${chunk.sourceUrl}` : '';
+  return `${title}${page}${url}`;
+}
+
+function cleanChunkText(text) {
+  return String(text || '')
+    .replace(/^<!--[\s\S]*?-->\s*$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function appendCitations(answer, chunks) {
+  const citations = [...new Set((chunks || []).map(citationForChunk).filter(Boolean))];
+  if (!citations.length) return answer;
+  if (/^Sources:/m.test(answer)) return answer;
+  return `${answer}\n\nSources:\n${citations.map((citation) => `- ${citation}`).join('\n')}`;
 }
 
 function createManufacturingGraph({
@@ -241,18 +273,38 @@ function createManufacturingGraph({
         return {
           proposedToolCall,
           route: classifyQuestionRoute(state.sanitizedQuestion),
-          supervisor: state.supervisor || { authenticated: false, role: 'operator' },
+          supervisor: state.supervisor || { authenticated: true, role: 'floor_supervisor' },
           machineState: state.machineState || { anomalyDetected: false, source: 'demo-default' },
           graphNodes: [...state.graphNodes, 'inspect_request'],
           langchainComponents: ['ChatPromptTemplate', 'ManufacturingRetriever'],
         };
       })
+      .addNode('evaluate_clearance', async (state) => {
+        const role = state.supervisor?.role || 'floor_supervisor';
+        const gateResult = await trace.span(
+          'evaluate_clearance',
+          'chain',
+          { question: state.sanitizedQuestion, role },
+          async () => clearanceGate(state.sanitizedQuestion, role)
+        );
+        return {
+          gates: gateResult.status === 'pass' ? state.gates : [...state.gates, gateResult],
+          graphNodes: [...state.graphNodes, 'evaluate_clearance'],
+          ...(gateResult.status === 'block'
+            ? {
+                status: 'blocked',
+                answer: chatbotGuardrailBlock(gateResult),
+              }
+            : {}),
+        };
+      })
       .addNode('plan_retrieval', async (state) => {
+        const role = state.supervisor?.role || 'floor_supervisor';
         const retrievalPlan = await trace.span(
           'plan_retrieval',
           'chain',
-          { question: state.sanitizedQuestion, route: state.route },
-          async () => planRetrieval(state.sanitizedQuestion, state.route)
+          { question: state.sanitizedQuestion, route: state.route, role },
+          async () => planRetrieval(state.sanitizedQuestion, state.route, role)
         );
         return {
           retrievalPlan,
@@ -275,16 +327,38 @@ function createManufacturingGraph({
         const toolGate = await trace.span(
           'thumbgate_tool_firewall',
           'tool',
-          { proposedToolCall: state.proposedToolCall },
-          async () => evaluatePreToolUseGate(state.proposedToolCall)
+          { proposedToolCall: state.proposedToolCall, actor: state.supervisor },
+          async () => evaluatePreToolUseGate(state.proposedToolCall, state.supervisor)
         );
         const gateReport = {
           gate: toolGate.gate || 'tool_safety',
           status: toolGate.allowed ? 'pass' : 'block',
           detail: toolGate.allowed ? 'Tool call allowed' : toolGate.reason,
+          actorRole: toolGate.actorRole || state.supervisor?.role,
+          requiredRole: toolGate.requiredRole,
           toolName: state.proposedToolCall.toolName,
           input: state.proposedToolCall.input,
         };
+
+        if (toolGate.allowed) {
+          try {
+            const { writeSingleRegister } = require('./modbus-client');
+            const modbusPort = process.env.MODBUS_PORT || 5020;
+            if (state.proposedToolCall.toolName === 'override_interlock') {
+              await writeSingleRegister(1, 0, modbusPort);
+              console.log('[ModbusClient] Executed override_interlock: Safety Curtain disabled (register 40002 = 0)');
+            } else if (state.proposedToolCall.toolName === 'trigger_emergency_shutdown') {
+              await writeSingleRegister(0, 0, modbusPort);
+              console.log('[ModbusClient] Executed trigger_emergency_shutdown: Conveyor stopped (register 40001 = 0)');
+            } else if (state.proposedToolCall.toolName === 'plant_wide_shutdown') {
+              await writeSingleRegister(2, 0, modbusPort);
+              console.log('[ModbusClient] Executed plant_wide_shutdown: Main Power turned off (register 40003 = 0)');
+            }
+          } catch (err) {
+            console.error('[ModbusClient] Failed to execute Modbus tool call:', err.message);
+          }
+        }
+
         return {
           toolGate,
           gates: [...state.gates, gateReport],
@@ -292,9 +366,9 @@ function createManufacturingGraph({
           ...(toolGate.allowed
             ? {}
             : {
-                status: 'blocked',
-                answer: safetyResponseForBlockedTool(state.proposedToolCall, toolGate),
-              }),
+                 status: 'blocked',
+                 answer: safetyResponseForBlockedTool(state.proposedToolCall, toolGate),
+               }),
         };
       })
       .addNode('retrieve_manual_context', async (state) => {
@@ -304,8 +378,38 @@ function createManufacturingGraph({
           { query: state.sanitizedQuestion, retrievalPlan: state.retrievalPlan, metadataFilters: state.metadataFilters },
           async () => retriever.invoke(state.sanitizedQuestion, { topK: state.retrievalPlan.candidateK, metadataFilters: state.metadataFilters })
         );
+
+        let chunks = [...candidateChunks];
+        if (isTelemetryQuestion(state.sanitizedQuestion)) {
+          try {
+            const { readCoils, readHoldingRegisters } = require('./modbus-client');
+            const modbusPort = process.env.MODBUS_PORT || 5020;
+            const coils = await readCoils(0, 4, modbusPort);
+            const regs = await readHoldingRegisters(0, 4, modbusPort);
+            const statusText = `REAL-TIME MACHINE PLC STATUS (MODBUS TCP):
+- Coil 0 Plant shutdown command: ${coils[0] === 1 ? 'TRIPPED' : 'NORMAL'} (coil 00001)
+- Coil 1 Conveyor stop command: ${coils[1] === 1 ? 'STOPPED' : 'NORMAL'} (coil 00002)
+- Coil 2 Interlock override command: ${coils[2] === 1 ? 'BYPASSED' : 'NORMAL'} (coil 00003)
+- Coil 3 Furnace E-stop command: ${coils[3] === 1 ? 'TRIPPED' : 'NORMAL'} (coil 00004)
+- Conveyor Line C-3: ${regs[0] === 1 ? 'RUNNING' : 'STOPPED'} (Register 40001)
+- Safety Light Curtain: ${regs[1] === 1 ? 'ARMED & ACTIVE' : 'BYPASSED / DISABLED'} (Register 40002)
+- Main Power System: ${regs[2] === 1 ? 'ONLINE' : 'OFFLINE'} (Register 40003)
+- Hydraulic Press Furnace: ${regs[3]}°C (Register 40004)`;
+            chunks.unshift({
+              title: "Real-time Machine Status (PLC Telemetry)",
+              text: statusText,
+              score: 2.0,
+              source: "Modbus TCP Telemetry",
+              fileName: "modbus_telemetry.raw"
+            });
+            console.log('[ModbusClient] Injected real-time Modbus register values into context.');
+          } catch (err) {
+            console.error('[ModbusClient] Failed to read Modbus registers for context injection:', err.message);
+          }
+        }
+
         return {
-          candidateChunks,
+          candidateChunks: chunks,
           graphNodes: [...state.graphNodes, 'retrieve_manual_context'],
         };
       })
@@ -378,7 +482,10 @@ function createManufacturingGraph({
       })
       .addNode('compose_langchain_prompt', async (state) => {
         const context = state.retrievedChunks.length
-          ? state.retrievedChunks.map((chunk) => `${chunk.title}\n${chunk.text}`).join('\n\n---\n\n')
+          ? state.retrievedChunks.map((chunk) => {
+              const citation = citationForChunk(chunk);
+              return `${chunk.title}\nCitation: ${citation || 'source metadata unavailable'}\n${cleanChunkText(chunk.text)}`;
+            }).join('\n\n---\n\n')
           : 'No matching manual procedures found.';
         const promptValue = await trace.span(
           'compose_langchain_prompt',
@@ -397,21 +504,43 @@ function createManufacturingGraph({
         // verbatim so the REAL graph (guardrails, LanceDB, tracing) still runs
         // end-to-end with zero credentials — no mock data path.
         const offline = chat === llm.chat && llm.activeProvider() === 'none';
-        const modelResponse = await trace.span(
+        let modelResponse = await trace.span(
           'generate_answer',
           'llm',
           { messages: state.messages, mode: offline ? 'extractive-offline' : 'llm' },
           async () => {
             if (offline) {
               const top = state.retrievedChunks[0];
-              return top
-                ? `Per ${top.title}:\n\n${top.text}`
-                : 'No matching manual procedures found. Escalate to your supervisor.';
+              if (!top) {
+                return 'No matching manual procedures found. Escalate to your supervisor.';
+              }
+              const citation = citationForChunk(top);
+              return `Per ${top.title} [${citation}]:\n\n${cleanChunkText(top.text)}`;
             }
             return chat(state.messages, { temperature: 0 });
           }
         );
-        const answer = redactSecrets(redactPii(modelResponse));
+
+        // Prepend physical execution status if an authorized tool call was made
+        if (state.proposedToolCall && state.toolGate?.allowed) {
+          let actionText = '';
+          if (state.proposedToolCall.toolName === 'override_interlock') {
+            actionText = `[Industrial Command Executed]\nModbus TCP Write Single Register: Address 1 set to 0. Safety Curtain bypassed on ${state.proposedToolCall.input.machine || 'CNC Mill VM-22'}.`;
+          } else if (state.proposedToolCall.toolName === 'trigger_emergency_shutdown') {
+            actionText = `[Industrial Command Executed]\nModbus TCP Write Single Register: Address 0 set to 0. Conveyor stopped on ${state.proposedToolCall.input.target || 'Conveyor Line C-3'}.`;
+          } else if (state.proposedToolCall.toolName === 'plant_wide_shutdown') {
+            actionText = `[Industrial Command Executed]\nModbus TCP Write Single Register: Address 2 set to 0. Plant-wide shutdown command broadcasted to shut down the plant.`;
+          }
+          modelResponse = `${actionText}\n\n${modelResponse}`;
+        }
+
+        let answer = redactSecrets(redactPii(modelResponse));
+
+        // Append source citations to the answer for transparency
+        if (state.retrievedChunks && state.retrievedChunks.length > 0) {
+          answer = appendCitations(answer, state.retrievedChunks);
+        }
+
         return {
           answer,
           status: 'pass',
@@ -466,7 +595,10 @@ function createManufacturingGraph({
         state.status === 'blocked' ? END : 'inspect_request'
       ))
       .addConditionalEdges('inspect_request', (state) => (
-        state.proposedToolCall ? 'thumbgate_tool_firewall' : 'plan_retrieval'
+        state.proposedToolCall ? 'thumbgate_tool_firewall' : 'evaluate_clearance'
+      ))
+      .addConditionalEdges('evaluate_clearance', (state) => (
+        state.status === 'blocked' ? END : 'plan_retrieval'
       ))
       .addConditionalEdges('thumbgate_tool_firewall', (state) => (
         state.toolGate?.allowed ? 'plan_retrieval' : END
@@ -506,6 +638,8 @@ async function executeManufacturingGraph(question, deps = {}) {
       candidateChunks: [],
       graphNodes: [],
       langchainComponents: [],
+      supervisor: deps.supervisor,
+      machineState: deps.machineState,
     });
 
     return trace.end({
@@ -513,12 +647,18 @@ async function executeManufacturingGraph(question, deps = {}) {
       status: state.status,
       toolCall: state.proposedToolCall || null,
       gates: state.gates || [],
-      retrievedChunks: (state.retrievedChunks || []).map((chunk) => ({
-        title: chunk.title,
-        source: chunk.source,
-        score: chunk.score,
-        fileName: chunk.fileName,
-      })),
+      retrievedChunks: (state.retrievedChunks || []).map((chunk) => {
+        const mapped = {
+          title: chunk.title,
+          source: chunk.source,
+          score: chunk.score,
+          fileName: chunk.fileName,
+        };
+        for (const key of ['sourceTitle', 'sourceUrl', 'sourcePage', 'sourcePdf']) {
+          if (chunk[key] !== undefined && chunk[key] !== null) mapped[key] = chunk[key];
+        }
+        return mapped;
+      }),
       orchestration: {
         runtime: 'LangGraph',
         nodes: state.graphNodes || [],
@@ -548,8 +688,12 @@ module.exports = {
   createManufacturingGraph,
   createManufacturingRetriever,
   executeManufacturingGraph,
+  isTelemetryQuestion,
   localHybridRerank,
   packRetrievedContext,
+  appendCitations,
+  cleanChunkText,
+  citationForChunk,
   planMetadataFilters,
   planRetrieval,
 };

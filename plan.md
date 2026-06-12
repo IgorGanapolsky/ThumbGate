@@ -28,13 +28,18 @@ backed by `middleware/guardrails.js` and `middleware/vector-db.js`. These includ
 - **Direct prompt-injection scan**: Evaluates user input against prompt-injection signatures.
 - **Hybrid fusion/rerank**: Blends HNSW vector similarity search with term-overlap/keyword matching.
 - **Retrieved-context injection quarantine**: Scans retrieved database chunks for indirect prompt-injections before prompt assembly.
-- **Retrieval-confidence refusal**: Blocks and escalates queries if retrieval confidence falls below threshold.
+- **Retrieval-confidence refusal**: Blocks and escalates only when there is no
+  usable evidence. Normal explanatory safety questions and live PLC telemetry
+  questions must answer when relevant evidence or telemetry is available.
 - **Unsafe-output scan**: Intercepts generated assistant output containing unsafe instructions (e.g. bypassing interlocks).
-- **Safety-citation gate**: Enforces safety-related answers to cite governing SP-xxx safety codes.
+- **Safety-citation gate**: Enforces safety-related answers to cite governing
+  public OSHA sources with page numbers.
 
-**Truth-grounded vector store**: all content in the LanceDB index must be
-grounded in truth. `middleware/vector-db.js` scans chunks at ingestion time and
-quarantines chunks carrying injection payloads before embedding.
+**Truth-grounded vector store**: the LanceDB index is now grounded in public
+OSHA source PDFs stored under `prototypes/manufacturing-copilot/data/sources/`.
+`middleware/vector-db.js` scans chunks at ingestion time, quarantines chunks
+carrying injection payloads before embedding, and carries source title, URL,
+local PDF path, and page metadata into every answer.
 
 ## Coordination Contract
 
@@ -44,17 +49,26 @@ status changes.
 
 ### Work in flight (updated 2026-06-12, main session)
 
-- IN PROGRESS (main session — CLAIMED, do not duplicate): **Real tool-call
-  layer** (CEO directive: real tool calls, no fake data). Building
-  `tools/cmms.js` (better-sqlite3 work-orders/parts/escalations store at
-  `db/cmms.sqlite`, real persistence — data exists only because a tool call
-  created it) and `tools/registry.js` (tool schemas + executors +
-  read/actuate/critical tiers). Graph gains an `execute_tool` node AFTER the
-  ThumbGate firewall edge: allowed tools execute for real; critical actuation
-  (interlock override, shutdowns, PLC writes) stays blocked/escalated. Two
-  deep-research workflows running in background: (a) floor-supervisor
-  permission tiers, (b) real industrial copilot tool-call registries — results
-  will refine the tier mapping here.
+- RESTORED: `plan.md` was found deleted in the working tree during the
+  2026-06-12 session and restored from `HEAD`; this file remains the mandatory
+  coordination source.
+- DONE: Real public manuals are wired into retrieval. Synthetic manual chunks
+  were replaced with public OSHA source-index chunks backed by local PDFs:
+  OSHA 3120 LOTO, OSHA 3170 machine guarding/amputation prevention, OSHA 3138
+  confined spaces, and OSHA 3636 HazCom labels/pictograms.
+- DONE: Every generated answer appends deterministic source citations from
+  retrieved chunk metadata: source title, page number, and OSHA URL. Fake
+  hardcoded page maps were removed.
+- DONE: Screenshot regressions fixed:
+  - "Explain to me what is an interlock?" now answers from OSHA 3170 with page citations.
+  - "is coil 3 working normally now?" now routes to Modbus PLC telemetry and does not fail retrieval confidence.
+- DONE: Real local industrial telemetry is wired via Modbus TCP simulator and
+  client. Read-only PLC telemetry questions can inspect coils/registers. Unsafe
+  physical-control calls still route through ThumbGate's pre-action firewall.
+- IN PROGRESS (main session — CLAIMED, do not duplicate): reconcile the
+  overlapping CMMS/tool registry work into one explicit `execute_tool` graph
+  node. Until that is complete, the demo must not present critical physical
+  actuation as executed for floor-supervisor users.
 - DONE: Floor-supervisor permission model implemented and verified. The default
   demo user is `floor_supervisor`: can read approved procedures and request
   escalation, but cannot receive or execute plant shutdown, emergency line
@@ -70,11 +84,13 @@ status changes.
 - DONE: `middleware/guardrails.js` (chatbot-owned guardrail functions, updated `safetyCitationGate` to support boolean route arguments).
 - DONE: `middleware/vector-db.js` ingestion quarantine + `getIngestionReport()`.
 - DONE: `middleware/graph.js` LangGraph StateGraph + `rag.js` facade rewrite; server endpoints are fully wired up.
-- DONE: `tests/manufacturing-copilot.test.js` (unit) + `tests/manufacturing-copilot-e2e.test.js` (e2e instrumentation) with 100% test pass rates (**49/49 tests passing**).
+- DONE: `tests/manufacturing-copilot.test.js` (unit) + `tests/manufacturing-copilot-e2e.test.js` (e2e instrumentation) with 100% test pass rates (**56/56 tests passing**, verified 2026-06-12).
 - DONE: Outbound response sanitization (PII + secret redaction) implemented and verified in the RAG execution path.
 - DONE: Saved and organized LangSmith API credentials in git-ignored `.env` for the supervisor trace dashboard.
 - DONE: Frontend (`index.html`) updated to always show thumbs up/down voting controls for all responses (including blocks) to capture feedback on firewall decisions.
-- DONE: RAG hybrid keyword-vector reranker (`vector-db.js`) implemented to bubble SP-xxx/MM-xxx matching procedures to the top of candidates.
+- DONE: RAG hybrid keyword-vector reranker (`vector-db.js`) implemented to
+  bubble exact source/procedure matches and relevant OSHA chunks to the top of
+  candidates.
 - DONE: Human-readable LangSmith trace timeline: raw LangGraph span names are
   translated into stakeholder-facing steps such as "Clean the question",
   "Check role permission", "Search the manuals", "Rerank the best evidence",
@@ -155,15 +171,20 @@ Location: `prototypes/manufacturing-copilot/`
 ## Data Stores And Documents
 
 - Chatbot retrieval store: local LanceDB table under
-  `prototypes/manufacturing-copilot/db/lancedb`, populated from synthetic local
-  manufacturing manuals in `prototypes/manufacturing-copilot/data/`.
+  `prototypes/manufacturing-copilot/db/lancedb`, populated from real public
+  OSHA source chunks in `prototypes/manufacturing-copilot/data/*.md`.
+- Real manual/PDF sources: local copies under
+  `prototypes/manufacturing-copilot/data/sources/`:
+  `OSHA3120-lockout-tagout.pdf`, `OSHA3170-amputation-machine-guarding.pdf`,
+  `OSHA3138-confined-spaces.pdf`, and
+  `OSHA3636-hazcom-labels-pictograms.pdf`.
 - Hybrid retrieval decision layer: LangGraph routes requests between proposed
   tool-call handling, role clearance gates, chatbot guardrails, and LanceDB vector retrieval;
   LangChain prompt/retriever components format the RAG answer path.
 - ThumbGate feedback store: ThumbGate's SQLite/FTS5/LanceDB lesson loop captures
   answer votes and promotes lessons/rules outside the chatbot retrieval path.
-- Manuals are synthetic. We are not pulling public-domain manufacturing manuals
-  for this interview demo.
+- Answers must cite retrieved source title, page number, and OSHA URL. Do not
+  reintroduce synthetic manuals or fake page maps.
 
 ## Test Coverage Target
 

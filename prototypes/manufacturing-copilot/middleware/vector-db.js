@@ -23,6 +23,7 @@ function extractSectionMetadata(section, file) {
 let _db = null;
 let _table = null;
 let _quarantined = [];
+let _seedPromise = null;
 let _deps = {
   fs,
   embed,
@@ -36,6 +37,7 @@ function configureVectorDBForTest(overrides = {}) {
   _db = null;
   _table = null;
   _quarantined = [];
+  _seedPromise = null;
 }
 
 function resetVectorDBForTest() {
@@ -49,6 +51,7 @@ function resetVectorDBForTest() {
   _db = null;
   _table = null;
   _quarantined = [];
+  _seedPromise = null;
 }
 
 // Report of chunks rejected at ingestion (for the UI / API surface).
@@ -81,7 +84,16 @@ async function getTable() {
  * Parses markdown manuals, splits them into headers and chunks, generates embeddings,
  * and populates the local LanceDB vector database.
  */
-async function seedVectorDatabase() {
+function seedVectorDatabase() {
+  if (!_seedPromise) {
+    _seedPromise = seedVectorDatabaseOnce().finally(() => {
+      _seedPromise = null;
+    });
+  }
+  return _seedPromise;
+}
+
+async function seedVectorDatabaseOnce() {
   const db = await getDB();
   console.log('[VectorDB] Seeding LanceDB vector database...');
 
@@ -214,11 +226,23 @@ async function queryVectorDB(query, topK = 2, options = {}) {
     ? Math.max(topK * 3, 10) 
     : (codeMatch ? Math.max(topK, 15) : topK);
 
-  const results = await table
-    .search(embeddingVector)
-    .distanceType('cosine')
-    .limit(candidateLimit)
-    .toArray();
+  let results;
+  try {
+    results = await table
+      .search(embeddingVector)
+      .distanceType('cosine')
+      .limit(candidateLimit)
+      .toArray();
+  } catch (err) {
+    console.warn('[VectorDB] Query failed, database schema might be mismatch or corrupted. Re-seeding...', err.message);
+    await seedVectorDatabase();
+    table = await getTable();
+    results = await table
+      .search(embeddingVector)
+      .distanceType('cosine')
+      .limit(candidateLimit)
+      .toArray();
+  }
 
   // Filter candidates by user role clearance level
   const userRole = options.metadataFilters?.role || options.role || 'operator';

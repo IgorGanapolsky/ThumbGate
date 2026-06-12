@@ -89,17 +89,37 @@
           <p id="response-text" class="response-content"></p>
         </div>
         
+        <!-- Governing Documentation Citations -->
+        <div id="response-references" style="display: none; margin-bottom: 1.5rem; padding: 1.2rem; background: rgba(255, 255, 255, 0.01); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px;">
+          <h4 style="font-size: 0.8rem; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.5px; margin-bottom: 0.6rem; font-weight: 600;">Governing Documentation & Citations</h4>
+          <div id="references-list" style="display: flex; flex-direction: column; gap: 0.6rem;"></div>
+        </div>
+        
         <!-- RLHF Feedback Layer -->
         <div class="rlhf-layer" id="rlhf-layer" style="display: none;">
           <span class="rlhf-prompt">Is this guidance helpful and safe?</span>
           <div class="rlhf-actions">
-            <button id="btn-vote-up" class="btn-vote btn-vote-up" onclick="sendFeedback('up')">
+            <button id="btn-vote-up" class="btn-vote btn-vote-up" onclick="submitFeedbackSimple('up')">
               👍 <span>Thumbs Up</span>
             </button>
-            <button id="btn-vote-down" class="btn-vote btn-vote-down" onclick="sendFeedback('down')">
+            <button id="btn-vote-down" class="btn-vote btn-vote-down" onclick="showExplanationForm()">
               👎 <span>Thumbs Down</span>
             </button>
           </div>
+
+          <!-- Thumbs Down Explanation Form -->
+          <div id="rlhf-explanation-form" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed rgba(255, 255, 255, 0.08); animation: slideIn 0.25s ease;">
+            <label for="feedback-explanation" style="font-size: 0.82rem; color: #94a3b8; display: block; margin-bottom: 0.5rem; font-weight: 500;">
+              What went wrong? (e.g., incorrect instructions, false override block)
+            </label>
+            <textarea id="feedback-explanation" placeholder="Please explain the issue..." style="width: 100%; height: 70px; background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 0.5rem; color: #fff; font-family: inherit; font-size: 0.85rem; resize: none; outline: none; margin-bottom: 0.4rem; transition: border-color 0.2s;" oninput="this.style.borderColor = this.value.trim() ? '#38bdf8' : 'rgba(255, 255, 255, 0.08)'; document.getElementById('feedback-error-msg').style.display = 'none';"></textarea>
+            <span id="feedback-error-msg" style="color: #ef4444; font-size: 0.8rem; display: none; margin-bottom: 0.8rem; font-weight: 500;">⚠️ Please explain what went wrong before submitting.</span>
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+              <button class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="hideExplanationForm()">Cancel</button>
+              <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);" onclick="submitFeedbackWithExplanation()">Submit Explanation</button>
+            </div>
+          </div>
+
           <div id="rlhf-success-msg" class="rlhf-success-msg" style="display: none;">
             ✅ Feedback submitted to ThumbGate SQLite memory database.
           </div>
@@ -109,6 +129,62 @@
 
     <!-- Right Panel: ThumbGate Guardrails & LangSmith Logs -->
     <section class="right-panel">
+      <!-- PLC Modbus TCP Simulator Panel -->
+      <div class="card glassmorphism plc-card" style="margin-bottom: 1.5rem;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <h2 class="section-title" style="margin-bottom: 0;">PLC Modbus TCP Simulator</h2>
+          <button class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="resetPLCSimulator()">Reset PLC State</button>
+        </div>
+        <p class="section-desc">Live status of physical coils and registers connected via TCP socket. ThumbGate blocks actions before commands are sent to the registers.</p>
+        
+        <div class="plc-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem;">
+          <!-- Coils Status -->
+          <div class="plc-group" style="background: rgba(30, 41, 59, 0.2); padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05);">
+            <div style="font-weight: 600; font-size: 0.82rem; color: #94a3b8; margin-bottom: 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.4rem;">Coils (Discrete Inputs/Outputs)</div>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
+                <span>Coil 0: Plant Shutdown</span>
+                <span id="coil-0-status" class="plc-indicator indicator-success">ONLINE</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
+                <span>Coil 1: Conveyor Stop</span>
+                <span id="coil-1-status" class="plc-indicator indicator-success">RUNNING</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
+                <span>Coil 2: Interlock Override</span>
+                <span id="coil-2-status" class="plc-indicator indicator-success">ACTIVE</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
+                <span>Coil 3: Furnace E-Stop</span>
+                <span id="coil-3-status" class="plc-indicator indicator-success">NORMAL</span>
+              </div>
+            </div>
+          </div>
+          <!-- Registers Telemetry -->
+          <div class="plc-group" style="background: rgba(30, 41, 59, 0.2); padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05);">
+            <div style="font-weight: 600; font-size: 0.82rem; color: #94a3b8; margin-bottom: 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.4rem;">Registers (Telemetry Data)</div>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
+                <span>Reg 0: Conveyor State</span>
+                <strong id="reg-0-val" class="cyan-text">1 (RUN)</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
+                <span>Reg 1: Safety Light Curtain</span>
+                <strong id="reg-1-val" class="cyan-text">1 (ARMED)</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
+                <span>Reg 2: Main Power State</span>
+                <strong id="reg-2-val" class="cyan-text">1 (ON)</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
+                <span>Reg 3: Furnace Temp</span>
+                <strong id="reg-3-val" class="cyan-text">220°C</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ThumbGate Control Panel -->
       <div class="card glassmorphism guardrails-card">
         <h2 class="section-title">ThumbGate Guardrail Engine</h2>
@@ -231,10 +307,37 @@
       } else {
         respBadge.classList.add('badge-warning');
       }
-      if (data.answer) {
+       if (data.answer) {
         document.getElementById('rlhf-layer').style.display = 'block';
       }
       respCard.style.display = 'block';
+
+      // 1.5. Render References
+      const refCard = document.getElementById('response-references');
+      const refList = document.getElementById('references-list');
+      refList.innerHTML = '';
+      
+      if (data.retrievedChunks && data.retrievedChunks.length > 0) {
+        data.retrievedChunks.forEach(chunk => {
+          const item = document.createElement('div');
+          item.style.fontSize = '0.85rem';
+          item.style.color = '#e2e8f0';
+          item.style.display = 'flex';
+          item.style.alignItems = 'center';
+          item.style.gap = '0.6rem';
+          
+          item.innerHTML = `
+            <span class="span-category-badge span-category-rag" style="font-size: 0.65rem; padding: 0.1rem 0.3rem;">Page ${chunk.page || 1}</span>
+            <span style="font-weight: 500; color: #38bdf8;">${chunk.source}</span>
+            <span style="color: #94a3b8;">—</span>
+            <span style="color: #cbd5e1;">${chunk.title}</span>
+          `;
+          refList.appendChild(item);
+        });
+        refCard.style.display = 'block';
+      } else {
+        refCard.style.display = 'none';
+      }
 
       // 2. Render Gates List (PreToolUse Firewall Interceptions)
       const gatesList = document.getElementById('gates-list');
@@ -279,85 +382,101 @@
 
       const spanMeta = {
         sanitize_input: {
-          title: "Sanitize Input",
-          desc: "Redacts PII (SSNs, emails, phone numbers) and sensitive API keys"
+          title: "Clean the question",
+          desc: "Removes secrets and personal data before anything is logged or sent to a model",
+          type: "Privacy"
         },
         scan_input_injection: {
-          title: "Scan Input Injection",
-          desc: "Validates input text against known prompt injection and jailbreak payloads"
+          title: "Check for prompt attack",
+          desc: "Looks for jailbreak or instruction-override language in the supervisor's question",
+          type: "Safety"
         },
         inspect_request: {
-          title: "Inspect Request",
-          desc: "Analyzes intent and detects if the request matches any physical control tools"
+          title: "Classify the request",
+          desc: "Decides whether this is read-only guidance or a proposed physical plant action",
+          type: "Intent"
         },
         evaluate_clearance: {
-          title: "Evaluate Clearance",
-          desc: "Verifies user role clearance level against requested document or override policies"
+          title: "Check role permission",
+          desc: "Confirms a floor supervisor is allowed to see this procedure before retrieval starts",
+          type: "Access"
         },
         plan_retrieval: {
-          title: "Plan Retrieval",
-          desc: "Resolves retrieval parameters, candidate size (K), and extracts procedure codes"
+          title: "Plan the manual search",
+          desc: "Finds procedure codes, equipment names, and how many candidate passages to inspect",
+          type: "RAG"
         },
         plan_metadata_filters: {
-          title: "Plan Metadata Filters",
-          desc: "Applies database metadata routing constraints based on user role and query intent"
+          title: "Filter by role and source",
+          desc: "Limits retrieval to manuals and procedures the current role can access",
+          type: "RAG"
         },
         retrieve_manual_context: {
-          title: "Retrieve Manual Context",
-          desc: "Executes LanceDB semantic vector query to fetch relevant manual passages"
+          title: "Search the manuals",
+          desc: "Runs LanceDB vector search over the local synthetic manufacturing manuals",
+          type: "Retrieval"
         },
         fusion_rerank: {
-          title: "Fusion Rerank",
-          desc: "Re-scores vector candidates by exact procedure code matches and source weight boosts"
+          title: "Rerank the best evidence",
+          desc: "Promotes exact procedure-code matches and role-appropriate sources above weaker vector matches",
+          type: "Rerank"
         },
         pack_context_tokens: {
-          title: "Pack Context Tokens",
-          desc: "Formats and packs retrieved context chunks under target model token limits"
+          title: "Pack context for the model",
+          desc: "Keeps only the highest-value passages within the model token budget",
+          type: "RAG"
         },
         quarantine_retrieved_context: {
-          title: "Quarantine Retrieved Context",
-          desc: "Inspects incoming document context for malicious instruction signatures"
+          title: "Quarantine retrieved text",
+          desc: "Rejects retrieved manual chunks that contain hidden prompt-injection instructions",
+          type: "Safety"
         },
         check_retrieval_confidence: {
-          title: "Check Retrieval Confidence",
-          desc: "Requires top chunk similarity score to meet minimum RAG confidence threshold"
+          title: "Check answer evidence",
+          desc: "Requires enough retrieval confidence before the assistant is allowed to answer",
+          type: "Quality"
         },
         compose_langchain_prompt: {
-          title: "Compose LangChain Prompt",
-          desc: "Synthesizes final system instruction template and injects verified context"
+          title: "Build the grounded prompt",
+          desc: "Creates the final prompt using only verified context",
+          type: "Prompt"
         },
         generate_answer: {
-          title: "Generate Answer",
-          desc: "Runs inference using Claude Sonnet 4.5 to produce the operator guide response"
+          title: "Draft the answer",
+          desc: "Generates a concise supervisor-facing answer from the approved retrieved context",
+          type: "Answer"
         },
         check_output_safety: {
-          title: "Check Output Safety",
-          desc: "Scans draft output to block instruction recommendations that compromise safety systems"
+          title: "Check the draft for unsafe guidance",
+          desc: "Blocks answers that tell the user to bypass interlocks, skip LOTO, or defeat safeguards",
+          type: "Safety"
         },
         check_safety_citation: {
-          title: "Check Safety Citation",
-          desc: "Enforces that safety responses explicitly cite the correct SP-xxx code"
+          title: "Require procedure citation",
+          desc: "Safety answers must cite an approved SP-xxx procedure before display",
+          type: "Quality"
         },
         thumbgate_tool_firewall: {
-          title: "ThumbGate PreToolUse Firewall",
-          desc: "Intercepts and gates proposed physical tool call parameters before execution"
+          title: "Block unsafe plant action",
+          desc: "ThumbGate stops prohibited tool calls before they can reach PLCs or control systems",
+          type: "ThumbGate"
         }
       };
 
       // Friendly step-type labels: LangSmith run types are developer jargon;
       // the panel narrates the pipeline for plant stakeholders.
       const runTypeLabels = {
-        chain: '🧭 Step',
-        tool: '🛡 Firewall',
-        retriever: '🔎 Search',
-        llm: '🤖 Model',
-        prompt: '📝 Prompt',
+        chain: 'Workflow',
+        tool: 'Tool firewall',
+        retriever: 'Manual search',
+        llm: 'Answer draft',
+        prompt: 'Prompt build',
       };
 
       if (data.spans && data.spans.length > 0) {
         data.spans.forEach((span, index) => {
           const row = document.createElement('div');
-          row.className = `span-row ${span.status === 'error' ? 'error' : ''}`;
+          row.className = `span-row ${span.status === 'error' ? 'error' : 'ok'}`;
 
           let statusBadge = `<span class="span-status-badge ok">✓ Passed</span>`;
           if (span.status === 'error') {
@@ -366,15 +485,17 @@
 
           const meta = spanMeta[span.name] || {
             title: formatGateName(span.name),
-            desc: "Execution step in the LangGraph pipeline"
+            desc: "Execution step in the LangGraph pipeline",
+            type: runTypeLabels[span.runType] || 'Workflow'
           };
-          const typeLabel = runTypeLabels[span.runType] || span.runType;
+          const typeLabel = meta.type || runTypeLabels[span.runType] || 'Workflow';
+          const typeClass = typeLabel.toLowerCase();
           const duration = span.ms < 1 ? '<1ms' : `${span.ms}ms`;
 
           row.innerHTML = `
             <div class="span-row-header">
               <div class="span-name-area">
-                <span class="span-type">${index + 1}. ${typeLabel}</span>
+                <span class="span-category-badge span-category-${typeClass}">${typeLabel}</span>
                 <span class="span-name">${meta.title}</span>
               </div>
               <div class="span-metrics-area">
@@ -383,6 +504,7 @@
               </div>
             </div>
             <div class="span-desc">${meta.desc}</div>
+            <div class="span-technical-name">Trace node: ${span.name}</div>
             ${span.error ? `<div class="span-error-details">Reason: ${span.error}</div>` : ''}
           `;
           timeline.appendChild(row);
@@ -392,7 +514,35 @@
       }
     }
 
-    async function sendFeedback(signal) {
+    function showExplanationForm() {
+      document.getElementById('rlhf-explanation-form').style.display = 'block';
+      document.getElementById('feedback-explanation').focus();
+      document.getElementById('rlhf-success-msg').style.display = 'none';
+    }
+
+    function hideExplanationForm() {
+      document.getElementById('rlhf-explanation-form').style.display = 'none';
+      document.getElementById('feedback-explanation').value = '';
+      document.getElementById('feedback-error-msg').style.display = 'none';
+    }
+
+    async function submitFeedbackSimple(signal) {
+      await sendFeedback(signal, '');
+    }
+
+    async function submitFeedbackWithExplanation() {
+      const explanationInput = document.getElementById('feedback-explanation');
+      const text = explanationInput.value.trim();
+      if (!text) {
+        document.getElementById('feedback-error-msg').style.display = 'block';
+        explanationInput.focus();
+        return;
+      }
+      await sendFeedback('down', text);
+      hideExplanationForm();
+    }
+
+    async function sendFeedback(signal, whatWentWrong) {
       if (!currentAnswer) {
         alert('Run a query before submitting feedback.');
         return;
@@ -409,7 +559,8 @@
           body: JSON.stringify({
             signal,
             question: currentQuestion,
-            answer: currentAnswer
+            answer: currentAnswer,
+            whatWentWrong: whatWentWrong || undefined
           })
         });
 
@@ -435,6 +586,83 @@
         .map(w => w.charAt(0).toUpperCase() + w.slice(1))
         .join(' ');
     }
+
+    async function resetPLCSimulator() {
+      try {
+        const res = await fetch('/api/plc-reset', { method: 'POST' });
+        if (res.ok) {
+          updatePLCStatus();
+        }
+      } catch (err) {
+        console.error('Failed to reset PLC:', err);
+      }
+    }
+
+    async function updatePLCStatus() {
+      try {
+        const res = await fetch('/api/plc-state');
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        // Coils
+        const coil0 = document.getElementById('coil-0-status');
+        const coil1 = document.getElementById('coil-1-status');
+        const coil2 = document.getElementById('coil-2-status');
+        const coil3 = document.getElementById('coil-3-status');
+        
+        if (data.coils[0] === 1) {
+          coil0.textContent = 'TRIPPED';
+          coil0.className = 'plc-indicator indicator-danger';
+        } else {
+          coil0.textContent = 'ONLINE';
+          coil0.className = 'plc-indicator indicator-success';
+        }
+        
+        if (data.coils[1] === 1) {
+          coil1.textContent = 'STOPPED';
+          coil1.className = 'plc-indicator indicator-danger';
+        } else {
+          coil1.textContent = 'RUNNING';
+          coil1.className = 'plc-indicator indicator-success';
+        }
+
+        if (data.coils[2] === 1) {
+          coil2.textContent = 'BYPASSED';
+          coil2.className = 'plc-indicator indicator-warning';
+        } else {
+          coil2.textContent = 'ACTIVE';
+          coil2.className = 'plc-indicator indicator-success';
+        }
+
+        if (data.coils[3] === 1) {
+          coil3.textContent = 'TRIPPED';
+          coil3.className = 'plc-indicator indicator-danger';
+        } else {
+          coil3.textContent = 'NORMAL';
+          coil3.className = 'plc-indicator indicator-success';
+        }
+
+        // Registers
+        document.getElementById('reg-0-val').textContent = `${data.conveyorState} (${data.conveyorState === 1 ? 'RUN' : 'STOP'})`;
+        document.getElementById('reg-1-val').textContent = `${data.safetyCurtainState} (${data.safetyCurtainState === 1 ? 'ARMED' : 'BYPASSED'})`;
+        document.getElementById('reg-2-val').textContent = `${data.mainPowerSystem} (${data.mainPowerSystem === 1 ? 'ON' : 'OFF'})`;
+        document.getElementById('reg-3-val').textContent = `${data.furnaceTemperature}°C`;
+
+      } catch (err) {
+        console.error('Failed to poll PLC state:', err);
+      }
+    }
+
+    // Start polling
+    updatePLCStatus();
+    setInterval(updatePLCStatus, 1500);
+
+    // Overwrite submitQuery to update PLC status immediately after query returns
+    const originalSubmitQuery = submitQuery;
+    submitQuery = async function() {
+      await originalSubmitQuery();
+      setTimeout(updatePLCStatus, 300);
+    };
   </script>
 </body>
 </html>

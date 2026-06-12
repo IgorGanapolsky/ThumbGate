@@ -17,6 +17,7 @@ process.env.PORTKEY_API_KEY = '';
 process.env.ANTHROPIC_API_KEY = '';
 process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
 process.env.THUMBGATE_DISABLE_TELEMETRY = '1';
+process.env.MODBUS_PORT = '0';
 // Isolated vector index per test process: e2e seeding must never overwrite
 // the dev/demo LanceDB store or race the unit-test process.
 process.env.MANUFACTURING_LANCE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-manufacturing-lance-'));
@@ -94,6 +95,10 @@ test('E2E Manufacturing Copilot HTTP Server tests', async (t) => {
     assert.match(text, /Run a query before submitting feedback\./);
     assert.match(text, /signal === 'up' \? 'Thumbs up' : 'Thumbs down'/);
     assert.match(text, /submitted to ThumbGate SQLite memory database/);
+    assert.match(text, /Clean the question/);
+    assert.match(text, /Check role permission/);
+    assert.match(text, /Block unsafe plant action/);
+    assert.match(text, /Trace node: \$\{span\.name\}/);
   });
 
   await t.test('GET /index.html, /index.css, and unknown routes are instrumented', async () => {
@@ -162,7 +167,8 @@ test('E2E Manufacturing Copilot HTTP Server tests', async (t) => {
     assert.equal(data.toolCall, null);
     assert.equal(typeof data.traceId, 'string');
     assert.ok(data.traceId.length > 0);
-    assert.match(data.answer, /SP-101/);
+    assert.match(data.answer, /OSHA 3120 Control of Hazardous Energy Lockout\/Tagout, p\. \d+/);
+    assert.match(data.answer, /https:\/\/www\.osha\.gov\/sites\/default\/files\/publications\/OSHA3120\.pdf/);
     assert.ok(Array.isArray(data.spans));
     assert.ok(data.spans.some((span) => span.name === 'retrieve_manual_context' && span.status === 'ok'));
     assert.ok(data.gates.some((gate) => gate.gate === 'rlhf_feedback_layer' && gate.status === 'pass'));
@@ -278,6 +284,7 @@ test('E2E Manufacturing Copilot HTTP Server tests', async (t) => {
       signal: 'down',
       question: 'Explain LOTO procedure SP-101.',
       answer: 'Incomplete answer that omitted hydraulic accumulator pressure bleed.',
+      whatWentWrong: 'Omitted pressure bleed step'
     });
     assert.equal(down.res.status, 200);
     assert.equal(down.body.success, true);
@@ -288,6 +295,7 @@ test('E2E Manufacturing Copilot HTTP Server tests', async (t) => {
     const feedbackLog = fs.readFileSync(logPath, 'utf8');
     assert.match(feedbackLog, /"signal":"positive"/);
     assert.match(feedbackLog, /"signal":"negative"/);
+    assert.match(feedbackLog, /"whatWentWrong":"Omitted pressure bleed step"/);
     assert.match(feedbackLog, /manufacturing-copilot/);
   });
 
@@ -317,10 +325,71 @@ test('E2E Manufacturing Copilot HTTP Server tests', async (t) => {
       reason: 'Operator manual request',
     });
     assert.ok(data.gates.some((gate) => (
-      gate.gate === 'no_unauthorized_shutdown'
+      gate.gate === 'role_permission_floor_supervisor'
       && gate.status === 'block'
+      && gate.actorRole === 'floor_supervisor'
+      && gate.requiredRole === 'ehs_incident_commander'
       && gate.toolName === 'trigger_emergency_shutdown'
     )));
+  });
+
+  await t.test('POST /api/ask blocks floor supervisor plant-wide shutdown request before retrieval', async () => {
+    const { res, body: data } = await requestJson(origin, '/api/ask', {
+      question: 'Can you shut down the plant?',
+    });
+    assert.equal(res.status, 200);
+    assert.equal(data.status, 'blocked');
+    assert.equal(data.toolCall.toolName, 'plant_wide_shutdown');
+    assert.equal(data.toolCall.input.target, 'Acme Plant 7');
+    assert.match(data.answer, /cannot execute or receive plant-wide shutdown instructions/);
+    assert.ok(data.gates.some((gate) => (
+      gate.gate === 'role_permission_floor_supervisor'
+      && gate.status === 'block'
+      && gate.actorRole === 'floor_supervisor'
+      && gate.requiredRole === 'ehs_incident_commander'
+      && gate.toolName === 'plant_wide_shutdown'
+    )));
+    assert.ok(data.spans.some((span) => span.name === 'thumbgate_tool_firewall' && span.status === 'ok'));
+    assert.ok(!data.spans.some((span) => span.name === 'retrieve_manual_context'));
+  });
+
+  await t.test('POST /api/ask blocks operator from SP-102 Confined Space but allows supervisor', async () => {
+    const op = await requestJson(origin, '/api/ask', {
+      question: 'Explain Confined Space Entry SP-102.',
+      supervisor: { role: 'operator' }
+    });
+    assert.equal(op.res.status, 200);
+    assert.equal(op.body.status, 'blocked');
+    assert.match(op.body.answer, /Access Denied: Confined space entry instructions/);
+    assert.ok(op.body.gates.some(gate => gate.gate === 'clearance_gate' && gate.status === 'block'));
+
+    const sup = await requestJson(origin, '/api/ask', {
+      question: 'Explain Confined Space Entry SP-102.',
+      supervisor: { role: 'supervisor' }
+    });
+    assert.equal(sup.res.status, 200);
+    assert.equal(sup.body.status, 'pass');
+    assert.match(sup.body.answer, /OSHA 3138 Permit-Required Confined Spaces, p\. \d+/);
+    assert.match(sup.body.answer, /https:\/\/www\.osha\.gov\/sites\/default\/files\/publications\/OSHA3138\.pdf/);
+  });
+
+  await t.test('POST /api/ask blocks supervisor from SP-110 safety overrides but allows plant manager', async () => {
+    const sup = await requestJson(origin, '/api/ask', {
+      question: 'Explain Safety System Override procedure SP-110.',
+      supervisor: { role: 'supervisor' }
+    });
+    assert.equal(sup.res.status, 200);
+    assert.equal(sup.body.status, 'blocked');
+    assert.match(sup.body.answer, /Access Denied: Safety system override procedures/);
+
+    const pm = await requestJson(origin, '/api/ask', {
+      question: 'Explain Safety System Override procedure SP-110.',
+      supervisor: { role: 'plant_manager' }
+    });
+    assert.equal(pm.res.status, 200);
+    assert.equal(pm.body.status, 'pass');
+    assert.match(pm.body.answer, /OSHA 3170 Safeguarding Equipment and Protecting Employees from Amputations, p\. \d+/);
+    assert.match(pm.body.answer, /https:\/\/www\.osha\.gov\/sites\/default\/files\/publications\/OSHA3170\.pdf/);
   });
 
   await t.test('POST /api/feedback accepts legacy single thumbs up payload shape', async () => {
@@ -332,6 +401,21 @@ test('E2E Manufacturing Copilot HTTP Server tests', async (t) => {
     assert.equal(res.status, 200);
     assert.equal(data.success, true);
     assert.ok(data.feedbackEvent);
+  });
+
+  await t.test('GET /api/plc-state and POST /api/plc-reset E2E flow', async () => {
+    const { res: resState, body: state } = await requestJson(origin, '/api/plc-state', {});
+    if (resState.status === 200) {
+      assert.equal(state.conveyorState, 1);
+      assert.equal(state.safetyCurtainState, 1);
+      assert.equal(state.mainPowerSystem, 1);
+      assert.equal(state.furnaceTemperature, 220);
+
+      // Reset
+      const { res: resReset, body: reset } = await requestJson(origin, '/api/plc-reset', {});
+      assert.equal(resReset.status, 200);
+      assert.equal(reset.success, true);
+    }
   });
 
   await t.test('createServer dependency injection surfaces feedback failures as 500', async () => {

@@ -103,7 +103,7 @@ async function handleAsk(req, res) {
 async function handleFeedback(req, res, feedbackCapture = captureFeedback) {
   try {
     const payload = await parseJSONBody(req);
-    const { signal, question, answer } = payload;
+    const { signal, question, answer, whatWentWrong } = payload;
 
     if (!signal || !['up', 'down'].includes(signal)) {
       return sendJSON(res, 400, { error: 'Signal is required and must be "up" or "down".' });
@@ -115,6 +115,7 @@ async function handleFeedback(req, res, feedbackCapture = captureFeedback) {
     const result = await feedbackCapture({
       signal,
       context: `User query: "${question || ''}" | Answer: "${answer || ''}"`,
+      whatWentWrong,
       tags: ['manufacturing-copilot', 'rlhf-demo'],
     });
 
@@ -190,6 +191,19 @@ function createServer({ feedbackCapture = captureFeedback } = {}) {
       sendJSON(res, 200, { scenarios: SCENARIOS });
       return;
     }
+    if (pathname === '/api/plc-state') {
+      const { getRegistersState } = require('./middleware/modbus-server');
+      sendJSON(res, 200, getRegistersState());
+      return;
+    }
+  }
+
+  // Route: /api/plc-reset
+  if (req.method === 'POST' && pathname === '/api/plc-reset') {
+    const { resetState } = require('./middleware/modbus-server');
+    resetState();
+    sendJSON(res, 200, { success: true });
+    return;
   }
 
   // Route: /api/ask
@@ -217,6 +231,25 @@ function createServer({ feedbackCapture = captureFeedback } = {}) {
 }
 
 const server = createServer();
+
+const { startModbusServer, stopModbusServer } = require('./middleware/modbus-server');
+
+server.on('listening', () => {
+  const modbusPort = process.env.MODBUS_PORT || 5020;
+  startModbusServer(modbusPort).catch(err => {
+    console.error('[Server] Failed to start Modbus TCP server:', err);
+  });
+});
+
+const originalClose = server.close;
+server.close = function(cb) {
+  stopModbusServer().then(() => {
+    originalClose.call(this, cb);
+  }).catch((err) => {
+    console.error('[Server] Error stopping Modbus TCP server on close:', err);
+    originalClose.call(this, cb);
+  });
+};
 
 server.listen(PORT, () => {
   const address = server.address();

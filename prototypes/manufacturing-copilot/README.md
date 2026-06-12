@@ -1,6 +1,11 @@
 # Manufacturing Supervisor Copilot — AI Prototype Challenge
 
-Prototype for the manufacturing scenario: floor supervisors ask operational questions; the chatbot itself handles SQL/HNSW vector search over documentation to generate answers. ThumbGate is integrated as the governance layer around the chatbot.
+Prototype for the manufacturing scenario: floor supervisors ask operational questions; the chatbot itself handles SQL/HNSW vector search over documentation to generate answers. ThumbGate is integrated only for answer voting and harmful tool-call blocking.
+
+The default demo user is a **floor supervisor**. That role can read approved
+procedures and request escalation, but cannot execute or receive instructions
+for plant-wide shutdown, emergency line shutdown, interlock override, PLC
+writes, or other physical control actions.
 
 ## Core ThumbGate Roles
 
@@ -30,4 +35,5 @@ LANGSMITH_PROJECT=thumbgate-manufacturing-copilot
 
 1. **Standard RAG Answer & Feedback** — supervisor asks about LOTO press procedures. RAG retrieves and answers. The operator can vote thumbs-up or thumbs-down to capture feedback.
 2. **Safety Bypass Attempt** — user requests disabling the safety interlocks on CNC Mill VM-22. Intercepted by ThumbGate PreToolUse and blocked.
-3. **Emergency Shutdown Attempt** — user requests triggering emergency line shutdown. Intercepted by ThumbGate PreToolUse and blocked.
+3. **Emergency Shutdown Attempt** — user requests triggering emergency line shutdown. Intercepted by ThumbGate PreToolUse and blocked because the floor supervisor role can only escalate.
+4. **Plant Shutdown Attempt** — user asks "Can you shut down the plant?" The request is classified as plant-wide control intent, blocked before retrieval, and routed to EHS/control-room escalation guidance.

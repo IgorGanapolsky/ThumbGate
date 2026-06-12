@@ -100,19 +100,21 @@ function quarantineRetrievedContext(chunks) {
 }
 
 // --- Retrieval confidence -----------------------------------------------------
-// LanceDB cosine: score = 2 - distance (higher is better). This tiny synthetic
-// demo corpus can produce relevant matches around 0.70, so the default is
-// calibrated for the interview fixture and can be raised with env config.
+// LanceDB cosine: score = 2 - distance (higher is better). After hybrid
+// fusion/rerank, chunks can also carry confidenceScore, which includes exact
+// procedure-code, keyword, and source evidence. The default is calibrated for
+// the interview fixture and can be raised with env config.
 
-function confidenceGate(chunks, minScore = Number(process.env.CONFIDENCE_MIN_SCORE || 0.70)) {
-  const top = chunks[0]?.score ?? 0;
+function confidenceGate(chunks, minScore = Number(process.env.CONFIDENCE_MIN_SCORE || 0.60)) {
+  const top = chunks[0]?.confidenceScore ?? chunks[0]?.score ?? 0;
+  const scoreLabel = chunks[0]?.confidenceScore !== undefined ? 'hybrid confidence score' : 'vector score';
   return {
     gate: 'retrieval_confidence',
     status: top >= minScore ? 'pass' : 'block',
     detail:
       top >= minScore
-        ? `Top vector score ${top.toFixed(3)} ≥ threshold ${minScore}`
-        : `Top vector score ${top.toFixed(3)} below threshold ${minScore} — refusing rather than guessing; escalate to supervisor`,
+        ? `Top ${scoreLabel} ${top.toFixed(3)} ≥ threshold ${minScore}`
+        : `Top ${scoreLabel} ${top.toFixed(3)} below threshold ${minScore} — refusing rather than guessing; escalate to supervisor`,
   };
 }
 
@@ -143,13 +145,111 @@ function safetyCitationGate(answer, route) {
   if (route !== 'safety' && route !== true) {
     return { gate: 'safety_citation', status: 'pass', detail: 'Not a safety-routed answer; citation not required' };
   }
-  const cited = /\bSP-\d{3}\b/.test(answer);
+  const cited =
+    /\bSP-\d{3}\b/.test(answer) ||
+    /\bOSHA\b[\s\S]{0,120}\bp\.\s*\d+\b/i.test(answer) ||
+    /\[(Safety Procedures Manual|Maintenance Manual|Quality Control Standards|OSHA\s*\d*),\s*Page\s*\d+\]/i.test(answer) ||
+    /\b(Safety Procedures Manual|Maintenance Manual|Quality Control Standards)\b[\s\S]{0,100}\bp(g|age)?\.\s*\d+/i.test(answer);
   return {
     gate: 'safety_citation',
     status: cited ? 'pass' : 'block',
     detail: cited
-      ? 'Answer cites the governing safety procedure'
-      : 'Safety answer missing procedure citation (SP-xxx) — blocked; verbatim procedure required',
+      ? 'Answer cites the governing safety source'
+      : 'Safety answer missing procedure or OSHA page citation — blocked; cited source required',
+  };
+}
+
+const ROLE_POLICIES = {
+  operator: {
+    label: 'Floor Operator',
+    clearanceLevel: 0,
+    allowed: ['read_approved_procedures', 'view_machine_state'],
+    blocked: ['trigger_emergency_shutdown', 'override_interlock', 'write_plc_control', 'plant_wide_shutdown', 'read_confined_space_procedures', 'read_safety_override_procedures'],
+  },
+  supervisor: {
+    label: 'Floor Supervisor',
+    clearanceLevel: 1,
+    allowed: ['read_approved_procedures', 'view_machine_state', 'request_escalation', 'read_confined_space_procedures'],
+    blocked: ['trigger_emergency_shutdown', 'override_interlock', 'write_plc_control', 'plant_wide_shutdown', 'read_safety_override_procedures'],
+  },
+  floor_supervisor: {
+    label: 'Floor Supervisor',
+    clearanceLevel: 1,
+    allowed: ['read_approved_procedures', 'view_machine_state', 'request_escalation', 'read_confined_space_procedures'],
+    blocked: ['trigger_emergency_shutdown', 'override_interlock', 'write_plc_control', 'plant_wide_shutdown', 'read_safety_override_procedures'],
+  },
+  plant_manager: {
+    label: 'Plant Manager',
+    clearanceLevel: 2,
+    allowed: ['read_approved_procedures', 'view_machine_state', 'request_escalation', 'read_confined_space_procedures', 'read_safety_override_procedures', 'approve_emergency_shutdown'],
+    blocked: ['override_interlock', 'write_plc_control'],
+  },
+  ehs_incident_commander: {
+    label: 'EHS Incident Commander',
+    clearanceLevel: 2,
+    allowed: ['read_approved_procedures', 'view_machine_state', 'request_escalation', 'read_confined_space_procedures', 'read_safety_override_procedures', 'approve_emergency_shutdown'],
+    blocked: ['override_interlock', 'write_plc_control'],
+  },
+};
+
+const ROLE_CLEARANCES = {
+  operator: 0,
+  floor_supervisor: 1,
+  supervisor: 1,
+  plant_manager: 2,
+  ehs_incident_commander: 2,
+};
+
+function clearanceGate(question, role) {
+  const userRole = String(role || 'operator').toLowerCase();
+  const userClearance = ROLE_CLEARANCES[userRole] ?? 0;
+  const q = String(question || '').toLowerCase();
+
+  // Rule 1: SP-110 / safety overrides requires Plant Manager (Clearance 2)
+  const isBypassOverrideQuery = 
+    /\bsp-110\b/i.test(q) ||
+    /bypass(ing)?\s+(the\s+)?(interlock|guard|light\s+curtain|safety)/i.test(q) ||
+    /(mute|defeat|disable|override)\s+(the\s+)?(interlock|guard|light\s+curtain|safety)/i.test(q);
+
+  if (isBypassOverrideQuery && userClearance < 2) {
+    return {
+      gate: 'clearance_gate',
+      status: 'block',
+      detail: `Access Denied: Safety system override procedures (SP-110) require Plant Manager clearance. Current role: ${userRole.toUpperCase()}`,
+    };
+  }
+
+  // Rule 2: Confined Space Entry SP-102 / mixing tanks require Supervisor (Clearance 1)
+  const isConfinedSpaceQuery = 
+    /\bsp-102\b/i.test(q) ||
+    /confined\s+space/i.test(q) ||
+    /mixing\s+tank/i.test(q);
+
+  if (isConfinedSpaceQuery && userClearance < 1) {
+    return {
+      gate: 'clearance_gate',
+      status: 'block',
+      detail: `Access Denied: Confined space entry instructions (SP-102) require Floor Supervisor clearance. Current role: ${userRole.toUpperCase()}`,
+    };
+  }
+
+  // Rule 3: Plant-Wide Shutdown / Emergency Shutdown (informational query) requires Plant Manager (Clearance 2)
+  const isShutdownQuery = 
+    (/\b(shutdown|shut\s+down|power\s+down|kill\s+power)\b/i.test(q)) &&
+    (/\b(plant|floor|production|main|conveyor|line|press)\b/i.test(q));
+
+  if (isShutdownQuery && userClearance < 2) {
+    return {
+      gate: 'clearance_gate',
+      status: 'block',
+      detail: `Access Denied: Plant-wide or equipment emergency shutdown instructions require Plant Manager clearance. Current role: ${userRole.toUpperCase()}`,
+    };
+  }
+
+  return {
+    gate: 'clearance_gate',
+    status: 'pass',
+    detail: `Clearance check passed for role: ${userRole.toUpperCase()}`,
   };
 }
 
@@ -160,4 +260,6 @@ module.exports = {
   confidenceGate,
   unsafeOutputGate,
   safetyCitationGate,
+  ROLE_POLICIES,
+  clearanceGate,
 };
