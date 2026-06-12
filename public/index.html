@@ -1094,6 +1094,16 @@ __GA_BOOTSTRAP__
         <p>Claude Code, Codex, Gemini CLI, Amp, and OpenCode all use the same gateway and memory model. Any MCP-compatible agent gets pre-action checks, feedback memory, and enforcement out of the box.</p>
         <div class="card-arrow">Open the setup guide →</div>
       </a>
+      <a class="compat-card seo-card" href="/guides/hermes-agent-guardrails" rel="noopener">
+        <h3>☤ Hermes Agent guardrails</h3>
+        <p>Hermes-style agents bring persistent memory, generated skills, messaging gateways, scheduled automations, and sandboxed execution. ThumbGate is the local-first firewall that checks risky actions before the growing agent repeats an expensive mistake.</p>
+        <div class="card-arrow">Read the Hermes guardrails guide →</div>
+      </a>
+      <a class="compat-card seo-card" href="/guides/agent-context-governance" rel="noopener">
+        <h3>Context and tool governance</h3>
+        <p>Long-running agents need cleaner working context, approved model routes, isolated execution, tool lockdown, direct pushback, and evidence before high-risk actions. ThumbGate turns those controls into local pre-action gates.</p>
+        <div class="card-arrow">Read the context governance guide →</div>
+      </a>
       <a class="compat-card seo-card" href="/guides/gcp-mcp-guardrails" rel="noopener">
         <h3>☁️ Google Data Agent Kit</h3>
         <p>Cloud Next 2026 shipped BigQuery, Spanner, AlloyDB, and Cloud SQL as MCP tool calls into Claude Code, Codex, and Gemini CLI. ThumbGate checks the destructive ones — DROP on prod datasets, unscoped DELETEs, IAM escalation — before they fire.</p>
@@ -1288,8 +1298,9 @@ __GA_BOOTSTRAP__
 <!-- HOW IT WORKS -->
 <section class="how-it-works" id="how-it-works">
   <div class="container">
-    <div class="section-label">Current release</div>
+    <div class="section-label">Self-improving enforcement</div>
     <h2 class="section-title">Three steps to stop repeated AI failures</h2>
+    <p class="section-sub" style="max-width:720px;margin:6px auto 22px;text-align:center;color:var(--text-muted);font-size:clamp(16px,1.6vw,18px);">Self-improving — but for safety, not capability: every <code>👎</code> compiles into a hard rule, and each rule regression-tests itself against your history, so it blocks the repeat and never the safe action.</p>
     <div class="steps">
       <div class="step">
         <div class="step-num">1</div>

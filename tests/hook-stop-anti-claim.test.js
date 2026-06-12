@@ -112,6 +112,70 @@ test('hook stays silent when claim is backed by a curl tool call in the same tur
   assert.equal(stdout.trim(), '');
 });
 
+test('findClaim catches the 2026-06-11 added completion phrases', () => {
+  assert.ok(findClaim('All tests are green.'));
+  assert.ok(findClaim('all green now'));
+  assert.ok(findClaim('Tests passing.'));
+  assert.ok(findClaim('All checks passed.'));
+  assert.ok(findClaim('Verified.'));
+  assert.ok(findClaim('Confirmed.'));
+  assert.ok(findClaim('The build is stable.'));
+  assert.ok(findClaim('All clear.'));
+  assert.ok(findClaim('Good to go.'));
+  assert.ok(findClaim('The race is over.'));
+  assert.ok(findClaim('We are no longer racing.'));
+});
+
+test('added phrases still respect the proof-gate (claim + test run = silent)', () => {
+  const transcript = writeTranscript({
+    content: [
+      { type: 'text', text: 'All tests pass.' },
+      { type: 'tool_use', name: 'Bash', input: { command: 'npm test' } },
+    ],
+  });
+  const { stdout } = runHook(transcript);
+  assert.equal(stdout.trim(), '');
+});
+
+test('added phrase fires the reminder when unproven', () => {
+  const transcript = writeTranscript({
+    content: [{ type: 'text', text: 'All green, the race is over.' }],
+  });
+  const { stdout } = runHook(transcript);
+  assert.match(stdout, /anti-claim gate/i);
+});
+
+test('strict mode (THUMBGATE_STRICT_ENFORCEMENT=1) emits a block decision, not a reminder', () => {
+  const transcript = writeTranscript({
+    content: [{ type: 'text', text: 'Everything is done and verified.' }],
+  });
+  const res = spawnSync(process.execPath, [HOOK], {
+    input: JSON.stringify({ transcript_path: transcript }),
+    encoding: 'utf8',
+    timeout: 5000,
+    env: { ...process.env, THUMBGATE_STRICT_ENFORCEMENT: '1' },
+  });
+  const out = JSON.parse((res.stdout || '').trim());
+  assert.equal(out.decision, 'block');
+  assert.match(out.reason, /anti-claim gate \(strict\)/i);
+});
+
+test('strict mode stays silent when the claim has proof', () => {
+  const transcript = writeTranscript({
+    content: [
+      { type: 'text', text: 'Verified.' },
+      { type: 'tool_use', name: 'Bash', input: { command: 'npm test' } },
+    ],
+  });
+  const res = spawnSync(process.execPath, [HOOK], {
+    input: JSON.stringify({ transcript_path: transcript }),
+    encoding: 'utf8',
+    timeout: 5000,
+    env: { ...process.env, THUMBGATE_STRICT_ENFORCEMENT: '1' },
+  });
+  assert.equal((res.stdout || '').trim(), '');
+});
+
 test('hook stays silent when no claim phrase appears', () => {
   const transcript = writeTranscript({
     content: [

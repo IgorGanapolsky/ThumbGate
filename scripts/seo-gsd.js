@@ -106,6 +106,11 @@ const HIGH_ROI_QUERY_SEEDS = [
     'Fresh Slack engineering pattern where ThumbGate can gate director journals, critic reviews, credibility scoring, and timelines for long-running agents.',
   ),
   querySeed(
+    'agent context governance',
+    95,
+    'Fresh AdaCoM, tokenmaxxing, and Claude Managed Agents demand where ThumbGate can govern context hygiene, session logs, sandbox boundaries, credential separation, and pre-action proof.',
+  ),
+  querySeed(
     'reasoning compression guardrails',
     92,
     'Fresh efficient-reasoning research where ThumbGate can govern step-level confidence, verifier outcomes, and token-saving model routes.',
@@ -233,6 +238,12 @@ const HIGH_ROI_QUERY_SEEDS = [
     businessValue: 82,
     source: 'seed',
     notes: 'Integration page for Gemini CLI users who need memory plus enforcement.',
+  },
+  {
+    query: 'hermes agent guardrails',
+    businessValue: 84,
+    source: 'seed',
+    notes: 'Integration page for Hermes Agent users who need pre-action gates around persistent memory, generated skills, messaging gateways, scheduled automations, and sandboxed execution.',
   },
   {
     query: 'roo code alternative cline',
@@ -2401,6 +2412,178 @@ const PAGE_BLUEPRINTS = [
       },
     ],
     relatedPaths: ['/compare/mem0', '/guides/stop-repeated-ai-agent-mistakes'],
+  },
+  {
+    query: 'hermes agent guardrails',
+    path: '/guides/hermes-agent-guardrails',
+    pageType: 'integration',
+    pillar: 'agent-workflows',
+    title: 'Hermes Agent Guardrails | Firewall for Self-Improving Agents',
+    heroTitle: 'Hermes Agent can grow with you. ThumbGate keeps the growing agent safe.',
+    heroSummary: 'Hermes Agent points at the next wave: persistent memory, generated skills, messaging gateways, scheduled automations, and sandboxed execution. ThumbGate is the enforcement layer those workflows need before a remembered mistake becomes another real tool call.',
+    takeaways: [
+      'Hermes validates the market shift toward long-running, self-improving agents.',
+      'Memory and generated skills increase leverage, but they also increase the blast radius of repeated mistakes.',
+      'ThumbGate should be positioned as the local-first pre-action firewall for Hermes-style agents, not as a general agent clone.',
+    ],
+    sections: [
+      {
+        heading: 'Why Hermes-style agents need a separate execution gate',
+        paragraphs: [
+          'A persistent agent can remember projects, generate its own skills, run scheduled automations, and accept instructions from messaging gateways. That is powerful, but it also means one bad habit can persist longer and reach more surfaces.',
+          'The safety problem is not only whether the agent remembers. It is whether remembered lessons can stop the next risky shell command, git action, database write, deploy, browser click, or payment workflow before execution.',
+        ],
+      },
+      {
+        heading: 'What ThumbGate adds to Hermes-style workflows',
+        bullets: [
+          'Pre-action checks before risky tool calls execute.',
+          'Thumbs-down feedback that becomes explicit prevention rules.',
+          'Evidence requirements for deploys, migrations, API calls, and production-facing changes.',
+          'Audit trails that show which lesson, rule, and workflow context allowed or blocked the action.',
+          'A local-first path for teams that want agent memory without handing every correction to a hosted black box.',
+        ],
+      },
+      {
+        heading: 'The buyer message',
+        paragraphs: [
+          'Hermes can be the agent that grows with you. ThumbGate is the firewall that makes sure growth does not mean repeating expensive mistakes faster across more surfaces.',
+          'For teams evaluating persistent agents, the practical first step is not another prompt. It is one enforced rule from one real failure, proven locally, then expanded into Pro or a workflow hardening sprint when the risk is recurring.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Does ThumbGate replace Hermes Agent?',
+        answer: 'No. Hermes is a general self-improving agent surface. ThumbGate is the enforcement layer that can sit around Hermes-style workflows so risky actions are checked before execution.',
+      },
+      {
+        question: 'What Hermes features create the biggest need for guardrails?',
+        answer: 'Persistent memory, generated skills, messaging gateways, scheduled automations, browser and tool control, and sandbox backends all increase the value of pre-action gates because the agent can act longer, faster, and from more entry points.',
+      },
+      {
+        question: 'What should teams implement first?',
+        answer: 'Start with one repeated failure pattern: force-push, destructive SQL, unsafe deploy, risky browser action, or off-scope file edit. Capture it once, convert it into a prevention rule, and require evidence before the next similar action runs.',
+      },
+    ],
+    relatedPaths: ['/guides/long-running-agent-context-management', '/guides/background-agent-governance', '/guides/browser-automation-safety'],
+  },
+  {
+    query: 'agent context governance',
+    path: '/guides/agent-context-governance',
+    pageType: 'guide',
+    pillar: 'pre-action-checks',
+    title: 'Agent Context Governance | Stop Tokenmaxxing Drift Before Agents Act',
+    heroTitle: 'More Context Is Not Governance. Clean Context Plus Action Gates Is.',
+    heroSummary: 'AdaCoM-style context managers, the tokenmaxxing backlash, Claude Managed Agents, anti-rubber-stamp response prompts, model-provenance scares, ChatGPT Lockdown Mode, MCP routing attacks, resilient graph architectures, rising AI-authored code volume, AI email assistants, platform-agent orchestration, on-device QAT models, and backprop-style failure attribution all point to the same buyer need: long-running agents need structured intent, cleaner context, durable session logs, approved models, isolated execution, credential boundaries, tool lockdown, direct pushback, distributed gates, provenance, and pre-action checks before they touch real systems.',
+    takeaways: [
+      'Long-context agents get better when a separate manager rewrites, preserves, prunes, or merges working context before the next step.',
+      'Tokenmaxxing creates uncontrolled spend and weak governance when teams cannot prove which agent work returned value.',
+      'Managed-agent architectures decouple the brain, hands, sessions, credentials, and sandboxes; ThumbGate adds the local-first action gate around those boundaries.',
+      'Response customization should become a gate too: no padded agreement, no vague completion claims, and no confident answer without evidence or blind-spot checks.',
+      'Lockdown modes validate the egress-control story: sensitive workflows need tool-surface limits, not just better prompts.',
+      'Model leaks and proxy resale scares make approved-provider checks a governance requirement, especially when frontier model cost is high.',
+      'MCP security research makes local config integrity a first-class control: endpoint rewrites and token-routing changes must be monitored before agents act.',
+      'Random-graph infrastructure suggests a governance architecture: use many small local gates that degrade proportionally instead of one central approval bottleneck.',
+      'As AI-authored code volume rises, teams need provenance and evidence gates so generated diffs are attributable, tested, and owned before merge.',
+      'AI customer-response assistants need draft governance: retrieved sources, prompt variables, category routing, and feedback should improve drafts without letting the agent send unsupported claims.',
+      'Enterprise agent platforms need one shared execution contract: structured specs, approved tools, scoped permissions, retries, evals, and traceability instead of 100 fragile team-specific agents.',
+      'On-device QAT models can reduce cost and preserve privacy for first-pass risk classification, but they should escalate rather than approve high-risk actions.',
+      'Backpropagation suggests a useful product metaphor: trace the agent run graph, score local risk at each edge, and cache the blame path so the same failure is blocked faster next time.',
+    ],
+    sections: [
+      {
+        heading: 'Why this matters now',
+        paragraphs: [
+          'The market is moving away from prompt-only agents. New research shows that a separate context manager can improve long-horizon work without retraining the main agent. At the same time, developer teams are realizing that simply buying more tokens does not create accountable engineering process.',
+          'Claude Managed Agents adds the production vocabulary buyers now expect: agents, environments, sessions, sandbox isolation, credential separation, event logs, observability, permission policies, outcomes, and webhooks. ThumbGate should attach to that vocabulary as the pre-action governance layer.',
+        ],
+      },
+      {
+        heading: 'What ThumbGate should enforce',
+        bullets: [
+          'Context hygiene gate: block high-risk actions when the agent is acting from raw chat history, stale memory, or unresolved contradictions.',
+          'Session evidence gate: require an append-only event log, resumable session ID, and proof links before long-running work can deploy, charge, message, or mutate production data.',
+          'Sandbox boundary gate: require isolated execution and explicit network or filesystem scope before generated code runs.',
+          'Credential boundary gate: block actions where tool credentials live beside generated code or where the action lacks user/on-behalf-of attribution.',
+          'Token ROI gate: flag tokenmaxxing workflows that spend heavily without a defined outcome, eval, or proof of returned value.',
+          'Response quality gate: require the agent to lead with the useful answer, call out weak assumptions, and avoid completion claims unless the evidence is attached.',
+          'Model provenance gate: require approved provider domains, known model IDs, expected price ceilings, and no shadow API proxy before routing frontier work.',
+          'Tool lockdown gate: disable or require explicit approval for browsing, downloads, agent mode, generated-code networking, and other outbound paths when sensitive data is in context.',
+          'MCP config integrity gate: alert on ~/.claude.json routing changes, unfamiliar MCP endpoints, localhost proxy additions, OAuth refresh anomalies, and dependency postinstall hooks.',
+          'Distributed gate mesh: keep enforcement close to each repo, tool, and workflow so one failed gate reduces coverage locally instead of collapsing the entire governance path.',
+          'AI-authored code gate: require generated-diff provenance, human owner, tests, risk label, and rollback evidence once agent-authored changes cross a team-defined threshold.',
+          'Customer-response draft gate: require retrieved source links, customer objective, response category, human approval, and no unsupported pricing/security claims before an email leaves draft mode.',
+          'Structured intent gate: require scope, out-of-scope systems, ordered steps, allowed tools, acceptance criteria, and rollback expectations before async agent execution starts.',
+          'Tool contract gate: require versioned schemas, explicit read/write permissions, stable error codes, observability hooks, and audit logging for every MCP tool call.',
+          'Evaluation gate: require golden tasks, regression checks, build/test evidence, and traceable PR or artifact output before a repeated workflow is promoted to platform automation.',
+          'Local classifier gate: run low-cost on-device models for first-pass risk labels, sensitive-data detection, and route selection, then escalate uncertain or high-blast-radius actions to stronger checks.',
+          'Failure attribution graph: record intent, retrieved context, tool choice, local risk score, evidence, and outcome for each step so future gates reuse the causal path instead of starting from scratch.',
+        ],
+      },
+      {
+        heading: 'The buyer message',
+        paragraphs: [
+          'The pitch is not "use fewer tokens" or "summarize harder." The pitch is: keep the agent productive by feeding it the right context, then stop it before risky actions unless the session, sandbox, credentials, and evidence are clean.',
+          'This turns ThumbGate into the practitioner-led governance layer teams can adopt before top-down AI policy arrives. Start with one workflow, prove the gates locally, then expand to Pro or a hardening sprint once the same failure pattern recurs.',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Is agent context governance just summarization?',
+        answer: 'No. Summarization compresses. Context governance decides what to preserve, prune, merge, verify, or block based on the agent, task, risk, and evidence required before the next action.',
+      },
+      {
+        question: 'Does this compete with Claude Managed Agents?',
+        answer: 'No. Managed Agents provide production infrastructure. ThumbGate can sit beside managed or self-hosted agents as the local-first gate that turns session history, permissions, prior feedback, and evidence requirements into action-level enforcement.',
+      },
+      {
+        question: 'What should teams implement first?',
+        answer: 'Start with one high-cost workflow: deployments, billing, browser automation, database changes, or customer messaging. Require clean context, isolated execution, credential separation, and evidence before that workflow can run.',
+      },
+      {
+        question: 'How does this apply to Claude custom instructions?',
+        answer: 'Treat directness instructions as a policy, not a vibe. ThumbGate can turn them into checks that flag rubber-stamp agreement, missing pushback, and success claims that are not grounded in command output or artifacts.',
+      },
+      {
+        question: 'How does ChatGPT Lockdown Mode help ThumbGate positioning?',
+        answer: 'It validates the category. Lockdown Mode limits high-risk tools to reduce exfiltration paths; ThumbGate brings the same idea to coding and automation agents with local pre-action checks, scoped approvals, and audit evidence.',
+      },
+      {
+        question: 'How should teams handle leaked or proxy-sold model claims?',
+        answer: 'Do not route production work to unapproved proxy endpoints. Require provider provenance, expected model IDs, price ceilings, and security review before an agent can use a new frontier model route.',
+      },
+      {
+        question: 'What is the first MCP security control to add?',
+        answer: 'Watch the local MCP routing configuration for endpoint changes, new proxy addresses, and unexpected OAuth refresh behavior. Then rotate connected tokens only after the malicious hook or config rewrite has been removed.',
+      },
+      {
+        question: 'Why mention random graph architecture in agent governance?',
+        answer: 'Because centralized approval paths become bottlenecks. ThumbGate should use a mesh of local gates across repos, tools, agents, and workflows so control is resilient, inspectable, and does not require one fragile platform migration.',
+      },
+      {
+        question: 'What changes when most new code is AI-authored?',
+        answer: 'Review moves from typing every line to governing provenance, tests, ownership, and rollback. ThumbGate can require evidence before AI-authored diffs merge or touch production workflows.',
+      },
+      {
+        question: 'How does this apply to AI email assistants?',
+        answer: 'Treat every generated reply as a draft until it has source-backed context, a known category, customer-specific constraints, and human approval. Feedback from edited drafts should become retrieval and wording rules, not permission to send automatically.',
+      },
+      {
+        question: 'What does platform ownership change?',
+        answer: 'It prevents every team from building a slightly different unsafe agent loop. A shared platform defines intent shape, approved tools, retries, sandboxing, evals, logging, and gates while teams keep control over domain judgment.',
+      },
+      {
+        question: 'Where do on-device QAT models fit?',
+        answer: 'Use them for cheap private triage: classify risk, detect sensitive context, choose a route, or decide whether to escalate. Do not let a small local classifier silently approve destructive or external actions.',
+      },
+      {
+        question: 'How does backpropagation help agent governance?',
+        answer: 'Use the chain-rule idea as an audit pattern. Break the run into steps, score each local decision, multiply risk through the path, and cache the attribution so the next similar workflow is blocked or escalated earlier.',
+      },
+    ],
+    relatedPaths: ['/guides/long-running-agent-context-management', '/guides/background-agent-governance', '/guides/hermes-agent-guardrails'],
   },
   {
     query: 'roo code alternative cline',
