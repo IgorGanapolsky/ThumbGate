@@ -339,7 +339,7 @@ test('manufacturing copilot LangGraph has credential-free extractive offline mod
   });
 
   assert.equal(result.status, 'pass');
-  assert.match(result.answer, /Per SP-101 Lockout Tagout/);
+  assert.match(result.answer, /here is the procedure for SP-101 Lockout/i);
   assert.match(result.answer, /\[Safety Procedures Manual\]/);
   assert.match(result.answer, /hydraulic bleed-down/);
   assert.ok(result.spans.some(span => span.name === 'generate_answer'));
