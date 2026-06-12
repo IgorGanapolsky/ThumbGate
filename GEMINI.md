@@ -6,7 +6,6 @@
 > The following rules were automatically derived from execution failures and thumbs-down feedback.
 > You MUST follow these constraints strictly to prevent repeated errors.
 
-- **Rule [auto-entity-customer]**: Auto-promoted repeated pattern: "PR hygiene lesson 2026-06-04: GitHub workflow YAML changes need actionlint plus YAML parser checks before merge; heredoc" (4 occurrences in 30 days)
 - **Rule [auto-setup-vertex-dry-run-was-accepted-but-ignored-it-e]**: Auto-promoted repeated pattern: "setup-vertex --dry-run was accepted but ignored; it enabled Vertex AI and wrote .env. Dry-run flags must never mutate cl" (1 occurrences in 30 days)
 - **Rule [auto-pr-hygiene-session-directive-thumbgate-hooks-workt]**: Auto-promoted repeated pattern: "PR hygiene cleanup exposed stale local hook.thumbgate command paths pointing at a removed temp worktree; remote branch d" (1 occurrences in 30 days)
 - **Rule [auto-rest-fallback]**: Auto-promoted repeated pattern: "stdin test" (6 occurrences in 30 days)
@@ -48,3 +47,4 @@
 - **Rule [auto-test-failure]**: Auto-promoted repeated pattern: "test failure" (1 occurrences in 30 days)
 - **Rule [auto-promoted-mq9ksgcf-0]**: NEVER repeated problem context string
 - **Rule [auto-entity-customer-entity-revenue-metric-roi]**: Auto-promoted repeated pattern: "Incorrectly counted operator/test Stripe payment as historical customer revenue. Future ThumbGate revenue claims must di" (1 occurrences in 30 days)
+- **Rule [auto-absolute-rule-git-flow-never-force-push-main-pr-fl]**: Auto-promoted repeated pattern: "CEO fury re: force-push to main + git-flow. Believes I force-pushed main." (1 occurrences in 30 days)
