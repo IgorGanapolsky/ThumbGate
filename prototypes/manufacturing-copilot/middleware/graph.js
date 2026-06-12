@@ -71,6 +71,32 @@ function classifyQuestionRoute(question) {
     : 'general';
 }
 
+function needsRetrievalScopeClarification(question) {
+  const q = String(question || '').toLowerCase();
+  const asksSetup = /\b(machine|equipment|line|plant)\s+(setup|set\s*up|start\s*up|startup|configuration|configure)\b/.test(q)
+    || /\b(setup|set\s*up|start\s*up|startup|configuration|configure)\s+(machine|equipment|line|plant)\b/.test(q);
+  if (!asksSetup) return false;
+
+  const hasSpecificScope =
+    /\b(?:SP|MM|QC)-\d{3}\b/i.test(q) ||
+    /\b(hp-400|vm-22|c-3|hydraulic press|cnc|conveyor|modbus|plc|loto|lockout|tagout|quality|inspection|hazcom|safety|maintenance)\b/i.test(q);
+  return !hasSpecificScope;
+}
+
+function retrievalScopeClarificationResponse() {
+  return [
+    'I need one more detail before retrieving manuals for machine setup.',
+    '',
+    'Which evidence category should I use?',
+    '- Safety Procedures Manual: guards, LOTO, interlocks, hazardous energy.',
+    '- Maintenance Manual: service setup, servicing prerequisites, equipment maintenance.',
+    '- Quality Standards Manual: inspection, labels, acceptance criteria.',
+    '- Protocol / PLC Telemetry: Modbus, PLC state, coils, registers.',
+    '',
+    'You can also name a machine or procedure code, such as HP-400, VM-22, SP-101, MM-201, or QC-301.'
+  ].join('\n');
+}
+
 const STOPWORDS = new Set([
   'a', 'an', 'and', 'are', 'as', 'at', 'be', 'for', 'from', 'how', 'i', 'in',
   'is', 'it', 'of', 'on', 'or', 'the', 'to', 'what', 'with',
@@ -330,6 +356,31 @@ function createManufacturingGraph({
             ? {
                 status: 'blocked',
                 answer: chatbotGuardrailBlock(gateResult),
+              }
+            : {}),
+        };
+      })
+      .addNode('clarify_retrieval_scope', async (state) => {
+        const needsClarification = await trace.span(
+          'clarify_retrieval_scope',
+          'chain',
+          { question: state.sanitizedQuestion },
+          async () => needsRetrievalScopeClarification(state.sanitizedQuestion)
+        );
+        return {
+          graphNodes: [...state.graphNodes, 'clarify_retrieval_scope'],
+          ...(needsClarification
+            ? {
+                status: 'needs_clarification',
+                answer: retrievalScopeClarificationResponse(),
+                gates: [
+                  ...state.gates,
+                  {
+                    gate: 'retrieval_scope',
+                    status: 'warning',
+                    detail: 'Generic machine setup question needs a manual category, machine, or procedure code before retrieval.',
+                  },
+                ],
               }
             : {}),
         };
@@ -688,7 +739,10 @@ function createManufacturingGraph({
         state.proposedToolCall ? 'thumbgate_tool_firewall' : 'evaluate_clearance'
       ))
       .addConditionalEdges('evaluate_clearance', (state) => (
-        state.status === 'blocked' ? END : 'plan_retrieval'
+        state.status === 'blocked' ? END : 'clarify_retrieval_scope'
+      ))
+      .addConditionalEdges('clarify_retrieval_scope', (state) => (
+        state.status === 'needs_clarification' ? END : 'plan_retrieval'
       ))
       .addConditionalEdges('thumbgate_tool_firewall', (state) => (
         state.toolGate?.allowed ? 'plan_retrieval' : END
@@ -783,6 +837,7 @@ module.exports = {
   createManufacturingRetriever,
   executeManufacturingGraph,
   isTelemetryQuestion,
+  needsRetrievalScopeClarification,
   localHybridRerank,
   packRetrievedContext,
   polishConversationalAnswer,

@@ -255,15 +255,17 @@
       return 'background: #374151; color: #d1d5db; border: 1px solid #9ca3af;'; // Default Slate/Grey
     }
 
-    function getCategoryName(chunk) {
-      if (!chunk) return 'Unknown';
-      const source = String(chunk.source || chunk.sourceCategory || '').toLowerCase();
+    function getCategoryName(chunkOrString) {
+      if (!chunkOrString) return 'Unknown';
+      const source = typeof chunkOrString === 'string'
+        ? chunkOrString.toLowerCase()
+        : String(chunkOrString.source || chunkOrString.sourceCategory || '').toLowerCase();
       if (source.includes('telemetry')) return 'Telemetry';
       if (source.includes('maintenance')) return 'Maintenance';
       if (source.includes('safety')) return 'Safety';
       if (source.includes('quality')) return 'Quality';
       if (source.includes('protocol')) return 'Protocol';
-      return chunk.source || 'Other';
+      return typeof chunkOrString === 'string' ? chunkOrString : (chunkOrString.source || 'Other');
     }
 
     function runScenario(type) {
@@ -353,10 +355,7 @@
       sourceCategorySummary.innerHTML = '';
       
       if (data.retrievedChunks && data.retrievedChunks.length > 0) {
-        const categories = [...new Set(data.retrievedChunks
-          .map(chunk => chunk.sourceCategory || chunk.source || 'Source Document')
-          .filter(Boolean))];
-        const usedCategoryText = categories.join(' ').toLowerCase();
+        const retrievedMapped = data.retrievedChunks.map(getCategoryName);
         const evidenceCategories = [
           'Safety Procedures Manual',
           'Maintenance Manual',
@@ -365,9 +364,8 @@
           'Live PLC Telemetry'
         ];
         evidenceCategories.forEach(category => {
-          const used = category.toLowerCase().split(/\s+/).some(term => (
-            term.length > 4 && usedCategoryText.includes(term)
-          ));
+          const mappedCat = getCategoryName(category);
+          const used = retrievedMapped.includes(mappedCat);
           const row = document.createElement('div');
           row.className = `source-category-row ${used ? 'used' : 'unused'}`;
           const name = document.createElement('span');
