@@ -5812,7 +5812,8 @@ async function addContext(){
       // pro Stripe Payment Link, preserving UTM + attribution metadata via
       // buildCheckoutFallbackUrl. Default-off; bot-deflection still applies
       // (bot + no email hint still falls through to the existing interstitial).
-      const interstitialBypassEnabled = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS === '1';
+      const interstitialBypassEnabled = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS === '1' ||
+        (process.env.NODE_ENV === 'production' && process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS !== '0');
       const interstitialSampleRate = normalizeCheckoutInterstitialSampleRate(
         process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE
       );
