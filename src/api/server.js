@@ -460,6 +460,36 @@ const TRACKED_LINK_TARGETS = Object.freeze({
     },
     allowCustomerEmail: true,
   },
+  diagnostic: {
+    configUrlKey: 'sprintDiagnosticCheckoutUrl',
+    fallbackHref: SPRINT_DIAGNOSTIC_CHECKOUT_URL,
+    external: true,
+    ctaId: 'go_diagnostic',
+    ctaPlacement: 'link_router',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'link_router',
+      utm_campaign: 'sprint_diagnostic',
+      plan_id: 'sprint_diagnostic',
+    },
+    allowCustomerEmail: true,
+  },
+  sprint: {
+    configUrlKey: 'workflowSprintCheckoutUrl',
+    fallbackHref: WORKFLOW_SPRINT_CHECKOUT_URL,
+    external: true,
+    ctaId: 'go_sprint',
+    ctaPlacement: 'link_router',
+    eventType: 'cta_click',
+    defaults: {
+      utm_source: 'website',
+      utm_medium: 'link_router',
+      utm_campaign: 'workflow_sprint',
+      plan_id: 'workflow_sprint',
+    },
+    allowCustomerEmail: true,
+  },
   trial: {
     path: '/guide',
     ctaId: 'go_trial',
@@ -2318,8 +2348,10 @@ function appendTrackedLinkQueryParams(destinationUrl, parsed, target) {
 }
 
 function buildTrackedLinkDestination(target, hostedConfig, parsed) {
-  const destinationUrl = target.href
-    ? new URL(target.href)
+  const configuredHref = target.configUrlKey ? hostedConfig[target.configUrlKey] : null;
+  const href = target.href || configuredHref || target.fallbackHref;
+  const destinationUrl = href
+    ? new URL(href)
     : new URL(target.path || '/', hostedConfig.appOrigin);
   appendTrackedLinkQueryParams(destinationUrl, parsed, target);
   return destinationUrl;
@@ -3337,24 +3369,29 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/compare/anthropic-claude-for-legal', changefreq: 'weekly', priority: '0.9' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
   ];
-  // Auto-include every hand-written comparison page so /sitemap.xml can never
-  // drift out of sync with public/compare/*.html. Crawlers and AI answer engines
-  // (Google AI Overviews/AI Mode, ChatGPT, Perplexity) only surface pages they can
-  // discover, so a comparison page missing from the sitemap is invisible on its
-  // buyer-intent query. De-duped against entries already declared above (e.g. the
-  // seo-gsd specs), which keep their explicit priorities.
+  // Auto-include every hand-written SEO page so /sitemap.xml can never drift out
+  // of sync with public/compare/*.html or public/guides/*.html. Crawlers and AI
+  // answer engines only surface pages they can discover, so a buyer-intent page
+  // missing from the sitemap is invisible on its query. De-duped against entries
+  // already declared above (e.g. seo-gsd specs), which keep explicit priorities.
   const declaredPaths = new Set(entries.map((entry) => entry.path));
   try {
-    const compareFiles = fs.readdirSync(path.join(PUBLIC_DIR, 'compare')).sort((a, b) => a.localeCompare(b));
-    for (const file of compareFiles) {
-      if (!file.endsWith('.html')) continue;
-      const comparePath = `/compare/${file.replace(/\.html$/, '')}`;
-      if (declaredPaths.has(comparePath)) continue;
-      declaredPaths.add(comparePath);
-      entries.push({ path: comparePath, changefreq: 'weekly', priority: '0.85' });
+    const seoDirectories = [
+      { dir: 'compare', route: '/compare', priority: '0.85' },
+      { dir: 'guides', route: '/guides', priority: '0.85' },
+    ];
+    for (const catalog of seoDirectories) {
+      const files = fs.readdirSync(path.join(PUBLIC_DIR, catalog.dir)).sort((a, b) => a.localeCompare(b));
+      for (const file of files) {
+        if (!file.endsWith('.html')) continue;
+        const publicPath = `${catalog.route}/${file.replace(/\.html$/, '')}`;
+        if (declaredPaths.has(publicPath)) continue;
+        declaredPaths.add(publicPath);
+        entries.push({ path: publicPath, changefreq: 'weekly', priority: catalog.priority });
+      }
     }
   } catch {
-    // public/compare absent in a stripped bundle — fall back to the static entries.
+    // SEO directories absent in a stripped bundle — fall back to static entries.
   }
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',

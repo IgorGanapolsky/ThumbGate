@@ -726,6 +726,40 @@ test('/go/pro falls back to default UTM attribution when no params are supplied'
   assert.equal(url.searchParams.get('plan_id'), 'pro');
 });
 
+test('/go/diagnostic redirects to configured diagnostic Stripe checkout with attribution preserved', async () => {
+  const res = await fetch(apiUrl('/go/diagnostic?utm_source=audit&utm_medium=codex&offer_code=VERIFY&customer_email=buyer%40example.com'), { redirect: 'manual' });
+  assert.equal(res.status, 302);
+  assert.equal(res.headers.get('x-thumbgate-link-slug'), 'diagnostic');
+  assert.equal(res.headers.get('cache-control'), 'no-store');
+  assert.equal(res.headers.get('x-robots-tag'), 'noindex,nofollow');
+
+  const url = new URL(res.headers.get('location'));
+  assert.equal(url.origin + url.pathname, 'https://buy.stripe.com/diagnostic-test');
+  assert.equal(url.searchParams.get('utm_source'), 'audit');
+  assert.equal(url.searchParams.get('utm_medium'), 'codex');
+  assert.equal(url.searchParams.get('utm_campaign'), 'sprint_diagnostic');
+  assert.equal(url.searchParams.get('plan_id'), 'sprint_diagnostic');
+  assert.equal(url.searchParams.get('offer_code'), 'VERIFY');
+  assert.equal(url.searchParams.get('customer_email'), 'buyer@example.com');
+  assert.equal(url.searchParams.get('cta_id'), 'go_diagnostic');
+  assert.equal(url.searchParams.get('landing_path'), '/go/diagnostic');
+});
+
+test('/go/sprint redirects to configured workflow sprint Stripe checkout with defaults', async () => {
+  const res = await fetch(apiUrl('/go/sprint'), { redirect: 'manual' });
+  assert.equal(res.status, 302);
+  assert.equal(res.headers.get('x-thumbgate-link-slug'), 'sprint');
+
+  const url = new URL(res.headers.get('location'));
+  assert.equal(url.origin + url.pathname, 'https://buy.stripe.com/sprint-test');
+  assert.equal(url.searchParams.get('utm_source'), 'website');
+  assert.equal(url.searchParams.get('utm_medium'), 'link_router');
+  assert.equal(url.searchParams.get('utm_campaign'), 'workflow_sprint');
+  assert.equal(url.searchParams.get('plan_id'), 'workflow_sprint');
+  assert.equal(url.searchParams.get('cta_id'), 'go_sprint');
+  assert.equal(url.searchParams.get('landing_path'), '/go/sprint');
+});
+
 test('/go/:slug returns 404 JSON for slugs not registered in TRACKED_LINK_TARGETS', async () => {
   const res = await fetch(apiUrl('/go/malicious?utm_source=x'), { redirect: 'manual' });
   assert.equal(res.status, 404);
