@@ -868,6 +868,26 @@ test('GET /sitemap.xml lists every public/compare/*.html page', async () => {
   assert.deepEqual(missing, [], `comparison pages missing from sitemap: ${missing.join(', ')}`);
 });
 
+// Regression guard: guide pages are AI-search/GEO landing pages, so adding one
+// without a sitemap entry makes it effectively invisible to crawlers.
+test('GET /sitemap.xml lists every public/guides/*.html page', async () => {
+  const guidePages = fs
+    .readdirSync(path.join(publicDir, 'guides'))
+    .filter((file) => file.endsWith('.html'))
+    .map((file) => `/guides/${file.replace(/\.html$/, '')}`);
+
+  assert.ok(guidePages.includes('/guides/vllm-serving-guardrails'), 'expected vLLM guide to be part of the guide catalog');
+
+  const res = await fetch(`${origin}/sitemap.xml`);
+  assert.equal(res.status, 200);
+  const xml = await res.text();
+
+  const missing = guidePages.filter(
+    (p) => !new RegExp(`<loc>[^<]*${p.replace(/[/-]/g, (c) => `\\${c}`)}</loc>`).test(xml),
+  );
+  assert.deepEqual(missing, [], `guide pages missing from sitemap: ${missing.join(', ')}`);
+});
+
 // Root cause this prevents: the /compare hub linked to a hand-maintained subset of the
 // catalog (4 of 13 pages), so flagship buyer-intent comparisons (claude-code-hooks, arcjet,
 // bumblebee, anthropic-containment, ...) were live and in the sitemap but unreachable from
