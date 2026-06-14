@@ -148,7 +148,7 @@
 <ul>
   <li><strong>npm package <code>thumbgate</code></strong> — the public shell. CLI, hook installer, adapter configs, JSON schemas. Node ≥18.18, MIT.</li>
   <li><strong>Railway-hosted API</strong> at <code>thumbgate.ai</code> — health, dashboard, checkout intent, billing summary. Docker rebuild on every push to <code>main</code> (2–5 min). Verified post-deploy by curling <code>/health</code> and grepping the version string.</li>
-  <li><strong>Stripe</strong> — 15 active products (Pro $19/mo + $149/yr; Team $49/seat/mo; plus 13 funnel/diagnostic SKUs from $1 to $1,500). All carry the canonical ThumbGate logo. Checkout sessions verified to mint live <code>cs_live_</code> IDs.</li>
+  <li><strong>Stripe</strong> — 15 active products (Pro $19/mo + $149/yr; Enterprise; plus 13 funnel/diagnostic SKUs from $1 to $1,500). All carry the canonical ThumbGate logo. Checkout sessions verified to mint live <code>cs_live_</code> IDs.</li>
   <li><strong>SQLite + FTS5 lesson DB</strong> — ships in the package, runs on-device, never phones home.</li>
   <li><strong>LanceDB vector index</strong> — for semantic lesson recall.</li>
   <li><strong>Plausible analytics</strong> — privacy-respecting, no cookie banner, no IP logging.</li>

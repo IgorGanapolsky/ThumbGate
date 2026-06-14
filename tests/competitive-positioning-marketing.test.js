@@ -56,7 +56,7 @@ test('Agentix comparison page frames agency services as adjacent competition', (
   assert.match(agentixHtml, /custom AI agent and automation services/i);
   assert.match(agentixHtml, /productized enforcement layer/i);
   assert.match(agentixHtml, /Pro \$19\/mo or \$149\/yr/);
-  assert.match(agentixHtml, /Team \$49\/seat\/mo/);
+  assert.match(agentixHtml, /Enterprise/);
 });
 
 test('platform-team use case page exists with rollout language', () => {

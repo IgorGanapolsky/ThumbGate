@@ -110,11 +110,11 @@ describe('SEO guide and comparison pages', () => {
         assert.ok(html.includes('ThumbGate'), `${file} does not mention ThumbGate`);
       });
 
-      it('mentions the current Pro and Team pricing', () => {
+      it('mentions the current Pro and Enterprise pricing', () => {
         html = html || fs.readFileSync(path.join(PUBLIC_DIR, file), 'utf-8');
         assert.ok(
-          html.includes('$19/mo') && html.includes('$149/yr') && html.includes('$49/seat/mo'),
-          `${file} missing current Pro and Team pricing`
+          html.includes('$19/mo') && html.includes('$149/yr') && html.includes('Enterprise'),
+          `${file} missing current Pro and Enterprise pricing`
         );
       });
     });
@@ -171,7 +171,7 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(hasCheckoutPath(html, '/fZu28rfCY6zcbO99uj3sI2G'));
     assert.ok(hasCheckoutPath(html, '/00w14neyUcXA5pL5e33sI0e'));
     assert.ok(html.includes('workflow-sprint-intake'));
-    assert.ok(html.includes('Pro $19/mo or $149/yr. Team $49/seat/mo.'));
+    assert.ok(html.includes('Pro $19/mo or $149/yr. Enterprise for org-wide enforcement.'));
     assert.ok(html.includes('pre-action rule that stops the already-rejected mistake'));
   });
 
@@ -375,7 +375,7 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('prefix caching'));
     assert.ok(html.includes('npx thumbgate model-runtime-guardrails --runtime=vllm'));
     assert.ok(html.includes('cache-isolation proof'));
-    assert.ok(html.includes('Pro $19/mo or $149/yr. Team $49/seat/mo.'));
+    assert.ok(html.includes('Pro $19/mo or $149/yr. Enterprise for org-wide enforcement.'));
   });
 
   it('Fallow comparison positions static analysis as complementary context', () => {
