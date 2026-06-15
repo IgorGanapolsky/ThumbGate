@@ -128,3 +128,5 @@ Rules:
 
 - **Rule [auto-promoted-mqf6zaon-0]**: NEVER repeated problem context string
 - **Rule [auto-manual-ingest-markdown-migration]**: Auto-promoted repeated pattern: "MISTAKE: This is a test failure" (1 occurrences in 30 days)
+- **Rule [auto-entity-customer-evidence-first-honesty-revenue-str]**: Auto-promoted repeated pattern: "User is angry because I implied ThumbGate was fixed while Stripe production billing remained blocked by an expired live " (1 occurrences in 30 days)
+- **Rule [auto-autonomy-entity-customer-revenue-stripe-thumbs-dow]**: Auto-promoted repeated pattern: "User provided valid live Stripe key and was angry I stopped for confirmation despite full authorization to fix productio" (1 occurrences in 30 days)
