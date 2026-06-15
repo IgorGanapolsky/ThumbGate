@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Headroom Guardrails | Context Compression Is Not Governance</title>
+  <meta name="description" content="Headroom compresses agent context before it reaches the LLM. ThumbGate complements that by gating risky tool calls, file edits, deploys, and proof claims before they execute." />
+  <meta property="og:title" content="Headroom Guardrails | Context Compression Is Not Governance" />
+  <meta property="og:description" content="Headroom compresses agent context before it reaches the LLM. ThumbGate complements that by gating risky tool calls, file edits, deploys, and proof claims before they execute." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/guides/headroom-context-compression-guardrails" />
+  <link rel="canonical" href="https://thumbgate.ai/guides/headroom-context-compression-guardrails" />
+  <link rel="llm-context" href="/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <style>
+    :root { --bg:#0a0a0b; --panel:#151518; --line:#29292f; --text:#ececf1; --muted:#a0a0aa; --cyan:#22d3ee; --green:#4ade80; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); line-height:1.65; }
+    a { color:var(--cyan); text-decoration:none; } a:hover { text-decoration:underline; }
+    .wrap { max-width:1040px; margin:0 auto; padding:0 24px; }
+    header { border-bottom:1px solid var(--line); background:rgba(10,10,11,.9); position:sticky; top:0; z-index:2; }
+    header .wrap { display:flex; justify-content:space-between; align-items:center; padding-top:14px; padding-bottom:14px; }
+    .brand { color:var(--text); font-weight:800; }
+    .hero { padding:70px 0 34px; }
+    .eyebrow { color:var(--cyan); text-transform:uppercase; font-size:12px; font-weight:800; letter-spacing:.08em; }
+    h1 { font-size:clamp(34px,5vw,58px); line-height:1.05; max-width:820px; margin:14px 0; }
+    .lead { color:var(--muted); font-size:18px; max-width:760px; }
+    .grid { display:grid; grid-template-columns:minmax(0,2fr) minmax(280px,1fr); gap:22px; padding-bottom:72px; }
+    section, aside > div { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:22px; margin-bottom:18px; }
+    h2 { margin:0 0 10px; font-size:24px; }
+    p, li { color:var(--muted); }
+    .cta { display:inline-flex; margin-top:12px; padding:12px 15px; border-radius:10px; background:var(--cyan); color:#051014; font-weight:800; }
+    .offer { display:block; border:1px solid rgba(74,222,128,.34); border-radius:10px; padding:12px; margin-top:10px; color:var(--text); }
+    .offer strong { color:var(--green); }
+    @media (max-width: 860px) { .grid { grid-template-columns:1fr; } }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Headroom Context Compression Guardrails",
+  "description": "Headroom compresses agent context before it reaches the LLM. ThumbGate complements that by gating risky tool calls, file edits, deploys, and proof claims before they execute.",
+  "about": ["Headroom", "context compression", "AI agent governance", "token compression", "pre-action checks"],
+  "url": "https://thumbgate.ai/guides/headroom-context-compression-guardrails",
+  "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+  "mainEntityOfPage": "https://thumbgate.ai/guides/headroom-context-compression-guardrails"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is Headroom a ThumbGate competitor?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Headroom is competitor-adjacent, not a direct replacement. It compresses context before the LLM. ThumbGate gates actions before tools, files, deploys, payments, and completion claims execute."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Should teams use compression without governance?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Compression can reduce token cost and noise, but it can also hide missing evidence. Risky actions still need pre-action checks, proof requirements, and rollback evidence."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <header><div class="wrap"><a class="brand" href="/">ThumbGate</a><a href="/pricing">Pro $19/mo or $149/yr. Enterprise for org-wide enforcement.</a></div></header>
+  <main class="wrap">
+    <div class="hero">
+      <div class="eyebrow">Context Compression Guardrails</div>
+      <h1>Headroom can reduce tokens. It still needs an action firewall.</h1>
+      <p class="lead">Headroom's useful idea is compressing tool outputs, logs, files, RAG chunks, and conversation history before they reach the LLM. ThumbGate's job starts where compression stops: blocking risky agent actions before they run.</p>
+    </div>
+    <div class="grid">
+      <div>
+        <section>
+          <h2>How this helps ThumbGate</h2>
+          <p>Headroom validates the same buyer pain we sell into: long-running coding agents get expensive, noisy, and confused. Our wedge is sharper: compression saves tokens; ThumbGate prevents the repeated mistake from executing.</p>
+          <ul>
+            <li>Use Headroom-style compression as an optional context budget lane.</li>
+            <li>Require ThumbGate proof before trusting compressed outputs for deploy, billing, file, git, or database actions.</li>
+            <li>Position ThumbGate as complementary: the deterministic gate underneath compression, memory, and model-routing tools.</li>
+          </ul>
+        </section>
+        <section>
+          <h2>The risk in compressed context</h2>
+          <p>Compression can remove exactly the evidence an agent needs to avoid a false status claim. If logs, test output, or RAG chunks are summarized, the next tool call should be gated by proof requirements, not model confidence.</p>
+          <ul>
+            <li>Block "done", "verified", or "all green" claims unless test output or deployment evidence is attached.</li>
+            <li>Require original-context retrieval before destructive actions when the compressed view omits file paths, stack traces, secrets, or failing assertions.</li>
+            <li>Record compression ratio, original pointer, verifier result, and action decision in the audit trail.</li>
+          </ul>
+        </section>
+        <section>
+          <h2>Recommended architecture</h2>
+          <p>Run compression before model context assembly. Run ThumbGate before execution. That keeps token efficiency out of the enforcement hot path and prevents "cheap context" from becoming unsafe action.</p>
+          <ul>
+            <li>Context layer: Headroom or similar compressor cleans logs, files, and RAG chunks.</li>
+            <li>Reasoning layer: Claude, Codex, Cursor, OpenCode, or a local model proposes the next step.</li>
+            <li>Execution layer: ThumbGate checks the proposed shell, file, git, deploy, API, or customer-system action before it runs.</li>
+          </ul>
+        </section>
+      </div>
+      <aside>
+        <div>
+          <h2>Turn this into money</h2>
+          <p>Use this page when buyers ask about Headroom, token compression, context optimization, or cheaper coding agents.</p>
+          <a class="cta" href="/checkout/pro?utm_source=headroom_guide&utm_medium=guide&utm_campaign=context_compression_guardrails&utm_content=pro">Go Pro</a>
+          <a class="offer" href="/?utm_source=headroom_guide&utm_medium=guide&utm_campaign=context_compression_guardrails&utm_content=workflow_sprint#workflow-sprint-intake"><strong>Enterprise:</strong> scope one compressed-agent workflow and gate its risky actions.</a>
+        </div>
+        <div>
+          <h2>Related</h2>
+          <p><a href="/guides/reasoning-compression-guardrails">Reasoning compression guardrails</a></p>
+          <p><a href="/guides/long-running-agent-context-management">Long-running agent context management</a></p>
+          <p><a href="/guides/agent-context-governance">Agent context governance</a></p>
+        </div>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>
