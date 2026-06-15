@@ -1969,7 +1969,7 @@ async function answerEnterpriseDataChat({ prompt, feedbackDir, parsed }) {
 const answerEnterpriseDialogflowChat = answerEnterpriseDataChat;
 
 function buildLossAnalyticsResponse(data, summaryOptions) {
-  return {
+  return sanitizeHtmlUnsafeJsonValue({
     window: data.analytics.window || summaryOptions,
     lossAnalysis: data.analytics.lossAnalysis || null,
     buyerLoss: data.analytics.buyerLoss || null,
@@ -1981,7 +1981,7 @@ function buildLossAnalyticsResponse(data, summaryOptions) {
       ctas: data.analytics.telemetry && data.analytics.telemetry.ctas,
       visitors: data.analytics.telemetry && data.analytics.telemetry.visitors,
     },
-  };
+  });
 }
 
 function createJourneyId(prefix) {
@@ -2478,6 +2478,7 @@ function sendJson(res, statusCode, payload, extraHeaders = {}, options = {}) {
   const body = JSON.stringify(payload);
   res.writeHead(statusCode, {
     'Content-Type': 'application/json; charset=utf-8',
+    'X-Content-Type-Options': 'nosniff',
     'Content-Length': Buffer.byteLength(body),
     ...extraHeaders,
   });
@@ -4610,6 +4611,33 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function escapeHtmlUnsafeJsonString(value) {
+  return String(value)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
+function sanitizeHtmlUnsafeJsonValue(value) {
+  if (typeof value === 'string') {
+    return escapeHtmlUnsafeJsonString(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map((entry) => sanitizeHtmlUnsafeJsonValue(entry));
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value).map(([key, entry]) => [
+      escapeHtmlUnsafeJsonString(key),
+      sanitizeHtmlUnsafeJsonValue(entry),
+    ])
+  );
 }
 
 function normalizeDocumentIdFromPath(pathname) {
@@ -9519,6 +9547,8 @@ module.exports = {
     buildEnterpriseChatAnswer,
     answerEnterpriseDataChat,
     answerEnterpriseDialogflowChat,
+    buildLossAnalyticsResponse,
+    sanitizeHtmlUnsafeJsonValue,
   },
 };
 

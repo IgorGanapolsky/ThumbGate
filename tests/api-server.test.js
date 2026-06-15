@@ -78,6 +78,41 @@ test('api servers 2026 pricing', () => {
   assert.match('$19/mo or $149/yr', /\$19\/mo or \$149\/yr/);
 });
 
+test('loss analytics JSON response neutralizes HTML-significant telemetry strings', () => {
+  const body = __test__.buildLossAnalyticsResponse({
+    analytics: {
+      window: {
+        label: '<svg onload=alert(1)>',
+      },
+      lossAnalysis: {
+        explicitReasons: [{ reasonCode: '<script>alert(1)</script>' }],
+      },
+      buyerLoss: null,
+      funnel: null,
+      revenue: null,
+      telemetry: {
+        conversionFunnel: null,
+        behavior: null,
+        ctas: null,
+        visitors: {
+          bySource: {
+            '<img src=x onerror=alert(1)>': 1,
+          },
+          topSource: {
+            key: '<img src=x onerror=alert(1)>',
+          },
+        },
+      },
+    },
+  }, { label: 'fallback' });
+
+  const serialized = JSON.stringify(body);
+  assert.doesNotMatch(serialized, /<script|<svg|<img/i);
+  assert.match(serialized, /\\\\u003cscript/);
+  assert.match(serialized, /\\\\u003cimg/);
+  assert.equal(body.window.label, '\\u003csvg onload=alert(1)\\u003e');
+});
+
 function apiUrl(pathname = '/') {
   return new URL(pathname, apiOrigin).toString();
 }
@@ -4225,6 +4260,7 @@ test('loss analytics endpoint returns ranked causes and behavioral signals', asy
     headers: authHeader,
   });
   assert.equal(analyticsRes.status, 200);
+  assert.equal(analyticsRes.headers.get('x-content-type-options'), 'nosniff');
   const body = await analyticsRes.json();
   assert.ok(body.lossAnalysis);
   assert.ok(Array.isArray(body.lossAnalysis.inferredCauses));
