@@ -64,6 +64,8 @@ npx thumbgate init --agent claude-code
 - Agent discovery: https://thumbgate.ai/.well-known/mcp.json
 - Progressive tool index: https://thumbgate.ai/.well-known/mcp/tools.json
 - Context footprint report: https://thumbgate.ai/.well-known/mcp/footprint.json
+- Headroom context compression guardrails: https://thumbgate.ai/guides/headroom-context-compression-guardrails
+- Sovereign coding model guardrails: https://thumbgate.ai/guides/sovereign-coding-model-guardrails
 - Agentic web governance: https://thumbgate.ai/guides/agentic-web-governance
 - AI Mode ads and agent governance: https://thumbgate.ai/guides/ai-mode-ads-agent-governance
 - MCP tool governance: https://thumbgate.ai/guides/mcp-tool-governance

@@ -41,6 +41,10 @@ ThumbGate is built on Node.js >=18.18.0 and runs locally on each developer's mac
 
 **vLLM Serving Guardrails**: vLLM validates demand for high-throughput self-hosted inference through PagedAttention, continuous batching, chunked prefill, prefix caching, broad Hugging Face model support, and optimized kernels. ThumbGate should not move deterministic PreToolUse checks into the model-serving batch. Its wedge is runtime rollout governance: require p95 latency, queue-time, cache-isolation, benchmark, model-compatibility, and rollback proof before agent traffic routes through a vLLM lane.
 
+**Headroom Context Compression Guardrails**: Headroom validates demand for token and context compression around tool outputs, logs, files, RAG chunks, code search results, and conversation history. ThumbGate's position is complementary: compression reduces context cost, but pre-action checks still govern shell commands, file writes, git operations, deploys, payment actions, API calls, and completion claims before execution. Compressed context should carry original pointers, verifier evidence, and rollback receipts before risky actions proceed.
+
+**Sovereign Coding Model Guardrails**: Cohere North Mini Code and similar local or on-prem coding models make sovereign developer agents more practical, especially inside OpenCode, vLLM, and terminal-based workflows. Local weights reduce vendor dependency, but they do not make generated actions safe by default. ThumbGate sits at the execution boundary: after the model proposes an action and before the terminal, file system, git remote, deployment target, payment system, or production connector receives it.
+
 **Audit Trail**: Every check decision (blocked, approved, overridden) is logged with a timestamp, the triggering tool call, the matching lesson ID, and the identity of any human who approved an exception. This log is queryable and exportable for compliance reporting.
 
 **Browser Bridge Audit**: `npx thumbgate native-messaging-audit` inspects local browser native messaging manifests, allowed extension origins, missing host binaries, and dormant AI browser bridges so teams can review connector scope before an agent turns a one-off install into a durable local integration.
@@ -256,6 +260,8 @@ npx thumbgate dashboard --open
 - AI search topical presence guide: https://thumbgate.ai/guides/ai-search-topical-presence
 - Agentic web governance guide: https://thumbgate.ai/guides/agentic-web-governance
 - GPT-5.5 model evaluation guide: https://thumbgate.ai/guides/gpt-5-5-model-evaluation
+- Headroom context compression guardrails guide: https://thumbgate.ai/guides/headroom-context-compression-guardrails
+- Sovereign coding model guardrails guide: https://thumbgate.ai/guides/sovereign-coding-model-guardrails
 - vLLM serving guardrails guide: https://thumbgate.ai/guides/vllm-serving-guardrails
 - Best tools to stop AI agents from breaking production: https://thumbgate.ai/guides/best-tools-stop-ai-agents-breaking-production
 - Relational knowledge guide: https://thumbgate.ai/guides/relational-knowledge-ai-recommendations
