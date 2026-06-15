@@ -22,7 +22,9 @@ const GUIDE_FILES = [
   'guides/claude-code-skills-guardrails.html',
   'guides/long-running-agent-context-management.html',
   'guides/reasoning-compression-guardrails.html',
+  'guides/headroom-context-compression-guardrails.html',
   'guides/deepseek-v4-runtime-guardrails.html',
+  'guides/sovereign-coding-model-guardrails.html',
   'guides/vllm-serving-guardrails.html',
   'guides/background-agent-governance.html',
   'guides/ai-agent-workflow-migration-checklist.html',
@@ -350,6 +352,34 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(contextGuide.includes('Director journals'));
     assert.ok(reasoningGuide.includes('npx thumbgate reasoning-efficiency-guardrails'));
     assert.ok(reasoningGuide.includes('Step-Level Verifier Checks'));
+  });
+
+  it('Headroom context compression guide positions compression as complementary to enforcement', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/headroom-context-compression-guardrails.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('Headroom can reduce tokens'));
+    assert.ok(html.includes('Context Compression Is Not Governance'));
+    assert.ok(html.includes('compression saves tokens; ThumbGate prevents the repeated mistake from executing'));
+    assert.ok(html.includes('Run compression before model context assembly. Run ThumbGate before execution.'));
+    assert.ok(html.includes('utm_source=headroom_guide'));
+    assert.ok(html.includes('Pro $19/mo or $149/yr. Enterprise for org-wide enforcement.'));
+  });
+
+  it('sovereign coding model guide routes Cohere North Mini Code demand into local gates', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/sovereign-coding-model-guardrails.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('Sovereign Coding Model Guardrails'));
+    assert.ok(html.includes('Cohere North Mini Code'));
+    assert.ok(html.includes('Local coding models are cheaper to run. They are not safer by default.'));
+    assert.ok(html.includes('Use North Mini Code, OpenCode, vLLM, or other self-hosted runtimes for generation. Use ThumbGate for deterministic pre-action enforcement.'));
+    assert.ok(html.includes('utm_source=cohere_north_guide'));
+    assert.ok(html.includes('Pro $19/mo or $149/yr. Enterprise for org-wide enforcement.'));
   });
 
   it('DeepSeek V4 runtime guide exposes sparse-attention guardrails', () => {
