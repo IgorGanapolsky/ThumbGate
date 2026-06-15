@@ -818,9 +818,16 @@
     "stripe": "^22.2.0"
   },
   "overrides": {
+    "@google/genai": {
+      "protobufjs": "7.6.4"
+    },
+    "onnxruntime-web": {
+      "protobufjs": "7.6.4"
+    },
     "express@4.22.1": {
       "path-to-regexp": "0.1.13"
-    }
+    },
+    "js-yaml": "4.2.0"
   },
   "mcpName": "io.github.IgorGanapolsky/thumbgate",
   "devDependencies": {
