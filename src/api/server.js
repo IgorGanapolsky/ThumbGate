@@ -3,6 +3,7 @@ const http = require('http');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('node:crypto');
 const { EventEmitter } = require('node:events');
 const pkg = require('../../package.json');
 const {
@@ -1772,10 +1773,11 @@ function buildFeedbackSection({ ctx, intent, feedbackDir, approval, lessonPipeli
   const windowNeg = windowed.filter((r) => r.signal === 'negative').length;
   const entries = buildFeedbackEntries(windowed, signal);
 
-  const lines = [];
-  lines.push(intent.windowMs
+  const lines = [
+    intent.windowMs
     ? `Feedback ${intent.windowLabel}: ${windowed.length} (${windowPos} positive, ${windowNeg} negative).`
-    : `Feedback total: ${compactNumber(approval.total)} (${compactNumber(approval.positive)} positive, ${compactNumber(approval.negative)} negative).`);
+    : `Feedback total: ${compactNumber(approval.total)} (${compactNumber(approval.positive)} positive, ${compactNumber(approval.negative)} negative).`,
+  ];
 
   if (intent.wantsList) {
     appendFeedbackListLines(lines, { entries, signal, intent });
@@ -2157,7 +2159,7 @@ function prunePendingOauthAuthorizeRequests(now = Date.now()) {
 
 function createPendingOauthAuthorizeRequest(params, now = Date.now()) {
   prunePendingOauthAuthorizeRequests(now);
-  const token = require('crypto').randomBytes(32).toString('base64url');
+  const token = crypto.randomBytes(32).toString('base64url');
   pendingOauthAuthorizeRequests.set(token, {
     params,
     expiresAt: now + OAUTH_AUTHORIZE_REQUEST_TTL_MS,
@@ -2725,12 +2727,30 @@ function normalizePublicRequestHost(value) {
     ? rawHost.split(']:')[1] || ''
     : rawHost.split(':')[1] || '';
 
-  if (!/^(localhost|[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*|\d{1,3}(?:\.\d{1,3}){3}|::1)$/.test(hostWithoutPort)) {
+  if (!isAllowedPublicHostName(hostWithoutPort)) {
     return '';
   }
   if (port && !/^\d{1,5}$/.test(port)) return '';
   if (port && Number(port) > 65535) return '';
   return port ? `${hostWithoutPort}:${port}` : hostWithoutPort;
+}
+
+function isAllowedPublicHostName(hostname) {
+  return hostname === 'localhost'
+    || hostname === '::1'
+    || isIpv4Host(hostname)
+    || isDnsHostName(hostname);
+}
+
+function isIpv4Host(hostname) {
+  const parts = hostname.split('.');
+  return parts.length === 4 && parts.every((part) => /^\d{1,3}$/.test(part));
+}
+
+function isDnsHostName(hostname) {
+  return hostname
+    .split('.')
+    .every((label) => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label));
 }
 
 function getSafePublicRequestHost(req) {
