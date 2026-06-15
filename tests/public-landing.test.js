@@ -76,6 +76,18 @@ test('public landing page maps agentic development cycle to pre-action execution
   assert.match(cycleSection, /agentic_cycle_card_click/);
 });
 
+test('public landing page distinguishes pre-action governance from logging and self-governance', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /Governance, Not Logging/);
+  assert.match(landingPage, /Logs describe the damage\. ThumbGate blocks the risky action before it runs\./);
+  assert.match(landingPage, /Self-governance is an operator writing local rules and keeping local logs\./);
+  assert.match(landingPage, /pre-action decision/);
+  assert.match(landingPage, /Reviewable decision trail/);
+  assert.match(landingPage, /signed evidence bundles/);
+  assert.match(landingPage, /without giving the agent unilateral authority over the rules/);
+});
+
 test('public landing page exposes above-fold paid Pro CTA with canonical revenue analytics', () => {
   const landingPage = readLandingPage();
   const heroStart = landingPage.indexOf('<!-- HERO -->');
