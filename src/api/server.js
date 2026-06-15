@@ -6464,7 +6464,7 @@ button{width:100%;padding:11px;border-radius:8px;border:0;background:#10b981;col
 a{color:#8b9}</style></head><body><form class="card" method="post" action="/oauth/authorize">
 <h2>Authorize Claude → ThumbGate</h2>
 <p>Paste your ThumbGate API key to let this connector act as you. Get one with <code>npx thumbgate init</code> or from your <a href="/dashboard">dashboard</a>.</p>
-<input type="hidden" name="auth_request_token" value="${authRequestToken}">
+<input type="hidden" name="auth_request_token" value="${escapeHtmlAttribute(authRequestToken)}">
 <input type="password" name="api_key" placeholder="ThumbGate API key" autocomplete="off" required>
 <button type="submit" name="approve" value="yes">Approve</button>
 </form></body></html>`;
