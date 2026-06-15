@@ -215,6 +215,8 @@ const mcpOauth = require('../../scripts/mcp-oauth');
 // OAuth 2.1 (PKCE) authorization-server state for the remote MCP connector
 // (Claude Connectors Directory requires OAuth for authenticated services).
 const oauthStore = mcpOauth.createStore();
+const pendingOauthAuthorizeRequests = new Map();
+const OAUTH_AUTHORIZE_REQUEST_TTL_MS = 10 * 60 * 1000;
 const resendMailer = require('../../scripts/mailer/resend-mailer');
 const {
   buildContextFootprintReport,
@@ -2143,6 +2145,59 @@ function buildCheckoutHiddenAttributionInputs(parsed = null) {
     }
   }
   return inputs.join('');
+}
+
+function prunePendingOauthAuthorizeRequests(now = Date.now()) {
+  for (const [token, entry] of pendingOauthAuthorizeRequests.entries()) {
+    if (!entry || entry.expiresAt <= now) {
+      pendingOauthAuthorizeRequests.delete(token);
+    }
+  }
+}
+
+function createPendingOauthAuthorizeRequest(params, now = Date.now()) {
+  prunePendingOauthAuthorizeRequests(now);
+  const token = require('crypto').randomBytes(32).toString('base64url');
+  pendingOauthAuthorizeRequests.set(token, {
+    params,
+    expiresAt: now + OAUTH_AUTHORIZE_REQUEST_TTL_MS,
+  });
+  return token;
+}
+
+function consumePendingOauthAuthorizeRequest(token, now = Date.now()) {
+  if (!token) return null;
+  prunePendingOauthAuthorizeRequests(now);
+  const entry = pendingOauthAuthorizeRequests.get(token);
+  if (!entry) return null;
+  pendingOauthAuthorizeRequests.delete(token);
+  return entry.params;
+}
+
+function getOauthAuthorizeParamsFromQuery(searchParams) {
+  return {
+    clientId: searchParams.get('client_id') || '',
+    redirectUri: searchParams.get('redirect_uri') || '',
+    codeChallenge: searchParams.get('code_challenge') || '',
+    codeChallengeMethod: searchParams.get('code_challenge_method') || '',
+    scope: searchParams.get('scope') || undefined,
+    state: searchParams.get('state') || '',
+    resource: searchParams.get('resource') || '',
+  };
+}
+
+function getOauthAuthorizeParamsFromForm(form, hostedConfig) {
+  const pending = consumePendingOauthAuthorizeRequest(form.get('auth_request_token') || '');
+  if (pending) return pending;
+  return {
+    clientId: form.get('client_id') || '',
+    redirectUri: form.get('redirect_uri') || '',
+    codeChallenge: form.get('code_challenge') || '',
+    codeChallengeMethod: form.get('code_challenge_method') || '',
+    scope: form.get('scope') || undefined,
+    state: form.get('state') || '',
+    resource: form.get('resource') || buildPublicUrl(hostedConfig, '/mcp'),
+  };
 }
 
 function renderCheckoutIntentPage(prefilledEmail = '', parsed = null, options = {}) {
@@ -6398,9 +6453,9 @@ async function addContext(){
     // Authorization endpoint: GET renders consent, POST issues the code.
     if (pathname === '/oauth/authorize') {
       if (isGetLikeRequest) {
-        const q = parsed.searchParams;
-        const fields = ['client_id', 'redirect_uri', 'code_challenge', 'code_challenge_method', 'scope', 'state', 'resource'];
-        const hidden = fields.map((f) => `<input type="hidden" name="${f}" value="${escapeHtmlAttribute(q.get(f) || '')}">`).join('\n');
+        const authRequestToken = createPendingOauthAuthorizeRequest(
+          getOauthAuthorizeParamsFromQuery(parsed.searchParams)
+        );
         const html = `<!doctype html><html><head><meta charset="utf-8"><title>Authorize ThumbGate</title>
 <style>body{font:15px system-ui;margin:0;background:#0b0b0c;color:#eee;display:flex;min-height:100vh;align-items:center;justify-content:center}
 .card{background:#161618;border:1px solid #2a2a2e;border-radius:12px;padding:28px;max-width:420px}
@@ -6409,7 +6464,7 @@ button{width:100%;padding:11px;border-radius:8px;border:0;background:#10b981;col
 a{color:#8b9}</style></head><body><form class="card" method="post" action="/oauth/authorize">
 <h2>Authorize Claude → ThumbGate</h2>
 <p>Paste your ThumbGate API key to let this connector act as you. Get one with <code>npx thumbgate init</code> or from your <a href="/dashboard">dashboard</a>.</p>
-${hidden}
+<input type="hidden" name="auth_request_token" value="${authRequestToken}">
 <input type="password" name="api_key" placeholder="ThumbGate API key" autocomplete="off" required>
 <button type="submit" name="approve" value="yes">Approve</button>
 </form></body></html>`;
@@ -6421,8 +6476,9 @@ ${hidden}
         req.on('data', (c) => { body += c; if (body.length > 16384) req.destroy(); });
         req.on('end', () => {
           const form = new URLSearchParams(body);
-          const redirectUri = form.get('redirect_uri') || '';
-          const state = form.get('state') || '';
+          const authorizationParams = getOauthAuthorizeParamsFromForm(form, hostedConfig);
+          const redirectUri = authorizationParams.redirectUri;
+          const state = authorizationParams.state;
           // Validate the presented ThumbGate key before issuing a code. When keys
           // are configured (production) the key MUST match a configured admin /
           // operator / reviewer key — otherwise OAuth would authenticate nobody.
@@ -6432,12 +6488,12 @@ ${hidden}
             return;
           }
           const issued = mcpOauth.createAuthorizationCode(oauthStore, {
-            clientId: form.get('client_id') || '',
+            clientId: authorizationParams.clientId,
             redirectUri,
-            codeChallenge: form.get('code_challenge') || '',
-            codeChallengeMethod: form.get('code_challenge_method') || '',
-            scope: form.get('scope') || undefined,
-            resource: form.get('resource') || buildPublicUrl(hostedConfig, '/mcp'),
+            codeChallenge: authorizationParams.codeChallenge,
+            codeChallengeMethod: authorizationParams.codeChallengeMethod,
+            scope: authorizationParams.scope,
+            resource: authorizationParams.resource || buildPublicUrl(hostedConfig, '/mcp'),
             boundKey: form.get('api_key') || '',
             state,
           });
