@@ -449,6 +449,10 @@ test('Deploy to Railway workflow skips non-runtime pushes and only deploys when 
     !scopeScript.includes('|adapters/|'),
     'scope script should not treat adapter Markdown docs as deployable',
   );
+  assert.ok(
+    !scopeScript.includes('|workers/|'),
+    'Railway deploy scope should not treat Cloudflare Worker changes as Railway runtime deploys',
+  );
   assert.match(scopeScript, /! printf '%s\\n' "\$CHANGED_FILES" \| grep -Eq "\$DEPLOYABLE_PATTERN"/);
   assert.match(scopeScript, /should_deploy=\$SHOULD_DEPLOY/);
   assert.match(scopeScript, /SHOULD_DEPLOY=true/);
@@ -467,6 +471,21 @@ test('deploy-scope script decides from the actual push range and writes reusable
   assert.equal(runtimeChange.shouldDeploy, true);
   assert.equal(runtimeChange.scopeReason, 'deployable_changes');
   assert.deepEqual(runtimeChange.changedFiles, ['src/runtime-change.js']);
+
+  const rootPackageLockChange = runDeployScopeFixture('package-lock.json');
+  assert.equal(rootPackageLockChange.shouldDeploy, true);
+  assert.equal(rootPackageLockChange.scopeReason, 'deployable_changes');
+  assert.deepEqual(rootPackageLockChange.changedFiles, ['package-lock.json']);
+
+  const workerPackageLockChange = runDeployScopeFixture('workers/package-lock.json');
+  assert.equal(workerPackageLockChange.shouldDeploy, false);
+  assert.equal(workerPackageLockChange.scopeReason, 'non_runtime_changes');
+  assert.deepEqual(workerPackageLockChange.changedFiles, ['workers/package-lock.json']);
+
+  const workerRuntimeChange = runDeployScopeFixture('workers/src/index.ts');
+  assert.equal(workerRuntimeChange.shouldDeploy, false);
+  assert.equal(workerRuntimeChange.scopeReason, 'non_runtime_changes');
+  assert.deepEqual(workerRuntimeChange.changedFiles, ['workers/src/index.ts']);
 
   const manualDeploy = runDeployScopeFixture('docs/manual-note.md', 'workflow_dispatch');
   assert.equal(manualDeploy.shouldDeploy, true);

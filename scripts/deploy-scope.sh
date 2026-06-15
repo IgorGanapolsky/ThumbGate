@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eu
 
-DEPLOYABLE_PATTERN='^(src/|scripts/.*\.(js|mjs|cjs)$|config/|adapters/.*\.(js|mjs|cjs|json|ya?ml|toml)$|public/|\.well-known/|openapi/|workers/|\.github/workflows/deploy-railway\.yml$|Dockerfile$|railway\.json$|package\.json$|package-lock\.json$)'
+DEPLOYABLE_PATTERN='^(src/|scripts/.*\.(js|mjs|cjs)$|config/|adapters/.*\.(js|mjs|cjs|json|ya?ml|toml)$|public/|\.well-known/|openapi/|\.github/workflows/deploy-railway\.yml$|Dockerfile$|railway\.json$|package\.json$|package-lock\.json$)'
 
 BEFORE_SHA="${BEFORE_SHA:-}"
 HEAD_SHA="${HEAD_SHA:-${GITHUB_SHA:-}}"
@@ -10,16 +10,16 @@ CHANGED_FILES=''
 SHOULD_DEPLOY=true
 SCOPE_REASON='default_deploy'
 
-if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
   SHOULD_DEPLOY=true
   SCOPE_REASON='workflow_dispatch'
-elif [ "$EVENT_NAME" = "push" ] && [ -n "$BEFORE_SHA" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
+elif [[ "$EVENT_NAME" == "push" && -n "$BEFORE_SHA" && "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]]; then
   if git cat-file -e "$BEFORE_SHA" 2>/dev/null; then
     CHANGED_FILES="$(git diff --name-only "$BEFORE_SHA" "$HEAD_SHA" | sed '/^$/d')"
-    if [ -n "$CHANGED_FILES" ] && ! printf '%s\n' "$CHANGED_FILES" | grep -Eq "$DEPLOYABLE_PATTERN"; then
+    if [[ -n "$CHANGED_FILES" ]] && ! printf '%s\n' "$CHANGED_FILES" | grep -Eq "$DEPLOYABLE_PATTERN"; then
       SHOULD_DEPLOY=false
       SCOPE_REASON='non_runtime_changes'
-    elif [ -n "$CHANGED_FILES" ]; then
+    elif [[ -n "$CHANGED_FILES" ]]; then
       SHOULD_DEPLOY=true
       SCOPE_REASON='deployable_changes'
     else
@@ -42,7 +42,7 @@ echo "deployable_pattern=$DEPLOYABLE_PATTERN"
 echo "should_deploy=$SHOULD_DEPLOY"
 echo "scope_reason=$SCOPE_REASON"
 
-if [ -n "${GITHUB_OUTPUT:-}" ]; then
+if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
   {
     echo "changed_files<<EOF"
     printf '%s\n' "$CHANGED_FILES"
@@ -53,7 +53,7 @@ if [ -n "${GITHUB_OUTPUT:-}" ]; then
   } >> "$GITHUB_OUTPUT"
 fi
 
-if [ -n "${DEPLOY_SCOPE_OUTPUT_JSON:-}" ]; then
+if [[ -n "${DEPLOY_SCOPE_OUTPUT_JSON:-}" ]]; then
   node - "$DEPLOY_SCOPE_OUTPUT_JSON" "$BEFORE_SHA" "$HEAD_SHA" "$EVENT_NAME" "$SHOULD_DEPLOY" "$SCOPE_REASON" "$DEPLOYABLE_PATTERN" "$CHANGED_FILES" <<'NODE'
 const fs = require('fs');
 const [
