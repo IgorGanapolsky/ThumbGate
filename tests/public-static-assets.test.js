@@ -135,6 +135,19 @@ test('landing pricing section compares plan capabilities and limits clearly', as
   assert.match(html, /Enterprise plans start through intake/);
 });
 
+test('landing page answers governance objections instead of presenting passive logs', async () => {
+  const res = await fetch(`${origin}/`);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+
+  assert.match(html, /Governance, Not Logging/);
+  assert.match(html, /Logs describe the damage\. ThumbGate blocks the risky action before it runs\./);
+  assert.match(html, /pre-action decision/);
+  assert.match(html, /Reviewable decision trail/);
+  assert.match(html, /signed evidence bundles/);
+  assert.doesNotMatch(html, /Org Dashboard \(Team\)/);
+});
+
 test('homepage and pricing surfaces expose canonical and LLM context links', async () => {
   const pages = [
     ['/', `${origin}/`, `${origin}/llm-context.md`],
