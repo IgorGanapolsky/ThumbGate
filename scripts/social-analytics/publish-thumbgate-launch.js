@@ -31,9 +31,22 @@ const DEFAULT_LAUNCH_PLATFORMS = ['twitter', 'linkedin', 'instagram'];
 const DEFAULT_OPERATOR_LAB_PLATFORMS = ['linkedin', 'instagram', 'threads', 'bluesky', 'reddit', 'youtube'];
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
+function resolveFirstExistingPath(candidates = []) {
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return candidates[0];
+}
+
 const OPERATOR_LAB_MEDIA = {
-  landscape: path.join(REPO_ROOT, 'docs', 'marketing', 'assets', 'thumbgate-skool-cover-1084x576.png'),
-  square: path.join(REPO_ROOT, 'docs', 'marketing', 'assets', 'thumbgate-skool-icon-128x128.png'),
+  landscape: resolveFirstExistingPath([
+    path.join(REPO_ROOT, 'docs', 'marketing', 'assets', 'thumbgate-skool-cover-1084x576.png'),
+    path.join(REPO_ROOT, 'public', 'assets', 'brand', 'thumbgate-logo-1200x360.png'),
+  ]),
+  square: resolveFirstExistingPath([
+    path.join(REPO_ROOT, 'docs', 'marketing', 'assets', 'thumbgate-skool-icon-128x128.png'),
+    path.join(REPO_ROOT, 'public', 'assets', 'brand', 'thumbgate-icon-512.png'),
+  ]),
 };
 
 function resolveOperatorLabMediaPlan(platform) {

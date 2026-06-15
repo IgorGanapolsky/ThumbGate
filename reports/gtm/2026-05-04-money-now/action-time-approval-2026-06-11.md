@@ -18,6 +18,7 @@ Use this card when requesting confirmation for any revenue or promo action from 
   - `reports/gtm/2026-05-04-money-now/operator-send-now.md`
   - `reports/gtm/2026-05-04-money-now/MONEY_NOW_ACTIONS.md`
 - Confirmation needed because: sending messages is an external write action
+- Exact approval string: `Approve A1 warm Reddit follow-up batch`
 
 ## Action 2
 
@@ -32,11 +33,12 @@ Use this card when requesting confirmation for any revenue or promo action from 
   - `schedule=<ISO-8601>` when `mode=schedule`
   - `timezone=America/New_York`
 - Current evidence:
-  - local dry-run re-verified in this run and returns `6` previews plus `0` errors
-  - asset resolution currently points at missing `docs/marketing/assets/*` files, and this checkout also lacks `public/assets/skool/` as a fallback layer
-  - local runtime still shows `accountCount: 0` on all `6` platform previews
+  - local dry-run re-verified at `2026-06-14T00:28:11Z` and returns `6` previews plus `0` errors
+  - asset resolution now falls back cleanly to committed `public/assets/brand/*` media when `docs/marketing/assets/*` is absent
+  - local runtime still shows `accountCount: 0` on all `6` platform previews, so this runtime is still preview-only
   - Zernio analytics status re-verified at `2026-06-11T18:45:22Z` and is still dark at `0/6` healthy platforms
-  - headless Skool readback failed again in this run with `[skool-reader] fetch failed`
+  - headless Skool readback still returns `Members: 1` with `Visible posts on page: 0` at `2026-06-14T00:28:11Z`
+  - public Skool shell still shows `JOIN GROUP`, `1 Member`, and the placeholder line `This is the start of something special`; the unauthenticated payload still suggests `archived: true`
 - Confirmation needed because: publish/schedule changes third-party state
 
 ## Recommended ask

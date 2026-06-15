@@ -1,6 +1,6 @@
 # ThumbGate for VS Code-Compatible IDEs
 
-![ThumbGate blocks risky AI agent actions before they run](assets/marketplace-hero.png)
+![ThumbGate blocks risky AI agent actions before they run](https://raw.githubusercontent.com/IgorGanapolsky/ThumbGate/main/plugins/vscode-extension/assets/marketplace-hero.png)
 
 ThumbGate adds a local MCP guardrail layer for AI coding agents. It captures thumbs up/down feedback, turns repeated mistakes into local prevention rules, and checks risky tool calls before they run.
 
@@ -13,7 +13,7 @@ Works through VS Code's MCP provider API plus a `.vscode/mcp.json` fallback for 
 - **Keep the runtime fresh** — the extension launches `thumbgate@latest`, so npm runtime fixes can reach installed users without a marketplace metadata refresh.
 - **Stay local-first** — the default MCP server runs locally over stdio.
 
-![ThumbGate feedback-to-gate flow](assets/marketplace-flow.png)
+![ThumbGate feedback-to-gate flow](https://raw.githubusercontent.com/IgorGanapolsky/ThumbGate/main/plugins/vscode-extension/assets/marketplace-flow.png)
 
 ## Commands
 
