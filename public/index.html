@@ -337,7 +337,7 @@ __GA_BOOTSTRAP__
       "name": "How does ThumbGate reduce host blast radius for high-risk local runs?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "ThumbGate combines pre-action checks with execution guidance. Workflow Sentinel predicts risky local actions before they execute, and high-risk runs can be routed into Docker Sandboxes instead of running directly on the host. Team workflows also have a signed hosted sandbox lane for isolated automation dispatch."
+        "text": "ThumbGate combines pre-action checks with execution guidance. Workflow Sentinel predicts risky local actions before they execute, and high-risk runs can be routed into Docker Sandboxes instead of running directly on the host. Enterprise workflows also have a signed hosted sandbox lane for isolated automation dispatch."
       }
     },
     {
@@ -1159,7 +1159,7 @@ __GA_BOOTSTRAP__
         <p>Every block explains why: which pattern matched, what evidence triggered it, and whether the rule came from your own corrections.</p>
       </div>
       <div class="agent-card">
-        <h3>📊 Org Dashboard (Team)</h3>
+        <h3>📊 Org Dashboard</h3>
         <p>See which agents are creating review churn, which checks are saving time, and where rollout risk is still concentrated across the shared workflow.</p>
       </div>
       <div class="agent-card">
@@ -1177,6 +1177,28 @@ __GA_BOOTSTRAP__
       <div class="agent-card">
         <h3>🪞 History-Aware Lessons</h3>
         <p>When the current Claude auto-capture hook only gets a vague thumbs-down, ThumbGate can reuse up to 8 prior recorded entries plus the failed tool call, then keep a linked 60-second feedback session open for later corrections instead of creating a dead-end note.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="compatibility" id="governance-not-logging">
+  <div class="container">
+    <div class="section-label">Governance, Not Logging</div>
+    <h2 class="section-title">Logs describe the damage. ThumbGate blocks the risky action before it runs.</h2>
+    <p style="color:var(--text-dim);max-width:820px;margin:0 auto 22px;">Self-governance is an operator writing local rules and keeping local logs. ThumbGate starts there, then turns each correction into a pre-action decision: allow, block, require evidence, or route for approval before the tool call touches code, data, money, or customers.</p>
+    <div class="agent-grid">
+      <div class="agent-card">
+        <h3>Pre-action enforcement</h3>
+        <p>The rule is evaluated at the execution boundary, not after the fact. Repeated failures are stopped before shell commands, PR actions, deploys, refunds, or production writes run.</p>
+      </div>
+      <div class="agent-card">
+        <h3>Reviewable decision trail</h3>
+        <p>Each event records the rule, source lesson, policy version, actor, action, evidence requirement, and reason so reviewers can inspect the decision instead of trusting an agent summary.</p>
+      </div>
+      <div class="agent-card">
+        <h3>Enterprise governance mode</h3>
+        <p>Org-owned policies, reviewer approvals, signed evidence bundles, and export paths turn local corrections into shared controls without giving the agent unilateral authority over the rules.</p>
       </div>
     </div>
   </div>
@@ -1267,7 +1289,7 @@ __GA_BOOTSTRAP__
         </div>
         <div class="autoresearch-card">
           <h3>Ship into CI</h3>
-          <p>Start with templates for <code>npm test</code>, Playwright duration, bundle size, lint, and CI failures, then add Team checks for shared workflows.</p>
+          <p>Start with templates for <code>npm test</code>, Playwright duration, bundle size, lint, and CI failures, then add shared workflow checks for team-owned releases.</p>
         </div>
       </div>
       <div class="autoresearch-cta">
@@ -1510,7 +1532,7 @@ __GA_BOOTSTRAP__
           <li><strong>Audit-ready enforcement proof</strong> — Personal local dashboard for the individual operator with auditable block history</li>
           <li><strong>Ship hardened agents to production</strong> — Model Hardening Advisor plus HuggingFace dataset export</li>
           <li><strong>Hand a PR with proof</strong> — Review-ready workflow support and proof-ready lesson bundles a reviewer can verify in 30 seconds</li>
-          <li><strong>Hand off without re-onboarding</strong> — Team lesson export/import for handoff or migration</li>
+          <li><strong>Hand off without re-onboarding</strong> — Lesson export/import for handoff or migration</li>
         </ul>
         <div style="margin:12px 0 16px;padding:12px;border:1px solid rgba(34,211,238,0.25);border-radius:8px;background:rgba(34,211,238,0.06);">
           <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">What your Pro dashboard looks like</div>
@@ -1688,7 +1710,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <button class="faq-q" type="button" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How do we keep high-risk autonomous runs off the host?</button>
-        <div class="faq-a">ThumbGate is the control plane, not just a prompt layer. Workflow Sentinel predicts blast radius before execution, and risky local autonomy can be routed into Docker Sandboxes instead of running directly on the host. Team workflows also have a signed hosted sandbox lane for isolated dispatch when local repo access is not required.</div>
+        <div class="faq-a">ThumbGate is the control plane, not just a prompt layer. Workflow Sentinel predicts blast radius before execution, and risky local autonomy can be routed into Docker Sandboxes instead of running directly on the host. Enterprise workflows also have a signed hosted sandbox lane for isolated dispatch when local repo access is not required.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How do we trust a new package release?</div>
@@ -2017,7 +2039,7 @@ function copyInstall(el) {
   trackClick('.btn-demo-link', 'demo_click', { source: 'homepage' });
   trackClick('.nav-cta:not([data-revenue-cta])', 'chatgpt_gpt_click', { tier: 'free', source: 'nav' });
 
-  /* Pricing CTA conversion tracking — fires on every Get Started / Pro / Team button click
+  /* Pricing CTA conversion tracking — fires on every Get Started / Pro / Enterprise button click
      with section context so we can distinguish pricing section vs final CTA section clicks */
   document.querySelectorAll('.btn-pro, .btn-gpt-page, .btn-pro-page, .btn-install-hero, .btn-install-link, .btn-team, .btn-free, .btn-demo-link, .nav-cta').forEach(function(el) {
     el.addEventListener('click', function() {

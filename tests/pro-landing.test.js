@@ -79,7 +79,7 @@ test('pro landing page keeps JSON-LD and FAQ structure for SEO and GEO', () => {
   assert.match(proPage, /How is Pro different from the free install\?/);
   assert.match(proPage, /Does Pro require a cloud account\?/);
   assert.match(proPage, /What happens after checkout\?/);
-  assert.match(proPage, /When should I choose Team instead of Pro\?/);
+  assert.match(proPage, /When should I choose Enterprise instead of Pro\?/);
 });
 
 test('pro landing page tracks paid CTAs without unsupported claims', () => {
@@ -95,7 +95,7 @@ test('pro landing page tracks paid CTAs without unsupported claims', () => {
 test('pro landing page keeps services out of the Pro buyer path', () => {
   const proPage = readProPage();
 
-  assert.match(proPage, /Team diagnostics and custom services are handled through intake, not this buyer path/);
+  assert.match(proPage, /Enterprise diagnostics and custom services are handled through intake, not this buyer path/);
   assert.match(proPage, /Book an Enterprise Pilot Call/);
   assert.doesNotMatch(proPage, /data-pro-paid-recovery/);
   assert.doesNotMatch(proPage, /data-first-rule-link/);
