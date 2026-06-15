@@ -124,6 +124,16 @@ const CLI_COMMANDS = [
     ],
   },
   {
+    name: 'community',
+    aliases: ['registry'],
+    description: 'Query or share verified prevention rules with the community knowledge registry',
+    group: 'discovery',
+    flags: [
+      { name: 'json',   type: 'boolean', description: 'Output as JSON' },
+      { name: 'remote', type: 'boolean', description: 'Fetch from community remote API' },
+    ],
+  },
+  {
     name: 'gate-stats',
     description: 'Check engine statistics — active checks, blocks, warns, time saved',
     group: 'discovery',

@@ -75,7 +75,7 @@ test('findCommand returns undefined for unknown name', () => {
 
 test('core commands are all registered in schema', () => {
   const required = ['capture', 'lessons', 'stats', 'gate-stats', 'explore',
-    'artifacts', 'rules', 'doctor', 'harness-audit', 'native-messaging-audit', 'export-dpo', 'init', 'serve', 'dashboard'];
+    'artifacts', 'rules', 'doctor', 'harness-audit', 'native-messaging-audit', 'export-dpo', 'init', 'serve', 'dashboard', 'community'];
   for (const name of required) {
     assert.ok(findCommand(name), `${name} must be in CLI_COMMANDS`);
   }

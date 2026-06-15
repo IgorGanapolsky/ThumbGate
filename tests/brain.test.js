@@ -146,3 +146,87 @@ test('CLI exposes brain command and JSON workflows', () => {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+test('CLI exposes dream and triage commands', () => {
+  const tmp = makeTmpDir();
+  try {
+    const init = runCli(['brain', 'init', '--json'], tmp);
+    assert.equal(init.status, 0);
+
+    const dream = runCli(['dream', '--json'], tmp);
+    assert.equal(dream.status, 0, dream.stderr);
+    const dreamPayload = JSON.parse(dream.stdout);
+    assert.equal(dreamPayload.success, true);
+
+    const triage = runCli(['triage', '--json'], tmp);
+    assert.equal(triage.status, 0, triage.stderr);
+    const triagePayload = JSON.parse(triage.stdout);
+    assert.equal(triagePayload.success, true);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('cmdBrain auto-wires CLAUDE.md and AGENTS.md if they exist', () => {
+  const tmp = makeTmpDir();
+  try {
+    fs.writeFileSync(path.join(tmp, 'CLAUDE.md'), '# Original CLAUDE\n\nSome instructions.\n');
+    fs.writeFileSync(path.join(tmp, 'AGENTS.md'), '# Original AGENTS\n\nSome agent conventions.\n');
+
+    const result = runCli(['brain', '--write'], tmp);
+    assert.equal(result.status, 0, result.stderr);
+
+    const claudeContent = fs.readFileSync(path.join(tmp, 'CLAUDE.md'), 'utf8');
+    const agentsContent = fs.readFileSync(path.join(tmp, 'AGENTS.md'), 'utf8');
+
+    assert.ok(claudeContent.includes('<!-- ThumbGate -->'));
+    assert.ok(claudeContent.includes('Read .thumbgate/BRAIN.md first'));
+    assert.ok(claudeContent.includes('# Original CLAUDE'));
+
+    assert.ok(agentsContent.includes('<!-- ThumbGate -->'));
+    assert.ok(agentsContent.includes('Read .thumbgate/BRAIN.md first'));
+    assert.ok(agentsContent.includes('# Original AGENTS'));
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('CLI exposes community query command', () => {
+  const tmp = makeTmpDir();
+  try {
+    const result = runCli(['community', 'query', 'npm', '--json'], tmp);
+    assert.equal(result.status, 0, result.stderr);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.query, 'npm');
+    assert.ok(payload.resultsCount >= 1);
+    assert.equal(payload.results[0].id, 'comm_001');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('CLI exposes community share command', () => {
+  const tmp = makeTmpDir();
+  try {
+    fs.writeFileSync(path.join(tmp, 'auto-promoted-gates.json'), JSON.stringify({
+      gates: [
+        {
+          id: 'synth_123',
+          pattern: 'git push --force',
+          action: 'block',
+          message: 'NEVER force push directly to main'
+        }
+      ]
+    }));
+
+    const result = runCli(['community', 'share', 'synth_123', '--json'], tmp);
+    assert.equal(result.status, 0, result.stderr);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.shared, true);
+    assert.equal(payload.payload.ruleId, 'synth_123');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});

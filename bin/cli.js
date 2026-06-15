@@ -3168,6 +3168,11 @@ const SUBCOMMAND_HELP = {
   'ai-inventory': 'Usage: npx thumbgate ai-inventory [--root <dir>] [--format=summary|json|cyclonedx] [--output <path>] [--max-files=N]\n\nScan source/manifests/model artifacts for AI, ML, agent-framework, vector DB, Vertex, Gemini, and Dialogflow CX components. Use --format=cyclonedx to produce exportable ML-BOM evidence for enterprise reviews.',
   brain: 'Usage: npx thumbgate brain [--write] [--json] [--limit=N]\n\nBuild the agent-readable "context brain" — a single artifact consolidating this\nrepo\'s lessons, prevention rules, active gates, and project context for a coding\nagent to read BEFORE acting. --write saves it to .thumbgate/BRAIN.md (versioned,\ndeterministic). --json emits the structured model. --limit caps lessons (default 15).',
   'team-sync': 'Usage: npx thumbgate team-sync\n\nSynchronize prevention rules and context brain with your team\'s git repository (git pull --rebase & git push), then auto-rebuild the local brain.',
+  dream: 'Usage: npx thumbgate dream [--min=N] [--feedback-dir=DIR] [--json]\n\nConsolidate raw history and lessons ("Silicon Dreaming"), merge duplicates, promote recurring failures to gates, and rebuild prevention rules + BRAIN.md.',
+  consolidate: 'Usage: npx thumbgate consolidate\n\nAlias for npx thumbgate dream.',
+  triage: 'Usage: npx thumbgate triage [--schedule="daily 9:00"] [--json]\n\nRun git updates, test verification, and memory consolidation, or schedule it on a cron.',
+  hygiene: 'Usage: npx thumbgate hygiene\n\nAlias for npx thumbgate triage.',
+  community: 'Usage: npx thumbgate community query <error> | share <rule-id>\n\nQuery or share verified prevention rules with the community knowledge registry.',
 };
 
 if (_wantsHelp && COMMAND && SUBCOMMAND_HELP[COMMAND]) {
@@ -3270,6 +3275,31 @@ function renderBrainMarkdown(model) {
   return out.join('\n');
 }
 
+function autoWireInstructionFile(fileName) {
+  const filePath = path.join(CWD, fileName);
+  if (!fs.existsSync(filePath)) return;
+  try {
+    let content = fs.readFileSync(filePath, 'utf8');
+    const blockStart = '<!-- ThumbGate -->';
+    const blockEnd = '<!-- End ThumbGate -->';
+    const block = `${blockStart}\nIMPORTANT: Read .thumbgate/BRAIN.md first for lessons, prevention rules, and active gates in this repo.\n${blockEnd}\n`;
+
+    if (content.includes(blockStart)) {
+      const startIdx = content.indexOf(blockStart);
+      const endIdx = content.indexOf(blockEnd);
+      if (endIdx !== -1) {
+        content = content.slice(0, startIdx) + block + content.slice(endIdx + blockEnd.length).replace(/^\n+/, '');
+      }
+    } else {
+      content = block + '\n' + content;
+    }
+    fs.writeFileSync(filePath, content);
+    console.error(`   Auto-wired agent pointer into ${fileName}`);
+  } catch (err) {
+    console.warn(`⚠️  Failed to auto-wire agent pointer in ${fileName}: ${err.message}`);
+  }
+}
+
 function cmdBrain(args = {}) {
   const model = buildBrainModel({ limit: args.limit });
   if (args.json) { console.log(JSON.stringify(model, null, 2)); return 0; }
@@ -3289,12 +3319,118 @@ function cmdBrain(args = {}) {
     const lt = (model.lessons && model.lessons.total) || 0;
     const rt = (model.rules && model.rules.total) || 0;
     const gt = (model.gates && model.gates.total) || 0;
-    console.log(`\u{1f9e0} Wrote context brain to .thumbgate/BRAIN.md (${lt} lessons · ${rt} rules · ${gt} gates).`);
-    console.log('   Point your agent at it: add "Read .thumbgate/BRAIN.md first" to CLAUDE.md / AGENTS.md.');
+    console.error(`\u{1f9e0} Wrote context brain to .thumbgate/BRAIN.md (${lt} lessons · ${rt} rules · ${gt} gates).`);
+    
+    // Auto-inject pointer block into CLAUDE.md / AGENTS.md
+    autoWireInstructionFile('CLAUDE.md');
+    autoWireInstructionFile('AGENTS.md');
+    
     return 0;
   }
   process.stdout.write(md);
   return 0;
+}
+
+function brain() {
+  const args = parseArgs(process.argv.slice(3));
+  const subcommand = process.argv.slice(3).find((arg) => !arg.startsWith('--')) || 'status';
+  const {
+    buildContextPack,
+    checkNeverDo,
+    cleanupReport,
+    ensureBrain,
+    formatContextPack,
+    recordMemory,
+    refreshNeverDoGates,
+  } = require(path.join(PKG_ROOT, 'scripts', 'brain'));
+
+  if (subcommand === 'init' || subcommand === 'status') {
+    const result = ensureBrain(CWD);
+    const gates = refreshNeverDoGates(CWD);
+    const payload = { ...result, gateCount: gates.gateCount };
+    if (args.json) {
+      console.log(JSON.stringify(payload, null, 2));
+      return;
+    }
+    console.log('ThumbGate brain');
+    console.log('='.repeat(15));
+    console.log(`Brain dir : ${path.relative(CWD, result.brainDir)}`);
+    console.log(`Created   : ${result.created.length}`);
+    console.log(`Soul files: ${result.soulFiles.length}`);
+    console.log(`Memory dirs: ${result.memoryDirs.length}`);
+    console.log(`Never-do gates: ${gates.gateCount}`);
+    return;
+  }
+
+  if (subcommand === 'context') {
+    const task = args.task || process.argv.slice(4).find((arg) => !arg.startsWith('--')) || '';
+    const pack = buildContextPack(CWD, { task });
+    if (args.json) {
+      console.log(JSON.stringify(pack, null, 2));
+      return;
+    }
+    process.stdout.write(formatContextPack(pack));
+    return;
+  }
+
+  if (subcommand === 'remember') {
+    const title = args.title || process.argv.slice(4).find((arg) => !arg.startsWith('--')) || '';
+    const result = recordMemory(CWD, {
+      type: args.type,
+      title,
+      content: args.content || title,
+      reason: args.reason,
+      source: args.source,
+      tags: args.tags,
+      date: args.date,
+    });
+    if (args.json) {
+      console.log(JSON.stringify(result, null, 2));
+      return;
+    }
+    if (!result.ok) {
+      console.error(result.error);
+      process.exit(1);
+    }
+    console.log(`Stored brain memory: ${result.path}`);
+    return;
+  }
+
+  if (subcommand === 'check') {
+    const text = args.text || args.action || readStdinText();
+    const result = checkNeverDo(CWD, { text });
+    if (args.json) {
+      console.log(JSON.stringify(result, null, 2));
+      if (!result.ok) process.exit(2);
+      return;
+    }
+    console.log(`ThumbGate brain decision: ${result.decision.toUpperCase()}`);
+    for (const rule of result.blocked) console.log(`- ${rule.text}`);
+    if (!result.ok) process.exit(2);
+    return;
+  }
+
+  if (subcommand === 'cleanup') {
+    const report = cleanupReport(CWD, args);
+    if (args.json) {
+      console.log(JSON.stringify(report, null, 2));
+      return;
+    }
+    console.log('ThumbGate brain cleanup report');
+    console.log('='.repeat(31));
+    console.log(`Memory files: ${report.total}`);
+    console.log(`Unsourced   : ${report.unsourced.length}`);
+    console.log(`Stale       : ${report.stale.length}`);
+    console.log(`Duplicates  : ${report.duplicates.length}`);
+    if (report.unsourced.length) {
+      console.log('\nUnsourced files:');
+      for (const filePath of report.unsourced) console.log(`- ${filePath}`);
+    }
+    return;
+  }
+
+  console.error('Usage: npx thumbgate brain init|context|remember|check|cleanup [--json]');
+  process.exit(1);
 }
 
 async function teamSync() {
@@ -3472,6 +3608,127 @@ switch (COMMAND) {
     } else {
       const brainArgs = parseArgs(process.argv.slice(3));
       process.exitCode = cmdBrain(brainArgs);
+    }
+    break;
+  }
+  case 'dream':
+  case 'consolidate': {
+    const args = parseArgs(process.argv.slice(3));
+    const { dream } = require(path.join(PKG_ROOT, 'scripts', 'dream-consolidation'));
+    dream({
+      pkgRoot: PKG_ROOT,
+      feedbackDir: args['feedback-dir'] || args.feedbackDir || CWD,
+      rulesPath: args.output || path.join(CWD, '.thumbgate', 'prevention-rules.md'),
+      minOccurrences: args.min || 2,
+    }).then(async (result) => {
+      try {
+        await cmdBrain({ write: true });
+      } catch (brainErr) {
+        console.warn(`⚠️  Failed to rebuild context brain: ${brainErr.message}`);
+      }
+      if (args.json) {
+        console.log(JSON.stringify(result, null, 2));
+      } else {
+        console.log(`✨ [Dreaming] Consolidation complete! Merged ${result.consolidated} duplicate(s) into ${result.lessonsCount} lessons.`);
+      }
+      process.exit(0);
+    }).catch((err) => {
+      console.error('❌ Error during memory consolidation:', err && err.message ? err.message : err);
+      process.exit(1);
+    });
+    break;
+  }
+  case 'triage':
+  case 'hygiene': {
+    const args = parseArgs(process.argv.slice(3));
+    const { runTriageLoop } = require(path.join(PKG_ROOT, 'scripts', 'triage-loop'));
+    
+    if (args.schedule) {
+      const { createSchedule } = require(path.join(PKG_ROOT, 'scripts', 'schedule-manager'));
+      const scheduleResult = createSchedule({
+        id: 'thumbgate-triage-hygiene',
+        name: 'ThumbGate Triage & Hygiene Loop',
+        description: 'Run autonomous git checks, test suite verification, and Silicon Dreaming memory consolidation.',
+        schedule: args.schedule,
+        command: `const { runTriageLoop } = require('${path.join(PKG_ROOT, 'scripts', 'triage-loop')}'); runTriageLoop({ cwd: '${CWD}', pkgRoot: '${PKG_ROOT}' }).catch(console.error);`,
+        workingDirectory: CWD,
+      });
+      if (args.json) {
+        console.log(JSON.stringify(scheduleResult, null, 2));
+      } else {
+        if (scheduleResult.success) {
+          console.log(`✅ [Triage] Scheduled triage hygiene loop: ${scheduleResult.message}`);
+        } else {
+          console.error(`❌ [Triage] Failed to schedule: ${scheduleResult.error}`);
+          process.exit(1);
+        }
+      }
+      break;
+    }
+
+    runTriageLoop({
+      cwd: CWD,
+      pkgRoot: PKG_ROOT,
+    }).then(async (result) => {
+      try {
+        await cmdBrain({ write: true });
+      } catch (brainErr) {
+        console.warn(`⚠️  Failed to rebuild context brain: ${brainErr.message}`);
+      }
+      if (args.json) {
+        console.log(JSON.stringify(result, null, 2));
+      } else {
+        console.log(result.log);
+      }
+      process.exit(0);
+    }).catch((err) => {
+      console.error('❌ Error during triage loop execution:', err && err.message ? err.message : err);
+      process.exit(1);
+    });
+    break;
+  }
+  case 'community': {
+    const args = parseArgs(process.argv.slice(3));
+    const sub = process.argv.slice(3).find((arg) => !arg.startsWith('--'));
+    const { queryCommunity, shareRule } = require(path.join(PKG_ROOT, 'scripts', 'community-knowledge'));
+
+    if (sub === 'query') {
+      const queryIdx = process.argv.indexOf('query');
+      const queryText = process.argv.slice(queryIdx + 1).filter(arg => !arg.startsWith('--')).join(' ');
+      const result = queryCommunity(queryText, { remote: args.remote });
+      if (args.json) {
+        console.log(JSON.stringify(result, null, 2));
+      } else {
+        console.log(`🔍 Found ${result.resultsCount} community rule(s) matching "${result.query}":`);
+        for (const r of result.results) {
+          console.log(`\n- [${r.id}] ${r.rule}`);
+          console.log(`  Remedy:      ${r.remedy}`);
+          console.log(`  Explanation: ${r.explanation}`);
+        }
+      }
+      process.exit(0);
+    } else if (sub === 'share') {
+      const shareIdx = process.argv.indexOf('share');
+      const ruleId = process.argv.slice(shareIdx + 1).find(arg => !arg.startsWith('--'));
+      if (!ruleId) {
+        console.error('❌ Error: rule ID is required for share subcommand.');
+        process.exit(1);
+      }
+      const result = shareRule(ruleId, { feedbackDir: CWD });
+      if (args.json) {
+        console.log(JSON.stringify(result, null, 2));
+      } else {
+        if (result.ok) {
+          console.log(`✨ Successfully shared rule "${ruleId}" to community registry.`);
+        } else {
+          console.error(`❌ Failed to share rule: ${result.error}`);
+          process.exit(1);
+        }
+      }
+      process.exit(0);
+    } else {
+      console.error('Usage: npx thumbgate community query <error> | share <rule-id> [--json]');
+      process.exit(1);
     }
     break;
   }
