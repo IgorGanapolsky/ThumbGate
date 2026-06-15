@@ -1782,7 +1782,7 @@ test('checkout bootstrap route preserves attribution and records first-party tel
 // render the interstitial; only POST or ?confirm=1 triggers a Stripe session.
 
 test('checkout interstitial: GET without confirm=1 (human UA) renders the interstitial HTML, no Stripe session', async () => {
-  const res = await fetch(apiUrl('/checkout/pro?plan_id=pro&billing_cycle=monthly'), {
+  const res = await fetch(apiUrl('/checkout/pro?plan_id=pro&billing_cycle=monthly&utm_campaign=%3Cimg%20src=x%20onerror=alert(1)%3E&not_allowed=%3Csvg%20onload=alert(1)%3E'), {
     redirect: 'manual',
     headers: {
       'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -1799,6 +1799,10 @@ test('checkout interstitial: GET without confirm=1 (human UA) renders the inters
   assert.match(body, /name="confirm" value="1"/);
   assert.match(body, /name="plan_id" value="pro"/, 'human interstitial should preserve checkout attribution through submit');
   assert.match(body, /name="billing_cycle" value="monthly"/, 'human interstitial should preserve billing cycle through submit');
+  assert.match(body, /name="utm_campaign" value="&lt;img src=x onerror=alert\(1\)&gt;"/);
+  assert.doesNotMatch(body, /not_allowed/);
+  assert.doesNotMatch(body, /<img src=x onerror=alert\(1\)>/);
+  assert.doesNotMatch(body, /<svg onload=alert\(1\)>/);
   assert.doesNotMatch(body, /name="customer_email"[^>]*required/, 'email should be optional because Stripe collects it');
   assert.match(body, /Stripe can collect your email/);
   assert.match(body, /Not sure yet\? Send the workflow first/);
