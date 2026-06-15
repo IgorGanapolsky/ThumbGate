@@ -1,0 +1,54 @@
+{
+  "updated": "2026-06-15",
+  "source": "https://mcpmarket.com/sell-skills",
+  "status": "early_access_ready_not_approved",
+  "listing": {
+    "name": "ThumbGate Agent Failure Firewall",
+    "category": "Developer Tools / AI Agent Governance",
+    "shortDescription": "Stop AI coding agents from repeating the same dangerous tool mistake. ThumbGate packages local-first feedback memory, MCP wiring checks, and pre-action governance into installable Agent Skills.",
+    "priceTest": {
+      "skillPackUsd": 49,
+      "proMonthlyUsd": 19,
+      "proAnnualUsd": 149
+    },
+    "urls": {
+      "product": "https://thumbgate.ai",
+      "repository": "https://github.com/IgorGanapolsky/ThumbGate",
+      "docs": "https://github.com/IgorGanapolsky/ThumbGate/tree/main/skills",
+      "proof": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md",
+      "support": "https://github.com/IgorGanapolsky/ThumbGate/issues"
+    }
+  },
+  "skills": [
+    {
+      "name": "thumbgate-doctor",
+      "path": "skills/thumbgate-doctor/SKILL.md",
+      "buyerPain": "Are my agent guardrails actually installed and connected?"
+    },
+    {
+      "name": "thumbgate-guard",
+      "path": "skills/thumbgate-guard/SKILL.md",
+      "buyerPain": "How do I stop this repeated tool mistake before it runs again?"
+    },
+    {
+      "name": "thumbgate-protect",
+      "path": "skills/thumbgate-protect/SKILL.md",
+      "buyerPain": "How do I grant one narrow exception without disabling governance?"
+    },
+    {
+      "name": "evidence-first-answer",
+      "path": ".claude/skills/evidence-first-answer/SKILL.md",
+      "buyerPain": "How do I prevent false completion claims without proof?"
+    }
+  ],
+  "trackedCtas": {
+    "install": "https://thumbgate.ai/go/pro?utm_source=mcpmarket&utm_medium=skill_listing&utm_campaign=agent_failure_firewall&utm_content=install&cta_id=mcpmarket_skill_install",
+    "proUpgrade": "https://thumbgate.ai/checkout/pro?utm_source=mcpmarket&utm_medium=skill_listing&utm_campaign=agent_failure_firewall&utm_content=pro_upgrade&cta_id=mcpmarket_skill_pro",
+    "workflowSprint": "https://thumbgate.ai/?utm_source=mcpmarket&utm_medium=skill_listing&utm_campaign=agent_failure_firewall&utm_content=workflow_sprint&cta_id=mcpmarket_skill_sprint#workflow-sprint-intake"
+  },
+  "guardrails": [
+    "Do not claim MCPMarket approval until it is granted.",
+    "Do not claim marketplace revenue until Stripe or marketplace payout evidence exists.",
+    "Do not disclose private-core implementation details in listing copy."
+  ]
+}
