@@ -2095,17 +2095,58 @@ function buildCheckoutIntentHref(baseUrl, metadata = {}, overrides = {}) {
   });
 }
 
+const CHECKOUT_HIDDEN_ATTRIBUTION_KEYS = Object.freeze([
+  'trace_id',
+  'acquisition_id',
+  'visitor_id',
+  'session_id',
+  'visitor_session_id',
+  'install_id',
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_content',
+  'utm_term',
+  'creator',
+  'community',
+  'post_id',
+  'comment_id',
+  'campaign_variant',
+  'offer_code',
+  'cta_id',
+  'cta_placement',
+  'plan_id',
+  'billing_cycle',
+  'seat_count',
+  'landing_path',
+  'referrer_host',
+]);
+
+function normalizeHiddenAttributionValue(value) {
+  const normalized = normalizeNullableText(value);
+  if (!normalized) return '';
+  return normalized.slice(0, 512);
+}
+
+function buildCheckoutHiddenAttributionInputs(parsed = null) {
+  if (!parsed?.searchParams) return '';
+
+  const inputs = [];
+  for (const key of CHECKOUT_HIDDEN_ATTRIBUTION_KEYS) {
+    const value = normalizeHiddenAttributionValue(parsed.searchParams.get(key));
+    if (value) {
+      inputs.push(`<input type="hidden" name="${key}" value="${escapeHtmlAttribute(value)}">`);
+    }
+  }
+  return inputs.join('');
+}
+
 function renderCheckoutIntentPage(prefilledEmail = '', parsed = null, options = {}) {
   const plausibleDomain = escapeHtmlAttribute(resolvePlausibleDataDomain({ host: 'thumbgate.ai' }));
   const includeHiddenAttribution = options.includeHiddenAttribution === true;
-  let hiddenInputs = '';
-  if (includeHiddenAttribution && parsed?.searchParams) {
-    for (const [key, value] of parsed.searchParams.entries()) {
-      if (key !== 'confirm' && key !== 'customer_email') {
-        hiddenInputs += `<input type="hidden" name="${escapeHtmlAttribute(key)}" value="${escapeHtmlAttribute(value)}">`;
-      }
-    }
-  }
+  const hiddenInputs = includeHiddenAttribution
+    ? buildCheckoutHiddenAttributionInputs(parsed)
+    : '';
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -2301,17 +2342,6 @@ function normalizeCheckoutCustomerEmail(value) {
   if (!email || email.length > 254 || atIndex <= 0 || atIndex !== email.lastIndexOf('@') || !domain || !domain.includes('.') || domain.startsWith('.') || domain.endsWith('.') || domain.includes('..')) return null;
   for (const ch of email) if (ch <= ' ' || ch === '<' || ch === '>' || ch === '"') return null;
   return email;
-}
-
-function renderCheckoutIntentGate(parsed, responseHeaders = {}) {
-  let hiddenInputs = '';
-  for (const [key, value] of parsed.searchParams.entries()) {
-    if (key !== 'confirm' && key !== 'customer_email') hiddenInputs += `<input type=hidden name=${escapeHtmlAttribute(key)} value=${escapeHtmlAttribute(value)}>`;
-  }
-  return {
-    html: `<!doctype html><h1>Email for Stripe receipt</h1><form action=/checkout/pro>${hiddenInputs}<input type=hidden name=confirm value=1><input name=customer_email type=email required><button>Continue</button></form>`,
-    headers: responseHeaders,
-  };
 }
 
 function normalizeTrackedLinkSlug(value) {
