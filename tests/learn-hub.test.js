@@ -405,10 +405,11 @@ test('server.js has /learn/* article route handler', () => {
   assert.ok(src.includes("pathname.startsWith('/learn/')"), '/learn/* route missing from server.js');
 });
 
-test('server.js /learn/* route sanitizes slug (no path traversal)', () => {
+test('server.js /learn/* route uses an allowlisted slug resolver (no path traversal)', () => {
   const src = readFile(serverPath);
   assert.ok(src.includes('.replace(/[^a-z0-9-]/g'), 'slug sanitization missing — path traversal risk');
-  assert.ok(src.includes('.startsWith(LEARN_DIR)'), 'path prefix check missing — path traversal risk');
+  assert.ok(src.includes('LEARN_PAGE_PATHS_BY_SLUG'), 'learn page allowlist missing — path traversal risk');
+  assert.ok(src.includes('resolvePublicHtmlFile(LEARN_PAGE_PATHS_BY_SLUG'), 'learn route must resolve files through the allowlist');
 });
 
 test('server.js API discovery includes /learn endpoint', () => {
