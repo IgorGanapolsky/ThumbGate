@@ -244,6 +244,10 @@ const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
 const USE_CASES_DIR = path.resolve(__dirname, '../../public/use-cases');
 const PUBLIC_DIR = path.resolve(__dirname, '../../public');
 const PUBLIC_ASSETS_DIR = path.resolve(__dirname, '../../public/assets');
+const LEARN_PAGE_PATHS_BY_SLUG = buildPublicHtmlFileMap(LEARN_DIR);
+const GUIDE_PAGE_PATHS_BY_SLUG = buildPublicHtmlFileMap(GUIDES_DIR);
+const COMPARE_PAGE_PATHS_BY_SLUG = buildPublicHtmlFileMap(COMPARE_DIR);
+const USE_CASE_PAGE_PATHS_BY_SLUG = buildPublicHtmlFileMap(USE_CASES_DIR);
 const BUYER_INTENT_SCRIPT_PATH = path.resolve(__dirname, '../../public/js/buyer-intent.js');
 const STATIC_MIME_BY_EXT = Object.freeze({
   '.png': 'image/png',
@@ -2354,6 +2358,27 @@ function normalizePublicPageSlug(value) {
     .replace(/[^a-z0-9-]/g, '');
 }
 
+function buildPublicHtmlFileMap(directory) {
+  const entries = new Map();
+  try {
+    for (const fileName of fs.readdirSync(directory)) {
+      if (!/^[a-z0-9-]+\.html$/i.test(fileName)) continue;
+      const slug = normalizePublicPageSlug(fileName);
+      if (!slug) continue;
+      entries.set(slug, path.join(directory, fileName));
+    }
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+  }
+  return entries;
+}
+
+function resolvePublicHtmlFile(publicPageMap, rawSlug) {
+  const slug = normalizePublicPageSlug(rawSlug);
+  if (!slug) return null;
+  return publicPageMap.get(slug) || null;
+}
+
 function getTrackedLinkTarget(slug) {
   const normalizedSlug = normalizeTrackedLinkSlug(slug);
   return TRACKED_LINK_TARGETS[normalizedSlug]
@@ -2613,8 +2638,9 @@ function chatgptActionEventType(integration, suffix) {
 }
 
 function getPublicOrigin(req) {
-  const proto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() || 'http';
-  const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim() || 'localhost';
+  const rawProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim().toLowerCase();
+  const proto = rawProto === 'https' ? 'https' : 'http';
+  const host = getSafePublicRequestHost(req) || 'localhost';
   return `${proto}://${host}`;
 }
 
@@ -2631,6 +2657,29 @@ function getRequestHostHeader(req) {
     return forwardedHost[0] || req.headers.host || '';
   }
   return forwardedHost || req.headers.host || '';
+}
+
+function normalizePublicRequestHost(value) {
+  const rawHost = String(value || '').split(',')[0].trim().toLowerCase();
+  if (!rawHost || rawHost.length > 253) return '';
+
+  const hostWithoutPort = rawHost.startsWith('[')
+    ? rawHost.slice(1).split(']')[0]
+    : rawHost.split(':')[0];
+  const port = rawHost.startsWith('[')
+    ? rawHost.split(']:')[1] || ''
+    : rawHost.split(':')[1] || '';
+
+  if (!/^(localhost|[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*|\d{1,3}(?:\.\d{1,3}){3}|::1)$/.test(hostWithoutPort)) {
+    return '';
+  }
+  if (port && !/^\d{1,5}$/.test(port)) return '';
+  if (port && Number(port) > 65535) return '';
+  return port ? `${hostWithoutPort}:${port}` : hostWithoutPort;
+}
+
+function getSafePublicRequestHost(req) {
+  return normalizePublicRequestHost(getRequestHostHeader(req));
 }
 
 function isLoopbackHost(hostValue) {
@@ -2687,7 +2736,7 @@ function normalizePublicMarketingHtml(html, runtimeConfig, requestHost) {
   let output = String(html);
   output = output.replaceAll(DEFAULT_PUBLIC_APP_ORIGIN, appOrigin);
   try {
-    const host = requestHost || new URL(appOrigin).host;
+    const host = normalizePublicRequestHost(requestHost) || new URL(appOrigin).host;
     const plausibleDomain = resolvePlausibleDataDomain({ host });
     output = output.replaceAll(
       'data-domain="thumbgate-production.up.railway.app"',
@@ -3560,7 +3609,7 @@ function servePublicMarketingPage({
     }, req.headers, 'seo_landing_view');
   }
 
-  const requestHost = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+  const requestHost = getSafePublicRequestHost(req);
   const html = renderHtml(hostedConfig, {
     serverVisitorId: journeyState.visitorId,
     serverSessionId: journeyState.sessionId,
@@ -5748,13 +5797,12 @@ async function addContext(){
 
     if (isGetLikeRequest && pathname.startsWith('/learn/')) {
       try {
-        const slug = normalizePublicPageSlug(pathname.replace('/learn/', ''));
-        const articlePath = path.join(LEARN_DIR, `${slug}.html`);
-        if (!articlePath.startsWith(LEARN_DIR)) {
-          sendJson(res, 403, { error: 'Forbidden' });
+        const articlePath = resolvePublicHtmlFile(LEARN_PAGE_PATHS_BY_SLUG, pathname.replace('/learn/', ''));
+        if (!articlePath) {
+          sendJson(res, 404, { error: 'Article not found' });
           return;
         }
-        const requestHost = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+        const requestHost = getSafePublicRequestHost(req);
         const html = normalizePublicMarketingHtml(fs.readFileSync(articlePath, 'utf-8'), hostedConfig, requestHost);
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch {
@@ -5765,10 +5813,9 @@ async function addContext(){
 
     if (isGetLikeRequest && pathname.startsWith('/guides/')) {
       try {
-        const slug = normalizePublicPageSlug(pathname.replace('/guides/', ''));
-        const guidePath = path.join(GUIDES_DIR, `${slug}.html`);
-        if (!guidePath.startsWith(GUIDES_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
-        const requestHost = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+        const guidePath = resolvePublicHtmlFile(GUIDE_PAGE_PATHS_BY_SLUG, pathname.replace('/guides/', ''));
+        if (!guidePath) { sendJson(res, 404, { error: 'Guide not found' }); return; }
+        const requestHost = getSafePublicRequestHost(req);
         const html = normalizePublicMarketingHtml(fs.readFileSync(guidePath, 'utf-8'), hostedConfig, requestHost);
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch { sendJson(res, 404, { error: 'Guide not found' }); }
@@ -5777,10 +5824,9 @@ async function addContext(){
 
     if (isGetLikeRequest && pathname.startsWith('/compare/') && pathname !== '/compare') {
       try {
-        const slug = normalizePublicPageSlug(pathname.replace('/compare/', ''));
-        const comparePath = path.join(COMPARE_DIR, `${slug}.html`);
-        if (!comparePath.startsWith(COMPARE_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
-        const requestHost = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+        const comparePath = resolvePublicHtmlFile(COMPARE_PAGE_PATHS_BY_SLUG, pathname.replace('/compare/', ''));
+        if (!comparePath) { sendJson(res, 404, { error: 'Comparison not found' }); return; }
+        const requestHost = getSafePublicRequestHost(req);
         const html = normalizePublicMarketingHtml(fs.readFileSync(comparePath, 'utf-8'), hostedConfig, requestHost);
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch { sendJson(res, 404, { error: 'Comparison not found' }); }
@@ -5789,10 +5835,9 @@ async function addContext(){
 
     if (isGetLikeRequest && pathname.startsWith('/use-cases/')) {
       try {
-        const slug = normalizePublicPageSlug(pathname.replace('/use-cases/', ''));
-        const useCasePath = path.join(USE_CASES_DIR, `${slug}.html`);
-        if (!useCasePath.startsWith(USE_CASES_DIR)) { sendJson(res, 403, { error: 'Forbidden' }); return; }
-        const requestHost = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+        const useCasePath = resolvePublicHtmlFile(USE_CASE_PAGE_PATHS_BY_SLUG, pathname.replace('/use-cases/', ''));
+        if (!useCasePath) { sendJson(res, 404, { error: 'Use case not found' }); return; }
+        const requestHost = getSafePublicRequestHost(req);
         const html = normalizePublicMarketingHtml(fs.readFileSync(useCasePath, 'utf-8'), hostedConfig, requestHost);
         sendHtml(res, 200, html, {}, { headOnly: isHeadRequest });
       } catch { sendJson(res, 404, { error: 'Use case not found' }); }
@@ -6295,7 +6340,7 @@ async function addContext(){
       // Public-facing broker lead-flow audit landing page. Wedge for the
       // real-estate broker outreach. Static HTML served from src/api/static.
       try {
-        const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+        const host = getSafePublicRequestHost(req);
         const html = normalizePublicMarketingHtml(fillTemplate(fs.readFileSync(
           path.resolve(__dirname, '../../assets/static/broker-audit.html'),
           'utf8'

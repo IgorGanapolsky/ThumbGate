@@ -1001,6 +1001,20 @@ test('public openapi yaml advertises forwarded https origin for hosted imports',
   assert.match(body, /servers:\n  - url: https:\/\/thumbgate-production\.up\.railway\.app/);
 });
 
+test('public openapi yaml ignores markup in forwarded host headers', async () => {
+  const res = await fetch(apiUrl('/openapi.yaml'), {
+    headers: {
+      'x-forwarded-proto': 'https',
+      'x-forwarded-host': '<img src=x onerror=alert(1)>',
+    },
+  });
+  assert.equal(res.status, 200);
+
+  const body = await res.text();
+  assert.doesNotMatch(body, /<img src=x onerror=alert\(1\)>/);
+  assert.match(body, /servers:\n  - url: https:\/\/localhost/);
+});
+
 test('public server card exposes MCP tool schemas for directory scanners', async () => {
   const res = await fetch(apiUrl('/.well-known/mcp/server-card.json'));
   assert.equal(res.status, 200);
@@ -1473,6 +1487,22 @@ test('SEO comparison pages serve HTML, reuse journey cookies, and record page-sp
   assert.ok(seoEvent);
   assert.equal(seoEvent.pageType, 'comparison');
   assert.equal(seoEvent.seoQuery, 'thumbgate vs speclock');
+});
+
+test('public comparison pages do not reflect malicious slug or forwarded host markup', async () => {
+  const missingRes = await fetch(apiUrl('/compare/%3Cimg%20src=x%20onerror=alert(1)%3E'));
+  assert.equal(missingRes.status, 404);
+  assert.match(String(missingRes.headers.get('content-type')), /application\/json/);
+  assert.doesNotMatch(await missingRes.text(), /<img src=x onerror=alert\(1\)>/);
+
+  const hostedRes = await fetch(apiUrl('/compare/speclock'), {
+    headers: {
+      'x-forwarded-host': '<svg onload=alert(1)>',
+    },
+  });
+  assert.equal(hostedRes.status, 200);
+  const body = await hostedRes.text();
+  assert.doesNotMatch(body, /<svg onload=alert\(1\)>/);
 });
 
 test('robots and sitemap endpoints publish crawl metadata for the canonical app origin', async () => {
