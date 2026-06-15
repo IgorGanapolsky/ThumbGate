@@ -47,14 +47,27 @@ test('end-to-end OAuth 2.1 PKCE flow: register -> authorize -> token -> authenti
 
   // 3. Authorize (consent POST) with PKCE + bound key -> 302 with code
   const { verifier, challenge } = pkce();
+  const consentUrl = new URL(`${base}/oauth/authorize`);
+  consentUrl.searchParams.set('client_id', reg.client_id);
+  consentUrl.searchParams.set('redirect_uri', redirectUri);
+  consentUrl.searchParams.set('code_challenge', challenge);
+  consentUrl.searchParams.set('code_challenge_method', 'S256');
+  consentUrl.searchParams.set('scope', 'mcp:read mcp:write');
+  consentUrl.searchParams.set('state', 'st123');
+  consentUrl.searchParams.set('resource', resource);
+  const consentRes = await fetch(consentUrl);
+  assert.equal(consentRes.status, 200, 'authorize GET renders consent page');
+  const consentHtml = await consentRes.text();
+  assert.doesNotMatch(consentHtml, new RegExp(redirectUri.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), 'redirect_uri is not reflected into HTML');
+  assert.doesNotMatch(consentHtml, /st123/, 'state is not reflected into HTML');
+  const tokenMatch = consentHtml.match(/name="auth_request_token" value="([^"]+)"/);
+  assert.ok(tokenMatch, 'consent page carries an opaque authorization request token');
   const authRes = await fetch(`${base}/oauth/authorize`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     redirect: 'manual',
     body: new URLSearchParams({
-      client_id: reg.client_id, redirect_uri: redirectUri,
-      code_challenge: challenge, code_challenge_method: 'S256',
-      scope: 'mcp:read mcp:write', state: 'st123', resource,
+      auth_request_token: tokenMatch[1],
       api_key: 'test-operator-key', approve: 'yes',
     }).toString(),
   });
@@ -105,4 +118,26 @@ test('expired/garbage token is rejected with 401', async () => {
   // A bogus OAuth-looking token has no session; the raw-key path also fails downstream.
   // Either way it must not 200 a tool execution for an unknown OAuth token.
   assert.ok(r.status === 401 || r.status === 200, 'responds deterministically');
+});
+
+test('OAuth authorize consent page does not reflect query parameter markup', async () => {
+  const redirectUri = 'https://claude.ai/api/mcp/auth_callback';
+  const reg = await (await fetch(`${base}/oauth/register`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ redirect_uris: [redirectUri], client_name: 'Claude' }),
+  })).json();
+  const { challenge } = pkce();
+  const payload = '\"><script>alert(1)</script>';
+  const consentUrl = new URL(`${base}/oauth/authorize`);
+  consentUrl.searchParams.set('client_id', reg.client_id);
+  consentUrl.searchParams.set('redirect_uri', `${redirectUri}?next=${encodeURIComponent(payload)}`);
+  consentUrl.searchParams.set('code_challenge', challenge);
+  consentUrl.searchParams.set('code_challenge_method', 'S256');
+  consentUrl.searchParams.set('state', payload);
+  const res = await fetch(consentUrl);
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.doesNotMatch(html, /<script>alert\(1\)<\/script>/);
+  assert.doesNotMatch(html, /next=/);
+  assert.match(html, /name="auth_request_token" value="[A-Za-z0-9_-]+"/);
 });
