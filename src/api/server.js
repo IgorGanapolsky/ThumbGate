@@ -1710,6 +1710,8 @@ const FEEDBACK_LIST_LABELS = Object.freeze({
   positive: 'Recent wins',
 });
 
+const FEEDBACK_OMITTED_TAGS = Object.freeze(['audit-trail', 'auto-capture']);
+
 function formatChatTimestamp(isoString) {
   if (!isoString) return 'unknown time';
   try {
@@ -1728,9 +1730,33 @@ function formatChatTimestamp(isoString) {
   }
 }
 
+function buildFeedbackEntries(windowed, signal) {
+  return (signal ? windowed.filter((r) => r.signal === signal) : windowed)
+    .filter((r) => r.context && !isPlaceholder(r.context))
+    .slice(0, 5);
+}
+
+function formatFeedbackEntry(entry) {
+  const tsFormatted = formatChatTimestamp(entry.timestamp);
+  const signalLabel = entry.signal ? ` [${entry.signal}]` : '';
+  const tagsList = Array.isArray(entry.tags)
+    ? entry.tags.filter((tag) => !FEEDBACK_OMITTED_TAGS.includes(tag))
+    : [];
+  const tagsStr = tagsList.length ? ` (${tagsList.join(', ')})` : '';
+  return `  • ${tsFormatted}${signalLabel}${tagsStr} — ${entry.context}`;
+}
+
+function appendFeedbackListLines(lines, { entries, signal, intent }) {
+  if (!entries.length) {
+    lines.push(`No ${signal || 'feedback'} entries found ${intent.windowLabel}.`);
+    return;
+  }
+  lines.push(`${FEEDBACK_LIST_LABELS[signal] || 'Recent feedback'} (${intent.windowLabel}):`);
+  lines.push(...entries.map(formatFeedbackEntry));
+}
+
 function buildFeedbackSection({ ctx, intent, feedbackDir, approval, lessonPipeline }) {
   const signal = detectFeedbackSignalFromPrompt(ctx.prompt);
-
   // One read of the time-windowed log, then in-memory counts + (signal-filtered,
   // placeholder-stripped) list. Counts include ALL entries (so "Feedback today: 5"
   // matches the dashboard tile); the list drops vague entries like literal "thumbs
@@ -1738,9 +1764,7 @@ function buildFeedbackSection({ ctx, intent, feedbackDir, approval, lessonPipeli
   const windowed = readRecentFeedbackEntries(feedbackDir, null, intent.windowMs, 10000, { includeSignal: true });
   const windowPos = windowed.filter((r) => r.signal === 'positive').length;
   const windowNeg = windowed.filter((r) => r.signal === 'negative').length;
-  const entries = (signal ? windowed.filter((r) => r.signal === signal) : windowed)
-    .filter((r) => r.context && !isPlaceholder(r.context))
-    .slice(0, 5);
+  const entries = buildFeedbackEntries(windowed, signal);
 
   const lines = [];
   lines.push(intent.windowMs
@@ -1748,20 +1772,7 @@ function buildFeedbackSection({ ctx, intent, feedbackDir, approval, lessonPipeli
     : `Feedback total: ${compactNumber(approval.total)} (${compactNumber(approval.positive)} positive, ${compactNumber(approval.negative)} negative).`);
 
   if (intent.wantsList) {
-    if (entries.length) {
-      lines.push(`${FEEDBACK_LIST_LABELS[signal] || 'Recent feedback'} (${intent.windowLabel}):`);
-      for (const e of entries) {
-        const tsFormatted = formatChatTimestamp(e.timestamp);
-        const signalLabel = e.signal ? ` [${e.signal}]` : '';
-        const tagsList = Array.isArray(e.tags)
-          ? e.tags.filter(t => !['audit-trail', 'auto-capture'].includes(t))
-          : [];
-        const tagsStr = tagsList.length ? ` (${tagsList.join(', ')})` : '';
-        lines.push(`  • ${tsFormatted}${signalLabel}${tagsStr} — ${e.context}`);
-      }
-    } else {
-      lines.push(`No ${signal || 'feedback'} entries found ${intent.windowLabel}.`);
-    }
+    appendFeedbackListLines(lines, { entries, signal, intent });
   } else {
     lines.push(`Lesson pipeline: ${compactNumber(lessonPipeline.lessons || lessonPipeline.generated || 0)} lessons visible in the current dashboard snapshot.`);
   }
@@ -1969,7 +1980,7 @@ async function answerEnterpriseDataChat({ prompt, feedbackDir, parsed }) {
 const answerEnterpriseDialogflowChat = answerEnterpriseDataChat;
 
 function buildLossAnalyticsResponse(data, summaryOptions) {
-  return {
+  return sanitizeHtmlUnsafeJsonValue({
     window: data.analytics.window || summaryOptions,
     lossAnalysis: data.analytics.lossAnalysis || null,
     buyerLoss: data.analytics.buyerLoss || null,
@@ -1981,7 +1992,7 @@ function buildLossAnalyticsResponse(data, summaryOptions) {
       ctas: data.analytics.telemetry && data.analytics.telemetry.ctas,
       visitors: data.analytics.telemetry && data.analytics.telemetry.visitors,
     },
-  };
+  });
 }
 
 function createJourneyId(prefix) {
@@ -2478,6 +2489,7 @@ function sendJson(res, statusCode, payload, extraHeaders = {}, options = {}) {
   const body = JSON.stringify(payload);
   res.writeHead(statusCode, {
     'Content-Type': 'application/json; charset=utf-8',
+    'X-Content-Type-Options': 'nosniff',
     'Content-Length': Buffer.byteLength(body),
     ...extraHeaders,
   });
@@ -4605,11 +4617,38 @@ function normalizeJobIdFromPath(pathname, suffix = '') {
 
 function escapeHtml(value) {
   return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function escapeHtmlUnsafeJsonString(value) {
+  return String(value)
+    .replaceAll('<', String.raw`\u003c`)
+    .replaceAll('>', String.raw`\u003e`)
+    .replaceAll('&', String.raw`\u0026`)
+    .replaceAll('\u2028', String.raw`\u2028`)
+    .replaceAll('\u2029', String.raw`\u2029`);
+}
+
+function sanitizeHtmlUnsafeJsonValue(value) {
+  if (typeof value === 'string') {
+    return escapeHtmlUnsafeJsonString(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map((entry) => sanitizeHtmlUnsafeJsonValue(entry));
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value).map(([key, entry]) => [
+      escapeHtmlUnsafeJsonString(key),
+      sanitizeHtmlUnsafeJsonValue(entry),
+    ])
+  );
 }
 
 function normalizeDocumentIdFromPath(pathname) {
@@ -9519,6 +9558,8 @@ module.exports = {
     buildEnterpriseChatAnswer,
     answerEnterpriseDataChat,
     answerEnterpriseDialogflowChat,
+    buildLossAnalyticsResponse,
+    sanitizeHtmlUnsafeJsonValue,
   },
 };
 
