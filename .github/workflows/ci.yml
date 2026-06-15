@@ -102,6 +102,12 @@ jobs:
       - name: Install deps
         run: npm ci --onnxruntime-node-install-cuda=skip
 
+      - name: Audit root npm dependencies
+        run: npm audit --audit-level=low
+
+      - name: Audit worker npm dependencies
+        run: npm --prefix workers ci && npm --prefix workers audit --audit-level=low
+
       - name: Check version sync
         run: node scripts/sync-version.js --check
 
