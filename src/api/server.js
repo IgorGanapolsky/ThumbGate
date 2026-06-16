@@ -3337,25 +3337,30 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/compare/anthropic-claude-for-legal', changefreq: 'weekly', priority: '0.9' },
     ...THUMBGATE_SEO_SITEMAP_ENTRIES,
   ];
-  // Auto-include every hand-written comparison page so /sitemap.xml can never
-  // drift out of sync with public/compare/*.html. Crawlers and AI answer engines
-  // (Google AI Overviews/AI Mode, ChatGPT, Perplexity) only surface pages they can
-  // discover, so a comparison page missing from the sitemap is invisible on its
-  // buyer-intent query. De-duped against entries already declared above (e.g. the
-  // seo-gsd specs), which keep their explicit priorities.
+  // Auto-include every hand-written comparison and guide page so /sitemap.xml can
+  // never drift out of sync with public/compare/*.html or public/guides/*.html.
+  // Crawlers and AI answer engines (Google AI Overviews/AI Mode, ChatGPT,
+  // Perplexity) only surface pages they can discover, so a page missing from the
+  // sitemap is invisible on its buyer-intent query. De-duped against entries
+  // already declared above (e.g. the seo-gsd specs), which keep their explicit
+  // priorities.
   const declaredPaths = new Set(entries.map((entry) => entry.path));
-  try {
-    const compareFiles = fs.readdirSync(path.join(PUBLIC_DIR, 'compare')).sort((a, b) => a.localeCompare(b));
-    for (const file of compareFiles) {
-      if (!file.endsWith('.html')) continue;
-      const comparePath = `/compare/${file.replace(/\.html$/, '')}`;
-      if (declaredPaths.has(comparePath)) continue;
-      declaredPaths.add(comparePath);
-      entries.push({ path: comparePath, changefreq: 'weekly', priority: '0.85' });
+  const includePublicHtmlPages = (dirName, publicPrefix, priority) => {
+    try {
+      const files = fs.readdirSync(path.join(PUBLIC_DIR, dirName)).sort((a, b) => a.localeCompare(b));
+      for (const file of files) {
+        if (!file.endsWith('.html')) continue;
+        const pagePath = `${publicPrefix}/${file.replace(/\.html$/, '')}`;
+        if (declaredPaths.has(pagePath)) continue;
+        declaredPaths.add(pagePath);
+        entries.push({ path: pagePath, changefreq: 'weekly', priority });
+      }
+    } catch {
+      // Directory absent in a stripped bundle — fall back to the static entries.
     }
-  } catch {
-    // public/compare absent in a stripped bundle — fall back to the static entries.
-  }
+  };
+  includePublicHtmlPages('compare', '/compare', '0.85');
+  includePublicHtmlPages('guides', '/guides', '0.82');
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Policy Engines Need Pre-Action Gates for AI Agents | ThumbGate</title>
+  <meta name="description" content="Policy engines, guardrail SDKs, and compliance APIs can decide whether an AI-agent action is allowed. ThumbGate enforces that decision locally before the tool runs." />
+  <meta property="og:title" content="Policy Engines Need Pre-Action Gates for AI Agents | ThumbGate" />
+  <meta property="og:description" content="Policy engines decide. ThumbGate enforces before shell, file, MCP, browser, deploy, or API actions run." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/guides/policy-engine-pre-action-gates" />
+  <link rel="canonical" href="https://thumbgate.ai/guides/policy-engine-pre-action-gates" />
+  <link rel="llm-context" href="/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/svg+xml" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --bg-raised: #111113;
+      --bg-card: #161618;
+      --line: #222225;
+      --text: #e8e8ec;
+      --muted: #9b9ba6;
+      --cyan: #22d3ee;
+      --green: #4ade80;
+      --red: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(12px);
+      background: rgba(10, 10, 11, 0.88);
+      border-bottom: 1px solid var(--line);
+    }
+    .topbar .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
+    .brand {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--text);
+      font-weight: 700;
+    }
+    .logo-mark { width: 28px; height: 28px; display: block; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow {
+      display: inline-flex;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 211, 238, 0.22);
+      background: rgba(34, 211, 238, 0.1);
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    h1 {
+      max-width: 820px;
+      margin: 16px 0;
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.06;
+      letter-spacing: -0.04em;
+    }
+    .hero p {
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+    .signal-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+    .signal-pill {
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--bg-raised);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .signal-pill.up { border-color: rgba(74, 222, 128, 0.28); color: #b8f7c8; background: rgba(74, 222, 128, 0.1); }
+    .signal-pill.down { border-color: rgba(248, 113, 113, 0.28); color: #ffc0c0; background: rgba(248, 113, 113, 0.1); }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+      gap: 24px;
+      padding-bottom: 72px;
+    }
+    .card, .detail-section, .sidebar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+    .card, .detail-section, .sidebar-card { padding: 24px; }
+    .detail-section { margin-bottom: 18px; }
+    .detail-section h2, .card h2, .sidebar-card h2 { margin: 0 0 12px; letter-spacing: -0.03em; }
+    .detail-section p, .card p, .sidebar-card p, li { color: var(--muted); }
+    ul { padding-left: 18px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { border: 1px solid var(--line); padding: 12px; vertical-align: top; text-align: left; }
+    th { color: var(--text); background: var(--bg-raised); }
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: #0d1117;
+      color: #d6deff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+    code { padding: 2px 6px; }
+    pre { overflow-x: auto; padding: 16px; }
+    .sidebar { display: flex; flex-direction: column; gap: 18px; }
+    .sidebar-card:first-child {
+      position: sticky;
+      top: 84px;
+      max-height: calc(100vh - 104px);
+      overflow-y: auto;
+    }
+    .cta-button {
+      display: inline-flex;
+      justify-content: center;
+      margin-top: 18px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: var(--cyan);
+      color: #071116;
+      font-weight: 700;
+    }
+    .related-card {
+      display: block;
+      padding: 14px;
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--bg-raised);
+      color: var(--text);
+    }
+    .related-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .faq-item { border-top: 1px solid var(--line); padding: 14px 0; }
+    .faq-item summary { cursor: pointer; font-weight: 700; }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+      .sidebar-card:first-child { position: static; max-height: none; }
+    }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Policy Engines Need Pre-Action Gates for AI Agents",
+  "description": "Policy engines, guardrail SDKs, and compliance APIs can decide whether an AI-agent action is allowed. ThumbGate enforces that decision locally before the tool runs.",
+  "about": [
+    "AI agent policy engine",
+    "pre-action gates",
+    "OPA agent guardrails",
+    "Bedrock Guardrails agent tools",
+    "Guardian SDK agent governance"
+  ],
+  "url": "https://thumbgate.ai/guides/policy-engine-pre-action-gates",
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  }
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does ThumbGate replace a policy engine?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. A policy engine decides whether an action is allowed. ThumbGate enforces that decision before the agent executes a shell, file, MCP, browser, deploy, or API action."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can ThumbGate use Guardian SDK, Ethicore, OPA, or Bedrock Guardrails decisions?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. ThumbGate's policy-engine adapter normalizes allow, block, and approval-required outputs from external policy engines, then applies local pre-action gates before execution."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why not just log policy violations after the run?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Post-run logging proves what happened after damage is possible. Pre-action gates stop the risky action before it runs and preserve the evidence for audit."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <a class="brand" href="/"><img class="logo-mark" src="/assets/brand/thumbgate-mark.svg" alt="" /> ThumbGate</a>
+      <a href="/pricing">Pricing</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <span class="eyebrow">Policy engine adapter</span>
+      <h1>Policy engines decide. ThumbGate enforces before the agent acts.</h1>
+      <p>Guardian SDK, Ethicore-style policy layers, OPA, Bedrock Guardrails, and custom compliance APIs are useful decision systems. The missing piece is a deterministic local gate that catches the actual command, file edit, MCP call, browser action, deployment, or API request before it executes.</p>
+      <div class="signal-row">
+        <span class="signal-pill up">Use existing policy engines</span>
+        <span class="signal-pill up">Normalize allow/block/review</span>
+        <span class="signal-pill down">Do not rely on after-the-fact logs</span>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div>
+        <div class="card">
+          <h2>The buyer objection</h2>
+          <p>"We already have a policy engine." Good. ThumbGate should sit underneath it, not compete with it. Policy engines answer whether an action is compliant. ThumbGate makes that answer operational at the exact moment an AI agent is about to touch a real system.</p>
+        </div>
+
+        <section class="detail-section">
+          <h2>Policy reasoning vs execution enforcement</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Layer</th>
+                <th>What it does</th>
+                <th>Failure if used alone</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Policy engine</td>
+                <td>Evaluates a rule, ontology, risk model, or compliance policy.</td>
+                <td>The agent can still execute if the decision is not wired into the tool boundary.</td>
+              </tr>
+              <tr>
+                <td>Audit log</td>
+                <td>Records what the agent did and why it was allowed or denied.</td>
+                <td>The record arrives after the risky action may already have run.</td>
+              </tr>
+              <tr>
+                <td>ThumbGate</td>
+                <td>Intercepts the concrete action locally before shell, file, MCP, deploy, browser, or API execution.</td>
+                <td>It needs policy input for teams that already maintain centralized governance models.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="detail-section">
+          <h2>Adapter contract</h2>
+          <p>The adapter normalizes common policy-engine outputs into ThumbGate's enforcement shape.</p>
+          <pre><code>{
+  "decision": "block",
+  "reason": "off-scope network egress",
+  "policyId": "egress-001",
+  "evidence": [
+    { "ruleId": "egress-001", "reason": "curl to unknown host" }
+  ]
+}</code></pre>
+          <p>ThumbGate then treats that as a pre-action decision. If the policy says block, the wrapped tool does not execute. If the policy says allow but a local thumbs-down rule catches a repeated mistake, ThumbGate can still hard-block locally.</p>
+        </section>
+
+        <section class="detail-section">
+          <h2>Where this helps teams</h2>
+          <ul>
+            <li>Enterprises that already have compliance policies but no AI-agent tool boundary.</li>
+            <li>Platform teams exposing internal MCP tools to Claude Code, Cursor, Codex, Gemini CLI, OpenCode, or Letta agents.</li>
+            <li>Security teams that need proof that a risky command was stopped before execution.</li>
+            <li>Teams comparing policy SDKs, guardrails, and agent firewalls for production rollouts.</li>
+          </ul>
+        </section>
+
+        <section class="detail-section">
+          <h2>FAQ</h2>
+          <details class="faq-item">
+            <summary>Does ThumbGate replace a policy engine?</summary>
+            <p>No. A policy engine decides whether an action is allowed. ThumbGate enforces that decision before the agent executes a shell, file, MCP, browser, deploy, or API action.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Can ThumbGate use Guardian SDK, Ethicore, OPA, or Bedrock Guardrails decisions?</summary>
+            <p>Yes. The policy-engine adapter normalizes allow, block, and approval-required outputs from external policy engines, then applies local pre-action gates before execution.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Why not just log policy violations after the run?</summary>
+            <p>Post-run logging proves what happened after damage is possible. Pre-action gates stop the risky action before it runs and preserve the evidence for audit.</p>
+          </details>
+        </section>
+      </div>
+
+      <aside class="sidebar">
+        <div class="sidebar-card">
+          <h2>Implementation path</h2>
+          <p>Install ThumbGate, wrap the policy decision, and enforce the result before the agent's tool call runs.</p>
+          <pre><code>npx thumbgate init</code></pre>
+          <p><strong>Pricing:</strong> Pro $19/mo or $149/yr. Team $49/seat/mo.</p>
+          <a class="cta-button" href="/checkout/pro?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=guides_policy_engine_pre_action_gates&amp;cta_placement=seo_brief&amp;plan_id=pro">Go Pro - $19/mo</a>
+        </div>
+        <div class="sidebar-card">
+          <h2>Related pages</h2>
+          <a class="related-card" href="/guides/mcp-tool-governance">
+            <span class="related-label">Related page</span>
+            <strong>MCP Tool Governance</strong>
+          </a>
+          <a class="related-card" href="/guides/ai-agent-pre-action-approval-gates">
+            <span class="related-label">Related page</span>
+            <strong>AI Agent Pre-Action Approval Gates</strong>
+          </a>
+          <a class="related-card" href="/guides/pretooluse-hooks-vs-advisory-prompt-rules">
+            <span class="related-label">Related page</span>
+            <strong>PreToolUse Hooks vs Advisory Prompt Rules</strong>
+          </a>
+        </div>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>

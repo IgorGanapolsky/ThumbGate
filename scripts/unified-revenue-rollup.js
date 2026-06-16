@@ -56,7 +56,7 @@ function parseArgs(argv = []) {
   return {
     json: argv.includes('--json'),
     dryRun: argv.includes('--dry-run'),
-    period: extractFlag(argv, '--period=') || '1d',
+    period: extractFlag(argv, '--period=') || 'day',
     outputDir: extractFlag(argv, '--output-dir=') || 'reports/revenue',
   };
 }
@@ -86,7 +86,7 @@ async function plausibleQuery(endpoint, params, { apiKey, siteId, fetchImpl = fe
   return json;
 }
 
-async function gatherPlausible({ period = '1d', fetchImpl = fetch, env = process.env } = {}) {
+async function gatherPlausible({ period = 'day', fetchImpl = fetch, env = process.env } = {}) {
   const apiKey = env.PLAUSIBLE_API_KEY;
   const siteId = env.PLAUSIBLE_SITE_ID || 'thumbgate.ai';
   if (!apiKey) {

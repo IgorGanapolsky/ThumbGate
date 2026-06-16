@@ -52,6 +52,7 @@
 - [AI agent pre-action approval gates](https://thumbgate.ai/guides/ai-agent-pre-action-approval-gates)
 - [Agentic web governance](https://thumbgate.ai/guides/agentic-web-governance)
 - [MCP tool governance](https://thumbgate.ai/guides/mcp-tool-governance)
+- [Policy engines need pre-action gates](https://thumbgate.ai/guides/policy-engine-pre-action-gates)
 - [Best tools to stop AI agents from breaking production](https://thumbgate.ai/guides/best-tools-stop-ai-agents-breaking-production)
 - [AI agent governance sprint](https://thumbgate.ai/guides/ai-agent-governance-sprint)
 - [Browser automation safety](https://thumbgate.ai/guides/browser-automation-safety)

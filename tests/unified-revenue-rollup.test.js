@@ -20,7 +20,7 @@ test('REVENUE_SURFACES includes every public surface shipped through 2026-05-15'
   }
 });
 
-test('parseArgs reads flags and defaults to 1d / reports/revenue', () => {
+test('parseArgs reads flags and defaults to day / reports/revenue', () => {
   const args = parseArgs(['--json', '--period=7d', '--output-dir=/tmp/x']);
   assert.equal(args.json, true);
   assert.equal(args.dryRun, false);
@@ -30,7 +30,7 @@ test('parseArgs reads flags and defaults to 1d / reports/revenue', () => {
   const defaults = parseArgs([]);
   assert.equal(defaults.json, false);
   assert.equal(defaults.dryRun, false);
-  assert.equal(defaults.period, '1d');
+  assert.equal(defaults.period, 'day');
   assert.equal(defaults.outputDir, 'reports/revenue');
 });
 
@@ -188,7 +188,7 @@ test('gatherSearchConsoleAiVisibility is configured with site property and crede
 
 test('gatherPlausible returns a gap object when PLAUSIBLE_API_KEY is missing', async () => {
   const result = await gatherPlausible({
-    period: '1d',
+    period: 'day',
     env: {},
     fetchImpl: () => {
       throw new Error('fetch must not be called when API key is missing');
@@ -215,7 +215,7 @@ test('gatherPlausible joins aggregate + pages + sources from a fake Plausible AP
     return { ok: true, json: async () => body, text: async () => JSON.stringify(body) };
   };
   const result = await gatherPlausible({
-    period: '1d',
+    period: 'day',
     env: { PLAUSIBLE_API_KEY: 'tok', PLAUSIBLE_SITE_ID: 'example.com' },
     fetchImpl: fakeFetch,
   });
@@ -266,7 +266,7 @@ test('buildSnapshot wires gather + join + diagnose into one object', async () =>
     },
     now: new Date('2026-05-15T13:30:00Z'),
   });
-  assert.equal(snapshot.period, '1d');
+  assert.equal(snapshot.period, 'day');
   assert.equal(snapshot.stripe.configured, false);
   assert.equal(snapshot.plausible.configured, false);
   assert.equal(snapshot.searchConsoleAi.configured, false);

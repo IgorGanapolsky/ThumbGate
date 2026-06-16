@@ -35,6 +35,8 @@ test('adapter files exist', () => {
     'adapters/forge/forge.yaml',
     'adapters/letta/README.md',
     'adapters/letta/thumbgate-letta-adapter.js',
+    'adapters/policy-engine/README.md',
+    'adapters/policy-engine/thumbgate-policy-engine-adapter.js',
     'opencode.json',
     '.opencode/instructions/thumbgate-workflow.md',
     '.opencode/agents/thumbgate-review.md',

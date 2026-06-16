@@ -1,0 +1,220 @@
+# Community Growth Readback — 2026-06-16
+
+Guardrail: do not publish posts, send messages, invite members, upload files, submit forms, change billing, or enable paid-community settings without action-time confirmation.
+
+## Latest command evidence
+
+- Repo-side refresh timestamp: `2026-06-16T17:14:56Z`
+- `node scripts/sales-pipeline.js summary`
+  - Run time: `2026-06-16T17:14:56Z`
+  - Result: unchanged at `24` active leads with actionable `byStage` truth of `22` `contacted`, `2` `replied`, `0` `checkout_started`, `0` `sprint_intake`, and `0` `paid`
+  - Caveat: the script still emits a top-level `contacted: 24`, so queue decisions should keep using `summary.byStage`
+- `node scripts/skool-reader.js --url https://www.skool.com/thumbgate-operator-lab-6000 --signals --format markdown`
+  - Run time: `2026-06-16T17:14:56Z`
+  - Result: public read still returns `Members: 1`, `Visible posts on page: 0`, and one visible category (`General discussion: 0 posts`)
+  - Constraint: this is still shallow public-page evidence only; it does not verify About/Classroom/settings state
+- `npm run social:zernio:status`
+  - Run time: `2026-06-16T17:14:10Z`
+  - Result: still dark at `0/6` healthy platforms and `0` rows in the last `24h`
+  - Constraint: the command still exits non-zero; likely causes remain missing/revoked `ZERNIO_API_KEY`, analytics paywall, or disconnected accounts
+- `npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=linkedin,instagram,threads,bluesky,reddit,youtube`
+  - Run time: `2026-06-16T17:14:56Z`
+  - Result: still returns `6` previews, `0` errors, `0` published, `0` scheduled
+  - Constraint: every preview still shows `accountCount: 0`, so this runtime remains preview-only
+  - Media proof: all preview media paths still resolve under committed `public/assets/brand/*` with `exists: true`, while `docs/marketing/assets/` is absent in this checkout
+
+- Repo-side refresh timestamp: `2026-06-16T16:14:57Z`
+- `node scripts/sales-pipeline.js summary`
+  - Run time: `2026-06-16T16:14:57Z`
+  - Result: unchanged at `24` active leads with actionable `byStage` truth of `22` `contacted`, `2` `replied`, `0` `checkout_started`, `0` `sprint_intake`, and `0` `paid`
+  - Caveat: the script still emits a top-level `contacted: 24`, so queue decisions should keep using `summary.byStage`
+- `node scripts/skool-reader.js --url https://www.skool.com/thumbgate-operator-lab-6000 --limit 10 --format markdown`
+  - Run time: `2026-06-16T16:14:57Z`
+  - Result: public read still returns `Members: 1`, `Visible posts on page: 0`, and one visible category (`General discussion: 0 posts`)
+  - Constraint: this is still shallow public-page evidence only; it does not verify About/Classroom/settings state
+- `npm run social:zernio:status`
+  - Run time: `2026-06-16T16:14:57Z`
+  - Result: still dark at `0/6` healthy platforms and `0` rows in the last `24h`
+  - Constraint: the command still exits non-zero; likely causes remain missing/revoked `ZERNIO_API_KEY`, analytics paywall, or disconnected accounts
+- `npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=linkedin,instagram,threads,bluesky,reddit,youtube`
+  - Run time: `2026-06-16T16:14:57Z`
+  - Result: still returns `6` previews, `0` errors, `0` published, `0` scheduled
+  - Constraint: every preview still shows `accountCount: 0`, so this runtime remains preview-only
+  - Media proof: all preview media paths still resolve under committed `public/assets/brand/*` with `exists: true`, while `docs/marketing/assets/` is absent in this checkout
+
+- Repo-side refresh timestamp: `2026-06-16T15:14:12Z`
+- `node scripts/sales-pipeline.js`
+  - Run time: `2026-06-16T15:14:11Z`
+  - Result: unchanged at `24` active leads with actionable `byStage` truth of `22` `contacted`, `2` `replied`, `0` `checkout_started`, `0` `sprint_intake`, and `0` `paid`
+  - Caveat: the script still emits a top-level `contacted: 24`, so queue decisions should keep using `summary.byStage`
+- `node scripts/skool-reader.js --url https://www.skool.com/thumbgate-operator-lab-6000 --limit 10 --format markdown`
+  - Run time: `2026-06-16T15:14:12Z`
+  - Result: public read still returns `Members: 1`, `Visible posts on page: 0`, and one visible category (`General discussion: 0 posts`)
+  - Constraint: this is still shallow public-page evidence only; it does not verify About/Classroom/settings state
+- `npm run social:zernio:status`
+  - Run time: `2026-06-16T15:14:12Z`
+  - Result: still dark at `0/6` healthy platforms and `0` rows in the last `24h`
+  - Constraint: the command still exits non-zero; likely causes remain missing/revoked `ZERNIO_API_KEY`, analytics paywall, or disconnected accounts
+- `npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=linkedin,instagram,threads,bluesky,reddit,youtube`
+  - Run time: `2026-06-16T15:14:12Z`
+  - Result: still returns `6` previews, `0` errors, `0` published, `0` scheduled
+  - Constraint: every preview still shows `accountCount: 0`, so this runtime remains preview-only
+  - Media proof: all preview media paths still resolve under committed `public/assets/brand/*` with `exists: true`, while `docs/marketing/assets/` is absent in this checkout
+
+- Repo-side refresh timestamp: `2026-06-16T12:10:44Z`
+- `node scripts/sales-pipeline.js summary`
+  - Run time: `2026-06-16T12:10:37Z`
+  - Result: unchanged at `24` active leads with actionable `byStage` truth of `22` `contacted`, `2` `replied`, `0` `checkout_started`, `0` `sprint_intake`, and `0` `paid`
+  - Caveat: the script still emits a top-level `contacted: 24`, so queue decisions should keep using `summary.byStage`
+- `node scripts/skool-reader.js --url https://www.skool.com/thumbgate-operator-lab-6000 --limit 10 --format markdown`
+  - Run time: `2026-06-16T12:10:44Z`
+  - Result: public read still returns `Members: 1`, `Visible posts on page: 0`, and one visible category (`General discussion: 0 posts`)
+  - Constraint: this is still shallow public-page evidence only; it does not verify About/Classroom/settings state
+- `npm run social:zernio:status`
+  - Run time: `2026-06-16T12:10:44Z`
+  - Result: still dark at `0/6` healthy platforms and `0` rows in the last `24h`
+  - Constraint: the command still exits non-zero; likely causes remain missing/revoked `ZERNIO_API_KEY`, analytics paywall, or disconnected accounts
+- `npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=linkedin,instagram,threads,bluesky,reddit,youtube`
+  - Run time: `2026-06-16T12:10:44Z`
+  - Result: still returns `6` previews, `0` errors, `0` published, `0` scheduled
+  - Constraint: every preview still shows `accountCount: 0`, so this runtime remains preview-only
+  - Media proof: all preview media paths still resolve under committed `public/assets/brand/*` with `exists: true`
+
+- Repo-side refresh timestamp: `2026-06-16T11:09:41Z`
+- `node scripts/sales-pipeline.js summary`
+  - Run time: `2026-06-16T11:09:40Z`
+  - Result: unchanged at `24` active leads with actionable `byStage` truth of `22` `contacted`, `2` `replied`, `0` `checkout_started`, `0` `sprint_intake`, and `0` `paid`
+  - Caveat: the script still emits a top-level `contacted: 24`, so queue decisions should keep using `summary.byStage`
+- `node scripts/skool-reader.js --url https://www.skool.com/thumbgate-operator-lab-6000 --limit 10 --format markdown`
+  - Run time: `2026-06-16T11:09:41Z`
+  - Result: public read still returns `Members: 1`, `Visible posts on page: 0`, and one visible category (`General discussion: 0 posts`)
+  - Constraint: this is still shallow public-page evidence only; it does not verify About/Classroom/settings state
+- `npm run social:zernio:status`
+  - Run time: `2026-06-16T11:09:41Z`
+  - Result: still dark at `0/6` healthy platforms and `0` rows in the last `24h`
+  - Constraint: the command still exits non-zero; likely causes remain missing/revoked `ZERNIO_API_KEY`, analytics paywall, or disconnected accounts
+- `npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=linkedin,instagram,threads,bluesky,reddit,youtube`
+  - Run time: `2026-06-16T11:09:41Z`
+  - Result: still returns `6` previews, `0` errors, `0` published, `0` scheduled
+  - Constraint: every preview still shows `accountCount: 0`, so this runtime remains preview-only
+  - Media proof: all preview media paths still resolve under committed `public/assets/brand/*` with `exists: true`
+
+- Repo-side refresh timestamp: `2026-06-16T10:07:44Z`
+- `node scripts/sales-pipeline.js summary`
+  - Run time: `2026-06-16T10:07:44Z`
+  - Result: unchanged at `24` active leads with actionable `byStage` truth of `22` `contacted`, `2` `replied`, `0` `checkout_started`, `0` `sprint_intake`, and `0` `paid`
+  - Caveat: the script still emits a top-level `contacted: 24`, so queue decisions should keep using `summary.byStage`
+- `node scripts/skool-reader.js --url https://www.skool.com/thumbgate-operator-lab-6000 --limit 10 --format markdown`
+  - Run time: `2026-06-16T10:07:44Z`
+  - Result: public read still returns `Members: 1`, `Visible posts on page: 0`, and one visible category (`General discussion: 0 posts`)
+  - Constraint: this is still shallow public-page evidence only; it does not verify About/Classroom/settings state
+- `npm run social:zernio:status`
+  - Run time: `2026-06-16T10:07:44Z`
+  - Result: still dark at `0/6` healthy platforms and `0` rows in the last `24h`
+  - Constraint: the command still exits non-zero; likely causes remain missing/revoked `ZERNIO_API_KEY`, analytics paywall, or disconnected accounts
+- `npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=linkedin,instagram,threads,bluesky,reddit,youtube`
+  - Run time: `2026-06-16T10:07:44Z`
+  - Result: still returns `6` previews, `0` errors, `0` published, `0` scheduled
+  - Constraint: every preview still shows `accountCount: 0`, so this runtime remains preview-only
+  - Media proof: all preview media paths still resolve under committed `public/assets/brand/*` with `exists: true`
+
+- Repo-side refresh timestamp: `2026-06-16T08:06:43Z`
+- `node scripts/sales-pipeline.js summary`
+  - Run time: `2026-06-16T08:06:14Z`
+  - Result: unchanged at `24` active leads with actionable `byStage` truth of `22` `contacted`, `2` `replied`, `0` `checkout_started`, `0` `sprint_intake`, and `0` `paid`
+  - Caveat: the script still emits a top-level `contacted: 24`, so queue decisions should keep using `summary.byStage`
+- `node scripts/skool-reader.js --url https://www.skool.com/thumbgate-operator-lab-6000 --signals --format markdown`
+  - Run time: `2026-06-16T08:06:15Z`
+  - Result: public read still returns `Members: 1`, `Visible posts on page: 0`, and one visible category (`General discussion: 0 posts`)
+  - Constraint: this is still shallow public-page evidence only; it does not verify About/Classroom/settings state
+- `npm run social:zernio:status`
+  - Run time: `2026-06-16T08:06:14Z`
+  - Result: still dark at `0/6` healthy platforms and `0` rows in the last `24h`
+  - Constraint: the command still exits non-zero; likely causes remain missing/revoked `ZERNIO_API_KEY`, analytics paywall, or disconnected accounts
+- Repo-side refresh timestamp: `2026-06-16T07:06:10Z`
+- `node scripts/sales-pipeline.js summary`
+  - Run time: `2026-06-16T07:05:33Z`
+  - Result: unchanged at `24` active leads with actionable `byStage` truth of `22` `contacted`, `2` `replied`, `0` `checkout_started`, `0` `sprint_intake`, and `0` `paid`
+  - Caveat: the script still emits a top-level `contacted: 24`, so queue decisions should keep using `summary.byStage`
+- `node scripts/skool-reader.js --url https://www.skool.com/thumbgate-operator-lab-6000 --limit 10 --format markdown`
+  - Run time: `2026-06-16T07:05:50Z`
+  - Result: public read still returns `Members: 1`, `Visible posts on page: 0`, and only one visible category (`General discussion: 0 posts`)
+  - Constraint: this is still shallow public-page evidence only; it does not verify About/Classroom/settings state
+- `npm run social:zernio:status`
+  - Run time: `2026-06-16T07:05:34Z`
+  - Result: still dark at `0/6` healthy platforms and `0` rows in the last `24h`
+  - Constraint: the command still exits non-zero; likely causes remain missing/revoked `ZERNIO_API_KEY`, analytics paywall, or disconnected accounts
+- Repo-side refresh timestamp: `2026-06-16T06:04:49Z`
+- `npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=linkedin,instagram,threads,bluesky,reddit,youtube`
+  - Run time: `2026-06-16T04:02:06Z`
+  - Result: `6` previews, `0` errors, `0` published, `0` scheduled
+  - Constraint: every preview still shows `accountCount: 0`, so this runtime remains preview-only
+  - Media proof: all preview media paths still resolve under committed `public/assets/brand/*` with `exists: true`
+- `node scripts/sales-pipeline.js summary`
+  - Run time: `2026-06-16T04:01:56Z`
+  - Result: `24` active leads with actionable `byStage` truth of `22` `contacted`, `2` `replied`, `0` `checkout_started`, `0` `sprint_intake`, and `0` `paid`
+  - Caveat: the script still emits a top-level `contacted: 24`, so queue decisions should keep using `summary.byStage`
+- `node scripts/skool-reader.js --url https://www.skool.com/thumbgate-operator-lab-6000 --json`
+  - Run time: `2026-06-16T04:02:06Z`
+  - Result: public read still returns `totalMembers: 1`, `totalPosts: 0`, one `General discussion` label, the live Operator Lab description, and no visible posts
+  - Constraint: this is still shallow public-page evidence only; it does not verify About/Classroom/settings state
+- `npm run social:zernio:status`
+  - Run time: `2026-06-16T04:01:57Z`
+  - Result: still dark at `0/6` healthy platforms and `0` rows in the last `24h`
+  - Constraint: the command still exits non-zero; likely causes remain missing/revoked `ZERNIO_API_KEY`, analytics paywall, or disconnected accounts
+- `node scripts/sales-pipeline.js summary`
+  - Run time: `2026-06-16T05:02:45Z`
+  - Result: unchanged at `24` active leads with actionable `byStage` truth of `22` `contacted`, `2` `replied`, `0` `checkout_started`, `0` `sprint_intake`, and `0` `paid`
+  - Caveat: the script still emits a top-level `contacted: 24`, so queue decisions should keep using `summary.byStage`
+- `node scripts/skool-reader.js --url https://www.skool.com/thumbgate-operator-lab-6000 --limit 10 --format markdown`
+  - Run time: `2026-06-16T05:02:45Z`
+  - Result: public read still returns `Members: 1` and `Visible posts on page: 0`
+  - Constraint: this is still shallow public-page evidence only; it does not verify About/Classroom/settings state
+- `npm run social:zernio:status`
+  - Run time: `2026-06-16T05:02:45Z`
+  - Result: still dark at `0/6` healthy platforms and `0` rows in the last `24h`
+  - Constraint: the command still exits non-zero; likely causes remain missing/revoked `ZERNIO_API_KEY`, analytics paywall, or disconnected accounts
+- `node scripts/sales-pipeline.js summary`
+  - Run time: `2026-06-16T06:04:48Z`
+  - Result: unchanged at `24` active leads with actionable `byStage` truth of `22` `contacted`, `2` `replied`, `0` `checkout_started`, `0` `sprint_intake`, and `0` `paid`
+  - Caveat: the script still emits a top-level `contacted: 24`, so queue decisions should keep using `summary.byStage`
+- `node scripts/skool-reader.js --url https://www.skool.com/thumbgate-operator-lab-6000 --json`
+  - Run time: `2026-06-16T06:04:49Z`
+  - Result: public read still returns `totalMembers: 1`, `totalPosts: 0`, one `General discussion` label, the live Operator Lab description, and no visible posts
+  - Constraint: this is still shallow public-page evidence only; it does not verify About/Classroom/settings state
+- `npm run social:zernio:status`
+  - Run time: `2026-06-16T06:04:48Z`
+  - Result: still dark at `0/6` healthy platforms and `0` rows in the last `24h`
+  - Constraint: the command still exits non-zero; likely causes remain missing/revoked `ZERNIO_API_KEY`, analytics paywall, or disconnected accounts
+- `npm run social:publish:launch -- --dry-run --offer=operator-lab --platforms=linkedin,instagram,threads,bluesky,reddit,youtube`
+  - Run time: `2026-06-16T06:04:49Z`
+  - Result: still returns `6` previews, `0` errors, `0` published, `0` scheduled
+  - Constraint: every preview still shows `accountCount: 0`, so this runtime remains preview-only
+  - Media proof: all preview media paths still resolve under committed `public/assets/brand/*` with `exists: true`
+
+## Official help refresh
+
+- Re-verified official Skool help again on `2026-06-16` after the `2026-06-16T17:14:56Z` repo refresh; there is still no material platform requirement delta.
+- Re-verified official Skool help again on `2026-06-16` after the `2026-06-16T16:14:57Z` repo refresh; there is still no material platform requirement delta.
+- Re-verified official Skool help again on `2026-06-16` after the `2026-06-16T15:14:12Z` repo refresh; there is still no material platform requirement delta.
+- Re-verified official Skool help again on `2026-06-16` after the `2026-06-16T12:10:44Z` repo refresh; there is still no material platform requirement delta.
+- Re-verified official Skool help again on `2026-06-16` via the live help center; no material platform requirement change from the earlier `2026-06-16` refresh.
+- Re-verified official Skool help on `2026-06-16`; no material platform requirement change from the `2026-06-15` brief.
+- Discovery FAQ still exposes the newer `within two hours` visibility guidance, while the older troubleshooting article still says `within an hour`; keep preferring the newer FAQ wording.
+- Discovery FAQ is still published as `2 months ago` and still says a group needs threshold members, posts, and activity plus a group description, About-page description/images, and a cover image before Discovery visibility, with visibility landing within about `two hours` after threshold.
+- The older Discovery troubleshooting article is also still published as `2 months ago` and still says `within an hour`, so operator docs should keep preferring the newer Discovery FAQ wording.
+- Membership questions is still published as `9 months ago`; invite flow as `2 weeks ago`; About page as `6 months ago`; Classroom as `May 29, 2026`; publish-course as `1.3 years ago`; plugins as `7 months ago`; video upload as `4 months ago`.
+- Invite flow, membership questions, About page, Classroom, pricing, analytics, spam, plugin, and account-security guidance all remain consistent with the current free-group posture.
+- Direct public-page fetch via `https://www.skool.com/thumbgate-operator-lab-6000` on `2026-06-16` still shows the same thin shell: `1 Member`, the live Operator Lab description, `JOIN GROUP`, and the placeholder feed line `This is the start of something special`.
+
+## Revenue interpretation
+
+- The `2026-06-16T17:14:56Z` readback did not change revenue, community depth, or creator-platform readiness; it only reconfirmed that the current runtime is preview-only because every platform still shows `accountCount: 0`.
+- The `2026-06-16T16:14:57Z` readback did not change revenue, community depth, or creator-platform readiness; it only reconfirmed that the current runtime is preview-only because every platform still shows `accountCount: 0`.
+- The only approval-ready money action is still the warm Reddit follow-up four-pack.
+- Creator-platform promo remains structurally preview-ready but operationally blocked by `accountCount: 0` and dark Zernio analytics.
+- Public Skool still lacks visible post depth even though the group description is live, so it does not outrank warm outbound follow-up.
+- The `2026-06-16T15:14:12Z` readback did not change revenue, community depth, or creator-platform readiness; it only sharpened the media-path truth that committed `public/assets/brand/*` assets exist while `docs/marketing/assets/` is absent locally.
+- The `2026-06-16T12:10:44Z` readback still shows no movement on revenue, community depth, or creator-platform readiness, so there is still no evidence to re-rank creator-platform dispatch above the warm follow-up batch.
+- The corrected public Skool read at `2026-06-16T07:05:50Z` removes the earlier command-format ambiguity and still shows no discovery-depth improvement.
+- The `2026-06-16T08:06:15Z` readback confirms the same flat outcome after another fresh run, so there is still no evidence to re-rank creator-platform dispatch above the warm follow-up batch.

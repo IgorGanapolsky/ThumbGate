@@ -44,6 +44,7 @@ const GUIDE_FILES = [
   'guides/cursor-prevent-repeated-mistakes.html',
   'guides/codex-cli-guardrails.html',
   'guides/autoresearch-agent-safety.html',
+  'guides/policy-engine-pre-action-gates.html',
 ];
 
 const COMPARE_FILES = [
@@ -210,6 +211,22 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('Ready to buy the sprint?'));
     assert.ok(hasCheckoutPath(html, '/00w14neyUcXA5pL5e33sI0e'));
     assert.ok(hasCheckoutPath(html, '/fZu9AT76saPsg4pbCr3sI0f'));
+  });
+
+  it('policy-engine guide positions ThumbGate under external policy decisions', () => {
+    const html = fs.readFileSync(
+      path.join(PUBLIC_DIR, 'guides/policy-engine-pre-action-gates.html'),
+      'utf-8'
+    );
+
+    assert.ok(html.includes('Policy engines decide. ThumbGate enforces before the agent acts.'));
+    assert.ok(html.includes('Guardian SDK'));
+    assert.ok(html.includes('Ethicore'));
+    assert.ok(html.includes('OPA'));
+    assert.ok(html.includes('Bedrock Guardrails'));
+    assert.ok(html.includes('policy-engine adapter'));
+    assert.ok(html.includes('npx thumbgate init'));
+    assert.ok(html.includes('Pro $19/mo or $149/yr. Team $49/seat/mo.'));
   });
 
   it('GPT-5.5 model evaluation guide routes teams into benchmark-first model routing', () => {

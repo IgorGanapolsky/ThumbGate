@@ -17,4 +17,5 @@
 - `hermes/HERMES.md`: High-ROI integration guide for Nous Research's hermes-agent (persistent, self-improving autonomous agent). Covers model candidates, gate templates for multi-channel posts safety, skill synthesis loop prevention, and DPO extraction for fine-tuning.
 - `hermes/config.toml`, `hermes/opencode.json`, `hermes/.mcp.json`: Adapter configurations for Hermes Agent + ThumbGate gates.
 - `letta/README.md`, `letta/thumbgate-letta-adapter.js`: Letta adapter for memory-first agents. Wraps Letta MCP, server-tool, or client-tool calls so ThumbGate can gate the action before Letta forwards or executes it.
+- `policy-engine/README.md`, `policy-engine/thumbgate-policy-engine-adapter.js`: Generic adapter for Guardian SDK / Ethicore-style policy checks, OPA, Bedrock Guardrails, or custom compliance APIs. Normalizes allow/block/approval-required decisions, then lets ThumbGate enforce them before the underlying tool executes.
 - `config/model-candidates.json` + `scripts/model-candidates.js`: managed-model catalog and benchmark planner for evaluating candidates like Tinker Kimi/Qwen against ThumbGate workloads before routing production traffic.
