@@ -708,6 +708,7 @@ function buildDocumentSummary(document) {
     sourcePath: document.sourcePath || null,
     sourceName: document.sourceName || null,
     sourceFormat: document.sourceFormat,
+    sourceUrl: document.sourceUrl || null,
     importedAt: document.importedAt,
     tags: normalizeTags(document.tags),
     excerpt: document.excerpt,
@@ -768,7 +769,11 @@ function persistDocument(document, options = {}) {
   const summaries = listImportedDocuments({
     ...options,
     limit: MAX_SEARCH_SCAN,
-  }).documents.filter((entry) => entry.documentId !== document.documentId);
+  }).documents.filter((entry) => {
+    if (entry.documentId === document.documentId) return false;
+    if (document.sourceUrl && entry.sourceUrl === document.sourceUrl) return false;
+    return true;
+  });
   const nextSummaries = [
     buildDocumentSummary(document),
     ...summaries,
@@ -882,6 +887,48 @@ function importDocument(options = {}) {
     sourceFormat,
   });
   const fingerprint = sha256(`${title}\n${normalizedContent}`);
+  
+  // -- deduplication and RAG drift tracking ----------------------------------
+  const paths = getDocumentStorePaths(options);
+  let duplicate = null;
+  if (fs.existsSync(paths.catalogPath)) {
+    try {
+      const catalog = readJsonl(paths.catalogPath);
+      const urlMatch = options.sourceUrl ? String(options.sourceUrl).trim() : null;
+      const matchedSummary = catalog.find((summary) =>
+        (urlMatch && summary.sourceUrl === urlMatch) ||
+        (summary.fingerprint === fingerprint)
+      );
+      if (matchedSummary) {
+        const fullDoc = readImportedDocument(matchedSummary.documentId, options);
+        if (fullDoc) {
+          if (fullDoc.fingerprint === fingerprint) {
+            // Case A: Content is identical
+            const dedupReason = urlMatch && fullDoc.sourceUrl === urlMatch
+              ? 'url-and-content-unchanged'
+              : 'content-identical';
+            return {
+              ...fullDoc,
+              duplicate: true,
+              updated: false,
+              dedupReason,
+            };
+          } else {
+            // Case B: URL matches but content changed (RAG Drift!)
+            duplicate = {
+              previousDocumentId: fullDoc.documentId,
+              previousFingerprint: fullDoc.fingerprint,
+              updated: true,
+              dedupReason: 'url-content-updated',
+            };
+          }
+        }
+      }
+    } catch (err) {
+      // best-effort
+    }
+  }
+
   const importedAt = nowIso();
   const sourceName = sourcePath ? path.basename(sourcePath) : null;
   const documentId = `doc_${slugify(title || sourceName || 'document').slice(0, 24) || 'document'}_${fingerprint.slice(0, 12)}`;
@@ -901,6 +948,7 @@ function importDocument(options = {}) {
     contentBytes: Buffer.byteLength(normalizedContent, 'utf8'),
     lineCount: normalizedContent.split('\n').filter(Boolean).length,
     headings: extractHeadings(normalizedContent),
+    ...(duplicate || {}),
   };
   document.proposals = options.proposeGates === false
     ? []

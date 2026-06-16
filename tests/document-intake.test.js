@@ -106,3 +106,71 @@ test('importDocument strips script/style tags even when closing tags include whi
   assert.doesNotMatch(document.content, /color:\s*red/);
   assert.match(document.content, /Never force-push to main/);
 });
+
+test('importDocument performs URL deduplication and RAG drift tracking', () => {
+  const url = 'https://thumbgate.ai/policies/standard-v1';
+  
+  // 1. First import
+  const doc1 = importDocument({
+    title: 'Standard Policy v1',
+    content: 'Rule: Never run unvetted npm scripts.',
+    sourceUrl: url,
+    sourceFormat: 'text',
+    feedbackDir: tmpFeedbackDir,
+  });
+  
+  assert.equal(doc1.duplicate, undefined);
+  assert.equal(doc1.updated, undefined);
+  
+  // 2. Second import of the identical URL and content (Deduplication)
+  const doc2 = importDocument({
+    title: 'Standard Policy v1',
+    content: 'Rule: Never run unvetted npm scripts.',
+    sourceUrl: url,
+    sourceFormat: 'text',
+    feedbackDir: tmpFeedbackDir,
+  });
+  
+  assert.equal(doc2.duplicate, true);
+  assert.equal(doc2.updated, false);
+  assert.equal(doc2.dedupReason, 'url-and-content-unchanged');
+  
+  // 3. Import of identical content but DIFFERENT URL (Content deduplication)
+  const doc3 = importDocument({
+    title: 'Standard Policy v1',
+    content: 'Rule: Never run unvetted npm scripts.',
+    sourceUrl: 'https://mirror.thumbgate.ai/policies/standard-v1',
+    sourceFormat: 'text',
+    feedbackDir: tmpFeedbackDir,
+  });
+  
+  assert.equal(doc3.duplicate, true);
+  assert.equal(doc3.updated, false);
+  assert.equal(doc3.dedupReason, 'content-identical');
+  
+  // 4. Import of same URL but EVOLVED content (RAG Drift)
+  const doc4 = importDocument({
+    title: 'Standard Policy v1',
+    content: 'Rule: Never run unvetted npm scripts. Rule: Use pnpm whenever possible.',
+    sourceUrl: url,
+    sourceFormat: 'text',
+    feedbackDir: tmpFeedbackDir,
+  });
+  
+  assert.equal(doc4.duplicate, undefined);
+  assert.equal(doc4.updated, true);
+  assert.equal(doc4.dedupReason, 'url-content-updated');
+  assert.equal(doc4.previousDocumentId, doc1.documentId);
+  assert.equal(doc4.previousFingerprint, doc1.fingerprint);
+  
+  // 5. Verify the catalog only lists the newest version of the URL
+  const listed = listImportedDocuments({
+    feedbackDir: tmpFeedbackDir,
+    query: 'Standard Policy',
+  });
+  
+  const urlDocs = listed.documents.filter(doc => doc.sourceUrl === url);
+  assert.equal(urlDocs.length, 1);
+  assert.equal(urlDocs[0].documentId, doc4.documentId);
+});
+
