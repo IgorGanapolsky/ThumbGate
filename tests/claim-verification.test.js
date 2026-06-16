@@ -172,6 +172,37 @@ test('verifyClaimEvidence accepts GitHub About claims after metadata evidence is
   }
 });
 
+test('verifyClaimEvidence blocks commercial-data claims without source-of-truth evidence', () => {
+  const backups = backupRuntimeState();
+  try {
+    resetRuntimeState();
+    const result = verifyClaimEvidence('The sales tax calculation is correct and the checkout charge is fixed');
+    assert.equal(result.verified, false);
+    const commercialCheck = result.checks.find((check) => check.missing.includes('commercial_truth_verified'));
+    assert.ok(commercialCheck);
+    assert.equal(commercialCheck.passed, false);
+    assert.match(commercialCheck.message, /commercial-data fact/);
+  } finally {
+    restoreRuntimeState(backups);
+  }
+});
+
+test('verifyClaimEvidence accepts commercial-data claims after source-of-truth evidence is tracked', () => {
+  const backups = backupRuntimeState();
+  try {
+    resetRuntimeState();
+    trackAction('commercial_truth_verified', {
+      source: 'Stripe API checkout session readback plus app config grep',
+    });
+    const result = verifyClaimEvidence('The checkout charge is verified and the invoice total matches');
+    assert.equal(result.verified, true);
+    assert.equal(result.checks.length, 1);
+    assert.equal(result.checks[0].passed, true);
+  } finally {
+    restoreRuntimeState(backups);
+  }
+});
+
 test('verifyClaimEvidence ignores non-matching claims', () => {
   const backups = backupRuntimeState();
   try {
@@ -192,4 +223,5 @@ test('default claim verification config ships expected gates', () => {
   assert.ok(patterns.some((pattern) => pattern.includes('ready to merge')));
   assert.ok(patterns.some((pattern) => pattern.includes('verified on device')));
   assert.ok(patterns.some((pattern) => pattern.includes('github|repo|repository')));
+  assert.ok(patterns.some((pattern) => pattern.includes('sales tax')));
 });
