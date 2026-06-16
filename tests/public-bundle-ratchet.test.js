@@ -85,7 +85,9 @@ const path = require('node:path');
 // 315 → 316: 2026-06-11 scripts/sync-telemetry-from-prod.js added.
 // 316 → 317: 2026-06-11 scripts/tool-contract-validator.js added.
 // 317 → 321: 2026-06-11 Letta adapter, async-eval-observability, eval-rag, agent-memory-lifecycle, and stripe-checkout-diagnostic added.
-const BASELINE_FILE_COUNT = 321;
+// 321 → 324: 2026-06-16 Guardian/Ethicore policy-engine adapter and
+// commercial-truth claim gate added as public runtime enforcement.
+const BASELINE_FILE_COUNT = 324;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
