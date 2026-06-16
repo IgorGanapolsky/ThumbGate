@@ -46,6 +46,8 @@ test('findClaim matches "is live" / "deployed" / "fixed" wording', () => {
   assert.ok(findClaim('Production-ready.'));
   assert.ok(findClaim('GitHub About metadata has been updated and verified.'));
   assert.ok(findClaim('The topics now match the GitHub repository metadata.'));
+  assert.ok(findClaim('The sales tax calculation is correct and checkout charge is verified.'));
+  assert.ok(findClaim('Customer-facing permissions are fixed.'));
 });
 
 test('findClaim ignores benign phrasing', () => {
@@ -88,6 +90,28 @@ test('hook emits reminder for GitHub metadata verification claim with no proof',
   const { stdout } = runHook(transcript);
   assert.match(stdout, /anti-claim gate/i);
   assert.match(stdout, /GitHub About metadata/i);
+});
+
+test('hook emits reminder for commercial truth claims with no proof', () => {
+  const transcript = writeTranscript({
+    content: [
+      { type: 'text', text: 'The sales tax calculation is correct and the checkout charge is verified.' },
+    ],
+  });
+  const { stdout } = runHook(transcript);
+  assert.match(stdout, /anti-claim gate/i);
+  assert.match(stdout, /commercial truth/i);
+});
+
+test('hook stays silent when commercial truth claim has Stripe proof in the same turn', () => {
+  const transcript = writeTranscript({
+    content: [
+      { type: 'text', text: 'The checkout charge is verified.' },
+      { type: 'tool_use', name: 'Bash', input: { command: 'stripe checkout sessions retrieve cs_test_123' } },
+    ],
+  });
+  const { stdout } = runHook(transcript);
+  assert.equal(stdout.trim(), '');
 });
 
 test('hook stays silent when GitHub metadata claim has gh api proof in the same turn', () => {
