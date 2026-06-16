@@ -48,7 +48,6 @@ const CLAIM_PATTERNS = [
   // asserted without proof and slipped past the original set. The proof-gate
   // below suppresses them whenever the SAME turn ran a verification tool, so a
   // "verified" claim backed by a test/curl/Read stays silent.
-  /\ball\s+(?:the\s+)?(?:tests?\s+|checks?\s+)?(?:are\s+)?green\b/i,
   /\b(?:all\s+)?(?:tests?|checks?|ci)\s+(?:are\s+)?(?:now\s+)?passing\b/i,
   /\ball\s+(?:tests?|checks?)\s+pass(?:ed)?\b/i,
   /\bverified\b/i,
@@ -76,9 +75,82 @@ const PROOF_PATTERNS = [
   /\bpytest\b/,
   /\bplaywright\b/,
   /\bgrep\b/,
+  /\bstripe\b/,
+  /\bplaid\b/,
+  /\bshopify\b/,
+  /\bsquare\b/,
+  /\bquickbooks\b/,
   /Read\s*\(/, // Claude Code Read tool call
   /Bash\s*\(/, // Claude Code Bash tool call
 ];
+
+const COMMERCIAL_CLAIM_SUBJECTS = [
+  'money',
+  'payment',
+  'charge',
+  'checkout',
+  'revenue',
+  'price',
+  'pricing',
+  'invoice',
+  'billing',
+  'tax',
+  'sales tax',
+  'inventory',
+  'stock',
+  'permission',
+  'access',
+  'customer facing',
+];
+
+const COMMERCIAL_CLAIM_STATES = [
+  'correct',
+  'accurate',
+  'verified',
+  'valid',
+  'matches',
+  'working',
+  'fixed',
+  'resolved',
+  'calculated',
+  'configured',
+];
+
+const GREEN_CLAIM_PHRASES = [
+  'all green',
+  'all tests green',
+  'all checks green',
+  'all the tests green',
+  'all the checks green',
+  'all tests are green',
+  'all checks are green',
+];
+
+function normalizeClaimText(text) {
+  return String(text || '')
+    .toLowerCase()
+    .replace(/[-_]+/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function containsPhrase(normalizedText, phrase) {
+  return ` ${normalizedText} `.includes(` ${phrase} `);
+}
+
+function findTokenListClaim(text, subjects, states, label) {
+  const normalized = normalizeClaimText(text);
+  if (!normalized) return null;
+  const subject = subjects.find((candidate) => containsPhrase(normalized, candidate));
+  const state = states.find((candidate) => containsPhrase(normalized, candidate));
+  return subject && state ? `${label}: ${subject} ${state}` : null;
+}
+
+function findGreenClaim(text) {
+  const normalized = normalizeClaimText(text);
+  return GREEN_CLAIM_PHRASES.find((phrase) => containsPhrase(normalized, phrase)) || null;
+}
 
 function readLastAssistantTurn(transcriptPath) {
   if (!transcriptPath || !fs.existsSync(transcriptPath)) return null;
@@ -133,6 +205,15 @@ function extractToolUseSummary(message) {
 }
 
 function findClaim(text) {
+  const commercialClaim = findTokenListClaim(
+    text,
+    COMMERCIAL_CLAIM_SUBJECTS,
+    COMMERCIAL_CLAIM_STATES,
+    'commercial truth',
+  );
+  if (commercialClaim) return commercialClaim;
+  const greenClaim = findGreenClaim(text);
+  if (greenClaim) return greenClaim;
   for (const p of CLAIM_PATTERNS) {
     const m = text.match(p);
     if (m) return m[0];
@@ -188,7 +269,8 @@ function main() {
     '⚠️ ThumbGate anti-claim gate: previous turn claimed completion',
     `   ("${claim}") without a proof tool call in the same message.`,
     '   Per CLAUDE.md anti-lying: never claim "done / live / deployed / fixed /',
-    '   verified / all green / stable" without curl / grep / test output in the SAME turn.',
+    '   verified / all green / stable" or commercial truth (money / tax / inventory /',
+    '   permissions / customer-facing state) without curl / grep / test / source-of-truth output in the SAME turn.',
     '   If the work really is verified, re-state the claim with the proof.',
     '   If not, retract and run the verification before re-asserting.',
   ].join('\n');

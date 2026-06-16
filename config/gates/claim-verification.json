@@ -30,6 +30,12 @@
       "requiredActions": ["github_metadata_verified"],
       "message": "You claimed GitHub repository metadata was updated or verified without source-of-truth evidence. Read it back with gh api/gh repo view and rendered HTML, then call track_action('github_metadata_verified').",
       "createdAt": 1780677400000
+    },
+    {
+      "pattern": "(money|payment|charge|checkout|revenue|price|pricing|invoice|billing|tax|sales tax|inventory|stock|permission|access|customer-facing|customer facing).*(correct|accurate|verified|valid|matches|working|fixed|resolved|calculated|configured)|(correct|accurate|verified|valid|matches|working|fixed|resolved|calculated|configured).*(money|payment|charge|checkout|revenue|price|pricing|invoice|billing|tax|sales tax|inventory|stock|permission|access|customer-facing|customer facing)",
+      "requiredActions": ["commercial_truth_verified"],
+      "message": "You claimed a commercial-data fact (money, tax, inventory, permissions, or customer-facing state) without external source-of-truth evidence. Read the authoritative system first, then call track_action('commercial_truth_verified').",
+      "createdAt": 1781640000000
     }
   ]
 }
