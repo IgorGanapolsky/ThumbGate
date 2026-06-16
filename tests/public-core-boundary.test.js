@@ -155,8 +155,10 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // Bumped 316 -> 317 (2026-06-11) to ship scripts/tool-contract-validator.js.
   // Bumped 317 -> 321 (2026-06-11) to ship Letta adapter, async-eval-observability,
   // eval-rag, agent-memory-lifecycle, and stripe-checkout-diagnostic.
+  // Bumped 321 -> 324 (2026-06-16) to ship the Guardian/Ethicore policy-engine
+  // adapter and commercial-truth claim gate as public-shell enforcement.
   const files = npmPackFiles();
-  const CEILING = 321;
+  const CEILING = 324;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

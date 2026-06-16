@@ -43,6 +43,8 @@ const CLAIM_PATTERNS = [
   /\beverything\s+(?:is\s+)?(?:done|working|ready)\b/i,
   /\b(?:github|repo|repository)\s+(?:about|metadata|description|topics?)\b.*\b(?:updated|verified|fixed|match(?:es|ed)?)\b/i,
   /\b(?:about|metadata|description|topics?)\b.*\b(?:updated|verified|fixed|match(?:es|ed)?)\b.*\b(?:github|repo|repository)\b/i,
+  /\b(?:money|payment|charge|checkout|revenue|price|pricing|invoice|billing|tax|sales tax|inventory|stock|permission|access|customer[-\s]facing)\b.*\b(?:correct|accurate|verified|valid|matches|working|fixed|resolved|calculated|configured)\b/i,
+  /\b(?:correct|accurate|verified|valid|matches|working|fixed|resolved|calculated|configured)\b.*\b(?:money|payment|charge|checkout|revenue|price|pricing|invoice|billing|tax|sales tax|inventory|stock|permission|access|customer[-\s]facing)\b/i,
   // Added 2026-06-11 after a cross-project failure analysis: these completion
   // claims ("all green / stable / verified / race over / tests pass") were
   // asserted without proof and slipped past the original set. The proof-gate
@@ -76,6 +78,11 @@ const PROOF_PATTERNS = [
   /\bpytest\b/,
   /\bplaywright\b/,
   /\bgrep\b/,
+  /\bstripe\b/,
+  /\bplaid\b/,
+  /\bshopify\b/,
+  /\bsquare\b/,
+  /\bquickbooks\b/,
   /Read\s*\(/, // Claude Code Read tool call
   /Bash\s*\(/, // Claude Code Bash tool call
 ];
@@ -188,7 +195,8 @@ function main() {
     '⚠️ ThumbGate anti-claim gate: previous turn claimed completion',
     `   ("${claim}") without a proof tool call in the same message.`,
     '   Per CLAUDE.md anti-lying: never claim "done / live / deployed / fixed /',
-    '   verified / all green / stable" without curl / grep / test output in the SAME turn.',
+    '   verified / all green / stable" or commercial truth (money / tax / inventory /',
+    '   permissions / customer-facing state) without curl / grep / test / source-of-truth output in the SAME turn.',
     '   If the work really is verified, re-state the claim with the proof.',
     '   If not, retract and run the verification before re-asserting.',
   ].join('\n');

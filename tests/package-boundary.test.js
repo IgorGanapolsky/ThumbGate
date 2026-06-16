@@ -323,9 +323,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 316 -> 317 (2026-06-11) to ship scripts/tool-contract-validator.js.
   // Bumped 317 -> 321 (2026-06-11) to ship Letta adapter, async-eval-observability,
   // eval-rag, agent-memory-lifecycle, and stripe-checkout-diagnostic.
+  // Bumped 321 -> 324 (2026-06-16) to ship the Guardian/Ethicore policy-engine
+  // adapter and commercial-truth claim gate as public runtime enforcement.
   assert.ok(
-    manifest.fileCount <= 321,
-    `npm package should stay <= 321 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 324,
+    `npm package should stay <= 324 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
