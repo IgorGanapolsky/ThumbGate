@@ -6,7 +6,6 @@
 > The following rules were automatically derived from execution failures and thumbs-down feedback.
 > You MUST follow these constraints strictly to prevent repeated errors.
 
-- **Rule [auto-account-state-diagnostic-first-entity-funnel-no-sp]**: Auto-promoted repeated pattern: "2026-05-15 session: claimed for hours that KYC on acct_1TWIXn73 was blocking 0/1000 checkout completions on ThumbGate St" (1 occurrences in 30 days)
 - **Rule [auto-diagnosis-tool-output-misread]**: Auto-promoted repeated diagnosis: "CEO thumbs-down on dashboard chat session — repeated overclaiming + multi-iteration fix cycle. CEO showed screenshot of " (7 occurrences in 30 days)
 - **Rule [auto-critical-path-cto-discipline-entity-revenue-merge-]**: Auto-promoted repeated pattern: "CTO got lost spinning on PR merge mechanics for 2 hours while $0 revenue stayed at $0. Critical-path discipline failed." (1 occurrences in 30 days)
 - **Rule [auto-connect-vs-standard-overconfidence-stripe-api-veri]**: Auto-promoted repeated pattern: "Wrote stripe-branding-apply.js + workflow claiming the CEO didn't need 2FA Dashboard access. Real Stripe API error: 'You" (1 occurrences in 30 days)
@@ -48,3 +47,4 @@
 - **Rule [auto-chat-multi-pr-churn-overclaiming-user-visible-corr]**: Auto-promoted repeated pattern: "CEO thumbs-down on dashboard chat session — repeated overclaiming + multi-iteration fix cycle. CEO showed screenshot of " (1 occurrences in 30 days)
 - **Rule [auto-evidence-first-keys-never-ask-user-recurring-reven]**: Auto-promoted repeated pattern: "Told CEO STRIPE_SECRET_KEY was absent and asked them to set it; only checked interactive shell $VAR, not .env or the ~/." (1 occurrences in 30 days)
 - **Rule [auto-ci-cd-deployment-entity-funnel-marketplace]**: Auto-promoted repeated pattern: "Missing credentials skipped the marketplace publish step during the release pipeline, leading to a stale extension listi" (1 occurrences in 30 days)
+- **Rule [auto-autonomy-entity-customer-revenue-social-thumbgate]**: Auto-promoted repeated pattern: "User thumbs-down during ThumbGate content publishing task: I prepared drafts and stopped before posting, then over-trust" (1 occurrences in 30 days)
