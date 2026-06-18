@@ -6,8 +6,6 @@
 > The following rules were automatically derived from execution failures and thumbs-down feedback.
 > You MUST follow these constraints strictly to prevent repeated errors.
 
-- **Rule [auto-critical-path-cto-discipline-entity-revenue-merge-]**: Auto-promoted repeated pattern: "CTO got lost spinning on PR merge mechanics for 2 hours while $0 revenue stayed at $0. Critical-path discipline failed." (1 occurrences in 30 days)
-- **Rule [auto-connect-vs-standard-overconfidence-stripe-api-veri]**: Auto-promoted repeated pattern: "Wrote stripe-branding-apply.js + workflow claiming the CEO didn't need 2FA Dashboard access. Real Stripe API error: 'You" (1 occurrences in 30 days)
 - **Rule [auto-cto-discipline-defeatist-wait-entity-customer-proa]**: Auto-promoted repeated pattern: "Said 'no more code from me unless something breaks' while sitting on a merge watcher. User had explicitly said 'continue" (1 occurrences in 30 days)
 - **Rule [auto-autonomy-ceo-cto-contract-entity-customer-entity-r]**: Auto-promoted repeated pattern: "Strict revenue assessment delivered honest diagnosis but stopped at recommendations; user expected autonomous fixes" (1 occurrences in 30 days)
 - **Rule [auto-email-outreach-trust]**: Auto-promoted repeated pattern: "Tried to force-send email to Luca via Resend after CEO already sent it manually" (1 occurrences in 30 days)
@@ -48,3 +46,5 @@
 - **Rule [auto-ci-cd-deployment-entity-funnel-marketplace]**: Auto-promoted repeated pattern: "Missing credentials skipped the marketplace publish step during the release pipeline, leading to a stale extension listi" (1 occurrences in 30 days)
 - **Rule [auto-autonomy-entity-customer-revenue-social-thumbgate]**: Auto-promoted repeated pattern: "User thumbs-down during ThumbGate content publishing task: I prepared drafts and stopped before posting, then over-trust" (1 occurrences in 30 days)
 - **Rule [auto-computer-use-entity-customer-permanent-rule-revenu]**: Auto-promoted repeated pattern: "User explicitly set permanent rule: never pay for or depend on Zernio; post everywhere manually using Computer Use/brows" (1 occurrences in 30 days)
+- **Rule [auto-diagnosis-tool-output-misread]**: Auto-promoted repeated diagnosis: "CEO thumbs-down on dashboard chat session — repeated overclaiming + multi-iteration fix cycle. CEO showed screenshot of " (6 occurrences in 30 days)
+- **Rule [auto-effectiveness-entity-customer-prevention-gap-socia]**: Auto-promoted repeated pattern: "User asks if ThumbGate is actually preventing repeated assistant stupidity after many thumbs-downs." (1 occurrences in 30 days)
