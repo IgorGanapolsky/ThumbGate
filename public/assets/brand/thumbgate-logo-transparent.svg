@@ -13,17 +13,14 @@
   <g filter="url(#tg-logo-transparent-glow)">
     <rect x="66" y="66" width="228" height="228" rx="54" fill="#061015" fill-opacity="0.78"/>
     <g transform="translate(66, 66) scale(3.5625)">
-      <!-- Outer Gate Frame (Transparent background) -->
-      <rect x="9" y="9" width="46" height="46" rx="12" fill="none" stroke="url(#tg-logo-transparent-frame)" stroke-width="3"/>
-      
-      <!-- Gate Arch -->
-      <path d="M19 44V25c0-5.5 4.5-10 10-10h6c5.5 0 10 4.5 10 10v19" fill="none" stroke="#8cf5d1" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
-      
-      <!-- TG Monogram -->
-      <text x="32" y="39" text-anchor="middle" fill="#e7fbff" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Arial, sans-serif" font-size="19" font-weight="900">TG</text>
-      
-      <!-- Bottom Bar -->
-      <rect x="18" y="44" width="28" height="4" rx="2" fill="#22d3ee"/>
+      <!-- Outer Shield / Gate -->
+      <path d="M32 9 C20 13 15 20 15 33 C15 45 26 53 32 56 C38 53 49 45 49 33 C49 20 44 13 32 9 Z" 
+            fill="#0b1820" stroke="url(#tg-logo-transparent-frame)" stroke-width="3.5" stroke-linejoin="round"/>
+            
+      <!-- Proportional Thumbs Up -->
+      <g transform="translate(19, 17) scale(1.1)" stroke="#8cf5d1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+      </g>
     </g>
   </g>
   <text x="340" y="178" fill="#f4fdff" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Arial, sans-serif" font-size="82" font-weight="900">ThumbGate</text>
