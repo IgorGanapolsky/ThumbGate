@@ -7,7 +7,7 @@ const repoRoot = path.join(__dirname, '..');
 // App-icon style mark (full-canvas dark rounded tile) — correct for apple-touch-icon / PWA manifest / OG
 const markPath = path.join(repoRoot, 'public', 'assets', 'brand', 'thumbgate-mark.svg');
 // Transparent full-bleed mark — correct for site-header inline use next to the wordmark
-const inlineMarkPath = path.join(repoRoot, 'public', 'assets', 'brand', 'thumbgate-mark-inline-v3.svg');
+const inlineMarkPath = path.join(repoRoot, 'public', 'assets', 'brand', 'thumbgate-mark-inline-v4.svg');
 const faviconPngPath = path.join(repoRoot, 'public', 'thumbgate-icon.png');
 const canonicalGptIconPath = path.join(repoRoot, 'public', 'assets', 'brand', 'thumbgate-icon-512.png');
 const ogPngPath = path.join(repoRoot, 'public', 'og.png');
@@ -26,13 +26,13 @@ test('ThumbGate inline mark SVG exists with transparent backdrop for header use'
   assert.equal(
     fs.existsSync(inlineMarkPath),
     true,
-    'public/assets/brand/thumbgate-mark-inline-v3.svg must exist for header use',
+    'public/assets/brand/thumbgate-mark-inline-v4.svg must exist for header use',
   );
   const svg = fs.readFileSync(inlineMarkPath, 'utf8');
   assert.match(svg, /<svg/);
   assert.match(svg, /viewBox="0 0 \d+ \d+"/);
-  assert.match(svg, /stroke="#8cf5d1"/, 'inline mark must stroke with standard color');
-  assert.match(svg, /premium shield and thumbs-up mark/, 'inline mark accessible description should name the premium shield and thumbs-up');
+  assert.match(svg, />TG</, 'inline mark must render the TG monogram in header-sized contexts');
+  assert.match(svg, /TG gate monogram/, 'inline mark accessible description should name the TG gate monogram');
   assert.match(svg, /<\/svg>/);
   assert.doesNotMatch(svg, /gate-and-signal|signal sweep|Status LEDs/i);
   // Guard: inline mark must NOT contain a full-canvas opaque rounded-rect tile. That tile
@@ -111,7 +111,7 @@ test('landing page header uses the inline (transparent) mark, not the app-icon t
   // which renders as a tiny iOS-launcher icon when sized down to header proportions.
   assert.match(
     indexHtml,
-    /<a[^>]*class="nav-logo"[^>]*>\s*<img[^>]*src="\/assets\/brand\/thumbgate-mark-inline-v3\.svg"/,
+    /<a[^>]*class="nav-logo"[^>]*>\s*<img[^>]*src="\/assets\/brand\/thumbgate-mark-inline-v4\.svg"/,
   );
   assert.match(indexHtml, /<span class="logo-text">ThumbGate<\/span>/);
   // Favicon link tag points at the PNG that actually resolves (not /favicon.svg which 401s)
@@ -128,7 +128,7 @@ test('landing page header uses the inline (transparent) mark, not the app-icon t
   assert.doesNotMatch(
     indexHtml,
     /class="nav-logo"[^>]*>\s*<img[^>]*src="\/assets\/brand\/thumbgate-mark\.svg"/,
-    'header must use thumbgate-mark-inline-v3.svg; the app-icon thumbgate-mark.svg renders as a tiny tile inline',
+    'header must use thumbgate-mark-inline-v4.svg; the app-icon thumbgate-mark.svg renders as a tiny tile inline',
   );
 });
 
@@ -148,8 +148,8 @@ test('dashboard, lessons, pro, and learn pages use the inline mark in their head
     const html = fs.readFileSync(path.join(repoRoot, relPath), 'utf8');
     assert.match(
       html,
-      /src="\/assets\/brand\/thumbgate-mark-inline-v3\.svg"/,
-      `${relPath} header must reference /assets/brand/thumbgate-mark-inline-v3.svg`,
+      /src="\/assets\/brand\/thumbgate-mark-inline-v4\.svg"/,
+      `${relPath} header must reference /assets/brand/thumbgate-mark-inline-v4.svg`,
     );
     assert.doesNotMatch(
       html,
@@ -175,7 +175,7 @@ test('checkout success (Context Gateway Activated) page renders the inline mark 
   // The renderCheckoutSuccessPage body includes a brand-header anchor with the inline SVG mark.
   assert.match(
     server,
-    /class="brand-header"[^>]*>\s*<img[^>]*src="\/assets\/brand\/thumbgate-mark-inline-v3\.svg"/,
+    /class="brand-header"[^>]*>\s*<img[^>]*src="\/assets\/brand\/thumbgate-mark-inline-v4\.svg"/,
   );
   // The legacy /brand/ path must not be referenced — it 401s on Railway
   assert.doesNotMatch(server, /src="\/brand\/thumbgate-mark\.svg"/);
@@ -185,7 +185,7 @@ test('checkout success (Context Gateway Activated) page renders the inline mark 
   assert.doesNotMatch(
     server,
     /class="brand-header"[^>]*>\s*<img[^>]*src="\/assets\/brand\/thumbgate-mark\.svg"/,
-    'success page header must use thumbgate-mark-inline-v3.svg, not the app-icon tile variant',
+    'success page header must use thumbgate-mark-inline-v4.svg, not the app-icon tile variant',
   );
 });
 
@@ -193,7 +193,7 @@ test('SEO-GSD generated page template uses the inline mark, not the app-icon til
   const seoGsd = fs.readFileSync(path.join(repoRoot, 'scripts', 'seo-gsd.js'), 'utf8');
   assert.match(
     seoGsd,
-    /class="brand"[^>]*>\s*<img[^>]*src="\/assets\/brand\/thumbgate-mark-inline-v3\.svg"/,
+    /class="brand"[^>]*>\s*<img[^>]*src="\/assets\/brand\/thumbgate-mark-inline-v4\.svg"/,
   );
   assert.doesNotMatch(seoGsd, /src="\/brand\/thumbgate-mark\.svg"/);
   assert.doesNotMatch(seoGsd, /class="brand"[^>]*>👍👎 ThumbGate/);

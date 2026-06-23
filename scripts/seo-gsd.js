@@ -3917,7 +3917,7 @@ ${renderWebPageJsonLd(page, { appOrigin })}
 <body>
   <div class="topbar">
     <div class="container">
-      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline-v4.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
       <a href="${escapeHtml(PRODUCT.verificationUrl)}" target="_blank" rel="noopener">Verification evidence</a>
     </div>
   </div>
