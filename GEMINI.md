@@ -22,3 +22,4 @@ Key: Always dogfood the latest local changes before publishing.
 
 - **Rule [auto-promoted-mqqu2a7f-0]**: NEVER repeated problem context string
 - **Rule [auto-manual-ingest-markdown-migration]**: Auto-promoted repeated pattern: "MISTAKE: This is a test failure" (1 occurrences in 30 days)
+- **Rule [auto-promoted-mqqw7vn3-0]**: NEVER MISTAKE: This is a test failure
