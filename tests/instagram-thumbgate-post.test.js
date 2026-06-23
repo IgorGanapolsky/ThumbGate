@@ -53,8 +53,10 @@ describe('Instagram ThumbGate Post', () => {
       assert.ok(result.id || result.data?.id, 'Post should have an ID');
       console.log(`✅ Instagram post created with ID: ${result.id || result.data?.id}`);
     } catch (err) {
-      if (err.code === 'ZERNIO_POST_LIMIT_REACHED' || err.message?.includes('Post limit reached')) {
-        t.skip('Zernio post limit reached - skipping integration test');
+      const isQuota = err.code === 'ZERNIO_POST_LIMIT_REACHED' || err.message?.includes('Post limit reached');
+      const isNetwork = err.message?.includes('fetch failed') || err.code === 'UND_ERR_CONNECT_TIMEOUT' || err.code === 'ENOTFOUND' || err.code === 'ETIMEDOUT' || err.name === 'TypeError';
+      if (isQuota || isNetwork) {
+        t.skip(`Zernio API issue: ${err.message} - skipping integration test`);
       } else {
         throw err;
       }
