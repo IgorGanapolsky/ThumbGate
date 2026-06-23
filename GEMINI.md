@@ -25,7 +25,7 @@ Key: Always dogfood the latest local changes before publishing.
 - **Rule [auto-setup-vertex-dry-run-was-accepted-but-ignored-it-e]**: Auto-promoted repeated pattern: "setup-vertex --dry-run was accepted but ignored; it enabled Vertex AI and wrote .env. Dry-run flags must never mutate cl" (1 occurrences in 30 days)
 - **Rule [auto-autonomy-babysitting-entity-customer-overclaiming-]**: Auto-promoted repeated pattern: "Acting as autonomous CEO/CTO, the user had to say 'are you sure?' ~8 times in one session, each catching a real error, t" (1 occurrences in 30 days)
 - **Rule [auto-pr-hygiene-session-directive-thumbgate-hooks-workt]**: Auto-promoted repeated pattern: "PR hygiene cleanup exposed stale local hook.thumbgate command paths pointing at a removed temp worktree; remote branch d" (1 occurrences in 30 days)
-- **Rule [auto-rest-fallback]**: Auto-promoted repeated pattern: "stdin test" (52 occurrences in 30 days)
+- **Rule [auto-rest-fallback]**: Auto-promoted repeated pattern: "stdin test" (53 occurrences in 30 days)
 - **Rule [auto-chat-gemini-pivot-ollama-overclaim-session-feedbac]**: Auto-promoted repeated pattern: "Claude Code session 2026-06-04 — chat OSS pivot" (1 occurrences in 30 days)
 - **Rule [auto-cli-telemetry-test]**: Auto-promoted repeated pattern: "verifies fetch fires when telemetry enabled" (3 occurrences in 30 days)
 - **Rule [auto-gsd-verify]**: Auto-promoted repeated pattern: "GSD verify ping" (1 occurrences in 30 days)
