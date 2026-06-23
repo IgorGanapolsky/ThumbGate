@@ -842,7 +842,7 @@
     "@changesets/cli": "^2.31.0",
     "@playwright/test": "^1.60.0",
     "c8": "^11.0.0",
-    "undici": "^8.2.0"
+    "undici": "^8.5.0"
   },
   "hotfix": "gate-check-bypass-2026-06-03"
 }
