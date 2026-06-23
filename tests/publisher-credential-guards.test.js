@@ -54,3 +54,41 @@ test('X publisher requires text', async () => {
     /text is required/
   );
 });
+
+test('Hashnode publishes successfully when credentials and mock response are present', async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (url, options) => {
+      assert.equal(url, 'https://gql.hashnode.com');
+      assert.equal(options.headers.Authorization, 'mock-token');
+      return {
+        ok: true,
+        text: async () => JSON.stringify({
+          data: {
+            publishPost: {
+              post: {
+                id: '123',
+                slug: 'my-post',
+                url: 'https://hashnode.com/my-post'
+              }
+            }
+          }
+        })
+      };
+    };
+
+    const post = await hashnode.publishArticle({
+      title: 'Hello',
+      contentMarkdown: 'World',
+      env: {
+        HASHNODE_TOKEN: 'mock-token',
+        HASHNODE_PUBLICATION_ID: 'mock-pub-id'
+      }
+    });
+
+    assert.equal(post.id, '123');
+    assert.equal(post.url, 'https://hashnode.com/my-post');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

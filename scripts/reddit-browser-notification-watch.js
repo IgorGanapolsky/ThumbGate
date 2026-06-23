@@ -158,11 +158,11 @@ async function readRedditNotifications({
   }
 }
 
-async function run({ dryRun = false, now = new Date().toISOString() } = {}) {
+async function run({ dryRun = false, now = new Date().toISOString(), readNotifications = readRedditNotifications } = {}) {
   const stateFile = resolveRuntimeFile('THUMBGATE_REDDIT_BROWSER_STATE_FILE', DEFAULT_STATE_FILE);
   const eventsFile = resolveRuntimeFile('THUMBGATE_REDDIT_BROWSER_EVENTS_FILE', DEFAULT_EVENTS_FILE);
   const state = loadJson(stateFile, { seen: {} });
-  const notifications = await readRedditNotifications();
+  const notifications = await readNotifications();
   const fresh = notifications.filter((notification) => !state.seen[notification.fingerprint]);
   const actionable = fresh.filter((notification) => notification.score > 0 && isRecentNotification(notification));
   const rows = actionable.map((notification) => ({
