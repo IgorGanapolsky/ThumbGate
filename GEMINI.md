@@ -20,8 +20,7 @@ Key: Always dogfood the latest local changes before publishing.
 > The following rules were automatically derived from execution failures and thumbs-down feedback.
 > You MUST follow these constraints strictly to prevent repeated errors.
 
-- **Rule [auto-dogfood-enterprise-roadmap-entity-customer-truthfu]**: Auto-promoted repeated pattern: "User pushed back that saying we can sell GCP/Dialogflow enterprise guardrails is premature because ThumbGate has no buil" (1 occurrences in 30 days)
-- **Rule [auto-diagnosis-tool-output-misread]**: Auto-promoted repeated diagnosis: "CEO thumbs-down on dashboard chat session — repeated overclaiming + multi-iteration fix cycle. CEO showed screenshot of " (3 occurrences in 30 days)
+- **Rule [auto-diagnosis-tool-output-misread]**: Auto-promoted repeated diagnosis: "User reported ThumbGate landing logo still tiny/compressed on live thumbgate.ai after prior claimed fix" (4 occurrences in 30 days)
 - **Rule [auto-setup-vertex-dry-run-was-accepted-but-ignored-it-e]**: Auto-promoted repeated pattern: "setup-vertex --dry-run was accepted but ignored; it enabled Vertex AI and wrote .env. Dry-run flags must never mutate cl" (1 occurrences in 30 days)
 - **Rule [auto-autonomy-babysitting-entity-customer-overclaiming-]**: Auto-promoted repeated pattern: "Acting as autonomous CEO/CTO, the user had to say 'are you sure?' ~8 times in one session, each catching a real error, t" (1 occurrences in 30 days)
 - **Rule [auto-pr-hygiene-session-directive-thumbgate-hooks-workt]**: Auto-promoted repeated pattern: "PR hygiene cleanup exposed stale local hook.thumbgate command paths pointing at a removed temp worktree; remote branch d" (1 occurrences in 30 days)
@@ -46,3 +45,4 @@ Key: Always dogfood the latest local changes before publishing.
 - **Rule [auto-automation-entity-customer-medium-permanent-rule-p]**: Auto-promoted repeated pattern: "User asks why Medium was not automated and why they have to remind me daily." (1 occurrences in 30 days)
 - **Rule [auto-claim-verification-entity-customer-entity-funnel-p]**: Auto-promoted repeated pattern: "Payment stack answer overfit to creating a missing Diagnostic checkout and failed to answer Stripe alternatives directly" (1 occurrences in 30 days)
 - **Rule [auto-email-entity-revenue-gatekeeper-revenue-operator-s]**: Auto-promoted repeated pattern: "Revenue Operator Gatekeeper follow-up" (1 occurrences in 30 days)
+- **Rule [auto-brand-entity-customer-logo-production-verification]**: Auto-promoted repeated pattern: "User reported ThumbGate landing logo still tiny/compressed on live thumbgate.ai after prior claimed fix" (1 occurrences in 30 days)
