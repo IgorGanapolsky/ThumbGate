@@ -127,6 +127,18 @@ function validateFeedbackMemory(memory) {
     }
   }
 
+  if (memory.riskCategories != null) {
+    if (!Array.isArray(memory.riskCategories) || memory.riskCategories.some((c) => typeof c !== 'string')) {
+      issues.push('riskCategories: must be an array of strings');
+    }
+  }
+  if (memory.isEdgeCase != null && typeof memory.isEdgeCase !== 'boolean') {
+    issues.push('isEdgeCase: must be a boolean');
+  }
+  if (memory.rationale != null && typeof memory.rationale !== 'string') {
+    issues.push('rationale: must be a string');
+  }
+
   return { valid: issues.length === 0, issues };
 }
 
@@ -163,6 +175,9 @@ function resolveFeedbackAction(params) {
     visualEvidence,
     tags,
     rubricEvaluation,
+    riskCategories,
+    isEdgeCase,
+    rationale,
   } = params;
 
   if (!context && !whatWentWrong && !whatWorked) {
@@ -244,6 +259,9 @@ function resolveFeedbackAction(params) {
           observations: 1,
           lastUpdated: new Date().toISOString(),
         },
+        riskCategories: riskCategories || [],
+        isEdgeCase: !!isEdgeCase,
+        rationale: rationale || null,
       },
     };
   }
@@ -295,6 +313,9 @@ function resolveFeedbackAction(params) {
           observations: 1,
           lastUpdated: new Date().toISOString(),
         },
+        riskCategories: riskCategories || [],
+        isEdgeCase: !!isEdgeCase,
+        rationale: rationale || null,
       },
     };
   }
@@ -403,6 +424,30 @@ function runTests() {
     },
   });
   assert(blockedPositive.type === 'no-action', 'rubric gate blocks unsafe positive promotion');
+
+  // Red-teaming extension tests
+  const rtFeedback = resolveFeedbackAction({
+    signal: 'negative',
+    context: 'Discovered prompt injection bypass in check_operational_integrity',
+    whatWentWrong: 'Model allowed executing a destructive command via nested JSON properties',
+    whatToChange: 'Sanitize nested properties recursively',
+    tags: ['security', 'red-teaming'],
+    riskCategories: ['Data Exfiltration', 'Unapproved Execution'],
+    isEdgeCase: true,
+    rationale: 'The injection leverages a JSON nesting technique that bypassed standard flat checks.',
+  });
+  assert(rtFeedback.type === 'store-mistake', 'red-teaming feedback creates store-mistake action');
+  const rtPrep = prepareForStorage(rtFeedback.memory);
+  assert(rtPrep.ok, 'red-teaming store-mistake passes validation');
+  assert(rtPrep.memory.isEdgeCase === true, 'isEdgeCase boolean is preserved');
+  assert(rtPrep.memory.riskCategories.includes('Data Exfiltration'), 'riskCategories are preserved');
+  assert(rtPrep.memory.rationale.includes('JSON nesting'), 'rationale is preserved');
+
+  const badRtMemory = {
+    ...rtPrep.memory,
+    isEdgeCase: 'not-a-boolean',
+  };
+  assert(!validateFeedbackMemory(badRtMemory).valid, 'invalid isEdgeCase type fails validation');
 
   console.log(`\nResults: ${passed} passed, ${failed} failed\n`);
   process.exit(failed > 0 ? 1 : 0);

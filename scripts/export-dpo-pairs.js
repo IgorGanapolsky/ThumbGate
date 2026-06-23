@@ -161,6 +161,13 @@ function buildDpoPairs(errors, learnings, { maxDistractors = 2 } = {}) {
           learningTitle: best.memory.title,
           rubric: buildRubricDelta(err.memory, best.memory),
           distractorCount: distractors.length,
+          riskCategories: Array.from(new Set([
+            ...(err.memory.riskCategories || []),
+            ...(best.memory.riskCategories || []),
+          ])),
+          isEdgeCase: !!(err.memory.isEdgeCase || best.memory.isEdgeCase),
+          errorRationale: err.memory.rationale || null,
+          learningRationale: best.memory.rationale || null,
         },
       });
       usedErrors.add(err.memory.id);
@@ -290,6 +297,9 @@ function runTests() {
         failingCriteria: ['verification_evidence'],
         failingGuardrails: ['testsPassed'],
       },
+      riskCategories: ['Unapproved Execution'],
+      isEdgeCase: true,
+      rationale: 'Jailbreak via nested instructions.',
     },
     {
       id: 2,
@@ -312,6 +322,8 @@ function runTests() {
         failingCriteria: [],
         failingGuardrails: [],
       },
+      riskCategories: ['Safety Override Control'],
+      rationale: 'Strict verification protocol enforced.',
     },
   ];
 
@@ -326,6 +338,10 @@ function runTests() {
   const parsed = JSON.parse(jsonl.trim());
   assert(parsed.prompt.includes('verification'), 'inferred prompt includes shared domain');
   assert(parsed.metadata.rubric.weightedDelta > 0, 'rubric delta metadata is attached');
+  assert(parsed.metadata.isEdgeCase === true, 'isEdgeCase is correct in dpo metadata');
+  assert(parsed.metadata.riskCategories.includes('Unapproved Execution') && parsed.metadata.riskCategories.includes('Safety Override Control'), 'riskCategories are aggregated in dpo metadata');
+  assert(parsed.metadata.errorRationale === 'Jailbreak via nested instructions.', 'errorRationale is correct in dpo metadata');
+  assert(parsed.metadata.learningRationale === 'Strict verification protocol enforced.', 'learningRationale is correct in dpo metadata');
 
   console.log(`\nResults: ${passed} passed, ${failed} failed\n`);
   process.exit(failed > 0 ? 1 : 0);

@@ -1083,6 +1083,9 @@ function captureFeedback(params) {
     visualEvidence: params.visualEvidence,
     tags,
     rubricEvaluation,
+    riskCategories: params.riskCategories,
+    isEdgeCase: params.isEdgeCase,
+    rationale: params.rationale,
   });
 
   // Tool-call attribution: link feedback to specific action (#203)
@@ -1108,6 +1111,9 @@ function captureFeedback(params) {
     whatWorked,
     reasoning: params.reasoning || null,
     visualEvidence: params.visualEvidence || null,
+    riskCategories: params.riskCategories || [],
+    isEdgeCase: !!params.isEdgeCase,
+    rationale: params.rationale || null,
     conversationWindow: Array.isArray(distillation.conversationWindow) && distillation.conversationWindow.length > 0 ? distillation.conversationWindow : null,
     distillation: distillation.usedHistory
       ? {

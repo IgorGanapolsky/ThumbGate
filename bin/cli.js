@@ -1196,6 +1196,16 @@ function capture() {
     whatToChange = `avoid: ${context}`;
   }
 
+  // Red-teaming properties parsing
+  const riskCategories = args['risk-categories'] || args['risk-category']
+    ? String(args['risk-categories'] || args['risk-category'])
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean)
+    : [];
+  const isEdgeCase = args['edge-case'] === true || args['edge-case'] === 'true' || args['is-edge-case'] === true || args['is-edge-case'] === 'true';
+  const rationale = args.rationale || '';
+
   const result = captureFeedback({
     signal: normalized,
     context: context,
@@ -1204,6 +1214,9 @@ function capture() {
     whatWorked: args['what-worked'],
     tags: args.tags,
     gateAction: gateAction || undefined,
+    riskCategories,
+    isEdgeCase,
+    rationale: rationale || undefined,
   });
 
   if (result.accepted) {

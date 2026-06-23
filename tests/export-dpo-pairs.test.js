@@ -105,4 +105,38 @@ describe('buildDpoPairs with distractors', () => {
     assert.ok(result.pairs.length >= 1, 'should still produce pairs');
     // With only one error, no distractors possible (it's the paired one)
   });
+
+  it('includes red-teaming fields in pair metadata', () => {
+    const errorWithRt = [
+      {
+        id: 1,
+        title: 'MISTAKE: Prompt injection bypass',
+        content: 'destructive script execution',
+        category: 'error',
+        tags: ['security'],
+        riskCategories: ['Unapproved Execution'],
+        isEdgeCase: true,
+        rationale: 'Injection via system instruction override.'
+      }
+    ];
+    const learningWithRt = [
+      {
+        id: 10,
+        title: 'SUCCESS: Locked system prompt',
+        content: 'strict regex filtering',
+        category: 'learning',
+        tags: ['security'],
+        riskCategories: ['Safety Override Control'],
+        rationale: 'Implemented strict prompt boundary checks.'
+      }
+    ];
+    const result = buildDpoPairs(errorWithRt, learningWithRt);
+    assert.equal(result.pairs.length, 1);
+    const metadata = result.pairs[0].metadata;
+    assert.equal(metadata.isEdgeCase, true);
+    assert.ok(metadata.riskCategories.includes('Unapproved Execution'));
+    assert.ok(metadata.riskCategories.includes('Safety Override Control'));
+    assert.equal(metadata.errorRationale, 'Injection via system instruction override.');
+    assert.equal(metadata.learningRationale, 'Implemented strict prompt boundary checks.');
+  });
 });

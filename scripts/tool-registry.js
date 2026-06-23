@@ -122,6 +122,19 @@ const TOOLS = [
             budgetCompliant: { type: 'boolean' },
           },
         },
+        riskCategories: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Optional risk/safety categories for red-teaming (e.g., Phishing / Scam, Vulgar & Insulting / Threatening Language).',
+        },
+        isEdgeCase: {
+          type: 'boolean',
+          description: 'Flag indicating this prompt/response is an edge case that does not fit neatly in standard taxons.',
+        },
+        rationale: {
+          type: 'string',
+          description: 'Detailed safety/policy rationale explaining the classification or edge-case status.',
+        },
       },
     },
   }),

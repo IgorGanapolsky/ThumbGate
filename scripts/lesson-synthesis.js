@@ -95,6 +95,17 @@ function mergeIntoExisting(memoryLogPath, existingLesson, newRecord, newFeedback
     merged.content = newRecord.content;
   }
 
+  // Merge riskCategories, isEdgeCase, and rationale from new record
+  if (Array.isArray(newRecord.riskCategories) && newRecord.riskCategories.length > 0) {
+    merged.riskCategories = Array.from(new Set([...(merged.riskCategories || []), ...newRecord.riskCategories]));
+  }
+  if (newRecord.isEdgeCase) {
+    merged.isEdgeCase = true;
+  }
+  if (newRecord.rationale && newRecord.rationale.length > (existingLesson.rationale || '').length) {
+    merged.rationale = newRecord.rationale;
+  }
+
   // Update the record in-place by rewriting the JSONL
   updateRecordInJsonl(memoryLogPath, existingLesson.id, merged);
 
