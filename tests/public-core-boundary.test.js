@@ -157,8 +157,9 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // eval-rag, agent-memory-lifecycle, and stripe-checkout-diagnostic.
   // Bumped 321 -> 324 (2026-06-16) to ship the Guardian/Ethicore policy-engine
   // adapter and commercial-truth claim gate as public-shell enforcement.
+  // Bumped 324 -> 326 (2026-06-22) to ship the new transparent brand logo SVG.
   const files = npmPackFiles();
-  const CEILING = 324;
+  const CEILING = 326;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

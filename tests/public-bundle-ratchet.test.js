@@ -87,7 +87,8 @@ const path = require('node:path');
 // 317 → 321: 2026-06-11 Letta adapter, async-eval-observability, eval-rag, agent-memory-lifecycle, and stripe-checkout-diagnostic added.
 // 321 → 324: 2026-06-16 Guardian/Ethicore policy-engine adapter and
 // commercial-truth claim gate added as public runtime enforcement.
-const BASELINE_FILE_COUNT = 324;
+// 324 → 326: 2026-06-22 ship new transparent brand logo SVG.
+const BASELINE_FILE_COUNT = 326;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
