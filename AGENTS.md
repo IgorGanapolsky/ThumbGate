@@ -126,6 +126,8 @@ Rules:
 > The following rules were automatically derived from execution failures and thumbs-down feedback.
 > You MUST follow these constraints strictly to prevent repeated errors.
 
+- **Rule [auto-pr-hygiene-session-directive-thumbgate-hooks-workt]**: Auto-promoted repeated pattern: "PR hygiene cleanup exposed stale local hook.thumbgate command paths pointing at a removed temp worktree; remote branch d" (1 occurrences in 30 days)
+- **Rule [auto-rest-fallback]**: Auto-promoted repeated pattern: "stdin test" (50 occurrences in 30 days)
 - **Rule [auto-chat-gemini-pivot-ollama-overclaim-session-feedbac]**: Auto-promoted repeated pattern: "Claude Code session 2026-06-04 — chat OSS pivot" (1 occurrences in 30 days)
 - **Rule [auto-cli-telemetry-test]**: Auto-promoted repeated pattern: "verifies fetch fires when telemetry enabled" (3 occurrences in 30 days)
 - **Rule [auto-gsd-verify]**: Auto-promoted repeated pattern: "GSD verify ping" (1 occurrences in 30 days)
@@ -146,5 +148,3 @@ Rules:
 - **Rule [auto-automation-entity-customer-medium-permanent-rule-p]**: Auto-promoted repeated pattern: "User asks why Medium was not automated and why they have to remind me daily." (1 occurrences in 30 days)
 - **Rule [auto-claim-verification-entity-customer-entity-funnel-p]**: Auto-promoted repeated pattern: "Payment stack answer overfit to creating a missing Diagnostic checkout and failed to answer Stripe alternatives directly" (1 occurrences in 30 days)
 - **Rule [auto-email-entity-revenue-gatekeeper-revenue-operator-s]**: Auto-promoted repeated pattern: "Revenue Operator Gatekeeper follow-up" (1 occurrences in 30 days)
-- **Rule [auto-promoted-mqq6zdoj-0]**: NEVER MISTAKE: This is a test failure
-- **Rule [auto-promoted-mqq7051s-0]**: NEVER repeated problem context string
