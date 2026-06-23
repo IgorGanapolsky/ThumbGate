@@ -1758,8 +1758,10 @@ function appendFeedbackListLines(lines, { entries, signal, intent }) {
     lines.push(`No ${signal || 'feedback'} entries found ${intent.windowLabel}.`);
     return;
   }
-  lines.push(`${FEEDBACK_LIST_LABELS[signal] || 'Recent feedback'} (${intent.windowLabel}):`);
-  lines.push(...entries.map(formatFeedbackEntry));
+  lines.push(
+    `${FEEDBACK_LIST_LABELS[signal] || 'Recent feedback'} (${intent.windowLabel}):`,
+    ...entries.map(formatFeedbackEntry)
+  );
 }
 
 function buildFeedbackSection({ ctx, intent, feedbackDir, approval, lessonPipeline }) {
@@ -6817,8 +6819,8 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       const cacheKey = '_metricsRealCache';
       const cacheTTL = 60_000;
       let entries;
-      if (global[cacheKey] && (Date.now() - global[cacheKey].ts) < cacheTTL) {
-        entries = global[cacheKey].entries;
+      if (globalThis[cacheKey] && (Date.now() - globalThis[cacheKey].ts) < cacheTTL) {
+        entries = globalThis[cacheKey].entries;
       } else {
         entries = [];
         try {
@@ -6829,7 +6831,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
               .filter(Boolean);
           }
         } catch { entries = []; }
-        global[cacheKey] = { entries, ts: Date.now() };
+        globalThis[cacheKey] = { entries, ts: Date.now() };
       }
 
       const now = Date.now();
