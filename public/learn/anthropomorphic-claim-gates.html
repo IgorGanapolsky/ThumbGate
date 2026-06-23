@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anthropomorphic Claim Gates for AI Agents — ThumbGate</title>
+<meta name="description" content="How ThumbGate turns AI anthropomorphism research into a pre-action claim gate: do not let agents claim models understand, know, decide, or act human-like without measurement criteria and evidence.">
+<link rel="canonical" href="https://thumbgate.ai/learn/anthropomorphic-claim-gates">
+<link rel="llm-context" href="/llm-context.md" type="text/markdown">
+<link rel="icon" type="image/png" href="/thumbgate-icon.png">
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta property="og:title" content="Anthropomorphic Claim Gates for AI Agents">
+<meta property="og:description" content="Stop agents from smuggling human-like claims into production decisions without explicit measurement criteria and evidence.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/anthropomorphic-claim-gates">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Anthropomorphic Claim Gates for AI Agents",
+  "description": "A ThumbGate implementation pattern for blocking unsupported human-like or cognitive claims about AI systems until explicit measurement criteria and evidence are attached.",
+  "datePublished": "2026-06-20",
+  "dateModified": "2026-06-20",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "about": [
+    "AI agent governance",
+    "claim verification",
+    "anthropomorphism",
+    "pre-action gates"
+  ],
+  "url": "https://thumbgate.ai/learn/anthropomorphic-claim-gates"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is an anthropomorphic claim gate?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It is a pre-action check that blocks claims such as an AI agent understands, knows, decides, wants, or behaves human-like until the operator records explicit measurement criteria and evidence."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Why does this matter for AI agent governance?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Unsupported cognitive claims can make teams over-trust an agent. ThumbGate turns those claims into verifiable gates before they influence production actions, audits, or buyer promises."
+      }
+    }
+  ]
+}
+</script>
+<link rel="stylesheet" href="/learn/learn.css">
+</head>
+<body>
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" width="28" height="28">ThumbGate</a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/compare/databricks-unity-ai-gateway">Databricks comparison</a>
+</nav>
+<main>
+  <h1>Anthropomorphic claim gates for AI agents</h1>
+  <p class="lede">A model may produce useful work. That does not mean it understands, knows, decides, wants, or behaves human-like. ThumbGate now treats those phrases as claims that need measurement criteria before they can influence a production decision.</p>
+
+  <div class="callout">
+    <p><strong>The high-ROI lesson:</strong> stop debating whether the agent is smart. Gate the claim. If an operator or agent says an AI system has a human-like attribute, require a tested attribute, interface/substrate context, evaluator, and evidence before accepting the statement.</p>
+    <p class="source-note">Research anchor: Adrian de Wynter's arXiv paper, <a href="https://arxiv.org/abs/2605.31514" rel="noopener">If LLMs Have Human-Like Attributes, Then So Does Age of Empires II</a>. A public X post by Rohan Paul surfaced the paper as a reminder to avoid treating LLMs as human-like without clear tests and narrower claims.</p>
+  </div>
+
+  <h2>What changes in ThumbGate</h2>
+  <p>ThumbGate's default claim-verification config now includes an anthropomorphic AI claim gate. It catches unsupported statements like:</p>
+  <div class="grid">
+    <div class="card"><strong>Blocked without evidence</strong> "The agent understands the user's intent."</div>
+    <div class="card"><strong>Blocked without evidence</strong> "The model decided this was safe."</div>
+    <div class="card"><strong>Blocked without evidence</strong> "This assistant is human-like on workflow judgment."</div>
+    <div class="card"><strong>Accepted after proof</strong> "The model matched human annotators on this narrow benchmark, with criteria and evaluator recorded."</div>
+  </div>
+
+  <h2>The rule shape</h2>
+  <p>The gate does not ban research or careful measurement. It blocks vague cognitive language until a proof action is recorded.</p>
+  <pre><code>track_action("anthropomorphic_claim_verified", {
+  criteria: "attribute under test",
+  interface: "where and how the model was evaluated",
+  evaluator: "script, benchmark, reviewer, or study",
+  evidence: "report, paper, trace, or benchmark output"
+})</code></pre>
+
+  <h2>Why buyers care</h2>
+  <p>Unsupported human-like claims create audit risk. They make it easy for a team to over-trust a chatbot, agent, or orchestration layer and then explain a bad outcome with vibes instead of evidence.</p>
+  <p>For regulated, enterprise, and customer-facing workflows, this is a governance gap. ThumbGate turns the gap into a small deterministic check before the next claim is accepted.</p>
+
+  <h2>Where this fits</h2>
+  <p>Enterprise AI gateways can govern models, traffic, credentials, spend, and observability. ThumbGate handles the local pre-action surface: the moment an agent tries to claim something, execute a tool, publish a result, or tell the operator the work is safe.</p>
+  <p><a class="cta" href="/guide">Install ThumbGate locally</a></p>
+</main>
+</body>
+</html>

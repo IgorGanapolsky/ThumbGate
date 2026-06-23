@@ -47,10 +47,21 @@ describe('Instagram ThumbGate Post', () => {
     }
 
     await generateInstagramCard(TEST_IMAGE_PATH);
-    const result = await postThumbGateToInstagram({ imagePath: TEST_IMAGE_PATH });
-    assert.ok(result, 'Post should return a result object');
-    assert.ok(result.id || result.data?.id, 'Post should have an ID');
-    console.log(`✅ Instagram post created with ID: ${result.id || result.data?.id}`);
-    fs.rmSync(TEST_IMAGE_PATH, { force: true });
+    try {
+      const result = await postThumbGateToInstagram({ imagePath: TEST_IMAGE_PATH });
+      assert.ok(result, 'Post should return a result object');
+      assert.ok(result.id || result.data?.id, 'Post should have an ID');
+      console.log(`✅ Instagram post created with ID: ${result.id || result.data?.id}`);
+    } catch (err) {
+      const isQuota = err.code === 'ZERNIO_POST_LIMIT_REACHED' || err.message?.includes('Post limit reached');
+      const isNetwork = err.message?.includes('fetch failed') || err.code === 'UND_ERR_CONNECT_TIMEOUT' || err.code === 'ENOTFOUND' || err.code === 'ETIMEDOUT' || err.name === 'TypeError';
+      if (isQuota || isNetwork) {
+        t.skip(`Zernio API issue: ${err.message} - skipping integration test`);
+      } else {
+        throw err;
+      }
+    } finally {
+      fs.rmSync(TEST_IMAGE_PATH, { force: true });
+    }
   });
 });

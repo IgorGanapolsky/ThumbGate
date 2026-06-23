@@ -354,6 +354,8 @@ Map:
           <p>Send one real agent workflow. We map the control gaps, repeated-failure risks, review evidence, and first enforceable gates.</p>
           <p><strong>Best fit:</strong> platform, security, OSPO, and engineering teams rolling out background agents or AI-assisted PR automation.</p>
           <a class="cta-button" href="https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e?utm_source=background_agent_checklist&amp;utm_medium=landing_page&amp;utm_campaign=agent_workflow_migration&amp;utm_content=diagnostic" target="_blank" rel="noopener">Pay $499 diagnostic</a>
+          <a class="cta-button optional-payment-link" href="__THUMBGATE_PAYPAL_DIAGNOSTIC_CHECKOUT_URL__" target="_blank" rel="noopener">Pay $499 diagnostic with PayPal</a>
+          <a class="cta-button optional-payment-link" href="__THUMBGATE_MOR_SNAPSHOT_CHECKOUT_URL__" target="_blank" rel="noopener">Buy $__SNAPSHOT_PRICE_DOLLARS__ snapshot via __MOR_PROVIDER__</a>
           <a class="secondary-button" href="/?utm_source=background_agent_checklist&amp;utm_medium=landing_page&amp;utm_campaign=agent_workflow_migration&amp;utm_content=intake#workflow-sprint-intake">Send workflow first</a>
         </div>
 
@@ -375,5 +377,13 @@ Map:
       </aside>
     </section>
   </main>
+  <script>
+    document.querySelectorAll('.optional-payment-link').forEach(link => {
+      const href = link.getAttribute('href') || '';
+      if (href.indexOf('__') !== -1 || link.textContent.indexOf('__') !== -1) {
+        link.style.display = 'none';
+      }
+    });
+  </script>
 </body>
 </html>

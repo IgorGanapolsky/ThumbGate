@@ -1,4 +1,5 @@
 'use strict';
+process.env.THUMBGATE_DISABLE_TELEMETRY = '1';
 const { test } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');

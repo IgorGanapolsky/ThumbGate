@@ -325,9 +325,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // eval-rag, agent-memory-lifecycle, and stripe-checkout-diagnostic.
   // Bumped 321 -> 324 (2026-06-16) to ship the Guardian/Ethicore policy-engine
   // adapter and commercial-truth claim gate as public runtime enforcement.
+  // Bumped 324 -> 326 (2026-06-22) to ship the new transparent brand logo SVG.
   assert.ok(
-    manifest.fileCount <= 324,
-    `npm package should stay <= 324 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 326,
+    `npm package should stay <= 326 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
