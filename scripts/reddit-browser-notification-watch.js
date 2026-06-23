@@ -95,6 +95,41 @@ function isRecentNotification(notification, maxAgeMinutes = 48 * 60) {
   return ageMinutes(notification.age) <= maxAgeMinutes;
 }
 
+function parseSingleNotification(lines, index) {
+  let author = lines[index];
+  let kind = lines[index + 1] || '';
+  let kindIndex = index + 1;
+  if (isAgeLine(author)) return null;
+
+  if (/\b(replied to|mentioned you|new mentions)\b/i.test(author)) {
+    kind = author;
+    kindIndex = index;
+    const authorMatch = /^u\/([^\s]+)/i.exec(kind);
+    author = authorMatch ? authorMatch[1] : author;
+  }
+
+  if (!kind || !/\b(accepted your chat invite|replied to|mentioned you|new mentions)\b/i.test(kind)) return null;
+
+  const hasPreview = !/accepted your chat invite|new mentions/i.test(kind);
+  const preview = hasPreview ? (lines[kindIndex + 1] || '') : '';
+  const age = hasPreview ? (lines[kindIndex + 2] || '') : (lines[kindIndex + 1] || '');
+  const subredditMatch = /\bin\s+r\/(\w+)/.exec(kind);
+  const notification = {
+    author,
+    kind,
+    subreddit: subredditMatch ? subredditMatch[1] : null,
+    preview,
+    age,
+  };
+  const scored = scoreNotification(notification);
+  return {
+    ...notification,
+    ...scored,
+    ageMinutes: ageMinutes(notification.age),
+    fingerprint: fingerprintNotification(notification),
+  };
+}
+
 function parseNotificationBlocks(bodyText) {
   const lines = String(bodyText || '')
     .split('\n')
@@ -103,38 +138,10 @@ function parseNotificationBlocks(bodyText) {
   const notifications = [];
 
   for (let index = 0; index < lines.length; index += 1) {
-    let author = lines[index];
-    let kind = lines[index + 1] || '';
-    let kindIndex = index + 1;
-    if (isAgeLine(author)) continue;
-
-    if (/\b(replied to|mentioned you|new mentions)\b/i.test(author)) {
-      kind = author;
-      kindIndex = index;
-      const authorMatch = /^u\/([^\s]+)/i.exec(kind);
-      author = authorMatch ? authorMatch[1] : author;
+    const parsed = parseSingleNotification(lines, index);
+    if (parsed) {
+      notifications.push(parsed);
     }
-
-    if (!kind || !/\b(accepted your chat invite|replied to|mentioned you|new mentions)\b/i.test(kind)) continue;
-
-    const hasPreview = !/accepted your chat invite|new mentions/i.test(kind);
-    const preview = hasPreview ? (lines[kindIndex + 1] || '') : '';
-    const age = hasPreview ? (lines[kindIndex + 2] || '') : (lines[kindIndex + 1] || '');
-    const subredditMatch = /\bin\s+r\/([A-Za-z0-9_]+)/.exec(kind);
-    const notification = {
-      author,
-      kind,
-      subreddit: subredditMatch ? subredditMatch[1] : null,
-      preview,
-      age,
-    };
-    const scored = scoreNotification(notification);
-    notifications.push({
-      ...notification,
-      ...scored,
-      ageMinutes: ageMinutes(notification.age),
-      fingerprint: fingerprintNotification(notification),
-    });
   }
 
   return notifications;
@@ -200,7 +207,7 @@ function parseArgs(argv = process.argv.slice(2)) {
   };
 }
 
-if (require.main === module) {
+if (require.main && require.main.filename === module.filename) {
   const args = parseArgs();
   run({ dryRun: args.dryRun })
     .then((result) => {
