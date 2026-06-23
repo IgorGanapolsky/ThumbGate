@@ -126,6 +126,7 @@ Rules:
 > The following rules were automatically derived from execution failures and thumbs-down feedback.
 > You MUST follow these constraints strictly to prevent repeated errors.
 
+- **Rule [auto-gemini-mistake-slash-commands]**: Auto-promoted repeated pattern: "Claimed that custom slash commands from .claude/commands or .gemini/commands would work in Gemini/Antigravity CLI. The G" (1 occurrences in 30 days)
 - **Rule [auto-chat-multi-pr-churn-overclaiming-user-visible-corr]**: Auto-promoted repeated pattern: "CEO thumbs-down on dashboard chat session — repeated overclaiming + multi-iteration fix cycle. CEO showed screenshot of " (1 occurrences in 30 days)
 - **Rule [auto-community-growth-entity-customer-feedback-capture-]**: Auto-promoted repeated pattern: "Ralph Loop community/course growth runbook used a retired local preview alias during Operator Lab promo verification" (1 occurrences in 30 days)
 - **Rule [auto-evidence-first-keys-never-ask-user-recurring-reven]**: Auto-promoted repeated pattern: "Told CEO STRIPE_SECRET_KEY was absent and asked them to set it; only checked interactive shell $VAR, not .env or the ~/." (1 occurrences in 30 days)
@@ -142,5 +143,3 @@ Rules:
 - **Rule [auto-automation-entity-customer-medium-permanent-rule-p]**: Auto-promoted repeated pattern: "User asks why Medium was not automated and why they have to remind me daily." (1 occurrences in 30 days)
 - **Rule [auto-claim-verification-entity-customer-entity-funnel-p]**: Auto-promoted repeated pattern: "Payment stack answer overfit to creating a missing Diagnostic checkout and failed to answer Stripe alternatives directly" (1 occurrences in 30 days)
 - **Rule [auto-email-entity-revenue-gatekeeper-revenue-operator-s]**: Auto-promoted repeated pattern: "Revenue Operator Gatekeeper follow-up" (1 occurrences in 30 days)
-- **Rule [auto-promoted-mqq2uh6e-0]**: NEVER MISTAKE: This is a test failure
-- **Rule [auto-promoted-mqq2xa0q-0]**: NEVER repeated problem context string
