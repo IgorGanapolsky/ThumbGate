@@ -2,12 +2,16 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const os = require('node:os');
 
 const {
   ageMinutes,
   isRecentNotification,
   parseNotificationBlocks,
   scoreNotification,
+  run,
 } = require('../scripts/reddit-browser-notification-watch');
 
 test('parseNotificationBlocks extracts Reddit chat and reply notifications', () => {
@@ -61,4 +65,64 @@ test('age helpers keep heartbeat action focused on recent Reddit signals', () =>
   assert.equal(ageMinutes('3d ago'), 4320);
   assert.equal(isRecentNotification({ age: '1h ago' }), true);
   assert.equal(isRecentNotification({ age: '10d ago' }), false);
+});
+
+test('run handles parsing, state caching, and appending notifications', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'reddit-watch-test-'));
+  const stateFile = path.join(tmpDir, 'state.json');
+  const eventsFile = path.join(tmpDir, 'events.jsonl');
+
+  process.env.THUMBGATE_REDDIT_BROWSER_STATE_FILE = stateFile;
+  process.env.THUMBGATE_REDDIT_BROWSER_EVENTS_FILE = eventsFile;
+
+  try {
+    const mockNotifications = [
+      {
+        author: 'leogodin217',
+        kind: 'accepted your chat invite!',
+        preview: 'Hi',
+        age: '1h ago',
+        ageMinutes: 60,
+        score: 5,
+        reasons: ['chat_accepted'],
+        fingerprint: 'leogodin217|accepted your chat invite!||hi|1h ago',
+      },
+    ];
+
+    const result = await run({
+      dryRun: false,
+      readNotifications: () => mockNotifications,
+    });
+
+    assert.equal(result.notifications, 1);
+    assert.equal(result.fresh, 1);
+    assert.equal(result.actionable, 1);
+
+    // Verify files were written
+    assert.ok(fs.existsSync(stateFile));
+    assert.ok(fs.existsSync(eventsFile));
+
+    const state = JSON.parse(fs.readFileSync(stateFile, 'utf8'));
+    assert.ok(state.seen[mockNotifications[0].fingerprint]);
+
+    const events = fs.readFileSync(eventsFile, 'utf8').trim().split('\n');
+    assert.equal(events.length, 1);
+    const parsedEvent = JSON.parse(events[0]);
+    assert.equal(parsedEvent.author, 'leogodin217');
+
+    // Run again - should not be fresh
+    const result2 = await run({
+      dryRun: false,
+      readNotifications: () => mockNotifications,
+    });
+    assert.equal(result2.fresh, 0);
+    assert.equal(result2.actionable, 0);
+
+  } finally {
+    delete process.env.THUMBGATE_REDDIT_BROWSER_STATE_FILE;
+    delete process.env.THUMBGATE_REDDIT_BROWSER_EVENTS_FILE;
+    try {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    } catch {}
+  }
 });
