@@ -20,6 +20,8 @@ Key: Always dogfood the latest local changes before publishing.
 > The following rules were automatically derived from execution failures and thumbs-down feedback.
 > You MUST follow these constraints strictly to prevent repeated errors.
 
+- **Rule [auto-chat-gemini-pivot-ollama-overclaim-session-feedbac]**: Auto-promoted repeated pattern: "Claude Code session 2026-06-04 — chat OSS pivot" (1 occurrences in 30 days)
+- **Rule [auto-cli-telemetry-test]**: Auto-promoted repeated pattern: "verifies fetch fires when telemetry enabled" (3 occurrences in 30 days)
 - **Rule [auto-gsd-verify]**: Auto-promoted repeated pattern: "GSD verify ping" (1 occurrences in 30 days)
 - **Rule [auto-gemini-mistake-slash-commands]**: Auto-promoted repeated pattern: "Claimed that custom slash commands from .claude/commands or .gemini/commands would work in Gemini/Antigravity CLI. The G" (1 occurrences in 30 days)
 - **Rule [auto-chat-multi-pr-churn-overclaiming-user-visible-corr]**: Auto-promoted repeated pattern: "CEO thumbs-down on dashboard chat session — repeated overclaiming + multi-iteration fix cycle. CEO showed screenshot of " (1 occurrences in 30 days)

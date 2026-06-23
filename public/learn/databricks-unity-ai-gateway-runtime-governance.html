@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Databricks Unity AI Gateway validates runtime AI governance - ThumbGate</title>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="Databricks Unity AI Gateway makes runtime AI governance mainstream. The next layer is local pre-action enforcement before developer agents call shell, browser, API, MCP, file, or deploy tools.">
+<meta name="keywords" content="Databricks Unity AI Gateway, AI governance, MCP governance, AI gateway, pre-action enforcement, PreToolUse, ThumbGate">
+<meta property="og:title" content="Databricks validates runtime AI governance">
+<meta property="og:description" content="Enterprise gateways govern the fleet. Local pre-action gates stop the agent action before it fires.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/databricks-unity-ai-gateway-runtime-governance">
+<link rel="canonical" href="https://thumbgate.ai/learn/databricks-unity-ai-gateway-runtime-governance">
+<link rel="stylesheet" href="/learn/learn.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Databricks Unity AI Gateway validates runtime AI governance",
+  "description": "Databricks Unity AI Gateway makes runtime governance for models, agents, MCP services, tools, guardrails, observability, and AI cost controls mainstream. ThumbGate positions as the local pre-action enforcement layer for developer-agent workflows.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-06-20",
+  "dateModified": "2026-06-20",
+  "mainEntityOfPage": "https://thumbgate.ai/learn/databricks-unity-ai-gateway-runtime-governance",
+  "about": [
+    {"@type": "Thing", "name": "Databricks Unity AI Gateway"},
+    {"@type": "Thing", "name": "runtime AI governance"},
+    {"@type": "Thing", "name": "MCP governance"},
+    {"@type": "Thing", "name": "pre-action gates"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What does Databricks Unity AI Gateway change for agent governance?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It moves the market conversation from static AI governance to runtime governance across models, agents, MCP services, skills, tools, observability, guardrails, and cost controls."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Where does ThumbGate fit?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ThumbGate fits at the local pre-action boundary. It gates the concrete tool action before a developer agent runs shell, edits files, calls MCP tools, opens browsers, hits APIs, or deploys."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is this a Databricks partnership claim?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. ThumbGate is not claiming partnership, certification, or endorsement by Databricks. The page uses public Databricks materials as market evidence for runtime governance."
+      }
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline-v2.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/compare">Compare</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/learn">Learn</a> / Databricks Unity AI Gateway</div>
+  <h1>Databricks validates runtime AI governance. The next layer is pre-action enforcement.</h1>
+  <p style="color:var(--muted);">5 min read &middot; For teams turning enterprise gateway announcements into local agent controls</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> Databricks Unity AI Gateway is a strong market signal: agent governance is moving into runtime interactions across models, agents, MCP services, tools, cost controls, and observability. ThumbGate should ride that signal by owning the local pre-action gate: the moment before a developer agent calls shell, file, browser, API, MCP, or deploy tools.</div>
+
+  <h2>What Databricks made obvious</h2>
+  <p>Databricks describes Unity AI Gateway as governance for enterprise AI runtime interactions. Its launch materials talk about centralizing access and monitoring across AI providers, coding agents, frameworks, applications, custom AI systems, MCP services, tools, guardrails, and AI cost controls.</p>
+  <p>That matters because it tells the buyer what the market now believes: governance cannot stop at policy documents, model catalogs, or dashboards. Once agents use tools, governance has to sit in the path of runtime decisions.</p>
+
+  <h2>Gateway vs gate</h2>
+  <p>An enterprise gateway answers questions like: Which model can this app call? Which MCP service is approved? Which team is burning tokens? Which guardrail applies to this route?</p>
+  <p>A local pre-action gate asks a different question: Should this specific agent action run right now?</p>
+  <ul>
+    <li>Should this command run in this directory?</li>
+    <li>Should this file edit proceed without a verified source?</li>
+    <li>Should this Reddit, LinkedIn, X, or Bluesky post publish without action-time confirmation?</li>
+    <li>Should this deploy continue when tests have not run?</li>
+    <li>Should a repeated failure become a durable prevention rule?</li>
+  </ul>
+
+  <h2>The gap teams still hit locally</h2>
+  <p>Even with a gateway, the developer's local agent can still drift: it can make the same bad claim, call the wrong tool, touch the wrong file, post externally without approval, or spend tokens on a loop that should have stopped earlier. Those are not abstract governance problems. They are workflow failures.</p>
+  <p>ThumbGate's position is not "replace the gateway." The position is: <strong>gateway plus gate</strong>. Use the enterprise gateway for provider, model, service, MCP, and cost governance. Use ThumbGate at the local action boundary where the agent is about to do something irreversible or expensive.</p>
+
+  <h2>What to test this week</h2>
+  <ol>
+    <li>Pick one repeated developer-agent failure: unsafe shell, unsupported claim, unapproved external post, missing test proof, wrong MCP tool, or runaway loop.</li>
+    <li>Turn it into a ThumbGate rule.</li>
+    <li>Run the workflow again and capture whether the bad action is blocked before the tool fires.</li>
+    <li>Package the result as a small proof run: failure, gate, replay, result.</li>
+  </ol>
+
+  <div class="callout callout-green">
+    <p><strong>Revenue framing:</strong> Databricks creates air cover for the budget line. ThumbGate sells the proof run: "Show me one workflow where your agent keeps repeating the same expensive mistake, and I will gate it before action."</p>
+  </div>
+
+  <h2>Sources and positioning</h2>
+  <p>This article is based on public Databricks materials, including the June 2026 Unity AI Gateway launch posts and product page. ThumbGate is not a Databricks partner, product, certification, or endorsed integration. The comparison is architectural positioning.</p>
+  <ul>
+    <li><a href="https://www.databricks.com/blog/ai-governance-data-ai-summit-2026-whats-new-unity-ai-gateway" target="_blank" rel="noopener">Databricks: AI governance at Data + AI Summit 2026</a></li>
+    <li><a href="https://www.databricks.com/blog/whats-new-unity-ai-gateway-service-policies-guardrails-observability-and-cost-controls-ai" target="_blank" rel="noopener">Databricks: service policies, guardrails, observability, and cost controls</a></li>
+    <li><a href="https://www.databricks.com/product/artificial-intelligence/unity-ai-gateway" target="_blank" rel="noopener">Databricks: Unity AI Gateway product page</a></li>
+  </ul>
+
+  <div class="cta-box">
+    <h2>Run the local gate</h2>
+    <p>Start with one repeated agent failure. Gate it before the action executes.</p>
+    <div class="cta-install">npx thumbgate init</div>
+    <div class="cta-actions">
+      <a class="cta-link" href="/compare/databricks-unity-ai-gateway">Compare gateway vs gate</a>
+      <a class="cta-link cta-link-secondary" href="/learn/mcp-pre-action-checks-explained">Read MCP pre-action checks</a>
+    </div>
+  </div>
+
+  <div class="related">
+    <h2>Related</h2>
+    <a href="/compare/databricks-unity-ai-gateway">ThumbGate vs Databricks Unity AI Gateway</a>
+    <a href="/learn/cost-aware-agent-gate-routing">Cost-aware agent gate routing</a>
+    <a href="/learn/background-agent-control-layer">Background agent control layer</a>
+  </div>
+</div>
+
+<div class="sticky-cta">
+  <span>Gate one repeated agent failure</span>
+  <code>npx thumbgate init</code>
+  <a href="/guide?utm_source=databricks_unity_ai_gateway&utm_medium=learn&utm_campaign=runtime_governance">Setup guide</a>
+</div>
+
+</body>
+</html>
