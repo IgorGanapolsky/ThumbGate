@@ -46,3 +46,4 @@ Key: Always dogfood the latest local changes before publishing.
 - **Rule [auto-claim-verification-entity-customer-entity-funnel-p]**: Auto-promoted repeated pattern: "Payment stack answer overfit to creating a missing Diagnostic checkout and failed to answer Stripe alternatives directly" (1 occurrences in 30 days)
 - **Rule [auto-email-entity-revenue-gatekeeper-revenue-operator-s]**: Auto-promoted repeated pattern: "Revenue Operator Gatekeeper follow-up" (1 occurrences in 30 days)
 - **Rule [auto-brand-entity-customer-logo-production-verification]**: Auto-promoted repeated pattern: "User reported ThumbGate landing logo still tiny/compressed on live thumbgate.ai after prior claimed fix" (1 occurrences in 30 days)
+- **Rule [auto-promoted-mqr2c91j-0]**: NEVER MISTAKE: This is a test failure
