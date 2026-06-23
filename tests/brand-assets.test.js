@@ -31,8 +31,8 @@ test('ThumbGate inline mark SVG exists with transparent backdrop for header use'
   const svg = fs.readFileSync(inlineMarkPath, 'utf8');
   assert.match(svg, /<svg/);
   assert.match(svg, /viewBox="0 0 \d+ \d+"/);
-  assert.match(svg, /stroke="#8cf5d1"/, 'inline mark must stroke with standard color');
-  assert.match(svg, /premium shield and thumbs-up mark/, 'inline mark accessible description should name the premium shield and thumbs-up');
+  assert.match(svg, />TG</, 'inline mark must render the TG monogram in header-sized contexts');
+  assert.match(svg, /TG gate monogram/, 'inline mark accessible description should name the TG gate monogram');
   assert.match(svg, /<\/svg>/);
   assert.doesNotMatch(svg, /gate-and-signal|signal sweep|Status LEDs/i);
   // Guard: inline mark must NOT contain a full-canvas opaque rounded-rect tile. That tile
