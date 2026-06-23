@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ThumbGate vs Arcade — Coding-Agent Guardrails vs Enterprise API Auth Delegation</title>
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta name="description" content="ThumbGate vs Arcade for AI agent governance. Arcade is a cloud-hosted OAuth proxy for enterprise production agents accessing SaaS APIs. ThumbGate is a local-first, feedback-driven pre-action check firewall for coding agents.">
+<meta name="keywords" content="AI agent governance, Arcade.dev, ThumbGate, runtime governance, pre-action hooks, agent decorator, coding agent guardrails, OAuth proxy, MCP authorization">
+<meta property="og:title" content="ThumbGate vs Arcade — Coding-Agent Guardrails vs Enterprise API Auth Delegation">
+<meta property="og:description" content="Both intercept agent actions before damage. Different layers, different deployment models, different target loops. Honest side-by-side.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/compare/arcade">
+<link rel="canonical" href="https://thumbgate.ai/compare/arcade">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ThumbGate vs Arcade — Coding-Agent Guardrails vs Enterprise API Auth Delegation",
+  "description": "Side-by-side comparison of two governance layers for AI agents. ThumbGate is a local-first pre-action check firewall specialized for AI coding agents. Arcade is a cloud-hosted auth proxy for enterprise production agents.",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "datePublished": "2026-06-17",
+  "dateModified": "2026-06-17",
+  "mainEntityOfPage": "https://thumbgate.ai/compare/arcade"
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What's the difference between Arcade and ThumbGate?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Both address the 'accountability gap' in AI agents, but they focus on different parts of the stack. Arcade is a cloud-hosted auth proxy built to delegate user identities (via OAuth) to downstream SaaS APIs for production enterprise agents. ThumbGate is a local-first pre-action check firewall built to prevent coding agents (Claude Code, Cursor, Cline) from making filesystem mistakes or breaking builds. Arcade targets enterprise SaaS integration; ThumbGate targets the developer's inner loop."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Arcade support MCP?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Arcade authored the Model Context Protocol (MCP) authorization spec to delegate OAuth tokens to APIs. ThumbGate operates as a local MCP server that enforces rule boundaries directly at the developer's tool-call execution level."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need to rewrite code to integrate ThumbGate or Arcade?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ThumbGate requires zero code changes — it auto-configures PreToolUse hooks via a CLI command (npx thumbgate init) to run out-of-process. Arcade requires routing agent API calls through their auth proxy or utilizing their SDK in your agent application backend."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="/learn/learn.css">
+<style>
+  .matrix { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.95rem; }
+  .matrix th, .matrix td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .matrix th { background: var(--bg-card); font-weight: 600; }
+  .matrix td:nth-child(2) { color: var(--muted); }
+  .matrix td:nth-child(3) { color: var(--text); }
+  .verdict { font-weight: 600; color: var(--green); }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 1.5rem 0; }
+  .pair > div { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+  @media (max-width: 700px) { .pair { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+  <a href="/pricing">Pricing</a>
+  <a href="/case-studies">Case Studies</a>
+  <a href="/compare">Compare</a>
+  <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="/compare">Compare</a> / ThumbGate vs Arcade</div>
+  <h1>ThumbGate vs Arcade.dev</h1>
+  <p style="color:var(--muted);">5 min read · For teams evaluating AI agent security, auth, and guardrail layers</p>
+
+  <div class="tldr"><strong>TL;DR:</strong> Arcade is a cloud-hosted auth proxy built to delegate user identities (OAuth) to SaaS APIs for production-facing enterprise agents. ThumbGate is a local-first, feedback-driven pre-action check firewall built to prevent coding agents (Claude Code, Cursor, Cline) from making filesystem mistakes or breaking builds. Arcade secures API identity delegation; ThumbGate secures local tool-call execution.</div>
+
+  <h2>Different Layers, Different Goals</h2>
+  <p>Arcade recently announced a $60M Series A (led by SYN Ventures with Morgan Stanley and Wipro) to address the authorization accountability gap in production AI agents. While both products focus on the AI agent security space, they are designed for completely separate loops.</p>
+
+  <p>If you're building a production agent that needs to draft emails, update Salesforce records, or post to Slack on behalf of real users, Arcade's token delegation is the industry standard. If you are a developer using Claude Code or Cursor and want to make sure the agent doesn't delete your files, leak API keys, or run unsafe commands, ThumbGate's local PreToolUse firewall is built for you.</p>
+
+  <h2>Side-by-Side Comparison</h2>
+
+  <table class="matrix">
+    <thead>
+      <tr><th style="width:28%;">Dimension</th><th style="width:36%;">Arcade.dev</th><th style="width:36%;">ThumbGate</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Primary Value Prop</strong></td>
+        <td>Secure identity/token delegation and auth propagation for production agents.</td>
+        <td>Local pre-action checks preventing coding-agent mistakes and directory destruction.</td>
+      </tr>
+      <tr>
+        <td><strong>Integration layer</strong></td>
+        <td>Cloud auth proxy between agent application and downstream SaaS APIs.</td>
+        <td>Out-of-process PreToolUse hook intercepting tool calls at the agent runtime boundary (Claude Code / Cursor / Codex / Gemini / Amp / Cline / OpenCode).</td>
+      </tr>
+      <tr>
+        <td><strong>Deployment mode</strong></td>
+        <td>Cloud-hosted service or self-hosted gateway.</td>
+        <td>Local-first, runs on the developer's machine with SQLite/JSON persistence.</td>
+      </tr>
+      <tr>
+        <td><strong>Identity &amp; Auth Model</strong></td>
+        <td>OAuth 2.0 user identity propagation.</td>
+        <td>Policy-based rules derived from human feedback (thumbs-down rules) and Thompson Sampling.</td>
+      </tr>
+      <tr>
+        <td><strong>Primary target tools</strong></td>
+        <td>SaaS APIs (Slack, Salesforce, GitHub, Gmail, Jira).</td>
+        <td>Local system tools (filesystem write, terminal execute, git push, package install).</td>
+      </tr>
+      <tr>
+        <td><strong>MCP Integration</strong></td>
+        <td>Authored the MCP authorization specification for API token delegation.</td>
+        <td>Operates as a local MCP server controlling local tool execution permissions.</td>
+      </tr>
+      <tr>
+        <td><strong>Setup Friction</strong></td>
+        <td>Requires configuring OAuth providers, redirect URIs, and deploying API proxy.</td>
+        <td>Installs in 30 seconds via <code>npx thumbgate init</code> with zero infrastructure.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Complementary, Not Conflicting</h2>
+  <p>Because they operate at different layers, ThumbGate and Arcade are complementary:</p>
+  <ul>
+    <li>Use <strong>Arcade</strong> to securely hook your company's production customer support agent into Gmail and Salesforce.</li>
+    <li>Use <strong>ThumbGate</strong> to keep your software engineers' local AI coding assistants from introducing security bugs, breaking builds, or deleting files.</li>
+  </ul>
+
+  <h2>Get Started with Local Guardrails</h2>
+  <div class="card">
+    <p>Install ThumbGate locally in one command:</p>
+    <pre><code>npx thumbgate init</code></pre>
+    <p>Then give thumbs-up/down feedback to let the firewall learn your boundaries. Core CLI + local hooks are MIT licensed.</p>
+    <p>
+      <a href="https://www.npmjs.com/package/thumbgate" class="cta">View on npm</a>
+      <a href="https://github.com/IgorGanapolsky/ThumbGate" style="color:var(--cyan); margin-left:1.5rem; text-decoration:underline;">View on GitHub</a>
+    </p>
+  </div>
+</div>
+
+<footer>
+  <p>ThumbGate -- Pre-action checks for AI coding agents</p>
+  <p><a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> | <a href="https://www.npmjs.com/package/thumbgate">npm</a> | <a href="/compare">Compare</a> | <a href="/dashboard">Dashboard</a></p>
+</footer>
+</body>
+</html>

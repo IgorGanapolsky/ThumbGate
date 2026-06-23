@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ThumbGate vs Databricks Unity AI Gateway | Enterprise Gateway vs Local Pre-Action Gates</title>
+  <meta name="description" content="Databricks Unity AI Gateway governs enterprise AI runtime interactions across models, agents, MCP services, tools, cost controls, and observability. ThumbGate adds local pre-action gates before developer agents execute shell, file, browser, API, MCP, or deploy actions." />
+  <meta property="og:title" content="ThumbGate vs Databricks Unity AI Gateway" />
+  <meta property="og:description" content="Enterprise AI gateways govern the fleet. ThumbGate gates the local action before the agent calls tools." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/compare/databricks-unity-ai-gateway" />
+  <link rel="canonical" href="https://thumbgate.ai/compare/databricks-unity-ai-gateway" />
+  <link rel="llm-context" href="/llm-context.md" type="text/markdown" />
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png" />
+  <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
+  <meta property="og:image" content="/og.png" />
+  <style>
+    :root { --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #161618; --line: #222225; --text: #e8e8ec; --muted: #8b8b96; --cyan: #22d3ee; --green: #4ade80; --amber: #fbbf24; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+    .topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); background: rgba(10, 10, 11, 0.88); border-bottom: 1px solid var(--line); }
+    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; padding-bottom: 14px; }
+    .brand { font-weight: 700; color: var(--text); display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+    .brand .logo-mark { width: 28px; height: 28px; display: block; }
+    .hero { padding: 72px 0 32px; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(34, 211, 238, 0.22); background: rgba(34, 211, 238, 0.1); color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
+    h1 { font-size: clamp(34px, 5vw, 56px); line-height: 1.06; letter-spacing: -0.04em; margin: 16px 0; max-width: 880px; }
+    .hero p { max-width: 760px; color: var(--muted); font-size: 18px; }
+    .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 24px; padding-bottom: 72px; }
+    .card, .detail-section, .sidebar-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px; }
+    .detail-section { padding: 24px; margin-bottom: 18px; }
+    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
+    .detail-section p, .detail-section li, .sidebar-card p { color: var(--muted); }
+    .detail-section ul { padding-left: 18px; }
+    .comparison-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+    .comparison-table th, .comparison-table td { border: 1px solid var(--line); padding: 12px; text-align: left; vertical-align: top; }
+    .comparison-table th { background: var(--bg-raised); color: var(--cyan); }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+    .pill { border: 1px solid var(--line); background: var(--bg-raised); border-radius: 999px; padding: 10px 14px; font-size: 14px; font-weight: 650; }
+    .pill.good { color: #b8f7c8; border-color: rgba(74, 222, 128, 0.28); background: rgba(74, 222, 128, 0.1); }
+    .pill.warn { color: #ffe2a4; border-color: rgba(251, 191, 36, 0.28); background: rgba(251, 191, 36, 0.1); }
+    .sidebar { display: flex; flex-direction: column; gap: 18px; }
+    .sidebar-card { padding: 20px; }
+    .sidebar-card:first-child { position: sticky; top: 84px; max-height: calc(100vh - 104px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .cta-button { display: inline-flex; align-items: center; justify-content: center; margin-top: 18px; padding: 12px 16px; border-radius: 10px; background: var(--cyan); color: #071116; font-weight: 700; text-decoration: none; }
+    .related-card { display: block; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg-raised); margin-top: 12px; color: var(--text); }
+    .related-label { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .faq-item { border-top: 1px solid var(--line); padding: 14px 0; }
+    .faq-item summary { cursor: pointer; font-weight: 600; }
+    .faq-item p { color: var(--muted); }
+    code { color: var(--cyan); background: var(--bg-raised); border: 1px solid var(--line); border-radius: 6px; padding: 0.08rem 0.3rem; }
+    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } .sidebar-card:first-child { position: static; max-height: none; overflow: visible; } }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ThumbGate vs Databricks Unity AI Gateway",
+  "description": "Databricks Unity AI Gateway is an enterprise control plane for model, agent, MCP, tool, observability, guardrail, and cost-control governance. ThumbGate is a local pre-action gate that blocks risky developer-agent actions before they call shell, file, browser, API, MCP, or deploy tools.",
+  "about": ["Databricks Unity AI Gateway", "AI gateway", "MCP governance", "pre-action gates", "AI agent governance"],
+  "url": "https://thumbgate.ai/compare/databricks-unity-ai-gateway",
+  "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+  "mainEntityOfPage": "https://thumbgate.ai/compare/databricks-unity-ai-gateway"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is ThumbGate a Databricks Unity AI Gateway competitor?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Databricks Unity AI Gateway is an enterprise AI gateway and governance control plane. ThumbGate is a local pre-action enforcement layer inside developer-agent workflows. The strongest architecture uses the gateway for fleet-level governance and local gates for action-level prevention."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What gap does ThumbGate fill if a team already has Unity AI Gateway?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ThumbGate fills the local action boundary: before a coding agent runs shell, edits files, calls MCP tools, opens browsers, hits APIs, or deploys. Enterprise gateways observe and govern centralized AI traffic. Local pre-action gates stop repeated workflow failures at the point where the agent is about to act."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do budget controls differ from pre-action gates?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Budget controls monitor consumption and can recommend cheaper routing or enforce spend limits. Pre-action gates inspect the actual proposed action and block destructive, unsupported, unverified, or policy-breaking tool calls before execution."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can Databricks Unity AI Gateway and ThumbGate run together?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Unity AI Gateway can govern model, agent, MCP, and tool access across the enterprise. ThumbGate can run locally in developer-agent workflows to enforce learned pre-action rules before tools fire. This page does not claim partnership, certification, or endorsement by Databricks."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" class="logo-mark" width="28" height="28" /><span>ThumbGate</span></a>
+      <nav><a href="/learn">Learn</a> &nbsp; <a href="/compare">Compare</a> &nbsp; <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a></nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="container">
+      <span class="eyebrow">ThumbGate vs Databricks Unity AI Gateway</span>
+      <h1>Enterprise AI gateways govern the fleet. ThumbGate gates the local action.</h1>
+      <p><strong>Databricks Unity AI Gateway</strong> validates the category: teams need runtime governance across models, agents, MCP services, enterprise tools, guardrails, observability, and AI cost controls. <strong>ThumbGate</strong> turns that buyer conversation into a developer-agent wedge: stop the repeated bad action before the agent calls shell, file, browser, API, MCP, or deploy tools.</p>
+      <div class="pill-row">
+        <span class="pill good">Complementary, not competitive</span>
+        <span class="pill">MCP governance + local PreToolUse</span>
+        <span class="pill warn">No Databricks partnership claim</span>
+      </div>
+    </div>
+  </section>
+
+  <main class="container">
+    <div class="grid">
+      <div class="content">
+        <section class="detail-section">
+          <h2>Side-by-side scope comparison</h2>
+          <table class="comparison-table">
+            <thead>
+              <tr><th>Dimension</th><th>Databricks Unity AI Gateway</th><th>ThumbGate</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Primary control plane</strong></td><td>Enterprise AI gateway for runtime interactions among models, agents, MCP services, skills, enterprise tools, and custom AI systems.</td><td>Local pre-action gate in the developer-agent workflow before shell, file, browser, API, MCP, or deploy actions execute.</td></tr>
+              <tr><td><strong>Buyer</strong></td><td>Data, platform, security, and AI governance teams standardizing enterprise access and observability.</td><td>Engineering leaders, operators, and agent builders who need repeated workflow failures to stop at the action boundary.</td></tr>
+              <tr><td><strong>MCP governance</strong></td><td>Service policies can define who can call which MCP services and enforce constraints as calls flow through the gateway.</td><td>PreToolUse rules can block or require proof for the local MCP tool call the agent is about to invoke.</td></tr>
+              <tr><td><strong>Cost posture</strong></td><td>Tracks token consumption, budgets, and model/provider routing at the gateway layer.</td><td>Can block runaway local loops, require proof before expensive steps, and enforce budget-aware gate routing before a tool fires.</td></tr>
+              <tr><td><strong>Failure mode caught</strong></td><td>Unapproved provider usage, ungoverned service calls, missing observability, policy violations in centralized AI traffic.</td><td>Repeated destructive commands, unverified claims, unsafe file writes, risky deploys, wrong-context MCP/API calls, and local automation drift.</td></tr>
+              <tr><td><strong>Time to first local test</strong></td><td>Enterprise platform setup and policy design.</td><td><code>npm install -g thumbgate</code>, then <code>npx thumbgate init</code> in the agent workflow.</td></tr>
+              <tr><td><strong>Best together</strong></td><td>Govern the enterprise AI gateway.</td><td>Gate the developer-agent action before it reaches tools.</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="detail-section">
+          <h2>Why the Databricks signal matters</h2>
+          <p>Databricks is telling the enterprise market that AI governance is no longer only a dashboard, model catalog, or compliance report. Their June 2026 launch language moves governance into runtime interactions: models, agents, MCP services, skills, tools, guardrails, observability, and cost controls.</p>
+          <p>That is good for ThumbGate. It makes the buyer problem obvious before ThumbGate has to educate the whole market: once agents can use tools, a team needs control at runtime. ThumbGate's narrower job is to own the local pre-action layer where a developer agent is about to do something concrete.</p>
+        </section>
+
+        <section class="detail-section">
+          <h2>The wedge: gateway plus gate</h2>
+          <p>A gateway can decide which provider, model, service, or MCP endpoint the enterprise permits. A pre-action gate asks the smaller, sharper question: <strong>should this agent action run right now?</strong></p>
+          <ul>
+            <li>Should this shell command execute in this directory?</li>
+            <li>Should this MCP tool call run without a source URL or approval receipt?</li>
+            <li>Should this browser automation post publicly without action-time confirmation?</li>
+            <li>Should this deploy proceed without the required tests and evidence?</li>
+            <li>Should this repeated failure become a durable prevention rule?</li>
+          </ul>
+          <p>That is not a replacement for Unity AI Gateway. It is the local enforcement surface that makes the gateway story more complete.</p>
+        </section>
+
+        <section class="detail-section">
+          <h2>Honest non-affiliation statement</h2>
+          <p>ThumbGate is not a Databricks product, partner, certification, or endorsed integration. This comparison cites public Databricks materials to explain market positioning and architecture boundaries. The practical recommendation is complementary deployment: enterprise gateway for fleet-level governance, ThumbGate for local developer-agent pre-action enforcement.</p>
+        </section>
+
+        <section class="detail-section">
+          <h2>Source evidence</h2>
+          <ul>
+            <li><a href="https://www.databricks.com/blog/ai-governance-data-ai-summit-2026-whats-new-unity-ai-gateway" target="_blank" rel="noopener">Databricks blog: AI governance at Data + AI Summit 2026 and Unity AI Gateway</a></li>
+            <li><a href="https://www.databricks.com/blog/whats-new-unity-ai-gateway-service-policies-guardrails-observability-and-cost-controls-ai" target="_blank" rel="noopener">Databricks blog: service policies, guardrails, observability, and cost controls</a></li>
+            <li><a href="https://www.databricks.com/product/artificial-intelligence/unity-ai-gateway" target="_blank" rel="noopener">Databricks product page: Unity AI Gateway</a></li>
+          </ul>
+        </section>
+      </div>
+
+      <aside class="sidebar">
+        <div class="sidebar-card">
+          <span class="related-label">Operator takeaway</span>
+          <h2>Dashboards and budgets warn you. Gates stop the action.</h2>
+          <p>Use Databricks' announcement as proof that runtime AI governance is now an enterprise budget line. Then sell ThumbGate as the fast local test for the action boundary.</p>
+          <a class="cta-button" href="/guide?utm_source=databricks_unity_ai_gateway&utm_medium=comparison&utm_campaign=enterprise_gateway_gap">Run the local gate</a>
+        </div>
+        <div class="sidebar-card">
+          <span class="related-label">Related</span>
+          <a class="related-card" href="/learn/databricks-unity-ai-gateway-runtime-governance">Databricks validates runtime AI governance</a>
+          <a class="related-card" href="/learn/mcp-pre-action-checks-explained">MCP pre-action checks explained</a>
+          <a class="related-card" href="/learn/cost-aware-agent-gate-routing">Cost-aware agent gate routing</a>
+          <a class="related-card" href="/compare/arcjet">ThumbGate vs Arcjet</a>
+        </div>
+        <div class="sidebar-card">
+          <span class="related-label">FAQ</span>
+          <details class="faq-item" open>
+            <summary>Can this be sold to enterprise teams?</summary>
+            <p>Yes, but the lowest-friction wedge is a concrete workflow diagnostic: one repeated failure, one local gate, one proof run.</p>
+          </details>
+          <details class="faq-item">
+            <summary>Should the copy attack Databricks?</summary>
+            <p>No. Databricks legitimizes the category. The money move is to show where a local gate complements the gateway.</p>
+          </details>
+        </div>
+      </aside>
+    </div>
+  </main>
+</body>
+</html>

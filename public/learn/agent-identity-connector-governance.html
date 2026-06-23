@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Identity and Connector Governance — ThumbGate</title>
+<meta name="description" content="How ThumbGate gates AI agent identities, MCP connectors, Tool Packs, service accounts, DLP, audit logs, and purpose-permission scope before agents act.">
+<link rel="canonical" href="https://thumbgate.ai/learn/agent-identity-connector-governance">
+<link rel="llm-context" href="/llm-context.md" type="text/markdown">
+<link rel="icon" type="image/png" href="/thumbgate-icon.png">
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<meta property="og:title" content="Agent Identity and Connector Governance">
+<meta property="og:description" content="Agents with connectors are identities. Gate owner, invoker, credentials, permissions, DLP, audit, and purpose before the next tool call.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/learn/agent-identity-connector-governance">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Agent Identity and Connector Governance",
+  "description": "A ThumbGate implementation pattern for treating AI agents and MCP connector tool packs as governed identities with owner, purpose, credentials, permissions, DLP, and audit evidence.",
+  "datePublished": "2026-06-20",
+  "dateModified": "2026-06-20",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "https://thumbgate.ai"
+  },
+  "url": "https://thumbgate.ai/learn/agent-identity-connector-governance",
+  "about": [
+    "AI agent identity",
+    "MCP connector governance",
+    "least privilege",
+    "agent audit trails"
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is Glean a ThumbGate competitor?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Glean is adjacent, not a direct replacement. Glean is a Work AI platform with enterprise search, agents, connectors, governance, orchestration, and an MCP gateway. ThumbGate is a local-first pre-action enforcement layer for agent tool calls, repeated-failure memory, and proof gates across developer and MCP workflows."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does Merge Agent Handler relate to ThumbGate?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Merge Agent Handler provides production-ready MCP connectors, authentication, scoped access, DLP, observability, and audit logs. ThumbGate complements it by gating whether the next tool call or connector addition matches the agent's owner, purpose, identity, and scope."
+      }
+    }
+  ]
+}
+</script>
+<link rel="stylesheet" href="/learn/learn.css">
+</head>
+<body>
+<nav>
+  <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline.svg" alt="ThumbGate" width="28" height="28">ThumbGate</a>
+  <a href="/guide">Setup Guide</a>
+  <a href="/learn">Learn</a>
+  <a href="/compare/databricks-unity-ai-gateway">Runtime governance</a>
+</nav>
+<main>
+  <h1>Agents with connectors are identities</h1>
+  <p class="lede">Once an AI agent can authenticate to GitHub, Jira, Slack, Salesforce, Snowflake, cloud, databases, or remote MCP tool packs, it is no longer just a chatbot. It is an actor with credentials, permissions, owners, purpose, and drift.</p>
+
+  <div class="callout">
+    <p><strong>The high-ROI lesson:</strong> treat every agent as an identity and every connector bundle as a scoped permission set. ThumbGate gates the moment before the next action: is this tool call inside the agent's declared purpose, identity, and connector scope?</p>
+    <p class="source-note">Source signals: BleepingComputer/Token Security argued on June 19, 2026 that AI agents are becoming first-class identities; Merge Agent Handler positions production MCP connectors with authentication, scoped access, DLP, observability, and audit logs; Glean positions Work AI with agents, governance, orchestration, connectors, and MCP Gateway; Okta's AI identity checklist frames secure-by-design agent patterns around token vaulting, fine-grained authorization, human-in-the-loop oversight, shadow AI discovery, registration, and lifecycle management.</p>
+  </div>
+
+  <h2>What ThumbGate now gates</h2>
+  <div class="grid">
+    <div class="card"><strong>Identity inventory</strong> Owner, invoker, credential or service account, connected systems, and allowed verbs.</div>
+    <div class="card"><strong>Purpose-permission match</strong> A sales prep agent should not delete database tables or create privileged users.</div>
+    <div class="card"><strong>Connector Tool Pack scope</strong> Remote MCP and connector bundles need allowed tools, auth identity, DLP, audit, and downstream-system evidence.</div>
+    <div class="card"><strong>Review freshness</strong> Agent access changes over time; stale point-in-time reviews are treated as drift signals.</div>
+    <div class="card"><strong>Shadow agent registration</strong> Unregistered agents and imported MCP servers are blocked before privileged tool calls.</div>
+    <div class="card"><strong>Vaulted tokens</strong> Raw connector credentials, plaintext API keys, and unvaulted service tokens require explicit exception evidence.</div>
+  </div>
+
+  <h2>The proof actions</h2>
+  <p>Before a high-trust claim is accepted, ThumbGate can require tracked evidence:</p>
+  <pre><code>track_action("agent_identity_inventory_verified", {
+  owner: "workflow owner",
+  invoker: "who can run the agent",
+  credential: "service account or connector identity",
+  systems: ["GitHub", "Jira", "Slack"],
+  verbs: ["read", "write"],
+  purpose: "triage engineering tickets"
+})
+
+track_action("connector_scope_verified", {
+  platform: "Merge Agent Handler or Glean MCP Gateway",
+  allowedTools: ["create_ticket", "read_issue"],
+  dlp: "enabled",
+  audit: "tool-call logs verified",
+  downstreamSystems: ["Jira"]
+})</code></pre>
+
+  <h2>Is Glean a competitor?</h2>
+  <p>Glean is adjacent and upstream. It is a Work AI platform: enterprise search, assistant, agents, orchestration, connectors, security, and MCP Gateway. It competes for enterprise AI budget, but it does not replace ThumbGate's local-first feedback-to-enforcement loop for Claude Code, Cursor, Codex, Gemini CLI, MCP tools, and developer-machine actions.</p>
+  <p>The wedge is complementary: Glean and Merge help agents reach more enterprise systems. ThumbGate makes each new action boundary safer by checking purpose, identity, connector scope, and prior failures before execution.</p>
+
+  <h2>Buyer message</h2>
+  <p>If your agent can authenticate, it has an identity. If it can call tools, it has a blast radius. ThumbGate gives the operator a pre-action gate for that blast radius.</p>
+  <p><a class="cta" href="/guide">Install ThumbGate locally</a></p>
+</main>
+</body>
+</html>

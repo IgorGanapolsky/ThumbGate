@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ThumbGate vs Hermes and EverOS | Memory Is Not Enforcement</title>
+  <meta name="description" content="Hermes, EverOS, Honcho, and Mem0 help AI agents remember. ThumbGate turns remembered failures into pre-action gates before shell, files, browser automation, APIs, MCP tools, or deploys execute." />
+  <meta property="og:title" content="ThumbGate vs Hermes and EverOS | Memory Is Not Enforcement" />
+  <meta property="og:description" content="Agent memory preserves context. ThumbGate enforces remembered failures before the next tool call." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/compare/hermes-everos-memory" />
+  <link rel="canonical" href="https://thumbgate.ai/compare/hermes-everos-memory" />
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png" />
+  <style>
+    :root { --bg: #0a0a0b; --card: #161618; --line: #242428; --text: #e8e8ec; --muted: #9b9ba6; --cyan: #22d3ee; --green: #4ade80; --amber: #fbbf24; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+    .topbar { border-bottom: 1px solid var(--line); background: rgba(10,10,11,.92); position: sticky; top: 0; z-index: 10; }
+    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; padding-bottom: 14px; }
+    .brand { color: var(--text); font-weight: 800; }
+    .hero { padding: 72px 0 34px; }
+    .eyebrow { color: var(--cyan); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    h1 { font-size: clamp(34px, 5vw, 58px); line-height: 1.05; letter-spacing: -.04em; max-width: 860px; margin: 14px 0 18px; }
+    .hero p { max-width: 760px; color: var(--muted); font-size: 18px; }
+    .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 22px; padding-bottom: 72px; }
+    .section, .aside { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 22px; margin-bottom: 18px; }
+    .section h2, .aside h2 { margin-top: 0; letter-spacing: -.02em; }
+    .section p, .section li, .aside p, .aside li { color: var(--muted); }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+    .pill { border: 1px solid var(--line); border-radius: 999px; padding: 9px 13px; background: #111113; color: var(--text); font-size: 14px; font-weight: 700; }
+    .pill.good { color: #b8f7c8; border-color: rgba(74,222,128,.3); background: rgba(74,222,128,.09); }
+    table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 14px; }
+    th, td { border: 1px solid var(--line); padding: 12px; text-align: left; vertical-align: top; }
+    th { color: var(--cyan); background: #111113; }
+    code { color: var(--cyan); background: #111113; border: 1px solid var(--line); border-radius: 6px; padding: .1rem .35rem; }
+    pre { overflow-x: auto; background: #111113; border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+    .cta { display: inline-flex; padding: 12px 16px; border-radius: 10px; background: var(--cyan); color: #061014; font-weight: 800; margin-top: 14px; }
+    .aside { position: sticky; top: 82px; }
+    @media (max-width: 840px) { .grid { grid-template-columns: 1fr; } .aside { position: static; } }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "ThumbGate vs Hermes and EverOS: Memory Is Not Enforcement",
+    "description": "Hermes, EverOS, Honcho, and Mem0 help AI agents remember. ThumbGate turns remembered failures into pre-action gates before tools execute.",
+    "about": ["AI agent memory", "Hermes Agent", "EverOS", "Honcho", "AI agent enforcement", "PreToolUse hooks"],
+    "url": "https://thumbgate.ai/compare/hermes-everos-memory",
+    "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" }
+  }
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <a class="brand" href="/">ThumbGate</a>
+      <nav><a href="/compare">Compare</a> &nbsp; <a href="/guide">Guide</a> &nbsp; <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a></nav>
+    </div>
+  </header>
+  <section class="hero">
+    <div class="container">
+      <div class="eyebrow">ThumbGate vs Hermes / EverOS / Honcho-style memory</div>
+      <h1>AI memory helps agents remember. ThumbGate stops the repeated mistake before execution.</h1>
+      <p>Hermes, EverOS, Honcho, Mem0, and markdown memory systems validate the same buyer pain: agents need continuity. ThumbGate competes at the next layer: remembered failures become local pre-action gates before shell, files, browser automation, APIs, MCP tools, payments, deploys, or public claims run.</p>
+      <div class="pill-row">
+        <span class="pill good">Complementary when stacked</span>
+        <span class="pill">Competitive when memory claims to be control</span>
+        <span class="pill">Local pre-action enforcement</span>
+      </div>
+    </div>
+  </section>
+  <main class="container grid">
+    <div>
+      <section class="section">
+        <h2>Competitor or complement?</h2>
+        <table>
+          <thead><tr><th>Layer</th><th>Hermes / EverOS / Honcho-style memory</th><th>ThumbGate</th></tr></thead>
+          <tbody>
+            <tr><td>Primary job</td><td>Remember context, profiles, cases, skills, and prior episodes.</td><td>Decide whether the next concrete action is allowed to execute.</td></tr>
+            <tr><td>Risk</td><td>The agent can remember a failure and still repeat it.</td><td>A remembered failure can become a warn/block gate at the tool-call boundary.</td></tr>
+            <tr><td>Best signal</td><td>Useful retrieval and continuity.</td><td>Blocked repeat mistakes, proof requirements, approval boundaries, and action receipts.</td></tr>
+            <tr><td>Best together</td><td>Feeds high-quality memory evidence.</td><td>Turns high-risk memory into enforceable pre-action policy.</td></tr>
+          </tbody>
+        </table>
+      </section>
+      <section class="section">
+        <h2>New bridge: memory provider to enforcement candidate</h2>
+        <p>ThumbGate now has a small local bridge for Hermes/EverOS/Honcho-style memory payloads. It scans remembered episodes for high-risk action language such as 429 retry loops, tool-call drift, identity scope, leaked credentials, production deploys, payment actions, state corruption, and unverified claims.</p>
+        <pre><code>cat hermes-memory.json | node scripts/integrations/memory-provider-enforcement-bridge.js --provider=hermes --markdown</code></pre>
+        <p>The output is not a blind import. It is an operator-reviewable list of proposed ThumbGate warn/block gates plus positive lessons.</p>
+      </section>
+      <section class="section">
+        <h2>The jiu-jitsu move</h2>
+        <p>Do not fight memory vendors at their strongest position. Take the control point they leave exposed.</p>
+        <ul>
+          <li><strong>Frame:</strong> memory is context, not enforcement.</li>
+          <li><strong>Position:</strong> place ThumbGate before the tool call.</li>
+          <li><strong>Leverage:</strong> one remembered failure becomes a reusable gate.</li>
+          <li><strong>Tap early:</strong> block, require proof, or ask for approval before the agent escalates a small mistake into real damage.</li>
+        </ul>
+      </section>
+    </div>
+    <aside class="aside">
+      <h2>Buyer takeaway</h2>
+      <p>If your AI memory layer says “we learned this,” ask the sharper question:</p>
+      <p><strong>What blocks the next agent from doing it again?</strong></p>
+      <a class="cta" href="/pricing">Harden a workflow</a>
+      <p style="margin-top:18px;">No partnership or endorsement is claimed with Hermes, EverOS, Honcho, Mem0, or their vendors.</p>
+    </aside>
+  </main>
+</body>
+</html>
