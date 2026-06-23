@@ -37,3 +37,4 @@ Key: Always dogfood the latest local changes before publishing.
 - **Rule [auto-claim-verification-entity-customer-entity-funnel-p]**: Auto-promoted repeated pattern: "Payment stack answer overfit to creating a missing Diagnostic checkout and failed to answer Stripe alternatives directly" (1 occurrences in 30 days)
 - **Rule [auto-email-entity-revenue-gatekeeper-revenue-operator-s]**: Auto-promoted repeated pattern: "Revenue Operator Gatekeeper follow-up" (1 occurrences in 30 days)
 - **Rule [auto-promoted-mqq2uh6e-0]**: NEVER MISTAKE: This is a test failure
+- **Rule [auto-promoted-mqq2xa0q-0]**: NEVER repeated problem context string
