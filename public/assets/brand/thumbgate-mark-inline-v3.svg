@@ -1,21 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="tg-inline-title tg-inline-desc">
   <title id="tg-inline-title">ThumbGate</title>
-  <desc id="tg-inline-desc">ThumbGate TG gate monogram, transparent background for inline use in site headers.</desc>
+  <desc id="tg-inline-desc">ThumbGate premium shield and thumbs-up mark for inline use in site headers.</desc>
   <defs>
     <linearGradient id="tg-inline-frame" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#8cf5d1"/>
       <stop offset="1" stop-color="#22d3ee"/>
     </linearGradient>
   </defs>
-  <!-- Transparent clean outer frame using the gradient stroke -->
-  <rect x="9" y="9" width="46" height="46" rx="12" fill="none" stroke="url(#tg-inline-frame)" stroke-width="3"/>
-  
-  <!-- Gate Arch -->
-  <path d="M19 44V25c0-5.5 4.5-10 10-10h6c5.5 0 10 4.5 10 10v19" fill="none" stroke="#8cf5d1" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
-  
-  <!-- TG Monogram -->
-  <text x="32" y="39" text-anchor="middle" fill="#e7fbff" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Arial, sans-serif" font-size="19" font-weight="900">TG</text>
-  
-  <!-- Bottom Bar -->
-  <rect x="18" y="44" width="28" height="4" rx="2" fill="#22d3ee"/>
+  <!-- Outer Shield / Gate (Transparent background fill, thicker gradient frame) -->
+  <path d="M32 9 C20 13 15 20 15 33 C15 45 26 53 32 56 C38 53 49 45 49 33 C49 20 44 13 32 9 Z" 
+        fill="none" stroke="url(#tg-inline-frame)" stroke-width="4.5" stroke-linejoin="round"/>
+        
+  <!-- Proportional Thumbs Up in Center (Enlarged and Bolder for high-contrast header visibility) -->
+  <g transform="translate(17, 16) scale(1.25)" stroke="#8cf5d1" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+  </g>
 </svg>
