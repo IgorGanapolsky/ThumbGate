@@ -126,6 +126,8 @@ Rules:
 > The following rules were automatically derived from execution failures and thumbs-down feedback.
 > You MUST follow these constraints strictly to prevent repeated errors.
 
+- **Rule [auto-chat-multi-pr-churn-overclaiming-user-visible-corr]**: Auto-promoted repeated pattern: "CEO thumbs-down on dashboard chat session — repeated overclaiming + multi-iteration fix cycle. CEO showed screenshot of " (1 occurrences in 30 days)
+- **Rule [auto-community-growth-entity-customer-feedback-capture-]**: Auto-promoted repeated pattern: "Ralph Loop community/course growth runbook used a retired local preview alias during Operator Lab promo verification" (1 occurrences in 30 days)
 - **Rule [auto-evidence-first-keys-never-ask-user-recurring-reven]**: Auto-promoted repeated pattern: "Told CEO STRIPE_SECRET_KEY was absent and asked them to set it; only checked interactive shell $VAR, not .env or the ~/." (1 occurrences in 30 days)
 - **Rule [auto-autonomy-drafts-only-override-entity-customer-exec]**: Auto-promoted repeated pattern: "CEO thumbs-down: 'why do you keep stopping?' — I kept ending turns with 'say the word and I'll do X', deferring to stand" (1 occurrences in 30 days)
 - **Rule [auto-autonomy-full-authority-lost-state-pr-management-r]**: Auto-promoted repeated pattern: "CEO: 'you idiot... why do you keep forgetting?' during a PR-management + hygiene directive. I re-inventoried the same op" (1 occurrences in 30 days)
@@ -140,5 +142,3 @@ Rules:
 - **Rule [auto-automation-entity-customer-medium-permanent-rule-p]**: Auto-promoted repeated pattern: "User asks why Medium was not automated and why they have to remind me daily." (1 occurrences in 30 days)
 - **Rule [auto-claim-verification-entity-customer-entity-funnel-p]**: Auto-promoted repeated pattern: "Payment stack answer overfit to creating a missing Diagnostic checkout and failed to answer Stripe alternatives directly" (1 occurrences in 30 days)
 - **Rule [auto-email-entity-revenue-gatekeeper-revenue-operator-s]**: Auto-promoted repeated pattern: "Revenue Operator Gatekeeper follow-up" (1 occurrences in 30 days)
-- **Rule [auto-promoted-mqpyvebi-0]**: NEVER MISTAKE: This is a test failure
-- **Rule [auto-promoted-mqpywcnq-0]**: NEVER repeated problem context string
