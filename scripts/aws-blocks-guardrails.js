@@ -5,6 +5,31 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const AWS_BLOCKS_DEPENDENCY_PATTERN = /(^|\/)@aws-blocks\/(?:blocks|[^/\s"']+)/;
+const PRODUCTION_DEPLOY_PATTERNS = [
+  /\bcdk\s+deploy\b/i,
+  /\bnpm\s+run\s+deploy\b/i,
+  /\bpnpm\s+deploy\b/i,
+  /\byarn\s+deploy\b/i,
+  /\bsst\s+deploy\b/i,
+  /\bblocks?\s+deploy\b/i,
+];
+const DESTROY_PATTERNS = [
+  /\bcdk\s+destroy\b/i,
+  /\bnpm\s+run\s+destroy\b/i,
+  /\bpnpm\s+destroy\b/i,
+  /\byarn\s+destroy\b/i,
+  /\bsandbox\b.*--destroy\b/i,
+  /\b--destroy\b/i,
+  /\baws\s+cloudformation\s+delete-stack\b/i,
+];
+const DESTRUCTIVE_AWS_PATTERNS = [
+  /\baws\s+dynamodb\s+delete-table\b/i,
+  /\baws\s+rds\s+delete-db-instance\b/i,
+  /\baws\s+s3\s+rm\b[\s\S]*--recursive\b/i,
+  /\baws\s+lambda\s+delete-function\b/i,
+  /\baws\s+bedrock-agent\s+delete-/i,
+  /\baws\s+bedrock-agent-runtime\b/i,
+];
 
 function toList(value) {
   if (Array.isArray(value)) return value.map(String).map((entry) => entry.trim()).filter(Boolean);
@@ -28,6 +53,20 @@ function readPackageJson(projectDir) {
   } catch {
     return null;
   }
+}
+
+function matchesAny(text, patterns) {
+  return patterns.some((pattern) => pattern.test(text));
+}
+
+function hasDestructiveSql(text) {
+  if (/\bdrop\s+(table|database|schema|index|column)\b/i.test(text)) return true;
+  if (/\btruncate\s+table\b/i.test(text)) return true;
+  if (/\bdelete\s+from\s+[\w".-]+(?:\s*;|\s*$)/i.test(text)) return true;
+  const updateMatch = /\bupdate\s+[\w".-]+\s+set\b/i.exec(text);
+  if (!updateMatch) return false;
+  const afterUpdate = text.slice(updateMatch.index, updateMatch.index + 180);
+  return !/\bwhere\b/i.test(afterUpdate);
 }
 
 function packageUsesAwsBlocks(pkg) {
@@ -60,19 +99,19 @@ function detectAction(input = {}) {
   const signals = [];
   const add = (id, label, severity = 'medium') => signals.push({ id, label, severity });
 
-  if (/\b(cdk\s+deploy|npm\s+run\s+deploy|pnpm\s+deploy|yarn\s+deploy|sst\s+deploy|blocks?\s+deploy)\b/i.test(combined)) {
+  if (matchesAny(combined, PRODUCTION_DEPLOY_PATTERNS)) {
     add('aws-blocks-production-deploy', 'production deploy from an AWS Blocks workflow', 'high');
   }
 
-  if (/\b(cdk\s+destroy|npm\s+run\s+destroy|pnpm\s+destroy|yarn\s+destroy|sandbox\b.*--destroy|--destroy\b|aws\s+cloudformation\s+delete-stack)\b/i.test(combined)) {
+  if (matchesAny(combined, DESTROY_PATTERNS)) {
     add('aws-blocks-destroy', 'destroy command can remove AWS resources created from local Blocks code', 'critical');
   }
 
-  if (/\b(drop\s+(table|database|schema|index|column)|truncate\s+table|delete\s+from\s+[\w".-]+(?:\s*;|\s*$)|update\s+[\w".-]+\s+set\b(?![\s\S]{0,160}\bwhere\b))/i.test(combined)) {
+  if (hasDestructiveSql(combined)) {
     add('destructive-sql-or-ddl', 'destructive or unscoped SQL mutation', 'critical');
   }
 
-  if (/\b(aws\s+dynamodb\s+delete-table|aws\s+rds\s+delete-db-instance|aws\s+s3\s+rm\b[\s\S]*--recursive|aws\s+lambda\s+delete-function|aws\s+bedrock-agent\s+delete-|aws\s+bedrock-agent-runtime\b)/i.test(combined)) {
+  if (matchesAny(combined, DESTRUCTIVE_AWS_PATTERNS)) {
     add('destructive-aws-cli', 'destructive AWS CLI or Bedrock agent action', 'critical');
   }
 
@@ -147,7 +186,12 @@ function evaluateAwsBlocksAction(input = {}) {
   }
 
   const shouldBlock = projectUsesAwsBlocks && requiredEvidence.length > 0;
-  const status = shouldBlock ? 'blocked' : (action.highRisk ? 'needs-review' : 'allowed');
+  let status = 'allowed';
+  if (shouldBlock) {
+    status = 'blocked';
+  } else if (action.highRisk) {
+    status = 'needs-review';
+  }
 
   return {
     name: 'thumbgate-aws-blocks-guardrails',
@@ -218,7 +262,7 @@ function runCli(args = parseArgs()) {
   }
 }
 
-if (require.main === module) runCli();
+if (require.main?.filename === __filename) runCli();
 
 module.exports = {
   detectAwsBlocksProject,

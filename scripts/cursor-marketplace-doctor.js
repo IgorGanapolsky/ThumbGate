@@ -58,7 +58,7 @@ function fetchText(url, timeoutMs = 10000) {
 }
 
 function extractTitle(html = '') {
-  const match = String(html).match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  const match = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(String(html));
   return match ? match[1].replace(/\s+/g, ' ').trim() : '';
 }
 
@@ -151,7 +151,7 @@ async function runDoctor(options = {}, deps = {}) {
       listing = {
         live: false,
         reason: 'network_error',
-        message: error && error.message ? error.message : String(error),
+        message: error?.message || String(error),
         url: CURSOR_MARKETPLACE_URL,
       };
     }
@@ -203,12 +203,13 @@ function renderText(report) {
   ];
   if (report.localBundle.failures.length > 0) {
     lines.push('', 'Local bundle failures:');
-    lines.push(...report.localBundle.failures.map((failure) => `- ${failure}`));
+    const failures = report.localBundle.failures.map((failure) => `- ${failure}`);
+    lines.push(...failures);
   }
   return `${lines.join('\n')}\n`;
 }
 
-if (require.main === module) {
+if (require.main?.filename === __filename) {
   const options = parseArgs(process.argv.slice(2));
   runDoctor(options)
     .then((report) => {
@@ -216,7 +217,7 @@ if (require.main === module) {
       process.exitCode = report.publicStatus === 'live' ? 0 : 2;
     })
     .catch((error) => {
-      console.error(error && error.stack ? error.stack : error);
+      console.error(error?.stack || error);
       process.exit(1);
     });
 }

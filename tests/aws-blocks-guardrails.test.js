@@ -8,6 +8,7 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 
 const {
+  detectAction,
   detectAwsBlocksProject,
   evaluateAwsBlocksAction,
   buildAwsBlocksHardeningOffer,
@@ -17,6 +18,20 @@ test('detectAwsBlocksProject recognizes an AWS Blocks workspace without network 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-aws-blocks-'));
   fs.mkdirSync(path.join(dir, 'aws-blocks'));
   fs.writeFileSync(path.join(dir, 'aws-blocks', 'index.ts'), 'export const blocks = [];\n');
+
+  assert.equal(detectAwsBlocksProject(dir), true);
+});
+
+test('detectAwsBlocksProject recognizes package scripts and dependency hints', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-aws-blocks-package-'));
+  fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({
+    dependencies: {
+      '@aws-blocks/blocks': '1.0.0',
+    },
+    scripts: {
+      deploy: 'cdk deploy',
+    },
+  }));
 
   assert.equal(detectAwsBlocksProject(dir), true);
 });
@@ -55,6 +70,28 @@ test('AWS Blocks deploy can pass when required evidence is attached', () => {
 
   assert.equal(report.status, 'needs-review');
   assert.deepEqual(report.requiredEvidence, []);
+});
+
+test('high-risk cloud actions outside AWS Blocks are marked for review rather than blocked', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-non-aws-blocks-'));
+  fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ scripts: { test: 'node --test' } }));
+  const report = evaluateAwsBlocksAction({
+    projectUsesAwsBlocks: false,
+    projectDir: dir,
+    command: 'aws s3 rm s3://customer-bucket --recursive',
+  });
+
+  assert.equal(report.status, 'needs-review');
+  assert.ok(report.requiredEvidence.some((entry) => entry.id === 'aws-account-and-region-confirmed'));
+  assert.ok(report.signals.some((signal) => signal.id === 'destructive-aws-cli'));
+});
+
+test('scoped SQL updates are not treated as destructive SQL', () => {
+  const action = detectAction({
+    command: 'psql "$DATABASE_URL" -c "update accounts set status = active where id = 42"',
+  });
+
+  assert.equal(action.signals.some((signal) => signal.id === 'destructive-sql-or-ddl'), false);
 });
 
 test('destroy and destructive SQL require backup and human approval evidence', () => {
@@ -113,4 +150,16 @@ test('CLI emits blocked JSON for AWS Blocks deploy guardrail', () => {
 
   assert.equal(report.status, 'blocked');
   assert.ok(report.requiredEvidence.some((entry) => entry.id === 'cdk-diff-reviewed'));
+});
+
+test('CLI renders the hardening offer in text mode', () => {
+  const stdout = execFileSync(process.execPath, [
+    path.join(__dirname, '..', 'scripts', 'aws-blocks-guardrails.js'),
+    'offer',
+    '--workflow=agent backend',
+    '--buyer=platform lead',
+  ], { encoding: 'utf8' });
+
+  assert.match(stdout, /thumbgate-aws-blocks-hardening-offer: ready-for-positioning/);
+  assert.match(stdout, /map one AWS Blocks local-to-cloud workflow/);
 });

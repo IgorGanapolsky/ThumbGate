@@ -731,7 +731,7 @@ async function main(argv = process.argv.slice(2)) {
   }
 }
 
-if (require.main === module) {
+if (require.main?.filename === __filename) {
   main().catch((error) => {
     console.error(error?.message || error);
     process.exit(1);
