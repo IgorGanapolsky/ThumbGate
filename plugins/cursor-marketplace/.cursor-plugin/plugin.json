@@ -2,7 +2,7 @@
   "name": "thumbgate",
   "displayName": "ThumbGate",
   "description": "👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.",
-  "version": "1.27.8",
+  "version": "1.27.15",
   "author": {
     "name": "Igor Ganapolsky",
     "url": "https://github.com/IgorGanapolsky"
@@ -33,8 +33,8 @@
       "Interactive",
       "Write"
     ],
-    "websiteURL": "https://thumbgate-production.up.railway.app",
-    "privacyPolicyURL": "https://thumbgate-production.up.railway.app/privacy",
+    "websiteURL": "https://thumbgate.ai",
+    "privacyPolicyURL": "https://thumbgate.ai/privacy",
     "termsOfServiceURL": "https://github.com/IgorGanapolsky/ThumbGate/blob/main/LICENSE",
     "defaultPrompt": [
       "Capture a thumbs down with context after a mistake.",

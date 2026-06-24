@@ -65,7 +65,7 @@ How it works:
 
 ### Cursor Marketplace Status
 
-ThumbGate has a Cursor plugin bundle in this repo, but do not claim public Cursor Marketplace availability until the Cursor dashboard shows the listing live. The screenshot-verified current state on 2026-06-03 is that this account's Cursor Plugins page shows no installed ThumbGate plugin.
+ThumbGate has a Cursor plugin bundle in this repo, but do not claim public Cursor Marketplace availability until the Cursor dashboard shows the listing live. As of 2026-06-24, `npm run cursor:marketplace:doctor:json` reports `publicStatus: not_live`; the public listing page title is `Marketplace Plugin Not Found | Cursor Plugins`.
 
 Use this path when publishing or refreshing the public listing:
 
@@ -108,7 +108,7 @@ Or copy the plugin MCP config into `.cursor/mcp.json`:
 }
 ```
 
-Full setup guide: https://thumbgate-production.up.railway.app/guide
+Full setup guide: https://thumbgate.ai/guide
 
 ## Update behavior
 
@@ -134,4 +134,4 @@ ThumbGate gives Cursor agents a practical guardrail layer:
 
 Verification evidence for shipped behavior lives in `docs/VERIFICATION_EVIDENCE.md`.
 Release and promotion rules live in `docs/CURSOR_PLUGIN_OPERATIONS.md`.
-Proof-backed setup path: https://thumbgate-production.up.railway.app/guide
+Proof-backed setup path: https://thumbgate.ai/guide
