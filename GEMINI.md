@@ -20,4 +20,4 @@ Key: Always dogfood the latest local changes before publishing.
 > The following rules were automatically derived from execution failures and thumbs-down feedback.
 > You MUST follow these constraints strictly to prevent repeated errors.
 
-- **Rule [auto-promoted-mqqrbk8u-0]**: NEVER repeated problem context string
+- **Rule [auto-promoted-mqs97psx-0]**: NEVER repeated problem context string
