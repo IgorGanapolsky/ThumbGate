@@ -111,7 +111,7 @@ The standalone Codex bundle ships `.codex-plugin/plugin.json`, `.mcp.json`, `.ag
 - Public submission path: `https://cursor.com/dashboard/plugins`
 - Team fallback: import the GitHub repo through `Dashboard -> Settings -> Plugins -> Team Marketplaces`
 - Cursor Directory: treat as a discovery surface, not the install/update surface
-- Current evidence: as of 2026-06-24, `npm run cursor:marketplace:doctor:json` reports `publicStatus: not_live` and the public listing title is `Marketplace Plugin Not Found | Cursor Plugins`; local Cursor metadata is aligned to package `1.27.15`.
+- Current evidence: public Cursor Marketplace availability is not yet proven. As of 2026-06-24, `npm run cursor:marketplace:doctor:json` reports `publicStatus: not_live` and the public listing title is `Marketplace Plugin Not Found | Cursor Plugins`; local Cursor metadata is aligned to package `1.27.15`.
 
 Cursor update rules:
 
