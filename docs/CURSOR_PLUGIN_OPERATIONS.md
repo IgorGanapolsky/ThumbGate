@@ -36,7 +36,18 @@
 - Keep `DPO` and `Thompson Sampling` in the body or tags, not the first sentence.
 - Keep proof near the pitch by linking [VERIFICATION_EVIDENCE.md](./VERIFICATION_EVIDENCE.md).
 - In manual forms, use the display name for `Name` and keep the slug for package/config paths only.
-- **Marketplace-listing claims must reflect review status.** The Cursor Marketplace submission was filed 2026-05-19 and is still pending Cursor's manual review (the listing URL `cursor.com/marketplace/thumbgate` returns 404 as of writing). Until Cursor confirms approval, public copy must say "Cursor Marketplace listing pending Cursor's review" or "Cursor support — Marketplace listing pending approval." The runtime install (`npx thumbgate init --agent cursor`) works today regardless of Marketplace status and is safe to promote as the install path. Re-flip the wording once Cursor approves the listing.
+- **Marketplace-listing claims must reflect review status.** The Cursor Marketplace submission was filed 2026-05-19 and is still pending Cursor's manual review. As of 2026-06-24, `npm run cursor:marketplace:doctor:json` reports `publicStatus: not_live`; the public listing URL `https://cursor.com/marketplace/thumbgate` returns Cursor's app shell with the page title `Marketplace Plugin Not Found | Cursor Plugins`, so HTTP 200 alone is not proof of publication. Until Cursor confirms approval, public copy must say "Cursor Marketplace listing pending Cursor's review" or "Cursor support — Marketplace listing pending approval." The runtime install (`npx thumbgate init --agent cursor`) works today regardless of Marketplace status and is safe to promote as the install path. Re-flip the wording once Cursor approves the listing.
+
+## Publication Doctor
+
+Run this before making any Cursor Marketplace claim:
+
+```bash
+npm run cursor:marketplace:doctor
+npm run cursor:marketplace:doctor:json
+```
+
+The doctor validates the local bundle and checks the public listing URL. If it reports `publicStatus: not_live`, the only authoritative next check is the logged-in dashboard at `https://cursor.com/dashboard/plugins`, because only the private dashboard can distinguish draft, pending, rejected, approved, or absent submission state.
 
 ## Suggested short description
 
@@ -53,6 +64,7 @@ When the feedback is a vague thumbs-down, ThumbGate can distill the lesson from 
 - Name: `ThumbGate`
 - Description: `👍👎 Thumbs down a mistake — your AI agent won't repeat it. Thumbs up good work — it remembers the pattern.`
 - Repository URL: `https://github.com/IgorGanapolsky/ThumbGate`
-- Homepage: `https://thumbgate-production.up.railway.app/guide`
+- Homepage: `https://thumbgate.ai/guide`
 - Revenue pack: `node scripts/cursor-marketplace-revenue-pack.js --write-docs`
 - **2026-05-19**: Submitted ThumbGate to Cursor Marketplace via `cursor.com/marketplace/publish`. Asset verified. Awaiting manual review.
+- **2026-06-24**: Local Cursor marketplace metadata aligned to package `1.27.15`; public listing still reports `not_live`.

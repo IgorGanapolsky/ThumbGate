@@ -37,6 +37,13 @@ Do not present the release zip as a one-click Codex Desktop installer. A user mu
 4. Verify the install page leads with CLI setup before the zip download.
 5. Refresh the install page, setup guide, and release-bundle positioning when proof links or offer order change.
 
+## Marketplace status language
+
+- Repo-local Codex marketplace: `codex plugin marketplace list --json` must show `thumbgate-plugin-catalog` before claiming local Codex marketplace availability.
+- Installed local plugin: `codex plugin list --json` must show `codex-profile@thumbgate-plugin-catalog` before claiming the current machine has it installed.
+- OpenAI curated plugin directory: do not claim ThumbGate is listed there until the Codex plugin directory itself shows ThumbGate. As of 2026-06-24, the verified path is repo-local marketplace plus CLI setup, not public curated directory approval.
+- Release bundle: do not claim the latest GitHub bundle is current unless `releases/latest/download/thumbgate-codex-plugin.zip` resolves to the current package version.
+
 ## Positioning rules
 
 - Lead with one repeated Codex workflow mistake before architecture.

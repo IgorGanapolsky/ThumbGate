@@ -11,6 +11,8 @@ const MODELS = {
 const DEFAULT_MODEL = MODELS.FAST;
 const DEFAULT_MAX_TOKENS = 1024;
 const DEFAULT_CACHE_TTL = '5m';
+const DEFAULT_ZAI_BASE_URL = 'https://api.z.ai/api/paas/v4';
+const DEFAULT_ZAI_MODEL = 'glm-5.2-flash';
 
 let _anthropicClient = null;
 let _geminiClient = null;
@@ -134,6 +136,58 @@ function parseClaudeJson(text) {
   if (typeof text !== 'string') return null;
   try {
     return JSON.parse(stripCodeFences(text));
+  } catch {
+    return null;
+  }
+}
+
+function getZaiApiKey(env = process.env) {
+  return env.ZAI_API_KEY || env.THUMBGATE_ZAI_API_KEY || '';
+}
+
+function getZaiBaseUrl(env = process.env) {
+  return env.ZAI_BASE_URL || env.THUMBGATE_ZAI_BASE_URL || DEFAULT_ZAI_BASE_URL;
+}
+
+function getZaiModel(env = process.env) {
+  return env.ZAI_API_MODEL || env.THUMBGATE_ZAI_MODEL || DEFAULT_ZAI_MODEL;
+}
+
+async function callZaiInternal(options = {}, env = process.env) {
+  const apiKey = getZaiApiKey(env);
+  if (!apiKey || typeof fetch !== 'function') return null;
+
+  const messages = Array.isArray(options.messages) && options.messages.length > 0
+    ? options.messages
+    : [
+      ...(options.systemPrompt ? [{ role: 'system', content: options.systemPrompt }] : []),
+      { role: 'user', content: options.userPrompt || '' },
+    ];
+
+  try {
+    const response = await fetch(`${getZaiBaseUrl(env).replace(/\/$/, '')}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: options.model || getZaiModel(env),
+        messages,
+        max_tokens: options.maxTokens || DEFAULT_MAX_TOKENS,
+        temperature: Number.isFinite(options.temperature) ? options.temperature : 0,
+      }),
+    });
+
+    if (!response.ok) return null;
+    const json = await response.json();
+    return {
+      text: stripCodeFences(json?.choices?.[0]?.message?.content || ''),
+      usage: json?.usage || null,
+      stopReason: json?.choices?.[0]?.finish_reason || null,
+      id: json?.id || null,
+      model: json?.model || options.model || getZaiModel(env),
+    };
   } catch {
     return null;
   }
@@ -279,10 +333,35 @@ async function callClaudeJson(options = {}) {
   return parsed;
 }
 
+async function callZaiJson(options = {}) {
+  const result = await callZaiInternal(options);
+  if (!result) return null;
+
+  const parsed = parseClaudeJson(result.text);
+  if (parsed === null) return null;
+
+  if (options.returnMetadata) {
+    return {
+      parsed,
+      text: result.text,
+      usage: result.usage,
+      stopReason: result.stopReason,
+      id: result.id,
+      model: result.model,
+    };
+  }
+
+  return parsed;
+}
+
 module.exports = {
   isAvailable,
   callClaude,
   callClaudeJson,
+  callZaiJson,
+  getZaiApiKey,
+  getZaiBaseUrl,
+  getZaiModel,
   stripCodeFences,
   parseClaudeJson,
   normalizeCacheOptions,
