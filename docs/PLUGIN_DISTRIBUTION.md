@@ -43,7 +43,7 @@ This avoids platform-specific rewrite cost and keeps the product under a small b
 ## Claude (MCP)
 
 - Use: `adapters/claude/.mcp.json`
-- Transport: local stdio MCP server launched via `npx -y thumbgate@1.27.8 serve`
+- Transport: local stdio MCP server launched via `npx -y thumbgate@latest serve`
 
 ## Claude Desktop Extensions
 
@@ -58,7 +58,7 @@ This avoids platform-specific rewrite cost and keeps the product under a small b
 - Release workflow: `.github/workflows/publish-claude-plugin.yml`
 - Latest direct download: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb`
 - Latest review packet zip: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-plugin-review.zip`
-- Local install path: `claude mcp add thumbgate -- npx -y thumbgate@1.27.8 serve`
+- Local install path: `claude mcp add thumbgate -- npx -y thumbgate@latest serve`
 - Promotion rule: treat directory inclusion as a discoverability lane, not customer proof
 
 Build the `.mcpb` for Claude Desktop review or direct installation with:
@@ -90,12 +90,13 @@ This lane is for Claude Code users who want Codex review, adversarial review, an
 - Manual profile: `adapters/codex/config.toml`
 - Standalone Codex bundle build command: `npm run build:codex-plugin`
 - Standalone Codex release workflow: `.github/workflows/publish-codex-plugin.yml`
-- Standalone Codex install page: `https://thumbgate-production.up.railway.app/codex-plugin`
+- Standalone Codex install page: `https://thumbgate.ai/codex-plugin`
 - Standalone Codex latest download: `https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-codex-plugin.zip`
 - Standalone Codex versioned asset pattern: `thumbgate-codex-plugin-v<VERSION>.zip`
 - Repo-local Codex plugin manifest: `plugins/codex-profile/.codex-plugin/plugin.json`
 - Repo-local Codex MCP config: `plugins/codex-profile/.mcp.json`
 - Repo-local Codex marketplace: `.agents/plugins/marketplace.json`
+- Current Codex evidence: `codex plugin marketplace list --json` shows the repo-local `thumbgate-plugin-catalog`; do not claim OpenAI curated plugin-directory approval until the public Codex plugin directory shows ThumbGate.
 - Transport: local stdio MCP server launched through `npm install --prefix ~/.thumbgate/runtime --no-save --omit=dev thumbgate@latest` followed by `~/.thumbgate/runtime/node_modules/.bin/thumbgate serve`
 - Update policy: Codex MCP and hook launchers resolve `thumbgate@latest` at startup instead of preferring a stale installed runtime binary; unpublished local source checkouts fall back to the local server path
 
@@ -110,7 +111,7 @@ The standalone Codex bundle ships `.codex-plugin/plugin.json`, `.mcp.json`, `.ag
 - Public submission path: `https://cursor.com/dashboard/plugins`
 - Team fallback: import the GitHub repo through `Dashboard -> Settings -> Plugins -> Team Marketplaces`
 - Cursor Directory: treat as a discovery surface, not the install/update surface
-- Current evidence: the 2026-06-03 Cursor dashboard screenshot shows no installed ThumbGate plugin in the account, so public Cursor Marketplace availability is not yet proven.
+- Current evidence: public Cursor Marketplace availability is not yet proven. As of 2026-06-24, `npm run cursor:marketplace:doctor:json` reports `publicStatus: not_live` and the public listing title is `Marketplace Plugin Not Found | Cursor Plugins`; local Cursor metadata is aligned to package `1.27.15`.
 
 Cursor update rules:
 
