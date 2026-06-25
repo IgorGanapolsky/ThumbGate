@@ -1,6 +1,6 @@
 {
   "name": "thumbgate-marketplace",
-  "version": "1.27.15",
+  "version": "1.27.16",
   "owner": {
     "name": "Igor Ganapolsky",
     "email": "ig5973700@gmail.com"
@@ -14,7 +14,7 @@
         "source": "npm",
         "package": "thumbgate"
       },
-      "version": "1.27.15",
+      "version": "1.27.16",
       "author": {
         "name": "Igor Ganapolsky",
         "email": "ig5973700@gmail.com",
@@ -57,7 +57,7 @@
         "hooks": 3,
         "mcpServer": "thumbgate serve"
       },
-      "installCommand": "/plugin install thumbgate@claude-plugins-official",
+      "installCommand": "/plugin install thumbgate@thumbgate-marketplace",
       "metadata": {
         "author": "Igor Ganapolsky",
         "homepage": "https://thumbgate.ai",

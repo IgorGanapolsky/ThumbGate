@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.27.16
+
+### Patch Changes
+
+- Publish ThumbGate marketplace metadata under the `thumbgate` plugin name, align the Claude local marketplace install path with `thumbgate@thumbgate-marketplace`, and ship corrected Claude plugin metadata in the npm package for local Claude/Codex install verification.
+- Keep the public package ratchet honest for the 1.27.16 release: the npm bundle now deliberately includes the local lessons seed, Human-on-the-Bridge pack generator, and oMLX smoke verifier used by the new self-checking install flow.
+
+## 1.27.15
+
+### Patch Changes
+
+- Fix the new `thumbgate doctor` feedback-loop probe so its durable-capture self-test always uses an isolated temp store instead of drifting into an existing project memory store.
+
+## 1.27.14
+
+### Patch Changes
+
+- Add a feedback-loop readiness probe to `thumbgate doctor`: it now reports whether typed thumbs feedback is automatically captured via `UserPromptSubmit` and verifies durable feedback/memory writes with an isolated self-test.
+
 ## 1.27.6
 
 ### Patch Changes
@@ -1891,13 +1910,13 @@
 
 - [#1801](https://github.com/IgorGanapolsky/ThumbGate/pull/1801) [`86277a8`](https://github.com/IgorGanapolsky/ThumbGate/commit/86277a86a2cedef4394c93a2ddec41c1e5b7d206) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix `thumbgate pro --upgrade` in the public npm package by shipping the local Pro upgrade bundle from `config/pro` and adding a clear missing-bundle error instead of referencing an unpublished top-level `pro/` subtree.
 
-- [#1754](https://github.com/IgorGanapolsky/ThumbGate/pull/1754) [`752a588`](https://github.com/IgorGanapolsky/ThumbGate/commit/752a588d5bc947366ba796a6870e8e3b9fbaa23a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Skip Instagram in text-only Zernio offer dispatches unless media is attached, keeping LinkedIn, Threads, and Bluesky publishes from failing after a successful post.
+- [#1754](https://github.com/IgorGanapolsky/ThumbGate/pull/1754) [`752a588`](https://github.com/IgorGanapolsky/ThumbGate/commit/752a588d5bc947366ba796a6870e8e3b9fbaa23a) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Skip Instagram in text-only DirectSocial offer dispatches unless media is attached, keeping LinkedIn, Threads, and Bluesky publishes from failing after a successful post.
 
 - [#1749](https://github.com/IgorGanapolsky/ThumbGate/pull/1749) [`4d70bb7`](https://github.com/IgorGanapolsky/ThumbGate/commit/4d70bb7c9969014f7de9485dfefbd91db89ed4c7) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a guarded GitHub Actions dispatch path for warm Reddit diagnostic DMs.
 
 - [#1735](https://github.com/IgorGanapolsky/ThumbGate/pull/1735) [`01adcb9`](https://github.com/IgorGanapolsky/ThumbGate/commit/01adcb9b19a7ef0ca86c52170a7ed711e81156f2) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add direct paid Pro and workflow sprint calls to action near the setup guide install path.
 
-- [#1768](https://github.com/IgorGanapolsky/ThumbGate/pull/1768) [`64d1f8d`](https://github.com/IgorGanapolsky/ThumbGate/commit/64d1f8d29b368773318003f56278fc933f743ba3) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Treat duplicate Instagram content blocks from Zernio as safe skipped outcomes instead of failing the Instagram Autopilot workflow.
+- [#1768](https://github.com/IgorGanapolsky/ThumbGate/pull/1768) [`64d1f8d`](https://github.com/IgorGanapolsky/ThumbGate/commit/64d1f8d29b368773318003f56278fc933f743ba3) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Treat duplicate Instagram content blocks from DirectSocial as safe skipped outcomes instead of failing the Instagram Autopilot workflow.
 
 - [#1745](https://github.com/IgorGanapolsky/ThumbGate/pull/1745) [`0ce9a65`](https://github.com/IgorGanapolsky/ThumbGate/commit/0ce9a655407098e2ea3f352e5f86ea30a99eab8d) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Warn instead of failing the LinkedIn post-dispatch workflow when LinkedIn credentials are missing or revoked.
 
@@ -1905,9 +1924,9 @@
 
 - [#1727](https://github.com/IgorGanapolsky/ThumbGate/pull/1727) [`532c072`](https://github.com/IgorGanapolsky/ThumbGate/commit/532c0729ebe629f79abdf033a659ba5c3f2740ff) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a guarded money marketplace distribution pack for Lindy, Gumroad, and GoHighLevel revenue motions.
 
-- [#1777](https://github.com/IgorGanapolsky/ThumbGate/pull/1777) [`990b10b`](https://github.com/IgorGanapolsky/ThumbGate/commit/990b10b6618ea07c4ba20e405ef01b21dcbbdf4e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add checkout-ready ThumbGate + OpenClaw digital kit assets, live Stripe links, Zernio promotion copy, and a landing-page CTA for the first self-serve governance kit.
+- [#1777](https://github.com/IgorGanapolsky/ThumbGate/pull/1777) [`990b10b`](https://github.com/IgorGanapolsky/ThumbGate/commit/990b10b6618ea07c4ba20e405ef01b21dcbbdf4e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add checkout-ready ThumbGate + OpenClaw digital kit assets, live Stripe links, DirectSocial promotion copy, and a landing-page CTA for the first self-serve governance kit.
 
-- [#1738](https://github.com/IgorGanapolsky/ThumbGate/pull/1738) [`50a4f8d`](https://github.com/IgorGanapolsky/ThumbGate/commit/50a4f8dffbec6180bd5ffd79968ba93801a7fe9e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a paid workflow-sprint Zernio campaign option for direct diagnostic and implementation-sprint revenue posts.
+- [#1738](https://github.com/IgorGanapolsky/ThumbGate/pull/1738) [`50a4f8d`](https://github.com/IgorGanapolsky/ThumbGate/commit/50a4f8dffbec6180bd5ffd79968ba93801a7fe9e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a paid workflow-sprint DirectSocial campaign option for direct diagnostic and implementation-sprint revenue posts.
 
 - [#1792](https://github.com/IgorGanapolsky/ThumbGate/pull/1792) [`0b415b5`](https://github.com/IgorGanapolsky/ThumbGate/commit/0b415b5e20d8b2b959fda2576b4efaf86dac3e03) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Route high-intent Pro page visitors to the direct quick-read checkout while keeping the Pro dashboard checkout available.
 
@@ -1915,7 +1934,7 @@
 
 - [#1777](https://github.com/IgorGanapolsky/ThumbGate/pull/1777) [`990b10b`](https://github.com/IgorGanapolsky/ThumbGate/commit/990b10b6618ea07c4ba20e405ef01b21dcbbdf4e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a ProgramBench-style cleanroom smoke proof lane to ThumbGate Bench, publish the benchmark fixtures with the npm package, and expose the high-ticket Reliable AI Agent Governance Setup intake path on the landing page.
 
-- [#1760](https://github.com/IgorGanapolsky/ThumbGate/pull/1760) [`d5bc51c`](https://github.com/IgorGanapolsky/ThumbGate/commit/d5bc51ce4392533be359cda45c4b1d5849953cea) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Treat thrown Zernio duplicate-post responses as skipped promo outcomes so idempotent paid-offer reruns stay green.
+- [#1760](https://github.com/IgorGanapolsky/ThumbGate/pull/1760) [`d5bc51c`](https://github.com/IgorGanapolsky/ThumbGate/commit/d5bc51ce4392533be359cda45c4b1d5849953cea) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Treat thrown DirectSocial duplicate-post responses as skipped promo outcomes so idempotent paid-offer reruns stay green.
 
 - [#1759](https://github.com/IgorGanapolsky/ThumbGate/pull/1759) [`fb942ce`](https://github.com/IgorGanapolsky/ThumbGate/commit/fb942ce2459ff71122ef4b86987c2937aa277ded) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Treat recent duplicate social publishes and Reddit text-post restrictions as skipped promo outcomes instead of fatal ThumbGate Creator Platform Promo failures.
 
@@ -1937,7 +1956,7 @@
 
 - [#1736](https://github.com/IgorGanapolsky/ThumbGate/pull/1736) [`0c3373b`](https://github.com/IgorGanapolsky/ThumbGate/commit/0c3373baeca216da3ae78e4433107f32ee83f07d) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a headless Skool community reader and read-only MCP connector for revenue research without taking over the user's browser.
 
-- [#1781](https://github.com/IgorGanapolsky/ThumbGate/pull/1781) [`28dc90d`](https://github.com/IgorGanapolsky/ThumbGate/commit/28dc90d635ffad1ecbf7600e3287d4aa12ec0860) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a manual Zernio duplicate cleanup workflow for TikTok and Instagram posts.
+- [#1781](https://github.com/IgorGanapolsky/ThumbGate/pull/1781) [`28dc90d`](https://github.com/IgorGanapolsky/ThumbGate/commit/28dc90d635ffad1ecbf7600e3287d4aa12ec0860) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a manual DirectSocial duplicate cleanup workflow for TikTok and Instagram posts.
 
 - [#1737](https://github.com/IgorGanapolsky/ThumbGate/pull/1737) [`aceb673`](https://github.com/IgorGanapolsky/ThumbGate/commit/aceb673d7ca9b12e0d23850606217d00673ee5c2) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Enable Stripe Checkout recovery URLs and promotion-code entry for paid sessions so abandoned buyers can resume checkout.
 
@@ -1945,13 +1964,13 @@
 
 - [#1800](https://github.com/IgorGanapolsky/ThumbGate/pull/1800) [`3fc5b0b`](https://github.com/IgorGanapolsky/ThumbGate/commit/3fc5b0bf569a296b8479983d9e1b6609ae374621) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Clarify the public numbers page so configured checks are labeled as inventory, recorded block/warn counts are treated as the usage evidence, zero-occurrence blocker claims are suppressed, and scorer calibration is reported as n/a until the feedback sample has both safe and harmful outcomes.
 
-- [#1746](https://github.com/IgorGanapolsky/ThumbGate/pull/1746) [`2377002`](https://github.com/IgorGanapolsky/ThumbGate/commit/2377002c459cef974896eaaf25da82472ce7777c) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a paid voice-agent reliability diagnostic offer to the Zernio promo publisher.
+- [#1746](https://github.com/IgorGanapolsky/ThumbGate/pull/1746) [`2377002`](https://github.com/IgorGanapolsky/ThumbGate/commit/2377002c459cef974896eaaf25da82472ce7777c) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a paid voice-agent reliability diagnostic offer to the DirectSocial promo publisher.
 
-- [#1778](https://github.com/IgorGanapolsky/ThumbGate/pull/1778) [`4dbc0a9`](https://github.com/IgorGanapolsky/ThumbGate/commit/4dbc0a99e1edf67bafd9d9fa7761592a523dcacb) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Make remaining Zernio publishing workflows opt-in by default so scheduled social, Instagram, weekly, and manual offer dispatches cannot spend paid-provider capacity or publish repeated content unless explicitly enabled.
+- [#1778](https://github.com/IgorGanapolsky/ThumbGate/pull/1778) [`4dbc0a9`](https://github.com/IgorGanapolsky/ThumbGate/commit/4dbc0a99e1edf67bafd9d9fa7761592a523dcacb) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Make remaining DirectSocial publishing workflows opt-in by default so scheduled social, Instagram, weekly, and manual offer dispatches cannot spend paid-provider capacity or publish repeated content unless explicitly enabled.
 
-- [#1744](https://github.com/IgorGanapolsky/ThumbGate/pull/1744) [`d1d6504`](https://github.com/IgorGanapolsky/ThumbGate/commit/d1d65040232c7bf178e931cb3394b701e60e2985) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a guarded Zernio offer dispatch workflow with campaign tracking for manual paid-offer pushes.
+- [#1744](https://github.com/IgorGanapolsky/ThumbGate/pull/1744) [`d1d6504`](https://github.com/IgorGanapolsky/ThumbGate/commit/d1d65040232c7bf178e931cb3394b701e60e2985) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add a guarded DirectSocial offer dispatch workflow with campaign tracking for manual paid-offer pushes.
 
-- [#1775](https://github.com/IgorGanapolsky/ThumbGate/pull/1775) [`294bb52`](https://github.com/IgorGanapolsky/ThumbGate/commit/294bb521f671157cd4993712491857f0ba54026b) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Guard Zernio video autopilot behind an explicit publish opt-in, slow TikTok and Instagram video cadence to one distinct experiment per day, and add a TikTok engagement creative that asks for concrete blocked-command examples instead of repeating generic product cards.
+- [#1775](https://github.com/IgorGanapolsky/ThumbGate/pull/1775) [`294bb52`](https://github.com/IgorGanapolsky/ThumbGate/commit/294bb521f671157cd4993712491857f0ba54026b) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Guard DirectSocial video autopilot behind an explicit publish opt-in, slow TikTok and Instagram video cadence to one distinct experiment per day, and add a TikTok engagement creative that asks for concrete blocked-command examples instead of repeating generic product cards.
 
 ## 1.16.21
 
@@ -2613,13 +2632,13 @@
     `publishTextPost(token, personUrn, text)`.
   - `postToThreads` called `threads.publishPost({text})`; no such export (real
     entry is `postTextThread({text, token, userId})`).
-  - `postToBluesky` called `zernio.publishPost({text, platform})`; the real
+  - `postToBluesky` called `directSocial.publishPost({text, platform})`; the real
     signature is `publishPost(content, platforms[], options)` with `accountId`
     required on each platform entry.
 
-  All three now route through `zernio.publishToAllPlatforms(content,
+  All three now route through `directSocial.publishToAllPlatforms(content,
 {platforms:[<name>]})` — single code path, account discovery handled by
-  Zernio. Contract tests in `tests/post-everywhere-channels.test.js` spy on
+  DirectSocial. Contract tests in `tests/post-everywhere-channels.test.js` spy on
   `publishToAllPlatforms` and pin the call shape so this bug class cannot land
   again.
 
@@ -2701,7 +2720,7 @@
   `LEGACY_POLLERS` no longer contains the `x` entry, and `scripts/social-analytics/pollers/x.js`
   and `scripts/social-analytics/publishers/x.js` have been deleted. The
   `social:poll:x` npm script has been removed. Tests in
-  `tests/social-reply-monitor.test.js`, `tests/zernio-canonical-pollers.test.js`,
+  `tests/social-reply-monitor.test.js`, `tests/direct-social-canonical-pollers.test.js`,
   and `tests/social-analytics.test.js` are pinned to the new surface.
 
 - [#1268](https://github.com/IgorGanapolsky/ThumbGate/pull/1268) [`377385e`](https://github.com/IgorGanapolsky/ThumbGate/commit/377385e03f4c91fae7a25685e6bbb8c25bc03037) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - fix(operational-summary): throw on 401/403 instead of silently falling back to empty local ledger
@@ -2712,7 +2731,7 @@
 
 - [#1199](https://github.com/IgorGanapolsky/ThumbGate/pull/1199) [`84d5d56`](https://github.com/IgorGanapolsky/ThumbGate/commit/84d5d5666a6e3b6ebfa9d140c2ce8d8fd1163cf1) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - marketing(roo-sunset): Cline-migration campaign + SEO guide
 
-  Adds `docs/marketing/roo-sunset/` copy for LinkedIn / Reddit r/ClaudeAI / Bluesky / Threads (all four live via Zernio 2026-04-22) and `public/guides/roo-code-alternative-cline.html` as the SEO landing for the Roo sunset narrative. Pairs with the new Cline adapter to convert Roo's 2026-05-15 shutdown into ThumbGate installs.
+  Adds `docs/marketing/roo-sunset/` copy for LinkedIn / Reddit r/ClaudeAI / Bluesky / Threads (all four live via DirectSocial 2026-04-22) and `public/guides/roo-code-alternative-cline.html` as the SEO landing for the Roo sunset narrative. Pairs with the new Cline adapter to convert Roo's 2026-05-15 shutdown into ThumbGate installs.
 
 - [#1259](https://github.com/IgorGanapolsky/ThumbGate/pull/1259) [`ad62ce7`](https://github.com/IgorGanapolsky/ThumbGate/commit/ad62ce786a95b674a665ca44e00b380a4cea7be8) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Make eval fixtures scanner-safe by replacing secret-shaped committed test data with runtime-expanded placeholders, and add regression coverage to prevent future GitGuardian-style false positives.
 
@@ -2743,13 +2762,13 @@
 
   The public repository was also scrubbed of obsolete project-specific proof lanes and source comments so ThumbGate no longer carries unrelated customer/repo names in tracked files.
 
-- [#1159](https://github.com/IgorGanapolsky/ThumbGate/pull/1159) [`6fd61b6`](https://github.com/IgorGanapolsky/ThumbGate/commit/6fd61b6633678dff2e00f8ee85a1c3afee3e0f97) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Route LinkedIn and Threads publishing through Zernio when `ZERNIO_API_KEY` is
+- [#1159](https://github.com/IgorGanapolsky/ThumbGate/pull/1159) [`6fd61b6`](https://github.com/IgorGanapolsky/ThumbGate/commit/6fd61b6633678dff2e00f8ee85a1c3afee3e0f97) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Route LinkedIn and Threads publishing through DirectSocial when `DIRECT_SOCIAL_API_KEY` is
   set, collapsing three token rotations (LinkedIn, Threads, Bluesky) to a single
-  Zernio OAuth bundle. Direct-API publishers remain the fallback when the key is
+  DirectSocial OAuth bundle. Direct-API publishers remain the fallback when the key is
   absent and can be forced back on with `THUMBGATE_USE_DIRECT_PUBLISHERS=1`
   (emergency escape parallel to `THUMBGATE_USE_DIRECT_POLLERS=1` for analytics).
   Reddit, Instagram, YouTube, Dev.to, and TikTok stay on direct-API because
-  Zernio cannot match their content shapes (subreddit+title, media, video,
+  DirectSocial cannot match their content shapes (subreddit+title, media, video,
   articles).
 
 ## 1.15.0
@@ -2840,7 +2859,7 @@
 
 - [#1115](https://github.com/IgorGanapolsky/ThumbGate/pull/1115) [`ddcbffd`](https://github.com/IgorGanapolsky/ThumbGate/commit/ddcbffdcc7254a00056c9fe4d27a0540ebdfa38c) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Wire Bluesky reply monitoring into Ralph Loop (hourly CI) as a draft-only step.
 
-  Zernio exposes no inbound/comments API as of 2026-04-21 (probed — `/inbox`, `/comments`, `/conversations`, `/messages`, `/dms`, `/threads`, `/engagements`, `/replies` all return 404 with HTML shell while `/accounts` returns 200 JSON). The Zernio Inbox add-on visible on the billing dashboard is a human-only surface. Reply monitoring for Bluesky therefore uses direct AT Protocol: `scripts/social-reply-monitor-bluesky.js` polls `app.bsky.notification.listNotifications` on the user's PDS and queues drafts to `.thumbgate/reply-drafts.jsonl`. The monitor never auto-posts — a draft-only posture was made mandatory after a CEO thumbs-down on AI-pitch reply voice.
+  DirectSocial exposes no inbound/comments API as of 2026-04-21 (probed — `/inbox`, `/comments`, `/conversations`, `/messages`, `/dms`, `/threads`, `/engagements`, `/replies` all return 404 with HTML shell while `/accounts` returns 200 JSON). The DirectSocial Inbox add-on visible on the billing dashboard is a human-only surface. Reply monitoring for Bluesky therefore uses direct AT Protocol: `scripts/social-reply-monitor-bluesky.js` polls `app.bsky.notification.listNotifications` on the user's PDS and queues drafts to `.thumbgate/reply-drafts.jsonl`. The monitor never auto-posts — a draft-only posture was made mandatory after a CEO thumbs-down on AI-pitch reply voice.
 
   New `reply-monitor-bluesky` step in `scripts/ralph-loop.js` gated on `requiredEnvAll: ['BLUESKY_HANDLE','BLUESKY_APP_PASSWORD']`. Workflow env block in `.github/workflows/ralph-loop.yml` passes the new repo secrets. Tests in `tests/ralph-loop.test.js` pin the step list and skip-reason contract.
 
@@ -2879,15 +2898,15 @@
 
 - [#1111](https://github.com/IgorGanapolsky/ThumbGate/pull/1111) [`fa777d1`](https://github.com/IgorGanapolsky/ThumbGate/commit/fa777d1a84ae769fb4610c1f4034d3a5f88d492f) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - fix(social): route social CTAs through tracked landing page
 
-  404 posts published via Zernio over the last 30 days produced 0 rows in
+  404 posts published via DirectSocial over the last 30 days produced 0 rows in
   `.claude/memory/feedback/funnel-events.jsonl` because every post CTA
   linked to `github.com/IgorGanapolsky/ThumbGate`, which never touches the
   funnel tracker. Attribution blindness: 4 lifetime installs across 404
   posts was the result.
 
-  Primary CTA in every Zernio-published angle/caption now routes through
+  Primary CTA in every DirectSocial-published angle/caption now routes through
   `https://thumbgate-production.up.railway.app/numbers`. `tagUrlsInText`
-  auto-injects `utm_source=zernio&utm_medium=social&utm_campaign=organic`
+  auto-injects `utm_source=directSocial&utm_medium=social&utm_campaign=organic`
   because the landing domain is already in `TRACKABLE_DOMAINS`. GitHub is
   retained as a secondary "Source (MIT)" reference for credibility.
 
@@ -2910,7 +2929,7 @@
   captured with the UTM metadata attached to the inbound request. Before
   this wire, `/numbers` views wrote only to `telemetry-pings.jsonl`
   (invisible to `npm run feedback:summary` and `bin/cli.js cfo --today`),
-  leaving the funnel ledger empty despite 404 published Zernio posts.
+  leaving the funnel ledger empty despite 404 published DirectSocial posts.
   Other marketing pages (`/`, `/dashboard`) already routed through
   `servePublicMarketingPage` and now automatically inherit the
   funnel-ledger write as well.
@@ -2933,26 +2952,26 @@
 
 ### Minor Changes
 
-- [#1059](https://github.com/IgorGanapolsky/ThumbGate/pull/1059) [`095cb8c`](https://github.com/IgorGanapolsky/ThumbGate/commit/095cb8c289546ccf7a957664d8d01c64ccd07aa3) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(analytics): Zernio as canonical social stack; trim direct-API pollers to opt-in fallback
+- [#1059](https://github.com/IgorGanapolsky/ThumbGate/pull/1059) [`095cb8c`](https://github.com/IgorGanapolsky/ThumbGate/commit/095cb8c289546ccf7a957664d8d01c64ccd07aa3) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(analytics): DirectSocial as canonical social stack; trim direct-API pollers to opt-in fallback
 
-  `scripts/social-analytics/poll-all.js` now runs only `github + plausible + zernio`
+  `scripts/social-analytics/poll-all.js` now runs only `github + plausible + directSocial`
   by default. The seven direct-API pollers (reddit, linkedin, x, threads,
   instagram, youtube, tiktok) move to a `LEGACY_POLLERS` list that activates
   only when `THUMBGATE_USE_DIRECT_POLLERS=1`.
 
-  Adds `scripts/social-analytics/zernio-status.js` (npm run `social:zernio:status`)
+  Adds `scripts/social-analytics/direct-social-status.js` (npm run `social:directSocial:status`)
   which reads the local `engagement_metrics` SQLite table, reports per-platform
   row counts for the last 24h, and exits non-zero when zero rows ingested —
-  making silent Zernio 402 / auth / rate-limit failures CEO-visible.
+  making silent DirectSocial 402 / auth / rate-limit failures CEO-visible.
 
-  Zernio holds the OAuth connections for every focus channel, so maintaining
+  DirectSocial holds the OAuth connections for every focus channel, so maintaining
   eight separate token rotations + direct pollers was duplicate infrastructure
   that silently skipped on missing env for months. The emergency fallback flag
   preserves the old behavior without making it the default contract.
 
 ### Patch Changes
 
-- Ship the Zernio social analytics runtime scripts in a new npm package version so main does not silently skip publish verification after analytics changes.
+- Ship the DirectSocial social analytics runtime scripts in a new npm package version so main does not silently skip publish verification after analytics changes.
 
 ## 1.12.2
 
@@ -2976,7 +2995,7 @@
 
 ### Minor Changes
 
-- [#991](https://github.com/IgorGanapolsky/ThumbGate/pull/991) [`f6525ef`](https://github.com/IgorGanapolsky/ThumbGate/commit/f6525efb73d1dc05682c06ef3b1f642132c67ca2) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Drop X/Twitter from the active distribution loop and consolidate on six focus channels: Reddit, LinkedIn, Threads, Bluesky, Instagram, YouTube. `scripts/post-everywhere.js` now exports a frozen `DEFAULT_PLATFORMS` list with dispatchers for each channel; Threads and Bluesky route through the Zernio aggregator. Marketing-autopilot, reply-monitor, weekly-social-post, Ralph mode/loop, social-engagement-hourly, GTM autonomous loop, daily revenue loop, and social-analytics workflows no longer reference X/Twitter secrets or fallback posters. `tests/post-everywhere-channels.test.js` pins the new focus list and rejects X/Twitter regressions. Legacy `scripts/post-to-x*.js` modules remain on disk for manual ad-hoc use only.
+- [#991](https://github.com/IgorGanapolsky/ThumbGate/pull/991) [`f6525ef`](https://github.com/IgorGanapolsky/ThumbGate/commit/f6525efb73d1dc05682c06ef3b1f642132c67ca2) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Drop X/Twitter from the active distribution loop and consolidate on six focus channels: Reddit, LinkedIn, Threads, Bluesky, Instagram, YouTube. `scripts/post-everywhere.js` now exports a frozen `DEFAULT_PLATFORMS` list with dispatchers for each channel; Threads and Bluesky route through the DirectSocial aggregator. Marketing-autopilot, reply-monitor, weekly-social-post, Ralph mode/loop, social-engagement-hourly, GTM autonomous loop, daily revenue loop, and social-analytics workflows no longer reference X/Twitter secrets or fallback posters. `tests/post-everywhere-channels.test.js` pins the new focus list and rejects X/Twitter regressions. Legacy `scripts/post-to-x*.js` modules remain on disk for manual ad-hoc use only.
 
 ## 1.11.1
 
@@ -3075,7 +3094,7 @@
 
   Wired into three highest-leverage call sites:
 
-  1. **Zernio publisher** (`publishPost`, `schedulePost`) — adds `Idempotency-Key` header so retried POSTs collapse to one published post on Zernio's side. Plan-quota errors are tagged `nonRetryable` to avoid wasting retries on 402-equivalents.
+  1. **DirectSocial publisher** (`publishPost`, `schedulePost`) — adds `Idempotency-Key` header so retried POSTs collapse to one published post on DirectSocial's side. Plan-quota errors are tagged `nonRetryable` to avoid wasting retries on 402-equivalents.
   2. **LanceDB vector write** (`upsertFeedback`) — survives transient filesystem contention (EBUSY / lock timeouts) with 2-retry backoff; embedding is pure CPU so not retried.
   3. **Anthropic SDK call** (`callClaude`) — retries 429/5xx, bails on malformed-prompt / auth errors. Contract-preserving: callers still get `null` on permanent failure.
 
@@ -3174,7 +3193,7 @@
 
 - [#943](https://github.com/IgorGanapolsky/ThumbGate/pull/943) [`7ac112c`](https://github.com/IgorGanapolsky/ThumbGate/commit/7ac112c0c210dd1be2bd4e9a14e1892b803ae0e3) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Replace the header inline logo and legacy favicon SVGs with the TG gate monogram so checkout, dashboard, and marketing headers use the same professional ThumbGate identity.
 
-- [#879](https://github.com/IgorGanapolsky/ThumbGate/pull/879) [`5f3e1fc`](https://github.com/IgorGanapolsky/ThumbGate/commit/5f3e1fc7e842aa9d4602741b104b6dd024d2a070) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix Instagram publishing end-to-end. `post-video.js` now uses the Zernio presign upload flow + shared `publishPost`, matching the `{ url, key, size, contentType, type }` media-item shape Instagram requires (legacy `/media` multipart + minimal `{ url, type }` payload was silently rejected). Added `instagram` dispatcher to `post-everywhere.js` (previously a silent no-op). Added daily `instagram-autopilot.yml` workflow that posts a ThumbGate card via `publish-instagram-thumbgate.js`.
+- [#879](https://github.com/IgorGanapolsky/ThumbGate/pull/879) [`5f3e1fc`](https://github.com/IgorGanapolsky/ThumbGate/commit/5f3e1fc7e842aa9d4602741b104b6dd024d2a070) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Fix Instagram publishing end-to-end. `post-video.js` now uses the DirectSocial presign upload flow + shared `publishPost`, matching the `{ url, key, size, contentType, type }` media-item shape Instagram requires (legacy `/media` multipart + minimal `{ url, type }` payload was silently rejected). Added `instagram` dispatcher to `post-everywhere.js` (previously a silent no-op). Added daily `instagram-autopilot.yml` workflow that posts a ThumbGate card via `publish-instagram-thumbgate.js`.
 
 - [#945](https://github.com/IgorGanapolsky/ThumbGate/pull/945) [`2f8e670`](https://github.com/IgorGanapolsky/ThumbGate/commit/2f8e670f6ac4020febc43cbf852bc9fade2b39d7) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Welcome email v2: consolidate the trial welcome email through the `scripts/mailer/resend-mailer.js` module and upgrade the template. Adds personalized greeting (first name from Stripe `customer_details.name`), explicit trial-end date (from Stripe `subscription.trial_end`), branded header mark, founder signoff, quickstart P.S., `reply_to: hello@thumbgate.app`, and a CAN-SPAM footer (business name, physical address, unsubscribe mailto) on every send. `handleWebhook` now threads `customerName` and `trialEndAt` through to the mailer. The legacy inline transport remains as a fallback and its `no_api_key` skip reason is normalized to `missing_resend_api_key` so dashboards and support tooling see a stable vocabulary regardless of which transport produced the skip.
 
@@ -3252,7 +3271,7 @@
 
 - [#940](https://github.com/IgorGanapolsky/ThumbGate/pull/940) [`5a39d1c`](https://github.com/IgorGanapolsky/ThumbGate/commit/5a39d1c9fb15423a60c5c6263c05c6b0ad4ec8fe) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Polish the ThumbGate Pro trial email so checkout activation uses conversion-ready copy, a clear dashboard call to action, Pre-Action Gates positioning, and Resend sender configuration synced into Railway deploys.
 
-- [#924](https://github.com/IgorGanapolsky/ThumbGate/pull/924) [`3a8ec38`](https://github.com/IgorGanapolsky/ThumbGate/commit/3a8ec38b7b35cc384514e6f2054a09777c13d46e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Enforce per-platform character limits in the Zernio publisher before posting or scheduling. The previous path blasted identical content to every connected platform — a 315-char post silently failed at Bluesky's 300-char ceiling (CEO-reported post `69d939ba88955f0579e44fa7`, 2026-04-16). New `platform-limits.js` module maps canonical limits (Bluesky 300, X/Twitter 280, LinkedIn 3000, etc.) and rejects over-limit targets with actionable `{ reason, platform, limit, length, overBy }` detail rather than letting the provider eat the failure.
+- [#924](https://github.com/IgorGanapolsky/ThumbGate/pull/924) [`3a8ec38`](https://github.com/IgorGanapolsky/ThumbGate/commit/3a8ec38b7b35cc384514e6f2054a09777c13d46e) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Enforce per-platform character limits in the DirectSocial publisher before posting or scheduling. The previous path blasted identical content to every connected platform — a 315-char post silently failed at Bluesky's 300-char ceiling (CEO-reported post `69d939ba88955f0579e44fa7`, 2026-04-16). New `platform-limits.js` module maps canonical limits (Bluesky 300, X/Twitter 280, LinkedIn 3000, etc.) and rejects over-limit targets with actionable `{ reason, platform, limit, length, overBy }` detail rather than letting the provider eat the failure.
 
 ## 1.5.1
 
@@ -3273,7 +3292,7 @@
 
 - [#815](https://github.com/IgorGanapolsky/ThumbGate/pull/815) [`9211b17`](https://github.com/IgorGanapolsky/ThumbGate/commit/9211b1726ebb11a852f459a34bb2b81aacdaf3e3) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Agent-first CLI experience: add `--json` flag to all commands, `thumbgate status` health check, `thumbgate explore` subcommands (lessons/rules/gates/firings), output context signals ([LOCAL], [ACTIVE], [LEARNING], [BLOCKED], [ALLOWED]), and `thumbgate demo` simulated walkthrough. AI agents can now programmatically check gate status, search lessons, and introspect ThumbGate state.
 
-- [#812](https://github.com/IgorGanapolsky/ThumbGate/pull/812) [`66277a7`](https://github.com/IgorGanapolsky/ThumbGate/commit/66277a7adfd6778a0c4954339ea4408e5bc63848) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add autonomous four-hour marketing autopilots for text, video, Reddit, Dev.to, and Zernio-backed distribution with cached deduplication state.
+- [#812](https://github.com/IgorGanapolsky/ThumbGate/pull/812) [`66277a7`](https://github.com/IgorGanapolsky/ThumbGate/commit/66277a7adfd6778a0c4954339ea4408e5bc63848) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add autonomous four-hour marketing autopilots for text, video, Reddit, Dev.to, and DirectSocial-backed distribution with cached deduplication state.
 
 - [#805](https://github.com/IgorGanapolsky/ThumbGate/pull/805) [`82a5849`](https://github.com/IgorGanapolsky/ThumbGate/commit/82a5849cf9fb123c6c5308bcc392e9c4d7b452a0) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Steal Cloudflare CLI ideas: schema-first help, --json everywhere, --local/--remote
 
@@ -3493,10 +3512,10 @@
 
 - [#812](https://github.com/IgorGanapolsky/ThumbGate/pull/812) [`66277a7`](https://github.com/IgorGanapolsky/ThumbGate/commit/66277a7adfd6778a0c4954339ea4408e5bc63848) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - feat(ci): autonomous marketing autopilot every 4 hours — video, text posts, Reddit, Dev.to
 
-  - video-autopilot.yml: generates slide-based MP4 (6 rotating templates), posts to TikTok/YouTube/Instagram via Zernio every 4 hours with per-platform cooldowns
+  - video-autopilot.yml: generates slide-based MP4 (6 rotating templates), posts to TikTok/YouTube/Instagram via DirectSocial every 4 hours with per-platform cooldowns
   - marketing-autopilot.yml: rewritten to fire every 4 hours (was Mon/Wed/Fri), all secrets wired (DEVTO_API_KEY, Reddit password OAuth, full X API), fixed reddit.publishToReddit() call, added Dev.to article step with 7-day dedup
   - marketing-db.js: SQLite dedup + analytics tracker prevents double-posting
-  - post-video.js: full slide→ffmpeg→Zernio pipeline
+  - post-video.js: full slide→ffmpeg→DirectSocial pipeline
 
 - [#839](https://github.com/IgorGanapolsky/ThumbGate/pull/839) [`4787185`](https://github.com/IgorGanapolsky/ThumbGate/commit/47871852b109ab89f5eff3dda8c627ef77c5cfdb) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Switch CLI upgrade link to no-card 7-day trial — 2,478 cloners seeing card-required checkout was killing conversion.
 
@@ -3560,7 +3579,7 @@
 
 - [#695](https://github.com/IgorGanapolsky/ThumbGate/pull/695) [`251f24f`](https://github.com/IgorGanapolsky/ThumbGate/commit/251f24fa096007ad41e8349038ee0cbe2a556cc5) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Submit main-branch automerge requests to Trunk without polling helper workflow checks or waiting for a final merge commit inside GitHub Actions.
 
-- [#700](https://github.com/IgorGanapolsky/ThumbGate/pull/700) [`f8496e6`](https://github.com/IgorGanapolsky/ThumbGate/commit/f8496e6e9d666c4b4b361fd8f82e2a71298f4939) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Treat Zernio monthly post-limit responses as controlled social-publisher skips so the daily acquisition workflow does not mark main unhealthy when the external posting budget is exhausted. Also isolate Trunk merge comment automation from shared personal access token rate limits.
+- [#700](https://github.com/IgorGanapolsky/ThumbGate/pull/700) [`f8496e6`](https://github.com/IgorGanapolsky/ThumbGate/commit/f8496e6e9d666c4b4b361fd8f82e2a71298f4939) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Treat DirectSocial monthly post-limit responses as controlled social-publisher skips so the daily acquisition workflow does not mark main unhealthy when the external posting budget is exhausted. Also isolate Trunk merge comment automation from shared personal access token rate limits.
 
 ## 1.3.0
 

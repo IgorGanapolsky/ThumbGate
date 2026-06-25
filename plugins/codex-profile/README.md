@@ -55,7 +55,7 @@ For local development or personal marketplace installs:
 
 ```bash
 codex plugin marketplace add /path/to/ThumbGate
-codex plugin add codex-profile@thumbgate-plugin-catalog
+codex plugin add thumbgate@thumbgate-plugin-catalog
 codex plugin list
 ```
 

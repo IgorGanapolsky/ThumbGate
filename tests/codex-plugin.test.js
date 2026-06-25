@@ -33,14 +33,15 @@ function assertCodexLatestShellEntry(entry) {
   assert.doesNotMatch(entry.args[1], /\[ -x /);
 }
 
-test('codex plugin marketplace points at the shipped codex profile', () => {
+test('codex plugin marketplace points at the shipped ThumbGate plugin profile', () => {
   const marketplace = readJson('.agents/plugins/marketplace.json');
   const plugin = readJson('plugins/codex-profile/.codex-plugin/plugin.json');
   const entry = marketplace.plugins.find((item) => item.name === plugin.name);
 
   assert.equal(marketplace.name, 'thumbgate-plugin-catalog');
   assert.equal(marketplace.interface.displayName, 'ThumbGate Plugin Catalog');
-  assert.ok(entry, 'marketplace entry for codex-profile should exist');
+  assert.equal(plugin.name, 'thumbgate');
+  assert.ok(entry, 'marketplace entry for thumbgate should exist');
   assert.equal(entry.source.source, 'local');
   assert.equal(entry.source.path, './plugins/codex-profile');
   assert.equal(entry.policy.installation, 'AVAILABLE');
@@ -53,7 +54,7 @@ test('codex plugin manifest uses ThumbGate branding and local MCP config', () =>
   const readme = fs.readFileSync(path.join(root, 'plugins/codex-profile/README.md'), 'utf-8');
   const install = fs.readFileSync(path.join(root, 'plugins/codex-profile/INSTALL.md'), 'utf-8');
 
-  assert.equal(plugin.name, 'codex-profile');
+  assert.equal(plugin.name, 'thumbgate');
   assert.equal(plugin.interface.displayName, 'ThumbGate for Codex');
   assert.equal(plugin.homepage, 'https://thumbgate.ai');
   assert.equal(plugin.interface.websiteURL, 'https://thumbgate.ai');

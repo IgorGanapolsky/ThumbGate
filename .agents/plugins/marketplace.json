@@ -5,7 +5,7 @@
   },
   "plugins": [
     {
-      "name": "codex-profile",
+      "name": "thumbgate",
       "source": {
         "source": "local",
         "path": "./plugins/codex-profile"

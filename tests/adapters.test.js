@@ -394,6 +394,8 @@ test('claude plugin metadata stays aligned with the released package and install
   assert.equal(pluginManifest.version, packageVersion);
   assert.equal(marketplace.version, packageVersion);
   assert.equal(marketplaceEntry.name, pluginManifest.name);
+  assert.equal(marketplaceEntry.installCommand, '/plugin install thumbgate@thumbgate-marketplace');
+  assert.doesNotMatch(marketplaceEntry.installCommand, /claude-plugins-official/);
   assert.equal(pluginManifest.skills, './skills/');
   assert.match(pluginManifest.description, /Pre-Action Checks|pre-action checks|prevention rules/i);
   assert.match(marketplaceEntry.description, /Pre-Action Checks|pre-action checks|prevention rules/i);
@@ -450,6 +452,7 @@ test('codex app plugin surface is present and aligned to ThumbGate metadata', ()
   const pluginEntry = marketplace.plugins.find((plugin) => plugin.name === pluginManifest.name);
 
   assert.equal(pluginManifest.version, packageVersion);
+  assert.equal(pluginManifest.name, 'thumbgate');
   assert.equal(pluginManifest.homepage, 'https://thumbgate.ai');
   assert.equal(pluginManifest.repository, 'https://github.com/IgorGanapolsky/ThumbGate');
   assert.equal(pluginManifest.interface.displayName, 'ThumbGate for Codex');
