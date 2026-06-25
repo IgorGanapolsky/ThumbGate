@@ -73,7 +73,7 @@ function buildSurfaces() {
       submissionPath: GLAMA_CANONICAL_URL,
       support: MCP_DIRECTORIES_GUIDE_URL,
       evidenceCheckedAt: CHECKED_AT,
-      evidenceSummary: 'Search results now resolve to the ThumbGate slug, but the canonical page still ships legacy schema text about `memory management and gateway capabilities` and an FAQ answer that opens with `The MCP Memory Gateway`.',
+      evidenceSummary: 'Search results now resolve to the ThumbGate slug, but the canonical page still ships retired gateway-era schema text and an FAQ answer that should be ThumbGate-only.',
       nextRepair: 'Update the canonical Glama metadata and FAQ content so the schema description, FAQ answer, and page copy are ThumbGate-only.',
       proof: VERIFICATION_EVIDENCE_LINK,
     },
@@ -95,13 +95,13 @@ function buildSurfaces() {
       key: 'punkpeye',
       name: 'punkpeye awesome-mcp-servers',
       role: 'Largest GitHub awesome-list discovery surface in the current repo research.',
-      publicStatus: 'Listed under the canonical ThumbGate repository, but the README still carries a duplicate legacy `IgorGanapolsky/mcp-memory-gateway` entry.',
+      publicStatus: 'Listed under the canonical ThumbGate repository, but the README still carries a duplicate retired repository entry.',
       operatorUse: 'Open a cleanup PR that removes the duplicate legacy entry while preserving the canonical ThumbGate listing.',
       surfaceUrl: PUNKPEYE_LIST_URL,
       submissionPath: 'https://github.com/punkpeye/awesome-mcp-servers/blob/main/README.md',
       support: MCP_DIRECTORIES_GUIDE_URL,
       evidenceCheckedAt: CHECKED_AT,
-      evidenceSummary: 'README search now shows both a canonical `IgorGanapolsky/ThumbGate` entry and a second legacy `IgorGanapolsky/mcp-memory-gateway` entry.',
+      evidenceSummary: 'README search now shows both the canonical `IgorGanapolsky/ThumbGate` entry and a second retired duplicate entry.',
       nextRepair: 'Submit a PR removing the duplicate legacy entry so discovery points at one canonical ThumbGate listing.',
       proof: VERIFICATION_EVIDENCE_LINK,
     },
@@ -175,7 +175,7 @@ function buildOperatorQueue() {
     {
       key: 'refresh_glama_metadata',
       audience: 'Glama listing owner or claimant',
-      evidence: 'Glama search now resolves to `IgorGanapolsky/ThumbGate`, but the canonical page still carries legacy schema text about `memory management and gateway capabilities` and an FAQ answer that begins with `The MCP Memory Gateway`.',
+      evidence: 'Glama search now resolves to `IgorGanapolsky/ThumbGate`, but the canonical page still carries retired gateway-era schema text and an FAQ answer that should be ThumbGate-only.',
       proofTrigger: 'Do this before sending more discovery traffic into Glama because the canonical listing still carries legacy metadata and FAQ copy.',
       proofAsset: GLAMA_CANONICAL_URL,
       nextAsk: GLAMA_CANONICAL_URL,
@@ -193,7 +193,7 @@ function buildOperatorQueue() {
     {
       key: 'remove_punkpeye_legacy_duplicate',
       audience: 'GitHub awesome-list maintainer or contributor',
-      evidence: 'The most visible awesome list now carries the canonical `IgorGanapolsky/ThumbGate` entry plus a second legacy `IgorGanapolsky/mcp-memory-gateway` duplicate.',
+      evidence: 'The most visible awesome list now carries the canonical `IgorGanapolsky/ThumbGate` entry plus a second retired duplicate entry.',
       proofTrigger: 'Repair before doing net-new list work because discovery should not split across both a canonical and legacy entry.',
       proofAsset: PUNKPEYE_LIST_URL,
       nextAsk: 'https://github.com/punkpeye/awesome-mcp-servers/pulls',
@@ -225,7 +225,7 @@ function buildOutreachDrafts() {
     {
       channel: 'Glama claim or support request',
       audience: 'Glama listing maintainer',
-      draft: 'ThumbGate now resolves to the canonical Glama listing, but the page still carries legacy metadata: the schema description still says `memory management and gateway capabilities`, and the FAQ answer still opens with `The MCP Memory Gateway`. Please refresh that metadata and FAQ copy so the canonical listing is ThumbGate-only.',
+      draft: 'ThumbGate now resolves to the canonical Glama listing, but the page still carries retired gateway-era metadata. Please refresh the schema description, FAQ answer, and page copy so the canonical listing is ThumbGate-only.',
     },
     {
       channel: 'Smithery publish note',
@@ -235,7 +235,7 @@ function buildOutreachDrafts() {
     {
       channel: 'punkpeye README PR body',
       audience: 'awesome-mcp-servers maintainer',
-      draft: 'This PR removes the duplicate legacy `IgorGanapolsky/mcp-memory-gateway` entry and keeps the canonical `IgorGanapolsky/ThumbGate` listing in place. The description remains focused on ThumbGate as pre-action gates that prevent AI coding agents from repeating known mistakes.',
+      draft: 'This PR removes the duplicate retired repository entry and keeps the canonical `IgorGanapolsky/ThumbGate` listing in place. The description remains focused on ThumbGate as pre-action gates that prevent AI coding agents from repeating known mistakes.',
     },
     {
       channel: 'appcypher README PR body',
@@ -260,7 +260,7 @@ function buildMeasurementPlan() {
     ],
     guardrails: [
       'Do not claim directory approval, ranking, installs, or revenue without direct command evidence.',
-      'Do not ship new directory copy that mentions `mcp-memory-gateway`, `rlhf-loop`, or other retired product names as active surfaces.',
+      'Do not ship new directory copy that mentions retired gateway-era product names as active surfaces.',
       'Keep pricing aligned with COMMERCIAL_TRUTH.md.',
       'Keep proof claims aligned with VERIFICATION_EVIDENCE.md.',
     ],

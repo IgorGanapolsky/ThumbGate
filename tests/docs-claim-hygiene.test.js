@@ -43,6 +43,21 @@ const staleFreeTierPatterns = [
   /1 agent/i,
 ];
 
+const retiredGatewayDisplayName = ['MCP Memory', ' Gateway'].join('');
+const retiredGatewayPackageName = ['mcp-memory', '-gateway'].join('');
+const retiredBrandSurfaceFiles = [
+  'README.md',
+  'package.json',
+  'package-lock.json',
+  'public/index.html',
+  'public/llms.txt',
+  'public/learn.html',
+  'public/learn/from-prototype-to-production.html',
+  'docs/COMMERCIAL_TRUTH.md',
+  'reports/gtm/2026-05-04-money-now/mcp-directory-revenue-pack.md',
+  'scripts/mcp-directory-revenue-pack.js',
+];
+
 test('active docs avoid brittle hard-coded verification metrics', () => {
   for (const relativePath of activeDocs) {
     const fullPath = path.join(projectRoot, relativePath);
@@ -55,6 +70,24 @@ test('active docs avoid brittle hard-coded verification metrics', () => {
         `${relativePath} should avoid brittle metric claim matching ${pattern}`,
       );
     }
+  }
+});
+
+test('active brand surfaces use ThumbGate, not retired gateway naming', () => {
+  for (const relativePath of retiredBrandSurfaceFiles) {
+    const fullPath = path.join(projectRoot, relativePath);
+    const text = fs.readFileSync(fullPath, 'utf8');
+
+    assert.doesNotMatch(
+      text,
+      new RegExp(retiredGatewayDisplayName, 'i'),
+      `${relativePath} must not use the retired gateway display name`,
+    );
+    assert.doesNotMatch(
+      text,
+      new RegExp(retiredGatewayPackageName, 'i'),
+      `${relativePath} must not point buyer-facing copy at the retired gateway package or repo`,
+    );
   }
 });
 
