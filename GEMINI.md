@@ -47,3 +47,9 @@ Key: Always dogfood the latest local changes before publishing.
 - **Rule [auto-claim-verification-engagement-linkedin-thumbs-down]**: Auto-promoted repeated pattern: "LinkedIn ThumbGate monetization engagement" (1 occurrences in 30 days)
 - **Rule [auto-content-quality-gatekeeper-linkedin-technical-meat]**: Auto-promoted repeated pattern: "ThumbGate LinkedIn daily content quality" (1 occurrences in 30 days)
 - **Rule [auto-content-quality-social-posts-thumbs-down-value-gat]**: Auto-promoted repeated pattern: "Global ThumbGate social content quality" (1 occurrences in 30 days)
+- **Rule [auto-promoted-mqtk70je-0]**: NEVER MISTAKE: This is a test failure
+- **Rule [auto-promoted-mqtk70jf-1]**: NEVER doctor feedback loop probe: prove thumbs feedback persists to durable logs
+- **Rule [auto-promoted-mqtk70jf-2]**: NEVER thumbs down This response skipped the required verification
+- **Rule [auto-promoted-mqtk70jf-3]**: NEVER feedback self-test: typed thumbs down reaches ThumbGate capture
+- **Rule [auto-promoted-mqtk70jf-4]**: NEVER deleted prod config ran rm on .env never delete .env files
+- **Rule [auto-promoted-mqtk70jf-5]**: NEVER skipped verification proof
