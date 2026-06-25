@@ -154,6 +154,14 @@ jobs:
 
       - name: Run tests
         if: steps.ci-scope.outputs.mode != 'web'
+        # Hermetic suite: short-circuit the npm-registry publish probe in
+        # scripts/mcp-config.js (isVersionPublished -> `npm view thumbgate@<v>`),
+        # which several CLI/statusline tests exercise indirectly. Without this,
+        # the suite depends on npm-registry reachability and intermittently
+        # stalls in CI. The probe and its 5s timeout stay intact for real users.
+        env:
+          THUMBGATE_PUBLISH_STATE: unpublished
+          THUMBGATE_PUBLISHED_CLI_STATE: unavailable
         run: npm test
 
       - name: Run gate-eval regression suite
@@ -166,6 +174,10 @@ jobs:
 
       - name: Run coverage
         if: steps.ci-scope.outputs.mode != 'web'
+        # Same hermetic override as "Run tests" — coverage re-runs the suite.
+        env:
+          THUMBGATE_PUBLISH_STATE: unpublished
+          THUMBGATE_PUBLISHED_CLI_STATE: unavailable
         run: npm run test:coverage
 
       - name: Check congruence (branding, tech stack, version across all surfaces)
