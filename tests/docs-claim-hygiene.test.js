@@ -68,6 +68,15 @@ test('README keeps buyer CTAs on current first-party ThumbGate surfaces', () => 
   assert.match(readme, /https:\/\/thumbgate\.ai\/guides\/codex-cli-guardrails\?utm_source=github&utm_medium=readme/);
 });
 
+test('README exposes visible sponsorship CTA without replacing product CTAs', () => {
+  const readme = fs.readFileSync(path.join(projectRoot, 'README.md'), 'utf8');
+
+  assert.match(readme, /https:\/\/buymeacoffee\.com\/igorganapolsky/);
+  assert.match(readme, /cdn\.buymeacoffee\.com\/buttons\/v2\/default-yellow\.png/);
+  assert.match(readme, /alt="Buy Me A Coffee"/);
+  assert.match(readme, /https:\/\/thumbgate\.ai\/checkout\/pro\?utm_source=github&utm_medium=readme/);
+});
+
 test('active commercial surfaces avoid stale free-tier limit claims', () => {
   for (const relativePath of freeTierTruthFiles) {
     const text = fs.readFileSync(path.join(projectRoot, relativePath), 'utf8');

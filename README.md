@@ -6,6 +6,12 @@
   </a>
 </p>
 
+<p align="center">
+  <a href="https://buymeacoffee.com/igorganapolsky">
+    <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="40" />
+  </a>
+</p>
+
 **AI coding agents repeat mistakes — and one wrong tool call can wipe a directory, leak a key, or push broken code.**
 
 ThumbGate is the local-first firewall for AI coding agents. It runs in the PreToolUse hook on your machine and blocks dangerous tool calls — `rm -rf`, secret exfiltration, off-scope edits, a bad `git push` — before they execute, across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode. No server, no gateway. (Regulated-industry policy templates — legal intake, financial compliance, healthcare — build on the same engine.)
