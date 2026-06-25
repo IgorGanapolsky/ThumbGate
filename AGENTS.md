@@ -39,3 +39,4 @@
 - **Rule [auto-promoted-mqtk70jf-3]**: NEVER feedback self-test: typed thumbs down reaches ThumbGate capture
 - **Rule [auto-promoted-mqtk70jf-4]**: NEVER deleted prod config ran rm on .env never delete .env files
 - **Rule [auto-promoted-mqtk70jf-5]**: NEVER skipped verification proof
+- **Rule [auto-promoted-mqtk7qhz-0]**: NEVER repeated problem context string
