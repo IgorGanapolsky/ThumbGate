@@ -133,9 +133,9 @@ Promotion and release operations are tracked in [CURSOR_PLUGIN_OPERATIONS.md](CU
 - Build command: `npm run build:vscode-extension`
 - Marketplace command: `cd plugins/vscode-extension && npx --yes @vscode/vsce publish`
 - Open VSX command: `cd plugins/vscode-extension && npx --yes ovsx publish *.vsix`
-- Current evidence: Open VSX has `igorganapolsky/thumbgate` at `1.27.8`; it is stale relative to repo metadata and needs republishing from `plugins/vscode-extension/`.
-- Current evidence: VS Code Marketplace has `igorganapolsky.thumbgate` at `1.27.15`; it is public but stale relative to package `1.27.16` until the IDE marketplace workflow publishes the VSIX.
-- Promotion rule: claim VS Code Marketplace availability only with the stale-version qualifier until the public gallery API shows the current package version. Do not claim fresh Open VSX metadata until the listing API proves it.
+- Current evidence: Open VSX has `igorganapolsky/thumbgate` at `1.27.16` by public API, timestamp `2026-06-25T14:20:19.655304Z`.
+- Current evidence: VS Code Marketplace workflow `28176778805` logged `Published igorganapolsky.thumbgate v1.27.16`, but the public gallery API still returned `1.27.15` at `2026-06-25T14:22:06Z`.
+- Promotion rule: claim Open VSX current-version availability. Claim VS Code Marketplace availability only with the propagation qualifier until the public gallery API shows the current package version.
 
 ## Antigravity-compatible VSIX
 

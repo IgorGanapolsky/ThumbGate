@@ -143,7 +143,9 @@ test('README and distribution docs promote IDE marketplaces without claiming pub
   assert.match(distribution, /Cursor plugin bundle/);
   assert.match(distribution, /public Cursor Marketplace availability is not yet proven/);
   assert.match(ideDistribution, /Open VSX has a published ThumbGate listing/);
-  assert.match(ideDistribution, /VS Code Marketplace `igorganapolsky\.thumbgate`: public, version `1\.27\.15`/);
+  assert.match(ideDistribution, /Open VSX `igorganapolsky\/thumbgate`: public API reports version `1\.27\.16`/);
+  assert.match(ideDistribution, /VS Code Marketplace `igorganapolsky\.thumbgate`: workflow `28176778805` logs `Published igorganapolsky\.thumbgate v1\.27\.16`/);
+  assert.match(ideDistribution, /public gallery API still returned version `1\.27\.15`/);
   assert.match(ideDistribution, /Cursor plugin bundle/);
   assert.match(ideDistribution, /Cursor dashboard screenshot from 2026-06-03 shows no installed ThumbGate plugin/);
   assert.match(cursorReadme, /Cursor Marketplace Status/);

@@ -1,6 +1,6 @@
 # IDE Marketplace Distribution
 
-Status: implementation-ready. Open VSX has a published ThumbGate listing, and VS Code Marketplace has a published ThumbGate listing, but both verified listings are stale until republished from the current extension package. Public Cursor Marketplace availability must not be claimed without live listing proof.
+Status: implementation-ready. Open VSX has a published ThumbGate listing at the current package version. VS Code Marketplace publish logs confirm `1.27.16`, but the public gallery API must show the current version before buyer-facing copy claims the refresh has propagated. Public Cursor Marketplace availability must not be claimed without live listing proof.
 
 ## Priority
 
@@ -25,10 +25,10 @@ Status: implementation-ready. Open VSX has a published ThumbGate listing, and VS
 
 Verified state on 2026-06-25:
 
-- Open VSX `igorganapolsky/thumbgate`: published, version `1.27.8`, stale relative to repo package `1.27.16`.
-- VS Code Marketplace `igorganapolsky.thumbgate`: public, version `1.27.15`, stale relative to repo package `1.27.16`.
+- Open VSX `igorganapolsky/thumbgate`: public API reports version `1.27.16` at `2026-06-25T14:20:19.655304Z`.
+- VS Code Marketplace `igorganapolsky.thumbgate`: workflow `28176778805` logs `Published igorganapolsky.thumbgate v1.27.16`; the public gallery API still returned version `1.27.15` at `2026-06-25T14:22:06Z`.
 
-Publish or refresh once the Marketplace assets are reviewed:
+Publish or refresh command path:
 
 ```bash
 cd plugins/vscode-extension
@@ -41,7 +41,7 @@ npx --yes ovsx publish *.vsix
 
 - Install doc: `plugins/antigravity-extension/INSTALL.md`
 - Current path: Open VSX or direct VSIX.
-- Current evidence: Antigravity's extension search can surface the Open VSX listing, but that listing must be refreshed from `plugins/vscode-extension/`.
+- Current evidence: Antigravity's extension search can surface the Open VSX listing, which is current at `1.27.16`.
 - Claim discipline: do not call it an Antigravity Marketplace listing until a first-party listing is live.
 
 ## Cursor
