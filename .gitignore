@@ -72,6 +72,35 @@ reports/gtm/2026-05-05-money-today/direct-email-outreach-*.json
 reports/gtm/2026-05-05-money-today/operator-close-packet.md
 reports/gtm/2026-05-05-money-today/sales-pipeline-latest.md
 
+# Autonomous revenue/GTM loop scratch — local-only working files.
+# These timestamped run artifacts hold internal pipeline numbers, contact
+# identifiers, and operating notes. Keep them confidential and out of git.
+# Secret-scanned clean; the concern is confidentiality, not credentials.
+# The loop regenerates them; they are never required in version control.
+reports/gtm/**/*Z.md
+reports/gtm/**/next-money-action-*
+reports/gtm/**/operator-loop-brief-*
+reports/gtm/**/revenue-operator-loop-*
+reports/gtm/**/community-growth-readback-2026-*
+reports/gtm/**/skool-platform-requirements-2026-*
+reports/gtm/**/skool-classroom-listing-copy-2026-*
+reports/gtm/**/skool-seed-post-draft-*
+reports/gtm/**/next-actions-2026-*
+reports/gtm/**/next-dollar-scorecard-*
+reports/gtm/**/gatekeeper-state-correction-*
+reports/gtm/**/reddit-*-send-*
+reports/gtm/**/reddit-*-posted-*
+reports/gtm/**/reddit-*-followup-*
+reports/gtm/**/paypal-business-collection-*
+reports/gtm/**/payment-rails-implementation-*
+reports/gtm/**/post-everywhere-status-*
+reports/gtm/**/reddit-*-sent-*
+reports/gtm/**/reddit-*-receipt-*
+reports/gtm/2026-06-*/
+
+# Local social post drafts — keep confidential, out of version control.
+/drafts/
+
 # RLHF runtime artifacts (per-checkout local state)
 .rlhf/
 test-results/
