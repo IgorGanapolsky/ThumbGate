@@ -43,6 +43,21 @@ const staleFreeTierPatterns = [
   /1 agent/i,
 ];
 
+const retiredGatewayDisplayName = ['MCP Memory', ' Gateway'].join('');
+const retiredGatewayPackageName = ['mcp-memory', '-gateway'].join('');
+const retiredBrandSurfaceFiles = [
+  'README.md',
+  'package.json',
+  'package-lock.json',
+  'public/index.html',
+  'public/llms.txt',
+  'public/learn.html',
+  'public/learn/from-prototype-to-production.html',
+  'docs/COMMERCIAL_TRUTH.md',
+  'reports/gtm/2026-05-04-money-now/mcp-directory-revenue-pack.md',
+  'scripts/mcp-directory-revenue-pack.js',
+];
+
 test('active docs avoid brittle hard-coded verification metrics', () => {
   for (const relativePath of activeDocs) {
     const fullPath = path.join(projectRoot, relativePath);
@@ -58,6 +73,24 @@ test('active docs avoid brittle hard-coded verification metrics', () => {
   }
 });
 
+test('active brand surfaces use ThumbGate, not retired gateway naming', () => {
+  for (const relativePath of retiredBrandSurfaceFiles) {
+    const fullPath = path.join(projectRoot, relativePath);
+    const text = fs.readFileSync(fullPath, 'utf8');
+
+    assert.doesNotMatch(
+      text,
+      new RegExp(retiredGatewayDisplayName, 'i'),
+      `${relativePath} must not use the retired gateway display name`,
+    );
+    assert.doesNotMatch(
+      text,
+      new RegExp(retiredGatewayPackageName, 'i'),
+      `${relativePath} must not point buyer-facing copy at the retired gateway package or repo`,
+    );
+  }
+});
+
 test('README keeps buyer CTAs on current first-party ThumbGate surfaces', () => {
   const readme = fs.readFileSync(path.join(projectRoot, 'README.md'), 'utf8');
 
@@ -66,6 +99,15 @@ test('README keeps buyer CTAs on current first-party ThumbGate surfaces', () => 
   assert.match(readme, /https:\/\/thumbgate\.ai\/checkout\/pro\?utm_source=github&utm_medium=readme/);
   assert.match(readme, /https:\/\/thumbgate\.ai\/dashboard\?utm_source=github&utm_medium=readme/);
   assert.match(readme, /https:\/\/thumbgate\.ai\/guides\/codex-cli-guardrails\?utm_source=github&utm_medium=readme/);
+});
+
+test('README exposes visible sponsorship CTA without replacing product CTAs', () => {
+  const readme = fs.readFileSync(path.join(projectRoot, 'README.md'), 'utf8');
+
+  assert.match(readme, /https:\/\/buymeacoffee\.com\/igorganapolsky/);
+  assert.match(readme, /cdn\.buymeacoffee\.com\/buttons\/v2\/default-yellow\.png/);
+  assert.match(readme, /alt="Buy Me A Coffee"/);
+  assert.match(readme, /https:\/\/thumbgate\.ai\/checkout\/pro\?utm_source=github&utm_medium=readme/);
 });
 
 test('active commercial surfaces avoid stale free-tier limit claims', () => {

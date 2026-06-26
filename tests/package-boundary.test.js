@@ -326,9 +326,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 321 -> 324 (2026-06-16) to ship the Guardian/Ethicore policy-engine
   // adapter and commercial-truth claim gate as public runtime enforcement.
   // Bumped 324 -> 326 (2026-06-22) to ship the new transparent brand logo SVG.
+  // Bumped 326 -> 329 (2026-06-25) to ship the local lessons seed,
+  // Human-on-the-Bridge pack generator, and oMLX smoke verifier in the public
+  // package. These are runtime surfaces for the self-checking install flow.
   assert.ok(
-    manifest.fileCount <= 326,
-    `npm package should stay <= 326 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 329,
+    `npm package should stay <= 329 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -448,9 +451,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 4.60 MB -> 4.65 MB (2026-06-11) for tool contract validator.
   // Bumped 4.65 MB -> 4.70 MB (2026-06-11) for Letta adapter and evaluation scripts.
   // Bumped 4.70 MB -> 4.75 MB (2026-06-12) for Core AI provider and main merges.
+  // Bumped 4.75 MB -> 4.85 MB (2026-06-25) for the local lessons seed plus
+  // HOB/oMLX runtime scripts. Observed 1.27.16 pack: ~4.786 MB unpacked.
   assert.ok(
-    manifest.unpackedSize <= 4_750_000,
-    `npm package should stay <= 4.75 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_850_000,
+    `npm package should stay <= 4.85 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
@@ -465,6 +470,17 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   for (const file of forbiddenFiles) {
     assert.equal(files.includes(file), false, `must not ship dev/marketing file: ${file}`);
   }
+});
+
+test('npm package ships Claude plugin metadata aligned with package version', () => {
+  const manifest = npmPackManifest();
+  const files = manifest.files;
+  const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+  const claudePlugin = JSON.parse(fs.readFileSync(path.join(root, '.claude-plugin', 'plugin.json'), 'utf8'));
+
+  assert.ok(files.includes('.claude-plugin/plugin.json'), 'Claude plugin manifest must ship in npm package');
+  assert.equal(claudePlugin.name, 'thumbgate');
+  assert.equal(claudePlugin.version, packageJson.version);
 });
 
 test('package main resolves through src entrypoint', () => {

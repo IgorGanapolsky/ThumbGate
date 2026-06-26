@@ -88,7 +88,10 @@ const path = require('node:path');
 // 321 → 324: 2026-06-16 Guardian/Ethicore policy-engine adapter and
 // commercial-truth claim gate added as public runtime enforcement.
 // 324 → 326: 2026-06-22 ship new transparent brand logo SVG.
-const BASELINE_FILE_COUNT = 326;
+// 326 → 329: 2026-06-25 ship local lessons seed, Human-on-the-Bridge pack
+// generator, and oMLX smoke verifier so public installs carry the new
+// self-checking runtime surfaces.
+const BASELINE_FILE_COUNT = 329;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

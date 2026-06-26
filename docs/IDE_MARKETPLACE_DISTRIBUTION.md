@@ -1,6 +1,6 @@
 # IDE Marketplace Distribution
 
-Status: implementation-ready. Open VSX has a published ThumbGate listing, but the verified listing is stale until it is republished from the current extension package. VS Code Marketplace and public Cursor Marketplace availability must not be claimed without live listing proof.
+Status: implementation-ready. Open VSX has a published ThumbGate listing at the current package version. VS Code Marketplace publish logs confirm `1.27.16`, but the public gallery API must show the current version before buyer-facing copy claims the refresh has propagated. Public Cursor Marketplace availability must not be claimed without live listing proof.
 
 ## Priority
 
@@ -23,12 +23,12 @@ Status: implementation-ready. Open VSX has a published ThumbGate listing, but th
   - `ThumbGate: Open Dashboard`
   - `ThumbGate: Upgrade to Pro`
 
-Verified state on 2026-06-03:
+Verified state on 2026-06-25:
 
-- Open VSX `igorganapolsky/thumbgate`: published, version `1.16.22`, stale relative to repo package metadata.
-- VS Code Marketplace `igorganapolsky.thumbgate`: no listing found through the public gallery API.
+- Open VSX `igorganapolsky/thumbgate`: public API reports version `1.27.16` at `2026-06-25T14:20:19.655304Z`.
+- VS Code Marketplace `igorganapolsky.thumbgate`: workflow `28176778805` logs `Published igorganapolsky.thumbgate v1.27.16`; the public gallery API still returned version `1.27.15` at `2026-06-25T14:22:06Z`.
 
-Publish or refresh once the Marketplace assets are reviewed:
+Publish or refresh command path:
 
 ```bash
 cd plugins/vscode-extension
@@ -41,7 +41,7 @@ npx --yes ovsx publish *.vsix
 
 - Install doc: `plugins/antigravity-extension/INSTALL.md`
 - Current path: Open VSX or direct VSIX.
-- Current evidence: Antigravity's extension search can surface the Open VSX listing, but that listing must be refreshed from `plugins/vscode-extension/`.
+- Current evidence: Antigravity's extension search can surface the Open VSX listing, which is current at `1.27.16`.
 - Claim discipline: do not call it an Antigravity Marketplace listing until a first-party listing is live.
 
 ## Cursor
@@ -51,7 +51,7 @@ npx --yes ovsx publish *.vsix
 - Runtime: `npx --yes --package thumbgate@latest thumbgate serve`
 - Public submission path: `https://cursor.com/dashboard/plugins`
 - Team fallback: import this repository through `Dashboard -> Settings -> Plugins -> Team Marketplaces`
-- Current evidence: the user-provided Cursor dashboard screenshot from 2026-06-03 shows no installed ThumbGate plugin in that account.
+- Current evidence: `npm run cursor:marketplace:doctor:json` on 2026-06-25 reports `publicStatus: not_live` with public listing reason `cursor_marketplace_plugin_not_found`; the user-provided Cursor dashboard screenshot from 2026-06-03 shows no installed ThumbGate plugin in that account.
 - Claim discipline: say "Cursor plugin bundle" or "Cursor Team Marketplace import path" until a public Cursor Marketplace listing is visibly live.
 
 ## JetBrains

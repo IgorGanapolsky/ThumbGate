@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "lessons": [
+    {
+      "id": "builtin-response-quality-shallow-positive-closeout",
+      "title": "MISTAKE: Assistant gave shallow acknowledgement after user said thumbs up",
+      "content": "What went wrong: Assistant gave shallow acknowledgement after positive feedback, such as thumbs up, perfect, good, or thank you, instead of staying quiet or giving an evidence checkpoint.\nHow to avoid: If the previous user message is positive feedback and the proposed final response is a low-value social closeout, block it and require either silence-level brevity or a compact evidence checkpoint with proof, result, residual risk, and next state.\nAction needed: Enforce this at the final-response boundary, not only as PreToolUse context.\nReasoning: Stored lessons and retrieval are not enough when the model can still ignore the lesson at generation time.",
+      "category": "error",
+      "importance": "high",
+      "tags": [
+        "feedback",
+        "negative",
+        "response-quality",
+        "final-response",
+        "positive-feedback",
+        "shallow-closeout",
+        "enforcement"
+      ],
+      "timestamp": "2026-06-20T19:01:58.000Z",
+      "source": "packaged-builtin"
+    }
+  ]
+}

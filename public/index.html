@@ -20,7 +20,7 @@ __GOOGLE_SITE_VERIFICATION_META__
 <meta property="og:image" content="https://thumbgate.ai/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://thumbgate.ai/og.png">
-<meta name="thumbgate-version" content="1.27.15">
+<meta name="thumbgate-version" content="1.27.16">
 <meta name="keywords" content="ThumbGate, thumbgate, AI agent orchestration, AI experience orchestration, agentic development cycle, AC/DC framework, Guide Generate Verify Solve, agent enforcement layer, save LLM tokens, reduce Claude API cost, reduce OpenAI cost, AI agent token savings, prevent LLM retries, prevent hallucination retries, stop AI token waste, pre-action checks, agent governance, Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, workflow hardening, context engineering, AI authenticity, brand authenticity AI">
 <link rel="canonical" href="__APP_ORIGIN__/">
 <link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
@@ -411,10 +411,9 @@ __GA_BOOTSTRAP__
   /* NAV */
   nav { position: sticky; top: 0; z-index: 50; background: rgba(10,10,11,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 14px 0; }
   nav .container { display: flex; justify-content: space-between; align-items: center; }
-  .nav-logo { font-weight: 700; font-size: 15px; letter-spacing: -0.02em; color: var(--text); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
-  .nav-logo .logo-mark { width: 28px; height: 28px; display: block; }
-  .nav-logo .logo-text { color: var(--text); }
-  .nav-logo span { color: var(--cyan); }
+  .nav-logo { color: var(--text); text-decoration: none; display: inline-flex; align-items: center; flex: 0 0 auto; }
+  .nav-logo .logo-mark { width: 220px; height: 66px; display: block; flex: 0 0 auto; object-fit: contain; }
+  .nav-logo .logo-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
   .nav-links { display: flex; gap: 24px; align-items: center; }
   .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; transition: color 0.15s; }
   .nav-links a:hover { color: var(--text); }
@@ -447,13 +446,20 @@ __GA_BOOTSTRAP__
   .hero-actions { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 12px; margin: 0 auto 16px; max-width: 900px; }
   .hero-actions a, .hero-actions .hero-install { min-height: 48px; border-radius: 8px; }
   .hero-actions .hero-install { margin-bottom: 0; font-size: 18px; padding: 14px 22px; border: 1px solid rgba(34,211,238,0.55); background: rgba(34,211,238,0.07); box-shadow: none; }
-  .hero-actions .btn-install-hero { font-size: 16px; padding: 14px 22px; }
+  .hero-actions .btn-install-hero { font-size: 17px; padding: 14px 24px; font-weight: 800; background: var(--cyan); color: var(--bg); border: 1px solid rgba(34,211,238,0.65); box-shadow: 0 0 0 1px rgba(34,211,238,0.28), 0 12px 32px rgba(34,211,238,0.18); }
   .hero-actions .hero-diagnostic { font-size: 16px; padding: 14px 22px; background: var(--green); color: #06120a; font-weight: 800; box-shadow: none; }
   .offer-router{max-width:940px;margin:18px auto 22px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;text-align:left}
   .offer-route{border:1px solid rgba(34,211,238,.18);background:rgba(17,17,19,.72);border-radius:8px;padding:14px}
   .offer-route strong{display:block;color:var(--text);font-size:14px;margin-bottom:6px}.offer-route p{margin:0 0 10px;color:var(--text-muted);font-size:13px}
   .offer-route a,.offer-route button{color:var(--cyan);font-weight:800;font-size:13px;text-decoration:none;background:transparent;border:0;padding:0;cursor:pointer}.offer-route.primary{background:rgba(34,211,238,.07)}
+  .repeat-proof-strip { max-width: 760px; margin: 0 auto 24px; display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: stretch; text-align: left; }
+  .repeat-proof-step { border: 1px solid rgba(34,211,238,0.18); background: rgba(17,17,19,0.76); border-radius: 8px; padding: 12px 14px; min-height: 74px; }
+  .repeat-proof-step strong { display: block; color: var(--text); font-size: 13px; margin-bottom: 4px; }
+  .repeat-proof-step code { display: block; color: var(--text-muted); font-family: var(--mono); font-size: 12px; line-height: 1.45; white-space: normal; }
+  .repeat-proof-step.blocked { border-color: rgba(248,113,113,0.34); background: rgba(248,113,113,0.08); }
+  .repeat-proof-arrow { display: flex; align-items: center; justify-content: center; color: var(--cyan); font-weight: 800; }
   .btn-pro-page { display: inline-flex; align-items: center; justify-content: center; padding: 11px 18px; background: var(--cyan); color: var(--bg); border-radius: 999px; text-decoration: none; font-size: 14px; font-weight: 700; box-shadow: 0 0 0 1px rgba(34,211,238,0.28), 0 12px 32px rgba(34,211,238,0.18); transition: opacity 0.15s, transform 0.15s; }
+  .btn-pro-page.hero-secondary { background: rgba(17,17,19,0.72); color: var(--cyan); border: 1px solid rgba(34,211,238,0.32); box-shadow: none; }
   .btn-pro-page:hover { opacity: 0.9; transform: translateY(-1px); }
   .btn-gpt-page { display: inline-flex; align-items: center; justify-content: center; padding: 14px 32px; background: var(--green); color: #06120a; border-radius: 8px; text-decoration: none; font-size: 16px; font-weight: 800; box-shadow: 0 0 0 1px rgba(74,222,128,0.32), 0 12px 32px rgba(74,222,128,0.18); transition: opacity 0.15s, transform 0.15s; }
   .btn-gpt-page:hover { opacity: 0.92; transform: translateY(-1px); }
@@ -706,6 +712,8 @@ __GA_BOOTSTRAP__
     .hero-actions { flex-direction: column; }
     .hero-actions a { width: 100%; }
     .offer-router { grid-template-columns: 1fr; }
+    .repeat-proof-strip { grid-template-columns: 1fr; }
+    .repeat-proof-arrow { min-height: 20px; }
     .hero-paid-actions { justify-content: center; }
     .hero-paid-actions a { width: 100%; }
     .nav-links a:not(.nav-cta) { display: none; }
@@ -730,7 +738,7 @@ __GA_BOOTSTRAP__
 <!-- NAV -->
 <nav>
   <div class="container">
-    <a href="/" class="nav-logo"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
+    <a href="/" class="nav-logo" aria-label="ThumbGate home"><img src="/assets/brand/thumbgate-logo-transparent.svg?v=20260623-transparent-wordmark-nav" alt="" class="logo-mark" width="220" height="66"><span class="logo-text">ThumbGate</span></a>
     <div class="nav-links">
       <a href="#how-it-works">How It Works</a>
       <a href="/pricing">Pricing</a>
@@ -755,15 +763,27 @@ __GA_BOOTSTRAP__
 <!-- HERO -->
 <section class="hero">
   <div class="container">
-    <div class="hero-badge">👍 👎 Local-first · open-source · Pro proof when it matters</div>
-    <h1>Stop AI agents before they spend money, leak secrets, or break production.</h1>
-    <p class="hero-lede">Claude Code, Cursor, Codex, Gemini CLI, and MCP tools now touch terminals, repos, databases, SaaS APIs, and cloud systems. ThumbGate checks the next tool call before it runs, blocks repeated failures from your thumbs-down feedback, and gives paid operators proof, sync, recall, and exports when local rules become business-critical.</p>
+    <div class="hero-badge">For AI coders who already corrected the same agent twice</div>
+    <h1>Stop repeated AI agent mistakes before they run again.</h1>
+    <p class="hero-lede">ThumbGate turns one thumbs-down into a local pre-action check. If Claude Code, Cursor, Codex, Gemini CLI, or another MCP-capable agent tries the same unsafe command, edit, deploy, retry loop, or API call again, ThumbGate blocks it before execution and records why.</p>
 
-    <div class="hero-signals" aria-label="June 2026 buyer signals">
-      <a class="signal-pill signal-down" href="#june-2026-proof">MCP tool risk</a>
-      <a class="signal-pill" href="#june-2026-proof">Managed-agent rollout</a>
-      <a class="signal-pill" href="#june-2026-proof">Token spend pressure</a>
-      <a class="signal-pill signal-up" href="#pricing">Free wedge, paid proof</a>
+    <div class="hero-signals" aria-label="Repeated agent mistakes ThumbGate stops">
+      <a class="signal-pill signal-down" href="#first-check">Repeated command</a>
+      <a class="signal-pill" href="#first-check">Runaway retry loop</a>
+      <a class="signal-pill" href="#first-check">Rejected edit returns</a>
+      <a class="signal-pill signal-up" href="#pricing">Upgrade after proof</a>
+    </div>
+
+    <div class="repeat-proof-strip" aria-label="ThumbGate thumbs-down to blocked repeat example">
+      <div class="repeat-proof-step">
+        <strong>1. You reject it once</strong>
+        <code>thumbs down: never force-push main without explicit approval</code>
+      </div>
+      <div class="repeat-proof-arrow">→</div>
+      <div class="repeat-proof-step blocked">
+        <strong>2. The repeat is stopped</strong>
+        <code>agent: git push --force origin main<br>BLOCKED before execution</code>
+      </div>
     </div>
 
     <div class="hero-proof-card" aria-label="ThumbGate blocking dangerous AI agent commands in real time">
@@ -771,26 +791,26 @@ __GA_BOOTSTRAP__
     </div>
 
     <div class="hero-actions">
-      <a href="/checkout/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_upgrade&cta_id=hero_start_pro&cta_placement=hero&plan_id=pro&landing_path=%2F" data-revenue-cta data-cta-id="hero_start_pro" data-cta-placement="hero" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);try{posthog.capture('hero_pro_checkout_click',{cta:'hero_start_pro',tier:'pro',price:19})}catch(_){}" class="btn-pro-page hero-pro hero-pro-primary">Start Pro — $19/mo</a>
-      <a href="#workflow-sprint-intake" onclick="try{posthog.capture('hero_sprint_click',{cta:'sprint_intake'})}catch(_){};sendFirstPartyTelemetry('hero_sprint_intake_started',{ctaId:'hero_workflow_sprint',ctaPlacement:'hero',offer:'workflow_sprint'});" class="btn-pro-page hero-pro">Workflow Hardening Sprint →</a>
       <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="event.preventDefault(); navigator.clipboard.writeText('npx thumbgate init'); this.textContent='Copied ✓ — paste in your repo'; setTimeout(()=>{this.textContent='Install Free CLI'},2000); try{posthog.capture('hero_install_click',{cta:'install_cli'})}catch(_){}" class="btn-free btn-install-hero" title="Click to copy: npx thumbgate init">Install Free CLI</a>
+      <a href="/checkout/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_upgrade&cta_id=hero_start_pro&cta_placement=hero&plan_id=pro&landing_path=%2F" data-revenue-cta data-cta-id="hero_start_pro" data-cta-placement="hero" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);try{posthog.capture('hero_pro_checkout_click',{cta:'hero_start_pro',tier:'pro',price:19})}catch(_){}" class="btn-pro-page hero-pro hero-pro-primary hero-secondary">Upgrade after one blocked repeat</a>
+      <a href="#workflow-sprint-intake" onclick="try{posthog.capture('hero_sprint_click',{cta:'sprint_intake'})}catch(_){};sendFirstPartyTelemetry('hero_sprint_intake_started',{ctaId:'hero_workflow_sprint',ctaPlacement:'hero',offer:'workflow_sprint'});" class="btn-pro-page hero-pro hero-secondary">Team workflow intake →</a>
     </div>
 
     <div class="offer-router" aria-label="Choose the right ThumbGate path">
       <div class="offer-route primary">
-        <strong>Solo operator: Start Pro</strong>
-        <p>Unlimited rules, recall, sync, proof, exports.</p>
-        <a href="/checkout/pro?utm_source=website&utm_medium=offer_router&cta_id=router_start_pro&cta_placement=offer_router&plan_id=pro" data-revenue-cta data-cta-id="router_start_pro" data-cta-placement="offer_router" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);">Pay $19/mo with Stripe →</a>
-      </div>
-      <div class="offer-route">
-        <strong>Enterprise workflow: Start with intake</strong>
-        <p>One repeated failure, one owner, one proof plan.</p>
-        <a href="#workflow-sprint-intake" onclick="sendFirstPartyTelemetry('workflow_sprint_intake_started',{ctaId:'router_workflow_sprint',ctaPlacement:'offer_router',offer:'workflow_sprint'});">Talk to us →</a>
-      </div>
-      <div class="offer-route">
-        <strong>Still evaluating: Free CLI</strong>
-        <p>2 captures/day, 3 active rules. Enough to prove one blocked repeat.</p>
+        <strong>Start here: Free CLI</strong>
+        <p>2 captures/day, 3 active rules. Enough to prove one blocked repeat in your repo.</p>
         <button data-router-install onclick="copyInstall(this)"><span class="copy-hint">Copy npx thumbgate init</span></button>
+      </div>
+      <div class="offer-route">
+        <strong>After it blocks a repeat: Pro</strong>
+        <p>Unlimited rules, recall, sync, dashboard proof, and exports for one operator.</p>
+        <a href="/checkout/pro?utm_source=website&utm_medium=offer_router&cta_id=router_start_pro&cta_placement=offer_router&plan_id=pro" data-revenue-cta data-cta-id="router_start_pro" data-cta-placement="offer_router" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);">Upgrade to Pro →</a>
+      </div>
+      <div class="offer-route">
+        <strong>Team has the same failure: intake</strong>
+        <p>One repeated workflow, one owner, one proof plan before a wider rollout.</p>
+        <a href="#workflow-sprint-intake" onclick="sendFirstPartyTelemetry('workflow_sprint_intake_started',{ctaId:'router_workflow_sprint',ctaPlacement:'offer_router',offer:'workflow_sprint'});">Send workflow first →</a>
       </div>
     </div>
 
@@ -1267,6 +1287,7 @@ __GA_BOOTSTRAP__
         <a href="/guides/relational-knowledge-ai-recommendations">Relational knowledge</a>
         <a href="/guides/claude-code-feedback">Claude Code feedback</a>
         <a href="/guides/autoresearch-agent-safety">Autoresearch safety</a>
+        <a href="/guides/aws-blocks-agent-guardrails">AWS Blocks guardrails</a>
       </div>
     </div>
   </div>
@@ -1794,7 +1815,7 @@ __GA_BOOTSTRAP__
       <a href="https://www.linkedin.com/in/igorganapolsky" target="_blank" rel="noopener">LinkedIn</a>
       <a href="/blog">Blog</a>
     </div>
-    <span class="footer-copy">© 2026 ThumbGate · MIT License · npm v1.27.15</span>
+    <span class="footer-copy">© 2026 ThumbGate · MIT License · npm v1.27.16</span>
   </div>
 </footer>
 
