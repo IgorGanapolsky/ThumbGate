@@ -1833,8 +1833,8 @@ test('checkout interstitial: GET without confirm=1 (human UA) renders the inters
   assert.doesNotMatch(body, /not_allowed/);
   assert.doesNotMatch(body, /<img src=x onerror=alert\(1\)>/);
   assert.doesNotMatch(body, /<svg onload=alert\(1\)>/);
-  assert.doesNotMatch(body, /name="customer_email"[^>]*required/, 'email should be optional because Stripe collects it');
-  assert.match(body, /Stripe can collect your email/);
+  assert.match(body, /name="customer_email"[^>]*required/, 'email is required before Stripe session creation so abandoned sessions remain recoverable');
+  assert.match(body, /Required for your Stripe receipt and checkout recovery link/);
   assert.match(body, /Not sure yet\? Send the workflow first/);
   assert.doesNotMatch(body, /Pay \$1 first rule/);
   assert.doesNotMatch(body, /Pay \$99 teardown/);

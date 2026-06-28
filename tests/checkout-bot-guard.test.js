@@ -240,8 +240,8 @@ describe('/checkout/pro bot guard', () => {
     assert.match(body, /<form action="\/checkout\/pro"/);
     assert.match(body, /name="confirm" value="1"/);
     assert.match(body, /name="customer_email"/);
-    assert.doesNotMatch(body, /name="customer_email"[^>]*required/);
-    assert.match(body, /Stripe can collect your email/);
+    assert.match(body, /name="customer_email"[^>]*required/);
+    assert.match(body, /Required for your Stripe receipt and checkout recovery link/);
     assert.doesNotMatch(body, /<a[^>]+confirm=1/, 'confirm=1 must not be in a crawlable anchor');
   });
 
@@ -433,7 +433,7 @@ describe('/checkout/pro bot guard', () => {
     );
   });
 
-  it('lets confirmed real browsers proceed while Stripe collects the email', async () => {
+  it('keeps confirmed real browsers on the interstitial until email is captured', async () => {
     try { fs.unlinkSync(path.join(ENV.THUMBGATE_FEEDBACK_DIR, 'telemetry-pings.jsonl')); } catch {}
     const res = await fetch(`${origin}/checkout/pro?confirm=1`, {
       redirect: 'manual',
@@ -442,17 +442,20 @@ describe('/checkout/pro bot guard', () => {
         accept: BROWSER_ACCEPT,
       },
     });
-    assert.ok(res.status >= 300 && res.status < 400, `expected checkout redirect, got ${res.status}`);
-    assert.match(res.headers.get('location') || '', /\/success\?/);
+    assert.equal(res.status, 200, `expected email interstitial, got ${res.status}`);
+    const body = await res.text();
+    assert.match(body, /Start ThumbGate Pro/);
+    assert.match(body, /name="customer_email"[^>]*required/);
 
     const events = readFunnelEvents();
     assert.ok(
-      events.some((e) => e.eventType === 'checkout_email_deferred_to_stripe'),
-      'missing email should be tracked as delegated to Stripe collection',
+      events.some((e) => e.eventType === 'checkout_interstitial_view' && e.reasonCode === 'missing_customer_email'),
+      'missing email should be tracked before creating a Stripe session',
     );
-    assert.ok(
-      events.some((e) => e.eventType === 'checkout_bootstrap'),
-      'confirmed browsers should create a checkout session without our email gate',
+    assert.equal(
+      events.filter((e) => e.eventType === 'checkout_bootstrap').length,
+      0,
+      'confirmed browsers without email must not create an unrecoverable checkout session',
     );
   });
 
