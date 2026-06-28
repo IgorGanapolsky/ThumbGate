@@ -6,6 +6,13 @@
 > The following rules were automatically derived from execution failures and thumbs-down feedback.
 > You MUST follow these constraints strictly to prevent repeated errors.
 
+- **Rule [auto-entity-customer]**: Auto-promoted repeated pattern: "skipped verification proof" (18 occurrences in 30 days)
+- **Rule [auto-dogfood-enterprise-roadmap-entity-customer-truthfu]**: Auto-promoted repeated pattern: "User pushed back that saying we can sell GCP/Dialogflow enterprise guardrails is premature because ThumbGate has no buil" (1 occurrences in 30 days)
+- **Rule [auto-diagnosis-tool-output-misread]**: Auto-promoted repeated diagnosis: "skipped verification proof" (11 occurrences in 30 days)
+- **Rule [auto-setup-vertex-dry-run-was-accepted-but-ignored-it-e]**: Auto-promoted repeated pattern: "setup-vertex --dry-run was accepted but ignored; it enabled Vertex AI and wrote .env. Dry-run flags must never mutate cl" (1 occurrences in 30 days)
+- **Rule [auto-autonomy-babysitting-entity-customer-overclaiming-]**: Auto-promoted repeated pattern: "Acting as autonomous CEO/CTO, the user had to say 'are you sure?' ~8 times in one session, each catching a real error, t" (1 occurrences in 30 days)
+- **Rule [auto-pr-hygiene-session-directive-thumbgate-hooks-workt]**: Auto-promoted repeated pattern: "PR hygiene cleanup exposed stale local hook.thumbgate command paths pointing at a removed temp worktree; remote branch d" (1 occurrences in 30 days)
+- **Rule [auto-rest-fallback]**: Auto-promoted repeated pattern: "stdin test" (59 occurrences in 30 days)
 - **Rule [auto-chat-gemini-pivot-ollama-overclaim-session-feedbac]**: Auto-promoted repeated pattern: "Claude Code session 2026-06-04 — chat OSS pivot" (1 occurrences in 30 days)
 - **Rule [auto-cli-telemetry-test]**: Auto-promoted repeated pattern: "verifies fetch fires when telemetry enabled" (3 occurrences in 30 days)
 - **Rule [auto-gsd-verify]**: Auto-promoted repeated pattern: "GSD verify ping" (1 occurrences in 30 days)
@@ -40,10 +47,3 @@
 - **Rule [auto-gtm-partner-mentions-post-everywhere-thumbgate]**: Auto-promoted repeated pattern: "2026-06-28 post-everywhere batch omitted agreed Gatekeeper and Aiventyx partner mentions from public ThumbGate posts." (1 occurrences in 30 days)
 - **Rule [auto-codex-smoke-thumbgate]**: Auto-promoted repeated pattern: "Smoke test from Codex on 2026-06-28: verify ThumbGate capture path after prior hang." (1 occurrences in 30 days)
 - **Rule [auto-dogfood-entity-customer-feedback-capture-honesty-m]**: Auto-promoted repeated pattern: "User questioned whether promoting ThumbGate is honest if the current agent feedback loop was not clearly dogfooded." (1 occurrences in 30 days)
-- **Rule [auto-promoted-mqydj1jt-0]**: NEVER MISTAKE: This is a test failure
-- **Rule [auto-promoted-mqydj1jt-1]**: NEVER doctor feedback loop probe: prove thumbs feedback persists to durable logs
-- **Rule [auto-promoted-mqydj1jt-2]**: NEVER thumbs down This response skipped the required verification
-- **Rule [auto-promoted-mqydj1jt-3]**: NEVER feedback self-test: typed thumbs down reaches ThumbGate capture
-- **Rule [auto-promoted-mqydj1jt-4]**: NEVER deleted prod config ran rm on .env never delete .env files
-- **Rule [auto-promoted-mqydj1jt-5]**: NEVER skipped verification proof
-- **Rule [auto-promoted-mqydlh4q-0]**: NEVER repeated problem context string
