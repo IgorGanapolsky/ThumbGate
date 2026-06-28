@@ -86,8 +86,8 @@ describe('/checkout/pro confirmation gate (closes 0/50 conversion leak)', () => 
     assert.match(body, /Start ThumbGate Pro/);
     assert.match(body, /Pay \$19\/mo with Stripe/);
     assert.match(body, /name="confirm" value="1"/, 'interstitial must include the confirm field as the primary CTA');
-    assert.doesNotMatch(body, /name="customer_email"[^>]*required/, 'email must be optional; Stripe should collect it if absent');
-    assert.match(body, /Stripe can collect your email/);
+    assert.match(body, /name="customer_email"[^>]*required/, 'email is required before Stripe session creation so abandoned sessions remain recoverable');
+    assert.match(body, /Required for your Stripe receipt and checkout recovery link/);
     assert.match(body, /Not sure yet\? Send the workflow first/);
     assert.doesNotMatch(body, /Pay \$1 first rule/);
     assert.doesNotMatch(body, /Pay \$99 teardown/);
@@ -108,23 +108,43 @@ describe('/checkout/pro confirmation gate (closes 0/50 conversion leak)', () => 
     );
   });
 
-  it('real-browser GET WITH ?confirm=1 → 302 toward checkout (preserves frictionless path for already-seen offer)', async () => {
+  it('real-browser GET WITH ?confirm=1 but no email → 200 interstitial, NO Stripe session created', async () => {
     clearTelemetry();
     const res = await fetch(`${origin}/checkout/pro?confirm=1`, {
       redirect: 'manual',
       headers: { 'user-agent': BROWSER_UA, accept: BROWSER_ACCEPT },
     });
-    assert.ok(res.status >= 300 && res.status < 400, `confirmed checkout must 302, got ${res.status}`);
-    const location = res.headers.get('location') || '';
+    assert.equal(res.status, 200, `confirmed checkout without email must render interstitial, got ${res.status}`);
+    const body = await res.text();
+    assert.match(body, /Start ThumbGate Pro/);
+    assert.match(body, /name="customer_email"[^>]*required/);
+
+    const events = readTelemetry();
     assert.ok(
-      /\/success\?/.test(location) || /checkout\.stripe\.com/.test(location),
-      `confirmed checkout must redirect to Stripe or success, got ${location}`,
+      events.some((e) => e.eventType === 'checkout_interstitial_view' && e.reasonCode === 'missing_customer_email'),
+      'missing email should be tracked before creating a Stripe session',
     );
+    assert.equal(
+      events.filter((e) => e.eventType === 'checkout_bootstrap').length,
+      0,
+      'confirm=1 without email must NOT create a Stripe session',
+    );
+  });
+
+  it('real-browser GET WITH ?confirm=1 and email → 302 toward checkout', async () => {
+    clearTelemetry();
+    const res = await fetch(`${origin}/checkout/pro?confirm=1&customer_email=buyer%40example.com`, {
+      redirect: 'manual',
+      headers: { 'user-agent': BROWSER_UA, accept: BROWSER_ACCEPT },
+    });
+    assert.ok(res.status >= 300 && res.status < 400, `confirmed checkout with email must 302, got ${res.status}`);
+    const location = res.headers.get('location') || '';
+    assert.ok(/\/success\?/.test(location) || /checkout\.stripe\.com/.test(location), `confirmed checkout must redirect to Stripe or success, got ${location}`);
 
     const events = readTelemetry();
     assert.ok(
       events.some((e) => e.eventType === 'checkout_bootstrap'),
-      'confirmed checkout should reach the bootstrap path',
+      'confirmed checkout with email should reach the bootstrap path',
     );
   });
 
