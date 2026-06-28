@@ -67,3 +67,4 @@ Key: Always dogfood the latest local changes before publishing.
 - **Rule [auto-promoted-mqye2m4r-3]**: NEVER feedback self-test: typed thumbs down reaches ThumbGate capture
 - **Rule [auto-promoted-mqye2m4r-4]**: NEVER deleted prod config ran rm on .env never delete .env files
 - **Rule [auto-promoted-mqye2m4r-5]**: NEVER skipped verification proof
+- **Rule [auto-promoted-mqye50uy-0]**: NEVER repeated problem context string
