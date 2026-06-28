@@ -6,6 +6,9 @@
 > The following rules were automatically derived from execution failures and thumbs-down feedback.
 > You MUST follow these constraints strictly to prevent repeated errors.
 
+- **Rule [auto-chat-gemini-pivot-ollama-overclaim-session-feedbac]**: Auto-promoted repeated pattern: "Claude Code session 2026-06-04 — chat OSS pivot" (1 occurrences in 30 days)
+- **Rule [auto-cli-telemetry-test]**: Auto-promoted repeated pattern: "verifies fetch fires when telemetry enabled" (3 occurrences in 30 days)
+- **Rule [auto-gsd-verify]**: Auto-promoted repeated pattern: "GSD verify ping" (1 occurrences in 30 days)
 - **Rule [auto-gemini-mistake-slash-commands]**: Auto-promoted repeated pattern: "Claimed that custom slash commands from .claude/commands or .gemini/commands would work in Gemini/Antigravity CLI. The G" (1 occurrences in 30 days)
 - **Rule [auto-chat-multi-pr-churn-overclaiming-user-visible-corr]**: Auto-promoted repeated pattern: "CEO thumbs-down on dashboard chat session — repeated overclaiming + multi-iteration fix cycle. CEO showed screenshot of " (1 occurrences in 30 days)
 - **Rule [auto-community-growth-entity-customer-feedback-capture-]**: Auto-promoted repeated pattern: "Ralph Loop community/course growth runbook used a retired local preview alias during Operator Lab promo verification" (1 occurrences in 30 days)
@@ -33,10 +36,7 @@
 - **Rule [auto-claim-verification-engagement-linkedin-thumbs-down]**: Auto-promoted repeated pattern: "LinkedIn ThumbGate monetization engagement" (1 occurrences in 30 days)
 - **Rule [auto-content-quality-gatekeeper-linkedin-technical-meat]**: Auto-promoted repeated pattern: "ThumbGate LinkedIn daily content quality" (1 occurrences in 30 days)
 - **Rule [auto-content-quality-social-posts-thumbs-down-value-gat]**: Auto-promoted repeated pattern: "Global ThumbGate social content quality" (1 occurrences in 30 days)
-- **Rule [auto-promoted-mqtk70je-0]**: NEVER MISTAKE: This is a test failure
-- **Rule [auto-promoted-mqtk70jf-1]**: NEVER doctor feedback loop probe: prove thumbs feedback persists to durable logs
-- **Rule [auto-promoted-mqtk70jf-2]**: NEVER thumbs down This response skipped the required verification
-- **Rule [auto-promoted-mqtk70jf-3]**: NEVER feedback self-test: typed thumbs down reaches ThumbGate capture
-- **Rule [auto-promoted-mqtk70jf-4]**: NEVER deleted prod config ran rm on .env never delete .env files
-- **Rule [auto-promoted-mqtk70jf-5]**: NEVER skipped verification proof
-- **Rule [auto-promoted-mqtk7qhz-0]**: NEVER repeated problem context string
+- **Rule [auto-durability-entity-customer-feedback-capture-honest]**: Auto-promoted repeated pattern: "Assistant replied to a thumbs-up with 'Logged mentally for this session' instead of proving whether ThumbGate captured d" (1 occurrences in 30 days)
+- **Rule [auto-gtm-partner-mentions-post-everywhere-thumbgate]**: Auto-promoted repeated pattern: "2026-06-28 post-everywhere batch omitted agreed Gatekeeper and Aiventyx partner mentions from public ThumbGate posts." (1 occurrences in 30 days)
+- **Rule [auto-codex-smoke-thumbgate]**: Auto-promoted repeated pattern: "Smoke test from Codex on 2026-06-28: verify ThumbGate capture path after prior hang." (1 occurrences in 30 days)
+- **Rule [auto-dogfood-entity-customer-feedback-capture-honesty-m]**: Auto-promoted repeated pattern: "User questioned whether promoting ThumbGate is honest if the current agent feedback loop was not clearly dogfooded." (1 occurrences in 30 days)
