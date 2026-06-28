@@ -68,3 +68,6 @@ Key: Always dogfood the latest local changes before publishing.
 - **Rule [auto-codex-smoke-thumbgate]**: Auto-promoted repeated pattern: "Smoke test from Codex on 2026-06-28: verify ThumbGate capture path after prior hang." (1 occurrences in 30 days)
 - **Rule [auto-dogfood-entity-customer-feedback-capture-honesty-m]**: Auto-promoted repeated pattern: "User questioned whether promoting ThumbGate is honest if the current agent feedback loop was not clearly dogfooded." (1 occurrences in 30 days)
 - **Rule [auto-approval-gating-dogfood-entity-customer-release-wo]**: Auto-promoted repeated pattern: "User said thumbs down after I answered a publish request by asking for a rigid approval phrase instead of proceeding wit" (1 occurrences in 30 days)
+- **Rule [auto-promoted-mqyg5gzg-0]**: NEVER MISTAKE: This is a test failure
+- **Rule [auto-promoted-mqyg5gzh-1]**: NEVER doctor feedback loop probe: prove thumbs feedback persists to durable logs
+- **Rule [auto-promoted-mqyg5gzh-2]**: NEVER thumbs down This response skipped the required verification
