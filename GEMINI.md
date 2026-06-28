@@ -61,3 +61,9 @@ Key: Always dogfood the latest local changes before publishing.
 - **Rule [auto-gtm-partner-mentions-post-everywhere-thumbgate]**: Auto-promoted repeated pattern: "2026-06-28 post-everywhere batch omitted agreed Gatekeeper and Aiventyx partner mentions from public ThumbGate posts." (1 occurrences in 30 days)
 - **Rule [auto-codex-smoke-thumbgate]**: Auto-promoted repeated pattern: "Smoke test from Codex on 2026-06-28: verify ThumbGate capture path after prior hang." (1 occurrences in 30 days)
 - **Rule [auto-dogfood-entity-customer-feedback-capture-honesty-m]**: Auto-promoted repeated pattern: "User questioned whether promoting ThumbGate is honest if the current agent feedback loop was not clearly dogfooded." (1 occurrences in 30 days)
+- **Rule [auto-promoted-mqye2m4r-0]**: NEVER MISTAKE: This is a test failure
+- **Rule [auto-promoted-mqye2m4r-1]**: NEVER doctor feedback loop probe: prove thumbs feedback persists to durable logs
+- **Rule [auto-promoted-mqye2m4r-2]**: NEVER thumbs down This response skipped the required verification
+- **Rule [auto-promoted-mqye2m4r-3]**: NEVER feedback self-test: typed thumbs down reaches ThumbGate capture
+- **Rule [auto-promoted-mqye2m4r-4]**: NEVER deleted prod config ran rm on .env never delete .env files
+- **Rule [auto-promoted-mqye2m4r-5]**: NEVER skipped verification proof
