@@ -60,19 +60,40 @@ test('probePublicFunnel passes when Pro checkout is focused; confirm-path probe 
       if (pathname === '/') {
         return response('<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script><script>fetch("/v1/telemetry/ping")</script>');
       }
-      return response('Start ThumbGate Pro <a>Pay $19/mo with Stripe</a><a>Not sure yet? Send the workflow first</a>');
+      return response('Start ThumbGate Pro <input name="customer_email"><a>Pay $19/mo with Stripe</a><a>Not sure yet? Send the workflow first</a>');
     },
   });
 
   assert.equal(result.ok, true);
   assert.equal(result.checkout.focusedProCta, true);
   assert.equal(result.checkout.workflowFallback, true);
+  assert.equal(result.checkout.emailInputPresent, true);
+  assert.equal(result.checkout.emailOptionalBeforeStripe, true);
+  assert.equal(result.checkout.requiresEmailBeforeStripe, false);
   assert.equal(result.checkout.leaksServiceLinks, false);
   assert.equal(result.confirm.probeDisabled, true);
   assert.equal(result.confirm.redirects, null);
   // Exactly 2 fetches (root + /checkout/pro). Was 3 before — the third was
   // the confirm=1 GET that's now disabled.
   assert.equal(calls.length, 2);
+});
+
+test('probePublicFunnel fails when Pro checkout requires email before Stripe', async () => {
+  const result = await probePublicFunnel({
+    appOrigin: 'https://thumbgate.test',
+    async fetchImpl(url) {
+      const parsed = new URL(String(url));
+      if (parsed.pathname === '/') {
+        return response('<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script><script>fetch("/v1/telemetry/ping")</script>');
+      }
+      return response('Start ThumbGate Pro <input name="customer_email" required><a>Pay $19/mo with Stripe</a><a>Not sure yet? Send the workflow first</a>');
+    },
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.checkout.emailInputPresent, true);
+  assert.equal(result.checkout.emailOptionalBeforeStripe, false);
+  assert.equal(result.checkout.requiresEmailBeforeStripe, true);
 });
 
 test('probePublicFunnel fails when service links leak into Pro checkout interstitial', async () => {
@@ -108,7 +129,7 @@ test('doctor blocks revenue claims when Stripe and hosted auth are missing', asy
       if (parsed.pathname === '/' || parsed.search.includes('confirm=1')) {
         return response('', { status: parsed.search.includes('confirm=1') ? 302 : 200 });
       }
-      return response('Start ThumbGate Pro Pay $19/mo with Stripe Not sure yet? Send the workflow first');
+      return response('Start ThumbGate Pro <input name="customer_email"> Pay $19/mo with Stripe Not sure yet? Send the workflow first');
     },
   });
 
@@ -117,6 +138,33 @@ test('doctor blocks revenue claims when Stripe and hosted auth are missing', asy
   assert.equal(report.canProveVisitorBehavior, false);
   assert.ok(report.nextActions.some((line) => /Stripe secret key/.test(line)));
   assert.ok(formatDoctorReport(report).includes('Revenue Observability Doctor: BLOCKED'));
+});
+
+test('doctor blocks when deployed checkout requires email before Stripe', async () => {
+  const report = await buildRevenueObservabilityDoctor({
+    env: {
+      THUMBGATE_OPERATOR_KEY: 'operator',
+      STRIPE_SECRET_KEY: 'sk_live_x',
+      PLAUSIBLE_API_KEY: 'plausible',
+      PLAUSIBLE_SITE_ID: 'thumbgate.ai',
+      POSTHOG_PERSONAL_API_KEY: 'phx',
+      POSTHOG_PROJECT_ID: '123',
+    },
+    appOrigin: 'https://thumbgate.test',
+    async fetchImpl(url) {
+      const parsed = new URL(String(url));
+      if (parsed.pathname === '/') {
+        return response('<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script><script>fetch("/v1/telemetry/ping")</script>');
+      }
+      return response('Start ThumbGate Pro <input name="customer_email" required> Pay $19/mo with Stripe Not sure yet? Send the workflow first');
+    },
+  });
+
+  const check = report.checks.find((entry) => entry.id === 'checkout_email_optional_before_stripe');
+  assert.equal(report.verdict, 'blocked');
+  assert.equal(check.ok, false);
+  assert.equal(check.evidence.requiresEmailBeforeStripe, true);
+  assert.ok(report.nextActions.some((line) => /must not require email before Stripe/.test(line)));
 });
 
 test('doctor blocks when live markup emits thumbgate.ai but Plausible registration only covers Railway', async () => {
@@ -135,7 +183,7 @@ test('doctor blocks when live markup emits thumbgate.ai but Plausible registrati
       if (parsed.pathname === '/') {
         return response('<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script><script>fetch("/v1/telemetry/ping")</script>');
       }
-      return response('Start ThumbGate Pro Pay $19/mo with Stripe Not sure yet? Send the workflow first');
+      return response('Start ThumbGate Pro <input name="customer_email"> Pay $19/mo with Stripe Not sure yet? Send the workflow first');
     },
   });
 
@@ -163,7 +211,7 @@ test('doctor is ready when proof access and focused public funnel are present', 
       if (parsed.pathname === '/' || parsed.search.includes('confirm=1')) {
         return response('', { status: parsed.search.includes('confirm=1') ? 302 : 200 });
       }
-      return response('Start ThumbGate Pro Pay $19/mo with Stripe Not sure yet? Send the workflow first');
+      return response('Start ThumbGate Pro <input name="customer_email"> Pay $19/mo with Stripe Not sure yet? Send the workflow first');
     },
   });
 
