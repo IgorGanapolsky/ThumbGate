@@ -9,8 +9,9 @@
  * against the live production URL (default
  * https://thumbgate-production.up.railway.app, overridable via
  * THUMBGATE_PROD_URL env or --prod-url=…). Each response body must
- * contain the configured sentinel string. Any mismatch fails the run
- * and the route is included in the failure summary.
+ * contain the configured sentinel string and must not contain any configured
+ * `mustNotContain` strings. Any mismatch fails the run and the route is
+ * included in the failure summary.
  *
  * Intended to run as a workflow step in .github/workflows/deploy-verify.yml
  * after the version sentinel check, so the marketing surface is verified
@@ -67,11 +68,19 @@ function loadManifest(manifestPath) {
     if (typeof entry.sentinel !== 'string' || entry.sentinel.length === 0) {
       throw new Error(`Invalid sentinel for route ${entry.route}`);
     }
+    if (entry.mustNotContain != null) {
+      if (!Array.isArray(entry.mustNotContain) || entry.mustNotContain.some((value) => typeof value !== 'string' || value.length === 0)) {
+        throw new Error(`Invalid mustNotContain for route ${entry.route}`);
+      }
+    }
+    if (entry.userAgent != null && (typeof entry.userAgent !== 'string' || entry.userAgent.length === 0)) {
+      throw new Error(`Invalid userAgent for route ${entry.route}`);
+    }
   }
   return parsed;
 }
 
-async function probePage({ prodUrl, route, sentinel, fetchImpl = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS }) {
+async function probePage({ prodUrl, route, sentinel, mustNotContain = [], userAgent, fetchImpl = globalThis.fetch, timeoutMs = DEFAULT_TIMEOUT_MS }) {
   if (typeof fetchImpl !== 'function') {
     return { route, ok: false, error: 'fetch_unavailable' };
   }
@@ -82,20 +91,24 @@ async function probePage({ prodUrl, route, sentinel, fetchImpl = globalThis.fetc
     const res = await fetchImpl(url, {
       signal: controller.signal,
       headers: {
-        // A real browser-shaped UA so any bot-deflection interstitials
-        // do NOT trigger; we are probing the real visitor's surface.
-        'User-Agent': 'thumbgate-deploy-verify/1.0 (+https://github.com/IgorGanapolsky/ThumbGate)',
+        // A real browser-shaped UA so bot-deflection interstitials do not
+        // trigger; this probe is meant to verify the buyer-facing surface.
+        'User-Agent': userAgent || 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
         Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       },
     });
     const body = await res.text().catch(() => '');
     const sentinelPresent = body.includes(sentinel);
+    const forbiddenPresent = Array.isArray(mustNotContain)
+      ? mustNotContain.filter((value) => body.includes(value))
+      : [];
     return {
       route,
       url,
       status: res.status,
-      ok: res.ok && sentinelPresent,
+      ok: res.ok && sentinelPresent && forbiddenPresent.length === 0,
       sentinelPresent,
+      forbiddenPresent,
       bytes: body.length,
     };
   } catch (error) {
@@ -120,6 +133,8 @@ async function runVerification({ prodUrl, manifestPath, fetchImpl = globalThis.f
       prodUrl,
       route: entry.route,
       sentinel: entry.sentinel,
+      mustNotContain: entry.mustNotContain,
+      userAgent: entry.userAgent,
       fetchImpl,
       timeoutMs,
     });
@@ -149,6 +164,8 @@ function renderHuman(report, { quiet = false } = {}) {
         lines.push(`❌ ${r.route.padEnd(20)}  ERROR ${r.error}`);
       } else if (!r.sentinelPresent) {
         lines.push(`❌ ${r.route.padEnd(20)}  HTTP ${r.status}  sentinel MISSING (expected: ${JSON.stringify(r.sentinel)})`);
+      } else if (Array.isArray(r.forbiddenPresent) && r.forbiddenPresent.length > 0) {
+        lines.push(`❌ ${r.route.padEnd(20)}  HTTP ${r.status}  forbidden content PRESENT (${r.forbiddenPresent.map((value) => JSON.stringify(value)).join(', ')})`);
       } else {
         lines.push(`❌ ${r.route.padEnd(20)}  HTTP ${r.status}`);
       }

@@ -13,6 +13,15 @@
       "description": "Pro landing page"
     },
     {
+      "route": "/checkout/pro",
+      "sentinel": "Optional. Stripe can collect your email on the secure checkout page.",
+      "mustNotContain": [
+        "Required for your Stripe receipt and checkout recovery link."
+      ],
+      "userAgent": "curl/8.0.0",
+      "description": "Pro checkout interstitial must not require email before Stripe"
+    },
+    {
       "route": "/dashboard",
       "sentinel": "ThumbGate Dashboard",
       "description": "Dashboard demo (already enforced by /dashboard step; included here for symmetry with PR comment surface)"
