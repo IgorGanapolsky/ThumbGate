@@ -515,6 +515,34 @@ test('/pro serves the Pro landing page instead of redirecting to the homepage', 
   assert.match(html, /\/checkout\/pro\?plan_id=pro&billing_cycle=monthly/);
 });
 
+test('/diagnostic serves the focused Workflow Hardening Diagnostic intake page', async () => {
+  const res = await fetch(apiUrl('/diagnostic?utm_source=reddit&utm_campaign=workflow_diagnostic'), { redirect: 'manual' });
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /text\/html/);
+  const html = await res.text();
+  assert.match(html, /Workflow Hardening Diagnostic/);
+  assert.match(html, /Submit for diagnostic scope/);
+  assert.match(html, /action="\/v1\/intake\/workflow-sprint"/);
+  assert.match(html, /name="planId" value="diagnostic"/);
+  assert.match(html, /name="ctaId" value="diagnostic_page_intake"/);
+  assert.match(html, /workflow_sprint_intake_submit_attempted/);
+  assert.match(html, /Pay \$499 diagnostic/);
+  assert.match(html, /\/go\/diagnostic\?utm_source=diagnostic_page&amp;utm_medium=onsite&amp;utm_campaign=workflow_hardening_diagnostic/);
+  assert.match(html, /data-cta-id="diagnostic_hero_paid"/);
+  assert.doesNotMatch(html, /No cold payment link/);
+});
+
+test('/workflow-hardening-sprint and diagnostic aliases serve the focused diagnostic page', async () => {
+  for (const route of ['/workflow-diagnostic', '/sprint', '/workflow-hardening-sprint']) {
+    const res = await fetch(apiUrl(route), { redirect: 'manual' });
+    assert.equal(res.status, 200, `${route} should render`);
+    assert.match(res.headers.get('content-type') || '', /text\/html/);
+    const html = await res.text();
+    assert.match(html, /Workflow Hardening Diagnostic/);
+    assert.match(html, /<link rel="canonical" href="https:\/\/app\.example\.com\/diagnostic"/);
+  }
+});
+
 test('startServer accepts an explicit bind host', async () => {
   const explicit = await startServer({ port: 0, host: '127.0.0.1' });
   try {
