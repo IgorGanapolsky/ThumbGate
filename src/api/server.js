@@ -2246,8 +2246,8 @@ a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:
 <form action="/checkout/pro" method="GET" data-i="pro_checkout_confirmed">
 ${hiddenInputs}
 <input type="hidden" name="confirm" value="1">
-<input type="email" name="customer_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email" required>
-<p class="email-note">Required for your Stripe receipt and checkout recovery link.</p>
+<input type="email" name="customer_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email">
+<p class="email-note">Optional. Stripe can collect your email on the secure checkout page.</p>
 <button type="submit" class="primary">Pay $19/mo with Stripe →</button>
 </form>
 <a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
@@ -6026,20 +6026,15 @@ async function addContext(){
       const hasCustomerEmailHint = !!parsed?.searchParams?.has('customer_email');
       const hasValidCustomerEmailHint = !!normalizedCheckoutEmail;
       const botShouldBypass = !botClassification.isBot || hasValidCustomerEmailHint;
-      // 2026-06-04 audit: after the POST-401 fix, 3 of 4 fresh /checkout/pro
-      // sessions had customer_email=null in Stripe (zombie sessions with no
-      // recovery surface). Root cause: POSTs were auto-confirmed regardless of
-      // whether the email query param was present. Require email on POSTs too
-      // so emails-less POSTs fall through to the interstitial form instead of
-      // creating an un-recoverable Stripe session.
-      //
-      // 2026-06-28 live Stripe audit: expired live Checkout Sessions still had
-      // customer_email=null, customer_details=null, and payment_status=unpaid.
-      // Stripe generated recovery URLs, but we had no contact surface for the
-      // buyer. Require a valid email before creating the Stripe Session.
-      const isConfirmedCheckout = ((req.method === 'POST') || hasConfirmFlag)
-        && botShouldBypass
-        && hasValidCustomerEmailHint;
+      // 2026-06-29 conversion audit: requiring email before Stripe gave us a
+      // recoverable abandoned-session theory, but the hosted funnel showed
+      // traffic with 0 checkout starts. Let confirmed human clicks reach
+      // Stripe; Stripe can collect email on the secure checkout page. Bots
+      // still need a valid email hint to bypass deflection.
+      const isConfirmedCheckout = (
+        (req.method === 'POST' && hasValidCustomerEmailHint)
+        || hasConfirmFlag
+      ) && botShouldBypass;
       // 2026-06-05 revenue bypass: env-gated direct-to-Stripe redirect.
       // Live 30d billing showed 254 interstitial views → 1 Stripe click-through
       // → 0 paid. When THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS=1 is set we
@@ -6170,7 +6165,17 @@ async function addContext(){
         return;
       }
 
-      bootstrapBody.customerEmail = normalizedCheckoutEmail;
+      if (!normalizedCheckoutEmail) {
+        appendBestEffortTelemetry(FEEDBACK_DIR, {
+          eventType: 'checkout_email_deferred_to_stripe',
+          clientType: 'web',
+          traceId,
+          page: '/checkout/pro',
+          planId: analyticsMetadata.planId,
+          reason: rawCheckoutEmail ? 'invalid_customer_email' : 'missing_customer_email',
+        }, req.headers, 'checkout_email_deferred_to_stripe');
+      }
+      bootstrapBody.customerEmail = normalizedCheckoutEmail || undefined;
 
       appendBestEffortTelemetry(FEEDBACK_DIR, {
         eventType: 'checkout_bootstrap',
