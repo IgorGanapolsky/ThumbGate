@@ -153,6 +153,7 @@ test('homepage and pricing surfaces expose canonical and LLM context links', asy
     ['/', `${origin}/`, `${origin}/llm-context.md`],
     ['/pricing', `${origin}/pricing`, `${origin}/llm-context.md`],
     ['/pro', `${origin}/pro`, `${origin}/llm-context.md`],
+    ['/diagnostic', `${origin}/diagnostic`, `${origin}/llm-context.md`],
   ];
 
   for (const [pathname, canonicalUrl, contextUrl] of pages) {
@@ -161,6 +162,60 @@ test('homepage and pricing surfaces expose canonical and LLM context links', asy
     const html = await res.text();
     assert.match(html, new RegExp(`<link rel="canonical" href="${canonicalUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`));
     assert.match(html, new RegExp(`<link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="${contextUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`));
+  }
+});
+
+test('GET /diagnostic serves the Workflow Hardening Diagnostic intake page', async () => {
+  const res = await fetch(`${origin}/diagnostic`);
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /text\/html/);
+  const html = await res.text();
+  assert.match(html, /Workflow Hardening Diagnostic/);
+  assert.match(html, /Submit for diagnostic scope/);
+  assert.match(html, /action="\/v1\/intake\/workflow-sprint"/);
+  assert.match(html, /data-diagnostic-intake-form/);
+  assert.match(html, /diagnostic_page_submit/);
+  assert.match(html, /Pay \$499 diagnostic/);
+  assert.match(html, /\/go\/diagnostic\?utm_source=diagnostic_page&amp;utm_medium=onsite&amp;utm_campaign=workflow_hardening_diagnostic/);
+  assert.match(html, /data-cta-id="diagnostic_hero_paid"/);
+  assert.doesNotMatch(html, /No cold payment link/);
+});
+
+test('workflow diagnostic aliases serve the focused diagnostic page', async () => {
+  const paths = [
+    '/diagnostic.html',
+    '/workflow-diagnostic',
+    '/workflow-diagnostic.html',
+    '/sprint',
+    '/sprint.html',
+    '/workflow-hardening',
+    '/workflow-hardening.html',
+    '/workflow-hardening-sprint',
+    '/workflow-hardening-sprint.html',
+    '/workflow-sprint',
+    '/workflow-sprint.html',
+  ];
+
+  for (const pathname of paths) {
+    const res = await fetch(`${origin}${pathname}`, { redirect: 'manual' });
+    assert.equal(res.status, 200, `${pathname} should render diagnostic page`);
+    assert.match(res.headers.get('content-type') || '', /text\/html/);
+    const html = await res.text();
+    assert.match(html, /Workflow Hardening Diagnostic/);
+    assert.match(html, /Submit for diagnostic scope/);
+    assert.match(html, /<link rel="canonical" href="[^"]+\/diagnostic"/);
+  }
+});
+
+test('GET /sitemap.xml includes /diagnostic and /workflow-hardening-sprint at priority 0.9', async () => {
+  const res = await fetch(`${origin}/sitemap.xml`);
+  assert.equal(res.status, 200);
+  const xml = await res.text();
+  for (const route of ['/diagnostic', '/workflow-hardening-sprint']) {
+    assert.match(xml, new RegExp(`<loc>[^<]*${route}<\\/loc>`), `sitemap must list ${route}`);
+    const entry = xml.match(new RegExp(`<url>\\s*<loc>[^<]*${route}<\\/loc>[\\s\\S]*?<\\/url>`));
+    assert.ok(entry, `${route} <url> block must exist`);
+    assert.match(entry[0], /<priority>0\.9<\/priority>/);
   }
 });
 
@@ -278,14 +333,6 @@ test('public marketing directory aliases redirect to canonical pages', async () 
     ['/guides.html', '/learn'],
     ['/services', '/#workflow-sprint-intake'],
     ['/services.html', '/#workflow-sprint-intake'],
-    ['/sprint', '/#workflow-sprint-intake'],
-    ['/sprint.html', '/#workflow-sprint-intake'],
-    ['/workflow-hardening', '/#workflow-sprint-intake'],
-    ['/workflow-hardening.html', '/#workflow-sprint-intake'],
-    ['/workflow-hardening-sprint', '/#workflow-sprint-intake'],
-    ['/workflow-hardening-sprint.html', '/#workflow-sprint-intake'],
-    ['/workflow-sprint', '/#workflow-sprint-intake'],
-    ['/workflow-sprint.html', '/#workflow-sprint-intake'],
   ];
 
   for (const [pathname, expectedLocation] of cases) {
