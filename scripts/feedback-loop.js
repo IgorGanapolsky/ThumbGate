@@ -315,6 +315,34 @@ function getMemoryFirewallModule() {
   }
 }
 
+function launchSelfHarnessOptimizer() {
+  if (process.env.THUMBGATE_DISABLE_SELF_HARNESS_OPTIMIZER === '1') {
+    return { launched: false, reason: 'disabled' };
+  }
+
+  const explicitOptimizerPath = process.env.THUMBGATE_SELF_HARNESS_OPTIMIZER_PATH
+    ? path.resolve(process.env.THUMBGATE_SELF_HARNESS_OPTIMIZER_PATH)
+    : null;
+  const localOptimizerPath = path.join(process.cwd(), 'scripts', 'self-harness-optimizer.js');
+  const packageOptimizerPath = path.join(__dirname, 'self-harness-optimizer.js');
+  const optimizerPath = explicitOptimizerPath
+    || (fs.existsSync(localOptimizerPath) ? localOptimizerPath : null)
+    || (fs.existsSync(packageOptimizerPath) ? packageOptimizerPath : null);
+
+  if (!optimizerPath || !fs.existsSync(optimizerPath)) {
+    return { launched: false, reason: 'missing' };
+  }
+
+  const { spawn } = require('child_process');
+  const child = spawn(process.execPath, [optimizerPath], {
+    detached: true,
+    stdio: 'ignore',
+    env: process.env,
+  });
+  child.unref();
+  return { launched: true, path: optimizerPath };
+}
+
 
 function appendJSONL(filePath, record) {
   ensureDir(path.dirname(filePath));
@@ -1500,17 +1528,11 @@ function captureFeedback(params) {
           });
         } catch { /* activation telemetry is non-critical */ }
 
-        // Trigger Self-Harness Optimizer to propagate the new rules to prompt files & validate
+        // Trigger Self-Harness Optimizer to propagate the new rules to prompt
+        // files & validate. Use spawn instead of fork: fork creates an IPC
+        // pipe that keeps CLI feedback capture alive after the durable write.
         try {
-          const { fork } = require('child_process');
-          const localOptimizerPath = path.join(process.cwd(), 'scripts', 'self-harness-optimizer.js');
-          const packageOptimizerPath = path.join(__dirname, 'self-harness-optimizer.js');
-          
-          if (fs.existsSync(localOptimizerPath)) {
-            fork(localOptimizerPath, [], { stdio: 'ignore', detached: true }).unref();
-          } else if (fs.existsSync(packageOptimizerPath)) {
-            fork(packageOptimizerPath, [], { stdio: 'ignore', detached: true }).unref();
-          }
+          launchSelfHarnessOptimizer();
         } catch (err) {
           console.error('Failed to trigger self-harness optimizer:', err);
         }

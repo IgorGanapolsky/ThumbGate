@@ -3,6 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { execSync, execFileSync } = require('child_process');
 
@@ -66,17 +67,30 @@ test('require-proof.js - allows commit when tests_passed is tracked', (t) => {
 });
 
 test('ingest-manual-feedback.js - ingests and marks files as ingested', (t) => {
-  const memoryDir = path.join(REPO_ROOT, 'memory');
-  if (!fs.existsSync(memoryDir)) fs.mkdirSync(memoryDir, { recursive: true });
+  const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-manual-ingest-'));
+  t.after(() => {
+    fs.rmSync(sandbox, { recursive: true, force: true });
+  });
+
+  const memoryDir = path.join(sandbox, 'memory');
+  fs.mkdirSync(memoryDir, { recursive: true });
   
   const feedbackFile = path.join(memoryDir, 'feedback_test_mistake.md');
   const content = 'MISTAKE: This is a test failure';
   fs.writeFileSync(feedbackFile, content);
 
-  execFileSync(process.execPath, [INGEST_FEEDBACK], { cwd: REPO_ROOT });
+  execFileSync(process.execPath, [INGEST_FEEDBACK], {
+    cwd: sandbox,
+    env: {
+      ...process.env,
+      HOME: path.join(sandbox, 'home'),
+      THUMBGATE_FEEDBACK_DIR: path.join(sandbox, '.thumbgate'),
+      THUMBGATE_DISABLE_SELF_HARNESS_OPTIMIZER: '1',
+      THUMBGATE_DISABLE_TELEMETRY: '1',
+    },
+    timeout: 5000,
+  });
 
   assert.ok(!fs.existsSync(feedbackFile), 'Original file should be gone');
   assert.ok(fs.existsSync(`${feedbackFile}.ingested`), 'File should be marked as ingested');
-  
-  if (fs.existsSync(`${feedbackFile}.ingested`)) fs.unlinkSync(`${feedbackFile}.ingested`);
 });

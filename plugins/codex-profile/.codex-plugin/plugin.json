@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "1.27.16",
+  "version": "1.27.17",
   "description": "ThumbGate for Codex turns one thumbs-down into a repeat-blocking pre-action check, backed by local MCP memory.",
   "author": {
     "name": "Igor Ganapolsky",

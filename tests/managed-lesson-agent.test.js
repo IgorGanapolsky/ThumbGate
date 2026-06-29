@@ -4,22 +4,47 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const originalKey = process.env.ANTHROPIC_API_KEY;
+const LLM_ENV_KEYS = [
+  'ANTHROPIC_API_KEY',
+  'GEMINI_API_KEY',
+  'VERTEX_PROJECT_ID',
+  'ZAI_API_KEY',
+  'THUMBGATE_ZAI_API_KEY',
+  'GLM_API_KEY',
+  'THUMBGATE_LLM_PROVIDER',
+  'LLM_PROVIDER',
+  'OMLX_API_KEY',
+  'THUMBGATE_OMLX_API_KEY',
+  'OMLX_BASE_URL',
+  'THUMBGATE_OMLX_BASE_URL',
+  'OMLX_ENABLED',
+  'THUMBGATE_OMLX_ENABLED',
+];
+
+const originalEnv = new Map(LLM_ENV_KEYS.map((key) => [key, process.env[key]]));
 const originalFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+const originalHome = process.env.HOME;
 
 let tmpDir;
 
 beforeEach(() => {
-  delete process.env.ANTHROPIC_API_KEY;
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-agent-test-'));
+  for (const key of LLM_ENV_KEYS) delete process.env[key];
   process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  process.env.HOME = path.join(tmpDir, 'home');
+  fs.mkdirSync(process.env.HOME, { recursive: true });
 });
 
 afterEach(() => {
-  if (originalKey) process.env.ANTHROPIC_API_KEY = originalKey;
-  else delete process.env.ANTHROPIC_API_KEY;
+  for (const key of LLM_ENV_KEYS) {
+    const value = originalEnv.get(key);
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
   if (originalFeedbackDir) process.env.THUMBGATE_FEEDBACK_DIR = originalFeedbackDir;
   else delete process.env.THUMBGATE_FEEDBACK_DIR;
+  if (originalHome) process.env.HOME = originalHome;
+  else delete process.env.HOME;
   // Clean up require cache so each test gets fresh state
   delete require.cache[require.resolve('../scripts/managed-lesson-agent')];
   delete require.cache[require.resolve('../scripts/llm-client')];

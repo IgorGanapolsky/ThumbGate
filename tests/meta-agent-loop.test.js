@@ -46,6 +46,42 @@ const SAMPLE_GATE_PROGRAM = `# ThumbGate Gate Program
 3. **Skip CI** — --no-verify flag
 `;
 
+const LLM_ENV_KEYS = [
+  'ANTHROPIC_API_KEY',
+  'GEMINI_API_KEY',
+  'VERTEX_PROJECT_ID',
+  'ZAI_API_KEY',
+  'THUMBGATE_ZAI_API_KEY',
+  'GLM_API_KEY',
+  'THUMBGATE_LLM_PROVIDER',
+  'LLM_PROVIDER',
+  'OMLX_API_KEY',
+  'THUMBGATE_OMLX_API_KEY',
+  'OMLX_BASE_URL',
+  'THUMBGATE_OMLX_BASE_URL',
+  'OMLX_ENABLED',
+  'THUMBGATE_OMLX_ENABLED',
+];
+
+async function withEnvUnset(keys, fn) {
+  const previous = new Map(keys.map((key) => [key, process.env[key]]));
+  for (const key of keys) {
+    delete process.env[key];
+  }
+  try {
+    return await fn();
+  } finally {
+    for (const key of keys) {
+      const value = previous.get(key);
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+  }
+}
+
 describe('extractSuccessDefinition', () => {
   it('extracts the success section', () => {
     const def = extractSuccessDefinition(SAMPLE_GATE_PROGRAM);
@@ -449,11 +485,10 @@ describe('runMetaAgentLoop dry-run integration', () => {
   });
 
   it('candidates come from heuristic when no API key', async () => {
-    const originalKey = process.env.ANTHROPIC_API_KEY;
-    delete process.env.ANTHROPIC_API_KEY;
-    const manifest = await runMetaAgentLoop({ dryRun: true, verbose: false });
+    const manifest = await withEnvUnset(LLM_ENV_KEYS, () => (
+      runMetaAgentLoop({ dryRun: true, verbose: false })
+    ));
     assert.strictEqual(manifest.analysisMode, 'heuristic');
-    if (originalKey) process.env.ANTHROPIC_API_KEY = originalKey;
   });
 
   it('promoted + reverted counts sum to candidateCount', async () => {

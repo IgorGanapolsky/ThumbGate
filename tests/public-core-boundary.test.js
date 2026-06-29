@@ -158,8 +158,12 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // Bumped 321 -> 324 (2026-06-16) to ship the Guardian/Ethicore policy-engine
   // adapter and commercial-truth claim gate as public-shell enforcement.
   // Bumped 324 -> 326 (2026-06-22) to ship the new transparent brand logo SVG.
+  // Bumped 326 -> 329 (2026-06-25) to ship the local lessons seed,
+  // Human-on-the-Bridge pack generator, and oMLX smoke verifier so public
+  // installs carry the current self-checking runtime surfaces. Keep in
+  // lockstep with BASELINE_FILE_COUNT in tests/public-bundle-ratchet.test.js.
   const files = npmPackFiles();
-  const CEILING = 326;
+  const CEILING = 329;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
