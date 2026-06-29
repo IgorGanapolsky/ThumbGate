@@ -240,8 +240,8 @@ describe('/checkout/pro bot guard', () => {
     assert.match(body, /<form action="\/checkout\/pro"/);
     assert.match(body, /name="confirm" value="1"/);
     assert.match(body, /name="customer_email"/);
-    assert.match(body, /name="customer_email"[^>]*required/);
-    assert.match(body, /Required for your Stripe receipt and checkout recovery link/);
+    assert.doesNotMatch(body, /name="customer_email"[^>]*required/);
+    assert.match(body, /Stripe can collect your email on the secure checkout page/);
     assert.doesNotMatch(body, /<a[^>]+confirm=1/, 'confirm=1 must not be in a crawlable anchor');
   });
 
@@ -433,7 +433,7 @@ describe('/checkout/pro bot guard', () => {
     );
   });
 
-  it('keeps confirmed real browsers on the interstitial until email is captured', async () => {
+  it('lets confirmed real browsers reach checkout and defer email capture to Stripe', async () => {
     try { fs.unlinkSync(path.join(ENV.THUMBGATE_FEEDBACK_DIR, 'telemetry-pings.jsonl')); } catch {}
     const res = await fetch(`${origin}/checkout/pro?confirm=1`, {
       redirect: 'manual',
@@ -442,20 +442,23 @@ describe('/checkout/pro bot guard', () => {
         accept: BROWSER_ACCEPT,
       },
     });
-    assert.equal(res.status, 200, `expected email interstitial, got ${res.status}`);
-    const body = await res.text();
-    assert.match(body, /Start ThumbGate Pro/);
-    assert.match(body, /name="customer_email"[^>]*required/);
+    assert.ok(res.status >= 300 && res.status < 400, `expected checkout redirect, got ${res.status}`);
+    const location = res.headers.get('location') || '';
+    assert.ok(/\/success\?/.test(location) || /checkout\.stripe\.com/.test(location), `expected Stripe or success redirect, got ${location}`);
 
     const events = readFunnelEvents();
-    assert.ok(
-      events.some((e) => e.eventType === 'checkout_interstitial_view' && e.reasonCode === 'missing_customer_email'),
-      'missing email should be tracked before creating a Stripe session',
-    );
     assert.equal(
-      events.filter((e) => e.eventType === 'checkout_bootstrap').length,
+      events.filter((e) => e.eventType === 'checkout_interstitial_view' && e.reasonCode === 'missing_customer_email').length,
       0,
-      'confirmed browsers without email must not create an unrecoverable checkout session',
+      'confirmed browsers without email must not be bounced back to the interstitial',
+    );
+    assert.ok(
+      events.some((e) => e.eventType === 'checkout_email_deferred_to_stripe'),
+      'missing email should be tracked as deferred to Stripe',
+    );
+    assert.ok(
+      events.some((e) => e.eventType === 'checkout_bootstrap'),
+      'confirmed browsers without email should create a checkout session',
     );
   });
 

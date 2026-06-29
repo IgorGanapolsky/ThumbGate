@@ -119,10 +119,13 @@ async function probePublicFunnel({ appOrigin, fetchImpl = globalThis.fetch, time
     const rootSignals = parseHtmlSignals(root.text || '');
     const checkoutHasFocusedProCta = /Pay \$19\/mo with Stripe/.test(checkoutBody);
     const checkoutHasFallback = /Send the workflow first/.test(checkoutBody);
+    const checkoutHasEmailInput = /name=["']customer_email["']/i.test(checkoutBody);
+    const checkoutRequiresEmailBeforeStripe = /name=["']customer_email["'][^>]*\brequired\b/i.test(checkoutBody);
+    const checkoutEmailOptionalBeforeStripe = checkoutHasEmailInput && !checkoutRequiresEmailBeforeStripe;
     const checkoutLeaksServiceLinks = /https:\/\/buy\.stripe\.com\/|Pay \$1 first rule|Pay \$99 teardown|Book \$499 diagnostic|Start \$1500 sprint/.test(checkoutBody);
 
     return {
-      ok: root.ok && checkout.ok && checkoutHasFocusedProCta && checkoutHasFallback && !checkoutLeaksServiceLinks,
+      ok: root.ok && checkout.ok && checkoutHasFocusedProCta && checkoutHasFallback && checkoutEmailOptionalBeforeStripe && !checkoutLeaksServiceLinks,
       root: {
         status: root.status,
         ok: root.ok,
@@ -134,6 +137,9 @@ async function probePublicFunnel({ appOrigin, fetchImpl = globalThis.fetch, time
         ok: checkout.ok,
         focusedProCta: checkoutHasFocusedProCta,
         workflowFallback: checkoutHasFallback,
+        emailInputPresent: checkoutHasEmailInput,
+        emailOptionalBeforeStripe: checkoutEmailOptionalBeforeStripe,
+        requiresEmailBeforeStripe: checkoutRequiresEmailBeforeStripe,
         leaksServiceLinks: checkoutLeaksServiceLinks,
         plausibleDomains: extractPlausibleDataDomains(checkoutBody),
       },
@@ -229,6 +235,13 @@ async function buildRevenueObservabilityDoctor({
       'critical',
       'Public home, Pro interstitial, and confirmed checkout route must be healthy and focused.',
       publicFunnel
+    ),
+    buildCheck(
+      'checkout_email_optional_before_stripe',
+      publicFunnel.checkout?.emailOptionalBeforeStripe === true,
+      'critical',
+      'Pro checkout interstitial must not require email before Stripe; Stripe can collect email on the secure checkout page.',
+      publicFunnel.checkout || {}
     ),
   ];
 

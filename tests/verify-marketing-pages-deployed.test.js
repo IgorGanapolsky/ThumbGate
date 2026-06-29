@@ -75,6 +75,13 @@ test('loadManifest: accepts a well-formed manifest', () => {
   assert.equal(m.version, 1);
 });
 
+test('loadManifest: rejects invalid route-specific user agents', () => {
+  const { file } = writeManifest([
+    { route: '/checkout/pro', sentinel: 'Checkout', userAgent: '' },
+  ]);
+  assert.throws(() => loadManifest(file), /Invalid userAgent/);
+});
+
 test('probePage: ok=true when status 200 + sentinel present', async () => {
   const r = await probePage({
     prodUrl: 'https://x.test',
@@ -97,6 +104,30 @@ test('probePage: ok=false when sentinel missing', async () => {
   assert.equal(r.ok, false);
   assert.equal(r.status, 200);
   assert.equal(r.sentinelPresent, false);
+});
+
+test('probePage: ok=false when forbidden content is present', async () => {
+  const r = await probePage({
+    prodUrl: 'https://x.test',
+    route: '/checkout/pro',
+    sentinel: 'Optional. Stripe can collect your email on the secure checkout page.',
+    mustNotContain: ['Required for your Stripe receipt and checkout recovery link.'],
+    fetchImpl: async () => response('Optional. Stripe can collect your email on the secure checkout page. Required for your Stripe receipt and checkout recovery link.'),
+  });
+  assert.equal(r.ok, false);
+  assert.deepEqual(r.forbiddenPresent, ['Required for your Stripe receipt and checkout recovery link.']);
+});
+
+test('probePage: ok=true when sentinel is present and forbidden content is absent', async () => {
+  const r = await probePage({
+    prodUrl: 'https://x.test',
+    route: '/checkout/pro',
+    sentinel: 'Optional. Stripe can collect your email on the secure checkout page.',
+    mustNotContain: ['Required for your Stripe receipt and checkout recovery link.'],
+    fetchImpl: async () => response('Optional. Stripe can collect your email on the secure checkout page.'),
+  });
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.forbiddenPresent, []);
 });
 
 test('probePage: ok=false when HTTP status is non-2xx', async () => {
@@ -202,6 +233,30 @@ test('renderHuman: shows per-route pass + fail lines and a summary', () => {
   assert.match(out, /verdict: FAIL/);
 });
 
+test('renderHuman: shows forbidden content failures', () => {
+  const report = {
+    prodUrl: 'https://x.test',
+    totalRoutes: 1,
+    passedCount: 0,
+    failedCount: 1,
+    verdict: 'fail',
+    results: [
+      {
+        route: '/checkout/pro',
+        status: 200,
+        bytes: 100,
+        ok: false,
+        sentinelPresent: true,
+        sentinel: 'Optional. Stripe can collect your email on the secure checkout page.',
+        forbiddenPresent: ['Required for your Stripe receipt and checkout recovery link.'],
+      },
+    ],
+  };
+  const out = renderHuman(report);
+  assert.match(out, /forbidden content PRESENT/);
+  assert.match(out, /Required for your Stripe receipt and checkout recovery link/);
+});
+
 test('renderHuman: --quiet suppresses per-route lines but keeps summary', () => {
   const report = {
     prodUrl: 'https://x.test',
@@ -230,4 +285,9 @@ test('manifest contract: shipped config/post-deploy-marketing-pages.json is vali
   const home = m.pages.find((p) => p.route === '/');
   assert.ok(home, 'manifest must include /');
   assert.ok(home.sentinel.length > 0);
+  const checkout = m.pages.find((p) => p.route === '/checkout/pro');
+  assert.ok(checkout, 'manifest must include the revenue-critical Pro checkout route');
+  assert.match(checkout.sentinel, /Stripe can collect your email/);
+  assert.ok(checkout.mustNotContain.includes('Required for your Stripe receipt and checkout recovery link.'));
+  assert.equal(checkout.userAgent, 'curl/8.0.0');
 });
