@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ThumbGate Workflow Hardening Diagnostic</title>
+<meta name="description" content="A focused diagnostic for one repeated AI-agent workflow failure. ThumbGate maps the failure taxonomy, block/warn/human-review split, and proof checklist before rollout.">
+<link rel="canonical" href="__APP_ORIGIN__/diagnostic">
+<link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
+<meta property="og:title" content="ThumbGate Workflow Hardening Diagnostic">
+<meta property="og:description" content="Send one repeated AI-agent workflow failure. Get the gate/review split and proof checklist before implementation.">
+<meta property="og:url" content="__APP_ORIGIN__/diagnostic">
+<meta property="og:type" content="website">
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #05080a;
+  --panel: #0d1418;
+  --panel-2: #12181d;
+  --line: #24323a;
+  --text: #eef7f9;
+  --muted: #a9b7bd;
+  --cyan: #28d5ee;
+  --green: #48dd83;
+  --red: #ff7676;
+  --white: #ffffff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.5;
+}
+a { color: inherit; }
+header, main, footer { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px 0;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+.mark {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--cyan);
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  color: var(--cyan);
+}
+nav { display: flex; gap: 18px; color: var(--muted); font-size: 14px; }
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(340px, 0.95fr);
+  gap: 36px;
+  align-items: start;
+  padding: 54px 0 40px;
+}
+.eyebrow {
+  color: var(--cyan);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+h1 {
+  margin: 14px 0 18px;
+  max-width: 720px;
+  font-size: clamp(42px, 6vw, 76px);
+  line-height: .92;
+  letter-spacing: 0;
+}
+.lede {
+  max-width: 650px;
+  margin: 0 0 26px;
+  color: var(--muted);
+  font-size: 20px;
+}
+.actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.button {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  text-decoration: none;
+  font-weight: 800;
+  color: var(--text);
+}
+.button.primary {
+  border-color: var(--cyan);
+  background: var(--cyan);
+  color: #031014;
+}
+.proof-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 34px;
+}
+.proof {
+  min-height: 90px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 8px;
+}
+.proof strong { display: block; font-size: 20px; }
+.proof span { color: var(--muted); font-size: 14px; }
+.intake-card {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 8px;
+  padding: 24px;
+}
+.intake-card h2 { margin: 0 0 10px; font-size: 24px; }
+.intake-card p { color: var(--muted); margin: 0 0 18px; }
+label {
+  display: block;
+  margin: 14px 0 7px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 750;
+}
+input, textarea, select {
+  width: 100%;
+  border: 1px solid #32424a;
+  border-radius: 7px;
+  background: #070b0d;
+  color: var(--text);
+  padding: 12px;
+  font: inherit;
+}
+textarea { min-height: 116px; resize: vertical; }
+button {
+  width: 100%;
+  min-height: 50px;
+  margin-top: 18px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--cyan);
+  color: #031014;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+.hint { font-size: 13px; color: var(--muted); }
+section {
+  padding: 40px 0;
+  border-top: 1px solid var(--line);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.box {
+  min-height: 170px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+}
+.box h3 { margin: 0 0 8px; }
+.box p { margin: 0; color: var(--muted); }
+footer { padding: 32px 0 44px; color: var(--muted); }
+@media (max-width: 860px) {
+  header { align-items: flex-start; flex-direction: column; }
+  .hero, .grid, .proof-strip { grid-template-columns: 1fr; }
+  h1 { font-size: 42px; }
+}
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "name": "ThumbGate Workflow Hardening Diagnostic",
+  "provider": {
+    "@type": "Organization",
+    "name": "ThumbGate",
+    "url": "__APP_ORIGIN__"
+  },
+  "description": "A focused diagnostic for one repeated AI-agent workflow failure, including failure taxonomy, block/warn/human-review split, and proof checklist.",
+  "offers": {
+    "@type": "Offer",
+    "price": "__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__",
+    "priceCurrency": "USD",
+    "availability": "https://schema.org/InStock",
+    "url": "__APP_ORIGIN__/diagnostic"
+  }
+}
+</script>
+</head>
+<body>
+<header>
+  <a class="brand" href="/">
+    <span class="mark">T</span>
+    <span>ThumbGate</span>
+  </a>
+  <nav aria-label="Primary">
+    <a href="/pro">Pro</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/llm-context.md">LLM Context</a>
+  </nav>
+</header>
+<main>
+  <div class="hero">
+    <div>
+      <div class="eyebrow">Workflow Hardening Diagnostic</div>
+      <h1>Turn one repeated AI-agent failure into a gate you can prove.</h1>
+      <p class="lede">Send the workflow that keeps failing. ThumbGate maps what should block, warn, or route to human review before an agent writes, sends, deploys, or spends.</p>
+      <div class="actions">
+        <a class="button primary" href="/go/diagnostic?utm_source=diagnostic_page&amp;utm_medium=onsite&amp;utm_campaign=workflow_hardening_diagnostic&amp;utm_content=hero_paid_diagnostic" data-revenue-cta data-cta-id="diagnostic_hero_paid" data-cta-placement="hero">Pay $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</a>
+        <a class="button" href="#intake" data-revenue-cta data-cta-id="diagnostic_hero_intake" data-cta-placement="hero">Send workflow first</a>
+      </div>
+      <div class="proof-strip" aria-label="Diagnostic proof points">
+        <div class="proof"><strong>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</strong><span>Credited toward a sprint when implementation follows.</span></div>
+        <div class="proof"><strong>One workflow</strong><span>Scoped tightly so the proof is shippable.</span></div>
+        <div class="proof"><strong>Fit fallback</strong><span>Use the intake if the workflow needs scoping first.</span></div>
+      </div>
+    </div>
+    <form id="intake" class="intake-card" action="/v1/intake/workflow-sprint" method="POST" data-team-intake-form data-diagnostic-intake-form>
+      <h2>Submit for diagnostic scope</h2>
+      <p>Use this when an AI-assisted workflow has already caused rework, review drag, or release risk.</p>
+      <input type="hidden" name="ctaId" value="diagnostic_page_intake">
+      <input type="hidden" name="ctaPlacement" value="diagnostic_page">
+      <input type="hidden" name="utmMedium" value="diagnostic_intake">
+      <input type="hidden" name="utmCampaign" value="workflow_hardening_diagnostic">
+      <input type="hidden" name="planId" value="diagnostic">
+      <input type="hidden" name="page" value="/diagnostic">
+      <label for="name">Name</label>
+      <input id="name" name="name" autocomplete="name" required>
+      <label for="email">Work email</label>
+      <input id="email" name="email" type="email" autocomplete="email" required>
+      <label for="company">Company or project</label>
+      <input id="company" name="company" autocomplete="organization">
+      <label for="workflow">What workflow keeps failing?</label>
+      <textarea id="workflow" name="workflow" required placeholder="Example: agent opens PRs without the right proof, sends the wrong customer update, or deploys before approvals are clear."></textarea>
+      <label for="urgency">Urgency</label>
+      <select id="urgency" name="urgency">
+        <option>Repeated failure already cost us time</option>
+        <option>We are about to roll this workflow out</option>
+        <option>We need an independent proof checklist first</option>
+      </select>
+      <button type="submit" data-revenue-cta data-cta-id="diagnostic_page_submit" data-cta-placement="intake">Submit for diagnostic scope</button>
+      <p class="hint">Ready to pay now? Use the $499 diagnostic checkout above. If the workflow needs fit review first, submit it here and we will route you to the diagnostic or sprint only when the scope is real.</p>
+    </form>
+  </div>
+  <section>
+    <div class="grid">
+      <div class="box">
+        <h3>Failure taxonomy</h3>
+        <p>Classify the repeated action: bad context, missing approval, unsafe write, wrong target, or proof gap.</p>
+      </div>
+      <div class="box">
+        <h3>Gate split</h3>
+        <p>Define what should block automatically, warn the operator, or route to human review with evidence attached.</p>
+      </div>
+      <div class="box">
+        <h3>Proof checklist</h3>
+        <p>Leave with the verification steps needed to prove the next similar action is caught before execution.</p>
+      </div>
+    </div>
+  </section>
+  <section>
+    <h2>Use this for real agent workflows</h2>
+    <div class="grid">
+      <div class="box">
+        <h3>Code and PR agents</h3>
+        <p>Repeated bad diffs, missing tests, unsafe merges, or unclear ownership around generated changes.</p>
+      </div>
+      <div class="box">
+        <h3>Browser and ops agents</h3>
+        <p>Agents clicking, posting, updating CRMs, or moving money without the right boundary proof.</p>
+      </div>
+      <div class="box">
+        <h3>Customer-visible automation</h3>
+        <p>Email, support, billing, or publishing workflows where a repeat mistake costs trust.</p>
+      </div>
+    </div>
+  </section>
+</main>
+<footer>
+  ThumbGate is local-first agent governance. Use <a href="/pro">Pro</a> for self-serve operator proof, or submit one workflow above for a diagnostic.
+</footer>
+<script>
+(function () {
+  const search = new URLSearchParams(window.location.search);
+  const form = document.querySelector('[data-diagnostic-intake-form]');
+  if (form) {
+    for (const [key, value] of search.entries()) {
+      if (!/^utm_|^(source|campaign|content|term)$/i.test(key)) continue;
+      let input = form.querySelector(`input[name="${CSS.escape(key)}"]`);
+      if (!input) {
+        input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        form.appendChild(input);
+      }
+      input.value = value;
+    }
+  }
+
+  function telemetry(eventName, props) {
+    try {
+      navigator.sendBeacon && navigator.sendBeacon('/v1/telemetry/event', JSON.stringify({
+        event: eventName,
+        page: '/diagnostic',
+        source: 'diagnostic_page',
+        props
+      }));
+    } catch (_) {}
+  }
+
+  document.addEventListener('click', function (event) {
+    const cta = event.target.closest('[data-revenue-cta]');
+    if (!cta) return;
+    telemetry('diagnostic_cta_click', {
+      ctaId: cta.getAttribute('data-cta-id'),
+      ctaPlacement: cta.getAttribute('data-cta-placement'),
+      planId: cta.getAttribute('data-cta-id') === 'diagnostic_secondary_pro' ? 'pro' : 'diagnostic'
+    });
+  });
+
+  document.addEventListener('submit', function (event) {
+    if (!event.target.matches('[data-diagnostic-intake-form]')) return;
+    telemetry('workflow_sprint_intake_submit_attempted', {
+      ctaId: 'diagnostic_page_submit',
+      ctaPlacement: 'diagnostic_page',
+      planId: 'diagnostic'
+    });
+  });
+})();
+</script>
+</body>
+</html>

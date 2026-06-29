@@ -326,9 +326,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 321 -> 324 (2026-06-16) to ship the Guardian/Ethicore policy-engine
   // adapter and commercial-truth claim gate as public runtime enforcement.
   // Bumped 324 -> 326 (2026-06-22) to ship the new transparent brand logo SVG.
+  // Bumped 326 -> 327 (2026-06-29) to ship public/diagnostic.html, the
+  // focused Workflow Hardening Diagnostic conversion page for warm traffic.
   assert.ok(
-    manifest.fileCount <= 326,
-    `npm package should stay <= 326 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 327,
+    `npm package should stay <= 327 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -448,9 +450,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 4.60 MB -> 4.65 MB (2026-06-11) for tool contract validator.
   // Bumped 4.65 MB -> 4.70 MB (2026-06-11) for Letta adapter and evaluation scripts.
   // Bumped 4.70 MB -> 4.75 MB (2026-06-12) for Core AI provider and main merges.
+  // Bumped 4.75 MB -> 4.80 MB (2026-06-29) for public/diagnostic.html,
+  // the focused Workflow Hardening Diagnostic conversion page.
   assert.ok(
-    manifest.unpackedSize <= 4_750_000,
-    `npm package should stay <= 4.75 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_800_000,
+    `npm package should stay <= 4.80 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

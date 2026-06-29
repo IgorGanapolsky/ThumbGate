@@ -22,6 +22,11 @@
       "description": "Pro checkout interstitial must not require email before Stripe"
     },
     {
+      "route": "/diagnostic",
+      "sentinel": "Workflow Hardening Diagnostic",
+      "description": "Workflow Hardening Diagnostic intake page for high-intent warm traffic"
+    },
+    {
       "route": "/dashboard",
       "sentinel": "ThumbGate Dashboard",
       "description": "Dashboard demo (already enforced by /dashboard step; included here for symmetry with PR comment surface)"

@@ -241,6 +241,7 @@ const NUMBERS_PAGE_PATH = path.resolve(__dirname, '../../public/numbers.html');
 const FEDERAL_PAGE_PATH = path.resolve(__dirname, '../../public/federal.html');
 const PRICING_PAGE_PATH = path.resolve(__dirname, '../../public/pricing.html');
 const ABOUT_PAGE_PATH = path.resolve(__dirname, '../../public/about.html');
+const DIAGNOSTIC_PAGE_PATH = path.resolve(__dirname, '../../public/diagnostic.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
 const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
@@ -2878,6 +2879,10 @@ function loadProPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(PRO_PAGE_PATH, runtimeConfig, pageContext);
 }
 
+function loadDiagnosticPageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(DIAGNOSTIC_PAGE_PATH, runtimeConfig, pageContext);
+}
+
 function loadPricingPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(PRICING_PAGE_PATH, runtimeConfig, pageContext);
 }
@@ -3511,6 +3516,8 @@ function renderSitemapXml(runtimeConfig) {
   const entries = [
     { path: '/', changefreq: 'weekly', priority: '1.0' },
     { path: '/pro', changefreq: 'weekly', priority: '0.9' },
+    { path: '/diagnostic', changefreq: 'weekly', priority: '0.9' },
+    { path: '/workflow-hardening-sprint', changefreq: 'weekly', priority: '0.9' },
     { path: '/agent-manager', changefreq: 'weekly', priority: '0.9' },
     { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
     { path: '/chatgpt-app', changefreq: 'weekly', priority: '0.85' },
@@ -5704,13 +5711,16 @@ async function addContext(){
       return;
     }
 
-    // Natural marketing URLs for the Workflow Hardening Sprint. Outbound
-    // messages, social posts, and word-of-mouth all refer to "the sprint"
-    // or "workflow hardening" — recipients who type or paste the natural
-    // URLs currently hit the generic API 401 JSON error and bounce.
-    // Redirect them to the canonical intake anchor instead.
+    // Natural marketing URLs for the Workflow Hardening Diagnostic/Sprint.
+    // High-intent outreach refers to "the diagnostic", "the sprint", or
+    // "workflow hardening"; serve a focused buyer page instead of sending
+    // qualified traffic to the generic homepage anchor.
     if (isGetLikeRequest && (
-      pathname === '/sprint'
+      pathname === '/diagnostic'
+      || pathname === '/diagnostic.html'
+      || pathname === '/workflow-diagnostic'
+      || pathname === '/workflow-diagnostic.html'
+      || pathname === '/sprint'
       || pathname === '/sprint.html'
       || pathname === '/workflow-hardening'
       || pathname === '/workflow-hardening.html'
@@ -5719,11 +5729,21 @@ async function addContext(){
       || pathname === '/workflow-sprint'
       || pathname === '/workflow-sprint.html'
     )) {
-      res.writeHead(302, {
-        Location: '/#workflow-sprint-intake',
-        'Cache-Control': 'no-store',
-      });
-      res.end();
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadDiagnosticPageHtml,
+          extraTelemetry: {
+            pageType: 'diagnostic',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Diagnostic page unavailable');
+      }
       return;
     }
 
