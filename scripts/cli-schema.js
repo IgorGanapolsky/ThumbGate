@@ -642,6 +642,13 @@ const CLI_COMMANDS = [
       { name: 'info',    type: 'boolean', description: 'Show Pro feature list' },
     ],
   },
+  {
+    name: 'diagnostic',
+    aliases: ['workflow-diagnostic', 'sprint-diagnostic'],
+    description: '$499 Workflow Hardening Diagnostic for one repeated AI-agent workflow failure',
+    group: 'ops',
+    flags: [],
+  },
 
   {
     name: 'workflow',

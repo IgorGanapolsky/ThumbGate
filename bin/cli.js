@@ -23,6 +23,7 @@
  *   npx thumbgate background-governance  # background-agent run report + risk check
  *   npx thumbgate cfo           # local operational billing summary
  *   npx thumbgate pro           # solo dashboard + exports side lane
+ *   npx thumbgate diagnostic    # team workflow diagnostic intake + checkout path
  *   npx thumbgate audit <file>  # audit an agent transcript for repeat-mistake token waste
  */
 
@@ -90,6 +91,32 @@ function pricingUrlFor(source, content) {
   }
 }
 
+function diagnosticUrlFor(source, content) {
+  try {
+    const url = new URL('/diagnostic', PRO_URL);
+    url.searchParams.set('utm_source', source || 'cli');
+    url.searchParams.set('utm_medium', 'cli');
+    url.searchParams.set('utm_campaign', 'workflow_hardening_diagnostic');
+    if (content) url.searchParams.set('utm_content', content);
+    return url.toString();
+  } catch (_) {
+    return `${PRO_URL}/diagnostic`;
+  }
+}
+
+function diagnosticCheckoutUrlFor(source, content) {
+  try {
+    const url = new URL('/go/diagnostic', PRO_URL);
+    url.searchParams.set('utm_source', source || 'cli');
+    url.searchParams.set('utm_medium', 'cli');
+    url.searchParams.set('utm_campaign', 'workflow_hardening_diagnostic');
+    if (content) url.searchParams.set('utm_content', content);
+    return url.toString();
+  } catch (_) {
+    return `${PRO_URL}/go/diagnostic`;
+  }
+}
+
 function trialDeadlineLabel(now = new Date()) {
   const deadline = new Date(now.getTime() + (TRIAL_DAYS * 24 * 60 * 60 * 1000));
   return deadline.toISOString().slice(0, 10);
@@ -102,13 +129,34 @@ function upgradeNudge() {
     if (isProTier()) return;
   } catch (_) { return; }
   const pricingUrl = pricingUrlFor('cli_upgrade_nudge', COMMAND || 'general');
+  const diagnosticUrl = diagnosticUrlFor('cli_upgrade_nudge', COMMAND || 'general');
   process.stderr.write(
-    '\n  Team rollout: start with the Workflow Hardening Sprint\n' +
-    '  https://thumbgate.ai/#workflow-sprint-intake\n' +
+    '\n  Team rollout: start with the $499 Workflow Hardening Diagnostic\n' +
+    `  ${diagnosticUrl}\n` +
     `\n  Solo side lane: Pro — ${PRO_PRICE_LABEL}\n` +
     '  Keeps lessons, rules, and the dashboard synced across machines and agent runtimes.\n' +
     `  ${pricingUrl}\n\n`
   );
+}
+
+function diagnostic() {
+  const intakeUrl = diagnosticUrlFor('cli_diagnostic', COMMAND || 'diagnostic');
+  const checkoutUrl = diagnosticCheckoutUrlFor('cli_diagnostic', COMMAND || 'diagnostic');
+  console.log('');
+  console.log('  ThumbGate Workflow Hardening Diagnostic');
+  console.log('  ---------------------------------------');
+  console.log('  Use this when one repeated AI-agent workflow failure is already costing');
+  console.log('  review time, release confidence, customer trust, or money.');
+  console.log('');
+  console.log('  Best fit: one workflow, one repeated failure, one owner who can review proof.');
+  console.log('  Output: failure taxonomy, block/warn/human-review split, and proof checklist.');
+  console.log('');
+  console.log('  Start with intake:');
+  console.log(`  ${intakeUrl}`);
+  console.log('');
+  console.log('  Ready to pay now:');
+  console.log(`  ${checkoutUrl}`);
+  console.log('');
 }
 
 function appendLocalTelemetry(payload) {
@@ -3023,6 +3071,7 @@ function help() {
     console.log('  break-glass --reason="..."                       Short TTL recovery if gates over-fire');
     console.log('  brain [--write]                                   Build the agent-readable context brain (lessons + rules + gates)');
     console.log('  pro                                               ThumbGate Pro (dashboard, exports, sync)');
+    console.log('  diagnostic                                        $499 Workflow Hardening Diagnostic for one repeated team failure');
     console.log('  subscribe <email>                                 Get the 5-min setup guide + weekly tips by email');
     console.log('');
     console.log('More:');
@@ -3167,6 +3216,7 @@ const SUBCOMMAND_HELP = {
   stats:         'Usage: npx thumbgate stats\n\nShow gate enforcement statistics: blocked/warned counts, active gates, time saved.',
   trial:         'Usage: npx thumbgate trial\n\nShow Pro trial status, remaining days, and upgrade path.',
   pro:           'Usage: npx thumbgate pro [--activate <key>]\n\nLaunch the local Pro dashboard or activate a Pro license key.',
+  diagnostic:    'Usage: npx thumbgate diagnostic\n\nShow the $499 Workflow Hardening Diagnostic intake and checkout paths for teams with one repeated AI-agent workflow failure.',
   subscribe:     'Usage: npx thumbgate subscribe <email>\n\nSubscribe to the 5-minute setup guide + trial reminders.',
   lessons:       'Usage: npx thumbgate lessons [--query="..."] [--limit=N]\n\nSearch the lesson database (Pro feature).',
   search:        'Usage: npx thumbgate search <query>\n\nSearch ThumbGate knowledge base (Pro feature).',
@@ -3838,6 +3888,11 @@ switch (COMMAND) {
   }
   case 'pro':
     pro();
+    break;
+  case 'diagnostic':
+  case 'workflow-diagnostic':
+  case 'sprint-diagnostic':
+    diagnostic();
     break;
   case 'activate':
     // Top-level alias: npx thumbgate activate <key>

@@ -127,6 +127,7 @@ const helpCases = [
   ['stats',        /Usage: npx thumbgate stats/],
   ['trial',        /Usage: npx thumbgate trial/],
   ['pro',          /Usage: npx thumbgate pro/],
+  ['diagnostic',   /Usage: npx thumbgate diagnostic/],
   ['subscribe',    /Usage: npx thumbgate subscribe/],
   ['lessons',      /Usage: npx thumbgate lessons/],
   ['search',       /Usage: npx thumbgate search/],
@@ -158,6 +159,21 @@ test('thumbgate stats -h short flag also triggers the interceptor', () => {
     const result = runCli(['stats', '-h'], unlicensedEnv(home));
     assert.equal(result.status, 0, `stats -h should exit 0; stderr=${result.stderr}`);
     assert.match(result.stdout, /Usage: npx thumbgate stats/);
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});
+
+test('thumbgate diagnostic prints team intake and checkout paths', () => {
+  const home = freshHome();
+  try {
+    const result = runCli(['diagnostic'], unlicensedEnv(home));
+    assert.equal(result.status, 0, `diagnostic subcommand should exit 0; stderr=${result.stderr}`);
+    assert.match(result.stdout, /Workflow Hardening Diagnostic/);
+    assert.match(result.stdout, /Best fit: one workflow, one repeated failure, one owner/);
+    assert.match(result.stdout, /https:\/\/thumbgate\.ai\/diagnostic\?utm_source=cli_diagnostic/);
+    assert.match(result.stdout, /https:\/\/thumbgate\.ai\/go\/diagnostic\?utm_source=cli_diagnostic/);
+    assert.match(result.stdout, /utm_campaign=workflow_hardening_diagnostic/);
   } finally {
     fs.rmSync(home, { recursive: true, force: true });
   }
