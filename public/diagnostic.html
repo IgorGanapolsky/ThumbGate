@@ -53,11 +53,7 @@ header {
 .mark {
   width: 28px;
   height: 28px;
-  border: 2px solid var(--cyan);
-  border-radius: 7px;
-  display: grid;
-  place-items: center;
-  color: var(--cyan);
+  display: block;
 }
 nav { display: flex; gap: 18px; color: var(--muted); font-size: 14px; }
 .hero {
@@ -207,7 +203,7 @@ footer { padding: 32px 0 44px; color: var(--muted); }
 <body>
 <header>
   <a class="brand" href="/">
-    <span class="mark">T</span>
+    <img class="mark" src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" width="28" height="28" />
     <span>ThumbGate</span>
   </a>
   <nav aria-label="Primary">
