@@ -2785,7 +2785,7 @@ function buildRecentCorrectiveActionsContext(options = {}) {
 function buildRelevantLessonContext(toolName, toolInput) {
   if (!toolName) return null;
 
-  const { retrieveRelevantLessons, calculateRetrievalEntropy, filterTopP } = loadOptionalModule("./lesson-retrieval", () => ({ retrieveRelevantLessons: () => [], calculateRetrievalEntropy: () => 0, filterTopP: (l) => l }));
+  const { retrieveRelevantLessons, calculateRetrievalEntropy } = loadOptionalModule("./lesson-retrieval", () => ({ retrieveRelevantLessons: () => [], calculateRetrievalEntropy: () => 0 }));
 
   // Extract a searchable action context from the tool input
   const actionContext = extractActionContext(toolName, toolInput);
