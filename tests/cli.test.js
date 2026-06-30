@@ -578,7 +578,7 @@ describe('bin/cli.js', () => {
     assert.strictEqual(result.status, 0, `Expected exit 0, got ${result.status}\n${result.stderr}`);
     assert.ok(result.stdout.includes('thumbgate'), 'Help should include CLI name');
     // Core commands a first-time user should see immediately.
-    for (const cmd of ['init', 'feedback-self-test', 'capture', 'stats', 'lessons', 'explore', 'dashboard', 'doctor', 'pro']) {
+    for (const cmd of ['init', 'feedback-self-test', 'capture', 'stats', 'lessons', 'explore', 'dashboard', 'doctor', 'pro', 'diagnostic']) {
       assert.ok(result.stdout.includes(cmd), `Default help should mention ${cmd}`);
     }
     // Hint to discover the rest, instead of dumping ~70 commands.
@@ -606,7 +606,7 @@ describe('bin/cli.js', () => {
       'export-databricks', 'lessons', 'stats', 'north-star', 'eval',
       'rules', 'self-heal', 'prove', 'doctor', 'dispatch',
       'background-governance', 'analytics', 'gate-check', 'statusline-render',
-      'feedback-self-test',
+      'feedback-self-test', 'diagnostic',
     ];
     for (const cmd of expected) {
       assert.ok(result.stdout.includes(cmd), `\`help all\` should mention ${cmd}`);
