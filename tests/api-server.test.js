@@ -830,6 +830,7 @@ test('terms of service route covers payment, refunds, acceptable use, and limita
   assert.match(body, /Acceptable Use/i);
   assert.match(body, /SMS Ticket Notifications/i);
   assert.match(body, /Reply HELP for help and STOP to opt out/i);
+  assert.doesNotMatch(body, /YourStage/i);
   assert.match(body, /Limitation of Liability/i);
   assert.match(body, /igor\.ganapolsky@gmail\.com/i);
   // Cross-links to /privacy and /support keep the legal triangle navigable.
@@ -887,13 +888,39 @@ test('sms page exposes 10DLC opt-in, STOP HELP, frequency, rates, and no-sharing
   assert.match(String(res.headers.get('content-type')), /text\/html/);
   const body = await res.text();
   assert.match(body, /SMS Ticket Notifications/i);
-  assert.match(body, /ThumbGate YourStage Ticket Alerts/i);
+  assert.match(body, /ThumbGate Ticket Alerts/i);
   assert.match(body, /Customers opt in by entering their mobile number/i);
+  assert.match(body, /href="\/sms-opt-in"/);
   assert.match(body, /Message frequency varies/i);
-  assert.match(body, /Message and data rates may apply/i);
+  assert.match(body, /Standard message and data rates may apply/i);
   assert.match(body, /Reply HELP for help/i);
   assert.match(body, /Reply STOP to opt out/i);
-  assert.match(body, /not shared with third parties for marketing or promotional purposes/i);
+  assert.match(body, /not be shared with third parties for promotional or marketing purposes/i);
+  assert.doesNotMatch(body, /YourStage/i);
+  assert.match(body, /href="\/privacy"/);
+  assert.match(body, /href="\/terms"/);
+  assert.match(body, /href="\/support"/);
+});
+
+test('sms opt-in form shows phone field, optional unchecked consent, and full 10DLC disclosure', async () => {
+  const res = await fetch(apiUrl('/sms-opt-in'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  const body = await res.text();
+  assert.match(body, /ThumbGate SMS Opt-In Form/i);
+  assert.match(body, /type="tel"/);
+  assert.match(body, /name="phone"/);
+  assert.match(body, /type="checkbox"/);
+  assert.match(body, /name="sms_consent"/);
+  assert.doesNotMatch(body, /type="checkbox"[^>]*checked/i);
+  assert.match(body, /transactional SMS ticket alerts from ThumbGate/i);
+  assert.match(body, /Message frequency may vary/i);
+  assert.match(body, /Standard message and data rates may apply/i);
+  assert.match(body, /Reply STOP to opt out/i);
+  assert.match(body, /Reply HELP for help/i);
+  assert.match(body, /will not be shared with third parties for promotional or marketing purposes/i);
+  assert.match(body, /Consent is not a condition of purchase/i);
+  assert.doesNotMatch(body, /YourStage/i);
   assert.match(body, /href="\/privacy"/);
   assert.match(body, /href="\/terms"/);
   assert.match(body, /href="\/support"/);

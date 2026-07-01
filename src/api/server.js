@@ -7538,7 +7538,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
 <h2>Acceptable Use</h2>
 <p>You may not use ThumbGate to (a) circumvent the safety controls of other AI providers, (b) generate malware or content that violates third-party terms, or (c) resell the hosted tier without written permission.</p>
 <h2>SMS Ticket Notifications</h2>
-<p>ThumbGate may operate low-volume transactional SMS ticket notifications for YourStage box office and checkout workflows. Customers opt in by entering a mobile number at checkout or box office purchase and consenting to receive the ticket confirmation message. Message frequency varies by ticket purchase. Message and data rates may apply. Reply HELP for help and STOP to opt out.</p>
+<p>ThumbGate may operate low-volume transactional SMS ticket notifications for ThumbGate-controlled demo ticket and checkout workflows. Customers opt in by entering a mobile number and selecting the optional SMS consent checkbox. Message frequency varies by ticket purchase. Message and data rates may apply. Reply HELP for help and STOP to opt out.</p>
 <h2>Disclaimer of Warranty</h2>
 <p>The service is provided "as is", without warranty of any kind. ThumbGate is a guard rail, not a guarantee. We do not warrant that every AI-agent mistake will be prevented.</p>
 <h2>Limitation of Liability</h2>
@@ -7674,15 +7674,16 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
 
     // Public SMS compliance page for low-volume transactional ticket notices.
     // This page gives carrier reviewers a stable, public opt-in disclosure
-    // matching the 10DLC campaign language used for YourStage ticket delivery.
+    // matching the 10DLC campaign language used for ThumbGate demo ticket delivery.
     if (isGetLikeRequest && pathname === '/sms') {
       sendHtml(res, 200, `<!DOCTYPE html><html><head><title>SMS Ticket Notifications — ThumbGate</title></head><body>
 <h1>SMS Ticket Notifications</h1>
-<p><strong>Program name:</strong> ThumbGate YourStage Ticket Alerts.</p>
-<p>ThumbGate supports low-volume transactional SMS ticket notifications for YourStage box office and checkout workflows. These messages are used for ticket confirmations, ticket delivery notices, event reminders, waitlist-fill alerts, and order-status updates tied to a ticket purchase or venue checkout action.</p>
+<p><strong>Program name:</strong> ThumbGate Ticket Alerts.</p>
+<p>ThumbGate supports low-volume transactional SMS ticket notifications for ThumbGate-controlled demo ticket and checkout workflows. These messages are used for ticket confirmations, ticket delivery notices, event reminders, waitlist-fill alerts, and order-status updates tied to a ticket purchase or checkout action.</p>
 <h2>Opt-In</h2>
-<p>Customers opt in by entering their mobile number during online checkout, waitlist signup, or box office checkout and selecting the SMS consent checkbox. Consent is collected per transaction.</p>
-<p><strong>Consent text:</strong> I agree to receive transactional SMS ticket alerts from ThumbGate YourStage Ticket Alerts about my purchase or waitlist request. Message frequency varies. Message and data rates may apply. Reply HELP for help or STOP to opt out. Consent is not a condition of purchase.</p>
+<p>Customers opt in by entering their mobile number during the ThumbGate demo checkout or waitlist flow and selecting the optional SMS consent checkbox. Consent is collected per transaction.</p>
+<p><strong>Consent text:</strong> By providing my phone number, I agree to receive transactional SMS ticket alerts from ThumbGate about my purchase or waitlist request. Message frequency may vary. Standard message and data rates may apply. Reply STOP to opt out. Reply HELP for help. Mobile information will not be shared with third parties for promotional or marketing purposes. Consent is not a condition of purchase.</p>
+<p><a href="/sms-opt-in">View the public SMS opt-in form evidence</a>.</p>
 <h2>Message Frequency</h2>
 <p>Message frequency varies by transaction. Most customers receive one ticket confirmation message per purchase, with optional event reminder or order-status messages when applicable.</p>
 <h2>Help and Opt-Out</h2>
@@ -7693,6 +7694,34 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
 <p>For SMS support, email <a href="mailto:igor.ganapolsky@gmail.com">igor.ganapolsky@gmail.com</a>.</p>
 <p><a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms of Service</a> · <a href="/support">Support</a></p>
 </body></html>`, {}, {
+        headOnly: isHeadRequest,
+      });
+      return;
+    }
+
+    // Public 10DLC opt-in form evidence. Telnyx reviewers need to see the
+    // phone number field and the full optional SMS consent language together.
+    if (isGetLikeRequest && pathname === '/sms-opt-in') {
+      sendHtml(res, 200, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SMS Opt-In Form — ThumbGate</title><style>body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;max-width:760px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#172033;background:#f8fafc}main{background:#fff;border:1px solid #dbe3ef;border-radius:8px;padding:28px;box-shadow:0 8px 24px rgba(15,23,42,.08)}h1{font-size:30px;margin:0 0 10px}p{margin:10px 0}.field{margin:20px 0}label{display:block;font-weight:700;margin-bottom:8px}input[type="tel"]{width:100%;box-sizing:border-box;border:1px solid #9ca3af;border-radius:6px;padding:12px;font-size:16px}.sms-consent{display:flex;gap:12px;align-items:flex-start;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;padding:16px;margin:20px 0}.sms-consent input{margin-top:4px;min-width:18px;min-height:18px}.sms-consent label{font-weight:500;margin:0}.note{color:#475569;font-size:14px}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}.button{display:inline-block;background:#0f172a;color:#fff;text-decoration:none;border:0;border-radius:6px;padding:11px 16px;font-weight:700}.secondary{background:#e2e8f0;color:#0f172a}footer{margin-top:24px;color:#475569;font-size:14px}a{color:#0f5fd7}</style></head><body><main>
+<h1>ThumbGate SMS Opt-In Form</h1>
+<p>This public form shows the opt-in workflow used for ThumbGate-controlled demo ticket and checkout notifications.</p>
+<form action="/sms-opt-in" method="get">
+<div class="field">
+<label for="mobile-number">Mobile phone number</label>
+<input id="mobile-number" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+1 201 555 0123">
+</div>
+<div class="sms-consent">
+<input id="sms-consent" name="sms_consent" type="checkbox" value="yes">
+<label for="sms-consent">By providing my phone number, I agree to receive transactional SMS ticket alerts from ThumbGate about my purchase or waitlist request. Message frequency may vary. Standard message and data rates may apply. Reply STOP to opt out. Reply HELP for help. Mobile information will not be shared with third parties for promotional or marketing purposes. Consent is not a condition of purchase.</label>
+</div>
+<p class="note">The SMS checkbox is optional and unchecked by default. This page is public reviewer evidence and does not submit or store a phone number.</p>
+<div class="actions">
+<button class="button" type="submit">Continue checkout demo</button>
+<a class="button secondary" href="/sms">SMS policy</a>
+</div>
+</form>
+<footer><a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms of Service</a> · <a href="/support">Support</a></footer>
+</main></body></html>`, {}, {
         headOnly: isHeadRequest,
       });
       return;
@@ -7715,7 +7744,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
 </ul>
 <h2>Data Sharing</h2>
 <p>We do not sell customer data. Hosted data is used to operate the service and is not shared with third parties except for infrastructure providers needed to run the product.</p>
-<p>SMS opt-in data and consent records for ThumbGate YourStage Ticket Alerts are used only to send transactional ticket messages and operate the ticket workflow. SMS opt-in data and consent are not sold and are not shared with third parties for marketing or promotional purposes.</p>
+<p>SMS opt-in data and consent records for ThumbGate Ticket Alerts are used only to send transactional ticket messages and operate the ticket workflow. SMS opt-in data and consent are not sold and are not shared with third parties for marketing or promotional purposes.</p>
 <h2>Data Retention</h2>
 <p>Local data is retained until you delete the files. Hosted data is retained while your account or API key remains active, or until you request deletion, subject to operational or legal retention requirements.</p>
 <h2>Data Deletion</h2>
