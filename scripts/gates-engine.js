@@ -1163,9 +1163,47 @@ function isThreadResolutionEvidenceAction(toolName, toolInput = {}) {
   return /\b(?:gate-satisfy|satisfy_gate|track_action|gh\s+pr\s+(?:view|checks|status)|gh\s+api\b.*(?:reviewThreads|reviews|comments|threads)|git\s+(?:status|diff|show))\b/i.test(command);
 }
 
+// Read-only observability/metrics MCP tools must NEVER be blocked by the pending
+// PR-thread-resolution gate. Reading revenue, the dashboard, gate stats, or a
+// semantic entity cannot advance a "done" claim or mutate any state, so gating it
+// only blinds the operator to their own numbers. This is the exact failure the CEO
+// hit on 2026-06-30: `get_business_metrics` denied with "a git commit was made on a
+// PR branch" — a governance gate eating the observability path. The exempt set is
+// sourced from the canonical `readonly` MCP profile (config/mcp-allowlists.json) so
+// it cannot drift from the product's own definition of "safe to read"; the hard-coded
+// fallback guarantees the core observability tools stay readable even if that policy
+// file is unreadable at runtime.
+const READ_ONLY_TOOL_FALLBACK = new Set([
+  'get_business_metrics', 'describe_semantic_entity', 'describe_reliability_entity',
+  'get_reliability_rules', 'dashboard', 'org_dashboard', 'gate_stats', 'feedback_stats',
+  'feedback_summary', 'session_report', 'generate_operator_artifact', 'settings_status',
+  'get_scope_state', 'get_branch_governance', 'context_provenance', 'native_messaging_audit',
+  'list_harnesses', 'list_intents', 'list_imported_documents', 'get_imported_document',
+  'check_operational_integrity', 'workflow_sentinel', 'recall', 'search_lessons',
+  'retrieve_lessons', 'search_thumbgate', 'unified_context', 'verify_claim',
+]);
+let readOnlyToolCache = null;
+function getReadOnlyToolNames() {
+  if (readOnlyToolCache) return readOnlyToolCache;
+  const names = new Set(READ_ONLY_TOOL_FALLBACK);
+  try {
+    const { getAllowedTools } = require('./mcp-policy');
+    for (const tool of getAllowedTools('readonly')) names.add(tool);
+  } catch (_) {
+    // Policy file missing/malformed — the fallback set still covers the core
+    // observability tools, so the operator can always read state.
+  }
+  readOnlyToolCache = names;
+  return names;
+}
+function isReadOnlyObservabilityTool(toolName) {
+  return Boolean(toolName) && getReadOnlyToolNames().has(toolName);
+}
+
 function evaluatePendingPrThreadResolutionGate(toolName, toolInput = {}) {
   if (!hasAction(PR_THREAD_RESOLUTION_ACTION)) return null;
   if (isThreadResolutionSatisfied()) return null;
+  if (isReadOnlyObservabilityTool(toolName)) return null;
   if (isThreadResolutionEvidenceAction(toolName, toolInput)) return null;
 
   const message = 'A git commit was made on a PR branch. Verify review threads are resolved before the next tool call.';
@@ -3335,6 +3373,7 @@ module.exports = {
   evaluateBoostedRiskTagGuard,
   registerPrThreadResolutionClaimGate,
   evaluatePendingPrThreadResolutionGate,
+  isReadOnlyObservabilityTool,
   getLocalOnlyScopeSources,
   isRemoteSideEffectCommand,
   evaluateLocalOnlyRemoteSideEffectGate,
