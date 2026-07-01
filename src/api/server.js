@@ -7537,6 +7537,8 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
 <p>Pro and Team subscriptions: cancel anytime; we issue a full refund within 7 days of the first charge, prorated thereafter. One-off purchases: refund on request if we cannot deliver the scoped artifact.</p>
 <h2>Acceptable Use</h2>
 <p>You may not use ThumbGate to (a) circumvent the safety controls of other AI providers, (b) generate malware or content that violates third-party terms, or (c) resell the hosted tier without written permission.</p>
+<h2>SMS Ticket Notifications</h2>
+<p>ThumbGate may operate low-volume transactional SMS ticket notifications for YourStage box office and checkout workflows. Customers opt in by entering a mobile number at checkout or box office purchase and consenting to receive the ticket confirmation message. Message frequency varies by ticket purchase. Message and data rates may apply. Reply HELP for help and STOP to opt out.</p>
 <h2>Disclaimer of Warranty</h2>
 <p>The service is provided "as is", without warranty of any kind. ThumbGate is a guard rail, not a guarantee. We do not warrant that every AI-agent mistake will be prevented.</p>
 <h2>Limitation of Liability</h2>
@@ -7670,6 +7672,32 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       return;
     }
 
+    // Public SMS compliance page for low-volume transactional ticket notices.
+    // This page gives carrier reviewers a stable, public opt-in disclosure
+    // matching the 10DLC campaign language used for YourStage ticket delivery.
+    if (isGetLikeRequest && pathname === '/sms') {
+      sendHtml(res, 200, `<!DOCTYPE html><html><head><title>SMS Ticket Notifications — ThumbGate</title></head><body>
+<h1>SMS Ticket Notifications</h1>
+<p><strong>Program name:</strong> ThumbGate YourStage Ticket Alerts.</p>
+<p>ThumbGate supports low-volume transactional SMS ticket notifications for YourStage box office and checkout workflows. These messages are used for ticket confirmations, ticket delivery notices, event reminders, waitlist-fill alerts, and order-status updates tied to a ticket purchase or venue checkout action.</p>
+<h2>Opt-In</h2>
+<p>Customers opt in by entering their mobile number during online checkout, waitlist signup, or box office checkout and selecting the SMS consent checkbox. Consent is collected per transaction.</p>
+<p><strong>Consent text:</strong> I agree to receive transactional SMS ticket alerts from ThumbGate YourStage Ticket Alerts about my purchase or waitlist request. Message frequency varies. Message and data rates may apply. Reply HELP for help or STOP to opt out. Consent is not a condition of purchase.</p>
+<h2>Message Frequency</h2>
+<p>Message frequency varies by transaction. Most customers receive one ticket confirmation message per purchase, with optional event reminder or order-status messages when applicable.</p>
+<h2>Help and Opt-Out</h2>
+<p>Reply HELP for help. Reply STOP to opt out of further messages. After STOP, no further ticket-alert SMS messages will be sent unless the customer opts in again.</p>
+<h2>Privacy</h2>
+<p>SMS opt-in data and consent records are used only to send transactional ticket messages and operate the ticket workflow. SMS opt-in data and consent are not sold and are not shared with third parties for marketing or promotional purposes.</p>
+<h2>Contact</h2>
+<p>For SMS support, email <a href="mailto:igor.ganapolsky@gmail.com">igor.ganapolsky@gmail.com</a>.</p>
+<p><a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms of Service</a> · <a href="/support">Support</a></p>
+</body></html>`, {}, {
+        headOnly: isHeadRequest,
+      });
+      return;
+    }
+
     // Public privacy policy — required for GPT Store and marketplace listings
     if (isGetLikeRequest && pathname === '/privacy') {
       sendHtml(res, 200, `<!DOCTYPE html><html><head><title>Privacy Policy — ThumbGate</title></head><body>
@@ -7687,6 +7715,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
 </ul>
 <h2>Data Sharing</h2>
 <p>We do not sell customer data. Hosted data is used to operate the service and is not shared with third parties except for infrastructure providers needed to run the product.</p>
+<p>SMS opt-in data and consent records for ThumbGate YourStage Ticket Alerts are used only to send transactional ticket messages and operate the ticket workflow. SMS opt-in data and consent are not sold and are not shared with third parties for marketing or promotional purposes.</p>
 <h2>Data Retention</h2>
 <p>Local data is retained until you delete the files. Hosted data is retained while your account or API key remains active, or until you request deletion, subject to operational or legal retention requirements.</p>
 <h2>Data Deletion</h2>
