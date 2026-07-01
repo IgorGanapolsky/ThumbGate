@@ -2029,6 +2029,19 @@ async function checkMetricCondition(metricCondition) {
   return true;
 }
 
+/**
+ * Whether this run is autonomous — i.e. no human is present to resolve an
+ * `approve` (human-in-the-loop) gate. Opt-in ONLY via THUMBGATE_AUTONOMOUS=1
+ * (or "true"); interactive and existing CI behavior is unchanged unless an
+ * operator explicitly sets it. In an autonomous agent loop an approval gate has
+ * nobody to sign off, so it must fail CLOSED (deny) rather than defer forever or
+ * slip through — a guardrail has to guard precisely when it is unattended.
+ */
+function isAutonomousRun() {
+  const raw = String(process.env.THUMBGATE_AUTONOMOUS || '').trim().toLowerCase();
+  return raw === '1' || raw === 'true';
+}
+
 async function evaluateGatesAsync(toolName, toolInput, configPath) {
   let config;
   try {
@@ -2183,6 +2196,15 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
     if (gate.action === 'approve') {
       const approvalEnabled = process.env.THUMBGATE_APPROVAL_GATES !== '0';
       if (approvalEnabled) {
+        if (isAutonomousRun()) {
+          // Autonomous run: no human to approve. Fail CLOSED so the actions that
+          // most need sign-off cannot slip through unattended.
+          const failClosedMessage = `[autonomous run — no approver present, failing closed] ${message}`;
+          recordStat(gate.id, 'block', gate, { toolName, toolInput });
+          const failClosedAudit = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: failClosedMessage, severity: gate.severity, source: 'gates-engine', autonomousFailClosed: true });
+          auditToFeedback(failClosedAudit);
+          return { decision: 'deny', gate: gate.id, message: failClosedMessage, severity: gate.severity, reasoning, requiresApproval: true, failedClosed: true };
+        }
         recordStat(gate.id, 'approve', gate, { toolName, toolInput });
         const result = { decision: 'approve', gate: gate.id, message, severity: gate.severity, reasoning, requiresApproval: true };
         const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'approve', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
@@ -2387,6 +2409,15 @@ function evaluateGates(toolName, toolInput, configPath) {
     if (gate.action === 'approve') {
       const approvalEnabled = process.env.THUMBGATE_APPROVAL_GATES !== '0';
       if (approvalEnabled) {
+        if (isAutonomousRun()) {
+          // Autonomous run: no human to approve. Fail CLOSED so the actions that
+          // most need sign-off cannot slip through unattended.
+          const failClosedMessage = `[autonomous run — no approver present, failing closed] ${message}`;
+          recordStat(gate.id, 'block', gate, { toolName, toolInput });
+          const failClosedAudit = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: failClosedMessage, severity: gate.severity, source: 'gates-engine', autonomousFailClosed: true });
+          auditToFeedback(failClosedAudit);
+          return { decision: 'deny', gate: gate.id, message: failClosedMessage, severity: gate.severity, reasoning, requiresApproval: true, failedClosed: true };
+        }
         recordStat(gate.id, 'approve', gate, { toolName, toolInput });
         const result = { decision: 'approve', gate: gate.id, message, severity: gate.severity, reasoning, requiresApproval: true };
         const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'approve', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
@@ -3332,6 +3363,7 @@ module.exports = {
   matchesGate,
   evaluateGates,
   evaluateGatesAsync,
+  isAutonomousRun,
   computeExecutableHash,
   formatOutput,
   isApprovalGatesEnabled,
