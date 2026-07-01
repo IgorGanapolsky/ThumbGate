@@ -1505,6 +1505,55 @@ test('evaluateGatesAsync skips metric gates for recall tool', async () => {
   }
 });
 
+test('evaluateGates: approval gate fails CLOSED (deny) in an autonomous run', () => {
+  const tmpConfig = makeTempPath('autonomous-approve.json');
+  fs.writeFileSync(tmpConfig, JSON.stringify({
+    version: 1,
+    gates: [{
+      id: 'needs-human-approval',
+      pattern: '.*',
+      action: 'approve',
+      message: 'This action needs human sign-off',
+      severity: 'high',
+    }],
+  }));
+  const orig = process.env.THUMBGATE_AUTONOMOUS;
+  try {
+    // Interactive (default): defer to a human — decision 'approve'.
+    delete process.env.THUMBGATE_AUTONOMOUS;
+    const interactive = evaluateGates('Bash', { command: 'deploy to production' }, tmpConfig);
+    assert.equal(interactive && interactive.decision, 'approve', 'interactive run should defer to human approval');
+    assert.equal(interactive.requiresApproval, true);
+
+    // Autonomous run: no human present → must fail CLOSED (deny), not slip through.
+    process.env.THUMBGATE_AUTONOMOUS = '1';
+    const autonomous = evaluateGates('Bash', { command: 'deploy to production' }, tmpConfig);
+    assert.equal(autonomous && autonomous.decision, 'deny', 'autonomous run must fail closed on an approval gate');
+    assert.equal(autonomous.failedClosed, true);
+  } finally {
+    if (orig === undefined) delete process.env.THUMBGATE_AUTONOMOUS;
+    else process.env.THUMBGATE_AUTONOMOUS = orig;
+    fs.rmSync(tmpConfig, { force: true });
+  }
+});
+
+test('isAutonomousRun is opt-in via THUMBGATE_AUTONOMOUS (off by default)', () => {
+  const orig = process.env.THUMBGATE_AUTONOMOUS;
+  try {
+    delete process.env.THUMBGATE_AUTONOMOUS;
+    assert.equal(gatesEngine.isAutonomousRun(), false);
+    process.env.THUMBGATE_AUTONOMOUS = '1';
+    assert.equal(gatesEngine.isAutonomousRun(), true);
+    process.env.THUMBGATE_AUTONOMOUS = 'true';
+    assert.equal(gatesEngine.isAutonomousRun(), true);
+    process.env.THUMBGATE_AUTONOMOUS = '0';
+    assert.equal(gatesEngine.isAutonomousRun(), false);
+  } finally {
+    if (orig === undefined) delete process.env.THUMBGATE_AUTONOMOUS;
+    else process.env.THUMBGATE_AUTONOMOUS = orig;
+  }
+});
+
 test('evaluateGatesAsync does NOT skip metric gates for non-skip tools', async () => {
   // Mock semantic-layer to return a metric value that violates the gate
   const semanticLayerPath = require.resolve('../scripts/semantic-layer');
