@@ -49,7 +49,8 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
 
   // Stage 3 (opt-in) — Memora-style nucleus stop: trim the low-mass tail so a
   // dominant lesson isn't padded out to maxResults. No-op unless topP < 1.
-  const selected = filterTopP(reranked, resolveTopP(options), { minKeep: options.minKeep });
+  const deduped = dedupeSupersededLessons(reranked);
+  const selected = filterTopP(deduped, resolveTopP(options), { minKeep: options.minKeep });
 
   return selected.map((m) => ({
     id: m.id,
@@ -181,7 +182,7 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
     // Short-circuit: skip embedding/dense search completely
     const { rerankLessons } = require('./lesson-reranker');
     const reranked = rerankLessons(actionContext, lexicalScored.slice(0, RERANK_CANDIDATE_POOL), { topK: maxResults, toolName });
-    return filterTopP(reranked, resolveTopP(options), { minKeep: options.minKeep }).map(shapeLesson);
+    return filterTopP(dedupeSupersededLessons(reranked), resolveTopP(options), { minKeep: options.minKeep }).map(shapeLesson);
   }
 
   // WHERE-clause pruning: filter memories before vector search to only include
@@ -245,7 +246,7 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
 
   const { rerankLessons } = require('./lesson-reranker');
   const reranked = rerankLessons(actionContext, candidates, { topK: maxResults, toolName });
-  return filterTopP(reranked, resolveTopP(options), { minKeep: options.minKeep }).map(shapeLesson);
+  return filterTopP(dedupeSupersededLessons(reranked), resolveTopP(options), { minKeep: options.minKeep }).map(shapeLesson);
 }
 
 function buildActionSignature(toolName, actionContext) {
@@ -388,6 +389,73 @@ function filterTopP(lessons, topP = 1.0, options = {}) {
   return kept;
 }
 
+/**
+ * Drop superseded / contradictory lessons before final selection.
+ *
+ * Retrieval can surface two lessons on the SAME topic at near-equal relevance —
+ * a stale one and a newer correction. Handing an agent contradictory guidance
+ * ("never force-push" AND "force-push is fine") poisons its decision and wastes
+ * tokens — the "context poisoning" failure mode. This collapses same-topic
+ * lessons on the reranked list:
+ *   - same topic + SAME signal     → duplicate: keep the higher-ranked, drop rest
+ *   - same topic + OPPOSITE signal → contradiction: keep the most RECENT (it
+ *                                    supersedes), drop the older
+ *
+ * "Same topic" = identical/near-identical structured-rule trigger (the strong
+ * signal), else high character-bigram similarity of title+content. Conservative
+ * by design: distinct lessons are never merged, and survivor order is preserved.
+ * Affects only lesson RETRIEVAL — never the hard gate rules.
+ *
+ * @param {Array<object>} lessons - reranked lessons/memories, best-first
+ * @param {object} [options]
+ * @param {number} [options.similarityThreshold=0.82] - bigram-Jaccard cutoff for "same topic"
+ * @returns {Array<object>} deduped list, order preserved
+ */
+function dedupeSupersededLessons(lessons, options = {}) {
+  if (!Array.isArray(lessons) || lessons.length <= 1) {
+    return Array.isArray(lessons) ? lessons.slice() : [];
+  }
+  const threshold = Number.isFinite(options.similarityThreshold) ? options.similarityThreshold : 0.82;
+  const signalOf = (x) => x.signal || (x.tags?.includes('negative') ? 'negative' : 'positive');
+  const topicSignature = (x) => {
+    const rule = x.rule || x.structuredRule;
+    const cond = rule && (rule.trigger?.condition || rule.if);
+    if (cond && String(cond).trim().length >= 3) return String(cond).toLowerCase().trim();
+    return `${x.title || ''} ${x.content || ''}`.toLowerCase().trim();
+  };
+  const timeOf = (x) => {
+    const t = x.timestamp ? new Date(x.timestamp).getTime() : NaN;
+    return Number.isFinite(t) ? t : -Infinity;
+  };
+  const sigs = lessons.map(topicSignature);
+  const grams = sigs.map((s) => textBigrams(s));
+  const sameTopic = (i, j) => {
+    if (!sigs[i] || !sigs[j]) return false;
+    if (sigs[i] === sigs[j]) return true;
+    return bigramJaccard(grams[i], grams[j]) >= threshold;
+  };
+
+  const kept = []; // indices into `lessons`, best-first
+  for (let i = 0; i < lessons.length; i++) {
+    let collapsed = false;
+    for (let k = 0; k < kept.length; k++) {
+      const j = kept[k];
+      if (!sameTopic(i, j)) continue;
+      if (signalOf(lessons[i]) === signalOf(lessons[j])) {
+        collapsed = true; // duplicate → keep the already-kept (higher-ranked)
+      } else if (timeOf(lessons[i]) > timeOf(lessons[j])) {
+        kept[k] = i; // contradiction → newer supersedes, take the slot
+        collapsed = true;
+      } else {
+        collapsed = true; // contradiction, incoming is older → drop it
+      }
+      break;
+    }
+    if (!collapsed) kept.push(i);
+  }
+  return kept.map((idx) => lessons[idx]);
+}
+
 function calculateRetrievalEntropy(lessons) {
   if (!Array.isArray(lessons) || lessons.length === 0) return 0;
   let pW = 0, nW = 0, tW = 0;
@@ -413,4 +481,5 @@ module.exports = {
   calculateRetrievalEntropy,
   filterTopP,
   resolveTopP,
+  dedupeSupersededLessons,
 };
