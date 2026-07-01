@@ -353,3 +353,54 @@ test('retrieveRelevantLessons: topP trims the tail, never empties, no-op at 1.0'
 
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
+
+// ---------------------------------------------------------------------------
+// Superseding / contradiction filter — the "context poisoning" fix.
+// Same-topic contradictory or duplicate lessons must not surface together.
+// ---------------------------------------------------------------------------
+
+test('dedupeSupersededLessons keeps the newest of two contradictory same-rule lessons', () => {
+  const { dedupeSupersededLessons } = require('../scripts/lesson-retrieval');
+  const older = { id: 'old', title: 'x', content: 'never force push', tags: ['negative'], structuredRule: { if: 'git push --force' }, timestamp: '2026-01-01T00:00:00Z', relevanceScore: 0.9 };
+  const newer = { id: 'new', title: 'y', content: 'force push ok on personal branches', tags: ['positive'], structuredRule: { if: 'git push --force' }, timestamp: '2026-06-01T00:00:00Z', relevanceScore: 0.7 };
+  const out = dedupeSupersededLessons([older, newer]);
+  assert.strictEqual(out.length, 1, 'contradiction collapsed to one');
+  assert.strictEqual(out[0].id, 'new', 'the newer lesson supersedes the older');
+});
+
+test('dedupeSupersededLessons drops a duplicate same-signal lesson and keeps the higher-ranked', () => {
+  const { dedupeSupersededLessons } = require('../scripts/lesson-retrieval');
+  const a = { id: 'a', title: 'force push', content: 'never force push to main', tags: ['negative'], timestamp: '2026-06-02T00:00:00Z', relevanceScore: 0.9 };
+  const b = { id: 'b', title: 'force push', content: 'never force push to main', tags: ['negative'], timestamp: '2026-06-01T00:00:00Z', relevanceScore: 0.5 };
+  const out = dedupeSupersededLessons([a, b]);
+  assert.strictEqual(out.length, 1, 'duplicate collapsed');
+  assert.strictEqual(out[0].id, 'a', 'higher-ranked (first) kept, order preserved');
+});
+
+test('dedupeSupersededLessons never merges distinct topics', () => {
+  const { dedupeSupersededLessons } = require('../scripts/lesson-retrieval');
+  const a = { id: 'a', title: 'git', content: 'never force push to main branch', tags: ['negative'], timestamp: '2026-06-01T00:00:00Z' };
+  const b = { id: 'b', title: 'auth', content: 'validate the jwt before trusting its claims', tags: ['negative'], timestamp: '2026-06-01T00:00:00Z' };
+  const out = dedupeSupersededLessons([a, b]);
+  assert.strictEqual(out.length, 2, 'distinct topics are both preserved');
+});
+
+test('dedupeSupersededLessons handles empty, null, and single inputs safely', () => {
+  const { dedupeSupersededLessons } = require('../scripts/lesson-retrieval');
+  assert.deepStrictEqual(dedupeSupersededLessons([]), []);
+  assert.deepStrictEqual(dedupeSupersededLessons(null), []);
+  assert.strictEqual(dedupeSupersededLessons([{ id: 'x', title: 't', content: 'c', tags: [] }]).length, 1);
+});
+
+test('retrieveRelevantLessons does not surface both sides of a same-rule contradiction', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lesson-supersede-'));
+  writeJsonl(path.join(tmpDir, 'memory-log.jsonl'), [
+    { id: 'old', title: 'bash git push', content: 'never force push to main', tags: ['negative'], structuredRule: { if: 'git push --force' }, timestamp: '2026-01-01T00:00:00Z' },
+    { id: 'new', title: 'bash git push', content: 'force push allowed on personal branches now', tags: ['positive'], structuredRule: { if: 'git push --force' }, timestamp: new Date().toISOString() },
+  ]);
+  const { retrieveRelevantLessons } = require('../scripts/lesson-retrieval');
+  const ids = retrieveRelevantLessons('Bash', 'git push --force to main', { maxResults: 5, feedbackDir: tmpDir }).map((l) => l.id);
+  assert.ok(!(ids.includes('old') && ids.includes('new')), `contradictory lessons surfaced together: ${ids.join(',')}`);
+  assert.ok(ids.length >= 1, 'still returns the surviving lesson');
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
