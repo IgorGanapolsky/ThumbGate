@@ -89,8 +89,6 @@ function buildCanonicalRepoUrls(about) {
     pluginsUrl: `${about.repositoryUrl}/tree/main/plugins`,
     readmeImageUrl: `https://raw.githubusercontent.com/${about.repo}/main/docs/diagrams/thumbgate-architecture-pb.png`,
     verificationEvidenceUrl: `${about.repositoryUrl}/blob/main/docs/VERIFICATION_EVIDENCE.md`,
-    compatibilityReportUrl: `${about.repositoryUrl}/blob/main/proof/compatibility/report.json`,
-    automationReportUrl: `${about.repositoryUrl}/blob/main/proof/automation/report.json`,
     gtmPlanUrl: `${about.repositoryUrl}/blob/main/docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md`,
     sprintBriefUrl: `${about.repositoryUrl}/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md`,
   };
