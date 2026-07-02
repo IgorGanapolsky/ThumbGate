@@ -242,6 +242,7 @@ const FEDERAL_PAGE_PATH = path.resolve(__dirname, '../../public/federal.html');
 const PRICING_PAGE_PATH = path.resolve(__dirname, '../../public/pricing.html');
 const ABOUT_PAGE_PATH = path.resolve(__dirname, '../../public/about.html');
 const DIAGNOSTIC_PAGE_PATH = path.resolve(__dirname, '../../public/diagnostic.html');
+const INSTALL_PAGE_PATH = path.resolve(__dirname, '../../public/install.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
 const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
@@ -2883,6 +2884,10 @@ function loadDiagnosticPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(DIAGNOSTIC_PAGE_PATH, runtimeConfig, pageContext);
 }
 
+function loadInstallPageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(INSTALL_PAGE_PATH, runtimeConfig, pageContext);
+}
+
 function loadPricingPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(PRICING_PAGE_PATH, runtimeConfig, pageContext);
 }
@@ -3518,6 +3523,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/pro', changefreq: 'weekly', priority: '0.9' },
     { path: '/diagnostic', changefreq: 'weekly', priority: '0.9' },
     { path: '/workflow-hardening-sprint', changefreq: 'weekly', priority: '0.9' },
+    { path: '/install', changefreq: 'weekly', priority: '0.9' },
     { path: '/agent-manager', changefreq: 'weekly', priority: '0.9' },
     { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
     { path: '/chatgpt-app', changefreq: 'weekly', priority: '0.85' },
@@ -5617,6 +5623,32 @@ async function addContext(){
         });
       } catch (err) {
         sendText(res, 500, err.message || 'Guide page unavailable');
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (
+      pathname === '/install'
+      || pathname === '/install.html'
+      || pathname === '/marketplace'
+      || pathname === '/marketplace.html'
+      || pathname === '/marketplaces'
+      || pathname === '/marketplaces.html'
+    )) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadInstallPageHtml,
+          extraTelemetry: {
+            pageType: 'install',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Install page unavailable');
       }
       return;
     }

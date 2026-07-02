@@ -207,6 +207,25 @@ test('workflow diagnostic aliases serve the focused diagnostic page', async () =
   }
 });
 
+test('GET /install serves the verified distribution and buyer path page', async () => {
+  const paths = ['/install', '/install.html', '/marketplace', '/marketplaces'];
+
+  for (const pathname of paths) {
+    const res = await fetch(`${origin}${pathname}`, { redirect: 'manual' });
+    assert.equal(res.status, 200, `${pathname} should render install page`);
+    assert.match(res.headers.get('content-type') || '', /text\/html/);
+    const html = await res.text();
+    assert.match(html, /Install paths verified for v1\.27\.17/);
+    assert.match(html, /npm package/);
+    assert.match(html, /VS Code Marketplace/);
+    assert.match(html, /Open VSX/);
+    assert.match(html, /MCP Registry/);
+    assert.match(html, /Cursor public Marketplace/);
+    assert.match(html, /\/diagnostic\?utm_source=install_page/);
+    assert.match(html, /Workflow Hardening Diagnostic/);
+  }
+});
+
 test('GET /sitemap.xml includes /diagnostic and /workflow-hardening-sprint at priority 0.9', async () => {
   const res = await fetch(`${origin}/sitemap.xml`);
   assert.equal(res.status, 200);
@@ -217,6 +236,16 @@ test('GET /sitemap.xml includes /diagnostic and /workflow-hardening-sprint at pr
     assert.ok(entry, `${route} <url> block must exist`);
     assert.match(entry[0], /<priority>0\.9<\/priority>/);
   }
+});
+
+test('GET /sitemap.xml includes the install page at priority 0.9', async () => {
+  const res = await fetch(`${origin}/sitemap.xml`);
+  assert.equal(res.status, 200);
+  const xml = await res.text();
+  assert.match(xml, /<loc>[^<]*\/install<\/loc>/);
+  const entry = xml.match(/<url>\s*<loc>[^<]*\/install<\/loc>[\s\S]*?<\/url>/);
+  assert.ok(entry, '/install <url> block must exist');
+  assert.match(entry[0], /<priority>0\.9<\/priority>/);
 });
 
 test('LLM discovery file is available at root and well-known paths with canonical thumbgate.ai URLs', async () => {

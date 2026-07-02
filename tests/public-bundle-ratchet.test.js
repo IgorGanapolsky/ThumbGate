@@ -90,7 +90,9 @@ const path = require('node:path');
 // 324 → 326: 2026-06-22 ship new transparent brand logo SVG.
 // 326 → 327: 2026-06-29 ship public/diagnostic.html, the focused Workflow
 // Hardening Diagnostic conversion page for warm traffic.
-const BASELINE_FILE_COUNT = 327;
+// 327 → 328: 2026-07-02 ship public/install.html, the install-intent buyer
+// path linked from marketplace/distribution traffic.
+const BASELINE_FILE_COUNT = 328;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

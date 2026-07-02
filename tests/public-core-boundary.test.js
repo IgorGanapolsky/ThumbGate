@@ -161,8 +161,10 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // Bumped 326 -> 327 (2026-06-29) to ship public/diagnostic.html, the
   // buyer-facing Workflow Hardening Diagnostic conversion page and deploy-gated
   // route for the $499 diagnostic checkout path.
+  // Bumped 327 -> 328 (2026-07-02) to ship public/install.html, the
+  // install-intent buyer path for marketplace/distribution traffic.
   const files = npmPackFiles();
-  const CEILING = 327;
+  const CEILING = 328;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
