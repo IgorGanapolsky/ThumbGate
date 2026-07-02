@@ -36,13 +36,18 @@ const BOT_PATTERNS = [
   /\bbaiduspider\b/i,
   /\bduckduckbot\b/i,
   /\bapplebot\b/i,
+  /slurp/i,
+  /petalbot/i,
+  /mediapartners/i,
   // LLM / AI crawlers — these started exploding in 2024+
   /\bgptbot\b/i,
-  /\bchatgpt-user\b/i,
+  /chatgpt/i,
   /\boai-searchbot\b/i,
-  /\bperplexitybot\b/i,
-  /\banthropic-ai\b/i,
+  /perplexity/i,
+  /anthropic/i,
   /\bclaude(?:bot|-web)\b/i,
+  /claude-searchbot/i,
+  /google-extended/i,
   /\bccbot\b/i,
   /\bcohere-ai\b/i,
   /\bbytespider\b/i,
@@ -86,6 +91,8 @@ const BOT_PATTERNS = [
   /\blibwww-perl\b/i,
   /\bjava\//i,
   /\bgo-http-client\b/i,
+  /scrapy/i,
+  /httpclient/i,
   /\bruby\b/i,
   // API/test tools
   /\bpostman(?:runtime)?\b/i,
@@ -158,8 +165,59 @@ function isProbablyBot(headers) {
   return classifyRequester(headers).isBot;
 }
 
+// --- Visitor classification (analytics filtering) ---------------------------
+// Classifies telemetry/analytics traffic as bot / owner / real_user.
+// Owner traffic is identified via the THUMBGATE_OWNER_EMAILS env var
+// (comma-separated, case-insensitive). There is no built-in default:
+// operators opt in via config, so the shipped artifact carries no
+// personal data.
+
+function getOwnerEmails(env = process.env) {
+  const raw = env.THUMBGATE_OWNER_EMAILS;
+  if (!raw) return [];
+  return raw
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function classifyVisitor(req) {
+  const ua = (req.headers && req.headers['user-agent']) || '';
+  const email = req.email || (req.query && req.query.email) || '';
+
+  for (const pattern of BOT_PATTERNS) {
+    if (pattern.test(ua)) {
+      return { type: 'bot', reason: `UA matches: ${pattern}`, userAgent: ua };
+    }
+  }
+  if (!ua || ua.length < 10) {
+    return { type: 'bot', reason: 'Empty or short user-agent', userAgent: ua };
+  }
+  if (email) {
+    const normalized = email.toLowerCase();
+    if (getOwnerEmails().some((ownerEmail) => normalized.includes(ownerEmail))) {
+      return { type: 'owner', reason: 'Email matches configured owner list', userAgent: ua };
+    }
+  }
+  return { type: 'real_user', reason: 'No bot pattern matched', userAgent: ua };
+}
+
+function shouldExcludeFromAnalytics(req) {
+  const classification = req.visitorClass || classifyVisitor(req);
+  return classification.type === 'bot';
+}
+
+function botFilterMiddleware(req, res, next) {
+  req.visitorClass = classifyVisitor(req);
+  next();
+}
+
 module.exports = {
   classifyRequester,
   isProbablyBot,
+  classifyVisitor,
+  shouldExcludeFromAnalytics,
+  botFilterMiddleware,
+  getOwnerEmails,
   BOT_PATTERNS,
 };

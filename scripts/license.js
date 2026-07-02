@@ -23,15 +23,17 @@ function isValidKey(key) {
 }
 
 function verifyLicense(options = {}) {
-  const envKey = [
-    process.env.THUMBGATE_API_KEY,
-    process.env.THUMBGATE_PRO_KEY,
+  // Only ThumbGate's own env vars are license candidates — scanning foreign
+  // *_API_KEY / *_PRO_KEY vars would treat another vendor's secret as a
+  // license key. The result object never carries the raw key value.
+  const envEntry = [
+    ['THUMBGATE_API_KEY', process.env.THUMBGATE_API_KEY],
+    ['THUMBGATE_PRO_KEY', process.env.THUMBGATE_PRO_KEY],
     ...Object.entries(process.env)
-      .filter(([name]) => /(?:_API_KEY|_PRO_KEY)$/.test(name))
-      .map(([, value]) => value),
-  ].find((value) => isValidKey(value));
-  if (isValidKey(envKey)) {
-    return { valid: true, source: 'env', key: envKey };
+      .filter(([name]) => name.startsWith('THUMBGATE_') && /(?:_API_KEY|_PRO_KEY)$/.test(name)),
+  ].find(([, value]) => isValidKey(value));
+  if (envEntry) {
+    return { valid: true, source: 'env', envVar: envEntry[0] };
   }
 
   const licensePath = getLicensePath(options.homeDir);
@@ -42,7 +44,6 @@ function verifyLicense(options = {}) {
         return {
           valid: true,
           source: 'file',
-          key: data.key,
           activatedAt: data.activatedAt,
           path: licensePath,
         };
