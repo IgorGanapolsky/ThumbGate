@@ -76,7 +76,7 @@ That profile launches the latest npm release instead of pinning a stale local ru
 ```toml
 [mcp_servers.thumbgate]
 command = "sh"
-args = ["-lc", "mkdir -p \"$HOME/.thumbgate/runtime\" && npm \"install\" \"--prefix\" \"$HOME/.thumbgate/runtime\" \"--no-save\" \"--omit=dev\" \"thumbgate@latest\" >/dev/null 2>&1 && exec \"$HOME/.thumbgate/runtime/node_modules/.bin/thumbgate\" \"serve\""]
+args = ["-lc", "[ -x \"$HOME/.thumbgate/runtime/node_modules/.bin/thumbgate\" ] && exec \"$HOME/.thumbgate/runtime/node_modules/.bin/thumbgate\" \"serve\" || mkdir -p \"$HOME/.thumbgate/runtime\" && exec npm \"exec\" \"--prefix\" \"$HOME/.thumbgate/runtime\" \"--yes\" \"--package\" \"thumbgate@latest\" \"--\" \"thumbgate\" \"serve\""]
 ```
 
 ### Build from source

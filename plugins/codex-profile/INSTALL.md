@@ -132,7 +132,7 @@ The following block is appended to `~/.codex/config.toml` when the published pac
 ```toml
 [mcp_servers.thumbgate]
 command = "sh"
-args = ["-lc", "mkdir -p \"$HOME/.thumbgate/runtime\" && npm \"install\" \"--prefix\" \"$HOME/.thumbgate/runtime\" \"--no-save\" \"--omit=dev\" \"thumbgate@latest\" >/dev/null 2>&1 && exec \"$HOME/.thumbgate/runtime/node_modules/.bin/thumbgate\" \"serve\""]
+args = ["-lc", "[ -x \"$HOME/.thumbgate/runtime/node_modules/.bin/thumbgate\" ] && exec \"$HOME/.thumbgate/runtime/node_modules/.bin/thumbgate\" \"serve\" || mkdir -p \"$HOME/.thumbgate/runtime\" && exec npm \"exec\" \"--prefix\" \"$HOME/.thumbgate/runtime\" \"--yes\" \"--package\" \"thumbgate@latest\" \"--\" \"thumbgate\" \"serve\""]
 ```
 
 The launcher resolves `thumbgate@latest` each time Codex starts the MCP server instead of reusing a stale installed binary. If you are developing from an unpublished local checkout, `npx thumbgate init --agent codex` falls back to the local `adapters/mcp/server-stdio.js` path so work-in-progress code still runs.
@@ -144,19 +144,19 @@ The Codex status line and hook bundle live in `~/.codex/config.json`. `npx thumb
 ```json
 {
   "hooks": {
-    "PreToolUse": [{ "matcher": "Bash", "hooks": [{ "type": "command", "command": "npm install --prefix ~/.thumbgate/runtime --no-save --omit=dev thumbgate@latest && ~/.thumbgate/runtime/node_modules/.bin/thumbgate gate-check" }] }],
-    "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "npm install --prefix ~/.thumbgate/runtime --no-save --omit=dev thumbgate@latest && ~/.thumbgate/runtime/node_modules/.bin/thumbgate hook-auto-capture" }] }],
-    "PostToolUse": [{ "matcher": "mcp__thumbgate__feedback_stats|mcp__thumbgate__dashboard", "hooks": [{ "type": "command", "command": "npm install --prefix ~/.thumbgate/runtime --no-save --omit=dev thumbgate@latest && ~/.thumbgate/runtime/node_modules/.bin/thumbgate cache-update" }] }],
-    "SessionStart": [{ "hooks": [{ "type": "command", "command": "npm install --prefix ~/.thumbgate/runtime --no-save --omit=dev thumbgate@latest && ~/.thumbgate/runtime/node_modules/.bin/thumbgate session-start" }] }]
+    "PreToolUse": [{ "matcher": "Bash", "hooks": [{ "type": "command", "command": "[ -x ~/.thumbgate/runtime/node_modules/.bin/thumbgate ] && exec ~/.thumbgate/runtime/node_modules/.bin/thumbgate gate-check || mkdir -p ~/.thumbgate/runtime && exec npm exec --prefix ~/.thumbgate/runtime --yes --package thumbgate@latest -- thumbgate gate-check" }] }],
+    "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "[ -x ~/.thumbgate/runtime/node_modules/.bin/thumbgate ] && exec ~/.thumbgate/runtime/node_modules/.bin/thumbgate hook-auto-capture || mkdir -p ~/.thumbgate/runtime && exec npm exec --prefix ~/.thumbgate/runtime --yes --package thumbgate@latest -- thumbgate hook-auto-capture" }] }],
+    "PostToolUse": [{ "matcher": "mcp__thumbgate__feedback_stats|mcp__thumbgate__dashboard", "hooks": [{ "type": "command", "command": "[ -x ~/.thumbgate/runtime/node_modules/.bin/thumbgate ] && exec ~/.thumbgate/runtime/node_modules/.bin/thumbgate cache-update || mkdir -p ~/.thumbgate/runtime && exec npm exec --prefix ~/.thumbgate/runtime --yes --package thumbgate@latest -- thumbgate cache-update" }] }],
+    "SessionStart": [{ "hooks": [{ "type": "command", "command": "[ -x ~/.thumbgate/runtime/node_modules/.bin/thumbgate ] && exec ~/.thumbgate/runtime/node_modules/.bin/thumbgate session-start || mkdir -p ~/.thumbgate/runtime && exec npm exec --prefix ~/.thumbgate/runtime --yes --package thumbgate@latest -- thumbgate session-start" }] }]
   },
   "statusLine": {
     "type": "command",
-    "command": "npm install --prefix ~/.thumbgate/runtime --no-save --omit=dev thumbgate@latest && ~/.thumbgate/runtime/node_modules/.bin/thumbgate statusline-render"
+    "command": "[ -x ~/.thumbgate/runtime/node_modules/.bin/thumbgate ] && exec ~/.thumbgate/runtime/node_modules/.bin/thumbgate statusline-render || mkdir -p ~/.thumbgate/runtime && exec npm exec --prefix ~/.thumbgate/runtime --yes --package thumbgate@latest -- thumbgate statusline-render"
   }
 }
 ```
 
-The real generated command includes a `mkdir -p ~/.thumbgate/runtime` guard before the `npm install` call and suppresses install noise.
+The real generated command fast-starts from the installed runtime binary and only resolves `thumbgate@latest` via `npm exec` (npx) when that binary is absent, so Codex never blocks MCP/hook startup on a per-launch reinstall.
 
 ## Verify
 

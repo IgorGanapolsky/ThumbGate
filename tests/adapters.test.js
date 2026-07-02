@@ -21,7 +21,10 @@ function assertCodexLatestShellEntry(entry) {
   assert.match(entry.args[1], /thumbgate/);
   assert.match(entry.args[1], /serve/);
   assert.match(entry.args[1], /\.thumbgate\/runtime/);
-  assert.doesNotMatch(entry.args[1], /\[ -x /);
+  // Fast-start form: exec the installed runtime binary; resolve @latest via npx
+  // only when it is absent. Must not block MCP startup on a per-launch reinstall.
+  assert.match(entry.args[1], /\[ -x /);
+  assert.doesNotMatch(entry.args[1], /npm "install"/);
 }
 
 test('adapter files exist', () => {
@@ -95,9 +98,11 @@ test('codex config.toml contains mcp_servers section', () => {
   
   if (content.includes('thumbgate@latest')) {
     assert.match(content, /command = "sh"/);
-    assert.match(content, /npm \\"install\\"/);
     assert.match(content, /node_modules\/\.bin\/thumbgate/);
-    assert.doesNotMatch(content, /\[ -x /);
+    // Fast-start form: exec the installed runtime binary, resolving @latest via
+    // npx only when it is absent. No blocking per-launch reinstall.
+    assert.match(content, /\[ -x /);
+    assert.doesNotMatch(content, /npm \\"install\\"/);
   } else if (content.includes('command = "npx"')) {
     assert.match(content, new RegExp(`thumbgate@${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
   } else {
@@ -439,7 +444,8 @@ test('codex config.toml uses npx, node, or latest-resolving shell command', () =
   }
   if (usesShell) {
     assert.match(content, /thumbgate@latest/, 'shell command should resolve latest npm release');
-    assert.doesNotMatch(content, /\[ -x /, 'shell command should not prefer a stale installed runtime');
+    assert.match(content, /\[ -x /, 'shell command should fast-start from the installed runtime binary');
+    assert.doesNotMatch(content, /npm \\"install\\"/, 'shell command should not block startup on a per-launch reinstall');
   }
 });
 
