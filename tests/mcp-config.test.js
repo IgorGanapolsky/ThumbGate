@@ -39,7 +39,7 @@ describe('mcp-config', () => {
     assert.match(entry.args[1], /\.thumbgate\/runtime/);
   });
 
-  it('codexAutoUpdateMcpEntry returns a latest-resolving shell wrapper without the stale binary fast path', () => {
+  it('codexAutoUpdateMcpEntry fast-starts from the installed runtime and resolves @latest via npx only when absent', () => {
     const entry = codexAutoUpdateMcpEntry();
     assert.strictEqual(entry.command, 'sh');
     assert.deepStrictEqual(entry.args.slice(0, 1), ['-lc']);
@@ -47,7 +47,10 @@ describe('mcp-config', () => {
     assert.match(entry.args[1], /thumbgate/);
     assert.match(entry.args[1], /serve/);
     assert.match(entry.args[1], /\.thumbgate\/runtime/);
-    assert.doesNotMatch(entry.args[1], /\[ -x /);
+    assert.match(entry.args[1], /\[ -x /, 'must include the [ -x fast-path guard');
+    const [fastPath] = entry.args[1].split(' || ');
+    assert.match(fastPath, /exec\s+"[^"]+"\s+"serve"/, 'fast-path must exec the runtime with serve');
+    assert.doesNotMatch(entry.args[1], /npm "install"/, 'must not block startup on a per-launch npm install');
   });
 
   it('resolveMcpEntry uses a latest-resolving launcher for published external installs', () => {
@@ -63,8 +66,8 @@ describe('mcp-config', () => {
 
       assert.strictEqual(entry.command, 'sh');
       assert.match(entry.args[1], /thumbgate@latest/);
-      assert.match(entry.args[1], /npm "install"/);
-      assert.doesNotMatch(entry.args[1], /\[ -x /);
+      assert.match(entry.args[1], /\[ -x /);
+      assert.doesNotMatch(entry.args[1], /npm "install"/);
       assert.doesNotMatch(entry.args[1], /thumbgate@1\.2\.3/);
     } finally {
       delete process.env.THUMBGATE_PUBLISH_STATE;
@@ -84,19 +87,22 @@ describe('mcp-config', () => {
 
       assert.strictEqual(entry.command, 'sh');
       assert.match(entry.args[1], /thumbgate@latest/);
-      assert.match(entry.args[1], /npm "install"/);
+      assert.match(entry.args[1], /\[ -x /);
+      assert.doesNotMatch(entry.args[1], /npm "install"/);
       assert.doesNotMatch(entry.args[1], /thumbgate@1\.2\.3/);
     } finally {
       fs.rmSync(pkgRoot, { recursive: true, force: true });
     }
   });
-  it('codexAutoUpdateCliEntry supports hook commands with the same latest-resolving policy', () => {
+  it('codexAutoUpdateCliEntry supports hook commands with the same fast-start policy', () => {
     const entry = codexAutoUpdateCliEntry(['gate-check']);
     assert.strictEqual(entry.command, 'sh');
     assert.match(entry.args[1], /thumbgate@latest/);
     assert.match(entry.args[1], /gate-check/);
-    assert.match(entry.args[1], /npm "install"/);
-    assert.doesNotMatch(entry.args[1], /\[ -x /);
+    assert.match(entry.args[1], /\[ -x /);
+    assert.doesNotMatch(entry.args[1], /npm "install"/);
+    const [fastPath] = entry.args[1].split(' || ');
+    assert.match(fastPath, /exec\s+"[^"]+"\s+"gate-check"/, 'fast-path must exec the runtime with the subcommand');
   });
 
   it('localMcpEntry returns node command pointing to server-stdio.js', () => {

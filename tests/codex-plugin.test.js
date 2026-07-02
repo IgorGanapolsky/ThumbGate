@@ -30,7 +30,10 @@ function assertCodexLatestShellEntry(entry) {
   assert.match(entry.args[1], /\.thumbgate\/runtime/);
   assert.match(entry.args[1], /thumbgate/);
   assert.match(entry.args[1], /serve/);
-  assert.doesNotMatch(entry.args[1], /\[ -x /);
+  // Fast-start form: exec the installed runtime binary; resolve @latest via npx
+  // only when it is absent. Must not block MCP startup on a per-launch reinstall.
+  assert.match(entry.args[1], /\[ -x /);
+  assert.doesNotMatch(entry.args[1], /npm \\?"install\\?"|npm "install"/);
 }
 
 test('codex plugin marketplace points at the shipped codex profile', () => {
@@ -171,7 +174,8 @@ test('codex plugin staging writes a standalone bundle with self-contained market
     assert.match(install, /Portable release bundle/i);
     assert.match(install, /not a double-click macOS installer/i);
     assert.match(configToml, /thumbgate@latest/);
-    assert.doesNotMatch(configToml, /\[ -x /);
+    assert.match(configToml, /\[ -x /, 'config.toml serve launcher must fast-start from the installed runtime');
+    assert.doesNotMatch(configToml, /npm \\"install\\"/, 'config.toml must not block startup on a per-launch reinstall');
   } finally {
     fs.rmSync(outputDir, { recursive: true, force: true });
   }

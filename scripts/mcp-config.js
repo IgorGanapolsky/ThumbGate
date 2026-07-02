@@ -107,9 +107,15 @@ function portableMcpEntry(pkgVersion) {
 }
 
 function codexAutoUpdateCliEntry(commandArgs = []) {
+  // Fast-start from the installed runtime binary; only resolve @latest via npx
+  // when the runtime is absent (e.g. first launch). This matches the hook
+  // commands and must never block MCP server startup on a per-launch reinstall
+  // (a blocking `npm install thumbgate@latest` on every launch caused
+  // capture/serve timeouts on slow or offline networks — a failed install left
+  // the chained `exec` unreached, so the server never started).
   return {
     command: 'sh',
-    args: ['-lc', publishedCliShellCommand('latest', commandArgs, { preferInstalled: false })],
+    args: ['-lc', publishedCliShellCommand('latest', commandArgs)],
   };
 }
 
