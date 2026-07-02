@@ -5222,7 +5222,7 @@ function createApiServer() {
     if (req.method === 'POST' && pathname === '/api/event') {
       // Filter bots from analytics to keep Plausible data clean
       let _botDetector;
-      try { _botDetector = require('../../scripts/bot-detector'); } catch (_e) { _botDetector = null; }
+      try { _botDetector = require('../../scripts/bot-detection'); } catch (_e) { _botDetector = null; }
       if (_botDetector && _botDetector.shouldExcludeFromAnalytics(req)) {
         sendJson(res, 202, { status: 'filtered', reason: 'bot' });
         return;
@@ -6867,7 +6867,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
     }
 
     if (req.method === 'GET' && pathname === '/v1/metrics/real') {
-      const bd = require('../../scripts/bot-detector');
+      const bd = require('../../scripts/bot-detection');
       const { FEEDBACK_DIR: metricsDir } = getFeedbackPaths();
       const telemetryPath = path.join(metricsDir, 'telemetry-pings.jsonl');
 
