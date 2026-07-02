@@ -2,7 +2,16 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
 
-const { classifyRequester, isProbablyBot } = require('../scripts/bot-detection');
+const fs = require('node:fs');
+
+const {
+  classifyRequester,
+  isProbablyBot,
+  classifyVisitor,
+  shouldExcludeFromAnalytics,
+  getOwnerEmails,
+  BOT_PATTERNS,
+} = require('../scripts/bot-detection');
 
 const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15';
 const BROWSER_ACCEPT = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8';
@@ -98,5 +107,71 @@ describe('bot-detection', () => {
   it('isProbablyBot convenience matches classifyRequester', () => {
     assert.equal(isProbablyBot({ 'user-agent': BROWSER_UA, accept: BROWSER_ACCEPT }), false);
     assert.equal(isProbablyBot({ 'user-agent': 'curl/8.0' }), true);
+  });
+});
+
+describe('classifyVisitor (analytics filtering)', () => {
+  const CHROME_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+  function withOwnerEmails(value, fn) {
+    const prev = process.env.THUMBGATE_OWNER_EMAILS;
+    if (value === undefined) delete process.env.THUMBGATE_OWNER_EMAILS;
+    else process.env.THUMBGATE_OWNER_EMAILS = value;
+    try {
+      return fn();
+    } finally {
+      if (prev === undefined) delete process.env.THUMBGATE_OWNER_EMAILS;
+      else process.env.THUMBGATE_OWNER_EMAILS = prev;
+    }
+  }
+
+  it('classifies Googlebot as bot', () => {
+    const result = classifyVisitor({ headers: { 'user-agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)' } });
+    assert.equal(result.type, 'bot');
+  });
+
+  it('classifies GPTBot as bot', () => {
+    const result = classifyVisitor({ headers: { 'user-agent': 'GPTBot/1.0' } });
+    assert.equal(result.type, 'bot');
+  });
+
+  it('classifies real Chrome as real_user', () => {
+    withOwnerEmails(undefined, () => {
+      const result = classifyVisitor({ headers: { 'user-agent': CHROME_UA } });
+      assert.equal(result.type, 'real_user');
+    });
+  });
+
+  it('classifies a configured owner email as owner', () => {
+    withOwnerEmails('Owner@Example.com, second@example.com', () => {
+      const result = classifyVisitor({ headers: { 'user-agent': CHROME_UA }, email: 'owner@example.com' });
+      assert.equal(result.type, 'owner');
+      assert.ok(!result.reason.includes('owner@example.com'), 'reason must not echo the owner email');
+    });
+  });
+
+  it('classifies nobody as owner when THUMBGATE_OWNER_EMAILS is unset', () => {
+    withOwnerEmails(undefined, () => {
+      assert.deepEqual(getOwnerEmails(), []);
+      const result = classifyVisitor({ headers: { 'user-agent': CHROME_UA }, email: 'owner@example.com' });
+      assert.equal(result.type, 'real_user');
+    });
+  });
+
+  it('shouldExcludeFromAnalytics filters bots only', () => {
+    assert.equal(shouldExcludeFromAnalytics({ headers: { 'user-agent': 'Googlebot/2.1' } }), true);
+    assert.equal(shouldExcludeFromAnalytics({ headers: { 'user-agent': CHROME_UA } }), false);
+  });
+
+  it('bot patterns list covers key categories', () => {
+    assert.ok(BOT_PATTERNS.length >= 20);
+  });
+
+  it('shipped module source contains no email address literals', () => {
+    const source = fs.readFileSync(require.resolve('../scripts/bot-detection'), 'utf8');
+    assert.ok(
+      !/[\w.+-]+@[\w-]+\.[a-z]{2,}/i.test(source),
+      'bot-detection.js is published to npm and must not hardcode personal emails',
+    );
   });
 });
