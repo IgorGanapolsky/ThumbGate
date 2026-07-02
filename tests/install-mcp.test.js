@@ -35,8 +35,10 @@ function assertLatestResolvingMcpConfig(entry) {
   assert.equal(entry.command, 'sh');
   assert.deepEqual(entry.args.slice(0, 1), ['-lc']);
   assert.match(entry.args[1], /thumbgate@latest/);
-  assert.match(entry.args[1], /npm "install"/);
-  assert.doesNotMatch(entry.args[1], /\[ -x /);
+  // Fast-start form: exec the installed runtime binary, resolving @latest via
+  // npx only when it is absent. Must not block startup on a per-launch reinstall.
+  assert.match(entry.args[1], /\[ -x /);
+  assert.doesNotMatch(entry.args[1], /npm "install"/);
   assert.match(entry.args[1], /\.thumbgate\/runtime/);
   assert.match(entry.args[1], /thumbgate/);
   assert.match(entry.args[1], /serve/);
@@ -122,8 +124,8 @@ describe('install-mcp', () => {
     assert.equal(projectConfig.command, 'sh');
     assert.deepEqual(projectConfig.args.slice(0, 1), ['-lc']);
     assert.match(projectConfig.args[1], /thumbgate@latest/);
-    assert.match(projectConfig.args[1], /npm "install"/);
-    assert.doesNotMatch(projectConfig.args[1], /\[ -x /);
+    assert.match(projectConfig.args[1], /\[ -x /);
+    assert.doesNotMatch(projectConfig.args[1], /npm "install"/);
     assert.match(projectConfig.args[1], /\.thumbgate\/runtime/);
     assert.match(projectConfig.args[1], /serve/);
 
