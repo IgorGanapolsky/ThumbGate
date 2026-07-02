@@ -643,6 +643,22 @@ Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recal
 
 ---
 
+## Who builds ThumbGate — and hiring me
+
+I'm **Igor Ganapolsky** — I designed and maintain ThumbGate. If you're shipping **payments, AI agents, or Android features** and want them built by someone demonstrably careful with production and with money, I take a small number of **freelance / contract** engagements.
+
+ThumbGate is the receipt, not the pitch: it fails *closed* on dangerous agent actions and publishes a [threat model](THREAT_MODEL.md) stating exactly what it enforces and what it can't contain. Documenting where my own guardrails end is the standard I hold client work to.
+
+- **Payments** — Stripe / Stripe Connect: destination charges, split payouts, escrow & milestone release, 3DS/SCA, idempotent webhooks, reconciliation.
+- **Applied AI / agents** — tool-use guardrails, MCP servers, orchestration, and evaluation loops (the engineering behind this repo).
+- **Android + backend** — native Android and the APIs behind it, shipped end-to-end.
+
+**$120–150/hr, 1099 · remote, US timezones** → **[LinkedIn](https://www.linkedin.com/in/igor-ganapolsky-859317343/)** · **[thumbgate.ai](https://thumbgate.ai)**
+
+> ThumbGate is free and MIT-licensed, and stays that way. If it saved you a costly mistake, the best thank-you is an intro to someone who needs an engineer who ships carefully.
+
+---
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
