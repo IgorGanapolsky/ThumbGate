@@ -122,18 +122,6 @@ describe('SEO guide and comparison pages', () => {
     });
   }
 
-  it('agent harness optimization guide links machine-readable harness proof', () => {
-    const html = fs.readFileSync(
-      path.join(PUBLIC_DIR, 'guides/agent-harness-optimization.html'),
-      'utf-8'
-    );
-
-    assert.ok(
-      html.includes('proof/harnesses-report.json'),
-      'agent harness guide should link machine-readable harness proof'
-    );
-  });
-
   it('browser safety guide routes readers into the native messaging audit', () => {
     const html = fs.readFileSync(
       path.join(PUBLIC_DIR, 'guides/browser-automation-safety.html'),

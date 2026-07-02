@@ -25,6 +25,12 @@ const FORBIDDEN_DIRS = [
   '.claude/implementation-notes',
   '.claude/ralph',
   'docs/marketing',
+  // 2026-07-02: internal operator artifacts — generated reports (some naming
+  // third parties), local proof artifacts, and session memory logs must never
+  // be tracked in the public tree. Regenerate locally; keep out of git.
+  'reports',
+  'proof',
+  'memory',
 ];
 
 const FORBIDDEN_FILE_PATTERNS = [

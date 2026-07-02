@@ -12,7 +12,6 @@ test('guide keeps proof-backed conversion links close to the install path', () =
   assert.match(GUIDE_HTML, /Commercial Truth/);
   assert.match(GUIDE_HTML, /docs\/COMMERCIAL_TRUTH\.md/);
   assert.match(GUIDE_HTML, /Verification Evidence/);
-  assert.match(GUIDE_HTML, /proof\/automation\/report\.json/);
 });
 
 test('guide explains when to use Pro versus the workflow hardening sprint', () => {

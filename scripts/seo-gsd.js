@@ -12,7 +12,6 @@ const PRODUCT = {
   repoUrl: 'https://github.com/IgorGanapolsky/ThumbGate',
   homepageUrl: 'https://thumbgate.ai',
   verificationUrl: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
-  automationUrl: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json',
   sprintDiagnosticPaymentUrl: 'https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e',
   workflowSprintPaymentUrl: 'https://buy.stripe.com/fZu9AT76saPsg4pbCr3sI0f',
   compatibility: ['Claude Code', 'Cursor', 'Codex', 'Gemini', 'Amp', 'OpenCode'],
@@ -3389,10 +3388,6 @@ function createPageSpec(blueprint, row) {
     },
     proofLinks: [
       { label: 'Verification evidence', href: PRODUCT.verificationUrl },
-      { label: 'Automation proof', href: PRODUCT.automationUrl },
-      ...(blueprint.path === '/guides/agent-harness-optimization'
-        ? [{ label: 'Harness proof', href: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/harnesses-report.json' }]
-        : []),
       { label: 'GitHub repository', href: PRODUCT.repoUrl },
     ],
     changefreq: blueprint.pageType === 'comparison' ? 'weekly' : 'monthly',
