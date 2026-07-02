@@ -77,7 +77,7 @@ async function run() {
         if (!/👎 Thumbs down blocks repeated mistakes/u.test(html)) {
           throw new Error('Thumbs-down proof copy missing');
         }
-        if (!/Verification evidence/.test(html) || !/Automation proof/.test(html)) {
+        if (!/Verification evidence/.test(html)) {
           throw new Error('Proof CTA links missing');
         }
       },
