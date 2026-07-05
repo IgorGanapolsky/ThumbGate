@@ -20,7 +20,7 @@ const POSTHOG_STATIC_PATH_PREFIX = '/static/';
 // Stripe catalog, with the per-tier thumbnails wired in. Re-run the
 // bootstrap workflow to regenerate; the new URLs surface in the workflow
 // summary log.
-const FIRST_FAILURE_RULE_CHECKOUT_URL = 'https://buy.stripe.com/fZu28rfCY6zcbO99uj3sI2G';
+const FIRST_FAILURE_RULE_CHECKOUT_URL = 'https://buy.stripe.com/7sY6oHaiEbTw6tP5e33sI3e';
 const QUICK_READ_CHECKOUT_URL = 'https://buy.stripe.com/5kQ7sL76s1eSaK55e33sI2H';
 const WORKFLOW_TEARDOWN_CHECKOUT_URL = 'https://buy.stripe.com/8x214n2Qc4r44lHayn3sI2I';
 const SPRINT_DIAGNOSTIC_CHECKOUT_URL = 'https://buy.stripe.com/28E00j3Uge1E2dzgWL3sI2J';
@@ -6093,7 +6093,7 @@ async function addContext(){
       // pro Stripe Payment Link, preserving UTM + attribution metadata via
       // buildCheckoutFallbackUrl. Default-off; bot-deflection still applies
       // (bot + no email hint still falls through to the existing interstitial).
-      const interstitialBypassEnabled = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS === '1';
+      const interstitialBypassEnabled = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS !== '0';
       const interstitialSampleRate = normalizeCheckoutInterstitialSampleRate(
         process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE
       );
