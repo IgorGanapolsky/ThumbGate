@@ -2245,10 +2245,9 @@ a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:
 <h1>Start ThumbGate Pro</h1>
 <div class="price">$19<small>/mo</small></div>
 <p>The npm package runs your gates locally. <strong>Pro</strong> is what keeps them working across every machine, every agent runtime, and every breaking-change week.</p>
-<form action="/checkout/pro" method="GET" data-i="pro_checkout_confirmed">
+<form action="https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f" method="GET" data-i="pro_checkout_confirmed">
 ${hiddenInputs}
-<input type="hidden" name="confirm" value="1">
-<input type="email" name="customer_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email">
+<input type="email" name="prefilled_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email">
 <p class="email-note">Optional. Stripe can collect your email on the secure checkout page.</p>
 <button type="submit" class="primary">Pay $19/mo with Stripe →</button>
 </form>
