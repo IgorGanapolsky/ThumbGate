@@ -16,8 +16,4 @@ Key: Always dogfood the latest local changes before publishing.
 
 ## 🛡️ Self-Harness Prevention Rules (Auto-Generated)
 
-> [!IMPORTANT]
-> The following rules were automatically derived from execution failures and thumbs-down feedback.
-> You MUST follow these constraints strictly to prevent repeated errors.
-
-- **Rule [auto-promoted-mr3rwu9r-0]**: NEVER repeated problem context string
+- No active auto-generated prevention rules at this time.
