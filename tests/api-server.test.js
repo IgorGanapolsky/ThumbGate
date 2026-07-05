@@ -1839,7 +1839,7 @@ test('checkout bootstrap route preserves attribution and records first-party tel
 // confused humans for money before they saw the offer). Post-change: GETs
 // render the interstitial; only POST or ?confirm=1 triggers a Stripe session.
 
-test('checkout interstitial: GET without confirm=1 (human UA) renders the interstitial HTML, no Stripe session', async () => {
+test('checkout interstitial: GET without confirm=1 (human UA) bypasses to Stripe Payment Link by default', async () => {
   const res = await fetch(apiUrl('/checkout/pro?plan_id=pro&billing_cycle=monthly&utm_campaign=%3Cimg%20src=x%20onerror=alert(1)%3E&not_allowed=%3Csvg%20onload=alert(1)%3E'), {
     redirect: 'manual',
     headers: {
@@ -1847,29 +1847,10 @@ test('checkout interstitial: GET without confirm=1 (human UA) renders the inters
       accept: 'text/html,application/xhtml+xml',
     },
   });
-  assert.equal(res.status, 200, 'human GET without confirm must NOT 302 to Stripe');
-  const body = await res.text();
-  assert.match(body, /Start ThumbGate Pro/i);
-  assert.match(body, /\$19/);
-  assert.match(body, /data-domain="thumbgate\.ai"/);
-  assert.doesNotMatch(body, /data-domain="thumbgate-production\.up\.railway\.app"/);
-  // Form links directly to Stripe Payment Link (fix: 99 visitors, 0 paid — server-side session creation was broken)
-  assert.match(body, /buy\.stripe\.com\//);
-  const emailInputMatch = body.match(/<input[^>]+name="prefilled_email"[^>]*>/i);
-  assert.ok(emailInputMatch, 'email input should remain visible for buyers who want checkout recovery');
-  assert.doesNotMatch(emailInputMatch[0], /\srequired(?:\s|=|>)/i, 'email must stay optional before Stripe so confirmed buyers can reach checkout');
-  assert.match(body, /Stripe can collect your email on the secure checkout page/);
-  assert.match(body, /Not sure yet\? Send the workflow first/);
-  assert.doesNotMatch(body, /Pay \$1 first rule/);
-  assert.doesNotMatch(body, /Pay \$99 teardown/);
-  assert.doesNotMatch(body, /Book \$499 diagnostic/);
-  assert.doesNotMatch(body, /Start \$1500 sprint/);
-
-  // Telemetry: a human view (not a bot) emits checkout_interstitial_view,
-  // not checkout_bot_deflected.
-  const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
-  const interstitialEvent = telemetryEvents.find((entry) => entry.eventType === 'checkout_interstitial_view');
-  assert.ok(interstitialEvent, 'expected checkout_interstitial_view telemetry for human GET');
+  // Bypass is now ON by default — human GETs 302 straight to Stripe Payment Link
+  assert.equal(res.status, 302, 'human GET without confirm should 302 to Stripe (bypass enabled)');
+  const location = res.headers.get('location') || '';
+  assert.match(location, /buy\.stripe\.com\//, 'redirect target must be a Stripe Payment Link');
 });
 
 test('checkout interstitial: GET with confirm=1 (human UA) bypasses interstitial and proceeds to Stripe redirect', async () => {
