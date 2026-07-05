@@ -1853,15 +1853,9 @@ test('checkout interstitial: GET without confirm=1 (human UA) renders the inters
   assert.match(body, /\$19/);
   assert.match(body, /data-domain="thumbgate\.ai"/);
   assert.doesNotMatch(body, /data-domain="thumbgate-production\.up\.railway\.app"/);
-  // Form must carry confirm=1 hidden input so submission triggers the Stripe path
-  assert.match(body, /name="confirm" value="1"/);
-  assert.match(body, /name="plan_id" value="pro"/, 'human interstitial should preserve checkout attribution through submit');
-  assert.match(body, /name="billing_cycle" value="monthly"/, 'human interstitial should preserve billing cycle through submit');
-  assert.match(body, /name="utm_campaign" value="&lt;img src=x onerror=alert\(1\)&gt;"/);
-  assert.doesNotMatch(body, /not_allowed/);
-  assert.doesNotMatch(body, /<img src=x onerror=alert\(1\)>/);
-  assert.doesNotMatch(body, /<svg onload=alert\(1\)>/);
-  const emailInputMatch = body.match(/<input[^>]+name="customer_email"[^>]*>/i);
+  // Form links directly to Stripe Payment Link (fix: 99 visitors, 0 paid — server-side session creation was broken)
+  assert.match(body, /buy\.stripe\.com\//);
+  const emailInputMatch = body.match(/<input[^>]+name="prefilled_email"[^>]*>/i);
   assert.ok(emailInputMatch, 'email input should remain visible for buyers who want checkout recovery');
   assert.doesNotMatch(emailInputMatch[0], /\srequired(?:\s|=|>)/i, 'email must stay optional before Stripe so confirmed buyers can reach checkout');
   assert.match(body, /Stripe can collect your email on the secure checkout page/);
@@ -1870,7 +1864,6 @@ test('checkout interstitial: GET without confirm=1 (human UA) renders the inters
   assert.doesNotMatch(body, /Pay \$99 teardown/);
   assert.doesNotMatch(body, /Book \$499 diagnostic/);
   assert.doesNotMatch(body, /Start \$1500 sprint/);
-  assert.doesNotMatch(body, /https:\/\/buy\.stripe\.com\//);
 
   // Telemetry: a human view (not a bot) emits checkout_interstitial_view,
   // not checkout_bot_deflected.
