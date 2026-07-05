@@ -228,7 +228,7 @@ describe('/checkout/pro bot guard', () => {
     }
   });
 
-  it('interstitial checkout uses a form (not a link) so crawlers cannot follow it', async () => {
+  it('interstitial checkout links directly to Stripe so crawlers see the form but cannot create sessions', async () => {
     const res = await fetch(`${origin}/checkout/pro`, {
       redirect: 'manual',
       headers: {
@@ -237,12 +237,11 @@ describe('/checkout/pro bot guard', () => {
       },
     });
     const body = await res.text();
-    assert.match(body, /<form action="\/checkout\/pro"/);
-    assert.match(body, /name="confirm" value="1"/);
-    assert.match(body, /name="customer_email"/);
-    assert.doesNotMatch(body, /name="customer_email"[^>]*required/);
+    // Form now links directly to Stripe Payment Link (fix: 99 visitors, 0 paid)
+    assert.match(body, /<form action="https:\/\/buy\.stripe\.com\//);
+    assert.match(body, /name="prefilled_email"/);
+    assert.doesNotMatch(body, /name="prefilled_email"[^>]*required/);
     assert.match(body, /Stripe can collect your email on the secure checkout page/);
-    assert.doesNotMatch(body, /<a[^>]+confirm=1/, 'confirm=1 must not be in a crawlable anchor');
   });
 
   it('returns HTML interstitial for link-preview bots (Slackbot, LinkedInBot, Twitterbot)', async () => {
