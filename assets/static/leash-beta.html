@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hermes Safeguards & ThumbGate Leash — Early Beta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #0B0F19;
+      --card-bg: rgba(17, 24, 39, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent-color: #00F2FE;
+      --accent-glow: rgba(0, 242, 254, 0.35);
+      --purple-accent: #8A2BE2;
+      --text-main: #F3F4F6;
+      --text-muted: #9CA3AF;
+      --success-color: #10B981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      line-height: 1.6;
+      overflow-x: hidden;
+      min-height: 100vh;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(138, 43, 226, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(0, 242, 254, 0.1) 0%, transparent 40%);
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 0;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 4rem;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .logo-badge {
+      background: linear-gradient(135deg, var(--accent-color), var(--purple-accent));
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.3rem;
+      color: #0B0F19;
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    .logo-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 1.4rem;
+      letter-spacing: -0.5px;
+      background: linear-gradient(to right, #FFF, var(--accent-color));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .version-tag {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.8rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      color: var(--accent-color);
+    }
+
+    /* Hero Section */
+    .hero {
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto 5rem auto;
+    }
+
+    h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 3.5rem;
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 1.5rem;
+      letter-spacing: -1.5px;
+      background: linear-gradient(to right, #FFF, #E5E7EB, var(--accent-color));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+      font-weight: 300;
+    }
+
+    /* Grid Layout */
+    .grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 3rem;
+      margin-bottom: 6rem;
+    }
+
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 2.5rem;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Feature Tabs */
+    .tabs-nav {
+      display: flex;
+      gap: 0.5rem;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 0.35rem;
+      border-radius: 12px;
+      margin-bottom: 2rem;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 500;
+      padding: 0.75rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn.active {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--accent-color);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Code Block Preview */
+    .preview-block {
+      background: rgba(5, 7, 12, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 1.5rem;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.9rem;
+      overflow-x: auto;
+      margin-top: 1.5rem;
+    }
+
+    .preview-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .circle {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .red { background: #FF5F56; }
+    .yellow { background: #FFBD2E; }
+    .green { background: #27C93F; }
+
+    /* Interactive Pricing Picker */
+    .tier-select {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .tier-option {
+      border: 2px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.25rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s ease;
+      background: rgba(255, 255, 255, 0.01);
+    }
+
+    .tier-option:hover {
+      border-color: rgba(0, 242, 254, 0.3);
+      background: rgba(0, 242, 254, 0.02);
+    }
+
+    .tier-option.selected {
+      border-color: var(--accent-color);
+      background: rgba(0, 242, 254, 0.05);
+      box-shadow: 0 0 20px rgba(0, 242, 254, 0.1);
+    }
+
+    .tier-details h3 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.15rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .tier-details p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .tier-price {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent-color);
+    }
+
+    /* Form Styles */
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+
+    input[type="email"] {
+      width: 100%;
+      background: rgba(5, 7, 12, 0.6);
+      border: 1px solid var(--card-border);
+      padding: 0.85rem 1rem;
+      border-radius: 12px;
+      color: #FFF;
+      font-size: 1rem;
+      transition: all 0.2s ease;
+    }
+
+    input[type="email"]:focus {
+      outline: none;
+      border-color: var(--accent-color);
+      box-shadow: 0 0 10px rgba(0, 242, 254, 0.15);
+    }
+
+    .submit-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent-color), var(--purple-accent));
+      border: none;
+      padding: 1rem;
+      border-radius: 12px;
+      color: #0B0F19;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(0, 242, 254, 0.5);
+    }
+
+    /* Success Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(5, 7, 12, 0.85);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 100;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal {
+      background: var(--bg-color);
+      border: 1px solid var(--accent-color);
+      border-radius: 24px;
+      padding: 3rem;
+      text-align: center;
+      max-width: 450px;
+      box-shadow: 0 10px 40px rgba(0, 242, 254, 0.15);
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.active .modal {
+      transform: scale(1);
+    }
+
+    .success-icon {
+      font-size: 4rem;
+      color: var(--success-color);
+      margin-bottom: 1.5rem;
+    }
+
+    .modal h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .modal p {
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+    }
+
+    .close-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--card-border);
+      color: #FFF;
+      padding: 0.75rem 2rem;
+      border-radius: 12px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .close-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="logo-container">
+        <div class="logo-badge">H</div>
+        <div class="logo-text">Hermes Safeguards</div>
+      </div>
+      <div class="version-tag">status: beta_ready</div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <h1>Stop Runaway AI Agents From Freezing Your Machine</h1>
+        <p class="hero-subtitle">
+          An OS-level watchdog and mobile haptic approvals gate for Cursor, Claude Code, Aider, and custom OpenClaw agents.
+        </p>
+      </section>
+
+      <section class="grid">
+        <!-- Feature Previews -->
+        <div class="card">
+          <h2 style="font-family: 'Space Grotesk', sans-serif; margin-bottom: 1.5rem;">How it works</h2>
+          <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchTab('watchdog')">OS Watchdog</button>
+            <button class="tab-btn" onclick="switchTab('leash')">Leash Pro Tab</button>
+            <button class="tab-btn" onclick="switchTab('openclaw')">OpenClaw Bridge</button>
+          </div>
+
+          <!-- Watchdog Content -->
+          <div id="watchdog-tab" class="tab-content active">
+            <p style="color: var(--text-muted); margin-bottom: 1rem;">
+              The background LaunchAgent daemon runs locally on your Mac. If your agent enters an infinite loop, leaks memory, or freezes simulator targets, the watchdog intercepts and reaps the processes while keeping your GUI safe.
+            </p>
+            <div class="preview-block">
+              <div class="preview-header">
+                <div class="circle red"></div>
+                <div class="circle yellow"></div>
+                <div class="circle green"></div>
+              </div>
+              <div style="color: #6EE7B7;">❯ tail -f ~/Library/Logs/hermes-watchdog.log</div>
+              <div style="color: #9CA3AF; margin-top: 0.5rem;">
+                [2026-07-05 18:32:00] WATCHDOG active (PID 19452)<br>
+                [2026-07-05 18:32:45] WARNING: process 'claude' (PID 19804) CPU at 96% for 60s<br>
+                [2026-07-05 18:33:45] REAPED process 'claude' (PID 19804) — Stuck loop detected<br>
+                [2026-07-05 18:33:46] Notification dispatched: "Run reaped safely"
+              </div>
+            </div>
+          </div>
+
+          <!-- Leash Content -->
+          <div id="leash-tab" class="tab-content">
+            <p style="color: var(--text-muted); margin-bottom: 1rem;">
+              Leash redirects expensive or destructive command executions (like server starts, database migrations, or pushes) to your phone for confirmation, complete with full visual diffs and haptic warnings.
+            </p>
+            <div class="preview-block">
+              <div class="preview-header">
+                <div class="circle red"></div>
+                <div class="circle yellow"></div>
+                <div class="circle green"></div>
+              </div>
+              <div style="color: #FF80BF;">🔒 THUMBGATE LEASH — Pending Approval</div>
+              <div style="color: #9CA3AF; margin-top: 0.5rem;">
+                Tool: bash<br>
+                Cmd:  git push origin production --force<br>
+                Diff: <span style="color: #EF4444;">-const STAGING = true;</span><br>
+                      <span style="color: #10B981;">+const PRODUCTION = true;</span><br>
+                -------------------------------------<br>
+                [Approve (Once)]  [Approve (Permanent)]  [Deny]
+              </div>
+            </div>
+          </div>
+
+          <!-- OpenClaw Content -->
+          <div id="openclaw-tab" class="tab-content">
+            <p style="color: var(--text-muted); margin-bottom: 1rem;">
+              Bridge OpenClaw’s messaging routing with Leash. Execute terminal scripts via WhatsApp, Telegram, or Discord while keeping the secure approvals control plane safely locked on your mobile screen.
+            </p>
+            <div class="preview-block">
+              <div class="preview-header">
+                <div class="circle red"></div>
+                <div class="circle yellow"></div>
+                <div class="circle green"></div>
+              </div>
+              <div style="color: #00F2FE;">💬 WhatsApp Gateway -> OpenClaw</div>
+              <div style="color: #9CA3AF; margin-top: 0.5rem;">
+                Operator: "run build:prod"<br>
+                OpenClaw: "Forwarding build command to Leash..."<br>
+                [Phone Notification: "Waiting for approval"]<br>
+                Operator (taps phone): Approve ✓<br>
+                OpenClaw: "Build succeeded. Output: production build complete."
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Call-to-action Card -->
+        <div class="card">
+          <h2 style="font-family: 'Space Grotesk', sans-serif; margin-bottom: 1rem;">Get early access</h2>
+          <p style="color: var(--text-muted); margin-bottom: 2rem; font-size: 0.95rem;">
+            Hermes Mobile stays free. Lock founding <strong>Leash Pro</strong> pricing before public App Store launch — 14-day refund if pairing fails.
+          </p>
+
+          <div class="tier-select">
+            <div class="tier-option selected" onclick="selectTier(this, 'founding', 9)">
+              <div class="tier-details">
+                <h3>Founding Leash Pro</h3>
+                <p>$9/mo for 12 months, then $19/mo · first 200 seats</p>
+              </div>
+              <div class="tier-price">$9<span style="font-size:0.9rem;color:var(--text-muted)">/mo</span></div>
+            </div>
+
+            <div class="tier-option" onclick="selectTier(this, 'year', 49)">
+              <div class="tier-details">
+                <h3>Founding Year</h3>
+                <p>12 months Leash Pro · one-time · 100 seats</p>
+              </div>
+              <div class="tier-price">$49</div>
+            </div>
+
+            <div class="tier-option" onclick="selectTier(this, 'lifetime', 149)">
+              <div class="tier-details">
+                <h3>Gate Keeper Lifetime</h3>
+                <p>Leash Pro forever · capped at 150 seats</p>
+              </div>
+              <div class="tier-price">$149</div>
+            </div>
+          </div>
+
+          <!-- Replace STRIPE_LINKS values with live Stripe Payment Link URLs from dashboard -->
+          <form id="signup-form" onsubmit="handleSignup(event)">
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input type="email" id="email" required placeholder="you@domain.com">
+            </div>
+            <button type="submit" class="submit-btn" id="submit-button">Lock founding Pro — $9/mo</button>
+          </form>
+          <p style="color: var(--text-muted); margin-top: 1rem; font-size: 0.8rem;">
+            Free tier: in-chat approve/deny + ThumbGate thumbs. VIP setup ($79) and Team Shield ($299) —
+            <a href="mailto:igor.ganapolsky@icloud.com?subject=Hermes%20Team%20Shield" style="color: var(--accent-color);">email us</a>.
+          </p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Success Modal -->
+  <div class="modal-overlay" id="success-overlay">
+    <div class="modal">
+      <div class="success-icon">✓</div>
+      <h2 id="success-title">You're in!</h2>
+      <p id="success-message">Thanks for supporting Hermes. We have reserved your spot in the early access beta. Look out for an email with your access keys shortly.</p>
+      <button class="close-btn" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+
+  <script>
+    // Paste Stripe Payment Link URLs after creating products in dashboard.
+    const STRIPE_LINKS = {
+      founding: '', // $9/mo founding Leash Pro subscription
+      year: '',     // $49 one-time founding year
+      lifetime: '', // $149 capped lifetime Gate Keeper
+    };
+
+    let activeTier = 'founding';
+    let activePrice = 9;
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      
+      event.target.classList.add('active');
+      document.getElementById(`${tabId}-tab`).classList.add('active');
+    }
+
+    function selectTier(element, tier, price) {
+      document.querySelectorAll('.tier-option').forEach(opt => opt.classList.remove('selected'));
+      element.classList.add('selected');
+      activeTier = tier;
+      activePrice = price;
+
+      const btn = document.getElementById('submit-button');
+      if (tier === 'founding') {
+        btn.textContent = 'Lock founding Pro — $9/mo';
+      } else if (tier === 'year') {
+        btn.textContent = 'Pay $49 — founding year';
+      } else {
+        btn.textContent = 'Pay $149 — Gate Keeper lifetime';
+      }
+    }
+
+    function handleSignup(event) {
+      event.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const stripeUrl = STRIPE_LINKS[activeTier];
+
+      if (stripeUrl) {
+        const url = new URL(stripeUrl);
+        url.searchParams.set('prefilled_email', email);
+        url.searchParams.set('client_reference_id', activeTier);
+        window.location.href = url.toString();
+        return;
+      }
+
+      const title = document.getElementById('success-title');
+      const message = document.getElementById('success-message');
+      title.textContent = 'Almost there — wire Stripe Payment Links';
+      message.textContent =
+        `Selected ${activeTier} ($${activePrice}) for ${email}. ` +
+        'Paste live Stripe Payment Link URLs into STRIPE_LINKS in this page, or connect Tally/Loops webhook. ' +
+        'See hermes-mobile/docs/BETA-LAUNCH-CAMPAIGN-RESEARCH.md.';
+
+      document.getElementById('success-overlay').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('success-overlay').classList.remove('active');
+      document.getElementById('signup-form').reset();
+    }
+  </script>
+</body>
+</html>
