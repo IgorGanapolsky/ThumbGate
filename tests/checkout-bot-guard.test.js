@@ -90,7 +90,7 @@ describe('/checkout/pro bot guard', () => {
     assert.match(body, /data-reason="need_team_plan"/);
     assert.match(body, /reason_not_buying/);
     assert.match(body, /checkout_interstitial_abandoned/);
-    assert.match(body, /name="confirm" value="1"/);
+    assert.match(body, /buy\.stripe\.com\//);
     assert.doesNotMatch(body, /Pay \$1 first rule/);
     assert.doesNotMatch(body, /Pay \$19 quick read/);
     assert.doesNotMatch(body, /Pay \$99 teardown/);
@@ -101,7 +101,8 @@ describe('/checkout/pro bot guard', () => {
     assert.doesNotMatch(body, /checkout_interstitial_workflow_teardown_checkout/);
     assert.doesNotMatch(body, /checkout_interstitial_sprint_diagnostic_checkout/);
     assert.doesNotMatch(body, /checkout_interstitial_workflow_sprint_checkout/);
-    assert.doesNotMatch(body, /https:\/\/buy\.stripe\.com\//);
+    // Bots can see the Payment Link in the form action — they can't submit forms.
+    // What matters is no Stripe checkout SESSION was created (no checkout.stripe.com).
     assert.doesNotMatch(body, /checkout\.stripe\.com/);
   });
 
@@ -228,7 +229,7 @@ describe('/checkout/pro bot guard', () => {
     }
   });
 
-  it('interstitial checkout uses a form (not a link) so crawlers cannot follow it', async () => {
+  it('interstitial checkout links directly to Stripe so crawlers see the form but cannot create sessions', async () => {
     const res = await fetch(`${origin}/checkout/pro`, {
       redirect: 'manual',
       headers: {
@@ -237,12 +238,11 @@ describe('/checkout/pro bot guard', () => {
       },
     });
     const body = await res.text();
-    assert.match(body, /<form action="\/checkout\/pro"/);
-    assert.match(body, /name="confirm" value="1"/);
-    assert.match(body, /name="customer_email"/);
-    assert.doesNotMatch(body, /name="customer_email"[^>]*required/);
+    // Form now links directly to Stripe Payment Link (fix: 99 visitors, 0 paid)
+    assert.match(body, /<form action="https:\/\/buy\.stripe\.com\//);
+    assert.match(body, /name="prefilled_email"/);
+    assert.doesNotMatch(body, /name="prefilled_email"[^>]*required/);
     assert.match(body, /Stripe can collect your email on the secure checkout page/);
-    assert.doesNotMatch(body, /<a[^>]+confirm=1/, 'confirm=1 must not be in a crawlable anchor');
   });
 
   it('returns HTML interstitial for link-preview bots (Slackbot, LinkedInBot, Twitterbot)', async () => {
@@ -406,7 +406,7 @@ describe('/checkout/pro bot guard', () => {
     }
   });
 
-  it('shows real browsers the intent interstitial before checkout session creation', async () => {
+  it('bypasses real browsers directly to Stripe Payment Link', async () => {
     try { fs.unlinkSync(path.join(ENV.THUMBGATE_FEEDBACK_DIR, 'telemetry-pings.jsonl')); } catch {}
     const res = await fetch(`${origin}/checkout/pro`, {
       redirect: 'manual',
@@ -415,22 +415,10 @@ describe('/checkout/pro bot guard', () => {
         accept: BROWSER_ACCEPT,
       },
     });
-    assert.equal(res.status, 200, `expected checkout interstitial, got ${res.status}`);
-    const body = await res.text();
-    assert.match(body, /Start ThumbGate Pro/);
-    assert.match(body, /name="confirm" value="1"/);
-
-    const events = readFunnelEvents();
-    assert.equal(
-      events.filter((e) => e.eventType === 'checkout_interstitial_view').length,
-      1,
-      'real browsers should see the intent interstitial before Stripe',
-    );
-    assert.equal(
-      events.filter((e) => e.eventType === 'checkout_bootstrap').length,
-      0,
-      'unconfirmed real browsers must not create checkout sessions',
-    );
+    // Bypass is ON by default — real browsers 302 straight to Stripe
+    assert.equal(res.status, 302, `expected Stripe redirect, got ${res.status}`);
+    const location = res.headers.get('location') || '';
+    assert.match(location, /buy\.stripe\.com\//);
   });
 
   it('lets confirmed real browsers reach checkout and defer email capture to Stripe', async () => {
