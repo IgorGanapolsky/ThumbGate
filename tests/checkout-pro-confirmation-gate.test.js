@@ -75,37 +75,16 @@ describe('/checkout/pro confirmation gate (closes 0/50 conversion leak)', () => 
     }
   });
 
-  it('real-browser GET without confirm → 200 interstitial, NO Stripe session created', async () => {
+  it('real-browser GET without confirm → 302 bypass to Stripe Payment Link', async () => {
     clearTelemetry();
     const res = await fetch(`${origin}/checkout/pro`, {
       redirect: 'manual',
       headers: { 'user-agent': BROWSER_UA, accept: BROWSER_ACCEPT },
     });
-    assert.equal(res.status, 200, 'real-browser bare GET must serve the interstitial, not 302 to Stripe');
-    const body = await res.text();
-    assert.match(body, /Start ThumbGate Pro/);
-    assert.match(body, /Pay \$19\/mo with Stripe/);
-    assert.match(body, /name="confirm" value="1"/, 'interstitial must include the confirm field as the primary CTA');
-    assert.doesNotMatch(body, /name="customer_email"[^>]*required/, 'email must be optional before Stripe so the interstitial does not block checkout starts');
-    assert.match(body, /Stripe can collect your email/);
-    assert.match(body, /Not sure yet\? Send the workflow first/);
-    assert.doesNotMatch(body, /Pay \$1 first rule/);
-    assert.doesNotMatch(body, /Pay \$99 teardown/);
-    assert.doesNotMatch(body, /Book \$499 diagnostic/);
-    assert.doesNotMatch(body, /Start \$1500 sprint/);
-    assert.doesNotMatch(body, /https:\/\/buy\.stripe\.com\//, 'Pro interstitial must not expose unrelated Payment Links');
-    assert.doesNotMatch(body, /checkout\.stripe\.com/, 'interstitial must not pre-leak a Stripe URL');
-
-    const events = readTelemetry();
-    assert.ok(
-      events.some((e) => e.eventType === 'checkout_interstitial_view' && e.isBot === 'false'),
-      'real-browser interstitial view should fire checkout_interstitial_view with isBot=false',
-    );
-    assert.equal(
-      events.filter((e) => e.eventType === 'checkout_bootstrap').length,
-      0,
-      'bare GET must NOT create a Stripe session — that was the 0/50 conversion leak',
-    );
+    // Bypass is ON by default — real browsers 302 straight to Stripe
+    assert.equal(res.status, 302, 'real-browser bare GET should 302 to Stripe (bypass enabled)');
+    const location = res.headers.get('location') || '';
+    assert.match(location, /buy\.stripe\.com\//, 'redirect target must be a Stripe Payment Link');
   });
 
   it('real-browser GET WITH ?confirm=1 but no email → 302 toward checkout and defers email to Stripe', async () => {

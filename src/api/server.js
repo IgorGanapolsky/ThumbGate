@@ -20,7 +20,7 @@ const POSTHOG_STATIC_PATH_PREFIX = '/static/';
 // Stripe catalog, with the per-tier thumbnails wired in. Re-run the
 // bootstrap workflow to regenerate; the new URLs surface in the workflow
 // summary log.
-const FIRST_FAILURE_RULE_CHECKOUT_URL = 'https://buy.stripe.com/fZu28rfCY6zcbO99uj3sI2G';
+const FIRST_FAILURE_RULE_CHECKOUT_URL = 'https://buy.stripe.com/7sY6oHaiEbTw6tP5e33sI3e';
 const QUICK_READ_CHECKOUT_URL = 'https://buy.stripe.com/5kQ7sL76s1eSaK55e33sI2H';
 const WORKFLOW_TEARDOWN_CHECKOUT_URL = 'https://buy.stripe.com/8x214n2Qc4r44lHayn3sI2I';
 const SPRINT_DIAGNOSTIC_CHECKOUT_URL = 'https://buy.stripe.com/28E00j3Uge1E2dzgWL3sI2J';
@@ -2245,10 +2245,9 @@ a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:
 <h1>Start ThumbGate Pro</h1>
 <div class="price">$19<small>/mo</small></div>
 <p>The npm package runs your gates locally. <strong>Pro</strong> is what keeps them working across every machine, every agent runtime, and every breaking-change week.</p>
-<form action="/checkout/pro" method="GET" data-i="pro_checkout_confirmed">
+<form action="https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f" method="GET" data-i="pro_checkout_confirmed">
 ${hiddenInputs}
-<input type="hidden" name="confirm" value="1">
-<input type="email" name="customer_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email">
+<input type="email" name="prefilled_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email">
 <p class="email-note">Optional. Stripe can collect your email on the secure checkout page.</p>
 <button type="submit" class="primary">Pay $19/mo with Stripe →</button>
 </form>
@@ -6094,7 +6093,7 @@ async function addContext(){
       // pro Stripe Payment Link, preserving UTM + attribution metadata via
       // buildCheckoutFallbackUrl. Default-off; bot-deflection still applies
       // (bot + no email hint still falls through to the existing interstitial).
-      const interstitialBypassEnabled = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS === '1';
+      const interstitialBypassEnabled = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS !== '0';
       const interstitialSampleRate = normalizeCheckoutInterstitialSampleRate(
         process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE
       );
