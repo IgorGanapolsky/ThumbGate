@@ -4377,4 +4377,32 @@ test('/broker-audit returns 500 problem-json when static asset is missing', asyn
   }
 });
 
+test('/leash-beta serves the Hermes founding beta landing page', async () => {
+  const res = await fetch(apiUrl('/leash-beta'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+
+  const body = await res.text();
+  assert.match(body, /Stop Runaway AI Agents From Freezing Your Machine/);
+  assert.match(body, /Founding Leash Pro/);
+  assert.match(body, /status: beta_ready/);
+
+  const head = await fetch(apiUrl('/leash-beta'), { method: 'HEAD' });
+  assert.equal(head.status, 200);
+});
+
+test('/leash-beta returns 500 problem-json when static asset is missing', async () => {
+  const assetPath = path.resolve(__dirname, '..', 'assets', 'static', 'leash-beta.html');
+  const backupPath = `${assetPath}.swap-${process.pid}`;
+  fs.renameSync(assetPath, backupPath);
+  try {
+    const res = await fetch(apiUrl('/leash-beta'));
+    assert.equal(res.status, 500);
+    const body = await res.json();
+    assert.equal(body.error, 'leash-beta page unavailable');
+  } finally {
+    fs.renameSync(backupPath, assetPath);
+  }
+});
+
 }

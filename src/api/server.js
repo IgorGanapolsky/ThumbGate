@@ -6492,6 +6492,25 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/leash-beta') {
+      // Hermes Mobile founding beta landing (mac-yolo-safeguards/hermes-mobile/docs/beta-page).
+      try {
+        const html = fs.readFileSync(
+          path.resolve(__dirname, '../../assets/static/leash-beta.html'),
+          'utf8'
+        );
+        if (isHeadRequest) {
+          sendHtml(res, 200, html, {}, { headOnly: true });
+          return;
+        }
+        sendHtml(res, 200, html);
+      } catch (err) {
+        console.error('leash-beta page read failed:', err?.message);
+        sendJson(res, 500, { error: 'leash-beta page unavailable' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/.well-known/mcp.json') {
       sendJson(res, 200, getMcpDiscoveryManifest(hostedConfig), {}, {
         headOnly: isHeadRequest,
