@@ -643,6 +643,21 @@ Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recal
 
 ---
 
+---
+
+## ThumbGate Pro — for Teams
+
+ThumbGate is free and MIT-licensed forever. For teams that need more:
+
+- **Team-wide enforcement policies** — apply rules across all agents and developers
+- **Centralized feedback memory** — share prevention rules across your org
+- **Budget monitoring** — track and cap agent spend per project
+- **Priority support** — direct access, SLA, onboarding help
+
+**$19/month · [Get started →](https://buy.stripe.com/4gM5kD9eA7DgdWh21R3sI3d)**
+
+---
+
 ## Who builds ThumbGate — and hiring me
 
 I'm **Igor Ganapolsky** — I designed and maintain ThumbGate. If you're shipping **payments, AI agents, or Android features** and want them built by someone demonstrably careful with production and with money, I take a small number of **freelance / contract** engagements.
