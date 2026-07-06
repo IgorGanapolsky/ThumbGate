@@ -6064,8 +6064,14 @@ async function addContext(){
         // redirect loop when bypass is on. Env override via
         // THUMBGATE_CHECKOUT_PRO_STRIPE_URL is supported for future
         // price-link rotation without a redeploy.
+        //
+        // 2026-07-06 revenue fix: default to the Pro $19/mo Payment Link,
+        // NOT FIRST_FAILURE_RULE_CHECKOUT_URL (a $4.99 one-off product).
+        // The 30d audit showed 254 interstitial views → 0 paid; routing
+        // to the wrong product makes that worse. This is the same link
+        // the interstitial form uses as its action target.
         const bypassTarget = process.env.THUMBGATE_CHECKOUT_PRO_STRIPE_URL
-          || FIRST_FAILURE_RULE_CHECKOUT_URL;
+          || 'https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f';
         appendBestEffortTelemetry(FEEDBACK_DIR, {
           eventType: 'checkout_interstitial_bypass_redirect',
           clientType: 'web',
