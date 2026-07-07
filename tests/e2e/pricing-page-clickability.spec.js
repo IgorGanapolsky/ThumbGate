@@ -89,13 +89,13 @@ test.describe('/pricing clickability — full CTA coverage', () => {
     await expect(link).toHaveAttribute('href', /#workflow-sprint-intake$/);
   });
 
-  // --- FAQ accordion (6 items, vanilla addEventListener — no IIFE issue) ---
+  // --- FAQ accordion (7 items, vanilla addEventListener — no IIFE issue) ---
 
-  test('FAQ has 6 items, all closed on initial load', async ({ page }) => {
+  test('FAQ has 7 items, all closed on initial load', async ({ page }) => {
     await page.goto('/pricing');
     const items = page.locator('.faq-item');
-    await expect(items).toHaveCount(6);
-    for (let i = 0; i < 6; i++) {
+    await expect(items).toHaveCount(7);
+    for (let i = 0; i < 7; i++) {
       await expect(items.nth(i)).not.toHaveClass(/(^|\s)open(\s|$)/);
     }
   });
