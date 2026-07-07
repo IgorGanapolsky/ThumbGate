@@ -5224,12 +5224,7 @@ function createApiServer() {
     if (req.method === 'POST' && pathname === '/api/event') {
       // Filter bots from analytics to keep Plausible data clean
       let _botDetector;
-      try {
-        _botDetector = require('../../scripts/bot-detection');
-      } catch {
-        // Optional module — when absent (stripped bundle), analytics continue unfiltered.
-        _botDetector = null;
-      }
+      try { _botDetector = require('../../scripts/bot-detection'); } catch { /* optional module — analytics degrade to unfiltered */ _botDetector = null; }
       if (_botDetector && _botDetector.shouldExcludeFromAnalytics(req)) {
         sendJson(res, 202, { status: 'filtered', reason: 'bot' });
         return;
