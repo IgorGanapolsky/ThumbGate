@@ -518,7 +518,7 @@
     "test:session-analyzer": "node --test tests/session-analyzer.test.js",
     "test:tessl": "node --test tests/tessl-export.test.js",
     "test:gates": "node --test tests/gate-templates.test.js tests/gates-engine.test.js tests/claim-verification.test.js tests/secret-scanner.test.js tests/secret-fixture-safety.test.js tests/prompt-guard.test.js tests/audit-trail.test.js tests/profile-router.test.js tests/workflow-sentinel.test.js tests/docker-sandbox-planner.test.js tests/mcp-tools-suggest-fix.test.js",
-    "test:budget": "node --test tests/budget-guard.test.js tests/budget-enforcer.test.js tests/tokenomics-cost-guard.test.js",
+    "test:budget": "node --test tests/budget-guard.test.js tests/budget-enforcer.test.js tests/tokenomics-cost-guard.test.js tests/hook-no-budget-lockout.test.js",
     "test:workers": "npm --prefix workers ci && npm --prefix workers test",
     "test:evoskill": "node --test tests/evoskill.test.js",
     "test:gates-hardening": "node --test tests/gates-hardening.test.js",

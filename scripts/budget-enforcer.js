@@ -95,17 +95,64 @@ function resetBudget() {
   return state;
 }
 
+function isTrueEnv(value) {
+  if (!value) return false;
+  const v = String(value).trim().toLowerCase();
+  return v === '1' || v === 'true' || v === 'yes' || v === 'on';
+}
+
+// State older than this multiple of the time cap cannot be a live session —
+// it is a leftover from a previous session that was never cleaned up. It is
+// reset, never enforced against. Without this, a stale budget-state.json
+// permanently denies every tool call in every future session (self-lockout
+// incident, 2026-07-07: session_start was 25 days old, every Bash/Edit/Write
+// was blocked, including the edits needed to repair the gate itself).
+const STALE_STATE_MULTIPLIER = 2;
+
+function freshState() {
+  return { action_count: 0, session_start: new Date().toISOString() };
+}
+
+function reconcileSessionState(state, config, sessionId) {
+  if (sessionId && state.session_id && state.session_id !== sessionId) {
+    return freshState();
+  }
+  if (config.max_time_minutes && state.session_start) {
+    const elapsedMinutes = (Date.now() - new Date(state.session_start).getTime()) / (60 * 1000);
+    if (
+      !Number.isFinite(elapsedMinutes)
+      || elapsedMinutes < 0
+      || elapsedMinutes > config.max_time_minutes * STALE_STATE_MULTIPLIER
+    ) {
+      return freshState();
+    }
+  }
+  return state;
+}
+
 /**
- * Evaluate budget limits. Called before every gate evaluation.
- * Returns null if within budget, or a deny result if budget exceeded.
+ * Evaluate budget limits.
+ *
+ * ADVISORY BY DEFAULT: always tracks action count and session age, but only
+ * returns a deny result when THUMBGATE_BUDGET_ENFORCE is explicitly truthy.
+ * A budget deny wired into a PreToolUse hook can block the very tools needed
+ * to repair the budget state, so enforcement must be a deliberate opt-in.
+ *
+ * Pass options.sessionId (e.g. the hook's session_id) to scope state to the
+ * current session; state from a different session is reset automatically.
  */
-function evaluateBudget(toolName, toolInput) {
+function evaluateBudget(toolName, toolInput, options = {}) {
   const config = loadBudgetConfig();
-  const state = loadBudgetState();
+  let state = reconcileSessionState(loadBudgetState(), config, options.sessionId || null);
+  if (options.sessionId) state.session_id = options.sessionId;
 
   // Increment action count
   state.action_count = (state.action_count || 0) + 1;
   saveBudgetState(state);
+
+  if (!isTrueEnv(process.env.THUMBGATE_BUDGET_ENFORCE)) {
+    return null; // Advisory mode: track, never block.
+  }
 
   // Check action limit
   if (config.max_actions && state.action_count > config.max_actions) {
