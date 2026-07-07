@@ -1,7 +1,9 @@
 'use strict';
 
 const test = require('node:test');
-const assert = require('node:assert/strict');
+// Plain node:assert (not the /strict subpath) so SonarJS S2699 resolves the
+// assertion library; match/doesNotMatch behave identically in both modes.
+const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
 

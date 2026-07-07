@@ -1760,8 +1760,10 @@ function appendFeedbackListLines(lines, { entries, signal, intent }) {
     lines.push(`No ${signal || 'feedback'} entries found ${intent.windowLabel}.`);
     return;
   }
-  lines.push(`${FEEDBACK_LIST_LABELS[signal] || 'Recent feedback'} (${intent.windowLabel}):`);
-  lines.push(...entries.map(formatFeedbackEntry));
+  lines.push(
+    `${FEEDBACK_LIST_LABELS[signal] || 'Recent feedback'} (${intent.windowLabel}):`,
+    ...entries.map(formatFeedbackEntry)
+  );
 }
 
 function buildFeedbackSection({ ctx, intent, feedbackDir, approval, lessonPipeline }) {
@@ -5222,7 +5224,12 @@ function createApiServer() {
     if (req.method === 'POST' && pathname === '/api/event') {
       // Filter bots from analytics to keep Plausible data clean
       let _botDetector;
-      try { _botDetector = require('../../scripts/bot-detection'); } catch (_e) { _botDetector = null; }
+      try {
+        _botDetector = require('../../scripts/bot-detection');
+      } catch {
+        // Optional module — when absent (stripped bundle), analytics continue unfiltered.
+        _botDetector = null;
+      }
       if (_botDetector && _botDetector.shouldExcludeFromAnalytics(req)) {
         sendJson(res, 202, { status: 'filtered', reason: 'bot' });
         return;
@@ -6181,6 +6188,7 @@ async function addContext(){
           ? 'checkout_bot_deflected'
           : 'checkout_interstitial_view';
         const missingConfirmedEmail = hasConfirmFlag && !hasValidCustomerEmailHint;
+        const missingEmailReason = hasCustomerEmailHint ? 'invalid_customer_email' : 'missing_customer_email';
         appendBestEffortTelemetry(FEEDBACK_DIR, {
           eventType,
           clientType: 'web',
@@ -6204,9 +6212,7 @@ async function addContext(){
           isBot: botClassification.isBot ? 'true' : 'false',
           interstitialSampled: interstitialSampled ? 'true' : 'false',
           interstitialSampleRate,
-          reason: missingConfirmedEmail
-            ? (hasCustomerEmailHint ? 'invalid_customer_email' : 'missing_customer_email')
-            : botClassification.reason,
+          reason: missingConfirmedEmail ? missingEmailReason : botClassification.reason,
           confirmEmailRequired: missingConfirmedEmail ? 'true' : 'false',
         }, req.headers, eventType);
         const prefilledEmail = parsed?.searchParams?.get('customer_email') || '';
