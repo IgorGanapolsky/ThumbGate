@@ -648,13 +648,16 @@ test('hook-pre-tool-use does NOT register auto-gate on non-commit Bash commands 
   }
 });
 
-test('hook-pre-tool-use blocks when budget session action limit is exceeded', () => {
+// Budget gates were removed from the hook path after the 2026-07-07
+// self-lockout incident: a stale budget-state.json denied every
+// Bash/Edit/Write call, including the edits needed to repair the gate
+// itself. The two tests below pin the NEW contract — the hook must never
+// budget-block, even when every budget limit is exceeded and enforcement
+// env flags are set. See tests/hook-no-budget-lockout.test.js for the
+// full worst-case matrix.
+
+test('hook-pre-tool-use does NOT block when budget session action limit is exceeded', () => {
   const tempStatePath = path.join(require('os').tmpdir(), `tg-budget-test-${Date.now()}.json`);
-  const origMax = process.env.THUMBGATE_MAX_ACTIONS;
-  const origState = process.env.THUMBGATE_BUDGET_STATE_PATH;
-  
-  process.env.THUMBGATE_MAX_ACTIONS = '2';
-  process.env.THUMBGATE_BUDGET_STATE_PATH = tempStatePath;
   fs.writeFileSync(tempStatePath, JSON.stringify({ action_count: 2, session_start: new Date().toISOString() }));
 
   try {
@@ -668,25 +671,21 @@ test('hook-pre-tool-use blocks when budget session action limit is exceeded', ()
       env: {
         THUMBGATE_MAX_ACTIONS: '2',
         THUMBGATE_BUDGET_STATE_PATH: tempStatePath,
+        THUMBGATE_BUDGET_ENFORCE: '1',
       }
     });
 
     assert.equal(res.status, 0);
-    assert.equal(res.parsed.decision, 'block');
-    assert.match(res.parsed.reason, /Budget exceeded.*actions/);
+    assert.notEqual(res.parsed && res.parsed.decision, 'block');
   } finally {
-    if (origMax) process.env.THUMBGATE_MAX_ACTIONS = origMax;
-    else delete process.env.THUMBGATE_MAX_ACTIONS;
-    if (origState) process.env.THUMBGATE_BUDGET_STATE_PATH = origState;
-    else delete process.env.THUMBGATE_BUDGET_STATE_PATH;
     try { fs.unlinkSync(tempStatePath); } catch {}
   }
 });
 
-test('hook-pre-tool-use blocks when monetary budget spend limit is exceeded', () => {
+test('hook-pre-tool-use does NOT block when monetary budget spend limit is exceeded', () => {
   const tempDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'tg-feedback-test-'));
   const tempLedger = path.join(tempDir, 'budget-ledger.json');
-  
+
   const now = new Date();
   const monthKey = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
   fs.writeFileSync(tempLedger, JSON.stringify({
@@ -697,9 +696,6 @@ test('hook-pre-tool-use blocks when monetary budget spend limit is exceeded', ()
       }
     }
   }));
-
-  const origBudget = process.env.THUMBGATE_MONTHLY_BUDGET_USD;
-  const origFeedback = process.env.THUMBGATE_FEEDBACK_DIR;
 
   try {
     const res = runHook({
@@ -716,13 +712,8 @@ test('hook-pre-tool-use blocks when monetary budget spend limit is exceeded', ()
     });
 
     assert.equal(res.status, 0);
-    assert.equal(res.parsed.decision, 'block');
-    assert.match(res.parsed.reason, /Monthly spend budget exceeded/);
+    assert.notEqual(res.parsed && res.parsed.decision, 'block');
   } finally {
-    if (origBudget) process.env.THUMBGATE_MONTHLY_BUDGET_USD = origBudget;
-    else delete process.env.THUMBGATE_MONTHLY_BUDGET_USD;
-    if (origFeedback) process.env.THUMBGATE_FEEDBACK_DIR = origFeedback;
-    else delete process.env.THUMBGATE_FEEDBACK_DIR;
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
 });
