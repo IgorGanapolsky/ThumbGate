@@ -9,6 +9,11 @@ const path = require('path');
 
 const TEST_HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-budget-home-'));
 process.env.THUMBGATE_BUDGET_STATE_PATH = path.join(TEST_HOME, 'budget-state.json');
+// Denial is opt-in as of 2026-07-07 (self-lockout incident): evaluateBudget
+// is advisory unless THUMBGATE_BUDGET_ENFORCE is truthy. Most tests below
+// exercise enforcement behavior, so opt in here; advisory-default tests
+// clear the flag locally.
+process.env.THUMBGATE_BUDGET_ENFORCE = '1';
 
 const {
   evaluateBudget,
@@ -27,6 +32,7 @@ beforeEach(() => {
 
 after(() => {
   delete process.env.THUMBGATE_BUDGET_STATE_PATH;
+  delete process.env.THUMBGATE_BUDGET_ENFORCE;
   fs.rmSync(TEST_HOME, { recursive: true, force: true });
 });
 
@@ -129,6 +135,49 @@ describe('budget-enforcer', () => {
       if (orig) process.env.THUMBGATE_BUDGET_PROFILE = orig;
       else delete process.env.THUMBGATE_BUDGET_PROFILE;
     }
+  });
+
+  it('evaluateBudget is advisory by default: never denies without THUMBGATE_BUDGET_ENFORCE', () => {
+    delete process.env.THUMBGATE_BUDGET_ENFORCE;
+    try {
+      // Both limits blown: action count over max, session 25 days old.
+      saveBudgetState({
+        action_count: 999999,
+        session_start: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
+      });
+      const result = evaluateBudget('Bash', 'ls');
+      assert.equal(result, null);
+    } finally {
+      process.env.THUMBGATE_BUDGET_ENFORCE = '1';
+    }
+  });
+
+  it('stale state (older than 2x time cap) auto-resets instead of denying — self-lockout regression', () => {
+    // 2026-07-07 incident: a 25-day-old session_start denied every
+    // Bash/Edit/Write call in every new session, including the edits
+    // needed to repair the gate itself.
+    saveBudgetState({
+      action_count: 1500,
+      session_start: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
+    });
+    const result = evaluateBudget('Bash', 'ls');
+    assert.equal(result, null);
+    const state = loadBudgetState();
+    assert.equal(state.action_count, 1); // reset, then incremented once
+    assert.ok(new Date(state.session_start).getTime() > Date.now() - 5000);
+  });
+
+  it('a new sessionId resets state from a previous session', () => {
+    saveBudgetState({
+      action_count: 1999,
+      session_start: new Date().toISOString(),
+      session_id: 'previous-session',
+    });
+    const result = evaluateBudget('Bash', 'ls', { sessionId: 'current-session' });
+    assert.equal(result, null);
+    const state = loadBudgetState();
+    assert.equal(state.action_count, 1);
+    assert.equal(state.session_id, 'current-session');
   });
 
   it('env vars override config file and profiles', () => {

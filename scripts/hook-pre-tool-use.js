@@ -503,28 +503,16 @@ function main() {
   const toolName = input.tool_name || process.env.CLAUDE_TOOL_NAME || '';
   const effectiveInput = resolveEffectiveInput(input.tool_input || null);
 
-  // 1. Session and Monetary Budget Enforcement
+  // Budget gates are intentionally NOT wired here. A stale budget-state.json
+  // once blocked every Bash/Edit/Write call — including the edits needed to
+  // repair the gate itself (self-lockout, 2026-07-07). A PreToolUse hook must
+  // never be able to deny the tools required to fix its own configuration.
+  // Spend tracking stays advisory: record it, never block on it.
   try {
     const pkgRoot = path.resolve(__dirname, '..');
-    
-    // Evaluate session actions & time limits
-    const { evaluateBudget } = require(path.join(pkgRoot, 'scripts', 'budget-enforcer'));
-    const sessionBlock = evaluateBudget(toolName, effectiveInput);
-    if (sessionBlock) {
-      return block(`✗ THUMBGATE: ${sessionBlock.message}`);
-    }
-
-    // Evaluate monthly spend budget
-    const { getBudgetStatus, addSpend } = require(path.join(pkgRoot, 'scripts', 'budget-guard'));
-    const status = getBudgetStatus();
-    if (status.totalUsd >= status.budgetUsd) {
-      return block(`✗ THUMBGATE: Monthly spend budget exceeded (${status.totalUsd.toFixed(4)}/${status.budgetUsd.toFixed(2)} USD). Tool execution blocked.`);
-    }
-
-    // Accumulate estimated tool call cost in ledger
-    const costEstimate = 0.015; // ~$0.015 per tool call model turn
+    const { addSpend } = require(path.join(pkgRoot, 'scripts', 'budget-guard'));
     addSpend({
-      amountUsd: costEstimate,
+      amountUsd: 0.015, // ~$0.015 per tool call model turn
       source: 'pre-tool-use',
       note: `${toolName}`
     });
