@@ -16,9 +16,4 @@ Key: Always dogfood the latest local changes before publishing.
 
 ## 🛡️ Self-Harness Prevention Rules (Auto-Generated)
 
-> [!IMPORTANT]
-> The following rules were automatically derived from execution failures and thumbs-down feedback.
-> You MUST follow these constraints strictly to prevent repeated errors.
-
-- **Rule [auto-test-failure]**: Auto-promoted repeated pattern: "test failure" (1 occurrences in 30 days)
-- **Rule [auto-entity-customer]**: Auto-promoted repeated pattern: "deleted prod config ran rm on .env never delete .env files" (1 occurrences in 30 days)
+- No active auto-generated prevention rules at this time.
