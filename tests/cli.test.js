@@ -2734,6 +2734,7 @@ describe('bin/cli.js', () => {
     const isolatedDir = makeTmpDir();
     const result = runCliSync(['capture', '--feedback=up', '--context=cli test verification'], {
       cwd: isolatedDir,
+      env: { ...process.env, THUMBGATE_NO_RATE_LIMIT: '1' },
     });
     fs.rmSync(isolatedDir, { recursive: true, force: true });
     // Exit 0 (promoted) or 2 (signal logged only) are both valid
@@ -2744,7 +2745,7 @@ describe('bin/cli.js', () => {
     const isolatedDir = makeTmpDir();
     const result = runCliSync(
       ['capture', '--feedback=down', '--context=test failure', '--what-went-wrong=broke it'],
-      { cwd: isolatedDir }
+      { cwd: isolatedDir, env: { ...process.env, THUMBGATE_NO_RATE_LIMIT: '1' } }
     );
     fs.rmSync(isolatedDir, { recursive: true, force: true });
     assert.notEqual(result.status, 1, `capture should not exit 1:\n${result.stderr}`);
@@ -2754,7 +2755,7 @@ describe('bin/cli.js', () => {
     const isolatedDir = makeTmpDir();
     const result = runCliSync(
       ['capture', 'down', 'deleted prod config', 'ran rm on .env', 'never delete .env files'],
-      { cwd: isolatedDir }
+      { cwd: isolatedDir, env: { ...process.env, THUMBGATE_NO_RATE_LIMIT: '1' } }
     );
     fs.rmSync(isolatedDir, { recursive: true, force: true });
     assert.notEqual(result.status, 1, `capture should not exit 1:\n${result.stderr}`);
@@ -2771,6 +2772,7 @@ describe('bin/cli.js', () => {
           ...process.env,
           THUMBGATE_FEEDBACK_DIR: feedbackDir,
           THUMBGATE_NO_NUDGE: '1',
+          THUMBGATE_NO_RATE_LIMIT: '1',
         },
       }
     );
