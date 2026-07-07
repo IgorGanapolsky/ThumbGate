@@ -53,12 +53,12 @@ function resolveCliCommand(subcommand) {
 function resolveCodexCliCommand(subcommand) {
   const version = packageVersion();
   if (publishedHookCommandsAvailable(version)) {
-    return publishedCliShellCommand('latest', [subcommand], { preferInstalled: false });
+    return publishedCliShellCommand('latest', [subcommand]);
   }
   if (isSourceCheckout(PKG_ROOT)) {
     return `node ${shellQuote(path.join(PKG_ROOT, 'bin', 'cli.js'))} ${subcommand}`;
   }
-  return publishedCliShellCommand('latest', [subcommand], { preferInstalled: false });
+  return publishedCliShellCommand('latest', [subcommand]);
 }
 
 function buildPortableHookCommand(subcommand) {

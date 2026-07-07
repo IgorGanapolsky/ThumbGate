@@ -328,9 +328,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 324 -> 326 (2026-06-22) to ship the new transparent brand logo SVG.
   // Bumped 326 -> 327 (2026-06-29) to ship public/diagnostic.html, the
   // focused Workflow Hardening Diagnostic conversion page for warm traffic.
+  // Bumped 327 -> 328 (2026-07-02) to ship public/install.html, the
+  // install-intent buyer path that server.js reads at runtime.
   assert.ok(
-    manifest.fileCount <= 327,
-    `npm package should stay <= 327 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 328,
+    `npm package should stay <= 328 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

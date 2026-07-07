@@ -58,7 +58,7 @@ test('activateLicense persists a Pro key that verifyLicense reads from the local
     const verified = license.verifyLicense({ homeDir });
     assert.equal(verified.valid, true);
     assert.equal(verified.source, 'file');
-    assert.equal(verified.key, key);
+    assert.ok(!('key' in verified), 'raw key must not be exposed in the verification result');
     assert.equal(verified.path, activation.path);
   } finally {
     restore();
@@ -74,8 +74,27 @@ test('verifyLicense prefers a valid Pro env key over the local license file', ()
     const verified = license.verifyLicense({ homeDir });
     assert.equal(verified.valid, true);
     assert.equal(verified.source, 'env');
-    assert.equal(verified.key, 'tg_pro_envtiercoverage1234567890');
+    assert.equal(verified.envVar, 'THUMBGATE_PRO_KEY');
+    assert.ok(!('key' in verified), 'raw key must not be exposed in the verification result');
   } finally {
+    restore();
+  }
+});
+
+test('foreign vendor *_API_KEY / *_PRO_KEY env vars are never license candidates', () => {
+  const { moduleExports: license, restore } = loadWithIsolatedLicenseEnv(LICENSE_MODULE_ID);
+  const foreignVars = ['ACME_VENDOR_API_KEY', 'SOME_SERVICE_PRO_KEY'];
+  try {
+    for (const name of foreignVars) {
+      // Value deliberately matches the legacy-compatible key shape: the old
+      // scan would have returned this foreign secret as a valid license.
+      process.env[name] = `acme_${'a1b2c3d4'.repeat(4)}`;
+    }
+    const verified = license.verifyLicense();
+    assert.equal(verified.valid, false, 'another vendor secret must not activate a license');
+    assert.ok(!('key' in verified));
+  } finally {
+    for (const name of foreignVars) delete process.env[name];
     restore();
   }
 });

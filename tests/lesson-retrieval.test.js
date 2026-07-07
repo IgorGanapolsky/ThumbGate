@@ -233,3 +233,174 @@ test('scoreRelevance boosts fuzzy matches via n-gram similarity', () => {
   assert.ok(similarScore > unrelatedScore,
     `Fuzzy match should boost similar content: ${similarScore} vs ${unrelatedScore}`);
 });
+
+// ---------------------------------------------------------------------------
+// Nucleus (top-P) "decide when to stop" filtering — Memora-style retrieval.
+// ---------------------------------------------------------------------------
+
+test('filterTopP is a no-op at topP >= 1 (default behaviour unchanged)', () => {
+  const { filterTopP } = require('../scripts/lesson-retrieval');
+  const lessons = [
+    { id: 'a', relevanceScore: 0.5 },
+    { id: 'b', relevanceScore: 0.3 },
+    { id: 'c', relevanceScore: 0.2 },
+  ];
+  assert.deepStrictEqual(filterTopP(lessons, 1.0).map((l) => l.id), ['a', 'b', 'c']);
+  assert.deepStrictEqual(filterTopP(lessons, 2).map((l) => l.id), ['a', 'b', 'c']);
+  // default arg is 1.0 → no-op
+  assert.deepStrictEqual(filterTopP(lessons).map((l) => l.id), ['a', 'b', 'c']);
+});
+
+test('filterTopP keeps the smallest prefix covering the normalized mass', () => {
+  const { filterTopP } = require('../scripts/lesson-retrieval');
+  // normalized distribution: 0.60, 0.25, 0.15
+  const lessons = [
+    { id: 'a', relevanceScore: 0.6 },
+    { id: 'b', relevanceScore: 0.25 },
+    { id: 'c', relevanceScore: 0.15 },
+  ];
+  assert.deepStrictEqual(filterTopP(lessons, 0.5).map((l) => l.id), ['a']); // 0.60 >= 0.50
+  assert.deepStrictEqual(filterTopP(lessons, 0.8).map((l) => l.id), ['a', 'b']); // 0.85 >= 0.80
+  assert.deepStrictEqual(filterTopP(lessons, 0.99).map((l) => l.id), ['a', 'b', 'c']);
+});
+
+test('filterTopP normalizes, so raw score scale does not matter', () => {
+  const { filterTopP } = require('../scripts/lesson-retrieval');
+  // Same distribution as above but scaled 100x — must produce identical cuts.
+  const lessons = [
+    { id: 'a', relevanceScore: 60 },
+    { id: 'b', relevanceScore: 25 },
+    { id: 'c', relevanceScore: 15 },
+  ];
+  assert.deepStrictEqual(filterTopP(lessons, 0.5).map((l) => l.id), ['a']);
+  assert.deepStrictEqual(filterTopP(lessons, 0.8).map((l) => l.id), ['a', 'b']);
+});
+
+test('filterTopP honors the minKeep floor', () => {
+  const { filterTopP } = require('../scripts/lesson-retrieval');
+  const lessons = [
+    { id: 'a', relevanceScore: 0.9 },
+    { id: 'b', relevanceScore: 0.07 },
+    { id: 'c', relevanceScore: 0.03 },
+  ];
+  // topP 0.5 alone would keep only 'a'; minKeep 2 forces a second lesson.
+  assert.deepStrictEqual(filterTopP(lessons, 0.5, { minKeep: 2 }).map((l) => l.id), ['a', 'b']);
+});
+
+test('filterTopP prefers rerankedScore over relevanceScore', () => {
+  const { filterTopP } = require('../scripts/lesson-retrieval');
+  const lessons = [
+    { id: 'a', relevanceScore: 0.1, rerankedScore: 0.05 },
+    { id: 'b', relevanceScore: 0.1, rerankedScore: 0.95 },
+  ];
+  assert.deepStrictEqual(filterTopP(lessons, 0.5).map((l) => l.id), ['b']);
+});
+
+test('filterTopP handles empty, null, and all-zero inputs safely', () => {
+  const { filterTopP } = require('../scripts/lesson-retrieval');
+  assert.deepStrictEqual(filterTopP([], 0.5), []);
+  assert.deepStrictEqual(filterTopP(null, 0.5), []);
+  // all-zero scores → no usable distribution → fall back to minKeep floor (never empty)
+  const zero = [{ id: 'a', relevanceScore: 0 }, { id: 'b', relevanceScore: 0 }];
+  assert.strictEqual(filterTopP(zero, 0.5).length, 1);
+});
+
+test('resolveTopP precedence: option > env > default(1.0)', () => {
+  const { resolveTopP } = require('../scripts/lesson-retrieval');
+  const saved = process.env.THUMBGATE_RETRIEVAL_TOP_P;
+  try {
+    delete process.env.THUMBGATE_RETRIEVAL_TOP_P;
+    assert.strictEqual(resolveTopP({}), 1.0);
+    assert.strictEqual(resolveTopP({ topP: 0.8 }), 0.8);
+    assert.strictEqual(resolveTopP({ topP: 5 }), 1.0); // out-of-range option ignored
+
+    process.env.THUMBGATE_RETRIEVAL_TOP_P = '0.7';
+    assert.strictEqual(resolveTopP({}), 0.7); // env used
+    assert.strictEqual(resolveTopP({ topP: 0.8 }), 0.8); // option still wins
+    assert.strictEqual(resolveTopP({ topP: 9 }), 0.7); // bad option → env
+
+    process.env.THUMBGATE_RETRIEVAL_TOP_P = 'nonsense';
+    assert.strictEqual(resolveTopP({}), 1.0); // unparseable env → default
+  } finally {
+    if (saved === undefined) delete process.env.THUMBGATE_RETRIEVAL_TOP_P;
+    else process.env.THUMBGATE_RETRIEVAL_TOP_P = saved;
+  }
+});
+
+test('retrieveRelevantLessons: topP trims the tail, never empties, no-op at 1.0', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lesson-ret-nucleus-'));
+  const now = new Date().toISOString();
+  writeJsonl(path.join(tmpDir, 'memory-log.jsonl'), [
+    { id: 'm1', title: 'bash git push', content: 'never force push to main', tags: ['negative'], timestamp: now },
+    { id: 'm2', title: 'bash push', content: 'verify before you push to remote', tags: ['negative'], timestamp: now },
+    { id: 'm3', title: 'git workflow', content: 'commit then push to remote branch', tags: ['positive'], timestamp: now },
+    { id: 'm4', title: 'bash deploy', content: 'deploy to production carefully after push', tags: ['negative'], timestamp: now },
+    { id: 'm5', title: 'read lesson', content: 'read before editing files', tags: ['negative'], timestamp: now },
+  ]);
+
+  const { retrieveRelevantLessons } = require('../scripts/lesson-retrieval');
+  const opts = { maxResults: 5, feedbackDir: tmpDir };
+
+  const full = retrieveRelevantLessons('Bash', 'git push to remote', opts);
+  const noop = retrieveRelevantLessons('Bash', 'git push to remote', { ...opts, topP: 1.0 });
+  const trimmed = retrieveRelevantLessons('Bash', 'git push to remote', { ...opts, topP: 0.01 });
+
+  assert.ok(full.length >= 1, 'baseline returns at least one lesson');
+  assert.deepStrictEqual(noop.map((l) => l.id), full.map((l) => l.id), 'topP=1.0 is identical to default');
+  assert.ok(trimmed.length >= 1, 'nucleus never empties the result');
+  assert.ok(trimmed.length <= full.length, 'nucleus is purely subtractive');
+  assert.strictEqual(trimmed.length, 1, 'a tiny topP keeps only the single top lesson');
+
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+// ---------------------------------------------------------------------------
+// Superseding / contradiction filter — the "context poisoning" fix.
+// Same-topic contradictory or duplicate lessons must not surface together.
+// ---------------------------------------------------------------------------
+
+test('dedupeSupersededLessons keeps the newest of two contradictory same-rule lessons', () => {
+  const { dedupeSupersededLessons } = require('../scripts/lesson-retrieval');
+  const older = { id: 'old', title: 'x', content: 'never force push', tags: ['negative'], structuredRule: { if: 'git push --force' }, timestamp: '2026-01-01T00:00:00Z', relevanceScore: 0.9 };
+  const newer = { id: 'new', title: 'y', content: 'force push ok on personal branches', tags: ['positive'], structuredRule: { if: 'git push --force' }, timestamp: '2026-06-01T00:00:00Z', relevanceScore: 0.7 };
+  const out = dedupeSupersededLessons([older, newer]);
+  assert.strictEqual(out.length, 1, 'contradiction collapsed to one');
+  assert.strictEqual(out[0].id, 'new', 'the newer lesson supersedes the older');
+});
+
+test('dedupeSupersededLessons drops a duplicate same-signal lesson and keeps the higher-ranked', () => {
+  const { dedupeSupersededLessons } = require('../scripts/lesson-retrieval');
+  const a = { id: 'a', title: 'force push', content: 'never force push to main', tags: ['negative'], timestamp: '2026-06-02T00:00:00Z', relevanceScore: 0.9 };
+  const b = { id: 'b', title: 'force push', content: 'never force push to main', tags: ['negative'], timestamp: '2026-06-01T00:00:00Z', relevanceScore: 0.5 };
+  const out = dedupeSupersededLessons([a, b]);
+  assert.strictEqual(out.length, 1, 'duplicate collapsed');
+  assert.strictEqual(out[0].id, 'a', 'higher-ranked (first) kept, order preserved');
+});
+
+test('dedupeSupersededLessons never merges distinct topics', () => {
+  const { dedupeSupersededLessons } = require('../scripts/lesson-retrieval');
+  const a = { id: 'a', title: 'git', content: 'never force push to main branch', tags: ['negative'], timestamp: '2026-06-01T00:00:00Z' };
+  const b = { id: 'b', title: 'auth', content: 'validate the jwt before trusting its claims', tags: ['negative'], timestamp: '2026-06-01T00:00:00Z' };
+  const out = dedupeSupersededLessons([a, b]);
+  assert.strictEqual(out.length, 2, 'distinct topics are both preserved');
+});
+
+test('dedupeSupersededLessons handles empty, null, and single inputs safely', () => {
+  const { dedupeSupersededLessons } = require('../scripts/lesson-retrieval');
+  assert.deepStrictEqual(dedupeSupersededLessons([]), []);
+  assert.deepStrictEqual(dedupeSupersededLessons(null), []);
+  assert.strictEqual(dedupeSupersededLessons([{ id: 'x', title: 't', content: 'c', tags: [] }]).length, 1);
+});
+
+test('retrieveRelevantLessons does not surface both sides of a same-rule contradiction', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lesson-supersede-'));
+  writeJsonl(path.join(tmpDir, 'memory-log.jsonl'), [
+    { id: 'old', title: 'bash git push', content: 'never force push to main', tags: ['negative'], structuredRule: { if: 'git push --force' }, timestamp: '2026-01-01T00:00:00Z' },
+    { id: 'new', title: 'bash git push', content: 'force push allowed on personal branches now', tags: ['positive'], structuredRule: { if: 'git push --force' }, timestamp: new Date().toISOString() },
+  ]);
+  const { retrieveRelevantLessons } = require('../scripts/lesson-retrieval');
+  const ids = retrieveRelevantLessons('Bash', 'git push --force to main', { maxResults: 5, feedbackDir: tmpDir }).map((l) => l.id);
+  assert.ok(!(ids.includes('old') && ids.includes('new')), `contradictory lessons surfaced together: ${ids.join(',')}`);
+  assert.ok(ids.length >= 1, 'still returns the surviving lesson');
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});

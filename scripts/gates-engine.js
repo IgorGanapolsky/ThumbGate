@@ -1163,9 +1163,47 @@ function isThreadResolutionEvidenceAction(toolName, toolInput = {}) {
   return /\b(?:gate-satisfy|satisfy_gate|track_action|gh\s+pr\s+(?:view|checks|status)|gh\s+api\b.*(?:reviewThreads|reviews|comments|threads)|git\s+(?:status|diff|show))\b/i.test(command);
 }
 
+// Read-only observability/metrics MCP tools must NEVER be blocked by the pending
+// PR-thread-resolution gate. Reading revenue, the dashboard, gate stats, or a
+// semantic entity cannot advance a "done" claim or mutate any state, so gating it
+// only blinds the operator to their own numbers. This is the exact failure the CEO
+// hit on 2026-06-30: `get_business_metrics` denied with "a git commit was made on a
+// PR branch" — a governance gate eating the observability path. The exempt set is
+// sourced from the canonical `readonly` MCP profile (config/mcp-allowlists.json) so
+// it cannot drift from the product's own definition of "safe to read"; the hard-coded
+// fallback guarantees the core observability tools stay readable even if that policy
+// file is unreadable at runtime.
+const READ_ONLY_TOOL_FALLBACK = new Set([
+  'get_business_metrics', 'describe_semantic_entity', 'describe_reliability_entity',
+  'get_reliability_rules', 'dashboard', 'org_dashboard', 'gate_stats', 'feedback_stats',
+  'feedback_summary', 'session_report', 'generate_operator_artifact', 'settings_status',
+  'get_scope_state', 'get_branch_governance', 'context_provenance', 'native_messaging_audit',
+  'list_harnesses', 'list_intents', 'list_imported_documents', 'get_imported_document',
+  'check_operational_integrity', 'workflow_sentinel', 'recall', 'search_lessons',
+  'retrieve_lessons', 'search_thumbgate', 'unified_context', 'verify_claim',
+]);
+let readOnlyToolCache = null;
+function getReadOnlyToolNames() {
+  if (readOnlyToolCache) return readOnlyToolCache;
+  const names = new Set(READ_ONLY_TOOL_FALLBACK);
+  try {
+    const { getAllowedTools } = require('./mcp-policy');
+    for (const tool of getAllowedTools('readonly')) names.add(tool);
+  } catch (_) {
+    // Policy file missing/malformed — the fallback set still covers the core
+    // observability tools, so the operator can always read state.
+  }
+  readOnlyToolCache = names;
+  return names;
+}
+function isReadOnlyObservabilityTool(toolName) {
+  return Boolean(toolName) && getReadOnlyToolNames().has(toolName);
+}
+
 function evaluatePendingPrThreadResolutionGate(toolName, toolInput = {}) {
   if (!hasAction(PR_THREAD_RESOLUTION_ACTION)) return null;
   if (isThreadResolutionSatisfied()) return null;
+  if (isReadOnlyObservabilityTool(toolName)) return null;
   if (isThreadResolutionEvidenceAction(toolName, toolInput)) return null;
 
   const message = 'A git commit was made on a PR branch. Verify review threads are resolved before the next tool call.';
@@ -1991,6 +2029,19 @@ async function checkMetricCondition(metricCondition) {
   return true;
 }
 
+/**
+ * Whether this run is autonomous — i.e. no human is present to resolve an
+ * `approve` (human-in-the-loop) gate. Opt-in ONLY via THUMBGATE_AUTONOMOUS=1
+ * (or "true"); interactive and existing CI behavior is unchanged unless an
+ * operator explicitly sets it. In an autonomous agent loop an approval gate has
+ * nobody to sign off, so it must fail CLOSED (deny) rather than defer forever or
+ * slip through — a guardrail has to guard precisely when it is unattended.
+ */
+function isAutonomousRun() {
+  const raw = String(process.env.THUMBGATE_AUTONOMOUS || '').trim().toLowerCase();
+  return raw === '1' || raw === 'true';
+}
+
 async function evaluateGatesAsync(toolName, toolInput, configPath) {
   let config;
   try {
@@ -2145,6 +2196,15 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
     if (gate.action === 'approve') {
       const approvalEnabled = process.env.THUMBGATE_APPROVAL_GATES !== '0';
       if (approvalEnabled) {
+        if (isAutonomousRun()) {
+          // Autonomous run: no human to approve. Fail CLOSED so the actions that
+          // most need sign-off cannot slip through unattended.
+          const failClosedMessage = `[autonomous run — no approver present, failing closed] ${message}`;
+          recordStat(gate.id, 'block', gate, { toolName, toolInput });
+          const failClosedAudit = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: failClosedMessage, severity: gate.severity, source: 'gates-engine', autonomousFailClosed: true });
+          auditToFeedback(failClosedAudit);
+          return { decision: 'deny', gate: gate.id, message: failClosedMessage, severity: gate.severity, reasoning, requiresApproval: true, failedClosed: true };
+        }
         recordStat(gate.id, 'approve', gate, { toolName, toolInput });
         const result = { decision: 'approve', gate: gate.id, message, severity: gate.severity, reasoning, requiresApproval: true };
         const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'approve', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
@@ -2349,6 +2409,15 @@ function evaluateGates(toolName, toolInput, configPath) {
     if (gate.action === 'approve') {
       const approvalEnabled = process.env.THUMBGATE_APPROVAL_GATES !== '0';
       if (approvalEnabled) {
+        if (isAutonomousRun()) {
+          // Autonomous run: no human to approve. Fail CLOSED so the actions that
+          // most need sign-off cannot slip through unattended.
+          const failClosedMessage = `[autonomous run — no approver present, failing closed] ${message}`;
+          recordStat(gate.id, 'block', gate, { toolName, toolInput });
+          const failClosedAudit = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: failClosedMessage, severity: gate.severity, source: 'gates-engine', autonomousFailClosed: true });
+          auditToFeedback(failClosedAudit);
+          return { decision: 'deny', gate: gate.id, message: failClosedMessage, severity: gate.severity, reasoning, requiresApproval: true, failedClosed: true };
+        }
         recordStat(gate.id, 'approve', gate, { toolName, toolInput });
         const result = { decision: 'approve', gate: gate.id, message, severity: gate.severity, reasoning, requiresApproval: true };
         const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'approve', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
@@ -2785,7 +2854,7 @@ function buildRecentCorrectiveActionsContext(options = {}) {
 function buildRelevantLessonContext(toolName, toolInput) {
   if (!toolName) return null;
 
-  const { retrieveRelevantLessons, calculateRetrievalEntropy, filterTopP } = loadOptionalModule("./lesson-retrieval", () => ({ retrieveRelevantLessons: () => [], calculateRetrievalEntropy: () => 0, filterTopP: (l) => l }));
+  const { retrieveRelevantLessons, calculateRetrievalEntropy } = loadOptionalModule("./lesson-retrieval", () => ({ retrieveRelevantLessons: () => [], calculateRetrievalEntropy: () => 0 }));
 
   // Extract a searchable action context from the tool input
   const actionContext = extractActionContext(toolName, toolInput);
@@ -3294,6 +3363,7 @@ module.exports = {
   matchesGate,
   evaluateGates,
   evaluateGatesAsync,
+  isAutonomousRun,
   computeExecutableHash,
   formatOutput,
   isApprovalGatesEnabled,
@@ -3335,6 +3405,7 @@ module.exports = {
   evaluateBoostedRiskTagGuard,
   registerPrThreadResolutionClaimGate,
   evaluatePendingPrThreadResolutionGate,
+  isReadOnlyObservabilityTool,
   getLocalOnlyScopeSources,
   isRemoteSideEffectCommand,
   evaluateLocalOnlyRemoteSideEffectGate,

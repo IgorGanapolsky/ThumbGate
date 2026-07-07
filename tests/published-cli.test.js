@@ -19,18 +19,18 @@ test('publishedCliShellCommand prefers the installed runtime binary before npm e
   assert.match(command, /npm "exec"/);
 });
 
-test('publishedCliShellCommand can bypass the installed runtime for latest-resolving launchers', () => {
+test('publishedCliShellCommand fast-starts the serve launcher instead of reinstalling on every launch', () => {
   const prefixDir = runtimePrefixDir('/tmp/thumbgate-runtime');
-  const command = publishedCliShellCommand('latest', ['serve'], {
-    prefixDir,
-    preferInstalled: false,
-  });
+  const command = publishedCliShellCommand('latest', ['serve'], { prefixDir });
 
-  assert.doesNotMatch(command, /\[ -x /);
-  assert.match(command, /thumbgate@latest/);
-  assert.match(command, /npm "install"/);
+  // Fast-path guard exists: exec the installed runtime binary when present.
+  assert.match(command, /\[ -x /, 'must include a [ -x fast-path guard');
+  assert.match(command, /thumbgate@latest/, 'must resolve @latest for the npx fallback');
   assert.match(command, /node_modules\/\.bin\/thumbgate/);
-  assert.match(command, /serve/);
+  const [fastPath] = command.split(' || ');
+  assert.match(fastPath, /exec\s+"[^"]+"\s+"serve"/, 'fast-path must exec the runtime with the serve subcommand');
+  // The blocking per-launch reinstall form must be gone.
+  assert.doesNotMatch(command, /npm "install"/, 'must not block startup on a per-launch npm install');
 });
 
 test('installedRuntimeBin resolves within the runtime prefix directory', () => {
@@ -71,10 +71,12 @@ test('publishedCliShellCommand emits the subcommand twice (once per branch) for 
   }
 });
 
-test('publishedCliShellCommand preferInstalled=false exec line includes the subcommand', () => {
+test('publishedCliShellCommand latest-resolving serve launcher includes the subcommand in both branches', () => {
   const command = publishedCliShellCommand('latest', ['serve'], {
     prefixDir: '/tmp/thumbgate-runtime',
-    preferInstalled: false,
   });
-  assert.match(command, /exec\s+"[^"]+"\s+"serve"/, 'install-then-exec must include the subcommand');
+  const [fastPath, fallback] = command.split(' || ');
+  assert.ok(fastPath && fallback, 'must have both branches');
+  assert.match(fastPath, /exec\s+"[^"]+"\s+"serve"/, 'fast-path exec must include the subcommand');
+  assert.match(fallback, /serve/, 'npx fallback must include the subcommand');
 });

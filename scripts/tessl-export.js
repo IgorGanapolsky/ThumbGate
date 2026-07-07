@@ -166,8 +166,6 @@ function renderTileDocs(tile, manifest, skillEntries, proofLinks) {
     '## Proof',
     '',
     `- Verification evidence: ${proofLinks.verificationEvidence}`,
-    `- Compatibility report: ${proofLinks.compatibilityReport}`,
-    `- Automation report: ${proofLinks.automationReport}`,
     '',
     '## Source of truth',
     '',

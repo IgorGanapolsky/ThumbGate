@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+__GOOGLE_SITE_VERIFICATION_META__
+<title>Install ThumbGate | Live agent guardrails for Claude, Cursor, Codex, and VS Code</title>
+<meta name="description" content="Install ThumbGate from npm, VS Code Marketplace, Open VSX, GitHub Release, or MCP Registry. See what is live now, what is pending, and when to buy the Workflow Hardening Diagnostic.">
+<meta property="og:title" content="Install ThumbGate">
+<meta property="og:description" content="Proof-backed install paths for ThumbGate agent guardrails, plus the paid diagnostic path for one repeated workflow failure.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="__APP_ORIGIN__/install">
+<meta property="og:image" content="/og.png">
+<link rel="canonical" href="__APP_ORIGIN__/install">
+<link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
+<link rel="icon" type="image/png" href="/thumbgate-icon.png">
+<link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+__GA_BOOTSTRAP__
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "ThumbGate",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "macOS, Windows, Linux",
+  "softwareVersion": "1.27.17",
+  "description": "Local-first pre-action gates and feedback capture for AI coding agents.",
+  "url": "__APP_ORIGIN__/install",
+  "downloadUrl": "https://www.npmjs.com/package/thumbgate",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD",
+    "availability": "https://schema.org/InStock"
+  },
+  "sameAs": [
+    "https://www.npmjs.com/package/thumbgate",
+    "https://open-vsx.org/extension/igorganapolsky/thumbgate",
+    "https://marketplace.visualstudio.com/items?itemName=igorganapolsky.thumbgate",
+    "https://github.com/IgorGanapolsky/ThumbGate/releases/tag/v1.27.17"
+  ]
+}
+</script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --bg: #090b0f;
+    --surface: #11151c;
+    --line: #27313d;
+    --text: #f1f5f9;
+    --muted: #9ba8b6;
+    --cyan: #22d3ee;
+    --green: #4ade80;
+    --amber: #fbbf24;
+    --red: #fb7185;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+  }
+  body { margin: 0; font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.55; }
+  a { color: inherit; }
+  .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  nav { border-bottom: 1px solid rgba(39, 49, 61, 0.9); background: rgba(9, 11, 15, 0.92); position: sticky; top: 0; z-index: 10; backdrop-filter: blur(12px); }
+  nav .container { min-height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 900; }
+  .brand img { width: 28px; height: 28px; }
+  .brand span { color: var(--cyan); }
+  .nav-links { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .nav-links a { color: var(--muted); text-decoration: none; font-size: 13px; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta, .btn-primary, .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    border-radius: 8px;
+    padding: 0 18px;
+    font-weight: 800;
+    text-decoration: none;
+    border: 1px solid transparent;
+  }
+  .nav-cta, .btn-primary { background: var(--cyan); color: #06121a; }
+  .btn-secondary { background: rgba(17, 21, 28, 0.82); color: var(--text); border-color: var(--line); }
+  header { padding: 72px 0 44px; }
+  .eyebrow { display: inline-flex; padding: 7px 11px; border: 1px solid rgba(34, 211, 238, 0.28); border-radius: 999px; color: var(--cyan); background: rgba(34, 211, 238, 0.1); font-size: 12px; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; }
+  h1 { margin: 18px 0 16px; max-width: 880px; font-size: clamp(36px, 6vw, 60px); line-height: 1.02; letter-spacing: -0.04em; }
+  .lede { margin: 0; max-width: 760px; color: var(--muted); font-size: 18px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
+  .proof-strip { margin-top: 28px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+  .proof { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 13px; }
+  .proof strong { display: block; font-size: 14px; }
+  .proof span { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; }
+  section { border-top: 1px solid var(--line); padding: 50px 0; }
+  h2 { margin: 0 0 12px; font-size: 30px; line-height: 1.12; letter-spacing: -0.03em; }
+  .section-lede { margin: 0 0 22px; max-width: 760px; color: var(--muted); }
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .card { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 18px; }
+  .card h3 { margin: 0 0 8px; color: var(--cyan); font-size: 17px; }
+  .card p { margin: 0 0 12px; color: var(--muted); font-size: 14px; }
+  .card a { color: var(--cyan); text-decoration: none; font-weight: 800; }
+  pre { margin: 10px 0 0; overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: #05070a; padding: 12px; color: #d7f9ff; font-size: 13px; }
+  .status-list { display: grid; gap: 10px; }
+  .status { display: grid; grid-template-columns: 120px 1fr; gap: 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 14px; }
+  .badge { display: inline-flex; justify-content: center; align-items: center; height: 28px; border-radius: 999px; font-size: 12px; font-weight: 900; }
+  .live { color: #062112; background: var(--green); }
+  .pending { color: #251802; background: var(--amber); }
+  .blocked { color: #2b080f; background: var(--red); }
+  .status strong { display: block; }
+  .status span { color: var(--muted); font-size: 14px; }
+  .cta-band { border: 1px solid rgba(34, 211, 238, 0.32); border-radius: 8px; background: linear-gradient(180deg, rgba(34, 211, 238, 0.1), rgba(17, 21, 28, 0.95)); padding: 24px; }
+  .cta-band p { color: var(--muted); margin: 0 0 16px; max-width: 760px; }
+  footer { color: var(--muted); padding: 38px 0 70px; text-align: center; font-size: 13px; }
+  footer a { color: var(--cyan); text-decoration: none; }
+  @media (max-width: 820px) {
+    .proof-strip, .grid { grid-template-columns: 1fr; }
+    .status { grid-template-columns: 1fr; }
+    nav .container { align-items: flex-start; flex-direction: column; padding-top: 16px; padding-bottom: 16px; }
+  }
+</style>
+</head>
+<body>
+<nav>
+  <div class="container">
+    <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark.svg" alt="" aria-hidden="true">Thumb<span>Gate</span></a>
+    <div class="nav-links">
+      <a href="/guide">Guide</a>
+      <a href="/learn">Learn</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/diagnostic" class="nav-cta">Diagnostic</a>
+    </div>
+  </div>
+</nav>
+<header>
+  <div class="container">
+    <span class="eyebrow">Install paths verified for v1.27.17</span>
+    <h1>Install the agent guardrail before the next repeated mistake costs real money.</h1>
+    <p class="lede">ThumbGate is live on the surfaces developers already use: npm, VS Code Marketplace, Open VSX, GitHub Release assets, and MCP Registry. If the risky workflow is already customer-visible, start with the Workflow Hardening Diagnostic instead of another generic install.</p>
+    <div class="actions">
+      <a class="btn-primary" href="#install">Install now</a>
+      <a class="btn-secondary" href="/diagnostic?utm_source=install_page&utm_medium=owned_page&utm_campaign=marketplace_distribution">Harden one workflow</a>
+    </div>
+    <div class="proof-strip" aria-label="Verified live distribution surfaces">
+      <div class="proof"><strong>npm</strong><span>thumbgate@1.27.17</span></div>
+      <div class="proof"><strong>VS Code</strong><span>Marketplace version live</span></div>
+      <div class="proof"><strong>Open VSX</strong><span>Antigravity-compatible path</span></div>
+      <div class="proof"><strong>MCP Registry</strong><span>1.27.17 is latest</span></div>
+      <div class="proof"><strong>GitHub Release</strong><span>VSIX, MCPB, Codex zip</span></div>
+    </div>
+  </div>
+</header>
+<section id="install">
+  <div class="container">
+    <h2>Choose the install path that matches your agent.</h2>
+    <p class="section-lede">Use the local CLI path for immediate enforcement. Use marketplace installs where your editor supports them. Use the diagnostic path when you need a human-reviewed gate map for one risky workflow.</p>
+    <div class="grid">
+      <article class="card"><h3>CLI and MCP-compatible agents</h3><p>Fastest path for Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and local MCP-compatible agents.</p><pre><code>npx -y thumbgate@1.27.17 doctor
+npx -y thumbgate@1.27.17 doctor --fix</code></pre></article>
+      <article class="card"><h3>Claude Desktop</h3><p>Use the npm-backed MCP server today. The Claude Desktop `.mcpb` directory submission packet is prepared separately.</p><pre><code>claude mcp add thumbgate -- npx --yes --package thumbgate thumbgate serve</code></pre></article>
+      <article class="card"><h3>Cursor</h3><p>The public Cursor Marketplace listing is not live yet. Use the CLI wiring while the dashboard submission is resolved.</p><pre><code>npx -y thumbgate@1.27.17 init --agent cursor</code></pre></article>
+      <article class="card"><h3>Codex</h3><p>Use the local adapter now. Public Codex self-serve plugin publishing is not open yet, so the GitHub Release asset is the distribution proof.</p><pre><code>npx -y thumbgate@1.27.17 init --agent codex</code></pre></article>
+    </div>
+  </div>
+</section>
+<section>
+  <div class="container">
+    <h2>Verified public surfaces.</h2>
+    <p class="section-lede">These are the surfaces safe to claim in public copy right now. Pending surfaces are listed so buyers do not get sent to dead marketplace pages.</p>
+    <div class="status-list">
+      <div class="status"><span class="badge live">LIVE</span><div><strong><a href="https://www.npmjs.com/package/thumbgate">npm package</a></strong><span>`thumbgate@1.27.17` is the canonical runtime install.</span></div></div>
+      <div class="status"><span class="badge live">LIVE</span><div><strong><a href="https://marketplace.visualstudio.com/items?itemName=igorganapolsky.thumbgate">VS Code Marketplace</a></strong><span>Marketplace version-list API includes `1.27.17`.</span></div></div>
+      <div class="status"><span class="badge live">LIVE</span><div><strong><a href="https://open-vsx.org/extension/igorganapolsky/thumbgate">Open VSX</a></strong><span>Public registry latest version is `1.27.17`; use this path for VS Code-compatible IDEs that consume Open VSX.</span></div></div>
+      <div class="status"><span class="badge live">LIVE</span><div><strong><a href="https://registry.modelcontextprotocol.io/v0/servers?search=thumbgate">MCP Registry</a></strong><span>Public search returns `io.github.IgorGanapolsky/thumbgate` version `1.27.17` as latest.</span></div></div>
+      <div class="status"><span class="badge live">LIVE</span><div><strong><a href="https://github.com/IgorGanapolsky/ThumbGate/releases/tag/v1.27.17">GitHub Release</a></strong><span>Includes VSIX, Claude Desktop `.mcpb`, Claude review zip, and Codex plugin zip assets.</span></div></div>
+      <div class="status"><span class="badge pending">PENDING</span><div><strong>Claude Desktop directory</strong><span>Official MCPB form is reachable; submission needs account/email/file-upload approval.</span></div></div>
+      <div class="status"><span class="badge blocked">BLOCKED</span><div><strong>Cursor public Marketplace</strong><span>Public listing returns "Marketplace Plugin Not Found"; dashboard requires sign-in to inspect or resubmit.</span></div></div>
+      <div class="status"><span class="badge pending">PENDING</span><div><strong>Codex public directory</strong><span>OpenAI docs say public plugin publishing and self-serve management are coming soon.</span></div></div>
+    </div>
+  </div>
+</section>
+<section>
+  <div class="container">
+    <div class="cta-band">
+      <h2>When install is not enough, buy the diagnostic.</h2>
+      <p>If one AI-agent workflow already touches customers, money, production, outbound messages, browser automation, or deploy approvals, a generic install is not enough. The Workflow Hardening Diagnostic maps the repeated failure, the block/warn/human-review split, and the proof receipt that should exist before the action runs.</p>
+      <div class="actions">
+        <a class="btn-primary" href="/diagnostic?utm_source=install_page&utm_medium=owned_page&utm_campaign=workflow_hardening_diagnostic">Start the $499 diagnostic</a>
+        <a class="btn-secondary" href="/guide">Read the setup guide</a>
+      </div>
+    </div>
+  </div>
+</section>
+<footer><div class="container"><p>Commercial claims stay pinned to <a href="/llm-context.md">LLM context</a>, <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md">commercial truth</a>, and <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md">verification evidence</a>.</p></div></footer>
+</body>
+</html>

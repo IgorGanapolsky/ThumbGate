@@ -107,9 +107,6 @@ async function run() {
         if (!docs.includes('VERIFICATION_EVIDENCE.md')) {
           throw new Error('Verification evidence link missing from generated docs');
         }
-        if (!docs.includes('proof/compatibility/report.json')) {
-          throw new Error('Compatibility proof link missing from generated docs');
-        }
       },
     },
     {

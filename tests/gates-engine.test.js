@@ -50,6 +50,7 @@ const {
   verifyClaimEvidence,
   evaluateBoostedRiskTagGuard,
   evaluatePendingPrThreadResolutionGate,
+  isReadOnlyObservabilityTool,
   getLocalOnlyScopeSources,
   isRemoteSideEffectCommand,
   evaluateLocalOnlyRemoteSideEffectGate,
@@ -1504,6 +1505,55 @@ test('evaluateGatesAsync skips metric gates for recall tool', async () => {
   }
 });
 
+test('evaluateGates: approval gate fails CLOSED (deny) in an autonomous run', () => {
+  const tmpConfig = makeTempPath('autonomous-approve.json');
+  fs.writeFileSync(tmpConfig, JSON.stringify({
+    version: 1,
+    gates: [{
+      id: 'needs-human-approval',
+      pattern: '.*',
+      action: 'approve',
+      message: 'This action needs human sign-off',
+      severity: 'high',
+    }],
+  }));
+  const orig = process.env.THUMBGATE_AUTONOMOUS;
+  try {
+    // Interactive (default): defer to a human — decision 'approve'.
+    delete process.env.THUMBGATE_AUTONOMOUS;
+    const interactive = evaluateGates('Bash', { command: 'deploy to production' }, tmpConfig);
+    assert.equal(interactive && interactive.decision, 'approve', 'interactive run should defer to human approval');
+    assert.equal(interactive.requiresApproval, true);
+
+    // Autonomous run: no human present → must fail CLOSED (deny), not slip through.
+    process.env.THUMBGATE_AUTONOMOUS = '1';
+    const autonomous = evaluateGates('Bash', { command: 'deploy to production' }, tmpConfig);
+    assert.equal(autonomous && autonomous.decision, 'deny', 'autonomous run must fail closed on an approval gate');
+    assert.equal(autonomous.failedClosed, true);
+  } finally {
+    if (orig === undefined) delete process.env.THUMBGATE_AUTONOMOUS;
+    else process.env.THUMBGATE_AUTONOMOUS = orig;
+    fs.rmSync(tmpConfig, { force: true });
+  }
+});
+
+test('isAutonomousRun is opt-in via THUMBGATE_AUTONOMOUS (off by default)', () => {
+  const orig = process.env.THUMBGATE_AUTONOMOUS;
+  try {
+    delete process.env.THUMBGATE_AUTONOMOUS;
+    assert.equal(gatesEngine.isAutonomousRun(), false);
+    process.env.THUMBGATE_AUTONOMOUS = '1';
+    assert.equal(gatesEngine.isAutonomousRun(), true);
+    process.env.THUMBGATE_AUTONOMOUS = 'true';
+    assert.equal(gatesEngine.isAutonomousRun(), true);
+    process.env.THUMBGATE_AUTONOMOUS = '0';
+    assert.equal(gatesEngine.isAutonomousRun(), false);
+  } finally {
+    if (orig === undefined) delete process.env.THUMBGATE_AUTONOMOUS;
+    else process.env.THUMBGATE_AUTONOMOUS = orig;
+  }
+});
+
 test('evaluateGatesAsync does NOT skip metric gates for non-skip tools', async () => {
   // Mock semantic-layer to return a metric value that violates the gate
   const semanticLayerPath = require.resolve('../scripts/semantic-layer');
@@ -1966,6 +2016,55 @@ test('git commit on PR branch registers thread-resolution claim gate and blocks 
 
     satisfyCondition('pr_threads_checked', 'reviewThreads first:50 returned 0 unresolved');
     assert.equal(evaluatePendingPrThreadResolutionGate('Read', { file_path: 'README.md' }), null);
+  } finally {
+    fs.rmSync(tmpConfig, { force: true });
+    cleanupStateFiles();
+  }
+});
+
+test('pending PR-thread gate never blocks read-only observability tools (operator can always read revenue)', () => {
+  cleanupStateFiles();
+  const tmpConfig = makeTempPath('pr-commit-readonly-exempt.json');
+  try {
+    setTaskScope({
+      allowedPaths: ['README.md'],
+      summary: 'Keep the read-only-exemption test isolated from the caller worktree.',
+    });
+    fs.writeFileSync(tmpConfig, JSON.stringify({ version: 1, gates: [] }));
+
+    // A PR-branch commit arms the pending thread-resolution gate.
+    const commitResult = evaluateGates('Bash', {
+      command: 'git commit -m "fix review feedback"',
+      branchName: 'fix/review-feedback',
+      prNumber: 123,
+      changedFiles: ['README.md'],
+    }, tmpConfig);
+    assert.equal(commitResult, null);
+    assert.ok(hasAction(PR_THREAD_RESOLUTION_ACTION));
+
+    // The gate still bites for a plain file Read (design intent preserved)...
+    const blockedRead = evaluatePendingPrThreadResolutionGate('Read', { file_path: 'README.md' });
+    assert.ok(blockedRead && blockedRead.decision === 'deny', 'file Read stays gated until threads verified');
+
+    // ...but read-only observability MCP tools must pass through so the operator can
+    // always read revenue/metrics/dashboard mid-PR. Regression guard for 2026-06-30:
+    // `get_business_metrics` was denied "a git commit was made on a PR branch".
+    for (const tool of [
+      'get_business_metrics', 'dashboard', 'describe_semantic_entity',
+      'generate_operator_artifact', 'gate_stats', 'session_report',
+    ]) {
+      assert.equal(
+        evaluatePendingPrThreadResolutionGate(tool, {}),
+        null,
+        `${tool} must not be blocked by the pending PR-thread gate`,
+      );
+      assert.equal(isReadOnlyObservabilityTool(tool), true, `${tool} classified read-only`);
+    }
+
+    // A mutating MCP tool is NOT read-only and stays gated.
+    assert.equal(isReadOnlyObservabilityTool('capture_feedback'), false);
+    const blockedMutation = evaluatePendingPrThreadResolutionGate('import_document', { title: 'x' });
+    assert.ok(blockedMutation && blockedMutation.decision === 'deny', 'mutating MCP tool stays gated');
   } finally {
     fs.rmSync(tmpConfig, { force: true });
     cleanupStateFiles();

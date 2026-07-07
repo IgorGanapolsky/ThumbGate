@@ -47,7 +47,12 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
     toolName,
   });
 
-  return reranked.map((m) => ({
+  // Stage 3 (opt-in) — Memora-style nucleus stop: trim the low-mass tail so a
+  // dominant lesson isn't padded out to maxResults. No-op unless topP < 1.
+  const deduped = dedupeSupersededLessons(reranked);
+  const selected = filterTopP(deduped, resolveTopP(options), { minKeep: options.minKeep });
+
+  return selected.map((m) => ({
     id: m.id,
     title: m.title,
     content: m.content,
@@ -177,7 +182,7 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
     // Short-circuit: skip embedding/dense search completely
     const { rerankLessons } = require('./lesson-reranker');
     const reranked = rerankLessons(actionContext, lexicalScored.slice(0, RERANK_CANDIDATE_POOL), { topK: maxResults, toolName });
-    return reranked.map(shapeLesson);
+    return filterTopP(dedupeSupersededLessons(reranked), resolveTopP(options), { minKeep: options.minKeep }).map(shapeLesson);
   }
 
   // WHERE-clause pruning: filter memories before vector search to only include
@@ -241,7 +246,7 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
 
   const { rerankLessons } = require('./lesson-reranker');
   const reranked = rerankLessons(actionContext, candidates, { topK: maxResults, toolName });
-  return reranked.map(shapeLesson);
+  return filterTopP(dedupeSupersededLessons(reranked), resolveTopP(options), { minKeep: options.minKeep }).map(shapeLesson);
 }
 
 function buildActionSignature(toolName, actionContext) {
@@ -325,37 +330,130 @@ function tokenize(text) {
   return (text || '').split(/[\s.,;:!?()\[\]{}"'`]+/).filter((t) => t.length > 3);
 }
 
-function calculateRetrievalEntropy(lessons) {
-  if (!Array.isArray(lessons) || lessons.length === 0) return 0;
-  let pW = 0, nW = 0, tW = 0;
-  for (const l of lessons) {
-    const w = l.relevanceScore || 0.1;
-    if (l.signal === "positive") pW += w; else nW += w;
-    tW += w;
-  }
-  if (tW === 0) return 0;
-  const pPos = pW / tW, pNeg = nW / tW;
-  const entropy = (pPos > 0 ? -pPos * Math.log2(pPos) : 0) + (pNeg > 0 ? -pNeg * Math.log2(pNeg) : 0);
-  return Number(entropy.toFixed(4));
+/**
+ * Resolve the nucleus (top-P) cutoff for a retrieval call. Precedence:
+ *   options.topP (finite, 0 < p <= 1)  →  env THUMBGATE_RETRIEVAL_TOP_P  →  1.0 (off).
+ * 1.0 is a no-op (returns the full reranked top-K), so retrieval behaviour is
+ * unchanged unless an operator explicitly opts in.
+ */
+function resolveTopP(options = {}) {
+  const fromOption = Number(options && options.topP);
+  if (Number.isFinite(fromOption) && fromOption > 0 && fromOption <= 1) return fromOption;
+  const fromEnv = Number(process.env.THUMBGATE_RETRIEVAL_TOP_P);
+  if (Number.isFinite(fromEnv) && fromEnv > 0 && fromEnv <= 1) return fromEnv;
+  return 1.0;
 }
-
 
 /**
- * Filter lessons using Top-P (nucleus) sampling logic.
- * Keeps lessons that contribute to the top cumulative relevance mass.
+ * Nucleus (top-P) filter over a ranked lesson list — the lightweight realization of
+ * Memora's "policy-guided retriever decides when to stop" (ICML 2026). Instead of a
+ * fixed top-K, keep the smallest prefix whose NORMALIZED relevance mass covers `topP`.
+ *
+ * Scores are normalized into a probability distribution first, so the cutoff is
+ * scale-free: it behaves the same on raw bi-encoder scores (0..~1.5) and on blended
+ * rerank scores. When one or two lessons dominate the distribution, fewer lessons are
+ * returned (less context stuffed into the prompt, fewer tokens); when relevance is
+ * spread out, more are kept.
+ *
+ * Guarantees:
+ *   - never returns more lessons than the input (purely subtractive);
+ *   - always returns at least `minKeep` (default 1) when the input is non-empty;
+ *   - topP >= 1 (or non-positive/NaN) is a no-op: returns the input, order preserved.
+ *
+ * @param {Array<object>} lessons - ranked lessons (each with rerankedScore or relevanceScore)
+ * @param {number} [topP=1.0] - cumulative normalized mass to cover, in (0, 1]
+ * @param {object} [options]
+ * @param {number} [options.minKeep=1] - hard floor on lessons returned
+ * @returns {Array<object>} the retained prefix, highest score first
  */
-function filterTopP(lessons, topP = 0.9) {
+function filterTopP(lessons, topP = 1.0, options = {}) {
   if (!Array.isArray(lessons) || lessons.length === 0) return [];
-  if (topP >= 1.0) return lessons;
-  const sorted = [...lessons].sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0));
+  const minKeep = Math.max(1, Math.floor(options && options.minKeep) || 1);
+  if (!(topP > 0) || topP >= 1) return lessons.slice();
+
+  const scoreOf = (l) => {
+    const s = l && (l.rerankedScore ?? l.relevanceScore);
+    return Number.isFinite(s) && s > 0 ? s : 0;
+  };
+  const sorted = [...lessons].sort((a, b) => scoreOf(b) - scoreOf(a));
+  const total = sorted.reduce((sum, l) => sum + scoreOf(l), 0);
+  if (total <= 0) return sorted.slice(0, Math.min(minKeep, sorted.length));
+
   let cumulative = 0;
-  const filtered = [];
-  for (const l of sorted) {
-    filtered.push(l);
-    cumulative += (l.relevanceScore || 0);
-    if (cumulative >= topP) break;
+  const kept = [];
+  for (const lesson of sorted) {
+    kept.push(lesson);
+    cumulative += scoreOf(lesson) / total;
+    if (kept.length >= minKeep && cumulative >= topP) break;
   }
-  return filtered;
+  return kept;
+}
+
+/**
+ * Drop superseded / contradictory lessons before final selection.
+ *
+ * Retrieval can surface two lessons on the SAME topic at near-equal relevance —
+ * a stale one and a newer correction. Handing an agent contradictory guidance
+ * ("never force-push" AND "force-push is fine") poisons its decision and wastes
+ * tokens — the "context poisoning" failure mode. This collapses same-topic
+ * lessons on the reranked list:
+ *   - same topic + SAME signal     → duplicate: keep the higher-ranked, drop rest
+ *   - same topic + OPPOSITE signal → contradiction: keep the most RECENT (it
+ *                                    supersedes), drop the older
+ *
+ * "Same topic" = identical/near-identical structured-rule trigger (the strong
+ * signal), else high character-bigram similarity of title+content. Conservative
+ * by design: distinct lessons are never merged, and survivor order is preserved.
+ * Affects only lesson RETRIEVAL — never the hard gate rules.
+ *
+ * @param {Array<object>} lessons - reranked lessons/memories, best-first
+ * @param {object} [options]
+ * @param {number} [options.similarityThreshold=0.82] - bigram-Jaccard cutoff for "same topic"
+ * @returns {Array<object>} deduped list, order preserved
+ */
+function dedupeSupersededLessons(lessons, options = {}) {
+  if (!Array.isArray(lessons) || lessons.length <= 1) {
+    return Array.isArray(lessons) ? lessons.slice() : [];
+  }
+  const threshold = Number.isFinite(options.similarityThreshold) ? options.similarityThreshold : 0.82;
+  const signalOf = (x) => x.signal || (x.tags?.includes('negative') ? 'negative' : 'positive');
+  const topicSignature = (x) => {
+    const rule = x.rule || x.structuredRule;
+    const cond = rule && (rule.trigger?.condition || rule.if);
+    if (cond && String(cond).trim().length >= 3) return String(cond).toLowerCase().trim();
+    return `${x.title || ''} ${x.content || ''}`.toLowerCase().trim();
+  };
+  const timeOf = (x) => {
+    const t = x.timestamp ? new Date(x.timestamp).getTime() : NaN;
+    return Number.isFinite(t) ? t : -Infinity;
+  };
+  const sigs = lessons.map(topicSignature);
+  const grams = sigs.map((s) => textBigrams(s));
+  const sameTopic = (i, j) => {
+    if (!sigs[i] || !sigs[j]) return false;
+    if (sigs[i] === sigs[j]) return true;
+    return bigramJaccard(grams[i], grams[j]) >= threshold;
+  };
+
+  const kept = []; // indices into `lessons`, best-first
+  for (let i = 0; i < lessons.length; i++) {
+    let collapsed = false;
+    for (let k = 0; k < kept.length; k++) {
+      const j = kept[k];
+      if (!sameTopic(i, j)) continue;
+      if (signalOf(lessons[i]) === signalOf(lessons[j])) {
+        collapsed = true; // duplicate → keep the already-kept (higher-ranked)
+      } else if (timeOf(lessons[i]) > timeOf(lessons[j])) {
+        kept[k] = i; // contradiction → newer supersedes, take the slot
+        collapsed = true;
+      } else {
+        collapsed = true; // contradiction, incoming is older → drop it
+      }
+      break;
+    }
+    if (!collapsed) kept.push(i);
+  }
+  return kept.map((idx) => lessons[idx]);
 }
 
 function calculateRetrievalEntropy(lessons) {
@@ -372,7 +470,7 @@ function calculateRetrievalEntropy(lessons) {
   return Number(entropy.toFixed(4));
 }
 
-module.exports = { calculateRetrievalEntropy, filterTopP,  calculateRetrievalEntropy, 
+module.exports = {
   retrieveRelevantLessons,
   retrieveRelevantLessonsAsync,
   reciprocalRankFusion,
@@ -380,4 +478,8 @@ module.exports = { calculateRetrievalEntropy, filterTopP,  calculateRetrievalEnt
   buildActionSignature,
   textBigrams,
   bigramJaccard,
+  calculateRetrievalEntropy,
+  filterTopP,
+  resolveTopP,
+  dedupeSupersededLessons,
 };

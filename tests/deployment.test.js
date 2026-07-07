@@ -33,7 +33,7 @@ function deployUrl(pathname = '/') {
   return new URL(pathname, deployOrigin).toString();
 }
 
-function runDeployScopeFixture(changePath, eventName = 'push', beforeShaOverride = null) {
+function runDeployScopeFixture(changePath, eventName = 'push', beforeShaOverride = null, deployedSha = null) {
   const repoDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-deploy-scope-'));
   const githubOutput = path.join(repoDir, 'github-output.txt');
   const jsonOutput = path.join(repoDir, 'deploy-scope.json');
@@ -54,6 +54,7 @@ function runDeployScopeFixture(changePath, eventName = 'push', beforeShaOverride
     execFileSync('git', ['add', '.'], { cwd: repoDir });
     execFileSync('git', ['commit', '-m', `change ${changePath}`], { cwd: repoDir, stdio: 'ignore' });
     const headSha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repoDir, encoding: 'utf8' }).trim();
+    const resolvedDeployedSha = deployedSha === '__HEAD__' ? headSha : (deployedSha || '');
 
     execFileSync('bash', [DEPLOY_SCOPE_SCRIPT], {
       cwd: repoDir,
@@ -64,6 +65,10 @@ function runDeployScopeFixture(changePath, eventName = 'push', beforeShaOverride
         EVENT_NAME: eventName,
         GITHUB_OUTPUT: githubOutput,
         DEPLOY_SCOPE_OUTPUT_JSON: jsonOutput,
+        // Hermetic: never let the real /health be curled during unit tests.
+        // Empty = "deployed SHA unknown" (preserves historical skip behaviour).
+        RAILWAY_HEALTHCHECK_URL: '',
+        DEPLOY_SCOPE_DEPLOYED_SHA: resolvedDeployedSha,
       },
       stdio: 'pipe',
     });
@@ -457,8 +462,30 @@ test('Deploy to Railway workflow skips non-runtime pushes and only deploys when 
   assert.match(scopeScript, /should_deploy=\$SHOULD_DEPLOY/);
   assert.match(scopeScript, /SHOULD_DEPLOY=true/);
   assert.match(scopeScript, /SHOULD_DEPLOY=false/);
+  // Drift guard: a non-runtime push must still deploy when prod is behind main HEAD.
+  assert.match(scopeScript, /get_deployed_sha/);
+  assert.match(scopeScript, /DEPLOY_SCOPE_DEPLOYED_SHA/);
+  assert.match(scopeScript, /prod_behind_head/);
   assert.match(workflow, /Railway deploy skipped: no runtime-serving files changed in this push range\./);
   assert.doesNotMatch(workflow, /Railway deploy skipped: deploy-scope disabled this run\./);
+});
+
+test('deploy-scope forces a catch-up deploy when production has drifted behind main HEAD', () => {
+  // Non-runtime push, but the live build SHA is behind HEAD -> must deploy to catch up.
+  const behind = runDeployScopeFixture('docs/only-a-note.md', 'push', null, '0000000000000000000000000000000000000000');
+  assert.equal(behind.shouldDeploy, true);
+  assert.equal(behind.scopeReason, 'prod_behind_head');
+
+  // Non-runtime push AND production already serving HEAD -> safe to skip.
+  const current = runDeployScopeFixture('docs/only-a-note.md', 'push', null, '__HEAD__');
+  assert.equal(current.shouldDeploy, false);
+  assert.equal(current.scopeReason, 'non_runtime_changes');
+
+  // Non-runtime push, deployed SHA unknown (no override / no reachable health) ->
+  // preserve historical skip so a health blip never blocks a merge.
+  const unknown = runDeployScopeFixture('docs/only-a-note.md');
+  assert.equal(unknown.shouldDeploy, false);
+  assert.equal(unknown.scopeReason, 'non_runtime_changes');
 });
 
 test('deploy-scope script decides from the actual push range and writes reusable evidence', () => {

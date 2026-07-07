@@ -207,6 +207,25 @@ test('workflow diagnostic aliases serve the focused diagnostic page', async () =
   }
 });
 
+test('GET /install serves the verified distribution and buyer path page', async () => {
+  const paths = ['/install', '/install.html', '/marketplace', '/marketplaces'];
+
+  for (const pathname of paths) {
+    const res = await fetch(`${origin}${pathname}`, { redirect: 'manual' });
+    assert.equal(res.status, 200, `${pathname} should render install page`);
+    assert.match(res.headers.get('content-type') || '', /text\/html/);
+    const html = await res.text();
+    assert.match(html, /Install paths verified for v1\.27\.17/);
+    assert.match(html, /npm package/);
+    assert.match(html, /VS Code Marketplace/);
+    assert.match(html, /Open VSX/);
+    assert.match(html, /MCP Registry/);
+    assert.match(html, /Cursor public Marketplace/);
+    assert.match(html, /\/diagnostic\?utm_source=install_page/);
+    assert.match(html, /Workflow Hardening Diagnostic/);
+  }
+});
+
 test('GET /sitemap.xml includes /diagnostic and /workflow-hardening-sprint at priority 0.9', async () => {
   const res = await fetch(`${origin}/sitemap.xml`);
   assert.equal(res.status, 200);
@@ -217,6 +236,16 @@ test('GET /sitemap.xml includes /diagnostic and /workflow-hardening-sprint at pr
     assert.ok(entry, `${route} <url> block must exist`);
     assert.match(entry[0], /<priority>0\.9<\/priority>/);
   }
+});
+
+test('GET /sitemap.xml includes the install page at priority 0.9', async () => {
+  const res = await fetch(`${origin}/sitemap.xml`);
+  assert.equal(res.status, 200);
+  const xml = await res.text();
+  assert.match(xml, /<loc>[^<]*\/install<\/loc>/);
+  const entry = xml.match(/<url>\s*<loc>[^<]*\/install<\/loc>[\s\S]*?<\/url>/);
+  assert.ok(entry, '/install <url> block must exist');
+  assert.match(entry[0], /<priority>0\.9<\/priority>/);
 });
 
 test('LLM discovery file is available at root and well-known paths with canonical thumbgate.ai URLs', async () => {
@@ -373,18 +402,13 @@ test('public sales copy avoids unsupported pricing, traction, and guarantee clai
   }
 });
 
-test('/checkout/pro interstitial does not assert paying-customer counts or inflated install numbers', async () => {
-  // Audit 2026-05-18: the live /checkout/pro interstitial advertised
-  // "6 paying customers, 18,000+ installs verified on npm." Verified
-  // ground truth: external paying customers = 0 (the only Stripe charge
-  // was a founder self-purchase) and real npm last-30-days downloads
-  // were 5,257. Both numbers were false trust signals on a buyer-
-  // facing surface. Banned forever.
-  const res = await fetch(`${origin}/checkout/pro`);
-  assert.equal(res.status, 200);
-  const html = await res.text();
-  assert.doesNotMatch(html, /\d+\s+paying customers/i, '/checkout/pro must not assert a paying-customer count');
-  assert.doesNotMatch(html, /18[,]?000\+?\s+installs/i, '/checkout/pro must not assert an inflated 18,000+ installs claim');
+test('/checkout/pro bypasses to Stripe Payment Link (no false claims possible)', async () => {
+  // Bypass is ON by default — /checkout/pro now 302s directly to Stripe.
+  // No HTML body is served from our origin, so no risk of false claims.
+  const res = await fetch(`${origin}/checkout/pro`, { redirect: 'manual' });
+  assert.equal(res.status, 302, 'expected Stripe redirect');
+  const location = res.headers.get('location') || '';
+  assert.match(location, /buy\.stripe\.com\//, 'must redirect to Stripe');
 });
 
 test('GET /codex-enterprise serves the Dell partnership landing HTML', async () => {

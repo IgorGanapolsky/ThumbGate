@@ -97,8 +97,8 @@ This lane is for Claude Code users who want Codex review, adversarial review, an
 - Repo-local Codex MCP config: `plugins/codex-profile/.mcp.json`
 - Repo-local Codex marketplace: `.agents/plugins/marketplace.json`
 - Current Codex evidence: `codex plugin marketplace list --json` shows the repo-local `thumbgate-plugin-catalog`; do not claim OpenAI curated plugin-directory approval until the public Codex plugin directory shows ThumbGate.
-- Transport: local stdio MCP server launched through `npm install --prefix ~/.thumbgate/runtime --no-save --omit=dev thumbgate@latest` followed by `~/.thumbgate/runtime/node_modules/.bin/thumbgate serve`
-- Update policy: Codex MCP and hook launchers resolve `thumbgate@latest` at startup instead of preferring a stale installed runtime binary; unpublished local source checkouts fall back to the local server path
+- Transport: local stdio MCP server that fast-starts by exec'ing the installed `~/.thumbgate/runtime/node_modules/.bin/thumbgate serve`, and only resolves `thumbgate@latest` via `npm exec` (npx) when that runtime binary is absent
+- Update policy: Codex MCP and hook launchers fast-start from the installed runtime binary and resolve `thumbgate@latest` via npx only when it is missing, so startup never blocks on a per-launch reinstall; unpublished local source checkouts fall back to the local server path
 
 The standalone Codex bundle ships `.codex-plugin/plugin.json`, `.mcp.json`, `.agents/plugins/marketplace.json`, `config.toml`, and install docs in one zip. Stable releases publish `thumbgate-codex-plugin.zip`; prereleases publish `thumbgate-codex-plugin-next.zip`. The bundle metadata remains versioned for marketplace review, while the runtime follows the latest npm release for active Codex installs.
 

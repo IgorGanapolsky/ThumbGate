@@ -70,6 +70,11 @@
       "route": "/about",
       "sentinel": "Igor Ganapolsky",
       "description": "About page for GEO discoverability"
+    },
+    {
+      "route": "/leash-beta",
+      "sentinel": "Stop Runaway AI Agents From Freezing Your Machine",
+      "description": "Hermes Mobile founding beta / Leash Pro pricing landing"
     }
   ]
 }

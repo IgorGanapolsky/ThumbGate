@@ -20,7 +20,7 @@ const POSTHOG_STATIC_PATH_PREFIX = '/static/';
 // Stripe catalog, with the per-tier thumbnails wired in. Re-run the
 // bootstrap workflow to regenerate; the new URLs surface in the workflow
 // summary log.
-const FIRST_FAILURE_RULE_CHECKOUT_URL = 'https://buy.stripe.com/fZu28rfCY6zcbO99uj3sI2G';
+const FIRST_FAILURE_RULE_CHECKOUT_URL = 'https://buy.stripe.com/7sY6oHaiEbTw6tP5e33sI3e';
 const QUICK_READ_CHECKOUT_URL = 'https://buy.stripe.com/5kQ7sL76s1eSaK55e33sI2H';
 const WORKFLOW_TEARDOWN_CHECKOUT_URL = 'https://buy.stripe.com/8x214n2Qc4r44lHayn3sI2I';
 const SPRINT_DIAGNOSTIC_CHECKOUT_URL = 'https://buy.stripe.com/28E00j3Uge1E2dzgWL3sI2J';
@@ -242,6 +242,7 @@ const FEDERAL_PAGE_PATH = path.resolve(__dirname, '../../public/federal.html');
 const PRICING_PAGE_PATH = path.resolve(__dirname, '../../public/pricing.html');
 const ABOUT_PAGE_PATH = path.resolve(__dirname, '../../public/about.html');
 const DIAGNOSTIC_PAGE_PATH = path.resolve(__dirname, '../../public/diagnostic.html');
+const INSTALL_PAGE_PATH = path.resolve(__dirname, '../../public/install.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
 const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
@@ -2244,10 +2245,9 @@ a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:
 <h1>Start ThumbGate Pro</h1>
 <div class="price">$19<small>/mo</small></div>
 <p>The npm package runs your gates locally. <strong>Pro</strong> is what keeps them working across every machine, every agent runtime, and every breaking-change week.</p>
-<form action="/checkout/pro" method="GET" data-i="pro_checkout_confirmed">
+<form action="https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f" method="GET" data-i="pro_checkout_confirmed">
 ${hiddenInputs}
-<input type="hidden" name="confirm" value="1">
-<input type="email" name="customer_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email">
+<input type="email" name="prefilled_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email">
 <p class="email-note">Optional. Stripe can collect your email on the secure checkout page.</p>
 <button type="submit" class="primary">Pay $19/mo with Stripe →</button>
 </form>
@@ -2863,8 +2863,8 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
     '__SERVER_ACQUISITION_ID__': pageContext.serverAcquisitionId || '',
     '__SERVER_TELEMETRY_CAPTURED__': pageContext.serverTelemetryCaptured ? 'true' : 'false',
     '__VERIFICATION_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
-    '__COMPATIBILITY_REPORT_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/compatibility/report.json',
-    '__AUTOMATION_REPORT_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/proof/automation/report.json',
+    '__COMPATIBILITY_REPORT_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
+    '__AUTOMATION_REPORT_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
     '__GTM_PLAN_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/GO_TO_MARKET_REVENUE_WEDGE_2026-03.md',
     '__GITHUB_URL__': 'https://github.com/IgorGanapolsky/ThumbGate',
     '__POSTHOG_API_KEY__': runtimeConfig.posthogApiKey || '',
@@ -2881,6 +2881,10 @@ function loadProPageHtml(runtimeConfig, pageContext = {}) {
 
 function loadDiagnosticPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(DIAGNOSTIC_PAGE_PATH, runtimeConfig, pageContext);
+}
+
+function loadInstallPageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(INSTALL_PAGE_PATH, runtimeConfig, pageContext);
 }
 
 function loadPricingPageHtml(runtimeConfig, pageContext = {}) {
@@ -3518,6 +3522,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/pro', changefreq: 'weekly', priority: '0.9' },
     { path: '/diagnostic', changefreq: 'weekly', priority: '0.9' },
     { path: '/workflow-hardening-sprint', changefreq: 'weekly', priority: '0.9' },
+    { path: '/install', changefreq: 'weekly', priority: '0.9' },
     { path: '/agent-manager', changefreq: 'weekly', priority: '0.9' },
     { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
     { path: '/chatgpt-app', changefreq: 'weekly', priority: '0.85' },
@@ -5216,7 +5221,7 @@ function createApiServer() {
     if (req.method === 'POST' && pathname === '/api/event') {
       // Filter bots from analytics to keep Plausible data clean
       let _botDetector;
-      try { _botDetector = require('../../scripts/bot-detector'); } catch (_e) { _botDetector = null; }
+      try { _botDetector = require('../../scripts/bot-detection'); } catch (_e) { _botDetector = null; }
       if (_botDetector && _botDetector.shouldExcludeFromAnalytics(req)) {
         sendJson(res, 202, { status: 'filtered', reason: 'bot' });
         return;
@@ -5617,6 +5622,32 @@ async function addContext(){
         });
       } catch (err) {
         sendText(res, 500, err.message || 'Guide page unavailable');
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (
+      pathname === '/install'
+      || pathname === '/install.html'
+      || pathname === '/marketplace'
+      || pathname === '/marketplace.html'
+      || pathname === '/marketplaces'
+      || pathname === '/marketplaces.html'
+    )) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadInstallPageHtml,
+          extraTelemetry: {
+            pageType: 'install',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Install page unavailable');
       }
       return;
     }
@@ -6062,7 +6093,7 @@ async function addContext(){
       // pro Stripe Payment Link, preserving UTM + attribution metadata via
       // buildCheckoutFallbackUrl. Default-off; bot-deflection still applies
       // (bot + no email hint still falls through to the existing interstitial).
-      const interstitialBypassEnabled = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS === '1';
+      const interstitialBypassEnabled = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS !== '0';
       const interstitialSampleRate = normalizeCheckoutInterstitialSampleRate(
         process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE
       );
@@ -6460,6 +6491,25 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && pathname === '/leash-beta') {
+      // Hermes Mobile founding beta landing (mac-yolo-safeguards/hermes-mobile/docs/beta-page).
+      try {
+        const html = fs.readFileSync(
+          path.resolve(__dirname, '../../assets/static/leash-beta.html'),
+          'utf8'
+        );
+        if (isHeadRequest) {
+          sendHtml(res, 200, html, {}, { headOnly: true });
+          return;
+        }
+        sendHtml(res, 200, html);
+      } catch (err) {
+        console.error('leash-beta page read failed:', err?.message);
+        sendJson(res, 500, { error: 'leash-beta page unavailable' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && pathname === '/.well-known/mcp.json') {
       sendJson(res, 200, getMcpDiscoveryManifest(hostedConfig), {}, {
         headOnly: isHeadRequest,
@@ -6835,7 +6885,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
     }
 
     if (req.method === 'GET' && pathname === '/v1/metrics/real') {
-      const bd = require('../../scripts/bot-detector');
+      const bd = require('../../scripts/bot-detection');
       const { FEEDBACK_DIR: metricsDir } = getFeedbackPaths();
       const telemetryPath = path.join(metricsDir, 'telemetry-pings.jsonl');
 

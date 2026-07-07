@@ -59,7 +59,8 @@ test.describe('/ landing page clickability — comprehensive E2E coverage', () =
   test('router Pro CTA navigates to hosted Pro checkout', async ({ page }) => {
     await page.goto('/');
     await page.locator('.offer-route.primary a', { hasText: /Pay \$19\/mo with Stripe/ }).click();
-    await expect(page).toHaveURL(/\/checkout\/pro/);
+    // Bypass is ON by default — Pro CTA now redirects directly to Stripe Payment Link
+    await expect(page).toHaveURL(/buy\.stripe\.com\//);
     await expect(page).toHaveURL(/cta_id=router_start_pro/);
   });
 

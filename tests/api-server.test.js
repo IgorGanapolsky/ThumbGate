@@ -1839,7 +1839,7 @@ test('checkout bootstrap route preserves attribution and records first-party tel
 // confused humans for money before they saw the offer). Post-change: GETs
 // render the interstitial; only POST or ?confirm=1 triggers a Stripe session.
 
-test('checkout interstitial: GET without confirm=1 (human UA) renders the interstitial HTML, no Stripe session', async () => {
+test('checkout interstitial: GET without confirm=1 (human UA) bypasses to Stripe Payment Link by default', async () => {
   const res = await fetch(apiUrl('/checkout/pro?plan_id=pro&billing_cycle=monthly&utm_campaign=%3Cimg%20src=x%20onerror=alert(1)%3E&not_allowed=%3Csvg%20onload=alert(1)%3E'), {
     redirect: 'manual',
     headers: {
@@ -1847,36 +1847,10 @@ test('checkout interstitial: GET without confirm=1 (human UA) renders the inters
       accept: 'text/html,application/xhtml+xml',
     },
   });
-  assert.equal(res.status, 200, 'human GET without confirm must NOT 302 to Stripe');
-  const body = await res.text();
-  assert.match(body, /Start ThumbGate Pro/i);
-  assert.match(body, /\$19/);
-  assert.match(body, /data-domain="thumbgate\.ai"/);
-  assert.doesNotMatch(body, /data-domain="thumbgate-production\.up\.railway\.app"/);
-  // Form must carry confirm=1 hidden input so submission triggers the Stripe path
-  assert.match(body, /name="confirm" value="1"/);
-  assert.match(body, /name="plan_id" value="pro"/, 'human interstitial should preserve checkout attribution through submit');
-  assert.match(body, /name="billing_cycle" value="monthly"/, 'human interstitial should preserve billing cycle through submit');
-  assert.match(body, /name="utm_campaign" value="&lt;img src=x onerror=alert\(1\)&gt;"/);
-  assert.doesNotMatch(body, /not_allowed/);
-  assert.doesNotMatch(body, /<img src=x onerror=alert\(1\)>/);
-  assert.doesNotMatch(body, /<svg onload=alert\(1\)>/);
-  const emailInputMatch = body.match(/<input[^>]+name="customer_email"[^>]*>/i);
-  assert.ok(emailInputMatch, 'email input should remain visible for buyers who want checkout recovery');
-  assert.doesNotMatch(emailInputMatch[0], /\srequired(?:\s|=|>)/i, 'email must stay optional before Stripe so confirmed buyers can reach checkout');
-  assert.match(body, /Stripe can collect your email on the secure checkout page/);
-  assert.match(body, /Not sure yet\? Send the workflow first/);
-  assert.doesNotMatch(body, /Pay \$1 first rule/);
-  assert.doesNotMatch(body, /Pay \$99 teardown/);
-  assert.doesNotMatch(body, /Book \$499 diagnostic/);
-  assert.doesNotMatch(body, /Start \$1500 sprint/);
-  assert.doesNotMatch(body, /https:\/\/buy\.stripe\.com\//);
-
-  // Telemetry: a human view (not a bot) emits checkout_interstitial_view,
-  // not checkout_bot_deflected.
-  const telemetryEvents = readJsonl(path.join(tmpFeedbackDir, 'telemetry-pings.jsonl'));
-  const interstitialEvent = telemetryEvents.find((entry) => entry.eventType === 'checkout_interstitial_view');
-  assert.ok(interstitialEvent, 'expected checkout_interstitial_view telemetry for human GET');
+  // Bypass is now ON by default — human GETs 302 straight to Stripe Payment Link
+  assert.equal(res.status, 302, 'human GET without confirm should 302 to Stripe (bypass enabled)');
+  const location = res.headers.get('location') || '';
+  assert.match(location, /buy\.stripe\.com\//, 'redirect target must be a Stripe Payment Link');
 });
 
 test('checkout interstitial: GET with confirm=1 (human UA) bypasses interstitial and proceeds to Stripe redirect', async () => {
@@ -4372,6 +4346,34 @@ test('/broker-audit returns 500 problem-json when static asset is missing', asyn
     assert.equal(res.status, 500);
     const body = await res.json();
     assert.equal(body.error, 'broker-audit page unavailable');
+  } finally {
+    fs.renameSync(backupPath, assetPath);
+  }
+});
+
+test('/leash-beta serves the Hermes founding beta landing page', async () => {
+  const res = await fetch(apiUrl('/leash-beta'));
+  assert.equal(res.status, 200);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+
+  const body = await res.text();
+  assert.match(body, /Stop Runaway AI Agents From Freezing Your Machine/);
+  assert.match(body, /Founding Leash Pro/);
+  assert.match(body, /status: beta_ready/);
+
+  const head = await fetch(apiUrl('/leash-beta'), { method: 'HEAD' });
+  assert.equal(head.status, 200);
+});
+
+test('/leash-beta returns 500 problem-json when static asset is missing', async () => {
+  const assetPath = path.resolve(__dirname, '..', 'assets', 'static', 'leash-beta.html');
+  const backupPath = `${assetPath}.swap-${process.pid}`;
+  fs.renameSync(assetPath, backupPath);
+  try {
+    const res = await fetch(apiUrl('/leash-beta'));
+    assert.equal(res.status, 500);
+    const body = await res.json();
+    assert.equal(body.error, 'leash-beta page unavailable');
   } finally {
     fs.renameSync(backupPath, assetPath);
   }

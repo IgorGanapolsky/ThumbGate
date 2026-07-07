@@ -46,6 +46,11 @@ FORBIDDEN_PATTERNS=(
   '^TEST_EVIDENCE_.*\.md$'
   '^.*_BATTLE_PLAN\.md$'
   '^undefined/'
+  # Internal operator artifacts removed from the public tree 2026-07-02:
+  # generated reports, proof artifacts, and session memory logs stay local.
+  '^reports/'
+  '^proof/'
+  '^memory/'
 )
 LEAKED=""
 for pat in "${FORBIDDEN_PATTERNS[@]}"; do
