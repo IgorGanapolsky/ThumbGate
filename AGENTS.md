@@ -127,3 +127,4 @@ Rules:
 > You MUST follow these constraints strictly to prevent repeated errors.
 
 - **Rule [auto-test-failure]**: Auto-promoted repeated pattern: "test failure" (1 occurrences in 30 days)
+- **Rule [auto-entity-customer]**: Auto-promoted repeated pattern: "deleted prod config ran rm on .env never delete .env files" (1 occurrences in 30 days)
