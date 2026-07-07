@@ -125,9 +125,11 @@ Session 2:  ⛔ Check blocks the force-push.  Zero round-trip. +0 tokens
 Session 3+: Never happens again.                              +0 tokens
 ```
 
-One thumbs-down. The PreToolUse hook intercepts the call **before** it reaches the model — no input tokens, no output tokens, no retry loop. The dashboard tracks **tokens saved this week** as a live counter so you can see exactly what your prevention rules are worth. Mark a review checkpoint once, and the dashboard narrows the next pass to only the feedback, lessons, and check blocks that landed since your last review.
+One thumbs-down. The PreToolUse hook intercepts the call **before** it reaches the model — no input tokens, no output tokens, no retry loop. `npx thumbgate cost` prints the cumulative tokens and dollars saved by gate blocks, and the dashboard shows **estimated tokens saved** so you can see exactly what your prevention rules are worth. Mark a review checkpoint once, and the dashboard narrows the next pass to only the feedback, lessons, and check blocks that landed since your last review.
 
 ThumbGate doesn't make your agent smarter. It makes your agent *cheaper to be wrong with.*
+
+> **Microsoft named this discipline in July 2026:** ["Token Economics: The New FinOps for Agentic AI"](https://techcommunity.microsoft.com/blog/azuredevcommunityblog/token-economics-the-new-finops-for-agentic-ai/4533743) — meter every call, set budget thresholds, add throttle and rollback actions, because "one retry loop can quietly turn a small user request into a budget incident." Our take on the waste class their playbook doesn't cover: [Token Economics — and the Layer It Misses](https://thumbgate.ai/learn/token-economics-finops-agentic-ai).
 
 ---
 

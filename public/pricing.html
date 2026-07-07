@@ -102,6 +102,7 @@ __GA_BOOTSTRAP__
   "@type": "FAQPage",
   "mainEntity": [
     { "@type": "Question", "name": "What does Pro add over the free CLI?", "acceptedAnswer": { "@type": "Answer", "text": "Free gives you 2 captures/day and 3 active rules, running entirely on your machine. Pro is the hosted layer: unlimited captures, unlimited rules, lesson sync across machines, a dashboard without self-hosting, managed adapter updates, and DPO export. You're paying for infrastructure we run, not features we hide." } },
+    { "@type": "Question", "name": "Does ThumbGate control my token spend?", "acceptedAnswer": { "@type": "Answer", "text": "It meters and prevents, in that order. The CLI keeps a local spend ledger — npx thumbgate cost prints the cumulative tokens and dollars saved by gate blocks — and every prevention rule stops a repeated mistake before the call bills you. Free caps at 3 active rules; Pro removes the caps so more repeat classes stay blocked. Strict budget denial is an explicit opt-in (THUMBGATE_BUDGET_ENFORCE=1), never a silent default, so a cost control can never lock you out of your own tools." } },
     { "@type": "Question", "name": "Does ThumbGate send my code to the cloud?", "acceptedAnswer": { "@type": "Answer", "text": "No. The CLI is local-first — no data leaves your machine. Pro and Enterprise add hosted sync for dashboards and shared lessons, but your source code stays local." } },
     { "@type": "Question", "name": "When should I pick Enterprise over Pro?", "acceptedAnswer": { "@type": "Answer", "text": "When one engineer's correction should protect the whole team. Enterprise shares the lesson database across the org so a fix in one repo prevents the same mistake in every repo." } },
     { "@type": "Question", "name": "Can I cancel anytime?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Pro and Enterprise are month-to-month with a 7-day refund window on the first charge. Cancel from the billing portal and your subscription ends at the period close." } }
@@ -349,6 +350,10 @@ __GA_BOOTSTRAP__
         <div class="faq-a">Free gives you 2 captures/day and 3 active rules, running entirely on your machine. Pro is the hosted layer: unlimited captures, unlimited rules, lesson sync across machines, a dashboard without self-hosting, managed adapter updates, and DPO export. You're paying for infrastructure we run, not features we hide.</div>
       </div>
       <div class="faq-item">
+        <div class="faq-q">Does ThumbGate control my token spend?</div>
+        <div class="faq-a">It meters and prevents, in that order. The CLI keeps a local spend ledger — <code>npx thumbgate cost</code> prints the cumulative tokens and dollars saved by gate blocks — and every prevention rule stops a repeated mistake before the call bills you. Free caps at 3 active rules; Pro removes the caps so more repeat classes stay blocked. Strict budget denial is an explicit opt-in (<code>THUMBGATE_BUDGET_ENFORCE=1</code>), never a silent default, so a cost control can never lock you out of your own tools. The full argument is in <a href="/learn/token-economics-finops-agentic-ai" style="color:var(--cyan);">Token Economics: The New FinOps for Agentic AI</a>.</div>
+      </div>
+      <div class="faq-item">
         <div class="faq-q">Why not just use an enterprise AI control plane?</div>
         <div class="faq-a">Enterprise control planes govern agents from a server-side gateway, sold to platform teams on a Fortune-500 timeline. ThumbGate runs local-first, in the PreToolUse hook on your machine, and ships enforcement for the coding agents developers actually use today — Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — with an <code>npm install</code> and minutes to value, not a procurement cycle.</div>
       </div>
@@ -366,7 +371,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q">What happens if I stop paying?</div>
-        <div class="faq-a">You keep the free CLI with 5-rule cap. Your existing rules and captures stay on your machine. You lose dashboard access, lesson search, exports, and auto-connect.</div>
+        <div class="faq-a">You keep the free CLI with its 3-active-rule cap. Your existing rules and captures stay on your machine. You lose dashboard access, lesson search, exports, and auto-connect.</div>
       </div>
     </div>
   </div>

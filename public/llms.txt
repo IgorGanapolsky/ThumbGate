@@ -27,6 +27,7 @@
 
 ## AI Agent Governance Learn Articles
 
+- [Token economics: the new FinOps for agentic AI — and the layer it misses](https://thumbgate.ai/learn/token-economics-finops-agentic-ai): Response to Microsoft's July 2026 token-economics playbook. Compression, caching, routing, and memory optimize repeated content; ThumbGate adds behavioral deduplication — blocking repeated agent mistakes pre-call, the only lane where waste costs zero tokens.
 - [Agentic enterprise context brain](https://thumbgate.ai/learn/agentic-enterprise-context-brain)
 - [Deterministic agent workflows](https://thumbgate.ai/learn/deterministic-agent-workflows)
 - [Cost-aware agent gate routing](https://thumbgate.ai/learn/cost-aware-agent-gate-routing)
