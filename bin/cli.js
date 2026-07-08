@@ -3934,6 +3934,7 @@ switch (COMMAND) {
     // PreToolUse hook interface: reads tool call JSON from stdin, outputs gate verdict
     // Used by: generate-pretool-hook.sh → npx thumbgate gate-check
     const { run: gateRun, runAsync: gateRunAsync } = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
+    const { evaluateSelfProtection } = require(path.join(PKG_ROOT, 'scripts', 'self-protection'));
     let stdinData = '';
     process.stdin.setEncoding('utf8');
     process.stdin.on('data', (chunk) => { stdinData += chunk; });
@@ -3941,7 +3942,32 @@ switch (COMMAND) {
       try {
         const input = JSON.parse(stdinData);
         const output = await gateRunAsync(input);
-        process.stdout.write(output + '\n');
+        // Self-protection overlay (2026-07-08): the gate engine only denies edits
+        // to ThumbGate's own governance files under strict enforcement; by default
+        // such edits pass as a clean ALLOW. Surface them (or block in strict) so an
+        // agent can't silently disable the firewall. Only overlays when the engine
+        // did not already produce a hard deny.
+        let verdict = output;
+        try {
+          const parsed = JSON.parse(output || '{}');
+          const alreadyDeny = (parsed.hookSpecificOutput && parsed.hookSpecificOutput.permissionDecision === 'deny')
+            || parsed.decision === 'block';
+          if (!alreadyDeny) {
+            const sp = evaluateSelfProtection(input.tool_name, input.tool_input);
+            if (sp && sp.action === 'block') {
+              verdict = JSON.stringify({
+                decision: 'block',
+                reason: sp.message,
+                hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: sp.message },
+              });
+            } else if (sp && sp.action === 'warn') {
+              verdict = JSON.stringify({
+                hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: sp.message },
+              });
+            }
+          }
+        } catch (_e) { /* non-JSON engine output: pass through unchanged */ }
+        process.stdout.write(verdict + '\n');
         process.exit(0);
       } catch (err) {
         process.stderr.write(`gate-check error: ${err.message}\n`);
