@@ -498,6 +498,14 @@ function findDominantTag(tags, lossMatrix) {
   return '(unknown)';
 }
 
+// Self-protection (2026-07-08, prompted by Andy Martin's review) lives in the
+// shipped scripts/self-protection.js module so BOTH this dogfood hook and the
+// distributed `npx thumbgate gate-check` entrypoint share one implementation.
+const {
+  selfProtectionTarget,
+  evaluateSelfProtection,
+} = require('./self-protection');
+
 function main() {
   const input = readStdinSync() || {};
   const toolName = input.tool_name || process.env.CLAUDE_TOOL_NAME || '';
@@ -524,6 +532,15 @@ function main() {
     trackCurlToProd(toolName, effectiveInput);
   } catch (err) {
     failOpen(err);
+  }
+
+  // Self-protection takes precedence over lesson matching: an edit to the
+  // firewall's own config must be surfaced (or blocked in strict mode) before
+  // anything else.
+  const selfProtect = evaluateSelfProtection(toolName, effectiveInput);
+  if (selfProtect) {
+    if (selfProtect.action === 'block') return block(selfProtect.message);
+    return allowWithContext(selfProtect.message);
   }
 
   const actionContext = extractActionContext(toolName, effectiveInput);
@@ -586,6 +603,8 @@ module.exports = {
   findBlockingRisk,
   currentGitBranch,
   maybeRegisterPrCommitGate,
+  selfProtectionTarget,
+  evaluateSelfProtection,
   formatLessonsAsReminder,
   summarizeActionRiskContext,
   buildSaferNextMove,
