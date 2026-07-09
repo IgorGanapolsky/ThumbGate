@@ -334,9 +334,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // config/entitlement-public-keys.json for signed-entitlement verification.
   // These are public runtime verifier files only: public keys, no private key
   // material, no Core dependency, no pro source subtree.
+  // Bumped 330 -> 332 (2026-07-09) to ship scripts/imperative-detector.js
+  // (never/always directive -> force-gate offer) in lockstep with the
+  // public-core-boundary ceiling.
   assert.ok(
-    manifest.fileCount <= 330,
-    `npm package should stay <= 330 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 332,
+    `npm package should stay <= 332 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
