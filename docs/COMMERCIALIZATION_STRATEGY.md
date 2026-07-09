@@ -59,11 +59,14 @@ Not code. In descending order: (1) **accumulated per-org lesson data** — compo
 
 ## Sequenced roadmap
 
-1. **Paywall (next PR):** replace `license.js` prefix-check with a real signed entitlement (Ed25519 offline verification of a license token: tier + features + expiry, public key bundled, issued by the hosted billing service). Gate the 3 exporters + the learned-model access behind `requireEntitlement()`. Roll out enforcement behind a flag first (`THUMBGATE_ENFORCE_ENTITLEMENTS`) so existing users aren't broken mid-flight.
+1. **Entitlement boundary FIRST — must land before, or in the same PR as, any license change.** Replace `license.js`'s prefix-check with **signed entitlements**, verified offline (Ed25519, public key bundled, tokens issued by the hosted billing service). The token carries **tier, feature flags, expiry, customer id, key id (for rotation), and a signature.** Gate the 3 exporters + learned-model access behind `requireEntitlement(feature)`. Roll out enforcement behind `THUMBGATE_ENFORCE_ENTITLEMENTS` so live users aren't broken mid-flight. **Tests must prove a fake/prefix key (`tg_pro_…`) and a tampered token both FAIL verification.**
 2. **Reprice** `public/pricing.html` + billing catalog to Team/Enterprise with the token-insurance ROI framing.
 3. **Design partners:** land 3–5 teams with visible token-burn pain; instrument tokens-prevented / catastrophic-blocks as the north-star metric.
 4. **Enterprise LOI:** one paid pilot at $25K+ ACV.
-5. **Then, and only then, consider FSL** to fence the commercial edition once there's adoption + revenue to protect.
+5. **Licensing — deliberate, counsel-reviewed. Do NOT blanket-relicense this repo.** Prefer a **two-package split over FSL-ing the whole repo**: keep the runtime **`thumbgate` MIT** (so the `README.md:661` "free and MIT-licensed forever" promise stays *true*), and put the crown jewels in a **separate FSL/commercial package (`thumbgate-pro`) or hosted-only surface**. The entitlement boundary (step 1) is the real protection; FSL only supplements the paid edition. **Have counsel review the license path before flipping any license text** (low risk — Igor owns 100%, only bot co-authors — but still do it). FSL is *source-available / "fair source,"* not OSI open source, and cannot claw back already-published MIT copies.
+
+## Hard constraint: the "MIT forever" promise
+`README.md:661` publicly states ThumbGate is "free and MIT-licensed forever." This session made the docs 100% truthful — relicensing the **runtime** to FSL would turn that verified-true line into a broken promise. The two-package split above keeps it honest: the runtime people adopt stays MIT; the paid intelligence lives in a separate package/license. Any plan that relicenses the runtime must also rewrite that promise — do not do it lightly.
 
 ## Investor milestones (2026 seed bar)
 
