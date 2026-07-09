@@ -144,4 +144,44 @@ describe('/checkout/pro confirmation gate (closes 0/50 conversion leak)', () => 
     const body = await res.text();
     assert.match(body, /Start ThumbGate Pro/);
   });
+
+  it('Googlebot confirm=1 without email records missing email and stays on interstitial', async () => {
+    clearTelemetry();
+    const res = await fetch(`${origin}/checkout/pro?confirm=1`, {
+      redirect: 'manual',
+      headers: {
+        'user-agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+        accept: 'text/html,*/*',
+      },
+    });
+    assert.equal(res.status, 200);
+    const body = await res.text();
+    assert.match(body, /Start ThumbGate Pro/);
+
+    const events = readTelemetry();
+    const interstitial = events.find((e) => e.eventType === 'checkout_bot_deflected');
+    assert.ok(interstitial, 'bot confirm=1 without email must emit a deflection event');
+    assert.equal(interstitial.reasonCode, 'missing_customer_email');
+    assert.equal(interstitial.isBot, 'true');
+  });
+
+  it('Googlebot confirm=1 with invalid email records invalid email and stays on interstitial', async () => {
+    clearTelemetry();
+    const res = await fetch(`${origin}/checkout/pro?confirm=1&customer_email=not-an-email`, {
+      redirect: 'manual',
+      headers: {
+        'user-agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+        accept: 'text/html,*/*',
+      },
+    });
+    assert.equal(res.status, 200);
+    const body = await res.text();
+    assert.match(body, /Start ThumbGate Pro/);
+
+    const events = readTelemetry();
+    const interstitial = events.find((e) => e.eventType === 'checkout_bot_deflected');
+    assert.ok(interstitial, 'bot confirm=1 with invalid email must emit a deflection event');
+    assert.equal(interstitial.reasonCode, 'invalid_customer_email');
+    assert.equal(interstitial.isBot, 'true');
+  });
 });
