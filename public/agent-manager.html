@@ -46,7 +46,7 @@
       "name": "How does ThumbGate help the Agent Manager?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "ThumbGate is the pre-action enforcement layer underneath what the role owns. It runs PreToolUse hooks at the tool-call boundary, auto-distills prevention rules from real thumbs-down feedback and writes them into CLAUDE.md, provides an org-wide rule library and hosted dashboard, and keeps an adapter matrix current as Claude Code, Cursor, and Codex change — so the role does not have to be the operator themselves. Each block carries the rule that fired and the evidence that triggered it, so the agent can choose a safer plan."
+        "text": "ThumbGate is the pre-action enforcement layer underneath what the role owns. It runs PreToolUse hooks at the tool-call boundary, auto-distills prevention rules from repeated thumbs-down feedback and writes them into CLAUDE.md. Pro keeps personal recall, exports, dashboard proof, and adapters maintained; Enterprise adds the org-wide rule library and hosted dashboard so the role does not have to be the operator themselves. Each block carries the rule that fired and the evidence that triggered it, so the agent can choose a safer plan."
       }
     },
     {
@@ -54,7 +54,7 @@
       "name": "Is ThumbGate free for the Agent Manager to start?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. npx thumbgate init in one repo is free and MIT licensed, and the gates work locally without a hosted account. The paid tier adds the hosted dashboard, the org-wide rule library, DPO/HuggingFace export, and 24x7 ops on the adapter matrix — the operational work the role would otherwise have to do itself."
+        "text": "Yes. npx thumbgate init in one repo is free and MIT licensed, and the gates work locally without a hosted account. Pro adds personal recall, dashboard proof, DPO/HuggingFace export, and managed adapter coverage. Enterprise adds the hosted dashboard, org-wide rule library, and rollout support — the operational work the role would otherwise have to do itself."
       }
     },
     {
@@ -112,7 +112,7 @@
     <tbody>
       <tr>
         <td><strong>CLAUDE.md hierarchy</strong><br>Keeping the policy that the model reads on every session current and consistent across repos.</td>
-        <td>Prevention rules auto-distilled from real <code>👎</code> feedback and written into <code>CLAUDE.md</code> by <code>scripts/feedback-to-rules.js</code>. Org-wide rule library on the hosted dashboard.</td>
+        <td>Prevention rules auto-distilled from repeated real <code>👎</code> feedback and written into <code>CLAUDE.md</code> by <code>scripts/feedback-to-rules.js</code>. Enterprise adds the org-wide rule library on the hosted dashboard.</td>
       </tr>
       <tr>
         <td><strong>Plugin marketplace</strong><br>Deciding which Claude Code / Cursor / Codex plugins are blessed and which are not.</td>
@@ -128,7 +128,7 @@
       </tr>
       <tr>
         <td><strong>Keep them current</strong><br>When Claude Code ships a breaking change to hooks or to the plugin API, your rollout cannot wait a quarter.</td>
-        <td>24×7 ops on the adapter matrix. SonarCloud regressions fixed in &lt;24h. The hosted tier is the operator the role does not have to be themselves.</td>
+        <td>24×7 ops on the adapter matrix. SonarCloud regressions fixed in &lt;24h. Pro covers personal adapter maintenance; Enterprise is the hosted operator the role does not have to be themselves.</td>
       </tr>
     </tbody>
   </table>
@@ -145,7 +145,7 @@
     </div>
     <div class="card">
       <h3>Phase 2 — Rollout lands</h3>
-      <p>Infrastructure is ready; the first wave finds it productive. This is where the Agent Manager becomes a named role. ThumbGate's hosted dashboard, org-wide rule library, and DPO export are what that role uses to keep CLAUDE.md and the permissions policy consistent across repos.</p>
+      <p>Infrastructure is ready; the first wave finds it productive. This is where the Agent Manager becomes a named role. ThumbGate Enterprise's hosted dashboard, org-wide rule library, and DPO export are what that role uses to keep CLAUDE.md and the permissions policy consistent across repos.</p>
     </div>
     <div class="card">
       <h3>Phase 3 — Adoption spreads</h3>

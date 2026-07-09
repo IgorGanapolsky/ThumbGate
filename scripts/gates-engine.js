@@ -2672,12 +2672,12 @@ function buildBlockActionProCta() {
     if (totalBlocks < 5) return null; // Too early — let them experience the product
 
     if (totalBlocks < 25) {
-      return '\n\n💡 Pro: keep this rule synced across laptops, CI, containers, and agent runtimes → thumbgate.ai/go/pro';
+      return '\n\n💡 Pro: keep this rule searchable, exportable, and visible in your personal dashboard → thumbgate.ai/go/pro';
     }
     if (totalBlocks < 100) {
-      return `\n\n💡 ${totalBlocks} actions blocked. Pro keeps these lessons/rules synced everywhere → thumbgate.ai/go/pro ($19/mo)`;
+      return `\n\n💡 ${totalBlocks} actions blocked. Pro removes solo caps and adds personal recall, dashboard proof, and exports → thumbgate.ai/go/pro ($19/mo)`;
     }
-    return `\n\n💡 ${totalBlocks} mistakes caught. Your team could use shared hosted enforcement → thumbgate.ai/go/pro`;
+    return `\n\n💡 ${totalBlocks} mistakes caught. Your team could use Enterprise shared hosted enforcement → thumbgate.ai/go/pro`;
   } catch (_) {
     return null;
   }

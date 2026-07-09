@@ -282,14 +282,14 @@ test('gates-engine.buildBlockActionProCta tiered messages at 5, 25, and 100 bloc
     fs.writeFileSync(ge.STATS_PATH, JSON.stringify({ blocked: 10, warned: 0, passed: 0, byGate: {} }));
     const lowMsg = ge.buildBlockActionProCta();
     assert.ok(lowMsg && lowMsg.includes('thumbgate.ai/go/pro'));
-    assert.match(lowMsg, /rule synced across laptops, CI, containers, and agent runtimes/);
+    assert.match(lowMsg, /rule searchable, exportable, and visible in your personal dashboard/);
 
     fs.writeFileSync(ge.STATS_PATH, JSON.stringify({ blocked: 50, warned: 0, passed: 0, byGate: {} }));
     const midMsg = ge.buildBlockActionProCta();
     assert.ok(midMsg && midMsg.includes('thumbgate.ai/go/pro'));
     assert.match(midMsg, /\$19\/mo/);
     assert.match(midMsg, /50 actions blocked/);
-    assert.match(midMsg, /lessons\/rules synced everywhere/);
+    assert.match(midMsg, /personal recall, dashboard proof, and exports/);
 
     fs.writeFileSync(ge.STATS_PATH, JSON.stringify({ blocked: 250, warned: 0, passed: 0, byGate: {} }));
     const teamMsg = ge.buildBlockActionProCta();
@@ -304,7 +304,7 @@ test('gates-engine.buildBlockActionProCta tiered messages at 5, 25, and 100 bloc
   }
 });
 
-test('commercial-offer capture receipt sells hosted sync at the moment of proof', () => {
+test('commercial-offer capture receipt sells personal recall at the moment of proof', () => {
   const { buildCaptureReceipt } = require('../scripts/commercial-offer');
   const receipt = buildCaptureReceipt({
     signal: 'down',
@@ -314,7 +314,7 @@ test('commercial-offer capture receipt sells hosted sync at the moment of proof'
   });
 
   assert.match(receipt, /Free today\s*: this proof protects this local machine/);
-  assert.match(receipt, /Pro sync\s*: keep this lesson, rule, and dashboard synced across machines and agent runtimes/);
+  assert.match(receipt, /Pro recall\s*: keep this lesson searchable, exportable, and visible in your personal dashboard/);
   assert.match(receipt, /utm_source=cli_capture_receipt/);
 });
 
