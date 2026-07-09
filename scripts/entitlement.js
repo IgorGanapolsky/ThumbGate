@@ -43,6 +43,8 @@ class EntitlementError extends Error {
   }
 }
 
+const advisoryWarnings = new Set();
+
 function b64urlEncode(buf) {
   return Buffer.from(buf).toString('base64url');
 }
@@ -195,6 +197,29 @@ function requireEntitlement(feature, opts = {}) {
   return decision;
 }
 
+/**
+ * Shared paid-feature wrapper for commercial entrypoints. In advisory mode it
+ * emits one warning per feature/label and lets the caller continue; in enforced
+ * mode `requireEntitlement()` throws before this function returns.
+ */
+function requirePaidFeature(feature, opts = {}) {
+  const decision = requireEntitlement(feature, opts);
+  const label = opts.label || feature;
+  const warningKey = `${feature}:${label}`;
+  if (!decision.entitled && !opts.silent && !advisoryWarnings.has(warningKey)) {
+    advisoryWarnings.add(warningKey);
+    console.error(`⚠️ ThumbGate: ${label} requires a paid license (tier: ${decision.tier}). Advisory mode — set THUMBGATE_ENFORCE_ENTITLEMENTS=1 to enforce. License: https://thumbgate.ai/pricing`);
+  }
+  return decision;
+}
+
+function requireLearnedModelsEntitlement(opts = {}) {
+  return requirePaidFeature('learned-models', {
+    ...opts,
+    label: opts.label || 'learned-models intelligence',
+  });
+}
+
 // Injectable clock (Date.now is fine at runtime; kept in one place for testability).
 function nowMs() {
   return Date.now();
@@ -204,6 +229,8 @@ module.exports = {
   verifyLicense,
   issueLicense,
   requireEntitlement,
+  requirePaidFeature,
+  requireLearnedModelsEntitlement,
   resolveLicenseToken,
   loadTrustedKeys,
   isEnforced,

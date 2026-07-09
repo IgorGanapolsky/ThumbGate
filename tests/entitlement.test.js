@@ -18,6 +18,11 @@ const {
   EntitlementError,
   TIER_FEATURES,
 } = require('../scripts/entitlement.js');
+const { trainRiskModel } = require('../scripts/risk-scorer.js');
+const { bayesOptimalDecision } = require('../scripts/bayes-optimal-gate.js');
+const thompson = require('../scripts/thompson-sampling.js');
+const { buildRewardReport } = require('../scripts/agent-reward-model.js');
+const { trainInterventionPolicy } = require('../scripts/intervention-policy.js');
 
 // Ephemeral keypair so tests never depend on the shipped production key.
 const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
@@ -34,6 +39,15 @@ function makeToken(overrides = {}) {
     exp: Math.floor(Date.now() / 1000) + 3600,
     ...overrides,
   });
+}
+
+function entitlementOpts(token, env = { THUMBGATE_ENFORCE_ENTITLEMENTS: '1' }) {
+  return {
+    token,
+    trustedKeys: TRUSTED,
+    env,
+    silent: true,
+  };
 }
 
 test('a validly-signed Pro token verifies and carries tier + features', () => {
@@ -135,4 +149,28 @@ test('issueLicense → verifyLicense round-trips for each tier', () => {
     assert.equal(r.tier, tier);
     assert.deepEqual(r.features, TIER_FEATURES[tier]);
   }
+});
+
+test('enforced entitlements block learned-model crown jewels without a signed token', () => {
+  const denied = entitlementOpts(null);
+  assert.throws(() => trainRiskModel([], { entitlement: denied }), EntitlementError);
+  assert.throws(() => bayesOptimalDecision({ pHarmful: 0.4, pSafe: 0.6 }, [], undefined, { entitlement: denied }), EntitlementError);
+  assert.throws(() => thompson.updateModel(thompson.createInitialModel(), {
+    signal: 'positive',
+    timestamp: new Date().toISOString(),
+    categories: ['testing'],
+    entitlement: denied,
+  }), EntitlementError);
+  assert.throws(() => buildRewardReport([], { entitlement: denied }), EntitlementError);
+  assert.throws(() => trainInterventionPolicy([], { entitlement: denied }), EntitlementError);
+});
+
+test('signed learned-model entitlement unlocks crown-jewel entrypoints in enforced mode', () => {
+  const token = makeToken({ tier: 'pro' });
+  const allowed = entitlementOpts(token);
+  assert.doesNotThrow(() => trainRiskModel([], { entitlement: allowed }));
+  assert.doesNotThrow(() => bayesOptimalDecision({ pHarmful: 0.4, pSafe: 0.6 }, [], undefined, { entitlement: allowed }));
+  assert.doesNotThrow(() => thompson.samplePosteriors(thompson.createInitialModel(), 1, { entitlement: allowed }));
+  assert.doesNotThrow(() => buildRewardReport([], { entitlement: allowed }));
+  assert.doesNotThrow(() => trainInterventionPolicy([], { entitlement: allowed }));
 });

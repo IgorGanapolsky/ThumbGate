@@ -92,7 +92,10 @@ const path = require('node:path');
 // Hardening Diagnostic conversion page for warm traffic.
 // 327 → 328: 2026-07-02 ship public/install.html, the install-intent buyer
 // path linked from marketplace/distribution traffic.
-const BASELINE_FILE_COUNT = 328;
+// 328 → 330: 2026-07-09 ship scripts/entitlement.js and
+// config/entitlement-public-keys.json for signed-entitlement verification in
+// the public runtime. Public keys only; no private key material or Core subtree.
+const BASELINE_FILE_COUNT = 330;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
