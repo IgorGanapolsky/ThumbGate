@@ -29,6 +29,7 @@ const G = '\x1b[32m';
 const R = '\x1b[31m';
 const C = '\x1b[36m';
 const M = '\x1b[35m';
+const Y = '\x1b[33m';
 const D = '\x1b[90m';
 const BD = '\x1b[1m';
 const RST = '\x1b[0m';
@@ -73,7 +74,15 @@ function processInlineFeedback({ signal, context, chatHistory, whatWentWrong, wh
   const recentLesson = getRecentLesson();
   const stats = getLessonStats();
 
-  return { feedbackResult, distillResult, recentLesson, stats };
+  // 4. If the user wrote an explicit "never …" / "always …" directive, surface
+  //    an OFFER (never auto-act): "never" on a thumbs-down → offer force-gate now.
+  let forceGateHint = null;
+  try {
+    const { suggestForceGate } = require('./imperative-detector');
+    forceGateHint = suggestForceGate({ signal, text: whatWentWrong || whatWorked || context });
+  } catch { /* detector optional; never block capture on it */ }
+
+  return { feedbackResult, distillResult, recentLesson, stats, forceGateHint };
 }
 
 /**
@@ -98,6 +107,13 @@ function formatCliOutput(result) {
     }
   } else {
     lines.push(`${R}Feedback not accepted: ${(result.feedbackResult && result.feedbackResult.reason) || 'unknown'}${RST}`);
+  }
+
+  // Explicit-directive offer (e.g. "never …" → offer immediate force-gate).
+  if (result.forceGateHint && result.forceGateHint.message) {
+    const color = result.forceGateHint.kind === 'force-gate-offer' ? Y : D;
+    lines.push('');
+    lines.push(`${color}💡 ${result.forceGateHint.message}${RST}`);
   }
 
   // Distilled lesson (if thumbs down)
