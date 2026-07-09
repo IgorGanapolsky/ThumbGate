@@ -1,10 +1,12 @@
 'use strict';
 
 const fs = require('fs');
+const crypto = require('crypto');
 const os = require('os');
 const path = require('path');
 
 const DEFAULT_PRO_API = 'https://thumbgate-production.up.railway.app';
+const DEFAULT_PRO_ACTIVATION_ALERT_EMAIL = 'igor.ganapolsky@gmail.com';
 const CREATOR_BYPASS_VALUE = process.env.THUMBGATE_DEV_SECRET || '';
 const CREATOR_BYPASS_ENV = 'THUMBGATE_DEV_BYPASS';
 const CREATOR_SYNTHETIC_KEY = process.env.THUMBGATE_DEV_KEY || '';
@@ -53,6 +55,195 @@ function getLicenseDir(homeDir = process.env.HOME || process.env.USERPROFILE || 
 
 function getLicensePath(homeDir = process.env.HOME || process.env.USERPROFILE || os.homedir()) {
   return path.join(getLicenseDir(homeDir), 'license.json');
+}
+
+function isTruthyEnv(value) {
+  return /^(1|true|yes|on)$/i.test(String(value || '').trim());
+}
+
+function normalizeText(value) {
+  return String(value || '').trim();
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function fingerprintProKey(key) {
+  const normalized = normalizeText(key);
+  if (!normalized) return '';
+  return `sha256:${crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 12)}`;
+}
+
+function resolveProActivationAlertRecipient(env = process.env) {
+  return normalizeText(
+    env.THUMBGATE_PRO_ACTIVATION_ALERT_EMAIL ||
+    env.THUMBGATE_OPERATOR_ALERT_EMAIL ||
+    env.THUMBGATE_SUPPORT_EMAIL ||
+    DEFAULT_PRO_ACTIVATION_ALERT_EMAIL
+  );
+}
+
+function canSendProActivationAlert({ env = process.env, sendEmailImpl } = {}) {
+  if (isTruthyEnv(env.THUMBGATE_DISABLE_PRO_ACTIVATION_ALERTS)) return false;
+  if (!resolveProActivationAlertRecipient(env)) return false;
+  if (sendEmailImpl) return true;
+  return Boolean(normalizeText(env.RESEND_API_KEY || env.THUMBGATE_RESEND_API_KEY));
+}
+
+function renderProActivationAlertBodies({
+  keyFingerprint,
+  source,
+  version,
+  activatedAt,
+  hostname,
+  platform,
+  arch,
+  nodeVersion,
+  customerId,
+  installId,
+  usageCount,
+} = {}) {
+  const occurredAt = activatedAt || new Date().toISOString();
+  const runtimePlatform = platform || process.platform;
+  const runtimeArch = arch || process.arch;
+  const runtimeNode = nodeVersion || process.version;
+  const text = [
+    'ThumbGate Pro activation detected.',
+    '',
+    `Activated at: ${occurredAt}`,
+    `Key fingerprint: ${keyFingerprint || 'unknown'}`,
+    `Source: ${source || 'unknown'}`,
+    `Version: ${version || 'unknown'}`,
+    `Customer ID: ${customerId || 'unknown'}`,
+    `Install ID: ${installId || 'unknown'}`,
+    `Usage count: ${usageCount ?? 'unknown'}`,
+    `Host: ${hostname || 'unknown'}`,
+    `Runtime: ${runtimePlatform}/${runtimeArch} on ${runtimeNode}`,
+    '',
+    'Secret hygiene: this alert intentionally does not include the raw Pro key.',
+  ].join('\n');
+  const html = `<!doctype html>
+<html>
+  <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;color:#17212b;line-height:1.5;">
+    <h1 style="font-size:20px;margin:0 0 12px;">ThumbGate Pro activation detected</h1>
+    <table role="presentation" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+      <tr><td style="padding:4px 14px 4px 0;color:#64748b;">Activated at</td><td style="padding:4px 0;">${escapeHtml(occurredAt)}</td></tr>
+      <tr><td style="padding:4px 14px 4px 0;color:#64748b;">Key fingerprint</td><td style="padding:4px 0;"><code>${escapeHtml(keyFingerprint || 'unknown')}</code></td></tr>
+      <tr><td style="padding:4px 14px 4px 0;color:#64748b;">Source</td><td style="padding:4px 0;">${escapeHtml(source || 'unknown')}</td></tr>
+      <tr><td style="padding:4px 14px 4px 0;color:#64748b;">Version</td><td style="padding:4px 0;">${escapeHtml(version || 'unknown')}</td></tr>
+      <tr><td style="padding:4px 14px 4px 0;color:#64748b;">Customer ID</td><td style="padding:4px 0;">${escapeHtml(customerId || 'unknown')}</td></tr>
+      <tr><td style="padding:4px 14px 4px 0;color:#64748b;">Install ID</td><td style="padding:4px 0;">${escapeHtml(installId || 'unknown')}</td></tr>
+      <tr><td style="padding:4px 14px 4px 0;color:#64748b;">Usage count</td><td style="padding:4px 0;">${escapeHtml(usageCount ?? 'unknown')}</td></tr>
+      <tr><td style="padding:4px 14px 4px 0;color:#64748b;">Host</td><td style="padding:4px 0;">${escapeHtml(hostname || 'unknown')}</td></tr>
+      <tr><td style="padding:4px 14px 4px 0;color:#64748b;">Runtime</td><td style="padding:4px 0;">${escapeHtml(runtimePlatform)}/${escapeHtml(runtimeArch)} on ${escapeHtml(runtimeNode)}</td></tr>
+    </table>
+    <p style="margin-top:16px;color:#64748b;">Secret hygiene: this alert intentionally does not include the raw Pro key.</p>
+  </body>
+</html>`;
+  return { text, html };
+}
+
+async function sendProActivationAlert({
+  key,
+  source = 'unknown',
+  version,
+  customerId,
+  installId,
+  usageCount,
+  env = process.env,
+  sendEmailImpl,
+} = {}) {
+  const keyFingerprint = fingerprintProKey(key);
+  if (!keyFingerprint) return { sent: false, reason: 'missing_key' };
+  if (!canSendProActivationAlert({ env, sendEmailImpl })) {
+    return { sent: false, reason: 'activation_alert_disabled_or_unconfigured' };
+  }
+
+  const to = resolveProActivationAlertRecipient(env);
+  const { html, text } = renderProActivationAlertBodies({
+    keyFingerprint,
+    source,
+    version,
+    customerId,
+    installId,
+    usageCount,
+    activatedAt: new Date().toISOString(),
+    hostname: os.hostname(),
+    platform: process.platform,
+    arch: process.arch,
+    nodeVersion: process.version,
+  });
+  const sender = sendEmailImpl || require('./mailer').sendEmail;
+
+  try {
+    return await sender({
+      to,
+      subject: 'ThumbGate Pro activated',
+      html,
+      text,
+    });
+  } catch (error) {
+    return {
+      sent: false,
+      reason: 'exception',
+      error: error && error.message ? error.message : String(error),
+    };
+  }
+}
+
+async function notifyHostedProActivation({
+  key,
+  source = 'cli_pro_activate',
+  version,
+  apiBaseUrl = process.env.THUMBGATE_API_BASE_URL || DEFAULT_PRO_API,
+  fetchImpl = globalThis.fetch,
+} = {}) {
+  const normalizedKey = normalizeText(key);
+  if (!normalizedKey) return { notified: false, reason: 'missing_key' };
+  if (typeof fetchImpl !== 'function') return { notified: false, reason: 'no_fetch' };
+
+  const keyFingerprint = fingerprintProKey(normalizedKey);
+  const endpoint = new URL('/v1/billing/pro-activation', apiBaseUrl).toString();
+  try {
+    const response = await fetchImpl(endpoint, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${normalizedKey}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        keyFingerprint,
+        source,
+        version: version || null,
+      }),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return {
+        notified: false,
+        reason: body && body.detail ? body.detail : `http_${response.status}`,
+        status: response.status,
+      };
+    }
+    return {
+      notified: true,
+      status: response.status,
+      alert: body.alert || null,
+      keyFingerprint: body.keyFingerprint || keyFingerprint,
+    };
+  } catch (error) {
+    return {
+      notified: false,
+      reason: 'exception',
+      error: error && error.message ? error.message : String(error),
+    };
+  }
 }
 
 function readLicense({ homeDir } = {}) {
@@ -162,12 +353,19 @@ module.exports = {
   CREATOR_BYPASS_VALUE,
   CREATOR_SYNTHETIC_KEY,
   DEFAULT_PRO_API,
+  DEFAULT_PRO_ACTIVATION_ALERT_EMAIL,
+  canSendProActivationAlert,
+  fingerprintProKey,
   getLicenseDir,
   getLicensePath,
   hasDevOverride,
   isCreatorDev,
   readLicense,
+  renderProActivationAlertBodies,
+  notifyHostedProActivation,
+  resolveProActivationAlertRecipient,
   saveLicense,
+  sendProActivationAlert,
   resolveProKey,
   validateProKey,
   startLocalProDashboard,
