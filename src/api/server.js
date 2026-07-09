@@ -1760,8 +1760,10 @@ function appendFeedbackListLines(lines, { entries, signal, intent }) {
     lines.push(`No ${signal || 'feedback'} entries found ${intent.windowLabel}.`);
     return;
   }
-  lines.push(`${FEEDBACK_LIST_LABELS[signal] || 'Recent feedback'} (${intent.windowLabel}):`);
-  lines.push(...entries.map(formatFeedbackEntry));
+  lines.push(
+    `${FEEDBACK_LIST_LABELS[signal] || 'Recent feedback'} (${intent.windowLabel}):`,
+    ...entries.map(formatFeedbackEntry)
+  );
 }
 
 function buildFeedbackSection({ ctx, intent, feedbackDir, approval, lessonPipeline }) {
@@ -5229,7 +5231,14 @@ function createApiServer() {
     if (req.method === 'POST' && pathname === '/api/event') {
       // Filter bots from analytics to keep Plausible data clean
       let _botDetector;
-      try { _botDetector = require('../../scripts/bot-detection'); } catch (_e) { _botDetector = null; }
+      try {
+        _botDetector = require('../../scripts/bot-detection');
+      } catch (err) {
+        _botDetector = null;
+        if (process.env.THUMBGATE_DEBUG_BOT_DETECTION === '1') {
+          console.warn(`Optional bot-detection module unavailable: ${err.message}`);
+        }
+      }
       if (_botDetector && _botDetector.shouldExcludeFromAnalytics(req)) {
         sendJson(res, 202, { status: 'filtered', reason: 'bot' });
         return;
@@ -6125,6 +6134,12 @@ async function addContext(){
         // price-link rotation without a redeploy.
         const bypassTarget = process.env.THUMBGATE_CHECKOUT_PRO_STRIPE_URL
           || FIRST_FAILURE_RULE_CHECKOUT_URL;
+        let checkoutDeflectionReason = botClassification.reason;
+        if (missingConfirmedEmail) {
+          checkoutDeflectionReason = hasCustomerEmailHint
+            ? 'invalid_customer_email'
+            : 'missing_customer_email';
+        }
         appendBestEffortTelemetry(FEEDBACK_DIR, {
           eventType: 'checkout_interstitial_bypass_redirect',
           clientType: 'web',
@@ -6211,9 +6226,7 @@ async function addContext(){
           isBot: botClassification.isBot ? 'true' : 'false',
           interstitialSampled: interstitialSampled ? 'true' : 'false',
           interstitialSampleRate,
-          reason: missingConfirmedEmail
-            ? (hasCustomerEmailHint ? 'invalid_customer_email' : 'missing_customer_email')
-            : botClassification.reason,
+          reason: checkoutDeflectionReason,
           confirmEmailRequired: missingConfirmedEmail ? 'true' : 'false',
         }, req.headers, eventType);
         const prefilledEmail = parsed?.searchParams?.get('customer_email') || '';
