@@ -5,6 +5,7 @@ const path = require('path');
 const { getAutoGatesPath } = require('./auto-promote-gates');
 const { resolveFeedbackDir } = require('./feedback-paths');
 const { deduplicateFeedback } = require('./semantic-dedup');
+const { formatLeveragePoints } = require('./rule-clustering');
 
 const DEFAULT_LOG = path.join(resolveFeedbackDir(), 'feedback-log.jsonl');
 const NEG = new Set(['negative', 'negative_strong', 'down', 'thumbs_down']);
@@ -96,6 +97,7 @@ function analyze(entries) {
         count: v.count,
         severity,
         hasHighRisk: v.hasHighRisk,
+        tags: v.tags || [],
         suggestedRule: `NEVER ${v.raw.slice(0, 80).replace(/CRITICAL ERROR - User frustrated: /i, '')}`,
       };
     });
@@ -195,6 +197,16 @@ function toRules(report) {
       lines.push(`- [${sev.toUpperCase()}]${action} (${issue.count}x) ${issue.suggestedRule}`);
       if (issue.reasoning) lines.push(`  > ${issue.reasoning}`);
     }
+    lines.push('');
+  }
+
+  // Leverage points: clusters of DISTINCT rules that likely share one upstream
+  // habit — surfaced so a human can make one fix instead of N narrow gates.
+  // Candidate suggestions only; makes no causal claim (see rule-clustering.js).
+  const leverage = formatLeveragePoints(report.recurringIssues, { minClusterSize: 3 });
+  if (leverage.length) {
+    lines.push('## LEVERAGE POINTS (candidate clusters — confirm before acting)');
+    lines.push(...leverage);
     lines.push('');
   }
 
