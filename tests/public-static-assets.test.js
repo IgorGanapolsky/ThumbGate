@@ -409,6 +409,12 @@ test('/checkout/pro bypasses to Stripe Payment Link (no false claims possible)',
   assert.equal(res.status, 302, 'expected Stripe redirect');
   const location = res.headers.get('location') || '';
   assert.match(location, /buy\.stripe\.com\//, 'must redirect to Stripe');
+  // 2026-07-09: the bypass must route to the Pro $19/mo Payment Link, NOT the
+  // $1 one-time "first failure rule" product. This was a 0-conversion root cause
+  // (issue #2188) — humans were sent to buy a $1 product instead of Pro.
+  const { __test__ } = require('../src/api/server');
+  const baseUrl = location.split('?')[0];
+  assert.equal(baseUrl, __test__.PRO_CHECKOUT_URL, 'bypass must target the Pro $19/mo Payment Link, not the $1 one-time product');
 });
 
 test('GET /codex-enterprise serves the Dell partnership landing HTML', async () => {

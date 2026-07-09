@@ -10,14 +10,14 @@
 > Pre-action checks that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.
 
 ### Public Landing Page (thumbgate-production.up.railway.app)
-> ThumbGate is the pre-action governance runtime for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI): 👍 thumbs up and 👎 thumbs down feedback become history-aware lessons, shared lessons and org visibility, and PreToolUse checks that flag and log every risky tool call — hard-blocking the catastrophic classes (secret exfiltration, destructive deletes like rm -rf, supply-chain) by default and warning on the rest, with strict mode to hard-block every rule. Built for vibe coding and human-in-the-loop workflows.
+> ThumbGate is the pre-action governance runtime for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode): 👍 thumbs up and 👎 thumbs down feedback become history-aware lessons stored locally; Enterprise adds shared lessons and org visibility. PreToolUse checks flag and log risky tool calls — hard-blocking catastrophic classes by default and warning on the rest, with strict mode to hard-block every rule.
 
 ### NPM package.json
 > Pre-action checks that block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.
 
 ### GitHub Repo About
 **Canonical source:** `config/github-about.json`
-> Agent governance for ThumbGate: 👍/👎 become Pre-Action Checks that flag repeat mistakes and hard-block the risky ones before code or systems change.
+> Agent governance: thumbs become Pre-Action Checks that flag repeat mistakes and hard-block catastrophic classes before code or systems change.
 
 **Canonical topics:** `thumbgate`, `pre-action-checks`, `mcp`, `mcp-server`, `ai-agents`, `agent-reliability`, `guardrails`, `ai-safety`, `developer-tools`, `feedback-loop`, `claude-code`, `cursor`, `codex`, `gemini`, `amp`, `opencode`, `thompson-sampling`
 

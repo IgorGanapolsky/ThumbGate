@@ -107,7 +107,10 @@ test('public landing page exposes above-fold paid Pro CTA with canonical revenue
   assert.match(heroBlock, /aria-label="Choose the right ThumbGate path"/);
   assert.match(heroBlock, /Solo operator: Start Pro/);
   assert.match(heroBlock, /data-cta-id="router_start_pro"/);
-  assert.match(heroBlock, /Enterprise workflow: Start with intake/);
+  assert.match(heroBlock, /Enterprise governance: Start with one workflow/);
+  assert.match(heroBlock, /Ideal customer/);
+  assert.match(heroBlock, /enterprise engineering, security, and platform teams/i);
+  assert.match(heroBlock, /Detection and coordination layers can identify drift/);
   assert.match(heroBlock, /Still evaluating: Free CLI/);
   assert.match(landingPage, /function trackRevenueCta/);
   assert.match(landingPage, /plausible\('pricing_cta_click'/);
@@ -272,7 +275,7 @@ test('public landing page reflects June 2026 agent-governance buying triggers', 
   assert.match(section, /Tokenmaxxing backlash/);
   assert.match(section, /Production code by AI/);
   assert.match(section, /lower credible conversion bound beats zero/);
-  assert.match(landingPage, /Pro unlocks recall, sync, exports/);
+  assert.match(landingPage, /Pro unlocks recall, proof, exports/);
   assert.doesNotMatch(landingPage, /free CLI, zero friction/);
 });
 

@@ -8,9 +8,9 @@
 
 **AI coding agents repeat mistakes — and one wrong tool call can wipe a directory, leak a key, or push broken code.**
 
-ThumbGate is the local-first firewall for AI coding agents. It runs in the PreToolUse hook on your machine: it flags the next tool call and logs every decision. It **hard-blocks the catastrophic classes by default** — secret exfiltration, destructive deletes (`rm -rf`), and supply-chain attacks — and hard-blocks **every** rule (force-push, off-scope edits, a bad `git push`, deploys) when you set `THUMBGATE_STRICT_ENFORCEMENT=1`; those classes warn-and-log by default. Works across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode. No server on the enforcement path. (Regulated-industry policy templates — legal intake, financial compliance, healthcare — are on the roadmap, built on the same engine.)
+ThumbGate is the local-first Pre-Action Checks engine for AI coding agents. It runs in the PreToolUse hook on your machine: it flags the next tool call and logs every decision. It **hard-blocks the catastrophic classes by default** — secret exfiltration, destructive deletes (`rm -rf`), and supply-chain attacks — and hard-blocks **every** rule (force-push, off-scope edits, a bad `git push`, deploys) when you set `THUMBGATE_STRICT_ENFORCEMENT=1`; those classes warn-and-log by default. Works across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode. No server on the enforcement path. (Regulated-industry policy templates — legal intake, financial compliance, healthcare — are on the roadmap, built on the same engine.)
 
-The product is a self-improving enforcement layer: thumbs-down feedback, prompt evaluation, and proof from prior runs become prevention rules that permanently stop repeated failures before the next tool call.
+The product is a self-improving enforcement layer: thumbs-down feedback, prompt evaluation, and proof from prior runs become prevention rules that flag or block repeated failures according to policy before the next tool call executes.
 
 <p align="center">
   <img src="docs/media/thumbgate-demo.gif" alt="ThumbGate gating an AI agent's dangerous commands (rm -rf, force-push, chmod 777) in real time — hard-blocking destructive deletes, flagging the rest, while letting safe commands through" width="820" />
@@ -95,6 +95,16 @@ If someone is not already bought into ThumbGate, do not lead with architecture. 
 4. **Upgrade only after proof:** Solo Pro is for the dashboard, DPO export, proof-ready evidence, and higher capture limits after one real blocked repeat. Team starts with the Workflow Hardening Sprint around one repeated failure, one owner, and one proof review.
 
 The buying question is simple: **what repeated AI mistake would be worth blocking before the next tool call?**
+
+---
+
+## Ideal customer
+
+The first high-value customer is an enterprise engineering, security, or platform leader whose team already uses AI coding agents in high-blast-radius workflows: finance, healthcare, insurance, public sector, critical infrastructure, manufacturing, or any audited software-delivery environment.
+
+The pain is security and operational risk; the buying context is enterprise AI-agent governance. ThumbGate owns the enforcement boundary: known-bad agent actions are flagged or blocked before shell, repo, CI/CD, SaaS, or cloud tool calls execute.
+
+For partners building detection or coordination layers, ThumbGate is the downstream enforcement surface. Detection systems identify drift, stale shared reality, or risky workflow intent; ThumbGate turns the approved finding into a PreToolUse prevention rule with auditable execution evidence.
 
 ---
 
