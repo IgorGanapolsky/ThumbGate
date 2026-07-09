@@ -2789,9 +2789,17 @@ function fillTemplate(template, replacements) {
 }
 
 function escapeHtmlAttribute(value) {
+  // Complete HTML-entity encoder for attribute contexts. Escapes single quotes
+  // and backticks in addition to & " < > so the output is safe in single- AND
+  // double-quoted attributes (and not just the double-quoted case). Fixes
+  // CodeQL js/reflected-xss #252 (search-param `email` reflected into the
+  // checkout page's value="..." attribute) — the prior version omitted ' which
+  // left it context-fragile and unrecognized as a sanitizer.
   return String(value)
     .replaceAll('&', '&amp;')
     .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+    .replaceAll('`', '&#96;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;');
 }
@@ -9765,6 +9773,8 @@ module.exports = {
   createApiServer,
   startServer,
   __test__: {
+    escapeHtmlAttribute,
+    renderCheckoutIntentPage,
     buildCheckoutFallbackUrl,
     createPrivateCoreUnavailableError,
     buildPosthogProxyRequestOptions,
