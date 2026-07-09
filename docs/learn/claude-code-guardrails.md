@@ -1,6 +1,6 @@
 ---
 title: "How to Add Guardrails to Claude Code: Stop Repeated Mistakes"
-description: "Learn how to use MCP and Pre-Action Checks to physically block Claude Code from repeating the same expensive mistakes."
+description: "Learn how to use MCP and Pre-Action Checks to flag and log Claude Code's repeat mistakes — and hard-block the catastrophic ones — before they execute."
 author: "Igor Ganapolsky"
 date: "2026-04-14"
 ---
@@ -11,7 +11,7 @@ If you use Claude Code for daily development, you already know its power. It can
 
 You tell it, "Never use the deprecated `passport.js` library, use `auth-v2`." It works for that session. Two days later, in a new session, it tries to install `passport.js` again. 
 
-Prompt engineering isn't enough for autonomous agents. You need hard guardrails. In this tutorial, we'll show you how to use the Model Context Protocol (MCP) and **ThumbGate** to physically block Claude Code from repeating mistakes.
+Prompt engineering isn't enough for autonomous agents. You need hard guardrails. In this tutorial, we'll show you how to use the Model Context Protocol (MCP) and **ThumbGate** to flag and log repeat mistakes — and hard-block the catastrophic ones — before Claude Code executes them.
 
 ## The Problem with System Prompts
 
@@ -27,7 +27,7 @@ Instead of relying on the LLM to remember rules, we can intercept the tool call 
 
 The Model Context Protocol (MCP) allows us to inject middleware between the LLM's decision and the actual execution on your machine. By using a local gateway like ThumbGate, we can evaluate every proposed action against a database of past mistakes.
 
-If the action matches a known bad pattern, the gateway physically blocks the execution and returns an error to the LLM, forcing it to correct itself.
+If the action matches a known bad pattern, the gateway fires and logs it by default. For the catastrophic classes — secret exfiltration, supply-chain tampering, destructive deletes — it hard-blocks the execution and returns an error to the LLM, forcing it to correct itself. Under strict enforcement mode (`THUMBGATE_STRICT_ENFORCEMENT=1`), every matched rule hard-blocks.
 
 ## Step 1: Install ThumbGate
 
@@ -80,7 +80,7 @@ Instead of executing the command, ThumbGate returns a hard block to the LLM:
 
 Because the block happens *before* execution, your system is safe. Furthermore, the LLM reads the error message, understands why it was blocked, and automatically generates a corrected tool call using the safe migration pattern you specified.
 
-## Conclusion: Fix It Once, Block the Repeat
+## Conclusion: Fix It Once, Catch the Repeat
 
 By moving enforcement out of the prompt and into the execution layer via MCP, you transform Claude Code from an unpredictable assistant into a reliable operator. 
 

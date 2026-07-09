@@ -46,7 +46,7 @@
       "name": "What is a pre-action check for AI coding agents?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "A pre-action check is an enforcement layer that intercepts AI agent tool calls before they execute. Unlike prompt rules that agents can ignore, pre-action checks physically block dangerous actions such as force-pushing to main, deleting production files, or committing code with failing tests. ThumbGate implements pre-action checks via PreToolUse hooks that fire before every tool call."
+        "text": "A pre-action check is an enforcement layer that intercepts AI agent tool calls before they execute. Unlike prompt rules that agents can ignore, pre-action checks flag and log risky actions, and hard-block the most dangerous classes by default (secret exfiltration, supply-chain installs, and rm -rf-class deletes). Actions such as force-pushing to main, off-scope edits, or skipping tests warn by default and hard-block under strict enforcement mode (THUMBGATE_STRICT_ENFORCEMENT=1). ThumbGate implements pre-action checks via PreToolUse hooks that fire before every tool call."
       }
     },
     {
@@ -70,7 +70,7 @@
       "name": "How is ThumbGate different from .cursorrules or CLAUDE.md rules?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Cursor rules and CLAUDE.md are prompt-level instructions that the AI agent can read, forget, or override. ThumbGate enforces rules at the tool-call level via PreToolUse hooks. When a tool call matches a known failure pattern, it is physically blocked before execution. Additionally, ThumbGate auto-generates prevention rules from feedback, so you never have to write rules manually."
+        "text": "Cursor rules and CLAUDE.md are prompt-level instructions that the AI agent can read, forget, or override. ThumbGate enforces rules at the tool-call level via PreToolUse hooks. When a tool call matches a known failure pattern, it is flagged and logged, and hard-blocked before execution for the most dangerous classes or under strict enforcement mode. Additionally, ThumbGate auto-generates prevention rules from feedback, so you never have to write rules manually."
       }
     },
     {
@@ -161,8 +161,8 @@
     <th>ESLint / Linters</th>
   </tr>
   <tr>
-    <td>Blocks bad actions before execution</td>
-    <td class="yes">Yes -- PreToolUse hooks</td>
+    <td>Intercepts bad actions before execution</td>
+    <td class="yes">Yes -- PreToolUse hooks warn by default; hard-block high-risk classes and strict mode</td>
     <td class="partial">Partially -- after PR only</td>
     <td class="no">No -- damage already done</td>
     <td class="partial">Partially -- suggestions only</td>
@@ -237,7 +237,7 @@
 
 <h2>Why ThumbGate Wins</h2>
 <ul>
-  <li><strong>Enforcement, not suggestions.</strong> Prompt rules in CLAUDE.md or .cursorrules are instructions the agent can ignore. ThumbGate intercepts tool calls at the PreToolUse hook level and physically blocks dangerous actions before they execute.</li>
+  <li><strong>Enforcement, not suggestions.</strong> Prompt rules in CLAUDE.md or .cursorrules are instructions the agent can ignore. ThumbGate intercepts tool calls at the PreToolUse hook level, flags and logs risky actions, and hard-blocks the most dangerous classes (secret exfiltration, supply-chain installs, rm -rf-class deletes) before they execute — with force-push, off-scope edits, and skip-tests escalated to hard blocks under strict enforcement mode.</li>
   <li><strong>Learns and adapts automatically.</strong> Every thumbs-down becomes a data point. After repeated failures with the same pattern, ThumbGate auto-generates a prevention rule. Checks adapt their sensitivity over time using Thompson Sampling -- aggressive checks that over-block get tuned down, effective checks get reinforced.</li>
   <li><strong>Works across all major AI coding agents.</strong> One install command covers Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and OpenCode. No per-agent configuration needed.</li>
   <li><strong>Prevention is cheaper than recovery.</strong> Manual code review catches mistakes after the PR. Git revert catches them after the push. ThumbGate catches them before the tool call executes -- saving the time, context switches, and cleanup cost of undoing damage.</li>
@@ -324,7 +324,7 @@
 
 <div class="card">
   <h3>What is a pre-action check?</h3>
-  <p>A pre-action check is an enforcement layer that intercepts AI agent tool calls before they execute. Unlike prompt rules that agents can ignore, pre-action checks physically block dangerous actions such as force-pushing to main, deleting production files, or committing code with failing tests.</p>
+  <p>A pre-action check is an enforcement layer that intercepts AI agent tool calls before they execute. Unlike prompt rules that agents can ignore, pre-action checks flag and log risky actions and hard-block the most dangerous classes by default (secret exfiltration, supply-chain installs, rm -rf-class deletes). Actions such as force-pushing to main, off-scope edits, or skipping tests warn by default and hard-block under strict enforcement mode.</p>
 </div>
 
 <div class="card">
@@ -339,7 +339,7 @@
 
 <div class="card">
   <h3>How is ThumbGate different from .cursorrules or CLAUDE.md rules?</h3>
-  <p>Cursor rules and CLAUDE.md are prompt-level instructions that the AI agent can read, forget, or override. ThumbGate enforces rules at the tool-call level via PreToolUse hooks. When a tool call matches a known failure pattern, it is physically blocked before execution. Additionally, ThumbGate auto-generates prevention rules from feedback -- no manual rule writing.</p>
+  <p>Cursor rules and CLAUDE.md are prompt-level instructions that the AI agent can read, forget, or override. ThumbGate enforces rules at the tool-call level via PreToolUse hooks. When a tool call matches a known failure pattern, it is flagged and logged, and hard-blocked before execution for the most dangerous classes or under strict enforcement mode. Additionally, ThumbGate auto-generates prevention rules from feedback -- no manual rule writing.</p>
 </div>
 
 <div class="card">

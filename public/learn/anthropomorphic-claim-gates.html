@@ -18,7 +18,7 @@
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "Anthropomorphic Claim Gates for AI Agents",
-  "description": "A ThumbGate implementation pattern for blocking unsupported human-like or cognitive claims about AI systems until explicit measurement criteria and evidence are attached.",
+  "description": "A ThumbGate implementation pattern for flagging unsupported human-like or cognitive claims about AI systems until explicit measurement criteria and evidence are attached.",
   "datePublished": "2026-06-20",
   "dateModified": "2026-06-20",
   "author": {
@@ -50,7 +50,7 @@
       "name": "What is an anthropomorphic claim gate?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "It is a pre-action check that blocks claims such as an AI agent understands, knows, decides, wants, or behaves human-like until the operator records explicit measurement criteria and evidence."
+        "text": "It is a pre-action check that flags claims such as an AI agent understands, knows, decides, wants, or behaves human-like and withholds acceptance until the operator records explicit measurement criteria and evidence."
       }
     },
     {
@@ -79,20 +79,20 @@
 
   <div class="callout">
     <p><strong>The high-ROI lesson:</strong> stop debating whether the agent is smart. Gate the claim. If an operator or agent says an AI system has a human-like attribute, require a tested attribute, interface/substrate context, evaluator, and evidence before accepting the statement.</p>
-    <p class="source-note">Research anchor: Adrian de Wynter's arXiv paper, <a href="https://arxiv.org/abs/2605.31514" rel="noopener">If LLMs Have Human-Like Attributes, Then So Does Age of Empires II</a>. A public X post by Rohan Paul surfaced the paper as a reminder to avoid treating LLMs as human-like without clear tests and narrower claims.</p>
+    <p class="source-note">Research anchor: Adrian de Wynter's arXiv paper, <a href="https://arxiv.org/abs/2605.31514" rel="noopener">If LLMs Have Human-Like Attributes, Then So Does Age of Empires II</a>. A public post by Rohan Paul surfaced the paper as a reminder to avoid treating LLMs as human-like without clear tests and narrower claims.</p>
   </div>
 
   <h2>What changes in ThumbGate</h2>
   <p>ThumbGate's default claim-verification config now includes an anthropomorphic AI claim gate. It catches unsupported statements like:</p>
   <div class="grid">
-    <div class="card"><strong>Blocked without evidence</strong> "The agent understands the user's intent."</div>
-    <div class="card"><strong>Blocked without evidence</strong> "The model decided this was safe."</div>
-    <div class="card"><strong>Blocked without evidence</strong> "This assistant is human-like on workflow judgment."</div>
+    <div class="card"><strong>Flagged without evidence</strong> "The agent understands the user's intent."</div>
+    <div class="card"><strong>Flagged without evidence</strong> "The model decided this was safe."</div>
+    <div class="card"><strong>Flagged without evidence</strong> "This assistant is human-like on workflow judgment."</div>
     <div class="card"><strong>Accepted after proof</strong> "The model matched human annotators on this narrow benchmark, with criteria and evaluator recorded."</div>
   </div>
 
   <h2>The rule shape</h2>
-  <p>The gate does not ban research or careful measurement. It blocks vague cognitive language until a proof action is recorded.</p>
+  <p>The gate does not ban research or careful measurement. It flags vague cognitive language and withholds acceptance until a proof action is recorded — and can hard-block it under strict mode.</p>
   <pre><code>track_action("anthropomorphic_claim_verified", {
   criteria: "attribute under test",
   interface: "where and how the model was evaluated",

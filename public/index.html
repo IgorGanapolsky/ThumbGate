@@ -12,7 +12,7 @@ __GOOGLE_SITE_VERIFICATION_META__
 <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
 <meta property="og:image" content="/og.png">
 <title>ThumbGate — Pre-action checks for AI coding agents</title>
-<meta name="description" content="Stripe Connect integration engineering for ticketing and marketplace platforms — Pretix plugin shipped to Hilltown Media. ThumbGate is also the pre-action governance runtime for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI): 👍 thumbs up and 👎 thumbs down feedback become history-aware lessons, shared lessons and org visibility, and PreToolUse checks that block repeated mistakes before code, money, or customer systems change. Perfect for vibe coding and human-in-the-loop workflows.">
+<meta name="description" content="ThumbGate is the pre-action governance runtime for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI): 👍 thumbs up and 👎 thumbs down feedback become history-aware lessons, shared lessons and org visibility, and PreToolUse checks that flag and log every risky tool call — hard-blocking the catastrophic classes (secret exfiltration, destructive deletes like rm -rf, supply-chain) by default and warning on the rest, with strict mode to hard-block every rule. Built for vibe coding and human-in-the-loop workflows.">
 <meta property="og:title" content="ThumbGate — Stop paying for the same AI mistake twice">
 <meta property="og:description" content="Frontier LLMs are expensive, opaque, and unreliable in production. ThumbGate gates risky agent actions before they run: workflow shape, inspection evidence, token budget, and repeated-failure memory in one pre-action check.">
 <meta property="og:type" content="website">
@@ -45,16 +45,13 @@ __GA_BOOTSTRAP__
   "@type": "Person",
   "name": "Igor Ganapolsky",
   "url": "https://github.com/IgorGanapolsky",
-  "jobTitle": "Senior Mobile & AI Engineer; Stripe Connect specialist",
+  "jobTitle": "Senior Mobile & AI Engineer",
   "worksFor": {
     "@type": "Organization",
     "name": "ThumbGate",
     "url": "https://thumbgate.ai"
   },
   "knowsAbout": [
-    "Stripe Connect",
-    "Pretix plugin engineering",
-    "Marketplace payments architecture",
     "AI agent governance",
     "Pre-action checks for AI coding agents"
   ],
@@ -62,7 +59,7 @@ __GA_BOOTSTRAP__
     "https://github.com/IgorGanapolsky",
     "https://www.npmjs.com/package/thumbgate"
   ],
-  "mainEntityOfPage": "https://thumbgate.ai/learn/pretix-stripe-connect-marketplaces"
+  "mainEntityOfPage": "https://thumbgate.ai/"
 }
 </script>
 
@@ -74,7 +71,7 @@ __GA_BOOTSTRAP__
   "alternateName": "thumbgate",
   "url": "https://thumbgate.ai",
   "logo": "https://thumbgate.ai/assets/brand/thumbgate-logo-1200x360.png",
-  "description": "ThumbGate ships pre-action gates for AI coding agents. Open-source CLI plus PreToolUse hooks that capture feedback, promote it to memory, generate prevention rules, and block repeated mistakes before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode.",
+  "description": "ThumbGate ships pre-action gates for AI coding agents. Open-source CLI plus PreToolUse hooks that capture feedback, promote it to memory, generate prevention rules, and flag repeated mistakes before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode — hard-blocking the catastrophic classes by default and every rule under strict mode.",
   "founder": {
     "@type": "Person",
     "name": "Igor Ganapolsky",
@@ -109,7 +106,7 @@ __GA_BOOTSTRAP__
   },
   "featureList": [
     "Prevent expensive AI mistakes — catch bad commands, destructive database actions, unsafe publishes, and risky API calls before execution",
-    "Make AI stop repeating mistakes — thumbs-down feedback becomes history-aware lessons and Pre-Action Checks",
+    "Make AI catch repeating mistakes — thumbs-down feedback becomes history-aware lessons and Pre-Action Checks",
     "Turn AI into a reliable operator — checkpoint risky actions, enforce safe patterns, and keep proof of what changed",
     "Agent surface inventory — see which tools, MCP surfaces, and policy sources are actually active before rollout",
     "Actionable remediations — rank the next highest-ROI fixes from real feedback and risk pressure",
@@ -270,8 +267,8 @@ __GA_BOOTSTRAP__
     {
       "@type": "HowToStep",
       "position": 4,
-      "name": "Pre-action checks block the mistake",
-      "text": "When the agent tries to repeat a known-bad action, the PreToolUse hook fires and physically blocks the tool call before execution. The agent cannot repeat the mistake."
+      "name": "Pre-action checks flag the mistake",
+      "text": "When the agent tries to repeat a known-bad action, the PreToolUse hook fires, flags the tool call, and logs the decision before execution. Catastrophic classes (secret exfiltration, destructive deletes like rm -rf, supply-chain) hard-block by default; set THUMBGATE_STRICT_ENFORCEMENT=1 to hard-block every rule."
     }
   ],
   "totalTime": "PT5M",
@@ -297,7 +294,7 @@ __GA_BOOTSTRAP__
       "name": "How is ThumbGate different from model-training feedback loops?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Model-training feedback loops update weights. ThumbGate does not touch the model. It injects past feedback into context so your agent is shaped by your corrections in real time. Think of it as a behavioral immune system, not a training pipeline. The check blocks are hard enforcement, not soft suggestions."
+        "text": "Model-training feedback loops update weights. ThumbGate does not touch the model. It injects past feedback into context so your agent is shaped by your corrections in real time. Think of it as a behavioral immune system, not a training pipeline. Checks fire on every tool call and log the decision; catastrophic classes hard-block by default, and strict mode (THUMBGATE_STRICT_ENFORCEMENT=1) hard-blocks every rule."
       }
     },
     {
@@ -329,7 +326,7 @@ __GA_BOOTSTRAP__
       "name": "When should I use Pro versus the Workflow Hardening Sprint?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Start with the setup guide if you only need the local path. Choose Pro after one real blocked repeat when you want your own dashboard, DPO export, and proof-ready exports. Choose the Workflow Hardening Sprint when one workflow owner needs approval boundaries, rollback safety, and rollout proof before wider rollout."
+        "text": "Start with the setup guide if you only need the local path. Choose Pro after one real caught repeat when you want your own dashboard, DPO export, and proof-ready exports. Choose the Workflow Hardening Sprint when one workflow owner needs approval boundaries, rollback safety, and rollout proof before wider rollout."
       }
     },
     {
@@ -345,7 +342,7 @@ __GA_BOOTSTRAP__
       "name": "How are pre-action checks different from prompt rules?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Prompt rules are suggestions agents can ignore. Pre-Action Checks are enforcement — they block the action before execution via PreToolUse hooks. Checks are auto-generated from feedback and use Thompson Sampling to adapt."
+        "text": "Prompt rules are suggestions agents can ignore. Pre-Action Checks fire before execution via PreToolUse hooks — they flag and log every decision, and can block the action: catastrophic classes hard-block by default, and strict mode (THUMBGATE_STRICT_ENFORCEMENT=1) hard-blocks every rule. Checks are auto-generated from feedback and use Thompson Sampling to adapt."
       }
     },
     {
@@ -361,7 +358,7 @@ __GA_BOOTSTRAP__
       "name": "How does ThumbGate prevent AI slop and protect brand authenticity?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "AI slop happens when agents act without human judgment as a hard check — generating repetitive, generic outputs that erode trust and dilute your brand. ThumbGate inserts human thumbs-up/down between AI intent and execution. Every thumbs-down becomes a prevention rule that blocks the bad pattern permanently. Every thumbs-up reinforces what 'good' looks like for your specific context. Your agent's outputs reflect your actual standards, not generic AI patterns. This is authenticity enforcement at the tool-call level."
+        "text": "AI slop happens when agents act without human judgment as a check — generating repetitive, generic outputs that erode trust and dilute your brand. ThumbGate inserts human thumbs-up/down between AI intent and execution. Every thumbs-down becomes a prevention rule that flags the bad pattern on the next matching tool call. Every thumbs-up reinforces what 'good' looks like for your specific context. Your agent's outputs reflect your actual standards, not generic AI patterns. This is authenticity enforcement at the tool-call level."
       }
     },
     {
@@ -369,7 +366,7 @@ __GA_BOOTSTRAP__
       "name": "How is ThumbGate different from SpecLock?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "SpecLock requires manually writing constraints or compiling them from a PRD. ThumbGate learns automatically from thumbs-up/down feedback and auto-generates prevention rules from repeated failures. SpecLock locks files from modification; ThumbGate blocks specific actions (like force-push) before they execute."
+        "text": "SpecLock requires manually writing constraints or compiling them from a PRD. ThumbGate learns automatically from thumbs-up/down feedback and auto-generates prevention rules from repeated failures. SpecLock locks files from modification; ThumbGate flags specific actions (like force-push) before they execute and logs the decision — warning by default and hard-blocking under strict mode, while catastrophic classes like secret exfiltration and rm -rf hard-block outright."
       }
     },
     {
@@ -377,7 +374,7 @@ __GA_BOOTSTRAP__
       "name": "How is ThumbGate different from Mem0?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Mem0 is cloud-hosted memory for AI apps. ThumbGate is local-first enforcement. Mem0 remembers context but cannot block actions. ThumbGate captures feedback, promotes it to prevention rules, and physically blocks tool calls that match known failure patterns via PreToolUse hooks."
+        "text": "Mem0 is cloud-hosted memory for AI apps. ThumbGate is local-first enforcement. Mem0 remembers context but does not gate actions. ThumbGate captures feedback, promotes it to prevention rules, and flags tool calls that match known failure patterns via PreToolUse hooks — hard-blocking the catastrophic classes by default, and every rule under strict mode."
       }
     }
   ]
@@ -756,8 +753,8 @@ __GA_BOOTSTRAP__
 <section class="hero">
   <div class="container">
     <div class="hero-badge">👍 👎 Local-first · open-source · Pro proof when it matters</div>
-    <h1>Stop AI agents before they spend money, leak secrets, or break production.</h1>
-    <p class="hero-lede">Claude Code, Cursor, Codex, Gemini CLI, and MCP tools now touch terminals, repos, databases, SaaS APIs, and cloud systems. ThumbGate checks the next tool call before it runs, blocks repeated failures from your thumbs-down feedback, and gives paid operators proof, sync, recall, and exports when local rules become business-critical.</p>
+    <h1>Catch AI agents before they spend money, leak secrets, or break production.</h1>
+    <p class="hero-lede">Claude Code, Cursor, Codex, Gemini CLI, and MCP tools now touch terminals, repos, databases, SaaS APIs, and cloud systems. ThumbGate checks the next tool call before it runs, flags repeated failures from your thumbs-down feedback and logs every decision — hard-blocking the catastrophic classes (secret exfiltration, rm -rf, supply-chain) by default and warning on the rest, with strict mode to hard-block everything — and gives paid operators proof, sync, recall, and exports when local rules become business-critical.</p>
 
     <div class="hero-signals" aria-label="June 2026 buyer signals">
       <a class="signal-pill signal-down" href="#june-2026-proof">MCP tool risk</a>
@@ -766,8 +763,8 @@ __GA_BOOTSTRAP__
       <a class="signal-pill signal-up" href="#pricing">Free wedge, paid proof</a>
     </div>
 
-    <div class="hero-proof-card" aria-label="ThumbGate blocking dangerous AI agent commands in real time">
-      <img src="/media/thumbgate-demo.gif" alt="ThumbGate blocking an AI agent's rm -rf, git push --force, and chmod 777 in real time, while letting safe commands through" style="width:100%;display:block;border-radius:8px;" loading="lazy" />
+    <div class="hero-proof-card" aria-label="ThumbGate flagging dangerous AI agent commands in real time">
+      <img src="/media/thumbgate-demo.gif" alt="ThumbGate flagging an AI agent's rm -rf, git push --force, and chmod 777 in real time — hard-blocking rm -rf and warning on the rest by default (strict mode blocks all) — while letting safe commands through" style="width:100%;display:block;border-radius:8px;" loading="lazy" />
     </div>
 
     <div class="hero-actions">
@@ -789,7 +786,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="offer-route">
         <strong>Still evaluating: Free CLI</strong>
-        <p>2 captures/day, 3 active rules. Enough to prove one blocked repeat.</p>
+        <p>2 captures/day, 3 active rules. Enough to prove one caught repeat.</p>
         <button data-router-install onclick="copyInstall(this)"><span class="copy-hint">Copy npx thumbgate init</span></button>
       </div>
     </div>
@@ -803,7 +800,7 @@ __GA_BOOTSTRAP__
     </div>
     <figure style="max-width:760px;margin:32px auto 0;padding:20px 24px;border-left:3px solid var(--cyan);background:rgba(34,211,238,0.04);border-radius:0 8px 8px 0;">
       <blockquote style="margin:0;font-size:18px;line-height:1.5;color:var(--text);font-style:italic;">&ldquo;A better dashboard doesn&rsquo;t make the agents more reliable. The hard part isn&rsquo;t visibility. It&rsquo;s trust.&rdquo;</blockquote>
-      <figcaption style="margin-top:12px;font-size:13px;color:var(--text-muted);">— Rob May, CEO &amp; co-founder, Neurometric AI, in <a href="https://thenewstack.io/claude-code-agent-view/" target="_blank" rel="noopener" style="color:var(--cyan);">The New Stack</a> on Anthropic&rsquo;s Claude Code Agent View (May 2026). ThumbGate is the open-source layer that makes the trust part real: PreToolUse gates, thumbs-down to rule, audit trail on every interception.</figcaption>
+      <figcaption style="margin-top:12px;font-size:13px;color:var(--text-muted);">— Rob May, CEO &amp; co-founder, Neurometric AI, in <a href="https://thenewstack.io/claude-code-agent-view/" target="_blank" rel="noopener" style="color:var(--cyan);">The New Stack</a> on Anthropic&rsquo;s Claude Code Agent View (May 2026). This is Rob May describing the industry, not an endorsement of ThumbGate. ThumbGate is our attempt at that trust problem: PreToolUse gates, thumbs-down to rule, and an audit trail on every interception.</figcaption>
     </figure>
     <figure style="max-width:760px;margin:24px auto 0;padding:20px 24px;border-left:3px solid var(--cyan);background:rgba(34,211,238,0.04);border-radius:0 8px 8px 0;">
       <p style="margin:0 0 8px;font-size:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;">Local-first is the new default</p>
@@ -824,8 +821,8 @@ __GA_BOOTSTRAP__
           <p>Use thumbs up for a good pattern and thumbs down for a failure. ThumbGate distills the correction into a concrete prevention rule.</p>
         </div>
         <div class="first-check-step">
-          <strong>3. The repeat gets blocked</strong>
-          <p>The next matching tool call is stopped before execution, with a reason the agent can use to choose a safer plan.</p>
+          <strong>3. The repeat gets flagged</strong>
+          <p>The next matching tool call is flagged and logged before execution, with a reason the agent can use to choose a safer plan — and hard-blocked outright for catastrophic actions (secrets, rm -rf) or when you set THUMBGATE_STRICT_ENFORCEMENT=1.</p>
         </div>
       </div>
     </div>
@@ -843,11 +840,11 @@ __GA_BOOTSTRAP__
     </nav>
     <div class="marketing-test-copy" hidden>
       <div class="hero-thumbs">👍👎</div>
-      <a class="signal-pill signal-up">Thumbs-down once, blocked forever</a>
-      <a class="signal-pill signal-down">Block repeat hallucinations before the model sees them</a>
+      <a class="signal-pill signal-up">Thumbs-down once, caught every time</a>
+      <a class="signal-pill signal-down">Catch repeat hallucinations before the model sees them</a>
       <p class="hero-persona">For consultancies, platform teams, and AI product teams that want workflow governance, CLI-first rollout, and a reliable operator.</p>
       <p>Have one AI-agent failure that keeps repeating? Start with one real workflow, one repeated failure pattern, enforceable pre-action gates, and a short audit trail your team can keep.</p>
-      <p>Prove one blocked repeat before asking anyone to buy. Give <code>thumbs up</code> when the agent follows your standards, <code>thumbs down</code> when it misses. Upgrade after one real blocked repeat.</p>
+      <p>Prove one caught repeat before asking anyone to buy. Give <code>thumbs up</code> when the agent follows your standards, <code>thumbs down</code> when it misses. Upgrade after one real caught repeat.</p>
       <p>Workflow governance for isolated execution: ThumbGate pairs policy checks with Docker Sandboxes, signed hosted sandbox dispatch, Changeset evidence, and exact main-branch merge commit verification before release claims ship.</p>
       <!--
         Hidden test/asserter strings — required by tests/public-landing.test.js regex assertions
@@ -952,10 +949,10 @@ __GA_BOOTSTRAP__
         <div><span class="fn">npx</span> thumbgate init</div>
         <div>&nbsp;</div>
         <div><span class="comment"># Your agent tries to delete production db...</span></div>
-        <div><span class="keyword">⛔ Check blocked:</span> <span class="string">"Never run DROP on production tables"</span></div>
+        <div><span class="keyword">⚠️ Check flagged:</span> <span class="string">"Never run DROP on production tables"</span> <span class="comment"># blocks under strict mode</span></div>
         <div><span class="comment"># Rule auto-generated from your previous 👎</span></div>
         <div>&nbsp;</div>
-        <div><span class="comment"># That's it. One thumbs-down = one permanent check.</span></div>
+        <div><span class="comment"># That's it. One thumbs-down = one reusable check.</span></div>
       </div>
     </div>
     <p style="text-align:center;margin-top:16px;font-size:14px;color:var(--text-muted);">This is the entire product in 2 lines. Install, give feedback, checks auto-generate.</p>
@@ -1030,7 +1027,7 @@ __GA_BOOTSTRAP__
         </div>
         <div class="gpt-step">
           <strong>3. Give feedback, checks auto-generate</strong>
-          <p>Type <code>thumbs down</code> when Claude makes a mistake. ThumbGate distills a lesson from up to 8 prior entries and blocks the pattern permanently via PreToolUse hooks.</p>
+          <p>Type <code>thumbs down</code> when Claude makes a mistake. ThumbGate distills a lesson from up to 8 prior entries and flags the pattern on the next matching tool call via PreToolUse hooks — hard-blocking the catastrophic classes by default, and every rule under strict mode.</p>
         </div>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
@@ -1061,7 +1058,7 @@ __GA_BOOTSTRAP__
         </div>
         <div class="gpt-step">
           <strong>3. Enforce locally</strong>
-          <p>Run <code>npx thumbgate init</code> in the repo so Pre-Action Checks block repeated mistakes before the coding agent executes them.</p>
+          <p>Run <code>npx thumbgate init</code> in the repo so Pre-Action Checks flag repeated mistakes (and hard-block the catastrophic ones) before the coding agent executes them.</p>
         </div>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
@@ -1185,12 +1182,12 @@ __GA_BOOTSTRAP__
 <section class="compatibility" id="governance-not-logging">
   <div class="container">
     <div class="section-label">Governance, Not Logging</div>
-    <h2 class="section-title">Logs describe the damage. ThumbGate blocks the risky action before it runs.</h2>
+    <h2 class="section-title">Logs describe the damage. ThumbGate flags the risky action before it runs — and blocks the catastrophic ones.</h2>
     <p style="color:var(--text-dim);max-width:820px;margin:0 auto 22px;">Self-governance is an operator writing local rules and keeping local logs. ThumbGate starts there, then turns each correction into a pre-action decision: allow, block, require evidence, or route for approval before the tool call touches code, data, money, or customers.</p>
     <div class="agent-grid">
       <div class="agent-card">
         <h3>Pre-action enforcement</h3>
-        <p>The rule is evaluated at the execution boundary, not after the fact. Repeated failures are stopped before shell commands, PR actions, deploys, refunds, or production writes run.</p>
+        <p>The rule is evaluated at the execution boundary, not after the fact. Repeated failures are flagged and logged before shell commands, PR actions, deploys, refunds, or production writes run — and hard-blocked for catastrophic classes (secrets, rm -rf, supply-chain) or when strict mode is on.</p>
       </div>
       <div class="agent-card">
         <h3>Reviewable decision trail</h3>
@@ -1216,7 +1213,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="agent-card">
         <h3>ThumbGate</h3>
-        <p>Turns operator feedback into Pre-Action Checks. It does not just remember the mistake. It blocks the repeat at the tool-call boundary across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode.</p>
+        <p>Turns operator feedback into Pre-Action Checks. It does not just remember the mistake. It flags the repeat at the tool-call boundary across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode — and can hard-block it (catastrophic classes by default, everything under strict mode).</p>
       </div>
       <div class="agent-card">
         <h3>The stack that makes sense</h3>
@@ -1304,7 +1301,7 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="section-label">Persistent Agent Skills</div>
     <h2 class="section-title">Reusable instructions are the new baseline. Enforcement is the moat.</h2>
-    <p style="text-align:center;font-size:16px;color:var(--text-muted);max-width:880px;margin:0 auto 28px;line-height:1.7;">Grok-style skills are training users to expect persistent expertise across every surface. ThumbGate turns that expectation into a governed reliability layer: capture the correction once, export it as a portable skill or lesson bundle, then prove the next risky tool call was blocked before it ran.</p>
+    <p style="text-align:center;font-size:16px;color:var(--text-muted);max-width:880px;margin:0 auto 28px;line-height:1.7;">Grok-style skills are training users to expect persistent expertise across every surface. ThumbGate turns that expectation into a governed reliability layer: capture the correction once, export it as a portable skill or lesson bundle, then prove the next risky tool call was flagged (and, for catastrophic classes or under strict mode, blocked) before it ran.</p>
     <div class="agent-grid">
       <div class="agent-card">
         <h3>Portable skill memory</h3>
@@ -1326,8 +1323,8 @@ __GA_BOOTSTRAP__
 <section class="how-it-works" id="how-it-works">
   <div class="container">
     <div class="section-label">Self-improving enforcement</div>
-    <h2 class="section-title">Three steps to stop repeated AI failures</h2>
-    <p class="section-sub" style="max-width:720px;margin:6px auto 22px;text-align:center;color:var(--text-muted);font-size:clamp(16px,1.6vw,18px);">Self-improving — but for safety, not capability: every <code>👎</code> compiles into a hard rule, and each rule regression-tests itself against your history, so it blocks the repeat and never the safe action.</p>
+    <h2 class="section-title">Three steps to catch repeated AI failures</h2>
+    <p class="section-sub" style="max-width:720px;margin:6px auto 22px;text-align:center;color:var(--text-muted);font-size:clamp(16px,1.6vw,18px);">Self-improving — but for safety, not capability: every <code>👎</code> compiles into a rule, and each rule regression-tests itself against your history, so it flags the repeat and never the safe action.</p>
     <div class="steps">
       <div class="step">
         <div class="step-num">1</div>
@@ -1342,7 +1339,7 @@ __GA_BOOTSTRAP__
       <div class="step">
         <div class="step-num">3</div>
         <h3>Checks</h3>
-        <p>Rules become Pre-Action Checks that <strong>block</strong> your agent before it repeats the same mistake. Your agent can't force-push, skip tests, or repeat a refactor you already rejected. No more fix-loops.</p>
+        <p>Rules become Pre-Action Checks that <strong>flag and log</strong> your agent before it repeats the same mistake — hard-blocking the catastrophic classes by default, and every rule when you set <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>. So a force-push, skipped test, or refactor you already rejected gets surfaced before it runs, not after.</p>
       </div>
     </div>
   </div>
@@ -1353,7 +1350,7 @@ __GA_BOOTSTRAP__
 <section class="compatibility" id="guardrails">
   <div class="container">
     <div class="section-label">Enforcement</div>
-    <h2 class="section-title">Checks block. They don't ask nicely.</h2>
+    <h2 class="section-title">Checks fire on every call and log it. Catastrophes get blocked.</h2>
     <div class="agent-grid">
       <div class="agent-card">
         <h3>Don't trust — verify</h3>
@@ -1361,7 +1358,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="agent-card">
         <h3>Real tools, not wishes</h3>
-        <p>Checks physically block tool calls. Not prompt tricks. Not "please don't."</p>
+        <p>Checks fire at the tool-call boundary and log every decision — not prompt tricks, not "please don't." Catastrophic classes hard-block; set <code>THUMBGATE_STRICT_ENFORCEMENT=1</code> to hard-block every rule.</p>
       </div>
       <div class="agent-card">
         <h3>Force models to show work</h3>
@@ -1398,7 +1395,7 @@ __GA_BOOTSTRAP__
         <div><span class="fn">npx</span> thumbgate init</div>
         <div>&nbsp;</div>
         <div><span class="comment"># Your agent tries to delete production db...</span></div>
-        <div><span class="keyword">⛔ Check blocked:</span> <span class="string">"Never run DROP on production tables"</span></div>
+        <div><span class="keyword">⚠️ Check flagged:</span> <span class="string">"Never run DROP on production tables"</span> <span class="comment"># blocks under strict mode</span></div>
         <div><span class="comment"># Rule auto-generated from your previous 👎</span></div>
         <div>&nbsp;</div>
         <div><span class="comment"># Works with your existing setup</span></div>
@@ -1491,7 +1488,7 @@ __GA_BOOTSTRAP__
           <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Hosted sync across machines</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
           <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Shared lesson database + org dashboard</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
           <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Org-wide shared enforcement + approval boundaries</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
-          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Audit trail, SSO, regulatory gate templates</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
+          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Audit trail; SSO &amp; regulatory gate templates <span style="color:var(--text-muted);font-size:12px;">(design-partner / roadmap)</span></td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">On request</td></tr>
           <tr><td style="padding:10px 14px;color:var(--text-muted);">Best for</td><td style="text-align:center;color:var(--text-muted);">One developer</td><td style="text-align:center;color:var(--text-muted);">Solo operators</td><td style="text-align:center;color:var(--text-muted);">Teams &amp; regulated orgs</td></tr>
         </tbody>
       </table>
@@ -1501,7 +1498,7 @@ __GA_BOOTSTRAP__
       <div class="price-card free-highlight" style="border-color:var(--cyan);box-shadow:0 0 40px var(--cyan-dim), inset 0 1px 0 rgba(34,211,238,0.15);position:relative;">
         <div class="tier" style="color:var(--cyan);">Free</div>
         <div class="price">$0</div>
-        <div class="price-sub">Block repeated mistakes daily. Forever free for solo devs.</div>
+        <div class="price-sub">Catch repeated mistakes daily. Forever free for solo devs.</div>
         <p style="font-size:13px;color:#aaa;margin-bottom:16px;">2 captures/day, 3 active rules. Enough to see the value — upgrade when you need more.</p>
         <ul>
           <li><strong>2 feedback captures/day</strong> — 10 total on Free, then Pro for unlimited</li>
@@ -1509,7 +1506,7 @@ __GA_BOOTSTRAP__
           <li>No recall or lesson search</li>
           <li>No exports (DPO, Databricks, HuggingFace)</li>
           <li>All MCP integrations (Claude Code, Cursor, Codex, Gemini, Amp, any MCP agent)</li>
-          <li>PreToolUse hook blocking with built-in safety checks (force-push, destructive SQL, secrets)</li>
+          <li>PreToolUse hook with built-in safety checks — hard-blocks secrets and destructive deletes (rm -rf) by default; warns on force-push and destructive SQL (blocks them under <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>)</li>
           <li><a href="/guide" style="color:var(--cyan);text-decoration:underline;">Setup guide for all agents →</a></li>
         </ul>
         <div class="hero-install" onclick="copyInstall(this)" title="Click to copy" style="margin-bottom:12px;width:100%;justify-content:center;">
@@ -1584,7 +1581,7 @@ __GA_BOOTSTRAP__
             <td><strong>Dashboard and proof</strong></td>
             <td>Local CLI evidence</td>
             <td>Personal dashboard, check debugger, DPO/HF exports</td>
-            <td>Org dashboard, hosted review views, rollout proof, SIEM-ready decision trail and compliance evidence</td>
+            <td>Org dashboard, hosted review views, rollout proof; SIEM export and compliance evidence packaging available on request</td>
           </tr>
           <tr>
             <td><strong>How to start</strong></td>
@@ -1608,13 +1605,13 @@ __GA_BOOTSTRAP__
               <li><strong>Shared lesson database</strong> — one hosted, shared lesson DB so one team member's correction becomes every developer's prevention rule across the org</li>
               <li><strong>Org dashboard</strong> — active agents, check hit-rates, and risk surfaces across the whole team</li>
               <li><strong>Shared enforcement memory</strong> — approval boundaries and rollback safety applied org-wide, not per machine</li>
-              <li><strong>Audit-grade decision trail</strong> — every PreToolUse evaluation logged with the rule that fired, ready for SIEM export</li>
+              <li><strong>Audit-grade decision trail</strong> — every PreToolUse evaluation logged with the rule that fired; SIEM export available on request</li>
               <li><strong>Immutable rule provenance</strong> — each prevention rule traceable to the feedback event that generated it</li>
               <li><strong>Self-managed deployment</strong> — air-gapped or VPC-hosted; no agent state leaves your boundary</li>
               <li><strong>Dialogflow CX fulfillment guard</strong> — ThumbGate's pre-action gate sits in front of your Dialogflow CX webhook fulfillment, in your own GCP tenant, so risky or repeat turns are blocked before they touch a database, CRM, or billing system (white-glove design-partner pilot)</li>
               <li><strong>Vertex AI / Gemini scoring, in-tenant</strong> — risk and planning scoring runs on Gemini via Vertex (<code>npx thumbgate setup-vertex</code>); no conversational data leaves your VPC</li>
-              <li><strong>DORA / EU AI Act evidence packaging</strong> — machine-readable reports aligned to Article 6, 28, and high-risk provider monitoring obligations</li>
-              <li><strong>SSO + role separation</strong> — operator, reviewer, and auditor roles enforced at the gate layer</li>
+              <li><strong>DORA / EU AI Act evidence packaging</strong> <span style="color:var(--text-muted);">(roadmap / design-partner)</span> — machine-readable reports aligned to Article 6, 28, and high-risk provider monitoring obligations</li>
+              <li><strong>SSO + role separation</strong> <span style="color:var(--text-muted);">(on the Enterprise roadmap)</span> — operator, reviewer, and auditor roles enforced at the gate layer</li>
               <li><strong>Enterprise Data Chat</strong> — local ThumbGate data Q&amp;A with Dialogflow CX / Vertex-ready governance; live cloud-agent claims require deployment evidence first</li>
               <li><strong>Workflow proof plan included</strong> — a scoped review that proves the boundary against one of your real repeated-failure cases before broader rollout</li>
               <li><strong>Quarterly red-team review</strong> — prompt-injection and policy-bypass exercises with written findings</li>
@@ -1686,15 +1683,15 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How is ThumbGate different from model-training feedback loops?</div>
-        <div class="faq-a">ThumbGate's intelligence is context, not weights. It doesn't touch the model — it injects past feedback into context so your agent is conditioned by your corrections. Think of it as a behavioral immune system, not a training pipeline. The check blocks are hard enforcement, not soft suggestions.</div>
+        <div class="faq-a">ThumbGate's intelligence is context, not weights. It doesn't touch the model — it injects past feedback into context so your agent is conditioned by your corrections. Think of it as a behavioral immune system, not a training pipeline. Checks fire on every tool call and log the decision; catastrophic classes (secret exfiltration, destructive deletes like rm -rf, supply-chain) hard-block by default, and strict mode (<code>THUMBGATE_STRICT_ENFORCEMENT=1</code>) hard-blocks every rule.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How is ThumbGate different from persistent agent skills?</div>
-        <div class="faq-a">Persistent agent skills are reusable instructions. ThumbGate uses the same market shift but adds the missing enforcement loop: lessons become portable skill context, Pre-Action Checks block repeated failures before tool execution, and the dashboard shows evidence for which rule fired and why.</div>
+        <div class="faq-a">Persistent agent skills are reusable instructions. ThumbGate uses the same market shift but adds the missing enforcement loop: lessons become portable skill context, Pre-Action Checks flag repeated failures before tool execution (and hard-block the catastrophic classes by default, or every rule under strict mode), and the dashboard shows evidence for which rule fired and why.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What's the tech stack?</div>
-        <div class="faq-a">SQLite+FTS5 lesson DB for fast full-text search. MemAlign-inspired dual recall (principle-based rules + episodic context). Thompson Sampling for adaptive check sensitivity per failure domain. LanceDB + Apache Arrow for local vector search with Hugging Face embeddings. ContextFS for context assembly. Bayesian belief updates on each memory. PreToolUse hook enforcement blocks known-bad actions before execution. All local-first — no cloud required.</div>
+        <div class="faq-a">SQLite+FTS5 lesson DB for fast full-text search. MemAlign-inspired dual recall (principle-based rules + episodic context). Thompson Sampling for adaptive check sensitivity per failure domain. LanceDB + Apache Arrow for local vector search with Hugging Face embeddings. ContextFS for context assembly. Bayesian belief updates on each memory. PreToolUse hook enforcement flags known-bad actions before execution and hard-blocks the catastrophic classes by default (every rule under strict mode). All local-first — no cloud required.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What AI agents and editors does this work with?</div>
@@ -1706,7 +1703,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">When should I use Pro versus the Workflow Hardening Sprint?</div>
-        <div class="faq-a">Start with the <a href="/guide" style="color:var(--cyan);text-decoration:underline;">setup guide</a> if you only need the local path. Choose Pro after one real blocked repeat when you want your own dashboard, DPO export, and proof-ready exports. Choose the <a href="#workflow-sprint-intake" style="color:var(--cyan);text-decoration:underline;">Workflow Hardening Sprint</a> when one workflow owner needs approval boundaries, rollback safety, and rollout proof before wider rollout.</div>
+        <div class="faq-a">Start with the <a href="/guide" style="color:var(--cyan);text-decoration:underline;">setup guide</a> if you only need the local path. Choose Pro after one real caught repeat when you want your own dashboard, DPO export, and proof-ready exports. Choose the <a href="#workflow-sprint-intake" style="color:var(--cyan);text-decoration:underline;">Workflow Hardening Sprint</a> when one workflow owner needs approval boundaries, rollback safety, and rollout proof before wider rollout.</div>
       </div>
       <div class="faq-item">
         <button class="faq-q" type="button" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How do we keep high-risk autonomous runs off the host?</button>
@@ -1726,7 +1723,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How are pre-action checks different from prompt rules?</div>
-        <div class="faq-a">Prompt rules are a starting point, not a finish line. Without prompt evaluation you do not know whether they still hold up under real tool use. ThumbGate adds the human-in-the-loop measurement loop and the enforcement layer: proof lanes, ThumbGate Bench, and self-heal checks show whether behavior improved, and Pre-Action Checks block the action before execution when it did not.</div>
+        <div class="faq-a">Prompt rules are a starting point, not a finish line. Without prompt evaluation you do not know whether they still hold up under real tool use. ThumbGate adds the human-in-the-loop measurement loop and the enforcement layer: proof lanes, ThumbGate Bench, and self-heal checks show whether behavior improved, and Pre-Action Checks flag and log the action before execution when it did not — hard-blocking catastrophic classes by default, and every rule under strict mode.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How does ThumbGate fit the agentic development cycle?</div>
@@ -1742,7 +1739,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How does ThumbGate contain enterprise API costs?</div>
-        <div class="faq-a">ThumbGate prevents runaway API costs through a local client-side token ledger (FrontierBudget) that enforces strict cost-containment limits (such as keeping monthly costs under $10/mo). Because GCP billing console alerts are delayed, our local circuit breaker halts runaway agent loops in milliseconds to guarantee budget protection.</div>
+        <div class="faq-a">ThumbGate helps contain runaway API costs through a local client-side token ledger (FrontierBudget) that applies cost-containment limits you configure (such as keeping monthly costs under $10/mo). Because GCP billing console alerts are delayed, the local circuit breaker is designed to halt runaway agent loops locally in milliseconds — helping contain spend rather than guaranteeing it.</div>
       </div>
     </div>
   </div>
@@ -1790,7 +1787,6 @@ __GA_BOOTSTRAP__
       <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
       <a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener">npm</a>
       <a href="https://www.producthunt.com/products/thumbgate" target="_blank" rel="noopener">Product Hunt</a>
-      <a href="https://x.com/IgorGanapolsky" target="_blank" rel="noopener">X / Twitter</a>
       <a href="https://www.linkedin.com/in/igorganapolsky" target="_blank" rel="noopener">LinkedIn</a>
       <a href="/blog">Blog</a>
     </div>

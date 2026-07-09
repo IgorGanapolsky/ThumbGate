@@ -96,7 +96,7 @@ Repo: https://github.com/IgorGanapolsky/ThumbGate
 ## Operator Queue
 
 1. Submit early access with the note above.
-2. Post one LinkedIn/X thread: "Agent skills should not just remember mistakes; they should block the repeat before the next tool call."
+2. Post one LinkedIn/X thread: "Agent skills should not just remember mistakes; they should catch the repeat before the next tool call."
 3. DM MCP/agent developers who publish skills: offer a free wiring audit and point them to the paid pack when they name one repeated failure.
 4. Track `utm_source=mcpmarket` visits, checkout starts, and sprint intake submissions.
 5. If any buyer asks for marketplace-native packaging, convert `skills/thumbgate-doctor`, `skills/thumbgate-guard`, `skills/thumbgate-protect`, and `.claude/skills/evidence-first-answer` into the exact MCPMarket upload format once MCPMarket publishes it.

@@ -8,12 +8,12 @@
 
 **AI coding agents repeat mistakes — and one wrong tool call can wipe a directory, leak a key, or push broken code.**
 
-ThumbGate is the local-first firewall for AI coding agents. It runs in the PreToolUse hook on your machine and blocks dangerous tool calls — `rm -rf`, secret exfiltration, off-scope edits, a bad `git push` — before they execute, across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode. No server, no gateway. (Regulated-industry policy templates — legal intake, financial compliance, healthcare — build on the same engine.)
+ThumbGate is the local-first firewall for AI coding agents. It runs in the PreToolUse hook on your machine: it flags the next tool call and logs every decision. It **hard-blocks the catastrophic classes by default** — secret exfiltration, destructive deletes (`rm -rf`), and supply-chain attacks — and hard-blocks **every** rule (force-push, off-scope edits, a bad `git push`, deploys) when you set `THUMBGATE_STRICT_ENFORCEMENT=1`; those classes warn-and-log by default. Works across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode. No server on the enforcement path. (Regulated-industry policy templates — legal intake, financial compliance, healthcare — are on the roadmap, built on the same engine.)
 
 The product is a self-improving enforcement layer: thumbs-down feedback, prompt evaluation, and proof from prior runs become prevention rules that permanently stop repeated failures before the next tool call.
 
 <p align="center">
-  <img src="docs/media/thumbgate-demo.gif" alt="ThumbGate blocking an AI agent's dangerous commands (rm -rf, force-push, chmod 777) in real time, while letting safe commands through" width="820" />
+  <img src="docs/media/thumbgate-demo.gif" alt="ThumbGate gating an AI agent's dangerous commands (rm -rf, force-push, chmod 777) in real time — hard-blocking destructive deletes, flagging the rest, while letting safe commands through" width="820" />
 </p>
 
 ```
@@ -77,7 +77,7 @@ Each is a thin wrapper over an existing MCP tool or CLI command — **no new enf
 
 ## 🎬 90-second demo
 
-Watch the force-push scenario: agent tries to `git push --force`, one thumbs-down, next session it's blocked — zero tokens spent on the repeat.
+Watch the force-push scenario: agent tries to `git push --force`, one thumbs-down, next session it's flagged and logged — and hard-blocked when you run with `THUMBGATE_STRICT_ENFORCEMENT=1` — zero tokens spent on the repeat.
 
 [**▶ Watch the 90-second demo**](https://thumbgate.ai/#demo?utm_source=github&utm_medium=readme&utm_campaign=demo_video) · [Script](docs/marketing/demo-video-script.md) · [ElevenLabs narration: `npm run demo:voiceover`](scripts/generate-demo-voiceover.js)
 
@@ -121,11 +121,11 @@ That's ~$0.21 in tokens just to fix the same mistake three times — multiplied 
 
 ```
 Session 1:  Agent force-pushes to main.     You 👎 it.       +4,200 tokens
-Session 2:  ⛔ Check blocks the force-push.  Zero round-trip. +0 tokens
-Session 3+: Never happens again.                              +0 tokens
+Session 2:  ⚠️ Gate flags the force-push.    Zero round-trip. +0 tokens
+Session 3+: Warned every time (hard-blocked under strict).   +0 tokens
 ```
 
-One thumbs-down. The PreToolUse hook intercepts the call **before** it reaches the model — no input tokens, no output tokens, no retry loop. The dashboard tracks **tokens saved this week** as a live counter so you can see exactly what your prevention rules are worth. Mark a review checkpoint once, and the dashboard narrows the next pass to only the feedback, lessons, and check blocks that landed since your last review.
+One thumbs-down. The PreToolUse hook catches the call **before** it reaches the model — no input tokens, no output tokens, no retry loop. Catastrophic classes (secret exfiltration, `rm -rf`, supply-chain) hard-block by default; the rest warn-and-log by default and hard-block under `THUMBGATE_STRICT_ENFORCEMENT=1`. The dashboard tracks **tokens saved this week** as a live counter so you can see exactly what your prevention rules are worth. Mark a review checkpoint once, and the dashboard narrows the next pass to only the feedback, lessons, and check blocks that landed since your last review.
 
 ThumbGate doesn't make your agent smarter. It makes your agent *cheaper to be wrong with.*
 
@@ -150,7 +150,7 @@ Then point your agent at it — add `Read .thumbgate/BRAIN.md first` to your `CL
 ## Guardrails — do NOT repeat these (prevention rules)
 - Never run DROP on production tables
 ## Active enforcement (gates)
-- `DROP.*production` → block
+- `DROP.*production` → warn + log (hard-block under strict enforcement)
 ```
 
 Same idea the SEO world is now calling a *"client brain"* — persistent context that AI reads before doing the work — applied to **engineering**: the institutional memory that stops your coding agent from relearning the same lesson on your dime.
@@ -167,9 +167,9 @@ npx thumbgate capture down "Never run DROP on production tables"
 That single command creates a prevention rule. Next time any AI agent tries to run `DROP` on production:
 
 ```
-⛔ Check blocked: "Never run DROP on production tables"
+⚠️ Check fired: "Never run DROP on production tables"
    Pattern: DROP.*production
-   Verdict: BLOCK
+   Verdict: WARN + LOG   (BLOCK when THUMBGATE_STRICT_ENFORCEMENT=1)
 ```
 
 ---
@@ -193,14 +193,14 @@ Where retrieval is needed (an agent is about to run a destructive command not on
 Rules stay in local ThumbGate runtime state.
 
 ### Layer 3: Pre-Action Interception
-Before any agent action executes, ThumbGate's `PreToolUse` hook intercepts the command and evaluates it against all active checks. This happens at the MCP protocol level — the agent physically cannot bypass it.
+Before any agent action executes, ThumbGate's `PreToolUse` hook intercepts the command and evaluates it against all active checks. This happens in the hook path on every tool call, so no decision goes unlogged. Catastrophic classes hard-block by default; other rules warn-and-log by default and hard-block under `THUMBGATE_STRICT_ENFORCEMENT=1`.
 
-### Layer 4: Multi-Agent Distribution (the actual moat vs hand-rolled hooks)
+### Layer 4: Multi-Agent Distribution (why not a hand-rolled hook?)
 Claude Code already ships `permissions.deny` and `PreToolUse` hooks. Cursor and Codex have their own. So why ThumbGate over a hand-written hook?
 
 Two things hand-written hooks structurally cannot do:
 
-1. **Cross-agent propagation.** A `permissions.deny` pattern lives in one agent's config and stays there. ThumbGate's checks distribute across every connected agent over MCP stdio — thumbs-down once in Cursor, the same pattern blocks on Claude Code, Codex, Gemini CLI, Cline, OpenCode, Amp in the next session, no copy-paste between configs.
+1. **Cross-agent propagation.** A `permissions.deny` pattern lives in one agent's config and stays there. ThumbGate's checks distribute across every connected agent over MCP stdio — thumbs-down once in Cursor, the same pattern fires (and hard-blocks under strict enforcement) on Claude Code, Codex, Gemini CLI, Cline, OpenCode, Amp in the next session, no copy-paste between configs.
 2. **Learning loop.** A hand-written hook covers exactly the patterns you wrote. ThumbGate promotes every thumbs-down into a fresh rule, tunes existing rules' confidence weights from outcomes (Thompson Sampling, see Layer 2), and pulls semantically-near patterns into scope via local embeddings. The rule corpus sharpens without an operator hand-writing a regex for every new mistake shape.
 
 Hand-rolled hooks are the right tool for a small, static denylist you maintain by hand. ThumbGate is the right tool when you want corrections from any agent to harden every agent automatically.
@@ -217,7 +217,8 @@ flowchart LR
     B -- "exact match" --> D["Deterministic gate decision<br/>(no model, on-device)"]
     B -- "no exact match, but<br/>semantically near a<br/>blocked pattern" --> C["Local CPU embeddings<br/>bge-small via LanceDB<br/>(no external API)"]
     C --> D
-    D -- "known-bad" --> E["⛔ BLOCK before execution"]
+    D -- "catastrophic class" --> E["⛔ Hard-block before execution"]
+    D -- "other known-bad" --> G["⚠️ Warn + log<br/>(hard-block under strict)"]
     D -- "safe" --> F["✓ Allow"]
 ```
 
@@ -263,6 +264,7 @@ Each recommendation ships with the benchmark commands to run next: feedback-deri
 | **Gemini CLI** | `npx thumbgate init --agent gemini` |
 | **Amp** | `npx thumbgate init --agent amp` |
 | **Cline** (Roo Code successor) | `npx thumbgate init --agent cline` |
+| **OpenCode** | `npx thumbgate init --agent opencode` |
 | **Claude Desktop** | [Download extension bundle](https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb) |
 | **Any MCP agent** | `npx thumbgate serve` |
 
@@ -319,8 +321,10 @@ ChatGPT is the advice, checkpointing, and typed-feedback surface; ThumbGate's ha
   👎 on a bad    ──►  Feedback becomes  ──►  Next time the
   agent action        a saved lesson         agent tries the
                       and a block rule       same thing:
-  👍 on a good   ──►  Good pattern gets      ⛔ BLOCKED
-  agent action        reinforced                 (or ✅ allowed)
+  👍 on a good   ──►  Good pattern gets      🚦 flagged + logged
+  agent action        reinforced             (hard-blocked for
+                                             catastrophic classes /
+                                             strict mode, or ✅ allowed)
 ```
 
 No manual rule-writing. No config files. Your reactions teach the agent what your team actually wants.
@@ -330,7 +334,7 @@ No manual rule-writing. No config files. Your reactions teach the agent what you
 ThumbGate sells three concrete outcomes:
 
 - **Prevent expensive AI mistakes** — catch bad commands, destructive database actions, unsafe publishes, and risky API calls before they run.
-- **Make AI stop repeating mistakes** — fix it once, turn the lesson into a rule, and block the repeat before the next tool call lands.
+- **Make AI stop repeating mistakes** — fix it once, turn the lesson into a rule, and catch the repeat before the next tool call lands (warn-and-log by default, hard-block for catastrophic classes or under strict enforcement).
 - **Turn AI into a reliable operator** — move from a smart assistant that apologizes after damage to a production-ready operator with checkpoints, proof, and enforcement.
 - **Measure prompts instead of rewriting them blindly** — use `thumbgate eval --from-feedback`, proof lanes, ThumbGate Bench, and `self-heal:check` to evaluate whether prompts and workflows actually improved behavior.
 
@@ -339,31 +343,38 @@ ThumbGate sells three concrete outcomes:
 ## Use Cases
 
 ### Developer Workflows
-- **Stop force-push to main** — Check blocks `git push --force` on protected branches before it runs
+- **Catch force-push to main** — Check flags `git push --force` on protected branches before it runs, and hard-blocks it under `THUMBGATE_STRICT_ENFORCEMENT=1`
 - **Prevent repeated migration failures** — Each mistake becomes a searchable lesson that fires before the next attempt
 - **Block unauthorized file edits** — Control which files agents can touch with path-based rules
 - **Memory across sessions** — The agent remembers your feedback from yesterday
 - **Shared team safety** — One developer's thumbs-down protects the whole team
 - **Auto-improving without feedback** — Self-improvement mode evaluates outcomes and generates rules automatically
 
-### Enterprise & Regulated Industries
-- **Legal AI intake governance** — Block unauthorized practice of law (ABA Rule 5.5), require conflict-of-interest clearance before fact collection (Rules 1.7/1.9/1.10), prevent privileged content from leaving firm boundaries (Rule 1.6)
-- **Financial compliance** — Gate AI-generated trade recommendations, block unauthorized disclosures, enforce approval chains before customer-facing outputs
-- **Healthcare** — Prevent AI agents from providing medical diagnoses, enforce HIPAA-compliant data routing, require clinician review before patient-facing content
-- **Audit trail** — Every gate decision (block, allow, reroute) is preserved with rule version, timestamp, and reviewer path for compliance review
+### Enterprise & Regulated Industries (roadmap / templates)
 
-[See the legal-intake demo →](https://thumbgate.ai/dashboard)
+These are policy-template directions on the roadmap, available on request — not yet exercised by a paying customer. They build on the same gate engine:
+
+- **Legal AI intake governance** — templates targeting unauthorized practice of law (ABA Rule 5.5), conflict-of-interest clearance before fact collection (Rules 1.7/1.9/1.10), and keeping privileged content inside firm boundaries (Rule 1.6)
+- **Financial compliance** — gate templates for AI-generated trade recommendations, unauthorized disclosures, and approval chains before customer-facing outputs
+- **Healthcare** — templates to keep AI agents from providing medical diagnoses, route data along HIPAA-compliant paths, and require clinician review before patient-facing content
+- **Audit trail** — every gate decision (block, warn, allow, reroute) is preserved with rule version, timestamp, and reviewer path for compliance review
+
+[Talk to us about regulated templates →](https://thumbgate.ai/dashboard)
 
 ---
 
 ## Built-in Checks
 
 ```
-⛔ force-push          → blocks git push --force
-⛔ protected-branch    → blocks direct push to main
-⛔ unresolved-threads  → blocks push with open reviews
-⛔ package-lock-reset  → blocks destructive lock edits
-⛔ env-file-edit       → blocks .env secret exposure
+⛔ env-file-edit       → hard-blocks .env secret exposure (default)
+⚠️ force-push          → flags git push --force        (hard-block under strict)
+⚠️ protected-branch    → flags direct push to main      (hard-block under strict)
+⚠️ unresolved-threads  → flags push with open reviews   (hard-block under strict)
+⚠️ package-lock-reset  → flags destructive lock edits   (hard-block under strict)
+
+Every check fires and logs on every match. Catastrophic classes (secret
+exfiltration, rm -rf, supply-chain) hard-block by default; the rest warn-and-log
+by default and hard-block under THUMBGATE_STRICT_ENFORCEMENT=1.
 
 + custom prevention rules for project-specific failures
 ```
@@ -435,14 +446,14 @@ If you change MCP or hook settings, restart the affected agent session so Claude
 | Shared hosted lesson DB | — | — | ✅ |
 | Org-wide dashboard | — | — | ✅ |
 | Approval + audit proof | — | — | ✅ |
-| Regulatory gate templates | — | — | ✅ |
-| Custom policy layers (firm/practice-area) | — | — | ✅ |
-| Compliance audit export | — | — | ✅ |
+| Regulatory gate templates (roadmap / on request) | — | — | 🛣️ |
+| Custom policy layers (firm/practice-area, roadmap) | — | — | 🛣️ |
+| Compliance audit export (roadmap) | — | — | 🛣️ |
 | Dedicated onboarding + SLA | — | — | ✅ |
 
 The free tier gives you 2 feedback captures/day (10 total) and up to 3 active auto-promoted prevention rules — enough to make ThumbGate part of your daily flow before you upgrade. MCP integrations for all agents (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode) ship free.
 
-Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recall, lesson search, DPO export, and a personal dashboard. Enterprise (custom pricing, scoped after intake) adds a shared hosted lesson DB, org dashboard, and shared enforcement across the org, plus regulatory gate templates (legal intake, financial compliance, healthcare), custom policy layers scoped to firm/practice-area, compliance audit export, and dedicated onboarding with SLA.
+Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recall, lesson search, DPO export, and a personal dashboard. Enterprise (custom pricing, scoped after intake) adds a shared hosted lesson DB, org dashboard, and shared enforcement across the org, plus dedicated onboarding with SLA. Regulatory gate templates (legal intake, financial compliance, healthcare), custom policy layers scoped to firm/practice-area, and compliance audit export are on the roadmap, available on request — not yet exercised by a paying customer.
 
 **Best first paid motion for teams:** the **Workflow Hardening Sprint** — qualify one repeated failure before committing to a full rollout. **[Start intake →](https://thumbgate.ai/?utm_source=github&utm_medium=readme&utm_campaign=team_rollout#workflow-sprint-intake)**
 
@@ -600,20 +611,20 @@ npx thumbgate setup-vertex
 
 This command does **not** create or verify a live Dialogflow CX agent. Dialogflow is only relevant when a customer wants ThumbGate guard adapters in front of their own production DFCX agents. On current Google Cloud CLI installs, the old alpha gcloud CX command group is not available; verify Conversational Agents / Dialogflow CX with the Google Cloud console or the official Dialogflow CX REST API (`projects.locations.agents`) before claiming a live DFCX deployment.
 
-### Zero-Friction Cost Containment ($10/mo Hard Cap)
-Google Cloud budget alerts are "alert-only" and do not stop API traffic, risking unexpected bill shock. ThumbGate completely resolves this on the client side:
-* **Instant Shutdown:** ThumbGate maintains a lightweight, local token ledger and instantly halts outgoing API traffic the millisecond your monthly token spending approaches the **$10 limit** (500k tokens of Gemini 1.5 Flash).
-* **Bypasses extra shutdown plumbing:** Requires no Pub/Sub or Cloud Functions for the local ThumbGate-side stop condition. You still need normal Google Cloud billing/API setup and live-agent verification for DFCX pilots.
+### Cost Containment ($10/mo Cap — roadmap)
+Google Cloud budget alerts are "alert-only" and do not stop API traffic, risking unexpected bill shock. ThumbGate's design addresses this on the client side (no paying customer has exercised it yet):
+* **Local token ledger:** ThumbGate maintains a lightweight, local token ledger intended to halt outgoing API traffic as monthly token spend approaches a configurable cap (e.g. **$10**, ~500k tokens of Gemini 1.5 Flash).
+* **No extra shutdown plumbing:** the local ThumbGate-side stop condition needs no Pub/Sub or Cloud Functions. You still need normal Google Cloud billing/API setup and live-agent verification for DFCX pilots.
 
 ---
 
 ## FAQ
 
 **Is ThumbGate a model fine-tuning tool?**
-No. ThumbGate does not update model weights. It captures feedback, stores lessons, injects context at runtime, and blocks bad actions before they execute.
+No. ThumbGate does not update model weights. It captures feedback, stores lessons, injects context at runtime, and flags bad actions before they execute — hard-blocking the catastrophic classes by default and every rule under strict enforcement.
 
 **How is this different from CLAUDE.md or .cursorrules?**
-Those are suggestions the agent can ignore. ThumbGate checks are enforced — they physically block the action before it runs. They also auto-generate from feedback instead of requiring manual writing.
+Those are suggestions the agent can ignore. ThumbGate checks are enforced at the hook path — they fire and log on every match, hard-block the catastrophic classes by default (and every rule under `THUMBGATE_STRICT_ENFORCEMENT=1`), and warn-and-log the rest. They also auto-generate from feedback instead of requiring manual writing.
 
 **Does it work with my agent?**
 If it supports MCP or pre-action hooks, yes. Claude Code, Claude Desktop, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode all work out of the box.
@@ -627,7 +638,7 @@ Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recal
 
 ## Docs
 
-- [**ThumbGate for Federal Agencies**](docs/FEDERAL.md) — pilot-ready posture, NIST 800-53 control mapping, OMB M-24-10 / EO 14110 alignment, ThumbGate-Core gov deployment mode, public/Core boundary invariants. Landing page: [thumbgate.ai/federal](https://thumbgate.ai/federal).
+- [**ThumbGate for Federal Agencies**](docs/FEDERAL.md) — pilot-ready posture, NIST 800-53 control mapping, OMB M-24-10 / EO 14110 alignment. Landing page: [thumbgate.ai/federal](https://thumbgate.ai/federal).
 - [First Dollar Playbook](docs/FIRST_DOLLAR_PLAYBOOK.md) — turning one painful workflow into the next booked pilot
 - [Commercial Truth](docs/COMMERCIAL_TRUTH.md) — pricing, claims, what we don't say
 - [Goal Contracts](docs/GOAL_CONTRACTS.md) — evidence-before-done contracts for multi-agent handoffs
@@ -639,7 +650,7 @@ Pro ($19/mo or $149/yr) removes the rule cap and adds history-aware lesson recal
 - [Ready for Agent Intake](https://github.com/IgorGanapolsky/ThumbGate/issues/new?template=ready-for-agent.yml) — ready-for-agent intake template
 - [SEO Guide: Claude Code Guardrails](docs/learn/claude-code-guardrails.md)
 - [Unsupervised Learning Signals](docs/UL.md) — silent-failure clustering (**on by default** as of 2026-05-21; opt out via `THUMBGATE_SILENT_FAILURE_CLUSTERING=0`; only meaningfully active on workspaces with ≥ 50 tool calls/day)
-- [ThumbGate-Core](https://github.com/IgorGanapolsky/ThumbGate-Core) — private core for hosted overlays, ranking, policy synthesis, billing intelligence, and org/team workflows
+- [ThumbGate-Core](https://github.com/IgorGanapolsky/ThumbGate-Core) — staging repo for pre-release features plus a handful of internal cache scripts that can't ship publicly. It is **not** the moat: intelligence, ranking, and synthesis land in this public repo by default (~212 of 216 Core scripts already ship publicly). The moat is hosted services + adapter compatibility + dashboard + support — see [MOAT.md](MOAT.md).
 
 ---
 
@@ -662,7 +673,7 @@ ThumbGate is free and MIT-licensed forever. For teams that need more:
 
 I'm **Igor Ganapolsky** — I designed and maintain ThumbGate. If you're shipping **payments, AI agents, or Android features** and want them built by someone demonstrably careful with production and with money, I take a small number of **freelance / contract** engagements.
 
-ThumbGate is the receipt, not the pitch: it fails *closed* on dangerous agent actions and publishes a [threat model](THREAT_MODEL.md) stating exactly what it enforces and what it can't contain. Documenting where my own guardrails end is the standard I hold client work to.
+ThumbGate is the receipt, not the pitch: it hard-blocks the catastrophic classes by default (and every rule under strict enforcement), logs every decision, and publishes a [threat model](THREAT_MODEL.md) stating exactly what it enforces and what it can't contain. Documenting where my own guardrails end is the standard I hold client work to.
 
 - **Payments** — Stripe / Stripe Connect: destination charges, split payouts, escrow & milestone release, 3DS/SCA, idempotent webhooks, reconciliation.
 - **Applied AI / agents** — tool-use guardrails, MCP servers, orchestration, and evaluation loops (the engineering behind this repo).

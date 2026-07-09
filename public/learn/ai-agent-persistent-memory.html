@@ -64,7 +64,7 @@
   <h1>How to Give Your AI Coding Agent Persistent Memory Across Sessions</h1>
   <p style="color:var(--muted);">6 min read &middot; For developers using Claude Code, Cursor, Codex, or Gemini who are tired of re-explaining context every session</p>
 
-  <div class="tldr"><strong>TL;DR:</strong> Your AI agent forgets everything between sessions. Give it a SQLite+FTS5 memory that stores lessons, retrieves relevant context, and blocks known-bad actions automatically.</div>
+  <div class="tldr"><strong>TL;DR:</strong> Your AI agent forgets everything between sessions. Give it a SQLite+FTS5 memory that stores lessons, retrieves relevant context, and flags known-bad actions automatically — hard-blocking the catastrophic ones.</div>
 
   <h2>The problem: agents forget everything when you close the tab</h2>
   <p>You spend twenty minutes explaining your codebase to your AI coding agent. You tell it about the monorepo structure, the deployment conventions, the one branch it must never force-push to. The session ends. You come back tomorrow and it has no memory of any of it.</p>
@@ -116,7 +116,7 @@
       <tr class="memory-row">
         <td>Procedural</td>
         <td>Encoded behaviours — checks that fire before actions without requiring the agent to reason about them</td>
-        <td>A PreToolUse hook that checks every <code>git push</code> command against the prevention rule and blocks the dangerous pattern automatically.</td>
+        <td>A PreToolUse hook that checks every <code>git push</code> command against the prevention rule and flags the dangerous pattern automatically — hard-blocking it under strict mode.</td>
       </tr>
     </tbody>
   </table>
@@ -153,7 +153,7 @@ node .claude/scripts/feedback/capture-feedback.js \
 
   <h2>Thompson Sampling for memory-informed decisions</h2>
   <p>Not every prevention rule has the same confidence level. A rule derived from one thumbs-down event is weaker than a rule reinforced by a dozen. ThumbGate uses Thompson Sampling — a multi-armed bandit algorithm — to handle this uncertainty.</p>
-  <p>For each check, the system maintains a Beta distribution over outcomes. As thumbs-up and thumbs-down feedback accumulates, the distribution tightens. A check with high confidence becomes a hard block. A check still gathering signal issues a warning and lets the agent reconsider.</p>
+  <p>For each check, the system maintains a Beta distribution over outcomes. As thumbs-up and thumbs-down feedback accumulates, the distribution tightens. A high-confidence check is surfaced as a stronger warning by default — and enforced as a hard block for catastrophic actions (secret exfiltration, rm -rf) or under strict mode. A check still gathering signal issues a lighter warning and lets the agent reconsider.</p>
   <p>This matters for memory because it means the system learns your preferences rather than requiring you to manually tune thresholds. You give feedback. The check calibrates. The agent adapts.</p>
   <p>Thompson Sampling also prevents over-blocking. If a pattern that was once dangerous stops being a problem — because the codebase changed, or you updated your workflow — thumbs-up feedback on future calls will widen the distribution back toward allowing. Memory is not one-way.</p>
 

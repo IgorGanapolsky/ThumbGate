@@ -67,7 +67,7 @@
 <div class="container">
   <span class="pill">Codex in the Enterprise</span>
   <h1>Codex in production needs a governance layer. Dell-distributed or self-hosted, agents repeat the same mistakes.</h1>
-  <p>OpenAI and Dell <a href="https://openai.com/index/dell-codex-enterprise-partnership/" target="_blank" rel="noopener" style="color:var(--cyan)">just announced</a> a partnership to distribute Codex into the enterprise — Dell PCs, Dell servers, and Dell's enterprise sales motion become a delivery channel for OpenAI's coding agent. Codex's addressable market jumps from individual developer install to org-wide procurement. The governance gap jumps with it: every enterprise that turns Codex on now needs a runtime layer that captures what the agent did, blocks the repeat failures, and produces the audit trail their security review will ask for.</p>
+  <p>OpenAI and Dell <a href="https://openai.com/index/dell-codex-enterprise-partnership/" target="_blank" rel="noopener" style="color:var(--cyan)">just announced</a> a partnership to distribute Codex into the enterprise — Dell PCs, Dell servers, and Dell's enterprise sales motion become a delivery channel for OpenAI's coding agent. Codex's addressable market jumps from individual developer install to org-wide procurement. The governance gap jumps with it: every enterprise that turns Codex on now needs a runtime layer that captures what the agent did, flags the repeat failures (and hard-blocks the catastrophic ones, or any rule under strict enforcement), and produces the audit trail their security review will ask for.</p>
   <p>ThumbGate already ships a <a href="/codex-plugin">Codex plugin</a>. The free CLI is real, MIT-licensed, and the gates work locally without a hosted account. This page is what that plugin maps to once Codex is no longer one developer's experiment but a procurement line item.</p>
 
   <h2>What the governance layer ships</h2>
@@ -78,7 +78,7 @@
     </div>
     <div class="card">
       <h3>Promote repeat failures to PreToolUse gates</h3>
-      <p>When the same agent mistake shows up twice, ThumbGate distills it into a prevention rule and blocks the next attempt at the tool-call boundary — with the rule that fired in the agent's reasoning trace, so Codex chooses a safer plan instead of being told to "be more careful."</p>
+      <p>When the same agent mistake shows up twice, ThumbGate distills it into a prevention rule and flags the next attempt at the tool-call boundary — hard-blocking it for catastrophic classes or under strict enforcement — with the rule that fired in the agent's reasoning trace, so Codex chooses a safer plan instead of being told to "be more careful."</p>
     </div>
     <div class="card">
       <h3>Audit trail enterprise procurement requires</h3>

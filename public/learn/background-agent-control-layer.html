@@ -127,7 +127,7 @@
     </div>
     <div class="mini-card">
       <h3>Controls answer whether this may run</h3>
-      <p>They block known-bad actions before execution and preserve proof that the decision happened.</p>
+      <p>They flag known-bad actions before execution — hard-blocking the catastrophic ones or under strict mode — and preserve proof that the decision happened.</p>
     </div>
   </div>
 
@@ -143,7 +143,7 @@
 
   <h2>How ThumbGate fits next to background-agent platforms</h2>
   <p>Background-agent platforms provide orchestration, environments, and fleet execution. ThumbGate should not pretend to replace that stack. It should attach as the local enforcement and proof layer across agents, models, repos, and workflows.</p>
-  <p>The integration shape is simple: when an agent proposes an action, ThumbGate evaluates the action against local rules and prior failures. If the action is safe, it proceeds and logs evidence. If the action matches a known-bad pattern, it blocks or routes to review before the tool runs.</p>
+  <p>The integration shape is simple: when an agent proposes an action, ThumbGate evaluates the action against local rules and prior failures. If the action is safe, it proceeds and logs evidence. If the action matches a known-bad pattern, it warns, blocks, or routes to review before the tool runs.</p>
 
   <div class="callout callout-green">
     <strong>Sales line:</strong> If your team already has agents, ThumbGate helps you ship the system around them: pre-action controls, reviewable evidence, and local rules that survive model churn.

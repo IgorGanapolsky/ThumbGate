@@ -7,8 +7,8 @@ This file mirrors the evidence-backed GTM queue in `docs/marketing/gtm-target-qu
 It is the qualification screen and send surface for the current Workflow Hardening Sprint revenue loop, not a raw GitHub scrape.
 
 ## Current Queue
-- Revenue state: post-first-dollar
-- Headline: Verified booked revenue exists. Keep selling one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
+- Revenue state: pre-first-dollar (0 external paying customers, 0 paid orders to date)
+- Headline: No external customer revenue yet. Sell one concrete Workflow Hardening Sprint first, then route self-serve buyers to Pro.
 - Follow-ups now: 0
 - Warm discovery ready: 4
 - Self-serve closes ready: 3

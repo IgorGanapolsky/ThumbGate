@@ -107,12 +107,12 @@
       <tr class="mapping-row">
         <td>Enforcement</td>
         <td>Best-effort — agent can override</td>
-        <td>Hard block at the tool boundary</td>
+        <td>Flag + log at the tool boundary; hard block for catastrophic actions or under strict mode</td>
       </tr>
       <tr class="mapping-row">
         <td>Token cost of repeated failures</td>
         <td>N&times; per task (one per agent)</td>
-        <td>1&times; per task (gate refuses)</td>
+        <td>1&times; per task (gate catches it once)</td>
       </tr>
     </tbody>
   </table>
@@ -129,7 +129,7 @@
   </ul>
 
   <div class="callout callout-green">
-    <strong>The swarm becomes one learner.</strong> Agent A makes a mistake, you thumbs-down it, the gate is promoted. The next tool call from agent B, C, or D matching that pattern is blocked. You paid once for the lesson; every agent benefits.
+    <strong>The swarm becomes one learner.</strong> Agent A makes a mistake, you thumbs-down it, the gate is promoted. The next tool call from agent B, C, or D matching that pattern is flagged and logged — and hard-blocked under strict mode. You paid once for the lesson; every agent benefits.
   </div>
 
   <h2>What this does not solve</h2>

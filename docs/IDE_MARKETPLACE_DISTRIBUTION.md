@@ -64,7 +64,7 @@ npx --yes ovsx publish *.vsix
 
 Every IDE listing should use the same conversion ladder:
 
-1. Free install for one visible blocked repeat.
+1. Free install for one visible caught repeat.
 2. Pro checkout for ongoing local enforcement and proof export.
 3. Workflow Hardening Sprint when a team names one risky workflow.
 

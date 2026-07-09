@@ -23,7 +23,7 @@ The problem is structural:
 
 ## Pre-Action Checks: Enforcement, Not Suggestions
 
-Pre-Action Checks are a different approach. Instead of hoping the agent cooperates, gates intercept tool calls *before execution* and block ones that match known failure patterns.
+Pre-Action Checks are a different approach. Instead of hoping the agent cooperates, gates intercept tool calls *before execution*, flag and log the ones that match known failure patterns, and hard-block the catastrophic classes (secret exfiltration, supply-chain tampering, destructive deletes).
 
 ```
 Agent tries: git push --force
@@ -32,7 +32,7 @@ Agent tries: git push --force
   -> BLOCKED: "force-push matched pattern from 3 prior failures"
 ```
 
-The gate doesn't ask the agent to reconsider. It physically prevents the action.
+The gate doesn't ask the agent to reconsider. It fires and logs on every match by default, hard-blocks the catastrophic classes outright, and — under strict enforcement mode (`THUMBGATE_STRICT_ENFORCEMENT=1`) — hard-blocks every matched rule.
 
 ## How It Works: Three Steps
 
@@ -55,7 +55,7 @@ When the same mistake pattern appears 3+ times, it's automatically promoted from
 
 ### 3. Enforce via PreToolUse hooks
 
-Prevention rules become gates that run on every tool call. The check engine checks the proposed action against all active rules and blocks matches before execution. No cooperation from the agent required.
+Prevention rules become gates that run on every tool call. The check engine checks the proposed action against all active rules and, by default, flags and logs matches before execution (hard-blocking the catastrophic classes); under strict enforcement mode every matched rule is hard-blocked. No cooperation from the agent required.
 
 ## The Tech Stack
 
@@ -74,7 +74,7 @@ Everything runs locally. No cloud account required. No model weights are modifie
 | Actually works | Does not work |
 |---|---|
 | `recall` injects past context into the next session | Thumbs up/down changing model weights |
-| Pre-action checks block known-bad tool calls before execution | Agents self-correcting without checks |
+| Pre-action checks flag known-bad tool calls before execution (and hard-block the catastrophic classes) | Agents self-correcting without checks |
 | Auto-promotion turns repeated failures into warn/block rules | Vague feedback silently helping the system |
 | Corrective actions surface remediation steps from similar past failures | Calling this model training in the strict sense |
 

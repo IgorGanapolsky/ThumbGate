@@ -7,7 +7,7 @@ Use [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md) for live pricing and traction cla
 
 ## Important correction
 
-ThumbGate already crossed the literal first-dollar threshold through booked Stripe revenue. The job now is the **next repeatable dollar**.
+ThumbGate has **no external paying customer and no external customer revenue yet** — 0 paid orders and 0 paid signups. Two historical Stripe charges totaling $20 exist in the ledger but are not external customer traction and do not count as the first dollar. The job is to book the **first real external dollar**.
 
 The shortest honest path is:
 
@@ -25,14 +25,14 @@ The failure mode is not missing infrastructure. It is weak demand capture:
 - A GPT, plugin, npm package, and docs page are distribution surfaces, not revenue by themselves.
 - Revenue starts when one buyer names one repeated failure they already care about and agrees that blocking it before the next tool call is valuable.
 
-The first-dollar motion therefore has one job: move a cold user from curiosity to one blocked repeat.
+The first-dollar motion therefore has one job: move a cold user from curiosity to one caught repeat.
 
 ## First-dollar activation ladder
 
 1. **GPT proof:** send the user to the live ThumbGate GPT and ask for one bad answer, risky command, deploy, PR action, or agent plan they do not want repeated.
 2. **Typed feedback:** have them type `thumbs down:` or `thumbs up:` with one concrete sentence. Do not claim ChatGPT's native rating buttons feed ThumbGate.
-3. **Local enforcement:** install with `npx thumbgate init` where the agent executes, then show the saved lesson, generated rule, or blocked repeat.
-4. **Solo Pro trigger:** upgrade only after a real blocked repeat when the buyer needs more captures, the dashboard, DPO export, or proof-ready evidence.
+3. **Local enforcement:** install with `npx thumbgate init` where the agent executes, then show the saved lesson, generated rule, or caught repeat.
+4. **Solo Pro trigger:** upgrade only after a real caught repeat when the buyer needs more captures, the dashboard, DPO export, or proof-ready evidence.
 5. **Team trigger:** if there is a shared repo, review queue, deploy workflow, migration process, or release approval problem, convert to the Workflow Hardening Sprint.
 
 ## Operating thesis

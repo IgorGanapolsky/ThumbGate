@@ -14,7 +14,7 @@ What that gives an agency:
 
 1. **Auditable AI agent behavior.** Every gate decision is logged with the intent, the action attempted, the policy invoked, and the outcome. This is the artifact OMB M-24-10 §5(c) (risk management) and EO 14110 §10.1 (AI use inventory) ask for, generated continuously rather than reconstructed quarterly.
 2. **Enforced agency-specific policy.** Generic LLM guardrails are vendor-controlled and opaque. ThumbGate policies are owned by the agency, written as code, version-controlled, and enforced locally before a tool call leaves the dev environment.
-3. **Repeated-failure prevention.** A thumbs-down from an agency engineer becomes a permanent prevention rule. The same risky action never reaches the model on the next attempt — relevant for cost control and for documenting "we did not let the agent do X" in incident reports.
+3. **Repeated-failure prevention.** A thumbs-down from an agency engineer becomes a permanent prevention rule. On the next attempt the same risky action is flagged and logged by default — and hard-blocked for the catastrophic classes, or for every matched rule under strict enforcement mode — relevant for cost control and for documenting "we did not let the agent do X" in incident reports.
 4. **Vendor-neutral.** Works with Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and any MCP-compatible agent. No lock-in to a single model vendor.
 
 ThumbGate is **not** a model, an evaluation harness for model outputs, or a federal data RAG system. It is a behavioral enforcement layer between the agent and the tools it can invoke.
@@ -43,7 +43,7 @@ ThumbGate directly supports the following control families. This list is conserv
 
 | Family | Control | How ThumbGate supports it |
 |---|---|---|
-| AC — Access Control | AC-3 Access Enforcement | PreToolUse hook physically blocks tool calls that violate policy, regardless of operator intent. |
+| AC — Access Control | AC-3 Access Enforcement | PreToolUse hook flags policy-violating tool calls and, under strict enforcement mode (default for the highest-risk classes), hard-blocks them regardless of operator intent. |
 | AC — Access Control | AC-6 Least Privilege | Per-gate scopes (`task-scope-required`, branch-governance) bind agent actions to declared task scope. |
 | AU — Audit & Accountability | AU-2 Event Logging | Every gate decision (allow / require-evidence / block) is logged with timestamp, actor, action, policy, evidence. |
 | AU — Audit & Accountability | AU-3 Content of Audit Records | Logs include the exact tool call payload, redacted of PII via the built-in PII scanner. |
