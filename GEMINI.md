@@ -30,3 +30,8 @@ Key: Always dogfood the latest local changes before publishing.
 - **Rule [auto-commercial-truth-email-thread-entity-customer-lead]**: Auto-promoted repeated pattern: "User showed Gmail thread after asking if outreach was on track; I answered as if Pro access still needed to be sent, des" (1 occurrences in 30 days)
 - **Rule [auto-codeql-prove-before-claim-security-verification-xs]**: Auto-promoted repeated pattern: "CodeQL #252 reflected-XSS: I dismissed the alert as false-positive and claimed the security dashboard was clean BEFORE v" (1 occurrences in 30 days)
 - **Rule [auto-never-force-push-to-main-again]**: Auto-promoted repeated pattern: "never force-push to main again" (1 occurrences in 30 days)
+- **Rule [auto-promoted-mrdpihth-0]**: NEVER The instructions omitted the hydraulic accumulator pressure bleed step.
+- **Rule [auto-promoted-mrdpihth-1]**: NEVER MISTAKE: This is a test failure
+- **Rule [auto-promoted-mrdpihth-2]**: NEVER CEO gave thumbs down because the mandatory session closure phrase 'Done merging 
+- **Rule [auto-promoted-mrdpihth-3]**: NEVER thumbs down This response skipped the required verification
+- **Rule [auto-promoted-mrdpindv-0]**: NEVER repeated problem context string
