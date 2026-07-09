@@ -220,6 +220,10 @@ const pendingOauthAuthorizeRequests = new Map();
 const OAUTH_AUTHORIZE_REQUEST_TTL_MS = 10 * 60 * 1000;
 const resendMailer = require('../../scripts/mailer/resend-mailer');
 const {
+  fingerprintProKey,
+  sendProActivationAlert,
+} = require('../../scripts/pro-local-dashboard');
+const {
   buildContextFootprintReport,
 } = require('../../scripts/context-footprint');
 const {
@@ -9223,6 +9227,48 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           key: token,
           customerId: validation.customerId,
           usageCount: validation.usageCount,
+        });
+        return;
+      }
+
+      // POST /v1/billing/pro-activation — customer key activation alert.
+      if (req.method === 'POST' && pathname === '/v1/billing/pro-activation') {
+        const token = extractBearerToken(req);
+        const validation = validateApiKey(token);
+        if (!validation.valid) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.UNAUTHORIZED,
+            title: 'Unauthorized',
+            status: 401,
+            detail: 'A valid API key is required to access this endpoint.',
+          });
+          return;
+        }
+
+        const body = await parseJsonBody(req);
+        const keyFingerprint = fingerprintProKey(token);
+        const alert = await sendProActivationAlert({
+          key: token,
+          source: body.source || 'hosted_pro_activation',
+          version: body.version || null,
+          customerId: validation.customerId,
+          installId: validation.installId,
+          usageCount: validation.usageCount,
+          env: process.env,
+        });
+
+        sendJson(res, 200, {
+          ok: true,
+          customerId: validation.customerId,
+          installId: validation.installId,
+          usageCount: validation.usageCount,
+          keyFingerprint,
+          keyFingerprintMatchesClient: body.keyFingerprint ? body.keyFingerprint === keyFingerprint : null,
+          alert: {
+            sent: Boolean(alert && alert.sent),
+            reason: alert && alert.reason ? alert.reason : null,
+            id: alert && alert.id ? alert.id : null,
+          },
         });
         return;
       }

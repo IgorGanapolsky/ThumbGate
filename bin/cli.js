@@ -1593,6 +1593,7 @@ function pro() {
   trackEvent('cli_pro_view', { command: 'pro' });
   const args = parseArgs(process.argv.slice(3));
   const {
+    notifyHostedProActivation,
     resolveProKey,
     saveLicense,
     startLocalProDashboard,
@@ -1661,7 +1662,22 @@ function pro() {
     console.log('\n✅ Pro license activated!');
     console.log(`   Key saved to: ${licensePath}`);
     console.log('   Launching your personal local dashboard...\n');
-    return launchDashboard(license.key, 'pro_activate');
+    return notifyHostedProActivation({
+      key: license.key,
+      source: 'cli_pro_activate',
+      version: license.version,
+    })
+      .then((notificationResult) => {
+        appendLocalTelemetry({
+          eventType: 'pro_activation_alert',
+          version: license.version,
+          timestamp: new Date().toISOString(),
+          notified: Boolean(notificationResult && notificationResult.notified),
+          sent: Boolean(notificationResult && notificationResult.alert && notificationResult.alert.sent),
+          reason: notificationResult && notificationResult.reason ? notificationResult.reason : null,
+        });
+        return launchDashboard(license.key, 'pro_activate');
+      });
   }
 
   if (args.upgrade) {
