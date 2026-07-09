@@ -34,3 +34,4 @@ Key: Always dogfood the latest local changes before publishing.
 - **Rule [auto-promoted-mrdpihth-1]**: NEVER MISTAKE: This is a test failure
 - **Rule [auto-promoted-mrdpihth-2]**: NEVER CEO gave thumbs down because the mandatory session closure phrase 'Done merging 
 - **Rule [auto-promoted-mrdpihth-3]**: NEVER thumbs down This response skipped the required verification
+- **Rule [auto-promoted-mrdpindv-0]**: NEVER repeated problem context string
