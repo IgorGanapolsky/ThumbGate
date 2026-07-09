@@ -27,7 +27,7 @@ test('README explains the product as self-improving agent enforcement', () => {
 
   assert.match(readme, /self-improv/i);
   assert.match(readme, /enforcement/i);
-  assert.match(readme, /permanently/i);
+  assert.match(readme, /flag or block repeated failures according to policy/i);
   assert.match(readme, /prompt evaluation/i);
 });
 

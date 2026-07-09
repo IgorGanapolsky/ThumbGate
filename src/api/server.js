@@ -20,6 +20,7 @@ const POSTHOG_STATIC_PATH_PREFIX = '/static/';
 // Stripe catalog, with the per-tier thumbnails wired in. Re-run the
 // bootstrap workflow to regenerate; the new URLs surface in the workflow
 // summary log.
+const PRO_CHECKOUT_URL = 'https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f';
 const FIRST_FAILURE_RULE_CHECKOUT_URL = 'https://buy.stripe.com/7sY6oHaiEbTw6tP5e33sI3e';
 const QUICK_READ_CHECKOUT_URL = 'https://buy.stripe.com/5kQ7sL76s1eSaK55e33sI2H';
 const WORKFLOW_TEARDOWN_CHECKOUT_URL = 'https://buy.stripe.com/8x214n2Qc4r44lHayn3sI2I';
@@ -2251,7 +2252,7 @@ a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:
 <h1>Start ThumbGate Pro</h1>
 <div class="price">$19<small>/mo</small></div>
 <p>The npm package runs your gates locally. <strong>Pro</strong> is what keeps them working across every machine, every agent runtime, and every breaking-change week.</p>
-<form action="https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f" method="GET" data-i="pro_checkout_confirmed">
+<form action="${PRO_CHECKOUT_URL}" method="GET" data-i="pro_checkout_confirmed">
 ${hiddenInputs}
 <input type="email" name="prefilled_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email">
 <p class="email-note">Optional. Stripe can collect your email on the secure checkout page.</p>
@@ -6137,7 +6138,7 @@ async function addContext(){
         // THUMBGATE_CHECKOUT_PRO_STRIPE_URL is supported for future
         // price-link rotation without a redeploy.
         const bypassTarget = process.env.THUMBGATE_CHECKOUT_PRO_STRIPE_URL
-          || FIRST_FAILURE_RULE_CHECKOUT_URL;
+          || PRO_CHECKOUT_URL;
         appendBestEffortTelemetry(FEEDBACK_DIR, {
           eventType: 'checkout_interstitial_bypass_redirect',
           clientType: 'web',
@@ -9265,9 +9266,9 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           keyFingerprint,
           keyFingerprintMatchesClient: body.keyFingerprint ? body.keyFingerprint === keyFingerprint : null,
           alert: {
-            sent: Boolean(alert && alert.sent),
-            reason: alert && alert.reason ? alert.reason : null,
-            id: alert && alert.id ? alert.id : null,
+            sent: Boolean(alert?.sent),
+            reason: alert?.reason || null,
+            id: alert?.id || null,
           },
         });
         return;
@@ -9832,6 +9833,7 @@ module.exports = {
   createApiServer,
   startServer,
   __test__: {
+    PRO_CHECKOUT_URL,
     escapeHtmlAttribute,
     renderCheckoutIntentPage,
     buildCheckoutFallbackUrl,
