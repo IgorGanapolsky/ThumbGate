@@ -88,7 +88,7 @@
     <div class="card"><strong>Purpose-permission match</strong> A sales prep agent should not delete database tables or create privileged users.</div>
     <div class="card"><strong>Connector Tool Pack scope</strong> Remote MCP and connector bundles need allowed tools, auth identity, DLP, audit, and downstream-system evidence.</div>
     <div class="card"><strong>Review freshness</strong> Agent access changes over time; stale point-in-time reviews are treated as drift signals.</div>
-    <div class="card"><strong>Shadow agent registration</strong> Unregistered agents and imported MCP servers are blocked before privileged tool calls.</div>
+    <div class="card"><strong>Shadow agent registration</strong> Unregistered agents and imported MCP servers are flagged and logged before privileged tool calls, and can be hard-blocked under strict mode.</div>
     <div class="card"><strong>Vaulted tokens</strong> Raw connector credentials, plaintext API keys, and unvaulted service tokens require explicit exception evidence.</div>
   </div>
 

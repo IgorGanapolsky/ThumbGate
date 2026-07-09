@@ -243,7 +243,7 @@
       "name": "How does a PreToolUse hook protect the codebase?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "PreToolUse hooks intercept tool calls at the protocol layer before they are executed. If a command matches a blocked pattern, the hook denies execution, making safety deterministic rather than probabilistic."
+        "text": "PreToolUse hooks intercept every tool call at the protocol layer before it executes, flagging and logging each decision deterministically rather than probabilistically. If a command matches a catastrophic class (secret exfiltration, rm -rf, supply-chain), the hook denies execution by default; other matched patterns warn by default and are denied when THUMBGATE_STRICT_ENFORCEMENT=1 is set."
       }
     }
   ]
@@ -276,7 +276,7 @@
           <ul>
             <li>Advisory files like CLAUDE.md are hints that the model can choose to ignore under pressure.</li>
             <li>Real security requires blocking unsafe operations before they hit the terminal or file system.</li>
-            <li>PreToolUse hooks provide protocol-level enforcement that cannot be bypassed by agent reasoning.</li>
+            <li>PreToolUse hooks fire on every tool call and cannot be reasoned away by the agent — the gate always evaluates and logs the action, and hard-blocks the catastrophic classes by default.</li>
           </ul>
         </div>
 
@@ -293,7 +293,7 @@
         <section class="detail-section">
           <h2>Deterministic PreToolUse Hook Enforcement</h2>
           <p>A <code>PreToolUse</code> hook intercepts execution at the Model Context Protocol (MCP) or platform layer. When the agent attempts to run a bash command, modify a file, or query a database, the call is evaluated by a local policy engine before execution.</p>
-          <p>If the action matches a known-bad pattern or violates a policy, the hook blocks it and returns a structured error response. The agent is physically stopped, preserving the system state and preventing the error before it can happen.</p>
+          <p>If the action matches a known-bad pattern or violates a policy, the hook flags and logs the decision by default and returns a structured response. For the catastrophic classes — secret exfiltration, rm -rf-class destructive commands, supply-chain risks — it hard-blocks the call by default, preserving system state before the error can happen. Set <code>THUMBGATE_STRICT_ENFORCEMENT=1</code> to hard-block every matched rule.</p>
         </section>
 
         <div class="detail-section">
@@ -304,7 +304,7 @@
           </details>
           <details class="faq-item">
             <summary>How does a PreToolUse hook protect the codebase?</summary>
-            <p>PreToolUse hooks intercept tool calls at the protocol layer before they are executed. If a command matches a blocked pattern, the hook denies execution, making safety deterministic rather than probabilistic.</p>
+            <p>PreToolUse hooks intercept every tool call at the protocol layer before it executes, flagging and logging each decision deterministically rather than probabilistically. If a command matches a catastrophic class (secret exfiltration, rm -rf, supply-chain), the hook denies execution by default; other matched patterns warn by default and are denied when THUMBGATE_STRICT_ENFORCEMENT=1 is set.</p>
           </details>
         </div>
       </div>

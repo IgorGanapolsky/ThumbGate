@@ -9,9 +9,9 @@
     "persona": "tool-evaluator",
     "opportunityScore": 100,
     "title": "ThumbGate vs SpecLock | Thumbs Feedback vs Manual Specs",
-    "description": "SpecLock starts from manually written constraints. ThumbGate starts from thumbs-up/down feedback and turns it into pre-action checks that block repeated mist...",
+    "description": "SpecLock starts from manually written constraints. ThumbGate starts from thumbs-up/down feedback and turns it into pre-action checks that catch repeated mist...",
     "heroTitle": "ThumbGate vs SpecLock",
-    "heroSummary": "SpecLock starts from manually written constraints. ThumbGate starts from thumbs-up/down feedback and turns it into pre-action checks that block repeated mistakes.",
+    "heroSummary": "SpecLock starts from manually written constraints. ThumbGate starts from thumbs-up/down feedback and turns it into pre-action checks that catch repeated mistakes.",
     "takeaways": [
       "ThumbGate learns from thumbs-up and thumbs-down feedback without requiring a separate spec-writing workflow.",
       "SpecLock is strongest when a team already has strong specifications and wants enforcement tied to those documents.",
@@ -49,7 +49,7 @@
       },
       {
         "question": "What does ThumbGate do that SpecLock does not?",
-        "answer": "ThumbGate turns explicit feedback into searchable memory, auto-generated prevention rules, and runtime checks that block repeated mistakes before the next tool call executes."
+        "answer": "ThumbGate turns explicit feedback into searchable memory, auto-generated prevention rules, and runtime checks that catch repeated mistakes before the next tool call executes."
       }
     ],
     "relatedPages": [
@@ -96,9 +96,9 @@
     "persona": "tool-evaluator",
     "opportunityScore": 100,
     "title": "ThumbGate vs Mem0 | Enforcement vs Memory for AI Agents",
-    "description": "Mem0 is memory. ThumbGate is memory plus enforcement. It captures thumbs-up/down feedback, promotes the signal into rules, and blocks repeat failures with pr...",
+    "description": "Mem0 is memory. ThumbGate is memory plus enforcement. It captures thumbs-up/down feedback, promotes the signal into rules, and catches repeat failures with pr...",
     "heroTitle": "ThumbGate vs Mem0",
-    "heroSummary": "Mem0 is memory. ThumbGate is memory plus enforcement. It captures thumbs-up/down feedback, promotes the signal into rules, and blocks repeat failures with pre-action checks.",
+    "heroSummary": "Mem0 is memory. ThumbGate is memory plus enforcement. It captures thumbs-up/down feedback, promotes the signal into rules, and catches repeat failures with pre-action checks.",
     "takeaways": [
       "Mem0 is useful when you mainly need retrieval and cross-session context.",
       "ThumbGate is useful when retrieval alone is not enough and the system has to stop the same mistake before execution.",
@@ -118,7 +118,7 @@
         ],
         "bullets": [
           "Thumbs up reinforces good behavior.",
-          "Thumbs down blocks repeated mistakes.",
+          "Thumbs down catches repeated mistakes.",
           "Verification evidence and automation reports back up the reliability claim."
         ]
       },
@@ -239,7 +239,7 @@
       },
       {
         "path": "/guides/agent-harness-optimization",
-        "title": "AI Agent Harness Optimization That Blocks Repeat Failures"
+        "title": "AI Agent Harness Optimization That Catches Repeat Failures"
       },
       {
         "path": "/guides/pre-action-checks",
@@ -874,7 +874,7 @@
       {
         "heading": "The Claude Code problem",
         "paragraphs": [
-          "Claude Code is strongest when the context is fresh, but teams still hit repeated mistakes, compaction drift, and re-explaining constraints. A memory file alone helps, but it does not physically stop the next bad move."
+          "Claude Code is strongest when the context is fresh, but teams still hit repeated mistakes, compaction drift, and re-explaining constraints. A memory file alone helps, but it is advisory only — nothing acts on it, so the next bad move still runs."
         ]
       },
       {
@@ -882,7 +882,7 @@
         "bullets": [
           "Thumbs up reinforces good behavior.",
           "Thumbs down becomes a prevention rule.",
-          "Pre-action gates stop the repeated mistake before the next command executes.",
+          "Pre-action gates catch the repeated mistake before the next command executes.",
           "The same flow works across Cursor, Codex, Gemini, Amp, and OpenCode."
         ]
       },
@@ -945,7 +945,7 @@
     "opportunityScore": 89,
     "title": "Cursor Agent Guardrails | Stop Repeated Mistakes with ThumbGate",
     "description": "Cursor moves fast, which makes repeated mistakes expensive. ThumbGate gives Cursor users a feedback loop that turns thumbs-down corrections into pre-action c...",
-    "heroTitle": "Cursor Guardrails That Block Repeated Mistakes",
+    "heroTitle": "Cursor Guardrails That Catch Repeated Mistakes",
     "heroSummary": "Cursor moves fast, which makes repeated mistakes expensive. ThumbGate gives Cursor users a feedback loop that turns thumbs-down corrections into pre-action checks before the next risky step fires.",
     "takeaways": [
       "Cursor users want speed without trusting the agent blindly.",
@@ -964,7 +964,7 @@
         "bullets": [
           "Capture thumbs-up/down feedback on agent behavior.",
           "Promote repeated failures into prevention rules.",
-          "Block known-bad commands with pre-action checks before execution.",
+          "Catch known-bad commands with pre-action checks before execution.",
           "Keep the memory and gates local-first so the operator retains control."
         ]
       },
@@ -1014,7 +1014,7 @@
     "keywordCluster": [
       "cursor prevent repeated mistakes"
     ],
-    "imageAlt": "ThumbGate guide for Cursor Guardrails That Block Repeated Mistakes"
+    "imageAlt": "ThumbGate guide for Cursor Guardrails That Catch Repeated Mistakes"
   },
   {
     "path": "/guides/codex-cli-guardrails",
@@ -1046,7 +1046,7 @@
         "bullets": [
           "Feedback capture with explicit thumbs-up/down signals.",
           "Searchable lessons and linked prevention rules.",
-          "Pre-action checks that block repeated bad commands before they run.",
+          "Pre-action checks that catch repeated bad commands before they run.",
           "Verification evidence that gives teams something concrete to audit."
         ]
       },
@@ -1064,7 +1064,7 @@
       },
       {
         "question": "How are Codex CLI guardrails different from prompt instructions?",
-        "answer": "Prompt instructions are advisory. ThumbGate pre-action checks intercept the tool call itself and block the known-bad pattern before execution."
+        "answer": "Prompt instructions are advisory. ThumbGate pre-action checks intercept the tool call itself and catch the known-bad pattern before execution."
       }
     ],
     "relatedPages": [
@@ -1129,7 +1129,7 @@
           "Local-first lessons you can search across sessions.",
           "Structured thumbs-up/down feedback for reinforcement and correction.",
           "Prevention rules linked to past failures.",
-          "Pre-action gates that stop repeated mistakes before execution."
+          "Pre-action gates that catch repeated mistakes before execution."
         ]
       },
       {
@@ -1224,7 +1224,7 @@
         "bullets": [
           "Thumbs-up/down feedback capture inside Claude Desktop.",
           "Prevention rules auto-generated from repeated failures.",
-          "Pre-action checks that block known-bad patterns before execution.",
+          "Pre-action checks that catch known-bad patterns before execution.",
           "Full-text search across your lesson history.",
           "Health checks and system diagnostics."
         ]
@@ -1792,7 +1792,7 @@
       },
       {
         "path": "/guides/agent-harness-optimization",
-        "title": "AI Agent Harness Optimization That Blocks Repeat Failures"
+        "title": "AI Agent Harness Optimization That Catches Repeat Failures"
       },
       {
         "path": "/guides/pre-action-checks",
@@ -2012,7 +2012,7 @@
     "opportunityScore": 83,
     "title": "AI Agent Harness Optimization | Progressive Disclosure + Pre-Action Checks",
     "description": "A better harness keeps global instructions lean, loads MCP schemas only when needed, and turns feedback into pre-action checks. ThumbGate makes that workflow...",
-    "heroTitle": "AI Agent Harness Optimization That Blocks Repeat Failures",
+    "heroTitle": "AI Agent Harness Optimization That Catches Repeat Failures",
     "heroSummary": "A better harness keeps global instructions lean, loads MCP schemas only when needed, and turns feedback into pre-action checks. ThumbGate makes that workflow measurable and enforceable.",
     "takeaways": [
       "Harness optimization is the control layer around the model: context, tools, guardrails, and feedback.",
@@ -2033,7 +2033,7 @@
           "Scores global agent docs so AGENTS.md, CLAUDE.md, and GEMINI.md stay lean instead of becoming unreviewable prompt bundles.",
           "Publishes progressive MCP discovery through lightweight indexes and per-tool schema URLs.",
           "Selects specialized gate harnesses for deploy, code-edit, and database-write actions instead of loading every gate for every workflow.",
-          "Turns thumbs-down feedback into prevention rules, then into hard Pre-Action Checks that block repeated mistakes."
+          "Turns thumbs-down feedback into prevention rules, then into hard Pre-Action Checks that catch repeated mistakes."
         ]
       },
       {
@@ -2050,7 +2050,7 @@
       },
       {
         "question": "How does ThumbGate optimize a harness?",
-        "answer": "ThumbGate keeps global instructions lean, supports progressive MCP discovery, selects workflow-specific gate harnesses, and converts feedback into Pre-Action Checks that block known-bad actions before execution."
+        "answer": "ThumbGate keeps global instructions lean, supports progressive MCP discovery, selects workflow-specific gate harnesses, and converts feedback into Pre-Action Checks that catch known-bad actions before execution."
       }
     ],
     "relatedPages": [
@@ -2085,7 +2085,7 @@
       "claude code prevent repeated mistakes",
       "codex cli guardrails"
     ],
-    "imageAlt": "ThumbGate guide for AI Agent Harness Optimization That Blocks Repeat Failures"
+    "imageAlt": "ThumbGate guide for AI Agent Harness Optimization That Catches Repeat Failures"
   },
   {
     "path": "/guides/code-knowledge-graph-guardrails",
@@ -2151,7 +2151,7 @@
       },
       {
         "path": "/guides/agent-harness-optimization",
-        "title": "AI Agent Harness Optimization That Blocks Repeat Failures"
+        "title": "AI Agent Harness Optimization That Catches Repeat Failures"
       },
       {
         "path": "/guides/best-tools-stop-ai-agents-breaking-production",
@@ -2342,7 +2342,7 @@
       },
       {
         "path": "/guides/agent-harness-optimization",
-        "title": "AI Agent Harness Optimization That Blocks Repeat Failures"
+        "title": "AI Agent Harness Optimization That Catches Repeat Failures"
       },
       {
         "path": "/guides/best-tools-stop-ai-agents-breaking-production",
@@ -2513,7 +2513,7 @@
     ],
     "faq": [
       {
-        "question": "Is memory alone enough to stop repeated mistakes?",
+        "question": "Is memory alone enough to catch repeated mistakes?",
         "answer": "Usually no. Memory helps retrieval, but ThumbGate adds pre-action checks so the same risky move can be blocked before the next command executes."
       },
       {
@@ -3150,7 +3150,7 @@
     "faq": [
       {
         "question": "Why do Autoresearch-style agents need gates?",
-        "answer": "A self-improving loop can optimize the wrong signal, skip holdout tests, or promote a cherry-picked run. ThumbGate blocks known-bad promotion patterns before the agent accepts the variant."
+        "answer": "A self-improving loop can optimize the wrong signal, skip holdout tests, or promote a cherry-picked run. ThumbGate catches known-bad promotion patterns before the agent accepts the variant."
       },
       {
         "question": "What does ThumbGate add to an Autoresearch loop?",
@@ -3222,7 +3222,7 @@
         "bullets": [
           "Intake for one workflow owner, one priority workflow, one repeated failure, and one production rollout target.",
           "A governance map for data access, tools, protected files, risky commands, approval boundaries, review tiers, and rollback expectations.",
-          "Pre-action gates that stop repeated mistakes before the next shell command, PR, release, or production automation step.",
+          "Pre-action gates that catch repeated mistakes before the next shell command, PR, release, or production automation step.",
           "Background-agent risk checks through npx thumbgate background-governance --check --json before unattended work reaches review.",
           "A proof pack with blocked-repeat examples, run evidence, verification notes, and rollout decisions the buyer can share internally."
         ]
@@ -3346,7 +3346,7 @@
       },
       {
         "path": "/guides/agent-harness-optimization",
-        "title": "AI Agent Harness Optimization That Blocks Repeat Failures"
+        "title": "AI Agent Harness Optimization That Catches Repeat Failures"
       },
       {
         "path": "/guides/pre-action-checks",
@@ -3595,7 +3595,7 @@
     "faq": [
       {
         "question": "Isn’t this just Claude Code’s built-in hooks?",
-        "answer": "Native hooks and community repos do static pattern-matching that you author and maintain per machine. ThumbGate adds the learning layer: a thumbs-down becomes a prevention rule that blocks the repeat automatically, across sessions and agents — the part static hooks cannot do."
+        "answer": "Native hooks and community repos do static pattern-matching that you author and maintain per machine. ThumbGate adds the learning layer: a thumbs-down becomes a prevention rule that catches the repeat automatically, across sessions and agents — the part static hooks cannot do."
       },
       {
         "question": "How does ThumbGate enforce zero trust for AI agents?",
@@ -3609,7 +3609,7 @@
       },
       {
         "path": "/guides/agent-harness-optimization",
-        "title": "AI Agent Harness Optimization That Blocks Repeat Failures"
+        "title": "AI Agent Harness Optimization That Catches Repeat Failures"
       }
     ],
     "cta": {
@@ -3806,7 +3806,7 @@
       },
       {
         "path": "/guides/agent-harness-optimization",
-        "title": "AI Agent Harness Optimization That Blocks Repeat Failures"
+        "title": "AI Agent Harness Optimization That Catches Repeat Failures"
       },
       {
         "path": "/guides/ai-search-topical-presence",
@@ -3899,7 +3899,7 @@
       },
       {
         "question": "Is this an AI DBA replacement?",
-        "answer": "No. ThumbGate is the governance layer before an agent touches database tooling. It blocks known-bad actions and requires proof for risky actions; DBAs and platform teams still own database design and operations."
+        "answer": "No. ThumbGate is the governance layer before an agent touches database tooling. It catches known-bad actions and requires proof for risky actions; DBAs and platform teams still own database design and operations."
       }
     ],
     "relatedPages": [
@@ -4004,7 +4004,7 @@
       },
       {
         "path": "/guides/agent-harness-optimization",
-        "title": "AI Agent Harness Optimization That Blocks Repeat Failures"
+        "title": "AI Agent Harness Optimization That Catches Repeat Failures"
       },
       {
         "path": "/guides/best-tools-stop-ai-agents-breaking-production",
@@ -4095,7 +4095,7 @@
     "relatedPages": [
       {
         "path": "/guides/agent-harness-optimization",
-        "title": "AI Agent Harness Optimization That Blocks Repeat Failures"
+        "title": "AI Agent Harness Optimization That Catches Repeat Failures"
       },
       {
         "path": "/guides/background-agent-governance",
@@ -4333,7 +4333,7 @@
         "heading": "Relational knowledge in plain English",
         "paragraphs": [
           "A language model stores facts and associations about the world. When a buyer asks for a recommendation, the model tries to retrieve the brand most strongly associated with that problem and category. If the associations are weak or generic, the model falls back to louder or simpler competitors.",
-          "That is why vague positioning like \"AI memory for agents\" is a weaker long-term recommendation strategy for ThumbGate than a sharper relationship such as \"pre-action checks that stop repeated AI coding mistakes before execution.\""
+          "That is why vague positioning like \"AI memory for agents\" is a weaker long-term recommendation strategy for ThumbGate than a sharper relationship such as \"pre-action checks that catch repeated AI coding mistakes before execution.\""
         ]
       },
       {

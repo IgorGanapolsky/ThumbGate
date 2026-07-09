@@ -213,16 +213,18 @@
         <h3>Real examples</h3>
         <ul>
           <li>
-            <strong>Force-push to main</strong> &mdash; Gate fires, push never
-            happens. Agent is redirected to create a branch and open a PR.
+            <strong>Force-push to main</strong> &mdash; Gate fires and logs;
+            the agent is redirected to create a branch and open a PR. Hard-blocked
+            under strict enforcement.
           </li>
           <li>
             <strong>Unknown dependency install</strong> &mdash; Flagged for human
             review. Agent pauses until you approve.
           </li>
           <li>
-            <strong>Destructive shell command</strong> &mdash; Blocked by a
-            prevention rule learned from a prior incident.
+            <strong>Destructive shell command</strong> &mdash; Hard-blocked by a
+            prevention rule learned from a prior incident (destructive deletes are
+            a hard-block class by default).
           </li>
         </ul>
 
@@ -310,8 +312,9 @@
         <p>
           Claude Code has a sophisticated permission model and tool-calling
           pipeline. What it does <strong>not</strong> have is feedback-driven
-          enforcement — the ability to learn from past mistakes and physically
-          block the agent from repeating them.
+          enforcement — the ability to learn from past mistakes and flag the
+          agent (hard-blocking the catastrophic ones, or any rule under strict
+          enforcement) before it repeats them.
         </p>
 
         <p>
@@ -325,8 +328,9 @@
             prevention rule
           </li>
           <li>
-            <strong>Gates enforce</strong> — PreToolUse hooks block the action
-            before execution
+            <strong>Gates enforce</strong> — PreToolUse hooks flag and log the
+            action before execution, and hard-block the catastrophic ones (or any
+            rule under strict enforcement)
           </li>
           <li>
             <strong>Reasoning chains explain</strong> — every block tells you
@@ -464,7 +468,6 @@
       <div class="container">
         <a href="/">Home</a> ·
         <a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> ·
-        <a href="https://x.com/IgorGanapolsky">X</a> ·
         <a href="https://www.linkedin.com/in/igorganapolsky">LinkedIn</a>
         <br /><br />© 2026 ThumbGate · MIT License
       </div>

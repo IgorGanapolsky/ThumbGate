@@ -100,7 +100,7 @@
   <ul>
     <li>Should this command run in this directory?</li>
     <li>Should this file edit proceed without a verified source?</li>
-    <li>Should this Reddit, LinkedIn, X, or Bluesky post publish without action-time confirmation?</li>
+    <li>Should this Reddit, LinkedIn, or Bluesky post publish without action-time confirmation?</li>
     <li>Should this deploy continue when tests have not run?</li>
     <li>Should a repeated failure become a durable prevention rule?</li>
   </ul>
@@ -113,7 +113,7 @@
   <ol>
     <li>Pick one repeated developer-agent failure: unsafe shell, unsupported claim, unapproved external post, missing test proof, wrong MCP tool, or runaway loop.</li>
     <li>Turn it into a ThumbGate rule.</li>
-    <li>Run the workflow again and capture whether the bad action is blocked before the tool fires.</li>
+    <li>Run the workflow again and capture whether the bad action is flagged (or hard-blocked in strict mode) before the tool fires.</li>
     <li>Package the result as a small proof run: failure, gate, replay, result.</li>
   </ol>
 

@@ -16,7 +16,7 @@ This document is the source of truth for product, pricing, traction, and proof c
 - The open-source runtime now supports history-aware lesson distillation from up to 8 prior recorded entries in the current Claude auto-capture path, linked 60-second feedback sessions, and reflector rule proposals across CLI, hosted API, Cursor, and Claude Desktop surfaces.
 - The runtime now supports Workflow Sentinel blast-radius scoring plus Docker Sandboxes routing guidance for high-risk local actions, and the hosted path supports signed sandbox dispatch for isolated automations.
 - Package publishing is governed by Changesets, SemVer, version-sync checks, and verification evidence; release claims should stay inspectable instead of being inferred from a diff.
-- Verified cumulative booked revenue through March 19, 2026 is **$20.00** from `2` reconciled Stripe charges tied to the current product; there is no evidence of any additional same-day booked charge beyond that cumulative total.
+- There is **no external paying customer and no external customer revenue to date**: 0 external paid orders and 0 paid signups. Two historical Stripe charges totaling $20.00 exist in the ledger, but they do not represent external customer traction and must not be cited as customer revenue.
 - Engineering verification is strong and should be cited through `docs/VERIFICATION_EVIDENCE.md` and machine-readable proof reports.
 
 ## Product Tiers
@@ -27,7 +27,8 @@ This document is the source of truth for product, pricing, traction, and proof c
 - Up to 3 active auto-promoted prevention rules
 - No recall or lesson search
 - No exports (DPO, Databricks, HuggingFace)
-- 5 built-in checks plus local PreToolUse hook blocking
+- 5 built-in checks plus a local PreToolUse hook
+- Warn-by-default enforcement: the hook flags and logs risky actions by default and hard-blocks only the highest-risk classes (secret exfiltration, supply-chain, rm-rf-class, self-config-under-strict); everything else hard-blocks only under `THUMBGATE_STRICT_ENFORCEMENT=1`
 - Local-first enforcement on the operator's machine
 - MCP integrations for Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and compatible agents
 

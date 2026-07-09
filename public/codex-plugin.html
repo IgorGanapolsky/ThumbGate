@@ -224,7 +224,7 @@
   <section class="hero">
     <div class="wrap">
       <div class="eyebrow">Codex MCP plugin + Pre-Action Checks</div>
-      <h1>Give Codex a thumbs-down once. Block the repeat before it runs again.</h1>
+      <h1>Give Codex a thumbs-down once. Catch the repeat before it runs again.</h1>
       <p class="sub" style="font-size:13px;opacity:0.85;">Updated: <time datetime="2026-04-20">2026-04-20</time> · by <a href="https://github.com/IgorGanapolsky" style="color:inherit;">Igor Ganapolsky</a></p>
       <p class="sub">ThumbGate wires Codex into local-first feedback memory, MCP tools, and hook enforcement. The launcher resolves <code>thumbgate@latest</code> when Codex starts, so published npm fixes reach your active MCP server after a restart.</p>
       <div class="actions">
@@ -235,7 +235,7 @@
       <nav class="proof-bar" aria-label="Codex proof and conversion links">
         <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
         <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/COMMERCIAL_TRUTH.md" target="_blank" rel="noopener">Commercial truth</a>
-        <a href="/checkout/pro?utm_source=codex&utm_medium=plugin_page&utm_campaign=codex_plugin_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=CODEX-PRO_FOLLOW_ON&cta_id=codex_pro_follow_on&cta_placement=plugin_page&plan_id=pro&surface=codex_plugin">Upgrade after one blocked repeat</a>
+        <a href="/checkout/pro?utm_source=codex&utm_medium=plugin_page&utm_campaign=codex_plugin_follow_on&utm_content=pro&campaign_variant=pro_follow_on&offer_code=CODEX-PRO_FOLLOW_ON&cta_id=codex_pro_follow_on&cta_placement=plugin_page&plan_id=pro&surface=codex_plugin">Upgrade after one caught repeat</a>
         <a href="/?utm_source=codex&utm_medium=plugin_page&utm_campaign=codex_team_follow_on&utm_content=workflow_sprint&campaign_variant=teams_follow_on&offer_code=CODEX-TEAMS_FOLLOW_ON&cta_id=codex_team_follow_on&cta_placement=plugin_page&surface=codex_plugin#workflow-sprint-intake">Team workflow sprint</a>
       </nav>
       <pre class="terminal">$ npx thumbgate init --agent codex
@@ -255,8 +255,8 @@ $ npx thumbgate feedback-self-test
       <p>The Codex launcher installs <code>thumbgate@latest</code> into <code>~/.thumbgate/runtime</code> before running MCP or gate checks. A new npm publish reaches Codex after the app restarts.</p>
     </div>
     <div class="tile">
-      <h3>Hard stop before action</h3>
-      <p>Pre-Action Checks evaluate commands, file edits, publishes, merges, and other high-risk actions before execution. Bad repeats get blocked before they burn time or tokens.</p>
+      <h3>Checks before action</h3>
+      <p>Pre-Action Checks evaluate commands, file edits, publishes, merges, and other high-risk actions before execution. Bad repeats are flagged and logged before they burn time or tokens — and hard-blocked for catastrophic classes (secret exfiltration, destructive deletes) or when strict enforcement is enabled.</p>
     </div>
   </section>
 
@@ -334,7 +334,7 @@ $ npx thumbgate feedback-self-test
   <section class="wrap grid" aria-label="Proof-backed next steps">
     <div class="tile">
       <h3>Pro only after proof</h3>
-      <p>Use the free Codex path to prove one real blocked repeat first. Upgrade to Pro only when you want the personal dashboard, proof-ready exports, and a review surface after that proof exists.</p>
+      <p>Use the free Codex path to prove one real caught repeat first. Upgrade to Pro only when you want the personal dashboard, proof-ready exports, and a review surface after that proof exists.</p>
     </div>
     <div class="tile">
       <h3>Commercial truth stays inspectable</h3>

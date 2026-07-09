@@ -70,7 +70,7 @@
       "name": "Does runtime enforcement replace AC/DC's Verify stage?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "No. They cover different surfaces and compose cleanly. AC/DC's Verify stage catches problems in committed code. Runtime enforcement catches problems in proposed tool calls before the tool fires. A correct deployment of both means: PreToolUse hooks block destructive or unauthorized actions before execution, Verify catches quality and security issues in the code the agent did write, and Solve fixes what Verify surfaces. The two layers add up to coverage of both the action surface and the code surface."
+        "text": "No. They cover different surfaces and compose cleanly. AC/DC's Verify stage catches problems in committed code. Runtime enforcement catches problems in proposed tool calls before the tool fires. A correct deployment of both means: PreToolUse hooks flag and log risky actions before execution — and hard-block the catastrophic ones like secret exfiltration or rm -rf — Verify catches quality and security issues in the code the agent did write, and Solve fixes what Verify surfaces. The two layers add up to coverage of both the action surface and the code surface."
       }
     },
     {
@@ -210,7 +210,7 @@
     </div>
     <div class="mini-card">
       <h3>Verify of action</h3>
-      <p>Runtime inspection of the proposed tool call before it fires. Catches destructive shell, unauthorized MCP, secret exfiltration, force-push, and out-of-scope file writes &mdash; before they become incidents.</p>
+      <p>Runtime inspection of the proposed tool call before it fires. Flags and logs destructive shell, unauthorized MCP, force-push, and out-of-scope file writes &mdash; and hard-blocks the catastrophic ones (secret exfiltration, rm -rf) &mdash; before they become incidents. Warn-only actions can be promoted to hard blocks under strict mode.</p>
     </div>
   </div>
 
@@ -230,7 +230,7 @@
   <h2>What this looks like in a buyer demo</h2>
   <ol>
     <li>One AC/DC iteration where Sonar's Verify catches a real code-quality issue in generated code. Good. That's what AC/DC promises.</li>
-    <li>One proposed tool call (<code>git push --force origin main</code>) blocked at PreToolUse before execution. Evidence logged.</li>
+    <li>One proposed tool call (<code>git push --force origin main</code>) flagged and logged at PreToolUse before execution &mdash; hard-blocked under strict mode. Evidence logged.</li>
     <li>The blocked call promoted to a prevention rule. The next agent run sees that rule in its Guide context.</li>
     <li>An export a reviewer or risk officer can inspect: allowed calls, blocked calls, overrides, rule-promotion history.</li>
   </ol>

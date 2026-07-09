@@ -85,7 +85,7 @@ test('learn hub has article cards with titles, descriptions, tags, and a buyer-q
   assert.match(html, /AI Deployment Readiness Before Production Rollout/);
   assert.match(html, /AI Search Topical Presence/);
   assert.match(html, /Relational Knowledge in AI Recommendations/);
-  assert.match(html, /Cursor Guardrails That Block Repeated Mistakes/);
+  assert.match(html, /Cursor Guardrails That Catch Repeated Mistakes/);
   assert.match(html, /Codex CLI Guardrails That Actually Enforce/);
   assert.match(html, /Gemini CLI Feedback Memory That Leads to Enforcement/);
   assert.match(html, /Hermes Agent Guardrails for Self-Improving Agents/);

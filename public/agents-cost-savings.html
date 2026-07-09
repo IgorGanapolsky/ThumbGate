@@ -78,7 +78,7 @@
   <p>"Measurable" is the operative word. A token-spend dashboard tells finance how much got burned; it doesn't tell the CIO board what was averted. <code>thumbgate cost</code> prints a single conservative dollar figure backed by the gate-block count from <em>your</em> machine — not "what enterprises like you saved." That's the artifact that survives a 2026 budget review.</p>
 
   <h2>One command, one number</h2>
-  <p>Once ThumbGate is installed and gates have been firing, this is what an operator sees:</p>
+  <p>Once ThumbGate is installed and gates have been firing, this is what an operator sees. The figures below are an <strong>illustrative example</strong> — your numbers are computed from your own machine's <code>gate-stats.json</code>, not from ThumbGate traction data:</p>
   <pre><code>$ thumbgate cost
 
 💰 ThumbGate cost-savings — cumulative
@@ -105,7 +105,7 @@
       <tr><td>See what agents spent last week</td><td>✅</td><td>Partial (via dashboard)</td></tr>
       <tr><td>Allocate spend to teams / features</td><td>✅</td><td>Per-gate breakdown via <code>byGate</code></td></tr>
       <tr><td>Stop a known-bad tool call before it hits the model</td><td>❌</td><td>✅ — PreToolUse gate fires, no API call made</td></tr>
-      <tr><td>Promote a one-off failure into a permanent gate</td><td>❌</td><td>✅ — feedback loop + lesson DB</td></tr>
+      <tr><td>Promote a one-off failure into a persistent gate</td><td>❌</td><td>✅ — feedback loop + lesson DB</td></tr>
       <tr><td>Surface gate candidates from <em>silent</em> failures (where no human ever gave thumbs-down)</td><td>❌</td><td>✅ — unsupervised silent-failure clustering, on by default</td></tr>
       <tr><td>Print conservative $ saved per day</td><td>❌</td><td>✅ — <code>thumbgate cost</code></td></tr>
       <tr><td>K8s pod-level allocation, finance-grade reporting</td><td>✅ (that's their core)</td><td>❌ (not our layer)</td></tr>

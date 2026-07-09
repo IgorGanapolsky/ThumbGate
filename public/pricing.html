@@ -101,7 +101,7 @@ __GA_BOOTSTRAP__
   "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
-    { "@type": "Question", "name": "What does Pro add over the free CLI?", "acceptedAnswer": { "@type": "Answer", "text": "Free gives you 2 captures/day and 3 active rules, running entirely on your machine. Pro is the hosted layer: unlimited captures, unlimited rules, lesson sync across machines, a dashboard without self-hosting, managed adapter updates, and DPO export. You're paying for infrastructure we run, not features we hide." } },
+    { "@type": "Question", "name": "What does Pro add over the free CLI?", "acceptedAnswer": { "@type": "Answer", "text": "Free gives you 2 captures/day and 3 active rules, running entirely on your machine. Pro is the hosted layer: unlimited captures, unlimited rules, lesson sync across machines, a dashboard without self-hosting, managed adapter updates, and DPO export. You're paying for the hosted layer, higher limits, managed adapter coverage, and support — the gate logic itself is open source." } },
     { "@type": "Question", "name": "Does ThumbGate send my code to the cloud?", "acceptedAnswer": { "@type": "Answer", "text": "No. The CLI is local-first — no data leaves your machine. Pro and Enterprise add hosted sync for dashboards and shared lessons, but your source code stays local." } },
     { "@type": "Question", "name": "When should I pick Enterprise over Pro?", "acceptedAnswer": { "@type": "Answer", "text": "When one engineer's correction should protect the whole team. Enterprise shares the lesson database across the org so a fix in one repo prevents the same mistake in every repo." } },
     { "@type": "Question", "name": "Can I cancel anytime?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Pro and Enterprise are month-to-month with a 7-day refund window on the first charge. Cancel from the billing portal and your subscription ends at the period close." } }
@@ -177,13 +177,6 @@ __GA_BOOTSTRAP__
     border-color: var(--cyan);
     box-shadow: 0 0 40px var(--cyan-dim), inset 0 1px 0 rgba(34, 211, 238, 0.15);
     position: relative;
-  }
-  .price-card.highlight::before {
-    content: "Most popular";
-    position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
-    background: var(--cyan); color: var(--bg);
-    padding: 3px 12px; border-radius: 6px;
-    font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
   }
 
   .tier { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
@@ -284,12 +277,12 @@ __GA_BOOTSTRAP__
     <div class="price-card">
       <div class="tier" style="color:var(--cyan);">Free</div>
       <div class="price">$0</div>
-      <div class="price-sub">Block repeated mistakes daily. Forever free for solo devs.</div>
+      <div class="price-sub">Catch repeated mistakes daily. Forever free for solo devs.</div>
       <ul>
         <li>2 feedback captures/day (10 total) — enough to see the value</li>
         <li>Up to 3 active prevention rules</li>
-        <li>All MCP integrations (Claude Code, Cursor, Codex, Gemini, Amp)</li>
-        <li>PreToolUse hook blocking with built-in safety checks</li>
+        <li>All MCP integrations (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode)</li>
+        <li>PreToolUse hook flags and logs risky calls — hard-blocks the catastrophic classes (secret exfil, rm -rf, supply-chain) by default; full hard enforcement in strict mode</li>
         <li>Runs 100% local — no account, no signup, no data leaves your machine</li>
       </ul>
       <a class="btn-install" href="/go/install?utm_source=pricing&utm_medium=free_card&cta_id=pricing_install_free&cta_placement=free_card" data-pricing-cta data-cta-id="pricing_install_free" data-cta-placement="free_card" data-tier="free" data-plan-id="free" data-price="0" onclick="try{posthog.capture('pricing_cta_click',{cta:'install_free',tier:'free',placement:'pricing_page'})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'install_free',tier:'free'}})}catch(_){}">Install free</a>
@@ -303,8 +296,8 @@ __GA_BOOTSTRAP__
       </div>
       <ul>
         <li><strong>Hosted lesson sync</strong> — corrections follow you across machines, no manual export</li>
-        <li><strong>Managed adapter matrix</strong> — we track runtime changes in Claude Code, Cursor, Codex, Gemini, Amp so you don't</li>
-        <li><strong>Hosted dashboard</strong> — see every blocked action, every rule that fired, without running your own server</li>
+        <li><strong>Managed adapter matrix</strong> — we track runtime changes in Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode so you don't</li>
+        <li><strong>Hosted dashboard</strong> — see every flagged and blocked action, every rule that fired, without running your own server</li>
         <li><strong>Unlimited prevention rules</strong> — free caps at 3 auto-promoted rules</li>
         <li><strong>DPO + HuggingFace export</strong> — training data from your real corrections</li>
         <li><strong>Auto-connect</strong> — new agent surfaces appear automatically after setup</li>
@@ -346,7 +339,7 @@ __GA_BOOTSTRAP__
     <div class="faq-list">
       <div class="faq-item">
         <div class="faq-q">What does Pro add over the free CLI?</div>
-        <div class="faq-a">Free gives you 2 captures/day and 3 active rules, running entirely on your machine. Pro is the hosted layer: unlimited captures, unlimited rules, lesson sync across machines, a dashboard without self-hosting, managed adapter updates, and DPO export. You're paying for infrastructure we run, not features we hide.</div>
+        <div class="faq-a">Free gives you 2 captures/day and 3 active rules, running entirely on your machine. Pro is the hosted layer: unlimited captures, unlimited rules, lesson sync across machines, a dashboard without self-hosting, managed adapter updates, and DPO export. You're paying for the hosted layer, higher limits, managed adapter coverage, and support — the gate logic itself is open source.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q">Why not just use an enterprise AI control plane?</div>
@@ -366,7 +359,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q">What happens if I stop paying?</div>
-        <div class="faq-a">You keep the free CLI with 5-rule cap. Your existing rules and captures stay on your machine. You lose dashboard access, lesson search, exports, and auto-connect.</div>
+        <div class="faq-a">You keep the free CLI, capped at 3 active rules and 2 captures/day. Your existing rules and captures stay on your machine. You lose the hosted dashboard, cross-machine sync, managed adapter updates, and higher limits.</div>
       </div>
     </div>
   </div>
