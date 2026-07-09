@@ -167,8 +167,11 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // config/entitlement-public-keys.json. These are public-runtime verification
   // files for signed entitlements: no private keys, no Core dependency, and no
   // pro source subtree. Keep in lockstep with public-bundle-ratchet + package-boundary.
+  // Bumped 330 -> 332 (2026-07-09) to ship scripts/rule-clustering.js
+  // (leverage-point clustering) and scripts/imperative-detector.js (never/always
+  // directive -> force-gate offer). Keep in lockstep with public-bundle-ratchet.
   const files = npmPackFiles();
-  const CEILING = 330;
+  const CEILING = 332;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

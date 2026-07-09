@@ -95,7 +95,11 @@ const path = require('node:path');
 // 328 → 330: 2026-07-09 ship scripts/entitlement.js and
 // config/entitlement-public-keys.json for signed-entitlement verification in
 // the public runtime. Public keys only; no private key material or Core subtree.
-const BASELINE_FILE_COUNT = 330;
+// 330 → 332: 2026-07-09 two additive runtime modules landing concurrently:
+//   • scripts/rule-clustering.js      (leverage-point clustering in rules report)
+//   • scripts/imperative-detector.js  (never/always directive -> force-gate offer)
+// Keep in lockstep with CEILING in tests/public-core-boundary.test.js.
+const BASELINE_FILE_COUNT = 332;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
