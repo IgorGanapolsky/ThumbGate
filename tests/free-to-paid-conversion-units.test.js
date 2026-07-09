@@ -282,14 +282,14 @@ test('gates-engine.buildBlockActionProCta tiered messages at 5, 25, and 100 bloc
     fs.writeFileSync(ge.STATS_PATH, JSON.stringify({ blocked: 10, warned: 0, passed: 0, byGate: {} }));
     const lowMsg = ge.buildBlockActionProCta();
     assert.ok(lowMsg && lowMsg.includes('thumbgate.ai/go/pro'));
-    assert.match(lowMsg, /rule searchable, exportable, and visible in your personal dashboard/);
+    assert.match(lowMsg, /rule searchable, exportable, and visible/);
 
     fs.writeFileSync(ge.STATS_PATH, JSON.stringify({ blocked: 50, warned: 0, passed: 0, byGate: {} }));
     const midMsg = ge.buildBlockActionProCta();
     assert.ok(midMsg && midMsg.includes('thumbgate.ai/go/pro'));
     assert.match(midMsg, /\$19\/mo/);
     assert.match(midMsg, /50 actions blocked/);
-    assert.match(midMsg, /personal recall, dashboard proof, and exports/);
+    assert.match(midMsg, /recall, dashboard proof, and exports/);
 
     fs.writeFileSync(ge.STATS_PATH, JSON.stringify({ blocked: 250, warned: 0, passed: 0, byGate: {} }));
     const teamMsg = ge.buildBlockActionProCta();
@@ -314,7 +314,7 @@ test('commercial-offer capture receipt sells personal recall at the moment of pr
   });
 
   assert.match(receipt, /Free today\s*: this proof protects this local machine/);
-  assert.match(receipt, /Pro recall\s*: keep this lesson searchable, exportable, and visible in your personal dashboard/);
+  assert.match(receipt, /Pro recall\s*: keep this lesson searchable, exportable, and visible/);
   assert.match(receipt, /utm_source=cli_capture_receipt/);
 });
 

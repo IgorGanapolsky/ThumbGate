@@ -2251,7 +2251,7 @@ a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:
 <div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div>
 <h1>Start ThumbGate Pro</h1>
 <div class="price">$19<small>/mo</small></div>
-<p>The npm package runs your gates locally. <strong>Pro</strong> removes solo caps and adds personal proof, recall, exports, and adapter maintenance. Shared hosted lesson databases and org dashboards are Enterprise.</p>
+<p>The npm package runs your gates locally. <strong>Pro</strong> removes solo caps and adds personal recall, proof, exports, and adapter maintenance. Shared hosted lessons and org dashboards are Enterprise.</p>
 <form action="${PRO_CHECKOUT_URL}" method="GET" data-i="pro_checkout_confirmed">
 ${hiddenInputs}
 <input type="email" name="prefilled_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email">
@@ -2271,7 +2271,7 @@ ${hiddenInputs}
 </div>
 <div class="feedback-saved" id="feedback-saved">Feedback saved.</div>
 </div>
-<div class="trust"><div class="trust-item">Personal lesson recall and proof exports without lifting the free-tier caps yourself</div><div class="trust-item">Adapter matrix kept current for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — version drift is our problem, not yours</div><div class="trust-item">Personal dashboard: gate stats, rule evidence, and DPO export</div><div class="trust-item">Enterprise adds shared hosted lessons, org visibility, and workflow rollout support</div></div>
+<div class="trust"><div class="trust-item">Personal recall and proof exports without free-tier caps</div><div class="trust-item">Adapter matrix kept current for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode</div><div class="trust-item">Personal dashboard: gate stats, rule evidence, DPO export</div><div class="trust-item">Enterprise adds shared hosted lessons, org visibility, rollout support</div></div>
 <p class="back"><a href="/">← Back to thumbgate.ai</a></p>
 </main>
 <script>

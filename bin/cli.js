@@ -134,7 +134,7 @@ function upgradeNudge() {
     '\n  Team rollout: start with the $499 Workflow Hardening Diagnostic\n' +
     `  ${diagnosticUrl}\n` +
     `\n  Solo side lane: Pro — ${PRO_PRICE_LABEL}\n` +
-    '  Removes solo caps and adds personal lesson recall, dashboard proof, exports, and managed adapter coverage.\n' +
+    '  Removes solo caps; adds personal recall, dashboard proof, exports, and managed adapters.\n' +
     `  ${pricingUrl}\n\n`
   );
 }
@@ -234,9 +234,9 @@ function proNudge(context) {
   const checkoutUrl = checkoutUrlFor('cli_nudge', context || COMMAND || 'general');
   const pricingUrl = pricingUrlFor('cli_nudge', context || COMMAND || 'general');
   const messages = [
-    `\n  💡 Pro (${PRO_PRICE_LABEL}): remove solo caps and add personal recall, dashboard proof, exports, and managed adapter coverage.\n     See pricing: ${pricingUrl}\n`,
-    `\n  💡 You just taught ThumbGate something locally. Pro keeps your personal lessons searchable and exportable without the free-tier caps.\n     See pricing: ${pricingUrl}\n`,
-    `\n  💡 ThumbGate Pro keeps the adapter matrix maintained across Claude, Codex, Cursor, containers, and CI. ${PRO_PRICE_LABEL}.\n     Start Pro: ${checkoutUrl}\n`,
+    `\n  💡 Pro (${PRO_PRICE_LABEL}): personal recall, dashboard proof, exports, and managed adapters.\n     See pricing: ${pricingUrl}\n`,
+    `\n  💡 You just taught ThumbGate something locally. Pro keeps personal lessons searchable and exportable without free-tier caps.\n     See pricing: ${pricingUrl}\n`,
+    `\n  💡 ThumbGate Pro maintains adapter coverage across Claude, Codex, Cursor, containers, and CI. ${PRO_PRICE_LABEL}.\n     Start Pro: ${checkoutUrl}\n`,
   ];
   // Rotate message daily — no Math.random (security policy)
   const msg = messages[Math.floor(Date.now() / 86400000) % messages.length];
@@ -1607,10 +1607,10 @@ function pro() {
     console.log('Self-serve side lane today: Pro ($19/mo or $149/yr).');
     console.log('Every licensed Pro user gets a personal local dashboard on localhost.');
     console.log('\nWhat is available:');
-    console.log('  - Personal recall: search lessons, rules, and proof without free-tier caps');
+    console.log('  - Personal recall: search lessons, rules, and proof');
     console.log('  - Local Pro dashboard: your own browser dashboard for search, gates, and DPO export');
-    console.log('  - Managed adapter coverage: Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode drift is tracked for you');
-    console.log('  - Team rollout path: Enterprise adds shared hosted lessons, org visibility, and workflow proof');
+    console.log('  - Managed adapters: Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode');
+    console.log('  - Team rollout path: Enterprise adds shared hosted lessons, org visibility, workflow proof');
     console.log('  - Commercial truth doc: source of truth for traction, pricing, and proof claims');
     console.log('\nLinks:');
     console.log(`  Buy Pro         : ${PRO_CHECKOUT_URL}`);
