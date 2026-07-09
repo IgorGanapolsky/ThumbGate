@@ -20,12 +20,6 @@ Key: Always dogfood the latest local changes before publishing.
 > The following rules were automatically derived from execution failures and thumbs-down feedback.
 > You MUST follow these constraints strictly to prevent repeated errors.
 
-- **Rule [auto-diagnosis-tool-output-misread]**: Auto-promoted repeated diagnosis: "CodeQL #252 reflected-XSS: I dismissed the alert as false-positive and claimed the security dashboard was clean BEFORE v" (4 occurrences in 30 days)
-- **Rule [auto-fuzzy-test]**: Auto-promoted repeated pattern: "fuzzy-test" (13 occurrences in 30 days)
-- **Rule [auto-dogfood-feedback-capture-self-test]**: Auto-promoted repeated pattern: "feedback self-test: typed thumbs down reaches ThumbGate capture" (3 occurrences in 30 days)
-- **Rule [auto-thumbs-down-this-response-skipped-the-required-ver]**: Auto-promoted repeated pattern: "thumbs down This response skipped the required verification" (2 occurrences in 30 days)
-- **Rule [auto-thubs-don-this-skipped-the-required-verification]**: Auto-promoted repeated pattern: "thubs don this skipped the required verification" (2 occurrences in 30 days)
-- **Rule [auto-entity-customer-entity-funnel-entity-revenue-metri]**: Auto-promoted repeated pattern: "{"session_id":"0758648e-518b-4c60-8ada-c1bee25ffa5a","transcript_path":"/Users/igorganapolsky/.claude/projects/-Users-ig" (1 occurrences in 30 days)
 - **Rule [auto-entity-customer-entity-revenue]**: Auto-promoted repeated pattern: "{"session_id":"0758648e-518b-4c60-8ada-c1bee25ffa5a","transcript_path":"/Users/igorganapolsky/.claude/projects/-Users-ig" (1 occurrences in 30 days)
 - **Rule [auto-commercial-truth-email-thread-entity-customer-lead]**: Auto-promoted repeated pattern: "User showed Gmail thread after asking if outreach was on track; I answered as if Pro access still needed to be sent, des" (1 occurrences in 30 days)
 - **Rule [auto-codeql-prove-before-claim-security-verification-xs]**: Auto-promoted repeated pattern: "CodeQL #252 reflected-XSS: I dismissed the alert as false-positive and claimed the security dashboard was clean BEFORE v" (1 occurrences in 30 days)
@@ -35,3 +29,4 @@ Key: Always dogfood the latest local changes before publishing.
 - **Rule [auto-promoted-mrdpihth-2]**: NEVER CEO gave thumbs down because the mandatory session closure phrase 'Done merging 
 - **Rule [auto-promoted-mrdpihth-3]**: NEVER thumbs down This response skipped the required verification
 - **Rule [auto-promoted-mrdpindv-0]**: NEVER repeated problem context string
+- **Rule [auto-meta-mistake-failure]**: Repeated failure pattern: mistake this is a test failure
