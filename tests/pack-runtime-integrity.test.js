@@ -12,7 +12,13 @@
  * The bundle-ratchet test only guards against the bundle GROWING; it never noticed a
  * SHRINKING bundle that dropped runtime-required files. This test closes that gap by proving:
  *   (1) every path in package.json:files that exists on disk is actually in the packed tarball;
- *   (2) every local `require('./x')` reachable from the hook entrypoints resolves inside the pack.
+ *   (2) every local `require('./x')` reachable from the hook entrypoints resolves inside the pack;
+ *   (3) every packed file's own local `require('./x')` also resolves inside the pack — the
+ *       CLOSURE invariant. (2) misses modules pulled in by dynamically-loaded command scripts
+ *       (e.g. cli.js resolves `scripts/<cmd>.js` by name, so a static walk from bin/cli.js never
+ *       reaches slo-alert-engine.js -> tool-kpi-tracker.js). (3) caught the 1.27.20 gap where 5
+ *       such files (tool-kpi-tracker, session-episode-store, session-health-sensor,
+ *       webhook-delivery, history-distiller) were required by shipped scripts but not shipped.
  *
  * It packs with `npm pack --dry-run --json` (no tarball written) so it is cheap and hermetic.
  */
@@ -101,5 +107,33 @@ test('every runtime-required local module resolves inside the packed tarball', (
     [],
     `runtime require() targets reachable from hook entrypoints but NOT shipped in the tarball:\n  ${missing.join('\n  ')}\n`
       + `This is exactly the class of bug that broke thumbgate@1.27.19 (missing feedback-sanitizer.js).`
+  );
+});
+
+test('closure: every packed file\'s local require() target is also packed (dynamic-load blind spot)', () => {
+  const packed = packedFileSet();
+  const requireRe = /require\(\s*['"](\.[^'"]+)['"]\s*\)/g;
+  const missing = new Set();
+  for (const rel of packed) {
+    if (!/\.(?:js|cjs|mjs)$/i.test(rel)) continue;
+    const abs = path.join(REPO, rel);
+    let src;
+    try { src = fs.readFileSync(abs, 'utf8'); } catch { continue; }
+    let m;
+    while ((m = requireRe.exec(src)) !== null) {
+      const target = path.resolve(path.dirname(abs), m[1]);
+      const candidates = [target, `${target}.js`, `${target}.cjs`, `${target}.json`, path.join(target, 'index.js')];
+      const resolved = candidates.find((c) => fs.existsSync(c) && fs.statSync(c).isFile());
+      if (!resolved) continue; // not a real local file (bare module / optional) — separate concern
+      const relTarget = path.relative(REPO, resolved);
+      if (!packed.has(relTarget)) missing.add(`${rel} -> ${relTarget}`);
+    }
+  }
+  assert.deepStrictEqual(
+    [...missing].sort(),
+    [],
+    `packed files hard-require local modules that are NOT in the tarball:\n  ${[...missing].sort().join('\n  ')}\n`
+      + `Add the missing target(s) to package.json:files. This closure check catches modules that a `
+      + `static walk from the hook entrypoints never reaches (dynamically-loaded command scripts).`
   );
 });

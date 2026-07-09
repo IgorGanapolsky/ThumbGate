@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "1.27.20",
+  "version": "1.27.21",
   "description": "ThumbGate self-improving agent governance: thumbs-up/down turns every mistake into a prevention rule and blocks repeat patterns. 36 pre-action checks, budget enforcement, and self-protection for Claude Code, Cursor, Codex, Gemini CLI, and Amp.",
   "homepage": "https://thumbgate.ai",
   "repository": {
@@ -191,6 +191,11 @@
     "scripts/seo-gsd.js",
     "scripts/settings-hierarchy.js",
     "scripts/silent-failure-cluster.js",
+    "scripts/history-distiller.js",
+    "scripts/session-episode-store.js",
+    "scripts/session-health-sensor.js",
+    "scripts/tool-kpi-tracker.js",
+    "scripts/webhook-delivery.js",
     "scripts/single-use-credential-gate.js",
     "scripts/skill-generator.js",
     "scripts/skill-rag-router.js",
