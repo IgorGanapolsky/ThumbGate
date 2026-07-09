@@ -139,3 +139,4 @@ Rules:
 - **Rule [auto-promoted-mrcvn187-0]**: NEVER The instructions omitted the hydraulic accumulator pressure bleed step.
 - **Rule [auto-promoted-mrcvn187-1]**: NEVER CEO gave thumbs down because the mandatory session closure phrase 'Done merging 
 - **Rule [auto-promoted-mrcvn187-2]**: NEVER thumbs down This response skipped the required verification
+- **Rule [auto-promoted-mrcvokr5-0]**: NEVER repeated problem context string
