@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 const { getDecisionLogPath, readDecisionLog, collapseDecisionTimeline } = require('./decision-journal');
+const { requireLearnedModelsEntitlement } = require('./entitlement');
 
 const LABELS = ['allow', 'recall', 'verify', 'warn', 'deny'];
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -551,6 +552,10 @@ function summarizeTopTokens(model, limit = 5) {
 }
 
 function trainInterventionPolicy(examples, options = {}) {
+  requireLearnedModelsEntitlement({
+    ...(options.entitlement || {}),
+    label: 'intervention-policy training',
+  });
   const split = splitExamples(examples);
   const evaluationModel = fitNaiveBayes(split.train);
   const deployedModel = fitNaiveBayes(examples);
@@ -631,6 +636,10 @@ function buildRuntimeCandidate(params = {}) {
 }
 
 function getInterventionRecommendation(params = {}, options = {}) {
+  requireLearnedModelsEntitlement({
+    ...(options.entitlement || {}),
+    label: 'intervention-policy recommendation',
+  });
   const resolvedDir = resolveFeedbackDir({ feedbackDir: options.feedbackDir || params.feedbackDir });
   let model = options.model || loadInterventionPolicy(resolvedDir);
   const candidate = options.candidate || buildRuntimeCandidate(params);
@@ -693,6 +702,10 @@ function computeDailySeries(examples, dayCount = 14) {
 }
 
 function getInterventionPolicySummary(feedbackDir, options = {}) {
+  requireLearnedModelsEntitlement({
+    ...(options.entitlement || {}),
+    label: 'intervention-policy summary',
+  });
   const resolvedDir = resolveFeedbackDir({ feedbackDir });
   const { examples, sourceCounts } = buildExamplesFromFeedbackDir(resolvedDir);
   const model = loadInterventionPolicy(resolvedDir) || trainInterventionPolicy(examples);

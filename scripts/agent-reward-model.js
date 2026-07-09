@@ -11,6 +11,7 @@
 
 const path = require('node:path');
 const { loadEpisodes } = require('./session-episode-store');
+const { requireLearnedModelsEntitlement } = require('./entitlement');
 
 const HIGH_RISK_TAGS = new Set([
   'billing',
@@ -163,6 +164,10 @@ function isRlTuple(value) {
 }
 
 function buildPreferencePairs(episodes = [], options = {}) {
+  requireLearnedModelsEntitlement({
+    ...(options.entitlement || {}),
+    label: 'agent reward preference-pair generation',
+  });
   const tuples = episodes
     .map((episode) => episodeToRlTuple(episode, options))
     .sort((a, b) => a.reward.total - b.reward.total);
@@ -181,6 +186,10 @@ function buildPreferencePairs(episodes = [], options = {}) {
 }
 
 function rankGateCandidatesByReward(episodes = [], options = {}) {
+  requireLearnedModelsEntitlement({
+    ...(options.entitlement || {}),
+    label: 'agent reward gate ranking',
+  });
   const minOccurrences = Math.max(1, Number(options.minOccurrences || 2));
   const buckets = new Map();
 
@@ -305,6 +314,10 @@ function allocateTestTimeCompute(action = {}) {
 }
 
 function buildRewardReport(episodes = [], options = {}) {
+  requireLearnedModelsEntitlement({
+    ...(options.entitlement || {}),
+    label: 'agent reward model report',
+  });
   const tuples = episodes.map((episode) => episodeToRlTuple(episode, options));
   const rewards = tuples.map((tuple) => tuple.reward.total);
   const averageReward = rewards.length ? round(rewards.reduce((sum, value) => sum + value, 0) / rewards.length) : 0;
