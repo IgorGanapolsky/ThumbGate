@@ -3,7 +3,7 @@
 **The control tower for autonomous coding agents.** *2026-07-09 · pre-seed*
 
 ## Problem
-Enterprises are giving AI coding agents (Claude Code, Cursor, Codex, Gemini CLI) write-access to terminals, repos, databases, and production — and eating six-figure monthly token bills on runaway loops. Uber exhausted its 2026 AI budget in four months; a 35-engineer team hit an $87K April bill. The governance layer is, in the market's own words, "still catching up."
+Enterprises are giving AI coding agents (Claude Code, Cursor, Codex, Gemini CLI) write-access to terminals, repos, databases, and production — and running up large monthly token bills on runaway loops. Uber exhausted its **entire 2026 AI budget in four months** (by April) as Claude Code spread to ~5,000 engineers, and now caps engineers at **$1,500/mo per tool** to contain the burn ([Forbes](https://www.forbes.com/sites/janakirammsv/2026/05/17/uber-burns-its-2026-ai-budget-in-four-months-on-claude-code/), [Fortune](https://fortune.com/2026/05/26/uber-coo-ai-spending-tokens-claude-code/)). Power users run $500–$2,000/mo. The governance layer is, in the market's own words, "still catching up."
 
 ## Product
 ThumbGate is a **PreToolUse firewall** that sits in the call path of every major coding agent. It learns each org's known-bad actions from developer 👍/👎 feedback, turns them into prevention rules, and hard-blocks the catastrophic ones (secret exfiltration, destructive deletes, supply-chain) before they execute — warn-by-default for the rest. One governance layer across all agents, not locked to one vendor's native gate.
