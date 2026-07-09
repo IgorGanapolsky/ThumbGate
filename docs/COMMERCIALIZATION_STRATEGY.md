@@ -43,7 +43,7 @@ Today the valuable intelligence ships free and ungated:
 
 ## Repricing (fundable tiers)
 
-$19/mo solo is a side-project price — at $19 ARPU you need ~4,400 payers for $1M ARR. The market already pays $500/mo for guardrails and $200–600/dev/mo for the agents. New model:
+$19/mo solo is a side-project price — at $19 ARPU you need ~4,400 payers for $1M ARR. The market is already showing budget pressure from agentic coding-tool token usage; public reporting on Uber describes its 2026 AI budget being consumed in four months and later monthly per-tool caps for agentic coding software. New model:
 
 | Tier | Price | For | Unlocks |
 |---|---|---|---|
@@ -51,7 +51,7 @@ $19/mo solo is a side-project price — at $19 ARPU you need ~4,400 payers for $
 | **Team** | **$49–99 / seat / mo** | teams with token-burn pain | learned models, recall/search, hosted sync + dashboard, exporters |
 | **Enterprise** | **$25K–75K+ ACV** (intake) | orgs handing agents prod access | SSO, audit log, compliance evidence, adapter SLAs, hosted state |
 
-**The pitch is "token-insurance," not "a $19 guardrail":** one prevented runaway loop (Uber exhausted its 2026 AI budget in 4 months; a 35-eng team hit an $87K April bill) pays for the year.
+**The pitch is "token-insurance," not "a $19 guardrail":** one prevented runaway loop or blocked catastrophic tool call can justify a Team or Enterprise contract. Keep numeric ROI claims tied to customer evidence, not invented benchmarks.
 
 ## The durable moat (what actually defends us)
 
@@ -73,4 +73,4 @@ Not code. In descending order: (1) **accumulated per-org lesson data** — compo
 $300–500K ARR (or a strong sub-$500K story), 15–20%+ MoM, real usage, 3–5 design partners, ≥1 enterprise LOI. Rounds land $1–4M (median ~$2.5M) for 18–24mo runway. The category took **$3.6B** in 2025–26; the coding-agent-native / MCP-security niche took only **~$40M** — the seat is open.
 
 ## Sources
-COSS Report 2025 (cossreport.com); Linux Foundation/COSSA VC report; Sentry FSL; HashiCorp BUSL → IBM $6.4B (techcrunch.com); Guardrails AI $7.5M seed; Snyk/Invariant, Palo Alto/Protect AI, Check Point/Lakera acquisitions; SoftwareStrategies agentic-AI-security funding (softwarestrategiesblog.com); DX + digitalapplied AI-coding pricing; CRV seed criteria.
+COSS Report 2025 (cossreport.com); Linux Foundation/COSSA VC report; Sentry FSL; HashiCorp BUSL → IBM $6.4B (techcrunch.com); Guardrails AI $7.5M seed; Snyk/Invariant, Palo Alto/Protect AI, Check Point/Lakera acquisitions; SoftwareStrategies agentic-AI-security funding (softwarestrategiesblog.com); DX + digitalapplied AI-coding pricing; CRV seed criteria; Forbes/Fortune reporting on Uber AI budget pressure and agentic coding-tool caps.
