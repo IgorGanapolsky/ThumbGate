@@ -20,5 +20,13 @@ Key: Always dogfood the latest local changes before publishing.
 > The following rules were automatically derived from execution failures and thumbs-down feedback.
 > You MUST follow these constraints strictly to prevent repeated errors.
 
-- **Rule [auto-test-failure]**: Auto-promoted repeated pattern: "test failure" (1 occurrences in 30 days)
-- **Rule [auto-entity-customer]**: Auto-promoted repeated pattern: "deleted prod config ran rm on .env never delete .env files" (1 occurrences in 30 days)
+- **Rule [auto-auto-capture-fallback-claude-history-sync]**: Auto-promoted repeated pattern: "thumbs down" (2 occurrences in 30 days)
+- **Rule [auto-budget-gate-hooks-self-lockout-session-state]**: Auto-promoted repeated pattern: "ThumbGate budget gate blocked every Bash/Edit/Write call in CTO session: budget-state.json session_start was 25 days sta" (1 occurrences in 30 days)
+- **Rule [auto-fleet-routing-hermes-yolo-multi-agent-coordination]**: Auto-promoted repeated pattern: "hermes-yolo unusable: printed hallucinated JSON tool-calls as text 14:37-15:00" (1 occurrences in 30 days)
+- **Rule [auto-entity-customer-entity-funnel-entity-revenue]**: Auto-promoted repeated pattern: "{"session_id":"0758648e-518b-4c60-8ada-c1bee25ffa5a","transcript_path":"/Users/igorganapolsky/.claude/projects/-Users-ig" (2 occurrences in 30 days)
+- **Rule [auto-diagnosis-tool-output-misread]**: Auto-promoted repeated diagnosis: "{"session_id":"0758648e-518b-4c60-8ada-c1bee25ffa5a","transcript_path":"/Users/igorganapolsky/.claude/projects/-Users-ig" (3 occurrences in 30 days)
+- **Rule [auto-fuzzy-test]**: Auto-promoted repeated pattern: "fuzzy-test" (6 occurrences in 30 days)
+- **Rule [auto-dogfood-feedback-capture-self-test]**: Auto-promoted repeated pattern: "feedback self-test: typed thumbs down reaches ThumbGate capture" (1 occurrences in 30 days)
+- **Rule [auto-thumbs-down-this-response-skipped-the-required-ver]**: Auto-promoted repeated pattern: "thumbs down This response skipped the required verification" (1 occurrences in 30 days)
+- **Rule [auto-thubs-don-this-skipped-the-required-verification]**: Auto-promoted repeated pattern: "thubs don this skipped the required verification" (1 occurrences in 30 days)
+- **Rule [auto-entity-customer-entity-funnel-entity-revenue-metri]**: Auto-promoted repeated pattern: "{"session_id":"0758648e-518b-4c60-8ada-c1bee25ffa5a","transcript_path":"/Users/igorganapolsky/.claude/projects/-Users-ig" (1 occurrences in 30 days)
