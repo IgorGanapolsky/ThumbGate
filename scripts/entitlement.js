@@ -21,6 +21,17 @@
  *   - advisory (default): requireEntitlement returns {entitled:false, reason} and
  *     the caller may warn but proceed.
  *   - enforced (flag set): requireEntitlement throws EntitlementError when not entitled.
+ *
+ * LIMITATION — read before overselling this. This gate runs CLIENT-SIDE in an
+ * MIT, open-source, un-compiled package. It makes a license UN-FORGEABLE (you
+ * cannot mint a valid token without the private key), but it does NOT make the
+ * check UN-BYPASSABLE: anyone with the source can monkey-patch requireEntitlement
+ * or delete the gate. So this protects against fake keys and honest free-riding,
+ * and it is the correct authorization primitive for the HOSTED service — but the
+ * only real, un-bypassable protection for the crown-jewel intelligence is to run
+ * it SERVER-SIDE (client sends inputs, gets outputs, never sees the code/weights),
+ * with these tokens as the auth. Client-side gating is a speed bump, not a wall.
+ * See docs/COMMERCIALIZATION_STRATEGY.md.
  */
 
 const crypto = require('node:crypto');
