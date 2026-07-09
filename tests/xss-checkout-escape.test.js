@@ -43,3 +43,12 @@ test('checkout page does not reflect a malicious email as executable markup', ()
   const html2 = renderCheckoutIntentPage(`x' onmouseover='alert(1)`);
   assert.ok(!html2.includes(`' onmouseover='`), 'single-quote breakout must not survive');
 });
+
+test('checkout page Pro copy stays truthful about personal vs Enterprise features', () => {
+  const html = renderCheckoutIntentPage('buyer@example.com');
+  assert.match(html, /Pro<\/strong> removes solo caps and adds personal recall, proof, exports, and adapter maintenance/);
+  assert.match(html, /Personal dashboard: gate stats, rule evidence, DPO export/);
+  assert.match(html, /Enterprise adds shared hosted lessons, org visibility, rollout support/);
+  assert.doesNotMatch(html, /Lessons synced across all your machines/i);
+  assert.doesNotMatch(html, /Hosted dashboard: gate stats, DPO export, org-wide rule library/i);
+});

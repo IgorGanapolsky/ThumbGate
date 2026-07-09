@@ -59,7 +59,7 @@
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "ThumbGate vs claude-code-hooks",
-  "description": "karanb192/claude-code-hooks is a copy-paste bash hook collection for one laptop. ThumbGate is the same enforcement model plus hosted lesson sync, an adapter matrix across 8 agent runtimes, and a dashboard. Side-by-side comparison.",
+  "description": "karanb192/claude-code-hooks is a copy-paste bash hook collection for one laptop. ThumbGate adds personal recall, exports, managed adapters across 8 agent runtimes, and an Enterprise rollout path.",
   "about": ["thumbgate vs claude-code-hooks", "AI coding agent safety hooks", "PreToolUse hook comparison", "Claude Code shell hooks"],
   "url": "https://thumbgate.ai/compare/claude-code-hooks",
   "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
@@ -76,7 +76,7 @@
       "name": "Is claude-code-hooks a direct ThumbGate competitor?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Same category, different scope. karanb192/claude-code-hooks is a curated GitHub repository of bash scripts you copy into ~/.claude/hooks and edit by hand. ThumbGate ships the same PreToolUse enforcement model as a runtime engine plus hosted lesson sync across machines, a maintained adapter matrix for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and Claude Desktop, and a dashboard you don't self-host. If you only run one agent on one laptop and you like bash, claude-code-hooks is great. If the same rule has to fire across multiple machines, multiple agents, or multiple teammates, that's where ThumbGate fits."
+        "text": "Same category, different scope. karanb192/claude-code-hooks is a curated GitHub repository of bash scripts you copy into ~/.claude/hooks and edit by hand. ThumbGate ships PreToolUse enforcement plus personal recall, a maintained adapter matrix, dashboard proof, and an Enterprise rollout path. If you only run one agent on one laptop and like bash, claude-code-hooks is great. If governance must work across agents or teammates, ThumbGate fits."
       }
     },
     {
@@ -92,7 +92,7 @@
       "name": "What does ThumbGate Pro add that the free tier and claude-code-hooks don't?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Hosted lesson sync (the same rule fires on your laptop and your CI runner without you re-copying scripts), the managed adapter matrix (when Claude Code, Cursor, or Codex ship a breaking change to their hook API, that's our problem not yours), a dashboard with gate hit rates and agent inventory, DPO/HuggingFace export for fine-tuning, and 24x7 ops. claude-code-hooks doesn't aim to do any of that on purpose — its scope is intentionally local-only."
+        "text": "Personal recall/search, managed adapters, a dashboard with gate hit rates, DPO/HuggingFace export, and 24x7 ops. Enterprise adds shared hosted lessons and org rollout. claude-code-hooks stays intentionally local-only."
       }
     },
     {
@@ -222,7 +222,7 @@
         <h2>FAQ</h2>
         <details class="faq-item" open>
           <summary>Is claude-code-hooks a direct ThumbGate competitor?</summary>
-          <p>Same category, different scope. claude-code-hooks is a copy-paste bash hook collection for one laptop running Claude Code. ThumbGate is the same PreToolUse enforcement model packaged as a runtime engine with hosted sync, a multi-agent adapter matrix, and a dashboard. If you only need a few static rules on one machine, claude-code-hooks is fine. If you need the same rule to fire across machines, agents, or teammates, that's where ThumbGate fits.</p>
+          <p>Same category, different scope. claude-code-hooks is a copy-paste bash hook collection for one laptop running Claude Code. ThumbGate packages PreToolUse enforcement with personal recall, multi-agent adapters, dashboard proof, and an Enterprise rollout path. If you only need static rules on one machine, claude-code-hooks is fine. If governance must work across agents or teammates, ThumbGate fits.</p>
         </details>
         <details class="faq-item">
           <summary>Is ThumbGate's free CLI as capable as claude-code-hooks?</summary>
@@ -230,7 +230,7 @@
         </details>
         <details class="faq-item">
           <summary>What does ThumbGate Pro add over both the free tier and claude-code-hooks?</summary>
-          <p>Hosted lesson sync, the maintained adapter matrix, the dashboard, DPO and HuggingFace export, and 24x7 ops on the rule engine. Pro is $19/mo. Enterprise adds shared lesson DB and the Workflow Hardening Sprint engagement.</p>
+          <p>Personal recall, the maintained adapter matrix, the dashboard, DPO and HuggingFace export, and 24x7 ops on the rule engine. Pro is $19/mo. Enterprise adds a shared hosted lesson DB and the Workflow Hardening Sprint engagement.</p>
         </details>
         <details class="faq-item">
           <summary>Where do I start?</summary>

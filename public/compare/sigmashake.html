@@ -37,7 +37,7 @@
       "name": "What's the difference between ThumbGate and SigmaShake?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Both gate an AI coding agent's tool calls before they run, across Claude Code, Cursor, Codex and others. The core difference is where the rules come from. SigmaShake gives you a hub of ready-made signed community rulesets and a three-tier enforcement model (DENY / ASK / FORCE-substitute-a-safe-command). ThumbGate generates the rule from your own correction: one thumbs-down on a mistake auto-writes the rule that blocks that exact mistake from then on, synced across your machines and team. SigmaShake is the broader, more mature catalog; ThumbGate is the learning loop for the mistakes no catalog has a rule for yet."
+        "text": "Both gate an AI coding agent's tool calls before they run, across Claude Code, Cursor, Codex and others. The core difference is where the rules come from. SigmaShake gives you a hub of ready-made signed community rulesets and a three-tier enforcement model (DENY / ASK / FORCE-substitute-a-safe-command). ThumbGate captures your correction, accumulates repeat evidence for the same mistake, and turns that pattern into an auditable pre-action rule. SigmaShake is the broader, more mature catalog; ThumbGate is the learning loop for the mistakes no catalog has a rule for yet."
       }
     },
     {
@@ -88,7 +88,7 @@
   <h1>ThumbGate vs SigmaShake (and APort, and agent-guardrails)</h1>
   <p style="color:var(--muted);">For developers and teams choosing a pre-action gate for their AI coding agents</p>
 
-  <div class="tldr"><strong>TL;DR:</strong> Four tools gate an AI coding agent before it acts. <strong>SigmaShake</strong> is the most polished: a hub of ready-made signed rulesets, three-tier DENY/ASK/FORCE enforcement (including auto-substituting a safe command), a desktop app, and a tamper-evident audit log. <strong>ThumbGate</strong>'s one differentiator is the learning loop — a single thumbs-down auto-writes the rule that blocks that exact mistake forever, synced across machines and team, instead of asking you to find or author one. <strong>APort</strong> is the org-identity layer (agent "passports," central policy). <strong>agent-guardrails</strong> is a free MIT starting point. We're honest below about where SigmaShake is ahead.</div>
+  <div class="tldr"><strong>TL;DR:</strong> Four tools gate an AI coding agent before it acts. <strong>SigmaShake</strong> is the most polished: a hub of ready-made signed rulesets, three-tier DENY/ASK/FORCE enforcement (including auto-substituting a safe command), a desktop app, and a tamper-evident audit log. <strong>ThumbGate</strong>'s one differentiator is the learning loop — thumbs-down corrections accumulate into auditable rules for repeated mistakes, instead of asking you to find or author one. <strong>APort</strong> is the org-identity layer (agent "passports," central policy). <strong>agent-guardrails</strong> is a free MIT starting point. We're honest below about where SigmaShake is ahead.</div>
 
   <h2>The shared category</h2>
   <p>All four start from the same fact: prompt-level rules in <code>CLAUDE.md</code> or <code>.cursorrules</code> are suggestions the model can ignore under context pressure. To actually stop a force-push to main or a <code>DROP TABLE</code>, you need a gate that fires <em>before</em> the tool call executes — not a reviewer after the PR, not a git revert after the damage. ThumbGate, SigmaShake, and agent-guardrails all hook the PreToolUse boundary. APort sits one layer up, as an identity/authorization layer for organizations.</p>
@@ -116,7 +116,7 @@
       </tr>
       <tr>
         <td>Learns rules from your corrections</td>
-        <td class="yes">Yes — one thumbs-down auto-writes the rule</td>
+        <td class="yes">Yes — repeated corrections become auditable rules</td>
         <td class="no">No — rules installed or authored</td>
         <td class="no">No — policy authored</td>
         <td class="no">No — hand-written deny rules</td>
@@ -143,8 +143,8 @@
         <td class="partial">Claude Code (settings.json hooks)</td>
       </tr>
       <tr>
-        <td>Team / cross-machine sync of learned rules</td>
-        <td class="yes">Yes — hosted sync (Pro)</td>
+        <td>Team / cross-machine rollout of learned rules</td>
+        <td class="partial">Enterprise — shared hosted lessons and org rollout</td>
         <td class="partial">Local-first; optional cloud</td>
         <td class="yes">Yes — central org policy</td>
         <td class="no">No</td>
@@ -192,8 +192,8 @@
   <ul>
     <li><strong>The mistakes no catalog has a rule for.</strong> Every team has codebase-specific footguns ("never edit the generated client," "this repo deploys from <code>release</code> not <code>main</code>"). No community hub ships those. ThumbGate writes the rule the first time you thumbs-down the mistake.</li>
     <li><strong>Zero rule-authoring overhead.</strong> SigmaShake and agent-guardrails both ask you to install or write rules. ThumbGate's primary input is a thumbs-down — the correction <em>is</em> the rule authoring.</li>
-    <li><strong>MIT core.</strong> The CLI and hook layer are MIT; the hosted sync is the paid part. SigmaShake and APort are closed-source.</li>
-    <li><strong>Learned rules sync across the team.</strong> One engineer's thumbs-down becomes everyone's prevention rule.</li>
+    <li><strong>MIT core.</strong> The CLI and hook layer are MIT; Pro adds personal recall, dashboard proof, exports, and managed adapter coverage. SigmaShake and APort are closed-source.</li>
+    <li><strong>Enterprise rollout for learned rules.</strong> A team correction can become shared enforcement through the hosted Enterprise lesson database.</li>
   </ul>
 
   <h2>And APort and agent-guardrails?</h2>
@@ -216,7 +216,7 @@
       <ul>
         <li>Your pain is repeat, team-specific mistakes no generic ruleset covers</li>
         <li>You'd rather thumbs-down a mistake than hunt for or author a rule</li>
-        <li>You want learned rules to sync across machines and teammates</li>
+        <li>You want an Enterprise path for learned rules to roll out across machines and teammates</li>
         <li>You want an MIT-licensed core you can read and embed</li>
       </ul>
     </div>
