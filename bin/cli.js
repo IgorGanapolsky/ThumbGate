@@ -921,7 +921,7 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
     console.log('Scaffold ThumbGate in the current project and wire detected agent integrations.');
     console.log('');
     console.log('Options:');
-    console.log('  --agent <name>           Wire a specific agent: claude-code, codex, gemini, amp, cursor, cline');
+    console.log('  --agent <name>           Wire a specific agent: claude-code, codex, gemini, amp, cursor, cline, opencode');
     console.log('  --wire-hooks             Wire hooks only; do not scaffold project files');
     console.log('  --email <email>          Subscribe installer to the setup guide and trial reminders');
     console.log('  --dry-run                Show hook changes without writing them');

@@ -12,7 +12,7 @@ __GOOGLE_SITE_VERIFICATION_META__
 <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
 <meta property="og:image" content="/og.png">
 <title>ThumbGate — Pre-action checks for AI coding agents</title>
-<meta name="description" content="ThumbGate is the pre-action governance runtime for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI): 👍 thumbs up and 👎 thumbs down feedback become history-aware lessons, shared lessons and org visibility, and PreToolUse checks that flag and log every risky tool call — hard-blocking the catastrophic classes (secret exfiltration, destructive deletes like rm -rf, supply-chain) by default and warning on the rest, with strict mode to hard-block every rule. Built for vibe coding and human-in-the-loop workflows.">
+<meta name="description" content="ThumbGate is the pre-action governance runtime for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode): 👍 thumbs up and 👎 thumbs down feedback become history-aware lessons stored locally; Enterprise adds shared lessons and org visibility. PreToolUse checks flag and log risky tool calls — hard-blocking catastrophic classes by default and warning on the rest, with strict mode to hard-block every rule.">
 <meta property="og:title" content="ThumbGate — Stop paying for the same AI mistake twice">
 <meta property="og:description" content="Frontier LLMs are expensive, opaque, and unreliable in production. ThumbGate gates risky agent actions before they run: workflow shape, inspection evidence, token budget, and repeated-failure memory in one pre-action check.">
 <meta property="og:type" content="website">
@@ -91,7 +91,7 @@ __GA_BOOTSTRAP__
   "@type": "SoftwareApplication",
   "name": "ThumbGate",
   "alternateName": "thumbgate",
-  "description": "ThumbGate stops you from paying for the same AI mistake twice. It is machine-speed pre-action defense for coding agents: thumbs-up/down feedback becomes history-aware lessons, shared lessons and org visibility, actionable remediations, agent surface inventory, and Pre-Action Checks that inspect workflow shape, environment evidence, budget, and repeated-failure memory before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and any MCP-compatible agent.",
+  "description": "ThumbGate stops you from paying for the same AI mistake twice. It is machine-speed pre-action defense for coding agents: thumbs-up/down feedback becomes history-aware lessons, local prevention rules, actionable remediations, agent surface inventory, and Pre-Action Checks that inspect workflow shape, environment evidence, budget, and repeated-failure memory before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and any MCP-compatible agent.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform, Node.js >=18.18.0",
   "license": "https://opensource.org/licenses/MIT",
@@ -752,15 +752,15 @@ __GA_BOOTSTRAP__
 <!-- HERO -->
 <section class="hero">
   <div class="container">
-    <div class="hero-badge">👍 👎 Local-first · open-source · Pro proof when it matters</div>
+    <div class="hero-badge">👍 👎 Local-first · open-source · enterprise governance when agents touch real systems</div>
     <h1>Catch AI agents before they spend money, leak secrets, or break production.</h1>
-    <p class="hero-lede">Claude Code, Cursor, Codex, Gemini CLI, and MCP tools now touch terminals, repos, databases, SaaS APIs, and cloud systems. ThumbGate checks the next tool call before it runs, flags repeated failures from your thumbs-down feedback and logs every decision — hard-blocking the catastrophic classes (secret exfiltration, rm -rf, supply-chain) by default and warning on the rest, with strict mode to hard-block everything — and gives paid operators proof, sync, recall, and exports when local rules become business-critical.</p>
+    <p class="hero-lede">Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and MCP tools now touch terminals, repos, databases, SaaS APIs, and cloud systems. ThumbGate checks the next tool call before it runs, flags repeated failures from your thumbs-down feedback and logs every decision — hard-blocking the catastrophic classes (secret exfiltration, rm -rf, supply-chain) by default and warning on the rest, with strict mode to hard-block everything. The beachhead buyer is an enterprise engineering, security, or platform team that needs governed AI-agent execution before agents touch regulated or high-blast-radius workflows.</p>
 
     <div class="hero-signals" aria-label="June 2026 buyer signals">
       <a class="signal-pill signal-down" href="#june-2026-proof">MCP tool risk</a>
       <a class="signal-pill" href="#june-2026-proof">Managed-agent rollout</a>
       <a class="signal-pill" href="#june-2026-proof">Token spend pressure</a>
-      <a class="signal-pill signal-up" href="#pricing">Free wedge, paid proof</a>
+      <a class="signal-pill signal-up" href="#workflow-sprint-intake">Regulated agent governance</a>
     </div>
 
     <div class="hero-proof-card" aria-label="ThumbGate flagging dangerous AI agent commands in real time">
@@ -776,18 +776,33 @@ __GA_BOOTSTRAP__
     <div class="offer-router" aria-label="Choose the right ThumbGate path">
       <div class="offer-route primary">
         <strong>Solo operator: Start Pro</strong>
-        <p>Unlimited rules, recall, sync, proof, exports.</p>
+        <p>Unlimited rules, recall, proof, exports.</p>
         <a href="/checkout/pro?utm_source=website&utm_medium=offer_router&cta_id=router_start_pro&cta_placement=offer_router&plan_id=pro" data-revenue-cta data-cta-id="router_start_pro" data-cta-placement="offer_router" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);">Pay $19/mo with Stripe →</a>
       </div>
       <div class="offer-route">
-        <strong>Enterprise workflow: Start with intake</strong>
-        <p>One repeated failure, one owner, one proof plan.</p>
+        <strong>Enterprise governance: Start with one workflow</strong>
+        <p>Finance, healthcare, insurance, public sector, critical infrastructure, manufacturing.</p>
         <a href="#workflow-sprint-intake" onclick="sendFirstPartyTelemetry('workflow_sprint_intake_started',{ctaId:'router_workflow_sprint',ctaPlacement:'offer_router',offer:'workflow_sprint'});">Talk to us →</a>
       </div>
       <div class="offer-route">
         <strong>Still evaluating: Free CLI</strong>
         <p>2 captures/day, 3 active rules. Enough to prove one caught repeat.</p>
         <button data-router-install onclick="copyInstall(this)"><span class="copy-hint">Copy npx thumbgate init</span></button>
+      </div>
+    </div>
+
+    <div style="max-width:920px;margin:22px auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;text-align:left;">
+      <div style="border:1px solid rgba(34,211,238,0.25);border-radius:10px;background:rgba(34,211,238,0.055);padding:16px;">
+        <strong style="display:block;color:var(--cyan);margin-bottom:6px;">Ideal customer</strong>
+        <span style="color:var(--text-dim);font-size:13px;line-height:1.55;">Enterprise engineering, security, and platform teams already using AI coding agents in repos, CI/CD, SaaS APIs, cloud operations, or audited workflows.</span>
+      </div>
+      <div style="border:1px solid rgba(74,222,128,0.24);border-radius:10px;background:rgba(74,222,128,0.055);padding:16px;">
+        <strong style="display:block;color:var(--green);margin-bottom:6px;">Pain</strong>
+        <span style="color:var(--text-dim);font-size:13px;line-height:1.55;">Security is the pain: agents can repeat dangerous actions. Enterprise governance is the budget: policy, auditability, approvals, and shared prevention before execution.</span>
+      </div>
+      <div style="border:1px solid rgba(168,85,247,0.24);border-radius:10px;background:rgba(168,85,247,0.055);padding:16px;">
+        <strong style="display:block;color:#c084fc;margin-bottom:6px;">Partnership fit</strong>
+        <span style="color:var(--text-dim);font-size:13px;line-height:1.55;">Detection and coordination layers can identify drift. ThumbGate turns approved findings into enforceable PreToolUse rules with decision evidence.</span>
       </div>
     </div>
 
@@ -866,7 +881,7 @@ __GA_BOOTSTRAP__
 <section class="compatibility" id="why-not-diy" aria-label="Why not write your own hooks">
   <div class="container">
     <h2>“Why not just write my own PreToolUse hooks?”</h2>
-    <p class="hero-lede" style="max-width:760px;margin:0 auto 18px;">You can — on one machine, for one agent, until the next breaking change. ThumbGate is that idea, maintained: a 👎 becomes a rule that <strong>propagates across every agent</strong> — Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — and every machine, with adapters kept current so you’re not patching shell scripts each release. Hand-written hooks don’t learn, don’t sync, and don’t survive a teammate’s laptop.</p>
+    <p class="hero-lede" style="max-width:760px;margin:0 auto 18px;">You can — on one machine, for one agent, until the next breaking change. ThumbGate is that idea, maintained: a 👎 becomes a rule that <strong>propagates across every configured agent</strong> — Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — in the install scope you choose, with adapters kept current so you’re not patching shell scripts each release. Hand-written hooks don’t learn, don’t create auditable proof, and don’t become shared team policy without a managed rollout.</p>
     <p><a href="/compare/claude-code-hooks">See ThumbGate vs. hand-written hooks →</a></p>
   </div>
 </section>
@@ -1485,7 +1500,7 @@ __GA_BOOTSTRAP__
           <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Active auto-promoted prevention rules</td><td style="text-align:center;border-bottom:1px solid var(--border);">3</td><td style="text-align:center;border-bottom:1px solid var(--border);">Unlimited</td><td style="text-align:center;border-bottom:1px solid var(--border);">Unlimited</td></tr>
           <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Lesson recall + search across sessions</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
           <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Personal dashboard + DPO export</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
-          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Hosted sync across machines</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
+          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Shared hosted lesson database</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
           <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Shared lesson database + org dashboard</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
           <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Org-wide shared enforcement + approval boundaries</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
           <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Audit trail; SSO &amp; regulatory gate templates <span style="color:var(--text-muted);font-size:12px;">(design-partner / roadmap)</span></td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">On request</td></tr>
@@ -1519,7 +1534,7 @@ __GA_BOOTSTRAP__
       <div class="price-card pro" data-price-dollars="19">
         <div class="tier">Pro</div>
         <div class="price">$19<span style="font-size:16px;color:var(--text-dim)">/mo</span></div>
-        <div class="price-sub"><strong>Don't buy a tool — buy hosted sync + compatibility insurance.</strong> The free CLI runs your gates locally, but Pro is what we operate for you: secure SQLite sync across all your machines (saving you from managing database migrations manually across developer boxes) and active adapter maintenance to stay compatible with weekly breaking updates in Claude Code, Cursor, and Cline.</div>
+        <div class="price-sub"><strong>Don't buy a tool — buy proof + compatibility insurance.</strong> The free CLI runs your gates locally. Pro removes the solo caps and adds the personal dashboard, recall, exports, and active adapter maintenance to stay compatible with weekly breaking updates in Claude Code, Cursor, and Cline. Shared hosted lesson databases are Enterprise.</div>
         <ul>
           <li><strong>Block every repeat mistake</strong> — unlimited feedback captures and prevention rules (Free caps at 3 active rules)</li>
           <li><strong>Never re-explain a correction</strong> — lesson recall and search across sessions on every agent surface</li>
@@ -1632,12 +1647,12 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="section-label">Enterprise Pilot</div>
     <h2 class="section-title">Start the AI Agent Governance Sprint with one repeat failure</h2>
-    <p style="color:var(--text-dim);max-width:720px;margin:0 auto 16px;">This is the fastest path to first paid value for teams. Start with one repo, one workflow owner, and one blocker. The intake is designed to prove that ThumbGate reduces review churn, rollout risk, or repeated agent mistakes before a wider rollout.</p>
+    <p style="color:var(--text-dim);max-width:760px;margin:0 auto 16px;">This is the fastest path to first paid value for regulated and high-blast-radius teams. Start with one repo, one workflow owner, and one blocker. The intake proves whether ThumbGate can enforce a repeatable action boundary before a wider rollout.</p>
     <div class="team-intake-panel">
       <div class="team-intake-panel-head">
         <div>
           <h3>Tell us the workflow. Get a proof plan.</h3>
-          <p>The highest-fit Enterprise buyer is already feeling one repeated failure. Send the workflow first so the next step is scoped around the real blocker instead of a blind checkout.</p>
+          <p>The highest-fit Enterprise buyer is already feeling one repeated failure in a workflow where mistakes have real consequences. Send the workflow first so the next step is scoped around the real blocker instead of a blind checkout.</p>
         </div>
         <span class="team-intake-badge">30-minute intake</span>
       </div>
@@ -1796,7 +1811,7 @@ __GA_BOOTSTRAP__
 
 <!-- STICKY BOTTOM CTA -->
 <div class="sticky-cta" id="sticky-cta">
-  <span class="sticky-cta-text"><strong>Pro unlocks recall, sync, exports</strong> — free CLI is capped at 2 captures/day</span>
+  <span class="sticky-cta-text"><strong>Pro unlocks recall, proof, exports</strong> — free CLI is capped at 2 captures/day</span>
   <div class="hero-install" onclick="copyInstall(this)" title="Click to copy" style="margin-bottom:0;padding:8px 16px;font-size:13px;">
     <span class="prompt">$</span>
     <span class="cmd">npx thumbgate init</span>
