@@ -2831,6 +2831,44 @@ function provisionApiKey(customerId, opts = {}) {
   return { key, customerId, createdAt, installId: opts.installId || null, remainingCredits: creditsToAdd };
 }
 
+function registerApiKey(customerId, key, opts = {}) {
+  if (!customerId || typeof customerId !== 'string') throw new Error('customerId is required');
+  if (!key || typeof key !== 'string') throw new Error('key is required');
+  if (!/^tg_[A-Za-z0-9_:-]{12,}$/.test(key)) throw new Error('key must start with tg_ and include at least 12 key characters');
+
+  const store = loadKeyStore();
+  const existing = store.keys[key];
+  const createdAt = existing && existing.createdAt ? existing.createdAt : new Date().toISOString();
+  const creditsToAdd = normalizeInteger(opts.credits);
+
+  if (existing && existing.customerId && existing.customerId !== customerId && existing.active) {
+    throw new Error('key is already registered to another active customer');
+  }
+
+  store.keys[key] = {
+    ...(existing || {}),
+    customerId,
+    active: true,
+    usageCount: existing && typeof existing.usageCount === 'number' ? existing.usageCount : 0,
+    createdAt,
+    installId: opts.installId || (existing && existing.installId) || null,
+    source: opts.source || (existing && existing.source) || 'manual_registration',
+    remainingCredits: creditsToAdd !== null
+      ? ((existing && typeof existing.remainingCredits === 'number') ? existing.remainingCredits : 0) + creditsToAdd
+      : (existing ? existing.remainingCredits : null),
+    registeredAt: new Date().toISOString(),
+  };
+  saveKeyStore(store);
+  return {
+    customerId,
+    createdAt,
+    installId: store.keys[key].installId || null,
+    reused: Boolean(existing),
+    remainingCredits: store.keys[key].remainingCredits,
+    keyFingerprint: `sha256:${crypto.createHash('sha256').update(key).digest('hex').slice(0, 12)}`,
+  };
+}
+
 function rotateApiKey(oldKey) {
   if (!oldKey) return { rotated: false, reason: 'missing_old_key' };
   const store = loadKeyStore();
@@ -3213,7 +3251,7 @@ function handleGithubWebhook(event) {
 }
 
 module.exports = {
-  CONFIG, createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
+  CONFIG, createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, registerApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
   _buildTrialActivationEmail: buildTrialActivationEmail,
   _sendTrialActivationEmail: sendTrialActivationEmail,

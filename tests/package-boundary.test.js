@@ -334,9 +334,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // config/entitlement-public-keys.json for signed-entitlement verification.
   // These are public runtime verifier files only: public keys, no private key
   // material, no Core dependency, no pro source subtree.
+  // Bumped 330 -> 331 (2026-07-09) to ship scripts/hosted-team-sync.js,
+  // required by src/api/server.js and `thumbgate team-sync --hosted` for
+  // customer-scoped Team lesson sync and shared audit trail.
   assert.ok(
-    manifest.fileCount <= 330,
-    `npm package should stay <= 330 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 331,
+    `npm package should stay <= 331 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -461,9 +464,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 4.80 MB -> 4.82 MB (2026-07-09) for signed-entitlement verifier
   // wiring and the bundled public keyset. Public verification code only; no
   // private key material, Core dependency, or pro source subtree.
+  // Bumped 4.82 MB -> 4.85 MB (2026-07-09) for the hosted Team sync/audit
+  // runtime helper required by packaged API and CLI entrypoints.
   assert.ok(
-    manifest.unpackedSize <= 4_820_000,
-    `npm package should stay <= 4.82 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_850_000,
+    `npm package should stay <= 4.85 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

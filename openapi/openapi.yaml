@@ -254,6 +254,41 @@ components:
           type: string
         installId:
           type: string
+        key:
+          type: string
+          description: Optional admin-only registration path for an already-issued manual Pro key. Responses never echo the key.
+        credits:
+          type: integer
+          minimum: 0
+    HostedTeamSyncPushRequest:
+      type: object
+      properties:
+        customerId:
+          type: string
+          description: Required only when using the static admin key; billing keys resolve the customer automatically.
+        bundle:
+          type: object
+          additionalProperties: true
+          properties:
+            lessons:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
+    HostedTeamAuditRequest:
+      type: object
+      properties:
+        customerId:
+          type: string
+          description: Required only when using the static admin key; billing keys resolve the customer automatically.
+        event:
+          type: object
+          additionalProperties: true
+        events:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
     WorkflowSprintIntakeRequest:
       type: object
       required: [email, workflow, owner, blocker, runtime]
@@ -1677,6 +1712,83 @@ paths:
           description: Unauthorized
         '403':
           description: Forbidden - requires static THUMBGATE_API_KEY admin token
+  /v1/team/sync/push:
+    post:
+      operationId: pushHostedTeamLessons
+      summary: Push local lessons into the authenticated customer's hosted Team namespace.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HostedTeamSyncPushRequest'
+      responses:
+        '200':
+          description: Lessons accepted, deduplicated, and stored in the hosted Team namespace
+        '400':
+          description: Invalid team sync request
+        '401':
+          description: Hosted billing key required
+  /v1/team/sync/pull:
+    get:
+      operationId: pullHostedTeamLessons
+      summary: Pull shared hosted Team lessons for the authenticated customer.
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 1000
+        - in: query
+          name: customerId
+          schema:
+            type: string
+          description: Required only when using the static admin key.
+      responses:
+        '200':
+          description: Hosted Team lesson bundle
+        '400':
+          description: Invalid team sync request
+        '401':
+          description: Hosted billing key required
+  /v1/team/audit:
+    post:
+      operationId: appendHostedTeamAudit
+      summary: Append sanitized shared audit-trail events for the authenticated customer.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HostedTeamAuditRequest'
+      responses:
+        '200':
+          description: Audit events accepted and sanitized
+        '400':
+          description: Invalid audit request
+        '401':
+          description: Hosted billing key required
+    get:
+      operationId: getHostedTeamAudit
+      summary: Read sanitized shared audit-trail events and aggregate decision stats.
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 1000
+        - in: query
+          name: customerId
+          schema:
+            type: string
+          description: Required only when using the static admin key.
+      responses:
+        '200':
+          description: Shared audit events and decision stats
+        '400':
+          description: Invalid audit request
+        '401':
+          description: Hosted billing key required
   /v1/billing/webhook:
     post:
       operationId: stripeBillingWebhook

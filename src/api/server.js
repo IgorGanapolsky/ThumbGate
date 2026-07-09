@@ -118,6 +118,7 @@ const {
   createCheckoutSession,
   getCheckoutSessionStatus,
   provisionApiKey,
+  registerApiKey,
   validateApiKey,
   recordUsage,
   rotateApiKey,
@@ -223,6 +224,12 @@ const {
   fingerprintProKey,
   sendProActivationAlert,
 } = require('../../scripts/pro-local-dashboard');
+const {
+  appendHostedAuditEvents,
+  exportHostedLessonBundle,
+  mergeLessonsIntoHostedStore,
+  readHostedAuditEvents,
+} = require('../../scripts/hosted-team-sync');
 const {
   buildContextFootprintReport,
 } = require('../../scripts/context-footprint');
@@ -4717,6 +4724,44 @@ function isBillingSummaryAuthorized(req, expectedAdminKey, expectedOperatorKey) 
   return false;
 }
 
+function resolveHostedTeamCustomer(req, expectedAdminKey, requestedCustomerId) {
+  const token = extractBearerToken(req);
+  const validation = validateApiKey(token);
+  if (validation.valid && validation.customerId) {
+    return {
+      authorized: true,
+      customerId: validation.customerId,
+      customerHashSource: 'billing_key',
+      installId: validation.installId || null,
+      usageCount: validation.usageCount || 0,
+    };
+  }
+
+  if (expectedAdminKey && token && safeKeyEqual(token, expectedAdminKey)) {
+    const customerId = String(requestedCustomerId || '').trim();
+    if (!customerId) {
+      return {
+        authorized: false,
+        status: 400,
+        detail: 'customerId is required when using the admin key for hosted team sync.',
+      };
+    }
+    return {
+      authorized: true,
+      customerId,
+      customerHashSource: 'admin_key',
+      installId: null,
+      usageCount: null,
+    };
+  }
+
+  return {
+    authorized: false,
+    status: 401,
+    detail: 'A valid hosted billing key is required for team sync and shared audit trail endpoints.',
+  };
+}
+
 function extractTags(input) {
   if (Array.isArray(input)) return input;
   if (typeof input === 'string') {
@@ -9067,6 +9112,114 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         return;
       }
 
+      // --- Hosted Team Sync: push local lessons into the customer's hosted namespace ---
+      if (req.method === 'POST' && pathname === '/v1/team/sync/push') {
+        const body = await parseJsonBody(req, 2 * 1024 * 1024);
+        const teamAuth = resolveHostedTeamCustomer(req, expectedApiKey, body.customerId);
+        if (!teamAuth.authorized) {
+          sendProblem(res, {
+            type: teamAuth.status === 400 ? PROBLEM_TYPES.BAD_REQUEST : PROBLEM_TYPES.UNAUTHORIZED,
+            title: teamAuth.status === 400 ? 'Invalid team sync request' : 'Unauthorized',
+            status: teamAuth.status,
+            detail: teamAuth.detail,
+          });
+          return;
+        }
+
+        const result = mergeLessonsIntoHostedStore(teamAuth.customerId, body, {
+          safeDataDir: requestSafeDataDir,
+        });
+        sendJson(res, 200, {
+          ok: true,
+          customerHash: result.customerHash,
+          customerHashSource: teamAuth.customerHashSource,
+          imported: result.imported,
+          skippedDuplicate: result.skippedDuplicate,
+          received: result.received,
+          totalHostedLessons: result.totalHostedLessons,
+        });
+        return;
+      }
+
+      // --- Hosted Team Sync: pull customer-scoped hosted lessons back to this client ---
+      if (req.method === 'GET' && pathname === '/v1/team/sync/pull') {
+        const teamAuth = resolveHostedTeamCustomer(req, expectedApiKey, parsed.searchParams.get('customerId'));
+        if (!teamAuth.authorized) {
+          sendProblem(res, {
+            type: teamAuth.status === 400 ? PROBLEM_TYPES.BAD_REQUEST : PROBLEM_TYPES.UNAUTHORIZED,
+            title: teamAuth.status === 400 ? 'Invalid team sync request' : 'Unauthorized',
+            status: teamAuth.status,
+            detail: teamAuth.detail,
+          });
+          return;
+        }
+
+        const bundle = exportHostedLessonBundle(teamAuth.customerId, {
+          safeDataDir: requestSafeDataDir,
+          limit: Number(parsed.searchParams.get('limit') || 1000),
+        });
+        sendJson(res, 200, {
+          ok: true,
+          bundle,
+        });
+        return;
+      }
+
+      // --- Hosted Shared Audit Trail: append sanitized tool-call decisions ---
+      if (req.method === 'POST' && pathname === '/v1/team/audit') {
+        const body = await parseJsonBody(req, 2 * 1024 * 1024);
+        const teamAuth = resolveHostedTeamCustomer(req, expectedApiKey, body.customerId);
+        if (!teamAuth.authorized) {
+          sendProblem(res, {
+            type: teamAuth.status === 400 ? PROBLEM_TYPES.BAD_REQUEST : PROBLEM_TYPES.UNAUTHORIZED,
+            title: teamAuth.status === 400 ? 'Invalid audit request' : 'Unauthorized',
+            status: teamAuth.status,
+            detail: teamAuth.detail,
+          });
+          return;
+        }
+
+        const events = Array.isArray(body.events) ? body.events : body.event || body;
+        const result = appendHostedAuditEvents(teamAuth.customerId, events, {
+          safeDataDir: requestSafeDataDir,
+        });
+        sendJson(res, 200, {
+          ok: true,
+          customerHash: result.customerHash,
+          accepted: result.accepted,
+          skippedDuplicate: result.skippedDuplicate,
+          received: result.received,
+          totalHostedAuditEvents: result.totalHostedAuditEvents,
+        });
+        return;
+      }
+
+      // --- Hosted Shared Audit Trail: read customer-scoped decisions and stats ---
+      if (req.method === 'GET' && pathname === '/v1/team/audit') {
+        const teamAuth = resolveHostedTeamCustomer(req, expectedApiKey, parsed.searchParams.get('customerId'));
+        if (!teamAuth.authorized) {
+          sendProblem(res, {
+            type: teamAuth.status === 400 ? PROBLEM_TYPES.BAD_REQUEST : PROBLEM_TYPES.UNAUTHORIZED,
+            title: teamAuth.status === 400 ? 'Invalid audit request' : 'Unauthorized',
+            status: teamAuth.status,
+            detail: teamAuth.detail,
+          });
+          return;
+        }
+
+        const audit = readHostedAuditEvents(teamAuth.customerId, {
+          safeDataDir: requestSafeDataDir,
+          limit: Number(parsed.searchParams.get('limit') || 1000),
+        });
+        sendJson(res, 200, {
+          ok: true,
+          customerHash: audit.customerHash,
+          events: audit.events,
+          stats: audit.stats,
+        });
+        return;
+      }
+
       if (req.method === 'POST' && pathname === '/v1/analytics/databricks/export') {
         const body = await parseJsonBody(req);
         const outputPath = body.outputPath
@@ -9288,6 +9441,18 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         const body = await parseJsonBody(req);
         if (!body.customerId) {
           throw createHttpError(400, 'customerId is required');
+        }
+        if (body.key) {
+          const result = registerApiKey(body.customerId, body.key, {
+            installId: body.installId,
+            credits: body.credits,
+            source: 'admin_manual_registration',
+          });
+          sendJson(res, 200, {
+            ...result,
+            registered: true,
+          });
+          return;
         }
         const result = provisionApiKey(body.customerId, {
           installId: body.installId,

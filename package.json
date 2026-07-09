@@ -111,6 +111,7 @@
     "scripts/hook-stop-anti-claim.js",
     "scripts/hook-thumbgate-cache-updater.js",
     "scripts/hosted-config.js",
+    "scripts/hosted-team-sync.js",
     "scripts/hybrid-feedback-context.js",
     "scripts/hybrid-supervisor-agent.js",
     "scripts/inference-cache-policy.js",

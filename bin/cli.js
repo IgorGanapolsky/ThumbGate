@@ -3254,7 +3254,7 @@ const SUBCOMMAND_HELP = {
   'setup-vertex': 'Usage: npx thumbgate setup-vertex [--dry-run]\n\nAuto-enable Vertex AI API on GCP and write local Vertex routing config to .env. With --dry-run, only detect the active account/project and print the planned changes. This does not create or verify a Dialogflow CX agent; use the Dialogflow CX REST API or console for live-agent evidence.',
   'ai-inventory': 'Usage: npx thumbgate ai-inventory [--root <dir>] [--format=summary|json|cyclonedx] [--output <path>] [--max-files=N]\n\nScan source/manifests/model artifacts for AI, ML, agent-framework, vector DB, Vertex, Gemini, and Dialogflow CX components. Use --format=cyclonedx to produce exportable ML-BOM evidence for enterprise reviews.',
   brain: 'Usage: npx thumbgate brain [--write] [--json] [--limit=N]\n\nBuild the agent-readable "context brain" — a single artifact consolidating this\nrepo\'s lessons, prevention rules, active gates, and project context for a coding\nagent to read BEFORE acting. --write saves it to .thumbgate/BRAIN.md (versioned,\ndeterministic). --json emits the structured model. --limit caps lessons (default 15).',
-  'team-sync': 'Usage: npx thumbgate team-sync\n\nSynchronize prevention rules and context brain with your team\'s git repository (git pull --rebase & git push), then auto-rebuild the local brain.',
+  'team-sync': 'Usage: npx thumbgate team-sync [--hosted] [--push-only|--pull-only] [--json]\n\nWithout --hosted: synchronize prevention rules and context brain with your team\'s git repository (git pull --rebase & git push), then auto-rebuild the local brain.\n\nWith --hosted: push local lessons + sanitized audit events to the hosted Team namespace, then pull shared lessons back into this agent runtime.',
 };
 
 if (_wantsHelp && COMMAND && SUBCOMMAND_HELP[COMMAND]) {
@@ -3384,7 +3384,159 @@ function cmdBrain(args = {}) {
   return 0;
 }
 
-async function teamSync() {
+function getThumbgateFeedbackDir() {
+  try {
+    const { getFeedbackPaths } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+    return getFeedbackPaths().FEEDBACK_DIR;
+  } catch (_) {
+    return path.join(CWD, '.thumbgate');
+  }
+}
+
+async function hostedTeamApiRequest(apiBaseUrl, pathname, options = {}) {
+  if (typeof fetch !== 'function') {
+    throw new Error('Hosted team sync requires Node.js fetch support. Upgrade to Node 18+ or use the git-based team-sync path.');
+  }
+  const url = new URL(pathname, apiBaseUrl);
+  const res = await fetch(url, {
+    method: options.method || 'GET',
+    headers: {
+      authorization: `Bearer ${options.apiKey}`,
+      accept: 'application/json',
+      connection: 'close',
+      ...(options.body ? { 'content-type': 'application/json' } : {}),
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  const text = await res.text();
+  let body = {};
+  try {
+    body = text ? JSON.parse(text) : {};
+  } catch (_) {
+    body = { detail: text };
+  }
+  if (!res.ok) {
+    const detail = body.detail || body.error || `HTTP ${res.status}`;
+    const err = new Error(detail);
+    err.status = res.status;
+    err.body = body;
+    throw err;
+  }
+  return body;
+}
+
+async function hostedTeamSync(args = {}) {
+  const {
+    DEFAULT_PRO_API,
+    resolveProKey,
+  } = require(path.join(PKG_ROOT, 'scripts', 'pro-local-dashboard'));
+  const {
+    buildLocalLessonBundle,
+    importHostedLessonsIntoFeedbackDir,
+  } = require(path.join(PKG_ROOT, 'scripts', 'hosted-team-sync'));
+  const { readAuditLog } = require(path.join(PKG_ROOT, 'scripts', 'audit-trail'));
+
+  const resolvedKey = resolveProKey();
+  const apiKey = args.key || process.env.THUMBGATE_API_KEY || (resolvedKey && resolvedKey.key);
+  if (!apiKey) {
+    console.error('❌ Hosted team sync requires a Pro/Team API key.');
+    console.error('   Run: npx thumbgate pro --activate --key=YOUR_KEY');
+    process.exit(1);
+  }
+
+  const apiBaseUrl = args.api || args.url || args['api-base-url'] || process.env.THUMBGATE_API_BASE_URL || process.env.THUMBGATE_API_URL || DEFAULT_PRO_API;
+  const feedbackDir = getThumbgateFeedbackDir();
+  const limit = Math.max(1, Number(args.limit || 1000));
+  const customerId = args.customerId || args['customer-id'] || args.customer || null;
+  const project = args.project || path.basename(CWD);
+  const result = {
+    apiBaseUrl,
+    feedbackDir,
+    pushedLessons: null,
+    pushedAudit: null,
+    pulledLessons: null,
+    importedLessons: null,
+  };
+
+  try {
+    if (!args['pull-only']) {
+      const bundle = buildLocalLessonBundle(feedbackDir, {
+        customerId: customerId || 'local',
+        limit,
+        project,
+      });
+      result.pushedLessons = await hostedTeamApiRequest(apiBaseUrl, '/v1/team/sync/push', {
+        method: 'POST',
+        apiKey,
+        body: {
+          customerId,
+          bundle,
+        },
+      });
+
+      if (!args['no-audit']) {
+        const auditEvents = readAuditLog().slice(-limit);
+        if (auditEvents.length) {
+          result.pushedAudit = await hostedTeamApiRequest(apiBaseUrl, '/v1/team/audit', {
+            method: 'POST',
+            apiKey,
+            body: {
+              customerId,
+              events: auditEvents,
+            },
+          });
+        } else {
+          result.pushedAudit = { ok: true, accepted: 0, received: 0, skippedDuplicate: 0 };
+        }
+      }
+    }
+
+    if (!args['push-only']) {
+      const query = new URLSearchParams({ limit: String(limit) });
+      if (customerId) query.set('customerId', customerId);
+      result.pulledLessons = await hostedTeamApiRequest(apiBaseUrl, `/v1/team/sync/pull?${query.toString()}`, {
+        apiKey,
+      });
+      result.importedLessons = importHostedLessonsIntoFeedbackDir(feedbackDir, result.pulledLessons.bundle, { limit });
+    }
+  } catch (err) {
+    if (args.json) {
+      console.log(JSON.stringify({ ok: false, status: err.status || null, error: err.message }, null, 2));
+      process.exit(1);
+    }
+    if (err.status === 401) {
+      console.error('❌ Hosted team sync rejected this key.');
+      console.error('   The key must be recognized by the hosted billing service, or an operator must register a manually issued Pro key.');
+    } else {
+      console.error(`❌ Hosted team sync failed: ${err.message}`);
+    }
+    process.exit(1);
+  }
+
+  if (args.json) {
+    console.log(JSON.stringify({ ok: true, ...result }, null, 2));
+    return;
+  }
+
+  console.log('\n☁️  Hosted Team sync complete');
+  if (result.pushedLessons) {
+    console.log(`   Lessons pushed     : ${result.pushedLessons.imported} new, ${result.pushedLessons.skippedDuplicate} duplicate, ${result.pushedLessons.totalHostedLessons} hosted total`);
+  }
+  if (result.pushedAudit) {
+    console.log(`   Audit events pushed: ${result.pushedAudit.accepted} new, ${result.pushedAudit.skippedDuplicate || 0} duplicate`);
+  }
+  if (result.pulledLessons && result.importedLessons) {
+    console.log(`   Lessons pulled     : ${result.pulledLessons.bundle.lessonCount}`);
+    console.log(`   Lessons imported   : ${result.importedLessons.imported} new, ${result.importedLessons.skippedDuplicate} duplicate`);
+  }
+}
+
+async function teamSync(args = parseArgs(process.argv.slice(3))) {
+  if (args.hosted || args.remote || args.cloud) {
+    await hostedTeamSync(args);
+    return;
+  }
+
   const { execSync } = require('child_process');
 
   // Verify we are in a Git repo

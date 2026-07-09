@@ -3161,6 +3161,122 @@ test('billing provision requires static admin key and rejects billing keys', asy
   assert.equal(res.status, 403);
 });
 
+test('admin can register an existing manual Pro key without echoing it', async () => {
+  const manualKey = 'tg_pro_manualregistrationtest1234567890';
+  const res = await fetch(apiUrl('/v1/billing/provision'), {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: 'Bearer test-api-key',
+    },
+    body: JSON.stringify({
+      customerId: 'cus_manual_registration',
+      installId: 'inst_manual_registration',
+      key: manualKey,
+    }),
+  });
+
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.registered, true);
+  assert.equal(body.customerId, 'cus_manual_registration');
+  assert.equal(body.installId, 'inst_manual_registration');
+  assert.match(body.keyFingerprint, /^sha256:[a-f0-9]{12}$/);
+  assert.doesNotMatch(JSON.stringify(body), new RegExp(manualKey));
+
+  const validation = billing.validateApiKey(manualKey);
+  assert.equal(validation.valid, true);
+  assert.equal(validation.customerId, 'cus_manual_registration');
+});
+
+test('hosted Team sync and shared audit trail are customer-scoped, redacted, and pullable', async () => {
+  const hostedKey = billing.provisionApiKey('cus_hosted_team_api', {
+    installId: 'inst_hosted_team_api',
+    source: 'test_hosted_team_sync',
+  }).key;
+  const fakeSecret = 'tg_pro_hostedsyncredaction1234567890';
+  const headers = {
+    'content-type': 'application/json',
+    authorization: `Bearer ${hostedKey}`,
+  };
+
+  const unauthorizedRes = await fetch(apiUrl('/v1/team/sync/pull'));
+  assert.equal(unauthorizedRes.status, 401);
+
+  const pushRes = await fetch(apiUrl('/v1/team/sync/push'), {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      bundle: {
+        source: { project: 'hosted-team-test' },
+        lessons: [
+          {
+            id: 'hosted-api-lesson-1',
+            signal: 'down',
+            title: `Never expose ${fakeSecret}`,
+            context: `The answer included ${fakeSecret}`,
+            tags: ['teams'],
+          },
+        ],
+      },
+    }),
+  });
+  assert.equal(pushRes.status, 200);
+  const pushBody = await pushRes.json();
+  assert.equal(pushBody.ok, true);
+  assert.equal(pushBody.imported, 1);
+  assert.equal(pushBody.customerHashSource, 'billing_key');
+  assert.doesNotMatch(JSON.stringify(pushBody), new RegExp(hostedKey));
+
+  const pullRes = await fetch(apiUrl('/v1/team/sync/pull?limit=5'), {
+    headers: { authorization: `Bearer ${hostedKey}` },
+  });
+  assert.equal(pullRes.status, 200);
+  const pullBody = await pullRes.json();
+  const serializedBundle = JSON.stringify(pullBody);
+  assert.equal(pullBody.ok, true);
+  assert.equal(pullBody.bundle.lessonCount, 1);
+  assert.doesNotMatch(serializedBundle, new RegExp(fakeSecret));
+  assert.match(serializedBundle, /\[redacted:thumbgate-key\]/);
+
+  const auditRes = await fetch(apiUrl('/v1/team/audit'), {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      event: {
+        id: 'hosted-api-audit-1',
+        timestamp: '2026-07-09T12:30:00.000Z',
+        toolName: 'exec_command',
+        toolInput: {
+          command: `THUMBGATE_API_KEY=${fakeSecret} npm test`,
+          content: 'sensitive prompt contents',
+        },
+        decision: 'deny',
+        gateId: 'secret-exposure',
+        message: `Blocked ${fakeSecret}`,
+        source: 'api-test',
+      },
+    }),
+  });
+  assert.equal(auditRes.status, 200);
+  const auditBody = await auditRes.json();
+  assert.equal(auditBody.ok, true);
+  assert.equal(auditBody.accepted, 1);
+
+  const auditPullRes = await fetch(apiUrl('/v1/team/audit?limit=5'), {
+    headers: { authorization: `Bearer ${hostedKey}` },
+  });
+  assert.equal(auditPullRes.status, 200);
+  const auditPullBody = await auditPullRes.json();
+  const serializedAudit = JSON.stringify(auditPullBody);
+  assert.equal(auditPullBody.stats.total, 1);
+  assert.equal(auditPullBody.stats.deny, 1);
+  assert.equal(auditPullBody.stats.byGate['secret-exposure'].deny, 1);
+  assert.match(auditPullBody.events[0].toolInput.content, /^\[redacted:\d+ chars\]$/);
+  assert.doesNotMatch(serializedAudit, new RegExp(fakeSecret));
+  assert.match(serializedAudit, /\[redacted:thumbgate-key\]/);
+});
+
 test('billing pro activation endpoint validates customer key and returns secret-safe alert status', async () => {
   const savedResend = process.env.RESEND_API_KEY;
   const savedThumbgateResend = process.env.THUMBGATE_RESEND_API_KEY;
