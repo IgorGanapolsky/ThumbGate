@@ -1,5 +1,7 @@
 # ThumbGate Moat
 
+> **Update 2026-07-09:** the commercialization decision now lives in [`docs/COMMERCIALIZATION_STRATEGY.md`](docs/COMMERCIALIZATION_STRATEGY.md) — **open-core: free permissive runtime as the adoption wedge, valuable intelligence (learned models + exporters + hosted) behind a real paywall.** That doc supersedes this one where they conflict. This audit's core finding still holds: the moat is data + hosted state + adapter breadth, **not** hidden code — so we protect the valuable parts with entitlement + server-side execution, not by relicensing (see the strategy doc for why relicensing now is premature).
+
 Plain-language statement of where ThumbGate's defensibility actually lives, written 2026-05-18 after a strict audit of the public/private repo split.
 
 ## The moat is *not* closed-source intelligence
