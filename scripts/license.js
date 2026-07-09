@@ -31,7 +31,7 @@ function isValidKey(key) {
 function collectSignedTokenCandidates(licensePath) {
   const candidates = [];
   const envToken = process.env.THUMBGATE_LICENSE;
-  if (envToken && envToken.trim()) candidates.push(envToken.trim());
+  if (envToken?.trim()) candidates.push(envToken.trim());
   try {
     if (fs.existsSync(licensePath)) {
       const data = JSON.parse(fs.readFileSync(licensePath, 'utf8'));
@@ -39,7 +39,9 @@ function collectSignedTokenCandidates(licensePath) {
         if (field && String(field).trim()) candidates.push(String(field).trim());
       }
     }
-  } catch (_) {}
+  } catch {
+    // Absent or malformed license file → no signed candidates (expected, not an error).
+  }
   return candidates;
 }
 
@@ -51,21 +53,23 @@ function verifySignedEntitlement(licensePath, options = {}) {
   let entitlement;
   try {
     entitlement = require('./entitlement');
-  } catch (_) {
-    return null; // entitlement module unavailable — no signed support
+  } catch {
+    // entitlement module unavailable in this bundle → no signed-token support.
+    return null;
   }
   const verifyOpts = options.trustedKeys ? { trustedKeys: options.trustedKeys } : undefined;
   for (const token of collectSignedTokenCandidates(licensePath)) {
-    if (/^tg_/.test(token)) continue; // legacy prefix key, not a signed token
+    if (token.startsWith('tg_')) continue; // legacy prefix key, not a signed token
     let result;
     try {
       result = entitlement.verifyLicense(token, verifyOpts);
-    } catch (_) {
+    } catch {
+      // Malformed / unverifiable token → skip and try the next candidate.
       continue;
     }
     // verifyLicense returns { valid:false, reason:'expired' } past exp, so an
     // expired trial correctly falls through to the free tier.
-    if (result && result.valid && SIGNED_PRO_TIERS.has(result.tier)) {
+    if (result?.valid && SIGNED_PRO_TIERS.has(result.tier)) {
       return { valid: true, source: 'entitlement', tier: result.tier, exp: result.exp || null };
     }
   }
