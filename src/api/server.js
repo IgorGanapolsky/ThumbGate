@@ -6134,12 +6134,6 @@ async function addContext(){
         // price-link rotation without a redeploy.
         const bypassTarget = process.env.THUMBGATE_CHECKOUT_PRO_STRIPE_URL
           || FIRST_FAILURE_RULE_CHECKOUT_URL;
-        let checkoutDeflectionReason = botClassification.reason;
-        if (missingConfirmedEmail) {
-          checkoutDeflectionReason = hasCustomerEmailHint
-            ? 'invalid_customer_email'
-            : 'missing_customer_email';
-        }
         appendBestEffortTelemetry(FEEDBACK_DIR, {
           eventType: 'checkout_interstitial_bypass_redirect',
           clientType: 'web',
@@ -6203,6 +6197,12 @@ async function addContext(){
           ? 'checkout_bot_deflected'
           : 'checkout_interstitial_view';
         const missingConfirmedEmail = hasConfirmFlag && !hasValidCustomerEmailHint;
+        let checkoutDeflectionReason = botClassification.reason;
+        if (missingConfirmedEmail) {
+          checkoutDeflectionReason = hasCustomerEmailHint
+            ? 'invalid_customer_email'
+            : 'missing_customer_email';
+        }
         appendBestEffortTelemetry(FEEDBACK_DIR, {
           eventType,
           clientType: 'web',
