@@ -30,3 +30,6 @@ Key: Always dogfood the latest local changes before publishing.
 - **Rule [auto-thubs-don-this-skipped-the-required-verification]**: Auto-promoted repeated pattern: "thubs don this skipped the required verification" (1 occurrences in 30 days)
 - **Rule [auto-entity-customer-entity-funnel-entity-revenue-metri]**: Auto-promoted repeated pattern: "{"session_id":"0758648e-518b-4c60-8ada-c1bee25ffa5a","transcript_path":"/Users/igorganapolsky/.claude/projects/-Users-ig" (1 occurrences in 30 days)
 - **Rule [auto-meta-mistake-failure]**: Repeated failure pattern: mistake this is a test failure
+- **Rule [auto-promoted-mrcvn187-0]**: NEVER The instructions omitted the hydraulic accumulator pressure bleed step.
+- **Rule [auto-promoted-mrcvn187-1]**: NEVER CEO gave thumbs down because the mandatory session closure phrase 'Done merging 
+- **Rule [auto-promoted-mrcvn187-2]**: NEVER thumbs down This response skipped the required verification
