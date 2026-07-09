@@ -22,6 +22,7 @@
 const fs = require('fs');
 const { parseTimestamp } = require('./feedback-schema');
 const { getEffectiveSetting } = require('./evolution-state');
+const { requireLearnedModelsEntitlement } = require('./entitlement');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -179,7 +180,11 @@ function saveModel(model, modelPath) {
  * @param {number} [params.weightMultiplier] - Optional multiplier for stronger/slower updates
  * @returns {Object} The mutated model
  */
-function updateModel(model, { signal, timestamp, categories, weightMultiplier, failureType }) {
+function updateModel(model, { signal, timestamp, categories, weightMultiplier, failureType, entitlement }) {
+  requireLearnedModelsEntitlement({
+    ...(entitlement || {}),
+    label: 'Thompson Sampling model update',
+  });
   const multiplier = Number.isFinite(weightMultiplier) && weightMultiplier > 0 ? weightMultiplier : 1;
   const weight = timeDecayWeight(timestamp) * multiplier;
   const isPositive = signal === 'positive';
@@ -334,7 +339,11 @@ function getTemperatureScaledPosteriorParams(params, temperature = 1.0) {
  * @param {number} temperature - Scaling factor (default 1.0)
  * @returns {Object} Map of category → float sample in [0, 1]
  */
-function samplePosteriors(model, temperature = 1.0) {
+function samplePosteriors(model, temperature = 1.0, options = {}) {
+  requireLearnedModelsEntitlement({
+    ...(options.entitlement || {}),
+    label: 'Thompson Sampling posterior sampling',
+  });
   const samples = {};
 
   for (const [cat, params] of Object.entries(model.categories || {})) {

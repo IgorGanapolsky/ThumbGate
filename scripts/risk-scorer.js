@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir: resolveSharedFeedbackDir } = require('./feedback-paths');
+const { requireLearnedModelsEntitlement } = require('./entitlement');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_FEEDBACK_DIR = resolveSharedFeedbackDir();
@@ -268,6 +269,10 @@ function buildPatternSummary(rows) {
 }
 
 function trainRiskModel(rows, options = {}) {
+  requireLearnedModelsEntitlement({
+    ...(options.entitlement || {}),
+    label: 'risk-scorer AdaBoost training',
+  });
   const registry = buildFeatureRegistry(rows, options);
   const examples = rows.map((row) => ({
     row,
@@ -419,6 +424,7 @@ function trainAndPersistRiskModel(feedbackDir, options = {}) {
 }
 
 function getRiskSummary(feedbackDir) {
+  requireLearnedModelsEntitlement({ label: 'risk-scorer summary' });
   const resolvedDir = resolveFeedbackDir(feedbackDir);
   const rows = readJSONL(sequencePathFor(resolvedDir));
   if (rows.length === 0) return null;

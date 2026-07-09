@@ -32,6 +32,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { requireLearnedModelsEntitlement } = require('./entitlement');
 
 // Baseline loss matrix. `default` applies when no tag-specific override
 // matches. Higher = more expensive. The asymmetry below reflects the
@@ -181,7 +182,11 @@ function computeBayesPosterior({ tags, riskByTag, baseRate, modelProbability } =
  *
  * This reduces to the usual Bayes classifier when both costs are equal.
  */
-function bayesOptimalDecision(posterior, tags, lossMatrix = DEFAULT_LOSS_MATRIX) {
+function bayesOptimalDecision(posterior, tags, lossMatrix = DEFAULT_LOSS_MATRIX, options = {}) {
+  requireLearnedModelsEntitlement({
+    ...(options.entitlement || {}),
+    label: 'Bayes-optimal gate decisioning',
+  });
   const pHarmful = clip(Number(posterior?.pHarmful), 0, 1);
   const pSafe = clip(Number(posterior?.pSafe ?? 1 - pHarmful), 0, 1);
   const cFalseAllow = resolveCost(lossMatrix?.falseAllow || {}, tags);

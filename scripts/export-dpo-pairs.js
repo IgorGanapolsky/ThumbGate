@@ -180,6 +180,12 @@ function toJSONL(pairs) {
 }
 
 function exportDpoFromMemories(memories) {
+  // Paid-feature gate: DPO export is a commercial (Pro+) capability. Advisory by
+  // default; enforced when THUMBGATE_ENFORCE_ENTITLEMENTS=1 (then this throws).
+  const _ent = require('./entitlement').requireEntitlement('data-export');
+  if (!_ent.entitled) {
+    console.error(`⚠️ ThumbGate: DPO export is a paid feature (tier: ${_ent.tier}). Advisory mode — set THUMBGATE_ENFORCE_ENTITLEMENTS=1 to enforce. License: https://thumbgate.ai/pricing`);
+  }
   const errors = memories.filter((m) => m.category === 'error');
   const learnings = memories.filter((m) => m.category === 'learning');
   const result = buildDpoPairs(errors, learnings);
