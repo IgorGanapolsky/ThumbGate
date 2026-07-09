@@ -126,13 +126,6 @@ Rules:
 > The following rules were automatically derived from execution failures and thumbs-down feedback.
 > You MUST follow these constraints strictly to prevent repeated errors.
 
-- **Rule [auto-entity-customer]**: Auto-promoted repeated pattern: "{"session_id":"0758648e-518b-4c60-8ada-c1bee25ffa5a","transcript_path":"/Users/igorganapolsky/.claude/projects/-Users-ig" (3 occurrences in 30 days)
-- **Rule [auto-auto-capture-fallback-claude-history-sync-entity-c]**: Auto-promoted repeated pattern: "and fix this fucking problem with yourself: > UserPromptSubmit hook error
-Failed with non-blocking status code: node:int" (2 occurrences in 30 days)
-- **Rule [auto-bug-fix-entity-customer-manufacturing-copilot-retr]**: Auto-promoted repeated pattern: "User asked: 'Explain to me what is an interlock?' but the system blocked it under retrieval_confidence gate because the " (1 occurrences in 30 days)
-- **Rule [auto-entity-customer-git-push-local-demo-user-preferenc]**: Auto-promoted repeated pattern: "Agent pushed to git origin and talked about merging PRs despite user warning that this is a local demo only." (1 occurrences in 30 days)
-- **Rule [auto-auto-capture-fallback-claude-history-sync]**: Auto-promoted repeated pattern: "thumbs down" (2 occurrences in 30 days)
-- **Rule [auto-budget-gate-hooks-self-lockout-session-state]**: Auto-promoted repeated pattern: "ThumbGate budget gate blocked every Bash/Edit/Write call in CTO session: budget-state.json session_start was 25 days sta" (1 occurrences in 30 days)
 - **Rule [auto-fleet-routing-hermes-yolo-multi-agent-coordination]**: Auto-promoted repeated pattern: "hermes-yolo unusable: printed hallucinated JSON tool-calls as text 14:37-15:00" (1 occurrences in 30 days)
 - **Rule [auto-entity-customer-entity-funnel-entity-revenue]**: Auto-promoted repeated pattern: "{"session_id":"0758648e-518b-4c60-8ada-c1bee25ffa5a","transcript_path":"/Users/igorganapolsky/.claude/projects/-Users-ig" (2 occurrences in 30 days)
 - **Rule [auto-diagnosis-tool-output-misread]**: Auto-promoted repeated diagnosis: "{"session_id":"0758648e-518b-4c60-8ada-c1bee25ffa5a","transcript_path":"/Users/igorganapolsky/.claude/projects/-Users-ig" (3 occurrences in 30 days)
@@ -141,3 +134,5 @@ Failed with non-blocking status code: node:int" (2 occurrences in 30 days)
 - **Rule [auto-thumbs-down-this-response-skipped-the-required-ver]**: Auto-promoted repeated pattern: "thumbs down This response skipped the required verification" (2 occurrences in 30 days)
 - **Rule [auto-thubs-don-this-skipped-the-required-verification]**: Auto-promoted repeated pattern: "thubs don this skipped the required verification" (2 occurrences in 30 days)
 - **Rule [auto-entity-customer-entity-funnel-entity-revenue-metri]**: Auto-promoted repeated pattern: "{"session_id":"0758648e-518b-4c60-8ada-c1bee25ffa5a","transcript_path":"/Users/igorganapolsky/.claude/projects/-Users-ig" (1 occurrences in 30 days)
+- **Rule [auto-entity-customer-entity-revenue]**: Auto-promoted repeated pattern: "{"session_id":"0758648e-518b-4c60-8ada-c1bee25ffa5a","transcript_path":"/Users/igorganapolsky/.claude/projects/-Users-ig" (1 occurrences in 30 days)
+- **Rule [auto-meta-mistake-failure]**: Repeated failure pattern: mistake this is a test failure
