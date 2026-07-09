@@ -1,10 +1,38 @@
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
 const { loadWithIsolatedLicenseEnv } = require('./helpers/license-env');
+const { issueLicense } = require('../scripts/entitlement');
 
 const LICENSE_MODULE_ID = require.resolve('../scripts/license');
 const PRO_FEATURES_MODULE_ID = require.resolve('../scripts/pro-features');
+
+// Ephemeral signing keypair so trial tests never depend on the production key.
+const { publicKey: _trialPub, privateKey: _trialPriv } = crypto.generateKeyPairSync('ed25519');
+const TRIAL_PUB = _trialPub.export({ type: 'spki', format: 'pem' });
+const TRIAL_PRIV = _trialPriv.export({ type: 'pkcs8', format: 'pem' });
+const TRIAL_KID = 'tgk_trial_test';
+const TRIAL_TRUSTED = { [TRIAL_KID]: TRIAL_PUB };
+
+function mintTrial(overrides = {}) {
+  const now = Math.floor(Date.now() / 1000);
+  return issueLicense(TRIAL_PRIV, { kid: TRIAL_KID, tier: 'pro', exp: now + 30 * 86400, ...overrides });
+}
+
+function withLicenseEnv(token, fn) {
+  const saved = process.env.THUMBGATE_LICENSE;
+  if (token === null) delete process.env.THUMBGATE_LICENSE;
+  else process.env.THUMBGATE_LICENSE = token;
+  try {
+    return fn();
+  } finally {
+    if (saved === undefined) delete process.env.THUMBGATE_LICENSE;
+    else process.env.THUMBGATE_LICENSE = saved;
+  }
+}
 
 test('license module exports required functions', () => {
   const { moduleExports: license, restore } = loadWithIsolatedLicenseEnv(LICENSE_MODULE_ID);
@@ -114,6 +142,78 @@ test('Pro feature gate blocks without license', () => {
     assert.ok(output.includes('Pro Feature Required'));
   } finally {
     process.stderr.write = origWrite;
+    restore();
+  }
+});
+
+test('a signed, unexpired Pro entitlement token (env) unlocks Pro with source=entitlement', () => {
+  const { moduleExports: license, homeDir, restore } = loadWithIsolatedLicenseEnv(LICENSE_MODULE_ID);
+  try {
+    withLicenseEnv(mintTrial(), () => {
+      const v = license.verifyLicense({ homeDir, trustedKeys: TRIAL_TRUSTED });
+      assert.equal(v.valid, true);
+      assert.equal(v.source, 'entitlement');
+      assert.equal(v.tier, 'pro');
+      assert.ok(typeof v.exp === 'number' && v.exp > Math.floor(Date.now() / 1000));
+      assert.ok(!('key' in v), 'raw token must not be exposed in the result');
+      assert.equal(license.isProLicensed({ homeDir, trustedKeys: TRIAL_TRUSTED }), true);
+    });
+  } finally {
+    restore();
+  }
+});
+
+test('an EXPIRED signed Pro trial reverts to free (isProLicensed false)', () => {
+  const { moduleExports: license, homeDir, restore } = loadWithIsolatedLicenseEnv(LICENSE_MODULE_ID);
+  try {
+    withLicenseEnv(mintTrial({ exp: Math.floor(Date.now() / 1000) - 10 }), () => {
+      assert.equal(license.verifyLicense({ homeDir, trustedKeys: TRIAL_TRUSTED }).valid, false);
+      assert.equal(license.isProLicensed({ homeDir, trustedKeys: TRIAL_TRUSTED }), false);
+    });
+  } finally {
+    restore();
+  }
+});
+
+test('a signed FREE-tier token does not grant Pro', () => {
+  const { moduleExports: license, homeDir, restore } = loadWithIsolatedLicenseEnv(LICENSE_MODULE_ID);
+  try {
+    withLicenseEnv(mintTrial({ tier: 'free' }), () => {
+      assert.equal(license.isProLicensed({ homeDir, trustedKeys: TRIAL_TRUSTED }), false);
+    });
+  } finally {
+    restore();
+  }
+});
+
+test('a signed Pro token stored in the license file also unlocks Pro', () => {
+  const { moduleExports: license, homeDir, restore } = loadWithIsolatedLicenseEnv(LICENSE_MODULE_ID);
+  try {
+    withLicenseEnv(null, () => {
+      const lp = license.getLicensePath(homeDir);
+      fs.mkdirSync(path.dirname(lp), { recursive: true });
+      fs.writeFileSync(lp, JSON.stringify({ key: mintTrial() }));
+      const v = license.verifyLicense({ homeDir, trustedKeys: TRIAL_TRUSTED });
+      assert.equal(v.valid, true);
+      assert.equal(v.source, 'entitlement');
+    });
+  } finally {
+    restore();
+  }
+});
+
+test('a tampered signed token does not unlock Pro', () => {
+  const { moduleExports: license, homeDir, restore } = loadWithIsolatedLicenseEnv(LICENSE_MODULE_ID);
+  try {
+    const tok = mintTrial();
+    const [h, , s] = tok.split('.');
+    const forged = Buffer.from(JSON.stringify({
+      tier: 'enterprise', features: ['sso'], keyId: TRIAL_KID,
+    })).toString('base64url');
+    withLicenseEnv(`${h}.${forged}.${s}`, () => {
+      assert.equal(license.isProLicensed({ homeDir, trustedKeys: TRIAL_TRUSTED }), false);
+    });
+  } finally {
     restore();
   }
 });

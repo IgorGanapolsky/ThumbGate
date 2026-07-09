@@ -5,6 +5,9 @@ const crypto = require('crypto');
 
 const VALID_PREFIXES = ['tg_pro_', 'tg_'];
 const LEGACY_COMPATIBLE_KEY = /^[a-z]{4,16}_[a-f0-9]{24,}$/i;
+// Tiers whose signed entitlement token unlocks Pro-gated behaviour (rate-limit
+// caps lift, Pro features unlock). Free-tier signed tokens must NOT count.
+const SIGNED_PRO_TIERS = new Set(['pro', 'team', 'enterprise']);
 
 function getLicensePath(homeDir = process.env.HOME || process.env.USERPROFILE || '.') {
   return path.join(homeDir, '.thumbgate', 'license.json');
@@ -20,6 +23,53 @@ function isValidKey(key) {
       || LEGACY_COMPATIBLE_KEY.test(key)
     )
   );
+}
+
+// Collect candidate signed-entitlement tokens (compact JWS, `eyJ…`) from the
+// THUMBGATE_LICENSE env var and the local license file. Legacy `tg_`-prefixed
+// keys are skipped here — they are handled by the prefix/isValidKey path.
+function collectSignedTokenCandidates(licensePath) {
+  const candidates = [];
+  const envToken = process.env.THUMBGATE_LICENSE;
+  if (envToken && envToken.trim()) candidates.push(envToken.trim());
+  try {
+    if (fs.existsSync(licensePath)) {
+      const data = JSON.parse(fs.readFileSync(licensePath, 'utf8'));
+      for (const field of [data.license, data.token, data.key]) {
+        if (field && String(field).trim()) candidates.push(String(field).trim());
+      }
+    }
+  } catch (_) {}
+  return candidates;
+}
+
+// Honour a cryptographically-signed, EXPIRING entitlement token (see
+// scripts/entitlement.js). This is what makes a real 30-day Pro trial possible:
+// the token grants Pro until `exp`, then verification fails and the caller
+// reverts to free — unlike the non-expiring tg_pro_ prefix keys.
+function verifySignedEntitlement(licensePath, options = {}) {
+  let entitlement;
+  try {
+    entitlement = require('./entitlement');
+  } catch (_) {
+    return null; // entitlement module unavailable — no signed support
+  }
+  const verifyOpts = options.trustedKeys ? { trustedKeys: options.trustedKeys } : undefined;
+  for (const token of collectSignedTokenCandidates(licensePath)) {
+    if (/^tg_/.test(token)) continue; // legacy prefix key, not a signed token
+    let result;
+    try {
+      result = entitlement.verifyLicense(token, verifyOpts);
+    } catch (_) {
+      continue;
+    }
+    // verifyLicense returns { valid:false, reason:'expired' } past exp, so an
+    // expired trial correctly falls through to the free tier.
+    if (result && result.valid && SIGNED_PRO_TIERS.has(result.tier)) {
+      return { valid: true, source: 'entitlement', tier: result.tier, exp: result.exp || null };
+    }
+  }
+  return null;
 }
 
 function verifyLicense(options = {}) {
@@ -50,6 +100,10 @@ function verifyLicense(options = {}) {
       }
     }
   } catch (_) {}
+
+  // Signed, expiring entitlement token (env THUMBGATE_LICENSE or license file).
+  const signed = verifySignedEntitlement(licensePath, options);
+  if (signed) return signed;
 
   return { valid: false, source: null };
 }
