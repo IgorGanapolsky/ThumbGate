@@ -9266,9 +9266,9 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           keyFingerprint,
           keyFingerprintMatchesClient: body.keyFingerprint ? body.keyFingerprint === keyFingerprint : null,
           alert: {
-            sent: Boolean(alert && alert.sent),
-            reason: alert && alert.reason ? alert.reason : null,
-            id: alert && alert.id ? alert.id : null,
+            sent: Boolean(alert?.sent),
+            reason: alert?.reason || null,
+            id: alert?.id || null,
           },
         });
         return;
