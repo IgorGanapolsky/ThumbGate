@@ -118,7 +118,7 @@
       <tr>
         <td>Fan-out</td>
         <td>How many agents work in parallel.</td>
-        <td>Block repeated known-bad actions across subagents before they amplify.</td>
+        <td>Catch repeated known-bad actions across subagents before they amplify.</td>
       </tr>
       <tr>
         <td>Tool calls</td>
@@ -145,11 +145,11 @@
     <li><strong>Before run:</strong> validate branch, scope, credentials, allowed paths, and budget.</li>
     <li><strong>During run:</strong> check every tool call against feedback-derived lessons and policy gates.</li>
     <li><strong>After run:</strong> require evidence artifacts before "done," "merged," "published," or "deployed" claims.</li>
-    <li><strong>Next run:</strong> use thumbs-downs and failed evidence checks to block repeated mistakes earlier.</li>
+    <li><strong>Next run:</strong> use thumbs-downs and failed evidence checks to catch repeated mistakes earlier.</li>
   </ul>
 
   <div class="callout callout-green">
-    <strong>Buyer demo:</strong> show the same deterministic workflow twice. First run records a blocked risky action. Second run stops the repeat before execution and exports the proof.
+    <strong>Buyer demo:</strong> show the same deterministic workflow twice. First run records a blocked risky action. Second run catches the repeat before execution and exports the proof.
   </div>
 
   <h2>Implementation checklist</h2>

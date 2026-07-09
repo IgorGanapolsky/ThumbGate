@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Spec-Driven Development for AI Agents — How ThumbGate Enforces the Spec</title>
 <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
-<meta name="description" content="Spec-driven development tells AI agents what to build via mission.md, tech-stack.md, and roadmap.md. ThumbGate enforces the spec at the gate layer so agents cannot drift outside scope.">
+<meta name="description" content="Spec-driven development tells AI agents what to build via mission.md, tech-stack.md, and roadmap.md. ThumbGate enforces the spec at the gate layer, flagging agents when they drift outside scope.">
 <meta name="keywords" content="spec-driven development, spec driven AI coding, mission.md, tech-stack.md, roadmap.md, AI agent spec enforcement, Claude Code spec, Cursor spec workflow, ThumbGate">
 <meta property="og:title" content="Spec-Driven Development for AI Agents — Runtime Enforcement with ThumbGate">
-<meta property="og:description" content="Writing the spec is half the work. The other half is making the agent stay inside it. ThumbGate gates tool calls against your spec so drift is blocked at the hook layer.">
+<meta property="og:description" content="Writing the spec is half the work. The other half is making the agent stay inside it. ThumbGate gates tool calls against your spec so drift is flagged at the hook layer — and hard-blocked in strict mode.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://thumbgate.ai/learn/spec-driven-development">
 <link rel="canonical" href="https://thumbgate.ai/learn/spec-driven-development">
@@ -18,7 +18,7 @@
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "Spec-Driven Development for AI Agents — How ThumbGate Enforces the Spec",
-  "description": "Spec-driven development gives AI coding agents a mission, tech-stack, and roadmap to follow. ThumbGate is the runtime enforcement layer that blocks tool calls that drift outside the spec.",
+  "description": "Spec-driven development gives AI coding agents a mission, tech-stack, and roadmap to follow. ThumbGate is the runtime enforcement layer that flags tool calls that drift outside the spec, and hard-blocks them in strict mode.",
   "author": {
     "@type": "Person",
     "name": "Igor Ganapolsky",
@@ -62,7 +62,7 @@
   <h1>Spec-Driven Development for AI Agents</h1>
   <p style="color:var(--muted);">4 min read &middot; For teams moving from vibe-coding to repeatable AI development</p>
 
-  <div class="tldr"><strong>TL;DR:</strong> Spec-driven development gives agents three constitution files — <code>mission.md</code>, <code>tech-stack.md</code>, <code>roadmap.md</code> — plus per-feature plan / requirements / validation docs. The spec only works if the agent cannot drift outside it. ThumbGate is the runtime enforcement layer that blocks tool calls that violate the spec, at the PreToolUse hook layer.</div>
+  <div class="tldr"><strong>TL;DR:</strong> Spec-driven development gives agents three constitution files — <code>mission.md</code>, <code>tech-stack.md</code>, <code>roadmap.md</code> — plus per-feature plan / requirements / validation docs. The spec only works if the agent cannot drift outside it. ThumbGate is the runtime enforcement layer that flags tool calls that violate the spec at the PreToolUse hook layer — and hard-blocks them in strict mode.</div>
 
   <h2>The constitution: three files that define your project</h2>
   <p>Spec-driven development replaces conversational LLM iteration with a small set of source-of-truth documents stored in the repo. The agent reads them, the team reads them, and they get updated together.</p>
@@ -113,7 +113,7 @@
       <ul>
         <li>ThumbGate hooks intercept tool calls before execution</li>
         <li>Each call is checked against the spec's scope</li>
-        <li>Out-of-scope writes, destructive commands, and dependency drift are blocked</li>
+        <li>Out-of-scope writes, destructive commands, and dependency drift are flagged and logged — and hard-blocked in strict mode</li>
         <li>The agent gets a structured error and a path back to the spec</li>
       </ul>
     </div>
@@ -122,7 +122,7 @@
   <h2>What ThumbGate actually checks against the spec</h2>
   <p>ThumbGate ingests the constitution files and uses them as the policy source for PreToolUse checks:</p>
   <ul>
-    <li><strong>Scope drift:</strong> if <code>tech-stack.md</code> says Postgres but the agent runs <code>npm install mongoose</code>, the install is blocked</li>
+    <li><strong>Scope drift:</strong> if <code>tech-stack.md</code> says Postgres but the agent runs <code>npm install mongoose</code>, the install is flagged (and hard-blocked in strict mode)</li>
     <li><strong>Path drift:</strong> if the current feature's <code>requirements.md</code> lists <code>src/auth/*</code> as in-scope, writes to <code>src/billing/*</code> require confirmation</li>
     <li><strong>Validation enforcement:</strong> if <code>validation.md</code> says "no merge without integration tests passing", merge tool calls are gated</li>
     <li><strong>Phase enforcement:</strong> if <code>roadmap.md</code> marks a feature as "Phase 3" and you are in Phase 1, related code paths are protected</li>
@@ -130,7 +130,7 @@
 
   <h2>Why prompt rules alone do not work</h2>
   <p>Spec-driven dev usually starts with <code>CLAUDE.md</code> or <code>.cursorrules</code> referencing the constitution. Those files live inside the agent's context. They compete with the live conversation for attention. When the context window pressures up, prompt rules are the first thing to lose weight.</p>
-  <p>Pre-action checks live <em>outside</em> the agent. They run in a separate process at the hook boundary. The agent cannot reason its way around a closed file handle.</p>
+  <p>Pre-action checks live <em>outside</em> the agent. They run in a separate process at the hook boundary, so the check always fires no matter how the context shifts — flagging the drift by default, and hard-blocking it in strict mode.</p>
 
   <div class="callout callout-green">
     <strong>Mental model:</strong> The spec is the law. ThumbGate is the bailiff.

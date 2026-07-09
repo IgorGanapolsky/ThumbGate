@@ -274,7 +274,7 @@
       <h1>AI Agent Workflow Migration Checklist</h1>
       <p>Most AI coding rollouts will not fail because the agent cannot write code. They will fail because the team never mapped the gates, exceptions, audit trail, ownership model, and review evidence before giving agents more surface area.</p>
       <div class="signal-row">
-        <div class="signal-pill good">ThumbGate blocks repeat agent failures before execution</div>
+        <div class="signal-pill good">ThumbGate catches repeat agent failures before execution</div>
         <div class="signal-pill warn">Pro $19/mo or $149/yr. Enterprise for org-wide enforcement.</div>
       </div>
     </section>
@@ -294,7 +294,7 @@
             <div class="check-item"><strong>2. Allowed surfaces</strong> Define repos, branches, directories, package files, infra files, secrets, generated assets, and production paths the agent may or may not touch.</div>
             <div class="check-item"><strong>3. Context source of truth</strong> Capture the issue, ticket, plan, or prompt that authorized the run so reviewers see the original intent.</div>
             <div class="check-item"><strong>4. Tool boundaries</strong> Separate read-only inspection, local file edits, shell commands, package installs, network calls, deploys, and GitHub mutations.</div>
-            <div class="check-item"><strong>5. Pre-action gates</strong> Block known-bad actions before execution: destructive git commands, unsafe prod edits, secret exposure, unreviewed dependency changes, and repeat failure patterns.</div>
+            <div class="check-item"><strong>5. Pre-action gates</strong> Catch known-bad actions before execution: destructive git commands, unsafe prod edits, secret exposure, unreviewed dependency changes, and repeat failure patterns.</div>
             <div class="check-item"><strong>6. Attribution evidence</strong> Record agent ID, model/tooling, branch, PR, changed files, dependency impact, CI result, and human feedback.</div>
             <div class="check-item"><strong>7. Exception policy</strong> Track when a gate is overridden, who approved it, why it was safe, and when the exception expires.</div>
             <div class="check-item"><strong>8. Review routing</strong> Route low-risk edits differently from protected branches, dependency/SBOM-sensitive files, auth, billing, data retention, and deployment code.</div>

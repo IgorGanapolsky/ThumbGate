@@ -223,7 +223,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="card">
         <h3>Repeated-failure prevention</h3>
-        <p>A thumbs-down from an agency engineer becomes a permanent prevention rule. The same risky action never reaches the model on the next attempt — relevant for cost control and for documenting "we did not let the agent do X" in incident review.</p>
+        <p>A thumbs-down from an agency engineer becomes a prevention rule. On the next attempt that risky action is flagged and logged — and hard-blocked for the highest-risk classes or under strict enforcement mode — relevant for cost control and for documenting "we did not let the agent do X" in incident review.</p>
       </div>
       <div class="card">
         <h3>Vendor-neutral</h3>
@@ -268,7 +268,7 @@ __GA_BOOTSTRAP__
         <tr><th>Family</th><th>Control</th><th>How ThumbGate supports it</th></tr>
       </thead>
       <tbody>
-        <tr><td>AC</td><td><code>AC-3</code> Access Enforcement</td><td>PreToolUse hook blocks tool calls that violate policy regardless of operator intent.</td></tr>
+        <tr><td>AC</td><td><code>AC-3</code> Access Enforcement</td><td>PreToolUse hook flags and logs tool calls that violate policy regardless of operator intent, and hard-blocks them under strict enforcement mode.</td></tr>
         <tr><td>AC</td><td><code>AC-6</code> Least Privilege</td><td>Per-gate scopes bind agent actions to declared task scope.</td></tr>
         <tr><td>AU</td><td><code>AU-2 / AU-3 / AU-12</code> Audit Logging</td><td>Every gate decision logged with full payload, PII-redacted, exportable to agency SIEM.</td></tr>
         <tr><td>CM</td><td><code>CM-3</code> Configuration Change Control</td><td>Branch governance gate requires <code>releaseVersion</code> declaration before release/publish actions.</td></tr>

@@ -2,11 +2,13 @@
 
 > Every feature ships with proof. This document is the complete audit trail of verification runs, test output, and deployment evidence.
 
+> Revenue note: dated log entries below record what the admin billing endpoint returned on specific dates, including a historical `$20.00 / 2 paid orders` figure. Those charges are internal/test Stripe charges and do **not** represent external customer revenue. As of this audit there are **0 external paying customers and 0 external paid orders**. See [`COMMERCIAL_TRUTH.md`](./COMMERCIAL_TRUTH.md) for the authoritative commercial state.
+
 ## What's verified
 
 | Category | Evidence |
 |----------|---------|
-| **Pre-action checks** | Block known mistakes before tool use — tested with real feedback patterns |
+| **Pre-action checks** | Flag known mistakes before tool use (warn by default; hard-block the highest-risk classes, and everything else under strict enforcement mode) — tested with real feedback patterns |
 | **Feedback capture** | Up/down signals with context, tags, rubric scores — schema-validated |
 | **Prevention rules** | Auto-promoted from repeated failures — regression-tested |
 | **Prompt/workflow evals** | Feedback-derived eval suites prove whether prompt and workflow behavior improved |

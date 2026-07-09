@@ -157,7 +157,7 @@ npm run self-heal:check
 
 ## What You Get
 
-- **Persistent memory across Claude Code sessions** — prevention rules block repeated mistakes
+- **Persistent memory across Claude Code sessions** — prevention rules catch repeated mistakes
 - **Visual graph of feedback connections** — Obsidian's graph view shows memory note relationships
 - **Prevention rules as browsable notes** — searchable, linkable, editable in Obsidian
 - **Feedback stats at a glance** — paste `npm run feedback:stats` output into a vault note

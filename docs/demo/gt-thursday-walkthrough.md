@@ -53,7 +53,7 @@ Two sentences. This is the pattern to avoid: advice-shaped output from a non-att
 
 Most "agent memory" tools store this incident, retrieve it later, and *hope* the model behaves differently next time. Hope is not a control.
 
-ThumbGate's mechanism is different: a thumbs-down doesn't write a note — it compiles a **deterministic PreToolUse gate** that physically blocks the next matching tool call before it executes. The attorney's hand is on the kill switch, but the switch is hardware-grade — it doesn't rely on the model remembering.
+ThumbGate's mechanism is different: a thumbs-down doesn't write a note — it compiles a **deterministic PreToolUse gate** that fires and logs on the next matching tool call before it executes, and hard-blocks it for the critical classes (privileged egress, conflicts, UPL routed to attorney review). The attorney's hand is on the kill switch, but the switch is deterministic — it doesn't rely on the model remembering.
 
 Transition: "Let me show you what that looks like."
 

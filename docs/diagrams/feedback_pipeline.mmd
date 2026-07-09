@@ -20,7 +20,7 @@ sequenceDiagram
     FB->>Promo: Analyze for promotion
     Promo->>Config: Auto-promote to prevention rule
 
-    Note over Dev,Config: Session 2 — Gate blocks the repeat
+    Note over Dev,Config: Session 2 — Gate catches the repeat
     Dev->>Agent: "Refactor the auth module"
     Agent->>Hook: Tool call: Write(auth.js)
     Hook->>Gate: Evaluate gates
