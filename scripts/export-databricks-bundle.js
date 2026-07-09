@@ -129,6 +129,11 @@ function timestampSlug() {
 }
 
 function exportDatabricksBundle(feedbackDir = getDefaultFeedbackDir(), outputPath, options = {}) {
+  // Paid-feature gate (advisory by default; enforced via THUMBGATE_ENFORCE_ENTITLEMENTS=1).
+  const _ent = require('./entitlement').requireEntitlement('data-export');
+  if (!_ent.entitled) {
+    console.error(`⚠️ ThumbGate: Databricks bundle export is a paid feature (tier: ${_ent.tier}). Advisory mode — set THUMBGATE_ENFORCE_ENTITLEMENTS=1 to enforce. License: https://thumbgate.ai/pricing`);
+  }
   const resolvedFeedbackDir = path.resolve(feedbackDir || getDefaultFeedbackDir());
   const resolvedProofDir = path.resolve(options.proofDir || DEFAULT_PROOF_DIR);
   const exportedAt = new Date().toISOString();
