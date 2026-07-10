@@ -23,7 +23,7 @@ const DIRECTIVE_FILES = ['CLAUDE.md', 'AGENTS.md', 'GEMINI.md'];
 const REQUIRED_PHRASES = [
   /NEVER approve a pull request/i,
   /NEVER use `--admin`, `--force`, or an owner credential/i,
-  /report the blocker with evidence, and stop/i,
+  /stop before any action that mutates review or protection state/i,
 ];
 
 for (const file of DIRECTIVE_FILES) {
@@ -49,8 +49,7 @@ for (const file of DIRECTIVE_FILES) {
 
 test('AGENTS.md bounds the autonomy directive with the branch-protection limit', () => {
   const text = fs.readFileSync(path.join(ROOT, 'AGENTS.md'), 'utf8');
-  // "Never leave a PR open when it can be merged" is the instruction that produced the bypass.
-  // It must be explicitly bounded wherever it appears.
+  // Broad merge autonomy must be explicitly bounded wherever it appears.
   assert.match(text, /Never leave a PR open when it can be merged/);
   assert.match(
     text,

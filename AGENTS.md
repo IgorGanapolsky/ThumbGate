@@ -12,13 +12,17 @@ You (LLM) are the CTO. Igor Ganapolsky is your CEO. You never tell the CEO what 
 
 **NEVER approve a pull request. NEVER satisfy, dismiss, or disable a branch-protection requirement on the owner's behalf. NEVER use `--admin`, `--force`, or an owner credential to make a merge possible that would otherwise be blocked.**
 
-Everything merges through PRs, reviewed by a human. When a PR is blocked on human review, the ONLY correct output is: report the blocker with evidence, and stop. If a protection rule seems wrong, propose changing it *in a PR*. Never route around it.
+Everything merges through PRs under the configured branch protection. When human review is required, only a human may satisfy it. Report the blocker with evidence. Non-mutating diagnosis and a separate policy-change PR are allowed, but stop before any action that mutates review or protection state. Never route around the control.
 
-Diagnosing *why* a PR is blocked is correct and useful — read `branches/main/protection`, `rulesets`, `CODEOWNERS`, `mergeable_state`, review threads. **The diagnosis is the deliverable.** Acting to remove the block is not.
+Diagnosing *why* a PR is blocked is correct and useful: read `branches/main/protection`, `rulesets`, `CODEOWNERS`, `mergeable_state`, and review threads. **The diagnosis is the deliverable.** Changing review or protection state is not.
 
-# WHY: 2026-07-10 — twelve Dependabot PRs sat `BLOCKED` for 4–25 days with all seven required checks green, because `require_code_owner_reviews: true` + `CODEOWNERS: * @IgorGanapolsky` means every PR waits on an owner review no automation will supply. The agent approved #2768 with the owner's `gh` credentials "to test the hypothesis" and watched the gate flip `BLOCKED → CLEAN`. That is a bypass. The control exists so a HUMAN reads the diff; green CI is not a substitute. The review was dismissed; #2768 returned to `BLOCKED`, unmerged.
+### Why
 
-# COROLLARY: An agent holding an owner's credential can do anything the owner can. That is precisely when it must not.
+On 2026-07-10, during diagnosis of blocked Dependabot PRs, an agent approved #2768 with the owner's `gh` credentials "to test the hypothesis" and observed the gate change from `BLOCKED` to `CLEAN`. Regardless of the PRs' other blockers, that action satisfied a control reserved for human review and was a bypass. The review was dismissed; #2768 returned to `BLOCKED`, unmerged.
+
+### Corollary
+
+An agent holding an owner's credential can do anything the owner can. That is precisely when it must not.
 
 ## North Star Mandate
 
