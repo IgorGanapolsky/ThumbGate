@@ -210,7 +210,7 @@
     {
       "id": "deny-network-egress",
       "layer": "Cloud",
-      "pattern": "curl\\s|wget\\s|fetch\\(|https?://(?!github\\.com|registry\\.npmjs\\.org|api\\.anthropic\\.com)",
+      "pattern": "fetch\\(|https?://(?!(?:github\\.com|registry\\.npmjs\\.org|api\\.anthropic\\.com|localhost|127\\.0\\.0\\.1|\\[::1\\]|0\\.0\\.0\\.0)(?:[:/?#]|$))|(?:curl|wget)\\s+(?:-\\S+\\s+)*(?!https?://|(?:github\\.com|registry\\.npmjs\\.org|api\\.anthropic\\.com|localhost|127\\.0\\.0\\.1|\\[::1\\]|0\\.0\\.0\\.0)(?:[:/?#]|$))[\\w.-]+\\.[a-z]{2,}",
       "action": "warn",
       "unless": "egress_approved",
       "message": "Potential unauthorized network egress detected.",
