@@ -151,10 +151,22 @@ const DESTRUCTIVE_OR_PRIVILEGE_BOUNDARY_PATTERN = /\b(?:rm\s+-rf|chmod\s+(?:\+x|
 // far better than any single regex). Secret exfiltration and the security-vulnerability
 // scan hard-deny on their OWN paths before this runs, so irreversible data-leak / supply
 // chain risks stay blocked regardless of posture.
+// Self-protective gates guard ThumbGate's own guardrails (kill/env/config/hooks). See the
+// self-protect-binds-regardless-of-posture changeset for the full rationale.
+function isSelfProtectGate(gateId) {
+  return typeof gateId === 'string' && gateId.startsWith('self-protect');
+}
+
 function applyEnforcementPosture(result) {
   if (!result || (result.decision !== 'deny' && result.decision !== 'approve')) return result;
   // Full hard enforcement opt-in: keep every deny.
   if (process.env.THUMBGATE_STRICT_ENFORCEMENT === '1') return result;
+  // Self-protection binds regardless of posture: a warning is worthless once the guardrail is
+  // gone. Owner escape: THUMBGATE_SELF_PROTECT_OVERRIDE=1 (break-glass covers .claude/settings*
+  // but not this surface, so it needs its own escape — self-lockout, 2026-07-07).
+  if (isSelfProtectGate(result.gate) && process.env.THUMBGATE_SELF_PROTECT_OVERRIDE !== '1') {
+    return result;
+  }
   // Honor the explicit strict-knowledge-conflict opt-in for that gate.
   if (process.env.THUMBGATE_STRICT_KNOWLEDGE_CONFLICT === '1' && result.gate === 'knowledge-conflict-gate') return result;
   // Warn-by-default: the gate still fired and is recorded; the action is allowed through
