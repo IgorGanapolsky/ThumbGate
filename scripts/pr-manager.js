@@ -34,6 +34,20 @@ const PASSING_BUCKETS = new Set((MERGE_QUALITY_CHECKS.passingBuckets || []).map(
 const PENDING_BUCKETS = new Set((MERGE_QUALITY_CHECKS.pendingBuckets || []).map((value) => String(value || '').toLowerCase()));
 const FAILING_BUCKETS = new Set((MERGE_QUALITY_CHECKS.failingBuckets || []).map((value) => String(value || '').toLowerCase()));
 
+// Checks that only resolve *because* we queue the PR. Gating the queue submission on them is a
+// deadlock: `Trunk Merge Queue (main)` stays `pending` until the PR enters the queue, and
+// pr-manager refuses to queue while anything is pending. Twelve Dependabot PRs sat stuck this
+// way for up to 25 days with all seven required checks green (2026-07-10).
+// See CLAUDE.md: "Do not build helper workflows that poll their own required check."
+const SELF_REFERENTIAL_CHECKS = (MERGE_QUALITY_CHECKS.selfReferentialChecks || []).map((value) =>
+  String(value || '').toLowerCase(),
+);
+
+function isSelfReferentialCheck(name) {
+  const lowered = String(name || '').toLowerCase();
+  return SELF_REFERENTIAL_CHECKS.some((marker) => marker && lowered.includes(marker));
+}
+
 function assertSafeGhArgs(args) {
   if (!Array.isArray(args) || args.length === 0) {
     throw new Error('GH CLI args must be a non-empty array.');
@@ -182,6 +196,12 @@ function summarizeChecks(checks = []) {
 
   for (const check of checks) {
     const name = check.name || 'unknown-check';
+
+    // The merge queue's own check cannot pass until we queue the PR. Never let it gate the
+    // decision to queue. A genuine merge-queue FAILURE is still surfaced by mergeStateStatus
+    // and by the queue itself; it is not this function's job to block on it.
+    if (isSelfReferentialCheck(name)) continue;
+
     const bucket = String(check.bucket || '').toLowerCase();
     if (bucket) {
       if (FAILING_BUCKETS.has(bucket)) {
@@ -294,12 +314,25 @@ async function resolveBlockers(pr, runner = runGh) {
   }
 
   // 5. Ready to Merge
-  if (pr.mergeStateStatus === 'CLEAN' && pr.mergeable === 'MERGEABLE') {
+  //
+  // CLEAN is the happy path. UNSTABLE is also ready IF every quality check has passed: by this
+  // point `failing` and `pending` are both empty, so the only thing GitHub can still be unhappy
+  // about is a non-required check -- in practice the merge queue's own `Trunk Merge Queue (main)`,
+  // which cannot report until we submit. Refusing to submit on it is the deadlock that stranded
+  // twelve Dependabot PRs for up to 25 days (2026-07-10). Branch protection still enforces the
+  // seven required contexts at merge time; nothing is being waved through here.
+  const readyState = pr.mergeStateStatus === 'CLEAN' || pr.mergeStateStatus === 'UNSTABLE';
+  if (readyState && pr.mergeable === 'MERGEABLE') {
+    if (pr.mergeStateStatus === 'UNSTABLE') {
+      console.log('[PR Manager] UNSTABLE, but every quality check passed — only the merge queue\'s own check is outstanding.');
+    }
     console.log('[PR Manager] SUCCESS: PR is ready for protected autonomous merge.');
     return { status: 'ready' };
   }
 
-  return { status: 'pending', reason: 'unknown_state' };
+  // Never exit silently: an unexplained state is a finding, not a no-op.
+  console.log(`[PR Manager] BLOCKED: unhandled state mergeStateStatus=${mergeState} mergeable=${mergeable}.`);
+  return { status: 'pending', reason: 'unknown_state', mergeState, mergeable };
 }
 
 function waitForMergeCommit(prNumber, runner = runGh, options = {}) {
