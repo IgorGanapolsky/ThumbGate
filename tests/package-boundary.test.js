@@ -464,9 +464,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 4.80 MB -> 4.82 MB (2026-07-09) for signed-entitlement verifier
   // wiring and the bundled public keyset. Public verification code only; no
   // private key material, Core dependency, or pro source subtree.
+  // Bumped 4.82 MB -> 4.83 MB (2026-07-10) for self-protection enforcement:
+  // self-protect gates now hard-deny regardless of posture (gates-engine.js).
+  // Runtime source only; main was already at the 4.82 ceiling, so the ~0.5 KB
+  // security change required the bump. No new deps or bundled assets.
   assert.ok(
-    manifest.unpackedSize <= 4_820_000,
-    `npm package should stay <= 4.82 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_830_000,
+    `npm package should stay <= 4.83 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
