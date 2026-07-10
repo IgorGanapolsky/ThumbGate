@@ -1,11 +1,4 @@
 #!/usr/bin/env node
-/**
- * PR Manager — High-Throughput Merge & Blocker Diagnosis
- * 
- * Inspired by the 2026 GitHub 'Quick Access' update. Centralizes merge status 
- * detection and triggers autonomous self-healing for common blockers.
- */
-
 'use strict';
 
 const fs = require('node:fs');
@@ -34,19 +27,7 @@ const PASSING_BUCKETS = new Set((MERGE_QUALITY_CHECKS.passingBuckets || []).map(
 const PENDING_BUCKETS = new Set((MERGE_QUALITY_CHECKS.pendingBuckets || []).map((value) => String(value || '').toLowerCase()));
 const FAILING_BUCKETS = new Set((MERGE_QUALITY_CHECKS.failingBuckets || []).map((value) => String(value || '').toLowerCase()));
 
-// Checks that only resolve *because* we queue the PR. Gating the queue submission on them is a
-// deadlock: `Trunk Merge Queue (main)` stays `pending` until the PR enters the queue, and
-// pr-manager refuses to queue while anything is pending. Twelve Dependabot PRs sat stuck this
-// way for up to 25 days with all seven required checks green (2026-07-10).
-// See CLAUDE.md: "Do not build helper workflows that poll their own required check."
-const SELF_REFERENTIAL_CHECKS = (MERGE_QUALITY_CHECKS.selfReferentialChecks || []).map((value) =>
-  String(value || '').toLowerCase(),
-);
-
-function isSelfReferentialCheck(name) {
-  const lowered = String(name || '').toLowerCase();
-  return SELF_REFERENTIAL_CHECKS.some((marker) => marker && lowered.includes(marker));
-}
+const SELF_REFERENTIAL_CHECKS = new Set(MERGE_QUALITY_CHECKS.selfReferentialChecks || []);
 
 function assertSafeGhArgs(args) {
   if (!Array.isArray(args) || args.length === 0) {
@@ -133,9 +114,6 @@ function isMissingCurrentBranchPr(result, prNumber) {
     || /could not determine current branch:.*not on any branch/i.test(formatGhError(result));
 }
 
-/**
- * Fetch granular PR status using GH CLI
- */
 function getPrStatus(prNumber = '', runner = runGh) {
   const normalizedPrNumber = normalizePrNumber(prNumber);
   const args = ['pr', 'view'];
@@ -197,10 +175,7 @@ function summarizeChecks(checks = []) {
   for (const check of checks) {
     const name = check.name || 'unknown-check';
 
-    // The merge queue's own check cannot pass until we queue the PR. Never let it gate the
-    // decision to queue. A genuine merge-queue FAILURE is still surfaced by mergeStateStatus
-    // and by the queue itself; it is not this function's job to block on it.
-    if (isSelfReferentialCheck(name)) continue;
+    if (SELF_REFERENTIAL_CHECKS.has(name)) continue;
 
     const bucket = String(check.bucket || '').toLowerCase();
     if (bucket) {
@@ -245,9 +220,6 @@ function sleep(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
-/**
- * Diagnose and resolve blockers autonomously
- */
 async function resolveBlockers(pr, runner = runGh) {
   const title = pr.title || 'Untitled PR';
   const mergeState = pr.mergeStateStatus || 'UNKNOWN';
@@ -261,7 +233,6 @@ async function resolveBlockers(pr, runner = runGh) {
     return { status: 'skipped', reason: 'draft' };
   }
 
-  // 1. Handle Outdated Branch (BEHIND)
   if (pr.mergeStateStatus === 'BEHIND') {
     console.log('[PR Manager] PR is behind main. Triggering auto-update...');
     const update = runner(['pr', 'update-branch', pr.number.toString()]);
@@ -270,13 +241,11 @@ async function resolveBlockers(pr, runner = runGh) {
     }
   }
 
-  // 2. Handle Merge Conflicts (DIRTY)
   if (pr.mergeStateStatus === 'DIRTY' || pr.mergeable === 'CONFLICTING') {
     console.log('[PR Manager] CRITICAL: Merge conflicts detected. Manual intervention or advanced rebase required.');
     return { status: 'blocked', reason: 'conflicts' };
   }
 
-  // 3. Handle CI Failures
   let checks = pr.statusCheckRollup || [];
   let checkSource = 'statusCheckRollup';
 
@@ -302,7 +271,6 @@ async function resolveBlockers(pr, runner = runGh) {
     return { status: 'blocked', reason: 'ci_pending', checks: checkSummary.pending, checkSource };
   }
 
-  // 4. Handle Review Blockers
   if (pr.reviewDecision === 'CHANGES_REQUESTED') {
     console.log('[PR Manager] BLOCKED: Changes requested by reviewer.');
     return { status: 'blocked', reason: 'changes_requested' };
@@ -313,26 +281,15 @@ async function resolveBlockers(pr, runner = runGh) {
     return { status: 'blocked', reason: 'review_required' };
   }
 
-  // 5. Ready to Merge
-  //
-  // CLEAN is the happy path. UNSTABLE is also ready IF every quality check has passed: by this
-  // point `failing` and `pending` are both empty, so the only thing GitHub can still be unhappy
-  // about is a non-required check -- in practice the merge queue's own `Trunk Merge Queue (main)`,
-  // which cannot report until we submit. Refusing to submit on it is the deadlock that stranded
-  // twelve Dependabot PRs for up to 25 days (2026-07-10). Branch protection still enforces the
-  // seven required contexts at merge time; nothing is being waved through here.
-  const readyState = pr.mergeStateStatus === 'CLEAN' || pr.mergeStateStatus === 'UNSTABLE';
-  if (readyState && pr.mergeable === 'MERGEABLE') {
-    if (pr.mergeStateStatus === 'UNSTABLE') {
-      console.log('[PR Manager] UNSTABLE, but every quality check passed — only the merge queue\'s own check is outstanding.');
-    }
+  if (
+    (pr.mergeStateStatus === 'CLEAN' || pr.mergeStateStatus === 'UNSTABLE')
+    && pr.mergeable === 'MERGEABLE'
+  ) {
     console.log('[PR Manager] SUCCESS: PR is ready for protected autonomous merge.');
     return { status: 'ready' };
   }
 
-  // Never exit silently: an unexplained state is a finding, not a no-op.
-  console.log(`[PR Manager] BLOCKED: unhandled state mergeStateStatus=${mergeState} mergeable=${mergeable}.`);
-  return { status: 'pending', reason: 'unknown_state', mergeState, mergeable };
+  return { status: 'pending', reason: 'unknown_state' };
 }
 
 function waitForMergeCommit(prNumber, runner = runGh, options = {}) {
@@ -401,9 +358,6 @@ function submitTrunkMergeRequest(prNumber, runner = runGh) {
   };
 }
 
-/**
- * Perform autonomous merge
- */
 function performMerge(prInput, runner = runGh, options = {}) {
   const pr = (prInput && typeof prInput === 'object')
     ? prInput

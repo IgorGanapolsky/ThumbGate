@@ -656,10 +656,7 @@ test('PR Manager - managePrs reports the landed merge commit instead of the PR h
   assert.notEqual(outcome.mergeCommit, 'c5c695c5cb0065cd42f8d86e9f6686df7407ea09');
 });
 
-// --- merge-queue deadlock (2026-07-10) -------------------------------------------------------
-// `Trunk Merge Queue (main)` stays `pending` until the PR enters the queue, and pr-manager
-// refused to queue while anything was pending. Twelve Dependabot PRs sat stuck for up to 25 days
-// with all seven required checks green. The queue's own check must never gate queue submission.
+// The queue's own pre-submission check must not gate queue submission.
 
 test('summarizeChecks ignores the merge queue\'s own pending check', () => {
   const { pending, failing } = summarizeChecks([
@@ -696,9 +693,13 @@ test('a genuinely failing quality check STILL blocks', () => {
   assert.deepEqual(failing, ['SonarCloud Code Analysis']);
 });
 
-test('matching is case-insensitive and substring-based on the configured marker', () => {
-  const { pending } = summarizeChecks([{ name: 'trunk merge queue (develop)', bucket: 'pending' }]);
-  assert.deepEqual(pending, []);
+test('a lookalike queue check remains a blocker', () => {
+  const { pending, failing } = summarizeChecks([
+    { name: 'Trunk Merge Queue (main) Security Scan', bucket: 'pending' },
+    { name: 'Trunk Merge Queue (develop)', bucket: 'fail' },
+  ]);
+  assert.deepEqual(pending, ['Trunk Merge Queue (main) Security Scan']);
+  assert.deepEqual(failing, ['Trunk Merge Queue (develop)']);
 });
 
 test('resolveBlockers treats UNSTABLE-with-all-checks-green as ready to queue', async () => {
