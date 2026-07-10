@@ -151,9 +151,8 @@ const DESTRUCTIVE_OR_PRIVILEGE_BOUNDARY_PATTERN = /\b(?:rm\s+-rf|chmod\s+(?:\+x|
 // far better than any single regex). Secret exfiltration and the security-vulnerability
 // scan hard-deny on their OWN paths before this runs, so irreversible data-leak / supply
 // chain risks stay blocked regardless of posture.
-// A gate is self-protective if it guards ThumbGate's own guardrails: its config, its kill
-// switch, its env overrides, or its hook wiring. These are the one class of action where a
-// warning is worthless — by the time it is logged, the guardrail is already gone.
+// Self-protective gates guard ThumbGate's own guardrails (kill/env/config/hooks). See the
+// self-protect-binds-regardless-of-posture changeset for the full rationale.
 function isSelfProtectGate(gateId) {
   return typeof gateId === 'string' && gateId.startsWith('self-protect');
 }
@@ -162,13 +161,9 @@ function applyEnforcementPosture(result) {
   if (!result || (result.decision !== 'deny' && result.decision !== 'approve')) return result;
   // Full hard enforcement opt-in: keep every deny.
   if (process.env.THUMBGATE_STRICT_ENFORCEMENT === '1') return result;
-  // Self-protection gates bind regardless of enforcement posture. An agent must not be able to
-  // disable or rewrite its own guardrails just because warn-by-default is on — that turns the
-  // firewall into a smoke detector wired to a light. Deliberate owner override via an explicit
-  // env-var escape, THUMBGATE_SELF_PROTECT_OVERRIDE=1, so an accidental warn posture can never
-  // strand the owner from repairing their own gate config (self-lockout, 2026-07-07). This is
-  // a distinct escape because break-glass covers `.claude/settings*` but NOT `config/gates/`,
-  // which is exactly the surface self-protect-config guards.
+  // Self-protection binds regardless of posture: a warning is worthless once the guardrail is
+  // gone. Owner escape: THUMBGATE_SELF_PROTECT_OVERRIDE=1 (break-glass covers .claude/settings*
+  // but not this surface, so it needs its own escape — self-lockout, 2026-07-07).
   if (isSelfProtectGate(result.gate) && process.env.THUMBGATE_SELF_PROTECT_OVERRIDE !== '1') {
     return result;
   }
