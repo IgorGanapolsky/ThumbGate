@@ -1,0 +1,5 @@
+---
+"thumbgate": patch
+---
+
+Bound the publish guard's pending-changeset exemption so a merged fix cannot sit unshipped behind a green check. `publish-npm.yml` already errored when shipped content changed since the last release tag without a version bump, but it exempted that error whenever any pending changeset existed — on the theory that "the next versioned publish will ship it." Nothing bounded *until*. On 2026-07-09 the `deny-network-egress` host-boundary fix merged to `main` while `Publish to NPM` reported success and published nothing, because a changeset for it existed; `npm install thumbgate` kept serving the vulnerable pattern and no check anywhere went red. The exemption now expires after `MAX_UNRELEASED_DAYS` (default 7), after which a pending changeset stops excusing the no-op and the workflow fails with an instruction to cut a release PR. The decision moves out of inline shell into `scripts/release-window.js` so it is unit-testable; `tests/release-window.test.js` pins the boundary and the 2026-07-09 regression.
