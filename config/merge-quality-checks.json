@@ -18,5 +18,8 @@
   "failingBuckets": [
     "fail",
     "cancel"
+  ],
+  "selfReferentialChecks": [
+    "Trunk Merge Queue (main)"
   ]
 }

@@ -36,7 +36,7 @@ jobs:
       PERPLEXITY_TIMEOUT_MS: '120000'
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Node
         uses: actions/setup-node@v6
