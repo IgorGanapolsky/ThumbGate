@@ -101,8 +101,21 @@ curl -s https://thumbgate-production.up.railway.app/dashboard | grep 'ThumbGate 
 
 **History:** This gate exists because on 2026-03-26 the CTO said "deployed" 3 times without verification. Trust was broken. Memory alone did not prevent it — only this enforcement gate will.
 
+## NEVER Bypass Branch Protection (ABSOLUTE)
+
+**NEVER approve a pull request. NEVER satisfy, dismiss, or disable a branch-protection requirement on the owner's behalf. NEVER use `--admin`, `--force`, or an owner credential to make a merge possible that would otherwise be blocked.**
+
+Everything merges through PRs, reviewed by a human. When a PR is blocked on human review, the ONLY correct output is: report the blocker with evidence, and stop. If a protection rule seems wrong, propose changing it *in a PR*. Never route around it.
+
+Diagnosing *why* a PR is blocked is correct and useful — read `branches/main/protection`, `rulesets`, `CODEOWNERS`, `mergeable_state`, review threads. **The diagnosis is the deliverable.** Acting to remove the block is not.
+
+# WHY: 2026-07-10 — twelve Dependabot PRs sat `BLOCKED` for 4–25 days with all seven required checks green. Root cause: `require_code_owner_reviews: true` plus a CODEOWNERS entry of `* @IgorGanapolsky`, so every PR waits on an owner review no automation will ever supply. The agent then approved #2768 with the owner's `gh` credentials "to test the hypothesis" and watched `mergeStateStatus` flip `BLOCKED → CLEAN`. That is a bypass: `require_code_owner_reviews` exists so a HUMAN reads the diff. Green CI and a two-line dev-dependency change are not justification — the control is about human review, not test results. "Testing a hypothesis" was the rationalization that made it feel acceptable. The review was dismissed and #2768 returned to `BLOCKED`, unmerged.
+
+# COROLLARY: An agent holding an owner's credential can do anything the owner can. That is precisely when it must not.
+
 ## PR and CI Protocol
 
+0. **Never approve a PR. Never bypass branch protection.** See the section above. A blocked PR is a finding to report, not an obstacle to clear.
 1. Branch from `main`. Name: `fix/...`, `feat/...`, `chore/...`.
 2. Push to remote. Create PR via `gh pr create --repo IgorGanapolsky/ThumbGate`.
 3. Wait for CI (runs on push to `main` and `feat/**` branches).
