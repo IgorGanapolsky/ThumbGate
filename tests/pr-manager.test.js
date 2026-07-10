@@ -15,6 +15,7 @@ const {
   resolveBlockers,
   resolveGhBinary,
   performMerge,
+  summarizeChecks,
   waitForMergeCommit,
 } = require('../scripts/pr-manager');
 
@@ -653,4 +654,85 @@ test('PR Manager - managePrs reports the landed merge commit instead of the PR h
   assert.equal(outcome.mergeFinalized, true);
   assert.equal(outcome.mergeCommit, 'fd1aa82164c5a00c374493abea60a46d4f5446db');
   assert.notEqual(outcome.mergeCommit, 'c5c695c5cb0065cd42f8d86e9f6686df7407ea09');
+});
+
+// The queue's own pre-submission check must not gate queue submission.
+
+test('summarizeChecks ignores the merge queue\'s own pending check', () => {
+  const { pending, failing } = summarizeChecks([
+    { name: 'test', bucket: 'pass' },
+    { name: 'CodeQL', bucket: 'pass' },
+    { name: 'Trunk Merge Queue (main)', bucket: 'pending' },
+  ]);
+  assert.deepEqual(pending, [], 'the merge queue must not block its own submission');
+  assert.deepEqual(failing, []);
+});
+
+test('summarizeChecks ignores a FAILING merge-queue check too (mergeStateStatus owns that)', () => {
+  const { pending, failing } = summarizeChecks([
+    { name: 'test', bucket: 'pass' },
+    { name: 'Trunk Merge Queue (main)', bucket: 'fail' },
+  ]);
+  assert.deepEqual(failing, [], 'a stale queue failure must not permanently wedge the PR');
+  assert.deepEqual(pending, []);
+});
+
+test('a genuinely pending quality check STILL blocks — the fix must not be a blanket bypass', () => {
+  const { pending } = summarizeChecks([
+    { name: 'test', bucket: 'pending' },
+    { name: 'Trunk Merge Queue (main)', bucket: 'pending' },
+  ]);
+  assert.deepEqual(pending, ['test'], 'real pending checks must still block the merge');
+});
+
+test('a genuinely failing quality check STILL blocks', () => {
+  const { failing } = summarizeChecks([
+    { name: 'SonarCloud Code Analysis', bucket: 'fail' },
+    { name: 'Trunk Merge Queue (main)', bucket: 'pending' },
+  ]);
+  assert.deepEqual(failing, ['SonarCloud Code Analysis']);
+});
+
+test('a lookalike queue check remains a blocker', () => {
+  const { pending, failing } = summarizeChecks([
+    { name: 'Trunk Merge Queue (main) Security Scan', bucket: 'pending' },
+    { name: 'Trunk Merge Queue (develop)', bucket: 'fail' },
+  ]);
+  assert.deepEqual(pending, ['Trunk Merge Queue (main) Security Scan']);
+  assert.deepEqual(failing, ['Trunk Merge Queue (develop)']);
+});
+
+test('resolveBlockers treats UNSTABLE-with-all-checks-green as ready to queue', async () => {
+  const pr = {
+    number: 2766,
+    title: 'chore(deps-dev): bump @types/node',
+    mergeStateStatus: 'UNSTABLE',
+    mergeable: 'MERGEABLE',
+    statusCheckRollup: [
+      { name: 'test', bucket: 'pass' },
+      { name: 'CodeQL', bucket: 'pass' },
+      { name: 'Trunk Merge Queue (main)', bucket: 'pending' },
+    ],
+  };
+  // getPrChecks would shell out; force the statusCheckRollup fallback by throwing.
+  const runner = () => { throw new Error('no gh in tests'); };
+  const outcome = await resolveBlockers(pr, runner);
+  assert.equal(outcome.status, 'ready', 'must queue when only the merge queue is outstanding');
+});
+
+test('resolveBlockers still refuses UNSTABLE when a real check is failing', async () => {
+  const pr = {
+    number: 1,
+    title: 'bad',
+    mergeStateStatus: 'UNSTABLE',
+    mergeable: 'MERGEABLE',
+    statusCheckRollup: [
+      { name: 'test', bucket: 'fail' },
+      { name: 'Trunk Merge Queue (main)', bucket: 'pending' },
+    ],
+  };
+  const runner = () => { throw new Error('no gh in tests'); };
+  const outcome = await resolveBlockers(pr, runner);
+  assert.equal(outcome.status, 'blocked');
+  assert.equal(outcome.reason, 'ci_failure');
 });
