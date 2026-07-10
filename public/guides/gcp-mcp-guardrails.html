@@ -78,7 +78,7 @@
       <p>The role-based layer and the feedback-based layer are orthogonal. IAM protects the tenant. ThumbGate protects the session.</p>
 
       <h2>What ThumbGate gates at the MCP boundary</h2>
-      <p>ThumbGate runs as an MCP server next to your agent and maintains a local SQLite lesson database at <code class="inline">.thumbgate/memory.sqlite</code>. Every thumbs-down becomes a row. On every subsequent tool call, ThumbGate's <code class="inline">gate_check</code> intercepts the proposed call and blocks known-bad patterns before execution. For Google's Agentic Data Cloud surfaces, the high-value patterns are:</p>
+      <p>ThumbGate runs as an MCP server next to your agent and maintains a local SQLite lesson database at <code class="inline">.thumbgate/memory.sqlite</code>. Every thumbs-down becomes a row. On every subsequent tool call, ThumbGate's <code class="inline">gate_check</code> intercepts the proposed call and catches known-bad patterns before execution. For Google's Agentic Data Cloud surfaces, the high-value patterns are:</p>
       <ul>
         <li><strong>BigQuery destructive DDL</strong> — <code class="inline">DROP TABLE</code>, <code class="inline">DROP DATASET</code>, <code class="inline">TRUNCATE TABLE</code>, <code class="inline">ALTER TABLE ... DROP COLUMN</code> on any dataset matching <code class="inline">prod_*</code>.</li>
         <li><strong>BigQuery unscoped DML</strong> — <code class="inline">DELETE FROM &lt;table&gt; WHERE 1=1</code>, <code class="inline">UPDATE</code> without a <code class="inline">WHERE</code>, any mutation whose predicate did not match the previous <code class="inline">SELECT COUNT(*)</code>.</li>

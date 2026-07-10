@@ -3161,6 +3161,48 @@ test('billing provision requires static admin key and rejects billing keys', asy
   assert.equal(res.status, 403);
 });
 
+test('billing pro activation endpoint validates customer key and returns secret-safe alert status', async () => {
+  const savedResend = process.env.RESEND_API_KEY;
+  const savedThumbgateResend = process.env.THUMBGATE_RESEND_API_KEY;
+  delete process.env.RESEND_API_KEY;
+  delete process.env.THUMBGATE_RESEND_API_KEY;
+
+  const billingKey = billing.provisionApiKey('cus_activation_alert', {
+    installId: 'inst_activation_alert',
+    source: 'test_activation_alert',
+  }).key;
+
+  try {
+    const res = await fetch(apiUrl('/v1/billing/pro-activation'), {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${billingKey}`,
+      },
+      body: JSON.stringify({
+        keyFingerprint: 'sha256:clienthint',
+        source: 'api_server_test',
+        version: '1.2.3-test',
+      }),
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.ok, true);
+    assert.equal(body.customerId, 'cus_activation_alert');
+    assert.equal(body.installId, 'inst_activation_alert');
+    assert.match(body.keyFingerprint, /^sha256:[a-f0-9]{12}$/);
+    assert.equal(body.keyFingerprintMatchesClient, false);
+    assert.equal(body.alert.sent, false);
+    assert.equal(body.alert.reason, 'activation_alert_disabled_or_unconfigured');
+    assert.doesNotMatch(JSON.stringify(body), new RegExp(billingKey));
+  } finally {
+    if (savedResend === undefined) delete process.env.RESEND_API_KEY;
+    else process.env.RESEND_API_KEY = savedResend;
+    if (savedThumbgateResend === undefined) delete process.env.THUMBGATE_RESEND_API_KEY;
+    else process.env.THUMBGATE_RESEND_API_KEY = savedThumbgateResend;
+  }
+});
+
 test('billing summary returns admin-only operational proxy', async () => {
   fs.writeFileSync(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl'), `${JSON.stringify({
     leadId: 'lead_admin_summary',

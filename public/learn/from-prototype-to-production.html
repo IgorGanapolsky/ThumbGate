@@ -133,7 +133,7 @@
 
   <div class="timeline-item">
     <div class="timeline-date">2026-05-11</div>
-    <div class="timeline-title">v1.17.0 ships. Free tier opens up: unlimited feedback captures, 5 active prevention rules (was 3 lifetime + 1 rule).</div>
+    <div class="timeline-title">v1.17.0 ships. Free tier opens up for daily use: 2 feedback captures per day and 3 active prevention rules.</div>
     <p>The hard wall on the free tier was killing habit formation. Daily-use lane is now open; Pro gates the dashboard, recall, lesson search, and DPO export.</p>
   </div>
 
@@ -152,7 +152,7 @@
   <li><strong>SQLite + FTS5 lesson DB</strong> — ships in the package, runs on-device, never phones home.</li>
   <li><strong>LanceDB vector index</strong> — for semantic lesson recall.</li>
   <li><strong>Plausible analytics</strong> — privacy-respecting, no cookie banner, no IP logging.</li>
-  <li><strong>Two-repo split</strong>: public <code>ThumbGate</code> (this) is the thin shell; <code>ThumbGate-Core</code> (private) holds the ranking, synthesis, billing intelligence, and org-wide telemetry. Wire protocol between them, never <code>require()</code>.</li>
+  <li><strong>Hosted services, not a closed core</strong>: the npm package ships permissively and includes the intelligence features (ranking, synthesis, adaptive gates). The moat is hosted state, adapter coverage, the dashboard, and support at <code>thumbgate.ai</code> — not private code you can't see.</li>
 </ul>
 
 <h2>Five lessons I'd give my March-3 self</h2>

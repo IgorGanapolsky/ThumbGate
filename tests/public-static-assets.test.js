@@ -141,7 +141,7 @@ test('landing page answers governance objections instead of presenting passive l
   const html = await res.text();
 
   assert.match(html, /Governance, Not Logging/);
-  assert.match(html, /Logs describe the damage\. ThumbGate blocks the risky action before it runs\./);
+  assert.match(html, /Logs describe the damage\. ThumbGate flags the risky action before it runs/);
   assert.match(html, /pre-action decision/);
   assert.match(html, /Reviewable decision trail/);
   assert.match(html, /signed evidence bundles/);
@@ -215,7 +215,7 @@ test('GET /install serves the verified distribution and buyer path page', async 
     assert.equal(res.status, 200, `${pathname} should render install page`);
     assert.match(res.headers.get('content-type') || '', /text\/html/);
     const html = await res.text();
-    assert.match(html, /Install paths verified for v1\.27\.17/);
+    assert.match(html, /Install paths verified for v1\.27\.20/);
     assert.match(html, /npm package/);
     assert.match(html, /VS Code Marketplace/);
     assert.match(html, /Open VSX/);
@@ -409,6 +409,12 @@ test('/checkout/pro bypasses to Stripe Payment Link (no false claims possible)',
   assert.equal(res.status, 302, 'expected Stripe redirect');
   const location = res.headers.get('location') || '';
   assert.match(location, /buy\.stripe\.com\//, 'must redirect to Stripe');
+  // 2026-07-09: the bypass must route to the Pro $19/mo Payment Link, NOT the
+  // $1 one-time "first failure rule" product. This was a 0-conversion root cause
+  // (issue #2188) — humans were sent to buy a $1 product instead of Pro.
+  const { __test__ } = require('../src/api/server');
+  const baseUrl = location.split('?')[0];
+  assert.equal(baseUrl, __test__.PRO_CHECKOUT_URL, 'bypass must target the Pro $19/mo Payment Link, not the $1 one-time product');
 });
 
 test('GET /codex-enterprise serves the Dell partnership landing HTML', async () => {

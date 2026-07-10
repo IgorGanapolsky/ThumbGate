@@ -20,6 +20,7 @@ const POSTHOG_STATIC_PATH_PREFIX = '/static/';
 // Stripe catalog, with the per-tier thumbnails wired in. Re-run the
 // bootstrap workflow to regenerate; the new URLs surface in the workflow
 // summary log.
+const PRO_CHECKOUT_URL = 'https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f';
 const FIRST_FAILURE_RULE_CHECKOUT_URL = 'https://buy.stripe.com/7sY6oHaiEbTw6tP5e33sI3e';
 const QUICK_READ_CHECKOUT_URL = 'https://buy.stripe.com/5kQ7sL76s1eSaK55e33sI2H';
 const WORKFLOW_TEARDOWN_CHECKOUT_URL = 'https://buy.stripe.com/8x214n2Qc4r44lHayn3sI2I';
@@ -219,6 +220,10 @@ const oauthStore = mcpOauth.createStore();
 const pendingOauthAuthorizeRequests = new Map();
 const OAUTH_AUTHORIZE_REQUEST_TTL_MS = 10 * 60 * 1000;
 const resendMailer = require('../../scripts/mailer/resend-mailer');
+const {
+  fingerprintProKey,
+  sendProActivationAlert,
+} = require('../../scripts/pro-local-dashboard');
 const {
   buildContextFootprintReport,
 } = require('../../scripts/context-footprint');
@@ -1760,8 +1765,10 @@ function appendFeedbackListLines(lines, { entries, signal, intent }) {
     lines.push(`No ${signal || 'feedback'} entries found ${intent.windowLabel}.`);
     return;
   }
-  lines.push(`${FEEDBACK_LIST_LABELS[signal] || 'Recent feedback'} (${intent.windowLabel}):`);
-  lines.push(...entries.map(formatFeedbackEntry));
+  lines.push(
+    `${FEEDBACK_LIST_LABELS[signal] || 'Recent feedback'} (${intent.windowLabel}):`,
+    ...entries.map(formatFeedbackEntry)
+  );
 }
 
 function buildFeedbackSection({ ctx, intent, feedbackDir, approval, lessonPipeline }) {
@@ -2244,8 +2251,8 @@ a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:
 <div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div>
 <h1>Start ThumbGate Pro</h1>
 <div class="price">$19<small>/mo</small></div>
-<p>The npm package runs your gates locally. <strong>Pro</strong> is what keeps them working across every machine, every agent runtime, and every breaking-change week.</p>
-<form action="https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f" method="GET" data-i="pro_checkout_confirmed">
+<p>The npm package runs your gates locally. <strong>Pro</strong> removes solo caps and adds personal recall, proof, exports, and adapter maintenance. Shared hosted lessons and org dashboards are Enterprise.</p>
+<form action="${PRO_CHECKOUT_URL}" method="GET" data-i="pro_checkout_confirmed">
 ${hiddenInputs}
 <input type="email" name="prefilled_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email">
 <p class="email-note">Optional. Stripe can collect your email on the secure checkout page.</p>
@@ -2264,7 +2271,7 @@ ${hiddenInputs}
 </div>
 <div class="feedback-saved" id="feedback-saved">Feedback saved.</div>
 </div>
-<div class="trust"><div class="trust-item">Lessons synced across all your machines — no local SQLite to babysit</div><div class="trust-item">Adapter matrix kept current for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — version drift is our problem, not yours</div><div class="trust-item">Hosted dashboard: gate stats, DPO export, org-wide rule library</div><div class="trust-item">24×7 ops on the rule engine — SonarCloud regressions fixed in &lt;24h</div></div>
+<div class="trust"><div class="trust-item">Personal recall and proof exports without free-tier caps</div><div class="trust-item">Adapter matrix kept current for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode</div><div class="trust-item">Personal dashboard: gate stats, rule evidence, DPO export</div><div class="trust-item">Enterprise adds shared hosted lessons, org visibility, rollout support</div></div>
 <p class="back"><a href="/">← Back to thumbgate.ai</a></p>
 </main>
 <script>
@@ -2789,9 +2796,17 @@ function fillTemplate(template, replacements) {
 }
 
 function escapeHtmlAttribute(value) {
+  // Complete HTML-entity encoder for attribute contexts. Escapes single quotes
+  // and backticks in addition to & " < > so the output is safe in single- AND
+  // double-quoted attributes (and not just the double-quoted case). Fixes
+  // CodeQL js/reflected-xss #252 (search-param `email` reflected into the
+  // checkout page's value="..." attribute) — the prior version omitted ' which
+  // left it context-fragile and unrecognized as a sanitizer.
   return String(value)
     .replaceAll('&', '&amp;')
     .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+    .replaceAll('`', '&#96;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;');
 }
@@ -5221,7 +5236,14 @@ function createApiServer() {
     if (req.method === 'POST' && pathname === '/api/event') {
       // Filter bots from analytics to keep Plausible data clean
       let _botDetector;
-      try { _botDetector = require('../../scripts/bot-detection'); } catch (_e) { _botDetector = null; }
+      try {
+        _botDetector = require('../../scripts/bot-detection');
+      } catch (err) {
+        _botDetector = null;
+        if (process.env.THUMBGATE_DEBUG_BOT_DETECTION === '1') {
+          console.warn(`Optional bot-detection module unavailable: ${err.message}`);
+        }
+      }
       if (_botDetector && _botDetector.shouldExcludeFromAnalytics(req)) {
         sendJson(res, 202, { status: 'filtered', reason: 'bot' });
         return;
@@ -6116,7 +6138,7 @@ async function addContext(){
         // THUMBGATE_CHECKOUT_PRO_STRIPE_URL is supported for future
         // price-link rotation without a redeploy.
         const bypassTarget = process.env.THUMBGATE_CHECKOUT_PRO_STRIPE_URL
-          || FIRST_FAILURE_RULE_CHECKOUT_URL;
+          || PRO_CHECKOUT_URL;
         appendBestEffortTelemetry(FEEDBACK_DIR, {
           eventType: 'checkout_interstitial_bypass_redirect',
           clientType: 'web',
@@ -6180,6 +6202,12 @@ async function addContext(){
           ? 'checkout_bot_deflected'
           : 'checkout_interstitial_view';
         const missingConfirmedEmail = hasConfirmFlag && !hasValidCustomerEmailHint;
+        let checkoutDeflectionReason = botClassification.reason;
+        if (missingConfirmedEmail) {
+          checkoutDeflectionReason = hasCustomerEmailHint
+            ? 'invalid_customer_email'
+            : 'missing_customer_email';
+        }
         appendBestEffortTelemetry(FEEDBACK_DIR, {
           eventType,
           clientType: 'web',
@@ -6203,9 +6231,7 @@ async function addContext(){
           isBot: botClassification.isBot ? 'true' : 'false',
           interstitialSampled: interstitialSampled ? 'true' : 'false',
           interstitialSampleRate,
-          reason: missingConfirmedEmail
-            ? (hasCustomerEmailHint ? 'invalid_customer_email' : 'missing_customer_email')
-            : botClassification.reason,
+          reason: checkoutDeflectionReason,
           confirmEmailRequired: missingConfirmedEmail ? 'true' : 'false',
         }, req.headers, eventType);
         const prefilledEmail = parsed?.searchParams?.get('customer_email') || '';
@@ -9206,6 +9232,48 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         return;
       }
 
+      // POST /v1/billing/pro-activation — customer key activation alert.
+      if (req.method === 'POST' && pathname === '/v1/billing/pro-activation') {
+        const token = extractBearerToken(req);
+        const validation = validateApiKey(token);
+        if (!validation.valid) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.UNAUTHORIZED,
+            title: 'Unauthorized',
+            status: 401,
+            detail: 'A valid API key is required to access this endpoint.',
+          });
+          return;
+        }
+
+        const body = await parseJsonBody(req);
+        const keyFingerprint = fingerprintProKey(token);
+        const alert = await sendProActivationAlert({
+          key: token,
+          source: body.source || 'hosted_pro_activation',
+          version: body.version || null,
+          customerId: validation.customerId,
+          installId: validation.installId,
+          usageCount: validation.usageCount,
+          env: process.env,
+        });
+
+        sendJson(res, 200, {
+          ok: true,
+          customerId: validation.customerId,
+          installId: validation.installId,
+          usageCount: validation.usageCount,
+          keyFingerprint,
+          keyFingerprintMatchesClient: body.keyFingerprint ? body.keyFingerprint === keyFingerprint : null,
+          alert: {
+            sent: Boolean(alert?.sent),
+            reason: alert?.reason || null,
+            id: alert?.id || null,
+          },
+        });
+        return;
+      }
+
       // POST /v1/billing/provision — manually provision key (admin)
       if (req.method === 'POST' && pathname === '/v1/billing/provision') {
         if (!isStaticAdminAuthorized(req, expectedApiKey)) {
@@ -9765,6 +9833,9 @@ module.exports = {
   createApiServer,
   startServer,
   __test__: {
+    PRO_CHECKOUT_URL,
+    escapeHtmlAttribute,
+    renderCheckoutIntentPage,
     buildCheckoutFallbackUrl,
     createPrivateCoreUnavailableError,
     buildPosthogProxyRequestOptions,

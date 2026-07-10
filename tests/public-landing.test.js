@@ -43,7 +43,7 @@ test('public landing page keeps FAQPage JSON-LD parity for SEO and GEO', () => {
   assert.match(landingPage, /PreToolUse hook enforcement/i);
   assert.match(landingPage, /Thompson Sampling/i);
   assert.match(landingPage, /prompt evaluation/i);
-  assert.match(landingPage, /one real blocked repeat/i);
+  assert.match(landingPage, /one real caught repeat/i);
   assert.match(landingPage, /workflow owner needs approval boundaries/i);
 });
 
@@ -80,7 +80,7 @@ test('public landing page distinguishes pre-action governance from logging and s
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /Governance, Not Logging/);
-  assert.match(landingPage, /Logs describe the damage\. ThumbGate blocks the risky action before it runs\./);
+  assert.match(landingPage, /Logs describe the damage\. ThumbGate flags the risky action before it runs/);
   assert.match(landingPage, /Self-governance is an operator writing local rules and keeping local logs\./);
   assert.match(landingPage, /pre-action decision/);
   assert.match(landingPage, /Reviewable decision trail/);
@@ -107,7 +107,10 @@ test('public landing page exposes above-fold paid Pro CTA with canonical revenue
   assert.match(heroBlock, /aria-label="Choose the right ThumbGate path"/);
   assert.match(heroBlock, /Solo operator: Start Pro/);
   assert.match(heroBlock, /data-cta-id="router_start_pro"/);
-  assert.match(heroBlock, /Enterprise workflow: Start with intake/);
+  assert.match(heroBlock, /Enterprise governance: Start with one workflow/);
+  assert.match(heroBlock, /Ideal customer/);
+  assert.match(heroBlock, /enterprise engineering, security, and platform teams/i);
+  assert.match(heroBlock, /Detection and coordination layers can identify drift/);
   assert.match(heroBlock, /Still evaluating: Free CLI/);
   assert.match(landingPage, /function trackRevenueCta/);
   assert.match(landingPage, /plausible\('pricing_cta_click'/);
@@ -160,7 +163,7 @@ test('public landing page includes pricing section with Free, Pro, and Enterpris
   assert.doesNotMatch(landingPage, /\$49\s*<span[^>]*>\s*\/seat\/mo/);
   // Free tier is intentionally capped so the npm package proves value without
   // cannibalizing Pro.
-  assert.match(landingPage, /Block repeated mistakes daily/);
+  assert.match(landingPage, /Catch repeated mistakes daily/);
   assert.match(landingPage, /2 captures\/day, 3 active rules/i);
   assert.match(landingPage, /2 feedback captures\/day/i);
   assert.match(landingPage, /Up to 3 active auto-promoted prevention rules/i);
@@ -272,7 +275,7 @@ test('public landing page reflects June 2026 agent-governance buying triggers', 
   assert.match(section, /Tokenmaxxing backlash/);
   assert.match(section, /Production code by AI/);
   assert.match(section, /lower credible conversion bound beats zero/);
-  assert.match(landingPage, /Pro unlocks recall, sync, exports/);
+  assert.match(landingPage, /Pro unlocks recall, proof, exports/);
   assert.doesNotMatch(landingPage, /free CLI, zero friction/);
 });
 
@@ -379,8 +382,8 @@ test('public landing page hero features both thumbs up AND thumbs down prominent
   // Signal pills must show both
   assert.match(landingPage, /signal-pill signal-up/);
   assert.match(landingPage, /signal-pill signal-down/);
-  assert.match(landingPage, /Block repeat hallucinations/i);
-  assert.match(landingPage, /Thumbs-down once, blocked forever/i);
+  assert.match(landingPage, /Catch repeat hallucinations/i);
+  assert.match(landingPage, /Thumbs-down once, caught every time/i);
   assert.match(landingPage, /reliable operator/i);
   // Persona targeting
   assert.match(landingPage, /class="hero-persona"/);
@@ -401,12 +404,12 @@ test('public landing page gives cold users a first-dollar activation path', () =
 
   assert.match(landingPage, /Block your first repeated AI mistake in 5 minutes/i);
   assert.match(landingPage, /First-Dollar Activation Path/i);
-  assert.match(landingPage, /Prove one blocked repeat before asking anyone to buy/i);
+  assert.match(landingPage, /Prove one caught repeat before asking anyone to buy/i);
   assert.match(landingPage, /Native ChatGPT rating buttons are not the ThumbGate capture path/i);
   assert.match(landingPage, /Give <code>thumbs up<\/code> when the agent follows your standards/i);
   assert.match(landingPage, /thumbs up: this review named exact files/i);
   assert.match(landingPage, /thumbs down: the answer ignored my request/i);
-  assert.match(landingPage, /Upgrade after one real blocked repeat/i);
+  assert.match(landingPage, /Upgrade after one real caught repeat/i);
 });
 
 test('Codex plugin page keeps proof and follow-on CTAs close to the install path', () => {
@@ -417,7 +420,7 @@ test('Codex plugin page keeps proof and follow-on CTAs close to the install path
   assert.match(codexPluginPage, /COMMERCIAL_TRUTH\.md/);
   assert.match(codexPluginPage, /\/checkout\/pro\?utm_source=codex/);
   assert.match(codexPluginPage, /#workflow-sprint-intake/);
-  assert.match(codexPluginPage, /Upgrade after one blocked repeat/i);
+  assert.match(codexPluginPage, /Upgrade after one caught repeat/i);
   assert.match(codexPluginPage, /Team workflow sprint/i);
 });
 
@@ -722,7 +725,7 @@ test('landing page has newsletter signup', () => {
 
 test('landing page has social links in footer', () => {
   const html = readLandingPage();
-  assert.match(html, /href="https:\/\/x\.com\/[^"]+"/, 'footer must link to X/Twitter');
+  assert.match(html, /href="https:\/\/github\.com\/IgorGanapolsky\/ThumbGate"/, 'footer must link to GitHub');
   assert.match(html, /href="https:\/\/www\.linkedin\.com\/[^"]+"/, 'footer must link to LinkedIn');
   assert.ok(html.includes('/blog'), 'footer must link to blog');
 });

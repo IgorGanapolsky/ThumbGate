@@ -330,9 +330,16 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // focused Workflow Hardening Diagnostic conversion page for warm traffic.
   // Bumped 327 -> 328 (2026-07-02) to ship public/install.html, the
   // install-intent buyer path that server.js reads at runtime.
+  // Bumped 328 -> 330 (2026-07-09) to ship scripts/entitlement.js and
+  // config/entitlement-public-keys.json for signed-entitlement verification.
+  // These are public runtime verifier files only: public keys, no private key
+  // material, no Core dependency, no pro source subtree.
+  // Bumped 330 -> 332 (2026-07-09) to ship scripts/imperative-detector.js
+  // (never/always directive -> force-gate offer) in lockstep with the
+  // public-core-boundary ceiling.
   assert.ok(
-    manifest.fileCount <= 328,
-    `npm package should stay <= 328 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 332,
+    `npm package should stay <= 332 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -454,9 +461,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 4.70 MB -> 4.75 MB (2026-06-12) for Core AI provider and main merges.
   // Bumped 4.75 MB -> 4.80 MB (2026-06-29) for public/diagnostic.html,
   // the focused Workflow Hardening Diagnostic conversion page.
+  // Bumped 4.80 MB -> 4.82 MB (2026-07-09) for signed-entitlement verifier
+  // wiring and the bundled public keyset. Public verification code only; no
+  // private key material, Core dependency, or pro source subtree.
   assert.ok(
-    manifest.unpackedSize <= 4_800_000,
-    `npm package should stay <= 4.80 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_820_000,
+    `npm package should stay <= 4.82 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

@@ -66,10 +66,10 @@
   <h1>MCP Pre-Action Checks Explained</h1>
   <p style="color:var(--muted);">4 min read &middot; Technical deep-dive for developers building on MCP</p>
 
-  <div class="tldr"><strong>TL;DR:</strong> Pre-action checks intercept tool calls before they execute. Unlike prompt rules, they cannot be ignored. This is how enforcement actually works in MCP.</div>
+  <div class="tldr"><strong>TL;DR:</strong> Pre-action checks intercept tool calls before they execute. Unlike prompt rules, they always fire — flagging and logging by default, and hard-blocking in strict mode (<code>THUMBGATE_STRICT_ENFORCEMENT=1</code>). This is how enforcement actually works in MCP.</div>
 
   <h2>What is a pre-action check?</h2>
-  <p>A pre-action check is an enforcement rule that intercepts an AI agent's tool call <em>before</em> it executes. If the tool call matches a known-bad pattern, the check blocks it and returns a rejection to the agent. The agent then adapts its approach without ever having run the dangerous action.</p>
+  <p>A pre-action check is an enforcement rule that intercepts an AI agent's tool call <em>before</em> it executes. If the tool call matches a known-bad pattern, the check flags and logs it by default — and in strict mode hard-blocks it and returns a rejection to the agent, so the dangerous action never runs. The highest-severity classes (secret exfiltration, supply-chain installs, <code>rm -rf</code>-style deletes) hard-block even by default.</p>
   <p>Checks run at the hook layer of the Model Context Protocol (MCP). They are external to the agent's reasoning chain, which means they cannot be overridden by prompt injection, context overflow, or chain-of-thought reasoning.</p>
 
   <h2>How it works: the tool call lifecycle</h2>
@@ -80,9 +80,9 @@
     <span class="arrow">&darr;</span><br>
     <span class="block">ThumbGate checks tool call against checks</span><br>
     <span class="arrow">&darr;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&darr;</span><br>
-    <span class="block">No match &rarr; ALLOW</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="deny">Match &rarr; BLOCK + reason</span><br>
+    <span class="block">No match &rarr; ALLOW</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="deny">Match &rarr; FLAG / BLOCK + reason</span><br>
     <span class="arrow">&darr;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&darr;</span><br>
-    <span class="block">Tool executes</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="deny">Agent receives rejection</span>
+    <span class="block">Tool executes</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="deny">Agent gets flag or rejection</span>
   </div>
 
   <h2>Prompt rules vs. pre-action checks</h2>
@@ -93,7 +93,7 @@
     <tbody>
       <tr><td>Where they live</td><td>Inside agent context</td><td>External hook layer</td></tr>
       <tr><td>Can be overridden</td><td>Yes (context overflow, reasoning)</td><td>No (runs outside agent)</td></tr>
-      <tr><td>Enforcement</td><td>Advisory</td><td>Physical block</td></tr>
+      <tr><td>Enforcement</td><td>Advisory</td><td>Flag + log by default; hard-block in strict mode</td></tr>
       <tr><td>Persistence</td><td>Per-session (context-dependent)</td><td>Permanent (database-backed)</td></tr>
       <tr><td>Adapts over time</td><td>No</td><td>Yes (Thompson Sampling)</td></tr>
       <tr><td>Explains why</td><td>No</td><td>Yes (reason chain per block)</td></tr>
@@ -107,15 +107,15 @@
   <pre><code>{
   "tool": "Bash",
   "pattern": "git push.*(--force|-f).*main",
-  "action": "BLOCK"
+  "action": "WARN"        // flags + logs by default; hard-blocks under THUMBGATE_STRICT_ENFORCEMENT=1
 }</code></pre>
 
   <h3>2. Evidence and reasoning</h3>
   <p>Every check decision includes a reasoning chain: why this pattern exists, how many times it has fired, what the original failure was. This transparency lets you audit the system and tune it.</p>
   <pre><code>{
   "check": "no-force-push-main",
-  "decision": "BLOCK",
-  "reason": "Force-push to main blocked",
+  "decision": "WARN",
+  "reason": "Force-push to main flagged (hard-blocks in strict mode)",
   "evidence": "User reported loss of 14 commits (2026-03-15)",
   "fire_count": 7,
   "confidence": 0.94

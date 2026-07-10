@@ -207,7 +207,7 @@
       <ul>
         <li>Stopping agent mistakes before they execute: bad bash, destructive DB query, unauthorized file write, privilege-violating LLM call.</li>
         <li>Cross-agent enforcement: the same prevention rule fires inside Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and Claude Desktop with one config.</li>
-        <li>Operator-feedback learning: thumbs-down on a bad output becomes a real Pre-Action Check that blocks the repeat next time, with precision/recall gating before any rule auto-promotes.</li>
+        <li>Operator-feedback learning: thumbs-down on a bad output becomes a real Pre-Action Check that catches the repeat next time, with precision/recall gating before any rule auto-promotes.</li>
         <li>Hosted lesson sync, dashboard, DPO export, adapter matrix maintenance, 24×7 ops on the rule engine (Pro/Team tiers).</li>
       </ul>
     </article>
@@ -273,7 +273,7 @@ bumblebee scan profile baseline</pre>
       </a>
       <a class="related-card" href="/compare/claude-code-hooks">
         <strong>ThumbGate vs claude-code-hooks</strong><br>
-        <span style="color: var(--muted); font-size: 13px;">Hosted sync vs local shell scripts</span>
+        <span style="color: var(--muted); font-size: 13px;">Personal recall vs local shell scripts</span>
       </a>
       <a class="related-card" href="/compare/heidi">
         <strong>ThumbGate vs HEIDI</strong><br>

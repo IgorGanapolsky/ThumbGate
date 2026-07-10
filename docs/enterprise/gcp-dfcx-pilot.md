@@ -46,7 +46,7 @@ Stated plainly so the offer is honest:
 
 ## Why ThumbGate specifically
 
-The gate is the same engine that blocks repeat mistakes for coding agents — `evaluateGates(action)` → allow/deny, plus same-session repeat detection and risk scoring. Applied to DFCX fulfillment, "block the second bad action before it round-trips" becomes "block the bad refund before the money moves." The implementation in `adapters/gcp/` is real, tested code — not slideware.
+The gate is the same engine that catches repeat mistakes for coding agents — `evaluateGates(action)` → allow/deny, plus same-session repeat detection and risk scoring. Applied to DFCX fulfillment, "block the second bad action before it round-trips" becomes "block the bad refund before the money moves." The implementation in `adapters/gcp/` is real, tested code — not slideware.
 
 ## Next step
 

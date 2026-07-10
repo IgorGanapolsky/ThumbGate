@@ -36,7 +36,7 @@ process.stderr.write(`
   ╰─────────────────────────────────────────────────────╯
 
   Trial unlocks: unlimited rules, lesson search, DPO export,
-  hosted dashboard. After 7 days, free tier limits apply.
+  and personal dashboard proof. After 7 days, free tier limits apply.
   Subscribe for the 5-min setup guide + weekly tips:
   npx thumbgate subscribe you@company.com
 

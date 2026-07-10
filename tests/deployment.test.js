@@ -606,7 +606,17 @@ test('Publish to NPM workflow uses the tested publish-decision guardrail', () =>
   assert.match(workflow, /'adapters\/\*\*'\s+'plugins\/\*\*'/);
   assert.match(workflow, /PENDING_CHANGESETS=\$\(git diff --name-only "\$LAST_TAG"\.\.HEAD -- '\.changeset\/\*\.md'/);
   assert.match(workflow, /grep -v '\^\.changeset\/README\.md\$'/);
-  assert.match(workflow, /Treating this no-op as release-audited until the next versioned publish lands\./);
+  // The pending-changeset exemption must be bounded. It used to excuse a publish no-op forever,
+  // which let PR #2807's security fix sit unshipped while this workflow reported success
+  // (2026-07-09). The decision now lives in the unit-tested scripts/release-window.js.
+  assert.match(workflow, /node scripts\/release-window\.js/);
+  assert.match(workflow, /MAX_UNRELEASED_DAYS="\$\{MAX_UNRELEASED_DAYS:-7\}"/);
+  assert.match(workflow, /LAST_TAG_TIMESTAMP="\$\(git log -1 --format=%ct "\$LAST_TAG"\)"/);
+  assert.doesNotMatch(
+    workflow,
+    /Treating this no-op as release-audited until the next versioned publish lands\./,
+    'the unbounded exemption must not return',
+  );
   assert.match(workflow, /npm publish --tag "\$\{\{\s*steps\.plan\.outputs\.npm_tag \|\| 'latest'\s*\}\}" --provenance/);
   assert.match(workflow, /--install-attempts 12 --install-delay-ms 10000/);
 });

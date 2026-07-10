@@ -562,7 +562,7 @@ const PRETOOLUSE_HOOK_GUIDE_SPEC = Object.freeze({
     ],
     [
       'Does this run locally or call a cloud service?',
-      'Local-first. The PreToolUse decision happens in the hook process on your machine in milliseconds — no network round-trip, no cloud dependency, no data leaving the laptop. Optional hosted sync exists for teams that want to share rules across seats.',
+      'Local-first. The PreToolUse decision happens in the hook process on your machine in milliseconds — no network round-trip, no cloud dependency, no data leaving the laptop. Pro adds personal recall, exports, dashboard proof, and managed adapter coverage. Enterprise adds hosted sharing for teams that want to share rules across seats.',
     ],
   ],
   relatedPaths: ['/guides/mcp-tool-governance', '/guides/ai-agent-pre-action-approval-gates', '/guides/ai-coding-agent-zero-trust'],
@@ -1972,7 +1972,7 @@ const PAGE_BLUEPRINTS = [
     faq: [
       {
         question: 'Why pay $19/mo for ThumbGate Pro when disler hooks are free?',
-        answer: 'Free disler hooks are static patterns you maintain per machine — re-copying them when they change, debugging false positives alone, and re-applying them in every new project. ThumbGate Pro adds the learning loop (thumbs-down → cross-session prevention rule), the dashboard, hosted sync across machines, and adapter maintenance across the weekly breaking-change cycle of Claude Code, Cursor, and Cline. Free disler is the right answer if you only ever work in one project on one machine and never want to learn from past mistakes. Pro is the right answer when those assumptions stop holding.',
+        answer: 'Free disler hooks are static patterns you maintain per machine — re-copying them when they change, debugging false positives alone, and re-applying them in every new project. ThumbGate Pro adds the learning loop (repeated thumbs-downs → cross-session prevention rule), the personal dashboard, lesson recall/search, DPO export, and adapter maintenance across the weekly breaking-change cycle of Claude Code, Cursor, and Cline. Free disler is the right answer if you only ever work in one project on one machine and never want to learn from past mistakes. Pro is the right answer when those assumptions stop holding; Enterprise adds shared hosted lessons across seats.',
       },
       {
         question: 'Is ThumbGate just a packaged version of disler/claude-code-hooks-mastery?',

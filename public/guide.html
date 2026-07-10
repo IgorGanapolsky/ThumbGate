@@ -9,7 +9,7 @@
 <meta name="description" content="The complete guide to preventing AI coding agent mistakes with pre-action checks, history-aware lesson distillation, and automatic prevention rules.">
 <meta name="keywords" content="AI agent mistakes, Claude Code force push, AI coding agent memory, MCP server guardrails, pre-action checks, vibe coding safety, PreToolUse hooks, ThumbGate, SpecLock alternative, Mem0 alternative">
 <meta property="og:title" content="How to Stop AI Coding Agents From Repeating Mistakes">
-<meta property="og:description" content="Pre-action checks that physically block AI agents from repeating known mistakes. The complete guide.">
+<meta property="og:description" content="Pre-action checks that flag and log known agent mistakes — and hard-block the catastrophic ones. The complete guide.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://thumbgate.ai/guide">
 <link rel="canonical" href="https://thumbgate.ai/guide">
@@ -69,8 +69,8 @@
     {
       "@type": "HowToStep",
       "position": 4,
-      "name": "Checks block mistakes before they happen",
-      "text": "PreToolUse hooks intercept tool calls and check them against known failure patterns. Bad actions are blocked before execution."
+      "name": "Checks flag mistakes before they happen",
+      "text": "PreToolUse hooks intercept tool calls and check them against known failure patterns. Risky actions are flagged and logged before execution; catastrophic ones (secret exfiltration, destructive deletes) are hard-blocked, and any rule can hard-block under strict mode."
     }
   ]
 }
@@ -94,7 +94,7 @@
       "name": "Why does my Claude Code agent keep force-pushing to main?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Because prompt rules are suggestions the agent can ignore. ThumbGate solves this with enforcement: a PreToolUse hook fires before every tool call and checks it against known failure patterns. If the action matches a check (like git push --force to main), it is physically blocked before execution."
+        "text": "Because prompt rules are suggestions the agent can ignore. ThumbGate adds enforcement: a PreToolUse hook fires before every tool call and checks it against known failure patterns. When the action matches a check (like git push --force to main), it is flagged and logged before execution — and hard-blocked when strict enforcement (THUMBGATE_STRICT_ENFORCEMENT=1) is on. Catastrophic actions such as secret exfiltration and destructive deletes are hard-blocked by default."
       }
     },
     {
@@ -102,7 +102,7 @@
       "name": "What is the difference between pre-action checks and prompt rules?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Prompt rules (like CLAUDE.md or .cursorrules) are instructions the agent may ignore. Pre-action checks are enforcement: they intercept the tool call at the PreToolUse hook level and block it before execution. Checks are auto-generated from feedback and use Thompson Sampling to adapt their sensitivity."
+        "text": "Prompt rules (like CLAUDE.md or .cursorrules) are instructions the agent may ignore. Pre-action checks are enforcement: they intercept the tool call at the PreToolUse hook level and act on it before execution — flagging and logging by default, hard-blocking catastrophic actions and anything under strict mode. Checks are auto-generated from feedback and use Thompson Sampling to adapt their sensitivity."
       }
     },
     {
@@ -110,7 +110,7 @@
       "name": "How does ThumbGate compare to SpecLock?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "SpecLock requires manually writing constraints or compiling them from a PRD. ThumbGate learns automatically from thumbs-up/down feedback and auto-generates prevention rules from repeated failures. SpecLock locks files from modification; ThumbGate blocks specific actions before they execute."
+        "text": "SpecLock requires manually writing constraints or compiling them from a PRD. ThumbGate learns automatically from thumbs-up/down feedback and auto-generates prevention rules from repeated failures. SpecLock locks files from modification; ThumbGate flags specific actions before they execute and hard-blocks the catastrophic ones (or any rule under strict mode)."
       }
     },
     {
@@ -118,7 +118,7 @@
       "name": "How does ThumbGate compare to Mem0?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Mem0 is cloud-hosted memory for AI apps. ThumbGate is local-first enforcement. Mem0 remembers context but cannot block actions. ThumbGate captures feedback, promotes it to prevention rules, and physically blocks tool calls that match known failure patterns."
+        "text": "Mem0 is cloud-hosted memory for AI apps. ThumbGate is local-first enforcement. Mem0 remembers context but does not gate actions. ThumbGate captures feedback, promotes it to prevention rules, and flags tool calls that match known failure patterns — hard-blocking the catastrophic ones (or any rule under strict mode)."
       }
     },
     {
@@ -223,7 +223,7 @@
 <p>This happens because <strong>prompt rules are suggestions</strong>. The agent can read them, forget them, or override them. There is no enforcement at the tool-call level.</p>
 
 <h2>The Fix: Pre-Action Checks</h2>
-<p>ThumbGate adds an enforcement layer between your agent and its tools. When the agent tries to execute a tool call, a <code>PreToolUse</code> hook fires <em>before</em> the action runs. The hook checks the call against known failure patterns. If it matches a check, the action is blocked.</p>
+<p>ThumbGate adds an enforcement layer between your agent and its tools. When the agent tries to execute a tool call, a <code>PreToolUse</code> hook fires <em>before</em> the action runs. The hook checks the call against known failure patterns. If it matches a check, the action is flagged and logged — and hard-blocked for catastrophic classes (secret exfiltration, security/supply-chain, destructive deletes) or when strict enforcement (<code>THUMBGATE_STRICT_ENFORCEMENT=1</code>) is on.</p>
 
 <div class="card">
 <h3>Before ThumbGate</h3>
@@ -231,7 +231,7 @@
 Result: Force-pushed. You lose 3 commits. Again.</code></pre>
 <h3>After ThumbGate</h3>
 <pre><code>Agent: git push --force origin main
-[check] Blocked: no-force-push (confidence: 0.94)
+[check] Warn: no-force-push (confidence: 0.94) — hard-blocked under strict mode
 Agent: git push origin feature-branch
 [check] Passed</code></pre>
 </div>
@@ -257,7 +257,7 @@ npx thumbgate init --agent gemini</code></pre>
       <td><strong>Machine-wide</strong> (default)</td>
       <td><code>npx thumbgate init</code></td>
       <td><code>~/.claude/memory/feedback/</code> — <strong>one shared dashboard across every repo on the machine</strong></td>
-      <td>Solo developer. A lesson learned in <code>repo-A</code> automatically blocks the same mistake in <code>repo-B</code>.</td>
+      <td>Solo developer. A lesson learned in <code>repo-A</code> automatically flags the same mistake in <code>repo-B</code>.</td>
     </tr>
     <tr>
       <td><strong>Per-project</strong></td>
@@ -315,7 +315,7 @@ npx thumbgate init --agent gemini</code></pre>
 <table class="comparison-table">
   <tr><th>Feature</th><th>Prompt Rules</th><th>Pre-Action Checks</th></tr>
   <tr><td>Where they live</td><td>CLAUDE.md, .cursorrules</td><td>PreToolUse hooks</td></tr>
-  <tr><td>Enforcement</td><td>Suggestion (can be ignored)</td><td>Blocks execution</td></tr>
+  <tr><td>Enforcement</td><td>Suggestion (can be ignored)</td><td>Flags + logs; hard-blocks critical / strict mode</td></tr>
   <tr><td>When they fire</td><td>At prompt load</td><td>Before every tool call</td></tr>
   <tr><td>Auto-generated</td><td>No — hand-written</td><td>Yes — from feedback</td></tr>
   <tr><td>Adaptive</td><td>No</td><td>Yes — Thompson Sampling</td></tr>
@@ -325,7 +325,7 @@ npx thumbgate init --agent gemini</code></pre>
 <h2>ThumbGate vs Alternatives</h2>
 <table class="comparison-table">
   <tr><th>Feature</th><th>ThumbGate</th><th>SpecLock</th><th>Mem0</th></tr>
-  <tr><td>Blocks mistakes before execution</td><td>Yes — PreToolUse checks</td><td>Yes — Patch Firewall</td><td>No</td></tr>
+  <tr><td>Flags mistakes before execution</td><td>Yes — PreToolUse checks (hard-blocks critical / strict mode)</td><td>Yes — Patch Firewall</td><td>No</td></tr>
   <tr><td>Learns from feedback</td><td>Yes — thumbs up/down</td><td>No — manual specs</td><td>Yes — auto-capture</td></tr>
   <tr><td>Auto-generates rules</td><td>Yes — from repeated failures</td><td>No</td><td>No</td></tr>
   <tr><td>Agent support</td><td>Claude Code, Codex, Gemini, Amp, Cursor, OpenCode</td><td>Claude Code, Cursor, Windsurf, Cline</td><td>Claude, Cursor</td></tr>
@@ -342,7 +342,7 @@ npx thumbgate init --agent gemini</code></pre>
 <p>Give a thumbs-down: "committed code with failing tests." ThumbGate learns the pattern and checks future commits when test results show failures.</p>
 
 <h3>Agent uses wrong API endpoint</h3>
-<p>Give a thumbs-down: "called staging API in production code." The check blocks tool calls that reference staging URLs in production contexts.</p>
+<p>Give a thumbs-down: "called staging API in production code." The check flags and logs tool calls that reference staging URLs in production contexts (and hard-blocks them under strict mode).</p>
 
 <h2>When ThumbGate becomes a paid decision</h2>
 <p>Stay on the free install path while one operator is proving the workflow locally. The paid motion starts when a workflow owner asks for proof, shared enforcement, or a safer rollout path.</p>
@@ -375,7 +375,7 @@ npx thumbgate init --agent gemini</code></pre>
 <a href="__SPRINT_DIAGNOSTIC_CHECKOUT_URL__" class="cta cta-secondary">Pay $499 diagnostic</a>
 <a href="__WORKFLOW_SPRINT_CHECKOUT_URL__" class="cta cta-secondary">Pay $1500 sprint</a>
 <a href="https://thumbgate.ai/#workflow-sprint-intake" class="cta cta-secondary">Send workflow first</a>
-<p style="color:var(--muted); font-size:0.85rem;">Free: 2 captures/day, 10 total captures, 3 active prevention rules, hook blocking. Pro: hosted sync, dashboard, recall, lesson search, unlimited captures/rules, DPO export. Enterprise: intake first, then custom pricing scoped to your rollout.</p>
+<p style="color:var(--muted); font-size:0.85rem;">Free: 2 captures/day, 10 total captures, 3 active prevention rules, hook blocking. Pro: personal dashboard, recall, search, unlimited captures/rules, managed adapters, DPO export. Enterprise: shared hosted lessons, org visibility, custom rollout support.</p>
 
 </div>
 <script src="/js/buyer-intent.js"></script>

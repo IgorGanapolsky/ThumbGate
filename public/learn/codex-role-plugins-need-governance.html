@@ -82,7 +82,7 @@
     <tbody>
       <tr><td>Role plugin</td><td>Bundles repeatable work for sales, analytics, design, finance, and operations.</td><td>Require role-specific allowed tools, scopes, and blocked action patterns before execution.</td></tr>
       <tr><td>App integration</td><td>Lets Codex read or write external systems.</td><td>Route CRM, email, billing, data warehouse, and file-share writes through approval and audit checks.</td></tr>
-      <tr><td>MCP server</td><td>Adds custom tools and shared information.</td><td>Inventory tools, tag high-risk writes, and block unauthorized tool calls before the model invokes them.</td></tr>
+      <tr><td>MCP server</td><td>Adds custom tools and shared information.</td><td>Inventory tools, tag high-risk writes, and flag unauthorized tool calls before the model invokes them — hard-blocking them under strict mode.</td></tr>
       <tr><td>Sites</td><td>Turns output into shareable hosted apps and dashboards.</td><td>Require build proof, access mode, secret handling, and deployment evidence before publish.</td></tr>
       <tr><td>Annotations</td><td>Targets exact regions of documents, spreadsheets, and slides.</td><td>Require source-region evidence and prevent partial edits from bypassing whole-document policy.</td></tr>
     </tbody>
@@ -92,9 +92,9 @@
   <ol>
     <li><strong>Ship role-specific gate templates:</strong> sales, analytics, design, finance, legal, and customer-support templates with allowed actions and evidence labels.</li>
     <li><strong>Make plugin install prove itself:</strong> every Codex plugin install path should end with <code>npx thumbgate feedback-self-test</code> and one real gate check.</li>
-    <li><strong>Gate Sites deploys:</strong> block public deploy or access widening until build, audience, and secret-handling proof are attached.</li>
+    <li><strong>Gate Sites deploys:</strong> flag public deploy or access widening until build, audience, and secret-handling proof are attached — and hard-block under strict mode.</li>
     <li><strong>Gate annotated edits:</strong> require the selected artifact region, intended edit, and document-level invariant before saving or exporting.</li>
-    <li><strong>Measure the new buyer metric:</strong> role-workflow repeats blocked before execution, split by role and tool surface.</li>
+    <li><strong>Measure the new buyer metric:</strong> role-workflow repeats caught before execution, split by role and tool surface.</li>
   </ol>
 
   <div class="callout callout-green">

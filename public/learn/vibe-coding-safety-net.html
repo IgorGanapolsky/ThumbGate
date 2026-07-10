@@ -79,11 +79,11 @@
     <div class="good">
       <h4>With ThumbGate</h4>
       <ul>
-        <li>Check blocks file writes outside scope</li>
-        <li>Check blocks destructive SQL before execution</li>
-        <li>Check blocks force-push to protected branches</li>
+        <li>Check flags file writes outside scope</li>
+        <li>Check flags destructive SQL before execution</li>
+        <li>Check flags force-push to protected branches</li>
         <li>Check remembers your rejection across sessions</li>
-        <li>Mistakes are blocked permanently after feedback</li>
+        <li>Repeat mistakes are flagged and logged — and hard-blocked in strict mode</li>
       </ul>
     </div>
   </div>
@@ -93,7 +93,7 @@
   <p>Pre-action checks live <em>outside</em> the agent. They intercept tool calls at the hook layer (PreToolUse in MCP) before execution. The agent cannot override them because the check runs in a separate process.</p>
 
   <div class="callout callout-green">
-    <strong>Mental model:</strong> Prompt rules are speed limit signs. Pre-action checks are physical barriers. Signs can be ignored. Barriers cannot.
+    <strong>Mental model:</strong> Prompt rules are speed limit signs — easy to ignore. Pre-action checks are a camera that always catches the attempt and logs it, and in strict mode a barrier that stops it.
   </div>
 
   <h2>How to add guardrails in two minutes</h2>
@@ -101,15 +101,15 @@
     <li><strong>Install:</strong> <code>npx thumbgate init</code> — auto-detects your agent and configures hooks</li>
     <li><strong>Code normally:</strong> vibe-code as you always do, no workflow changes</li>
     <li><strong>Correct when needed:</strong> when the agent does something wrong, give it a thumbs-down with context</li>
-    <li><strong>Checks build themselves:</strong> repeated failures auto-promote into prevention rules that block the action next time</li>
+    <li><strong>Checks build themselves:</strong> repeated failures auto-promote into prevention rules that flag the action next time (and hard-block it in strict mode)</li>
   </ol>
 
   <h2>It gets smarter over time</h2>
   <p>ThumbGate uses Thompson Sampling to adapt enforcement. Patterns that cause real damage get strict checks. Low-risk patterns stay relaxed. The system tunes itself based on your feedback — no manual rule-writing required.</p>
-  <p>Every correction you make improves the model. Every thumbs-up reinforces good behavior. Over weeks, your agent develops an immune system tailored to your codebase and workflow.</p>
+  <p>Every correction you make sharpens the rules. Every thumbs-up reinforces good behavior. Over weeks, your agent develops an immune system tailored to your codebase and workflow.</p>
 
   <h2>What vibe-coders actually check</h2>
-  <p>Based on real usage patterns from ThumbGate users:</p>
+  <p>The checks worth wiring up first:</p>
   <ul>
     <li><strong>Git operations:</strong> force-push, branch deletion, rebase on shared branches</li>
     <li><strong>File mutations:</strong> writes to config files, package.json changes, lock file modifications</li>

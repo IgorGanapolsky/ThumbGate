@@ -78,7 +78,7 @@
   <p>"Measurable" is the operative word. A token-spend dashboard tells finance how much got burned; it doesn't tell the CIO board what was averted. <code>thumbgate cost</code> prints a single conservative dollar figure backed by the gate-block count from <em>your</em> machine — not "what enterprises like you saved." That's the artifact that survives a 2026 budget review.</p>
 
   <h2>One command, one number</h2>
-  <p>Once ThumbGate is installed and gates have been firing, this is what an operator sees:</p>
+  <p>Once ThumbGate is installed and gates have been firing, this is what an operator sees. The figures below are an <strong>illustrative example</strong> — your numbers are computed from your own machine's <code>gate-stats.json</code>, not from ThumbGate traction data:</p>
   <pre><code>$ thumbgate cost
 
 💰 ThumbGate cost-savings — cumulative
@@ -105,7 +105,7 @@
       <tr><td>See what agents spent last week</td><td>✅</td><td>Partial (via dashboard)</td></tr>
       <tr><td>Allocate spend to teams / features</td><td>✅</td><td>Per-gate breakdown via <code>byGate</code></td></tr>
       <tr><td>Stop a known-bad tool call before it hits the model</td><td>❌</td><td>✅ — PreToolUse gate fires, no API call made</td></tr>
-      <tr><td>Promote a one-off failure into a permanent gate</td><td>❌</td><td>✅ — feedback loop + lesson DB</td></tr>
+      <tr><td>Promote a one-off failure into a persistent gate</td><td>❌</td><td>✅ — feedback loop + lesson DB</td></tr>
       <tr><td>Surface gate candidates from <em>silent</em> failures (where no human ever gave thumbs-down)</td><td>❌</td><td>✅ — unsupervised silent-failure clustering, on by default</td></tr>
       <tr><td>Print conservative $ saved per day</td><td>❌</td><td>✅ — <code>thumbgate cost</code></td></tr>
       <tr><td>K8s pod-level allocation, finance-grade reporting</td><td>✅ (that's their core)</td><td>❌ (not our layer)</td></tr>
@@ -131,7 +131,7 @@ npx thumbgate cost        # see what the gates were worth</code></pre>
   <div class="quote">"The category isn't 'FinOps for AI' — it's 'gates that stop the spend so FinOps has less to report on.' One sits behind the other."</div>
 
   <div class="card">
-    <p><strong>The free CLI is real. The paid tier is the hosted dashboard, org-wide rule library, and the operator the Agent Manager doesn't have to be themselves.</strong></p>
+    <p><strong>The free CLI is real. Pro adds the personal dashboard, recall, exports, and managed adapters. Enterprise is the hosted dashboard, org-wide rule library, and the operator the Agent Manager doesn't have to be themselves.</strong></p>
     <p>
       <a href="/#workflow-sprint-intake?utm_source=website&amp;utm_medium=agents_cost_savings_page&amp;utm_campaign=finops_sprint&amp;cta_id=agents_cost_savings_sprint_intake&amp;cta_placement=agents_cost_savings_page" class="cta">Start the Workflow Hardening Sprint</a>
       <a href="/checkout/pro?utm_source=website&amp;utm_medium=agents_cost_savings_page&amp;utm_campaign=pro_upgrade&amp;cta_id=agents_cost_savings_pro_checkout&amp;cta_placement=agents_cost_savings_page&amp;plan_id=pro" class="secondary">Or start Pro at $19/mo →</a>

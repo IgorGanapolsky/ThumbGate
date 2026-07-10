@@ -14,11 +14,17 @@ const {
   CREATOR_BYPASS_ENV,
   CREATOR_BYPASS_VALUE,
   CREATOR_SYNTHETIC_KEY,
+  canSendProActivationAlert,
+  fingerprintProKey,
   getLicensePath,
   isCreatorDev,
+  notifyHostedProActivation,
   readLicense,
+  renderProActivationAlertBodies,
+  resolveProActivationAlertRecipient,
   resolveProKey,
   saveLicense,
+  sendProActivationAlert,
   startLocalProDashboard,
   validateProKey,
 } = require('../scripts/pro-local-dashboard');
@@ -104,6 +110,118 @@ test('pro local dashboard helper starts localhost dashboard and seeds pro env', 
   assert.equal(env.PORT, '0');
   assert.equal(result.port, 4123);
   assert.equal(result.url, 'http://localhost:4123/dashboard');
+});
+
+test('pro activation alert sends a secret-safe owner email', async () => {
+  const rawKey = 'tg_pro_unit_test_secret_key_1234567890';
+  const sent = [];
+
+  const result = await sendProActivationAlert({
+    key: rawKey,
+    source: 'unit_test_activate',
+    version: '9.9.9-test',
+    env: {
+      THUMBGATE_PRO_ACTIVATION_ALERT_EMAIL: 'owner@example.com',
+    },
+    sendEmailImpl: async (payload) => {
+      sent.push(payload);
+      return { sent: true, id: 'email_test_activation' };
+    },
+  });
+
+  assert.deepEqual(result, { sent: true, id: 'email_test_activation' });
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].to, 'owner@example.com');
+  assert.equal(sent[0].subject, 'ThumbGate Pro activated');
+  assert.match(sent[0].text, /ThumbGate Pro activation detected/);
+  assert.match(sent[0].text, /Key fingerprint: sha256:/);
+  assert.match(sent[0].html, /Key fingerprint/);
+  assert.doesNotMatch(sent[0].text, new RegExp(rawKey));
+  assert.doesNotMatch(sent[0].html, new RegExp(rawKey));
+});
+
+test('pro activation alert skips cleanly when email is unconfigured', async () => {
+  const result = await sendProActivationAlert({
+    key: 'tg_pro_unit_test_secret_key_0987654321',
+    env: {
+      RESEND_API_KEY: '',
+      THUMBGATE_RESEND_API_KEY: '',
+    },
+    sendEmailImpl: null,
+  });
+
+  assert.deepEqual(result, {
+    sent: false,
+    reason: 'activation_alert_disabled_or_unconfigured',
+  });
+});
+
+test('pro activation alert can be disabled explicitly', () => {
+  assert.equal(canSendProActivationAlert({
+    env: {
+      RESEND_API_KEY: 're_test_key',
+      THUMBGATE_DISABLE_PRO_ACTIVATION_ALERTS: '1',
+    },
+  }), false);
+});
+
+test('pro activation alert fingerprints keys without exposing the key', () => {
+  const key = 'tg_pro_unit_test_fingerprint_key_1234567890';
+  const fingerprint = fingerprintProKey(key);
+  const bodies = renderProActivationAlertBodies({
+    keyFingerprint: fingerprint,
+    source: 'unit_test',
+    version: '1.2.3',
+    activatedAt: '2026-07-09T12:00:00.000Z',
+    hostname: 'test-host',
+    platform: 'darwin',
+    arch: 'arm64',
+    nodeVersion: 'v99.0.0',
+  });
+
+  assert.match(fingerprint, /^sha256:[a-f0-9]{12}$/);
+  assert.equal(resolveProActivationAlertRecipient({
+    THUMBGATE_PRO_ACTIVATION_ALERT_EMAIL: 'alerts@example.com',
+  }), 'alerts@example.com');
+  assert.match(bodies.text, new RegExp(fingerprint));
+  assert.match(bodies.html, new RegExp(fingerprint));
+  assert.doesNotMatch(bodies.text, new RegExp(key));
+  assert.doesNotMatch(bodies.html, new RegExp(key));
+});
+
+test('hosted pro activation notifier sends key only as bearer auth', async () => {
+  const rawKey = 'tg_pro_unit_test_notify_key_1234567890';
+  let captured = null;
+  const result = await notifyHostedProActivation({
+    key: rawKey,
+    source: 'unit_test_cli',
+    version: '7.7.7-test',
+    apiBaseUrl: 'https://api.example.com/base',
+    fetchImpl: async (url, init) => {
+      captured = { url, init };
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            alert: { sent: true, id: 'email_activation_test' },
+            keyFingerprint: fingerprintProKey(rawKey),
+          };
+        },
+      };
+    },
+  });
+
+  assert.equal(result.notified, true);
+  assert.equal(result.alert.sent, true);
+  assert.equal(captured.url, 'https://api.example.com/v1/billing/pro-activation');
+  assert.equal(captured.init.method, 'POST');
+  assert.equal(captured.init.headers.authorization, `Bearer ${rawKey}`);
+  const body = JSON.parse(captured.init.body);
+  assert.equal(body.source, 'unit_test_cli');
+  assert.equal(body.version, '7.7.7-test');
+  assert.match(body.keyFingerprint, /^sha256:[a-f0-9]{12}$/);
+  assert.doesNotMatch(captured.init.body, new RegExp(rawKey));
 });
 
 // ── Creator dev bypass tests ────────────────────────────────────

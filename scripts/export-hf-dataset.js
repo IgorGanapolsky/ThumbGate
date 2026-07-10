@@ -177,6 +177,11 @@ function buildDatasetInfo({ traceCount, preferenceCount, exportedAt }) {
  * @returns {Object} Export summary
  */
 function exportHfDataset(options = {}) {
+  // Paid-feature gate (advisory by default; enforced via THUMBGATE_ENFORCE_ENTITLEMENTS=1).
+  const _ent = require('./entitlement').requireEntitlement('data-export');
+  if (!_ent.entitled) {
+    console.error(`⚠️ ThumbGate: HuggingFace dataset export is a paid feature (tier: ${_ent.tier}). Advisory mode — set THUMBGATE_ENFORCE_ENTITLEMENTS=1 to enforce. License: https://thumbgate.ai/pricing`);
+  }
   const feedbackDir = options.feedbackDir || resolveFeedbackDir();
   const outputDir = options.outputDir || path.join(feedbackDir, 'hf-dataset');
   const includeProvenance = options.includeProvenance !== false;

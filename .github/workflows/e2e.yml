@@ -48,7 +48,7 @@ jobs:
       THUMBGATE_ALLOW_INSECURE: 'true'
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -98,10 +98,13 @@ jobs:
     if: ${{ !cancelled() }}
     needs: [e2e]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Merging two Playwright blob artifacts regularly needs npm install plus
+    # report upload; 5m was enough to produce the report but still cancelled
+    # the job at cleanup on PR #2790.
+    timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Node
         uses: actions/setup-node@v6

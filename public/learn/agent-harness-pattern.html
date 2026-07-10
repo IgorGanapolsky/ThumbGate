@@ -70,7 +70,7 @@
   <p>Researchers at Tsinghua University formalized this problem in their work on Natural-Language Agent Harnesses (NLAH). Their key insight: the safety layer must be <strong>external to the agent</strong>, treated as a first-class object with its own contracts, verification logic, and persistent state.</p>
 
   <div class="callout">
-    <strong>The core idea:</strong> An agent harness is not a prompt. It is a runtime layer that sits between the agent's intent and the outside world, enforcing contracts that the agent cannot bypass.
+    <strong>The core idea:</strong> An agent harness is not a prompt. It is a runtime layer that sits between the agent's intent and the outside world, enforcing contracts from outside the prompt context the agent controls.
   </div>
 
   <h2>Four components of an agent harness</h2>
@@ -110,10 +110,10 @@
 
   <h2>Why contracts beat prompt rules</h2>
   <p>A prompt rule says: "Do not force-push to main." An agent can reason around that, reinterpret it, or simply lose it in a long context window.</p>
-  <p>A contract says: if the tool call is <code>Bash</code> and the command matches <code>git push.*--force</code> targeting <code>main</code>, return <code>{"decision": "block"}</code>. The agent never executes the command. There is nothing to reason around.</p>
+  <p>A contract says: if the tool call is <code>Bash</code> and the command matches <code>git push.*--force</code> targeting <code>main</code>, the harness flags and logs it by default — and hard-blocks it (<code>{"decision": "block"}</code>) under strict mode. The agent gets a structured response outside its own context. There is nothing to reason around.</p>
 
   <div class="callout callout-red">
-    <strong>Prompt rules fail silently.</strong> When a prompt rule is violated, you only find out after the damage is done. A verification check fails loudly — the agent receives a block response and must adapt.
+    <strong>Prompt rules fail silently.</strong> When a prompt rule is violated, you only find out after the damage is done. A verification check fails loudly — the agent receives a warn-or-block response and must adapt.
   </div>
 
   <h2>Verification checks in practice</h2>
@@ -133,7 +133,7 @@
   <p>ThumbGate stores every feedback event in a SQLite database with full-text search (FTS5). When a new session starts, the agent's context is assembled from relevant past lessons — not the entire history, but the lessons most similar to the current task.</p>
 
   <div class="callout callout-green">
-    <strong>The feedback loop closes itself:</strong> You thumbs-down a mistake → a prevention rule is generated → the check blocks the mistake next time → the agent adapts → you thumbs-up the adaptation → the rule is reinforced.
+    <strong>The feedback loop closes itself:</strong> You thumbs-down a mistake → a prevention rule is generated → the check catches the mistake next time → the agent adapts → you thumbs-up the adaptation → the rule is reinforced.
   </div>
 
   <h2>Adapters: one harness, many agents</h2>

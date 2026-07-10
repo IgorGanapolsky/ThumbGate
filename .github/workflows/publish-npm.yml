@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: actions/setup-node@v6
@@ -111,20 +111,28 @@ jobs:
             'adapters/**' 'plugins/**' 'public/*.html' 'scripts/*.js' \
             'src/**' 'bin/**' 'README.md' 'CHANGELOG.md' 2>/dev/null | wc -l | tr -d ' ')
           PENDING_CHANGESETS=$(git diff --name-only "$LAST_TAG"..HEAD -- '.changeset/*.md' 2>/dev/null | grep -v '^.changeset/README.md$' | wc -l | tr -d ' ')
-          if [ "$SHIPPED_CHANGES" -gt 0 ]; then
-            if [ "$PENDING_CHANGESETS" -gt 0 ]; then
-              echo "::notice::Shipped content changed since ${LAST_TAG}, but ${PENDING_CHANGESETS} pending changeset file(s) were detected. Treating this no-op as release-audited until the next versioned publish lands."
-              git diff --name-only "$LAST_TAG"..HEAD -- '.changeset/*.md' | grep -v '^.changeset/README.md$' | head -20
-              exit 0
-            fi
-            echo "::error::Silent no-op detected: ${SHIPPED_CHANGES} shipped files changed since ${LAST_TAG} but package.json still says ${VERSION} (already on npm). Bump the version or tests won't verify the content ships."
-            git diff --name-only "$LAST_TAG"..HEAD -- \
-              'package.json' 'package-lock.json' 'server.json' \
-              'adapters/**' 'plugins/**' 'public/*.html' 'scripts/*.js' \
-              'src/**' 'bin/**' 'README.md' 'CHANGELOG.md' | head -20
-            exit 1
+
+          # A pending changeset excuses the no-op only while a release is plausibly imminent.
+          # It used to excuse it forever: on 2026-07-09 a merged security fix (#2807) sat
+          # unshipped while this step printed a green notice, because a changeset existed.
+          # An exemption with no expiry is a silence, not an audit. scripts/release-window.js
+          # bounds it; see tests/release-window.test.js for the regression case.
+          if [ "$SHIPPED_CHANGES" -gt 0 ] && [ "$PENDING_CHANGESETS" -gt 0 ]; then
+            git diff --name-only "$LAST_TAG"..HEAD -- '.changeset/*.md' | grep -v '^.changeset/README.md$' | head -20
           fi
-          echo "::notice::No shipped content changes since ${LAST_TAG} — no-op is legitimate."
+          SHIPPED_CHANGES="$SHIPPED_CHANGES" \
+          PENDING_CHANGESETS="$PENDING_CHANGESETS" \
+          LAST_TAG_TIMESTAMP="$(git log -1 --format=%ct "$LAST_TAG")" \
+          NOW_TIMESTAMP="$(date -u +%s)" \
+          MAX_UNRELEASED_DAYS="${MAX_UNRELEASED_DAYS:-7}" \
+            node scripts/release-window.js || {
+              echo "::error::Merged changes are not on npm and the release is overdue. Cut a release PR (bump package.json + consume changesets). Do not hand-publish."
+              git diff --name-only "$LAST_TAG"..HEAD -- \
+                'package.json' 'package-lock.json' 'server.json' \
+                'adapters/**' 'plugins/**' 'public/*.html' 'scripts/*.js' \
+                'src/**' 'bin/**' 'README.md' 'CHANGELOG.md' | head -20
+              exit 1
+            }
       - name: Create release tag
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.create_tag == 'true'
         env:

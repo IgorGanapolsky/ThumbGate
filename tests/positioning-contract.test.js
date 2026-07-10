@@ -27,7 +27,7 @@ test('README explains the product as self-improving agent enforcement', () => {
 
   assert.match(readme, /self-improv/i);
   assert.match(readme, /enforcement/i);
-  assert.match(readme, /permanently/i);
+  assert.match(readme, /flag or block repeated failures according to policy/i);
   assert.match(readme, /prompt evaluation/i);
 });
 
@@ -256,9 +256,9 @@ test('first dollar playbook keeps the sales motion sprint-first and proof-backed
   const playbook = readText(path.join('docs', 'FIRST_DOLLAR_PLAYBOOK.md'));
 
   assert.match(playbook, /Status: current/i);
-  assert.match(playbook, /next repeatable dollar/i);
+  assert.match(playbook, /first real external dollar/i);
   assert.match(playbook, /First-dollar activation ladder/i);
-  assert.match(playbook, /move a cold user from curiosity to one blocked repeat/i);
+  assert.match(playbook, /move a cold user from curiosity to one caught repeat/i);
   assert.match(playbook, /Do not claim ChatGPT's native rating buttons feed ThumbGate/i);
   assert.match(playbook, /Workflow Hardening Sprint/i);
   assert.match(playbook, /proof pack/i);

@@ -64,7 +64,7 @@
   <h1>Claude Code /goal vs Todo: The 4-Field Pattern That Actually Holds</h1>
   <p style="color:var(--muted);">6 min read &middot; For developers using Claude Code's /goal command in production</p>
 
-  <div class="tldr"><strong>TL;DR:</strong> Treating <code>/goal</code> like a todo wastes the command. The pattern that holds: <strong>clear goal, measurable success, shown proof, hard limits.</strong> That's a 4-field rubric — the same shape ThumbGate's rubric-engine enforces at gate-fire time. Pair them and the agent cannot fake completion.</div>
+  <div class="tldr"><strong>TL;DR:</strong> Treating <code>/goal</code> like a todo wastes the command. The pattern that holds: <strong>clear goal, measurable success, shown proof, hard limits.</strong> That's a 4-field rubric — the same shape ThumbGate's rubric-engine enforces at gate-fire time. Pair them and the agent cannot promote a faked completion past the rubric.</div>
 
   <h2>The todo-shaped /goal anti-pattern</h2>
   <p>A common usage of Claude Code's <code>/goal</code> command looks like this:</p>
@@ -182,7 +182,7 @@
   <p>Then, in any conversation, use the goal-shape phrasing above. ThumbGate's rubric-engine runs as part of the PreToolUse hook chain; no extra config required. The first time the agent tries to promote a "done" claim without proof, you'll see the gate fire in your dashboard.</p>
 
   <div class="cta-box">
-    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Pair /goal with a rubric the agent cannot fake.</h2>
+    <h2 style="color:var(--text);font-size:1.3rem;margin:0 0 8px;">Pair /goal with a rubric that catches faked completion.</h2>
     <p>Works with Claude Code, Cursor, Codex, Gemini, Amp, OpenCode, and any MCP-compatible agent.</p>
     <div class="cta-install">$ npx thumbgate init</div>
   </div>

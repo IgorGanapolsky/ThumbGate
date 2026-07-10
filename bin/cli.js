@@ -134,7 +134,7 @@ function upgradeNudge() {
     '\n  Team rollout: start with the $499 Workflow Hardening Diagnostic\n' +
     `  ${diagnosticUrl}\n` +
     `\n  Solo side lane: Pro — ${PRO_PRICE_LABEL}\n` +
-    '  Keeps lessons, rules, and the dashboard synced across machines and agent runtimes.\n' +
+    '  Removes solo caps; adds personal recall, dashboard proof, exports, and managed adapters.\n' +
     `  ${pricingUrl}\n\n`
   );
 }
@@ -234,9 +234,9 @@ function proNudge(context) {
   const checkoutUrl = checkoutUrlFor('cli_nudge', context || COMMAND || 'general');
   const pricingUrl = pricingUrlFor('cli_nudge', context || COMMAND || 'general');
   const messages = [
-    `\n  💡 Pro (${PRO_PRICE_LABEL}): keep lessons, rules, and dashboard state synced across machines and agent runtimes.\n     See pricing: ${pricingUrl}\n`,
-    `\n  💡 You just taught ThumbGate something locally. Pro keeps that lesson alive on every laptop, CI box, and agent runtime.\n     See pricing: ${pricingUrl}\n`,
-    `\n  💡 ThumbGate Pro syncs lessons/rules across Claude, Codex, Cursor, containers, and CI. ${PRO_PRICE_LABEL}.\n     Start Pro: ${checkoutUrl}\n`,
+    `\n  💡 Pro (${PRO_PRICE_LABEL}): personal recall, dashboard proof, exports, and managed adapters.\n     See pricing: ${pricingUrl}\n`,
+    `\n  💡 You just taught ThumbGate something locally. Pro keeps personal lessons searchable and exportable without free-tier caps.\n     See pricing: ${pricingUrl}\n`,
+    `\n  💡 ThumbGate Pro maintains adapter coverage across Claude, Codex, Cursor, containers, and CI. ${PRO_PRICE_LABEL}.\n     Start Pro: ${checkoutUrl}\n`,
   ];
   // Rotate message daily — no Math.random (security policy)
   const msg = messages[Math.floor(Date.now() / 86400000) % messages.length];
@@ -921,7 +921,7 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
     console.log('Scaffold ThumbGate in the current project and wire detected agent integrations.');
     console.log('');
     console.log('Options:');
-    console.log('  --agent <name>           Wire a specific agent: claude-code, codex, gemini, amp, cursor, cline');
+    console.log('  --agent <name>           Wire a specific agent: claude-code, codex, gemini, amp, cursor, cline, opencode');
     console.log('  --wire-hooks             Wire hooks only; do not scaffold project files');
     console.log('  --email <email>          Subscribe installer to the setup guide and trial reminders');
     console.log('  --dry-run                Show hook changes without writing them');
@@ -1593,6 +1593,7 @@ function pro() {
   trackEvent('cli_pro_view', { command: 'pro' });
   const args = parseArgs(process.argv.slice(3));
   const {
+    notifyHostedProActivation,
     resolveProKey,
     saveLicense,
     startLocalProDashboard,
@@ -1606,9 +1607,10 @@ function pro() {
     console.log('Self-serve side lane today: Pro ($19/mo or $149/yr).');
     console.log('Every licensed Pro user gets a personal local dashboard on localhost.');
     console.log('\nWhat is available:');
-    console.log('  - Hosted sync: keep lessons, rules, and dashboard state aligned across laptops, CI, containers, and agent runtimes');
+    console.log('  - Personal recall: search lessons, rules, and proof');
     console.log('  - Local Pro dashboard: your own browser dashboard for search, gates, and DPO export');
-    console.log('  - Team rollout path: shared hosted lessons, org visibility, and workflow proof');
+    console.log('  - Managed adapters: Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode');
+    console.log('  - Team rollout path: Enterprise adds shared hosted lessons, org visibility, workflow proof');
     console.log('  - Commercial truth doc: source of truth for traction, pricing, and proof claims');
     console.log('\nLinks:');
     console.log(`  Buy Pro         : ${PRO_CHECKOUT_URL}`);
@@ -1661,7 +1663,22 @@ function pro() {
     console.log('\n✅ Pro license activated!');
     console.log(`   Key saved to: ${licensePath}`);
     console.log('   Launching your personal local dashboard...\n');
-    return launchDashboard(license.key, 'pro_activate');
+    return notifyHostedProActivation({
+      key: license.key,
+      source: 'cli_pro_activate',
+      version: license.version,
+    })
+      .then((notificationResult) => {
+        appendLocalTelemetry({
+          eventType: 'pro_activation_alert',
+          version: license.version,
+          timestamp: new Date().toISOString(),
+          notified: Boolean(notificationResult && notificationResult.notified),
+          sent: Boolean(notificationResult && notificationResult.alert && notificationResult.alert.sent),
+          reason: notificationResult && notificationResult.reason ? notificationResult.reason : null,
+        });
+        return launchDashboard(license.key, 'pro_activate');
+      });
   }
 
   if (args.upgrade) {
@@ -3934,6 +3951,7 @@ switch (COMMAND) {
     // PreToolUse hook interface: reads tool call JSON from stdin, outputs gate verdict
     // Used by: generate-pretool-hook.sh → npx thumbgate gate-check
     const { run: gateRun, runAsync: gateRunAsync } = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
+    const { evaluateSelfProtection } = require(path.join(PKG_ROOT, 'scripts', 'self-protection'));
     let stdinData = '';
     process.stdin.setEncoding('utf8');
     process.stdin.on('data', (chunk) => { stdinData += chunk; });
@@ -3941,7 +3959,32 @@ switch (COMMAND) {
       try {
         const input = JSON.parse(stdinData);
         const output = await gateRunAsync(input);
-        process.stdout.write(output + '\n');
+        // Self-protection overlay (2026-07-08): the gate engine only denies edits
+        // to ThumbGate's own governance files under strict enforcement; by default
+        // such edits pass as a clean ALLOW. Surface them (or block in strict) so an
+        // agent can't silently disable the firewall. Only overlays when the engine
+        // did not already produce a hard deny.
+        let verdict = output;
+        try {
+          const parsed = JSON.parse(output || '{}');
+          const alreadyDeny = (parsed.hookSpecificOutput && parsed.hookSpecificOutput.permissionDecision === 'deny')
+            || parsed.decision === 'block';
+          if (!alreadyDeny) {
+            const sp = evaluateSelfProtection(input.tool_name, input.tool_input);
+            if (sp && sp.action === 'block') {
+              verdict = JSON.stringify({
+                decision: 'block',
+                reason: sp.message,
+                hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: sp.message },
+              });
+            } else if (sp && sp.action === 'warn') {
+              verdict = JSON.stringify({
+                hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: sp.message },
+              });
+            }
+          }
+        } catch (_e) { /* non-JSON engine output: pass through unchanged */ }
+        process.stdout.write(verdict + '\n');
         process.exit(0);
       } catch (err) {
         process.stderr.write(`gate-check error: ${err.message}\n`);

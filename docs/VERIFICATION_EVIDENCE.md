@@ -2,11 +2,13 @@
 
 > Every feature ships with proof. This document is the complete audit trail of verification runs, test output, and deployment evidence.
 
+> Revenue note: dated log entries below record what the admin billing endpoint returned on specific dates, including a historical `$20.00 / 2 paid orders` figure. Those charges are internal/test Stripe charges and do **not** represent external customer revenue. As of this audit there are **0 external paying customers and 0 external paid orders**. See [`COMMERCIAL_TRUTH.md`](./COMMERCIAL_TRUTH.md) for the authoritative commercial state.
+
 ## What's verified
 
 | Category | Evidence |
 |----------|---------|
-| **Pre-action checks** | Block known mistakes before tool use — tested with real feedback patterns |
+| **Pre-action checks** | Flag known mistakes before tool use (warn by default; hard-block the highest-risk classes, and everything else under strict enforcement mode) — tested with real feedback patterns |
 | **Feedback capture** | Up/down signals with context, tags, rubric scores — schema-validated |
 | **Prevention rules** | Auto-promoted from repeated failures — regression-tested |
 | **Prompt/workflow evals** | Feedback-derived eval suites prove whether prompt and workflow behavior improved |
@@ -63,9 +65,9 @@ npm pack --dry-run --json
 npm publish --access public
 npm view thumbgate version --json
 npm view thumbgate dist.integrity --json
-npx -y thumbgate@1.27.15 --version
-npx -y thumbgate@1.27.15 setup-vertex --dry-run
-npx -y thumbgate@1.27.15 feedback-self-test --help
+npx -y thumbgate@1.27.20 --version
+npx -y thumbgate@1.27.20 setup-vertex --dry-run
+npx -y thumbgate@1.27.20 feedback-self-test --help
 ```
 
 Observed result:
@@ -73,7 +75,7 @@ Observed result:
 - Focused release tests passed: `267/267`.
 - Version sync check passed across `32` tracked targets.
 - Package dry run included `public/dashboard.html` and `scripts/dashboard-chat.js`.
-- Published package was verified from npm after release: `thumbgate@1.27.15`.
+- Published package was verified from npm after release: `thumbgate@1.27.20`.
 - Published dist integrity: `sha512-DKsT53EnZCZTfIXbMg+erbsppyUiNFY+kc8Hnx9XY8vQ6LJfIb84FMN9H0J1zlPhsOzBXm1G9GBVR+BioTyqTg==`.
 - Published `setup-vertex --dry-run` reported active account `ig5973700@gmail.com` and project `gen-lang-client-0559847560`, then printed planned changes without enabling services or writing `.env`.
 - Published `feedback-self-test --help` documented the isolated default test store and `--persist` dogfood mode.
@@ -107,8 +109,8 @@ npm publish --access public
 npm view thumbgate version --json
 npm view thumbgate dist.integrity --json
 npm view thumbgate readme | rg -n "Recovery if a gate over-fires|break-glass"
-npx -y thumbgate@1.27.15 help break-glass
-npx -y thumbgate@1.27.15 break-glass --reason="published artifact verification" --json
+npx -y thumbgate@1.27.20 help break-glass
+npx -y thumbgate@1.27.20 break-glass --reason="published artifact verification" --json
 ```
 
 Observed result:
@@ -117,11 +119,11 @@ Observed result:
 - Gate hardening tests passed: `5/5`.
 - Version sync check passed across `32` tracked targets.
 - Congruence check passed across public/package/adapter surfaces.
-- Published package was verified from npm after release: `thumbgate@1.27.15`.
+- Published package was verified from npm after release: `thumbgate@1.27.20`.
 - Published dist integrity: `sha512-DKsT53EnZCZTfIXbMg+erbsppyUiNFY+kc8Hnx9XY8vQ6LJfIb84FMN9H0J1zlPhsOzBXm1G9GBVR+BioTyqTg==`.
 - Published npm README contains the `Recovery if a gate over-fires` section and `break-glass` commands.
-- Published-artifact dogfood passed for `npx -y thumbgate@1.27.15 help break-glass`.
-- Published-artifact dogfood passed for `npx -y thumbgate@1.27.15 break-glass --reason="published artifact verification" --json`, returning a `300000` ms TTL and settings-only recovery globs.
+- Published-artifact dogfood passed for `npx -y thumbgate@1.27.20 help break-glass`.
+- Published-artifact dogfood passed for `npx -y thumbgate@1.27.20 break-glass --reason="published artifact verification" --json`, returning a `300000` ms TTL and settings-only recovery globs.
 - Runtime dogfood passed against the installed `1.26.5` hook path before this documentation entry was added; the published `1.26.6` artifact was then verified with `npx`.
 
 Requirements verified:
@@ -1648,7 +1650,7 @@ Evidence artifacts:
 Requirements verified:
 
 - Source checkouts now install canonical MCP entries that launch the local stdio server directly via `node adapters/mcp/server-stdio.js`.
-- Portable docs and adapter examples now use the version-pinned launcher `npx -y thumbgate@1.27.15 serve` instead of an unpinned `npx` call that can be shadowed by stale local installs.
+- Portable docs and adapter examples now use the version-pinned launcher `npx -y thumbgate@1.27.20 serve` instead of an unpinned `npx` call that can be shadowed by stale local installs.
 - Re-running the MCP installer upgrades stale config entries instead of treating them as already configured.
 - Adapter and LanceDB proof cleanup now uses retry-capable recursive removal so ephemeral filesystem contention no longer flakes CI.
 - Transient `.thumbgate` reminder/A2UI/test-run files are now ignored as local runtime state and do not pollute git hygiene during verification.
@@ -2865,7 +2867,7 @@ Scope:
 
 - Added a repo-root Cursor marketplace manifest at `.cursor-plugin/marketplace.json`.
 - Added a dedicated Cursor plugin bundle in `plugins/cursor-marketplace/` with `.cursor-plugin/plugin.json`, `.mcp.json`, README, and committed logo asset.
-- Switched the Cursor launcher to the portable published package entrypoint `npx -y thumbgate@1.27.15 serve` instead of any checkout-local absolute path.
+- Switched the Cursor launcher to the portable published package entrypoint `npx -y thumbgate@1.27.20 serve` instead of any checkout-local absolute path.
 - Removed the stale `.mcp.json.plugin` legacy config file so the repo has one canonical Cursor packaging path.
 - Extended `scripts/sync-version.js` so Cursor manifests and all pinned launcher docs stay version-synced on future releases.
 - Added regression coverage for the repo-level marketplace contract, manifest/version consistency, and MCP launcher safety.

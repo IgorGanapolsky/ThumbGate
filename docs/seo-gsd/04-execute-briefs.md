@@ -92,7 +92,7 @@ Framework: GSD
 - Page type: comparison
 - Opportunity score: 100
 - CTA: Go Pro — $19/mo
-- Summary: SpecLock starts from manually written constraints. ThumbGate starts from thumbs-up/down feedback and turns it into pre-action checks that block repeated mistakes.
+- Summary: SpecLock starts from manually written constraints. ThumbGate starts from thumbs-up/down feedback and turns it into pre-action checks that catch repeated mistakes.
 ### 2. ThumbGate vs Mem0 | Enforcement vs Memory for AI Agents
 
 - Path: /compare/mem0
@@ -101,7 +101,7 @@ Framework: GSD
 - Page type: comparison
 - Opportunity score: 100
 - CTA: Go Pro — $19/mo
-- Summary: Mem0 is memory. ThumbGate is memory plus enforcement. It captures thumbs-up/down feedback, promotes the signal into rules, and blocks repeat failures with pre-action checks.
+- Summary: Mem0 is memory. ThumbGate is memory plus enforcement. It captures thumbs-up/down feedback, promotes the signal into rules, and catches repeat failures with pre-action checks.
 ### 3. ThumbGate vs Fallow | Static Analysis vs Agent Action Enforcement
 
 - Path: /compare/fallow
