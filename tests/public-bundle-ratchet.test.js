@@ -98,6 +98,11 @@ const path = require('node:path');
 // 2026-07-09 bump 330 -> 332: two additive runtime modules landing concurrently:
 //   • scripts/rule-clustering.js      (leverage-point clustering in the rules report)
 //   • scripts/imperative-detector.js  (never/always directive -> force-gate offer)
+// 2026-07-11: hooks/hooks.json added to the bundle so a plugin /
+// desktop-extension install of "thumbgate" actually wires the PreToolUse /
+// UserPromptSubmit / SessionStart enforcement lifecycle (without it an install
+// got skills+commands+mcpServers but ZERO enforcement). It replaced headroom
+// under the ceiling, so the count stays at 332 — no baseline bump required.
 const BASELINE_FILE_COUNT = 332;
 
 function readBundleSnapshot() {
