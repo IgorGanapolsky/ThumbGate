@@ -82,25 +82,18 @@ function isPathToken(token) {
 //   (b) contains a known transport marker substring, OR
 //   (c) is dominated by filesystem-path tokens.
 function looksLikeTransportBlob(text) {
-  const raw = String(text || '');
-  const trimmed = raw.trim();
+  const trimmed = String(text || '').trim();
   if (!trimmed) return false;
 
-  // (a) Anything that parses as JSON is a payload, not a human lesson.
-  if (/^[[{]/.test(trimmed)) {
-    try {
-      JSON.parse(trimmed);
-      return true;
-    } catch (_) {
-      /* not valid JSON — fall through to substring/path checks */
-    }
-  }
-
-  // (b) Known transport marker substrings.
+  // (a) Known transport marker substrings (session / transcript / prompt / hook
+  // ids). This is what identifies a hook-stdin metadata payload — a JSON blob is
+  // rejected because it CARRIES these markers, NOT merely because it is JSON.
+  // Legitimate CONTENT json (e.g. a tool input {"filePath":"…","reason":"…"})
+  // carries none of them and must survive so it can be matched against patterns.
   const lower = trimmed.toLowerCase();
   if (REJECT_SUBSTRINGS.some((marker) => lower.includes(marker))) return true;
 
-  // (c) Dominated by filesystem-path tokens.
+  // (b) Dominated by filesystem-path tokens.
   const tokens = trimmed.split(/\s+/).filter(Boolean);
   if (tokens.length > 0) {
     const pathTokens = tokens.filter(isPathToken);
@@ -173,9 +166,28 @@ function transportWordsOnly(text) {
 }
 
 function sanitizeFeedbackText(text) {
-  // Reject transport/metadata blobs outright, on the ORIGINAL text — before
-  // stripEphemeralText scrubs the marker keys that identify them.
-  if (looksLikeTransportBlob(text)) return '';
+  const raw = String(text || '').trim();
+  // A raw hook-stdin PAYLOAD — a pure JSON object carrying transport markers
+  // (session_id / transcript_path / prompt_id / hook_event_name) — is never a
+  // human lesson; reject it whole, even when it also carries a `prompt` field
+  // (that field is pulled out separately via extractPromptText). But do NOT
+  // reject content JSON that carries no transport markers (e.g. a tool input
+  // {"filePath":"…","reason":"…"}): it must survive so it can be matched against
+  // patterns. The discriminator is the marker, not JSON-ness.
+  if (/^[[{]/.test(raw)) {
+    try {
+      JSON.parse(raw);
+      const lower = raw.toLowerCase();
+      if (REJECT_SUBSTRINGS.some((marker) => lower.includes(marker))) return '';
+    } catch (_) {
+      /* not valid JSON — a human sentence that merely starts with a brace */
+    }
+  }
+  // Otherwise scrub ephemeral marker key:value pairs and volatile paths, then
+  // reject only if nothing substantive remains — so real feedback that arrives
+  // next to hook metadata keeps the sentence while the metadata is stripped, and
+  // space-separated marker residue / path-dominated blobs collapse to
+  // transport-only text and are dropped by transportWordsOnly().
   const stripped = stripEphemeralText(text)
     .replace(/\/Users\/[^\s/]+/g, '/Users/redacted')
     .replace(/\s+/g, ' ')
