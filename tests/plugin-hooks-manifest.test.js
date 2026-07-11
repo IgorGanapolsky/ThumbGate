@@ -29,8 +29,9 @@ test('plugin hooks resolve to a real, valid hooks manifest', () => {
 
   let hooksConfig;
   if (typeof hooks === 'string') {
-    // Path form (like skills/commands): resolve relative to .claude-plugin/.
-    const hooksPath = path.join(root, '.claude-plugin', hooks);
+    // Component paths in plugin.json resolve from the plugin root. Only the
+    // manifest itself belongs under .claude-plugin/.
+    const hooksPath = path.join(root, hooks);
     assert.ok(fs.existsSync(hooksPath), `hooks path must exist: ${hooksPath}`);
     hooksConfig = JSON.parse(fs.readFileSync(hooksPath, 'utf-8'));
   } else {
@@ -51,7 +52,7 @@ function loadLifecycles() {
   let hooksConfig;
   if (typeof hooks === 'string') {
     hooksConfig = JSON.parse(
-      fs.readFileSync(path.join(root, '.claude-plugin', hooks), 'utf-8'),
+      fs.readFileSync(path.join(root, hooks), 'utf-8'),
     );
   } else {
     hooksConfig = hooks;

@@ -235,7 +235,7 @@
     "scripts/workspace-evolver.js",
     "scripts/xmemory-lite.js",
     ".claude-plugin/plugin.json",
-    ".claude-plugin/hooks/hooks.json",
+    "hooks/hooks.json",
     ".claude/commands/",
     "commands/",
     ".well-known/",
