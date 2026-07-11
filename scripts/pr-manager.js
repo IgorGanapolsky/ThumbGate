@@ -1,11 +1,4 @@
 #!/usr/bin/env node
-/**
- * PR Manager — High-Throughput Merge & Blocker Diagnosis
- * 
- * Inspired by the 2026 GitHub 'Quick Access' update. Centralizes merge status 
- * detection and triggers autonomous self-healing for common blockers.
- */
-
 'use strict';
 
 const fs = require('node:fs');
@@ -33,6 +26,8 @@ const FAILING_CHECK_CONCLUSIONS = new Set([
 const PASSING_BUCKETS = new Set((MERGE_QUALITY_CHECKS.passingBuckets || []).map((value) => String(value || '').toLowerCase()));
 const PENDING_BUCKETS = new Set((MERGE_QUALITY_CHECKS.pendingBuckets || []).map((value) => String(value || '').toLowerCase()));
 const FAILING_BUCKETS = new Set((MERGE_QUALITY_CHECKS.failingBuckets || []).map((value) => String(value || '').toLowerCase()));
+
+const SELF_REFERENTIAL_CHECKS = new Set(MERGE_QUALITY_CHECKS.selfReferentialChecks || []);
 
 function assertSafeGhArgs(args) {
   if (!Array.isArray(args) || args.length === 0) {
@@ -119,9 +114,6 @@ function isMissingCurrentBranchPr(result, prNumber) {
     || /could not determine current branch:.*not on any branch/i.test(formatGhError(result));
 }
 
-/**
- * Fetch granular PR status using GH CLI
- */
 function getPrStatus(prNumber = '', runner = runGh) {
   const normalizedPrNumber = normalizePrNumber(prNumber);
   const args = ['pr', 'view'];
@@ -182,6 +174,9 @@ function summarizeChecks(checks = []) {
 
   for (const check of checks) {
     const name = check.name || 'unknown-check';
+
+    if (SELF_REFERENTIAL_CHECKS.has(name)) continue;
+
     const bucket = String(check.bucket || '').toLowerCase();
     if (bucket) {
       if (FAILING_BUCKETS.has(bucket)) {
@@ -225,9 +220,6 @@ function sleep(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
-/**
- * Diagnose and resolve blockers autonomously
- */
 async function resolveBlockers(pr, runner = runGh) {
   const title = pr.title || 'Untitled PR';
   const mergeState = pr.mergeStateStatus || 'UNKNOWN';
@@ -241,7 +233,6 @@ async function resolveBlockers(pr, runner = runGh) {
     return { status: 'skipped', reason: 'draft' };
   }
 
-  // 1. Handle Outdated Branch (BEHIND)
   if (pr.mergeStateStatus === 'BEHIND') {
     console.log('[PR Manager] PR is behind main. Triggering auto-update...');
     const update = runner(['pr', 'update-branch', pr.number.toString()]);
@@ -250,13 +241,11 @@ async function resolveBlockers(pr, runner = runGh) {
     }
   }
 
-  // 2. Handle Merge Conflicts (DIRTY)
   if (pr.mergeStateStatus === 'DIRTY' || pr.mergeable === 'CONFLICTING') {
     console.log('[PR Manager] CRITICAL: Merge conflicts detected. Manual intervention or advanced rebase required.');
     return { status: 'blocked', reason: 'conflicts' };
   }
 
-  // 3. Handle CI Failures
   let checks = pr.statusCheckRollup || [];
   let checkSource = 'statusCheckRollup';
 
@@ -282,7 +271,6 @@ async function resolveBlockers(pr, runner = runGh) {
     return { status: 'blocked', reason: 'ci_pending', checks: checkSummary.pending, checkSource };
   }
 
-  // 4. Handle Review Blockers
   if (pr.reviewDecision === 'CHANGES_REQUESTED') {
     console.log('[PR Manager] BLOCKED: Changes requested by reviewer.');
     return { status: 'blocked', reason: 'changes_requested' };
@@ -293,8 +281,10 @@ async function resolveBlockers(pr, runner = runGh) {
     return { status: 'blocked', reason: 'review_required' };
   }
 
-  // 5. Ready to Merge
-  if (pr.mergeStateStatus === 'CLEAN' && pr.mergeable === 'MERGEABLE') {
+  if (
+    (pr.mergeStateStatus === 'CLEAN' || pr.mergeStateStatus === 'UNSTABLE')
+    && pr.mergeable === 'MERGEABLE'
+  ) {
     console.log('[PR Manager] SUCCESS: PR is ready for protected autonomous merge.');
     return { status: 'ready' };
   }
@@ -368,9 +358,6 @@ function submitTrunkMergeRequest(prNumber, runner = runGh) {
   };
 }
 
-/**
- * Perform autonomous merge
- */
 function performMerge(prInput, runner = runGh, options = {}) {
   const pr = (prInput && typeof prInput === 'object')
     ? prInput
