@@ -50,6 +50,8 @@ npm run changeset:version
 
 That command updates the root version, generates or updates `CHANGELOG.md`, and then runs ThumbGate's version-sync step so the adapter and plugin manifests stay aligned.
 
+The versioning step uses Changesets' local changelog formatter, so consuming a large backlog does not depend on GitHub API availability. The publish workflow adds repository links, the exact release ref, npm receipt metadata, and the full Changeset record after publication.
+
 ## Why buyers should care
 
 - `latest` stays reserved for stable releases.
