@@ -442,3 +442,33 @@ test('changeset workflow delegates release relevance to the tested checker', () 
   assert.doesNotMatch(workflow, /PR_TITLE/);
   assert.doesNotMatch(workflow, /feat\/fix PRs require a changeset/);
 });
+
+test('changeset workflow keys the Dependabot bypass on PR author, not run actor', () => {
+  const workflow = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'changeset-check.yml'), 'utf8');
+  const author = "github\\.event\\.pull_request\\.user\\.login";
+
+  assert.match(
+    workflow,
+    new RegExp(`- name: Bypass for Dependabot PRs\\s+if: ${author} == 'dependabot\\[bot\\]'`),
+  );
+
+  for (const step of [
+    'Checkout',
+    'Setup Node',
+    'Fetch base branch for changeset diff',
+    'Install release-check dependencies',
+    'Check release-relevant changeset coverage',
+  ]) {
+    assert.match(
+      workflow,
+      new RegExp(`- name: ${step}\\s+if: ${author} != 'dependabot\\[bot\\]'`),
+      `${step} must run for non-Dependabot PR authors`,
+    );
+  }
+
+  assert.doesNotMatch(
+    workflow,
+    /if:\s*github\.actor\s*(?:==|!=)/,
+    'the run actor changes on reruns and branch updates, so it cannot classify the PR author',
+  );
+});
