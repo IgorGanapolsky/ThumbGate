@@ -29,6 +29,7 @@
   ],
   "skills": "./skills/",
   "commands": "./.claude/commands/",
+  "hooks": "./hooks/hooks.json",
   "mcpServers": {
     "thumbgate": {
       "command": "npx",
