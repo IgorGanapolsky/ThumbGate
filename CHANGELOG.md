@@ -36,6 +36,8 @@
 
 ### Patch Changes
 
+- [#2855](https://github.com/IgorGanapolsky/ThumbGate/pull/2855) [`836dff8`](https://github.com/IgorGanapolsky/ThumbGate/commit/836dff8d) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Reject versioned release pull requests that leave any Changesets pending, preventing a green release PR from preserving an unshipped backlog. Version generation now uses Changesets' local changelog formatter so backlog consumption does not depend on GitHub GraphQL; the publish workflow still attaches repository links, the exact release ref, and npm receipt metadata after publication.
+
 - [#2574](https://github.com/IgorGanapolsky/ThumbGate/pull/2574) [`0295054`](https://github.com/IgorGanapolsky/ThumbGate/commit/029505484c2cbac71cd6b7738162a708516af545) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - chore(activation): clean up `scripts/activation-quickstart.js` maintainability smells flagged by SonarCloud after [#2568](https://github.com/IgorGanapolsky/ThumbGate/issues/2568) merged — use `node:` import specifiers, `String.raw` in the regex escaper, optional chaining for the gate verdict and CLI error, and drop unused catch bindings. Also replaces an always-true assertion in the non-TTY quickstart test with a real check on the printed hint. No behavior change.
 
 - [#2626](https://github.com/IgorGanapolsky/ThumbGate/pull/2626) [`c6ca469`](https://github.com/IgorGanapolsky/ThumbGate/commit/c6ca469bcfb1e145df48e916163504e7b79526ab) Thanks [@IgorGanapolsky](https://github.com/IgorGanapolsky)! - Add agent context governance positioning, Learn and homepage entry points, and a public guide for context hygiene, tool lockdown, MCP integrity, and AI-authored code provenance.
