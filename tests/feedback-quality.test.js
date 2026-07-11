@@ -44,7 +44,6 @@ test('detectFeedbackSignal accepts explicit standalone and leading signals', () 
     ['👍 verified before claiming done', 'up'],
     ['👎 claimed published without npm proof', 'down'],
     ['perfect, the verification was clear', 'up'],
-    ['fix this bug before closing the task', 'down'],
   ];
 
   for (const [value, expectedSignal] of cases) {
@@ -58,6 +57,7 @@ test('detectFeedbackSignal rejects quoted, descriptive, negated, and mid-sentenc
     'I just gave you a thumbs up; did it work?',
     'the text says "thumbs up"',
     'I will fix this bug',
+    'fix this bug before closing the task',
     'the operator typed thumbss up in the transcript',
     'the example contains 👎 but is not feedback',
     '"thumbs down: reason"',

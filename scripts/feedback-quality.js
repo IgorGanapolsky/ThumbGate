@@ -114,7 +114,6 @@ function detectFeedbackSignal(value) {
     /^that failed\b/,
     /^it failed\b/,
     /^that was wrong\b/,
-    /^fix this\b/,
   ];
   if (exactDown.some((pattern) => pattern.test(normalized))) {
     return { signal: 'down', confidence: 'exact', match: normalized };
