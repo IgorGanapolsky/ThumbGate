@@ -100,49 +100,49 @@ function isNearDownToken(token) {
 
 function detectFeedbackSignal(value) {
   const raw = String(value || '');
-  if (/[👎👎🏻👎🏼👎🏽👎🏾👎🏿]/u.test(raw)) return { signal: 'down', confidence: 'emoji', match: '👎' };
-  if (/[👍👍🏻👍🏼👍🏽👍🏾👍🏿]/u.test(raw)) return { signal: 'up', confidence: 'emoji', match: '👍' };
+  const leading = raw.trimStart();
+  if (/^["'`]/.test(leading)) return null;
+  if (/^👎(?:🏻|🏼|🏽|🏾|🏿)?/u.test(leading)) return { signal: 'down', confidence: 'emoji', match: '👎' };
+  if (/^👍(?:🏻|🏼|🏽|🏾|🏿)?/u.test(leading)) return { signal: 'up', confidence: 'emoji', match: '👍' };
 
   const normalized = normalizeFeedbackText(raw);
   if (!normalized) return null;
 
   const exactDown = [
-    /\bthumbs?\s*down\b/,
-    /\bthumbs?down\b/,
-    /\bthat failed\b/,
-    /\bit failed\b/,
-    /\bthat was wrong\b/,
-    /\bfix this\b/,
+    /^thumbs?\s*down\b/,
+    /^thumbs?down\b/,
+    /^that failed\b/,
+    /^it failed\b/,
+    /^that was wrong\b/,
+    /^fix this\b/,
   ];
   if (exactDown.some((pattern) => pattern.test(normalized))) {
     return { signal: 'down', confidence: 'exact', match: normalized };
   }
 
   const exactUp = [
-    /\bthumbs?\s*up\b/,
-    /\bthumbs?up\b/,
-    /\bthat worked\b/,
-    /\bit worked\b/,
-    /\blooks good\b/,
-    /\bgood job\b/,
-    /\bgood work\b/,
-    /\bnice work\b/,
-    /\bperfect\b/,
-    /\blgtm\b/,
+    /^thumbs?\s*up\b/,
+    /^thumbs?up\b/,
+    /^that worked\b/,
+    /^it worked\b/,
+    /^looks good\b/,
+    /^good job\b/,
+    /^good work\b/,
+    /^nice work\b/,
+    /^perfect\b/,
+    /^lgtm\b/,
   ];
   if (exactUp.some((pattern) => pattern.test(normalized))) {
     return { signal: 'up', confidence: 'exact', match: normalized };
   }
 
   const words = normalized.split(/\s+/).filter(Boolean);
-  for (let i = 0; i < words.length - 1; i++) {
-    if (!isNearThumbToken(words[i])) continue;
-    if (isNearDownToken(words[i + 1])) {
-      return { signal: 'down', confidence: 'fuzzy', match: `${words[i]} ${words[i + 1]}` };
-    }
-    if (isNearUpToken(words[i + 1])) {
-      return { signal: 'up', confidence: 'fuzzy', match: `${words[i]} ${words[i + 1]}` };
-    }
+  if (!isNearThumbToken(words[0])) return null;
+  if (isNearDownToken(words[1])) {
+    return { signal: 'down', confidence: 'fuzzy', match: `${words[0]} ${words[1]}` };
+  }
+  if (isNearUpToken(words[1])) {
+    return { signal: 'up', confidence: 'fuzzy', match: `${words[0]} ${words[1]}` };
   }
 
   return null;
