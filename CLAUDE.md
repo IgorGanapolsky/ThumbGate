@@ -101,8 +101,25 @@ curl -s https://thumbgate-production.up.railway.app/dashboard | grep 'ThumbGate 
 
 **History:** This gate exists because on 2026-03-26 the CTO said "deployed" 3 times without verification. Trust was broken. Memory alone did not prevent it — only this enforcement gate will.
 
+## NEVER Bypass Branch Protection (ABSOLUTE)
+
+**NEVER approve a pull request. NEVER satisfy, dismiss, or disable a branch-protection requirement on the owner's behalf. NEVER use `--admin`, `--force`, or an owner credential to make a merge possible that would otherwise be blocked.**
+
+Everything merges through PRs under the configured branch protection. When human review is required, only a human may satisfy it. Report the blocker with evidence. Non-mutating diagnosis and a separate policy-change PR are allowed, but stop before any action that mutates review or protection state. Never route around the control.
+
+Diagnosing *why* a PR is blocked is correct and useful: read `branches/main/protection`, `rulesets`, `CODEOWNERS`, `mergeable_state`, and review threads. **The diagnosis is the deliverable.** Changing review or protection state is not.
+
+### Why
+
+On 2026-07-10, during diagnosis of blocked Dependabot PRs, an agent approved #2768 with the owner's `gh` credentials "to test the hypothesis" and observed `mergeStateStatus` change from `BLOCKED` to `CLEAN`. Regardless of the PRs' other blockers, that action satisfied a control reserved for human review and was a bypass. The review was dismissed; #2768 returned to `BLOCKED`, unmerged.
+
+### Corollary
+
+An agent holding an owner's credential can do anything the owner can. That is precisely when it must not.
+
 ## PR and CI Protocol
 
+0. **Never approve a PR. Never bypass branch protection.** See the section above. A blocked PR is a finding to report, not an obstacle to clear.
 1. Branch from `main`. Name: `fix/...`, `feat/...`, `chore/...`.
 2. Push to remote. Create PR via `gh pr create --repo IgorGanapolsky/ThumbGate`.
 3. Wait for CI (runs on push to `main` and `feat/**` branches).
