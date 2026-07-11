@@ -39,8 +39,11 @@ function gateCheck(input, env = {}) {
 
 const KILL = { tool_name: 'Bash', tool_input: { command: 'pkill -f gates-engine' } };
 const ENV_OVERRIDE = { tool_name: 'Bash', tool_input: { command: 'export THUMBGATE_HOTFIX_BYPASS=1' } };
-// A deny that is NOT self-protective — proves the change is targeted, not a blanket hard-block.
-const FORCE_PUSH = { tool_name: 'Bash', tool_input: { command: 'git push --force origin main' } };
+// A deny that is NOT self-protective AND NOT on the catastrophic floor — proves the change is
+// targeted, not a blanket hard-block. (`git reset --hard` is recoverable via reflog, so it
+// deliberately stays warn-by-default; force-push, which rewrites published history, is on the
+// catastrophic floor and now denies by default — see tests/enforcement-catastrophic-floor.test.js.)
+const GIT_RESET_HARD = { tool_name: 'Bash', tool_input: { command: 'git reset --hard HEAD~5' } };
 
 test('self-protect-kill DENIES by default (warn-by-default posture)', () => {
   const v = gateCheck(KILL);
@@ -66,16 +69,16 @@ test('strict enforcement still denies self-protect (unchanged)', () => {
   assert.equal(gateCheck(KILL, { THUMBGATE_STRICT_ENFORCEMENT: '1' }).decision, 'deny');
 });
 
-test('CONTROL: a non-self-protect deny (force-push) still only WARNS by default', () => {
+test('CONTROL: a non-self-protect, non-catastrophic deny (git reset --hard) still only WARNS by default', () => {
   // If this ever flips to `deny`, the change stopped being targeted and became a blanket
   // hard-block — the warn-by-default policy the CEO deliberately chose (2026-06-04).
   assert.notEqual(
-    gateCheck(FORCE_PUSH).decision,
+    gateCheck(GIT_RESET_HARD).decision,
     'deny',
-    'force-push is not self-protective; warn-by-default must still apply',
+    'git reset --hard is not self-protective and is recoverable; warn-by-default must still apply',
   );
 });
 
-test('CONTROL: force-push DOES deny under strict — proving the gate itself still fires', () => {
-  assert.equal(gateCheck(FORCE_PUSH, { THUMBGATE_STRICT_ENFORCEMENT: '1' }).decision, 'deny');
+test('CONTROL: git reset --hard DOES deny under strict — proving the gate itself still fires', () => {
+  assert.equal(gateCheck(GIT_RESET_HARD, { THUMBGATE_STRICT_ENFORCEMENT: '1' }).decision, 'deny');
 });

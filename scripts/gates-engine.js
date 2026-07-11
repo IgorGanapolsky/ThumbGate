@@ -131,30 +131,43 @@ const DOWNLOAD_EXEC_CHAIN_PATTERN = /\b(?:curl|wget)\b[\s\S]{0,400}(?:\|\s*(?:ba
 const DESTRUCTIVE_OR_PRIVILEGE_BOUNDARY_PATTERN = /\b(?:rm\s+-rf|chmod\s+(?:\+x|777)|chown\b|sudo\b|dd\s+if=|mkfs|git\s+reset\s+--hard|git\s+clean\s+-f[a-z]*|kubectl\s+(?:apply|delete)|terraform\s+(?:apply|destroy)|railway\s+(?:deploy|up)|gcloud\s+(?:run\s+deploy|app\s+deploy)|vercel\s+--prod|firebase\s+deploy)\b/i;
 
 // ---------------------------------------------------------------------------
-// Enforcement posture (CEO decision 2026-06-04): warn-by-default.
-// The firewall ALWAYS fires and logs every decision, but most gates WARN rather
-// than hard-block — only TRULY CATASTROPHIC, irreversible actions hard-block:
-//   - secret exfiltration (handled on its own deny path; never downgraded)
-//   - security-vulnerability / supply-chain denies (own deny path; not downgraded)
-//   - irreversibly destructive filesystem commands (rm -rf class, mkfs, dd to disk,
-//     fork bomb) — kept as hard deny via DESTRUCTIVE_FS_PATTERN below.
-// Everything else (memory-high-risk, workflow-sequence, off-scope, git push, deploy,
-// approval gates) downgrades deny/approve -> warn so legitimate work is never blocked.
-// Opt back into full hard enforcement with THUMBGATE_STRICT_ENFORCEMENT=1.
 // Enforcement posture (CEO decision 2026-06-04): WARN + AUDIT by default.
-// The firewall fires and LOGS every decision, but downgrades deny/approve -> warn so
-// legitimate work is never hard-blocked. We deliberately do NOT try to hard-block
-// arbitrary destructive commands here: a regex "catastrophic floor" is unwinnable
-// (sudo / bash -c / find -exec / eval / base64|sh all evade it) and gives false confidence.
-// HARD enforcement is an explicit opt-in via THUMBGATE_STRICT_ENFORCEMENT=1, which keeps
-// the engine's FULL gate set (its high-risk-command gates catch prefixed/obfuscated forms
-// far better than any single regex). Secret exfiltration and the security-vulnerability
-// scan hard-deny on their OWN paths before this runs, so irreversible data-leak / supply
-// chain risks stay blocked regardless of posture.
+// The firewall ALWAYS fires and logs every decision, but most gates WARN rather than
+// hard-block, so legitimate work is never blocked. Only a few classes stay a hard DENY
+// regardless of posture:
+//   - secret exfiltration (handled on its own deny path; never downgraded here)
+//   - security-vulnerability / supply-chain denies (own deny path; not downgraded here)
+//   - self-protective gates that guard ThumbGate's own guardrails (kill/env/config/hooks)
+//   - the "catastrophic floor": a SMALL, conservative allowlist of gate IDs for TRULY
+//     IRREVERSIBLE actions (force-push that rewrites published history; rm -rf of repo/home/root).
+//
+// The catastrophic floor is enforced by GATE ID, reusing the engine's existing gate
+// detection (the same mechanism self-protect uses) — NOT by a standalone regex over the raw
+// command. A regex "catastrophic floor" is unwinnable (sudo / bash -c / find -exec / eval /
+// base64|sh all evade it) and gives false confidence; matching a RESOLVED gate id instead
+// rides on the same detection the rest of the engine already trusts. Everything else
+// (memory-high-risk, workflow-sequence, off-scope, non-force git push, deploy, approval
+// gates) downgrades deny/approve -> warn. Opt into full hard enforcement for EVERY gate
+// with THUMBGATE_STRICT_ENFORCEMENT=1.
 // Self-protective gates guard ThumbGate's own guardrails (kill/env/config/hooks). See the
 // self-protect-binds-regardless-of-posture changeset for the full rationale.
 function isSelfProtectGate(gateId) {
   return typeof gateId === 'string' && gateId.startsWith('self-protect');
+}
+
+// Catastrophic floor: a deliberately tiny allowlist of gate IDs whose actions are genuinely
+// IRREVERSIBLE — there is no undo, so a mere warning is worthless once the action lands.
+// These stay a hard DENY even in warn-by-default mode. Keep this set minimal: anything that
+// CAN be recovered (git revert, reflog, redeploy, restore) must still warn, not block, so the
+// floor never degrades into the blanket hard-block the CEO deliberately rejected. Owner
+// escape: THUMBGATE_CATASTROPHIC_OVERRIDE=1 (mirrors THUMBGATE_SELF_PROTECT_OVERRIDE so an
+// operator who truly means it is never stranded).
+const CATASTROPHIC_GATE_IDS = new Set([
+  'force-push',         // git push --force/-f: rewrites published history, unrecoverable
+  'rm-rf-home-or-root', // rm -rf of / ~ $HOME: irreversible filesystem destruction
+]);
+function isCatastrophicGate(gateId) {
+  return typeof gateId === 'string' && CATASTROPHIC_GATE_IDS.has(gateId);
 }
 
 function applyEnforcementPosture(result) {
@@ -165,6 +178,12 @@ function applyEnforcementPosture(result) {
   // gone. Owner escape: THUMBGATE_SELF_PROTECT_OVERRIDE=1 (break-glass covers .claude/settings*
   // but not this surface, so it needs its own escape — self-lockout, 2026-07-07).
   if (isSelfProtectGate(result.gate) && process.env.THUMBGATE_SELF_PROTECT_OVERRIDE !== '1') {
+    return result;
+  }
+  // Catastrophic floor: genuinely IRREVERSIBLE actions (force-push that rewrites published
+  // history, rm -rf of repo/home/root) stay a hard deny regardless of posture — a warning is
+  // worthless once the action lands. Owner escape mirrors self-protect: THUMBGATE_CATASTROPHIC_OVERRIDE=1.
+  if (isCatastrophicGate(result.gate) && process.env.THUMBGATE_CATASTROPHIC_OVERRIDE !== '1') {
     return result;
   }
   // Honor the explicit strict-knowledge-conflict opt-in for that gate.
@@ -3375,6 +3394,10 @@ module.exports = {
   matchesGate,
   evaluateGates,
   evaluateGatesAsync,
+  applyEnforcementPosture,
+  isSelfProtectGate,
+  isCatastrophicGate,
+  CATASTROPHIC_GATE_IDS,
   isAutonomousRun,
   computeExecutableHash,
   formatOutput,

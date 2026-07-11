@@ -1127,17 +1127,27 @@ test('run warns on destructive local git cleanup by default, denies under strict
   cleanupStateFiles();
 });
 
-test('run warns on broad rm -rf by default, denies under strict enforcement', () => {
+test('run denies rm -rf of root/home by default (catastrophic floor); override + strict both resolve', () => {
   cleanupStateFiles();
-  // Warn+audit posture (CEO decision 2026-06-04): even rm -rf / is flagged + logged, NOT
-  // hard-blocked, by default — we do not pretend a regex can reliably catch destructive
-  // commands (sudo/bash -c/find -exec all evade it). Hard enforcement is the strict opt-in.
-  const warnOut = JSON.parse(run({ tool_name: 'Bash', tool_input: { command: 'rm -rf /' } }));
-  assert.notEqual(warnOut.hookSpecificOutput.permissionDecision, 'deny');
+  // Catastrophic floor (2026-07-11): rm -rf of / ~ $HOME is genuinely IRREVERSIBLE, so the
+  // rm-rf-home-or-root gate stays a hard deny even in warn-by-default posture (CEO 2026-06-04) —
+  // a warning is worthless once the filesystem is gone. This is a gate-id exemption, not a broad
+  // regex: recoverable rm -rf (node_modules, ./build/cache) still only warns (see next test).
+  const denyOut = JSON.parse(run({ tool_name: 'Bash', tool_input: { command: 'rm -rf /' } }));
+  assert.equal(denyOut.hookSpecificOutput.permissionDecision, 'deny');
+  // Owner escape mirrors self-protect: THUMBGATE_CATASTROPHIC_OVERRIDE=1 downgrades it to a warn.
+  process.env.THUMBGATE_CATASTROPHIC_OVERRIDE = '1';
+  try {
+    const warnOut = JSON.parse(run({ tool_name: 'Bash', tool_input: { command: 'rm -rf /' } }));
+    assert.notEqual(warnOut.hookSpecificOutput.permissionDecision, 'deny');
+  } finally {
+    delete process.env.THUMBGATE_CATASTROPHIC_OVERRIDE;
+  }
+  // Strict enforcement also denies (unchanged).
   process.env.THUMBGATE_STRICT_ENFORCEMENT = '1';
   try {
-    const denyOut = JSON.parse(run({ tool_name: 'Bash', tool_input: { command: 'rm -rf /' } }));
-    assert.equal(denyOut.hookSpecificOutput.permissionDecision, 'deny');
+    const denyStrict = JSON.parse(run({ tool_name: 'Bash', tool_input: { command: 'rm -rf /' } }));
+    assert.equal(denyStrict.hookSpecificOutput.permissionDecision, 'deny');
   } finally {
     delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
   }
