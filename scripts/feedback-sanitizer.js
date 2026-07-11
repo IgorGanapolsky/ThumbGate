@@ -1,6 +1,17 @@
 'use strict';
 
-const crypto = require('crypto');
+const crypto = require('node:crypto');
+
+// Parse JSON without throwing: returns the parsed value, or undefined when the
+// input is not valid JSON. Lets callers branch on validity instead of wrapping
+// each call site in its own (empty) catch block.
+function tryParseJson(str) {
+  try {
+    return JSON.parse(str);
+  } catch {
+    return undefined;
+  }
+}
 
 const TRANSPORT_KEYS = new Set([
   'hookeventname',
@@ -117,29 +128,39 @@ function extractPromptText(rawStdin) {
   if (!trimmed) return '';
 
   if (/^[[{]/.test(trimmed)) {
-    try {
-      const parsed = JSON.parse(trimmed);
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        if (typeof parsed.prompt === 'string') return parsed.prompt.trim();
-        // Structured payload with no human prompt field → no lesson text.
-        return '';
-      }
-      // Parsed to an array / scalar — not a user prompt.
+    const parsed = tryParseJson(trimmed);
+    // Not valid JSON — a genuine human prompt that merely starts with a
+    // brace/bracket. Return it verbatim.
+    if (parsed === undefined) return trimmed;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      if (typeof parsed.prompt === 'string') return parsed.prompt.trim();
+      // Structured payload with no human prompt field → no lesson text.
       return '';
-    } catch (_) {
-      // Not valid JSON — a genuine human prompt that merely starts with a
-      // brace/bracket. Fall through and return it verbatim.
-      return trimmed;
     }
+    // Parsed to an array / scalar — not a user prompt.
+    return '';
   }
 
   return trimmed;
 }
 
+// Ephemeral marker keys (optional underscores) whose "key: value" pairs are
+// scrubbed out of feedback text. Kept as a list mirroring TRANSPORT_KEYS and
+// compiled once, rather than as one oversized literal alternation.
+const EPHEMERAL_MARKER_KEY_PATTERNS = [
+  'hook_?event_?name', 'session_?id', 'transcript_?path', 'timestamp',
+  'created_?at', 'updated_?at', 'cwd', 'pid', 'process_?id', 'prompt_?id',
+  'trace_?id', 'request_?id', 'install_?id', 'visitor_?session_?id',
+];
+const EPHEMERAL_MARKER_RE = new RegExp(
+  `["']?(?:${EPHEMERAL_MARKER_KEY_PATTERNS.join('|')})["']?\\s*[:=]\\s*["']?[^"',}\\]\\s]+["']?`,
+  'gi',
+);
+
 function stripEphemeralText(text) {
   if (!text || typeof text !== 'string') return '';
   return String(text)
-    .replace(/["']?(?:hook_?event_?name|session_?id|transcript_?path|timestamp|created_?at|updated_?at|cwd|pid|process_?id|prompt_?id|trace_?id|request_?id|install_?id|visitor_?session_?id)["']?\s*[:=]\s*["']?[^"',}\]\s]+["']?/gi, ' ')
+    .replace(EPHEMERAL_MARKER_RE, ' ')
     .replace(/\/(?:private\/)?tmp\/[^\s"',}\]]+/gi, ' ')
     .replace(/\/var\/folders\/[^\s"',}\]]+/gi, ' ')
     .replace(/\/Users\/[^/\s]+\/\.(?:claude|codex|thumbgate)\/[^\s"',}\]]+/gi, ' ')
@@ -174,14 +195,11 @@ function sanitizeFeedbackText(text) {
   // reject content JSON that carries no transport markers (e.g. a tool input
   // {"filePath":"…","reason":"…"}): it must survive so it can be matched against
   // patterns. The discriminator is the marker, not JSON-ness.
-  if (/^[[{]/.test(raw)) {
-    try {
-      JSON.parse(raw);
-      const lower = raw.toLowerCase();
-      if (REJECT_SUBSTRINGS.some((marker) => lower.includes(marker))) return '';
-    } catch (_) {
-      /* not valid JSON — a human sentence that merely starts with a brace */
-    }
+  // Only a valid JSON object/array counts as a "payload"; a human sentence that
+  // merely starts with a brace is not, and falls through to normal scrubbing.
+  if (/^[[{]/.test(raw) && tryParseJson(raw) !== undefined) {
+    const lower = raw.toLowerCase();
+    if (REJECT_SUBSTRINGS.some((marker) => lower.includes(marker))) return '';
   }
   // Otherwise scrub ephemeral marker key:value pairs and volatile paths, then
   // reject only if nothing substantive remains — so real feedback that arrives
