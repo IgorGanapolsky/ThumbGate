@@ -408,8 +408,9 @@ function runCli({
   }
 
   const changedFiles = getChangedFiles({ baseRef, cwd, runner });
-  const changesets = collectChangesets({ files: changedFiles });
-  const pendingChangesets = collectChangesets();
+  const changesetDir = path.join(cwd, '.changeset');
+  const changesets = collectChangesets({ dir: changesetDir, files: changedFiles });
+  const pendingChangesets = collectChangesets({ dir: changesetDir });
   const baseVersion = getPackageVersionAtRef({ ref: baseRef, cwd, runner });
   const currentVersion = getCurrentPackageVersion({ cwd });
   const result = evaluateChangesetRequirement({
