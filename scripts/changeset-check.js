@@ -203,12 +203,40 @@ function collectChangesets({
 function evaluateChangesetRequirement({
   changedFiles = [],
   changesets = [],
+  pendingChangesets = [],
+  versionChanged = false,
 } = {}) {
   const relevantFiles = changedFiles.filter(isReleaseRelevantFile);
   const required = relevantFiles.length > 0;
   const validChangesets = changesets.filter((entry) => entry.validForPackage);
   const invalidChangesets = changesets.filter((entry) => !entry.validForPackage);
   const versionedRelease = isVersionedReleaseChangeSet(changedFiles);
+
+  if (versionChanged && pendingChangesets.length > 0) {
+    return {
+      ok: false,
+      required: true,
+      versionChanged: true,
+      relevantFiles,
+      validChangesets,
+      invalidChangesets,
+      pendingChangesets,
+      reason: `Versioned release still has ${pendingChangesets.length} pending changeset file(s). Release PRs must consume the complete backlog.`,
+    };
+  }
+
+  if (versionChanged && !versionedRelease) {
+    return {
+      ok: false,
+      required: true,
+      versionChanged: true,
+      relevantFiles,
+      validChangesets,
+      invalidChangesets,
+      pendingChangesets,
+      reason: 'Versioned release is missing generated release artifacts such as CHANGELOG.md and package-lock.json.',
+    };
+  }
 
   if (!required) {
     return {
@@ -251,6 +279,38 @@ function evaluateChangesetRequirement({
     invalidChangesets,
     reason: 'Release-relevant changes require at least one valid .changeset entry for thumbgate.',
   };
+}
+
+function parsePackageVersion(content, source = 'package.json') {
+  let manifest;
+  try {
+    manifest = JSON.parse(String(content || ''));
+  } catch (error) {
+    throw new Error(`Unable to parse ${source}: ${error.message}`);
+  }
+
+  const version = String(manifest.version || '').trim();
+  if (!version) {
+    throw new Error(`${source} does not contain a version.`);
+  }
+  return version;
+}
+
+function getPackageVersionAtRef({
+  ref,
+  cwd = PROJECT_ROOT,
+  runner = execFileSync,
+} = {}) {
+  if (!ref) {
+    throw new Error('A git ref is required to read the package version.');
+  }
+  const content = runGitCommand(['show', `${ref}:package.json`], { cwd, runner });
+  return parsePackageVersion(content, `${ref}:package.json`);
+}
+
+function getCurrentPackageVersion({ cwd = PROJECT_ROOT } = {}) {
+  const filePath = path.join(cwd, 'package.json');
+  return parsePackageVersion(fs.readFileSync(filePath, 'utf8'), filePath);
 }
 
 function runGitCommand(args, {
@@ -323,7 +383,11 @@ function formatFailure(result) {
     });
     lines.push('');
   }
-  lines.push('Run `npm run changeset` and add a release note for thumbgate before merging.');
+  if (result.versionChanged) {
+    lines.push('Run `npm run changeset:version` to consume every pending changeset and generate the release artifacts before merging.');
+  } else {
+    lines.push('Run `npm run changeset` and add a release note for thumbgate before merging.');
+  }
   return lines.join('\n');
 }
 
@@ -344,8 +408,17 @@ function runCli({
   }
 
   const changedFiles = getChangedFiles({ baseRef, cwd, runner });
-  const changesets = collectChangesets({ files: changedFiles });
-  const result = evaluateChangesetRequirement({ changedFiles, changesets });
+  const changesetDir = path.join(cwd, '.changeset');
+  const changesets = collectChangesets({ dir: changesetDir, files: changedFiles });
+  const pendingChangesets = collectChangesets({ dir: changesetDir });
+  const baseVersion = getPackageVersionAtRef({ ref: baseRef, cwd, runner });
+  const currentVersion = getCurrentPackageVersion({ cwd });
+  const result = evaluateChangesetRequirement({
+    changedFiles,
+    changesets,
+    pendingChangesets,
+    versionChanged: baseVersion !== currentVersion,
+  });
   if (result.ok) {
     console.log(result.reason);
     return result;
@@ -369,12 +442,15 @@ module.exports = {
   collectChangesets,
   evaluateChangesetRequirement,
   formatFailure,
+  getCurrentPackageVersion,
   getChangedFiles,
+  getPackageVersionAtRef,
   isChangesetMarkdownFile,
   isReleaseRelevantFile,
   isVersionedReleaseChangeSet,
   parseArgs,
   parseChangesetMarkdown,
+  parsePackageVersion,
   resolveBaseRef,
   runCli,
   runGitCommand,
