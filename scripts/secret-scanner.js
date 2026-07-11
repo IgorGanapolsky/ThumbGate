@@ -54,6 +54,20 @@ const BASH_SECRET_READ_PREFIXES = [
   'printenv',
 ];
 
+const OUTBOUND_FILE_COMMANDS = new Set(['curl', 'wget']);
+const OUTBOUND_COMMAND_WRAPPERS = new Set(['command', 'env', 'nohup', 'sudo']);
+const CURL_DATA_FILE_OPTIONS = new Set([
+  '-d',
+  '--data',
+  '--data-ascii',
+  '--data-binary',
+  '--data-urlencode',
+  '--json',
+]);
+const CURL_FORM_FILE_OPTIONS = new Set(['-F', '--form']);
+const CURL_UPLOAD_FILE_OPTIONS = new Set(['-T', '--upload-file']);
+const WGET_POST_FILE_OPTIONS = new Set(['--post-file', '--body-file']);
+
 const EDIT_LIKE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
 const SAFE_SECRET_STORAGE_DIRS = [
   '.resume_secrets',
@@ -248,7 +262,7 @@ function scanText(text, options = {}) {
 }
 
 function scanFile(filePath, options = {}) {
-  const pathFinding = classifySecretPath(filePath);
+  const pathFinding = options.includePathFinding === false ? null : classifySecretPath(filePath);
   const provider = resolveProvider(options.provider);
   const findings = [];
   if (pathFinding) findings.push(pathFinding);
@@ -307,6 +321,174 @@ function resolvePathToken(token, cwd) {
   return path.join(cwd || process.cwd(), normalized);
 }
 
+function splitCommandSegments(command) {
+  const segments = [];
+  let current = '';
+  let quote = null;
+  let escaped = false;
+
+  for (const char of String(command || '')) {
+    if (escaped) {
+      current += char;
+      escaped = false;
+      continue;
+    }
+    if (char === '\\' && quote !== "'") {
+      current += char;
+      escaped = true;
+      continue;
+    }
+    if (quote) {
+      current += char;
+      if (char === quote) quote = null;
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      current += char;
+      continue;
+    }
+    if (char === ';' || char === '|' || char === '&' || char === '\n') {
+      if (current.trim()) segments.push(current.trim());
+      current = '';
+      continue;
+    }
+    current += char;
+  }
+
+  if (current.trim()) segments.push(current.trim());
+  return segments;
+}
+
+function isShellAssignment(token) {
+  return /^[A-Za-z_][A-Za-z0-9_]*=/.test(String(token || ''));
+}
+
+function findOutboundCommand(tokens) {
+  let index = 0;
+  while (isShellAssignment(tokens[index])) index += 1;
+
+  while (index < tokens.length) {
+    const wrapper = path.basename(String(tokens[index] || '')).toLowerCase();
+    if (!OUTBOUND_COMMAND_WRAPPERS.has(wrapper)) break;
+    index += 1;
+    if (wrapper === 'env') {
+      while (isShellAssignment(tokens[index])) index += 1;
+    }
+    if (String(tokens[index] || '').startsWith('-')) return null;
+  }
+
+  const command = path.basename(String(tokens[index] || '')).toLowerCase();
+  return OUTBOUND_FILE_COMMANDS.has(command) ? { command, index } : null;
+}
+
+function stripCurlFormMetadata(fileReference) {
+  return String(fileReference || '').split(';', 1)[0];
+}
+
+function curlDataFileReference(value, allowNamedReference = false) {
+  const normalized = String(value || '');
+  if (normalized.startsWith('@')) return normalized.slice(1);
+  if (!allowNamedReference) return null;
+  const markerIndex = normalized.indexOf('@');
+  return markerIndex > 0 ? normalized.slice(markerIndex + 1) : null;
+}
+
+function curlFormFileReference(value) {
+  const normalized = String(value || '');
+  const marker = normalized.match(/(?:^|=)[@<](.+)$/);
+  return marker ? stripCurlFormMetadata(marker[1]) : null;
+}
+
+function addOutboundReference(references, fileReference, cwd, metadata) {
+  const normalized = String(fileReference || '').trim();
+  if (!normalized || normalized === '-') return;
+  const resolvedPath = resolvePathToken(normalized, cwd);
+  if (!resolvedPath) return;
+  references.push({
+    path: resolvedPath,
+    ...metadata,
+  });
+}
+
+function readOptionArgument(args, index, option) {
+  const token = String(args[index] || '');
+  if (token === option) {
+    return { value: args[index + 1], consumesNext: true };
+  }
+  if (option.startsWith('--') && token.startsWith(`${option}=`)) {
+    return { value: token.slice(option.length + 1), consumesNext: false };
+  }
+  if (option.length === 2 && token.startsWith(option) && token.length > 2) {
+    return { value: token.slice(2), consumesNext: false };
+  }
+  return null;
+}
+
+function outboundOptionSpecs(command) {
+  if (command === 'wget') {
+    return [{
+      options: WGET_POST_FILE_OPTIONS,
+      fileReference: (value) => value,
+    }];
+  }
+  return [
+    {
+      options: CURL_DATA_FILE_OPTIONS,
+      fileReference: (value, option) => curlDataFileReference(value, option === '--data-urlencode'),
+    },
+    {
+      options: CURL_FORM_FILE_OPTIONS,
+      fileReference: curlFormFileReference,
+    },
+    {
+      options: CURL_UPLOAD_FILE_OPTIONS,
+      fileReference: (value) => value,
+    },
+  ];
+}
+
+function extractCommandFileReferences(command, args, cwd, references) {
+  const specs = outboundOptionSpecs(command);
+  for (let index = 0; index < args.length; index += 1) {
+    let matched = false;
+    for (const spec of specs) {
+      for (const option of spec.options) {
+        const argument = readOptionArgument(args, index, option);
+        if (!argument) continue;
+        addOutboundReference(references, spec.fileReference(argument.value, option), cwd, {
+          command,
+          option,
+        });
+        if (argument.consumesNext) index += 1;
+        matched = true;
+        break;
+      }
+      if (matched) break;
+    }
+  }
+}
+
+function extractOutboundFileReferences(command, cwd = process.cwd()) {
+  // Only file-bearing client options enter this path. Endpoint-only egress
+  // remains governed by the existing warn-level network gate.
+  const references = [];
+  for (const segment of splitCommandSegments(command)) {
+    const tokens = tokenizeCommand(segment);
+    const outboundCommand = findOutboundCommand(tokens);
+    if (!outboundCommand) continue;
+    const args = tokens.slice(outboundCommand.index + 1);
+    extractCommandFileReferences(outboundCommand.command, args, cwd, references);
+  }
+
+  const seen = new Set();
+  return references.filter((reference) => {
+    if (seen.has(reference.path)) return false;
+    seen.add(reference.path);
+    return true;
+  });
+}
+
 function normalizePathForPolicy(filePath) {
   return path.resolve(String(filePath || '').replace(/^~(?=\/|$)/, os.homedir()));
 }
@@ -330,6 +512,7 @@ function isSafeSecretStorageWrite(toolName, toolInput = {}, cwd = process.cwd())
 function scanBashCommand(command, options = {}) {
   const cwd = options.cwd || process.cwd();
   const findings = [];
+  const fileHashes = [];
   const inlineScan = scanText(command, { provider: options.provider, source: 'command' });
   findings.push(...inlineScan.findings.map((finding) => ({
     ...finding,
@@ -353,11 +536,30 @@ function scanBashCommand(command, options = {}) {
     }
   }
 
+  if (inlineScan.provider !== 'off') {
+    for (const reference of extractOutboundFileReferences(command, cwd)) {
+      const fileScan = scanFile(reference.path, {
+        provider: options.provider,
+        includePathFinding: false,
+      });
+      if (!fileScan.detected) continue;
+      findings.push(...fileScan.findings.map((finding) => ({
+        ...finding,
+        source: 'outbound_file',
+        reason: `${finding.label} found in file referenced by ${reference.command} ${reference.option}`,
+      })));
+      if (fileScan.fileHash) fileHashes.push(fileScan.fileHash);
+    }
+  }
+
+  const uniqueFileHashes = [...new Set(fileHashes)];
+
   return {
     detected: findings.length > 0,
     provider: inlineScan.provider,
     findings: uniqueFindings(findings),
     commandHash: hashText(command),
+    fileHashes: uniqueFileHashes,
   };
 }
 
@@ -405,6 +607,7 @@ function scanHookInput(input = {}, options = {}) {
     if (result.detected) {
       provider = result.provider;
       commandHash = result.commandHash;
+      fileHashes.push(...(result.fileHashes || []));
       findings.push(...result.findings);
     }
   }
