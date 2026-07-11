@@ -24,6 +24,16 @@ test('looksLikeTransportBlob flags the blob (JSON payload)', () => {
   assert.equal(looksLikeTransportBlob(POLLUTION_BLOB), true);
 });
 
+test('looksLikeTransportBlob flags camelCase hook envelopes', () => {
+  const payload = JSON.stringify({
+    sessionId: 'session-1',
+    transcriptPath: '/tmp/session.jsonl',
+    hookEventName: 'UserPromptSubmit',
+  });
+  assert.equal(looksLikeTransportBlob(payload), true);
+  assert.equal(sanitizeFeedbackText(payload), '');
+});
+
 test('transportWordsOnly treats the blob as transport-only', () => {
   assert.equal(transportWordsOnly(POLLUTION_BLOB), true);
 });

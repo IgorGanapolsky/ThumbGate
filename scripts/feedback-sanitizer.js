@@ -1,6 +1,6 @@
 'use strict';
 
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 
 const TRANSPORT_KEYS = new Set([
   'hookeventname',
@@ -61,6 +61,13 @@ const REJECT_SUBSTRINGS = [
   'prompt_id',
   'hook_event_name',
 ];
+const REJECT_JSON_KEYS = new Set([
+  ...REJECT_SUBSTRINGS,
+  'sessionid',
+  'transcriptpath',
+  'promptid',
+  'hookeventname',
+]);
 
 // A token is treated as a filesystem-path fragment when it contains a path
 // separator, ends in a machine-file extension, or is a bare UUID.
@@ -74,17 +81,24 @@ function isPathToken(token) {
   );
 }
 
+function parseJsonValue(text) {
+  try {
+    return { ok: true, value: JSON.parse(text) };
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error;
+    return { ok: false, value: null };
+  }
+}
+
 function hasTransportJsonKey(text) {
   const trimmed = String(text || '').trim();
   if (!/^[[{]/.test(trimmed)) return false;
-  try {
-    const parsed = JSON.parse(trimmed);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false;
-    const keys = new Set(Object.keys(parsed).map((key) => key.toLowerCase()));
-    return REJECT_SUBSTRINGS.some((marker) => keys.has(marker));
-  } catch (_) {
-    return false;
-  }
+  const parsedResult = parseJsonValue(trimmed);
+  if (!parsedResult.ok) return false;
+  const parsed = parsedResult.value;
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false;
+  const keys = new Set(Object.keys(parsed).map((key) => key.toLowerCase()));
+  return [...keys].some((key) => REJECT_JSON_KEYS.has(key));
 }
 
 // Positive rejection guard. Returns true when `text` is a transport/metadata
@@ -128,20 +142,16 @@ function extractPromptText(rawStdin) {
   if (!trimmed) return '';
 
   if (/^[[{]/.test(trimmed)) {
-    try {
-      const parsed = JSON.parse(trimmed);
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        if (typeof parsed.prompt === 'string') return parsed.prompt.trim();
-        // Structured payload with no human prompt field → no lesson text.
-        return '';
-      }
-      // Parsed to an array / scalar — not a user prompt.
+    const parsedResult = parseJsonValue(trimmed);
+    if (!parsedResult.ok) return trimmed;
+    const parsed = parsedResult.value;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      if (typeof parsed.prompt === 'string') return parsed.prompt.trim();
+      // Structured payload with no human prompt field → no lesson text.
       return '';
-    } catch (_) {
-      // Not valid JSON — a genuine human prompt that merely starts with a
-      // brace/bracket. Fall through and return it verbatim.
-      return trimmed;
     }
+    // Parsed to an array / scalar — not a user prompt.
+    return '';
   }
 
   return trimmed;
@@ -149,8 +159,13 @@ function extractPromptText(rawStdin) {
 
 function stripEphemeralText(text) {
   if (!text || typeof text !== 'string') return '';
-  return String(text)
-    .replace(/["']?(?:hook_?event_?name|session_?id|transcript_?path|timestamp|created_?at|updated_?at|cwd|pid|process_?id|prompt_?id|trace_?id|request_?id|install_?id|visitor_?session_?id)["']?\s*[:=]\s*["']?[^"',}\]\s]+["']?/gi, ' ')
+  let stripped = String(text);
+  for (const key of TRANSPORT_KEYS) {
+    const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const assignment = new RegExp(`["']?${escapedKey}["']?\\s*[:=]\\s*["']?[^"',}\\]\\s]+["']?`, 'gi');
+    stripped = stripped.replace(assignment, ' ');
+  }
+  return stripped
     .replace(/\/(?:private\/)?tmp\/[^\s"',}\]]+/gi, ' ')
     .replace(/\/var\/folders\/[^\s"',}\]]+/gi, ' ')
     .replace(/\/Users\/[^/\s]+\/\.(?:claude|codex|thumbgate)\/[^\s"',}\]]+/gi, ' ')
