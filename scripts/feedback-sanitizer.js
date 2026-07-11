@@ -52,11 +52,9 @@ const TRANSPORT_WORDS = new Set([
   'json',
 ]);
 
-// Positive-rejection markers: any raw feedback text that carries one of these
-// substrings is a hook/session transport payload, never a human lesson. Unlike
-// TRANSPORT_WORDS (a denylist that a blob can slip past when it also contains
-// non-transport path fragments like "workspace", "git", the repo name or
-// "jsonl"), these markers force an outright reject.
+// Transport keys that distinguish hook/session envelopes from ordinary JSON
+// tool inputs. A JSON object is rejected only when it carries one of these
+// keys; valid inputs such as {"filePath":"AGENTS.md"} must remain searchable.
 const REJECT_SUBSTRINGS = [
   'session_id',
   'transcript_path',
@@ -76,28 +74,41 @@ function isPathToken(token) {
   );
 }
 
+function hasTransportJsonKey(text) {
+  const trimmed = String(text || '').trim();
+  if (!/^[[{]/.test(trimmed)) return false;
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false;
+    const keys = new Set(Object.keys(parsed).map((key) => key.toLowerCase()));
+    return REJECT_SUBSTRINGS.some((marker) => keys.has(marker));
+  } catch (_) {
+    return false;
+  }
+}
+
 // Positive rejection guard. Returns true when `text` is a transport/metadata
 // blob that must never be stored as a lesson, because it:
-//   (a) parses as JSON (a structured payload, not a sentence), OR
-//   (b) contains a known transport marker substring, OR
+//   (a) is a JSON object carrying a hook/session transport key, OR
+//   (b) contains multiple known transport marker substrings, OR
 //   (c) is dominated by filesystem-path tokens.
 function looksLikeTransportBlob(text) {
   const trimmed = String(text || '').trim();
   if (!trimmed) return false;
 
-  // (a) Known transport marker substrings (session / transcript / prompt / hook
-  // ids). This is what identifies a hook-stdin metadata payload — a JSON blob is
-  // rejected because it CARRIES these markers, NOT merely because it is JSON.
-  // Legitimate CONTENT json (e.g. a tool input {"filePath":"…","reason":"…"})
-  // carries none of them and must survive so it can be matched against patterns.
+  if (hasTransportJsonKey(trimmed)) return true;
+
+  // Multiple marker names identify non-JSON transport residue. A human
+  // sentence that merely discusses `session_id` is not itself an envelope.
   const lower = trimmed.toLowerCase();
-  if (REJECT_SUBSTRINGS.some((marker) => lower.includes(marker))) return true;
+  const markerCount = REJECT_SUBSTRINGS.filter((marker) => lower.includes(marker)).length;
+  if (markerCount >= 2) return true;
 
   // (b) Dominated by filesystem-path tokens.
   const tokens = trimmed.split(/\s+/).filter(Boolean);
   if (tokens.length > 0) {
     const pathTokens = tokens.filter(isPathToken);
-    if (pathTokens.length > 0 && pathTokens.length / tokens.length >= 0.5) {
+    if (pathTokens.length > 0 && pathTokens.length / tokens.length > 0.5) {
       return true;
     }
   }
@@ -174,15 +185,7 @@ function sanitizeFeedbackText(text) {
   // reject content JSON that carries no transport markers (e.g. a tool input
   // {"filePath":"…","reason":"…"}): it must survive so it can be matched against
   // patterns. The discriminator is the marker, not JSON-ness.
-  if (/^[[{]/.test(raw)) {
-    try {
-      JSON.parse(raw);
-      const lower = raw.toLowerCase();
-      if (REJECT_SUBSTRINGS.some((marker) => lower.includes(marker))) return '';
-    } catch (_) {
-      /* not valid JSON — a human sentence that merely starts with a brace */
-    }
-  }
+  if (hasTransportJsonKey(raw)) return '';
   // Otherwise scrub ephemeral marker key:value pairs and volatile paths, then
   // reject only if nothing substantive remains — so real feedback that arrives
   // next to hook metadata keeps the sentence while the metadata is stripped, and

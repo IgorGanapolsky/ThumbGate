@@ -45,6 +45,24 @@ test('a normal human prompt SURVIVES sanitization', () => {
   assert.equal(transportWordsOnly(prompt), false);
 });
 
+test('a tool action with one path token SURVIVES sanitization', () => {
+  const context = 'Edit /var/src/foo.js';
+  assert.equal(sanitizeFeedbackText(context), context);
+  assert.equal(looksLikeTransportBlob(context), false);
+});
+
+test('ordinary JSON tool input SURVIVES sanitization', () => {
+  const toolInput = '{"filePath":"AGENTS.md","reason":"protected file scope creep"}';
+  assert.equal(sanitizeFeedbackText(toolInput), toolInput);
+  assert.equal(looksLikeTransportBlob(toolInput), false);
+});
+
+test('a human sentence that names one transport key SURVIVES sanitization', () => {
+  const sentence = 'do not expose the session_id field in logs';
+  assert.equal(sanitizeFeedbackText(sentence), sentence);
+  assert.equal(looksLikeTransportBlob(sentence), false);
+});
+
 test('extractPromptText pulls ONLY the .prompt field from a hook payload', () => {
   const payload = JSON.stringify({
     session_id: '1234cc85-2b12-4d92-8cd6-a9033f0d0efc',
