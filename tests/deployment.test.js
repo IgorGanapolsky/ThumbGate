@@ -75,7 +75,13 @@ function runDeployScopeFixture(changePath, eventName = 'push', beforeShaOverride
 
     return JSON.parse(fs.readFileSync(jsonOutput, 'utf8'));
   } finally {
-    fs.rmSync(repoDir, { recursive: true, force: true });
+    // Retry transient APFS ENOTEMPTY teardown failures observed under Node 26.
+    fs.rmSync(repoDir, {
+      recursive: true,
+      force: true,
+      maxRetries: 5,
+      retryDelay: 50,
+    });
   }
 }
 
