@@ -281,12 +281,12 @@ function syncClaudeHistoryFeedback(options = {}) {
         sourceEvent,
       });
 
-      if (captureResult && captureResult.duplicate) {
+      if (captureResult?.duplicate) {
         processedIds.add(candidate.externalId);
         skippedCount += 1;
         continue;
       }
-      if (captureResult && captureResult.feedbackEvent) {
+      if (captureResult?.feedbackEvent) {
         existingEntries.push(captureResult.feedbackEvent);
       }
       processedIds.add(candidate.externalId);

@@ -678,7 +678,8 @@ function buildFeedbackSourceIdentity(input = {}) {
   const discriminator = promptIdHash
     ? `prompt:${sessionHash || ''}:${projectHash || ''}:${promptIdHash}`
     : `content:${sessionHash || ''}:${projectHash || ''}:${textHash}`;
-  const key = `fev_${hashFeedbackSourcePart(`v1:${signal}:${discriminator}`)}`;
+  const eventHash = hashFeedbackSourcePart(['v1', signal, discriminator].join(':'));
+  const key = `fev_${eventHash}`;
 
   return {
     key,
@@ -745,7 +746,8 @@ function sleepSync(milliseconds) {
 }
 
 function replaceStaleClaim(claimPath) {
-  const stalePath = `${claimPath}.stale-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const nonce = crypto.randomBytes(4).toString('hex');
+  const stalePath = `${claimPath}.stale-${process.pid}-${Date.now()}-${nonce}`;
   try {
     fs.renameSync(claimPath, stalePath);
     fs.rmSync(stalePath, { recursive: true, force: true });
@@ -769,17 +771,17 @@ function findRecordById(filePath, id) {
   if (!id) return null;
   const entries = readJSONL(filePath, { maxLines: 500 });
   for (let index = entries.length - 1; index >= 0; index -= 1) {
-    if (entries[index] && entries[index].id === id) return entries[index];
+    if (entries[index]?.id === id) return entries[index];
   }
   return null;
 }
 
 function duplicateCaptureResult(receipt, paths, options = {}) {
-  const feedbackEvent = findRecordById(paths.FEEDBACK_LOG_PATH, receipt && receipt.feedbackId);
-  const memoryRecord = findRecordById(paths.MEMORY_LOG_PATH, receipt && receipt.memoryId);
+  const feedbackEvent = findRecordById(paths.FEEDBACK_LOG_PATH, receipt?.feedbackId);
+  const memoryRecord = findRecordById(paths.MEMORY_LOG_PATH, receipt?.memoryId);
   return {
-    accepted: Boolean(receipt && receipt.accepted),
-    signalLogged: Boolean(receipt && receipt.signalLogged),
+    accepted: Boolean(receipt?.accepted),
+    signalLogged: Boolean(receipt?.signalLogged),
     duplicate: true,
     pending: Boolean(options.pending),
     status: options.pending ? 'duplicate_in_progress' : 'duplicate',
@@ -787,41 +789,70 @@ function duplicateCaptureResult(receipt, paths, options = {}) {
     message: options.pending
       ? 'Equivalent feedback is already being captured.'
       : 'This feedback event was already captured; no counters or lessons were changed.',
-    feedbackEvent: feedbackEvent || (receipt && receipt.feedbackId ? { id: receipt.feedbackId } : null),
-    memoryRecord: memoryRecord || (receipt && receipt.memoryId ? { id: receipt.memoryId } : null),
+    feedbackEvent: feedbackEvent || (receipt?.feedbackId ? { id: receipt.feedbackId } : null),
+    memoryRecord: memoryRecord || (receipt?.memoryId ? { id: receipt.memoryId } : null),
+  };
+}
+
+function sourceHashMatches(expected, actual) {
+  return !expected || !actual || expected === actual;
+}
+
+function isDuplicateFeedbackEntry(entry, identity) {
+  if (!entry || entry.signal !== identity.signal) return false;
+  if (normalizeFeedbackText(entry.submittedContext || entry.context) !== identity.normalizedText) return false;
+
+  const sourceEvent = entry.sourceEvent || {};
+  if (!sourceHashMatches(identity.sessionHash, sourceEvent.sessionHash)) return false;
+  if (!sourceHashMatches(identity.projectHash, sourceEvent.projectHash)) return false;
+  if (!sourceHashMatches(identity.promptIdHash, sourceEvent.promptIdHash)) return false;
+  if (identity.promptIdHash && sourceEvent.promptIdHash === identity.promptIdHash) return true;
+
+  const timestamp = parseFeedbackSourceTimestamp(sourceEvent.timestamp || entry.timestamp);
+  return Math.abs(identity.eventTimestampMs - timestamp) <= FEEDBACK_EVENT_DEDUPE_WINDOW_MS;
+}
+
+function receiptFromFeedbackEntry(entry, paths) {
+  if (!entry) return null;
+  const memories = readJSONL(paths.MEMORY_LOG_PATH, { maxLines: 500 });
+  const memory = memories.find((candidate) => candidate?.sourceFeedbackId === entry.id);
+  return {
+    status: 'complete',
+    feedbackId: entry.id,
+    memoryId: memory?.id,
+    accepted: entry.actionType !== 'no-action'
+      && (!Array.isArray(entry.validationIssues) || entry.validationIssues.length === 0),
+    signalLogged: true,
+    completedAtMs: Date.parse(entry.timestamp || '') || Date.now(),
   };
 }
 
 function recentDuplicateReceipt(identity, paths) {
   const entries = readJSONL(paths.FEEDBACK_LOG_PATH, { maxLines: 250 });
-  for (let index = entries.length - 1; index >= 0; index -= 1) {
-    const entry = entries[index];
-    if (!entry || entry.signal !== identity.signal) continue;
-    if (normalizeFeedbackText(entry.submittedContext || entry.context) !== identity.normalizedText) continue;
+  const entry = entries.findLast((candidate) => isDuplicateFeedbackEntry(candidate, identity));
+  return receiptFromFeedbackEntry(entry, paths);
+}
 
-    const sourceEvent = entry.sourceEvent || {};
-    if (identity.sessionHash && sourceEvent.sessionHash && identity.sessionHash !== sourceEvent.sessionHash) continue;
-    if (identity.projectHash && sourceEvent.projectHash && identity.projectHash !== sourceEvent.projectHash) continue;
-    if (identity.promptIdHash && sourceEvent.promptIdHash && identity.promptIdHash !== sourceEvent.promptIdHash) continue;
+function tryCreateFeedbackClaim(claimPath) {
+  try {
+    fs.mkdirSync(claimPath, { mode: 0o700 });
+    writeClaimState(claimPath, { status: 'pending', startedAtMs: Date.now() });
+    return { owned: true, claimPath };
+  } catch (error) {
+    if (error?.code === 'EEXIST') return null;
+    throw error;
+  }
+}
 
-    const stablePromptMatch = identity.promptIdHash
-      && sourceEvent.promptIdHash === identity.promptIdHash;
-    const entryTimestamp = parseFeedbackSourceTimestamp(sourceEvent.timestamp || entry.timestamp);
-    if (!stablePromptMatch
-      && Math.abs(identity.eventTimestampMs - entryTimestamp) > FEEDBACK_EVENT_DEDUPE_WINDOW_MS) continue;
-
-    const memories = readJSONL(paths.MEMORY_LOG_PATH, { maxLines: 500 });
-    const memory = memories.find((candidate) => candidate && candidate.sourceFeedbackId === entry.id) || null;
-    const accepted = entry.actionType !== 'no-action'
-      && (!Array.isArray(entry.validationIssues) || entry.validationIssues.length === 0);
-    return {
-      status: 'complete',
-      feedbackId: entry.id,
-      memoryId: memory && memory.id,
-      accepted,
-      signalLogged: true,
-      completedAtMs: Date.parse(entry.timestamp || '') || Date.now(),
-    };
+function existingClaimResult(state, identity, paths) {
+  const stateTimestamp = Number(state?.completedAtMs || state?.startedAtMs || 0);
+  const ageMs = stateTimestamp > 0 ? Date.now() - stateTimestamp : 0;
+  if (state?.status === 'complete'
+    && (identity.promptIdHash || ageMs <= FEEDBACK_EVENT_DEDUPE_WINDOW_MS)) {
+    return duplicateCaptureResult(state, paths);
+  }
+  if (state?.status === 'pending' && ageMs <= FEEDBACK_EVENT_CLAIM_STALE_MS) {
+    return duplicateCaptureResult(state, paths, { pending: true });
   }
   return null;
 }
@@ -835,30 +866,12 @@ function acquireFeedbackEventClaim(identity, paths) {
   ensureDir(claimsRoot);
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      fs.mkdirSync(claimPath, { mode: 0o700 });
-      writeClaimState(claimPath, {
-        status: 'pending',
-        startedAtMs: Date.now(),
-      });
-      return { owned: true, claimPath };
-    } catch (error) {
-      if (!error || error.code !== 'EEXIST') throw error;
-    }
+    const ownedClaim = tryCreateFeedbackClaim(claimPath);
+    if (ownedClaim) return ownedClaim;
 
     const state = waitForClaimCompletion(claimPath, Date.now() + FEEDBACK_EVENT_CLAIM_WAIT_MS);
-    const stateTimestamp = Number(state && (state.completedAtMs || state.startedAtMs) || 0);
-    const ageMs = stateTimestamp > 0 ? Date.now() - stateTimestamp : 0;
-    if (state && state.status === 'complete'
-      && (identity.promptIdHash || ageMs <= FEEDBACK_EVENT_DEDUPE_WINDOW_MS)) {
-      return { owned: false, result: duplicateCaptureResult(state, paths) };
-    }
-    if (state && state.status === 'pending' && ageMs <= FEEDBACK_EVENT_CLAIM_STALE_MS) {
-      return {
-        owned: false,
-        result: duplicateCaptureResult(state, paths, { pending: true }),
-      };
-    }
+    const duplicateResult = existingClaimResult(state, identity, paths);
+    if (duplicateResult) return { owned: false, result: duplicateResult };
     if (!replaceStaleClaim(claimPath)) continue;
   }
 
@@ -869,20 +882,20 @@ function acquireFeedbackEventClaim(identity, paths) {
 }
 
 function finalizeFeedbackEventClaim(claim, result) {
-  if (!claim || !claim.owned) return;
+  if (!claim?.owned) return;
   writeClaimState(claim.claimPath, {
     status: 'complete',
     startedAtMs: Date.now(),
     completedAtMs: Date.now(),
-    accepted: Boolean(result && result.accepted),
-    signalLogged: Boolean(result && (result.signalLogged || result.feedbackEvent)),
-    feedbackId: result && result.feedbackEvent && result.feedbackEvent.id || null,
-    memoryId: result && result.memoryRecord && result.memoryRecord.id || null,
+    accepted: Boolean(result?.accepted),
+    signalLogged: Boolean(result?.signalLogged || result?.feedbackEvent),
+    feedbackId: result?.feedbackEvent?.id || null,
+    memoryId: result?.memoryRecord?.id || null,
   });
 }
 
 function releaseFeedbackEventClaim(claim) {
-  if (claim && claim.owned && claim.claimPath) {
+  if (claim?.owned && claim.claimPath) {
     fs.rmSync(claim.claimPath, { recursive: true, force: true });
   }
 }
@@ -1229,7 +1242,7 @@ function inferLessonFromConversation(conversationWindow, signal) {
   };
 }
 
-function captureFeedbackOnce(params) {
+function captureFeedback(params) {
   const _captureStart = Date.now();
   const { FEEDBACK_LOG_PATH, MEMORY_LOG_PATH, FEEDBACK_DIR } = getFeedbackPaths();
   const signal = normalizeSignal(params.signal);
@@ -1824,16 +1837,16 @@ function captureFeedbackOnce(params) {
   return result;
 }
 
-function captureFeedback(params = {}) {
+function captureFeedbackIdempotent(params = {}) {
   const paths = getFeedbackPaths();
   const identity = normalizeFeedbackSourceIdentity(params.sourceEvent, params);
-  if (!identity) return captureFeedbackOnce(params);
+  if (!identity) return captureFeedback(params);
 
   const claim = acquireFeedbackEventClaim(identity, paths);
   if (!claim.owned) return claim.result;
 
   try {
-    const result = captureFeedbackOnce({ ...params, sourceEvent: identity });
+    const result = captureFeedback({ ...params, sourceEvent: identity });
     finalizeFeedbackEventClaim(claim, result);
     return result;
   } catch (error) {
@@ -2475,7 +2488,7 @@ function buildCorrectiveActionsReminder(correctiveActions = []) {
 }
 
 module.exports = {
-  captureFeedback,
+  captureFeedback: captureFeedbackIdempotent,
   buildFeedbackSourceIdentity,
   compactMemories,
   buildCorrectiveActionsReminder,

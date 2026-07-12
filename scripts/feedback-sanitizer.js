@@ -177,8 +177,8 @@ function stripEphemeralText(text) {
   if (!text || typeof text !== 'string') return '';
   let stripped = String(text);
   for (const key of TRANSPORT_KEYS) {
-    const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const assignment = new RegExp(`["']?${escapedKey}["']?\\s*[:=]\\s*["']?[^"',}\\]\\s]+["']?`, 'gi');
+    const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
+    const assignment = new RegExp(String.raw`["']?${escapedKey}["']?\s*[:=]\s*["']?[^"',}\]\s]+["']?`, 'gi');
     stripped = stripped.replace(assignment, ' ');
   }
   return stripped
