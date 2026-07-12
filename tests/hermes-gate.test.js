@@ -73,3 +73,44 @@ test('hermes-gate honors THUMBGATE_HERMES_WARN_ONLY (advisory mode never blocks)
   );
   assert.notEqual(decision.decision, 'block', `warn-only mode must not block: ${JSON.stringify(decision)}`);
 });
+
+for (const [label, payload] of [
+  ['terminal environment override', {
+    tool_name: 'terminal',
+    tool_input: { command: 'export THUMBGATE_HOTFIX_BYPASS=1' },
+  }],
+  ['patch hook disable', {
+    tool_name: 'patch',
+    tool_input: {
+      file_path: '.claude/settings.json',
+      old_string: '"PreToolUse": []',
+      new_string: '"PreToolUse": [{"hooks": []}]',
+    },
+  }],
+]) {
+  test(`hermes-gate keeps ${label} on the hard floor under bypass flags`, () => {
+    const decision = runHermesGate(
+      { hook_event_name: 'pre_tool_call', ...payload },
+      {
+        THUMBGATE_HERMES_WARN_ONLY: '1',
+        THUMBGATE_HOTFIX_BYPASS: '1',
+        THUMBGATE_SELF_PROTECT_OVERRIDE: '1',
+        THUMBGATE_ALLOW_SELF_EDIT: '1',
+      },
+    );
+    assert.equal(decision.decision, 'block', JSON.stringify(decision));
+    assert.match(decision.reason, /\[GATE:self-protect-/);
+  });
+}
+
+test('Hermes operator bypass still allows an ordinary force-push gate', () => {
+  const decision = runHermesGate(
+    {
+      hook_event_name: 'pre_tool_call',
+      tool_name: 'terminal',
+      tool_input: { command: 'git push --force origin main' },
+    },
+    { THUMBGATE_HOTFIX_BYPASS: '1' },
+  );
+  assert.notEqual(decision.decision, 'block', JSON.stringify(decision));
+});

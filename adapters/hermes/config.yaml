@@ -42,8 +42,9 @@ hooks_auto_accept: false
 #   ThumbGate ships warn-by-default. Because Hermes's pre_tool_call hook is binary
 #   (block or allow) with no "warn-with-context" channel, `thumbgate hermes-gate`
 #   runs in STRICT enforcement by default so that a deny actually blocks. To make
-#   the gate advisory only (never block, just log), set THUMBGATE_HERMES_WARN_ONLY=1
-#   in the hook's environment. THUMBGATE_HOTFIX_BYPASS=1 disables checks entirely.
+#   ordinary gates advisory, set THUMBGATE_HERMES_WARN_ONLY=1 in the hook's
+#   environment. THUMBGATE_HOTFIX_BYPASS=1 also skips ordinary gates. Neither
+#   setting disables secret, critical security-scan, or self-protection floors.
 #
 # Reliability note: Hermes hooks FAIL OPEN — if the hook errors or exceeds `timeout`,
 # the tool proceeds. Keep the gate fast (the 5s timeout above is the ceiling) so a

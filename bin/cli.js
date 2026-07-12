@@ -2695,23 +2695,27 @@ function install() {
 }
 
 async function gateCheck() {
-  // Explicit emergency escape hatch ONLY. The 2026-06-03 hotfix made this
-  // bypass-by-default, which silently disabled ThumbGate's enforcement entirely
-  // (the firewall approved everything). Restored 2026-06-04: enforcement runs by
-  // default in warn-by-default posture (see gates-engine applyEnforcementPosture);
-  // set THUMBGATE_HOTFIX_BYPASS=1 to disable all checks if a gate ever misfires.
-  if (process.env.THUMBGATE_HOTFIX_BYPASS === '1') {
-    process.stdout.write(JSON.stringify({
-      decision: 'approve',
-      reason: 'hotfix-bypass-opt-in',
-      hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: '' }
-    }) + '\n');
-    return;
-  }
   try {
     const payload = readStdinText();
     const input = payload ? JSON.parse(payload) : {};
     const gatesEngine = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
+
+    // The operator bypass only skips advisory and strict-mode gates. Security and
+    // self-protection floors are evaluated before the early approval path.
+    if (process.env.THUMBGATE_HOTFIX_BYPASS === '1') {
+      const hardFloorOutput = gatesEngine.runHardFloor(input);
+      if (hardFloorOutput) {
+        process.stdout.write(hardFloorOutput + '\n');
+        return;
+      }
+      process.stdout.write(JSON.stringify({
+        decision: 'approve',
+        reason: 'operator-bypass-opt-in',
+        hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: '' }
+      }) + '\n');
+      return;
+    }
+
     const output = await gatesEngine.runAsync(input);
     process.stdout.write(output + '\n');
   } catch (err) {
@@ -3976,53 +3980,6 @@ switch (COMMAND) {
   case 'dispatch-brief':
     dispatchBrief();
     break;
-  case 'gate-check': {
-    // PreToolUse hook interface: reads tool call JSON from stdin, outputs gate verdict
-    // Used by: generate-pretool-hook.sh → npx thumbgate gate-check
-    const { run: gateRun, runAsync: gateRunAsync } = require(path.join(PKG_ROOT, 'scripts', 'gates-engine'));
-    const { evaluateSelfProtection } = require(path.join(PKG_ROOT, 'scripts', 'self-protection'));
-    let stdinData = '';
-    process.stdin.setEncoding('utf8');
-    process.stdin.on('data', (chunk) => { stdinData += chunk; });
-    process.stdin.on('end', async () => {
-      try {
-        const input = JSON.parse(stdinData);
-        const output = await gateRunAsync(input);
-        // Self-protection overlay (2026-07-08): the gate engine only denies edits
-        // to ThumbGate's own governance files under strict enforcement; by default
-        // such edits pass as a clean ALLOW. Surface them (or block in strict) so an
-        // agent can't silently disable the firewall. Only overlays when the engine
-        // did not already produce a hard deny.
-        let verdict = output;
-        try {
-          const parsed = JSON.parse(output || '{}');
-          const alreadyDeny = (parsed.hookSpecificOutput && parsed.hookSpecificOutput.permissionDecision === 'deny')
-            || parsed.decision === 'block';
-          if (!alreadyDeny) {
-            const sp = evaluateSelfProtection(input.tool_name, input.tool_input);
-            if (sp && sp.action === 'block') {
-              verdict = JSON.stringify({
-                decision: 'block',
-                reason: sp.message,
-                hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: sp.message },
-              });
-            } else if (sp && sp.action === 'warn') {
-              verdict = JSON.stringify({
-                hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: sp.message },
-              });
-            }
-          }
-        } catch (_e) { /* non-JSON engine output: pass through unchanged */ }
-        process.stdout.write(verdict + '\n');
-        process.exit(0);
-      } catch (err) {
-        process.stderr.write(`gate-check error: ${err.message}\n`);
-        process.stdout.write(JSON.stringify({}) + '\n');
-        process.exit(0);
-      }
-    });
-    break;
-  }
   case 'hermes-gate': {
     // Nous Research Hermes Agent `pre_tool_call` shell hook.
     // Hermes pipes each pending tool call as JSON to stdin and reads a decision from stdout;
@@ -4033,7 +3990,7 @@ switch (COMMAND) {
     // Hermes `pre_tool_call` is binary (block or allow) with no warn channel, and the whole point
     // of wiring it is to gate, so we run STRICT enforcement by default — otherwise ThumbGate's
     // warn-by-default posture would pass every deny through and the hook would block nothing.
-    // Opt out with THUMBGATE_HERMES_WARN_ONLY=1; THUMBGATE_HOTFIX_BYPASS=1 still disables checks.
+    // Opt out with THUMBGATE_HERMES_WARN_ONLY=1; the operator bypass also leaves ordinary gates advisory.
     // Wire it in ~/.hermes/config.yaml — see adapters/hermes/config.yaml.
     if (process.env.THUMBGATE_HERMES_WARN_ONLY !== '1' && process.env.THUMBGATE_HOTFIX_BYPASS !== '1') {
       process.env.THUMBGATE_STRICT_ENFORCEMENT = '1';
@@ -4045,8 +4002,22 @@ switch (COMMAND) {
     process.stdin.on('end', async () => {
       try {
         const payload = JSON.parse(hermesStdin);
-        // Hermes sends snake_case tool_name/tool_input — gates-engine reads these directly.
-        const verdict = await hermesGateRun({ tool_name: payload.tool_name, tool_input: payload.tool_input });
+        const hermesToolName = String(payload.tool_name || '');
+        const canonicalToolNames = {
+          terminal: 'Bash',
+          process: 'Bash',
+          execute_code: 'Bash',
+          patch: 'Edit',
+          write_file: 'Write',
+          read_file: 'Read',
+        };
+        const verdict = await hermesGateRun({
+          tool_name: canonicalToolNames[hermesToolName] || hermesToolName,
+          tool_input: {
+            ...(payload.tool_input || {}),
+            hermes_tool_name: hermesToolName,
+          },
+        });
         let parsed = {};
         try { parsed = JSON.parse(verdict); } catch (_e) { parsed = {}; }
         const hso = parsed.hookSpecificOutput || {};
