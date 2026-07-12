@@ -285,6 +285,11 @@ test('manifest contract: shipped config/post-deploy-marketing-pages.json is vali
   const home = m.pages.find((p) => p.route === '/');
   assert.ok(home, 'manifest must include /');
   assert.ok(home.sentinel.length > 0);
+  const homeHtml = fs.readFileSync(path.resolve(__dirname, '..', 'public', 'index.html'), 'utf8');
+  assert.ok(
+    homeHtml.includes(home.sentinel),
+    'home-page sentinel must match shipped public/index.html before deployment',
+  );
   const checkout = m.pages.find((p) => p.route === '/checkout/pro');
   assert.ok(checkout, 'manifest must include the revenue-critical Pro checkout route');
   assert.match(checkout.sentinel, /Stripe can collect your email/);
