@@ -740,6 +740,56 @@ describe('billing.js — funnel ledger', () => {
     }
   });
 
+  test('external Payment Link webhook restores marketplace attribution from client_reference_id', async () => {
+    const savedWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const savedAllowUnsigned = process.env.THUMBGATE_ALLOW_UNSIGNED_STRIPE_WEBHOOKS;
+    process.env.STRIPE_WEBHOOK_SECRET = '';
+    process.env.THUMBGATE_ALLOW_UNSIGNED_STRIPE_WEBHOOKS = '1';
+    const { packCheckoutReference } = require('../scripts/checkout-attribution-reference');
+    const billing = requireFreshBilling('sk_test_payment_link_attribution');
+    try {
+      const result = await billing.handleWebhook(Buffer.from(JSON.stringify({
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test_aiventyx_diagnostic',
+            customer: 'cus_aiventyx_diagnostic',
+            customer_details: { email: 'buyer@example.com' },
+            payment_status: 'paid',
+            mode: 'payment',
+            amount_total: 49900,
+            currency: 'usd',
+            metadata: {},
+            client_reference_id: packCheckoutReference({
+              utmSource: 'aiventyx',
+              acquisitionId: 'acq_aiventyx_diagnostic',
+            }),
+          },
+        },
+      })), null);
+
+      assert.equal(result.handled, true);
+      const paidEvent = readLedgerEvents().find((entry) => (
+        entry.event === 'stripe_checkout_completed'
+        && entry.evidence === 'cs_test_aiventyx_diagnostic'
+      ));
+      assert.equal(paidEvent.metadata.source, 'aiventyx');
+      assert.equal(paidEvent.metadata.acquisitionId, 'acq_aiventyx_diagnostic');
+
+      const revenueEvent = readRevenueEvents().find((entry) => (
+        entry.event === 'stripe_checkout_completed'
+        && entry.orderId === 'cs_test_aiventyx_diagnostic'
+      ));
+      assert.equal(revenueEvent.attribution.source, 'aiventyx');
+      assert.equal(revenueEvent.acquisitionId, 'acq_aiventyx_diagnostic');
+    } finally {
+      if (savedWebhookSecret === undefined) delete process.env.STRIPE_WEBHOOK_SECRET;
+      else process.env.STRIPE_WEBHOOK_SECRET = savedWebhookSecret;
+      if (savedAllowUnsigned === undefined) delete process.env.THUMBGATE_ALLOW_UNSIGNED_STRIPE_WEBHOOKS;
+      else process.env.THUMBGATE_ALLOW_UNSIGNED_STRIPE_WEBHOOKS = savedAllowUnsigned;
+    }
+  });
+
   test('stripe webhook fails closed when live billing lacks a webhook secret', async () => {
     const savedWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     const savedAllowUnsigned = process.env.THUMBGATE_ALLOW_UNSIGNED_STRIPE_WEBHOOKS;

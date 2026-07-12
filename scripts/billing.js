@@ -52,6 +52,7 @@ const {
 const { ensureParentDir } = require('./fs-utils');
 const mailer = require('./mailer');
 const { recordCheckoutFunnelEvent } = require('./plausible-server-events');
+const { parseCheckoutReference } = require('./checkout-attribution-reference');
 
 function loadWorkflowSprintIntakeModule() {
   const modulePath = path.resolve(__dirname, 'workflow-sprint-intake.js');
@@ -486,8 +487,8 @@ async function verifyActiveProductForPlan(stripe, planId) {
     // session.create fires with inline product_data. Safe path.
     return;
   }
-  const active = matching.find((p) => p.active === true);
-  if (!active) {
+  const hasActive = matching.some((p) => p.active === true);
+  if (!hasActive) {
     const archived = matching[0];
     throw new Error(
       `Refusing to create checkout session: Stripe product named "${expectedName}" ` +
@@ -2969,6 +2970,17 @@ async function handleWebhook(rawBody, signature) {
       const trialEndAt = computeTrialEndAt(session);
 
       const attribution = extractAttribution(session.metadata);
+      // External Stripe Payment Links (the diagnostic/sprint checkouts) carry no
+      // metadata but preserve client_reference_id. When metadata yields no source,
+      // recover it so marketplace-attributed paid checkouts (e.g. utm_source=aiventyx)
+      // are credited/reported instead of silently landing as source=unknown.
+      if (!attribution.source) {
+        const ref = parseCheckoutReference(session.client_reference_id);
+        if (ref?.source) {
+          attribution.source = ref.source;
+          if (!attribution.acquisitionId) attribution.acquisitionId = ref.acquisitionId;
+        }
+      }
       const result = provisionApiKey(customerId, {
         installId,
         credits,

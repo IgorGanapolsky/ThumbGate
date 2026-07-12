@@ -214,6 +214,7 @@ const {
 const { sendProblem, PROBLEM_TYPES } = require('../../scripts/problem-detail');
 const { TOOLS: MCP_TOOLS } = require('../../scripts/tool-registry');
 const mcpOauth = require('../../scripts/mcp-oauth');
+const { packCheckoutReference } = require('../../scripts/checkout-attribution-reference');
 // OAuth 2.1 (PKCE) authorization-server state for the remote MCP connector
 // (Claude Connectors Directory requires OAuth for authenticated services).
 const oauthStore = mcpOauth.createStore();
@@ -2102,6 +2103,10 @@ function buildCheckoutFallbackUrl(baseUrl, metadata = {}) {
   appendQueryParam(url, 'seat_count', metadata.seatCount);
   appendQueryParam(url, 'landing_path', metadata.landingPath);
   appendQueryParam(url, 'referrer_host', metadata.referrerHost);
+  // External Stripe Payment Links drop utm_* query params but preserve
+  // client_reference_id — pack attribution into it so marketplace-attributed paid
+  // checkouts (e.g. utm_source=aiventyx) survive to the webhook and can be credited.
+  appendQueryParam(url, 'client_reference_id', packCheckoutReference(metadata));
   return restoreStripeCheckoutPlaceholder(url.toString());
 }
 
@@ -2546,10 +2551,18 @@ function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadReques
   const { FEEDBACK_DIR } = getFeedbackPaths();
   const journeyState = resolveJourneyState(req, parsed);
   const destinationUrl = buildTrackedLinkDestination(target, hostedConfig, parsed);
+  const attribution = buildTrackedLinkAttribution(target, parsed, req, journeyState, destinationUrl);
+  if (target.external) {
+    appendQueryParam(
+      destinationUrl,
+      'client_reference_id',
+      packCheckoutReference(attribution)
+    );
+  }
   if (!isHeadRequest) {
     appendBestEffortTelemetry(
       FEEDBACK_DIR,
-      buildTrackedLinkAttribution(target, parsed, req, journeyState, destinationUrl),
+      attribution,
       req.headers,
       `tracked_link_redirect:${target.slug}`
     );
