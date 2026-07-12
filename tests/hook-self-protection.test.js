@@ -11,10 +11,9 @@
  * Contract:
  *   - Edits to governance files (.claude/settings.json, scripts/hook-*.js,
  *     config/gates/**, config/enforcement.json, config/mcp-allowlists.json)
- *     produce a decision (warn by default, block under strict).
+ *     hard-block unless a scoped approval or break-glass recovery is active.
  *   - Non-governance edits produce nothing.
- *   - THUMBGATE_ALLOW_SELF_EDIT=1 is an escape hatch that fully opts out,
- *     preserving the repair path (self-lockout lesson, 2026-07-07).
+ *   - Environment flags cannot bypass the floor.
  */
 
 const { test } = require('node:test');
@@ -32,8 +31,11 @@ const GOVERNANCE_FILES = [
   'scripts/hook-pre-tool-use.js',
   'scripts/hook-stop-self-score.sh',
   'config/gates/default.json',
+  'config/budget.json',
   'config/enforcement.json',
   'config/mcp-allowlists.json',
+  '.thumbgate/config.json',
+  'thumbgate.json',
 ];
 
 const NON_GOVERNANCE_FILES = [
@@ -86,32 +88,33 @@ test('selfProtectionTarget ignores non-edit tools (Bash cannot be mistaken for a
   assert.strictEqual(selfProtectionTarget('Read', { file_path: '.claude/settings.json' }), null);
 });
 
-test('default posture = warn (never silent, never blocks legitimate work)', () => {
+test('default posture hard-blocks self-governance edits', () => {
   withEnv({ THUMBGATE_STRICT_ENFORCEMENT: undefined, THUMBGATE_ALLOW_SELF_EDIT: undefined }, () => {
     const r = evaluateSelfProtection('Edit', { file_path: '.claude/settings.json' });
     assert.ok(r, 'expected a decision');
-    assert.strictEqual(r.action, 'warn');
+    assert.strictEqual(r.action, 'block');
     assert.match(r.message, /self-protection/i);
-    assert.match(r.message, /THUMBGATE_STRICT_ENFORCEMENT=1/);
   });
 });
 
-test('strict posture = hard block', () => {
+test('strict posture remains a hard block', () => {
   withEnv({ THUMBGATE_STRICT_ENFORCEMENT: '1', THUMBGATE_ALLOW_SELF_EDIT: undefined }, () => {
     const r = evaluateSelfProtection('Edit', { file_path: 'config/gates/default.json' });
     assert.ok(r);
     assert.strictEqual(r.action, 'block');
-    assert.match(r.message, /THUMBGATE_ALLOW_SELF_EDIT=1/);
   });
 });
 
-test('escape hatch opts out entirely — repair path is never denied (self-lockout lesson)', () => {
-  withEnv({ THUMBGATE_STRICT_ENFORCEMENT: '1', THUMBGATE_ALLOW_SELF_EDIT: '1' }, () => {
-    assert.strictEqual(
-      evaluateSelfProtection('Edit', { file_path: '.claude/settings.json' }),
-      null,
-      'escape hatch must fully bypass so a locked-out gate can be repaired'
-    );
+test('legacy environment escape cannot disable self-protection', () => {
+  withEnv({
+    THUMBGATE_STRICT_ENFORCEMENT: '1',
+    THUMBGATE_ALLOW_SELF_EDIT: '1',
+    THUMBGATE_SELF_PROTECT_OVERRIDE: '1',
+    THUMBGATE_HOTFIX_BYPASS: '1',
+  }, () => {
+    const result = evaluateSelfProtection('Edit', { file_path: '.claude/settings.json' });
+    assert.ok(result);
+    assert.strictEqual(result.action, 'block');
   });
 });
 

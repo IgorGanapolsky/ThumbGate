@@ -149,6 +149,11 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   'slopsquat-guard',
   ...SELF_PROTECT_HARD_FLOOR_GATE_IDS,
 ]);
+const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
+const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
+const SELF_PROTECT_CONFIG_COMMAND_PATTERN = /(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json\b|\.thumbgate\/config\.json\b|thumbgate\.json\b)/i;
+const SELF_PROTECT_HOOK_COMMAND_PATTERN = /(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^\s'";|]+\.(?:js|sh))\b/i;
+const SHELL_FILE_MUTATION_PATTERN = /\b(?:sed\s+-i|perl\s+-pi|python\d*\s+-c|node\s+-e|ruby\s+-e|tee|truncate|rm|mv|cp|install|patch|jq)\b|(?:^|[\s;&|])>{1,2}\s*\S/i;
 
 function isSelfProtectGate(gateId) {
   return SELF_PROTECT_HARD_FLOOR_GATE_IDS.has(gateId);
@@ -1703,6 +1708,10 @@ function matchGate(gate, toolName, toolInput = {}) {
   const governanceState = loadGovernanceState();
   const constraints = loadConstraints();
 
+  if (isSelfProtectGate(gate.id) && hasActiveProtectedApproval(governanceState, affectedFiles)) {
+    return { matched: false, matchText, affectedFiles };
+  }
+
   if (gate.id === 'on-demand-freeze-mode' || (gate.when && gate.when.constraints && gate.when.constraints.freeze_mode)) {
     let freezePaths = [];
     if (process.env.THUMBGATE_FREEZE_PATHS) {
@@ -1810,30 +1819,52 @@ function matchesGate(gate, toolName, toolInput) {
   return matchGate(gate, toolName, toolInput).matched;
 }
 
+function hasActiveProtectedApproval(governanceState, affectedFiles) {
+  if (!Array.isArray(affectedFiles) || affectedFiles.length === 0) return false;
+  const approvals = Array.isArray(governanceState && governanceState.protectedApprovals)
+    ? governanceState.protectedApprovals
+    : [];
+  return affectedFiles.every((filePath) => approvals.some((entry) => {
+    return matchesAnyGlob(filePath, sanitizeGlobList(entry && entry.pathGlobs));
+  }));
+}
+
 function matchSelfProtectHardFloor(gate, toolName, toolInput = {}) {
-  if (!Array.isArray(gate.toolNames) || !gate.toolNames.includes(toolName)) return null;
+  const affected = extractAffectedFiles(toolName, toolInput);
+  const affectedFiles = affected.files;
+  if (hasActiveProtectedApproval(loadGovernanceState(), affectedFiles)) return null;
 
-  const matchText = [
-    toolInput.command,
-    toolInput.file_path,
-    toolInput.path,
-    toolInput.filePath,
-    toolInput.content,
-    toolInput.new_string,
-    toolInput.old_string,
-  ].filter((value) => typeof value === 'string' && value.length > 0).join(' ');
-  if (!matchText || !gate.pattern) return null;
-
-  try {
-    if (!new RegExp(gate.pattern).test(matchText)) return null;
-  } catch {
-    return null;
+  const command = String(toolInput.command || '');
+  let matchText = command;
+  if (gate.id === 'self-protect-config' || gate.id === 'self-protect-hooks-disable') {
+    const targetPattern = gate.id === 'self-protect-config'
+      ? SELF_PROTECT_CONFIG_TARGET_PATTERN
+      : SELF_PROTECT_HOOK_TARGET_PATTERN;
+    if (EDIT_LIKE_TOOLS.has(toolName)) {
+      matchText = affectedFiles.join(' ');
+      if (!targetPattern.test(matchText)) return null;
+    } else if (toolName === 'Bash') {
+      const commandTargetPattern = gate.id === 'self-protect-config'
+        ? SELF_PROTECT_CONFIG_COMMAND_PATTERN
+        : SELF_PROTECT_HOOK_COMMAND_PATTERN;
+      if (!SHELL_FILE_MUTATION_PATTERN.test(command) || !commandTargetPattern.test(command)) return null;
+    } else {
+      return null;
+    }
+  } else {
+    if (!Array.isArray(gate.toolNames) || !gate.toolNames.includes(toolName)) return null;
+    if (!matchText || !gate.pattern) return null;
+    try {
+      if (!new RegExp(gate.pattern).test(matchText)) return null;
+    } catch {
+      return null;
+    }
   }
 
   return {
     matched: true,
     matchText,
-    affectedFiles: extractAffectedFiles(toolName, toolInput).files,
+    affectedFiles,
   };
 }
 

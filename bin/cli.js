@@ -4002,8 +4002,22 @@ switch (COMMAND) {
     process.stdin.on('end', async () => {
       try {
         const payload = JSON.parse(hermesStdin);
-        // Hermes sends snake_case tool_name/tool_input — gates-engine reads these directly.
-        const verdict = await hermesGateRun({ tool_name: payload.tool_name, tool_input: payload.tool_input });
+        const hermesToolName = String(payload.tool_name || '');
+        const canonicalToolNames = {
+          terminal: 'Bash',
+          process: 'Bash',
+          execute_code: 'Bash',
+          patch: 'Edit',
+          write_file: 'Write',
+          read_file: 'Read',
+        };
+        const verdict = await hermesGateRun({
+          tool_name: canonicalToolNames[hermesToolName] || hermesToolName,
+          tool_input: {
+            ...(payload.tool_input || {}),
+            hermes_tool_name: hermesToolName,
+          },
+        });
         let parsed = {};
         try { parsed = JSON.parse(verdict); } catch (_e) { parsed = {}; }
         const hso = parsed.hookSpecificOutput || {};

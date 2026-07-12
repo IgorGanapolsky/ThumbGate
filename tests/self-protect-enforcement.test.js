@@ -12,6 +12,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const CLI = path.join(__dirname, '..', 'bin', 'cli.js');
+const PLUGIN_HOOK = path.join(__dirname, '..', 'scripts', 'hook-pre-tool-use.js');
 const REPO = path.join(__dirname, '..');
 
 function gateCheck(input, env = {}) {
@@ -54,6 +55,31 @@ function gateCheck(input, env = {}) {
   }
 }
 
+function pluginHook(input, env = {}) {
+  const runtimeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-plugin-floor-test-'));
+  try {
+    const res = spawnSync(process.execPath, [PLUGIN_HOOK], {
+      input: JSON.stringify({ ...input, cwd: REPO }),
+      cwd: REPO,
+      env: {
+        ...process.env,
+        THUMBGATE_STATE_DIR: runtimeDir,
+        THUMBGATE_FEEDBACK_DIR: runtimeDir,
+        THUMBGATE_SECRET_SCAN_PROVIDER: 'heuristic',
+        THUMBGATE_PRO_MODE: '1',
+        THUMBGATE_NO_RATE_LIMIT: '1',
+        THUMBGATE_NO_NUDGE: '1',
+        ...env,
+      },
+      encoding: 'utf8',
+    });
+    assert.equal(res.status, 0, `plugin hook failed:\n${res.stderr}`);
+    return JSON.parse(res.stdout || '{}');
+  } finally {
+    fs.rmSync(runtimeDir, { recursive: true, force: true });
+  }
+}
+
 function buildFakeStripeSecret() {
   return ['sk', '_live_', '1234567890abcdefghijklmnopqrstuvwxyz'].join('');
 }
@@ -71,6 +97,10 @@ const HARD_FLOOR_CASES = [
     tool_name: 'Write',
     tool_input: { file_path: 'config/gates/default.json', content: '{}' },
   }],
+  ['self-protect-config', {
+    tool_name: 'Bash',
+    tool_input: { command: "printf '%s' '{}' > config/gates/default.json" },
+  }],
   ['self-protect-kill', {
     tool_name: 'Bash',
     tool_input: { command: 'pkill -f gates-engine' },
@@ -85,6 +115,10 @@ const HARD_FLOOR_CASES = [
       file_path: '.claude/settings.json',
       new_string: '{"hooks":{"PreToolUse":[]}}',
     },
+  }],
+  ['self-protect-hooks-disable', {
+    tool_name: 'Bash',
+    tool_input: { command: "sed -i '' 's/PreToolUse/Disabled/' .claude/settings.json" },
   }],
 ];
 const FORCE_PUSH = {
@@ -128,4 +162,27 @@ test('CLI has one reachable gate-check case and no nonexistent destructive-floor
   const engineSource = fs.readFileSync(path.join(REPO, 'scripts', 'gates-engine.js'), 'utf8');
   assert.equal((cliSource.match(/case\s+['"]gate-check['"]\s*:/g) || []).length, 1);
   assert.doesNotMatch(engineSource, /DESTRUCTIVE_FS_PATTERN/);
+});
+
+test('published plugin hook uses the same bypass-immune hard floor as gate-check', () => {
+  const bypassEnv = {
+    THUMBGATE_HOTFIX_BYPASS: '1',
+    THUMBGATE_SELF_PROTECT_OVERRIDE: '1',
+    THUMBGATE_ALLOW_SELF_EDIT: '1',
+  };
+  const blocked = pluginHook({
+    tool_name: 'Bash',
+    tool_input: { command: "printf '%s' '{}' > config/gates/default.json" },
+  }, bypassEnv);
+  assert.equal(blocked.decision, 'block');
+  assert.match(blocked.reason, /\[GATE:self-protect-config\]/);
+
+  const allowed = pluginHook({
+    tool_name: 'Write',
+    tool_input: {
+      file_path: 'docs/gate-design.md',
+      content: 'The default policy lives under config/gates/.',
+    },
+  }, bypassEnv);
+  assert.notEqual(allowed.decision, 'block');
 });
