@@ -67,7 +67,7 @@
       "name": "How does ThumbGate differ from Claude Code CLAUDE.md rules?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "CLAUDE.md rules are advisory and can be overridden by context overflow or chain-of-thought reasoning. ThumbGate pre-action checks intercept tool calls at the hook layer, flag and log every decision by default, and hard-block the catastrophic classes (secret exfiltration, rm -rf, supply-chain) before execution. Set THUMBGATE_STRICT_ENFORCEMENT=1 to hard-block every rule."
+        "text": "CLAUDE.md rules are advisory and can be overridden by context overflow or chain-of-thought reasoning. ThumbGate pre-action checks intercept tool calls at the hook layer, flag and log every decision by default, and hard-block secret exfiltration and guardrail-tampering by default (rm -rf, force-push, and supply-chain warn by default) before execution. Set THUMBGATE_STRICT_ENFORCEMENT=1 to hard-block every rule."
       }
     },
     {
@@ -112,7 +112,7 @@
   <ul>
     <li>Thumbs up reinforces good behavior.</li>
     <li>Thumbs down becomes a prevention rule.</li>
-    <li>Pre-action checks flag and log the repeated mistake before the next command executes — and hard-block the catastrophic classes by default.</li>
+    <li>Pre-action checks flag and log the repeated mistake before the next command executes — and hard-block secret exfiltration and guardrail-tampering by default.</li>
     <li>The same flow works across Cursor, Codex, Gemini, Amp, and OpenCode.</li>
   </ul>
 
@@ -131,7 +131,7 @@
   <p>Because reinforcement matters. Good behavior should become easier to repeat, not only bad behavior harder to repeat.</p>
 
   <h3>How does ThumbGate differ from Claude Code CLAUDE.md rules?</h3>
-  <p>CLAUDE.md rules are advisory and can be overridden by context overflow or chain-of-thought reasoning. ThumbGate pre-action checks intercept tool calls at the hook layer, flag and log every decision by default, and hard-block the catastrophic classes (secret exfiltration, rm -rf, supply-chain) before execution. Set THUMBGATE_STRICT_ENFORCEMENT=1 to hard-block every rule.</p>
+  <p>CLAUDE.md rules are advisory and can be overridden by context overflow or chain-of-thought reasoning. ThumbGate pre-action checks intercept tool calls at the hook layer, flag and log every decision by default, and hard-block secret exfiltration and guardrail-tampering by default (rm -rf, force-push, and supply-chain warn by default) before execution. Set THUMBGATE_STRICT_ENFORCEMENT=1 to hard-block every rule.</p>
 
   <h3>Can ThumbGate prevent Claude Code from repeating the same mistake across sessions?</h3>
   <p>Yes. ThumbGate persists lessons and prevention rules in a local SQLite+FTS5 database, so checks survive across sessions and prevent repeat failures even when the conversation context resets.</p>

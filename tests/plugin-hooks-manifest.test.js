@@ -60,14 +60,14 @@ function loadLifecycles() {
   return hooksConfig.hooks || hooksConfig;
 }
 
-function collectCommands(lifecycle) {
-  const commands = [];
+function collectHooks(lifecycle) {
+  const hooks = [];
   for (const group of lifecycle || []) {
     for (const hook of group.hooks || []) {
-      if (hook.command) commands.push(hook.command);
+      hooks.push(hook);
     }
   }
-  return commands;
+  return hooks;
 }
 
 test('PreToolUse enforcement is wired via ${CLAUDE_PLUGIN_ROOT}', () => {
@@ -80,9 +80,10 @@ test('PreToolUse enforcement is wired via ${CLAUDE_PLUGIN_ROOT}', () => {
     'PreToolUse must match Bash|Edit|Write',
   );
 
-  const commands = collectCommands(lifecycles.PreToolUse);
+  const hooks = collectHooks(lifecycles.PreToolUse);
   assert.ok(
-    commands.some((c) => c.includes('${CLAUDE_PLUGIN_ROOT}') && c.includes('hook-pre-tool-use.js')),
+    hooks.some((hook) => hook.command === 'node'
+      && hook.args?.some((arg) => arg.includes('${CLAUDE_PLUGIN_ROOT}') && arg.includes('hook-pre-tool-use.js'))),
     'PreToolUse must run hook-pre-tool-use.js via ${CLAUDE_PLUGIN_ROOT}',
   );
 });
@@ -91,9 +92,11 @@ test('UserPromptSubmit recall is wired via ${CLAUDE_PLUGIN_ROOT}', () => {
   const lifecycles = loadLifecycles();
   assert.ok(Array.isArray(lifecycles.UserPromptSubmit), 'UserPromptSubmit lifecycle must be present');
 
-  const commands = collectCommands(lifecycles.UserPromptSubmit);
+  const hooks = collectHooks(lifecycles.UserPromptSubmit);
   assert.ok(
-    commands.some((c) => c.includes('${CLAUDE_PLUGIN_ROOT}') && c.includes('hook-auto-capture')),
+    hooks.some((hook) => hook.command === 'node'
+      && hook.args?.some((arg) => arg.includes('${CLAUDE_PLUGIN_ROOT}') && arg.includes('bin/cli.js'))
+      && hook.args?.includes('hook-auto-capture')),
     'UserPromptSubmit must run hook-auto-capture via ${CLAUDE_PLUGIN_ROOT}',
   );
 });
@@ -102,9 +105,11 @@ test('SessionStart primer is wired via ${CLAUDE_PLUGIN_ROOT}', () => {
   const lifecycles = loadLifecycles();
   assert.ok(Array.isArray(lifecycles.SessionStart), 'SessionStart lifecycle must be present');
 
-  const commands = collectCommands(lifecycles.SessionStart);
+  const hooks = collectHooks(lifecycles.SessionStart);
   assert.ok(
-    commands.some((c) => c.includes('${CLAUDE_PLUGIN_ROOT}') && c.includes('session-start')),
+    hooks.some((hook) => hook.command === 'node'
+      && hook.args?.some((arg) => arg.includes('${CLAUDE_PLUGIN_ROOT}') && arg.includes('bin/cli.js'))
+      && hook.args?.includes('session-start')),
     'SessionStart must run session-start via ${CLAUDE_PLUGIN_ROOT}',
   );
 });
@@ -113,10 +118,19 @@ test('every plugin hook command path is anchored to ${CLAUDE_PLUGIN_ROOT}', () =
   const lifecycles = loadLifecycles();
   const required = ['PreToolUse', 'UserPromptSubmit', 'SessionStart'];
   for (const event of required) {
-    for (const command of collectCommands(lifecycles[event])) {
+    for (const hook of collectHooks(lifecycles[event])) {
+      assert.equal(hook.command, 'node', `${event} must use exec-form command syntax`);
+      const pathArgs = (hook.args || []).filter((arg) => /[\\/]/.test(arg));
+      assert.ok(pathArgs.length > 0, `${event} must provide its script path as an argument`);
+      for (const pathArg of pathArgs) {
+        assert.ok(
+          pathArg.startsWith('${CLAUDE_PLUGIN_ROOT}/'),
+          `${event} path must be anchored to \${CLAUDE_PLUGIN_ROOT}: ${pathArg}`,
+        );
+      }
       assert.ok(
-        command.includes('${CLAUDE_PLUGIN_ROOT}'),
-        `${event} command must anchor paths to \${CLAUDE_PLUGIN_ROOT}: ${command}`,
+        !/\s/.test(hook.command),
+        `${event} executable must not contain shell-tokenized arguments: ${hook.command}`,
       );
     }
   }

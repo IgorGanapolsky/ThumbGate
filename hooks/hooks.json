@@ -6,7 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/scripts/hook-pre-tool-use.js"
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/hook-pre-tool-use.js"]
           }
         ]
       }
@@ -16,7 +17,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/bin/cli.js hook-auto-capture"
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/bin/cli.js", "hook-auto-capture"]
           }
         ]
       }
@@ -26,7 +28,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/bin/cli.js session-start"
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/bin/cli.js", "session-start"]
           }
         ]
       }

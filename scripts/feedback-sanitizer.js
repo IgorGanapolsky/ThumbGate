@@ -130,39 +130,55 @@ function looksLikeTransportBlob(text) {
   return false;
 }
 
-// Extract the human prompt text from a UserPromptSubmit hook stdin payload.
-// Claude Code / Codex deliver the hook input as a JSON object
-// {"session_id":..,"transcript_path":..,"cwd":..,"prompt":"<human text>"}.
-// We must persist ONLY the `.prompt` field as feedback/lesson content — never
-// the whole stdin object. A JSON object with no `prompt` field is pure
-// transport metadata and yields no prompt text.
-function extractPromptText(rawStdin) {
+function firstStringField(record, names) {
+  for (const name of names) {
+    if (typeof record[name] === 'string' && record[name].trim()) return record[name].trim();
+    if (typeof record[name] === 'number' && Number.isFinite(record[name])) return String(record[name]);
+  }
+  return null;
+}
+
+/**
+ * Extract the human prompt plus the minimum source metadata needed to identify
+ * one hook event. Transcript paths and raw identifiers never enter lesson text;
+ * callers hash the source fields before persistence.
+ */
+function extractPromptEnvelope(rawStdin) {
   const raw = typeof rawStdin === 'string' ? rawStdin : '';
   const trimmed = raw.trim();
-  if (!trimmed) return '';
+  if (!trimmed) return { prompt: '' };
 
   if (/^[[{]/.test(trimmed)) {
     const parsedResult = parseJsonValue(trimmed);
-    if (!parsedResult.ok) return trimmed;
+    if (!parsedResult.ok) return { prompt: trimmed };
     const parsed = parsedResult.value;
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      if (typeof parsed.prompt === 'string') return parsed.prompt.trim();
-      // Structured payload with no human prompt field → no lesson text.
-      return '';
+      return {
+        prompt: typeof parsed.prompt === 'string' ? parsed.prompt.trim() : '',
+        sessionId: firstStringField(parsed, ['session_id', 'sessionId']),
+        promptId: firstStringField(parsed, ['prompt_id', 'promptId']),
+        projectDir: firstStringField(parsed, ['cwd', 'project', 'project_dir', 'projectDir']),
+        timestamp: firstStringField(parsed, ['timestamp', 'created_at', 'createdAt']),
+        hookEventName: firstStringField(parsed, ['hook_event_name', 'hookEventName']),
+      };
     }
-    // Parsed to an array / scalar — not a user prompt.
-    return '';
+    return { prompt: '' };
   }
 
-  return trimmed;
+  return { prompt: trimmed };
+}
+
+// Persist ONLY the human `.prompt` field from a hook transport envelope.
+function extractPromptText(rawStdin) {
+  return extractPromptEnvelope(rawStdin).prompt;
 }
 
 function stripEphemeralText(text) {
   if (!text || typeof text !== 'string') return '';
   let stripped = String(text);
   for (const key of TRANSPORT_KEYS) {
-    const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const assignment = new RegExp(`["']?${escapedKey}["']?\\s*[:=]\\s*["']?[^"',}\\]\\s]+["']?`, 'gi');
+    const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
+    const assignment = new RegExp(String.raw`["']?${escapedKey}["']?\s*[:=]\s*["']?[^"',}\]\s]+["']?`, 'gi');
     stripped = stripped.replace(assignment, ' ');
   }
   return stripped
@@ -232,5 +248,6 @@ module.exports = {
   actionFingerprint,
   transportWordsOnly,
   looksLikeTransportBlob,
+  extractPromptEnvelope,
   extractPromptText,
 };
