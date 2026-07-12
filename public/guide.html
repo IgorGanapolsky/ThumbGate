@@ -223,7 +223,7 @@
 <p>This happens because <strong>prompt rules are suggestions</strong>. The agent can read them, forget them, or override them. There is no enforcement at the tool-call level.</p>
 
 <h2>The Fix: Pre-Action Checks</h2>
-<p>ThumbGate adds an enforcement layer between your agent and its tools. When the agent tries to execute a tool call, a <code>PreToolUse</code> hook fires <em>before</em> the action runs. The hook checks the call against known failure patterns. If it matches a check, the action is flagged and logged — and hard-blocked for catastrophic classes (secret exfiltration, security/supply-chain, destructive deletes) or when strict enforcement (<code>THUMBGATE_STRICT_ENFORCEMENT=1</code>) is on.</p>
+<p>ThumbGate adds an enforcement layer between your agent and its tools. When the agent tries to execute a tool call, a <code>PreToolUse</code> hook fires <em>before</em> the action runs. The hook checks the call against known failure patterns. If it matches a check, the action is flagged and logged — and hard-blocked for secret exfiltration and guardrail-tampering by default (destructive deletes, force-push, and supply-chain warn by default) or when strict enforcement (<code>THUMBGATE_STRICT_ENFORCEMENT=1</code>) is on.</p>
 
 <div class="card">
 <h3>Before ThumbGate</h3>
