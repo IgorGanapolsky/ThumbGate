@@ -34,14 +34,20 @@ function normalizeTopics(topics) {
   return [...new Set((topics || []).map((topic) => normalizeText(topic).toLowerCase()).filter(Boolean))].sort();
 }
 
+function trimTrailingSlashes(value) {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === '/') end -= 1;
+  return value.slice(0, end);
+}
+
 function normalizeUrl(value) {
   const text = normalizeText(value);
   if (!text) return '';
   try {
     const parsed = new URL(text);
-    return `${parsed.protocol}//${parsed.host}${parsed.pathname.replace(/\/+$/, '')}`;
+    return `${parsed.protocol}//${parsed.host}${trimTrailingSlashes(parsed.pathname)}`;
   } catch {
-    return text.replace(/\/+$/, '');
+    return trimTrailingSlashes(text);
   }
 }
 

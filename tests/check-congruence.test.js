@@ -11,6 +11,7 @@ const {
   VERIFY_ATTEMPTS_ENV,
   VERIFY_DELAY_MS_ENV,
   normalizeTopics,
+  normalizeUrl,
   verifyLiveGitHubAbout,
 } = require('../scripts/github-about');
 
@@ -58,6 +59,13 @@ test('check-congruence verifies version, brand, tech terms, and disclaimer', () 
 
 test('GitHub About source-of-truth matches local public surfaces', () => {
   assert.deepEqual(collectLocalGitHubAboutErrors(ROOT), []);
+});
+
+test('GitHub About URL normalization removes trailing slashes without changing URL identity', () => {
+  assert.equal(normalizeUrl('https://thumbgate.ai///'), 'https://thumbgate.ai');
+  assert.equal(normalizeUrl('https://thumbgate.ai/guide///?source=test#install'), 'https://thumbgate.ai/guide');
+  assert.equal(normalizeUrl('not-a-url///'), 'not-a-url');
+  assert.equal(normalizeUrl('https://thumbgate.ai'), 'https://thumbgate.ai');
 });
 
 test('GitHub About config keeps a rich landing description and a valid GitHub description', () => {
