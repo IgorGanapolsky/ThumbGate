@@ -7,6 +7,7 @@ const {
   sanitizeFeedbackText,
   transportWordsOnly,
   looksLikeTransportBlob,
+  extractPromptEnvelope,
   extractPromptText,
 } = require('../scripts/feedback-sanitizer');
 
@@ -82,6 +83,27 @@ test('extractPromptText pulls ONLY the .prompt field from a hook payload', () =>
     prompt: 'cut the railway bill',
   });
   assert.equal(extractPromptText(payload), 'cut the railway bill');
+});
+
+test('extractPromptEnvelope separates source identity fields from human lesson text', () => {
+  const envelope = extractPromptEnvelope(JSON.stringify({
+    session_id: 'session-123',
+    prompt_id: 'prompt-456',
+    cwd: '/tmp/project',
+    hook_event_name: 'UserPromptSubmit',
+    timestamp: 1775750156301,
+    transcript_path: '/tmp/transcript.jsonl',
+    prompt: 'thumbs up Evidence was clear',
+  }));
+  assert.deepEqual(envelope, {
+    prompt: 'thumbs up Evidence was clear',
+    sessionId: 'session-123',
+    promptId: 'prompt-456',
+    projectDir: '/tmp/project',
+    timestamp: '1775750156301',
+    hookEventName: 'UserPromptSubmit',
+  });
+  assert.equal(Object.hasOwn(envelope, 'transcriptPath'), false);
 });
 
 test('extractPromptText yields no text for a metadata-only payload (no .prompt)', () => {
