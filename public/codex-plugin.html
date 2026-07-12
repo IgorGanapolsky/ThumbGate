@@ -256,7 +256,7 @@ $ npx thumbgate feedback-self-test
     </div>
     <div class="tile">
       <h3>Checks before action</h3>
-      <p>Pre-Action Checks evaluate commands, file edits, publishes, merges, and other high-risk actions before execution. Bad repeats are flagged and logged before they burn time or tokens — and hard-blocked for catastrophic classes (secret exfiltration, destructive deletes) or when strict enforcement is enabled.</p>
+      <p>Pre-Action Checks evaluate commands, file edits, publishes, merges, and other high-risk actions before execution. Bad repeats are flagged and logged before they burn time or tokens — and hard-blocked for secret exfiltration and guardrail-tampering by default (destructive deletes, force-push, and supply-chain warn by default) or when strict enforcement is enabled.</p>
     </div>
   </section>
 

@@ -230,7 +230,7 @@
         </div>
         <div class="screen">
           <div class="message">Before I run this migration, check whether this repeats a rejected deploy pattern.</div>
-          <div class="message"><strong>ThumbGate:</strong> Require evidence first: test output, rollback path, and the exact affected tables. Then install the local gate so future risky actions are flagged and logged before execution (and hard-blocked for catastrophic classes or under strict mode).</div>
+          <div class="message"><strong>ThumbGate:</strong> Require evidence first: test output, rollback path, and the exact affected tables. Then install the local gate so future risky actions are flagged and logged before execution (and hard-blocked for secret exfiltration and guardrail-tampering by default, or under strict mode).</div>
           <code class="code">thumbs down: agent claimed the release was published before checking npm and CI</code>
           <code class="code">npx thumbgate init --agent codex</code>
         </div>
@@ -239,7 +239,7 @@
 
     <section aria-labelledby="what-ships">
       <h2 class="section-title" id="what-ships">What ships today</h2>
-      <p class="section-copy">This is the ChatGPT-facing distribution page. It keeps the claim precise: ChatGPT is the discovery, advice, checkpointing, and typed-feedback surface. The enforcement — flag and log by default, hard-block for catastrophic classes or under strict mode — still runs in the local agent or CI lane.</p>
+      <p class="section-copy">This is the ChatGPT-facing distribution page. It keeps the claim precise: ChatGPT is the discovery, advice, checkpointing, and typed-feedback surface. The enforcement — flag and log by default, hard-block for secret exfiltration and guardrail-tampering by default, or every rule under strict mode — still runs in the local agent or CI lane.</p>
       <div class="grid">
         <article class="card">
           <h3>Live GPT entrypoint</h3>
