@@ -2749,11 +2749,16 @@ function statuslineRender() {
 
 function hookAutoCapture() {
   syncActiveProjectContext();
+  const { extractPromptText } = require(path.join(PKG_ROOT, 'scripts', 'feedback-sanitizer'));
+  // stdin on a UserPromptSubmit hook is the JSON payload
+  // {session_id, transcript_path, cwd, prompt, ...}. Persist ONLY the human
+  // `.prompt` field — never the whole stdin object — so session metadata blobs
+  // can't be promoted as lessons.
   const prompt = process.env.CLAUDE_USER_PROMPT
     || process.env.THUMBGATE_USER_PROMPT
     || process.env.CODEX_USER_PROMPT
     || process.env.USER_PROMPT
-    || readStdinText().trim();
+    || extractPromptText(readStdinText());
   const { evaluatePromptGuard } = require(path.join(PKG_ROOT, 'scripts', 'prompt-guard'));
   const { processInlineFeedback, formatCliOutput } = require(path.join(PKG_ROOT, 'scripts', 'cli-feedback'));
   const { detectFeedbackSignal } = require(path.join(PKG_ROOT, 'scripts', 'feedback-quality'));
