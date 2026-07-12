@@ -7,6 +7,17 @@ const landingPagePath = path.join(__dirname, '..', 'public', 'index.html');
 const proPagePath = path.join(__dirname, '..', 'public', 'pro.html');
 const codexPluginPagePath = path.join(__dirname, '..', 'public', 'codex-plugin.html');
 const buyerIntentScriptPath = path.join(__dirname, '..', 'public', 'js', 'buyer-intent.js');
+const HTML_ENTITY_REPLACEMENTS = new Map([
+  ['&amp;', '&'],
+  ['&quot;', '"'],
+  ['&#39;', "'"],
+  ['&apos;', "'"],
+  ['&mdash;', '—'],
+  ['&ndash;', '–'],
+  ['&rsquo;', '’'],
+  ['&ldquo;', '“'],
+  ['&rdquo;', '”'],
+]);
 
 function readLandingPage() {
   return fs.readFileSync(landingPagePath, 'utf8');
@@ -24,27 +35,60 @@ function readCodexPluginPage() {
   return fs.readFileSync(codexPluginPagePath, 'utf8');
 }
 
+function normalizeHtmlText(value) {
+  return String(value)
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&(amp|quot|#39|apos|mdash|ndash|rsquo|ldquo|rdquo);/g, (entity) => (
+      HTML_ENTITY_REPLACEMENTS.get(entity)
+    ))
+    .replace(/\s+/g, ' ')
+    .replace(/\(\s+/g, '(')
+    .replace(/\s+\)/g, ')')
+    .replace(/\s+([,.;:!?])/g, '$1')
+    .trim();
+}
+
+function parseJsonLd(landingPage) {
+  return [...landingPage.matchAll(
+    /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g
+  )].map((match) => JSON.parse(match[1]));
+}
+
+function visibleFaqAnswers(landingPage) {
+  const entries = [...landingPage.matchAll(
+    /<(div|button) class="faq-q"[^>]*>([\s\S]*?)<\/\1>\s*<div class="faq-a">([\s\S]*?)<\/div>/g
+  )];
+  return new Map(entries.map(([, , question, answer]) => [
+    normalizeHtmlText(question),
+    normalizeHtmlText(answer),
+  ]));
+}
+
 test('public landing page keeps FAQPage JSON-LD parity for SEO and GEO', () => {
   const landingPage = readLandingPage();
+  const jsonLd = parseJsonLd(landingPage);
+  const types = jsonLd.map((document) => document['@type']);
+  const faqSchema = jsonLd.find((document) => document['@type'] === 'FAQPage');
+  const visibleFaq = visibleFaqAnswers(landingPage);
 
-  assert.match(landingPage, /"@type": "SoftwareApplication"/);
-  assert.match(landingPage, /"@type": "Service"/);
-  assert.match(landingPage, /"@type": "FAQPage"/);
+  assert.ok(types.includes('SoftwareApplication'));
+  assert.ok(types.includes('Service'));
+  assert.ok(types.includes('FAQPage'));
   assert.match(landingPage, /"@type": "InstallAction"/);
   assert.match(landingPage, /"@type": "BuyAction"/);
   assert.match(landingPage, /"@type": "CommunicateAction"/);
-  assert.match(landingPage, /How is ThumbGate different from model-training feedback loops\?/);
-  assert.match(landingPage, /What is the ThumbGate tech stack\?/);
-  assert.match(landingPage, /What AI agents does ThumbGate work with\?/);
-  assert.match(landingPage, /Do I have to chat inside the ThumbGate GPT for enforcement\?/);
-  assert.match(landingPage, /When should I use Pro versus the Workflow Hardening Sprint\?/);
-  assert.match(landingPage, /How are pre-action checks different from prompt rules\?/);
-  assert.match(landingPage, /behavioral immune system/i);
-  assert.match(landingPage, /PreToolUse hook enforcement/i);
-  assert.match(landingPage, /Thompson Sampling/i);
-  assert.match(landingPage, /prompt evaluation/i);
-  assert.match(landingPage, /one real caught repeat/i);
-  assert.match(landingPage, /workflow owner needs approval boundaries/i);
+  assert.ok(faqSchema);
+  assert.ok(faqSchema.mainEntity.length > 0);
+  for (const entity of faqSchema.mainEntity) {
+    const question = normalizeHtmlText(entity.name);
+    const schemaAnswer = normalizeHtmlText(entity.acceptedAnswer.text);
+    assert.ok(visibleFaq.has(question), `FAQ schema question is not visible: ${question}`);
+    assert.equal(schemaAnswer, visibleFaq.get(question), `FAQ answer drift: ${question}`);
+  }
+  assert.match(landingPage, /does not guarantee that a trained model will avoid a mistake/i);
+  assert.match(landingPage, /matching destructive deletes, force-pushes, and fetch-and-run commands warn by default/i);
+  assert.match(landingPage, /MCP compatibility alone does not install enforcement automatically/i);
+  assert.match(landingPage, /hosted team lesson sync and a hosted org dashboard are not general-availability/i);
 });
 
 test('public landing page routes Pro buyers through the hosted checkout surface', () => {
@@ -80,12 +124,12 @@ test('public landing page distinguishes pre-action governance from logging and s
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /Governance, Not Logging/);
-  assert.match(landingPage, /Logs describe the damage\. ThumbGate flags the risky action before it runs/);
+  assert.match(landingPage, /Logs describe the damage\. ThumbGate evaluates the proposed action before it runs/);
   assert.match(landingPage, /Self-governance is an operator writing local rules and keeping local logs\./);
-  assert.match(landingPage, /pre-action decision/);
+  assert.match(landingPage, /allow, warn, or deny decision/);
   assert.match(landingPage, /Reviewable decision trail/);
-  assert.match(landingPage, /signed evidence bundles/);
-  assert.match(landingPage, /without giving the agent unilateral authority over the rules/);
+  assert.match(landingPage, /fields available for that evaluation/);
+  assert.match(landingPage, /hosted team sync, org dashboards, SSO, SIEM, and compliance packaging are not general-availability/i);
 });
 
 test('public landing page exposes above-fold paid Pro CTA with canonical revenue analytics', () => {
@@ -169,8 +213,9 @@ test('public landing page includes pricing section with Free, Pro, and Enterpris
   assert.match(landingPage, /Up to 3 active auto-promoted prevention rules/i);
   assert.doesNotMatch(landingPage, /3 captures.*1 rule.*1 agent/i);
   assert.doesNotMatch(landingPage, /3 captures total/i);
-  assert.match(landingPage, /solo side lane/i);
-  assert.match(landingPage, /Shared enforcement/i);
+  assert.match(landingPage, /individual local governance with higher limits/i);
+  assert.match(landingPage, /Hosted team lesson sync[\s\S]{0,500}Not GA/i);
+  assert.match(landingPage, /Hosted org dashboard[\s\S]{0,500}Not GA/i);
   assert.match(landingPage, /Install Free/);
   assert.match(landingPage, /Pay-now Pro|Upgrade to Pro/i);
   assert.match(landingPage, /PAY-NOW PRO/i);
@@ -191,6 +236,8 @@ test('public landing page shows an at-a-glance plan comparison matrix with consi
   assert.match(landingPage, /2\/day \(10 total\)/);
   // Enterprise is contact-sales; no seat price ladder anywhere on the page.
   assert.doesNotMatch(landingPage, /\$49\s*\/\s*seat\s*\/\s*mo/);
+  assert.match(landingPage, /Approval boundaries \+ rollout design[\s\S]{0,500}Scoped after intake/i);
+  assert.match(landingPage, /SSO, SIEM \+ compliance packaging[\s\S]{0,500}Not GA/i);
 });
 
 test('public landing page keeps services intake-led instead of exposing a paid-service price ladder', () => {
@@ -274,7 +321,8 @@ test('public landing page reflects June 2026 agent-governance buying triggers', 
   assert.match(section, /Managed agents need receipts/);
   assert.match(section, /Tokenmaxxing backlash/);
   assert.match(section, /Production code by AI/);
-  assert.match(section, /lower credible conversion bound beats zero/);
+  assert.match(section, /Make conversion or traction claims only from authenticated billing and analytics telemetry/);
+  assert.match(section, /does not publish a current customer or revenue count/);
   assert.match(landingPage, /Pro unlocks recall, proof, exports/);
   assert.doesNotMatch(landingPage, /free CLI, zero friction/);
 });
@@ -318,9 +366,9 @@ test('public landing page positions ThumbGate as agent governance for AI coding 
   assert.match(landingPage, /CLI-first/i);
   assert.match(landingPage, /Persistent Agent Skills/i);
   assert.match(landingPage, /Reusable instructions are the new baseline\. Enforcement is the moat\./);
-  assert.match(landingPage, /Grok-style skills are training users to expect persistent expertise/i);
-  assert.match(landingPage, /Persistent skills tell an agent what you prefer\. ThumbGate checks whether the next action follows those preferences/i);
-  assert.match(landingPage, /Every fired rule carries the source lesson, decision trace, and audit evidence/i);
+  assert.match(landingPage, /Persistent agent skills create reusable instructions/i);
+  assert.match(landingPage, /ThumbGate evaluates configured checks against the next proposed action/i);
+  assert.match(landingPage, /Local gate results expose the matched rule and available decision context/i);
   assert.match(landingPage, /Claude Code/);
   assert.match(landingPage, /Cursor/);
   assert.match(landingPage, /Codex/);
@@ -336,8 +384,8 @@ test('public landing page differentiates deterministic ThumbGate enforcement fro
 
   assert.match(landingPage, /Native thumbs are a black box\. ThumbGate is the inspectable control layer\./);
   assert.match(landingPage, /Codex, Claude Code, ChatGPT, and other agent surfaces can collect preference signals/);
-  assert.match(landingPage, /typed feedback becomes a local lesson/);
-  assert.match(landingPage, /every block names the matched rule, source lesson, tool call, and audit event/);
+  assert.match(landingPage, /accepted typed feedback becomes a local lesson/i);
+  assert.match(landingPage, /gate results expose the matched check and decision reason available at evaluation time/i);
   assert.match(landingPage, /Lessons live in your ThumbGate store/);
   assert.match(landingPage, /exported as JSONL or DPO pairs/);
   assert.match(landingPage, /The final decision is not another model opinion/);
@@ -382,8 +430,10 @@ test('public landing page hero features both thumbs up AND thumbs down prominent
   // Signal pills must show both
   assert.match(landingPage, /signal-pill signal-up/);
   assert.match(landingPage, /signal-pill signal-down/);
-  assert.match(landingPage, /Catch repeat hallucinations/i);
-  assert.match(landingPage, /Thumbs-down once, caught every time/i);
+  assert.match(landingPage, /Accepted feedback becomes local lessons/i);
+  assert.match(landingPage, /Evaluate proposed tool calls before execution/i);
+  assert.doesNotMatch(landingPage, /Thumbs-down once, caught every time/i);
+  assert.doesNotMatch(landingPage, /before the model sees them/i);
   assert.match(landingPage, /reliable operator/i);
   // Persona targeting
   assert.match(landingPage, /class="hero-persona"/);
@@ -395,21 +445,22 @@ test('public landing page exposes the free CLI wedge above the fold and keeps Pr
 
   assert.match(landingPage, /Install Free CLI/i);
   assert.match(landingPage, /btn-install-link/);
-  assert.match(landingPage, /Install free\./i);
-  assert.match(landingPage, /solo side lane/i);
+  assert.match(landingPage, /Install the local CLI without a credit card or account/i);
+  assert.match(landingPage, /individual tier/i);
 });
 
 test('public landing page gives cold users a first-dollar activation path', () => {
   const landingPage = readLandingPage();
 
-  assert.match(landingPage, /Block your first repeated AI mistake in 5 minutes/i);
+  assert.match(landingPage, /Run your first pre-action check locally/i);
   assert.match(landingPage, /First-Dollar Activation Path/i);
-  assert.match(landingPage, /Prove one caught repeat before asking anyone to buy/i);
+  assert.match(landingPage, /Prove one evaluated repeat before asking anyone to buy/i);
   assert.match(landingPage, /Native ChatGPT rating buttons are not the ThumbGate capture path/i);
   assert.match(landingPage, /Give <code>thumbs up<\/code> when the agent follows your standards/i);
   assert.match(landingPage, /thumbs up: this review named exact files/i);
   assert.match(landingPage, /thumbs down: the answer ignored my request/i);
-  assert.match(landingPage, /Upgrade after one real caught repeat/i);
+  assert.match(landingPage, /Upgrade when the individual operator needs higher limits/i);
+  assert.doesNotMatch(landingPage, /in 5 minutes|in 60 seconds/i);
 });
 
 test('Codex plugin page keeps proof and follow-on CTAs close to the install path', () => {
@@ -442,15 +493,16 @@ test('public landing page proof bar uses individually clickable link chips', () 
 test('public landing page Pro tier uses outcome-framed bullets that justify upgrade', () => {
   const landingPage = readLandingPage();
 
-  // Pro bullets frame outcomes, not features
+  // Pro copy describes the shipped individual capabilities without automatic
+  // cross-agent or hosted-team promises.
   assert.match(landingPage, /Visual check debugger/i);
-  assert.match(landingPage, /every blocked action and the check that fired/i);
-  assert.match(landingPage, /Auto-connect/i);
-  assert.match(landingPage, /agents appear automatically/i);
-  assert.match(landingPage, /DPO training data export/i);
-  assert.match(landingPage, /ready-to-use preference pairs for fine-tuning/i);
+  assert.match(landingPage, /available local gate history/i);
+  assert.match(landingPage, /Use supported integrations/i);
+  assert.match(landingPage, /documented setup path/i);
+  assert.match(landingPage, /DPO preference-pair export/i);
+  assert.match(landingPage, /separate fine-tuning workflow/i);
   assert.match(landingPage, /Personal local dashboard/i);
-  assert.match(landingPage, /Review-ready workflow support/i);
+  assert.match(landingPage, /review-ready workflow support/i);
   // Persona targeting for Pro
   assert.match(landingPage, /individual operator/i);
   // Model hardening and HuggingFace export
@@ -462,10 +514,13 @@ test('public landing page includes an explicit Enterprise rollout lane with shar
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /<div class="tier"[^>]*>Enterprise<\/div>/);
-  assert.match(landingPage, /Shared enforcement memory/i);
-  assert.match(landingPage, /Shared lesson database/i);
-  assert.match(landingPage, /Org dashboard/i);
-  assert.match(landingPage, /Audit-grade decision trail/i);
+  assert.match(landingPage, /One-workflow discovery/i);
+  assert.match(landingPage, /Approval and rollback design/i);
+  assert.match(landingPage, /Verification plan/i);
+  assert.match(landingPage, /Current availability boundary/i);
+  assert.match(landingPage, /hosted team sync, a hosted org dashboard, SSO, SIEM, and compliance packaging are not general-availability/i);
+  assert.doesNotMatch(landingPage, /<li><strong>Shared lesson database<\/strong>/i);
+  assert.doesNotMatch(landingPage, /<li><strong>Org dashboard<\/strong>/i);
   assert.match(landingPage, /workflow-sprint-intake/);
   assert.match(landingPage, /Start Enterprise Pilot Intake/i);
   assert.match(landingPage, /id="team-pilot-intake-form"/);
@@ -495,7 +550,7 @@ test('public landing page includes FAQ section with accordion interaction', () =
   assert.match(landingPage, /Common questions/);
   assert.match(landingPage, /How is ThumbGate different from model-training feedback loops\?/);
   assert.match(landingPage, /How is ThumbGate different from persistent agent skills\?/);
-  assert.match(landingPage, /lessons become portable skill context/i);
+  assert.match(landingPage, /accepted feedback becomes lessons, recurring failures can become rules/i);
   assert.match(landingPage, /What's the tech stack\?/);
   assert.match(landingPage, /What AI agents and editors does this work with\?/);
   assert.match(landingPage, /Do I need a cloud account\?/);
@@ -510,9 +565,9 @@ test('public landing page includes FAQ section with accordion interaction', () =
   assert.match(landingPage, /function toggleFaq\(el\)/);
   assert.match(landingPage, /function handleFaqKeydown\(event\)/);
   assert.match(landingPage, /personal local dashboard/i);
-  assert.match(landingPage, /shared enforcement memory/i);
-  assert.match(landingPage, /hosted review views/i);
-  assert.match(landingPage, /org dashboard/i);
+  assert.match(landingPage, /hosted team lesson sync and a hosted org dashboard are not general-availability/i);
+  assert.doesNotMatch(landingPage, /shared enforcement memory/i);
+  assert.doesNotMatch(landingPage, /hosted review views/i);
 });
 
 test('public landing page includes compatibility section for AI agent surfaces', () => {
@@ -527,7 +582,8 @@ test('public landing page includes compatibility section for AI agent surfaces',
   assert.match(landingPage, /AI CLIs/i);
   assert.match(landingPage, /MCP-compatible agent/i);
   assert.match(landingPage, /pre-action checks/i);
-  assert.match(landingPage, /enforcement out of the box/i);
+  assert.match(landingPage, /require an equivalent MCP or hook setup/i);
+  assert.doesNotMatch(landingPage, /enforcement out of the box/i);
   assert.match(landingPage, /Claude Desktop plugin/i);
   assert.match(landingPage, /Editor workflows/i);
   assert.match(landingPage, /Claude Code Skill/i);
@@ -566,14 +622,14 @@ test('public landing page includes compatibility section for AI agent surfaces',
   assert.match(landingPage, /ChatGPT Entry Point/);
   assert.match(landingPage, /Use the GPT as a preflight desk for risky commands, refunds, deploys, and PR actions\./);
   assert.match(landingPage, /No, you do not have to chat inside the GPT forever/);
-  assert.match(landingPage, /ChatGPT is the discovery and memory surface/);
+  assert.match(landingPage, /ChatGPT is a discovery and checkpointing surface/);
   assert.match(landingPage, /Do not rely on ChatGPT's native rating buttons for ThumbGate memory/);
   assert.match(landingPage, /Explore GPTs/);
   assert.match(landingPage, /choose the GPT by Igor Ganapolsky/i);
   assert.match(landingPage, /Programming/);
   assert.match(landingPage, /Do I have to chat inside the ThumbGate GPT for enforcement\?/);
-  assert.match(landingPage, /capture thumbs-up\/down lessons/i);
-  assert.match(landingPage, /Real blocking for coding agents still runs locally/);
+  assert.match(landingPage, /capture typed thumbs-up\/down feedback/i);
+  assert.match(landingPage, /Local allow\/warn\/deny enforcement for coding agents requires a configured integration/);
   assert.match(landingPage, /adapters\/chatgpt\/INSTALL\.md/);
   // Editor workflows + Claude Code Skill arrows evolved from "Browse plugins" /
   // "View skill on GitHub" to guide-page language in 1.5.8. Now assert on the
@@ -711,7 +767,7 @@ test('landing page has guardrail positioning section', () => {
   assert.ok(html.includes('Don\'t trust'), 'must include "Don\'t trust — verify" card');
   assert.ok(html.includes('Real tools'), 'must include "Real tools" card');
   assert.ok(html.includes('show work'), 'must include "show work" card');
-  assert.ok(html.includes('Log everything'), 'must include "Log everything" card');
+  assert.ok(html.includes('Review decisions and recurring failures'), 'must include review-and-learning card');
 });
 
 test('landing page has newsletter signup', () => {

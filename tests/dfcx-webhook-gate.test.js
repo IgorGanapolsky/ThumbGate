@@ -86,37 +86,49 @@ test('allow path: with no matching gate, the real fulfillment runs and response 
 });
 
 test('repeat-block path: the same action twice — second is blocked, fulfillment does NOT run', async () => {
-  resetSession();
-  let calls = 0;
-  const fulfill = async () => { calls += 1; return { fulfillment_response: { messages: [] } }; };
-  const req = dfcxRequest('delete-account', { account_id: 'DUP-1' });
+  const evaluateGates = gates.evaluateGates;
+  gates.evaluateGates = () => null;
+  try {
+    resetSession();
+    let calls = 0;
+    const fulfill = async () => { calls += 1; return { fulfillment_response: { messages: [] } }; };
+    const req = dfcxRequest('delete-account', { account_id: 'DUP-1' });
 
-  const first = await guardDfcxWebhook(req, fulfill);
-  assert.equal(first.blocked, false, 'first attempt allowed');
-  assert.equal(calls, 1);
+    const first = await guardDfcxWebhook(req, fulfill);
+    assert.equal(first.blocked, false, 'first attempt allowed');
+    assert.equal(calls, 1);
 
-  const second = await guardDfcxWebhook(req, fulfill);
-  assert.equal(second.blocked, true, 'repeat attempt blocked');
-  assert.equal(calls, 1, 'fulfillment must NOT run on the blocked repeat');
-  assert.equal(second.response.session_info.parameters.thumbgate_blocked, true);
-  // Reason is surfaced to the flow/logs via params, NOT leaked in the caller-facing
-  // message (which stays a generic safe string by design).
-  assert.equal(second.response.session_info.parameters.thumbgate_gate, 'dfcx-repeat-action');
-  assert.equal(second.evaluation.message, 'This action was already attempted in this session and is blocked as a repeat.');
-  const userMsg = second.response.fulfillment_response.messages[0].text.text[0];
-  assert.equal(typeof userMsg, 'string');
-  assert.ok(userMsg.length > 0 && !/repeat|gate/i.test(userMsg), 'caller-facing message must not leak internals');
+    const second = await guardDfcxWebhook(req, fulfill);
+    assert.equal(second.blocked, true, 'repeat attempt blocked');
+    assert.equal(calls, 1, 'fulfillment must NOT run on the blocked repeat');
+    assert.equal(second.response.session_info.parameters.thumbgate_blocked, true);
+    // Reason is surfaced to the flow/logs via params, NOT leaked in the caller-facing
+    // message (which stays a generic safe string by design).
+    assert.equal(second.response.session_info.parameters.thumbgate_gate, 'dfcx-repeat-action');
+    assert.equal(second.evaluation.message, 'This action was already attempted in this session and is blocked as a repeat.');
+    const userMsg = second.response.fulfillment_response.messages[0].text.text[0];
+    assert.equal(typeof userMsg, 'string');
+    assert.ok(userMsg.length > 0 && !/repeat|gate/i.test(userMsg), 'caller-facing message must not leak internals');
+  } finally {
+    gates.evaluateGates = evaluateGates;
+  }
 });
 
 test('blockOnRepeat=false disables the repeat block', async () => {
-  resetSession();
-  let calls = 0;
-  const fulfill = async () => { calls += 1; return { fulfillment_response: { messages: [] } }; };
-  const req = dfcxRequest('send-receipt', { account_id: 'OK-2' });
-  await guardDfcxWebhook(req, fulfill, { blockOnRepeat: false });
-  const second = await guardDfcxWebhook(req, fulfill, { blockOnRepeat: false });
-  assert.equal(second.blocked, false);
-  assert.equal(calls, 2, 'both attempts run when repeat-blocking is off');
+  const evaluateGates = gates.evaluateGates;
+  gates.evaluateGates = () => null;
+  try {
+    resetSession();
+    let calls = 0;
+    const fulfill = async () => { calls += 1; return { fulfillment_response: { messages: [] } }; };
+    const req = dfcxRequest('send-receipt', { account_id: 'OK-2' });
+    await guardDfcxWebhook(req, fulfill, { blockOnRepeat: false });
+    const second = await guardDfcxWebhook(req, fulfill, { blockOnRepeat: false });
+    assert.equal(second.blocked, false);
+    assert.equal(calls, 2, 'both attempts run when repeat-blocking is off');
+  } finally {
+    gates.evaluateGates = evaluateGates;
+  }
 });
 
 test('buildBlockResponse: valid DFCX WebhookResponse with safe defaults', () => {
@@ -173,10 +185,16 @@ test('an unsafe fulfillment tag is blocked', async () => {
 });
 
 test('ordinary values (ids, amounts, hyphens) are NOT treated as unsafe', () => {
-  resetSession();
-  const r = evaluateDfcxFulfillment(dfcxRequest('lookup-balance', { account_id: 'A-100', amount: 500, name: 'Jane Doe' }));
-  assert.notEqual(r.gate, 'dfcx-unsafe-input');
-  assert.equal(r.allowed, true);
+  const evaluateGates = gates.evaluateGates;
+  gates.evaluateGates = () => null;
+  try {
+    resetSession();
+    const r = evaluateDfcxFulfillment(dfcxRequest('lookup-balance', { account_id: 'A-100', amount: 500, name: 'Jane Doe' }));
+    assert.notEqual(r.gate, 'dfcx-unsafe-input');
+    assert.equal(r.allowed, true);
+  } finally {
+    gates.evaluateGates = evaluateGates;
+  }
 });
 
 test('evaluateDfcxFulfillment: never throws on a malformed request', () => {

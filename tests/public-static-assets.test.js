@@ -132,7 +132,8 @@ test('landing pricing section compares plan capabilities and limits clearly', as
   assert.match(html, /3 active rules/);
   assert.match(html, /\$19\/mo or \$149\/yr/);
   assert.match(html, /Custom — scoped after intake/);
-  assert.match(html, /Enterprise plans start through intake/);
+  assert.match(html, /Enterprise starts through intake to scope one workflow/);
+  assert.match(html, /does not imply generally available hosted team features/);
 });
 
 test('landing page answers governance objections instead of presenting passive logs', async () => {
@@ -141,10 +142,11 @@ test('landing page answers governance objections instead of presenting passive l
   const html = await res.text();
 
   assert.match(html, /Governance, Not Logging/);
-  assert.match(html, /Logs describe the damage\. ThumbGate flags the risky action before it runs/);
-  assert.match(html, /pre-action decision/);
+  assert.match(html, /Logs describe the damage\. ThumbGate evaluates the proposed action before it runs/);
+  assert.match(html, /Detected secret exfiltration and gate kill\/bypass commands deny by default; strict mode also denies matching warning-mode checks/);
+  assert.match(html, /allow, warn, or deny decision/);
   assert.match(html, /Reviewable decision trail/);
-  assert.match(html, /signed evidence bundles/);
+  assert.match(html, /local evidence instead of trusting an agent summary/);
   assert.doesNotMatch(html, /Org Dashboard \(Team\)/);
 });
 

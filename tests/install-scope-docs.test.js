@@ -34,7 +34,7 @@ const SCOPE_KEYWORDS = [
   /--project/,
 ];
 
-const SHARED_DASHBOARD_PHRASE = /shared dashboard|one shared dashboard|across every repo/i;
+const SHARED_LOCAL_STORE_PHRASE = /same machine-local feedback store/i;
 const ISOLATED_DASHBOARD_PHRASE = /separate dashboard|isolated|per[- ]repo dashboard/i;
 const LESSON_PATH_PHRASE = /\.claude\/memory\/feedback\//;
 
@@ -53,9 +53,10 @@ describe('install-scope documentation: README.md', () => {
     }
   });
 
-  test('contrasts shared vs isolated dashboards', () => {
-    assert.match(README, SHARED_DASHBOARD_PHRASE, 'README must describe the shared-dashboard outcome');
+  test('contrasts a shared local store with isolated per-project data', () => {
+    assert.match(README, SHARED_LOCAL_STORE_PHRASE, 'README must describe the machine-local shared-store outcome');
     assert.match(README, ISOLATED_DASHBOARD_PHRASE, 'README must describe the isolated-dashboard outcome');
+    assert.match(README, /cross-repo blocking is not automatic/i);
   });
 
   test('shows where the lesson DB lives so users can find it', () => {
