@@ -295,6 +295,21 @@ footer { padding: 32px 0 44px; color: var(--muted); }
 <script>
 (function () {
   const search = new URLSearchParams(window.location.search);
+  const paidCta = document.querySelector('[data-cta-id="diagnostic_hero_paid"]');
+  if (paidCta) {
+    const href = new URL(paidCta.getAttribute('href'), window.location.origin);
+    const passthrough = /^(utm_(source|medium|campaign|content|term)|source|acquisition_id|visitor_id|session_id|visitor_session_id|install_id|trace_id|creator|community|post_id|comment_id|campaign_variant|offer_code|referrer_host)$/i;
+    for (const [key, value] of search.entries()) {
+      if (!passthrough.test(key) || !value.trim()) continue;
+      href.searchParams.set(key, value.trim());
+    }
+    const inboundSource = search.get('utm_source') || search.get('source');
+    if (inboundSource && inboundSource.trim()) {
+      href.searchParams.set('utm_source', inboundSource.trim());
+    }
+    paidCta.setAttribute('href', `${href.pathname}${href.search}${href.hash}`);
+  }
+
   const form = document.querySelector('[data-diagnostic-intake-form]');
   if (form) {
     for (const [key, value] of search.entries()) {
