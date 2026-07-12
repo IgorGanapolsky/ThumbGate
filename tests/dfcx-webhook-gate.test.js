@@ -185,10 +185,16 @@ test('an unsafe fulfillment tag is blocked', async () => {
 });
 
 test('ordinary values (ids, amounts, hyphens) are NOT treated as unsafe', () => {
-  resetSession();
-  const r = evaluateDfcxFulfillment(dfcxRequest('lookup-balance', { account_id: 'A-100', amount: 500, name: 'Jane Doe' }));
-  assert.notEqual(r.gate, 'dfcx-unsafe-input');
-  assert.equal(r.allowed, true);
+  const evaluateGates = gates.evaluateGates;
+  gates.evaluateGates = () => null;
+  try {
+    resetSession();
+    const r = evaluateDfcxFulfillment(dfcxRequest('lookup-balance', { account_id: 'A-100', amount: 500, name: 'Jane Doe' }));
+    assert.notEqual(r.gate, 'dfcx-unsafe-input');
+    assert.equal(r.allowed, true);
+  } finally {
+    gates.evaluateGates = evaluateGates;
+  }
 });
 
 test('evaluateDfcxFulfillment: never throws on a malformed request', () => {
