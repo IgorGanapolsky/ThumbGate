@@ -276,7 +276,7 @@
           <ul>
             <li>Advisory files like CLAUDE.md are hints that the model can choose to ignore under pressure.</li>
             <li>Real security requires blocking unsafe operations before they hit the terminal or file system.</li>
-            <li>PreToolUse hooks fire on every tool call and cannot be reasoned away by the agent — the gate always evaluates and logs the action, and hard-blocks the catastrophic classes by default.</li>
+            <li>PreToolUse hooks fire on every tool call and cannot be reasoned away by the agent — the gate always evaluates and logs the action, and hard-blocks secret exfiltration and guardrail-tampering by default.</li>
           </ul>
         </div>
 
@@ -293,7 +293,7 @@
         <section class="detail-section">
           <h2>Deterministic PreToolUse Hook Enforcement</h2>
           <p>A <code>PreToolUse</code> hook intercepts execution at the Model Context Protocol (MCP) or platform layer. When the agent attempts to run a bash command, modify a file, or query a database, the call is evaluated by a local policy engine before execution.</p>
-          <p>If the action matches a known-bad pattern or violates a policy, the hook flags and logs the decision by default and returns a structured response. For the catastrophic classes — secret exfiltration, rm -rf-class destructive commands, supply-chain risks — it hard-blocks the call by default, preserving system state before the error can happen. Set <code>THUMBGATE_STRICT_ENFORCEMENT=1</code> to hard-block every matched rule.</p>
+          <p>If the action matches a known-bad pattern or violates a policy, the hook flags and logs the decision by default and returns a structured response. For secret exfiltration and attempts to disable ThumbGate's own guardrails, it hard-blocks the call by default, preserving system state before the error can happen; rm -rf-class destructive commands, force-push, and supply-chain risks warn by default. Set <code>THUMBGATE_STRICT_ENFORCEMENT=1</code> to hard-block every matched rule.</p>
         </section>
 
         <div class="detail-section">

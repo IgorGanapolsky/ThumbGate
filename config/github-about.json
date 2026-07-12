@@ -2,8 +2,8 @@
   "repo": "IgorGanapolsky/ThumbGate",
   "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
   "homepageUrl": "https://thumbgate.ai",
-  "githubDescription": "Agent governance: thumbs become Pre-Action Checks that flag repeat mistakes and hard-block catastrophic classes before code or systems change.",
-  "metaDescription": "ThumbGate is the pre-action governance runtime for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode): 👍 thumbs up and 👎 thumbs down feedback become history-aware lessons stored locally; Enterprise adds shared lessons and org visibility. PreToolUse checks flag and log risky tool calls — hard-blocking catastrophic classes by default and warning on the rest, with strict mode to hard-block every rule.",
+  "githubDescription": "Agent governance: thumbs become Pre-Action Checks that flag repeat mistakes and hard-block secret exfiltration before code or systems change.",
+  "metaDescription": "ThumbGate is the pre-action governance runtime for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode): 👍 thumbs up and 👎 thumbs down feedback become history-aware lessons stored locally; Enterprise adds shared lessons and org visibility. PreToolUse checks flag and log risky tool calls — hard-blocking secret exfiltration by default and flagging the rest, with strict mode to hard-block every rule.",
   "topics": [
     "thumbgate",
     "pre-action-checks",

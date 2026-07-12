@@ -12,7 +12,7 @@ __GOOGLE_SITE_VERIFICATION_META__
 <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
 <meta property="og:image" content="/og.png">
 <title>ThumbGate — Pre-action checks for AI coding agents</title>
-<meta name="description" content="ThumbGate is the pre-action governance runtime for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode): 👍 thumbs up and 👎 thumbs down feedback become history-aware lessons stored locally; Enterprise adds shared lessons and org visibility. PreToolUse checks flag and log risky tool calls — hard-blocking catastrophic classes by default and warning on the rest, with strict mode to hard-block every rule.">
+<meta name="description" content="ThumbGate is the pre-action governance runtime for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode): 👍 thumbs up and 👎 thumbs down feedback become history-aware lessons stored locally; Enterprise adds shared lessons and org visibility. PreToolUse checks flag and log risky tool calls — hard-blocking secret exfiltration by default and flagging the rest, with strict mode to hard-block every rule.">
 <meta property="og:title" content="ThumbGate — Stop paying for the same AI mistake twice">
 <meta property="og:description" content="Frontier LLMs are expensive, opaque, and unreliable in production. ThumbGate gates risky agent actions before they run: workflow shape, inspection evidence, token budget, and repeated-failure memory in one pre-action check.">
 <meta property="og:type" content="website">
@@ -71,7 +71,7 @@ __GA_BOOTSTRAP__
   "alternateName": "thumbgate",
   "url": "https://thumbgate.ai",
   "logo": "https://thumbgate.ai/assets/brand/thumbgate-logo-1200x360.png",
-  "description": "ThumbGate ships pre-action gates for AI coding agents. Open-source CLI plus PreToolUse hooks that capture feedback, promote it to memory, generate prevention rules, and flag repeated mistakes before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode — hard-blocking the catastrophic classes by default and every rule under strict mode.",
+  "description": "ThumbGate ships pre-action gates for AI coding agents. Open-source CLI plus PreToolUse hooks that capture feedback, promote it to memory, generate prevention rules, and flag repeated mistakes before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode — hard-blocking secret exfiltration by default and every rule under strict mode.",
   "founder": {
     "@type": "Person",
     "name": "Igor Ganapolsky",
@@ -268,7 +268,7 @@ __GA_BOOTSTRAP__
       "@type": "HowToStep",
       "position": 4,
       "name": "Pre-action checks flag the mistake",
-      "text": "When the agent tries to repeat a known-bad action, the PreToolUse hook fires, flags the tool call, and logs the decision before execution. Catastrophic classes (secret exfiltration, destructive deletes like rm -rf, supply-chain) hard-block by default; set THUMBGATE_STRICT_ENFORCEMENT=1 to hard-block every rule."
+      "text": "When the agent tries to repeat a known-bad action, the PreToolUse hook fires, flags the tool call, and logs the decision before execution. Secret exfiltration and attempts to disable ThumbGate itself hard-block by default (rm -rf, force-push, and supply-chain are flagged by default); set THUMBGATE_STRICT_ENFORCEMENT=1 to hard-block every rule."
     }
   ],
   "totalTime": "PT5M",
@@ -294,7 +294,7 @@ __GA_BOOTSTRAP__
       "name": "How is ThumbGate different from model-training feedback loops?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Model-training feedback loops update weights. ThumbGate does not touch the model. It injects past feedback into context so your agent is shaped by your corrections in real time. Think of it as a behavioral immune system, not a training pipeline. Checks fire on every tool call and log the decision; catastrophic classes hard-block by default, and strict mode (THUMBGATE_STRICT_ENFORCEMENT=1) hard-blocks every rule."
+        "text": "Model-training feedback loops update weights. ThumbGate does not touch the model. It injects past feedback into context so your agent is shaped by your corrections in real time. Think of it as a behavioral immune system, not a training pipeline. Checks fire on every tool call and log the decision; secret exfiltration and attempts to disable ThumbGate itself hard-block by default, and strict mode (THUMBGATE_STRICT_ENFORCEMENT=1) hard-blocks every rule."
       }
     },
     {
@@ -342,7 +342,7 @@ __GA_BOOTSTRAP__
       "name": "How are pre-action checks different from prompt rules?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Prompt rules are suggestions agents can ignore. Pre-Action Checks fire before execution via PreToolUse hooks — they flag and log every decision, and can block the action: catastrophic classes hard-block by default, and strict mode (THUMBGATE_STRICT_ENFORCEMENT=1) hard-blocks every rule. Checks are auto-generated from feedback and use Thompson Sampling to adapt."
+        "text": "Prompt rules are suggestions agents can ignore. Pre-Action Checks fire before execution via PreToolUse hooks — they flag and log every decision, and can block the action: secret exfiltration and attempts to disable ThumbGate itself hard-block by default, and strict mode (THUMBGATE_STRICT_ENFORCEMENT=1) hard-blocks every rule. Checks are auto-generated from feedback and use Thompson Sampling to adapt."
       }
     },
     {
@@ -366,7 +366,7 @@ __GA_BOOTSTRAP__
       "name": "How is ThumbGate different from SpecLock?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "SpecLock requires manually writing constraints or compiling them from a PRD. ThumbGate learns automatically from thumbs-up/down feedback and auto-generates prevention rules from repeated failures. SpecLock locks files from modification; ThumbGate flags specific actions (like force-push) before they execute and logs the decision — warning by default and hard-blocking under strict mode, while catastrophic classes like secret exfiltration and rm -rf hard-block outright."
+        "text": "SpecLock requires manually writing constraints or compiling them from a PRD. ThumbGate learns automatically from thumbs-up/down feedback and auto-generates prevention rules from repeated failures. SpecLock locks files from modification; ThumbGate flags specific actions (like force-push and rm -rf) before they execute and logs the decision — warning by default and hard-blocking under strict mode, while secret exfiltration and attempts to disable ThumbGate itself hard-block outright by default."
       }
     },
     {
@@ -374,7 +374,7 @@ __GA_BOOTSTRAP__
       "name": "How is ThumbGate different from Mem0?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Mem0 is cloud-hosted memory for AI apps. ThumbGate is local-first enforcement. Mem0 remembers context but does not gate actions. ThumbGate captures feedback, promotes it to prevention rules, and flags tool calls that match known failure patterns via PreToolUse hooks — hard-blocking the catastrophic classes by default, and every rule under strict mode."
+        "text": "Mem0 is cloud-hosted memory for AI apps. ThumbGate is local-first enforcement. Mem0 remembers context but does not gate actions. ThumbGate captures feedback, promotes it to prevention rules, and flags tool calls that match known failure patterns via PreToolUse hooks — hard-blocking secret exfiltration by default, and every rule under strict mode."
       }
     }
   ]
@@ -754,7 +754,7 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="hero-badge">👍 👎 Local-first · open-source · enterprise governance when agents touch real systems</div>
     <h1>Catch AI agents before they spend money, leak secrets, or break production.</h1>
-    <p class="hero-lede">Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and MCP tools now touch terminals, repos, databases, SaaS APIs, and cloud systems. ThumbGate checks the next tool call before it runs, flags repeated failures from your thumbs-down feedback and logs every decision — hard-blocking the catastrophic classes (secret exfiltration, rm -rf, supply-chain) by default and warning on the rest, with strict mode to hard-block everything. The beachhead buyer is an enterprise engineering, security, or platform team that needs governed AI-agent execution before agents touch regulated or high-blast-radius workflows.</p>
+    <p class="hero-lede">Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and MCP tools now touch terminals, repos, databases, SaaS APIs, and cloud systems. ThumbGate checks the next tool call before it runs, flags repeated failures from your thumbs-down feedback and logs every decision — hard-blocking secret exfiltration and guardrail-tampering by default while flagging the other high-risk classes (rm -rf, force-push, supply-chain), with strict mode to hard-block every rule. The beachhead buyer is an enterprise engineering, security, or platform team that needs governed AI-agent execution before agents touch regulated or high-blast-radius workflows.</p>
 
     <div class="hero-signals" aria-label="June 2026 buyer signals">
       <a class="signal-pill signal-down" href="#june-2026-proof">MCP tool risk</a>
@@ -764,7 +764,7 @@ __GA_BOOTSTRAP__
     </div>
 
     <div class="hero-proof-card" aria-label="ThumbGate flagging dangerous AI agent commands in real time">
-      <img src="/media/thumbgate-demo.gif" alt="ThumbGate flagging an AI agent's rm -rf, git push --force, and chmod 777 in real time — hard-blocking rm -rf and warning on the rest by default (strict mode blocks all) — while letting safe commands through" style="width:100%;display:block;border-radius:8px;" loading="lazy" />
+      <img src="/media/thumbgate-demo.gif" alt="ThumbGate flagging an AI agent's rm -rf, git push --force, and chmod 777 in real time — flagging them by default and hard-blocking under strict mode — while letting safe commands through" style="width:100%;display:block;border-radius:8px;" loading="lazy" />
     </div>
 
     <div class="hero-actions">
@@ -837,7 +837,7 @@ __GA_BOOTSTRAP__
         </div>
         <div class="first-check-step">
           <strong>3. The repeat gets flagged</strong>
-          <p>The next matching tool call is flagged and logged before execution, with a reason the agent can use to choose a safer plan — and hard-blocked outright for catastrophic actions (secrets, rm -rf) or when you set THUMBGATE_STRICT_ENFORCEMENT=1.</p>
+          <p>The next matching tool call is flagged and logged before execution, with a reason the agent can use to choose a safer plan — and hard-blocked outright for secret exfiltration and attempts to disable ThumbGate itself, or when you set THUMBGATE_STRICT_ENFORCEMENT=1.</p>
         </div>
       </div>
     </div>
@@ -1042,7 +1042,7 @@ __GA_BOOTSTRAP__
         </div>
         <div class="gpt-step">
           <strong>3. Give feedback, checks auto-generate</strong>
-          <p>Type <code>thumbs down</code> when Claude makes a mistake. ThumbGate distills a lesson from up to 8 prior entries and flags the pattern on the next matching tool call via PreToolUse hooks — hard-blocking the catastrophic classes by default, and every rule under strict mode.</p>
+          <p>Type <code>thumbs down</code> when Claude makes a mistake. ThumbGate distills a lesson from up to 8 prior entries and flags the pattern on the next matching tool call via PreToolUse hooks — hard-blocking secret exfiltration by default, and every rule under strict mode.</p>
         </div>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
@@ -1073,7 +1073,7 @@ __GA_BOOTSTRAP__
         </div>
         <div class="gpt-step">
           <strong>3. Enforce locally</strong>
-          <p>Run <code>npx thumbgate init</code> in the repo so Pre-Action Checks flag repeated mistakes (and hard-block the catastrophic ones) before the coding agent executes them.</p>
+          <p>Run <code>npx thumbgate init</code> in the repo so Pre-Action Checks flag repeated mistakes (and hard-block secret exfiltration and guardrail-tampering) before the coding agent executes them.</p>
         </div>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
@@ -1197,12 +1197,12 @@ __GA_BOOTSTRAP__
 <section class="compatibility" id="governance-not-logging">
   <div class="container">
     <div class="section-label">Governance, Not Logging</div>
-    <h2 class="section-title">Logs describe the damage. ThumbGate flags the risky action before it runs — and blocks the catastrophic ones.</h2>
+    <h2 class="section-title">Logs describe the damage. ThumbGate flags the risky action before it runs — and hard-blocks secret exfiltration and guardrail-tampering by default.</h2>
     <p style="color:var(--text-dim);max-width:820px;margin:0 auto 22px;">Self-governance is an operator writing local rules and keeping local logs. ThumbGate starts there, then turns each correction into a pre-action decision: allow, block, require evidence, or route for approval before the tool call touches code, data, money, or customers.</p>
     <div class="agent-grid">
       <div class="agent-card">
         <h3>Pre-action enforcement</h3>
-        <p>The rule is evaluated at the execution boundary, not after the fact. Repeated failures are flagged and logged before shell commands, PR actions, deploys, refunds, or production writes run — and hard-blocked for catastrophic classes (secrets, rm -rf, supply-chain) or when strict mode is on.</p>
+        <p>The rule is evaluated at the execution boundary, not after the fact. Repeated failures are flagged and logged before shell commands, PR actions, deploys, refunds, or production writes run — hard-blocked outright for secret exfiltration by default (and for every rule when strict mode is on).</p>
       </div>
       <div class="agent-card">
         <h3>Reviewable decision trail</h3>
@@ -1228,7 +1228,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="agent-card">
         <h3>ThumbGate</h3>
-        <p>Turns operator feedback into Pre-Action Checks. It does not just remember the mistake. It flags the repeat at the tool-call boundary across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode — and can hard-block it (catastrophic classes by default, everything under strict mode).</p>
+        <p>Turns operator feedback into Pre-Action Checks. It does not just remember the mistake. It flags the repeat at the tool-call boundary across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode — and can hard-block it (secret exfiltration and guardrail-tampering by default, everything under strict mode).</p>
       </div>
       <div class="agent-card">
         <h3>The stack that makes sense</h3>
@@ -1316,7 +1316,7 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="section-label">Persistent Agent Skills</div>
     <h2 class="section-title">Reusable instructions are the new baseline. Enforcement is the moat.</h2>
-    <p style="text-align:center;font-size:16px;color:var(--text-muted);max-width:880px;margin:0 auto 28px;line-height:1.7;">Grok-style skills are training users to expect persistent expertise across every surface. ThumbGate turns that expectation into a governed reliability layer: capture the correction once, export it as a portable skill or lesson bundle, then prove the next risky tool call was flagged (and, for catastrophic classes or under strict mode, blocked) before it ran.</p>
+    <p style="text-align:center;font-size:16px;color:var(--text-muted);max-width:880px;margin:0 auto 28px;line-height:1.7;">Grok-style skills are training users to expect persistent expertise across every surface. ThumbGate turns that expectation into a governed reliability layer: capture the correction once, export it as a portable skill or lesson bundle, then prove the next risky tool call was flagged (and, for secret exfiltration and guardrail-tampering, or under strict mode, blocked) before it ran.</p>
     <div class="agent-grid">
       <div class="agent-card">
         <h3>Portable skill memory</h3>
@@ -1354,7 +1354,7 @@ __GA_BOOTSTRAP__
       <div class="step">
         <div class="step-num">3</div>
         <h3>Checks</h3>
-        <p>Rules become Pre-Action Checks that <strong>flag and log</strong> your agent before it repeats the same mistake — hard-blocking the catastrophic classes by default, and every rule when you set <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>. So a force-push, skipped test, or refactor you already rejected gets surfaced before it runs, not after.</p>
+        <p>Rules become Pre-Action Checks that <strong>flag and log</strong> your agent before it repeats the same mistake — hard-blocking secret exfiltration by default, and every rule when you set <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>. So a force-push, skipped test, or refactor you already rejected gets surfaced before it runs, not after.</p>
       </div>
     </div>
   </div>
@@ -1373,7 +1373,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="agent-card">
         <h3>Real tools, not wishes</h3>
-        <p>Checks fire at the tool-call boundary and log every decision — not prompt tricks, not "please don't." Catastrophic classes hard-block; set <code>THUMBGATE_STRICT_ENFORCEMENT=1</code> to hard-block every rule.</p>
+        <p>Checks fire at the tool-call boundary and log every decision — not prompt tricks, not "please don't." Secret exfiltration and guardrail-tampering hard-block by default; set <code>THUMBGATE_STRICT_ENFORCEMENT=1</code> to hard-block every rule.</p>
       </div>
       <div class="agent-card">
         <h3>Force models to show work</h3>
@@ -1521,7 +1521,7 @@ __GA_BOOTSTRAP__
           <li>No recall or lesson search</li>
           <li>No exports (DPO, Databricks, HuggingFace)</li>
           <li>All MCP integrations (Claude Code, Cursor, Codex, Gemini, Amp, any MCP agent)</li>
-          <li>PreToolUse hook with built-in safety checks — hard-blocks secrets and destructive deletes (rm -rf) by default; warns on force-push and destructive SQL (blocks them under <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>)</li>
+          <li>PreToolUse hook with built-in safety checks — hard-blocks secret exfiltration by default; warns on rm -rf, force-push, and destructive SQL (blocks them under <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>)</li>
           <li><a href="/guide" style="color:var(--cyan);text-decoration:underline;">Setup guide for all agents →</a></li>
         </ul>
         <div class="hero-install" onclick="copyInstall(this)" title="Click to copy" style="margin-bottom:12px;width:100%;justify-content:center;">
@@ -1698,15 +1698,15 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How is ThumbGate different from model-training feedback loops?</div>
-        <div class="faq-a">ThumbGate's intelligence is context, not weights. It doesn't touch the model — it injects past feedback into context so your agent is conditioned by your corrections. Think of it as a behavioral immune system, not a training pipeline. Checks fire on every tool call and log the decision; catastrophic classes (secret exfiltration, destructive deletes like rm -rf, supply-chain) hard-block by default, and strict mode (<code>THUMBGATE_STRICT_ENFORCEMENT=1</code>) hard-blocks every rule.</div>
+        <div class="faq-a">ThumbGate's intelligence is context, not weights. It doesn't touch the model — it injects past feedback into context so your agent is conditioned by your corrections. Think of it as a behavioral immune system, not a training pipeline. Checks fire on every tool call and log the decision; secret exfiltration and attempts to disable ThumbGate itself hard-block by default (destructive deletes like rm -rf, force-push, and supply-chain are flagged), and strict mode (<code>THUMBGATE_STRICT_ENFORCEMENT=1</code>) hard-blocks every rule.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How is ThumbGate different from persistent agent skills?</div>
-        <div class="faq-a">Persistent agent skills are reusable instructions. ThumbGate uses the same market shift but adds the missing enforcement loop: lessons become portable skill context, Pre-Action Checks flag repeated failures before tool execution (and hard-block the catastrophic classes by default, or every rule under strict mode), and the dashboard shows evidence for which rule fired and why.</div>
+        <div class="faq-a">Persistent agent skills are reusable instructions. ThumbGate uses the same market shift but adds the missing enforcement loop: lessons become portable skill context, Pre-Action Checks flag repeated failures before tool execution (and hard-block secret exfiltration and guardrail-tampering by default, or every rule under strict mode), and the dashboard shows evidence for which rule fired and why.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What's the tech stack?</div>
-        <div class="faq-a">SQLite+FTS5 lesson DB for fast full-text search. MemAlign-inspired dual recall (principle-based rules + episodic context). Thompson Sampling for adaptive check sensitivity per failure domain. LanceDB + Apache Arrow for local vector search with Hugging Face embeddings. ContextFS for context assembly. Bayesian belief updates on each memory. PreToolUse hook enforcement flags known-bad actions before execution and hard-blocks the catastrophic classes by default (every rule under strict mode). All local-first — no cloud required.</div>
+        <div class="faq-a">SQLite+FTS5 lesson DB for fast full-text search. MemAlign-inspired dual recall (principle-based rules + episodic context). Thompson Sampling for adaptive check sensitivity per failure domain. LanceDB + Apache Arrow for local vector search with Hugging Face embeddings. ContextFS for context assembly. Bayesian belief updates on each memory. PreToolUse hook enforcement flags known-bad actions before execution and hard-blocks secret exfiltration by default (every rule under strict mode). All local-first — no cloud required.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What AI agents and editors does this work with?</div>
@@ -1738,7 +1738,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How are pre-action checks different from prompt rules?</div>
-        <div class="faq-a">Prompt rules are a starting point, not a finish line. Without prompt evaluation you do not know whether they still hold up under real tool use. ThumbGate adds the human-in-the-loop measurement loop and the enforcement layer: proof lanes, ThumbGate Bench, and self-heal checks show whether behavior improved, and Pre-Action Checks flag and log the action before execution when it did not — hard-blocking catastrophic classes by default, and every rule under strict mode.</div>
+        <div class="faq-a">Prompt rules are a starting point, not a finish line. Without prompt evaluation you do not know whether they still hold up under real tool use. ThumbGate adds the human-in-the-loop measurement loop and the enforcement layer: proof lanes, ThumbGate Bench, and self-heal checks show whether behavior improved, and Pre-Action Checks flag and log the action before execution when it did not — hard-blocking secret exfiltration and guardrail-tampering by default, and every rule under strict mode.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How does ThumbGate fit the agentic development cycle?</div>

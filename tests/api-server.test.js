@@ -58,6 +58,7 @@ const billing = require('../scripts/billing');
 const gatesEngine = require('../scripts/gates-engine');
 const { listGateTemplates } = require('../scripts/gate-templates');
 const { buildHostedSuccessUrl } = require('../scripts/hosted-config');
+const { parseCheckoutReference } = require('../scripts/checkout-attribution-reference');
 const { readJsonl } = require('../scripts/fs-utils');
 const {
   recordConversationEntry,
@@ -806,6 +807,9 @@ test('/go/diagnostic redirects to configured diagnostic Stripe checkout with att
   assert.equal(url.searchParams.get('customer_email'), 'buyer@example.com');
   assert.equal(url.searchParams.get('cta_id'), 'go_diagnostic');
   assert.equal(url.searchParams.get('landing_path'), '/go/diagnostic');
+  const reference = parseCheckoutReference(url.searchParams.get('client_reference_id'));
+  assert.equal(reference.source, 'audit');
+  assert.ok(reference.acquisitionId, 'carries the acquisition id into Stripe');
 });
 
 test('/go/sprint redirects to configured workflow sprint Stripe checkout with defaults', async () => {
@@ -1767,6 +1771,10 @@ test('checkout fallback URLs preserve Stripe session placeholders while carrying
   assert.equal(parsed.searchParams.get('visitor_id'), 'visitor_test');
   assert.equal(parsed.searchParams.get('utm_source'), 'reddit');
   assert.equal(parsed.searchParams.get('community'), 'ClaudeCode');
+  assert.deepEqual(
+    parseCheckoutReference(parsed.searchParams.get('client_reference_id')),
+    { source: 'reddit', traceId: null, acquisitionId: 'acq_test' }
+  );
 });
 
 test('checkout bootstrap route preserves attribution and records first-party telemetry in local mode', async () => {

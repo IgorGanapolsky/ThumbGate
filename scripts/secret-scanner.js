@@ -18,7 +18,7 @@ const SECRET_PATTERNS = [
   { id: 'stripe_live_secret', label: 'Stripe live secret key', regex: /\bsk_live_[A-Za-z0-9]{16,}\b/g },
   { id: 'slack_token', label: 'Slack token', regex: /\bxox(?:a|b|p|r|s)-[A-Za-z0-9-]{10,}\b/g },
   { id: 'aws_access_key', label: 'AWS access key', regex: /\bAKIA[0-9A-Z]{16}\b/g },
-  { id: 'jwt_token', label: 'JWT token', regex: /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9._-]{8,}\.[A-Za-z0-9._-]{8,}\b/g },
+  { id: 'jwt_token', label: 'JWT token', regex: /\beyJ[\w-]{8,}\.[\w-]{8,}\.[\w-]{8,}\b/g },
   { id: 'pem_private_key', label: 'Private key block', regex: /-----BEGIN (?:RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY-----[\s\S]+?-----END (?:RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY-----/g },
   {
     id: 'generic_assignment',
@@ -53,6 +53,30 @@ const BASH_SECRET_READ_PREFIXES = [
   'env',
   'printenv',
 ];
+
+const OUTBOUND_FILE_COMMANDS = new Set(['curl', 'wget']);
+const OUTBOUND_COMMAND_WRAPPERS = new Set(['command', 'env', 'nohup', 'sudo']);
+const SHELL_QUOTES = new Set(['"', "'"]);
+const SHELL_SEGMENT_SEPARATORS = new Set([';', '|', '&', '\n']);
+const WRAPPER_OPTIONS_WITH_VALUE = {
+  env: new Set(['-u', '--unset', '-C', '--chdir', '-S', '--split-string']),
+  sudo: new Set([
+    '-u', '--user', '-g', '--group', '-h', '--host', '-p', '--prompt',
+    '-C', '--close-from', '-T', '--command-timeout', '-R', '--chroot',
+    '-D', '--chdir',
+  ]),
+};
+const CURL_DATA_FILE_OPTIONS = new Set([
+  '-d',
+  '--data',
+  '--data-ascii',
+  '--data-binary',
+  '--data-urlencode',
+  '--json',
+]);
+const CURL_FORM_FILE_OPTIONS = new Set(['-F', '--form']);
+const CURL_UPLOAD_FILE_OPTIONS = new Set(['-T', '--upload-file']);
+const WGET_POST_FILE_OPTIONS = new Set(['--post-file', '--body-file']);
 
 const EDIT_LIKE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
 const SAFE_SECRET_STORAGE_DIRS = [
@@ -248,7 +272,7 @@ function scanText(text, options = {}) {
 }
 
 function scanFile(filePath, options = {}) {
-  const pathFinding = classifySecretPath(filePath);
+  const pathFinding = options.includePathFinding === false ? null : classifySecretPath(filePath);
   const provider = resolveProvider(options.provider);
   const findings = [];
   if (pathFinding) findings.push(pathFinding);
@@ -279,14 +303,47 @@ function scanFile(filePath, options = {}) {
   };
 }
 
+function flushToken(tokens, state) {
+  if (!state.current) return;
+  tokens.push(state.current);
+  state.current = '';
+}
+
+function consumeTokenCharacter(state, tokens, char) {
+  if (state.escaped) {
+    state.current += char;
+    state.escaped = false;
+    return;
+  }
+  if (char === '\\' && state.quote !== "'") {
+    state.escaped = true;
+    return;
+  }
+  if (state.quote) {
+    if (char === state.quote) state.quote = null;
+    else state.current += char;
+    return;
+  }
+  if (SHELL_QUOTES.has(char)) {
+    state.quote = char;
+    return;
+  }
+  if (/\s/.test(char)) {
+    flushToken(tokens, state);
+    return;
+  }
+  state.current += char;
+}
+
 function tokenizeCommand(command) {
   const tokens = [];
-  const regex = /"([^"]+)"|'([^']+)'|(\S+)/g;
-  let match = regex.exec(String(command || ''));
-  while (match) {
-    tokens.push(match[1] || match[2] || match[3]);
-    match = regex.exec(String(command || ''));
+  const state = { current: '', quote: null, escaped: false };
+
+  for (const char of String(command || '')) {
+    consumeTokenCharacter(state, tokens, char);
   }
+  if (state.escaped) state.current += '\\';
+  flushToken(tokens, state);
   return tokens;
 }
 
@@ -305,6 +362,202 @@ function resolvePathToken(token, cwd) {
   }
   if (path.isAbsolute(normalized)) return normalized;
   return path.join(cwd || process.cwd(), normalized);
+}
+
+function flushCommandSegment(segments, state) {
+  const segment = state.current.trim();
+  if (segment) segments.push(segment);
+  state.current = '';
+}
+
+function consumeSegmentCharacter(state, segments, char) {
+  if (state.escaped) {
+    state.current += char;
+    state.escaped = false;
+    return;
+  }
+  if (char === '\\' && state.quote !== "'") {
+    state.current += char;
+    state.escaped = true;
+    return;
+  }
+  if (state.quote) {
+    state.current += char;
+    if (char === state.quote) state.quote = null;
+    return;
+  }
+  if (SHELL_QUOTES.has(char)) {
+    state.quote = char;
+    state.current += char;
+    return;
+  }
+  if (SHELL_SEGMENT_SEPARATORS.has(char)) {
+    flushCommandSegment(segments, state);
+    return;
+  }
+  state.current += char;
+}
+
+function splitCommandSegments(command) {
+  const segments = [];
+  const state = { current: '', quote: null, escaped: false };
+
+  for (const char of String(command || '')) {
+    consumeSegmentCharacter(state, segments, char);
+  }
+  flushCommandSegment(segments, state);
+  return segments;
+}
+
+function isShellAssignment(token) {
+  return /^[A-Za-z_]\w*=/.test(String(token || ''));
+}
+
+function skipWrapperOptions(tokens, startIndex, wrapper) {
+  let index = startIndex;
+  const valueOptions = WRAPPER_OPTIONS_WITH_VALUE[wrapper] || new Set();
+
+  while (index < tokens.length) {
+    const token = String(tokens[index] || '');
+    if (wrapper === 'env' && isShellAssignment(token)) {
+      index += 1;
+      continue;
+    }
+    if (token === '--') return index + 1;
+    if (!token.startsWith('-')) return index;
+    if (wrapper === 'command' && (token === '-v' || token === '-V')) return -1;
+
+    const optionName = token.split('=', 1)[0];
+    if (valueOptions.has(optionName) && !token.includes('=')) index += 2;
+    else index += 1;
+  }
+
+  return index;
+}
+
+function findOutboundCommand(tokens) {
+  let index = 0;
+  while (isShellAssignment(tokens[index])) index += 1;
+
+  while (index < tokens.length) {
+    const wrapper = path.basename(String(tokens[index] || '')).toLowerCase();
+    if (!OUTBOUND_COMMAND_WRAPPERS.has(wrapper)) break;
+    index += 1;
+    index = skipWrapperOptions(tokens, index, wrapper);
+    if (index < 0) return null;
+  }
+
+  const command = path.basename(String(tokens[index] || '')).toLowerCase();
+  return OUTBOUND_FILE_COMMANDS.has(command) ? { command, index } : null;
+}
+
+function stripCurlFormMetadata(fileReference) {
+  return String(fileReference || '').split(';', 1)[0];
+}
+
+function curlDataFileReference(value, allowNamedReference = false) {
+  const normalized = String(value || '');
+  if (normalized.startsWith('@')) return normalized.slice(1);
+  if (!allowNamedReference) return null;
+  const markerIndex = normalized.indexOf('@');
+  return markerIndex > 0 ? normalized.slice(markerIndex + 1) : null;
+}
+
+function curlFormFileReference(value) {
+  const normalized = String(value || '');
+  const marker = /(?:^|=)[@<](.+)$/.exec(normalized);
+  return marker ? stripCurlFormMetadata(marker[1]) : null;
+}
+
+function addOutboundReference(references, fileReference, cwd, metadata) {
+  const normalized = String(fileReference || '').trim();
+  if (!normalized || normalized === '-') return;
+  const resolvedPath = resolvePathToken(normalized, cwd);
+  if (!resolvedPath) return;
+  references.push({
+    path: resolvedPath,
+    ...metadata,
+  });
+}
+
+function readOptionArgument(args, index, option) {
+  const token = String(args[index] || '');
+  if (token === option) {
+    return { value: args[index + 1], consumesNext: true };
+  }
+  if (option.startsWith('--') && token.startsWith(`${option}=`)) {
+    return { value: token.slice(option.length + 1), consumesNext: false };
+  }
+  if (option.length === 2 && token.startsWith(option) && token.length > 2) {
+    return { value: token.slice(2), consumesNext: false };
+  }
+  return null;
+}
+
+function outboundOptionSpecs(command) {
+  if (command === 'wget') {
+    return [{
+      options: WGET_POST_FILE_OPTIONS,
+      fileReference: (value) => value,
+    }];
+  }
+  return [
+    {
+      options: CURL_DATA_FILE_OPTIONS,
+      fileReference: (value, option) => curlDataFileReference(value, option === '--data-urlencode'),
+    },
+    {
+      options: CURL_FORM_FILE_OPTIONS,
+      fileReference: curlFormFileReference,
+    },
+    {
+      options: CURL_UPLOAD_FILE_OPTIONS,
+      fileReference: (value) => value,
+    },
+  ];
+}
+
+function findOutboundOptionArgument(args, index, specs) {
+  for (const spec of specs) {
+    for (const option of spec.options) {
+      const argument = readOptionArgument(args, index, option);
+      if (argument) return { argument, fileReference: spec.fileReference, option };
+    }
+  }
+  return null;
+}
+
+function extractCommandFileReferences(command, args, cwd, references) {
+  const specs = outboundOptionSpecs(command);
+  for (let index = 0; index < args.length; index += 1) {
+    const match = findOutboundOptionArgument(args, index, specs);
+    if (!match) continue;
+    addOutboundReference(references, match.fileReference(match.argument.value, match.option), cwd, {
+      command,
+      option: match.option,
+    });
+    if (match.argument.consumesNext) index += 1;
+  }
+}
+
+function extractOutboundFileReferences(command, cwd = process.cwd()) {
+  // Only file-bearing client options enter this path. Endpoint-only egress
+  // remains governed by the existing warn-level network gate.
+  const references = [];
+  for (const segment of splitCommandSegments(command)) {
+    const tokens = tokenizeCommand(segment);
+    const outboundCommand = findOutboundCommand(tokens);
+    if (!outboundCommand) continue;
+    const args = tokens.slice(outboundCommand.index + 1);
+    extractCommandFileReferences(outboundCommand.command, args, cwd, references);
+  }
+
+  const seen = new Set();
+  return references.filter((reference) => {
+    if (seen.has(reference.path)) return false;
+    seen.add(reference.path);
+    return true;
+  });
 }
 
 function normalizePathForPolicy(filePath) {
@@ -327,37 +580,70 @@ function isSafeSecretStorageWrite(toolName, toolInput = {}, cwd = process.cwd())
   return paths.length > 0 && paths.every((filePath) => isSafeSecretStoragePath(filePath));
 }
 
-function scanBashCommand(command, options = {}) {
-  const cwd = options.cwd || process.cwd();
-  const findings = [];
-  const inlineScan = scanText(command, { provider: options.provider, source: 'command' });
-  findings.push(...inlineScan.findings.map((finding) => ({
+function commandTextFindings(inlineScan) {
+  return inlineScan.findings.map((finding) => ({
     ...finding,
     reason: `${finding.label} found in command text`,
-  })));
+  }));
+}
 
+function scanCommandReadFiles(command, cwd, provider) {
   const tokens = tokenizeCommand(command);
   const verb = String(tokens[0] || '').toLowerCase();
-  const inspectsFiles = BASH_SECRET_READ_PREFIXES.includes(verb);
+  if (!BASH_SECRET_READ_PREFIXES.includes(verb)) return [];
 
-  if (inspectsFiles) {
-    for (const token of tokens.slice(1)) {
-      if (!looksLikePath(token)) continue;
-      const resolved = resolvePathToken(token, cwd);
-      const fileScan = scanFile(resolved, { provider: options.provider });
-      if (!fileScan.detected) continue;
-      findings.push(...fileScan.findings.map((finding) => ({
-        ...finding,
-        source: 'command_file',
-      })));
-    }
+  const findings = [];
+  for (const token of tokens.slice(1)) {
+    if (!looksLikePath(token)) continue;
+    const resolved = resolvePathToken(token, cwd);
+    const fileScan = scanFile(resolved, { provider });
+    if (!fileScan.detected) continue;
+    findings.push(...fileScan.findings.map((finding) => ({
+      ...finding,
+      source: 'command_file',
+    })));
   }
+  return findings;
+}
+
+function scanOutboundCommandFiles(command, cwd, provider) {
+  const findings = [];
+  const fileHashes = [];
+  for (const reference of extractOutboundFileReferences(command, cwd)) {
+    const fileScan = scanFile(reference.path, {
+      provider,
+      includePathFinding: false,
+    });
+    if (!fileScan.detected) continue;
+    findings.push(...fileScan.findings.map((finding) => ({
+      ...finding,
+      source: 'outbound_file',
+      reason: `${finding.label} found in file referenced by ${reference.command} ${reference.option}`,
+    })));
+    if (fileScan.fileHash) fileHashes.push(fileScan.fileHash);
+  }
+  return { findings, fileHashes };
+}
+
+function scanBashCommand(command, options = {}) {
+  const cwd = options.cwd || process.cwd();
+  const inlineScan = scanText(command, { provider: options.provider, source: 'command' });
+  const findings = commandTextFindings(inlineScan);
+  findings.push(...scanCommandReadFiles(command, cwd, options.provider));
+
+  const outboundScan = inlineScan.provider === 'off'
+    ? { findings: [], fileHashes: [] }
+    : scanOutboundCommandFiles(command, cwd, options.provider);
+  findings.push(...outboundScan.findings);
+
+  const uniqueFileHashes = [...new Set(outboundScan.fileHashes)];
 
   return {
     detected: findings.length > 0,
     provider: inlineScan.provider,
     findings: uniqueFindings(findings),
     commandHash: hashText(command),
+    fileHashes: uniqueFileHashes,
   };
 }
 
@@ -371,61 +657,70 @@ function getToolInputPaths(toolInput = {}, cwd = process.cwd()) {
   return candidates.map((candidate) => resolvePathToken(candidate, cwd));
 }
 
-function scanHookInput(input = {}, options = {}) {
-  const toolName = String(input.tool_name || input.toolName || '').trim();
-  const toolInput = input.tool_input && typeof input.tool_input === 'object' ? input.tool_input : {};
-  const cwd = input.cwd || options.cwd || process.cwd();
-  const findings = [];
-  let provider = resolveProvider(options.provider);
-  let commandHash = null;
-  let fileHashes = [];
-  const safeSecretStorageWrite = isSafeSecretStorageWrite(toolName, toolInput, cwd);
-
-  const contentFields = [
+function getToolInputContent(toolInput) {
+  return [
     toolInput.content,
     toolInput.new_string,
     toolInput.value,
     toolInput.text,
   ].filter((value) => typeof value === 'string' && value.trim());
+}
 
-  if (!EDIT_LIKE_TOOLS.has(toolName)) {
-    const paths = getToolInputPaths(toolInput, cwd);
-    for (const filePath of paths) {
-      const result = scanFile(filePath, { provider });
-      if (result.detected) {
-        provider = result.provider;
-        fileHashes.push(result.fileHash);
-        findings.push(...result.findings);
-      }
-    }
+function scanHookPaths(state, toolName, toolInput, cwd) {
+  if (EDIT_LIKE_TOOLS.has(toolName)) return;
+  for (const filePath of getToolInputPaths(toolInput, cwd)) {
+    const result = scanFile(filePath, { provider: state.provider });
+    if (!result.detected) continue;
+    state.provider = result.provider;
+    state.fileHashes.push(result.fileHash);
+    state.findings.push(...result.findings);
   }
+}
 
-  if (typeof toolInput.command === 'string' && toolInput.command.trim()) {
-    const result = scanBashCommand(toolInput.command, { provider, cwd });
-    if (result.detected) {
-      provider = result.provider;
-      commandHash = result.commandHash;
-      findings.push(...result.findings);
-    }
-  }
+function scanHookCommand(state, toolInput, cwd) {
+  const command = toolInput.command;
+  if (typeof command !== 'string' || !command.trim()) return;
+  const result = scanBashCommand(command, { provider: state.provider, cwd });
+  if (!result.detected) return;
+  state.provider = result.provider;
+  state.commandHash = result.commandHash;
+  state.fileHashes.push(...(result.fileHashes || []));
+  state.findings.push(...result.findings);
+}
 
-  if (!safeSecretStorageWrite) {
-    for (const content of contentFields) {
-      const result = scanText(content, { provider, source: 'tool_input' });
-      if (result.detected) {
-        provider = result.provider;
-        findings.push(...result.findings);
-      }
-    }
+function scanHookContent(state, toolInput, safeSecretStorageWrite) {
+  if (safeSecretStorageWrite) return;
+  for (const content of getToolInputContent(toolInput)) {
+    const result = scanText(content, { provider: state.provider, source: 'tool_input' });
+    if (!result.detected) continue;
+    state.provider = result.provider;
+    state.findings.push(...result.findings);
   }
+}
+
+function scanHookInput(input = {}, options = {}) {
+  const toolName = String(input.tool_name || input.toolName || '').trim();
+  const toolInput = input.tool_input && typeof input.tool_input === 'object' ? input.tool_input : {};
+  const cwd = input.cwd || options.cwd || process.cwd();
+  const state = {
+    provider: resolveProvider(options.provider),
+    findings: [],
+    commandHash: null,
+    fileHashes: [],
+  };
+  const safeSecretStorageWrite = isSafeSecretStorageWrite(toolName, toolInput, cwd);
+
+  scanHookPaths(state, toolName, toolInput, cwd);
+  scanHookCommand(state, toolInput, cwd);
+  scanHookContent(state, toolInput, safeSecretStorageWrite);
 
   return {
-    detected: findings.length > 0,
-    provider,
+    detected: state.findings.length > 0,
+    provider: state.provider,
     toolName,
-    findings: uniqueFindings(findings),
-    commandHash,
-    fileHashes: fileHashes.filter(Boolean),
+    findings: uniqueFindings(state.findings),
+    commandHash: state.commandHash,
+    fileHashes: state.fileHashes.filter(Boolean),
   };
 }
 
