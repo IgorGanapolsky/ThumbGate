@@ -7,6 +7,7 @@
  *   -> compute analytics -> generate prevention rules
  */
 
+const crypto = require('node:crypto');
 const fs = require('fs');
 const path = require('path');
 const { loadOptionalModule } = require('./private-core-boundary');
@@ -19,6 +20,7 @@ const {
 const {
   buildClarificationMessage,
   isGenericFeedbackText,
+  normalizeFeedbackText,
 } = require('./feedback-quality');
 const {
   buildRubricEvaluation,
@@ -55,6 +57,10 @@ const {
 }));
 
 const AUDIT_TRAIL_TAG = 'audit-trail';
+const FEEDBACK_EVENT_DEDUPE_WINDOW_MS = 30 * 1000;
+const FEEDBACK_EVENT_CLAIM_STALE_MS = 60 * 1000;
+const FEEDBACK_EVENT_CLAIM_WAIT_MS = 15 * 1000;
+const FEEDBACK_EVENT_CLAIM_POLL_MS = 25;
 
 /**
  * Anonymous fire-and-forget CLI feedback telemetry.
@@ -631,6 +637,269 @@ function normalizeSignal(signal) {
   return null;
 }
 
+function hashFeedbackSourcePart(value) {
+  const text = String(value || '').trim();
+  if (!text) return null;
+  return crypto.createHash('sha256').update(text).digest('hex');
+}
+
+function parseFeedbackSourceTimestamp(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value > 1e12 ? value : value * 1000;
+  }
+  const text = String(value || '').trim();
+  if (!text) return Date.now();
+  if (/^\d+$/.test(text)) {
+    const numeric = Number(text);
+    return numeric > 1e12 ? numeric : numeric * 1000;
+  }
+  const parsed = Date.parse(text);
+  return Number.isFinite(parsed) ? parsed : Date.now();
+}
+
+/**
+ * Build a privacy-preserving identity for one external thumbs event.
+ * Raw session, prompt, and project identifiers are hashed before persistence.
+ * A prompt ID wins when present so two distinct prompts with identical text are
+ * still separate events; otherwise the session + project + text fingerprint is
+ * deduplicated inside a short capture window.
+ */
+function buildFeedbackSourceIdentity(input = {}) {
+  const signal = normalizeSignal(input.signal);
+  const normalizedText = normalizeFeedbackText(input.promptText || input.context);
+  if (!signal || !normalizedText) return null;
+
+  const sessionHash = hashFeedbackSourcePart(input.sessionId);
+  const promptIdHash = hashFeedbackSourcePart(input.promptId);
+  const projectHash = hashFeedbackSourcePart(input.projectDir || input.project);
+  if (!sessionHash && !promptIdHash) return null;
+
+  const textHash = hashFeedbackSourcePart(normalizedText);
+  const discriminator = promptIdHash
+    ? `prompt:${sessionHash || ''}:${projectHash || ''}:${promptIdHash}`
+    : `content:${sessionHash || ''}:${projectHash || ''}:${textHash}`;
+  const eventHash = hashFeedbackSourcePart(['v1', signal, discriminator].join(':'));
+  const key = `fev_${eventHash}`;
+
+  return {
+    key,
+    signal,
+    normalizedText,
+    sessionHash,
+    promptIdHash,
+    projectHash,
+    eventTimestampMs: parseFeedbackSourceTimestamp(input.timestamp),
+    source: String(input.source || 'external').replace(/[^a-z0-9._-]/gi, '-').slice(0, 64),
+  };
+}
+
+function normalizeFeedbackSourceIdentity(identity, params = {}) {
+  if (!identity || typeof identity !== 'object' || typeof identity.key !== 'string') return null;
+  const signal = normalizeSignal(params.signal || identity.signal);
+  const normalizedText = normalizeFeedbackText(
+    identity.normalizedText || params.context || params.whatWentWrong || params.whatWorked,
+  );
+  if (!signal || !normalizedText) return null;
+
+  return {
+    key: `fev_${hashFeedbackSourcePart(identity.key)}`,
+    signal,
+    normalizedText,
+    sessionHash: hashFeedbackSourcePart(identity.sessionHash),
+    promptIdHash: hashFeedbackSourcePart(identity.promptIdHash),
+    projectHash: hashFeedbackSourcePart(identity.projectHash),
+    eventTimestampMs: parseFeedbackSourceTimestamp(identity.eventTimestampMs),
+    source: String(identity.source || 'external').replace(/[^a-z0-9._-]/gi, '-').slice(0, 64),
+  };
+}
+
+function publicFeedbackSourceMetadata(identity) {
+  if (!identity) return null;
+  return {
+    key: identity.key,
+    sessionHash: identity.sessionHash,
+    promptIdHash: identity.promptIdHash,
+    projectHash: identity.projectHash,
+    source: identity.source,
+    timestamp: new Date(identity.eventTimestampMs).toISOString(),
+  };
+}
+
+function readClaimState(claimPath) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(claimPath, 'state.json'), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function writeClaimState(claimPath, state) {
+  const target = path.join(claimPath, 'state.json');
+  const temporary = path.join(claimPath, `state.${process.pid}.${Date.now()}.tmp`);
+  fs.writeFileSync(temporary, `${JSON.stringify(state)}\n`, { mode: 0o600 });
+  fs.renameSync(temporary, target);
+}
+
+function sleepSync(milliseconds) {
+  const signal = new Int32Array(new SharedArrayBuffer(4));
+  Atomics.wait(signal, 0, 0, milliseconds);
+}
+
+function replaceStaleClaim(claimPath) {
+  const nonce = crypto.randomBytes(4).toString('hex');
+  const stalePath = `${claimPath}.stale-${process.pid}-${Date.now()}-${nonce}`;
+  try {
+    fs.renameSync(claimPath, stalePath);
+    fs.rmSync(stalePath, { recursive: true, force: true });
+    return true;
+  } catch (error) {
+    if (error && (error.code === 'ENOENT' || error.code === 'EEXIST')) return false;
+    throw error;
+  }
+}
+
+function waitForClaimCompletion(claimPath, deadlineMs) {
+  let state = readClaimState(claimPath);
+  while ((!state || state.status === 'pending') && Date.now() < deadlineMs) {
+    sleepSync(FEEDBACK_EVENT_CLAIM_POLL_MS);
+    state = readClaimState(claimPath);
+  }
+  return state;
+}
+
+function findRecordById(filePath, id) {
+  if (!id) return null;
+  const entries = readJSONL(filePath, { maxLines: 500 });
+  for (let index = entries.length - 1; index >= 0; index -= 1) {
+    if (entries[index]?.id === id) return entries[index];
+  }
+  return null;
+}
+
+function duplicateCaptureResult(receipt, paths, options = {}) {
+  const feedbackEvent = findRecordById(paths.FEEDBACK_LOG_PATH, receipt?.feedbackId);
+  const memoryRecord = findRecordById(paths.MEMORY_LOG_PATH, receipt?.memoryId);
+  return {
+    accepted: Boolean(receipt?.accepted),
+    signalLogged: Boolean(receipt?.signalLogged),
+    duplicate: true,
+    pending: Boolean(options.pending),
+    status: options.pending ? 'duplicate_in_progress' : 'duplicate',
+    reason: options.pending ? 'source_event_capture_in_progress' : 'source_event_already_captured',
+    message: options.pending
+      ? 'Equivalent feedback is already being captured.'
+      : 'This feedback event was already captured; no counters or lessons were changed.',
+    feedbackEvent: feedbackEvent || (receipt?.feedbackId ? { id: receipt.feedbackId } : null),
+    memoryRecord: memoryRecord || (receipt?.memoryId ? { id: receipt.memoryId } : null),
+  };
+}
+
+function sourceHashMatches(expected, actual) {
+  return !expected || !actual || expected === actual;
+}
+
+function isDuplicateFeedbackEntry(entry, identity) {
+  if (!entry || entry.signal !== identity.signal) return false;
+  if (normalizeFeedbackText(entry.submittedContext || entry.context) !== identity.normalizedText) return false;
+
+  const sourceEvent = entry.sourceEvent || {};
+  if (!sourceHashMatches(identity.sessionHash, sourceEvent.sessionHash)) return false;
+  if (!sourceHashMatches(identity.projectHash, sourceEvent.projectHash)) return false;
+  if (!sourceHashMatches(identity.promptIdHash, sourceEvent.promptIdHash)) return false;
+  if (identity.promptIdHash && sourceEvent.promptIdHash === identity.promptIdHash) return true;
+
+  const timestamp = parseFeedbackSourceTimestamp(sourceEvent.timestamp || entry.timestamp);
+  return Math.abs(identity.eventTimestampMs - timestamp) <= FEEDBACK_EVENT_DEDUPE_WINDOW_MS;
+}
+
+function receiptFromFeedbackEntry(entry, paths) {
+  if (!entry) return null;
+  const memories = readJSONL(paths.MEMORY_LOG_PATH, { maxLines: 500 });
+  const memory = memories.find((candidate) => candidate?.sourceFeedbackId === entry.id);
+  return {
+    status: 'complete',
+    feedbackId: entry.id,
+    memoryId: memory?.id,
+    accepted: entry.actionType !== 'no-action'
+      && (!Array.isArray(entry.validationIssues) || entry.validationIssues.length === 0),
+    signalLogged: true,
+    completedAtMs: Date.parse(entry.timestamp || '') || Date.now(),
+  };
+}
+
+function recentDuplicateReceipt(identity, paths) {
+  const entries = readJSONL(paths.FEEDBACK_LOG_PATH, { maxLines: 250 });
+  const entry = entries.findLast((candidate) => isDuplicateFeedbackEntry(candidate, identity));
+  return receiptFromFeedbackEntry(entry, paths);
+}
+
+function tryCreateFeedbackClaim(claimPath) {
+  try {
+    fs.mkdirSync(claimPath, { mode: 0o700 });
+    writeClaimState(claimPath, { status: 'pending', startedAtMs: Date.now() });
+    return { owned: true, claimPath };
+  } catch (error) {
+    if (error?.code === 'EEXIST') return null;
+    throw error;
+  }
+}
+
+function existingClaimResult(state, identity, paths) {
+  const stateTimestamp = Number(state?.completedAtMs || state?.startedAtMs || 0);
+  const ageMs = stateTimestamp > 0 ? Date.now() - stateTimestamp : 0;
+  if (state?.status === 'complete'
+    && (identity.promptIdHash || ageMs <= FEEDBACK_EVENT_DEDUPE_WINDOW_MS)) {
+    return duplicateCaptureResult(state, paths);
+  }
+  if (state?.status === 'pending' && ageMs <= FEEDBACK_EVENT_CLAIM_STALE_MS) {
+    return duplicateCaptureResult(state, paths, { pending: true });
+  }
+  return null;
+}
+
+function acquireFeedbackEventClaim(identity, paths) {
+  const recent = recentDuplicateReceipt(identity, paths);
+  if (recent) return { owned: false, result: duplicateCaptureResult(recent, paths) };
+
+  const claimsRoot = path.join(paths.FEEDBACK_DIR, '.feedback-event-claims');
+  const claimPath = path.join(claimsRoot, identity.key);
+  ensureDir(claimsRoot);
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const ownedClaim = tryCreateFeedbackClaim(claimPath);
+    if (ownedClaim) return ownedClaim;
+
+    const state = waitForClaimCompletion(claimPath, Date.now() + FEEDBACK_EVENT_CLAIM_WAIT_MS);
+    const duplicateResult = existingClaimResult(state, identity, paths);
+    if (duplicateResult) return { owned: false, result: duplicateResult };
+    if (!replaceStaleClaim(claimPath)) continue;
+  }
+
+  return {
+    owned: false,
+    result: duplicateCaptureResult(null, paths, { pending: true }),
+  };
+}
+
+function finalizeFeedbackEventClaim(claim, result) {
+  if (!claim?.owned) return;
+  writeClaimState(claim.claimPath, {
+    status: 'complete',
+    startedAtMs: Date.now(),
+    completedAtMs: Date.now(),
+    accepted: Boolean(result?.accepted),
+    signalLogged: Boolean(result?.signalLogged || result?.feedbackEvent),
+    feedbackId: result?.feedbackEvent?.id || null,
+    memoryId: result?.memoryRecord?.id || null,
+  });
+}
+
+function releaseFeedbackEventClaim(claim) {
+  if (claim?.owned && claim.claimPath) {
+    fs.rmSync(claim.claimPath, { recursive: true, force: true });
+  }
+}
+
 function parseOptionalObject(input, name) {
   if (input == null) return {};
   if (typeof input === 'object' && !Array.isArray(input)) return input;
@@ -1144,6 +1413,7 @@ function captureFeedback(params) {
     structuredRule: structuredRule || null,
     ...(reflection && { reflection }),
     gateAction: params.gateAction || null,
+    sourceEvent: publicFeedbackSourceMetadata(params.sourceEvent),
     timestamp: now,
   };
 
@@ -1565,6 +1835,24 @@ function captureFeedback(params) {
   });
 
   return result;
+}
+
+function captureFeedbackIdempotent(params = {}) {
+  const paths = getFeedbackPaths();
+  const identity = normalizeFeedbackSourceIdentity(params.sourceEvent, params);
+  if (!identity) return captureFeedback(params);
+
+  const claim = acquireFeedbackEventClaim(identity, paths);
+  if (!claim.owned) return claim.result;
+
+  try {
+    const result = captureFeedback({ ...params, sourceEvent: identity });
+    finalizeFeedbackEventClaim(claim, result);
+    return result;
+  } catch (error) {
+    releaseFeedbackEventClaim(claim);
+    throw error;
+  }
 }
 
 function analyzeFeedback(logPath) {
@@ -2200,7 +2488,8 @@ function buildCorrectiveActionsReminder(correctiveActions = []) {
 }
 
 module.exports = {
-  captureFeedback,
+  captureFeedback: captureFeedbackIdempotent,
+  buildFeedbackSourceIdentity,
   compactMemories,
   buildCorrectiveActionsReminder,
   analyzeFeedback,

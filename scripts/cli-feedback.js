@@ -44,9 +44,10 @@ const RST = '\x1b[0m';
  * @param {Array} [opts.chatHistory] - Conversation messages for distillation
  * @param {string} [opts.whatWentWrong] - For thumbs down
  * @param {string} [opts.whatWorked] - For thumbs up
+ * @param {Object} [opts.sourceEvent] - Hashed source identity for idempotent hook capture
  * @returns {Object} Result with feedback + lesson + stats
  */
-function processInlineFeedback({ signal, context, chatHistory, whatWentWrong, whatWorked } = {}) {
+function processInlineFeedback({ signal, context, chatHistory, whatWentWrong, whatWorked, sourceEvent } = {}) {
   const isDown = signal === 'down' || signal === 'negative';
 
   // 1. Capture the feedback
@@ -57,6 +58,7 @@ function processInlineFeedback({ signal, context, chatHistory, whatWentWrong, wh
       context: context || (isDown ? 'Thumbs down from CLI' : 'Thumbs up from CLI'),
       whatWentWrong: whatWentWrong || undefined,
       whatWorked: whatWorked || undefined,
+      sourceEvent,
     });
   } catch (err) {
     feedbackResult = { accepted: false, reason: err.message };
@@ -90,30 +92,37 @@ function processInlineFeedback({ signal, context, chatHistory, whatWentWrong, wh
  */
 function formatCliOutput(result) {
   const lines = [];
-  const feedbackSignal = result.feedbackResult?.signal || result.feedbackResult?.feedbackEvent?.signal;
+  const feedbackResult = result.feedbackResult;
+  const feedbackSignal = feedbackResult?.signal || feedbackResult?.feedbackEvent?.signal;
   const isDown = ['down', 'negative', 'thumbs_down'].includes(feedbackSignal);
 
   // Header
-  if (result.feedbackResult && result.feedbackResult.accepted !== false) {
+  if (feedbackResult?.duplicate) {
+    lines.push(`${Y}${BD}Feedback already captured${RST}`);
+    const feedbackId = feedbackResult.feedbackEvent?.id;
+    const memoryId = feedbackResult.memoryRecord?.id;
+    if (feedbackId) lines.push(`${D}  Feedback ID: ${feedbackId}${RST}`);
+    if (memoryId) lines.push(`${D}  Memory ID  : ${memoryId}${RST}`);
+  } else if (feedbackResult && feedbackResult.accepted !== false) {
     lines.push(`${isDown ? R : G}${BD}${isDown ? '👎 Thumbs down recorded' : '👍 Thumbs up recorded'}${RST}`);
-    const feedbackId = (result.feedbackResult.feedbackEvent && result.feedbackResult.feedbackEvent.id) || result.feedbackResult.id;
-    const memoryId = (result.feedbackResult.memoryRecord && result.feedbackResult.memoryRecord.id) || result.feedbackResult.memoryId;
+    const feedbackId = feedbackResult.feedbackEvent?.id || feedbackResult.id;
+    const memoryId = feedbackResult.memoryRecord?.id || feedbackResult.memoryId;
     if (feedbackId) {
       lines.push(`${D}  Feedback ID: ${feedbackId}${RST}`);
       if (memoryId) lines.push(`${D}  Memory ID  : ${memoryId}${RST}`);
       // Echo feedback ID to stderr so it's visible directly in the terminal,
       // not hidden behind Claude Code's "ctrl+o to expand" MCP call collapse.
-      process.stderr.write(`✅ Feedback captured (${feedbackId}${memoryId ? `, ${memoryId}` : ''})\n`);
+      const capturedIds = memoryId ? `${feedbackId}, ${memoryId}` : feedbackId;
+      process.stderr.write(`✅ Feedback captured (${capturedIds})\n`);
     }
   } else {
-    lines.push(`${R}Feedback not accepted: ${(result.feedbackResult && result.feedbackResult.reason) || 'unknown'}${RST}`);
+    lines.push(`${R}Feedback not accepted: ${feedbackResult?.reason || 'unknown'}${RST}`);
   }
 
   // Explicit-directive offer (e.g. "never …" → offer immediate force-gate).
-  if (result.forceGateHint && result.forceGateHint.message) {
+  if (result.forceGateHint?.message) {
     const color = result.forceGateHint.kind === 'force-gate-offer' ? Y : D;
-    lines.push('');
-    lines.push(`${color}💡 ${result.forceGateHint.message}${RST}`);
+    lines.push('', `${color}💡 ${result.forceGateHint.message}${RST}`);
   }
 
   // Distilled lesson (if thumbs down)

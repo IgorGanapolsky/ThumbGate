@@ -194,6 +194,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/hosted-job-launcher.js',
     'scripts/intent-router.js',
     'scripts/workflow-sprint-intake.js',
+    // Repository-only GitHub preview; no npm runtime or hosted page references it.
+    'public/assets/brand/github-social-preview.png',
   ];
 
   // File-count ceiling bumped 220 → 225 (2026-04-19) after main picked up
