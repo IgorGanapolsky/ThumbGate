@@ -7,6 +7,17 @@ const landingPagePath = path.join(__dirname, '..', 'public', 'index.html');
 const proPagePath = path.join(__dirname, '..', 'public', 'pro.html');
 const codexPluginPagePath = path.join(__dirname, '..', 'public', 'codex-plugin.html');
 const buyerIntentScriptPath = path.join(__dirname, '..', 'public', 'js', 'buyer-intent.js');
+const HTML_ENTITY_REPLACEMENTS = new Map([
+  ['&amp;', '&'],
+  ['&quot;', '"'],
+  ['&#39;', "'"],
+  ['&apos;', "'"],
+  ['&mdash;', '—'],
+  ['&ndash;', '–'],
+  ['&rsquo;', '’'],
+  ['&ldquo;', '“'],
+  ['&rdquo;', '”'],
+]);
 
 function readLandingPage() {
   return fs.readFileSync(landingPagePath, 'utf8');
@@ -27,14 +38,9 @@ function readCodexPluginPage() {
 function normalizeHtmlText(value) {
   return String(value)
     .replace(/<[^>]+>/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;|&apos;/g, "'")
-    .replace(/&mdash;/g, '—')
-    .replace(/&ndash;/g, '–')
-    .replace(/&rsquo;/g, '’')
-    .replace(/&ldquo;/g, '“')
-    .replace(/&rdquo;/g, '”')
+    .replace(/&(amp|quot|#39|apos|mdash|ndash|rsquo|ldquo|rdquo);/g, (entity) => (
+      HTML_ENTITY_REPLACEMENTS.get(entity)
+    ))
     .replace(/\s+/g, ' ')
     .replace(/\(\s+/g, '(')
     .replace(/\s+\)/g, ')')

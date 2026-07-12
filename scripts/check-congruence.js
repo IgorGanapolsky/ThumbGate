@@ -66,7 +66,7 @@ const LEGACY_THUMBGATE_PRICING_PATTERNS = [
 const FALSE_PUBLIC_CLAIM_PATTERNS = [
   {
     label: 'single thumbs-down guarantee',
-    pattern: /thumbs-down once, caught every time|one thumbs-down\s*=\s*one reusable check/i,
+    pattern: /thumbs-down once, caught every time|one thumbs-down\s*=\s*one reusable check|learns from every mistake/i,
   },
   {
     label: 'pre-model enforcement claim',
