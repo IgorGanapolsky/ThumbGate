@@ -18,6 +18,7 @@ const {
   evaluateGatesAsync,
   buildReasoning,
   formatOutput,
+  runHardFloor,
   run,
   runAsync,
   satisfyCondition,
@@ -2337,6 +2338,122 @@ test('evaluateSecretGuard returns null when no secrets detected', () => {
     tool_input: { command: 'echo hello' },
   });
   assert.equal(result, null);
+});
+
+test('runHardFloor denies secret, security, and all four self-protect classes', () => {
+  cleanupStateFiles();
+  const cases = [
+    ['secret-exfiltration', {
+      tool_name: 'Bash',
+      tool_input: { command: `echo ${buildStripeKey()}` },
+    }],
+    ['security-vuln-scan', {
+      tool_name: 'Write',
+      tool_input: { file_path: 'src/unsafe.js', content: "execSync('rm ' + req.query.path)" },
+    }],
+    ['self-protect-config', {
+      tool_name: 'Write',
+      tool_input: { file_path: 'config/gates/default.json', content: '{}' },
+    }],
+    ['self-protect-kill', {
+      tool_name: 'Bash',
+      tool_input: { command: 'pkill -f gates-engine' },
+    }],
+    ['self-protect-env-override', {
+      tool_name: 'Bash',
+      tool_input: { command: 'export THUMBGATE_HOTFIX_BYPASS=1' },
+    }],
+    ['self-protect-hooks-disable', {
+      tool_name: 'Edit',
+      tool_input: {
+        file_path: '.claude/settings.json',
+        new_string: '{"hooks":{"PreToolUse":[]}}',
+      },
+    }],
+  ];
+
+  for (const [expectedGate, input] of cases) {
+    const output = runHardFloor(input);
+    assert.ok(output, `expected ${expectedGate} to produce a hard-floor result`);
+    const hook = JSON.parse(output).hookSpecificOutput;
+    assert.equal(hook.permissionDecision, 'deny', expectedGate);
+    assert.match(hook.permissionDecisionReason, new RegExp(`\\[GATE:${expectedGate}\\]`));
+  }
+  cleanupStateFiles();
+});
+
+test('runHardFloor ignores ordinary block gates', () => {
+  assert.equal(runHardFloor({
+    tool_name: 'Bash',
+    tool_input: { command: 'git push --force origin main' },
+  }), null);
+});
+
+test('self-protection hard floor matches protected targets, not documentation content', () => {
+  cleanupStateFiles();
+  assert.equal(runHardFloor({
+    tool_name: 'Write',
+    tool_input: {
+      file_path: 'docs/gate-design.md',
+      content: 'The default policy lives under config/gates/.',
+    },
+  }), null);
+
+  for (const [expectedGate, command] of [
+    ['self-protect-config', "printf '%s' '{}' > config/gates/default.json"],
+    ['self-protect-hooks-disable', "sed -i '' 's/PreToolUse/Disabled/' .claude/settings.json"],
+  ]) {
+    const output = runHardFloor({ tool_name: 'Bash', tool_input: { command } });
+    assert.ok(output, `expected ${expectedGate} for ${command}`);
+    const hook = JSON.parse(output).hookSpecificOutput;
+    assert.equal(hook.permissionDecision, 'deny');
+    assert.match(hook.permissionDecisionReason, new RegExp(`\\[GATE:${expectedGate}\\]`));
+  }
+  cleanupStateFiles();
+});
+
+test('audited protected approval remains the repair path for hard-floor files', () => {
+  cleanupStateFiles();
+  const configEdit = {
+    tool_name: 'Write',
+    tool_input: { file_path: 'config/gates/default.json', content: '{}' },
+  };
+  assert.ok(runHardFloor(configEdit));
+
+  approveProtectedAction({
+    pathGlobs: ['config/gates/default.json'],
+    reason: 'operator approved one scoped gate repair',
+    ttlMs: 5 * 60 * 1000,
+  });
+  assert.equal(runHardFloor(configEdit), null);
+  const output = JSON.parse(run(configEdit));
+  assert.notEqual(output.hookSpecificOutput && output.hookSpecificOutput.permissionDecision, 'deny');
+  cleanupStateFiles();
+});
+
+test('break-glass unlocks hook repair but not environment or process floors', () => {
+  cleanupStateFiles();
+  const settingsEdit = {
+    tool_name: 'Edit',
+    tool_input: {
+      file_path: '.claude/settings.json',
+      old_string: '"PreToolUse": []',
+      new_string: '"PreToolUse": [{"hooks": []}]',
+    },
+  };
+  assert.ok(runHardFloor(settingsEdit));
+  breakGlassEmergency({ reason: 'repair duplicate hook registration', ttlMs: 5 * 60 * 1000 });
+  assert.equal(runHardFloor(settingsEdit), null);
+
+  assert.ok(runHardFloor({
+    tool_name: 'Bash',
+    tool_input: { command: 'export THUMBGATE_HOTFIX_BYPASS=1' },
+  }));
+  assert.ok(runHardFloor({
+    tool_name: 'Bash',
+    tool_input: { command: 'pkill -f gates-engine' },
+  }));
+  cleanupStateFiles();
 });
 
 test('buildSecretGuardResult builds correct structure', () => {

@@ -9,20 +9,19 @@
  * an agent could disable the firewall before continuing and the surfaced
  * verdict was a clean ALLOW.
  *
- * This module is the single source of truth for "is this edit touching the
- * firewall's own kill-switches", used by BOTH the shipped `npx thumbgate
- * gate-check` entrypoint and this repo's dogfood PreToolUse hook.
+ * This module retains the path-classification API used by the dogfood hook and
+ * third-party integrations. Enforcement itself lives in gates-engine.js so the
+ * plugin hook and `thumbgate gate-check` cannot drift apart.
  *
  * Posture threads three constraints:
  *   * Andy's ask: don't let the agent quietly rewrite/disable the gate.
- *   * CEO warn-by-default (2026-06-04): never hard-block legitimate work.
- *   * Self-lockout lesson (2026-07-07): a PreToolUse hook must NEVER deny the
- *     tools needed to repair its own config, or the agent is bricked.
+ *   * CEO warn-by-default (2026-06-04): ordinary operational gates stay advisory.
+ *   * Self-lockout lesson (2026-07-07): every protected-file floor needs an
+ *     audited, short-lived repair path.
  *
- * Resolution:
- *   default                         -> WARN (surfaced + logged, never silent)
- *   THUMBGATE_STRICT_ENFORCEMENT=1  -> BLOCK
- *   THUMBGATE_ALLOW_SELF_EDIT=1     -> full opt-out (preserves the repair path)
+ * Self-protection is now an unconditional floor. Intentional repairs use the
+ * audited, time-limited protected approval / break-glass path; environment
+ * flags cannot disable it.
  */
 
 const SELF_GOVERNANCE_PATH_PATTERNS = [
@@ -30,17 +29,14 @@ const SELF_GOVERNANCE_PATH_PATTERNS = [
   /(?:^|\/)\.codex\/config\.toml$/i,
   /(?:^|\/)scripts\/hook-[^/]+\.(?:js|sh)$/i, // the hook scripts themselves
   /(?:^|\/)config\/gates\//i, // gate definitions
+  /(?:^|\/)config\/budget\.json$/i,
   /(?:^|\/)config\/enforcement\.json$/i, // enforcement policy
   /(?:^|\/)config\/mcp-allowlists\.json$/i, // MCP policy surface
+  /(?:^|\/)\.thumbgate\/config\.json$/i,
+  /(?:^|\/)thumbgate\.json$/i,
 ];
 
 const EDIT_LIKE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit']);
-
-function isTrueEnv(value) {
-  if (value === undefined || value === null) return false;
-  const v = String(value).trim().toLowerCase();
-  return v === '1' || v === 'true' || v === 'yes' || v === 'on';
-}
 
 /**
  * Returns the matched governance file path, or null. Accepts both camelCase
@@ -55,31 +51,20 @@ function selfProtectionTarget(toolName, toolInput) {
 
 /**
  * Evaluate the self-protection posture for a tool call.
- * @returns {{action:'block'|'warn', target:string, message:string}|null}
+ * @returns {{action:'block', target:string, message:string}|null}
  */
-function evaluateSelfProtection(toolName, toolInput, env = process.env) {
+function evaluateSelfProtection(toolName, toolInput) {
   const target = selfProtectionTarget(toolName, toolInput);
   if (!target) return null;
-  // Escape hatch: an operator repairing the gate opts out explicitly. Honors the
-  // self-lockout lesson — the repair path is never denied.
-  if (isTrueEnv(env.THUMBGATE_ALLOW_SELF_EDIT)) return null;
-  if (isTrueEnv(env.THUMBGATE_STRICT_ENFORCEMENT)) {
-    return {
-      action: 'block',
-      target,
-      message:
-        `ThumbGate self-protection: blocked ${toolName} to its own governance file "${target}". `
-        + `Editing the firewall's own hook wiring / gate config while strict enforcement is on is denied. `
-        + `Set THUMBGATE_ALLOW_SELF_EDIT=1 to make an intentional repair.`,
-    };
-  }
+  const { runHardFloor } = require('./gates-engine');
+  const output = runHardFloor({ tool_name: toolName, tool_input: toolInput });
+  if (!output) return null;
+  const parsed = JSON.parse(output);
+  const message = parsed.hookSpecificOutput && parsed.hookSpecificOutput.permissionDecisionReason;
   return {
-    action: 'warn',
+    action: 'block',
     target,
-    message:
-      `⚠️ ThumbGate self-protection: this ${toolName} targets a governance file that configures the firewall itself `
-      + `("${target}"). It is being ALLOWED and LOGGED (warn-by-default). An agent editing this could weaken or disable `
-      + `its own guardrails — confirm this is intentional. Set THUMBGATE_STRICT_ENFORCEMENT=1 to hard-block such edits.`,
+    message: message || `ThumbGate self-protection blocked ${toolName} to "${target}".`,
   };
 }
 

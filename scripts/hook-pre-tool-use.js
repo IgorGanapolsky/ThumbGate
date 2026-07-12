@@ -498,13 +498,8 @@ function findDominantTag(tags, lossMatrix) {
   return '(unknown)';
 }
 
-// Self-protection (2026-07-08, prompted by Andy Martin's review) lives in the
-// shipped scripts/self-protection.js module so BOTH this dogfood hook and the
-// distributed `npx thumbgate gate-check` entrypoint share one implementation.
-const {
-  selfProtectionTarget,
-  evaluateSelfProtection,
-} = require('./self-protection');
+const { selfProtectionTarget, evaluateSelfProtection } = require('./self-protection');
+const { runHardFloor } = require('./gates-engine');
 
 function main() {
   const input = readStdinSync() || {};
@@ -512,10 +507,9 @@ function main() {
   const effectiveInput = resolveEffectiveInput(input.tool_input || null);
 
   // Budget gates are intentionally NOT wired here. A stale budget-state.json
-  // once blocked every Bash/Edit/Write call — including the edits needed to
-  // repair the gate itself (self-lockout, 2026-07-07). A PreToolUse hook must
-  // never be able to deny the tools required to fix its own configuration.
-  // Spend tracking stays advisory: record it, never block on it.
+  // once blocked every Bash/Edit/Write call, including the repair path
+  // (self-lockout, 2026-07-07). Spend tracking therefore stays advisory. The
+  // targeted hard floors below retain scoped approval and break-glass recovery.
   try {
     const pkgRoot = path.resolve(__dirname, '..');
     const { addSpend } = require(path.join(pkgRoot, 'scripts', 'budget-guard'));
@@ -534,13 +528,20 @@ function main() {
     failOpen(err);
   }
 
-  // Self-protection takes precedence over lesson matching: an edit to the
-  // firewall's own config must be surfaced (or blocked in strict mode) before
-  // anything else.
-  const selfProtect = evaluateSelfProtection(toolName, effectiveInput);
-  if (selfProtect) {
-    if (selfProtect.action === 'block') return block(selfProtect.message);
-    return allowWithContext(selfProtect.message);
+  // The plugin hook and `thumbgate gate-check` share one hard-floor evaluator.
+  // Environment bypasses may skip advisory gates, but not secrets, critical
+  // security findings, or changes that disable the guardrail itself.
+  const hardFloorOutput = runHardFloor({ tool_name: toolName, tool_input: effectiveInput });
+  if (hardFloorOutput) {
+    try {
+      const parsed = JSON.parse(hardFloorOutput);
+      const hook = parsed.hookSpecificOutput || {};
+      if (hook.permissionDecision === 'deny') {
+        return block(hook.permissionDecisionReason || 'ThumbGate hard floor denied this action.');
+      }
+    } catch (err) {
+      failOpen(err);
+    }
   }
 
   const actionContext = extractActionContext(toolName, effectiveInput);
