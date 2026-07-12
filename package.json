@@ -46,6 +46,7 @@
     "scripts/bayes-optimal-gate.js",
     "scripts/belief-update.js",
     "scripts/billing.js",
+    "scripts/checkout-attribution-reference.js",
     "scripts/bot-detection.js",
     "scripts/build-metadata.js",
     "scripts/classifier-routing.js",

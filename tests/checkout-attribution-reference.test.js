@@ -19,7 +19,8 @@ test('packs source + trace + acquisition into a stripe-safe reference', () => {
     traceId: 'trace-9f2c1b7e',
     acquisitionId: 'acq-4a10',
   });
-  assert.equal(ref, 'tg1.aiventyx.trace-9f2c1b7e.acq-4a10');
+  assert.equal(ref, 'tg108aiventyx14trace-9f2c1b7e08acq-4a10');
+  assert.match(ref, /^[A-Za-z0-9_-]+$/);
   assert.ok(ref.length <= 200, 'stays within Stripe client_reference_id limit');
 });
 
@@ -43,13 +44,14 @@ test('rejects non-tg1 / empty / malformed references', () => {
   assert.equal(parseCheckoutReference(''), null);
   assert.equal(parseCheckoutReference(null), null);
   assert.equal(parseCheckoutReference('cus_123'), null); // a Stripe customer id
-  assert.equal(parseCheckoutReference('tg1.'), null); // prefix but no source
-  assert.equal(parseCheckoutReference('tg1'), null); // prefix without delimiter
+  assert.equal(parseCheckoutReference('tg1'), null); // prefix without length fields
+  assert.equal(parseCheckoutReference('tg108aiventyx'), null); // truncated fields
+  assert.equal(parseCheckoutReference('tg108aiventyx0000trailing'), null);
 });
 
-test('sanitizes hostile input so the delimiter can never collide', () => {
+test('sanitizes characters Stripe does not allow in client_reference_id', () => {
   const ref = packCheckoutReference({ source: 'ai.ven tyx/../x', traceId: 'a.b.c' });
-  // dots/slashes/spaces stripped from fields; delimiter dots remain structural
+  // Stripe permits letters, digits, hyphens, and underscores only.
   const parsed = parseCheckoutReference(ref);
   assert.equal(parsed.source, 'aiventyxx');
   assert.equal(parsed.traceId, 'abc');

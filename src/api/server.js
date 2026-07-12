@@ -2551,10 +2551,18 @@ function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadReques
   const { FEEDBACK_DIR } = getFeedbackPaths();
   const journeyState = resolveJourneyState(req, parsed);
   const destinationUrl = buildTrackedLinkDestination(target, hostedConfig, parsed);
+  const attribution = buildTrackedLinkAttribution(target, parsed, req, journeyState, destinationUrl);
+  if (target.external) {
+    appendQueryParam(
+      destinationUrl,
+      'client_reference_id',
+      packCheckoutReference(attribution)
+    );
+  }
   if (!isHeadRequest) {
     appendBestEffortTelemetry(
       FEEDBACK_DIR,
-      buildTrackedLinkAttribution(target, parsed, req, journeyState, destinationUrl),
+      attribution,
       req.headers,
       `tracked_link_redirect:${target.slug}`
     );

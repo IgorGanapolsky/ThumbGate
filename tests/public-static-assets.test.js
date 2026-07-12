@@ -178,6 +178,8 @@ test('GET /diagnostic serves the Workflow Hardening Diagnostic intake page', asy
   assert.match(html, /Pay \$499 diagnostic/);
   assert.match(html, /\/go\/diagnostic\?utm_source=diagnostic_page&amp;utm_medium=onsite&amp;utm_campaign=workflow_hardening_diagnostic/);
   assert.match(html, /data-cta-id="diagnostic_hero_paid"/);
+  assert.match(html, /const inboundSource = search\.get\('utm_source'\) \|\| search\.get\('source'\)/);
+  assert.match(html, /href\.searchParams\.set\('utm_source', inboundSource\.trim\(\)\)/);
   assert.doesNotMatch(html, /No cold payment link/);
 });
 
