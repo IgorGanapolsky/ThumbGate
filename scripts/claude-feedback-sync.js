@@ -5,11 +5,12 @@ const fs = require('fs');
 const path = require('path');
 const {
   captureFeedback,
+  buildFeedbackSourceIdentity,
   getFeedbackPaths,
   readJSONL,
   analyzeFeedback,
 } = require('./feedback-loop');
-const { normalizeFeedbackText } = require('./feedback-quality');
+const { detectFeedbackSignal, normalizeFeedbackText } = require('./feedback-quality');
 const {
   resolveFeedbackDir,
   resolveProjectDir,
@@ -126,10 +127,8 @@ function parseHistoryTimestamp(value) {
 }
 
 function detectSignal(text) {
-  const normalized = String(text || '').toLowerCase();
-  if (/(thumbs?\s*down|that failed|that was wrong|fix this)/i.test(normalized)) return 'down';
-  if (/(thumbs?\s*up|that worked|looks good|nice work|perfect|good job)/i.test(normalized)) return 'up';
-  return null;
+  const detected = detectFeedbackSignal(text);
+  return detected ? detected.signal : null;
 }
 
 function extractPromptText(entry) {
@@ -179,6 +178,9 @@ function toHistoryCandidate(entry, options = {}) {
     promptText,
     signal,
     timestampMs: parseHistoryTimestamp(entry.timestamp),
+    sessionId: entry.sessionId || entry.session_id || null,
+    promptId: entry.promptId || entry.prompt_id || null,
+    projectDir: entry.project || entry.cwd || null,
   };
 }
 
@@ -261,14 +263,29 @@ function syncClaudeHistoryFeedback(options = {}) {
         continue;
       }
 
+      const sourceEvent = buildFeedbackSourceIdentity({
+        signal: candidate.signal,
+        promptText: candidate.promptText,
+        sessionId: candidate.sessionId,
+        promptId: candidate.promptId,
+        projectDir: candidate.projectDir,
+        timestamp: candidate.timestampMs,
+        source: 'claude-history',
+      });
       const captureResult = captureFeedback({
         signal: candidate.signal,
         context: candidate.promptText,
         whatWentWrong: candidate.signal === 'down' ? candidate.promptText : undefined,
         whatWorked: candidate.signal === 'up' ? candidate.promptText : undefined,
         tags: ['claude-history-sync', 'auto-capture-fallback'],
+        sourceEvent,
       });
 
+      if (captureResult && captureResult.duplicate) {
+        processedIds.add(candidate.externalId);
+        skippedCount += 1;
+        continue;
+      }
       if (captureResult && captureResult.feedbackEvent) {
         existingEntries.push(captureResult.feedbackEvent);
       }
