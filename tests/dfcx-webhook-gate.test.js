@@ -89,7 +89,8 @@ test('repeat-block path: the same action twice — second is blocked, fulfillmen
   resetSession();
   let calls = 0;
   const fulfill = async () => { calls += 1; return { fulfillment_response: { messages: [] } }; };
-  const req = dfcxRequest('delete-account', { account_id: 'DUP-1' });
+  // Keep policy gates out of this unit: this case isolates fallback repeat detection.
+  const req = dfcxRequest('lookup-balance', { account_id: 'DUP-1' });
 
   const first = await guardDfcxWebhook(req, fulfill);
   assert.equal(first.blocked, false, 'first attempt allowed');
