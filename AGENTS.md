@@ -144,4 +144,4 @@ Rules:
 > The following rules were automatically derived from execution failures and thumbs-down feedback.
 > You MUST follow these constraints strictly to prevent repeated errors.
 
-- **Rule [auto-promoted-mri81k7v-0]**: NEVER repeated problem context string
+- **Rule [auto-promoted-mrhwo33d-0]**: NEVER repeated problem context string

@@ -36,4 +36,4 @@ An agent holding an owner's credential can do anything the owner can. That is pr
 > The following rules were automatically derived from execution failures and thumbs-down feedback.
 > You MUST follow these constraints strictly to prevent repeated errors.
 
-- **Rule [auto-promoted-mri81k7v-0]**: NEVER repeated problem context string
+- **Rule [auto-promoted-mrhwo33d-0]**: NEVER repeated problem context string
