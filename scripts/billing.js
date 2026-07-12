@@ -487,8 +487,8 @@ async function verifyActiveProductForPlan(stripe, planId) {
     // session.create fires with inline product_data. Safe path.
     return;
   }
-  const active = matching.find((p) => p.active === true);
-  if (!active) {
+  const hasActive = matching.some((p) => p.active === true);
+  if (!hasActive) {
     const archived = matching[0];
     throw new Error(
       `Refusing to create checkout session: Stripe product named "${expectedName}" ` +
@@ -2976,7 +2976,7 @@ async function handleWebhook(rawBody, signature) {
       // are credited/reported instead of silently landing as source=unknown.
       if (!attribution.source) {
         const ref = parseCheckoutReference(session.client_reference_id);
-        if (ref && ref.source) {
+        if (ref?.source) {
           attribution.source = ref.source;
           if (!attribution.acquisitionId) attribution.acquisitionId = ref.acquisitionId;
         }
