@@ -74,7 +74,7 @@
       </ul>
 
       <h2>What ThumbGate adds</h2>
-      <p>ThumbGate is the tool-call-boundary enforcement layer. It runs as an MCP server on the same VPS as your Multica-hosted agent and maintains a local SQLite lesson database at <code class="inline">.thumbgate/memory.sqlite</code>. Every thumbs-down becomes a row. On every subsequent tool call, ThumbGate checks the proposed call against the DB, flags and logs the decision, and hard-blocks the catastrophic classes by default — secret exfiltration (writes to <code class="inline">.env</code>), <code class="inline">rm -rf</code>-class irreversible filesystem commands, and supply-chain risks like <code class="inline">curl ... | sh</code> — before the command executes. Everything else (<code class="inline">git push --force</code>, destructive SQL, cloud mutations) warns by default and hard-blocks when you set <code class="inline">THUMBGATE_STRICT_ENFORCEMENT=1</code>.</p>
+      <p>ThumbGate is the tool-call-boundary enforcement layer. It runs as an MCP server on the same VPS as your Multica-hosted agent and maintains a local SQLite lesson database at <code class="inline">.thumbgate/memory.sqlite</code>. Every thumbs-down becomes a row. On every subsequent tool call, ThumbGate checks the proposed call against the DB, flags and logs the decision, and hard-blocks secret exfiltration (writes to <code class="inline">.env</code>) and attempts to disable ThumbGate itself by default — before the command executes. Everything else (<code class="inline">rm -rf</code>-class irreversible filesystem commands, supply-chain risks like <code class="inline">curl ... | sh</code>, <code class="inline">git push --force</code>, destructive SQL, cloud mutations) warns by default and hard-blocks when you set <code class="inline">THUMBGATE_STRICT_ENFORCEMENT=1</code>.</p>
       <p>No cloud service, no account, no vendor lock-in. The lesson DB lives next to the agent on your VPS.</p>
 
       <h2>Install inside Multica</h2>
@@ -97,7 +97,7 @@ npx thumbgate init --agent opencode</code></pre>
       <p>Multica's autopilot creates an Issue on each scheduled run, which the assigned agent picks up. The agent runs in a fresh session every time, which is precisely why prompt-level rules decay. ThumbGate's lesson DB is the piece of memory that survives the session reset:</p>
       <ul>
         <li>Session 1: autopilot fires, agent proposes bad pattern, you thumbs-down.</li>
-        <li>Session 2 (tomorrow 9am): autopilot fires, agent proposes the same pattern, PreToolUse hook reads the DB and flags the call (hard-blocking it for the catastrophic classes, or for every rule when <code class="inline">THUMBGATE_STRICT_ENFORCEMENT=1</code>), the agent sees the warning and tries a different approach — minimal token spend on the repeat.</li>
+        <li>Session 2 (tomorrow 9am): autopilot fires, agent proposes the same pattern, PreToolUse hook reads the DB and flags the call (hard-blocking it for secret exfiltration and guardrail-tampering by default, or for every rule when <code class="inline">THUMBGATE_STRICT_ENFORCEMENT=1</code>), the agent sees the warning and tries a different approach — minimal token spend on the repeat.</li>
       </ul>
 
       <h2>Local-only vs VPS tradeoffs</h2>
