@@ -63,6 +63,40 @@ const LEGACY_THUMBGATE_PRICING_PATTERNS = [
     pattern: /founder[- ]license/i,
   },
 ];
+const FALSE_PUBLIC_CLAIM_PATTERNS = [
+  {
+    label: 'single thumbs-down guarantee',
+    pattern: /thumbs-down once, caught every time|one thumbs-down\s*=\s*one reusable check|learns from every mistake/i,
+  },
+  {
+    label: 'pre-model enforcement claim',
+    pattern: /before the model sees (?:it|them)|zero tokens (?:spent|used)/i,
+  },
+  {
+    label: 'unsupported setup-time metric',
+    pattern: /block your first repeated AI mistake in 5 minutes|install in 30 seconds|hit your first check in 60 seconds/i,
+  },
+  {
+    label: 'stale gate-count metric',
+    pattern: /checks:\s*36 active/i,
+  },
+  {
+    label: 'automatic cross-agent enforcement claim',
+    pattern: /one install, every agent|enforcement out of the box/i,
+  },
+  {
+    label: 'overbroad audit claim',
+    pattern: /every block names the matched rule, source lesson, tool call, and audit event|logs every decision/i,
+  },
+  {
+    label: 'overbroad default self-protection claim',
+    pattern: /hard-block(?:s|ing)? secret exfiltration and guardrail-tampering by default/i,
+  },
+  {
+    label: 'unshipped hosted Enterprise promise',
+    pattern: /<li><strong>(?:shared lesson database|org dashboard|shared enforcement memory|audit-grade decision trail)<\/strong>/i,
+  },
+];
 
 function read(rel) {
   const full = path.join(ROOT, rel);
@@ -111,6 +145,7 @@ async function main() {
   const proHtml = read('public/pro.html') || '';
   const readmeMd = read('README.md') || '';
   const commercialTruth = read('docs/COMMERCIAL_TRUTH.md') || '';
+  const marketingCopy = read('docs/MARKETING_COPY_CONGRUENCE.md') || '';
   const docsLandingHtml = read('docs/landing-page.html') || '';
   const agentsMd = read('AGENTS.md') || '';
   const claudeMd = read('CLAUDE.md') || '';
@@ -245,8 +280,16 @@ async function main() {
     'docs/COMMERCIAL_TRUTH.md must record the Enterprise tier'
   );
   check(
-    /shared lessons and org visibility/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must mention shared lessons and org visibility'
+    /accepted .*feedback becomes history-aware local lessons/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must describe accepted feedback becoming local lessons'
+  );
+  check(
+    /hard-block detected secret leaks/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must describe the narrow default secret-leak deny'
+  );
+  check(
+    /Enterprise rollout is scoped after intake/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must keep Enterprise intake-scoped'
   );
   check(
     /\$19\/mo or \$149\/yr/i.test(readmeMd),
@@ -279,12 +322,12 @@ async function main() {
     );
   }
   check(
-    /shared hosted lesson db/i.test(readmeMd),
-    'README.md must describe the shared hosted Enterprise lesson database'
+    /Hosted team lesson sync \| — \| — \| Not general availability/i.test(readmeMd),
+    'README.md must state that hosted team lesson sync is not general availability'
   );
   check(
-    /org dashboard/i.test(readmeMd),
-    'README.md must describe the Enterprise org dashboard'
+    /Hosted org dashboard \| — \| — \| Not general availability/i.test(readmeMd),
+    'README.md must state that the hosted org dashboard is not general availability'
   );
   check(
     /history-aware/i.test(readmeMd),
@@ -324,12 +367,12 @@ async function main() {
     'public/index.html must expose the Enterprise workflow intake path'
   );
   check(
-    /shared lesson db|shared lesson database/i.test(landingHtml),
-    'public/index.html must describe the shared Enterprise lesson database'
+    /Hosted team lesson sync[\s\S]{0,500}Not GA/i.test(landingHtml),
+    'public/index.html must label hosted team lesson sync as not GA'
   );
   check(
-    /org dashboard/i.test(landingHtml),
-    'public/index.html must describe the Enterprise org dashboard'
+    /Hosted org dashboard[\s\S]{0,500}Not GA/i.test(landingHtml),
+    'public/index.html must label the hosted org dashboard as not GA'
   );
   check(
     /personal local dashboard/i.test(landingHtml),
@@ -384,17 +427,39 @@ async function main() {
     'config/github-about.json metaDescription must mention thumbs-down feedback'
   );
   check(
-    /history-aware lessons/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must mention history-aware lessons'
+    /history-aware local lessons/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must mention history-aware local lessons'
   );
   check(
-    /agent governance/i.test(githubAbout.githubDescription),
-    'config/github-about.json githubDescription must mention agent governance'
+    /ThumbGate Pre-Action Checks/i.test(githubAbout.githubDescription),
+    'config/github-about.json githubDescription must lead with ThumbGate Pre-Action Checks'
   );
   check(
     /pre-action checks|shared lessons|team safeguards/i.test(githubAbout.githubDescription),
     'config/github-about.json githubDescription must preserve the GitHub repo positioning'
   );
+  check(
+    /Source:\s*hosted-billing-summary/i.test(commercialTruth)
+      && /local-fallback/i.test(commercialTruth)
+      && /401/.test(commercialTruth),
+    'docs/COMMERCIAL_TRUTH.md must preserve the authenticated-telemetry boundary for traction claims'
+  );
+  check(
+    !githubAbout.topics.some((topic) => /(?:save-llm-tokens|reduce-llm-cost|ai-cost-optimization)/i.test(topic)),
+    'config/github-about.json topics must not advertise unmeasured token or cost savings'
+  );
+
+  for (const [surface, text] of Object.entries({
+    'README.md': readmeMd,
+    'public/index.html': landingHtml,
+    'docs/COMMERCIAL_TRUTH.md': commercialTruth,
+    'docs/MARKETING_COPY_CONGRUENCE.md': marketingCopy,
+    'package.json description': pkg.description,
+  })) {
+    for (const { label, pattern } of FALSE_PUBLIC_CLAIM_PATTERNS) {
+      check(!pattern.test(text), `${surface} contains ${label}`);
+    }
+  }
   // Product Hunt launch-kit checks removed 2026-06-06 — docs/marketing/
   // was deleted in the post-Reddit credibility cleanup. The live PH URL is
   // still pinned in CHANGELOG / README via separate checks.

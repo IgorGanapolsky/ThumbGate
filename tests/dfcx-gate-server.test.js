@@ -38,6 +38,8 @@ test('GET /health returns 200 ok', async () => {
 });
 
 test('POST routes through the gate; with no upstream a benign turn is allowed', async () => {
+  const evaluateGates = gates.evaluateGates;
+  gates.evaluateGates = () => null;
   const server = createServer();
   const port = await listen(server);
   try {
@@ -54,6 +56,7 @@ test('POST routes through the gate; with no upstream a benign turn is allowed', 
     const json = await res.json();
     assert.equal(json.session_info.parameters.thumbgate_blocked, false);
   } finally {
+    gates.evaluateGates = evaluateGates;
     await close(server);
   }
 });

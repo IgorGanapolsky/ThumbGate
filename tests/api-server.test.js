@@ -725,8 +725,11 @@ test('root serves the landing page by default', async () => {
 
   const body = await res.text();
   assert.match(body, /ThumbGate/);
-  assert.match(body, /self-improving/i);
-  assert.match(body, /learns from every mistake/i);
+  assert.match(body, /accepted feedback becomes local lessons/i);
+  assert.match(body, /recurring failures can become prevention rules/i);
+  assert.match(body, /warn by default/i);
+  assert.match(body, /strict mode/i);
+  assert.doesNotMatch(body, /learns from every mistake/i);
   assert.match(body, /npx thumbgate init/);
   assert.match(body, /Thompson Sampling/i);
   assert.match(body, /FAQPage/);

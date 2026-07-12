@@ -3,7 +3,7 @@
 /**
  * Landing-page congruence tests.
  *
- * Every bullet point on the Free/Pro/Team pricing columns must have either:
+ * Every bullet point on the Free/Pro/Enterprise pricing columns must have either:
  *   (a) code evidence it's actually implemented, or
  *   (b) explicit inclusion in the known-marketing-claims allowlist below.
  *
@@ -40,11 +40,6 @@ const PRO_BULLETS = extractTierBullets(
   INDEX_HTML,
   /<div class="tier"[^>]*>Pro<\/div>/,
 );
-const TEAM_BULLETS = extractTierBullets(
-  INDEX_HTML,
-  /<div class="tier"[^>]*>Team<\/div>/,
-);
-
 describe('Free tier bullets: extraction', () => {
   test('extracts at least 6 bullets from Free tier', () => {
     assert.ok(FREE_BULLETS, 'Free tier block not found');
@@ -95,14 +90,14 @@ describe('Free tier bullets: code-backed claims', () => {
     );
   });
 
-  test('"All MCP integrations" — auto-wire-hooks.js supports named agents', () => {
+  test('configured integration copy is backed by named auto-wire paths', () => {
     const src = fs.readFileSync(path.join(ROOT, 'scripts', 'auto-wire-hooks.js'), 'utf8');
     for (const agent of ['claude-code', 'codex', 'gemini']) {
       assert.ok(src.includes(`'${agent}'`), `auto-wire-hooks must support ${agent}`);
     }
   });
 
-  test('"PreToolUse hook blocking" — gates-engine run() produces hook output', () => {
+  test('PreToolUse evaluation copy is backed by gates-engine hook output', () => {
     const engine = require(path.join(ROOT, 'scripts', 'gates-engine.js'));
     assert.equal(typeof engine.run, 'function', 'run() must exist for PreToolUse hook');
     const out = engine.run({ tool_name: 'Bash', tool_input: { command: 'echo hi' } });
@@ -129,7 +124,7 @@ describe('Pro tier bullets: code-backed claims', () => {
     assert.ok(server.includes("'/v1/dpo/export'"),
       'POST /v1/dpo/export endpoint must be registered to back DPO export claim');
     assert.ok(
-      PRO_BULLETS.some((b) => /DPO training data export|DPO.*pairs/i.test(b)),
+      PRO_BULLETS.some((b) => /DPO (?:training data|preference-pair) export|DPO.*pairs/i.test(b)),
       'Pro bullet must mention DPO export',
     );
   });
@@ -151,7 +146,7 @@ describe('Pro tier bullets: code-backed claims', () => {
 
   test('"Visual check debugger" link deep-links to insights or gates tab', () => {
     // Find the href that immediately precedes "Visual check debugger" text
-    const m = INDEX_HTML.match(/href="([^"]+)"[^>]*>\s*Visual check debugger/);
+    const m = INDEX_HTML.match(/href="([^"]+)"[^>]*>[^<]*visual check debugger/i);
     assert.ok(m, 'Visual check debugger link not found');
     assert.match(
       m[1],
@@ -160,9 +155,9 @@ describe('Pro tier bullets: code-backed claims', () => {
     );
   });
 
-  test('"DPO training data export" link deep-links to export tab', () => {
-    const m = INDEX_HTML.match(/href="([^"]+)"[^>]*>\s*DPO training data export/);
-    assert.ok(m, 'DPO training data export link not found');
+  test('DPO preference-pair export link deep-links to export tab', () => {
+    const m = INDEX_HTML.match(/href="([^"]+)"[^>]*>\s*DPO preference-pair export/);
+    assert.ok(m, 'DPO preference-pair export link not found');
     assert.match(
       m[1],
       /dashboard(#|\?tab=)export/,
@@ -282,20 +277,24 @@ describe('Pro tier bullets: code-backed claims', () => {
   });
 });
 
-describe('Team tier bullets: code-backed claims', () => {
-  test('"Team lesson export/import" endpoints exist', () => {
+describe('Enterprise availability boundaries', () => {
+  test('operator-managed lesson export/import exists without claiming hosted sync', () => {
     const server = fs.readFileSync(path.join(ROOT, 'src', 'api', 'server.js'), 'utf8');
     assert.ok(server.includes("'/v1/lessons/export'"),
       'POST /v1/lessons/export endpoint must exist');
     assert.ok(server.includes("'/v1/lessons/import'"),
       'POST /v1/lessons/import endpoint must exist');
+    assert.match(INDEX_HTML, /Hosted team lesson sync[\s\S]{0,500}Not GA/i);
+    assert.doesNotMatch(INDEX_HTML, /<li><strong>Shared lesson database<\/strong>/i);
   });
 
-  test('"Org dashboard" script exists', () => {
+  test('local org report generator does not become a hosted org-dashboard claim', () => {
     assert.ok(
       fs.existsSync(path.join(ROOT, 'scripts', 'org-dashboard.js')),
-      'scripts/org-dashboard.js must exist to back org dashboard claim',
+      'scripts/org-dashboard.js must exist to back the local report claim',
     );
+    assert.match(INDEX_HTML, /Hosted org dashboard[\s\S]{0,500}Not GA/i);
+    assert.doesNotMatch(INDEX_HTML, /<li><strong>Org dashboard<\/strong>/i);
   });
 
   test('"Check template library" config exists', () => {

@@ -12,16 +12,16 @@ __GOOGLE_SITE_VERIFICATION_META__
 <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
 <meta property="og:image" content="/og.png">
 <title>ThumbGate — Pre-action checks for AI coding agents</title>
-<meta name="description" content="ThumbGate is the pre-action governance runtime for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode): 👍 thumbs up and 👎 thumbs down feedback become history-aware lessons stored locally; Enterprise adds shared lessons and org visibility. PreToolUse checks flag and log risky tool calls — hard-blocking secret exfiltration by default and flagging the rest, with strict mode to hard-block every rule.">
-<meta property="og:title" content="ThumbGate — Stop paying for the same AI mistake twice">
-<meta property="og:description" content="Frontier LLMs are expensive, opaque, and unreliable in production. ThumbGate gates risky agent actions before they run: workflow shape, inspection evidence, token budget, and repeated-failure memory in one pre-action check.">
+<meta name="description" content="ThumbGate is the local pre-action governance runtime for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode): accepted 👍 thumbs-up and 👎 thumbs-down feedback becomes history-aware local lessons; repeated failures can become prevention rules. PreToolUse checks flag and log risky tool calls, hard-block detected secret leaks, and block matching actions in strict mode. Pro is for individual operators; Enterprise rollout is scoped after intake.">
+<meta property="og:title" content="ThumbGate — Inspect risky AI-agent actions before execution">
+<meta property="og:description" content="ThumbGate evaluates proposed tool calls before execution, records allow/warn/deny decisions, hard-blocks detected secret leaks, and supports strict enforcement for matched rules.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="__APP_ORIGIN__/">
 <meta property="og:image" content="https://thumbgate.ai/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://thumbgate.ai/og.png">
 <meta name="thumbgate-version" content="1.28.0">
-<meta name="keywords" content="ThumbGate, thumbgate, AI agent orchestration, AI experience orchestration, agentic development cycle, AC/DC framework, Guide Generate Verify Solve, agent enforcement layer, save LLM tokens, reduce Claude API cost, reduce OpenAI cost, AI agent token savings, prevent LLM retries, prevent hallucination retries, stop AI token waste, pre-action checks, agent governance, Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, workflow hardening, context engineering, AI authenticity, brand authenticity AI">
+<meta name="keywords" content="ThumbGate, thumbgate, AI agent orchestration, AI experience orchestration, agentic development cycle, AC/DC framework, Guide Generate Verify Solve, agent enforcement layer, pre-action checks, agent governance, Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, workflow hardening, context engineering, AI authenticity, brand authenticity AI">
 <link rel="canonical" href="__APP_ORIGIN__/">
 <link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -71,7 +71,7 @@ __GA_BOOTSTRAP__
   "alternateName": "thumbgate",
   "url": "https://thumbgate.ai",
   "logo": "https://thumbgate.ai/assets/brand/thumbgate-logo-1200x360.png",
-  "description": "ThumbGate ships pre-action gates for AI coding agents. Open-source CLI plus PreToolUse hooks that capture feedback, promote it to memory, generate prevention rules, and flag repeated mistakes before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode — hard-blocking secret exfiltration by default and every rule under strict mode.",
+  "description": "ThumbGate ships local PreToolUse checks for AI coding agents. Accepted feedback becomes local lessons, recurring failures can become prevention rules, risky tool calls warn and log by default, detected secret leaks hard-block, and strict mode blocks matching actions.",
   "founder": {
     "@type": "Person",
     "name": "Igor Ganapolsky",
@@ -91,44 +91,44 @@ __GA_BOOTSTRAP__
   "@type": "SoftwareApplication",
   "name": "ThumbGate",
   "alternateName": "thumbgate",
-  "description": "ThumbGate stops you from paying for the same AI mistake twice. It is machine-speed pre-action defense for coding agents: thumbs-up/down feedback becomes history-aware lessons, local prevention rules, actionable remediations, agent surface inventory, and Pre-Action Checks that inspect workflow shape, environment evidence, budget, and repeated-failure memory before the next tool call across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and any MCP-compatible agent.",
+  "description": "ThumbGate is a local pre-action governance runtime for AI coding agents. It stores accepted feedback as history-aware lessons, can derive prevention rules from recurring failures, and evaluates proposed tool calls before execution across configured Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and MCP-compatible integrations.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform, Node.js >=18.18.0",
   "license": "https://opensource.org/licenses/MIT",
   "url": "https://github.com/IgorGanapolsky/ThumbGate",
   "downloadUrl": "https://www.npmjs.com/package/thumbgate",
   "installUrl": "https://www.npmjs.com/package/thumbgate",
-  "dateModified": "2026-04-09",
+  "dateModified": "2026-07-12",
   "creator": {
     "@type": "Person",
     "name": "Igor Ganapolsky",
     "url": "https://github.com/IgorGanapolsky"
   },
   "featureList": [
-    "Prevent expensive AI mistakes — catch bad commands, destructive database actions, unsafe publishes, and risky API calls before execution",
-    "Make AI catch repeating mistakes — thumbs-down feedback becomes history-aware lessons and Pre-Action Checks",
-    "Turn AI into a reliable operator — checkpoint risky actions, enforce safe patterns, and keep proof of what changed",
+    "Inspect risky AI-agent actions — evaluate commands, database actions, publishes, and API calls before tool execution",
+    "Capture concrete corrections — accepted feedback becomes history-aware local lessons and recurring failures can become Pre-Action Checks",
+    "Keep reviewable decisions — checkpoint risky actions and record why a call was allowed, warned, or denied",
     "Agent surface inventory — see which tools, MCP surfaces, and policy sources are actually active before rollout",
     "Actionable remediations — rank the next highest-ROI fixes from real feedback and risk pressure",
-    "ThumbGate GPT for ChatGPT — preflight risky commands, refunds, deploys, and PR actions, capture typed thumbs-up/down lessons, and route users into local enforcement",
+    "ThumbGate GPT for ChatGPT — preflight risky commands, refunds, deploys, and PR actions, guide typed feedback capture, and route users to documented local setup",
     "Workflow Sentinel — score blast radius before PR, merge, release, and publish actions fire",
     "Workflow architecture checks — distinguish predefined workflows, parallel fan-out, and open-ended agents before execution",
     "Agentic development cycle control — maps Guide, Generate, Verify, and Solve into enforceable pre-action gates before risky tool calls execute",
     "Environment inspection evidence — require read-before-write, screenshots, API response checks, tests, or output validation for open-ended agent loops",
-    "Parallel branch budgets — prevent agent desktops and fan-out workflows from silently multiplying token spend",
-    "Docker Sandboxes routing — move high-risk local runs into isolated microVM-backed execution",
-    "Hosted sandbox dispatch — signed isolated lane for team automations",
+    "Parallel branch budgets — surface budget pressure from agent desktops and fan-out workflows",
+    "Docker Sandboxes routing — recommend isolated execution for high-risk local runs",
+    "Signed sandbox-dispatch mechanism — deployment-specific isolation helper that requires configuration and verification",
     "Domain Skill Packs — Stripe, Railway, database migration best practices",
-    "Progressive Disclosure — 3-tier L1/L2/L3 loading cuts skill-pack token cost per the disclosureSavings metric in scripts/skill-packs.js",
+    "Progressive Disclosure — 3-tier L1/L2/L3 loading reports estimated disclosureSavings from scripts/skill-packs.js",
     "Hallucination Detection — decomposes claims into verifiable sub-claims",
     "PII Scanner — blocks emails, credit cards, SSNs in feedback and exports",
     "Background Agent Governance — per-agent pass rates, CI auto-feedback",
-    "Memory Migration — imports Claude Code MEMORY.md into unlimited SQLite DB",
+    "Memory Migration — imports Claude Code MEMORY.md into the local lesson store",
     "Prompt-Level DLP — scans tool call inputs before execution",
-    "Per-Step Scoring — every check decision becomes a DPO/KTO training signal",
+    "Per-Step Scoring — check decisions can become DPO/KTO training signals",
     "HuggingFace Export — share PII-redacted agent traces as open training datasets",
     "Unified Context — one-call context assembly with session, lessons, guards, and code-graph",
-    "AI Authenticity Enforcement — every check reflects your team's actual standards, not generic AI patterns"
+    "AI Authenticity Enforcement — reviewable rules can encode operator-specific standards"
   ],
   "offers": [
     {
@@ -136,13 +136,13 @@ __GA_BOOTSTRAP__
       "name": "Free",
       "price": "0",
       "priceCurrency": "USD",
-      "description": "Free local CLI enforcement for one developer — captures, recalls, checks, and PreToolUse hook blocking after install"
+      "description": "Free local CLI for one developer: 2 feedback captures per day, 10 total, up to 3 active auto-promoted rules, no recall/search or exports, warn-and-log defaults, and hard blocking for detected secret leaks"
     },
     {
       "@type": "Offer",
       "name": "Enterprise",
       "priceCurrency": "USD",
-      "description": "Contact-sales tier with custom pricing scoped after intake: a workflow hardening sprint, shared hosted lesson database, org dashboard visibility, shared enforcement, approval boundaries, audit-grade decision trail, regulatory gate templates, Docker Sandboxes guidance for risky local autonomy, and dedicated onboarding for teams shipping AI-generated changes",
+      "description": "Contact-sales tier with custom pricing scoped after intake for one workflow's approval boundaries, rollback plan, evidence requirements, and rollout support. Hosted team lesson sync and a hosted org dashboard are not general-availability runtime features.",
       "url": "https://thumbgate.ai/#workflow-sprint-intake"
     },
     {
@@ -150,7 +150,7 @@ __GA_BOOTSTRAP__
       "name": "Pro Monthly",
       "price": "19",
       "priceCurrency": "USD",
-      "description": "Self-serve side lane for solo operators who want personal enforcement proof, a local dashboard, DPO export, team lesson export/import, and proof-ready exports",
+      "description": "Self-serve individual tier with unlimited rules and captures, history-aware recall and search, a personal local dashboard, DPO export, and operator-managed lesson export/import",
       "url": "https://thumbgate.ai/checkout/pro?plan_id=pro&landing_path=%2F"
     },
     {
@@ -243,14 +243,14 @@ __GA_BOOTSTRAP__
 {
   "@context": "https://schema.org",
   "@type": "HowTo",
-  "name": "How to make your AI coding agent self-improving",
-  "description": "Set up ThumbGate so your AI agent learns from every mistake and never repeats it — a self-improvement loop powered by feedback enforcement and a trained local intervention policy.",
+  "name": "How to add Pre-Action Checks to an AI coding agent",
+  "description": "Configure ThumbGate so accepted feedback becomes local lessons and recurring failures can become checks that evaluate proposed tool calls before execution.",
   "step": [
     {
       "@type": "HowToStep",
       "position": 1,
       "name": "Install ThumbGate",
-      "text": "Run: npx thumbgate init --agent claude-code. This installs the local CLI gateway and wires the agent's MCP transport automatically. No API key needed and the core path stays local."
+      "text": "Run: npx thumbgate init --agent claude-code. This installs the local CLI gateway and writes the supported agent integration. No API key is needed for the local path."
     },
     {
       "@type": "HowToStep",
@@ -262,16 +262,15 @@ __GA_BOOTSTRAP__
       "@type": "HowToStep",
       "position": 3,
       "name": "Prevention rules auto-generate",
-      "text": "After repeated failures in the same domain, ThumbGate auto-generates prevention rules. These rules are injected into the agent's context at the start of every session via the recall MCP tool."
+      "text": "After qualifying repeated failures in the same domain, ThumbGate can auto-generate prevention rules. Configured integrations can load the resulting local lessons and rules."
     },
     {
       "@type": "HowToStep",
       "position": 4,
       "name": "Pre-action checks flag the mistake",
-      "text": "When the agent tries to repeat a known-bad action, the PreToolUse hook fires, flags the tool call, and logs the decision before execution. Secret exfiltration and attempts to disable ThumbGate itself hard-block by default (rm -rf, force-push, and supply-chain are flagged by default); set THUMBGATE_STRICT_ENFORCEMENT=1 to hard-block every rule."
+      "text": "When a configured agent proposes a matching action, the PreToolUse hook records the decision before tool execution. Detected secret leaks and direct ThumbGate process-kill/environment-override commands deny by default; rm -rf, force-push, fetch-and-run, and direct guardrail-file edits warn by default. Set THUMBGATE_STRICT_ENFORCEMENT=1 to deny every matched blocking rule."
     }
   ],
-  "totalTime": "PT5M",
   "tool": { "@type": "SoftwareApplication", "name": "thumbgate", "url": "https://www.npmjs.com/package/thumbgate" }
 }
 </script>
@@ -286,7 +285,7 @@ __GA_BOOTSTRAP__
       "name": "Does ThumbGate support model fine-tuning?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. ThumbGate Pro includes a Model Hardening Advisor and LoRA JSONL export. Pro users can export their episodic memory as DPO (Direct Preference Optimization) pairs to fine-tune local models (like Llama 3 or Mistral) so they natively avoid repeating known mistakes."
+        "text": "ThumbGate Pro includes a Model Hardening Advisor plus LoRA JSONL and DPO preference-pair exports for use in a separate fine-tuning workflow. An export does not guarantee that a trained model will avoid a mistake; that outcome depends on the dataset, training process, model, and evaluation."
       }
     },
     {
@@ -294,23 +293,23 @@ __GA_BOOTSTRAP__
       "name": "How is ThumbGate different from model-training feedback loops?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Model-training feedback loops update weights. ThumbGate does not touch the model. It injects past feedback into context so your agent is shaped by your corrections in real time. Think of it as a behavioral immune system, not a training pipeline. Checks fire on every tool call and log the decision; secret exfiltration and attempts to disable ThumbGate itself hard-block by default, and strict mode (THUMBGATE_STRICT_ENFORCEMENT=1) hard-blocks every rule."
+        "text": "ThumbGate's runtime keeps lessons and rules outside the model. A configured hook evaluates proposed tool calls before execution. Detected secret exfiltration plus commands that kill the gate process or enable its bypass variable deny by default; matching destructive deletes, force-pushes, and fetch-and-run commands warn by default. Strict mode (THUMBGATE_STRICT_ENFORCEMENT=1) turns matching warning-mode checks into denies."
       }
     },
     {
       "@type": "Question",
-      "name": "What is the ThumbGate tech stack?",
+      "name": "What's the tech stack?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "SQLite+FTS5 lesson DB, MemAlign-inspired dual recall, Thompson Sampling for adaptive checks, LanceDB vector search with Hugging Face embeddings, ContextFS context assembly, Bayesian belief updates, and PreToolUse hook enforcement."
+        "text": "SQLite+FTS5 lesson DB for fast full-text search. MemAlign-inspired dual recall (principle-based rules + episodic context). Thompson Sampling for adaptive check sensitivity per failure domain. LanceDB + Apache Arrow for local vector search with Hugging Face embeddings. ContextFS for context assembly. Bayesian belief updates on each memory. Configured PreToolUse hooks evaluate known-bad actions before execution; detected secret exfiltration and gate kill/bypass commands deny by default, while strict mode also denies matching warning-mode checks. The local path requires no cloud account."
       }
     },
     {
       "@type": "Question",
-      "name": "What AI agents does ThumbGate work with?",
+      "name": "What AI agents and editors does this work with?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and any MCP-compatible agent."
+        "text": "ThumbGate includes documented integration paths for Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and OpenCode. Each agent must be configured through its hook or MCP setup; MCP compatibility alone does not install enforcement automatically. The Cursor runtime setup is npx thumbgate init --agent cursor, while the in-app Marketplace listing remains separate. VS Code can host an MCP-compatible agent, but this repo does not ship a standalone VS Code extension."
       }
     },
     {
@@ -318,7 +317,7 @@ __GA_BOOTSTRAP__
       "name": "Do I have to chat inside the ThumbGate GPT for enforcement?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "No. The ThumbGate GPT is the ChatGPT entrypoint for checking proposed actions, capturing thumbs-up/down lessons, and getting setup help. Use it for advice and checkpointing; hard enforcement still runs locally where the agent executes after npx thumbgate init."
+        "text": "No. The ThumbGate GPT is a ChatGPT entrypoint for checking proposed actions and getting setup help. Local allow, warn, or deny enforcement runs where the coding agent executes and requires npx thumbgate init plus the documented integration setup."
       }
     },
     {
@@ -326,15 +325,15 @@ __GA_BOOTSTRAP__
       "name": "When should I use Pro versus the Workflow Hardening Sprint?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Start with the setup guide if you only need the local path. Choose Pro after one real caught repeat when you want your own dashboard, DPO export, and proof-ready exports. Choose the Workflow Hardening Sprint when one workflow owner needs approval boundaries, rollback safety, and rollout proof before wider rollout."
+        "text": "Start with the setup guide if you only need the local path. Choose Pro when an individual operator wants higher limits, personal recall, a local dashboard, DPO export, and operator-managed lesson bundles. Choose the Workflow Hardening Sprint when one workflow owner needs to scope approval boundaries, rollback safety, and evidence requirements before a wider rollout claim."
       }
     },
     {
       "@type": "Question",
-      "name": "How does ThumbGate reduce host blast radius for high-risk local runs?",
+      "name": "How do we keep high-risk autonomous runs off the host?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "ThumbGate combines pre-action checks with execution guidance. Workflow Sentinel predicts risky local actions before they execute, and high-risk runs can be routed into Docker Sandboxes instead of running directly on the host. Enterprise workflows also have a signed hosted sandbox lane for isolated automation dispatch."
+        "text": "ThumbGate combines pre-action checks with execution guidance. Workflow Sentinel can recommend Docker Sandboxes for risky local actions. The package also contains a signed sandbox-dispatch mechanism, but each deployment must configure and verify that isolation boundary; it is not hosted team lesson sync or a generally available hosted org service."
       }
     },
     {
@@ -342,7 +341,7 @@ __GA_BOOTSTRAP__
       "name": "How are pre-action checks different from prompt rules?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Prompt rules are suggestions agents can ignore. Pre-Action Checks fire before execution via PreToolUse hooks — they flag and log every decision, and can block the action: secret exfiltration and attempts to disable ThumbGate itself hard-block by default, and strict mode (THUMBGATE_STRICT_ENFORCEMENT=1) hard-blocks every rule. Checks are auto-generated from feedback and use Thompson Sampling to adapt."
+        "text": "Prompt rules are a starting point, not a finish line. ThumbGate adds a human-feedback loop plus configured Pre-Action Checks at the tool-call boundary. The default policy denies detected secret exfiltration and gate kill/bypass commands while other matching high-risk checks warn; strict mode also denies matching warning-mode checks."
       }
     },
     {
@@ -350,31 +349,7 @@ __GA_BOOTSTRAP__
       "name": "How does ThumbGate fit the agentic development cycle?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Agentic development is converging around Guide, Generate, Verify, and Solve. ThumbGate adds the execution-control layer between those stages: project guidance and feedback become rules, generated tool calls are checked before execution, verification evidence is required for risky actions, and solved failures become reusable prevention gates."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How does ThumbGate prevent AI slop and protect brand authenticity?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "AI slop happens when agents act without human judgment as a check — generating repetitive, generic outputs that erode trust and dilute your brand. ThumbGate inserts human thumbs-up/down between AI intent and execution. Every thumbs-down becomes a prevention rule that flags the bad pattern on the next matching tool call. Every thumbs-up reinforces what 'good' looks like for your specific context. Your agent's outputs reflect your actual standards, not generic AI patterns. This is authenticity enforcement at the tool-call level."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How is ThumbGate different from SpecLock?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "SpecLock requires manually writing constraints or compiling them from a PRD. ThumbGate learns automatically from thumbs-up/down feedback and auto-generates prevention rules from repeated failures. SpecLock locks files from modification; ThumbGate flags specific actions (like force-push and rm -rf) before they execute and logs the decision — warning by default and hard-blocking under strict mode, while secret exfiltration and attempts to disable ThumbGate itself hard-block outright by default."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How is ThumbGate different from Mem0?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Mem0 is cloud-hosted memory for AI apps. ThumbGate is local-first enforcement. Mem0 remembers context but does not gate actions. ThumbGate captures feedback, promotes it to prevention rules, and flags tool calls that match known failure patterns via PreToolUse hooks — hard-blocking secret exfiltration by default, and every rule under strict mode."
+        "text": "Agentic development is not just generation. Teams need Guide, Generate, Verify, and Solve working as a repeatable loop. ThumbGate can serve as the pre-action execution gate: guidance and accepted feedback can become rules, generated tool calls are evaluated before execution, rules can require verification evidence, and recurring solved failures can become reusable prevention gates."
       }
     }
   ]
@@ -754,7 +729,7 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="hero-badge">👍 👎 Local-first · open-source · enterprise governance when agents touch real systems</div>
     <h1>Catch AI agents before they spend money, leak secrets, or break production.</h1>
-    <p class="hero-lede">Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and MCP tools now touch terminals, repos, databases, SaaS APIs, and cloud systems. ThumbGate checks the next tool call before it runs, flags repeated failures from your thumbs-down feedback and logs every decision — hard-blocking secret exfiltration and guardrail-tampering by default while flagging the other high-risk classes (rm -rf, force-push, supply-chain), with strict mode to hard-block every rule. The beachhead buyer is an enterprise engineering, security, or platform team that needs governed AI-agent execution before agents touch regulated or high-blast-radius workflows.</p>
+    <p class="hero-lede">Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and MCP tools can touch terminals, repos, databases, SaaS APIs, and cloud systems. After a configured agent proposes a tool call, ThumbGate evaluates it before execution and records the decision. The default policy denies detected secret exfiltration plus commands that kill the ThumbGate gate process or enable its bypass environment variable; other matched high-risk classes such as destructive deletes, force-pushes, and fetch-and-run commands warn by default. Strict mode turns matching warning-mode checks into denies. The beachhead buyer is an enterprise engineering, security, or platform team that needs governed AI-agent execution before agents touch regulated or high-blast-radius workflows.</p>
 
     <div class="hero-signals" aria-label="June 2026 buyer signals">
       <a class="signal-pill signal-down" href="#june-2026-proof">MCP tool risk</a>
@@ -815,7 +790,7 @@ __GA_BOOTSTRAP__
     </div>
     <figure style="max-width:760px;margin:32px auto 0;padding:20px 24px;border-left:3px solid var(--cyan);background:rgba(34,211,238,0.04);border-radius:0 8px 8px 0;">
       <blockquote style="margin:0;font-size:18px;line-height:1.5;color:var(--text);font-style:italic;">&ldquo;A better dashboard doesn&rsquo;t make the agents more reliable. The hard part isn&rsquo;t visibility. It&rsquo;s trust.&rdquo;</blockquote>
-      <figcaption style="margin-top:12px;font-size:13px;color:var(--text-muted);">— Rob May, CEO &amp; co-founder, Neurometric AI, in <a href="https://thenewstack.io/claude-code-agent-view/" target="_blank" rel="noopener" style="color:var(--cyan);">The New Stack</a> on Anthropic&rsquo;s Claude Code Agent View (May 2026). This is Rob May describing the industry, not an endorsement of ThumbGate. ThumbGate is our attempt at that trust problem: PreToolUse gates, thumbs-down to rule, and an audit trail on every interception.</figcaption>
+      <figcaption style="margin-top:12px;font-size:13px;color:var(--text-muted);">— Rob May, CEO &amp; co-founder, Neurometric AI, in <a href="https://thenewstack.io/claude-code-agent-view/" target="_blank" rel="noopener" style="color:var(--cyan);">The New Stack</a> on Anthropic&rsquo;s Claude Code Agent View (May 2026). This is Rob May describing the industry, not an endorsement of ThumbGate. ThumbGate addresses that trust problem with configured PreToolUse gates, accepted feedback, explicit prevention rules, and local decision records.</figcaption>
     </figure>
     <figure style="max-width:760px;margin:24px auto 0;padding:20px 24px;border-left:3px solid var(--cyan);background:rgba(34,211,238,0.04);border-radius:0 8px 8px 0;">
       <p style="margin:0 0 8px;font-size:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;">Local-first is the new default</p>
@@ -824,8 +799,8 @@ __GA_BOOTSTRAP__
     </figure>
     <div class="first-check-card" id="first-check">
       <div class="section-label" style="text-align:left;margin-bottom:8px;">First-Dollar Activation Path</div>
-      <h2>Block your first repeated AI mistake in 5 minutes.</h2>
-      <p>Install, give one thumbs-down, and let the PreToolUse hook stop that failure from rerunning. Upgrade only when you need dashboards, exports, or shared team enforcement.</p>
+      <h2>Run your first pre-action check locally.</h2>
+      <p>Install ThumbGate, capture concrete feedback, and let the configured PreToolUse hook flag a matching action before execution. Upgrade only when you need higher limits, recall, a personal dashboard, or exports.</p>
       <div class="first-check-steps">
         <div class="first-check-step">
           <strong>1. Install ThumbGate</strong>
@@ -833,11 +808,11 @@ __GA_BOOTSTRAP__
         </div>
         <div class="first-check-step">
           <strong>2. Give feedback</strong>
-          <p>Use thumbs up for a good pattern and thumbs down for a failure. ThumbGate distills the correction into a concrete prevention rule.</p>
+          <p>Use thumbs up for a good pattern and thumbs down with concrete context for a failure. Accepted feedback becomes a local lesson; recurring failures can be promoted into prevention rules.</p>
         </div>
         <div class="first-check-step">
           <strong>3. The repeat gets flagged</strong>
-          <p>The next matching tool call is flagged and logged before execution, with a reason the agent can use to choose a safer plan — and hard-blocked outright for secret exfiltration and attempts to disable ThumbGate itself, or when you set THUMBGATE_STRICT_ENFORCEMENT=1.</p>
+          <p>A matching tool call is evaluated and recorded before execution, with a reason the agent can use to choose a safer plan. Detected secret exfiltration and commands that kill the gate process or enable its bypass variable are denied by default; strict mode also denies matching warning-mode checks.</p>
         </div>
       </div>
     </div>
@@ -855,11 +830,11 @@ __GA_BOOTSTRAP__
     </nav>
     <div class="marketing-test-copy" hidden>
       <div class="hero-thumbs">👍👎</div>
-      <a class="signal-pill signal-up">Thumbs-down once, caught every time</a>
-      <a class="signal-pill signal-down">Catch repeat hallucinations before the model sees them</a>
+      <a class="signal-pill signal-up">Accepted feedback becomes local lessons</a>
+      <a class="signal-pill signal-down">Evaluate proposed tool calls before execution</a>
       <p class="hero-persona">For consultancies, platform teams, and AI product teams that want workflow governance, CLI-first rollout, and a reliable operator.</p>
       <p>Have one AI-agent failure that keeps repeating? Start with one real workflow, one repeated failure pattern, enforceable pre-action gates, and a short audit trail your team can keep.</p>
-      <p>Prove one caught repeat before asking anyone to buy. Give <code>thumbs up</code> when the agent follows your standards, <code>thumbs down</code> when it misses. Upgrade after one real caught repeat.</p>
+      <p>Prove one evaluated repeat before asking anyone to buy. Give <code>thumbs up</code> when the agent follows your standards and a concrete <code>thumbs down</code> when it misses. Upgrade when the individual operator needs higher limits, recall, a personal dashboard, or exports.</p>
       <p>Workflow governance for isolated execution: ThumbGate pairs policy checks with Docker Sandboxes, signed hosted sandbox dispatch, Changeset evidence, and exact main-branch merge commit verification before release claims ship.</p>
       <!--
         Hidden test/asserter strings — required by tests/public-landing.test.js regex assertions
@@ -872,7 +847,7 @@ __GA_BOOTSTRAP__
         <span data-cta="hero_workflow_sprint_intake">ctaId: 'hero_workflow_sprint' ctaId: 'hero_workflow_sprint_recovery_intake' workflow_sprint_intake_started workflow_sprint_recovery_intake_clicked hero_workflow_sprint_recovery_intake</span>
         <span data-anchor="dashboard-preview">dashboard-preview What your Pro dashboard looks like check:no-force-push</span>
         <span data-anchor="team-intake-form">Start Enterprise Pilot Intake id="team-pilot-intake-form" data-team-intake-form name="ctaPlacement" value="team_visible_intake" name="utmMedium" value="visible_team_intake" name="planId" value="team" name="ctaId" value="workflow_sprint_intake" Enterprise checkout happens after scope. team_workflow_sprint_recovery_intake scope_first workflow_sprint_intake_started workflow_sprint_intake_submit_attempted pricing_team_intake team_intake_started</span>
-        <span data-anchor="chatgpt-context">No, you do not have to chat inside the GPT forever. ChatGPT is the discovery and memory surface. Do not rely on ChatGPT's native rating buttons for ThumbGate memory. Explore GPTs choose the GPT by Igor Ganapolsky Programming Do I have to chat inside the ThumbGate GPT for enforcement? capture thumbs-up/down lessons Real blocking for coding agents still runs locally adapters/chatgpt/INSTALL.md Native ChatGPT rating buttons are not the ThumbGate capture path. thumbs up: this review named exact files, commands, and tests. thumbs down: the answer ignored my request.</span>
+        <span data-anchor="chatgpt-context">No, you do not have to chat inside the GPT forever. ChatGPT is a discovery and checkpointing surface. Do not rely on ChatGPT's native rating buttons for ThumbGate memory. Explore GPTs choose the GPT by Igor Ganapolsky Programming Do I have to chat inside the ThumbGate GPT for enforcement? capture typed thumbs-up/down feedback Local allow/warn/deny enforcement for coding agents requires a configured integration adapters/chatgpt/INSTALL.md Native ChatGPT rating buttons are not the ThumbGate capture path. thumbs up: this review named exact files, commands, and tests. thumbs down: the answer ignored my request.</span>
       </div>
     </div>
   </div>
@@ -881,7 +856,7 @@ __GA_BOOTSTRAP__
 <section class="compatibility" id="why-not-diy" aria-label="Why not write your own hooks">
   <div class="container">
     <h2>“Why not just write my own PreToolUse hooks?”</h2>
-    <p class="hero-lede" style="max-width:760px;margin:0 auto 18px;">You can — on one machine, for one agent, until the next breaking change. ThumbGate is that idea, maintained: a 👎 becomes a rule that <strong>propagates across every configured agent</strong> — Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode — in the install scope you choose, with adapters kept current so you’re not patching shell scripts each release. Hand-written hooks don’t learn, don’t create auditable proof, and don’t become shared team policy without a managed rollout.</p>
+    <p class="hero-lede" style="max-width:760px;margin:0 auto 18px;">You can — on one machine, for one agent, until the next breaking change. ThumbGate is that idea, maintained: accepted feedback becomes local lessons, recurring failures can become explicit rules, and those rules can be reused by supported agents configured against the same local install scope. Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode each require their documented integration setup. Hand-written hooks do not automatically provide ThumbGate's lesson store, rule promotion, local decision records, or adapter tests.</p>
     <p><a href="/compare/claude-code-hooks">See ThumbGate vs. hand-written hooks →</a></p>
   </div>
 </section>
@@ -894,11 +869,11 @@ __GA_BOOTSTRAP__
     <div class="agent-grid">
       <div class="agent-card">
         <h3>MCP and tool lockdown</h3>
-        <p>As MCP servers and hosted tools spread, the failure mode is no longer just a bad answer. It is an agent calling the wrong tool with real developer permissions. ThumbGate sells the local allow/block layer before the tool call executes.</p>
+        <p>As MCP servers and hosted tools spread, the failure mode is no longer just a bad answer. It is an agent calling the wrong tool with real developer permissions. ThumbGate provides a local allow, warn, or deny decision before a configured tool call executes.</p>
       </div>
       <div class="agent-card">
         <h3>Managed agents need receipts</h3>
-        <p>Managed background agents can multiply output, but every extra autonomous run needs evidence, rollback boundaries, and approval rules. ThumbGate turns “agent did work” into “this exact risky action was allowed or blocked for this reason.”</p>
+        <p>Managed background agents can multiply output, but every extra autonomous run needs evidence, rollback boundaries, and approval rules. ThumbGate records why a configured pre-action check allowed, warned on, or denied a proposed action.</p>
       </div>
       <div class="agent-card">
         <h3>Tokenmaxxing backlash</h3>
@@ -906,11 +881,11 @@ __GA_BOOTSTRAP__
       </div>
       <div class="agent-card">
         <h3>Production code by AI</h3>
-        <p>When teams claim most new production code is AI-authored, the real enterprise question becomes auditability. ThumbGate maps corrections to prevention rules, then records the enforcement evidence reviewers need.</p>
+        <p>When teams claim most new production code is AI-authored, the real enterprise question becomes auditability. ThumbGate can promote accepted recurring corrections into prevention rules and retain the local gate evidence available to reviewers.</p>
       </div>
     </div>
     <div style="margin:22px auto 0;max-width:900px;border:1px solid rgba(74,222,128,0.26);border-radius:8px;background:rgba(74,222,128,0.07);padding:16px 18px;color:var(--text-muted);">
-      <strong style="color:var(--green);">Data-science posture:</strong> use the free CLI as acquisition, treat Pro checkout starts and workflow-intake submissions as intent, and promote only the offer whose lower credible conversion bound beats zero. With the current low-traffic data, the next experiment should optimize clarity and qualified intake before scaling paid traffic.
+      <strong style="color:var(--green);">Data-science posture:</strong> treat Pro checkout starts and workflow-intake submissions as intent, not revenue. Make conversion or traction claims only from authenticated billing and analytics telemetry; this page does not publish a current customer or revenue count.
     </div>
   </div>
 </section>
@@ -933,12 +908,12 @@ __GA_BOOTSTRAP__
       </a>
       <a class="cycle-card" href="/learn/ac-dc-runtime-enforcement" rel="noopener" aria-label="Read the AC/DC mapping framework article" onclick="try{posthog.capture('agentic_cycle_card_click',{stage:'verify'})}catch(_){}">
         <h3>Verify</h3>
-        <p>Pre-Action Checks require inspection evidence, tests, CI, screenshots, API responses, or human approval before high-risk actions proceed.</p>
+        <p>Pre-Action Checks can require inspection evidence, tests, CI, screenshots, API responses, or human approval for configured high-risk actions.</p>
         <div class="card-arrow">Read the AC/DC map →</div>
       </a>
       <a class="cycle-card" href="/lessons" rel="noopener" aria-label="Explore the lessons library and generated rules" onclick="try{posthog.capture('agentic_cycle_card_click',{stage:'solve'})}catch(_){}">
         <h3>Solve</h3>
-        <p>Blocked failures and accepted fixes become lessons, shared rules, DPO exports, and audit events so the same mistake is not paid for again.</p>
+        <p>Accepted feedback can become local lessons and recurring failures can become rules. Pro operators can export DPO data and lesson bundles for separately reviewed reuse.</p>
         <div class="card-arrow">Explore the lessons →</div>
       </a>
     </div>
@@ -957,20 +932,20 @@ __GA_BOOTSTRAP__
         <div class="code-dot red"></div>
         <div class="code-dot yellow"></div>
         <div class="code-dot green"></div>
-        <span>terminal — see it work in 30 seconds</span>
+        <span>terminal — local setup</span>
       </div>
       <div class="code-body" style="font-size:14px;">
-        <div><span class="comment"># Install in 30 seconds</span></div>
+        <div><span class="comment"># Install the local CLI</span></div>
         <div><span class="fn">npx</span> thumbgate init</div>
         <div>&nbsp;</div>
         <div><span class="comment"># Your agent tries to delete production db...</span></div>
         <div><span class="keyword">⚠️ Check flagged:</span> <span class="string">"Never run DROP on production tables"</span> <span class="comment"># blocks under strict mode</span></div>
-        <div><span class="comment"># Rule auto-generated from your previous 👎</span></div>
+        <div><span class="comment"># Rule promoted from accepted recurring feedback</span></div>
         <div>&nbsp;</div>
-        <div><span class="comment"># That's it. One thumbs-down = one reusable check.</span></div>
+        <div><span class="comment"># Matching warning-mode checks deny when strict mode is enabled.</span></div>
       </div>
     </div>
-    <p style="text-align:center;margin-top:16px;font-size:14px;color:var(--text-muted);">This is the entire product in 2 lines. Install, give feedback, checks auto-generate.</p>
+    <p style="text-align:center;margin-top:16px;font-size:14px;color:var(--text-muted);">Install the local runtime, capture concrete feedback, and inspect the resulting lessons and checks.</p>
   </div>
 </section>
 
@@ -978,11 +953,11 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="section-label">Deterministic Prevention</div>
     <h2 class="section-title">Native thumbs are a black box. ThumbGate is the inspectable control layer.</h2>
-    <p style="text-align:center;font-size:16px;color:var(--text-muted);max-width:900px;margin:0 auto 28px;line-height:1.7;">Codex, Claude Code, ChatGPT, and other agent surfaces can collect preference signals, but you usually cannot see exactly what changed, which rule will fire, or why a future tool call is allowed. ThumbGate keeps the prevention layer outside the model: typed feedback becomes a local lesson, repeated mistakes become explicit rules, and every block names the matched rule, source lesson, tool call, and audit event.</p>
+    <p style="text-align:center;font-size:16px;color:var(--text-muted);max-width:900px;margin:0 auto 28px;line-height:1.7;">Codex, Claude Code, ChatGPT, and other agent surfaces can collect preference signals, but you usually cannot see exactly what changed, which rule will fire, or why a future tool call is allowed. ThumbGate keeps the prevention layer outside the model: accepted typed feedback becomes a local lesson, recurring failures can become explicit rules, and gate results expose the matched check and decision reason available at evaluation time.</p>
     <div class="agent-grid">
       <div class="agent-card">
         <h3>Black-box memory</h3>
-        <p>Native thumbs and vendor memories may improve future behavior, but they do not give teams a deterministic allow/block contract at the moment an agent touches files, terminals, APIs, or CI.</p>
+        <p>Native thumbs and vendor memories may improve future behavior, but they do not provide ThumbGate's explicit local allow, warn, or deny contract at the moment a configured agent touches files, terminals, APIs, or CI.</p>
       </div>
       <div class="agent-card">
         <h3>Inspectable ThumbGate memory</h3>
@@ -999,7 +974,7 @@ __GA_BOOTSTRAP__
         <li><strong>Agent security is now mainstream risk.</strong> Coding agents run shell commands, write files, query databases, and chain actions with developer permissions, so unattended autonomy needs a local policy boundary.</li>
         <li><strong>MCP adoption is accelerating.</strong> More tools are becoming agent-callable through shared protocols, which means one cross-agent governance layer beats one-off prompt rules per app.</li>
         <li><strong>Managed-agent output needs audit evidence.</strong> Background agents, subagents, and workflow runners can ship more work, but buyers need receipts for what was blocked, approved, and verified.</li>
-        <li><strong>Repeated failures waste cash and trust.</strong> Every repeat burns tokens, review time, and release confidence. ThumbGate turns the first correction into a reusable prevention check.</li>
+        <li><strong>Repeated failures waste cash and trust.</strong> Repeats can burn tokens, review time, and release confidence. ThumbGate can promote accepted recurring feedback into a reusable prevention check.</li>
       </ul>
       <p style="margin:12px 0 0;font-size:13px;color:var(--text-dim);">Sources to verify the market timing: <a href="https://www.docker.com/blog/ai-coding-agent-horror-stories-security-risks/" target="_blank" rel="noopener" style="color:var(--cyan);">Docker on AI coding agent security risks</a>, <a href="https://www.techradar.com/pro/how-ai-agents-are-wrecking-havoc-in-legacy-security-setups-and-enterprises-are-catching-up" target="_blank" rel="noopener" style="color:var(--cyan);">TechRadar on enterprise agent security pressure</a>, and <a href="https://www.techradar.com/pro/zendesk-becomes-the-latest-to-adopt-mcp-to-futureproof-customers-in-the-ai-first-era" target="_blank" rel="noopener" style="color:var(--cyan);">current MCP adoption coverage</a>.</p>
     </div>
@@ -1029,7 +1004,7 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="gpt-panel" style="border-color:rgba(217,119,6,0.3);background:linear-gradient(135deg, rgba(217,119,6,0.06) 0%, rgba(34,211,238,0.04) 100%);">
       <div class="section-label" style="text-align:left;color:#d97706;">Claude Code · Claude Desktop · Claude Extension</div>
-      <h2>The fastest path for Claude users: install the extension and start blocking mistakes.</h2>
+      <h2>Configure ThumbGate for Claude Code or Claude Desktop.</h2>
       <p>ThumbGate ships a published Claude Desktop extension bundle (<code>.mcpb</code>) you can install today. Claude Code users can also add the repo marketplace plugin immediately. No waiting for directory approval.</p>
       <div class="gpt-steps">
         <div class="gpt-step">
@@ -1042,7 +1017,7 @@ __GA_BOOTSTRAP__
         </div>
         <div class="gpt-step">
           <strong>3. Give feedback, checks auto-generate</strong>
-          <p>Type <code>thumbs down</code> when Claude makes a mistake. ThumbGate distills a lesson from up to 8 prior entries and flags the pattern on the next matching tool call via PreToolUse hooks — hard-blocking secret exfiltration by default, and every rule under strict mode.</p>
+          <p>Type a concrete <code>thumbs down</code> when Claude makes a mistake. Accepted feedback can distill a lesson from up to 8 prior entries, and recurring failures can become rules evaluated by the configured PreToolUse hook. Detected secret exfiltration is denied by default; strict mode also denies matching warning-mode checks.</p>
         </div>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
@@ -1061,7 +1036,7 @@ __GA_BOOTSTRAP__
     <div class="gpt-panel">
       <div class="section-label" style="text-align:left;">ChatGPT Entry Point · Live ThumbGate GPT for ChatGPT</div>
       <h2>Use the GPT as a preflight desk for risky commands, refunds, deploys, and PR actions.</h2>
-      <p>ThumbGate should meet users where they already ask AI for help. The live GPT is the fastest way to preflight a risky action, capture a typed thumbs-up/down lesson, and prove the enforcement loop before installing anything. As ChatGPT ads roll out, this matters more: ChatGPT can stay the discovery and checkpointing layer, while ThumbGate remains the hard execution boundary after <code>npx thumbgate init</code>.</p>
+      <p>The live GPT is a ChatGPT entrypoint for preflighting a proposed action and finding setup guidance. It does not create a local execution boundary by itself. Local allow, warn, or deny decisions require <code>npx thumbgate init</code> plus the documented integration for the agent that executes the tool call.</p>
       <div class="gpt-steps">
         <div class="gpt-step">
           <strong>1. Open the live GPT</strong>
@@ -1073,7 +1048,7 @@ __GA_BOOTSTRAP__
         </div>
         <div class="gpt-step">
           <strong>3. Enforce locally</strong>
-          <p>Run <code>npx thumbgate init</code> in the repo so Pre-Action Checks flag repeated mistakes (and hard-block secret exfiltration and guardrail-tampering) before the coding agent executes them.</p>
+          <p>Run <code>npx thumbgate init</code> in the repo and configure the documented agent integration so Pre-Action Checks evaluate proposed tool calls before execution. The default policy denies detected secret exfiltration plus commands that kill the gate process or enable its bypass variable.</p>
         </div>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
@@ -1081,7 +1056,7 @@ __GA_BOOTSTRAP__
         <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/chatgpt/INSTALL.md" class="btn-free" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">ChatGPT Actions setup</a>
         <a href="/guides/chatgpt-ads-trust" class="btn-free" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">Why ChatGPT ads need checks</a>
       </div>
-      <p class="gpt-note"><strong>Find it fast:</strong> if the direct link does not open, go to <strong>Explore GPTs</strong>, search <code>ThumbGate</code>, and choose the GPT by Igor Ganapolsky in <strong>Programming</strong>. <strong>Plain English rule:</strong> ChatGPT is the discovery and memory surface for advice, checkpointing, and typed feedback capture. One typed signal becomes one remembered rule. The hard Reliability Gateway still runs in the local agent or CI lane.</p>
+      <p class="gpt-note"><strong>Find it fast:</strong> if the direct link does not open, go to <strong>Explore GPTs</strong>, search <code>ThumbGate</code>, and choose the GPT by Igor Ganapolsky in <strong>Programming</strong>. <strong>Plain English rule:</strong> ChatGPT is the discovery and checkpointing surface. Accepted typed feedback can become a local lesson; recurring failures can become rules. The Reliability Gateway still runs in the configured local agent or CI lane.</p>
     </div>
   </div>
 </section>
@@ -1103,7 +1078,7 @@ __GA_BOOTSTRAP__
       </a>
       <a class="compat-card" href="/guide" rel="noopener">
         <h3>🤖 AI CLIs</h3>
-        <p>Claude Code, Codex, Gemini CLI, Amp, and OpenCode all use the same gateway and memory model. Any MCP-compatible agent gets pre-action checks, feedback memory, and enforcement out of the box.</p>
+        <p>Claude Code, Codex, Gemini CLI, Amp, and OpenCode can use the same gateway and memory model after their documented integration is configured. Other MCP-compatible agents require an equivalent MCP or hook setup.</p>
         <div class="card-arrow">Open the setup guide →</div>
       </a>
       <a class="compat-card seo-card" href="/guides/hermes-agent-guardrails" rel="noopener">
@@ -1123,7 +1098,7 @@ __GA_BOOTSTRAP__
       </a>
       <a class="compat-card seo-card" href="/guides/gcp-mcp-guardrails" rel="noopener">
         <h3>☁️ Google Data Agent Kit</h3>
-        <p>Cloud Next 2026 shipped BigQuery, Spanner, AlloyDB, and Cloud SQL as MCP tool calls into Claude Code, Codex, and Gemini CLI. ThumbGate checks the destructive ones — DROP on prod datasets, unscoped DELETEs, IAM escalation — before they fire.</p>
+        <p>When database and IAM operations are exposed as agent tool calls, ThumbGate can evaluate configured patterns such as production DROP, unscoped DELETE, or IAM escalation before execution. The resulting action depends on the matched rule and enforcement mode.</p>
         <div class="card-arrow">Read the GCP guardrails guide →</div>
       </a>
       <a class="compat-card" href="/codex-plugin?utm_source=website&utm_medium=compatibility&utm_campaign=codex_plugin&cta_id=compat_codex_plugin&cta_placement=compatibility" rel="noopener" onclick="if(typeof posthog!=='undefined')posthog.capture('compat_codex_plugin_click',{cta:'open_codex_plugin_page'})">
@@ -1132,13 +1107,13 @@ __GA_BOOTSTRAP__
         <div class="card-arrow">Open the Codex install page →</div>
       </a>
       <a class="compat-card" href="/guides/cursor-prevent-repeated-mistakes" rel="noopener">
-        <h3>🎯 Cursor plugin <span style="font-size:12px;font-weight:500;color:var(--text-muted);">(Marketplace review pending)</span></h3>
-        <p>Drop the ThumbGate MCP config into <code>.cursor/mcp.json</code> and Cursor gets the same pre-action checks as Claude Code and Codex. Ships with bundled rules, commands, hooks, and agents. The runtime install works today via <code>npx thumbgate init --agent cursor</code>; the official Cursor Marketplace listing was submitted 2026-05-19 and is awaiting Cursor's manual review.</p>
+        <h3>🎯 Cursor integration</h3>
+        <p>Run <code>npx thumbgate init --agent cursor</code> or configure <code>.cursor/mcp.json</code> through the documented setup path. The npm runtime path is separate from any in-app Marketplace listing.</p>
         <div class="card-arrow">Read the Cursor guide →</div>
       </a>
       <a class="compat-card" href="/guide" rel="noopener">
         <h3>✏️ Editor workflows</h3>
-        <p>VS Code works when you run an MCP-compatible agent inside it (Continue, Cline, etc.). Any editor that speaks MCP stdio gets the same gateway.</p>
+        <p>VS Code can host an MCP-compatible agent such as Continue or Cline. Each editor or agent still requires its MCP stdio or hook configuration; this repo does not ship a standalone VS Code extension.</p>
         <div class="card-arrow">Open the setup guide →</div>
       </a>
       <a class="compat-card" href="https://mcp.so/server/thumbgate" target="_blank" rel="noopener" onclick="if(typeof posthog!=='undefined')posthog.capture('compat_mcp_so_click',{cta:'view_mcp_directory'})">
@@ -1148,7 +1123,7 @@ __GA_BOOTSTRAP__
       </a>
       <a class="compat-card" href="/go/gpt?utm_source=website&utm_medium=compatibility&utm_campaign=chatgpt_gpt&cta_id=compat_open_gpt&cta_placement=compatibility" target="_blank" rel="noopener">
         <h3>💬 ChatGPT GPT Actions</h3>
-        <p>Open the ThumbGate GPT to preflight risky commands, deploys, refunds, PR actions, and setup steps, capture thumbs-up/down lessons, and save typed signals. Real blocking for coding agents still runs locally after <code>npx thumbgate init</code>.</p>
+        <p>Open the ThumbGate GPT to preflight risky commands, deploys, refunds, PR actions, and setup steps. Local allow, warn, or deny enforcement for coding agents requires <code>npx thumbgate init</code> plus the documented integration setup.</p>
         <div class="card-arrow">Open ThumbGate GPT →</div>
       </a>
     </div>
@@ -1167,24 +1142,24 @@ __GA_BOOTSTRAP__
         <a href="/dashboard" style="display:inline-block;margin-top:12px;color:var(--cyan);font-weight:600;text-decoration:underline;">Open Dashboard Demo →</a>
       </div>
       <div class="agent-card">
-        <h3>⛔ Check Reasoning Chains</h3>
-        <p>Every block explains why: which pattern matched, what evidence triggered it, and whether the rule came from your own corrections.</p>
+        <h3>⛔ Check Decisions</h3>
+        <p>Inspect the matched gate, allow/warn/deny decision, and reason returned by the local evaluator.</p>
       </div>
       <div class="agent-card">
-        <h3>📊 Org Dashboard</h3>
-        <p>See which agents are creating review churn, which checks are saving time, and where rollout risk is still concentrated across the shared workflow.</p>
+        <h3>📊 Local Reports</h3>
+        <p>Generate local dashboard and report views from the operator's available gate and feedback data. A hosted org dashboard is not generally available.</p>
       </div>
       <div class="agent-card">
         <h3>🧱 Isolated Execution Lanes</h3>
-        <p>High-risk local autonomy can route into Docker Sandboxes, while hosted team automations use a signed sandbox dispatch lane instead of running loose on a shared host.</p>
+        <p>Workflow Sentinel can recommend Docker Sandboxes for high-risk local actions. The package includes a signed sandbox-dispatch mechanism, but each deployment must configure and verify its isolation boundary.</p>
       </div>
       <div class="agent-card">
         <h3>Data Processing Boundaries</h3>
-        <p>Local enforcement data stays in the operator's ThumbGate feedback directory by default. Hosted checkout, intake, newsletter, team sync, and product analytics are labeled as hosted processing surfaces instead of being blurred into the local runtime.</p>
+        <p>Local enforcement data stays in the operator's ThumbGate feedback directory by default. Checkout, intake, newsletter, and product analytics are separate hosted processing surfaces. Hosted team lesson sync is not generally available.</p>
       </div>
       <div class="agent-card">
         <h3>🧪 Thompson Sampling</h3>
-        <p>Confidence tiers (none/low/medium/high) tell you when to trust the model vs fall back to rules. No guessing.</p>
+        <p>Confidence tiers (none/low/medium/high) are available inputs to adaptive rule selection; they do not guarantee a correct decision.</p>
       </div>
       <div class="agent-card">
         <h3>🪞 History-Aware Lessons</h3>
@@ -1197,20 +1172,20 @@ __GA_BOOTSTRAP__
 <section class="compatibility" id="governance-not-logging">
   <div class="container">
     <div class="section-label">Governance, Not Logging</div>
-    <h2 class="section-title">Logs describe the damage. ThumbGate flags the risky action before it runs — and hard-blocks secret exfiltration and guardrail-tampering by default.</h2>
-    <p style="color:var(--text-dim);max-width:820px;margin:0 auto 22px;">Self-governance is an operator writing local rules and keeping local logs. ThumbGate starts there, then turns each correction into a pre-action decision: allow, block, require evidence, or route for approval before the tool call touches code, data, money, or customers.</p>
+    <h2 class="section-title">Logs describe the damage. ThumbGate evaluates the proposed action before it runs.</h2>
+    <p style="color:var(--text-dim);max-width:820px;margin:0 auto 22px;">Self-governance is an operator writing local rules and keeping local logs. ThumbGate starts there, then evaluates configured checks as an allow, warn, or deny decision before the tool call touches code, data, money, or customers.</p>
     <div class="agent-grid">
       <div class="agent-card">
         <h3>Pre-action enforcement</h3>
-        <p>The rule is evaluated at the execution boundary, not after the fact. Repeated failures are flagged and logged before shell commands, PR actions, deploys, refunds, or production writes run — hard-blocked outright for secret exfiltration by default (and for every rule when strict mode is on).</p>
+        <p>The rule is evaluated at the execution boundary, not after the fact. Matching failures are evaluated before configured shell commands, PR actions, deploys, refunds, or production writes run. Detected secret exfiltration and gate kill/bypass commands deny by default; strict mode also denies matching warning-mode checks.</p>
       </div>
       <div class="agent-card">
         <h3>Reviewable decision trail</h3>
-        <p>Each event records the rule, source lesson, policy version, actor, action, evidence requirement, and reason so reviewers can inspect the decision instead of trusting an agent summary.</p>
+        <p>Gate records expose the fields available for that evaluation, including its decision, matched gate, reason, and provided context, so reviewers can inspect local evidence instead of trusting an agent summary.</p>
       </div>
       <div class="agent-card">
         <h3>Enterprise governance mode</h3>
-        <p>Org-owned policies, reviewer approvals, signed evidence bundles, and export paths turn local corrections into shared controls without giving the agent unilateral authority over the rules.</p>
+        <p>Enterprise is intake-first and scoped around one workflow's approval boundaries, rollback plan, evidence requirements, and rollout support. Hosted team sync, org dashboards, SSO, SIEM, and compliance packaging are not general-availability runtime features.</p>
       </div>
     </div>
   </div>
@@ -1228,7 +1203,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="agent-card">
         <h3>ThumbGate</h3>
-        <p>Turns operator feedback into Pre-Action Checks. It does not just remember the mistake. It flags the repeat at the tool-call boundary across Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode — and can hard-block it (secret exfiltration and guardrail-tampering by default, everything under strict mode).</p>
+        <p>Turns accepted operator feedback into local lessons and recurring failures into Pre-Action Checks. Supported agent integrations evaluate matching rules at the tool-call boundary. Detected secret exfiltration and gate kill/bypass commands deny by default; strict mode also denies matching warning-mode checks.</p>
       </div>
       <div class="agent-card">
         <h3>The stack that makes sense</h3>
@@ -1293,7 +1268,7 @@ __GA_BOOTSTRAP__
       <div class="autoresearch-grid">
         <div class="autoresearch-card">
           <h3>Guard the metric</h3>
-          <p>Require primary and holdout checks before an agent can call a variant better. Block cherry-picked runs and missing baselines.</p>
+          <p>Require primary and holdout checks before an agent can call a variant better. Flag cherry-picked runs and missing baselines, then configure strict enforcement where a deny is required.</p>
         </div>
         <div class="autoresearch-card">
           <h3>Preserve proof trails</h3>
@@ -1316,19 +1291,19 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="section-label">Persistent Agent Skills</div>
     <h2 class="section-title">Reusable instructions are the new baseline. Enforcement is the moat.</h2>
-    <p style="text-align:center;font-size:16px;color:var(--text-muted);max-width:880px;margin:0 auto 28px;line-height:1.7;">Grok-style skills are training users to expect persistent expertise across every surface. ThumbGate turns that expectation into a governed reliability layer: capture the correction once, export it as a portable skill or lesson bundle, then prove the next risky tool call was flagged (and, for secret exfiltration and guardrail-tampering, or under strict mode, blocked) before it ran.</p>
+    <p style="text-align:center;font-size:16px;color:var(--text-muted);max-width:880px;margin:0 auto 28px;line-height:1.7;">Persistent agent skills create reusable instructions. ThumbGate adds a governed reliability layer: capture accepted feedback, export local lessons where the plan permits it, and inspect how a configured pre-action gate evaluated the next matching tool call before execution.</p>
     <div class="agent-grid">
       <div class="agent-card">
         <h3>Portable skill memory</h3>
-        <p>Thumbs-up/down lessons become reusable rules and skill-pack context that can move across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and MCP-compatible agents.</p>
+        <p>Accepted lessons can supply reusable rule and skill-pack context. Moving that context between supported agents requires an explicit operator-managed export/import or a shared local install scope.</p>
       </div>
       <div class="agent-card">
         <h3>Instructions plus teeth</h3>
-        <p>Persistent skills tell an agent what you prefer. ThumbGate checks whether the next action follows those preferences and blocks high-risk repeats before execution.</p>
+        <p>Persistent skills tell an agent what you prefer. ThumbGate evaluates configured checks against the next proposed action and returns allow, warn, or deny before execution.</p>
       </div>
       <div class="agent-card">
         <h3>Proof for teams</h3>
-        <p>Every fired rule carries the source lesson, decision trace, and audit evidence, so teams can review which skill worked instead of trusting a hidden chatbot memory.</p>
+        <p>Local gate results expose the matched rule and available decision context so operators can review what fired instead of relying only on hidden chatbot memory.</p>
       </div>
     </div>
   </div>
@@ -1339,12 +1314,12 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="section-label">Self-improving enforcement</div>
     <h2 class="section-title">Three steps to catch repeated AI failures</h2>
-    <p class="section-sub" style="max-width:720px;margin:6px auto 22px;text-align:center;color:var(--text-muted);font-size:clamp(16px,1.6vw,18px);">Self-improving — but for safety, not capability: every <code>👎</code> compiles into a rule, and each rule regression-tests itself against your history, so it flags the repeat and never the safe action.</p>
+    <p class="section-sub" style="max-width:720px;margin:6px auto 22px;text-align:center;color:var(--text-muted);font-size:clamp(16px,1.6vw,18px);">Self-improving — but for safety, not capability: human-in-the-loop accepted feedback becomes local lessons, recurring failures can become prevention rules, and regression tests help detect false-positive rule matches.</p>
     <div class="steps">
       <div class="step">
         <div class="step-num">1</div>
         <h3>Feedback</h3>
-        <p>Give <code>👍</code> or <code>👎</code> on your AI agent's actions. Feedback is stored in a SQLite+FTS5 lesson DB. In the current Claude auto-capture hook, a vague thumbs-down can distill from up to 8 prior recorded entries and the failed tool call before promotion, then stay linked to a 60-second feedback session. Example: you 👎 a risky migration → it auto-promotes to a "never run DROP on prod" check.</p>
+        <p>Give <code>👍</code> or a concrete <code>👎</code> on your AI agent's actions. Accepted feedback is stored in a local SQLite+FTS5 lesson DB. In the current Claude auto-capture hook, a vague thumbs-down can distill from up to 8 prior recorded entries and the failed tool call before promotion, then stay linked to a 60-second feedback session. Recurring accepted failures can auto-promote into a prevention rule.</p>
       </div>
       <div class="step">
         <div class="step-num">2</div>
@@ -1354,7 +1329,7 @@ __GA_BOOTSTRAP__
       <div class="step">
         <div class="step-num">3</div>
         <h3>Checks</h3>
-        <p>Rules become Pre-Action Checks that <strong>flag and log</strong> your agent before it repeats the same mistake — hard-blocking secret exfiltration by default, and every rule when you set <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>. So a force-push, skipped test, or refactor you already rejected gets surfaced before it runs, not after.</p>
+        <p>Rules become Pre-Action Checks that evaluate proposed tool calls before execution. Detected secret exfiltration and gate kill/bypass commands deny by default; matching force-push, destructive-delete, fetch-and-run, or learned checks warn unless strict enforcement turns them into denies.</p>
       </div>
     </div>
   </div>
@@ -1365,23 +1340,23 @@ __GA_BOOTSTRAP__
 <section class="compatibility" id="guardrails">
   <div class="container">
     <div class="section-label">Enforcement</div>
-    <h2 class="section-title">Checks fire on every call and log it. Catastrophes get blocked.</h2>
+    <h2 class="section-title">Configured checks evaluate proposed tool calls before execution.</h2>
     <div class="agent-grid">
       <div class="agent-card">
         <h3>Don't trust — verify</h3>
-        <p>Every block shows why: pattern match, evidence, confidence score.</p>
+        <p>Gate results report the decision, matched gate, and available reason or evidence context.</p>
       </div>
       <div class="agent-card">
         <h3>Real tools, not wishes</h3>
-        <p>Checks fire at the tool-call boundary and log every decision — not prompt tricks, not "please don't." Secret exfiltration and guardrail-tampering hard-block by default; set <code>THUMBGATE_STRICT_ENFORCEMENT=1</code> to hard-block every rule.</p>
+        <p>Configured checks run at the tool-call boundary. Detected secret exfiltration and gate kill/bypass commands deny by default; set <code>THUMBGATE_STRICT_ENFORCEMENT=1</code> to deny matching warning-mode checks.</p>
       </div>
       <div class="agent-card">
         <h3>Force models to show work</h3>
-        <p>Reasoning chains on every check decision. Thompson Sampling confidence tiers.</p>
+        <p>Decision reasons and Thompson Sampling confidence tiers are available where the evaluator produces them.</p>
       </div>
       <div class="agent-card">
-        <h3>Log everything, learn automatically</h3>
-        <p>Repeated failures auto-promote to checks. Org dashboard shows all agents.</p>
+        <h3>Review decisions and recurring failures</h3>
+        <p>Recurring accepted failures can auto-promote to checks. Pro includes a personal local dashboard; a hosted org dashboard is not generally available.</p>
       </div>
       <div class="agent-card">
         <h3>Keep risky runs off the host</h3>
@@ -1406,12 +1381,12 @@ __GA_BOOTSTRAP__
         <span>terminal</span>
       </div>
       <div class="code-body">
-        <div><span class="comment"># Install in 30 seconds</span></div>
+        <div><span class="comment"># Install the local CLI</span></div>
         <div><span class="fn">npx</span> thumbgate init</div>
         <div>&nbsp;</div>
         <div><span class="comment"># Your agent tries to delete production db...</span></div>
         <div><span class="keyword">⚠️ Check flagged:</span> <span class="string">"Never run DROP on production tables"</span> <span class="comment"># blocks under strict mode</span></div>
-        <div><span class="comment"># Rule auto-generated from your previous 👎</span></div>
+        <div><span class="comment"># Rule promoted from accepted recurring feedback</span></div>
         <div>&nbsp;</div>
         <div><span class="comment"># Works with your existing setup</span></div>
         <div><span class="fn">npx</span> thumbgate init <span class="comment"># bootstraps .thumbgate and .mcp.json</span></div>
@@ -1495,15 +1470,15 @@ __GA_BOOTSTRAP__
           </tr>
         </thead>
         <tbody>
-          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Local PreToolUse enforcement (all agents)</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
-          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Feedback captures</td><td style="text-align:center;border-bottom:1px solid var(--border);">2/day (10 total)</td><td style="text-align:center;border-bottom:1px solid var(--border);">Unlimited</td><td style="text-align:center;border-bottom:1px solid var(--border);">Unlimited</td></tr>
-          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Active auto-promoted prevention rules</td><td style="text-align:center;border-bottom:1px solid var(--border);">3</td><td style="text-align:center;border-bottom:1px solid var(--border);">Unlimited</td><td style="text-align:center;border-bottom:1px solid var(--border);">Unlimited</td></tr>
-          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Lesson recall + search across sessions</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
-          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Personal dashboard + DPO export</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
-          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Shared hosted lesson database</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
-          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Shared lesson database + org dashboard</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
-          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Org-wide shared enforcement + approval boundaries</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td></tr>
-          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Audit trail; SSO &amp; regulatory gate templates <span style="color:var(--text-muted);font-size:12px;">(design-partner / roadmap)</span></td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">On request</td></tr>
+          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Local PreToolUse enforcement (configured integrations)</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">Scoped after intake</td></tr>
+          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Feedback captures</td><td style="text-align:center;border-bottom:1px solid var(--border);">2/day (10 total)</td><td style="text-align:center;border-bottom:1px solid var(--border);">Unlimited</td><td style="text-align:center;border-bottom:1px solid var(--border);">Scoped after intake</td></tr>
+          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Active auto-promoted prevention rules</td><td style="text-align:center;border-bottom:1px solid var(--border);">3</td><td style="text-align:center;border-bottom:1px solid var(--border);">Unlimited</td><td style="text-align:center;border-bottom:1px solid var(--border);">Scoped after intake</td></tr>
+          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Lesson recall + search across sessions</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">Scoped after intake</td></tr>
+          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Personal dashboard + DPO export</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">Scoped after intake</td></tr>
+          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Hosted team lesson sync</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">Not GA</td></tr>
+          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Hosted org dashboard</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">Not GA</td></tr>
+          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Approval boundaries + rollout design</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">Scoped after intake</td></tr>
+          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">SSO, SIEM + compliance packaging</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">Not GA</td></tr>
           <tr><td style="padding:10px 14px;color:var(--text-muted);">Best for</td><td style="text-align:center;color:var(--text-muted);">One developer</td><td style="text-align:center;color:var(--text-muted);">Solo operators</td><td style="text-align:center;color:var(--text-muted);">Teams &amp; regulated orgs</td></tr>
         </tbody>
       </table>
@@ -1534,21 +1509,21 @@ __GA_BOOTSTRAP__
       <div class="price-card pro" data-price-dollars="19">
         <div class="tier">Pro</div>
         <div class="price">$19<span style="font-size:16px;color:var(--text-dim)">/mo</span></div>
-        <div class="price-sub"><strong>Don't buy a tool — buy proof + compatibility insurance.</strong> The free CLI runs your gates locally. Pro removes the solo caps and adds the personal dashboard, recall, exports, and active adapter maintenance to stay compatible with weekly breaking updates in Claude Code, Cursor, and Cline. Shared hosted lesson databases are Enterprise.</div>
+        <div class="price-sub"><strong>Individual local governance with higher limits.</strong> The free CLI runs configured gates locally. Pro removes the individual caps and adds the personal dashboard, recall, search, and exports. Hosted team lesson sync is not generally available.</div>
         <ul>
-          <li><strong>Block every repeat mistake</strong> — unlimited feedback captures and prevention rules (Free caps at 3 active rules)</li>
-          <li><strong>Never re-explain a correction</strong> — lesson recall and search across sessions on every agent surface</li>
-          <li><strong>See exactly which rule fired</strong> — <a href="/dashboard#insights" style="color:var(--cyan);text-decoration:underline;">Visual check debugger</a> for every blocked action and the check that fired</li>
-          <li><strong>One install, every agent</strong> — Auto-connect so supported agents appear automatically after setup (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode)</li>
-          <li><strong>Fine-tune your local model</strong> on what your team actually wants — <a href="/dashboard#export" style="color:var(--cyan);text-decoration:underline;">DPO training data export</a> with ready-to-use preference pairs for fine-tuning</li>
-          <li><strong>Audit-ready enforcement proof</strong> — Personal local dashboard for the individual operator with auditable block history</li>
-          <li><strong>Ship hardened agents to production</strong> — Model Hardening Advisor plus HuggingFace dataset export</li>
-          <li><strong>Hand a PR with proof</strong> — Review-ready workflow support and proof-ready lesson bundles a reviewer can verify in 30 seconds</li>
+          <li><strong>Higher local limits</strong> — unlimited feedback captures and active auto-promoted prevention rules (Free caps at 3 active rules)</li>
+          <li><strong>Recall and search accepted lessons</strong> across sessions in the configured local scope</li>
+          <li><strong>Inspect which check fired</strong> — <a href="/dashboard#insights" style="color:var(--cyan);text-decoration:underline;">personal visual check debugger</a> for available local gate history</li>
+          <li><strong>Use supported integrations</strong> — configure Claude Code, Cursor, Codex, Gemini, Amp, Cline, or OpenCode through its documented setup path</li>
+          <li><strong>Export training data</strong> — <a href="/dashboard#export" style="color:var(--cyan);text-decoration:underline;">DPO preference-pair export</a> for a separate fine-tuning workflow</li>
+          <li><strong>Review local enforcement evidence</strong> — personal dashboard for the individual operator with available gate history</li>
+          <li><strong>Prepare model-hardening data</strong> — Model Hardening Advisor plus HuggingFace dataset export for a separate training and evaluation workflow</li>
+          <li><strong>Hand a PR with proof</strong> — review-ready workflow support and exportable lesson bundles</li>
           <li><strong>Hand off without re-onboarding</strong> — Lesson export/import for handoff or migration</li>
         </ul>
         <div style="margin:12px 0 16px;padding:12px;border:1px solid rgba(34,211,238,0.25);border-radius:8px;background:rgba(34,211,238,0.06);">
           <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">What your Pro dashboard looks like</div>
-          <div style="font-family:var(--mono);font-size:12px;color:var(--cyan);line-height:1.6;">checks: 36 active<br>feedback: unlimited<br>exports: DPO + lessons</div>
+          <div style="font-family:var(--mono);font-size:12px;color:var(--cyan);line-height:1.6;">checks: local gate history<br>feedback: unlimited<br>exports: DPO + lessons</div>
         </div>
         <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--cyan);font-weight:800;margin-bottom:8px;">PAY-NOW PRO</div>
         <a href="/checkout/pro?utm_source=pricing&utm_medium=cta&utm_campaign=v2_landing&utm_content=pricing_pro&cta_id=pricing_pro_checkout&cta_placement=pricing&plan_id=pro&landing_path=%2F" id="pro-checkout-link" class="btn-pro" data-revenue-cta data-cta-id="pricing_pro_checkout" data-cta-placement="pricing" data-tier="pro" data-plan-id="pro" data-price="19" onclick="handleProCheckout();return false;" style="display:block;width:100%;text-align:center;padding:12px;font-size:15px;">Upgrade to Pro — $19/mo</a>
@@ -1570,9 +1545,9 @@ __GA_BOOTSTRAP__
         <tbody>
           <tr>
             <td><strong>Best for</strong></td>
-            <td>Solo proof that a repeat mistake can be blocked</td>
+            <td>One developer evaluating local checks</td>
             <td>One operator who wants personal recall, dashboard proof, managed adapters, and exports</td>
-            <td>Teams &amp; regulated orgs — one person's correction protects every seat; banking, insurance, healthcare, public sector, audited workflows</td>
+            <td>Teams &amp; regulated organizations scoping one governed workflow</td>
           </tr>
           <tr>
             <td><strong>Price</strong></td>
@@ -1584,19 +1559,19 @@ __GA_BOOTSTRAP__
             <td><strong>Feedback captures</strong></td>
             <td>2/day, 10 total</td>
             <td>Unlimited</td>
-            <td>Unlimited, shared across the org; custom retention and evidence policy</td>
+            <td>Scoped after intake; hosted team sync is not GA</td>
           </tr>
           <tr>
             <td><strong>Active prevention rules</strong></td>
             <td>3 active rules</td>
             <td>Unlimited personal rules</td>
-            <td>Shared org rules, policy templates, approvals, and audit export</td>
+            <td>Approval boundaries and rollout requirements scoped after intake</td>
           </tr>
           <tr>
             <td><strong>Dashboard and proof</strong></td>
             <td>Local CLI evidence</td>
             <td>Personal dashboard, check debugger, DPO/HF exports</td>
-            <td>Org dashboard, hosted review views, rollout proof; SIEM export and compliance evidence packaging available on request</td>
+            <td>Hosted org dashboard, SIEM, and compliance packaging are not GA</td>
           </tr>
           <tr>
             <td><strong>How to start</strong></td>
@@ -1607,35 +1582,27 @@ __GA_BOOTSTRAP__
         </tbody>
       </table>
     </div>
-    <p class="pricing-note">Free proves the enforcement loop. Pro removes solo limits. Enterprise plans start through intake because shared rules, permissions, rollback paths, and rollout proof must be explicit before checkout.</p>
+    <p class="pricing-note">Free provides capped local evaluation. Pro removes individual limits and adds recall, search, a personal dashboard, and exports. Enterprise starts through intake to scope one workflow; it does not imply generally available hosted team features.</p>
     <div style="max-width:1080px;margin:24px auto 0;">
       <div class="price-card enterprise" style="border:1px solid var(--cyan);background:linear-gradient(180deg, rgba(34,211,238,0.04), transparent);padding:24px 28px;">
         <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:24px;justify-content:space-between;">
           <div style="flex:1 1 420px;min-width:280px;">
             <div class="tier" style="color:var(--cyan);">Enterprise</div>
             <div style="font-size:14px;color:var(--text-muted);margin:4px 0 12px;letter-spacing:0.04em;text-transform:uppercase;">Engineering teams · Banking · Insurance · Healthcare · Public sector</div>
-            <div style="font-size:18px;color:var(--text);margin-bottom:6px;font-weight:700;">Shared enforcement for teams &amp; regulated workflows — custom pricing</div>
-            <div class="price-sub" style="margin-bottom:14px;">For teams that need one correction to protect every developer and agent across shared repos, CI, and approval policies — including teams operating under DORA, the EU AI Act, HIPAA, or comparable audit pressure. Pricing is scoped after intake because the buyer needs evidence, deployment boundaries, and approval ownership before checkout.</div>
+            <div style="font-size:18px;color:var(--text);margin-bottom:6px;font-weight:700;">Scope one governed workflow — custom pricing after intake</div>
+            <div class="price-sub" style="margin-bottom:14px;">Enterprise is an intake-led service path for teams that need to define approval boundaries, rollback plans, evidence requirements, and rollout ownership around one workflow. The current public runtime remains local per configured operator; hosted team lesson sync and a hosted org dashboard are not generally available.</div>
             <ul style="margin-bottom:0;">
-              <li><strong>Shared lesson database</strong> — one hosted, shared lesson DB so one team member's correction becomes every developer's prevention rule across the org</li>
-              <li><strong>Org dashboard</strong> — active agents, check hit-rates, and risk surfaces across the whole team</li>
-              <li><strong>Shared enforcement memory</strong> — approval boundaries and rollback safety applied org-wide, not per machine</li>
-              <li><strong>Audit-grade decision trail</strong> — every PreToolUse evaluation logged with the rule that fired; SIEM export available on request</li>
-              <li><strong>Immutable rule provenance</strong> — each prevention rule traceable to the feedback event that generated it</li>
-              <li><strong>Self-managed deployment</strong> — air-gapped or VPC-hosted; no agent state leaves your boundary</li>
-              <li><strong>Dialogflow CX fulfillment guard</strong> — ThumbGate's pre-action gate sits in front of your Dialogflow CX webhook fulfillment, in your own GCP tenant, so risky or repeat turns are blocked before they touch a database, CRM, or billing system (white-glove design-partner pilot)</li>
-              <li><strong>Vertex AI / Gemini scoring, in-tenant</strong> — risk and planning scoring runs on Gemini via Vertex (<code>npx thumbgate setup-vertex</code>); no conversational data leaves your VPC</li>
-              <li><strong>DORA / EU AI Act evidence packaging</strong> <span style="color:var(--text-muted);">(roadmap / design-partner)</span> — machine-readable reports aligned to Article 6, 28, and high-risk provider monitoring obligations</li>
-              <li><strong>SSO + role separation</strong> <span style="color:var(--text-muted);">(on the Enterprise roadmap)</span> — operator, reviewer, and auditor roles enforced at the gate layer</li>
-              <li><strong>Enterprise Data Chat</strong> — local ThumbGate data Q&amp;A with Dialogflow CX / Vertex-ready governance; live cloud-agent claims require deployment evidence first</li>
-              <li><strong>Workflow proof plan included</strong> — a scoped review that proves the boundary against one of your real repeated-failure cases before broader rollout</li>
-              <li><strong>Quarterly red-team review</strong> — prompt-injection and policy-bypass exercises with written findings</li>
+              <li><strong>One-workflow discovery</strong> — identify the repeated failure, runtime, owner, and decision boundary</li>
+              <li><strong>Approval and rollback design</strong> — document who can approve, what evidence is required, and how the workflow recovers</li>
+              <li><strong>Verification plan</strong> — define the local tests and proof required before a wider rollout claim</li>
+              <li><strong>Deployment requirements</strong> — capture data-boundary, identity, hosting, and integration constraints before making delivery commitments</li>
+              <li><strong>Current availability boundary</strong> — hosted team sync, a hosted org dashboard, SSO, SIEM, and compliance packaging are not general-availability features</li>
             </ul>
           </div>
           <div style="flex:0 0 260px;min-width:240px;display:flex;flex-direction:column;gap:10px;">
             <a href="/?tier=enterprise#workflow-sprint-intake" onclick="try{posthog.capture('enterprise_intake_click',{cta:'enterprise_contact_sales',placement:'pricing'})}catch(_){};sendFirstPartyTelemetry('enterprise_intake_started',{ctaId:'pricing_enterprise_intake',ctaPlacement:'pricing',planId:'enterprise'});" class="btn-team" style="display:block;text-align:center;background:var(--cyan);color:#06121a;font-weight:800;">Start enterprise intake →</a>
             <a href="/learn/regulated-agent-execution-boundary" style="display:block;text-align:center;padding:10px 14px;font-size:13px;color:var(--cyan);border:1px solid var(--cyan);border-radius:8px;text-decoration:none;">Read the build-vs-buy thesis first</a>
-            <p style="font-size:11px;color:var(--text-muted);margin:0;text-align:center;line-height:1.5;">Pricing is workflow-scoped and shared after the intake call. Annual pre-pay available.</p>
+            <p style="font-size:11px;color:var(--text-muted);margin:0;text-align:center;line-height:1.5;">Pricing and deliverables are scoped after intake; no hosted-team capability is promised before verification.</p>
           </div>
         </div>
       </div>
@@ -1647,14 +1614,14 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="section-label">Enterprise Pilot</div>
     <h2 class="section-title">Start the AI Agent Governance Sprint with one repeat failure</h2>
-    <p style="color:var(--text-dim);max-width:760px;margin:0 auto 16px;">This is the fastest path to first paid value for regulated and high-blast-radius teams. Start with one repo, one workflow owner, and one blocker. The intake proves whether ThumbGate can enforce a repeatable action boundary before a wider rollout.</p>
+    <p style="color:var(--text-dim);max-width:760px;margin:0 auto 16px;">Start with one repo, one workflow owner, and one repeated failure. The intake scopes the evidence needed to determine whether ThumbGate fits that action boundary before any wider rollout claim.</p>
     <div class="team-intake-panel">
       <div class="team-intake-panel-head">
         <div>
           <h3>Tell us the workflow. Get a proof plan.</h3>
           <p>The highest-fit Enterprise buyer is already feeling one repeated failure in a workflow where mistakes have real consequences. Send the workflow first so the next step is scoped around the real blocker instead of a blind checkout.</p>
         </div>
-        <span class="team-intake-badge">30-minute intake</span>
+        <span class="team-intake-badge">Scope-first intake</span>
       </div>
       <div class="team-intake-recovery" aria-label="Checkout recovery path for workflow sprint buyers">
         <div>
@@ -1694,35 +1661,35 @@ __GA_BOOTSTRAP__
     <div class="faq-list">
       <div class="faq-item open">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="true" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Does ThumbGate support model fine-tuning?</div>
-        <div class="faq-a">Yes. ThumbGate Pro includes a Model Hardening Advisor and LoRA JSONL export. Pro users can export their episodic memory as DPO (Direct Preference Optimization) pairs to fine-tune local models (like Llama 3 or Mistral) so they natively avoid repeating known mistakes.</div>
+        <div class="faq-a">ThumbGate Pro includes a Model Hardening Advisor plus LoRA JSONL and DPO preference-pair exports for use in a separate fine-tuning workflow. An export does not guarantee that a trained model will avoid a mistake; that outcome depends on the dataset, training process, model, and evaluation.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How is ThumbGate different from model-training feedback loops?</div>
-        <div class="faq-a">ThumbGate's intelligence is context, not weights. It doesn't touch the model — it injects past feedback into context so your agent is conditioned by your corrections. Think of it as a behavioral immune system, not a training pipeline. Checks fire on every tool call and log the decision; secret exfiltration and attempts to disable ThumbGate itself hard-block by default (destructive deletes like rm -rf, force-push, and supply-chain are flagged), and strict mode (<code>THUMBGATE_STRICT_ENFORCEMENT=1</code>) hard-blocks every rule.</div>
+        <div class="faq-a">ThumbGate's runtime keeps lessons and rules outside the model. A configured hook evaluates proposed tool calls before execution. Detected secret exfiltration plus commands that kill the gate process or enable its bypass variable deny by default; matching destructive deletes, force-pushes, and fetch-and-run commands warn by default. Strict mode (<code>THUMBGATE_STRICT_ENFORCEMENT=1</code>) turns matching warning-mode checks into denies.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How is ThumbGate different from persistent agent skills?</div>
-        <div class="faq-a">Persistent agent skills are reusable instructions. ThumbGate uses the same market shift but adds the missing enforcement loop: lessons become portable skill context, Pre-Action Checks flag repeated failures before tool execution (and hard-block secret exfiltration and guardrail-tampering by default, or every rule under strict mode), and the dashboard shows evidence for which rule fired and why.</div>
+        <div class="faq-a">Persistent agent skills are reusable instructions. ThumbGate adds a local enforcement loop: accepted feedback becomes lessons, recurring failures can become rules, and configured Pre-Action Checks return allow, warn, or deny before tool execution. Pro adds a personal dashboard and operator-managed exports; hosted team sync and a hosted org dashboard are not generally available.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What's the tech stack?</div>
-        <div class="faq-a">SQLite+FTS5 lesson DB for fast full-text search. MemAlign-inspired dual recall (principle-based rules + episodic context). Thompson Sampling for adaptive check sensitivity per failure domain. LanceDB + Apache Arrow for local vector search with Hugging Face embeddings. ContextFS for context assembly. Bayesian belief updates on each memory. PreToolUse hook enforcement flags known-bad actions before execution and hard-blocks secret exfiltration by default (every rule under strict mode). All local-first — no cloud required.</div>
+        <div class="faq-a">SQLite+FTS5 lesson DB for fast full-text search. MemAlign-inspired dual recall (principle-based rules + episodic context). Thompson Sampling for adaptive check sensitivity per failure domain. LanceDB + Apache Arrow for local vector search with Hugging Face embeddings. ContextFS for context assembly. Bayesian belief updates on each memory. Configured PreToolUse hooks evaluate known-bad actions before execution; detected secret exfiltration and gate kill/bypass commands deny by default, while strict mode also denies matching warning-mode checks. The local path requires no cloud account.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What AI agents and editors does this work with?</div>
-        <div class="faq-a">ThumbGate works with Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and any other MCP-compatible agent. The Cursor plugin bundle ships in this repo and installs today via <code>npx thumbgate init --agent cursor</code>; the Cursor Marketplace listing was submitted 2026-05-19 and is still pending Cursor's manual review, so it is not yet discoverable from the in-app Marketplace. Codex now ships both a standalone plugin bundle and a repo-local app plugin profile, and the published download is linked directly from this page. VS Code works when you run an MCP-compatible agent inside it, but this repo does not ship a standalone VS Code extension today.</div>
+        <div class="faq-a">ThumbGate includes documented integration paths for Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and OpenCode. Each agent must be configured through its hook or MCP setup; MCP compatibility alone does not install enforcement automatically. The Cursor runtime setup is <code>npx thumbgate init --agent cursor</code>, while the in-app Marketplace listing remains separate. VS Code can host an MCP-compatible agent, but this repo does not ship a standalone VS Code extension.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Do I have to chat inside the ThumbGate GPT for enforcement?</div>
-        <div class="faq-a">No. The ThumbGate GPT is the ChatGPT entrypoint for checking proposed actions, capturing thumbs-up/down lessons, and getting setup help. Use it for advice and checkpointing; hard enforcement still runs locally where the agent executes after <code>npx thumbgate init</code>.</div>
+        <div class="faq-a">No. The ThumbGate GPT is a ChatGPT entrypoint for checking proposed actions and getting setup help. Local allow, warn, or deny enforcement runs where the coding agent executes and requires <code>npx thumbgate init</code> plus the documented integration setup.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">When should I use Pro versus the Workflow Hardening Sprint?</div>
-        <div class="faq-a">Start with the <a href="/guide" style="color:var(--cyan);text-decoration:underline;">setup guide</a> if you only need the local path. Choose Pro after one real caught repeat when you want your own dashboard, DPO export, and proof-ready exports. Choose the <a href="#workflow-sprint-intake" style="color:var(--cyan);text-decoration:underline;">Workflow Hardening Sprint</a> when one workflow owner needs approval boundaries, rollback safety, and rollout proof before wider rollout.</div>
+        <div class="faq-a">Start with the <a href="/guide" style="color:var(--cyan);text-decoration:underline;">setup guide</a> if you only need the local path. Choose Pro when an individual operator wants higher limits, personal recall, a local dashboard, DPO export, and operator-managed lesson bundles. Choose the <a href="#workflow-sprint-intake" style="color:var(--cyan);text-decoration:underline;">Workflow Hardening Sprint</a> when one workflow owner needs to scope approval boundaries, rollback safety, and evidence requirements before a wider rollout claim.</div>
       </div>
       <div class="faq-item">
         <button class="faq-q" type="button" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How do we keep high-risk autonomous runs off the host?</button>
-        <div class="faq-a">ThumbGate is the control plane, not just a prompt layer. Workflow Sentinel predicts blast radius before execution, and risky local autonomy can be routed into Docker Sandboxes instead of running directly on the host. Enterprise workflows also have a signed hosted sandbox lane for isolated dispatch when local repo access is not required.</div>
+        <div class="faq-a">ThumbGate combines pre-action checks with execution guidance. Workflow Sentinel can recommend Docker Sandboxes for risky local actions. The package also contains a signed sandbox-dispatch mechanism, but each deployment must configure and verify that isolation boundary; it is not hosted team lesson sync or a generally available hosted org service.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How do we trust a new package release?</div>
@@ -1730,7 +1697,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Do I need a cloud account?</div>
-        <div class="faq-a">No. Free keeps local enforcement on your machine with 2 feedback captures/day, up to 3 active auto-promoted prevention rules, built-in safety checks, and hook blocking. Recall, lesson search, unlimited rules, unlimited captures, and exports open up on Pro. No cloud account is required. The business starts when a team wants shared rules, approval boundaries, hosted review views, org dashboard visibility, and proof that survives handoffs. Pro is the optional solo side lane for a personal dashboard, DPO export, and team lesson export/import — share lessons across projects so one team's mistakes become every team's prevention rules.</div>
+        <div class="faq-a">No. Free keeps local enforcement on your machine with 2 feedback captures/day, up to 3 active auto-promoted prevention rules, and built-in checks. Recall, lesson search, unlimited rules and captures, a personal dashboard, and operator-managed exports open up on Pro. Enterprise is custom and scoped after intake around one workflow. Hosted team lesson sync and a hosted org dashboard are not general-availability runtime features.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What if my thumbs-down is vague?</div>
@@ -1738,23 +1705,23 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How are pre-action checks different from prompt rules?</div>
-        <div class="faq-a">Prompt rules are a starting point, not a finish line. Without prompt evaluation you do not know whether they still hold up under real tool use. ThumbGate adds the human-in-the-loop measurement loop and the enforcement layer: proof lanes, ThumbGate Bench, and self-heal checks show whether behavior improved, and Pre-Action Checks flag and log the action before execution when it did not — hard-blocking secret exfiltration and guardrail-tampering by default, and every rule under strict mode.</div>
+        <div class="faq-a">Prompt rules are a starting point, not a finish line. ThumbGate adds a human-feedback loop plus configured Pre-Action Checks at the tool-call boundary. The default policy denies detected secret exfiltration and gate kill/bypass commands while other matching high-risk checks warn; strict mode also denies matching warning-mode checks.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How does ThumbGate fit the agentic development cycle?</div>
-        <div class="faq-a">Agentic development is not just generation. Teams need Guide, Generate, Verify, and Solve working as a repeatable loop. ThumbGate is the pre-action execution gate in that loop: guidance and feedback become rules, generated tool calls are checked before execution, verification evidence is required for risky actions, and solved failures become reusable prevention gates.</div>
+        <div class="faq-a">Agentic development is not just generation. Teams need Guide, Generate, Verify, and Solve working as a repeatable loop. ThumbGate can serve as the pre-action execution gate: guidance and accepted feedback can become rules, generated tool calls are evaluated before execution, rules can require verification evidence, and recurring solved failures can become reusable prevention gates.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What does Pro cost?</div>
-        <div class="faq-a">Pro is $19/mo or $149/yr for individual operators and bills immediately through Stripe. Enterprise is custom pricing, scoped after intake, and starts through the workflow intake so scope, shared rules, and rollout proof are explicit before a rollout.</div>
+        <div class="faq-a">Pro is $19/mo or $149/yr for individual operators and bills through Stripe. Enterprise is custom pricing, scoped after intake around one workflow's approval boundaries, rollback plan, evidence requirements, and rollout support. Hosted team features are not implied by intake.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Does ThumbGate support enterprise Google Cloud / Vertex AI?</div>
-        <div class="faq-a">Yes. <code>npx thumbgate setup-vertex</code> detects your active gcloud session, enables the Vertex AI API on your Google Cloud project, and configures secure Application Default Credentials (ADC) so evaluations run within your corporate VPC. For Dialogflow CX, the Enterprise pilot puts ThumbGate's pre-action gate in front of your DFCX webhook fulfillment (deployed in your own tenant) so risky or repeat turns are blocked before they touch a database, CRM, or billing system. It's a white-glove design-partner pilot — ThumbGate gates your own Dialogflow CX agent; it does not host a Dialogflow CX agent for you.</div>
+        <div class="faq-a">The package ships a <code>npx thumbgate setup-vertex</code> setup helper for operators who choose the optional Vertex adapter. Whether evaluations stay within a particular VPC depends on the operator's Google Cloud configuration and must be verified in that deployment. Dialogflow CX governance is an intake-scoped integration requirement, not a generally available hosted deployment claim.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How does ThumbGate contain enterprise API costs?</div>
-        <div class="faq-a">ThumbGate helps contain runaway API costs through a local client-side token ledger (FrontierBudget) that applies cost-containment limits you configure (such as keeping monthly costs under $10/mo). Because GCP billing console alerts are delayed, the local circuit breaker is designed to halt runaway agent loops locally in milliseconds — helping contain spend rather than guaranteeing it.</div>
+        <div class="faq-a">FrontierBudget provides a local client-side token ledger and configurable routing or cost-containment limits. Reported token savings are estimates based on configured assumptions, not provider-billing measurements or a spend guarantee; verify actual costs in the provider's billing telemetry.</div>
       </div>
     </div>
   </div>
@@ -1778,7 +1745,7 @@ __GA_BOOTSTRAP__
 <section class="final-cta">
   <div class="container">
     <h2>Stop the same mistake before it runs again.</h2>
-    <p>Install free. No credit card. No signup. Hit your first check in 60 seconds.</p>
+    <p>Install the local CLI without a credit card or account, then configure the integration for your agent.</p>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;align-items:center;">
       <div class="hero-install" onclick="copyInstall(this)" title="Click to copy" style="margin-bottom:0;font-size:16px;padding:14px 24px;border:2px solid var(--cyan);">
         <span class="prompt">$</span>
