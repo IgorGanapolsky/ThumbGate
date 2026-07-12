@@ -44,9 +44,10 @@ const RST = '\x1b[0m';
  * @param {Array} [opts.chatHistory] - Conversation messages for distillation
  * @param {string} [opts.whatWentWrong] - For thumbs down
  * @param {string} [opts.whatWorked] - For thumbs up
+ * @param {Object} [opts.sourceEvent] - Hashed source identity for idempotent hook capture
  * @returns {Object} Result with feedback + lesson + stats
  */
-function processInlineFeedback({ signal, context, chatHistory, whatWentWrong, whatWorked } = {}) {
+function processInlineFeedback({ signal, context, chatHistory, whatWentWrong, whatWorked, sourceEvent } = {}) {
   const isDown = signal === 'down' || signal === 'negative';
 
   // 1. Capture the feedback
@@ -57,6 +58,7 @@ function processInlineFeedback({ signal, context, chatHistory, whatWentWrong, wh
       context: context || (isDown ? 'Thumbs down from CLI' : 'Thumbs up from CLI'),
       whatWentWrong: whatWentWrong || undefined,
       whatWorked: whatWorked || undefined,
+      sourceEvent,
     });
   } catch (err) {
     feedbackResult = { accepted: false, reason: err.message };
@@ -94,7 +96,13 @@ function formatCliOutput(result) {
   const isDown = ['down', 'negative', 'thumbs_down'].includes(feedbackSignal);
 
   // Header
-  if (result.feedbackResult && result.feedbackResult.accepted !== false) {
+  if (result.feedbackResult && result.feedbackResult.duplicate) {
+    lines.push(`${Y}${BD}Feedback already captured${RST}`);
+    const feedbackId = result.feedbackResult.feedbackEvent && result.feedbackResult.feedbackEvent.id;
+    const memoryId = result.feedbackResult.memoryRecord && result.feedbackResult.memoryRecord.id;
+    if (feedbackId) lines.push(`${D}  Feedback ID: ${feedbackId}${RST}`);
+    if (memoryId) lines.push(`${D}  Memory ID  : ${memoryId}${RST}`);
+  } else if (result.feedbackResult && result.feedbackResult.accepted !== false) {
     lines.push(`${isDown ? R : G}${BD}${isDown ? '👎 Thumbs down recorded' : '👍 Thumbs up recorded'}${RST}`);
     const feedbackId = (result.feedbackResult.feedbackEvent && result.feedbackResult.feedbackEvent.id) || result.feedbackResult.id;
     const memoryId = (result.feedbackResult.memoryRecord && result.feedbackResult.memoryRecord.id) || result.feedbackResult.memoryId;
