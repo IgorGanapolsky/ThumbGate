@@ -18,6 +18,7 @@ const {
   evaluateGatesAsync,
   buildReasoning,
   formatOutput,
+  runHardFloor,
   run,
   runAsync,
   satisfyCondition,
@@ -2290,6 +2291,53 @@ test('evaluateSecretGuard returns null when no secrets detected', () => {
   assert.equal(result, null);
 });
 
+test('runHardFloor denies secret, security, and all four self-protect classes', () => {
+  const cases = [
+    ['secret-exfiltration', {
+      tool_name: 'Bash',
+      tool_input: { command: `echo ${buildStripeKey()}` },
+    }],
+    ['security-vuln-scan', {
+      tool_name: 'Write',
+      tool_input: { file_path: 'src/unsafe.js', content: "execSync('rm ' + req.query.path)" },
+    }],
+    ['self-protect-config', {
+      tool_name: 'Write',
+      tool_input: { file_path: 'config/gates/default.json', content: '{}' },
+    }],
+    ['self-protect-kill', {
+      tool_name: 'Bash',
+      tool_input: { command: 'pkill -f gates-engine' },
+    }],
+    ['self-protect-env-override', {
+      tool_name: 'Bash',
+      tool_input: { command: 'export THUMBGATE_HOTFIX_BYPASS=1' },
+    }],
+    ['self-protect-hooks-disable', {
+      tool_name: 'Edit',
+      tool_input: {
+        file_path: '.claude/settings.json',
+        new_string: '{"hooks":{"PreToolUse":[]}}',
+      },
+    }],
+  ];
+
+  for (const [expectedGate, input] of cases) {
+    const output = runHardFloor(input);
+    assert.ok(output, `expected ${expectedGate} to produce a hard-floor result`);
+    const hook = JSON.parse(output).hookSpecificOutput;
+    assert.equal(hook.permissionDecision, 'deny', expectedGate);
+    assert.match(hook.permissionDecisionReason, new RegExp(`\\[GATE:${expectedGate}\\]`));
+  }
+});
+
+test('runHardFloor ignores ordinary block gates', () => {
+  assert.equal(runHardFloor({
+    tool_name: 'Bash',
+    tool_input: { command: 'git push --force origin main' },
+  }), null);
+});
+
 test('buildSecretGuardResult builds correct structure', () => {
   const result = buildSecretGuardResult({
     provider: 'heuristic',
@@ -3057,4 +3105,3 @@ test('evaluateGates matches on-demand-freeze-mode when freeze_mode or env is set
     cleanupStateFiles();
   }
 });
-

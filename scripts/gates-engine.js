@@ -131,42 +131,35 @@ const DOWNLOAD_EXEC_CHAIN_PATTERN = /\b(?:curl|wget)\b[\s\S]{0,400}(?:\|\s*(?:ba
 const DESTRUCTIVE_OR_PRIVILEGE_BOUNDARY_PATTERN = /\b(?:rm\s+-rf|chmod\s+(?:\+x|777)|chown\b|sudo\b|dd\s+if=|mkfs|git\s+reset\s+--hard|git\s+clean\s+-f[a-z]*|kubectl\s+(?:apply|delete)|terraform\s+(?:apply|destroy)|railway\s+(?:deploy|up)|gcloud\s+(?:run\s+deploy|app\s+deploy)|vercel\s+--prod|firebase\s+deploy)\b/i;
 
 // ---------------------------------------------------------------------------
-// Enforcement posture (CEO decision 2026-06-04): warn-by-default.
-// The firewall ALWAYS fires and logs every decision, but most gates WARN rather
-// than hard-block — only TRULY CATASTROPHIC, irreversible actions hard-block:
-//   - secret exfiltration (handled on its own deny path; never downgraded)
-//   - security-vulnerability / supply-chain denies (own deny path; not downgraded)
-//   - irreversibly destructive filesystem commands (rm -rf class, mkfs, dd to disk,
-//     fork bomb) — kept as hard deny via DESTRUCTIVE_FS_PATTERN below.
-// Everything else (memory-high-risk, workflow-sequence, off-scope, git push, deploy,
-// approval gates) downgrades deny/approve -> warn so legitimate work is never blocked.
-// Opt back into full hard enforcement with THUMBGATE_STRICT_ENFORCEMENT=1.
 // Enforcement posture (CEO decision 2026-06-04): WARN + AUDIT by default.
-// The firewall fires and LOGS every decision, but downgrades deny/approve -> warn so
-// legitimate work is never hard-blocked. We deliberately do NOT try to hard-block
-// arbitrary destructive commands here: a regex "catastrophic floor" is unwinnable
-// (sudo / bash -c / find -exec / eval / base64|sh all evade it) and gives false confidence.
-// HARD enforcement is an explicit opt-in via THUMBGATE_STRICT_ENFORCEMENT=1, which keeps
-// the engine's FULL gate set (its high-risk-command gates catch prefixed/obfuscated forms
-// far better than any single regex). Secret exfiltration and the security-vulnerability
-// scan hard-deny on their OWN paths before this runs, so irreversible data-leak / supply
-// chain risks stay blocked regardless of posture.
-// Self-protective gates guard ThumbGate's own guardrails (kill/env/config/hooks). See the
-// self-protect-binds-regardless-of-posture changeset for the full rationale.
+// Unconditional floors run before posture conversion: secret exfiltration, deny results
+// from the security scanner, and the four canonical self-protection gates. Arbitrary
+// destructive commands do not get a regex-based "catastrophic" floor; wrappers and
+// obfuscation make that boundary misleading. Every other deny/approve becomes a warning
+// unless the operator explicitly enables THUMBGATE_STRICT_ENFORCEMENT=1.
+const SELF_PROTECT_HARD_FLOOR_GATE_IDS = new Set([
+  'self-protect-config',
+  'self-protect-kill',
+  'self-protect-env-override',
+  'self-protect-hooks-disable',
+]);
+const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
+  'secret-exfiltration',
+  'security-vuln-scan',
+  'slopsquat-guard',
+  ...SELF_PROTECT_HARD_FLOOR_GATE_IDS,
+]);
+
 function isSelfProtectGate(gateId) {
-  return typeof gateId === 'string' && gateId.startsWith('self-protect');
+  return SELF_PROTECT_HARD_FLOOR_GATE_IDS.has(gateId);
 }
 
 function applyEnforcementPosture(result) {
   if (!result || (result.decision !== 'deny' && result.decision !== 'approve')) return result;
+  // Defensive backstop: hard-floor results must never be posture-downgraded.
+  if (UNCONDITIONAL_HARD_FLOOR_GATE_IDS.has(result.gate)) return result;
   // Full hard enforcement opt-in: keep every deny.
   if (process.env.THUMBGATE_STRICT_ENFORCEMENT === '1') return result;
-  // Self-protection binds regardless of posture: a warning is worthless once the guardrail is
-  // gone. Owner escape: THUMBGATE_SELF_PROTECT_OVERRIDE=1 (break-glass covers .claude/settings*
-  // but not this surface, so it needs its own escape — self-lockout, 2026-07-07).
-  if (isSelfProtectGate(result.gate) && process.env.THUMBGATE_SELF_PROTECT_OVERRIDE !== '1') {
-    return result;
-  }
   // Honor the explicit strict-knowledge-conflict opt-in for that gate.
   if (process.env.THUMBGATE_STRICT_KNOWLEDGE_CONFLICT === '1' && result.gate === 'knowledge-conflict-gate') return result;
   // Warn-by-default: the gate still fired and is recorded; the action is allowed through
@@ -175,7 +168,7 @@ function applyEnforcementPosture(result) {
     ...result,
     decision: 'warn',
     warnByDefault: true,
-    message: `${result.message}\n\n⚠️ ThumbGate is in warn-by-default mode — this was flagged and logged, not blocked. Set THUMBGATE_STRICT_ENFORCEMENT=1 to hard-block, or THUMBGATE_HOTFIX_BYPASS=1 to disable checks entirely.`,
+    message: `${result.message}\n\n⚠️ ThumbGate is in warn-by-default mode — this was flagged and logged, not blocked. Set THUMBGATE_STRICT_ENFORCEMENT=1 to hard-block other flagged actions.`,
   };
 }
 const BREAK_GLASS_CONDITION = 'thumbgate_break_glass';
@@ -1817,6 +1810,56 @@ function matchesGate(gate, toolName, toolInput) {
   return matchGate(gate, toolName, toolInput).matched;
 }
 
+function matchSelfProtectHardFloor(gate, toolName, toolInput = {}) {
+  if (!Array.isArray(gate.toolNames) || !gate.toolNames.includes(toolName)) return null;
+
+  const matchText = [
+    toolInput.command,
+    toolInput.file_path,
+    toolInput.path,
+    toolInput.filePath,
+    toolInput.content,
+    toolInput.new_string,
+    toolInput.old_string,
+  ].filter((value) => typeof value === 'string' && value.length > 0).join(' ');
+  if (!matchText || !gate.pattern) return null;
+
+  try {
+    if (!new RegExp(gate.pattern).test(matchText)) return null;
+  } catch {
+    return null;
+  }
+
+  return {
+    matched: true,
+    matchText,
+    affectedFiles: extractAffectedFiles(toolName, toolInput).files,
+  };
+}
+
+function evaluateSelfProtectHardFloor(input = {}) {
+  const toolName = input.tool_name || input.toolName || '';
+  const toolInput = input.tool_input || input.toolInput || {};
+  const config = loadGatesConfig(DEFAULT_CONFIG_PATH);
+
+  for (const gate of config.gates) {
+    if (!isSelfProtectGate(gate.id)) continue;
+    const matchDetails = matchSelfProtectHardFloor(gate, toolName, toolInput);
+    if (!matchDetails) continue;
+
+    const result = {
+      decision: 'deny',
+      gate: gate.id,
+      message: buildGateMessage(gate, matchDetails),
+      severity: gate.severity,
+      reasoning: buildReasoning(gate, toolName, toolInput, matchDetails),
+    };
+    return recordStructuralGateBlock(toolName, toolInput, result);
+  }
+
+  return null;
+}
+
 function isSafeLocalCredentialHardeningCommand(toolName, toolInput = {}) {
   if (toolName !== 'Bash') return false;
   const command = String(toolInput.command || '').trim();
@@ -2643,6 +2686,26 @@ function evaluateSecretGuard(input = {}) {
   return result;
 }
 
+function evaluateUnconditionalHardFloor(input = {}) {
+  const secretGuard = evaluateSecretGuard(input);
+  if (secretGuard) return { hardFloor: secretGuard, securityScan: null };
+
+  const securityScan = evaluateSecurityScan(input);
+  if (securityScan && securityScan.decision === 'deny') {
+    return { hardFloor: securityScan, securityScan };
+  }
+
+  return {
+    hardFloor: evaluateSelfProtectHardFloor(input),
+    securityScan,
+  };
+}
+
+function runHardFloor(input) {
+  const { hardFloor } = evaluateUnconditionalHardFloor(input);
+  return hardFloor ? formatOutput(hardFloor) : null;
+}
+
 // ---------------------------------------------------------------------------
 function isApprovalGatesEnabled() {
   return process.env.THUMBGATE_APPROVAL_GATES !== '0';
@@ -2996,16 +3059,8 @@ function mergeContextStrings(...ctxs) {
 }
 
 async function runAsync(input) {
-  const secretGuard = evaluateSecretGuard(input);
-  if (secretGuard) {
-    return formatOutput(secretGuard);
-  }
-
-  // Security vulnerability scan (Tier 1: pattern match, Tier 2: supply chain)
-  const securityScan = evaluateSecurityScan(input);
-  if (securityScan && securityScan.decision === 'deny') {
-    return formatOutput(securityScan);
-  }
+  const { hardFloor, securityScan } = evaluateUnconditionalHardFloor(input);
+  if (hardFloor) return formatOutput(hardFloor);
 
   const toolName = input.tool_name || '';
   const toolInput = input.tool_input || {};
@@ -3043,16 +3098,8 @@ async function runAsync(input) {
 }
 
 function run(input) {
-  const secretGuard = evaluateSecretGuard(input);
-  if (secretGuard) {
-    return formatOutput(secretGuard);
-  }
-
-  // Security vulnerability scan (Tier 1: pattern match, Tier 2: supply chain)
-  const securityScan = evaluateSecurityScan(input);
-  if (securityScan && securityScan.decision === 'deny') {
-    return formatOutput(securityScan);
-  }
+  const { hardFloor, securityScan } = evaluateUnconditionalHardFloor(input);
+  if (hardFloor) return formatOutput(hardFloor);
 
   const toolName = input.tool_name || '';
   const toolInput = input.tool_input || {};
@@ -3379,6 +3426,7 @@ module.exports = {
   computeExecutableHash,
   formatOutput,
   isApprovalGatesEnabled,
+  runHardFloor,
   run,
   runAsync,
   trackAction,
