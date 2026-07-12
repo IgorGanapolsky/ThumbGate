@@ -56,6 +56,14 @@ const BASH_SECRET_READ_PREFIXES = [
 
 const OUTBOUND_FILE_COMMANDS = new Set(['curl', 'wget']);
 const OUTBOUND_COMMAND_WRAPPERS = new Set(['command', 'env', 'nohup', 'sudo']);
+const WRAPPER_OPTIONS_WITH_VALUE = {
+  env: new Set(['-u', '--unset', '-C', '--chdir', '-S', '--split-string']),
+  sudo: new Set([
+    '-u', '--user', '-g', '--group', '-h', '--host', '-p', '--prompt',
+    '-C', '--close-from', '-T', '--command-timeout', '-R', '--chroot',
+    '-D', '--chdir',
+  ]),
+};
 const CURL_DATA_FILE_OPTIONS = new Set([
   '-d',
   '--data',
@@ -295,12 +303,38 @@ function scanFile(filePath, options = {}) {
 
 function tokenizeCommand(command) {
   const tokens = [];
-  const regex = /"([^"]+)"|'([^']+)'|(\S+)/g;
-  let match = regex.exec(String(command || ''));
-  while (match) {
-    tokens.push(match[1] || match[2] || match[3]);
-    match = regex.exec(String(command || ''));
+  let current = '';
+  let quote = null;
+  let escaped = false;
+
+  for (const char of String(command || '')) {
+    if (escaped) {
+      current += char;
+      escaped = false;
+      continue;
+    }
+    if (char === '\\' && quote !== "'") {
+      escaped = true;
+      continue;
+    }
+    if (quote) {
+      if (char === quote) quote = null;
+      else current += char;
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      continue;
+    }
+    if (/\s/.test(char)) {
+      if (current) tokens.push(current);
+      current = '';
+      continue;
+    }
+    current += char;
   }
+  if (escaped) current += '\\';
+  if (current) tokens.push(current);
   return tokens;
 }
 
@@ -364,6 +398,28 @@ function isShellAssignment(token) {
   return /^[A-Za-z_][A-Za-z0-9_]*=/.test(String(token || ''));
 }
 
+function skipWrapperOptions(tokens, startIndex, wrapper) {
+  let index = startIndex;
+  const valueOptions = WRAPPER_OPTIONS_WITH_VALUE[wrapper] || new Set();
+
+  while (index < tokens.length) {
+    const token = String(tokens[index] || '');
+    if (wrapper === 'env' && isShellAssignment(token)) {
+      index += 1;
+      continue;
+    }
+    if (token === '--') return index + 1;
+    if (!token.startsWith('-')) return index;
+    if (wrapper === 'command' && (token === '-v' || token === '-V')) return -1;
+
+    const optionName = token.split('=', 1)[0];
+    if (valueOptions.has(optionName) && !token.includes('=')) index += 2;
+    else index += 1;
+  }
+
+  return index;
+}
+
 function findOutboundCommand(tokens) {
   let index = 0;
   while (isShellAssignment(tokens[index])) index += 1;
@@ -372,10 +428,8 @@ function findOutboundCommand(tokens) {
     const wrapper = path.basename(String(tokens[index] || '')).toLowerCase();
     if (!OUTBOUND_COMMAND_WRAPPERS.has(wrapper)) break;
     index += 1;
-    if (wrapper === 'env') {
-      while (isShellAssignment(tokens[index])) index += 1;
-    }
-    if (String(tokens[index] || '').startsWith('-')) return null;
+    index = skipWrapperOptions(tokens, index, wrapper);
+    if (index < 0) return null;
   }
 
   const command = path.basename(String(tokens[index] || '')).toLowerCase();
