@@ -18,7 +18,7 @@ const SECRET_PATTERNS = [
   { id: 'stripe_live_secret', label: 'Stripe live secret key', regex: /\bsk_live_[A-Za-z0-9]{16,}\b/g },
   { id: 'slack_token', label: 'Slack token', regex: /\bxox(?:a|b|p|r|s)-[A-Za-z0-9-]{10,}\b/g },
   { id: 'aws_access_key', label: 'AWS access key', regex: /\bAKIA[0-9A-Z]{16}\b/g },
-  { id: 'jwt_token', label: 'JWT token', regex: /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9._-]{8,}\.[A-Za-z0-9._-]{8,}\b/g },
+  { id: 'jwt_token', label: 'JWT token', regex: /\beyJ[\w-]{8,}\.[\w-]{8,}\.[\w-]{8,}\b/g },
   { id: 'pem_private_key', label: 'Private key block', regex: /-----BEGIN (?:RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY-----[\s\S]+?-----END (?:RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY-----/g },
   {
     id: 'generic_assignment',
@@ -56,6 +56,8 @@ const BASH_SECRET_READ_PREFIXES = [
 
 const OUTBOUND_FILE_COMMANDS = new Set(['curl', 'wget']);
 const OUTBOUND_COMMAND_WRAPPERS = new Set(['command', 'env', 'nohup', 'sudo']);
+const SHELL_QUOTES = new Set(['"', "'"]);
+const SHELL_SEGMENT_SEPARATORS = new Set([';', '|', '&', '\n']);
 const WRAPPER_OPTIONS_WITH_VALUE = {
   env: new Set(['-u', '--unset', '-C', '--chdir', '-S', '--split-string']),
   sudo: new Set([
@@ -301,40 +303,47 @@ function scanFile(filePath, options = {}) {
   };
 }
 
+function flushToken(tokens, state) {
+  if (!state.current) return;
+  tokens.push(state.current);
+  state.current = '';
+}
+
+function consumeTokenCharacter(state, tokens, char) {
+  if (state.escaped) {
+    state.current += char;
+    state.escaped = false;
+    return;
+  }
+  if (char === '\\' && state.quote !== "'") {
+    state.escaped = true;
+    return;
+  }
+  if (state.quote) {
+    if (char === state.quote) state.quote = null;
+    else state.current += char;
+    return;
+  }
+  if (SHELL_QUOTES.has(char)) {
+    state.quote = char;
+    return;
+  }
+  if (/\s/.test(char)) {
+    flushToken(tokens, state);
+    return;
+  }
+  state.current += char;
+}
+
 function tokenizeCommand(command) {
   const tokens = [];
-  let current = '';
-  let quote = null;
-  let escaped = false;
+  const state = { current: '', quote: null, escaped: false };
 
   for (const char of String(command || '')) {
-    if (escaped) {
-      current += char;
-      escaped = false;
-      continue;
-    }
-    if (char === '\\' && quote !== "'") {
-      escaped = true;
-      continue;
-    }
-    if (quote) {
-      if (char === quote) quote = null;
-      else current += char;
-      continue;
-    }
-    if (char === '"' || char === "'") {
-      quote = char;
-      continue;
-    }
-    if (/\s/.test(char)) {
-      if (current) tokens.push(current);
-      current = '';
-      continue;
-    }
-    current += char;
+    consumeTokenCharacter(state, tokens, char);
   }
-  if (escaped) current += '\\';
-  if (current) tokens.push(current);
+  if (state.escaped) state.current += '\\';
+  flushToken(tokens, state);
   return tokens;
 }
 
@@ -355,47 +364,53 @@ function resolvePathToken(token, cwd) {
   return path.join(cwd || process.cwd(), normalized);
 }
 
+function flushCommandSegment(segments, state) {
+  const segment = state.current.trim();
+  if (segment) segments.push(segment);
+  state.current = '';
+}
+
+function consumeSegmentCharacter(state, segments, char) {
+  if (state.escaped) {
+    state.current += char;
+    state.escaped = false;
+    return;
+  }
+  if (char === '\\' && state.quote !== "'") {
+    state.current += char;
+    state.escaped = true;
+    return;
+  }
+  if (state.quote) {
+    state.current += char;
+    if (char === state.quote) state.quote = null;
+    return;
+  }
+  if (SHELL_QUOTES.has(char)) {
+    state.quote = char;
+    state.current += char;
+    return;
+  }
+  if (SHELL_SEGMENT_SEPARATORS.has(char)) {
+    flushCommandSegment(segments, state);
+    return;
+  }
+  state.current += char;
+}
+
 function splitCommandSegments(command) {
   const segments = [];
-  let current = '';
-  let quote = null;
-  let escaped = false;
+  const state = { current: '', quote: null, escaped: false };
 
   for (const char of String(command || '')) {
-    if (escaped) {
-      current += char;
-      escaped = false;
-      continue;
-    }
-    if (char === '\\' && quote !== "'") {
-      current += char;
-      escaped = true;
-      continue;
-    }
-    if (quote) {
-      current += char;
-      if (char === quote) quote = null;
-      continue;
-    }
-    if (char === '"' || char === "'") {
-      quote = char;
-      current += char;
-      continue;
-    }
-    if (char === ';' || char === '|' || char === '&' || char === '\n') {
-      if (current.trim()) segments.push(current.trim());
-      current = '';
-      continue;
-    }
-    current += char;
+    consumeSegmentCharacter(state, segments, char);
   }
-
-  if (current.trim()) segments.push(current.trim());
+  flushCommandSegment(segments, state);
   return segments;
 }
 
 function isShellAssignment(token) {
-  return /^[A-Za-z_][A-Za-z0-9_]*=/.test(String(token || ''));
+  return /^[A-Za-z_]\w*=/.test(String(token || ''));
 }
 
 function skipWrapperOptions(tokens, startIndex, wrapper) {
@@ -450,7 +465,7 @@ function curlDataFileReference(value, allowNamedReference = false) {
 
 function curlFormFileReference(value) {
   const normalized = String(value || '');
-  const marker = normalized.match(/(?:^|=)[@<](.+)$/);
+  const marker = /(?:^|=)[@<](.+)$/.exec(normalized);
   return marker ? stripCurlFormMetadata(marker[1]) : null;
 }
 
@@ -502,24 +517,26 @@ function outboundOptionSpecs(command) {
   ];
 }
 
+function findOutboundOptionArgument(args, index, specs) {
+  for (const spec of specs) {
+    for (const option of spec.options) {
+      const argument = readOptionArgument(args, index, option);
+      if (argument) return { argument, fileReference: spec.fileReference, option };
+    }
+  }
+  return null;
+}
+
 function extractCommandFileReferences(command, args, cwd, references) {
   const specs = outboundOptionSpecs(command);
   for (let index = 0; index < args.length; index += 1) {
-    let matched = false;
-    for (const spec of specs) {
-      for (const option of spec.options) {
-        const argument = readOptionArgument(args, index, option);
-        if (!argument) continue;
-        addOutboundReference(references, spec.fileReference(argument.value, option), cwd, {
-          command,
-          option,
-        });
-        if (argument.consumesNext) index += 1;
-        matched = true;
-        break;
-      }
-      if (matched) break;
-    }
+    const match = findOutboundOptionArgument(args, index, specs);
+    if (!match) continue;
+    addOutboundReference(references, match.fileReference(match.argument.value, match.option), cwd, {
+      command,
+      option: match.option,
+    });
+    if (match.argument.consumesNext) index += 1;
   }
 }
 
@@ -563,50 +580,63 @@ function isSafeSecretStorageWrite(toolName, toolInput = {}, cwd = process.cwd())
   return paths.length > 0 && paths.every((filePath) => isSafeSecretStoragePath(filePath));
 }
 
-function scanBashCommand(command, options = {}) {
-  const cwd = options.cwd || process.cwd();
-  const findings = [];
-  const fileHashes = [];
-  const inlineScan = scanText(command, { provider: options.provider, source: 'command' });
-  findings.push(...inlineScan.findings.map((finding) => ({
+function commandTextFindings(inlineScan) {
+  return inlineScan.findings.map((finding) => ({
     ...finding,
     reason: `${finding.label} found in command text`,
-  })));
+  }));
+}
 
+function scanCommandReadFiles(command, cwd, provider) {
   const tokens = tokenizeCommand(command);
   const verb = String(tokens[0] || '').toLowerCase();
-  const inspectsFiles = BASH_SECRET_READ_PREFIXES.includes(verb);
+  if (!BASH_SECRET_READ_PREFIXES.includes(verb)) return [];
 
-  if (inspectsFiles) {
-    for (const token of tokens.slice(1)) {
-      if (!looksLikePath(token)) continue;
-      const resolved = resolvePathToken(token, cwd);
-      const fileScan = scanFile(resolved, { provider: options.provider });
-      if (!fileScan.detected) continue;
-      findings.push(...fileScan.findings.map((finding) => ({
-        ...finding,
-        source: 'command_file',
-      })));
-    }
+  const findings = [];
+  for (const token of tokens.slice(1)) {
+    if (!looksLikePath(token)) continue;
+    const resolved = resolvePathToken(token, cwd);
+    const fileScan = scanFile(resolved, { provider });
+    if (!fileScan.detected) continue;
+    findings.push(...fileScan.findings.map((finding) => ({
+      ...finding,
+      source: 'command_file',
+    })));
   }
+  return findings;
+}
 
-  if (inlineScan.provider !== 'off') {
-    for (const reference of extractOutboundFileReferences(command, cwd)) {
-      const fileScan = scanFile(reference.path, {
-        provider: options.provider,
-        includePathFinding: false,
-      });
-      if (!fileScan.detected) continue;
-      findings.push(...fileScan.findings.map((finding) => ({
-        ...finding,
-        source: 'outbound_file',
-        reason: `${finding.label} found in file referenced by ${reference.command} ${reference.option}`,
-      })));
-      if (fileScan.fileHash) fileHashes.push(fileScan.fileHash);
-    }
+function scanOutboundCommandFiles(command, cwd, provider) {
+  const findings = [];
+  const fileHashes = [];
+  for (const reference of extractOutboundFileReferences(command, cwd)) {
+    const fileScan = scanFile(reference.path, {
+      provider,
+      includePathFinding: false,
+    });
+    if (!fileScan.detected) continue;
+    findings.push(...fileScan.findings.map((finding) => ({
+      ...finding,
+      source: 'outbound_file',
+      reason: `${finding.label} found in file referenced by ${reference.command} ${reference.option}`,
+    })));
+    if (fileScan.fileHash) fileHashes.push(fileScan.fileHash);
   }
+  return { findings, fileHashes };
+}
 
-  const uniqueFileHashes = [...new Set(fileHashes)];
+function scanBashCommand(command, options = {}) {
+  const cwd = options.cwd || process.cwd();
+  const inlineScan = scanText(command, { provider: options.provider, source: 'command' });
+  const findings = commandTextFindings(inlineScan);
+  findings.push(...scanCommandReadFiles(command, cwd, options.provider));
+
+  const outboundScan = inlineScan.provider === 'off'
+    ? { findings: [], fileHashes: [] }
+    : scanOutboundCommandFiles(command, cwd, options.provider);
+  findings.push(...outboundScan.findings);
+
+  const uniqueFileHashes = [...new Set(outboundScan.fileHashes)];
 
   return {
     detected: findings.length > 0,
@@ -627,62 +657,70 @@ function getToolInputPaths(toolInput = {}, cwd = process.cwd()) {
   return candidates.map((candidate) => resolvePathToken(candidate, cwd));
 }
 
-function scanHookInput(input = {}, options = {}) {
-  const toolName = String(input.tool_name || input.toolName || '').trim();
-  const toolInput = input.tool_input && typeof input.tool_input === 'object' ? input.tool_input : {};
-  const cwd = input.cwd || options.cwd || process.cwd();
-  const findings = [];
-  let provider = resolveProvider(options.provider);
-  let commandHash = null;
-  let fileHashes = [];
-  const safeSecretStorageWrite = isSafeSecretStorageWrite(toolName, toolInput, cwd);
-
-  const contentFields = [
+function getToolInputContent(toolInput) {
+  return [
     toolInput.content,
     toolInput.new_string,
     toolInput.value,
     toolInput.text,
   ].filter((value) => typeof value === 'string' && value.trim());
+}
 
-  if (!EDIT_LIKE_TOOLS.has(toolName)) {
-    const paths = getToolInputPaths(toolInput, cwd);
-    for (const filePath of paths) {
-      const result = scanFile(filePath, { provider });
-      if (result.detected) {
-        provider = result.provider;
-        fileHashes.push(result.fileHash);
-        findings.push(...result.findings);
-      }
-    }
+function scanHookPaths(state, toolName, toolInput, cwd) {
+  if (EDIT_LIKE_TOOLS.has(toolName)) return;
+  for (const filePath of getToolInputPaths(toolInput, cwd)) {
+    const result = scanFile(filePath, { provider: state.provider });
+    if (!result.detected) continue;
+    state.provider = result.provider;
+    state.fileHashes.push(result.fileHash);
+    state.findings.push(...result.findings);
   }
+}
 
-  if (typeof toolInput.command === 'string' && toolInput.command.trim()) {
-    const result = scanBashCommand(toolInput.command, { provider, cwd });
-    if (result.detected) {
-      provider = result.provider;
-      commandHash = result.commandHash;
-      fileHashes.push(...(result.fileHashes || []));
-      findings.push(...result.findings);
-    }
-  }
+function scanHookCommand(state, toolInput, cwd) {
+  const command = toolInput.command;
+  if (typeof command !== 'string' || !command.trim()) return;
+  const result = scanBashCommand(command, { provider: state.provider, cwd });
+  if (!result.detected) return;
+  state.provider = result.provider;
+  state.commandHash = result.commandHash;
+  state.fileHashes.push(...(result.fileHashes || []));
+  state.findings.push(...result.findings);
+}
 
-  if (!safeSecretStorageWrite) {
-    for (const content of contentFields) {
-      const result = scanText(content, { provider, source: 'tool_input' });
-      if (result.detected) {
-        provider = result.provider;
-        findings.push(...result.findings);
-      }
-    }
+function scanHookContent(state, toolInput, safeSecretStorageWrite) {
+  if (safeSecretStorageWrite) return;
+  for (const content of getToolInputContent(toolInput)) {
+    const result = scanText(content, { provider: state.provider, source: 'tool_input' });
+    if (!result.detected) continue;
+    state.provider = result.provider;
+    state.findings.push(...result.findings);
   }
+}
+
+function scanHookInput(input = {}, options = {}) {
+  const toolName = String(input.tool_name || input.toolName || '').trim();
+  const toolInput = input.tool_input && typeof input.tool_input === 'object' ? input.tool_input : {};
+  const cwd = input.cwd || options.cwd || process.cwd();
+  const state = {
+    provider: resolveProvider(options.provider),
+    findings: [],
+    commandHash: null,
+    fileHashes: [],
+  };
+  const safeSecretStorageWrite = isSafeSecretStorageWrite(toolName, toolInput, cwd);
+
+  scanHookPaths(state, toolName, toolInput, cwd);
+  scanHookCommand(state, toolInput, cwd);
+  scanHookContent(state, toolInput, safeSecretStorageWrite);
 
   return {
-    detected: findings.length > 0,
-    provider,
+    detected: state.findings.length > 0,
+    provider: state.provider,
     toolName,
-    findings: uniqueFindings(findings),
-    commandHash,
-    fileHashes: fileHashes.filter(Boolean),
+    findings: uniqueFindings(state.findings),
+    commandHash: state.commandHash,
+    fileHashes: state.fileHashes.filter(Boolean),
   };
 }
 
