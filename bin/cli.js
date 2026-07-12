@@ -2749,7 +2749,9 @@ function statuslineRender() {
 
 function hookAutoCapture() {
   syncActiveProjectContext();
-  const { extractPromptText } = require(path.join(PKG_ROOT, 'scripts', 'feedback-sanitizer'));
+  const { extractPromptEnvelope } = require(path.join(PKG_ROOT, 'scripts', 'feedback-sanitizer'));
+  const rawStdin = readStdinText();
+  const promptEnvelope = extractPromptEnvelope(rawStdin);
   // stdin on a UserPromptSubmit hook is the JSON payload
   // {session_id, transcript_path, cwd, prompt, ...}. Persist ONLY the human
   // `.prompt` field — never the whole stdin object — so session metadata blobs
@@ -2758,7 +2760,7 @@ function hookAutoCapture() {
     || process.env.THUMBGATE_USER_PROMPT
     || process.env.CODEX_USER_PROMPT
     || process.env.USER_PROMPT
-    || extractPromptText(readStdinText());
+    || promptEnvelope.prompt;
   const { evaluatePromptGuard } = require(path.join(PKG_ROOT, 'scripts', 'prompt-guard'));
   const { processInlineFeedback, formatCliOutput } = require(path.join(PKG_ROOT, 'scripts', 'cli-feedback'));
   const { detectFeedbackSignal } = require(path.join(PKG_ROOT, 'scripts', 'feedback-quality'));
@@ -2771,25 +2773,39 @@ function hookAutoCapture() {
     })
   );
 
-  recordConversationEntry({
-    author: 'user',
-    text: prompt,
-    source: 'claude_user_prompt',
-  });
-
   const guardResult = evaluatePromptGuard(prompt);
   if (guardResult) {
+    recordConversationEntry({
+      author: 'user',
+      text: prompt,
+      source: 'claude_user_prompt',
+    });
     process.stdout.write(`${JSON.stringify(guardResult)}\n`);
     return;
   }
 
   const detected = detectFeedbackSignal(prompt);
   if (!detected) {
+    recordConversationEntry({
+      author: 'user',
+      text: prompt,
+      source: 'claude_user_prompt',
+    });
     return;
   }
 
   const signal = detected.signal;
   const conversationWindow = readRecentConversationWindow({ limit: 8 });
+  const { buildFeedbackSourceIdentity } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
+  const sourceEvent = buildFeedbackSourceIdentity({
+    signal,
+    promptText: prompt,
+    sessionId: promptEnvelope.sessionId || process.env.CLAUDE_SESSION_ID,
+    promptId: promptEnvelope.promptId,
+    projectDir: promptEnvelope.projectDir || CWD,
+    timestamp: promptEnvelope.timestamp,
+    source: 'claude-user-prompt',
+  });
   const result = processInlineFeedback({
     signal,
     context: prompt,
@@ -2798,7 +2814,15 @@ function hookAutoCapture() {
       : undefined,
     whatWentWrong: signal === 'down' ? prompt : undefined,
     whatWorked: signal === 'up' ? prompt : undefined,
+    sourceEvent,
   });
+  if (!result.feedbackResult || !result.feedbackResult.duplicate) {
+    recordConversationEntry({
+      author: 'user',
+      text: prompt,
+      source: 'claude_user_prompt',
+    });
+  }
   process.stdout.write(formatCliOutput(result) + '\n');
 }
 
