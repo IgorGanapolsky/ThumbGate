@@ -282,7 +282,7 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.match(publicLanding, /workflow governance|agent governance/i);
   assert.match(publicLanding, /Verification evidence/i);
   assert.match(publicLanding, /Release confidence/i);
-  assert.match(publicLanding, /standalone plugin bundle/i);
+  assert.match(publicLanding, /standalone (?:ThumbGate )?plugin bundle/i);
   assert.doesNotMatch(publicLanding, /billingDuration/);
   assert.doesNotMatch(publicLanding, /P1M/);
   assert.doesNotMatch(publicLanding, /mcp-gateway\.vercel\.app/);

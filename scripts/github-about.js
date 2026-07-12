@@ -147,6 +147,10 @@ function collectLocalGitHubAboutErrors(root = ROOT) {
     `config/github-about.json githubDescription must be ${MAX_GITHUB_DESCRIPTION_LENGTH} characters or fewer for GitHub repo metadata`
   );
   check(
+    normalizeText(packageJson.description) === about.githubDescription,
+    'package.json description must match config/github-about.json githubDescription'
+  );
+  check(
     packageJson.homepage === about.homepageUrl,
     `package.json homepage must match ${about.homepageUrl}`
   );

@@ -2,28 +2,28 @@
 
 ## Core Identity
 **Product Name:** ThumbGate
-**Primary Value Proposition:** Stop AI agents before they make costly mistakes
+**Primary Value Proposition:** Inspect risky agent actions before execution and block them when policy requires it
 
 ## Surface Descriptions
 
 ### Cursor Directory (cursor.directory/thumbgate)
-> Pre-action checks that block AI agents from repeating known mistakes. Captures feedback, auto-generates prevention rules, and enforces them via PreToolUse hooks.
+> Pre-action checks that flag repeated risky actions before execution and block matching actions when strict policy is enabled. Accepted feedback becomes local lessons; repeated failures can become prevention rules.
 
 ### Public Landing Page (thumbgate-production.up.railway.app)
-> ThumbGate is the pre-action governance runtime for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode): 👍 thumbs up and 👎 thumbs down feedback become history-aware lessons stored locally; Enterprise adds shared lessons and org visibility. PreToolUse checks flag and log risky tool calls — hard-blocking secret exfiltration by default and flagging the rest, with strict mode to hard-block every rule.
+> ThumbGate is the local pre-action governance runtime for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode): accepted 👍 thumbs-up and 👎 thumbs-down feedback becomes history-aware local lessons; repeated failures can become prevention rules. PreToolUse checks flag and log risky tool calls, hard-block detected secret leaks, and block matching actions in strict mode. Pro is for individual operators; Enterprise rollout is scoped after intake.
 
 ### NPM package.json
-> Pre-action checks that block AI coding agents from repeating known mistakes. Captures feedback, auto-promotes failures into prevention rules, and enforces them via PreToolUse hooks.
+> ThumbGate Pre-Action Checks derive rules from repeated failures, flag risky tool calls, hard-block detected secret leaks, and block matches in strict mode.
 
 ### GitHub Repo About
 **Canonical source:** `config/github-about.json`
-> Agent governance: thumbs become Pre-Action Checks that flag repeat mistakes and hard-block secret exfiltration before code or systems change.
+> ThumbGate Pre-Action Checks derive rules from repeated failures, flag risky tool calls, hard-block detected secret leaks, and block matches in strict mode.
 
 **Canonical topics:** `thumbgate`, `pre-action-checks`, `mcp`, `mcp-server`, `ai-agents`, `agent-reliability`, `guardrails`, `ai-safety`, `developer-tools`, `feedback-loop`, `claude-code`, `cursor`, `codex`, `gemini`, `amp`, `opencode`, `thompson-sampling`
 
 ### Stripe Pro Offer
 **Title:** ThumbGate Pro — Personal Local Dashboard + DPO Export
-**Description:** ThumbGate Pro gives individual operators a personal local dashboard, DPO export, advanced data exports, and review-ready workflow support. Team rollout remains intake-first for shared hosted lessons, approval boundaries, and org visibility.
+**Description:** ThumbGate Pro gives individual operators a personal local dashboard, DPO export, advanced data exports, and review-ready workflow support. Enterprise remains intake-first for scoped shared-governance requirements; hosted team lesson sync and a hosted org dashboard are not general-availability runtime features.
 
 ### DEV.TO Blog Post
 **Title:** I built pre-action checks that flag Claude Code's repeat mistakes — and hard-block secret exfiltration by default
@@ -34,7 +34,7 @@
 |---|---|
 | AI reliability layer | stop costly AI agent mistakes |
 | Global enforcement | enforcement for actions routed through ThumbGate |
-| Behavior control system | Pre-Action Checks that block risky actions before execution |
+| Behavior control system | Pre-Action Checks that flag or block risky actions according to policy before execution |
 | ThumbGate feedback loop | feedback-to-enforcement pipeline |
 | Veto Layer | Pre-Action Checks |
 | Agentic Feedback Studio | [DROP] |
@@ -48,7 +48,7 @@
 
 **Context**: In the age of AI slop — oversaturation with generic, low-quality AI-generated outputs — brands and engineering teams are actively seeking ways to ensure AI acts with human-backed standards. Merriam-Webster named "slop" its 2025 Word of the Year. The antidote the market wants: "human insight leads, AI supports."
 
-**ThumbGate's answer**: ThumbGate is the authenticity enforcement layer for AI agents. The thumbs-up/down mechanism is a hard check between AI intent and execution — not a soft suggestion. Every thumbs-down becomes a prevention rule specific to your team's actual standards.
+**ThumbGate's answer**: ThumbGate is an inspectable policy layer for AI agents. Accepted thumbs-up/down feedback becomes local lessons, recurring failures can become prevention rules, and the PreToolUse path records an allow, warning, or denial before execution.
 
 **Key messages to use on this angle:**
 - "Stop AI agents before they make costly mistakes."
@@ -57,7 +57,7 @@
 - "Turn a smart assistant into a reliable operator."
 - "Your AI's outputs should reflect your standards, not generic patterns."
 - "Human judgment leads. ThumbGate enforces it."
-- "Stop AI slop before it ships — at the tool-call level."
+- "Catch risky AI-agent actions before tool execution."
 - "The authenticity enforcement layer for AI coding agents."
 
 **When to use**: On authenticity-conscious buyer surfaces, developer community content (AI slop is acutely felt by developers), and comparison pages where differentiating from unconstrained agent tools matters.

@@ -13,21 +13,26 @@ function readJson(relativePath) {
   return JSON.parse(readText(relativePath));
 }
 
-test('package metadata leads with self-improving governance framing instead of generic memory-layer phrasing', () => {
+test('package metadata leads with the concrete enforcement contract', () => {
   const packageJson = readJson('package.json');
 
-  assert.match(packageJson.description, /self-improving/i);
-  assert.match(packageJson.description, /governance/i);
-  assert.match(packageJson.description, /prevention rule/i);
+  assert.match(packageJson.description, /ThumbGate Pre-Action Checks/i);
+  assert.match(packageJson.description, /repeated failures/i);
+  assert.match(packageJson.description, /hard-block detected secret leaks/i);
+  assert.match(packageJson.description, /strict mode/i);
+  assert.doesNotMatch(packageJson.description, /every mistake|every thumbs-down/i);
   assert.doesNotMatch(packageJson.description, /Universal Context & Memory Layer/i);
 });
 
-test('README explains the product as self-improving agent enforcement', () => {
+test('README explains the observed feedback and enforcement boundaries', () => {
   const readme = readText('README.md');
 
-  assert.match(readme, /self-improv/i);
-  assert.match(readme, /enforcement/i);
-  assert.match(readme, /flag or block repeated failures according to policy/i);
+  assert.match(readme, /Accepted feedback is stored as local lessons/i);
+  assert.match(readme, /Repeated concrete failures can become prevention rules/i);
+  assert.match(readme, /warn and log by default/i);
+  assert.match(readme, /hard-blocks detected secret leaks and two direct self-disable command classes by default/i);
+  assert.match(readme, /terminate the ThumbGate gate process or enable its bypass environment override/i);
+  assert.match(readme, /THUMBGATE_STRICT_ENFORCEMENT=1/i);
   assert.match(readme, /prompt evaluation/i);
 });
 
@@ -43,11 +48,10 @@ test('public surfaces lead with outcomes instead of infrastructure abstractions'
     assert.match(surface, /Pre-Action Checks/i);
   }
 
-  assert.match(readme, /Prevent expensive AI mistakes/i);
-  assert.match(readme, /Make AI stop repeating mistakes/i);
-  assert.match(readme, /reliable operator/i);
-  assert.match(landingPage, /Stop the same mistake before|paying Anthropic to watch/i);
-  assert.match(landingPage, /machine-speed pre-action defense/i);
+  assert.match(readme, /AI coding agents repeat mistakes/i);
+  assert.match(readme, /evaluate the proposed tool call before execution/i);
+  assert.match(landingPage, /Stop the same mistake before|Catch AI agents before/i);
+  assert.match(landingPage, /configured pre-action check allowed, warned on, or denied/i);
   assert.match(landingPage, /agent surface inventory/i);
   assert.match(gptInstructions, /Sell outcomes before infrastructure/i);
   assert.doesNotMatch(landingPage, /Global enforcement/i);
@@ -57,12 +61,12 @@ test('public surfaces lead with outcomes instead of infrastructure abstractions'
 test('README keeps the business sprint-first while preserving the Pro side lane', () => {
   const readme = readText('README.md');
 
-  assert.match(readme, /Best first paid motion for teams/i);
-  assert.match(readme, /Best first technical motion/i);
+  assert.match(readme, /Enterprise intake path/i);
+  assert.match(readme, /Local technical path/i);
   assert.match(readme, /First-dollar activation path/i);
-  assert.match(readme, /what repeated AI mistake would be worth blocking before the next tool call/i);
+  assert.match(readme, /what repeated AI mistake would be worth catching before the tool executes/i);
   assert.match(readme, /Native ChatGPT rating buttons are not the ThumbGate capture path/i);
-  assert.match(readme, /CLI-first/i);
+  assert.match(readme, /install the CLI and use `init` plus the documented setup/i);
   assert.match(readme, /Workflow Hardening Sprint/i);
   assert.match(readme, /Paid path for individual operators/i);
   assert.match(readme, /self-serve side lane/i);
@@ -110,12 +114,14 @@ test('README exposes the actual shipped tech stack', () => {
   assert.match(readme, /Railway/i);
 });
 
-test('README exposes lesson search as a free self-hosted MCP surface', () => {
+test('README keeps lesson search on Pro instead of the Free tier', () => {
   const readme = readText('README.md');
 
   assert.match(readme, /search_lessons/i);
-  assert.match(readme, /self-hosted users can invoke `search_lessons` directly through MCP/i);
+  assert.match(readme, /Pro operators can invoke `search_lessons` through MCP/i);
   assert.match(readme, /npx thumbgate lessons/i);
+  assert.match(readme, /Free does not include recall or search/i);
+  assert.doesNotMatch(readme, /Free and self-hosted users can invoke `search_lessons`/i);
 });
 
 test('LLM context keeps team pricing and CLI-first positioning aligned with commercial truth', () => {
@@ -229,7 +235,9 @@ test('public landing copy stays vendor-neutral and honest about editor support',
   assert.match(landingPage, /Gemini/i);
   assert.match(landingPage, /Amp/i);
   assert.match(landingPage, /OpenCode/i);
-  assert.match(landingPage, /VS Code works when you run an MCP-compatible agent inside it/i);
+  assert.match(landingPage, /VS Code can host an MCP-compatible agent/i);
+  assert.match(landingPage, /Each editor or agent still requires its MCP stdio or hook configuration/i);
+  assert.match(landingPage, /does not ship a standalone VS Code extension/i);
   assert.doesNotMatch(landingPage, /auto-detects supported local agent installs/i);
   assert.doesNotMatch(landingPage, /claude --mcp thumbgate/i);
 });
