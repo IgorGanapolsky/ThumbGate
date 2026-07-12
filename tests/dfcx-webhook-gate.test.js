@@ -115,14 +115,20 @@ test('repeat-block path: the same action twice — second is blocked, fulfillmen
 });
 
 test('blockOnRepeat=false disables the repeat block', async () => {
-  resetSession();
-  let calls = 0;
-  const fulfill = async () => { calls += 1; return { fulfillment_response: { messages: [] } }; };
-  const req = dfcxRequest('send-receipt', { account_id: 'OK-2' });
-  await guardDfcxWebhook(req, fulfill, { blockOnRepeat: false });
-  const second = await guardDfcxWebhook(req, fulfill, { blockOnRepeat: false });
-  assert.equal(second.blocked, false);
-  assert.equal(calls, 2, 'both attempts run when repeat-blocking is off');
+  const evaluateGates = gates.evaluateGates;
+  gates.evaluateGates = () => null;
+  try {
+    resetSession();
+    let calls = 0;
+    const fulfill = async () => { calls += 1; return { fulfillment_response: { messages: [] } }; };
+    const req = dfcxRequest('send-receipt', { account_id: 'OK-2' });
+    await guardDfcxWebhook(req, fulfill, { blockOnRepeat: false });
+    const second = await guardDfcxWebhook(req, fulfill, { blockOnRepeat: false });
+    assert.equal(second.blocked, false);
+    assert.equal(calls, 2, 'both attempts run when repeat-blocking is off');
+  } finally {
+    gates.evaluateGates = evaluateGates;
+  }
 });
 
 test('buildBlockResponse: valid DFCX WebhookResponse with safe defaults', () => {
