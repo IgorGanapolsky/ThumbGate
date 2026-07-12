@@ -515,7 +515,7 @@
     "test:operational-integrity": "node --test tests/operational-integrity.test.js tests/sync-branch-protection.test.js",
     "test:workflow": "node --test tests/parallel-workflow.test.js tests/workflow-contract.test.js tests/positioning-contract.test.js tests/docs-claim-hygiene.test.js tests/thumbgate-scope.test.js tests/workflow-runs.test.js tests/workflow-sprint-intake.test.js tests/revenue-pack-utils.test.js tests/sales-pipeline.test.js tests/github-outreach.test.js tests/enterprise-story.test.js tests/guide-conversion-path.test.js tests/buyer-intent-revenue-assist.test.js",
     "test:sales-pipeline": "node --test tests/sales-pipeline.test.js",
-    "test:billing": "node --test tests/billing.test.js tests/stripe-sync-product-images.test.js",
+    "test:billing": "node --test tests/billing.test.js tests/stripe-sync-product-images.test.js tests/checkout-attribution-reference.test.js",
     "test:billing-setup": "node --test tests/billing-setup-redaction.test.js",
     "test:cli": "node --test tests/analytics-report.test.js tests/agent-design-governance.test.js tests/codex-self-heal.test.js tests/creator-campaigns.test.js tests/cli.test.js tests/codex-bridge-script.test.js tests/dependabot-changeset.test.js tests/dispatch-brief.test.js tests/feedback-normalize.test.js tests/feedback-lesson-sanitization.test.js tests/install-mcp.test.js tests/install-scope-docs.test.js tests/pr-manager.test.js tests/pro-local-dashboard.test.js tests/published-cli.test.js tests/revenue-status.test.js tests/stripe-live-status.test.js tests/creator-dev-and-prune.test.js",
     "test:evolution": "node --test tests/workspace-evolver.test.js",
