@@ -840,7 +840,7 @@
     "dotenv": "^17.4.2",
     "playwright-core": "^1.59.1",
     "protobufjs": "^8.5.0",
-    "stripe": "^22.2.0"
+    "stripe": "^22.3.1"
   },
   "overrides": {
     "@google/genai": {
