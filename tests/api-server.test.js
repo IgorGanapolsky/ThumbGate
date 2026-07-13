@@ -933,30 +933,32 @@ test('terms of service route covers payment, refunds, acceptable use, and limita
 });
 
 test('pricing page is the single source of truth for what ThumbGate sells', async () => {
-  // Resolves the "pricing schizophrenia" flagged in the audit: sales/pricing.json
-  // said $49/$299, COMMERCIAL_TRUTH.md said $19/$149, and no buyer-facing
-  // surface existed to reconcile. This page MUST stay canonical.
+  // Canonical money path: paid diagnostic + sprint services first, Pro solo
+  // subscription side lane, Enterprise after proof. No retired seat/kit ladders.
   const res = await fetch(apiUrl('/pricing'));
   assert.equal(res.status, 200);
   assert.match(String(res.headers.get('content-type')), /text\/html/);
   const body = await res.text();
-  // Three coherent tiers present; consulting and kit checkout are intentionally
-  // kept out of the pricing table so cold buyers see one purchase decision.
-  assert.match(body, /ThumbGate CLI/i);
-  assert.match(body, /ThumbGate Pro/i);
+  assert.match(body, /ThumbGate CLI|Forever free for solo|Free/i);
+  assert.match(body, /ThumbGate Pro|<div class="tier">Pro/i);
   assert.match(body, /\$19/);
   assert.match(body, /\$149/);
   assert.match(body, /ThumbGate Enterprise|<div class="tier">Enterprise/i);
+  assert.match(body, /Workflow Hardening Sprint/i);
+  assert.match(body, /Diagnostic/i);
+  assert.match(body, /\$499/);
+  assert.match(body, /\$1500/);
   assert.doesNotMatch(body, /\$49\b[\s\S]{0,40}seat/i);
-  assert.doesNotMatch(body, /Workflow Hardening Sprint/i);
-  assert.doesNotMatch(body, /\$499|\$1,500|\$97/);
+  assert.doesNotMatch(body, /\$97\b/);
   assert.doesNotMatch(body, /buy\.stripe\.com/);
   assert.doesNotMatch(body, /mailto:igor\.ganapolsky@gmail\.com/);
   assert.doesNotMatch(body, /self-serve checkout on every subscription plan/i);
-  // CTAs route to the canonical paths.
+  // CTAs route to the canonical paths (services via /go/* routers, Pro checkout).
   assert.match(body, /href="\/go\/install/);
+  assert.match(body, /href="\/go\/diagnostic/);
+  assert.match(body, /href="\/go\/sprint/);
   assert.match(body, /href="\/checkout\/pro/);
-  assert.match(body, /pricing_enterprise_intake/);
+  assert.match(body, /pricing_enterprise_intake|pricing_enterprise_sprint/);
   assert.match(body, /#workflow-sprint-intake/);
   // Cross-links so it's a navigation hub, not a dead end.
   assert.match(body, /href="\/support"/);
