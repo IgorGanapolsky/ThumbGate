@@ -33,6 +33,7 @@ Book the first external ThumbGate payment, then build a repeatable path to $100/
 - `npm run test:billing`: 73/73 passing.
 - `npm run test:e2e`: 30/30 passing.
 - Aiventyx intake-only browser contract: 2/2 passing.
+- npm package boundary: measured 4,852,148 bytes; cap ratcheted from 4.85 MB to 4.88 MB for the shipped fulfillment and partner-rail runtime, with no new dependency or asset.
 - `npm run prove:adapters`: 48/48 passing.
 - `npm run prove:automation`: 55/55 passing.
 - Monolithic `npm test`: three existing `rate-limiter.test.js` failures. The test isolates `HOME`, but the previously loaded creator-mode module remains cached and incorrectly reports Pro. This is not caused by the diagnostic diff and must not be reported as green.

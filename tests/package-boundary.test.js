@@ -473,10 +473,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 4.83 MB -> 4.85 MB (2026-07-12) for paid diagnostic fulfillment:
   // confirmed-payment handling, diagnostic-safe session lookup, idempotent
   // Resend delivery, intake alert throttling, and offer-aware attribution.
-  // Measured unpacked size is 4,832,852 bytes; no new dependency or asset.
+  // Bumped 4.85 MB -> 4.88 MB (2026-07-13) after the final fulfillment
+  // concurrency, entitlement-replay, and partner-rail guards. Measured unpacked
+  // size is 4,852,148 bytes; no new dependency or asset.
   assert.ok(
-    manifest.unpackedSize <= 4_850_000,
-    `npm package should stay <= 4.85 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_880_000,
+    `npm package should stay <= 4.88 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
