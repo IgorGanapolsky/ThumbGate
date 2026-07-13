@@ -12,11 +12,19 @@ test('pricing page emits first-party telemetry for views and CTA clicks', () => 
   assert.match(pricingHtml, /pricing_page_view/);
   assert.match(pricingHtml, /pricing_cta_click/);
   assert.match(pricingHtml, /data-pricing-cta/);
+  assert.match(pricingHtml, /data-cta-id="pricing_diagnostic"/);
+  assert.match(pricingHtml, /data-cta-id="pricing_sprint"/);
   assert.match(pricingHtml, /data-cta-id="pricing_pro"/);
 });
 
-test('pricing Pro CTAs use confirmed checkout so Stripe collects email without the extra gate', () => {
-  assert.match(pricingHtml, /href="\/checkout\/pro\?confirm=1[^"]*cta_id=pricing_nav_start_pro/);
+test('pricing leads with paid diagnostic/sprint and keeps confirmed Pro checkout', () => {
+  assert.match(pricingHtml, /href="\/go\/diagnostic\?[^"]*cta_id=pricing_nav_diagnostic/);
+  assert.match(pricingHtml, /href="\/go\/diagnostic\?[^"]*cta_id=pricing_diagnostic/);
+  assert.match(pricingHtml, /href="\/go\/sprint\?[^"]*cta_id=pricing_sprint/);
+  assert.match(pricingHtml, /Pay \$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic/);
+  assert.match(pricingHtml, /Pay \$__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint/);
   assert.match(pricingHtml, /href="\/checkout\/pro\?confirm=1[^"]*cta_id=pricing_pro/);
   assert.match(pricingHtml, /"url": "__APP_ORIGIN__\/checkout\/pro\?confirm=1&plan_id=pro&billing_cycle=monthly/);
+  assert.match(pricingHtml, /"name": "Workflow Hardening Diagnostic"/);
+  assert.match(pricingHtml, /"name": "Workflow Hardening Sprint"/);
 });

@@ -52,11 +52,13 @@ Only move forward when the buyer has:
 
 ## Commercial Motion
 
-- This is a pilot-by-request service offer, not a new public self-serve subscription tier.
-- The public self-serve offer remains Pro at `$19/mo or $149/yr` per [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md).
+- Public paid checkout (live Stripe Payment Links, substituted at runtime):
+  - **Diagnostic: $499** — `/go/diagnostic` (or `/diagnostic` for scope + pay)
+  - **Sprint: $1,500** — `/go/sprint`
+- Pro at `$19/mo or $149/yr` remains the solo self-serve side lane per [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md).
 - Enterprise scope and pricing remain intake-first after the initial workflow is qualified.
 - Use booked pilots, paid orders, or named pilot agreements as commercial proof.
-- Same-day next step after a qualified call: send the sprint brief, the proof pack, and the proposed buyer review path.
+- Same-day next step after a qualified call: Stripe checkout for diagnostic or sprint, or intake only when the workflow still needs fit review.
 
 ## Contact
 
