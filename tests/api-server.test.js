@@ -19,10 +19,17 @@ const savedProjectEnv = {
   THUMBGATE_PROJECT_DIR: process.env.THUMBGATE_PROJECT_DIR,
   CLAUDE_PROJECT_DIR: process.env.CLAUDE_PROJECT_DIR,
   INIT_CWD: process.env.INIT_CWD,
+  RESEND_API_KEY: process.env.RESEND_API_KEY,
+  THUMBGATE_RESEND_API_KEY: process.env.THUMBGATE_RESEND_API_KEY,
+  THUMBGATE_OPERATOR_ALERT_EMAIL: process.env.THUMBGATE_OPERATOR_ALERT_EMAIL,
+  THUMBGATE_DIAGNOSTIC_PAYMENT_LINK_ID: process.env.THUMBGATE_DIAGNOSTIC_PAYMENT_LINK_ID,
 };
 delete process.env.THUMBGATE_PROJECT_DIR;
 delete process.env.CLAUDE_PROJECT_DIR;
 delete process.env.INIT_CWD;
+delete process.env.RESEND_API_KEY;
+delete process.env.THUMBGATE_RESEND_API_KEY;
+delete process.env.THUMBGATE_OPERATOR_ALERT_EMAIL;
 delete process.env.GEMINI_API_KEY;
 delete process.env.THUMBGATE_GEMINI_API_KEY;
 delete process.env.PERPLEXITY_API_KEY;
@@ -42,6 +49,7 @@ process.env.STRIPE_PRICE_ID = '';
 process.env.THUMBGATE_PUBLIC_APP_ORIGIN = 'https://app.example.com';
 process.env.THUMBGATE_BILLING_API_BASE_URL = 'https://billing.example.com';
 process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL = 'https://buy.stripe.com/diagnostic-test';
+process.env.THUMBGATE_DIAGNOSTIC_PAYMENT_LINK_ID = 'plink_testdiagnosticapi';
 process.env.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL = 'https://buy.stripe.com/sprint-test';
 process.env.THUMBGATE_GA_MEASUREMENT_ID = 'G-TEST1234';
 process.env.THUMBGATE_GOOGLE_SITE_VERIFICATION = 'test-verification-token';
@@ -114,6 +122,27 @@ test('loss analytics JSON response neutralizes HTML-significant telemetry string
   assert.equal(body.window.label, '\\u003csvg onload=alert(1)\\u003e');
 });
 
+test('intake rate-limit identity trusts Railway ingress but ignores spoofed headers elsewhere', () => {
+  const socket = { remoteAddress: '10.0.0.7' };
+  const firstRequest = { headers: { 'x-real-ip': '203.0.113.10' }, socket };
+  const secondRequest = { headers: { 'x-real-ip': '203.0.113.11' }, socket };
+  assert.equal(
+    __test__.buildIntakeAlertRateLimitKey(firstRequest, {}),
+    __test__.buildIntakeAlertRateLimitKey(secondRequest, {}),
+    'outside Railway, caller-controlled forwarding headers must be ignored'
+  );
+  assert.notEqual(
+    __test__.buildIntakeAlertRateLimitKey(firstRequest, { RAILWAY_ENVIRONMENT_ID: 'production' }),
+    __test__.buildIntakeAlertRateLimitKey(secondRequest, { RAILWAY_ENVIRONMENT_ID: 'production' }),
+    'Railway overwrites X-Real-IP, so distinct buyers retain distinct quotas'
+  );
+  assert.equal(
+    __test__.buildIntakeAlertRateLimitKey({ headers: { 'x-real-ip': 'forged,chain' }, socket }, { RAILWAY_PROJECT_ID: 'project' }),
+    __test__.buildIntakeAlertRateLimitKey({ headers: {}, socket }, { RAILWAY_PROJECT_ID: 'project' }),
+    'malformed ingress values fall back to the transport peer'
+  );
+});
+
 function apiUrl(pathname = '/') {
   return new URL(pathname, apiOrigin).toString();
 }
@@ -160,6 +189,14 @@ test.after(async () => {
   else process.env.CLAUDE_PROJECT_DIR = savedProjectEnv.CLAUDE_PROJECT_DIR;
   if (savedProjectEnv.INIT_CWD === undefined) delete process.env.INIT_CWD;
   else process.env.INIT_CWD = savedProjectEnv.INIT_CWD;
+  if (savedProjectEnv.RESEND_API_KEY === undefined) delete process.env.RESEND_API_KEY;
+  else process.env.RESEND_API_KEY = savedProjectEnv.RESEND_API_KEY;
+  if (savedProjectEnv.THUMBGATE_RESEND_API_KEY === undefined) delete process.env.THUMBGATE_RESEND_API_KEY;
+  else process.env.THUMBGATE_RESEND_API_KEY = savedProjectEnv.THUMBGATE_RESEND_API_KEY;
+  if (savedProjectEnv.THUMBGATE_OPERATOR_ALERT_EMAIL === undefined) delete process.env.THUMBGATE_OPERATOR_ALERT_EMAIL;
+  else process.env.THUMBGATE_OPERATOR_ALERT_EMAIL = savedProjectEnv.THUMBGATE_OPERATOR_ALERT_EMAIL;
+  if (savedProjectEnv.THUMBGATE_DIAGNOSTIC_PAYMENT_LINK_ID === undefined) delete process.env.THUMBGATE_DIAGNOSTIC_PAYMENT_LINK_ID;
+  else process.env.THUMBGATE_DIAGNOSTIC_PAYMENT_LINK_ID = savedProjectEnv.THUMBGATE_DIAGNOSTIC_PAYMENT_LINK_ID;
   try {
     fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
     fs.rmSync(tmpProofDir, { recursive: true, force: true });
@@ -812,6 +849,7 @@ test('/go/diagnostic redirects to configured diagnostic Stripe checkout with att
   assert.equal(url.searchParams.get('landing_path'), '/go/diagnostic');
   const reference = parseCheckoutReference(url.searchParams.get('client_reference_id'));
   assert.equal(reference.source, 'audit');
+  assert.equal(reference.planId, 'sprint_diagnostic');
   assert.ok(reference.acquisitionId, 'carries the acquisition id into Stripe');
 });
 
@@ -1776,7 +1814,7 @@ test('checkout fallback URLs preserve Stripe session placeholders while carrying
   assert.equal(parsed.searchParams.get('community'), 'ClaudeCode');
   assert.deepEqual(
     parseCheckoutReference(parsed.searchParams.get('client_reference_id')),
-    { source: 'reddit', traceId: null, acquisitionId: 'acq_test' }
+    { source: 'reddit', traceId: null, acquisitionId: 'acq_test', planId: null }
   );
 });
 
@@ -2589,6 +2627,26 @@ test('billing checkout endpoint is public', async () => {
   assert.equal(res.headers.get('x-thumbgate-trace-id'), body.traceId);
 });
 
+test('public billing checkout cannot choose Stripe trial duration through metadata', async () => {
+  const res = await fetch(apiUrl('/v1/billing/checkout'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      installId: 'inst_public_trial_injection',
+      metadata: {
+        trial: 'true',
+        trial_period_days: 30,
+        source: 'trial-injection-test',
+      },
+    }),
+  });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.equal(body.metadata.trial, undefined);
+  assert.equal(body.metadata.trial_period_days, undefined);
+  assert.equal(body.metadata.source, 'trial-injection-test');
+});
+
 test('product feedback endpoint logs local issue reports without auth', async () => {
   const originalGithubToken = process.env.GITHUB_TOKEN;
   const originalGhToken = process.env.GH_TOKEN;
@@ -2766,13 +2824,54 @@ test('workflow sprint intake accepts form posts, seeds journey cookies, and retu
   assert.ok(submitted);
 });
 
+test('diagnostic page form posts create a contactable lead instead of failing shared intake validation', async () => {
+  const body = new URLSearchParams({
+    name: 'Ada Lovelace',
+    email: 'ada@example.com',
+    company: 'Analytical Engines',
+    workflow: 'The release agent repeatedly deploys without approval evidence.',
+    urgency: 'Repeated failure already cost us time',
+    planId: 'diagnostic',
+    ctaId: 'diagnostic_page_intake',
+    ctaPlacement: 'diagnostic_page',
+    utm_source: 'aiventyx',
+    utm_medium: 'partner',
+    utm_campaign: 'hosted_listing',
+  }).toString();
+
+  const res = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/x-www-form-urlencoded',
+      referer: 'https://thumbgate.ai/diagnostic?utm_source=aiventyx&utm_medium=partner&utm_campaign=hosted_listing',
+    },
+    body,
+  });
+
+  assert.equal(res.status, 201);
+  assert.match(String(res.headers.get('content-type')), /text\/html/);
+  assert.match(await res.text(), /Workflow sprint intake received/);
+
+  const leads = readJsonl(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl'));
+  const lead = leads.find((entry) => entry.contact.email === 'ada@example.com');
+  assert.ok(lead);
+  assert.equal(lead.contact.name, 'Ada Lovelace');
+  assert.equal(lead.offer, 'workflow_hardening_diagnostic');
+  assert.equal(lead.qualification.owner, null);
+  assert.equal(lead.qualification.blocker, null);
+  assert.equal(lead.qualification.runtime, null);
+  assert.equal(lead.qualification.urgency, 'Repeated failure already cost us time');
+  assert.equal(lead.attribution.planId, 'diagnostic');
+  assert.equal(lead.attribution.utmSource, 'aiventyx');
+});
+
 test('workflow sprint intake validation failure records failure telemetry and writes no lead', async () => {
   const leadsBefore = readJsonl(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl')).length;
   const res = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      referer: 'https://app.example.com/?utm_source=linkedin&utm_campaign=workflow_hardening',
+      referer: 'https://app.example.com/?utm_source=linkedin&utm_campaign=workflow_hardening&token=sk_test_1234567890abcdef',
     },
     body: JSON.stringify({
       email: 'invalid-email',
@@ -2793,6 +2892,8 @@ test('workflow sprint intake validation failure records failure telemetry and wr
   assert.equal(failure.utmSource, 'linkedin');
   assert.equal(failure.utmCampaign, 'workflow_hardening');
   assert.equal(failure.ctaId, 'workflow_sprint_intake');
+  assert.match(failure.referrer, /\[REDACTED:stripe_test_secret\]/);
+  assert.doesNotMatch(JSON.stringify(failure), /sk_test_1234567890abcdef/);
 });
 
 test('broker audit intake captures form leads first-party and records telemetry', async () => {
@@ -3103,6 +3204,46 @@ test('billing session endpoint returns provisioned local checkout details', asyn
   assert.match(sessionBody.nextSteps.env, /THUMBGATE_API_KEY=/);
   assert.match(sessionBody.nextSteps.env, /THUMBGATE_API_BASE_URL=https:\/\/billing\.example\.com/);
   assert.match(sessionBody.nextSteps.curl, /https:\/\/billing\.example\.com\/v1\/feedback\/capture/);
+});
+
+test('billing session endpoint returns diagnostic fulfillment without a Pro key', async () => {
+  const sessionId = 'cs_local_diagnostic_status';
+  const sessionsPath = process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH;
+  const keyStoreBefore = fs.existsSync(process.env._TEST_API_KEYS_PATH)
+    ? fs.readFileSync(process.env._TEST_API_KEYS_PATH, 'utf8')
+    : null;
+  fs.writeFileSync(sessionsPath, JSON.stringify({
+    sessions: {
+      [sessionId]: {
+        id: sessionId,
+        customer: 'cus_local_diagnostic',
+        customer_email: 'diagnostic@example.com',
+        customer_details: { email: 'diagnostic@example.com' },
+        payment_status: 'paid',
+        status: 'complete',
+        mode: 'payment',
+        amount_subtotal: 49900,
+        amount_total: 49900,
+        currency: 'usd',
+        payment_link: 'plink_testdiagnosticapi',
+        metadata: { planId: 'sprint_diagnostic', traceId: 'trace_local_diagnostic' },
+      },
+    },
+  }));
+
+  const response = await fetch(`${apiUrl('/v1/billing/session')}?sessionId=${sessionId}`);
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.offerKind, 'workflow_hardening_diagnostic');
+  assert.equal(body.apiKey, null);
+  assert.equal(body.remainingCredits, null);
+  assert.equal(body.trialEmail.reason, 'diagnostic_order');
+  assert.match(body.nextSteps.fulfillment, /fulfillment is processing/i);
+  assert.equal(Object.prototype.hasOwnProperty.call(body.nextSteps, 'env'), false);
+  const keyStoreAfter = fs.existsSync(process.env._TEST_API_KEYS_PATH)
+    ? fs.readFileSync(process.env._TEST_API_KEYS_PATH, 'utf8')
+    : null;
+  assert.equal(keyStoreAfter, keyStoreBefore);
 });
 
 test('billing checkout supports annual Pro and Team seat selection', async () => {

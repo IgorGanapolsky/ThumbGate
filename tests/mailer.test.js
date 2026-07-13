@@ -304,6 +304,29 @@ test('sendEmail validates required fields', async () => {
   );
 });
 
+test('sendEmail forwards a bounded Resend idempotency key', async () => {
+  const restore = savingEnv(['RESEND_API_KEY']);
+  process.env.RESEND_API_KEY = 're_test_idempotency';
+  const { sendEmail } = freshMailer();
+  let capturedHeaders = null;
+
+  const result = await sendEmail({
+    to: 'buyer@example.com',
+    subject: 'Order received',
+    text: 'Receipt',
+    idempotencyKey: `diagnostic-${'a'.repeat(300)}`,
+    fetchImpl: async (_url, init) => {
+      capturedHeaders = init.headers;
+      return { ok: true, status: 200, text: async () => '{"id":"email_idempotent"}' };
+    },
+  });
+
+  assert.equal(result.sent, true);
+  assert.equal(capturedHeaders['Idempotency-Key'].length, 256);
+  assert.match(capturedHeaders['Idempotency-Key'], /^diagnostic-/);
+  restore();
+});
+
 test('sendEmail returns {sent:false, reason:api_error} on non-2xx response', async () => {
   const restore = savingEnv(['RESEND_API_KEY']);
   process.env.RESEND_API_KEY = 're_test_fail';

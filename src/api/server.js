@@ -10,6 +10,7 @@ const {
   createUnavailableAsyncOperation,
   loadOptionalModule,
 } = require('../../scripts/private-core-boundary');
+const { redactSecrets, redactSecretsDeep } = require('../../scripts/secret-redaction');
 
 const POSTHOG_API_PATHS = new Set(['/capture', '/batch', '/decide', '/e', '/engage']);
 const POSTHOG_INGEST_HOST = 'us.i.posthog.com';
@@ -24,7 +25,7 @@ const PRO_CHECKOUT_URL = 'https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f';
 const FIRST_FAILURE_RULE_CHECKOUT_URL = 'https://buy.stripe.com/7sY6oHaiEbTw6tP5e33sI3e';
 const QUICK_READ_CHECKOUT_URL = 'https://buy.stripe.com/5kQ7sL76s1eSaK55e33sI2H';
 const WORKFLOW_TEARDOWN_CHECKOUT_URL = 'https://buy.stripe.com/8x214n2Qc4r44lHayn3sI2I';
-const SPRINT_DIAGNOSTIC_CHECKOUT_URL = 'https://buy.stripe.com/28E00j3Uge1E2dzgWL3sI2J';
+const SPRINT_DIAGNOSTIC_CHECKOUT_URL = 'https://buy.stripe.com/9B69ATbmI4r4aK5eOD3sI3k';
 const WORKFLOW_SPRINT_CHECKOUT_URL = 'https://buy.stripe.com/6oU00j8aw2iWdWh9uj3sI2K';
 
 function getPosthogProxyPath(pathname) {
@@ -1432,7 +1433,6 @@ function buildCheckoutAttributionMetadata(body, req, traceId) {
     : 1;
 
   return {
-    ...rawMetadata,
     traceId,
     acquisitionId: pickFirstText(rawMetadata.acquisitionId, body.acquisitionId),
     visitorId: pickFirstText(rawMetadata.visitorId, body.visitorId),
@@ -4534,6 +4534,19 @@ function normalizeLeadEmail(value) {
   return email.toLowerCase();
 }
 
+function buildIntakeAlertRateLimitKey(req, env = process.env) {
+  const transportPeer = String(req.socket?.remoteAddress || 'unknown');
+  const railwayRealIp = String(req.headers['x-real-ip'] || '').trim();
+  const runningBehindRailway = Boolean(env.RAILWAY_ENVIRONMENT_ID || env.RAILWAY_PROJECT_ID);
+  const hasValidRailwayIp = /^[0-9a-f:.]{3,64}$/i.test(railwayRealIp);
+  // Railway overwrites X-Real-IP at its ingress. Outside that explicit trust
+  // boundary, forwarding headers remain caller-controlled and are ignored.
+  const clientAddress = runningBehindRailway && hasValidRailwayIp
+    ? railwayRealIp
+    : transportPeer;
+  return crypto.createHash('sha256').update(clientAddress).digest('hex');
+}
+
 function normalizeHttpUrl(value, fieldName) {
   const raw = normalizeNullableText(value);
   if (!raw) throw createHttpError(400, `${fieldName} is required`);
@@ -7450,7 +7463,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           ? await parseFormBody(req, 24 * 1024)
           : await parseJsonBody(req, 24 * 1024);
         const workflowSprintIntake = requirePrivateApiModule('workflowSprintIntake', 'Workflow sprint intake');
-        const lead = workflowSprintIntake.appendWorkflowSprintLead({
+        const leadPayload = {
           ...body,
           traceId: body.traceId || traceId,
           acquisitionId: body.acquisitionId || journeyState.acquisitionId,
@@ -7475,7 +7488,17 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           offerCode: body.offerCode || referrerAttribution.offerCode || null,
           referrerHost: body.referrerHost || referrerAttribution.referrerHost || null,
           referrer: body.referrer || referrerAttribution.referrer || null,
-        }, { feedbackDir: FEEDBACK_DIR });
+        };
+        const intakeReservation = workflowSprintIntake.reserveWorkflowSprintIntake(leadPayload, {
+          feedbackDir: FEEDBACK_DIR,
+          rateLimitKey: buildIntakeAlertRateLimitKey(req),
+        });
+        if (!intakeReservation.allowed) {
+          const error = new Error('Too many workflow-intake submissions. Try again later.');
+          error.statusCode = intakeReservation.statusCode || 429;
+          throw error;
+        }
+        const lead = workflowSprintIntake.appendWorkflowSprintLead(leadPayload, { feedbackDir: FEEDBACK_DIR });
 
         appendBestEffortTelemetry(FEEDBACK_DIR, {
           eventType: 'workflow_sprint_lead_submitted',
@@ -7506,6 +7529,11 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           referrer: lead.attribution.referrer,
         }, req.headers, 'workflow_sprint_lead_submitted');
 
+        const leadNotification = await workflowSprintIntake.notifyWorkflowSprintLead(lead, {
+          sendEmailImpl: resendMailer.sendEmail,
+          rateLimitKey: buildIntakeAlertRateLimitKey(req),
+        });
+
         if (isFormSubmission && !wantsJson(req, parsed)) {
           sendHtml(
             res,
@@ -7526,6 +7554,8 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           status: lead.status,
           offer: lead.offer,
           nextStep: 'review_proof_pack',
+          operatorAlertSent: leadNotification.sent === true,
+          operatorAlertReason: leadNotification.reason || null,
           proofPackUrl: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
           sprintBriefUrl: 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/WORKFLOW_HARDENING_SPRINT.md',
         }, {
@@ -7533,7 +7563,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
         });
       } catch (err) {
-        appendBestEffortTelemetry(FEEDBACK_DIR, {
+        appendBestEffortTelemetry(FEEDBACK_DIR, redactSecretsDeep({
           eventType: 'workflow_sprint_lead_failed',
           clientType: 'web',
           traceId,
@@ -7556,10 +7586,10 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           page: referrerAttribution.page || '/#workflow-sprint-intake',
           landingPath: referrerAttribution.landingPath || '/',
           referrerHost: referrerAttribution.referrerHost,
-          referrer: referrerAttribution.referrer,
-          failureCode: err?.message ? err.message : 'workflow_sprint_lead_failed',
+          referrer: redactSecrets(referrerAttribution.referrer),
+          failureCode: redactSecrets(err?.message ? err.message : 'workflow_sprint_lead_failed'),
           httpStatus: err && err.statusCode ? err.statusCode : null,
-        }, req.headers, 'workflow_sprint_lead_failed');
+        }), redactSecretsDeep(req.headers), 'workflow_sprint_lead_failed');
         if (isFormSubmission && !wantsJson(req, parsed)) {
           sendHtml(
             res,
@@ -7845,6 +7875,15 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           });
           return;
         }
+        if (result && result.retryable === true) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.INTERNAL,
+            title: 'Fulfillment temporarily unavailable',
+            status: 503,
+            detail: 'The payment was received but fulfillment did not complete. Stripe should retry this event.',
+          });
+          return;
+        }
         sendJson(res, 200, result);
 
       } catch (err) {
@@ -7977,16 +8016,24 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         }
 
         const resolvedTraceId = result.traceId || requestedTraceId;
+        const nextSteps = result.apiKey
+          ? {
+            env: `THUMBGATE_API_KEY=${result.apiKey}\nTHUMBGATE_API_BASE_URL=${hostedConfig.billingApiBaseUrl}`,
+            curl: `curl -X POST ${hostedConfig.billingApiBaseUrl}/v1/feedback/capture \\\n+  -H 'Authorization: Bearer ${result.apiKey}' \\\n+  -H 'Content-Type: application/json' \\\n+  -d '{"signal":"down","context":"example","whatWentWrong":"example","whatToChange":"example"}'`,
+          }
+          : result.offerKind === 'workflow_hardening_diagnostic'
+            ? { fulfillment: 'Payment confirmed. Diagnostic fulfillment is processing; an email will arrive when it completes.' }
+            : {};
 
         sendJson(res, 200, {
           ...result,
           traceId: resolvedTraceId || null,
           appOrigin: hostedConfig.appOrigin,
           apiBaseUrl: hostedConfig.billingApiBaseUrl,
-          nextSteps: {
+          nextSteps: result.apiKey ? {
             env: `THUMBGATE_API_KEY=${result.apiKey || ''}\nTHUMBGATE_API_BASE_URL=${hostedConfig.billingApiBaseUrl}`,
             curl: `curl -X POST ${hostedConfig.billingApiBaseUrl}/v1/feedback/capture \\\n  -H 'Authorization: Bearer ${result.apiKey || ''}' \\\n  -H 'Content-Type: application/json' \\\n  -d '{"signal":"down","context":"example","whatWentWrong":"example","whatToChange":"example"}'`,
-          },
+          } : nextSteps,
         }, getPublicBillingHeaders(resolvedTraceId));
       } catch (err) {
         const requestedTraceId = parsed.searchParams.get('traceId') || '';
@@ -9870,6 +9917,7 @@ module.exports = {
     answerEnterpriseDataChat,
     answerEnterpriseDialogflowChat,
     buildLossAnalyticsResponse,
+    buildIntakeAlertRateLimitKey,
     sanitizeHtmlUnsafeJsonValue,
   },
 };

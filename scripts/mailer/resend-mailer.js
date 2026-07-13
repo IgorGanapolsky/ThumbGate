@@ -226,12 +226,13 @@ function parseJsonOrNull(bodyText) {
   }
 }
 
-async function postResendEmail({ fetcher, apiKey, payload }) {
+async function postResendEmail({ fetcher, apiKey, payload, idempotencyKey }) {
   const res = await fetcher(RESEND_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
+      ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
     },
     body: JSON.stringify(payload),
   });
@@ -256,7 +257,7 @@ function buildSendSuccess({ bodyJson, status, senderFallback }) {
  * Low-level send. Posts to the Resend API or no-ops when RESEND_API_KEY is
  * missing. Never throws on network errors; returns a structured result instead.
  */
-async function sendEmail({ to, subject, html, text, from, replyTo, fetchImpl, dnsResolver } = {}) {
+async function sendEmail({ to, subject, html, text, from, replyTo, idempotencyKey, fetchImpl, dnsResolver } = {}) {
   validateSendEmailInput({ to, subject, html, text });
 
   const apiKey = getApiKey();
@@ -278,7 +279,12 @@ async function sendEmail({ to, subject, html, text, from, replyTo, fetchImpl, dn
   }
 
   try {
-    const { res, bodyText, bodyJson } = await postResendEmail({ fetcher, apiKey, payload });
+    const { res, bodyText, bodyJson } = await postResendEmail({
+      fetcher,
+      apiKey,
+      payload,
+      idempotencyKey: isNonEmptyString(idempotencyKey) ? idempotencyKey.slice(0, 256) : null,
+    });
     if (!res.ok) {
       // eslint-disable-next-line no-console
       console.warn(`[mailer] Resend returned ${res.status}:`, bodyText);
@@ -490,7 +496,7 @@ function renderTrialWelcomeBodies({ licenseKey, customerId, customerName, trialE
  * Never throws on send failures (beyond input validation); the Stripe webhook
  * must keep working even if email breaks.
  */
-async function sendTrialWelcomeEmail({ to, licenseKey, customerId, customerName, trialEndAt, fetchImpl, dnsResolver } = {}) {
+async function sendTrialWelcomeEmail({ to, licenseKey, customerId, customerName, trialEndAt, idempotencyKey, fetchImpl, dnsResolver } = {}) {
   if (!isNonEmptyString(to)) throw new Error('sendTrialWelcomeEmail: `to` is required');
   if (!isNonEmptyString(licenseKey)) throw new Error('sendTrialWelcomeEmail: `licenseKey` is required');
 
@@ -500,7 +506,7 @@ async function sendTrialWelcomeEmail({ to, licenseKey, customerId, customerName,
     ? `${name}, your ThumbGate Pro key is inside`
     : 'Your ThumbGate Pro key is inside';
 
-  return sendEmail({ to, subject, html, text, replyTo: getReplyTo(), fetchImpl, dnsResolver });
+  return sendEmail({ to, subject, html, text, replyTo: getReplyTo(), idempotencyKey, fetchImpl, dnsResolver });
 }
 
 function renderNewsletterWelcomeBodies() {

@@ -51,8 +51,11 @@ const {
 } = require('./analytics-window');
 const { ensureParentDir } = require('./fs-utils');
 const mailer = require('./mailer');
-const { recordCheckoutFunnelEvent } = require('./plausible-server-events');
+const { plausibleEvent, recordCheckoutFunnelEvent } = require('./plausible-server-events');
 const { parseCheckoutReference } = require('./checkout-attribution-reference');
+const { redactSecrets } = require('./secret-redaction');
+
+const diagnosticEmailInFlight = new Map();
 
 function loadWorkflowSprintIntakeModule() {
   const modulePath = path.resolve(__dirname, 'workflow-sprint-intake.js');
@@ -92,11 +95,16 @@ const CONFIG = {
   get TRIAL_EMAIL_LEDGER_PATH() {
     return process.env._TEST_TRIAL_EMAIL_LEDGER_PATH || process.env.THUMBGATE_TRIAL_EMAIL_LEDGER_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'trial-emails.jsonl');
   },
+  get ORDER_EMAIL_LEDGER_PATH() {
+    return process.env._TEST_ORDER_EMAIL_LEDGER_PATH || process.env.THUMBGATE_ORDER_EMAIL_LEDGER_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'order-emails.jsonl');
+  },
   RESEND_API_KEY: process.env.RESEND_API_KEY || process.env.THUMBGATE_RESEND_API_KEY || '',
   TRIAL_EMAIL_FROM: process.env.THUMBGATE_TRIAL_EMAIL_FROM || process.env.RESEND_FROM_EMAIL || process.env.RESEND_FROM || 'onboarding@resend.dev',
   TRIAL_EMAIL_REPLY_TO: process.env.THUMBGATE_TRIAL_EMAIL_REPLY_TO || 'igor.ganapolsky@gmail.com',
   CREDIT_PACKS: {}
 };
+
+const DEFAULT_DIAGNOSTIC_PAYMENT_LINK_ID = 'plink_1TsO6lGGBpd520QYsFToXuRC';
 
 function resolveLegacyBillingPath(fileName) {
   return resolveFallbackArtifactPath(fileName, {
@@ -683,7 +691,8 @@ function buildTrialActivationEmail({ customerEmail, apiKey, sessionId, planId, a
 
 function sendResendEmail(message) {
   return new Promise((resolve, reject) => {
-    const body = JSON.stringify(message);
+    const { idempotencyKey, ...payload } = message;
+    const body = JSON.stringify(payload);
     const req = https.request({
       hostname: 'api.resend.com',
       path: '/emails',
@@ -692,6 +701,7 @@ function sendResendEmail(message) {
         Authorization: `Bearer ${CONFIG.RESEND_API_KEY}`,
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(body),
+        ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
       },
       timeout: 10000,
     }, (res) => {
@@ -731,6 +741,7 @@ async function sendTrialActivationEmail(params = {}, options = {}) {
     : null;
   const transport = options.transport || sendResendEmail;
   const planId = normalizeText(params.planId);
+  const idempotencyKey = `trial-${crypto.createHash('sha256').update(`${sessionId}:${customerEmail}`).digest('hex')}`;
 
   if (!customerEmail) {
     return { status: 'skipped', reason: 'missing_customer_email' };
@@ -781,6 +792,7 @@ async function sendTrialActivationEmail(params = {}, options = {}) {
         customerId: params.customerId,
         customerName: params.customerName,
         trialEndAt: params.trialEndAt,
+        idempotencyKey,
       });
       if (!response || response.sent !== true) {
         const rawReason = normalizeText(response && response.reason) || 'provider_error';
@@ -819,6 +831,7 @@ async function sendTrialActivationEmail(params = {}, options = {}) {
         planId,
         appOrigin: params.appOrigin,
       });
+      message.idempotencyKey = idempotencyKey;
       const response = await transport(message, params);
       providerId = response && response.body ? response.body.id : response && response.id ? response.id : null;
     }
@@ -867,6 +880,281 @@ function trialEmailToWebhookEmailResult(trialEmail = {}) {
       : trialEmail.reason || trialEmail.status || 'unknown',
     error: trialEmail.error || undefined,
   };
+}
+
+function isDiagnosticCheckoutSession(session = {}) {
+  const configuredIds = String(
+    process.env.THUMBGATE_DIAGNOSTIC_PAYMENT_LINK_IDS
+    || process.env.THUMBGATE_DIAGNOSTIC_PAYMENT_LINK_ID
+    || DEFAULT_DIAGNOSTIC_PAYMENT_LINK_ID
+  )
+    .split(',')
+    .map((value) => value.trim())
+    .filter((value) => /^plink_[A-Za-z0-9]+$/.test(value));
+  const paymentLinkId = typeof session.payment_link === 'string'
+    ? session.payment_link
+    : normalizeText(session.payment_link && session.payment_link.id);
+  // Metadata, client_reference_id, and amount are not authorization: public
+  // checkout input can set metadata, while other SKUs can share a price. The
+  // Stripe-created Payment Link identity is the diagnostic SKU boundary.
+  return session.mode === 'payment'
+    && configuredIds.includes(paymentLinkId);
+}
+
+/**
+ * Decide whether a completed Stripe session is allowed to mint an API key.
+ *
+ * A paid session is not automatically a software entitlement. ThumbGate also
+ * sells one-time services through Stripe Payment Links, and those orders must
+ * be recorded without receiving Pro access. Subscription mode is Stripe-owned
+ * state. Credit packs are accepted only when both the pack id and credit count
+ * match the server-side catalog written by createCheckoutSession().
+ */
+function resolveCheckoutProvisioningGrant(session = {}) {
+  if (session.mode === 'subscription') {
+    return { allowed: true, kind: 'subscription', credits: null };
+  }
+  if (session.mode !== 'payment') {
+    return { allowed: false, kind: 'unknown', credits: null };
+  }
+
+  const packId = normalizeText(session.metadata && session.metadata.packId);
+  const configuredPack = packId && CONFIG.CREDIT_PACKS[packId];
+  const credits = normalizeInteger(session.metadata && session.metadata.credits);
+  if (configuredPack && credits === configuredPack.credits) {
+    return { allowed: true, kind: 'credit_pack', credits };
+  }
+  return { allowed: false, kind: 'service_order', credits: null };
+}
+
+function resolveStripeCustomerLedgerId(session = {}, customerEmail = '') {
+  const stripeCustomerId = normalizeText(session.customer);
+  if (stripeCustomerId) return stripeCustomerId;
+  const normalizedEmail = normalizeEmail(customerEmail);
+  const seed = normalizedEmail || normalizeText(session.id) || crypto.randomBytes(16).toString('hex');
+  return `guest_${crypto.createHash('sha256').update(seed).digest('hex').slice(0, 24)}`;
+}
+
+function resolveOperatorAlertEmail(env = process.env) {
+  return normalizeEmail(
+    env.THUMBGATE_OPERATOR_ALERT_EMAIL
+    || env.THUMBGATE_PRO_ACTIVATION_ALERT_EMAIL
+    || env.THUMBGATE_SUPPORT_EMAIL
+    || 'igor.ganapolsky@gmail.com'
+  );
+}
+
+function findOrderEmailRecord({ sessionId, kind } = {}) {
+  const normalizedSessionId = normalizeText(sessionId);
+  const normalizedKind = normalizeText(kind);
+  if (!normalizedSessionId || !normalizedKind) return null;
+  return loadJsonlRecords(CONFIG.ORDER_EMAIL_LEDGER_PATH).find((row) => (
+    row
+    && row.sessionId === normalizedSessionId
+    && row.kind === normalizedKind
+    && row.status === 'sent'
+  )) || null;
+}
+
+function appendOrderEmailRecord(payload = {}) {
+  return appendJsonlRecord(CONFIG.ORDER_EMAIL_LEDGER_PATH, {
+    timestamp: new Date().toISOString(),
+    ...payload,
+  });
+}
+
+function getOrderOperationStatePaths(sessionId, operation) {
+  const key = crypto.createHash('sha256').update(String(sessionId || '')).digest('hex');
+  const safeOperation = String(operation || 'checkout').replace(/[^a-z0-9_-]/gi, '-').toLowerCase();
+  const stateDir = path.join(path.dirname(CONFIG.ORDER_EMAIL_LEDGER_PATH), `${safeOperation}-order-state`);
+  return {
+    stateDir,
+    lockPath: path.join(stateDir, `${key}.lock`),
+    receiptPath: path.join(stateDir, `${key}.json`),
+  };
+}
+
+function readOrderOperationReceipt(sessionId, operation) {
+  const { receiptPath } = getOrderOperationStatePaths(sessionId, operation);
+  try {
+    return JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function claimOrderOperation(sessionId, operation, now = Date.now()) {
+  const previous = readOrderOperationReceipt(sessionId, operation);
+  if (previous) return { claimed: false, completed: true, receipt: previous };
+  const paths = getOrderOperationStatePaths(sessionId, operation);
+  fs.mkdirSync(paths.stateDir, { recursive: true });
+  try {
+    fs.mkdirSync(paths.lockPath);
+    fs.writeFileSync(path.join(paths.lockPath, 'owner.json'), JSON.stringify({ acquiredAt: now }));
+    return { claimed: true, completed: false, ...paths };
+  } catch (error) {
+    if (!error || error.code !== 'EEXIST') throw error;
+    try {
+      const ageMs = now - fs.statSync(paths.lockPath).mtimeMs;
+      if (ageMs > 5 * 60 * 1000) {
+        fs.rmSync(paths.lockPath, { recursive: true, force: true });
+        return claimOrderOperation(sessionId, operation, now);
+      }
+    } catch {
+      return claimOrderOperation(sessionId, operation, now);
+    }
+    return { claimed: false, completed: false, ...paths };
+  }
+}
+
+function releaseOrderOperation(claim) {
+  if (claim && claim.claimed && claim.lockPath) {
+    fs.rmSync(claim.lockPath, { recursive: true, force: true });
+  }
+}
+
+function completeOrderOperation(claim, payload = {}) {
+  if (!claim || !claim.claimed) return;
+  const tmpPath = `${claim.receiptPath}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`;
+  fs.writeFileSync(tmpPath, JSON.stringify({
+    completedAt: new Date().toISOString(),
+    ...payload,
+  }));
+  fs.renameSync(tmpPath, claim.receiptPath);
+  releaseOrderOperation(claim);
+  claim.claimed = false;
+}
+
+async function sendDiagnosticOrderEmails({
+  session = {},
+  customerEmail,
+  customerName,
+  attribution = {},
+  env = process.env,
+} = {}) {
+  const injectedMailer = module.exports && module.exports._mailer;
+  const sendEmail = injectedMailer && typeof injectedMailer.sendEmail === 'function'
+    ? injectedMailer.sendEmail
+    : null;
+  const sessionId = normalizeText(session.id);
+  const operatorEmail = resolveOperatorAlertEmail(env);
+  const normalizedCustomerEmail = normalizeEmail(customerEmail);
+  const safeCustomerName = redactSecrets(normalizeText(customerName) || '');
+  const amount = Number(session.amount_total);
+  const amountLabel = Number.isFinite(amount) ? `$${(amount / 100).toFixed(2)}` : 'unknown';
+
+  async function sendOnce({ kind, to, subject, text }) {
+    if (!to) return { sent: false, reason: 'missing_recipient', kind };
+    const previous = findOrderEmailRecord({ sessionId, kind });
+    if (previous) return { sent: true, status: 'already_sent', providerId: previous.providerId || null };
+    if (!sendEmail) return { sent: false, reason: 'missing_mailer' };
+    const operationKey = `${sessionId}:${kind}`;
+    if (diagnosticEmailInFlight.has(operationKey)) {
+      return diagnosticEmailInFlight.get(operationKey);
+    }
+    const operation = (async () => {
+      try {
+        const idempotencyKey = `diagnostic-${crypto.createHash('sha256').update(operationKey).digest('hex')}`;
+        const response = await sendEmail({ to, subject, text, idempotencyKey });
+        const sent = response && response.sent === true;
+        appendOrderEmailRecord({
+          sessionId,
+          kind,
+          status: sent ? 'sent' : 'skipped',
+          reason: sent ? null : (response && response.reason) || 'provider_error',
+          providerId: response && (response.id || response.providerId) || null,
+          idempotencyKeyHash: crypto.createHash('sha256').update(idempotencyKey).digest('hex').slice(0, 16),
+        });
+        return response || { sent: false, reason: 'provider_error' };
+      } catch (error) {
+        appendOrderEmailRecord({
+          sessionId,
+          kind,
+          status: 'failed',
+          reason: 'exception',
+          error: error && error.message ? error.message : String(error),
+        });
+        return {
+          sent: false,
+          reason: 'exception',
+          error: error && error.message ? error.message : String(error),
+        };
+      } finally {
+        diagnosticEmailInFlight.delete(operationKey);
+      }
+    })();
+    diagnosticEmailInFlight.set(operationKey, operation);
+    return operation;
+  }
+
+  const buyerText = [
+    safeCustomerName ? `Hi ${safeCustomerName},` : 'Hi there,',
+    '',
+    `We received your ${amountLabel} ThumbGate Workflow Hardening Diagnostic order.`,
+    'The diagnostic covers one AI-agent workflow and is delivered within two business days.',
+    'Reply with the repository or product URL plus the repeated failure trace if you did not submit them before checkout.',
+    '',
+    `Order reference: ${sessionId || 'unknown'}`,
+    'Questions: reply to this email.',
+  ].join('\n');
+  const operatorText = [
+    'Paid ThumbGate diagnostic received.',
+    '',
+    `Amount: ${amountLabel} ${(session.currency || 'usd').toUpperCase()}`,
+    `Stripe session: ${sessionId || 'unknown'}`,
+    `Customer: ${safeCustomerName || 'not provided'}`,
+    `Email: ${normalizedCustomerEmail || 'not provided'}`,
+    `Source: ${redactSecrets(normalizeText(attribution.source) || 'unknown')}`,
+    `Campaign: ${redactSecrets(normalizeText(attribution.campaign) || 'unknown')}`,
+    `Client reference: ${redactSecrets(normalizeText(session.client_reference_id) || 'not provided')}`,
+    '',
+    'Start the two-business-day fulfillment clock and match the buyer to any captured workflow intake.',
+  ].join('\n');
+
+  const [buyer, operator] = await Promise.all([
+    sendOnce({
+      kind: 'diagnostic_buyer_receipt',
+      to: normalizedCustomerEmail,
+      subject: 'ThumbGate diagnostic order received',
+      text: buyerText,
+    }),
+    sendOnce({
+      kind: 'diagnostic_operator_alert',
+      to: operatorEmail,
+      subject: `Paid ThumbGate diagnostic: ${amountLabel}`,
+      text: operatorText,
+    }),
+  ]);
+
+  return { buyer, operator };
+}
+
+function isRetryableDiagnosticDelivery(result = {}) {
+  if (result && result.sent === true) return false;
+  const reason = normalizeText(result && result.reason);
+  if (reason === 'api_error') {
+    const status = Number(result && result.status);
+    if (!Number.isFinite(status)) return true;
+    if (status !== 400 && status !== 422) return true;
+    const bodyText = typeof result.body === 'string'
+      ? result.body
+      : JSON.stringify(result.body || {});
+    const normalizedBody = bodyText.toLowerCase();
+    const recipientOnlyFailure = (
+      normalizedBody.includes('invalid_to_address')
+      || normalizedBody.includes('invalid recipient')
+      || normalizedBody.includes('recipient address is invalid')
+    ) && !(
+      normalizedBody.includes('invalid_from_address')
+      || normalizedBody.includes('sender')
+      || normalizedBody.includes('domain')
+    );
+    return !recipientOnlyFailure;
+  }
+  if (reason === 'missing_recipient') {
+    return result.kind === 'diagnostic_operator_alert';
+  }
+  return ['no_api_key', 'no_fetch', 'exception', 'provider_error', 'missing_mailer'].includes(reason);
 }
 
 function normalizeCurrency(value) {
@@ -2519,16 +2807,72 @@ function loadKeyStore() {
     const primary = CONFIG.API_KEYS_PATH;
     const legacy = resolveLegacyBillingPath('api-keys.json');
     const target = (IS_TEST || fs.existsSync(primary)) ? primary : legacy;
-    if (!fs.existsSync(target)) return { keys: {} };
+    if (!fs.existsSync(target)) return { keys: {}, canceledSubscriptions: {}, customerRevocations: {} };
     const parsed = JSON.parse(fs.readFileSync(target, 'utf-8'));
-    return (parsed && typeof parsed.keys === 'object') ? parsed : { keys: {} };
-  } catch { return { keys: {} }; }
+    if (!parsed || typeof parsed.keys !== 'object') {
+      return { keys: {}, canceledSubscriptions: {}, customerRevocations: {} };
+    }
+    parsed.canceledSubscriptions = parsed.canceledSubscriptions && typeof parsed.canceledSubscriptions === 'object'
+      ? parsed.canceledSubscriptions
+      : {};
+    parsed.customerRevocations = parsed.customerRevocations && typeof parsed.customerRevocations === 'object'
+      ? parsed.customerRevocations
+      : {};
+    return parsed;
+  } catch { return { keys: {}, canceledSubscriptions: {}, customerRevocations: {} }; }
 }
 
 function saveKeyStore(store) {
   const target = CONFIG.API_KEYS_PATH;
   ensureParentDir(target);
-  fs.writeFileSync(target, JSON.stringify(store, null, 2), 'utf-8');
+  const tmpPath = `${target}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`;
+  fs.writeFileSync(tmpPath, JSON.stringify(store, null, 2), 'utf-8');
+  fs.renameSync(tmpPath, target);
+}
+
+function sleepSync(milliseconds) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, milliseconds);
+}
+
+function acquireDirectoryLock(lockPath, options = {}) {
+  const timeoutMs = normalizeInteger(options.timeoutMs) || 10000;
+  const staleMs = normalizeInteger(options.staleMs) || 30000;
+  const startedAt = Date.now();
+  ensureParentDir(lockPath);
+  while (true) {
+    try {
+      fs.mkdirSync(lockPath);
+      fs.writeFileSync(path.join(lockPath, 'owner.json'), JSON.stringify({
+        acquiredAt: Date.now(),
+        pid: process.pid,
+      }));
+      return;
+    } catch (error) {
+      if (!error || error.code !== 'EEXIST') throw error;
+      try {
+        if (Date.now() - fs.statSync(lockPath).mtimeMs > staleMs) {
+          fs.rmSync(lockPath, { recursive: true, force: true });
+          continue;
+        }
+      } catch {
+        continue;
+      }
+      if (Date.now() - startedAt >= timeoutMs) {
+        throw new Error(`Timed out waiting for billing state lock: ${path.basename(lockPath)}`);
+      }
+      sleepSync(20);
+    }
+  }
+}
+
+function withKeyStoreLock(mutator) {
+  const lockPath = `${CONFIG.API_KEYS_PATH}.lock`;
+  acquireDirectoryLock(lockPath);
+  try {
+    return mutator();
+  } finally {
+    fs.rmSync(lockPath, { recursive: true, force: true });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -2565,6 +2909,7 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
       customer_email: localCustomerEmail,
       customer_details: localCustomerEmail ? { email: localCustomerEmail } : null,
       metadata: { ...checkoutMetadata, packId: pack ? pack.id : null, credits: pack ? pack.credits : null },
+      mode: pack ? 'payment' : 'subscription',
       payment_status: 'paid',
       status: 'complete'
     };
@@ -2688,6 +3033,7 @@ function buildCheckoutSessionPayload({ successUrl, cancelUrl, customerEmail, che
       payment_method_collection: 'always',
       ...(shouldStartTrial ? { subscription_data: { trial_period_days: trialPeriodDays } } : {}),
     }),
+    ...(pack ? { customer_creation: 'always' } : {}),
   };
 
   const normalizedCustomerEmail = normalizeText(customerEmail);
@@ -2702,25 +3048,43 @@ async function getCheckoutSessionStatus(sessionId) {
     const store = loadLocalCheckoutSessions();
     const session = store.sessions[sessionId];
     if (!session) return { found: false };
-    const provisioned = provisionApiKey(session.customer, {
-      installId: session.metadata?.installId,
-      credits: session.metadata?.credits,
-      source: 'local_checkout_lookup'
-    });
+    const diagnosticOrder = isDiagnosticCheckoutSession(session);
+    const provisioningGrant = resolveCheckoutProvisioningGrant(session);
+    const provisioned = provisioningGrant.allowed
+      ? provisionApiKey(session.customer, {
+        installId: session.metadata?.installId,
+        credits: provisioningGrant.credits,
+        orderId: session.id,
+        subscriptionId: session.subscription,
+        orderCreatedAt: session.created,
+        enforceCancellationHistory: provisioningGrant.kind === 'subscription',
+        entitlementKind: provisioningGrant.kind,
+        source: 'local_checkout_lookup'
+      })
+      : null;
     const customerEmail = session.customer_details?.email || session.customer_email || '';
     const customerName = session.customer_details?.name || null;
     const trialEndAt = computeTrialEndAt(session);
-    const trialEmail = await sendTrialActivationEmail({
-      sessionId,
-      customerId: session.customer,
-      customerEmail,
-      customerName,
-      trialEndAt,
-      apiKey: provisioned.key,
-      planId: session.metadata?.planId || session.metadata?.packId || null,
-      appOrigin: process.env.THUMBGATE_PUBLIC_APP_ORIGIN,
-      source: 'local_checkout_lookup',
-    });
+    const trialEmail = !provisioned || !provisioned.key
+      ? {
+        status: 'skipped',
+        reason: diagnosticOrder
+          ? 'diagnostic_order'
+          : provisioned && provisioned.entitlementActive === false
+            ? 'entitlement_inactive'
+            : 'non_entitlement_order',
+      }
+      : await sendTrialActivationEmail({
+        sessionId,
+        customerId: session.customer,
+        customerEmail,
+        customerName,
+        trialEndAt,
+        apiKey: provisioned.key,
+        planId: session.metadata?.planId || session.metadata?.packId || null,
+        appOrigin: process.env.THUMBGATE_PUBLIC_APP_ORIGIN,
+        source: 'local_checkout_lookup',
+      });
     return {
       found: true,
       localMode: true,
@@ -2738,10 +3102,11 @@ async function getCheckoutSessionStatus(sessionId) {
       ctaId: session.metadata?.ctaId || null,
       ctaPlacement: session.metadata?.ctaPlacement || null,
       planId: session.metadata?.planId || session.metadata?.packId || null,
+      offerKind: diagnosticOrder ? 'workflow_hardening_diagnostic' : null,
       landingPath: session.metadata?.landingPath || null,
       referrerHost: session.metadata?.referrerHost || null,
-      apiKey: provisioned.key,
-      remainingCredits: provisioned.remainingCredits,
+      apiKey: provisioned ? provisioned.key : null,
+      remainingCredits: provisioned ? provisioned.remainingCredits : null,
       trialEmail,
     };
   }
@@ -2749,28 +3114,53 @@ async function getCheckoutSessionStatus(sessionId) {
   try {
     const stripe = getStripeClient();
     const session = await stripe.checkout.sessions.retrieve(sessionId);
-    const isPaid = session.payment_status === 'paid' || session.payment_status === 'no_payment_required';
+    const diagnosticOrder = isDiagnosticCheckoutSession(session);
+    const provisioningGrant = resolveCheckoutProvisioningGrant(session);
+    const isPaid = session.payment_status === 'paid'
+      || (!diagnosticOrder
+        && session.mode === 'subscription'
+        && session.payment_status === 'no_payment_required');
     const traceId = session.metadata?.traceId || null;
 
     if (!isPaid) return { found: true, localMode: false, sessionId, paid: false, paymentStatus: session.payment_status, status: session.status };
 
     const installId = session.metadata?.installId || null;
-    const credits = session.metadata?.credits ? parseInt(session.metadata.credits, 10) : null;
-    const provisioned = provisionApiKey(session.customer, { installId, credits, source: 'stripe_checkout_session_lookup' });
     const customerEmail = session.customer_details?.email || session.customer_email || '';
+    const customerId = resolveStripeCustomerLedgerId(session, customerEmail);
+    const provisioned = provisioningGrant.allowed
+      ? provisionApiKey(customerId, {
+        installId,
+        credits: provisioningGrant.credits,
+        orderId: session.id,
+        subscriptionId: session.subscription,
+        orderCreatedAt: session.created,
+        enforceCancellationHistory: provisioningGrant.kind === 'subscription',
+        entitlementKind: provisioningGrant.kind,
+        source: 'stripe_checkout_session_lookup',
+      })
+      : null;
     const customerName = session.customer_details?.name || null;
     const trialEndAt = computeTrialEndAt(session);
-    const trialEmail = await sendTrialActivationEmail({
-      sessionId,
-      customerId: session.customer,
-      customerEmail,
-      customerName,
-      trialEndAt,
-      apiKey: provisioned.key,
-      planId: session.metadata?.planId || session.metadata?.packId || null,
-      appOrigin: process.env.THUMBGATE_PUBLIC_APP_ORIGIN,
-      source: 'stripe_checkout_session_lookup',
-    });
+    const trialEmail = !provisioned || !provisioned.key
+      ? {
+        status: 'skipped',
+        reason: diagnosticOrder
+          ? 'diagnostic_order'
+          : provisioned && provisioned.entitlementActive === false
+            ? 'entitlement_inactive'
+            : 'non_entitlement_order',
+      }
+      : await sendTrialActivationEmail({
+        sessionId,
+        customerId,
+        customerEmail,
+        customerName,
+        trialEndAt,
+        apiKey: provisioned.key,
+        planId: session.metadata?.planId || session.metadata?.packId || null,
+        appOrigin: process.env.THUMBGATE_PUBLIC_APP_ORIGIN,
+        source: 'stripe_checkout_session_lookup',
+      });
 
     return {
       found: true,
@@ -2778,7 +3168,7 @@ async function getCheckoutSessionStatus(sessionId) {
       sessionId,
       paid: true,
       paymentStatus: session.payment_status,
-      customerId: session.customer,
+      customerId,
       customerEmail,
       installId,
       traceId,
@@ -2788,10 +3178,11 @@ async function getCheckoutSessionStatus(sessionId) {
       ctaId: session.metadata?.ctaId || null,
       ctaPlacement: session.metadata?.ctaPlacement || null,
       planId: session.metadata?.planId || session.metadata?.packId || null,
+      offerKind: diagnosticOrder ? 'workflow_hardening_diagnostic' : null,
       landingPath: session.metadata?.landingPath || null,
       referrerHost: session.metadata?.referrerHost || null,
-      apiKey: provisioned.key,
-      remainingCredits: provisioned.remainingCredits,
+      apiKey: provisioned ? provisioned.key : null,
+      remainingCredits: provisioned ? provisioned.remainingCredits : null,
       trialEmail,
     };
   } catch {
@@ -2801,58 +3192,150 @@ async function getCheckoutSessionStatus(sessionId) {
 
 function provisionApiKey(customerId, opts = {}) {
   if (!customerId || typeof customerId !== 'string') throw new Error('customerId is required');
-  const store = loadKeyStore();
-  const existing = Object.entries(store.keys).find(([, m]) => m.customerId === customerId && m.active);
+  return withKeyStoreLock(() => {
+    const store = loadKeyStore();
+    const orderId = normalizeText(opts.orderId);
+    const subscriptionId = normalizeText(opts.subscriptionId);
+    const orderCreatedAt = normalizeInteger(opts.orderCreatedAt);
+    const enforceCancellationHistory = opts.enforceCancellationHistory === true;
 
-  const creditsToAdd = normalizeInteger(opts.credits);
-
-  if (existing) {
-    const key = existing[0];
-    const meta = existing[1];
-    if (opts.installId && !meta.installId) { meta.installId = opts.installId; }
-    if (creditsToAdd !== null) {
-      meta.remainingCredits = (meta.remainingCredits || 0) + creditsToAdd;
+    if (orderId) {
+      const fulfilled = Object.entries(store.keys)
+        .filter(([, metadata]) => (
+          Array.isArray(metadata.fulfilledOrderIds)
+          && metadata.fulfilledOrderIds.includes(orderId)
+        ))
+        .sort((left, right) => Number(Boolean(right[1].active)) - Number(Boolean(left[1].active)))[0];
+      if (fulfilled) {
+        const [key, metadata] = fulfilled;
+        return {
+          key: metadata.active ? key : null,
+          customerId,
+          createdAt: metadata.createdAt,
+          installId: metadata.installId || null,
+          reused: true,
+          orderAlreadyFulfilled: true,
+          entitlementActive: Boolean(metadata.active),
+          remainingCredits: metadata.remainingCredits,
+        };
+      }
     }
-    saveKeyStore(store);
-    return { key, customerId, createdAt: meta.createdAt, installId: meta.installId || null, reused: true, remainingCredits: meta.remainingCredits };
-  }
 
-  const key = `tg_${crypto.randomBytes(16).toString('hex')}`;
-  const createdAt = new Date().toISOString();
-  store.keys[key] = {
-    customerId,
-    active: true,
-    usageCount: 0,
-    createdAt,
-    installId: opts.installId || null,
-    source: opts.source || 'provision',
-    remainingCredits: creditsToAdd // null means unlimited (standard subscription)
-  };
-  saveKeyStore(store);
-  return { key, customerId, createdAt, installId: opts.installId || null, remainingCredits: creditsToAdd };
+    const customerKeys = Object.entries(store.keys)
+      .filter(([, metadata]) => metadata.customerId === customerId);
+    const activeCustomerKey = customerKeys.find(([, metadata]) => metadata.active);
+    const latestDisabledKey = customerKeys
+      .filter(([, metadata]) => !metadata.active && metadata.disabledAt)
+      .sort((left, right) => Date.parse(right[1].disabledAt) - Date.parse(left[1].disabledAt))[0];
+    const canceledSubscription = subscriptionId && store.canceledSubscriptions[subscriptionId];
+    const customerRevocation = store.customerRevocations[customerId];
+    const revocationCreatedAt = normalizeInteger(customerRevocation && customerRevocation.eventCreatedAt);
+    const isNewSubscriptionAfterRevocation = Boolean(
+      customerRevocation
+      && subscriptionId
+      && subscriptionId !== customerRevocation.subscriptionId
+      && orderCreatedAt !== null
+      && revocationCreatedAt !== null
+      && orderCreatedAt > revocationCreatedAt
+    );
+    const legacyDisabledAt = latestDisabledKey
+      ? Math.floor(Date.parse(latestDisabledKey[1].disabledAt) / 1000)
+      : null;
+    const blockedByLegacyCancellation = enforceCancellationHistory
+      && !activeCustomerKey
+      && latestDisabledKey
+      && (orderCreatedAt === null || !Number.isFinite(legacyDisabledAt) || legacyDisabledAt >= orderCreatedAt);
+    const blockedByCustomerRevocation = customerRevocation && !isNewSubscriptionAfterRevocation
+      && (
+        !subscriptionId
+        || subscriptionId === customerRevocation.subscriptionId
+        || orderCreatedAt === null
+        || revocationCreatedAt === null
+        || revocationCreatedAt >= orderCreatedAt
+      );
+
+    if (canceledSubscription || blockedByCustomerRevocation || blockedByLegacyCancellation) {
+      return {
+        key: null,
+        customerId,
+        reused: true,
+        entitlementActive: false,
+        remainingCredits: null,
+        reason: canceledSubscription ? 'subscription_cancelled' : 'customer_entitlement_revoked',
+      };
+    }
+    if (isNewSubscriptionAfterRevocation) {
+      delete store.customerRevocations[customerId];
+    }
+
+    const creditsToAdd = normalizeInteger(opts.credits);
+    if (activeCustomerKey) {
+      const key = activeCustomerKey[0];
+      const meta = activeCustomerKey[1];
+      if (opts.installId && !meta.installId) meta.installId = opts.installId;
+      if (opts.entitlementKind === 'subscription') {
+        meta.remainingCredits = null;
+        meta.entitlementKind = 'subscription';
+        if (subscriptionId) meta.subscriptionId = subscriptionId;
+      } else if (creditsToAdd !== null && meta.remainingCredits !== null) {
+        meta.remainingCredits = (meta.remainingCredits || 0) + creditsToAdd;
+      }
+      if (orderId) {
+        meta.fulfilledOrderIds = Array.isArray(meta.fulfilledOrderIds)
+          ? [...new Set([...meta.fulfilledOrderIds, orderId])]
+          : [orderId];
+      }
+      saveKeyStore(store);
+      return { key, customerId, createdAt: meta.createdAt, installId: meta.installId || null, reused: true, remainingCredits: meta.remainingCredits };
+    }
+
+    const key = `tg_${crypto.randomBytes(16).toString('hex')}`;
+    const createdAt = new Date().toISOString();
+    store.keys[key] = {
+      customerId,
+      active: true,
+      usageCount: 0,
+      createdAt,
+      installId: opts.installId || null,
+      source: opts.source || 'provision',
+      subscriptionId: subscriptionId || null,
+      entitlementKind: opts.entitlementKind || null,
+      remainingCredits: creditsToAdd, // null means unlimited (standard subscription)
+      fulfilledOrderIds: orderId ? [orderId] : [],
+    };
+    saveKeyStore(store);
+    return { key, customerId, createdAt, installId: opts.installId || null, remainingCredits: creditsToAdd };
+  });
 }
 
 function rotateApiKey(oldKey) {
   if (!oldKey) return { rotated: false, reason: 'missing_old_key' };
-  const store = loadKeyStore();
-  const meta = store.keys[oldKey];
-  if (!meta || !meta.active) return { rotated: false, reason: 'key_not_active' };
+  return withKeyStoreLock(() => {
+    const store = loadKeyStore();
+    const meta = store.keys[oldKey];
+    if (!meta || !meta.active) return { rotated: false, reason: 'key_not_active' };
 
-  meta.active = false;
-  meta.disabledAt = new Date().toISOString();
-  const newKey = `tg_${crypto.randomBytes(16).toString('hex')}`;
-  store.keys[newKey] = {
-    customerId: meta.customerId,
-    active: true,
-    usageCount: 0,
-    createdAt: new Date().toISOString(),
-    installId: meta.installId,
-    source: 'rotation',
-    replacedKey: oldKey,
-    remainingCredits: meta.remainingCredits
-  };
-  saveKeyStore(store);
-  return { rotated: true, key: newKey, oldKey };
+    meta.active = false;
+    meta.disabledAt = new Date().toISOString();
+    const fulfilledOrderIds = Array.isArray(meta.fulfilledOrderIds) ? [...meta.fulfilledOrderIds] : [];
+    meta.fulfilledOrderIds = [];
+    const newKey = `tg_${crypto.randomBytes(16).toString('hex')}`;
+    store.keys[newKey] = {
+      customerId: meta.customerId,
+      active: true,
+      usageCount: 0,
+      createdAt: new Date().toISOString(),
+      installId: meta.installId,
+      source: 'rotation',
+      replacedKey: oldKey,
+      subscriptionId: meta.subscriptionId || null,
+      entitlementKind: meta.entitlementKind || null,
+      remainingCredits: meta.remainingCredits,
+      fulfilledOrderIds,
+    };
+    saveKeyStore(store);
+    return { rotated: true, key: newKey, oldKey };
+  });
 }
 
 function validateApiKey(key) {
@@ -2877,32 +3360,47 @@ function validateApiKey(key) {
 }
 
 function recordUsage(key) {
-  const store = loadKeyStore();
-  const meta = store.keys[key];
-  if (meta && meta.active) {
-    const oldVal = meta.usageCount || 0;
-    meta.usageCount = oldVal + 1;
+  return withKeyStoreLock(() => {
+    const store = loadKeyStore();
+    const meta = store.keys[key];
+    if (meta && meta.active) {
+      const oldVal = meta.usageCount || 0;
+      meta.usageCount = oldVal + 1;
 
-    // Decrement credits if applicable
-    if (meta.remainingCredits !== undefined && meta.remainingCredits !== null) {
-      meta.remainingCredits = Math.max(0, meta.remainingCredits - 1);
+      if (meta.remainingCredits !== undefined && meta.remainingCredits !== null) {
+        meta.remainingCredits = Math.max(0, meta.remainingCredits - 1);
+      }
+
+      if (oldVal === 0) appendFunnelEvent({ stage: 'activation', event: 'api_key_first_usage', installId: meta.installId, evidence: key, metadata: { customerId: meta.customerId } });
+      saveKeyStore(store);
+      return { recorded: true, usageCount: meta.usageCount, remainingCredits: meta.remainingCredits };
     }
-
-    if (oldVal === 0) appendFunnelEvent({ stage: 'activation', event: 'api_key_first_usage', installId: meta.installId, evidence: key, metadata: { customerId: meta.customerId } });
-    saveKeyStore(store);
-    return { recorded: true, usageCount: meta.usageCount, remainingCredits: meta.remainingCredits };
-  }
-  return { recorded: false };
+    return { recorded: false };
+  });
 }
 
-function disableCustomerKeys(customerId) {
-  const store = loadKeyStore();
-  let disabledCount = 0;
-  for (const [key, meta] of Object.entries(store.keys)) {
-    if (meta.customerId === customerId && meta.active) { meta.active = false; meta.disabledAt = new Date().toISOString(); disabledCount++; }
-  }
-  if (disabledCount > 0) saveKeyStore(store);
-  return { disabledCount };
+function disableCustomerKeys(customerId, options = {}) {
+  if (!customerId || typeof customerId !== 'string') return { disabledCount: 0 };
+  return withKeyStoreLock(() => {
+    const store = loadKeyStore();
+    let disabledCount = 0;
+    const disabledAt = new Date().toISOString();
+    for (const meta of Object.values(store.keys)) {
+      if (meta.customerId === customerId && meta.active) {
+        meta.active = false;
+        meta.disabledAt = disabledAt;
+        disabledCount++;
+      }
+    }
+    const subscriptionId = normalizeText(options.subscriptionId);
+    if (subscriptionId) {
+      const eventCreatedAt = normalizeInteger(options.eventCreatedAt) || Math.floor(Date.now() / 1000);
+      store.canceledSubscriptions[subscriptionId] = { customerId, eventCreatedAt, disabledAt };
+      store.customerRevocations[customerId] = { subscriptionId, eventCreatedAt, disabledAt };
+    }
+    if (disabledCount > 0 || subscriptionId) saveKeyStore(store);
+    return { disabledCount };
+  });
 }
 
 function verifyWebhookSignature(rawBody, signature) {
@@ -2958,14 +3456,28 @@ async function handleWebhook(rawBody, signature) {
   }
 
   switch (event.type) {
+    case 'checkout.session.async_payment_succeeded':
     case 'checkout.session.completed': {
       const session = event.data.object;
-      const customerId = session.customer;
+      const diagnosticOrder = isDiagnosticCheckoutSession(session);
+      const provisioningGrant = resolveCheckoutProvisioningGrant(session);
+      const paymentConfirmed = session.payment_status === 'paid'
+        || (!diagnosticOrder
+          && session.mode === 'subscription'
+          && session.payment_status === 'no_payment_required');
+      if (!paymentConfirmed) {
+        return {
+          handled: true,
+          action: 'payment_pending',
+          sessionId: session.id || null,
+          paymentStatus: session.payment_status || 'unknown',
+        };
+      }
+      const customerEmail = session.customer_details?.email || session.customer_email || '';
+      const customerId = resolveStripeCustomerLedgerId(session, customerEmail);
       const installId = session.metadata?.installId;
       const traceId = session.metadata?.traceId || null;
-      const credits = session.metadata?.credits ? parseInt(session.metadata.credits, 10) : null;
       const packId = session.metadata?.packId || null;
-      const customerEmail = session.customer_details?.email || session.customer_email || '';
       const customerName = session.customer_details?.name || null;
       const trialEndAt = computeTrialEndAt(session);
 
@@ -2981,22 +3493,56 @@ async function handleWebhook(rawBody, signature) {
           if (!attribution.acquisitionId) attribution.acquisitionId = ref.acquisitionId;
         }
       }
-      const result = provisionApiKey(customerId, {
-        installId,
-        credits,
-        source: 'stripe_webhook_checkout_completed'
-      });
-      const trialEmail = await sendTrialActivationEmail({
-        sessionId: session.id,
-        customerId,
-        customerEmail,
-        customerName,
-        trialEndAt,
-        apiKey: result.key,
-        planId: session.metadata?.planId || packId || null,
-        appOrigin: process.env.THUMBGATE_PUBLIC_APP_ORIGIN,
-        source: 'stripe_webhook_checkout_completed',
-      });
+      let diagnosticClaim = null;
+      if (diagnosticOrder) {
+        diagnosticClaim = claimOrderOperation(session.id, 'diagnostic');
+        if (diagnosticClaim.completed) {
+          return {
+            handled: true,
+            action: 'diagnostic_order_already_processed',
+            result: null,
+          };
+        }
+        if (!diagnosticClaim.claimed) {
+          return {
+            handled: false,
+            retryable: true,
+            reason: 'diagnostic_fulfillment_in_progress',
+          };
+        }
+      }
+      const result = provisioningGrant.allowed
+        ? provisionApiKey(customerId, {
+          installId,
+          credits: provisioningGrant.credits,
+          orderId: session.id,
+          subscriptionId: session.subscription,
+          orderCreatedAt: session.created,
+          enforceCancellationHistory: provisioningGrant.kind === 'subscription',
+          entitlementKind: provisioningGrant.kind,
+          source: 'stripe_webhook_checkout_completed'
+        })
+        : null;
+      const trialEmail = !result || !result.key
+        ? {
+          status: 'skipped',
+          reason: diagnosticOrder
+            ? 'diagnostic_order'
+            : result && result.entitlementActive === false
+              ? 'entitlement_inactive'
+              : 'non_entitlement_order',
+        }
+        : await sendTrialActivationEmail({
+          sessionId: session.id,
+          customerId,
+          customerEmail,
+          customerName,
+          trialEndAt,
+          apiKey: result.key,
+          planId: session.metadata?.planId || packId || null,
+          appOrigin: process.env.THUMBGATE_PUBLIC_APP_ORIGIN,
+          source: 'stripe_webhook_checkout_completed',
+        });
       const funnelRecord = {
         stage: 'paid',
         event: 'stripe_checkout_completed',
@@ -3006,6 +3552,9 @@ async function handleWebhook(rawBody, signature) {
           sessionId: session.id,
           traceId,
           packId,
+          offerKind: diagnosticOrder
+            ? 'workflow_hardening_diagnostic'
+            : provisioningGrant.allowed ? provisioningGrant.kind : 'service_order',
           ...extractJourneyFields(session.metadata),
           ...attribution,
         },
@@ -3021,11 +3570,9 @@ async function handleWebhook(rawBody, signature) {
         });
       }
       // Write checkout_paid_confirmed event with amount/currency for funnel analytics
-      appendFunnelEvent({
+      const paidConfirmationRecord = {
         stage: 'paid',
         event: 'checkout_paid_confirmed',
-        installId,
-        traceId,
         evidence: session.id,
         metadata: {
           source: 'stripe_webhook_checkout_completed',
@@ -3034,7 +3581,14 @@ async function handleWebhook(rawBody, signature) {
           customerId,
           ...funnelRecord.metadata,
         },
-      });
+      };
+      if (!hasFunnelEventMatch(loadFunnelLedger(), paidConfirmationRecord)) {
+        appendFunnelEvent({
+          ...paidConfirmationRecord,
+          installId,
+          traceId,
+        });
+      }
       const revenueRecord = {
         provider: 'stripe',
         event: 'stripe_checkout_completed',
@@ -3047,10 +3601,25 @@ async function handleWebhook(rawBody, signature) {
           mode: session.mode || null,
           paymentStatus: session.payment_status || null,
           packId,
+          offerKind: diagnosticOrder
+            ? 'workflow_hardening_diagnostic'
+            : provisioningGrant.allowed ? provisioningGrant.kind : 'service_order',
         },
       };
-      if (!hasRevenueEventMatch(loadRevenueLedger(), revenueRecord)) {
-        appendRevenueEvent({
+      const revenueClaim = claimOrderOperation(session.id, 'revenue');
+      if (!revenueClaim.claimed && !revenueClaim.completed) {
+        if (diagnosticOrder) releaseOrderOperation(diagnosticClaim);
+        return {
+          handled: false,
+          retryable: true,
+          reason: 'payment_record_in_progress',
+        };
+      }
+      const isNewRevenueRecord = revenueClaim.claimed
+        && !hasRevenueEventMatch(loadRevenueLedger(), revenueRecord);
+      let revenueWriteResult = { written: true, reason: 'already_recorded' };
+      if (isNewRevenueRecord) {
+        revenueWriteResult = appendRevenueEvent({
           ...revenueRecord,
           installId,
           traceId,
@@ -3062,10 +3631,25 @@ async function handleWebhook(rawBody, signature) {
           attribution,
         });
       }
+      if (revenueWriteResult.written !== true) {
+        releaseOrderOperation(revenueClaim);
+        if (diagnosticOrder) releaseOrderOperation(diagnosticClaim);
+        return {
+          handled: false,
+          retryable: true,
+          reason: 'payment_record_retry_required',
+        };
+      }
+      if (revenueClaim.claimed) {
+        completeOrderOperation(revenueClaim, {
+          sessionId: session.id,
+          action: isNewRevenueRecord ? 'revenue_recorded' : 'revenue_already_recorded',
+        });
+      }
       // Fire Plausible purchase event so the funnel poller can measure
       // end-to-end conversion: visitor → CTA → checkout → email → Stripe → purchase.
       // Fire-and-forget (never blocks the webhook response).
-      void recordCheckoutFunnelEvent('purchase', {
+      const purchaseEventOptions = {
         page: '/success',
         props: {
           sessionId: session.id,
@@ -3076,7 +3660,69 @@ async function handleWebhook(rawBody, signature) {
           currency: session.currency || '',
           ...attribution,
         },
-      });
+      };
+      if (isNewRevenueRecord) {
+        if (diagnosticOrder) {
+          void plausibleEvent('Workflow Diagnostic Purchase Completed', purchaseEventOptions);
+        } else {
+          void recordCheckoutFunnelEvent('purchase', purchaseEventOptions);
+        }
+      }
+
+      if (diagnosticOrder) {
+        const diagnosticEmails = await sendDiagnosticOrderEmails({
+          session,
+          customerEmail,
+          customerName,
+          attribution,
+        });
+        const deliveryComplete = diagnosticEmails.buyer.sent && diagnosticEmails.operator.sent;
+        const deliveryRetryable = [diagnosticEmails.buyer, diagnosticEmails.operator]
+          .some(isRetryableDiagnosticDelivery);
+        if (!deliveryComplete && deliveryRetryable) {
+          releaseOrderOperation(diagnosticClaim);
+          return {
+            handled: false,
+            retryable: true,
+            paymentRecorded: true,
+            reason: 'diagnostic_fulfillment_retry_required',
+            delivery: {
+              buyer: diagnosticEmails.buyer.reason || diagnosticEmails.buyer.status || 'not_sent',
+              operator: diagnosticEmails.operator.reason || diagnosticEmails.operator.status || 'not_sent',
+            },
+          };
+        }
+        completeOrderOperation(diagnosticClaim, {
+          sessionId: session.id,
+          action: 'diagnostic_order_recorded',
+          fulfillment: deliveryComplete ? 'complete' : 'attention_required',
+        });
+        return {
+          handled: true,
+          action: 'diagnostic_order_recorded',
+          result: null,
+          diagnosticEmails,
+          fulfillment: deliveryComplete ? 'complete' : 'attention_required',
+        };
+      }
+
+      if (!provisioningGrant.allowed) {
+        return {
+          handled: true,
+          action: 'paid_service_order_recorded',
+          result: null,
+          trialEmail,
+        };
+      }
+
+      if (result && result.entitlementActive === false) {
+        return {
+          handled: true,
+          action: 'checkout_entitlement_inactive',
+          result,
+          trialEmail,
+        };
+      }
 
       return {
         handled: true,
@@ -3086,9 +3732,25 @@ async function handleWebhook(rawBody, signature) {
         email: trialEmailToWebhookEmailResult(trialEmail),
       };
     }
+    case 'checkout.session.async_payment_failed': {
+      const session = event.data.object;
+      return {
+        handled: true,
+        action: 'payment_failed',
+        sessionId: session.id || null,
+        paymentStatus: session.payment_status || 'unpaid',
+      };
+    }
     case 'customer.subscription.deleted': {
       const sub = event.data.object;
-      return { handled: true, action: 'disabled_customer_keys', result: disableCustomerKeys(sub.customer) };
+      return {
+        handled: true,
+        action: 'disabled_customer_keys',
+        result: disableCustomerKeys(sub.customer, {
+          subscriptionId: sub.id,
+          eventCreatedAt: event.created || sub.canceled_at || sub.ended_at,
+        }),
+      };
     }
     default: return { handled: false, reason: `unhandled_event_type:${event.type}` };
   }
@@ -3229,6 +3891,9 @@ module.exports = {
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
   _buildTrialActivationEmail: buildTrialActivationEmail,
   _sendTrialActivationEmail: sendTrialActivationEmail,
+  _isDiagnosticCheckoutSession: isDiagnosticCheckoutSession,
+  _resolveCheckoutProvisioningGrant: resolveCheckoutProvisioningGrant,
+  _sendDiagnosticOrderEmails: sendDiagnosticOrderEmails,
   _resolveSubscriptionCheckoutSelection: resolveSubscriptionCheckoutSelection,
   _verifyActiveProductForPlan: verifyActiveProductForPlan,
   _API_KEYS_PATH: () => CONFIG.API_KEYS_PATH,
@@ -3236,6 +3901,7 @@ module.exports = {
   _REVENUE_LEDGER_PATH: () => CONFIG.REVENUE_LEDGER_PATH,
   _LOCAL_CHECKOUT_SESSIONS_PATH: () => CONFIG.LOCAL_CHECKOUT_SESSIONS_PATH,
   _TRIAL_EMAIL_LEDGER_PATH: () => CONFIG.TRIAL_EMAIL_LEDGER_PATH,
+  _ORDER_EMAIL_LEDGER_PATH: () => CONFIG.ORDER_EMAIL_LEDGER_PATH,
   _LOCAL_MODE: () => LOCAL_MODE(),
   _withTimeout: withTimeout,
   // Default to the real Resend-backed mailer so production webhooks send the

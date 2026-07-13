@@ -13,21 +13,29 @@ const {
   parseCheckoutReference,
 } = require('../scripts/checkout-attribution-reference');
 
-test('packs source + trace + acquisition into a stripe-safe reference', () => {
+test('packs source + trace + acquisition + plan into a stripe-safe reference', () => {
   const ref = packCheckoutReference({
     utmSource: 'aiventyx',
     traceId: 'trace-9f2c1b7e',
     acquisitionId: 'acq-4a10',
+    planId: 'sprint_diagnostic',
   });
-  assert.equal(ref, 'tg108aiventyx14trace-9f2c1b7e08acq-4a10');
+  assert.equal(ref, 'tg208aiventyx14trace-9f2c1b7e08acq-4a1017sprint_diagnostic');
   assert.match(ref, /^[A-Za-z0-9_-]+$/);
   assert.ok(ref.length <= 200, 'stays within Stripe client_reference_id limit');
 });
 
 test('round-trips: what we pack is what the webhook recovers', () => {
-  const meta = { source: 'aiventyx', traceId: 't1', acquisitionId: 'a1' };
+  const meta = { source: 'aiventyx', traceId: 't1', acquisitionId: 'a1', planId: 'sprint_diagnostic' };
   const parsed = parseCheckoutReference(packCheckoutReference(meta));
-  assert.deepEqual(parsed, { source: 'aiventyx', traceId: 't1', acquisitionId: 'a1' });
+  assert.deepEqual(parsed, { source: 'aiventyx', traceId: 't1', acquisitionId: 'a1', planId: 'sprint_diagnostic' });
+});
+
+test('parses legacy tg1 references without inventing an offer', () => {
+  assert.deepEqual(
+    parseCheckoutReference('tg108aiventyx02t102a1'),
+    { source: 'aiventyx', traceId: 't1', acquisitionId: 'a1', planId: null },
+  );
 });
 
 test('prefers utmSource over source when both present', () => {
@@ -40,7 +48,7 @@ test('no source => no reference (caller appends nothing)', () => {
   assert.equal(packCheckoutReference({ traceId: 't', acquisitionId: 'a' }), null);
 });
 
-test('rejects non-tg1 / empty / malformed references', () => {
+test('rejects non-ThumbGate / empty / malformed references', () => {
   assert.equal(parseCheckoutReference(''), null);
   assert.equal(parseCheckoutReference(null), null);
   assert.equal(parseCheckoutReference('cus_123'), null); // a Stripe customer id
@@ -61,7 +69,7 @@ test('caps field length to avoid overflowing the reference', () => {
   const long = 'x'.repeat(500);
   const ref = packCheckoutReference({ source: long });
   assert.ok(ref.length <= 190);
-  assert.ok(parseCheckoutReference(ref).source.length <= 60);
+  assert.ok(parseCheckoutReference(ref).source.length <= 45);
 });
 
 test('recovery scenario: empty metadata + client_reference_id => source restored', () => {
