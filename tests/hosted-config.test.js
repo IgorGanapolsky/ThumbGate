@@ -10,6 +10,8 @@ const {
   resolveHostedBillingConfig,
   DEFAULT_SPRINT_DIAGNOSTIC_PRICE_DOLLARS,
   DEFAULT_WORKFLOW_SPRINT_PRICE_DOLLARS,
+  DEFAULT_SPRINT_DIAGNOSTIC_CHECKOUT_URL,
+  DEFAULT_WORKFLOW_SPRINT_CHECKOUT_URL,
 } = require('../scripts/hosted-config');
 
 describe('hosted-config', () => {
@@ -75,5 +77,17 @@ describe('hosted-config', () => {
 
     assert.strictEqual(config.sprintDiagnosticPriceDollars, DEFAULT_SPRINT_DIAGNOSTIC_PRICE_DOLLARS);
     assert.strictEqual(config.workflowSprintPriceDollars, DEFAULT_WORKFLOW_SPRINT_PRICE_DOLLARS);
+  });
+
+  it('resolveHostedBillingConfig falls back to price-aligned checkout URLs', () => {
+    const config = resolveHostedBillingConfig({}, {});
+    assert.strictEqual(config.sprintDiagnosticCheckoutUrl, DEFAULT_SPRINT_DIAGNOSTIC_CHECKOUT_URL);
+    assert.strictEqual(config.workflowSprintCheckoutUrl, DEFAULT_WORKFLOW_SPRINT_CHECKOUT_URL);
+    assert.notStrictEqual(config.sprintDiagnosticCheckoutUrl, config.workflowSprintCheckoutUrl);
+    assert.strictEqual(config.sprintDiagnosticPriceDollars, 499);
+    assert.strictEqual(config.workflowSprintPriceDollars, 1500);
+    // Sprint fallback must not be a buy.stripe.com slug that maps to the $499 diagnostic.
+    assert.match(config.workflowSprintCheckoutUrl, /paypal\.com\/ncp\/payment\//);
+    assert.doesNotMatch(config.workflowSprintCheckoutUrl, /buy\.stripe\.com\/6oU00j8aw2iWdWh9uj3sI2K/);
   });
 });

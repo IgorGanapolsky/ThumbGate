@@ -13,6 +13,9 @@ const DEFAULT_PRO_PRICE_DOLLARS = PRO_MONTHLY_PRICE_DOLLARS;
 const DEFAULT_PRO_PRICE_LABEL = PRO_PRICE_LABEL;
 const DEFAULT_SPRINT_DIAGNOSTIC_PRICE_DOLLARS = 499;
 const DEFAULT_WORKFLOW_SPRINT_PRICE_DOLLARS = 1500;
+// Keep fallbacks price-aligned. Sprint must NOT share the diagnostic Stripe slug.
+const DEFAULT_SPRINT_DIAGNOSTIC_CHECKOUT_URL = 'https://buy.stripe.com/9B69ATbmI4r4aK5eOD3sI3k';
+const DEFAULT_WORKFLOW_SPRINT_CHECKOUT_URL = 'https://www.paypal.com/ncp/payment/LTQFR7P9AR3QG';
 const GA_MEASUREMENT_ID_PATTERN = /^G-[A-Z0-9]+$/i;
 
 function normalizeOrigin(value) {
@@ -127,8 +130,10 @@ function resolveHostedBillingConfig({ requestOrigin } = {}, env = process.env) {
   const gaMeasurementId = normalizeTrackingId(env.THUMBGATE_GA_MEASUREMENT_ID, GA_MEASUREMENT_ID_PATTERN);
   const posthogApiKey = env.POSTHOG_API_KEY || '';
   const googleSiteVerification = normalizeTrackingId(env.THUMBGATE_GOOGLE_SITE_VERIFICATION);
-  const sprintDiagnosticCheckoutUrl = normalizeAbsoluteUrl(env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL);
-  const workflowSprintCheckoutUrl = normalizeAbsoluteUrl(env.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL);
+  const sprintDiagnosticCheckoutUrl = normalizeAbsoluteUrl(env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL)
+    || DEFAULT_SPRINT_DIAGNOSTIC_CHECKOUT_URL;
+  const workflowSprintCheckoutUrl = normalizeAbsoluteUrl(env.THUMBGATE_WORKFLOW_SPRINT_CHECKOUT_URL)
+    || DEFAULT_WORKFLOW_SPRINT_CHECKOUT_URL;
 
   return {
     appOrigin,
@@ -159,6 +164,8 @@ module.exports = {
   DEFAULT_PRO_PRICE_LABEL,
   DEFAULT_SPRINT_DIAGNOSTIC_PRICE_DOLLARS,
   DEFAULT_WORKFLOW_SPRINT_PRICE_DOLLARS,
+  DEFAULT_SPRINT_DIAGNOSTIC_CHECKOUT_URL,
+  DEFAULT_WORKFLOW_SPRINT_CHECKOUT_URL,
   GA_MEASUREMENT_ID_PATTERN,
   normalizeAbsoluteUrl,
   normalizeOrigin,

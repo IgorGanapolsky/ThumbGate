@@ -25,8 +25,12 @@ const PRO_CHECKOUT_URL = 'https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f';
 const FIRST_FAILURE_RULE_CHECKOUT_URL = 'https://buy.stripe.com/7sY6oHaiEbTw6tP5e33sI3e';
 const QUICK_READ_CHECKOUT_URL = 'https://buy.stripe.com/5kQ7sL76s1eSaK55e33sI2H';
 const WORKFLOW_TEARDOWN_CHECKOUT_URL = 'https://buy.stripe.com/8x214n2Qc4r44lHayn3sI2I';
+// Verified live amounts (2026-07-13): diagnostic Stripe page contains $499;
+// sprint code-default Stripe slug previously pointed at a $499 diagnostic product.
+// Production sprint rail is PayPal at $1500 — pin that as the code fallback so a
+// missing Railway env cannot silently charge $499 under a $1500 label.
 const SPRINT_DIAGNOSTIC_CHECKOUT_URL = 'https://buy.stripe.com/9B69ATbmI4r4aK5eOD3sI3k';
-const WORKFLOW_SPRINT_CHECKOUT_URL = 'https://buy.stripe.com/6oU00j8aw2iWdWh9uj3sI2K';
+const WORKFLOW_SPRINT_CHECKOUT_URL = 'https://www.paypal.com/ncp/payment/LTQFR7P9AR3QG';
 
 function getPosthogProxyPath(pathname) {
   return pathname.slice('/ingest'.length) || '/';
