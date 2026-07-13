@@ -46,10 +46,10 @@ test('shared CLI runner invokes only a matching entrypoint', async () => {
   };
 
   assert.equal(
-    runAsyncCli(main, sourcePath, [process.execPath, path.join(__dirname, 'other.js')]),
+    await runAsyncCli(main, sourcePath, [process.execPath, path.join(__dirname, 'other.js')]),
     false,
   );
-  await runAsyncCli(main, sourcePath, [process.execPath, sourcePath]);
+  assert.equal(await runAsyncCli(main, sourcePath, [process.execPath, sourcePath]), true);
   assert.equal(calls, 1);
   assert.equal(isDirectRun([process.execPath], sourcePath), false);
 });
@@ -61,11 +61,12 @@ test('shared CLI runner reports a rejected command', async (context) => {
   context.mock.method(console, 'error', (message) => errors.push(message));
 
   try {
-    await runAsyncCli(
+    const result = await runAsyncCli(
       async () => { throw new Error('expected CLI failure'); },
       sourcePath,
       [process.execPath, sourcePath],
     );
+    assert.equal(result, false);
     assert.deepEqual(errors, ['expected CLI failure']);
     assert.equal(process.exitCode, 1);
   } finally {
