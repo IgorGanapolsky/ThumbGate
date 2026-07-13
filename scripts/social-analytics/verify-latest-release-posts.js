@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
+const { isDirectRun, runAsyncCli } = require('./cli-entrypoint');
 const { listPosts } = require('./publishers/zernio');
 
 const LATEST_RELEASE_MARKERS = [
@@ -61,16 +62,12 @@ async function main() {
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
-if (require.main === module) {
-  main().catch((error) => {
-    console.error(error && error.message ? error.message : error);
-    process.exit(1);
-  });
-}
+runAsyncCli(main, __filename);
 
 module.exports = {
   flattenPostReceipts,
   isLatestReleasePost,
+  isDirectRun,
   parseArgs,
   selectLatestByPlatform,
   verifyLatestReleasePosts,
