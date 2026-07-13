@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ThumbGate Partner Workflow Intake</title>
+<meta name="description" content="Submit one failing AI-agent workflow for fit review before implementation.">
+<meta name="robots" content="noindex,nofollow">
+<link rel="canonical" href="__APP_ORIGIN__/partner-intake">
+<link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
+<meta property="og:title" content="ThumbGate Partner Workflow Intake">
+<meta property="og:description" content="Describe one repeated AI-agent workflow failure and the proof gap around it.">
+<meta property="og:url" content="__APP_ORIGIN__/partner-intake">
+<meta property="og:type" content="website">
+__GOOGLE_SITE_VERIFICATION_META__
+__GA_BOOTSTRAP__
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #070a0c;
+  --panel: #10161a;
+  --line: #2a3941;
+  --text: #edf7f8;
+  --muted: #a7b5ba;
+  --cyan: #2fd2e6;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.5;
+}
+header, main, footer { width: min(1040px, calc(100% - 32px)); margin: 0 auto; }
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 0;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  font-weight: 800;
+  text-decoration: none;
+}
+.brand img { display: block; width: 28px; height: 28px; }
+.partner-label { color: var(--muted); font-size: 14px; }
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1.1fr);
+  gap: 48px;
+  align-items: start;
+  padding: 56px 0 64px;
+}
+.eyebrow {
+  color: var(--cyan);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+h1 {
+  margin: 14px 0 18px;
+  max-width: 620px;
+  font-size: 52px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+.lede { max-width: 600px; color: var(--muted); font-size: 19px; }
+.signals {
+  display: grid;
+  gap: 12px;
+  margin-top: 30px;
+  padding: 0;
+  list-style: none;
+}
+.signals li { padding-left: 18px; border-left: 3px solid var(--cyan); color: var(--muted); }
+.signals strong { color: var(--text); }
+.intake-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 24px;
+}
+.intake-card h2 { margin: 0 0 8px; font-size: 24px; }
+.intake-card > p { margin: 0 0 18px; color: var(--muted); }
+label { display: block; margin: 14px 0 7px; font-size: 14px; font-weight: 750; }
+input, textarea, select {
+  width: 100%;
+  border: 1px solid #35464e;
+  border-radius: 7px;
+  background: #080c0f;
+  color: var(--text);
+  padding: 12px;
+  font: inherit;
+}
+textarea { min-height: 124px; resize: vertical; }
+button {
+  width: 100%;
+  min-height: 50px;
+  margin-top: 18px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--cyan);
+  color: #041014;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+.hint { margin: 12px 0 0; color: var(--muted); font-size: 13px; }
+footer { padding: 28px 0 40px; border-top: 1px solid var(--line); color: var(--muted); }
+@media (max-width: 800px) {
+  header { align-items: flex-start; flex-direction: column; }
+  .layout { grid-template-columns: 1fr; padding-top: 36px; }
+  h1 { font-size: 40px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="/">
+    <img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" width="28" height="28">
+    <span>ThumbGate</span>
+  </a>
+  <span class="partner-label">Partner workflow intake</span>
+</header>
+<main>
+  <div class="layout">
+    <section aria-labelledby="partner-intake-title">
+      <div class="eyebrow">Workflow fit review</div>
+      <h1 id="partner-intake-title">Send one failing AI-agent workflow.</h1>
+      <p class="lede">Describe the repeated action, the agent involved, and the proof gap. We will review whether the workflow is a fit and return the next concrete step through the referring partner.</p>
+      <ul class="signals">
+        <li><strong>One workflow:</strong> keep the review narrow enough to verify.</li>
+        <li><strong>One owner:</strong> identify who can approve the resulting boundary.</li>
+        <li><strong>One proof target:</strong> state what must be true before the action runs again.</li>
+      </ul>
+    </section>
+    <form class="intake-card" action="/v1/intake/workflow-sprint" method="POST" data-partner-intake-form>
+      <h2>Submit workflow</h2>
+      <p>Use a work email so we can return the fit review to the right owner.</p>
+      <input type="hidden" name="ctaId" value="partner_intake_submit">
+      <input type="hidden" name="ctaPlacement" value="partner_intake">
+      <input type="hidden" name="planId" value="diagnostic">
+      <input type="hidden" name="page" value="/partner-intake">
+      <input type="hidden" name="source" value="__SERVER_ATTRIBUTION_SOURCE__">
+      <input type="hidden" name="utmSource" value="__SERVER_UTM_SOURCE__">
+      <input type="hidden" name="utmMedium" value="__SERVER_UTM_MEDIUM__">
+      <input type="hidden" name="utmCampaign" value="__SERVER_UTM_CAMPAIGN__">
+      <input type="hidden" name="utmContent" value="__SERVER_UTM_CONTENT__">
+      <label for="partner-name">Name</label>
+      <input id="partner-name" name="name" autocomplete="name" required>
+      <label for="partner-email">Work email</label>
+      <input id="partner-email" name="email" type="email" autocomplete="email" required>
+      <label for="partner-company">Company or project</label>
+      <input id="partner-company" name="company" autocomplete="organization">
+      <label for="partner-workflow">What workflow keeps failing?</label>
+      <textarea id="partner-workflow" name="workflow" required placeholder="Example: the agent sends a customer update before the evidence and approver are confirmed."></textarea>
+      <label for="partner-urgency">Urgency</label>
+      <select id="partner-urgency" name="urgency">
+        <option>Repeated failure already cost us time</option>
+        <option>We are about to roll this workflow out</option>
+        <option>We need an independent proof checklist first</option>
+      </select>
+      <button type="submit">Send workflow for review</button>
+      <p class="hint">The next page confirms receipt and provides the review references.</p>
+    </form>
+  </div>
+</main>
+<footer>ThumbGate reviews one concrete agent workflow at a time so the resulting boundary can be tested.</footer>
+<script>
+(function () {
+  const form = document.querySelector('[data-partner-intake-form]');
+  if (!form) return;
+
+  const search = new URLSearchParams(window.location.search);
+  const fields = {
+    source: search.get('utm_source') || search.get('source') || 'partner',
+    utmSource: search.get('utm_source') || search.get('source') || 'partner',
+    utmMedium: search.get('utm_medium') || 'partner',
+    utmCampaign: search.get('utm_campaign') || 'hosted_listing',
+    utmContent: search.get('utm_content') || 'partner_intake'
+  };
+
+  for (const [name, value] of Object.entries(fields)) {
+    const input = form.querySelector(`input[name="${name}"]`);
+    if (input && value.trim()) input.value = value.trim();
+  }
+}());
+</script>
+</body>
+</html>

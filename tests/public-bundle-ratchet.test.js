@@ -103,7 +103,9 @@ const path = require('node:path');
 // UserPromptSubmit / SessionStart enforcement lifecycle (without it an install
 // got skills+commands+mcpServers but ZERO enforcement). It replaced headroom
 // under the ceiling, so the count stays at 332 — no baseline bump required.
-const BASELINE_FILE_COUNT = 332;
+// 332 -> 333: public/partner-intake.html adds the form-only partner handoff
+// used by attributed marketplace listings before a scoped offer is accepted.
+const BASELINE_FILE_COUNT = 333;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

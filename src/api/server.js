@@ -249,6 +249,7 @@ const FEDERAL_PAGE_PATH = path.resolve(__dirname, '../../public/federal.html');
 const PRICING_PAGE_PATH = path.resolve(__dirname, '../../public/pricing.html');
 const ABOUT_PAGE_PATH = path.resolve(__dirname, '../../public/about.html');
 const DIAGNOSTIC_PAGE_PATH = path.resolve(__dirname, '../../public/diagnostic.html');
+const PARTNER_INTAKE_PAGE_PATH = path.resolve(__dirname, '../../public/partner-intake.html');
 const INSTALL_PAGE_PATH = path.resolve(__dirname, '../../public/install.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
@@ -2890,6 +2891,11 @@ function loadPublicMarketingTemplateHtml(templatePath, runtimeConfig, pageContex
     '__SERVER_SESSION_ID__': pageContext.serverSessionId || '',
     '__SERVER_ACQUISITION_ID__': pageContext.serverAcquisitionId || '',
     '__SERVER_TELEMETRY_CAPTURED__': pageContext.serverTelemetryCaptured ? 'true' : 'false',
+    '__SERVER_ATTRIBUTION_SOURCE__': escapeHtmlAttribute(pageContext.serverAttributionSource || 'partner'),
+    '__SERVER_UTM_SOURCE__': escapeHtmlAttribute(pageContext.serverUtmSource || 'partner'),
+    '__SERVER_UTM_MEDIUM__': escapeHtmlAttribute(pageContext.serverUtmMedium || 'partner'),
+    '__SERVER_UTM_CAMPAIGN__': escapeHtmlAttribute(pageContext.serverUtmCampaign || 'hosted_listing'),
+    '__SERVER_UTM_CONTENT__': escapeHtmlAttribute(pageContext.serverUtmContent || 'partner_intake'),
     '__VERIFICATION_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
     '__COMPATIBILITY_REPORT_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
     '__AUTOMATION_REPORT_URL__': 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md',
@@ -2909,6 +2915,10 @@ function loadProPageHtml(runtimeConfig, pageContext = {}) {
 
 function loadDiagnosticPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(DIAGNOSTIC_PAGE_PATH, runtimeConfig, pageContext);
+}
+
+function loadPartnerIntakePageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(PARTNER_INTAKE_PAGE_PATH, runtimeConfig, pageContext);
 }
 
 function loadInstallPageHtml(runtimeConfig, pageContext = {}) {
@@ -3730,6 +3740,11 @@ function servePublicMarketingPage({
     serverSessionId: journeyState.sessionId,
     serverAcquisitionId: journeyState.acquisitionId,
     serverTelemetryCaptured: landingTelemetryCaptured,
+    serverAttributionSource: landingAttribution.source,
+    serverUtmSource: landingAttribution.utmSource,
+    serverUtmMedium: landingAttribution.utmMedium,
+    serverUtmCampaign: landingAttribution.utmCampaign,
+    serverUtmContent: landingAttribution.utmContent,
     requestHost,
   });
 
@@ -5787,6 +5802,25 @@ async function addContext(){
         'Cache-Control': 'no-store',
       });
       res.end();
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/partner-intake' || pathname === '/partner-intake.html')) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadPartnerIntakePageHtml,
+          extraTelemetry: {
+            pageType: 'partner_intake',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Partner intake page unavailable');
+      }
       return;
     }
 
