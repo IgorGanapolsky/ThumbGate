@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-const path = require('node:path');
+const { isDirectRun, runAsyncCli } = require('./cli-entrypoint');
 const {
   buildLatestReleasePost,
   buildLatestReleaseUrl,
@@ -178,17 +178,7 @@ async function main() {
   if (results.errors.length > 0) process.exitCode = 1;
 }
 
-function isDirectRun(argv = process.argv, filename = __filename) {
-  if (!argv[1]) return false;
-  return path.resolve(argv[1]) === path.resolve(filename);
-}
-
-if (isDirectRun()) {
-  main().catch((error) => {
-    console.error(error?.message || error);
-    process.exit(1);
-  });
-}
+runAsyncCli(main, __filename);
 
 module.exports = {
   DEFAULT_REDDIT_PARENT_ID,

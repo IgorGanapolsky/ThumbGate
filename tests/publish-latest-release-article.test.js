@@ -4,6 +4,10 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const {
+  isDirectRun,
+  runAsyncCli,
+} = require('../scripts/social-analytics/cli-entrypoint');
+const {
   ARTICLE_TITLE,
   isDirectRun: isArticleDirectRun,
   publishLatestReleaseArticle,
@@ -31,6 +35,41 @@ test('CLI entrypoint detection compares resolved paths', () => {
       false,
     );
     assert.equal(isDirectRun([process.execPath], sourcePath), false);
+  }
+});
+
+test('shared CLI runner invokes only a matching entrypoint', async () => {
+  const sourcePath = require.resolve('../scripts/social-analytics/publish-latest-release-article');
+  let calls = 0;
+  const main = async () => {
+    calls += 1;
+  };
+
+  assert.equal(
+    runAsyncCli(main, sourcePath, [process.execPath, path.join(__dirname, 'other.js')]),
+    false,
+  );
+  await runAsyncCli(main, sourcePath, [process.execPath, sourcePath]);
+  assert.equal(calls, 1);
+  assert.equal(isDirectRun([process.execPath], sourcePath), false);
+});
+
+test('shared CLI runner reports a rejected command', async (context) => {
+  const sourcePath = require.resolve('../scripts/social-analytics/publish-latest-release-article');
+  const originalExitCode = process.exitCode;
+  const errors = [];
+  context.mock.method(console, 'error', (message) => errors.push(message));
+
+  try {
+    await runAsyncCli(
+      async () => { throw new Error('expected CLI failure'); },
+      sourcePath,
+      [process.execPath, sourcePath],
+    );
+    assert.deepEqual(errors, ['expected CLI failure']);
+    assert.equal(process.exitCode, 1);
+  } finally {
+    process.exitCode = originalExitCode;
   }
 });
 

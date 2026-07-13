@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-const path = require('node:path');
+const { isDirectRun, runAsyncCli } = require('./cli-entrypoint');
 const { listPosts } = require('./publishers/zernio');
 
 const LATEST_RELEASE_MARKERS = [
@@ -62,17 +62,7 @@ async function main() {
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
-function isDirectRun(argv = process.argv, filename = __filename) {
-  if (!argv[1]) return false;
-  return path.resolve(argv[1]) === path.resolve(filename);
-}
-
-if (isDirectRun()) {
-  main().catch((error) => {
-    console.error(error?.message || error);
-    process.exit(1);
-  });
-}
+runAsyncCli(main, __filename);
 
 module.exports = {
   flattenPostReceipts,
