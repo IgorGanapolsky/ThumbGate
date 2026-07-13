@@ -54,9 +54,14 @@ async function main() {
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
-if (require.main === module) {
+function isDirectRun(argv = process.argv, filename = __filename) {
+  if (!argv[1]) return false;
+  return path.resolve(argv[1]) === path.resolve(filename);
+}
+
+if (isDirectRun()) {
   main().catch((error) => {
-    console.error(error && error.message ? error.message : error);
+    console.error(error?.message || error);
     process.exit(1);
   });
 }
@@ -64,5 +69,6 @@ if (require.main === module) {
 module.exports = {
   ARTICLE_PATH,
   ARTICLE_TITLE,
+  isDirectRun,
   publishLatestReleaseArticle,
 };

@@ -2,10 +2,37 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const path = require('node:path');
 const {
   ARTICLE_TITLE,
+  isDirectRun: isArticleDirectRun,
   publishLatestReleaseArticle,
 } = require('../scripts/social-analytics/publish-latest-release-article');
+const {
+  isDirectRun: isVerifierDirectRun,
+} = require('../scripts/social-analytics/verify-latest-release-posts');
+
+test('CLI entrypoint detection compares resolved paths', () => {
+  const cases = [
+    [
+      isArticleDirectRun,
+      require.resolve('../scripts/social-analytics/publish-latest-release-article'),
+    ],
+    [
+      isVerifierDirectRun,
+      require.resolve('../scripts/social-analytics/verify-latest-release-posts'),
+    ],
+  ];
+
+  for (const [isDirectRun, sourcePath] of cases) {
+    assert.equal(isDirectRun([process.execPath, sourcePath], sourcePath), true);
+    assert.equal(
+      isDirectRun([process.execPath, path.join(__dirname, 'other.js')], sourcePath),
+      false,
+    );
+    assert.equal(isDirectRun([process.execPath], sourcePath), false);
+  }
+});
 
 test('publishes the latest release article with technical tags', async () => {
   let received;

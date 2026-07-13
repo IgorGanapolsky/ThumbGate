@@ -53,6 +53,16 @@ function resolveLatestReleaseMediaPlan(platform) {
   return ['instagram', 'youtube'].includes(normalized) ? [LATEST_RELEASE_MEDIA.square] : [];
 }
 
+function resolveOfferMediaPlan(offer, platform) {
+  if (offer === 'operator-lab') {
+    return resolveOperatorLabMediaPlan(platform);
+  }
+  if (offer === 'release-1.28.0') {
+    return resolveLatestReleaseMediaPlan(platform);
+  }
+  return [];
+}
+
 function describeMediaPlan(paths = []) {
   return paths.map((p) => ({
     path: p,
@@ -750,9 +760,7 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
     }
 
     const content = buildPlatformPost(normalizedPlatform, offer);
-    const mediaPlanPaths = offer === 'operator-lab'
-      ? resolveOperatorLabMediaPlan(normalizedPlatform)
-      : (offer === 'release-1.28.0' ? resolveLatestReleaseMediaPlan(normalizedPlatform) : []);
+    const mediaPlanPaths = resolveOfferMediaPlan(offer, normalizedPlatform);
     results.previews.push({
       platform: normalizedPlatform,
       content,
