@@ -166,6 +166,25 @@ describe('/checkout/pro bot guard', () => {
     }
   });
 
+  it('falls back to the active allowlisted diagnostic Payment Link', async () => {
+    const diagnosticCheckoutUrl = process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL;
+    delete process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL;
+    try {
+      const res = await fetch(`${origin}/go/diagnostic?utm_source=aiventyx`, {
+        redirect: 'manual',
+      });
+      assert.equal(res.status, 302);
+      const destination = new URL(res.headers.get('location'));
+      assert.equal(destination.origin + destination.pathname, 'https://buy.stripe.com/9B69ATbmI4r4aK5eOD3sI3k');
+      assert.equal(destination.searchParams.get('utm_source'), 'aiventyx');
+      const reference = destination.searchParams.get('client_reference_id');
+      assert.match(reference, /^tg2/);
+      assert.equal(require('../scripts/checkout-attribution-reference').parseCheckoutReference(reference).source, 'aiventyx');
+    } finally {
+      process.env.THUMBGATE_SPRINT_DIAGNOSTIC_CHECKOUT_URL = diagnosticCheckoutUrl;
+    }
+  });
+
   it('returns HTML interstitial for curl (missing browser headers)', async () => {
     const res = await fetch(`${origin}/checkout/pro`, {
       redirect: 'manual',

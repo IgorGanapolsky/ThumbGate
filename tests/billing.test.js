@@ -11,6 +11,7 @@ const path = require('path');
 const os = require('os');
 const https = require('https');
 const { EventEmitter } = require('events');
+const { spawn } = require('node:child_process');
 
 const { startServer } = require('../src/api/server');
 
@@ -40,6 +41,8 @@ const savedTestRlhfFeedbackDir = process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_D
 const savedLegacyFeedbackDir = process.env.THUMBGATE_LEGACY_FEEDBACK_DIR;
 const savedFallbackFeedbackDir = process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR;
 const savedPlausibleDisable = process.env.THUMBGATE_PLAUSIBLE_DISABLE;
+const savedDiagnosticPaymentLinkId = process.env.THUMBGATE_DIAGNOSTIC_PAYMENT_LINK_ID;
+const TEST_DIAGNOSTIC_PAYMENT_LINK_ID = 'plink_testdiagnosticbilling';
 
 // Initial setup
 process.env._TEST_API_KEYS_PATH = testApiKeysPath;
@@ -57,6 +60,7 @@ delete process.env._TEST_THUMBGATE_FALLBACK_FEEDBACK_DIR;
 delete process.env.THUMBGATE_LEGACY_FEEDBACK_DIR;
 delete process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR;
 process.env.THUMBGATE_PLAUSIBLE_DISABLE = '1';
+process.env.THUMBGATE_DIAGNOSTIC_PAYMENT_LINK_ID = TEST_DIAGNOSTIC_PAYMENT_LINK_ID;
 
 after(() => {
   process.env.STRIPE_SECRET_KEY = savedStripeSecretKey || '';
@@ -91,6 +95,8 @@ after(() => {
   else process.env.THUMBGATE_FALLBACK_FEEDBACK_DIR = savedFallbackFeedbackDir;
   if (savedPlausibleDisable === undefined) delete process.env.THUMBGATE_PLAUSIBLE_DISABLE;
   else process.env.THUMBGATE_PLAUSIBLE_DISABLE = savedPlausibleDisable;
+  if (savedDiagnosticPaymentLinkId === undefined) delete process.env.THUMBGATE_DIAGNOSTIC_PAYMENT_LINK_ID;
+  else process.env.THUMBGATE_DIAGNOSTIC_PAYMENT_LINK_ID = savedDiagnosticPaymentLinkId;
   fs.rmSync(billingTestRoot, { recursive: true, force: true });
 });
 
@@ -107,6 +113,35 @@ function requireFreshBilling(stripeKey = '') {
   delete require.cache[require.resolve('../scripts/billing')];
   process.env.STRIPE_SECRET_KEY = stripeKey;
   return require('../scripts/billing');
+}
+
+function provisionInChild({ keyStorePath, customerId, options }) {
+  const billingPath = path.resolve(__dirname, '../scripts/billing.js');
+  const source = [
+    `process.env._TEST_API_KEYS_PATH=${JSON.stringify(keyStorePath)};`,
+    `const billing=require(${JSON.stringify(billingPath)});`,
+    `const result=billing.provisionApiKey(${JSON.stringify(customerId)},${JSON.stringify(options)});`,
+    'process.stdout.write(JSON.stringify(result));',
+  ].join('');
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, ['-e', source], {
+      cwd: path.resolve(__dirname, '..'),
+      env: { ...process.env, _TEST_API_KEYS_PATH: keyStorePath },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (chunk) => { stdout += chunk; });
+    child.stderr.on('data', (chunk) => { stderr += chunk; });
+    child.on('error', reject);
+    child.on('exit', (code) => {
+      if (code !== 0) {
+        reject(new Error(`child provisioning failed (${code}): ${stderr}`));
+        return;
+      }
+      resolve(JSON.parse(stdout));
+    });
+  });
 }
 
 function clearBillingArtifacts() {
@@ -217,6 +252,122 @@ describe('billing.js — provisionApiKey', () => {
     const r1 = billing.provisionApiKey('cus_reuse_001');
     const r2 = billing.provisionApiKey('cus_reuse_001');
     assert.equal(r1.key, r2.key);
+  });
+
+  test('cross-process replay mints one key and applies one credit-pack order', async () => {
+    const options = {
+      orderId: 'cs_cross_process_replay',
+      credits: 100,
+      entitlementKind: 'credit_pack',
+    };
+    const [left, right] = await Promise.all([
+      provisionInChild({ keyStorePath, customerId: 'cus_cross_process', options }),
+      provisionInChild({ keyStorePath, customerId: 'cus_cross_process', options }),
+    ]);
+
+    assert.equal(left.key, right.key);
+    const store = JSON.parse(fs.readFileSync(keyStorePath, 'utf8'));
+    assert.equal(Object.keys(store.keys).length, 1);
+    assert.equal(store.keys[left.key].remainingCredits, 100);
+    assert.deepEqual(store.keys[left.key].fulfilledOrderIds, ['cs_cross_process_replay']);
+  });
+
+  test('cross-process distinct credit-pack orders cannot overwrite each other', async () => {
+    const [left, right] = await Promise.all([
+      provisionInChild({
+        keyStorePath,
+        customerId: 'cus_cross_process_distinct',
+        options: { orderId: 'cs_pack_left', credits: 100, entitlementKind: 'credit_pack' },
+      }),
+      provisionInChild({
+        keyStorePath,
+        customerId: 'cus_cross_process_distinct',
+        options: { orderId: 'cs_pack_right', credits: 100, entitlementKind: 'credit_pack' },
+      }),
+    ]);
+
+    assert.equal(left.key, right.key);
+    const metadata = JSON.parse(fs.readFileSync(keyStorePath, 'utf8')).keys[left.key];
+    assert.equal(metadata.remainingCredits, 200);
+    assert.deepEqual(new Set(metadata.fulfilledOrderIds), new Set(['cs_pack_left', 'cs_pack_right']));
+  });
+
+  test('subscriptions stay unlimited regardless of credit-pack ordering', () => {
+    const billing = requireFreshBilling('');
+    const subscriptionFirst = billing.provisionApiKey('cus_subscription_first', {
+      orderId: 'cs_subscription_first',
+      entitlementKind: 'subscription',
+      enforceCancellationHistory: true,
+    });
+    const packAfter = billing.provisionApiKey('cus_subscription_first', {
+      orderId: 'cs_pack_after_subscription',
+      credits: 100,
+      entitlementKind: 'credit_pack',
+    });
+    assert.equal(packAfter.key, subscriptionFirst.key);
+    assert.equal(packAfter.remainingCredits, null);
+
+    const packFirst = billing.provisionApiKey('cus_pack_first', {
+      orderId: 'cs_pack_first',
+      credits: 100,
+      entitlementKind: 'credit_pack',
+    });
+    const subscriptionAfter = billing.provisionApiKey('cus_pack_first', {
+      orderId: 'cs_subscription_after_pack',
+      subscriptionId: 'sub_subscription_after_pack',
+      orderCreatedAt: 200,
+      entitlementKind: 'subscription',
+      enforceCancellationHistory: true,
+    });
+    assert.equal(subscriptionAfter.key, packFirst.key);
+    assert.equal(subscriptionAfter.remainingCredits, null);
+  });
+
+  test('cancellation tombstone blocks delayed checkout and rotation preserves recovery', () => {
+    const billing = requireFreshBilling('');
+    billing.disableCustomerKeys('cus_cancelled_before_provision', {
+      subscriptionId: 'sub_cancelled_before_provision',
+      eventCreatedAt: 200,
+    });
+    const blocked = billing.provisionApiKey('cus_cancelled_before_provision', {
+      orderId: 'cs_delayed_checkout',
+      subscriptionId: 'sub_cancelled_before_provision',
+      orderCreatedAt: 100,
+      entitlementKind: 'subscription',
+      enforceCancellationHistory: true,
+    });
+    assert.equal(blocked.key, null);
+    assert.equal(blocked.entitlementActive, false);
+
+    const legacyStore = billing.loadKeyStore();
+    legacyStore.keys.tg_legacy_disabled = {
+      customerId: 'cus_legacy_disabled',
+      active: false,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      disabledAt: '2026-01-02T00:00:00.000Z',
+      remainingCredits: null,
+    };
+    fs.writeFileSync(keyStorePath, JSON.stringify(legacyStore, null, 2));
+    const legacyReplay = billing.provisionApiKey('cus_legacy_disabled', {
+      orderId: 'cs_legacy_replay',
+      orderCreatedAt: Math.floor(Date.parse('2026-01-01T12:00:00.000Z') / 1000),
+      entitlementKind: 'subscription',
+      enforceCancellationHistory: true,
+    });
+    assert.equal(legacyReplay.key, null);
+    assert.equal(legacyReplay.entitlementActive, false);
+
+    const original = billing.provisionApiKey('cus_rotation_recovery', {
+      orderId: 'cs_rotation_recovery',
+      entitlementKind: 'subscription',
+    });
+    const rotated = billing.rotateApiKey(original.key);
+    const recovered = billing.provisionApiKey('cus_rotation_recovery', {
+      orderId: 'cs_rotation_recovery',
+      entitlementKind: 'subscription',
+    });
+    assert.equal(recovered.key, rotated.key);
+    assert.equal(recovered.entitlementActive, true);
   });
 });
 
@@ -594,6 +745,7 @@ describe('billing.js — funnel ledger', () => {
     });
 
     assert.equal(payload.mode, 'payment');
+    assert.equal(payload.customer_creation, 'always');
     assert.equal(payload.customer_email, 'buyer@example.com');
     assert.equal(payload.metadata.packId, 'test_pack');
     assert.equal(payload.metadata.credits, '1000');
@@ -657,6 +809,7 @@ describe('billing.js — funnel ledger', () => {
               customer_email: null,
               payment_status: 'paid',
               status: 'complete',
+              mode: 'subscription',
               metadata: {
                 installId: 'inst_live_status',
                 traceId: 'trace_live_status',
@@ -683,9 +836,204 @@ describe('billing.js — funnel ledger', () => {
       assert.equal(status.customerEmail, 'Buyer@Example.com');
       assert.equal(status.installId, 'inst_live_status');
       assert.equal(status.traceId, 'trace_live_status');
-      assert.equal(status.remainingCredits, 25);
+      assert.equal(status.remainingCredits, null, 'subscription entitlements are unlimited; client metadata cannot constrain or inflate them');
       assert.equal(status.trialEmail.status, 'skipped');
       assert.equal(status.trialEmail.reason, 'missing_resend_api_key');
+    } finally {
+      restoreStripe();
+    }
+  });
+
+  test('hosted diagnostic status never provisions a Pro key', async () => {
+    const restoreStripe = installStripeMock(function Stripe() {
+      return {
+        checkout: {
+          sessions: {
+            retrieve: async (sessionId) => ({
+              id: sessionId,
+              customer: 'cus_diagnostic_status',
+              customer_details: { email: 'diagnostic@example.com' },
+              payment_status: 'paid',
+              status: 'complete',
+              mode: 'payment',
+              amount_subtotal: 49900,
+              amount_total: 49900,
+              currency: 'usd',
+              payment_link: TEST_DIAGNOSTIC_PAYMENT_LINK_ID,
+              metadata: { planId: 'sprint_diagnostic', traceId: 'trace_diagnostic_status' },
+            }),
+          },
+        },
+      };
+    });
+
+    try {
+      setupTempStore();
+      const billing = requireFreshBilling('sk_test_diagnostic_status');
+      const status = await billing.getCheckoutSessionStatus('cs_diagnostic_status');
+
+      assert.equal(status.found, true);
+      assert.equal(status.paid, true);
+      assert.equal(status.offerKind, 'workflow_hardening_diagnostic');
+      assert.equal(status.apiKey, null);
+      assert.equal(status.remainingCredits, null);
+      assert.equal(status.trialEmail.reason, 'diagnostic_order');
+      assert.equal(fs.existsSync(testApiKeysPath), false);
+    } finally {
+      restoreStripe();
+    }
+  });
+
+  test('hosted one-time no-payment session never provisions a Pro key', async () => {
+    const restoreStripe = installStripeMock(function Stripe() {
+      return {
+        checkout: {
+          sessions: {
+            retrieve: async (sessionId) => ({
+              id: sessionId,
+              customer: 'cus_no_payment_status',
+              customer_details: { email: 'free@example.com' },
+              payment_status: 'no_payment_required',
+              status: 'complete',
+              mode: 'payment',
+              amount_total: 0,
+              currency: 'usd',
+              metadata: { planId: 'pro' },
+            }),
+          },
+        },
+      };
+    });
+
+    try {
+      setupTempStore();
+      const billing = requireFreshBilling('sk_test_no_payment_status');
+      const status = await billing.getCheckoutSessionStatus('cs_no_payment_status');
+      assert.equal(status.found, true);
+      assert.equal(status.paid, false);
+      assert.equal(fs.existsSync(testApiKeysPath), false);
+    } finally {
+      restoreStripe();
+    }
+  });
+
+  test('hosted paid service order never provisions a Pro key', async () => {
+    const restoreStripe = installStripeMock(function Stripe() {
+      return {
+        checkout: {
+          sessions: {
+            retrieve: async (sessionId) => ({
+              id: sessionId,
+              customer: 'cus_first_failure_rule',
+              customer_details: { email: 'service@example.com' },
+              payment_status: 'paid',
+              status: 'complete',
+              mode: 'payment',
+              amount_total: 100,
+              currency: 'usd',
+              payment_link: 'plink_first_failure_rule',
+              metadata: {
+                thumbgate_tier: 'first_failure_rule',
+                thumbgate_lookup_key: 'thumbgate_first_failure_rule',
+              },
+            }),
+          },
+        },
+      };
+    });
+
+    try {
+      setupTempStore();
+      const billing = requireFreshBilling('sk_test_service_order_status');
+      const status = await billing.getCheckoutSessionStatus('cs_first_failure_rule');
+      assert.equal(status.found, true);
+      assert.equal(status.paid, true);
+      assert.equal(status.apiKey, null);
+      assert.equal(status.trialEmail.reason, 'non_entitlement_order');
+      assert.equal(fs.existsSync(testApiKeysPath), false);
+    } finally {
+      restoreStripe();
+    }
+  });
+
+  test('hosted guest credit-pack status provisions against a stable guest customer', async () => {
+    const restoreStripe = installStripeMock(function Stripe() {
+      return {
+        checkout: {
+          sessions: {
+            retrieve: async (sessionId) => ({
+              id: sessionId,
+              customer: null,
+              customer_details: { email: 'guest-pack@example.com' },
+              payment_status: 'paid',
+              status: 'complete',
+              mode: 'payment',
+              created: 100,
+              amount_total: 5000,
+              currency: 'usd',
+              metadata: { packId: 'guest_pack_100', credits: '100' },
+            }),
+          },
+        },
+      };
+    });
+
+    try {
+      setupTempStore();
+      const billing = requireFreshBilling('sk_test_guest_pack_status');
+      billing.CONFIG.CREDIT_PACKS.guest_pack_100 = {
+        id: 'guest_pack_100',
+        name: '100 credits',
+        credits: 100,
+        amountCents: 5000,
+        currency: 'USD',
+      };
+      const status = await billing.getCheckoutSessionStatus('cs_guest_pack_status');
+      assert.equal(status.found, true);
+      assert.equal(status.paid, true);
+      assert.match(status.customerId, /^guest_[a-f0-9]{24}$/);
+      assert.match(status.apiKey, /^tg_/);
+      assert.equal(status.remainingCredits, 100);
+      delete billing.CONFIG.CREDIT_PACKS.guest_pack_100;
+    } finally {
+      restoreStripe();
+    }
+  });
+
+  test('polling a canceled checkout session cannot resurrect its entitlement', async () => {
+    const restoreStripe = installStripeMock(function Stripe() {
+      return {
+        checkout: {
+          sessions: {
+            retrieve: async (sessionId) => ({
+              id: sessionId,
+              customer: 'cus_cancelled_checkout',
+              customer_details: { email: 'cancelled@example.com' },
+              payment_status: 'paid',
+              status: 'complete',
+              mode: 'subscription',
+              amount_total: 1900,
+              currency: 'usd',
+              metadata: { planId: 'pro' },
+            }),
+          },
+        },
+      };
+    });
+
+    try {
+      setupTempStore();
+      const billing = requireFreshBilling('sk_test_cancelled_poll');
+      const first = await billing.getCheckoutSessionStatus('cs_cancelled_checkout');
+      assert.ok(first.apiKey);
+      billing.disableCustomerKeys('cus_cancelled_checkout');
+
+      const second = await billing.getCheckoutSessionStatus('cs_cancelled_checkout');
+      assert.equal(second.apiKey, null);
+      assert.equal(second.trialEmail.reason, 'entitlement_inactive');
+      const keys = billing.loadKeyStore().keys;
+      assert.equal(Object.keys(keys).length, 1, 'polling must not mint a replacement key');
+      assert.equal(Object.values(keys)[0].active, false);
     } finally {
       restoreStripe();
     }
@@ -747,6 +1095,9 @@ describe('billing.js — funnel ledger', () => {
     process.env.THUMBGATE_ALLOW_UNSIGNED_STRIPE_WEBHOOKS = '1';
     const { packCheckoutReference } = require('../scripts/checkout-attribution-reference');
     const billing = requireFreshBilling('sk_test_payment_link_attribution');
+    billing._mailer = {
+      sendEmail: async () => ({ sent: true, id: 'email_payment_link_attribution' }),
+    };
     try {
       const result = await billing.handleWebhook(Buffer.from(JSON.stringify({
         type: 'checkout.session.completed',
@@ -759,10 +1110,12 @@ describe('billing.js — funnel ledger', () => {
             mode: 'payment',
             amount_total: 49900,
             currency: 'usd',
+            payment_link: TEST_DIAGNOSTIC_PAYMENT_LINK_ID,
             metadata: {},
             client_reference_id: packCheckoutReference({
               utmSource: 'aiventyx',
               acquisitionId: 'acq_aiventyx_diagnostic',
+              planId: 'sprint_diagnostic',
             }),
           },
         },
@@ -787,6 +1140,7 @@ describe('billing.js — funnel ledger', () => {
       else process.env.STRIPE_WEBHOOK_SECRET = savedWebhookSecret;
       if (savedAllowUnsigned === undefined) delete process.env.THUMBGATE_ALLOW_UNSIGNED_STRIPE_WEBHOOKS;
       else process.env.THUMBGATE_ALLOW_UNSIGNED_STRIPE_WEBHOOKS = savedAllowUnsigned;
+      billing._mailer = null;
     }
   });
 
