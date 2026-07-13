@@ -12,13 +12,15 @@ test.describe('/pricing clickability — full CTA coverage', () => {
     await mockDashboardApis(page);
   });
 
-  test('renders three plan cards with hardcoded prices', async ({ page }) => {
+  test('renders money-first plan cards with diagnostic, sprint, free, pro, enterprise', async ({ page }) => {
     await page.goto('/pricing');
     const cards = page.locator('.price-card');
-    await expect(cards).toHaveCount(3);
-    await expect(page.locator('.price-card').nth(0).locator('.price')).toHaveText('$0');
+    await expect(cards).toHaveCount(5);
+    await expect(page.locator('#diagnostic .price')).toContainText('$499');
+    await expect(page.locator('#sprint .price')).toContainText('$1500');
     await expect(page.locator('#pro .price')).toContainText('$19');
     await expect(page.locator('#enterprise .price')).toContainText('Custom');
+    await expect(page.locator('.price-card', { hasText: /Forever free for solo/ }).locator('.price')).toHaveText('$0');
   });
 
   // --- nav (5 anchors) ---
@@ -47,18 +49,34 @@ test.describe('/pricing clickability — full CTA coverage', () => {
     await page.waitForURL(/\/dashboard$/);
   });
 
-  test('nav: "Start Pro" CTA links to /checkout/pro with pricing utm_source', async ({ page }) => {
+  test('nav: diagnostic CTA links to /go/diagnostic with pricing utm_source', async ({ page }) => {
     await page.goto('/pricing');
-    const cta = page.locator('nav a.nav-cta', { hasText: 'Start Pro' });
-    await expect(cta).toHaveAttribute('href', /\/checkout\/pro/);
+    const cta = page.locator('nav a.nav-cta', { hasText: /diagnostic/i });
+    await expect(cta).toHaveAttribute('href', /\/go\/diagnostic/);
     await expect(cta).toHaveAttribute('href', /utm_source=pricing/);
   });
 
-  // --- 3 plan CTAs ---
+  // --- plan CTAs ---
+
+  test('Diagnostic card CTA links to /go/diagnostic', async ({ page }) => {
+    await page.goto('/pricing');
+    const cta = page.locator('#diagnostic a.btn-money');
+    await expect(cta).toContainText(/diagnostic/i);
+    await expect(cta).toHaveAttribute('href', /\/go\/diagnostic/);
+    await expect(cta).toHaveAttribute('href', /utm_source=pricing/);
+  });
+
+  test('Sprint card CTA links to /go/sprint', async ({ page }) => {
+    await page.goto('/pricing');
+    const cta = page.locator('#sprint a.btn-money');
+    await expect(cta).toContainText(/sprint/i);
+    await expect(cta).toHaveAttribute('href', /\/go\/sprint/);
+    await expect(cta).toHaveAttribute('href', /utm_source=pricing/);
+  });
 
   test('Free card "Install free" CTA links to /go/install with pricing utm_source', async ({ page }) => {
     await page.goto('/pricing');
-    const cta = page.locator('.price-card').nth(0).locator('a.btn-install');
+    const cta = page.locator('.price-card', { hasText: /Forever free for solo/ }).locator('a.btn-install');
     await expect(cta).toHaveAttribute('href', /\/go\/install/);
     await expect(cta).toHaveAttribute('href', /utm_source=pricing/);
   });
@@ -72,11 +90,11 @@ test.describe('/pricing clickability — full CTA coverage', () => {
     await expect(cta).toHaveAttribute('href', /utm_medium=hero_card/);
   });
 
-  test('Enterprise card CTA "Talk to us" links to / with #workflow-sprint-intake', async ({ page }) => {
+  test('Enterprise card CTA starts with paid sprint checkout', async ({ page }) => {
     await page.goto('/pricing');
     const cta = page.locator('#enterprise a.btn-team');
-    await expect(cta).toContainText('Talk to us');
-    await expect(cta).toHaveAttribute('href', /#workflow-sprint-intake$/);
+    await expect(cta).toContainText(/sprint/i);
+    await expect(cta).toHaveAttribute('href', /\/go\/sprint/);
     await expect(cta).toHaveAttribute('href', /utm_medium=enterprise_card/);
   });
 

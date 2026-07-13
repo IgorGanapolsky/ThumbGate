@@ -132,7 +132,7 @@ test('public landing page distinguishes pre-action governance from logging and s
   assert.match(landingPage, /hosted team sync, org dashboards, SSO, SIEM, and compliance packaging are not general-availability/i);
 });
 
-test('public landing page exposes above-fold paid Pro CTA with canonical revenue analytics', () => {
+test('public landing page exposes above-fold paid diagnostic/sprint CTAs with Pro as side lane', () => {
   const landingPage = readLandingPage();
   const heroStart = landingPage.indexOf('<!-- HERO -->');
   const heroEnd = landingPage.indexOf('<div class="hero-trust-bar">');
@@ -141,17 +141,24 @@ test('public landing page exposes above-fold paid Pro CTA with canonical revenue
 
   assert.ok(heroStart > -1);
   assert.ok(heroEnd > heroStart);
-  assert.match(aboveFold, /cta_id=nav_start_pro/);
-  assert.match(aboveFold, /data-revenue-cta data-cta-id="nav_start_pro"/);
+  assert.match(aboveFold, /cta_id=nav_pay_diagnostic/);
+  assert.match(aboveFold, /data-revenue-cta data-cta-id="nav_pay_diagnostic"/);
+  assert.match(heroBlock, /cta_id=hero_workflow_sprint_diagnostic_checkout/);
+  assert.match(heroBlock, /data-revenue-cta data-cta-id="hero_workflow_sprint_diagnostic_checkout"/);
+  assert.match(heroBlock, /Pay \$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic/);
+  assert.match(heroBlock, /cta_id=hero_workflow_sprint_checkout/);
+  assert.match(heroBlock, /Pay \$__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint/);
   assert.match(heroBlock, /cta_id=hero_start_pro/);
-  assert.match(heroBlock, /data-revenue-cta data-cta-id="hero_start_pro"/);
   assert.match(heroBlock, /Start Pro — \$19\/mo/);
   assert.match(heroBlock, /\/checkout\/pro\?/);
+  assert.ok(heroBlock.indexOf('hero_workflow_sprint_diagnostic_checkout') < heroBlock.indexOf('hero_start_pro'));
   assert.ok(heroBlock.indexOf('hero_start_pro') < heroBlock.indexOf('hero_install_cli'));
   assert.match(heroBlock, /aria-label="Choose the right ThumbGate path"/);
+  assert.match(heroBlock, /Team \/ enterprise: buy proof this week/);
+  assert.match(heroBlock, /data-cta-id="router_pay_diagnostic"/);
+  assert.match(heroBlock, /data-cta-id="router_pay_sprint"/);
   assert.match(heroBlock, /Solo operator: Start Pro/);
   assert.match(heroBlock, /data-cta-id="router_start_pro"/);
-  assert.match(heroBlock, /Enterprise governance: Start with one workflow/);
   assert.match(heroBlock, /Ideal customer/);
   assert.match(heroBlock, /enterprise engineering, security, and platform teams/i);
   assert.match(heroBlock, /Detection and coordination layers can identify drift/);
@@ -240,61 +247,41 @@ test('public landing page shows an at-a-glance plan comparison matrix with consi
   assert.match(landingPage, /SSO, SIEM \+ compliance packaging[\s\S]{0,500}Not GA/i);
 });
 
-test('public landing page keeps services intake-led instead of exposing a paid-service price ladder', () => {
+test('public landing page leads with paid diagnostic/sprint checkout, not retired service ladders', () => {
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /Have one AI-agent failure that keeps repeating\?/);
   assert.match(landingPage, /one real workflow, one repeated failure pattern, enforceable pre-action gates/);
-  assert.doesNotMatch(landingPage, /const sprintDiagnosticCheckoutUrl/);
-  assert.doesNotMatch(landingPage, /const workflowSprintCheckoutUrl/);
-  assert.doesNotMatch(landingPage, /__SPRINT_DIAGNOSTIC_CHECKOUT_URL__/);
-  assert.doesNotMatch(landingPage, /__WORKFLOW_SPRINT_CHECKOUT_URL__/);
-  assert.doesNotMatch(landingPage, /data-sprint-paid-path/);
-  assert.doesNotMatch(landingPage, /Workflow Hardening Diagnostic/);
-  assert.doesNotMatch(landingPage, /founder_workflow_diagnostic_checkout_started/);
+  // Canonical money path: template-substituted diagnostic + sprint prices via /go/* routers.
+  assert.match(landingPage, /Pay \$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic/);
+  assert.match(landingPage, /Pay \$__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint/);
+  assert.match(landingPage, /\/go\/diagnostic\?/);
+  assert.match(landingPage, /\/go\/sprint\?/);
+  assert.match(landingPage, /data-sprint-paid-path="diagnostic"/);
+  assert.match(landingPage, /data-sprint-paid-path="sprint"/);
+  assert.match(landingPage, /hero_workflow_sprint_diagnostic_checkout/);
+  assert.match(landingPage, /hero_workflow_sprint_checkout/);
+  assert.match(landingPage, /workflow_sprint_diagnostic_checkout_started/);
+  assert.match(landingPage, /workflow_sprint_checkout_started/);
+  assert.match(landingPage, /Send workflow first/);
+  assert.match(landingPage, /hero_workflow_sprint_recovery_intake/);
+  assert.match(landingPage, /workflow_sprint_recovery_intake_clicked/);
+  assert.match(landingPage, /ctaId: 'hero_workflow_sprint'/);
+  assert.match(landingPage, /ctaId: 'hero_workflow_sprint_recovery_intake'/);
+  // Retired experimental ladders must stay off the homepage.
   assert.doesNotMatch(landingPage, /Pay \$99 diagnostic/);
-  assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/7sY4gzgH24r49G17mb3sI0g/);
-  assert.doesNotMatch(landingPage, /First AI Agent Failure Rule/);
-  assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/4gM6oHgH2bTw4lH6i73sI0z/);
   assert.doesNotMatch(landingPage, /Pay \$1 first rule/);
   assert.doesNotMatch(landingPage, /first_failure_rule_checkout_started/);
-  assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/7sYfZhgH29LodWhdKz3sI0v/);
   assert.doesNotMatch(landingPage, /Pay \$99 teardown/);
-  assert.doesNotMatch(landingPage, /AI Agent Failure Quick Read/);
   assert.doesNotMatch(landingPage, /Pay \$19 quick read/);
-  assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/aFa8wPgH29Lo4lH35V3sI0w/);
   assert.doesNotMatch(landingPage, /quick_read_checkout_started/);
-  // Hero keeps a paid Pro side lane plus Workflow Hardening Sprint intake.
-  // Services are no longer exposed as competing direct checkout paths on the
-  // homepage.
-  assert.doesNotMatch(landingPage, /Pay \$499 diagnostic/);
-  assert.match(landingPage, /Start the AI Agent Governance Sprint/);
-  assert.doesNotMatch(landingPage, /Pay \$1500 sprint/);
-  assert.doesNotMatch(landingPage, /Reliable AI Agent Governance Setup/);
   assert.doesNotMatch(landingPage, /\$3,997/);
   assert.doesNotMatch(landingPage, /\$297\/mo/);
-  assert.doesNotMatch(landingPage, /governance_setup_intake_clicked/);
   assert.doesNotMatch(landingPage, /OpenClaw Agent Governance Kit/);
-  assert.doesNotMatch(landingPage, /https:\/\/buy\.stripe\.com\/bJe14naiE9Lo7xT49Z3sI12/);
   assert.doesNotMatch(landingPage, /openclaw_governance_kit_checkout_started/);
-  assert.doesNotMatch(landingPage, /team_openclaw_governance_kit_checkout/);
   assert.doesNotMatch(landingPage, /Buy kit/);
-  assert.match(landingPage, /Send workflow first/);
-  assert.doesNotMatch(landingPage, /Pay for diagnostic/);
-  assert.doesNotMatch(landingPage, /Pay for sprint/);
-  assert.doesNotMatch(landingPage, /workflow_teardown_checkout_started/);
-  assert.doesNotMatch(landingPage, /hero_workflow_sprint_diagnostic_checkout/);
-  assert.doesNotMatch(landingPage, /hero_workflow_sprint_checkout/);
-  assert.match(landingPage, /hero_workflow_sprint_recovery_intake/);
-  assert.doesNotMatch(landingPage, /workflow_sprint_diagnostic_checkout_started/);
-  assert.doesNotMatch(landingPage, /workflow_sprint_checkout_started/);
-  assert.match(landingPage, /workflow_sprint_recovery_intake_clicked/);
-  assert.match(landingPage, /workflow_sprint_recovery_intake/);
   assert.doesNotMatch(landingPage, /ctaId:'hero_first_failure_rule_checkout'/);
   assert.doesNotMatch(landingPage, /ctaId:'hero_workflow_teardown_checkout'/);
-  assert.match(landingPage, /ctaId: 'hero_workflow_sprint'/);
-  assert.doesNotMatch(landingPage, /ctaId: 'hero_workflow_sprint_checkout'/);
-  assert.match(landingPage, /ctaId: 'hero_workflow_sprint_recovery_intake'/);
 });
 
 test('public landing page includes Plausible analytics and search engine proof bar', () => {

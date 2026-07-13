@@ -719,7 +719,7 @@ __GA_BOOTSTRAP__
       <a href="#claude-code-section" class="nav-claude" onclick="posthog.capture('nav_claude_click')" style="display:none;">Claude</a>
       <a href="#workflow-sprint-intake" onclick="posthog.capture('workflow_sprint')" style="display:none;">Start Sprint</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" target="_blank" rel="noopener" onclick="posthog.capture('nav_claude_extension_click',{cta:'install_claude_extension'})" class="nav-cta" style="background:#d97706;display:none;">Claude Extension</a>
-      <a href="/checkout/pro?utm_source=website&utm_medium=nav&utm_campaign=pro_upgrade&cta_id=nav_start_pro&cta_placement=nav&plan_id=pro&landing_path=%2F" data-revenue-cta data-cta-id="nav_start_pro" data-cta-placement="nav" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);try{posthog.capture('nav_pro_click',{cta:'nav_start_pro',tier:'pro',price:19})}catch(_){}" class="nav-cta">Start Pro — $19/mo</a>
+      <a href="/go/diagnostic?utm_source=website&utm_medium=nav&utm_campaign=money_today&utm_content=nav_diagnostic&cta_id=nav_pay_diagnostic&cta_placement=nav&plan_id=sprint_diagnostic" data-revenue-cta data-cta-id="nav_pay_diagnostic" data-cta-placement="nav" data-tier="service" data-plan-id="sprint_diagnostic" data-price="__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__" onclick="trackRevenueCta(this);try{posthog.capture('nav_diagnostic_click',{cta:'nav_pay_diagnostic',price:__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__})}catch(_){}" class="nav-cta">Pay $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</a>
     </div>
   </div>
 </nav>
@@ -743,26 +743,30 @@ __GA_BOOTSTRAP__
     </div>
 
     <div class="hero-actions">
-      <a href="/checkout/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_upgrade&cta_id=hero_start_pro&cta_placement=hero&plan_id=pro&landing_path=%2F" data-revenue-cta data-cta-id="hero_start_pro" data-cta-placement="hero" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);try{posthog.capture('hero_pro_checkout_click',{cta:'hero_start_pro',tier:'pro',price:19})}catch(_){}" class="btn-pro-page hero-pro hero-pro-primary">Start Pro — $19/mo</a>
-      <a href="#workflow-sprint-intake" onclick="try{posthog.capture('hero_sprint_click',{cta:'sprint_intake'})}catch(_){};sendFirstPartyTelemetry('hero_sprint_intake_started',{ctaId:'hero_workflow_sprint',ctaPlacement:'hero',offer:'workflow_sprint'});" class="btn-pro-page hero-pro">Workflow Hardening Sprint →</a>
+      <a href="/go/diagnostic?utm_source=website&utm_medium=hero_cta&utm_campaign=money_today&utm_content=hero_diagnostic&cta_id=hero_workflow_sprint_diagnostic_checkout&cta_placement=hero&plan_id=sprint_diagnostic" data-revenue-cta data-cta-id="hero_workflow_sprint_diagnostic_checkout" data-cta-placement="hero" data-tier="service" data-plan-id="sprint_diagnostic" data-price="__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__" data-sprint-paid-path="diagnostic" onclick="trackRevenueCta(this);sendFirstPartyTelemetry('workflow_sprint_diagnostic_checkout_started',{ctaId:'hero_workflow_sprint_diagnostic_checkout',ctaPlacement:'hero',offer:'sprint_diagnostic',price:__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__});try{posthog.capture('hero_diagnostic_checkout_click',{cta:'hero_diagnostic',price:__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__})}catch(_){}" class="btn-pro-page hero-pro hero-pro-primary hero-diagnostic">Pay $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</a>
+      <a href="/go/sprint?utm_source=website&utm_medium=hero_cta&utm_campaign=money_today&utm_content=hero_sprint&cta_id=hero_workflow_sprint_checkout&cta_placement=hero&plan_id=workflow_sprint" data-revenue-cta data-cta-id="hero_workflow_sprint_checkout" data-cta-placement="hero" data-tier="service" data-plan-id="workflow_sprint" data-price="__WORKFLOW_SPRINT_PRICE_DOLLARS__" data-sprint-paid-path="sprint" onclick="trackRevenueCta(this);sendFirstPartyTelemetry('workflow_sprint_checkout_started',{ctaId:'hero_workflow_sprint_checkout',ctaPlacement:'hero',offer:'workflow_sprint',price:__WORKFLOW_SPRINT_PRICE_DOLLARS__});try{posthog.capture('hero_sprint_checkout_click',{cta:'hero_sprint',price:__WORKFLOW_SPRINT_PRICE_DOLLARS__})}catch(_){}" class="btn-pro-page hero-pro">Pay $__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint</a>
+      <a href="/checkout/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_upgrade&cta_id=hero_start_pro&cta_placement=hero&plan_id=pro&landing_path=%2F" data-revenue-cta data-cta-id="hero_start_pro" data-cta-placement="hero" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);try{posthog.capture('hero_pro_checkout_click',{cta:'hero_start_pro',tier:'pro',price:19})}catch(_){}" class="btn-pro-page hero-pro">Start Pro — $19/mo</a>
       <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="event.preventDefault(); navigator.clipboard.writeText('npx thumbgate init'); this.textContent='Copied ✓ — paste in your repo'; setTimeout(()=>{this.textContent='Install Free CLI'},2000); try{posthog.capture('hero_install_click',{cta:'install_cli'})}catch(_){}" class="btn-free btn-install-hero" title="Click to copy: npx thumbgate init">Install Free CLI</a>
     </div>
+    <p class="hero-paid-note" style="margin-top:4px;">Money path today: <strong>Workflow Hardening Diagnostic ($__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__)</strong> or <strong>Sprint ($__WORKFLOW_SPRINT_PRICE_DOLLARS__)</strong> for one repeated agent failure. Pro stays the solo self-serve lane. Prefer scoping first? <a href="#workflow-sprint-intake" style="color:var(--cyan);" onclick="try{posthog.capture('hero_sprint_click',{cta:'sprint_intake'})}catch(_){};sendFirstPartyTelemetry('hero_sprint_intake_started',{ctaId:'hero_workflow_sprint',ctaPlacement:'hero',offer:'workflow_sprint'});sendFirstPartyTelemetry('workflow_sprint_recovery_intake_clicked',{ctaId:'hero_workflow_sprint_recovery_intake',ctaPlacement:'hero',offer:'workflow_sprint_intake'});">Send workflow first</a>.</p>
 
     <div class="offer-router" aria-label="Choose the right ThumbGate path">
       <div class="offer-route primary">
+        <strong>Team / enterprise: buy proof this week</strong>
+        <p>One workflow. One repeated failure. Paid diagnostic or sprint with Stripe — credit applies when you continue to implementation.</p>
+        <a href="/go/diagnostic?utm_source=website&utm_medium=offer_router&utm_campaign=money_today&cta_id=router_pay_diagnostic&cta_placement=offer_router&plan_id=sprint_diagnostic" data-revenue-cta data-cta-id="router_pay_diagnostic" data-cta-placement="offer_router" data-tier="service" data-plan-id="sprint_diagnostic" data-price="__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__" onclick="trackRevenueCta(this);sendFirstPartyTelemetry('workflow_sprint_diagnostic_checkout_started',{ctaId:'router_pay_diagnostic',ctaPlacement:'offer_router',offer:'sprint_diagnostic'});">Pay $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic →</a>
+        <a href="/go/sprint?utm_source=website&utm_medium=offer_router&utm_campaign=money_today&cta_id=router_pay_sprint&cta_placement=offer_router&plan_id=workflow_sprint" data-revenue-cta data-cta-id="router_pay_sprint" data-cta-placement="offer_router" data-tier="service" data-plan-id="workflow_sprint" data-price="__WORKFLOW_SPRINT_PRICE_DOLLARS__" style="display:block;margin-top:8px;" onclick="trackRevenueCta(this);sendFirstPartyTelemetry('workflow_sprint_checkout_started',{ctaId:'router_pay_sprint',ctaPlacement:'offer_router',offer:'workflow_sprint'});">Pay $__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint →</a>
+      </div>
+      <div class="offer-route">
         <strong>Solo operator: Start Pro</strong>
-        <p>Unlimited rules, recall, proof, exports.</p>
+        <p>Unlimited rules, recall, proof, exports after one real caught repeat.</p>
         <a href="/checkout/pro?utm_source=website&utm_medium=offer_router&cta_id=router_start_pro&cta_placement=offer_router&plan_id=pro" data-revenue-cta data-cta-id="router_start_pro" data-cta-placement="offer_router" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);">Pay $19/mo with Stripe →</a>
       </div>
       <div class="offer-route">
-        <strong>Enterprise governance: Start with one workflow</strong>
-        <p>Finance, healthcare, insurance, public sector, critical infrastructure, manufacturing.</p>
-        <a href="#workflow-sprint-intake" onclick="sendFirstPartyTelemetry('workflow_sprint_intake_started',{ctaId:'router_workflow_sprint',ctaPlacement:'offer_router',offer:'workflow_sprint'});">Talk to us →</a>
-      </div>
-      <div class="offer-route">
-        <strong>Still evaluating: Free CLI</strong>
-        <p>2 captures/day, 3 active rules. Enough to prove one caught repeat.</p>
+        <strong>Still evaluating: Free CLI or intake</strong>
+        <p>2 captures/day, 3 active rules. Or send the workflow if you need fit review before paying.</p>
         <button data-router-install onclick="copyInstall(this)"><span class="copy-hint">Copy npx thumbgate init</span></button>
+        <a href="#workflow-sprint-intake" style="display:block;margin-top:10px;color:var(--cyan);font-weight:700;text-decoration:none;" onclick="sendFirstPartyTelemetry('workflow_sprint_intake_started',{ctaId:'router_workflow_sprint',ctaPlacement:'offer_router',offer:'workflow_sprint'});sendFirstPartyTelemetry('workflow_sprint_recovery_intake_clicked',{ctaId:'router_workflow_sprint_recovery_intake',ctaPlacement:'offer_router',offer:'workflow_sprint_intake'});">Send workflow first →</a>
       </div>
     </div>
 

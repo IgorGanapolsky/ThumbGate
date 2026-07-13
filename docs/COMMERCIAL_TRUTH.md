@@ -9,8 +9,8 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 - The open-source `thumbgate` package is free and MIT licensed.
 - The local CLI is the adoption wedge; it is not the primary monetization story.
-- The primary commercial motion is the **Workflow Hardening Sprint** for one workflow, followed by Enterprise scoping when approval boundaries, rollback requirements, and evidence ownership must be designed across operators.
-- The current public self-serve commercial offer is **Pro at $19/mo or $149/yr** via Stripe checkout.
+- The primary commercial motion is the **Workflow Hardening Sprint** ($1,500 via `/go/sprint`) for one workflow, with an optional **Workflow Hardening Diagnostic** ($499 via `/go/diagnostic`, credited toward the sprint when implementation follows), then Enterprise scoping when approval boundaries, rollback requirements, and evidence ownership must be designed across operators.
+- The current public self-serve **subscription** offer is **Pro at $19/mo or $149/yr** via Stripe checkout — the solo side lane. Homepage and pricing lead with the paid diagnostic/sprint services, not Pro.
 - Legacy one-time Stripe links are retained only for past buyers and are not a current public offer.
 - Enterprise is the contact-sales tier: **custom pricing, scoped after intake**, and the public Enterprise path remains an **intake-led pilot for the first workflow**. Hosted team lesson sync and a hosted org dashboard are not general-availability features in the current public runtime. The former Team seat tier is retired.
 - The open-source runtime now supports history-aware lesson distillation from up to 8 prior recorded entries in the current Claude auto-capture path, linked 60-second feedback sessions, and reflector rule proposals across CLI, hosted API, Cursor, and Claude Desktop surfaces.
