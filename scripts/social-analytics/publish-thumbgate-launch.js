@@ -868,6 +868,7 @@ module.exports = {
   buildLandingUrl,
   buildLatestReleasePost,
   buildLatestReleaseUrl,
+  buildPlatformTitle,
   buildOperatorLabPost,
   buildOperatorLabUrl,
   buildPlatformPost,

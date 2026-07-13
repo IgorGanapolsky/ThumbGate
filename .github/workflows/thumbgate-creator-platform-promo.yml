@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'preview, publish, or schedule'
+        description: 'preview, publish, schedule, verify, or fallback'
         required: true
         type: choice
         default: preview
@@ -12,8 +12,10 @@ on:
           - preview
           - publish
           - schedule
+          - verify
+          - fallback
       platforms:
-        description: 'Comma-separated Zernio platforms'
+        description: 'Comma-separated platforms'
         required: false
         default: 'linkedin,instagram,threads,bluesky,reddit,youtube'
       schedule:
@@ -28,6 +30,10 @@ on:
         description: 'Campaign offer to publish'
         required: false
         default: 'operator-lab'
+      reddit_parent_id:
+        description: 'Reddit weekly project-display thread fullname for fallback mode'
+        required: false
+        default: 't3_1uqwwus'
 
 permissions:
   contents: read
@@ -49,6 +55,12 @@ jobs:
       ZERNIO_TIKTOK_ACCOUNT_ID: ${{ secrets.ZERNIO_TIKTOK_ACCOUNT_ID }}
       ZERNIO_YOUTUBE_ACCOUNT_ID: ${{ secrets.ZERNIO_YOUTUBE_ACCOUNT_ID }}
       DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
+      LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+      LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
+      REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+      REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+      REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
+      REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
 
     steps:
       - uses: actions/checkout@v7
@@ -70,12 +82,23 @@ jobs:
             --platforms="${{ github.event.inputs.platforms }}"
 
       - name: Require Zernio API key
-        if: github.event.inputs.mode != 'preview'
+        if: github.event.inputs.mode == 'publish' || github.event.inputs.mode == 'schedule' || github.event.inputs.mode == 'verify'
         run: |
           if [ -z "${ZERNIO_API_KEY}" ]; then
-            echo "ZERNIO_API_KEY is required for publish/schedule modes." >&2
+            echo "ZERNIO_API_KEY is required for publish, schedule, and verify modes." >&2
             exit 1
           fi
+
+      - name: Verify latest release receipts
+        if: github.event.inputs.mode == 'verify'
+        run: npm run social:verify:latest-release
+
+      - name: Publish missing channels through direct fallbacks
+        if: github.event.inputs.mode == 'fallback'
+        run: |
+          npm run social:publish:latest-release-fallbacks -- \
+            --platforms="${{ github.event.inputs.platforms }}" \
+            --reddit-parent-id="${{ github.event.inputs.reddit_parent_id }}"
 
       - name: Publish campaign
         if: github.event.inputs.mode == 'publish'
