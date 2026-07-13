@@ -3,6 +3,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { isDirectRun, runAsyncCli } = require('./cli-entrypoint');
 const { loadLocalEnv } = require('./load-env');
 const { listMyArticles, publishArticle } = require('./publishers/devto');
 
@@ -54,15 +55,11 @@ async function main() {
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
-if (require.main === module) {
-  main().catch((error) => {
-    console.error(error && error.message ? error.message : error);
-    process.exit(1);
-  });
-}
+runAsyncCli(main, __filename);
 
 module.exports = {
   ARTICLE_PATH,
   ARTICLE_TITLE,
+  isDirectRun,
   publishLatestReleaseArticle,
 };

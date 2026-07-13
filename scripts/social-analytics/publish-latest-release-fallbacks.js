@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
+const { isDirectRun, runAsyncCli } = require('./cli-entrypoint');
 const {
   buildLatestReleasePost,
   buildLatestReleaseUrl,
@@ -21,8 +22,7 @@ function parseArgs(argv = []) {
     redditThreadUrl: DEFAULT_REDDIT_THREAD_URL,
   };
 
-  for (let index = 0; index < argv.length; index += 1) {
-    const token = argv[index];
+  for (const token of argv) {
     if (token === '--dry-run') {
       options.dryRun = true;
       continue;
@@ -79,12 +79,68 @@ function buildRedditCommentUrl(comment, threadUrl = DEFAULT_REDDIT_THREAD_URL) {
   return `${String(threadUrl).replace(/\/?$/, '/')}${id}/`;
 }
 
-async function publishLatestReleaseFallbacks(options = {}, publishers = {}, env = process.env) {
-  const platforms = (options.platforms && options.platforms.length > 0
-    ? options.platforms
-    : ['linkedin', 'reddit'])
+function resolvePlatforms(platforms = []) {
+  const requested = platforms.length > 0 ? platforms : ['linkedin', 'reddit'];
+  return requested
     .map((platform) => String(platform).trim().toLowerCase())
     .filter((platform) => SUPPORTED_PLATFORMS.has(platform));
+}
+
+function buildPreview(platform) {
+  const isReddit = platform === 'reddit';
+  return {
+    content: isReddit ? buildRedditProjectThreadComment() : buildLatestReleasePost(platform),
+    platform,
+    title: isReddit ? 'r/AI_Agents weekly project-display comment' : null,
+  };
+}
+
+async function publishLinkedInFallback(content, api, env) {
+  const postUrn = await api.publishLinkedIn(
+    env.LINKEDIN_ACCESS_TOKEN,
+    env.LINKEDIN_PERSON_URN,
+    content,
+  );
+  const url = buildLinkedInPostUrl(postUrn);
+  if (!url) throw new Error('LinkedIn publish returned no post URN');
+  return { platform: 'linkedin', postId: postUrn, url };
+}
+
+async function publishRedditFallback(content, options, api, env) {
+  const gateResult = qualityGate.gatePost(content);
+  if (!gateResult.allowed) throw new Error('Reddit quality gate blocked the release comment');
+
+  const redditToken = await api.getRedditToken(
+    env.REDDIT_CLIENT_ID,
+    env.REDDIT_CLIENT_SECRET,
+    env.REDDIT_USERNAME,
+    env.REDDIT_PASSWORD,
+  );
+  const redditResult = await api.submitRedditComment(
+    redditToken,
+    env.REDDIT_USER_AGENT || `thumbgate/1.0 by ${env.REDDIT_USERNAME}`,
+    {
+      parentId: options.redditParentId || DEFAULT_REDDIT_PARENT_ID,
+      text: content,
+    },
+  );
+  const url = buildRedditCommentUrl(redditResult, options.redditThreadUrl);
+  if (!url) throw new Error('Reddit publish returned no public comment URL');
+  return {
+    platform: 'reddit',
+    postId: redditResult.name || redditResult.id || null,
+    subreddit: 'AI_Agents',
+    url,
+  };
+}
+
+function publishPlatformFallback(platform, content, options, api, env) {
+  if (platform === 'linkedin') return publishLinkedInFallback(content, api, env);
+  return publishRedditFallback(content, options, api, env);
+}
+
+async function publishLatestReleaseFallbacks(options = {}, publishers = {}, env = process.env) {
+  const platforms = resolvePlatforms(options.platforms);
   const api = {
     publishLinkedIn: publishers.publishLinkedIn || publishTextPost,
     getRedditToken: publishers.getRedditToken || getRedditToken,
@@ -98,53 +154,16 @@ async function publishLatestReleaseFallbacks(options = {}, publishers = {}, env 
   };
 
   for (const platform of platforms) {
-    const content = platform === 'reddit'
-      ? buildRedditProjectThreadComment()
-      : buildLatestReleasePost(platform);
-    const title = platform === 'reddit' ? 'r/AI_Agents weekly project-display comment' : null;
-    results.previews.push({ content, platform, title });
+    const preview = buildPreview(platform);
+    results.previews.push(preview);
     if (results.dryRun) continue;
 
     try {
-      if (platform === 'linkedin') {
-        const postUrn = await api.publishLinkedIn(
-          env.LINKEDIN_ACCESS_TOKEN,
-          env.LINKEDIN_PERSON_URN,
-          content,
-        );
-        const url = buildLinkedInPostUrl(postUrn);
-        if (!url) throw new Error('LinkedIn publish returned no post URN');
-        results.published.push({ platform, postId: postUrn, url });
-        continue;
-      }
-
-      const gateResult = qualityGate.gatePost(content);
-      if (!gateResult.allowed) throw new Error('Reddit quality gate blocked the release comment');
-      const redditToken = await api.getRedditToken(
-        env.REDDIT_CLIENT_ID,
-        env.REDDIT_CLIENT_SECRET,
-        env.REDDIT_USERNAME,
-        env.REDDIT_PASSWORD,
-      );
-      const redditResult = await api.submitRedditComment(
-        redditToken,
-        env.REDDIT_USER_AGENT || `thumbgate/1.0 by ${env.REDDIT_USERNAME}`,
-        {
-          parentId: options.redditParentId || DEFAULT_REDDIT_PARENT_ID,
-          text: content,
-        },
-      );
-      const url = buildRedditCommentUrl(redditResult, options.redditThreadUrl);
-      if (!url) throw new Error('Reddit publish returned no public comment URL');
-      results.published.push({
-        platform,
-        postId: redditResult.name || redditResult.id || null,
-        subreddit: 'AI_Agents',
-        url,
-      });
+      const receipt = await publishPlatformFallback(platform, preview.content, options, api, env);
+      results.published.push(receipt);
     } catch (error) {
       results.errors.push({
-        error: error && error.message ? error.message : String(error),
+        error: error?.message || String(error),
         platform,
       });
     }
@@ -159,12 +178,7 @@ async function main() {
   if (results.errors.length > 0) process.exitCode = 1;
 }
 
-if (require.main === module) {
-  main().catch((error) => {
-    console.error(error && error.message ? error.message : error);
-    process.exit(1);
-  });
-}
+runAsyncCli(main, __filename);
 
 module.exports = {
   DEFAULT_REDDIT_PARENT_ID,
@@ -172,6 +186,7 @@ module.exports = {
   buildLinkedInPostUrl,
   buildRedditCommentUrl,
   buildRedditProjectThreadComment,
+  isDirectRun,
   normalizeRedditPostUrl,
   parseArgs,
   publishLatestReleaseFallbacks,
