@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 __GOOGLE_SITE_VERIFICATION_META__
 <title>Pricing — ThumbGate</title>
-<meta name="description" content="ThumbGate pricing: free CLI forever, $19/mo Pro dashboard, and custom Enterprise enforcement scoped after intake. One clear subscription path.">
+<meta name="description" content="ThumbGate pricing: free CLI, $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic, $__WORKFLOW_SPRINT_PRICE_DOLLARS__ workflow sprint, $19/mo Pro, and Enterprise after scope. Paid services first.">
 <meta property="og:title" content="Pricing — ThumbGate">
-<meta property="og:description" content="Free CLI, Pro self-serve, and Enterprise after workflow scope. No mixed consulting checkout maze.">
+<meta property="og:description" content="Buy a $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic or $__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint today. Free CLI forever. Pro $19/mo for solo operators.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="__APP_ORIGIN__/pricing">
 <meta property="og:image" content="/og.png">
@@ -89,6 +89,8 @@ __GA_BOOTSTRAP__
   "url": "__APP_ORIGIN__/pricing",
   "offers": [
     { "@type": "Offer", "name": "ThumbGate CLI (Free)", "price": "0", "priceCurrency": "USD" },
+    { "@type": "Offer", "name": "Workflow Hardening Diagnostic", "price": "__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__", "priceCurrency": "USD", "url": "__APP_ORIGIN__/go/diagnostic" },
+    { "@type": "Offer", "name": "Workflow Hardening Sprint", "price": "__WORKFLOW_SPRINT_PRICE_DOLLARS__", "priceCurrency": "USD", "url": "__APP_ORIGIN__/go/sprint" },
     { "@type": "Offer", "name": "ThumbGate Pro Monthly", "price": "__PRO_PRICE_DOLLARS__", "priceCurrency": "USD", "url": "__APP_ORIGIN__/checkout/pro?confirm=1&plan_id=pro&billing_cycle=monthly&landing_path=%2Fpricing" },
     { "@type": "Offer", "name": "ThumbGate Pro Annual", "price": "149", "priceCurrency": "USD", "url": "__APP_ORIGIN__/checkout/pro?confirm=1&plan_id=pro&billing_cycle=annual&landing_path=%2Fpricing" },
     { "@type": "Offer", "name": "ThumbGate Enterprise", "priceCurrency": "USD", "url": "__APP_ORIGIN__/#workflow-sprint-intake" }
@@ -165,8 +167,14 @@ __GA_BOOTSTRAP__
   .pricing-hero .lede { color: var(--text-muted); font-size: 17px; max-width: 560px; margin: 0 auto; }
 
   /* GRID */
-  .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 40px 0 32px; }
+  .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin: 40px 0 32px; }
   @media (max-width: 768px) { .pricing-grid { grid-template-columns: 1fr; } }
+  .price-card.money { border-color: rgba(74,222,128,0.45); box-shadow: 0 0 0 1px rgba(74,222,128,0.15); }
+  .price-card.money .tier { color: var(--green, #4ade80); }
+  .btn-money {
+    display: block; width: 100%; text-align: center; padding: 12px 16px; border-radius: 8px;
+    background: var(--green, #4ade80); color: #06120a; font-weight: 800; text-decoration: none;
+  }
 
   /* CARDS */
   .price-card {
@@ -259,7 +267,7 @@ __GA_BOOTSTRAP__
       <a href="/pricing" style="color:var(--text);">Pricing</a>
       <a href="/guide">Guide</a>
       <a href="/dashboard">Dashboard</a>
-      <a class="nav-cta" href="/checkout/pro?confirm=1&utm_source=pricing&utm_medium=nav&utm_campaign=pricing_page&cta_id=pricing_nav_start_pro&cta_placement=nav&plan_id=pro&landing_path=%2Fpricing" data-pricing-cta data-cta-id="pricing_nav_start_pro" data-cta-placement="nav" data-tier="pro" data-plan-id="pro" data-billing-cycle="monthly" data-price="19">Start Pro</a>
+      <a class="nav-cta" href="/go/diagnostic?utm_source=pricing&utm_medium=nav&utm_campaign=money_today&cta_id=pricing_nav_diagnostic&cta_placement=nav&plan_id=sprint_diagnostic" data-pricing-cta data-cta-id="pricing_nav_diagnostic" data-cta-placement="nav" data-tier="service" data-plan-id="sprint_diagnostic" data-price="__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__">Pay $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</a>
     </div>
   </div>
 </nav>
@@ -267,12 +275,40 @@ __GA_BOOTSTRAP__
 <section class="pricing-hero">
   <div class="container">
     <h1>Stop paying for the same AI mistake twice.</h1>
-    <p class="lede">One self-serve paid path for solo operators. Teams start with workflow scope so shared enforcement is mapped before checkout.</p>
+    <p class="lede">Paid services first: harden one AI-agent workflow with a <strong>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</strong> or <strong>$__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint</strong>. Free CLI forever. Pro is the solo self-serve lane. Enterprise is intake after proof.</p>
   </div>
 </section>
 
 <section class="container">
   <div class="pricing-grid">
+
+    <div class="price-card money highlight" id="diagnostic">
+      <div class="tier">Diagnostic</div>
+      <div class="price">$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</div>
+      <div class="price-sub"><strong>Fastest path to cash + proof.</strong> Map one repeated agent failure: block / warn / human-review split and a shippable proof checklist. Credited toward the sprint when you continue.</div>
+      <ul>
+        <li>One workflow, one owner, one failure pattern</li>
+        <li>Gate split + proof checklist deliverable</li>
+        <li>Stripe checkout — pay today</li>
+        <li>Credit toward $__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint when implementation follows</li>
+      </ul>
+      <a class="btn-money" href="/go/diagnostic?utm_source=pricing&utm_medium=hero_card&utm_campaign=money_today&cta_id=pricing_diagnostic&cta_placement=pricing&plan_id=sprint_diagnostic" data-pricing-cta data-cta-id="pricing_diagnostic" data-cta-placement="pricing" data-tier="service" data-plan-id="sprint_diagnostic" data-price="__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__" onclick="try{posthog.capture('pricing_cta_click',{cta:'pay_diagnostic',tier:'service',placement:'pricing_page',price:__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'pay_diagnostic',tier:'service'}})}catch(_){}">Pay $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</a>
+      <p class="btn-sub"><a href="/diagnostic" style="color:var(--cyan);text-decoration:none;font-weight:600;">Or open the diagnostic page →</a></p>
+    </div>
+
+    <div class="price-card money" id="sprint">
+      <div class="tier">Workflow Hardening Sprint</div>
+      <div class="price">$__WORKFLOW_SPRINT_PRICE_DOLLARS__</div>
+      <div class="price-sub"><strong>Primary commercial motion.</strong> Wire gates for one workflow, promote prevention rules, deliver verification evidence and a rollout checklist.</div>
+      <ul>
+        <li>Workflow map + approval boundaries</li>
+        <li>Memory / gate wiring plan</li>
+        <li>Proof pack for the next production-facing iteration</li>
+        <li>Expands into Enterprise when shared lessons matter</li>
+      </ul>
+      <a class="btn-money" href="/go/sprint?utm_source=pricing&utm_medium=hero_card&utm_campaign=money_today&cta_id=pricing_sprint&cta_placement=pricing&plan_id=workflow_sprint" data-pricing-cta data-cta-id="pricing_sprint" data-cta-placement="pricing" data-tier="service" data-plan-id="workflow_sprint" data-price="__WORKFLOW_SPRINT_PRICE_DOLLARS__" onclick="try{posthog.capture('pricing_cta_click',{cta:'pay_sprint',tier:'service',placement:'pricing_page',price:__WORKFLOW_SPRINT_PRICE_DOLLARS__})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'pay_sprint',tier:'service'}})}catch(_){}">Pay $__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint</a>
+      <p class="btn-sub"><a href="/?utm_source=pricing&utm_medium=sprint_intake#workflow-sprint-intake" style="color:var(--cyan);text-decoration:none;font-weight:600;">Need fit review first? Send the workflow →</a></p>
+    </div>
 
     <div class="price-card">
       <div class="tier" style="color:var(--cyan);">Free</div>
@@ -288,11 +324,11 @@ __GA_BOOTSTRAP__
       <a class="btn-install" href="/go/install?utm_source=pricing&utm_medium=free_card&cta_id=pricing_install_free&cta_placement=free_card" data-pricing-cta data-cta-id="pricing_install_free" data-cta-placement="free_card" data-tier="free" data-plan-id="free" data-price="0" onclick="try{posthog.capture('pricing_cta_click',{cta:'install_free',tier:'free',placement:'pricing_page'})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'install_free',tier:'free'}})}catch(_){}">Install free</a>
     </div>
 
-    <div class="price-card highlight" id="pro">
+    <div class="price-card" id="pro">
       <div class="tier">Pro</div>
       <div class="price">$19<span>/mo</span></div>
       <div class="price-sub">
-        <strong>Don't buy a tool — buy proof + compatibility insurance.</strong> The free CLI runs your gates locally. Pro removes the solo caps and adds the personal dashboard, recall, exports, and active adapter maintenance to stay compatible with weekly breaking updates in Claude Code, Cursor, and Cline. Shared hosted lesson databases are Enterprise.
+        <strong>Solo self-serve side lane.</strong> After one real caught repeat: personal dashboard, recall, exports, managed adapters. Shared hosted lessons are Enterprise.
       </div>
       <ul>
         <li><strong>Personal lesson recall</strong> — search and reuse your own corrections across sessions</li>
@@ -309,8 +345,8 @@ __GA_BOOTSTRAP__
 
     <div class="price-card enterprise-card" id="enterprise">
       <div class="tier">Enterprise</div>
-      <div class="price">Custom<span> / scoped after intake</span></div>
-      <div class="price-sub">Shared enforcement for the whole team and regulated workflows. One engineer's save protects every agent.</div>
+      <div class="price">Custom<span> / after sprint proof</span></div>
+      <div class="price-sub">Shared enforcement for the whole team and regulated workflows. Start with a paid diagnostic or sprint — then expand.</div>
       <ul>
         <li>Everything in Pro, for every developer and agent</li>
         <li><strong>Shared lesson database</strong> — one engineer's fix protects every agent on the team</li>
@@ -321,15 +357,16 @@ __GA_BOOTSTRAP__
         <li>Custom policy layers, compliance audit export, approval boundaries, SSO, and dedicated onboarding with SLA</li>
         <li>Rollout starts only after workflow and proof review are explicit</li>
       </ul>
-      <a class="btn-team" href="/?utm_source=pricing&utm_medium=enterprise_card&utm_campaign=enterprise_intake&cta_id=pricing_enterprise_intake&cta_placement=pricing&plan_id=enterprise#workflow-sprint-intake" data-pricing-cta data-cta-id="pricing_enterprise_intake" data-cta-placement="pricing" data-tier="enterprise" data-plan-id="enterprise" data-price="0" onclick="try{posthog.capture('pricing_cta_click',{cta:'enterprise_intake',tier:'enterprise',placement:'pricing_page',price:0})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'enterprise_intake',tier:'enterprise'}})}catch(_){}">Talk to us</a>
-      <p class="btn-sub">Custom pricing, scoped through intake so the workflow is explicit before checkout.</p>
+      <a class="btn-team" href="/go/sprint?utm_source=pricing&utm_medium=enterprise_card&utm_campaign=money_today&cta_id=pricing_enterprise_sprint&cta_placement=pricing&plan_id=workflow_sprint" data-pricing-cta data-cta-id="pricing_enterprise_sprint" data-cta-placement="pricing" data-tier="service" data-plan-id="workflow_sprint" data-price="__WORKFLOW_SPRINT_PRICE_DOLLARS__" onclick="try{posthog.capture('pricing_cta_click',{cta:'enterprise_sprint',tier:'service',placement:'pricing_page',price:__WORKFLOW_SPRINT_PRICE_DOLLARS__})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'enterprise_sprint',tier:'service'}})}catch(_){}">Start with $__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint</a>
+      <p class="btn-sub"><a href="/?utm_source=pricing&utm_medium=enterprise_intake&utm_campaign=enterprise_intake&cta_id=pricing_enterprise_intake&cta_placement=pricing&plan_id=enterprise#workflow-sprint-intake" data-pricing-cta data-cta-id="pricing_enterprise_intake" data-cta-placement="pricing" data-tier="enterprise" data-plan-id="enterprise" data-price="0" style="color:var(--cyan);text-decoration:none;font-weight:600;">Or send workflow intake →</a></p>
     </div>
 
   </div>
 
   <div style="text-align:center;margin:32px 0;color:var(--text-muted);font-size:14px;">
-    Need founder help? Do not buy a blind diagnostic from a pricing table.
-    <a href="/?utm_source=pricing&utm_medium=scope_first&utm_campaign=enterprise_intake&cta_id=pricing_scope_first&cta_placement=pricing_note&plan_id=enterprise#workflow-sprint-intake" data-pricing-cta data-cta-id="pricing_scope_first" data-cta-placement="pricing_note" data-tier="enterprise" data-plan-id="enterprise" data-price="0" style="color:var(--cyan);text-decoration:none;font-weight:600;" onclick="try{posthog.capture('pricing_cta_click',{cta:'scope_first',tier:'enterprise',price:0})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'scope_first',tier:'enterprise'}})}catch(_){}">Send the workflow first</a> — then we scope the smallest paid rollout that can prove one repeated failure is blocked.
+    Prefer a scoped conversation before Stripe?
+    <a href="/?utm_source=pricing&utm_medium=scope_first&utm_campaign=enterprise_intake&cta_id=pricing_scope_first&cta_placement=pricing_note&plan_id=enterprise#workflow-sprint-intake" data-pricing-cta data-cta-id="pricing_scope_first" data-cta-placement="pricing_note" data-tier="enterprise" data-plan-id="enterprise" data-price="0" style="color:var(--cyan);text-decoration:none;font-weight:600;" onclick="try{posthog.capture('pricing_cta_click',{cta:'scope_first',tier:'enterprise',price:0})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'scope_first',tier:'enterprise'}})}catch(_){}">Send the workflow first</a>
+    — or pay the diagnostic today if you already know the failure.
   </div>
 </section>
 

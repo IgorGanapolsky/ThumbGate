@@ -5670,6 +5670,16 @@ async function addContext(){
       return;
     }
 
+    // /docs is a common buyer URL; route to the public setup guide instead of 404.
+    if (isGetLikeRequest && (pathname === '/docs' || pathname === '/docs/' || pathname === '/documentation' || pathname === '/documentation/')) {
+      res.writeHead(302, {
+        Location: '/guide',
+        'Cache-Control': 'public, max-age=300',
+      });
+      res.end();
+      return;
+    }
+
     if (isGetLikeRequest && (pathname === '/guide' || pathname === '/guide.html')) {
       try {
         servePublicMarketingPage({
