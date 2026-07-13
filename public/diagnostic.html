@@ -252,7 +252,7 @@ footer { padding: 32px 0 44px; color: var(--muted); }
         <option>We need an independent proof checklist first</option>
       </select>
       <button type="submit" data-revenue-cta data-cta-id="diagnostic_page_submit" data-cta-placement="intake">Submit for diagnostic scope</button>
-      <p class="hint">Ready to pay now? Use the $499 diagnostic checkout above. If the workflow needs fit review first, submit it here and we will route you to the diagnostic or sprint only when the scope is real.</p>
+      <p class="hint" data-diagnostic-payment-hint>Ready to pay now? Use the $499 diagnostic checkout above. If the workflow needs fit review first, submit it here and we will route you to the diagnostic or sprint only when the scope is real.</p>
     </form>
   </div>
   <section>
@@ -296,14 +296,21 @@ footer { padding: 32px 0 44px; color: var(--muted); }
 (function () {
   const search = new URLSearchParams(window.location.search);
   const paidCta = document.querySelector('[data-cta-id="diagnostic_hero_paid"]');
-  if (paidCta) {
+  const inboundSource = search.get('utm_source') || search.get('source');
+  const isAiventyxTraffic = String(inboundSource || '').trim().toLowerCase() === 'aiventyx';
+  if (paidCta && isAiventyxTraffic) {
+    paidCta.remove();
+    const paymentHint = document.querySelector('[data-diagnostic-payment-hint]');
+    if (paymentHint) {
+      paymentHint.textContent = 'Submit the workflow here. Aiventyx will collect payment on its checkout once the scope is accepted.';
+    }
+  } else if (paidCta) {
     const href = new URL(paidCta.getAttribute('href'), window.location.origin);
     const passthrough = /^(utm_(source|medium|campaign|content|term)|source|acquisition_id|visitor_id|session_id|visitor_session_id|install_id|trace_id|creator|community|post_id|comment_id|campaign_variant|offer_code|referrer_host)$/i;
     for (const [key, value] of search.entries()) {
       if (!passthrough.test(key) || !value.trim()) continue;
       href.searchParams.set(key, value.trim());
     }
-    const inboundSource = search.get('utm_source') || search.get('source');
     if (inboundSource && inboundSource.trim()) {
       href.searchParams.set('utm_source', inboundSource.trim());
     }
