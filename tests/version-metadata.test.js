@@ -453,7 +453,9 @@ test('commercial truth sources stay aligned across public and historical docs', 
   assert.doesNotMatch(anthropicStrategy, /^We are an official Anthropic partner\b/m);
 
   assert.match(workflowSprint, /Status: current/i);
-  assert.match(workflowSprint, /pilot-by-request/i);
+  assert.match(workflowSprint, /Public paid checkout/i);
+  assert.match(workflowSprint, /\$499|Diagnostic: \$499/);
+  assert.match(workflowSprint, /\$1,500|Sprint: \$1,500/);
   assert.match(workflowSprint, /one workflow/i);
   assert.match(workflowSprint, /VERIFICATION_EVIDENCE\.md/);
   assert.doesNotMatch(workflowSprint, /^We are an official Anthropic partner\b/m);
