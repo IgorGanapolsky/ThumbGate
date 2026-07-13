@@ -48,6 +48,7 @@ jobs:
       ZERNIO_REDDIT_ACCOUNT_ID: ${{ secrets.ZERNIO_REDDIT_ACCOUNT_ID }}
       ZERNIO_TIKTOK_ACCOUNT_ID: ${{ secrets.ZERNIO_TIKTOK_ACCOUNT_ID }}
       ZERNIO_YOUTUBE_ACCOUNT_ID: ${{ secrets.ZERNIO_YOUTUBE_ACCOUNT_ID }}
+      DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
 
     steps:
       - uses: actions/checkout@v7
@@ -82,6 +83,10 @@ jobs:
           npm run social:publish:launch -- \
             --offer="${{ github.event.inputs.offer }}" \
             --platforms="${{ github.event.inputs.platforms }}"
+
+      - name: Publish release article to Dev.to
+        if: ${{ always() && github.event.inputs.mode == 'publish' && github.event.inputs.offer == 'release-1.28.0' }}
+        run: node scripts/social-analytics/publish-latest-release-article.js
 
       - name: Schedule campaign
         if: github.event.inputs.mode == 'schedule'

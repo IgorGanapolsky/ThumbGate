@@ -23,6 +23,9 @@ const LAUNCH_CAMPAIGN = 'first_customer_push';
 const OPERATOR_LAB_CAMPAIGN = 'operator_lab_launch';
 const PAID_SPRINT_CAMPAIGN = 'paid_workflow_sprint';
 const VOICE_AGENT_DIAGNOSTIC_CAMPAIGN = 'voice_agent_reliability_diagnostic';
+const LATEST_RELEASE_CAMPAIGN = 'thumbgate_1_28_0_release';
+const LATEST_RELEASE_VERSION = '1.28.0';
+const LATEST_RELEASE_URL = `https://github.com/IgorGanapolsky/ThumbGate/releases/tag/v${LATEST_RELEASE_VERSION}`;
 const SKOOL_OPERATOR_LAB_URL = 'https://www.skool.com/thumbgate-operator-lab-6000';
 const DIAGNOSTIC_CHECKOUT_URL = 'https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e';
 const PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL = 'https://buy.stripe.com/9B69ATbmI4r4aK5eOD3sI3k';
@@ -35,11 +38,19 @@ const OPERATOR_LAB_MEDIA = {
   landscape: path.join(REPO_ROOT, 'docs', 'marketing', 'assets', 'thumbgate-skool-cover-1084x576.png'),
   square: path.join(REPO_ROOT, 'docs', 'marketing', 'assets', 'thumbgate-skool-icon-128x128.png'),
 };
+const LATEST_RELEASE_MEDIA = {
+  square: path.join(REPO_ROOT, 'public', 'assets', 'thumbgate-1-28-0-release.png'),
+};
 
 function resolveOperatorLabMediaPlan(platform) {
   const normalized = String(platform || '').trim().toLowerCase();
   if (normalized === 'instagram') return [OPERATOR_LAB_MEDIA.square];
   return [OPERATOR_LAB_MEDIA.landscape];
+}
+
+function resolveLatestReleaseMediaPlan(platform) {
+  const normalized = String(platform || '').trim().toLowerCase();
+  return ['instagram', 'youtube'].includes(normalized) ? [LATEST_RELEASE_MEDIA.square] : [];
 }
 
 function describeMediaPlan(paths = []) {
@@ -246,6 +257,15 @@ function buildVoiceAgentDiagnosticUrl(platform, content) {
   });
 }
 
+function buildLatestReleaseUrl(platform, content) {
+  return buildUTMLink(LATEST_RELEASE_URL, {
+    source: platform,
+    medium: 'organic_social',
+    campaign: LATEST_RELEASE_CAMPAIGN,
+    content,
+  });
+}
+
 function buildPaidSprintCheckoutUrls(platform, content) {
   const source = platform || 'zernio';
   const baseContent = content || `paid_sprint_${source}`;
@@ -271,10 +291,113 @@ function mediumForOffer(offer) {
 }
 
 function campaignForOffer(offer) {
+  if (offer === 'release-1.28.0') return LATEST_RELEASE_CAMPAIGN;
   if (offer === 'operator-lab') return OPERATOR_LAB_CAMPAIGN;
   if (offer === 'paid-sprint') return PAID_SPRINT_CAMPAIGN;
   if (offer === 'voice-agent-diagnostic') return VOICE_AGENT_DIAGNOSTIC_CAMPAIGN;
   return LAUNCH_CAMPAIGN;
+}
+
+function buildLatestReleasePost(platform) {
+  const normalized = String(platform || '').trim().toLowerCase();
+  const key = normalized === 'x' ? 'twitter' : normalized;
+  const releaseUrl = buildLatestReleaseUrl(key || 'zernio', `release_1_28_0_${key || 'generic'}`);
+
+  if (key === 'linkedin') {
+    return [
+      'Most AI-agent safety demos stop at detection. ThumbGate 1.28.0 focuses on the harder transition: turning operator feedback into enforcement without turning one vague signal into a permanent lockout.',
+      '',
+      'What shipped:',
+      '',
+      '- `npx thumbgate quickstart` for guided first-rule activation',
+      '- `THUMBGATE_AUTONOMOUS=1` so approval gates fail closed in unattended loops',
+      '- five explicit operator commands for guarding, inspecting rules, reviewing blocks, protecting branches, and diagnosing installation',
+      '- an immediate force-gate path for a thumbs-down followed by an explicit "never ..." correction; vague feedback does not silently become a permanent block',
+      '- regression replay before promotion, so an over-broad candidate rule is quarantined to warn instead of hardening',
+      '',
+      'The release also adds a Hermes Agent adapter, stronger self-protection, and package-integrity checks.',
+      '',
+      `Release notes: ${releaseUrl}`,
+      '',
+      'Disclosure: I built ThumbGate. The repository is MIT-licensed.',
+    ].join('\n');
+  }
+
+  if (key === 'threads') {
+    return [
+      'ThumbGate 1.28.0 tightens feedback-to-enforcement: guided quickstart, fail-closed autonomous approvals, explicit commands, and regression replay before a rule can harden.',
+      '',
+      'An explicit "never ..." correction can take the immediate force-gate path. Vague feedback cannot become a silent permanent block.',
+      '',
+      releaseUrl,
+    ].join('\n');
+  }
+
+  if (key === 'bluesky') {
+    return `ThumbGate 1.28.0: guided quickstart, fail-closed autonomous approvals, and regression-tested rule promotion. ${releaseUrl}`;
+  }
+
+  if (key === 'instagram') {
+    return [
+      'ThumbGate 1.28.0',
+      '',
+      'A safer path from feedback to enforcement:',
+      '',
+      '- guided first-rule activation',
+      '- fail-closed approvals for unattended loops',
+      '- explicit guard, rules, blocked, protect, and doctor commands',
+      '- regression replay before a candidate rule can harden',
+      '- an immediate force-gate path for explicit "never ..." corrections',
+      '',
+      'Vague feedback does not silently become a permanent block.',
+      '',
+      releaseUrl,
+      '',
+      '#AIAgents #DeveloperTools #AISafety #ThumbGate',
+    ].join('\n');
+  }
+
+  if (key === 'reddit') {
+    return [
+      'I have been working on the dangerous boundary between agent feedback and enforcement: when should a correction become a hard rule, and how do you avoid locking yourself out because of one vague signal?',
+      '',
+      'ThumbGate 1.28.0 now has a guided `npx thumbgate quickstart` path and five explicit commands for installing a guard, inspecting active rules, reviewing actual blocks, protecting branch operations, and diagnosing the hook wiring.',
+      '',
+      'The behavioral change I care about most is explicitness. A thumbs-down followed by a concrete `never ...` correction can take the immediate force-gate path. It does not auto-block from a bare thumbs-down, and thumbs-up guidance does not silently become a hard rule.',
+      '',
+      'Candidate rules are also replayed against prior allowed actions before promotion. If a rule would catch too much, it is quarantined to warn rather than hardened.',
+      '',
+      `Technical release notes: ${releaseUrl}`,
+      '',
+      'Disclosure: I built ThumbGate. The code is MIT-licensed, and I would value technical criticism of the promotion and lockout tradeoffs.',
+    ].join('\n');
+  }
+
+  if (key === 'youtube') {
+    return [
+      'ThumbGate 1.28.0 makes the path from AI-agent feedback to enforcement more explicit.',
+      '',
+      'Guided quickstart, fail-closed autonomous approvals, five operator commands, and regression replay before a candidate prevention rule can harden.',
+      '',
+      'A concrete "never ..." correction can take the immediate force-gate path. Vague feedback does not silently become a permanent block.',
+      '',
+      releaseUrl,
+    ].join('\n');
+  }
+
+  return `ThumbGate 1.28.0 adds guided activation, fail-closed autonomous approvals, explicit operator commands, and regression-tested rule promotion. ${releaseUrl}`;
+}
+
+function buildPlatformTitle(platform, offer) {
+  if (offer !== 'release-1.28.0') return undefined;
+  const normalized = String(platform || '').trim().toLowerCase();
+  if (normalized === 'reddit') {
+    return 'I built a safer feedback-to-enforcement path for AI coding agents (ThumbGate 1.28.0)';
+  }
+  if (normalized === 'youtube') {
+    return 'ThumbGate 1.28.0: safer feedback-to-enforcement';
+  }
+  return undefined;
 }
 
 function renderTrackedPost(spec, platform, urlBuilder) {
@@ -408,6 +531,9 @@ function buildVoiceAgentDiagnosticPost(platform) {
 }
 
 function buildPlatformPost(platform, offer = 'launch') {
+  if (offer === 'release-1.28.0') {
+    return buildLatestReleasePost(platform);
+  }
   if (offer === 'operator-lab') {
     return buildOperatorLabPost(platform);
   }
@@ -624,7 +750,9 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
     }
 
     const content = buildPlatformPost(normalizedPlatform, offer);
-    const mediaPlanPaths = offer === 'operator-lab' ? resolveOperatorLabMediaPlan(normalizedPlatform) : [];
+    const mediaPlanPaths = offer === 'operator-lab'
+      ? resolveOperatorLabMediaPlan(normalizedPlatform)
+      : (offer === 'release-1.28.0' ? resolveLatestReleaseMediaPlan(normalizedPlatform) : []);
     results.previews.push({
       platform: normalizedPlatform,
       content,
@@ -644,13 +772,13 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
 
     try {
       const mediaItems = [];
-      if (offer === 'operator-lab') {
+      if (offer === 'operator-lab' || offer === 'release-1.28.0') {
         for (const mediaPath of mediaPlanPaths) {
           mediaItems.push(await api.uploadLocalMedia(mediaPath));
         }
       }
 
-      if (normalizedPlatform === 'instagram' && offer !== 'operator-lab') {
+      if (normalizedPlatform === 'instagram' && !['operator-lab', 'release-1.28.0'].includes(offer)) {
         if (schedule) {
           results.skipped.push({ platform: normalizedPlatform, reason: 'schedule_not_supported_for_instagram_launch' });
           continue;
@@ -665,7 +793,11 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
         const scheduledResult = await api.schedulePost(content, platformAccounts, schedule, timezone, { utm, mediaItems });
         recordPublishResult(results, normalizedPlatform, scheduledResult, 'scheduled');
       } else {
-        const publishResult = await api.publishPost(content, platformAccounts, { utm, mediaItems });
+        const publishResult = await api.publishPost(content, platformAccounts, {
+          utm,
+          mediaItems,
+          title: buildPlatformTitle(normalizedPlatform, offer),
+        });
         recordPublishResult(results, normalizedPlatform, publishResult, 'published');
       }
     } catch (error) {
@@ -723,6 +855,9 @@ module.exports = {
   DEFAULT_TIMEZONE,
   DIAGNOSTIC_CHECKOUT_URL,
   LAUNCH_CAMPAIGN,
+  LATEST_RELEASE_CAMPAIGN,
+  LATEST_RELEASE_VERSION,
+  LATEST_RELEASE_URL,
   OPERATOR_LAB_CAMPAIGN,
   PAID_SPRINT_CAMPAIGN,
   PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL,
@@ -731,6 +866,8 @@ module.exports = {
   VOICE_AGENT_DIAGNOSTIC_CAMPAIGN,
   buildCampaignEntries,
   buildLandingUrl,
+  buildLatestReleasePost,
+  buildLatestReleaseUrl,
   buildOperatorLabPost,
   buildOperatorLabUrl,
   buildPlatformPost,
