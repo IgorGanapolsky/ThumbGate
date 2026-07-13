@@ -7,18 +7,37 @@ const {
   DEFAULT_LAUNCH_PLATFORMS,
   DIAGNOSTIC_CHECKOUT_URL,
   LAUNCH_CAMPAIGN,
+  LATEST_RELEASE_CAMPAIGN,
+  LATEST_RELEASE_VERSION,
   OPERATOR_LAB_CAMPAIGN,
   PAID_SPRINT_CAMPAIGN,
   PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL,
   PAID_SPRINT_IMPLEMENTATION_PAYMENT_URL,
   VOICE_AGENT_DIAGNOSTIC_CAMPAIGN,
   buildPaidSprintCheckoutUrls,
+  buildLatestReleasePost,
   buildPlatformPost,
   classifyPublishFailure,
   getPlatformFailures,
   parseArgs,
   publishLaunchCampaign,
 } = require('../scripts/social-analytics/publish-thumbgate-launch');
+
+test('buildLatestReleasePost is accurate and within platform limits', () => {
+  const linkedIn = buildLatestReleasePost('linkedin');
+  const threads = buildLatestReleasePost('threads');
+  const bluesky = buildLatestReleasePost('bluesky');
+  const reddit = buildLatestReleasePost('reddit');
+
+  assert.equal(LATEST_RELEASE_VERSION, '1.28.0');
+  assert.equal(LATEST_RELEASE_CAMPAIGN, 'thumbgate_1_28_0_release');
+  assert.match(linkedIn, /npx thumbgate quickstart/);
+  assert.match(linkedIn, /vague feedback does not silently become a permanent block/);
+  assert.match(linkedIn, /regression replay before promotion/);
+  assert.match(reddit, /does not auto-block from a bare thumbs-down/);
+  assert.ok(threads.length <= 500, `Threads release post should fit 500 chars; got ${threads.length}`);
+  assert.ok(bluesky.length <= 300, `Bluesky release post should fit 300 chars; got ${bluesky.length}`);
+});
 
 test('buildPlatformPost creates tracked launch copy for X', () => {
   const post = buildPlatformPost('twitter');
