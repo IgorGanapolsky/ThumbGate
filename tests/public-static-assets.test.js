@@ -156,6 +156,7 @@ test('homepage and pricing surfaces expose canonical and LLM context links', asy
     ['/pricing', `${origin}/pricing`, `${origin}/llm-context.md`],
     ['/pro', `${origin}/pro`, `${origin}/llm-context.md`],
     ['/diagnostic', `${origin}/diagnostic`, `${origin}/llm-context.md`],
+    ['/partner-intake', `${origin}/partner-intake`, `${origin}/llm-context.md`],
   ];
 
   for (const [pathname, canonicalUrl, contextUrl] of pages) {
@@ -165,6 +166,22 @@ test('homepage and pricing surfaces expose canonical and LLM context links', asy
     assert.match(html, new RegExp(`<link rel="canonical" href="${canonicalUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`));
     assert.match(html, new RegExp(`<link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="${contextUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`));
   }
+});
+
+test('GET /partner-intake serves a clean form-only partner handoff', async () => {
+  const res = await fetch(`${origin}/partner-intake?utm_source=aiventyx&utm_medium=partner&utm_campaign=hosted_listing`);
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /text\/html/);
+  const html = await res.text();
+  assert.match(html, /Partner Workflow Intake/);
+  assert.match(html, /action="\/v1\/intake\/workflow-sprint"/);
+  assert.match(html, /data-partner-intake-form/);
+  assert.match(html, /name="ctaId" value="partner_intake_submit"/);
+  assert.match(html, /name="source" value="aiventyx"/);
+  assert.match(html, /name="utmSource" value="aiventyx"/);
+  assert.match(html, /name="utmMedium" value="partner"/);
+  assert.match(html, /name="utmCampaign" value="hosted_listing"/);
+  assert.doesNotMatch(html, /\$\s*\d|Stripe|checkout|payment|data-revenue-cta/i);
 });
 
 test('GET /diagnostic serves the Workflow Hardening Diagnostic intake page', async () => {
