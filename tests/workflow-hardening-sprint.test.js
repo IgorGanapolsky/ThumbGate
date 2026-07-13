@@ -12,7 +12,9 @@ test('workflow hardening sprint brief stays current, proof-backed, and commercia
   assert.match(brief, /one workflow/i);
   assert.match(brief, /one owner/i);
   assert.match(brief, /one proof review/i);
-  assert.match(brief, /pilot-by-request/i);
+  assert.match(brief, /Public paid checkout/i);
+  assert.match(brief, /\$499|Diagnostic: \$499/);
+  assert.match(brief, /\$1,500|Sprint: \$1,500/);
   assert.match(brief, /first-dollar path/i);
   assert.match(brief, /igor\.ganapolsky@gmail\.com/i);
   assert.match(brief, /workflow-sprint-intake/i);
