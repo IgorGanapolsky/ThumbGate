@@ -553,6 +553,32 @@ test('/pro serves the Pro landing page instead of redirecting to the homepage', 
   assert.match(html, /\/checkout\/pro\?plan_id=pro&billing_cycle=monthly/);
 });
 
+test('/partner-intake serves an attributed form without a price or payment path', async () => {
+  const res = await fetch(apiUrl('/partner-intake?utm_source=aiventyx&utm_medium=partner&utm_campaign=hosted_listing'));
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /text\/html/);
+  const html = await res.text();
+  assert.match(html, /Send one failing AI-agent workflow/);
+  assert.match(html, /action="\/v1\/intake\/workflow-sprint"/);
+  assert.match(html, /name="page" value="\/partner-intake"/);
+  assert.match(html, /name="source" value="aiventyx"/);
+  assert.match(html, /name="utmSource" value="aiventyx"/);
+  assert.match(html, /name="utmMedium" value="partner"/);
+  assert.match(html, /name="utmCampaign" value="hosted_listing"/);
+  assert.match(html, /search\.get\('utm_source'\)/);
+  assert.doesNotMatch(html, /\$\s*\d|Stripe|checkout|payment|data-revenue-cta/i);
+});
+
+test('/partner-intake escapes server-rendered attribution values', async () => {
+  const maliciousSource = 'aiventyx\"><script>window.partnerPwned=true</script>';
+  const query = new URLSearchParams({ utm_source: maliciousSource });
+  const res = await fetch(apiUrl(`/partner-intake?${query.toString()}`));
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.doesNotMatch(html, /value="aiventyx"><script>window\.partnerPwned/);
+  assert.match(html, /value="aiventyx&quot;&gt;&lt;script&gt;window\.partnerPwned=true&lt;\/script&gt;"/);
+});
+
 test('/diagnostic serves the focused Workflow Hardening Diagnostic intake page', async () => {
   const res = await fetch(apiUrl('/diagnostic?utm_source=reddit&utm_campaign=workflow_diagnostic'), { redirect: 'manual' });
   assert.equal(res.status, 200);
@@ -2800,6 +2826,7 @@ test('workflow sprint intake accepts form posts, seeds journey cookies, and retu
   assert.match(html, /Workflow sprint intake received/);
   assert.match(html, /Review Proof Pack/);
   assert.match(html, /Review Sprint Brief/);
+  assert.doesNotMatch(html, /\$\s*\d|Stripe|checkout|payment/i);
 
   const leads = readJsonl(path.join(tmpFeedbackDir, 'workflow-sprint-leads.jsonl'));
   const lead = leads.find((entry) => entry.contact.email === 'formbuyer@example.com');
