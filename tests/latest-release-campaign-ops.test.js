@@ -2,10 +2,12 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const path = require('node:path');
 
 const {
   buildLinkedInPostUrl,
   buildRedditProjectThreadComment,
+  isDirectRun,
   normalizeRedditPostUrl,
   parseArgs: parseFallbackArgs,
   publishLatestReleaseFallbacks,
@@ -36,6 +38,14 @@ test('fallback argument parsing and receipt URL normalization are deterministic'
   );
   assert.match(buildRedditProjectThreadComment(), /Disclosure: I maintain ThumbGate/);
   assert.doesNotMatch(buildRedditProjectThreadComment(), /\$|buy\.stripe\.com/);
+});
+
+test('direct-run detection compares resolved entrypoint paths', () => {
+  const sourcePath = require.resolve('../scripts/social-analytics/publish-latest-release-fallbacks');
+
+  assert.equal(isDirectRun([process.execPath, sourcePath], sourcePath), true);
+  assert.equal(isDirectRun([process.execPath, path.join(__dirname, 'other.js')], sourcePath), false);
+  assert.equal(isDirectRun([process.execPath], sourcePath), false);
 });
 
 test('fallback publisher returns public receipts for LinkedIn and Reddit', async () => {
