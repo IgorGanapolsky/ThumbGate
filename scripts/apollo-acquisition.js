@@ -103,7 +103,7 @@ function knownTargetIdentityMatches(targetName, candidate = {}) {
   const nameParts = normalize(targetName).split(/\s+/).filter(Boolean);
   if (nameParts.length < 2) return false;
   const expectedFirstName = nameParts[0];
-  const expectedSurname = nameParts[nameParts.length - 1];
+  const expectedSurname = nameParts.at(-1);
   return normalize(candidate.firstName) === expectedFirstName
     && obfuscatedSurnameMatches(expectedSurname, candidate.lastNameObfuscated);
 }
@@ -370,7 +370,7 @@ function runCli(argv = process.argv.slice(2), dependencies = {}) {
   return { mode: 'executed', report, files: writeReport(report, options.output) };
 }
 
-if (require.main === module) {
+if (!module.parent) {
   try {
     const result = runCli();
     if (result.help) process.stdout.write(result.help);

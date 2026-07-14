@@ -34,6 +34,15 @@ test('parses quoted acquisition tracker rows without corrupting notes', () => {
   assert.equal(rows[0].notes, 'Agents scale, confidence lags');
 });
 
+test('parses escaped quotes inside quoted tracker fields', () => {
+  const rows = parseCsv([
+    'target_name,notes',
+    'Ryan Miller,"Owns ""AI Transformation"""',
+  ].join('\n'));
+
+  assert.equal(rows[0].notes, 'Owns "AI Transformation"');
+});
+
 test('builds known-target and organization scans while suppressing duplicate outreach', () => {
   const rows = [{
     campaign_id: 'wave1',
@@ -121,6 +130,47 @@ test('dry run returns a reusable plan without calling Apollo', () => {
   const result = runCli(['--input', input, '--config', configPath]);
   assert.equal(result.mode, 'dry_run');
   assert.equal(result.plan.trackerSearches.length, 1);
+});
+
+test('executed CLI writes JSON and Markdown evidence without enrichment or sends', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'apollo-acquisition-execute-'));
+  const input = path.join(tempDir, 'targets.csv');
+  const configPath = path.join(tempDir, 'config.json');
+  const output = path.join(tempDir, 'report.json');
+  fs.writeFileSync(input, 'target_name,organization,status\nJeffery Aronhalt,Gametime,Contacted\n');
+  fs.writeFileSync(configPath, JSON.stringify(config));
+
+  const runner = (_command, args) => {
+    if (args[0] === 'usage') {
+      return { status: 0, stdout: JSON.stringify({ credit_usage_stats: { lead_credit: { consumed: 10 } } }) };
+    }
+    if (args.includes('Jeffery Aronhalt')) {
+      return { status: 0, stdout: JSON.stringify({ people: [] }) };
+    }
+    return {
+      status: 0,
+      stdout: JSON.stringify({
+        people: [{
+          id: 'buyer-1',
+          first_name: 'Ryan',
+          last_name_obfuscated: 'Mi***r',
+          title: 'VP of AI Transformation',
+          has_email: true,
+          organization: { name: 'Gametime' },
+        }],
+      }),
+    };
+  };
+  const result = runCli([
+    '--execute', '--input', input, '--config', configPath, '--output', output,
+  ], { runner });
+
+  assert.equal(result.mode, 'executed');
+  assert.equal(result.report.safety.zeroCreditSearchVerified, true);
+  assert.equal(fs.existsSync(result.files.json), true);
+  assert.equal(fs.existsSync(result.files.markdown), true);
+  assert.match(fs.readFileSync(result.files.markdown, 'utf8'), /VP of AI Transformation/);
+  assert.match(fs.readFileSync(result.files.markdown, 'utf8'), /Messages sent: 0/);
 });
 
 test('argument validation blocks accidental unbounded or malformed runs', () => {
