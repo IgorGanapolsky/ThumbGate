@@ -159,12 +159,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'bin/memory.sh',
     'bin/obsidian-sync.sh',
     'scripts/autonomous-workflow.js',
+    'scripts/apollo-acquisition.js',
     'scripts/decision-trace.js',
     'scripts/sales-pipeline.js',
     // scripts/post-to-x.js + post-to-x-retry.sh removed 2026-06-06
     // (X/Twitter retired from active distribution 2026-04-20).
     'scripts/reddit-dm-outreach.js',
     'scripts/reddit-monitor-cron.sh',
+    'sales/apollo-buyer-search.json',
     'scripts/perplexity-command-center.js',
     'scripts/perplexity-marketing.js',
     'scripts/build-claude-mcpb.js',
