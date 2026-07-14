@@ -87,15 +87,12 @@ test('acquireLock: lock held by active PID (fresh) — creates per-session lock 
   result.cleanupLock();
 });
 
-// ── Orphaned lock (live PID, stale): reap and take over ─────────────
+// ── Old lock with live PID: coexist without terminating owner ──────
 
-test('acquireLock: lock held by live PID but older than threshold — reaps and acquires', () => {
+test('acquireLock: old lock held by live PID — preserves owner and coexists', () => {
   const lockPath = path.join(tmpDir, '.mcp-server.lock');
-  // Set threshold very low so the lock is considered stale
-  process.env.THUMBGATE_LOCK_STALE_MS = '1'; // 1ms — any lock is stale
 
-  // Spawn a real child process so we have a live PID to reap
-  const { execSync } = require('child_process');
+  // Spawn a real child process so we can prove an old live owner survives.
   const child = require('child_process').spawn('sleep', ['60'], { detached: true, stdio: 'ignore' });
   child.unref();
   const childPid = child.pid;
@@ -105,24 +102,17 @@ test('acquireLock: lock held by live PID but older than threshold — reaps and 
 
   try {
     const { acquireLock } = freshRequire();
-    // Should NOT exit — should reap the orphaned process and take over
     const { lockFile, cleanupLock } = acquireLock();
 
-    assert.ok(fs.existsSync(lockPath), 'new lock file should be written');
+    assert.ok(lockFile.includes(`mcp-server-${process.pid}.lock`), 'should use a per-session lock');
+    assert.ok(fs.existsSync(lockPath), 'original lock should remain');
     const data = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
-    assert.strictEqual(data.pid, process.pid, 'lock should now belong to current process');
+    assert.strictEqual(data.pid, childPid, 'original lock should still belong to the live owner');
 
-    // Verify the child was killed
-    let childStillRunning = false;
-    try { process.kill(childPid, 0); childStillRunning = true; } catch { /* dead */ }
-    // Give SIGTERM a moment to propagate
-    if (childStillRunning) {
-      try { process.kill(childPid, 'SIGKILL'); } catch { /* already gone */ }
-    }
+    assert.doesNotThrow(() => process.kill(childPid, 0), 'live owner must not be terminated because its lock is old');
 
     cleanupLock();
   } finally {
-    delete process.env.THUMBGATE_LOCK_STALE_MS;
     try { process.kill(childPid, 'SIGKILL'); } catch { /* cleanup */ }
   }
 });
