@@ -1,0 +1,47 @@
+{
+  "buyerHypothesis": "Enterprise teams expanding autonomous AI-agent use need an accountable owner for pre-action enforcement, decision continuity, and audit-ready proof before agents touch production systems.",
+  "titles": [
+    "Chief AI Officer",
+    "Head of AI",
+    "VP Artificial Intelligence",
+    "AI Transformation",
+    "AI Platform",
+    "AI Governance",
+    "Enterprise Architecture",
+    "Developer Experience",
+    "Developer Productivity",
+    "Intelligent Automation"
+  ],
+  "seniority": [
+    "director",
+    "vp",
+    "c_suite"
+  ],
+  "organizations": [
+    {
+      "name": "Gametime",
+      "domain": "gametime.co",
+      "reason": "A public engineering case study identified operational confidence as a constraint while AI-generated code and background agents scale."
+    },
+    {
+      "name": "Walmart",
+      "domain": "walmart.com",
+      "reason": "Large-scale enterprise AI and automation create a buyer need for action boundaries, owner-level proof, and cross-agent governance."
+    },
+    {
+      "name": "BlackRock",
+      "domain": "blackrock.com",
+      "reason": "Regulated financial workflows make traceable decisions and pre-action controls commercially relevant."
+    },
+    {
+      "name": "Northrop Grumman",
+      "domain": "northropgrumman.com",
+      "reason": "High-assurance and hybrid environments make local-first agent governance and evidence boundaries commercially relevant."
+    },
+    {
+      "name": "Deloitte",
+      "domain": "deloitte.com",
+      "reason": "AI transformation delivery teams can use a vendor-neutral governance layer across client agent stacks."
+    }
+  ]
+}
