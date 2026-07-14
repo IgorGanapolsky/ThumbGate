@@ -164,6 +164,77 @@ test('acquireLock: live PID with ancient startedAt but fresh heartbeatAt — coe
   }
 });
 
+// ── Wedged holder (live PID, STALE heartbeatAt): reaped, lock taken ──
+
+test('acquireLock: live PID with STALE heartbeatAt — reaps holder and takes over the main lock', () => {
+  const lockPath = path.join(tmpDir, '.mcp-server.lock');
+  process.env.THUMBGATE_LOCK_STALE_MS = '60000';
+  process.env.THUMBGATE_REAP_GRACE_MS = '200';
+
+  const child = require('child_process').spawn('sleep', ['60'], { detached: true, stdio: 'ignore' });
+  child.unref();
+  const childPid = child.pid;
+
+  // Session AND heartbeat both long stale: the wedged-process case.
+  fs.writeFileSync(lockPath, JSON.stringify({
+    pid: childPid,
+    startedAt: '2020-01-01T00:00:00.000Z',
+    heartbeatAt: '2020-01-01T00:00:01.000Z',
+  }));
+
+  try {
+    const { acquireLock } = freshRequire();
+    const { cleanupLock } = acquireLock();
+
+    const data = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+    assert.strictEqual(data.pid, process.pid, 'stale-heartbeat holder must be reaped and the main lock taken over');
+
+    cleanupLock();
+  } finally {
+    delete process.env.THUMBGATE_LOCK_STALE_MS;
+    delete process.env.THUMBGATE_REAP_GRACE_MS;
+    try { process.kill(childPid, 'SIGKILL'); } catch { /* already dead */ }
+  }
+});
+
+// ── SIGTERM-immune holder: escalated to SIGKILL before claiming ──────
+
+test('acquireLock: holder that ignores SIGTERM is SIGKILLed before the lock is claimed', async () => {
+  const lockPath = path.join(tmpDir, '.mcp-server.lock');
+  process.env.THUMBGATE_LOCK_STALE_MS = '60000';
+  process.env.THUMBGATE_REAP_GRACE_MS = '200';
+
+  // A holder whose SIGTERM handler never exits — the wedged-server stand-in.
+  const child = require('child_process').spawn(process.execPath, [
+    '-e', 'process.on("SIGTERM", () => {}); console.log("ready"); setInterval(() => {}, 1000);',
+  ], { stdio: ['ignore', 'pipe', 'ignore'] });
+  await new Promise((resolve) => child.stdout.once('data', resolve));
+  const childPid = child.pid;
+
+  fs.writeFileSync(lockPath, JSON.stringify({
+    pid: childPid,
+    startedAt: '2020-01-01T00:00:00.000Z',
+    heartbeatAt: '2020-01-01T00:00:01.000Z',
+  }));
+
+  try {
+    const { acquireLock } = freshRequire();
+    const { cleanupLock } = acquireLock();
+
+    const data = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+    assert.strictEqual(data.pid, process.pid, 'lock must be claimed after SIGKILL escalation');
+
+    const signal = await new Promise((resolve) => child.on('exit', (code, sig) => resolve(sig)));
+    assert.strictEqual(signal, 'SIGKILL', 'SIGTERM-immune holder must be SIGKILLed, not left running');
+
+    cleanupLock();
+  } finally {
+    delete process.env.THUMBGATE_LOCK_STALE_MS;
+    delete process.env.THUMBGATE_REAP_GRACE_MS;
+    try { process.kill(childPid, 'SIGKILL'); } catch { /* already dead */ }
+  }
+});
+
 // ── Heartbeat refresh: lock file heartbeatAt advances while held ─────
 
 test('acquireLock: holder refreshes heartbeatAt and cleanup stops the heartbeat', async () => {

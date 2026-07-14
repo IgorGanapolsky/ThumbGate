@@ -1430,36 +1430,94 @@ function writeNdjsonResponse(id, payload, error = null) {
   process.stdout.write(`${body}\n`);
 }
 
+/** How often a live server refreshes `heartbeatAt` in its lock file. */
+const LOCK_HEARTBEAT_MS = Number(process.env.THUMBGATE_LOCK_HEARTBEAT_MS) || 60 * 1000; // 1 minute
+
 /**
  * Default staleness threshold: if a lock holder has not heartbeated for this
  * long (ms), it is considered orphaned even if its PID is still alive. A
  * healthy server refreshes `heartbeatAt` every LOCK_HEARTBEAT_MS, so only a
  * wedged process — or one from a pre-heartbeat version that never refreshes
- * its lock — can exceed this.
+ * its lock — can exceed this. Clamped to at least 3 beats so a
+ * misconfigured threshold cannot make every healthy holder look orphaned.
  */
-const LOCK_STALE_MS = Number(process.env.THUMBGATE_LOCK_STALE_MS) || 2 * 60 * 60 * 1000; // 2 hours
+const LOCK_STALE_MS = Math.max(
+  Number(process.env.THUMBGATE_LOCK_STALE_MS) || 2 * 60 * 60 * 1000, // 2 hours
+  3 * LOCK_HEARTBEAT_MS
+);
 
-/** How often a live server refreshes `heartbeatAt` in its lock file. */
-const LOCK_HEARTBEAT_MS = Number(process.env.THUMBGATE_LOCK_HEARTBEAT_MS) || 60 * 1000; // 1 minute
+/** Grace period for a reaped holder to exit after SIGTERM before SIGKILL. */
+const REAP_GRACE_MS = Number(process.env.THUMBGATE_REAP_GRACE_MS) || 1500;
+
+// Synchronous sleep without CPU spin. acquireLock() runs before the server
+// starts reading stdin, so blocking here is safe.
+function sleepSync(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/**
+ * Terminate a stale lock holder and report whether it is safe to claim its
+ * lock. SIGTERM goes first so a merely-slow holder can run its cleanup
+ * handler (which unlinks its own lock BEFORE we claim — no clobber race).
+ * But a wedged event loop cannot run a JS signal handler at all — and a
+ * stale heartbeat selects for exactly that class — so after the grace
+ * period escalate to unmaskable SIGKILL. Once SIGKILL is delivered the
+ * holder executes nothing further, so claiming is safe even if kill(pid, 0)
+ * still succeeds (that is a zombie awaiting parent reaping, not a server).
+ * Returns false only when the holder cannot be signalled (EPERM) — the
+ * caller must then coexist rather than clobber a live process's lock.
+ */
+function reapProcess(pid) {
+  try { process.kill(pid, 'SIGTERM'); } catch (err) { return err.code !== 'EPERM'; }
+  const deadline = Date.now() + REAP_GRACE_MS;
+  while (Date.now() < deadline) {
+    try { process.kill(pid, 0); } catch { return true; }
+    sleepSync(50);
+  }
+  try { process.kill(pid, 'SIGKILL'); } catch (err) { return err.code !== 'EPERM'; }
+  return true;
+}
+
+/**
+ * Remove heartbeat tmp files stranded by processes killed between the tmp
+ * write and the rename (SIGKILL/jetsam). Anything older than an hour cannot
+ * belong to an in-flight beat.
+ */
+function sweepStaleLockTmp(feedbackDir) {
+  try {
+    for (const name of fs.readdirSync(feedbackDir)) {
+      if (!name.startsWith('.mcp-server') || !name.endsWith('.tmp')) continue;
+      const tmpPath = path.join(feedbackDir, name);
+      try {
+        if (Date.now() - fs.statSync(tmpPath).mtimeMs > 60 * 60 * 1000) fs.unlinkSync(tmpPath);
+      } catch { /* raced with its owner */ }
+    }
+  } catch { /* best-effort */ }
+}
 
 /**
  * Write a lock file and keep refreshing its `heartbeatAt` so other sessions
- * can tell a live server from a wedged one. Returns an idempotent cleanup
+ * can tell a live server from a wedged one. With `exclusive`, the initial
+ * write uses O_EXCL so two simultaneous starters cannot both become primary
+ * (the loser gets EEXIST and coexists). Returns an idempotent cleanup
  * function that stops the heartbeat and removes the lock file.
  */
-function writeHeartbeatLock(lockFilePath) {
+function writeHeartbeatLock(lockFilePath, { exclusive = false } = {}) {
   const startedAt = new Date().toISOString();
-  const write = () => {
+  const payload = () => JSON.stringify({ pid: process.pid, startedAt, heartbeatAt: new Date().toISOString() });
+  fs.writeFileSync(lockFilePath, payload(), exclusive ? { flag: 'wx' } : undefined);
+  const beat = () => {
+    const tmpPath = `${lockFilePath}.${process.pid}.tmp`;
     try {
-      // Atomic replace (tmp + rename) so concurrent acquireLock() readers
-      // never see a torn write of the periodically rewritten lock file.
-      const tmpPath = `${lockFilePath}.${process.pid}.tmp`;
-      fs.writeFileSync(tmpPath, JSON.stringify({ pid: process.pid, startedAt, heartbeatAt: new Date().toISOString() }));
+      // Atomic replace (tmp + rename in the same directory) so concurrent
+      // acquireLock() readers never see a torn write.
+      fs.writeFileSync(tmpPath, payload());
       fs.renameSync(tmpPath, lockFilePath);
-    } catch { /* best-effort */ }
+    } catch {
+      try { fs.unlinkSync(tmpPath); } catch { /* already gone */ }
+    }
   };
-  write();
-  const timer = setInterval(write, LOCK_HEARTBEAT_MS);
+  const timer = setInterval(beat, LOCK_HEARTBEAT_MS);
   if (typeof timer.unref === 'function') timer.unref();
   return () => {
     clearInterval(timer);
@@ -1468,25 +1526,45 @@ function writeHeartbeatLock(lockFilePath) {
 }
 
 /**
+ * Coexist with a live primary: take a per-session lock instead. Each client
+ * session speaks over its own stdio pipe and needs its own server process;
+ * SQLite WAL mode handles concurrent access safely.
+ */
+function acquireSessionLock(feedbackDir) {
+  const sessionLockFile = path.join(feedbackDir, `.mcp-server-${process.pid}.lock`);
+  const cleanupSessionLock = writeHeartbeatLock(sessionLockFile);
+  process.on('exit', cleanupSessionLock);
+  process.on('SIGTERM', () => { cleanupSessionLock(); process.exit(0); });
+  process.on('SIGINT', () => { cleanupSessionLock(); process.exit(0); });
+  return { lockFile: sessionLockFile, cleanupLock: cleanupSessionLock };
+}
+
+/**
  * Acquire a file-system lock to prevent duplicate MCP server instances.
  * Returns { lockFile, cleanupLock } on success, or calls process.exit(1)
  * if another live server holds the lock.
  *
- * Staleness reaping: the holder is killed (SIGTERM) and the lock reclaimed
- * ONLY when its PID is alive but its heartbeat is older than LOCK_STALE_MS.
- * Session age alone is NOT proof of orphaning — a live server heartbeats
- * every LOCK_HEARTBEAT_MS, so long-running sessions are never reaped.
+ * Staleness reaping: the holder is killed and the lock reclaimed ONLY when
+ * its PID is alive but its heartbeat is older than LOCK_STALE_MS. Session
+ * age alone is NOT proof of orphaning — a live server heartbeats every
+ * LOCK_HEARTBEAT_MS, so long-running sessions are never reaped.
  * WHY: on 2026-07-13 a newly started agent session SIGTERM'd a live MCP
  * server whose lock `startedAt` was simply >2h old, closing another agent's
  * stdio transport mid-session ("Transport closed" on thumbgate.recall).
  * Locks without `heartbeatAt` (written by pre-heartbeat versions) still
  * reap by `startedAt` age, since those servers never refresh their lock.
+ * The lock is claimed only after the holder verifiably cannot run again
+ * (see reapProcess) — never while it could still clobber our claim.
+ * Known residual: a host that slept >LOCK_STALE_MS can have a healthy
+ * holder reaped at wake, before its first post-wake beat fires. Bounded,
+ * rare, and strictly better than the pre-heartbeat behavior.
  */
 function acquireLock() {
   const feedbackDir = getFeedbackPaths().FEEDBACK_DIR;
   const lockFile = path.join(feedbackDir, '.mcp-server.lock');
   try {
     fs.mkdirSync(feedbackDir, { recursive: true });
+    sweepStaleLockTmp(feedbackDir);
     if (fs.existsSync(lockFile)) {
       const lockData = JSON.parse(fs.readFileSync(lockFile, 'utf8'));
       let isRunning = false;
@@ -1495,30 +1573,36 @@ function acquireLock() {
       if (isRunning) {
         // Heartbeat age, not session age: a live server refreshes heartbeatAt
         // every LOCK_HEARTBEAT_MS. Pre-heartbeat locks fall back to startedAt.
-        const lastAliveAt = new Date(lockData.heartbeatAt || lockData.startedAt).getTime();
+        // `|| 0` makes corrupt timestamps read as stale, not fresh-forever.
+        const lastAliveAt = new Date(lockData.heartbeatAt || lockData.startedAt).getTime() || 0;
         const lockAge = Date.now() - lastAliveAt;
         if (lockAge > LOCK_STALE_MS) {
-          // No heartbeat within threshold — wedged or pre-heartbeat orphan; kill it and take over
+          // No heartbeat within threshold — wedged or pre-heartbeat orphan.
           process.stderr.write(`[thumbgate] Lock held by PID ${lockData.pid} has not heartbeated for ${Math.round(lockAge / 60000)}m (threshold: ${Math.round(LOCK_STALE_MS / 60000)}m). Reaping orphaned process.\n`);
-          try { process.kill(lockData.pid, 'SIGTERM'); } catch { /* already gone */ }
+          if (!reapProcess(lockData.pid)) {
+            process.stderr.write(`[thumbgate] Cannot signal PID ${lockData.pid}; coexisting without touching its lock.\n`);
+            return acquireSessionLock(feedbackDir);
+          }
         } else {
-          // Another session's MCP server is running — coexist via per-session lock.
-          // Each Claude session communicates via its own stdio pipe and needs its own server.
-          // SQLite WAL mode handles concurrent access safely.
           process.stderr.write(`[thumbgate] Another MCP server (PID ${lockData.pid}) is running for ${feedbackDir}. Starting concurrent session.\n`);
-          const sessionLockFile = path.join(feedbackDir, `.mcp-server-${process.pid}.lock`);
-          const cleanupSessionLock = writeHeartbeatLock(sessionLockFile);
-          process.on('exit', cleanupSessionLock);
-          process.on('SIGTERM', () => { cleanupSessionLock(); process.exit(0); });
-          process.on('SIGINT', () => { cleanupSessionLock(); process.exit(0); });
-          return { lockFile: sessionLockFile, cleanupLock: cleanupSessionLock };
+          return acquireSessionLock(feedbackDir);
         }
       }
       // Stale lock from a dead or reaped process — remove it
       try { fs.unlinkSync(lockFile); } catch { /* already gone */ }
       process.stderr.write(`[thumbgate] Removed stale lock (PID ${lockData.pid} is no longer running).\n`);
     }
-    const cleanupLock = writeHeartbeatLock(lockFile);
+    let cleanupLock;
+    try {
+      cleanupLock = writeHeartbeatLock(lockFile, { exclusive: true });
+    } catch (err) {
+      if (err && err.code === 'EEXIST') {
+        // Lost the primary-claim race to a simultaneous starter — coexist.
+        process.stderr.write(`[thumbgate] Another MCP server claimed the lock first for ${feedbackDir}. Starting concurrent session.\n`);
+        return acquireSessionLock(feedbackDir);
+      }
+      throw err;
+    }
     process.on('exit', cleanupLock);
     process.on('SIGTERM', () => { cleanupLock(); process.exit(0); });
     process.on('SIGINT', () => { cleanupLock(); process.exit(0); });
