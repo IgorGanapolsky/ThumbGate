@@ -1431,21 +1431,56 @@ function writeNdjsonResponse(id, payload, error = null) {
 }
 
 /**
- * Default staleness threshold: if a lock is older than this (ms), the holder
- * is considered orphaned even if its PID is still alive — it likely belongs
- * to a defunct Claude Code session whose process was never reaped.
+ * Default staleness threshold: if a lock holder has not heartbeated for this
+ * long (ms), it is considered orphaned even if its PID is still alive. A
+ * healthy server refreshes `heartbeatAt` every LOCK_HEARTBEAT_MS, so only a
+ * wedged process — or one from a pre-heartbeat version that never refreshes
+ * its lock — can exceed this.
  */
 const LOCK_STALE_MS = Number(process.env.THUMBGATE_LOCK_STALE_MS) || 2 * 60 * 60 * 1000; // 2 hours
+
+/** How often a live server refreshes `heartbeatAt` in its lock file. */
+const LOCK_HEARTBEAT_MS = Number(process.env.THUMBGATE_LOCK_HEARTBEAT_MS) || 60 * 1000; // 1 minute
+
+/**
+ * Write a lock file and keep refreshing its `heartbeatAt` so other sessions
+ * can tell a live server from a wedged one. Returns an idempotent cleanup
+ * function that stops the heartbeat and removes the lock file.
+ */
+function writeHeartbeatLock(lockFilePath) {
+  const startedAt = new Date().toISOString();
+  const write = () => {
+    try {
+      // Atomic replace (tmp + rename) so concurrent acquireLock() readers
+      // never see a torn write of the periodically rewritten lock file.
+      const tmpPath = `${lockFilePath}.${process.pid}.tmp`;
+      fs.writeFileSync(tmpPath, JSON.stringify({ pid: process.pid, startedAt, heartbeatAt: new Date().toISOString() }));
+      fs.renameSync(tmpPath, lockFilePath);
+    } catch { /* best-effort */ }
+  };
+  write();
+  const timer = setInterval(write, LOCK_HEARTBEAT_MS);
+  if (typeof timer.unref === 'function') timer.unref();
+  return () => {
+    clearInterval(timer);
+    try { fs.unlinkSync(lockFilePath); } catch { /* already removed */ }
+  };
+}
 
 /**
  * Acquire a file-system lock to prevent duplicate MCP server instances.
  * Returns { lockFile, cleanupLock } on success, or calls process.exit(1)
  * if another live server holds the lock.
  *
- * Staleness reaping: if the lock-holding process is alive but the lock is
- * older than LOCK_STALE_MS, the holder is killed (SIGTERM) and the lock is
- * reclaimed. This prevents orphaned `thumbgate serve` processes from permanently
- * blocking new sessions.
+ * Staleness reaping: the holder is killed (SIGTERM) and the lock reclaimed
+ * ONLY when its PID is alive but its heartbeat is older than LOCK_STALE_MS.
+ * Session age alone is NOT proof of orphaning — a live server heartbeats
+ * every LOCK_HEARTBEAT_MS, so long-running sessions are never reaped.
+ * WHY: on 2026-07-13 a newly started agent session SIGTERM'd a live MCP
+ * server whose lock `startedAt` was simply >2h old, closing another agent's
+ * stdio transport mid-session ("Transport closed" on thumbgate.recall).
+ * Locks without `heartbeatAt` (written by pre-heartbeat versions) still
+ * reap by `startedAt` age, since those servers never refresh their lock.
  */
 function acquireLock() {
   const feedbackDir = getFeedbackPaths().FEEDBACK_DIR;
@@ -1458,10 +1493,13 @@ function acquireLock() {
       try { process.kill(lockData.pid, 0); isRunning = true; } catch { /* process is dead */ }
 
       if (isRunning) {
-        const lockAge = Date.now() - new Date(lockData.startedAt).getTime();
+        // Heartbeat age, not session age: a live server refreshes heartbeatAt
+        // every LOCK_HEARTBEAT_MS. Pre-heartbeat locks fall back to startedAt.
+        const lastAliveAt = new Date(lockData.heartbeatAt || lockData.startedAt).getTime();
+        const lockAge = Date.now() - lastAliveAt;
         if (lockAge > LOCK_STALE_MS) {
-          // Orphaned process — kill it and take over
-          process.stderr.write(`[thumbgate] Lock held by PID ${lockData.pid} is ${Math.round(lockAge / 60000)}m old (threshold: ${Math.round(LOCK_STALE_MS / 60000)}m). Reaping orphaned process.\n`);
+          // No heartbeat within threshold — wedged or pre-heartbeat orphan; kill it and take over
+          process.stderr.write(`[thumbgate] Lock held by PID ${lockData.pid} has not heartbeated for ${Math.round(lockAge / 60000)}m (threshold: ${Math.round(LOCK_STALE_MS / 60000)}m). Reaping orphaned process.\n`);
           try { process.kill(lockData.pid, 'SIGTERM'); } catch { /* already gone */ }
         } else {
           // Another session's MCP server is running — coexist via per-session lock.
@@ -1469,8 +1507,7 @@ function acquireLock() {
           // SQLite WAL mode handles concurrent access safely.
           process.stderr.write(`[thumbgate] Another MCP server (PID ${lockData.pid}) is running for ${feedbackDir}. Starting concurrent session.\n`);
           const sessionLockFile = path.join(feedbackDir, `.mcp-server-${process.pid}.lock`);
-          fs.writeFileSync(sessionLockFile, JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }));
-          const cleanupSessionLock = () => { try { fs.unlinkSync(sessionLockFile); } catch { /* already removed */ } };
+          const cleanupSessionLock = writeHeartbeatLock(sessionLockFile);
           process.on('exit', cleanupSessionLock);
           process.on('SIGTERM', () => { cleanupSessionLock(); process.exit(0); });
           process.on('SIGINT', () => { cleanupSessionLock(); process.exit(0); });
@@ -1481,8 +1518,7 @@ function acquireLock() {
       try { fs.unlinkSync(lockFile); } catch { /* already gone */ }
       process.stderr.write(`[thumbgate] Removed stale lock (PID ${lockData.pid} is no longer running).\n`);
     }
-    fs.writeFileSync(lockFile, JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }));
-    const cleanupLock = () => { try { fs.unlinkSync(lockFile); } catch { /* already removed */ } };
+    const cleanupLock = writeHeartbeatLock(lockFile);
     process.on('exit', cleanupLock);
     process.on('SIGTERM', () => { cleanupLock(); process.exit(0); });
     process.on('SIGINT', () => { cleanupLock(); process.exit(0); });

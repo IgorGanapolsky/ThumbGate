@@ -127,6 +127,70 @@ test('acquireLock: lock held by live PID but older than threshold — reaps and 
   }
 });
 
+// ── Live holder with old startedAt but fresh heartbeat: NOT reaped ───
+
+test('acquireLock: live PID with ancient startedAt but fresh heartbeatAt — coexists, does not kill', () => {
+  const lockPath = path.join(tmpDir, '.mcp-server.lock');
+  process.env.THUMBGATE_LOCK_STALE_MS = '60000'; // 1 minute
+
+  const child = require('child_process').spawn('sleep', ['60'], { detached: true, stdio: 'ignore' });
+  child.unref();
+  const childPid = child.pid;
+
+  // Session started long ago, but the server is heartbeating right now.
+  fs.writeFileSync(lockPath, JSON.stringify({
+    pid: childPid,
+    startedAt: '2020-01-01T00:00:00.000Z',
+    heartbeatAt: new Date().toISOString(),
+  }));
+
+  try {
+    const { acquireLock } = freshRequire();
+    const result = acquireLock();
+
+    // Must coexist via per-session lock, not reap the live holder.
+    assert.ok(result.lockFile.includes(`mcp-server-${process.pid}.lock`), 'should create a per-session lock');
+    const original = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+    assert.strictEqual(original.pid, childPid, 'original lock should remain untouched');
+
+    let childAlive = false;
+    try { process.kill(childPid, 0); childAlive = true; } catch { /* dead */ }
+    assert.ok(childAlive, 'heartbeating holder must NOT be SIGTERMed');
+
+    result.cleanupLock();
+  } finally {
+    delete process.env.THUMBGATE_LOCK_STALE_MS;
+    try { process.kill(childPid, 'SIGKILL'); } catch { /* cleanup */ }
+  }
+});
+
+// ── Heartbeat refresh: lock file heartbeatAt advances while held ─────
+
+test('acquireLock: holder refreshes heartbeatAt and cleanup stops the heartbeat', async () => {
+  process.env.THUMBGATE_LOCK_HEARTBEAT_MS = '25';
+  const lockPath = path.join(tmpDir, '.mcp-server.lock');
+
+  try {
+    const { acquireLock } = freshRequire();
+    const { cleanupLock } = acquireLock();
+
+    const first = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+    assert.ok(first.heartbeatAt, 'heartbeatAt should be set on acquire');
+
+    await new Promise((r) => setTimeout(r, 120));
+    const second = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+    assert.ok(new Date(second.heartbeatAt) > new Date(first.heartbeatAt), 'heartbeatAt should advance while held');
+    assert.strictEqual(second.startedAt, first.startedAt, 'startedAt should stay fixed');
+
+    cleanupLock();
+    assert.ok(!fs.existsSync(lockPath), 'lock should be removed by cleanup');
+    await new Promise((r) => setTimeout(r, 80));
+    assert.ok(!fs.existsSync(lockPath), 'heartbeat must not recreate the lock after cleanup');
+  } finally {
+    delete process.env.THUMBGATE_LOCK_HEARTBEAT_MS;
+  }
+});
+
 // ── cleanupLock is idempotent ────────────────────────────────────────
 
 test('cleanupLock: calling twice does not throw (idempotent)', () => {
