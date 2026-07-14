@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.28.1
+
+### Patch Changes
+
+- 71be09d: fix(billing): preserve marketplace attribution (e.g. utm_source=aiventyx) across external Stripe Payment Links via client_reference_id, so paid diagnostics are credited/reported instead of landing as source=unknown.
+- e3fa2bd: Keep the production homepage verifier aligned with the shipped enforcement copy.
+- 36e859c: Add a repository-only Apollo buyer-acquisition workflow that ranks enterprise AI-governance owners, suppresses duplicate outreach, and proves credit-safe search runs without adding sales tooling to the public npm package.
+- 8b1d2b9: Keep secret exfiltration, critical security-scan findings, and all four self-protection gate classes as hard floors in both the CLI and plugin hook even when environment bypasses are active. Ordinary block gates remain advisory by default, while audited scoped approvals and the short-lived break-glass command preserve a repair path for protected configuration.
+- 5d031ab: Fix the Dependabot bypass in the changeset gate keying on `github.actor` (who triggered the run) instead of `github.event.pull_request.user.login` (who authored the PR). Any human or agent that touched a Dependabot PR — a rebase, `gh pr update-branch`, a re-run — became the actor, so the bypass silently stopped applying and the gate demanded a changeset Dependabot will never write. Reproduced on #2766: the re-run reported `actor=IgorGanapolsky`, and `Verify changeset` went SUCCESS → FAILURE without the diff changing. This is the same class of failure the bypass was written for on 2026-05-12 ("6 stale PRs, oldest 16 days, traced to this single gate"), reintroduced by keying on a variable a rebase can change.
+- 0dcdf35: Require automatic feedback signals to be standalone or lead the operator message, preventing quoted, descriptive, negated, and mid-sentence mentions from being captured while preserving explicit and typo-tolerant thumbs feedback.
+- 290e16b: Deduplicate concurrent UserPromptSubmit and Claude-history feedback captures at the storage boundary so one user signal creates one feedback event, lesson, counter update, and SQLite record. Keep the npm runtime slim by excluding the repository-only GitHub social preview asset.
+- df714ac: fix(feedback): stop promoting raw session-metadata JSON blobs as lessons — capture only the human .prompt and reject transport blobs (session_id/transcript_path/JSON) in the sanitizer so recall stays clean.
+- 271fbb0: Accept the public diagnostic intake fields, keep Aiventyx traffic on its billing rail, notify the operator about new leads, and fulfill paid diagnostic orders without provisioning Pro licenses.
+- 485595a: Pin Workflow Hardening Sprint checkout fallback to the verified $1,500 PayPal rail so a missing env cannot charge the $499 diagnostic under a $1,500 label.
+- 357d9c0: fix(docs): correct the enforcement claim on README + landing — only secret exfiltration and guardrail-tampering hard-block by default; rm -rf, force-push, and supply-chain are flagged by default and hard-block under strict mode. Verified against the actual gate-check engine.
+- 95232e2: Add an evidence-backed ThumbGate 1.28.0 release campaign with channel-specific copy, a verified social card, a deduplicated Dev.to article publisher, and GitHub-hosted publishing through the configured social accounts.
+- db64f2f: Lead homepage and pricing with paid Workflow Hardening Diagnostic ($499) and Sprint ($1,500) checkouts; route `/docs` to the setup guide; keep Pro as the solo side lane.
+- f17d5b2: Add an absolute directive to `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md`: never approve a pull request, mutate review or protection state, or use `--admin`/`--force`/owner credentials to make a blocked merge possible. The policy preserves non-mutating diagnosis and separate policy-change PRs while pinning the verified 2026-07-10 incident in which an agent used owner credentials to approve #2768. `tests/never-bypass-branch-protection.test.js` prevents the directive from being quietly deleted.
+- 8819ab2: Add a form-only partner intake route that preserves referral attribution and contains no price or checkout path before scope review.
+- b54e5e9: Run bundled Claude plugin hooks with exec-form command arguments so installation paths containing spaces cannot split the script path or disable enforcement.
+- 419f109: fix(plugin): ship a hooks lifecycle in the plugin manifest so fresh plugin/desktop-extension installs actually run PreToolUse enforcement, recall, and the session primer (previously only skills/commands/mcpServers were wired).
+- 9cc0158: Align the README, landing page, JSON-LD FAQ, package description, and canonical GitHub About metadata with the shipped enforcement and commercial boundaries: default warnings for force-push, destructive-delete, fetch-and-run, and guardrail-file matches; narrow default denies for detected secret leaks and gate kill/bypass commands; strict-mode denies for matching warning checks; individual Pro packaging; and no generally available hosted team sync or org dashboard.
+- e9197b4: Preserve long-running MCP transports when additional ThumbGate sessions start. Live lock owners now coexist through per-session locks regardless of age instead of being terminated after two hours.
+- 9196892: Fix direct-run detection and simplify release-campaign publishing so the article, receipt verifier, and direct fallback commands execute reliably and pass the new-code quality gate.
+- 2fb11ff: Hard-deny outbound commands that attach local secret-bearing files through curl data, form, and upload options or wget post/body-file options, while keeping benign file references under the existing advisory network-egress policy.
+
 ## 1.28.0
 
 ### Minor Changes
