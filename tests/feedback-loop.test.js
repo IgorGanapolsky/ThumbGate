@@ -6,9 +6,11 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const crypto = require('node:crypto');
 
 const {
   captureFeedback,
+  emitAnonymousFeedbackPing,
   analyzeFeedback,
   buildPreventionRules,
   feedbackSummary,
@@ -50,6 +52,107 @@ test('self-harness prompt mutation is disabled unless explicitly opted in', () =
   assert.equal(isSelfHarnessOptimizerEnabled({ THUMBGATE_SELF_HARNESS_OPTIMIZER: '0' }), false);
   assert.equal(isSelfHarnessOptimizerEnabled({ THUMBGATE_SELF_HARNESS_OPTIMIZER: '1' }), true);
   assert.equal(isSelfHarnessOptimizerEnabled({ THUMBGATE_SELF_HARNESS_OPTIMIZER: 'true' }), true);
+});
+
+test('anonymous feedback telemetry strips trailing origin slashes and uses a UUID fallback', async (t) => {
+  const cliTelemetry = require('../scripts/cli-telemetry');
+  const statuslineMeta = require('../scripts/statusline-meta');
+  const savedOrigin = process.env.THUMBGATE_PUBLIC_APP_ORIGIN;
+  process.env.THUMBGATE_PUBLIC_APP_ORIGIN = 'https://telemetry.example.test///';
+  t.after(() => {
+    if (savedOrigin === undefined) delete process.env.THUMBGATE_PUBLIC_APP_ORIGIN;
+    else process.env.THUMBGATE_PUBLIC_APP_ORIGIN = savedOrigin;
+  });
+
+  t.mock.method(cliTelemetry, 'getInstallId', () => null);
+  t.mock.method(crypto, 'randomUUID', () => 'fallback-install-id');
+  t.mock.method(statuslineMeta, 'getStatuslineMeta', () => ({ tier: 'enterprise' }));
+  const requests = [];
+  t.mock.method(globalThis, 'fetch', (url, options) => {
+    requests.push({ url, options });
+    return Promise.reject(new Error('expected fire-and-forget failure'));
+  });
+
+  emitAnonymousFeedbackPing('positive');
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].url, 'https://telemetry.example.test/v1/telemetry/ping');
+  const body = JSON.parse(requests[0].options.body);
+  assert.equal(body.installId, 'fallback-install-id');
+  assert.equal(body.signal, 'up');
+  assert.equal(body.tier, 'enterprise');
+});
+
+test('anonymous feedback telemetry falls back safely when metadata helpers fail', async (t) => {
+  const cliTelemetry = require('../scripts/cli-telemetry');
+  const statuslineMeta = require('../scripts/statusline-meta');
+  t.mock.method(cliTelemetry, 'getInstallId', () => {
+    throw new Error('install id unavailable');
+  });
+  t.mock.method(crypto, 'randomUUID', () => 'recovered-install-id');
+  t.mock.method(statuslineMeta, 'getStatuslineMeta', () => {
+    throw new Error('statusline metadata unavailable');
+  });
+  const requests = [];
+  t.mock.method(globalThis, 'fetch', (url, options) => {
+    requests.push({ url, options });
+    return Promise.resolve({ ok: true });
+  });
+
+  emitAnonymousFeedbackPing('negative');
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(requests.length, 1);
+  const body = JSON.parse(requests[0].options.body);
+  assert.equal(body.installId, 'recovered-install-id');
+  assert.equal(body.signal, 'down');
+  assert.equal(body.tier, 'free');
+});
+
+test('anonymous feedback telemetry never leaks helper failures to capture callers', (t) => {
+  const cliTelemetry = require('../scripts/cli-telemetry');
+  t.mock.method(cliTelemetry, 'getInstallId', () => {
+    throw new Error('install id unavailable');
+  });
+  t.mock.method(crypto, 'randomUUID', () => {
+    throw new Error('random UUID unavailable');
+  });
+
+  assert.doesNotThrow(() => emitAnonymousFeedbackPing('negative'));
+});
+
+test('captureFeedback tolerates a failed optional Obsidian export', async (t) => {
+  const tmpDir = makeTmpDir();
+  const obsidianExport = require('../scripts/obsidian-export');
+  const savedFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  const savedVaultPath = process.env.THUMBGATE_OBSIDIAN_VAULT_PATH;
+  const savedTelemetryOptOut = process.env.THUMBGATE_DISABLE_TELEMETRY;
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_OBSIDIAN_VAULT_PATH = path.join(tmpDir, 'vault');
+  process.env.THUMBGATE_DISABLE_TELEMETRY = '1';
+  t.after(() => {
+    if (savedFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+    else process.env.THUMBGATE_FEEDBACK_DIR = savedFeedbackDir;
+    if (savedVaultPath === undefined) delete process.env.THUMBGATE_OBSIDIAN_VAULT_PATH;
+    else process.env.THUMBGATE_OBSIDIAN_VAULT_PATH = savedVaultPath;
+    if (savedTelemetryOptOut === undefined) delete process.env.THUMBGATE_DISABLE_TELEMETRY;
+    else process.env.THUMBGATE_DISABLE_TELEMETRY = savedTelemetryOptOut;
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+  t.mock.method(obsidianExport, 'exportAll', () => {
+    throw new Error('optional export unavailable');
+  });
+
+  const result = captureFeedback({
+    signal: 'up',
+    context: 'Tests passed with exact evidence.',
+    whatWorked: 'The verification output matched the release artifact.',
+    tags: ['testing'],
+  });
+  assert.equal(result.accepted, true);
+  await waitForBackgroundSideEffects();
+  assert.equal(getPendingBackgroundSideEffectCount(), 0);
 });
 
 // -- inferDomain --
