@@ -293,6 +293,16 @@ function normalizeMemoryGuardForSentinel(memoryGuard, isHighRisk) {
   return memoryGuard;
 }
 
+function normalizeLearnedPolicyForSentinel(learnedPolicy, actionable) {
+  if (!learnedPolicy?.enabled || actionable) return learnedPolicy;
+  return {
+    ...learnedPolicy,
+    enabled: false,
+    advisoryOnly: true,
+    reason: 'non_execution_action',
+  };
+}
+
 function buildTaskScopeViolation(taskScope, affectedFiles) {
   if (!Array.isArray(affectedFiles) || affectedFiles.length === 0) return null;
   if (!taskScope || !Array.isArray(taskScope.allowedPaths) || taskScope.allowedPaths.length === 0) {
@@ -1486,7 +1496,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     affectedFiles,
   }), options.feedbackOptions || {});
   const memoryGuard = normalizeMemoryGuardForSentinel(rawMemoryGuard, highRiskAction);
-  const learnedPolicy = getInterventionRecommendation({
+  const rawLearnedPolicy = getInterventionRecommendation({
     toolName: normalizedToolName,
     command: normalizedToolInput.command || '',
     affectedFiles,
@@ -1500,6 +1510,18 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
       || process.env.THUMBGATE_FEEDBACK_DIR
       || (repoRoot ? path.join(repoRoot, '.thumbgate') : null),
   });
+  // Learned deny/warn models exist to constrain execution, not observation.
+  // Keeping their prediction in the report preserves diagnostics while making
+  // read-only inspection immune to stale or unrelated training state.
+  const learnedPolicy = normalizeLearnedPolicyForSentinel(
+    rawLearnedPolicy,
+    normalizedToolName === 'Bash'
+      || EDIT_LIKE_TOOLS.has(normalizedToolName)
+      || highRiskAction
+      || actionProfile.backgroundAgent
+      || actionProfile.economicAction
+      || actionProfile.customerSystemAction
+  );
   const blastRadius = buildBlastRadius({
     affectedFiles,
     integrity,
@@ -1643,6 +1665,7 @@ module.exports = {
   evaluateWorkflowSentinel,
   isHighRiskAction,
   loadGovernanceState,
+  normalizeLearnedPolicyForSentinel,
   scoreRisk,
 };
 
