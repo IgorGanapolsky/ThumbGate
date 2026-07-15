@@ -194,7 +194,8 @@ describe('Sequence Tracking (ML-03)', () => {
       },
     });
 
-    assert.equal(result.accepted, false, 'rubric-blocked capture should not be promoted');
+    assert.equal(result.accepted, true, 'rubric-blocked feedback should still be durably captured');
+    assert.equal(result.promoted, false, 'rubric-blocked capture should not be promoted');
 
     const linesAfter = fs.readFileSync(seqPath, 'utf-8').trim().split('\n').filter(Boolean);
     assert.equal(linesAfter.length, linesBefore + 1, 'blocked capture should still add a sequence entry');

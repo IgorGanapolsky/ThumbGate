@@ -30,12 +30,16 @@ async function withIsolatedRuntime(fn) {
   const previousHome = process.env.HOME;
   const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   const previousNoRateLimit = process.env.THUMBGATE_NO_RATE_LIMIT;
+  const previousMcpProfile = process.env.THUMBGATE_MCP_PROFILE;
   const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-claim-home-'));
   const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-claim-feedback-'));
 
   process.env.HOME = homeDir;
   process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
   process.env.THUMBGATE_NO_RATE_LIMIT = '1';
+  // CLAIM-05 verifies expanded claim-authoring tools, which intentionally sit
+  // outside the factory essential profile.
+  process.env.THUMBGATE_MCP_PROFILE = 'default';
   resetModules();
 
   try {
@@ -51,6 +55,8 @@ async function withIsolatedRuntime(fn) {
     else process.env.THUMBGATE_FEEDBACK_DIR = previousFeedbackDir;
     if (previousNoRateLimit === undefined) delete process.env.THUMBGATE_NO_RATE_LIMIT;
     else process.env.THUMBGATE_NO_RATE_LIMIT = previousNoRateLimit;
+    if (previousMcpProfile === undefined) delete process.env.THUMBGATE_MCP_PROFILE;
+    else process.env.THUMBGATE_MCP_PROFILE = previousMcpProfile;
     fs.rmSync(homeDir, { recursive: true, force: true });
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }

@@ -369,8 +369,9 @@ async function runProof(options = {}) {
           tags: ['verification'],
         }),
       });
-      check(res.status === 422, `clarification capture expected 422, got ${res.status}`);
+      check(res.status === 200, `clarification capture expected stored-event 200, got ${res.status}`);
       const body = await res.json();
+      check(body.accepted === true && body.promoted === false, 'vague capture should be stored without promotion');
       check(body.status === 'clarification_required', 'vague capture should require clarification');
       check(body.needsClarification === true, 'vague capture should set needsClarification');
       addResult('api.capture_feedback.clarification', true, { status: body.status, prompt: body.prompt });
@@ -396,10 +397,11 @@ async function runProof(options = {}) {
           tags: ['verification'],
         }),
       });
-      check(res.status === 422, `rubric-gated capture expected 422, got ${res.status}`);
+      check(res.status === 200, `rubric-gated capture expected stored-event 200, got ${res.status}`);
       const body = await res.json();
-      check(body.accepted === false, 'rubric-gated capture should not be accepted');
-      addResult('api.capture_feedback.rubric_gate', true, { accepted: body.accepted });
+      check(body.accepted === true, 'rubric-gated feedback should be durably captured');
+      check(body.promoted === false, 'rubric-gated feedback should not be promoted');
+      addResult('api.capture_feedback.rubric_gate', true, { accepted: body.accepted, promoted: body.promoted });
     }
 
     {
@@ -697,8 +699,9 @@ async function runProof(options = {}) {
         },
       });
       const payload = parseLeadingJson(call.content[0].text);
-      check(payload.accepted === false, 'mcp capture_feedback should apply rubric gating');
-      addResult('mcp.tools.call.capture_feedback.rubric_gate', true, { accepted: payload.accepted });
+      check(payload.accepted === true, 'mcp capture_feedback should store the feedback event');
+      check(payload.promoted === false, 'mcp capture_feedback should apply rubric promotion gating');
+      addResult('mcp.tools.call.capture_feedback.rubric_gate', true, { accepted: payload.accepted, promoted: payload.promoted });
     }
 
     {

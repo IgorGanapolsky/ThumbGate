@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.28.3
+
+### Patch Changes
+
+- Capture explicit thumbs feedback in the same turn with a durable event ID, distinguish capture from reusable-memory promotion, and deduplicate repeated hook deliveries including emoji-only signals without storing raw session identifiers.
+
+  Expose only executable MCP tools for the active profile, label unavailable private-core capabilities internally, use the documented `essential` factory profile, and fail clearly instead of returning an empty retrieval result when a required capability is missing.
+
+  Ship `lesson-retrieval.js`, `lesson-reranker.js`, `cross-encoder-reranker.js`, and `lesson-embedding-index.js` in the public npm package so `retrieve_lessons` works after installation. This intentionally raises the audited public-bundle ceiling from 333 to 337 files.
+
+  Reduce guardrail noise by limiting network warnings to executable egress, applying task scope only to mutating actions, and requiring contextual recurring-memory matches before hard denial. Self-harness prompt mutation is now explicit opt-in instead of silently editing and committing `AGENTS.md`/`GEMINI.md` after negative feedback.
+
+  Keep learned deny/warn policy advisory for read-only inspection, while retaining the prediction in structured diagnostics and preserving enforcement for execution-oriented actions.
+
+  Redact Gemini/Vertex authentication failures to scalar summaries and clear ambient provider credentials in tests so an accidental live authentication call cannot expose structured credential metadata.
+
 ## 1.28.2
 
 ### Patch Changes
@@ -10,6 +26,7 @@
 
 ### Patch Changes
 
+- Prevent Gemini/Vertex failures and tests from leaking structured authentication request metadata: provider errors now log only a redacted scalar summary, and the Gemini routing regression test clears ambient Google/Vertex credentials before execution.
 - Fix Codex feedback capture so current installs wire `hooks.user_prompt_submit` in `~/.codex/config.toml`, use recent conversation context when the user sends a bare thumbs-up/down, and hide MCP tools whose required runtime modules are not installed. Ship the feedback history distiller in the public package so same-turn feedback can become a context-backed lesson instead of a generic counter increment.
 - 71be09d: fix(billing): preserve marketplace attribution (e.g. utm_source=aiventyx) across external Stripe Payment Links via client_reference_id, so paid diagnostics are credited/reported instead of landing as source=unknown.
 - e3fa2bd: Keep the production homepage verifier aligned with the shipped enforcement copy.

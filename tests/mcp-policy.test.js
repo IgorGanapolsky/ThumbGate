@@ -5,6 +5,7 @@ const {
   getAllowedTools,
   isToolAllowed,
   getActiveMcpProfile,
+  getConfiguredDefaultProfile,
   assertToolAllowed,
 } = require('../scripts/mcp-policy');
 
@@ -13,6 +14,23 @@ test('loads mcp policy and profiles', () => {
   assert.ok(policy.profiles.default);
   assert.ok(policy.profiles.dispatch);
   assert.ok(policy.profiles.locked);
+});
+
+test('factory MCP profile is essential while default remains an explicit expanded profile', () => {
+  const previousProfile = process.env.THUMBGATE_MCP_PROFILE;
+  const previousSubagent = process.env.THUMBGATE_SUBAGENT_PROFILE;
+  delete process.env.THUMBGATE_MCP_PROFILE;
+  delete process.env.THUMBGATE_SUBAGENT_PROFILE;
+  try {
+    assert.equal(getConfiguredDefaultProfile(), 'essential');
+    assert.equal(getActiveMcpProfile(), 'essential');
+    assert.ok(getAllowedTools('default').length > getAllowedTools('essential').length);
+  } finally {
+    if (previousProfile === undefined) delete process.env.THUMBGATE_MCP_PROFILE;
+    else process.env.THUMBGATE_MCP_PROFILE = previousProfile;
+    if (previousSubagent === undefined) delete process.env.THUMBGATE_SUBAGENT_PROFILE;
+    else process.env.THUMBGATE_SUBAGENT_PROFILE = previousSubagent;
+  }
 });
 
 test('profile allowlists differentiate permissions', () => {

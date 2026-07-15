@@ -90,7 +90,8 @@ test('automation proof: rubric pass has weighted score', () => {
 
 test('automation proof: rubric block has rejection reason', () => {
   const check = getCheck('feedback.capture.rubric_block');
-  assert.equal(check.details.accepted, false);
+  assert.equal(check.details.accepted, true);
+  assert.equal(check.details.promoted, false);
   assert.ok(check.details.reason);
 });
 
@@ -116,14 +117,17 @@ test('automation proof: DPO rubric metadata present', () => {
   assert.ok(check.details);
 });
 
-test('automation proof: API rubric gate returns 422', () => {
+test('automation proof: API rubric gate stores without promotion', () => {
   const check = getCheck('api.rubric_gate');
-  assert.equal(check.details.status, 422);
+  assert.equal(check.details.status, 200);
+  assert.equal(check.details.accepted, true);
+  assert.equal(check.details.promoted, false);
 });
 
-test('automation proof: MCP rubric gate rejects', () => {
+test('automation proof: MCP rubric gate stores without promotion', () => {
   const check = getCheck('mcp.rubric_gate');
-  assert.equal(check.details.accepted, false);
+  assert.equal(check.details.accepted, true);
+  assert.equal(check.details.promoted, false);
 });
 
 test('automation proof: secret guard blocks file reads', () => {

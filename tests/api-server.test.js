@@ -2035,9 +2035,11 @@ test('feedback capture blocks positive memory promotion when rubric guardrail fa
       tags: ['verification'],
     }),
   });
-  assert.equal(res.status, 422);
+  assert.equal(res.status, 200);
   const body = await res.json();
-  assert.equal(body.accepted, false);
+  assert.equal(body.accepted, true);
+  assert.equal(body.promoted, false);
+  assert.ok(body.feedbackEvent?.id);
   assert.match(body.reason, /Rubric gate prevented promotion/);
 });
 
@@ -2073,9 +2075,10 @@ test('feedback capture returns clarification_required for vague positive signal'
       tags: ['verification'],
     }),
   });
-  assert.equal(res.status, 422);
+  assert.equal(res.status, 200);
   const body = await res.json();
-  assert.equal(body.accepted, false);
+  assert.equal(body.accepted, true);
+  assert.equal(body.promoted, false);
   assert.equal(body.signalLogged, true);
   assert.equal(body.status, 'clarification_required');
   assert.equal(body.needsClarification, true);

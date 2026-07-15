@@ -47,6 +47,51 @@ function cleanupGateState() {
   fs.rmSync(CUSTOM_CLAIM_GATES_PATH, { force: true });
 }
 
+test('workflow sentinel does not treat read-only inspection as a task-scope violation', (t) => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-readonly-'));
+  t.after(() => fs.rmSync(feedbackDir, { recursive: true, force: true }));
+  writeJsonl(path.join(feedbackDir, 'diagnostic-log.jsonl'), Array.from({ length: 8 }, (_, index) => ({
+    id: `diag_deny_${index}`,
+    timestamp: new Date(Date.now() - ((8 - index) * 1000)).toISOString(),
+    source: 'guardrail',
+    step: 'execution',
+    context: 'blocked destructive credential release action',
+    diagnosis: {
+      rootCauseCategory: 'guardrail_triggered',
+      criticalFailureStep: 'execution',
+      violations: [{ constraintId: 'workflow:protected_release' }],
+    },
+  })));
+
+  const report = evaluateWorkflowSentinel('Read', {
+    file_path: 'docs/outside-current-task.md',
+  }, {
+    feedbackDir,
+    repoPath: process.cwd(),
+    memoryGuard: { mode: 'allow', reason: '' },
+    governanceState: {
+      taskScope: {
+        summary: 'source-only edit',
+        allowedPaths: ['src/**'],
+        protectedPaths: [],
+      },
+      protectedApprovals: [],
+      branchGovernance: {
+        baseBranch: 'main',
+        prRequired: true,
+      },
+    },
+  });
+
+  assert.equal(report.taskScopeViolation, null);
+  assert.equal(report.drivers.some((driver) => driver.key === 'outside_declared_scope'), false);
+  assert.equal(report.learnedPolicy.prediction.label, 'deny');
+  assert.equal(report.learnedPolicy.advisoryOnly, true);
+  assert.equal(report.learnedPolicy.enabled, false);
+  assert.equal(report.drivers.some((driver) => driver.key === 'learned_policy_deny'), false);
+  assert.equal(report.decision, 'allow');
+});
+
 test('workflow sentinel warns on multi-surface release-sensitive blast radius', () => {
   // Use an isolated empty feedbackDir so local learned policy data does not
   // inflate the risk score beyond the warn threshold in this deterministic test.
@@ -343,8 +388,8 @@ test('workflow sentinel treats explicit changed files as authoritative for PR ha
   assert.deepEqual(report.blastRadius.affectedFiles, ['README.md']);
   assert.equal(report.decisionControl.executionMode, 'auto_execute');
   assert.equal(report.decisionControl.decisionOwner, 'agent');
-  assert.equal(report.decisionControl.deliberation.required, true);
-  assert.equal(report.decisionControl.deliberation.mode, 'reason_then_decide');
+  assert.equal(report.decisionControl.deliberation.required, false);
+  assert.equal(report.decisionControl.deliberation.mode, 'brief_rationale');
   assert.equal(report.decisionControl.deliberation.consistencyCheck.required, false);
 });
 

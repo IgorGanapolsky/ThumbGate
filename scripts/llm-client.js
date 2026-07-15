@@ -2,6 +2,7 @@
 'use strict';
 
 const { runStep } = require('./durability/step');
+const { redactSecrets } = require('./secret-redaction');
 
 const MODELS = {
   FAST: 'claude-haiku-4-5-20251001',
@@ -141,6 +142,19 @@ function parseClaudeJson(text) {
   }
 }
 
+function buildSafeProviderError(error) {
+  const rawMessage = error && error.message ? String(error.message) : 'provider request failed';
+  const summary = {
+    name: String(error && error.name || 'Error').slice(0, 80),
+    message: redactSecrets(rawMessage).split('\n')[0].slice(0, 500),
+  };
+  const status = Number(error && (error.status || (error.response && error.response.status)));
+  if (Number.isFinite(status)) summary.status = status;
+  const code = error && error.code;
+  if (typeof code === 'string' || typeof code === 'number') summary.code = code;
+  return summary;
+}
+
 function getZaiApiKey(env = process.env) {
   return env.ZAI_API_KEY || env.THUMBGATE_ZAI_API_KEY || '';
 }
@@ -198,6 +212,8 @@ async function callGeminiInternal(options = {}) {
   const { detectInferenceBackend } = require('./local-model-profile');
   const providerMode = detectInferenceBackend(env).providerMode;
 
+  if (providerMode !== 'vertex' && !env.GEMINI_API_KEY) return null;
+
   try {
     const { GoogleGenAI } = require('@google/genai');
     if (!_geminiClient) {
@@ -246,7 +262,7 @@ async function callGeminiInternal(options = {}) {
       model: options.model,
     };
   } catch (err) {
-    console.error('Gemini/Vertex AI execution error:', err);
+    console.error('Gemini/Vertex AI execution error:', JSON.stringify(buildSafeProviderError(err)));
     return null;
   }
 }
@@ -366,5 +382,6 @@ module.exports = {
   parseClaudeJson,
   normalizeCacheOptions,
   buildClaudeRequest,
+  buildSafeProviderError,
   MODELS,
 };

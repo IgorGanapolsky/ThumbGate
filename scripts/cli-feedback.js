@@ -116,6 +116,10 @@ function formatCliOutput(result) {
       const capturedIds = memoryId ? `${feedbackId}, ${memoryId}` : feedbackId;
       process.stderr.write(`✅ Feedback captured (${capturedIds})\n`);
     }
+    if (feedbackResult.promoted === false || !memoryId) {
+      const clarification = feedbackResult.prompt || feedbackResult.message || feedbackResult.reason;
+      lines.push(`${D}  Reusable memory: not created${clarification ? ` — ${clarification}` : ''}${RST}`);
+    }
   } else {
     lines.push(`${R}Feedback not accepted: ${feedbackResult?.reason || 'unknown'}${RST}`);
   }

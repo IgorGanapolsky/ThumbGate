@@ -115,7 +115,11 @@ const {
 const {
   retrieveRelevantLessons,
 } = loadOptionalModule(path.join(__dirname, '../../scripts/lesson-retrieval'), () => ({
-  retrieveRelevantLessons: () => [],
+  retrieveRelevantLessons: () => {
+    const error = new Error('retrieve_lessons is unavailable because the packaged retrieval modules are missing.');
+    error.code = 'THUMBGATE_CAPABILITY_UNAVAILABLE';
+    throw error;
+  },
 }));
 const {
   searchThumbgate,
@@ -186,8 +190,13 @@ const PRIVATE_MCP_MODULES = Object.freeze({
   lessonInference: path.resolve(__dirname, '../../scripts/lesson-inference.js'),
   lessonSearch: path.resolve(__dirname, '../../scripts/lesson-search.js'),
 });
-
-const PRIVATE_MCP_TOOL_REQUIREMENTS = Object.freeze({
+const PUBLIC_MCP_MODULES = Object.freeze({
+  lessonRetrieval: path.resolve(__dirname, '../../scripts/lesson-retrieval.js'),
+  lessonReranker: path.resolve(__dirname, '../../scripts/lesson-reranker.js'),
+  crossEncoderReranker: path.resolve(__dirname, '../../scripts/cross-encoder-reranker.js'),
+  lessonEmbeddingIndex: path.resolve(__dirname, '../../scripts/lesson-embedding-index.js'),
+});
+const PRIVATE_TOOL_MODULE_KEYS = Object.freeze({
   search_lessons: ['lessonSearch'],
   reflect_on_feedback: ['reflectorAgent'],
   list_intents: ['intentRouter'],
@@ -204,6 +213,41 @@ const PRIVATE_MCP_TOOL_REQUIREMENTS = Object.freeze({
   managed_agent_status: ['managedLessonAgent'],
   context_stuff_lessons: ['lessonInference'],
 });
+const PUBLIC_TOOL_MODULE_KEYS = Object.freeze({
+  retrieve_lessons: [
+    'lessonRetrieval',
+    'lessonReranker',
+    'crossEncoderReranker',
+    'lessonEmbeddingIndex',
+  ],
+});
+
+function getToolCapability(toolName, options = {}) {
+  const privateKeys = PRIVATE_TOOL_MODULE_KEYS[toolName] || [];
+  const publicKeys = PUBLIC_TOOL_MODULE_KEYS[toolName] || [];
+  const privateModuleAvailable = options.existsSync
+    ? (key) => options.existsSync(PRIVATE_MCP_MODULES[key])
+    : (key) => Boolean(loadPrivateMcpModule(key));
+  const publicModuleAvailable = options.existsSync
+    ? (key) => options.existsSync(PUBLIC_MCP_MODULES[key])
+    : (key) => fs.existsSync(PUBLIC_MCP_MODULES[key]);
+  const missingPrivateModules = privateKeys.filter((key) => !privateModuleAvailable(key));
+  const missingPublicModules = publicKeys.filter((key) => !publicModuleAvailable(key));
+  if (missingPrivateModules.length > 0) {
+    return { available: false, availability: 'private_core', missingModules: missingPrivateModules };
+  }
+  if (missingPublicModules.length > 0) {
+    return { available: false, availability: 'package_incomplete', missingModules: missingPublicModules };
+  }
+  return { available: true, availability: privateKeys.length > 0 ? 'private_core' : 'public', missingModules: [] };
+}
+
+function getExposedTools(profileName = getActiveMcpProfile(), options = {}) {
+  const allowed = new Set(getAllowedTools(profileName));
+  return TOOLS.filter((tool) => allowed.has(tool.name) && getToolCapability(tool.name, options).available);
+}
+
+const PRIVATE_MCP_TOOL_REQUIREMENTS = PRIVATE_TOOL_MODULE_KEYS;
 
 function loadPrivateMcpModule(key) {
   const modulePath = PRIVATE_MCP_MODULES[key];
@@ -223,17 +267,15 @@ function loadPrivateMcpModule(key) {
 }
 
 function isToolAvailable(toolName) {
-  const requirements = PRIVATE_MCP_TOOL_REQUIREMENTS[toolName] || [];
   try {
-    return requirements.every((key) => Boolean(loadPrivateMcpModule(key)));
+    return getToolCapability(toolName).available;
   } catch {
     return false;
   }
 }
 
 function listAvailableTools(profileName = getActiveMcpProfile()) {
-  const allowedTools = new Set(getAllowedTools(profileName));
-  return TOOLS.filter((tool) => allowedTools.has(tool.name) && isToolAvailable(tool.name));
+  return getExposedTools(profileName);
 }
 
 function unavailablePrivateMcpFeature(toolName) {
@@ -263,7 +305,7 @@ const {
   finalizeSession: finalizeFeedbackSession,
 } = require('../../scripts/feedback-session');
 
-const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.28.2' };
+const SERVER_INFO = { name: 'thumbgate-mcp', version: '1.28.3' };
 const COMMERCE_CATEGORIES = [
   'product_recommendation',
   'brand_compliance',
@@ -705,7 +747,21 @@ function buildEstimateUncertaintyResponse(args = {}) {
 }
 
 async function callTool(name, args = {}) {
-  assertToolAllowed(name, getActiveMcpProfile());
+  const activeProfile = getActiveMcpProfile();
+  assertToolAllowed(name, activeProfile);
+  const capability = getToolCapability(name);
+  if (!capability.available) {
+    if (capability.availability === 'private_core') {
+      return unavailablePrivateMcpFeature(name);
+    }
+    const error = new Error(
+      `Tool '${name}' is unavailable (${capability.availability}): missing ${capability.missingModules.join(', ')}.`,
+    );
+    error.code = 'THUMBGATE_CAPABILITY_UNAVAILABLE';
+    error.errorCategory = 'capability';
+    error.isRetryable = false;
+    throw error;
+  }
 
   // Validate tool input contract against schema
   const { TOOLS } = require('../../scripts/tool-registry');
@@ -1389,7 +1445,7 @@ async function handleRequest(message) {
     };
   }
   if (message.method === 'ping') return {};
-  if (message.method === 'tools/list') return { tools: listAvailableTools() };
+  if (message.method === 'tools/list') return { tools: getExposedTools() };
   if (message.method === 'tools/call') return callTool(message.params.name, message.params.arguments);
   throw new Error(`Unsupported method: ${message.method}`);
 }
@@ -1581,6 +1637,8 @@ if (require.main === module) startStdioServer();
 
 module.exports = {
   TOOLS,
+  getExposedTools,
+  getToolCapability,
   SAFE_DATA_DIR,
   handleRequest,
   callTool,
@@ -1591,6 +1649,9 @@ module.exports = {
   buildSuggestFixResponse,
   __test__: {
     PRIVATE_MCP_MODULES,
+    PRIVATE_TOOL_MODULE_KEYS,
+    PUBLIC_MCP_MODULES,
+    PUBLIC_TOOL_MODULE_KEYS,
     PRIVATE_MCP_TOOL_REQUIREMENTS,
     loadPrivateMcpModule,
     isToolAvailable,

@@ -12,6 +12,7 @@ process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 process.env.THUMBGATE_PROOF_DIR = tmpProofDir;
 process.env.THUMBGATE_NO_RATE_LIMIT = '1'; // bypass free-tier rate limits during tests
 process.env.THUMBGATE_DISABLE_MCP_FIREWALL = '1';
+process.env.THUMBGATE_MCP_PROFILE = 'default';
 
 const RUNNER_PATH = require.resolve('../scripts/async-job-runner');
 const HARNESS_PATH = require.resolve('../scripts/natural-language-harness');
@@ -20,7 +21,7 @@ const RERANKER_PATH = require.resolve('../scripts/cross-encoder-reranker');
 const SEMANTIC_LAYER_PATH = require.resolve('../scripts/semantic-layer');
 const LESSON_INFERENCE_PATH = require.resolve('../scripts/lesson-inference');
 
-const { handleRequest, TOOLS, SAFE_DATA_DIR, __test__ } = require('../adapters/mcp/server-stdio');
+const { handleRequest, TOOLS, SAFE_DATA_DIR, getExposedTools, __test__ } = require('../adapters/mcp/server-stdio');
 
 function initGitRepo() {
   const repoPath = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-mcp-repo-'));
@@ -96,6 +97,7 @@ test('tools/list returns only tools allowed by the active profile and available 
   const result = await handleRequest({ jsonrpc: '2.0', id: 1, method: 'tools/list' });
   assert.equal(Array.isArray(result.tools), true);
   assert.deepEqual(result.tools, __test__.listAvailableTools('default'));
+  assert.equal(result.tools.length, getExposedTools('default').length);
   assert.ok(result.tools.length < TOOLS.length);
   assert.ok(result.tools.some((tool) => tool.name === 'run_autoresearch'));
   assert.ok(result.tools.some((tool) => tool.name === 'plan_multimodal_retrieval'));
@@ -568,7 +570,9 @@ test('capture_feedback applies rubric anti-hacking gate', async () => {
     },
   });
   const payload = JSON.parse(result.content[0].text);
-  assert.equal(payload.accepted, false);
+  assert.equal(payload.accepted, true);
+  assert.equal(payload.promoted, false);
+  assert.equal(payload.promotionAccepted, false);
   assert.match(payload.reason, /Rubric gate prevented promotion/);
 });
 
@@ -589,7 +593,8 @@ test('capture_feedback returns clarification_required for vague positive feedbac
   
   const text = result.content[0].text;
   assert.equal(result.isError, undefined);
-  assert.match(text, /"accepted":\s*false/);
+  assert.match(text, /"accepted":\s*true/);
+  assert.match(text, /"promoted":\s*false/);
   assert.match(text, /"status":\s*"clarification_required"/);
   assert.match(text, /"needsClarification":\s*true/);
   assert.match(text, /What specifically worked that should be repeated/);

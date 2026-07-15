@@ -931,6 +931,34 @@ describe('bin/cli.js', () => {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
 
+  test('hook-auto-capture acknowledges a bare thumbs signal without inventing a reusable memory', () => {
+    const feedbackDir = makeTmpDir();
+    const result = runCliSync(['hook-auto-capture'], {
+      env: {
+        ...process.env,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        CLAUDE_USER_PROMPT: 'thumbs up',
+        THUMBGATE_NO_NUDGE: '1',
+      },
+    });
+
+    assert.equal(result.status, 0, `hook-auto-capture failed:\n${result.stderr}`);
+    assert.match(result.stdout, /Thumbs up recorded/);
+    assert.match(result.stdout, /Feedback ID: fb_/);
+    assert.match(result.stdout, /Reusable memory: not created/);
+    assert.match(result.stdout, /What specifically worked/);
+
+    const feedbackRows = fs.readFileSync(path.join(feedbackDir, 'feedback-log.jsonl'), 'utf8')
+      .trim()
+      .split(/\r?\n/)
+      .map((line) => JSON.parse(line));
+    assert.equal(feedbackRows.length, 1);
+    assert.equal(feedbackRows[0].signal, 'positive');
+    assert.equal(feedbackRows[0].actionType, 'no-action');
+    assert.equal(fs.existsSync(path.join(feedbackDir, 'memory-log.jsonl')), false);
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  });
+
   test('statusline-render syncs missed Claude feedback even when the cache is still fresh', () => {
     const projectDir = makeTmpDir();
     const feedbackDir = path.join(projectDir, '.thumbgate');

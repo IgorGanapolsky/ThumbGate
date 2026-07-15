@@ -282,15 +282,25 @@ function isProtectedApprovalRelevant(toolName, toolInput = {}) {
 function normalizeMemoryGuardForSentinel(memoryGuard, isHighRisk) {
   if (!memoryGuard || memoryGuard.mode === 'allow') return memoryGuard;
   const reason = String(memoryGuard.reason || '');
-  const broadToolOnlySignal = /^Tool "[^"]+" has \d+ attributed negative\(s\), \d+ total negative\(s\)$/i.test(reason);
-  if (!isHighRisk && broadToolOnlySignal) {
+  const broadToolOnlySignal = /^Tool "[^"]+" (?:has \d+ attributed negative\(s\), \d+ total negative\(s\)|has recurring negative patterns \(count: \d+\))$/i.test(reason);
+  if (broadToolOnlySignal) {
     return {
       ...memoryGuard,
-      mode: 'warn',
-      reason: `${reason}. Treating this as advisory because the current action is not in the high-risk command set.`,
+      mode: 'allow',
+      reason: `${reason}. Ignored for this action because no contextual pattern matched the current input.`,
     };
   }
   return memoryGuard;
+}
+
+function normalizeLearnedPolicyForSentinel(learnedPolicy, actionable) {
+  if (!learnedPolicy?.enabled || actionable) return learnedPolicy;
+  return {
+    ...learnedPolicy,
+    enabled: false,
+    advisoryOnly: true,
+    reason: 'non_execution_action',
+  };
 }
 
 function buildTaskScopeViolation(taskScope, affectedFiles) {
@@ -1465,7 +1475,12 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
       options,
     }
   );
-  const taskScopeViolation = buildTaskScopeViolation(governanceState.taskScope, affectedFiles);
+  // Scope is an execution boundary, not a read boundary. Treating Read/Glob/Grep
+  // paths as writes generated a warning on almost every inspection and trained
+  // callers to ignore the sentinel.
+  const taskScopeViolation = highRiskAction
+    ? buildTaskScopeViolation(governanceState.taskScope, affectedFiles)
+    : null;
   const protectedSurface = buildProtectedSurface(governanceState, affectedFiles);
   const protectedSurfaceForRisk = isProtectedApprovalRelevant(normalizedToolName, normalizedToolInput)
     ? protectedSurface
@@ -1481,7 +1496,7 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
     affectedFiles,
   }), options.feedbackOptions || {});
   const memoryGuard = normalizeMemoryGuardForSentinel(rawMemoryGuard, highRiskAction);
-  const learnedPolicy = getInterventionRecommendation({
+  const rawLearnedPolicy = getInterventionRecommendation({
     toolName: normalizedToolName,
     command: normalizedToolInput.command || '',
     affectedFiles,
@@ -1495,6 +1510,18 @@ function evaluateWorkflowSentinel(toolName, toolInput = {}, options = {}) {
       || process.env.THUMBGATE_FEEDBACK_DIR
       || (repoRoot ? path.join(repoRoot, '.thumbgate') : null),
   });
+  // Learned deny/warn models exist to constrain execution, not observation.
+  // Keeping their prediction in the report preserves diagnostics while making
+  // read-only inspection immune to stale or unrelated training state.
+  const learnedPolicy = normalizeLearnedPolicyForSentinel(
+    rawLearnedPolicy,
+    normalizedToolName === 'Bash'
+      || EDIT_LIKE_TOOLS.has(normalizedToolName)
+      || highRiskAction
+      || actionProfile.backgroundAgent
+      || actionProfile.economicAction
+      || actionProfile.customerSystemAction
+  );
   const blastRadius = buildBlastRadius({
     affectedFiles,
     integrity,
@@ -1638,6 +1665,7 @@ module.exports = {
   evaluateWorkflowSentinel,
   isHighRiskAction,
   loadGovernanceState,
+  normalizeLearnedPolicyForSentinel,
   scoreRisk,
 };
 

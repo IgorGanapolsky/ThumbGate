@@ -30,6 +30,11 @@ function loadSubagentProfiles() {
   return parsed;
 }
 
+function getConfiguredDefaultProfile() {
+  const { getSetting } = require('./settings-hierarchy');
+  return String(getSetting('mcp.defaultProfile') || 'essential');
+}
+
 function getActiveMcpProfile(toolName) {
   const explicitProfile = process.env.THUMBGATE_MCP_PROFILE || null;
   const runtimeSubagentProfile = process.env.THUMBGATE_SUBAGENT_PROFILE || null;
@@ -42,7 +47,7 @@ function getActiveMcpProfile(toolName) {
       const routing = routeProfile({ toolName });
       return routing.profile;
     }
-    return explicitProfile || 'default';
+    return explicitProfile || getConfiguredDefaultProfile();
   }
 
   const config = loadSubagentProfiles();
@@ -86,6 +91,7 @@ module.exports = {
   loadMcpPolicy,
   loadSubagentProfiles,
   getActiveMcpProfile,
+  getConfiguredDefaultProfile,
   getAllowedTools,
   isToolAllowed,
   assertToolAllowed,

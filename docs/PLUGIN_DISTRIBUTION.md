@@ -169,7 +169,7 @@ Promotion and release operations are tracked in [CURSOR_PLUGIN_OPERATIONS.md](CU
 1. Set `THUMBGATE_API_KEY` in hosted deployments.
 2. Keep `THUMBGATE_ALLOW_EXTERNAL_PATHS` unset in production.
 3. Keep monthly spend bounded with budget guard scripts (`npm run budget:status`).
-4. Enforce MCP least-privilege with `THUMBGATE_MCP_PROFILE` (`default`, `essential`, `commerce`, `readonly`, `dispatch`, `locked`).
+4. Enforce MCP least-privilege with `THUMBGATE_MCP_PROFILE` (`default`, `essential`, `commerce`, `readonly`, `dispatch`, `locked`). `essential` is the factory profile. `default` is the explicitly selected expanded profile retained for compatibility; it is not the factory fallback.
 
 ## Sales-ready evidence checklist
 

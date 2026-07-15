@@ -55,6 +55,7 @@ test('detectFeedbackSignal rejects quoted, descriptive, negated, and mid-sentenc
   const cases = [
     'This is not perfect',
     'I just gave you a thumbs up; did it work?',
+    'Did ThumbGate capture my 👎?',
     'the text says "thumbs up"',
     'I will fix this bug',
     'fix this bug before closing the task',
