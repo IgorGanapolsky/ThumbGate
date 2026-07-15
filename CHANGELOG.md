@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.28.2
+## 1.28.3
 
 ### Patch Changes
 
@@ -11,6 +11,16 @@
   Ship `lesson-retrieval.js`, `lesson-reranker.js`, `cross-encoder-reranker.js`, and `lesson-embedding-index.js` in the public npm package so `retrieve_lessons` works after installation. This intentionally raises the audited public-bundle ceiling from 333 to 337 files.
 
   Reduce guardrail noise by limiting network warnings to executable egress, applying task scope only to mutating actions, and requiring contextual recurring-memory matches before hard denial. Self-harness prompt mutation is now explicit opt-in instead of silently editing and committing `AGENTS.md`/`GEMINI.md` after negative feedback.
+
+  Keep learned deny/warn policy advisory for read-only inspection, while retaining the prediction in structured diagnostics and preserving enforcement for execution-oriented actions.
+
+  Redact Gemini/Vertex authentication failures to scalar summaries and clear ambient provider credentials in tests so an accidental live authentication call cannot expose structured credential metadata.
+
+## 1.28.2
+
+### Patch Changes
+
+- 7331522: Wire the current Codex `user_prompt_submit` hook through `config.toml`, preserve recent conversation context for bare thumbs-up/down signals, and only advertise MCP tools that the active profile and installed runtime can execute.
 
 ## 1.28.1
 
