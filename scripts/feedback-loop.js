@@ -2518,6 +2518,7 @@ function buildCorrectiveActionsReminder(correctiveActions = []) {
 
 module.exports = {
   captureFeedback: captureFeedbackIdempotent,
+  emitAnonymousFeedbackPing,
   buildFeedbackSourceIdentity,
   compactMemories,
   buildCorrectiveActionsReminder,
