@@ -171,7 +171,9 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // (never/always directive -> force-gate offer) and scripts/rule-clustering.js
   // (landing concurrently). Keep in lockstep with public-bundle-ratchet.
   const files = npmPackFiles();
-  const CEILING = 333;
+  // 333 -> 337 (2026-07-15): the public retrieve_lessons surface now ships
+  // lesson retrieval, reranking, cross-encoding, and embedding-index modules.
+  const CEILING = 337;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

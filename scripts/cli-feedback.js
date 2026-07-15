@@ -58,6 +58,7 @@ function processInlineFeedback({ signal, context, chatHistory, whatWentWrong, wh
       context: context || (isDown ? 'Thumbs down from CLI' : 'Thumbs up from CLI'),
       whatWentWrong: whatWentWrong || undefined,
       whatWorked: whatWorked || undefined,
+      chatHistory,
       sourceEvent,
     });
   } catch (err) {
@@ -114,6 +115,10 @@ function formatCliOutput(result) {
       // not hidden behind Claude Code's "ctrl+o to expand" MCP call collapse.
       const capturedIds = memoryId ? `${feedbackId}, ${memoryId}` : feedbackId;
       process.stderr.write(`✅ Feedback captured (${capturedIds})\n`);
+    }
+    if (feedbackResult.promoted === false || !memoryId) {
+      const clarification = feedbackResult.prompt || feedbackResult.message || feedbackResult.reason;
+      lines.push(`${D}  Reusable memory: not created${clarification ? ` — ${clarification}` : ''}${RST}`);
     }
   } else {
     lines.push(`${R}Feedback not accepted: ${feedbackResult?.reason || 'unknown'}${RST}`);

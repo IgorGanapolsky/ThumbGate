@@ -47,6 +47,31 @@ function cleanupGateState() {
   fs.rmSync(CUSTOM_CLAIM_GATES_PATH, { force: true });
 }
 
+test('workflow sentinel does not treat read-only inspection as a task-scope violation', () => {
+  const report = evaluateWorkflowSentinel('Read', {
+    file_path: 'docs/outside-current-task.md',
+  }, {
+    repoPath: process.cwd(),
+    memoryGuard: { mode: 'allow', reason: '' },
+    governanceState: {
+      taskScope: {
+        summary: 'source-only edit',
+        allowedPaths: ['src/**'],
+        protectedPaths: [],
+      },
+      protectedApprovals: [],
+      branchGovernance: {
+        baseBranch: 'main',
+        prRequired: true,
+      },
+    },
+  });
+
+  assert.equal(report.taskScopeViolation, null);
+  assert.equal(report.drivers.some((driver) => driver.key === 'outside_declared_scope'), false);
+  assert.equal(report.decision, 'allow');
+});
+
 test('workflow sentinel warns on multi-surface release-sensitive blast radius', () => {
   // Use an isolated empty feedbackDir so local learned policy data does not
   // inflate the risk score beyond the warn threshold in this deterministic test.
@@ -343,8 +368,8 @@ test('workflow sentinel treats explicit changed files as authoritative for PR ha
   assert.deepEqual(report.blastRadius.affectedFiles, ['README.md']);
   assert.equal(report.decisionControl.executionMode, 'auto_execute');
   assert.equal(report.decisionControl.decisionOwner, 'agent');
-  assert.equal(report.decisionControl.deliberation.required, true);
-  assert.equal(report.decisionControl.deliberation.mode, 'reason_then_decide');
+  assert.equal(report.decisionControl.deliberation.required, false);
+  assert.equal(report.decisionControl.deliberation.mode, 'brief_rationale');
   assert.equal(report.decisionControl.deliberation.consistencyCheck.required, false);
 });
 

@@ -129,9 +129,10 @@ async function runAutomationProof(options = {}) {
           budgetCompliant: true,
         },
       });
-      check(result.accepted === false, 'expected rubric-gated positive feedback to be rejected');
+      check(result.accepted === true, 'expected rubric-gated positive feedback to be captured');
+      check(result.promoted === false, 'expected rubric-gated positive feedback not to be promoted');
       check(/Rubric gate prevented promotion/i.test(String(result.reason)), 'expected rubric gate reason');
-      addResult('feedback.capture.rubric_block', true, { accepted: result.accepted, reason: result.reason });
+      addResult('feedback.capture.rubric_block', true, { accepted: result.accepted, promoted: result.promoted, reason: result.reason });
     }
 
     // 3) Negative with rubric failures -> accepted mistake memory with rubric tags
@@ -215,7 +216,7 @@ async function runAutomationProof(options = {}) {
       addResult('dpo_export.rubric_metadata', true, first.metadata.rubric);
     }
 
-    // 8) API rubric gate returns 422
+    // 8) API rubric gate stores the event but withholds promotion
     {
       currentCheck = 'api.rubric_gate';
       const res = await fetchWithRetry(`${baseUrl}/v1/feedback/capture`, {
@@ -236,13 +237,14 @@ async function runAutomationProof(options = {}) {
           guardrails: { testsPassed: false, pathSafety: true, budgetCompliant: true },
         }),
       });
-      check(res.status === 422, `expected 422 from API rubric gate, got ${res.status}`);
+      check(res.status === 200, `expected stored-event 200 from API rubric gate, got ${res.status}`);
       const body = await res.json();
-      check(body.accepted === false, 'API rubric-gated capture must be rejected');
-      addResult('api.rubric_gate', true, { status: res.status });
+      check(body.accepted === true, 'API rubric-gated feedback must be captured');
+      check(body.promoted === false, 'API rubric-gated feedback must not be promoted');
+      addResult('api.rubric_gate', true, { status: res.status, accepted: body.accepted, promoted: body.promoted });
     }
 
-    // 9) MCP rubric gate returns accepted=false
+    // 9) MCP rubric gate stores the event but withholds promotion
     {
       currentCheck = 'mcp.rubric_gate';
       const call = await handleRequest({
@@ -264,8 +266,9 @@ async function runAutomationProof(options = {}) {
         },
       });
       const payload = JSON.parse(call.content[0].text);
-      check(payload.accepted === false, 'MCP rubric-gated capture must be rejected');
-      addResult('mcp.rubric_gate', true, { accepted: payload.accepted });
+      check(payload.accepted === true, 'MCP rubric-gated feedback must be captured');
+      check(payload.promoted === false, 'MCP rubric-gated feedback must not be promoted');
+      addResult('mcp.rubric_gate', true, { accepted: payload.accepted, promoted: payload.promoted });
     }
 
     // 10) PreToolUse blocks reads of secret-bearing files

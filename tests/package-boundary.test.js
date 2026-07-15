@@ -341,9 +341,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 330 -> 332 (2026-07-09) to ship scripts/imperative-detector.js
   // (never/always directive -> force-gate offer) in lockstep with the
   // public-core-boundary ceiling.
+  // Bumped 333 -> 337 (2026-07-15) to ship the four public lesson-retrieval
+  // modules required by the already-advertised retrieve_lessons MCP tool.
   assert.ok(
-    manifest.fileCount <= 333,
-    `npm package should stay <= 333 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 337,
+    `npm package should stay <= 337 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -478,9 +480,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 4.85 MB -> 4.88 MB (2026-07-13) after the final fulfillment
   // concurrency, entitlement-replay, and partner-rail guards. Measured unpacked
   // size is 4,852,148 bytes; no new dependency or asset.
+  // Bumped 4.88 MB -> 4.94 MB (2026-07-15) to ship the four missing public
+  // retrieval modules (43,108 source bytes). Measured artifact: 4,918,230
+  // unpacked bytes; the remaining margin stays deliberately narrow.
   assert.ok(
-    manifest.unpackedSize <= 4_880_000,
-    `npm package should stay <= 4.88 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_940_000,
+    `npm package should stay <= 4.94 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

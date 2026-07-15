@@ -8,6 +8,7 @@ const GOVERNED_RELEASE_VERSION_MISMATCH = '9999.0.0';
 
 const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-mcp-gates-test-'));
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
+process.env.THUMBGATE_MCP_PROFILE = 'default';
 
 const { handleRequest, TOOLS } = require('../adapters/mcp/server-stdio');
 const gatesEngine = require('../scripts/gates-engine');

@@ -28,6 +28,16 @@ test('sync-version covers package-lock.json', serial, () => {
   assert.ok(hasPackageLock, 'package-lock.json should be a sync target');
 });
 
+test('sync-version does not rewrite historical verification receipts', serial, () => {
+  const { syncVersion } = require('../scripts/sync-version');
+  const result = syncVersion({ checkOnly: true });
+  assert.equal(result.targets.includes('docs/VERIFICATION_EVIDENCE.md'), false);
+
+  const evidence = fs.readFileSync(path.join(ROOT, 'docs', 'VERIFICATION_EVIDENCE.md'), 'utf8');
+  assert.match(evidence, /thumbgate@1\.28\.1/);
+  assert.doesNotMatch(evidence, /Published package was verified from npm after release: `thumbgate@1\.28\.2`/);
+});
+
 test('sync-version covers the Claude adapter launcher manifest', serial, () => {
   const { syncVersion } = require('../scripts/sync-version');
   const result = syncVersion({ checkOnly: true });

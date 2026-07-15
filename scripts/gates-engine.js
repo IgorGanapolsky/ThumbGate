@@ -2003,7 +2003,12 @@ function evaluateMemoryGuard(toolName, toolInput = {}) {
   } else {
     guard = hybrid.evaluatePretool(toolName, serializedInput);
   }
-  if (!guard || guard.mode === 'allow') {
+  if (!guard || guard.mode !== 'block') {
+    return null;
+  }
+  const guardReason = String(guard.reason || '');
+  const contextualMatch = /^(?:Matched guard pattern|Recurring negative pattern)\b/i.test(guardReason);
+  if (!contextualMatch) {
     return null;
   }
 

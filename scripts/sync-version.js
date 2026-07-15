@@ -316,7 +316,8 @@ function syncVersion(opts) {
     'adapters/opencode/opencode.json',
     'docs/guides/opencode-integration.md',
     'docs/mcp-hub-submission.md',
-    'docs/VERIFICATION_EVIDENCE.md',
+    // VERIFICATION_EVIDENCE.md is an append-only historical record. Rewriting
+    // old package receipts would pair a new version with an old integrity hash.
     'plugins/claude-codex-bridge/README.md',
     'plugins/claude-codex-bridge/INSTALL.md',
     'plugins/codex-profile/README.md',

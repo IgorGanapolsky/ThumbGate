@@ -105,7 +105,11 @@ const path = require('node:path');
 // under the ceiling, so the count stays at 332 — no baseline bump required.
 // 332 -> 333: public/partner-intake.html adds the form-only partner handoff
 // used by attributed marketplace listings before a scoped offer is accepted.
-const BASELINE_FILE_COUNT = 333;
+// 333 -> 337: ship lesson-retrieval.js, lesson-reranker.js,
+// cross-encoder-reranker.js, and lesson-embedding-index.js. retrieve_lessons
+// was publicly advertised but returned [] in the packed npm runtime because
+// those four implementation modules were absent.
+const BASELINE_FILE_COUNT = 337;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

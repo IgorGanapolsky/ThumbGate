@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.28.2
+
+### Patch Changes
+
+- Capture explicit thumbs feedback in the same turn with a durable event ID, distinguish capture from reusable-memory promotion, and deduplicate repeated hook deliveries including emoji-only signals without storing raw session identifiers.
+
+  Expose only executable MCP tools for the active profile, label unavailable private-core capabilities internally, use the documented `essential` factory profile, and fail clearly instead of returning an empty retrieval result when a required capability is missing.
+
+  Ship `lesson-retrieval.js`, `lesson-reranker.js`, `cross-encoder-reranker.js`, and `lesson-embedding-index.js` in the public npm package so `retrieve_lessons` works after installation. This intentionally raises the audited public-bundle ceiling from 333 to 337 files.
+
+  Reduce guardrail noise by limiting network warnings to executable egress, applying task scope only to mutating actions, and requiring contextual recurring-memory matches before hard denial.
+
 ## 1.28.1
 
 ### Patch Changes

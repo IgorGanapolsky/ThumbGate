@@ -98,9 +98,10 @@ test('adapter proof: auth required returns 401', () => {
   assert.equal(check.details.status, 401);
 });
 
-test('adapter proof: rubric gate returns accepted=false', () => {
+test('adapter proof: rubric gate captures the event without promotion', () => {
   const check = getCheck('api.capture_feedback.rubric_gate');
-  assert.equal(check.details.accepted, false);
+  assert.equal(check.details.accepted, true);
+  assert.equal(check.details.promoted, false);
 });
 
 test('adapter proof: vague API feedback requires clarification', () => {

@@ -57,7 +57,7 @@ const {
 }));
 
 const AUDIT_TRAIL_TAG = 'audit-trail';
-const FEEDBACK_EVENT_DEDUPE_WINDOW_MS = 30 * 1000;
+const FEEDBACK_EVENT_DEDUPE_WINDOW_MS = 5 * 60 * 1000;
 const FEEDBACK_EVENT_CLAIM_STALE_MS = 60 * 1000;
 const FEEDBACK_EVENT_CLAIM_WAIT_MS = 15 * 1000;
 const FEEDBACK_EVENT_CLAIM_POLL_MS = 25;
@@ -666,8 +666,11 @@ function parseFeedbackSourceTimestamp(value) {
  */
 function buildFeedbackSourceIdentity(input = {}) {
   const signal = normalizeSignal(input.signal);
-  const normalizedText = normalizeFeedbackText(input.promptText || input.context);
-  if (!signal || !normalizedText) return null;
+  if (!signal) return null;
+  // Emoji-only prompts normalize to no alphanumeric text. Preserve a stable,
+  // non-sensitive canonical value so duplicate 👍/👎 hook deliveries still
+  // share one source identity and cannot create duplicate feedback rows.
+  const normalizedText = normalizeFeedbackText(input.promptText || input.context) || `thumbs-${signal}`;
 
   const sessionHash = hashFeedbackSourcePart(input.sessionId);
   const promptIdHash = hashFeedbackSourcePart(input.promptId);
@@ -696,10 +699,10 @@ function buildFeedbackSourceIdentity(input = {}) {
 function normalizeFeedbackSourceIdentity(identity, params = {}) {
   if (!identity || typeof identity !== 'object' || typeof identity.key !== 'string') return null;
   const signal = normalizeSignal(params.signal || identity.signal);
+  if (!signal) return null;
   const normalizedText = normalizeFeedbackText(
     identity.normalizedText || params.context || params.whatWentWrong || params.whatWorked,
-  );
-  if (!signal || !normalizedText) return null;
+  ) || `thumbs-${signal}`;
 
   return {
     key: `fev_${hashFeedbackSourcePart(identity.key)}`,
@@ -781,6 +784,9 @@ function duplicateCaptureResult(receipt, paths, options = {}) {
   const memoryRecord = findRecordById(paths.MEMORY_LOG_PATH, receipt?.memoryId);
   return {
     accepted: Boolean(receipt?.accepted),
+    captured: Boolean(receipt?.signalLogged),
+    promoted: Boolean(receipt?.promoted),
+    promotionAccepted: Boolean(receipt?.promoted),
     signalLogged: Boolean(receipt?.signalLogged),
     duplicate: true,
     pending: Boolean(options.pending),
@@ -820,7 +826,8 @@ function receiptFromFeedbackEntry(entry, paths) {
     status: 'complete',
     feedbackId: entry.id,
     memoryId: memory?.id,
-    accepted: entry.actionType !== 'no-action'
+    accepted: !Array.isArray(entry.validationIssues) || entry.validationIssues.length === 0,
+    promoted: entry.actionType !== 'no-action'
       && (!Array.isArray(entry.validationIssues) || entry.validationIssues.length === 0),
     signalLogged: true,
     completedAtMs: Date.parse(entry.timestamp || '') || Date.now(),
@@ -888,6 +895,7 @@ function finalizeFeedbackEventClaim(claim, result) {
     startedAtMs: Date.now(),
     completedAtMs: Date.now(),
     accepted: Boolean(result?.accepted),
+    promoted: Boolean(result?.promoted || result?.memoryRecord),
     signalLogged: Boolean(result?.signalLogged || result?.feedbackEvent),
     feedbackId: result?.feedbackEvent?.id || null,
     memoryId: result?.memoryRecord?.id || null,
@@ -1481,12 +1489,15 @@ function captureFeedback(params) {
       trainAndPersistInterventionPolicy(FEEDBACK_DIR);
     } catch { /* non-critical */ }
     updateStatuslineWithLesson({
-      accepted: false,
+      accepted: true,
       signal,
       feedbackId: feedbackEvent.id,
     });
     return {
-      accepted: false,
+      accepted: true,
+      captured: true,
+      promoted: false,
+      promotionAccepted: false,
       signalLogged: true,
       status: clarification ? 'clarification_required' : 'rejected',
       reason: action.reason,
@@ -1692,6 +1703,9 @@ function captureFeedback(params) {
   // Build result immediately — all remaining side-effects are deferred
   const result = {
     accepted: true,
+    captured: true,
+    promoted: true,
+    promotionAccepted: true,
     status: 'promoted',
     message: 'Feedback promoted to reusable memory.',
     feedbackEvent,
@@ -2416,10 +2430,10 @@ function runTests() {
       budgetCompliant: true,
     }),
   });
-  assert(!blocked.accepted, 'captureFeedback blocks unsafe positive promotion via rubric gate');
+  assert(blocked.accepted && blocked.promoted === false, 'captureFeedback stores but does not promote unsafe positive feedback');
 
   const bad = captureFeedback({ signal: 'down' });
-  assert(!bad.accepted, 'captureFeedback rejects vague negative feedback');
+  assert(bad.accepted && bad.promoted === false, 'captureFeedback stores vague negative feedback without promotion');
   assert(bad.needsClarification === true, 'captureFeedback requests clarification for vague negative feedback');
 
   const summary = feedbackSummary(5);

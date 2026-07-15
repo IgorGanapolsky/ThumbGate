@@ -219,7 +219,7 @@ test('captureFeedback: blocks secret-bearing feedback before any raw memory writ
   assert.doesNotMatch(JSON.stringify(diagnostics[0]), new RegExp(secret));
 });
 
-test('captureFeedback: rejects vague negative (no context/whatWentWrong/whatToChange)', (t) => {
+test('captureFeedback: records vague negative but does not promote it', (t) => {
   const tmpDir = makeTmpDir();
   process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
@@ -228,13 +228,15 @@ test('captureFeedback: rejects vague negative (no context/whatWentWrong/whatToCh
   });
 
   const result = captureFeedback({ signal: 'down' });
-  assert.strictEqual(result.accepted, false);
+  assert.strictEqual(result.accepted, true);
+  assert.strictEqual(result.captured, true);
+  assert.strictEqual(result.promoted, false);
   assert.strictEqual(result.needsClarification, true);
   assert.match(result.prompt, /What failed and what should change next time/i);
   assert.equal(result.feedbackEvent.diagnosis, undefined);
 });
 
-test('captureFeedback: rejects generic positive context and requests clarification', (t) => {
+test('captureFeedback: records generic positive context and requests clarification', (t) => {
   const tmpDir = makeTmpDir();
   process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
   t.after(() => {
@@ -247,7 +249,9 @@ test('captureFeedback: rejects generic positive context and requests clarificati
     context: 'thumbs up',
     tags: ['verification'],
   });
-  assert.strictEqual(result.accepted, false);
+  assert.strictEqual(result.accepted, true);
+  assert.strictEqual(result.captured, true);
+  assert.strictEqual(result.promoted, false);
   assert.strictEqual(result.status, 'clarification_required');
   assert.strictEqual(result.needsClarification, true);
   assert.match(result.reason, /too vague/i);
@@ -723,12 +727,13 @@ test('captureFeedback: waitForBackgroundSideEffects drains deferred vector write
 
 // -- Rejection Ledger --
 
-test('rejected feedback is written to rejection-ledger.jsonl with revival condition', () => {
+test('non-promoted feedback is accepted as captured and written to rejection ledger', () => {
   const tmpDir = makeTmpDir();
   process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
   const result = captureFeedback({ signal: 'down' });
-  assert.equal(result.accepted, false);
+  assert.equal(result.accepted, true);
+  assert.equal(result.promoted, false);
 
   const ledgerPath = path.join(tmpDir, 'rejection-ledger.jsonl');
   assert.ok(fs.existsSync(ledgerPath), 'rejection-ledger.jsonl should exist');
@@ -743,12 +748,13 @@ test('rejected feedback is written to rejection-ledger.jsonl with revival condit
   delete process.env.THUMBGATE_FEEDBACK_DIR;
 });
 
-test('rejected positive feedback is also recorded in rejection ledger', () => {
+test('non-promoted positive feedback is also recorded in rejection ledger', () => {
   const tmpDir = makeTmpDir();
   process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
 
   const result = captureFeedback({ signal: 'up' });
-  assert.equal(result.accepted, false);
+  assert.equal(result.accepted, true);
+  assert.equal(result.promoted, false);
 
   const ledgerPath = path.join(tmpDir, 'rejection-ledger.jsonl');
   const entries = fs.readFileSync(ledgerPath, 'utf-8').trim().split('\n').map(JSON.parse);

@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { execFileSync } = require('node:child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 const boundaryPath = require.resolve('../scripts/private-core-boundary');
@@ -12,17 +13,20 @@ const boundary = require('../scripts/private-core-boundary');
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
 const PRIVATE_CORE_MODULES = [
-  'scripts/cross-encoder-reranker.js',
   'scripts/feedback-history-distiller.js',
   'scripts/history-distiller.js',
   'scripts/hosted-job-launcher.js',
-  'scripts/lesson-reranker.js',
-  'scripts/lesson-retrieval.js',
   'scripts/managed-lesson-agent.js',
   'scripts/org-dashboard.js',
   'scripts/partner-orchestration.js',
   'scripts/predictive-insights.js',
   'scripts/reflector-agent.js',
+];
+const REQUIRED_PUBLIC_RETRIEVAL_MODULES = [
+  'scripts/cross-encoder-reranker.js',
+  'scripts/lesson-embedding-index.js',
+  'scripts/lesson-reranker.js',
+  'scripts/lesson-retrieval.js',
 ];
 
 function createMissingModuleError(request) {
@@ -112,6 +116,25 @@ test('public npm package excludes private-core implementation modules', () => {
 test('public npm package ships the private-core boundary helper', () => {
   const whitelist = new Set(pkg.files);
   assert.equal(whitelist.has('scripts/private-core-boundary.js'), true);
+});
+
+test('public npm package ships every module needed by retrieve_lessons', () => {
+  const whitelist = new Set(pkg.files);
+  for (const modulePath of REQUIRED_PUBLIC_RETRIEVAL_MODULES) {
+    assert.equal(whitelist.has(modulePath), true, `${modulePath} must ship with retrieve_lessons`);
+  }
+});
+
+test('npm pack artifact contains every public retrieval module', () => {
+  const output = execFileSync('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
+  const manifest = JSON.parse(output);
+  const packed = new Set(manifest[0].files.map((entry) => entry.path));
+  for (const modulePath of REQUIRED_PUBLIC_RETRIEVAL_MODULES) {
+    assert.equal(packed.has(modulePath), true, `${modulePath} missing from npm pack artifact`);
+  }
 });
 
 test('private-core boundary helper falls back only for the requested missing module', async () => {
