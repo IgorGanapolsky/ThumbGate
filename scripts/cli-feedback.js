@@ -118,7 +118,9 @@ function formatCliOutput(result) {
     }
     if (feedbackResult.promoted === false || !memoryId) {
       const clarification = feedbackResult.prompt || feedbackResult.message || feedbackResult.reason;
-      lines.push(`${D}  Reusable memory: not created${clarification ? ` — ${clarification}` : ''}${RST}`);
+      let reusableMemoryLine = `${D}  Reusable memory: not created`;
+      if (clarification) reusableMemoryLine += ` — ${clarification}`;
+      lines.push(`${reusableMemoryLine}${RST}`);
     }
   } else {
     lines.push(`${R}Feedback not accepted: ${feedbackResult?.reason || 'unknown'}${RST}`);

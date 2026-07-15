@@ -3,7 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execFileSync } = require('child_process');
+const { execFileSync } = require('node:child_process');
 
 const {
   DEFAULT_BASE_BRANCH,
@@ -90,7 +90,9 @@ function safeExecFileLines(binary, args, cwd) {
 }
 
 function normalizeGlob(glob) {
-  return normalizePosix(glob).replace(/\/+$/, '');
+  let normalized = normalizePosix(glob);
+  while (normalized.endsWith('/')) normalized = normalized.slice(0, -1);
+  return normalized;
 }
 
 function sanitizeGlobList(globs) {

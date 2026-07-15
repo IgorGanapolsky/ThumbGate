@@ -531,7 +531,7 @@ function syncVersion(opts) {
         generatorResults.push({ label: gen.label, ok: true });
       } catch (err) {
         // Surface as a warning, not a failure — the per-generator test catches drift.
-        generatorResults.push({ label: gen.label, ok: false, error: String(err && err.message || err).slice(0, 200) });
+        generatorResults.push({ label: gen.label, ok: false, error: String(err?.message || err).slice(0, 200) });
       }
     }
   }
