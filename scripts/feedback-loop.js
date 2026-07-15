@@ -94,7 +94,9 @@ function emitAnonymousFeedbackPing(signal) {
       return;
     }
 
-    const normalizedSignal = signal === 'positive' ? 'up' : signal === 'negative' ? 'down' : null;
+    let normalizedSignal = null;
+    if (signal === 'positive') normalizedSignal = 'up';
+    if (signal === 'negative') normalizedSignal = 'down';
     if (!normalizedSignal) return;
 
     // Reuse the canonical installId from cli-telemetry.js (persisted at
@@ -105,24 +107,24 @@ function emitAnonymousFeedbackPing(signal) {
     try {
       const { getInstallId } = require('./cli-telemetry');
       installId = getInstallId();
-    } catch (_) { /* fall through */ }
+    } catch {
+      installId = null;
+    }
     if (!installId) {
-      try {
-        installId = require('crypto').randomUUID();
-      } catch (_) {
-        return; // no crypto, no install id → drop silently
-      }
+      installId = crypto.randomUUID();
     }
 
     let tier = 'free';
     try {
       const { getStatuslineMeta } = require('./statusline-meta');
       const meta = getStatuslineMeta({ env });
-      const rawTier = String(meta && meta.tier ? meta.tier : 'free').toLowerCase();
+      const rawTier = String(meta?.tier || 'free').toLowerCase();
       if (rawTier === 'pro' || rawTier === 'enterprise' || rawTier === 'free') {
         tier = rawTier;
       }
-    } catch (_) { /* default to 'free' */ }
+    } catch {
+      tier = 'free';
+    }
 
     const base = env.THUMBGATE_PUBLIC_APP_ORIGIN
       || env.THUMBGATE_API_URL
@@ -141,13 +143,17 @@ function emitAnonymousFeedbackPing(signal) {
     if (typeof fetch !== 'function' || typeof AbortSignal === 'undefined' || typeof AbortSignal.timeout !== 'function') {
       return;
     }
-    fetch(`${base.replace(/\/+$/, '')}/v1/telemetry/ping`, {
+    let appOrigin = String(base);
+    while (appOrigin.endsWith('/')) appOrigin = appOrigin.slice(0, -1);
+    void fetch(`${appOrigin}/v1/telemetry/ping`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body,
       signal: AbortSignal.timeout(2000),
-    }).catch(() => { /* fire-and-forget */ });
-  } catch (_) { /* telemetry must never disrupt CLI */ }
+    }).catch(() => undefined);
+  } catch {
+    return;
+  }
 }
 
 function isAuditTrailEntry(entry = {}) {
@@ -1793,7 +1799,7 @@ function captureFeedback(params) {
         // AGENTS.md/GEMINI.md merely because a negative rule was promoted.
         if (isSelfHarnessOptimizerEnabled()) {
           try {
-            const { fork } = require('child_process');
+            const { fork } = require('node:child_process');
             const localOptimizerPath = path.join(process.cwd(), 'scripts', 'self-harness-optimizer.js');
             const packageOptimizerPath = path.join(__dirname, 'self-harness-optimizer.js');
 
@@ -1820,8 +1826,9 @@ function captureFeedback(params) {
             feedbackDir: FEEDBACK_DIR,
             outputDir: process.env.THUMBGATE_OBSIDIAN_VAULT_PATH,
           });
-        } catch (_err) {
-          // Non-critical, do not crash feedback loop
+        } catch {
+          resolve();
+          return;
         }
         resolve();
       });
