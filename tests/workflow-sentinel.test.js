@@ -8,6 +8,7 @@ const assert = require('node:assert/strict');
 
 const {
   buildEvidence,
+  buildProtectedSurface,
   buildReasoning,
   buildRemediations,
   evaluateWorkflowSentinel,
@@ -46,6 +47,19 @@ function cleanupGateState() {
   fs.rmSync(GOVERNANCE_STATE_PATH, { force: true });
   fs.rmSync(CUSTOM_CLAIM_GATES_PATH, { force: true });
 }
+
+test('protected-surface globs normalize repeated trailing slashes', () => {
+  const surface = buildProtectedSurface({
+    taskScope: {
+      protectedPaths: ['docs/**///'],
+    },
+    protectedApprovals: [],
+  }, ['docs/runbook.md']);
+
+  assert.deepEqual(surface.protectedGlobs, ['docs/**']);
+  assert.deepEqual(surface.protectedFiles, ['docs/runbook.md']);
+  assert.deepEqual(surface.unapprovedProtectedFiles, ['docs/runbook.md']);
+});
 
 test('workflow sentinel does not treat read-only inspection as a task-scope violation', (t) => {
   const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-sentinel-readonly-'));
