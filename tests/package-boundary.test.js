@@ -341,9 +341,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 330 -> 332 (2026-07-09) to ship scripts/imperative-detector.js
   // (never/always directive -> force-gate offer) in lockstep with the
   // public-core-boundary ceiling.
+  // Bumped 333 -> 334 (2026-07-15) to ship feedback-history-distiller.js so
+  // public Codex hooks can learn context from bare thumbs-up/down signals.
   assert.ok(
-    manifest.fileCount <= 333,
-    `npm package should stay <= 333 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 334,
+    `npm package should stay <= 334 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -478,9 +480,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 4.85 MB -> 4.88 MB (2026-07-13) after the final fulfillment
   // concurrency, entitlement-replay, and partner-rail guards. Measured unpacked
   // size is 4,852,148 bytes; no new dependency or asset.
+  // Bumped 4.88 MB -> 4.90 MB (2026-07-15) for the 13 KB public feedback
+  // history distiller required by same-turn Codex approval/rejection learning.
   assert.ok(
-    manifest.unpackedSize <= 4_880_000,
-    `npm package should stay <= 4.88 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 4_900_000,
+    `npm package should stay <= 4.90 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

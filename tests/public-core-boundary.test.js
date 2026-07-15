@@ -171,7 +171,9 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // (never/always directive -> force-gate offer) and scripts/rule-clustering.js
   // (landing concurrently). Keep in lockstep with public-bundle-ratchet.
   const files = npmPackFiles();
-  const CEILING = 333;
+  // 333 -> 334: public Codex feedback hooks need feedback-history-distiller.js
+  // to turn bare approval/rejection into a context-backed lesson.
+  const CEILING = 334;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

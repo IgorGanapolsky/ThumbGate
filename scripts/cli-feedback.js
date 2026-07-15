@@ -58,6 +58,7 @@ function processInlineFeedback({ signal, context, chatHistory, whatWentWrong, wh
       context: context || (isDown ? 'Thumbs down from CLI' : 'Thumbs up from CLI'),
       whatWentWrong: whatWentWrong || undefined,
       whatWorked: whatWorked || undefined,
+      chatHistory,
       sourceEvent,
     });
   } catch (err) {
