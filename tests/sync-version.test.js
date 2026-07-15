@@ -48,6 +48,49 @@ test('sync-version covers the Claude adapter launcher manifest', serial, () => {
   );
 });
 
+test('sync-version covers every version-pinned adapter launcher', serial, () => {
+  const { syncVersion } = require('../scripts/sync-version');
+  const result = syncVersion({ checkOnly: true });
+  const adapterLaunchers = [
+    'adapters/claude/.mcp.json',
+    'adapters/claw/config.toml',
+    'adapters/claw/opencode.json',
+    'adapters/forge/forge.yaml',
+    'adapters/hermes/config.toml',
+    'adapters/hermes/opencode.json',
+    'adapters/opencode/opencode.json',
+    'adapters/perplexity/config.toml',
+    'adapters/perplexity/opencode.json',
+  ];
+
+  for (const launcher of adapterLaunchers) {
+    assert.ok(result.targets.includes(launcher), `${launcher} should be a sync target`);
+  }
+});
+
+test('sync-version detects and repairs adapter launcher package drift', serial, () => {
+  const { syncVersion } = require('../scripts/sync-version');
+  const { version } = require('../package.json');
+  const launcherPath = path.join(ROOT, 'adapters', 'hermes', 'config.toml');
+  const original = fs.readFileSync(launcherPath, 'utf8');
+  const drifted = original.replaceAll(`thumbgate@${version}`, 'thumbgate@0.0.1');
+
+  try {
+    fs.writeFileSync(launcherPath, drifted);
+    const check = syncVersion({ checkOnly: true });
+    assert.ok(
+      check.drifted.some((entry) => entry.file === 'adapters/hermes/config.toml'),
+      `expected Hermes adapter drift, found: ${JSON.stringify(check.drifted)}`
+    );
+
+    syncVersion({ checkOnly: false });
+    const repaired = fs.readFileSync(launcherPath, 'utf8');
+    assert.equal(repaired, original, 'adapter launcher should be restored to the package version');
+  } finally {
+    fs.writeFileSync(launcherPath, original);
+  }
+});
+
 test('sync-version detects Claude marketplace nested plugin version drift', serial, () => {
   const { syncVersion } = require('../scripts/sync-version');
   const marketplacePath = path.join(ROOT, '.claude-plugin', 'marketplace.json');
