@@ -311,6 +311,13 @@ function syncVersion(opts) {
   // 10. docs/install files that pin the npm package version
   const pinnedPackageTargets = [
     'adapters/claude/.mcp.json',
+    'adapters/claw/config.toml',
+    'adapters/claw/opencode.json',
+    'adapters/forge/forge.yaml',
+    'adapters/hermes/config.toml',
+    'adapters/hermes/opencode.json',
+    'adapters/perplexity/config.toml',
+    'adapters/perplexity/opencode.json',
     'docs/PLUGIN_DISTRIBUTION.md',
     'adapters/README.md',
     'adapters/opencode/opencode.json',
