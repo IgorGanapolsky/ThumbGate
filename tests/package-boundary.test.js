@@ -483,7 +483,7 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // size is 4,852,148 bytes; no new dependency or asset.
   // Bumped 4.88 MB -> 4.96 MB (2026-07-15) to ship the public feedback-history
   // distiller plus four missing retrieval modules. Measured combined artifact:
-  // 4,935,553 unpacked bytes; the remaining margin stays deliberately narrow.
+  // 4,936,330 unpacked bytes; the remaining margin stays deliberately narrow.
   assert.ok(
     manifest.unpackedSize <= 4_960_000,
     `npm package should stay <= 4.96 MB unpacked, got ${manifest.unpackedSize}`
