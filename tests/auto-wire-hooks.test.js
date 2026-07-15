@@ -314,7 +314,7 @@ describe('auto-wire-hooks', () => {
       try {
         const result = wireCodexHooks({ settingsPath });
         assert.equal(result.changed, true);
-        assert.equal(result.added.length, 5);
+        assert.equal(result.added.length, 6);
         assert.equal(result.added[0].lifecycle, 'PreToolUse');
 
         const config = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
@@ -328,6 +328,9 @@ describe('auto-wire-hooks', () => {
         assert.equal(config.hooks.PostToolUse[0].hooks[0].command, require('../scripts/hook-runtime').codexCacheUpdateHookCommand());
         assert.equal(config.hooks.SessionStart[0].hooks[0].command, require('../scripts/hook-runtime').codexSessionStartHookCommand());
         assert.equal(config.statusLine.command, require('../scripts/hook-runtime').codexStatuslineCommand());
+        const toml = fs.readFileSync(path.join(tmpDir, '.codex', 'config.toml'), 'utf8');
+        assert.match(toml, /\[hooks\.user_prompt_submit\]/);
+        assert.match(toml, /hook-auto-capture/);
       } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });
       }
@@ -405,7 +408,7 @@ describe('auto-wire-hooks', () => {
       try {
         const result = wireCodexHooks({ settingsPath, dryRun: true });
         assert.equal(result.changed, true);
-        assert.equal(result.added.length, 5);
+        assert.equal(result.added.length, 6);
         assert.equal(fs.existsSync(settingsPath), false);
       } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });

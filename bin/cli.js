@@ -444,6 +444,11 @@ function codexPreToolHookSectionBlock() {
   return `[hooks.pre_tool_use]\ncommand = "${entry.command}"\nargs = ${formatTomlStringArray(entry.args)}\n`;
 }
 
+function codexUserPromptHookSectionBlock() {
+  const entry = canonicalCodexCliEntry(['hook-auto-capture']);
+  return `[hooks.user_prompt_submit]\ncommand = "${entry.command}"\nargs = ${formatTomlStringArray(entry.args)}\n`;
+}
+
 function mcpSectionRegex(name) {
   return new RegExp(
     `^\\[mcp_servers\\.${escapeRegExp(name)}\\]\\n(?:^(?!\\[).*(?:\\n|$))*`,
@@ -461,6 +466,7 @@ function tomlSectionRegex(name) {
 function upsertCodexServerConfig(content) {
   const canonicalBlock = codexMcpSectionBlock(MCP_SERVER_NAME);
   const canonicalHookBlock = codexPreToolHookSectionBlock();
+  const canonicalUserPromptHookBlock = codexUserPromptHookSectionBlock();
   const sections = MCP_SERVER_NAMES.map((name) => ({
     name,
     regex: mcpSectionRegex(name),
@@ -473,7 +479,7 @@ function upsertCodexServerConfig(content) {
     const prefix = content.trimEnd();
     return {
       changed: true,
-      content: `${prefix}${prefix ? '\n\n' : ''}${canonicalBlock}\n${canonicalHookBlock}`,
+      content: `${prefix}${prefix ? '\n\n' : ''}${canonicalBlock}\n${canonicalHookBlock}\n${canonicalUserPromptHookBlock}`,
     };
   }
 
@@ -514,6 +520,19 @@ function upsertCodexServerConfig(content) {
   } else {
     const prefix = nextContent.trimEnd();
     nextContent = `${prefix}${prefix ? '\n\n' : ''}${canonicalHookBlock}`;
+    changed = true;
+  }
+
+  const userPromptHookRegex = tomlSectionRegex('hooks.user_prompt_submit');
+  if (userPromptHookRegex.test(nextContent)) {
+    const current = nextContent.match(userPromptHookRegex)[0];
+    if (current !== canonicalUserPromptHookBlock) {
+      nextContent = nextContent.replace(userPromptHookRegex, canonicalUserPromptHookBlock);
+      changed = true;
+    }
+  } else {
+    const prefix = nextContent.trimEnd();
+    nextContent = `${prefix}${prefix ? '\n\n' : ''}${canonicalUserPromptHookBlock}`;
     changed = true;
   }
 
@@ -2767,7 +2786,7 @@ function hookAutoCapture() {
     || promptEnvelope.prompt;
   const { evaluatePromptGuard } = require(path.join(PKG_ROOT, 'scripts', 'prompt-guard'));
   const { processInlineFeedback, formatCliOutput } = require(path.join(PKG_ROOT, 'scripts', 'cli-feedback'));
-  const { detectFeedbackSignal } = require(path.join(PKG_ROOT, 'scripts', 'feedback-quality'));
+  const { detectFeedbackSignal, isGenericFeedbackText } = require(path.join(PKG_ROOT, 'scripts', 'feedback-quality'));
   const { loadOptionalModule } = require(path.join(PKG_ROOT, 'scripts', 'private-core-boundary'));
   const { recordConversationEntry, readRecentConversationWindow } = loadOptionalModule(
     path.join(PKG_ROOT, 'scripts', 'feedback-history-distiller'),
@@ -2800,6 +2819,12 @@ function hookAutoCapture() {
 
   const signal = detected.signal;
   const conversationWindow = readRecentConversationWindow({ limit: 8 });
+  const chatHistory = conversationWindow.map((entry) => ({
+    role: entry.author === 'assistant' ? 'assistant' : 'user',
+    content: entry.text || '',
+  }));
+  const normalizedSignal = signal === 'down' ? 'negative' : 'positive';
+  const genericFeedback = isGenericFeedbackText(prompt, normalizedSignal);
   const { buildFeedbackSourceIdentity } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const sourceEvent = buildFeedbackSourceIdentity({
     signal,
@@ -2813,11 +2838,9 @@ function hookAutoCapture() {
   const result = processInlineFeedback({
     signal,
     context: prompt,
-    chatHistory: signal === 'down'
-      ? conversationWindow.map((entry) => ({ role: entry.author === 'assistant' ? 'assistant' : 'user', content: entry.text || '' }))
-      : undefined,
-    whatWentWrong: signal === 'down' ? prompt : undefined,
-    whatWorked: signal === 'up' ? prompt : undefined,
+    chatHistory,
+    whatWentWrong: signal === 'down' && !genericFeedback ? prompt : undefined,
+    whatWorked: signal === 'up' && !genericFeedback ? prompt : undefined,
     sourceEvent,
   });
   if (!result.feedbackResult || !result.feedbackResult.duplicate) {

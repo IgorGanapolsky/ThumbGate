@@ -452,6 +452,46 @@ function codexConfigPath() {
   return path.join(getHome(), '.codex', 'config.json');
 }
 
+function codexTomlConfigPath(configPath = codexConfigPath()) {
+  return path.join(path.dirname(configPath), 'config.toml');
+}
+
+function tomlSectionRegex(name) {
+  return new RegExp(`^\\[${String(name).replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}\\]\\n(?:^(?!\\[).*(?:\\n|$))*`, 'm');
+}
+
+function codexUserPromptTomlBlock() {
+  const hookCommand = codexUserPromptHookCommand();
+  return `[hooks.user_prompt_submit]\ncommand = "sh"\nargs = ["-lc", ${JSON.stringify(hookCommand)}]\n`;
+}
+
+function upsertCodexUserPromptToml(configPath, dryRun = false) {
+  const tomlPath = codexTomlConfigPath(configPath);
+  const current = fs.existsSync(tomlPath) ? fs.readFileSync(tomlPath, 'utf8') : '';
+  const canonicalBlock = codexUserPromptTomlBlock();
+  const sectionRegex = tomlSectionRegex('hooks.user_prompt_submit');
+  let next = current;
+
+  if (sectionRegex.test(current)) {
+    const existingBlock = current.match(sectionRegex)[0];
+    if (existingBlock === canonicalBlock) {
+      return { changed: false, settingsPath: tomlPath };
+    }
+    next = current.replace(sectionRegex, canonicalBlock);
+  } else {
+    const prefix = current.trimEnd();
+    next = `${prefix}${prefix ? '\n\n' : ''}${canonicalBlock}`;
+  }
+
+  if (!dryRun) {
+    const dir = path.dirname(tomlPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(tomlPath, next.endsWith('\n') ? next : `${next}\n`);
+  }
+
+  return { changed: true, settingsPath: tomlPath };
+}
+
 function writeJsonFile(filePath, payload, dryRun) {
   if (dryRun) {
     return;
@@ -500,6 +540,7 @@ function wireCodexHooks(options) {
   const configPath = options.settingsPath || codexConfigPath();
   const dryRun = options.dryRun || false;
   const desiredStatusLine = codexStatuslineCommand();
+  const tomlResult = upsertCodexUserPromptToml(configPath, dryRun);
 
   let config = loadJsonFile(configPath) || {};
   config.hooks = config.hooks || {};
@@ -519,15 +560,28 @@ function wireCodexHooks(options) {
   if (added.length === 0) {
     if (syncCodexStatusLine(config, desiredStatusLine)) {
       writeJsonFile(configPath, config, dryRun);
-      return { changed: true, settingsPath: configPath, added: [{ lifecycle: 'statusLine', command: desiredStatusLine }] };
+      const statusAdded = [{ lifecycle: 'statusLine', command: desiredStatusLine }];
+      if (tomlResult.changed) {
+        statusAdded.push({ lifecycle: 'UserPromptSubmit', command: `${codexUserPromptHookCommand()} (${tomlResult.settingsPath})` });
+      }
+      return { changed: true, settingsPath: configPath, added: statusAdded };
     }
-    return { changed: false, settingsPath: configPath, added: [] };
+    return {
+      changed: tomlResult.changed,
+      settingsPath: configPath,
+      added: tomlResult.changed
+        ? [{ lifecycle: 'UserPromptSubmit', command: `${codexUserPromptHookCommand()} (${tomlResult.settingsPath})` }]
+        : [],
+    };
   }
 
   syncCodexStatusLine(config, desiredStatusLine);
   writeJsonFile(configPath, config, dryRun);
 
   added.push({ lifecycle: 'statusLine', command: desiredStatusLine });
+  if (tomlResult.changed) {
+    added.push({ lifecycle: 'UserPromptSubmit', command: `${codexUserPromptHookCommand()} (${tomlResult.settingsPath})` });
+  }
   return { changed: true, settingsPath: configPath, added };
 }
 
@@ -702,6 +756,8 @@ module.exports = {
   claudeSharedSettingsPath,
   claudeProjectSettingsPath,
   codexConfigPath,
+  codexTomlConfigPath,
+  upsertCodexUserPromptToml,
   geminiSettingsPath,
   syncClaudeStatusLine,
   forgeConfigPath,

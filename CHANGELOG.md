@@ -16,6 +16,7 @@
 
 ### Patch Changes
 
+- Fix Codex feedback capture so current installs wire `hooks.user_prompt_submit` in `~/.codex/config.toml`, use recent conversation context when the user sends a bare thumbs-up/down, and hide MCP tools whose required runtime modules are not installed. Ship the feedback history distiller in the public package so same-turn feedback can become a context-backed lesson instead of a generic counter increment.
 - 71be09d: fix(billing): preserve marketplace attribution (e.g. utm_source=aiventyx) across external Stripe Payment Links via client_reference_id, so paid diagnostics are credited/reported instead of landing as source=unknown.
 - e3fa2bd: Keep the production homepage verifier aligned with the shipped enforcement copy.
 - 36e859c: Add a repository-only Apollo buyer-acquisition workflow that ranks enterprise AI-governance owners, suppresses duplicate outreach, and proves credit-safe search runs without adding sales tooling to the public npm package.

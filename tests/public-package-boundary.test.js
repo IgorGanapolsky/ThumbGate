@@ -13,7 +13,6 @@ const boundary = require('../scripts/private-core-boundary');
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
 const PRIVATE_CORE_MODULES = [
-  'scripts/feedback-history-distiller.js',
   'scripts/history-distiller.js',
   'scripts/hosted-job-launcher.js',
   'scripts/managed-lesson-agent.js',
@@ -22,8 +21,9 @@ const PRIVATE_CORE_MODULES = [
   'scripts/predictive-insights.js',
   'scripts/reflector-agent.js',
 ];
-const REQUIRED_PUBLIC_RETRIEVAL_MODULES = [
+const REQUIRED_PUBLIC_CAPABILITY_MODULES = [
   'scripts/cross-encoder-reranker.js',
+  'scripts/feedback-history-distiller.js',
   'scripts/lesson-embedding-index.js',
   'scripts/lesson-reranker.js',
   'scripts/lesson-retrieval.js',
@@ -118,21 +118,21 @@ test('public npm package ships the private-core boundary helper', () => {
   assert.equal(whitelist.has('scripts/private-core-boundary.js'), true);
 });
 
-test('public npm package ships every module needed by retrieve_lessons', () => {
+test('public npm package declares every module needed by feedback capture and retrieval', () => {
   const whitelist = new Set(pkg.files);
-  for (const modulePath of REQUIRED_PUBLIC_RETRIEVAL_MODULES) {
-    assert.equal(whitelist.has(modulePath), true, `${modulePath} must ship with retrieve_lessons`);
+  for (const modulePath of REQUIRED_PUBLIC_CAPABILITY_MODULES) {
+    assert.equal(whitelist.has(modulePath), true, `${modulePath} must ship with the public capability surface`);
   }
 });
 
-test('npm pack artifact contains every public retrieval module', () => {
+test('npm pack artifact contains every public feedback and retrieval module', () => {
   const output = execFileSync('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], {
     cwd: ROOT,
     encoding: 'utf8',
   });
   const manifest = JSON.parse(output);
   const packed = new Set(manifest[0].files.map((entry) => entry.path));
-  for (const modulePath of REQUIRED_PUBLIC_RETRIEVAL_MODULES) {
+  for (const modulePath of REQUIRED_PUBLIC_CAPABILITY_MODULES) {
     assert.equal(packed.has(modulePath), true, `${modulePath} missing from npm pack artifact`);
   }
 });

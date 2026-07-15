@@ -91,6 +91,7 @@
     "scripts/export-hf-dataset.js",
     "scripts/failure-diagnostics.js",
     "scripts/feedback-aggregate.js",
+    "scripts/feedback-history-distiller.js",
     "scripts/feedback-attribution.js",
     "scripts/feedback-loop.js",
     "scripts/feedback-paths.js",

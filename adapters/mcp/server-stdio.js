@@ -194,6 +194,7 @@ const PUBLIC_MCP_MODULES = Object.freeze({
   lessonRetrieval: path.resolve(__dirname, '../../scripts/lesson-retrieval.js'),
   lessonReranker: path.resolve(__dirname, '../../scripts/lesson-reranker.js'),
   crossEncoderReranker: path.resolve(__dirname, '../../scripts/cross-encoder-reranker.js'),
+  lessonEmbeddingIndex: path.resolve(__dirname, '../../scripts/lesson-embedding-index.js'),
 });
 const PRIVATE_TOOL_MODULE_KEYS = Object.freeze({
   search_lessons: ['lessonSearch'],
@@ -213,15 +214,25 @@ const PRIVATE_TOOL_MODULE_KEYS = Object.freeze({
   context_stuff_lessons: ['lessonInference'],
 });
 const PUBLIC_TOOL_MODULE_KEYS = Object.freeze({
-  retrieve_lessons: ['lessonRetrieval', 'lessonReranker', 'crossEncoderReranker'],
+  retrieve_lessons: [
+    'lessonRetrieval',
+    'lessonReranker',
+    'crossEncoderReranker',
+    'lessonEmbeddingIndex',
+  ],
 });
 
 function getToolCapability(toolName, options = {}) {
-  const existsSync = options.existsSync || fs.existsSync;
   const privateKeys = PRIVATE_TOOL_MODULE_KEYS[toolName] || [];
   const publicKeys = PUBLIC_TOOL_MODULE_KEYS[toolName] || [];
-  const missingPrivateModules = privateKeys.filter((key) => !existsSync(PRIVATE_MCP_MODULES[key]));
-  const missingPublicModules = publicKeys.filter((key) => !existsSync(PUBLIC_MCP_MODULES[key]));
+  const privateModuleAvailable = options.existsSync
+    ? (key) => options.existsSync(PRIVATE_MCP_MODULES[key])
+    : (key) => Boolean(loadPrivateMcpModule(key));
+  const publicModuleAvailable = options.existsSync
+    ? (key) => options.existsSync(PUBLIC_MCP_MODULES[key])
+    : (key) => fs.existsSync(PUBLIC_MCP_MODULES[key]);
+  const missingPrivateModules = privateKeys.filter((key) => !privateModuleAvailable(key));
+  const missingPublicModules = publicKeys.filter((key) => !publicModuleAvailable(key));
   if (missingPrivateModules.length > 0) {
     return { available: false, availability: 'private_core', missingModules: missingPrivateModules };
   }
@@ -235,6 +246,8 @@ function getExposedTools(profileName = getActiveMcpProfile(), options = {}) {
   const allowed = new Set(getAllowedTools(profileName));
   return TOOLS.filter((tool) => allowed.has(tool.name) && getToolCapability(tool.name, options).available);
 }
+
+const PRIVATE_MCP_TOOL_REQUIREMENTS = PRIVATE_TOOL_MODULE_KEYS;
 
 function loadPrivateMcpModule(key) {
   const modulePath = PRIVATE_MCP_MODULES[key];
@@ -251,6 +264,18 @@ function loadPrivateMcpModule(key) {
     }
     throw error;
   }
+}
+
+function isToolAvailable(toolName) {
+  try {
+    return getToolCapability(toolName).available;
+  } catch {
+    return false;
+  }
+}
+
+function listAvailableTools(profileName = getActiveMcpProfile()) {
+  return getExposedTools(profileName);
 }
 
 function unavailablePrivateMcpFeature(toolName) {
@@ -726,6 +751,9 @@ async function callTool(name, args = {}) {
   assertToolAllowed(name, activeProfile);
   const capability = getToolCapability(name);
   if (!capability.available) {
+    if (capability.availability === 'private_core') {
+      return unavailablePrivateMcpFeature(name);
+    }
     const error = new Error(
       `Tool '${name}' is unavailable (${capability.availability}): missing ${capability.missingModules.join(', ')}.`,
     );
@@ -1624,7 +1652,10 @@ module.exports = {
     PRIVATE_TOOL_MODULE_KEYS,
     PUBLIC_MCP_MODULES,
     PUBLIC_TOOL_MODULE_KEYS,
+    PRIVATE_MCP_TOOL_REQUIREMENTS,
     loadPrivateMcpModule,
+    isToolAvailable,
+    listAvailableTools,
     unavailablePrivateMcpFeature,
     callToolInner,
   },

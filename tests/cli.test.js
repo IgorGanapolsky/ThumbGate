@@ -77,6 +77,12 @@ function assertLocalCodexPreToolHook(content) {
   assert.match(content, /"gate-check"/);
 }
 
+function assertLocalCodexUserPromptHook(content) {
+  assert.match(content, /\[hooks\.user_prompt_submit\]/);
+  assert.match(content, new RegExp(escapeRegExp(path.join(PKG_ROOT, 'bin', 'cli.js'))));
+  assert.match(content, /hook-auto-capture/);
+}
+
 function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -840,6 +846,38 @@ describe('bin/cli.js', () => {
     const cache = JSON.parse(fs.readFileSync(path.join(feedbackDir, 'statusline_cache.json'), 'utf8'));
     assert.equal(cache.thumbs_down, '1');
     assert.equal(cache.total_feedback, '1');
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  });
+
+  test('hook-auto-capture uses recent context for a bare thumbs up', () => {
+    const feedbackDir = makeTmpDir();
+    fs.writeFileSync(path.join(feedbackDir, 'conversation-window.jsonl'), `${JSON.stringify({
+      author: 'assistant',
+      text: 'Verified the requested fix with passing unit tests and concrete output.',
+      source: 'assistant_response',
+      timestamp: new Date().toISOString(),
+    })}\n`);
+
+    const result = runCliSync(['hook-auto-capture'], {
+      env: {
+        ...process.env,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        CODEX_USER_PROMPT: 'thumbs up',
+        THUMBGATE_NO_NUDGE: '1',
+      },
+    });
+
+    assert.equal(result.status, 0, `hook-auto-capture failed:\n${result.stderr}`);
+    assert.match(result.stdout, /Thumbs up recorded/);
+    assert.match(result.stdout, /Memory ID\s+:/);
+
+    const feedbackRows = fs.readFileSync(path.join(feedbackDir, 'feedback-log.jsonl'), 'utf8')
+      .trim()
+      .split(/\r?\n/)
+      .map((line) => JSON.parse(line));
+    assert.equal(feedbackRows.length, 1);
+    assert.match(feedbackRows[0].whatWorked, /passing unit tests/i);
+    assert.notEqual(feedbackRows[0].whatWorked, 'thumbs up');
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
 
@@ -2687,6 +2725,7 @@ describe('bin/cli.js', () => {
     const content = fs.readFileSync(configPath, 'utf8');
     assertLocalTomlMcpBlock(content, HOME_MCP_SERVER_PATH);
     assertLocalCodexPreToolHook(content);
+    assertLocalCodexUserPromptHook(content);
     assert.doesNotMatch(content, /\/tmp\/disposable-worktree\/adapters\/mcp\/server-stdio\.js/);
     const hooksPath = path.join(codexHome, 'config.json');
     const hooksConfig = JSON.parse(fs.readFileSync(hooksPath, 'utf8'));
@@ -2730,6 +2769,7 @@ describe('bin/cli.js', () => {
     const content = fs.readFileSync(configPath, 'utf8');
     assertLocalTomlMcpBlock(content, HOME_MCP_SERVER_PATH);
     assertLocalCodexPreToolHook(content);
+    assertLocalCodexUserPromptHook(content);
     assert.doesNotMatch(content, /disposable-worktree/);
     assert.doesNotMatch(content, /thumbgate@1\.4\.6/);
     const hooksPath = path.join(codexHome, 'config.json');
