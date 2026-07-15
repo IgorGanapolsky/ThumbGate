@@ -21,7 +21,8 @@ function run(feedbackValue, extraArgs = []) {
   }
 }
 
-// Exit 0 = promoted, exit 2 = signal logged only (clarification or rubric gate).
+// Exit 0 = durably captured (with or without reusable-memory promotion).
+// Exit 2 = capture blocked before durable storage.
 // Exit 1 = normalize failed (unrecognized input).
 // We test normalize by asserting status !== 1.
 
@@ -86,7 +87,8 @@ test('normalize: "xyz" rejected', () => {
 
 test('capture wrapper asks for clarification on generic positive context', () => {
   const result = run('up', ['--context=thumbs up', '--tags=verification']);
-  assert.equal(result.status, 2);
+  assert.equal(result.status, 0);
   assert.match(result.stdout, /clarification required/i);
+  assert.match(result.stdout, /Feedback ID\s+: fb_/i);
   assert.match(result.stdout, /What specifically worked that should be repeated/i);
 });

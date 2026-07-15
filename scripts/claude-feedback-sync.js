@@ -20,7 +20,7 @@ const { refreshStatuslineCache } = require('./hook-thumbgate-cache-updater');
 const SYNC_STATE_FILE = 'claude-feedback-sync-state.json';
 const DEFAULT_RECENT_FEEDBACK_LIMIT = 250;
 const DEFAULT_PROCESSED_ID_LIMIT = 512;
-const DUPLICATE_WINDOW_MS = 30 * 1000;
+const DUPLICATE_WINDOW_MS = 5 * 60 * 1000;
 
 function getClaudeHistoryPath(options = {}) {
   if (options.historyPath) return options.historyPath;

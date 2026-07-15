@@ -62,7 +62,12 @@ function makeAcceptedVerification() {
 
 async function withHarnessRuntime(callback) {
   const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-harness-proof-'));
+  const previousMcpProfile = process.env.THUMBGATE_MCP_PROFILE;
   process.env.THUMBGATE_FEEDBACK_DIR = feedbackDir;
+  // HARNESS-05 intentionally exercises expanded workflow tools. The factory
+  // profile is essential, so this proof must opt into the documented expanded
+  // profile instead of relying on the old implicit default.
+  process.env.THUMBGATE_MCP_PROFILE = 'default';
   try {
     resetModules();
     stubModule(VERIFICATION_PATH, {
@@ -77,6 +82,8 @@ async function withHarnessRuntime(callback) {
   } finally {
     resetModules();
     delete process.env.THUMBGATE_FEEDBACK_DIR;
+    if (previousMcpProfile === undefined) delete process.env.THUMBGATE_MCP_PROFILE;
+    else process.env.THUMBGATE_MCP_PROFILE = previousMcpProfile;
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }
 }

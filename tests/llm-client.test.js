@@ -1,16 +1,32 @@
 const { describe, test, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert/strict');
 
-// Always test without API key to avoid real calls
-const originalKey = process.env.ANTHROPIC_API_KEY;
+// Always test without ambient provider credentials to avoid real calls.
+const PROVIDER_ENV_KEYS = [
+  'ANTHROPIC_API_KEY',
+  'GEMINI_API_KEY',
+  'GOOGLE_APPLICATION_CREDENTIALS',
+  'GOOGLE_CLOUD_PROJECT',
+  'GCLOUD_PROJECT',
+  'VERTEX_PROJECT_ID',
+  'VERTEX_API_ENDPOINT',
+  'THUMBGATE_PROVIDER_MODE',
+  'THUMBGATE_MODEL_PROVIDER_MODE',
+];
+const originalProviderEnv = Object.fromEntries(
+  PROVIDER_ENV_KEYS.map((key) => [key, process.env[key]]),
+);
 
 beforeEach(() => {
-  delete process.env.ANTHROPIC_API_KEY;
+  for (const key of PROVIDER_ENV_KEYS) delete process.env[key];
+  process.env.THUMBGATE_PROVIDER_MODE = 'managed';
 });
 
 afterEach(() => {
-  if (originalKey) process.env.ANTHROPIC_API_KEY = originalKey;
-  else delete process.env.ANTHROPIC_API_KEY;
+  for (const key of PROVIDER_ENV_KEYS) {
+    if (originalProviderEnv[key] === undefined) delete process.env[key];
+    else process.env[key] = originalProviderEnv[key];
+  }
 });
 
 test('isAvailable returns false without ANTHROPIC_API_KEY', () => {
@@ -100,6 +116,21 @@ test('parseClaudeJson strips fences before parsing', () => {
   assert.deepEqual(parseClaudeJson('```json\n{"ok":true}\n```'), { ok: true });
   assert.deepEqual(parseClaudeJson('[1,2,3]'), [1, 2, 3]);
   assert.equal(parseClaudeJson('not json'), null);
+});
+
+test('buildSafeProviderError omits request metadata and redacts credential-bearing messages', () => {
+  const { buildSafeProviderError } = require('../scripts/llm-client');
+  const error = new Error('invalid_grant refresh_token=1//fake-refresh-credential-value');
+  error.code = 400;
+  error.config = {
+    data: { refresh_token: '1//fake-refresh-credential-value' },
+  };
+
+  const safe = buildSafeProviderError(error);
+  const serialized = JSON.stringify(safe);
+  assert.equal(serialized.includes('fake-refresh-credential-value'), false);
+  assert.equal(Object.hasOwn(safe, 'config'), false);
+  assert.equal(safe.code, 400);
 });
 
 test('callClaude with a gemini model resolves via callGeminiInternal', async () => {

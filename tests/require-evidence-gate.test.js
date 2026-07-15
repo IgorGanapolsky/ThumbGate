@@ -9,6 +9,8 @@ const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-evidence-ga
 process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
 process.env.THUMBGATE_PROOF_DIR = tmpProofDir;
 process.env.THUMBGATE_NO_RATE_LIMIT = '1';
+// This suite intentionally exercises the expanded coordination/reporting tools.
+process.env.THUMBGATE_MCP_PROFILE = 'default';
 
 const { handleRequest, TOOLS } = require('../adapters/mcp/server-stdio');
 const { clearSessionActions, trackAction } = require('../scripts/gates-engine');

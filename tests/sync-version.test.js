@@ -28,6 +28,17 @@ test('sync-version covers package-lock.json', serial, () => {
   assert.ok(hasPackageLock, 'package-lock.json should be a sync target');
 });
 
+test('sync-version does not rewrite historical verification receipts', serial, () => {
+  const { syncVersion } = require('../scripts/sync-version');
+  const evidencePath = path.join(ROOT, 'docs', 'VERIFICATION_EVIDENCE.md');
+  const before = fs.readFileSync(evidencePath, 'utf8');
+  const result = syncVersion();
+  const after = fs.readFileSync(evidencePath, 'utf8');
+
+  assert.equal(result.targets.includes('docs/VERIFICATION_EVIDENCE.md'), false);
+  assert.equal(after, before, 'historical verification evidence must remain byte-for-byte unchanged');
+});
+
 test('sync-version covers the Claude adapter launcher manifest', serial, () => {
   const { syncVersion } = require('../scripts/sync-version');
   const result = syncVersion({ checkOnly: true });

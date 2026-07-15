@@ -145,6 +145,9 @@ function main() {
     // immediately — without this, the cache stays stale until a PostToolUse
     // hook fires for an mcp__thumbgate__* tool, which may be hours away.
     refreshStatuslineCacheBestEffort();
+  }
+
+  if (result.accepted && result.promoted && result.memoryRecord) {
     const ev = result.feedbackEvent;
     const mem = result.memoryRecord;
     console.log('');
@@ -178,7 +181,7 @@ function main() {
     console.log('');
     console.log('  Signal log only: stored in feedback history, but reusable memory was not created yet.');
     console.log('');
-    process.exit(2);
+    return;
   }
 
   console.log('');
@@ -190,7 +193,7 @@ function main() {
   console.log('  Signal log only: reusable memory was not created.');
   console.log('  Common causes: rubric guardrails, missing domain tags, or invalid evidence payloads.');
   console.log('');
-  process.exit(2);
+  if (!result.accepted) process.exit(2);
 }
 
 if (require.main === module) {

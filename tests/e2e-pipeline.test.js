@@ -184,7 +184,8 @@ test('E2E: feedback capture -> memory -> DPO export -> prevention rules', async 
       guardrails: { testsPassed: false, pathSafety: true, budgetCompliant: true },
     });
 
-    assert.equal(result.accepted, false, 'unsafe positive should be rejected');
+    assert.equal(result.accepted, true, 'unsafe positive should still be captured');
+    assert.equal(result.promoted, false, 'unsafe positive should not be promoted');
     assert.ok(/rubric gate/i.test(result.reason), 'rejection reason should mention rubric gate');
   });
 
@@ -271,7 +272,7 @@ test('E2E: API server feedback capture -> stats -> summary round-trip', async (t
     assert.ok(body.summary.includes('Positive:'));
   });
 
-  await t.test('rubric-gated capture returns 422', async () => {
+  await t.test('rubric-gated capture returns a stored event without promotion', async () => {
     const res = await fetch(`http://localhost:${port}/v1/feedback/capture`, {
       method: 'POST',
       headers,
@@ -287,9 +288,11 @@ test('E2E: API server feedback capture -> stats -> summary round-trip', async (t
         guardrails: { testsPassed: false, pathSafety: true, budgetCompliant: true },
       }),
     });
-    assert.equal(res.status, 422);
+    assert.equal(res.status, 200);
     const body = await res.json();
-    assert.equal(body.accepted, false);
+    assert.equal(body.accepted, true);
+    assert.equal(body.promoted, false);
+    assert.ok(body.feedbackEvent?.id);
   });
 
   await t.test('health endpoint returns ok', async () => {

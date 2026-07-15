@@ -1844,6 +1844,20 @@ test('evaluateGatesAsync returns null when no gate matches', async () => {
   assert.equal(result, null);
 });
 
+test('network egress gate warns on executable egress but ignores URLs in read-only context', () => {
+  const readResult = evaluateGates('Read', { file_path: 'https://untrusted.example/docs' });
+  const proseResult = evaluateGates('Bash', { command: 'echo "See https://untrusted.example/docs"' });
+  const curlResult = evaluateGates('Bash', { command: 'curl https://untrusted.example/data' });
+  const fetchResult = evaluateGates('Bash', { command: 'node -e "fetch(\'https://untrusted.example/data\')"' });
+
+  assert.notEqual(readResult && readResult.gate, 'deny-network-egress');
+  assert.notEqual(proseResult && proseResult.gate, 'deny-network-egress');
+  assert.equal(curlResult.gate, 'deny-network-egress');
+  assert.equal(curlResult.decision, 'warn');
+  assert.equal(fetchResult.gate, 'deny-network-egress');
+  assert.equal(fetchResult.decision, 'warn');
+});
+
 test('evaluateGatesAsync denies high-risk actions when recurring negative memory matches', async () => {
   const tmpConfig = makeTempPath('memory-only-gates.json');
   fs.writeFileSync(tmpConfig, JSON.stringify({ version: 1, gates: [] }));
@@ -1853,6 +1867,7 @@ test('evaluateGatesAsync denies high-risk actions when recurring negative memory
   const entries = [
     { id: 'mem-1', signal: 'negative', context: 'git push AGENTS.md protected file regression', timestamp: new Date().toISOString() },
     { id: 'mem-2', signal: 'negative', context: 'git push AGENTS.md protected file regression', timestamp: new Date().toISOString() },
+    { id: 'mem-3', signal: 'negative', context: 'git push AGENTS.md protected file regression', timestamp: new Date().toISOString() },
   ];
   fs.writeFileSync(feedbackLog, entries.map((entry) => JSON.stringify(entry)).join('\n') + '\n');
   fs.writeFileSync(attributedFeedback, '');
@@ -1871,6 +1886,44 @@ test('evaluateGatesAsync denies high-risk actions when recurring negative memory
     assert.equal(result.decision, 'deny');
     assert.equal(result.gate, 'memory-high-risk-default-deny');
     assert.match(result.message, /Recurring negative memory matched/i);
+  } finally {
+    if (originalFeedbackLog === undefined) delete process.env.THUMBGATE_FEEDBACK_LOG;
+    else process.env.THUMBGATE_FEEDBACK_LOG = originalFeedbackLog;
+    if (originalAttributedFeedback === undefined) delete process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
+    else process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = originalAttributedFeedback;
+    fs.rmSync(tmpConfig, { force: true });
+    fs.rmSync(feedbackLog, { force: true });
+    fs.rmSync(attributedFeedback, { force: true });
+  }
+});
+
+test('evaluateGatesAsync ignores unrelated tool-only negative memory for ordinary writes', async () => {
+  const tmpConfig = makeTempPath('memory-unrelated-write-gates.json');
+  fs.writeFileSync(tmpConfig, JSON.stringify({ version: 1, gates: [] }));
+
+  const feedbackLog = makeTempPath('memory-unrelated-write-feedback.jsonl');
+  const attributedFeedback = makeTempPath('memory-unrelated-write-attributed.jsonl');
+  const entries = Array.from({ length: 4 }, (_, index) => ({
+    id: `mem-unrelated-${index}`,
+    toolName: 'Write',
+    signal: 'negative',
+    context: 'Upwork proposal was staged instead of submitted to the client',
+    timestamp: new Date().toISOString(),
+  }));
+  fs.writeFileSync(feedbackLog, '');
+  fs.writeFileSync(attributedFeedback, entries.map((entry) => JSON.stringify(entry)).join('\n') + '\n');
+
+  const originalFeedbackLog = process.env.THUMBGATE_FEEDBACK_LOG;
+  const originalAttributedFeedback = process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
+  process.env.THUMBGATE_FEEDBACK_LOG = feedbackLog;
+  process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = attributedFeedback;
+
+  try {
+    const result = await evaluateGatesAsync('Write', {
+      file_path: 'applications/g2i/answers.md',
+      content: 'Segmented Yes/No fields and country location answers',
+    }, tmpConfig);
+    assert.equal(result, null);
   } finally {
     if (originalFeedbackLog === undefined) delete process.env.THUMBGATE_FEEDBACK_LOG;
     else process.env.THUMBGATE_FEEDBACK_LOG = originalFeedbackLog;
