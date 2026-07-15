@@ -43,6 +43,11 @@ test('profile allowlists differentiate permissions', () => {
   assert.ok(isToolAllowed('report_product_issue', 'essential'));
   assert.equal(isToolAllowed('track_action', 'readonly'), false);
   assert.ok(isToolAllowed('register_claim_gate', 'default'));
+  assert.ok(isToolAllowed('run_managed_lesson_agent', 'default'));
+  assert.ok(isToolAllowed('managed_agent_status', 'default'));
+  assert.ok(isToolAllowed('run_self_distill', 'default'));
+  assert.ok(isToolAllowed('self_distill_status', 'default'));
+  assert.ok(isToolAllowed('context_stuff_lessons', 'default'));
 });
 
 test('assertToolAllowed throws for denied tools', () => {

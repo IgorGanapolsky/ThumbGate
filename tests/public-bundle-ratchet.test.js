@@ -105,7 +105,9 @@ const path = require('node:path');
 // under the ceiling, so the count stays at 332 — no baseline bump required.
 // 332 -> 333: public/partner-intake.html adds the form-only partner handoff
 // used by attributed marketplace listings before a scoped offer is accepted.
-const BASELINE_FILE_COUNT = 333;
+// 333 -> 334: scripts/feedback-history-distiller.js ships the context inference
+// used by bare thumbs-up/down hooks in public Codex installs.
+const BASELINE_FILE_COUNT = 334;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
