@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.28.4
+
+### Patch Changes
+
+- e34f20d: Refactor feedback, CLI, version-sync, and workflow-sentinel helpers to clear Sonar maintainability findings without changing their public behavior.
+
 ## 1.28.3
 
 ### Patch Changes
