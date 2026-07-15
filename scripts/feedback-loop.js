@@ -62,6 +62,10 @@ const FEEDBACK_EVENT_CLAIM_STALE_MS = 60 * 1000;
 const FEEDBACK_EVENT_CLAIM_WAIT_MS = 15 * 1000;
 const FEEDBACK_EVENT_CLAIM_POLL_MS = 25;
 
+function isSelfHarnessOptimizerEnabled(env = process.env) {
+  return /^(?:1|true)$/i.test(String(env.THUMBGATE_SELF_HARNESS_OPTIMIZER || '').trim());
+}
+
 /**
  * Anonymous fire-and-forget CLI feedback telemetry.
  *
@@ -1784,19 +1788,23 @@ function captureFeedback(params) {
           });
         } catch { /* activation telemetry is non-critical */ }
 
-        // Trigger Self-Harness Optimizer to propagate the new rules to prompt files & validate
-        try {
-          const { fork } = require('child_process');
-          const localOptimizerPath = path.join(process.cwd(), 'scripts', 'self-harness-optimizer.js');
-          const packageOptimizerPath = path.join(__dirname, 'self-harness-optimizer.js');
-          
-          if (fs.existsSync(localOptimizerPath)) {
-            fork(localOptimizerPath, [], { stdio: 'ignore', detached: true }).unref();
-          } else if (fs.existsSync(packageOptimizerPath)) {
-            fork(packageOptimizerPath, [], { stdio: 'ignore', detached: true }).unref();
+        // Prompt-file mutation and git commits are explicit opt-in side effects.
+        // Feedback capture must never detach an unrequested process that edits
+        // AGENTS.md/GEMINI.md merely because a negative rule was promoted.
+        if (isSelfHarnessOptimizerEnabled()) {
+          try {
+            const { fork } = require('child_process');
+            const localOptimizerPath = path.join(process.cwd(), 'scripts', 'self-harness-optimizer.js');
+            const packageOptimizerPath = path.join(__dirname, 'self-harness-optimizer.js');
+
+            if (fs.existsSync(localOptimizerPath)) {
+              fork(localOptimizerPath, [], { stdio: 'ignore', detached: true }).unref();
+            } else if (fs.existsSync(packageOptimizerPath)) {
+              fork(packageOptimizerPath, [], { stdio: 'ignore', detached: true }).unref();
+            }
+          } catch (err) {
+            console.error('Failed to trigger self-harness optimizer:', err);
           }
-        } catch (err) {
-          console.error('Failed to trigger self-harness optimizer:', err);
         }
       }
     } catch { /* Gate promotion is non-critical */ }
@@ -2522,6 +2530,7 @@ module.exports = {
   updateStatuslineWithLesson,
   waitForBackgroundSideEffects,
   getPendingBackgroundSideEffectCount,
+  isSelfHarnessOptimizerEnabled,
   getFeedbackPaths,
   get FEEDBACK_LOG_PATH() {
     return getFeedbackPaths().FEEDBACK_LOG_PATH;

@@ -10,7 +10,7 @@
 
   Ship `lesson-retrieval.js`, `lesson-reranker.js`, `cross-encoder-reranker.js`, and `lesson-embedding-index.js` in the public npm package so `retrieve_lessons` works after installation. This intentionally raises the audited public-bundle ceiling from 333 to 337 files.
 
-  Reduce guardrail noise by limiting network warnings to executable egress, applying task scope only to mutating actions, and requiring contextual recurring-memory matches before hard denial.
+  Reduce guardrail noise by limiting network warnings to executable egress, applying task scope only to mutating actions, and requiring contextual recurring-memory matches before hard denial. Self-harness prompt mutation is now explicit opt-in instead of silently editing and committing `AGENTS.md`/`GEMINI.md` after negative feedback.
 
 ## 1.28.1
 

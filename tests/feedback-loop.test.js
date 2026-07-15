@@ -16,6 +16,7 @@ const {
   appendDiagnosticRecord,
   buildCorrectiveActionsReminder,
   getPendingBackgroundSideEffectCount,
+  isSelfHarnessOptimizerEnabled,
   readJSONL,
   getFeedbackPaths,
   inferDomain,
@@ -43,6 +44,13 @@ function loadFreshFeedbackLoop() {
   try { delete require.cache[require.resolve('../scripts/feedback-paths')]; } catch {}
   return require('../scripts/feedback-loop');
 }
+
+test('self-harness prompt mutation is disabled unless explicitly opted in', () => {
+  assert.equal(isSelfHarnessOptimizerEnabled({}), false);
+  assert.equal(isSelfHarnessOptimizerEnabled({ THUMBGATE_SELF_HARNESS_OPTIMIZER: '0' }), false);
+  assert.equal(isSelfHarnessOptimizerEnabled({ THUMBGATE_SELF_HARNESS_OPTIMIZER: '1' }), true);
+  assert.equal(isSelfHarnessOptimizerEnabled({ THUMBGATE_SELF_HARNESS_OPTIMIZER: 'true' }), true);
+});
 
 // -- inferDomain --
 
