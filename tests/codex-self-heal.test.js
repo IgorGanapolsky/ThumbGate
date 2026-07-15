@@ -57,6 +57,9 @@ describe('codex self-heal', () => {
       assert.equal(config.hooks.PostToolUse[0].hooks[0].command, codexCacheUpdateHookCommand());
       assert.equal(config.hooks.SessionStart[0].hooks[0].command, codexSessionStartHookCommand());
       assert.equal(config.statusLine.command, codexStatuslineCommand());
+      const toml = fs.readFileSync(path.join(homeDir, '.codex', 'config.toml'), 'utf8');
+      assert.match(toml, /\[hooks\.user_prompt_submit\]/);
+      assert.match(toml, /hook-auto-capture/);
     } finally {
       fs.rmSync(homeDir, { recursive: true, force: true });
     }

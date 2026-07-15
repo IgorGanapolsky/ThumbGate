@@ -92,10 +92,11 @@ test.after(() => {
   fs.rmSync(tmpProofDir, { recursive: true, force: true });
 });
 
-test('tools/list returns all configured tools', async () => {
+test('tools/list returns only tools allowed by the active profile and available runtime', async () => {
   const result = await handleRequest({ jsonrpc: '2.0', id: 1, method: 'tools/list' });
   assert.equal(Array.isArray(result.tools), true);
-  assert.equal(result.tools.length, TOOLS.length);
+  assert.deepEqual(result.tools, __test__.listAvailableTools('default'));
+  assert.ok(result.tools.length < TOOLS.length);
   assert.ok(result.tools.some((tool) => tool.name === 'run_autoresearch'));
   assert.ok(result.tools.some((tool) => tool.name === 'plan_multimodal_retrieval'));
   assert.ok(result.tools.some((tool) => tool.name === 'plan_context_footprint'));
@@ -700,6 +701,22 @@ test('private-core MCP module helpers report unknown and unavailable modules cle
   assert.equal(unavailable.ok, false);
   assert.equal(unavailable.availability, 'private_core');
   assert.equal(unavailable.tool, 'plan_intent');
+});
+
+test('tools/list hides private-core tools when their runtime modules are absent', async () => {
+  await withMissingPrivateModules([
+    __test__.PRIVATE_MCP_MODULES.reflectorAgent,
+    __test__.PRIVATE_MCP_MODULES.managedLessonAgent,
+    __test__.PRIVATE_MCP_MODULES.intentRouter,
+  ], async () => {
+    const result = await handleRequest({ jsonrpc: '2.0', id: 35, method: 'tools/list' });
+    const names = result.tools.map((tool) => tool.name);
+    assert.equal(names.includes('reflect_on_feedback'), false);
+    assert.equal(names.includes('run_managed_lesson_agent'), false);
+    assert.equal(names.includes('managed_agent_status'), false);
+    assert.equal(names.includes('list_intents'), false);
+    assert.equal(names.includes('plan_intent'), false);
+  });
 });
 
 test('semantic and lesson-inference MCP tools route through private module loaders', async () => {

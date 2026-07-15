@@ -13,7 +13,6 @@ const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
 
 const PRIVATE_CORE_MODULES = [
   'scripts/cross-encoder-reranker.js',
-  'scripts/feedback-history-distiller.js',
   'scripts/history-distiller.js',
   'scripts/hosted-job-launcher.js',
   'scripts/lesson-reranker.js',
