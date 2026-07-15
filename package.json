@@ -1,6 +1,6 @@
 {
   "name": "thumbgate",
-  "version": "1.28.1",
+  "version": "1.28.2",
   "description": "ThumbGate Pre-Action Checks derive rules from repeated failures, flag risky tool calls, hard-block detected secret leaks, and block matches in strict mode.",
   "homepage": "https://thumbgate.ai",
   "repository": {
