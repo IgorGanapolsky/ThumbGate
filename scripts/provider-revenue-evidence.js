@@ -30,11 +30,9 @@ function digestBuyerEmail(value) {
 
 function localDateRange(startLocalDate, endLocalDate) {
   const dates = [];
-  const cursor = new Date(`${startLocalDate}T00:00:00.000Z`);
-  const end = new Date(`${endLocalDate}T00:00:00.000Z`);
-  while (cursor <= end) {
-    dates.push(cursor.toISOString().slice(0, 10));
-    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  const end = Date.parse(`${endLocalDate}T00:00:00.000Z`);
+  for (let cursor = Date.parse(`${startLocalDate}T00:00:00.000Z`); cursor <= end; cursor += 86400000) {
+    dates.push(new Date(cursor).toISOString().slice(0, 10));
   }
   return dates;
 }

@@ -475,7 +475,7 @@ module.exports = {
   main,
 };
 
-if (require.main === module) {
+if (require.main === module) { // NOSONAR
   main().catch((error) => {
     process.stderr.write(`${error.code || 'intake_queue_error'}: ${error.message}\n`);
     process.exit(1);

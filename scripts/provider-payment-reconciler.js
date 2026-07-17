@@ -76,7 +76,7 @@ function offerIdsFor(payment = {}) {
   ];
   return [...new Set(values
     .map((value) => String(value || '').trim().slice(0, 120))
-    .filter(Boolean))].sort();
+    .filter(Boolean))].sort((a, b) => a.localeCompare(b));
 }
 
 function matchPaymentOffer(payment = {}, lead = {}) {

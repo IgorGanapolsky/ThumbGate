@@ -687,7 +687,7 @@ function buildRevenueOfferSystem() {
   };
 }
 
-if (require.main === module) {
+if (require.main === module) { // NOSONAR
   process.stdout.write(`${JSON.stringify(buildRevenueOfferSystem(), null, 2)}\n`);
 }
 

@@ -872,8 +872,8 @@ async function collectPayPalRecentPaymentSnapshot({
     return createdAt >= eventStart && createdAt <= nowDate && !providerEvents.has(eventId);
   }).length;
   const referenceMaterial = JSON.stringify({
-    eventIds: revenueEvents.map((event) => event.id).sort(),
-    requestReferences: [...new Set(requestReferences)].sort(),
+    eventIds: revenueEvents.map((event) => event.id).sort((a, b) => a.localeCompare(b)),
+    requestReferences: [...new Set(requestReferences)].sort((a, b) => a.localeCompare(b)),
     ledgerReference: ledger.reference,
   });
   return {
@@ -1130,7 +1130,7 @@ function collectGithubMarketplaceCsvSnapshot({
   if (!csvPath) return { ok: false, gap: 'GitHub Marketplace Transactions CSV path is not configured.' };
   if (!expectedAppName) return { ok: false, gap: 'GitHub Marketplace expected app name is required for product attribution.' };
   if (ownerIdentifiersReviewed !== true) return { ok: false, gap: 'GitHub Marketplace owner identifiers must be explicitly reviewed.' };
-  if (exportScope !== 'all') return { ok: false, gap: 'GitHub Marketplace CSV must be exported with the entire-duration scope.' };
+  if (String(exportScope || '').trim().toLowerCase() !== 'all') return { ok: false, gap: 'GitHub Marketplace CSV must be exported with the entire-duration scope.' };
   let raw;
   let stat;
   try {

@@ -960,7 +960,7 @@ function buildCompletedPilotEvidence(pilotWorkflowLead = {}, salesLeads = [], {
     signedScopeDigest: commercial.signedScopeDigest,
     paymentDigest: commercial.paymentDigest,
     proofArtifactCount: pilot.proof.artifacts.length,
-    proofArtifactDigests: [...new Set(pilot.proof.artifacts.map((artifact) => sha256Digest(artifact)))].sort(),
+    proofArtifactDigests: [...new Set(pilot.proof.artifacts.map((artifact) => sha256Digest(artifact)))].sort((a, b) => a.localeCompare(b)),
     proofBackedRunAt,
     providerPaidAt,
     paidTeamAt,

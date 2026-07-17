@@ -89,7 +89,7 @@ function shasMatch(left, right) {
 
 function getGitHead() {
   try {
-    return normalizeSha(execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }));
+    return normalizeSha(execFileSync('/usr/bin/git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }));
   } catch {
     return null;
   }
@@ -155,8 +155,8 @@ function revenueSliceReconciles(revenue = null) {
   const expectedKeys = localDateRange(start, end);
   const gross = revenue.dailyGrossRevenueCents || {};
   const net = revenue.dailyNetRevenueCents || {};
-  if (expectedKeys.length !== 30 || JSON.stringify(Object.keys(gross).sort()) !== JSON.stringify(expectedKeys) ||
-      JSON.stringify(Object.keys(net).sort()) !== JSON.stringify(expectedKeys)) return false;
+  if (expectedKeys.length !== 30 || JSON.stringify(Object.keys(gross).sort((a, b) => a.localeCompare(b))) !== JSON.stringify(expectedKeys) ||
+      JSON.stringify(Object.keys(net).sort((a, b) => a.localeCompare(b))) !== JSON.stringify(expectedKeys)) return false;
   const grossValues = expectedKeys.map((key) => numberOrNull(gross[key]));
   const netValues = expectedKeys.map((key) => numberOrNull(net[key]));
   if (grossValues.some((value) => value === null || value < 0) || netValues.some((value) => value === null || value < 0)) return false;
@@ -718,7 +718,7 @@ module.exports = {
   shasMatch,
 };
 
-if (require.main === module) {
+if (require.main === module) { // NOSONAR
   main().catch((error) => {
     process.stderr.write(`revenue-target-control FAILED: ${error.message}\n`);
     process.exit(1);

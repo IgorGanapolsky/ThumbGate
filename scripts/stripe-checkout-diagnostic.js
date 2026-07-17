@@ -330,7 +330,7 @@ function summarizeSessionRecency(
   });
   const latestAt = (predicate) => {
     const latest = datedSessions
-      .filter(predicate)
+      .filter((session) => predicate(session))
       .reduce((maximum, session) => Math.max(maximum, Number(session.created)), -Infinity);
     return toIsoTimestamp(latest);
   };

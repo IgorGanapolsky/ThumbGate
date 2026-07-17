@@ -1,32 +1,5 @@
 #!/usr/bin/env node
-/**
- * external-customer-audit.js — reconcile known non-owner Stripe activity.
- *
- * Background. The unified revenue rollup ships raw Stripe totals: lifetime
- * net, MRR, active subscription count. Those numbers include the owner's
- * own purchases and subscriptions. On a small operator-run product that
- * inflates the apparent customer base — the difference between "1 active
- * sub" and "0 real customers" is whether the operator subscribed to their
- * own product to test billing.
- *
- * This script splits Stripe activity by owner-vs-external email and reports
- * the external-only counts. Owner emails are configured via the
- * THUMBGATE_OWNER_EMAILS env var (comma-separated, case-insensitive). Defaults
- * to the THUMBGATE_TRIAL_EMAIL_REPLY_TO support address used elsewhere.
- *
- * Runs in CI under the Daily Revenue Loop alongside the existing Stripe
- * audit, so we can compare raw vs external-only counts.
- *
- * Usage:
- *   node scripts/external-customer-audit.js
- *   node scripts/external-customer-audit.js --json
- *   node scripts/external-customer-audit.js --strict   # exit 2 if 0 known non-owner paying identities
- *
- * Env:
- *   STRIPE_SECRET_KEY        preferred; managed local key files are fallback
- *   THUMBGATE_OWNER_EMAILS   comma-separated owner emails to exclude
- *                            (default: iganapolsky@gmail.com,igor.ganapolsky@gmail.com)
- */
+/** Reconcile exact Stripe product activity while excluding reviewed owner/test identities. */
 
 'use strict';
 
@@ -45,6 +18,7 @@ const {
   validateStripeRevenueCatalog,
   matchStripeRevenueCatalogPrice,
 } = require('./stripe-revenue-catalog');
+const compareText = (a, b) => a.localeCompare(b);
 
 function parseArgs(argv = []) {
   return {
@@ -233,10 +207,10 @@ function buildStripeIndividualPaymentEvidence(charges = [], contexts = new Map()
     const currency = String(charge?.currency || 'usd').trim().toLowerCase();
     const payerEmail = String(chargeEmail(charge) || '').trim().toLowerCase();
     const context = contexts.get(id) || {};
-    const sessionIds = [...(context.sessionIds || [])].sort();
-    const productIds = [...(context.productIds || [])].sort();
-    const priceIds = [...(context.priceIds || [])].sort();
-    const offerIds = [...(context.offerIds || [])].sort();
+    const sessionIds = [...(context.sessionIds || [])].sort(compareText);
+    const productIds = [...(context.productIds || [])].sort(compareText);
+    const priceIds = [...(context.priceIds || [])].sort(compareText);
+    const offerIds = [...(context.offerIds || [])].sort(compareText);
     const buyerEmailDigest = digestBuyerEmail(payerEmail);
     if (!id || ids.has(id) || Number.isNaN(createdAt.getTime()) ||
         createdAt.getTime() > nowDate.getTime() + 5 * 60 * 1000 ||
@@ -314,11 +288,9 @@ function buildStripeIndividualPaymentEvidence(charges = [], contexts = new Map()
 
 function localDateRange(startLocalDate, endLocalDate) {
   const dates = [];
-  const cursor = new Date(`${startLocalDate}T00:00:00.000Z`);
-  const end = new Date(`${endLocalDate}T00:00:00.000Z`);
-  while (cursor <= end) {
-    dates.push(cursor.toISOString().slice(0, 10));
-    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  const end = Date.parse(`${endLocalDate}T00:00:00.000Z`);
+  for (let cursor = Date.parse(`${startLocalDate}T00:00:00.000Z`); cursor <= end; cursor += 86400000) {
+    dates.push(new Date(cursor).toISOString().slice(0, 10));
   }
   return dates;
 }

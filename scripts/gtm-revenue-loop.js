@@ -393,9 +393,8 @@ function normalizePipelineStage(stage) {
 }
 
 function buildNextOperatorAction(stage, actionEligibility = null) {
-  if (normalizeText(actionEligibility?.nextAction)) {
-    return actionEligibility.nextAction;
-  }
+  const eligibleNextAction = normalizeText(actionEligibility?.nextAction);
+  if (eligibleNextAction) return eligibleNextAction;
   switch (normalizePipelineStage(stage)) {
     case 'contacted':
       return 'Reconcile the send receipt and cooldown before requesting approval for one follow-up.';

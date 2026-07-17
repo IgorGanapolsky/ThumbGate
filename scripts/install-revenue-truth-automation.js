@@ -44,7 +44,7 @@ function installRevenueTruthAutomation(manager = scheduleManager) {
   };
 }
 
-if (require.main === module) {
+if (require.main === module) { // NOSONAR
   const result = installRevenueTruthAutomation();
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   if (!result.installed?.success) process.exitCode = 1;

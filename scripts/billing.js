@@ -3970,13 +3970,15 @@ async function recordPayPalWebhookDelivery({
     if (!ledger.ok) {
       return { verified: true, recorded: false, reason: 'paypal_webhook_ledger_unreadable' };
     }
+    const eventId = normalizeText(verification.eventId);
+    const transmissionId = normalizeText(verification.transmission.transmissionId);
     const existing = ledger.rows.find((entry) => (
-      normalizeText(entry.eventId) === verification.eventId ||
-      normalizeText(entry.transmissionId) === verification.transmission.transmissionId
+      normalizeText(entry.eventId) === eventId ||
+      normalizeText(entry.transmissionId) === transmissionId
     ));
     if (existing) {
       if (normalizeText(existing.payloadSha256) !== payloadSha256 ||
-          normalizeText(existing.eventId) !== verification.eventId) {
+          normalizeText(existing.eventId) !== eventId) {
         return { verified: false, recorded: false, reason: 'paypal_webhook_delivery_collision' };
       }
       return {
