@@ -595,10 +595,14 @@ test('Deploy verification comment does not require a build SHA change for non-ru
 test('Deploy verification reports authoritative failures and route-only checks cannot overclaim readiness', () => {
   const authoritative = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'verify-deploy-comment.yml'), 'utf8');
   const routeOnly = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-verify.yml'), 'utf8');
+  const permissionsStart = authoritative.indexOf('\npermissions:\n');
+  const permissionsEnd = authoritative.indexOf('\n\nconcurrency:', permissionsStart);
 
   assert.match(authoritative, /comment-authoritative-failure:/);
   assert.match(authoritative, /if: github\.event\.workflow_run\.conclusion != 'success'/);
-  assert.match(authoritative, /permissions:\n(?:\s+.+\n)*\s+issues: write\n/);
+  assert.ok(permissionsStart >= 0 && permissionsEnd > permissionsStart, 'top-level permissions block must exist');
+  const permissionsBlock = authoritative.slice(permissionsStart, permissionsEnd);
+  assert.match(permissionsBlock, /\n  issues: write(?:\n|$)/);
   assert.match(authoritative, /Railway deployment or revenue readiness failed/);
   assert.match(authoritative, /The build may or may not have been promoted/);
   assert.match(authoritative, /run\.html_url/);
