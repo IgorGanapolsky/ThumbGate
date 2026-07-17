@@ -6,6 +6,10 @@ const {
   parseArgs,
   bucketSessions,
   bucketPaymentIntentErrors,
+  extractSessionAttribution,
+  isPlaceholderIdentityEmail,
+  summarizeSessionEvidence,
+  summarizeSessionRecency,
   classifyCheckoutFunnel,
   runDiagnostic,
   renderMarkdown,
@@ -59,8 +63,8 @@ test('bucketPaymentIntentErrors counts last_payment_error by code, type, and dec
   assert.equal(buckets.byDeclineCode.no_decline_code, 1);
 });
 
-test('classifyCheckoutFunnel distinguishes pre-payment abandonment from Stripe account blocks', () => {
-  const abandoned = classifyCheckoutFunnel({
+test('classifyCheckoutFunnel refuses to call anonymous raw sessions buyer abandonment', () => {
+  const anonymous = classifyCheckoutFunnel({
     sessions: Array.from({ length: 30 }, (_, i) => ({
       status: i % 2 ? 'expired' : 'open',
       payment_status: 'unpaid',
@@ -68,10 +72,12 @@ test('classifyCheckoutFunnel distinguishes pre-payment abandonment from Stripe a
     paymentIntents: [],
     account: { configured: true, chargesEnabled: true },
   });
-  assert.equal(abandoned.primaryDiagnosis, 'pre_payment_abandonment');
-  assert.equal(abandoned.checkoutConversionRate, 0);
-  assert.equal(abandoned.paymentIntentsTotal, 0);
-  assert.match(abandoned.recommendation, /Simplify the offer/);
+  assert.equal(anonymous.primaryDiagnosis, 'unverified_session_noise_or_pre_payment_exit');
+  assert.equal(anonymous.checkoutConversionRate, 0);
+  assert.equal(anonymous.paymentIntentsTotal, 0);
+  assert.equal(anonymous.strongIntentEvidenceSessions, 0);
+  assert.equal(anonymous.rawOnlySessions, 30);
+  assert.match(anonymous.recommendation, /do not prove buyer abandonment/);
 
   const blocked = classifyCheckoutFunnel({
     sessions: [{ status: 'expired', payment_status: 'unpaid' }],
@@ -79,6 +85,139 @@ test('classifyCheckoutFunnel distinguishes pre-payment abandonment from Stripe a
     account: { configured: true, chargesEnabled: false },
   });
   assert.equal(blocked.primaryDiagnosis, 'stripe_account_blocked');
+});
+
+test('classifyCheckoutFunnel distinguishes identified pre-payment dropoff', () => {
+  const sessions = Array.from({ length: 30 }, (_, index) => ({
+    status: index % 2 ? 'expired' : 'open',
+    payment_status: 'unpaid',
+    customer_email: index === 0 ? 'procurement@buyer-company.com' : null,
+  }));
+  const result = classifyCheckoutFunnel({
+    sessions,
+    paymentIntents: [],
+    account: { configured: true, chargesEnabled: true },
+  });
+  assert.equal(result.primaryDiagnosis, 'identified_pre_payment_dropoff');
+  assert.equal(result.strongIntentEvidenceSessions, 1);
+  assert.match(result.recommendation, /Identified checkout entrants/);
+});
+
+test('extractSessionAttribution restores source and plan from the compact reference', () => {
+  const attribution = extractSessionAttribution({
+    client_reference_id: 'tg207website0025acq_mrmhxlrm_a7393664311317sprint_diagnostic',
+  });
+  assert.equal(attribution.source, 'website');
+  assert.equal(attribution.planId, 'sprint_diagnostic');
+  assert.equal(attribution.hasAcquisitionId, true);
+});
+
+test('placeholder identity detection excludes reserved and synthetic test emails', () => {
+  assert.equal(isPlaceholderIdentityEmail('buyer@example.com'), true);
+  assert.equal(isPlaceholderIdentityEmail('test+checkout@company.test'), true);
+  assert.equal(isPlaceholderIdentityEmail('qa-123@vendor.io'), true);
+  assert.equal(isPlaceholderIdentityEmail('procurement@buyer-company.com'), false);
+  assert.equal(isPlaceholderIdentityEmail(null), false);
+});
+
+test('summarizeSessionEvidence separates attribution-only sessions and flags multi-offer probe clusters', () => {
+  const sessions = [
+    {
+      id: 'cs_pro',
+      created: 100,
+      status: 'open',
+      payment_status: 'unpaid',
+      metadata: { source: 'website', planId: 'pro' },
+    },
+    {
+      id: 'cs_diagnostic',
+      created: 102,
+      status: 'open',
+      payment_status: 'unpaid',
+      metadata: { source: 'website', planId: 'sprint_diagnostic' },
+    },
+    {
+      id: 'cs_identified',
+      created: 200,
+      status: 'open',
+      payment_status: 'unpaid',
+      customer_email: 'procurement@buyer-company.com',
+      metadata: { source: 'reddit', planId: 'sprint_diagnostic' },
+    },
+    {
+      id: 'cs_paid',
+      created: 300,
+      status: 'complete',
+      payment_status: 'paid',
+      payment_intent: 'pi_paid',
+      metadata: { source: 'linkedin', planId: 'pro' },
+    },
+  ];
+  const summary = summarizeSessionEvidence(sessions);
+  assert.equal(summary.totalSessions, 4);
+  assert.equal(summary.strongIntentEvidenceSessions, 2);
+  assert.equal(summary.credibleIdentifiedSessions, 1);
+  assert.equal(summary.placeholderIdentitySessions, 0);
+  assert.equal(summary.rawOnlySessions, 2);
+  assert.equal(summary.attributionOnlySessions, 2);
+  assert.equal(summary.possibleAutomationClusters, 1);
+  assert.equal(summary.possibleAutomationSessions, 2);
+  assert.deepEqual(summary.byPlan, { pro: 2, sprint_diagnostic: 2 });
+});
+
+test('summarizeSessionRecency separates current signals from historical conversion without exposing identity', () => {
+  const now = 2_000_000;
+  const summary = summarizeSessionRecency([
+    { created: now - 60 * 60, status: 'open', payment_status: 'unpaid' },
+    { created: now - 2 * 24 * 60 * 60, status: 'open', payment_status: 'unpaid', customer_email: 'ops@buyer-company.com' },
+    { created: now - 10 * 24 * 60 * 60, status: 'complete', payment_status: 'paid' },
+    { created: now - 40 * 24 * 60 * 60, status: 'complete', payment_status: 'paid' },
+    { created: now + 60, status: 'complete', payment_status: 'paid' },
+  ], now);
+
+  assert.deepEqual(summary.windows.last24Hours, {
+    totalSessions: 1,
+    completedEvidenceSessions: 0,
+    paymentAttemptSessions: 0,
+    credibleIdentifiedSessions: 0,
+    strongIntentEvidenceSessions: 0,
+    rawOnlySessions: 1,
+  });
+  assert.equal(summary.windows.last7Days.totalSessions, 2);
+  assert.equal(summary.windows.last7Days.credibleIdentifiedSessions, 1);
+  assert.equal(summary.windows.last30Days.totalSessions, 3);
+  assert.equal(summary.windows.last30Days.completedEvidenceSessions, 1);
+  assert.equal(summary.latestCompletedAt, new Date((now - 10 * 24 * 60 * 60) * 1000).toISOString());
+  assert.equal(summary.latestCredibleIdentityAt, new Date((now - 2 * 24 * 60 * 60) * 1000).toISOString());
+  assert.equal(Object.hasOwn(summary, 'customerEmail'), false);
+});
+
+test('classifyCheckoutFunnel distinguishes historical conversion from recent completion evidence', () => {
+  const now = 2_000_000;
+  const historical = classifyCheckoutFunnel({
+    sessions: [{
+      created: now - 40 * 24 * 60 * 60,
+      status: 'complete',
+      payment_status: 'paid',
+    }],
+    account: { configured: true, chargesEnabled: true },
+    nowEpochSeconds: now,
+  });
+  assert.equal(historical.primaryDiagnosis, 'historical_checkout_conversion_no_recent_payment_evidence');
+  assert.equal(historical.recent30DayCompletedEvidenceSessions, 0);
+  assert.match(historical.recommendation, /converted historically/);
+
+  const recent = classifyCheckoutFunnel({
+    sessions: [{
+      created: now - 60 * 60,
+      status: 'complete',
+      payment_status: 'paid',
+    }],
+    account: { configured: true, chargesEnabled: true },
+    nowEpochSeconds: now,
+  });
+  assert.equal(recent.primaryDiagnosis, 'checkout_can_convert');
+  assert.equal(recent.recent30DayCompletedEvidenceSessions, 1);
 });
 
 // runDiagnostic with an injected fake Stripe client ----------------------
@@ -164,7 +303,7 @@ test('runDiagnostic flags missing webhook endpoints as a perception risk', async
   assert.match(md, /No webhook endpoints configured/);
 });
 
-test('runDiagnostic recent-sessions table includes PI error codes when present', async () => {
+test('runDiagnostic recent-sessions table includes PI error codes without exposing PII or checkout URLs', async () => {
   const stripeClient = fakeStripe({
     sessions: [
       {
@@ -173,6 +312,8 @@ test('runDiagnostic recent-sessions table includes PI error codes when present',
         customer_email: 'buyer@example.com',
         amount_total: 1900, currency: 'usd',
         payment_intent: 'pi_a',
+        url: 'https://checkout.stripe.com/private-session-url',
+        metadata: { source: 'reddit', planId: 'pro' },
       },
     ],
     paymentIntents: [
@@ -187,13 +328,22 @@ test('runDiagnostic recent-sessions table includes PI error codes when present',
     webhooks: [],
   });
   const report = await runDiagnostic({ stripeClient });
+  assert.equal(report.recentSessions[0].hasCustomerIdentity, true);
+  assert.equal(report.recentSessions[0].identityEvidence, 'placeholder_email');
+  assert.equal(report.recentSessions[0].hasPaymentIntent, true);
+  assert.equal(report.recentSessions[0].attribution.source, 'reddit');
+  assert.equal(Object.hasOwn(report.recentSessions[0], 'customerEmail'), false);
+  assert.equal(Object.hasOwn(report.recentSessions[0], 'url'), false);
+  assert.equal(Object.hasOwn(report.recentSessions[0], 'paymentIntentId'), false);
   const md = renderMarkdown(report);
-  assert.match(md, /buyer \(at\) example\.com/);
+  assert.doesNotMatch(md, /buyer@example\.com|private-session-url|pi_a/);
+  assert.match(md, /Identity evidence/);
+  assert.match(md, /reddit/);
   assert.match(md, /card_declined/);
   assert.match(md, /insufficient_funds/);
 });
 
-test('renderMarkdown emits the abandonment diagnosis when there are no PI errors but many sessions', async () => {
+test('renderMarkdown emits an evidence-limited diagnosis when anonymous sessions have no payment attempts', async () => {
   const sessions = Array.from({ length: 60 }, (_, i) => ({
     id: `cs_${i}`, status: i % 2 ? 'expired' : 'open', payment_status: 'unpaid', created: 1700000000,
   }));
@@ -212,6 +362,11 @@ test('renderMarkdown emits the abandonment diagnosis when there are no PI errors
   const md = renderMarkdown(report);
   // Uniform-expiry diagnosis fires when 0 completions and >50 non-complete sessions
   assert.match(md, /uniformly expiring or staying open/);
-  assert.match(md, /Primary diagnosis: `pre_payment_abandonment`/);
+  assert.match(md, /Primary diagnosis: `unverified_session_noise_or_pre_payment_exit`/);
+  assert.match(md, /raw Stripe Checkout session is not proof of a buyer/);
+  assert.match(md, /Recency boundary/);
+  assert.match(md, /Historical conversion proves that checkout has worked before/);
+  assert.match(md, /No session produced a PaymentIntent/);
+  assert.doesNotMatch(md, /Buyers are leaving|buyers are abandoning|price too high/);
   assert.match(md, /Checkout completion rate: 0\.00%/);
 });

@@ -3,6 +3,10 @@
 
 const path = require('node:path');
 const { sendEmail } = require('./mailer');
+const {
+  buildDiagnosticBuyerUrl,
+  buildSprintBuyerUrl,
+} = require('./buyer-paths');
 
 const DEFAULT_FROM = 'ThumbGate <onboarding@resend.dev>';
 const DEFAULT_REPLY_TO = 'igor.ganapolsky@gmail.com';
@@ -16,19 +20,20 @@ const BUSINESS_FOOTER = [
 
 const CAMPAIGNS = {
   aiventyx_marketplace_followup: {
+    status: 'hold_unverified_cost',
+    blockedReason: 'Aiventyx seller fees and downstream obligations are not verified.',
     to: 'qaisermehdi3@gmail.com',
-    subject: 'ThumbGate Aiventyx listings: ready to submit today',
+    subject: 'ThumbGate Aiventyx listings: payment routing remains paused',
     text: [
-      'Qaiser, quick follow-up on ThumbGate Free, Pro, and Teams for Aiventyx.',
+      'Qaiser, ThumbGate payment routing remains paused while seller fees and downstream obligations are unverified.',
       '',
-      'The paid paths are live now. Please remove any stale proxy Free listing if it is still present, then use these final tracked CTAs for the listings:',
+      'For reference only, the current first-party buyer paths are:',
       '',
       'Free / guide: https://thumbgate.ai/guide?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_free_listing',
-      '$19 quick read: https://buy.stripe.com/5kQ7sL76s1eSaK55e33sI2H',
-      '$99 teardown: https://buy.stripe.com/8x214n2Qc4r44lHayn3sI2I',
-      '$499 diagnostic: https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e',
+      `$499 diagnostic: ${buildDiagnosticBuyerUrl({ source: 'aiventyx', medium: 'marketplace' })}`,
+      `$1,500 sprint scope: ${buildSprintBuyerUrl({ source: 'aiventyx', medium: 'marketplace' })}`,
       '',
-      "If click tracking on Aiventyx is not live yet, ThumbGate UTMs are the source of truth until your side is ready. Send me the live listing URLs once they are up and I will route today's traffic there.",
+      'Do not publish or route payment traffic until the zero-cost terms are confirmed in writing.',
     ].join('\n'),
     pipelineLeadId: 'aiventyx_qaiser_marketplace_listings',
   },
@@ -62,11 +67,17 @@ async function main(argv = process.argv.slice(2), deps = {}) {
     throw new Error(`Unknown campaign. Expected one of: ${Object.keys(CAMPAIGNS).join(', ')}`);
   }
   const message = renderMessage(campaign);
+  const campaignAllowed = campaign.status === 'proceed_zero_cost';
+  if (!campaignAllowed && options.confirmSend) {
+    throw new Error(`Revenue email blocked: ${campaign.status} — ${campaign.blockedReason}`);
+  }
   if (options.dryRun || !options.confirmSend) {
     console.log(JSON.stringify({
       dryRun: true,
-      blocked: !options.confirmSend && !options.dryRun,
-      reason: !options.confirmSend && !options.dryRun ? 'missing_confirm_send' : null,
+      blocked: !campaignAllowed || (!options.confirmSend && !options.dryRun),
+      reason: !campaignAllowed
+        ? campaign.status
+        : (!options.confirmSend && !options.dryRun ? 'missing_confirm_send' : null),
       message,
     }, null, 2));
     return { sent: false, dryRun: true, message };

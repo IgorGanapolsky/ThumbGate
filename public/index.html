@@ -141,8 +141,9 @@ __GA_BOOTSTRAP__
     {
       "@type": "Offer",
       "name": "Enterprise",
+      "price": "15000",
       "priceCurrency": "USD",
-      "description": "Contact-sales tier with custom pricing scoped after intake for one workflow's approval boundaries, rollback plan, evidence requirements, and rollout support. Hosted team lesson sync and a hosted org dashboard are not general-availability runtime features.",
+      "description": "Proposal-only services after qualification: a $15,000 30-day governance pilot for up to three local workflows and $10,000/month post-pilot reliability operations for those workflows. Hosted team lesson sync and a hosted org dashboard are not general-availability runtime features.",
       "url": "https://thumbgate.ai/#workflow-sprint-intake"
     },
     {
@@ -719,7 +720,7 @@ __GA_BOOTSTRAP__
       <a href="#claude-code-section" class="nav-claude" onclick="posthog.capture('nav_claude_click')" style="display:none;">Claude</a>
       <a href="#workflow-sprint-intake" onclick="posthog.capture('workflow_sprint')" style="display:none;">Start Sprint</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" target="_blank" rel="noopener" onclick="posthog.capture('nav_claude_extension_click',{cta:'install_claude_extension'})" class="nav-cta" style="background:#d97706;display:none;">Claude Extension</a>
-      <a href="/go/diagnostic?utm_source=website&utm_medium=nav&utm_campaign=money_today&utm_content=nav_diagnostic&cta_id=nav_pay_diagnostic&cta_placement=nav&plan_id=sprint_diagnostic" data-revenue-cta data-cta-id="nav_pay_diagnostic" data-cta-placement="nav" data-tier="service" data-plan-id="sprint_diagnostic" data-price="__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__" onclick="trackRevenueCta(this);try{posthog.capture('nav_diagnostic_click',{cta:'nav_pay_diagnostic',price:__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__})}catch(_){}" class="nav-cta">Pay $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</a>
+      <a href="/diagnostic?utm_source=website&utm_medium=nav&utm_campaign=money_today&utm_content=nav_diagnostic&cta_id=nav_pay_diagnostic&cta_placement=nav&plan_id=sprint_diagnostic" data-revenue-cta data-cta-id="nav_pay_diagnostic" data-cta-placement="nav" data-tier="service" data-plan-id="sprint_diagnostic" data-price="__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__" onclick="trackRevenueCta(this);try{posthog.capture('nav_diagnostic_click',{cta:'nav_pay_diagnostic',price:__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__})}catch(_){}" class="nav-cta">Start $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</a>
     </div>
   </div>
 </nav>
@@ -743,24 +744,24 @@ __GA_BOOTSTRAP__
     </div>
 
     <div class="hero-actions">
-      <a href="/go/diagnostic?utm_source=website&utm_medium=hero_cta&utm_campaign=money_today&utm_content=hero_diagnostic&cta_id=hero_workflow_sprint_diagnostic_checkout&cta_placement=hero&plan_id=sprint_diagnostic" data-revenue-cta data-cta-id="hero_workflow_sprint_diagnostic_checkout" data-cta-placement="hero" data-tier="service" data-plan-id="sprint_diagnostic" data-price="__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__" data-sprint-paid-path="diagnostic" onclick="trackRevenueCta(this);sendFirstPartyTelemetry('workflow_sprint_diagnostic_checkout_started',{ctaId:'hero_workflow_sprint_diagnostic_checkout',ctaPlacement:'hero',offer:'sprint_diagnostic',price:__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__});try{posthog.capture('hero_diagnostic_checkout_click',{cta:'hero_diagnostic',price:__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__})}catch(_){}" class="btn-pro-page hero-pro hero-pro-primary hero-diagnostic">Pay $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</a>
-      <a href="/go/sprint?utm_source=website&utm_medium=hero_cta&utm_campaign=money_today&utm_content=hero_sprint&cta_id=hero_workflow_sprint_checkout&cta_placement=hero&plan_id=workflow_sprint" data-revenue-cta data-cta-id="hero_workflow_sprint_checkout" data-cta-placement="hero" data-tier="service" data-plan-id="workflow_sprint" data-price="__WORKFLOW_SPRINT_PRICE_DOLLARS__" data-sprint-paid-path="sprint" onclick="trackRevenueCta(this);sendFirstPartyTelemetry('workflow_sprint_checkout_started',{ctaId:'hero_workflow_sprint_checkout',ctaPlacement:'hero',offer:'workflow_sprint',price:__WORKFLOW_SPRINT_PRICE_DOLLARS__});try{posthog.capture('hero_sprint_checkout_click',{cta:'hero_sprint',price:__WORKFLOW_SPRINT_PRICE_DOLLARS__})}catch(_){}" class="btn-pro-page hero-pro">Pay $__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint</a>
+      <a href="/diagnostic?utm_source=website&utm_medium=hero_cta&utm_campaign=money_today&utm_content=hero_diagnostic&cta_id=hero_workflow_sprint_diagnostic_checkout&cta_placement=hero&plan_id=sprint_diagnostic" data-revenue-cta data-cta-id="hero_workflow_sprint_diagnostic_checkout" data-cta-placement="hero" data-tier="service" data-plan-id="sprint_diagnostic" data-price="__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__" data-sprint-paid-path="diagnostic" onclick="trackRevenueCta(this);sendFirstPartyTelemetry('workflow_sprint_diagnostic_page_opened',{ctaId:'hero_workflow_sprint_diagnostic_checkout',ctaPlacement:'hero',offer:'sprint_diagnostic',price:__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__});try{posthog.capture('hero_diagnostic_page_click',{cta:'hero_diagnostic',price:__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__})}catch(_){}" class="btn-pro-page hero-pro hero-pro-primary hero-diagnostic">Start $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</a>
+      <a href="/go/sprint?utm_source=website&utm_medium=hero_cta&utm_campaign=money_today&utm_content=hero_sprint&cta_id=hero_workflow_sprint_checkout&cta_placement=hero&plan_id=workflow_sprint" data-revenue-cta data-cta-id="hero_workflow_sprint_checkout" data-cta-placement="hero" data-tier="service" data-plan-id="workflow_sprint" data-price="__WORKFLOW_SPRINT_PRICE_DOLLARS__" data-sprint-paid-path="sprint" onclick="trackRevenueCta(this);sendFirstPartyTelemetry('workflow_sprint_scope_opened',{ctaId:'hero_workflow_sprint_checkout',ctaPlacement:'hero',offer:'workflow_sprint',price:__WORKFLOW_SPRINT_PRICE_DOLLARS__});try{posthog.capture('hero_sprint_scope_click',{cta:'hero_sprint',price:__WORKFLOW_SPRINT_PRICE_DOLLARS__})}catch(_){}" class="btn-pro-page hero-pro">Scope $__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint</a>
       <a href="/checkout/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_upgrade&cta_id=hero_start_pro&cta_placement=hero&plan_id=pro&landing_path=%2F" data-revenue-cta data-cta-id="hero_start_pro" data-cta-placement="hero" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);try{posthog.capture('hero_pro_checkout_click',{cta:'hero_start_pro',tier:'pro',price:19})}catch(_){}" class="btn-pro-page hero-pro">Start Pro — $19/mo</a>
       <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="event.preventDefault(); navigator.clipboard.writeText('npx thumbgate init'); this.textContent='Copied ✓ — paste in your repo'; setTimeout(()=>{this.textContent='Install Free CLI'},2000); try{posthog.capture('hero_install_click',{cta:'install_cli'})}catch(_){}" class="btn-free btn-install-hero" title="Click to copy: npx thumbgate init">Install Free CLI</a>
     </div>
-    <p class="hero-paid-note" style="margin-top:4px;">Money path today: <strong>Workflow Hardening Diagnostic ($__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__)</strong> or <strong>Sprint ($__WORKFLOW_SPRINT_PRICE_DOLLARS__)</strong> for one repeated agent failure. Pro stays the solo self-serve lane. Prefer scoping first? <a href="#workflow-sprint-intake" style="color:var(--cyan);" onclick="try{posthog.capture('hero_sprint_click',{cta:'sprint_intake'})}catch(_){};sendFirstPartyTelemetry('hero_sprint_intake_started',{ctaId:'hero_workflow_sprint',ctaPlacement:'hero',offer:'workflow_sprint'});sendFirstPartyTelemetry('workflow_sprint_recovery_intake_clicked',{ctaId:'hero_workflow_sprint_recovery_intake',ctaPlacement:'hero',offer:'workflow_sprint_intake'});">Send workflow first</a>.</p>
+    <p class="hero-paid-note" style="margin-top:4px;">Money path today: confirm the <strong>Workflow Hardening Diagnostic ($__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__)</strong> with a work email, or scope the <strong>Sprint ($__WORKFLOW_SPRINT_PRICE_DOLLARS__)</strong> before checkout. Pro stays the solo self-serve lane. Prefer scoping first? <a href="#workflow-sprint-intake" style="color:var(--cyan);" onclick="try{posthog.capture('hero_sprint_click',{cta:'sprint_intake'})}catch(_){};sendFirstPartyTelemetry('hero_sprint_intake_started',{ctaId:'hero_workflow_sprint',ctaPlacement:'hero',offer:'workflow_sprint'});sendFirstPartyTelemetry('workflow_sprint_recovery_intake_clicked',{ctaId:'hero_workflow_sprint_recovery_intake',ctaPlacement:'hero',offer:'workflow_sprint_intake'});">Send workflow first</a>.</p>
 
     <div class="offer-router" aria-label="Choose the right ThumbGate path">
       <div class="offer-route primary">
         <strong>Team / enterprise: buy proof this week</strong>
-        <p>One workflow. One repeated failure. Paid diagnostic or sprint with Stripe — credit applies when you continue to implementation.</p>
-        <a href="/go/diagnostic?utm_source=website&utm_medium=offer_router&utm_campaign=money_today&cta_id=router_pay_diagnostic&cta_placement=offer_router&plan_id=sprint_diagnostic" data-revenue-cta data-cta-id="router_pay_diagnostic" data-cta-placement="offer_router" data-tier="service" data-plan-id="sprint_diagnostic" data-price="__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__" onclick="trackRevenueCta(this);sendFirstPartyTelemetry('workflow_sprint_diagnostic_checkout_started',{ctaId:'router_pay_diagnostic',ctaPlacement:'offer_router',offer:'sprint_diagnostic'});">Pay $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic →</a>
-        <a href="/go/sprint?utm_source=website&utm_medium=offer_router&utm_campaign=money_today&cta_id=router_pay_sprint&cta_placement=offer_router&plan_id=workflow_sprint" data-revenue-cta data-cta-id="router_pay_sprint" data-cta-placement="offer_router" data-tier="service" data-plan-id="workflow_sprint" data-price="__WORKFLOW_SPRINT_PRICE_DOLLARS__" style="display:block;margin-top:8px;" onclick="trackRevenueCta(this);sendFirstPartyTelemetry('workflow_sprint_checkout_started',{ctaId:'router_pay_sprint',ctaPlacement:'offer_router',offer:'workflow_sprint'});">Pay $__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint →</a>
+        <p>One workflow. One repeated failure. Confirm the diagnostic with email, or scope the sprint before checkout — credit applies when you continue to implementation.</p>
+        <a href="/diagnostic?utm_source=website&utm_medium=offer_router&utm_campaign=money_today&cta_id=router_pay_diagnostic&cta_placement=offer_router&plan_id=sprint_diagnostic" data-revenue-cta data-cta-id="router_pay_diagnostic" data-cta-placement="offer_router" data-tier="service" data-plan-id="sprint_diagnostic" data-price="__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__" onclick="trackRevenueCta(this);sendFirstPartyTelemetry('workflow_sprint_diagnostic_page_opened',{ctaId:'router_pay_diagnostic',ctaPlacement:'offer_router',offer:'sprint_diagnostic'});">Start $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic →</a>
+        <a href="/go/sprint?utm_source=website&utm_medium=offer_router&utm_campaign=money_today&cta_id=router_pay_sprint&cta_placement=offer_router&plan_id=workflow_sprint" data-revenue-cta data-cta-id="router_pay_sprint" data-cta-placement="offer_router" data-tier="service" data-plan-id="workflow_sprint" data-price="__WORKFLOW_SPRINT_PRICE_DOLLARS__" style="display:block;margin-top:8px;" onclick="trackRevenueCta(this);sendFirstPartyTelemetry('workflow_sprint_scope_opened',{ctaId:'router_pay_sprint',ctaPlacement:'offer_router',offer:'workflow_sprint'});">Scope $__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint →</a>
       </div>
       <div class="offer-route">
         <strong>Solo operator: Start Pro</strong>
         <p>Unlimited rules, recall, proof, exports after one real caught repeat.</p>
-        <a href="/checkout/pro?utm_source=website&utm_medium=offer_router&cta_id=router_start_pro&cta_placement=offer_router&plan_id=pro" data-revenue-cta data-cta-id="router_start_pro" data-cta-placement="offer_router" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);">Pay $19/mo with Stripe →</a>
+        <a href="/checkout/pro?utm_source=website&utm_medium=offer_router&cta_id=router_start_pro&cta_placement=offer_router&plan_id=pro" data-revenue-cta data-cta-id="router_start_pro" data-cta-placement="offer_router" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);">Confirm $19/mo Pro with email →</a>
       </div>
       <div class="offer-route">
         <strong>Still evaluating: Free CLI or intake</strong>
@@ -1470,7 +1471,7 @@ __GA_BOOTSTRAP__
             <th style="text-align:left;padding:12px 14px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);"></th>
             <th style="text-align:center;padding:12px 14px;border-bottom:1px solid var(--border);">Free<br><span style="font-size:12px;color:var(--text-muted);font-weight:400;">$0 forever</span></th>
             <th style="text-align:center;padding:12px 14px;border-bottom:1px solid var(--border);color:var(--cyan);">Pro<br><span style="font-size:12px;color:var(--text-muted);font-weight:400;">$19/mo or $149/yr</span></th>
-            <th style="text-align:center;padding:12px 14px;border-bottom:1px solid var(--border);color:var(--cyan);">Enterprise<br><span style="font-size:12px;color:var(--text-muted);font-weight:400;">Custom — scoped after intake</span></th>
+            <th style="text-align:center;padding:12px 14px;border-bottom:1px solid var(--border);color:var(--cyan);">Enterprise<br><span style="font-size:12px;color:var(--text-muted);font-weight:400;">$15k pilot / $10k per month after pilot</span></th>
           </tr>
         </thead>
         <tbody>
@@ -1551,13 +1552,13 @@ __GA_BOOTSTRAP__
             <td><strong>Best for</strong></td>
             <td>One developer evaluating local checks</td>
             <td>One operator who wants personal recall, dashboard proof, managed adapters, and exports</td>
-            <td>Teams &amp; regulated organizations scoping one governed workflow</td>
+            <td>Teams &amp; regulated organizations scoping up to three local workflows</td>
           </tr>
           <tr>
             <td><strong>Price</strong></td>
             <td>$0</td>
             <td>$19/mo or $149/yr</td>
-            <td>Custom — scoped after intake</td>
+            <td>$15,000 pilot; $10,000/month after completed pilot</td>
           </tr>
           <tr>
             <td><strong>Feedback captures</strong></td>
@@ -1581,24 +1582,24 @@ __GA_BOOTSTRAP__
             <td><strong>How to start</strong></td>
             <td><code>npx thumbgate init</code></td>
             <td>Self-serve Stripe checkout</td>
-            <td>Send one repeated workflow failure first — intake before checkout</td>
+            <td>Send the first repeated workflow failure — qualification and signed scope before invoice</td>
           </tr>
         </tbody>
       </table>
     </div>
-    <p class="pricing-note">Free provides capped local evaluation. Pro removes individual limits and adds recall, search, a personal dashboard, and exports. Enterprise starts through intake to scope one workflow; it does not imply generally available hosted team features.</p>
+    <p class="pricing-note">Free provides capped local evaluation. Pro removes individual limits and adds recall, search, a personal dashboard, and exports. Proposal-only service paths start through intake: $3,000/month for one proof-backed workflow, a $15,000 30-day pilot for up to three local workflows, and $10,000/month after a completed pilot. None imply generally available hosted team features.</p>
     <div style="max-width:1080px;margin:24px auto 0;">
       <div class="price-card enterprise" style="border:1px solid var(--cyan);background:linear-gradient(180deg, rgba(34,211,238,0.04), transparent);padding:24px 28px;">
         <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:24px;justify-content:space-between;">
           <div style="flex:1 1 420px;min-width:280px;">
             <div class="tier" style="color:var(--cyan);">Enterprise</div>
             <div style="font-size:14px;color:var(--text-muted);margin:4px 0 12px;letter-spacing:0.04em;text-transform:uppercase;">Engineering teams · Banking · Insurance · Healthcare · Public sector</div>
-            <div style="font-size:18px;color:var(--text);margin-bottom:6px;font-weight:700;">Scope one governed workflow — custom pricing after intake</div>
-            <div class="price-sub" style="margin-bottom:14px;">Enterprise is an intake-led service path for teams that need to define approval boundaries, rollback plans, evidence requirements, and rollout ownership around one workflow. The current public runtime remains local per configured operator; hosted team lesson sync and a hosted org dashboard are not generally available.</div>
+            <div style="font-size:18px;color:var(--text);margin-bottom:6px;font-weight:700;">$15,000 30-day pilot for up to three local workflows</div>
+            <div class="price-sub" style="margin-bottom:14px;">Enterprise is an intake-led, proposal-only service path for teams that need approval boundaries, rollback plans, evidence requirements, and rollout ownership for up to three local workflows. After a completed pilot, the bounded follow-on is $10,000/month for the same workflows. The current public runtime remains local per configured operator; hosted team lesson sync and a hosted org dashboard are not generally available.</div>
             <ul style="margin-bottom:0;">
-              <li><strong>One-workflow discovery</strong> — identify the repeated failure, runtime, owner, and decision boundary</li>
-              <li><strong>Approval and rollback design</strong> — document who can approve, what evidence is required, and how the workflow recovers</li>
-              <li><strong>Verification plan</strong> — define the local tests and proof required before a wider rollout claim</li>
+              <li><strong>Up to three local workflows</strong> — identify each repeated failure, runtime, owner, and decision boundary</li>
+              <li><strong>Approval and rollback implementation</strong> — implement the signed local gate scope and document who can approve, what evidence is required, and how each workflow recovers</li>
+              <li><strong>Verification proof</strong> — run the local regression evidence required before a wider rollout claim</li>
               <li><strong>Deployment requirements</strong> — capture data-boundary, identity, hosting, and integration constraints before making delivery commitments</li>
               <li><strong>Current availability boundary</strong> — hosted team sync, a hosted org dashboard, SSO, SIEM, and compliance packaging are not general-availability features</li>
             </ul>
@@ -1606,7 +1607,7 @@ __GA_BOOTSTRAP__
           <div style="flex:0 0 260px;min-width:240px;display:flex;flex-direction:column;gap:10px;">
             <a href="/?tier=enterprise#workflow-sprint-intake" onclick="try{posthog.capture('enterprise_intake_click',{cta:'enterprise_contact_sales',placement:'pricing'})}catch(_){};sendFirstPartyTelemetry('enterprise_intake_started',{ctaId:'pricing_enterprise_intake',ctaPlacement:'pricing',planId:'enterprise'});" class="btn-team" style="display:block;text-align:center;background:var(--cyan);color:#06121a;font-weight:800;">Start enterprise intake →</a>
             <a href="/learn/regulated-agent-execution-boundary" style="display:block;text-align:center;padding:10px 14px;font-size:13px;color:var(--cyan);border:1px solid var(--cyan);border-radius:8px;text-decoration:none;">Read the build-vs-buy thesis first</a>
-            <p style="font-size:11px;color:var(--text-muted);margin:0;text-align:center;line-height:1.5;">Pricing and deliverables are scoped after intake; no hosted-team capability is promised before verification.</p>
+            <p style="font-size:11px;color:var(--text-muted);margin:0;text-align:center;line-height:1.5;">Qualification and a signed scope come before invoice. No hosted-team capability is promised before a separate build decision and verification.</p>
           </div>
         </div>
       </div>
@@ -1701,7 +1702,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Do I need a cloud account?</div>
-        <div class="faq-a">No. Free keeps local enforcement on your machine with 2 feedback captures/day, up to 3 active auto-promoted prevention rules, and built-in checks. Recall, lesson search, unlimited rules and captures, a personal dashboard, and operator-managed exports open up on Pro. Enterprise is custom and scoped after intake around one workflow. Hosted team lesson sync and a hosted org dashboard are not general-availability runtime features.</div>
+        <div class="faq-a">No. Free keeps local enforcement on your machine with 2 feedback captures/day, up to 3 active auto-promoted prevention rules, and built-in checks. Recall, lesson search, unlimited rules and captures, a personal dashboard, and operator-managed exports open up on Pro. Proposal-only service paths are $3,000/month for one proof-backed workflow, a $15,000 30-day pilot for up to three local workflows, and $10,000/month after a completed pilot. Hosted team lesson sync and a hosted org dashboard are not general-availability runtime features.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What if my thumbs-down is vague?</div>
@@ -1717,7 +1718,7 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What does Pro cost?</div>
-        <div class="faq-a">Pro is $19/mo or $149/yr for individual operators and bills through Stripe. Enterprise is custom pricing, scoped after intake around one workflow's approval boundaries, rollback plan, evidence requirements, and rollout support. Hosted team features are not implied by intake.</div>
+        <div class="faq-a">Pro is $19/mo or $149/yr for individual operators and bills through Stripe. Proposal-only service paths are $3,000/month for one proof-backed workflow, a $15,000 30-day Enterprise pilot for up to three local workflows, and $10,000/month after a completed pilot. Qualification and a signed scope come before invoice; hosted team features are not implied by intake.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Does ThumbGate support enterprise Google Cloud / Vertex AI?</div>

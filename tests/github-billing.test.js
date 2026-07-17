@@ -16,14 +16,17 @@ const crypto = require('crypto');
 let tmpDir;
 let keyStorePath;
 let revenueLedgerPath;
+let githubWebhookLedgerPath;
 
 function setupTempStore() {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'github-billing-test-'));
   keyStorePath = path.join(tmpDir, 'api-keys.json');
   revenueLedgerPath = path.join(tmpDir, 'revenue-events.jsonl');
+  githubWebhookLedgerPath = path.join(tmpDir, 'github-marketplace-webhook-deliveries.jsonl');
   process.env._TEST_API_KEYS_PATH = keyStorePath;
   process.env._TEST_REVENUE_LEDGER_PATH = revenueLedgerPath;
   process.env._TEST_FUNNEL_LEDGER_PATH = path.join(tmpDir, 'funnel-events.jsonl');
+  process.env._TEST_GITHUB_MARKETPLACE_WEBHOOK_LEDGER_PATH = githubWebhookLedgerPath;
   fs.writeFileSync(keyStorePath, JSON.stringify({ keys: {} }), 'utf-8');
 }
 
@@ -34,7 +37,9 @@ function cleanupTempStore() {
   delete process.env._TEST_API_KEYS_PATH;
   delete process.env._TEST_REVENUE_LEDGER_PATH;
   delete process.env._TEST_FUNNEL_LEDGER_PATH;
+  delete process.env._TEST_GITHUB_MARKETPLACE_WEBHOOK_LEDGER_PATH;
   delete process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON;
+  delete process.env.THUMBGATE_ALLOW_UNSIGNED_GITHUB_WEBHOOKS;
 }
 
 function readRevenueEvents() {
@@ -241,16 +246,65 @@ describe('billing.js — GitHub Marketplace Webhooks', () => {
     assert.equal(result.result.customerId, 'github_organization_67890');
   });
 
-  test('verifyGithubWebhookSignature — returns true in local mode', () => {
-    const oldSecret = process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET;
-    delete process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET;
-    
-    // Need to re-require to pick up env change or just use the logic
-    // Since billing.js captures it at top level, we'll just check the exported function
-    const res = billing.verifyGithubWebhookSignature('body', 'any-sig');
-    assert.equal(res, true);
+  test('verifyGithubWebhookSignature — missing secret fails closed even in a test process', () => {
+    assert.equal(billing.verifyGithubWebhookSignature('body', 'any-sig'), false);
+  });
 
-    if (oldSecret) process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET = oldSecret;
+  test('verifyGithubWebhookSignature — matches GitHub official HMAC-SHA256 test vector', () => {
+    process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET = "It's a Secret to Everybody";
+    delete require.cache[require.resolve('../scripts/billing')];
+    billing = require('../scripts/billing');
+    const signature = 'sha256=757107ea0eb2509fc211221cce984b8a37570b6d7586c22c46f4379c8b043e17';
+    assert.equal(billing.verifyGithubWebhookSignature('Hello, World!', signature), true);
+    assert.equal(billing.verifyGithubWebhookSignature('Hello, World?', signature), false);
+
+    delete process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET;
+    delete require.cache[require.resolve('../scripts/billing')];
+    billing = require('../scripts/billing');
+  });
+
+  test('recordGithubMarketplaceWebhookDelivery — re-verifies, persists raw proof, dedupes, and rejects collisions', () => {
+    process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET = 'github-ledger-secret';
+    delete require.cache[require.resolve('../scripts/billing')];
+    billing = require('../scripts/billing');
+    const body = Buffer.from(JSON.stringify({
+      action: 'purchased',
+      marketplace_purchase: { account: { type: 'User', id: 909 }, plan: { id: 1 } },
+    }));
+    const signature = `sha256=${crypto.createHmac('sha256', 'github-ledger-secret').update(body).digest('hex')}`;
+    const input = {
+      rawBody: body,
+      signature,
+      deliveryId: 'delivery-909',
+      eventName: 'marketplace_purchase',
+      receivedAt: '2026-07-15T12:00:00.000Z',
+    };
+    const first = billing.recordGithubMarketplaceWebhookDelivery(input);
+    const duplicate = billing.recordGithubMarketplaceWebhookDelivery(input);
+    const collisionBody = Buffer.from(JSON.stringify({
+      action: 'cancelled',
+      marketplace_purchase: { account: { type: 'User', id: 909 }, plan: { id: 1 } },
+    }));
+    const collision = billing.recordGithubMarketplaceWebhookDelivery({
+      ...input,
+      rawBody: collisionBody,
+      signature: `sha256=${crypto.createHmac('sha256', 'github-ledger-secret').update(collisionBody).digest('hex')}`,
+    });
+    assert.equal(first.verified, true);
+    assert.equal(first.recorded, true);
+    assert.equal(first.duplicate, false);
+    assert.equal(duplicate.duplicate, true);
+    assert.equal(collision.verified, false);
+    assert.equal(collision.reason, 'github_delivery_id_collision');
+    const rows = billing.loadGithubMarketplaceWebhookLedger();
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].deliveryId, 'delivery-909');
+    assert.match(rows[0].signature, /^sha256=[a-f0-9]{64}$/);
+    assert.equal(Buffer.from(rows[0].rawBodyBase64, 'base64').equals(body), true);
+
+    delete process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET;
+    delete require.cache[require.resolve('../scripts/billing')];
+    billing = require('../scripts/billing');
   });
 
   test('handleGithubWebhook — purchased is idempotent for repeated marketplace order events', () => {
@@ -387,8 +441,10 @@ describe('API server — GitHub Webhook Route', () => {
   before(async () => {
     setupTempStore();
     process.env.THUMBGATE_ALLOW_INSECURE = 'true';
-    delete process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET;
+    process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET = 'github-api-route-secret';
 
+    delete require.cache[require.resolve('../scripts/billing')];
+    delete require.cache[require.resolve('../src/api/server')];
     const { startServer } = require('../src/api/server');
     const started = await startServer({ port: 0 });
     server = started.server;
@@ -399,12 +455,20 @@ describe('API server — GitHub Webhook Route', () => {
     await new Promise((resolve) => server.close(resolve));
     cleanupTempStore();
     delete process.env.THUMBGATE_ALLOW_INSECURE;
+    delete process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET;
   });
 
   async function apiRequest(method, path, body, headers = {}) {
     const http = require('http');
     return new Promise((resolve, reject) => {
       const bodyStr = body ? JSON.stringify(body) : undefined;
+      const githubHeaders = path === '/v1/billing/github-webhook' && bodyStr
+        ? {
+            'X-GitHub-Event': 'marketplace_purchase',
+            'X-GitHub-Delivery': `test-delivery-${crypto.createHash('sha256').update(bodyStr).digest('hex').slice(0, 16)}`,
+            'X-Hub-Signature-256': `sha256=${crypto.createHmac('sha256', 'github-api-route-secret').update(bodyStr).digest('hex')}`,
+          }
+        : {};
       const options = {
         hostname: '127.0.0.1',
         port,
@@ -412,6 +476,7 @@ describe('API server — GitHub Webhook Route', () => {
         method,
         headers: {
           'Content-Type': 'application/json',
+          ...githubHeaders,
           ...headers,
           ...(bodyStr ? { 'Content-Length': Buffer.byteLength(bodyStr) } : {}),
         },
@@ -448,21 +513,47 @@ describe('API server — GitHub Webhook Route', () => {
     assert.equal(res.body.handled, true);
     assert.equal(res.body.action, 'provisioned_api_key');
     assert.equal(res.body.result.customerId, 'github_user_999');
+    const ledgerRows = fs.readFileSync(githubWebhookLedgerPath, 'utf8').trim().split('\n').map(JSON.parse);
+    assert.equal(ledgerRows.length, 1);
+    const revenueRows = readRevenueEvents().filter((entry) => entry.customerId === 'github_user_999');
+    assert.equal(revenueRows[0].metadata.githubWebhookSignatureVerified, true);
+    assert.match(revenueRows[0].metadata.githubPayloadSha256, /^sha256:[a-f0-9]{64}$/);
+  });
+
+  test('POST /v1/billing/github-webhook rejects unsigned deliveries without provisioning', async () => {
+    const event = {
+      action: 'purchased',
+      marketplace_purchase: { account: { type: 'User', id: 1000 }, plan: { id: 1 } },
+    };
+    const res = await apiRequest('POST', '/v1/billing/github-webhook', event, {
+      'X-Hub-Signature-256': '',
+      'X-GitHub-Delivery': 'unsigned-delivery',
+    });
+    assert.equal(res.status, 400);
+    assert.match(res.body.title, /Invalid GitHub webhook delivery/i);
+    assert.equal(readRevenueEvents().some((entry) => entry.customerId === 'github_user_1000'), false);
   });
 
   test('POST /v1/billing/github-webhook handles invalid JSON', async () => {
     const http = require('http');
+    const rawBody = 'not-json';
+    const signature = `sha256=${crypto.createHmac('sha256', 'github-api-route-secret').update(rawBody).digest('hex')}`;
     const res = await new Promise((resolve) => {
       const req = http.request({
         hostname: '127.0.0.1',
         port,
         path: '/v1/billing/github-webhook',
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+          'Content-Type': 'application/json',
+          'X-GitHub-Event': 'marketplace_purchase',
+          'X-GitHub-Delivery': 'invalid-json-delivery',
+          'X-Hub-Signature-256': signature,
+        }
       }, (res) => {
         resolve(res.statusCode);
       });
-      req.write('not-json');
+      req.write(rawBody);
       req.end();
     });
     assert.equal(res, 400);

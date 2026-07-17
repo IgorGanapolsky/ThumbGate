@@ -9,6 +9,7 @@ const { getFeedbackPaths } = require('./feedback-paths');
 const { appendJsonl, ensureParentDir, readJsonl } = require('./fs-utils');
 
 const SALES_PIPELINE_FILE = 'sales-pipeline.jsonl';
+const SALES_PIPELINE_PATH_ENV = 'THUMBGATE_SALES_PIPELINE_PATH';
 const SALES_STAGE_FLOW = [
   'targeted',
   'contacted',
@@ -27,9 +28,42 @@ const SALES_STAGE_TRANSITIONS = {
   call_booked: ['checkout_started', 'sprint_intake', 'paid', 'lost'],
   checkout_started: ['paid', 'lost'],
   sprint_intake: ['paid', 'lost'],
-  paid: [],
+  paid: ['lost'],
   lost: [],
 };
+
+const SALES_EVIDENCE_KINDS = Object.freeze([
+  'platform_send_receipt',
+  'buyer_reply',
+  'booking_confirmation',
+  'provider_checkout_session',
+  'buyer_checkout_confirmation',
+  'intake_submission',
+  'workflow_materials_received',
+  'provider_payment',
+  'provider_refund',
+  'buyer_declined',
+  'operator_disqualified',
+  'stale_closed',
+  'operator_note',
+]);
+
+const SALES_STAGE_EVIDENCE_KINDS = Object.freeze({
+  targeted: [],
+  contacted: ['platform_send_receipt'],
+  replied: ['buyer_reply'],
+  call_booked: ['booking_confirmation'],
+  checkout_started: ['provider_checkout_session', 'buyer_checkout_confirmation'],
+  sprint_intake: ['intake_submission', 'workflow_materials_received'],
+  paid: ['provider_payment'],
+  lost: ['buyer_declined', 'operator_disqualified', 'stale_closed', 'provider_refund'],
+});
+
+const VERIFIED_PAYMENT_PROVIDERS = Object.freeze(['paypal', 'stripe']);
+const VERIFIED_PAYMENT_SOURCE_PATTERN = /^provider_api_live:.+/;
+const VERIFIED_PAYMENT_DIGEST_PATTERN = /^sha256:[a-f0-9]{64}$/;
+
+const LEGACY_TIMESTAMP_FALLBACK = '1970-01-01T00:00:00.000Z';
 
 function normalizeText(value, maxLength = 1000) {
   if (value === undefined || value === null) return null;
@@ -57,6 +91,95 @@ function normalizeSalesStage(value, fallback = null) {
 function normalizeInteger(value, fallback = 0) {
   const parsed = Number.parseInt(String(value || '').trim(), 10);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function normalizeSalesEvidence(value = {}) {
+  const evidence = value && typeof value === 'object' ? value : {};
+  const normalized = {
+    kind: normalizeText(evidence.kind, 80),
+    provider: normalizeText(evidence.provider, 80)?.toLowerCase() || null,
+    source: normalizeText(evidence.source, 160),
+    reference: normalizeText(evidence.reference, 1000),
+    verified: evidence.verified === true,
+    digest: normalizeText(evidence.digest, 160)?.toLowerCase() || null,
+  };
+  const invoiceId = normalizeText(evidence.invoiceId, 127);
+  if (invoiceId) normalized.invoiceId = invoiceId;
+  const offerId = normalizeText(evidence.offerId, 120);
+  if (offerId) normalized.offerId = offerId;
+  const buyerDigest = normalizeText(evidence.buyerDigest, 80)?.toLowerCase() || null;
+  if (buyerDigest) normalized.buyerDigest = buyerDigest;
+  return normalized;
+}
+
+function buildSalesEvidence(payload = {}) {
+  return normalizeSalesEvidence({
+    kind: payload.evidenceKind || payload.evidence?.kind,
+    provider: payload.evidenceProvider || payload.evidence?.provider,
+    source: payload.evidenceSource || payload.evidence?.source,
+    reference: payload.evidenceRef || payload.evidenceReference
+      || payload.evidence?.reference,
+    verified: payload.evidenceVerified === true || payload.evidence?.verified === true,
+    digest: payload.evidenceDigest || payload.evidence?.digest,
+    invoiceId: payload.evidenceInvoiceId || payload.evidence?.invoiceId,
+    offerId: payload.evidenceOfferId || payload.evidence?.offerId,
+    buyerDigest: payload.evidenceBuyerDigest || payload.evidence?.buyerDigest,
+  });
+}
+
+function isVerifiedProviderFinancialEvidence(evidence = {}) {
+  return ['provider_payment', 'provider_refund'].includes(evidence.kind)
+    && VERIFIED_PAYMENT_PROVIDERS.includes(evidence.provider)
+    && evidence.verified === true
+    && VERIFIED_PAYMENT_SOURCE_PATTERN.test(evidence.source || '')
+    && VERIFIED_PAYMENT_DIGEST_PATTERN.test(evidence.digest || '')
+    && Boolean(evidence.offerId)
+    && VERIFIED_PAYMENT_DIGEST_PATTERN.test(evidence.buyerDigest || '');
+}
+
+function evidenceSupportsStage(stage, evidence = {}) {
+  if (stage === 'targeted') return true;
+  const allowed = SALES_STAGE_EVIDENCE_KINDS[stage] || [];
+  const containsPlaceholder = [evidence.source, evidence.reference]
+    .some((value) => /^REPLACE_WITH_/i.test(String(value || '').trim()));
+  const structurallySupported = allowed.includes(evidence.kind)
+    && Boolean(evidence.source)
+    && Boolean(evidence.reference)
+    && !containsPlaceholder;
+  if (!structurallySupported) return false;
+  if (stage === 'paid') return evidence.kind === 'provider_payment' && isVerifiedProviderFinancialEvidence(evidence);
+  if (evidence.kind === 'provider_refund') return stage === 'lost' && isVerifiedProviderFinancialEvidence(evidence);
+  return true;
+}
+
+function validateKnownEvidence(evidence = {}) {
+  if (!evidence.kind || !SALES_EVIDENCE_KINDS.includes(evidence.kind)) {
+    throw new Error(`evidenceKind must be one of: ${SALES_EVIDENCE_KINDS.join(', ')}`);
+  }
+  if (!evidence.source) throw new Error('evidenceSource is required.');
+  if (!evidence.reference) throw new Error('evidenceRef is required.');
+  if (/^REPLACE_WITH_/i.test(evidence.source) || /^REPLACE_WITH_/i.test(evidence.reference)) {
+    throw new Error('Replace evidence placeholders with an actual provider or buyer receipt before advancing.');
+  }
+  if (['provider_payment', 'provider_refund'].includes(evidence.kind)) {
+    if (!isVerifiedProviderFinancialEvidence(evidence)) {
+      throw new Error('Provider payment/refund evidence must come from provider-payment reconciliation with a supported provider, live provider API source, verified=true, and sha256 evidence digest.');
+    }
+  }
+  return evidence;
+}
+
+function validateStageEvidence(stage, payload = {}) {
+  if (stage === 'targeted') return normalizeSalesEvidence();
+  const evidence = validateKnownEvidence(buildSalesEvidence(payload));
+  const allowed = SALES_STAGE_EVIDENCE_KINDS[stage] || [];
+  if (!allowed.includes(evidence.kind)) {
+    throw new Error(`stage ${stage} requires evidenceKind: ${allowed.join(' or ')}`);
+  }
+  if (stage === 'paid' && normalizeInteger(payload.amountCents, 0) <= 0) {
+    throw new Error('stage paid requires amountCents greater than 0.');
+  }
+  return evidence;
 }
 
 function slugify(value, fallback = 'lead') {
@@ -104,20 +227,24 @@ function buildSalesLeadId(entry = {}) {
 function buildHistoryEntry({
   fromStage = null,
   toStage,
+  at = null,
   actor = null,
   channel = null,
   note = null,
   url = null,
-  timestamp = new Date().toISOString(),
+  timestamp = null,
+  evidence = null,
 } = {}) {
+  const resolvedTimestamp = timestamp || at || new Date().toISOString();
   return {
     fromStage: normalizeSalesStage(fromStage, null),
     toStage: normalizeSalesStage(toStage, 'targeted'),
-    at: normalizeText(timestamp, 64) || new Date().toISOString(),
+    at: normalizeText(resolvedTimestamp, 64) || new Date().toISOString(),
     actor: normalizeText(actor, 160),
     channel: normalizeText(channel, 80),
     note: normalizeText(note, 2000),
     url: normalizeUrl(url),
+    evidence: normalizeSalesEvidence(evidence || {}),
   };
 }
 
@@ -131,6 +258,7 @@ function normalizeLeadHistory(entry, stage, updatedAt) {
       channel: entry.channel || entry.source || 'manual',
       note: entry.note || 'Lead entered pipeline.',
       timestamp: updatedAt,
+      evidence: entry.evidence,
     })];
 }
 
@@ -199,8 +327,17 @@ function normalizeLeadAttribution(entry = {}) {
 }
 
 function sanitizeSalesLead(entry = {}) {
-  const createdAt = normalizeText(entry.createdAt, 64) || new Date().toISOString();
-  const updatedAt = normalizeText(entry.updatedAt, 64) || createdAt;
+  const history = Array.isArray(entry.history) ? entry.history : [];
+  const firstHistoryAt = normalizeText(history[0]?.at || history[0]?.timestamp, 64);
+  const lastHistoryAt = normalizeText(history.at(-1)?.at || history.at(-1)?.timestamp, 64);
+  const createdAt = normalizeText(entry.createdAt, 64)
+    || firstHistoryAt
+    || normalizeText(entry.outbound?.lastSentAt || entry.revenue?.paidAt, 64)
+    || LEGACY_TIMESTAMP_FALLBACK;
+  const updatedAt = normalizeText(entry.updatedAt, 64)
+    || lastHistoryAt
+    || normalizeText(entry.revenue?.paidAt || entry.outbound?.lastSentAt, 64)
+    || createdAt;
   const stage = normalizeSalesStage(entry.stage, 'targeted');
   const source = normalizeText(entry.source, 80) || 'manual';
 
@@ -222,9 +359,74 @@ function sanitizeSalesLead(entry = {}) {
   };
 }
 
-function getSalesPipelinePath({ statePath = null, feedbackDir = null } = {}) {
+function findLinkedGitCommonRoot({ cwd = process.cwd() } = {}) {
+  let currentDir;
+  try {
+    currentDir = path.resolve(cwd);
+  } catch {
+    return null;
+  }
+
+  while (true) {
+    const dotGitPath = path.join(currentDir, '.git');
+    try {
+      const stat = fs.statSync(dotGitPath);
+      if (stat.isDirectory()) return null;
+      if (stat.isFile()) {
+        const match = /^gitdir:\s*(.+)$/im.exec(fs.readFileSync(dotGitPath, 'utf8'));
+        if (!match) return null;
+        const gitDir = path.resolve(currentDir, match[1].trim());
+        const commonDirFile = path.join(gitDir, 'commondir');
+        const commonDir = fs.existsSync(commonDirFile)
+          ? path.resolve(gitDir, fs.readFileSync(commonDirFile, 'utf8').trim())
+          : gitDir;
+        if (path.basename(commonDir) !== '.git' || !fs.existsSync(commonDir)) return null;
+        const relativeGitDir = path.relative(path.join(commonDir, 'worktrees'), gitDir);
+        if (
+          !relativeGitDir
+          || relativeGitDir.startsWith('..')
+          || path.isAbsolute(relativeGitDir)
+        ) return null;
+        return path.dirname(commonDir);
+      }
+    } catch {
+      // Keep walking until a repository boundary is found.
+    }
+
+    const parentDir = path.dirname(currentDir);
+    if (parentDir === currentDir) return null;
+    currentDir = parentDir;
+  }
+}
+
+function getSalesPipelinePath({
+  statePath = null,
+  feedbackDir = null,
+  cwd = process.cwd(),
+  env = process.env,
+} = {}) {
   if (statePath) return path.resolve(statePath);
-  const baseDir = feedbackDir || getFeedbackPaths().FEEDBACK_DIR;
+  if (feedbackDir) return path.join(path.resolve(feedbackDir), SALES_PIPELINE_FILE);
+  if (env[SALES_PIPELINE_PATH_ENV]) return path.resolve(env[SALES_PIPELINE_PATH_ENV]);
+
+  // Explicit runtime storage always wins. In particular, hosted Railway
+  // deployments must keep using their mounted feedback volume.
+  if (
+    env.THUMBGATE_FEEDBACK_DIR
+    || env.RAILWAY_VOLUME_MOUNT_PATH
+    || env.THUMBGATE_PROJECT_DIR
+    || env.CLAUDE_PROJECT_DIR
+  ) {
+    return path.join(getFeedbackPaths({ cwd, env }).FEEDBACK_DIR, SALES_PIPELINE_FILE);
+  }
+
+  // A linked Git worktree is another view of the same commercial system, not
+  // a new business. Share its pipeline with the primary checkout so a release
+  // or repair worktree cannot silently report zero active buyers.
+  const commonRoot = findLinkedGitCommonRoot({ cwd });
+  if (commonRoot) return path.join(commonRoot, '.thumbgate', SALES_PIPELINE_FILE);
+
+  const baseDir = getFeedbackPaths({ cwd, env }).FEEDBACK_DIR;
   return path.join(baseDir, SALES_PIPELINE_FILE);
 }
 
@@ -328,11 +530,16 @@ function importRevenueLoopReport(report = {}, options = {}) {
 }
 
 function addSalesLead(payload = {}, options = {}) {
+  const initialStage = normalizeSalesStage(payload.stage, 'targeted');
+  const initialEvidence = validateStageEvidence(initialStage, payload);
+  const initialAt = normalizeText(payload.timestamp, 64) || new Date().toISOString();
   const lead = sanitizeSalesLead({
     leadId: payload.leadId,
+    createdAt: initialAt,
+    updatedAt: initialAt,
     source: payload.source || 'manual',
     channel: payload.channel || payload.source || 'manual',
-    stage: payload.stage || 'targeted',
+    stage: initialStage,
     offer: payload.offer || 'workflow_hardening_sprint',
     contact: {
       username: payload.username,
@@ -355,6 +562,15 @@ function addSalesLead(payload = {}, options = {}) {
     outbound: {
       draft: payload.draft,
       cta: payload.cta,
+      lastSentAt: initialEvidence.kind === 'platform_send_receipt' ? initialAt : null,
+      lastSentUrl: initialEvidence.kind === 'platform_send_receipt'
+        ? normalizeUrl(payload.url) || initialEvidence.reference
+        : null,
+    },
+    revenue: {
+      amountCents: initialStage === 'paid' ? payload.amountCents : 0,
+      currency: payload.currency,
+      paidAt: initialStage === 'paid' ? initialAt : null,
     },
     attribution: {
       campaign: payload.campaign || 'workflow_hardening_sprint_outbound',
@@ -362,6 +578,15 @@ function addSalesLead(payload = {}, options = {}) {
       utmMedium: payload.utmMedium || 'direct_outbound',
       utmCampaign: payload.utmCampaign || 'workflow_hardening_sprint',
     },
+    history: [buildHistoryEntry({
+      toStage: initialStage,
+      actor: payload.actor || 'sales-pipeline',
+      channel: payload.channel || payload.source || 'manual',
+      note: payload.note || 'Lead entered pipeline.',
+      url: payload.url,
+      timestamp: initialAt,
+      evidence: initialEvidence,
+    })],
   });
 
   const existing = loadSalesLeads(options).find((entry) => entry.leadId === lead.leadId);
@@ -398,32 +623,81 @@ function advanceSalesLead(payload = {}, options = {}) {
   const currentLead = loadSalesLeads(options).find((lead) => lead.leadId === leadId);
   if (!currentLead) throw new Error(`Unknown sales lead: ${leadId}`);
   validateStageTransition(currentLead.stage, nextStage, { force: Boolean(payload.force) });
+  const eventAt = normalizeText(payload.timestamp, 64) || new Date().toISOString();
+  const updatedAt = new Date().toISOString();
 
   if (currentLead.stage === nextStage) {
+    const hasEventEvidence = Boolean(payload.evidenceKind || payload.evidence?.kind);
+    if (hasEventEvidence) {
+      const eventEvidence = validateKnownEvidence(buildSalesEvidence(payload));
+      const isSendReceipt = eventEvidence.kind === 'platform_send_receipt';
+      const isPaymentEvidence = eventEvidence.kind === 'provider_payment';
+      const evidenceAmount = normalizeInteger(payload.amountCents, currentLead.revenue.amountCents || 0);
+      if (currentLead.stage === 'paid' && isPaymentEvidence && evidenceAmount <= 0) {
+        throw new Error('stage paid requires amountCents greater than 0.');
+      }
+      const updatedLead = appendSalesLeadSnapshot({
+        ...currentLead,
+        updatedAt,
+        outbound: {
+          ...currentLead.outbound,
+          lastSentAt: isSendReceipt ? eventAt : currentLead.outbound.lastSentAt,
+          lastSentUrl: isSendReceipt
+            ? normalizeUrl(payload.url) || eventEvidence.reference || currentLead.outbound.lastSentUrl
+            : currentLead.outbound.lastSentUrl,
+        },
+        revenue: {
+          ...currentLead.revenue,
+          amountCents: isPaymentEvidence ? evidenceAmount : currentLead.revenue.amountCents,
+          currency: isPaymentEvidence
+            ? normalizeText(payload.currency, 16) || currentLead.revenue.currency
+            : currentLead.revenue.currency,
+          paidAt: isPaymentEvidence ? (currentLead.revenue.paidAt || eventAt) : currentLead.revenue.paidAt,
+        },
+        history: currentLead.history.concat(buildHistoryEntry({
+          fromStage: currentLead.stage,
+          toStage: nextStage,
+          actor: payload.actor || 'operator',
+          channel: payload.channel || currentLead.channel,
+          note: payload.note || 'Recorded same-stage sales evidence.',
+          url: payload.url,
+          timestamp: eventAt,
+          evidence: eventEvidence,
+        })),
+      }, options);
+      return {
+        lead: updatedLead,
+        unchanged: false,
+      };
+    }
+    if (payload.note || payload.url || payload.evidenceSource || payload.evidenceRef) {
+      throw new Error('same-stage updates require evidenceKind, evidenceSource, and evidenceRef.');
+    }
     return {
       lead: currentLead,
       unchanged: true,
     };
   }
 
-  const updatedAt = normalizeText(payload.timestamp, 64) || new Date().toISOString();
+  const stageEvidence = validateStageEvidence(nextStage, payload);
   const revenueAmount = normalizeInteger(payload.amountCents, currentLead.revenue.amountCents || 0);
+  const isFullRefund = nextStage === 'lost' && stageEvidence.kind === 'provider_refund';
   const updatedLead = appendSalesLeadSnapshot({
     ...currentLead,
     updatedAt,
     stage: nextStage,
     outbound: {
       ...currentLead.outbound,
-      lastSentAt: nextStage === 'contacted' ? updatedAt : currentLead.outbound.lastSentAt,
+      lastSentAt: nextStage === 'contacted' ? eventAt : currentLead.outbound.lastSentAt,
       lastSentUrl: nextStage === 'contacted'
         ? normalizeUrl(payload.url) || currentLead.outbound.lastSentUrl
         : currentLead.outbound.lastSentUrl,
     },
     revenue: {
       ...currentLead.revenue,
-      amountCents: nextStage === 'paid' ? revenueAmount : currentLead.revenue.amountCents,
+      amountCents: nextStage === 'paid' ? revenueAmount : (isFullRefund ? 0 : currentLead.revenue.amountCents),
       currency: normalizeText(payload.currency, 16) || currentLead.revenue.currency,
-      paidAt: nextStage === 'paid' ? updatedAt : currentLead.revenue.paidAt,
+      paidAt: nextStage === 'paid' ? eventAt : currentLead.revenue.paidAt,
     },
     history: currentLead.history.concat(buildHistoryEntry({
       fromStage: currentLead.stage,
@@ -432,7 +706,8 @@ function advanceSalesLead(payload = {}, options = {}) {
       channel: payload.channel || currentLead.channel,
       note: payload.note,
       url: payload.url,
-      timestamp: updatedAt,
+      timestamp: eventAt,
+      evidence: stageEvidence,
     })),
   }, options);
 
@@ -442,25 +717,119 @@ function advanceSalesLead(payload = {}, options = {}) {
   };
 }
 
+function evaluateLeadEvidenceAtStage(lead = {}, requestedStage = lead.stage) {
+  const stage = normalizeSalesStage(requestedStage, 'targeted');
+  if (stage === 'targeted') {
+    return {
+      stage,
+      verified: true,
+      evidence: null,
+      reason: null,
+    };
+  }
+
+  const history = Array.isArray(lead.history) ? lead.history : [];
+  const supportingEvent = history
+    .slice()
+    .reverse()
+    .find((event) => event.toStage === stage && evidenceSupportsStage(stage, event.evidence));
+  if (!supportingEvent) {
+    return {
+      stage,
+      verified: false,
+      evidence: null,
+      reason: `No stage-appropriate evidence for ${stage}.`,
+    };
+  }
+  if (stage === 'paid' && normalizeInteger(lead.revenue?.amountCents, 0) <= 0) {
+    return {
+      stage,
+      verified: false,
+      evidence: supportingEvent.evidence,
+      reason: 'Paid stage has no positive amountCents.',
+    };
+  }
+
+  return {
+    stage,
+    verified: true,
+    evidence: supportingEvent.evidence,
+    evidenceAt: supportingEvent.at,
+    reason: null,
+  };
+}
+
+function evaluateLeadStageEvidence(lead = {}) {
+  return evaluateLeadEvidenceAtStage(lead, lead.stage);
+}
+
+function auditSalesPipeline(leads = []) {
+  const issues = [];
+  let verified = 0;
+  for (const lead of leads) {
+    const result = evaluateLeadStageEvidence(lead);
+    if (result.verified) {
+      verified += 1;
+      continue;
+    }
+    issues.push({
+      leadId: lead.leadId,
+      stage: lead.stage,
+      code: 'unverified_stage_evidence',
+      reason: result.reason,
+      allowedEvidenceKinds: SALES_STAGE_EVIDENCE_KINDS[lead.stage] || [],
+    });
+  }
+  return {
+    ok: issues.length === 0,
+    total: leads.length,
+    verified,
+    unverified: issues.length,
+    issues,
+  };
+}
+
 function summarizeSalesPipeline(leads = []) {
   const byStage = Object.fromEntries(SALES_STAGE_FLOW.map((stage) => [stage, 0]));
+  const verifiedByStage = Object.fromEntries(SALES_STAGE_FLOW.map((stage) => [stage, 0]));
+  const unverifiedByStage = Object.fromEntries(SALES_STAGE_FLOW.map((stage) => [stage, 0]));
   let bookedRevenueCents = 0;
   for (const lead of leads) {
     byStage[lead.stage] = (byStage[lead.stage] || 0) + 1;
-    if (lead.stage === 'paid') {
+    const stageEvidence = evaluateLeadStageEvidence(lead);
+    const evidenceBucket = stageEvidence.verified ? verifiedByStage : unverifiedByStage;
+    evidenceBucket[lead.stage] = (evidenceBucket[lead.stage] || 0) + 1;
+    if (lead.stage === 'paid' && stageEvidence.verified) {
       bookedRevenueCents += lead.revenue.amountCents || 0;
     }
   }
 
+  const countAtOrBeyond = (stageCounts, stage) => {
+    const startIndex = SALES_STAGE_FLOW.indexOf(stage);
+    return SALES_STAGE_FLOW.slice(startIndex)
+      .filter((candidate) => candidate !== 'lost')
+      .reduce((sum, candidate) => sum + (stageCounts[candidate] || 0), 0);
+  };
+
+  const rawContacted = countAtOrBeyond(byStage, 'contacted');
+  const rawReplies = countAtOrBeyond(byStage, 'replied');
+  const rawCallsBooked = countAtOrBeyond(byStage, 'call_booked');
+
   return {
     total: leads.length,
     byStage,
+    verifiedByStage,
+    unverifiedByStage,
+    evidenceGapCount: Object.values(unverifiedByStage).reduce((sum, count) => sum + count, 0),
     active: leads.filter((lead) => lead.stage !== 'paid' && lead.stage !== 'lost').length,
-    contacted: byStage.contacted + byStage.replied + byStage.call_booked
-      + byStage.checkout_started + byStage.sprint_intake + byStage.paid,
-    replies: byStage.replied + byStage.call_booked + byStage.checkout_started + byStage.sprint_intake + byStage.paid,
-    callsBooked: byStage.call_booked + byStage.checkout_started + byStage.sprint_intake + byStage.paid,
-    paid: byStage.paid,
+    contacted: leads.filter((lead) => evaluateLeadEvidenceAtStage(lead, 'contacted').verified).length,
+    rawContacted,
+    replies: leads.filter((lead) => evaluateLeadEvidenceAtStage(lead, 'replied').verified).length,
+    rawReplies,
+    callsBooked: leads.filter((lead) => evaluateLeadEvidenceAtStage(lead, 'call_booked').verified).length,
+    rawCallsBooked,
+    paid: verifiedByStage.paid,
+    rawPaid: byStage.paid,
     bookedRevenueCents,
   };
 }
@@ -471,12 +840,14 @@ function formatLeadContact(contact = {}) {
 
 function renderLeadQueueEntry(lead) {
   const repo = lead.account.repoUrl || lead.account.repoName || lead.account.name || 'n/a';
+  const stageEvidence = evaluateLeadStageEvidence(lead);
   return [
     `### ${lead.leadId}`,
     `- Stage: ${lead.stage}`,
     `- Offer: ${lead.offer}`,
     `- Repo/account: ${repo}`,
     `- Contact: ${formatLeadContact(lead.contact)}`,
+    `- Stage evidence: ${stageEvidence.verified ? 'verified' : `unverified — ${stageEvidence.reason}`}`,
     `- Concrete offer: ${lead.qualification.concreteOffer}`,
     `- Proof rule: ${lead.qualification.proofTiming}`,
     `- Outreach draft: ${lead.outbound.draft || 'n/a'}`,
@@ -500,14 +871,18 @@ function renderSalesPipelineMarkdown({ leads = [], generatedAt = new Date().toIS
     '## Summary',
     `- Total leads: ${summary.total}`,
     `- Active leads: ${summary.active}`,
-    `- Contacted: ${summary.contacted}`,
-    `- Replied: ${summary.replies}`,
-    `- Calls booked: ${summary.callsBooked}`,
-    `- Paid: ${summary.paid}`,
-    `- Booked revenue: $${(summary.bookedRevenueCents / 100).toFixed(2)}`,
+    `- Verified contacted: ${summary.contacted} (raw stage-derived: ${summary.rawContacted})`,
+    `- Verified replied: ${summary.replies} (raw stage-derived: ${summary.rawReplies})`,
+    `- Verified calls booked: ${summary.callsBooked} (raw stage-derived: ${summary.rawCallsBooked})`,
+    `- Verified paid: ${summary.paid} (raw stage-derived: ${summary.rawPaid})`,
+    `- Verified booked revenue: $${(summary.bookedRevenueCents / 100).toFixed(2)}`,
     '',
     '## Stage Counts',
     ...SALES_STAGE_FLOW.map((stage) => `- ${stage}: ${summary.byStage[stage] || 0}`),
+    '',
+    '## Verified Stage Counts',
+    ...SALES_STAGE_FLOW.map((stage) => `- ${stage}: ${summary.verifiedByStage[stage] || 0}`),
+    `- Evidence gaps: ${summary.evidenceGapCount}`,
     '',
     '## Lead Queue',
     ...leadQueueLines,
@@ -580,6 +955,10 @@ function runCli(argv = process.argv.slice(2)) {
     }
 
     case 'advance': {
+      if (!options.lead && !options.leadId) throw new Error('leadId is required.');
+      if (options.stage === 'paid') {
+        throw new Error('The sales:pipeline CLI cannot mark a lead paid. Use sales:reconcile-payment with a live provider payment ID.');
+      }
       const result = advanceSalesLead({
         leadId: options.lead || options.leadId,
         stage: options.stage,
@@ -589,6 +968,10 @@ function runCli(argv = process.argv.slice(2)) {
         url: options.url,
         amountCents: options.amountCents,
         currency: options.currency,
+        evidenceKind: options.evidenceKind,
+        evidenceSource: options.evidenceSource,
+        evidenceRef: options.evidenceRef,
+        timestamp: options.timestamp,
         force: options.force,
       }, stateOptions);
       const leads = loadSalesLeads(stateOptions);
@@ -604,6 +987,9 @@ function runCli(argv = process.argv.slice(2)) {
     }
 
     case 'add': {
+      if (options.stage === 'paid') {
+        throw new Error('The sales:pipeline CLI cannot add a paid lead. Add the lead first, then use sales:reconcile-payment with a live provider payment ID.');
+      }
       const lead = addSalesLead({
         leadId: options.lead || options.leadId,
         source: options.source,
@@ -628,6 +1014,15 @@ function runCli(argv = process.argv.slice(2)) {
         utmSource: options.utmSource,
         utmMedium: options.utmMedium,
         utmCampaign: options.utmCampaign,
+        actor: options.actor,
+        note: options.note,
+        url: options.url,
+        evidenceKind: options.evidenceKind,
+        evidenceSource: options.evidenceSource,
+        evidenceRef: options.evidenceRef,
+        amountCents: options.amountCents,
+        currency: options.currency,
+        timestamp: options.timestamp,
         force: options.force,
       }, stateOptions);
       const leads = loadSalesLeads(stateOptions);
@@ -652,6 +1047,15 @@ function runCli(argv = process.argv.slice(2)) {
       };
     }
 
+    case 'audit': {
+      const leads = loadSalesLeads(stateOptions);
+      return {
+        command: options.command,
+        audit: auditSalesPipeline(leads),
+        statePath: getSalesPipelinePath(stateOptions),
+      };
+    }
+
     default:
       throw new Error(`Unknown sales pipeline command: ${options.command}`);
   }
@@ -659,7 +1063,12 @@ function runCli(argv = process.argv.slice(2)) {
 
 function isCliInvocation(argv = process.argv) {
   const invokedPath = argv[1];
-  return Boolean(invokedPath) && !path.relative(path.resolve(invokedPath), __filename);
+  if (!invokedPath) return false;
+  try {
+    return fs.realpathSync(path.resolve(invokedPath)) === fs.realpathSync(__filename);
+  } catch {
+    return path.resolve(invokedPath) === path.resolve(__filename);
+  }
 }
 
 if (isCliInvocation()) {
@@ -674,17 +1083,31 @@ if (isCliInvocation()) {
 
 module.exports = {
   SALES_PIPELINE_FILE,
+  SALES_PIPELINE_PATH_ENV,
+  SALES_EVIDENCE_KINDS,
   SALES_STAGE_FLOW,
+  SALES_STAGE_EVIDENCE_KINDS,
   SALES_STAGE_TRANSITIONS,
+  VERIFIED_PAYMENT_DIGEST_PATTERN,
+  VERIFIED_PAYMENT_PROVIDERS,
+  VERIFIED_PAYMENT_SOURCE_PATTERN,
+  LEGACY_TIMESTAMP_FALLBACK,
   addSalesLead,
   advanceSalesLead,
   appendSalesLeadSnapshot,
+  auditSalesPipeline,
+  buildSalesEvidence,
   buildLeadFromRevenueTarget,
+  evaluateLeadStageEvidence,
+  evaluateLeadEvidenceAtStage,
+  findLinkedGitCommonRoot,
   getSalesPipelinePath,
   importRevenueLoopReport,
+  isVerifiedProviderFinancialEvidence,
   isCliInvocation,
   loadSalesLeads,
   loadSalesLeadSnapshots,
+  normalizeSalesEvidence,
   normalizeSalesStage,
   parseArgs,
   renderSalesPipelineMarkdown,

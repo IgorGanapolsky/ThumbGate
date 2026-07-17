@@ -129,16 +129,48 @@ function formatRatio(value) {
   return Number.isFinite(Number(value)) ? Number(value).toFixed(4) : '0.0000';
 }
 
+function omitRecordDetails(value = {}, fields = []) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const omitted = new Set(fields);
+  return Object.fromEntries(
+    Object.entries(value).filter(([key]) => !omitted.has(key))
+  );
+}
+
 function normalizeWindowSummary(status, payload = {}) {
+  const pipeline = payload.pipeline && typeof payload.pipeline === 'object'
+    ? payload.pipeline
+    : {};
+  const workflowSprintLeads = pipeline.workflowSprintLeads;
   return {
     status,
     trafficMetrics: payload.trafficMetrics || {},
     ctas: payload.ctas || {},
     signups: payload.signups || {},
-    revenue: payload.revenue || {},
-    pipeline: payload.pipeline || {},
+    revenue: omitRecordDetails(payload.revenue, ['latestPaidOrder', 'events']),
+    pipeline: {
+      ...pipeline,
+      ...(workflowSprintLeads && typeof workflowSprintLeads === 'object'
+        ? { workflowSprintLeads: omitRecordDetails(workflowSprintLeads, ['latestLead']) }
+        : {}),
+    },
     attribution: payload.attribution || {},
     dataQuality: payload.dataQuality || {},
+  };
+}
+
+function normalizeWorkflowIntakeQueue(queue = null) {
+  if (!queue || typeof queue !== 'object') return null;
+  return {
+    total: Number(queue.total || 0),
+    eligibleTotal: Number(queue.eligibleTotal || 0),
+    returned: Number(queue.returned || 0),
+    approvalReadyTotal: Number(queue.approvalReadyTotal || 0),
+    discoveryReadyTotal: Number(queue.discoveryReadyTotal || 0),
+    byStatus: queue.byStatus && typeof queue.byStatus === 'object' ? queue.byStatus : {},
+    filters: queue.filters && typeof queue.filters === 'object' ? queue.filters : {},
+    latestSubmittedAt: queue.latestSubmittedAt || null,
+    oldestSubmittedAt: queue.oldestSubmittedAt || null,
   };
 }
 
@@ -161,11 +193,22 @@ function normalizeExternalCustomerAudit(payload = null) {
   const subscriptions = payload.subscriptions || {};
   const externalCharges = charges.external || {};
   const ownerCharges = charges.owner || {};
+  const productAttribution = payload.productAttribution || {};
+  const thumbgateAttribution = productAttribution.thumbgate || {};
+  const revenueWindows = thumbgateAttribution.revenueWindows || {};
+  const productAttributionVerified = productAttribution.verified === true;
+  const windowAttributionVerified = productAttributionVerified && revenueWindows.verified === true;
 
   return {
     configured: true,
     generatedAt: payload.generatedAt || null,
     ownerEmails: Array.isArray(payload.ownerEmails) ? payload.ownerEmails : [],
+    productAttributionVerified,
+    productAttributionGap: productAttribution.gap || 'ThumbGate product attribution was not verified',
+    windowAttributionVerified,
+    windowAttributionGap: revenueWindows.gap || 'ThumbGate time-window attribution was not verified',
+    revenueWindowBasis: revenueWindows.basis || null,
+    revenueWindowTimeZone: revenueWindows.timeZone || null,
     charges: {
       all: charges.all || {},
       owner: ownerCharges,
@@ -173,10 +216,34 @@ function normalizeExternalCustomerAudit(payload = null) {
     },
     subscriptions,
     checkout: payload.checkout || {},
-    externalCustomerCount: Number(externalCharges.uniqueCustomerCount || 0),
-    externalNetRevenueCents: Number(externalCharges.netCents || 0),
-    externalMrrCents: Number(subscriptions.mrrExternalCents || 0),
-    activeExternalSubscriptions: Number(subscriptions.activeExternal || 0),
+    accountWideExternalCustomerCount: Number(externalCharges.uniqueCustomerCount || 0),
+    accountWideExternalNetRevenueCents: Number(externalCharges.netCents || 0),
+    accountWideExternalMrrCents: Number(subscriptions.mrrExternalCents || 0),
+    accountWideActiveExternalSubscriptions: Number(subscriptions.activeExternal || 0),
+    externalCustomerCount: productAttributionVerified
+      ? Number(thumbgateAttribution.uniquePayingCustomerCount || 0)
+      : 0,
+    externalNetRevenueCents: productAttributionVerified
+      ? Number(thumbgateAttribution.netRevenueCents || 0)
+      : 0,
+    externalTodayGrossRevenueCents: windowAttributionVerified
+      ? Number(revenueWindows.todayGrossRevenueCents || 0)
+      : 0,
+    externalTodayNetRevenueCents: windowAttributionVerified
+      ? Number(revenueWindows.todayNetRevenueCents || 0)
+      : 0,
+    externalTrailing30DayGrossRevenueCents: windowAttributionVerified
+      ? Number(revenueWindows.trailing30DayGrossRevenueCents || 0)
+      : 0,
+    externalTrailing30DayNetRevenueCents: windowAttributionVerified
+      ? Number(revenueWindows.trailing30DayNetRevenueCents || 0)
+      : 0,
+    externalMrrCents: productAttributionVerified
+      ? Number(thumbgateAttribution.mrrCents || 0)
+      : 0,
+    activeExternalSubscriptions: productAttributionVerified
+      ? Number(thumbgateAttribution.activeSubscriptionCount || 0)
+      : 0,
     ownerChargeCount: Number(ownerCharges.chargeCount || 0),
     ownerNetRevenueCents: Number(ownerCharges.netCents || 0),
     activeOwnerSubscriptions: Number(subscriptions.activeOwner || 0),
@@ -184,16 +251,7 @@ function normalizeExternalCustomerAudit(payload = null) {
 }
 
 function windowSnapshot(summary = {}) {
-  return {
-    status: summary.status,
-    trafficMetrics: summary.trafficMetrics || {},
-    ctas: summary.ctas || {},
-    signups: summary.signups || {},
-    revenue: summary.revenue || {},
-    pipeline: summary.pipeline || {},
-    attribution: summary.attribution || {},
-    dataQuality: summary.dataQuality || {},
-  };
+  return normalizeWindowSummary(summary.status, summary);
 }
 
 function buildDiagnosis({ publicProbe, hostedAudit }) {
@@ -227,7 +285,8 @@ function buildDiagnosis({ publicProbe, hostedAudit }) {
   const hostedRevenueObserved = Number(revenue30.paidOrders || 0) > 0 || Number(revenue30.bookedRevenueCents || 0) > 0;
   const rawLifetimeRevenueObserved = Number(lifetimeRevenue.paidOrders || 0) > 0 || Number(lifetimeRevenue.bookedRevenueCents || 0) > 0;
   const externalCustomerRevenueObserved = Boolean(
-    externalCustomerAudit.configured && (
+    externalCustomerAudit.configured &&
+    externalCustomerAudit.productAttributionVerified && (
       externalCustomerAudit.externalCustomerCount > 0 ||
       externalCustomerAudit.externalNetRevenueCents > 0 ||
       externalCustomerAudit.activeExternalSubscriptions > 0 ||
@@ -373,9 +432,18 @@ function formatReport(report) {
     ...formatWindowBlock('Lifetime', report.hostedAudit.summaries.lifetime),
   ];
 
+  if (report.hostedAudit.intakeQueue) {
+    const queue = report.hostedAudit.intakeQueue;
+    lines.push(
+      `Operator intake queue: eligible ${queue.eligibleTotal}, discovery-ready ${queue.discoveryReadyTotal}, close-ready ${queue.approvalReadyTotal}, new ${Number(queue.byStatus?.new || 0)}, qualified ${Number(queue.byStatus?.qualified || 0)}, latest ${queue.latestSubmittedAt || 'none'} (contact details withheld from status output)`
+    );
+  }
+
   if (externalAudit.configured) {
     lines.push(
-      `External customers: ${externalAudit.externalCustomerCount}, external net revenue ${centsToDollars(externalAudit.externalNetRevenueCents)}, external MRR ${centsToDollars(externalAudit.externalMrrCents)}`,
+      `ThumbGate-attributed known non-owner identities: ${externalAudit.externalCustomerCount}, net revenue ${centsToDollars(externalAudit.externalNetRevenueCents)}, MRR ${centsToDollars(externalAudit.externalMrrCents)}, product attribution verified: ${externalAudit.productAttributionVerified}`,
+      `ThumbGate-attributed windows (${externalAudit.revenueWindowTimeZone || 'unknown timezone'}): today gross ${centsToDollars(externalAudit.externalTodayGrossRevenueCents)}, today cohort net ${centsToDollars(externalAudit.externalTodayNetRevenueCents)}, trailing 30d gross ${centsToDollars(externalAudit.externalTrailing30DayGrossRevenueCents)}, trailing 30d cohort net ${centsToDollars(externalAudit.externalTrailing30DayNetRevenueCents)}, verified: ${externalAudit.windowAttributionVerified}`,
+      `Account-wide known non-owner identities: ${externalAudit.accountWideExternalCustomerCount}, net revenue ${centsToDollars(externalAudit.accountWideExternalNetRevenueCents)}, MRR ${centsToDollars(externalAudit.accountWideExternalMrrCents)}`,
       `Owner/test filtered: ${externalAudit.ownerChargeCount} charge(s), ${centsToDollars(externalAudit.ownerNetRevenueCents)} net, active owner subscriptions ${externalAudit.activeOwnerSubscriptions}`,
     );
   } else {
@@ -593,6 +661,10 @@ function getHostedAuditViaRailway({
     auditMethod: 'railway-env',
     runtimePresenceKnown: true,
     ...hostedAudit,
+    summaries: Object.fromEntries(HOSTED_WINDOWS.map((window) => [
+      window,
+      normalizeWindowSummary(hostedAudit.summaries?.[window]?.status, hostedAudit.summaries?.[window]),
+    ])),
   };
 }
 
@@ -661,12 +733,52 @@ async function getHostedAuditViaHttp({
     throw new Error('THUMBGATE_OPERATOR_KEY or THUMBGATE_API_KEY is not set for hosted billing summary audit.');
   }
 
+  const batchUrl = new URL('/v1/billing/summary', appOrigin);
+  batchUrl.searchParams.set('window', 'all');
+  batchUrl.searchParams.set('timezone', timeZone);
+  batchUrl.searchParams.set('include_intake_queue', '1');
+  const batchResponse = await fetchWithTimeout(fetchImpl, batchUrl, {
+    headers: {
+      authorization: `Bearer ${apiKey}`,
+      accept: 'application/json',
+    },
+  }, timeoutMs);
+  const batchPayload = await batchResponse.json().catch(() => ({}));
+  const hasCompleteBatch = batchResponse.ok
+    && batchPayload.summaries
+    && HOSTED_WINDOWS.every((window) => batchPayload.summaries[window]);
+  if (hasCompleteBatch) {
+    const summaries = Object.fromEntries(HOSTED_WINDOWS.map((window) => [
+      window,
+      normalizeWindowSummary(batchResponse.status, batchPayload.summaries[window]),
+    ]));
+    const runtimePresence = batchPayload.runtimePresence && typeof batchPayload.runtimePresence === 'object'
+      ? batchPayload.runtimePresence
+      : null;
+    return {
+      auditMethod: 'hosted-http-api',
+      runtimePresenceKnown: Boolean(runtimePresence),
+      runtimePresence: runtimePresence || {
+        THUMBGATE_OPERATOR_KEY: Boolean(process.env.THUMBGATE_OPERATOR_KEY),
+        THUMBGATE_API_KEY: true,
+      },
+      summaries,
+      intakeQueue: normalizeWorkflowIntakeQueue(batchPayload.intakeQueue),
+      batchSummary: true,
+    };
+  }
+  if (!batchResponse.ok && ![400, 404].includes(batchResponse.status)) {
+    throw new Error(`Hosted billing summary batch returned ${batchResponse.status}`);
+  }
+
   const summaries = {};
   let runtimePresence = null;
+  let intakeQueue = null;
   for (const window of HOSTED_WINDOWS) {
     const url = new URL('/v1/billing/summary', appOrigin);
     url.searchParams.set('window', window);
     url.searchParams.set('timezone', timeZone);
+    if (window === '30d') url.searchParams.set('include_intake_queue', '1');
     const response = await fetchWithTimeout(fetchImpl, url, {
       headers: {
         authorization: `Bearer ${apiKey}`,
@@ -680,6 +792,9 @@ async function getHostedAuditViaHttp({
     if (!runtimePresence && payload.runtimePresence && typeof payload.runtimePresence === 'object') {
       runtimePresence = payload.runtimePresence;
     }
+    if (!intakeQueue && payload.intakeQueue) {
+      intakeQueue = normalizeWorkflowIntakeQueue(payload.intakeQueue);
+    }
     summaries[window] = normalizeWindowSummary(response.status, payload);
   }
 
@@ -691,6 +806,8 @@ async function getHostedAuditViaHttp({
       THUMBGATE_API_KEY: true,
     },
     summaries,
+    intakeQueue,
+    batchSummary: false,
   };
 }
 
@@ -922,6 +1039,8 @@ module.exports = {
   parseHtmlSignals,
   centsToDollars,
   normalizeExternalCustomerAudit,
+  normalizeWindowSummary,
+  normalizeWorkflowIntakeQueue,
   fetchWithTimeout,
   buildDiagnosis,
   formatReport,

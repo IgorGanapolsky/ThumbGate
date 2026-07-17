@@ -4,8 +4,8 @@
 /**
  * social-post-hourly.js → now "social-post-daily.js" in practice
  *
- * Generates ONE quality social post per day and publishes via Zernio
- * to LinkedIn, X/Twitter, and TikTok (text-friendly platforms).
+ * Generates ONE quality social-post draft per day. This legacy entry point is
+ * preview-only: publishing must use direct platform paths with explicit approval.
  *
  * Strategy based on research of top SaaS companies (Linear, Vercel, Supabase,
  * PostHog, Cursor, Raycast, Cal.com):
@@ -19,7 +19,6 @@
  * keep outbound publishing behind explicit human approval and private ops state.
  *
  * Usage:
- *   node scripts/social-post-hourly.js            # publish for real
  *   node scripts/social-post-hourly.js --dry-run   # preview only
  */
 
@@ -27,9 +26,8 @@ require('dotenv').config();
 
 const { generateWeeklyStatsPost } = require('./daily-digest');
 const {
-  getConnectedAccounts,
+  blockZernioMutation,
   isZernioQuotaError,
-  publishPost,
 } = require('./social-analytics/publishers/zernio');
 
 // Platforms that support text-only posts.
@@ -74,7 +72,7 @@ function generatePost(angle) {
   const { post, stats, suppressed } = generateWeeklyStatsPost({ periodDays: 1 });
   // Primary CTA routes through the production landing page so the funnel
   // ledger (scripts/funnel/*) can attribute views → installs → paid. Links
-  // passed through `tagUrlsInText` auto-inject utm_source=zernio etc. because
+  // should be attributed by the approved direct-platform publisher because
   // thumbgate-production.up.railway.app is in TRACKABLE_DOMAINS.
   // Earlier versions pointed at GitHub, which is un-tracked by our funnel and
   // invisible in revenue attribution — see 2026-04-21 distribution audit.
@@ -191,31 +189,7 @@ async function main() {
     return;
   }
 
-  // Fetch connected accounts, filter to text-friendly platforms (no Reddit, no Instagram)
-  const accounts = await getConnectedAccounts();
-  const textAccounts = accounts
-    .filter(a => TEXT_PLATFORMS.has(a.platform))
-    .map(a => ({ platform: a.platform, accountId: a._id || a.accountId }));
-
-  if (textAccounts.length === 0) {
-    console.error('[daily-post] No text-friendly accounts connected.');
-    process.exit(1);
-  }
-
-  console.log(`[daily-post] Publishing to ${textAccounts.length} platform(s): ${textAccounts.map(a => a.platform).join(', ')}`);
-
-  const result = await publishPost(content, textAccounts);
-  console.log('[daily-post] Result:', JSON.stringify(result, null, 2));
-
-  if (result.platformResults) {
-    for (const pr of result.platformResults) {
-      if (pr.status === 'published') {
-        console.log(`[daily-post] ${pr.platform}: published`);
-      } else {
-        console.error(`[daily-post] ${pr.platform}: ${pr.status} — ${pr.error || 'unknown'}`);
-      }
-    }
-  }
+  blockZernioMutation('daily_social_post');
 }
 
 function isNonFatalPostFailure(err) {

@@ -16,18 +16,21 @@ test('payment rails doc pins Stripe, PayPal, and Merchant of Record roles', () =
   assert.match(doc, /\$499/);
   assert.match(doc, /\$1500/);
   assert.match(doc, /\$97/);
+  assert.match(doc, /\$1,000\/hour/);
+  assert.match(doc, /\$24,000/);
+  assert.match(doc, /evidence_incomplete/);
+  assert.match(doc, /node scripts\/revenue-target-control\.js/);
   assert.match(doc, /Pay by Stripe or PayPal, whichever is easier/);
 });
 
-test('workflow migration checklist hides optional payment links until configured', () => {
+test('workflow migration checklist routes payment through the intent gate', () => {
   const page = fs.readFileSync(
     path.join(ROOT, 'public', 'guides', 'ai-agent-workflow-migration-checklist.html'),
     'utf8',
   );
 
-  assert.match(page, /Pay \$499 diagnostic/);
-  assert.match(page, /Pay \$499 diagnostic with PayPal/);
-  assert.match(page, /Buy \$__SNAPSHOT_PRICE_DOLLARS__ snapshot via __MOR_PROVIDER__/);
-  assert.match(page, /optional-payment-link/);
-  assert.match(page, /href\.indexOf\('__'\)/);
+  assert.match(page, /Start \$499 diagnostic/);
+  assert.match(page, /href="\/diagnostic\?/);
+  assert.match(page, /Alternative payment rails are offered only after email-backed confirmation/);
+  assert.doesNotMatch(page, /optional-payment-link|CHECKOUT_URL|buy\.stripe\.com|paypal\.com/);
 });

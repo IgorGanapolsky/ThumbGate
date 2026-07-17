@@ -298,6 +298,98 @@ jobs:
             echo "Observed build SHA: ${LIVE_SHA:-<missing>}"
             exit 1
           fi
+      - name: Verify revenue and buyer-path readiness
+        id: revenue-readiness
+        if: steps.railway-config.outputs.enabled == 'true'
+        timeout-minutes: 3
+        run: |
+          SERVICE_ARGS=()
+          if [ -n "$RAILWAY_SERVICE" ]; then
+            SERVICE_ARGS+=(--service "$RAILWAY_SERVICE")
+          fi
+
+          set +e
+          railway run \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment "$RAILWAY_ENVIRONMENT_ID" \
+            "${SERVICE_ARGS[@]}" \
+            --no-local \
+            -- node scripts/revenue-observability-doctor.js --json \
+            > revenue-observability-doctor.json
+          DOCTOR_EXIT=$?
+          set -e
+
+          if [ ! -s revenue-observability-doctor.json ]; then
+            echo "::error::Revenue observability doctor returned no JSON evidence."
+            exit 1
+          fi
+
+          cat revenue-observability-doctor.json
+          node -e '
+            const fs = require("fs");
+            const report = JSON.parse(fs.readFileSync("revenue-observability-doctor.json", "utf8"));
+            if (!report || !["ready", "degraded", "blocked"].includes(report.verdict)) {
+              throw new Error("Revenue observability doctor emitted an invalid verdict");
+            }
+            if (report.globalRevenueClaimVerified !== false) {
+              throw new Error("Configuration readiness must not be represented as verified global revenue");
+            }
+          '
+
+          if [ "$DOCTOR_EXIT" -ne 0 ]; then
+            echo "::error::Revenue and buyer-path readiness is blocked; see the uploaded doctor evidence."
+            exit "$DOCTOR_EXIT"
+          fi
+      - name: Upload revenue observability evidence
+        if: always() && steps.railway-config.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          retention-days: 7
+          name: revenue-observability-${{ github.run_id }}
+          path: revenue-observability-doctor.json
+          if-no-files-found: warn
+      - name: Verify public conversion surfaces
+        id: public-conversion-surfaces
+        if: always() && steps.railway-config.outputs.enabled == 'true'
+        timeout-minutes: 5
+        run: |
+          set +e
+          node scripts/verify-marketing-pages-deployed.js \
+            --json \
+            --prod-url="$THUMBGATE_PUBLIC_APP_ORIGIN" \
+            > marketing-page-verification.json
+          VERIFY_EXIT=$?
+          set -e
+
+          if [ ! -s marketing-page-verification.json ]; then
+            echo "::error::Public conversion-surface verification returned no JSON evidence."
+            exit 1
+          fi
+
+          cat marketing-page-verification.json
+          node -e '
+            const fs = require("fs");
+            const report = JSON.parse(fs.readFileSync("marketing-page-verification.json", "utf8"));
+            if (!report || !["pass", "fail"].includes(report.verdict)) {
+              throw new Error("Public conversion-surface verifier emitted an invalid verdict");
+            }
+            if (!Number.isInteger(report.totalRoutes) || report.totalRoutes < 1) {
+              throw new Error("Public conversion-surface verifier emitted no route coverage");
+            }
+          '
+
+          if [ "$VERIFY_EXIT" -ne 0 ]; then
+            echo "::error::Public conversion surfaces do not match the reviewed buyer-path contract."
+            exit "$VERIFY_EXIT"
+          fi
+      - name: Upload public conversion-surface evidence
+        if: always() && steps.railway-config.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          retention-days: 7
+          name: public-conversion-surfaces-${{ github.run_id }}
+          path: marketing-page-verification.json
+          if-no-files-found: warn
       - name: Capture Railway diagnostics
         if: failure() && steps.railway-config.outputs.enabled == 'true'
         continue-on-error: true

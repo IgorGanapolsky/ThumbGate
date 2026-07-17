@@ -52,13 +52,13 @@ Only move forward when the buyer has:
 
 ## Commercial Motion
 
-- Public paid checkout (live Stripe Payment Links, substituted at runtime):
-  - **Diagnostic: $499** — `/go/diagnostic` (or `/diagnostic` for scope + pay)
-  - **Sprint: $1,500** — `/go/sprint`
+- Public paid checkout and scoping entry:
+  - **Diagnostic: $499** — `/diagnostic` (explicit email-backed confirmation before Stripe)
+  - **Sprint: $1,500** — `/go/sprint` (intake and scope confirmation before provider checkout)
 - Pro at `$19/mo or $149/yr` remains the solo self-serve side lane per [COMMERCIAL_TRUTH.md](COMMERCIAL_TRUTH.md).
 - Enterprise scope and pricing remain intake-first after the initial workflow is qualified.
 - Use booked pilots, paid orders, or named pilot agreements as commercial proof.
-- Same-day next step after a qualified call: Stripe checkout for diagnostic or sprint, or intake only when the workflow still needs fit review.
+- Same-day next step after a qualified call: email-backed Stripe checkout for the diagnostic; a provider checkout for the sprint only after scope is confirmed; or intake when the workflow still needs fit review.
 
 ## Contact
 

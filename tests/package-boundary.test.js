@@ -100,10 +100,20 @@ test('npm package ships static dependencies needed for packaged entrypoints', ()
   const mcpMissing = collectStaticRuntimeDependencies('adapters/mcp/server-stdio.js', files);
   const apiMissing = collectStaticRuntimeDependencies('src/api/server.js', files);
   const hookRuntimeMissing = collectStaticRuntimeDependencies('scripts/hook-runtime.js', files);
+  const salesPipelineMissing = collectStaticRuntimeDependencies('scripts/sales-pipeline.js', files);
+  const paymentReconcilerMissing = collectStaticRuntimeDependencies('scripts/provider-payment-reconciler.js', files);
+  const revenueEligibilityMissing = collectStaticRuntimeDependencies('scripts/revenue-action-eligibility.js', files);
+  const revenueRemediationMissing = collectStaticRuntimeDependencies('scripts/revenue-evidence-remediation.js', files);
+  const workflowIntakeQueueMissing = collectStaticRuntimeDependencies('scripts/workflow-intake-queue.js', files);
 
   assert.deepEqual(mcpMissing, []);
   assert.deepEqual(apiMissing, []);
   assert.deepEqual(hookRuntimeMissing, []);
+  assert.deepEqual(salesPipelineMissing, []);
+  assert.deepEqual(paymentReconcilerMissing, []);
+  assert.deepEqual(revenueEligibilityMissing, []);
+  assert.deepEqual(revenueRemediationMissing, []);
+  assert.deepEqual(workflowIntakeQueueMissing, []);
 });
 
 test('npm package ships a slim runtime boundary instead of repo/dev surfaces', () => {
@@ -118,17 +128,27 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/bot-detection.js',
     'scripts/feedback-loop.js',
     'scripts/gates-engine.js',
+    'scripts/grafana-revenue-evidence.js',
     'scripts/hf-papers.js',
     'scripts/self-healing-check.js',
     'scripts/install-shim.js',
     'scripts/plan-gate.js',
+    'scripts/provider-live-evidence.js',
+    'scripts/provider-payment-reconciler.js',
+    'scripts/provider-revenue-evidence.js',
+    'scripts/revenue-action-eligibility.js',
+    'scripts/revenue-evidence-remediation.js',
+    'scripts/sales-pipeline.js',
     'scripts/silent-failure-cluster.js',
     'scripts/statusline-cache-read.js',
     'scripts/statusline.sh',
     'scripts/statusline-meta.js',
+    'scripts/stripe-revenue-catalog.js',
+    'scripts/stripe-revenue-catalog-audit.js',
     'scripts/tool-contract-validator.js',
     'scripts/tool-registry.js',
     'scripts/trajectory-scorer.js',
+    'scripts/workflow-intake-queue.js',
     'skills/thumbgate/SKILL.md',
     'config/pro/constraints-pro.json',
     'config/pro/prevention-rules-pro.md',
@@ -146,6 +166,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'public/index.html',
     'public/pricing.html',
   ];
+  const requiredDistributionAssets = [
+    'docs/integrations/grafana/README.md',
+    'docs/integrations/grafana/thumbgate-revenue-evidence-dashboard.json',
+  ];
   const forbiddenPrefixes = [
     'public/learn/',
     'public/guides/',
@@ -161,7 +185,6 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/autonomous-workflow.js',
     'scripts/apollo-acquisition.js',
     'scripts/decision-trace.js',
-    'scripts/sales-pipeline.js',
     // scripts/post-to-x.js + post-to-x-retry.sh removed 2026-06-06
     // (X/Twitter retired from active distribution 2026-04-20).
     'scripts/reddit-dm-outreach.js',
@@ -344,9 +367,27 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 333 -> 338 (2026-07-15) to ship feedback-history-distiller.js and
   // the four public lesson-retrieval modules required by same-turn context
   // capture and the already-advertised retrieve_lessons MCP tool.
+  // Bumped 338 -> 339 (2026-07-15) to ship the first-party buyer-path helper
+  // required by packaged CLI conversion receipts and rate-limit messages.
+  // Bumped 339 -> 340 (2026-07-15) to ship the deterministic offer contract
+  // used by the revenue operator and proposal qualification tests.
+  // Bumped 340 -> 344 (2026-07-16) to ship the sales pipeline, authenticated
+  // PayPal payment reconciler, and its two provider-evidence dependencies.
+  // These four files close the manual paid-claim path in the packaged CLI.
+  // Bumped 344 -> 346 (2026-07-16) so the advertised revenue:remediate script
+  // and its shared eligibility dependency are executable after npm install.
+  // Bumped 346 -> 349 (2026-07-16) so the Grafana revenue-evidence exporter,
+  // operator guide, and importable aggregate dashboard are present after npm install.
+  // Bumped 349 -> 350 (2026-07-16) for the secret-safe hosted intake queue
+  // operator CLI. It exports no state by default and ships no buyer records.
+  // Bumped 350 -> 352 (2026-07-16) for the read-only Stripe product audit and
+  // credential resolver required by packaged Stripe payment reconciliation.
+  // Bumped 352 -> 354 (2026-07-16) for the exact Stripe offer catalog and its
+  // read-only live price and Payment Link drift audit. No credentials, buyer
+  // state, mutation route, or private Core module are packaged.
   assert.ok(
-    manifest.fileCount <= 338,
-    `npm package should stay <= 338 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 354,
+    `npm package should stay <= 354 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -484,9 +525,34 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 4.88 MB -> 4.96 MB (2026-07-15) to ship the public feedback-history
   // distiller plus four missing retrieval modules. Measured combined artifact:
   // 4,936,330 unpacked bytes; the remaining margin stays deliberately narrow.
+  // Bumped 4.96 MB -> 4.98 MB (2026-07-16) for PayPal remote webhook-signature
+  // verification, bounded evidence persistence, and the public webhook route.
+  // Measured artifact: 4,969,527 unpacked bytes. No file-count, dependency, or
+  // asset increase; the 10 KB remainder keeps this a narrow runtime ratchet.
+  // Bumped 4.98 MB -> 5.10 MB (2026-07-16) for the four packaged payment-proof
+  // files above. Measured artifact: 5,084,161 unpacked bytes.
+  // Bumped 5.10 MB -> 5.15 MB (2026-07-16) for the executable public
+  // remediation command and shared action-eligibility dependency.
+  // Bumped 5.15 MB -> 5.22 MB (2026-07-16) for the packaged Grafana exporter,
+  // operator guide, importable aggregate dashboard, and root documentation.
+  // Measured artifact: 5,205,100 unpacked bytes.
+  // Bumped 5.22 MB -> 5.24 MB (2026-07-16) for first-party intake chronology,
+  // evidence qualification, fixed-offer routing, and fail-closed action gates.
+  // Measured artifact: 5,224,693 unpacked bytes; no file-count or dependency increase.
+  // Bumped 5.24 MB -> 5.25 MB (2026-07-16) for the authenticated reviewed-intake
+  // close queue plus its aggregate-only Grafana availability and approval-ready
+  // panels. Measured artifact: 5,241,395 unpacked bytes; no file-count or dependency increase.
+  // Bumped 5.25 MB -> 5.27 MB (2026-07-16) for the packaged hosted intake queue
+  // operator CLI. Measured artifact: 5,260,505 bytes; no buyer state is bundled.
+  // Bumped 5.27 MB -> 5.31 MB (2026-07-16) for read-only Stripe charge,
+  // checkout, payer, product, and refund reconciliation. Measured artifact:
+  // 5,306,884 bytes; no payer identity or runtime buyer state is bundled.
+  // Bumped 5.31 MB -> 5.35 MB (2026-07-16) for the exact Stripe offer catalog,
+  // read-only drift audit, and aggregate-only Grafana catalog panels. Measured
+  // artifact: 5,343,656 bytes; no credentials or buyer state are bundled.
   assert.ok(
-    manifest.unpackedSize <= 4_960_000,
-    `npm package should stay <= 4.96 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 5_350_000,
+    `npm package should stay <= 5.35 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
@@ -494,6 +560,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   }
   for (const file of requiredPublicFiles) {
     assert.ok(files.includes(file), `required public HTML must ship (server.js reads it at runtime): ${file}`);
+  }
+  for (const file of requiredDistributionAssets) {
+    assert.ok(files.includes(file), `required public distribution asset must ship: ${file}`);
   }
   for (const prefix of forbiddenPrefixes) {
     assert.equal(files.some((file) => file.startsWith(prefix)), false, `must not ship ${prefix}`);

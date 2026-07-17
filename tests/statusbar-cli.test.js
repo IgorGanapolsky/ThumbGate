@@ -81,6 +81,32 @@ test('formatCliOutput shows rejected feedback', () => {
   assert.ok(output.includes('too vague'));
 });
 
+test('formatCliOutput acknowledges capture only after accepted is exactly true', () => {
+  const output = formatCliOutput({
+    feedbackResult: { signal: 'positive', feedbackEvent: { id: 'fb_unconfirmed' } },
+    stats: { total: 0 },
+  });
+  assert.ok(output.includes('not accepted'));
+  assert.ok(!output.includes('Thumbs up recorded'));
+  assert.ok(!output.includes('fb_unconfirmed'));
+});
+
+test('formatCliOutput does not acknowledge an unaccepted duplicate', () => {
+  const output = formatCliOutput({
+    feedbackResult: {
+      accepted: false,
+      duplicate: true,
+      reason: 'source_event_capture_in_progress',
+      feedbackEvent: { id: 'fb_pending' },
+    },
+    stats: { total: 0 },
+  });
+  assert.ok(output.includes('not accepted'));
+  assert.ok(output.includes('source_event_capture_in_progress'));
+  assert.ok(!output.includes('already captured'));
+  assert.ok(!output.includes('fb_pending'));
+});
+
 test('formatCliOutput handles no distill result', () => {
   const output = formatCliOutput({ feedbackResult: { accepted: true, signal: 'positive' }, stats: { total: 1, positive: 1, negative: 0, avgConfidence: 80 } });
   assert.ok(!output.includes('Lesson distilled'));

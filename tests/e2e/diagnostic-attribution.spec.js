@@ -5,11 +5,11 @@ test('Aiventyx diagnostic traffic stays intake-only until its checkout is ready'
     '/diagnostic?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_diagnostic&acquisition_id=acq-aiventyx-1'
   );
 
-  await expect(page.locator('[data-cta-id="diagnostic_hero_paid"]')).toHaveCount(0);
+  await expect(page.locator('[data-diagnostic-pay-form]')).toHaveCount(0);
   await expect(page.locator('[data-diagnostic-intake-form]')).toBeVisible();
   await expect(page.locator('input[name="utm_source"]')).toHaveValue('aiventyx');
   await expect(page.locator('[data-diagnostic-payment-hint]')).toContainText(
-    'Aiventyx will collect payment on its checkout'
+    'payment path is paused'
   );
 });
 
@@ -18,12 +18,12 @@ test('non-Aiventyx diagnostic checkout preserves inbound attribution', async ({ 
     '/diagnostic?utm_source=linkedin&utm_medium=partner&utm_campaign=diagnostic_outreach&acquisition_id=acq-linkedin-1'
   );
 
-  const href = await page.locator('[data-cta-id="diagnostic_hero_paid"]').getAttribute('href');
-  const checkout = new URL(href, 'https://thumbgate.ai');
-
-  expect(checkout.pathname).toBe('/go/diagnostic');
-  expect(checkout.searchParams.get('utm_source')).toBe('linkedin');
-  expect(checkout.searchParams.get('utm_medium')).toBe('partner');
-  expect(checkout.searchParams.get('utm_campaign')).toBe('diagnostic_outreach');
-  expect(checkout.searchParams.get('acquisition_id')).toBe('acq-linkedin-1');
+  const form = page.locator('[data-diagnostic-pay-form]');
+  await expect(form).toHaveAttribute('action', '/go/diagnostic-pay');
+  await expect(form).toHaveAttribute('method', /post/i);
+  await expect(form.locator('input[name="customer_email"]')).toHaveAttribute('required', '');
+  await expect(form.locator('input[name="utm_source"]')).toHaveValue('linkedin');
+  await expect(form.locator('input[name="utm_medium"]')).toHaveValue('partner');
+  await expect(form.locator('input[name="utm_campaign"]')).toHaveValue('diagnostic_outreach');
+  await expect(form.locator('input[name="acquisition_id"]')).toHaveValue('acq-linkedin-1');
 });

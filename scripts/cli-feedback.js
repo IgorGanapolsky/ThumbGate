@@ -98,13 +98,13 @@ function formatCliOutput(result) {
   const isDown = ['down', 'negative', 'thumbs_down'].includes(feedbackSignal);
 
   // Header
-  if (feedbackResult?.duplicate) {
+  if (feedbackResult?.duplicate && feedbackResult.accepted === true) {
     lines.push(`${Y}${BD}Feedback already captured${RST}`);
     const feedbackId = feedbackResult.feedbackEvent?.id;
     const memoryId = feedbackResult.memoryRecord?.id;
     if (feedbackId) lines.push(`${D}  Feedback ID: ${feedbackId}${RST}`);
     if (memoryId) lines.push(`${D}  Memory ID  : ${memoryId}${RST}`);
-  } else if (feedbackResult && feedbackResult.accepted !== false) {
+  } else if (feedbackResult?.accepted === true) {
     lines.push(`${isDown ? R : G}${BD}${isDown ? '👎 Thumbs down recorded' : '👍 Thumbs up recorded'}${RST}`);
     const feedbackId = feedbackResult.feedbackEvent?.id || feedbackResult.id;
     const memoryId = feedbackResult.memoryRecord?.id || feedbackResult.memoryId;

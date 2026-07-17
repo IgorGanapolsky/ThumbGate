@@ -371,7 +371,7 @@ function buildRooSendNowPayload(report = {}, links = buildRevenueLinks()) {
       markContactedCommand: `npm run sales:pipeline -- advance --lead 'roo_memory_migrant_<handle>' --channel 'github' --stage 'contacted' --note 'Sent Roo migration install-first first touch.'`,
       markRepliedCommand: `npm run sales:pipeline -- advance --lead 'roo_memory_migrant_<handle>' --channel 'github' --stage 'replied' --note 'Buyer confirmed migration pain and wants saved corrections to survive the move.'`,
       markCheckoutStartedCommand: `npm run sales:pipeline -- advance --lead 'roo_memory_migrant_<handle>' --channel 'github' --stage 'checkout_started' --note 'Buyer started the Pro checkout after reviewing the setup path.'`,
-      markPaidCommand: `npm run sales:pipeline -- advance --lead 'roo_memory_migrant_<handle>' --channel 'github' --stage 'paid' --note 'Closed Roo migration self-serve Pro after install-first evaluation.'`,
+      markPaidCommand: `npm run sales:reconcile-payment -- --lead 'roo_memory_migrant_<handle>' --payment 'REPLACE_WITH_PAYPAL_PAYMENT_ID'`,
     },
     {
       rank: 2,
@@ -393,7 +393,7 @@ function buildRooSendNowPayload(report = {}, links = buildRevenueLinks()) {
       markContactedCommand: `npm run sales:pipeline -- advance --lead 'roo_workflow_owner_<account>' --channel 'linkedin' --stage 'contacted' --note 'Sent Roo workflow-hardening first touch.'`,
       markRepliedCommand: `npm run sales:pipeline -- advance --lead 'roo_workflow_owner_<account>' --channel 'linkedin' --stage 'replied' --note 'Buyer confirmed one risky workflow during Roo migration.'`,
       markCheckoutStartedCommand: `npm run sales:pipeline -- advance --lead 'roo_workflow_owner_<account>' --channel 'linkedin' --stage 'sprint_intake' --note 'Buyer started the Workflow Hardening Sprint intake.'`,
-      markPaidCommand: `npm run sales:pipeline -- advance --lead 'roo_workflow_owner_<account>' --channel 'linkedin' --stage 'paid' --note 'Closed Roo migration workflow-hardening engagement.'`,
+      markPaidCommand: `npm run sales:reconcile-payment -- --lead 'roo_workflow_owner_<account>' --payment 'REPLACE_WITH_PAYPAL_PAYMENT_ID'`,
     },
     {
       rank: 3,
@@ -415,7 +415,7 @@ function buildRooSendNowPayload(report = {}, links = buildRevenueLinks()) {
       markContactedCommand: `npm run sales:pipeline -- advance --lead 'roo_self_serve_evaluator_<handle>' --channel 'github' --stage 'contacted' --note 'Sent Roo guide-first self-serve first touch.'`,
       markRepliedCommand: `npm run sales:pipeline -- advance --lead 'roo_self_serve_evaluator_<handle>' --channel 'github' --stage 'replied' --note 'Buyer asked for install, pricing, or dashboard path.'`,
       markCheckoutStartedCommand: `npm run sales:pipeline -- advance --lead 'roo_self_serve_evaluator_<handle>' --channel 'github' --stage 'checkout_started' --note 'Buyer started the Pro checkout after the guide-first path.'`,
-      markPaidCommand: `npm run sales:pipeline -- advance --lead 'roo_self_serve_evaluator_<handle>' --channel 'github' --stage 'paid' --note 'Closed Roo migration self-serve Pro.'`,
+      markPaidCommand: `npm run sales:reconcile-payment -- --lead 'roo_self_serve_evaluator_<handle>' --payment 'REPLACE_WITH_PAYPAL_PAYMENT_ID'`,
     },
   ];
 
