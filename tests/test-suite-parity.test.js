@@ -49,7 +49,21 @@ function collectReachableScriptCommands(scriptName = 'test', seen = new Set()) {
 function listNpmTestFiles() {
   const reachableCommands = collectReachableScriptCommands();
   const matches = reachableCommands.match(/tests\/[^\s'"]+\.test\.js/g) || [];
-  return new Set(matches);
+  const repoTests = listRepoTests();
+  const resolved = new Set();
+  for (const match of matches) {
+    if (!match.includes('*')) {
+      resolved.add(match);
+      continue;
+    }
+    const pattern = new RegExp(`^${match
+      .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+      .replaceAll('*', '.*')}$`);
+    for (const file of repoTests) {
+      if (pattern.test(file)) resolved.add(file);
+    }
+  }
+  return resolved;
 }
 
 test('npm test includes every repository test file', () => {
@@ -86,4 +100,6 @@ test('listNpmTestFiles returns a set', () => {
   const files = listNpmTestFiles();
   assert.ok(files instanceof Set, 'should return a Set');
   assert.ok(files.size > 0, 'should find at least one test file');
+  assert.ok(files.has('tests/external-customer-audit.test.js'), 'should expand test globs');
+  assert.ok(files.has('tests/external-customer-audit-target-control.test.js'), 'should expand every matching test glob');
 });

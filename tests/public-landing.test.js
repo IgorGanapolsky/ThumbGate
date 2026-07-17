@@ -145,9 +145,10 @@ test('public landing page exposes above-fold paid diagnostic/sprint CTAs with Pr
   assert.match(aboveFold, /data-revenue-cta data-cta-id="nav_pay_diagnostic"/);
   assert.match(heroBlock, /cta_id=hero_workflow_sprint_diagnostic_checkout/);
   assert.match(heroBlock, /data-revenue-cta data-cta-id="hero_workflow_sprint_diagnostic_checkout"/);
-  assert.match(heroBlock, /Pay \$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic/);
+  assert.match(heroBlock, /Start \$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic/);
+  assert.match(heroBlock, /href="\/diagnostic\?/);
   assert.match(heroBlock, /cta_id=hero_workflow_sprint_checkout/);
-  assert.match(heroBlock, /Pay \$__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint/);
+  assert.match(heroBlock, /Scope \$__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint/);
   assert.match(heroBlock, /cta_id=hero_start_pro/);
   assert.match(heroBlock, /Start Pro — \$19\/mo/);
   assert.match(heroBlock, /\/checkout\/pro\?/);
@@ -252,17 +253,17 @@ test('public landing page leads with paid diagnostic/sprint checkout, not retire
 
   assert.match(landingPage, /Have one AI-agent failure that keeps repeating\?/);
   assert.match(landingPage, /one real workflow, one repeated failure pattern, enforceable pre-action gates/);
-  // Canonical money path: template-substituted diagnostic + sprint prices via /go/* routers.
-  assert.match(landingPage, /Pay \$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic/);
-  assert.match(landingPage, /Pay \$__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint/);
-  assert.match(landingPage, /\/go\/diagnostic\?/);
+  // Canonical money path: diagnostic confirmation page + sprint payment router.
+  assert.match(landingPage, /Start \$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic/);
+  assert.match(landingPage, /Scope \$__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint/);
+  assert.match(landingPage, /\/diagnostic\?/);
   assert.match(landingPage, /\/go\/sprint\?/);
   assert.match(landingPage, /data-sprint-paid-path="diagnostic"/);
   assert.match(landingPage, /data-sprint-paid-path="sprint"/);
   assert.match(landingPage, /hero_workflow_sprint_diagnostic_checkout/);
   assert.match(landingPage, /hero_workflow_sprint_checkout/);
-  assert.match(landingPage, /workflow_sprint_diagnostic_checkout_started/);
-  assert.match(landingPage, /workflow_sprint_checkout_started/);
+  assert.match(landingPage, /workflow_sprint_diagnostic_page_opened/);
+  assert.match(landingPage, /workflow_sprint_scope_opened/);
   assert.match(landingPage, /Send workflow first/);
   assert.match(landingPage, /hero_workflow_sprint_recovery_intake/);
   assert.match(landingPage, /workflow_sprint_recovery_intake_clicked/);
@@ -501,9 +502,9 @@ test('public landing page includes an explicit Enterprise rollout lane with shar
   const landingPage = readLandingPage();
 
   assert.match(landingPage, /<div class="tier"[^>]*>Enterprise<\/div>/);
-  assert.match(landingPage, /One-workflow discovery/i);
-  assert.match(landingPage, /Approval and rollback design/i);
-  assert.match(landingPage, /Verification plan/i);
+  assert.match(landingPage, /Up to three local workflows/i);
+  assert.match(landingPage, /Approval and rollback implementation/i);
+  assert.match(landingPage, /Verification proof/i);
   assert.match(landingPage, /Current availability boundary/i);
   assert.match(landingPage, /hosted team sync, a hosted org dashboard, SSO, SIEM, and compliance packaging are not general-availability/i);
   assert.doesNotMatch(landingPage, /<li><strong>Shared lesson database<\/strong>/i);
@@ -877,8 +878,9 @@ test('public landing page Enterprise card is intake-led without a blind checkout
 
   assert.match(landingPage, /Start enterprise intake/i);
   assert.match(landingPage, /pricing_enterprise_intake/);
-  assert.match(landingPage, /custom pricing/i);
-  assert.match(landingPage, /scoped after intake/i);
+  assert.match(landingPage, /\$15,000 30-day pilot/i);
+  assert.match(landingPage, /\$10,000\/month after a completed pilot/i);
+  assert.match(landingPage, /qualification and a signed scope/i);
   assert.doesNotMatch(landingPage, /\$49\s*\/\s*seat\s*\/\s*mo/);
   assert.doesNotMatch(landingPage, /Start 3-seat Team — \$147\/mo/);
   assert.doesNotMatch(landingPage, /pricing_team_self_serve/);

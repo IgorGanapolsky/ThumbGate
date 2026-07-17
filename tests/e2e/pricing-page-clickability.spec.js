@@ -19,7 +19,7 @@ test.describe('/pricing clickability — full CTA coverage', () => {
     await expect(page.locator('#diagnostic .price')).toContainText('$499');
     await expect(page.locator('#sprint .price')).toContainText('$1500');
     await expect(page.locator('#pro .price')).toContainText('$19');
-    await expect(page.locator('#enterprise .price')).toContainText('Custom');
+    await expect(page.locator('#enterprise .price')).toContainText('Qualified / signed scope only');
     await expect(page.locator('.price-card', { hasText: /Forever free for solo/ }).locator('.price')).toHaveText('$0');
   });
 
@@ -49,20 +49,20 @@ test.describe('/pricing clickability — full CTA coverage', () => {
     await page.waitForURL(/\/dashboard$/);
   });
 
-  test('nav: diagnostic CTA links to /go/diagnostic with pricing utm_source', async ({ page }) => {
+  test('nav: diagnostic CTA links to /diagnostic with pricing utm_source', async ({ page }) => {
     await page.goto('/pricing');
     const cta = page.locator('nav a.nav-cta', { hasText: /diagnostic/i });
-    await expect(cta).toHaveAttribute('href', /\/go\/diagnostic/);
+    await expect(cta).toHaveAttribute('href', /\/diagnostic/);
     await expect(cta).toHaveAttribute('href', /utm_source=pricing/);
   });
 
   // --- plan CTAs ---
 
-  test('Diagnostic card CTA links to /go/diagnostic', async ({ page }) => {
+  test('Diagnostic card CTA links to /diagnostic', async ({ page }) => {
     await page.goto('/pricing');
     const cta = page.locator('#diagnostic a.btn-money');
     await expect(cta).toContainText(/diagnostic/i);
-    await expect(cta).toHaveAttribute('href', /\/go\/diagnostic/);
+    await expect(cta).toHaveAttribute('href', /\/diagnostic/);
     await expect(cta).toHaveAttribute('href', /utm_source=pricing/);
   });
 
@@ -90,7 +90,7 @@ test.describe('/pricing clickability — full CTA coverage', () => {
     await expect(cta).toHaveAttribute('href', /utm_medium=hero_card/);
   });
 
-  test('Enterprise card CTA starts with paid sprint checkout', async ({ page }) => {
+  test('Enterprise card CTA starts sprint scoping', async ({ page }) => {
     await page.goto('/pricing');
     const cta = page.locator('#enterprise a.btn-team');
     await expect(cta).toContainText(/sprint/i);

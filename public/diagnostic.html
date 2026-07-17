@@ -84,6 +84,16 @@ h1 {
   font-size: 20px;
 }
 .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.diagnostic-pay-form {
+  width: min(100%, 520px);
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+.diagnostic-pay-form label { margin-top: 0; }
+.diagnostic-pay-form button { margin-top: 10px; }
+.diagnostic-pay-form .hint { display: block; margin-top: 8px; }
 .button {
   min-height: 48px;
   display: inline-flex;
@@ -219,7 +229,19 @@ footer { padding: 32px 0 44px; color: var(--muted); }
       <h1>Turn one repeated AI-agent failure into a gate you can prove.</h1>
       <p class="lede">Send the workflow that keeps failing. ThumbGate maps what should block, warn, or route to human review before an agent writes, sends, deploys, or spends.</p>
       <div class="actions">
-        <a class="button primary" href="/go/diagnostic?utm_source=diagnostic_page&amp;utm_medium=onsite&amp;utm_campaign=workflow_hardening_diagnostic&amp;utm_content=hero_paid_diagnostic" data-revenue-cta data-cta-id="diagnostic_hero_paid" data-cta-placement="hero">Pay $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</a>
+        <form class="diagnostic-pay-form" action="/go/diagnostic-pay" method="POST" data-diagnostic-pay-form>
+          <input type="hidden" name="utm_source" value="diagnostic_page">
+          <input type="hidden" name="utm_medium" value="diagnostic_confirmation">
+          <input type="hidden" name="utm_campaign" value="workflow_hardening_diagnostic">
+          <input type="hidden" name="utm_content" value="hero_paid_diagnostic">
+          <input type="hidden" name="cta_id" value="diagnostic_hero_paid">
+          <input type="hidden" name="cta_placement" value="hero">
+          <input type="hidden" name="plan_id" value="sprint_diagnostic">
+          <label for="diagnostic-pay-email">Work email for the receipt</label>
+          <input id="diagnostic-pay-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
+          <button class="button primary" type="submit" data-revenue-cta data-cta-id="diagnostic_hero_paid" data-cta-placement="hero">Continue to secure $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ checkout</button>
+          <span class="hint">No Stripe session is created until you submit this form.</span>
+        </form>
         <a class="button" href="#intake" data-revenue-cta data-cta-id="diagnostic_hero_intake" data-cta-placement="hero">Send workflow first</a>
       </div>
       <div class="proof-strip" aria-label="Diagnostic proof points">
@@ -255,6 +277,29 @@ footer { padding: 32px 0 44px; color: var(--muted); }
       <p class="hint" data-diagnostic-payment-hint>Ready to pay now? Use the $499 diagnostic checkout above. If the workflow needs fit review first, submit it here and we will route you to the diagnostic or sprint only when the scope is real.</p>
     </form>
   </div>
+  <section>
+    <h2>Exactly what the $499 diagnostic includes</h2>
+    <p class="lede" style="font-size:17px;">One workflow, one 60-minute working review, and a written decision packet delivered within two business days after the review and receipt of the agreed workflow materials.</p>
+    <div class="grid" data-diagnostic-offer-contract>
+      <div class="box">
+        <h3>You provide</h3>
+        <p>A short intake, the accountable workflow owner, and non-secret examples or logs that show the repeated failure. Submit first if fit is unclear; an out-of-scope workflow does not require checkout.</p>
+      </div>
+      <div class="box">
+        <h3>You receive</h3>
+        <p>A workflow and failure map, block/warn/human-review matrix, verification checklist, and prioritized implementation recommendation for the agreed workflow.</p>
+      </div>
+      <div class="box">
+        <h3>Boundaries</h3>
+        <p>The diagnostic does not include implementation, legal or compliance certification, guaranteed savings, guaranteed incident prevention, or uncontracted hosted-team features.</p>
+      </div>
+    </div>
+    <div class="intake-card" style="margin-top:16px;" data-diagnostic-credit-terms>
+      <h3 style="margin-top:0;">If implementation follows</h3>
+      <p>The public Workflow Hardening Sprint is $__WORKFLOW_SPRINT_PRICE_DOLLARS__. If the paid diagnostic continues into a sprint for the same workflow, the $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic fee is applied through the follow-up sprint invoice or checkout. Do not pay both public links at full price.</p>
+      <p class="hint">The sprint adds the agreed gate implementation, local regression and proof artifacts, an approval and rollback runbook, and a review handoff. Multi-workflow rollout, ongoing monitoring, shared hosting, and compliance work require separate Enterprise scope.</p>
+    </div>
+  </section>
   <section>
     <div class="grid">
       <div class="box">
@@ -295,26 +340,31 @@ footer { padding: 32px 0 44px; color: var(--muted); }
 <script>
 (function () {
   const search = new URLSearchParams(window.location.search);
-  const paidCta = document.querySelector('[data-cta-id="diagnostic_hero_paid"]');
+  const paidForm = document.querySelector('[data-diagnostic-pay-form]');
   const inboundSource = search.get('utm_source') || search.get('source');
   const isAiventyxTraffic = String(inboundSource || '').trim().toLowerCase() === 'aiventyx';
-  if (paidCta && isAiventyxTraffic) {
-    paidCta.remove();
+  if (paidForm && isAiventyxTraffic) {
+    paidForm.remove();
     const paymentHint = document.querySelector('[data-diagnostic-payment-hint]');
     if (paymentHint) {
-      paymentHint.textContent = 'Submit the workflow here. Aiventyx will collect payment on its checkout once the scope is accepted.';
+      paymentHint.textContent = 'The Aiventyx payment path is paused while seller fees and downstream obligations remain unverified. Submit the workflow here without entering a marketplace payment or revenue-share commitment.';
     }
-  } else if (paidCta) {
-    const href = new URL(paidCta.getAttribute('href'), window.location.origin);
+  } else if (paidForm) {
     const passthrough = /^(utm_(source|medium|campaign|content|term)|source|acquisition_id|visitor_id|session_id|visitor_session_id|install_id|trace_id|creator|community|post_id|comment_id|campaign_variant|offer_code|referrer_host)$/i;
     for (const [key, value] of search.entries()) {
       if (!passthrough.test(key) || !value.trim()) continue;
-      href.searchParams.set(key, value.trim());
+      let input = paidForm.querySelector(`input[name="${CSS.escape(key)}"]`);
+      if (!input) {
+        input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        paidForm.appendChild(input);
+      }
+      input.value = value.trim();
     }
     if (inboundSource && inboundSource.trim()) {
-      href.searchParams.set('utm_source', inboundSource.trim());
+      paidForm.querySelector('input[name="utm_source"]').value = inboundSource.trim();
     }
-    paidCta.setAttribute('href', `${href.pathname}${href.search}${href.hash}`);
   }
 
   const form = document.querySelector('[data-diagnostic-intake-form]');

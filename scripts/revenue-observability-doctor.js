@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+const path = require('node:path');
+
 const {
   DEFAULT_PUBLIC_APP_ORIGIN,
 } = require('./hosted-config');
@@ -12,14 +14,30 @@ const {
   analyzePlausibleDomainCoverage,
   getConfiguredRegisteredDomains,
 } = require('./plausible-domain-config');
+const {
+  resolvePayPalConfig,
+} = require('./provider-live-evidence');
 
 const DEFAULT_TIMEOUT_MS = 10000;
 const QUERY_ACCESS_KEYS = Object.freeze({
   stripe: ['STRIPE_SECRET_KEY'],
+  paypal: [
+    'THUMBGATE_PAYPAL_CLIENT_ID',
+    'THUMBGATE_PAYPAL_CLIENT_SECRET',
+    'THUMBGATE_PAYPAL_EVIDENCE_RULES_JSON',
+    'THUMBGATE_PAYPAL_WEBHOOK_ID',
+    'THUMBGATE_PAYPAL_WEBHOOK_URL',
+    'THUMBGATE_PAYPAL_WEBHOOK_LEDGER_PATH',
+  ],
   plausible: ['PLAUSIBLE_API_KEY', 'PLAUSIBLE_SITE_ID'],
   posthog: ['POSTHOG_PERSONAL_API_KEY', 'POSTHOG_PROJECT_ID'],
   hosted: ['THUMBGATE_OPERATOR_KEY'],
 });
+const PAYPAL_BUYER_RAIL_KEYS = Object.freeze([
+  'THUMBGATE_PAYPAL_DIAGNOSTIC_CHECKOUT_URL',
+  'THUMBGATE_PAYPAL_WORKFLOW_SPRINT_CHECKOUT_URL',
+  'THUMBGATE_MOR_SNAPSHOT_CHECKOUT_URL',
+]);
 
 function parseArgs(argv = []) {
   const options = {
@@ -52,6 +70,66 @@ function hasAllEnv(env, keys) {
 
 function envPresence(env, keys) {
   return Object.fromEntries(keys.map((key) => [key, String(env[key] || '').trim().length > 0]));
+}
+
+function assessPayPalPaymentProofReadiness(env = process.env) {
+  const proofPresence = envPresence(env, QUERY_ACCESS_KEYS.paypal);
+  const buyerRailPresence = envPresence(env, PAYPAL_BUYER_RAIL_KEYS);
+  const fallbackCredentialPresence = {
+    PAYPAL_CLIENT_ID: String(env.PAYPAL_CLIENT_ID || '').trim().length > 0,
+    PAYPAL_CLIENT_SECRET: String(env.PAYPAL_CLIENT_SECRET || '').trim().length > 0,
+  };
+  const providerIsPayPal = String(env.THUMBGATE_MOR_PROVIDER || '').trim().toLowerCase() === 'paypal';
+  const required = providerIsPayPal ||
+    Object.values(buyerRailPresence).some(Boolean) ||
+    Object.values(proofPresence).some(Boolean) ||
+    Object.values(fallbackCredentialPresence).some(Boolean);
+  if (!required) {
+    return {
+      required: false,
+      ready: true,
+      providerIsPayPal: false,
+      directAuditConfigured: false,
+      recentPaymentReconciliationConfigured: false,
+      proofPresence,
+      buyerRailPresence,
+      fallbackCredentialPresence,
+      gap: null,
+    };
+  }
+
+  const config = resolvePayPalConfig(env);
+  let webhookUrl = null;
+  try {
+    webhookUrl = new URL(config.webhookUrl || '');
+  } catch {
+    webhookUrl = null;
+  }
+  const webhookIdValid = /^[A-Za-z0-9]{1,50}$/.test(String(config.webhookId || ''));
+  const webhookUrlValid = Boolean(webhookUrl && webhookUrl.protocol === 'https:' &&
+    !webhookUrl.username && !webhookUrl.password && !webhookUrl.hash &&
+    webhookUrl.pathname === '/v1/billing/paypal-webhook');
+  const ledgerPathValid = path.isAbsolute(String(config.webhookLedgerPath || ''));
+  const recentPaymentReconciliationConfigured = Boolean(
+    config.configured && webhookIdValid && webhookUrlValid && ledgerPathValid
+  );
+  let gap = null;
+  if (!config.configured) gap = config.gap;
+  else if (!recentPaymentReconciliationConfigured) {
+    gap = 'PayPal payment proof requires a valid webhook ID, HTTPS /v1/billing/paypal-webhook URL, and absolute ledger path.';
+  }
+
+  return {
+    required: true,
+    ready: recentPaymentReconciliationConfigured,
+    providerIsPayPal,
+    directAuditConfigured: Boolean(config.configured),
+    recentPaymentReconciliationConfigured,
+    proofPresence,
+    buyerRailPresence,
+    fallbackCredentialPresence,
+    gap,
+  };
 }
 
 function extractPlausibleDataDomains(html = '') {
@@ -122,10 +200,10 @@ async function probePublicFunnel({ appOrigin, fetchImpl = globalThis.fetch, time
     const checkoutHasEmailInput = /name=["']customer_email["']/i.test(checkoutBody);
     const checkoutRequiresEmailBeforeStripe = /name=["']customer_email["'][^>]*\brequired\b/i.test(checkoutBody);
     const checkoutEmailOptionalBeforeStripe = checkoutHasEmailInput && !checkoutRequiresEmailBeforeStripe;
-    const checkoutLeaksServiceLinks = /https:\/\/buy\.stripe\.com\/|Pay \$1 first rule|Pay \$99 teardown|Book \$499 diagnostic|Start \$1500 sprint/.test(checkoutBody);
+    const checkoutLeaksServiceLinks = /https:\/\/buy\.stripe\.com\/|https:\/\/(?:www\.)?paypal\.com\/ncp\/payment\/|Pay \$1 first rule|Pay \$99 teardown|Book \$499 diagnostic|Start \$1500 sprint/.test(checkoutBody);
 
     return {
-      ok: root.ok && checkout.ok && checkoutHasFocusedProCta && checkoutHasFallback && checkoutEmailOptionalBeforeStripe && !checkoutLeaksServiceLinks,
+      ok: root.ok && checkout.ok && checkoutHasFocusedProCta && checkoutHasFallback && checkoutRequiresEmailBeforeStripe && !checkoutLeaksServiceLinks,
       root: {
         status: root.status,
         ok: root.ok,
@@ -182,6 +260,7 @@ async function buildRevenueObservabilityDoctor({
 } = {}) {
   const hostedApiKey = resolveHostedAuditApiKey(env, { operatorKey: null });
   const publicFunnel = await probePublicFunnel({ appOrigin, fetchImpl, timeoutMs });
+  const paypalPaymentProof = assessPayPalPaymentProofReadiness(env);
   const plausibleDomainCoverage = analyzePlausibleDomainCoverage({
     emittedDomains: publicFunnel.plausibleDomains || [],
     registeredDomains: getConfiguredRegisteredDomains(env),
@@ -200,6 +279,13 @@ async function buildRevenueObservabilityDoctor({
       'critical',
       'Stripe secret key must be available before revenue claims can be verified directly.',
       envPresence(env, QUERY_ACCESS_KEYS.stripe)
+    ),
+    buildCheck(
+      'paypal_payment_proof_access',
+      paypalPaymentProof.ready,
+      'critical',
+      'When PayPal is an active or partially configured buyer rail, direct-audit rules and recent webhook reconciliation must be configured before revenue observability is ready.',
+      paypalPaymentProof
     ),
     buildCheck(
       'plausible_query_access',
@@ -237,10 +323,10 @@ async function buildRevenueObservabilityDoctor({
       publicFunnel
     ),
     buildCheck(
-      'checkout_email_optional_before_stripe',
-      publicFunnel.checkout?.emailOptionalBeforeStripe === true,
+      'checkout_email_required_before_provider',
+      publicFunnel.checkout?.requiresEmailBeforeStripe === true,
       'critical',
-      'Pro checkout interstitial must not require email before Stripe; Stripe can collect email on the secure checkout page.',
+      'Pro checkout must require a valid buyer email before provider session creation.',
       publicFunnel.checkout || {}
     ),
   ];
@@ -256,11 +342,16 @@ async function buildRevenueObservabilityDoctor({
     verdict = 'ready';
   }
 
+  const stripeQueryReady = checks.find((check) => check.id === 'stripe_query_access')?.ok === true;
+  const activeProviderProofReady = stripeQueryReady && paypalPaymentProof.ready;
   return {
     generatedAt: new Date().toISOString(),
     appOrigin,
     verdict,
-    canProveRevenue: checks.find((check) => check.id === 'stripe_query_access')?.ok === true,
+    canProveRevenue: activeProviderProofReady,
+    canProveIndividualPayment: stripeQueryReady || (paypalPaymentProof.required && paypalPaymentProof.ready),
+    globalRevenueClaimVerified: false,
+    revenueProofBoundary: 'Configuration readiness is not payment evidence. Run the strict revenue target control with provider-origin data before making a global revenue claim.',
     canProveVisitorBehavior: (
       checks.find((check) => check.id === 'plausible_query_access')?.ok === true ||
       checks.find((check) => check.id === 'posthog_query_access')?.ok === true ||
@@ -277,7 +368,9 @@ function formatDoctorReport(report) {
   const lines = [
     `Revenue Observability Doctor: ${report.verdict.toUpperCase()}`,
     `App origin: ${report.appOrigin}`,
-    `Can prove revenue: ${report.canProveRevenue ? 'yes' : 'no'}`,
+    `Active-provider proof prerequisites ready: ${report.canProveRevenue ? 'yes' : 'no'}`,
+    `Can prove an individual payment: ${report.canProveIndividualPayment ? 'yes' : 'no'}`,
+    `Global revenue claim verified: ${report.globalRevenueClaimVerified ? 'yes' : 'no'}`,
     `Can prove visitor behavior: ${report.canProveVisitorBehavior ? 'yes' : 'no'}`,
     '',
     'Checks:',
@@ -295,15 +388,19 @@ function formatDoctorReport(report) {
   return `${lines.join('\n')}\n`;
 }
 
+function doctorExitCode(report) {
+  return report?.verdict === 'blocked' ? 1 : 0;
+}
+
 async function main(argv = process.argv.slice(2)) {
   const options = parseArgs(argv);
   const report = await buildRevenueObservabilityDoctor(options);
   if (options.json) {
     process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-    return;
+  } else {
+    process.stdout.write(formatDoctorReport(report));
   }
-  process.stdout.write(formatDoctorReport(report));
-  if (report.verdict === 'blocked') process.exitCode = 1;
+  process.exitCode = doctorExitCode(report);
 }
 
 module.exports = {
@@ -312,10 +409,12 @@ module.exports = {
   parseArgs,
   hasAllEnv,
   envPresence,
+  assessPayPalPaymentProofReadiness,
   probePublicFunnel,
   extractPlausibleDataDomains,
   buildRevenueObservabilityDoctor,
   formatDoctorReport,
+  doctorExitCode,
 };
 
 if (require('node:path').resolve(process.argv[1] || '') === require('node:path').resolve(__filename)) {

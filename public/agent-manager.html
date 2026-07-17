@@ -46,7 +46,7 @@
       "name": "How does ThumbGate help the Agent Manager?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "ThumbGate is the pre-action enforcement layer under the role. It runs PreToolUse hooks, distills repeated thumbs-down feedback into CLAUDE.md rules, and shows the rule plus evidence on each block. Pro keeps personal recall, exports, dashboard proof, and adapters maintained; Enterprise adds the org-wide rule library and hosted dashboard."
+        "text": "ThumbGate is the pre-action enforcement layer under the role. It runs PreToolUse hooks, distills repeated thumbs-down feedback into CLAUDE.md rules, and shows the rule plus evidence on each block. Pro keeps personal recall, exports, personal dashboard proof, and adapters maintained. Enterprise service work is qualified after intake; an org-wide hosted rule library and hosted dashboard are not generally available."
       }
     },
     {
@@ -54,7 +54,7 @@
       "name": "Is ThumbGate free for the Agent Manager to start?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. npx thumbgate init in one repo is free and MIT licensed, and gates work locally without a hosted account. Pro adds personal recall, dashboard proof, DPO/HuggingFace export, and managed adapters. Enterprise adds the hosted dashboard, org-wide rule library, and rollout support."
+        "text": "Yes. npx thumbgate init in one repo is free and MIT licensed, and gates work locally without a hosted account. Pro adds personal recall, personal dashboard proof, DPO/HuggingFace export, and managed adapters. Enterprise service work can add scoped rollout support after intake; a hosted org dashboard and org-wide hosted rule library are not generally available."
       }
     },
     {
@@ -112,7 +112,7 @@
     <tbody>
       <tr>
         <td><strong>CLAUDE.md hierarchy</strong><br>Keeping the policy that the model reads on every session current and consistent across repos.</td>
-        <td>Prevention rules distilled from repeated real <code>👎</code> feedback and written into <code>CLAUDE.md</code> by <code>scripts/feedback-to-rules.js</code>. Enterprise adds the hosted org-wide rule library.</td>
+        <td>Prevention rules distilled from repeated real <code>👎</code> feedback and written into <code>CLAUDE.md</code> by <code>scripts/feedback-to-rules.js</code>. A hosted org-wide rule library is not generally available.</td>
       </tr>
       <tr>
         <td><strong>Plugin marketplace</strong><br>Deciding which Claude Code / Cursor / Codex plugins are blessed and which are not.</td>
@@ -128,7 +128,7 @@
       </tr>
       <tr>
         <td><strong>Keep them current</strong><br>When Claude Code ships a breaking change to hooks or to the plugin API, your rollout cannot wait a quarter.</td>
-        <td>24×7 ops on the adapter matrix. SonarCloud regressions fixed in &lt;24h. Pro covers personal adapter maintenance; Enterprise is the hosted operator.</td>
+        <td>Managed adapter maintenance for the supported personal runtime surfaces. Enterprise service work is fixed in a signed scope; it is not an unbounded hosted operator or 24×7 incident-response promise.</td>
       </tr>
     </tbody>
   </table>
@@ -145,7 +145,7 @@
     </div>
     <div class="card">
       <h3>Phase 2 — Rollout lands</h3>
-      <p>Infrastructure is ready; the first wave finds it productive. This is where the Agent Manager becomes a named role. ThumbGate Enterprise's hosted dashboard, org-wide rule library, and DPO export keep CLAUDE.md and permissions consistent across repos.</p>
+      <p>This is where the Agent Manager becomes a named role. ThumbGate Enterprise service work can scope local approval boundaries, rollback paths, and proof ownership across up to three workflows. A hosted dashboard and org-wide hosted rule library are not generally available.</p>
     </div>
     <div class="card">
       <h3>Phase 3 — Adoption spreads</h3>
@@ -157,7 +157,7 @@
   <ol>
     <li><strong>Install free.</strong> <code>npx thumbgate init</code> in one repo. Captures thumbs-up/down feedback locally; auto-promotes repeated failures into prevention rules.</li>
     <li><strong>Wire one Pre-Action Check.</strong> Pick the most-repeated agent mistake your org has felt this month. Promote that one to a rule. Watch the next attempt get flagged and logged at the tool-call boundary (and hard-blocked under strict enforcement), with the rule that fired in the agent's reasoning trace.</li>
-    <li><strong>Run the Workflow Hardening Sprint.</strong> When phase 2 hits — when you need shared rules, org dashboard visibility, and adapter coverage you do not have to maintain yourself — the sprint is the path from local proof to managed rollout.</li>
+    <li><strong>Run the Workflow Hardening Sprint.</strong> When phase 2 hits, use the sprint to prove local approval boundaries, rollback safety, and evidence ownership before discussing a bounded multi-workflow rollout. Hosted shared rules and org dashboard visibility are not generally available.</li>
   </ol>
 
   <div class="card">

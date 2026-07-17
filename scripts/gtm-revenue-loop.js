@@ -9,6 +9,7 @@ const { getOperationalBillingSummary } = require('./operational-summary');
 const { generateRevenueStatusReport } = require('./revenue-status');
 const { ensureDir } = require('./fs-utils');
 const { buildLeadFromRevenueTarget, loadSalesLeads } = require('./sales-pipeline');
+const { evaluateRevenueActionEligibility } = require('./revenue-action-eligibility');
 const { getWarmOutboundTargets } = require('./warm-outreach-targets');
 
 const GITHUB_API_BASE_URL = 'https://api.github.com/';
@@ -391,21 +392,39 @@ function normalizePipelineStage(stage) {
   return normalized || 'targeted';
 }
 
-function buildNextOperatorAction(stage) {
+function buildNextOperatorAction(stage, actionEligibility = null) {
+  const eligibleNextAction = normalizeText(actionEligibility?.nextAction);
+  if (eligibleNextAction) return eligibleNextAction;
   switch (normalizePipelineStage(stage)) {
     case 'contacted':
-      return 'Send the pain-confirmation follow-up and ask for the repeated workflow blocker.';
+      return 'Reconcile the send receipt and cooldown before requesting approval for one follow-up.';
     case 'replied':
-      return 'Convert the reply into a 15-minute diagnostic or sprint intake.';
+      return 'Verify the buyer reply is unanswered, then request approval for one qualification response.';
     case 'call_booked':
-      return 'Confirm the diagnostic agenda and capture the exact repeated failure to harden.';
+      return 'Prepare the diagnostic agenda and capture the exact repeated failure to harden.';
     case 'checkout_started':
-      return 'Close the self-serve checkout and keep proof links ready for objections.';
+      return 'Verify buyer identity and monitor provider payment; do not resend or call checkout revenue.';
     case 'sprint_intake':
-      return 'Review the sprint intake, scope the workflow, and close the paid sprint.';
+      return 'Review the verified intake and scope the workflow before requesting any offer approval.';
+    case 'paid':
+      return 'Deliver the paid scope, capture outcome evidence, and evaluate expansion after proof.';
+    case 'lost':
+      return 'Take no further action without a new inbound buyer signal.';
     default:
-      return 'Send the first-touch draft and log the outreach in the sales pipeline.';
+      return 'Request exact action-time approval for the first-touch draft; send nothing before approval.';
   }
+}
+
+function resolveTargetActionEligibility(target = {}, lead = null, options = {}) {
+  if (target.actionEligibility && typeof target.actionEligibility === 'object') {
+    return target.actionEligibility;
+  }
+  const pipelineStage = normalizePipelineStage(target.pipelineStage);
+  const syntheticLead = lead || {
+    ...buildLeadFromRevenueTarget(target),
+    stage: pipelineStage,
+  };
+  return evaluateRevenueActionEligibility(syntheticLead, target, options);
 }
 
 function quoteShellArg(value) {
@@ -477,6 +496,17 @@ function buildSalesPipelineCommand(command, args = {}) {
   return parts.join(' ');
 }
 
+function buildPaymentReconciliationCommand(args = {}) {
+  const parts = ['npm', 'run', 'sales:reconcile-payment', '--'];
+  for (const [key, rawValue] of Object.entries(args)) {
+    const value = normalizeText(rawValue, 4000);
+    if (!value) continue;
+    parts.push(`--${key}`);
+    parts.push(quoteShellArg(value));
+  }
+  return parts.join(' ');
+}
+
 function buildTargetSalesCommands(target = {}) {
   const leadId = normalizeText(target.pipelineLeadId) || buildLeadFromRevenueTarget(target).leadId;
   const channel = normalizeText(target.channel) || normalizeText(target.source) || 'manual';
@@ -490,6 +520,9 @@ function buildTargetSalesCommands(target = {}) {
     markContacted: buildSalesPipelineCommand('advance', {
       ...commandBase,
       stage: 'contacted',
+      'evidence-kind': 'platform_send_receipt',
+      'evidence-source': 'REPLACE_WITH_PLATFORM',
+      'evidence-ref': 'REPLACE_WITH_PLATFORM_RECEIPT',
       note: isProMotion
         ? `Sent ${motionLabel} self-serve first touch focused on ${pain}.`
         : `Sent ${motionLabel} first touch focused on ${pain}.`,
@@ -497,11 +530,17 @@ function buildTargetSalesCommands(target = {}) {
     markReplied: buildSalesPipelineCommand('advance', {
       ...commandBase,
       stage: 'replied',
+      'evidence-kind': 'buyer_reply',
+      'evidence-source': 'REPLACE_WITH_BUYER_CHANNEL',
+      'evidence-ref': 'REPLACE_WITH_BUYER_REPLY_RECEIPT',
       note: `Buyer confirmed pain around ${pain}.`,
     }),
     markCallBooked: buildSalesPipelineCommand('advance', {
       ...commandBase,
       stage: 'call_booked',
+      'evidence-kind': 'booking_confirmation',
+      'evidence-source': 'REPLACE_WITH_CALENDAR_PROVIDER',
+      'evidence-ref': 'REPLACE_WITH_BOOKING_RECEIPT',
       note: isProMotion
         ? `Booked a 15-minute diagnostic after the self-serve conversation exposed repeated pain around ${pain}.`
         : `Booked a 15-minute workflow hardening diagnostic for ${pain}.`,
@@ -509,19 +548,25 @@ function buildTargetSalesCommands(target = {}) {
     markCheckoutStarted: buildSalesPipelineCommand('advance', {
       ...commandBase,
       stage: 'checkout_started',
+      'evidence-kind': 'provider_checkout_session',
+      'evidence-source': 'REPLACE_WITH_PAYMENT_PROVIDER',
+      'evidence-ref': 'REPLACE_WITH_CHECKOUT_SESSION',
       note: `Buyer started the self-serve checkout after discussing ${pain}.`,
     }),
     markSprintIntake: buildSalesPipelineCommand('advance', {
       ...commandBase,
       stage: 'sprint_intake',
+      'evidence-kind': 'intake_submission',
+      'evidence-source': 'REPLACE_WITH_INTAKE_SYSTEM',
+      'evidence-ref': 'REPLACE_WITH_INTAKE_RECEIPT',
       note: isProMotion
         ? `Buyer escalated from the self-serve lane into Workflow Hardening Sprint intake for ${pain}.`
         : `Buyer moved into Workflow Hardening Sprint intake for ${pain}.`,
     }),
-    markPaid: buildSalesPipelineCommand('advance', {
-      ...commandBase,
-      stage: 'paid',
-      note: `Closed ${motionLabel} and booked revenue after resolving ${pain}.`,
+    markPaid: buildPaymentReconciliationCommand({
+      lead: leadId,
+      provider: 'REPLACE_WITH_PAYMENT_PROVIDER',
+      payment: 'REPLACE_WITH_PROVIDER_PAYMENT_ID',
     }),
   };
 }
@@ -548,6 +593,11 @@ function enrichRenderableTarget(target = {}) {
   const selectedMotion = resolveSelectedMotion(target, motionCatalog);
   const pipelineLeadId = normalizeText(target.pipelineLeadId) || buildLeadFromRevenueTarget(target).leadId;
   const pipelineStage = normalizePipelineStage(target.pipelineStage);
+  const actionEligibility = resolveTargetActionEligibility({
+    ...target,
+    pipelineLeadId,
+    pipelineStage,
+  });
   return {
     ...target,
     motion: normalizeText(target.motion) || selectedMotion.key,
@@ -559,7 +609,9 @@ function enrichRenderableTarget(target = {}) {
       || buildCheckoutCloseDraft(target, selectedMotion, motionCatalog),
     pipelineLeadId,
     pipelineStage,
-    nextOperatorAction: normalizeText(target.nextOperatorAction) || buildNextOperatorAction(pipelineStage),
+    pipelineStageVerified: actionEligibility.evidence?.stageVerified === true,
+    actionEligibility,
+    nextOperatorAction: buildNextOperatorAction(pipelineStage, actionEligibility),
     salesCommands: target.salesCommands || buildTargetSalesCommands({
       ...target,
       motion: normalizeText(target.motion) || selectedMotion.key,
@@ -570,7 +622,7 @@ function enrichRenderableTarget(target = {}) {
   };
 }
 
-function applyPipelineStateToTargets(targets = [], { salesStatePath = null } = {}) {
+function applyPipelineStateToTargets(targets = [], { salesStatePath = null, now = null } = {}) {
   const leads = loadSalesLeads({ statePath: salesStatePath });
   const leadMap = new Map(leads.map((lead) => [lead.leadId, lead]));
 
@@ -580,13 +632,20 @@ function applyPipelineStateToTargets(targets = [], { salesStatePath = null } = {
       const existingLead = leadMap.get(candidateLead.leadId);
       const pipelineStage = normalizePipelineStage(existingLead?.stage || target.pipelineStage);
       const pipelineLeadId = existingLead?.leadId || candidateLead.leadId;
+      const actionEligibility = evaluateRevenueActionEligibility(
+        existingLead || { ...candidateLead, stage: pipelineStage },
+        target,
+        now ? { now } : {}
+      );
 
       return {
         ...target,
         pipelineLeadId,
         pipelineStage,
+        pipelineStageVerified: actionEligibility.evidence?.stageVerified === true,
         pipelineUpdatedAt: normalizeText(existingLead?.updatedAt),
-        nextOperatorAction: buildNextOperatorAction(pipelineStage),
+        actionEligibility,
+        nextOperatorAction: buildNextOperatorAction(pipelineStage, actionEligibility),
         salesCommands: buildTargetSalesCommands({
           ...target,
           pipelineLeadId,
@@ -1595,6 +1654,11 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
       const evidenceSources = buildEvidenceSources(target, motionCatalog);
       const pipelineLeadId = normalizeText(target.pipelineLeadId) || buildLeadFromRevenueTarget(target).leadId;
       const pipelineStage = normalizePipelineStage(target.pipelineStage);
+      const actionEligibility = resolveTargetActionEligibility({
+        ...target,
+        pipelineLeadId,
+        pipelineStage,
+      });
       const salesCommands = target.salesCommands || buildTargetSalesCommands({
         ...target,
         pipelineLeadId,
@@ -1627,8 +1691,10 @@ function buildRevenueLoopReport({ source, fallbackReason, summary, motionCatalog
         motionReason: target.selectedMotion.reason,
         pipelineLeadId,
         pipelineStage,
+        pipelineStageVerified: actionEligibility.evidence?.stageVerified === true,
         pipelineUpdatedAt: normalizeText(target.pipelineUpdatedAt),
-        nextOperatorAction: normalizeText(target.nextOperatorAction) || buildNextOperatorAction(pipelineStage),
+        actionEligibility,
+        nextOperatorAction: buildNextOperatorAction(pipelineStage, actionEligibility),
         offer: target.selectedMotion.key === motionCatalog.sprint.key ? 'workflow_hardening_sprint' : 'pro_self_serve',
         cta: target.selectedMotion.key === motionCatalog.sprint.key
           ? motionCatalog.sprint.cta
@@ -1839,7 +1905,13 @@ function renderRevenueTargetMarkdown(target) {
     `- Temperature: ${target.temperature || 'cold'}`,
     `- Source: ${target.source || 'github'} / ${target.channel || target.source || 'github'}`,
     `- Pipeline stage: ${target.pipelineStage}`,
-    `- Next operator step: ${target.nextOperatorAction || buildNextOperatorAction(target.pipelineStage)}`,
+    `- Stage evidence: ${target.pipelineStageVerified ? 'verified' : 'unverified'}`,
+    `- Action status: ${target.actionEligibility?.status || 'hold_unverified_stage_evidence'}`,
+    `- Zero-spend status: ${target.actionEligibility?.evidence?.zeroSpendStatus || 'hold_unverified_cost'}`,
+    `- Outbound ready: ${target.actionEligibility?.readyForOutbound === true ? 'yes, after exact approval' : 'no'}`,
+    `- Approval phrase: ${target.actionEligibility?.approvalPhrase || 'n/a'}`,
+    `- Eligibility reason: ${target.actionEligibility?.reason || 'n/a'}`,
+    `- Next operator step: ${target.nextOperatorAction || buildNextOperatorAction(target.pipelineStage, target.actionEligibility)}`,
     `- Pipeline last updated: ${target.pipelineUpdatedAt || 'n/a'}`,
     `- Offer: ${target.offer}`,
     `- Contact: ${target.contactUrl || 'n/a'}`,
@@ -1938,6 +2010,7 @@ function renderQuotedText(text) {
 function renderWarmTargetOutreachMarkdown(target, index) {
   const enrichedTarget = enrichRenderableTarget(target);
   const salesCommands = enrichedTarget.salesCommands;
+  const actionEligibility = enrichedTarget.actionEligibility || {};
   return [
     `## ${index + 1}. ${enrichedTarget.username} (${enrichedTarget.accountName || enrichedTarget.source || 'warm lead'})`,
     `- Source: ${enrichedTarget.source || 'github'} / ${enrichedTarget.channel || enrichedTarget.source || 'github'}`,
@@ -1950,6 +2023,11 @@ function renderWarmTargetOutreachMarkdown(target, index) {
     `- Outreach angle: ${enrichedTarget.outreachAngle || 'n/a'}`,
     `- Motion: ${enrichedTarget.motionLabel}`,
     `- Why: ${enrichedTarget.motionReason}`,
+    `- Action status: ${actionEligibility.status || 'hold_unverified_stage_evidence'}`,
+    `- Stage evidence: ${actionEligibility.evidence?.stageVerified === true ? 'verified' : 'unverified'}`,
+    `- Zero-spend status: ${actionEligibility.evidence?.zeroSpendStatus || 'hold_unverified_cost'}`,
+    `- Approval phrase: ${actionEligibility.approvalPhrase || 'n/a'}`,
+    `- Eligibility reason: ${actionEligibility.reason || 'No action-eligibility evidence was supplied.'}`,
     `- Proof timing: ${enrichedTarget.proofPackTrigger || 'Use proof pack only after the buyer confirms pain.'}`,
     `- CTA: ${enrichedTarget.cta}`,
     `- Log after send: \`${salesCommands.markContacted || 'n/a'}\``,
@@ -1974,6 +2052,18 @@ function renderWarmTargetOutreachMarkdown(target, index) {
 
 function rankOperatorTargets(targets = []) {
   return [...targets].sort((left, right) => {
+    const leftOutboundReady = left.actionEligibility?.readyForOutbound === true ? 1 : 0;
+    const rightOutboundReady = right.actionEligibility?.readyForOutbound === true ? 1 : 0;
+    if (rightOutboundReady !== leftOutboundReady) {
+      return rightOutboundReady - leftOutboundReady;
+    }
+
+    const leftInternalReady = left.actionEligibility?.queueClass === 'internal_ready' ? 1 : 0;
+    const rightInternalReady = right.actionEligibility?.queueClass === 'internal_ready' ? 1 : 0;
+    if (rightInternalReady !== leftInternalReady) {
+      return rightInternalReady - leftInternalReady;
+    }
+
     const leftStagePriority = PIPELINE_STAGE_PRIORITY[normalizePipelineStage(left.pipelineStage)] || 0;
     const rightStagePriority = PIPELINE_STAGE_PRIORITY[normalizePipelineStage(right.pipelineStage)] || 0;
     if (rightStagePriority !== leftStagePriority) {
@@ -2010,14 +2100,22 @@ function renderOperatorPriorityTargetMarkdown(target, index) {
   const contactSurface = enrichedTarget.contactSurface || enrichedTarget.contactUrl || enrichedTarget.repoUrl || 'n/a';
   const contactSurfaces = renderContactSurfaces(enrichedTarget.contactSurfaces);
   const salesCommands = enrichedTarget.salesCommands;
+  const eligibility = enrichedTarget.actionEligibility || {};
   const whyNow = enrichedTarget.whyNow || enrichedTarget.motionReason || enrichedTarget.outreachAngle || 'n/a';
   return [
     `## ${index + 1}. ${label}`,
     `- Temperature: ${enrichedTarget.temperature || 'cold'}`,
     `- Source: ${enrichedTarget.source || 'github'} / ${enrichedTarget.channel || enrichedTarget.source || 'github'}`,
     `- Pipeline stage: ${enrichedTarget.pipelineStage || 'targeted'}`,
+    `- Stage evidence: ${enrichedTarget.pipelineStageVerified ? 'verified' : 'unverified'}`,
     `- Pipeline lead id: ${enrichedTarget.pipelineLeadId || 'n/a'}`,
-    `- Next operator step: ${enrichedTarget.nextOperatorAction || buildNextOperatorAction(enrichedTarget.pipelineStage)}`,
+    `- Action status: ${eligibility.status || 'hold_unverified_stage_evidence'}`,
+    `- Zero-spend status: ${eligibility.evidence?.zeroSpendStatus || 'hold_unverified_cost'}`,
+    `- Outbound ready: ${eligibility.readyForOutbound === true ? 'yes, after exact approval' : 'no'}`,
+    `- Approval phrase: ${eligibility.approvalPhrase || 'n/a'}`,
+    `- Eligibility reason: ${eligibility.reason || 'n/a'}`,
+    `- Next eligible at: ${eligibility.nextEligibleAt || 'n/a'}`,
+    `- Next operator step: ${enrichedTarget.nextOperatorAction || buildNextOperatorAction(enrichedTarget.pipelineStage, eligibility)}`,
     `- Pipeline last updated: ${enrichedTarget.pipelineUpdatedAt || 'n/a'}`,
     `- Log after send: \`${salesCommands.markContacted || 'n/a'}\``,
     `- Log after pain-confirmed reply: \`${salesCommands.markReplied || 'n/a'}\``,
@@ -2068,8 +2166,10 @@ function buildOperatorPriorityTargetSummary(target, index) {
     source: normalizeText(enrichedTarget.source) || 'github',
     channel: normalizeText(enrichedTarget.channel) || normalizeText(enrichedTarget.source) || 'github',
     pipelineStage: normalizeText(enrichedTarget.pipelineStage) || 'targeted',
+    pipelineStageVerified: enrichedTarget.pipelineStageVerified === true,
     pipelineLeadId: normalizeText(enrichedTarget.pipelineLeadId) || 'n/a',
-    nextOperatorStep: normalizeText(enrichedTarget.nextOperatorAction) || buildNextOperatorAction(enrichedTarget.pipelineStage),
+    actionEligibility: enrichedTarget.actionEligibility || {},
+    nextOperatorStep: normalizeText(enrichedTarget.nextOperatorAction) || buildNextOperatorAction(enrichedTarget.pipelineStage, enrichedTarget.actionEligibility),
     pipelineUpdatedAt: normalizeText(enrichedTarget.pipelineUpdatedAt),
     contactSurface: normalizeText(enrichedTarget.contactSurface)
       || normalizeText(enrichedTarget.contactUrl)
@@ -2103,8 +2203,15 @@ function isProductionRolloutTarget(target) {
 
 function buildOperatorHandoffPayload(report) {
   const rankedTargets = rankOperatorTargets(Array.isArray(report?.targets) ? report.targets.map(enrichRenderableTarget) : []);
-  const followUpTargets = rankedTargets.filter((target) => normalizePipelineStage(target.pipelineStage) !== 'targeted');
-  const freshTargets = rankedTargets.filter((target) => normalizePipelineStage(target.pipelineStage) === 'targeted');
+  const approvalReadyTargets = rankedTargets.filter((target) => target.actionEligibility?.readyForOutbound === true);
+  const internalTargets = rankedTargets.filter((target) => target.actionEligibility?.queueClass === 'internal_ready');
+  const heldTargets = rankedTargets.filter((target) => (
+    target.actionEligibility?.readyForOutbound !== true
+    && target.actionEligibility?.queueClass !== 'internal_ready'
+    && target.actionEligibility?.queueClass !== 'terminal'
+  ));
+  const followUpTargets = approvalReadyTargets.filter((target) => normalizePipelineStage(target.pipelineStage) !== 'targeted');
+  const freshTargets = approvalReadyTargets.filter((target) => normalizePipelineStage(target.pipelineStage) === 'targeted');
   const githubTargets = freshTargets.filter((target) => normalizeText(target.source).toLowerCase() === 'github');
   const selfServeTargets = freshTargets.filter((target) => normalizeText(target.motion).toLowerCase() === 'pro');
   const warmTargets = freshTargets.filter((target) => (
@@ -2143,6 +2250,16 @@ function buildOperatorHandoffPayload(report) {
       label: 'Seed Next: Cold GitHub',
       targets: coldTargets,
     },
+    {
+      key: 'internal_ready',
+      label: 'Internal Review Ready',
+      targets: internalTargets,
+    },
+    {
+      key: 'held_evidence_cost_or_cooldown',
+      label: 'Held: Evidence, Cost, Receipt, or Cooldown',
+      targets: heldTargets,
+    },
   ];
 
   return {
@@ -2160,12 +2277,16 @@ function buildOperatorHandoffPayload(report) {
       selfServeTargetsReadyNow: selfServeTargets.length,
       productionRolloutTargetsReadyNow: productionTargets.length,
       coldGitHubTargetsReadyNext: coldTargets.length,
+      internalActionsReady: internalTargets.length,
+      heldTargets: heldTargets.length,
     },
     operatorRules: [
       'Import the queue into the sales ledger before sending anything.',
       'Follow the row motion: sprint rows get one workflow-hardening offer; self-serve rows get the guide-to-Pro lane unless pain is confirmed.',
       `Qualify the offer split: ${OFFER_SPLIT_RULE}`,
       'Use VERIFICATION_EVIDENCE.md and COMMERCIAL_TRUTH.md only after the buyer confirms pain.',
+      'No row enters a send-now section from a stage label alone; current stage evidence, zero-spend status, receipt chronology, cooldown, and duplicate-follow-up state must all pass.',
+      'Every outbound-ready row still requires its exact action-time approval phrase. Internal and monitoring rows never enter the send-now sheet.',
     ],
     importCommand: 'npm run sales:pipeline -- import --source docs/marketing/gtm-revenue-loop.json',
     sections: sections.map((section) => ({
@@ -2183,6 +2304,8 @@ function renderOperatorHandoffMarkdown(report) {
   const selfServeTargets = handoff.sections.find((section) => section.key === 'close_now_self_serve_pro')?.targets || [];
   const productionTargets = handoff.sections.find((section) => section.key === 'send_next_production_rollout')?.targets || [];
   const coldTargets = handoff.sections.find((section) => section.key === 'seed_next_cold_github')?.targets || [];
+  const internalTargets = handoff.sections.find((section) => section.key === 'internal_ready')?.targets || [];
+  const heldTargets = handoff.sections.find((section) => section.key === 'held_evidence_cost_or_cooldown')?.targets || [];
   const followUpLines = followUpTargets.length
     ? followUpTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index))
     : ['- No in-flight follow-ups are currently tracked.', ''];
@@ -2198,13 +2321,19 @@ function renderOperatorHandoffMarkdown(report) {
   const coldLines = coldTargets.length
     ? coldTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index + followUpTargets.length + warmTargets.length + selfServeTargets.length + productionTargets.length))
     : ['- No cold GitHub targets are available for this run.', ''];
+  const internalLines = internalTargets.length
+    ? internalTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index))
+    : ['- No internal review actions are ready for this run.', ''];
+  const heldLines = heldTargets.length
+    ? heldTargets.flatMap((target, index) => renderOperatorPriorityTargetMarkdown(target, index))
+    : ['- No targets are held by evidence, cost, receipt, or cooldown gates.', ''];
 
   return [
     '# Revenue Operator Priority Handoff',
     '',
     `Updated: ${handoff.generatedAt}`,
     '',
-    'This is the ranked send order for the current zero-to-one revenue loop. Work follow-ups first, then warm discovery, then self-serve closes, then production-rollout buyers, then expand into the remaining cold GitHub targets with the same proof discipline.',
+    'This is the evidence-gated action order for the current zero-to-one revenue loop. Only approval-ready rows enter send sections; internal work, monitoring, and held rows stay outside the send-now sheet.',
     'GitHub prospects can land in the self-serve, production-rollout, or seed-next buckets depending on urgency and buying signal, so read the GitHub total first and the sub-buckets second.',
     '',
     'This handoff sits on top of `gtm-revenue-loop.md`, `gtm-target-queue.csv`, and `team-outreach-messages.md` so an operator can decide who to contact next without re-ranking the queue manually.',
@@ -2224,6 +2353,8 @@ function renderOperatorHandoffMarkdown(report) {
     `- Self-serve closes ready now: ${handoff.summary.selfServeTargetsReadyNow}`,
     `- Production-rollout targets ready now: ${handoff.summary.productionRolloutTargetsReadyNow}`,
     `- Seed-stage cold GitHub targets ready next: ${handoff.summary.coldGitHubTargetsReadyNext}`,
+    `- Internal actions ready: ${handoff.summary.internalActionsReady}`,
+    `- Held targets: ${handoff.summary.heldTargets}`,
     '',
     '## Operator Rules',
     ...handoff.operatorRules.map((rule) => {
@@ -2247,12 +2378,18 @@ function renderOperatorHandoffMarkdown(report) {
     ...productionLines,
     '## Seed Next: Cold GitHub',
     ...coldLines,
+    '## Internal Review Ready',
+    ...internalLines,
+    '## Held: Evidence, Cost, Receipt, or Cooldown',
+    ...heldLines,
   ].join('\n');
 }
 
 function buildOperatorSendNowPayload(report) {
   const handoff = buildOperatorHandoffPayload(report);
-  const rows = handoff.sections.flatMap((section) => (
+  const rows = handoff.sections
+    .filter((section) => !['internal_ready', 'held_evidence_cost_or_cooldown'].includes(section.key))
+    .flatMap((section) => (
     section.targets.map((target) => ({
       rank: Number(target.rank || 0),
       sectionKey: section.key,
@@ -2261,7 +2398,12 @@ function buildOperatorSendNowPayload(report) {
       source: normalizeText(target.source) || 'github',
       channel: normalizeText(target.channel) || normalizeText(target.source) || 'github',
       pipelineStage: normalizeText(target.pipelineStage) || 'targeted',
+      pipelineStageVerified: target.pipelineStageVerified === true,
       pipelineLeadId: normalizeText(target.pipelineLeadId) || 'n/a',
+      actionStatus: normalizeText(target.actionEligibility?.status),
+      approvalPhrase: normalizeText(target.actionEligibility?.approvalPhrase),
+      zeroSpendStatus: normalizeText(target.actionEligibility?.evidence?.zeroSpendStatus),
+      eligibilityReason: normalizeText(target.actionEligibility?.reason),
       username: normalizeText(target.username),
       accountName: normalizeText(target.accountName),
       company: normalizeText(target.company),
@@ -2310,7 +2452,12 @@ function renderOperatorSendNowCsv(report) {
       'source',
       'channel',
       'pipelineStage',
+      'pipelineStageVerified',
       'pipelineLeadId',
+      'actionStatus',
+      'approvalPhrase',
+      'zeroSpendStatus',
+      'eligibilityReason',
       'username',
       'accountName',
       'company',
@@ -2347,7 +2494,12 @@ function renderOperatorSendNowCsv(report) {
       row.source,
       row.channel,
       row.pipelineStage,
+      row.pipelineStageVerified ? 'true' : 'false',
       row.pipelineLeadId,
+      row.actionStatus,
+      row.approvalPhrase,
+      row.zeroSpendStatus,
+      row.eligibilityReason,
       row.username,
       row.accountName,
       row.company,
@@ -2416,7 +2568,12 @@ function renderOperatorSendNowMarkdown(report) {
             `### ${row.rank}. ${label}`,
             `- Channel: ${row.source || 'github'} / ${row.channel || row.source || 'github'}`,
             `- Pipeline stage: ${row.pipelineStage || 'targeted'}`,
+            `- Stage evidence: ${row.pipelineStageVerified ? 'verified' : 'unverified'}`,
             `- Pipeline lead id: ${row.pipelineLeadId || 'n/a'}`,
+            `- Action status: ${row.actionStatus || 'n/a'}`,
+            `- Zero-spend status: ${row.zeroSpendStatus || 'hold_unverified_cost'}`,
+            `- Approval phrase: ${row.approvalPhrase || 'n/a'}`,
+            `- Eligibility reason: ${row.eligibilityReason || 'n/a'}`,
             `- Next operator step: ${row.nextOperatorStep || 'Send the first-touch draft and log it.'}`,
             `- Evidence score: ${Number(row.evidenceScore || 0)}`,
             `- Motion: ${row.motionLabel || 'n/a'}`,
@@ -2491,11 +2648,13 @@ function renderOperatorSendNowMarkdown(report) {
 
 function renderTeamOutreachMessagesMarkdown(report) {
   const warmTargets = Array.isArray(report?.targets)
-    ? report.targets.map(enrichRenderableTarget).filter((target) => target.temperature === 'warm')
+    ? report.targets
+      .map(enrichRenderableTarget)
+      .filter((target) => target.temperature === 'warm' && target.actionEligibility?.readyForOutbound === true)
     : [];
   const warmTargetLines = warmTargets.length
     ? warmTargets.flatMap(renderWarmTargetOutreachMarkdown)
-    : ['- No warm discovery targets were loaded for this run.', ''];
+    : ['- No approval-ready warm discovery targets were loaded for this run.', ''];
 
   return [
     '# Workflow Hardening Sprint Outreach Messages',
@@ -2503,7 +2662,7 @@ function renderTeamOutreachMessagesMarkdown(report) {
     `Updated: ${report.generatedAt}`,
     '',
     'These drafts are generated from the same evidence-backed revenue-loop report as `gtm-revenue-loop.md`, `gtm-target-queue.csv`, and `gtm-marketplace-copy.md`.',
-    'Use `operator-priority-handoff.md` for the ranked send order; this file is the copy layer for warm outreach only.',
+    'Use `operator-priority-handoff.md` for the ranked send order; this file contains only warm rows whose receipt, zero-spend, chronology, cooldown, and approval gates are satisfied. Held and internal-only rows are excluded.',
     '',
     'Track each lead in the sales ledger before sending anything:',
     '',
@@ -2683,7 +2842,14 @@ function renderRevenueLoopCsv(report) {
       'updatedAt',
       'offer',
       'pipelineStage',
+      'pipelineStageVerified',
       'pipelineLeadId',
+      'actionStatus',
+      'zeroSpendStatus',
+      'readyForOutbound',
+      'approvalPhrase',
+      'eligibilityReason',
+      'nextEligibleAt',
       'nextOperatorAction',
       'pipelineUpdatedAt',
       'evidenceScore',
@@ -2723,7 +2889,14 @@ function renderRevenueLoopCsv(report) {
         target.updatedAt,
         target.offer,
         target.pipelineStage,
+        target.pipelineStageVerified ? 'true' : 'false',
         target.pipelineLeadId,
+        target.actionEligibility?.status,
+        target.actionEligibility?.evidence?.zeroSpendStatus,
+        target.actionEligibility?.readyForOutbound === true ? 'true' : 'false',
+        target.actionEligibility?.approvalPhrase,
+        target.actionEligibility?.reason,
+        target.actionEligibility?.nextEligibleAt,
         target.nextOperatorAction,
         target.pipelineUpdatedAt,
         String(target.evidenceScore),
@@ -2860,7 +3033,7 @@ async function runRevenueLoop(options = {}) {
   const enrichedTargets = await generateOutreachMessages(targets, motionCatalog);
   const pipelineAwareTargets = applyPipelineStateToTargets(
     warmTargets.concat(enrichedTargets),
-    { salesStatePath: options.salesStatePath || null }
+    { salesStatePath: options.salesStatePath || null, now: options.now || null }
   );
   const report = buildRevenueLoopReport({
     source,
@@ -2930,6 +3103,8 @@ module.exports = {
   buildMotionCatalog,
   buildRevenueLinks,
   buildRevenueLoopReport,
+  buildNextOperatorAction,
+  buildTargetSalesCommands,
   clampTargetCount,
   deriveRevenueDirective,
   fetchGitHubJson,
@@ -2941,6 +3116,7 @@ module.exports = {
   parseArgs,
   prospectTargets,
   applyPipelineStateToTargets,
+  resolveTargetActionEligibility,
   renderRevenueLoopMarkdown,
   renderMarketplaceCopyMarkdown,
   renderMarketplaceSurfacesCsv,

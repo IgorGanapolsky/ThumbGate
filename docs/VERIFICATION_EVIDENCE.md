@@ -46,6 +46,404 @@ curl -H "Authorization: Bearer YOUR_KEY" \
 
 # Verification log
 
+## July 16, 2026: revenue evidence remediation and real-pipeline proof
+
+Scope:
+
+- Added a read-only remediation queue for every revenue row held by missing stage evidence, unverified acquisition cost, stale chronology, follow-up cooldown, exhausted follow-up, or unverified buyer checkout intent.
+- Ranked verified unanswered buyer replies above legacy repair work only while the reply remains inside a 14-day warm-signal window, while keeping every external action behind its exact action-time approval phrase.
+- Applied that same 14-day window to booking, checkout, and intake signals; same-stage outbound activity cannot refresh buyer intent, and current-stage entry is selected by timestamp even when history is out of order.
+- Split fresh unverified labels from verified buyer-origin evidence: labels and provider checkout objects now route to read-only review, while only fresh preferred evidence on a verified zero-cost route earns same-day evidence priority.
+- Selected preferred buyer evidence by event timestamp rather than history array order, so a newer provider object cannot hide a buyer confirmation and a fresh provider object cannot revive a stale buyer confirmation.
+- Held high-intent signals older than 14 days and timestamps dated more than five minutes in the future, so stale or invalid chronology cannot create an approval-ready same-day action.
+- Preserved independent blockers: repairing a receipt cannot waive an unknown-cost or paid-route restriction.
+- Emitted display-only `REPLACE_WITH_ACTUAL_...` templates that the pipeline validator rejects until an operator has inspected and supplied a real receipt; durable-state audit also rejects any `REPLACE_WITH_...` evidence inserted outside the normal write path.
+- Kept paid status exclusively behind authenticated live PayPal reconciliation; the queue never emits a manual paid transition.
+- Shipped both the remediation command and its eligibility dependency in the public npm bundle so the advertised package script is executable after installation.
+- Exercised the tool against the current 40-row local pipeline without modifying it or authorizing an outbound side effect.
+
+Commands and observed results:
+
+```text
+$ npm run test:revenue-evidence-remediation
+# tests 30
+# pass 30
+# fail 0
+
+$ node --test --experimental-test-coverage tests/revenue-action-eligibility.test.js tests/revenue-evidence-remediation.test.js
+# tests 58
+# pass 58
+# fail 0
+revenue-action-eligibility.js   | 100.00 lines | 90.15 branches | 100.00 functions
+revenue-evidence-remediation.js | 100.00 lines | 90.04 branches | 100.00 functions
+
+$ npm run test:revenue-action-eligibility
+# tests 38
+# pass 38
+# fail 0
+
+$ npm run test:sales-pipeline
+# tests 54
+# pass 54
+# fail 0
+
+$ npm run test:workflow
+# tests 229
+# pass 229
+# fail 0
+
+$ npm run test:deployment
+# tests 130
+# pass 130
+# fail 0
+
+$ npm test > /tmp/thumbgate-npm-test-20260716-v7.log 2>&1
+(exit 0; complete chained repository test command)
+TAP blocks=280
+tests=7006
+pass=7001
+fail=0
+cancelled=0
+skipped=5
+log lines=49867
+log sha256=893fce52ff5540d027a49bba7defb2ff502ce298bd56484cf6fe41ccd1c0006b
+(one skip is the mutually exclusive missing-sklearn branch while sklearn is installed; four are external Zernio paths, which were not configured or invoked)
+
+$ npm audit --omit=dev --json
+vulnerabilities: info=0 low=0 moderate=0 high=0 critical=0 total=0
+
+$ npm audit --json
+vulnerabilities: info=0 low=0 moderate=0 high=0 critical=0 total=0
+
+$ npm pack --dry-run --json
+name=thumbgate
+version=1.28.4
+fileCount=346
+unpackedSize=5135677
+revenueActionEligibilityIncluded=true
+revenueEvidenceRemediationIncluded=true
+
+$ npm run prove:packaged-runtime
+expectedVersion=1.28.4
+health.status=ok
+health.degraded=false
+health.buildSha=local-runtime
+(fresh tarball installed into a temporary prefix; dashboard and lessons returned HTTP 200)
+
+$ deterministic high-intent stage-signal freshness property sweep
+seed=0x5eed5678
+cases=10000
+stale=2887
+futureInvalid=468
+fresh=6645
+verdict=pass
+
+$ deterministic evidence-vs-review classification property sweep
+seed=0x5eed9abc
+cases=30000
+preferredEvidence=6594
+providerReview=6594
+labelReview=6594
+held=10218
+verdict=pass
+
+$ node --test tests/packed-revenue-remediation-e2e.test.js
+# tests 1
+# pass 1
+# fail 0
+(packed npm install; advertised command executable; input bytes unchanged; relabeled marketplace route held)
+
+$ npm run changeset:check -- --base=origin/main
+Found 2 valid changeset file(s) for release-relevant changes.
+(exit 0)
+
+$ npm run revenue:remediate -- --state /Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/.thumbgate/sales-pipeline.jsonl --now 2026-07-16T13:31:33Z --limit 40 --out /tmp/thumbgate-revenue-evidence-remediation-20260716-v4.md --json-out /tmp/thumbgate-revenue-evidence-remediation-20260716-v4.json
+total=40
+remediation=39
+monitor=1
+approvalReady=0
+internalReady=0
+sameDayEvidencePriority=0
+sameDayReviewPriority=2
+hold_unverified_stage_evidence=37
+hold_unverified_cost=2
+hold_stale_buyer_reply=1
+primaryLead=email_mohamed_oya_failure_mode
+primaryMissingEvidence=buyer_reply
+primaryEvidencePriority=false
+primaryReviewPriority=true
+staleCheckoutLead=reddit_leogodin217_r_claudecode
+staleCheckoutRank=3
+staleCheckoutStageSignalFresh=false
+staleCheckoutBlockers=stage_evidence_missing,stage_label_stale
+externalSideEffectAuthorized=false
+pipelineSha256=19fccf4c9a7381fee823a45ae4f7172125ad468fd2b141c72908cd9fcbd4ec05
+(exit 0; no pipeline mutation, send, post, checkout, or payment claim)
+
+$ npm run revenue:truth
+generatedAt=2026-07-16T12:52:48.468Z
+source=local-fallback
+hostedSummaryWorking=false
+hostedTrafficObserved=false
+todayVisitors=285
+todayPageViews=442
+todayCheckoutStarts=0
+todayPaidOrders=0
+todayBookedRevenue=$0.00
+externalCustomerRevenueObserved=false
+(local fallback is not Stripe-reconciled hosted truth and cannot support a production revenue claim)
+
+$ selected output from scripts/external-customer-audit.js live Stripe audit
+generatedAt=2026-07-16T11:52:47.688Z
+attributionVerified=true
+externalPayingIdentities=0
+externalNetRevenueCents=0
+thumbgatePayingCustomerCount=0
+thumbgateNetRevenueCents=0
+thumbgateActiveSubscriptionCount=0
+thumbgateMrrCents=0
+
+$ selected output from scripts/provider-live-evidence.js PayPal audit
+provider=paypal
+audited=false
+status=audit_incomplete
+gap=local PayPal client ID and secret are not configured
+
+$ curl -fsS https://thumbgate.ai/health
+status=ok version=1.28.4 buildSha=c0bc017a15565c5c6ee2aa9c1464ae5be6b35b03
+```
+
+Adversarial regressions explicitly exercised:
+
+- a fresh verified unanswered buyer reply outranks unverified checkout, intake, reply, and send-receipt repair work;
+- a reply exactly 14 days old remains eligible, while one millisecond older is held;
+- a future reply exactly at the five-minute clock-skew allowance remains eligible, while one millisecond later fails closed;
+- verified booking, checkout, and intake signals all expire at the same 14-day boundary;
+- an out-of-order history still selects the chronologically latest current-stage entry, while a newer same-stage outbound receipt does not refresh buyer intent;
+- recurring workflow fixtures use explicit chronological timestamps and remain deterministic after the host wall clock passes their former fixed transition time;
+- the real 27-day-old `BC_MARO` reply remains stage-verified but is excluded from same-day priority and approval-ready outbound;
+- target enrichment cannot disguise a durable marketplace route as a direct-organic source;
+- marketplace cost uncertainty and missing buyer evidence remain separate blockers;
+- paid-access and revenue-share acquisition routes are discarded and receive a zero-cost replacement;
+- placeholder repair commands are rejected by the real sales-pipeline validator;
+- shell-injection-shaped lead IDs remain quoted, inert display text;
+- a real CLI subprocess succeeds read-only and malformed target input exits nonzero without changing pipeline bytes;
+- a provider checkout object remains distinct from buyer checkout confirmation;
+- buyer-confirmed checkout remains a payment-monitor state, not revenue;
+- verified intake is internal-only and two prior sends exhaust the one-follow-up allowance;
+- stored private drafts and provider URLs are absent from remediation output;
+- every rendered primary action reports `externalSideEffectAuthorized: false`.
+
+This entry proves local candidate behavior and a read-only classification of the current local pipeline. It does not prove deployment, a sent message, buyer intent, payment, external revenue, a customer outcome, or achievement of the `$1,000/hour` target.
+
+## July 16, 2026: revenue action eligibility and operator-copy hardening
+
+Scope:
+
+- Added one fail-closed action-eligibility decision point between sales-pipeline state and operator action.
+- Required stage-appropriate receipts after `targeted`, a verified zero-spend route, safe event chronology, the 48-hour single-follow-up cooldown, and an exact action-time approval phrase before any row can enter a generated send-copy surface.
+- Kept raw stage labels, unknown marketplace costs, paid access, revenue share, provider checkout objects, already-answered replies, internal delivery work, and terminal leads out of send-now artifacts.
+- Removed held-row copy from the GitHub outreach send surface and restricted team outreach copy to approval-ready rows.
+- At this earlier checkpoint, kept the helper repository-only because its two consumers were repository-only operator scripts; the later remediation section above supersedes this packaging decision and proves both required modules now ship.
+
+Commands and observed results:
+
+```text
+$ node --check scripts/revenue-action-eligibility.js
+(exit 0)
+
+$ node --check scripts/gtm-revenue-loop.js
+(exit 0)
+
+$ node --check scripts/github-outreach.js
+(exit 0)
+
+$ node --test tests/revenue-action-eligibility.test.js tests/gtm-revenue-action-eligibility.test.js tests/gtm-sales-evidence-commands.test.js tests/github-outreach.test.js
+# tests 34
+# pass 34
+# fail 0
+
+$ npm run test:workflow
+# tests 194
+# pass 194
+# fail 0
+
+$ npm run test:deployment
+# tests 129
+# pass 129
+# fail 0
+
+$ npm test
+(exit 0; complete chained repository test command, including the 194-test workflow lane and 129-test deployment/package lane)
+
+$ npx --no-install c8 --reporter=text node --test tests/revenue-action-eligibility.test.js tests/gtm-revenue-action-eligibility.test.js tests/github-outreach.test.js
+# tests 33
+# pass 33
+# fail 0
+revenue-action-eligibility.js | 100.00 statements | 86.72 branches | 100.00 functions | 100.00 lines
+
+$ npm pack --dry-run --json
+name=thumbgate
+version=1.28.4
+fileCount=344
+unpackedSize=5092008
+repoOnlyEligibilityScriptExcluded=true
+
+$ npm audit --omit=dev --json
+vulnerabilities: info=0 low=0 moderate=0 high=0 critical=0 total=0
+
+$ npm audit --json
+vulnerabilities: info=0 low=0 moderate=0 high=0 critical=0 total=0
+
+$ realistic local dry run against repo/docs/marketing/gtm-target-queue.jsonl and repo/.thumbgate/sales-pipeline.jsonl
+targetCount=10
+approval_required_first_touch=2
+hold_unverified_stage_evidence=8
+operatorSendNowRows=2
+heldTargets=8
+heldCopyLeaks=[]
+sendNowHeldLeaks=[]
+missingApprovals=[]
+(exit 0; no message sent)
+```
+
+Adversarial regressions explicitly exercised:
+
+- a claimed `proceed_zero_cost` status cannot override a paid-access or revenue-share flag;
+- an ambiguous marketplace cannot proceed from a label alone and needs explicit zero-cost evidence;
+- callers cannot shorten the 48-hour cooldown;
+- a stale `targeted` label with prior send evidence cannot recreate a first touch;
+- two outbound receipts without new buyer input exhaust the single-follow-up allowance;
+- equal reply/send timestamps fail closed because chronology is ambiguous;
+- a newer buyer reply on a still-`contacted` lead requires pipeline reconciliation;
+- a raw `replied` label without a buyer-reply receipt cannot enter send-now;
+- a provider checkout object is monitoring evidence, not buyer intent or revenue;
+- verified calls, intakes, and payments route to internal work rather than outbound copy;
+- held targets do not leak drafts into team or GitHub send surfaces;
+- every dry-run send row carries an exact `APPROVE SEND THUMBGATE ...` phrase.
+
+This entry proves local candidate behavior and repository release readiness. It does not prove deployment, sent outreach, payment, external revenue, or achievement of the `$1,000/hour` operating target.
+
+## July 16, 2026: expansion-revenue commercial-proof and replay hardening
+
+Scope:
+
+- Bound `paid_team`, productized recurring, and Enterprise revenue claims to a fixed catalog offer, exact signed-scope fields, buyer identity, currency, amount, workflow count, and a provider-reconciled paid sales record.
+- Preserved the documented `$499` diagnostic credit toward a `$1,500` Workflow Hardening Sprint while requiring the same buyer and a separate provider-paid diagnostic record before accepting the `$1,001` balance.
+- Prevented one paid sales record or diagnostic credit from supporting multiple workflow contracts, including a multiprocess race protected by a per-pipeline commercial-proof lock.
+- Kept generic Pro MRR separate from productized recurring and Enterprise contract milestones.
+- Preserved provider-returned PayPal invoice IDs across reporting, recent capture/order reconciliation, individual-payment proof, and paid sales evidence; conflicting provider views fail closed.
+- Required recurring services to have a 27–32 day billing period tied to the provider payment, rejected future-dated payment proof against a server-controlled evaluation clock, kept legitimate prepayments scheduled until their period starts, expired old invoices out of the active-recurring milestone without erasing historical proof, and required a new paid sales record for renewal.
+- Audited all immutable workflow snapshots so historical payment or diagnostic-credit replay cannot disappear when the latest lead snapshot changes.
+- Labeled the signed-scope boundary precisely: the scope reference and SHA-256 digest are locally integrity-checked; ThumbGate does not remotely authenticate an e-signature platform.
+
+Commands and observed results:
+
+```text
+$ node --check scripts/workflow-sprint-intake.js
+(exit 0)
+
+$ node --check scripts/revenue-target-control.js
+(exit 0)
+
+$ node --test tests/provider-payment-reconciler.test.js tests/external-customer-audit-provider-live-evidence.test.js tests/external-customer-audit-target-control.test.js tests/workflow-sprint-intake.test.js
+# tests 96
+# pass 96
+# fail 0
+
+$ node --test tests/provider-payment-reconciler.test.js tests/external-customer-audit-provider-live-evidence.test.js tests/external-customer-audit-target-control.test.js tests/workflow-sprint-intake.test.js tests/revenue-offer-ladder.test.js tests/e2e-product-flows.test.js tests/api-server.test.js
+# tests 267
+# pass 267
+# fail 0
+
+$ npm test
+(exit 0; complete chained repository test command)
+
+$ npm run test:coverage
+all files | 86.60 lines | 74.34 branches | 88.09 functions
+(exit 0)
+
+$ npm run test:workflow
+# tests 165
+# pass 165
+# fail 0
+
+$ npm run test:sales-pipeline
+# tests 54
+# pass 54
+# fail 0
+
+$ npm run test:external-customer-audit
+# tests 103
+# pass 103
+# fail 0
+
+$ npm run test:pack-runtime-integrity
+# tests 2
+# pass 2
+# fail 0
+
+$ npm audit --omit=dev --json
+vulnerabilities: info=0 low=0 moderate=0 high=0 critical=0 total=0
+
+$ npm audit --json
+vulnerabilities: info=0 low=0 moderate=0 high=0 critical=0 total=0
+
+$ npm run changeset:check -- --base=origin/main
+Found 1 valid changeset file(s) for release-relevant changes.
+(exit 0)
+
+$ scan added lines with scripts/secret-scanner.js (heuristic provider)
+addedLineCount=660, detected=false, findings=[]
+(exit 0)
+
+$ git diff --check
+(exit 0)
+```
+
+Race, tamper, and false-proof regressions explicitly exercised:
+
+- two child processes competing for one paid sales record advance only one workflow contract;
+- duplicate payment and diagnostic-credit assignments fail the read-only commercial audit;
+- durable signed-scope tampering is revalidated and rejected at the paid transition;
+- wrong buyer, offer, amount, digest, workflow count, unsupported offer, and unverified provider evidence fail closed;
+- a generic Pro subscription cannot satisfy productized recurring or Enterprise milestones;
+- missing or conflicting provider invoice IDs, future-dated payments, implausible billing periods, scheduled prepayments, expired invoices, and reused renewal payments cannot inflate the active-recurring gate;
+- full and partial refund reconciliation continues to prevent overstated booked revenue.
+
+Live truth checked at `2026-07-16 05:51:59 EDT`:
+
+```text
+$ node scripts/revenue-target-control.js --json \
+    --feedback-dir=/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/.thumbgate \
+    --pipeline-path=/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/.thumbgate/sales-pipeline.jsonl \
+    --production-origin=https://thumbgate-production.up.railway.app \
+    --timeout-ms=15000
+status=evidence_incomplete
+claim=The $1,000/hour target is not verified by this evidence snapshot.
+pipeline.total=40
+pipeline.verifiedPaid=0
+pipeline.bookedRevenueCents=0
+pipeline.evidenceGapCount=40
+productizedRecurringRevenue.achieved=false
+productizedRecurringRevenue.verifiedContractCount=0
+productizedRecurringRevenue.verifiedRevenueCents=0
+productizedRecurringRevenue.historicalContractCount=0
+enterpriseRevenue.achieved=false
+deployment.httpStatus=200
+deployment.healthy=true
+deployment.expectedSha=f260d8b4162ede1097885630b63495dfe966eedb
+deployment.deployedSha=c0bc017a15565c5c6ee2aa9c1464ae5be6b35b03
+deployment.expectedRevisionDeployed=false
+providerCoverage.completeForGlobalClaim=false
+paypal.status=audit_incomplete
+merchantOfRecord.status=audit_incomplete
+githubMarketplace.status=audit_incomplete
+(exit 0)
+```
+
+Therefore this entry proves the local candidate controls and regressions, not deployment, external revenue, or attainment of the `$1,000/hour` target. The hosted service was healthy, but it served the older `c0bc017a...` revision; the candidate remained intentionally unpushed and undeployed. Stripe's attributed slice was audited as zero for the window, while the global total remained unknown because the other documented provider roles were incomplete.
+
 ## June 2, 2026: dashboard review/chat and setup-vertex dry-run release
 
 Scope:
@@ -1230,6 +1628,247 @@ Evidence artifacts verified:
 - `proof/automation/report.json`
 - `proof/automation/report.md`
 
+## 2026-07-16 Exact Stripe Offer Catalog and Grafana Revenue Evidence
+
+Scope:
+
+- Replaced product-name Stripe attribution with an immutable, versioned offer catalog.
+- Added a read-only live audit for exact price, product, amount, currency, cadence, active-state, live-mode, and public Payment Link bindings.
+- Added aggregate-only catalog integrity fields and four drift panels to the prepared Grafana dashboard.
+- Kept catalog configuration separate from payment evidence: a clean catalog does not prove a customer, payment, or revenue.
+
+### Live read-only Stripe catalog proof
+
+Command:
+
+```bash
+node scripts/stripe-revenue-catalog-audit.js --json --out /private/tmp/thumbgate-stripe-catalog-audit.json
+```
+
+Raw selected output:
+
+```json
+{
+  "generatedAt": "2026-07-16T20:25:53.446Z",
+  "configured": true,
+  "credentialSource": "managed_file",
+  "verified": true,
+  "gaps": [],
+  "summary": {
+    "expectedOfferCount": 4,
+    "verifiedOfferCount": 4,
+    "priceDriftCount": 0,
+    "expectedPublicPaymentRailCount": 2,
+    "verifiedPublicPaymentRailCount": 2,
+    "paymentRailDriftCount": 0
+  }
+}
+```
+
+The audit was read-only. It did not create, update, archive, or send any Stripe object.
+
+### Grafana dry-run and privacy proof
+
+Command:
+
+```bash
+node scripts/grafana-revenue-evidence.js \
+  --target /private/tmp/thumbgate-revenue-target-control-20260716-dc3ecd4a-shared-pipeline.json \
+  --remediation /private/tmp/thumbgate-revenue-evidence-remediation-20260716-v5.json \
+  --billing /private/tmp/thumbgate-hosted-funnel-aggregate-20260716-v3.json \
+  --stripe-catalog /private/tmp/thumbgate-stripe-catalog-audit.json \
+  --out /private/tmp/thumbgate-grafana-revenue-evidence-20260716-catalog.json
+```
+
+Raw command output:
+
+```text
+status=prepared_not_sent
+delivery=null
+payloadSha256=5881cc3405c094d4b185a9e33d3dce5a69e6b98d09a7bb7c720628d85b752bae
+stripeCatalogAttached=true
+stripeCatalogVerified=true
+stripeCatalogVersion=thumbgate-stripe-revenue-catalog-v1
+stripeCatalogExpectedOfferCount=4
+stripeCatalogVerifiedOfferCount=4
+stripeCatalogPriceDriftCount=0
+stripeCatalogExpectedPublicPaymentRailCount=2
+stripeCatalogVerifiedPublicPaymentRailCount=2
+stripeCatalogPaymentRailDriftCount=0
+verifiedPaid=0
+bookedRevenueCents=0
+```
+
+Privacy and dashboard reproduction commands:
+
+```bash
+rg -n -i 'price_[A-Za-z0-9]+|prod_[A-Za-z0-9]+|buy\\.stripe\\.com|customer_email|payer_email|@' /private/tmp/thumbgate-grafana-revenue-evidence-20260716-catalog.json
+node scripts/grafana-revenue-evidence.js --dashboard --out /private/tmp/thumbgate-grafana-dashboard-20260716-catalog.json
+cmp /private/tmp/thumbgate-grafana-dashboard-20260716-catalog.json docs/integrations/grafana/thumbgate-revenue-evidence-dashboard.json
+```
+
+Raw output:
+
+```text
+rg exit=1
+rg stdout=<empty>
+dashboard status=dashboard_prepared_not_published
+dashboardUid=thumbgate-revenue-evidence
+cmp exit=0
+cmp stdout=<empty>
+artifactSha256=cb7f6d938123a8d430b1fac64669e3540b3acfa62e74ae60491e92c2d696ae6e
+dashboardSha256=5f0f73abedc2c6c1528486977929b3735ce2be457865186e030fb5ed5cb7bd7b
+```
+
+The empty `rg` result proves the prepared payload contains no Stripe price IDs, product IDs, public checkout URL, payer email field, customer email field, or email address marker covered by the command. No Grafana network delivery or dashboard import occurred.
+
+### Regression, package, and dependency proof
+
+```text
+$ npm run test:external-customer-audit
+tests=126 pass=126 fail=0
+
+$ npm run test:grafana-revenue-evidence
+tests=20 pass=20 fail=0
+
+$ npm run test:workflow
+tests=261 pass=261 fail=0
+
+$ node --test tests/package-boundary.test.js tests/public-core-boundary.test.js tests/public-bundle-ratchet.test.js tests/pack-runtime-integrity.test.js
+tests=16 pass=16 fail=0
+
+$ npm run test:public-package-parity
+tests=5 pass=5 fail=0
+
+$ npm run test:secret-redaction
+tests=9 pass=9 fail=0
+
+$ npm run test:leak-scanner
+tests=5 pass=5 fail=0
+
+$ npm run test:public-repo-hygiene
+tests=3 pass=3 fail=0
+
+$ npm run test:no-internal-orchestration-leaks
+tests=3 pass=3 fail=0
+
+$ node --check scripts/stripe-revenue-catalog.js scripts/stripe-revenue-catalog-audit.js scripts/external-customer-audit.js scripts/grafana-revenue-evidence.js
+exit=0
+
+$ npm test
+exit=0
+
+$ npm audit --omit=dev --json
+auditReportVersion=2
+info=0 low=0 moderate=0 high=0 critical=0 total=0
+prodDependencies=150 totalDependencies=327
+
+$ npm pack --dry-run --json
+id=thumbgate@1.28.4
+entryCount=354
+size=1420156
+unpackedSize=5343656
+
+$ npm run changeset:check -- --base=origin/main
+Found 13 valid changeset file(s) for release-relevant changes.
+
+$ git diff --check
+exit=0
+```
+
+### User-supplied Grafana material boundary
+
+The non-browser URL extraction returned only:
+
+```text
+title=Grafana
+# Welcome to Grafana Cloud
+Documentation
+Support
+Cloud Trial (Licensed)
+Grafana Cloud
+```
+
+The supplied PDF path was not present:
+
+```text
+$ ls -l /Users/igorganapolsky/Downloads/grafana.pdf
+ls: /Users/igorganapolsky/Downloads/grafana.pdf: No such file or directory
+exit=1
+```
+
+`UNVERIFIED_CLAIM`: no current plan, entitlement, trial-conversion, or free-tier claim was derived from the missing PDF or the generic URL shell. Current account terms must be reconfirmed before any Grafana send or schedule. No paid Grafana capacity is authorized.
+
+### Side-effect boundary
+
+No push, PR, merge, npm publish, deployment, Stripe mutation, Grafana credential creation, Grafana telemetry send, dashboard import, browser action, outreach, or payment occurred in this work.
+
+### Exact local revenue watcher follow-up
+
+The revenue watcher now polls the external-customer audit in addition to hosted counters, persists only allowlisted aggregate Stripe fields, and distinguishes provider-verified ThumbGate payment changes from hosted activity that still requires reconciliation. A dedicated installer defines exactly one hourly local job; it was tested but not installed.
+
+```text
+$ node scripts/money-watcher.js --once --state-path /private/tmp/thumbgate-exact-money-watch-state.json --alert-log-path /private/tmp/thumbgate-exact-money-watch-alerts.jsonl
+source=hosted
+paidOrders=0
+bookedRevenueCents=0
+stripeProductAttribution.verified=true
+stripeProductAttribution.catalogVersion=thumbgate-stripe-revenue-catalog-v1
+stripeProductAttribution.payingCustomerCount=0
+stripeProductAttribution.netRevenueCents=0
+stripeProductAttribution.activeSubscriptionCount=0
+stripeProductAttribution.mrrCents=0
+stripeProductAttribution.todayNetRevenueCents=0
+exit=0
+
+$ npm run test:money-watcher
+tests=16 pass=16 fail=0
+
+$ npm run test:revenue-truth-workflow
+tests=5 pass=5 fail=0
+
+$ npm run test:ci-cd-hygiene-audit
+tests=11 pass=11 fail=0
+
+$ actionlint .github/workflows/revenue-truth-audit.yml
+exit=0
+
+$ npm run test:workflow
+tests=261 pass=261 fail=0
+
+$ npm audit --omit=dev --json
+production_vulnerabilities=0
+
+$ npm pack --dry-run --json
+entryCount=354
+unpackedSize=5343827
+
+$ npm test
+exit=0
+```
+
+The manual workflow now reads `productAttribution.thumbgate` rather than account-wide `charges.external` or `subscriptions.activeExternal`, audits the exact catalog and secure intake queue, runs the fail-closed target controller, and retains transient artifacts for one day. The repository's no-recurring-nonsecurity-Actions invariant remains intact.
+
+The final live one-shot wrote the following aggregate-only state to `/private/tmp/thumbgate-exact-money-watch-state-final.json`; no alert log was created because neither hosted activity nor an exact provider-verified payment increase occurred:
+
+```json
+{
+  "paidOrders": 0,
+  "bookedRevenueCents": 0,
+  "latestPaidAt": null,
+  "latestPaidOrder": null,
+  "stripeProductAttribution": {
+    "verified": true,
+    "catalogVersion": "thumbgate-stripe-revenue-catalog-v1",
+    "payingCustomerCount": 0,
+    "netRevenueCents": 0,
+    "activeSubscriptionCount": 0,
+    "mrrCents": 0,
+    "todayNetRevenueCents": 0
+  }
+}
+```
+
 Requirements verified:
 
 - `diagnose_failure` no longer fabricates `tool_output_misread` for vague or unclassified failures with no real evidence.
@@ -1973,6 +2612,174 @@ Artifacts updated:
 - `proof/compatibility/report.md`
 - `proof/automation/report.json`
 - `proof/automation/report.md`
+
+## 2026-07-16 Evidence-Based Intake Qualification and Revenue Routing
+
+Scope:
+
+- Authenticated first-party intake queue with deterministic chronology, evidence completeness, fixed-offer routing, priority, and approval gates.
+- Evidence-reviewed qualification required before a lead can progress beyond `new` or count as qualified in billing analytics.
+- Fail-closed commercial audit when the review is missing, forged, internally inconsistent, paid-to-access, or backed only by placeholder evidence.
+- Public pricing correction: Pro does not imply hosted team sync or an organization dashboard; Enterprise remains qualified, scope-first service work.
+
+Commands and observed results:
+
+```text
+node --test tests/revenue-offer-system.test.js tests/workflow-sprint-intake.test.js tests/billing.test.js tests/api-server.test.js tests/openapi-parity.test.js tests/checkout-pro-confirmation-gate.test.js
+tests=267 pass=267 fail=0 exit=0
+
+node --test tests/secret-redaction.test.js tests/public-core-boundary.test.js tests/package-boundary.test.js tests/public-package-boundary.test.js tests/pack-runtime-integrity.test.js tests/openapi-parity.test.js
+tests=37 pass=37 fail=0 exit=0
+
+node --test tests/e2e-product-flows.test.js
+tests=9 pass=9 fail=0 exit=0
+
+npm run test:external-customer-audit
+tests=103 pass=103 fail=0 exit=0
+
+npm test
+exit=0; every chained repository test group completed through test:okara-money-promo-automation
+
+npm audit --omit=dev --json
+production vulnerabilities: info=0 low=0 moderate=0 high=0 critical=0 total=0
+
+npm pack --dry-run --json
+name=thumbgate version=1.28.4 fileCount=349 unpackedSize=5224693
+
+npm run changeset:check -- --base=origin/main
+Found 6 valid changeset file(s) for release-relevant changes; exit=0
+
+cmp -s openapi/openapi.yaml adapters/chatgpt/openapi.yaml
+exit=0
+
+git diff --check
+exit=0
+```
+
+Focused coverage evidence:
+
+- `scripts/revenue-offer-system.js`: lines `98.81%`, branches `85.52%`, functions `100%`.
+- `scripts/workflow-sprint-intake.js`: lines `92.84%`, branches `84.62%`, functions `100%`.
+- `tests/revenue-offer-system.test.js`: `100%` lines, branches, and functions.
+- `tests/workflow-sprint-intake.test.js`: lines `99.51%`, branches `97.83%`, functions `98.63%`.
+
+Packaging note:
+
+- The runtime grew from the documented `5,205,100` bytes to `5,241,395` bytes for the packaged intake chronology, authenticated close queue, action gates, and aggregate-only Grafana close-queue panels.
+- The size ratchet is now `5,250,000` bytes, leaving a narrow `8,605`-byte margin; file count and dependency count did not increase.
+
+Reviewed-close and Grafana extension verification:
+
+```text
+node --test tests/grafana-revenue-evidence.test.js tests/revenue-offer-system.test.js tests/workflow-sprint-intake.test.js tests/api-server.test.js tests/openapi-parity.test.js
+tests=230 pass=230 fail=0 exit=0
+
+node --test tests/package-boundary.test.js tests/public-core-boundary.test.js tests/pack-runtime-integrity.test.js tests/public-bundle-ratchet.test.js
+tests=14 pass=14 fail=0 exit=0
+
+npm run test:security-scanner && npm run test:agent-security
+tests=61 pass=61 fail=0 exit=0
+
+npm run test:e2e
+tests=30 pass=30 fail=0 exit=0
+
+npm run test:external-customer-audit
+tests=103 pass=103 fail=0 exit=0
+
+npm run test:grafana-revenue-evidence
+tests=18 pass=18 fail=0 exit=0
+
+npm test
+exit=0; every chained repository test group completed through test:okara-money-promo-automation
+
+npm audit --omit=dev --json
+production vulnerabilities: info=0 low=0 moderate=0 high=0 critical=0 total=0
+
+npm pack --dry-run --json
+name=thumbgate version=1.28.4 fileCount=349 unpackedSize=5241395
+```
+
+Behavior verified:
+
+- A sparse `$499` Diagnostic intake can be qualified from a complete evidence review without being rejected or silently upsold.
+- The authenticated no-store queue emits one exact close packet only after the strict review validator passes; the packet remains `externalActionAuthorized=false` and `revenueRecognized=false`.
+- Scope-first Sprint, recurring, and Enterprise packets contain no checkout or payment request before written acceptance.
+- A missing private workflow module returns `503` for both queue reads and intake advancement in public-core runtimes.
+- Grafana receives only `observedIntakeCloseQueueAvailable` and `observedApprovalReadyIntakeCount`; buyer identity, drafts, approval tokens, checkout URLs, queue rows, and primary actions are excluded.
+- The dashboard contains `22` aggregate stat panels and stays dry-run/import-only unless a separate `--send` action is explicitly requested with the zero-spend confirmation flag.
+
+Release boundary:
+
+- This evidence verifies the local candidate only.
+- No push, pull request, deployment, public post, outreach message, checkout, or revenue claim was authorized or performed by these checks.
+
+### Canonical revenue state across linked worktrees
+
+Verified at `2026-07-16T17:46:28Z` after the reviewed-close and Grafana commit.
+
+Before the fix, the release worktree resolved its default state to
+`.worktrees/revenue-evidence-gates-20260715/.thumbgate/sales-pipeline.jsonl` and
+reported `total=0`, while the primary checkout's authoritative pipeline
+reported `total=40`. The two views could therefore drive contradictory revenue
+decisions from the same repository.
+
+The sales-pipeline resolver now recognizes a real linked-worktree Git metadata
+chain and resolves the primary checkout's canonical pipeline. Explicit
+`--state`, `--feedback-dir`, `THUMBGATE_SALES_PIPELINE_PATH`, project-directory,
+and hosted-volume inputs retain precedence. A forged `.git` pointer outside the
+common repository's `worktrees` directory fails closed.
+
+Observed post-fix readback from the release worktree:
+
+```text
+statePath=/Users/igorganapolsky/workspace/git/igor/ThumbGate/repo/.thumbgate/sales-pipeline.jsonl
+summary.total=40
+summary.byStage.contacted=31
+summary.byStage.replied=6
+summary.byStage.checkout_started=1
+summary.byStage.sprint_intake=1
+summary.byStage.paid=0
+summary.verifiedByStage.replied=1
+summary.evidenceGapCount=39
+summary.bookedRevenueCents=0
+```
+
+Commands and observed results:
+
+```text
+node --test tests/sales-pipeline.test.js
+tests=32 pass=32 fail=0 exit=0
+
+node --test tests/sales-pipeline.test.js tests/revenue-evidence-remediation.test.js tests/provider-payment-reconciler.test.js tests/workflow-sprint-intake.test.js tests/revenue-action-eligibility.test.js tests/gtm-revenue-action-eligibility.test.js tests/external-customer-audit-target-control.test.js
+tests=167 pass=167 fail=0 exit=0
+
+npm run test:workflow
+tests=244 pass=244 fail=0 exit=0
+
+node --test tests/package-boundary.test.js tests/public-core-boundary.test.js tests/public-package-boundary.test.js tests/pack-runtime-integrity.test.js tests/public-bundle-ratchet.test.js
+tests=24 pass=24 fail=0 exit=0
+
+npm run test:security-scanner && npm run test:agent-security
+tests=61 pass=61 fail=0 exit=0
+
+npm run test:e2e
+tests=30 pass=30 fail=0 exit=0
+
+npm test
+exit=0; every chained repository test group completed through test:okara-money-promo-automation
+
+npm audit --omit=dev --json
+production vulnerabilities: info=0 low=0 moderate=0 high=0 critical=0 total=0
+
+npm pack --dry-run --json
+name=thumbgate version=1.28.4 fileCount=349 unpackedSize=5243578
+```
+
+The live target controller still returned `evidence_incomplete`: `40` pipeline
+records, `0` verified paid records, `$0` booked revenue, incomplete provider
+coverage, and production build `c0bc017a...` rather than the candidate. This
+change prevents false-empty state; it does not fabricate qualification,
+authorization, payment, deployment, or revenue.
 
 ---
 

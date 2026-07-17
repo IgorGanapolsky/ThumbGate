@@ -57,6 +57,14 @@ test('check-congruence verifies version, brand, tech terms, and disclaimer', () 
   assert.match(output, /GitHub About source-of-truth verified/);
 });
 
+test('current Pro subscription math is not confused with retired starter-pack positioning', () => {
+  const ladder = readText('docs/REVENUE_OFFER_LADDER.md');
+  assert.match(ladder, /\$19\/month/);
+  assert.doesNotMatch(ladder, /Mistake-Free Starter Pack/i);
+  const output = execSync('node scripts/check-congruence.js', { cwd: ROOT, encoding: 'utf-8' });
+  assert.match(output, /Congruence check passed/);
+});
+
 test('GitHub About source-of-truth matches local public surfaces', () => {
   assert.deepEqual(collectLocalGitHubAboutErrors(ROOT), []);
 });

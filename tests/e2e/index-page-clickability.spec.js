@@ -25,8 +25,8 @@ test.describe('/ landing page clickability — comprehensive E2E coverage', () =
     await page.goto('/');
     await expect(page.locator('.hero-pro-primary')).toBeVisible();
     await expect(page.locator('.btn-install-hero')).toBeVisible();
-    await expect(page.locator('.hero-pro', { hasText: /Pay \$\d+ diagnostic/ })).toBeVisible();
-    await expect(page.locator('.hero-pro', { hasText: /Pay \$\d+ sprint/ })).toBeVisible();
+    await expect(page.locator('.hero-pro', { hasText: /Start \$\d+ diagnostic/ })).toBeVisible();
+    await expect(page.locator('.hero-pro', { hasText: /Scope \$\d+ sprint/ })).toBeVisible();
     await expect(page.locator('.hero-pro', { hasText: /Start Pro/ })).toBeVisible();
     await expect(page.locator('.offer-router')).toBeVisible();
     await expect(page.locator('.offer-route', { hasText: /Solo operator/ })).toBeVisible();
@@ -58,18 +58,19 @@ test.describe('/ landing page clickability — comprehensive E2E coverage', () =
     await expect(page).toHaveURL(/#workflow-sprint-intake$/);
   });
 
-  test('router primary CTA navigates to diagnostic Stripe checkout', async ({ page }) => {
+  test('router primary CTA opens the diagnostic confirmation page', async ({ page }) => {
     await page.goto('/');
-    await page.locator('.offer-route.primary a', { hasText: /Pay \$\d+ diagnostic/ }).click();
-    // /go/diagnostic routes through telemetry then Stripe Payment Link
-    await expect(page).toHaveURL(/buy\.stripe\.com\//);
+    await page.locator('.offer-route.primary a', { hasText: /Start \$\d+ diagnostic/ }).click();
+    await expect(page).toHaveURL(/\/diagnostic\?/);
+    await expect(page.locator('[data-diagnostic-pay-form] input[name="customer_email"]')).toBeVisible();
   });
 
-  test('router Pro CTA navigates to hosted Pro checkout', async ({ page }) => {
+  test('router Pro CTA opens the email-backed Pro intent form', async ({ page }) => {
     await page.goto('/');
-    await page.locator('.offer-route', { hasText: /Solo operator/ }).locator('a', { hasText: /Pay \$19\/mo with Stripe/ }).click();
-    await expect(page).toHaveURL(/buy\.stripe\.com\//);
+    await page.locator('.offer-route', { hasText: /Solo operator/ }).locator('a', { hasText: /Confirm \$19\/mo Pro with email/ }).click();
+    await expect(page).toHaveURL(/\/checkout\/pro\?/);
     await expect(page).toHaveURL(/cta_id=router_start_pro/);
+    await expect(page.locator('form[action="/checkout/pro"] input[name="customer_email"]')).toBeVisible();
   });
 
   // --- nav region (in-page anchors that are actually visible) ---
@@ -106,13 +107,11 @@ test.describe('/ landing page clickability — comprehensive E2E coverage', () =
     await page.waitForURL(/\/learn$/);
   });
 
-  test('nav diagnostic CTA routes toward paid diagnostic checkout', async ({ page }) => {
+  test('nav diagnostic CTA routes to the diagnostic confirmation page', async ({ page }) => {
     await page.goto('/');
-    await page.route('**/buy.stripe.com/**', (route) =>
-      route.fulfill({ status: 200, contentType: 'text/html', body: '<html><body>stripe</body></html>' }),
-    );
     await page.locator('nav a.nav-cta', { hasText: /diagnostic/i }).first().click();
-    await expect(page).toHaveURL(/buy\.stripe\.com\//);
+    await expect(page).toHaveURL(/\/diagnostic\?/);
+    await expect(page.locator('[data-diagnostic-pay-form] input[name="customer_email"]')).toBeVisible();
   });
 
   // --- FAQ accordion (deterministic, no backend) ---

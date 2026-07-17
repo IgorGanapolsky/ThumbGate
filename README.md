@@ -561,6 +561,7 @@ Every Changeset is tied to the exact `main` merge commit and generates Verificat
 - **[Perplexity Command Center](docs/PERPLEXITY_MAX_COMMAND_CENTER.md)** — AI-search visibility + lead discovery
 - **[ThumbGate Bench](docs/THUMBGATE_BENCH.md)** — Reliability benchmark and ProgramBench-style cleanroom proof lane
 - **[Manus AI Skill](skills/thumbgate/SKILL.md)** — ThumbGate integration for Manus AI agents
+- **Grafana Cloud revenue evidence** — The npm package includes a PII-free aggregate exporter and importable Loki dashboard. Generate the dashboard locally with `thumbgate-revenue-evidence --dashboard --out thumbgate-revenue-evidence-dashboard.json`. Snapshot preparation is dry-run by default; network delivery requires both `--send` and `THUMBGATE_GRAFANA_ZERO_SPEND_CONFIRMED=1`. Dashboard observations never promote clicks, checkout starts, or intakes into payment or customer claims. Repository operators can use the full [Grafana integration guide](docs/integrations/grafana/README.md).
 
 ---
 
@@ -626,6 +627,8 @@ Pro ($19/mo or $149/yr) is for individual operators and adds history-aware lesso
 - [**ThumbGate for Federal Agencies**](docs/FEDERAL.md) — pilot-ready posture, NIST 800-53 control mapping, OMB M-24-10 / EO 14110 alignment. Landing page: [thumbgate.ai/federal](https://thumbgate.ai/federal).
 - [First Dollar Playbook](docs/FIRST_DOLLAR_PLAYBOOK.md) — turning one painful workflow into the next booked pilot
 - [Commercial Truth](docs/COMMERCIAL_TRUTH.md) — pricing, claims, what we don't say
+- [Sales Pipeline Evidence Contract](docs/SALES_PIPELINE_EVIDENCE.md) — stage-specific receipts, audits, and verified-revenue rules
+- [Revenue Offer Ladder](docs/REVENUE_OFFER_LADDER.md) — productized diagnostic, sprint, recurring, and Enterprise economics without traction inflation
 - [Goal Contracts](docs/GOAL_CONTRACTS.md) — evidence-before-done contracts for multi-agent handoffs
 - [Changeset Strategy](docs/CHANGESET_STRATEGY.md) — release notes and version bump enforcement
 - [Release Confidence](docs/RELEASE_CONFIDENCE.md) — changesets, version checks, proof lanes

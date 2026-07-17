@@ -153,11 +153,7 @@ function checkLimit(action, authContext) {
   const dailyCurrent = usage.counts[action] || 0;
   const lifetimeCurrent = usage.lifetime[action] || 0;
 
-  const isCapture = action === 'capture_feedback';
-  const monthlyLink = isCapture
-    ? 'https://buy.stripe.com/7sYfZhaiE1eSbO99uj3sI0d'
-    : PRO_MONTHLY_PAYMENT_LINK;
-  const upgradeMessage = `Pro: ${PRO_PRICE_LABEL} — unlimited rules, recall, lesson search, dashboard, and exports: ${monthlyLink}\n  Enterprise: ${ENTERPRISE_PRICE_LABEL} after workflow qualification.`;
+  const upgradeMessage = `Pro: ${PRO_PRICE_LABEL} — unlimited rules, recall, lesson search, dashboard, and exports: ${PRO_MONTHLY_PAYMENT_LINK}\n  Enterprise: ${ENTERPRISE_PRICE_LABEL} after workflow qualification.`;
 
   // Check lifetime limit first (the hard wall)
   if (lifetimeLimit !== Infinity && lifetimeCurrent >= lifetimeLimit) {

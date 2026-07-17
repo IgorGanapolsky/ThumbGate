@@ -807,6 +807,33 @@ test('getTelemetryAnalytics summarizes ChatGPT GPT Action usage separately from 
   assert.equal(analytics.chatgpt.byDecisionMode.checkpoint_required, 1);
 });
 
+test('diagnostic checkout confirmation counts as a checkout start without claiming payment', () => {
+  appendTelemetryEvent(tmpDir, {
+    eventType: 'diagnostic_checkout_confirmed',
+    clientType: 'web',
+    acquisitionId: 'acq_diagnostic_start',
+    visitorId: 'visitor_diagnostic_start',
+    sessionId: 'session_diagnostic_start',
+    source: 'diagnostic_page',
+    utmSource: 'diagnostic_page',
+    utmCampaign: 'sprint_diagnostic',
+    ctaId: 'diagnostic_hero_paid',
+    linkSlug: 'diagnostic-pay',
+    page: '/go/diagnostic-pay',
+  });
+
+  const analytics = getTelemetryAnalytics(tmpDir);
+
+  assert.equal(analytics.ctas.checkoutStarts, 1);
+  assert.equal(analytics.ctas.diagnosticCheckoutStarts, 1);
+  assert.equal(analytics.ctas.checkoutStartsByCampaign.sprint_diagnostic, 1);
+  assert.equal(analytics.ctas.uniqueCheckoutStarters, 1);
+  assert.equal(analytics.conversionFunnel.checkoutStarts, 1);
+  assert.equal(analytics.conversionFunnel.diagnosticCheckoutStarts, 1);
+  assert.equal(analytics.ctas.paidConfirmations, 0);
+  assert.equal(analytics.trafficQuality.external.checkoutStarts, 1);
+});
+
 test('getTelemetryAnalytics summarizes reddit community and offer performance', () => {
   appendTelemetryEvent(tmpDir, {
     eventType: 'landing_page_view',

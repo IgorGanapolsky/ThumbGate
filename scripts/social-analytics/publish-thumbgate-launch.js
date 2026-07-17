@@ -2,16 +2,12 @@
 'use strict';
 
 const { buildUTMLink } = require('./utm');
-const { publishInstagramThumbGate } = require('./publish-instagram-thumbgate');
-const {
-  getConnectedAccounts,
-  groupAccountsByPlatform,
-  publishPost,
-  schedulePost,
-  uploadLocalMedia,
-} = require('./publishers/zernio');
 const { THUMBGATE_CAPTION } = require('./instagram-thumbgate-post');
 const { resolveHostedBillingConfig } = require('../hosted-config');
+const {
+  buildDiagnosticBuyerUrl,
+  buildSprintBuyerUrl,
+} = require('../buyer-paths');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -27,9 +23,9 @@ const LATEST_RELEASE_CAMPAIGN = 'thumbgate_1_28_0_release';
 const LATEST_RELEASE_VERSION = '1.28.0';
 const LATEST_RELEASE_URL = `https://github.com/IgorGanapolsky/ThumbGate/releases/tag/v${LATEST_RELEASE_VERSION}`;
 const SKOOL_OPERATOR_LAB_URL = 'https://www.skool.com/thumbgate-operator-lab-6000';
-const DIAGNOSTIC_CHECKOUT_URL = 'https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e';
-const PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL = 'https://buy.stripe.com/9B69ATbmI4r4aK5eOD3sI3k';
-const PAID_SPRINT_IMPLEMENTATION_PAYMENT_URL = 'https://buy.stripe.com/6oU00j8aw2iWdWh9uj3sI2K';
+const DIAGNOSTIC_CHECKOUT_URL = buildDiagnosticBuyerUrl();
+const PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL = buildDiagnosticBuyerUrl();
+const PAID_SPRINT_IMPLEMENTATION_PAYMENT_URL = buildSprintBuyerUrl();
 const DEFAULT_LAUNCH_PLATFORMS = ['twitter', 'linkedin', 'instagram'];
 const DEFAULT_OPERATOR_LAB_PLATFORMS = ['linkedin', 'instagram', 'threads', 'bluesky', 'reddit', 'youtube'];
 
@@ -277,7 +273,7 @@ function buildLatestReleaseUrl(platform, content) {
 }
 
 function buildPaidSprintCheckoutUrls(platform, content) {
-  const source = platform || 'zernio';
+  const source = platform || 'direct';
   const baseContent = content || `paid_sprint_${source}`;
   return {
     diagnostic: buildUTMLink(PAID_SPRINT_DIAGNOSTIC_PAYMENT_URL, {
@@ -311,7 +307,7 @@ function campaignForOffer(offer) {
 function buildLatestReleasePost(platform) {
   const normalized = String(platform || '').trim().toLowerCase();
   const key = normalized === 'x' ? 'twitter' : normalized;
-  const releaseUrl = buildLatestReleaseUrl(key || 'zernio', `release_1_28_0_${key || 'generic'}`);
+  const releaseUrl = buildLatestReleaseUrl(key || 'direct', `release_1_28_0_${key || 'generic'}`);
 
   if (key === 'linkedin') {
     return [
@@ -424,7 +420,7 @@ function buildOperatorLabPost(platform) {
   if (spec) {
     return renderTrackedPost(spec, spec.source || key, buildOperatorLabUrl);
   }
-  const fallbackKey = normalized || 'zernio';
+  const fallbackKey = normalized || 'direct';
   return renderTrackedPost({
     content: `operator_lab_${fallbackKey || 'generic'}`,
     separator: ' ',
@@ -435,7 +431,7 @@ function buildOperatorLabPost(platform) {
 function buildPaidSprintPost(platform) {
   const normalized = String(platform || '').trim().toLowerCase();
   const key = normalized === 'x' ? 'twitter' : normalized;
-  const links = buildPaidSprintCheckoutUrls(key || 'zernio', `paid_sprint_${key || 'generic'}`);
+  const links = buildPaidSprintCheckoutUrls(key || 'direct', `paid_sprint_${key || 'generic'}`);
   const compact = [
     'Paid ThumbGate hardening is open.',
     '$499 diagnostic maps one repeated Claude/Codex/Cursor failure into prevention rules.',
@@ -462,7 +458,7 @@ function buildPaidSprintPost(platform) {
 
   if (key === 'twitter') {
     return [
-      'Paid ThumbGate workflow hardening is open:',
+      'Paid ThumbGate hardening:',
       '$499 diagnostic for repeated Claude/Codex/Cursor failures.',
       links.diagnostic,
     ].join(' ');
@@ -491,13 +487,21 @@ function buildPaidSprintPost(platform) {
     ].join(' ');
   }
 
+  if (key === 'threads') {
+    return [
+      'Paid ThumbGate hardening: $499 diagnostic for one repeated AI-agent workflow failure.',
+      'Scope the first gate set after the diagnostic.',
+      links.diagnostic,
+    ].join(' ');
+  }
+
   return compact.join(' ');
 }
 
 function buildVoiceAgentDiagnosticPost(platform) {
   const normalized = String(platform || '').trim().toLowerCase();
   const key = normalized === 'x' ? 'twitter' : normalized;
-  const intakeUrl = buildVoiceAgentDiagnosticUrl(key || 'zernio', `voice_agent_diagnostic_${key || 'generic'}`);
+  const intakeUrl = buildVoiceAgentDiagnosticUrl(key || 'direct', `voice_agent_diagnostic_${key || 'generic'}`);
 
   if (key === 'linkedin') {
     return [
@@ -591,7 +595,7 @@ function buildPlatformPost(platform, offer = 'launch') {
   return [
     'ThumbGate turns AI coding-agent feedback into enforced prevention rules so the same mistake gets blocked in the next session.',
     'Local-first. Free path. Pro adds the personal dashboard and DPO export.',
-    buildLandingUrl(normalized || 'zernio', `launch_post_${normalized || 'generic'}`),
+    buildLandingUrl(normalized || 'direct', `launch_post_${normalized || 'generic'}`),
   ].join(' ');
 }
 
@@ -645,7 +649,7 @@ function classifyPublishFailure(failure) {
   const normalizedError = error.toLowerCase();
 
   if (
-    normalizedError.includes('zernio api 409')
+    normalizedError.includes('publisher api 409')
     || (
       normalizedError.includes('already')
       && (
@@ -717,13 +721,29 @@ function defaultCampaignSchedule(now = new Date()) {
 }
 
 async function publishLaunchCampaign(options = {}, publisher = {}) {
+  const dryRun = options.dryRun === true;
+  const hasDirectPublisher = [
+    'getConnectedAccounts',
+    'groupAccountsByPlatform',
+  ].every((method) => typeof publisher[method] === 'function');
+  if (!dryRun && !hasDirectPublisher) {
+    throw new Error('direct_platform_publisher_required');
+  }
   const api = {
-    getConnectedAccounts: publisher.getConnectedAccounts || getConnectedAccounts,
-    groupAccountsByPlatform: publisher.groupAccountsByPlatform || groupAccountsByPlatform,
-    publishPost: publisher.publishPost || publishPost,
-    schedulePost: publisher.schedulePost || schedulePost,
-    publishInstagramThumbGate: publisher.publishInstagramThumbGate || publishInstagramThumbGate,
-    uploadLocalMedia: publisher.uploadLocalMedia || uploadLocalMedia,
+    getConnectedAccounts: publisher.getConnectedAccounts,
+    groupAccountsByPlatform: publisher.groupAccountsByPlatform,
+    publishPost: publisher.publishPost || (async () => {
+      throw new Error('direct_platform_publisher_required');
+    }),
+    schedulePost: publisher.schedulePost || (async () => {
+      throw new Error('direct_platform_scheduler_required');
+    }),
+    publishInstagramThumbGate: publisher.publishInstagramThumbGate || (async () => {
+      throw new Error('direct_platform_instagram_publisher_required');
+    }),
+    uploadLocalMedia: publisher.uploadLocalMedia || (async () => {
+      throw new Error('direct_platform_media_uploader_required');
+    }),
   };
 
   const offer = String(options.offer || 'launch').trim() || 'launch';
@@ -735,13 +755,13 @@ async function publishLaunchCampaign(options = {}, publisher = {}) {
   const timezone = String(options.timezone || DEFAULT_TIMEZONE).trim() || DEFAULT_TIMEZONE;
 
   let groupedAccounts = new Map();
-  if (!(options.dryRun === true && !process.env.ZERNIO_API_KEY)) {
+  if (!dryRun) {
     const accounts = await api.getConnectedAccounts();
     groupedAccounts = api.groupAccountsByPlatform(accounts);
   }
 
   const results = {
-    dryRun: options.dryRun === true,
+    dryRun,
     offer,
     platforms,
     previews: [],

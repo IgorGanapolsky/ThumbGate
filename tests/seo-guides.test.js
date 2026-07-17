@@ -59,16 +59,6 @@ const COMPARE_FILES = [
 
 const ALL_FILES = [...GUIDE_FILES, ...COMPARE_FILES];
 
-function hasCheckoutPath(html, pathname) {
-  return Array.from(
-    html.matchAll(/<a\b[^>]*\bhref="([^"]+)"/g),
-    (match) => match[1]
-  ).some((href) => {
-    const url = new URL(href, 'https://thumbgate.ai');
-    return url.protocol === 'https:' && url.hostname === 'buy.stripe.com' && url.pathname === pathname;
-  });
-}
-
 describe('SEO guide and comparison pages', () => {
   it('all configured HTML files exist', () => {
     assert.ok(ALL_FILES.length > 0, 'SEO guide file list is empty');
@@ -154,12 +144,13 @@ describe('SEO guide and comparison pages', () => {
 
     assert.ok(html.includes('AI Agent Workflow Migration Checklist'));
     assert.ok(html.includes('$499 Agent Workflow Migration Diagnostic'));
-    assert.ok(html.includes('Pay $19 quick read'));
-    assert.ok(html.includes('Pay $1 first rule'));
-    assert.ok(html.includes('Pay $499 diagnostic'));
-    assert.ok(hasCheckoutPath(html, '/5kQ7sL76s1eSaK55e33sI2H'));
-    assert.ok(hasCheckoutPath(html, '/fZu28rfCY6zcbO99uj3sI2G'));
-    assert.ok(hasCheckoutPath(html, '/00w14neyUcXA5pL5e33sI0e'));
+    assert.ok(html.includes('Review Pro — $19/mo'));
+    assert.ok(html.includes('Use the free CLI first'));
+    assert.ok(html.includes('Start $499 diagnostic'));
+    assert.ok(html.includes('href="/checkout/pro?'));
+    assert.ok(html.includes('href="/guide?'));
+    assert.ok(html.includes('href="/diagnostic?'));
+    assert.ok(!html.includes('buy.stripe.com'));
     assert.ok(html.includes('workflow-sprint-intake'));
     assert.ok(html.includes('Pro $19/mo or $149/yr. Enterprise for org-wide enforcement.'));
     assert.ok(html.includes('pre-action rule that stops the already-rejected mistake'));
@@ -175,15 +166,16 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('48-hour Workflow Hardening Sprint'));
     assert.ok(html.includes('npx thumbgate background-governance --check --json'));
     assert.ok(html.includes('workflow-sprint-intake'));
-    assert.ok(html.includes('Ready to buy the sprint?'));
+    assert.ok(html.includes('Ready to scope the sprint?'));
     const paidOfferHrefs = Array.from(
       html.matchAll(/<a class="paid-offer [^"]+" href="([^"]+)"/g),
       (match) => match[1]
     );
     assert.deepEqual(paidOfferHrefs, [
-      'https://buy.stripe.com/00w14neyUcXA5pL5e33sI0e',
-      'https://buy.stripe.com/fZu9AT76saPsg4pbCr3sI0f',
+      '/diagnostic?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=ai_agent_governance_sprint&amp;utm_content=diagnostic',
+      '/diagnostic?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=ai_agent_governance_sprint&amp;utm_content=sprint#intake',
     ]);
+    assert.ok(!html.includes('buy.stripe.com'));
     assert.ok(html.includes('$499'));
     assert.ok(html.includes('$1500'));
   });
@@ -199,9 +191,11 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('governance and proof layer'));
     assert.ok(html.includes('npx thumbgate background-governance --check --json'));
     assert.ok(html.includes('workflow-sprint-intake'));
-    assert.ok(html.includes('Ready to buy the sprint?'));
-    assert.ok(hasCheckoutPath(html, '/00w14neyUcXA5pL5e33sI0e'));
-    assert.ok(hasCheckoutPath(html, '/fZu9AT76saPsg4pbCr3sI0f'));
+    assert.ok(html.includes('Ready to scope the sprint?'));
+    assert.ok(html.includes('/diagnostic?utm_source=website'));
+    assert.ok(html.includes('utm_content=diagnostic'));
+    assert.ok(html.includes('utm_content=sprint#intake'));
+    assert.ok(!html.includes('buy.stripe.com'));
   });
 
   it('GPT-5.5 model evaluation guide routes teams into benchmark-first model routing', () => {

@@ -1,7 +1,15 @@
 'use strict';
 
-const PRO_MONTHLY_PAYMENT_LINK = 'https://thumbgate.ai/go/pro?utm_source=offer';
-const PRO_ANNUAL_PAYMENT_LINK = 'https://buy.stripe.com/3cI8wPfCYaPs2dzdKz3sI07';
+const { buildProBuyerUrl } = require('./buyer-paths');
+
+const PRO_MONTHLY_PAYMENT_LINK = buildProBuyerUrl({
+  billingCycle: 'monthly',
+  source: 'offer',
+});
+const PRO_ANNUAL_PAYMENT_LINK = buildProBuyerUrl({
+  billingCycle: 'annual',
+  source: 'offer',
+});
 
 const PRO_MONTHLY_PRICE_ID = 'price_1THQY7GGBpd520QYHoS7RG0J';
 const PRO_ANNUAL_PRICE_ID = 'price_1THQZ7GGBpd520QYxzDRnxhB';
@@ -14,12 +22,11 @@ const TEAM_ANNUAL_PRICE_DOLLARS = 588;
 const TEAM_MIN_SEATS = 3;
 
 const PRO_PRICE_LABEL = '$19/mo or $149/yr (individual)';
-// Enterprise is the contact-sales tier (absorbs the former Team workflow + the
-// regulated-industry lane). Pricing is scoped after intake — no self-serve seat
-// price is surfaced. The dormant TEAM_* Stripe constants below remain only as
-// inert billing plumbing pending a dedicated cleanup; they are no longer a
-// customer-facing tier.
-const ENTERPRISE_PRICE_LABEL = 'Custom pricing, scoped after intake — Enterprise agent governance';
+// Enterprise services are qualified, proposal-only paths after intake. The
+// productized prices are not public checkout rails. The dormant TEAM_* Stripe
+// constants below remain only as inert billing plumbing pending a dedicated
+// cleanup; they are no longer a customer-facing tier.
+const ENTERPRISE_PRICE_LABEL = 'Enterprise: $15k 30-day pilot; $10k/mo after completed pilot — qualified proposal only';
 
 function normalizePlanId(value) {
   const text = String(value || '').trim().toLowerCase();

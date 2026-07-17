@@ -232,7 +232,6 @@
     var placement = settings.placement || normalizePlacement(pathname);
     var campaign = settings.campaign || 'high_traffic_pages';
     var proHref = appendCampaignParams(settings.proHref || '/checkout/pro', {
-      confirm: '1',
       utm_source: 'owned_site',
       utm_medium: 'sticky_cta',
       utm_campaign: campaign,
