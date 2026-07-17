@@ -128,7 +128,7 @@
   <div class="timeline-item">
     <div class="timeline-date">2026-04-21</div>
     <div class="timeline-title">X/Twitter retired from active distribution.</div>
-    <p>Active outbound moved to Reddit, LinkedIn, Threads, Bluesky, Instagram, YouTube. All routed through one social-publishing layer (Zernio) so I'm not maintaining six token rotations.</p>
+    <p>Active outbound moved to Reddit, LinkedIn, Threads, Bluesky, Instagram, and YouTube. Publishing now uses direct platform APIs or an explicitly approved manual platform session; the former aggregator route is retired.</p>
   </div>
 
   <div class="timeline-item">
@@ -195,7 +195,7 @@
 
 <h2>The tools I shipped this on</h2>
 
-<p>Solo founder, no team. Stack: <strong>Claude Code</strong> as the primary engineer (CTO mode, autonomous PR/merge/deploy when CI is green); <strong>Cursor</strong> for ad-hoc edits; <strong>Railway</strong> for hosting; <strong>Stripe</strong> for billing; <strong>Resend</strong> for transactional email; <strong>Plausible</strong> for analytics; <strong>Zernio</strong> for cross-platform social publishing.</p>
+<p>Solo founder, no team. Stack: <strong>Claude Code</strong> as the primary engineer; <strong>Cursor</strong> for ad-hoc edits; <strong>Railway</strong> for hosting; <strong>Stripe</strong> for billing; <strong>Resend</strong> for transactional email; <strong>Plausible</strong> for analytics; and direct, platform-specific publishing paths behind explicit approval.</p>
 
 <p>The single highest-ROI choice was treating Claude Code as a CTO with a strict <code>CLAUDE.md</code> contract — branch from <code>main</code>, push, PR, wait for green CI, merge, verify, deploy. The model handles the work; the gate file handles the discipline.</p>
 

@@ -58,16 +58,39 @@ test('joinSurfaceTraffic returns [] when Plausible is unconfigured', () => {
   assert.deepEqual(joinSurfaceTraffic(null), []);
 });
 
-test('diagnoseFunnel emits "cash_available" win when Stripe shows positive dollar balance', () => {
+test('diagnoseFunnel emits a win only when positive Stripe cash is ThumbGate-attributed', () => {
   // stripe-live-status.getLiveStatus returns dollar-denominated values,
   // not cents. The rollup must trust those numbers as-is.
-  const stripe = { configured: true, balance: { available: 149, pending: 0 }, checkout: { completed: 1 } };
+  const stripe = {
+    configured: true,
+    balance: { available: 149, pending: 0 },
+    checkout: { completed: 1 },
+    attribution: { thumbgateVerified: true },
+  };
   const surfaces = [{ surface: '/pricing', visitors: 5 }];
   const diagnostics = diagnoseFunnel(stripe, surfaces);
-  const cashSignal = diagnostics.find((d) => d.signal === 'cash_available');
+  const cashSignal = diagnostics.find((d) => d.signal === 'thumbgate_cash_available');
   assert.ok(cashSignal);
   assert.equal(cashSignal.severity, 'win');
   assert.match(cashSignal.message, /\$149\.00/);
+});
+
+test('diagnoseFunnel never turns unattributed account-wide cash into a ThumbGate win', () => {
+  const stripe = {
+    configured: true,
+    balance: { available: 169, pending: 0 },
+    checkout: { completed: 7 },
+    attribution: {
+      scope: 'stripe_account_wide_unattributed',
+      thumbgateVerified: false,
+    },
+  };
+  const diagnostics = diagnoseFunnel(stripe, []);
+  const signal = diagnostics.find((entry) => entry.signal === 'stripe_account_cash_available_unattributed');
+  assert.ok(signal);
+  assert.equal(signal.severity, 'info');
+  assert.match(signal.message, /not ThumbGate revenue proof/);
+  assert.equal(diagnostics.some((entry) => entry.severity === 'win'), false);
 });
 
 test('diagnoseFunnel emits funnel-leak signals when traffic is present but cash and checkouts are not', () => {
@@ -114,7 +137,12 @@ test('renderMarkdown produces a well-formed report that includes cash, surfaces,
       balance: { available: 49, pending: 0, currency: 'USD' },
       revenue: { today: 0, todayChargeCount: 0, netLifetime: 0 },
       subscriptions: { active: 0, mrr: 0 },
-      checkout: { completed: 0, total: 0, conversionRate: '0%' },
+      checkout: { completed: 0, positiveAmountPaid: 0, total: 0, conversionRate: '0%' },
+      attribution: {
+        scope: 'stripe_account_wide_unattributed',
+        thumbgateVerified: false,
+        note: 'Account-wide status only.',
+      },
     },
     plausible: {
       configured: true,
@@ -142,6 +170,8 @@ test('renderMarkdown produces a well-formed report that includes cash, surfaces,
   const md = renderMarkdown(snapshot);
   assert.match(md, /# Unified Revenue Rollup/);
   assert.match(md, /Available: \$49\.00/);
+  assert.match(md, /NOT THUMBGATE-VERIFIED/);
+  assert.match(md, /ThumbGate revenue requires separate product and external-customer reconciliation/);
   assert.match(md, /Visitors: 42/);
   assert.match(md, /\/pricing/);
   assert.match(md, /reddit\.com/);
@@ -245,6 +275,7 @@ test('gatherStripe surfaces a configured status with revenue + checkout data', a
         revenue: { today: 4900, todayChargeCount: 1, netLifetime: 4900, grossLifetime: 4900 },
         subscriptions: { active: 1, cancelled: 0, total: 1, mrr: 4900 },
         checkout: { completed: 1, total: 2, expired: 1, conversionRate: '50%' },
+        attribution: { scope: 'stripe_account_wide_unattributed', thumbgateVerified: false },
         products: [],
       }),
     },
@@ -252,6 +283,7 @@ test('gatherStripe surfaces a configured status with revenue + checkout data', a
   assert.equal(result.configured, true);
   assert.equal(result.balance.available, 4900);
   assert.equal(result.checkout.completed, 1);
+  assert.equal(result.attribution.thumbgateVerified, false);
 });
 
 test('buildSnapshot wires gather + join + diagnose into one object', async () => {

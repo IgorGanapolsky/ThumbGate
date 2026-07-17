@@ -174,7 +174,26 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 333 -> 338 (2026-07-15): public Codex feedback hooks ship their context
   // distiller and retrieve_lessons ships retrieval, reranking, cross-encoding,
   // and embedding-index modules.
-  const CEILING = 338;
+  // 338 -> 339 (2026-07-15): scripts/buyer-paths.js keeps packaged CLI
+  // conversion receipts and rate-limit messages on first-party intent gates.
+  // 339 -> 340 (2026-07-15): scripts/revenue-offer-system.js adds the bounded
+  // public offer and qualification contract. It has no Core dependency.
+  // 340 -> 344 (2026-07-16): package the sales pipeline, authenticated PayPal
+  // payment reconciler, and its two provider-evidence dependencies. They are
+  // public-shell evidence controls with no Core import or proprietary module.
+  // 344 -> 346 (2026-07-16): package the action-eligibility and read-only
+  // remediation modules required by the public revenue:remediate command.
+  // 346 -> 349 (2026-07-16): package the public Grafana revenue-evidence
+  // exporter, operator guide, and aggregate dashboard. They contain no Core
+  // import, buyer identity, secret, or proprietary module.
+  // 349 -> 350 (2026-07-16): package the hosted intake queue operator client.
+  // It is aggregate-only by default, ships no buyer state, and imports no Core.
+  // 350 -> 352 (2026-07-16): package the read-only Stripe product audit and
+  // credential resolver used by the public payment reconciler.
+  // 352 -> 354 (2026-07-16): package the exact Stripe offer catalog and its
+  // read-only price and Payment Link drift audit. They import no Core code and
+  // contain no credential, buyer state, or external mutation path.
+  const CEILING = 354;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

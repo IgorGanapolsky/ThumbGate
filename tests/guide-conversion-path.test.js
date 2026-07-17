@@ -18,12 +18,13 @@ test('guide explains when to use Pro versus the workflow hardening sprint', () =
   assert.match(GUIDE_HTML, /Workflow Hardening Sprint/i);
   assert.match(GUIDE_HTML, /one workflow, one owner, and one repeated failure/i);
   assert.match(GUIDE_HTML, /Get Pro — \$19\/mo or \$149\/yr/);
-  assert.match(GUIDE_HTML, /__SPRINT_DIAGNOSTIC_CHECKOUT_URL__/);
-  assert.match(GUIDE_HTML, /Pay \$499 diagnostic/);
-  assert.match(GUIDE_HTML, /__WORKFLOW_SPRINT_CHECKOUT_URL__/);
-  assert.match(GUIDE_HTML, /Pay \$1500 sprint/);
+  assert.match(GUIDE_HTML, /\/diagnostic\?utm_source=guide/);
+  assert.match(GUIDE_HTML, /Start \$499 diagnostic/);
+  assert.match(GUIDE_HTML, /\/go\/sprint\?utm_source=guide/);
+  assert.match(GUIDE_HTML, /Scope \$1500 sprint/);
   assert.match(GUIDE_HTML, /Send workflow first/);
   assert.match(GUIDE_HTML, /#workflow-sprint-intake/);
+  assert.doesNotMatch(GUIDE_HTML, /CHECKOUT_URL__|buy\.stripe\.com|paypal\.com\/ncp\/payment/);
 });
 
 test('guide loads shared buyer intent conversion assist', () => {

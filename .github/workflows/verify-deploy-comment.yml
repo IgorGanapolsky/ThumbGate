@@ -22,6 +22,41 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  comment-authoritative-failure:
+    if: github.event.workflow_run.conclusion != 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment authoritative deploy or revenue-readiness failure
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const sha = run.head_sha;
+            const resp = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: sha,
+            });
+            if (!resp.data.length) {
+              console.log(`No PR associated with ${sha}; skipping failure comment.`);
+              return;
+            }
+            const pr = resp.data[0];
+            const lines = [
+              '### ❌ Railway deployment or revenue readiness failed',
+              '',
+              `- Authoritative workflow conclusion: **${run.conclusion || 'unknown'}**`,
+              `- Commit: \`${sha}\``,
+              '- The build may or may not have been promoted. Do not call it shipped, buyer-ready, or revenue-observable until the failing step and uploaded evidence are reviewed.',
+              `- Workflow run: ${run.html_url}`,
+            ];
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: lines.join('\n'),
+            });
+
   verify-and-comment:
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest

@@ -37,8 +37,8 @@ test('checkout page does not reflect a malicious email as executable markup', ()
   // The raw attack sequence must never appear verbatim in the output.
   assert.ok(!html.includes('<script>alert(document.cookie)</script>'), 'script tag must not survive');
   assert.ok(!html.includes(`"><script`), 'attribute breakout sequence must not survive');
-  // The escaped form must be present in the prefilled_email value attribute.
-  assert.match(html, /name="prefilled_email" value="[^"]*&lt;script&gt;/, 'email must be entity-encoded inside the value attribute');
+  // The escaped form must be present in the buyer-email value attribute.
+  assert.match(html, /name="customer_email" value="[^"]*&lt;script&gt;/, 'email must be entity-encoded inside the value attribute');
   // A single-quote payload must also be neutralized.
   const html2 = renderCheckoutIntentPage(`x' onmouseover='alert(1)`);
   assert.ok(!html2.includes(`' onmouseover='`), 'single-quote breakout must not survive');
@@ -48,7 +48,7 @@ test('checkout page Pro copy stays truthful about personal vs Enterprise feature
   const html = renderCheckoutIntentPage('buyer@example.com');
   assert.match(html, /Pro<\/strong> removes solo caps and adds personal recall, proof, exports, and adapter maintenance/);
   assert.match(html, /Personal dashboard: gate stats, rule evidence, DPO export/);
-  assert.match(html, /Enterprise adds shared hosted lessons, org visibility, rollout support/);
+  assert.match(html, /Enterprise service work is qualified after intake; hosted team sync and a hosted org dashboard are not generally available/);
   assert.doesNotMatch(html, /Lessons synced across all your machines/i);
   assert.doesNotMatch(html, /Hosted dashboard: gate stats, DPO export, org-wide rule library/i);
 });

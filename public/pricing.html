@@ -7,7 +7,7 @@ __GOOGLE_SITE_VERIFICATION_META__
 <title>Pricing — ThumbGate</title>
 <meta name="description" content="ThumbGate pricing: free CLI, $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic, $__WORKFLOW_SPRINT_PRICE_DOLLARS__ workflow sprint, $19/mo Pro, and Enterprise after scope. Paid services first.">
 <meta property="og:title" content="Pricing — ThumbGate">
-<meta property="og:description" content="Buy a $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic or $__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint today. Free CLI forever. Pro $19/mo for solo operators.">
+<meta property="og:description" content="Start a $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic today or scope a $__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint. Free CLI forever. Pro $19/mo for solo operators.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="__APP_ORIGIN__/pricing">
 <meta property="og:image" content="/og.png">
@@ -89,11 +89,13 @@ __GA_BOOTSTRAP__
   "url": "__APP_ORIGIN__/pricing",
   "offers": [
     { "@type": "Offer", "name": "ThumbGate CLI (Free)", "price": "0", "priceCurrency": "USD" },
-    { "@type": "Offer", "name": "Workflow Hardening Diagnostic", "price": "__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__", "priceCurrency": "USD", "url": "__APP_ORIGIN__/go/diagnostic" },
-    { "@type": "Offer", "name": "Workflow Hardening Sprint", "price": "__WORKFLOW_SPRINT_PRICE_DOLLARS__", "priceCurrency": "USD", "url": "__APP_ORIGIN__/go/sprint" },
-    { "@type": "Offer", "name": "ThumbGate Pro Monthly", "price": "__PRO_PRICE_DOLLARS__", "priceCurrency": "USD", "url": "__APP_ORIGIN__/checkout/pro?confirm=1&plan_id=pro&billing_cycle=monthly&landing_path=%2Fpricing" },
-    { "@type": "Offer", "name": "ThumbGate Pro Annual", "price": "149", "priceCurrency": "USD", "url": "__APP_ORIGIN__/checkout/pro?confirm=1&plan_id=pro&billing_cycle=annual&landing_path=%2Fpricing" },
-    { "@type": "Offer", "name": "ThumbGate Enterprise", "priceCurrency": "USD", "url": "__APP_ORIGIN__/#workflow-sprint-intake" }
+    { "@type": "Offer", "name": "Workflow Hardening Diagnostic", "price": "__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__", "priceCurrency": "USD", "url": "__APP_ORIGIN__/diagnostic" },
+    { "@type": "Offer", "name": "Workflow Hardening Sprint", "price": "__WORKFLOW_SPRINT_PRICE_DOLLARS__", "priceCurrency": "USD", "url": "__APP_ORIGIN__/diagnostic#intake" },
+    { "@type": "Offer", "name": "ThumbGate Pro Monthly", "price": "__PRO_PRICE_DOLLARS__", "priceCurrency": "USD", "url": "__APP_ORIGIN__/checkout/pro?plan_id=pro&billing_cycle=monthly&landing_path=%2Fpricing" },
+    { "@type": "Offer", "name": "ThumbGate Pro Annual", "price": "149", "priceCurrency": "USD", "url": "__APP_ORIGIN__/checkout/pro?plan_id=pro&billing_cycle=annual&landing_path=%2Fpricing" },
+    { "@type": "Offer", "name": "Workflow Reliability Operations", "price": "3000", "priceCurrency": "USD", "url": "__APP_ORIGIN__/#workflow-sprint-intake" },
+    { "@type": "Offer", "name": "Enterprise Governance Pilot", "price": "15000", "priceCurrency": "USD", "url": "__APP_ORIGIN__/#workflow-sprint-intake" },
+    { "@type": "Offer", "name": "Enterprise Reliability Operations", "price": "10000", "priceCurrency": "USD", "url": "__APP_ORIGIN__/#workflow-sprint-intake" }
   ]
 }
 </script>
@@ -103,10 +105,10 @@ __GA_BOOTSTRAP__
   "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
-    { "@type": "Question", "name": "What does Pro add over the free CLI?", "acceptedAnswer": { "@type": "Answer", "text": "Free gives you 2 captures/day and 3 active rules, running on your machine. Pro removes solo caps and adds personal recall, dashboard proof, managed adapters, and DPO export. Enterprise adds shared hosted lessons and org visibility." } },
-    { "@type": "Question", "name": "Does ThumbGate send my code to the cloud?", "acceptedAnswer": { "@type": "Answer", "text": "No. The CLI is local-first — no source code leaves your machine. Pro adds personal proof and exports; Enterprise adds shared hosted lessons and org dashboards." } },
-    { "@type": "Question", "name": "When should I pick Enterprise over Pro?", "acceptedAnswer": { "@type": "Answer", "text": "When one engineer's correction should protect the whole team. Enterprise shares the lesson database across the org so a fix in one repo prevents the same mistake in every repo." } },
-    { "@type": "Question", "name": "Can I cancel anytime?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Pro and Enterprise are month-to-month with a 7-day refund window on the first charge. Cancel from the billing portal and your subscription ends at the period close." } }
+    { "@type": "Question", "name": "What does Pro add over the free CLI?", "acceptedAnswer": { "@type": "Answer", "text": "Free gives you 2 captures/day and 3 active rules on one machine. Pro removes individual caps and adds personal recall, dashboard proof, managed adapters, and DPO export. Team and Enterprise work starts through a signed service scope; hosted team sync and a hosted org dashboard are not generally available." } },
+    { "@type": "Question", "name": "Does ThumbGate send my code to the cloud?", "acceptedAnswer": { "@type": "Answer", "text": "The CLI is local-first and does not send source code to ThumbGate. Pro remains an individual local-runtime offer. Any future shared or hosted deployment requires a separate signed data-processing and implementation scope; hosted team sync and a hosted org dashboard are not generally available." } },
+    { "@type": "Question", "name": "When should I pick Enterprise over Pro?", "acceptedAnswer": { "@type": "Answer", "text": "Choose Pro for one individual operator. Ask about the fixed Enterprise pilot when two or three consequential local workflows need explicit approval boundaries, rollback paths, and proof ownership. The pilot does not promise unavailable hosted team features." } },
+    { "@type": "Question", "name": "Can I cancel anytime?", "acceptedAnswer": { "@type": "Answer", "text": "Pro subscriptions can be cancelled from the billing portal and include the stated first-charge refund window. Proposal-only service offers use the cancellation and payment terms in their signed scope; they are not self-serve subscriptions." } }
   ]
 }
 </script>
@@ -267,7 +269,7 @@ __GA_BOOTSTRAP__
       <a href="/pricing" style="color:var(--text);">Pricing</a>
       <a href="/guide">Guide</a>
       <a href="/dashboard">Dashboard</a>
-      <a class="nav-cta" href="/go/diagnostic?utm_source=pricing&utm_medium=nav&utm_campaign=money_today&cta_id=pricing_nav_diagnostic&cta_placement=nav&plan_id=sprint_diagnostic" data-pricing-cta data-cta-id="pricing_nav_diagnostic" data-cta-placement="nav" data-tier="service" data-plan-id="sprint_diagnostic" data-price="__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__">Pay $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</a>
+      <a class="nav-cta" href="/diagnostic?utm_source=pricing&utm_medium=nav&utm_campaign=money_today&cta_id=pricing_nav_diagnostic&cta_placement=nav&plan_id=sprint_diagnostic" data-pricing-cta data-cta-id="pricing_nav_diagnostic" data-cta-placement="nav" data-tier="service" data-plan-id="sprint_diagnostic" data-price="__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__">Start $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</a>
     </div>
   </div>
 </nav>
@@ -292,7 +294,7 @@ __GA_BOOTSTRAP__
         <li>Stripe checkout — pay today</li>
         <li>Credit toward $__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint when implementation follows</li>
       </ul>
-      <a class="btn-money" href="/go/diagnostic?utm_source=pricing&utm_medium=hero_card&utm_campaign=money_today&cta_id=pricing_diagnostic&cta_placement=pricing&plan_id=sprint_diagnostic" data-pricing-cta data-cta-id="pricing_diagnostic" data-cta-placement="pricing" data-tier="service" data-plan-id="sprint_diagnostic" data-price="__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__" onclick="try{posthog.capture('pricing_cta_click',{cta:'pay_diagnostic',tier:'service',placement:'pricing_page',price:__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'pay_diagnostic',tier:'service'}})}catch(_){}">Pay $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</a>
+      <a class="btn-money" href="/diagnostic?utm_source=pricing&utm_medium=hero_card&utm_campaign=money_today&cta_id=pricing_diagnostic&cta_placement=pricing&plan_id=sprint_diagnostic" data-pricing-cta data-cta-id="pricing_diagnostic" data-cta-placement="pricing" data-tier="service" data-plan-id="sprint_diagnostic" data-price="__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__" onclick="try{posthog.capture('pricing_cta_click',{cta:'start_diagnostic',tier:'service',placement:'pricing_page',price:__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'start_diagnostic',tier:'service'}})}catch(_){}">Start $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</a>
       <p class="btn-sub"><a href="/diagnostic" style="color:var(--cyan);text-decoration:none;font-weight:600;">Or open the diagnostic page →</a></p>
     </div>
 
@@ -304,9 +306,9 @@ __GA_BOOTSTRAP__
         <li>Workflow map + approval boundaries</li>
         <li>Memory / gate wiring plan</li>
         <li>Proof pack for the next production-facing iteration</li>
-        <li>Expands into Enterprise when shared lessons matter</li>
+        <li>Qualifies for fixed-scope recurring or Enterprise work after proof</li>
       </ul>
-      <a class="btn-money" href="/go/sprint?utm_source=pricing&utm_medium=hero_card&utm_campaign=money_today&cta_id=pricing_sprint&cta_placement=pricing&plan_id=workflow_sprint" data-pricing-cta data-cta-id="pricing_sprint" data-cta-placement="pricing" data-tier="service" data-plan-id="workflow_sprint" data-price="__WORKFLOW_SPRINT_PRICE_DOLLARS__" onclick="try{posthog.capture('pricing_cta_click',{cta:'pay_sprint',tier:'service',placement:'pricing_page',price:__WORKFLOW_SPRINT_PRICE_DOLLARS__})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'pay_sprint',tier:'service'}})}catch(_){}">Pay $__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint</a>
+      <a class="btn-money" href="/go/sprint?utm_source=pricing&utm_medium=hero_card&utm_campaign=money_today&cta_id=pricing_sprint&cta_placement=pricing&plan_id=workflow_sprint" data-pricing-cta data-cta-id="pricing_sprint" data-cta-placement="pricing" data-tier="service" data-plan-id="workflow_sprint" data-price="__WORKFLOW_SPRINT_PRICE_DOLLARS__" onclick="try{posthog.capture('pricing_cta_click',{cta:'scope_sprint',tier:'service',placement:'pricing_page',price:__WORKFLOW_SPRINT_PRICE_DOLLARS__})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'scope_sprint',tier:'service'}})}catch(_){}">Scope $__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint</a>
       <p class="btn-sub"><a href="/?utm_source=pricing&utm_medium=sprint_intake#workflow-sprint-intake" style="color:var(--cyan);text-decoration:none;font-weight:600;">Need fit review first? Send the workflow →</a></p>
     </div>
 
@@ -328,7 +330,7 @@ __GA_BOOTSTRAP__
       <div class="tier">Pro</div>
       <div class="price">$19<span>/mo</span></div>
       <div class="price-sub">
-        <strong>Solo self-serve side lane.</strong> After one real caught repeat: personal dashboard, recall, exports, managed adapters. Shared hosted lessons are Enterprise.
+        <strong>Solo self-serve side lane.</strong> After one real caught repeat: personal dashboard, recall, exports, and managed adapters. Hosted team sync and a hosted org dashboard are not generally available.
       </div>
       <ul>
         <li><strong>Personal lesson recall</strong> — search and reuse your own corrections across sessions</li>
@@ -339,25 +341,22 @@ __GA_BOOTSTRAP__
         <li><strong>Auto-connect</strong> — new agent surfaces appear automatically after setup</li>
         <li>7-day refund window. Cancel anytime.</li>
       </ul>
-      <a class="btn-pro" href="/checkout/pro?confirm=1&utm_source=pricing&utm_medium=hero_card&utm_campaign=pricing_page&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&billing_cycle=monthly&landing_path=%2Fpricing" data-pricing-cta data-cta-id="pricing_pro" data-cta-placement="pricing" data-tier="pro" data-plan-id="pro" data-billing-cycle="monthly" data-price="19" onclick="try{posthog.capture('pricing_cta_click',{cta:'start_pro',tier:'pro',placement:'pricing_page',price:19})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'start_pro',tier:'pro'}})}catch(_){}">Start Pro — $19/mo</a>
-      <p class="btn-sub">or <a href="/checkout/pro?confirm=1&utm_source=pricing&utm_medium=hero_card_annual&utm_campaign=pricing_page&cta_id=pricing_pro_annual&cta_placement=pricing&plan_id=pro&billing_cycle=annual&landing_path=%2Fpricing" data-pricing-cta data-cta-id="pricing_pro_annual" data-cta-placement="pricing" data-tier="pro" data-plan-id="pro" data-billing-cycle="annual" data-price="149" onclick="try{posthog.capture('pricing_cta_click',{cta:'start_pro_annual',tier:'pro',placement:'pricing_page',price:149})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'start_pro_annual',tier:'pro'}})}catch(_){}" style="color:var(--cyan);text-decoration:none;font-weight:600;">$149/year (save 35%) →</a></p>
+      <a class="btn-pro" href="/checkout/pro?utm_source=pricing&utm_medium=hero_card&utm_campaign=pricing_page&cta_id=pricing_pro&cta_placement=pricing&plan_id=pro&billing_cycle=monthly&landing_path=%2Fpricing" data-pricing-cta data-cta-id="pricing_pro" data-cta-placement="pricing" data-tier="pro" data-plan-id="pro" data-billing-cycle="monthly" data-price="19" onclick="try{posthog.capture('pricing_cta_click',{cta:'start_pro',tier:'pro',placement:'pricing_page',price:19})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'start_pro',tier:'pro'}})}catch(_){}">Start Pro — $19/mo</a>
+      <p class="btn-sub">or <a href="/checkout/pro?utm_source=pricing&utm_medium=hero_card_annual&utm_campaign=pricing_page&cta_id=pricing_pro_annual&cta_placement=pricing&plan_id=pro&billing_cycle=annual&landing_path=%2Fpricing" data-pricing-cta data-cta-id="pricing_pro_annual" data-cta-placement="pricing" data-tier="pro" data-plan-id="pro" data-billing-cycle="annual" data-price="149" onclick="try{posthog.capture('pricing_cta_click',{cta:'start_pro_annual',tier:'pro',placement:'pricing_page',price:149})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'start_pro_annual',tier:'pro'}})}catch(_){}" style="color:var(--cyan);text-decoration:none;font-weight:600;">$149/year (save 35%) →</a></p>
     </div>
 
     <div class="price-card enterprise-card" id="enterprise">
       <div class="tier">Enterprise</div>
-      <div class="price">Custom<span> / after sprint proof</span></div>
-      <div class="price-sub">Shared enforcement for the whole team and regulated workflows. Start with a paid diagnostic or sprint — then expand.</div>
+      <div class="price">Qualified<span> / signed scope only</span></div>
+      <div class="price-sub">Fixed service paths for teams that already have workflow proof. No public Enterprise checkout and no promise of unavailable hosted features.</div>
       <ul>
-        <li>Everything in Pro, for every developer and agent</li>
-        <li><strong>Shared lesson database</strong> — one engineer's fix protects every agent on the team</li>
-        <li><strong>Org dashboard</strong> — visibility across all agent surfaces and developers</li>
-        <li><strong>Dialogflow CX fulfillment guard</strong> — put ThumbGate's pre-action gate in front of your Dialogflow CX webhook fulfillment, in your own GCP tenant, so risky or repeat turns are blocked before they touch a DB, CRM, or billing system (white-glove design-partner pilot)</li>
-        <li><strong>Vertex AI / VPC gating</strong> — route agent checks through Gemini in your own Google Cloud project (<code>npx thumbgate setup-vertex</code>)</li>
-        <li><strong>Regulatory gate templates</strong> — legal intake, financial compliance, healthcare</li>
-        <li>Custom policy layers, compliance audit export, approval boundaries, SSO, and dedicated onboarding with SLA</li>
-        <li>Rollout starts only after workflow and proof review are explicit</li>
+        <li><strong>$3,000/month Workflow Reliability Operations</strong> — one proof-backed workflow, one monthly review, up to two small updates, one incident review, and a refreshed proof packet</li>
+        <li><strong>$15,000 30-day Enterprise Governance Pilot</strong> — approval, rollback, and proof controls for up to three local workflows</li>
+        <li><strong>$10,000/month Enterprise Reliability Operations</strong> — post-pilot review and bounded updates for the same three workflows</li>
+        <li>Every service requires qualification, a signed scope, and provider-confirmed payment before it counts as revenue</li>
+        <li>Hosted team sync, a hosted org dashboard, SSO, SIEM, compliance certification, and 24/7 incident response are not included or generally available</li>
       </ul>
-      <a class="btn-team" href="/go/sprint?utm_source=pricing&utm_medium=enterprise_card&utm_campaign=money_today&cta_id=pricing_enterprise_sprint&cta_placement=pricing&plan_id=workflow_sprint" data-pricing-cta data-cta-id="pricing_enterprise_sprint" data-cta-placement="pricing" data-tier="service" data-plan-id="workflow_sprint" data-price="__WORKFLOW_SPRINT_PRICE_DOLLARS__" onclick="try{posthog.capture('pricing_cta_click',{cta:'enterprise_sprint',tier:'service',placement:'pricing_page',price:__WORKFLOW_SPRINT_PRICE_DOLLARS__})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'enterprise_sprint',tier:'service'}})}catch(_){}">Start with $__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint</a>
+      <a class="btn-team" href="/go/sprint?utm_source=pricing&utm_medium=enterprise_card&utm_campaign=money_today&cta_id=pricing_enterprise_sprint&cta_placement=pricing&plan_id=workflow_sprint" data-pricing-cta data-cta-id="pricing_enterprise_sprint" data-cta-placement="pricing" data-tier="service" data-plan-id="workflow_sprint" data-price="__WORKFLOW_SPRINT_PRICE_DOLLARS__" onclick="try{posthog.capture('pricing_cta_click',{cta:'enterprise_sprint',tier:'service',placement:'pricing_page',price:__WORKFLOW_SPRINT_PRICE_DOLLARS__})}catch(_){};try{plausible('pricing_cta_click',{props:{cta:'enterprise_sprint',tier:'service'}})}catch(_){}">Scope $__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint</a>
       <p class="btn-sub"><a href="/?utm_source=pricing&utm_medium=enterprise_intake&utm_campaign=enterprise_intake&cta_id=pricing_enterprise_intake&cta_placement=pricing&plan_id=enterprise#workflow-sprint-intake" data-pricing-cta data-cta-id="pricing_enterprise_intake" data-cta-placement="pricing" data-tier="enterprise" data-plan-id="enterprise" data-price="0" style="color:var(--cyan);text-decoration:none;font-weight:600;">Or send workflow intake →</a></p>
     </div>
 
@@ -376,7 +375,7 @@ __GA_BOOTSTRAP__
     <div class="faq-list">
       <div class="faq-item">
         <div class="faq-q">What does Pro add over the free CLI?</div>
-        <div class="faq-a">Free gives you 2 captures/day and 3 active rules, running on your machine. Pro removes solo caps and adds personal recall, dashboard proof, managed adapters, and DPO export. Enterprise adds shared hosted lessons and org visibility.</div>
+        <div class="faq-a">Free gives you 2 captures/day and 3 active rules on one machine. Pro removes individual caps and adds personal recall, dashboard proof, managed adapters, and DPO export. Team and Enterprise work starts through a signed service scope; hosted team sync and a hosted org dashboard are not generally available.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q">Why not just use an enterprise AI control plane?</div>
@@ -384,19 +383,19 @@ __GA_BOOTSTRAP__
       </div>
       <div class="faq-item">
         <div class="faq-q">Does ThumbGate send my code to the cloud?</div>
-        <div class="faq-a">No. The CLI is local-first and no source code leaves your machine. Pro adds personal proof and exports; Enterprise adds shared hosted lessons and org dashboards.</div>
+        <div class="faq-a">The CLI is local-first and does not send source code to ThumbGate. Pro remains an individual local-runtime offer. Any future shared or hosted deployment requires a separate signed data-processing and implementation scope; hosted team sync and a hosted org dashboard are not generally available.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q">When should I pick Enterprise over Pro?</div>
-        <div class="faq-a">When one engineer's correction should protect the whole team. Enterprise shares the lesson database across the org so a fix in one repo prevents the same mistake in every repo.</div>
+        <div class="faq-a">Choose Pro for one individual operator. Ask about the fixed Enterprise pilot when two or three consequential local workflows need explicit approval boundaries, rollback paths, and proof ownership. The pilot does not promise unavailable hosted team features.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q">Can I cancel anytime?</div>
-        <div class="faq-a">Yes. Pro and Enterprise are month-to-month with a 7-day refund window on the first charge. Cancel from the billing portal and your subscription ends at the period close.</div>
+        <div class="faq-a">Pro subscriptions can be cancelled from the billing portal and include the stated first-charge refund window. Proposal-only service offers use the cancellation and payment terms in their signed scope; they are not self-serve subscriptions.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q">What happens if I stop paying?</div>
-        <div class="faq-a">You keep the free CLI, capped at 3 active rules and 2 captures/day. Existing rules and captures stay on your machine. You lose the personal dashboard, managed adapters, exports, and higher limits. Shared hosted lessons and org dashboards are Enterprise.</div>
+        <div class="faq-a">After a Pro subscription ends, you keep the free local CLI and its current caps; existing local rules and captures stay on your machine. Proposal-only service work ends according to its signed scope. Hosted team sync and a hosted org dashboard are not generally available.</div>
       </div>
     </div>
   </div>

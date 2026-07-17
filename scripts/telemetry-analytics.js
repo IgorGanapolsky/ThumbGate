@@ -19,6 +19,7 @@ const MARKETING_CLICK_EVENT_TYPES = new Set([
   'cta_click',
   'checkout_start',
   'checkout_bootstrap',
+  'diagnostic_checkout_confirmed',
   'checkout_interstitial_cta_clicked',
   'chatgpt_gpt_open',
   'chatgpt_gpt_click',
@@ -30,6 +31,14 @@ const MARKETING_CLICK_EVENT_TYPES = new Set([
   'demo_click',
   'github_repo_click',
   'community_landing_redirect',
+]);
+const CHECKOUT_START_EVENT_TYPES = new Set([
+  'checkout_start',
+  'checkout_bootstrap',
+  // A diagnostic buyer has submitted a valid receipt email and the server is
+  // issuing the external Payment Link redirect. This is stronger than a CTA
+  // click and is the service equivalent of the Pro checkout bootstrap.
+  'diagnostic_checkout_confirmed',
 ]);
 
 function shouldIncludeLegacyTelemetry() {
@@ -89,6 +98,10 @@ function safeRate(num, den) {
 
 function isMarketingClickEvent(eventType) {
   return MARKETING_CLICK_EVENT_TYPES.has(String(eventType || '').toLowerCase());
+}
+
+function isCheckoutStartEvent(eventType) {
+  return CHECKOUT_START_EVENT_TYPES.has(String(eventType || '').toLowerCase());
 }
 
 function getTelemetryPath(feedbackDir) {
@@ -666,7 +679,7 @@ function summarizeExternalTrafficQuality(events) {
       if ((entry.page || entry.landingPath) && !pathRow.pages.includes(entry.page || entry.landingPath)) {
         pathRow.pages.push(entry.page || entry.landingPath);
       }
-      if (eventType === 'checkout_start' || eventType === 'checkout_bootstrap') {
+      if (isCheckoutStartEvent(eventType)) {
         pathRow.checkoutStarts += 1;
       }
       visitorPaths.set(visitorKey, pathRow);
@@ -683,7 +696,7 @@ function summarizeExternalTrafficQuality(events) {
       externalCtaClicks += 1;
     }
 
-    if (eventType === 'checkout_start' || eventType === 'checkout_bootstrap') {
+    if (isCheckoutStartEvent(eventType)) {
       externalCheckoutStarts += 1;
       incrementCounter(checkoutStartsBySource, entry.source);
       incrementCounter(checkoutStartsByTrafficChannel, entry.trafficChannel);
@@ -814,6 +827,7 @@ function getTelemetrySummary(feedbackDir, options = {}) {
   let ctaClicks = 0;
   let ctaImpressions = 0;
   let checkoutStarts = 0;
+  let diagnosticCheckoutStarts = 0;
   let checkoutInterstitialViews = 0;
   let checkoutBotDeflections = 0;
   let checkoutInterstitialClicks = 0;
@@ -922,8 +936,11 @@ function getTelemetrySummary(feedbackDir, options = {}) {
         }
       }
 
-      if ((entry.eventType || entry.event) === 'checkout_start' || (entry.eventType || entry.event) === 'checkout_bootstrap') {
+      if (isCheckoutStartEvent(entry.eventType || entry.event)) {
         checkoutStarts += 1;
+        if ((entry.eventType || entry.event) === 'diagnostic_checkout_confirmed') {
+          diagnosticCheckoutStarts += 1;
+        }
         incrementCounter(checkoutStartsBySource, entry.source);
         incrementCounter(checkoutStartsByCampaign, entry.utmCampaign);
         incrementCounter(checkoutStartsByTrafficChannel, entry.trafficChannel);
@@ -1112,6 +1129,7 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       gptOpens,
       gptActionCalls: chatgptActionCalls,
       checkoutStarts,
+      diagnosticCheckoutStarts,
       checkoutInterstitialViews,
       checkoutInterstitialClicks,
       trialEmails,
@@ -1133,6 +1151,7 @@ function getTelemetrySummary(feedbackDir, options = {}) {
       pageViews,
       ctaClicks,
       checkoutStarts,
+      diagnosticCheckoutStarts,
       checkoutInterstitialViews,
       checkoutBotDeflections,
       checkoutInterstitialClicks,
@@ -1317,6 +1336,7 @@ function getTelemetryAnalytics(feedbackDir, options = {}) {
     ctas: {
       totalClicks: summary.web.ctaClicks,
       checkoutStarts: summary.web.checkoutStarts,
+      diagnosticCheckoutStarts: summary.web.diagnosticCheckoutStarts,
       checkoutInterstitialViews: summary.web.checkoutInterstitialViews,
       checkoutBotDeflections: summary.web.checkoutBotDeflections,
       checkoutInterstitialClicks: summary.web.checkoutInterstitialClicks,

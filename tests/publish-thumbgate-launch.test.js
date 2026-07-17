@@ -90,7 +90,7 @@ test('buildPlatformPost can create paid voice-agent diagnostic copy', () => {
   assert.match(threadsPost, /utm_content=voice_agent_diagnostic_threads/);
 });
 
-test('buildPlatformPost creates paid sprint copy with direct checkout links', () => {
+test('buildPlatformPost creates paid sprint copy with first-party intent links', () => {
   const linkedInPost = buildPlatformPost('linkedin', 'paid-sprint');
   const xPost = buildPlatformPost('twitter', 'paid-sprint');
   const threadsPost = buildPlatformPost('threads', 'paid-sprint');
@@ -104,9 +104,12 @@ test('buildPlatformPost creates paid sprint copy with direct checkout links', ()
   assert.ok(linkedInPost.includes(links.sprint));
   assert.match(linkedInPost, /utm_campaign=paid_workflow_sprint/);
   assert.match(linkedInPost, /utm_content=paid_sprint_linkedin_diagnostic/);
-  assert.match(xPost, /buy\.stripe\.com/);
+  assert.doesNotMatch(linkedInPost, /buy\.stripe\.com/);
+  assert.match(xPost, /thumbgate\.ai/);
+  assert.doesNotMatch(xPost, /buy\.stripe\.com/);
   assert.ok(xPost.length <= 280, `X paid-sprint post should fit 280 chars; got ${xPost.length}`);
-  assert.match(threadsPost, /buy\.stripe\.com/);
+  assert.match(threadsPost, /thumbgate\.ai/);
+  assert.doesNotMatch(threadsPost, /buy\.stripe\.com/);
   assert.ok(threadsPost.length <= 500, `Threads paid-sprint post should fit 500 chars; got ${threadsPost.length}`);
 });
 
@@ -227,7 +230,8 @@ test('publishLaunchCampaign uses paid sprint UTM settings when requested', async
   assert.equal(calls[0].options.utm.source, 'linkedin');
   assert.equal(calls[0].options.utm.medium, 'organic_social');
   assert.equal(calls[0].options.utm.campaign, PAID_SPRINT_CAMPAIGN);
-  assert.match(calls[0].content, /buy\.stripe\.com/);
+  assert.match(calls[0].content, /thumbgate\.ai/);
+  assert.doesNotMatch(calls[0].content, /buy\.stripe\.com/);
   assert.match(calls[0].content, /utm_campaign=paid_workflow_sprint/);
 });
 
@@ -319,7 +323,25 @@ test('publishLaunchCampaign routes Instagram through the media-backed workflow',
   assert.match(result.published[0].result.caption, /utm_content=launch_post_instagram/);
 });
 
-test('getPlatformFailures extracts Zernio platform-level publish failures', () => {
+test('publishLaunchCampaign never falls back to an aggregator for Instagram', async () => {
+  const fakePublisher = {
+    getConnectedAccounts: async () => ([
+      { platform: 'instagram', accountId: 'acc_i1' },
+    ]),
+    groupAccountsByPlatform(accounts) {
+      return new Map([['instagram', accounts]]);
+    },
+  };
+
+  const result = await publishLaunchCampaign({ platforms: ['instagram'] }, fakePublisher);
+  assert.equal(result.published.length, 0);
+  assert.deepEqual(result.errors, [{
+    platform: 'instagram',
+    error: 'direct_platform_instagram_publisher_required',
+  }]);
+});
+
+test('getPlatformFailures extracts provider platform-level publish failures', () => {
   const failures = getPlatformFailures({
     post: {
       status: 'failed',
@@ -345,10 +367,10 @@ test('getPlatformFailures extracts Zernio platform-level publish failures', () =
   assert.match(failures[0].error, /NO_SELFS/);
 });
 
-test('classifyPublishFailure treats duplicate Zernio posts as nonfatal', () => {
+test('classifyPublishFailure treats duplicate provider posts as nonfatal', () => {
   const classification = classifyPublishFailure({
     platform: 'linkedin',
-    error: 'Zernio API 409: This exact content is already scheduled, publishing, or was posted to this account within the last 24 hours.',
+    error: 'Publisher API 409: This exact content is already scheduled, publishing, or was posted to this account within the last 24 hours.',
   });
 
   assert.equal(classification.fatal, false);
@@ -394,7 +416,7 @@ test('publishLaunchCampaign skips unsupported Reddit text posts', async () => {
   assert.match(result.skipped[0].error, /NO_SELFS/);
 });
 
-test('publishLaunchCampaign skips recent duplicate Zernio posts', async () => {
+test('publishLaunchCampaign skips recent duplicate provider posts', async () => {
   const fakePublisher = {
     getConnectedAccounts: async () => ([
       { platform: 'linkedin', accountId: 'acc_l1' },
@@ -409,7 +431,7 @@ test('publishLaunchCampaign skips recent duplicate Zernio posts', async () => {
           {
             platform: 'linkedin',
             status: 'failed',
-            errorMessage: 'Zernio API 409: This exact content is already scheduled, publishing, or was posted to this account within the last 24 hours.',
+            errorMessage: 'Publisher API 409: This exact content is already scheduled, publishing, or was posted to this account within the last 24 hours.',
           },
         ],
       },
@@ -425,7 +447,7 @@ test('publishLaunchCampaign skips recent duplicate Zernio posts', async () => {
   assert.equal(result.skipped[0].reason, 'duplicate_recent_post');
 });
 
-test('publishLaunchCampaign skips recent duplicate Zernio exceptions', async () => {
+test('publishLaunchCampaign skips recent duplicate provider exceptions', async () => {
   const fakePublisher = {
     getConnectedAccounts: async () => ([
       { platform: 'bluesky', accountId: 'acc_b1' },
@@ -434,7 +456,7 @@ test('publishLaunchCampaign skips recent duplicate Zernio exceptions', async () 
       return new Map([['bluesky', accounts]]);
     },
     publishPost: async () => {
-      throw new Error('Zernio API 409 for POST /posts: {"error":"This exact content is already scheduled, publishing, or was posted to this account within the last 24 hours.","details":{"platform":"bluesky"}}');
+      throw new Error('Publisher API 409 for POST /posts: {"error":"This exact content is already scheduled, publishing, or was posted to this account within the last 24 hours.","details":{"platform":"bluesky"}}');
     },
   };
 

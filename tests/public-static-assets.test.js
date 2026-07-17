@@ -131,9 +131,9 @@ test('landing pricing section compares plan capabilities and limits clearly', as
   assert.match(html, /2\/day, 10 total/);
   assert.match(html, /3 active rules/);
   assert.match(html, /\$19\/mo or \$149\/yr/);
-  assert.match(html, /Custom — scoped after intake/);
-  assert.match(html, /Enterprise starts through intake to scope one workflow/);
-  assert.match(html, /does not imply generally available hosted team features/);
+  assert.match(html, /\$15,000 pilot; \$10,000\/month after completed pilot/);
+  assert.match(html, /Enterprise is intake-first and scoped around one workflow/);
+  assert.match(html, /None imply generally available hosted team features/);
 });
 
 test('landing page answers governance objections instead of presenting passive logs', async () => {
@@ -194,11 +194,18 @@ test('GET /diagnostic serves the Workflow Hardening Diagnostic intake page', asy
   assert.match(html, /action="\/v1\/intake\/workflow-sprint"/);
   assert.match(html, /data-diagnostic-intake-form/);
   assert.match(html, /diagnostic_page_submit/);
-  assert.match(html, /Pay \$499 diagnostic/);
-  assert.match(html, /\/go\/diagnostic\?utm_source=diagnostic_page&amp;utm_medium=onsite&amp;utm_campaign=workflow_hardening_diagnostic/);
+  assert.match(html, /Continue to secure \$499 checkout/);
+  assert.match(html, /Exactly what the \$499 diagnostic includes/);
+  assert.match(html, /one 60-minute working review/i);
+  assert.match(html, /written decision packet delivered within two business days/i);
+  assert.match(html, /public Workflow Hardening Sprint is \$1500/);
+  assert.match(html, /\$499 diagnostic fee is applied through the follow-up sprint invoice or checkout/i);
+  assert.doesNotMatch(html, /__WORKFLOW_SPRINT_PRICE_DOLLARS__|__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
+  assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
+  assert.match(html, /name="customer_email"[^>]*required/);
   assert.match(html, /data-cta-id="diagnostic_hero_paid"/);
   assert.match(html, /const inboundSource = search\.get\('utm_source'\) \|\| search\.get\('source'\)/);
-  assert.match(html, /href\.searchParams\.set\('utm_source', inboundSource\.trim\(\)\)/);
+  assert.match(html, /paidForm\.querySelector\('input\[name="utm_source"\]'\)\.value = inboundSource\.trim\(\)/);
   assert.doesNotMatch(html, /No cold payment link/);
 });
 
@@ -423,19 +430,14 @@ test('public sales copy avoids unsupported pricing, traction, and guarantee clai
   }
 });
 
-test('/checkout/pro bypasses to Stripe Payment Link (no false claims possible)', async () => {
-  // Bypass is ON by default — /checkout/pro now 302s directly to Stripe.
-  // No HTML body is served from our origin, so no risk of false claims.
+test('/checkout/pro requires explicit email-backed intent before Stripe', async () => {
   const res = await fetch(`${origin}/checkout/pro`, { redirect: 'manual' });
-  assert.equal(res.status, 302, 'expected Stripe redirect');
-  const location = res.headers.get('location') || '';
-  assert.match(location, /buy\.stripe\.com\//, 'must redirect to Stripe');
-  // 2026-07-09: the bypass must route to the Pro $19/mo Payment Link, NOT the
-  // $1 one-time "first failure rule" product. This was a 0-conversion root cause
-  // (issue #2188) — humans were sent to buy a $1 product instead of Pro.
-  const { __test__ } = require('../src/api/server');
-  const baseUrl = location.split('?')[0];
-  assert.equal(baseUrl, __test__.PRO_CHECKOUT_URL, 'bypass must target the Pro $19/mo Payment Link, not the $1 one-time product');
+  assert.equal(res.status, 200, 'expected intent confirmation page');
+  const html = await res.text();
+  assert.match(html, /action="\/checkout\/pro" method="POST"/);
+  assert.match(html, /name="confirm" value="1"/);
+  assert.match(html, /name="customer_email"[^>]*required/);
+  assert.doesNotMatch(html, /<form action="https:\/\/buy\.stripe\.com\//);
 });
 
 test('GET /codex-enterprise serves the Dell partnership landing HTML', async () => {

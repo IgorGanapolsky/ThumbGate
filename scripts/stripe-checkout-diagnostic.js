@@ -3,11 +3,11 @@
  * stripe-checkout-diagnostic.js — answer "WHY did 1000 checkout sessions
  * produce 0 completed payments?"
  *
- * Background. The external-customer-audit (PR #2095) revealed that lifetime
- * checkout sessions on acct_1TWIXn73 are 1000+ with 0 completions. That is
- * not a "small sample" — it's a definitive funnel collapse at the Stripe
- * page. The unified rollup reports the COUNT but not the CAUSE. This script
- * pulls the actual cause distribution from Stripe.
+ * Background. The external-customer audit found a large number of raw Stripe
+ * Checkout sessions with no completions. A raw session is not proof that a
+ * buyer reached checkout: crawlers, monitors, owner verification, and route
+ * probes can all create sessions. This script separates session creation from
+ * stronger intent and payment evidence before proposing a cause.
  *
  * What this exposes:
  *   1. Checkout session terminal status breakdown (complete / expired /
@@ -36,6 +36,7 @@
 'use strict';
 
 const path = require('node:path');
+const { parseCheckoutReference } = require('./checkout-attribution-reference');
 
 function parseArgs(argv = []) {
   return {
@@ -122,7 +123,258 @@ function safeRate(numerator, denominator) {
   return denominator > 0 ? numerator / denominator : 0;
 }
 
-function classifyCheckoutFunnel({ sessions = [], paymentIntents = [], account = {} } = {}) {
+function normalizeEvidenceText(value) {
+  const text = String(value == null ? '' : value).trim();
+  return text || null;
+}
+
+function extractSessionAttribution(session = {}) {
+  const metadata = session.metadata && typeof session.metadata === 'object'
+    ? session.metadata
+    : {};
+  let reference = {};
+  try {
+    reference = parseCheckoutReference(session.client_reference_id) || {};
+  } catch (_) {
+    reference = {};
+  }
+  return {
+    source: normalizeEvidenceText(
+      metadata.source
+      || metadata.utmSource
+      || metadata.utm_source
+      || reference.source
+    ),
+    planId: normalizeEvidenceText(
+      metadata.planId
+      || metadata.plan_id
+      || metadata.thumbgate_tier
+      || reference.planId
+    ),
+    hasTraceId: Boolean(normalizeEvidenceText(
+      metadata.traceId
+      || metadata.trace_id
+      || reference.traceId
+    )),
+    hasAcquisitionId: Boolean(normalizeEvidenceText(
+      metadata.acquisitionId
+      || metadata.acquisition_id
+      || reference.acquisitionId
+    )),
+  };
+}
+
+function hasCustomerIdentityEvidence(session = {}) {
+  return Boolean(
+    normalizeEvidenceText(session.customer_email)
+    || normalizeEvidenceText(session.customer_details?.email)
+  );
+}
+
+function getSessionEmail(session = {}) {
+  return normalizeEvidenceText(
+    session.customer_email
+    || session.customer_details?.email
+  );
+}
+
+function isPlaceholderIdentityEmail(value) {
+  const email = normalizeEvidenceText(value)?.toLowerCase();
+  if (!email || !email.includes('@')) return false;
+  const [localPart, domain = ''] = email.split('@');
+  const reservedDomains = new Set([
+    'example.com',
+    'example.net',
+    'example.org',
+    'localhost',
+    'invalid',
+  ]);
+  if (reservedDomains.has(domain) || domain.endsWith('.test')) return true;
+  return /^(?:test|buyer|demo|fake|sample|operator|owner|qa|user)(?:[+._-]|\d|$)/i.test(localPart);
+}
+
+function identityEvidenceKind(session = {}) {
+  const email = getSessionEmail(session);
+  if (!email) return 'none';
+  return isPlaceholderIdentityEmail(email)
+    ? 'placeholder_email'
+    : 'non_placeholder_email';
+}
+
+function hasPaymentAttemptEvidence(session = {}) {
+  return Boolean(
+    normalizeEvidenceText(session.payment_intent)
+    || normalizeEvidenceText(session.payment_status) === 'paid'
+  );
+}
+
+function isCompletedSession(session = {}) {
+  return session.status === 'complete' || session.payment_status === 'paid';
+}
+
+function incrementBucket(map, key) {
+  const normalizedKey = normalizeEvidenceText(key) || 'unknown';
+  map.set(normalizedKey, (map.get(normalizedKey) || 0) + 1);
+}
+
+function countPossibleAutomationClusters(sessionFacts, maxSpanSeconds = 5) {
+  const sorted = sessionFacts
+    .filter((fact) => Number.isFinite(fact.created))
+    .sort((left, right) => left.created - right.created);
+  let clusterCount = 0;
+  let sessionCount = 0;
+  let cursor = 0;
+
+  while (cursor < sorted.length) {
+    const cluster = [sorted[cursor]];
+    let next = cursor + 1;
+    while (
+      next < sorted.length
+      && sorted[next].created - cluster[0].created <= maxSpanSeconds
+    ) {
+      cluster.push(sorted[next]);
+      next += 1;
+    }
+    const distinctPlans = new Set(cluster.map((fact) => fact.planId).filter(Boolean));
+    const lacksStrongIntent = cluster.every((fact) => !fact.strongIntentEvidence);
+    if (cluster.length >= 2 && distinctPlans.size >= 2 && lacksStrongIntent) {
+      clusterCount += 1;
+      sessionCount += cluster.length;
+    }
+    cursor = next;
+  }
+
+  return { clusterCount, sessionCount, maxSpanSeconds };
+}
+
+function summarizeSessionEvidence(sessions = []) {
+  const sourceBuckets = new Map();
+  const planBuckets = new Map();
+  let completedEvidenceSessions = 0;
+  let paymentAttemptSessions = 0;
+  let identifiedSessions = 0;
+  let placeholderIdentitySessions = 0;
+  let credibleIdentifiedSessions = 0;
+  let attributedSessions = 0;
+  let strongIntentEvidenceSessions = 0;
+  let attributionOnlySessions = 0;
+
+  const facts = sessions.map((session) => {
+    const attribution = extractSessionAttribution(session);
+    const completed = isCompletedSession(session);
+    const paymentAttempt = hasPaymentAttemptEvidence(session);
+    const identityKind = identityEvidenceKind(session);
+    const identified = identityKind !== 'none';
+    const placeholderIdentity = identityKind === 'placeholder_email';
+    const credibleIdentity = identityKind === 'non_placeholder_email';
+    const attributed = Boolean(
+      attribution.source
+      || attribution.planId
+      || attribution.hasTraceId
+      || attribution.hasAcquisitionId
+    );
+    const strongIntentEvidence = completed || paymentAttempt || credibleIdentity;
+
+    if (completed) completedEvidenceSessions += 1;
+    if (paymentAttempt) paymentAttemptSessions += 1;
+    if (identified) identifiedSessions += 1;
+    if (placeholderIdentity) placeholderIdentitySessions += 1;
+    if (credibleIdentity) credibleIdentifiedSessions += 1;
+    if (attributed) attributedSessions += 1;
+    if (strongIntentEvidence) strongIntentEvidenceSessions += 1;
+    if (attributed && !strongIntentEvidence) attributionOnlySessions += 1;
+    incrementBucket(sourceBuckets, attribution.source);
+    incrementBucket(planBuckets, attribution.planId);
+
+    return {
+      created: Number(session.created),
+      planId: attribution.planId,
+      strongIntentEvidence,
+    };
+  });
+
+  const possibleAutomation = countPossibleAutomationClusters(facts);
+  return {
+    totalSessions: sessions.length,
+    completedEvidenceSessions,
+    paymentAttemptSessions,
+    identifiedSessions,
+    placeholderIdentitySessions,
+    credibleIdentifiedSessions,
+    attributedSessions,
+    strongIntentEvidenceSessions,
+    attributionOnlySessions,
+    rawOnlySessions: sessions.length - strongIntentEvidenceSessions,
+    possibleAutomationClusters: possibleAutomation.clusterCount,
+    possibleAutomationSessions: possibleAutomation.sessionCount,
+    possibleAutomationWindowSeconds: possibleAutomation.maxSpanSeconds,
+    bySource: Object.fromEntries(sourceBuckets),
+    byPlan: Object.fromEntries(planBuckets),
+  };
+}
+
+function toIsoTimestamp(epochSeconds) {
+  return Number.isFinite(epochSeconds)
+    ? new Date(epochSeconds * 1000).toISOString()
+    : null;
+}
+
+function summarizeSessionRecency(
+  sessions = [],
+  nowEpochSeconds = Math.floor(Date.now() / 1000)
+) {
+  const now = Number(nowEpochSeconds);
+  const datedSessions = sessions.filter((session) => {
+    const created = Number(session.created);
+    return Number.isFinite(created) && created <= now;
+  });
+  const latestAt = (predicate) => {
+    const latest = datedSessions
+      .filter(predicate)
+      .reduce((maximum, session) => Math.max(maximum, Number(session.created)), -Infinity);
+    return toIsoTimestamp(latest);
+  };
+  const summarizeWindow = (seconds) => {
+    const cutoff = now - seconds;
+    const windowSessions = datedSessions.filter((session) => Number(session.created) >= cutoff);
+    const evidence = summarizeSessionEvidence(windowSessions);
+    return {
+      totalSessions: evidence.totalSessions,
+      completedEvidenceSessions: evidence.completedEvidenceSessions,
+      paymentAttemptSessions: evidence.paymentAttemptSessions,
+      credibleIdentifiedSessions: evidence.credibleIdentifiedSessions,
+      strongIntentEvidenceSessions: evidence.strongIntentEvidenceSessions,
+      rawOnlySessions: evidence.rawOnlySessions,
+    };
+  };
+
+  return {
+    asOf: toIsoTimestamp(now),
+    latestSessionAt: latestAt(() => true),
+    latestStrongIntentAt: latestAt((session) => (
+      isCompletedSession(session)
+      || hasPaymentAttemptEvidence(session)
+      || identityEvidenceKind(session) === 'non_placeholder_email'
+    )),
+    latestCredibleIdentityAt: latestAt((session) => (
+      identityEvidenceKind(session) === 'non_placeholder_email'
+    )),
+    latestPaymentAttemptAt: latestAt(hasPaymentAttemptEvidence),
+    latestCompletedAt: latestAt(isCompletedSession),
+    windows: {
+      last24Hours: summarizeWindow(24 * 60 * 60),
+      last7Days: summarizeWindow(7 * 24 * 60 * 60),
+      last30Days: summarizeWindow(30 * 24 * 60 * 60),
+    },
+  };
+}
+
+function classifyCheckoutFunnel({
+  sessions = [],
+  paymentIntents = [],
+  account = {},
+  nowEpochSeconds = Math.floor(Date.now() / 1000),
+} = {}) {
   const buckets = bucketSessions(sessions);
   const total = sessions.length;
   const complete = buckets.byStatus.complete || 0;
@@ -130,6 +382,8 @@ function classifyCheckoutFunnel({ sessions = [], paymentIntents = [], account = 
   const open = buckets.byStatus.open || 0;
   const paid = buckets.byPaymentStatus.paid || 0;
   const piErrors = bucketPaymentIntentErrors(paymentIntents);
+  const sessionEvidence = summarizeSessionEvidence(sessions);
+  const sessionRecency = summarizeSessionRecency(sessions, nowEpochSeconds);
   const conversionRate = safeRate(complete, total);
   const paidRate = safeRate(paid, total);
   const abandonmentRate = safeRate(expired + open, total);
@@ -143,18 +397,43 @@ function classifyCheckoutFunnel({ sessions = [], paymentIntents = [], account = 
   } else if (piErrors.intentsWithError > 0) {
     primaryDiagnosis = 'payment_attempt_failures';
     recommendation = 'Fix the payment-method or decline-code pattern shown in PaymentIntent errors.';
-  } else if (total >= 20 && complete === 0 && paymentIntents.length === 0 && abandonmentRate >= 0.8) {
-    primaryDiagnosis = 'pre_payment_abandonment';
-    recommendation = 'Buyers are leaving before a payment attempt. Simplify the offer, reduce competing CTAs, and move proof closer to checkout.';
-  } else if (total >= 20 && conversionRate < 0.01 && abandonmentRate >= 0.8) {
-    primaryDiagnosis = 'severe_checkout_abandonment';
-    recommendation = 'Checkout is mechanically reachable, but trust/price/offer clarity is failing before purchase.';
   } else if (complete > 0 && paid === 0) {
     primaryDiagnosis = 'post_checkout_payment_or_webhook_gap';
     recommendation = 'Inspect payment status and webhook provisioning because sessions complete without paid confirmation.';
+  } else if (
+    complete > 0
+    && sessionRecency.latestCompletedAt
+    && sessionRecency.windows.last30Days.completedEvidenceSessions === 0
+  ) {
+    primaryDiagnosis = 'historical_checkout_conversion_no_recent_payment_evidence';
+    recommendation = 'Checkout converted historically, but no completion evidence appears in the last 30 days. Prioritize recent verified entrants and provider-confirmed payment rather than scaling old source attribution.';
   } else if (complete > 0) {
     primaryDiagnosis = 'checkout_can_convert';
     recommendation = 'Checkout can convert. Attribute the converting source and scale that segment cautiously.';
+  } else if (
+    total >= 20
+    && sessionEvidence.paymentAttemptSessions === 0
+    && sessionEvidence.credibleIdentifiedSessions === 0
+    && abandonmentRate >= 0.8
+  ) {
+    primaryDiagnosis = 'unverified_session_noise_or_pre_payment_exit';
+    recommendation = 'Raw Stripe sessions do not prove buyer abandonment. Correlate first-party CTA receipts, exclude automated and owner probes, and only then test offer changes.';
+  } else if (
+    total >= 20
+    && sessionEvidence.paymentAttemptSessions === 0
+    && sessionEvidence.credibleIdentifiedSessions > 0
+    && abandonmentRate >= 0.8
+  ) {
+    primaryDiagnosis = 'identified_pre_payment_dropoff';
+    recommendation = 'Identified checkout entrants did not produce a payment attempt. Review those attributed journeys and the offer handoff without treating anonymous sessions as buyers.';
+  } else if (
+    total >= 20
+    && sessionEvidence.strongIntentEvidenceSessions > 0
+    && conversionRate < 0.01
+    && abandonmentRate >= 0.8
+  ) {
+    primaryDiagnosis = 'evidence_backed_checkout_dropoff';
+    recommendation = 'Some sessions contain identity or payment-attempt evidence but did not convert. Segment those journeys by offer and source before changing price or copy.';
   }
 
   return {
@@ -167,6 +446,10 @@ function classifyCheckoutFunnel({ sessions = [], paymentIntents = [], account = 
     abandonmentRate,
     paymentIntentsTotal: paymentIntents.length,
     paymentIntentsWithError: piErrors.intentsWithError,
+    strongIntentEvidenceSessions: sessionEvidence.strongIntentEvidenceSessions,
+    rawOnlySessions: sessionEvidence.rawOnlySessions,
+    possibleAutomationClusters: sessionEvidence.possibleAutomationClusters,
+    recent30DayCompletedEvidenceSessions: sessionRecency.windows.last30Days.completedEvidenceSessions,
     primaryDiagnosis,
     recommendation,
   };
@@ -272,37 +555,45 @@ async function runDiagnostic({
           piError = null;
         }
       }
+      const attribution = extractSessionAttribution(s);
       return {
-        id: s.id,
+        sessionId: s.id,
         status: s.status,
         paymentStatus: s.payment_status,
         createdAt: new Date(s.created * 1000).toISOString(),
         expiresAt: s.expires_at ? new Date(s.expires_at * 1000).toISOString() : null,
-        customerEmail: s.customer_email || s.customer_details?.email || null,
+        hasCustomerIdentity: hasCustomerIdentityEvidence(s),
+        identityEvidence: identityEvidenceKind(s),
         amountTotal: s.amount_total,
         currency: s.currency,
-        url: s.url,
-        paymentIntentId: typeof s.payment_intent === 'string' ? s.payment_intent : null,
+        hasPaymentIntent: typeof s.payment_intent === 'string',
+        attribution,
         piErrorCode: piError?.code || null,
         piErrorType: piError?.type || null,
         piErrorDeclineCode: piError?.decline_code || null,
-        piErrorMessage: piError?.message || null,
       };
     })
   );
 
+  const generatedAt = new Date();
+  const nowEpochSeconds = Math.floor(generatedAt.getTime() / 1000);
+  const sessionEvidence = summarizeSessionEvidence(sessions);
+  const sessionRecency = summarizeSessionRecency(sessions, nowEpochSeconds);
   const funnelDiagnosis = classifyCheckoutFunnel({
     sessions,
     paymentIntents,
     account,
+    nowEpochSeconds,
   });
 
   return {
     configured: true,
-    generatedAt: new Date().toISOString(),
+    generatedAt: generatedAt.toISOString(),
     sessionsExamined: sessions.length,
     paymentIntentsExamined: paymentIntents.length,
     sessionBuckets: bucketSessions(sessions),
+    sessionEvidence,
+    sessionRecency,
     paymentIntentErrors: bucketPaymentIntentErrors(paymentIntents),
     funnelDiagnosis,
     account,
@@ -329,6 +620,44 @@ function renderMarkdown(report) {
     lines.push(`**Primary diagnosis: \`${report.funnelDiagnosis.primaryDiagnosis}\`**`);
     lines.push(`Recommendation: ${report.funnelDiagnosis.recommendation}`);
     lines.push(`Checkout completion rate: ${(report.funnelDiagnosis.checkoutConversionRate * 100).toFixed(2)}%; paid-session rate: ${(report.funnelDiagnosis.paidSessionRate * 100).toFixed(2)}%; expired/open rate: ${(report.funnelDiagnosis.abandonmentRate * 100).toFixed(2)}%.`);
+  }
+  lines.push('');
+  lines.push('> Evidence boundary: a raw Stripe Checkout session is not proof of a buyer. Crawlers, monitoring, owner verification, and route probes can create sessions without human purchase intent.');
+  if (report.sessionEvidence) {
+    lines.push('');
+    lines.push('### Session evidence quality');
+    lines.push('');
+    lines.push(`- Strong intent evidence (completed, non-placeholder identity, or payment attempt): **${report.sessionEvidence.strongIntentEvidenceSessions}**`);
+    lines.push(`- Non-placeholder identity evidence: **${report.sessionEvidence.credibleIdentifiedSessions}**`);
+    lines.push(`- Placeholder/test identity evidence: **${report.sessionEvidence.placeholderIdentitySessions}**`);
+    lines.push(`- Raw-only session creations: **${report.sessionEvidence.rawOnlySessions}**`);
+    lines.push(`- Attribution-only sessions: **${report.sessionEvidence.attributionOnlySessions}**`);
+    lines.push(`- Possible multi-offer automation clusters: **${report.sessionEvidence.possibleAutomationClusters}** (${report.sessionEvidence.possibleAutomationSessions} sessions within ${report.sessionEvidence.possibleAutomationWindowSeconds}s windows)`);
+    lines.push('');
+    lines.push('The automation-cluster count is a heuristic, not proof of bot traffic. It flags near-simultaneous session creation for multiple offers with no identity, completion, or payment-attempt evidence.');
+  }
+  if (report.sessionRecency?.windows) {
+    lines.push('');
+    lines.push('### Recency boundary');
+    lines.push('');
+    lines.push('| Window | Sessions | Completed | Payment attempt | Non-placeholder identity | Strong intent | Raw-only |');
+    lines.push('| --- | ---: | ---: | ---: | ---: | ---: | ---: |');
+    for (const [label, key] of [
+      ['24 hours', 'last24Hours'],
+      ['7 days', 'last7Days'],
+      ['30 days', 'last30Days'],
+    ]) {
+      const window = report.sessionRecency.windows[key];
+      lines.push(`| ${label} | ${window.totalSessions} | ${window.completedEvidenceSessions} | ${window.paymentAttemptSessions} | ${window.credibleIdentifiedSessions} | ${window.strongIntentEvidenceSessions} | ${window.rawOnlySessions} |`);
+    }
+    lines.push('');
+    lines.push(`- Latest session: ${report.sessionRecency.latestSessionAt || 'none'}`);
+    lines.push(`- Latest strong-intent evidence: ${report.sessionRecency.latestStrongIntentAt || 'none'}`);
+    lines.push(`- Latest non-placeholder identity: ${report.sessionRecency.latestCredibleIdentityAt || 'none'}`);
+    lines.push(`- Latest payment-attempt evidence: ${report.sessionRecency.latestPaymentAttemptAt || 'none'}`);
+    lines.push(`- Latest completed evidence: ${report.sessionRecency.latestCompletedAt || 'none'}`);
+    lines.push('');
+    lines.push('Historical conversion proves that checkout has worked before; it does not prove current buyer intent or current conversion. The time windows above are event-time evidence, not outreach consent.');
   }
   lines.push('');
   lines.push('### Checkout session status breakdown');
@@ -406,14 +735,17 @@ function renderMarkdown(report) {
   lines.push('');
   lines.push('## Recent sessions (last 20)');
   lines.push('');
-  lines.push('| Created | Status | Pay status | Amount | Email | PI error code | PI decline |');
-  lines.push('| --- | --- | --- | ---: | --- | --- | --- |');
+  lines.push('| Created | Status | Pay status | Amount | Identity evidence | Payment attempt | Source | Plan | PI error code | PI decline |');
+  lines.push('| --- | --- | --- | ---: | --- | --- | --- | --- | --- | --- |');
   for (const s of report.recentSessions) {
     const amt = s.amountTotal != null ? `${(s.amountTotal / 100).toFixed(2)} ${(s.currency || '').toUpperCase()}` : '—';
-    const email = s.customerEmail ? s.customerEmail.replace(/@/, ' (at) ') : '_no email_';
     const code = s.piErrorCode || '—';
     const decline = s.piErrorDeclineCode || '—';
-    lines.push(`| ${s.createdAt} | ${s.status} | ${s.paymentStatus} | ${amt} | ${email} | \`${code}\` | \`${decline}\` |`);
+    const identity = s.identityEvidence || (s.hasCustomerIdentity ? 'present' : 'none');
+    const attempt = s.hasPaymentIntent ? 'yes' : 'no';
+    const source = s.attribution?.source || 'unknown';
+    const plan = s.attribution?.planId || 'unknown';
+    lines.push(`| ${s.createdAt} | ${s.status} | ${s.paymentStatus} | ${amt} | ${identity} | ${attempt} | ${source} | ${plan} | \`${code}\` | \`${decline}\` |`);
   }
   lines.push('');
   lines.push('## Top diagnosis paths');
@@ -431,10 +763,12 @@ function renderMarkdown(report) {
   const open = report.sessionBuckets.byStatus.open || 0;
   const complete = report.sessionBuckets.byStatus.complete || 0;
   if (complete === 0 && expired + open > 50) {
-    lines.push('2. **Sessions are uniformly expiring or staying open with zero completions.** Combined with healthy account flags, this points at buyer-side abandonment OR a checkout UX problem (e.g. price too high, missing trust signals, payment-method limitations).');
+    lines.push('2. **Sessions are uniformly expiring or staying open with zero completions.** Combined with healthy account flags, this proves non-conversion but not buyer abandonment. Separate human CTA receipts from crawler, monitor, owner, and route-probe traffic before changing the offer.');
   }
-  if (report.paymentIntentErrors.intentsWithError === 0 && report.paymentIntentErrors.intentsTotal > 0) {
-    lines.push('3. **Zero payment intents have a `last_payment_error`** — buyers are abandoning BEFORE attempting to pay. The funnel is leaking at the Stripe form itself, not at the card-decline step. Look at the recent-sessions table for missing emails (= buyers bailed at email entry) or zero amount_total values (= configuration miss).');
+  if (report.paymentIntentErrors.intentsTotal === 0 && report.sessionEvidence?.rawOnlySessions > 0) {
+    lines.push('3. **No session produced a PaymentIntent, and the raw-only count is non-zero.** This cannot distinguish anonymous human exits from synthetic session creation. Correlate first-party CTA telemetry or provider receipts before naming a buyer failure mode.');
+  } else if (report.paymentIntentErrors.intentsWithError === 0 && report.paymentIntentErrors.intentsTotal > 0) {
+    lines.push('3. **Payment attempts exist without a recorded `last_payment_error`.** Segment identified and attributed journeys before inferring whether the remaining loss is checkout friction, an incomplete authentication step, or later abandonment.');
   }
   if (report.webhooks.configured && report.webhooks.endpoints.length === 0) {
     lines.push('4. **No webhooks configured.** The session counts above come from Stripe API directly and are NOT undercounted by missing webhooks (Codex P2 correction). What missing webhooks DO break: post-completion side effects on our backend — provisioning, trial-welcome emails, local revenue-ledger writes. Wire `https://thumbgate.ai/v1/billing/webhook` listening for `checkout.session.completed` / `payment_intent.succeeded` to close that loop.');
@@ -443,6 +777,7 @@ function renderMarkdown(report) {
   lines.push('## Honest limits of this diagnostic');
   lines.push('');
   lines.push('- This script reports what Stripe has on file. It cannot see UX friction outside Stripe (broken redirects, blocked-region geofencing, slow page loads).');
+  lines.push('- Stripe session creation alone cannot distinguish a buyer from a crawler, monitor, owner verification, or route probe. Human-intent claims require first-party CTA evidence, identity evidence, a PaymentIntent, or a completed payment.');
   lines.push('- Recent-sessions table is the last 20 only; for full forensics inspect Stripe Dashboard → Payments → Checkout Sessions.');
   lines.push('- Webhook delivery success rates are not available via the list endpoint; check Stripe Dashboard → Developers → Webhooks for per-event attempt history.');
   return lines.join('\n') + '\n';
@@ -469,6 +804,12 @@ module.exports = {
   parseArgs,
   bucketSessions,
   bucketPaymentIntentErrors,
+  extractSessionAttribution,
+  isPlaceholderIdentityEmail,
+  identityEvidenceKind,
+  summarizeSessionEvidence,
+  summarizeSessionRecency,
+  countPossibleAutomationClusters,
   classifyCheckoutFunnel,
   runDiagnostic,
   renderMarkdown,

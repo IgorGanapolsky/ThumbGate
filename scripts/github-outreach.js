@@ -6,6 +6,7 @@ const path = require('node:path');
 
 const { ensureParentDir, readJsonl } = require('./fs-utils');
 const { buildLeadFromRevenueTarget, getSalesPipelinePath, loadSalesLeads } = require('./sales-pipeline');
+const { evaluateRevenueActionEligibility } = require('./revenue-action-eligibility');
 
 const DEFAULT_QUEUE_PATH = path.join(__dirname, '..', 'docs', 'marketing', 'gtm-target-queue.jsonl');
 const DEFAULT_REPORT_PATH = path.join(__dirname, '..', 'docs', 'marketing', 'gtm-revenue-loop.json');
@@ -117,11 +118,16 @@ function getNextTrackingCommand(target = {}) {
   }
 }
 
-function enrichTarget(target = {}, pipelineIndex = new Map(), queuePath = DEFAULT_QUEUE_PATH) {
+function enrichTarget(target = {}, pipelineIndex = new Map(), queuePath = DEFAULT_QUEUE_PATH, { now = null } = {}) {
   const lead = buildLeadFromRevenueTarget(target, { sourcePath: queuePath });
   const pipelineLead = pipelineIndex.get(lead.leadId);
   const stage = normalizeText(pipelineLead?.stage || target.pipelineStage || lead.stage || TARGETED_STAGE);
   const evidence = Array.isArray(target.evidence) ? target.evidence : [];
+  const actionEligibility = evaluateRevenueActionEligibility(
+    pipelineLead || { ...lead, stage },
+    target,
+    now ? { now } : {}
+  );
 
   return {
     ...target,
@@ -129,10 +135,11 @@ function enrichTarget(target = {}, pipelineIndex = new Map(), queuePath = DEFAUL
     stage: TERMINAL_STAGES.has(stage) ? stage : (stage || TARGETED_STAGE),
     queuePath,
     pipelineUpdatedAt: normalizeText(pipelineLead?.updatedAt || target.pipelineUpdatedAt || ''),
-    nextTrackingCommand: getNextTrackingCommand({
+    actionEligibility,
+    nextTrackingCommand: actionEligibility.readyForOutbound ? getNextTrackingCommand({
       ...target,
       stage,
-    }),
+    }) : '',
     summary: buildTargetSummary(target),
     contactSurface: normalizeText(target.contactUrl || lead.contact?.url || ''),
     evidenceScore: Number(target.evidenceScore || 0),
@@ -144,29 +151,39 @@ function buildOutreachTargetsReport({
   queuePath = DEFAULT_QUEUE_PATH,
   reportPath = DEFAULT_REPORT_PATH,
   statePath = null,
+  now = null,
 } = {}) {
   const revenueLoopReport = readJsonObject(reportPath);
   const pipelinePath = getSalesPipelinePath(statePath ? { statePath } : {});
   const pipelineExists = fs.existsSync(pipelinePath);
   const pipelineIndex = buildPipelineIndex(statePath ? { statePath } : {});
   const targets = loadQueue(queuePath)
-    .map((target) => enrichTarget(target, pipelineIndex, queuePath))
+    .map((target) => enrichTarget(target, pipelineIndex, queuePath, { now }))
     .filter((target) => !TERMINAL_STAGES.has(target.stage))
     .sort(compareTargetPriority);
-  const followUpTargets = targets.filter((target) => FOLLOW_UP_STAGES.has(target.stage));
-  const warmTargets = targets.filter((target) => target.stage === TARGETED_STAGE && normalizeText(target.temperature) === 'warm');
+  const approvalReadyTargets = targets.filter((target) => target.actionEligibility.readyForOutbound === true);
+  const followUpTargets = approvalReadyTargets.filter((target) => FOLLOW_UP_STAGES.has(target.stage));
+  const warmTargets = approvalReadyTargets.filter((target) => target.stage === TARGETED_STAGE && normalizeText(target.temperature) === 'warm');
   const selfServeTargets = targets.filter((target) => {
-    return target.stage === TARGETED_STAGE
+    return target.actionEligibility.readyForOutbound === true
+      && target.stage === TARGETED_STAGE
       && normalizeText(target.temperature) !== 'warm'
       && normalizeText(target.source) === 'github'
       && isSelfServeTarget(target);
   });
   const coldTargets = targets.filter((target) => {
-    return target.stage === TARGETED_STAGE
+    return target.actionEligibility.readyForOutbound === true
+      && target.stage === TARGETED_STAGE
       && normalizeText(target.temperature) !== 'warm'
       && normalizeText(target.source) === 'github'
       && !isSelfServeTarget(target);
   });
+  const internalTargets = targets.filter((target) => target.actionEligibility.queueClass === 'internal_ready');
+  const heldTargets = targets.filter((target) => (
+    target.actionEligibility.readyForOutbound !== true
+    && target.actionEligibility.queueClass !== 'internal_ready'
+    && target.actionEligibility.queueClass !== 'terminal'
+  ));
 
   return {
     generatedAt: normalizeText(revenueLoopReport.generatedAt) || new Date().toISOString(),
@@ -193,6 +210,8 @@ function buildOutreachTargetsReport({
     warmTargets,
     selfServeTargets,
     coldTargets,
+    internalTargets,
+    heldTargets,
     totalTargets: targets.length,
   };
 }
@@ -202,6 +221,14 @@ function renderTargetMarkdown(target = {}, index = 0) {
     `### ${index + 1}. ${target.summary}`,
     `- Temperature: ${normalizeText(target.temperature) || 'cold'}`,
     `- Current stage: ${target.stage || TARGETED_STAGE}`,
+    `- Stage evidence: ${target.actionEligibility?.evidence?.stageVerified ? 'verified' : 'unverified'}`,
+    `- Action status: ${target.actionEligibility?.status || 'hold_unverified_stage_evidence'}`,
+    `- Zero-spend status: ${target.actionEligibility?.evidence?.zeroSpendStatus || 'hold_unverified_cost'}`,
+    `- Outbound ready: ${target.actionEligibility?.readyForOutbound === true ? 'yes, after exact approval' : 'no'}`,
+    `- Approval phrase: ${target.actionEligibility?.approvalPhrase || 'n/a'}`,
+    `- Eligibility reason: ${target.actionEligibility?.reason || 'n/a'}`,
+    `- Next eligible at: ${target.actionEligibility?.nextEligibleAt || 'n/a'}`,
+    `- Next action: ${target.actionEligibility?.nextAction || 'Reconcile evidence before acting.'}`,
     `- Contact surface: ${target.contactSurface || 'n/a'}`,
     `- Evidence score: ${Number(target.evidenceScore || 0)}`,
     `- Evidence: ${target.evidence.length ? target.evidence.join(', ') : 'n/a'}`,
@@ -209,12 +236,16 @@ function renderTargetMarkdown(target = {}, index = 0) {
     `- CTA: ${normalizeText(target.cta || DEFAULT_CORE_LINKS.sprint)}`,
   ];
 
-  if (target.firstTouchDraft) {
+  if (target.actionEligibility?.readyForOutbound === true && target.firstTouchDraft) {
     lines.push('', 'First-touch draft:', `> ${target.firstTouchDraft}`);
   }
 
-  if (target.painConfirmedFollowUpDraft) {
+  if (target.actionEligibility?.readyForOutbound === true && target.painConfirmedFollowUpDraft) {
     lines.push('', 'Pain-confirmed follow-up:', `> ${target.painConfirmedFollowUpDraft}`);
+  }
+
+  if (target.actionEligibility?.readyForOutbound !== true) {
+    lines.push('', '- Outbound copy: excluded by the action-eligibility gate.');
   }
 
   if (target.nextTrackingCommand) {
@@ -237,6 +268,12 @@ function renderOutreachTargetsMarkdown(report = {}) {
   const coldLines = report.coldTargets.length
     ? report.coldTargets.flatMap((target, index) => renderTargetMarkdown(target, index))
     : ['- No cold GitHub targets are currently ready.', ''];
+  const internalLines = report.internalTargets.length
+    ? report.internalTargets.flatMap((target, index) => renderTargetMarkdown(target, index))
+    : ['- No internal review actions are currently ready.', ''];
+  const heldLines = report.heldTargets.length
+    ? report.heldTargets.flatMap((target, index) => renderTargetMarkdown(target, index))
+    : ['- No targets are held by evidence, cost, receipt, or cooldown gates.', ''];
 
   return [
     '# Revenue Pipeline Outreach Targets',
@@ -254,6 +291,8 @@ function renderOutreachTargetsMarkdown(report = {}) {
     `- Warm discovery ready: ${report.warmTargets.length}`,
     `- Self-serve closes ready: ${report.selfServeTargets.length}`,
     `- Cold GitHub ready: ${report.coldTargets.length}`,
+    `- Internal reviews ready: ${report.internalTargets.length}`,
+    `- Held by evidence/cost/receipt/cooldown: ${report.heldTargets.length}`,
     `- Sales ledger tracked leads: ${report.pipelineTrackedLeadCount || 0}${report.pipelineExists ? '' : ' (pipeline file not created yet)'}`,
     `- Proof rule: ${report.proofRule}`,
     '',
@@ -268,6 +307,10 @@ function renderOutreachTargetsMarkdown(report = {}) {
     ...selfServeLines,
     '## Cold GitHub',
     ...coldLines,
+    '## Internal Review Ready',
+    ...internalLines,
+    '## Held: Evidence, Cost, Receipt, or Cooldown',
+    ...heldLines,
     '## Core Links',
     `- Sprint intake: ${report.coreLinks?.sprint || DEFAULT_CORE_LINKS.sprint}`,
     `- Proof-backed setup guide: ${report.coreLinks?.guide || DEFAULT_CORE_LINKS.guide}`,

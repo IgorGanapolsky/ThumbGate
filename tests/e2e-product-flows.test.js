@@ -5,6 +5,9 @@ const path = require('node:path');
 const os = require('node:os');
 const gatesEngine = require('../scripts/gates-engine');
 const { readJsonl } = require('../scripts/fs-utils');
+const { addSalesLead } = require('../scripts/sales-pipeline');
+const { reconcileProviderPayment } = require('../scripts/provider-payment-reconciler');
+const { digestBuyerEmail } = require('../scripts/provider-revenue-evidence');
 
 const GOVERNED_RELEASE_VERSION_MISMATCH = '9999.0.0';
 
@@ -447,16 +450,83 @@ test('E2E: workflow sprint intake progresses to paid team and surfaces in dashbo
   assert.equal(intakeBody.ok, true);
   assert.ok(intakeBody.leadId);
 
+  addSalesLead({
+    leadId: 'sales_e2e_paid_team',
+    source: 'direct',
+    email: 'pilot@example.com',
+  }, { feedbackDir: tmpDir });
+  const paidSalesLead = await reconcileProviderPayment({
+    leadId: 'sales_e2e_paid_team',
+    paymentId: 'capture_e2e_paid_team',
+    force: true,
+  }, {
+    feedbackDir: tmpDir,
+    auditPayPalLiveEvidence: async () => ({
+      individualPayments: [{
+        provider: 'paypal',
+        id: 'capture_e2e_paid_team',
+        createdAt: '2026-07-16T12:00:00.000Z',
+        status: 'completed',
+        grossCents: 150000,
+        refundedCents: 0,
+        netCents: 150000,
+        currency: 'usd',
+        customerClassification: 'external',
+        ownerTest: false,
+        buyerEmailDigest: digestBuyerEmail('pilot@example.com'),
+        productAttribution: { verified: true, product: 'thumbgate' },
+        evidenceVerified: true,
+        evidenceSource: 'provider_api_live:test-e2e-reconciliation',
+        evidenceDigest: `sha256:${'a'.repeat(64)}`,
+      }],
+    }),
+  });
+
   const transitions = [
-    { status: 'qualified', actor: 'ops' },
-    { status: 'named_pilot', actor: 'ops', workflowId: 'pr_review_hardening', teamId: 'north_star_systems' },
+    {
+      status: 'qualified',
+      actor: 'ops',
+      reviewedBy: 'ops@example.com',
+      qualificationReview: {
+        severityAndFrequency: 'The approval failure repeats in the current workflow.',
+        measurableImpact: 'The team must repeat review work after each regression.',
+        urgencyAndTrigger: 'The latest rollout is blocked until the workflow is hardened.',
+        decisionAuthority: 'The named platform lead can approve the scoped sprint.',
+        budgetMechanism: 'The buyer reviews the fixed price before accepting scope.',
+        offerFit: 'One bounded workflow fits the Workflow Hardening Sprint.',
+        proofRequired: 'Regression evidence and an approval runbook are required.',
+        nextStep: 'Review the fixed one-workflow scope.',
+        evidenceReferences: ['intake:e2e-paid-team'],
+        zeroSpendStatus: 'proceed_zero_cost',
+        priceUnderstandingConfirmed: true,
+        workflowCount: 1,
+        authorityConfirmed: true,
+        urgencyDays: 14,
+        budgetCents: 150000,
+        readyToImplement: true,
+      },
+    },
+    {
+      status: 'named_pilot',
+      actor: 'ops',
+      workflowId: 'pr_review_hardening',
+      teamId: 'north_star_systems',
+      agreementSource: 'docusign',
+      agreementRef: 'envelope_e2e_signed',
+      agreementSignedBy: 'buyer@example.com',
+      agreementSignedAt: '2026-07-15T12:00:00.000Z',
+      agreementDigest: `sha256:${'b'.repeat(64)}`,
+      agreementOfferId: 'workflow_hardening_sprint',
+      agreementAmountCents: 150000,
+      agreementWorkflowCount: 1,
+    },
     {
       status: 'proof_backed_run',
       actor: 'ops',
       reviewedBy: 'buyer@example.com',
       proofArtifacts: ['docs/VERIFICATION_EVIDENCE.md'],
     },
-    { status: 'paid_team', actor: 'ops' },
+    { status: 'paid_team', actor: 'ops', salesLeadId: paidSalesLead.leadId },
   ];
 
   for (const transition of transitions) {

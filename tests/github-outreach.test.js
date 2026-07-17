@@ -128,7 +128,7 @@ test('queue-backed outreach report separates warm, self-serve, and cold sprint l
   assert.equal(fs.existsSync(outPath), true);
 });
 
-test('active follow-ups are promoted ahead of fresh sends using sales ledger state', () => {
+test('raw follow-up stage without a buyer receipt is held outside the send queue', () => {
   const tempDir = makeTempDir();
   const queuePath = path.join(tempDir, 'gtm-target-queue.jsonl');
   const reportPath = path.join(tempDir, 'gtm-revenue-loop.json');
@@ -155,17 +155,73 @@ test('active follow-ups are promoted ahead of fresh sends using sales ledger sta
   const report = buildOutreachTargetsReport({ queuePath, reportPath, statePath });
   const markdown = renderOutreachTargetsMarkdown(report);
 
-  assert.equal(report.followUpTargets.length, 1);
-  assert.equal(report.followUpTargets[0].stage, 'replied');
+  assert.equal(report.followUpTargets.length, 0);
+  assert.equal(report.heldTargets.length, 1);
+  assert.equal(report.heldTargets[0].stage, 'replied');
+  assert.equal(report.heldTargets[0].actionEligibility.status, 'hold_unverified_stage_evidence');
   assert.equal(report.warmTargets.length, 1);
   assert.equal(report.selfServeTargets.length, 1);
   assert.equal(report.coldTargets.length, 0);
   assert.equal(report.pipelineTrackedLeadCount, 1);
   assert.equal(report.pipelineExists, true);
   assert.match(markdown, /## Follow Up Now/);
+  assert.match(markdown, /## Held: Evidence, Cost, Receipt, or Cooldown/);
   assert.match(markdown, /## Self-Serve Closes/);
   assert.match(markdown, /Current stage: replied/);
-  assert.match(markdown, /stage 'call_booked'/);
+  assert.match(markdown, /Action status: hold_unverified_stage_evidence/);
+  assert.match(markdown, /Outbound copy: excluded by the action-eligibility gate/);
+  assert.doesNotMatch(markdown, /Hey @DGouron, if one approval or rollback step keeps creating trouble/);
+  assert.doesNotMatch(markdown, /Track next step:.*stage 'call_booked'/);
+});
+
+test('verified unanswered buyer reply is promoted with an exact approval phrase', () => {
+  const tempDir = makeTempDir();
+  const queuePath = path.join(tempDir, 'gtm-target-queue.jsonl');
+  const reportPath = path.join(tempDir, 'gtm-revenue-loop.json');
+  const statePath = path.join(tempDir, 'sales-pipeline.jsonl');
+  const coldTarget = makeColdTarget();
+  const lead = buildLeadFromRevenueTarget(coldTarget, { sourcePath: queuePath });
+
+  writeJsonl(queuePath, [coldTarget]);
+  fs.writeFileSync(reportPath, JSON.stringify({
+    generatedAt: '2026-04-27T17:00:00.000Z',
+    directive: { state: 'pipeline-active-no-revenue', headline: 'No verified payment.' },
+  }, null, 2));
+  writeJsonl(statePath, [{
+    ...lead,
+    stage: 'replied',
+    updatedAt: '2026-04-27T17:10:00.000Z',
+    history: [
+      {
+        fromStage: 'targeted',
+        toStage: 'contacted',
+        at: '2026-04-26T17:00:00.000Z',
+        evidence: { kind: 'platform_send_receipt', source: 'github', reference: 'send-1' },
+      },
+      {
+        fromStage: 'contacted',
+        toStage: 'replied',
+        at: '2026-04-27T17:10:00.000Z',
+        evidence: { kind: 'buyer_reply', source: 'github', reference: 'reply-1' },
+      },
+    ],
+  }]);
+
+  const report = buildOutreachTargetsReport({
+    queuePath,
+    reportPath,
+    statePath,
+    now: '2026-04-28T17:00:00.000Z',
+  });
+  const markdown = renderOutreachTargetsMarkdown(report);
+
+  assert.equal(report.followUpTargets.length, 1);
+  assert.equal(report.heldTargets.length, 0);
+  assert.equal(report.followUpTargets[0].actionEligibility.status, 'approval_required_qualification_reply');
+  assert.match(report.followUpTargets[0].actionEligibility.approvalPhrase, /APPROVE SEND THUMBGATE QUALIFICATION REPLY/);
+  assert.match(markdown, /Outbound ready: yes, after exact approval/);
+  assert.match(markdown, /Approval phrase: APPROVE SEND THUMBGATE QUALIFICATION REPLY/);
+  assert.match(markdown, /Hey @DGouron, if one approval or rollback step keeps creating trouble/);
 });
 
 test('report core links inherit the current team pilot CTA when provided', () => {

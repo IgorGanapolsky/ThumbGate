@@ -11,6 +11,11 @@ const {
   loadOptionalModule,
 } = require('../../scripts/private-core-boundary');
 const { redactSecrets, redactSecretsDeep } = require('../../scripts/secret-redaction');
+const {
+  buildIntakeClosePacket,
+  buildIntakeDiscoveryPacket,
+  buildIntakeQualificationCard,
+} = require('../../scripts/revenue-offer-system');
 
 const POSTHOG_API_PATHS = new Set(['/capture', '/batch', '/decide', '/e', '/engage']);
 const POSTHOG_INGEST_HOST = 'us.i.posthog.com';
@@ -22,9 +27,6 @@ const POSTHOG_STATIC_PATH_PREFIX = '/static/';
 // bootstrap workflow to regenerate; the new URLs surface in the workflow
 // summary log.
 const PRO_CHECKOUT_URL = 'https://buy.stripe.com/8x2dR91M84r4cSd9uj3sI3f';
-const FIRST_FAILURE_RULE_CHECKOUT_URL = 'https://buy.stripe.com/7sY6oHaiEbTw6tP5e33sI3e';
-const QUICK_READ_CHECKOUT_URL = 'https://buy.stripe.com/5kQ7sL76s1eSaK55e33sI2H';
-const WORKFLOW_TEARDOWN_CHECKOUT_URL = 'https://buy.stripe.com/8x214n2Qc4r44lHayn3sI2I';
 // Verified live amounts (2026-07-13): diagnostic Stripe page contains $499;
 // sprint code-default Stripe slug previously pointed at a $499 diagnostic product.
 // Production sprint rail is PayPal at $1500 — pin that as the code fallback so a
@@ -129,11 +131,13 @@ const {
   rotateApiKey,
   handleWebhook,
   verifyWebhookSignature,
-  verifyGithubWebhookSignature,
+  recordGithubMarketplaceWebhookDelivery,
+  recordPayPalWebhookDelivery,
   handleGithubWebhook,
   getFunnelAnalytics,
   getBillingSummary,
   getBillingSummaryLive,
+  getBillingSummariesLive,
 } = require('../../scripts/billing');
 const {
   DEFAULT_PUBLIC_APP_ORIGIN,
@@ -482,34 +486,46 @@ const TRACKED_LINK_TARGETS = Object.freeze({
     allowCustomerEmail: true,
   },
   diagnostic: {
-    configUrlKey: 'sprintDiagnosticCheckoutUrl',
-    fallbackHref: SPRINT_DIAGNOSTIC_CHECKOUT_URL,
-    external: true,
+    path: '/diagnostic',
     ctaId: 'go_diagnostic',
     ctaPlacement: 'link_router',
-    eventType: 'cta_click',
+    eventType: 'diagnostic_intent_open',
     defaults: {
       utm_source: 'website',
       utm_medium: 'link_router',
       utm_campaign: 'sprint_diagnostic',
       plan_id: 'sprint_diagnostic',
     },
+  },
+  'diagnostic-pay': {
+    configUrlKey: 'sprintDiagnosticCheckoutUrl',
+    fallbackHref: SPRINT_DIAGNOSTIC_CHECKOUT_URL,
+    external: true,
+    ctaId: 'go_diagnostic_pay',
+    ctaPlacement: 'diagnostic_confirmation',
+    eventType: 'diagnostic_checkout_confirmed',
+    requiresPost: true,
+    requiresBuyerEmail: true,
+    prefillStripeEmail: true,
+    defaults: {
+      utm_source: 'diagnostic_page',
+      utm_medium: 'diagnostic_confirmation',
+      utm_campaign: 'sprint_diagnostic',
+      plan_id: 'sprint_diagnostic',
+    },
     allowCustomerEmail: true,
   },
   sprint: {
-    configUrlKey: 'workflowSprintCheckoutUrl',
-    fallbackHref: WORKFLOW_SPRINT_CHECKOUT_URL,
-    external: true,
+    path: '/diagnostic',
     ctaId: 'go_sprint',
     ctaPlacement: 'link_router',
-    eventType: 'cta_click',
+    eventType: 'workflow_sprint_scope_open',
     defaults: {
       utm_source: 'website',
       utm_medium: 'link_router',
       utm_campaign: 'workflow_sprint',
       plan_id: 'workflow_sprint',
     },
-    allowCustomerEmail: true,
   },
   trial: {
     path: '/guide',
@@ -1519,12 +1535,198 @@ function resolveBillingSummaryOptions(parsed) {
   });
 }
 
+const BILLING_SUMMARY_BATCH_WINDOWS = Object.freeze(['today', '30d', 'lifetime']);
+const WORKFLOW_INTAKE_QUEUE_DEFAULT_LIMIT = 50;
+const WORKFLOW_INTAKE_QUEUE_MAX_LIMIT = 100;
+const PRIVATE_OPERATOR_RESPONSE_HEADERS = Object.freeze({
+  'Cache-Control': 'private, no-store, max-age=0',
+  Pragma: 'no-cache',
+  Vary: 'Authorization',
+});
+
+function resolveBillingSummaryBatchOptions(parsed) {
+  return Object.fromEntries(BILLING_SUMMARY_BATCH_WINDOWS.map((window) => [
+    window,
+    resolveAnalyticsWindow({
+      window,
+      timeZone: parsed.searchParams.get('timezone'),
+      now: parsed.searchParams.get('now'),
+    }),
+  ]));
+}
+
+function wantsWorkflowIntakeQueue(parsed) {
+  return ['1', 'true', 'yes'].includes(
+    String(parsed.searchParams.get('include_intake_queue') || '').trim().toLowerCase()
+  );
+}
+
+function resolveWorkflowIntakeQueueOptions(parsed, workflowSprintIntake) {
+  const rawLimit = Number(
+    parsed.searchParams.get('intake_limit') ||
+    parsed.searchParams.get('limit') ||
+    WORKFLOW_INTAKE_QUEUE_DEFAULT_LIMIT
+  );
+  if (!Number.isInteger(rawLimit) || rawLimit < 1 || rawLimit > WORKFLOW_INTAKE_QUEUE_MAX_LIMIT) {
+    throw createHttpError(
+      400,
+      `intake_limit must be an integer from 1 to ${WORKFLOW_INTAKE_QUEUE_MAX_LIMIT}`
+    );
+  }
+
+  const allowedStatuses = new Set(workflowSprintIntake.WORKFLOW_SPRINT_STATUS_FLOW || []);
+  const rawStatuses = String(
+    parsed.searchParams.get('intake_status') ||
+    parsed.searchParams.get('status') ||
+    'new,qualified'
+  )
+    .split(',')
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
+  const allRequested = rawStatuses.length === 1 && rawStatuses[0] === 'all';
+  const statuses = allRequested ? [] : [...new Set(rawStatuses)];
+  const invalid = statuses.filter((status) => !allowedStatuses.has(status));
+  if (invalid.length > 0 || (!allRequested && statuses.length === 0)) {
+    throw createHttpError(
+      400,
+      `intake_status must be all or a comma-separated subset of: ${[...allowedStatuses].join(', ')}`
+    );
+  }
+
+  return { limit: rawLimit, statuses };
+}
+
+function projectWorkflowIntakeQueueLead(lead = {}, options = {}) {
+  const contact = lead.contact || {};
+  const qualification = lead.qualification || {};
+  const attribution = lead.attribution || {};
+  return {
+    leadId: lead.leadId || null,
+    submittedAt: lead.submittedAt || null,
+    updatedAt: lead.updatedAt || null,
+    status: lead.status || null,
+    offer: lead.offer || null,
+    contact: {
+      name: contact.name || null,
+      email: contact.email || null,
+      company: contact.company || null,
+    },
+    qualification: {
+      workflow: qualification.workflow || null,
+      owner: qualification.owner || null,
+      blocker: qualification.blocker || null,
+      runtime: qualification.runtime || null,
+      urgency: qualification.urgency || null,
+      note: qualification.note || null,
+    },
+    attribution: {
+      source: attribution.source || null,
+      utmSource: attribution.utmSource || null,
+      utmMedium: attribution.utmMedium || null,
+      utmCampaign: attribution.utmCampaign || null,
+      creator: attribution.creator || null,
+      community: attribution.community || null,
+      planId: attribution.planId || null,
+      page: attribution.page || null,
+      landingPath: attribution.landingPath || null,
+    },
+    nextOperatorStep: options.closePacket?.status === 'approval_ready_not_authorized'
+      ? 'request_action_time_approval'
+      : options.discoveryPacket?.status === 'approval_ready_not_authorized'
+        ? 'request_action_time_approval_for_discovery'
+        : lead.status === 'new' ? 'review_and_qualify' : 'prepare_scope_or_hold',
+    qualificationCard: options.qualificationCard || buildIntakeQualificationCard(lead, options),
+    discoveryPacket: options.discoveryPacket || buildIntakeDiscoveryPacket(lead, options),
+    closePacket: options.closePacket || buildIntakeClosePacket(lead, options),
+  };
+}
+
+function buildWorkflowIntakeQueue(parsed, workflowSprintIntake, feedbackDir, options = {}) {
+  const { limit, statuses } = resolveWorkflowIntakeQueueOptions(parsed, workflowSprintIntake);
+  const leads = workflowSprintIntake.loadWorkflowSprintLeads(feedbackDir);
+  const generatedAt = new Date().toISOString();
+  const byStatus = {};
+  for (const lead of leads) {
+    const status = lead.status || 'unknown';
+    byStatus[status] = (byStatus[status] || 0) + 1;
+  }
+  const eligible = leads
+    .filter((lead) => statuses.length === 0 || statuses.includes(lead.status))
+    .map((lead) => {
+      const qualificationReviewVerified =
+        typeof workflowSprintIntake.isEvidenceBasedQualificationReview === 'function' &&
+        workflowSprintIntake.isEvidenceBasedQualificationReview(lead.qualificationReview);
+      const cardOptions = {
+        now: generatedAt,
+        qualificationReviewVerified,
+        publicOrigin: options.publicOrigin,
+      };
+      return {
+        lead,
+        qualificationCard: buildIntakeQualificationCard(lead, cardOptions),
+        discoveryPacket: buildIntakeDiscoveryPacket(lead, cardOptions),
+        closePacket: buildIntakeClosePacket(lead, cardOptions),
+      };
+    })
+    .sort((a, b) =>
+      b.qualificationCard.priorityScore - a.qualificationCard.priorityScore ||
+      String(b.lead.submittedAt || '').localeCompare(String(a.lead.submittedAt || '')));
+  const selected = eligible.slice(0, limit);
+  const approvalReady = eligible.filter(
+    (entry) => entry.closePacket.status === 'approval_ready_not_authorized'
+  );
+  const discoveryReady = eligible.filter(
+    (entry) => entry.discoveryPacket.status === 'approval_ready_not_authorized'
+  );
+  const chronological = eligible
+    .map((entry) => entry.lead)
+    .sort((a, b) => String(b.submittedAt || '').localeCompare(String(a.submittedAt || '')));
+  return {
+    generatedAt,
+    total: leads.length,
+    eligibleTotal: eligible.length,
+    returned: selected.length,
+    approvalReadyTotal: approvalReady.length,
+    discoveryReadyTotal: discoveryReady.length,
+    primaryApprovalAction: approvalReady[0]?.closePacket || null,
+    primaryDiscoveryAction: discoveryReady[0]?.discoveryPacket || null,
+    byStatus,
+    filters: {
+      statuses: statuses.length === 0 ? ['all'] : statuses,
+      limit,
+    },
+    latestSubmittedAt: chronological[0] ? chronological[0].submittedAt || null : null,
+    oldestSubmittedAt: chronological.length ? chronological[chronological.length - 1].submittedAt || null : null,
+    leads: selected.map((entry, index) => ({
+      ...projectWorkflowIntakeQueueLead(entry.lead, {
+        now: generatedAt,
+        qualificationCard: entry.qualificationCard,
+        discoveryPacket: entry.discoveryPacket,
+        closePacket: entry.closePacket,
+      }),
+      priorityRank: index + 1,
+    })),
+  };
+}
+
 function sendInvalidAnalyticsWindowProblem(res, title, err) {
   sendProblem(res, {
     type: PROBLEM_TYPES.INVALID_REQUEST,
     title,
     status: 400,
     detail: err?.message ? err.message : 'Invalid analytics window request.',
+  });
+}
+
+function sendWorkflowIntakeQueueProblem(res, err) {
+  const status = Number(err && err.statusCode) || 400;
+  sendProblem(res, {
+    type: status >= 500 ? PROBLEM_TYPES.INTERNAL : PROBLEM_TYPES.INVALID_REQUEST,
+    title: status >= 500
+      ? 'Workflow intake queue unavailable'
+      : 'Invalid workflow intake queue query',
+    status,
+    detail: err?.message ? err.message : 'Workflow intake queue request failed.',
   });
 }
 
@@ -2261,11 +2463,12 @@ a{display:block;text-decoration:none}a.secondary{border:1px solid #374151;color:
 <div class="brand"><span class="brand-mark"></span><span>ThumbGate</span></div>
 <h1>Start ThumbGate Pro</h1>
 <div class="price">$19<small>/mo</small></div>
-<p>The npm package runs your gates locally. <strong>Pro</strong> removes solo caps and adds personal recall, proof, exports, and adapter maintenance. Shared hosted lessons and org dashboards are Enterprise.</p>
-<form action="${PRO_CHECKOUT_URL}" method="GET" data-i="pro_checkout_confirmed">
+<p>The npm package runs your gates locally. <strong>Pro</strong> removes solo caps and adds personal recall, proof, exports, and adapter maintenance. Enterprise service work is qualified after intake; hosted team sync and a hosted org dashboard are not generally available.</p>
+<form action="/checkout/pro" method="POST" data-i="pro_checkout_confirmed">
 ${hiddenInputs}
-<input type="email" name="prefilled_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email">
-<p class="email-note">Optional. Stripe can collect your email on the secure checkout page.</p>
+<input type="hidden" name="confirm" value="1">
+<input type="email" name="customer_email" value="${escapeHtmlAttribute(prefilledEmail)}" placeholder="you@company.com" autocomplete="email" required>
+<p class="email-note">Required so the checkout has attributable buyer intent and your receipt can be recovered.</p>
 <button type="submit" class="primary">Pay $19/mo with Stripe →</button>
 </form>
 <a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
@@ -2281,7 +2484,7 @@ ${hiddenInputs}
 </div>
 <div class="feedback-saved" id="feedback-saved">Feedback saved.</div>
 </div>
-<div class="trust"><div class="trust-item">Personal recall and proof exports without free-tier caps</div><div class="trust-item">Adapter matrix kept current for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode</div><div class="trust-item">Personal dashboard: gate stats, rule evidence, DPO export</div><div class="trust-item">Enterprise adds shared hosted lessons, org visibility, rollout support</div></div>
+<div class="trust"><div class="trust-item">Personal recall and proof exports without free-tier caps</div><div class="trust-item">Adapter matrix kept current for Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode</div><div class="trust-item">Personal dashboard: gate stats, rule evidence, DPO export</div><div class="trust-item">Enterprise service work is qualified after intake; hosted team sync and a hosted org dashboard are not generally available</div></div>
 <p class="back"><a href="/">← Back to thumbgate.ai</a></p>
 </main>
 <script>
@@ -2475,7 +2678,14 @@ function appendTrackedLinkQueryParams(destinationUrl, parsed, target) {
     }
   }
   if (target.allowCustomerEmail) {
-    appendQueryParam(destinationUrl, 'customer_email', params.get('customer_email'));
+    const customerEmail = normalizeCheckoutCustomerEmail(params.get('customer_email'));
+    if (customerEmail) {
+      appendQueryParam(
+        destinationUrl,
+        target.prefillStripeEmail ? 'prefilled_email' : 'customer_email',
+        customerEmail
+      );
+    }
   }
   if (!destinationUrl.searchParams.has('cta_id')) {
     appendQueryParam(destinationUrl, 'cta_id', target.ctaId);
@@ -2553,6 +2763,31 @@ function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadReques
     return;
   }
 
+  if (target.requiresPost && req.method !== 'POST') {
+    sendJson(res, 405, {
+      error: 'Explicit checkout confirmation is required',
+      next: '/diagnostic',
+    }, {
+      Allow: 'POST',
+      'Cache-Control': 'no-store',
+    }, {
+      headOnly: isHeadRequest,
+    });
+    return;
+  }
+  if (
+    target.requiresBuyerEmail
+    && !normalizeCheckoutCustomerEmail(parsed.searchParams.get('customer_email'))
+  ) {
+    sendJson(res, 400, {
+      error: 'A valid buyer email is required before checkout',
+      next: '/diagnostic',
+    }, {
+      'Cache-Control': 'no-store',
+    });
+    return;
+  }
+
   const { FEEDBACK_DIR } = getFeedbackPaths();
   const journeyState = resolveJourneyState(req, parsed);
   const destinationUrl = buildTrackedLinkDestination(target, hostedConfig, parsed);
@@ -2573,7 +2808,7 @@ function serveTrackedLinkRedirect({ req, res, parsed, hostedConfig, isHeadReques
     );
   }
 
-  res.writeHead(302, {
+  res.writeHead(req.method === 'POST' ? 303 : 302, {
     ...(journeyState.setCookieHeaders.length ? { 'Set-Cookie': journeyState.setCookieHeaders } : {}),
     'Cache-Control': 'no-store',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
@@ -4113,30 +4348,16 @@ function renderCheckoutSuccessPage(runtimeConfig) {
 }
 
 function renderCheckoutCancelledPage(runtimeConfig) {
-  const firstFailureRuleCheckoutUrl = escapeHtmlAttribute(FIRST_FAILURE_RULE_CHECKOUT_URL);
-  const quickReadCheckoutUrl = escapeHtmlAttribute(QUICK_READ_CHECKOUT_URL);
-  const workflowTeardownCheckoutUrl = escapeHtmlAttribute(WORKFLOW_TEARDOWN_CHECKOUT_URL);
-  const diagnosticCheckoutUrl = runtimeConfig.sprintDiagnosticCheckoutUrl
-    ? escapeHtmlAttribute(runtimeConfig.sprintDiagnosticCheckoutUrl)
-    : '';
-  const workflowSprintCheckoutUrl = runtimeConfig.workflowSprintCheckoutUrl
-    ? escapeHtmlAttribute(runtimeConfig.workflowSprintCheckoutUrl)
-    : '';
   const sprintDiagnosticPriceDollars = runtimeConfig.sprintDiagnosticPriceDollars || 499;
   const workflowSprintPriceDollars = runtimeConfig.workflowSprintPriceDollars || 1500;
-  const workflowSprintIntakeUrl = `${escapeHtmlAttribute(runtimeConfig.appOrigin)}/#workflow-sprint-intake`;
+  const diagnosticUrl = escapeHtmlAttribute(new URL('/diagnostic', runtimeConfig.appOrigin).toString());
+  const workflowSprintUrl = escapeHtmlAttribute(new URL('/go/sprint', runtimeConfig.appOrigin).toString());
+  const workflowSprintIntakeUrl = escapeHtmlAttribute(new URL('/#workflow-sprint-intake', runtimeConfig.appOrigin).toString());
   const recoveryOfferLinks = [
-    diagnosticCheckoutUrl
-      ? `<a href="${diagnosticCheckoutUrl}" data-recovery-offer="sprint_diagnostic" data-offer-price="${sprintDiagnosticPriceDollars}">Book $${sprintDiagnosticPriceDollars} diagnostic</a>`
-      : '',
-    workflowSprintCheckoutUrl
-      ? `<a href="${workflowSprintCheckoutUrl}" data-recovery-offer="workflow_sprint" data-offer-price="${workflowSprintPriceDollars}">Start $${workflowSprintPriceDollars} sprint</a>`
-      : '',
-    `<a href="${workflowTeardownCheckoutUrl}" data-recovery-offer="workflow_teardown" data-offer-price="99">Pay $99 teardown</a>`,
-    `<a href="${quickReadCheckoutUrl}" data-recovery-offer="quick_read" data-offer-price="19">Pay $19 quick read</a>`,
-    `<a href="${firstFailureRuleCheckoutUrl}" data-recovery-offer="first_failure_rule" data-offer-price="1">Pay $1 first rule</a>`,
     `<a id="send-workflow-first" href="${workflowSprintIntakeUrl}" data-recovery-offer="workflow_sprint_intake" data-offer-price="0">Send workflow first</a>`,
-  ].filter(Boolean).join('\n        ');
+    `<a href="${diagnosticUrl}" data-recovery-offer="sprint_diagnostic" data-offer-price="${sprintDiagnosticPriceDollars}">Review $${sprintDiagnosticPriceDollars} diagnostic</a>`,
+    `<a href="${workflowSprintUrl}" data-recovery-offer="workflow_sprint" data-offer-price="${workflowSprintPriceDollars}">Scope $${workflowSprintPriceDollars} sprint</a>`,
+  ].join('\n        ');
   const recoveryOfferCard = recoveryOfferLinks
     ? `<div class="card recovery-card">
       <h2>Need help deciding?</h2>
@@ -4504,19 +4725,24 @@ function renderBrokerAuditIntakeResultPage(runtimeConfig, { title, detail, leadI
 function readBodyBuffer(req, maxBytes = 1024 * 1024) {
   return new Promise((resolve, reject) => {
     let total = 0;
+    let oversize = false;
     const chunks = [];
 
     req.on('data', (chunk) => {
       total += chunk.length;
       if (total > maxBytes) {
-        reject(createHttpError(413, 'Request body too large'));
-        req.destroy();
+        oversize = true;
+        chunks.length = 0;
         return;
       }
-      chunks.push(chunk);
+      if (!oversize) chunks.push(chunk);
     });
 
     req.on('end', () => {
+      if (oversize) {
+        reject(createHttpError(413, 'Request body too large'));
+        return;
+      }
       if (chunks.length === 0) {
         resolve(Buffer.alloc(0));
         return;
@@ -5320,11 +5546,38 @@ function createApiServer() {
 
     // Public endpoints — no auth required
     const trackedLinkMatch = pathname.match(/^\/go\/([^/]+)$/);
-    if (isGetLikeRequest && trackedLinkMatch) {
+    if ((isGetLikeRequest || req.method === 'POST') && trackedLinkMatch) {
+      let trackedParsed = parsed;
+      if (req.method === 'POST') {
+        const target = getTrackedLinkTarget(trackedLinkMatch[1]);
+        if (!target || !target.requiresPost) {
+          sendJson(res, target ? 405 : 404, target
+            ? { error: 'POST is not supported for this tracked link' }
+            : { error: 'Tracked link not found', allowed: Object.keys(TRACKED_LINK_TARGETS) }, {
+            Allow: 'GET, HEAD',
+            'Cache-Control': 'no-store',
+          });
+          return;
+        }
+        const contentType = String(req.headers['content-type'] || '').toLowerCase();
+        if (!contentType.includes('application/x-www-form-urlencoded')) {
+          sendJson(res, 415, { error: 'Form-encoded checkout confirmation is required' }, {
+            'Cache-Control': 'no-store',
+          });
+          return;
+        }
+        const form = await parseFormBody(req, 16 * 1024);
+        trackedParsed = new URL(parsed.toString());
+        for (const [key, value] of Object.entries(form)) {
+          if (key === 'customer_email' || TRACKED_LINK_QUERY_KEYS.includes(key)) {
+            trackedParsed.searchParams.set(key, String(value || '').trim());
+          }
+        }
+      }
       serveTrackedLinkRedirect({
         req,
         res,
-        parsed,
+        parsed: trackedParsed,
         hostedConfig,
         isHeadRequest,
         slug: trackedLinkMatch[1],
@@ -6132,17 +6385,37 @@ async function addContext(){
       return;
     }
 
-    // HOTFIX 2026-06-04 — accept ANY method (GET/HEAD/POST) on /checkout/pro
+    // HOTFIX 2026-06-04 — accept GET, HEAD, and POST on /checkout/pro
     // to prevent the API-key guard from 401'ing real prospective customers
-    // whose forms or fetch() calls land via POST. Audit: 69 emails submitted
-    // → 0 paid because POST hit the auth gate. Query params still drive the
-    // Stripe session creation; POST bodies are ignored harmlessly.
+    // whose forms land via POST. Audit: 69 emails submitted → 0 paid because
+    // POST hit the auth gate. Form bodies are now allowlisted into the same
+    // attribution path as query parameters before checkout evaluation.
     if ((isGetLikeRequest || req.method === 'POST') && pathname === '/checkout/pro') {
       if (isHeadRequest) {
         sendHtml(res, 200, '', {}, {
           headOnly: true,
         });
         return;
+      }
+
+      if (req.method === 'POST') {
+        const contentType = String(req.headers['content-type'] || '').toLowerCase();
+        if (!contentType.includes('application/x-www-form-urlencoded')) {
+          sendJson(res, 415, { error: 'Form-encoded checkout confirmation is required' }, {
+            'Cache-Control': 'no-store',
+          });
+          return;
+        }
+        const form = await parseFormBody(req, 16 * 1024);
+        for (const [key, value] of Object.entries(form)) {
+          if (
+            key === 'confirm'
+            || key === 'customer_email'
+            || TRACKED_LINK_QUERY_KEYS.includes(key)
+          ) {
+            parsed.searchParams.set(key, String(value || '').trim());
+          }
+        }
       }
 
       const { FEEDBACK_DIR } = getFeedbackPaths();
@@ -6163,33 +6436,26 @@ async function addContext(){
       // it and followed it, bypassing the bot deflection. A bot crawl never
       // reaches the payment form, so the session is guaranteed waste.
       //
-      // Fix: bot + confirm=1 (alone) deflects back to the interstitial. Two
-      // escape hatches preserve real-user flows: (a) POST always proceeds
-      // (form submission JS-less bots don't do), (b) a `customer_email`
-      // query param treats the request as confirmed even from a bot UA,
-      // because no real crawler appends customer_email to discovered URLs.
+      // Fix: bot-classified traffic never reaches session creation, and a
+      // browser must provide both explicit confirmation and a valid email.
       const rawCheckoutEmail = normalizeNullableText(bootstrapBody.customerEmail);
       const normalizedCheckoutEmail = normalizeCheckoutCustomerEmail(rawCheckoutEmail);
       const hasCustomerEmailHint = !!parsed?.searchParams?.has('customer_email');
       const hasValidCustomerEmailHint = !!normalizedCheckoutEmail;
-      const botShouldBypass = !botClassification.isBot || hasValidCustomerEmailHint;
-      // 2026-06-29 conversion audit: requiring email before Stripe gave us a
-      // recoverable abandoned-session theory, but the hosted funnel showed
-      // traffic with 0 checkout starts. Let confirmed human clicks reach
-      // Stripe; Stripe can collect email on the secure checkout page. Bots
-      // still need a valid email hint to bypass deflection.
+      const botShouldBypass = !botClassification.isBot;
+      // A valid email is the explicit human-intent proof for both GET
+      // confirmation and form POST. This prevents browser-shaped monitors
+      // from minting anonymous sessions while preserving a one-field path to
+      // Stripe for real buyers.
       const isConfirmedCheckout = (
         (req.method === 'POST' && hasValidCustomerEmailHint)
-        || hasConfirmFlag
+        || (hasConfirmFlag && hasValidCustomerEmailHint)
       ) && botShouldBypass;
-      // 2026-06-05 revenue bypass: env-gated direct-to-Stripe redirect.
-      // Live 30d billing showed 254 interstitial views → 1 Stripe click-through
-      // → 0 paid. When THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS=1 is set we
-      // route raw /checkout/pro GETs (no confirm=1, no POST) straight to the
-      // pro Stripe Payment Link, preserving UTM + attribution metadata via
-      // buildCheckoutFallbackUrl. Default-off; bot-deflection still applies
-      // (bot + no email hint still falls through to the existing interstitial).
-      const interstitialBypassEnabled = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS !== '0';
+      // Legacy env-gated bypass. It is default-off and still requires a valid
+      // email plus a non-bot request; enabling it must never re-open anonymous
+      // Stripe-session creation. Attribution is preserved via
+      // buildCheckoutFallbackUrl.
+      const interstitialBypassEnabled = process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_BYPASS === '1';
       const interstitialSampleRate = normalizeCheckoutInterstitialSampleRate(
         process.env.THUMBGATE_CHECKOUT_INTERSTITIAL_SAMPLE_RATE
       );
@@ -6203,6 +6469,7 @@ async function addContext(){
         && interstitialBypassEnabled
         && req.method !== 'POST'
         && botShouldBypass
+        && hasValidCustomerEmailHint
         && !interstitialSampled
       ) {
         // Always target the pro Stripe Payment Link directly. The
@@ -6258,19 +6525,10 @@ async function addContext(){
           planId: analyticsMetadata.planId,
         },
       }).catch(() => {});
-      // Render the interstitial for ALL non-confirmed GETs (bot or human),
-      // not just bot traffic. Rationale: a raw GET on /checkout/pro currently
-      // 302s straight to a fresh Stripe `cs_live_*` session, regardless of
-      // whether the visitor is a search crawler, a link-preview fetcher, or
-      // a confused human who doesn't yet know what they're paying for.
-      // That created the 50-zombie-sessions / 0-paid pattern the CEO flagged
-      // 2026-05-13. Every visitor now sees the $19/mo confirmation page first
-      // and must click "Pay $19/mo with Stripe →" (which sets confirm=1) to
-      // trigger the Stripe-session creation + redirect. Counter-risk: one
-      // extra click on the human path. Mitigated because the interstitial
-      // also serves as a value-preview ("5,200+ npm installs/mo, MIT open source,
-      // cancel anytime"), which typically lifts conversion more than the
-      // click-friction costs.
+      // Render the intent form for every non-confirmed request. A raw GET can
+      // come from a crawler, link preview, monitor, or visitor who has not yet
+      // supplied buyer identity. The form requires email-backed confirmation
+      // before any Stripe session is created.
       if (!isConfirmedCheckout) {
         const eventType = botClassification.isBot
           ? 'checkout_bot_deflected'
@@ -6316,16 +6574,6 @@ async function addContext(){
         return;
       }
 
-      if (!normalizedCheckoutEmail) {
-        appendBestEffortTelemetry(FEEDBACK_DIR, {
-          eventType: 'checkout_email_deferred_to_stripe',
-          clientType: 'web',
-          traceId,
-          page: '/checkout/pro',
-          planId: analyticsMetadata.planId,
-          reason: rawCheckoutEmail ? 'invalid_customer_email' : 'missing_customer_email',
-        }, req.headers, 'checkout_email_deferred_to_stripe');
-      }
       bootstrapBody.customerEmail = normalizedCheckoutEmail || undefined;
 
       appendBestEffortTelemetry(FEEDBACK_DIR, {
@@ -7952,6 +8200,45 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       return;
     }
 
+    // PayPal webhook evidence. PayPal authenticates the delivery through its
+    // verify-webhook-signature API before raw proof is persisted locally.
+    if (req.method === 'POST' && pathname === '/v1/billing/paypal-webhook') {
+      try {
+        const rawBody = await readBodyBuffer(req);
+        const delivery = await recordPayPalWebhookDelivery({
+          rawBody,
+          headers: req.headers,
+        });
+        if (!delivery.verified || !delivery.recorded) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.WEBHOOK_INVALID,
+            title: 'Invalid PayPal webhook delivery',
+            status: delivery.verified ? 503 : 400,
+            detail: delivery.verified
+              ? 'The PayPal-verified webhook could not be written to the evidence ledger.'
+              : 'The PayPal transmission headers, event, or remote signature verification were invalid.',
+          });
+          return;
+        }
+        sendJson(res, 200, {
+          verified: true,
+          recorded: true,
+          duplicate: delivery.duplicate === true,
+          eventId: delivery.eventId,
+          eventType: delivery.eventType,
+          payloadSha256: delivery.payloadSha256,
+        });
+      } catch (err) {
+        sendProblem(res, {
+          type: !err.statusCode || err.statusCode >= 500 ? PROBLEM_TYPES.INTERNAL : PROBLEM_TYPES.BAD_REQUEST,
+          title: !err.statusCode || err.statusCode >= 500 ? 'Internal Server Error' : 'Request Error',
+          status: err.statusCode || 500,
+          detail: err.message,
+        });
+      }
+      return;
+    }
+
     // GitHub Marketplace webhook
     if (req.method === 'POST' && pathname === '/v1/billing/github-webhook') {
       try {
@@ -7963,12 +8250,20 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         });
 
         const sig = req.headers['x-hub-signature-256'] || '';
-        if (!verifyGithubWebhookSignature(rawBody, sig)) {
+        const delivery = recordGithubMarketplaceWebhookDelivery({
+          rawBody,
+          signature: sig,
+          deliveryId: req.headers['x-github-delivery'] || '',
+          eventName: req.headers['x-github-event'] || '',
+        });
+        if (!delivery.verified || !delivery.recorded) {
           sendProblem(res, {
             type: PROBLEM_TYPES.WEBHOOK_INVALID,
-            title: 'Invalid webhook signature',
-            status: 400,
-            detail: 'The webhook signature could not be verified.',
+            title: 'Invalid GitHub webhook delivery',
+            status: delivery.verified ? 503 : 400,
+            detail: delivery.verified
+              ? 'The verified webhook could not be written to the evidence ledger.'
+              : 'The webhook signature, delivery headers, or payload could not be verified.',
           });
           return;
         }
@@ -7986,7 +8281,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           return;
         }
 
-        const result = handleGithubWebhook(event);
+        const result = handleGithubWebhook(event, delivery);
         sendJson(res, 200, result);
       } catch (err) {
         sendProblem(res, {
@@ -8108,7 +8403,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
     const isOperatorBillingRequest = Boolean(expectedOperatorKey)
       && _reqToken === expectedOperatorKey
       && req.method === 'GET'
-      && pathname === '/v1/billing/summary';
+      && ['/v1/billing/summary', '/v1/intake/workflow-sprint/queue'].includes(pathname);
 
     if (!isOperatorBillingRequest && !isAuthorized(req, expectedApiKey)) {
       sendProblem(res, {
@@ -9406,6 +9701,33 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         return;
       }
 
+      // GET /v1/intake/workflow-sprint/queue — authenticated, no-store operator close queue
+      if (req.method === 'GET' && pathname === '/v1/intake/workflow-sprint/queue') {
+        if (!isBillingSummaryAuthorized(req, expectedApiKey, expectedOperatorKey)) {
+          sendProblem(res, {
+            type: PROBLEM_TYPES.FORBIDDEN,
+            title: 'Forbidden',
+            status: 403,
+            detail: 'Admin or operator API key required for this endpoint.',
+          });
+          return;
+        }
+        try {
+          const { FEEDBACK_DIR } = getFeedbackPaths();
+          const workflowSprintIntake = requirePrivateApiModule(
+            'workflowSprintIntake',
+            'Workflow sprint intake'
+          );
+          const queue = buildWorkflowIntakeQueue(parsed, workflowSprintIntake, FEEDBACK_DIR, {
+            publicOrigin: hostedConfig.appOrigin,
+          });
+          sendJson(res, 200, queue, PRIVATE_OPERATOR_RESPONSE_HEADERS);
+        } catch (err) {
+          sendWorkflowIntakeQueueProblem(res, err);
+        }
+        return;
+      }
+
       // GET /v1/billing/summary — operator billing summary (admin key or operator key)
       if (req.method === 'GET' && pathname === '/v1/billing/summary') {
         if (!isBillingSummaryAuthorized(req, expectedApiKey, expectedOperatorKey)) {
@@ -9415,6 +9737,48 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
             status: 403,
             detail: 'Admin or operator API key required for this endpoint.',
           });
+          return;
+        }
+
+        const includeIntakeQueue = wantsWorkflowIntakeQueue(parsed);
+        let intakeQueue = null;
+        if (includeIntakeQueue) {
+          try {
+            const { FEEDBACK_DIR } = getFeedbackPaths();
+            const workflowSprintIntake = requirePrivateApiModule(
+              'workflowSprintIntake',
+              'Workflow sprint intake'
+            );
+            intakeQueue = buildWorkflowIntakeQueue(parsed, workflowSprintIntake, FEEDBACK_DIR, {
+              publicOrigin: hostedConfig.appOrigin,
+            });
+          } catch (err) {
+            sendWorkflowIntakeQueueProblem(res, err);
+            return;
+          }
+        }
+
+        const runtimePresence = buildHostedRuntimePresence(hostedConfig, {
+          expectedApiKey,
+          expectedOperatorKey,
+        });
+        const requestedWindow = String(parsed.searchParams.get('window') || '').trim().toLowerCase();
+        if (requestedWindow === 'all') {
+          let summaryOptionsByWindow;
+          try {
+            summaryOptionsByWindow = resolveBillingSummaryBatchOptions(parsed);
+          } catch (err) {
+            sendInvalidAnalyticsWindowProblem(res, 'Invalid billing summary query', err);
+            return;
+          }
+          const summaries = await getBillingSummariesLive(summaryOptionsByWindow);
+          sendJson(res, 200, {
+            generatedAt: new Date().toISOString(),
+            windows: BILLING_SUMMARY_BATCH_WINDOWS,
+            summaries,
+            runtimePresence,
+            ...(intakeQueue ? { intakeQueue } : {}),
+          }, PRIVATE_OPERATOR_RESPONSE_HEADERS);
           return;
         }
 
@@ -9430,11 +9794,9 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         const summary = await getBillingSummaryLive(summaryOptions);
         sendJson(res, 200, {
           ...summary,
-          runtimePresence: buildHostedRuntimePresence(hostedConfig, {
-            expectedApiKey,
-            expectedOperatorKey,
-          }),
-        });
+          runtimePresence,
+          ...(intakeQueue ? { intakeQueue } : {}),
+        }, PRIVATE_OPERATOR_RESPONSE_HEADERS);
         return;
       }
 
@@ -9887,6 +10249,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
 function startServer({ port, host } = {}) {
   const listenPort = Number(port ?? process.env.PORT ?? 8787);
   const listenHost = String(host ?? process.env.HOST ?? '0.0.0.0').trim() || '0.0.0.0';
+  fs.mkdirSync(getFeedbackPaths().FEEDBACK_DIR, { recursive: true });
   const server = createApiServer();
   registerGracefulShutdown(server);
   return new Promise((resolve) => {

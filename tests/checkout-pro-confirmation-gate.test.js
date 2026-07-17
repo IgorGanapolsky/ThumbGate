@@ -6,8 +6,9 @@
  * interstitial first. This closes the observed 0/50 completion rate where
  * buyers were 302'd cold to checkout.stripe.com with no context and bailed.
  *
- * Confirmed checkout (?confirm=1 OR POST) still 302s straight to Stripe so
- * the "user has already seen the offer" path remains friction-free.
+ * Confirmed checkout requires ?confirm=1 plus a valid buyer email before it
+ * can create a session. The single field keeps the path short and makes the
+ * resulting session attributable and recoverable.
  */
 
 const { describe, it, before, after } = require('node:test');
@@ -75,38 +76,38 @@ describe('/checkout/pro confirmation gate (closes 0/50 conversion leak)', () => 
     }
   });
 
-  it('real-browser GET without confirm → 302 bypass to Stripe Payment Link', async () => {
+  it('real-browser GET without confirm renders the email-backed intent form', async () => {
     clearTelemetry();
     const res = await fetch(`${origin}/checkout/pro`, {
       redirect: 'manual',
       headers: { 'user-agent': BROWSER_UA, accept: BROWSER_ACCEPT },
     });
-    // Bypass is ON by default — real browsers 302 straight to Stripe
-    assert.equal(res.status, 302, 'real-browser bare GET should 302 to Stripe (bypass enabled)');
-    const location = res.headers.get('location') || '';
-    assert.match(location, /buy\.stripe\.com\//, 'redirect target must be a Stripe Payment Link');
+    assert.equal(res.status, 200, 'real-browser bare GET should render the intent form');
+    const body = await res.text();
+    assert.match(body, /action="\/checkout\/pro" method="POST"/);
+    assert.match(body, /name="confirm" value="1"/);
+    assert.match(body, /name="customer_email"[^>]*required/);
+    assert.match(body, /hosted team sync and a hosted org dashboard are not generally available/i);
+    assert.doesNotMatch(body, /Shared hosted lessons and org dashboards are Enterprise/i);
+    assert.doesNotMatch(body, /<form action="https:\/\/buy\.stripe\.com\//);
   });
 
-  it('real-browser GET WITH ?confirm=1 but no email → 302 toward checkout and defers email to Stripe', async () => {
+  it('real-browser GET WITH ?confirm=1 but no email stays on the intent form', async () => {
     clearTelemetry();
     const res = await fetch(`${origin}/checkout/pro?confirm=1`, {
       redirect: 'manual',
       headers: { 'user-agent': BROWSER_UA, accept: BROWSER_ACCEPT },
     });
-    assert.ok(res.status >= 300 && res.status < 400, `confirmed checkout without email must 302, got ${res.status}`);
-    const location = res.headers.get('location') || '';
-    assert.ok(/\/success\?/.test(location) || /checkout\.stripe\.com/.test(location), `confirmed checkout must redirect to Stripe or success, got ${location}`);
+    assert.equal(res.status, 200);
+    const body = await res.text();
+    assert.match(body, /name="customer_email"[^>]*required/);
 
     const events = readTelemetry();
-    assert.equal(
-      events.filter((e) => e.eventType === 'checkout_interstitial_view' && e.reasonCode === 'missing_customer_email').length,
-      0,
-      'missing email must not bounce a confirmed human click back to the interstitial',
-    );
     assert.ok(
-      events.some((e) => e.eventType === 'checkout_bootstrap'),
-      'confirm=1 without email should create a checkout session',
+      events.some((e) => e.eventType === 'checkout_interstitial_view' && e.reasonCode === 'missing_customer_email'),
+      'missing email should remain on the attributable intent form',
     );
+    assert.equal(events.filter((e) => e.eventType === 'checkout_bootstrap').length, 0);
   });
 
   it('real-browser GET WITH ?confirm=1 and email → 302 toward checkout', async () => {
@@ -126,11 +127,43 @@ describe('/checkout/pro confirmation gate (closes 0/50 conversion leak)', () => 
     );
   });
 
-  // NOTE: POST /checkout/pro is intentionally NOT tested here. The route is
-  // GET-only — the server.js handler matches on `isGetLikeRequest &&
-  // pathname === '/checkout/pro'`, so POST 404s. The `req.method === 'POST'`
-  // branch inside `isConfirmedCheckout` is dead code and confirmation comes
-  // exclusively via `?confirm=1` (covered by the previous test case).
+  it('real-browser form POST with email creates an attributable checkout', async () => {
+    clearTelemetry();
+    const res = await fetch(`${origin}/checkout/pro`, {
+      method: 'POST',
+      redirect: 'manual',
+      headers: {
+        'user-agent': BROWSER_UA,
+        accept: BROWSER_ACCEPT,
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        confirm: '1',
+        customer_email: 'buyer@example.com',
+        utm_source: 'intent_form',
+        cta_id: 'pro_checkout_confirmed',
+      }),
+    });
+    assert.ok(res.status >= 300 && res.status < 400, `confirmed form must redirect, got ${res.status}`);
+    const events = readTelemetry();
+    const bootstrap = events.find((e) => e.eventType === 'checkout_bootstrap');
+    assert.ok(bootstrap, 'form POST should reach checkout bootstrap');
+    assert.equal(bootstrap.utmSource, 'intent_form');
+    assert.equal(bootstrap.ctaId, 'pro_checkout_confirmed');
+  });
+
+  it('rejects non-form POST bodies before checkout evaluation', async () => {
+    const res = await fetch(`${origin}/checkout/pro`, {
+      method: 'POST',
+      redirect: 'manual',
+      headers: {
+        'user-agent': BROWSER_UA,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ confirm: '1', customer_email: 'buyer@example.com' }),
+    });
+    assert.equal(res.status, 415);
+  });
 
   it('Googlebot still gets the interstitial (no regression on bot path)', async () => {
     const res = await fetch(`${origin}/checkout/pro`, {

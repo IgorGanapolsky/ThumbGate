@@ -175,10 +175,17 @@ async function gatherStripe({ liveStatusModule = null } = {}) {
       configured,
       status: status.status || 'ok',
       gap: configured ? null : (status.gaps && status.gaps[0]) || 'Stripe is not configured',
+      credentialSource: status.credentialSource || null,
+      attribution: status.attribution || {
+        scope: 'stripe_account_wide_unattributed',
+        thumbgateVerified: false,
+        note: 'Stripe status is account-wide and has not been reconciled to ThumbGate products.',
+      },
       balance: status.balance || { available: 0, pending: 0, currency: 'USD' },
       revenue: status.revenue || { grossLifetime: 0, netLifetime: 0, today: 0, todayChargeCount: 0 },
       checkout: status.checkout || { completed: 0, expired: 0, total: 0, conversionRate: '0%' },
       subscriptions: status.subscriptions || { active: 0, cancelled: 0, total: 0, mrr: 0 },
+      catalog: status.catalog || null,
       products: status.products || [],
     };
   } catch (error) {
@@ -224,11 +231,18 @@ function diagnoseFunnel(stripe, surfaces, searchConsoleAi = null) {
     });
   }
   if (cashAvailable > 0) {
-    diagnostics.push({
-      severity: 'win',
-      signal: 'cash_available',
-      message: `Stripe shows ${formatUsd(cashAvailable)} available — this is real cash, not aspirational.`,
-    });
+    const thumbgateVerified = stripe?.attribution?.thumbgateVerified === true;
+    diagnostics.push(thumbgateVerified
+      ? {
+        severity: 'win',
+        signal: 'thumbgate_cash_available',
+        message: `Stripe shows ${formatUsd(cashAvailable)} available with ThumbGate attribution verified.`,
+      }
+      : {
+        severity: 'info',
+        signal: 'stripe_account_cash_available_unattributed',
+        message: `Stripe shows ${formatUsd(cashAvailable)} account-wide cash, but this is not ThumbGate revenue proof without product and external-customer reconciliation.`,
+      });
   }
   if (!stripe?.configured) {
     diagnostics.push({
@@ -254,17 +268,22 @@ function renderMarkdown(snapshot) {
   lines.push(`Generated: ${snapshot.generatedAt}`);
   lines.push(`Period: ${snapshot.period}`);
   lines.push('');
-  lines.push('## Cash Truth (Stripe Live API)');
+  lines.push('## Stripe Account-Wide Status');
   lines.push('');
   if (snapshot.stripe.configured) {
     // stripe-live-status.getLiveStatus returns dollar-denominated values.
     // Do NOT divide by 100 again here.
     lines.push(`- Available: ${formatUsd(snapshot.stripe.balance.available)}`);
     lines.push(`- Pending: ${formatUsd(snapshot.stripe.balance.pending)}`);
-    lines.push(`- Today gross: ${formatUsd(snapshot.stripe.revenue.today)} (${snapshot.stripe.revenue.todayChargeCount} charge${snapshot.stripe.revenue.todayChargeCount === 1 ? '' : 's'})`);
-    lines.push(`- Lifetime net: ${formatUsd(snapshot.stripe.revenue.netLifetime)}`);
+    lines.push(`- Today account net: ${formatUsd(snapshot.stripe.revenue.todayNet ?? snapshot.stripe.revenue.today)} (${snapshot.stripe.revenue.todayChargeCount} charge${snapshot.stripe.revenue.todayChargeCount === 1 ? '' : 's'})`);
+    lines.push(`- Lifetime account net: ${formatUsd(snapshot.stripe.revenue.netLifetime)}`);
     lines.push(`- Active subs: ${snapshot.stripe.subscriptions.active} (MRR ${formatUsd(snapshot.stripe.subscriptions.mrr)})`);
-    lines.push(`- Checkouts completed lifetime: ${snapshot.stripe.checkout.completed} of ${snapshot.stripe.checkout.total} (${snapshot.stripe.checkout.conversionRate})`);
+    lines.push(`- Positive-amount paid checkouts: ${snapshot.stripe.checkout.positiveAmountPaid ?? snapshot.stripe.checkout.completed} of ${snapshot.stripe.checkout.total} (${snapshot.stripe.checkout.conversionRate})`);
+    if (snapshot.stripe.attribution?.thumbgateVerified === true) {
+      lines.push('- Attribution: ThumbGate verified.');
+    } else {
+      lines.push(`- Attribution: NOT THUMBGATE-VERIFIED — ${snapshot.stripe.attribution?.note || 'run product and external-customer reconciliation before claiming ThumbGate revenue'}`);
+    }
   } else {
     lines.push(`- Stripe: NOT CONFIGURED — ${snapshot.stripe.gap}`);
   }
@@ -330,8 +349,8 @@ function renderMarkdown(snapshot) {
   lines.push('');
   lines.push('## Honest Limits');
   lines.push('');
-  lines.push('- This rollup never claims revenue without a Stripe-API balance check.');
-  lines.push('- Plausible counts unique visitors / pageviews — not buyers. Conversion is inferred only when Stripe charges arrive.');
+  lines.push('- This rollup presents account-wide Stripe activity only. ThumbGate revenue requires separate product and external-customer reconciliation.');
+  lines.push('- Plausible counts unique visitors / pageviews — not buyers. ThumbGate conversion requires a provider-confirmed payment reconciled to a ThumbGate product and external payer.');
   lines.push('- Search Console AI reports prove generative-search visibility, not revenue. Join them to first-party checkout/intake events before calling them demand.');
   lines.push('- First-party telemetry-pings.jsonl + funnel-events.jsonl live on the Railway container and are not joined here.');
   lines.push('  Hooking them in requires a persistent-volume export step.');
