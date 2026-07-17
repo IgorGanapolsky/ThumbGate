@@ -598,6 +598,7 @@ test('Deploy verification reports authoritative failures and route-only checks c
 
   assert.match(authoritative, /comment-authoritative-failure:/);
   assert.match(authoritative, /if: github\.event\.workflow_run\.conclusion != 'success'/);
+  assert.match(authoritative, /permissions:\n(?:\s+.+\n)*\s+issues: write\n/);
   assert.match(authoritative, /Railway deployment or revenue readiness failed/);
   assert.match(authoritative, /The build may or may not have been promoted/);
   assert.match(authoritative, /run\.html_url/);
