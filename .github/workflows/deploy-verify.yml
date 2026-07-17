@@ -162,12 +162,13 @@ jobs:
             const marketingPassed = parseInt(process.env.MARKETING_PASSED || '0', 10);
             const marketingTotal = parseInt(process.env.MARKETING_TOTAL || '0', 10);
             const lines = [
-              '### ✅ Production deploy verified',
+              '### ✅ Production public-route checks passed',
               '',
               `- \`${prodUrl}/health\` reports version **${process.env.EXPECTED_VERSION}**`,
               `- \`${prodUrl}/dashboard\` renders`,
               `- **${marketingPassed}/${marketingTotal}** top-level marketing pages match their sentinel manifest (\`config/post-deploy-marketing-pages.json\`)`,
               `- ${checked} \`public/learn|guides|compare/*.html\` route(s) added in this diff returned HTTP 200`,
+              '- This route-only check does not override the authoritative `Deploy to Railway` workflow or its revenue and buyer-path readiness evidence.',
               '',
               `<sub>Auto-posted by \`.github/workflows/deploy-verify.yml\` after \`${sha.slice(0, 7)}\` merged to main.</sub>`,
             ];

@@ -1,17 +1,16 @@
 #!/usr/bin/env node
-/**
- * billing.js — Stripe billing integration using official Stripe SDK.
- */
-
 'use strict';
 
 const STRIPE_TIMEOUT_MS = 5000;
 const STRIPE_RECONCILIATION_SUMMARY_TIMEOUT_MS = 3500;
 function withTimeout(promise, ms = STRIPE_TIMEOUT_MS) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error(`Stripe API timeout after ${ms}ms`)), ms)),
-  ]);
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error(`Stripe API timeout after ${ms}ms`)), ms);
+    Promise.resolve(promise).then(
+      (value) => { clearTimeout(timeout); resolve(value); },
+      (error) => { clearTimeout(timeout); reject(error); },
+    );
+  });
 }
 
 const fs = require('fs');
@@ -63,14 +62,14 @@ function loadWorkflowSprintIntakeModule() {
   return require(modulePath);
 }
 
-// ---------------------------------------------------------------------------
-// Config
-// ---------------------------------------------------------------------------
-
 const CONFIG = {
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
   GITHUB_MARKETPLACE_WEBHOOK_SECRET: process.env.GITHUB_MARKETPLACE_WEBHOOK_SECRET || '',
+  PAYPAL_CLIENT_ID: process.env.THUMBGATE_PAYPAL_CLIENT_ID || process.env.PAYPAL_CLIENT_ID || '',
+  PAYPAL_CLIENT_SECRET: process.env.THUMBGATE_PAYPAL_CLIENT_SECRET || process.env.PAYPAL_CLIENT_SECRET || '',
+  PAYPAL_WEBHOOK_ID: process.env.THUMBGATE_PAYPAL_WEBHOOK_ID || '',
+  PAYPAL_API_BASE_URL: process.env.THUMBGATE_PAYPAL_API_BASE_URL || 'https://api-m.paypal.com',
   GITHUB_MARKETPLACE_PLAN_PRICES_JSON: process.env.THUMBGATE_GITHUB_MARKETPLACE_PLAN_PRICES_JSON || '',
   STRIPE_PRICE_ID: process.env.STRIPE_PRICE_ID || PRO_MONTHLY_PRICE_ID,
   STRIPE_PRICE_ID_PRO_MONTHLY: process.env.STRIPE_PRICE_ID_PRO_MONTHLY || PRO_MONTHLY_PRICE_ID,
@@ -85,6 +84,16 @@ const CONFIG = {
   },
   get REVENUE_LEDGER_PATH() {
     return process.env._TEST_REVENUE_LEDGER_PATH || process.env.THUMBGATE_REVENUE_LEDGER_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'revenue-events.jsonl');
+  },
+  get GITHUB_MARKETPLACE_WEBHOOK_LEDGER_PATH() {
+    return process.env._TEST_GITHUB_MARKETPLACE_WEBHOOK_LEDGER_PATH ||
+      process.env.THUMBGATE_GITHUB_MARKETPLACE_WEBHOOK_LEDGER_PATH ||
+      path.join(getFeedbackPaths().FEEDBACK_DIR, 'github-marketplace-webhook-deliveries.jsonl');
+  },
+  get PAYPAL_WEBHOOK_LEDGER_PATH() {
+    return process.env._TEST_PAYPAL_WEBHOOK_LEDGER_PATH ||
+      process.env.THUMBGATE_PAYPAL_WEBHOOK_LEDGER_PATH ||
+      path.join(getFeedbackPaths().FEEDBACK_DIR, 'paypal-webhook-deliveries.jsonl');
   },
   get LOCAL_CHECKOUT_SESSIONS_PATH() {
     return process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH || path.join(getFeedbackPaths().FEEDBACK_DIR, 'local-checkout-sessions.json');
@@ -144,12 +153,18 @@ const IS_TEST = !!(
   process.env._TEST_API_KEYS_PATH ||
   process.env._TEST_FUNNEL_LEDGER_PATH ||
   process.env._TEST_REVENUE_LEDGER_PATH ||
+  process.env._TEST_GITHUB_MARKETPLACE_WEBHOOK_LEDGER_PATH ||
+  process.env._TEST_PAYPAL_WEBHOOK_LEDGER_PATH ||
   process.env._TEST_LOCAL_CHECKOUT_SESSIONS_PATH ||
   process.env.NODE_ENV === 'test'
 );
 
 function allowUnsignedStripeWebhooks() {
   return IS_TEST && process.env.THUMBGATE_ALLOW_UNSIGNED_STRIPE_WEBHOOKS === '1';
+}
+
+function allowUnsignedGithubWebhooks() {
+  return IS_TEST && process.env.THUMBGATE_ALLOW_UNSIGNED_GITHUB_WEBHOOKS === '1';
 }
 
 function shouldMergeLegacyBillingData() {
@@ -169,10 +184,6 @@ function safeCompareHex(expectedHex, actualHex) {
     return false;
   }
 }
-
-// ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
 
 function sanitizeMetadata(metadata) {
   if (!metadata || typeof metadata !== 'object') return {};
@@ -458,41 +469,17 @@ function buildCheckoutProductData({ name, description, appOrigin, planId }) {
   };
 }
 
-/**
- * Verify an ACTIVE Stripe product exists for the given plan name before
- * we let buildSubscriptionPriceData create inline price_data under it.
- *
- * Stripe matches product_data by `name`. If only an archived product
- * matches, new prices created via that path inherit active=false and the
- * generated checkout URL renders "Something went wrong / The page you
- * were looking for could not be found." for the buyer. Stripe Dashboard
- * shows the session as `open` with no email captured — looks like the
- * buyer abandoned, but they were never given a working page.
- *
- * Failing here surfaces the misconfiguration at the first checkout
- * attempt instead of silently breaking every buyer for days.
- *
- * Verified incident: ThumbGate#2188 (May 2026) — 20 sessions abandoned in
- * 7 days, all because the only product named "ThumbGate Pro" matching the
- * inline product_data was archived (prod_UXxOHAfbDsPyRb), while an active
- * product with the same name existed (prod_UW82THPxfNvwKT) that should
- * have been used instead.
- */
 async function verifyActiveProductForPlan(stripe, planId) {
   const expectedName = planId === 'team' ? 'ThumbGate Team' : 'ThumbGate Pro';
   let products;
   try {
     products = await stripe.products.list({ limit: 100 });
   } catch (err) {
-    // Network/transient failures shouldn't block checkout creation.
-    // The original session.create call will surface real Stripe errors.
     return;
   }
   const matching = (products && products.data ? products.data : [])
     .filter((p) => p && p.name === expectedName);
   if (matching.length === 0) {
-    // No product with this name exists; Stripe will create a new one when
-    // session.create fires with inline product_data. Safe path.
     return;
   }
   const hasActive = matching.some((p) => p.active === true);
@@ -566,14 +553,6 @@ function appendTrialEmailRecord(payload) {
   });
 }
 
-/**
- * Resolve the trial expiry date for a Stripe checkout session.
- *
- * Prefers an explicit `subscription.trial_end` unix timestamp when the session
- * embeds one (subscriptions with trial_period_days populate it). Falls back to
- * the session's `expires_at`, and finally to now + 7 days. Always returns a
- * Date; never throws.
- */
 function computeTrialEndAt(session) {
   const TRIAL_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
   if (session && session.subscription && typeof session.subscription === 'object') {
@@ -796,10 +775,6 @@ async function sendTrialActivationEmail(params = {}, options = {}) {
       });
       if (!response || response.sent !== true) {
         const rawReason = normalizeText(response && response.reason) || 'provider_error';
-        // Normalize the mailer module's `no_api_key` to billing.js's legacy
-        // `missing_resend_api_key` reason so downstream consumers (dashboards,
-        // tests, support tooling) see a stable vocabulary regardless of which
-        // transport produced the skip.
         const reason = rawReason === 'no_api_key' ? 'missing_resend_api_key' : rawReason;
         const isSkipped = reason === 'missing_resend_api_key';
         const previousSkipped = isSkipped
@@ -894,22 +869,10 @@ function isDiagnosticCheckoutSession(session = {}) {
   const paymentLinkId = typeof session.payment_link === 'string'
     ? session.payment_link
     : normalizeText(session.payment_link && session.payment_link.id);
-  // Metadata, client_reference_id, and amount are not authorization: public
-  // checkout input can set metadata, while other SKUs can share a price. The
-  // Stripe-created Payment Link identity is the diagnostic SKU boundary.
   return session.mode === 'payment'
     && configuredIds.includes(paymentLinkId);
 }
 
-/**
- * Decide whether a completed Stripe session is allowed to mint an API key.
- *
- * A paid session is not automatically a software entitlement. ThumbGate also
- * sells one-time services through Stripe Payment Links, and those orders must
- * be recorded without receiving Pro access. Subscription mode is Stripe-owned
- * state. Credit packs are accepted only when both the pack id and credit count
- * match the server-side catalog written by createCheckoutSession().
- */
 function resolveCheckoutProvisioningGrant(session = {}) {
   if (session.mode === 'subscription') {
     return { allowed: true, kind: 'subscription', credits: null };
@@ -1334,7 +1297,14 @@ function resolveRevenueEventKey(entry = {}) {
   );
 }
 
-function isQualifiedWorkflowSprintLead(entry = {}) {
+const QUALIFIED_WORKFLOW_SPRINT_STATUSES = new Set([
+  'qualified',
+  'named_pilot',
+  'proof_backed_run',
+  'paid_team',
+]);
+
+function isCompleteWorkflowSprintIntake(entry = {}) {
   return Boolean(
     normalizeText(entry.contact && entry.contact.email) &&
     normalizeText(entry.qualification && entry.qualification.workflow) &&
@@ -1342,6 +1312,13 @@ function isQualifiedWorkflowSprintLead(entry = {}) {
     normalizeText(entry.qualification && entry.qualification.blocker) &&
     normalizeText(entry.qualification && entry.qualification.runtime)
   );
+}
+
+function isQualifiedWorkflowSprintLead(entry = {}, workflowSprintIntake = null) {
+  return isCompleteWorkflowSprintIntake(entry)
+    && typeof workflowSprintIntake?.isEvidenceBasedQualificationReview === 'function'
+    && workflowSprintIntake.isEvidenceBasedQualificationReview(entry.qualificationReview)
+    && QUALIFIED_WORKFLOW_SPRINT_STATUSES.has(normalizeText(entry.status));
 }
 
 function isOperatorGeneratedAcquisitionEntry(entry = {}) {
@@ -1508,8 +1485,6 @@ function repairGithubMarketplaceRevenueLedger(options = {}) {
   const resolvedAt = new Date().toISOString();
   const repairs = [];
 
-  // Pass 1: in-place repair of rows already in revenue-events.jsonl that have
-  // unknown amounts but resolvable plan metadata.
   const updatedRows = rows.map((entry) => {
     const result = resolveGithubMarketplaceRevenueEntry(entry, {
       annotate: true,
@@ -1532,12 +1507,6 @@ function repairGithubMarketplaceRevenueLedger(options = {}) {
     return result.entry;
   });
 
-  // Pass 2: append rows for funnel-derived paid github_marketplace events that
-  // never landed in the revenue ledger. The webhook handler at handleGithubWebhook
-  // skips appendRevenueEvent when hasRevenueEventMatch is true, so duplicates from
-  // a re-run are already prevented; the only way an order gets here is if the
-  // revenue write was skipped at webhook time (e.g. funnel pre-existed, planPricing
-  // had unknown amount at the time, or the row was created via a different path).
   const funnelRecords = loadFunnelLedger().filter(
     (e) =>
       e &&
@@ -1554,10 +1523,6 @@ function repairGithubMarketplaceRevenueLedger(options = {}) {
       annotate: true,
       resolvedAt,
     });
-    // Skip funnel-derived rows that still have unknown amounts after resolving —
-    // we don't want to permanently bake amountKnown:false rows when there's no
-    // pricing data to attach. Better to leave them off-disk and keep the
-    // read-time merge in loadResolvedRevenueEvents covering them.
     if (!resolved.changed || !resolved.entry.amountKnown) continue;
 
     const persisted = {
@@ -2404,11 +2369,14 @@ function getBusinessAnalytics(options = {}) {
   const workflowSprintLeadByCreator = {};
   const workflowSprintLeadByCommunity = {};
   const workflowSprintLeadByRuntime = {};
+  const completeWorkflowSprintIntakeBySource = {};
+  const completeWorkflowSprintIntakeByCreator = {};
   const qualifiedWorkflowSprintLeadBySource = {};
   const qualifiedWorkflowSprintLeadByCreator = {};
   let workflowSprintLeadLatest = null;
   let workflowSprintLeadLatestAt = null;
   let workflowSprintLeadContactable = 0;
+  let completeWorkflowSprintIntakeCount = 0;
   let qualifiedWorkflowSprintLeadCount = 0;
   const newsletterBySource = {};
   const newsletterByCampaign = {};
@@ -2435,7 +2403,15 @@ function getBusinessAnalytics(options = {}) {
     if (entry.contact?.email) {
       workflowSprintLeadContactable += 1;
     }
-    if (isQualifiedWorkflowSprintLead(entry)) {
+    if (isCompleteWorkflowSprintIntake(entry)) {
+      completeWorkflowSprintIntakeCount += 1;
+      incrementCounter(
+        completeWorkflowSprintIntakeBySource,
+        resolveAttributionSource(attribution, 'workflow_sprint_intake')
+      );
+      incrementCounter(completeWorkflowSprintIntakeByCreator, attribution.creator);
+    }
+    if (isQualifiedWorkflowSprintLead(entry, workflowSprintIntake)) {
       qualifiedWorkflowSprintLeadCount += 1;
       incrementCounter(
         qualifiedWorkflowSprintLeadBySource,
@@ -2614,6 +2590,11 @@ function getBusinessAnalytics(options = {}) {
         latestLeadAt: workflowSprintLeadLatestAt,
         latestLead: workflowSprintLeadLatest,
       },
+      completeWorkflowSprintIntakes: {
+        total: completeWorkflowSprintIntakeCount,
+        bySource: completeWorkflowSprintIntakeBySource,
+        byCreator: completeWorkflowSprintIntakeByCreator,
+      },
       qualifiedWorkflowSprintLeads: {
         total: qualifiedWorkflowSprintLeadCount,
         bySource: qualifiedWorkflowSprintLeadBySource,
@@ -2778,28 +2759,47 @@ function getBillingSummary(options = {}) {
   };
 }
 
-async function getBillingSummaryLive(options = {}) {
+function buildBillingSummaryFailure(error) {
+  const isTimeout = error && error.message && error.message.includes('Stripe API timeout');
+  return {
+    error: isTimeout ? 'stripe_timeout' : 'billing_summary_error',
+    message: error && error.message ? error.message : 'Unknown error',
+    revenue: { total: 0, mrr: 0, events: [] },
+    usage: { totalUsage: 0, bySource: {}, activeBySource: {} },
+    customers: [],
+  };
+}
+
+async function getBillingSummariesLive(optionsByWindow = {}, {
+  listStripeReconciledRevenueEventsFn = listStripeReconciledRevenueEvents,
+} = {}) {
+  const entries = Object.entries(optionsByWindow || {});
+  if (entries.length === 0) return {};
+
   try {
-    const reconciliationTimeoutMs = normalizeInteger(options.stripeReconciliationTimeoutMs)
+    const reconciliationTimeoutMs = entries
+      .map(([, options]) => normalizeInteger(options && options.stripeReconciliationTimeoutMs))
+      .find((value) => value !== null)
       || STRIPE_RECONCILIATION_SUMMARY_TIMEOUT_MS;
     const extraRevenueEvents = await withTimeout(
-      listStripeReconciledRevenueEvents(),
+      listStripeReconciledRevenueEventsFn(),
       reconciliationTimeoutMs
     ).catch(() => []);
-    return getBillingSummary({
-      ...options,
-      extraRevenueEvents,
-    });
+    return Object.fromEntries(entries.map(([key, options]) => [
+      key,
+      getBillingSummary({
+        ...(options || {}),
+        extraRevenueEvents,
+      }),
+    ]));
   } catch (err) {
-    const isTimeout = err && err.message && err.message.includes('Stripe API timeout');
-    return {
-      error: isTimeout ? 'stripe_timeout' : 'billing_summary_error',
-      message: err && err.message ? err.message : 'Unknown error',
-      revenue: { total: 0, mrr: 0, events: [] },
-      usage: { totalUsage: 0, bySource: {}, activeBySource: {} },
-      customers: [],
-    };
+    return Object.fromEntries(entries.map(([key]) => [key, buildBillingSummaryFailure(err)]));
   }
+}
+
+async function getBillingSummaryLive(options = {}, runtime = {}) {
+  const summaries = await getBillingSummariesLive({ summary: options }, runtime);
+  return summaries.summary;
 }
 
 function loadKeyStore() {
@@ -2875,10 +2875,6 @@ function withKeyStoreLock(mutator) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Core Exports
-// ---------------------------------------------------------------------------
-
 async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, installId, traceId, packId = null, metadata = {}, appOrigin } = {}) {
   const resolvedTraceId = traceId || metadata.traceId || createTraceId('checkout');
   const baseCheckoutMetadata = sanitizeMetadata({
@@ -2928,13 +2924,6 @@ async function createCheckoutSession({ successUrl, cancelUrl, customerEmail, ins
 
   const stripe = getStripeClient();
 
-  // Defensive guard against ThumbGate#2188:
-  // When buildSubscriptionPriceData passes inline `product_data` to Stripe,
-  // Stripe name-matches existing products. If the only existing product with
-  // that name is ARCHIVED (active=false), the new price inherits active=false
-  // and every Stripe checkout page renders "page not found" for the buyer.
-  // That bug burnt 20+ silent abandoned sessions in May 2026. Fail fast
-  // instead of letting the broken page ship.
   if (!packId) {
     await verifyActiveProductForPlan(stripe, checkoutSelection.planId);
   }
@@ -3344,7 +3333,6 @@ function validateApiKey(key) {
   const meta = store.keys[key];
   if (!meta || !meta.active) return { valid: false };
 
-  // Check if credits are exhausted
   if (meta.remainingCredits !== undefined && meta.remainingCredits !== null && meta.remainingCredits <= 0) {
     return { valid: false, reason: 'credits_exhausted' };
   }
@@ -3407,7 +3395,6 @@ function verifyWebhookSignature(rawBody, signature) {
   if (!CONFIG.STRIPE_WEBHOOK_SECRET) return allowUnsignedStripeWebhooks();
   if (!signature || !rawBody) return false;
 
-  // Stripe signature format: t=<timestamp>,v1=<hmac>,...
   const parts = { v1: [] };
   for (const part of signature.split(',')) {
     const [k, v] = part.split('=');
@@ -3421,7 +3408,6 @@ function verifyWebhookSignature(rawBody, signature) {
 
   if (!parts.t || !Array.isArray(parts.v1) || parts.v1.length === 0) return false;
 
-  // Timestamp tolerance: +/- 5 minutes
   const timestamp = parseInt(parts.t, 10);
   const now = Math.floor(Date.now() / 1000);
   if (isNaN(timestamp) || Math.abs(now - timestamp) > 300) return false;
@@ -3447,8 +3433,6 @@ async function handleWebhook(rawBody, signature) {
       const stripe = getStripeClient();
       event = stripe.webhooks.constructEvent(rawBody, signature, CONFIG.STRIPE_WEBHOOK_SECRET);
     } else {
-      // No webhook secret configured — signature was already checked by verifyWebhookSignature
-      // (which is also lenient when no secret). Parse the raw body directly.
       event = JSON.parse(rawBody.toString('utf-8'));
     }
   } catch (err) {
@@ -3482,10 +3466,6 @@ async function handleWebhook(rawBody, signature) {
       const trialEndAt = computeTrialEndAt(session);
 
       const attribution = extractAttribution(session.metadata);
-      // External Stripe Payment Links (the diagnostic/sprint checkouts) carry no
-      // metadata but preserve client_reference_id. When metadata yields no source,
-      // recover it so marketplace-attributed paid checkouts (e.g. utm_source=aiventyx)
-      // are credited/reported instead of silently landing as source=unknown.
       if (!attribution.source) {
         const ref = parseCheckoutReference(session.client_reference_id);
         if (ref?.source) {
@@ -3569,7 +3549,6 @@ async function handleWebhook(rawBody, signature) {
           metadata: funnelRecord.metadata,
         });
       }
-      // Write checkout_paid_confirmed event with amount/currency for funnel analytics
       const paidConfirmationRecord = {
         stage: 'paid',
         event: 'checkout_paid_confirmed',
@@ -3646,9 +3625,6 @@ async function handleWebhook(rawBody, signature) {
           action: isNewRevenueRecord ? 'revenue_recorded' : 'revenue_already_recorded',
         });
       }
-      // Fire Plausible purchase event so the funnel poller can measure
-      // end-to-end conversion: visitor → CTA → checkout → email → Stripe → purchase.
-      // Fire-and-forget (never blocks the webhook response).
       const purchaseEventOptions = {
         page: '/success',
         props: {
@@ -3757,7 +3733,7 @@ async function handleWebhook(rawBody, signature) {
 }
 
 function verifyGithubWebhookSignature(rawBody, signature) {
-  if (!CONFIG.GITHUB_MARKETPLACE_WEBHOOK_SECRET) return true;
+  if (!CONFIG.GITHUB_MARKETPLACE_WEBHOOK_SECRET) return allowUnsignedGithubWebhooks();
   if (!signature || !rawBody) return false;
   const expected = crypto.createHmac('sha256', CONFIG.GITHUB_MARKETPLACE_WEBHOOK_SECRET).update(rawBody).digest('hex');
   const digest = Buffer.from(`sha256=${expected}`, 'utf8');
@@ -3765,7 +3741,357 @@ function verifyGithubWebhookSignature(rawBody, signature) {
   return checksum.length === digest.length && crypto.timingSafeEqual(digest, checksum);
 }
 
-function buildGithubMarketplaceRevenueMetadata(marketplacePurchase = {}, marketplaceOrderId, planPricing = {}) {
+const PAYPAL_REVENUE_WEBHOOK_EVENT_TYPES = new Set([
+  'PAYMENT.CAPTURE.COMPLETED',
+  'PAYMENT.CAPTURE.REFUNDED',
+  'PAYMENT.CAPTURE.REVERSED',
+]);
+const PAYPAL_WEBHOOK_REPLAY_WINDOW_MS = 4 * 24 * 60 * 60 * 1000;
+const PAYPAL_WEBHOOK_FUTURE_SKEW_MS = 5 * 60 * 1000;
+const PAYPAL_API_HOSTS = new Set(['api-m.paypal.com', 'api-m.sandbox.paypal.com']);
+const PAYPAL_WEBHOOK_MAX_BYTES = 1024 * 1024;
+
+function normalizePayPalTransmissionHeaders(headers = {}) {
+  const entries = Object.fromEntries(Object.entries(headers || {}).map(([key, value]) => [
+    String(key).trim().toLowerCase(),
+    Array.isArray(value) ? value[0] : value,
+  ]));
+  const read = (name) => normalizeText(entries[name]);
+  return {
+    authAlgo: read('paypal-auth-algo'),
+    certUrl: read('paypal-cert-url'),
+    transmissionId: read('paypal-transmission-id'),
+    transmissionSig: read('paypal-transmission-sig'),
+    transmissionTime: read('paypal-transmission-time'),
+  };
+}
+
+function resolvePayPalWebhookVerifierConfig(overrides = {}) {
+  const clientId = normalizeText(overrides.clientId || CONFIG.PAYPAL_CLIENT_ID);
+  const clientSecret = normalizeText(overrides.clientSecret || CONFIG.PAYPAL_CLIENT_SECRET);
+  const webhookId = normalizeText(overrides.webhookId || CONFIG.PAYPAL_WEBHOOK_ID);
+  const apiBaseUrl = normalizeText(overrides.apiBaseUrl || CONFIG.PAYPAL_API_BASE_URL);
+  if (!clientId || !clientSecret || !webhookId) {
+    return {
+      configured: false,
+      reason: 'paypal_webhook_verification_not_configured',
+    };
+  }
+  let parsedBaseUrl;
+  try {
+    parsedBaseUrl = new URL(apiBaseUrl);
+  } catch {
+    return { configured: false, reason: 'invalid_paypal_api_base_url' };
+  }
+  if (parsedBaseUrl.protocol !== 'https:' || !PAYPAL_API_HOSTS.has(parsedBaseUrl.hostname)) {
+    return { configured: false, reason: 'untrusted_paypal_api_base_url' };
+  }
+  if (!/^[A-Za-z0-9]+$/.test(webhookId) || webhookId.length > 50) {
+    return { configured: false, reason: 'invalid_paypal_webhook_id' };
+  }
+  return {
+    configured: true,
+    clientId,
+    clientSecret,
+    webhookId,
+    apiBaseUrl: parsedBaseUrl.toString(),
+  };
+}
+
+async function readPayPalJsonResponse(response) {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+async function verifyPayPalWebhookSignature({
+  rawBody,
+  headers,
+  fetchImpl = globalThis.fetch,
+  now = new Date().toISOString(),
+  ...configOverrides
+} = {}) {
+  const config = resolvePayPalWebhookVerifierConfig(configOverrides);
+  if (!config.configured) return { verified: false, reason: config.reason };
+  if (typeof fetchImpl !== 'function') return { verified: false, reason: 'paypal_verification_fetch_unavailable' };
+  const body = Buffer.isBuffer(rawBody) ? rawBody : Buffer.from(rawBody || '');
+  if (body.length === 0) return { verified: false, reason: 'missing_paypal_webhook_body' };
+  if (body.length > PAYPAL_WEBHOOK_MAX_BYTES) return { verified: false, reason: 'paypal_webhook_body_too_large' };
+
+  let event;
+  try {
+    event = JSON.parse(body.toString('utf8'));
+  } catch {
+    return { verified: false, reason: 'invalid_paypal_webhook_json' };
+  }
+  const eventId = normalizeText(event && event.id);
+  const eventType = normalizeText(event && event.event_type);
+  const eventCreatedAt = normalizeText(event && event.create_time);
+  const eventCreatedMs = new Date(eventCreatedAt || '').getTime();
+  if (!eventId || eventId.length > 128 || !Number.isFinite(eventCreatedMs) ||
+      !event.resource || typeof event.resource !== 'object' || Array.isArray(event.resource) ||
+      !PAYPAL_REVENUE_WEBHOOK_EVENT_TYPES.has(eventType)) {
+    return { verified: false, reason: 'invalid_or_unsupported_paypal_webhook_event' };
+  }
+
+  const transmission = normalizePayPalTransmissionHeaders(headers);
+  if (Object.values(transmission).some((value) => !value)) {
+    return { verified: false, reason: 'missing_paypal_transmission_headers' };
+  }
+  let certUrl;
+  try {
+    certUrl = new URL(transmission.certUrl);
+  } catch {
+    return { verified: false, reason: 'invalid_paypal_cert_url' };
+  }
+  if (certUrl.protocol !== 'https:') return { verified: false, reason: 'invalid_paypal_cert_url' };
+  const nowMs = new Date(now).getTime();
+  const transmissionMs = new Date(transmission.transmissionTime).getTime();
+  if (!Number.isFinite(nowMs) || !Number.isFinite(transmissionMs) ||
+      transmissionMs > nowMs + PAYPAL_WEBHOOK_FUTURE_SKEW_MS ||
+      nowMs - transmissionMs > PAYPAL_WEBHOOK_REPLAY_WINDOW_MS) {
+    return { verified: false, reason: 'stale_or_future_paypal_transmission' };
+  }
+
+  let tokenResponse;
+  try {
+    tokenResponse = await withTimeout(fetchImpl(new URL('/v1/oauth2/token', config.apiBaseUrl), {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${config.clientId}:${config.clientSecret}`).toString('base64')}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: 'grant_type=client_credentials',
+    }));
+  } catch {
+    return { verified: false, reason: 'paypal_oauth_request_failed' };
+  }
+  const tokenPayload = await readPayPalJsonResponse(tokenResponse);
+  if (!tokenResponse.ok || !normalizeText(tokenPayload && tokenPayload.access_token)) {
+    return { verified: false, reason: 'paypal_oauth_rejected' };
+  }
+
+  let verificationResponse;
+  try {
+    verificationResponse = await withTimeout(fetchImpl(new URL('/v1/notifications/verify-webhook-signature', config.apiBaseUrl), {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${tokenPayload.access_token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        auth_algo: transmission.authAlgo,
+        cert_url: transmission.certUrl,
+        transmission_id: transmission.transmissionId,
+        transmission_sig: transmission.transmissionSig,
+        transmission_time: transmission.transmissionTime,
+        webhook_id: config.webhookId,
+        webhook_event: event,
+      }),
+    }));
+  } catch {
+    return { verified: false, reason: 'paypal_signature_verification_request_failed' };
+  }
+  const verificationPayload = await readPayPalJsonResponse(verificationResponse);
+  const verificationStatus = (normalizeText(verificationPayload && verificationPayload.verification_status) || '').toUpperCase();
+  if (!verificationResponse.ok || verificationStatus !== 'SUCCESS') {
+    return { verified: false, reason: 'invalid_paypal_webhook_signature' };
+  }
+  const paypalDebugId = normalizeText(verificationResponse.headers && verificationResponse.headers.get
+    ? verificationResponse.headers.get('paypal-debug-id')
+    : null);
+  return {
+    verified: true,
+    reason: null,
+    event,
+    eventId,
+    eventType,
+    eventCreatedAt,
+    transmission,
+    verificationStatus,
+    paypalDebugId: paypalDebugId || null,
+    webhookId: config.webhookId,
+  };
+}
+
+function readPayPalWebhookLedgerStrict() {
+  const ledgerPath = CONFIG.PAYPAL_WEBHOOK_LEDGER_PATH;
+  try {
+    if (!fs.existsSync(ledgerPath)) return { ok: true, rows: [] };
+    const rows = [];
+    for (const [index, line] of fs.readFileSync(ledgerPath, 'utf8').split('\n').entries()) {
+      if (!line.trim()) continue;
+      const row = JSON.parse(line);
+      if (!row || typeof row !== 'object' || Array.isArray(row)) {
+        return { ok: false, rows: [], reason: `invalid_row_${index}` };
+      }
+      rows.push(row);
+    }
+    return { ok: true, rows };
+  } catch {
+    return { ok: false, rows: [], reason: 'read_failed' };
+  }
+}
+
+function loadPayPalWebhookLedger() {
+  const ledger = readPayPalWebhookLedgerStrict();
+  return ledger.ok ? ledger.rows : [];
+}
+
+async function recordPayPalWebhookDelivery({
+  rawBody,
+  headers,
+  receivedAt = new Date().toISOString(),
+  fetchImpl = globalThis.fetch,
+  now = receivedAt,
+  ...configOverrides
+} = {}) {
+  const body = Buffer.isBuffer(rawBody) ? rawBody : Buffer.from(rawBody || '');
+  const verification = await verifyPayPalWebhookSignature({
+    rawBody: body,
+    headers,
+    fetchImpl,
+    now,
+    ...configOverrides,
+  });
+  if (!verification.verified) return { verified: false, recorded: false, reason: verification.reason };
+
+  const payloadSha256 = `sha256:${crypto.createHash('sha256').update(body).digest('hex')}`;
+  const lockPath = `${CONFIG.PAYPAL_WEBHOOK_LEDGER_PATH}.lock`;
+  let lockAcquired = false;
+  try {
+    acquireDirectoryLock(lockPath);
+    lockAcquired = true;
+    const ledger = readPayPalWebhookLedgerStrict();
+    if (!ledger.ok) {
+      return { verified: true, recorded: false, reason: 'paypal_webhook_ledger_unreadable' };
+    }
+    const existing = ledger.rows.find((entry) => (
+      normalizeText(entry.eventId) === verification.eventId ||
+      normalizeText(entry.transmissionId) === verification.transmission.transmissionId
+    ));
+    if (existing) {
+      if (normalizeText(existing.payloadSha256) !== payloadSha256 ||
+          normalizeText(existing.eventId) !== verification.eventId) {
+        return { verified: false, recorded: false, reason: 'paypal_webhook_delivery_collision' };
+      }
+      return {
+        verified: true, recorded: true, duplicate: true,
+        eventId: verification.eventId, eventType: verification.eventType, payloadSha256,
+      };
+    }
+    const write = appendJsonlRecord(CONFIG.PAYPAL_WEBHOOK_LEDGER_PATH, {
+      schemaVersion: 1,
+      provider: 'paypal',
+      receivedAt,
+      eventId: verification.eventId,
+      eventType: verification.eventType,
+      eventCreatedAt: verification.eventCreatedAt,
+      webhookId: verification.webhookId,
+      transmissionId: verification.transmission.transmissionId,
+      transmissionTime: verification.transmission.transmissionTime,
+      authAlgo: verification.transmission.authAlgo,
+      certUrl: verification.transmission.certUrl,
+      transmissionSig: verification.transmission.transmissionSig,
+      verificationStatus: verification.verificationStatus,
+      verificationSource: 'paypal_verify_webhook_signature_api',
+      paypalDebugId: verification.paypalDebugId,
+      payloadSha256,
+      rawBodyBase64: body.toString('base64'),
+    });
+    if (!write.written) return { verified: true, recorded: false, reason: 'paypal_webhook_ledger_write_failed' };
+  } catch {
+    return { verified: true, recorded: false, reason: 'paypal_webhook_ledger_lock_failed' };
+  } finally {
+    if (lockAcquired) {
+      try { fs.rmSync(lockPath, { recursive: true, force: true }); } catch { /* retry via provider */ }
+    }
+  }
+  return {
+    verified: true,
+    recorded: true,
+    duplicate: false,
+    eventId: verification.eventId,
+    eventType: verification.eventType,
+    payloadSha256,
+  };
+}
+
+function loadGithubMarketplaceWebhookLedger() {
+  return loadJsonlRecords(CONFIG.GITHUB_MARKETPLACE_WEBHOOK_LEDGER_PATH);
+}
+
+function recordGithubMarketplaceWebhookDelivery({
+  rawBody,
+  signature,
+  deliveryId,
+  eventName,
+  receivedAt = new Date().toISOString(),
+} = {}) {
+  const body = Buffer.isBuffer(rawBody) ? rawBody : Buffer.from(rawBody || '');
+  const normalizedDeliveryId = normalizeText(deliveryId);
+  const normalizedEventName = normalizeText(eventName);
+  if (!normalizedDeliveryId || normalizedEventName !== 'marketplace_purchase') {
+    return { verified: false, recorded: false, reason: 'missing_or_invalid_github_delivery_headers' };
+  }
+  if (!verifyGithubWebhookSignature(body, signature)) {
+    return { verified: false, recorded: false, reason: 'invalid_github_webhook_signature' };
+  }
+
+  let event;
+  try {
+    event = JSON.parse(body.toString('utf8'));
+  } catch {
+    return { verified: false, recorded: false, reason: 'invalid_github_webhook_json' };
+  }
+  if (!event || !event.action || !event.marketplace_purchase) {
+    return { verified: false, recorded: false, reason: 'invalid_github_marketplace_payload' };
+  }
+
+  const payloadSha256 = `sha256:${crypto.createHash('sha256').update(body).digest('hex')}`;
+  const existing = loadGithubMarketplaceWebhookLedger()
+    .find((entry) => normalizeText(entry.deliveryId) === normalizedDeliveryId);
+  if (existing) {
+    if (normalizeText(existing.payloadSha256) !== payloadSha256) {
+      return { verified: false, recorded: false, reason: 'github_delivery_id_collision' };
+    }
+    return {
+      verified: true,
+      recorded: true,
+      duplicate: true,
+      deliveryId: normalizedDeliveryId,
+      eventName: normalizedEventName,
+      payloadSha256,
+    };
+  }
+
+  const write = appendJsonlRecord(CONFIG.GITHUB_MARKETPLACE_WEBHOOK_LEDGER_PATH, {
+    schemaVersion: 1,
+    receivedAt,
+    deliveryId: normalizedDeliveryId,
+    eventName: normalizedEventName,
+    signature: normalizeText(signature),
+    payloadSha256,
+    rawBodyBase64: body.toString('base64'),
+  });
+  if (!write.written) {
+    return { verified: true, recorded: false, reason: 'github_webhook_ledger_write_failed' };
+  }
+  return {
+    verified: true,
+    recorded: true,
+    duplicate: false,
+    deliveryId: normalizedDeliveryId,
+    eventName: normalizedEventName,
+    payloadSha256,
+  };
+}
+
+function buildGithubMarketplaceRevenueMetadata(marketplacePurchase = {}, marketplaceOrderId, planPricing = {}, provenance = {}) {
   const plan = marketplacePurchase && typeof marketplacePurchase.plan === 'object'
     ? marketplacePurchase.plan
     : {};
@@ -3781,17 +4107,21 @@ function buildGithubMarketplaceRevenueMetadata(marketplacePurchase = {}, marketp
     monthlyPriceInCents: normalizeInteger(plan.monthly_price_in_cents ?? plan.monthlyPriceInCents),
     yearlyPriceInCents: normalizeInteger(plan.yearly_price_in_cents ?? plan.yearlyPriceInCents),
     githubMarketplaceAmountSource: normalizeText(planPricing.pricingSource),
+    githubWebhookSignatureVerified: provenance.verified === true,
+    githubDeliveryId: normalizeText(provenance.deliveryId),
+    githubEventName: normalizeText(provenance.eventName),
+    githubPayloadSha256: normalizeText(provenance.payloadSha256),
   };
 }
 
-function handleGithubWebhook(event) {
+function handleGithubWebhook(event, provenance = {}) {
   if (!event) return { handled: false, reason: 'missing_payload_data' };
   const { action, marketplace_purchase: mp } = event;
   if (!action || !mp || !mp.account?.id) return { handled: false, reason: 'missing_payload_data' };
   const customerId = `github_${String(mp.account.type).toLowerCase()}_${mp.account.id}`;
   const marketplaceOrderId = normalizeText(mp.id) || `github_marketplace_${String(mp.account.id)}_${String(mp.plan?.id || 'unknown')}`;
   const planPricing = resolveGithubPlanPricing(mp.plan?.id, mp);
-  const githubMetadata = buildGithubMarketplaceRevenueMetadata(mp, marketplaceOrderId, planPricing);
+  const githubMetadata = buildGithubMarketplaceRevenueMetadata(mp, marketplaceOrderId, planPricing, provenance);
   switch (action) {
     case 'purchased': {
       const result = provisionApiKey(customerId, { source: 'github_marketplace_purchased' });
@@ -3887,7 +4217,7 @@ function handleGithubWebhook(event) {
 }
 
 module.exports = {
-  CONFIG, createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
+  CONFIG, createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
   _buildTrialActivationEmail: buildTrialActivationEmail,
   _sendTrialActivationEmail: sendTrialActivationEmail,
@@ -3899,14 +4229,12 @@ module.exports = {
   _API_KEYS_PATH: () => CONFIG.API_KEYS_PATH,
   _FUNNEL_LEDGER_PATH: () => CONFIG.FUNNEL_LEDGER_PATH,
   _REVENUE_LEDGER_PATH: () => CONFIG.REVENUE_LEDGER_PATH,
+  _GITHUB_MARKETPLACE_WEBHOOK_LEDGER_PATH: () => CONFIG.GITHUB_MARKETPLACE_WEBHOOK_LEDGER_PATH,
+  _PAYPAL_WEBHOOK_LEDGER_PATH: () => CONFIG.PAYPAL_WEBHOOK_LEDGER_PATH,
   _LOCAL_CHECKOUT_SESSIONS_PATH: () => CONFIG.LOCAL_CHECKOUT_SESSIONS_PATH,
   _TRIAL_EMAIL_LEDGER_PATH: () => CONFIG.TRIAL_EMAIL_LEDGER_PATH,
   _ORDER_EMAIL_LEDGER_PATH: () => CONFIG.ORDER_EMAIL_LEDGER_PATH,
   _LOCAL_MODE: () => LOCAL_MODE(),
   _withTimeout: withTimeout,
-  // Default to the real Resend-backed mailer so production webhooks send the
-  // marketing-grade trial-welcome template. Tests overwrite this with a stub
-  // (freshBilling() re-requires the module so the default is restored between
-  // tests — see tests/billing-webhook-email.test.js).
   _mailer: mailer,
 };

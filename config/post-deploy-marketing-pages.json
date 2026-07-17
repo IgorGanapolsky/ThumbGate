@@ -14,12 +14,12 @@
     },
     {
       "route": "/checkout/pro",
-      "sentinel": "Optional. Stripe can collect your email on the secure checkout page.",
+      "sentinel": "Required so the checkout has attributable buyer intent and your receipt can be recovered.",
       "mustNotContain": [
-        "Required for your Stripe receipt and checkout recovery link."
+        "Optional. Stripe can collect your email on the secure checkout page."
       ],
       "userAgent": "curl/8.0.0",
-      "description": "Pro checkout interstitial must not require email before Stripe"
+      "description": "Pro checkout interstitial must require attributable buyer email before Stripe"
     },
     {
       "route": "/diagnostic",

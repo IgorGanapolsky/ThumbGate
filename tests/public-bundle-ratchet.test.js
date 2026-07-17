@@ -109,7 +109,27 @@ const path = require('node:path');
 // for bare thumbs, while lesson-retrieval.js, lesson-reranker.js,
 // cross-encoder-reranker.js, and lesson-embedding-index.js make the advertised
 // retrieve_lessons tool executable in the packed npm runtime.
-const BASELINE_FILE_COUNT = 338;
+// 338 -> 339: scripts/buyer-paths.js centralizes first-party intent URLs used
+// by packaged CLI conversion receipts and rate-limit messages.
+// 339 -> 340: scripts/revenue-offer-system.js ships the bounded public offer,
+// qualification, zero-spend, proof, and target-math contract used by the CLI.
+// 340 -> 344: sales-pipeline.js, provider-payment-reconciler.js, and the two
+// provider-evidence dependencies close the manual paid-claim path in the
+// packaged public CLI without adding ThumbGate-Core code.
+// 344 -> 346: revenue-action-eligibility.js and
+// revenue-evidence-remediation.js keep the advertised remediation command
+// executable after npm install without importing ThumbGate-Core.
+// 346 -> 349: the claim-safe Grafana revenue-evidence exporter, operator guide,
+// and aggregate dashboard now ship to npm customers instead of remaining repo-only.
+// 349 -> 350: the aggregate-first hosted intake queue operator client ships
+// without buyer records, private Core code, or implicit outbound authority.
+// 350 -> 352: package the read-only Stripe product-attribution audit and its
+// credential resolver so the payment reconciler can prove Stripe charges in
+// the same fail-closed pipeline contract as PayPal.
+// 352 -> 354: package the exact Stripe offer catalog and its read-only live
+// price/Payment-Link drift audit. Both are public evidence controls with no
+// buyer state, credential material, mutation path, or ThumbGate-Core import.
+const BASELINE_FILE_COUNT = 354;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

@@ -52,7 +52,9 @@ const LEGACY_THUMBGATE_PRICING_PATTERNS = [
   },
   {
     label: 'retired $19 starter-pack positioning',
-    pattern: /Mistake-Free Starter Pack|Mistake-Free Starter Pack[^\n]{0,80}\$19\/mo|\$19\/mo[^\n]{0,80}subscriptions/i,
+    // `$19/mo` is the current Pro subscription price. The retired claim was
+    // the "Mistake-Free Starter Pack" packaging, not recurring pricing itself.
+    pattern: /Mistake-Free Starter Pack/i,
   },
   {
     label: 'retired $49 founder lifetime pricing',

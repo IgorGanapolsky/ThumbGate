@@ -16,6 +16,7 @@
  */
 
 const https = require('https');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { resolveHostedBillingConfig } = require('./hosted-config');
@@ -62,15 +63,23 @@ function getRedditCredentials() {
   };
 }
 
-function markContacted(message, { advanceLead = advanceSalesLead, timestamp = new Date().toISOString() } = {}) {
+function markContacted(message, {
+  advanceLead = advanceSalesLead,
+  timestamp = new Date().toISOString(),
+  evidenceRef = null,
+} = {}) {
   const leadId = WARM_REDDIT_LEAD_IDS[message.to];
   if (!leadId) return null;
+  if (!evidenceRef) throw new Error('Reddit send receipt reference is required before marking contacted.');
   const result = advanceLead({
     leadId,
     stage: 'contacted',
     channel: 'reddit_dm',
     note: `Sent same-day $499 workflow diagnostic offer to u/${message.to}.`,
     timestamp,
+    evidenceKind: 'platform_send_receipt',
+    evidenceSource: 'reddit_compose_api',
+    evidenceRef,
   });
   return {
     leadId,
@@ -140,6 +149,29 @@ function authenticate() {
   });
 }
 
+function parseRedditComposeResponse(statusCode, body) {
+  if (statusCode !== 200) {
+    throw new Error(`HTTP ${statusCode}: ${String(body || '').substring(0, 200)}`);
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(String(body || ''));
+  } catch (error) {
+    throw new Error(`Reddit compose returned invalid JSON: ${error.message}`);
+  }
+
+  const errors = Array.isArray(parsed?.json?.errors) ? parsed.json.errors : [];
+  if (errors.length > 0) {
+    throw new Error(`Reddit compose rejected the message: ${JSON.stringify(errors).substring(0, 400)}`);
+  }
+
+  return {
+    statusCode,
+    responseSha256: crypto.createHash('sha256').update(String(body || '')).digest('hex'),
+  };
+}
+
 // Send a single DM
 function sendDM(accessToken, to, subject, text) {
   return new Promise((resolve, reject) => {
@@ -162,10 +194,10 @@ function sendDM(accessToken, to, subject, text) {
       let data = '';
       res.on('data', chunk => { data += chunk; });
       res.on('end', () => {
-        if (res.statusCode === 200) {
-          resolve();
-        } else {
-          reject(new Error(`HTTP ${res.statusCode}: ${data.substring(0, 200)}`));
+        try {
+          resolve(parseRedditComposeResponse(res.statusCode, data));
+        } catch (error) {
+          reject(error);
         }
       });
     });
@@ -208,14 +240,31 @@ async function main() {
     console.log(`\n📨 Sending ${messages.length} direct messages...\n`);
 
     let sent = 0;
+    let trackedCount = 0;
+    let trackingFailures = 0;
     for (const msg of messages) {
       try {
-        await sendDM(accessToken, msg.to, msg.subject, msg.text);
+        const sendResult = await sendDM(accessToken, msg.to, msg.subject, msg.text);
+        const sentAt = new Date().toISOString();
         sent += 1;
         console.log(`✅ DM sent to u/${msg.to}`);
         if (shouldMarkContacted) {
-          const tracked = markContacted(msg);
-          if (tracked) console.log(`📈 Pipeline tracked ${tracked.leadId}`);
+          try {
+            const tracked = markContacted(msg, {
+              timestamp: sentAt,
+              evidenceRef: `reddit:compose:http-${sendResult.statusCode}:sha256-${sendResult.responseSha256}:${sentAt}:u/${msg.to}`,
+            });
+            if (tracked) {
+              trackedCount += 1;
+              console.log(`📈 Pipeline tracked ${tracked.leadId}`);
+            }
+          } catch (trackingError) {
+            trackingFailures += 1;
+            console.error(
+              `⚠️ DM was sent to u/${msg.to}, but pipeline tracking failed:`,
+              trackingError.message
+            );
+          }
         }
       } catch (err) {
         console.error(`❌ Failed to send DM to u/${msg.to}:`, err.message);
@@ -223,6 +272,9 @@ async function main() {
     }
 
     console.log(`\n✅ Outreach complete (${sent}/${messages.length} sent)`);
+    if (shouldMarkContacted) {
+      console.log(`📈 Pipeline tracking complete (${trackedCount} tracked, ${trackingFailures} failed)`);
+    }
   } catch (err) {
     console.error('❌ Error:', err.message);
     process.exit(1);
@@ -248,4 +300,6 @@ module.exports = {
   main,
   markContacted,
   parseEnv,
+  parseRedditComposeResponse,
+  sendDM,
 };

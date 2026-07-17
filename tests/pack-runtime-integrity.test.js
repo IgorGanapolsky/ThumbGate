@@ -38,6 +38,21 @@ function packedFileSet() {
 const HOOK_ENTRYPOINTS = [
   'bin/cli.js',
   'adapters/mcp/server-stdio.js',
+  'scripts/sales-pipeline.js',
+  'scripts/provider-payment-reconciler.js',
+  'scripts/stripe-revenue-catalog-audit.js',
+  'scripts/workflow-intake-queue.js',
+];
+
+const REQUIRED_GRAFANA_DISTRIBUTION_FILES = [
+  'scripts/grafana-revenue-evidence.js',
+  'docs/integrations/grafana/README.md',
+  'docs/integrations/grafana/thumbgate-revenue-evidence-dashboard.json',
+];
+
+const REQUIRED_STRIPE_CATALOG_FILES = [
+  'scripts/stripe-revenue-catalog.js',
+  'scripts/stripe-revenue-catalog-audit.js',
 ];
 
 // Resolve the transitive set of local (./ or ../) requires reachable from the entrypoints.
@@ -102,4 +117,44 @@ test('every runtime-required local module resolves inside the packed tarball', (
     `runtime require() targets reachable from hook entrypoints but NOT shipped in the tarball:\n  ${missing.join('\n  ')}\n`
       + `This is exactly the class of bug that broke thumbgate@1.27.19 (missing feedback-sanitizer.js).`
   );
+});
+
+test('packed npm artifact exposes the Grafana revenue-evidence command and dashboard', () => {
+  const packageJson = require(path.join(REPO, 'package.json'));
+  const packed = packedFileSet();
+
+  assert.equal(
+    packageJson.bin['thumbgate-revenue-evidence'],
+    'scripts/grafana-revenue-evidence.js'
+  );
+  assert.deepStrictEqual(
+    REQUIRED_GRAFANA_DISTRIBUTION_FILES.filter((file) => !packed.has(file)),
+    [],
+    'Grafana exporter and dashboard must both ship in the npm tarball'
+  );
+});
+
+test('packed npm artifact exposes the read-only Stripe catalog audit with all local dependencies', () => {
+  const packageJson = require(path.join(REPO, 'package.json'));
+  const packed = packedFileSet();
+
+  assert.equal(
+    packageJson.scripts['stripe:catalog-audit'],
+    'node scripts/stripe-revenue-catalog-audit.js --json'
+  );
+  assert.deepStrictEqual(
+    REQUIRED_STRIPE_CATALOG_FILES.filter((file) => !packed.has(file)),
+    [],
+    'Stripe catalog and live read-only audit must both ship in the npm tarball'
+  );
+});
+
+test('packed npm artifact keeps the advertised intake queue command executable', () => {
+  const packageJson = require(path.join(REPO, 'package.json'));
+  const packed = packedFileSet();
+  assert.equal(
+    packageJson.scripts['revenue:intake-queue'],
+    'node scripts/workflow-intake-queue.js'
+  );
+  assert.equal(packed.has('scripts/workflow-intake-queue.js'), true);
 });

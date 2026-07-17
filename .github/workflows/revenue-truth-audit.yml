@@ -37,20 +37,45 @@ jobs:
           THUMBGATE_OPERATOR_KEY: ${{ secrets.THUMBGATE_OPERATOR_KEY }}
           THUMBGATE_API_KEY: ${{ secrets.THUMBGATE_API_KEY }}
           THUMBGATE_BILLING_API_BASE_URL: ${{ vars.THUMBGATE_BILLING_API_BASE_URL || 'https://thumbgate.ai' }}
+          AUDIT_WINDOW: ${{ inputs.window || '30d' }}
         run: |
           set -euo pipefail
           mkdir -p reports/revenue
-          node bin/cli.js cfo --window="${{ inputs.window }}" > reports/revenue/hosted-cfo.json
+          node bin/cli.js cfo --window="$AUDIT_WINDOW" > reports/revenue/hosted-cfo.json
           SOURCE=$(node -p "require('./reports/revenue/hosted-cfo.json').source")
           BOOKED=$(node -p "require('./reports/revenue/hosted-cfo.json').summary.revenue.bookedRevenueCents || 0")
           PAID=$(node -p "require('./reports/revenue/hosted-cfo.json').summary.revenue.paidOrders || 0")
-          echo "source=$SOURCE" >> "$GITHUB_OUTPUT"
-          echo "booked_cents=$BOOKED" >> "$GITHUB_OUTPUT"
-          echo "paid_orders=$PAID" >> "$GITHUB_OUTPUT"
+          {
+            echo "window=$AUDIT_WINDOW"
+            echo "source=$SOURCE"
+            echo "booked_cents=$BOOKED"
+            echo "paid_orders=$PAID"
+          } >> "$GITHUB_OUTPUT"
           if [ "$SOURCE" != "hosted" ]; then
             echo "::error::Hosted billing summary did not return hosted truth. Source=$SOURCE"
             exit 1
           fi
+
+      - name: Audit exact Stripe offer catalog
+        id: catalog
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p reports/revenue
+          node scripts/stripe-revenue-catalog-audit.js --json --out reports/revenue/stripe-revenue-catalog-audit.json > reports/revenue/stripe-revenue-catalog-audit-command.json
+          CATALOG_VERSION=$(node -p "require('./reports/revenue/stripe-revenue-catalog-audit.json').catalogVersion")
+          VERIFIED_OFFERS=$(node -p "require('./reports/revenue/stripe-revenue-catalog-audit.json').summary.verifiedOfferCount")
+          EXPECTED_OFFERS=$(node -p "require('./reports/revenue/stripe-revenue-catalog-audit.json').summary.expectedOfferCount")
+          VERIFIED_RAILS=$(node -p "require('./reports/revenue/stripe-revenue-catalog-audit.json').summary.verifiedPublicPaymentRailCount")
+          EXPECTED_RAILS=$(node -p "require('./reports/revenue/stripe-revenue-catalog-audit.json').summary.expectedPublicPaymentRailCount")
+          {
+            echo "version=$CATALOG_VERSION"
+            echo "verified_offers=$VERIFIED_OFFERS"
+            echo "expected_offers=$EXPECTED_OFFERS"
+            echo "verified_rails=$VERIFIED_RAILS"
+            echo "expected_rails=$EXPECTED_RAILS"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Audit Stripe live status
         env:
@@ -70,33 +95,96 @@ jobs:
           mkdir -p reports/revenue
           node scripts/external-customer-audit.js --json > reports/revenue/external-customer-audit.json
           node scripts/external-customer-audit.js > reports/revenue/external-customer-audit.md
-          REAL_CUSTOMERS=$(node -p "require('./reports/revenue/external-customer-audit.json').charges.external.uniqueCustomerCount || 0")
-          REAL_NET=$(node -p "require('./reports/revenue/external-customer-audit.json').charges.external.net || 0")
-          REAL_ACTIVE=$(node -p "require('./reports/revenue/external-customer-audit.json').subscriptions.activeExternal || 0")
-          echo "real_customers=$REAL_CUSTOMERS" >> "$GITHUB_OUTPUT"
-          echo "real_net=$REAL_NET" >> "$GITHUB_OUTPUT"
-          echo "real_active=$REAL_ACTIVE" >> "$GITHUB_OUTPUT"
+          ATTRIBUTION_VERIFIED=$(node -p "require('./reports/revenue/external-customer-audit.json').productAttribution.verified")
+          ATTRIBUTED_CUSTOMERS=$(node -p "require('./reports/revenue/external-customer-audit.json').productAttribution.thumbgate.uniquePayingCustomerCount || 0")
+          ATTRIBUTED_NET_CENTS=$(node -p "require('./reports/revenue/external-customer-audit.json').productAttribution.thumbgate.netRevenueCents || 0")
+          ATTRIBUTED_ACTIVE=$(node -p "require('./reports/revenue/external-customer-audit.json').productAttribution.thumbgate.activeSubscriptionCount || 0")
+          ATTRIBUTED_MRR_CENTS=$(node -p "require('./reports/revenue/external-customer-audit.json').productAttribution.thumbgate.mrrCents || 0")
+          ATTRIBUTED_TODAY_NET_CENTS=$(node -p "require('./reports/revenue/external-customer-audit.json').productAttribution.thumbgate.revenueWindows.todayNetRevenueCents || 0")
+          CATALOG_VERSION=$(node -p "require('./reports/revenue/external-customer-audit.json').productAttribution.catalogVersion")
+          {
+            echo "attribution_verified=$ATTRIBUTION_VERIFIED"
+            echo "attributed_customers=$ATTRIBUTED_CUSTOMERS"
+            echo "attributed_net_cents=$ATTRIBUTED_NET_CENTS"
+            echo "attributed_active=$ATTRIBUTED_ACTIVE"
+            echo "attributed_mrr_cents=$ATTRIBUTED_MRR_CENTS"
+            echo "attributed_today_net_cents=$ATTRIBUTED_TODAY_NET_CENTS"
+            echo "catalog_version=$CATALOG_VERSION"
+          } >> "$GITHUB_OUTPUT"
+          if [ "$ATTRIBUTION_VERIFIED" != "true" ]; then
+            echo "::error::Exact ThumbGate Stripe attribution is not verified."
+            exit 1
+          fi
+
+      - name: Audit hosted intake close queue
+        id: intake
+        env:
+          THUMBGATE_OPERATOR_KEY: ${{ secrets.THUMBGATE_OPERATOR_KEY }}
+          THUMBGATE_API_KEY: ${{ secrets.THUMBGATE_API_KEY }}
+          THUMBGATE_BILLING_API_BASE_URL: ${{ vars.THUMBGATE_BILLING_API_BASE_URL || 'https://thumbgate.ai' }}
+        run: |
+          set -euo pipefail
+          mkdir -p reports/revenue
+          node scripts/workflow-intake-queue.js --json > reports/revenue/workflow-intake-queue.json
+          ELIGIBLE=$(node -p "require('./reports/revenue/workflow-intake-queue.json').eligibleTotal || 0")
+          DISCOVERY_READY=$(node -p "require('./reports/revenue/workflow-intake-queue.json').discoveryReadyTotal || 0")
+          APPROVAL_READY=$(node -p "require('./reports/revenue/workflow-intake-queue.json').approvalReadyTotal || 0")
+          {
+            echo "eligible=$ELIGIBLE"
+            echo "discovery_ready=$DISCOVERY_READY"
+            echo "approval_ready=$APPROVAL_READY"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Audit the $1,000/hour target control
+        id: target
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          THUMBGATE_OWNER_EMAILS: ${{ secrets.THUMBGATE_OWNER_EMAILS }}
+        run: |
+          set -euo pipefail
+          mkdir -p reports/revenue
+          node scripts/revenue-target-control.js --json --no-provider-api --expected-sha="$GITHUB_SHA" > reports/revenue/revenue-target-control.json
+          STATUS=$(node -p "require('./reports/revenue/revenue-target-control.json').status")
+          TARGET_ACHIEVED=$(node -p "require('./reports/revenue/revenue-target-control.json').status === 'target_achieved_verified'")
+          {
+            echo "status=$STATUS"
+            echo "target_achieved=$TARGET_ACHIEVED"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Write operator summary
+        if: always()
         run: |
           set -euo pipefail
           {
             echo "## Revenue Truth Audit"
             echo
+            echo "- Window: ${{ steps.hosted.outputs.window || 'unverified' }}"
             echo "- Hosted source: ${{ steps.hosted.outputs.source }}"
-            echo "- Hosted paid orders (${{ inputs.window }}): ${{ steps.hosted.outputs.paid_orders }}"
-            echo "- Hosted booked cents (${{ inputs.window }}): ${{ steps.hosted.outputs.booked_cents }}"
-            echo "- Real non-owner paying customers lifetime: ${{ steps.external.outputs.real_customers }}"
-            echo "- Real non-owner active subscriptions: ${{ steps.external.outputs.real_active }}"
-            echo "- Real non-owner net revenue lifetime: \$${{ steps.external.outputs.real_net }}"
+            echo "- Hosted paid orders: ${{ steps.hosted.outputs.paid_orders || 'unverified' }}"
+            echo "- Hosted booked cents: ${{ steps.hosted.outputs.booked_cents || 'unverified' }}"
+            echo "- Exact Stripe catalog: ${{ steps.catalog.outputs.verified_offers || 'unverified' }}/${{ steps.catalog.outputs.expected_offers || 'unverified' }} offers; ${{ steps.catalog.outputs.verified_rails || 'unverified' }}/${{ steps.catalog.outputs.expected_rails || 'unverified' }} public rails"
+            echo "- Product-attributed Stripe proof verified: ${{ steps.external.outputs.attribution_verified || 'unverified' }}"
+            echo "- Product-attributed paying customers lifetime: ${{ steps.external.outputs.attributed_customers || 'unverified' }}"
+            echo "- Product-attributed active subscriptions: ${{ steps.external.outputs.attributed_active || 'unverified' }}"
+            echo "- Product-attributed MRR cents: ${{ steps.external.outputs.attributed_mrr_cents || 'unverified' }}"
+            echo "- Product-attributed net revenue cents lifetime: ${{ steps.external.outputs.attributed_net_cents || 'unverified' }}"
+            echo "- Product-attributed net revenue cents today: ${{ steps.external.outputs.attributed_today_net_cents || 'unverified' }}"
+            echo "- Intake queue eligible: ${{ steps.intake.outputs.eligible || 'unverified' }}"
+            echo "- Intake discovery-ready: ${{ steps.intake.outputs.discovery_ready || 'unverified' }}"
+            echo "- Intake approval-ready: ${{ steps.intake.outputs.approval_ready || 'unverified' }}"
+            echo "- \$1,000/hour control: ${{ steps.target.outputs.status || 'unverified' }}; achieved=${{ steps.target.outputs.target_achieved || 'unverified' }}"
             echo
-            cat reports/revenue/external-customer-audit.md
+            echo "Claim boundary: account-wide Stripe activity, checkout views, intakes, and stage labels are not ThumbGate revenue. Only exact product-attributed provider evidence can populate the Stripe revenue fields above."
+            echo
+            if [ -f reports/revenue/external-customer-audit.md ]; then
+              cat reports/revenue/external-customer-audit.md
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload revenue truth artifacts
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          retention-days: 7
+          retention-days: 1
           name: revenue-truth-audit-${{ github.run_id }}
           path: reports/revenue/

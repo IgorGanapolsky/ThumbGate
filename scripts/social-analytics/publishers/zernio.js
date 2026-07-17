@@ -2,10 +2,13 @@
 
 /**
  * zernio.js
- * Unified publisher via Zernio API.
+ * Retained read-only adapter for historical Zernio analytics.
  *
  * Required env vars:
  *   ZERNIO_API_KEY — Bearer token for https://zernio.com/api/v1
+ *
+ * Mutations are permanently disabled. ThumbGate publishing must use a direct
+ * platform API or an explicitly approved manual platform session.
  */
 
 const fs = require('node:fs');
@@ -20,8 +23,19 @@ const ZERNIO_UTM = { source: 'zernio', medium: 'social', campaign: 'organic' };
 
 const ZERNIO_BASE = 'https://zernio.com/api/v1';
 const DEFAULT_DEDUP_LOG_PATH = path.join(__dirname, '..', '..', '..', '.thumbgate', 'zernio-dedup-log.json');
+const ZERNIO_MUTATION_BLOCK_CODE = 'ZERNIO_MUTATION_DISABLED_BY_POLICY';
+const ZERNIO_MUTATION_BLOCK_MESSAGE = 'Zernio mutations are disabled by ThumbGate policy; use a direct platform API or an explicitly approved manual platform session.';
 
 loadLocalEnv();
+
+function blockZernioMutation(action) {
+  const error = new Error(ZERNIO_MUTATION_BLOCK_MESSAGE);
+  error.name = 'ZernioMutationBlockedError';
+  error.code = ZERNIO_MUTATION_BLOCK_CODE;
+  error.action = action;
+  error.nonRetryable = true;
+  throw error;
+}
 
 function safeLogValue(value, maxLength = 500) {
   return String(value ?? '')
@@ -299,12 +313,14 @@ async function listPosts(options = {}) {
 }
 
 async function deletePost(postId) {
+  blockZernioMutation('delete_post');
   if (!postId) throw new Error('deletePost: postId is required');
   const json = await zernioFetch('DELETE', `/posts/${encodeURIComponent(String(postId).trim())}`);
   return json.data ?? json;
 }
 
 async function requestMediaPresign(filename, contentType, size) {
+  blockZernioMutation('request_media_presign');
   if (!filename) throw new Error('requestMediaPresign: filename is required');
   if (!contentType) throw new Error('requestMediaPresign: contentType is required');
 
@@ -318,6 +334,7 @@ async function requestMediaPresign(filename, contentType, size) {
 }
 
 async function uploadLocalMedia(filePath, options = {}) {
+  blockZernioMutation('upload_media');
   const resolvedPath = path.resolve(String(filePath || ''));
   if (!fs.existsSync(resolvedPath)) {
     throw new Error(`uploadLocalMedia: file not found at ${resolvedPath}`);
@@ -361,6 +378,7 @@ async function uploadLocalMedia(filePath, options = {}) {
  * @returns {Promise<object>}
  */
 async function publishPost(content, platforms, options = {}) {
+  blockZernioMutation('publish_post');
   if (!content) throw new Error('publishPost: content is required');
   if (!Array.isArray(platforms) || platforms.length === 0) {
     throw new Error('publishPost: platforms must be a non-empty array');
@@ -455,6 +473,7 @@ async function publishPost(content, platforms, options = {}) {
  * @returns {Promise<object>}
  */
 async function schedulePost(content, platforms, scheduledFor, timezone, options = {}) {
+  blockZernioMutation('schedule_post');
   if (!content) throw new Error('schedulePost: content is required');
   if (!Array.isArray(platforms) || platforms.length === 0) {
     throw new Error('schedulePost: platforms must be a non-empty array');
@@ -553,6 +572,7 @@ async function getConnectedAccounts() {
  * @returns {Promise<{ published: object[], errors: object[] }>}
  */
 async function publishToAllPlatforms(content, options = {}) {
+  blockZernioMutation('publish_to_all_platforms');
   if (!content) throw new Error('publishToAllPlatforms: content is required');
 
   console.log('[zernio:publisher] Fetching all connected accounts for bulk publish');
@@ -606,6 +626,7 @@ async function publishToAllPlatforms(content, options = {}) {
 }
 
 module.exports = {
+  blockZernioMutation,
   buildDedupKey,
   deletePost,
   isDuplicate,
@@ -627,6 +648,8 @@ module.exports = {
   resolveAccountId,
   safeLogValue,
   uploadLocalMedia,
+  ZERNIO_MUTATION_BLOCK_CODE,
+  ZERNIO_MUTATION_BLOCK_MESSAGE,
 };
 
 if (require.main === module) {

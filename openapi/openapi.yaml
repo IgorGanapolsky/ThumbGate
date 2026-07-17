@@ -338,6 +338,150 @@ components:
         sprintBriefUrl:
           type: string
           format: uri
+    WorkflowIntakeClosePacket:
+      type: object
+      required:
+        - status
+        - leadId
+        - blockers
+        - verificationPlan
+        - externalActionAuthorized
+        - revenueRecognized
+      properties:
+        status:
+          type: string
+          enum: [approval_ready_not_authorized, hold_not_approval_ready]
+        leadId:
+          type: string
+        destination:
+          type: object
+          nullable: true
+          properties:
+            channel:
+              type: string
+              enum: [email]
+            address:
+              type: string
+              format: email
+        offer:
+          type: object
+          nullable: true
+          additionalProperties: true
+        draft:
+          type: object
+          nullable: true
+          properties:
+            subject:
+              type: string
+            body:
+              type: string
+        approvalPhrase:
+          type: string
+          nullable: true
+        blockers:
+          type: array
+          items:
+            type: string
+        evidence:
+          type: object
+          additionalProperties: true
+        verificationPlan:
+          type: array
+          items:
+            type: string
+        externalActionAuthorized:
+          type: boolean
+          enum: [false]
+        revenueRecognized:
+          type: boolean
+          enum: [false]
+    WorkflowIntakeDiscoveryPacket:
+      type: object
+      required:
+        - type
+        - status
+        - leadId
+        - blockers
+        - verificationPlan
+        - externalActionAuthorized
+        - revenueRecognized
+      properties:
+        type:
+          type: string
+          enum: [discovery_questions]
+        status:
+          type: string
+          enum: [approval_ready_not_authorized, hold_not_approval_ready]
+        leadId:
+          type: string
+        destination:
+          type: object
+          nullable: true
+          properties:
+            channel:
+              type: string
+              enum: [email]
+            address:
+              type: string
+              format: email
+        draft:
+          type: object
+          nullable: true
+          properties:
+            subject:
+              type: string
+            body:
+              type: string
+        approvalPhrase:
+          type: string
+          nullable: true
+        blockers:
+          type: array
+          items:
+            type: string
+        evidence:
+          type: object
+          additionalProperties: true
+        verificationPlan:
+          type: array
+          items:
+            type: string
+        externalActionAuthorized:
+          type: boolean
+          enum: [false]
+        revenueRecognized:
+          type: boolean
+          enum: [false]
+    WorkflowIntakeQueueResponse:
+      type: object
+      required: [generatedAt, total, eligibleTotal, returned, approvalReadyTotal, discoveryReadyTotal, leads]
+      properties:
+        generatedAt:
+          type: string
+          format: date-time
+        total:
+          type: integer
+        eligibleTotal:
+          type: integer
+        returned:
+          type: integer
+        approvalReadyTotal:
+          type: integer
+        discoveryReadyTotal:
+          type: integer
+        primaryApprovalAction:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/WorkflowIntakeClosePacket'
+        primaryDiscoveryAction:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/WorkflowIntakeDiscoveryPacket'
+        leads:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
     WorkflowSprintAdvanceRequest:
       type: object
       required: [leadId, status]
@@ -361,6 +505,66 @@ components:
           type: array
           items:
             type: string
+        qualificationReview:
+          type: object
+          description: Required evidence-based buyer qualification review when advancing to qualified.
+          required:
+            - severityAndFrequency
+            - measurableImpact
+            - urgencyAndTrigger
+            - decisionAuthority
+            - budgetMechanism
+            - offerFit
+            - proofRequired
+            - nextStep
+            - evidenceReferences
+            - zeroSpendStatus
+          properties:
+            severityAndFrequency:
+              type: string
+            measurableImpact:
+              type: string
+            urgencyAndTrigger:
+              type: string
+            decisionAuthority:
+              type: string
+            budgetMechanism:
+              type: string
+            offerFit:
+              type: string
+            proofRequired:
+              type: string
+            nextStep:
+              type: string
+            evidenceReferences:
+              type: array
+              minItems: 1
+              items:
+                type: string
+            zeroSpendStatus:
+              type: string
+              enum: [proceed_zero_cost]
+            priceUnderstandingConfirmed:
+              type: boolean
+            workflowCount:
+              type: integer
+              minimum: 1
+            authorityConfirmed:
+              type: boolean
+            urgencyDays:
+              type: integer
+              minimum: 1
+            budgetCents:
+              type: integer
+              minimum: 0
+            readyToImplement:
+              type: boolean
+            proofBackedSprint:
+              type: boolean
+            completedEnterprisePilot:
+              type: boolean
+            requiresUnavailableHostedFeature:
+              type: boolean
     WorkflowSprintAdvanceResponse:
       type: object
       properties:
@@ -1104,6 +1308,36 @@ paths:
                 $ref: '#/components/schemas/WorkflowSprintIntakeResponse'
         '400':
           description: Invalid sprint intake request
+  /v1/intake/workflow-sprint/queue:
+    get:
+      operationId: getWorkflowSprintCloseQueue
+      parameters:
+        - in: query
+          name: status
+          description: Comma-separated workflow lifecycle statuses or all.
+          schema:
+            type: string
+            default: new,qualified
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Private no-store intake queue with fail-closed approval packets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowIntakeQueueResponse'
+        '400':
+          description: Invalid queue filter
+        '403':
+          description: Forbidden
+        '503':
+          description: Workflow intake capability is unavailable in this runtime
   /v1/intake/workflow-sprint/advance:
     post:
       operationId: advanceWorkflowSprintLead
@@ -1695,13 +1929,14 @@ paths:
           description: Webhook accepted
         '400':
           description: Invalid webhook signature or payload
-k signature or payload
-  /v1/billing/github-webhook:
+  /v1/billing/paypal-webhook:
     post:
-      operationId: githubMarketplaceWebhook
+      operationId: paypalBillingWebhook
       security: []
       responses:
         '200':
-          description: Webhook accepted
+          description: PayPal-verified payment event durably recorded
         '400':
-          description: Invalid webhook signature or payload
+          description: Invalid PayPal transmission headers, event, or remote signature verification
+        '503':
+          description: PayPal verified the event but durable evidence storage failed

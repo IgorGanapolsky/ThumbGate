@@ -6,6 +6,15 @@
 
 'use strict';
 
+const {
+  DEFAULT_SECRET_PATHS,
+  resolveStripeSecretKey,
+} = require('./stripe-credentials');
+const {
+  listAllPaged,
+  subscriptionMRRCents,
+} = require('./external-customer-audit');
+
 function parseArgs(argv = []) {
   return {
     strict: argv.includes('--strict'),
@@ -22,7 +31,13 @@ function unavailableReport(status, gap) {
     source: 'stripe_live_api',
     status,
     configured: false,
+    credentialSource: null,
     gaps: [gap],
+    attribution: {
+      scope: 'stripe_account_wide_unattributed',
+      thumbgateVerified: false,
+      note: 'Account-wide Stripe activity is not ThumbGate product or external-customer revenue proof.',
+    },
     balance: {
       available: 0,
       pending: 0,
@@ -49,6 +64,10 @@ function unavailableReport(status, gap) {
     },
     checkout: {
       completed: 0,
+      statusComplete: 0,
+      paymentStatusPaid: 0,
+      positiveAmountPaid: 0,
+      zeroAmountPaidStatus: 0,
       expired: 0,
       total: 0,
       conversionRate: '0%',
@@ -72,11 +91,30 @@ function createStripeClient(stripeFactory, secretKey) {
 async function getLiveStatus({
   stripeClient = null,
   stripeCtor = null,
-  secretKey = process.env.STRIPE_SECRET_KEY,
+  secretKey,
+  env = process.env,
+  secretPaths = DEFAULT_SECRET_PATHS,
+  catalogOutputLimit = 20,
   now = new Date(),
 } = {}) {
-  if (!secretKey && !stripeClient) {
-    return unavailableReport('missing_secret', 'STRIPE_SECRET_KEY is not set');
+  let credentialSource = stripeClient ? 'injected_client' : null;
+  let resolvedSecretKey = null;
+  if (!stripeClient) {
+    const credential = secretKey === undefined
+      ? resolveStripeSecretKey({ env, secretPaths })
+      : {
+        secretKey: String(secretKey || '').trim() || null,
+        source: String(secretKey || '').trim() ? 'argument' : null,
+      };
+    resolvedSecretKey = credential.secretKey;
+    credentialSource = credential.source;
+  }
+
+  if (!resolvedSecretKey && !stripeClient) {
+    return unavailableReport(
+      'missing_secret',
+      'STRIPE_SECRET_KEY is not set and no managed local key file is available',
+    );
   }
 
   let stripe = stripeClient;
@@ -84,7 +122,7 @@ async function getLiveStatus({
     let stripeFactory = stripeCtor;
     try {
       stripeFactory = stripeFactory || loadStripe();
-      stripe = createStripeClient(stripeFactory, secretKey);
+      stripe = createStripeClient(stripeFactory, resolvedSecretKey);
     } catch (error) {
       return unavailableReport('missing_dependency', `Stripe SDK is unavailable: ${error.message}`);
     }
@@ -118,40 +156,53 @@ async function getLiveStatus({
 
   const [balance, charges, subscriptions, products, prices, sessions] = await Promise.all([
     balanceApi.retrieve(),
-    chargesApi.list({ limit: 100 }),
-    subscriptionsApi.list({ limit: 100, status: 'all' }),
-    productsApi.list({ limit: 20, active: true }),
-    pricesApi.list({ limit: 20, active: true }),
-    checkoutSessionsApi.list({ limit: 50 }),
+    listAllPaged((params) => chargesApi.list(params)),
+    listAllPaged((params) => subscriptionsApi.list(params), { status: 'all' }),
+    listAllPaged((params) => productsApi.list(params), { active: true }),
+    listAllPaged((params) => pricesApi.list(params), { active: true }),
+    listAllPaged((params) => checkoutSessionsApi.list(params)),
   ]);
 
   const availableBalance = balance.available.reduce((sum, b) => sum + b.amount, 0);
   const pendingBalance = balance.pending.reduce((sum, b) => sum + b.amount, 0);
 
-  const paidCharges = charges.data.filter(c => c.paid && !c.refunded);
-  const refundedCharges = charges.data.filter(c => c.refunded);
-  const failedCharges = charges.data.filter(c => c.status === 'failed');
+  const successfulCharges = charges.filter((charge) => (
+    charge.status === 'succeeded' || charge.paid === true
+  ));
+  const refundedCharges = successfulCharges.filter((charge) => Number(charge.amount_refunded || 0) > 0);
+  const failedCharges = charges.filter((charge) => charge.status === 'failed');
 
-  const grossRevenue = paidCharges.reduce((sum, c) => sum + c.amount, 0);
+  const grossRevenue = successfulCharges.reduce((sum, c) => sum + Number(c.amount || 0), 0);
   const refundedAmount = refundedCharges.reduce((sum, c) => sum + c.amount_refunded, 0);
 
-  const activeSubs = subscriptions.data.filter(s => s.status === 'active');
-  const cancelledSubs = subscriptions.data.filter(s => s.status === 'canceled');
+  const activeSubs = subscriptions.filter(s => s.status === 'active');
+  const cancelledSubs = subscriptions.filter(s => s.status === 'canceled');
 
-  const completedSessions = sessions.data.filter(s => s.payment_status === 'paid');
-  const expiredSessions = sessions.data.filter(s => s.status === 'expired');
+  const statusCompleteSessions = sessions.filter((session) => session.status === 'complete');
+  const paymentStatusPaidSessions = sessions.filter((session) => session.payment_status === 'paid');
+  const positiveAmountPaidSessions = paymentStatusPaidSessions.filter((session) => Number(session.amount_total || 0) > 0);
+  const zeroAmountPaidStatusSessions = paymentStatusPaidSessions.filter((session) => Number(session.amount_total || 0) <= 0);
+  const expiredSessions = sessions.filter(s => s.status === 'expired');
 
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
-  const todayCharges = paidCharges.filter(c => c.created * 1000 >= todayStart.getTime());
-  const todayRevenue = todayCharges.reduce((sum, c) => sum + c.amount, 0);
+  const todayCharges = successfulCharges.filter(c => c.created * 1000 >= todayStart.getTime());
+  const todayGross = todayCharges.reduce((sum, c) => sum + Number(c.amount || 0), 0);
+  const todayRefunded = todayCharges.reduce((sum, c) => sum + Number(c.amount_refunded || 0), 0);
+  const todayNet = todayGross - todayRefunded;
 
   const report = {
     generatedAt: new Date().toISOString(),
     source: 'stripe_live_api',
     status: 'ok',
     configured: true,
+    credentialSource,
     gaps: [],
+    attribution: {
+      scope: 'stripe_account_wide_unattributed',
+      thumbgateVerified: false,
+      note: 'Account-wide Stripe activity is not ThumbGate product or external-customer revenue proof. Use external-customer-audit.js for attribution.',
+    },
     balance: {
       available: dollars(availableBalance),
       pending: dollars(pendingBalance),
@@ -161,35 +212,49 @@ async function getLiveStatus({
       grossLifetime: dollars(grossRevenue),
       refundedLifetime: dollars(refundedAmount),
       netLifetime: dollars(grossRevenue - refundedAmount),
-      today: dollars(todayRevenue),
+      today: dollars(todayNet),
+      todayGross: dollars(todayGross),
+      todayRefunded: dollars(todayRefunded),
+      todayNet: dollars(todayNet),
       todayChargeCount: todayCharges.length,
     },
     charges: {
-      total: charges.data.length,
-      paid: paidCharges.length,
+      total: charges.length,
+      paid: successfulCharges.length,
       refunded: refundedCharges.length,
       failed: failedCharges.length,
     },
     subscriptions: {
       active: activeSubs.length,
       cancelled: cancelledSubs.length,
-      total: subscriptions.data.length,
-      mrr: dollars(activeSubs.reduce((sum, s) => sum + (s.plan?.amount || 0), 0)),
+      total: subscriptions.length,
+      mrr: dollars(activeSubs.reduce((sum, subscription) => sum + subscriptionMRRCents(subscription), 0)),
     },
     checkout: {
-      completed: completedSessions.length,
+      completed: positiveAmountPaidSessions.length,
+      statusComplete: statusCompleteSessions.length,
+      paymentStatusPaid: paymentStatusPaidSessions.length,
+      positiveAmountPaid: positiveAmountPaidSessions.length,
+      zeroAmountPaidStatus: zeroAmountPaidStatusSessions.length,
       expired: expiredSessions.length,
-      total: sessions.data.length,
-      conversionRate: sessions.data.length > 0
-        ? (completedSessions.length / sessions.data.length * 100).toFixed(1) + '%'
+      total: sessions.length,
+      conversionRate: sessions.length > 0
+        ? (positiveAmountPaidSessions.length / sessions.length * 100).toFixed(1) + '%'
         : '0%',
     },
-    products: products.data.map(p => ({
+    catalog: {
+      activeProductCount: products.length,
+      activePriceCount: prices.length,
+      outputLimit: catalogOutputLimit,
+      productsTruncated: products.length > catalogOutputLimit,
+      pricesTruncated: prices.length > catalogOutputLimit,
+    },
+    products: products.slice(0, catalogOutputLimit).map(p => ({
       id: p.id,
       name: p.name,
       defaultPrice: p.default_price,
     })),
-    activePrices: prices.data.map(p => ({
+    activePrices: prices.slice(0, catalogOutputLimit).map(p => ({
       id: p.id,
       amount: dollars(p.unit_amount),
       type: p.type,

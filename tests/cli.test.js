@@ -1068,7 +1068,7 @@ describe('bin/cli.js', () => {
     assert.match(result.stdout, /Pro \(\$19\/mo or \$149\/yr\)/);
     assert.match(result.stdout, /Personal recall: search lessons, rules, and proof/);
     assert.match(result.stdout, /Managed adapters: Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode/);
-    assert.match(result.stdout, /Enterprise adds shared hosted lessons, org visibility, workflow proof/);
+    assert.match(result.stdout, /Enterprise service path: qualified after intake; hosted team sync and org dashboard are not GA/);
     assert.match(result.stdout, /personal local dashboard/i);
     assert.match(result.stdout, /Launch dashboard\s*:\s*npx thumbgate pro/);
     assert.match(result.stdout, /Activate \+ run\s*:\s*npx thumbgate pro --activate --key=YOUR_KEY/);
@@ -1346,7 +1346,7 @@ describe('bin/cli.js', () => {
     assert.equal(checkoutUrl, PRO_MONTHLY_PAYMENT_LINK, 'Pro command should include the attributed Pro checkout URL');
     assert.ok(result.stdout.includes('$19/mo or $149/yr'), 'Pro command should include current pricing');
     assert.ok(result.stdout.includes('Personal recall: search lessons, rules, and proof'), 'Pro command should lead with personal recall');
-    assert.ok(result.stdout.includes('Enterprise adds shared hosted lessons, org visibility, workflow proof'), 'Pro command should separate Enterprise hosted rollout features');
+    assert.ok(result.stdout.includes('Enterprise service path: qualified after intake; hosted team sync and org dashboard are not GA'), 'Pro command should separate the individual product from unavailable hosted team features');
     assert.ok(result.stdout.includes('Launch dashboard: npx thumbgate pro'), 'Pro command should include the local dashboard launcher');
     assert.ok(result.stdout.includes('Private core    : ThumbGate-Core (private repo)'), 'Pro command should describe the current private-core split');
   });
@@ -1818,7 +1818,8 @@ describe('bin/cli.js', () => {
     assert.equal(payload.summary.revenue.paidProviderEvents, 1);
     assert.equal(payload.summary.pipeline.workflowSprintLeads.total, 1);
     assert.equal(payload.summary.pipeline.workflowSprintLeads.bySource.x, 1);
-    assert.equal(payload.summary.pipeline.qualifiedWorkflowSprintLeads.total, 1);
+    assert.equal(payload.summary.pipeline.completeWorkflowSprintIntakes.total, 1);
+    assert.equal(payload.summary.pipeline.qualifiedWorkflowSprintLeads.total, 0);
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });

@@ -1178,7 +1178,10 @@ describe('billing.js — funnel ledger', () => {
 
   test('getBillingSummary merges funnel ledger and key store state', () => {
     const billing = require('../scripts/billing');
-    const { appendWorkflowSprintLead } = require('../scripts/workflow-sprint-intake');
+    const {
+      advanceWorkflowSprintLead,
+      appendWorkflowSprintLead,
+    } = require('../scripts/workflow-sprint-intake');
     const activeKey = billing.provisionApiKey('cus_summary_a', {
       installId: 'inst_summary_a',
       source: 'stripe_webhook_checkout_completed',
@@ -1256,7 +1259,7 @@ describe('billing.js — funnel ledger', () => {
       },
       metadata: { subscriptionId: 'sub_summary_a' },
     });
-    appendWorkflowSprintLead({
+    const workflowSprintLead = appendWorkflowSprintLead({
       email: 'ops@example.com',
       company: 'Example Co',
       workflow: 'Claude code modernization approvals',
@@ -1293,9 +1296,10 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(summary.pipeline.workflowSprintLeads.byCommunity.platform, 1);
     assert.equal(summary.pipeline.workflowSprintLeads.byRuntime['Claude Code + MCP'], 1);
     assert.equal(summary.pipeline.workflowSprintLeads.latestLead.email, 'ops@example.com');
-    assert.equal(summary.pipeline.qualifiedWorkflowSprintLeads.total, 1);
-    assert.equal(summary.pipeline.qualifiedWorkflowSprintLeads.bySource.linkedin, 1);
-    assert.equal(summary.pipeline.qualifiedWorkflowSprintLeads.byCreator.reach_vb, 1);
+    assert.equal(summary.pipeline.completeWorkflowSprintIntakes.total, 1);
+    assert.equal(summary.pipeline.completeWorkflowSprintIntakes.bySource.linkedin, 1);
+    assert.equal(summary.pipeline.completeWorkflowSprintIntakes.byCreator.reach_vb, 1);
+    assert.equal(summary.pipeline.qualifiedWorkflowSprintLeads.total, 0);
     assert.equal(summary.attribution.acquisitionBySource.reddit, 1);
     assert.equal(summary.attribution.acquisitionByCreator.reach_vb, 1);
     assert.equal(summary.attribution.acquisitionByCommunity.ClaudeCode, 1);
@@ -1308,6 +1312,48 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(summary.attribution.paidByCommunity.ClaudeCode, 1);
     assert.equal(summary.attribution.paidByPostId['1rsudq0'], 1);
     assert.equal(summary.attribution.paidByCommentId.oa9mqjf, 1);
+
+    advanceWorkflowSprintLead({
+      leadId: workflowSprintLead.leadId,
+      status: 'qualified',
+      actor: 'operator',
+      reviewedBy: 'operator@example.com',
+      qualificationReview: {
+        severityAndFrequency: 'The failure repeats in the current workflow.',
+        measurableImpact: 'The team must repeat review work.',
+        urgencyAndTrigger: 'The failure blocked the latest rollout.',
+        decisionAuthority: 'The workflow owner can approve a scoped sprint.',
+        budgetMechanism: 'The fixed price is reviewed before checkout.',
+        offerFit: 'One workflow fits a bounded sprint.',
+        proofRequired: 'Regression proof and an approval runbook are required.',
+        nextStep: 'Review the one-workflow scope.',
+        evidenceReferences: ['intake:billing-test'],
+        zeroSpendStatus: 'proceed_zero_cost',
+        priceUnderstandingConfirmed: true,
+        workflowCount: 1,
+        authorityConfirmed: true,
+        urgencyDays: 14,
+        budgetCents: 150000,
+        readyToImplement: true,
+      },
+    }, { feedbackDir: testFeedbackDir });
+    const qualifiedSummary = billing.getBillingSummary();
+    assert.equal(qualifiedSummary.pipeline.completeWorkflowSprintIntakes.total, 1);
+    assert.equal(qualifiedSummary.pipeline.qualifiedWorkflowSprintLeads.total, 1);
+    assert.equal(qualifiedSummary.pipeline.qualifiedWorkflowSprintLeads.bySource.linkedin, 1);
+    assert.equal(qualifiedSummary.pipeline.qualifiedWorkflowSprintLeads.byCreator.reach_vb, 1);
+
+    const leadSnapshotsPath = path.join(testFeedbackDir, 'workflow-sprint-leads.jsonl');
+    const snapshots = fs.readFileSync(leadSnapshotsPath, 'utf8').trim().split('\n').map(JSON.parse);
+    const latest = snapshots[snapshots.length - 1];
+    fs.appendFileSync(leadSnapshotsPath, `${JSON.stringify({
+      ...latest,
+      leadId: 'forged_qualified_lead',
+      status: 'qualified',
+      qualificationReview: { evidenceBased: true },
+    })}\n`, 'utf8');
+    const forgedSummary = billing.getBillingSummary();
+    assert.equal(forgedSummary.pipeline.qualifiedWorkflowSprintLeads.total, 1);
     assert.equal(summary.attribution.paidByCampaignVariant.comment_problem_solution, 1);
     assert.equal(summary.attribution.paidByOfferCode['REDDIT-EARLY'], 1);
     assert.equal(summary.attribution.bookedRevenueBySourceCents.reddit, 4900);
@@ -1747,6 +1793,18 @@ describe('billing.js — funnel ledger', () => {
         ctaId: 'pricing_pro',
       }),
       JSON.stringify({
+        receivedAt: '2026-03-19T10:03:00.000Z',
+        eventType: 'diagnostic_checkout_confirmed',
+        clientType: 'web',
+        acquisitionId: 'acq_window_diagnostic',
+        visitorId: 'visitor_window_diagnostic',
+        sessionId: 'session_window_diagnostic',
+        source: 'diagnostic_page',
+        utmCampaign: 'sprint_diagnostic',
+        ctaId: 'diagnostic_hero_paid',
+        linkSlug: 'diagnostic-pay',
+      }),
+      JSON.stringify({
         receivedAt: '2026-03-19T10:06:00.000Z',
         eventType: 'checkout_paid_confirmed',
         clientType: 'web',
@@ -1772,7 +1830,8 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(summary.pipeline.workflowSprintLeads.total, 1);
     assert.equal(summary.pipeline.workflowSprintLeads.bySource.linkedin, 1);
     assert.equal(summary.trafficMetrics.pageViews, 1);
-    assert.equal(summary.trafficMetrics.checkoutStarts, 1);
+    assert.equal(summary.trafficMetrics.checkoutStarts, 2);
+    assert.equal(summary.ctas.diagnosticCheckoutStarts, 1);
     assert.equal(summary.trafficMetrics.checkoutPaidConfirmations, 1);
     assert.equal(summary.sourceDiagnostics.files.keyStore.activeMode, 'primary');
     assert.equal(summary.sourceDiagnostics.files.funnelLedger.activeMode, 'primary');
@@ -1828,6 +1887,38 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(todaySummary.revenue.bookedRevenueCents, 0);
     assert.equal(todaySummary.revenue.paidOrders, 0);
     assert.equal(todaySummary.revenue.processorReconciledOrders, 0);
+  });
+
+  test('getBillingSummariesLive reconciles Stripe once for every requested analytics window', async () => {
+    const billing = requireFreshBilling('');
+    let reconciliationCalls = 0;
+    const summaries = await billing.getBillingSummariesLive({
+      today: {
+        window: 'today',
+        timeZone: 'UTC',
+        now: '2026-07-16T12:00:00.000Z',
+      },
+      '30d': {
+        window: '30d',
+        timeZone: 'UTC',
+        now: '2026-07-16T12:00:00.000Z',
+      },
+      lifetime: {
+        window: 'lifetime',
+        timeZone: 'UTC',
+        now: '2026-07-16T12:00:00.000Z',
+      },
+    }, {
+      listStripeReconciledRevenueEventsFn: async () => {
+        reconciliationCalls += 1;
+        return [];
+      },
+    });
+
+    assert.equal(reconciliationCalls, 1);
+    assert.equal(summaries.today.window.window, 'today');
+    assert.equal(summaries['30d'].window.window, '30d');
+    assert.equal(summaries.lifetime.window.window, 'lifetime');
   });
 });
 

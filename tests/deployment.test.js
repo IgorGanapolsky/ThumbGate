@@ -355,6 +355,43 @@ test('Deploy to Railway workflow waits long enough to verify the promoted build 
   assert.match(workflow, /Expected build SHA/);
 });
 
+test('Deploy to Railway workflow fails closed on post-deploy revenue and buyer-path readiness', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
+  const healthIndex = workflow.indexOf('name: Verify deployment health');
+  const revenueIndex = workflow.indexOf('name: Verify revenue and buyer-path readiness');
+
+  assert.notEqual(healthIndex, -1);
+  assert.ok(revenueIndex > healthIndex, 'revenue readiness must inspect the promoted build after SHA verification');
+  assert.match(workflow, /railway run \\/);
+  assert.match(workflow, /--project "\$RAILWAY_PROJECT_ID"/);
+  assert.match(workflow, /--environment "\$RAILWAY_ENVIRONMENT_ID"/);
+  assert.match(workflow, /--no-local/);
+  assert.match(workflow, /node scripts\/revenue-observability-doctor\.js --json/);
+  assert.match(workflow, /> revenue-observability-doctor\.json/);
+  assert.match(workflow, /globalRevenueClaimVerified !== false/);
+  assert.match(workflow, /Revenue and buyer-path readiness is blocked/);
+  assert.match(workflow, /name: Upload revenue observability evidence/);
+  assert.match(workflow, /revenue-observability-\$\{\{\s*github\.run_id\s*\}\}/);
+  assert.match(workflow, /if-no-files-found: warn/);
+});
+
+test('Deploy to Railway workflow fails closed on the reviewed public conversion-surface contract', () => {
+  const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
+  const revenueGate = workflow.indexOf('name: Verify revenue and buyer-path readiness');
+  const surfaceGate = workflow.indexOf('name: Verify public conversion surfaces');
+  const surfaceArtifact = workflow.indexOf('name: Upload public conversion-surface evidence');
+
+  assert.ok(revenueGate >= 0, 'authoritative revenue gate must exist');
+  assert.ok(surfaceGate > revenueGate, 'public conversion-surface gate must run after the revenue gate');
+  assert.ok(surfaceArtifact > surfaceGate, 'public conversion-surface artifact must follow its verifier');
+  const surfaceStep = workflow.slice(surfaceGate, surfaceArtifact);
+  assert.match(surfaceStep, /if:\s*always\(\)\s*&&\s*steps\.railway-config\.outputs\.enabled == 'true'/);
+  assert.match(surfaceStep, /node scripts\/verify-marketing-pages-deployed\.js[\s\S]*?--json[\s\S]*?--prod-url="\$THUMBGATE_PUBLIC_APP_ORIGIN"[\s\S]*?> marketing-page-verification\.json/);
+  assert.match(surfaceStep, /Public conversion surfaces do not match the reviewed buyer-path contract/);
+  assert.match(workflow, /name:\s*public-conversion-surfaces-\$\{\{\s*github\.run_id\s*\}\}/);
+  assert.match(workflow, /path:\s*marketing-page-verification\.json/);
+});
+
 test('Deploy to Railway workflow captures Railway diagnostics when health verification fails', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-railway.yml'), 'utf8');
 
@@ -553,6 +590,22 @@ test('Deploy verification comment does not require a build SHA change for non-ru
   assert.match(workflow, /Public-route probes/);
   assert.doesNotMatch(workflow, /DEPLOYABLE_PATTERN='/);
   assert.doesNotMatch(workflow, /git diff --name-only "\$\{MERGE_SHA\}~1" "\$\{MERGE_SHA\}"/);
+});
+
+test('Deploy verification reports authoritative failures and route-only checks cannot overclaim readiness', () => {
+  const authoritative = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'verify-deploy-comment.yml'), 'utf8');
+  const routeOnly = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'deploy-verify.yml'), 'utf8');
+
+  assert.match(authoritative, /comment-authoritative-failure:/);
+  assert.match(authoritative, /if: github\.event\.workflow_run\.conclusion != 'success'/);
+  assert.match(authoritative, /Railway deployment or revenue readiness failed/);
+  assert.match(authoritative, /The build may or may not have been promoted/);
+  assert.match(authoritative, /run\.html_url/);
+  assert.match(authoritative, /verify-and-comment:\n\s+if: github\.event\.workflow_run\.conclusion == 'success'/);
+
+  assert.match(routeOnly, /Production public-route checks passed/);
+  assert.match(routeOnly, /route-only check does not override the authoritative `Deploy to Railway` workflow/);
+  assert.doesNotMatch(routeOnly, /Production deploy verified/);
 });
 
 test('Deploy verification workflow keeps embedded heredoc scripts valid YAML', () => {

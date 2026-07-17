@@ -1629,7 +1629,7 @@ function pro() {
     console.log('  - Personal recall: search lessons, rules, and proof');
     console.log('  - Local Pro dashboard: your own browser dashboard for search, gates, and DPO export');
     console.log('  - Managed adapters: Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode');
-    console.log('  - Team rollout path: Enterprise adds shared hosted lessons, org visibility, workflow proof');
+    console.log('  - Enterprise service path: qualified after intake; hosted team sync and org dashboard are not GA');
     console.log('  - Commercial truth doc: source of truth for traction, pricing, and proof claims');
     console.log('\nLinks:');
     console.log(`  Buy Pro         : ${PRO_CHECKOUT_URL}`);

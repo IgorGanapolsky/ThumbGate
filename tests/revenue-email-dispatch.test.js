@@ -11,10 +11,14 @@ const {
   main,
 } = require('../scripts/revenue-email-dispatch');
 
-test('revenue email campaign includes required commercial compliance footer and paid CTAs', () => {
+test('unverified-cost revenue email is paused and contains only first-party buyer paths', () => {
   const message = renderMessage(CAMPAIGNS.aiventyx_marketplace_followup);
   assert.equal(message.to, 'qaisermehdi3@gmail.com');
-  assert.match(message.text, /buy\.stripe\.com\/5kQ7sL76s1eSaK55e33sI2H/);
+  assert.equal(CAMPAIGNS.aiventyx_marketplace_followup.status, 'hold_unverified_cost');
+  assert.match(message.text, /payment routing remains paused/i);
+  assert.match(message.text, /https:\/\/thumbgate\.ai\/diagnostic/);
+  assert.match(message.text, /https:\/\/thumbgate\.ai\/go\/sprint/);
+  assert.doesNotMatch(message.text, /buy\.stripe\.com|paypal\.com\/ncp\/payment/);
   assert.match(message.text, /Max Smith KDP LLC/);
   assert.match(message.text, /Unsubscribe:/);
 });
@@ -29,26 +33,32 @@ test('revenue email dispatch requires explicit confirm send', async () => {
   assert.equal(result.dryRun, true);
 });
 
-test('revenue email dispatch sends through injected transport when confirmed', async () => {
+test('revenue email dispatch fail-closes a confirmed unverified-cost campaign', async () => {
   const calls = [];
-  const result = await main(['--campaign=aiventyx_marketplace_followup', '--confirm-send'], {
-    sendEmail: async (payload) => {
-      calls.push(payload);
-      return { sent: true, id: 'email_123' };
-    },
-  });
-  assert.equal(result.sent, true);
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0].to, 'qaisermehdi3@gmail.com');
-});
-
-test('revenue email dispatch fails confirmed runs when Resend rejects the send', async () => {
   await assert.rejects(
     () => main(['--campaign=aiventyx_marketplace_followup', '--confirm-send'], {
-      sendEmail: async () => ({ sent: false, reason: 'api_error' }),
+      sendEmail: async (payload) => {
+        calls.push(payload);
+        return { sent: true, id: 'email_123' };
+      },
     }),
-    /Revenue email was not sent: api_error/,
+    /Revenue email blocked: hold_unverified_cost/,
   );
+  assert.equal(calls.length, 0);
+});
+
+test('blocked campaign never reaches Resend even when the injected transport would reject', async () => {
+  let called = false;
+  await assert.rejects(
+    () => main(['--campaign=aiventyx_marketplace_followup', '--confirm-send'], {
+      sendEmail: async () => {
+        called = true;
+        return { sent: false, reason: 'api_error' };
+      },
+    }),
+    /Revenue email blocked: hold_unverified_cost/,
+  );
+  assert.equal(called, false);
 });
 
 test('parseArgs captures campaign and guards', () => {
