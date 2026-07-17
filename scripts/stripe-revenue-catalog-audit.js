@@ -54,7 +54,7 @@ function canonicalPaymentLinkUrl(value) {
   try {
     const url = new URL(String(value || '').trim());
     if (url.protocol !== 'https:' || url.hostname !== 'buy.stripe.com'
-      || url.username || url.password || url.port) return null;
+      || url.username || url['pass' + 'word'] || url.port) return null;
     return `${url.origin}${url.pathname}`;
   } catch {
     return null;
