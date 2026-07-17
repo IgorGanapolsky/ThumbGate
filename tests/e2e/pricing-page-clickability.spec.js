@@ -19,7 +19,7 @@ test.describe('/pricing clickability — full CTA coverage', () => {
     await expect(page.locator('#diagnostic .price')).toContainText('$499');
     await expect(page.locator('#sprint .price')).toContainText('$1500');
     await expect(page.locator('#pro .price')).toContainText('$19');
-    await expect(page.locator('#enterprise .price')).toContainText('Custom');
+    await expect(page.locator('#enterprise .price')).toContainText('Qualified / signed scope only');
     await expect(page.locator('.price-card', { hasText: /Forever free for solo/ }).locator('.price')).toHaveText('$0');
   });
 
