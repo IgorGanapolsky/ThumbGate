@@ -78,7 +78,7 @@ jobs:
 
       - name: Setup Python
         if: steps.ci-scope.outputs.mode != 'web'
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
