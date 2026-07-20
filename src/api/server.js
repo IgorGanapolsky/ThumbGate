@@ -259,6 +259,7 @@ const ABOUT_PAGE_PATH = path.resolve(__dirname, '../../public/about.html');
 const DIAGNOSTIC_PAGE_PATH = path.resolve(__dirname, '../../public/diagnostic.html');
 const PARTNER_INTAKE_PAGE_PATH = path.resolve(__dirname, '../../public/partner-intake.html');
 const INSTALL_PAGE_PATH = path.resolve(__dirname, '../../public/install.html');
+const LEASH_PAGE_PATH = path.resolve(__dirname, '../../public/leash.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
 const GUIDES_DIR = path.resolve(__dirname, '../../public/guides');
 const COMPARE_DIR = path.resolve(__dirname, '../../public/compare');
@@ -3164,6 +3165,10 @@ function loadInstallPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(INSTALL_PAGE_PATH, runtimeConfig, pageContext);
 }
 
+function loadLeashPageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(LEASH_PAGE_PATH, runtimeConfig, pageContext);
+}
+
 function loadPricingPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(PRICING_PAGE_PATH, runtimeConfig, pageContext);
 }
@@ -3800,6 +3805,7 @@ function renderSitemapXml(runtimeConfig) {
     { path: '/diagnostic', changefreq: 'weekly', priority: '0.9' },
     { path: '/workflow-hardening-sprint', changefreq: 'weekly', priority: '0.9' },
     { path: '/install', changefreq: 'weekly', priority: '0.9' },
+    { path: '/leash', changefreq: 'weekly', priority: '0.9' },
     { path: '/agent-manager', changefreq: 'weekly', priority: '0.9' },
     { path: '/llm-context.md', changefreq: 'weekly', priority: '0.8' },
     { path: '/chatgpt-app', changefreq: 'weekly', priority: '0.85' },
@@ -5904,6 +5910,50 @@ async function addContext(){
         });
       } catch (err) {
         sendText(res, 500, err.message || 'Pro page unavailable');
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && pathname === '/leash/open') {
+      const controlPlaneUrl = String(process.env.LEASH_CONTROL_PLANE_URL || '').trim();
+      let destination;
+      try {
+        destination = new URL(controlPlaneUrl);
+      } catch {
+        destination = null;
+      }
+      if (!destination || destination.protocol !== 'https:') {
+        sendJson(res, 503, {
+          error: 'Leash control plane is not available yet',
+          next: '/leash',
+        }, { 'Cache-Control': 'no-store' }, { headOnly: isHeadRequest });
+        return;
+      }
+      res.writeHead(302, {
+        Location: destination.toString(),
+        'Cache-Control': 'no-store',
+        'Referrer-Policy': 'no-referrer',
+      });
+      res.end();
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/leash' || pathname === '/leash.html')) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadLeashPageHtml,
+          extraTelemetry: {
+            pageType: 'leash',
+            planId: 'leash_cloud_runner',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Leash page unavailable');
       }
       return;
     }

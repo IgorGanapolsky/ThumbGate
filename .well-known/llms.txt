@@ -58,6 +58,7 @@ npx thumbgate init --agent claude-code
 
 ## Links
 
+- Leash web control and cloud continuation: https://thumbgate.ai/leash — free browser control for a paired Hermes machine, with an optional $10/month managed cloud runner. The hosted control plane is in preview; this does not claim existing subscribers or revenue.
 - Home: https://thumbgate.ai/
 - Pricing: https://thumbgate.ai/pricing
 - Pro checkout: https://thumbgate.ai/checkout/pro

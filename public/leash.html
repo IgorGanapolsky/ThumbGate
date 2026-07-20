@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leash by ThumbGate — Web Control and Cloud Continuation for Hermes</title>
+  <meta name="description" content="Manage a paired Hermes machine from the web for free. Add a managed cloud runner for $10/month so approved work can continue when the machine is offline.">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <link rel="canonical" href="__APP_ORIGIN__/leash">
+  <link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llms.txt">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Leash by ThumbGate — Your Hermes work does not stop with your Mac">
+  <meta property="og:description" content="Free web control for your paired Hermes machine. Optional managed cloud continuation for $10/month.">
+  <meta property="og:url" content="__APP_ORIGIN__/leash">
+  <meta property="og:image" content="__APP_ORIGIN__/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Leash by ThumbGate",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Web, macOS, iOS, Android",
+    "url": "__APP_ORIGIN__/leash",
+    "description": "A local-first web control plane for paired Hermes agents with optional managed cloud continuation.",
+    "offers": [
+      {
+        "@type": "Offer",
+        "name": "Web Control",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/OnlineOnly"
+      },
+      {
+        "@type": "Offer",
+        "name": "Managed Cloud Runner",
+        "price": "10",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/PreOrder",
+        "priceSpecification": {
+          "@type": "UnitPriceSpecification",
+          "price": "10",
+          "priceCurrency": "USD",
+          "billingDuration": "P1M"
+        }
+      }
+    ],
+    "publisher": {
+      "@type": "Organization",
+      "name": "ThumbGate",
+      "url": "https://thumbgate.ai"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Do I need to open ports on my Hermes machine?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. The connector initiates an outbound encrypted connection, so the paired machine does not need a public inbound port."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What happens when my paired machine goes offline?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The optional managed cloud runner is designed to claim eligible work under a fenced lease so the local and cloud runners do not execute the same task at the same time."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What does Leash cost?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Web control of your paired machine is free. The managed cloud runner is $10 per month during preview availability."
+        }
+      }
+    ]
+  }
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    :root { --bg:#070a08; --panel:#0d130f; --panel-2:#111a14; --border:#223128; --text:#f4f7f5; --muted:#9aa69e; --green:#8df58d; --green-2:#53c96a; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:radial-gradient(circle at 72% 16%, rgba(83,201,106,.12), transparent 31rem), var(--bg); color:var(--text); font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; line-height:1.6; }
+    a { color:inherit; }
+    nav { max-width:1180px; margin:auto; padding:1.25rem 1.5rem; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
+    nav .brand { font-weight:800; text-decoration:none; letter-spacing:-.02em; }
+    nav .links { display:flex; align-items:center; gap:1.25rem; }
+    nav .links a { color:var(--muted); text-decoration:none; font-size:.92rem; }
+    nav .links .nav-cta { color:#071008; background:var(--green); border-radius:.6rem; padding:.55rem .85rem; font-weight:750; }
+    main { max-width:1180px; margin:auto; padding:5.5rem 1.5rem 4rem; }
+    .hero { display:grid; grid-template-columns:minmax(0,1.05fr) minmax(330px,.8fr); gap:4rem; align-items:center; }
+    .eyebrow { display:inline-flex; gap:.6rem; align-items:center; color:var(--green); text-transform:uppercase; letter-spacing:.18em; font-size:.73rem; font-weight:800; }
+    .dot { width:.55rem; height:.55rem; border-radius:50%; background:var(--green); box-shadow:0 0 1.2rem var(--green); }
+    h1 { font-size:clamp(3rem,7vw,6.4rem); line-height:.94; letter-spacing:-.065em; margin:1.35rem 0 1.5rem; max-width:10ch; }
+    .lede { color:#bdc7c0; font-size:clamp(1.06rem,1.7vw,1.3rem); max-width:44rem; }
+    .actions { display:flex; flex-wrap:wrap; gap:1rem; margin:2rem 0 1.25rem; }
+    .button { display:inline-flex; align-items:center; justify-content:center; min-height:3.25rem; padding:0 1.25rem; border-radius:.72rem; text-decoration:none; font-weight:800; }
+    .button.primary { background:var(--green); color:#071008; box-shadow:0 0 2.2rem rgba(141,245,141,.18); }
+    .button.secondary { border:1px solid var(--border); color:#d6ddd8; background:rgba(255,255,255,.025); }
+    .proof { display:flex; flex-wrap:wrap; gap:1.2rem; color:var(--muted); font-size:.85rem; }
+    .proof span::before { content:"✓"; color:var(--green); margin-right:.45rem; }
+    .console { border:1px solid #2a4932; border-radius:1.1rem; padding:1.2rem; background:linear-gradient(145deg,rgba(17,29,20,.96),rgba(9,14,11,.96)); box-shadow:0 1.5rem 5rem rgba(0,0,0,.38); }
+    .console-head { display:flex; justify-content:space-between; align-items:center; padding:.3rem .2rem 1rem; color:#dfe7e1; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .status { color:var(--green); background:rgba(83,201,106,.14); border:1px solid rgba(83,201,106,.24); border-radius:.45rem; padding:.25rem .5rem; font-size:.7rem; font-weight:800; }
+    .machine { border:1px solid var(--border); border-radius:.8rem; padding:1rem; margin:.7rem 0; display:flex; align-items:center; justify-content:space-between; background:rgba(255,255,255,.018); }
+    .machine strong { display:block; }
+    .machine small { color:var(--muted); }
+    .lease { color:var(--green); text-align:center; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.72rem; padding:.55rem 0; letter-spacing:.08em; }
+    .task { border:1px solid #2e5538; border-radius:.8rem; padding:1rem; color:#c8d2cb; background:rgba(83,201,106,.055); }
+    .bar { height:.3rem; border-radius:1rem; background:#263128; margin-top:1rem; overflow:hidden; }
+    .bar::after { content:""; display:block; width:72%; height:100%; background:var(--green); }
+    section { padding-top:6rem; }
+    h2 { font-size:clamp(2rem,4vw,3.4rem); letter-spacing:-.045em; line-height:1.08; margin:.4rem 0 1rem; }
+    .section-intro { color:var(--muted); max-width:42rem; }
+    .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-top:2rem; }
+    .card { border:1px solid var(--border); background:var(--panel); border-radius:1rem; padding:1.4rem; }
+    .card .number { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; color:var(--green); font-size:.8rem; }
+    .card h3 { margin:.7rem 0 .45rem; font-size:1.1rem; }
+    .card p { margin:0; color:var(--muted); }
+    .pricing { display:grid; grid-template-columns:1fr 1fr; gap:1rem; max-width:860px; }
+    .price { font-size:3rem; font-weight:850; letter-spacing:-.05em; margin:.5rem 0; }
+    .price small { font-size:1rem; color:var(--muted); letter-spacing:0; }
+    .card.featured { border-color:#397147; background:linear-gradient(145deg,rgba(54,110,68,.18),var(--panel)); }
+    .fine-print { color:var(--muted); font-size:.86rem; max-width:780px; margin-top:1.25rem; }
+    footer { max-width:1180px; margin:4rem auto 0; padding:2rem 1.5rem 3rem; border-top:1px solid var(--border); color:var(--muted); display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; font-size:.88rem; }
+    @media (max-width:820px) { .hero { grid-template-columns:1fr; gap:2.4rem; } .grid,.pricing { grid-template-columns:1fr; } main { padding-top:3.5rem; } nav .links a:not(.nav-cta) { display:none; } }
+  </style>
+</head>
+<body>
+  <nav>
+    <a class="brand" href="/">ThumbGate <span style="color:var(--green)">/ Leash</span></a>
+    <div class="links">
+      <a href="#how">How it works</a>
+      <a href="#pricing">Pricing</a>
+      <a class="nav-cta" href="/leash/open" data-cta-id="leash_nav_open" data-cta-placement="nav">Open preview</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="hero">
+      <div>
+        <div class="eyebrow"><span class="dot"></span> Local-first. Cloud-resilient.</div>
+        <h1>Your Hermes work does not stop with your Mac.</h1>
+        <p class="lede">Manage paired Hermes threads from a browser. If your machine disappears, an optional fenced cloud runner can continue eligible work without double-running it.</p>
+        <div class="actions">
+          <a class="button primary" href="/leash/open" data-cta-id="leash_hero_open" data-cta-placement="hero" onclick="if(typeof plausible==='function')plausible('leash_control_plane_open',{props:{placement:'hero'}})">Open the control plane preview →</a>
+          <a class="button secondary" href="#how">See the failover path</a>
+        </div>
+        <div class="proof"><span>Outbound-only pairing</span><span>Fenced leases</span><span>Audit trail</span></div>
+      </div>
+      <div class="console" aria-label="Illustration of a local Hermes machine handing work to a managed cloud runner">
+        <div class="console-head"><strong>⌘ Live routing</strong><span class="status">PROTECTED</span></div>
+        <div class="machine"><div><strong>Your Mac</strong><small>Last seen 2 minutes ago</small></div><span class="status" style="color:#adb8b0;background:#1b231d;border-color:#2a352d">OFFLINE</span></div>
+        <div class="lease">FENCED HANDOFF · LEASE #18</div>
+        <div class="machine" style="border-color:#315c3b"><div><strong>Hermes Cloud Runner</strong><small>Eligible work claimed</small></div><span class="status">ACTIVE</span></div>
+        <div class="task"><small style="color:var(--green)">THREAD / MARKET RESEARCH</small><br>Continue the approved task and preserve the source trail.<div class="bar"></div></div>
+      </div>
+    </div>
+
+    <section id="how">
+      <div class="eyebrow">One control surface</div>
+      <h2>Pair once. Continue from anywhere.</h2>
+      <p class="section-intro">The connector dials out over HTTPS. The control plane tracks machine presence, task ownership, and a bounded handoff lease.</p>
+      <div class="grid">
+        <div class="card"><div class="number">01 / PAIR</div><h3>No inbound networking</h3><p>Your Hermes connector initiates the encrypted connection. No public port or home-router configuration is required.</p></div>
+        <div class="card"><div class="number">02 / CONTROL</div><h3>Browser and phone oversight</h3><p>See paired machines and threads from the web, with the existing Hermes Mobile app as the phone control surface.</p></div>
+        <div class="card"><div class="number">03 / CONTINUE</div><h3>Fenced cloud handoff</h3><p>When the local machine is unavailable, eligible work can move under a time-bounded lease so two runners do not claim the same task.</p></div>
+      </div>
+    </section>
+
+    <section id="pricing">
+      <div class="eyebrow">Simple pricing</div>
+      <h2>Web control is free. Continuation is paid.</h2>
+      <div class="pricing">
+        <div class="card"><div class="number">WEB CONTROL</div><div class="price">$0</div><p>Pair your own Hermes machine, browse its status, and continue local threads from the web.</p></div>
+        <div class="card featured"><div class="number">MANAGED CLOUD RUNNER</div><div class="price">$10 <small>/ month</small></div><p>Optional managed compute for eligible work that should continue while your paired machine is offline.</p></div>
+      </div>
+      <div class="actions"><a class="button primary" href="/leash/open" data-cta-id="leash_pricing_open" data-cta-placement="pricing" onclick="if(typeof plausible==='function')plausible('leash_control_plane_open',{props:{placement:'pricing'}})">Open the live preview →</a></div>
+      <p class="fine-print"><strong>Current status:</strong> the public control plane is in preview while branded-domain routing and full customer sign-in-to-checkout proof are completed. The price above describes the dedicated live Stripe offer; it does not claim existing subscribers or revenue.</p>
+    </section>
+  </main>
+
+  <footer><span>© 2026 ThumbGate</span><span>Pre-action governance for agents that can touch production.</span></footer>
+  <script src="/js/buyer-intent.js"></script>
+</body>
+</html>
