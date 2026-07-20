@@ -67,7 +67,7 @@ jobs:
           retention-days: 7
           name: deploy-scope
           path: deploy-scope.json
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
       - name: Check Railway deployment configuration

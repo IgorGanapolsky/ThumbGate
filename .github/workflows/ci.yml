@@ -91,7 +91,7 @@ jobs:
         # end users — these installs only affect the CI runner.
         run: pip install pytest scikit-learn joblib
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: 'npm'
