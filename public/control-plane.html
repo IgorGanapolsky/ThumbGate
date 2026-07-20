@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ThumbGate Control Plane — Stop runaway AI agents from your phone</title>
+<meta name="description" content="See which AI coding agents are stuck, burning money, or attempting dangerous actions — and stop them remotely. Waitlist for the ThumbGate reliability control plane. Paid diagnostic available today.">
+<link rel="canonical" href="__APP_ORIGIN__/control-plane">
+<link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
+<meta property="og:title" content="ThumbGate Control Plane — Stop runaway AI agents from your phone">
+<meta property="og:description" content="See which AI coding agents are stuck, burning money, or attempting dangerous actions — and stop them remotely. Waitlist + $499 diagnostic.">
+<meta property="og:url" content="__APP_ORIGIN__/control-plane">
+<meta property="og:type" content="website">
+<meta name="robots" content="index,follow">
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #05080a;
+  --panel: #0d1418;
+  --panel-2: #12181d;
+  --line: #24323a;
+  --text: #eef7f9;
+  --muted: #a9b7bd;
+  --cyan: #28d5ee;
+  --green: #48dd83;
+  --red: #ff7676;
+  --amber: #f5c45e;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.5;
+}
+a { color: inherit; }
+header, main, footer { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px 0;
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; }
+.mark { width: 28px; height: 28px; display: block; }
+nav { display: flex; gap: 18px; color: var(--muted); font-size: 14px; }
+nav a { color: var(--muted); text-decoration: none; }
+nav a:hover { color: var(--text); }
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(340px, 0.95fr);
+  gap: 36px;
+  align-items: start;
+  padding: 48px 0 36px;
+}
+.eyebrow {
+  color: var(--cyan);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+h1 {
+  margin: 14px 0 18px;
+  max-width: 720px;
+  font-size: clamp(38px, 5.4vw, 64px);
+  line-height: .96;
+  letter-spacing: 0;
+}
+.lede {
+  max-width: 650px;
+  margin: 0 0 26px;
+  color: var(--muted);
+  font-size: 19px;
+}
+.actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch; }
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  text-decoration: none;
+  font-weight: 800;
+  color: var(--text);
+  background: transparent;
+}
+.button.primary {
+  border-color: var(--cyan);
+  background: var(--cyan);
+  color: #031014;
+}
+.button.secondary { border-color: var(--line); }
+.waitlist-card {
+  width: min(100%, 520px);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 8px;
+  padding: 22px;
+}
+.waitlist-card h2 { margin: 0 0 8px; font-size: 22px; }
+.waitlist-card p { color: var(--muted); margin: 0 0 16px; font-size: 15px; }
+label {
+  display: block;
+  margin: 14px 0 7px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 750;
+}
+input, select {
+  width: 100%;
+  border: 1px solid #32424a;
+  border-radius: 7px;
+  background: #070b0d;
+  color: var(--text);
+  padding: 12px;
+  font: inherit;
+}
+button {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 18px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--cyan);
+  color: #031014;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+button:disabled { opacity: .5; cursor: wait; }
+.hint { font-size: 13px; color: var(--muted); margin-top: 10px; }
+.hint.ok { color: var(--green); }
+.hint.err { color: var(--red); }
+.proof-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 28px 0 0;
+}
+.proof {
+  min-height: 90px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 8px;
+}
+.proof strong { display: block; font-size: 20px; }
+.proof span { color: var(--muted); font-size: 14px; }
+section {
+  padding: 36px 0;
+  border-top: 1px solid var(--line);
+}
+section h2 {
+  font-size: 28px;
+  margin: 0 0 18px;
+  max-width: 720px;
+}
+section .lede { font-size: 17px; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.box {
+  min-height: 170px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-2);
+}
+.box h3 { margin: 0 0 8px; font-size: 18px; }
+.box p { margin: 0; color: var(--muted); font-size: 15px; }
+.box.warn { border-color: rgba(245,196,94,0.35); }
+.box.danger { border-color: rgba(255,118,118,0.35); }
+.compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 18px;
+}
+.compare .col {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+.compare .col h3 { margin: 0 0 12px; font-size: 16px; }
+.compare .col ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 14px; line-height: 1.7; }
+.compare .col.you { border-color: var(--cyan); }
+.compare .col.you h3 { color: var(--cyan); }
+.gap-callout {
+  margin: 22px 0 0;
+  padding: 18px 22px;
+  border: 1px solid rgba(40,213,238,0.35);
+  border-radius: 8px;
+  background: rgba(40,213,238,0.06);
+}
+.gap-callout strong { color: var(--cyan); }
+.pricing-card {
+  padding: 24px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 8px;
+}
+.pricing-card h3 { margin: 0 0 6px; font-size: 22px; }
+.pricing-card .price { font-size: 36px; font-weight: 800; margin: 6px 0; }
+.pricing-card .price small { font-size: 15px; color: var(--muted); font-weight: 500; }
+.pricing-card p { color: var(--muted); margin: 0 0 16px; }
+footer { padding: 32px 0 44px; color: var(--muted); font-size: 14px; }
+footer a { color: var(--cyan); text-decoration: none; }
+ul.facts { margin: 8px 0 0; padding-left: 18px; color: var(--muted); font-size: 14px; line-height: 1.7; }
+@media (max-width: 860px) {
+  header { align-items: flex-start; flex-direction: column; }
+  .hero, .grid, .proof-strip, .compare { grid-template-columns: 1fr; }
+  h1 { font-size: 38px; }
+}
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "name": "ThumbGate Control Plane",
+  "provider": { "@type": "Organization", "name": "ThumbGate", "url": "__APP_ORIGIN__" },
+  "description": "See which AI coding agents are stuck, burning money, or attempting dangerous actions — and stop them remotely. Waitlist plus a $499 reliability diagnostic available today.",
+  "offers": {
+    "@type": "Offer",
+    "price": "__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__",
+    "priceCurrency": "USD",
+    "availability": "https://schema.org/InStock",
+    "url": "__APP_ORIGIN__/diagnostic"
+  }
+}
+</script>
+__GA_BOOTSTRAP__
+</head>
+<body>
+<header>
+  <a class="brand" href="/">
+    <img class="mark" src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" width="28" height="28" />
+    <span>ThumbGate</span>
+  </a>
+  <nav aria-label="Primary">
+    <a href="/pro">Pro</a>
+    <a href="/diagnostic">Diagnostic</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/llm-context.md">LLM Context</a>
+  </nav>
+</header>
+<main>
+  <div class="hero">
+    <div>
+      <div class="eyebrow">Reliability Control Plane · Coming soon</div>
+      <h1>See which AI agents are stuck, burning money, or about to do something dangerous — and stop them from your phone.</h1>
+      <p class="lede">A hosted control plane for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, OpenCode). Browse in-flight sessions. Catch runaway token loops and unsafe terminal actions before they blow through the budget or damage a repo. Kill or approve remotely.</p>
+      <div class="actions">
+        <a class="button primary" href="#waitlist" data-revenue-cta data-cta-id="control_plane_waitlist" data-cta-placement="hero">Join the waitlist</a>
+        <a class="button secondary" href="/diagnostic" data-revenue-cta data-cta-id="control_plane_diagnostic" data-cta-placement="hero">Get the $499 diagnostic now →</a>
+      </div>
+      <div class="proof-strip" aria-label="Why this exists">
+        <div class="proof"><strong>Runaway loops</strong><span>Get a flag the moment an agent burns past your token or dollar ceiling on a single session.</span></div>
+        <div class="proof"><strong>Dangerous actions</strong><span>Hot-key approvals for destructive writes, force-pushes, deletes, and shell escape hatches.</span></div>
+        <div class="proof"><strong>Silent failures</strong><span>Crashed or hung sessions surface in one inbox — no more "did it finish or did it die?".</span></div>
+      </div>
+    </div>
+    <div id="waitlist" class="waitlist-card">
+      <h2>Join the waitlist</h2>
+      <p>We open seats in small batches. Paid diagnostic customers skip the queue.</p>
+      <form id="waitlist-form" action="/api/newsletter" method="POST" data-waitlist-form>
+        <input type="hidden" name="page" value="/control-plane">
+        <input type="hidden" name="source" value="control_plane_waitlist">
+        <input type="hidden" name="utm_medium" value="control_plane_waitlist">
+        <input type="hidden" name="utm_campaign" value="reliability_control_plane">
+        <input type="hidden" name="list" value="control_plane_waitlist">
+        <label for="wl-email">Work email</label>
+        <input id="wl-email" type="email" name="email" autocomplete="email" required placeholder="you@company.com">
+        <label for="wl-stack">Which agents do you run unattended?</label>
+        <select id="wl-stack" name="agent_stack">
+          <option value="">Select one</option>
+          <option>Claude Code</option>
+          <option>Cursor (CLI / background)</option>
+          <option>Codex CLI</option>
+          <option>Gemini CLI</option>
+          <option>OpenCode</option>
+          <option>Multiple — mixed fleet</option>
+          <option>Custom / self-hosted</option>
+        </select>
+        <label for="wl-pain">What hurts most right now?</label>
+        <select id="wl-pain" name="top_pain">
+          <option value="">Select one</option>
+          <option>Runaway token / spend loops</option>
+          <option>Unsafe terminal actions (rm, force-push, deletes)</option>
+          <option>Silent agent crashes or hangs</option>
+          <option>No way to stop an agent from my phone</option>
+          <option>No audit trail of agent actions</option>
+          <option>Multiple agents, no unified view</option>
+        </select>
+        <button type="submit" data-waitlist-submit>Add me to the waitlist</button>
+        <p class="hint" data-waitlist-hint>One email per seat. No spam. Unsubscribe in one click.</p>
+      </form>
+    </div>
+  </div>
+
+  <section>
+    <h2>What this product is — and what it is not</h2>
+    <p class="lede">This is not "sync your chats across machines." CloudCLI already does that for €7/month and does it well. ThumbGate's control plane is the missing reliability layer that sits on top of any session source.</p>
+    <div class="compare">
+      <div class="col you">
+        <h3>CloudCLI / session browsers</h3>
+        <ul>
+          <li>Browse and resume sessions across devices ✓</li>
+          <li>Cross-vendor agent support ✓</li>
+          <li>Mobile PWA session view ✓</li>
+          <li>Token cost calculator (community plugin) ✓</li>
+          <li>Stops at "show me what happened"</li>
+          <li>No incident learning across sessions</li>
+        </ul>
+      </div>
+      <div class="col">
+        <h3>ThumbGate Control Plane</h3>
+        <ul>
+          <li>Sees the sessions that are burning budget <em>right now</em></li>
+          <li>Hot-key approvals before dangerous tool calls</li>
+          <li>Mobile kill switch — stop an agent from your phone</li>
+          <li>Incident history: "your agent tried rm -rf 6 times today"</li>
+          <li>History-aware block rules (ThumbGate) that learn from kills</li>
+          <li>Goes beyond observe — into <em>act on incidents</em></li>
+        </ul>
+      </div>
+    </div>
+    <div class="gap-callout">
+      <strong>The wedge:</strong> CloudCLI shows you what your agent did. ThumbGate Control Plane shows you the sessions that are burning money or about to force-push main — and lets you stop them remotely.
+    </div>
+  </section>
+
+  <section>
+    <h2>What's live today vs. what's coming</h2>
+    <div class="grid">
+      <div class="box">
+        <h3>Live now (free OSS)</h3>
+        <p>ThumbGate's local PreToolUse hook gates tool calls before execution, hard-blocks detected secret leaks, and logs every decision. Local-first; nothing leaves your machine. <a style="color:var(--cyan)" href="/install">Install →</a></p>
+      </div>
+      <div class="box">
+        <h3>Live now ($499 diagnostic)</h3>
+        <p>One 60-minute working review on one repeated AI-agent failure in your workflow. Failure taxonomy, block/warn/review split, and a proof checklist. <a style="color:var(--cyan)" href="/diagnostic">Book a diagnostic →</a></p>
+      </div>
+      <div class="box warn">
+        <h3>Coming — Hosted Control Plane</h3>
+        <p>Multi-tenant hosted dashboard + mobile kill switch + cross-vendor incident timeline. Shipping in small batches to paid-diagnostic and waitlist customers.</p>
+      </div>
+    </div>
+    <div class="intake-card" style="margin-top:18px; border:1px solid var(--line); background:var(--panel); border-radius:8px; padding:22px;">
+      <h3 style="margin:0 0 8px; font-size:18px;">Why we are not shipping the hosted SaaS tonight</h3>
+      <p style="color:var(--muted); margin:0 0 10px; font-size:15px;">A real multi-tenant control plane needs per-user isolation, secrets handling, and a GDPR review. We do not fake it. Until the waitlist plus the live $499 diagnostic prove paid buyer demand, we keep building the local-first engine and the diagnostic only.</p>
+      <p style="color:var(--muted); margin:0; font-size:15px;">If you are one of the buyers — run unattended agents in production, feel the cost of a runaway loop, and want a single phone screen to stop them — join the waitlist and book the $499 diagnostic. You will be the first cohort we onboard.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>The $499 reliability diagnostic</h2>
+    <p class="lede">Validate the wedge on your real workflow before the hosted dashboard ships. One fixed price, credited toward a sprint if implementation follows.</p>
+    <div class="pricing-card">
+      <h3>Agent Reliability Diagnostic</h3>
+      <div class="price"> $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ <small>one-time, USD</small></div>
+      <p>One 60-minute working review on one repeated AI-agent failure in your workflow. You leave with the failure taxonomy, the block/warn/human-review matrix, and a verification checklist. Credited toward a Workflow Hardening Sprint if implementation follows.</p>
+      <a class="button primary" style="display:inline-flex; width:auto; min-height:48px; padding:12px 24px;" href="/diagnostic" data-revenue-cta data-cta-id="control_plane_diagnostic_secondary" data-cta-placement="pricing_section">Book the $499 diagnostic →</a>
+      <ul class="facts">
+        <li>One workflow, scoped tightly so the proof is shippable.</li>
+        <li>Out-of-scope workflows get a fit review first — no checkout required.</li>
+        <li>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ credited toward a $__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint if implementation follows.</li>
+        <li>No recurring subscription. No lock-in. No marketplaced revenue share.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Designed for operators running unattended agents</h2>
+    <div class="grid">
+      <div class="box">
+        <h3>Overnight CI / batch agent flows</h3>
+        <p>Claude Code or Cursor running in CI, scheduled cron, or long background tasks. Wake up to a flagged incident, not a $400 API bill and a force-push.</p>
+      </div>
+      <div class="box">
+        <h3>Multi-machine fleets</h3>
+        <p>MacBook + Mac mini + cloud dev boxes. One mobile screen sees every active session across every machine, with kill and approve actions.</p>
+      </div>
+      <div class="box">
+        <h3>Agentic CI/CD steps</h3>
+        <p>Agents writing PRs, deploying, or modifying prod configs. Hot-key approvals slipstream into your existing ThumbGate gate decisions.</p>
+      </div>
+    </div>
+  </section>
+</main>
+<footer>
+  ThumbGate is local-first agent governance. Join the <a href="#waitlist">control-plane waitlist</a>, book the <a href="/diagnostic">$499 diagnostic</a>, or install the <a href="/install">free local hook</a>.
+</footer>
+<script>
+(function () {
+  const search = new URLSearchParams(window.location.search);
+  const form = document.querySelector('[data-waitlist-form]');
+  const hint = document.querySelector('[data-waitlist-hint]');
+  const submitBtn = document.querySelector('[data-waitlist-submit]');
+  if (!form || !hint || !submitBtn) return;
+
+  const passthrough = /^(utm_(source|medium|campaign|content|term)|source|acquisition_id|visitor_id|session_id|creator|community|post_id|comment_id|campaign_variant|offer_code|referrer_host)$/i;
+  for (const [key, value] of search.entries()) {
+    if (!passthrough.test(key) || !value.trim()) continue;
+    let input = form.querySelector('input[name="' + CSS.escape(key) + '"]');
+    if (!input) {
+      input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = key;
+      form.appendChild(input);
+    }
+    input.value = value.trim();
+  }
+
+  function telemetry(eventName, props) {
+    try {
+      navigator.sendBeacon && navigator.sendBeacon('/v1/telemetry/event', JSON.stringify({
+        event: eventName,
+        page: '/control-plane',
+        source: 'control_plane_page',
+        props: props || {}
+      }));
+    } catch (_) {}
+  }
+
+  document.addEventListener('click', function (event) {
+    const cta = event.target.closest('[data-revenue-cta]');
+    if (!cta) return;
+    telemetry('control_plane_cta_click', {
+      ctaId: cta.getAttribute('data-cta-id'),
+      ctaPlacement: cta.getAttribute('data-cta-placement')
+    });
+  });
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Adding…';
+    hint.className = 'hint';
+    hint.textContent = '';
+    fetch(form.action, {
+      method: 'POST',
+      body: new FormData(form),
+      headers: { 'X-Requested-With': 'fetch', 'Accept': 'application/json' }
+    }).then(function (r) {
+      if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || ('HTTP ' + r.status)); });
+      return r.json().catch(function () { return { ok: true }; });
+    }).then(function () {
+      hint.className = 'hint ok';
+      hint.textContent = "You're on the list. Check your inbox for a confirmation.";
+      form.reset();
+      telemetry('control_plane_waitlist_subscribed');
+    }).catch(function (err) {
+      hint.className = 'hint err';
+      hint.textContent = String(err && err.message || 'Could not subscribe. Try again.');
+      telemetry('control_plane_waitlist_failed', { error: hint.textContent });
+    }).finally(function () {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Add me to the waitlist';
+    });
+  });
+})();
+</script>
+</body>
+</html>

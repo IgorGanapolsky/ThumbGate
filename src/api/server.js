@@ -257,6 +257,7 @@ const FEDERAL_PAGE_PATH = path.resolve(__dirname, '../../public/federal.html');
 const PRICING_PAGE_PATH = path.resolve(__dirname, '../../public/pricing.html');
 const ABOUT_PAGE_PATH = path.resolve(__dirname, '../../public/about.html');
 const DIAGNOSTIC_PAGE_PATH = path.resolve(__dirname, '../../public/diagnostic.html');
+const CONTROL_PLANE_PAGE_PATH = path.resolve(__dirname, '../../public/control-plane.html');
 const PARTNER_INTAKE_PAGE_PATH = path.resolve(__dirname, '../../public/partner-intake.html');
 const INSTALL_PAGE_PATH = path.resolve(__dirname, '../../public/install.html');
 const LEARN_DIR = path.resolve(__dirname, '../../public/learn');
@@ -3154,6 +3155,10 @@ function loadProPageHtml(runtimeConfig, pageContext = {}) {
 
 function loadDiagnosticPageHtml(runtimeConfig, pageContext = {}) {
   return loadPublicMarketingTemplateHtml(DIAGNOSTIC_PAGE_PATH, runtimeConfig, pageContext);
+}
+
+function loadControlPlanePageHtml(runtimeConfig, pageContext = {}) {
+  return loadPublicMarketingTemplateHtml(CONTROL_PLANE_PAGE_PATH, runtimeConfig, pageContext);
 }
 
 function loadPartnerIntakePageHtml(runtimeConfig, pageContext = {}) {
@@ -6123,6 +6128,37 @@ async function addContext(){
         });
       } catch (err) {
         sendText(res, 500, err.message || 'Diagnostic page unavailable');
+      }
+      return;
+    }
+
+    // Reliability / safety control-plane landing page. Wedge pitch for the
+    // planned hosted dashboard product: browse sessions AND stop runaway
+    // agents / dangerous actions / silent failures from your phone. Captures
+    // waitlist signups via /api/newsletter; primary CTA is the $499
+    // diagnostic to validate paid buyer demand before any multi-tenant code.
+    if (isGetLikeRequest && (
+      pathname === '/control-plane'
+      || pathname === '/control-plane.html'
+      || pathname === '/agent-control-plane'
+      || pathname === '/agent-control-plane.html'
+      || pathname === '/sessions'
+      || pathname === '/sessions.html'
+    )) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: loadControlPlanePageHtml,
+          extraTelemetry: {
+            pageType: 'control-plane',
+          },
+        });
+      } catch (err) {
+        sendText(res, 500, err.message || 'Control plane page unavailable');
       }
       return;
     }
