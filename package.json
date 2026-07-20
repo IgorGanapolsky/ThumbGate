@@ -893,7 +893,8 @@
     "express@4.22.1": {
       "path-to-regexp": "0.1.13"
     },
-    "js-yaml": "4.2.0"
+    "js-yaml": "4.2.0",
+    "adm-zip": "^0.6.0"
   },
   "mcpName": "io.github.IgorGanapolsky/thumbgate",
   "devDependencies": {
