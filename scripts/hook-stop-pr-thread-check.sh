@@ -62,24 +62,38 @@ node -e '
   // any "merged"/"resolved"/"done" claim about a DIFFERENT repo entirely
   // (e.g. summarizing a PR merged in a sibling project) false-positives here
   // just because the current repo happens to be on a non-main branch.
+  //
+  // Fail CLOSED when the check itself is inconclusive: `gh` missing, expired
+  // auth, or a transient API error must not be treated the same as a
+  // genuine "no PR for this branch" result, or a real open PR with
+  // unresolved threads could slip through a completion claim unverified.
   let prExists = false;
+  let prCheckFailed = false;
   try {
-    const out = execSync("gh pr view --json number", { encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] });
+    const out = execSync("gh pr view --json number", { encoding: "utf-8", stdio: ["ignore", "pipe", "pipe"] });
     const parsed = JSON.parse(out || "{}");
     prExists = Boolean(parsed && parsed.number);
-  } catch {
-    prExists = false;
+  } catch (err) {
+    const stderr = String((err && err.stderr) || "");
+    if (/no pull requests found/i.test(stderr)) {
+      prExists = false;
+    } else {
+      prCheckFailed = true;
+    }
   }
 
-  if (!prExists) {
-    // No open PR for this branch — nothing to check thread-resolution against
+  if (!prExists && !prCheckFailed) {
+    // Genuinely no open PR for this branch — nothing to check threads against
     process.exit(0);
   }
 
-  // 4. Block: completion claim on a feature branch without thread evidence
+  // 4. Block: completion claim on a feature branch without thread evidence,
+  // or without being able to verify thread state at all (fail closed).
   const output = {
     decision: "block",
-    reason: "MANDATORY: Before declaring done, run `gh pr view --json reviewDecision,comments` and confirm 0 unresolved threads. Show the output in your response."
+    reason: prCheckFailed
+      ? "MANDATORY: Could not verify whether a PR exists for this branch (gh pr view failed for a reason other than \"no PR\" — check gh auth/availability). Re-run `gh pr view --json reviewDecision,comments` and show the output before declaring done."
+      : "MANDATORY: Before declaring done, run `gh pr view --json reviewDecision,comments` and confirm 0 unresolved threads. Show the output in your response."
   };
   process.stdout.write(JSON.stringify(output));
 ' 2>/dev/null || true

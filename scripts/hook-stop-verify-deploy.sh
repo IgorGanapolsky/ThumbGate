@@ -62,17 +62,22 @@ node -e '
     process.exit(0);
   }
 
-  // A bare "deployed"/"shipped" is ambiguous on its own — e.g. "no model was
-  // deployed" (a local Ollama model) or "the PR merged" (a sibling repo) have
-  // nothing to do with ThumbGate production. Only treat this as a production
-  // claim if the response also names ThumbGate/Railway/production somewhere.
-  const contextSignal = new RegExp(
-    prodUrl.replace(/\./g, "\\.") + "|" + prodDomain.replace(/\./g, "\\.") +
-    "|\\bthumbgate\\b|\\brailway\\b|\\bproduction\\b|\\bprod\\b",
+  // A bare "deployed"/"shipped" is ambiguous - e.g. "no model was deployed"
+  // (a local Ollama model) or "the PR merged" (a sibling repo) have nothing
+  // to do with ThumbGate production. But REQUIRING ThumbGate/production
+  // wording to enable the check (the previous approach) fails open on real
+  // claims phrased without those words, e.g. "the federal route is now
+  // live" - so default stays strict; only skip when the response contains
+  // a positive signal that this is about a DIFFERENT, named system. This is
+  // an exclusion list of exactly the false positives already hit, not an
+  // inclusion list that a genuine ThumbGate claim could fail to match.
+  const foreignSystemSignal = new RegExp(
+    "\\bmac-yolo-safeguards\\b|\\btinker-yolo\\b|\\bhermes\\b|\\bhermes-mobile\\b|" +
+    "\\bollama\\b|\\bmac mini\\b|\\bmac pro\\b|\\banswerguard\\b",
     "i"
   ).test(response);
 
-  if (!contextSignal) {
+  if (foreignSystemSignal) {
     process.exit(0);
   }
 
