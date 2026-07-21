@@ -62,6 +62,20 @@ node -e '
     process.exit(0);
   }
 
+  // A bare "deployed"/"shipped" is ambiguous on its own — e.g. "no model was
+  // deployed" (a local Ollama model) or "the PR merged" (a sibling repo) have
+  // nothing to do with ThumbGate production. Only treat this as a production
+  // claim if the response also names ThumbGate/Railway/production somewhere.
+  const contextSignal = new RegExp(
+    prodUrl.replace(/\./g, "\\.") + "|" + prodDomain.replace(/\./g, "\\.") +
+    "|\\bthumbgate\\b|\\brailway\\b|\\bproduction\\b|\\bprod\\b",
+    "i"
+  ).test(response);
+
+  if (!contextSignal) {
+    process.exit(0);
+  }
+
   const hostPattern = new RegExp(
     prodUrl.replace(/\./g, "\\.") + "|" + prodDomain.replace(/\./g, "\\."),
     "i"

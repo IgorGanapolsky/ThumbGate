@@ -52,11 +52,18 @@ describe('hook-stop-verify-deploy', () => {
   });
 
   test('blocks "deployed" without any evidence', () => {
-    const r = runHook('The blog post is deployed.');
+    const r = runHook('ThumbGate is deployed.');
     assert.equal(r.exitCode, 0);
     assert.ok(r.decision, 'expected a JSON decision payload');
     assert.equal(r.decision.decision, 'block');
     assert.match(r.decision.reason, /CLAUDE\.md hard-block rule #6/i);
+  });
+
+  test('does not block a "deployed" claim unrelated to ThumbGate production', () => {
+    // e.g. summarizing a local Ollama model's deploy state, or a PR merged
+    // in a sibling repo — neither has anything to do with ThumbGate prod.
+    const r = runHook('No model was deployed on the mac mini; Ollama stays disabled.');
+    assert.equal(r.decision, null);
   });
 
   test('blocks "live in production" without evidence', () => {
@@ -65,7 +72,7 @@ describe('hook-stop-verify-deploy', () => {
   });
 
   test('blocks "shipped" without evidence', () => {
-    const r = runHook('Shipped the fix to main.');
+    const r = runHook('Shipped the ThumbGate fix to production.');
     assert.equal(r.decision?.decision, 'block');
   });
 

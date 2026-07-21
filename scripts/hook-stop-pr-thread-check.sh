@@ -57,6 +57,25 @@ node -e '
     process.exit(0);
   }
 
+  // 3b. A branch name alone does not mean a PR exists for it — verify one
+  // actually does before demanding thread-resolution evidence. Without this,
+  // any "merged"/"resolved"/"done" claim about a DIFFERENT repo entirely
+  // (e.g. summarizing a PR merged in a sibling project) false-positives here
+  // just because the current repo happens to be on a non-main branch.
+  let prExists = false;
+  try {
+    const out = execSync("gh pr view --json number", { encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] });
+    const parsed = JSON.parse(out || "{}");
+    prExists = Boolean(parsed && parsed.number);
+  } catch {
+    prExists = false;
+  }
+
+  if (!prExists) {
+    // No open PR for this branch — nothing to check thread-resolution against
+    process.exit(0);
+  }
+
   // 4. Block: completion claim on a feature branch without thread evidence
   const output = {
     decision: "block",
