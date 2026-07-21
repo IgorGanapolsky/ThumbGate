@@ -436,6 +436,18 @@ test('public landing page gives cold users a first-dollar activation path', () =
   assert.doesNotMatch(landingPage, /in 5 minutes|in 60 seconds/i);
 });
 
+test('public landing page keeps local-first evidence scoped and below activation', () => {
+  const landingPage = readLandingPage();
+  const activationIndex = landingPage.indexOf('First-Dollar Activation Path');
+  const evidenceIndex = landingPage.indexOf('Why local-first?');
+
+  assert.ok(activationIndex > -1);
+  assert.ok(evidenceIndex > activationIndex);
+  assert.match(landingPage, /data ownership requires usable control, governance, portability, and structural independence/i);
+  assert.match(landingPage, /infoq\.com\/news\/2026\/07\/data-ownership-localfirst/);
+  assert.doesNotMatch(landingPage, /the architectural debate is settled/i);
+});
+
 test('Codex plugin page keeps proof and follow-on CTAs close to the install path', () => {
   const codexPluginPage = readCodexPluginPage();
 
