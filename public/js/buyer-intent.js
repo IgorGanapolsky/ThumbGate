@@ -361,10 +361,22 @@
       });
     }
 
-    if (checkoutWasSeen() && global.setTimeout) {
-      global.setTimeout(function() {
+    var checkoutReturnTimer = null;
+
+    function scheduleCheckoutReturnSurvey() {
+      if (!checkoutWasSeen() || !global.setTimeout) return;
+      if (checkoutReturnTimer && global.clearTimeout) {
+        global.clearTimeout(checkoutReturnTimer);
+      }
+      checkoutReturnTimer = global.setTimeout(function() {
+        checkoutReturnTimer = null;
         showAbandonSurvey('checkout_return');
       }, settings.checkoutReturnSurveyDelayMs || 1200);
+    }
+
+    scheduleCheckoutReturnSurvey();
+    if (global.addEventListener) {
+      global.addEventListener('pageshow', scheduleCheckoutReturnSurvey);
     }
 
     return {

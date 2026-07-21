@@ -56,10 +56,26 @@ test.describe('/ landing page clickability — comprehensive E2E coverage', () =
 
   test('clicking nav Install Free copies the command without leaving the page', async ({ page }) => {
     await page.goto('/');
+    await page.evaluate(() => {
+      window.__thumbgatePlausibleEvents = [];
+      window.plausible = (eventName, options) => {
+        window.__thumbgatePlausibleEvents.push({ eventName, options });
+      };
+    });
     const install = page.locator('[data-nav-install]');
     await install.click();
     await expect(install).toHaveText(/Copied/);
     await expect(page).toHaveURL(/\/$/);
+
+    const events = await page.evaluate(() => window.__thumbgatePlausibleEvents);
+    expect(events.some(({ eventName }) => eventName === 'install_guide_click')).toBe(true);
+    expect(events.some(({ eventName }) => eventName === 'chatgpt_gpt_click')).toBe(false);
+    expect(events).toContainEqual(expect.objectContaining({
+      eventName: 'pricing_cta_click',
+      options: expect.objectContaining({
+        props: expect.objectContaining({ tier: 'install' }),
+      }),
+    }));
   });
 
   test('hero explanation stays concise', async ({ page }) => {
@@ -68,6 +84,23 @@ test.describe('/ landing page clickability — comprehensive E2E coverage', () =
       element.textContent.trim().split(/\s+/).length
     ));
     expect(words).toBeLessThanOrEqual(25);
+  });
+
+  test('checkout-return survey is re-armed when browser history restores an eligible page', async ({ page }) => {
+    await page.goto('/guide');
+    const checkout = page.locator('[data-assist-cta="assist_pro_checkout"]');
+    await expect(checkout).toBeVisible();
+
+    await checkout.evaluate((element) => {
+      element.addEventListener('click', (event) => event.preventDefault(), { capture: true, once: true });
+    });
+    await checkout.click();
+    await expect(page.locator('[data-thumbgate-abandon-survey]')).toHaveCount(0);
+
+    await page.evaluate(() => window.dispatchEvent(new Event('pageshow')));
+    const survey = page.locator('[data-thumbgate-abandon-survey="checkout_return"]');
+    await expect(survey).toBeVisible({ timeout: 5000 });
+    await expect(survey).toContainText('What stopped you from completing checkout?');
   });
 
   // --- nav region (in-page anchors that are actually visible) ---

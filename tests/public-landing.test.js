@@ -648,7 +648,10 @@ test('public landing page includes Plausible custom event tracking for all CTAs'
   assert.match(landingPage, /selector: '#team-pilot-intake-form'/);
   assert.match(landingPage, /trackClick\('.btn-free', 'install_click'/);
   assert.match(landingPage, /trackClick\('.btn-demo-link', 'demo_click'/);
-  assert.match(landingPage, /trackClick\('.nav-cta:not\(\[data-revenue-cta\]\)', 'chatgpt_gpt_click'/);
+  assert.match(landingPage, /trackClick\('.nav-cta\[data-nav-install\]', 'install_guide_click'/);
+  assert.match(landingPage, /ctaId: 'nav_install_cli'/);
+  assert.match(landingPage, /trackClick\('.nav-cta:not\(\[data-revenue-cta\]\):not\(\[data-nav-install\]\)', 'chatgpt_gpt_click'/);
+  assert.match(landingPage, /if \(el\.hasAttribute\('data-nav-install'\)\) return 'install'/);
   assert.match(landingPage, /plausible\('faq_open'/);
   assert.match(landingPage, /plausible\('scroll_depth'/);
   assert.match(landingPage, /trackClick\('.proof-bar a', 'proof_bar_click'\)/);

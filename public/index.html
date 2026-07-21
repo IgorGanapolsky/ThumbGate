@@ -1911,6 +1911,7 @@ function initializeTeamIntakeTelemetry() {
 function resolvePricingClickTier(el) {
   if (el.classList.contains('btn-install-hero')) return 'install';
   if (el.classList.contains('btn-install-link')) return 'install';
+  if (el.hasAttribute('data-nav-install')) return 'install';
   if (el.classList.contains('btn-gpt-page')) return 'chatgpt_gpt';
   if (el.classList.contains('btn-pro')) return 'pro';
   if (el.classList.contains('btn-pro-page')) return 'pro_page';
@@ -1983,7 +1984,14 @@ function copyInstall(el) {
   trackClick('.btn-team', 'workflow_sprint_intake_click', { tier: 'team', offer: 'workflow_hardening_sprint' });
   trackClick('.btn-free', 'install_click', { tier: 'free' });
   trackClick('.btn-demo-link', 'demo_click', { source: 'homepage' });
-  trackClick('.nav-cta:not([data-revenue-cta])', 'chatgpt_gpt_click', { tier: 'free', source: 'nav' });
+  trackClick('.nav-cta[data-nav-install]', 'install_guide_click', {
+    tier: 'free',
+    source: 'nav_install',
+    ctaId: 'nav_install_cli',
+    ctaPlacement: 'nav',
+    planId: 'free',
+  });
+  trackClick('.nav-cta:not([data-revenue-cta]):not([data-nav-install])', 'chatgpt_gpt_click', { tier: 'free', source: 'nav' });
 
   /* Pricing CTA conversion tracking — fires on every Get Started / Pro / Enterprise button click
      with section context so we can distinguish pricing section vs final CTA section clicks */
