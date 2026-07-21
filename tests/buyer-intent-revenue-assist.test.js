@@ -31,6 +31,15 @@ test('buyer intent script exposes paid CTA and abandon reason observability', ()
   assert.match(BUYER_INTENT, /researching/);
 });
 
+test('abandon survey requires a prior checkout visit and never fires on generic dwell or exit intent', () => {
+  assert.match(BUYER_INTENT, /wasSurveyShown\(\) \|\| !checkoutWasSeen\(\)/);
+  assert.match(BUYER_INTENT, /showAbandonSurvey\('checkout_return'\)/);
+  assert.match(BUYER_INTENT, /What stopped you from completing checkout\?/);
+  assert.doesNotMatch(BUYER_INTENT, /showAbandonSurvey\('dwell_45s'\)/);
+  assert.doesNotMatch(BUYER_INTENT, /showAbandonSurvey\('exit_intent'\)/);
+  assert.doesNotMatch(BUYER_INTENT, /showAbandonSurvey\('cta_dismiss'\)/);
+});
+
 test('revenue assist routes workflow help through intake, not blind diagnostic checkout', () => {
   const intakeLinkTemplate = BUYER_INTENT.match(/<a data-assist-cta="assist_workflow_intake"[^;]+Send workflow first<\/a>/);
 

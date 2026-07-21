@@ -132,38 +132,33 @@ test('public landing page distinguishes pre-action governance from logging and s
   assert.match(landingPage, /hosted team sync, org dashboards, SSO, SIEM, and compliance packaging are not general-availability/i);
 });
 
-test('public landing page exposes above-fold paid diagnostic/sprint CTAs with Pro as side lane', () => {
+test('public landing page exposes one primary free-install path with immediate proof', () => {
   const landingPage = readLandingPage();
   const heroStart = landingPage.indexOf('<!-- HERO -->');
   const heroEnd = landingPage.indexOf('<div class="hero-trust-bar">');
   const aboveFold = landingPage.slice(0, heroEnd);
   const heroBlock = landingPage.slice(heroStart, heroEnd);
+  const heroLede = heroBlock.match(/<p class="hero-lede">([\s\S]*?)<\/p>/);
 
   assert.ok(heroStart > -1);
   assert.ok(heroEnd > heroStart);
-  assert.match(aboveFold, /cta_id=nav_pay_diagnostic/);
-  assert.match(aboveFold, /data-revenue-cta data-cta-id="nav_pay_diagnostic"/);
-  assert.match(heroBlock, /cta_id=hero_workflow_sprint_diagnostic_checkout/);
-  assert.match(heroBlock, /data-revenue-cta data-cta-id="hero_workflow_sprint_diagnostic_checkout"/);
-  assert.match(heroBlock, /Start \$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic/);
-  assert.match(heroBlock, /href="\/diagnostic\?/);
-  assert.match(heroBlock, /cta_id=hero_workflow_sprint_checkout/);
-  assert.match(heroBlock, /Scope \$__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint/);
-  assert.match(heroBlock, /cta_id=hero_start_pro/);
-  assert.match(heroBlock, /Start Pro — \$19\/mo/);
-  assert.match(heroBlock, /\/checkout\/pro\?/);
-  assert.ok(heroBlock.indexOf('hero_workflow_sprint_diagnostic_checkout') < heroBlock.indexOf('hero_start_pro'));
-  assert.ok(heroBlock.indexOf('hero_start_pro') < heroBlock.indexOf('hero_install_cli'));
-  assert.match(heroBlock, /aria-label="Choose the right ThumbGate path"/);
-  assert.match(heroBlock, /Team \/ enterprise: buy proof this week/);
-  assert.match(heroBlock, /data-cta-id="router_pay_diagnostic"/);
-  assert.match(heroBlock, /data-cta-id="router_pay_sprint"/);
-  assert.match(heroBlock, /Solo operator: Start Pro/);
-  assert.match(heroBlock, /data-cta-id="router_start_pro"/);
-  assert.match(heroBlock, /Ideal customer/);
-  assert.match(heroBlock, /enterprise engineering, security, and platform teams/i);
-  assert.match(heroBlock, /Detection and coordination layers can identify drift/);
-  assert.match(heroBlock, /Still evaluating: Free CLI/);
+  assert.ok(heroLede, 'hero lede should exist');
+  assert.ok(normalizeHtmlText(heroLede[1]).split(' ').length <= 25, 'hero lede must stay at or below 25 words');
+  assert.match(aboveFold, /cta_id=nav_install_cli/);
+  assert.match(aboveFold, /data-nav-install/);
+  assert.match(heroBlock, /Stop dangerous AI-agent actions before they run\./);
+  assert.match(heroBlock, /cta_id=hero_install_cli/);
+  assert.match(heroBlock, /class="btn-free btn-install-hero"/);
+  assert.match(heroBlock, /href="#live-proof" class="hero-proof-link"/);
+  assert.match(heroBlock, /id="live-proof"/);
+  assert.match(heroBlock, /Real pre-action decision/);
+  assert.match(heroBlock, /cta_id=hero_team_diagnostic/);
+  assert.match(heroBlock, /See the scoped diagnostic/);
+  assert.doesNotMatch(aboveFold, /nav_pay_diagnostic/);
+  assert.doesNotMatch(heroBlock, /Start \$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic/);
+  assert.doesNotMatch(heroBlock, /Scope \$__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint/);
+  assert.doesNotMatch(heroBlock, /hero_start_pro|offer-router|hero-signals/);
+  assert.match(landingPage, /<body data-revenue-assist="off">/);
   assert.match(landingPage, /function trackRevenueCta/);
   assert.match(landingPage, /plausible\('pricing_cta_click'/);
   assert.match(landingPage, /plausible\('checkout_start'/);
@@ -248,27 +243,17 @@ test('public landing page shows an at-a-glance plan comparison matrix with consi
   assert.match(landingPage, /SSO, SIEM \+ compliance packaging[\s\S]{0,500}Not GA/i);
 });
 
-test('public landing page leads with paid diagnostic/sprint checkout, not retired service ladders', () => {
+test('public landing page keeps paid services on the scoped diagnostic path, not in the hero', () => {
   const landingPage = readLandingPage();
+  const heroStart = landingPage.indexOf('<!-- HERO -->');
+  const heroEnd = landingPage.indexOf('<div class="hero-trust-bar">');
+  const heroBlock = landingPage.slice(heroStart, heroEnd);
 
   assert.match(landingPage, /Have one AI-agent failure that keeps repeating\?/);
   assert.match(landingPage, /one real workflow, one repeated failure pattern, enforceable pre-action gates/);
-  // Canonical money path: diagnostic confirmation page + sprint payment router.
-  assert.match(landingPage, /Start \$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic/);
-  assert.match(landingPage, /Scope \$__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint/);
-  assert.match(landingPage, /\/diagnostic\?/);
-  assert.match(landingPage, /\/go\/sprint\?/);
-  assert.match(landingPage, /data-sprint-paid-path="diagnostic"/);
-  assert.match(landingPage, /data-sprint-paid-path="sprint"/);
-  assert.match(landingPage, /hero_workflow_sprint_diagnostic_checkout/);
-  assert.match(landingPage, /hero_workflow_sprint_checkout/);
-  assert.match(landingPage, /workflow_sprint_diagnostic_page_opened/);
-  assert.match(landingPage, /workflow_sprint_scope_opened/);
-  assert.match(landingPage, /Send workflow first/);
-  assert.match(landingPage, /hero_workflow_sprint_recovery_intake/);
-  assert.match(landingPage, /workflow_sprint_recovery_intake_clicked/);
-  assert.match(landingPage, /ctaId: 'hero_workflow_sprint'/);
-  assert.match(landingPage, /ctaId: 'hero_workflow_sprint_recovery_intake'/);
+  assert.match(heroBlock, /href="\/diagnostic\?[^\"]*cta_id=hero_team_diagnostic/);
+  assert.doesNotMatch(heroBlock, /data-revenue-cta|data-sprint-paid-path|\/go\/sprint\?/);
+  assert.doesNotMatch(heroBlock, /Start Pro|Start \$|Scope \$/);
   // Retired experimental ladders must stay off the homepage.
   assert.doesNotMatch(landingPage, /Pay \$99 diagnostic/);
   assert.doesNotMatch(landingPage, /Pay \$1 first rule/);

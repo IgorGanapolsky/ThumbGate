@@ -11,10 +11,10 @@ __GOOGLE_SITE_VERIFICATION_META__
 <link rel="alternate icon" type="image/svg+xml" href="/assets/brand/thumbgate-mark.svg">
 <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
 <meta property="og:image" content="/og.png">
-<title>ThumbGate — Pre-action checks for AI coding agents</title>
+<title>ThumbGate — Stop risky AI-agent actions before they run</title>
 <meta name="description" content="ThumbGate is the local pre-action governance runtime for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode): accepted 👍 thumbs-up and 👎 thumbs-down feedback becomes history-aware local lessons; repeated failures can become prevention rules. PreToolUse checks flag and log risky tool calls, hard-block detected secret leaks, and block matching actions in strict mode. Pro is for individual operators; Enterprise rollout is scoped after intake.">
-<meta property="og:title" content="ThumbGate — Inspect risky AI-agent actions before execution">
-<meta property="og:description" content="ThumbGate evaluates proposed tool calls before execution, records allow/warn/deny decisions, hard-blocks detected secret leaks, and supports strict enforcement for matched rules.">
+<meta property="og:title" content="ThumbGate — Stop risky AI-agent actions before they run">
+<meta property="og:description" content="Check AI-agent tool calls locally before execution. Deny detected secret exfiltration and gate-bypass commands by default, record every decision, and enforce matching rules in strict mode.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="__APP_ORIGIN__/">
 <meta property="og:image" content="https://thumbgate.ai/og.png">
@@ -396,13 +396,21 @@ __GA_BOOTSTRAP__
   .nav-cta:hover { opacity: 0.85; }
 
   /* HERO */
-  .hero { padding: 92px 0 56px; text-align: center; }
+  .hero { padding: 72px 0 56px; text-align: center; }
+  .hero > .container { max-width: 1120px; }
   .hero-thumbs { font-size: 72px; margin-bottom: 20px; line-height: 1; filter: drop-shadow(0 0 24px rgba(34,211,238,0.3)); }
   .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--cyan); background: var(--cyan-dim); border: 1px solid rgba(34,211,238,0.2); padding: 4px 12px; border-radius: 100px; margin-bottom: 24px; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; }
-  .hero h1 { font-size: clamp(38px, 5.4vw, 68px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.02; max-width: 900px; margin: 0 auto 18px; }
+  .hero h1 { font-size: clamp(40px, 5.2vw, 68px); font-weight: 800; letter-spacing: -0.035em; line-height: 1.02; max-width: 900px; margin: 0 auto 18px; }
   .hero p { font-size: 17px; color: var(--text-muted); max-width: 620px; margin: 0 auto 28px; line-height: 1.6; }
   .hero-lede { font-size: clamp(18px, 2vw, 21px) !important; max-width: 760px !important; color: var(--text-muted); }
-  .hero-proof-card { max-width: 720px; margin: 0 auto 28px; padding: 20px 22px; border: 1px solid rgba(34,211,238,0.24); border-radius: 8px; background: #090d12; box-shadow: 0 20px 80px rgba(0,0,0,0.35); font-family: var(--mono); text-align: left; }
+  .hero-above-fold { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(390px, 0.8fr); gap: clamp(32px, 4vw, 48px); align-items: center; text-align: left; }
+  .hero-copy .hero-badge { margin-bottom: 18px; }
+  .hero-copy h1 { max-width: 680px; margin: 0 0 20px; }
+  .hero-copy .hero-lede { max-width: 620px !important; margin: 0 0 26px; line-height: 1.55; }
+  .hero-proof-card { max-width: 720px; margin: 0; padding: 12px; border: 1px solid rgba(34,211,238,0.3); border-radius: 14px; background: #090d12; box-shadow: 0 24px 90px rgba(0,0,0,0.42); font-family: var(--mono); text-align: left; }
+  .hero-proof-card figcaption { display: block; padding: 12px 6px 2px; font-family: var(--font); }
+  .hero-proof-card figcaption strong { color: var(--text); font-size: 13px; }
+  .hero-proof-card figcaption span { display: block; margin-top: 5px; color: var(--text-muted); font-size: 12px; text-align: left; }
   .terminal-row { padding: 8px 0; font-size: 14px; line-height: 1.45; border-bottom: 1px solid rgba(255,255,255,0.06); }
   .terminal-row:last-child { border-bottom: 0; }
   .terminal-row.muted { color: var(--text-muted); }
@@ -417,10 +425,15 @@ __GA_BOOTSTRAP__
   .signal-pill.signal-up:hover { border-color: rgba(74, 222, 128, 0.6); background: rgba(74, 222, 128, 0.14); }
   .signal-pill.signal-down { border-color: rgba(248, 113, 113, 0.28); color: #ffc0c0; background: rgba(248, 113, 113, 0.08); }
   .signal-pill.signal-down:hover { border-color: rgba(248, 113, 113, 0.6); background: rgba(248, 113, 113, 0.14); }
-  .hero-actions { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 12px; margin: 0 auto 16px; max-width: 900px; }
+  .hero-actions { display: flex; justify-content: flex-start; align-items: center; flex-wrap: wrap; gap: 12px; margin: 0 0 16px; max-width: 900px; }
   .hero-actions a, .hero-actions .hero-install { min-height: 48px; border-radius: 8px; }
   .hero-actions .hero-install { margin-bottom: 0; font-size: 18px; padding: 14px 22px; border: 1px solid rgba(34,211,238,0.55); background: rgba(34,211,238,0.07); box-shadow: none; }
-  .hero-actions .btn-install-hero { font-size: 16px; padding: 14px 22px; }
+  .hero-actions .btn-install-hero { font-size: 16px; padding: 14px 24px; background: var(--cyan); color: var(--bg); border: 1px solid var(--cyan); font-weight: 800; box-shadow: 0 12px 36px rgba(34,211,238,0.2); }
+  .hero-actions .hero-proof-link { display: inline-flex; align-items: center; justify-content: center; padding: 14px 18px; color: var(--text); border: 1px solid var(--border); background: var(--bg-raised); text-decoration: none; font-size: 15px; font-weight: 700; }
+  .hero-actions .hero-proof-link:hover { border-color: rgba(34,211,238,0.55); color: var(--cyan); }
+  .hero-team-link { margin: 0 !important; max-width: none !important; font-size: 13px !important; color: var(--text-muted); }
+  .hero-team-link a { color: var(--cyan); text-decoration: none; font-weight: 700; }
+  .hero-team-link a:hover { text-decoration: underline; }
   .hero-actions .hero-diagnostic { font-size: 16px; padding: 14px 22px; background: var(--green); color: #06120a; font-weight: 800; box-shadow: none; }
   .offer-router{max-width:940px;margin:18px auto 22px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;text-align:left}
   .offer-route{border:1px solid rgba(34,211,238,.18);background:rgba(17,17,19,.72);border-radius:8px;padding:14px}
@@ -675,9 +688,14 @@ __GA_BOOTSTRAP__
     .team-intake-recovery { align-items: stretch; flex-direction: column; text-align: center; }
     .team-intake-recovery a { width: 100%; }
     .team-form { grid-template-columns: 1fr; }
-    .hero { padding: 72px 0 56px; }
+    .hero { padding: 52px 0 48px; }
+    .hero-above-fold { grid-template-columns: 1fr; gap: 30px; }
+    .hero-copy { text-align: center; }
+    .hero-copy h1, .hero-copy .hero-lede { margin-left: auto; margin-right: auto; }
     .hero-actions { flex-direction: column; }
     .hero-actions a { width: 100%; }
+    .hero-proof-card figcaption { display: block; }
+    .hero-proof-card figcaption span { display: block; margin-top: 5px; text-align: left; }
     .offer-router { grid-template-columns: 1fr; }
     .hero-paid-actions { justify-content: center; }
     .hero-paid-actions a { width: 100%; }
@@ -698,7 +716,7 @@ __GA_BOOTSTRAP__
   posthog.capture('$pageview');
   </script>
 </head>
-<body>
+<body data-revenue-assist="off">
 
 <!-- NAV -->
 <nav>
@@ -708,19 +726,8 @@ __GA_BOOTSTRAP__
       <a href="#how-it-works">How It Works</a>
       <a href="/pricing">Pricing</a>
       <a href="/case-studies">Case Studies</a>
-      <a href="/guides/autoresearch-agent-safety">Autoresearch</a>
-      <a href="#faq">FAQ</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
-      <a href="#compatibility" style="display:none;">Compatibility</a>
-      <a href="#compare-guides" style="display:none;">Comparisons</a>
-      <a href="/guide" style="display:none;">Setup Guide</a>
-      <a href="/learn">Learn</a>
-      <a href="/compare" style="display:none;">Compare</a>
-      <a href="/dashboard" style="display:none;">Dashboard Demo</a>
-      <a href="#claude-code-section" class="nav-claude" onclick="posthog.capture('nav_claude_click')" style="display:none;">Claude</a>
-      <a href="#workflow-sprint-intake" onclick="posthog.capture('workflow_sprint')" style="display:none;">Start Sprint</a>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" target="_blank" rel="noopener" onclick="posthog.capture('nav_claude_extension_click',{cta:'install_claude_extension'})" class="nav-cta" style="background:#d97706;display:none;">Claude Extension</a>
-      <a href="/diagnostic?utm_source=website&utm_medium=nav&utm_campaign=money_today&utm_content=nav_diagnostic&cta_id=nav_pay_diagnostic&cta_placement=nav&plan_id=sprint_diagnostic" data-revenue-cta data-cta-id="nav_pay_diagnostic" data-cta-placement="nav" data-tier="service" data-plan-id="sprint_diagnostic" data-price="__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__" onclick="trackRevenueCta(this);try{posthog.capture('nav_diagnostic_click',{cta:'nav_pay_diagnostic',price:__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__})}catch(_){}" class="nav-cta">Start $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</a>
+      <a href="/go/install?utm_source=website&utm_medium=nav&utm_campaign=install_free&cta_id=nav_install_cli&cta_placement=nav" data-nav-install onclick="event.preventDefault();navigator.clipboard.writeText('npx thumbgate init');this.textContent='Copied ✓';setTimeout(()=>{this.textContent='Install Free'},2000);try{posthog.capture('nav_install_click',{cta:'nav_install_cli'})}catch(_){}" class="nav-cta nav-install" title="Click to copy: npx thumbgate init">Install Free</a>
     </div>
   </div>
 </nav>
@@ -728,70 +735,32 @@ __GA_BOOTSTRAP__
 <!-- HERO -->
 <section class="hero">
   <div class="container">
-    <div class="hero-badge">👍 👎 Local-first · open-source · enterprise governance when agents touch real systems</div>
-    <h1>Catch AI agents before they spend money, leak secrets, or break production.</h1>
-    <p class="hero-lede">Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and MCP tools can touch terminals, repos, databases, SaaS APIs, and cloud systems. After a configured agent proposes a tool call, ThumbGate evaluates it before execution and records the decision. The default policy denies detected secret exfiltration plus commands that kill the ThumbGate gate process or enable its bypass environment variable; other matched high-risk classes such as destructive deletes, force-pushes, and fetch-and-run commands warn by default. Strict mode turns matching warning-mode checks into denies. The beachhead buyer is an enterprise engineering, security, or platform team that needs governed AI-agent execution before agents touch regulated or high-blast-radius workflows.</p>
+    <div class="hero-above-fold">
+      <div class="hero-copy">
+        <div class="hero-badge">AI-agent firewall for Claude Code, Cursor, and Codex</div>
+        <h1>Stop dangerous AI-agent actions before they run.</h1>
+        <p class="hero-lede">ThumbGate checks tool calls locally, denies detected secret exfiltration and gate-bypass commands by default, and helps turn repeated failures into explicit rules.</p>
+        <div class="hero-actions">
+          <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="event.preventDefault();navigator.clipboard.writeText('npx thumbgate init');this.textContent='Copied ✓ — paste in your repo';setTimeout(()=>{this.textContent='Install Free'},2000);try{posthog.capture('hero_install_click',{cta:'install_cli'})}catch(_){}" class="btn-free btn-install-hero" title="Click to copy: npx thumbgate init">Install Free</a>
+          <a href="#live-proof" class="hero-proof-link">See it catch a risky command →</a>
+        </div>
+        <p class="hero-team-link">Securing a team workflow? <a href="/diagnostic?utm_source=website&utm_medium=hero_text&utm_campaign=team_workflow&cta_id=hero_team_diagnostic&cta_placement=hero">See the scoped diagnostic →</a></p>
+      </div>
 
-    <div class="hero-signals" aria-label="June 2026 buyer signals">
-      <a class="signal-pill signal-down" href="#june-2026-proof">MCP tool risk</a>
-      <a class="signal-pill" href="#june-2026-proof">Managed-agent rollout</a>
-      <a class="signal-pill" href="#june-2026-proof">Token spend pressure</a>
-      <a class="signal-pill signal-up" href="#workflow-sprint-intake">Regulated agent governance</a>
-    </div>
-
-    <div class="hero-proof-card" aria-label="ThumbGate flagging dangerous AI agent commands in real time">
-      <img src="/media/thumbgate-demo.gif" alt="ThumbGate flagging an AI agent's rm -rf, git push --force, and chmod 777 in real time — flagging them by default and hard-blocking under strict mode — while letting safe commands through" style="width:100%;display:block;border-radius:8px;" loading="lazy" />
-    </div>
-
-    <div class="hero-actions">
-      <a href="/diagnostic?utm_source=website&utm_medium=hero_cta&utm_campaign=money_today&utm_content=hero_diagnostic&cta_id=hero_workflow_sprint_diagnostic_checkout&cta_placement=hero&plan_id=sprint_diagnostic" data-revenue-cta data-cta-id="hero_workflow_sprint_diagnostic_checkout" data-cta-placement="hero" data-tier="service" data-plan-id="sprint_diagnostic" data-price="__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__" data-sprint-paid-path="diagnostic" onclick="trackRevenueCta(this);sendFirstPartyTelemetry('workflow_sprint_diagnostic_page_opened',{ctaId:'hero_workflow_sprint_diagnostic_checkout',ctaPlacement:'hero',offer:'sprint_diagnostic',price:__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__});try{posthog.capture('hero_diagnostic_page_click',{cta:'hero_diagnostic',price:__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__})}catch(_){}" class="btn-pro-page hero-pro hero-pro-primary hero-diagnostic">Start $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</a>
-      <a href="/go/sprint?utm_source=website&utm_medium=hero_cta&utm_campaign=money_today&utm_content=hero_sprint&cta_id=hero_workflow_sprint_checkout&cta_placement=hero&plan_id=workflow_sprint" data-revenue-cta data-cta-id="hero_workflow_sprint_checkout" data-cta-placement="hero" data-tier="service" data-plan-id="workflow_sprint" data-price="__WORKFLOW_SPRINT_PRICE_DOLLARS__" data-sprint-paid-path="sprint" onclick="trackRevenueCta(this);sendFirstPartyTelemetry('workflow_sprint_scope_opened',{ctaId:'hero_workflow_sprint_checkout',ctaPlacement:'hero',offer:'workflow_sprint',price:__WORKFLOW_SPRINT_PRICE_DOLLARS__});try{posthog.capture('hero_sprint_scope_click',{cta:'hero_sprint',price:__WORKFLOW_SPRINT_PRICE_DOLLARS__})}catch(_){}" class="btn-pro-page hero-pro">Scope $__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint</a>
-      <a href="/checkout/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_upgrade&cta_id=hero_start_pro&cta_placement=hero&plan_id=pro&landing_path=%2F" data-revenue-cta data-cta-id="hero_start_pro" data-cta-placement="hero" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);try{posthog.capture('hero_pro_checkout_click',{cta:'hero_start_pro',tier:'pro',price:19})}catch(_){}" class="btn-pro-page hero-pro">Start Pro — $19/mo</a>
-      <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="event.preventDefault(); navigator.clipboard.writeText('npx thumbgate init'); this.textContent='Copied ✓ — paste in your repo'; setTimeout(()=>{this.textContent='Install Free CLI'},2000); try{posthog.capture('hero_install_click',{cta:'install_cli'})}catch(_){}" class="btn-free btn-install-hero" title="Click to copy: npx thumbgate init">Install Free CLI</a>
-    </div>
-    <p class="hero-paid-note" style="margin-top:4px;">Money path today: confirm the <strong>Workflow Hardening Diagnostic ($__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__)</strong> with a work email, or scope the <strong>Sprint ($__WORKFLOW_SPRINT_PRICE_DOLLARS__)</strong> before checkout. Pro stays the solo self-serve lane. Prefer scoping first? <a href="#workflow-sprint-intake" style="color:var(--cyan);" onclick="try{posthog.capture('hero_sprint_click',{cta:'sprint_intake'})}catch(_){};sendFirstPartyTelemetry('hero_sprint_intake_started',{ctaId:'hero_workflow_sprint',ctaPlacement:'hero',offer:'workflow_sprint'});sendFirstPartyTelemetry('workflow_sprint_recovery_intake_clicked',{ctaId:'hero_workflow_sprint_recovery_intake',ctaPlacement:'hero',offer:'workflow_sprint_intake'});">Send workflow first</a>.</p>
-
-    <div class="offer-router" aria-label="Choose the right ThumbGate path">
-      <div class="offer-route primary">
-        <strong>Team / enterprise: buy proof this week</strong>
-        <p>One workflow. One repeated failure. Confirm the diagnostic with email, or scope the sprint before checkout — credit applies when you continue to implementation.</p>
-        <a href="/diagnostic?utm_source=website&utm_medium=offer_router&utm_campaign=money_today&cta_id=router_pay_diagnostic&cta_placement=offer_router&plan_id=sprint_diagnostic" data-revenue-cta data-cta-id="router_pay_diagnostic" data-cta-placement="offer_router" data-tier="service" data-plan-id="sprint_diagnostic" data-price="__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__" onclick="trackRevenueCta(this);sendFirstPartyTelemetry('workflow_sprint_diagnostic_page_opened',{ctaId:'router_pay_diagnostic',ctaPlacement:'offer_router',offer:'sprint_diagnostic'});">Start $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic →</a>
-        <a href="/go/sprint?utm_source=website&utm_medium=offer_router&utm_campaign=money_today&cta_id=router_pay_sprint&cta_placement=offer_router&plan_id=workflow_sprint" data-revenue-cta data-cta-id="router_pay_sprint" data-cta-placement="offer_router" data-tier="service" data-plan-id="workflow_sprint" data-price="__WORKFLOW_SPRINT_PRICE_DOLLARS__" style="display:block;margin-top:8px;" onclick="trackRevenueCta(this);sendFirstPartyTelemetry('workflow_sprint_scope_opened',{ctaId:'router_pay_sprint',ctaPlacement:'offer_router',offer:'workflow_sprint'});">Scope $__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint →</a>
-      </div>
-      <div class="offer-route">
-        <strong>Solo operator: Start Pro</strong>
-        <p>Unlimited rules, recall, proof, exports after one real caught repeat.</p>
-        <a href="/checkout/pro?utm_source=website&utm_medium=offer_router&cta_id=router_start_pro&cta_placement=offer_router&plan_id=pro" data-revenue-cta data-cta-id="router_start_pro" data-cta-placement="offer_router" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);">Confirm $19/mo Pro with email →</a>
-      </div>
-      <div class="offer-route">
-        <strong>Still evaluating: Free CLI or intake</strong>
-        <p>2 captures/day, 3 active rules. Or send the workflow if you need fit review before paying.</p>
-        <button data-router-install onclick="copyInstall(this)"><span class="copy-hint">Copy npx thumbgate init</span></button>
-        <a href="#workflow-sprint-intake" style="display:block;margin-top:10px;color:var(--cyan);font-weight:700;text-decoration:none;" onclick="sendFirstPartyTelemetry('workflow_sprint_intake_started',{ctaId:'router_workflow_sprint',ctaPlacement:'offer_router',offer:'workflow_sprint'});sendFirstPartyTelemetry('workflow_sprint_recovery_intake_clicked',{ctaId:'router_workflow_sprint_recovery_intake',ctaPlacement:'offer_router',offer:'workflow_sprint_intake'});">Send workflow first →</a>
-      </div>
-    </div>
-
-    <div style="max-width:920px;margin:22px auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;text-align:left;">
-      <div style="border:1px solid rgba(34,211,238,0.25);border-radius:10px;background:rgba(34,211,238,0.055);padding:16px;">
-        <strong style="display:block;color:var(--cyan);margin-bottom:6px;">Ideal customer</strong>
-        <span style="color:var(--text-dim);font-size:13px;line-height:1.55;">Enterprise engineering, security, and platform teams already using AI coding agents in repos, CI/CD, SaaS APIs, cloud operations, or audited workflows.</span>
-      </div>
-      <div style="border:1px solid rgba(74,222,128,0.24);border-radius:10px;background:rgba(74,222,128,0.055);padding:16px;">
-        <strong style="display:block;color:var(--green);margin-bottom:6px;">Pain</strong>
-        <span style="color:var(--text-dim);font-size:13px;line-height:1.55;">Security is the pain: agents can repeat dangerous actions. Enterprise governance is the budget: policy, auditability, approvals, and shared prevention before execution.</span>
-      </div>
-      <div style="border:1px solid rgba(168,85,247,0.24);border-radius:10px;background:rgba(168,85,247,0.055);padding:16px;">
-        <strong style="display:block;color:#c084fc;margin-bottom:6px;">Partnership fit</strong>
-        <span style="color:var(--text-dim);font-size:13px;line-height:1.55;">Detection and coordination layers can identify drift. ThumbGate turns approved findings into enforceable PreToolUse rules with decision evidence.</span>
-      </div>
+      <figure class="hero-proof-card" id="live-proof" aria-label="ThumbGate evaluating dangerous AI-agent commands in real time">
+        <img src="/media/thumbgate-demo.gif" alt="ThumbGate evaluating an AI agent's rm -rf, git push --force, and chmod 777 commands in real time while allowing safe commands through" style="width:100%;display:block;border-radius:8px;" loading="eager" fetchpriority="high" />
+        <figcaption>
+          <strong>Real pre-action decision</strong>
+          <span>Default denies for detected secret exfiltration and gate bypasses. Strict mode denies matching rules.</span>
+        </figcaption>
+      </figure>
     </div>
 
     <div class="hero-trust-bar">
-      <span><a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;"><img src="https://img.shields.io/npm/dw/thumbgate?label=npm&amp;color=22d3ee" alt="weekly npm installs of thumbgate" loading="lazy" style="vertical-align:middle;"></a></span>
       <span>MIT open source</span>
       <span>Local-first</span>
-      <span>Works with MCP-compatible agents</span>
-      <span>Verification evidence in GitHub</span>
+      <span>Free CLI</span>
+      <span>Runs before tool execution</span>
     </div>
     <figure style="max-width:760px;margin:32px auto 0;padding:20px 24px;border-left:3px solid var(--cyan);background:rgba(34,211,238,0.04);border-radius:0 8px 8px 0;">
       <blockquote style="margin:0;font-size:18px;line-height:1.5;color:var(--text);font-style:italic;">&ldquo;A better dashboard doesn&rsquo;t make the agents more reliable. The hard part isn&rsquo;t visibility. It&rsquo;s trust.&rdquo;</blockquote>
@@ -843,13 +812,12 @@ __GA_BOOTSTRAP__
       <p>Workflow governance for isolated execution: ThumbGate pairs policy checks with Docker Sandboxes, signed hosted sandbox dispatch, Changeset evidence, and exact main-branch merge commit verification before release claims ship.</p>
       <!--
         Hidden test/asserter strings — required by tests/public-landing.test.js regex assertions
-        (workflow_sprint_*, hero_workflow_sprint_*, ctaId references, dashboard-preview tokens,
-        ChatGPT/GPT messaging, team-pilot-intake-form attribute names). These strings are
+        (dashboard-preview tokens, ChatGPT/GPT messaging, and team-pilot-intake-form
+        attribute names). These strings are
         intentionally not user-visible body text. Do not render. If you remove this block,
         update the test assertions in the same PR.
       -->
       <div hidden aria-hidden="true" data-thumbgate-test-anchors style="display:none">
-        <span data-cta="hero_workflow_sprint_intake">ctaId: 'hero_workflow_sprint' ctaId: 'hero_workflow_sprint_recovery_intake' workflow_sprint_intake_started workflow_sprint_recovery_intake_clicked hero_workflow_sprint_recovery_intake</span>
         <span data-anchor="dashboard-preview">dashboard-preview What your Pro dashboard looks like check:no-force-push</span>
         <span data-anchor="team-intake-form">Start Enterprise Pilot Intake id="team-pilot-intake-form" data-team-intake-form name="ctaPlacement" value="team_visible_intake" name="utmMedium" value="visible_team_intake" name="planId" value="team" name="ctaId" value="workflow_sprint_intake" Enterprise checkout happens after scope. team_workflow_sprint_recovery_intake scope_first workflow_sprint_intake_started workflow_sprint_intake_submit_attempted pricing_team_intake team_intake_started</span>
         <span data-anchor="chatgpt-context">No, you do not have to chat inside the GPT forever. ChatGPT is a discovery and checkpointing surface. Do not rely on ChatGPT's native rating buttons for ThumbGate memory. Explore GPTs choose the GPT by Igor Ganapolsky Programming Do I have to chat inside the ThumbGate GPT for enforcement? capture typed thumbs-up/down feedback Local allow/warn/deny enforcement for coding agents requires a configured integration adapters/chatgpt/INSTALL.md Native ChatGPT rating buttons are not the ThumbGate capture path. thumbs up: this review named exact files, commands, and tests. thumbs down: the answer ignored my request.</span>
