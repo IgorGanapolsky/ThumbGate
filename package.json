@@ -879,20 +879,21 @@
     "better-sqlite3": "^12.9.0",
     "dotenv": "^17.4.2",
     "playwright-core": "^1.59.1",
-    "protobufjs": "^8.5.0",
+    "protobufjs": "^8.7.0",
     "stripe": "^22.2.0"
   },
   "overrides": {
     "@google/genai": {
-      "protobufjs": "7.6.4"
+      "protobufjs": "7.6.5"
     },
     "onnxruntime-web": {
-      "protobufjs": "7.6.4"
+      "protobufjs": "7.6.5"
     },
     "express@4.22.1": {
       "path-to-regexp": "0.1.13"
     },
-    "js-yaml": "4.2.0"
+    "js-yaml": "^4.3.0",
+    "adm-zip": "^0.6.0"
   },
   "mcpName": "io.github.IgorGanapolsky/thumbgate",
   "devDependencies": {
