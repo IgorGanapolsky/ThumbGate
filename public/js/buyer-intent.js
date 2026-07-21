@@ -1,5 +1,6 @@
 (function(global) {
   var BUYER_EMAIL_STORAGE_KEY = 'thumbgateBuyerEmail';
+  var REVENUE_ASSIST_CHECKOUT_KEY = 'thumbgateRevenueAssistCheckoutSeen';
   var CHECKOUT_LINK_SELECTOR = 'a[href*="/checkout/pro"], a[href*="/go/pro"]';
   var BUYER_EMAIL_SELECTOR = '[data-buyer-email]';
 
@@ -263,9 +264,9 @@
 
     panel.querySelectorAll('[data-assist-cta]').forEach(function(link) {
       link.addEventListener('click', function() {
-        try {
-          global.sessionStorage.setItem('thumbgateRevenueAssistCheckoutSeen', '1');
-        } catch (_error) {}
+        if (link.getAttribute('data-assist-cta') === 'assist_pro_checkout') {
+          markCheckoutSeen();
+        }
         trackEvent('assist_cta_click', {
           ctaId: link.getAttribute('data-assist-cta'),
           ctaPlacement: placement,
@@ -282,7 +283,6 @@
           page: pathname,
         });
         panel.remove();
-        showAbandonSurvey('cta_dismiss');
       });
     }
 
@@ -308,22 +308,33 @@
 
     function checkoutWasSeen() {
       try {
-        return global.sessionStorage.getItem('thumbgateRevenueAssistCheckoutSeen') === '1';
+        return global.sessionStorage.getItem(REVENUE_ASSIST_CHECKOUT_KEY) === '1';
       } catch (_error) {
         return false;
       }
     }
 
+    function markCheckoutSeen() {
+      try {
+        global.sessionStorage.setItem(REVENUE_ASSIST_CHECKOUT_KEY, '1');
+      } catch (_error) {}
+    }
+
+    getCheckoutLinks().forEach(function(link) {
+      link.addEventListener('click', markCheckoutSeen);
+    });
+
     function showAbandonSurvey(trigger) {
-      if (wasSurveyShown() || checkoutWasSeen() || global.document.querySelector('[data-thumbgate-abandon-survey]')) {
+      if (wasSurveyShown() || !checkoutWasSeen() || global.document.querySelector('[data-thumbgate-abandon-survey]')) {
         return;
       }
       markSurveyShown();
+      panel.remove();
       var survey = global.document.createElement('aside');
       survey.setAttribute('data-thumbgate-abandon-survey', trigger || 'unknown');
       survey.setAttribute('aria-label', 'ThumbGate checkout feedback');
       survey.innerHTML = [
-        '<strong>What stopped you from buying today?</strong>',
+        '<strong>What stopped you from completing checkout?</strong>',
         '<div>',
         '<button type="button" data-abandon-reason="fit_unclear">Not sure it fits my agent stack</button>',
         '<button type="button" data-abandon-reason="need_proof">Need proof before paying</button>',
@@ -350,17 +361,22 @@
       });
     }
 
-    if (global.setTimeout) {
-      global.setTimeout(function() {
-        showAbandonSurvey('dwell_45s');
-      }, settings.surveyDelayMs || 45000);
+    var checkoutReturnTimer = null;
+
+    function scheduleCheckoutReturnSurvey() {
+      if (!checkoutWasSeen() || !global.setTimeout) return;
+      if (checkoutReturnTimer && global.clearTimeout) {
+        global.clearTimeout(checkoutReturnTimer);
+      }
+      checkoutReturnTimer = global.setTimeout(function() {
+        checkoutReturnTimer = null;
+        showAbandonSurvey('checkout_return');
+      }, settings.checkoutReturnSurveyDelayMs || 1200);
     }
-    if (global.document && global.document.addEventListener) {
-      global.document.addEventListener('mouseleave', function(event) {
-        if (event && event.clientY <= 0) {
-          showAbandonSurvey('exit_intent');
-        }
-      });
+
+    scheduleCheckoutReturnSurvey();
+    if (global.addEventListener) {
+      global.addEventListener('pageshow', scheduleCheckoutReturnSurvey);
     }
 
     return {
