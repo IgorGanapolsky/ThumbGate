@@ -893,7 +893,8 @@
       "path-to-regexp": "0.1.13"
     },
     "js-yaml": "^4.3.0",
-    "adm-zip": "^0.6.0"
+    "adm-zip": "^0.6.0",
+    "brace-expansion": "^5.0.7"
   },
   "mcpName": "io.github.IgorGanapolsky/thumbgate",
   "devDependencies": {
