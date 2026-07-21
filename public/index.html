@@ -728,28 +728,13 @@ __GA_BOOTSTRAP__
 <!-- HERO -->
 <section class="hero">
   <div class="container">
-    <div class="hero-badge">👍 👎 Local-first · open-source · enterprise governance when agents touch real systems</div>
+    <div class="hero-badge">🛡️ Open-source · runs locally · free to start</div>
     <h1>Catch AI agents before they spend money, leak secrets, or break production.</h1>
-    <p class="hero-lede">Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and MCP tools can touch terminals, repos, databases, SaaS APIs, and cloud systems. After a configured agent proposes a tool call, ThumbGate evaluates it before execution and records the decision. The default policy denies detected secret exfiltration plus commands that kill the ThumbGate gate process or enable its bypass environment variable; other matched high-risk classes such as destructive deletes, force-pushes, and fetch-and-run commands warn by default. Strict mode turns matching warning-mode checks into denies. The beachhead buyer is an enterprise engineering, security, or platform team that needs governed AI-agent execution before agents touch regulated or high-blast-radius workflows.</p>
-
-    <div class="hero-signals" aria-label="June 2026 buyer signals">
-      <a class="signal-pill signal-down" href="#june-2026-proof">MCP tool risk</a>
-      <a class="signal-pill" href="#june-2026-proof">Managed-agent rollout</a>
-      <a class="signal-pill" href="#june-2026-proof">Token spend pressure</a>
-      <a class="signal-pill signal-up" href="#workflow-sprint-intake">Regulated agent governance</a>
-    </div>
+    <p class="hero-lede">Claude Code, Cursor, Codex, and other AI coding agents can run any command they want — including the ones that wipe a database or leak an API key. ThumbGate checks every command before it runs and blocks the dangerous ones automatically, then remembers what to block next time from your thumbs down.</p>
 
     <div class="hero-proof-card" aria-label="ThumbGate flagging dangerous AI agent commands in real time">
       <img src="/media/thumbgate-demo.gif" alt="ThumbGate flagging an AI agent's rm -rf, git push --force, and chmod 777 in real time — flagging them by default and hard-blocking under strict mode — while letting safe commands through" style="width:100%;display:block;border-radius:8px;" loading="lazy" />
     </div>
-
-    <div class="hero-actions">
-      <a href="/diagnostic?utm_source=website&utm_medium=hero_cta&utm_campaign=money_today&utm_content=hero_diagnostic&cta_id=hero_workflow_sprint_diagnostic_checkout&cta_placement=hero&plan_id=sprint_diagnostic" data-revenue-cta data-cta-id="hero_workflow_sprint_diagnostic_checkout" data-cta-placement="hero" data-tier="service" data-plan-id="sprint_diagnostic" data-price="__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__" data-sprint-paid-path="diagnostic" onclick="trackRevenueCta(this);sendFirstPartyTelemetry('workflow_sprint_diagnostic_page_opened',{ctaId:'hero_workflow_sprint_diagnostic_checkout',ctaPlacement:'hero',offer:'sprint_diagnostic',price:__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__});try{posthog.capture('hero_diagnostic_page_click',{cta:'hero_diagnostic',price:__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__})}catch(_){}" class="btn-pro-page hero-pro hero-pro-primary hero-diagnostic">Start $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic</a>
-      <a href="/go/sprint?utm_source=website&utm_medium=hero_cta&utm_campaign=money_today&utm_content=hero_sprint&cta_id=hero_workflow_sprint_checkout&cta_placement=hero&plan_id=workflow_sprint" data-revenue-cta data-cta-id="hero_workflow_sprint_checkout" data-cta-placement="hero" data-tier="service" data-plan-id="workflow_sprint" data-price="__WORKFLOW_SPRINT_PRICE_DOLLARS__" data-sprint-paid-path="sprint" onclick="trackRevenueCta(this);sendFirstPartyTelemetry('workflow_sprint_scope_opened',{ctaId:'hero_workflow_sprint_checkout',ctaPlacement:'hero',offer:'workflow_sprint',price:__WORKFLOW_SPRINT_PRICE_DOLLARS__});try{posthog.capture('hero_sprint_scope_click',{cta:'hero_sprint',price:__WORKFLOW_SPRINT_PRICE_DOLLARS__})}catch(_){}" class="btn-pro-page hero-pro">Scope $__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint</a>
-      <a href="/checkout/pro?utm_source=website&utm_medium=hero_cta&utm_campaign=pro_upgrade&cta_id=hero_start_pro&cta_placement=hero&plan_id=pro&landing_path=%2F" data-revenue-cta data-cta-id="hero_start_pro" data-cta-placement="hero" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);try{posthog.capture('hero_pro_checkout_click',{cta:'hero_start_pro',tier:'pro',price:19})}catch(_){}" class="btn-pro-page hero-pro">Start Pro — $19/mo</a>
-      <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="event.preventDefault(); navigator.clipboard.writeText('npx thumbgate init'); this.textContent='Copied ✓ — paste in your repo'; setTimeout(()=>{this.textContent='Install Free CLI'},2000); try{posthog.capture('hero_install_click',{cta:'install_cli'})}catch(_){}" class="btn-free btn-install-hero" title="Click to copy: npx thumbgate init">Install Free CLI</a>
-    </div>
-    <p class="hero-paid-note" style="margin-top:4px;">Money path today: confirm the <strong>Workflow Hardening Diagnostic ($__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__)</strong> with a work email, or scope the <strong>Sprint ($__WORKFLOW_SPRINT_PRICE_DOLLARS__)</strong> before checkout. Pro stays the solo self-serve lane. Prefer scoping first? <a href="#workflow-sprint-intake" style="color:var(--cyan);" onclick="try{posthog.capture('hero_sprint_click',{cta:'sprint_intake'})}catch(_){};sendFirstPartyTelemetry('hero_sprint_intake_started',{ctaId:'hero_workflow_sprint',ctaPlacement:'hero',offer:'workflow_sprint'});sendFirstPartyTelemetry('workflow_sprint_recovery_intake_clicked',{ctaId:'hero_workflow_sprint_recovery_intake',ctaPlacement:'hero',offer:'workflow_sprint_intake'});">Send workflow first</a>.</p>
 
     <div class="offer-router" aria-label="Choose the right ThumbGate path">
       <div class="offer-route primary">
@@ -771,21 +756,6 @@ __GA_BOOTSTRAP__
       </div>
     </div>
 
-    <div style="max-width:920px;margin:22px auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;text-align:left;">
-      <div style="border:1px solid rgba(34,211,238,0.25);border-radius:10px;background:rgba(34,211,238,0.055);padding:16px;">
-        <strong style="display:block;color:var(--cyan);margin-bottom:6px;">Ideal customer</strong>
-        <span style="color:var(--text-dim);font-size:13px;line-height:1.55;">Enterprise engineering, security, and platform teams already using AI coding agents in repos, CI/CD, SaaS APIs, cloud operations, or audited workflows.</span>
-      </div>
-      <div style="border:1px solid rgba(74,222,128,0.24);border-radius:10px;background:rgba(74,222,128,0.055);padding:16px;">
-        <strong style="display:block;color:var(--green);margin-bottom:6px;">Pain</strong>
-        <span style="color:var(--text-dim);font-size:13px;line-height:1.55;">Security is the pain: agents can repeat dangerous actions. Enterprise governance is the budget: policy, auditability, approvals, and shared prevention before execution.</span>
-      </div>
-      <div style="border:1px solid rgba(168,85,247,0.24);border-radius:10px;background:rgba(168,85,247,0.055);padding:16px;">
-        <strong style="display:block;color:#c084fc;margin-bottom:6px;">Partnership fit</strong>
-        <span style="color:var(--text-dim);font-size:13px;line-height:1.55;">Detection and coordination layers can identify drift. ThumbGate turns approved findings into enforceable PreToolUse rules with decision evidence.</span>
-      </div>
-    </div>
-
     <div class="hero-trust-bar">
       <span><a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;"><img src="https://img.shields.io/npm/dw/thumbgate?label=npm&amp;color=22d3ee" alt="weekly npm installs of thumbgate" loading="lazy" style="vertical-align:middle;"></a></span>
       <span>MIT open source</span>
@@ -795,7 +765,7 @@ __GA_BOOTSTRAP__
     </div>
     <figure style="max-width:760px;margin:32px auto 0;padding:20px 24px;border-left:3px solid var(--cyan);background:rgba(34,211,238,0.04);border-radius:0 8px 8px 0;">
       <blockquote style="margin:0;font-size:18px;line-height:1.5;color:var(--text);font-style:italic;">&ldquo;A better dashboard doesn&rsquo;t make the agents more reliable. The hard part isn&rsquo;t visibility. It&rsquo;s trust.&rdquo;</blockquote>
-      <figcaption style="margin-top:12px;font-size:13px;color:var(--text-muted);">— Rob May, CEO &amp; co-founder, Neurometric AI, in <a href="https://thenewstack.io/claude-code-agent-view/" target="_blank" rel="noopener" style="color:var(--cyan);">The New Stack</a> on Anthropic&rsquo;s Claude Code Agent View (May 2026). This is Rob May describing the industry, not an endorsement of ThumbGate. ThumbGate addresses that trust problem with configured PreToolUse gates, accepted feedback, explicit prevention rules, and local decision records.</figcaption>
+      <figcaption style="margin-top:12px;font-size:13px;color:var(--text-muted);">— Rob May, CEO &amp; co-founder, Neurometric AI, in <a href="https://thenewstack.io/claude-code-agent-view/" target="_blank" rel="noopener" style="color:var(--cyan);">The New Stack</a> on Anthropic&rsquo;s Claude Code Agent View (May 2026)</figcaption>
     </figure>
     <figure style="max-width:760px;margin:24px auto 0;padding:20px 24px;border-left:3px solid var(--cyan);background:rgba(34,211,238,0.04);border-radius:0 8px 8px 0;">
       <p style="margin:0 0 8px;font-size:14px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;">Local-first is the new default</p>

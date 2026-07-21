@@ -659,13 +659,23 @@
     bucketScrollPercent: bucketScrollPercent,
   };
 
-  if (global.document) {
-    if (global.document.readyState === 'loading') {
-      global.document.addEventListener('DOMContentLoaded', function() {
+  var REVENUE_ASSIST_DELAY_MS = 20000;
+
+  function scheduleRevenueAssist() {
+    if (global.setTimeout) {
+      global.setTimeout(function() {
         initializeRevenueAssist();
-      });
+      }, REVENUE_ASSIST_DELAY_MS);
     } else {
       initializeRevenueAssist();
+    }
+  }
+
+  if (global.document) {
+    if (global.document.readyState === 'loading') {
+      global.document.addEventListener('DOMContentLoaded', scheduleRevenueAssist);
+    } else {
+      scheduleRevenueAssist();
     }
   }
 })(globalThis);

@@ -143,26 +143,21 @@ test('public landing page exposes above-fold paid diagnostic/sprint CTAs with Pr
   assert.ok(heroEnd > heroStart);
   assert.match(aboveFold, /cta_id=nav_pay_diagnostic/);
   assert.match(aboveFold, /data-revenue-cta data-cta-id="nav_pay_diagnostic"/);
-  assert.match(heroBlock, /cta_id=hero_workflow_sprint_diagnostic_checkout/);
-  assert.match(heroBlock, /data-revenue-cta data-cta-id="hero_workflow_sprint_diagnostic_checkout"/);
+  // Above-fold paid CTAs now live once, in the offer-router, instead of being
+  // restated three times (a button row, a paragraph, then the router) — the
+  // prior triple-restatement was hero bloat, not a distinct CTA surface.
   assert.match(heroBlock, /Start \$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic/);
   assert.match(heroBlock, /href="\/diagnostic\?/);
-  assert.match(heroBlock, /cta_id=hero_workflow_sprint_checkout/);
   assert.match(heroBlock, /Scope \$__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint/);
-  assert.match(heroBlock, /cta_id=hero_start_pro/);
-  assert.match(heroBlock, /Start Pro — \$19\/mo/);
   assert.match(heroBlock, /\/checkout\/pro\?/);
-  assert.ok(heroBlock.indexOf('hero_workflow_sprint_diagnostic_checkout') < heroBlock.indexOf('hero_start_pro'));
-  assert.ok(heroBlock.indexOf('hero_start_pro') < heroBlock.indexOf('hero_install_cli'));
+  assert.ok(heroBlock.indexOf('router_pay_diagnostic') < heroBlock.indexOf('router_start_pro'));
+  assert.ok(heroBlock.indexOf('router_start_pro') < heroBlock.indexOf('Still evaluating'));
   assert.match(heroBlock, /aria-label="Choose the right ThumbGate path"/);
   assert.match(heroBlock, /Team \/ enterprise: buy proof this week/);
   assert.match(heroBlock, /data-cta-id="router_pay_diagnostic"/);
   assert.match(heroBlock, /data-cta-id="router_pay_sprint"/);
   assert.match(heroBlock, /Solo operator: Start Pro/);
   assert.match(heroBlock, /data-cta-id="router_start_pro"/);
-  assert.match(heroBlock, /Ideal customer/);
-  assert.match(heroBlock, /enterprise engineering, security, and platform teams/i);
-  assert.match(heroBlock, /Detection and coordination layers can identify drift/);
   assert.match(heroBlock, /Still evaluating: Free CLI/);
   assert.match(landingPage, /function trackRevenueCta/);
   assert.match(landingPage, /plausible\('pricing_cta_click'/);
@@ -258,10 +253,8 @@ test('public landing page leads with paid diagnostic/sprint checkout, not retire
   assert.match(landingPage, /Scope \$__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint/);
   assert.match(landingPage, /\/diagnostic\?/);
   assert.match(landingPage, /\/go\/sprint\?/);
-  assert.match(landingPage, /data-sprint-paid-path="diagnostic"/);
-  assert.match(landingPage, /data-sprint-paid-path="sprint"/);
-  assert.match(landingPage, /hero_workflow_sprint_diagnostic_checkout/);
-  assert.match(landingPage, /hero_workflow_sprint_checkout/);
+  assert.match(landingPage, /router_pay_diagnostic/);
+  assert.match(landingPage, /router_pay_sprint/);
   assert.match(landingPage, /workflow_sprint_diagnostic_page_opened/);
   assert.match(landingPage, /workflow_sprint_scope_opened/);
   assert.match(landingPage, /Send workflow first/);
