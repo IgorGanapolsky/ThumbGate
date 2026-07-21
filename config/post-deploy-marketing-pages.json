@@ -4,7 +4,7 @@
   "pages": [
     {
       "route": "/",
-      "sentinel": "Catch AI agents before they spend money",
+      "sentinel": "Stop dangerous AI-agent actions before they run",
       "description": "Home page hero (lifeblood — never regress)"
     },
     {

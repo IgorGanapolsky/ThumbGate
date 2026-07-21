@@ -379,12 +379,12 @@ test('persistent-memory article has related links to other articles', () => {
 });
 
 // ============================================================
-// Integration: Landing page nav includes Learn link
+// Integration: Landing page includes Learn link without crowding the primary nav
 // ============================================================
 
-test('landing page nav includes Learn link', () => {
+test('landing page links to the Learn hub from the guide section', () => {
   const html = readFile(landingPath);
-  assert.match(html, /href="\/learn">Learn<\/a>/);
+  assert.match(html, /href="\/learn">Browse the guide library<\/a>/);
 });
 
 // ============================================================

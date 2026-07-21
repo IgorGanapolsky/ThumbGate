@@ -23,54 +23,84 @@ test.describe('/ landing page clickability — comprehensive E2E coverage', () =
 
   test('renders the hero install command + visible CTAs', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('.hero-pro-primary')).toBeVisible();
+    await expect(page.locator('.hero h1')).toHaveText('Stop dangerous AI-agent actions before they run.');
     await expect(page.locator('.btn-install-hero')).toBeVisible();
-    await expect(page.locator('.hero-pro', { hasText: /Start \$\d+ diagnostic/ })).toBeVisible();
-    await expect(page.locator('.hero-pro', { hasText: /Scope \$\d+ sprint/ })).toBeVisible();
-    await expect(page.locator('.hero-pro', { hasText: /Start Pro/ })).toBeVisible();
-    await expect(page.locator('.offer-router')).toBeVisible();
-    await expect(page.locator('.offer-route', { hasText: /Solo operator/ })).toBeVisible();
-    await expect(page.locator('.offer-route', { hasText: /Team \/ enterprise|buy proof/i })).toBeVisible();
-    await expect(page.locator('.offer-route', { hasText: /Still evaluating/ })).toBeVisible();
+    await expect(page.locator('.hero-proof-link')).toBeVisible();
+    await expect(page.locator('#live-proof')).toBeVisible();
+    await expect(page.locator('.hero-pro')).toHaveCount(0);
+    await expect(page.locator('.offer-router')).toHaveCount(0);
   });
 
-  test('clicking router install button copies the command and confirms the copy', async ({ page }) => {
+  test('clicking the proof CTA jumps to the live product demo', async ({ page }) => {
     await page.goto('/');
-    const btn = page.locator('[data-router-install]');
-    await expect(btn.locator('.copy-hint')).toHaveText('Copy npx thumbgate init');
-    await btn.click();
-    await expect(btn.locator('.copy-hint')).toHaveText('copied!');
-    await expect(btn.locator('.copy-hint')).toHaveClass(/copied/);
+    await page.locator('.hero-proof-link').click();
+    await expect(page).toHaveURL(/#live-proof$/);
+    await expect(page.locator('#live-proof')).toBeVisible();
   });
 
-  test('clicking "Install Free CLI" button swaps its label to the Copied confirmation', async ({ page }) => {
+  test('clicking "Install Free" button swaps its label to the Copied confirmation', async ({ page }) => {
     await page.goto('/');
     const btn = page.locator('.btn-install-hero');
     const originalText = (await btn.textContent()).trim();
-    expect(originalText).toBe('Install Free CLI');
+    expect(originalText).toBe('Install Free');
     await btn.click();
     await expect(btn).toHaveText(/Copied/);
   });
 
-  test('clicking hero "Send workflow first" anchors to #workflow-sprint-intake', async ({ page }) => {
+  test('the quiet team path opens the scoped diagnostic page', async ({ page }) => {
     await page.goto('/');
-    await page.locator('.hero-paid-note a', { hasText: /Send workflow first/ }).click();
-    await expect(page).toHaveURL(/#workflow-sprint-intake$/);
-  });
-
-  test('router primary CTA opens the diagnostic confirmation page', async ({ page }) => {
-    await page.goto('/');
-    await page.locator('.offer-route.primary a', { hasText: /Start \$\d+ diagnostic/ }).click();
+    await page.locator('.hero-team-link a', { hasText: /scoped diagnostic/i }).click();
     await expect(page).toHaveURL(/\/diagnostic\?/);
     await expect(page.locator('[data-diagnostic-pay-form] input[name="customer_email"]')).toBeVisible();
   });
 
-  test('router Pro CTA opens the email-backed Pro intent form', async ({ page }) => {
+  test('clicking nav Install Free copies the command without leaving the page', async ({ page }) => {
     await page.goto('/');
-    await page.locator('.offer-route', { hasText: /Solo operator/ }).locator('a', { hasText: /Confirm \$19\/mo Pro with email/ }).click();
-    await expect(page).toHaveURL(/\/checkout\/pro\?/);
-    await expect(page).toHaveURL(/cta_id=router_start_pro/);
-    await expect(page.locator('form[action="/checkout/pro"] input[name="customer_email"]')).toBeVisible();
+    await page.evaluate(() => {
+      window.__thumbgatePlausibleEvents = [];
+      window.plausible = (eventName, options) => {
+        window.__thumbgatePlausibleEvents.push({ eventName, options });
+      };
+    });
+    const install = page.locator('[data-nav-install]');
+    await install.click();
+    await expect(install).toHaveText(/Copied/);
+    await expect(page).toHaveURL(/\/$/);
+
+    const events = await page.evaluate(() => window.__thumbgatePlausibleEvents);
+    expect(events.some(({ eventName }) => eventName === 'install_guide_click')).toBe(true);
+    expect(events.some(({ eventName }) => eventName === 'chatgpt_gpt_click')).toBe(false);
+    expect(events).toContainEqual(expect.objectContaining({
+      eventName: 'pricing_cta_click',
+      options: expect.objectContaining({
+        props: expect.objectContaining({ tier: 'install' }),
+      }),
+    }));
+  });
+
+  test('hero explanation stays concise', async ({ page }) => {
+    await page.goto('/');
+    const words = await page.locator('.hero-copy .hero-lede').evaluate((element) => (
+      element.textContent.trim().split(/\s+/).length
+    ));
+    expect(words).toBeLessThanOrEqual(25);
+  });
+
+  test('checkout-return survey is re-armed when browser history restores an eligible page', async ({ page }) => {
+    await page.goto('/guide');
+    const checkout = page.locator('[data-assist-cta="assist_pro_checkout"]');
+    await expect(checkout).toBeVisible();
+
+    await checkout.evaluate((element) => {
+      element.addEventListener('click', (event) => event.preventDefault(), { capture: true, once: true });
+    });
+    await checkout.click();
+    await expect(page.locator('[data-thumbgate-abandon-survey]')).toHaveCount(0);
+
+    await page.evaluate(() => window.dispatchEvent(new Event('pageshow')));
+    const survey = page.locator('[data-thumbgate-abandon-survey="checkout_return"]');
+    await expect(survey).toBeVisible({ timeout: 5000 });
+    await expect(survey).toContainText('What stopped you from completing checkout?');
   });
 
   // --- nav region (in-page anchors that are actually visible) ---
@@ -88,10 +118,10 @@ test.describe('/ landing page clickability — comprehensive E2E coverage', () =
     await expect(page.locator('#how-it-works')).toBeVisible();
   });
 
-  test('nav "FAQ" link jumps to #faq', async ({ page }) => {
-    await page.goto('/');
-    await page.locator('nav a[href="#faq"]').first().click();
-    await expect(page).toHaveURL(/#faq$/);
+  test('secondary FAQ and Learn links stay out of the header while their pages remain available', async ({ page }) => {
+    await page.goto('/#faq');
+    await expect(page.locator('nav a[href="#faq"]')).toHaveCount(0);
+    await expect(page.locator('nav a[href="/learn"]')).toHaveCount(0);
     await expect(page.locator('#faq')).toBeVisible();
   });
 
@@ -101,17 +131,18 @@ test.describe('/ landing page clickability — comprehensive E2E coverage', () =
     await page.waitForURL(/\/pricing$/);
   });
 
-  test('nav "Learn" link navigates to /learn', async ({ page }) => {
+  test('nav "Case Studies" link navigates to /case-studies', async ({ page }) => {
     await page.goto('/');
-    await page.locator('nav a[href="/learn"]').first().click();
-    await page.waitForURL(/\/learn$/);
+    await page.locator('nav a[href="/case-studies"]').first().click();
+    await page.waitForURL(/\/case-studies$/);
   });
 
-  test('nav diagnostic CTA routes to the diagnostic confirmation page', async ({ page }) => {
+  test('nav CTA is the free install path, not a high-ticket checkout', async ({ page }) => {
     await page.goto('/');
-    await page.locator('nav a.nav-cta', { hasText: /diagnostic/i }).first().click();
-    await expect(page).toHaveURL(/\/diagnostic\?/);
-    await expect(page.locator('[data-diagnostic-pay-form] input[name="customer_email"]')).toBeVisible();
+    const cta = page.locator('nav a.nav-cta').first();
+    await expect(cta).toHaveText('Install Free');
+    await expect(cta).toHaveAttribute('href', /\/go\/install/);
+    await expect(cta).not.toHaveAttribute('href', /diagnostic/);
   });
 
   // --- FAQ accordion (deterministic, no backend) ---
