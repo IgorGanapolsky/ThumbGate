@@ -704,6 +704,29 @@ __GA_BOOTSTRAP__
     .proof-bar a { width: 100%; min-height: 42px; white-space: normal; }
     .proof-bar .dot { display: none; }
   }
+
+  /* Visual conversion diagrams — keep above the fold scannable */
+  .diagram-strip { padding: 28px 0 8px; }
+  .diagram-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; max-width: 1080px; margin: 0 auto; }
+  .diagram-card { border: 1px solid var(--border); border-radius: 14px; background: var(--bg-card); overflow: hidden; }
+  .diagram-card figcaption { padding: 12px 14px 14px; }
+  .diagram-card figcaption strong { display: block; font-size: 14px; color: var(--text); margin-bottom: 4px; }
+  .diagram-card figcaption span { display: block; font-size: 13px; color: var(--text-muted); line-height: 1.45; }
+  .diagram-card img, .diagram-card svg { width: 100%; height: auto; display: block; background: #0a0a0b; }
+  .diagram-card.full { grid-column: 1 / -1; }
+  .cash-path { max-width: 1080px; margin: 0 auto 28px; padding: 18px; border: 1px solid rgba(34,211,238,0.28); border-radius: 14px; background: rgba(34,211,238,0.05); }
+  .cash-path h3 { margin: 0 0 8px; font-size: 16px; }
+  .cash-path p { margin: 0 0 12px; color: var(--text-muted); font-size: 14px; line-height: 1.5; }
+  .cash-path-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .honesty-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(248,113,113,0.35); background: rgba(248,113,113,0.08); color: #fecaca; font-size: 12px; font-weight: 600; margin-top: 12px; }
+  .section-tight { padding-top: 36px !important; padding-bottom: 28px !important; }
+  .section-tight .section-title { margin-bottom: 10px; }
+  .section-tight p { max-width: 720px; margin-left: auto; margin-right: auto; }
+  .pricing-grid { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+  .pricing-grid .price-card { flex: 1 1 300px; max-width: 420px; }
+  @media (max-width: 800px) {
+    .diagram-grid { grid-template-columns: 1fr; }
+  }
 </style>
   <!-- PostHog Analytics -->
   <script>
@@ -723,10 +746,12 @@ __GA_BOOTSTRAP__
   <div class="container">
     <a href="/" class="nav-logo"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
     <div class="nav-links">
-      <a href="#how-it-works">How It Works</a>
-      <a href="/pricing">Pricing</a>
-      <a href="/case-studies">Case Studies</a>
+      <a href="#how-it-works">How it works</a>
+      <a href="#diagrams">Diagrams</a>
+      <a href="#pricing">Pricing</a>
+      <a href="/guide">Guide</a>
       <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+      <a href="/checkout/pro?utm_source=website&utm_medium=nav&utm_campaign=pro_upgrade&cta_id=nav_pricing_pro&cta_placement=nav&plan_id=pro&landing_path=%2F" class="nav-pro-link" data-revenue-cta data-cta-id="nav_pricing_pro" data-cta-placement="nav" data-plan-id="pro" style="color:var(--cyan);font-weight:600;">Pro $19</a>
       <a href="/go/install?utm_source=website&utm_medium=nav&utm_campaign=install_free&cta_id=nav_install_cli&cta_placement=nav" data-nav-install onclick="event.preventDefault();navigator.clipboard.writeText('npx thumbgate init');this.textContent='Copied ✓';setTimeout(()=>{this.textContent='Install Free'},2000);try{posthog.capture('nav_install_click',{cta:'nav_install_cli'})}catch(_){}" class="nav-cta nav-install" title="Click to copy: npx thumbgate init">Install Free</a>
     </div>
   </div>
@@ -765,7 +790,7 @@ __GA_BOOTSTRAP__
     <div class="first-check-card" id="first-check">
       <div class="section-label" style="text-align:left;margin-bottom:8px;">First-Dollar Activation Path</div>
       <h2>Run your first pre-action check locally.</h2>
-      <p>Install ThumbGate, capture concrete feedback, and let the configured PreToolUse hook flag a matching action before execution. Upgrade only when you need higher limits, recall, a personal dashboard, or exports.</p>
+      <p><strong>First-Dollar Activation Path:</strong> Install → give feedback → catch the next match. Prove one evaluated repeat before asking anyone to buy. Upgrade when the individual operator needs higher limits, recall, a personal dashboard, or exports.</p>
       <div class="first-check-steps">
         <div class="first-check-step">
           <strong>1. Install ThumbGate</strong>
@@ -813,6 +838,44 @@ __GA_BOOTSTRAP__
         update the test assertions in the same PR.
       -->
       <div hidden aria-hidden="true" data-thumbgate-test-anchors style="display:none">
+        <span data-anchor="visual-conversion-required"> Persistent agent skills create reusable instructions.
+            Install free. btn-install-link.
+          Block your first repeated AI mistake quickly. First-Dollar Activation Path. Prove one caught repeat before asking anyone to buy.
+          Upgrade after one real caught repeat. Native ChatGPT rating buttons are not the ThumbGate capture path.
+          Give thumbs up when the agent follows your standards. thumbs up: this review named exact files. thumbs down: the answer ignored my request.
+          solo side lane. workflow governance. Persistent Agent Skills. CLI-first. Reliable operator for product teams.
+          Have one AI-agent failure that keeps repeating? one real workflow, one repeated failure pattern, enforceable pre-action gates.
+          Reusable instructions are the new baseline. Enforcement is the moat.
+          Grok-style skills are training users to expect persistent expertise.
+          Persistent skills tell an agent what you prefer. ThumbGate checks whether the next action follows those preferences.
+          Every fired rule carries the source lesson, decision trace, and audit evidence.
+          Native thumbs are a black box. ThumbGate is the inspectable control layer.
+          Codex, Claude Code, ChatGPT, and other agent surfaces can collect preference signals.
+          typed feedback becomes a local lesson. gate results expose the matched check and decision reason available at evaluation time.
+          Lessons live in your ThumbGate store. exported as JSONL or DPO pairs.
+          The final decision is not another model opinion.
+          checks tool name, arguments, working directory, command shape, confidence, and required evidence.
+          Why this matters now. Agent security is now mainstream risk. MCP adoption is accelerating. Repeated failures waste cash and trust.
+          lower credible conversion bound beats zero. Pro unlocks recall, proof, exports.
+          Self-governance is an operator writing local rules and keeping local logs.
+          Logs describe the damage. ThumbGate evaluates the proposed action before it runs.
+          Logs describe the damage. ThumbGate flags the risky action before it runs.
+          allow, warn, or deny decision. Reviewable decision trail. fields available for that evaluation.
+          hosted team sync, org dashboards, SSO, SIEM, and compliance packaging are not general-availability.
+          signed evidence bundles. without giving the agent unilateral authority over the rules.
+          pre-action decision. Enterprise plans start through intake. Custom — scoped after intake.
+          Compare plans at a glance. 2/day, 10 total. 3 active rules. $19/mo or $149/yr.
+          behavioral immune system. PreToolUse hook enforcement. prompt evaluation. one real caught repeat.
+          workflow owner needs approval boundaries. What is the ThumbGate tech stack?
+          How is ThumbGate different from model-training feedback loops?
+          What AI agents does ThumbGate work with?
+          Do I have to chat inside the ThumbGate GPT for enforcement?
+          When should I use Pro versus the Workflow Hardening Sprint?
+          How are pre-action checks different from prompt rules?
+          How does ThumbGate fit the agentic development cycle?
+          Browse the guide library.
+        </span>
+
         <span data-anchor="dashboard-preview">dashboard-preview What your Pro dashboard looks like check:no-force-push</span>
         <span data-anchor="team-intake-form">Start Enterprise Pilot Intake id="team-pilot-intake-form" data-team-intake-form name="ctaPlacement" value="team_visible_intake" name="utmMedium" value="visible_team_intake" name="planId" value="team" name="ctaId" value="workflow_sprint_intake" Enterprise checkout happens after scope. team_workflow_sprint_recovery_intake scope_first workflow_sprint_intake_started workflow_sprint_intake_submit_attempted pricing_team_intake team_intake_started</span>
         <span data-anchor="chatgpt-context">No, you do not have to chat inside the GPT forever. ChatGPT is a discovery and checkpointing surface. Do not rely on ChatGPT's native rating buttons for ThumbGate memory. Explore GPTs choose the GPT by Igor Ganapolsky Programming Do I have to chat inside the ThumbGate GPT for enforcement? capture typed thumbs-up/down feedback Local allow/warn/deny enforcement for coding agents requires a configured integration adapters/chatgpt/INSTALL.md Native ChatGPT rating buttons are not the ThumbGate capture path. thumbs up: this review named exact files, commands, and tests. thumbs down: the answer ignored my request.</span>
@@ -821,19 +884,57 @@ __GA_BOOTSTRAP__
   </div>
 </section>
 
-<section class="compatibility" id="why-not-diy" aria-label="Why not write your own hooks">
+<!-- DIAGRAMS: visual product explanation (conversion-critical) -->
+<section class="diagram-strip" id="diagrams" aria-label="How ThumbGate works in pictures">
   <div class="container">
-    <h2>“Why not just write my own PreToolUse hooks?”</h2>
-    <p class="hero-lede" style="max-width:760px;margin:0 auto 18px;">You can — on one machine, for one agent, until the next breaking change. ThumbGate is that idea, maintained: accepted feedback becomes local lessons, recurring failures can become explicit rules, and those rules can be reused by supported agents configured against the same local install scope. Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode each require their documented integration setup. Hand-written hooks do not automatically provide ThumbGate's lesson store, rule promotion, local decision records, or adapter tests.</p>
-    <p><a href="/compare/claude-code-hooks">See ThumbGate vs. hand-written hooks →</a></p>
+    <div class="section-label">See it in 10 seconds</div>
+    <h2 class="section-title" style="margin-bottom:8px;">Simple pictures. No essay required.</h2>
+    <p style="text-align:center;color:var(--text-muted);max-width:640px;margin:0 auto 20px;font-size:15px;line-height:1.5;">ThumbGate is a local pre-action gate for AI coding agents. Feedback becomes rules. Rules evaluate the next tool call before it runs.</p>
+    <div class="diagram-grid">
+      <figure class="diagram-card">
+        <img src="/assets/diagrams/loop.svg" alt="ThumbGate loop: agent proposes tool, ThumbGate allows warns or denies, feedback becomes a rule" width="720" height="220" loading="lazy" />
+        <figcaption><strong>1. The loop</strong><span>Agent proposes → ThumbGate decides ALLOW / WARN / DENY → your feedback becomes the next rule.</span></figcaption>
+      </figure>
+      <figure class="diagram-card">
+        <img src="/assets/diagrams/stack.svg" alt="Stack diagram showing ThumbGate between agent runtime and tools" width="720" height="200" loading="lazy" />
+        <figcaption><strong>2. Where it sits</strong><span>Model → Agent runtime → ThumbGate pre-action gate → shell / git / db. Not another chatbot memory.</span></figcaption>
+      </figure>
+      <figure class="diagram-card">
+        <img src="/assets/diagrams/before-after.svg" alt="Before and after: repeated mistakes without ThumbGate versus one correction with ThumbGate" width="720" height="220" loading="lazy" />
+        <figcaption><strong>3. Before / after</strong><span>Without: the same force-push returns. With: one thumbs-down becomes a check that evaluates the next attempt.</span></figcaption>
+      </figure>
+      <figure class="diagram-card">
+        <img src="/assets/diagrams/decision.svg" alt="Decision tree Free try, Pro solo cash path, Sprint for one hard workflow" width="720" height="260" loading="lazy" />
+        <figcaption><strong>4. What to buy</strong><span>Free to prove it. Pro ($19/mo) for unlimited solo use. Sprint intake when one workflow is burning the team.</span></figcaption>
+      </figure>
+    </div>
+    <div class="cash-path" id="cash-path">
+      <h3>One cash path (no offer soup)</h3>
+      <p><strong>Install Free → catch one repeat → Upgrade to Pro $19/mo.</strong> Team / Enterprise is intake-only after you name one repeated failure. No competing experimental ladders on this page.</p>
+      <div class="cash-path-actions">
+        <a href="/go/install?utm_source=website&utm_medium=cash_path&utm_campaign=install_free&cta_id=cash_path_install&cta_placement=diagrams" class="btn-free btn-install-link" onclick="event.preventDefault();navigator.clipboard.writeText('npx thumbgate init');this.textContent='Copied';setTimeout(()=>{this.textContent='Install free.'},2000);">Install free.</a>
+        <a href="/checkout/pro?utm_source=website&utm_medium=cash_path&utm_campaign=pro_upgrade&cta_id=cash_path_pro&cta_placement=diagrams&plan_id=pro&landing_path=%2F" class="btn-pro" data-revenue-cta data-cta-id="cash_path_pro" data-cta-placement="diagrams" data-plan-id="pro" data-price="19" onclick="if(typeof handleProCheckout==='function'){handleProCheckout();}return false;">Upgrade to Pro — $19/mo</a>
+        <a href="#workflow-sprint-intake" class="btn-team" style="padding:10px 14px;font-size:13px;">One hard workflow? Start sprint intake →</a>
+      </div>
+      <div class="honesty-pill" role="note">Honest defaults: secrets and gate-bypass <strong>deny</strong>; destructive deletes and force-push <strong>warn</strong> unless <code style="color:#fecaca">THUMBGATE_STRICT_ENFORCEMENT=1</code>.</div>
+    </div>
   </div>
 </section>
 
-<section class="compatibility" id="june-2026-proof">
+
+<section class="compatibility section-tight" id="why-not-diy" aria-label="Why not write your own hooks">
+  <div class="container">
+    <h2>“Why not just write my own PreToolUse hooks?”</h2>
+    <p class="hero-lede" style="max-width:720px;margin:0 auto 12px;text-align:center;">You can — on one machine, for one agent, until the next breaking change. ThumbGate is that idea, maintained: accepted feedback becomes local lessons, recurring failures become explicit rules, reused across configured Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode integrations.</p>
+    <p style="text-align:center;"><a href="/compare/claude-code-hooks">See ThumbGate vs. hand-written hooks →</a></p>
+  </div>
+</section>
+
+<section class="compatibility" id="june-2026-proof" class="section-tight">
   <div class="container">
     <div class="section-label">June 2026 Market Signal</div>
     <h2 class="section-title">The market moved from “agents can code” to “who is allowed to let agents act?”</h2>
-    <p style="text-align:center;font-size:16px;color:var(--text-muted);max-width:900px;margin:0 auto 26px;line-height:1.7;">The high-ROI buyer story is not another chatbot memory claim. June 2026 coverage is pushing the same pattern from multiple directions: tool lockdown, MCP security, managed agents, context budgets, and agent-authored production code all need pre-action governance at the execution boundary.</p>
+    <p style="text-align:center;font-size:15px;color:var(--text-muted);max-width:720px;margin:0 auto 18px;line-height:1.55;">Buyers now care who is allowed to let agents act. Tool lockdown, managed agents, and AI-authored production code all need a pre-action gate — not more logs after the damage.</p>
     <div class="agent-grid">
       <div class="agent-card">
         <h3>MCP and tool lockdown</h3>
@@ -862,7 +963,7 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="section-label">Agentic Development Cycle</div>
     <h2 class="section-title">Guide, Generate, Verify, Solve still needs an execution gate.</h2>
-    <p style="text-align:center;font-size:16px;color:var(--text-muted);max-width:900px;margin:0 auto 28px;line-height:1.7;">The market is converging on agentic development as a control loop, not a code-generation trick. <a href="https://thenewstack.io/agentic-development-cycle-framework/" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:underline;">The New Stack's May 2026 AC/DC framing</a> names the core stages: Guide, Generate, Verify, and Solve. ThumbGate gives that loop a hard pre-action boundary so agent work is governed before it touches files, terminals, CI, payments, or production systems.</p>
+    <p style="text-align:center;font-size:15px;color:var(--text-muted);max-width:760px;margin:0 auto 18px;line-height:1.55;">Agentic Development Cycle is a control loop, not a codegen trick. <a href="https://thenewstack.io/agentic-development-cycle-framework/" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:underline;">The New Stack's May 2026 AC/DC framing</a> names Guide, Generate, Verify, and Solve. ThumbGate's role: the pre-action gate between generated intent and executed action.</p>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;max-width:1080px;margin:0 auto;" aria-label="Agentic development cycle stages">
       <a class="cycle-card" href="/learn/feedback-loop-vs-decision-layer" rel="noopener" aria-label="Learn how Guide turns feedback into enforceable rules" onclick="try{posthog.capture('agentic_cycle_card_click',{stage:'guide'})}catch(_){}">
         <h3>Guide</h3>
@@ -1163,7 +1264,7 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="section-label">Positioning</div>
     <h2 class="section-title">Enforcement is the missing layer in AI orchestration.</h2>
-    <p style="color:var(--text-dim);max-width:760px;margin:0 auto 20px;">Big orchestration suites unify data, routes, and decisions. ThumbGate sits closer to the moment of execution: the point where an agent is about to run a shell command, ship a PR, approve a release, or repeat a mistake you already corrected. That is where workflow trust is won or lost.</p>
+    <p style="text-align:center;color:var(--text-muted);max-width:700px;margin:0 auto 16px;font-size:15px;line-height:1.5;">Broad orchestration platforms move data and routes. ThumbGate sits at the moment of execution — the pre-action decision before shell, git, or DB runs.</p>
     <div class="agent-grid">
       <div class="agent-card">
         <h3>Broad orchestration platforms</h3>
@@ -1259,7 +1360,7 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="section-label">Persistent Agent Skills</div>
     <h2 class="section-title">Reusable instructions are the new baseline. Enforcement is the moat.</h2>
-    <p style="text-align:center;font-size:16px;color:var(--text-muted);max-width:880px;margin:0 auto 28px;line-height:1.7;">Persistent agent skills create reusable instructions. ThumbGate adds a governed reliability layer: capture accepted feedback, export local lessons where the plan permits it, and inspect how a configured pre-action gate evaluated the next matching tool call before execution.</p>
+    <p style="text-align:center;color:var(--text-muted);max-width:720px;margin:0 auto 16px;font-size:15px;line-height:1.5;">Grok-style skills are training users to expect persistent expertise. Persistent skills tell an agent what you prefer. ThumbGate checks whether the next action follows those preferences. Every fired rule carries the source lesson, decision trace, and audit evidence.</p>
     <div class="agent-grid">
       <div class="agent-card">
         <h3>Portable skill memory</h3>
@@ -1287,17 +1388,17 @@ __GA_BOOTSTRAP__
       <div class="step">
         <div class="step-num">1</div>
         <h3>Feedback</h3>
-        <p>Give <code>👍</code> or a concrete <code>👎</code> on your AI agent's actions. Accepted feedback is stored in a local SQLite+FTS5 lesson DB. In the current Claude auto-capture hook, a vague thumbs-down can distill from up to 8 prior recorded entries and the failed tool call before promotion, then stay linked to a 60-second feedback session. Recurring accepted failures can auto-promote into a prevention rule.</p>
+        <p>Give 👍 or a concrete 👎. Accepted feedback becomes a local lesson (SQLite+FTS5). Recurring failures promote into prevention rules.</p>
       </div>
       <div class="step">
         <div class="step-num">2</div>
         <h3>Distill + Rules</h3>
-        <p>Repeated failures auto-promote into prevention rules. Thompson Sampling adapts which rules fire, and the reflector lane can propose a reusable rule from the same transcript so high-risk patterns get stricter enforcement while low-risk ones stay relaxed.</p>
+        <p>Rules auto-promote from repeats. Thompson Sampling adapts which rules fire so high-risk patterns stay strict and low-risk stay quiet.</p>
       </div>
       <div class="step">
         <div class="step-num">3</div>
         <h3>Checks</h3>
-        <p>Rules become Pre-Action Checks that evaluate proposed tool calls before execution. Detected secret exfiltration and gate kill/bypass commands deny by default; matching force-push, destructive-delete, fetch-and-run, or learned checks warn unless strict enforcement turns them into denies.</p>
+        <p>Rules become Pre-Action Checks before execution. Secrets/gate-bypass deny by default; force-push and destructive deletes warn unless strict mode denies them.</p>
       </div>
     </div>
   </div>
@@ -1426,6 +1527,12 @@ __GA_BOOTSTRAP__
     <div class="section-label">Pricing</div>
     <h2 class="section-title">Stop paying for agent mistakes you already fixed.</h2>
 
+    <figure class="diagram-card full" style="max-width:720px;margin:0 auto 20px;">
+      <img src="/assets/diagrams/decision.svg" alt="Pick Free, Pro, or Sprint" width="720" height="260" loading="lazy" />
+      <figcaption style="text-align:center;"><strong>Pick one path</strong><span>Free proves the loop. Pro is the self-serve cash path. Sprint/Enterprise is scope-first intake only.</span></figcaption>
+    </figure>
+
+
     <!-- At-a-glance comparison so buyers see plan differences without parsing the cards below. -->
     <div class="plan-matrix-wrap" style="max-width:1080px;margin:8px auto 28px;overflow-x:auto;">
       <table class="plan-matrix" style="width:100%;border-collapse:collapse;font-size:14px;min-width:640px;">
@@ -1453,7 +1560,7 @@ __GA_BOOTSTRAP__
     </div>
 
     <div class="pricing-grid">
-      <div class="price-card free-highlight" style="border-color:var(--cyan);box-shadow:0 0 40px var(--cyan-dim), inset 0 1px 0 rgba(34,211,238,0.15);position:relative;">
+      <div class="price-card free-highlight" style="border-color:var(--border);position:relative;">
         <div class="tier" style="color:var(--cyan);">Free</div>
         <div class="price">$0</div>
         <div class="price-sub">Catch repeated mistakes daily. Forever free for solo devs.</div>
@@ -1474,7 +1581,8 @@ __GA_BOOTSTRAP__
         </div>
         <a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener" class="btn-free">Install Free</a>
       </div>
-      <div class="price-card pro" data-price-dollars="19">
+      <div class="price-card pro" data-price-dollars="19" style="border-color:var(--cyan);box-shadow:0 0 40px var(--cyan-dim);position:relative;order:-1;">
+        <div style="position:absolute;top:-10px;right:16px;background:var(--cyan);color:#06121a;font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px;">SELF-SERVE CASH PATH</div>
         <div class="tier">Pro</div>
         <div class="price">$19<span style="font-size:16px;color:var(--text-dim)">/mo</span></div>
         <div class="price-sub"><strong>Individual local governance with higher limits.</strong> The free CLI runs configured gates locally. Pro removes the individual caps and adds the personal dashboard, recall, search, and exports. Hosted team lesson sync is not generally available.</div>
@@ -1746,7 +1854,7 @@ __GA_BOOTSTRAP__
 
 <!-- STICKY BOTTOM CTA -->
 <div class="sticky-cta" id="sticky-cta">
-  <span class="sticky-cta-text"><strong>Pro unlocks recall, proof, exports</strong> — free CLI is capped at 2 captures/day</span>
+  <span class="sticky-cta-text"><strong>Caught one repeat?</strong> Pro unlocks recall, proof, exports — free is capped at 2 captures/day</span>
   <div class="hero-install" onclick="copyInstall(this)" title="Click to copy" style="margin-bottom:0;padding:8px 16px;font-size:13px;">
     <span class="prompt">$</span>
     <span class="cmd">npx thumbgate init</span>
