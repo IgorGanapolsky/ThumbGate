@@ -552,7 +552,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 5.31 MB -> 5.35 MB (2026-07-16) for the exact Stripe offer catalog,
   // read-only drift audit, and aggregate-only Grafana catalog panels. Measured
   // artifact: 5,343,656 bytes; no credentials or buyer state are bundled.
-  // Bumped 5.35 MB -> 5.40 MB (2026-07-22) for observability env/setup/jsonl.
+  // Bumped 5.35 MB -> 5.40 MB (2026-07-22) for observability env/setup/jsonl
+  // and TG monogram SVG rewrite for Stripe brand alignment.
   assert.ok(
     manifest.unpackedSize <= 5_400_000,
     `npm package should stay <= 5.40 MB unpacked, got ${manifest.unpackedSize}`
