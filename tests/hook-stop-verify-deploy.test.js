@@ -118,6 +118,21 @@ describe('hook-stop-verify-deploy', () => {
     assert.equal(r.decision?.decision, 'block');
   });
 
+  test('ignores a deployment claim scoped only to a known foreign system', () => {
+    const r = runHook('Hermes is deployed to production.');
+    assert.equal(r.decision, null);
+  });
+
+  test('does not let an unrelated foreign-system mention suppress a ThumbGate claim', () => {
+    const r = runHook('Deployed ThumbGate to production. Also documented Ollama setup.');
+    assert.equal(r.decision?.decision, 'block');
+  });
+
+  test('does not let a foreign system in the same clause suppress a ThumbGate claim', () => {
+    const r = runHook('Deployed ThumbGate to production and documented the Ollama setup.');
+    assert.equal(r.decision?.decision, 'block');
+  });
+
   test('exits 0 with empty CLAUDE_RESPONSE', () => {
     const r = runHook('');
     assert.equal(r.exitCode, 0);
