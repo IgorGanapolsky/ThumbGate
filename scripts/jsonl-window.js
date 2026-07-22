@@ -66,7 +66,10 @@ function readJsonlSinceTail(filePath, {
       parsed = typeof raw === 'number' ? raw : Date.parse(raw);
       if (Number.isFinite(parsed)) break;
     }
-    if (!Number.isFinite(parsed) || parsed >= sinceMs) {
+    // Preserve since filter: only include rows with a parseable timestamp
+    // inside the window. Legacy/malformed lines without timestamps must not
+    // inflate totalAfterSince or journey summaries.
+    if (Number.isFinite(parsed) && parsed >= sinceMs) {
       matched.push(obj);
     }
   }

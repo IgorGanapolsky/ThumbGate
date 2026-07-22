@@ -42,7 +42,9 @@ const PAYPAL_BUYER_RAIL_KEYS = Object.freeze([
 function parseArgs(argv = []) {
   const options = {
     json: false,
-    appOrigin: process.env.THUMBGATE_PUBLIC_APP_ORIGIN || DEFAULT_PUBLIC_APP_ORIGIN,
+    // Leave appOrigin unset unless CLI flag is explicit, so secret-load can
+    // still apply ~/.config/thumbgate/observability.json publicAppOrigin.
+    appOrigin: undefined,
     timeoutMs: DEFAULT_TIMEOUT_MS,
   };
 
@@ -52,7 +54,7 @@ function parseArgs(argv = []) {
       continue;
     }
     if (arg.startsWith('--app-origin=')) {
-      options.appOrigin = arg.slice('--app-origin='.length).trim() || options.appOrigin;
+      options.appOrigin = arg.slice('--app-origin='.length).trim() || DEFAULT_PUBLIC_APP_ORIGIN;
       continue;
     }
     if (arg.startsWith('--timeout-ms=')) {
@@ -297,7 +299,7 @@ async function probeHostedJson({
 
 async function buildRevenueObservabilityDoctor({
   env = process.env,
-  appOrigin = env.THUMBGATE_PUBLIC_APP_ORIGIN || DEFAULT_PUBLIC_APP_ORIGIN,
+  appOrigin = undefined,
   fetchImpl = globalThis.fetch,
   timeoutMs = DEFAULT_TIMEOUT_MS,
   loadLocalSecrets = true,
@@ -311,6 +313,13 @@ async function buildRevenueObservabilityDoctor({
       secretLoad = { applied: [] };
     }
   }
+
+  // Resolve origin AFTER secret load so observability.json publicAppOrigin wins
+  // when the caller did not pass an explicit appOrigin override.
+  const resolvedAppOrigin = appOrigin
+    || env.THUMBGATE_PUBLIC_APP_ORIGIN
+    || DEFAULT_PUBLIC_APP_ORIGIN;
+  appOrigin = resolvedAppOrigin;
 
   // Prefer managed Stripe files when env is empty.
   try {

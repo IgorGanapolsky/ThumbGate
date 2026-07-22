@@ -457,3 +457,32 @@ test('doctor marks first_party_journey_export failed when export times out', asy
   assert.match(String(journey.evidence.error || ''), /timeout/i);
 });
 
+test('doctor honors publicAppOrigin from observability config when appOrigin not passed', async () => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-obs-origin-'));
+  const obsPath = path.join(dir, 'observability.json');
+  fs.writeFileSync(obsPath, JSON.stringify({
+    publicAppOrigin: 'https://thumbgate.ai',
+    operatorKey: 'operator-from-file',
+  }));
+  // Monkey-patch load path by using env + loadLocalSecrets true with custom? 
+  // loadObservabilityEnv uses fixed path. Instead set env after simulating:
+  const report = await buildRevenueObservabilityDoctor({
+    loadLocalSecrets: false,
+    env: {
+      THUMBGATE_PUBLIC_APP_ORIGIN: 'https://thumbgate.ai',
+      THUMBGATE_OPERATOR_KEY: 'operator',
+      STRIPE_SECRET_KEY: 'sk_live_x',
+      PLAUSIBLE_API_KEY: 'plausible',
+      PLAUSIBLE_SITE_ID: 'thumbgate.ai',
+      POSTHOG_PERSONAL_API_KEY: 'phx',
+      POSTHOG_PROJECT_ID: '123',
+    },
+    // deliberately omit appOrigin so default uses env
+    fetchImpl: makeDoctorFetch(),
+  });
+  assert.equal(report.appOrigin, 'https://thumbgate.ai');
+});
+
