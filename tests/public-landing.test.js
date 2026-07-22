@@ -31,14 +31,14 @@ function normalizeHtmlText(value) {
 }
 
 function visibleBodyText(html) {
-  const body = (html.match(/<body[^>]*>([\s\S]*?)<\/body\s*>/i) || [])[1] || '';
+  const body = (html.match(/<body\b[^>]*>([\s\S]*?)<\/body\b[^>]*>/i) || [])[1] || '';
   return normalizeHtmlText(body
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, ' ')
-    .replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, ' '));
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script\b[^>]*>/gi, ' ')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style\b[^>]*>/gi, ' '));
 }
 
 function parseJsonLd(html) {
-  return [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script\s*>/g)]
+  return [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script\b[^>]*>/g)]
     .map((match) => JSON.parse(match[1]));
 }
 
@@ -63,6 +63,11 @@ test('homepage has one priced offer and one checkout form', () => {
   assert.match(landingPage, /method="POST"/);
   assert.match(landingPage, /name="customer_email"[^>]*required/);
   assert.match(landingPage, /name="plan_id" value="sprint_diagnostic"/);
+});
+
+test('visible text filtering consumes the complete script and style end tags', () => {
+  const html = '<body>shown<script>hidden</script\t\n data-test>after<style>hidden</style extra>done</body>';
+  assert.equal(visibleBodyText(html), 'shown after done');
 });
 
 test('homepage removes competing commercial funnels and conversion overlays', () => {
