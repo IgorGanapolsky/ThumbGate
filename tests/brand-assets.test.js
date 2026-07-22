@@ -31,10 +31,12 @@ test('ThumbGate inline mark SVG exists with transparent backdrop for header use'
   const svg = fs.readFileSync(inlineMarkPath, 'utf8');
   assert.match(svg, /<svg/);
   assert.match(svg, /viewBox="0 0 \d+ \d+"/);
-  assert.match(svg, /stroke="#8cf5d1"/, 'inline mark must stroke with standard color');
-  assert.match(svg, /premium shield and thumbs-up mark/, 'inline mark accessible description should name the premium shield and thumbs-up');
+  assert.match(svg, /#8cf5d1|#22d3ee/, 'inline mark must use brand cyan/mint colors');
+  assert.match(svg, /TG gate monogram|Stripe product/i, 'inline mark accessible description should name the TG gate monogram used on Stripe');
+  assert.match(svg, />TG</, 'inline mark must render the TG monogram, not a thumbs-up glyph');
   assert.match(svg, /<\/svg>/);
   assert.doesNotMatch(svg, /gate-and-signal|signal sweep|Status LEDs/i);
+  assert.doesNotMatch(svg, /thumbs-up mark|thumbs up/i, 'inline mark must not use the retired shield/thumbs-up emblem');
   // Guard: inline mark must NOT contain a full-canvas opaque rounded-rect tile. That tile
   // backdrop is what made thumbgate-mark.svg render as a tiny iOS-launcher icon inside
   // website headers. The inline variant exists specifically to avoid that look.

@@ -1,21 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
   <title id="title">ThumbGate mark</title>
-  <desc id="desc">A crisp shield and thumbs-up mark for ThumbGate.</desc>
+  <desc id="desc">ThumbGate TG gate monogram app icon. Matches the Stripe product image family used on Checkout.</desc>
   <defs>
-    <linearGradient id="tg-frame" x1="96" y1="96" x2="416" y2="416" gradientUnits="userSpaceOnUse">
+    <linearGradient id="tg-frame" x1="96" y1="72" x2="416" y2="440" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#8cf5d1"/>
+      <stop offset="0.55" stop-color="#5eead4"/>
       <stop offset="1" stop-color="#22d3ee"/>
     </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="112" fill="#061015"/>
-  <g transform="translate(78, 78) scale(5.5625)">
-    <!-- Outer Shield / Gate -->
-    <path d="M32 9 C20 13 15 20 15 33 C15 45 26 53 32 56 C38 53 49 45 49 33 C49 20 44 13 32 9 Z" 
-          fill="#0b1820" stroke="url(#tg-frame)" stroke-width="3.5" stroke-linejoin="round"/>
-          
-    <!-- Proportional Thumbs Up -->
-    <g transform="translate(19, 17) scale(1.1)" stroke="#8cf5d1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none">
-      <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
-    </g>
-  </g>
+  <!-- App-icon tile (full dark rounded square) for favicon / apple-touch / PWA -->
+  <rect width="512" height="512" rx="112" fill="#0b1220"/>
+  <!-- Outer gate frame -->
+  <rect x="64" y="64" width="384" height="384" rx="96" fill="none" stroke="url(#tg-frame)" stroke-width="28"/>
+  <!-- Inner gate opening -->
+  <rect x="128" y="128" width="256" height="256" rx="64" fill="none" stroke="url(#tg-frame)" stroke-width="24"/>
+  <!-- Gate threshold bar -->
+  <rect x="148" y="336" width="216" height="28" rx="14" fill="#22d3ee"/>
+  <!-- TG monogram -->
+  <text x="256" y="300" text-anchor="middle" font-family="Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="132" font-weight="700" fill="#f8fafc" letter-spacing="-0.04em">TG</text>
 </svg>
