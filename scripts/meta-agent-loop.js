@@ -581,6 +581,20 @@ async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes('--dry-run');
   const verbose = args.includes('--verbose') || args.includes('-v');
+  let hookMode = args.includes('--hook');
+
+  // Settings may already be cached by a running agent process. Detect the
+  // current Stop payload as well, so the legacy command (without --hook) is
+  // immediately JSON-safe before the host reloads its settings.
+  if (!hookMode && !process.stdin.isTTY) {
+    try {
+      const raw = fs.readFileSync(0, 'utf8');
+      const payload = raw ? JSON.parse(raw) : {};
+      hookMode = payload.hook_event_name === 'Stop';
+    } catch {
+      // Normal CLI invocation with empty/non-JSON stdin.
+    }
+  }
 
   if (args.includes('--status')) {
     const status = getMetaAgentStatus();
@@ -593,9 +607,13 @@ async function main() {
   }
 
   const mode = dryRun ? 'DRY RUN' : 'LIVE';
-  console.log(`Meta-agent loop starting [${mode}]...`);
+  if (!hookMode) console.log(`Meta-agent loop starting [${mode}]...`);
 
-  const manifest = await runMetaAgentLoop({ dryRun, verbose: verbose || true });
+  const manifest = await runMetaAgentLoop({ dryRun, verbose: hookMode ? false : true });
+
+  // Stop hooks may emit only empty stdout or a valid JSON object. The loop's
+  // work is intentionally silent in hook mode.
+  if (hookMode) return;
 
   console.log(`Run ID        : ${manifest.runId}`);
   console.log(`Analysis mode : ${manifest.analysisMode}`);
