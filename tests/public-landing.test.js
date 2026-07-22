@@ -31,14 +31,14 @@ function normalizeHtmlText(value) {
 }
 
 function visibleBodyText(html) {
-  const body = (html.match(/<body[^>]*>([\s\S]*?)<\/body>/i) || [])[1] || '';
+  const body = (html.match(/<body[^>]*>([\s\S]*?)<\/body\s*>/i) || [])[1] || '';
   return normalizeHtmlText(body
-    .replace(/<script\b[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style\b[\s\S]*?<\/style>/gi, ' '));
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, ' ')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, ' '));
 }
 
 function parseJsonLd(html) {
-  return [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
+  return [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script\s*>/g)]
     .map((match) => JSON.parse(match[1]));
 }
 
