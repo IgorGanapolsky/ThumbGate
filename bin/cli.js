@@ -131,7 +131,7 @@ function upgradeNudge() {
   const pricingUrl = pricingUrlFor('cli_upgrade_nudge', COMMAND || 'general');
   const diagnosticUrl = diagnosticUrlFor('cli_upgrade_nudge', COMMAND || 'general');
   process.stderr.write(
-    '\n  Team rollout: start with the $499 Workflow Hardening Diagnostic\n' +
+    '\n  Enterprise entry: $499 Enterprise Workflow Gate for one workflow\n' +
     `  ${diagnosticUrl}\n` +
     `\n  Solo side lane: Pro — ${PRO_PRICE_LABEL}\n` +
     '  Removes solo caps; adds personal recall, dashboard proof, exports, and managed adapters.\n' +
@@ -143,8 +143,8 @@ function diagnostic() {
   const intakeUrl = diagnosticUrlFor('cli_diagnostic', COMMAND || 'diagnostic');
   const checkoutUrl = diagnosticCheckoutUrlFor('cli_diagnostic', COMMAND || 'diagnostic');
   console.log('');
-  console.log('  ThumbGate Workflow Hardening Diagnostic');
-  console.log('  ---------------------------------------');
+  console.log('  ThumbGate Enterprise Workflow Gate — $499');
+  console.log('  ------------------------------------------');
   console.log('  Use this when one repeated AI-agent workflow failure is already costing');
   console.log('  review time, release confidence, customer trust, or money.');
   console.log('');
@@ -1500,8 +1500,8 @@ function stats() {
     console.log(`  Repeated Failures detected: ${payload.negatives}`);
     console.log(`  Estimated Operational Loss: $${payload.revenueAtRisk}`);
     console.log('  Action Required: Run "npx thumbgate rules" to generate guardrails.');
-    console.log('  Strategic Recommendation: if this is a shared workflow problem, start the Workflow Hardening Sprint.');
-    console.log('  Team intake: https://thumbgate.ai/#workflow-sprint-intake');
+    console.log('  Strategic Recommendation: if this is a shared workflow problem, start with the $499 Enterprise Workflow Gate.');
+    console.log('  Enterprise entry: https://thumbgate.ai/pricing');
     console.log('  Solo side lane: npx thumbgate pro');
   } else {
     console.log('\n✅ System is currently high-reliability. No immediate revenue loss detected.');
@@ -1629,7 +1629,7 @@ function pro() {
     console.log('  - Personal recall: search lessons, rules, and proof');
     console.log('  - Local Pro dashboard: your own browser dashboard for search, gates, and DPO export');
     console.log('  - Managed adapters: Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode');
-    console.log('  - Enterprise service path: qualified after intake; hosted team sync and org dashboard are not GA');
+    console.log('  - Enterprise Workflow Gate: $499 for one supported workflow; hosted team sync and org dashboard are not GA');
     console.log('  - Commercial truth doc: source of truth for traction, pricing, and proof claims');
     console.log('\nLinks:');
     console.log(`  Buy Pro         : ${PRO_CHECKOUT_URL}`);
@@ -3144,7 +3144,7 @@ function help() {
     console.log('  break-glass --reason="..."                       Short TTL recovery if gates over-fire');
     console.log('  brain [--write]                                   Build the agent-readable context brain (lessons + rules + gates)');
     console.log('  pro                                               ThumbGate Pro (dashboard, exports, sync)');
-    console.log('  diagnostic                                        $499 Workflow Hardening Diagnostic for one repeated team failure');
+    console.log('  diagnostic                                        $499 Enterprise Workflow Gate for one repeated team failure');
     console.log('  subscribe <email>                                 Get the 5-min setup guide + weekly tips by email');
     console.log('');
     console.log('More:');
@@ -3289,7 +3289,7 @@ const SUBCOMMAND_HELP = {
   stats:         'Usage: npx thumbgate stats\n\nShow gate enforcement statistics: blocked/warned counts, active gates, time saved.',
   trial:         'Usage: npx thumbgate trial\n\nShow Pro trial status, remaining days, and upgrade path.',
   pro:           'Usage: npx thumbgate pro [--activate <key>]\n\nLaunch the local Pro dashboard or activate a Pro license key.',
-  diagnostic:    'Usage: npx thumbgate diagnostic\n\nShow the $499 Workflow Hardening Diagnostic intake and checkout paths for teams with one repeated AI-agent workflow failure.',
+  diagnostic:    'Usage: npx thumbgate diagnostic\n\nShow the $499 Enterprise Workflow Gate fit-check and checkout paths for teams with one repeated AI-agent workflow failure.',
   subscribe:     'Usage: npx thumbgate subscribe <email>\n\nSubscribe to the 5-minute setup guide + trial reminders.',
   lessons:       'Usage: npx thumbgate lessons [--query="..."] [--limit=N]\n\nSearch the lesson database (Pro feature).',
   search:        'Usage: npx thumbgate search <query>\n\nSearch ThumbGate knowledge base (Pro feature).',
