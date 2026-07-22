@@ -871,7 +871,7 @@
     "node": ">=18.18.0"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "0.102.0",
+    "@anthropic-ai/sdk": "0.112.5",
     "@google/genai": "2.7.0",
     "@lancedb/lancedb": "^0.30.0",
     "apache-arrow": "^18.1.0",
