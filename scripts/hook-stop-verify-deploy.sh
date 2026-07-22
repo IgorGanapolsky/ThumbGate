@@ -17,9 +17,10 @@
 #   CLAUDE_RESPONSE     — the assistant's last response text
 #   CLAUDE_STOP_REASON  — why the agent stopped (set by Claude Code)
 #
-# Marker file (informational, NOT a substitute for in-response evidence):
-#   ${TMPDIR:-/tmp}/.thumbgate-last-deploy-verify — written by
-#   scripts/hook-pre-tool-use.js when an out-of-band verify is observed.
+# A legacy `.thumbgate-last-deploy-verify` marker may still be written by
+# older runtimes. This hook deliberately ignores it: marker text on stdout
+# violates the Stop-hook JSON contract, and out-of-band state is not a
+# substitute for evidence in the assistant response.
 #
 # Exit code:
 #   0 in every path. The block decision is emitted via JSON on stdout.
@@ -28,25 +29,34 @@ set -euo pipefail
 
 PROD_URL="thumbgate-production.up.railway.app"
 PROD_DOMAIN="thumbgate.ai"
-VERIFICATION_MARKER="${TMPDIR:-/tmp}/.thumbgate-last-deploy-verify"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 EXPECTED_VERSION="$(node -e "console.log(require(process.argv[1]).version)" "${REPO_ROOT}/package.json" 2>/dev/null || echo "")"
 
 export PROD_URL PROD_DOMAIN EXPECTED_VERSION
 
-RESPONSE="${CLAUDE_RESPONSE:-}"
-if [[ -z "$RESPONSE" ]]; then
-  if [[ -f "$VERIFICATION_MARKER" ]]; then
-    echo "✅ Last deployment verification: $(cat "$VERIFICATION_MARKER")"
-  fi
-  exit 0
-fi
-
 node -e '
   "use strict";
 
-  const response = process.env.CLAUDE_RESPONSE || "";
+  const fs = require("fs");
+
+  let response = process.env.CLAUDE_RESPONSE || "";
+  if (!response) {
+    try {
+      const raw = fs.readFileSync(0, "utf8");
+      const payload = raw ? JSON.parse(raw) : {};
+      response = typeof payload.last_assistant_message === "string"
+        ? payload.last_assistant_message
+        : "";
+    } catch {
+      response = "";
+    }
+  }
+
+  if (!response) {
+    process.exit(0);
+  }
+
   const prodUrl = process.env.PROD_URL || "";
   const prodDomain = process.env.PROD_DOMAIN || "";
   const expectedVersion = process.env.EXPECTED_VERSION || "";
@@ -113,10 +123,5 @@ node -e '
   };
   process.stdout.write(JSON.stringify(output));
 ' 2>/dev/null
-NODE_EXIT=$?
-
-if [[ "$NODE_EXIT" -eq 0 ]] && [[ -f "$VERIFICATION_MARKER" ]]; then
-  echo "✅ Last deployment verification: $(cat "$VERIFICATION_MARKER")"
-fi
 
 exit 0

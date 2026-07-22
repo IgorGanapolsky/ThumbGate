@@ -20,9 +20,17 @@ const path = require('node:path');
 
 const HOOK = path.join(__dirname, '..', 'scripts', 'hook-stop-verify-deploy.sh');
 
-function runHook(response) {
+function runHook(response, { useStdin = false, tmpdir } = {}) {
   const result = spawnSync('bash', [HOOK], {
-    env: { ...process.env, CLAUDE_RESPONSE: response || '' },
+    input: useStdin ? JSON.stringify({
+      hook_event_name: 'Stop',
+      last_assistant_message: response || '',
+    }) : undefined,
+    env: {
+      ...process.env,
+      CLAUDE_RESPONSE: useStdin ? '' : (response || ''),
+      ...(tmpdir ? { TMPDIR: tmpdir } : {}),
+    },
     encoding: 'utf-8',
   });
   return {
@@ -34,11 +42,10 @@ function runHook(response) {
 }
 
 function parseDecision(stdout) {
-  // The hook emits JSON only when it blocks. Find the first { ... } object.
-  const match = stdout.match(/\{[\s\S]*\}/);
-  if (!match) return null;
+  // Stop hooks may emit only empty stdout or one JSON object.
+  if (!stdout.trim()) return null;
   try {
-    return JSON.parse(match[0]);
+    return JSON.parse(stdout.trim());
   } catch {
     return null;
   }
@@ -57,6 +64,20 @@ describe('hook-stop-verify-deploy', () => {
     assert.ok(r.decision, 'expected a JSON decision payload');
     assert.equal(r.decision.decision, 'block');
     assert.match(r.decision.reason, /CLAUDE\.md hard-block rule #6/i);
+  });
+
+  test('reads last_assistant_message from the current stdin payload', () => {
+    const r = runHook('The blog post is deployed.', { useStdin: true });
+    assert.equal(r.decision?.decision, 'block');
+  });
+
+  test('never contaminates stdout with the legacy verification marker', () => {
+    const fs = require('node:fs');
+    const os = require('node:os');
+    const tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-stop-json-'));
+    fs.writeFileSync(path.join(tmpdir, '.thumbgate-last-deploy-verify'), '2026-07-13T00:00:00Z');
+    const r = runHook('No deployment claim here.', { useStdin: true, tmpdir });
+    assert.equal(r.stdout.trim(), '');
   });
 
   test('does not block a "deployed" claim unrelated to ThumbGate production', () => {
