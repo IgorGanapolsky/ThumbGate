@@ -10,7 +10,6 @@ const { OFFER_CATALOG } = require('../scripts/revenue-offer-system');
 const root = path.resolve(__dirname, '..');
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
 const buyerPages = [
-  'public/index.html',
   'public/pricing.html',
   'public/pro.html',
   'public/compare.html',
@@ -64,7 +63,7 @@ test('primary buyer pages do not resurrect unconditional hosted Enterprise promi
   }
 });
 
-test('public pricing matches the fixed proposal-only expansion offer prices', () => {
+test('proposal-only expansion prices remain internal catalog truth', () => {
   const pricing = read('public/pricing.html');
   const workflowOps = OFFER_CATALOG.workflow_reliability_operations;
   const pilot = OFFER_CATALOG.enterprise_governance_pilot;
@@ -73,25 +72,15 @@ test('public pricing matches the fixed proposal-only expansion offer prices', ()
   assert.equal(workflowOps.priceCents, 300000);
   assert.equal(pilot.priceCents, 1500000);
   assert.equal(enterpriseOps.priceCents, 1000000);
-  assert.match(pricing, /\$3,000\/month Workflow Reliability Operations/);
-  assert.match(pricing, /\$15,000 30-day Enterprise Governance Pilot/);
-  assert.match(pricing, /\$10,000\/month Enterprise Reliability Operations/);
-  assert.match(pricing, /signed scope, and provider-confirmed payment before it counts as revenue/i);
+  assert.doesNotMatch(pricing, /\$3,000|\$15,000|\$10,000/);
+  assert.match(pricing, /one offer · one workflow · one fixed price/i);
 });
 
-test('Enterprise pricing remains intake-led without a public checkout', () => {
+test('public pricing hides proposal-only Enterprise expansion', () => {
   const pricing = read('public/pricing.html');
-  const start = pricing.indexOf('<div class="price-card enterprise-card"');
-  const end = pricing.indexOf('</div>\n\n  </div>', start);
-  assert.ok(start >= 0, 'Enterprise pricing card is missing');
-  assert.ok(end > start, 'Enterprise pricing card boundary is missing');
-  const enterpriseCard = pricing.slice(start, end);
-
-  assert.match(enterpriseCard, /qualified/i);
-  assert.match(enterpriseCard, /signed scope/i);
-  assert.match(enterpriseCard, /workflow-sprint-intake/i);
-  assert.doesNotMatch(enterpriseCard, /checkout\/enterprise|checkout\/team/i);
-  assert.doesNotMatch(enterpriseCard, /Stripe checkout/i);
+  assert.doesNotMatch(pricing, /Enterprise Governance Pilot|Enterprise Reliability Operations/i);
+  assert.doesNotMatch(pricing, /workflow-sprint-intake|checkout\/enterprise|checkout\/team/i);
+  assert.match(pricing, /Hosted Enterprise capabilities are not generally available/i);
 });
 
 test('proposal-only service copy does not make guarantees or fake urgency claims', () => {

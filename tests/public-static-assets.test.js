@@ -118,36 +118,37 @@ test('landing page does not render empty revenue links', async () => {
   assert.doesNotMatch(html, /__SPRINT_DIAGNOSTIC_CHECKOUT_URL__|__WORKFLOW_SPRINT_CHECKOUT_URL__/);
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/28E00j3Uge1E2dzgWL3sI2J/);
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/6oU00j8aw2iWdWh9uj3sI2K/);
-  assert.match(html, /#workflow-sprint-intake/);
-  assert.match(html, /Enterprise checkout happens after scope\./);
+  assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
+  assert.match(html, /Buy the \$499 enterprise gate/);
+  assert.doesNotMatch(html, /\/checkout\/pro|\/go\/sprint|href="[^"]*workflow-sprint-intake/i);
+  assert.match(html, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
 });
 
-test('landing pricing section compares plan capabilities and limits clearly', async () => {
+test('landing page presents one fixed-price managed offer clearly', async () => {
   const res = await fetch(`${origin}/`);
   assert.equal(res.status, 200);
   const html = await res.text();
 
-  assert.match(html, /Compare plans at a glance/);
-  assert.match(html, /2\/day, 10 total/);
-  assert.match(html, /3 active rules/);
-  assert.match(html, /\$19\/mo or \$149\/yr/);
-  assert.match(html, /\$15,000 pilot; \$10,000\/month after completed pilot/);
-  assert.match(html, /Enterprise is intake-first and scoped around one workflow/);
-  assert.match(html, /None imply generally available hosted team features/);
+  assert.match(html, /Enterprise Workflow Gate/);
+  assert.match(html, /One configured local gate and its regression test/);
+  assert.match(html, /Rollout and rollback proof within two business days/);
+  assert.match(html, /one supported local workflow/i);
+  assert.doesNotMatch(html, /\$19|\$149|\$1,500|\$3,000|\$10,000|\$15,000/);
 });
 
-test('landing page answers governance objections instead of presenting passive logs', async () => {
+test('landing page explains pre-action enforcement instead of passive logging', async () => {
   const res = await fetch(`${origin}/`);
   assert.equal(res.status, 200);
   const html = await res.text();
 
-  assert.match(html, /Governance, Not Logging/);
-  assert.match(html, /Logs describe the damage\. ThumbGate evaluates the proposed action before it runs/);
-  assert.match(html, /Detected secret exfiltration and gate kill\/bypass commands deny by default; strict mode also denies matching warning-mode checks/);
-  assert.match(html, /allow, warn, or deny decision/);
-  assert.match(html, /Reviewable decision trail/);
-  assert.match(html, /local evidence instead of trusting an agent summary/);
-  assert.doesNotMatch(html, /Org Dashboard \(Team\)/);
+  assert.match(html, /Agent proposes/);
+  assert.match(html, /ThumbGate checks/);
+  assert.match(html, /Decision before execution/);
+  assert.match(html, />ALLOW</);
+  assert.match(html, />WARN</);
+  assert.match(html, />DENY</);
+  assert.match(html, /Detected secret exfiltration and gate-process bypass attempts are denied by default/);
+  assert.match(html, /Matching destructive actions warn by default and deny in strict mode/);
 });
 
 test('homepage and pricing surfaces expose canonical and LLM context links', async () => {
@@ -184,26 +185,29 @@ test('GET /partner-intake serves a clean form-only partner handoff', async () =>
   assert.doesNotMatch(html, /\$\s*\d|Stripe|checkout|payment|data-revenue-cta/i);
 });
 
-test('GET /diagnostic serves the Workflow Hardening Diagnostic intake page', async () => {
+test('GET /diagnostic serves the managed workflow gate checkout and fit page', async () => {
   const res = await fetch(`${origin}/diagnostic`);
   assert.equal(res.status, 200);
   assert.match(res.headers.get('content-type') || '', /text\/html/);
   const html = await res.text();
-  assert.match(html, /Workflow Hardening Diagnostic/);
-  assert.match(html, /Submit for diagnostic scope/);
+  assert.match(html, /Enterprise Workflow Gate/);
+  assert.match(html, /Submit for fit check/);
   assert.match(html, /action="\/v1\/intake\/workflow-sprint"/);
   assert.match(html, /data-diagnostic-intake-form/);
   assert.match(html, /diagnostic_page_submit/);
-  assert.match(html, /Continue to secure \$499 checkout/);
-  assert.match(html, /Exactly what the \$499 diagnostic includes/);
+  assert.match(html, /Buy the \$499 enterprise gate/);
+  assert.match(html, /Exactly what the \$499 Enterprise Workflow Gate includes/);
   assert.match(html, /one 60-minute working review/i);
-  assert.match(html, /written decision packet delivered within two business days/i);
-  assert.match(html, /public Workflow Hardening Sprint is \$1500/);
-  assert.match(html, /\$499 diagnostic fee is applied through the follow-up sprint invoice or checkout/i);
+  assert.match(html, /one configured local gate and regression test/i);
+  assert.match(html, /rollout and rollback proof within two business days/i);
+  assert.match(html, /order is refunded instead of being silently converted/i);
+  assert.doesNotMatch(html, /\$1500|public Workflow Hardening Sprint/i);
   assert.doesNotMatch(html, /__WORKFLOW_SPRINT_PRICE_DOLLARS__|__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
   assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(html, /name="customer_email"[^>]*required/);
   assert.match(html, /data-cta-id="diagnostic_hero_paid"/);
+  assert.match(html, /\/v1\/telemetry\/ping/);
+  assert.doesNotMatch(html, /\/v1\/telemetry\/event/);
   assert.match(html, /const inboundSource = search\.get\('utm_source'\) \|\| search\.get\('source'\)/);
   assert.match(html, /paidForm\.querySelector\('input\[name="utm_source"\]'\)\.value = inboundSource\.trim\(\)/);
   assert.doesNotMatch(html, /No cold payment link/);
@@ -229,8 +233,8 @@ test('workflow diagnostic aliases serve the focused diagnostic page', async () =
     assert.equal(res.status, 200, `${pathname} should render diagnostic page`);
     assert.match(res.headers.get('content-type') || '', /text\/html/);
     const html = await res.text();
-    assert.match(html, /Workflow Hardening Diagnostic/);
-    assert.match(html, /Submit for diagnostic scope/);
+    assert.match(html, /Enterprise Workflow Gate/);
+    assert.match(html, /Submit for fit check/);
     assert.match(html, /<link rel="canonical" href="[^"]+\/diagnostic"/);
   }
 });
@@ -250,7 +254,7 @@ test('GET /install serves the verified distribution and buyer path page', async 
     assert.match(html, /MCP Registry/);
     assert.match(html, /Cursor public Marketplace/);
     assert.match(html, /\/diagnostic\?utm_source=install_page/);
-    assert.match(html, /Workflow Hardening Diagnostic/);
+    assert.match(html, /Managed AI Agent Workflow Gate/);
   }
 });
 

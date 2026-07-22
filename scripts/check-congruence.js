@@ -14,10 +14,7 @@ const {
   loadGitHubAboutConfig,
   verifyLiveGitHubAbout,
 } = require('./github-about');
-const {
-  PRODUCTHUNT_URL,
-  getClaudePluginLatestDownloadUrl,
-} = require('./distribution-surfaces');
+const { getClaudePluginLatestDownloadUrl } = require('./distribution-surfaces');
 const {
   ENTERPRISE_PRICE_LABEL,
 } = require('./commercial-offer');
@@ -142,6 +139,7 @@ async function main() {
   const version = pkg.version;
 
   const landingHtml = read('public/index.html') || '';
+  const pricingHtml = read('public/pricing.html') || '';
   const guideHtml = read('public/guide.html') || '';
   const compareHtml = read('public/compare.html') || '';
   const proHtml = read('public/pro.html') || '';
@@ -204,7 +202,7 @@ async function main() {
     check(present, `Brand "ThumbGate" missing from ${surface}`);
   }
 
-  // --- Tech stack congruence: key terms must appear in both README and landing page ---
+  // --- Tech stack congruence: technical details belong in technical surfaces ---
   const techTerms = [
     'SQLite',
     'FTS5',
@@ -219,18 +217,20 @@ async function main() {
       readmeMd.includes(term),
       `Tech term "${term}" missing from README.md`
     );
-    check(
-      landingHtml.includes(term),
-      `Tech term "${term}" missing from public/index.html`
-    );
   }
 
-  // --- SEO positioning terms must appear on landing page ---
+  // --- SEO positioning terms remain available without crowding the cash page ---
+  const technicalContent = [
+    guideHtml,
+    compareHtml,
+    read('public/llm-context.md') || '',
+    read('docs/articles/tds-pre-action-checks.md') || '',
+  ].join('\n');
   const seoTerms = ['human-in-the-loop', 'vibe coding'];
   for (const term of seoTerms) {
     check(
-      landingHtml.toLowerCase().includes(term.toLowerCase()),
-      `SEO term "${term}" missing from public/index.html`
+      technicalContent.toLowerCase().includes(term.toLowerCase()),
+      `SEO term "${term}" missing from technical content surfaces`
     );
   }
 
@@ -250,12 +250,8 @@ async function main() {
     'README.md contains unresolved merge conflict markers'
   );
   check(
-    landingHtml.includes('doesn\'t touch the model') || landingHtml.includes('different from model-training feedback loops'),
-    'public/index.html missing honest disclaimer (FAQ or inline)'
-  );
-  check(
-    /\$19\/mo/i.test(landingHtml) && /\$149\/yr/i.test(landingHtml),
-    'public/index.html must advertise the current Pro monthly and annual pricing'
+    /warn by default[^.]*den(?:y|ies) (?:when|in) strict/i.test(landingHtml),
+    'public/index.html must state the default-versus-strict enforcement boundary'
   );
   check(
     /\$19\/mo/i.test(guideHtml) && /\$149\/yr/i.test(guideHtml),
@@ -282,16 +278,16 @@ async function main() {
     'docs/COMMERCIAL_TRUTH.md must record the Enterprise tier'
   );
   check(
-    /accepted .*feedback becomes history-aware local lessons/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must describe accepted feedback becoming local lessons'
+    /one hard, test-backed safety gate/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must describe the one test-backed gate'
   );
   check(
-    /hard-block detected secret leaks/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must describe the narrow default secret-leak deny'
+    /supported AI-agent workflow/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must keep the supported-workflow boundary'
   );
   check(
-    /Enterprise rollout is scoped after intake/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must keep Enterprise intake-scoped'
+    /two business days/i.test(githubAbout.metaDescription),
+    'config/github-about.json metaDescription must state the managed delivery window'
   );
   check(
     /\$19\/mo or \$149\/yr/i.test(readmeMd),
@@ -304,10 +300,8 @@ async function main() {
   // Free / Pro / Enterprise must be the visible model everywhere a buyer looks,
   // and the retired Team seat price must NOT reappear on any buyer surface.
   for (const [surface, text] of Object.entries({
-    'public/index.html': landingHtml,
     'public/compare.html': compareHtml,
     'public/pro.html': proHtml,
-    'public/pricing.html': read('public/pricing.html') || '',
     'docs/landing-page.html': docsLandingHtml,
     // docs/marketing/product-hunt-launch-kit.md removed 2026-06-06.
     'README.md': readmeMd,
@@ -357,80 +351,29 @@ async function main() {
   );
 
   check(
-    landingHtml.includes('👍'),
-    'public/index.html must visibly include the thumbs-up icon'
+    /action="\/go\/diagnostic-pay"[^>]*method="POST"/i.test(landingHtml),
+    'public/index.html must post directly to the canonical managed-gate checkout route'
   );
   check(
-    landingHtml.includes('👎'),
-    'public/index.html must visibly include the thumbs-down icon'
+    /\$(?:499|__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__)/.test(landingHtml)
+      && /Managed AI Agent Workflow Gate/i.test(landingHtml),
+    'public/index.html must expose the one $499 managed gate offer'
   );
   check(
-    /workflow-sprint-intake/.test(landingHtml),
-    'public/index.html must expose the Enterprise workflow intake path'
+    !/\/checkout\/pro|\/go\/sprint|href="[^"]*workflow-sprint-intake/i.test(landingHtml),
+    'public/index.html must not expose a competing Pro, sprint, or Enterprise cash path'
   );
   check(
-    /Hosted team lesson sync[\s\S]{0,500}Not GA/i.test(landingHtml),
-    'public/index.html must label hosted team lesson sync as not GA'
+    /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/i.test(landingHtml),
+    'public/index.html must preserve old intake hashes as an alias to the one managed-gate checkout'
   );
   check(
-    /Hosted org dashboard[\s\S]{0,500}Not GA/i.test(landingHtml),
-    'public/index.html must label the hosted org dashboard as not GA'
+    /action="\/go\/diagnostic-pay"[^>]*method="POST"/i.test(pricingHtml),
+    'public/pricing.html must use the same canonical managed-gate checkout route'
   );
   check(
-    /personal local dashboard/i.test(landingHtml),
-    'public/index.html must keep the personal Pro dashboard message'
-  );
-  check(
-    /history-aware/i.test(landingHtml),
-    'public/index.html must mention history-aware lesson distillation'
-  );
-  check(
-    /feedback session/i.test(landingHtml),
-    'public/index.html must mention the linked feedback session flow'
-  );
-  check(
-    /2 captures\/day/i.test(landingHtml) && /10 total/i.test(landingHtml),
-    'public/index.html must advertise the truthful free-tier capture limits (2/day, 10 total)'
-  );
-  check(
-    /3 (active )?(auto-promoted )?prevention rules/i.test(landingHtml),
-    'public/index.html must advertise the truthful free-tier rule limit (3 active rules)'
-  );
-  check(
-    landingHtml.includes(PRODUCTHUNT_URL),
-    'public/index.html must link to the live Product Hunt listing'
-  );
-  check(
-    /Claude Desktop plugin/i.test(landingHtml),
-    'public/index.html must promote the Claude Desktop plugin install lane'
-  );
-  check(
-    /thumbs[\s-]?up/i.test(landingHtml),
-    'public/index.html must explain the thumbs-up feedback path'
-  );
-  check(
-    /thumbs[\s-]?down/i.test(landingHtml),
-    'public/index.html must explain the thumbs-down feedback path'
-  );
-  check(
-    githubAbout.metaDescription.includes('👍'),
-    'config/github-about.json metaDescription must include the thumbs-up icon'
-  );
-  check(
-    githubAbout.metaDescription.includes('👎'),
-    'config/github-about.json metaDescription must include the thumbs-down icon'
-  );
-  check(
-    /thumbs[\s-]?up/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must mention thumbs-up feedback'
-  );
-  check(
-    /thumbs[\s-]?down/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must mention thumbs-down feedback'
-  );
-  check(
-    /history-aware local lessons/i.test(githubAbout.metaDescription),
-    'config/github-about.json metaDescription must mention history-aware local lessons'
+    !/\/checkout\/pro|\/go\/sprint|workflow-sprint-intake/i.test(pricingHtml),
+    'public/pricing.html must not expose a competing Pro, sprint, or Enterprise cash path'
   );
   check(
     /ThumbGate Pre-Action Checks/i.test(githubAbout.githubDescription),

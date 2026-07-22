@@ -39,10 +39,10 @@ test.describe('/agent-manager clickability — full link coverage', () => {
     await page.waitForURL(/\/dashboard$/);
   });
 
-  test('nav: clicking "Workflow Hardening Sprint" navigates to / with #workflow-sprint-intake', async ({ page }) => {
+  test('nav: clicking "Managed workflow gate" navigates to /diagnostic', async ({ page }) => {
     await page.goto('/agent-manager');
-    await page.locator('nav a', { hasText: 'Workflow Hardening Sprint' }).click();
-    await page.waitForURL(/\/#workflow-sprint-intake$/);
+    await page.locator('nav a', { hasText: 'Managed workflow gate' }).click();
+    await page.waitForURL(/\/diagnostic$/);
   });
 
   test('nav: GitHub link has correct external href + opens in new tab', async ({ page }) => {
@@ -54,18 +54,15 @@ test.describe('/agent-manager clickability — full link coverage', () => {
 
   // --- primary CTAs in the bottom call-to-action card ---
 
-  test('primary CTA "Start the Workflow Hardening Sprint" anchors to /#workflow-sprint-intake', async ({ page }) => {
+  test('primary CTA "Get the managed workflow gate" navigates to /diagnostic', async ({ page }) => {
     await page.goto('/agent-manager');
-    await page.locator('a.cta', { hasText: /Start the Workflow Hardening Sprint/ }).click();
-    await page.waitForURL(/\/#workflow-sprint-intake$/);
+    await page.locator('a.cta', { hasText: /Get the managed workflow gate/ }).click();
+    await page.waitForURL(/\/diagnostic$/);
   });
 
-  test('secondary CTA "Or start Pro at $19/mo" links to the Pro checkout with utm_medium=agent_manager_page', async ({ page }) => {
+  test('does not expose a competing Pro checkout CTA', async ({ page }) => {
     await page.goto('/agent-manager');
-    const cta = page.locator('a.secondary', { hasText: /Or start Pro at \$19\/mo/ });
-    await expect(cta).toHaveAttribute('href', /\/checkout\/pro/);
-    await expect(cta).toHaveAttribute('href', /utm_medium=agent_manager_page/);
-    await expect(cta).toHaveAttribute('href', /plan_id=pro/);
+    await expect(page.locator('a[href*="/checkout/pro"]')).toHaveCount(0);
   });
 
   // --- "Related reading" footer links (3) ---

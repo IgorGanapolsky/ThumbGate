@@ -12,9 +12,9 @@
 
 ## Core
 
-- [Pricing](https://thumbgate.ai/pricing): Free local CLI with 2 captures/day, 10 total captures, and 3 active rules; Pro $19/mo or $149/yr; Workflow Hardening Sprint is intake-led and custom-scoped.
-- [Pro checkout](https://thumbgate.ai/checkout/pro): Personal enforcement proof, recall, managed adapter coverage, dashboard evidence, DPO export.
-- [Workflow Hardening Sprint](https://thumbgate.ai/#workflow-sprint-intake): Intake-led offer for one repeated AI-agent failure, one workflow owner, and one proof plan.
+- [Managed AI Agent Workflow Gate](https://thumbgate.ai/pricing): $499 one-time for one supported workflow, including a 60-minute review, configured local gate, regression test, and rollout/rollback proof within two business days.
+- [Fit and checkout](https://thumbgate.ai/diagnostic): Buyers can describe the workflow before paying; unsupported fits are not kept as paid work.
+- [Free local CLI](https://thumbgate.ai/guide): The open-source install remains available for hands-on evaluation, but it is not a competing paid offer.
 - [Setup guide](https://thumbgate.ai/guide): `npx thumbgate init` for Claude Code, Cursor, Codex, Gemini CLI, Amp, OpenCode.
 - [Comparison](https://thumbgate.ai/compare): vs CLAUDE.md, ESLint, manual code review, Mem0, SpecLock.
 - [About](https://thumbgate.ai/about): Founder context and positioning.

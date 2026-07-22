@@ -42,7 +42,7 @@ test('public surfaces lead with outcomes instead of infrastructure abstractions'
   const llms = readText(path.join('.well-known', 'llms.txt'));
   const gptInstructions = readText(path.join('docs', 'chatgpt-gpt-instructions.md'));
 
-  for (const surface of [readme, landingPage, llms, gptInstructions]) {
+  for (const surface of [readme, llms, gptInstructions]) {
     assert.match(surface, /costly|expensive/i);
     assert.match(surface, /before (?:they|it) (?:make|run|happen)|before execution/i);
     assert.match(surface, /Pre-Action Checks/i);
@@ -50,9 +50,9 @@ test('public surfaces lead with outcomes instead of infrastructure abstractions'
 
   assert.match(readme, /AI coding agents repeat mistakes/i);
   assert.match(readme, /evaluate the proposed tool call before execution/i);
-  assert.match(landingPage, /Stop the same mistake before|Catch AI agents before/i);
-  assert.match(landingPage, /configured pre-action check allowed, warned on, or denied/i);
-  assert.match(landingPage, /agent surface inventory/i);
+  assert.match(landingPage, /Stop the AI-agent mistake that keeps happening/i);
+  assert.match(landingPage, /allowed, warned, or denied/i);
+  assert.match(landingPage, /one configured local gate/i);
   assert.match(gptInstructions, /Sell outcomes before infrastructure/i);
   assert.doesNotMatch(landingPage, /Global enforcement/i);
   assert.doesNotMatch(readme, /Behavior control system/i);
@@ -124,11 +124,14 @@ test('README keeps lesson search on Pro instead of the Free tier', () => {
   assert.doesNotMatch(readme, /Free and self-hosted users can invoke `search_lessons`/i);
 });
 
-test('LLM context keeps team pricing and CLI-first positioning aligned with commercial truth', () => {
+test('LLM context keeps the promoted offer and CLI positioning aligned with commercial truth', () => {
   const context = readText(path.join('public', 'llm-context.md'));
 
-  assert.match(context, /Workflow Hardening Sprint/i);
-  assert.match(context, /custom and scoped/i);
+  assert.match(context, /\$499 Managed AI Agent Workflow Gate/i);
+  assert.match(context, /one supported workflow/i);
+  assert.match(context, /60-minute working review/i);
+  assert.match(context, /regression test/i);
+  assert.match(context, /within two business days/i);
   assert.match(context, /Autoresearch Safety Pack/i);
   assert.match(context, /native-messaging-audit/i);
   assert.match(context, /background-governance/i);
@@ -141,7 +144,6 @@ test('LLM context keeps team pricing and CLI-first positioning aligned with comm
   assert.match(context, /THUMBGATE_NO_TELEMETRY=1/i);
   assert.match(context, /reward-hacking failures/i);
   assert.match(context, /CLI-first/i);
-  assert.match(context, /solo side lane/i);
   assert.match(context, /AI Recommendation Visibility/);
   assert.match(context, /repeated AI coding mistakes/);
   assert.match(context, /pre-action checks/);
@@ -154,7 +156,7 @@ test('AI-visible surfaces map ThumbGate to the agentic development cycle', () =>
   const llms = readText(path.join('.well-known', 'llms.txt'));
   const context = readText(path.join('public', 'llm-context.md'));
 
-  for (const surface of [readme, landingPage, llms, context]) {
+  for (const surface of [readme, llms, context]) {
     assert.match(surface, /Guide/i);
     assert.match(surface, /Generate/i);
     assert.match(surface, /Verify/i);
@@ -162,7 +164,9 @@ test('AI-visible surfaces map ThumbGate to the agentic development cycle', () =>
     assert.match(surface, /pre-action (?:execution )?gate|pre-action boundary/i);
   }
 
-  assert.match(landingPage, /The New Stack's May 2026 AC\/DC framing/);
+  assert.match(landingPage, /Agent proposes/i);
+  assert.match(landingPage, /ThumbGate checks/i);
+  assert.match(landingPage, /allowed, warned, or denied/i);
   assert.match(context, /Agentic Development Cycle Alignment/);
   assert.match(llms, /Agentic development cycle fit/);
 });
@@ -223,7 +227,7 @@ test('continuity guide frames the gateway as downstream reliability, not a new o
 // part of the post-Reddit credibility cleanup (file admitted "$0 revenue"
 // publicly and read as launch-theater).
 
-test('public landing copy stays vendor-neutral and honest about editor support', () => {
+test('public landing copy stays vendor-neutral while keeping the primary offer focused', () => {
   const congruence = readText(path.join('docs', 'MARKETING_COPY_CONGRUENCE.md'));
   const landingPage = readText(path.join('public', 'index.html'));
 
@@ -232,12 +236,11 @@ test('public landing copy stays vendor-neutral and honest about editor support',
   assert.match(landingPage, /Claude Code/i);
   assert.match(landingPage, /Cursor/i);
   assert.match(landingPage, /Codex/i);
-  assert.match(landingPage, /Gemini/i);
-  assert.match(landingPage, /Amp/i);
-  assert.match(landingPage, /OpenCode/i);
-  assert.match(landingPage, /VS Code can host an MCP-compatible agent/i);
-  assert.match(landingPage, /Each editor or agent still requires its MCP stdio or hook configuration/i);
-  assert.match(landingPage, /does not ship a standalone VS Code extension/i);
+  assert.match(landingPage, /or similar agents/i);
+  assert.match(landingPage, /Managed AI Agent Workflow Gate/i);
+  assert.match(landingPage, /\$499/);
+  assert.doesNotMatch(landingPage, /\bPro\b/i);
+  assert.doesNotMatch(landingPage, /Enterprise pilot|\/enterprise/i);
   assert.doesNotMatch(landingPage, /auto-detects supported local agent installs/i);
   assert.doesNotMatch(landingPage, /claude --mcp thumbgate/i);
 });

@@ -1,7 +1,7 @@
 # Commercial Truth
 
 Status: current for packaging and runtime capabilities; live traction requires authenticated telemetry
-Updated: July 16, 2026
+Updated: July 22, 2026
 
 This document is the source of truth for product, pricing, traction, and proof claims in this repository.
 
@@ -9,10 +9,10 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 - The open-source `thumbgate` package is free and MIT licensed.
 - The local CLI is the adoption wedge; it is not the primary monetization story.
-- The primary commercial motion is the **Workflow Hardening Sprint** ($1,500 scoped via `/go/sprint`) for one workflow, with an optional **Workflow Hardening Diagnostic** ($499 via `/diagnostic`, credited toward the sprint when implementation follows). The sprint remains intake-first; its provider checkout is supplied only after scope is confirmed. The diagnostic page requires an explicit email-backed POST before `/go/diagnostic-pay` can redirect to Stripe, so a crawler or raw link fetch cannot create a checkout session. Enterprise scoping follows when approval boundaries, rollback requirements, and evidence ownership must be designed across operators.
-- The current public self-serve **subscription** offer is **Pro at $19/mo or $149/yr** via Stripe checkout — the solo side lane. Homepage and pricing lead with the paid diagnostic/sprint services, not Pro.
-- The `$499` diagnostic and `$1,500` sprint links named above are the only current public one-time service offers. Other legacy one-time Stripe links are retained only for past buyers and are not current public offers.
-- Stripe revenue attribution never relies on a product name. `scripts/stripe-revenue-catalog.js` binds each reviewed offer to its exact price ID, product ID, integer amount, currency, cadence, and interval. This is necessary because the public `$499` diagnostic uses the generic Stripe product name `AI Agent Reliability Audit`, and that same product also has a separate active `$999` price that is not a current ThumbGate offer. `npm run stripe:catalog-audit` verifies the live prices, product/price active states, mode, and the exact Pro-monthly and diagnostic Payment Links without mutating Stripe. Catalog configuration is not payment evidence.
+- For the current 30-day conversion experiment, the only promoted public offer is the **Managed AI Agent Workflow Gate** at **$499 one-time** via the email-backed `/go/diagnostic-pay` POST on `/`, `/pricing`, and `/diagnostic`. It covers one 60-minute review for one supported local workflow, one configured gate, one regression test, and written rollout and rollback proof within two business days after access and agreed materials are available. If the failure cannot be reduced to a supported gate, the order is refunded instead of silently upsold.
+- **Pro at $19/mo or $149/yr** remains a supported legacy self-serve subscription and the `$1,500` Workflow Hardening Sprint remains an internal catalog/scoping rail, but neither is promoted on the homepage or pricing page during the single-offer experiment. Enterprise remains proposal-only after qualification.
+- The `$499` managed workflow gate is the only currently promoted public one-time service offer. Legacy Stripe Payment Links must remain deactivated or undistributed; they are not current public acquisition offers.
+- Stripe revenue attribution never relies on a product name. `scripts/stripe-revenue-catalog.js` binds each reviewed offer to its exact price ID, product ID, integer amount, currency, cadence, and interval. The public `$499` checkout now uses the Stripe product name `Managed AI Agent Workflow Gate`; that product still has a separate active `$999` price, but its Payment Link is deactivated and it is not a current ThumbGate offer. `npm run stripe:catalog-audit` verifies the live prices, product/price active states, mode, and the exact Pro-monthly and managed-gate Payment Links without mutating Stripe. Catalog configuration is not payment evidence.
 - Active CLI receipts, paywall messages, SEO generators, email drafts, and social launch drafts must use first-party `thumbgate.ai` buyer paths. Raw Stripe or PayPal links are provider plumbing, not buyer-facing distribution assets. Retired kit catalogs are archived and cannot advertise their historical Payment Links as current offers.
 - Zernio is retired for ThumbGate publishing. Its historical adapter is read-only; every publish, schedule, upload, or delete mutation fails closed before a network request. Active publishing requires a direct platform adapter or an explicitly approved manual platform session.
 - Recurring and Enterprise service work is proposal-only after qualification: **Workflow Reliability Operations at $3,000/month for one proof-backed workflow**, a **$15,000 30-day Enterprise Governance Pilot for up to three local workflows**, and **Enterprise Reliability Operations at $10,000/month for the same three workflows after a completed pilot**. There is no public checkout for these services. Every engagement requires a signed scope, and service revenue counts only after provider-confirmed payment. Generic self-serve subscription MRR remains a separate provider-subscription metric. Hosted team lesson sync and a hosted org dashboard are not general-availability features in the current public runtime. The former Team seat tier is retired.
@@ -58,20 +58,20 @@ This document is the source of truth for product, pricing, traction, and proof c
 
 ## Service Offer Ladder
 
-### Workflow Hardening Diagnostic ($499 one-time)
+### Managed AI Agent Workflow Gate ($499 one-time)
 
 - Buyer: one workflow owner with one repeated AI-agent failure and enough workflow evidence to review it
 - Buyer inputs: short intake, a 60-minute working review, and non-secret examples or logs needed to understand the failure
-- Deliverables: one workflow/failure map, one block/warn/human-review matrix, one verification checklist, and a prioritized implementation recommendation
-- Delivery window: within two business days after the working review and receipt of the agreed workflow materials
-- Risk reducer: submit the workflow before checkout when fit is unclear; no purchase is required for an out-of-scope workflow
-- Exclusions: implementation, legal or compliance certification, guaranteed savings, guaranteed incident prevention, and uncontracted hosted-team features
+- Deliverables: one workflow/failure map, one configured local gate, one regression test, and written rollout, rollback, and verification proof
+- Delivery window: within two business days after access and the agreed workflow materials are available
+- Risk reducer: submit the workflow before checkout when fit is unclear; if a paid workflow cannot be reduced to one supported gate, refund the order instead of expanding the scope
+- Exclusions: multi-system implementation, legal or compliance certification, guaranteed savings, guaranteed incident prevention, and uncontracted hosted-team features
 
-### Workflow Hardening Sprint ($1,500 one-time)
+### Workflow Hardening Sprint ($1,500 one-time, not a promoted public offer)
 
 - Buyer: a diagnostic-qualified workflow owner ready to implement and prove the first gate set
 - Deliverables: scoped gate implementation for the agreed workflow, local regression/proof artifacts, an approval and rollback runbook, and a review handoff
-- The public sprint price is `$1,500`. When a paid diagnostic continues into a sprint for the same workflow, the `$499` diagnostic fee is applied through the follow-up sprint invoice or checkout. The buyer should not pay both public links at full price.
+- The internal catalog price is `$1,500`. It is retained for prior contracts and controlled scoping, not advertised as a second public cash path during the single-offer experiment.
 - Broader integrations, ongoing monitoring, multi-workflow rollout, shared hosting, and compliance work require separate Enterprise scope
 
 ### Recurring and Enterprise expansion

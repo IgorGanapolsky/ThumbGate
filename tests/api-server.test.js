@@ -579,23 +579,24 @@ test('/partner-intake escapes server-rendered attribution values', async () => {
   assert.match(html, /value="aiventyx&quot;&gt;&lt;script&gt;window\.partnerPwned=true&lt;\/script&gt;"/);
 });
 
-test('/diagnostic serves the focused Workflow Hardening Diagnostic intake page', async () => {
+test('/diagnostic serves the managed workflow gate checkout and fit page', async () => {
   const res = await fetch(apiUrl('/diagnostic?utm_source=reddit&utm_campaign=workflow_diagnostic'), { redirect: 'manual' });
   assert.equal(res.status, 200);
   assert.match(res.headers.get('content-type') || '', /text\/html/);
   const html = await res.text();
-  assert.match(html, /Workflow Hardening Diagnostic/);
-  assert.match(html, /Submit for diagnostic scope/);
+  assert.match(html, /Enterprise Workflow Gate/);
+  assert.match(html, /Submit for fit check/);
   assert.match(html, /action="\/v1\/intake\/workflow-sprint"/);
   assert.match(html, /name="planId" value="diagnostic"/);
   assert.match(html, /name="ctaId" value="diagnostic_page_intake"/);
   assert.match(html, /workflow_sprint_intake_submit_attempted/);
-  assert.match(html, /Continue to secure \$499 checkout/);
-  assert.match(html, /Exactly what the \$499 diagnostic includes/);
+  assert.match(html, /Buy the \$499 enterprise gate/);
+  assert.match(html, /Exactly what the \$499 Enterprise Workflow Gate includes/);
   assert.match(html, /one 60-minute working review/i);
-  assert.match(html, /written decision packet delivered within two business days/i);
-  assert.match(html, /public Workflow Hardening Sprint is \$1500/);
-  assert.match(html, /\$499 diagnostic fee is applied through the follow-up sprint invoice or checkout/i);
+  assert.match(html, /one configured local gate and regression test/i);
+  assert.match(html, /rollout and rollback proof within two business days/i);
+  assert.match(html, /order is refunded instead of being silently converted/i);
+  assert.doesNotMatch(html, /\$1500|public Workflow Hardening Sprint/i);
   assert.doesNotMatch(html, /__WORKFLOW_SPRINT_PRICE_DOLLARS__|__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
   assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(html, /name="customer_email"[^>]*required/);
@@ -610,7 +611,7 @@ test('/workflow-hardening-sprint and diagnostic aliases serve the focused diagno
     assert.equal(res.status, 200, `${route} should render`);
     assert.match(res.headers.get('content-type') || '', /text\/html/);
     const html = await res.text();
-    assert.match(html, /Workflow Hardening Diagnostic/);
+    assert.match(html, /Enterprise Workflow Gate/);
     assert.match(html, /<link rel="canonical" href="https:\/\/app\.example\.com\/diagnostic"/);
   }
 });
@@ -818,21 +819,19 @@ test('root serves the landing page by default', async () => {
 
   const body = await res.text();
   assert.match(body, /ThumbGate/);
-  assert.match(body, /accepted feedback becomes local lessons/i);
-  assert.match(body, /recurring failures can become prevention rules/i);
+  assert.match(body, /Stop the AI-agent mistake that keeps happening/i);
+  assert.match(body, /Enterprise Workflow Gate/i);
+  assert.match(body, /action="\/go\/diagnostic-pay" method="POST"/);
+  assert.match(body, /Buy the \$499 enterprise gate/i);
+  assert.match(body, /One configured local gate and its regression test/i);
   assert.match(body, /warn by default/i);
   assert.match(body, /strict mode/i);
   assert.doesNotMatch(body, /learns from every mistake/i);
-  assert.match(body, /npx thumbgate init/);
-  assert.match(body, /Thompson Sampling/i);
+  assert.doesNotMatch(body, /Thompson Sampling|DPO|LanceDB|MemAlign|FTS5/i);
+  assert.doesNotMatch(body, /\/checkout\/pro|\/go\/sprint|href="[^"]*workflow-sprint-intake/i);
+  assert.match(body, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
   assert.match(body, /FAQPage/);
   assert.match(body, /SoftwareApplication/);
-  assert.match(body, /InstallAction/);
-  assert.match(body, /BuyAction/);
-  assert.match(body, /CommunicateAction/);
-  assert.match(body, /ThumbGate Workflow Hardening Sprint/);
-  assert.match(body, /\$19/);
-  assert.match(body, /\$149/);
   assert.match(body, /plausible\.io\/js\/script\.tagged-events\.js/);
   assert.match(body, /data-domain="app\.example\.com"/);
   assert.match(body, /googletagmanager\.com\/gtag\/js\?id=G-TEST1234/);
@@ -1013,34 +1012,21 @@ test('terms of service route covers payment, refunds, acceptable use, and limita
 });
 
 test('pricing page is the single source of truth for what ThumbGate sells', async () => {
-  // Canonical money path: paid diagnostic + sprint services first, Pro solo
-  // subscription side lane, Enterprise after proof. No retired seat/kit ladders.
   const res = await fetch(apiUrl('/pricing'));
   assert.equal(res.status, 200);
   assert.match(String(res.headers.get('content-type')), /text\/html/);
   const body = await res.text();
-  assert.match(body, /ThumbGate CLI|Forever free for solo|Free/i);
-  assert.match(body, /ThumbGate Pro|<div class="tier">Pro/i);
-  assert.match(body, /\$19/);
-  assert.match(body, /\$149/);
-  assert.match(body, /ThumbGate Enterprise|<div class="tier">Enterprise/i);
-  assert.match(body, /Workflow Hardening Sprint/i);
-  assert.match(body, /Diagnostic/i);
+  assert.match(body, /Enterprise Workflow Gate/i);
   assert.match(body, /\$499/);
-  assert.match(body, /\$1500/);
-  assert.doesNotMatch(body, /\$49\b[\s\S]{0,40}seat/i);
-  assert.doesNotMatch(body, /\$97\b/);
+  assert.match(body, /action="\/go\/diagnostic-pay" method="POST"/);
+  assert.match(body, /name="customer_email"[^>]*required/);
+  assert.match(body, /one configured local pre-action gate/i);
+  assert.match(body, /regression test/i);
+  assert.match(body, /rollout and rollback proof/i);
+  assert.doesNotMatch(body, /\$19|\$149|\$1,500|\$3,000|\$10,000|\$15,000/);
   assert.doesNotMatch(body, /buy\.stripe\.com/);
   assert.doesNotMatch(body, /mailto:igor\.ganapolsky@gmail\.com/);
-  assert.doesNotMatch(body, /self-serve checkout on every subscription plan/i);
-  // CTAs route to the canonical paths (diagnostic confirmation, sprint router, Pro checkout).
-  assert.match(body, /href="\/go\/install/);
-  assert.match(body, /href="\/diagnostic/);
-  assert.match(body, /href="\/go\/sprint/);
-  assert.match(body, /href="\/checkout\/pro/);
-  assert.match(body, /pricing_enterprise_intake|pricing_enterprise_sprint/);
-  assert.match(body, /#workflow-sprint-intake/);
-  // Cross-links so it's a navigation hub, not a dead end.
+  assert.doesNotMatch(body, /\/checkout\/pro|\/go\/sprint|workflow-sprint-intake/);
   assert.match(body, /href="\/support"/);
 });
 

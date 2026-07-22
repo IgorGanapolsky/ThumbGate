@@ -164,12 +164,12 @@ test('thumbgate stats -h short flag also triggers the interceptor', () => {
   }
 });
 
-test('thumbgate diagnostic prints team intake and checkout paths', () => {
+test('thumbgate diagnostic prints the enterprise entry fit and checkout paths', () => {
   const home = freshHome();
   try {
     const result = runCli(['diagnostic'], unlicensedEnv(home));
     assert.equal(result.status, 0, `diagnostic subcommand should exit 0; stderr=${result.stderr}`);
-    assert.match(result.stdout, /Workflow Hardening Diagnostic/);
+    assert.match(result.stdout, /Enterprise Workflow Gate — \$499/);
     assert.match(result.stdout, /Best fit: one workflow, one repeated failure, one owner/);
     assert.match(result.stdout, /https:\/\/thumbgate\.ai\/diagnostic\?utm_source=cli_diagnostic/);
     assert.match(result.stdout, /https:\/\/thumbgate\.ai\/go\/diagnostic\?utm_source=cli_diagnostic/);

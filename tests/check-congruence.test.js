@@ -76,16 +76,13 @@ test('GitHub About URL normalization removes trailing slashes without changing U
   assert.equal(normalizeUrl('https://thumbgate.ai'), 'https://thumbgate.ai');
 });
 
-test('GitHub About config keeps a rich landing description and a valid GitHub description', () => {
+test('GitHub About config keeps a focused cash-path description and a valid GitHub description', () => {
   const about = loadGitHubAboutConfig(ROOT);
   const packageJson = JSON.parse(readText('package.json'));
-  assert.match(about.metaDescription, /👍/u);
-  assert.match(about.metaDescription, /👎/u);
-  assert.match(about.metaDescription, /thumbs[ -]?up/i);
-  assert.match(about.metaDescription, /thumbs[ -]?down/i);
-  assert.match(about.metaDescription, /history-aware local lessons/i);
-  assert.match(about.metaDescription, /hard-block detected secret leaks/i);
-  assert.match(about.metaDescription, /Enterprise rollout is scoped after intake/i);
+  assert.match(about.metaDescription, /one hard, test-backed safety gate/i);
+  assert.match(about.metaDescription, /supported AI-agent workflow/i);
+  assert.match(about.metaDescription, /two business days/i);
+  assert.doesNotMatch(about.metaDescription, /Pro|Enterprise|Thompson Sampling|LanceDB/i);
   assert.match(about.githubDescription, /ThumbGate Pre-Action Checks/i);
   assert.match(about.githubDescription, /hard-block detected secret leaks/i);
   assert.equal(packageJson.description, about.githubDescription);

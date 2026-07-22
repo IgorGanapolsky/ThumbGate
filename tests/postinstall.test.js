@@ -37,17 +37,19 @@ describe('postinstall banner', () => {
     assert.equal(stdout, '', 'stdout should be empty');
   });
 
-  it('includes trial banner and upgrade URL in stderr output', () => {
+  it('includes trial banner and the single managed-gate cash path in stderr output', () => {
     const { stderr, exitCode } = runPostinstall();
     assert.equal(exitCode, 0);
     assert.ok(stderr.includes('ThumbGate'), 'should mention ThumbGate');
     assert.ok(stderr.includes('npx thumbgate'), 'should include quick start');
-    assert.match(stderr, /7-day Pro trial/i, 'should mention reverse trial');
+    assert.match(stderr, /full features for 7 days/i, 'should mention the trial without promoting a second paid offer');
     assert.match(stderr, /thumbgate\.ai\/dashboard/i, 'should include dashboard URL');
     assert.match(stderr, /unlimited rules/i, 'should list trial features');
     assert.match(stderr, /Lesson search/i, 'should mention lesson search');
     assert.match(stderr, /DPO export/i, 'should mention DPO export');
-    assert.match(stderr, /thumbgate\.ai\/go\/pro/i, 'should include upgrade URL');
+    assert.match(stderr, /thumbgate\.ai\/diagnostic/i, 'should include managed-gate URL');
+    assert.match(stderr, /\$499 one-time/i, 'should name the single promoted offer');
+    assert.doesNotMatch(stderr, /\$19|Keep Pro/i);
     assert.doesNotMatch(stderr, /optional hosted API key/i);
   });
 
