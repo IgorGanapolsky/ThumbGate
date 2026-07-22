@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 220" role="img" aria-labelledby="t d">
+  <title id="t">Before and after ThumbGate</title>
+  <desc id="d">Without ThumbGate the same mistake repeats. With ThumbGate the second attempt is caught.</desc>
+  <rect width="720" height="220" fill="#0a0a0b"/>
+  <g font-family="system-ui,sans-serif">
+    <rect x="30" y="30" width="300" height="160" rx="14" fill="#1a1010" stroke="#f87171"/>
+    <text x="180" y="60" text-anchor="middle" fill="#f87171" font-size="14" font-weight="800">WITHOUT</text>
+    <text x="180" y="95" text-anchor="middle" fill="#e8e8ec" font-size="13">Agent force-pushes</text>
+    <text x="180" y="118" text-anchor="middle" fill="#e8e8ec" font-size="13">You fix it. Again.</text>
+    <text x="180" y="141" text-anchor="middle" fill="#e8e8ec" font-size="13">Same mistake returns.</text>
+    <text x="180" y="170" text-anchor="middle" fill="#8b8b96" font-size="12">cost = time × trust × risk</text>
+    <rect x="390" y="30" width="300" height="160" rx="14" fill="#0d1b14" stroke="#4ade80"/>
+    <text x="540" y="60" text-anchor="middle" fill="#4ade80" font-size="14" font-weight="800">WITH THUMBGATE</text>
+    <text x="540" y="95" text-anchor="middle" fill="#e8e8ec" font-size="13">You thumbs-down once</text>
+    <text x="540" y="118" text-anchor="middle" fill="#e8e8ec" font-size="13">Rule is stored locally</text>
+    <text x="540" y="141" text-anchor="middle" fill="#e8e8ec" font-size="13">Next attempt is evaluated</text>
+    <text x="540" y="170" text-anchor="middle" fill="#8b8b96" font-size="12">cost = one correction</text>
+  </g>
+</svg>
