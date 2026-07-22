@@ -11,7 +11,7 @@ is browsable, searchable, and linkable inside Obsidian.
 - [BRAT plugin](https://github.com/TfTHacker/obsidian42-brat) installed in Obsidian
   (Settings > Community Plugins > Browse > search "BRAT" > Install > Enable)
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and authenticated
-- Node.js >= 18.18.0
+- Node.js >= 20.10.0
 
 ---
 
@@ -182,7 +182,7 @@ These files are git-ignored and exist only on your local machine:
 ## Troubleshooting
 
 **MCP server not connecting:**
-Verify `npx thumbgate serve` runs without error. Check Node.js version >= 18.18.0.
+Verify `npx thumbgate serve` runs without error. Check Node.js version >= 20.10.0.
 
 **Symlinks not resolving in Obsidian:**
 Enable "Detect all file extensions" in Obsidian Settings > Files and Links > Detect all file extensions.

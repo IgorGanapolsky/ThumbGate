@@ -23,7 +23,7 @@ ThumbGate: infrastructure firewalls for AI coding agents. Captures feedback → 
 
 **Not** traditional model-training feedback optimization. It is context engineering + enforcement.
 
-Stack: Node.js >=18.18.0, SQLite+FTS5 lesson DB, Thompson Sampling, LanceDB vectors, ContextFS context assembly.
+Stack: Node.js >=20.10.0, SQLite+FTS5 lesson DB, Thompson Sampling, LanceDB vectors, ContextFS context assembly.
 
 ## Canonical Product Scope
 

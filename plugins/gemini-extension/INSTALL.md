@@ -70,7 +70,7 @@ async function callThumbGateTool(name, params) {
 ## Requirements
 
 - Google Gemini SDK (`@google/generative-ai`)
-- Node.js 18+ or Python 3.9+
+- Node.js 20.10+ or Python 3.9+
 - ThumbGate API running (local or hosted)
 
 ## Branding Alignment (Google Cloud)

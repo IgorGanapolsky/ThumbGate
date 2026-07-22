@@ -93,7 +93,7 @@ function renderNumbersPage(input) {
     name: 'ThumbGate',
     alternateName: 'thumbgate',
     applicationCategory: 'DeveloperApplication',
-    operatingSystem: 'Cross-platform, Node.js >=18.18.0',
+    operatingSystem: 'Cross-platform, Node.js >=20.10.0',
     softwareVersion: version,
     url: 'https://thumbgate-production.up.railway.app/numbers',
     dateModified: nowDate,

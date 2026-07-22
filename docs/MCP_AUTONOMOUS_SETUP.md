@@ -5,7 +5,7 @@
 ## Prerequisites
 
 - [ ] Claude Desktop installed
-- [ ] Node.js 18+ with `npx` available
+- [ ] Node.js 20.10+ with `npx` available
 - [ ] Google OAuth credentials (for Gmail)
 - [ ] GitHub Personal Access Token (fine-grained, scoped to your repos)
 

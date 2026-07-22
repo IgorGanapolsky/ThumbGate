@@ -42,7 +42,7 @@ npx thumbgate capture --feedback=down --context="..." --what-went-wrong="..." --
 ## Requirements
 
 - Amp (any version with skills support)
-- Node.js 18+ in PATH
+- Node.js 20.10+ in PATH
 - `.thumbgate/` directory (created by `npx thumbgate init`)
 
 ## Uninstall
