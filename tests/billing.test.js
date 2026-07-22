@@ -1272,6 +1272,24 @@ describe('billing.js — funnel ledger', () => {
       creator: 'reach_vb',
       community: 'platform',
     });
+    appendWorkflowSprintLead({
+      email: 'qa+checkout@thumbgate.ai',
+      company: 'ThumbGate Production Verification',
+      workflow: 'QA verification only',
+      owner: 'ThumbGate QA',
+      blocker: 'Test the partner intake receipt.',
+      runtime: 'Browser QA',
+      source: 'aiventyx',
+    });
+    appendWorkflowSprintLead({
+      email: 'outreach@example.com',
+      company: 'Website Outreach',
+      workflow: 'Deploy approvals',
+      owner: 'Unsolicited sender',
+      blocker: 'Contact website owners worldwide through website contact forms. Telegram and WhatsApp only.',
+      runtime: 'Contact-form automation',
+      source: 'website',
+    });
 
     const summary = billing.getBillingSummary();
     assert.equal(summary.coverage.source, 'funnel_ledger+revenue_ledger+key_store+workflow_sprint_leads');
@@ -1288,6 +1306,10 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(summary.revenue.amountKnownCoverageRate, 1);
     assert.equal(summary.revenue.paidProviderEvents, 1);
     assert.equal(summary.pipeline.workflowSprintLeads.total, 1);
+    assert.equal(summary.pipeline.workflowSprintLeads.observedTotal, 3);
+    assert.equal(summary.pipeline.workflowSprintLeads.excludedNoise.total, 2);
+    assert.equal(summary.pipeline.workflowSprintLeads.excludedNoise.byReason.internal_or_partner_test, 1);
+    assert.equal(summary.pipeline.workflowSprintLeads.excludedNoise.byReason.unsolicited_service_spam, 1);
     assert.equal(summary.pipeline.workflowSprintLeads.contactable, 1);
     assert.equal(summary.pipeline.workflowSprintLeads.byStatus.new, 1);
     assert.equal(summary.pipeline.workflowSprintLeads.bySource.linkedin, 1);
@@ -1388,6 +1410,54 @@ describe('billing.js — funnel ledger', () => {
     assert.equal(disabledCustomer.activeKeys, 0);
     assert.equal(disabledCustomer.source, 'github_marketplace_purchased');
     assert.equal(disabledKey.customerId, 'cus_summary_b');
+  });
+
+  test('getBillingSummary excludes self-verification and operator-generated acquisition noise', () => {
+    const billing = requireFreshBilling('');
+    billing.appendFunnelEvent({
+      timestamp: '2026-07-22T12:00:00.000Z',
+      stage: 'acquisition',
+      event: 'checkout_session_created',
+      acquisitionId: 'acq_real_buyer',
+      metadata: {
+        source: 'reddit',
+        utmCampaign: 'managed_workflow_gate',
+      },
+    });
+    billing.appendFunnelEvent({
+      timestamp: '2026-07-22T12:01:00.000Z',
+      stage: 'acquisition',
+      event: 'checkout_session_created',
+      acquisitionId: 'acq_codex_verify',
+      metadata: {
+        source: 'codex',
+        utmCampaign: 'homepage_self_verify',
+      },
+    });
+    billing.appendFunnelEvent({
+      timestamp: '2026-07-22T12:02:00.000Z',
+      stage: 'acquisition',
+      event: 'outreach_target_generated',
+      acquisitionId: 'acq_operator_generated',
+      metadata: {
+        source: 'cli',
+        utmMedium: 'operator_outreach',
+      },
+    });
+
+    const summary = billing.getBillingSummary();
+    assert.equal(summary.funnel.observedAcquisitionEvents, 3);
+    assert.equal(summary.funnel.stageCounts.acquisition, 1);
+    assert.equal(summary.signups.total, 1);
+    assert.equal(summary.signups.uniqueLeads, 1);
+    assert.deepEqual(summary.signups.bySource, { reddit: 1 });
+    assert.equal(summary.excludedInternalAcquisition.totalEvents, 2);
+    assert.equal(summary.excludedInternalAcquisition.uniqueLeads, 2);
+    assert.equal(summary.excludedInternalAcquisition.selfVerification.totalEvents, 1);
+    assert.equal(summary.excludedInternalAcquisition.selfVerification.uniqueLeads, 1);
+    assert.equal(summary.excludedInternalAcquisition.selfVerification.bySource.codex, 1);
+    assert.equal(summary.operatorGeneratedAcquisition.totalEvents, 1);
+    assert.equal(summary.operatorGeneratedAcquisition.uniqueLeads, 1);
   });
 
   test('getBillingSummary reports newsletter subscribers separately from acquisition events', () => {

@@ -18,6 +18,9 @@ describe('rate-limiter', () => {
     savedEnv.THUMBGATE_API_KEY = process.env.THUMBGATE_API_KEY;
     savedEnv.THUMBGATE_PRO_MODE = process.env.THUMBGATE_PRO_MODE; // legacy, kept for cleanup
     savedEnv.THUMBGATE_NO_RATE_LIMIT = process.env.THUMBGATE_NO_RATE_LIMIT;
+    savedEnv.THUMBGATE_DEV_SECRET = process.env.THUMBGATE_DEV_SECRET;
+    savedEnv.THUMBGATE_DEV_BYPASS = process.env.THUMBGATE_DEV_BYPASS;
+    savedEnv.THUMBGATE_DEV_KEY = process.env.THUMBGATE_DEV_KEY;
 
     tempHomeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-rate-limit-test-'));
     process.env.HOME = tempHomeDir;
@@ -25,9 +28,13 @@ describe('rate-limiter', () => {
     delete process.env.THUMBGATE_API_KEY;
     delete process.env.THUMBGATE_PRO_MODE;
     delete process.env.THUMBGATE_NO_RATE_LIMIT;
+    delete process.env.THUMBGATE_DEV_SECRET;
+    delete process.env.THUMBGATE_DEV_BYPASS;
+    delete process.env.THUMBGATE_DEV_KEY;
 
     delete require.cache[require.resolve('../scripts/rate-limiter')];
     delete require.cache[require.resolve('../scripts/license')];
+    delete require.cache[require.resolve('../scripts/pro-local-dashboard')];
     rateLimiter = require('../scripts/rate-limiter');
     ({ getLicensePath } = require('../scripts/license'));
     rateLimiter.USAGE_FILE = TEMP_USAGE_FILE;
@@ -46,6 +53,12 @@ describe('rate-limiter', () => {
     else delete process.env.THUMBGATE_PRO_MODE;
     if (savedEnv.THUMBGATE_NO_RATE_LIMIT !== undefined) process.env.THUMBGATE_NO_RATE_LIMIT = savedEnv.THUMBGATE_NO_RATE_LIMIT;
     else delete process.env.THUMBGATE_NO_RATE_LIMIT;
+    if (savedEnv.THUMBGATE_DEV_SECRET !== undefined) process.env.THUMBGATE_DEV_SECRET = savedEnv.THUMBGATE_DEV_SECRET;
+    else delete process.env.THUMBGATE_DEV_SECRET;
+    if (savedEnv.THUMBGATE_DEV_BYPASS !== undefined) process.env.THUMBGATE_DEV_BYPASS = savedEnv.THUMBGATE_DEV_BYPASS;
+    else delete process.env.THUMBGATE_DEV_BYPASS;
+    if (savedEnv.THUMBGATE_DEV_KEY !== undefined) process.env.THUMBGATE_DEV_KEY = savedEnv.THUMBGATE_DEV_KEY;
+    else delete process.env.THUMBGATE_DEV_KEY;
 
     fs.rmSync(tempHomeDir, { recursive: true, force: true });
     if (fs.existsSync(TEMP_USAGE_FILE)) fs.unlinkSync(TEMP_USAGE_FILE);

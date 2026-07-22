@@ -17,7 +17,10 @@ function sampleQueue() {
   return {
     generatedAt: '2026-07-16T18:00:00.000Z',
     total: 2,
+    matchedTotal: 2,
     eligibleTotal: 2,
+    excludedTotal: 0,
+    excludedByReason: {},
     returned: 2,
     approvalReadyTotal: 1,
     discoveryReadyTotal: 1,
@@ -172,6 +175,9 @@ test('aggregate summary redacts every buyer and approval field', () => {
   const summary = summarizeQueue(payload, 'https://thumbgate.ai');
   const text = JSON.stringify(summary);
   assert.equal(summary.total, 2);
+  assert.equal(summary.matchedTotal, 2);
+  assert.equal(summary.eligibleTotal, 2);
+  assert.equal(summary.excludedTotal, 0);
   assert.equal(summary.approvalReadyTotal, 1);
   assert.equal(summary.discoveryReadyTotal, 1);
   assert.equal(summary.primaryApprovalActionAvailable, true);

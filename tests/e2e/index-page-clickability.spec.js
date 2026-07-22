@@ -1,249 +1,98 @@
 const { test, expect } = require('@playwright/test');
 const { mockDashboardApis } = require('./helpers/mock-api');
 
-// Comprehensive clickability coverage for the landing page (public/index.html).
-// PR #2268 covered only /lessons. The CEO demanded "100% e2e verification"
-// across the conversion funnel — / is the top of that funnel and had ZERO
-// clickability coverage before this spec. Each test asserts a VISIBLE effect
-// (URL/hash change, content swap, copy-hint toggle, accordion open), never
-// just "handler fired."
-//
-// Out of scope here (deferred to follow-up): per-pricing-card backend
-// integration, scroll-depth tracking, third-party telemetry. Focus is on the
-// deterministic in-page interactions a real visitor performs.
-
-test.describe('/ landing page clickability — comprehensive E2E coverage', () => {
-  test.beforeEach(async ({ page, context }) => {
+test.describe('/ single-offer conversion path', () => {
+  test.beforeEach(async ({ page }) => {
     await mockDashboardApis(page);
-    // Grant clipboard so copyInstall() doesn't reject silently.
-    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   });
 
-  // --- hero region ---
-
-  test('renders the hero install command + visible CTAs', async ({ page }) => {
+  test('renders one managed-gate offer and the enforcement loop', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('.hero h1')).toHaveText('Stop dangerous AI-agent actions before they run.');
-    await expect(page.locator('.btn-install-hero')).toBeVisible();
-    await expect(page.locator('.hero-proof-link')).toBeVisible();
-    await expect(page.locator('#live-proof')).toBeVisible();
-    await expect(page.locator('.hero-pro')).toHaveCount(0);
-    await expect(page.locator('.offer-router')).toHaveCount(0);
+
+    await expect(page.locator('.hero h1')).toHaveText('Stop the AI-agent mistake that keeps happening.');
+    await expect(page.locator('[data-primary-checkout]')).toBeVisible();
+    await expect(page.locator('[data-primary-checkout] .price')).toContainText('$499');
+    await expect(page.locator('[data-primary-checkout]')).toContainText('Managed AI Agent Workflow Gate');
+    await expect(page.locator('.loop-step')).toHaveCount(3);
+    await expect(page.locator('.decision')).toHaveText(['ALLOW', 'WARN', 'DENY']);
+
+    await expect(page.locator('a[href*="/checkout/pro"]')).toHaveCount(0);
+    await expect(page.locator('[id*="workflow-sprint-intake"]')).toHaveCount(0);
   });
 
-  test('clicking the proof CTA jumps to the live product demo', async ({ page }) => {
+  test('navigation and final CTA both return to the same checkout form', async ({ page }) => {
     await page.goto('/');
-    await page.locator('.hero-proof-link').click();
-    await expect(page).toHaveURL(/#live-proof$/);
-    await expect(page.locator('#live-proof')).toBeVisible();
+
+    const navBuy = page.locator('nav [data-offer-link]');
+    await navBuy.click();
+    await expect(page).toHaveURL(/#buy$/);
+    await expect(page.locator('[data-primary-checkout]')).toBeVisible();
+
+    await page.locator('.final [data-offer-link]').click();
+    await expect(page).toHaveURL(/#buy$/);
+    await expect(page.locator('form[action="/go/diagnostic-pay"]')).toHaveCount(1);
   });
 
-  test('clicking "Install Free" button swaps its label to the Copied confirmation', async ({ page }) => {
-    await page.goto('/');
-    const btn = page.locator('.btn-install-hero');
-    const originalText = (await btn.textContent()).trim();
-    expect(originalText).toBe('Install Free');
-    await btn.click();
-    await expect(btn).toHaveText(/Copied/);
-  });
-
-  test('the quiet team path opens the scoped diagnostic page', async ({ page }) => {
-    await page.goto('/');
-    await page.locator('.hero-team-link a', { hasText: /scoped diagnostic/i }).click();
-    await expect(page).toHaveURL(/\/diagnostic\?/);
-    await expect(page.locator('[data-diagnostic-pay-form] input[name="customer_email"]')).toBeVisible();
-  });
-
-  test('clicking nav Install Free copies the command without leaving the page', async ({ page }) => {
-    await page.goto('/');
-    await page.evaluate(() => {
-      window.__thumbgatePlausibleEvents = [];
-      window.plausible = (eventName, options) => {
-        window.__thumbgatePlausibleEvents.push({ eventName, options });
-      };
+  test('valid buyer email posts directly to the canonical $499 checkout route', async ({ page }) => {
+    let capturedRequest = null;
+    await page.route('**/go/diagnostic-pay', async (route) => {
+      capturedRequest = route.request();
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/html',
+        body: '<html><body>secure checkout handoff</body></html>',
+      });
     });
-    const install = page.locator('[data-nav-install]');
-    await install.click();
-    await expect(install).toHaveText(/Copied/);
-    await expect(page).toHaveURL(/\/$/);
-
-    const events = await page.evaluate(() => window.__thumbgatePlausibleEvents);
-    expect(events.some(({ eventName }) => eventName === 'install_guide_click')).toBe(true);
-    expect(events.some(({ eventName }) => eventName === 'chatgpt_gpt_click')).toBe(false);
-    expect(events).toContainEqual(expect.objectContaining({
-      eventName: 'pricing_cta_click',
-      options: expect.objectContaining({
-        props: expect.objectContaining({ tier: 'install' }),
-      }),
-    }));
-  });
-
-  test('hero explanation stays concise', async ({ page }) => {
     await page.goto('/');
-    const words = await page.locator('.hero-copy .hero-lede').evaluate((element) => (
-      element.textContent.trim().split(/\s+/).length
-    ));
-    expect(words).toBeLessThanOrEqual(25);
-  });
+    await page.locator('#buyer-email').fill('buyer@company.com');
 
-  test('checkout-return survey is re-armed when browser history restores an eligible page', async ({ page }) => {
-    await page.goto('/guide');
-    const checkout = page.locator('[data-assist-cta="assist_pro_checkout"]');
-    await expect(checkout).toBeVisible();
-
-    await checkout.evaluate((element) => {
-      element.addEventListener('click', (event) => event.preventDefault(), { capture: true, once: true });
-    });
-    await checkout.click();
-    await expect(page.locator('[data-thumbgate-abandon-survey]')).toHaveCount(0);
-
-    await page.evaluate(() => window.dispatchEvent(new Event('pageshow')));
-    const survey = page.locator('[data-thumbgate-abandon-survey="checkout_return"]');
-    await expect(survey).toBeVisible({ timeout: 5000 });
-    await expect(survey).toContainText('What stopped you from completing checkout?');
-  });
-
-  // --- nav region (in-page anchors that are actually visible) ---
-
-  test('nav "How It Works" link jumps to #how-it-works', async ({ page }) => {
-    await page.goto('/');
-    await page.locator('nav a[href="#how-it-works"]').first().click();
-    await expect(page).toHaveURL(/#how-it-works$/);
-    // URL change + section-visible is the deterministic contract. The
-    // pixel-level in-viewport check was flaky in CI (headless viewport size +
-    // smooth-scroll timing left the section partially in/out of viewport at
-    // the moment of measurement). Native hash navigation handles scroll
-    // reliably; we don't need to assert pixel position to prove the click
-    // worked.
-    await expect(page.locator('#how-it-works')).toBeVisible();
-  });
-
-  test('secondary FAQ and Learn links stay out of the header while their pages remain available', async ({ page }) => {
-    await page.goto('/#faq');
-    await expect(page.locator('nav a[href="#faq"]')).toHaveCount(0);
-    await expect(page.locator('nav a[href="/learn"]')).toHaveCount(0);
-    await expect(page.locator('#faq')).toBeVisible();
-  });
-
-  test('nav "Pricing" link navigates to /pricing', async ({ page }) => {
-    await page.goto('/');
-    await page.locator('nav a[href="/pricing"]').first().click();
-    await page.waitForURL(/\/pricing$/);
-  });
-
-  test('nav "Case Studies" link navigates to /case-studies', async ({ page }) => {
-    await page.goto('/');
-    await page.locator('nav a[href="/case-studies"]').first().click();
-    await page.waitForURL(/\/case-studies$/);
-  });
-
-  test('nav CTA is the free install path, not a high-ticket checkout', async ({ page }) => {
-    await page.goto('/');
-    const cta = page.locator('nav a.nav-cta').first();
-    await expect(cta).toHaveText('Install Free');
-    await expect(cta).toHaveAttribute('href', /\/go\/install/);
-    await expect(cta).not.toHaveAttribute('href', /diagnostic/);
-  });
-
-  // --- FAQ accordion (deterministic, no backend) ---
-
-  test('clicking a closed FAQ question opens its answer (toggles .open)', async ({ page }) => {
-    await page.goto('/#faq');
-    // Pick the second item (the first is preset to open in the HTML)
-    const item = page.locator('.faq-item').nth(1);
-    await expect(item).not.toHaveClass(/(^|\s)open(\s|$)/);
-    await item.locator('.faq-q').click();
-    await expect(item).toHaveClass(/(^|\s)open(\s|$)/);
-  });
-
-  test('clicking an open FAQ question closes it again', async ({ page }) => {
-    await page.goto('/#faq');
-    const firstItem = page.locator('.faq-item').first();
-    // The first item ships with aria-expanded=true / .open
-    await expect(firstItem).toHaveClass(/(^|\s)open(\s|$)/);
-    await firstItem.locator('.faq-q').click();
-    await expect(firstItem).not.toHaveClass(/(^|\s)open(\s|$)/);
-  });
-
-  test('opening a FAQ flips aria-expanded on the trigger from "false" to "true"', async ({ page }) => {
-    await page.goto('/#faq');
-    const trigger = page.locator('.faq-item').nth(2).locator('.faq-q');
-    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    await trigger.click();
-    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
-  });
-
-  // --- pricing section CTAs ---
-
-  test('pricing-section "Install Free" link navigates to npm package page', async ({ page }) => {
-    await page.goto('/#pricing');
-    const link = page.locator('#pricing .price-card.free-highlight a.btn-free');
-    await expect(link).toHaveAttribute('href', /npmjs\.com\/package\/thumbgate/);
-  });
-
-  test('pricing-section Pro card secondary install tile copies the command', async ({ page }) => {
-    await page.goto('/#pricing');
-    const tile = page.locator('#pricing .price-card.free-highlight .hero-install');
-    await tile.click();
-    await expect(tile.locator('.copy-hint')).toHaveText('copied!');
-  });
-
-  test('clicking "Upgrade to Pro" without a valid email flags the email field red', async ({ page }) => {
-    await page.goto('/#pricing');
-    const email = page.locator('#pro-email');
-    await email.fill('not-a-real-email');
-    await page.locator('#pro-checkout-link').click();
-    // handleProCheckout() applies inline border style on invalid email
-    const borderStyle = await email.evaluate((el) => el.style.border);
-    expect(borderStyle).toContain('rgb(248, 113, 113)');
-  });
-
-  test('clicking "Upgrade to Pro" with a valid email triggers a /checkout/pro navigation', async ({ page }) => {
-    // Test the actual user-visible contract — a valid email click leads to
-    // /checkout/pro — instead of trying to suppress navigation and snapshot
-    // border style mid-flight. Stubbing window.location in CI is brittle
-    // (CDP context differences); intercepting the resulting navigation is
-    // deterministic.
-    await page.route('**/api/newsletter/**', (route) => route.fulfill({ status: 200, body: '{}' }));
-    await page.route('**/api/buyer-intent/**', (route) => route.fulfill({ status: 200, body: '{}' }));
-    // Fulfill the checkout page request so the test doesn't depend on real
-    // /checkout/pro rendering — we just need to confirm the click attempted
-    // the navigation.
-    await page.route('**/checkout/pro**', (route) =>
-      route.fulfill({ status: 200, contentType: 'text/html', body: '<html><body>checkout</body></html>' }),
-    );
-
-    await page.goto('/#pricing');
-    await page.locator('#pro-email').fill('buyer@example.com');
-
-    const [navRequest] = await Promise.all([
-      page.waitForRequest(
-        (req) => /\/checkout\/pro/.test(req.url()) && req.resourceType() === 'document',
-        { timeout: 7500 },
-      ),
-      page.locator('#pro-checkout-link').click(),
+    await Promise.all([
+      page.waitForURL(/\/go\/diagnostic-pay$/),
+      page.locator('[data-primary-checkout] button[type="submit"]').click(),
     ]);
 
-    expect(navRequest.url()).toMatch(/\/checkout\/pro/);
+    expect(capturedRequest).not.toBeNull();
+    expect(capturedRequest.method()).toBe('POST');
+    const form = new URLSearchParams(capturedRequest.postData());
+    expect(form.get('customer_email')).toBe('buyer@company.com');
+    expect(form.get('plan_id')).toBe('sprint_diagnostic');
+    expect(form.get('utm_campaign')).toBe('managed_workflow_gate');
+    expect(form.get('cta_id')).toBe('homepage_diagnostic_buy');
   });
 
-  // --- sticky bottom CTA (appears after scrolling past hero) ---
-
-  test('sticky CTA becomes visible after scrolling past the hero', async ({ page }) => {
+  test('invalid email is stopped by native form validation before checkout', async ({ page }) => {
+    let checkoutRequests = 0;
+    await page.route('**/go/diagnostic-pay', async (route) => {
+      checkoutRequests += 1;
+      await route.abort();
+    });
     await page.goto('/');
-    const sticky = page.locator('#sticky-cta');
-    // Force scroll well past the hero
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight / 2));
-    // IntersectionObserver toggles the .visible class
-    await expect(sticky).toHaveClass(/(^|\s)visible(\s|$)/, { timeout: 5000 });
+    await page.locator('#buyer-email').fill('not-an-email');
+    await page.locator('[data-primary-checkout] button[type="submit"]').click();
+
+    await expect(page.locator('#buyer-email')).toBeFocused();
+    expect(checkoutRequests).toBe(0);
+    await expect(page).toHaveURL(/\/$/);
   });
 
-  test('sticky CTA install tile copies the command when clicked', async ({ page }) => {
+  test('proof link lands on the honest strict-mode boundary', async ({ page }) => {
     await page.goto('/');
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight / 2));
-    const tile = page.locator('#sticky-cta .hero-install');
-    await expect(tile).toBeVisible();
-    await tile.click();
-    await expect(tile.locator('.copy-hint')).toHaveText('copied!');
+    await page.locator('.proof-link').click();
+
+    await expect(page).toHaveURL(/#proof$/);
+    await expect(page.locator('#proof .terminal')).toBeVisible();
+    await expect(page.locator('#proof')).toContainText('Matching destructive actions warn by default and deny in strict mode.');
+  });
+
+  test('FAQ interaction updates both visibility and aria-expanded', async ({ page }) => {
+    await page.goto('/#faq');
+    const secondItem = page.locator('.faq-item').nth(1);
+    const button = secondItem.locator('.faq-q');
+
+    await expect(secondItem.locator('.faq-a')).not.toBeVisible();
+    await expect(button).toHaveAttribute('aria-expanded', 'false');
+    await button.click();
+    await expect(secondItem.locator('.faq-a')).toBeVisible();
+    await expect(button).toHaveAttribute('aria-expanded', 'true');
   });
 });

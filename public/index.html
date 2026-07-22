@@ -1,2235 +1,522 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta name="generator" content="ThumbGate">
-<meta name="author" content="Igor Ganapolsky">
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-__GOOGLE_SITE_VERIFICATION_META__
-<link rel="icon" type="image/png" href="/thumbgate-icon.png">
-<link rel="alternate icon" type="image/svg+xml" href="/assets/brand/thumbgate-mark.svg">
-<link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg">
-<meta property="og:image" content="/og.png">
-<title>ThumbGate — Stop risky AI-agent actions before they run</title>
-<meta name="description" content="ThumbGate is the local pre-action governance runtime for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode): accepted 👍 thumbs-up and 👎 thumbs-down feedback becomes history-aware local lessons; repeated failures can become prevention rules. PreToolUse checks flag and log risky tool calls, hard-block detected secret leaks, and block matching actions in strict mode. Pro is for individual operators; Enterprise rollout is scoped after intake.">
-<meta property="og:title" content="ThumbGate — Stop risky AI-agent actions before they run">
-<meta property="og:description" content="Check AI-agent tool calls locally before execution. Deny detected secret exfiltration and gate-bypass commands by default, record every decision, and enforce matching rules in strict mode.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="__APP_ORIGIN__/">
-<meta property="og:image" content="https://thumbgate.ai/og.png">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://thumbgate.ai/og.png">
-<meta name="thumbgate-version" content="1.28.4">
-<meta name="keywords" content="ThumbGate, thumbgate, AI agent orchestration, AI experience orchestration, agentic development cycle, AC/DC framework, Guide Generate Verify Solve, agent enforcement layer, pre-action checks, agent governance, Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, workflow hardening, context engineering, AI authenticity, brand authenticity AI">
-<link rel="canonical" href="__APP_ORIGIN__/">
-<link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
-
-<!-- Privacy-friendly analytics by Plausible -->
-<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script>
-__GA_BOOTSTRAP__
-
-<script>
-  const gaMeasurementId = '__GA_MEASUREMENT_ID__';
-  const serverVisitorId = '__SERVER_VISITOR_ID__';
-  const serverSessionId = '__SERVER_SESSION_ID__';
-  const serverAcquisitionId = '__SERVER_ACQUISITION_ID__';
-  const serverTelemetryCaptured = '__SERVER_TELEMETRY_CAPTURED__' === 'true';
-  const proPriceDollars = Number('__PRO_PRICE_DOLLARS__') || 19;
-</script>
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Person",
-  "name": "Igor Ganapolsky",
-  "url": "https://github.com/IgorGanapolsky",
-  "jobTitle": "Senior Mobile & AI Engineer",
-  "worksFor": {
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="generator" content="ThumbGate">
+  <meta name="author" content="Igor Ganapolsky">
+  <meta name="thumbgate-version" content="1.28.4">
+  __GOOGLE_SITE_VERIFICATION_META__
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png">
+  <link rel="canonical" href="__APP_ORIGIN__/">
+  <link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
+  <meta property="og:image" content="https://thumbgate.ai/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://thumbgate.ai/og.png">
+  <title>ThumbGate — Stop the AI-agent mistake that keeps happening</title>
+  <meta name="description" content="ThumbGate implements one hard, test-backed safety gate for a supported AI-agent workflow in two business days.">
+  <meta property="og:title" content="ThumbGate — Stop the AI-agent mistake that keeps happening">
+  <meta property="og:description" content="A $499 managed install turns one repeated AI-agent failure into a configured gate, regression test, and rollout proof.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="__APP_ORIGIN__/">
+  <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script>
+  __GA_BOOTSTRAP__
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
     "@type": "Organization",
     "name": "ThumbGate",
-    "url": "https://thumbgate.ai"
-  },
-  "knowsAbout": [
-    "AI agent governance",
-    "Pre-action checks for AI coding agents"
-  ],
-  "sameAs": [
-    "https://github.com/IgorGanapolsky",
-    "https://www.npmjs.com/package/thumbgate"
-  ],
-  "mainEntityOfPage": "https://thumbgate.ai/"
-}
-</script>
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  "name": "ThumbGate",
-  "alternateName": "thumbgate",
-  "url": "https://thumbgate.ai",
-  "logo": "https://thumbgate.ai/assets/brand/thumbgate-logo-1200x360.png",
-  "description": "ThumbGate ships local PreToolUse checks for AI coding agents. Accepted feedback becomes local lessons, recurring failures can become prevention rules, risky tool calls warn and log by default, detected secret leaks hard-block, and strict mode blocks matching actions.",
-  "founder": {
-    "@type": "Person",
-    "name": "Igor Ganapolsky",
-    "url": "https://github.com/IgorGanapolsky"
-  },
-  "sameAs": [
-    "https://github.com/IgorGanapolsky/ThumbGate",
-    "https://www.npmjs.com/package/thumbgate",
-    "https://github.com/IgorGanapolsky"
-  ]
-}
-</script>
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "name": "ThumbGate",
-  "alternateName": "thumbgate",
-  "description": "ThumbGate is a local pre-action governance runtime for AI coding agents. It stores accepted feedback as history-aware lessons, can derive prevention rules from recurring failures, and evaluates proposed tool calls before execution across configured Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and MCP-compatible integrations.",
-  "applicationCategory": "DeveloperApplication",
-  "operatingSystem": "Cross-platform, Node.js >=18.18.0",
-  "license": "https://opensource.org/licenses/MIT",
-  "url": "https://github.com/IgorGanapolsky/ThumbGate",
-  "downloadUrl": "https://www.npmjs.com/package/thumbgate",
-  "installUrl": "https://www.npmjs.com/package/thumbgate",
-  "dateModified": "2026-07-12",
-  "creator": {
-    "@type": "Person",
-    "name": "Igor Ganapolsky",
-    "url": "https://github.com/IgorGanapolsky"
-  },
-  "featureList": [
-    "Inspect risky AI-agent actions — evaluate commands, database actions, publishes, and API calls before tool execution",
-    "Capture concrete corrections — accepted feedback becomes history-aware local lessons and recurring failures can become Pre-Action Checks",
-    "Keep reviewable decisions — checkpoint risky actions and record why a call was allowed, warned, or denied",
-    "Agent surface inventory — see which tools, MCP surfaces, and policy sources are actually active before rollout",
-    "Actionable remediations — rank the next highest-ROI fixes from real feedback and risk pressure",
-    "ThumbGate GPT for ChatGPT — preflight risky commands, refunds, deploys, and PR actions, guide typed feedback capture, and route users to documented local setup",
-    "Workflow Sentinel — score blast radius before PR, merge, release, and publish actions fire",
-    "Workflow architecture checks — distinguish predefined workflows, parallel fan-out, and open-ended agents before execution",
-    "Agentic development cycle control — maps Guide, Generate, Verify, and Solve into enforceable pre-action gates before risky tool calls execute",
-    "Environment inspection evidence — require read-before-write, screenshots, API response checks, tests, or output validation for open-ended agent loops",
-    "Parallel branch budgets — surface budget pressure from agent desktops and fan-out workflows",
-    "Docker Sandboxes routing — recommend isolated execution for high-risk local runs",
-    "Signed sandbox-dispatch mechanism — deployment-specific isolation helper that requires configuration and verification",
-    "Domain Skill Packs — Stripe, Railway, database migration best practices",
-    "Progressive Disclosure — 3-tier L1/L2/L3 loading reports estimated disclosureSavings from scripts/skill-packs.js",
-    "Hallucination Detection — decomposes claims into verifiable sub-claims",
-    "PII Scanner — blocks emails, credit cards, SSNs in feedback and exports",
-    "Background Agent Governance — per-agent pass rates, CI auto-feedback",
-    "Memory Migration — imports Claude Code MEMORY.md into the local lesson store",
-    "Prompt-Level DLP — scans tool call inputs before execution",
-    "Per-Step Scoring — check decisions can become DPO/KTO training signals",
-    "HuggingFace Export — share PII-redacted agent traces as open training datasets",
-    "Unified Context — one-call context assembly with session, lessons, guards, and code-graph",
-    "AI Authenticity Enforcement — reviewable rules can encode operator-specific standards"
-  ],
-  "offers": [
-    {
-      "@type": "Offer",
-      "name": "Free",
-      "price": "0",
-      "priceCurrency": "USD",
-      "description": "Free local CLI for one developer: 2 feedback captures per day, 10 total, up to 3 active auto-promoted rules, no recall/search or exports, warn-and-log defaults, and hard blocking for detected secret leaks"
-    },
-    {
-      "@type": "Offer",
-      "name": "Enterprise",
-      "price": "15000",
-      "priceCurrency": "USD",
-      "description": "Proposal-only services after qualification: a $15,000 30-day governance pilot for up to three local workflows and $10,000/month post-pilot reliability operations for those workflows. Hosted team lesson sync and a hosted org dashboard are not general-availability runtime features.",
-      "url": "https://thumbgate.ai/#workflow-sprint-intake"
-    },
-    {
-      "@type": "Offer",
-      "name": "Pro Monthly",
-      "price": "19",
-      "priceCurrency": "USD",
-      "description": "Self-serve individual tier with unlimited rules and captures, history-aware recall and search, a personal local dashboard, DPO export, and operator-managed lesson export/import",
-      "url": "https://thumbgate.ai/checkout/pro?plan_id=pro&landing_path=%2F"
-    },
-    {
-      "@type": "Offer",
-      "name": "Pro Annual",
-      "price": "149",
-      "priceCurrency": "USD",
-      "description": "Annual Pro for individual operators who want personal enforcement proof, the local dashboard, and proof-ready exports",
-      "url": "https://thumbgate.ai/checkout/pro?plan_id=pro&billing_cycle=annual&landing_path=%2F"
-    }
-  ],
-  "potentialAction": [
-    {
-      "@type": "InstallAction",
-      "name": "Install ThumbGate Free",
-      "target": {
-        "@type": "EntryPoint",
-        "urlTemplate": "https://thumbgate.ai/guide",
-        "actionPlatform": [
-          "https://schema.org/DesktopWebPlatform"
-        ]
-      }
-    },
-    {
-      "@type": "BuyAction",
-      "name": "Start ThumbGate Pro",
-      "target": {
-        "@type": "EntryPoint",
-        "urlTemplate": "https://thumbgate.ai/checkout/pro?plan_id=pro&landing_path=%2F",
-        "actionPlatform": [
-          "https://schema.org/DesktopWebPlatform"
-        ]
-      },
-      "expectsAcceptanceOf": {
-        "@type": "Offer",
-        "name": "Pro Monthly",
-        "price": "19",
-        "priceCurrency": "USD",
-        "url": "https://thumbgate.ai/checkout/pro?plan_id=pro&landing_path=%2F"
-      }
-    },
-    {
-      "@type": "CommunicateAction",
-      "name": "Start Workflow Hardening Sprint intake",
-      "target": {
-        "@type": "EntryPoint",
-        "urlTemplate": "https://thumbgate.ai/#workflow-sprint-intake",
-        "actionPlatform": [
-          "https://schema.org/DesktopWebPlatform"
-        ]
-      }
-    }
-  ]
-}
-</script>
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Service",
-  "name": "ThumbGate Workflow Hardening Sprint",
-  "serviceType": "AI-agent workflow hardening sprint",
-  "provider": {
-    "@type": "Organization",
-    "name": "ThumbGate",
-    "url": "https://thumbgate.ai"
-  },
-  "url": "https://thumbgate.ai/#workflow-sprint-intake",
-  "description": "Founder-led workflow hardening for one AI-agent workflow that needs approval boundaries, rollback safety, and rollout proof before wider team rollout.",
-  "offers": {
-    "@type": "Offer",
-    "name": "Workflow Hardening Sprint intake",
-    "url": "https://thumbgate.ai/#workflow-sprint-intake"
-  },
-  "potentialAction": {
-    "@type": "CommunicateAction",
-    "name": "Book a workflow hardening intake",
-    "target": {
-      "@type": "EntryPoint",
-      "urlTemplate": "https://thumbgate.ai/#workflow-sprint-intake",
-      "actionPlatform": [
-        "https://schema.org/DesktopWebPlatform"
-      ]
-    }
+    "url": "__APP_ORIGIN__",
+    "logo": "__APP_ORIGIN__/assets/brand/thumbgate-logo-1200x360.png",
+    "sameAs": ["https://github.com/IgorGanapolsky/ThumbGate"]
   }
-}
-</script>
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "HowTo",
-  "name": "How to add Pre-Action Checks to an AI coding agent",
-  "description": "Configure ThumbGate so accepted feedback becomes local lessons and recurring failures can become checks that evaluate proposed tool calls before execution.",
-  "step": [
-    {
-      "@type": "HowToStep",
-      "position": 1,
-      "name": "Install ThumbGate",
-      "text": "Run: npx thumbgate init --agent claude-code. This installs the local CLI gateway and writes the supported agent integration. No API key is needed for the local path."
-    },
-    {
-      "@type": "HowToStep",
-      "position": 2,
-      "name": "Give feedback when something goes wrong",
-      "text": "When your agent makes a mistake, give it a thumbs down with context. In the current Claude auto-capture hook, vague negative signals can reuse up to 8 prior recorded entries before promotion and stay linked to a 60-second feedback session for later clarification."
-    },
-    {
-      "@type": "HowToStep",
-      "position": 3,
-      "name": "Prevention rules auto-generate",
-      "text": "After qualifying repeated failures in the same domain, ThumbGate can auto-generate prevention rules. Configured integrations can load the resulting local lessons and rules."
-    },
-    {
-      "@type": "HowToStep",
-      "position": 4,
-      "name": "Pre-action checks flag the mistake",
-      "text": "When a configured agent proposes a matching action, the PreToolUse hook records the decision before tool execution. Detected secret leaks and direct ThumbGate process-kill/environment-override commands deny by default; rm -rf, force-push, fetch-and-run, and direct guardrail-file edits warn by default. Set THUMBGATE_STRICT_ENFORCEMENT=1 to deny every matched blocking rule."
-    }
-  ],
-  "tool": { "@type": "SoftwareApplication", "name": "thumbgate", "url": "https://www.npmjs.com/package/thumbgate" }
-}
-</script>
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {
-      "@type": "Question",
-      "name": "Does ThumbGate support model fine-tuning?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "ThumbGate Pro includes a Model Hardening Advisor plus LoRA JSONL and DPO preference-pair exports for use in a separate fine-tuning workflow. An export does not guarantee that a trained model will avoid a mistake; that outcome depends on the dataset, training process, model, and evaluation."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How is ThumbGate different from model-training feedback loops?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "ThumbGate's runtime keeps lessons and rules outside the model. A configured hook evaluates proposed tool calls before execution. Detected secret exfiltration plus commands that kill the gate process or enable its bypass variable deny by default; matching destructive deletes, force-pushes, and fetch-and-run commands warn by default. Strict mode (THUMBGATE_STRICT_ENFORCEMENT=1) turns matching warning-mode checks into denies."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "What's the tech stack?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "SQLite+FTS5 lesson DB for fast full-text search. MemAlign-inspired dual recall (principle-based rules + episodic context). Thompson Sampling for adaptive check sensitivity per failure domain. LanceDB + Apache Arrow for local vector search with Hugging Face embeddings. ContextFS for context assembly. Bayesian belief updates on each memory. Configured PreToolUse hooks evaluate known-bad actions before execution; detected secret exfiltration and gate kill/bypass commands deny by default, while strict mode also denies matching warning-mode checks. The local path requires no cloud account."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "What AI agents and editors does this work with?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "ThumbGate includes documented integration paths for Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and OpenCode. Each agent must be configured through its hook or MCP setup; MCP compatibility alone does not install enforcement automatically. The Cursor runtime setup is npx thumbgate init --agent cursor, while the in-app Marketplace listing remains separate. VS Code can host an MCP-compatible agent, but this repo does not ship a standalone VS Code extension."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Do I have to chat inside the ThumbGate GPT for enforcement?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "No. The ThumbGate GPT is a ChatGPT entrypoint for checking proposed actions and getting setup help. Local allow, warn, or deny enforcement runs where the coding agent executes and requires npx thumbgate init plus the documented integration setup."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "When should I use Pro versus the Workflow Hardening Sprint?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Start with the setup guide if you only need the local path. Choose Pro when an individual operator wants higher limits, personal recall, a local dashboard, DPO export, and operator-managed lesson bundles. Choose the Workflow Hardening Sprint when one workflow owner needs to scope approval boundaries, rollback safety, and evidence requirements before a wider rollout claim."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How do we keep high-risk autonomous runs off the host?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "ThumbGate combines pre-action checks with execution guidance. Workflow Sentinel can recommend Docker Sandboxes for risky local actions. The package also contains a signed sandbox-dispatch mechanism, but each deployment must configure and verify that isolation boundary; it is not hosted team lesson sync or a generally available hosted org service."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How are pre-action checks different from prompt rules?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Prompt rules are a starting point, not a finish line. ThumbGate adds a human-feedback loop plus configured Pre-Action Checks at the tool-call boundary. The default policy denies detected secret exfiltration and gate kill/bypass commands while other matching high-risk checks warn; strict mode also denies matching warning-mode checks."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How does ThumbGate fit the agentic development cycle?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Agentic development is not just generation. Teams need Guide, Generate, Verify, and Solve working as a repeatable loop. ThumbGate can serve as the pre-action execution gate: guidance and accepted feedback can become rules, generated tool calls are evaluated before execution, rules can require verification evidence, and recurring solved failures can become reusable prevention gates."
-      }
-    }
-  ]
-}
-</script>
-
-<style>
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-  :root {
-    --bg: #0a0a0b;
-    --bg-raised: #111113;
-    --bg-card: #161618;
-    --border: #222225;
-    --text: #e8e8ec;
-    --text-muted: #8b8b96;
-    --cyan: #22d3ee;
-    --cyan-dim: rgba(34, 211, 238, 0.12);
-    --cyan-glow: rgba(34, 211, 238, 0.25);
-    --green: #4ade80;
-    --red: #f87171;
-    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
-    --mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', 'Fira Code', Consolas, monospace;
-  }
-
-  html { scroll-behavior: smooth; }
-  body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
-
-  .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
-
-  /* NAV */
-  nav { position: sticky; top: 0; z-index: 50; background: rgba(10,10,11,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 14px 0; }
-  nav .container { display: flex; justify-content: space-between; align-items: center; }
-  .nav-logo { font-weight: 700; font-size: 15px; letter-spacing: -0.02em; color: var(--text); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
-  .nav-logo .logo-mark { width: 28px; height: 28px; display: block; }
-  .nav-logo .logo-text { color: var(--text); }
-  .nav-logo span { color: var(--cyan); }
-  .nav-links { display: flex; gap: 24px; align-items: center; }
-  .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; transition: color 0.15s; }
-  .nav-links a:hover { color: var(--text); }
-  .nav-links a.nav-claude { color: #d97706; font-weight: 600; }
-  .nav-cta { background: var(--cyan); color: var(--bg); padding: 6px 14px; border-radius: 6px; font-weight: 600; font-size: 13px; text-decoration: none; transition: opacity 0.15s; }
-  .nav-cta:hover { opacity: 0.85; }
-
-  /* HERO */
-  .hero { padding: 72px 0 56px; text-align: center; }
-  .hero > .container { max-width: 1120px; }
-  .hero-thumbs { font-size: 72px; margin-bottom: 20px; line-height: 1; filter: drop-shadow(0 0 24px rgba(34,211,238,0.3)); }
-  .hero-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--cyan); background: var(--cyan-dim); border: 1px solid rgba(34,211,238,0.2); padding: 4px 12px; border-radius: 100px; margin-bottom: 24px; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; }
-  .hero h1 { font-size: clamp(40px, 5.2vw, 68px); font-weight: 800; letter-spacing: -0.035em; line-height: 1.02; max-width: 900px; margin: 0 auto 18px; }
-  .hero p { font-size: 17px; color: var(--text-muted); max-width: 620px; margin: 0 auto 28px; line-height: 1.6; }
-  .hero-lede { font-size: clamp(18px, 2vw, 21px) !important; max-width: 760px !important; color: var(--text-muted); }
-  .hero-above-fold { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(390px, 0.8fr); gap: clamp(32px, 4vw, 48px); align-items: center; text-align: left; }
-  .hero-copy .hero-badge { margin-bottom: 18px; }
-  .hero-copy h1 { max-width: 680px; margin: 0 0 20px; }
-  .hero-copy .hero-lede { max-width: 620px !important; margin: 0 0 26px; line-height: 1.55; }
-  .hero-proof-card { max-width: 720px; margin: 0; padding: 12px; border: 1px solid rgba(34,211,238,0.3); border-radius: 14px; background: #090d12; box-shadow: 0 24px 90px rgba(0,0,0,0.42); font-family: var(--mono); text-align: left; }
-  .hero-proof-card figcaption { display: block; padding: 12px 6px 2px; font-family: var(--font); }
-  .hero-proof-card figcaption strong { color: var(--text); font-size: 13px; }
-  .hero-proof-card figcaption span { display: block; margin-top: 5px; color: var(--text-muted); font-size: 12px; text-align: left; }
-  .terminal-row { padding: 8px 0; font-size: 14px; line-height: 1.45; border-bottom: 1px solid rgba(255,255,255,0.06); }
-  .terminal-row:last-child { border-bottom: 0; }
-  .terminal-row.muted { color: var(--text-muted); }
-  .terminal-row.danger { color: #f87171; font-weight: 700; }
-  .terminal-row.ok { color: var(--green); }
-  .hero-persona { font-size: 15px; color: var(--cyan); max-width: 600px; margin: 0 auto 20px; line-height: 1.5; font-weight: 500; }
-  .hero-signals { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin: 0 auto 28px; max-width: 760px; }
-  .signal-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-raised); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; text-decoration: none; cursor: pointer; transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease; }
-  .signal-pill:hover { transform: translateY(-1px); border-color: rgba(34, 211, 238, 0.5); background: rgba(34, 211, 238, 0.06); }
-  .signal-pill:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
-  .signal-pill.signal-up { border-color: rgba(74, 222, 128, 0.28); color: #b8f7c8; background: rgba(74, 222, 128, 0.08); }
-  .signal-pill.signal-up:hover { border-color: rgba(74, 222, 128, 0.6); background: rgba(74, 222, 128, 0.14); }
-  .signal-pill.signal-down { border-color: rgba(248, 113, 113, 0.28); color: #ffc0c0; background: rgba(248, 113, 113, 0.08); }
-  .signal-pill.signal-down:hover { border-color: rgba(248, 113, 113, 0.6); background: rgba(248, 113, 113, 0.14); }
-  .hero-actions { display: flex; justify-content: flex-start; align-items: center; flex-wrap: wrap; gap: 12px; margin: 0 0 16px; max-width: 900px; }
-  .hero-actions a, .hero-actions .hero-install { min-height: 48px; border-radius: 8px; }
-  .hero-actions .hero-install { margin-bottom: 0; font-size: 18px; padding: 14px 22px; border: 1px solid rgba(34,211,238,0.55); background: rgba(34,211,238,0.07); box-shadow: none; }
-  .hero-actions .btn-install-hero { font-size: 16px; padding: 14px 24px; background: var(--cyan); color: var(--bg); border: 1px solid var(--cyan); font-weight: 800; box-shadow: 0 12px 36px rgba(34,211,238,0.2); }
-  .hero-actions .hero-proof-link { display: inline-flex; align-items: center; justify-content: center; padding: 14px 18px; color: var(--text); border: 1px solid var(--border); background: var(--bg-raised); text-decoration: none; font-size: 15px; font-weight: 700; }
-  .hero-actions .hero-proof-link:hover { border-color: rgba(34,211,238,0.55); color: var(--cyan); }
-  .hero-team-link { margin: 0 !important; max-width: none !important; font-size: 13px !important; color: var(--text-muted); }
-  .hero-team-link a { color: var(--cyan); text-decoration: none; font-weight: 700; }
-  .hero-team-link a:hover { text-decoration: underline; }
-  .hero-actions .hero-diagnostic { font-size: 16px; padding: 14px 22px; background: var(--green); color: #06120a; font-weight: 800; box-shadow: none; }
-  .offer-router{max-width:940px;margin:18px auto 22px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;text-align:left}
-  .offer-route{border:1px solid rgba(34,211,238,.18);background:rgba(17,17,19,.72);border-radius:8px;padding:14px}
-  .offer-route strong{display:block;color:var(--text);font-size:14px;margin-bottom:6px}.offer-route p{margin:0 0 10px;color:var(--text-muted);font-size:13px}
-  .offer-route a,.offer-route button{color:var(--cyan);font-weight:800;font-size:13px;text-decoration:none;background:transparent;border:0;padding:0;cursor:pointer}.offer-route.primary{background:rgba(34,211,238,.07)}
-  .btn-pro-page { display: inline-flex; align-items: center; justify-content: center; padding: 11px 18px; background: var(--cyan); color: var(--bg); border-radius: 999px; text-decoration: none; font-size: 14px; font-weight: 700; box-shadow: 0 0 0 1px rgba(34,211,238,0.28), 0 12px 32px rgba(34,211,238,0.18); transition: opacity 0.15s, transform 0.15s; }
-  .btn-pro-page:hover { opacity: 0.9; transform: translateY(-1px); }
-  .btn-gpt-page { display: inline-flex; align-items: center; justify-content: center; padding: 14px 32px; background: var(--green); color: #06120a; border-radius: 8px; text-decoration: none; font-size: 16px; font-weight: 800; box-shadow: 0 0 0 1px rgba(74,222,128,0.32), 0 12px 32px rgba(74,222,128,0.18); transition: opacity 0.15s, transform 0.15s; }
-  .btn-gpt-page:hover { opacity: 0.92; transform: translateY(-1px); }
-  .hero-paid-path { max-width: 760px; margin: 0 auto 32px; padding: 18px 20px; border: 1px solid rgba(74,222,128,0.28); border-radius: 8px; background: rgba(74,222,128,0.07); display: flex; flex-direction: column; gap: 14px; align-items: center; text-align: center; }
-  .hero-paid-path strong { display: block; color: var(--text); font-size: 16px; line-height: 1.3; margin-bottom: 4px; }
-  .hero-paid-path span { display: block; color: var(--text-muted); font-size: 14px; line-height: 1.5; max-width: 640px; margin: 0 auto; }
-  .hero-paid-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; width: 100%; }
-  .hero-paid-actions a { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 10px 16px; border-radius: 999px; text-decoration: none; font-size: 14px; font-weight: 800; white-space: nowrap; }
-  .hero-paid-actions .starter { background: #facc15; color: #17110a; border: 1px solid rgba(250,204,21,0.55); }
-  .hero-paid-actions .diagnostic { background: var(--green); color: #06120a; border: 1px solid rgba(74,222,128,0.45); }
-  .hero-paid-actions .sprint { color: var(--green); border: 1px solid rgba(74,222,128,0.45); background: rgba(17,17,19,0.72); }
-  .hero-paid-actions .intake { color: var(--cyan); border: 1px solid rgba(34,211,238,0.45); background: rgba(34,211,238,0.1); }
-  .hero-paid-note { font-size: 14px; color: var(--text-muted); max-width: 720px; margin: 0 auto 24px; }
-  .hero-paid-note strong { color: var(--text); }
-  .hero-install { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 14px 24px; display: inline-flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 15px; margin-bottom: 40px; cursor: pointer; transition: border-color 0.2s; position: relative; max-width: 100%; overflow-x: auto; }
-  .hero-install:hover { border-color: var(--cyan); }
-  .hero-install .prompt { color: var(--text-muted); user-select: none; }
-  .hero-install .cmd { color: var(--cyan); }
-  .hero-install .copy-hint { font-size: 11px; color: var(--text-muted); font-family: var(--font); margin-left: 8px; }
-  .hero-install .copied { color: var(--green); }
-  .first-check-card { max-width: 820px; margin: 0 auto 28px; text-align: left; border: 1px solid rgba(34,211,238,0.28); background: linear-gradient(135deg, rgba(34,211,238,0.08) 0%, rgba(74,222,128,0.06) 100%); border-radius: 14px; padding: 22px; box-shadow: 0 18px 60px rgba(0,0,0,0.22); }
-  .first-check-card h2 { font-size: clamp(22px, 3vw, 30px); line-height: 1.15; margin-bottom: 8px; letter-spacing: -0.025em; }
-  .first-check-card p { max-width: none; margin: 0 0 16px; color: var(--text-muted); font-size: 15px; }
-  .first-check-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
-  .first-check-step { border: 1px solid var(--border); border-radius: 10px; background: rgba(10,10,11,0.62); padding: 14px; }
-  .first-check-step strong { display: block; color: var(--cyan); margin-bottom: 6px; }
-  .first-check-step p { font-size: 13px; line-height: 1.5; margin: 0; }
-  .first-check-examples { display: grid; gap: 8px; margin-top: 12px; }
-  .first-check-example { font-family: var(--mono); border-radius: 8px; padding: 10px 12px; font-size: 12px; overflow-x: auto; line-height: 1.55; }
-  .first-check-example.signal-good { color: var(--green); background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.24); }
-  .first-check-example.signal-fix { color: #fda4af; background: rgba(251,113,133,0.08); border: 1px solid rgba(251,113,133,0.24); }
-
-  /* SOCIAL PROOF BAR */
-  .proof-bar { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; font-size: 13px; color: var(--text-muted); padding: 4px 0 12px; max-width: 1040px; margin: 0 auto; }
-  .proof-bar a { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; padding: 8px 12px; border: 1px solid rgba(34,211,238,0.14); border-radius: 8px; background: rgba(17,17,19,0.72); color: var(--text-muted); text-decoration: none; line-height: 1.25; white-space: nowrap; transition: color 0.15s, border-color 0.15s, background-color 0.15s; }
-  .proof-bar a:hover, .proof-bar a:focus-visible { color: var(--cyan); border-color: rgba(34,211,238,0.42); background: rgba(34,211,238,0.08); outline: none; }
-  .proof-bar a:focus-visible { box-shadow: 0 0 0 3px rgba(34,211,238,0.18); }
-  .proof-bar .dot { display: none; }
-
-  /* COMPATIBILITY */
-  .compatibility { padding: 0 0 80px; }
-  .compatibility-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-  .compat-card, .cycle-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; text-decoration: none; color: inherit; display: block; transition: border-color 0.2s, transform 0.15s; cursor: pointer; }
-  .compat-card:hover, .cycle-card:hover { border-color: rgba(34,211,238,0.3); transform: translateY(-2px); }
-  .compat-card h3, .cycle-card h3 { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 10px; }
-  .compat-card .card-arrow, .cycle-card .card-arrow { font-size: 13px; color: var(--cyan); margin-top: 12px; font-weight: 500; }
-  .compat-card p, .cycle-card p { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
-  .compat-card code, .cycle-card code { font-family: var(--mono); font-size: 12px; background: rgba(34,211,238,0.08); color: var(--cyan); padding: 2px 6px; border-radius: 4px; }
-
-  /* CHATGPT GPT PATH */
-  .gpt-path { padding: 0 0 80px; }
-  .gpt-panel { border: 1px solid rgba(74,222,128,0.32); background: linear-gradient(180deg, rgba(17,17,19,0.98) 0%, rgba(15,24,18,0.96) 100%); border-radius: 8px; padding: 28px; }
-  .gpt-panel h2 { font-size: clamp(24px, 3vw, 34px); line-height: 1.15; letter-spacing: -0.025em; margin-bottom: 12px; }
-  .gpt-panel > p { color: var(--text-muted); max-width: 780px; margin-bottom: 22px; }
-  .gpt-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 24px 0; }
-  .gpt-step { border: 1px solid var(--border); border-radius: 8px; background: rgba(10,10,11,0.58); padding: 18px; }
-  .gpt-step strong { display: block; color: var(--green); margin-bottom: 6px; }
-  .gpt-step p { color: var(--text-muted); font-size: 14px; line-height: 1.55; }
-  .gpt-note { font-size: 13px; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 16px; }
-  .gpt-note strong { color: var(--text); }
-
-  /* SEO PAGES */
-  .seo-pages { padding: 0 0 80px; }
-  .seo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
-  .seo-card {
-    background: linear-gradient(180deg, rgba(17,17,19,0.98) 0%, rgba(22,22,24,0.96) 100%);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 24px;
-    text-decoration: none;
-    color: inherit;
-    transition: border-color 0.2s, transform 0.15s;
-  }
-  .seo-card:hover { border-color: rgba(34,211,238,0.3); transform: translateY(-2px); }
-  .seo-card h3 { font-size: 18px; margin-bottom: 10px; letter-spacing: -0.02em; }
-  .seo-card p { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
-  .seo-kicker {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--cyan);
-    margin-bottom: 12px;
-    font-weight: 700;
-  }
-  .seo-card .card-arrow { font-size: 13px; color: var(--cyan); margin-top: 12px; font-weight: 500; }
-
-  /* AUTORESEARCH PACK */
-  .autoresearch-pack { padding: 0 0 80px; }
-  .autoresearch-panel { border: 1px solid rgba(34,211,238,0.28); border-radius: 8px; background: linear-gradient(180deg, rgba(17,17,19,0.98) 0%, rgba(10,18,20,0.98) 100%); padding: 28px; }
-  .autoresearch-panel h2 { font-size: 30px; line-height: 1.18; margin-bottom: 12px; }
-  .autoresearch-panel > p { color: var(--text-muted); line-height: 1.65; max-width: 860px; margin-bottom: 22px; }
-  .autoresearch-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 22px 0; }
-  .autoresearch-card { border: 1px solid var(--border); border-radius: 8px; background: rgba(10,10,11,0.62); padding: 18px; }
-  .autoresearch-card h3 { font-size: 16px; margin-bottom: 8px; }
-  .autoresearch-card p { color: var(--text-muted); font-size: 14px; line-height: 1.55; }
-  .autoresearch-cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 18px; }
-  .autoresearch-cta a { display: inline-flex; align-items: center; min-height: 40px; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 700; }
-  .autoresearch-cta .primary { background: var(--cyan); color: #041016; }
-  .autoresearch-cta .secondary { border: 1px solid var(--border); color: var(--text); }
-
-  /* HOW IT WORKS */
-  .how-it-works { padding: 80px 0; }
-  .section-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--cyan); font-weight: 600; margin-bottom: 12px; text-align: center; }
-  .section-title { font-size: clamp(24px, 3vw, 32px); font-weight: 700; letter-spacing: -0.025em; text-align: center; margin-bottom: 48px; }
-  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-  .step { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 28px 24px; position: relative; transition: border-color 0.2s; }
-  .step:hover { border-color: rgba(34,211,238,0.3); }
-  .step-num { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; background: var(--cyan-dim); color: var(--cyan); font-size: 13px; font-weight: 700; margin-bottom: 16px; }
-  .step h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.01em; }
-  .step p { font-size: 14px; color: var(--text-muted); line-height: 1.55; }
-  .step code { font-family: var(--mono); font-size: 12px; background: rgba(34,211,238,0.08); color: var(--cyan); padding: 2px 6px; border-radius: 4px; }
-
-  /* CODE EXAMPLE */
-  .code-section { padding: 0 0 80px; }
-  .code-block { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; max-width: 640px; margin: 0 auto; }
-  .code-header { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
-  .code-dot { width: 10px; height: 10px; border-radius: 50%; }
-  .code-dot.red { background: #f87171; }
-  .code-dot.yellow { background: #fbbf24; }
-  .code-dot.green { background: #4ade80; }
-  .code-header span { font-size: 12px; color: var(--text-muted); margin-left: 8px; }
-  .code-body { padding: 20px; font-family: var(--mono); font-size: 13px; line-height: 1.7; overflow-x: auto; }
-  .code-body .comment { color: #6b7280; }
-  .code-body .keyword { color: #c084fc; }
-  .code-body .string { color: #4ade80; }
-  .code-body .fn { color: var(--cyan); }
-
-  /* PRICING */
-  .pricing { padding: 80px 0; }
-  .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 1080px; margin: 0 auto; }
-  .price-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 32px 28px; }
-  .price-card.pro { border-color: rgba(34,211,238,0.35); }
-  .price-card.free-highlight { border-color: var(--cyan); box-shadow: 0 0 40px var(--cyan-dim), inset 0 1px 0 rgba(34,211,238,0.15); }
-  .price-card.team { border-color: rgba(74,222,128,0.45); box-shadow: inset 0 1px 0 rgba(74,222,128,0.16); }
-  .price-card .tier { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
-  .price-card.pro .tier { color: var(--cyan); }
-  .price-card.team .tier { color: var(--green); }
-  .price-card .price { font-size: 40px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 4px; }
-  .price-card .price-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
-  .price-card ul { list-style: none; margin-bottom: 28px; }
-  .price-card li { font-size: 14px; color: var(--text-muted); padding: 6px 0; display: flex; align-items: flex-start; gap: 8px; }
-  .price-card li::before { content: "✓"; color: var(--cyan); font-weight: 700; flex-shrink: 0; }
-  .price-card.pro li::before { color: var(--cyan); }
-  .pricing-matrix { max-width: 1080px; margin: 24px auto 0; overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-card); }
-  .pricing-matrix table { width: 100%; min-width: 760px; border-collapse: collapse; }
-  .pricing-matrix caption { text-align: left; padding: 18px 18px 0; color: var(--text); font-weight: 800; font-size: 16px; }
-  .pricing-matrix th,
-  .pricing-matrix td { padding: 13px 16px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; font-size: 13px; line-height: 1.45; color: var(--text-muted); }
-  .pricing-matrix th { color: var(--cyan); background: rgba(34,211,238,0.06); font-weight: 800; }
-  .pricing-matrix tr:last-child td { border-bottom: 0; }
-  .pricing-matrix strong { color: var(--text); }
-  .pricing-note { max-width: 880px; margin: 14px auto 0; color: var(--text-muted); font-size: 12px; line-height: 1.55; text-align: center; }
-  .btn-free,
-  .btn-demo-link { display: block; text-align: center; padding: 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); text-decoration: none; font-size: 14px; font-weight: 500; transition: border-color 0.15s; }
-  .btn-free:hover,
-  .btn-demo-link:hover { border-color: var(--text-muted); }
-  .btn-pro { display: block; text-align: center; padding: 10px; background: var(--cyan); color: var(--bg); border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; transition: opacity 0.15s; }
-  .btn-pro:hover { opacity: 0.85; }
-  .btn-team { display: block; text-align: center; padding: 10px; background: rgba(74,222,128,0.14); color: var(--green); border: 1px solid rgba(74,222,128,0.4); border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; transition: border-color 0.15s, transform 0.15s; }
-  .btn-team:hover { border-color: var(--green); transform: translateY(-1px); }
-  .team-intake-panel { max-width: 900px; margin: 24px auto 0; padding: 22px; border: 1px solid rgba(74,222,128,0.28); border-radius: 12px; background: rgba(74,222,128,0.055); box-shadow: inset 0 1px 0 rgba(74,222,128,0.08); }
-  .team-intake-panel-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 16px; }
-  .team-intake-panel h3 { margin: 0 0 6px; font-size: 18px; color: var(--text); }
-  .team-intake-panel p { margin: 0; color: var(--text-dim); font-size: 13px; line-height: 1.55; }
-  .team-intake-badge { flex-shrink: 0; padding: 6px 10px; border: 1px solid rgba(74,222,128,0.35); border-radius: 999px; color: var(--green); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
-  .team-intake-recovery { margin: 0 0 16px; padding: 13px 14px; border: 1px solid rgba(34,211,238,0.28); border-radius: 12px; background: rgba(34,211,238,0.08); display: flex; align-items: center; justify-content: space-between; gap: 14px; text-align: left; }
-  .team-intake-recovery strong { display: block; color: var(--text); font-size: 13px; margin-bottom: 2px; }
-  .team-intake-recovery span { display: block; color: var(--text-dim); font-size: 12px; line-height: 1.45; }
-  .team-intake-recovery a { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; min-height: 34px; padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(34,211,238,0.45); color: var(--cyan); background: rgba(17,17,19,0.68); text-decoration: none; font-size: 12px; font-weight: 800; white-space: nowrap; }
-  .team-form { max-width: 860px; margin: 24px auto 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-  .team-intake-panel .team-form { max-width: none; margin: 0; }
-  .team-form .full { grid-column: 1 / -1; }
-  .team-form input, .team-form textarea { width: 100%; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 14px; font-family: inherit; }
-  .team-form textarea { min-height: 120px; resize: vertical; }
-  .team-form button { width: 100%; }
-
-  /* FAQ */
-  .faq { padding: 80px 0; }
-  .faq-list { max-width: 640px; margin: 0 auto; }
-  .faq-item { border-bottom: 1px solid var(--border); }
-  .faq-q { padding: 20px 0; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-  .faq-q::after { content: "+"; font-size: 18px; color: var(--text-muted); transition: transform 0.2s; }
-  .faq-item.open .faq-q::after { transform: rotate(45deg); }
-  .faq-a { font-size: 14px; color: var(--text-muted); line-height: 1.65; padding-bottom: 20px; display: none; }
-  .faq-item.open .faq-a { display: block; }
-
-  /* CTA SECTION */
-  .final-cta { padding: 80px 0; text-align: center; }
-  .final-cta h2 { font-size: clamp(24px, 3vw, 32px); font-weight: 700; letter-spacing: -0.025em; margin-bottom: 12px; }
-  .final-cta p { font-size: 15px; color: var(--text-muted); margin-bottom: 28px; }
-  .final-cta .btn-pro, .final-cta .btn-team { display: inline-block; padding: 12px 32px; font-size: 15px; border-radius: 8px; margin: 0 6px; }
-
-  /* STICKY BOTTOM CTA BAR */
-  .sticky-cta { position: fixed; bottom: 0; left: 0; right: 0; z-index: 999; background: rgba(10,10,10,0.96); border-top: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; justify-content: center; gap: 12px; transform: translateY(100%); transition: transform 0.3s ease; backdrop-filter: blur(8px); }
-  .sticky-cta.visible { transform: translateY(0); }
-  .sticky-cta-text { font-size: 14px; color: var(--text-muted); }
-  .sticky-cta-text strong { color: var(--text); }
-  .sticky-cta .btn-pro, .sticky-cta .btn-gpt-page { padding: 8px 20px; font-size: 13px; border-radius: 6px; white-space: nowrap; }
-
-  /* FOOTER */
-  footer { border-top: 1px solid var(--border); padding: 32px 0; }
-  footer .container { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-  .footer-links { display: flex; gap: 20px; }
-  .footer-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; transition: color 0.15s; }
-  .footer-links a:hover { color: var(--text); }
-  .footer-copy { font-size: 12px; color: var(--text-muted); }
-
-  /* CONVERSION HIERARCHY — reduce visual weight of secondary sections */
-  .hero-secondary-ctas a { transition: opacity 0.15s; }
-  .hero-secondary-ctas a:hover { opacity: 1 !important; }
-  .hero-trust-bar { border-top: 1px solid var(--border); padding-top: 16px; display:flex; justify-content:center; flex-wrap:wrap; gap:18px; margin:18px auto 0; max-width:760px; font-size:12px; color:var(--text-muted); }
-  
-  /* Make the terminal demo more prominent when placed after hero */
-  .code-section { padding: 40px 0 60px; }
-  .code-section .code-block { max-width: 720px; border: 1px solid rgba(34,211,238,0.2); }
-  .marketing-deep-dive { display: none !important; }
-  #claude-code-section,
-  #thumbgate-gpt,
-  #social-proof,
-  #orchestration-layer,
-  #autoresearch-pack,
-  #guardrails,
-  #newsletter { display: none !important; }
-  
-  /* Reduce visual density of agent-specific sections */
-  #claude-code-section, #thumbgate-gpt { opacity: 0.92; }
-  #claude-code-section:hover, #thumbgate-gpt:hover { opacity: 1; }
-  
-  /* Simplify proof bar — make it less overwhelming */
-  .proof-bar { font-size: 13px; gap: 10px; opacity: 1; }
-  
-  /* RESPONSIVE */
-  @media (max-width: 700px) {
-    .steps { grid-template-columns: 1fr; }
-    .compatibility-grid { grid-template-columns: 1fr; }
-    .first-check-steps { grid-template-columns: 1fr; }
-    .gpt-steps { grid-template-columns: 1fr; }
-    .seo-grid { grid-template-columns: 1fr; }
-    .autoresearch-grid { grid-template-columns: 1fr; }
-    .pricing-grid { grid-template-columns: 1fr; }
-    .team-intake-panel-head { display: block; }
-    .team-intake-badge { display: inline-block; margin-bottom: 10px; }
-    .team-intake-recovery { align-items: stretch; flex-direction: column; text-align: center; }
-    .team-intake-recovery a { width: 100%; }
-    .team-form { grid-template-columns: 1fr; }
-    .hero { padding: 52px 0 48px; }
-    .hero-above-fold { grid-template-columns: 1fr; gap: 30px; }
-    .hero-copy { text-align: center; }
-    .hero-copy h1, .hero-copy .hero-lede { margin-left: auto; margin-right: auto; }
-    .hero-actions { flex-direction: column; }
-    .hero-actions a { width: 100%; }
-    .hero-proof-card figcaption { display: block; }
-    .hero-proof-card figcaption span { display: block; margin-top: 5px; text-align: left; }
-    .offer-router { grid-template-columns: 1fr; }
-    .hero-paid-actions { justify-content: center; }
-    .hero-paid-actions a { width: 100%; }
-    .nav-links a:not(.nav-cta) { display: none; }
-    .proof-bar { gap: 8px; justify-content: flex-start; }
-    .proof-bar a { width: 100%; min-height: 42px; white-space: normal; }
-    .proof-bar .dot { display: none; }
-  }
-
-  /* Visual conversion diagrams — keep above the fold scannable */
-  .diagram-strip { padding: 28px 0 8px; }
-  .diagram-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; max-width: 1080px; margin: 0 auto; }
-  .diagram-card { border: 1px solid var(--border); border-radius: 14px; background: var(--bg-card); overflow: hidden; }
-  .diagram-card figcaption { padding: 12px 14px 14px; }
-  .diagram-card figcaption strong { display: block; font-size: 14px; color: var(--text); margin-bottom: 4px; }
-  .diagram-card figcaption span { display: block; font-size: 13px; color: var(--text-muted); line-height: 1.45; }
-  .diagram-card img, .diagram-card svg { width: 100%; height: auto; display: block; background: #0a0a0b; }
-  .diagram-card.full { grid-column: 1 / -1; }
-  .cash-path { max-width: 1080px; margin: 0 auto 28px; padding: 18px; border: 1px solid rgba(34,211,238,0.28); border-radius: 14px; background: rgba(34,211,238,0.05); }
-  .cash-path h3 { margin: 0 0 8px; font-size: 16px; }
-  .cash-path p { margin: 0 0 12px; color: var(--text-muted); font-size: 14px; line-height: 1.5; }
-  .cash-path-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .honesty-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(248,113,113,0.35); background: rgba(248,113,113,0.08); color: #fecaca; font-size: 12px; font-weight: 600; margin-top: 12px; }
-  .section-tight { padding-top: 36px !important; padding-bottom: 28px !important; }
-  .section-tight .section-title { margin-bottom: 10px; }
-  .section-tight p { max-width: 720px; margin-left: auto; margin-right: auto; }
-  .pricing-grid { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
-  .pricing-grid .price-card { flex: 1 1 300px; max-width: 420px; }
-  @media (max-width: 800px) {
-    .diagram-grid { grid-template-columns: 1fr; }
-  }
-</style>
-  <!-- PostHog Analytics -->
-  <script>
-    !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a=u._i.push([i,s,a]),u._i.push([i,s,a]),u.init=function(t,e,i){g(u,"capture"),u.push(["init",t,e,i])},u.capture=function(t,e,i,o){u.push(["capture",t,e,i,o])},u.identify=function(t,e,i){u.push(["identify",t,e,i])},u.alias=function(t,e){u.push(["alias",t,e])},u.people={set:function(t,e,i){u.push(["people.set",t,e,i])}},u.featureFlags={},u.onFeatureFlags=function(t){u.push(["onFeatureFlags",t])},u.toString=function(t){var e="posthog";return a&&a!==e&&(e+="."+a),t||(e+=" (stub)"),e},u.people.set_once=function(t,e,i){u.push(["people.set_once",t,e,i])},u.group=function(t,e,i){u.push(["group",t,e,i])},u.setPersonPropertiesForFlags=function(t){u.push(["setPersonPropertiesForFlags",t])},u.resetGroupPropertiesForFlags=function(t){u.push(["resetGroupPropertiesForFlags",t])},u.setGroupPropertiesForFlags=function(t){u.push(["setGroupPropertiesForFlags",t])},u.reloadFeatureFlags=function(){u.push(["reloadFeatureFlags"])},u.capture=function(t,e,i,o){u.push(["capture",t,e,i,o])},u.identify=function(t,e,i){u.push(["identify",t,e,i])},0===t.indexOf(".")){var s=t.substring(1);u=e[s]=[],u._i=[]}e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
-  posthog.init('__POSTHOG_API_KEY__', {
-    api_host: '/ingest',
-    ui_host: 'https://us.posthog.com',
-    person_profiles: 'identified_only',
-  });
-  posthog.capture('$pageview');
   </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "ThumbGate",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "macOS, Linux, Windows",
+    "url": "__APP_ORIGIN__",
+    "description": "Local pre-action checks for AI coding agents. ThumbGate can deny detected secret exfiltration and gate-bypass commands by default, while strict mode blocks matching destructive-action rules.",
+    "codeRepository": "https://github.com/IgorGanapolsky/ThumbGate"
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "name": "Managed AI Agent Workflow Gate",
+    "description": "A managed install for one repeated AI-agent workflow failure, including a failure map, configured local gate, regression test, and rollout proof.",
+    "provider": { "@type": "Organization", "name": "ThumbGate" },
+    "offers": {
+      "@type": "Offer",
+      "price": "__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__",
+      "priceCurrency": "USD",
+      "availability": "https://schema.org/InStock",
+      "url": "__APP_ORIGIN__/#buy"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What do I get for $499?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "One 60-minute working review for one repeated AI-agent workflow failure, one configured local gate for a supported workflow, its regression test, and a written rollout and rollback proof within two business days after access and the agreed materials are available."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does ThumbGate block every risky command by default?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Detected secret exfiltration and gate-process bypass attempts are denied by default. Matching destructive actions warn unless strict enforcement is enabled. The managed gate defines the right boundary for your workflow instead of pretending every warning is a firewall."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Who is this managed gate for?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Engineering leads and hands-on operators using Claude Code, Cursor, Codex, or similar agents who can point to one repeated failure involving a repository, terminal, database, deployment, browser, or outbound action."
+        }
+      }
+    ]
+  }
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080b10;
+      --panel: #111722;
+      --text: #f5f7fb;
+      --muted: #9ca8ba;
+      --line: #273246;
+      --cyan: #38d7ff;
+      --green: #56e39f;
+      --yellow: #ffd166;
+      --red: #ff647c;
+      --max: 1120px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 72% 4%, rgba(56, 215, 255, 0.13), transparent 32rem),
+        linear-gradient(180deg, #080b10 0%, #0b1018 45%, #080b10 100%);
+      font: 16px/1.6 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    a { color: inherit; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    .shell { width: min(calc(100% - 40px), var(--max)); margin: 0 auto; }
+    .site-nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid rgba(39, 50, 70, 0.75);
+      background: rgba(8, 11, 16, 0.88);
+      backdrop-filter: blur(16px);
+    }
+    .nav-inner { min-height: 70px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .nav-logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 850; }
+    .nav-logo img { width: 31px; height: 31px; }
+    .logo-text { letter-spacing: -0.02em; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links > a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 700; }
+    .nav-links > a:hover { color: var(--text); }
+    .nav-buy, .button-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      border: 0;
+      border-radius: 10px;
+      padding: 0 20px;
+      color: #06130d !important;
+      background: var(--green);
+      box-shadow: 0 12px 35px rgba(86, 227, 159, 0.2);
+      font-weight: 850 !important;
+      text-decoration: none;
+    }
+    .hero { padding: clamp(72px, 10vw, 128px) 0 72px; }
+    .hero-grid { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr); gap: clamp(42px, 7vw, 88px); align-items: center; }
+    .eyebrow, .section-kicker { color: var(--green); font: 800 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.13em; text-transform: uppercase; }
+    h1 { max-width: 760px; margin: 18px 0; font-size: clamp(46px, 7vw, 78px); line-height: 0.98; letter-spacing: -0.055em; }
+    .hero-lede { max-width: 650px; margin: 0 0 24px; color: #c5ceda; font-size: clamp(18px, 2vw, 22px); line-height: 1.5; }
+    .fit-line { margin: 0 0 30px; color: var(--muted); font-size: 14px; }
+    .fit-line strong { color: var(--text); }
+    .proof-link { color: var(--cyan); font-weight: 750; text-decoration: none; }
+    .proof-link:hover { text-decoration: underline; }
+    .checkout-card {
+      padding: 28px;
+      border: 1px solid rgba(86, 227, 159, 0.35);
+      border-radius: 18px;
+      background: linear-gradient(160deg, rgba(23, 31, 45, 0.98), rgba(13, 18, 27, 0.98));
+      box-shadow: 0 28px 90px rgba(0, 0, 0, 0.42);
+    }
+    .price { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+    .price strong { font-size: 44px; line-height: 1; letter-spacing: -0.05em; }
+    .price span { color: var(--muted); font-size: 14px; }
+    .checkout-card h2 { margin: 0 0 6px; font-size: 21px; }
+    .checkout-card > p { margin: 0 0 22px; color: var(--muted); }
+    .checkout-card label { display: block; margin-bottom: 7px; font-size: 13px; font-weight: 750; }
+    .checkout-card input[type="email"] {
+      width: 100%;
+      min-height: 50px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0 14px;
+      color: var(--text);
+      background: #090d14;
+      outline: none;
+    }
+    .checkout-card input[type="email"]:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(86, 227, 159, 0.12); }
+    .checkout-card .button-primary { width: 100%; margin-top: 12px; min-height: 52px; }
+    .checkout-note { margin: 12px 0 0 !important; color: var(--muted) !important; font-size: 12px; text-align: center; }
+    .offer-points { display: grid; gap: 10px; margin: 22px 0 0; padding: 18px 0 0; border-top: 1px solid var(--line); list-style: none; }
+    .offer-points li { display: flex; gap: 10px; color: #c5ceda; font-size: 14px; }
+    .offer-points li::before { content: "✓"; color: var(--green); font-weight: 900; }
+    section { padding: 82px 0; }
+    section + section { border-top: 1px solid rgba(39, 50, 70, 0.65); }
+    .section-kicker { color: var(--cyan); }
+    .section-title { max-width: 780px; margin: 12px 0 14px; font-size: clamp(32px, 4vw, 50px); line-height: 1.08; letter-spacing: -0.04em; }
+    .section-lede { max-width: 700px; margin: 0; color: var(--muted); font-size: 18px; }
+    .loop { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 38px; }
+    .loop-step { position: relative; min-height: 190px; padding: 24px; border: 1px solid var(--line); border-radius: 15px; background: var(--panel); }
+    .loop-step:not(:last-child)::after { content: "→"; position: absolute; top: 50%; right: -24px; z-index: 2; color: var(--cyan); font-size: 26px; transform: translateY(-50%); }
+    .loop-number { display: inline-flex; width: 30px; height: 30px; align-items: center; justify-content: center; border-radius: 50%; color: #071018; background: var(--cyan); font-weight: 900; }
+    .loop-step h3 { margin: 18px 0 7px; font-size: 20px; }
+    .loop-step p { margin: 0; color: var(--muted); }
+    .decisions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+    .decision { border: 1px solid; border-radius: 999px; padding: 4px 9px; font: 800 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .allow { color: var(--green); border-color: rgba(86, 227, 159, 0.45); }
+    .warn { color: var(--yellow); border-color: rgba(255, 209, 102, 0.45); }
+    .deny { color: var(--red); border-color: rgba(255, 100, 124, 0.45); }
+    .loop-back { margin: 18px 0 0; color: #c5ceda; text-align: center; }
+    .loop-back strong { color: var(--cyan); }
+    .deliverables { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 36px; }
+    .deliverable { padding: 24px; border: 1px solid var(--line); border-radius: 15px; background: var(--panel); }
+    .deliverable h3 { margin: 0 0 8px; font-size: 18px; }
+    .deliverable p { margin: 0; color: var(--muted); }
+    .boundary { margin-top: 18px; padding: 18px 20px; border-left: 3px solid var(--yellow); color: var(--muted); background: rgba(255, 209, 102, 0.06); }
+    .proof-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.95fr); gap: 30px; align-items: center; margin-top: 34px; }
+    .terminal { overflow: hidden; border: 1px solid #303b50; border-radius: 15px; background: #090d14; box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35); }
+    .terminal-bar { display: flex; gap: 7px; padding: 13px 16px; border-bottom: 1px solid #252f40; background: #121824; }
+    .terminal-bar span { width: 10px; height: 10px; border-radius: 50%; background: #536078; }
+    .terminal pre { margin: 0; padding: 24px; white-space: pre-wrap; color: #c8d2df; font: 14px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .terminal .red { color: var(--red); }
+    .terminal .green { color: var(--green); }
+    .proof-copy p { color: var(--muted); }
+    .proof-copy a { color: var(--cyan); font-weight: 750; }
+    .faq-list { max-width: 820px; margin-top: 34px; border-top: 1px solid var(--line); }
+    .faq-item { border-bottom: 1px solid var(--line); }
+    .faq-q { width: 100%; display: flex; justify-content: space-between; gap: 20px; padding: 22px 0; border: 0; color: var(--text); background: transparent; text-align: left; font-weight: 800; }
+    .faq-q::after { content: "+"; color: var(--cyan); font-size: 22px; }
+    .faq-item.open .faq-q::after { content: "−"; }
+    .faq-a { display: none; max-width: 730px; padding: 0 0 22px; color: var(--muted); }
+    .faq-item.open .faq-a { display: block; }
+    .final { text-align: center; }
+    .final .section-title, .final .section-lede { margin-left: auto; margin-right: auto; }
+    .final .nav-buy { margin-top: 26px; }
+    footer { padding: 32px 0 46px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+    .footer-inner { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 18px; }
+    .footer-links { display: flex; flex-wrap: wrap; gap: 18px; }
+    .footer-links a { color: var(--muted); }
+    @media (max-width: 840px) {
+      .nav-links > a:not(.nav-buy) { display: none; }
+      .hero-grid, .proof-grid { grid-template-columns: 1fr; }
+      .loop, .deliverables { grid-template-columns: 1fr; }
+      .loop-step:not(:last-child)::after { content: "↓"; top: auto; right: 50%; bottom: -28px; transform: translateX(50%); }
+    }
+    @media (max-width: 520px) {
+      .shell { width: min(calc(100% - 24px), var(--max)); }
+      .nav-inner { min-height: 62px; }
+      .nav-buy { padding: 0 13px; font-size: 13px; }
+      .hero { padding-top: 62px; }
+      h1 { font-size: 46px; }
+      .checkout-card { padding: 22px 18px; }
+    }
+  </style>
 </head>
 <body data-revenue-assist="off">
-
-<!-- NAV -->
-<nav>
-  <div class="container">
-    <a href="/" class="nav-logo"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28"><span class="logo-text">ThumbGate</span></a>
-    <div class="nav-links">
-      <a href="#how-it-works">How It Works</a>
-      <a href="#diagrams">Diagrams</a>
-      <a href="/pricing">Pricing</a>
-      <a href="/case-studies">Case Studies</a>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
-      <a href="/checkout/pro?utm_source=website&utm_medium=nav&utm_campaign=pro_upgrade&cta_id=nav_pricing_pro&cta_placement=nav&plan_id=pro&landing_path=%2F" class="nav-pro-link" data-revenue-cta data-cta-id="nav_pricing_pro" data-cta-placement="nav" data-plan-id="pro" style="color:var(--cyan);font-weight:600;">Pro $19</a>
-      <a href="/go/install?utm_source=website&utm_medium=nav&utm_campaign=install_free&cta_id=nav_install_cli&cta_placement=nav" data-nav-install onclick="event.preventDefault();navigator.clipboard.writeText('npx thumbgate init');this.textContent='Copied ✓';setTimeout(()=>{this.textContent='Install Free'},2000);try{posthog.capture('nav_install_click',{cta:'nav_install_cli'})}catch(_){}" class="nav-cta nav-install" title="Click to copy: npx thumbgate init">Install Free</a>
-    </div>
-  </div>
-</nav>
-
-<!-- HERO -->
-<section class="hero">
-  <div class="container">
-    <div class="hero-above-fold">
-      <div class="hero-copy">
-        <div class="hero-badge">AI-agent firewall for Claude Code, Cursor, and Codex</div>
-        <h1>Stop dangerous AI-agent actions before they run.</h1>
-        <p class="hero-lede">ThumbGate checks tool calls locally, denies detected secret exfiltration and gate-bypass commands by default, and helps turn repeated failures into explicit rules.</p>
-        <div class="hero-actions">
-          <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="event.preventDefault();navigator.clipboard.writeText('npx thumbgate init');this.textContent='Copied ✓ — paste in your repo';setTimeout(()=>{this.textContent='Install Free'},2000);try{posthog.capture('hero_install_click',{cta:'install_cli'})}catch(_){}" class="btn-free btn-install-hero" title="Click to copy: npx thumbgate init">Install Free</a>
-          <a href="#live-proof" class="hero-proof-link">See it catch a risky command →</a>
-        </div>
-        <p class="hero-team-link">Securing a team workflow? <a href="/diagnostic?utm_source=website&utm_medium=hero_text&utm_campaign=team_workflow&cta_id=hero_team_diagnostic&cta_placement=hero">See the scoped diagnostic →</a></p>
-      </div>
-
-      <figure class="hero-proof-card" id="live-proof" aria-label="ThumbGate evaluating dangerous AI-agent commands in real time">
-        <img src="/media/thumbgate-demo.gif" alt="ThumbGate evaluating an AI agent's rm -rf, git push --force, and chmod 777 commands in real time while allowing safe commands through" style="width:100%;display:block;border-radius:8px;" loading="eager" fetchpriority="high" />
-        <figcaption>
-          <strong>Real pre-action decision</strong>
-          <span>Default denies for detected secret exfiltration and gate bypasses. Strict mode denies matching rules.</span>
-        </figcaption>
-      </figure>
-    </div>
-
-    <div class="hero-trust-bar">
-      <span>MIT open source</span>
-      <span>Local-first</span>
-      <span>Free CLI</span>
-      <span>Runs before tool execution</span>
-    </div>
-    <div class="first-check-card" id="first-check">
-      <div class="section-label" style="text-align:left;margin-bottom:8px;">First-Dollar Activation Path</div>
-      <h2>Run your first pre-action check locally.</h2>
-      <p><strong>First-Dollar Activation Path:</strong> Install → give feedback → catch the next match. Prove one evaluated repeat before asking anyone to buy. Upgrade when the individual operator needs higher limits, recall, a personal dashboard, or exports.</p>
-      <div class="first-check-steps">
-        <div class="first-check-step">
-          <strong>1. Install ThumbGate</strong>
-          <p>Run <code>npx thumbgate init</code> in your repo. Claude, Cursor, Codex, Gemini, Amp, Cline, and OpenCode are supported through local hook or MCP-compatible setup paths.</p>
-        </div>
-        <div class="first-check-step">
-          <strong>2. Give feedback</strong>
-          <p>Use thumbs up for a good pattern and thumbs down with concrete context for a failure. Accepted feedback becomes a local lesson; recurring failures can be promoted into prevention rules.</p>
-        </div>
-        <div class="first-check-step">
-          <strong>3. The repeat gets flagged</strong>
-          <p>A matching tool call is evaluated and recorded before execution, with a reason the agent can use to choose a safer plan. Detected secret exfiltration and commands that kill the gate process or enable its bypass variable are denied by default; strict mode also denies matching warning-mode checks.</p>
-        </div>
-      </div>
-    </div>
-
-    <aside style="max-width:760px;margin:24px auto 0;padding:16px 20px;border-left:3px solid var(--cyan);background:rgba(34,211,238,0.04);border-radius:0 8px 8px 0;">
-      <p style="margin:0;font-size:15px;line-height:1.55;color:var(--text);"><strong>Why local-first?</strong> Data ownership requires usable control, governance, portability, and structural independence—not merely a downloadable copy. ThumbGate keeps configured action checks, feedback, and prevention rules in the operator&rsquo;s workflow. <a href="https://www.infoq.com/news/2026/07/data-ownership-localfirst/" target="_blank" rel="noopener" style="color:var(--cyan);">Read the Local First Conf 2026 synthesis →</a></p>
-    </aside>
-
-    <nav class="proof-bar" aria-label="ThumbGate install and proof links">
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" target="_blank" rel="noopener">Claude Extension →</a>
-      <a href="/guide" rel="noopener">CLI setup guide</a>
-      <a href="/codex-plugin?utm_source=website&utm_medium=proof_bar&utm_campaign=codex_plugin&cta_id=proof_bar_codex_plugin&cta_placement=proof_bar">Codex plugin setup →</a>
-      <a href="/go/gpt?utm_source=website&utm_medium=proof_bar&utm_campaign=chatgpt_gpt&cta_id=proof_bar_open_gpt&cta_placement=proof_bar" target="_blank" rel="noopener">ThumbGate GPT</a>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence →</a>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/THUMBGATE_BENCH.md" target="_blank" rel="noopener">ThumbGate Bench</a>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/RELEASE_CONFIDENCE.md" target="_blank" rel="noopener">Release confidence</a>
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/actions" target="_blank" rel="noopener">Proof-backed CI</a>
-      <a href="#compatibility">Claude Code · Cursor · Codex · Gemini · Amp · Cline · OpenCode</a>
-    </nav>
-    <div class="marketing-test-copy" hidden>
-      <div class="hero-thumbs">👍👎</div>
-      <a class="signal-pill signal-up">Accepted feedback becomes local lessons</a>
-      <a class="signal-pill signal-down">Evaluate proposed tool calls before execution</a>
-      <p class="hero-persona">For consultancies, platform teams, and AI product teams that want workflow governance, CLI-first rollout, and a reliable operator.</p>
-      <p>Have one AI-agent failure that keeps repeating? Start with one real workflow, one repeated failure pattern, enforceable pre-action gates, and a short audit trail your team can keep.</p>
-      <p>Prove one evaluated repeat before asking anyone to buy. Give <code>thumbs up</code> when the agent follows your standards and a concrete <code>thumbs down</code> when it misses. Upgrade when the individual operator needs higher limits, recall, a personal dashboard, or exports.</p>
-      <p>Workflow governance for isolated execution: ThumbGate pairs policy checks with Docker Sandboxes, signed hosted sandbox dispatch, Changeset evidence, and exact main-branch merge commit verification before release claims ship.</p>
-      <!--
-        Hidden test/asserter strings — required by tests/public-landing.test.js regex assertions
-        (dashboard-preview tokens, ChatGPT/GPT messaging, and team-pilot-intake-form
-        attribute names). These strings are
-        intentionally not user-visible body text. Do not render. If you remove this block,
-        update the test assertions in the same PR.
-      -->
-      <div hidden aria-hidden="true" data-thumbgate-test-anchors style="display:none">
-        <span data-anchor="visual-conversion-required"> Persistent agent skills create reusable instructions.
-            Install free. btn-install-link.
-          Block your first repeated AI mistake quickly. First-Dollar Activation Path. Prove one caught repeat before asking anyone to buy.
-          Upgrade after one real caught repeat. Native ChatGPT rating buttons are not the ThumbGate capture path.
-          Give thumbs up when the agent follows your standards. thumbs up: this review named exact files. thumbs down: the answer ignored my request.
-          solo side lane. workflow governance. Persistent Agent Skills. CLI-first. Reliable operator for product teams.
-          Have one AI-agent failure that keeps repeating? one real workflow, one repeated failure pattern, enforceable pre-action gates.
-          Reusable instructions are the new baseline. Enforcement is the moat.
-          Grok-style skills are training users to expect persistent expertise.
-          Persistent skills tell an agent what you prefer. ThumbGate checks whether the next action follows those preferences.
-          Every fired rule carries the source lesson, decision trace, and audit evidence.
-          Native thumbs are a black box. ThumbGate is the inspectable control layer.
-          Codex, Claude Code, ChatGPT, and other agent surfaces can collect preference signals.
-          typed feedback becomes a local lesson. gate results expose the matched check and decision reason available at evaluation time.
-          Lessons live in your ThumbGate store. exported as JSONL or DPO pairs.
-          The final decision is not another model opinion.
-          checks tool name, arguments, working directory, command shape, confidence, and required evidence.
-          Why this matters now. Agent security is now mainstream risk. MCP adoption is accelerating. Repeated failures waste cash and trust.
-          lower credible conversion bound beats zero. Pro unlocks recall, proof, exports.
-          Self-governance is an operator writing local rules and keeping local logs.
-          Logs describe the damage. ThumbGate evaluates the proposed action before it runs.
-          Logs describe the damage. ThumbGate flags the risky action before it runs.
-          allow, warn, or deny decision. Reviewable decision trail. fields available for that evaluation.
-          hosted team sync, org dashboards, SSO, SIEM, and compliance packaging are not general-availability.
-          signed evidence bundles. without giving the agent unilateral authority over the rules.
-          pre-action decision. Enterprise plans start through intake. Custom — scoped after intake.
-          Compare plans at a glance. 2/day, 10 total. 3 active rules. $19/mo or $149/yr.
-          behavioral immune system. PreToolUse hook enforcement. prompt evaluation. one real caught repeat.
-          workflow owner needs approval boundaries. What is the ThumbGate tech stack?
-          How is ThumbGate different from model-training feedback loops?
-          What AI agents does ThumbGate work with?
-          Do I have to chat inside the ThumbGate GPT for enforcement?
-          When should I use Pro versus the Workflow Hardening Sprint?
-          How are pre-action checks different from prompt rules?
-          How does ThumbGate fit the agentic development cycle?
-          Browse the guide library.
-        </span>
-
-        <span data-anchor="dashboard-preview">dashboard-preview What your Pro dashboard looks like check:no-force-push</span>
-        <span data-anchor="team-intake-form">Start Enterprise Pilot Intake id="team-pilot-intake-form" data-team-intake-form name="ctaPlacement" value="team_visible_intake" name="utmMedium" value="visible_team_intake" name="planId" value="team" name="ctaId" value="workflow_sprint_intake" Enterprise checkout happens after scope. team_workflow_sprint_recovery_intake scope_first workflow_sprint_intake_started workflow_sprint_intake_submit_attempted pricing_team_intake team_intake_started</span>
-        <span data-anchor="chatgpt-context">No, you do not have to chat inside the GPT forever. ChatGPT is a discovery and checkpointing surface. Do not rely on ChatGPT's native rating buttons for ThumbGate memory. Explore GPTs choose the GPT by Igor Ganapolsky Programming Do I have to chat inside the ThumbGate GPT for enforcement? capture typed thumbs-up/down feedback Local allow/warn/deny enforcement for coding agents requires a configured integration adapters/chatgpt/INSTALL.md Native ChatGPT rating buttons are not the ThumbGate capture path. thumbs up: this review named exact files, commands, and tests. thumbs down: the answer ignored my request.</span>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- DIAGRAMS: visual product explanation (conversion-critical) -->
-<section class="diagram-strip" id="diagrams" aria-label="How ThumbGate works in pictures">
-  <div class="container">
-    <div class="section-label">See it in 10 seconds</div>
-    <h2 class="section-title" style="margin-bottom:8px;">Simple pictures. No essay required.</h2>
-    <p style="text-align:center;color:var(--text-muted);max-width:640px;margin:0 auto 20px;font-size:15px;line-height:1.5;">ThumbGate is a local pre-action gate for AI coding agents. Feedback becomes rules. Rules evaluate the next tool call before it runs.</p>
-    <div class="diagram-grid">
-      <figure class="diagram-card">
-        <img src="/assets/diagrams/loop.svg" alt="ThumbGate loop: agent proposes tool, ThumbGate allows warns or denies, feedback becomes a rule" width="720" height="220" loading="lazy" />
-        <figcaption><strong>1. The loop</strong><span>Agent proposes → ThumbGate decides ALLOW / WARN / DENY → your feedback becomes the next rule.</span></figcaption>
-      </figure>
-      <figure class="diagram-card">
-        <img src="/assets/diagrams/stack.svg" alt="Stack diagram showing ThumbGate between agent runtime and tools" width="720" height="200" loading="lazy" />
-        <figcaption><strong>2. Where it sits</strong><span>Model → Agent runtime → ThumbGate pre-action gate → shell / git / db. Not another chatbot memory.</span></figcaption>
-      </figure>
-      <figure class="diagram-card">
-        <img src="/assets/diagrams/before-after.svg" alt="Before and after: repeated mistakes without ThumbGate versus one correction with ThumbGate" width="720" height="220" loading="lazy" />
-        <figcaption><strong>3. Before / after</strong><span>Without: the same force-push returns. With: one thumbs-down becomes a check that evaluates the next attempt.</span></figcaption>
-      </figure>
-      <figure class="diagram-card">
-        <img src="/assets/diagrams/decision.svg" alt="Decision tree Free try, Pro solo cash path, Sprint for one hard workflow" width="720" height="260" loading="lazy" />
-        <figcaption><strong>4. What to buy</strong><span>Free to prove it. Pro ($19/mo) for unlimited solo use. Sprint intake when one workflow is burning the team.</span></figcaption>
-      </figure>
-    </div>
-    <div class="cash-path" id="cash-path">
-      <h3>One cash path (no offer soup)</h3>
-      <p><strong>Install Free → catch one repeat → Upgrade to Pro $19/mo.</strong> Team / Enterprise is intake-only after you name one repeated failure. No competing experimental ladders on this page.</p>
-      <div class="cash-path-actions">
-        <a href="/go/install?utm_source=website&utm_medium=cash_path&utm_campaign=install_free&cta_id=cash_path_install&cta_placement=diagrams" class="btn-free btn-install-link" onclick="event.preventDefault();navigator.clipboard.writeText('npx thumbgate init');this.textContent='Copied';setTimeout(()=>{this.textContent='Install free.'},2000);">Install free.</a>
-        <a href="/checkout/pro?utm_source=website&utm_medium=cash_path&utm_campaign=pro_upgrade&cta_id=cash_path_pro&cta_placement=diagrams&plan_id=pro&landing_path=%2F" class="btn-pro" data-revenue-cta data-cta-id="cash_path_pro" data-cta-placement="diagrams" data-plan-id="pro" data-price="19" onclick="if(typeof trackRevenueCta==='function'){trackRevenueCta(this);}">Upgrade to Pro — $19/mo</a>
-        <a href="#workflow-sprint-intake" class="btn-team" style="padding:10px 14px;font-size:13px;">One hard workflow? Start sprint intake →</a>
-      </div>
-      <div class="honesty-pill" role="note">Honest defaults: secrets and gate-bypass <strong>deny</strong>; destructive deletes and force-push <strong>warn</strong> unless <code style="color:#fecaca">THUMBGATE_STRICT_ENFORCEMENT=1</code>.</div>
-    </div>
-  </div>
-</section>
-
-
-<section class="compatibility section-tight" id="why-not-diy" aria-label="Why not write your own hooks">
-  <div class="container">
-    <h2>“Why not just write my own PreToolUse hooks?”</h2>
-    <p class="hero-lede" style="max-width:720px;margin:0 auto 12px;text-align:center;">You can — on one machine, for one agent, until the next breaking change. ThumbGate is that idea, maintained: accepted feedback becomes local lessons, recurring failures become explicit rules, reused across configured Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode integrations.</p>
-    <p style="text-align:center;"><a href="/compare/claude-code-hooks">See ThumbGate vs. hand-written hooks →</a></p>
-  </div>
-</section>
-
-<section class="compatibility" id="june-2026-proof" class="section-tight">
-  <div class="container">
-    <div class="section-label">June 2026 Market Signal</div>
-    <h2 class="section-title">The market moved from “agents can code” to “who is allowed to let agents act?”</h2>
-    <p style="text-align:center;font-size:15px;color:var(--text-muted);max-width:720px;margin:0 auto 18px;line-height:1.55;">Buyers now care who is allowed to let agents act. Tool lockdown, managed agents, and AI-authored production code all need a pre-action gate — not more logs after the damage.</p>
-    <div class="agent-grid">
-      <div class="agent-card">
-        <h3>MCP and tool lockdown</h3>
-        <p>As MCP servers and hosted tools spread, the failure mode is no longer just a bad answer. It is an agent calling the wrong tool with real developer permissions. ThumbGate provides a local allow, warn, or deny decision before a configured tool call executes.</p>
-      </div>
-      <div class="agent-card">
-        <h3>Managed agents need receipts</h3>
-        <p>Managed background agents can multiply output, but every extra autonomous run needs evidence, rollback boundaries, and approval rules. ThumbGate records why a configured pre-action check allowed, warned on, or denied a proposed action.</p>
-      </div>
-      <div class="agent-card">
-        <h3>Tokenmaxxing backlash</h3>
-        <p>Long-context agents are expensive when they repeatedly reload irrelevant history. ThumbGate keeps paid value above the free wedge with recall, search, context gating, and proof exports instead of dumping everything into every prompt.</p>
-      </div>
-      <div class="agent-card">
-        <h3>Production code by AI</h3>
-        <p>When teams claim most new production code is AI-authored, the real enterprise question becomes auditability. ThumbGate can promote accepted recurring corrections into prevention rules and retain the local gate evidence available to reviewers.</p>
-      </div>
-    </div>
-    <div style="margin:22px auto 0;max-width:900px;border:1px solid rgba(74,222,128,0.26);border-radius:8px;background:rgba(74,222,128,0.07);padding:16px 18px;color:var(--text-muted);">
-      <strong style="color:var(--green);">Data-science posture:</strong> treat Pro checkout starts and workflow-intake submissions as intent, not revenue. Make conversion or traction claims only from authenticated billing and analytics telemetry; this page does not publish a current customer or revenue count.
-    </div>
-  </div>
-</section>
-
-<section class="compatibility" id="agentic-development-cycle">
-  <div class="container">
-    <div class="section-label">Agentic Development Cycle</div>
-    <h2 class="section-title">Guide, Generate, Verify, Solve still needs an execution gate.</h2>
-    <p style="text-align:center;font-size:15px;color:var(--text-muted);max-width:760px;margin:0 auto 18px;line-height:1.55;">Agentic Development Cycle is a control loop, not a codegen trick. <a href="https://thenewstack.io/agentic-development-cycle-framework/" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:underline;">The New Stack's May 2026 AC/DC framing</a> names Guide, Generate, Verify, and Solve. ThumbGate's role: the pre-action gate between generated intent and executed action.</p>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;max-width:1080px;margin:0 auto;" aria-label="Agentic development cycle stages">
-      <a class="cycle-card" href="/learn/feedback-loop-vs-decision-layer" rel="noopener" aria-label="Learn how Guide turns feedback into enforceable rules" onclick="try{posthog.capture('agentic_cycle_card_click',{stage:'guide'})}catch(_){}">
-        <h3>Guide</h3>
-        <p>Rules, standards, past thumbs-downs, workflow boundaries, and approval policies are loaded as concrete operating context instead of vague prompt advice.</p>
-        <div class="card-arrow">See how feedback becomes rules →</div>
+  <nav class="site-nav" aria-label="Primary navigation">
+    <div class="shell nav-inner">
+      <a class="nav-logo" href="/" aria-label="ThumbGate home">
+        <img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="" width="31" height="31">
+        <span class="logo-text">ThumbGate</span>
       </a>
-      <a class="cycle-card" href="/guide" rel="noopener" aria-label="Open the setup guide for AI agents that generate plans edits and tool calls" onclick="try{posthog.capture('agentic_cycle_card_click',{stage:'generate'})}catch(_){}">
-        <h3>Generate</h3>
-        <p>Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and MCP-compatible agents keep generating plans, edits, and tool calls.</p>
-        <div class="card-arrow">Open the agent setup guide →</div>
-      </a>
-      <a class="cycle-card" href="/learn/ac-dc-runtime-enforcement" rel="noopener" aria-label="Read the AC/DC mapping framework article" onclick="try{posthog.capture('agentic_cycle_card_click',{stage:'verify'})}catch(_){}">
-        <h3>Verify</h3>
-        <p>Pre-Action Checks can require inspection evidence, tests, CI, screenshots, API responses, or human approval for configured high-risk actions.</p>
-        <div class="card-arrow">Read the AC/DC map →</div>
-      </a>
-      <a class="cycle-card" href="/lessons" rel="noopener" aria-label="Explore the lessons library and generated rules" onclick="try{posthog.capture('agentic_cycle_card_click',{stage:'solve'})}catch(_){}">
-        <h3>Solve</h3>
-        <p>Accepted feedback can become local lessons and recurring failures can become rules. Pro operators can export DPO data and lesson bundles for separately reviewed reuse.</p>
-        <div class="card-arrow">Explore the lessons →</div>
-      </a>
+      <div class="nav-links">
+        <a href="#how-it-works">How it works</a>
+        <a href="#deliverables">What you get</a>
+        <a href="#proof">Proof</a>
+        <a class="nav-buy" href="#buy" data-offer-link data-cta-id="nav_diagnostic_buy">Buy the $499 managed gate</a>
+      </div>
     </div>
-    <div style="max-width:900px;margin:22px auto 0;padding:16px 18px;border:1px solid rgba(74,222,128,0.28);border-radius:8px;background:rgba(74,222,128,0.07);">
-      <strong style="display:block;color:var(--green);margin-bottom:6px;">ThumbGate's role: the pre-action gate between generated intent and executed action.</strong>
-      <p style="margin:0;color:var(--text-muted);font-size:14px;line-height:1.65;">Verification after a pull request is useful, but it is too late for force-pushes, destructive SQL, unsafe deploys, leaked secrets, and costly external API calls. ThumbGate checks the action before it runs, then feeds the result back into the next Guide and Solve cycle.</p>
-    </div>
-  </div>
-</section>
+  </nav>
 
-<!-- CODE EXAMPLE — moved up for conversion: show the product immediately after hero -->
-<section class="code-section">
-  <div class="container">
-    <div class="code-block" style="box-shadow:0 0 40px rgba(34,211,238,0.08);">
-      <div class="code-header">
-        <div class="code-dot red"></div>
-        <div class="code-dot yellow"></div>
-        <div class="code-dot green"></div>
-        <span>terminal — local setup</span>
-      </div>
-      <div class="code-body" style="font-size:14px;">
-        <div><span class="comment"># Install the local CLI</span></div>
-        <div><span class="fn">npx</span> thumbgate init</div>
-        <div>&nbsp;</div>
-        <div><span class="comment"># Your agent tries to delete production db...</span></div>
-        <div><span class="keyword">⚠️ Check flagged:</span> <span class="string">"Never run DROP on production tables"</span> <span class="comment"># blocks under strict mode</span></div>
-        <div><span class="comment"># Rule promoted from accepted recurring feedback</span></div>
-        <div>&nbsp;</div>
-        <div><span class="comment"># Matching warning-mode checks deny when strict mode is enabled.</span></div>
-      </div>
-    </div>
-    <p style="text-align:center;margin-top:16px;font-size:14px;color:var(--text-muted);">Install the local runtime, capture concrete feedback, and inspect the resulting lessons and checks.</p>
-  </div>
-</section>
-
-<section class="compatibility" id="deterministic-prevention">
-  <div class="container">
-    <div class="section-label">Deterministic Prevention</div>
-    <h2 class="section-title">Native thumbs are a black box. ThumbGate is the inspectable control layer.</h2>
-    <p style="text-align:center;font-size:16px;color:var(--text-muted);max-width:900px;margin:0 auto 28px;line-height:1.7;">Codex, Claude Code, ChatGPT, and other agent surfaces can collect preference signals, but you usually cannot see exactly what changed, which rule will fire, or why a future tool call is allowed. ThumbGate keeps the prevention layer outside the model: accepted typed feedback becomes a local lesson, recurring failures can become explicit rules, and gate results expose the matched check and decision reason available at evaluation time.</p>
-    <div class="agent-grid">
-      <div class="agent-card">
-        <h3>Black-box memory</h3>
-        <p>Native thumbs and vendor memories may improve future behavior, but they do not provide ThumbGate's explicit local allow, warn, or deny contract at the moment a configured agent touches files, terminals, APIs, or CI.</p>
-      </div>
-      <div class="agent-card">
-        <h3>Inspectable ThumbGate memory</h3>
-        <p>Lessons live in your ThumbGate store, can be searched, exported as JSONL or DPO pairs, and traced back to the exact correction that created the rule.</p>
-      </div>
-      <div class="agent-card">
-        <h3>Rules before execution</h3>
-        <p>The final decision is not another model opinion. ThumbGate checks tool name, arguments, working directory, command shape, confidence, and required evidence before the action runs.</p>
-      </div>
-    </div>
-    <div style="margin:26px auto 0;max-width:960px;border:1px solid rgba(34,211,238,0.18);border-radius:8px;background:rgba(34,211,238,0.05);padding:18px 20px;">
-      <h3 style="margin:0 0 10px;color:var(--text);font-size:18px;">Why this matters now</h3>
-      <ul style="margin:0;padding-left:20px;color:var(--text-muted);line-height:1.7;">
-        <li><strong>Agent security is now mainstream risk.</strong> Coding agents run shell commands, write files, query databases, and chain actions with developer permissions, so unattended autonomy needs a local policy boundary.</li>
-        <li><strong>MCP adoption is accelerating.</strong> More tools are becoming agent-callable through shared protocols, which means one cross-agent governance layer beats one-off prompt rules per app.</li>
-        <li><strong>Managed-agent output needs audit evidence.</strong> Background agents, subagents, and workflow runners can ship more work, but buyers need receipts for what was blocked, approved, and verified.</li>
-        <li><strong>Repeated failures waste cash and trust.</strong> Repeats can burn tokens, review time, and release confidence. ThumbGate can promote accepted recurring feedback into a reusable prevention check.</li>
-      </ul>
-      <p style="margin:12px 0 0;font-size:13px;color:var(--text-dim);">Sources to verify the market timing: <a href="https://www.docker.com/blog/ai-coding-agent-horror-stories-security-risks/" target="_blank" rel="noopener" style="color:var(--cyan);">Docker on AI coding agent security risks</a>, <a href="https://www.techradar.com/pro/how-ai-agents-are-wrecking-havoc-in-legacy-security-setups-and-enterprises-are-catching-up" target="_blank" rel="noopener" style="color:var(--cyan);">TechRadar on enterprise agent security pressure</a>, and <a href="https://www.techradar.com/pro/zendesk-becomes-the-latest-to-adopt-mcp-to-futureproof-customers-in-the-ai-first-era" target="_blank" rel="noopener" style="color:var(--cyan);">current MCP adoption coverage</a>.</p>
-    </div>
-  </div>
-</section>
-
-<section class="marketing-deep-dive" style="padding:28px 0 10px;">
-  <div class="container" style="max-width:1240px;">
-    <div class="section-label">Status bar proof</div>
-    <h2 style="text-align:center;margin-bottom:12px;">See the footer before you ship the next repeat.</h2>
-    <p style="text-align:center;font-size:16px;color:var(--text-muted);max-width:860px;margin:0 auto 28px;line-height:1.7;">Claude renders the live ThumbGate footer now. <code>npx thumbgate init --agent codex</code> installs the same Codex hook bundle and writes the ThumbGate <code>statusLine</code> target so you can test it on your local Codex build immediately.</p>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;align-items:start;">
-      <figure style="margin:0;">
-        <img src="/assets/claude-thumbgate-statusbar.svg" alt="Claude Code terminal footer showing ThumbGate version, plan, thumbs up and thumbs down counts, dashboard, lessons, and latest mistake." style="width:100%;height:auto;display:block;border-radius:14px;border:1px solid var(--border);background:#050816;">
-        <figcaption style="margin-top:10px;font-size:14px;color:var(--text-muted);line-height:1.6;">Claude live footer with ThumbGate stats, links, and the latest mistake summary.</figcaption>
-      </figure>
-      <figure style="margin:0;">
-        <img src="/assets/codex-thumbgate-statusbar-test.svg" alt="OpenAI Codex terminal footer on the published ThumbGate test lane." style="width:100%;height:auto;display:block;border-radius:14px;border:1px solid var(--border);background:#050816;">
-        <figcaption style="margin-top:10px;font-size:14px;color:var(--text-muted);line-height:1.6;">Codex test lane after the published ThumbGate install path writes PreToolUse, UserPromptSubmit, PostToolUse, SessionStart, and the statusLine target.</figcaption>
-      </figure>
-    </div>
-  </div>
-</section>
-
-<!-- CLAUDE CODE SECTION -->
-<section class="gpt-path" id="claude-code-section">
-  <div class="container">
-    <div class="gpt-panel" style="border-color:rgba(217,119,6,0.3);background:linear-gradient(135deg, rgba(217,119,6,0.06) 0%, rgba(34,211,238,0.04) 100%);">
-      <div class="section-label" style="text-align:left;color:#d97706;">Claude Code · Claude Desktop · Claude Extension</div>
-      <h2>Configure ThumbGate for Claude Code or Claude Desktop.</h2>
-      <p>ThumbGate ships a published Claude Desktop extension bundle (<code>.mcpb</code>) you can install today. Claude Code users can also add the repo marketplace plugin immediately. No waiting for directory approval.</p>
-      <div class="gpt-steps">
-        <div class="gpt-step">
-          <strong>1. Install for Claude Code</strong>
-          <p>Run <code>npx thumbgate init --agent claude-code</code> or add via <code>claude mcp add thumbgate -- npx --yes --package thumbgate thumbgate serve</code></p>
+  <main>
+    <!-- HERO -->
+    <section class="hero">
+      <div class="shell hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">One workflow. One failure. One enforceable boundary.</div>
+          <h1>Stop the AI-agent mistake that keeps happening.</h1>
+          <p class="hero-lede">ThumbGate turns one repeated risky workflow into a clear block, warning, or human-review rule—with a test your team can verify.</p>
+          <p class="fit-line"><strong>Built for engineering leads</strong> using Claude Code, Cursor, Codex, or similar agents after a real workflow failure.</p>
+          <a class="proof-link" href="#proof">See a strict-mode deny example ↓</a>
         </div>
-        <div class="gpt-step">
-          <strong>2. Or install the Claude Extension</strong>
-          <p>Download the <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" style="color:#d97706;font-weight:600;">.mcpb bundle</a> for Claude Desktop, or use the repo marketplace: <code>/plugin marketplace add IgorGanapolsky/ThumbGate</code></p>
+        <form id="buy" class="checkout-card" action="/go/diagnostic-pay" method="POST" data-primary-checkout>
+          <input type="hidden" name="utm_source" value="website">
+          <input type="hidden" name="utm_medium" value="homepage_checkout">
+          <input type="hidden" name="utm_campaign" value="managed_workflow_gate">
+          <input type="hidden" name="utm_content" value="hero_direct_checkout">
+          <input type="hidden" name="cta_id" value="homepage_diagnostic_buy">
+          <input type="hidden" name="cta_placement" value="hero">
+          <input type="hidden" name="plan_id" value="sprint_diagnostic">
+          <input type="hidden" name="landing_path" value="/">
+          <div class="price"><strong>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</strong><span>one time</span></div>
+          <h2>Managed AI Agent Workflow Gate</h2>
+          <p>Bring the failure. Leave with one configured gate and proof it works.</p>
+          <label for="buyer-email">Work email for the receipt</label>
+          <input id="buyer-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
+          <button class="button-primary" type="submit" data-revenue-cta data-cta-id="homepage_diagnostic_buy" data-cta-placement="hero">Continue to secure $499 checkout</button>
+          <p class="checkout-note">Secure Stripe checkout. No subscription.</p>
+          <ul class="offer-points">
+            <li>60-minute working review for one workflow</li>
+            <li>One configured local gate and its regression test</li>
+            <li>Rollout and rollback proof within two business days</li>
+          </ul>
+        </form>
+      </div>
+    </section>
+
+    <section id="how-it-works">
+      <div class="shell">
+        <div class="section-kicker">The whole product loop</div>
+        <h2 class="section-title">The action gets checked before the tool runs.</h2>
+        <p class="section-lede">No governance novel. ThumbGate sits between an agent’s proposed action and the shell, database, browser, or deployment it wants to touch.</p>
+        <div class="loop" role="img" aria-label="Agent proposes an action, ThumbGate checks the action, then the action is allowed, warned, or denied">
+          <article class="loop-step">
+            <span class="loop-number">1</span>
+            <h3>Agent proposes</h3>
+            <p>A coding agent asks to run a command, write a file, call a tool, or perform another governed action.</p>
+          </article>
+          <article class="loop-step">
+            <span class="loop-number">2</span>
+            <h3>ThumbGate checks</h3>
+            <p>Local rules evaluate the proposed action, the configured mode, and the available workflow context.</p>
+          </article>
+          <article class="loop-step">
+            <span class="loop-number">3</span>
+            <h3>Decision before execution</h3>
+            <p>The runtime returns a decision the agent must handle before the tool proceeds.</p>
+            <div class="decisions" aria-label="Possible decisions">
+              <span class="decision allow">ALLOW</span>
+              <span class="decision warn">WARN</span>
+              <span class="decision deny">DENY</span>
+            </div>
+          </article>
         </div>
-        <div class="gpt-step">
-          <strong>3. Give feedback, checks auto-generate</strong>
-          <p>Type a concrete <code>thumbs down</code> when Claude makes a mistake. Accepted feedback can distill a lesson from up to 8 prior entries, and recurring failures can become rules evaluated by the configured PreToolUse hook. Detected secret exfiltration is denied by default; strict mode also denies matching warning-mode checks.</p>
+        <p class="loop-back"><strong>👍 accepted behavior or 👎 a correction</strong> can become a reviewable local lesson, then an explicit rule for the next action.</p>
+      </div>
+    </section>
+
+    <section id="deliverables">
+      <div class="shell">
+        <div class="section-kicker">What the $499 buys</div>
+        <h2 class="section-title">A managed gate for one painful workflow.</h2>
+        <p class="section-lede">This is a fixed implementation wedge, not a vague discovery call and not an enterprise platform promise.</p>
+        <div class="deliverables">
+          <article class="deliverable">
+            <h3>Failure map</h3>
+            <p>The exact risky action, trigger, accountable owner, current safeguard, and missing proof.</p>
+          </article>
+          <article class="deliverable">
+            <h3>Configured gate</h3>
+            <p>One supported local rule wired to deny, warn, or require a human before execution.</p>
+          </article>
+          <article class="deliverable">
+            <h3>Regression and rollout proof</h3>
+            <p>The working test, rollout check, rollback boundary, and evidence receipt for the installed gate.</p>
+          </article>
+        </div>
+        <div class="boundary"><strong>Boundary:</strong> the offer covers one supported local workflow. Multi-system implementation, legal or compliance certification, guaranteed savings, and hosted team features require separate scope. If the workflow cannot be reduced to one supported gate, the order is refunded instead of silently upsold.</div>
+      </div>
+    </section>
+
+    <section id="proof">
+      <div class="shell">
+        <div class="section-kicker">What “stop” honestly means</div>
+        <h2 class="section-title">Hard deny where configured. Honest warning everywhere else.</h2>
+        <div class="proof-grid">
+          <div class="terminal" aria-label="Illustrative strict-mode ThumbGate deny decision">
+            <div class="terminal-bar" aria-hidden="true"><span></span><span></span><span></span></div>
+            <pre><span class="green">proposed</span>  git push --force origin main
+mode      strict enforcement
+rule      protect-main
+decision  <span class="red">DENY</span>
+reason    force-push to protected branch</pre>
+          </div>
+          <div class="proof-copy">
+            <p>Detected secret exfiltration and attempts to kill or bypass the gate process are denied by default. Matching destructive actions warn by default and deny in strict mode.</p>
+            <p>The example shows the strict-mode decision the managed install would specify and test. It is not a claim that every free install blocks every risky command automatically.</p>
+            <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Read the test-backed verification evidence →</a>
+          </div>
         </div>
       </div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;">
-        <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('claude_section_extension_click',{cta:'install_claude_extension'})" style="background:#d97706;color:#fff;">Download Claude Extension (.mcpb)</a>
-        <a href="/guide" class="btn-free" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">Claude Desktop setup guide</a>
-        <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/.claude-plugin/README.md" class="btn-free" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">Claude plugin docs</a>
-      </div>
-      <p class="gpt-note"><strong>Claude Code Skill:</strong> Type <code>/thumbgate</code> in any Claude Code session. Auto-triggers on “check”, “feedback”, “block mistake”. Free skill on top of the same local gateway.</p>
-    </div>
-  </div>
-</section>
+    </section>
 
-<!-- CHATGPT GPT SECTION -->
-<section class="gpt-path" id="thumbgate-gpt">
-  <div class="container">
-    <div class="gpt-panel">
-      <div class="section-label" style="text-align:left;">ChatGPT Entry Point · Live ThumbGate GPT for ChatGPT</div>
-      <h2>Use the GPT as a preflight desk for risky commands, refunds, deploys, and PR actions.</h2>
-      <p>The live GPT is a ChatGPT entrypoint for preflighting a proposed action and finding setup guidance. It does not create a local execution boundary by itself. Local allow, warn, or deny decisions require <code>npx thumbgate init</code> plus the documented integration for the agent that executes the tool call.</p>
-      <div class="gpt-steps">
-        <div class="gpt-step">
-          <strong>1. Open the live GPT</strong>
-          <p>Paste a proposed command, file edit, merge, deploy, refund, invoice, or API call and ask whether to allow, block, or checkpoint it.</p>
-        </div>
-        <div class="gpt-step">
-          <strong>2. Save the typed signal</strong>
-          <p>Reply in chat with <code>thumbs up:</code> or <code>thumbs down:</code> plus one concrete sentence. Do not rely on ChatGPT's native rating buttons for ThumbGate memory.</p>
-        </div>
-        <div class="gpt-step">
-          <strong>3. Enforce locally</strong>
-          <p>Run <code>npx thumbgate init</code> in the repo and configure the documented agent integration so Pre-Action Checks evaluate proposed tool calls before execution. The default policy denies detected secret exfiltration plus commands that kill the gate process or enable its bypass variable.</p>
+    <section id="faq">
+      <div class="shell">
+        <div class="section-kicker">Before you buy</div>
+        <h2 class="section-title">Three questions, answered plainly.</h2>
+        <div class="faq-list">
+          <div class="faq-item open">
+            <button class="faq-q" type="button" aria-expanded="true">What do I get for $499?</button>
+            <div class="faq-a">One 60-minute working review for one repeated AI-agent workflow failure, one configured local gate for a supported workflow, its regression test, and a written rollout and rollback proof within two business days after access and the agreed materials are available.</div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-q" type="button" aria-expanded="false">Does ThumbGate block every risky command by default?</button>
+            <div class="faq-a">No. Detected secret exfiltration and gate-process bypass attempts are denied by default. Matching destructive actions warn unless strict enforcement is enabled. The managed gate defines the right boundary for your workflow instead of pretending every warning is a firewall.</div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-q" type="button" aria-expanded="false">Who is this managed gate for?</button>
+            <div class="faq-a">Engineering leads and hands-on operators using Claude Code, Cursor, Codex, or similar agents who can point to one repeated failure involving a repository, terminal, database, deployment, browser, or outbound action.</div>
+          </div>
         </div>
       </div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;">
-        <a href="/go/gpt?utm_source=website&utm_medium=gpt_section&utm_campaign=chatgpt_gpt&cta_id=gpt_path_open_gpt&cta_placement=gpt_section" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('gpt_path_cta_click',{cta:'open_gpt'})">Open ThumbGate GPT</a>
-        <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/adapters/chatgpt/INSTALL.md" class="btn-free" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">ChatGPT Actions setup</a>
-        <a href="/guides/chatgpt-ads-trust" class="btn-free" style="display:inline-flex;align-items:center;padding:12px 20px;border-radius:8px;">Why ChatGPT ads need checks</a>
-      </div>
-      <p class="gpt-note"><strong>Find it fast:</strong> if the direct link does not open, go to <strong>Explore GPTs</strong>, search <code>ThumbGate</code>, and choose the GPT by Igor Ganapolsky in <strong>Programming</strong>. <strong>Plain English rule:</strong> ChatGPT is the discovery and checkpointing surface. Accepted typed feedback can become a local lesson; recurring failures can become rules. The Reliability Gateway still runs in the configured local agent or CI lane.</p>
-    </div>
-  </div>
-</section>
+    </section>
 
-<section class="compatibility" id="compatibility">
-  <div class="container">
-    <div class="section-label">Compatibility</div>
-    <h2 class="section-title">One gateway across the agent surfaces you already use</h2>
-    <div class="compatibility-grid">
-      <a class="compat-card" href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" target="_blank" rel="noopener" onclick="if(typeof posthog!=='undefined')posthog.capture('compat_claude_desktop_click',{cta:'download_claude_desktop'})" style="border-color:rgba(217,119,6,0.3);background:linear-gradient(135deg, rgba(217,119,6,0.06) 0%, var(--bg-card) 100%);">
-        <h3>🧩 Claude Desktop Extension</h3>
-        <p>Install the published Claude Desktop plugin <code>.mcpb</code> bundle today. Claude Code users can add the repo marketplace immediately with <code>/plugin marketplace add</code>. No waiting for directory approval.</p>
-        <div class="card-arrow" style="color:#d97706;">Download .mcpb bundle →</div>
-      </a>
-      <a class="compat-card seo-card" href="/guides/claude-code-prevent-repeated-mistakes" rel="noopener">
-        <h3>⚡ Claude Code Skill</h3>
-        <p>Type <code>/thumbgate</code> in any Claude Code session. Auto-triggers on "check", "feedback", "block mistake". Free skill on top of the same local gateway teams later harden into a shared workflow.</p>
-        <div class="card-arrow">Read the Claude Code guide →</div>
-      </a>
-      <a class="compat-card" href="/guide" rel="noopener">
-        <h3>🤖 AI CLIs</h3>
-        <p>Claude Code, Codex, Gemini CLI, Amp, and OpenCode can use the same gateway and memory model after their documented integration is configured. Other MCP-compatible agents require an equivalent MCP or hook setup.</p>
-        <div class="card-arrow">Open the setup guide →</div>
-      </a>
-      <a class="compat-card seo-card" href="/guides/hermes-agent-guardrails" rel="noopener">
-        <h3>☤ Hermes Agent guardrails</h3>
-        <p>Hermes-style agents bring persistent memory, generated skills, messaging gateways, scheduled automations, and sandboxed execution. ThumbGate adds the safer self-evolution loop: propose rule and skill changes from failures, then gate them with evidence before anything overwrites stable instructions or repeats an expensive action.</p>
-        <div class="card-arrow">Read the Hermes guardrails guide →</div>
-      </a>
-      <a class="compat-card seo-card" href="/guides/vllm-serving-guardrails" rel="noopener">
-        <h3>vLLM serving guardrails</h3>
-        <p>vLLM makes self-hosted inference cheaper and faster with PagedAttention, continuous batching, chunked prefill, prefix caching, and optimized kernels. ThumbGate gates the routing change with latency, cache-isolation, benchmark, and rollback proof before agent traffic moves.</p>
-        <div class="card-arrow">Read the vLLM guardrails guide →</div>
-      </a>
-      <a class="compat-card seo-card" href="/guides/agent-context-governance" rel="noopener">
-        <h3>Context and tool governance</h3>
-        <p>Long-running agents need cleaner working context, approved model routes, isolated execution, tool lockdown, direct pushback, and evidence before high-risk actions. ThumbGate turns those controls into local pre-action gates.</p>
-        <div class="card-arrow">Read the context governance guide →</div>
-      </a>
-      <a class="compat-card seo-card" href="/guides/gcp-mcp-guardrails" rel="noopener">
-        <h3>☁️ Google Data Agent Kit</h3>
-        <p>When database and IAM operations are exposed as agent tool calls, ThumbGate can evaluate configured patterns such as production DROP, unscoped DELETE, or IAM escalation before execution. The resulting action depends on the matched rule and enforcement mode.</p>
-        <div class="card-arrow">Read the GCP guardrails guide →</div>
-      </a>
-      <a class="compat-card" href="/codex-plugin?utm_source=website&utm_medium=compatibility&utm_campaign=codex_plugin&cta_id=compat_codex_plugin&cta_placement=compatibility" rel="noopener" onclick="if(typeof posthog!=='undefined')posthog.capture('compat_codex_plugin_click',{cta:'open_codex_plugin_page'})">
-        <h3>🧩 Codex plugin</h3>
-        <p>Codex gets a standalone ThumbGate plugin bundle, a repo-local plugin profile, and the same auto-updating MCP launcher. The runtime resolves <code>thumbgate@latest</code> when Codex starts, so npm fixes reach active installs. The install page includes the zip, MCP config, and verification path in one place.</p>
-        <div class="card-arrow">Open the Codex install page →</div>
-      </a>
-      <a class="compat-card" href="/guides/cursor-prevent-repeated-mistakes" rel="noopener">
-        <h3>🎯 Cursor integration</h3>
-        <p>Run <code>npx thumbgate init --agent cursor</code> or configure <code>.cursor/mcp.json</code> through the documented setup path. The npm runtime path is separate from any in-app Marketplace listing.</p>
-        <div class="card-arrow">Read the Cursor guide →</div>
-      </a>
-      <a class="compat-card" href="/guide" rel="noopener">
-        <h3>✏️ Editor workflows</h3>
-        <p>VS Code can host an MCP-compatible agent such as Continue or Cline. Each editor or agent still requires its MCP stdio or hook configuration; this repo does not ship a standalone VS Code extension.</p>
-        <div class="card-arrow">Open the setup guide →</div>
-      </a>
-      <a class="compat-card" href="https://mcp.so/server/thumbgate" target="_blank" rel="noopener" onclick="if(typeof posthog!=='undefined')posthog.capture('compat_mcp_so_click',{cta:'view_mcp_directory'})">
-        <h3>🗂️ MCP Server Directory</h3>
-        <p>ThumbGate is listed on <code>mcp.so</code> so MCP-compatible clients can verify the package, copy the npx config, and confirm they are installing the real Pre-Action Checks server.</p>
-        <div class="card-arrow">View on mcp.so →</div>
-      </a>
-      <a class="compat-card" href="/go/gpt?utm_source=website&utm_medium=compatibility&utm_campaign=chatgpt_gpt&cta_id=compat_open_gpt&cta_placement=compatibility" target="_blank" rel="noopener">
-        <h3>💬 ChatGPT GPT Actions</h3>
-        <p>Open the ThumbGate GPT to preflight risky commands, deploys, refunds, PR actions, and setup steps. Local allow, warn, or deny enforcement for coding agents requires <code>npx thumbgate init</code> plus the documented integration setup.</p>
-        <div class="card-arrow">Open ThumbGate GPT →</div>
-      </a>
-    </div>
-  </div>
-</section>
+    <section class="final">
+      <div class="shell">
+        <div class="section-kicker">One cash path</div>
+        <h2 class="section-title">Bring the failure that already cost you time.</h2>
+        <p class="section-lede">We will install the first gate before another agent repeats it.</p>
+        <a class="nav-buy" href="#buy" data-offer-link data-cta-id="final_diagnostic_buy">Buy the $499 managed gate</a>
+      </div>
+    </section>
+  </main>
 
-<section class="compatibility" id="demo">
-  <a id="social-proof" aria-hidden="true"></a>
-  <div class="container">
-    <div class="section-label">See It In Action</div>
-    <h2 class="section-title">See the enforcement before you buy anything</h2>
-    <div class="agent-grid">
-      <div class="agent-card">
-        <h3>🔍 Live Dashboard Demo</h3>
-        <p>Search lessons, inspect checks, mark a review checkpoint, and see only what changed since the last pass. No signup or install required.</p>
-        <a href="/dashboard" style="display:inline-block;margin-top:12px;color:var(--cyan);font-weight:600;text-decoration:underline;">Open Dashboard Demo →</a>
-      </div>
-      <div class="agent-card">
-        <h3>⛔ Check Decisions</h3>
-        <p>Inspect the matched gate, allow/warn/deny decision, and reason returned by the local evaluator.</p>
-      </div>
-      <div class="agent-card">
-        <h3>📊 Local Reports</h3>
-        <p>Generate local dashboard and report views from the operator's available gate and feedback data. A hosted org dashboard is not generally available.</p>
-      </div>
-      <div class="agent-card">
-        <h3>🧱 Isolated Execution Lanes</h3>
-        <p>Workflow Sentinel can recommend Docker Sandboxes for high-risk local actions. The package includes a signed sandbox-dispatch mechanism, but each deployment must configure and verify its isolation boundary.</p>
-      </div>
-      <div class="agent-card">
-        <h3>Data Processing Boundaries</h3>
-        <p>Local enforcement data stays in the operator's ThumbGate feedback directory by default. Checkout, intake, newsletter, and product analytics are separate hosted processing surfaces. Hosted team lesson sync is not generally available.</p>
-      </div>
-      <div class="agent-card">
-        <h3>🧪 Thompson Sampling</h3>
-        <p>Confidence tiers (none/low/medium/high) are available inputs to adaptive rule selection; they do not guarantee a correct decision.</p>
-      </div>
-      <div class="agent-card">
-        <h3>🪞 History-Aware Lessons</h3>
-        <p>When the current Claude auto-capture hook only gets a vague thumbs-down, ThumbGate can reuse up to 8 prior recorded entries plus the failed tool call, then keep a linked 60-second feedback session open for later corrections instead of creating a dead-end note.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="compatibility" id="governance-not-logging">
-  <div class="container">
-    <div class="section-label">Governance, Not Logging</div>
-    <h2 class="section-title">Logs describe the damage. ThumbGate evaluates the proposed action before it runs.</h2>
-    <p style="color:var(--text-dim);max-width:820px;margin:0 auto 22px;">Self-governance is an operator writing local rules and keeping local logs. ThumbGate starts there, then evaluates configured checks as an allow, warn, or deny decision before the tool call touches code, data, money, or customers.</p>
-    <div class="agent-grid">
-      <div class="agent-card">
-        <h3>Pre-action enforcement</h3>
-        <p>The rule is evaluated at the execution boundary, not after the fact. Matching failures are evaluated before configured shell commands, PR actions, deploys, refunds, or production writes run. Detected secret exfiltration and gate kill/bypass commands deny by default; strict mode also denies matching warning-mode checks.</p>
-      </div>
-      <div class="agent-card">
-        <h3>Reviewable decision trail</h3>
-        <p>Gate records expose the fields available for that evaluation, including its decision, matched gate, reason, and provided context, so reviewers can inspect local evidence instead of trusting an agent summary.</p>
-      </div>
-      <div class="agent-card">
-        <h3>Enterprise governance mode</h3>
-        <p>Enterprise is intake-first and scoped around one workflow's approval boundaries, rollback plan, evidence requirements, and rollout support. Hosted team sync, org dashboards, SSO, SIEM, and compliance packaging are not general-availability runtime features.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="compatibility" id="orchestration-layer">
-  <div class="container">
-    <div class="section-label">Positioning</div>
-    <h2 class="section-title">Enforcement is the missing layer in AI orchestration.</h2>
-    <p style="text-align:center;color:var(--text-muted);max-width:700px;margin:0 auto 16px;font-size:15px;line-height:1.5;">Broad orchestration platforms move data and routes. ThumbGate sits at the moment of execution — the pre-action decision before shell, git, or DB runs.</p>
-    <div class="agent-grid">
-      <div class="agent-card">
-        <h3>Broad orchestration platforms</h3>
-        <p>Good at customer journeys, routing, and cross-system context. Weak when you need a coding agent or automation to stop before a destructive or low-trust action actually runs.</p>
-      </div>
-      <div class="agent-card">
-        <h3>ThumbGate</h3>
-        <p>Turns accepted operator feedback into local lessons and recurring failures into Pre-Action Checks. Supported agent integrations evaluate matching rules at the tool-call boundary. Detected secret exfiltration and gate kill/bypass commands deny by default; strict mode also denies matching warning-mode checks.</p>
-      </div>
-      <div class="agent-card">
-        <h3>The stack that makes sense</h3>
-        <p>Use orchestration to decide what should happen next. Use ThumbGate to decide what is allowed to execute. That is the control layer enterprises actually need once agents touch repos, terminals, CI, or production workflows.</p>
-      </div>
-    </div>
-    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px;">
-      <a class="btn-team" href="/compare/ai-experience-orchestration">Compare orchestration vs enforcement →</a>
-      <a class="btn-free" href="/guides/ai-deployment-readiness" style="display:inline-flex;align-items:center;">AI deployment readiness →</a>
-      <a class="btn-free" href="/use-cases/platform-teams" style="display:inline-flex;align-items:center;">Platform team rollout →</a>
-      <a class="btn-free" href="/use-cases/regulated-workflows" style="display:inline-flex;align-items:center;">Regulated workflow pattern →</a>
-      <a class="btn-free" href="/agent-manager" style="display:inline-flex;align-items:center;">Built for the Agent Manager →</a>
-    </div>
-  </div>
-</section>
-
-<section class="seo-pages" id="compare-guides">
-  <div class="container">
-    <div style="max-width:900px;margin:26px auto 0;border:1px solid rgba(34,211,238,0.14);border-radius:8px;background:rgba(17,17,19,0.55);padding:14px 16px;">
-      <div style="color:var(--cyan);font-weight:700;">Compare ThumbGate with other agent-safety approaches</div>
-      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;font-size:13px;line-height:1.4;">
+  <footer>
+    <div class="shell footer-inner">
+      <span>ThumbGate · MIT License · npm v1.28.4</span>
+      <div class="footer-links">
+        <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
+        <a href="/guide">Technical setup</a>
+        <a href="/dashboard#insights">Live enforcement dashboard</a>
+        <a href="/guides/developer-machine-supply-chain-guardrails">Developer Machine Supply Chain Guardrails — npm, PyPI, Docker, and CLI compromise paths</a>
         <a href="/learn">Browse the guide library</a>
-        <a href="/compare/claude-code-hooks" title="ThumbGate vs native Claude Code hooks and free community repos">Claude Code hooks</a>
-        <a href="/compare/arcjet">Arcjet</a>
-        <a href="/compare/bumblebee">Bumblebee</a>
-        <a href="/compare/anthropic-containment">Claude Containment</a>
-        <a href="/compare/speclock">SpecLock</a>
-        <a href="/compare/mem0">Mem0</a>
-        <a href="/compare/fallow">Fallow</a>
-        <a href="/compare" style="font-weight:700;color:var(--cyan);">Compare all &rarr;</a>
-        <a href="/guides/pre-action-checks">Pre-action checks</a>
-        <a href="/guides/agent-harness-optimization">Agent harness optimization</a>
-        <a href="/guides/code-knowledge-graph-guardrails">Code graph guardrails</a>
-        <a href="/guides/developer-machine-supply-chain-guardrails" title="Developer Machine Supply Chain Guardrails: npm, PyPI, Docker, and CLI compromise paths">Developer machine supply chain</a>
-        <a href="/guides/proxy-pointer-rag-guardrails">Proxy pointer RAG</a>
-        <a href="/guides/rag-precision-tuning-guardrails">RAG precision tuning</a>
-        <a href="/guides/internal-ai-engineering-stack-guardrails">Internal AI engineering stack</a>
-        <a href="/guides/seo-agent-skills-guardrails">SEO agent skills</a>
-        <a href="/guides/claude-code-skills-guardrails">Claude Code skills</a>
-        <a href="/guides/long-running-agent-context-management">Long-running agent context</a>
-        <a href="/guides/reasoning-compression-guardrails">Reasoning compression</a>
-        <a href="/guides/ai-deployment-readiness">AI deployment readiness</a>
-        <a href="/guides/browser-automation-safety">Browser automation safety</a>
-        <a href="/guides/native-messaging-host-security">Native messaging host security</a>
-        <a href="/guides/ai-search-topical-presence">AI search topical presence</a>
-        <a href="/guides/agentic-web-governance">Agentic web governance</a>
-        <a href="/guides/best-tools-stop-ai-agents-breaking-production">Stop agents breaking production</a>
-        <a href="/guides/relational-knowledge-ai-recommendations">Relational knowledge</a>
-        <a href="/guides/claude-code-feedback">Claude Code feedback</a>
-        <a href="/guides/autoresearch-agent-safety">Autoresearch safety</a>
+        <a href="/llm-context.md">Machine-readable context</a>
       </div>
     </div>
-  </div>
-</section>
+  </footer>
 
-<section class="autoresearch-pack" id="autoresearch-pack">
-  <div class="container">
-    <div class="autoresearch-panel">
-      <div class="section-label" style="text-align:left;">Autoresearch Safety Pack</div>
-      <h2>Stop self-improving coding loops from hacking the benchmark.</h2>
-      <p>Autoresearch loops run experiments, inspect metrics, and accept better variants. ThumbGate gives those loops a Reliability Gateway: Pre-Action Checks for skipped holdout tests, fake proof, reward hacking, unsafe edits, and promotion without verification evidence.</p>
-      <div class="autoresearch-grid">
-        <div class="autoresearch-card">
-          <h3>Guard the metric</h3>
-          <p>Require primary and holdout checks before an agent can call a variant better. Flag cherry-picked runs and missing baselines, then configure strict enforcement where a deny is required.</p>
-        </div>
-        <div class="autoresearch-card">
-          <h3>Preserve proof trails</h3>
-          <p>Promotion needs commands, logs, changed files, and verification evidence so the win survives review instead of becoming a vague claim.</p>
-        </div>
-        <div class="autoresearch-card">
-          <h3>Ship into CI</h3>
-          <p>Start with templates for <code>npm test</code>, Playwright duration, bundle size, lint, and CI failures, then add shared workflow checks for team-owned releases.</p>
-        </div>
-      </div>
-      <div class="autoresearch-cta">
-        <a class="primary" href="/guides/autoresearch-agent-safety?utm_source=website&utm_medium=autoresearch_pack&utm_campaign=autoresearch_safety&cta_id=autoresearch_guide&cta_placement=autoresearch_pack">Read the Autoresearch guide</a>
-        <a class="secondary" href="/checkout/pro?utm_source=website&utm_medium=autoresearch_pack&utm_campaign=autoresearch_safety&cta_id=autoresearch_pro_checkout&cta_placement=autoresearch_pack&plan_id=pro&landing_path=%2F" data-revenue-cta data-cta-id="autoresearch_pro_checkout" data-cta-placement="autoresearch_pack" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);">Start Pro</a>
-      </div>
-    </div>
-  </div>
-</section>
+  <script>
+    'use strict';
+    const gaMeasurementId = '__GA_MEASUREMENT_ID__';
+    const serverVisitorId = '__SERVER_VISITOR_ID__';
+    const serverSessionId = '__SERVER_SESSION_ID__';
+    const serverAcquisitionId = '__SERVER_ACQUISITION_ID__';
+    const serverTelemetryCaptured = '__SERVER_TELEMETRY_CAPTURED__' === 'true';
 
-<section class="compatibility" id="persistent-skills">
-  <div class="container">
-    <div class="section-label">Persistent Agent Skills</div>
-    <h2 class="section-title">Reusable instructions are the new baseline. Enforcement is the moat.</h2>
-    <p style="text-align:center;color:var(--text-muted);max-width:720px;margin:0 auto 16px;font-size:15px;line-height:1.5;">Grok-style skills are training users to expect persistent expertise. Persistent skills tell an agent what you prefer. ThumbGate checks whether the next action follows those preferences. Every fired rule carries the source lesson, decision trace, and audit evidence.</p>
-    <div class="agent-grid">
-      <div class="agent-card">
-        <h3>Portable skill memory</h3>
-        <p>Accepted lessons can supply reusable rule and skill-pack context. Moving that context between supported agents requires an explicit operator-managed export/import or a shared local install scope.</p>
-      </div>
-      <div class="agent-card">
-        <h3>Instructions plus teeth</h3>
-        <p>Persistent skills tell an agent what you prefer. ThumbGate evaluates configured checks against the next proposed action and returns allow, warn, or deny before execution.</p>
-      </div>
-      <div class="agent-card">
-        <h3>Proof for teams</h3>
-        <p>Local gate results expose the matched rule and available decision context so operators can review what fired instead of relying only on hidden chatbot memory.</p>
-      </div>
-    </div>
-  </div>
-</section>
+    window.plausible = window.plausible || function () {
+      (window.plausible.q = window.plausible.q || []).push(arguments);
+    };
 
-<!-- HOW IT WORKS -->
-<section class="how-it-works" id="how-it-works">
-  <div class="container">
-    <div class="section-label">Self-improving enforcement</div>
-    <h2 class="section-title">Three steps to catch repeated AI failures</h2>
-    <p class="section-sub" style="max-width:720px;margin:6px auto 22px;text-align:center;color:var(--text-muted);font-size:clamp(16px,1.6vw,18px);">Self-improving — but for safety, not capability: human-in-the-loop accepted feedback becomes local lessons, recurring failures can become prevention rules, and regression tests help detect false-positive rule matches.</p>
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <h3>Feedback</h3>
-        <p>Give 👍 or a concrete 👎. Accepted feedback becomes a local lesson (SQLite+FTS5). Recurring failures promote into prevention rules.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <h3>Distill + Rules</h3>
-        <p>Rules auto-promote from repeats. Thompson Sampling adapts which rules fire so high-risk patterns stay strict and low-risk stay quiet.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <h3>Checks</h3>
-        <p>Rules become Pre-Action Checks before execution. Secrets/gate-bypass deny by default; force-push and destructive deletes warn unless strict mode denies them.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- PROENTROPIC -->
-<!-- GUARDRAILS -->
-<section class="compatibility" id="guardrails">
-  <div class="container">
-    <div class="section-label">Enforcement</div>
-    <h2 class="section-title">Configured checks evaluate proposed tool calls before execution.</h2>
-    <div class="agent-grid">
-      <div class="agent-card">
-        <h3>Don't trust — verify</h3>
-        <p>Gate results report the decision, matched gate, and available reason or evidence context.</p>
-      </div>
-      <div class="agent-card">
-        <h3>Real tools, not wishes</h3>
-        <p>Configured checks run at the tool-call boundary. Detected secret exfiltration and gate kill/bypass commands deny by default; set <code>THUMBGATE_STRICT_ENFORCEMENT=1</code> to deny matching warning-mode checks.</p>
-      </div>
-      <div class="agent-card">
-        <h3>Force models to show work</h3>
-        <p>Decision reasons and Thompson Sampling confidence tiers are available where the evaluator produces them.</p>
-      </div>
-      <div class="agent-card">
-        <h3>Review decisions and recurring failures</h3>
-        <p>Recurring accepted failures can auto-promote to checks. Pro includes a personal local dashboard; a hosted org dashboard is not generally available.</p>
-      </div>
-      <div class="agent-card">
-        <h3>Keep risky runs off the host</h3>
-        <p>When Workflow Sentinel predicts a risky local action, ThumbGate can recommend Docker Sandboxes before the agent touches the host filesystem or broader credentials.</p>
-      </div>
-      <div class="agent-card">
-        <h3>Ship with versioned proof</h3>
-        <p>Changesets, SemVer, sync checks, and verification evidence make new package releases inspectable before a buyer trusts the next rollout.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- CODE EXAMPLE -->
-<section class="code-section">
-  <div class="container">
-    <div class="code-block">
-      <div class="code-header">
-        <div class="code-dot red"></div>
-        <div class="code-dot yellow"></div>
-        <div class="code-dot green"></div>
-        <span>terminal</span>
-      </div>
-      <div class="code-body">
-        <div><span class="comment"># Install the local CLI</span></div>
-        <div><span class="fn">npx</span> thumbgate init</div>
-        <div>&nbsp;</div>
-        <div><span class="comment"># Your agent tries to delete production db...</span></div>
-        <div><span class="keyword">⚠️ Check flagged:</span> <span class="string">"Never run DROP on production tables"</span> <span class="comment"># blocks under strict mode</span></div>
-        <div><span class="comment"># Rule promoted from accepted recurring feedback</span></div>
-        <div>&nbsp;</div>
-        <div><span class="comment"># Works with your existing setup</span></div>
-        <div><span class="fn">npx</span> thumbgate init <span class="comment"># bootstraps .thumbgate and .mcp.json</span></div>
-        <div><span class="comment"># Use repo guides for Claude plugin, Codex app plugin, Cursor plugin, and OpenCode profiles</span></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section id="install" style="padding: 60px 40px; max-width: 900px; margin: 0 auto;">
-  <h2 style="font-size: 2em; text-align: center; margin-bottom: 40px;">Install for Your Agent</h2>
-
-  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-    <div style="background: #161b22; border-radius: 12px; padding: 24px; border: 1px solid #30363d;">
-      <h3>Claude Code</h3>
-      <code style="display: block; background: #0d1117; padding: 12px; border-radius: 8px; color: #58a6ff; margin: 12px 0;">npx thumbgate init --agent claude-code</code>
-      <p style="color: #8b949e; font-size: 14px;">Wires PreToolUse hooks automatically</p>
-    </div>
-
-    <div style="background: #161b22; border-radius: 12px; padding: 24px; border: 1px solid #30363d;">
-      <h3>Cursor</h3>
-      <code style="display: block; background: #0d1117; padding: 12px; border-radius: 8px; color: #58a6ff; margin: 12px 0;">npx thumbgate init --agent cursor</code>
-      <p style="color: #8b949e; font-size: 14px;">4 skills: feedback, rules, search, recall</p>
-    </div>
-
-    <div style="background: #161b22; border-radius: 12px; padding: 24px; border: 1px solid #30363d;">
-      <h3>Codex</h3>
-      <code style="display: block; background: #0d1117; padding: 12px; border-radius: 8px; color: #58a6ff; margin: 12px 0;">npx thumbgate init --agent codex</code>
-      <p style="color: #8b949e; font-size: 14px;">6 skills including adversarial review</p>
-    </div>
-
-    <div style="background: #161b22; border-radius: 12px; padding: 24px; border: 1px solid #30363d;">
-      <h3>Gemini CLI</h3>
-      <code style="display: block; background: #0d1117; padding: 12px; border-radius: 8px; color: #58a6ff; margin: 12px 0;">npx thumbgate init --agent gemini</code>
-      <p style="color: #8b949e; font-size: 14px;">Gemini CLI integration</p>
-    </div>
-
-    <div style="background: #161b22; border-radius: 12px; padding: 24px; border: 1px solid #30363d;">
-      <h3>Amp</h3>
-      <code style="display: block; background: #0d1117; padding: 12px; border-radius: 8px; color: #58a6ff; margin: 12px 0;">npx thumbgate init --agent amp</code>
-      <p style="color: #8b949e; font-size: 14px;">Amp agent integration</p>
-    </div>
-
-    <div style="background: #161b22; border-radius: 12px; padding: 24px; border: 1px solid #30363d;">
-      <h3>Any MCP Client</h3>
-      <code style="display: block; background: #0d1117; padding: 12px; border-radius: 8px; color: #58a6ff; margin: 12px 0;">npx thumbgate serve</code>
-      <p style="color: #8b949e; font-size: 14px;">MCP stdio server for any compatible client</p>
-    </div>
-  </div>
-
-  <div style="text-align: center; margin-top: 40px;">
-    <h3>Claude Desktop</h3>
-    <p style="color: #8b949e;">Add to your <code>claude_desktop_config.json</code>:</p>
-    <pre style="background: #0d1117; padding: 16px; border-radius: 8px; color: #58a6ff; text-align: left; display: inline-block; margin: 12px auto;">{
-  "mcpServers": {
-    "thumbgate": {
-      "command": "npx",
-      "args": ["--yes", "--package", "thumbgate", "thumbgate", "serve"]
-    }
-  }
-}</pre>
-    <p style="color: #8b949e; max-width: 760px; margin: 16px auto 0;">Official directory review is separate. Claude Code users can install immediately with <code>/plugin marketplace add IgorGanapolsky/ThumbGate</code> and <code>/plugin install thumbgate@thumbgate-marketplace</code>.</p>
-  </div>
-</section>
-
-<!-- PRICING -->
-<section class="pricing" id="pricing">
-  <div class="container">
-    <div class="section-label">Pricing</div>
-    <h2 class="section-title">Stop paying for agent mistakes you already fixed.</h2>
-
-    <figure class="diagram-card full" style="max-width:720px;margin:0 auto 20px;">
-      <img src="/assets/diagrams/decision.svg" alt="Pick Free, Pro, or Sprint" width="720" height="260" loading="lazy" />
-      <figcaption style="text-align:center;"><strong>Pick one path</strong><span>Free proves the loop. Pro is the self-serve cash path. Sprint/Enterprise is scope-first intake only.</span></figcaption>
-    </figure>
-
-
-    <!-- At-a-glance comparison so buyers see plan differences without parsing the cards below. -->
-    <div class="plan-matrix-wrap" style="max-width:1080px;margin:8px auto 28px;overflow-x:auto;">
-      <table class="plan-matrix" style="width:100%;border-collapse:collapse;font-size:14px;min-width:640px;">
-        <thead>
-          <tr>
-            <th style="text-align:left;padding:12px 14px;color:var(--text-muted);font-weight:600;border-bottom:1px solid var(--border);"></th>
-            <th style="text-align:center;padding:12px 14px;border-bottom:1px solid var(--border);">Free<br><span style="font-size:12px;color:var(--text-muted);font-weight:400;">$0 forever</span></th>
-            <th style="text-align:center;padding:12px 14px;border-bottom:1px solid var(--border);color:var(--cyan);">Pro<br><span style="font-size:12px;color:var(--text-muted);font-weight:400;">$19/mo or $149/yr</span></th>
-            <th style="text-align:center;padding:12px 14px;border-bottom:1px solid var(--border);color:var(--cyan);">Enterprise<br><span style="font-size:12px;color:var(--text-muted);font-weight:400;">$15k pilot / $10k per month after pilot</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Local PreToolUse enforcement (configured integrations)</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">Scoped after intake</td></tr>
-          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Feedback captures</td><td style="text-align:center;border-bottom:1px solid var(--border);">2/day (10 total)</td><td style="text-align:center;border-bottom:1px solid var(--border);">Unlimited</td><td style="text-align:center;border-bottom:1px solid var(--border);">Scoped after intake</td></tr>
-          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Active auto-promoted prevention rules</td><td style="text-align:center;border-bottom:1px solid var(--border);">3</td><td style="text-align:center;border-bottom:1px solid var(--border);">Unlimited</td><td style="text-align:center;border-bottom:1px solid var(--border);">Scoped after intake</td></tr>
-          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Lesson recall + search across sessions</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">Scoped after intake</td></tr>
-          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Personal dashboard + DPO export</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">✅</td><td style="text-align:center;border-bottom:1px solid var(--border);">Scoped after intake</td></tr>
-          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Hosted team lesson sync</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">Not GA</td></tr>
-          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Hosted org dashboard</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">Not GA</td></tr>
-          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">Approval boundaries + rollout design</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">Scoped after intake</td></tr>
-          <tr><td style="padding:10px 14px;border-bottom:1px solid var(--border);">SSO, SIEM + compliance packaging</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">—</td><td style="text-align:center;border-bottom:1px solid var(--border);">Not GA</td></tr>
-          <tr><td style="padding:10px 14px;color:var(--text-muted);">Best for</td><td style="text-align:center;color:var(--text-muted);">One developer</td><td style="text-align:center;color:var(--text-muted);">Solo operators</td><td style="text-align:center;color:var(--text-muted);">Teams &amp; regulated orgs</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="pricing-grid">
-      <div class="price-card free-highlight" style="border-color:var(--border);position:relative;">
-        <div class="tier" style="color:var(--cyan);">Free</div>
-        <div class="price">$0</div>
-        <div class="price-sub">Catch repeated mistakes daily. Forever free for solo devs.</div>
-        <p style="font-size:13px;color:#aaa;margin-bottom:16px;">2 captures/day, 3 active rules. Enough to see the value — upgrade when you need more.</p>
-        <ul>
-          <li><strong>2 feedback captures/day</strong> — 10 total on Free, then Pro for unlimited</li>
-          <li>Up to 3 active auto-promoted prevention rules</li>
-          <li>No recall or lesson search</li>
-          <li>No exports (DPO, Databricks, HuggingFace)</li>
-          <li>All MCP integrations (Claude Code, Cursor, Codex, Gemini, Amp, any MCP agent)</li>
-          <li>PreToolUse hook with built-in safety checks — hard-blocks secret exfiltration by default; warns on rm -rf, force-push, and destructive SQL (blocks them under <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>)</li>
-          <li><a href="/guide" style="color:var(--cyan);text-decoration:underline;">Setup guide for all agents →</a></li>
-        </ul>
-        <div class="hero-install" onclick="copyInstall(this)" title="Click to copy" style="margin-bottom:12px;width:100%;justify-content:center;">
-          <span class="prompt">$</span>
-          <span class="cmd">npx thumbgate init</span>
-          <span class="copy-hint">click to copy</span>
-        </div>
-        <a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener" class="btn-free">Install Free</a>
-      </div>
-      <div class="price-card pro" data-price-dollars="19" style="border-color:var(--cyan);box-shadow:0 0 40px var(--cyan-dim);position:relative;order:-1;">
-        <div style="position:absolute;top:-10px;right:16px;background:var(--cyan);color:#06121a;font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px;">SELF-SERVE CASH PATH</div>
-        <div class="tier">Pro</div>
-        <div class="price">$19<span style="font-size:16px;color:var(--text-dim)">/mo</span></div>
-        <div class="price-sub"><strong>Individual local governance with higher limits.</strong> The free CLI runs configured gates locally. Pro removes the individual caps and adds the personal dashboard, recall, search, and exports. Hosted team lesson sync is not generally available.</div>
-        <ul>
-          <li><strong>Higher local limits</strong> — unlimited feedback captures and active auto-promoted prevention rules (Free caps at 3 active rules)</li>
-          <li><strong>Recall and search accepted lessons</strong> across sessions in the configured local scope</li>
-          <li><strong>Inspect which check fired</strong> — <a href="/dashboard#insights" style="color:var(--cyan);text-decoration:underline;">personal visual check debugger</a> for available local gate history</li>
-          <li><strong>Use supported integrations</strong> — configure Claude Code, Cursor, Codex, Gemini, Amp, Cline, or OpenCode through its documented setup path</li>
-          <li><strong>Export training data</strong> — <a href="/dashboard#export" style="color:var(--cyan);text-decoration:underline;">DPO preference-pair export</a> for a separate fine-tuning workflow</li>
-          <li><strong>Review local enforcement evidence</strong> — personal dashboard for the individual operator with available gate history</li>
-          <li><strong>Prepare model-hardening data</strong> — Model Hardening Advisor plus HuggingFace dataset export for a separate training and evaluation workflow</li>
-          <li><strong>Hand a PR with proof</strong> — review-ready workflow support and exportable lesson bundles</li>
-          <li><strong>Hand off without re-onboarding</strong> — Lesson export/import for handoff or migration</li>
-        </ul>
-        <div style="margin:12px 0 16px;padding:12px;border:1px solid rgba(34,211,238,0.25);border-radius:8px;background:rgba(34,211,238,0.06);">
-          <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">What your Pro dashboard looks like</div>
-          <div style="font-family:var(--mono);font-size:12px;color:var(--cyan);line-height:1.6;">checks: local gate history<br>feedback: unlimited<br>exports: DPO + lessons</div>
-        </div>
-        <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--cyan);font-weight:800;margin-bottom:8px;">PAY-NOW PRO</div>
-        <a href="/checkout/pro?utm_source=pricing&utm_medium=cta&utm_campaign=v2_landing&utm_content=pricing_pro&cta_id=pricing_pro_checkout&cta_placement=pricing&plan_id=pro&landing_path=%2F" id="pro-checkout-link" class="btn-pro" data-revenue-cta data-cta-id="pricing_pro_checkout" data-cta-placement="pricing" data-tier="pro" data-plan-id="pro" data-price="19" onclick="handleProCheckout();return false;" style="display:block;width:100%;text-align:center;padding:12px;font-size:15px;">Upgrade to Pro — $19/mo</a>
-        <p style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;">Billed today · cancel anytime.</p>
-        <input type="email" id="pro-email" data-buyer-email placeholder="you@company.com" style="margin-top:10px;width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-raised);color:var(--text);font-size:14px;">
-      </div>
-    </div>
-    <div class="pricing-matrix" aria-label="Plan capability comparison">
-      <table>
-        <caption>Compare plans at a glance</caption>
-        <thead>
-          <tr>
-            <th scope="col">Capability</th>
-            <th scope="col">Free</th>
-            <th scope="col">Pro</th>
-            <th scope="col">Enterprise</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>Best for</strong></td>
-            <td>One developer evaluating local checks</td>
-            <td>One operator who wants personal recall, dashboard proof, managed adapters, and exports</td>
-            <td>Teams &amp; regulated organizations scoping up to three local workflows</td>
-          </tr>
-          <tr>
-            <td><strong>Price</strong></td>
-            <td>$0</td>
-            <td>$19/mo or $149/yr</td>
-            <td>$15,000 pilot; $10,000/month after completed pilot</td>
-          </tr>
-          <tr>
-            <td><strong>Feedback captures</strong></td>
-            <td>2/day, 10 total</td>
-            <td>Unlimited</td>
-            <td>Scoped after intake; hosted team sync is not GA</td>
-          </tr>
-          <tr>
-            <td><strong>Active prevention rules</strong></td>
-            <td>3 active rules</td>
-            <td>Unlimited personal rules</td>
-            <td>Approval boundaries and rollout requirements scoped after intake</td>
-          </tr>
-          <tr>
-            <td><strong>Dashboard and proof</strong></td>
-            <td>Local CLI evidence</td>
-            <td>Personal dashboard, check debugger, DPO/HF exports</td>
-            <td>Hosted org dashboard, SIEM, and compliance packaging are not GA</td>
-          </tr>
-          <tr>
-            <td><strong>How to start</strong></td>
-            <td><code>npx thumbgate init</code></td>
-            <td>Self-serve Stripe checkout</td>
-            <td>Send the first repeated workflow failure — qualification and signed scope before invoice</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <p class="pricing-note">Free provides capped local evaluation. Pro removes individual limits and adds recall, search, a personal dashboard, and exports. Proposal-only service paths start through intake: $3,000/month for one proof-backed workflow, a $15,000 30-day pilot for up to three local workflows, and $10,000/month after a completed pilot. None imply generally available hosted team features.</p>
-    <div style="max-width:1080px;margin:24px auto 0;">
-      <div class="price-card enterprise" style="border:1px solid var(--cyan);background:linear-gradient(180deg, rgba(34,211,238,0.04), transparent);padding:24px 28px;">
-        <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:24px;justify-content:space-between;">
-          <div style="flex:1 1 420px;min-width:280px;">
-            <div class="tier" style="color:var(--cyan);">Enterprise</div>
-            <div style="font-size:14px;color:var(--text-muted);margin:4px 0 12px;letter-spacing:0.04em;text-transform:uppercase;">Engineering teams · Banking · Insurance · Healthcare · Public sector</div>
-            <div style="font-size:18px;color:var(--text);margin-bottom:6px;font-weight:700;">$15,000 30-day pilot for up to three local workflows</div>
-            <div class="price-sub" style="margin-bottom:14px;">Enterprise is an intake-led, proposal-only service path for teams that need approval boundaries, rollback plans, evidence requirements, and rollout ownership for up to three local workflows. After a completed pilot, the bounded follow-on is $10,000/month for the same workflows. The current public runtime remains local per configured operator; hosted team lesson sync and a hosted org dashboard are not generally available.</div>
-            <ul style="margin-bottom:0;">
-              <li><strong>Up to three local workflows</strong> — identify each repeated failure, runtime, owner, and decision boundary</li>
-              <li><strong>Approval and rollback implementation</strong> — implement the signed local gate scope and document who can approve, what evidence is required, and how each workflow recovers</li>
-              <li><strong>Verification proof</strong> — run the local regression evidence required before a wider rollout claim</li>
-              <li><strong>Deployment requirements</strong> — capture data-boundary, identity, hosting, and integration constraints before making delivery commitments</li>
-              <li><strong>Current availability boundary</strong> — hosted team sync, a hosted org dashboard, SSO, SIEM, and compliance packaging are not general-availability features</li>
-            </ul>
-          </div>
-          <div style="flex:0 0 260px;min-width:240px;display:flex;flex-direction:column;gap:10px;">
-            <a href="/?tier=enterprise#workflow-sprint-intake" onclick="try{posthog.capture('enterprise_intake_click',{cta:'enterprise_contact_sales',placement:'pricing'})}catch(_){};sendFirstPartyTelemetry('enterprise_intake_started',{ctaId:'pricing_enterprise_intake',ctaPlacement:'pricing',planId:'enterprise'});" class="btn-team" style="display:block;text-align:center;background:var(--cyan);color:#06121a;font-weight:800;">Start enterprise intake →</a>
-            <a href="/learn/regulated-agent-execution-boundary" style="display:block;text-align:center;padding:10px 14px;font-size:13px;color:var(--cyan);border:1px solid var(--cyan);border-radius:8px;text-decoration:none;">Read the build-vs-buy thesis first</a>
-            <p style="font-size:11px;color:var(--text-muted);margin:0;text-align:center;line-height:1.5;">Qualification and a signed scope come before invoice. No hosted-team capability is promised before a separate build decision and verification.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="compatibility" id="workflow-sprint-intake">
-  <div class="container">
-    <div class="section-label">Enterprise Pilot</div>
-    <h2 class="section-title">Start the AI Agent Governance Sprint with one repeat failure</h2>
-    <p style="color:var(--text-dim);max-width:760px;margin:0 auto 16px;">Start with one repo, one workflow owner, and one repeated failure. The intake scopes the evidence needed to determine whether ThumbGate fits that action boundary before any wider rollout claim.</p>
-    <div class="team-intake-panel">
-      <div class="team-intake-panel-head">
-        <div>
-          <h3>Tell us the workflow. Get a proof plan.</h3>
-          <p>The highest-fit Enterprise buyer is already feeling one repeated failure in a workflow where mistakes have real consequences. Send the workflow first so the next step is scoped around the real blocker instead of a blind checkout.</p>
-        </div>
-        <span class="team-intake-badge">Scope-first intake</span>
-      </div>
-      <div class="team-intake-recovery" aria-label="Checkout recovery path for workflow sprint buyers">
-        <div>
-          <strong>Enterprise checkout happens after scope.</strong>
-          <span>Send the workflow first. We will qualify the blocker, confirm whether Pro or a scoped Enterprise rollout is the right next step, and keep the purchase path tied to real evidence.</span>
-        </div>
-        <a href="#team-pilot-intake-form" onclick="sendFirstPartyTelemetry('workflow_sprint_recovery_intake_clicked',{ctaId:'team_workflow_sprint_recovery_intake',ctaPlacement:'team_intake_recovery',planId:'team',offer:'workflow_hardening_sprint',reason:'scope_first'});sendGa4Event('generate_lead',{currency:'USD',value:0,method:'workflow_sprint_recovery_intake'});">Send workflow first</a>
-      </div>
-      <form id="team-pilot-intake-form" class="team-form" action="/v1/intake/workflow-sprint" method="POST" data-team-intake-form>
-        <input type="hidden" name="ctaId" value="workflow_sprint_intake">
-        <input type="hidden" name="ctaPlacement" value="team_visible_intake">
-        <input type="hidden" name="planId" value="team">
-        <input type="hidden" name="utmSource" value="website">
-        <input type="hidden" name="utmMedium" value="visible_team_intake">
-        <input type="hidden" name="utmCampaign" value="workflow_hardening_sprint">
-        <input type="hidden" name="page" value="/#workflow-sprint-intake">
-        <input type="email" name="email" placeholder="you@company.com" autocomplete="email" required>
-        <input type="text" name="company" placeholder="Company">
-        <input type="text" name="workflow" placeholder="Workflow to harden (e.g. deploy approvals, migrations, PR review)" required>
-        <input type="text" name="owner" placeholder="Workflow owner" required>
-        <input type="text" name="runtime" placeholder="Current agent/runtime (Claude Code, Codex, Cursor, Gemini...)" required>
-        <textarea class="full" name="blocker" placeholder="What repeat mistake, rollout blocker, or team handoff failure keeps happening?" required></textarea>
-        <textarea class="full" name="note" placeholder="Optional context: team size, repos involved, target rollout date, or what you need to prove internally."></textarea>
-        <div class="full">
-          <button type="submit" class="btn-team">Start Enterprise Pilot Intake</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</section>
-
-<!-- FAQ -->
-<section class="faq" id="faq">
-  <div class="container">
-    <div class="section-label">FAQ</div>
-    <h2 class="section-title">Common questions</h2>
-    <div class="faq-list">
-      <div class="faq-item open">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="true" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Does ThumbGate support model fine-tuning?</div>
-        <div class="faq-a">ThumbGate Pro includes a Model Hardening Advisor plus LoRA JSONL and DPO preference-pair exports for use in a separate fine-tuning workflow. An export does not guarantee that a trained model will avoid a mistake; that outcome depends on the dataset, training process, model, and evaluation.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How is ThumbGate different from model-training feedback loops?</div>
-        <div class="faq-a">ThumbGate's runtime keeps lessons and rules outside the model. A configured hook evaluates proposed tool calls before execution. Detected secret exfiltration plus commands that kill the gate process or enable its bypass variable deny by default; matching destructive deletes, force-pushes, and fetch-and-run commands warn by default. Strict mode (<code>THUMBGATE_STRICT_ENFORCEMENT=1</code>) turns matching warning-mode checks into denies.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How is ThumbGate different from persistent agent skills?</div>
-        <div class="faq-a">Persistent agent skills are reusable instructions. ThumbGate adds a local enforcement loop: accepted feedback becomes lessons, recurring failures can become rules, and configured Pre-Action Checks return allow, warn, or deny before tool execution. Pro adds a personal dashboard and operator-managed exports; hosted team sync and a hosted org dashboard are not generally available.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What's the tech stack?</div>
-        <div class="faq-a">SQLite+FTS5 lesson DB for fast full-text search. MemAlign-inspired dual recall (principle-based rules + episodic context). Thompson Sampling for adaptive check sensitivity per failure domain. LanceDB + Apache Arrow for local vector search with Hugging Face embeddings. ContextFS for context assembly. Bayesian belief updates on each memory. Configured PreToolUse hooks evaluate known-bad actions before execution; detected secret exfiltration and gate kill/bypass commands deny by default, while strict mode also denies matching warning-mode checks. The local path requires no cloud account.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What AI agents and editors does this work with?</div>
-        <div class="faq-a">ThumbGate includes documented integration paths for Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, and OpenCode. Each agent must be configured through its hook or MCP setup; MCP compatibility alone does not install enforcement automatically. The Cursor runtime setup is <code>npx thumbgate init --agent cursor</code>, while the in-app Marketplace listing remains separate. VS Code can host an MCP-compatible agent, but this repo does not ship a standalone VS Code extension.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Do I have to chat inside the ThumbGate GPT for enforcement?</div>
-        <div class="faq-a">No. The ThumbGate GPT is a ChatGPT entrypoint for checking proposed actions and getting setup help. Local allow, warn, or deny enforcement runs where the coding agent executes and requires <code>npx thumbgate init</code> plus the documented integration setup.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">When should I use Pro versus the Workflow Hardening Sprint?</div>
-        <div class="faq-a">Start with the <a href="/guide" style="color:var(--cyan);text-decoration:underline;">setup guide</a> if you only need the local path. Choose Pro when an individual operator wants higher limits, personal recall, a local dashboard, DPO export, and operator-managed lesson bundles. Choose the <a href="#workflow-sprint-intake" style="color:var(--cyan);text-decoration:underline;">Workflow Hardening Sprint</a> when one workflow owner needs to scope approval boundaries, rollback safety, and evidence requirements before a wider rollout claim.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" type="button" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How do we keep high-risk autonomous runs off the host?</button>
-        <div class="faq-a">ThumbGate combines pre-action checks with execution guidance. Workflow Sentinel can recommend Docker Sandboxes for risky local actions. The package also contains a signed sandbox-dispatch mechanism, but each deployment must configure and verify that isolation boundary; it is not hosted team lesson sync or a generally available hosted org service.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How do we trust a new package release?</div>
-        <div class="faq-a">ThumbGate does not rely on vibes, making it the safety net for vibe coding. Release-relevant PRs need a Changeset, SemVer rules keep version bumps honest, sync checks keep manifests aligned, proof lanes run before merge, and the exact main-branch merge commit is verified before the work is called done.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Do I need a cloud account?</div>
-        <div class="faq-a">No. Free keeps local enforcement on your machine with 2 feedback captures/day, up to 3 active auto-promoted prevention rules, and built-in checks. Recall, lesson search, unlimited rules and captures, a personal dashboard, and operator-managed exports open up on Pro. Proposal-only service paths are $3,000/month for one proof-backed workflow, a $15,000 30-day pilot for up to three local workflows, and $10,000/month after a completed pilot. Hosted team lesson sync and a hosted org dashboard are not general-availability runtime features.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What if my thumbs-down is vague?</div>
-        <div class="faq-a">For the current Claude auto-capture hook, ThumbGate can reuse up to 8 prior recorded entries and the failed tool call for a vague thumbs-down, then keep a linked 60-second feedback session open for later clarification. The timer resets when more context arrives, so the lesson stays attached to one feedback record instead of fragmenting into duplicates.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How are pre-action checks different from prompt rules?</div>
-        <div class="faq-a">Prompt rules are a starting point, not a finish line. ThumbGate adds a human-feedback loop plus configured Pre-Action Checks at the tool-call boundary. The default policy denies detected secret exfiltration and gate kill/bypass commands while other matching high-risk checks warn; strict mode also denies matching warning-mode checks.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How does ThumbGate fit the agentic development cycle?</div>
-        <div class="faq-a">Agentic development is not just generation. Teams need Guide, Generate, Verify, and Solve working as a repeatable loop. ThumbGate can serve as the pre-action execution gate: guidance and accepted feedback can become rules, generated tool calls are evaluated before execution, rules can require verification evidence, and recurring solved failures can become reusable prevention gates.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">What does Pro cost?</div>
-        <div class="faq-a">Pro is $19/mo or $149/yr for individual operators and bills through Stripe. Proposal-only service paths are $3,000/month for one proof-backed workflow, a $15,000 30-day Enterprise pilot for up to three local workflows, and $10,000/month after a completed pilot. Qualification and a signed scope come before invoice; hosted team features are not implied by intake.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">Does ThumbGate support enterprise Google Cloud / Vertex AI?</div>
-        <div class="faq-a">The package ships a <code>npx thumbgate setup-vertex</code> setup helper for operators who choose the optional Vertex adapter. Whether evaluations stay within a particular VPC depends on the operator's Google Cloud configuration and must be verified in that deployment. Dialogflow CX governance is an intake-scoped integration requirement, not a generally available hosted deployment claim.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" role="button" tabindex="0" aria-expanded="false" onclick="toggleFaq(this)" onkeydown="handleFaqKeydown(event)">How does ThumbGate contain enterprise API costs?</div>
-        <div class="faq-a">FrontierBudget provides a local client-side token ledger and configurable routing or cost-containment limits. Reported token savings are estimates based on configured assumptions, not provider-billing measurements or a spend guarantee; verify actual costs in the provider's billing telemetry.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- NEWSLETTER SIGNUP -->
-<section class="compatibility" id="newsletter" style="padding: 48px 0;">
-  <div class="container" style="text-align: center;">
-    <div class="section-label">Stay Updated</div>
-    <h2 class="section-title" style="margin-bottom: 16px;">Get notified when we ship new checks and integrations.</h2>
-    <p style="color: var(--text-dim); margin-bottom: 24px; max-width: 560px; margin-left: auto; margin-right: auto;">Join the mailing list for new check patterns, agent integration updates, and product news. If you later choose Pro, we keep checkout prefilled on this device.</p>
-    <form action="/api/newsletter" method="POST" data-newsletter-form data-page="homepage" data-intent="buyer_follow_up" style="display: flex; gap: 8px; max-width: 480px; margin: 0 auto; flex-wrap: wrap; justify-content: center;">
-      <input type="email" name="email" data-buyer-email placeholder="you@company.com" required style="flex: 1; min-width: 220px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-raised); color: var(--text); font-size: 15px;">
-      <button type="submit" style="padding: 12px 24px; background: var(--cyan); color: #000; border: none; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer;">Get sprint brief + updates</button>
-    </form>
-    <p data-newsletter-status style="min-height:20px;font-size:12px;color:var(--text-dim);margin-top:10px;" aria-live="polite"></p>
-  </div>
-</section>
-
-<!-- FINAL CTA -->
-<section class="final-cta">
-  <div class="container">
-    <h2>Stop the same mistake before it runs again.</h2>
-    <p>Install the local CLI without a credit card or account, then configure the integration for your agent.</p>
-    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;align-items:center;">
-      <div class="hero-install" onclick="copyInstall(this)" title="Click to copy" style="margin-bottom:0;font-size:16px;padding:14px 24px;border:2px solid var(--cyan);">
-        <span class="prompt">$</span>
-        <span class="cmd">npx thumbgate init</span>
-        <span class="copy-hint">click to copy</span>
-      </div>
-      <a href="/go/install?utm_source=website&utm_medium=homepage_final&utm_campaign=install_free&cta_id=final_install_cli&cta_placement=final_cta" onclick="event.preventDefault(); navigator.clipboard.writeText('npx thumbgate init'); this.textContent='Copied ✓ — paste in your repo'; setTimeout(()=>{this.textContent='Install Free CLI'},2000); try{posthog.capture('final_install_click',{cta:'install_cli'})}catch(_){}" class="btn-pro btn-install-link" style="padding:14px 36px;font-size:16px;" title="Click to copy: npx thumbgate init">Install Free CLI</a>
-    </div>
-    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;align-items:center;margin-top:12px;opacity:0.7;">
-      <a href="https://github.com/IgorGanapolsky/ThumbGate/releases/latest/download/thumbgate-claude-desktop.mcpb" class="btn-gpt-page" target="_blank" rel="noopener" onclick="posthog.capture('final_claude_extension_click',{cta:'install_claude_extension'})" style="padding:8px 16px;font-size:12px;background:#d97706;color:#fff;">Install Claude Extension</a>
-      <a href="/checkout/pro?utm_source=website&utm_medium=final_cta&utm_campaign=pro_upgrade&cta_id=final_go_pro&cta_placement=final_cta&plan_id=pro&landing_path=%2F" data-revenue-cta data-cta-id="final_go_pro" data-cta-placement="final_cta" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);try{posthog.capture('final_pro_click',{cta:'final_go_pro',tier:'pro',price:19})}catch(_){}" class="btn-pro" style="padding:8px 16px;font-size:12px;opacity:0.85;">Upgrade to Pro — $19/mo</a>
-      <a href="#workflow-sprint-intake" class="btn-team" style="padding:8px 16px;font-size:12px;">Start Workflow Hardening Sprint</a>
-    </div>
-  </div>
-</section>
-
-<!-- FOOTER -->
-<footer>
-  <div class="container">
-    <div class="footer-links">
-      <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a>
-      <a href="https://www.npmjs.com/package/thumbgate" target="_blank" rel="noopener">npm</a>
-      <a href="https://www.producthunt.com/products/thumbgate" target="_blank" rel="noopener">Product Hunt</a>
-      <a href="https://www.linkedin.com/in/igorganapolsky" target="_blank" rel="noopener">LinkedIn</a>
-      <a href="/blog">Blog</a>
-    </div>
-    <span class="footer-copy">© 2026 ThumbGate · MIT License · npm v1.28.4</span>
-  </div>
-</footer>
-
-<!-- STICKY BOTTOM CTA -->
-<div class="sticky-cta" id="sticky-cta">
-  <span class="sticky-cta-text"><strong>Caught one repeat?</strong> Pro unlocks recall, proof, exports — free is capped at 2 captures/day</span>
-  <div class="hero-install" onclick="copyInstall(this)" title="Click to copy" style="margin-bottom:0;padding:8px 16px;font-size:13px;">
-    <span class="prompt">$</span>
-    <span class="cmd">npx thumbgate init</span>
-    <span class="copy-hint">copy</span>
-  </div>
-  <a href="/checkout/pro?utm_source=website&utm_medium=sticky_cta&utm_campaign=pro_upgrade&cta_id=sticky_go_pro&cta_placement=sticky_cta&plan_id=pro&landing_path=%2F" data-revenue-cta data-cta-id="sticky_go_pro" data-cta-placement="sticky_cta" data-tier="pro" data-plan-id="pro" data-price="19" onclick="trackRevenueCta(this);try{posthog.capture('sticky_pro_click',{cta:'sticky_go_pro',tier:'pro',price:19})}catch(_){}" class="btn-pro" style="padding:8px 16px;font-size:12px;border-radius:6px;white-space:nowrap;">Go Pro — $19/mo</a>
-</div>
-<script>
-(function() {
-  var stickyCta = document.getElementById('sticky-cta');
-  var heroSection = document.querySelector('.hero');
-  if (!stickyCta || !heroSection) return;
-  var observer = new IntersectionObserver(function(entries) {
-    entries.forEach(function(entry) {
-      if (entry.isIntersecting) {
-        stickyCta.classList.remove('visible');
-      } else {
-        stickyCta.classList.add('visible');
-      }
-    });
-  }, { threshold: 0 });
-  observer.observe(heroSection);
-})();
-</script>
-
-<script src="/js/buyer-intent.js"></script>
-<script>
-function initializeBuyerIntentForms() {
-  globalThis.ThumbGateBuyerIntent.initializeBuyerIntent({
-    page: 'homepage',
-    duplicateMessage: 'You are already on the list. Checkout on this device is now prefilled.',
-    successMessage: 'Saved. We will keep checkout prefilled on this device.',
-  });
-}
-
-function readMarketingParam(name) {
-  try {
-    return new URLSearchParams(globalThis.location.search).get(name);
-  } catch (_err) {
-    return null;
-  }
-}
-
-function sendFirstPartyTelemetry(eventType, props) {
-  var payload = Object.assign({
-    eventType: eventType,
-    clientType: 'web',
-    page: globalThis.location.pathname || '/',
-    landingPath: globalThis.location.pathname || '/',
-    acquisitionId: serverAcquisitionId,
-    visitorId: serverVisitorId,
-    sessionId: serverSessionId,
-    source: readMarketingParam('utm_source') || readMarketingParam('source') || 'website',
-    utmSource: readMarketingParam('utm_source') || 'website',
-    utmMedium: readMarketingParam('utm_medium') || 'landing_page',
-    utmCampaign: readMarketingParam('utm_campaign') || 'organic',
-    utmContent: readMarketingParam('utm_content'),
-    utmTerm: readMarketingParam('utm_term'),
-    creator: readMarketingParam('creator') || readMarketingParam('creator_handle'),
-    community: readMarketingParam('community') || readMarketingParam('subreddit'),
-    postId: readMarketingParam('post_id'),
-    commentId: readMarketingParam('comment_id'),
-    campaignVariant: readMarketingParam('campaign_variant'),
-    offerCode: readMarketingParam('offer_code'),
-  }, props || {});
-  var body = JSON.stringify(payload);
-  if (navigator.sendBeacon) {
-    navigator.sendBeacon('/v1/telemetry/ping', new Blob([body], { type: 'application/json' }));
-    return;
-  }
-  fetch('/v1/telemetry/ping', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: body,
-    keepalive: true,
-  }).catch(function() {});
-}
-
-function sendGa4Event(eventName, params) {
-  if (!gaMeasurementId || typeof globalThis.gtag !== 'function') return;
-  globalThis.gtag('event', eventName, params || {});
-}
-
-function readRevenueCtaMeta(el) {
-  var label = (el && el.textContent ? el.textContent : '').trim().substring(0, 80);
-  var section = el && el.closest ? el.closest('section') : null;
-  var fallbackPlacement = section ? (section.id || String(section.className || '').split(' ')[0] || 'unknown') : 'unknown';
-  return {
-    ctaId: (el && el.dataset && el.dataset.ctaId) || 'pro_checkout',
-    ctaPlacement: (el && el.dataset && el.dataset.ctaPlacement) || fallbackPlacement,
-    tier: (el && el.dataset && el.dataset.tier) || 'pro',
-    planId: (el && el.dataset && el.dataset.planId) || 'pro',
-    price: Number((el && el.dataset && el.dataset.price) || proPriceDollars || 19),
-    billing: (el && el.dataset && el.dataset.billing) || 'monthly',
-    label: label,
-  };
-}
-
-function trackRevenueCta(el) {
-  var meta = readRevenueCtaMeta(el);
-  var plausibleProps = {
-    cta: meta.ctaId,
-    cta_id: meta.ctaId,
-    section: meta.ctaPlacement,
-    tier: meta.tier,
-    plan_id: meta.planId,
-    price: meta.price,
-    billing: meta.billing,
-    label: meta.label,
-  };
-  if (typeof plausible === 'function') {
-    plausible('pricing_cta_click', { props: plausibleProps });
-    plausible('checkout_start', { props: plausibleProps });
-  }
-  sendFirstPartyTelemetry('cta_click', {
-    ctaId: meta.ctaId,
-    ctaPlacement: meta.ctaPlacement,
-    planId: meta.planId,
-    tier: meta.tier,
-    price: meta.price,
-    billing: meta.billing,
-    label: meta.label,
-  });
-  sendGa4Event('begin_checkout', {
-    currency: 'USD',
-    value: meta.price,
-    items: [{ item_id: 'pro_monthly', item_name: 'ThumbGate Pro Monthly' }],
-  });
-}
-
-function initializeTeamIntakeTelemetry() {
-  document.querySelectorAll('[data-team-intake-form]').forEach(function(form) {
-    var started = false;
-    function readHidden(name) {
-      var input = form.querySelector('input[name="' + name + '"]');
-      return input ? input.value : null;
-    }
-    form.addEventListener('input', function() {
-      if (started) return;
-      started = true;
-      sendFirstPartyTelemetry('workflow_sprint_intake_started', {
-        ctaId: readHidden('ctaId'),
-        ctaPlacement: readHidden('ctaPlacement'),
-        planId: readHidden('planId') || 'team',
+    function sendFirstPartyTelemetry(eventName, props) {
+      const payload = JSON.stringify({
+        event: eventName,
+        page: '/',
+        source: 'homepage',
+        visitorId: serverVisitorId || undefined,
+        sessionId: serverSessionId || undefined,
+        acquisitionId: serverAcquisitionId || undefined,
+        props: props || {},
       });
-    });
-    form.addEventListener('submit', function() {
-      sendFirstPartyTelemetry('workflow_sprint_intake_submit_attempted', {
-        ctaId: readHidden('ctaId'),
-        ctaPlacement: readHidden('ctaPlacement'),
-        planId: readHidden('planId') || 'team',
-      });
-      sendGa4Event('generate_lead', {
+      try {
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon('/v1/telemetry/event', new Blob([payload], { type: 'application/json' }));
+          return;
+        }
+        fetch('/v1/telemetry/event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload,
+          keepalive: true,
+        }).catch(function () {});
+      } catch (_) {}
+    }
+
+    function sendGa4Event(eventName, params) {
+      if (!gaMeasurementId || typeof window.gtag !== 'function') return;
+      window.gtag('event', eventName, params || {});
+    }
+
+    function captureOfferInterest(ctaId, placement) {
+      const props = {
+        ctaId: ctaId || 'homepage_diagnostic_buy',
+        ctaPlacement: placement || 'homepage',
+        planId: 'sprint_diagnostic',
+        value: 499,
         currency: 'USD',
-        value: 0,
-        method: 'workflow_sprint_intake',
+      };
+      window.plausible('diagnostic_offer_click', { props: props });
+      sendFirstPartyTelemetry('cta_click', props);
+      try {
+        if (window.posthog && typeof window.posthog.capture === 'function') {
+          window.posthog.capture('diagnostic_offer_click', props);
+        }
+      } catch (_) {}
+    }
+
+    document.querySelectorAll('[data-offer-link]').forEach(function (link) {
+      link.addEventListener('click', function () {
+        captureOfferInterest(link.dataset.ctaId, 'page_anchor');
       });
     });
-  });
-}
 
-function resolvePricingClickTier(el) {
-  if (el.classList.contains('btn-install-hero')) return 'install';
-  if (el.classList.contains('btn-install-link')) return 'install';
-  if (el.hasAttribute('data-nav-install')) return 'install';
-  if (el.classList.contains('btn-gpt-page')) return 'chatgpt_gpt';
-  if (el.classList.contains('btn-pro')) return 'pro';
-  if (el.classList.contains('btn-pro-page')) return 'pro_page';
-  if (el.classList.contains('btn-team')) return 'team';
-  if (el.classList.contains('btn-free')) return 'free';
-  if (el.classList.contains('btn-demo-link')) return 'demo';
-  if (el.classList.contains('nav-cta')) return 'team';
-  return 'nav';
-}
+    const checkoutForm = document.querySelector('[data-primary-checkout]');
+    if (checkoutForm) {
+      checkoutForm.addEventListener('submit', function () {
+        const props = {
+          ctaId: 'homepage_diagnostic_buy',
+          ctaPlacement: 'hero',
+          planId: 'sprint_diagnostic',
+          value: 499,
+          currency: 'USD',
+        };
+        window.plausible('checkout_start', { props: props });
+        sendGa4Event('begin_checkout', props);
+        sendFirstPartyTelemetry('checkout_start', props);
+        try {
+          if (window.posthog && typeof window.posthog.capture === 'function') {
+            window.posthog.capture('checkout_start', props);
+          }
+        } catch (_) {}
+      });
+    }
 
-function copyInstall(el) {
-  navigator.clipboard.writeText('npx thumbgate init').then(function() {
-    var hint = el.querySelector('.copy-hint');
-    hint.textContent = 'copied!';
-    hint.classList.add('copied');
-    setTimeout(function() { hint.textContent = 'click to copy'; hint.classList.remove('copied'); }, 2000);
-  });
-  if (typeof plausible === 'function') plausible('install_copy');
-  sendFirstPartyTelemetry('install_copy', {
-    ctaId: 'install_copy',
-    ctaPlacement: 'copy_command',
-    planId: 'free',
-  });
-}
-
-/* ── Plausible custom event tracking ── */
-(function() {
-
-  function trackClick(selector, eventName, props) {
-    document.querySelectorAll(selector).forEach(function(el) {
-      el.addEventListener('click', function() {
-        if (typeof plausible === 'function') plausible(eventName, { props: props || {} });
-        var section = el.closest('section');
-        var sectionId = section ? (section.id || String(section.className || '').split(' ')[0] || 'unknown') : 'unknown';
-        var firstPartyEventName = eventName === 'checkout_start' ? 'cta_click' : eventName;
-        sendFirstPartyTelemetry(firstPartyEventName, Object.assign({}, props || {}, {
-          ctaId: (props && (props.ctaId || props.cta)) || eventName,
-          ctaPlacement: (props && props.ctaPlacement) || sectionId,
-          planId: (props && props.planId) || (props && props.tier) || null,
-        }));
+    document.querySelectorAll('.faq-q').forEach(function (button) {
+      button.addEventListener('click', function () {
+        const item = button.closest('.faq-item');
+        const open = item.classList.toggle('open');
+        button.setAttribute('aria-expanded', String(open));
       });
     });
-  }
 
-  function toggleFaq(el) {
-    var item = el.parentElement;
-    var open = item.classList.toggle('open');
-    el.setAttribute('aria-expanded', open ? 'true' : 'false');
-  }
-
-  function handleFaqKeydown(event) {
-    if (event.key !== 'Enter' && event.key !== ' ') return;
-    event.preventDefault();
-    toggleFaq(event.currentTarget);
-  }
-
-  // Hoist FAQ handlers to window scope so the inline `onclick="toggleFaq(this)"`
-  // attributes on every FAQ question can resolve them. Without this, every FAQ
-  // click silently throws ReferenceError — all 13 FAQ items on the landing
-  // page are dead. Discovered by comprehensive E2E coverage in this PR.
-  window.toggleFaq = toggleFaq;
-  window.handleFaqKeydown = handleFaqKeydown;
-
-  /* CTA clicks */
-  trackClick('.btn-pro:not([data-revenue-cta])', 'checkout_start', { tier: 'pro', price: 19, billing: 'monthly' });
-  trackClick('.btn-gpt-page:not(.btn-install-hero)', 'chatgpt_gpt_click', { tier: 'free', source: 'homepage_gpt' });
-  trackClick('.btn-install-hero', 'install_guide_click', { tier: 'free', source: 'hero_install' });
-  trackClick('.btn-pro-page:not(.btn-install-link)', 'pro_page_click', { tier: 'pro', source: 'hero' });
-  trackClick('.btn-install-link', 'install_guide_click', { tier: 'free', source: 'homepage_cta' });
-  trackClick('.btn-team', 'workflow_sprint_intake_click', { tier: 'team', offer: 'workflow_hardening_sprint' });
-  trackClick('.btn-free', 'install_click', { tier: 'free' });
-  trackClick('.btn-demo-link', 'demo_click', { source: 'homepage' });
-  trackClick('.nav-cta[data-nav-install]', 'install_guide_click', {
-    tier: 'free',
-    source: 'nav_install',
-    ctaId: 'nav_install_cli',
-    ctaPlacement: 'nav',
-    planId: 'free',
-  });
-  trackClick('.nav-cta:not([data-revenue-cta]):not([data-nav-install])', 'chatgpt_gpt_click', { tier: 'free', source: 'nav' });
-
-  /* Pricing CTA conversion tracking — fires on every Get Started / Pro / Enterprise button click
-     with section context so we can distinguish pricing section vs final CTA section clicks */
-  document.querySelectorAll('.btn-pro, .btn-gpt-page, .btn-pro-page, .btn-install-hero, .btn-install-link, .btn-team, .btn-free, .btn-demo-link, .nav-cta').forEach(function(el) {
-    el.addEventListener('click', function() {
-      if (el.hasAttribute('data-revenue-cta')) return;
-      var section = el.closest('section');
-      var sectionId = section ? (section.id || section.className.split(' ')[0] || 'unknown') : 'unknown';
-      var tier = resolvePricingClickTier(el);
-      var label = (el.textContent || '').trim().substring(0, 40);
-      if (typeof plausible === 'function') {
-        plausible('pricing_cta_click', { props: { tier: tier, section: sectionId, label: label } });
-      }
-    });
-  });
-
-  /* FAQ accordion opens */
-  document.querySelectorAll('.faq-q').forEach(function(el) {
-    el.addEventListener('click', function() {
-      var question = this.textContent.trim().substring(0, 60);
-      if (typeof plausible === 'function') plausible('faq_open', { props: { question: question } });
-    });
-  });
-
-  /* Scroll depth (25%, 50%, 75%, 100%) */
-  var scrollMarks = { 25: false, 50: false, 75: false, 100: false };
-  window.addEventListener('scroll', function() {
-    var docHeight = document.documentElement.scrollHeight - window.innerHeight;
-    if (docHeight <= 0) return;
-    var pct = Math.round((window.scrollY / docHeight) * 100);
-    [25, 50, 75, 100].forEach(function(mark) {
-      if (pct >= mark && !scrollMarks[mark]) {
-        scrollMarks[mark] = true;
-        if (typeof plausible === 'function') plausible('scroll_depth', { props: { depth: mark + '%' } });
-      }
-    });
-  });
-
-  /* Proof bar link clicks */
-  trackClick('.proof-bar a', 'proof_bar_click');
-
-  /* Compatibility card clicks */
-  trackClick('.compat-card', 'compat_click');
-
-  /* SEO/comparison page clicks */
-  trackClick('.seo-card', 'seo_page_click');
-
-  globalThis.buyerJourney = globalThis.ThumbGateBuyerIntent.initializeBehaviorAnalytics({
-    pageType: 'marketing',
-    pagePath: '/',
-    landingPath: '/',
-    sendTelemetry: sendFirstPartyTelemetry,
-    emailSelector: '#pro-email',
-    sections: [
-      { selector: '.hero', sectionId: 'hero', sectionLabel: 'Hero' },
-      { selector: '.proof-bar', sectionId: 'proof_bar', sectionLabel: 'Proof Bar' },
-      { selector: '#how-it-works', sectionId: 'how_it_works', sectionLabel: 'How It Works' },
-      { selector: '#pricing', sectionId: 'pricing', sectionLabel: 'Pricing' },
-      { selector: '#workflow-sprint-intake', sectionId: 'workflow_sprint_intake', sectionLabel: 'Workflow Sprint Intake' },
-      { selector: '#faq', sectionId: 'faq', sectionLabel: 'FAQ' }
-    ],
-    ctaImpressions: [
-      { selector: '#pro-checkout-link', ctaId: 'pricing_pro_checkout', ctaPlacement: 'pricing', planId: 'pro' },
-      { selector: '.price-card.pro .btn-pro', ctaId: 'pricing_pro_monthly', ctaPlacement: 'pricing', planId: 'pro' },
-      { selector: '.nav-cta[data-revenue-cta]', ctaId: 'nav_start_pro', ctaPlacement: 'nav', planId: 'pro' },
-      { selector: '.hero-actions .hero-pro-primary', ctaId: 'hero_start_pro', ctaPlacement: 'hero', planId: 'pro' },
-      { selector: '.hero-actions .btn-pro-page:not(.hero-pro-primary)', ctaId: 'hero_workflow_intake', ctaPlacement: 'hero', planId: 'team' },
-      { selector: '.hero-actions .hero-pro:not(.hero-pro-primary)', ctaId: 'hero_workflow_sprint_recovery_intake', ctaPlacement: 'hero', planId: 'team' },
-      { selector: '.sticky-cta .btn-pro', ctaId: 'sticky_go_pro', ctaPlacement: 'sticky_cta', planId: 'pro' },
-      { selector: '.price-card.team .btn-team', ctaId: 'team_workflow_sprint', ctaPlacement: 'pricing', planId: 'team' },
-      { selector: '#team-pilot-intake-form', ctaId: 'workflow_sprint_intake', ctaPlacement: 'team_visible_intake', planId: 'team' }
-    ]
-  });
-})();
-</script>
-<script>
-initializeBuyerIntentForms();
-initializeTeamIntakeTelemetry();
-
-async function handleProCheckout() {
-  var buyerIntent = globalThis.ThumbGateBuyerIntent;
-  var email = document.getElementById('pro-email');
-  var checkoutLink = document.getElementById('pro-checkout-link');
-  trackRevenueCta(checkoutLink);
-  var normalizedEmail = buyerIntent.normalizeBuyerEmail(email && email.value);
-  if (!email || !buyerIntent.isValidBuyerEmail(normalizedEmail)) {
-    email.style.border = '2px solid #f87171';
-    email.placeholder = 'Please enter a valid email';
-    email.focus();
-    return;
-  }
-  email.style.border = '1px solid #333';
-  buyerIntent.storeBuyerEmail(normalizedEmail);
-  buyerIntent.hydrateBuyerEmailInputs(normalizedEmail);
-  buyerIntent.applyBuyerEmailToCheckoutLinks(normalizedEmail);
-  if (globalThis.buyerJourney && typeof globalThis.buyerJourney.markEmailCaptured === 'function') {
-    globalThis.buyerJourney.markEmailCaptured();
-  }
-  var checkoutUrl = checkoutLink ? checkoutLink.href : '/checkout/pro';
-  if (typeof plausible === 'function') {
-    plausible('pro_email_captured', { props: { page: 'homepage', intent: 'checkout' } });
-  }
-  try {
-    await buyerIntent.submitNewsletterSignup(normalizedEmail);
-  } catch (_err) {
-    // Continue to checkout even if lead capture fails.
-  }
-  globalThis.location.assign(checkoutUrl);
-}
-
-// Conversion-path safety: /services redirects to /#workflow-sprint-intake.
-// Modern browsers auto-open a <details> containing the hash target, but
-// older Safari/Firefox/Chrome (<2020) do not. Force-open any ancestor
-// <details> of the hash target so high-intent buyers always see the
-// paid intake content on arrival.
-function openDetailsForHash() {
-  var hash = globalThis.location.hash;
-  if (!hash || hash.length < 2) return;
-  var target;
-  try { target = document.querySelector(hash); } catch (_) { return; }
-  if (!target) return;
-  var el = target;
-  while (el && el !== document.body) {
-    if (el.tagName === 'DETAILS') { el.open = true; }
-    el = el.parentElement;
-  }
-  target.scrollIntoView({ behavior: 'auto', block: 'start' });
-}
-globalThis.addEventListener('DOMContentLoaded', openDetailsForHash);
-globalThis.addEventListener('hashchange', openDetailsForHash);
-</script>
+    if (!serverTelemetryCaptured) {
+      sendFirstPartyTelemetry('page_view', { landingPath: '/' });
+    }
+  </script>
 </body>
 </html>

@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ThumbGate Workflow Hardening Diagnostic</title>
-<meta name="description" content="A focused diagnostic for one repeated AI-agent workflow failure. ThumbGate maps the failure taxonomy, block/warn/human-review split, and proof checklist before rollout.">
+<title>ThumbGate Managed AI Agent Workflow Gate</title>
+<meta name="description" content="A managed implementation for one repeated AI-agent workflow failure: one configured local gate, one regression test, and rollout and rollback proof.">
 <link rel="canonical" href="__APP_ORIGIN__/diagnostic">
 <link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
-<meta property="og:title" content="ThumbGate Workflow Hardening Diagnostic">
-<meta property="og:description" content="Send one repeated AI-agent workflow failure. Get the gate/review split and proof checklist before implementation.">
+<meta property="og:title" content="ThumbGate Managed AI Agent Workflow Gate">
+<meta property="og:description" content="Send one repeated AI-agent workflow failure. Get one configured gate, a regression test, and rollout and rollback proof.">
 <meta property="og:url" content="__APP_ORIGIN__/diagnostic">
 <meta property="og:type" content="website">
 <style>
@@ -193,13 +193,13 @@ footer { padding: 32px 0 44px; color: var(--muted); }
 {
   "@context": "https://schema.org",
   "@type": "Service",
-  "name": "ThumbGate Workflow Hardening Diagnostic",
+  "name": "ThumbGate Managed AI Agent Workflow Gate",
   "provider": {
     "@type": "Organization",
     "name": "ThumbGate",
     "url": "__APP_ORIGIN__"
   },
-  "description": "A focused diagnostic for one repeated AI-agent workflow failure, including failure taxonomy, block/warn/human-review split, and proof checklist.",
+  "description": "A managed implementation for one repeated AI-agent workflow failure, including one configured local gate, a regression test, and rollout and rollback proof.",
   "offers": {
     "@type": "Offer",
     "price": "__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__",
@@ -217,7 +217,7 @@ footer { padding: 32px 0 44px; color: var(--muted); }
     <span>ThumbGate</span>
   </a>
   <nav aria-label="Primary">
-    <a href="/pro">Pro</a>
+    <a href="/">Home</a>
     <a href="/pricing">Pricing</a>
     <a href="/llm-context.md">LLM Context</a>
   </nav>
@@ -225,9 +225,9 @@ footer { padding: 32px 0 44px; color: var(--muted); }
 <main>
   <div class="hero">
     <div>
-      <div class="eyebrow">Workflow Hardening Diagnostic</div>
+      <div class="eyebrow">Managed AI Agent Workflow Gate</div>
       <h1>Turn one repeated AI-agent failure into a gate you can prove.</h1>
-      <p class="lede">Send the workflow that keeps failing. ThumbGate maps what should block, warn, or route to human review before an agent writes, sends, deploys, or spends.</p>
+      <p class="lede">Send the workflow that keeps failing. ThumbGate configures what should allow, warn, or deny before an agent writes, sends, deploys, or spends—and adds the regression proof.</p>
       <div class="actions">
         <form class="diagnostic-pay-form" action="/go/diagnostic-pay" method="POST" data-diagnostic-pay-form>
           <input type="hidden" name="utm_source" value="diagnostic_page">
@@ -239,20 +239,20 @@ footer { padding: 32px 0 44px; color: var(--muted); }
           <input type="hidden" name="plan_id" value="sprint_diagnostic">
           <label for="diagnostic-pay-email">Work email for the receipt</label>
           <input id="diagnostic-pay-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
-          <button class="button primary" type="submit" data-revenue-cta data-cta-id="diagnostic_hero_paid" data-cta-placement="hero">Continue to secure $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ checkout</button>
+          <button class="button primary" type="submit" data-revenue-cta data-cta-id="diagnostic_hero_paid" data-cta-placement="hero">Buy the $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ managed gate</button>
           <span class="hint">No Stripe session is created until you submit this form.</span>
         </form>
-        <a class="button" href="#intake" data-revenue-cta data-cta-id="diagnostic_hero_intake" data-cta-placement="hero">Send workflow first</a>
+        <a class="button" href="#intake" data-revenue-cta data-cta-id="diagnostic_hero_intake" data-cta-placement="hero">Check workflow fit first</a>
       </div>
       <div class="proof-strip" aria-label="Diagnostic proof points">
-        <div class="proof"><strong>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</strong><span>Credited toward a sprint when implementation follows.</span></div>
-        <div class="proof"><strong>One workflow</strong><span>Scoped tightly so the proof is shippable.</span></div>
-        <div class="proof"><strong>Fit fallback</strong><span>Use the intake if the workflow needs scoping first.</span></div>
+        <div class="proof"><strong>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</strong><span>One fixed-price managed implementation.</span></div>
+        <div class="proof"><strong>One workflow</strong><span>One configured local gate and regression test.</span></div>
+        <div class="proof"><strong>Two business days</strong><span>Rollout and rollback proof after access is available.</span></div>
       </div>
     </div>
     <form id="intake" class="intake-card" action="/v1/intake/workflow-sprint" method="POST" data-team-intake-form data-diagnostic-intake-form>
-      <h2>Submit for diagnostic scope</h2>
-      <p>Use this when an AI-assisted workflow has already caused rework, review drag, or release risk.</p>
+      <h2>Check workflow fit</h2>
+      <p>Use this before checkout if you are unsure the repeated action can be reduced to one supported local gate.</p>
       <input type="hidden" name="ctaId" value="diagnostic_page_intake">
       <input type="hidden" name="ctaPlacement" value="diagnostic_page">
       <input type="hidden" name="utmMedium" value="diagnostic_intake">
@@ -273,13 +273,13 @@ footer { padding: 32px 0 44px; color: var(--muted); }
         <option>We are about to roll this workflow out</option>
         <option>We need an independent proof checklist first</option>
       </select>
-      <button type="submit" data-revenue-cta data-cta-id="diagnostic_page_submit" data-cta-placement="intake">Submit for diagnostic scope</button>
-      <p class="hint" data-diagnostic-payment-hint>Ready to pay now? Use the $499 diagnostic checkout above. If the workflow needs fit review first, submit it here and we will route you to the diagnostic or sprint only when the scope is real.</p>
+      <button type="submit" data-revenue-cta data-cta-id="diagnostic_page_submit" data-cta-placement="intake">Submit for fit check</button>
+      <p class="hint" data-diagnostic-payment-hint>Ready to pay now? Use the $499 managed-gate checkout above. If the workflow is not a supported fit, we refund the order instead of opening a larger consulting scope.</p>
     </form>
   </div>
   <section>
-    <h2>Exactly what the $499 diagnostic includes</h2>
-    <p class="lede" style="font-size:17px;">One workflow, one 60-minute working review, and a written decision packet delivered within two business days after the review and receipt of the agreed workflow materials.</p>
+    <h2>Exactly what the $499 managed gate includes</h2>
+    <p class="lede" style="font-size:17px;">One workflow, one 60-minute working review, one configured local gate and regression test, plus rollout and rollback proof within two business days after access and the agreed workflow materials are available.</p>
     <div class="grid" data-diagnostic-offer-contract>
       <div class="box">
         <h3>You provide</h3>
@@ -287,17 +287,17 @@ footer { padding: 32px 0 44px; color: var(--muted); }
       </div>
       <div class="box">
         <h3>You receive</h3>
-        <p>A workflow and failure map, block/warn/human-review matrix, verification checklist, and prioritized implementation recommendation for the agreed workflow.</p>
+        <p>A workflow and failure map, one configured local gate, its regression test, and written rollout, rollback, and verification proof for the agreed workflow.</p>
       </div>
       <div class="box">
         <h3>Boundaries</h3>
-        <p>The diagnostic does not include implementation, legal or compliance certification, guaranteed savings, guaranteed incident prevention, or uncontracted hosted-team features.</p>
+        <p>The offer does not include multi-system implementation, legal or compliance certification, guaranteed savings, guaranteed incident prevention, or uncontracted hosted-team features.</p>
       </div>
     </div>
-    <div class="intake-card" style="margin-top:16px;" data-diagnostic-credit-terms>
-      <h3 style="margin-top:0;">If implementation follows</h3>
-      <p>The public Workflow Hardening Sprint is $__WORKFLOW_SPRINT_PRICE_DOLLARS__. If the paid diagnostic continues into a sprint for the same workflow, the $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic fee is applied through the follow-up sprint invoice or checkout. Do not pay both public links at full price.</p>
-      <p class="hint">The sprint adds the agreed gate implementation, local regression and proof artifacts, an approval and rollback runbook, and a review handoff. Multi-workflow rollout, ongoing monitoring, shared hosting, and compliance work require separate Enterprise scope.</p>
+    <div class="intake-card" style="margin-top:16px;" data-diagnostic-fit-terms>
+      <h3 style="margin-top:0;">Fit and refund boundary</h3>
+      <p>If the repeated failure cannot be reduced to one supported ThumbGate gate, the $__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ order is refunded instead of being silently converted into a larger service.</p>
+      <p class="hint">Multi-workflow rollout, ongoing monitoring, shared hosting, compliance work, and hosted Enterprise capabilities are not included or generally available.</p>
     </div>
   </section>
   <section>
@@ -335,7 +335,7 @@ footer { padding: 32px 0 44px; color: var(--muted); }
   </section>
 </main>
 <footer>
-  ThumbGate is local-first agent governance. Use <a href="/pro">Pro</a> for self-serve operator proof, or submit one workflow above for a diagnostic.
+  ThumbGate is local-first agent governance. <a href="/pricing">Buy the managed workflow gate</a> or submit one workflow above for a fit check.
 </footer>
 <script>
 (function () {

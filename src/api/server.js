@@ -1650,8 +1650,24 @@ function buildWorkflowIntakeQueue(parsed, workflowSprintIntake, feedbackDir, opt
     const status = lead.status || 'unknown';
     byStatus[status] = (byStatus[status] || 0) + 1;
   }
-  const eligible = leads
-    .filter((lead) => statuses.length === 0 || statuses.includes(lead.status))
+  const statusMatched = leads.filter(
+    (lead) => statuses.length === 0 || statuses.includes(lead.status)
+  );
+  const classified = statusMatched.map((lead) => ({
+    lead,
+    quality: typeof workflowSprintIntake.classifyWorkflowSprintLeadQuality === 'function'
+      ? workflowSprintIntake.classifyWorkflowSprintLeadQuality(lead)
+      : { eligible: true, reason: null },
+  }));
+  const excluded = classified.filter((entry) => entry.quality.eligible === false);
+  const excludedByReason = {};
+  for (const entry of excluded) {
+    const reason = entry.quality.reason || 'unspecified_noise';
+    excludedByReason[reason] = (excludedByReason[reason] || 0) + 1;
+  }
+  const eligible = classified
+    .filter((entry) => entry.quality.eligible !== false)
+    .map((entry) => entry.lead)
     .map((lead) => {
       const qualificationReviewVerified =
         typeof workflowSprintIntake.isEvidenceBasedQualificationReview === 'function' &&
@@ -1684,7 +1700,10 @@ function buildWorkflowIntakeQueue(parsed, workflowSprintIntake, feedbackDir, opt
   return {
     generatedAt,
     total: leads.length,
+    matchedTotal: statusMatched.length,
     eligibleTotal: eligible.length,
+    excludedTotal: excluded.length,
+    excludedByReason,
     returned: selected.length,
     approvalReadyTotal: approvalReady.length,
     discoveryReadyTotal: discoveryReady.length,

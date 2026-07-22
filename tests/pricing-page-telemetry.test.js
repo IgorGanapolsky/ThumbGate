@@ -7,25 +7,21 @@ const test = require('node:test');
 
 const pricingHtml = fs.readFileSync(path.resolve(__dirname, '../public/pricing.html'), 'utf8');
 
-test('pricing page emits first-party telemetry for views and CTA clicks', () => {
-  assert.match(pricingHtml, /\/v1\/telemetry\/ping/);
+test('pricing page emits first-party telemetry for views and buyer actions', () => {
+  assert.match(pricingHtml, /\/v1\/telemetry\/event/);
   assert.match(pricingHtml, /pricing_page_view/);
   assert.match(pricingHtml, /pricing_cta_click/);
-  assert.match(pricingHtml, /data-pricing-cta/);
-  assert.match(pricingHtml, /data-cta-id="pricing_diagnostic"/);
-  assert.match(pricingHtml, /data-cta-id="pricing_sprint"/);
-  assert.match(pricingHtml, /data-cta-id="pricing_pro"/);
+  assert.match(pricingHtml, /checkout_start/);
+  assert.match(pricingHtml, /data-cta-id="pricing_nav_buy"/);
+  assert.match(pricingHtml, /data-primary-checkout/);
 });
 
-test('pricing leads with diagnostic confirmation, sprint payment, and gated Pro checkout', () => {
-  assert.match(pricingHtml, /href="\/diagnostic\?[^"]*cta_id=pricing_nav_diagnostic/);
-  assert.match(pricingHtml, /href="\/diagnostic\?[^"]*cta_id=pricing_diagnostic/);
-  assert.match(pricingHtml, /href="\/go\/sprint\?[^"]*cta_id=pricing_sprint/);
-  assert.match(pricingHtml, /Start \$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__ diagnostic/);
-  assert.match(pricingHtml, /Scope \$__WORKFLOW_SPRINT_PRICE_DOLLARS__ sprint/);
-  assert.match(pricingHtml, /href="\/checkout\/pro\?[^"]*cta_id=pricing_pro/);
-  assert.doesNotMatch(pricingHtml, /checkout\/pro\?confirm=1/);
-  assert.match(pricingHtml, /"url": "__APP_ORIGIN__\/checkout\/pro\?plan_id=pro&billing_cycle=monthly/);
-  assert.match(pricingHtml, /"name": "Workflow Hardening Diagnostic"/);
-  assert.match(pricingHtml, /"name": "Workflow Hardening Sprint"/);
+test('pricing exposes one direct $499 cash path and no competing offer', () => {
+  assert.match(pricingHtml, /action="\/go\/diagnostic-pay" method="POST"/);
+  assert.match(pricingHtml, /Buy the \$499 managed gate/);
+  assert.match(pricingHtml, /name="customer_email"[^>]*required/);
+  assert.match(pricingHtml, /"name": "ThumbGate Managed AI Agent Workflow Gate"/);
+  assert.match(pricingHtml, /"price": "499"/);
+  assert.doesNotMatch(pricingHtml, /\/checkout\/pro|\/go\/sprint|workflow-sprint-intake/);
+  assert.doesNotMatch(pricingHtml, /\$19|\$149|\$1,500|\$3,000|\$10,000|\$15,000/);
 });

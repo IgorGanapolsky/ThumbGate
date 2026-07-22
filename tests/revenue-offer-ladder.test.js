@@ -20,37 +20,31 @@ const commercialTruth = read('docs/COMMERCIAL_TRUTH.md');
 const ladder = read('docs/REVENUE_OFFER_LADDER.md');
 const diagnostic = read('public/diagnostic.html');
 
-test('commercial truth names only the current one-time service offers without contradicting itself', () => {
-  assert.match(commercialTruth, /Workflow Hardening Sprint.*\$1,500.*\/go\/sprint/i);
-  assert.match(commercialTruth, /Workflow Hardening Diagnostic.*\$499.*\/go\/diagnostic/i);
-  assert.ok(commercialTruth.includes(
-    'The `$499` diagnostic and `$1,500` sprint links named above are the only current public one-time service offers.'
-  ));
-  assert.match(commercialTruth, /Other legacy one-time Stripe links.*not current public offers/i);
-  assert.doesNotMatch(
-    commercialTruth,
-    /^- Legacy one-time Stripe links are retained only for past buyers and are not a current public offer\.$/m
-  );
+test('commercial truth names one promoted public service offer', () => {
+  assert.match(commercialTruth, /only promoted public offer.*Managed AI Agent Workflow Gate.*\$499 one-time/is);
+  assert.match(commercialTruth, /\/go\/diagnostic-pay/);
+  assert.match(commercialTruth, /\$1,500.*internal catalog\/scoping rail/i);
+  assert.match(commercialTruth, /\$499.*only currently promoted public one-time service offer/i);
 });
 
-test('diagnostic page states a complete fixed-scope offer contract', () => {
-  assert.match(diagnostic, /Exactly what the \$499 diagnostic includes/);
+test('managed-gate page states a complete fixed-scope implementation contract', () => {
+  assert.match(diagnostic, /Exactly what the \$499 managed gate includes/);
   assert.match(diagnostic, /one 60-minute working review/i);
   assert.match(diagnostic, /within two business days/i);
   assert.match(diagnostic, /workflow and failure map/i);
-  assert.match(diagnostic, /block\/warn\/human-review matrix/i);
-  assert.match(diagnostic, /verification checklist/i);
-  assert.match(diagnostic, /prioritized implementation recommendation/i);
-  assert.match(diagnostic, /does not include implementation/i);
+  assert.match(diagnostic, /one configured local gate/i);
+  assert.match(diagnostic, /regression test/i);
+  assert.match(diagnostic, /rollout, rollback, and verification proof/i);
+  assert.match(diagnostic, /does not include multi-system implementation/i);
   assert.match(diagnostic, /guaranteed savings/i);
-  assert.match(diagnostic, /out-of-scope workflow does not require checkout/i);
+  assert.match(diagnostic, /order is refunded instead of being silently converted/i);
 });
 
-test('diagnostic credit mechanics prevent a buyer from paying two full-price links', () => {
-  assert.match(diagnostic, /data-diagnostic-credit-terms/);
-  assert.match(diagnostic, /fee is applied through the follow-up sprint invoice or checkout/i);
-  assert.match(diagnostic, /Do not pay both public links at full price/i);
-  assert.match(commercialTruth, /buyer should not pay both public links at full price/i);
+test('managed-gate fit mechanics prevent an open-ended upsell', () => {
+  assert.match(diagnostic, /data-diagnostic-fit-terms/);
+  assert.match(diagnostic, /order is refunded instead of being silently converted/i);
+  assert.doesNotMatch(diagnostic, /public Workflow Hardening Sprint is/i);
+  assert.match(commercialTruth, /refunded instead of silently upsold/i);
 });
 
 test('unverified marketplace obligations cannot receive a payment diversion', () => {
@@ -83,7 +77,7 @@ test('revenue target is explicit math and never presented as achieved traction',
   assert.match(ladder, /\$24,000\/day/);
   assert.match(ladder, /\$8,760,000\/year/);
   assert.match(ladder, /49.*paid.*\$499.*diagnostics per day/i);
-  assert.match(ladder, /16.*paid.*\$1,500.*sprints per day/i);
+  assert.match(ladder, /16.*paid.*\$1,500.*internal sprint scopes per day/i);
   assert.match(ladder, /38,422.*active.*\$19\/month.*subscriptions/i);
   assert.match(ladder, /244.*active.*\$3,000\/month.*Workflow Reliability Operations/i);
   assert.match(ladder, /49.*paid.*\$15,000.*Enterprise Governance Pilots/i);

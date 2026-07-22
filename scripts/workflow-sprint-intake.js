@@ -77,6 +77,7 @@ const QUALIFICATION_DECISION_OFFER_IDS = Object.freeze({
     'enterprise_reliability_operations',
   ]),
 });
+const SYNTHETIC_INTAKE_DOMAINS = new Set(['clumsysnake.org']);
 
 function normalizeText(value, maxLength = 280) {
   if (value === undefined || value === null) return null;
@@ -95,6 +96,55 @@ function normalizeEmail(value) {
   if (!email) return null;
   const normalized = email.toLowerCase();
   return EMAIL_PATTERN.test(normalized) ? normalized : null;
+}
+
+function classifyWorkflowSprintLeadQuality(lead = {}) {
+  const contact = lead.contact || {};
+  const qualification = lead.qualification || {};
+  const attribution = lead.attribution || {};
+  const email = String(contact.email || '').trim().toLowerCase();
+  const emailDomain = email.includes('@') ? email.split('@').pop() : '';
+  const company = String(contact.company || '').trim().toLowerCase();
+  const corpus = [
+    contact.name,
+    contact.company,
+    qualification.workflow,
+    qualification.owner,
+    qualification.blocker,
+    qualification.note,
+    attribution.source,
+    attribution.utmSource,
+    attribution.utmCampaign,
+  ].map((value) => String(value || '').toLowerCase()).join('\n');
+
+  const internalTest =
+    (emailDomain === 'thumbgate.ai' && /\b(?:qa|test|verification|self[-_ ]?verify)\b/.test(corpus)) ||
+    /\bthumbgate production verification\b/.test(company) ||
+    /\baiventyx test\b/.test(company) ||
+    /^test submission$/.test(String(qualification.workflow || '').trim().toLowerCase());
+  if (internalTest) {
+    return { eligible: false, reason: 'internal_or_partner_test' };
+  }
+
+  if (SYNTHETIC_INTAKE_DOMAINS.has(emailDomain)) {
+    return { eligible: false, reason: 'synthetic_test_domain' };
+  }
+
+  const unsolicitedOutreach =
+    /(?:telegram|whatsapp|wa\.me|t\.me)/.test(corpus) &&
+    /(?:website outreach|contact website owners|connect with website owners|website contact (?:pages|forms)|reach (?:website owners|websites) worldwide)/.test(corpus);
+  if (unsolicitedOutreach) {
+    return { eligible: false, reason: 'unsolicited_service_spam' };
+  }
+
+  const financialScam =
+    /(?:limited.?time loan offer|instant approval|no collateral required)/.test(corpus) ||
+    (/(?:deceased client|inheritance)/.test(corpus) && /(?:million|funds|transaction)/.test(corpus));
+  if (financialScam) {
+    return { eligible: false, reason: 'financial_scam' };
+  }
+
+  return { eligible: true, reason: null };
 }
 
 function sha256Digest(value) {
@@ -1730,6 +1780,7 @@ module.exports = {
   sanitizeCommercialProof,
   sanitizeQualificationReview,
   isEvidenceBasedQualificationReview,
+  classifyWorkflowSprintLeadQuality,
   evaluatePaidTeamCommercialProof,
   evaluateDiagnosticCredit,
   validateSignedScope,

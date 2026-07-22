@@ -10,7 +10,7 @@
 > Pre-action checks that flag repeated risky actions before execution and block matching actions when strict policy is enabled. Accepted feedback becomes local lessons; repeated failures can become prevention rules.
 
 ### Public Landing Page (thumbgate-production.up.railway.app)
-> ThumbGate is the local pre-action governance runtime for AI coding agents (Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode): accepted 👍 thumbs-up and 👎 thumbs-down feedback becomes history-aware local lessons; repeated failures can become prevention rules. PreToolUse checks flag and log risky tool calls, hard-block detected secret leaks, and block matching actions in strict mode. Pro is for individual operators; Enterprise rollout is scoped after intake.
+> ThumbGate implements one hard, test-backed safety gate for a supported AI-agent workflow in two business days.
 
 ### NPM package.json
 > ThumbGate Pre-Action Checks derive rules from repeated failures, flag risky tool calls, hard-block detected secret leaks, and block matches in strict mode.

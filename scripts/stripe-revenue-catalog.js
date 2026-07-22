@@ -4,8 +4,8 @@ const STRIPE_REVENUE_CATALOG_VERSION = 'thumbgate-stripe-revenue-catalog-v1';
 
 // These immutable Stripe price/product pairs are the reviewed ThumbGate
 // buyer rails. Product names are intentionally not evidence: the live $499
-// diagnostic uses a generic product name and that same product also has a
-// separate $999 price. Exact price + product + commercial terms prevent both
+// managed gate shares its product with a separate, non-offer $999 price. Exact
+// price + product + commercial terms prevent both
 // false negatives and name/product lookalike attribution.
 const DEFAULT_STRIPE_REVENUE_CATALOG = Object.freeze([
   Object.freeze({

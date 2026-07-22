@@ -16,19 +16,17 @@ const platformTeamsHtml = read('public', 'use-cases', 'platform-teams.html');
 const regulatedHtml = read('public', 'use-cases', 'regulated-workflows.html');
 const deploymentReadinessHtml = read('public', 'guides', 'ai-deployment-readiness.html');
 
-test('homepage positions ThumbGate as the enforcement layer inside orchestration', () => {
-  assert.match(indexHtml, /Enforcement is the missing layer in AI orchestration/i);
-  assert.match(indexHtml, /what should happen next/i);
-  assert.match(indexHtml, /what is allowed to execute/i);
-  assert.match(indexHtml, /Broad orchestration platforms/i);
-  assert.match(indexHtml, /ThumbGate/i);
+test('homepage explains the enforcement point without an orchestration essay', () => {
+  assert.match(indexHtml, /The action gets checked before the tool runs/i);
+  assert.match(indexHtml, /Agent proposes/i);
+  assert.match(indexHtml, /ThumbGate checks/i);
+  assert.match(indexHtml, /Decision before execution/i);
+  assert.doesNotMatch(indexHtml, /Enforcement is the missing layer in AI orchestration/i);
 });
 
-test('homepage links to new orchestration comparison and buyer workflow pages', () => {
-  assert.match(indexHtml, /\/compare\/ai-experience-orchestration/);
-  assert.match(indexHtml, /\/guides\/ai-deployment-readiness/);
-  assert.match(indexHtml, /\/use-cases\/platform-teams/);
-  assert.match(indexHtml, /\/use-cases\/regulated-workflows/);
+test('homepage routes research through one guide-library link', () => {
+  assert.match(indexHtml, /href="\/learn"/);
+  assert.doesNotMatch(indexHtml, /id="compare-guides"/);
 });
 
 test('compare hub links to orchestration comparison page', () => {
@@ -55,15 +53,16 @@ test('Agentix comparison page frames agency services as adjacent competition', (
   assert.match(agentixHtml, /adjacent competition/i);
   assert.match(agentixHtml, /custom AI agent and automation services/i);
   assert.match(agentixHtml, /productized enforcement layer/i);
-  assert.match(agentixHtml, /Pro \$19\/mo or \$149\/yr/);
-  assert.match(agentixHtml, /Enterprise/);
+  assert.match(agentixHtml, /\$499 one-time Managed AI Agent Workflow Gate/i);
+  assert.doesNotMatch(agentixHtml, /Pro \$19|\$149|Workflow Hardening Sprint/i);
 });
 
 test('platform-team use case page exists with rollout language', () => {
   assert.match(platformTeamsHtml, /ThumbGate for platform teams/i);
   assert.match(platformTeamsHtml, /one repo, one owner, and one repeated AI failure/i);
   assert.match(platformTeamsHtml, /shared lessons/i);
-  assert.match(platformTeamsHtml, /workflow hardening sprint/i);
+  assert.match(platformTeamsHtml, /managed workflow gate/i);
+  assert.match(platformTeamsHtml, /href="\/diagnostic"/i);
 });
 
 test('regulated workflow page exists without fake compliance claims', () => {
@@ -73,10 +72,11 @@ test('regulated workflow page exists without fake compliance claims', () => {
   assert.match(regulatedHtml, /does not market itself as a compliance badge/i);
 });
 
-test('deployment readiness guide converts OpenAI-style deployment demand into ThumbGate sprint', () => {
+test('deployment readiness guide converts OpenAI-style deployment demand into one managed gate', () => {
   assert.match(deploymentReadinessHtml, /AI Deployment Readiness/i);
   assert.match(deploymentReadinessHtml, /deployment companies/i);
   assert.match(deploymentReadinessHtml, /governance and proof layer/i);
-  assert.match(deploymentReadinessHtml, /workflow-sprint-intake/);
-  assert.match(deploymentReadinessHtml, /Workflow Hardening Diagnostic/);
+  assert.match(deploymentReadinessHtml, /Managed AI Agent Workflow Gate/);
+  assert.match(deploymentReadinessHtml, /\$499 one-time/i);
+  assert.doesNotMatch(deploymentReadinessHtml, /\$1500|workflow-sprint-intake|Pro \$19|\$149/i);
 });

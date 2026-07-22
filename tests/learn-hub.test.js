@@ -351,17 +351,13 @@ test('persistent-memory article has install CTA', () => {
   assert.match(html, /npx thumbgate init/);
 });
 
-test('persistent-memory article routes high-intent readers to paid options', () => {
+test('persistent-memory article routes high-intent readers to the single paid offer', () => {
   const html = readFile(path.join(learnDir, 'ai-agent-persistent-memory.html'));
-  assert.match(html, /Get Pro — \$19\/mo or \$149\/yr/);
-  assert.match(html, /\/checkout\/pro\?utm_source=learn&amp;utm_medium=persistent_memory_article/);
-  assert.match(html, /cta_id=learn_persistent_memory_pro/);
-  assert.match(html, /Start \$499 diagnostic/);
+  assert.match(html, /Get the \$499 managed workflow gate/);
   assert.match(html, /\/diagnostic\?utm_source=learn&amp;utm_medium=persistent_memory_article/);
+  assert.match(html, /cta_id=learn_persistent_memory_managed_gate/);
   assert.doesNotMatch(html, /buy\.stripe\.com|paypal\.com\/ncp\/payment/);
-  assert.match(html, /Send workflow first/);
-  assert.match(html, /#workflow-sprint-intake/);
-  assert.match(html, /cta_id=learn_persistent_memory_sticky_pro/);
+  assert.doesNotMatch(html, /\/checkout\/pro|#workflow-sprint-intake/);
 });
 
 test('persistent-memory article has breadcrumb back to learn hub', () => {

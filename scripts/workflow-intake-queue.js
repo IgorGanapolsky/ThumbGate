@@ -231,7 +231,9 @@ function assertPrivateResponse(response) {
 function validateQueuePayload(payload) {
   const counters = payload && typeof payload === 'object' ? [
     payload.total,
+    payload.matchedTotal ?? 0,
     payload.eligibleTotal,
+    payload.excludedTotal ?? 0,
     payload.returned,
     payload.approvalReadyTotal,
     payload.discoveryReadyTotal,
@@ -240,6 +242,8 @@ function validateQueuePayload(payload) {
       counters.some((value) => !Number.isSafeInteger(value) || value < 0) ||
       payload.eligibleTotal > payload.total || payload.returned !== payload.leads.length ||
       payload.returned > payload.eligibleTotal ||
+      (payload.matchedTotal !== undefined && payload.matchedTotal > payload.total) ||
+      (payload.excludedTotal !== undefined && payload.eligibleTotal + payload.excludedTotal !== payload.matchedTotal) ||
       payload.approvalReadyTotal + payload.discoveryReadyTotal > payload.eligibleTotal) {
     throw queueError('invalid_queue_payload', 'Hosted intake queue returned an invalid payload.');
   }
@@ -311,7 +315,13 @@ function summarizeQueue(payload, apiBaseUrl) {
     apiOrigin: new URL(apiBaseUrl).origin,
     queueAvailable: true,
     total: payload.total,
+    matchedTotal: Number.isInteger(payload.matchedTotal) ? payload.matchedTotal : payload.eligibleTotal,
     eligibleTotal: payload.eligibleTotal,
+    excludedTotal: Number.isInteger(payload.excludedTotal) ? payload.excludedTotal : 0,
+    excludedByReason: payload.excludedByReason && typeof payload.excludedByReason === 'object'
+      ? Object.fromEntries(Object.entries(payload.excludedByReason)
+        .filter(([, value]) => Number.isInteger(value) && value >= 0))
+      : {},
     returned: Number.isInteger(payload.returned) ? payload.returned : payload.leads.length,
     approvalReadyTotal: payload.approvalReadyTotal,
     discoveryReadyTotal: payload.discoveryReadyTotal,
@@ -419,7 +429,7 @@ function formatSummary(summary, privateExport = null) {
   const lines = [
     'ThumbGate hosted intake close queue',
     `Source: ${summary.source}`,
-    `Total: ${summary.total} | eligible: ${summary.eligibleTotal} | returned: ${summary.returned}`,
+    `Observed: ${summary.total} | matched: ${summary.matchedTotal} | commercial: ${summary.eligibleTotal} | excluded noise: ${summary.excludedTotal} | returned: ${summary.returned}`,
     `Approval-ready: ${summary.approvalReadyTotal} (not authorized to send)`,
     `Discovery-ready: ${summary.discoveryReadyTotal} (not authorized to send)`,
     `Status: ${Object.entries(summary.byStatus).map(([key, value]) => `${key}=${value}`).join(', ') || 'none'}`,
