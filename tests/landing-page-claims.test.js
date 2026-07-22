@@ -15,7 +15,8 @@ test('homepage commercial contract stays one $499 enterprise entry offer', () =>
   assert.match(HOME_HTML, /\$499 enterprise entry offer/i);
   assert.match(HOME_HTML, /action="\/go\/diagnostic-pay"/);
   assert.match(HOME_HTML, /\$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
-  assert.doesNotMatch(HOME_HTML, /\/checkout\/pro|workflow-sprint-intake|\/go\/sprint/i);
+  assert.doesNotMatch(HOME_HTML, /\/checkout\/pro|href="[^"]*workflow-sprint-intake|\/go\/sprint/i);
+  assert.match(HOME_HTML, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
 });
 
 test('pricing repeats the same offer without a competing cash path', () => {

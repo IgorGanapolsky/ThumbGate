@@ -23,7 +23,7 @@
     },
     {
       "route": "/diagnostic",
-      "sentinel": "Managed AI Agent Workflow Gate",
+      "sentinel": "Enterprise Workflow Gate",
       "description": "Managed gate checkout and fit-check page for high-intent warm traffic"
     },
     {

@@ -828,7 +828,8 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /strict mode/i);
   assert.doesNotMatch(body, /learns from every mistake/i);
   assert.doesNotMatch(body, /Thompson Sampling|DPO|LanceDB|MemAlign|FTS5/i);
-  assert.doesNotMatch(body, /\/checkout\/pro|\/go\/sprint|workflow-sprint-intake/i);
+  assert.doesNotMatch(body, /\/checkout\/pro|\/go\/sprint|href="[^"]*workflow-sprint-intake/i);
+  assert.match(body, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
   assert.match(body, /FAQPage/);
   assert.match(body, /SoftwareApplication/);
   assert.match(body, /plausible\.io\/js\/script\.tagged-events\.js/);

@@ -276,6 +276,7 @@
           <a class="proof-link" href="#proof">See a strict-mode deny example ↓</a>
         </div>
         <form id="buy" class="checkout-card" action="/go/diagnostic-pay" method="POST" data-primary-checkout>
+          <span id="workflow-sprint-intake" data-legacy-intake-alias aria-hidden="true"></span>
           <input type="hidden" name="utm_source" value="website">
           <input type="hidden" name="utm_medium" value="homepage_checkout">
           <input type="hidden" name="utm_campaign" value="managed_workflow_gate">
@@ -445,10 +446,10 @@ reason    force-push to protected branch</pre>
       });
       try {
         if (navigator.sendBeacon) {
-          navigator.sendBeacon('/v1/telemetry/event', new Blob([payload], { type: 'application/json' }));
+          navigator.sendBeacon('/v1/telemetry/ping', new Blob([payload], { type: 'application/json' }));
           return;
         }
-        fetch('/v1/telemetry/event', {
+        fetch('/v1/telemetry/ping', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: payload,

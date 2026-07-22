@@ -8,12 +8,14 @@ const test = require('node:test');
 const pricingHtml = fs.readFileSync(path.resolve(__dirname, '../public/pricing.html'), 'utf8');
 
 test('pricing page emits first-party telemetry for views and buyer actions', () => {
-  assert.match(pricingHtml, /\/v1\/telemetry\/event/);
+  assert.match(pricingHtml, /\/v1\/telemetry\/ping/);
+  assert.doesNotMatch(pricingHtml, /\/v1\/telemetry\/event/);
   assert.match(pricingHtml, /pricing_page_view/);
   assert.match(pricingHtml, /pricing_cta_click/);
   assert.match(pricingHtml, /checkout_start/);
   assert.match(pricingHtml, /data-cta-id="pricing_nav_buy"/);
   assert.match(pricingHtml, /data-primary-checkout/);
+  assert.match(pricingHtml, /href="https:\/\/github\.com\/IgorGanapolsky\/ThumbGate\/blob\/main\/docs\/VERIFICATION_EVIDENCE\.md"/);
 });
 
 test('pricing exposes one direct $499 cash path and no competing offer', () => {

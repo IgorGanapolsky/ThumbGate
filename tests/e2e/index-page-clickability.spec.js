@@ -18,7 +18,7 @@ test.describe('/ single-offer conversion path', () => {
     await expect(page.locator('.decision')).toHaveText(['ALLOW', 'WARN', 'DENY']);
 
     await expect(page.locator('a[href*="/checkout/pro"]')).toHaveCount(0);
-    await expect(page.locator('[id*="workflow-sprint-intake"]')).toHaveCount(0);
+    await expect(page.locator('#workflow-sprint-intake[data-legacy-intake-alias]')).toHaveCount(1);
   });
 
   test('navigation and final CTA both return to the same checkout form', async ({ page }) => {

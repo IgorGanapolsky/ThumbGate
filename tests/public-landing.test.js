@@ -71,7 +71,8 @@ test('visible text filtering consumes the complete script and style end tags', (
 });
 
 test('homepage removes competing commercial funnels and conversion overlays', () => {
-  assert.doesNotMatch(landingPage, /\/checkout\/pro|\/go\/sprint|workflow-sprint-intake/i);
+  assert.doesNotMatch(landingPage, /\/checkout\/pro|\/go\/sprint|href="[^"]*workflow-sprint-intake/i);
+  assert.match(landingPage, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
   assert.doesNotMatch(landingPage, /Start Pro|Upgrade to Pro|Enterprise pilot|newsletter/i);
   assert.doesNotMatch(landingPage, /offer-router|sticky-cta|buyer-intent\.js|revenue-assist-panel/i);
   assert.match(landingPage, /<body data-revenue-assist="off">/);
@@ -151,6 +152,8 @@ test('FAQPage JSON-LD matches the three visible buyer questions', () => {
 
 test('checkout intent keeps first-party, Plausible, and optional GA4 telemetry', () => {
   assert.match(landingPage, /function sendFirstPartyTelemetry/);
+  assert.match(landingPage, /\/v1\/telemetry\/ping/);
+  assert.doesNotMatch(landingPage, /\/v1\/telemetry\/event/);
   assert.match(landingPage, /window\.plausible\('checkout_start'/);
   assert.match(landingPage, /sendGa4Event\('begin_checkout'/);
   assert.match(landingPage, /sendFirstPartyTelemetry\('checkout_start'/);

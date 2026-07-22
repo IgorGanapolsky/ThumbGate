@@ -102,7 +102,7 @@
       <a class="brand" href="/">ThumbGate</a>
       <div class="nav-links">
         <a href="/guide">Technical setup</a>
-        <a href="/verification-evidence">Proof</a>
+        <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Proof</a>
         <a class="nav-buy" href="#buy" data-offer-link data-cta-id="pricing_nav_buy">Enterprise gate · $499</a>
       </div>
     </div>
@@ -189,10 +189,10 @@
       const payload = JSON.stringify({ event: eventName, page: '/pricing', source: 'pricing', props: props || {} });
       try {
         if (navigator.sendBeacon) {
-          navigator.sendBeacon('/v1/telemetry/event', new Blob([payload], { type: 'application/json' }));
+          navigator.sendBeacon('/v1/telemetry/ping', new Blob([payload], { type: 'application/json' }));
           return;
         }
-        fetch('/v1/telemetry/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(function () {});
+        fetch('/v1/telemetry/ping', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(function () {});
       } catch (_) {}
     }
 

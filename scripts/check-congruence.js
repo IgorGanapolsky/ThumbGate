@@ -360,8 +360,12 @@ async function main() {
     'public/index.html must expose the one $499 managed gate offer'
   );
   check(
-    !/\/checkout\/pro|\/go\/sprint|workflow-sprint-intake/i.test(landingHtml),
+    !/\/checkout\/pro|\/go\/sprint|href="[^"]*workflow-sprint-intake/i.test(landingHtml),
     'public/index.html must not expose a competing Pro, sprint, or Enterprise cash path'
+  );
+  check(
+    /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/i.test(landingHtml),
+    'public/index.html must preserve old intake hashes as an alias to the one managed-gate checkout'
   );
   check(
     /action="\/go\/diagnostic-pay"[^>]*method="POST"/i.test(pricingHtml),

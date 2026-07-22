@@ -384,7 +384,7 @@ footer { padding: 32px 0 44px; color: var(--muted); }
 
   function telemetry(eventName, props) {
     try {
-      navigator.sendBeacon && navigator.sendBeacon('/v1/telemetry/event', JSON.stringify({
+      navigator.sendBeacon && navigator.sendBeacon('/v1/telemetry/ping', JSON.stringify({
         event: eventName,
         page: '/diagnostic',
         source: 'diagnostic_page',

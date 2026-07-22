@@ -120,7 +120,8 @@ test('landing page does not render empty revenue links', async () => {
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/6oU00j8aw2iWdWh9uj3sI2K/);
   assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(html, /Buy the \$499 enterprise gate/);
-  assert.doesNotMatch(html, /\/checkout\/pro|\/go\/sprint|workflow-sprint-intake/i);
+  assert.doesNotMatch(html, /\/checkout\/pro|\/go\/sprint|href="[^"]*workflow-sprint-intake/i);
+  assert.match(html, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
 });
 
 test('landing page presents one fixed-price managed offer clearly', async () => {
@@ -205,6 +206,8 @@ test('GET /diagnostic serves the managed workflow gate checkout and fit page', a
   assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(html, /name="customer_email"[^>]*required/);
   assert.match(html, /data-cta-id="diagnostic_hero_paid"/);
+  assert.match(html, /\/v1\/telemetry\/ping/);
+  assert.doesNotMatch(html, /\/v1\/telemetry\/event/);
   assert.match(html, /const inboundSource = search\.get\('utm_source'\) \|\| search\.get\('source'\)/);
   assert.match(html, /paidForm\.querySelector\('input\[name="utm_source"\]'\)\.value = inboundSource\.trim\(\)/);
   assert.doesNotMatch(html, /No cold payment link/);
