@@ -757,7 +757,28 @@ __GA_BOOTSTRAP__
   .deep-dive-drawer .deep-dive-body .section-title { font-size: clamp(22px, 3vw, 32px) !important; }
   .first-check-card { display: none !important; } /* moved to visual path below diagrams */
   .hero aside { display: none !important; } /* local-first essay out of fold */
-  .proof-bar { display: none !important; } /* link farm out of fold — kept in deep dive via anchors */
+  .proof-bar {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    max-width: 900px;
+    margin: 18px auto 0;
+    padding: 12px 14px;
+    border: 1px solid rgba(34,211,238,0.2);
+    border-radius: 12px;
+    background: rgba(34,211,238,0.04);
+  }
+  .proof-bar a {
+    font-size: 12px;
+    font-weight: 700;
+    color: #22d3ee;
+    text-decoration: none;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(34,211,238,0.25);
+  }
+  .proof-bar a:hover { background: rgba(34,211,238,0.1); }
 </style>
   <!-- PostHog Analytics -->
   <script>
