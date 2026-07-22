@@ -873,7 +873,6 @@
   "dependencies": {
     "@anthropic-ai/sdk": "0.102.0",
     "@google/genai": "2.7.0",
-    "@huggingface/transformers": "^4.2.0",
     "@lancedb/lancedb": "^0.30.0",
     "apache-arrow": "^18.1.0",
     "better-sqlite3": "^12.9.0",
@@ -894,8 +893,7 @@
     "express@4.22.1": {
       "path-to-regexp": "0.1.13"
     },
-    "js-yaml": "4.3.0",
-    "sharp": "0.35.3"
+    "js-yaml": "4.3.0"
   },
   "mcpName": "io.github.IgorGanapolsky/thumbgate",
   "devDependencies": {
