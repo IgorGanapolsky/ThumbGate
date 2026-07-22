@@ -1,29 +1,36 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 300" role="img" aria-labelledby="t d">
   <title id="t">Which ThumbGate path to pick</title>
-  <desc id="d">Free for solo try, Pro for unlimited personal use, Sprint for one painful team workflow.</desc>
+  <desc id="d">Free try, Pro solo, $499 diagnostic, sprint after intake.</desc>
   <rect width="960" height="300" fill="#0a0a0b"/>
   <g font-family="system-ui,sans-serif">
-    <text x="480" y="40" text-anchor="middle" fill="#f5f5f7" font-size="18" font-weight="800">One path. No offer soup.</text>
+    <text x="480" y="36" text-anchor="middle" fill="#f5f5f7" font-size="17" font-weight="800">Pick the path that matches the pain</text>
     <!-- Free -->
-    <rect x="40" y="70" width="270" height="190" rx="18" fill="#161618" stroke="#333"/>
-    <text x="175" y="110" text-anchor="middle" fill="#9ca3af" font-size="13" font-weight="700">STEP 1</text>
-    <text x="175" y="145" text-anchor="middle" fill="#f5f5f7" font-size="22" font-weight="900">Free</text>
-    <text x="175" y="175" text-anchor="middle" fill="#9ca3af" font-size="14">npx thumbgate init</text>
-    <text x="175" y="205" text-anchor="middle" fill="#e5e7eb" font-size="14">Catch one real repeat</text>
-    <text x="175" y="235" text-anchor="middle" fill="#4ade80" font-size="13" font-weight="700">prove it works</text>
+    <rect x="28" y="58" width="210" height="210" rx="16" fill="#161618" stroke="#333"/>
+    <text x="133" y="95" text-anchor="middle" fill="#9ca3af" font-size="12" font-weight="700">SOLO TRY</text>
+    <text x="133" y="130" text-anchor="middle" fill="#f5f5f7" font-size="22" font-weight="900">Free</text>
+    <text x="133" y="160" text-anchor="middle" fill="#9ca3af" font-size="13">npx thumbgate init</text>
+    <text x="133" y="190" text-anchor="middle" fill="#e5e7eb" font-size="13">Catch one repeat</text>
+    <text x="133" y="230" text-anchor="middle" fill="#4ade80" font-size="12" font-weight="700">prove it works</text>
     <!-- Pro -->
-    <rect x="345" y="70" width="270" height="190" rx="18" fill="#07151a" stroke="#22d3ee" stroke-width="2.5"/>
-    <text x="480" y="110" text-anchor="middle" fill="#22d3ee" font-size="13" font-weight="700">STEP 2 · BUY</text>
-    <text x="480" y="145" text-anchor="middle" fill="#f5f5f7" font-size="22" font-weight="900">Pro $19/mo</text>
-    <text x="480" y="175" text-anchor="middle" fill="#9ca3af" font-size="14">Unlimited solo use</text>
-    <text x="480" y="205" text-anchor="middle" fill="#e5e7eb" font-size="14">Dashboard · exports</text>
-    <text x="480" y="235" text-anchor="middle" fill="#22d3ee" font-size="13" font-weight="700">self-serve checkout</text>
+    <rect x="258" y="58" width="210" height="210" rx="16" fill="#07151a" stroke="#22d3ee" stroke-width="2"/>
+    <text x="363" y="95" text-anchor="middle" fill="#22d3ee" font-size="12" font-weight="700">SELF-SERVE</text>
+    <text x="363" y="130" text-anchor="middle" fill="#f5f5f7" font-size="22" font-weight="900">Pro $19/mo</text>
+    <text x="363" y="160" text-anchor="middle" fill="#9ca3af" font-size="13">Unlimited solo</text>
+    <text x="363" y="190" text-anchor="middle" fill="#e5e7eb" font-size="13">Dashboard · exports</text>
+    <text x="363" y="230" text-anchor="middle" fill="#22d3ee" font-size="12" font-weight="700">checkout today</text>
+    <!-- Diagnostic $499 - HIGHLIGHT -->
+    <rect x="488" y="58" width="220" height="210" rx="16" fill="#0d1b14" stroke="#4ade80" stroke-width="2.5"/>
+    <text x="598" y="95" text-anchor="middle" fill="#4ade80" font-size="12" font-weight="700">ONE WORKFLOW · PAY TODAY</text>
+    <text x="598" y="130" text-anchor="middle" fill="#f5f5f7" font-size="22" font-weight="900">$499</text>
+    <text x="598" y="160" text-anchor="middle" fill="#9ca3af" font-size="13">Diagnostic</text>
+    <text x="598" y="190" text-anchor="middle" fill="#e5e7eb" font-size="13">Map block / warn / review</text>
+    <text x="598" y="230" text-anchor="middle" fill="#4ade80" font-size="12" font-weight="700">not Enterprise</text>
     <!-- Sprint -->
-    <rect x="650" y="70" width="270" height="190" rx="18" fill="#161618" stroke="#333"/>
-    <text x="785" y="110" text-anchor="middle" fill="#9ca3af" font-size="13" font-weight="700">IF NEEDED</text>
-    <text x="785" y="145" text-anchor="middle" fill="#f5f5f7" font-size="22" font-weight="900">Sprint</text>
-    <text x="785" y="175" text-anchor="middle" fill="#9ca3af" font-size="14">One hard workflow</text>
-    <text x="785" y="205" text-anchor="middle" fill="#e5e7eb" font-size="14">Scoped after intake</text>
-    <text x="785" y="235" text-anchor="middle" fill="#fbbf24" font-size="13" font-weight="700">not self-serve</text>
+    <rect x="728" y="58" width="204" height="210" rx="16" fill="#161618" stroke="#333"/>
+    <text x="830" y="95" text-anchor="middle" fill="#9ca3af" font-size="12" font-weight="700">IMPLEMENT</text>
+    <text x="830" y="130" text-anchor="middle" fill="#f5f5f7" font-size="22" font-weight="900">$1,500</text>
+    <text x="830" y="160" text-anchor="middle" fill="#9ca3af" font-size="13">Hardening Sprint</text>
+    <text x="830" y="190" text-anchor="middle" fill="#e5e7eb" font-size="13">Wire + prove gates</text>
+    <text x="830" y="230" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="700">after scope</text>
   </g>
 </svg>

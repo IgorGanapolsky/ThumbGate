@@ -800,7 +800,7 @@ __GA_BOOTSTRAP__
           <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="event.preventDefault();navigator.clipboard.writeText('npx thumbgate init');this.textContent='Copied ✓ — paste in your repo';setTimeout(()=>{this.textContent='Install Free'},2000);try{posthog.capture('hero_install_click',{cta:'install_cli'})}catch(_){}" class="btn-free btn-install-hero" title="Click to copy: npx thumbgate init">Install Free</a>
           <a href="#live-proof" class="hero-proof-link">See it catch a risky command →</a>
         </div>
-        <p class="hero-team-link">Securing a team workflow? <a href="/diagnostic?utm_source=website&utm_medium=hero_text&utm_campaign=team_workflow&cta_id=hero_team_diagnostic&cta_placement=hero">See the scoped diagnostic →</a> · <a href="#diagrams">Pictures + buy path →</a></p>
+        <p class="hero-team-link">Need a paid human gate map for one failure? <a href="/diagnostic?utm_source=website&utm_medium=hero_text&utm_campaign=team_workflow&cta_id=hero_team_diagnostic&cta_placement=hero">See the scoped diagnostic →</a> ($499 · not Enterprise) · <a href="#diagrams">Pictures + buy path →</a></p>
         <div class="hero-visual-strip" aria-hidden="false">
           <img src="/assets/diagrams/before-after.svg" alt="Without ThumbGate mistakes repeat. With ThumbGate one thumbs-down becomes a permanent check." width="960" height="280" loading="eager" fetchpriority="high" />
         </div>
@@ -939,7 +939,7 @@ __GA_BOOTSTRAP__
       </figure>
       <figure class="diagram-card full">
         <img src="/assets/diagrams/decision.svg" alt="Decision tree Free try, Pro solo cash path, Sprint for one hard workflow" width="960" height="300" loading="lazy" />
-        <figcaption><strong>4. What to buy</strong><span>Free → prove it. Pro $19/mo → solo cash path. Sprint → one hard workflow after intake.</span></figcaption>
+        <figcaption><strong>4. What to buy</strong><span>Free → prove it. Pro $19/mo → solo. <strong>$499 diagnostic</strong> → one failure, pay today. $1,500 sprint → implement. Enterprise pilot is $15k — separate ladder.</span></figcaption>
       </figure>
     </div>
     <div class="cash-path" id="cash-path">
@@ -948,8 +948,9 @@ __GA_BOOTSTRAP__
       <div class="cash-path-actions">
         <a href="/go/install?utm_source=website&utm_medium=cash_path&utm_campaign=install_free&cta_id=cash_path_install&cta_placement=diagrams" class="btn-free btn-install-link" onclick="event.preventDefault();navigator.clipboard.writeText('npx thumbgate init');this.textContent='Copied';setTimeout(()=>{this.textContent='Install free.'},2000);">Install free.</a>
         <a href="/checkout/pro?utm_source=website&utm_medium=cash_path&utm_campaign=pro_upgrade&cta_id=cash_path_pro&cta_placement=diagrams&plan_id=pro&landing_path=%2F" class="btn-pro" data-revenue-cta data-cta-id="cash_path_pro" data-cta-placement="diagrams" data-plan-id="pro" data-price="19" onclick="if(typeof trackRevenueCta==='function'){trackRevenueCta(this);}">Upgrade to Pro — $19/mo</a>
-        <a href="#workflow-sprint-intake" class="btn-team" style="padding:10px 14px;font-size:13px;">Team sprint intake →</a>
+        <a href="/diagnostic?utm_source=website&utm_medium=cash_path&utm_campaign=money_today&cta_id=cash_path_diagnostic&cta_placement=diagrams&plan_id=sprint_diagnostic" class="btn-team" style="padding:12px 16px;font-size:15px;font-weight:800;background:#4ade80;color:#06120a;border-radius:10px;text-decoration:none;" data-revenue-cta data-cta-id="cash_path_diagnostic" data-cta-placement="diagrams" data-plan-id="sprint_diagnostic" data-price="499">Buy $499 diagnostic →</a>
       </div>
+      <p style="margin:12px 0 0;color:var(--text-muted);font-size:13px;"><strong style="color:var(--text);">$499 = Workflow Hardening Diagnostic</strong> (not Enterprise). Enterprise is $15k pilot / $10k/mo after intake.</p>
       <div class="honesty-pill" role="note">Defaults: secrets + gate-bypass <strong>deny</strong>; force-push / destructive deletes <strong>warn</strong> unless <code style="color:#fecaca">THUMBGATE_STRICT_ENFORCEMENT=1</code>.</div>
     </div>
   </div>
