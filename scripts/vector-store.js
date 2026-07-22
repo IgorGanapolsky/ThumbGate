@@ -28,6 +28,7 @@ let _lastEmbeddingProfile = null;
 let _pipelineLoader = null;
 let _geminiEmbedderForTests = null;
 const TABLE_NAME = 'thumbgate_memories';
+const FEATURE_HASH_DIMENSIONS = 384;
 
 async function getLanceDB() {
   if (!_lancedb) {
@@ -67,6 +68,58 @@ async function loadPipelineForProfile(profile) {
   });
   _pipelineCache.set(cacheKey, pipe);
   return pipe;
+}
+
+function hasLocalTransformerProvider() {
+  if (_pipelineLoader) return true;
+  try {
+    require.resolve('@huggingface/transformers');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function fnv1a32(value) {
+  let hash = 0x811c9dc5;
+  const bytes = Buffer.from(String(value), 'utf8');
+  for (const byte of bytes) {
+    hash ^= byte;
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash;
+}
+
+function addHashedFeature(vector, feature, weight) {
+  const hash = fnv1a32(feature);
+  const index = hash % vector.length;
+  const sign = (hash & 0x80000000) === 0 ? 1 : -1;
+  vector[index] += sign * weight;
+}
+
+function embedWithFeatureHash(text) {
+  const vector = Array(FEATURE_HASH_DIMENSIONS).fill(0);
+  const tokens = String(text || '').toLowerCase().match(/[\p{L}\p{N}_-]+/gu) || [];
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
+    addHashedFeature(vector, `token:${token}`, 1);
+    if (index > 0) {
+      addHashedFeature(vector, `bigram:${tokens[index - 1]}:${token}`, 0.6);
+    }
+
+    const bounded = `^${token.slice(0, 64)}$`;
+    for (let offset = 0; offset <= bounded.length - 3; offset += 1) {
+      addHashedFeature(vector, `trigram:${bounded.slice(offset, offset + 3)}`, 0.3);
+    }
+  }
+
+  const norm = Math.sqrt(vector.reduce((sum, value) => sum + (value * value), 0));
+  if (norm === 0) {
+    vector[0] = 1;
+    return vector;
+  }
+  return vector.map((value) => value / norm);
 }
 
 async function getEmbeddingPipeline() {
@@ -247,12 +300,33 @@ async function embed(text, options = {}) {
       console.warn(`Gemini embedding fallback: ${geminiError.message}`);
     }
   }
-  const { pipe, profile } = await getEmbeddingPipeline();
-  const output = await pipe(truncateForEmbedding(text, profile.activeProfile.maxChars), {
-    pooling: 'mean',
-    normalize: true,
-  });
-  return Array.from(output.data); // Float32Array -> plain number[] for LanceDB Arrow serialization
+  if (hasLocalTransformerProvider()) {
+    try {
+      const { pipe, profile } = await getEmbeddingPipeline();
+      const output = await pipe(truncateForEmbedding(text, profile.activeProfile.maxChars), {
+        pooling: 'mean',
+        normalize: true,
+      });
+      return Array.from(output.data); // Float32Array -> plain number[] for LanceDB Arrow serialization
+    } catch (transformerError) {
+      console.warn(`Transformers.js embedding fallback: ${transformerError.message}`);
+    }
+  }
+
+  const vector = embedWithFeatureHash(text);
+  _lastEmbeddingProfile = {
+    generatedAt: new Date().toISOString(),
+    source: 'built-in',
+    activeProfile: {
+      id: 'feature-hash-v1',
+      model: 'ThumbGate feature hashing',
+      outputDimensionality: FEATURE_HASH_DIMENSIONS,
+      task: options.task || 'code retrieval',
+      rationale: 'Deterministic zero-dependency local text embedding.',
+    },
+    fallbackUsed: false,
+  };
+  return vector;
 }
 
 async function upsertFeedback(feedbackEvent) {
@@ -269,7 +343,8 @@ async function upsertFeedback(feedbackEvent) {
     feedbackEvent.whatWorked || '',
   ].filter(Boolean).join('. ');
 
-  // Embed is pure CPU/model work (transformers.js or stub) — deterministic
+  // Embed is pure CPU/model work (managed, optional Transformers.js, built-in,
+  // or stub) and deterministic for local providers.
   // for a given input, so no retry is needed here. Retry wraps the table
   // write below, which is the actual I/O failure surface.
   const vector = await embed(textForEmbedding, {
@@ -364,4 +439,5 @@ module.exports = {
   setLanceLoaderForTests,
   setGeminiEmbedderForTests,
   truncateForEmbedding,
+  embedWithFeatureHash,
 };

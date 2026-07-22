@@ -99,16 +99,12 @@ function isEmbedderAvailable() {
     const cfg = resolveGeminiEmbeddingConfig();
     if (cfg && cfg.enabled && cfg.apiKey) return true;
   } catch { /* policy module unavailable */ }
-  // Local transformers path
-  try {
-    require.resolve('@huggingface/transformers');
-    return true;
-  } catch { /* not installed */ }
-  return false;
+  // The zero-dependency feature-hash provider is always available locally.
+  return true;
 }
 
 function defaultEmbedder() {
-  // Lazy: do not pull in LanceDB/transformers at module require time.
+  // Lazy: do not pull in LanceDB or optional embedding providers at module require time.
   const { embed } = require('./vector-store');
   return embed;
 }
