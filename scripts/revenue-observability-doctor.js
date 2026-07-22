@@ -18,7 +18,7 @@ const {
   resolvePayPalConfig,
 } = require('./provider-live-evidence');
 
-const DEFAULT_TIMEOUT_MS = 10000;
+const DEFAULT_TIMEOUT_MS = 45000;
 const QUERY_ACCESS_KEYS = Object.freeze({
   stripe: ['STRIPE_SECRET_KEY'],
   paypal: [
@@ -252,32 +252,145 @@ function buildCheck(id, ok, severity, message, evidence = {}) {
   };
 }
 
+async function probeHostedJson({
+  appOrigin,
+  apiKey,
+  pathname,
+  fetchImpl = globalThis.fetch,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+} = {}) {
+  if (!apiKey || typeof fetchImpl !== 'function') {
+    return { ok: false, status: null, error: 'missing_api_key_or_fetch', body: null };
+  }
+  try {
+    const url = new URL(pathname, appOrigin);
+    const res = await fetchTextWithTimeout(fetchImpl, url, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        Accept: 'application/json',
+        'User-Agent': 'thumbgate-observability-doctor',
+      },
+    }, timeoutMs);
+    let body = null;
+    try {
+      body = res.text ? JSON.parse(res.text) : null;
+    } catch {
+      body = null;
+    }
+    return {
+      ok: res.ok && body && typeof body === 'object',
+      status: res.status,
+      body,
+      error: res.ok ? null : `http_${res.status}`,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      status: null,
+      body: null,
+      error: error?.name === 'AbortError'
+        ? `timeout_after_${timeoutMs}ms`
+        : (error?.message || String(error)),
+    };
+  }
+}
+
 async function buildRevenueObservabilityDoctor({
   env = process.env,
   appOrigin = env.THUMBGATE_PUBLIC_APP_ORIGIN || DEFAULT_PUBLIC_APP_ORIGIN,
   fetchImpl = globalThis.fetch,
   timeoutMs = DEFAULT_TIMEOUT_MS,
+  loadLocalSecrets = true,
 } = {}) {
+  let secretLoad = { applied: [] };
+  if (loadLocalSecrets) {
+    try {
+      const { loadObservabilityEnv } = require('./observability-env');
+      secretLoad = loadObservabilityEnv({ env });
+    } catch {
+      secretLoad = { applied: [] };
+    }
+  }
+
+  // Prefer managed Stripe files when env is empty.
+  try {
+    const { resolveStripeSecretKey } = require('./stripe-credentials');
+    const resolved = resolveStripeSecretKey({ env });
+    if (resolved.secretKey && !String(env.STRIPE_SECRET_KEY || '').trim()) {
+      env.STRIPE_SECRET_KEY = resolved.secretKey;
+    }
+  } catch {
+    // optional
+  }
+
   const hostedApiKey = resolveHostedAuditApiKey(env, { operatorKey: null });
+  const billingBase = String(env.THUMBGATE_BILLING_API_BASE_URL || appOrigin || DEFAULT_PUBLIC_APP_ORIGIN).trim();
   const publicFunnel = await probePublicFunnel({ appOrigin, fetchImpl, timeoutMs });
   const paypalPaymentProof = assessPayPalPaymentProofReadiness(env);
   const plausibleDomainCoverage = analyzePlausibleDomainCoverage({
     emittedDomains: publicFunnel.plausibleDomains || [],
     registeredDomains: getConfiguredRegisteredDomains(env),
   });
+
+  // Sequential probes: concurrent summary+export was aborting both under
+  // production load (each can exceed 15s). Prefer summary truth first.
+  const billingSummaryProbe = await probeHostedJson({
+    appOrigin: billingBase,
+    apiKey: hostedApiKey,
+    pathname: '/v1/billing/summary?window=30d',
+    fetchImpl,
+    timeoutMs,
+  });
+  const journeyExportProbe = await probeHostedJson({
+    appOrigin: billingBase,
+    apiKey: hostedApiKey,
+    // Funnel-only + small limit keeps operator proof under the timeout budget.
+    pathname: '/v1/telemetry/export?source=funnel&limit=50',
+    fetchImpl,
+    timeoutMs: Math.min(timeoutMs, 30000),
+  });
+
+  const stripeQueryReady = hasAllEnv(env, QUERY_ACCESS_KEYS.stripe);
+  const hostedLedgerReady = Boolean(
+    billingSummaryProbe.ok
+    && billingSummaryProbe.body?.coverage?.tracksBookedRevenue === true
+  );
+  const journeyExportReady = Boolean(
+    journeyExportProbe.ok
+    && (
+      journeyExportProbe.body?.journeySummary
+      || journeyExportProbe.body?.telemetry
+      || journeyExportProbe.body?.funnel
+    )
+  );
+
   const checks = [
     buildCheck(
       'hosted_operator_auth',
       Boolean(hostedApiKey),
       'critical',
       'Operator key must be available before hosted billing and analytics can be treated as business truth.',
-      envPresence(env, QUERY_ACCESS_KEYS.hosted)
+      { ...envPresence(env, QUERY_ACCESS_KEYS.hosted), secretLoadApplied: secretLoad.applied || [] }
+    ),
+    buildCheck(
+      'hosted_billing_summary_access',
+      hostedLedgerReady,
+      'critical',
+      'Operator must read hosted /v1/billing/summary (funnel + revenue ledger) before conversion claims are trusted.',
+      {
+        ok: billingSummaryProbe.ok,
+        status: billingSummaryProbe.status,
+        error: billingSummaryProbe.error,
+        tracksBookedRevenue: billingSummaryProbe.body?.coverage?.tracksBookedRevenue === true,
+        visitors: billingSummaryProbe.body?.trafficMetrics?.visitors ?? null,
+        paidOrders: billingSummaryProbe.body?.revenue?.paidOrders ?? null,
+      }
     ),
     buildCheck(
       'stripe_query_access',
-      hasAllEnv(env, QUERY_ACCESS_KEYS.stripe),
-      'critical',
-      'Stripe secret key must be available before revenue claims can be verified directly.',
+      stripeQueryReady,
+      hostedLedgerReady ? 'high' : 'critical',
+      'Stripe secret key must be available before direct provider revenue claims can be verified (hosted ledger is the fallback proof path).',
       envPresence(env, QUERY_ACCESS_KEYS.stripe)
     ),
     buildCheck(
@@ -310,10 +423,18 @@ async function buildRevenueObservabilityDoctor({
     ),
     buildCheck(
       'first_party_journey_export',
-      Boolean(hostedApiKey),
+      journeyExportReady,
       'high',
-      'Operator-key gated /v1/telemetry/export now returns session-level journeySummary, stage counts, and dropoff buckets from first-party ledgers.',
-      { endpoint: '/v1/telemetry/export', requires: 'THUMBGATE_OPERATOR_KEY or THUMBGATE_API_KEY' }
+      'Operator-key gated /v1/telemetry/export must return journey/funnel rows (or journeySummary) from first-party ledgers.',
+      {
+        endpoint: '/v1/telemetry/export',
+        ok: journeyExportProbe.ok,
+        status: journeyExportProbe.status,
+        error: journeyExportProbe.error,
+        hasJourneySummary: Boolean(journeyExportProbe.body?.journeySummary),
+        telemetryRows: journeyExportProbe.body?.telemetry?.rows?.length ?? null,
+        funnelRows: journeyExportProbe.body?.funnel?.rows?.length ?? null,
+      }
     ),
     buildCheck(
       'public_funnel_health',
@@ -342,20 +463,22 @@ async function buildRevenueObservabilityDoctor({
     verdict = 'ready';
   }
 
-  const stripeQueryReady = checks.find((check) => check.id === 'stripe_query_access')?.ok === true;
-  const activeProviderProofReady = stripeQueryReady && paypalPaymentProof.ready;
+  const activeProviderProofReady = (stripeQueryReady || hostedLedgerReady) && paypalPaymentProof.ready;
   return {
     generatedAt: new Date().toISOString(),
     appOrigin,
     verdict,
     canProveRevenue: activeProviderProofReady,
-    canProveIndividualPayment: stripeQueryReady || (paypalPaymentProof.required && paypalPaymentProof.ready),
+    canProveIndividualPayment: stripeQueryReady
+      || hostedLedgerReady
+      || (paypalPaymentProof.required && paypalPaymentProof.ready),
     globalRevenueClaimVerified: false,
-    revenueProofBoundary: 'Configuration readiness is not payment evidence. Run the strict revenue target control with provider-origin data before making a global revenue claim.',
+    revenueProofBoundary: 'Configuration readiness is not payment evidence. Run the strict revenue target control with provider-origin data before making a global revenue claim. Hosted billing summary is accepted as the operator conversion ledger when Stripe secret is absent.',
     canProveVisitorBehavior: (
       checks.find((check) => check.id === 'plausible_query_access')?.ok === true ||
       checks.find((check) => check.id === 'posthog_query_access')?.ok === true ||
-      checks.find((check) => check.id === 'first_party_journey_export')?.ok === true
+      checks.find((check) => check.id === 'first_party_journey_export')?.ok === true ||
+      hostedLedgerReady
     ),
     checks,
     nextActions: checks
@@ -411,6 +534,7 @@ module.exports = {
   envPresence,
   assessPayPalPaymentProofReadiness,
   probePublicFunnel,
+  probeHostedJson,
   extractPlausibleDataDomains,
   buildRevenueObservabilityDoctor,
   formatDoctorReport,

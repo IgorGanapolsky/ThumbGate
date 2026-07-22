@@ -1701,6 +1701,32 @@ function captureFeedback(params) {
 
   const _captureMs = Date.now() - _captureStart;
 
+  // Funnel activation: first non-audit accepted feedback marks product usage.
+  // Acquisition is init; activation is "operator actually used the feedback loop."
+  if (!isAuditEntry) {
+    try {
+      const markerPath = path.join(FEEDBACK_DIR, 'activation-recorded.json');
+      if (!fs.existsSync(markerPath)) {
+        const { appendFunnelEvent } = require('./billing');
+        appendFunnelEvent({
+          stage: 'activation',
+          event: 'first_feedback_capture',
+          installId: feedbackEvent.installId || process.env.THUMBGATE_INSTALL_ID || null,
+          evidence: feedbackEvent.id,
+          metadata: {
+            signal,
+            source: 'capture_feedback',
+          },
+        });
+        fs.writeFileSync(markerPath, JSON.stringify({
+          at: new Date().toISOString(),
+          feedbackId: feedbackEvent.id,
+          signal,
+        }), 'utf8');
+      }
+    } catch { /* activation funnel is best-effort */ }
+  }
+
   // Auto-open feedback session for follow-up capture
   let feedbackSession = null;
   try {

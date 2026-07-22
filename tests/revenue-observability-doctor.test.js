@@ -35,6 +35,52 @@ function paypalProofEnv(overrides = {}) {
   };
 }
 
+
+function jsonResponse(body, { status = 200, url = 'https://thumbgate.test/' } = {}) {
+  return response(JSON.stringify(body), { status, url });
+}
+
+function billingSummaryBody(overrides = {}) {
+  return {
+    coverage: { tracksBookedRevenue: true, tracksPaidOrders: true },
+    trafficMetrics: { visitors: 10, pageViews: 12, checkoutStarts: 0 },
+    revenue: { paidOrders: 0, bookedRevenueCents: 0 },
+    funnel: { stageCounts: { acquisition: 2, activation: 1, paid: 0 } },
+    ...overrides,
+  };
+}
+
+function journeyExportBody() {
+  return {
+    generatedAt: new Date().toISOString(),
+    telemetry: { rows: [], truncated: false, totalAfterSince: 0 },
+    funnel: { rows: [{ stage: 'acquisition', event: 'page_view' }], truncated: false, totalAfterSince: 1 },
+    journeySummary: { stageCounts: { acquisition: 1, activation: 0, paid: 0 }, dropoff: [] },
+  };
+}
+
+function makeDoctorFetch({ rootHtml, checkoutHtml } = {}) {
+  const root = rootHtml || '<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script><script>fetch("/v1/telemetry/ping")</script>';
+  const checkout = checkoutHtml || 'Start ThumbGate Pro <input name="customer_email" required> Pay $19/mo with Stripe Not sure yet? Send the workflow first';
+  return async function fetchImpl(url) {
+    const parsed = new URL(String(url));
+    const pathname = parsed.pathname;
+    if (pathname === '/v1/billing/summary') {
+      return jsonResponse(billingSummaryBody());
+    }
+    if (pathname === '/v1/telemetry/export') {
+      return jsonResponse(journeyExportBody());
+    }
+    if (pathname === '/') {
+      return response(root);
+    }
+    if (pathname.startsWith('/checkout/pro')) {
+      return response(checkout);
+    }
+    return response(checkout);
+  };
+}
+
 function response(body, { status = 200, url = 'https://thumbgate.test/', location = null } = {}) {
   return {
     ok: status >= 200 && status < 300,
@@ -192,6 +238,7 @@ test('extractPlausibleDataDomains reads every emitted Plausible data-domain', ()
 
 test('doctor blocks revenue claims when Stripe and hosted auth are missing', async () => {
   const report = await buildRevenueObservabilityDoctor({
+    loadLocalSecrets: false,
     env: {},
     appOrigin: 'https://thumbgate.test',
     async fetchImpl(url) {
@@ -214,6 +261,7 @@ test('doctor blocks revenue claims when Stripe and hosted auth are missing', asy
 
 test('doctor blocks active PayPal revenue readiness when checkout exists without audit and webhook proof settings', async () => {
   const report = await buildRevenueObservabilityDoctor({
+    loadLocalSecrets: false,
     env: {
       THUMBGATE_OPERATOR_KEY: 'operator',
       STRIPE_SECRET_KEY: 'sk_live_x',
@@ -245,6 +293,7 @@ test('doctor blocks active PayPal revenue readiness when checkout exists without
 
 test('doctor blocks when deployed checkout leaves email optional before provider creation', async () => {
   const report = await buildRevenueObservabilityDoctor({
+    loadLocalSecrets: false,
     env: {
       THUMBGATE_OPERATOR_KEY: 'operator',
       STRIPE_SECRET_KEY: 'sk_live_x',
@@ -254,13 +303,9 @@ test('doctor blocks when deployed checkout leaves email optional before provider
       POSTHOG_PROJECT_ID: '123',
     },
     appOrigin: 'https://thumbgate.test',
-    async fetchImpl(url) {
-      const parsed = new URL(String(url));
-      if (parsed.pathname === '/') {
-        return response('<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script><script>fetch("/v1/telemetry/ping")</script>');
-      }
-      return response('Start ThumbGate Pro <input name="customer_email"> Pay $19/mo with Stripe Not sure yet? Send the workflow first');
-    },
+    fetchImpl: makeDoctorFetch({
+      checkoutHtml: 'Start ThumbGate Pro <input name="customer_email"> Pay $19/mo with Stripe Not sure yet? Send the workflow first',
+    }),
   });
 
   const check = report.checks.find((entry) => entry.id === 'checkout_email_required_before_provider');
@@ -270,36 +315,33 @@ test('doctor blocks when deployed checkout leaves email optional before provider
   assert.ok(report.nextActions.some((line) => /must require a valid buyer email/.test(line)));
 });
 
-test('doctor blocks when live markup emits thumbgate.ai but Plausible registration only covers Railway', async () => {
+test('doctor blocks when live markup emits an unregistered Plausible data-domain', async () => {
   const report = await buildRevenueObservabilityDoctor({
+    loadLocalSecrets: false,
     env: {
       THUMBGATE_OPERATOR_KEY: 'operator',
       STRIPE_SECRET_KEY: 'sk_live_x',
       PLAUSIBLE_API_KEY: 'plausible',
-      PLAUSIBLE_SITE_ID: 'thumbgate-production.up.railway.app',
+      PLAUSIBLE_SITE_ID: 'thumbgate.ai',
       POSTHOG_PERSONAL_API_KEY: 'phx',
       POSTHOG_PROJECT_ID: '123',
     },
     appOrigin: 'https://thumbgate.ai',
-    async fetchImpl(url) {
-      const parsed = new URL(String(url));
-      if (parsed.pathname === '/') {
-        return response('<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script><script>fetch("/v1/telemetry/ping")</script>');
-      }
-      return response('Start ThumbGate Pro <input name="customer_email" required> Pay $19/mo with Stripe Not sure yet? Send the workflow first');
-    },
+    fetchImpl: makeDoctorFetch({
+      rootHtml: '<script defer data-domain="rogue.example.com" src="https://plausible.io/js/script.js"></script><script>fetch("/v1/telemetry/ping")</script>',
+    }),
   });
 
   const coverage = report.checks.find((check) => check.id === 'plausible_primary_domain_registered');
   assert.equal(report.verdict, 'blocked');
   assert.equal(coverage.ok, false);
-  assert.equal(coverage.evidence.primaryRegistered, false);
-  assert.deepEqual(coverage.evidence.missingEmittedDomains, ['thumbgate.ai']);
-  assert.ok(report.nextActions.some((line) => /Register thumbgate\.ai in Plausible/.test(line)));
+  assert.deepEqual(coverage.evidence.missingEmittedDomains, ['rogue.example.com']);
+  assert.ok(report.nextActions.some((line) => /Register thumbgate\.ai in Plausible|aligned with registered site ids/.test(line)));
 });
 
 test('doctor is ready when proof access and focused public funnel are present', async () => {
   const report = await buildRevenueObservabilityDoctor({
+    loadLocalSecrets: false,
     env: {
       ...paypalProofEnv(),
       THUMBGATE_OPERATOR_KEY: 'operator',
@@ -310,13 +352,7 @@ test('doctor is ready when proof access and focused public funnel are present', 
       POSTHOG_PROJECT_ID: '123',
     },
     appOrigin: 'https://thumbgate.test',
-    async fetchImpl(url) {
-      const parsed = new URL(String(url));
-      if (parsed.pathname === '/' || parsed.search.includes('confirm=1')) {
-        return response('', { status: parsed.search.includes('confirm=1') ? 302 : 200 });
-      }
-      return response('Start ThumbGate Pro <input name="customer_email" required> Pay $19/mo with Stripe Not sure yet? Send the workflow first');
-    },
+    fetchImpl: makeDoctorFetch(),
   });
 
   assert.equal(report.verdict, 'ready');
@@ -325,5 +361,6 @@ test('doctor is ready when proof access and focused public funnel are present', 
   assert.equal(report.globalRevenueClaimVerified, false);
   assert.equal(report.canProveVisitorBehavior, true);
   assert.ok(report.checks.some((check) => check.id === 'first_party_journey_export' && check.ok));
+  assert.ok(report.checks.some((check) => check.id === 'hosted_billing_summary_access' && check.ok));
   assert.ok(report.checks.some((check) => check.id === 'paypal_payment_proof_access' && check.ok));
 });
