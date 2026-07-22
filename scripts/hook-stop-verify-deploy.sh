@@ -102,38 +102,32 @@ node -e '
   const CLAIM_PATTERN_GLOBAL = /\b(deployed|shipped|live (in|to) production|live at|now live|is live\b|in prod\b|in production\b|production[- ]ready|ready (for|to) ship|verified in (prod|production))\b/gi;
   const NEGATION_BEFORE = /\b(not|never)\b(?:\s+\S+){0,2}\s*$/i;
   const NEGATION_AFTER = /^[\s,.:;?]*\b(no|not)\b/i;
+  const FOREIGN_SYSTEM_PATTERN = /\b(mac-yolo-safeguards|tinker-yolo|hermes|hermes-mobile|ollama|mac mini|mac pro|answerguard)\b/i;
+  const THUMBGATE_PATTERN = /\bthumbgate\b|thumbgate-production\.up\.railway\.app|thumbgate\.ai/i;
 
-  let hasUnnegatedClaim = false;
+  function claimClause(index, length) {
+    let start = index;
+    let end = index + length;
+    const isBoundary = (character) => /[.!?;\n]/.test(character);
+    while (start > 0 && !isBoundary(response[start - 1])) start -= 1;
+    while (end < response.length && !isBoundary(response[end])) end += 1;
+    return response.slice(start, end);
+  }
+
+  let hasRelevantUnnegatedClaim = false;
   let claimMatch;
   while ((claimMatch = CLAIM_PATTERN_GLOBAL.exec(response)) !== null) {
     const before = response.slice(Math.max(0, claimMatch.index - 30), claimMatch.index);
     const after = response.slice(claimMatch.index + claimMatch[0].length, claimMatch.index + claimMatch[0].length + 15);
-    if (!NEGATION_BEFORE.test(before) && !NEGATION_AFTER.test(after)) {
-      hasUnnegatedClaim = true;
+    const clause = claimClause(claimMatch.index, claimMatch[0].length);
+    const isForeignOnlyClaim = FOREIGN_SYSTEM_PATTERN.test(clause) && !THUMBGATE_PATTERN.test(clause);
+    if (!NEGATION_BEFORE.test(before) && !NEGATION_AFTER.test(after) && !isForeignOnlyClaim) {
+      hasRelevantUnnegatedClaim = true;
       break;
     }
   }
 
-  if (!hasUnnegatedClaim) {
-    process.exit(0);
-  }
-
-  // A bare "deployed"/"shipped" is ambiguous - e.g. "no model was deployed"
-  // (a local Ollama model) or "the PR merged" (a sibling repo) have nothing
-  // to do with ThumbGate production. But REQUIRING ThumbGate/production
-  // wording to enable the check (the previous approach) fails open on real
-  // claims phrased without those words, e.g. "the federal route is now
-  // live" - so default stays strict; only skip when the response contains
-  // a positive signal that this is about a DIFFERENT, named system. This is
-  // an exclusion list of exactly the false positives already hit, not an
-  // inclusion list that a genuine ThumbGate claim could fail to match.
-  const foreignSystemSignal = new RegExp(
-    "\\bmac-yolo-safeguards\\b|\\btinker-yolo\\b|\\bhermes\\b|\\bhermes-mobile\\b|" +
-    "\\bollama\\b|\\bmac mini\\b|\\bmac pro\\b|\\banswerguard\\b",
-    "i"
-  ).test(response);
-
-  if (foreignSystemSignal) {
+  if (!hasRelevantUnnegatedClaim) {
     process.exit(0);
   }
 
