@@ -103,7 +103,7 @@ jobs:
         run: npm ci --onnxruntime-node-install-cuda=skip
 
       - name: Audit root npm dependencies
-        run: npm audit --audit-level=low
+        run: node scripts/npm-audit-gate.js low
 
       - name: Audit worker npm dependencies
         run: npm --prefix workers ci && npm --prefix workers audit --audit-level=low

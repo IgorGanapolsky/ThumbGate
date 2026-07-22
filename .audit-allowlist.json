@@ -1,0 +1,9 @@
+[
+  {
+    "url": "https://github.com/advisories/GHSA-f88m-g3jw-g9cj",
+    "package": "sharp",
+    "reason": "sharp <0.35.0 inherits libvips CVE-2026-33327/33328/35590/35591. No fix available upstream as of 2026-07-22 (npm audit reports fixAvailable=false for both sharp and @huggingface/transformers, which depends on it). sharp is used directly only in scripts/social-analytics/generate-instagram-card.js and generate-applyops-instagram-card.js, both of which render self-generated SVG templates -- not external or user-supplied image input.",
+    "addedDate": "2026-07-22",
+    "reviewBy": "2026-08-22"
+  }
+]
