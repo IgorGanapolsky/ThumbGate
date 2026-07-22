@@ -1,21 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
   <title id="title">ThumbGate mark</title>
-  <desc id="desc">ThumbGate TG gate monogram app icon. Matches the Stripe product image family used on Checkout.</desc>
+  <desc id="desc">ThumbGate TG gate monogram app icon. Matches the Stripe product image family used on Checkout — dark tile, inset frame, arched gate, bold TG, threshold bar.</desc>
   <defs>
-    <linearGradient id="tg-frame" x1="96" y1="72" x2="416" y2="440" gradientUnits="userSpaceOnUse">
+    <linearGradient id="tg-frame" x1="96" y1="96" x2="416" y2="416" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#8cf5d1"/>
-      <stop offset="0.55" stop-color="#5eead4"/>
       <stop offset="1" stop-color="#22d3ee"/>
     </linearGradient>
   </defs>
-  <!-- App-icon tile (full dark rounded square) for favicon / apple-touch / PWA -->
-  <rect width="512" height="512" rx="112" fill="#0b1220"/>
-  <!-- Outer gate frame -->
-  <rect x="64" y="64" width="384" height="384" rx="96" fill="none" stroke="url(#tg-frame)" stroke-width="28"/>
-  <!-- Inner gate opening -->
-  <rect x="128" y="128" width="256" height="256" rx="64" fill="none" stroke="url(#tg-frame)" stroke-width="24"/>
-  <!-- Gate threshold bar -->
-  <rect x="148" y="336" width="216" height="28" rx="14" fill="#22d3ee"/>
+  <!-- App-icon tile (full dark rounded square) for favicon / apple-touch / PWA / Stripe -->
+  <rect width="512" height="512" rx="112" fill="#061015"/>
+  <!-- Outer gate frame (inset filled panel + stroke) -->
+  <rect x="78" y="78" width="356" height="356" rx="84" fill="#0b1820" stroke="url(#tg-frame)" stroke-width="18"/>
+  <!-- Arched gate opening -->
+  <path d="M146 354V192c0-36 29-65 65-65h90c36 0 65 29 65 65v162" fill="none" stroke="#8cf5d1" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
   <!-- TG monogram -->
-  <text x="256" y="300" text-anchor="middle" font-family="Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="132" font-weight="700" fill="#f8fafc" letter-spacing="-0.04em">TG</text>
+  <text x="256" y="310" text-anchor="middle" fill="#e7fbff" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Arial, sans-serif" font-size="132" font-weight="900" letter-spacing="-8">TG</text>
+  <!-- Gate threshold bar -->
+  <rect x="140" y="344" width="232" height="28" rx="14" fill="#22d3ee"/>
 </svg>

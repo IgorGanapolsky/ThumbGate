@@ -20,6 +20,12 @@ test('ThumbGate app-icon mark SVG exists at /assets/brand (for apple-touch-icon 
   assert.match(svg, /viewBox="0 0 \d+ \d+"/);
   assert.match(svg, /fill=/);
   assert.match(svg, /<\/svg>/);
+  // Canonical Stripe-family geometry (restored in #2700 / #2990): dark tile, inset
+  // frame, arched gate path, bold TG, threshold bar — not the dual-rect simplification.
+  assert.match(svg, /fill="#061015"/, 'app-icon mark must use Stripe-family dark tile fill');
+  assert.match(svg, /M146 354V192c0-36 29-65 65-65h90/, 'app-icon mark must use arched gate path geometry');
+  assert.match(svg, />TG</, 'app-icon mark must render the TG monogram');
+  assert.doesNotMatch(svg, /thumbs-up mark|thumbs up/i, 'app-icon mark must not use the retired shield/thumbs-up emblem');
 });
 
 test('ThumbGate inline mark SVG exists with transparent backdrop for header use', () => {
@@ -34,6 +40,7 @@ test('ThumbGate inline mark SVG exists with transparent backdrop for header use'
   assert.match(svg, /#8cf5d1|#22d3ee/, 'inline mark must use brand cyan/mint colors');
   assert.match(svg, /TG gate monogram|Stripe product/i, 'inline mark accessible description should name the TG gate monogram used on Stripe');
   assert.match(svg, />TG</, 'inline mark must render the TG monogram, not a thumbs-up glyph');
+  assert.match(svg, /M18 44V24c0-4\.5 3\.6-8\.1 8\.1-8\.1h11\.8/, 'inline mark must use arched gate path geometry matching Stripe family');
   assert.match(svg, /<\/svg>/);
   assert.doesNotMatch(svg, /gate-and-signal|signal sweep|Status LEDs/i);
   assert.doesNotMatch(svg, /thumbs-up mark|thumbs up/i, 'inline mark must not use the retired shield/thumbs-up emblem');
