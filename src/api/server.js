@@ -7420,9 +7420,28 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         journeySummary: null,
       };
 
+      // Bounded reverse scan — full-file read of multi-MB ledgers was timing
+      // out operator dashboards and revenue:doctor probes.
+      let readJsonlSinceTail;
+      try {
+        ({ readJsonlSinceTail } = require('../../scripts/jsonl-window'));
+      } catch {
+        readJsonlSinceTail = null;
+      }
+
       function readJsonlSince(p) {
+        if (typeof readJsonlSinceTail === 'function') {
+          const windowed = readJsonlSinceTail(p, {
+            sinceMs: since,
+            limit,
+            maxBytes: 8 * 1024 * 1024,
+          });
+          return windowed;
+        }
         try {
-          if (!fs.existsSync(p)) return [];
+          if (!fs.existsSync(p)) {
+            return { rows: [], totalAfterSince: 0, truncated: false };
+          }
           const text = fs.readFileSync(p, 'utf8');
           const rows = [];
           for (const line of text.split('\n')) {
@@ -7435,16 +7454,22 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
               rows.push(obj);
             }
           }
-          return rows;
-        } catch { return []; }
+          return {
+            rows: rows.slice(-limit),
+            totalAfterSince: rows.length,
+            truncated: rows.length > limit,
+          };
+        } catch {
+          return { rows: [], totalAfterSince: 0, truncated: false };
+        }
       }
 
       if (wantTelemetry) {
         const tp = path.join(exportDir, 'telemetry-pings.jsonl');
-        const all = readJsonlSince(tp);
-        result.telemetry.totalAfterSince = all.length;
-        result.telemetry.rows = all.slice(-limit);
-        result.telemetry.truncated = all.length > limit;
+        const windowed = readJsonlSince(tp);
+        result.telemetry.totalAfterSince = windowed.totalAfterSince;
+        result.telemetry.rows = windowed.rows;
+        result.telemetry.truncated = windowed.truncated;
       }
 
       if (wantFunnel) {
@@ -7459,10 +7484,10 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         } catch {
           funnelPath = path.join(exportDir, 'funnel-events.jsonl');
         }
-        const all = readJsonlSince(funnelPath);
-        result.funnel.totalAfterSince = all.length;
-        result.funnel.rows = all.slice(-limit);
-        result.funnel.truncated = all.length > limit;
+        const windowed = readJsonlSince(funnelPath);
+        result.funnel.totalAfterSince = windowed.totalAfterSince;
+        result.funnel.rows = windowed.rows;
+        result.funnel.truncated = windowed.truncated;
       }
 
       try {

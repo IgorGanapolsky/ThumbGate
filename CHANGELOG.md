@@ -4,6 +4,7 @@
 
 ### Patch Changes
 
+- Observability hardening: hosted billing/journey doctor probes, Plausible primary-domain registration, bounded telemetry export reads, first-feedback activation funnel, and local observability secret loader. Public-bundle ceiling raised 354 → 357 for the three new scripts.
 - e34f20d: Refactor feedback, CLI, version-sync, and workflow-sentinel helpers to clear Sonar maintainability findings without changing their public behavior.
 
 ## 1.28.3

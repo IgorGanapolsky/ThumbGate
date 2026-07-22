@@ -385,9 +385,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 352 -> 354 (2026-07-16) for the exact Stripe offer catalog and its
   // read-only live price and Payment Link drift audit. No credentials, buyer
   // state, mutation route, or private Core module are packaged.
+  // Bumped 354 -> 357 (2026-07-22) for observability env loader, setup CLI,
+  // and bounded JSONL window reader used by telemetry export + revenue doctor.
   assert.ok(
-    manifest.fileCount <= 354,
-    `npm package should stay <= 354 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 357,
+    `npm package should stay <= 357 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -550,9 +552,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 5.31 MB -> 5.35 MB (2026-07-16) for the exact Stripe offer catalog,
   // read-only drift audit, and aggregate-only Grafana catalog panels. Measured
   // artifact: 5,343,656 bytes; no credentials or buyer state are bundled.
+  // Bumped 5.35 MB -> 5.40 MB (2026-07-22) for observability env/setup/jsonl.
   assert.ok(
-    manifest.unpackedSize <= 5_350_000,
-    `npm package should stay <= 5.35 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 5_400_000,
+    `npm package should stay <= 5.40 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {
