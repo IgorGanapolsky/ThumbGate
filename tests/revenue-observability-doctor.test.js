@@ -10,8 +10,10 @@ const {
   extractPlausibleDataDomains,
   probePublicFunnel,
   buildRevenueObservabilityDoctor,
+  classifyDoctorVerdict,
   formatDoctorReport,
   doctorExitCode,
+  probeHostedJson,
 } = require('../scripts/revenue-observability-doctor');
 
 function paypalProofEnv(overrides = {}) {
@@ -364,3 +366,94 @@ test('doctor is ready when proof access and focused public funnel are present', 
   assert.ok(report.checks.some((check) => check.id === 'hosted_billing_summary_access' && check.ok));
   assert.ok(report.checks.some((check) => check.id === 'paypal_payment_proof_access' && check.ok));
 });
+
+test('classifyDoctorVerdict maps critical and high failures', () => {
+  assert.equal(classifyDoctorVerdict([{ ok: true, severity: 'critical' }]), 'ready');
+  assert.equal(classifyDoctorVerdict([{ ok: false, severity: 'high' }]), 'degraded');
+  assert.equal(classifyDoctorVerdict([{ ok: false, severity: 'critical' }]), 'blocked');
+});
+
+test('probeHostedJson returns missing_api_key_or_fetch without a key', async () => {
+  const result = await probeHostedJson({
+    appOrigin: 'https://thumbgate.test',
+    apiKey: null,
+    pathname: '/v1/billing/summary',
+    async fetchImpl() { throw new Error('should_not_fetch'); },
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.error, 'missing_api_key_or_fetch');
+});
+
+test('probeHostedJson parses JSON and surfaces http errors', async () => {
+  const ok = await probeHostedJson({
+    appOrigin: 'https://thumbgate.test',
+    apiKey: 'op',
+    pathname: '/v1/billing/summary',
+    async fetchImpl() {
+      return response(JSON.stringify({ coverage: { tracksBookedRevenue: true } }));
+    },
+  });
+  assert.equal(ok.ok, true);
+  assert.equal(ok.body.coverage.tracksBookedRevenue, true);
+
+  const bad = await probeHostedJson({
+    appOrigin: 'https://thumbgate.test',
+    apiKey: 'op',
+    pathname: '/v1/billing/summary',
+    async fetchImpl() {
+      return response('nope', { status: 500 });
+    },
+  });
+  assert.equal(bad.ok, false);
+  assert.equal(bad.error, 'http_500');
+});
+
+test('doctor can prove revenue via hosted ledger without local Stripe secret', async () => {
+  const report = await buildRevenueObservabilityDoctor({
+    loadLocalSecrets: false,
+    env: {
+      THUMBGATE_OPERATOR_KEY: 'operator',
+      PLAUSIBLE_API_KEY: 'plausible',
+      PLAUSIBLE_SITE_ID: 'thumbgate.ai',
+      POSTHOG_PERSONAL_API_KEY: 'phx',
+      POSTHOG_PROJECT_ID: '123',
+    },
+    appOrigin: 'https://thumbgate.test',
+    fetchImpl: makeDoctorFetch(),
+  });
+
+  assert.equal(report.checks.find((c) => c.id === 'hosted_billing_summary_access').ok, true);
+  assert.equal(report.checks.find((c) => c.id === 'stripe_query_access').ok, false);
+  assert.equal(report.checks.find((c) => c.id === 'stripe_query_access').severity, 'high');
+  assert.equal(report.canProveRevenue, true);
+  assert.equal(report.canProveIndividualPayment, true);
+  assert.equal(report.verdict, 'degraded');
+});
+
+test('doctor marks first_party_journey_export failed when export times out', async () => {
+  const report = await buildRevenueObservabilityDoctor({
+    loadLocalSecrets: false,
+    env: {
+      THUMBGATE_OPERATOR_KEY: 'operator',
+      STRIPE_SECRET_KEY: 'sk_live_x',
+      PLAUSIBLE_API_KEY: 'plausible',
+      PLAUSIBLE_SITE_ID: 'thumbgate.ai',
+      POSTHOG_PERSONAL_API_KEY: 'phx',
+      POSTHOG_PROJECT_ID: '123',
+    },
+    appOrigin: 'https://thumbgate.test',
+    async fetchImpl(url) {
+      const parsed = new URL(String(url));
+      if (parsed.pathname === '/v1/telemetry/export') {
+        const err = new Error('aborted');
+        err.name = 'AbortError';
+        throw err;
+      }
+      return makeDoctorFetch()(url);
+    },
+  });
+  const journey = report.checks.find((c) => c.id === 'first_party_journey_export');
+  assert.equal(journey.ok, false);
+  assert.match(String(journey.evidence.error || ''), /timeout/i);
+});
+

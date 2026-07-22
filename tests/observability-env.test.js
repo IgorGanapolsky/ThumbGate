@@ -42,3 +42,15 @@ test('observabilityConfigTemplate includes primary Plausible site', () => {
   assert.equal(t.plausibleSiteId, 'thumbgate.ai');
   assert.match(t.plausibleRegisteredDomains, /thumbgate\.ai/);
 });
+
+
+test('sets registered domains default when neither site id nor registered list is present', () => {
+  const env = {};
+  loadObservabilityEnv({
+    env,
+    observabilityPath: '/tmp/no-such-obs.json',
+    operatorPath: '/tmp/no-such-op.json',
+    applyStripeManagedFiles: false,
+  });
+  assert.match(env.THUMBGATE_PLAUSIBLE_REGISTERED_DOMAINS, /thumbgate\.ai/);
+});
