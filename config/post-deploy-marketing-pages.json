@@ -4,7 +4,7 @@
   "pages": [
     {
       "route": "/",
-      "sentinel": "Stop dangerous AI-agent actions before they run",
+      "sentinel": "Stop the AI-agent mistake that keeps happening",
       "description": "Home page hero (lifeblood — never regress)"
     },
     {
@@ -23,8 +23,8 @@
     },
     {
       "route": "/diagnostic",
-      "sentinel": "Workflow Hardening Diagnostic",
-      "description": "Workflow Hardening Diagnostic intake page for high-intent warm traffic"
+      "sentinel": "Enterprise Workflow Gate",
+      "description": "Managed gate checkout and fit-check page for high-intent warm traffic"
     },
     {
       "route": "/dashboard",

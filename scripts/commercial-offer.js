@@ -22,11 +22,11 @@ const TEAM_ANNUAL_PRICE_DOLLARS = 588;
 const TEAM_MIN_SEATS = 3;
 
 const PRO_PRICE_LABEL = '$19/mo or $149/yr (individual)';
-// Enterprise services are qualified, proposal-only paths after intake. The
-// productized prices are not public checkout rails. The dormant TEAM_* Stripe
-// constants below remain only as inert billing plumbing pending a dedicated
-// cleanup; they are no longer a customer-facing tier.
-const ENTERPRISE_PRICE_LABEL = 'Enterprise: $15k 30-day pilot; $10k/mo after completed pilot — qualified proposal only';
+// The Enterprise Workflow Gate is the one promoted public service offer. The
+// dormant TEAM_* Stripe constants below remain only as inert billing plumbing
+// pending a dedicated cleanup; they are no longer a customer-facing tier.
+const ENTERPRISE_PRICE_LABEL = 'Enterprise Workflow Gate — $499 one-time for one supported workflow';
+const ENTERPRISE_ENTRY_URL = 'https://thumbgate.ai/pricing';
 
 function normalizePlanId(value) {
   const text = String(value || '').trim().toLowerCase();
@@ -81,7 +81,7 @@ function buildCaptureReceipt({ signal, feedbackId, memoryId, actionType } = {}) 
     `  Solo Pro       : ${PRO_PRICE_LABEL} for recall, dashboard, adapters, and exports`,
     `  Upgrade        : ${trackedProUrl('cli_capture_receipt', actionType || normalizedSignal.toLowerCase())}`,
     `  Enterprise     : ${ENTERPRISE_PRICE_LABEL}; start with one repeated workflow failure`,
-    '                   https://thumbgate.ai/#workflow-sprint-intake',
+    `                   ${ENTERPRISE_ENTRY_URL}`,
     '',
   ];
   return lines.join('\n');
@@ -114,7 +114,7 @@ function buildStatsReceipt(stats = {}) {
   lines.push('  Show the buyer     : npx thumbgate cost');
   lines.push('  Pro recall value   : keep lessons/rules searchable, exportable, and visible');
   lines.push(`  Solo Pro           : ${trackedProUrl('cli_stats_receipt', 'proof_seen')}`);
-  lines.push('  Enterprise         : https://thumbgate.ai/#workflow-sprint-intake');
+  lines.push(`  Enterprise         : ${ENTERPRISE_ENTRY_URL}`);
   lines.push('');
   return lines.join('\n');
 }
@@ -132,6 +132,7 @@ module.exports = {
   TEAM_MIN_SEATS,
   PRO_PRICE_LABEL,
   ENTERPRISE_PRICE_LABEL,
+  ENTERPRISE_ENTRY_URL,
   normalizePlanId,
   normalizeBillingCycle,
   normalizeSeatCount,

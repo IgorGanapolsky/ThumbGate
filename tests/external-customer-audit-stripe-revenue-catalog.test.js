@@ -19,7 +19,7 @@ function diagnosticPrice(overrides = {}) {
     recurring: null,
     product: {
       id: 'prod_Us8Nf20z0bOb1g',
-      name: 'AI Agent Reliability Audit',
+      name: 'Managed AI Agent Workflow Gate',
     },
     ...overrides,
   };
@@ -31,7 +31,7 @@ test('default catalog is versioned, valid, and unique by immutable Stripe price 
   assert.equal(new Set(DEFAULT_STRIPE_REVENUE_CATALOG.map((entry) => entry.priceId)).size, DEFAULT_STRIPE_REVENUE_CATALOG.length);
 });
 
-test('live $499 diagnostic matches despite its generic product name', () => {
+test('live $499 managed gate matches its immutable catalog identity', () => {
   const result = matchStripeRevenueCatalogPrice(diagnosticPrice());
   assert.equal(result.matched, true);
   assert.equal(result.complete, true);
@@ -62,7 +62,7 @@ test('a ThumbGate-looking product name cannot substitute for an exact catalog id
 
 test('known price ID fails closed when product, amount, currency, or cadence drifts', () => {
   const cases = [
-    diagnosticPrice({ product: { id: 'prod_wrong', name: 'AI Agent Reliability Audit' } }),
+    diagnosticPrice({ product: { id: 'prod_wrong', name: 'Managed AI Agent Workflow Gate' } }),
     diagnosticPrice({ unit_amount: 99900 }),
     diagnosticPrice({ currency: 'eur' }),
     diagnosticPrice({ recurring: { interval: 'month', interval_count: 1 } }),

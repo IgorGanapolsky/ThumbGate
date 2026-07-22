@@ -14,44 +14,44 @@ An average gross revenue rate of `$1,000/hour` across every hour equals:
 - about `$730,000` in an average 365-day/12 month
 - `$8,760,000/year`
 
-At current public prices, any single-offer path would require approximately:
+At the current promoted public price, the cash path would require approximately:
 
 - `49` paid `$499` diagnostics per day, or
-- `16` paid `$1,500` sprints per day, or
-- `38,422` active `$19/month` subscriptions to produce about `$730,000` MRR
+- `16` paid `$1,500` internal sprint scopes per day, or
+- `38,422` active `$19/month` legacy subscriptions to produce about `$730,000` MRR
 - `244` active `$3,000/month` Workflow Reliability Operations scopes, or
 - `49` paid `$15,000` Enterprise Governance Pilots per average month, or
 - `73` active `$10,000/month` Enterprise Reliability Operations scopes
 
 These are arithmetic requirements, not forecasts. They show why founder-delivered diagnostics and sprints can validate demand but cannot alone support the target without productization, recurring revenue, and Enterprise expansion.
 
-## Offer 1: Workflow Hardening Diagnostic
+## Offer 1: Managed AI Agent Workflow Gate
 
 ```text
 buyer: one accountable owner with one repeated AI-agent workflow failure
 pain: the same unsafe, wrong-target, missing-approval, or proof-gap action keeps recurring
-outcome: a reviewable decision packet for what should block, warn, or require human approval
-deliverables: workflow/failure map; gate matrix; verification checklist; prioritized implementation recommendation
+outcome: one repeated failure becomes a configured local pre-action gate with regression proof
+deliverables: workflow/failure map; one configured local gate; one regression test; rollout, rollback, and verification proof
 time_to_value: within two business days after a 60-minute working review and receipt of agreed materials
 buyer_effort: short intake, workflow owner, and non-secret examples or logs
 price: $499 one-time
 proof: repository verification evidence and workflow-specific artifacts produced by the diagnostic
-risk_reducer: submit the workflow first when fit is unclear; no checkout for an out-of-scope workflow
-boundaries: no implementation, legal/compliance certification, savings guarantee, incident-prevention guarantee, or uncontracted hosted-team capability
+risk_reducer: submit the workflow first when fit is unclear; refund a paid order that cannot be reduced to one supported gate
+boundaries: no multi-system implementation, legal/compliance certification, savings guarantee, incident-prevention guarantee, or uncontracted hosted-team capability
 next_step: /diagnostic or /go/diagnostic after fit is clear
 ```
 
-## Offer 2: Workflow Hardening Sprint
+## Offer 2: Workflow Hardening Sprint (internal catalog; hidden during the single-offer experiment)
 
 ```text
 buyer: a diagnostic-qualified workflow owner ready to implement the first gate set
 pain: the workflow cannot safely scale until its action boundary and proof path are implemented
 outcome: one agreed workflow has implemented local gates and reviewable proof artifacts
 deliverables: scoped gate implementation; local regression/proof artifacts; approval and rollback runbook; review handoff
-price: $1,500 one-time; a paid $499 diagnostic for the same workflow is applied through the follow-up invoice or checkout
+price: $1,500 one-time for prior contracts or controlled internal scoping; not a promoted public cash path
 risk_reducer: scope is fixed before implementation; multi-workflow and hosted work are excluded
 boundaries: no broad platform rollout, ongoing monitoring, shared hosting, SSO/SIEM, or compliance certification without Enterprise scope
-next_step: diagnostic recommendation or qualified Enterprise intake; do not pay both public links at full price
+next_step: only after separately accepted scope; do not expose as a competing homepage or pricing CTA
 ```
 
 ## Offer 3: Pro recurring

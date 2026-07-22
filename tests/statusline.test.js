@@ -59,6 +59,8 @@ function runStatusline(cachePayload, extraEnv = {}) {
         HOME: homeDir,
         THUMBGATE_FEEDBACK_DIR: tmpDir,
         THUMBGATE_STATUSLINE_VERBOSE: '1',
+        THUMBGATE_OPERATOR_KEY: '',
+        THUMBGATE_API_KEY: '',
         ...extraEnv,
       },
       timeout: 5000,
@@ -180,6 +182,8 @@ test('statusline rebuilds counters from local feedback logs when cache is empty'
         ...process.env,
         HOME: homeDir,
         THUMBGATE_FEEDBACK_DIR: tmpDir,
+        THUMBGATE_OPERATOR_KEY: '',
+        THUMBGATE_API_KEY: '',
       },
       timeout: 5000,
     });
@@ -400,6 +404,8 @@ test('statusline shows Pro when a valid ThumbGate license is present', () => {
         ...process.env,
         HOME: homeDir,
         THUMBGATE_FEEDBACK_DIR: tmpDir,
+        THUMBGATE_OPERATOR_KEY: '',
+        THUMBGATE_API_KEY: '',
       },
       timeout: 5000,
     });

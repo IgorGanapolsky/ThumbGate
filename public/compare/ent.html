@@ -3,249 +3,178 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ThumbGate vs Ent (ent.ai) | Coding-Agent PreToolUse Gate vs Endpoint Pre-Breach Security</title>
-  <meta name="description" content="Ent (ent.ai) is an intent-aware endpoint/workspace security platform — ~$100M seed — that reads human and AI-agent behavior on enterprise devices before incidents escalate. ThumbGate is a PreToolUse hook inside AI coding agents that turns thumbs-down feedback into prevention rules. Adjacent layers: Ent at the device perimeter, ThumbGate at the tool-call boundary. Honest head-to-head." />
-  <meta property="og:title" content="ThumbGate vs Ent | Endpoint Pre-Breach vs Coding-Agent Gate" />
-  <meta property="og:description" content="Ent watches endpoint intent before a breach. ThumbGate gates the coding agent's next tool call before it fires. Different buyers, different install surfaces — and a clean dual-deploy story for security + engineering teams." />
+  <title>ThumbGate vs Ent | Agent Tool Enforcement vs Workspace Security</title>
+  <meta name="description" content="Compare ThumbGate's local pre-action enforcement for AI-agent tool calls with Ent's intent-aware workspace security across human, AI, and application activity." />
+  <meta property="og:title" content="ThumbGate vs Ent | Agent Tool Enforcement vs Workspace Security" />
+  <meta property="og:description" content="Two prevention layers, two control points: local AI-agent tool calls versus broad workspace activity." />
   <meta property="og:type" content="article" />
   <meta property="og:url" content="https://thumbgate.ai/compare/ent" />
+  <meta property="og:image" content="/og.png" />
   <link rel="canonical" href="https://thumbgate.ai/compare/ent" />
   <link rel="llm-context" href="/llm-context.md" type="text/markdown" />
   <link rel="icon" type="image/png" href="/thumbgate-icon.png" />
   <link rel="apple-touch-icon" href="/assets/brand/thumbgate-mark.svg" />
-  <meta property="og:image" content="/og.png" />
   <style>
-    :root { --bg: #0a0a0b; --bg-raised: #111113; --bg-card: #161618; --line: #222225; --text: #e8e8ec; --muted: #8b8b96; --cyan: #22d3ee; --green: #4ade80; --amber: #fbbf24; }
+    :root { --bg: #0a0a0b; --raised: #111113; --card: #161618; --line: #28282c; --text: #e8e8ec; --muted: #a0a0aa; --cyan: #22d3ee; --green: #4ade80; --amber: #fbbf24; }
     * { box-sizing: border-box; }
     body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; }
     a { color: var(--cyan); text-decoration: none; }
     a:hover { text-decoration: underline; }
-    .container { max-width: 980px; margin: 0 auto; padding: 0 24px; }
-    .topbar { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); background: rgba(10, 10, 11, 0.88); border-bottom: 1px solid var(--line); }
-    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; padding-bottom: 14px; }
-    .brand { font-weight: 700; color: var(--text); display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
-    .brand .logo-mark { width: 28px; height: 28px; display: block; }
-    .hero { padding: 72px 0 32px; }
-    .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(34, 211, 238, 0.22); background: rgba(34, 211, 238, 0.1); color: var(--cyan); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; font-weight: 700; }
-    h1 { font-size: clamp(34px, 5vw, 56px); line-height: 1.06; letter-spacing: -0.04em; margin: 16px 0; max-width: 900px; }
-    .hero p { max-width: 780px; color: var(--muted); font-size: 18px; }
-    .grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 24px; padding-bottom: 72px; }
-    .card, .detail-section, .sidebar-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px; }
-    .card { padding: 24px; }
-    .detail-section { padding: 24px; margin-bottom: 18px; }
-    .detail-section h2 { margin: 0 0 12px; font-size: 24px; letter-spacing: -0.03em; }
-    .detail-section p, .detail-section li, .sidebar-card p { color: var(--muted); }
-    .detail-section ul, .card ul { padding-left: 18px; color: var(--muted); }
-    .comparison-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
-    .comparison-table th, .comparison-table td { border: 1px solid var(--line); padding: 12px; text-align: left; vertical-align: top; }
-    .comparison-table th { background: var(--bg-raised); color: var(--cyan); }
-    .pill-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
-    .pill { border: 1px solid var(--line); background: var(--bg-raised); border-radius: 999px; padding: 10px 14px; font-size: 14px; font-weight: 650; }
-    .pill.good { color: #b8f7c8; border-color: rgba(74, 222, 128, 0.28); background: rgba(74, 222, 128, 0.1); }
-    .pill.warn { color: #ffe2a4; border-color: rgba(251, 191, 36, 0.28); background: rgba(251, 191, 36, 0.1); }
-    .sidebar { display: flex; flex-direction: column; gap: 18px; }
-    .sidebar-card { padding: 20px; }
-    .sidebar-card:first-child { position: sticky; top: 84px; max-height: calc(100vh - 104px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
-    .cta-button { display: inline-flex; align-items: center; justify-content: center; margin-top: 18px; padding: 12px 16px; border-radius: 10px; background: var(--cyan); color: #071116; font-weight: 700; text-decoration: none; }
-    .related-card { display: block; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg-raised); margin-top: 12px; color: var(--text); }
-    .related-label { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
-    .faq-item { border-top: 1px solid var(--line); padding: 14px 0; }
-    .faq-item summary { cursor: pointer; font-weight: 600; }
-    .faq-item p { color: var(--muted); }
-    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } .sidebar-card:first-child { position: static; max-height: none; overflow: visible; } }
+    .container { width: min(980px, calc(100% - 40px)); margin: 0 auto; }
+    .topbar { position: sticky; top: 0; z-index: 10; border-bottom: 1px solid var(--line); background: rgba(10, 10, 11, 0.9); backdrop-filter: blur(12px); }
+    .topbar .container { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; }
+    .brand { color: var(--text); display: inline-flex; align-items: center; gap: 9px; font-weight: 750; }
+    .brand img { width: 28px; height: 28px; }
+    .hero { padding: 68px 0 34px; }
+    .eyebrow { color: var(--cyan); font-size: 12px; font-weight: 750; letter-spacing: .09em; text-transform: uppercase; }
+    h1 { max-width: 830px; margin: 14px 0; font-size: clamp(36px, 5.5vw, 58px); line-height: 1.06; letter-spacing: -.045em; }
+    .hero p { max-width: 770px; color: var(--muted); font-size: 19px; }
+    .pills { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+    .pill { padding: 9px 13px; border: 1px solid var(--line); border-radius: 999px; background: var(--raised); font-size: 14px; font-weight: 650; }
+    .pill.green { color: #b8f7c8; border-color: rgba(74, 222, 128, .3); }
+    .pill.amber { color: #ffe2a4; border-color: rgba(251, 191, 36, .3); }
+    .layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(270px, 1fr); gap: 22px; padding-bottom: 72px; }
+    .card { margin-bottom: 18px; padding: 24px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); }
+    .card h2 { margin: 0 0 10px; font-size: 24px; letter-spacing: -.025em; }
+    .card p, .card li { color: var(--muted); }
+    ul { padding-left: 19px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 14px; }
+    th, td { padding: 12px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--cyan); background: var(--raised); }
+    .side { align-self: start; position: sticky; top: 82px; }
+    .cta { display: inline-flex; justify-content: center; width: 100%; margin-top: 14px; padding: 12px 15px; border-radius: 10px; background: var(--cyan); color: #061114; font-weight: 800; }
+    .related { display: block; margin-top: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--raised); color: var(--text); }
+    details { padding: 13px 0; border-top: 1px solid var(--line); }
+    summary { cursor: pointer; font-weight: 700; }
+    @media (max-width: 820px) { .layout { grid-template-columns: 1fr; } .side { position: static; } }
   </style>
   <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "TechArticle",
-  "headline": "ThumbGate vs Ent (ent.ai)",
-  "description": "Ent is an intent-aware endpoint and workspace security platform for human and AI-agent behavior on enterprise devices. ThumbGate is a PreToolUse enforcement runtime inside AI coding agents with feedback-to-prevention rules. Adjacent layers — not substitutes.",
-  "about": ["thumbgate vs ent", "ent.ai alternative", "AI agent endpoint security", "PreToolUse coding agent gate", "intent-aware workspace security"],
-  "url": "https://thumbgate.ai/compare/ent",
-  "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
-  "mainEntityOfPage": "https://thumbgate.ai/compare/ent",
-  "dateModified": "2026-07-22"
-}
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "ThumbGate vs Ent: Agent Tool Enforcement vs Workspace Security",
+    "description": "A factual comparison of ThumbGate's local AI-agent tool-call enforcement and Ent's intent-aware workspace security.",
+    "about": ["ThumbGate vs Ent", "AI agent security", "pre-action enforcement", "intent-aware workspace security"],
+    "url": "https://thumbgate.ai/compare/ent",
+    "datePublished": "2026-07-22",
+    "dateModified": "2026-07-22",
+    "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+    "mainEntityOfPage": "https://thumbgate.ai/compare/ent"
+  }
   </script>
   <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {
-      "@type": "Question",
-      "name": "Is Ent a direct ThumbGate competitor?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "No — they are narrative neighbors, not substitutes. Ent (ent.ai) is endpoint / workspace security: lightweight agent software on enterprise devices that interprets human and AI-agent intent and intervenes before risky behavior becomes a breach. ThumbGate runs inside the AI coding agent process (Claude Code, Cursor, Codex CLI, Gemini CLI, Amp, Cline, OpenCode, Claude Desktop) at the PreToolUse hook, before a tool call executes. Ent's buyer is typically security / IT / CISO. ThumbGate's buyer is typically the engineering lead or solo founder running coding agents. Funding scale is not product overlap."
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is Ent a direct ThumbGate competitor?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Ent and ThumbGate share a prevention thesis but operate at different control points. Ent describes broad workspace security across human, AI, and application activity. ThumbGate focuses on local, inspectable enforcement before AI developer agents execute tool calls."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can ThumbGate and Ent work together?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Conceptually, yes. A workspace security layer can govern broad endpoint activity while ThumbGate applies deterministic rules at the developer-agent tool-call boundary. No product integration is claimed."
+        }
       }
-    },
-    {
-      "@type": "Question",
-      "name": "Can I use both Ent and ThumbGate?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes. The dual-deploy story is clean: Ent on the fleet (devices, workspaces, data-loss and insider/AI-agent endpoint risk); ThumbGate on every developer AI coding agent (force-push, destructive shell, secret exfil via tools, skip-tests loops). Neither product can replace the other at its native boundary."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Does Ent block rm -rf or git push --force from Claude Code?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Ent's published positioning is intent-aware intervention on the endpoint/workspace for risky human and AI-agent behavior before incidents escalate — not a Claude Code / Cursor PreToolUse adapter matrix with lesson promotion from thumbs-down feedback. If your failure mode is the coding agent about to execute a known-bad tool call inside the IDE-agent process, ThumbGate is the layer purpose-built for that hook. Endpoint agents may still see secondary signals after the tool has already been invoked."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Why does Ent's $100M seed matter for ThumbGate positioning?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "It validates market spend on AI-agent security at the enterprise perimeter. It does not mean every AI-agent security headline is a coding-agent PreToolUse product. Prospects who hear 'AI agent security' after Ent's launch often mean endpoint/workspace risk. ThumbGate's job in that conversation is to re-scope: we are the Reliability Gateway at the tool-call boundary for coding agents — free to start via npx thumbgate init; Pro unlocks unlimited captures/rules, personal local dashboard, and DPO/advanced exports (not hosted team sync)."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Is this comparison sponsored?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "No. There is no partnership with Ent. Public facts about Ent's seed and positioning come from June 2026 coverage (RiskIQ co-founders Elias Manousos and Brandon Dixon; Decibel-led seed reported at approximately $100M; intent-aware workspace/endpoint security). If anything here misrepresents Ent, open an issue on the ThumbGate GitHub repo and we will correct it."
-      }
-    }
-  ]
-}
+    ]
+  }
   </script>
 </head>
 <body>
   <header class="topbar">
     <div class="container">
-      <a href="/" class="brand"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" class="logo-mark" width="28" height="28" /><span>ThumbGate</span></a>
-      <nav><a href="/learn">Learn</a> &nbsp; <a href="/pro">Pro</a> &nbsp; <a href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">GitHub</a></nav>
+      <a class="brand" href="/"><img src="/assets/brand/thumbgate-mark-inline-v3.svg" alt="ThumbGate" width="28" height="28" />ThumbGate</a>
+      <a href="/compare">All comparisons</a>
     </div>
   </header>
 
-  <section class="hero">
-    <div class="container">
-      <span class="eyebrow">ThumbGate vs Ent (ent.ai)</span>
-      <h1>Endpoint pre-breach security is not a PreToolUse gate for coding agents.</h1>
-      <p><strong>Ent</strong> (<a href="https://ent.ai" target="_blank" rel="noopener">ent.ai</a>) is an intent-aware endpoint / workspace security platform — public coverage of a ~$100M June 2026 seed from RiskIQ co-founders — that analyzes human and AI-agent behavior on enterprise devices and intervenes before risky actions become incidents. <strong>ThumbGate</strong> is a local-first Reliability Gateway that installs as PreToolUse hooks inside AI coding agents, captures thumbs-up/down feedback, promotes lessons, and flags or hard-blocks known-bad tool calls before they fire. Same AI-agent-security conversation. Different install surface, buyer, and decision boundary.</p>
-      <div class="pill-row">
-        <span class="pill">Both care about AI agents</span>
-        <span class="pill good">Different layers</span>
-        <span class="pill warn">Not substitutes</span>
-        <span class="pill">Dual-deploy is normal</span>
-      </div>
-    </div>
-  </section>
-
   <main class="container">
-    <div class="grid">
-      <div class="content">
+    <section class="hero">
+      <div class="eyebrow">comparison · updated July 22, 2026</div>
+      <h1>ThumbGate vs Ent</h1>
+      <p>Ent validates the market shift from alerts after damage to intervention before a mistake becomes a breach. The difference is where each product stands: Ent describes broad intent-aware workspace security; ThumbGate enforces inspectable rules immediately before a developer agent executes a tool call.</p>
+      <div class="pills">
+        <span class="pill green">ThumbGate: agent tool-call boundary</span>
+        <span class="pill amber">Ent: workforce and endpoint boundary</span>
+      </div>
+    </section>
 
-        <section class="detail-section">
-          <h2>Side-by-side scope comparison</h2>
-          <table class="comparison-table">
-            <thead>
-              <tr><th>Dimension</th><th>Ent (ent.ai)</th><th>ThumbGate</th></tr>
-            </thead>
-            <tbody>
-              <tr><td><strong>Primary surface</strong></td><td>Enterprise endpoint / workspace (device-resident agent)</td><td>AI coding agent process (PreToolUse / hooks)</td></tr>
-              <tr><td><strong>Decision boundary</strong></td><td>Intent-aware policy on human + AI-agent behavior before a security incident</td><td>Tool-call intercept before bash / SQL / file write / MCP / git runs</td></tr>
-              <tr><td><strong>Typical buyer</strong></td><td>CISO / SecOps / IT / workspace security</td><td>Engineering lead, platform team, solo founder running coding agents</td></tr>
-              <tr><td><strong>What it is for</strong></td><td>Data loss, insider risk, AI-related endpoint misuse, pre-breach intervention</td><td>Repeat coding-agent mistakes: force-push, secret exfil via tools, destructive deletes, skip-verification loops</td></tr>
-              <tr><td><strong>Learning loop</strong></td><td>Enterprise policy + behavioral intent models (vendor product surface)</td><td>Thumbs-down → lesson DB → prevention rules (Thompson Sampling on the free/Pro path)</td></tr>
-              <tr><td><strong>Agent matrix</strong></td><td>Human employees + AI agents on managed devices (endpoint scope)</td><td>Claude Code, Cursor, Codex CLI, Gemini CLI, Amp, Cline, OpenCode, Claude Desktop</td></tr>
-              <tr><td><strong>Install</strong></td><td>Enterprise endpoint software (sales-led / fleet)</td><td><code>npx thumbgate init</code> (local-first; MIT free tier)</td></tr>
-              <tr><td><strong>Best alongside</strong></td><td>ThumbGate on every developer coding agent</td><td>Ent (or existing EDR/DLP) on the corporate fleet</td></tr>
-            </tbody>
+    <section class="layout">
+      <div>
+        <article class="card">
+          <h2>The short answer</h2>
+          <p>They are competitive in thesis, not identical in scope. Ent says it observes, investigates, and intervenes across human, AI, and application activity. ThumbGate is narrower: it evaluates an AI agent's proposed tool action and returns an inspectable ALLOW, WARN, or DENY before execution.</p>
+          <p>That narrower boundary is useful when the immediate problem is concrete: stop a force-push, secret leak, destructive shell command, unsafe dependency install, or repeated off-scope edit inside an agent workflow.</p>
+        </article>
+
+        <article class="card">
+          <h2>Control-point comparison</h2>
+          <table>
+            <tr><th>Buyer question</th><th>ThumbGate</th><th>Ent</th></tr>
+            <tr><td>Primary scope</td><td>Tool-calling developer agents and local automation workflows.</td><td>Workspace security across people, applications, endpoints, and AI agents.</td></tr>
+            <tr><td>Decision point</td><td>Immediately before an agent tool call executes.</td><td>Across workspace activity, with intervention informed by intent and context.</td></tr>
+            <tr><td>Deployment posture</td><td>Open-source, local-first CLI, MCP server, and agent hooks.</td><td>Ent describes a lightweight endpoint agent and a customer-controlled cloud environment.</td></tr>
+            <tr><td>Decision output</td><td>Deterministic ALLOW, WARN, or DENY with the matched rule.</td><td>Ent describes responses from soft nudges through hard blocks.</td></tr>
+            <tr><td>Learning loop</td><td>Turns contextual thumbs-down feedback into prevention rules and regression tests.</td><td>Ent describes intent-aware detection and investigation; its internal implementation is not evaluated here.</td></tr>
+            <tr><td>Public buying path</td><td>Free CLI; $499 one-time managed gate for one supported workflow.</td><td>Contact Ent for its current commercial terms.</td></tr>
           </table>
-        </section>
+        </article>
 
-        <section class="detail-section">
-          <h2>The shared architectural insight</h2>
-          <p>Both products reject pure post-incident forensics as the only line of defense. Ent's public story is <em>prevent before breach</em> on the workspace. ThumbGate's story is <em>gate before tool execution</em> inside the coding agent. The industry is converging on pre-action controls for AI — but "pre-action" on a laptop security agent is not the same as PreToolUse in Claude Code.</p>
-          <p>If you collapse those layers, you buy the wrong product: endpoint coverage without a coding-agent lesson loop, or a coding-agent gate without fleet DLP. The honest pitch is dual-deploy for orgs that have both managed devices and heavy AI coding adoption.</p>
-        </section>
-
-        <section class="detail-section">
-          <h2>When to pick which (or both)</h2>
+        <article class="card">
+          <h2>Choose ThumbGate when</h2>
           <ul>
-            <li><strong>Pick Ent</strong> when the risk is fleet-wide: employee or AI-agent behavior on managed endpoints, data leaving the workspace, insider / pre-breach intervention that security owns.</li>
-            <li><strong>Pick ThumbGate</strong> when the risk is developer-agent: the model is about to <code>git push --force</code>, <code>rm -rf</code> the wrong tree, ship secrets via a tool, or skip the verification step it already failed last week — and you want that pattern to become a permanent rule from feedback.</li>
-            <li><strong>Run both</strong> when security owns devices and eng owns AI coding agents. Ent does not ship ThumbGate's adapter matrix or thumbs → prevention pipeline; ThumbGate is not an EDR.</li>
+            <li>You already use Claude Code, Codex, Cursor, Gemini CLI, or another tool-calling agent.</li>
+            <li>You can name the repeated bad action you need stopped.</li>
+            <li>You need local inspection, source access, and a deterministic rule at the point of execution.</li>
+            <li>You want one workflow gated and regression-tested in days, not a broad security-platform rollout.</li>
           </ul>
-        </section>
+        </article>
 
-        <section class="detail-section">
-          <h2>Funding narrative vs product category</h2>
-          <p>Ent's reported ~$100M seed (June 2026 coverage; founders Elias Manousos and Brandon Dixon of RiskIQ; investors publicly named include Decibel, with Sequoia, In-Q-Tel, and Craft cited in industry write-ups) is a signal that capital is pouring into AI-era endpoint security. It is <strong>not</strong> a signal that ThumbGate must "compete with Ent for the same SKU." Category neighbors raise money in the same news cycle; buyers still buy by failure mode.</p>
-          <p>ThumbGate's wedge stays small and concrete: local PreToolUse enforcement + feedback-to-rule learning for coding agents, free to start; Pro adds unlimited captures/rules, a personal local dashboard, and DPO/advanced exports. Hosted team lesson sync and org dashboards are not generally available. See <a href="/pricing">pricing</a> and <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">VERIFICATION_EVIDENCE.md</a>.</p>
-        </section>
+        <article class="card">
+          <h2>Evaluate Ent when</h2>
+          <ul>
+            <li>Your security problem spans employee activity, applications, endpoints, and AI agents.</li>
+            <li>You need a broad enterprise security program rather than a developer-agent control.</li>
+            <li>You want intent-aware investigation and intervention across the workspace.</li>
+          </ul>
+          <p>Source for Ent's current positioning: <a href="https://ent.ai/" target="_blank" rel="noopener">Ent's official website</a>. This comparison uses public claims only and does not claim a product integration.</p>
+        </article>
 
-        <section class="detail-section">
+        <article class="card">
           <h2>FAQ</h2>
-          <details class="faq-item" open>
-            <summary>Is Ent a ThumbGate competitor?</summary>
-            <p>Narrative competitor in the "AI agent security" search bucket. Product substitute? No. Different install surface, buyer, and decision boundary. See the table above.</p>
+          <details>
+            <summary>Is Ent a direct ThumbGate competitor?</summary>
+            <p>It is adjacent competition with an overlapping prevention thesis. Ent is broader workspace security; ThumbGate is a focused control at the AI-agent tool-call boundary.</p>
           </details>
-          <details class="faq-item">
-            <summary>Will Ent make ThumbGate obsolete?</summary>
-            <p>Only if Ent ships a maintained PreToolUse adapter matrix across the major coding agents with a feedback → prevention rule loop that engineering teams control without a fleet security rollout. That is not Ent's published product center of gravity today.</p>
+          <details>
+            <summary>Can both layers coexist?</summary>
+            <p>Conceptually, yes. Broad workspace security and deterministic tool-call enforcement cover different surfaces. ThumbGate does not claim a current Ent integration.</p>
           </details>
-          <details class="faq-item">
-            <summary>Where does each one log evidence?</summary>
-            <p>Ent is an enterprise security product — evidence surfaces belong to their security console / SOC workflows (vendor-specific). ThumbGate writes structured allow/warn/block decisions to a local lesson DB; Pro adds a personal local dashboard and DPO/advanced exports. Different audit consumers: SOC vs eng reliability.</p>
-          </details>
-          <details class="faq-item">
-            <summary>Pricing posture</summary>
-            <p>Ent is sales-led enterprise security (public pricing not the free-npm path). ThumbGate: MIT free local runtime with daily free-tier limits; Pro at $19/mo for unlimited captures/rules, personal local dashboard, and DPO/advanced exports. Shared hosted team sync is not a Pro entitlement. Compare apples to apples only after you pick the layer you need.</p>
-          </details>
-          <details class="faq-item">
-            <summary>Is this comparison sponsored or partnered?</summary>
-            <p>No. We wrote this so buyers who land on Ent headlines do not confuse endpoint pre-breach with coding-agent PreToolUse. Corrections welcome via <a href="https://github.com/IgorGanapolsky/ThumbGate/issues" target="_blank" rel="noopener">GitHub issues</a>.</p>
-          </details>
-        </section>
-
+        </article>
       </div>
 
-      <aside class="sidebar">
-        <div class="sidebar-card">
-          <span class="related-label">Install ThumbGate</span>
-          <p style="font-size: 14px;">Get PreToolUse rules running in your AI coding agent in two minutes.</p>
-          <a class="cta-button" href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">npx thumbgate init &rarr;</a>
+      <aside class="side">
+        <div class="card">
+          <h2>Managed AI Agent Workflow Gate</h2>
+          <p>For $499, ThumbGate reviews one supported AI-agent workflow, configures one pre-action gate, adds a regression test, and delivers written rollout and rollback proof within two business days.</p>
+          <a class="cta" href="/diagnostic?utm_source=website&amp;utm_medium=comparison&amp;utm_campaign=compare_ent&amp;cta_placement=sidebar">Check workflow fit</a>
+          <p><small>Full refund if the workflow is not a supported fit.</small></p>
         </div>
-
-        <div class="sidebar-card">
-          <span class="related-label">Ent's surface</span>
-          <p style="font-size: 13px;">If you need fleet endpoint / workspace security for human + AI-agent intent, evaluate <a href="https://ent.ai" target="_blank" rel="noopener">ent.ai</a> with your security team. That is not ThumbGate's product surface.</p>
-        </div>
-
-        <div class="sidebar-card">
-          <span class="related-label">Related comparisons</span>
-          <a class="related-card" href="/compare/arcjet">
-            <strong>ThumbGate vs Arcjet</strong><br>
-            <span style="color: var(--muted); font-size: 13px;">Agent-outbound gate pairs with app-inbound firewall</span>
-          </a>
-          <a class="related-card" href="/compare/anthropic-containment">
-            <strong>ThumbGate vs Anthropic containment</strong><br>
-            <span style="color: var(--muted); font-size: 13px;">IDE-agent extension of published architecture</span>
-          </a>
-          <a class="related-card" href="/compare/oak-and-sparrow-gatekeeper">
-            <strong>ThumbGate vs Gatekeeper</strong><br>
-            <span style="color: var(--muted); font-size: 13px;">Agent-action gate vs workforce-input gate</span>
-          </a>
-          <a class="related-card" href="/compare/rein">
-            <strong>ThumbGate vs Rein</strong><br>
-            <span style="color: var(--muted); font-size: 13px;">Coding-agent governance vs decorator governance</span>
-          </a>
-        </div>
-
-        <div class="sidebar-card">
-          <span class="related-label">Sources</span>
-          <p style="font-size: 13px;">Ent seed and positioning from June 2026 public coverage (DataBreachToday, Resilient Cyber, New Market Pitch, and industry posts summarizing the Decibel-led seed and RiskIQ founders). Product facts for ThumbGate from this repository and <a href="https://thumbgate.ai">thumbgate.ai</a>. Not sponsored. Correct via issue if Ent's product surface changes.</p>
+        <div class="card">
+          <h2>Verify the product</h2>
+          <a class="related" href="https://github.com/IgorGanapolsky/ThumbGate" target="_blank" rel="noopener">Open-source repository</a>
+          <a class="related" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Verification evidence</a>
+          <a class="related" href="/guides/pre-action-checks">How pre-action checks work</a>
         </div>
       </aside>
-    </div>
+    </section>
   </main>
 </body>
 </html>

@@ -203,12 +203,14 @@ describe('/v1/marketing/install-email', () => {
   });
 });
 
-describe('postinstall banner contains subscribe and upgrade affordances', () => {
-  it('postinstall.js renders subscribe, guide, Pro pricing, and trial mentions', () => {
+describe('postinstall banner contains subscribe and managed-service affordances', () => {
+  it('postinstall.js renders subscribe, guide, managed-gate pricing, and trial mentions', () => {
     const src = fs.readFileSync(path.resolve(__dirname, '..', 'bin', 'postinstall.js'), 'utf8');
     assert.match(src, /npx thumbgate subscribe/);
     assert.match(src, /5-min setup guide \+ weekly tips/);
-    assert.match(src, /Pro.*\$19/);
+    assert.match(src, /\$499 one-time/);
+    assert.match(src, /thumbgate\.ai\/diagnostic/);
+    assert.doesNotMatch(src, /Keep Pro|\$19/);
     assert.match(src, /trial/i);
   });
 });

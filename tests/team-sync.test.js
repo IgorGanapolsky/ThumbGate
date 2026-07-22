@@ -27,6 +27,9 @@ test('team-sync commits local prevention rules and pulls/pushes successfully', (
     // 2. Setup client repo
     fs.mkdirSync(clientDir, { recursive: true });
     execSync('git init', { cwd: clientDir, stdio: 'ignore' });
+    const isolatedHooksDir = path.join(tmp, 'empty-hooks');
+    fs.mkdirSync(isolatedHooksDir, { recursive: true });
+    execFileSync('git', ['config', 'core.hooksPath', isolatedHooksDir], { cwd: clientDir, stdio: 'ignore' });
     execSync('git config user.email "sync-test@example.com"', { cwd: clientDir, stdio: 'ignore' });
     execSync('git config user.name "Sync Test"', { cwd: clientDir, stdio: 'ignore' });
     execSync('git config commit.gpgsign false', { cwd: clientDir, stdio: 'ignore' });

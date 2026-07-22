@@ -55,6 +55,7 @@ const COMPARE_FILES = [
   'compare/mem0.html',
   'compare/fallow.html',
   'compare/agentix-labs.html',
+  'compare/ent.html',
 ];
 
 const ALL_FILES = [...GUIDE_FILES, ...COMPARE_FILES];
@@ -102,11 +103,17 @@ describe('SEO guide and comparison pages', () => {
         assert.ok(html.includes('ThumbGate'), `${file} does not mention ThumbGate`);
       });
 
-      it('mentions the current Pro and Enterprise pricing', () => {
+      it('mentions a current commercial path', () => {
         html = html || fs.readFileSync(path.join(PUBLIC_DIR, file), 'utf-8');
+        const hasLegacyTierPath = html.includes('$19/mo')
+          && html.includes('$149/yr')
+          && html.includes('Enterprise');
+        const hasManagedGatePath = html.includes('$499')
+          && html.includes('Managed AI Agent Workflow Gate')
+          && html.includes('/diagnostic');
         assert.ok(
-          html.includes('$19/mo') && html.includes('$149/yr') && html.includes('Enterprise'),
-          `${file} missing current Pro and Enterprise pricing`
+          hasLegacyTierPath || hasManagedGatePath,
+          `${file} missing a current commercial path`
         );
       });
     });
@@ -180,7 +187,7 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('$1500'));
   });
 
-  it('AI deployment readiness guide converts production rollout demand into paid sprint paths', () => {
+  it('AI deployment readiness guide converts production rollout demand into one managed gate', () => {
     const html = fs.readFileSync(
       path.join(PUBLIC_DIR, 'guides/ai-deployment-readiness.html'),
       'utf-8'
@@ -190,11 +197,13 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('deployment companies'));
     assert.ok(html.includes('governance and proof layer'));
     assert.ok(html.includes('npx thumbgate background-governance --check --json'));
-    assert.ok(html.includes('workflow-sprint-intake'));
-    assert.ok(html.includes('Ready to scope the sprint?'));
+    assert.ok(html.includes('Managed AI Agent Workflow Gate'));
+    assert.ok(html.includes('$499'));
     assert.ok(html.includes('/diagnostic?utm_source=website'));
     assert.ok(html.includes('utm_content=diagnostic'));
-    assert.ok(html.includes('utm_content=sprint#intake'));
+    assert.ok(!html.includes('workflow-sprint-intake'));
+    assert.ok(!html.includes('Ready to scope the sprint?'));
+    assert.ok(!html.includes('utm_content=sprint#intake'));
     assert.ok(!html.includes('buy.stripe.com'));
   });
 

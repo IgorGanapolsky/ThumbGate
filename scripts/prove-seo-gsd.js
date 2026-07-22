@@ -159,39 +159,15 @@ async function run() {
     },
     {
       id: 'SEO-GSD-06',
-      desc: 'landing page internally links to the high-intent comparison and guide pages',
+      desc: 'landing page keeps one compact guide-library path instead of a link directory',
       fn: () => {
         const landingHtml = fs.readFileSync(path.join(ROOT, 'public', 'index.html'), 'utf8');
 
-        if (!/id="compare-guides"/.test(landingHtml)) {
-          throw new Error('Landing page compare-guides section missing');
+        if (!/href="\/learn"/.test(landingHtml)) {
+          throw new Error('Landing page guide-library link missing');
         }
-        for (const pathname of [
-          '/compare/speclock',
-          '/compare/mem0',
-          '/compare/fallow',
-          '/guides/pre-action-checks',
-          '/guides/agent-harness-optimization',
-          '/guides/code-knowledge-graph-guardrails',
-          '/guides/developer-machine-supply-chain-guardrails',
-          '/guides/proxy-pointer-rag-guardrails',
-          '/guides/rag-precision-tuning-guardrails',
-          '/guides/internal-ai-engineering-stack-guardrails',
-          '/guides/seo-agent-skills-guardrails',
-          '/guides/claude-code-skills-guardrails',
-          '/guides/long-running-agent-context-management',
-          '/guides/reasoning-compression-guardrails',
-          '/guides/browser-automation-safety',
-          '/guides/native-messaging-host-security',
-          '/guides/ai-search-topical-presence',
-          '/guides/best-tools-stop-ai-agents-breaking-production',
-          '/guides/relational-knowledge-ai-recommendations',
-          '/guides/claude-code-feedback',
-          '/guides/autoresearch-agent-safety',
-        ]) {
-          if (!landingHtml.includes(`href="${pathname}"`)) {
-            throw new Error(`Landing page missing internal link for ${pathname}`);
-          }
+        if (/id="compare-guides"/.test(landingHtml)) {
+          throw new Error('Landing page regressed to the comparison-guide directory');
         }
       },
     },
