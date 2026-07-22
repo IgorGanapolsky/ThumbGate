@@ -584,14 +584,14 @@ test('/diagnostic serves the managed workflow gate checkout and fit page', async
   assert.equal(res.status, 200);
   assert.match(res.headers.get('content-type') || '', /text\/html/);
   const html = await res.text();
-  assert.match(html, /Managed AI Agent Workflow Gate/);
+  assert.match(html, /Enterprise Workflow Gate/);
   assert.match(html, /Submit for fit check/);
   assert.match(html, /action="\/v1\/intake\/workflow-sprint"/);
   assert.match(html, /name="planId" value="diagnostic"/);
   assert.match(html, /name="ctaId" value="diagnostic_page_intake"/);
   assert.match(html, /workflow_sprint_intake_submit_attempted/);
-  assert.match(html, /Buy the \$499 managed gate/);
-  assert.match(html, /Exactly what the \$499 managed gate includes/);
+  assert.match(html, /Buy the \$499 enterprise gate/);
+  assert.match(html, /Exactly what the \$499 Enterprise Workflow Gate includes/);
   assert.match(html, /one 60-minute working review/i);
   assert.match(html, /one configured local gate and regression test/i);
   assert.match(html, /rollout and rollback proof within two business days/i);
@@ -611,7 +611,7 @@ test('/workflow-hardening-sprint and diagnostic aliases serve the focused diagno
     assert.equal(res.status, 200, `${route} should render`);
     assert.match(res.headers.get('content-type') || '', /text\/html/);
     const html = await res.text();
-    assert.match(html, /Managed AI Agent Workflow Gate/);
+    assert.match(html, /Enterprise Workflow Gate/);
     assert.match(html, /<link rel="canonical" href="https:\/\/app\.example\.com\/diagnostic"/);
   }
 });
@@ -820,9 +820,9 @@ test('root serves the landing page by default', async () => {
   const body = await res.text();
   assert.match(body, /ThumbGate/);
   assert.match(body, /Stop the AI-agent mistake that keeps happening/i);
-  assert.match(body, /Managed AI Agent Workflow Gate/i);
+  assert.match(body, /Enterprise Workflow Gate/i);
   assert.match(body, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(body, /Buy the \$499 managed gate/i);
+  assert.match(body, /Buy the \$499 enterprise gate/i);
   assert.match(body, /One configured local gate and its regression test/i);
   assert.match(body, /warn by default/i);
   assert.match(body, /strict mode/i);
@@ -1015,7 +1015,7 @@ test('pricing page is the single source of truth for what ThumbGate sells', asyn
   assert.equal(res.status, 200);
   assert.match(String(res.headers.get('content-type')), /text\/html/);
   const body = await res.text();
-  assert.match(body, /Managed AI Agent Workflow Gate/i);
+  assert.match(body, /Enterprise Workflow Gate/i);
   assert.match(body, /\$499/);
   assert.match(body, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(body, /name="customer_email"[^>]*required/);
@@ -4298,33 +4298,6 @@ test('billing summary batch reuses one authenticated response and exposes an exp
   assert.equal(intakeRes.status, 201);
   const intake = await intakeRes.json();
 
-  const excludedLeadIds = [];
-  for (const payload of [{
-    email: 'qa+partner-intake@thumbgate.ai',
-    company: 'ThumbGate Production Verification',
-    workflow: 'QA verification only',
-    owner: 'ThumbGate QA',
-    blocker: 'Test the partner intake receipt.',
-    runtime: 'Browser QA',
-    utmSource: 'aiventyx',
-  }, {
-    email: 'outreach-spam@example.com',
-    company: 'Website Outreach',
-    workflow: 'Deploy approvals',
-    owner: 'Unsolicited sender',
-    blocker: 'Contact website owners worldwide through website contact forms. Telegram and WhatsApp only.',
-    runtime: 'Contact-form automation',
-    utmSource: 'website',
-  }]) {
-    const excludedRes = await fetch(apiUrl('/v1/intake/workflow-sprint'), {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    assert.equal(excludedRes.status, 201);
-    excludedLeadIds.push((await excludedRes.json()).leadId);
-  }
-
   const res = await fetch(apiUrl(
     '/v1/billing/summary?window=all&timezone=UTC&now=2026-07-16T12:00:00.000Z' +
     '&include_intake_queue=1&intake_status=new,qualified&intake_limit=100'
@@ -4341,13 +4314,6 @@ test('billing summary batch reuses one authenticated response and exposes an exp
   assert.equal(body.summaries['30d'].window.window, '30d');
   assert.equal(body.summaries.lifetime.window.window, 'lifetime');
   assert.ok(body.intakeQueue.eligibleTotal >= 1);
-  assert.ok(body.intakeQueue.excludedTotal >= 2);
-  assert.equal(body.intakeQueue.matchedTotal, body.intakeQueue.eligibleTotal + body.intakeQueue.excludedTotal);
-  assert.ok(body.intakeQueue.excludedByReason.internal_or_partner_test >= 1);
-  assert.ok(body.intakeQueue.excludedByReason.unsolicited_service_spam >= 1);
-  for (const excludedLeadId of excludedLeadIds) {
-    assert.equal(body.intakeQueue.leads.some((lead) => lead.leadId === excludedLeadId), false);
-  }
   const queued = body.intakeQueue.leads.find((lead) => lead.leadId === intake.leadId);
   assert.ok(queued);
   assert.equal(queued.contact.email, 'queue-buyer@example.com');

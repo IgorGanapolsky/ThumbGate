@@ -25,7 +25,7 @@ test.describe('/pricing single-offer cash path', () => {
     });
     await page.goto('/pricing');
     await page.locator('#pricing-email').fill('buyer@example.com');
-    await page.getByRole('button', { name: 'Buy the $499 managed gate' }).click();
+    await page.getByRole('button', { name: 'Buy the $499 enterprise gate' }).click();
     await expect.poll(() => submitted).toContain('customer_email=buyer%40example.com');
     expect(submitted).toContain('plan_id=sprint_diagnostic');
     expect(submitted).toContain('utm_source=pricing');
@@ -34,7 +34,7 @@ test.describe('/pricing single-offer cash path', () => {
   test('browser validation blocks checkout without a valid email', async ({ page }) => {
     await page.goto('/pricing');
     await page.locator('#pricing-email').fill('not-an-email');
-    await page.getByRole('button', { name: 'Buy the $499 managed gate' }).click();
+    await page.getByRole('button', { name: 'Buy the $499 enterprise gate' }).click();
     await expect(page).toHaveURL(/\/pricing$/);
     await expect(page.locator('#pricing-email')).toHaveJSProperty('validity.valid', false);
   });

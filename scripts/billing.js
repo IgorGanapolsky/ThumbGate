@@ -1053,15 +1053,15 @@ async function sendDiagnosticOrderEmails({
   const buyerText = [
     safeCustomerName ? `Hi ${safeCustomerName},` : 'Hi there,',
     '',
-    `We received your ${amountLabel} ThumbGate Managed AI Agent Workflow Gate order.`,
-    'The service covers one supported AI-agent workflow and is delivered within two business days.',
+    `We received your ${amountLabel} ThumbGate Workflow Hardening Diagnostic order.`,
+    'The diagnostic covers one AI-agent workflow and is delivered within two business days.',
     'Reply with the repository or product URL plus the repeated failure trace if you did not submit them before checkout.',
     '',
     `Order reference: ${sessionId || 'unknown'}`,
     'Questions: reply to this email.',
   ].join('\n');
   const operatorText = [
-    'Paid ThumbGate managed workflow gate received.',
+    'Paid ThumbGate diagnostic received.',
     '',
     `Amount: ${amountLabel} ${(session.currency || 'usd').toUpperCase()}`,
     `Stripe session: ${sessionId || 'unknown'}`,
@@ -1078,13 +1078,13 @@ async function sendDiagnosticOrderEmails({
     sendOnce({
       kind: 'diagnostic_buyer_receipt',
       to: normalizedCustomerEmail,
-      subject: 'ThumbGate managed workflow gate order received',
+      subject: 'ThumbGate diagnostic order received',
       text: buyerText,
     }),
     sendOnce({
       kind: 'diagnostic_operator_alert',
       to: operatorEmail,
-      subject: `Paid ThumbGate managed workflow gate: ${amountLabel}`,
+      subject: `Paid ThumbGate diagnostic: ${amountLabel}`,
       text: operatorText,
     }),
   ]);
@@ -1337,34 +1337,6 @@ function isOperatorGeneratedAcquisitionEntry(entry = {}) {
     eventName === 'outreach_target_generated' ||
     eventName === 'outreach_sequence_started' ||
     eventName === 'lead_list_generated';
-}
-
-function isSelfVerificationAcquisitionEntry(entry = {}) {
-  const metadata = sanitizeMetadata(entry.metadata);
-  const attribution = extractAttribution({
-    ...metadata,
-    ...sanitizeMetadata(entry.attribution),
-    ...sanitizeMetadata(entry),
-  });
-  const fields = [
-    entry.event,
-    entry.source,
-    metadata.source,
-    attribution.source,
-    attribution.medium,
-    attribution.campaign,
-    attribution.content,
-    attribution.term,
-    attribution.creator,
-    attribution.campaignVariant,
-    attribution.offerCode,
-  ].map((value) => normalizeText(value)).filter(Boolean);
-
-  return fields.some((value) => /(?:^|[_-])self(?:[_-])?verif(?:y|ication)(?:$|[_-])/i.test(value));
-}
-
-function isExcludedInternalAcquisitionEntry(entry = {}) {
-  return isOperatorGeneratedAcquisitionEntry(entry) || isSelfVerificationAcquisitionEntry(entry);
 }
 
 function hasRevenueEventMatch(entries, target) {
@@ -2180,36 +2152,18 @@ function getBusinessAnalytics(options = {}) {
   );
   const revenueEvents = loadResolvedRevenueEvents({ ...analyticsWindow, extraRevenueEvents });
   const workflowSprintIntake = loadWorkflowSprintIntakeModule();
-  const observedWorkflowSprintLeads = filterEntriesForWindow(
+  const workflowSprintLeads = filterEntriesForWindow(
     workflowSprintIntake ? workflowSprintIntake.loadWorkflowSprintLeads() : [],
     analyticsWindow,
     (entry) => entry && entry.submittedAt
   );
-  const excludedWorkflowSprintLeads = [];
-  const workflowSprintLeads = [];
-  for (const entry of observedWorkflowSprintLeads) {
-    const quality = workflowSprintIntake && typeof workflowSprintIntake.classifyWorkflowSprintLeadQuality === 'function'
-      ? workflowSprintIntake.classifyWorkflowSprintLeadQuality(entry)
-      : { eligible: true, reason: null };
-    if (quality.eligible === false) {
-      excludedWorkflowSprintLeads.push({ entry, reason: quality.reason || 'unspecified_noise' });
-    } else {
-      workflowSprintLeads.push(entry);
-    }
-  }
-  const excludedWorkflowSprintLeadByReason = {};
-  for (const excluded of excludedWorkflowSprintLeads) {
-    incrementCounter(excludedWorkflowSprintLeadByReason, excluded.reason);
-  }
   const newsletterSubscribers = filterEntriesForWindow(
     loadNewsletterSubscribers(),
     analyticsWindow,
     (entry) => entry && entry.subscribedAt
   );
   const funnel = getFunnelAnalytics({ ...analyticsWindow, extraRevenueEvents });
-  const observedAcquisitionEvents = events.filter((entry) => entry && entry.stage === 'acquisition');
-  const excludedInternalAcquisitionEvents = observedAcquisitionEvents.filter(isExcludedInternalAcquisitionEntry);
-  const acquisitionEvents = observedAcquisitionEvents.filter((entry) => !isExcludedInternalAcquisitionEntry(entry));
+  const acquisitionEvents = events.filter((entry) => entry && entry.stage === 'acquisition');
   const paidEvents = events.filter((entry) => entry && entry.stage === 'paid');
   const paidOrders = revenueEvents.filter((entry) => entry && entry.status === 'paid');
   const firstPaid = paidEvents[0] || null;
@@ -2226,8 +2180,6 @@ function getBusinessAnalytics(options = {}) {
   const acquisitionLeadKeys = new Set();
   const operatorGeneratedAcquisitionBySource = {};
   const operatorGeneratedAcquisitionLeadKeys = new Set();
-  const selfVerificationAcquisitionBySource = {};
-  const selfVerificationAcquisitionLeadKeys = new Set();
   for (const entry of acquisitionEvents) {
     const attribution = extractAttribution({
       ...sanitizeMetadata(entry.metadata),
@@ -2244,22 +2196,9 @@ function getBusinessAnalytics(options = {}) {
     incrementCounter(signupsByCampaignVariant, attribution.campaignVariant);
     incrementCounter(signupsByOfferCode, attribution.offerCode);
     acquisitionLeadKeys.add(resolveAcquisitionLeadKey(entry) || `${entry.timestamp}:${entry.event}`);
-  }
-
-  for (const entry of excludedInternalAcquisitionEvents) {
-    const attribution = extractAttribution({
-      ...sanitizeMetadata(entry.metadata),
-      ...sanitizeMetadata(entry),
-    });
-    const sourceKey = resolveAttributionSource(attribution);
-    const leadKey = resolveAcquisitionLeadKey(entry) || `${entry.timestamp}:${entry.event}`;
     if (isOperatorGeneratedAcquisitionEntry(entry)) {
       incrementCounter(operatorGeneratedAcquisitionBySource, sourceKey);
-      operatorGeneratedAcquisitionLeadKeys.add(leadKey);
-    }
-    if (isSelfVerificationAcquisitionEntry(entry)) {
-      incrementCounter(selfVerificationAcquisitionBySource, sourceKey);
-      selfVerificationAcquisitionLeadKeys.add(leadKey);
+      operatorGeneratedAcquisitionLeadKeys.add(resolveAcquisitionLeadKey(entry) || `${entry.timestamp}:${entry.event}`);
     }
   }
 
@@ -2561,21 +2500,9 @@ function getBusinessAnalytics(options = {}) {
   };
 
   const operatorGeneratedAcquisition = {
-    totalEvents: observedAcquisitionEvents.filter(isOperatorGeneratedAcquisitionEntry).length,
+    totalEvents: acquisitionEvents.filter(isOperatorGeneratedAcquisitionEntry).length,
     uniqueLeads: operatorGeneratedAcquisitionLeadKeys.size,
     bySource: operatorGeneratedAcquisitionBySource,
-  };
-
-  const excludedInternalAcquisition = {
-    totalEvents: excludedInternalAcquisitionEvents.length,
-    uniqueLeads: new Set(excludedInternalAcquisitionEvents.map((entry) => (
-      resolveAcquisitionLeadKey(entry) || `${entry.timestamp}:${entry.event}`
-    ))).size,
-    selfVerification: {
-      totalEvents: excludedInternalAcquisitionEvents.filter(isSelfVerificationAcquisitionEntry).length,
-      uniqueLeads: selfVerificationAcquisitionLeadKeys.size,
-      bySource: selfVerificationAcquisitionBySource,
-    },
   };
 
   const dataQuality = {
@@ -2607,11 +2534,6 @@ function getBusinessAnalytics(options = {}) {
     },
     funnel: {
       ...funnel,
-      stageCounts: {
-        ...funnel.stageCounts,
-        acquisition: acquisitionEvents.length,
-      },
-      observedAcquisitionEvents: observedAcquisitionEvents.length,
       uniqueAcquisitionLeads: acquisitionLeadKeys.size,
       uniquePaidCustomers: paidCustomerIds.size,
       firstPaidAt: firstPaid ? firstPaid.timestamp || null : null,
@@ -2658,11 +2580,6 @@ function getBusinessAnalytics(options = {}) {
     pipeline: {
       workflowSprintLeads: {
         total: workflowSprintLeads.length,
-        observedTotal: observedWorkflowSprintLeads.length,
-        excludedNoise: {
-          total: excludedWorkflowSprintLeads.length,
-          byReason: excludedWorkflowSprintLeadByReason,
-        },
         contactable: workflowSprintLeadContactable,
         byStatus: workflowSprintLeadStatus,
         bySource: workflowSprintLeadBySource,
@@ -2738,7 +2655,6 @@ function getBusinessAnalytics(options = {}) {
     trafficMetrics,
     ctas: telemetry.ctas || {},
     operatorGeneratedAcquisition,
-    excludedInternalAcquisition,
     dataQuality,
     sourceDiagnostics,
   };
@@ -2826,7 +2742,6 @@ function getBillingSummary(options = {}) {
     trafficMetrics: business.trafficMetrics,
     ctas: business.ctas,
     operatorGeneratedAcquisition: business.operatorGeneratedAcquisition,
-    excludedInternalAcquisition: business.excludedInternalAcquisition,
     dataQuality: business.dataQuality,
     sourceDiagnostics: business.sourceDiagnostics,
     keys: {
