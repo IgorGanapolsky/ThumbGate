@@ -452,17 +452,7 @@ async function buildRevenueObservabilityDoctor({
     ),
   ];
 
-  const criticalFailures = checks.filter((check) => !check.ok && check.severity === 'critical');
-  const highFailures = checks.filter((check) => !check.ok && check.severity === 'high');
-  let verdict;
-  if (criticalFailures.length) {
-    verdict = 'blocked';
-  } else if (highFailures.length) {
-    verdict = 'degraded';
-  } else {
-    verdict = 'ready';
-  }
-
+  const verdict = classifyDoctorVerdict(checks);
   const activeProviderProofReady = (stripeQueryReady || hostedLedgerReady) && paypalPaymentProof.ready;
   return {
     generatedAt: new Date().toISOString(),
@@ -485,6 +475,14 @@ async function buildRevenueObservabilityDoctor({
       .filter((check) => !check.ok)
       .map((check) => check.message),
   };
+}
+
+function classifyDoctorVerdict(checks) {
+  const criticalFailures = checks.filter((check) => !check.ok && check.severity === 'critical');
+  const highFailures = checks.filter((check) => !check.ok && check.severity === 'high');
+  if (criticalFailures.length) return 'blocked';
+  if (highFailures.length) return 'degraded';
+  return 'ready';
 }
 
 function formatDoctorReport(report) {
@@ -537,6 +535,7 @@ module.exports = {
   probeHostedJson,
   extractPlausibleDataDomains,
   buildRevenueObservabilityDoctor,
+  classifyDoctorVerdict,
   formatDoctorReport,
   doctorExitCode,
 };
