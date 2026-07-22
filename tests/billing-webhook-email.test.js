@@ -197,8 +197,8 @@ test('a $499 diagnostic payment sends fulfillment emails and never provisions a 
   assert.equal(emailCalls.length, 2);
   assert.ok(emailCalls.some((call) => call.to === 'diagnostic-buyer@example.com'));
   assert.ok(emailCalls.some((call) => call.to === 'owner@example.com'));
-  assert.ok(emailCalls.some((call) => /managed workflow gate order received/i.test(call.subject)));
-  assert.ok(emailCalls.some((call) => /Paid ThumbGate managed workflow gate/.test(call.subject)));
+  assert.ok(emailCalls.some((call) => /diagnostic order received/i.test(call.subject)));
+  assert.ok(emailCalls.some((call) => /Paid ThumbGate diagnostic/.test(call.subject)));
   assert.equal(new Set(emailCalls.map((call) => call.idempotencyKey)).size, 2);
   assert.ok(emailCalls.every((call) => /^diagnostic-[a-f0-9]{64}$/.test(call.idempotencyKey)));
   assert.equal(fs.existsSync(process.env._TEST_API_KEYS_PATH), false, 'diagnostic payment must not provision a Pro key');
