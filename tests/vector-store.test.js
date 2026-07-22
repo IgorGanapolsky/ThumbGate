@@ -97,6 +97,23 @@ describe('vector-store — embedding config', () => {
   });
 });
 
+describe('vector-store — built-in feature-hash embeddings', () => {
+  it('is deterministic, normalized, and preserves lexical overlap', () => {
+    const { embedWithFeatureHash } = require('../scripts/vector-store');
+    const first = embedWithFeatureHash('stop hook JSON contract failure');
+    const repeated = embedWithFeatureHash('stop hook JSON contract failure');
+    const related = embedWithFeatureHash('stop hook emitted invalid JSON output');
+    const unrelated = embedWithFeatureHash('quarterly restaurant menu planning');
+    const dot = (left, right) => left.reduce((sum, value, index) => sum + (value * right[index]), 0);
+    const norm = Math.sqrt(dot(first, first));
+
+    assert.deepEqual(first, repeated);
+    assert.equal(first.length, 384);
+    assert.ok(Math.abs(norm - 1) < 1e-12, `expected unit vector, got ${norm}`);
+    assert.ok(dot(first, related) > dot(first, unrelated));
+  });
+});
+
 describe('vector-store — Gemini Embedding 2 provider', () => {
   it('uses task-prefixed Gemini embeddings when the managed provider is enabled', async () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-test-gemini-'));
