@@ -129,7 +129,9 @@ const path = require('node:path');
 // 352 -> 354: package the exact Stripe offer catalog and its read-only live
 // price/Payment-Link drift audit. Both are public evidence controls with no
 // buyer state, credential material, mutation path, or ThumbGate-Core import.
-const BASELINE_FILE_COUNT = 354;
+// 354 -> 357: observability env loader, setup CLI, and bounded JSONL window
+// reader for hosted telemetry export / revenue doctor (no buyer state).
+const BASELINE_FILE_COUNT = 357;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

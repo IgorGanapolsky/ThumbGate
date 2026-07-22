@@ -30,7 +30,11 @@ function getConfiguredRegisteredDomains(env = process.env) {
     ...splitDomains(env.PLAUSIBLE_REGISTERED_DOMAINS),
   ].map(normalizeDomain).filter(Boolean);
 
+  // Both product surfaces are first-class Plausible site ids for ThumbGate.
+  // Emitting data-domain=thumbgate.ai while only registering the Railway host
+  // previously made primary-domain traffic invisible to automation.
   return [...new Set([
+    PRIMARY_PLAUSIBLE_DOMAIN,
     FALLBACK_REGISTERED_PLAUSIBLE_DOMAIN,
     ...configured,
   ])];

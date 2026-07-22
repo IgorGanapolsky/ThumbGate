@@ -193,7 +193,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 352 -> 354 (2026-07-16): package the exact Stripe offer catalog and its
   // read-only price and Payment Link drift audit. They import no Core code and
   // contain no credential, buyer state, or external mutation path.
-  const CEILING = 354;
+  // 354 -> 357 (2026-07-22): observability env loader, setup CLI, JSONL window.
+  const CEILING = 357;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

@@ -12,10 +12,15 @@ const {
   analyzePlausibleDomainCoverage,
 } = require('../scripts/plausible-domain-config');
 
-test('resolvePlausibleDataDomain keeps known-registered fallback when primary is not registered', () => {
+test('resolvePlausibleDataDomain uses primary domain because it is always product-registered', () => {
   const env = { PLAUSIBLE_SITE_ID: FALLBACK_REGISTERED_PLAUSIBLE_DOMAIN };
 
-  assert.equal(resolvePlausibleDataDomain({ host: PRIMARY_PLAUSIBLE_DOMAIN, env }), FALLBACK_REGISTERED_PLAUSIBLE_DOMAIN);
+  assert.equal(resolvePlausibleDataDomain({ host: PRIMARY_PLAUSIBLE_DOMAIN, env }), PRIMARY_PLAUSIBLE_DOMAIN);
+});
+
+test('resolvePlausibleDataDomain falls back for unregistered custom hosts', () => {
+  const env = { PLAUSIBLE_SITE_ID: FALLBACK_REGISTERED_PLAUSIBLE_DOMAIN };
+  assert.equal(resolvePlausibleDataDomain({ host: 'preview.example.com', env }), FALLBACK_REGISTERED_PLAUSIBLE_DOMAIN);
 });
 
 test('resolvePlausibleDataDomain uses primary domain once Plausible registration is configured', () => {
@@ -35,13 +40,13 @@ test('explicit THUMBGATE_PLAUSIBLE_DOMAIN overrides fallback and host matching',
 
 test('analyzePlausibleDomainCoverage flags the live dropped-event failure mode', () => {
   const report = analyzePlausibleDomainCoverage({
-    emittedDomains: [PRIMARY_PLAUSIBLE_DOMAIN],
-    registeredDomains: [FALLBACK_REGISTERED_PLAUSIBLE_DOMAIN],
+    emittedDomains: ['rogue.example.com'],
+    registeredDomains: [PRIMARY_PLAUSIBLE_DOMAIN, FALLBACK_REGISTERED_PLAUSIBLE_DOMAIN],
   });
 
   assert.equal(report.ok, false);
-  assert.equal(report.primaryRegistered, false);
-  assert.deepEqual(report.missingEmittedDomains, [PRIMARY_PLAUSIBLE_DOMAIN]);
+  assert.equal(report.primaryRegistered, true);
+  assert.deepEqual(report.missingEmittedDomains, ['rogue.example.com']);
   assert.equal(report.severity, 'critical');
 });
 
@@ -52,8 +57,8 @@ test('configured registered domains include fallback plus Plausible site ids', (
   };
 
   assert.deepEqual(getConfiguredRegisteredDomains(env), [
-    FALLBACK_REGISTERED_PLAUSIBLE_DOMAIN,
     PRIMARY_PLAUSIBLE_DOMAIN,
+    FALLBACK_REGISTERED_PLAUSIBLE_DOMAIN,
     'docs.thumbgate.ai',
     'app.thumbgate.ai',
   ]);
