@@ -38,7 +38,7 @@ Sources are industry coverage (DataBreachToday, Resilient Cyber, New Market Pitc
 | Hook | Endpoint agent + intent policy | PreToolUse hooks (Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, Desktop) |
 | Failure modes | DLP, insider, AI-on-device misuse, pre-breach | Force-push, secret exfil via tools, destructive shell, skip-verification loops |
 | Learning | Enterprise security product surface | Thumbs-down → lesson DB → prevention rules |
-| GTM | Sales-led, capital-heavy | `npx thumbgate init`, MIT free tier, Pro $19/mo hosted proof |
+| GTM | Sales-led, capital-heavy | `npx thumbgate init`, MIT free tier, Pro $19/mo (local dashboard + exports; not team sync) |
 | Funding signal | Validates **enterprise AI-agent security spend** | Does **not** fund or define our SKU |
 
 ---
@@ -54,7 +54,8 @@ Sources are industry coverage (DataBreachToday, Resilient Cyber, New Market Pitc
 1. **PreToolUse coding-agent matrix** with local-first install.  
 2. **Feedback → rule** loop (Infrastructure Firewall / Reliability Gateway).  
 3. **Developer / founder ICP** who will never buy a $100M-seed EDR motion for Claude Code hygiene.  
-4. Dual-deploy story: **Ent on the fleet, ThumbGate on the coding agents.**
+4. Dual-deploy story: **Ent on the fleet, ThumbGate on the coding agents.**  
+5. Pro commercial truth: personal local dashboard + exports — **not** hosted team lesson sync (see `docs/COMMERCIAL_TRUTH.md`).
 
 ---
 
