@@ -119,7 +119,7 @@ test('landing page does not render empty revenue links', async () => {
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/28E00j3Uge1E2dzgWL3sI2J/);
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/6oU00j8aw2iWdWh9uj3sI2K/);
   assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(html, /Buy the \$499 managed gate/);
+  assert.match(html, /Buy the \$499 enterprise gate/);
   assert.doesNotMatch(html, /\/checkout\/pro|\/go\/sprint|workflow-sprint-intake/i);
 });
 
@@ -128,7 +128,7 @@ test('landing page presents one fixed-price managed offer clearly', async () => 
   assert.equal(res.status, 200);
   const html = await res.text();
 
-  assert.match(html, /Managed AI Agent Workflow Gate/);
+  assert.match(html, /Enterprise Workflow Gate/);
   assert.match(html, /One configured local gate and its regression test/);
   assert.match(html, /Rollout and rollback proof within two business days/);
   assert.match(html, /one supported local workflow/i);
@@ -189,13 +189,13 @@ test('GET /diagnostic serves the managed workflow gate checkout and fit page', a
   assert.equal(res.status, 200);
   assert.match(res.headers.get('content-type') || '', /text\/html/);
   const html = await res.text();
-  assert.match(html, /Managed AI Agent Workflow Gate/);
+  assert.match(html, /Enterprise Workflow Gate/);
   assert.match(html, /Submit for fit check/);
   assert.match(html, /action="\/v1\/intake\/workflow-sprint"/);
   assert.match(html, /data-diagnostic-intake-form/);
   assert.match(html, /diagnostic_page_submit/);
-  assert.match(html, /Buy the \$499 managed gate/);
-  assert.match(html, /Exactly what the \$499 managed gate includes/);
+  assert.match(html, /Buy the \$499 enterprise gate/);
+  assert.match(html, /Exactly what the \$499 Enterprise Workflow Gate includes/);
   assert.match(html, /one 60-minute working review/i);
   assert.match(html, /one configured local gate and regression test/i);
   assert.match(html, /rollout and rollback proof within two business days/i);
@@ -230,7 +230,7 @@ test('workflow diagnostic aliases serve the focused diagnostic page', async () =
     assert.equal(res.status, 200, `${pathname} should render diagnostic page`);
     assert.match(res.headers.get('content-type') || '', /text\/html/);
     const html = await res.text();
-    assert.match(html, /Managed AI Agent Workflow Gate/);
+    assert.match(html, /Enterprise Workflow Gate/);
     assert.match(html, /Submit for fit check/);
     assert.match(html, /<link rel="canonical" href="[^"]+\/diagnostic"/);
   }
