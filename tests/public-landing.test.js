@@ -896,3 +896,38 @@ test('public landing page includes dashboard preview in Pro card', () => {
   assert.match(landingPage, /What your Pro dashboard looks like/);
   assert.match(landingPage, /check:no-force-push/);
 });
+
+test('public landing page leads with visual diagrams and a single cash path', () => {
+  const landingPage = readLandingPage();
+
+  assert.match(landingPage, /id="diagrams"/);
+  assert.match(landingPage, /id="cash-path"/);
+  assert.match(landingPage, /\/assets\/diagrams\/loop\.svg/);
+  assert.match(landingPage, /\/assets\/diagrams\/stack\.svg/);
+  assert.match(landingPage, /\/assets\/diagrams\/before-after\.svg/);
+  assert.match(landingPage, /\/assets\/diagrams\/decision\.svg/);
+  assert.match(landingPage, /One cash path \(no offer soup\)/);
+  assert.match(landingPage, /SELF-SERVE CASH PATH/);
+  assert.match(landingPage, /Simple pictures\. No essay required\./);
+  // Diagrams sit immediately after the hero for scanability.
+  const heroEnd = landingPage.indexOf('</section>', landingPage.indexOf('<!-- HERO -->'));
+  const diagramsAt = landingPage.indexOf('id="diagrams"');
+  assert.ok(diagramsAt > heroEnd, 'diagrams should follow the hero section');
+  assert.ok(diagramsAt - heroEnd < 800, 'diagrams should be the next major section after hero');
+});
+
+test('public landing page ships diagram SVG assets on disk', () => {
+  const diagramsDir = path.join(__dirname, '..', 'public', 'assets', 'diagrams');
+  for (const name of ['loop.svg', 'stack.svg', 'before-after.svg', 'decision.svg']) {
+    const full = path.join(diagramsDir, name);
+    assert.ok(fs.existsSync(full), missingDiagram(name));
+    const svg = fs.readFileSync(full, 'utf8');
+    assert.match(svg, /<svg[\s\S]*<\/svg>/);
+    assert.doesNotMatch(svg, /Math\.random\(/);
+  }
+});
+
+function missingDiagram(name) {
+  return `missing public/assets/diagrams/${name}`;
+}
+
