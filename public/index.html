@@ -727,6 +727,37 @@ __GA_BOOTSTRAP__
   @media (max-width: 800px) {
     .diagram-grid { grid-template-columns: 1fr; }
   }
+
+  /* 2026-07-22 conversion: diagrams first, essays last */
+  .diagram-strip { padding: 12px 0 36px !important; background: linear-gradient(180deg, rgba(34,211,238,0.04), transparent 60%); }
+  .diagram-grid { gap: 20px !important; }
+  .diagram-card { box-shadow: 0 18px 50px rgba(0,0,0,0.35); border-color: rgba(34,211,238,0.22) !important; }
+  .diagram-card figcaption { padding: 14px 16px 16px !important; }
+  .diagram-card figcaption strong { font-size: 16px !important; }
+  .diagram-card figcaption span { font-size: 14px !important; }
+  .hero-visual-strip { max-width: 1080px; margin: 20px auto 0; }
+  .hero-visual-strip img { width: 100%; height: auto; border-radius: 16px; border: 1px solid rgba(34,211,238,0.25); background: #0a0a0b; display: block; }
+  .hero-copy { max-width: 720px; margin: 0 auto; text-align: center; }
+  .hero-above-fold { display: block !important; }
+  .hero-proof-card { max-width: 720px; margin: 22px auto 0; }
+  .hero-actions { justify-content: center !important; }
+  .hero-team-link { text-align: center; }
+  .hero-trust-bar { justify-content: center; }
+  .cash-path { padding: 22px !important; border-width: 2px !important; }
+  .cash-path h3 { font-size: 20px !important; }
+  .cash-path-actions a { min-height: 48px; padding: 12px 18px !important; font-size: 15px !important; font-weight: 800; }
+  .btn-pro { background: #22d3ee !important; color: #041018 !important; border-radius: 10px; text-decoration: none; display: inline-flex; align-items: center; }
+  .btn-free { border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; padding: 12px 18px; text-decoration: none; display: inline-flex; align-items: center; }
+  .deep-dive-drawer { max-width: 900px; margin: 24px auto 40px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-card); }
+  .deep-dive-drawer > summary { cursor: pointer; list-style: none; padding: 16px 20px; font-weight: 800; color: var(--text-muted); }
+  .deep-dive-drawer > summary::-webkit-details-marker { display: none; }
+  .deep-dive-drawer[open] > summary { border-bottom: 1px solid var(--border); color: var(--text); }
+  .deep-dive-drawer .deep-dive-body { padding: 8px 0 16px; }
+  .deep-dive-drawer .deep-dive-body section { padding-top: 28px !important; padding-bottom: 20px !important; }
+  .deep-dive-drawer .deep-dive-body .section-title { font-size: clamp(22px, 3vw, 32px) !important; }
+  .first-check-card { display: none !important; } /* moved to visual path below diagrams */
+  .hero aside { display: none !important; } /* local-first essay out of fold */
+  .proof-bar { display: none !important; } /* link farm out of fold — kept in deep dive via anchors */
 </style>
   <!-- PostHog Analytics -->
   <script>
@@ -764,12 +795,15 @@ __GA_BOOTSTRAP__
       <div class="hero-copy">
         <div class="hero-badge">AI-agent firewall for Claude Code, Cursor, and Codex</div>
         <h1>Stop dangerous AI-agent actions before they run.</h1>
-        <p class="hero-lede">ThumbGate checks tool calls locally, denies detected secret exfiltration and gate-bypass commands by default, and helps turn repeated failures into explicit rules.</p>
+        <p class="hero-lede">Local pre-action gate. Feedback becomes rules. Rules check the next tool call.</p>
         <div class="hero-actions">
           <a href="/go/install?utm_source=website&utm_medium=hero_cta&utm_campaign=install_free&cta_id=hero_install_cli&cta_placement=hero" onclick="event.preventDefault();navigator.clipboard.writeText('npx thumbgate init');this.textContent='Copied ✓ — paste in your repo';setTimeout(()=>{this.textContent='Install Free'},2000);try{posthog.capture('hero_install_click',{cta:'install_cli'})}catch(_){}" class="btn-free btn-install-hero" title="Click to copy: npx thumbgate init">Install Free</a>
           <a href="#live-proof" class="hero-proof-link">See it catch a risky command →</a>
         </div>
-        <p class="hero-team-link">Securing a team workflow? <a href="/diagnostic?utm_source=website&utm_medium=hero_text&utm_campaign=team_workflow&cta_id=hero_team_diagnostic&cta_placement=hero">See the scoped diagnostic →</a></p>
+        <p class="hero-team-link">Securing a team workflow? <a href="/diagnostic?utm_source=website&utm_medium=hero_text&utm_campaign=team_workflow&cta_id=hero_team_diagnostic&cta_placement=hero">See the scoped diagnostic →</a> · <a href="#diagrams">Pictures + buy path →</a></p>
+        <div class="hero-visual-strip" aria-hidden="false">
+          <img src="/assets/diagrams/before-after.svg" alt="Without ThumbGate mistakes repeat. With ThumbGate one thumbs-down becomes a permanent check." width="960" height="280" loading="eager" fetchpriority="high" />
+        </div>
       </div>
 
       <figure class="hero-proof-card" id="live-proof" aria-label="ThumbGate evaluating dangerous AI-agent commands in real time">
@@ -889,39 +923,42 @@ __GA_BOOTSTRAP__
   <div class="container">
     <div class="section-label">See it in 10 seconds</div>
     <h2 class="section-title" style="margin-bottom:8px;">Simple pictures. No essay required.</h2>
-    <p style="text-align:center;color:var(--text-muted);max-width:640px;margin:0 auto 20px;font-size:15px;line-height:1.5;">ThumbGate is a local pre-action gate for AI coding agents. Feedback becomes rules. Rules evaluate the next tool call before it runs.</p>
+    <p style="text-align:center;color:var(--text-muted);max-width:560px;margin:0 auto 16px;font-size:15px;line-height:1.45;">Three pictures. Then buy if it fits.</p>
+    <figure class="diagram-card full" style="margin-bottom:18px;">
+      <img src="/assets/diagrams/loop.svg" alt="ThumbGate loop: agent proposes tool, ThumbGate allows warns or denies, feedback becomes a rule" width="960" height="280" loading="eager" />
+      <figcaption><strong>1. The loop</strong><span>Agent proposes → ThumbGate decides ALLOW / WARN / DENY → your feedback becomes the next rule.</span></figcaption>
+    </figure>
     <div class="diagram-grid">
       <figure class="diagram-card">
-        <img src="/assets/diagrams/loop.svg" alt="ThumbGate loop: agent proposes tool, ThumbGate allows warns or denies, feedback becomes a rule" width="720" height="220" loading="lazy" />
-        <figcaption><strong>1. The loop</strong><span>Agent proposes → ThumbGate decides ALLOW / WARN / DENY → your feedback becomes the next rule.</span></figcaption>
+        <img src="/assets/diagrams/stack.svg" alt="Stack diagram showing ThumbGate between agent runtime and tools" width="960" height="240" loading="lazy" />
+        <figcaption><strong>2. Where it sits</strong><span>Between the agent and the tools — not another chatbot memory layer.</span></figcaption>
       </figure>
       <figure class="diagram-card">
-        <img src="/assets/diagrams/stack.svg" alt="Stack diagram showing ThumbGate between agent runtime and tools" width="720" height="200" loading="lazy" />
-        <figcaption><strong>2. Where it sits</strong><span>Model → Agent runtime → ThumbGate pre-action gate → shell / git / db. Not another chatbot memory.</span></figcaption>
+        <img src="/assets/diagrams/before-after.svg" alt="Before and after: repeated mistakes without ThumbGate versus one correction with ThumbGate" width="960" height="280" loading="lazy" />
+        <figcaption><strong>3. Before / after</strong><span>One thumbs-down. Next attempt is checked. No essay.</span></figcaption>
       </figure>
-      <figure class="diagram-card">
-        <img src="/assets/diagrams/before-after.svg" alt="Before and after: repeated mistakes without ThumbGate versus one correction with ThumbGate" width="720" height="220" loading="lazy" />
-        <figcaption><strong>3. Before / after</strong><span>Without: the same force-push returns. With: one thumbs-down becomes a check that evaluates the next attempt.</span></figcaption>
-      </figure>
-      <figure class="diagram-card">
-        <img src="/assets/diagrams/decision.svg" alt="Decision tree Free try, Pro solo cash path, Sprint for one hard workflow" width="720" height="260" loading="lazy" />
-        <figcaption><strong>4. What to buy</strong><span>Free to prove it. Pro ($19/mo) for unlimited solo use. Sprint intake when one workflow is burning the team.</span></figcaption>
+      <figure class="diagram-card full">
+        <img src="/assets/diagrams/decision.svg" alt="Decision tree Free try, Pro solo cash path, Sprint for one hard workflow" width="960" height="300" loading="lazy" />
+        <figcaption><strong>4. What to buy</strong><span>Free → prove it. Pro $19/mo → solo cash path. Sprint → one hard workflow after intake.</span></figcaption>
       </figure>
     </div>
     <div class="cash-path" id="cash-path">
       <h3>One cash path (no offer soup)</h3>
-      <p><strong>Install Free → catch one repeat → Upgrade to Pro $19/mo.</strong> Team / Enterprise is intake-only after you name one repeated failure. No competing experimental ladders on this page.</p>
+      <p><strong>Install free → catch one repeat → Pro $19/mo.</strong></p>
       <div class="cash-path-actions">
         <a href="/go/install?utm_source=website&utm_medium=cash_path&utm_campaign=install_free&cta_id=cash_path_install&cta_placement=diagrams" class="btn-free btn-install-link" onclick="event.preventDefault();navigator.clipboard.writeText('npx thumbgate init');this.textContent='Copied';setTimeout(()=>{this.textContent='Install free.'},2000);">Install free.</a>
         <a href="/checkout/pro?utm_source=website&utm_medium=cash_path&utm_campaign=pro_upgrade&cta_id=cash_path_pro&cta_placement=diagrams&plan_id=pro&landing_path=%2F" class="btn-pro" data-revenue-cta data-cta-id="cash_path_pro" data-cta-placement="diagrams" data-plan-id="pro" data-price="19" onclick="if(typeof trackRevenueCta==='function'){trackRevenueCta(this);}">Upgrade to Pro — $19/mo</a>
-        <a href="#workflow-sprint-intake" class="btn-team" style="padding:10px 14px;font-size:13px;">One hard workflow? Start sprint intake →</a>
+        <a href="#workflow-sprint-intake" class="btn-team" style="padding:10px 14px;font-size:13px;">Team sprint intake →</a>
       </div>
-      <div class="honesty-pill" role="note">Honest defaults: secrets and gate-bypass <strong>deny</strong>; destructive deletes and force-push <strong>warn</strong> unless <code style="color:#fecaca">THUMBGATE_STRICT_ENFORCEMENT=1</code>.</div>
+      <div class="honesty-pill" role="note">Defaults: secrets + gate-bypass <strong>deny</strong>; force-push / destructive deletes <strong>warn</strong> unless <code style="color:#fecaca">THUMBGATE_STRICT_ENFORCEMENT=1</code>.</div>
     </div>
   </div>
 </section>
 
 
+<details class="deep-dive-drawer" id="deep-dive">
+  <summary>Optional deep dive (market context, GPT, comparisons) — closed by default so the page stays visual.</summary>
+  <div class="deep-dive-body">
 <section class="compatibility section-tight" id="why-not-diy" aria-label="Why not write your own hooks">
   <div class="container">
     <h2>“Why not just write my own PreToolUse hooks?”</h2>
@@ -1464,6 +1501,9 @@ __GA_BOOTSTRAP__
     </div>
   </div>
 </section>
+
+  </div>
+</details>
 
 <section id="install" style="padding: 60px 40px; max-width: 900px; margin: 0 auto;">
   <h2 style="font-size: 2em; text-align: center; margin-bottom: 40px;">Install for Your Agent</h2>

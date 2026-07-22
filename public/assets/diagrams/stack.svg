@@ -1,22 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 200" role="img" aria-labelledby="t d">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 240" role="img" aria-labelledby="t d">
   <title id="t">Where ThumbGate sits in the stack</title>
   <desc id="d">Model to agent runtime to ThumbGate pre-action gate to tools.</desc>
-  <rect width="720" height="200" fill="#0a0a0b"/>
+  <rect width="960" height="240" fill="#0a0a0b"/>
   <g font-family="system-ui,sans-serif">
-    <rect x="30" y="60" width="130" height="70" rx="10" fill="#161618" stroke="#222225"/>
-    <text x="95" y="100" text-anchor="middle" fill="#e8e8ec" font-size="14" font-weight="700">Model</text>
-    <text x="170" y="100" fill="#8b8b96" font-size="20">→</text>
-    <rect x="200" y="60" width="140" height="70" rx="10" fill="#161618" stroke="#222225"/>
-    <text x="270" y="95" text-anchor="middle" fill="#e8e8ec" font-size="14" font-weight="700">Agent</text>
-    <text x="270" y="115" text-anchor="middle" fill="#8b8b96" font-size="11">Claude · Cursor · Codex</text>
-    <text x="350" y="100" fill="#8b8b96" font-size="20">→</text>
-    <rect x="380" y="50" width="160" height="90" rx="10" fill="#0d1b22" stroke="#22d3ee" stroke-width="2"/>
-    <text x="460" y="85" text-anchor="middle" fill="#22d3ee" font-size="14" font-weight="800">ThumbGate</text>
-    <text x="460" y="105" text-anchor="middle" fill="#e8e8ec" font-size="12">pre-action gate</text>
-    <text x="460" y="123" text-anchor="middle" fill="#8b8b96" font-size="11">hook / MCP</text>
-    <text x="550" y="100" fill="#8b8b96" font-size="20">→</text>
-    <rect x="580" y="60" width="110" height="70" rx="10" fill="#161618" stroke="#222225"/>
-    <text x="635" y="95" text-anchor="middle" fill="#e8e8ec" font-size="14" font-weight="700">Tools</text>
-    <text x="635" y="115" text-anchor="middle" fill="#8b8b96" font-size="11">shell git db</text>
+    <rect x="60" y="36" width="840" height="40" rx="10" fill="#161618" stroke="#333"/>
+    <text x="480" y="62" text-anchor="middle" fill="#9ca3af" font-size="15" font-weight="600">Model (Claude · GPT · Gemini · local)</text>
+    <text x="480" y="100" text-anchor="middle" fill="#22d3ee" font-size="22">↓</text>
+    <rect x="60" y="112" width="840" height="40" rx="10" fill="#161618" stroke="#333"/>
+    <text x="480" y="138" text-anchor="middle" fill="#e5e7eb" font-size="15" font-weight="600">Agent runtime (Claude Code · Cursor · Codex · …)</text>
+    <text x="480" y="176" text-anchor="middle" fill="#22d3ee" font-size="22">↓</text>
+    <rect x="60" y="188" width="400" height="40" rx="10" fill="#07151a" stroke="#22d3ee" stroke-width="2"/>
+    <text x="260" y="214" text-anchor="middle" fill="#22d3ee" font-size="15" font-weight="800">ThumbGate pre-action gate</text>
+    <text x="490" y="214" text-anchor="middle" fill="#4ade80" font-size="20">→</text>
+    <rect x="520" y="188" width="380" height="40" rx="10" fill="#161618" stroke="#333"/>
+    <text x="710" y="214" text-anchor="middle" fill="#e5e7eb" font-size="15" font-weight="600">shell · git · db · MCP tools</text>
   </g>
 </svg>
