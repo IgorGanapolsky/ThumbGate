@@ -21,10 +21,11 @@ test('README keeps the enterprise story tied to control-plane language and proof
   assert.match(readme, /exact `main` merge commit/i);
 });
 
-test('public landing page keeps enterprise architecture out of the primary cash path', () => {
+test('public landing page exposes the enterprise entry offer without broader architecture', () => {
   const landing = read(path.join('public', 'index.html'));
 
-  assert.match(landing, /Managed AI Agent Workflow Gate/i);
+  assert.match(landing, /Enterprise Workflow Gate/i);
+  assert.match(landing, /\$499 enterprise entry offer/i);
   assert.match(landing, /one supported local workflow/i);
   assert.match(landing, /regression test/i);
   assert.match(landing, /rollout and rollback proof/i);

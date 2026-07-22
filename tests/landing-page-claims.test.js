@@ -10,15 +10,17 @@ const HOME_HTML = fs.readFileSync(path.join(ROOT, 'public', 'index.html'), 'utf8
 const PRICING_HTML = fs.readFileSync(path.join(ROOT, 'public', 'pricing.html'), 'utf8');
 const PRO_HTML = fs.readFileSync(path.join(ROOT, 'public', 'pro.html'), 'utf8');
 
-test('homepage commercial contract stays one managed $499 offer', () => {
-  assert.match(HOME_HTML, /Managed AI Agent Workflow Gate/);
+test('homepage commercial contract stays one $499 enterprise entry offer', () => {
+  assert.match(HOME_HTML, /Enterprise Workflow Gate/);
+  assert.match(HOME_HTML, /\$499 enterprise entry offer/i);
   assert.match(HOME_HTML, /action="\/go\/diagnostic-pay"/);
   assert.match(HOME_HTML, /\$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
   assert.doesNotMatch(HOME_HTML, /\/checkout\/pro|workflow-sprint-intake|\/go\/sprint/i);
 });
 
 test('pricing repeats the same offer without a competing cash path', () => {
-  assert.match(PRICING_HTML, /Managed AI Agent Workflow Gate/);
+  assert.match(PRICING_HTML, /Enterprise Workflow Gate/);
+  assert.match(PRICING_HTML, /Enterprise entry offer/i);
   assert.match(PRICING_HTML, /action="\/go\/diagnostic-pay"/);
   assert.match(PRICING_HTML, /\$499/);
   assert.doesNotMatch(PRICING_HTML, /\/checkout\/pro|workflow-sprint-intake|\/go\/sprint/i);

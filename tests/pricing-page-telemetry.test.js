@@ -18,9 +18,9 @@ test('pricing page emits first-party telemetry for views and buyer actions', () 
 
 test('pricing exposes one direct $499 cash path and no competing offer', () => {
   assert.match(pricingHtml, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.match(pricingHtml, /Buy the \$499 managed gate/);
+  assert.match(pricingHtml, /Buy the \$499 enterprise gate/);
   assert.match(pricingHtml, /name="customer_email"[^>]*required/);
-  assert.match(pricingHtml, /"name": "ThumbGate Managed AI Agent Workflow Gate"/);
+  assert.match(pricingHtml, /"name": "ThumbGate Enterprise Workflow Gate"/);
   assert.match(pricingHtml, /"price": "499"/);
   assert.doesNotMatch(pricingHtml, /\/checkout\/pro|\/go\/sprint|workflow-sprint-intake/);
   assert.doesNotMatch(pricingHtml, /\$19|\$149|\$1,500|\$3,000|\$10,000|\$15,000/);

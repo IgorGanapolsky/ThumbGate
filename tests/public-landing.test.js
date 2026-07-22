@@ -86,7 +86,7 @@ test('homepage stays human-scannable instead of becoming a product monorepo', ()
   }
 });
 
-test('hero names one buyer, one failure, and the managed outcome', () => {
+test('hero names one buyer, one failure, and the enterprise entry outcome', () => {
   const hero = landingPage.slice(
     landingPage.indexOf('<!-- HERO -->'),
     landingPage.indexOf('</section>', landingPage.indexOf('<!-- HERO -->'))
@@ -94,8 +94,9 @@ test('hero names one buyer, one failure, and the managed outcome', () => {
   const lede = normalizeHtmlText((hero.match(/<p class="hero-lede">([\s\S]*?)<\/p>/) || [])[1]);
 
   assert.match(hero, /Stop the AI-agent mistake that keeps happening/);
-  assert.match(hero, /Built for engineering leads/);
-  assert.match(hero, /Managed AI Agent Workflow Gate/);
+  assert.match(hero, /engineering and security leads/);
+  assert.match(hero, /Enterprise Workflow Gate/);
+  assert.match(hero, /\$499 enterprise entry offer/);
   assert.ok(lede.split(/\s+/).length <= 30, `hero lede is ${lede.split(/\s+/).length} words`);
 });
 
@@ -111,6 +112,8 @@ test('homepage explains the product with one three-step enforcement loop', () =>
 });
 
 test('paid wedge includes managed implementation, regression, and rollout proof', () => {
+  assert.match(landingPage, /Enterprise gate · \$499/);
+  assert.match(landingPage, /enterprise entry offer for one workflow/i);
   assert.match(landingPage, /One configured local gate and its regression test/);
   assert.match(landingPage, /Rollout and rollback proof within two business days/);
   assert.match(landingPage, /If the workflow cannot be reduced to one supported gate, the order is refunded/);

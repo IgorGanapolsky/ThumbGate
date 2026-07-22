@@ -28,7 +28,7 @@ test('commercial truth names one promoted public service offer', () => {
 });
 
 test('managed-gate page states a complete fixed-scope implementation contract', () => {
-  assert.match(diagnostic, /Exactly what the \$499 managed gate includes/);
+  assert.match(diagnostic, /Exactly what the \$499 Enterprise Workflow Gate includes/);
   assert.match(diagnostic, /one 60-minute working review/i);
   assert.match(diagnostic, /within two business days/i);
   assert.match(diagnostic, /workflow and failure map/i);
