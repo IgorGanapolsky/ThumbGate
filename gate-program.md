@@ -53,7 +53,7 @@ from repeating the same mistake.
 
 ## Domain Context (for Meta-Agent Evaluation)
 
-- Primary language: Node.js (>=20.10.0)
+- Primary language: Node.js (>=18.18.0)
 - Critical files: `package.json` (version), `scripts/sync-version.js`, `.claude/settings.json`
 - Protected branches: `main`
 - Test command: `npm test` (1634 tests, expect 0 failures)

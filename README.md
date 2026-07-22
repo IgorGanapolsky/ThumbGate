@@ -532,7 +532,7 @@ curl -X POST http://localhost:3456/v1/dpo/export \
 | **Capture** | 2/day, 10 total on Free; unlimited on Pro, Team, and Enterprise |
 | **Intelligence** | MemAlign dual recall, Thompson Sampling |
 | **Enforcement** | PreToolUse hook engine, Checks config |
-| **Interfaces** | MCP stdio, HTTP API, CLI (Node.js >=20.10) |
+| **Interfaces** | MCP stdio, HTTP API, CLI (Node.js >=18) |
 | **Billing** | Stripe |
 | **Execution** | Railway, Cloudflare Workers, Docker Sandboxes |
 | **Governance** | Workflow Sentinel, control plane, Docker Sandboxes |

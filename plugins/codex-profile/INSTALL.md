@@ -186,7 +186,7 @@ Then restart Codex. The `thumbgate` MCP server will appear in the tool list, and
 ## Requirements
 
 - Codex with MCP support
-- Node.js 20.10+ in PATH
+- Node.js 18+ in PATH
 - Config file at `~/.codex/config.toml` when using the manual MCP install path
 
 ## Uninstall

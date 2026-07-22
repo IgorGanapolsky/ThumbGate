@@ -21,7 +21,7 @@ The buyer outcome is simple: prevent expensive AI mistakes, make AI catch repeat
 
 ## How ThumbGate Works Technically
 
-ThumbGate is built on Node.js >=20.10.0 and runs locally on each developer's machine with optional team sync.
+ThumbGate is built on Node.js >=18.18.0 and runs locally on each developer's machine with optional team sync.
 
 **CLI-first install, MCP-compatible transport**: `npx thumbgate init` is the default setup path. It installs the local gateway, wires the needed hooks, and configures MCP transport automatically for the agent that is already in use. MCP matters for compatibility, but the product surface is the operator-friendly CLI.
 

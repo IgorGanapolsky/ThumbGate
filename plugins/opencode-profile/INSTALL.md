@@ -49,7 +49,7 @@ For this repository specifically, the committed `opencode.json` also enables:
 ## Requirements
 
 - OpenCode with MCP support
-- Node.js 20.10+ in PATH
+- Node.js 18+ in PATH
 - `npx` available in PATH
 
 ## Uninstall

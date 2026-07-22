@@ -45,7 +45,7 @@ npx thumbgate capture --feedback=up --context="skill install verified" --tags="i
 ## Requirements
 
 - Claude Code (any version)
-- Node.js 20.10+ in PATH
+- Node.js 18+ in PATH
 - `.thumbgate/` directory (created by `npx thumbgate init`)
 
 ## Uninstall
