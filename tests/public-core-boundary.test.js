@@ -194,7 +194,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // read-only price and Payment Link drift audit. They import no Core code and
   // contain no credential, buyer state, or external mutation path.
   // 354 -> 357 (2026-07-22): observability env loader, setup CLI, JSONL window.
-  const CEILING = 357;
+  // 357 -> 359 (2026-07-23): Poolside-style blog essays under public/blog/.
+  const CEILING = 359;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
