@@ -2,6 +2,17 @@
 
 > ThumbGate is the self-improving firewall for AI coding agents: Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and MCP-compatible tools. Thumbs-up/down feedback becomes reviewable local lessons; matching lessons are re-ranked per action; repeated negative patterns can promote from warning to blocking gates; stale auto-promoted gates expire; and PreToolUse checks gate the next tool call. Local-first by default. Stripe Connect marketplace engineering is a founder proof point, not the primary product category.
 
+## Store story (canonical)
+
+> ThumbGate: the self-improving firewall for AI agents
+> Every approval teaches it what to allow, block, or escalate next time.
+
+Strongest promise: **self-improving under your control** (not silent policy rewrite).
+
+Product hierarchy: Hermes Mobile = control surface; ThumbGate = learning safety layer inside it. This package remains `thumbgate`-only.
+
+Proof sequence: remember → re-rank lessons → promote repeated failures → expire/archive stale policy → improve the next decision. Do not claim active-gate demotion until proven.
+
 ## Positioning (2026-07)
 
 - Category: pre-action firewall / reliability gateway for agent tool calls
