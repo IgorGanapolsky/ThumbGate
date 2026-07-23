@@ -60,6 +60,28 @@ const COMPARE_FILES = [
 
 const ALL_FILES = [...GUIDE_FILES, ...COMPARE_FILES];
 
+/**
+ * CodeQL js/incomplete-url-substring-sanitization flags `html.includes('buy.stripe.com')`
+ * because hostnames must be checked via URL parsing, not substring search.
+ * Parse each href and compare hostname exactly (and optional subdomains).
+ */
+function hrefHostnameIs(href, expectedHostname) {
+  try {
+    const url = new URL(href, 'https://thumbgate.ai');
+    return url.hostname === expectedHostname
+      || url.hostname.endsWith(`.${expectedHostname}`);
+  } catch {
+    return false;
+  }
+}
+
+function htmlHasBuyStripeHost(html) {
+  return Array.from(
+    html.matchAll(/<a\b[^>]*\bhref="([^"]+)"/gi),
+    (match) => match[1]
+  ).some((href) => hrefHostnameIs(href, 'buy.stripe.com'));
+}
+
 describe('SEO guide and comparison pages', () => {
   it('all configured HTML files exist', () => {
     assert.ok(ALL_FILES.length > 0, 'SEO guide file list is empty');
@@ -157,7 +179,7 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(html.includes('href="/checkout/pro?'));
     assert.ok(html.includes('href="/guide?'));
     assert.ok(html.includes('href="/diagnostic?'));
-    assert.ok(!html.includes('buy.stripe.com'));
+    assert.equal(htmlHasBuyStripeHost(html), false, 'migration checklist must not hard-link buy.stripe.com');
     assert.ok(html.includes('workflow-sprint-intake'));
     assert.ok(html.includes('Pro $19/mo or $149/yr. Enterprise for org-wide enforcement.'));
     assert.ok(html.includes('pre-action rule that stops the already-rejected mistake'));
@@ -182,7 +204,7 @@ describe('SEO guide and comparison pages', () => {
       '/diagnostic?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=ai_agent_governance_sprint&amp;utm_content=diagnostic',
       '/diagnostic?utm_source=website&amp;utm_medium=seo_page&amp;utm_campaign=ai_agent_governance_sprint&amp;utm_content=sprint#intake',
     ]);
-    assert.ok(!html.includes('buy.stripe.com'));
+    assert.equal(htmlHasBuyStripeHost(html), false, 'governance sprint guide must not hard-link buy.stripe.com');
     assert.ok(html.includes('$499'));
     assert.ok(html.includes('$1500'));
   });
@@ -204,7 +226,7 @@ describe('SEO guide and comparison pages', () => {
     assert.ok(!html.includes('workflow-sprint-intake'));
     assert.ok(!html.includes('Ready to scope the sprint?'));
     assert.ok(!html.includes('utm_content=sprint#intake'));
-    assert.ok(!html.includes('buy.stripe.com'));
+    assert.equal(htmlHasBuyStripeHost(html), false, 'deployment readiness guide must not hard-link buy.stripe.com');
   });
 
   it('GPT-5.5 model evaluation guide routes teams into benchmark-first model routing', () => {
