@@ -50,7 +50,7 @@ test('public surfaces lead with outcomes instead of infrastructure abstractions'
 
   assert.match(readme, /AI coding agents repeat mistakes/i);
   assert.match(readme, /evaluate the proposed tool call before execution/i);
-  assert.match(landingPage, /Stop the AI-agent mistake that keeps happening/i);
+  assert.match(landingPage, /Self-Improving Firewall for Your AI Agents/i);
   assert.match(landingPage, /allowed, warned, or denied/i);
   assert.match(landingPage, /one configured local gate/i);
   assert.match(gptInstructions, /Sell outcomes before infrastructure/i);
@@ -164,8 +164,10 @@ test('AI-visible surfaces map ThumbGate to the agentic development cycle', () =>
     assert.match(surface, /pre-action (?:execution )?gate|pre-action boundary/i);
   }
 
-  assert.match(landingPage, /Agent proposes/i);
-  assert.match(landingPage, /ThumbGate checks/i);
+  assert.match(landingPage, /Capture feedback/i);
+  assert.match(landingPage, /Remember locally/i);
+  assert.match(landingPage, /Rank and refine/i);
+  assert.match(landingPage, /Gate the next action/i);
   assert.match(landingPage, /allowed, warned, or denied/i);
   assert.match(context, /Agentic Development Cycle Alignment/);
   assert.match(llms, /Agentic development cycle fit/);

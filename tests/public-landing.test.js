@@ -86,7 +86,7 @@ test('homepage stays human-scannable instead of becoming a product monorepo', ()
 
   assert.ok(words.length <= 900, `visible homepage is ${words.length} words`);
   assert.ok(h2Count <= 6, `homepage has ${h2Count} H2 headings`);
-  assert.ok(h3Count <= 6, `homepage has ${h3Count} H3 headings`);
+  assert.ok(h3Count <= 7, `homepage has ${h3Count} H3 headings`);
   for (const jargon of ['Thompson Sampling', 'DPO', 'LanceDB', 'ContextFS', 'MemAlign', 'FTS5']) {
     assert.doesNotMatch(visibleText, new RegExp(jargon, 'i'));
   }
@@ -99,33 +99,36 @@ test('hero names one buyer, one failure, and the enterprise entry outcome', () =
   );
   const lede = normalizeHtmlText((hero.match(/<p class="hero-lede">([\s\S]*?)<\/p>/) || [])[1]);
 
-  assert.match(landingPage, /Self-Improving Firewall for AI Agents/i);
-  assert.match(hero, /Self-Improving Firewall for AI agents/i);
-  assert.match(hero, /Stop the AI-agent mistake that keeps happening/);
+  assert.match(landingPage, /Self-Improving Firewall for Your AI Agents/i);
+  assert.match(hero, /<h1>Self-Improving Firewall for Your AI Agents\.<\/h1>/i);
   assert.match(hero, /engineering and security leads/);
   assert.match(hero, /Enterprise Workflow Gate/);
   assert.match(hero, /\$499 enterprise entry offer/);
-  assert.match(hero, /Promote[\s\S]*lessons|lessons[\s\S]*Promote/i);
+  assert.match(hero, /Rank[\s\S]*lessons/i);
+  assert.match(hero, /Promote[\s\S]*gates/i);
   assert.match(hero, /npx thumbgate init/);
   assert.ok(lede.split(/\s+/).length <= 30, `hero lede is ${lede.split(/\s+/).length} words`);
 });
 
 test('how-it-works sells the self-improving loop, not a static allowlist', () => {
   assert.match(landingPage, /Pre-action checks—and the systems that refine them/i);
-  assert.match(landingPage, /promoted or demoted rule that re-ranks/i);
+  assert.match(landingPage, /Lessons are re-ranked per action/i);
+  assert.match(landingPage, /repeated failures can promote into gates/i);
+  assert.match(landingPage, /stale auto-promoted gates expire/i);
   assert.match(landingPage, /firewall improves without retraining the model/i);
-  assert.match(landingPage, /source\s+lesson · thumbs-down/i);
+  assert.match(landingPage, /source\s+core protection · strict mode/i);
 });
 
-test('homepage explains the product with one three-step enforcement loop', () => {
+test('homepage explains the product with one four-stage self-improving loop', () => {
   assert.match(landingPage, /id="how-it-works"/);
-  assert.match(landingPage, /Agent proposes/);
-  assert.match(landingPage, /ThumbGate checks/);
-  assert.match(landingPage, /Decision before execution/);
+  assert.match(landingPage, /Capture feedback/);
+  assert.match(landingPage, /Remember locally/);
+  assert.match(landingPage, /Rank and refine/);
+  assert.match(landingPage, /Gate the next action/);
   assert.match(landingPage, />ALLOW</);
   assert.match(landingPage, />WARN</);
   assert.match(landingPage, />DENY</);
-  assert.match(landingPage, /👍 accepted behavior or 👎 a correction/);
+  assert.match(landingPage, /Each reviewed outcome closes the loop/);
 });
 
 test('paid wedge includes managed implementation, regression, and rollout proof', () => {
@@ -144,7 +147,7 @@ test('enforcement promise distinguishes default denies from strict-mode blocks',
   assert.match(landingPage, /mode\s+strict enforcement[\s\S]*decision\s+<span class="red">DENY<\/span>/i);
 });
 
-test('FAQPage JSON-LD matches the three visible buyer questions', () => {
+test('FAQPage JSON-LD matches the four visible buyer questions', () => {
   const jsonLd = parseJsonLd(landingPage);
   const faqSchema = jsonLd.find((document) => document['@type'] === 'FAQPage');
   const visibleFaq = visibleFaqAnswers(landingPage);
@@ -152,8 +155,8 @@ test('FAQPage JSON-LD matches the three visible buyer questions', () => {
   assert.ok(jsonLd.some((document) => document['@type'] === 'SoftwareApplication'));
   assert.ok(jsonLd.some((document) => document['@type'] === 'Service'));
   assert.ok(faqSchema);
-  assert.equal(faqSchema.mainEntity.length, 3);
-  assert.equal(visibleFaq.size, 3);
+  assert.equal(faqSchema.mainEntity.length, 4);
+  assert.equal(visibleFaq.size, 4);
   for (const entity of faqSchema.mainEntity) {
     const question = normalizeHtmlText(entity.name);
     const answer = normalizeHtmlText(entity.acceptedAnswer.text);

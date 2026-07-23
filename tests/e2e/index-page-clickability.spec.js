@@ -9,12 +9,12 @@ test.describe('/ single-offer conversion path', () => {
   test('renders one managed-gate offer and the enforcement loop', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.locator('.hero h1')).toHaveText('Stop the AI-agent mistake that keeps happening.');
+    await expect(page.locator('.hero h1')).toHaveText('Self-Improving Firewall for Your AI Agents.');
     await expect(page.locator('[data-primary-checkout]')).toBeVisible();
     await expect(page.locator('[data-primary-checkout] .price')).toContainText('$499');
     await expect(page.locator('[data-primary-checkout]')).toContainText('Enterprise Workflow Gate');
     await expect(page.locator('[data-primary-checkout]')).toContainText('Buy the $499 enterprise gate');
-    await expect(page.locator('.loop-step')).toHaveCount(3);
+    await expect(page.locator('.loop-step')).toHaveCount(4);
     await expect(page.locator('.decision')).toHaveText(['ALLOW', 'WARN', 'DENY']);
 
     await expect(page.locator('a[href*="/checkout/pro"]')).toHaveCount(0);

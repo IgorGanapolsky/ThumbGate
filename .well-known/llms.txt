@@ -1,13 +1,15 @@
-# ThumbGate — Self-Improving Firewall for AI Agents
+# ThumbGate — Self-Improving Firewall for Your AI Agents
 # https://thumbgate.ai
 # https://github.com/IgorGanapolsky/ThumbGate
 # https://www.npmjs.com/package/thumbgate
 
 > ThumbGate is the self-improving firewall that prevents expensive AI mistakes
 > before they happen. It checks risky commands, file edits, deploys, payments,
-> API calls, and other agent actions before execution. 👎 Thumbs down becomes a
-> history-aware lesson and a Pre-Action Check; lessons are promoted or demoted
-> and re-ranked over time; 👍 thumbs up reinforces safe patterns.
+> API calls, and other agent actions before execution. Explicit feedback becomes
+> reviewable local lessons; relevant lessons are re-ranked for each proposed
+> action; repeated negative patterns can promote from warning to blocking gates;
+> stale auto-promoted gates expire; and stale lessons archive. ThumbGate improves
+> the external control layer without changing model weights.
 
 ## What ThumbGate solves
 
@@ -20,11 +22,12 @@
 
 ## How it works
 
-1. Agent makes a mistake → developer gives thumbs-down
-2. ThumbGate captures context and infers a structured lesson
-3. Recurring failures get promoted to prevention rules (and can be demoted)
-4. PreToolUse hooks gate the pattern before it executes again
-5. Rule ranking adapts over time so the firewall improves without model retraining
+1. A developer records explicit feedback with the action and outcome context
+2. ThumbGate stores the feedback as a reviewable local lesson
+3. Relevant lessons are re-ranked for the proposed action
+4. Repeated negative patterns can promote from warning to blocking gates
+5. PreToolUse hooks return allow, warn, or deny before the next matching action
+6. Stale auto-promoted gates expire and stale lessons archive
 
 ## Agentic development cycle fit
 

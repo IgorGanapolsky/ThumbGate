@@ -13,10 +13,10 @@
   <meta property="og:image" content="https://thumbgate.ai/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://thumbgate.ai/og.png">
-  <title>ThumbGate — Self-Improving Firewall for AI Agents</title>
-  <meta name="description" content="Feedback-driven firewall for AI agents: ThumbGate's $499 workflow gate implements one hard, test-backed safety gate for a supported AI-agent workflow in two business days.">
-  <meta property="og:title" content="ThumbGate — Self-Improving Firewall for AI Agents">
-  <meta property="og:description" content="Not a static allowlist. ThumbGate captures corrections, promotes and demotes lessons, re-ranks rules, and gates the next tool call. $499 enterprise entry for one repeated workflow failure.">
+  <title>ThumbGate — Self-Improving Firewall for Your AI Agents</title>
+  <meta name="description" content="ThumbGate is the feedback-driven firewall for AI agents. The $499 offer installs one hard, test-backed safety gate for a supported AI-agent workflow in two business days.">
+  <meta property="og:title" content="ThumbGate — Self-Improving Firewall for Your AI Agents">
+  <meta property="og:description" content="Feedback becomes local lessons. Relevant lessons are re-ranked, repeated failures can promote to pre-action gates, and stale gates expire. $499 managed setup for one workflow.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="__APP_ORIGIN__/">
   <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script>
@@ -39,12 +39,14 @@
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "macOS, Linux, Windows",
     "url": "__APP_ORIGIN__",
-    "description": "Self-improving firewall for AI coding agents. ThumbGate captures thumbs-up/down feedback, stores reviewable lessons, promotes or demotes rules over time, and runs pre-action checks before shell, file, git, deploy, or API tool calls. Detected secret exfiltration and gate-bypass commands are denied by default; strict mode blocks matching destructive-action rules.",
+    "description": "Self-improving firewall for AI coding agents. ThumbGate captures feedback as local lessons, re-ranks relevant lessons for each action, promotes repeated negative patterns into warning or blocking gates, expires stale auto-promoted gates, and runs pre-action checks before shell, file, git, deploy, or API tool calls. Detected secret exfiltration and gate-bypass commands are denied by default; strict mode blocks matching destructive-action rules.",
     "codeRepository": "https://github.com/IgorGanapolsky/ThumbGate",
     "featureList": [
       "Pre-action PreToolUse checks for coding agents",
-      "Thumbs-up/down feedback becomes local lessons",
-      "Promotion, demotion, and re-ranking of prevention rules over time",
+      "Thumbs-up/down feedback becomes reviewable local lessons",
+      "Relevant lessons are re-ranked for the proposed action",
+      "Repeated negative patterns can promote from warning to blocking gates",
+      "Stale auto-promoted gates expire and stale lessons archive",
       "Managed Enterprise Workflow Gate for one supported workflow",
       "Local-first install with optional shared team enforcement"
     ]
@@ -55,26 +57,31 @@
     "@context": "https://schema.org",
     "@type": "HowTo",
     "name": "How ThumbGate becomes a self-improving firewall",
-    "description": "Install local pre-action checks, capture a correction when an agent fails, and let ThumbGate promote the lesson into a rule that fires before the next tool call.",
-    "totalTime": "PT5M",
+    "description": "Capture operational feedback, store it as local lessons, re-rank the lessons that match the next action, promote repeated negative patterns into gates, and check the next tool call before execution.",
     "step": [
       {
         "@type": "HowToStep",
         "position": 1,
-        "name": "Agent proposes an action",
-        "text": "A coding agent asks to run a command, write a file, call a tool, or perform another governed action."
+        "name": "Capture real feedback",
+        "text": "Record explicit thumbs-up or thumbs-down feedback with the action and outcome context."
       },
       {
         "@type": "HowToStep",
         "position": 2,
-        "name": "ThumbGate checks before execution",
-        "text": "Local rules evaluate the proposed action, the configured mode, and the available workflow context, then return allow, warn, or deny."
+        "name": "Remember local lessons",
+        "text": "Store the feedback as reviewable local lessons that survive sessions and model changes."
       },
       {
         "@type": "HowToStep",
         "position": 3,
-        "name": "Feedback improves the firewall",
-        "text": "Accepted behavior or a thumbs-down correction becomes a reviewable lesson, then a promoted or demoted rule for the next matching tool call."
+        "name": "Refine the control layer",
+        "text": "Re-rank relevant lessons for the action, promote repeated negative patterns into warning or blocking gates, and expire stale auto-promoted gates."
+      },
+      {
+        "@type": "HowToStep",
+        "position": 4,
+        "name": "Gate the next action",
+        "text": "Run the resulting pre-action checks before the shell, file, git, deployment, or API tool call executes."
       }
     ]
   }
@@ -122,6 +129,14 @@
         "acceptedAnswer": {
           "@type": "Answer",
           "text": "Yes. The $499 Enterprise Workflow Gate is the enterprise entry offer for one supported workflow. It is not an org-wide hosted platform license: shared hosting, SSO, compliance packaging, and multi-workflow rollout require separate scope and are not generally available."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does self-improving mean ThumbGate retrains my model?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. ThumbGate does not change model weights. It improves the external control layer by storing feedback as local lessons, re-ranking relevant lessons, promoting repeated negative patterns into gates, and expiring stale auto-promoted gates."
         }
       }
     ]
@@ -278,7 +293,7 @@
     .section-kicker { color: var(--cyan); }
     .section-title { max-width: 780px; margin: 12px 0 14px; font-size: clamp(32px, 4vw, 50px); line-height: 1.08; letter-spacing: -0.04em; }
     .section-lede { max-width: 700px; margin: 0; color: var(--muted); font-size: 18px; }
-    .loop { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 38px; }
+    .loop { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 38px; }
     .loop-step { position: relative; min-height: 190px; padding: 24px; border: 1px solid var(--line); border-radius: 15px; background: var(--panel); }
     .loop-step:not(:last-child)::after { content: "→"; position: absolute; top: 50%; right: -24px; z-index: 2; color: var(--cyan); font-size: 26px; transform: translateY(-50%); }
     .loop-number { display: inline-flex; width: 30px; height: 30px; align-items: center; justify-content: center; border-radius: 50%; color: #071018; background: var(--cyan); font-weight: 900; }
@@ -356,15 +371,15 @@
     <section class="hero">
       <div class="shell hero-grid">
         <div class="hero-copy">
-          <div class="eyebrow">Self-Improving Firewall for AI agents</div>
-          <h1>Stop the AI-agent mistake that keeps happening.</h1>
-          <p class="hero-lede">Feedback becomes a rule that improves over time: block, warn, or human review for one repeated workflow—with a test you can verify.</p>
+          <div class="eyebrow">Feedback → memory → gates → safer actions</div>
+          <h1>Self-Improving Firewall for Your AI Agents.</h1>
+          <p class="hero-lede">ThumbGate remembers operational feedback, re-ranks the right lessons, and promotes repeated failures into test-backed pre-action gates before the next tool call runs.</p>
           <p class="fit-line"><strong>$499 enterprise entry offer</strong> for engineering and security leads using Claude Code, Cursor, Codex, or similar agents after a real workflow failure.</p>
           <div class="spec-chips" aria-label="What the self-improving firewall does">
-            <span class="spec-chip"><strong>Capture</strong> thumbs</span>
-            <span class="spec-chip"><strong>Promote</strong> lessons</span>
-            <span class="spec-chip"><strong>Re-rank</strong> rules</span>
-            <span class="spec-chip"><strong>Gate</strong> next tool call</span>
+            <span class="spec-chip"><strong>Capture</strong> feedback</span>
+            <span class="spec-chip"><strong>Rank</strong> lessons</span>
+            <span class="spec-chip"><strong>Promote</strong> gates</span>
+            <span class="spec-chip"><strong>Check</strong> next action</span>
           </div>
           <a class="proof-link" href="#proof">See a strict-mode deny example ↓</a>
           <p class="install-hint"><code>npx thumbgate init</code> free local evaluate · <a href="/guide">setup guide</a></p>
@@ -399,22 +414,27 @@
       <div class="shell">
         <div class="section-kicker">Self-improving product loop</div>
         <h2 class="section-title">Pre-action checks—and the systems that refine them.</h2>
-        <p class="section-lede">No governance novel. ThumbGate sits between an agent’s proposed action and the shell, database, browser, or deployment it wants to touch. Corrections do not vanish into a black box: they become reviewable lessons and explicit rules.</p>
-        <div class="loop" role="img" aria-label="Agent proposes an action, ThumbGate checks the action, then the action is allowed, warned, or denied">
+        <p class="section-lede">No governance novel. Corrections become reviewable local lessons; relevant lessons are re-ranked; repeated negative patterns can become explicit gates; and the next action is checked before execution.</p>
+        <div class="loop" role="img" aria-label="Feedback becomes local lessons, relevant lessons refine gates, and the next agent action is checked before execution">
           <article class="loop-step">
             <span class="loop-number">1</span>
-            <h3>Agent proposes</h3>
-            <p>A coding agent asks to run a command, write a file, call a tool, or perform another governed action.</p>
+            <h3>Capture feedback</h3>
+            <p>Record explicit 👍 or 👎 feedback with the action and outcome context that made it useful or wrong.</p>
           </article>
           <article class="loop-step">
             <span class="loop-number">2</span>
-            <h3>ThumbGate checks</h3>
-            <p>Local rules evaluate the proposed action, the configured mode, and the available workflow context.</p>
+            <h3>Remember locally</h3>
+            <p>Store a reviewable lesson that survives sessions and model changes without sending the control history into model weights.</p>
           </article>
           <article class="loop-step">
             <span class="loop-number">3</span>
-            <h3>Decision before execution</h3>
-            <p>The runtime returns a decision the agent must handle before the tool proceeds.</p>
+            <h3>Rank and refine</h3>
+            <p>Re-rank relevant lessons for the action. Repeated negative patterns can promote from warnings to blocking gates; stale gates expire.</p>
+          </article>
+          <article class="loop-step">
+            <span class="loop-number">4</span>
+            <h3>Gate the next action</h3>
+            <p>The action is allowed, warned, or denied before the tool proceeds.</p>
             <div class="decisions" aria-label="Possible decisions">
               <span class="decision allow">ALLOW</span>
               <span class="decision warn">WARN</span>
@@ -422,7 +442,7 @@
             </div>
           </article>
         </div>
-        <p class="loop-back"><strong>👍 accepted behavior or 👎 a correction</strong> becomes a reviewable local lesson, then a promoted or demoted rule that re-ranks for the next tool call. The firewall improves without retraining the model.</p>
+        <p class="loop-back"><strong>Each reviewed outcome closes the loop.</strong> Lessons are re-ranked per action, repeated failures can promote into gates, and stale auto-promoted gates expire. The firewall improves without retraining the model.</p>
       </div>
     </section>
 
@@ -463,10 +483,10 @@
             <pre><span class="green">proposed</span>  git push --force origin main
 mode      strict enforcement
 rule      protect-main
-source    lesson · thumbs-down · force-push main
+source    core protection · strict mode
 decision  <span class="red">DENY</span>
 reason    force-push to protected branch
-next      rule stays promoted for future matches</pre>
+next      decision recorded before execution</pre>
             <div class="terminal-status" aria-hidden="true">
               <span>reviewable decision</span>
               <span><span class="accent">self-improving</span> · local lesson store</span>
@@ -484,7 +504,7 @@ next      rule stays promoted for future matches</pre>
     <section id="faq">
       <div class="shell">
         <div class="section-kicker">Before you buy</div>
-        <h2 class="section-title">Three questions, answered plainly.</h2>
+        <h2 class="section-title">Four questions, answered plainly.</h2>
         <div class="faq-list">
           <div class="faq-item open">
             <button class="faq-q" type="button" aria-expanded="true">What do I get for $499?</button>
@@ -497,6 +517,10 @@ next      rule stays promoted for future matches</pre>
           <div class="faq-item">
             <button class="faq-q" type="button" aria-expanded="false">Is this the enterprise option?</button>
             <div class="faq-a">Yes. The $499 Enterprise Workflow Gate is the enterprise entry offer for one supported workflow. It is not an org-wide hosted platform license: shared hosting, SSO, compliance packaging, and multi-workflow rollout require separate scope and are not generally available.</div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-q" type="button" aria-expanded="false">Does self-improving mean ThumbGate retrains my model?</button>
+            <div class="faq-a">No. ThumbGate does not change model weights. It improves the external control layer by storing feedback as local lessons, re-ranking relevant lessons, promoting repeated negative patterns into gates, and expiring stale auto-promoted gates.</div>
           </div>
         </div>
       </div>

@@ -2,8 +2,8 @@
   "repo": "IgorGanapolsky/ThumbGate",
   "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
   "homepageUrl": "https://thumbgate.ai",
-  "githubDescription": "ThumbGate Pre-Action Checks derive rules from repeated failures, re-rank gates over time, hard-block detected secret leaks, and block matches in strict mode.",
-  "metaDescription": "Feedback-driven firewall for AI agents: ThumbGate's $499 workflow gate implements one hard, test-backed safety gate for a supported AI-agent workflow in two business days.",
+  "githubDescription": "ThumbGate Pre-Action Checks self-improve from ranked lessons and repeated failures, hard-block detected secret leaks, and block matches in strict mode.",
+  "metaDescription": "ThumbGate is the feedback-driven firewall for AI agents. The $499 offer installs one hard, test-backed safety gate for a supported AI-agent workflow in two business days.",
   "topics": [
     "thumbgate",
     "pre-action-checks",
@@ -21,6 +21,7 @@
     "gemini",
     "amp",
     "opencode",
-    "thompson-sampling"
+    "thompson-sampling",
+    "self-improving-agents"
   ]
 }
