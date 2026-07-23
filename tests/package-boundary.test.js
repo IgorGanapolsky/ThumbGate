@@ -387,9 +387,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // state, mutation route, or private Core module are packaged.
   // Bumped 354 -> 357 (2026-07-22) for observability env loader, setup CLI,
   // and bounded JSONL window reader used by telemetry export + revenue doctor.
+  // Bumped 357 -> 359 (2026-07-23) for Poolside-style blog essays under public/blog/
+  // (inside-your-boundary + process-over-outcome-gates) served by the hosted package.
   assert.ok(
-    manifest.fileCount <= 357,
-    `npm package should stay <= 357 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 359,
+    `npm package should stay <= 359 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
