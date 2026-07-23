@@ -57,7 +57,7 @@ GitHub root mixes marketplace manifests, agent directives, and ops docs.
 
 | From | To | Why |
 |------|-----|-----|
-| `plan.md` | `docs/revenue-plan.md` | Revenue planning doc does not belong at package root |
+| `plan.md` | `archive/revenue-plan.md` | Revenue planning doc does not belong at package root |
 
 ### Gitignore hardened
 
@@ -104,7 +104,7 @@ GitHub root mixes marketplace manifests, agent directives, and ops docs.
 |--------|-------:|------:|
 | Tracked files | 1,811 | 1,732 |
 | Files deleted | — | 80 (prototype DB only) |
-| Files moved | — | 1 (`plan.md` → `docs/revenue-plan.md`) |
+| Files moved | — | 1 (`plan.md` → `archive/revenue-plan.md`) |
 | Files added | — | 1 (this audit report) |
 | Root noise reduced | prototype dir gone | gitignore ratchet added |
 
