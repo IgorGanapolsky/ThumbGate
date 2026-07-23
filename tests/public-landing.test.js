@@ -100,7 +100,10 @@ test('hero names one buyer, one failure, and the enterprise entry outcome', () =
   const lede = normalizeHtmlText((hero.match(/<p class="hero-lede">([\s\S]*?)<\/p>/) || [])[1]);
 
   assert.match(landingPage, /Self-Improving Firewall for Your AI Agents/i);
+  assert.match(landingPage, /ThumbGate: the self-improving firewall for AI agents/i);
   assert.match(hero, /<h1>Self-Improving Firewall for Your AI Agents\.<\/h1>/i);
+  assert.match(hero, /Self-improving under your control/i);
+  assert.match(hero, /Every approval teaches it what to allow, block, or escalate next time/i);
   assert.match(hero, /engineering and security leads/);
   assert.match(hero, /Enterprise Workflow Gate/);
   assert.match(hero, /\$499 enterprise entry offer/);
@@ -115,7 +118,9 @@ test('how-it-works sells the self-improving loop, not a static allowlist', () =>
   assert.match(landingPage, /Lessons are re-ranked per action/i);
   assert.match(landingPage, /repeated failures can promote into gates/i);
   assert.match(landingPage, /stale auto-promoted gates expire/i);
-  assert.match(landingPage, /firewall improves without retraining the model/i);
+  assert.match(landingPage, /under your control/i);
+  assert.match(landingPage, /silently rewriting policy|does not silently rewrite/i);
+  assert.match(landingPage, /firewall improves from explicit feedback without retraining the model/i);
   assert.match(landingPage, /source\s+core protection · strict mode/i);
 });
 
