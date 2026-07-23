@@ -10,7 +10,7 @@
 > Pre-action checks that flag repeated risky actions before execution and block matching actions when strict policy is enabled. Accepted feedback becomes local lessons; repeated failures can become prevention rules.
 
 ### Public Landing Page (thumbgate-production.up.railway.app)
-> Self-improving firewall for AI agents: ThumbGate's $499 workflow gate implements one hard, test-backed safety gate for a supported AI-agent workflow in two business days.
+> Feedback-driven firewall for AI agents: ThumbGate's $499 workflow gate implements one hard, test-backed safety gate for a supported AI-agent workflow in two business days.
 
 ### NPM package.json
 > ThumbGate Pre-Action Checks derive rules from repeated failures, re-rank gates over time, hard-block detected secret leaks, and block matches in strict mode.
