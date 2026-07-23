@@ -68,6 +68,13 @@
 - [Platform teams](https://thumbgate.ai/use-cases/platform-teams)
 - [Regulated workflows](https://thumbgate.ai/use-cases/regulated-workflows)
 
+
+## Blog (Poolside-style engineering notes)
+
+- [Blog index](https://thumbgate.ai/blog): Self-improving firewall engineering notes — process-over-outcome gates, boundary-local governance, runtime enforcement.
+- [Process over outcome](https://thumbgate.ai/blog/process-over-outcome-gates): Gate the process when self-improving coding loops optimize for "done."
+- [Inside your boundary](https://thumbgate.ai/blog/inside-your-boundary): Local pre-action governance without permanent security exceptions; $499 one-workflow entry.
+
 ## Optional
 
 - [Agent discovery manifest](https://thumbgate.ai/.well-known/mcp.json)

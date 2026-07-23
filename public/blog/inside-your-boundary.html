@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI inside your boundary: governance without relaxing controls | ThumbGate</title>
+  <meta name="description" content="Enterprises should not trade security exceptions for agent speed. ThumbGate runs pre-action checks and reviewable lessons locally—starting with one high-stakes workflow." />
+  <meta property="og:title" content="AI inside your boundary: governance without relaxing controls" />
+  <meta property="og:description" content="Local pre-action checks, audit-ready decisions, and a $499 managed gate for one workflow." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://thumbgate.ai/blog/inside-your-boundary" />
+  <link rel="canonical" href="https://thumbgate.ai/blog/inside-your-boundary" />
+  <link rel="icon" type="image/png" href="/thumbgate-icon.png" />
+  <meta property="og:image" content="https://thumbgate.ai/og.png" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "AI inside your boundary: governance without relaxing controls",
+    "datePublished": "2026-07-23",
+    "author": { "@type": "Organization", "name": "ThumbGate" },
+    "publisher": { "@type": "Organization", "name": "ThumbGate", "url": "https://thumbgate.ai" },
+    "mainEntityOfPage": "https://thumbgate.ai/blog/inside-your-boundary",
+    "description": "Local pre-action checks and one managed workflow gate so teams keep agent speed without permanent security exceptions."
+  }
+  </script>
+  <style>
+    :root { color-scheme: dark; --bg:#080b10; --panel:#111722; --text:#f5f7fb; --muted:#9ca8ba; --line:#273246; --cyan:#38d7ff; --green:#56e39f; --max:760px; }
+    * { box-sizing: border-box; }
+    body { margin:0; color:var(--text); background:var(--bg); font:16px/1.7 Inter,ui-sans-serif,system-ui,-apple-system,sans-serif; }
+    a { color:var(--cyan); }
+    .shell { width:min(calc(100% - 40px),var(--max)); margin:0 auto; }
+    header { padding:22px 0; border-bottom:1px solid var(--line); }
+    header a { color:var(--muted); text-decoration:none; font-weight:700; }
+    .brand { color:var(--text); font-weight:850; text-decoration:none; }
+    article { padding:48px 0 80px; }
+    .meta { color:var(--muted); font:700 12px/1.2 ui-monospace,Menlo,monospace; letter-spacing:.08em; text-transform:uppercase; }
+    h1 { margin:14px 0 18px; font-size:clamp(32px,5vw,46px); line-height:1.08; letter-spacing:-.04em; }
+    h2 { margin:36px 0 12px; font-size:24px; letter-spacing:-.03em; }
+    p, li { color:var(--muted); }
+    p { margin:0 0 16px; }
+    ul, ol { margin:0 0 18px; padding-left:1.2em; }
+    li { margin-bottom:8px; }
+    strong { color:var(--text); }
+    .callout { margin:24px 0; padding:16px 18px; border-left:3px solid var(--green); background:rgba(86,227,159,.07); color:var(--muted); }
+    .cta { display:inline-flex; margin-top:8px; margin-right:10px; padding:12px 18px; border-radius:10px; background:var(--green); color:#06130d; font-weight:850; text-decoration:none; }
+    code { color:var(--cyan); font-family:ui-monospace,Menlo,monospace; font-size:0.95em; }
+    footer { padding:28px 0 48px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="shell" style="display:flex;justify-content:space-between;gap:16px;align-items:center;">
+      <a class="brand" href="/blog">ThumbGate / Blog</a>
+      <a href="/diagnostic">$499 workflow gate</a>
+    </div>
+  </header>
+  <article class="shell">
+    <div class="meta">2026-07-23 · Inside your boundary</div>
+    <h1>AI inside your boundary: governance without relaxing controls</h1>
+    <p>
+      Enterprise AI platforms now lead with a blunt line: run agents <strong>inside your security boundary</strong>, with auditability and governance, instead of permanent exceptions to “keep up.” That demand is real. ThumbGate’s answer is not another model API. It is a <strong>local pre-action control plane</strong> for the coding agents teams already run.
+    </p>
+
+    <h2>Who this is for</h2>
+    <p>
+      Engineering and security leads whose approved base images, network rules, and CISO policies are not optional theater. Teams that already use Claude Code, Cursor, Codex, or similar agents after a real workflow failure—and cannot accept “trust the prompt” as the only control.
+    </p>
+    <div class="callout">
+      Vendors should not require enterprises to relax well-established practice for agent speed. Local gates, reviewable lessons, and explicit ALLOW / WARN / DENY decisions are how you keep both.
+    </div>
+
+    <h2>What “inside your boundary” means for ThumbGate</h2>
+    <ul>
+      <li><strong>Local-first checks</strong> — PreToolUse hooks evaluate the proposed tool call on the machine or in the lane you control.</li>
+      <li><strong>Lessons stay reviewable</strong> — thumbs become local lessons; relevant lessons are re-ranked for the next action; repeated failures can promote into gates; stale auto-promoted gates expire.</li>
+      <li><strong>Honest default enforcement</strong> — detected secret exfiltration and gate-bypass attempts are denied by default; many other matches warn unless strict mode is enabled.</li>
+      <li><strong>Decision receipts</strong> — blocks and warnings name the matched rule and leave a trail reviewers can inspect.</li>
+    </ul>
+    <p>
+      We do not claim a full air-gapped multi-cloud agent OS on day one. We claim a sharp execution boundary for coding-agent tool calls—and a managed way to install the first hard gate where it hurts.
+    </p>
+
+    <h2>Land on one high-stakes problem</h2>
+    <p>
+      Platform vendors talk about forward-deployed motion. Our cash path is deliberately small:
+    </p>
+    <ol>
+      <li><strong>One workflow</strong> with a repeated AI-agent failure.</li>
+      <li><strong>One configured local gate</strong> with a regression test.</li>
+      <li><strong>Rollout and rollback proof</strong> within two business days after access and materials are available.</li>
+    </ol>
+    <p>
+      That is the $499 Enterprise Workflow Gate—not an org-wide hosted license. Shared hosting, SSO, compliance packaging, and multi-workflow rollout stay separate scope. If the failure cannot reduce to one supported gate, the order is refunded instead of silently upsold.
+    </p>
+
+    <h2>Start without a procurement cycle</h2>
+    <p>
+      Free local evaluate: <code>npx thumbgate init</code>. Prove one caught repeat. When the pain is real and shared, buy the managed gate for that workflow.
+    </p>
+    <p>
+      <a class="cta" href="/#buy">Buy the $499 enterprise gate →</a>
+      <a class="cta" href="/guide" style="background:transparent;border:1px solid var(--cyan);color:var(--cyan);">Setup guide →</a>
+    </p>
+  </article>
+  <footer>
+    <div class="shell">
+      <a href="/blog">← All posts</a> ·
+      <a href="/diagnostic">Diagnostic / offer detail</a> ·
+      <a href="/">Home</a>
+    </div>
+  </footer>
+</body>
+</html>
