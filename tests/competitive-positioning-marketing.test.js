@@ -17,7 +17,8 @@ const regulatedHtml = read('public', 'use-cases', 'regulated-workflows.html');
 const deploymentReadinessHtml = read('public', 'guides', 'ai-deployment-readiness.html');
 
 test('homepage explains the enforcement point without an orchestration essay', () => {
-  assert.match(indexHtml, /The action gets checked before the tool runs/i);
+  assert.match(indexHtml, /Pre-action checks—and the systems that refine them/i);
+  assert.match(indexHtml, /Self-Improving Firewall for AI agents/i);
   assert.match(indexHtml, /Agent proposes/i);
   assert.match(indexHtml, /ThumbGate checks/i);
   assert.match(indexHtml, /Decision before execution/i);
