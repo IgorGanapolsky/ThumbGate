@@ -82,7 +82,9 @@ test('GitHub About config keeps a focused cash-path description and a valid GitH
   assert.match(about.metaDescription, /one hard, test-backed safety gate/i);
   assert.match(about.metaDescription, /supported AI-agent workflow/i);
   assert.match(about.metaDescription, /two business days/i);
-  assert.doesNotMatch(about.metaDescription, /\bPro\b|\bEnterprise\b|Thompson Sampling|LanceDB/i);
+  assert.match(about.metaDescription, /\$19\/mo/);
+  assert.match(about.metaDescription, /\$499/);
+  assert.doesNotMatch(about.metaDescription, /Thompson Sampling|LanceDB/i);
   assert.match(about.githubDescription, /ThumbGate Pre-Action Checks/i);
   assert.match(about.githubDescription, /hard-block detected secret leaks/i);
   assert.equal(packageJson.description, about.githubDescription);

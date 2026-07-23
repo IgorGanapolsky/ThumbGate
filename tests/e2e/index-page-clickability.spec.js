@@ -1,12 +1,12 @@
 const { test, expect } = require('@playwright/test');
 const { mockDashboardApis } = require('./helpers/mock-api');
 
-test.describe('/ single-offer conversion path', () => {
+test.describe('/ dual-offer conversion path', () => {
   test.beforeEach(async ({ page }) => {
     await mockDashboardApis(page);
   });
 
-  test('renders one managed-gate offer and the enforcement loop', async ({ page }) => {
+  test('renders Pro $19/mo and Enterprise $499 offers plus the enforcement loop', async ({ page }) => {
     await page.goto('/');
 
     await expect(page.locator('.hero h1')).toHaveText('Self-Improving Firewall for Your AI Agents.');
@@ -14,23 +14,23 @@ test.describe('/ single-offer conversion path', () => {
     await expect(page.locator('[data-primary-checkout] .price')).toContainText('$499');
     await expect(page.locator('[data-primary-checkout]')).toContainText('Enterprise Workflow Gate');
     await expect(page.locator('[data-primary-checkout]')).toContainText('Buy the $499 enterprise gate');
+    await expect(page.getByRole('link', { name: 'Start Pro — $19/mo' }).first()).toBeVisible();
+    await expect(page.locator('a[href*="/checkout/pro"]')).not.toHaveCount(0);
     await expect(page.locator('.loop-step')).toHaveCount(4);
     await expect(page.locator('.decision')).toHaveText(['ALLOW', 'WARN', 'DENY']);
-
-    await expect(page.locator('a[href*="/checkout/pro"]')).toHaveCount(0);
     await expect(page.locator('#workflow-sprint-intake[data-legacy-intake-alias]')).toHaveCount(1);
   });
 
-  test('navigation and final CTA both return to the same checkout form', async ({ page }) => {
+  test('Pro nav goes to checkout; Enterprise nav returns to managed form', async ({ page }) => {
     await page.goto('/');
 
-    const navBuy = page.locator('nav [data-offer-link]');
-    await navBuy.click();
-    await expect(page).toHaveURL(/#buy$/);
+    await expect(page.locator('nav [data-cta-id="nav_pro_buy"]')).toHaveAttribute('href', /\/checkout\/pro/);
+    await page.locator('nav [data-cta-id="nav_diagnostic_buy"]').click();
+    await expect(page).toHaveURL(/#enterprise-gate$/);
     await expect(page.locator('[data-primary-checkout]')).toBeVisible();
 
-    await page.locator('.final [data-offer-link]').click();
-    await expect(page).toHaveURL(/#buy$/);
+    await page.locator('.final [data-cta-id="final_diagnostic_buy"]').click();
+    await expect(page).toHaveURL(/#enterprise-gate$/);
     await expect(page.locator('form[action="/go/diagnostic-pay"]')).toHaveCount(1);
   });
 

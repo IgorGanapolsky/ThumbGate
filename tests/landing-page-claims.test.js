@@ -10,22 +10,29 @@ const HOME_HTML = fs.readFileSync(path.join(ROOT, 'public', 'index.html'), 'utf8
 const PRICING_HTML = fs.readFileSync(path.join(ROOT, 'public', 'pricing.html'), 'utf8');
 const PRO_HTML = fs.readFileSync(path.join(ROOT, 'public', 'pro.html'), 'utf8');
 
-test('homepage commercial contract stays one $499 enterprise entry offer', () => {
+test('homepage commercial contract offers Pro $19/mo and Enterprise $499', () => {
   assert.match(HOME_HTML, /Enterprise Workflow Gate/);
   assert.match(HOME_HTML, /\$499 enterprise entry offer/i);
   assert.match(HOME_HTML, /action="\/go\/diagnostic-pay"/);
   assert.match(HOME_HTML, /\$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
-  assert.doesNotMatch(HOME_HTML, /\/checkout\/pro|href="[^"]*workflow-sprint-intake|\/go\/sprint/i);
+  assert.match(HOME_HTML, /\/checkout\/pro/);
+  assert.match(HOME_HTML, /Start Pro — \$19\/mo/);
+  assert.match(HOME_HTML, /Pro · \$19\/mo/);
+  assert.doesNotMatch(HOME_HTML, /href="[^"]*workflow-sprint-intake|\/go\/sprint/i);
   assert.match(HOME_HTML, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
 });
 
-test('pricing repeats the same offer without a competing cash path', () => {
+test('pricing surfaces Pro self-serve and Enterprise managed gate together', () => {
   assert.match(PRICING_HTML, /Enterprise Workflow Gate/);
   assert.match(PRICING_HTML, /Enterprise entry offer/i);
   assert.match(PRICING_HTML, /action="\/go\/diagnostic-pay"/);
   assert.match(PRICING_HTML, /\$499/);
-  assert.doesNotMatch(PRICING_HTML, /\/checkout\/pro|workflow-sprint-intake|\/go\/sprint/i);
-  assert.doesNotMatch(PRICING_HTML, /\$19|\$149|\$1,500|\$3,000|\$10,000|\$15,000/);
+  assert.match(PRICING_HTML, /\/checkout\/pro/);
+  assert.match(PRICING_HTML, /Start Pro — \$19\/mo/);
+  assert.match(PRICING_HTML, /\$19/);
+  assert.match(PRICING_HTML, /\$149/);
+  assert.doesNotMatch(PRICING_HTML, /workflow-sprint-intake|\/go\/sprint/i);
+  assert.doesNotMatch(PRICING_HTML, /\$1,500|\$3,000|\$10,000|\$15,000/);
 });
 
 test('free-tier limits remain code truth without crowding the cash path', () => {
@@ -38,7 +45,7 @@ test('free-tier limits remain code truth without crowding the cash path', () => 
   assert.doesNotMatch(PRICING_HTML, /2 captures\/day|10 total|3 active prevention rules/i);
 });
 
-test('legacy Pro detail stays code-backed off the primary cash path', () => {
+test('Pro detail stays code-backed and is linked from primary cash paths', () => {
   const server = fs.readFileSync(path.join(ROOT, 'src', 'api', 'server.js'), 'utf8');
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
@@ -46,8 +53,8 @@ test('legacy Pro detail stays code-backed off the primary cash path', () => {
   assert.match(PRO_HTML, /DPO/i);
   assert.match(server, /'\/v1\/dpo\/export'/);
   assert.ok(pkg.files.includes('public/dashboard.html'));
-  assert.doesNotMatch(HOME_HTML, /\/checkout\/pro/i);
-  assert.doesNotMatch(PRICING_HTML, /\/checkout\/pro/i);
+  assert.match(HOME_HTML, /\/checkout\/pro/i);
+  assert.match(PRICING_HTML, /\/checkout\/pro/i);
 });
 
 test('pricing hides hosted team offers and states the availability boundary', () => {

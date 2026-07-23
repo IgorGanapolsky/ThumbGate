@@ -823,12 +823,14 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /Enterprise Workflow Gate/i);
   assert.match(body, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(body, /Buy the \$499 enterprise gate/i);
+  assert.match(body, /Start Pro — \$19\/mo/i);
+  assert.match(body, /\/checkout\/pro/);
   assert.match(body, /One configured local gate and its regression test/i);
   assert.match(body, /warn by default/i);
   assert.match(body, /strict mode/i);
   assert.doesNotMatch(body, /learns from every mistake/i);
-  assert.doesNotMatch(body, /Thompson Sampling|DPO|LanceDB|MemAlign|FTS5/i);
-  assert.doesNotMatch(body, /\/checkout\/pro|\/go\/sprint|href="[^"]*workflow-sprint-intake/i);
+  assert.doesNotMatch(body, /Thompson Sampling|LanceDB|MemAlign|FTS5/i);
+  assert.doesNotMatch(body, /\/go\/sprint|href="[^"]*workflow-sprint-intake/i);
   assert.match(body, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
   assert.match(body, /FAQPage/);
   assert.match(body, /SoftwareApplication/);
@@ -1018,15 +1020,19 @@ test('pricing page is the single source of truth for what ThumbGate sells', asyn
   const body = await res.text();
   assert.match(body, /Enterprise Workflow Gate/i);
   assert.match(body, /\$499/);
+  assert.match(body, /\$19/);
+  assert.match(body, /\$149/);
+  assert.match(body, /Start Pro — \$19\/mo/);
+  assert.match(body, /\/checkout\/pro/);
   assert.match(body, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(body, /name="customer_email"[^>]*required/);
   assert.match(body, /one configured local pre-action gate/i);
   assert.match(body, /regression test/i);
   assert.match(body, /rollout and rollback proof/i);
-  assert.doesNotMatch(body, /\$19|\$149|\$1,500|\$3,000|\$10,000|\$15,000/);
+  assert.doesNotMatch(body, /\$1,500|\$3,000|\$10,000|\$15,000/);
   assert.doesNotMatch(body, /buy\.stripe\.com/);
   assert.doesNotMatch(body, /mailto:igor\.ganapolsky@gmail\.com/);
-  assert.doesNotMatch(body, /\/checkout\/pro|\/go\/sprint|workflow-sprint-intake/);
+  assert.doesNotMatch(body, /\/go\/sprint|workflow-sprint-intake/);
   assert.match(body, /href="\/support"/);
 });
 

@@ -14,9 +14,9 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://thumbgate.ai/og.png">
   <title>ThumbGate: the self-improving firewall for AI agents</title>
-  <meta name="description" content="ThumbGate is the self-improving firewall for AI agents under your control. The $499 offer installs one hard, test-backed safety gate for a supported AI-agent workflow in two business days.">
+  <meta name="description" content="ThumbGate is the self-improving firewall for AI agents under your control. Self-serve is $19/mo; the $499 managed entry installs one hard, test-backed safety gate for a supported AI-agent workflow in two business days.">
   <meta property="og:title" content="ThumbGate: the self-improving firewall for AI agents">
-  <meta property="og:description" content="Every approval teaches it what to allow, block, or escalate next time. Self-improving under your control—not a silent policy rewrite. $499 managed setup for one workflow.">
+  <meta property="og:description" content="Every approval teaches it what to allow, block, or escalate next time. Self-improving under your control. Self-serve $19/mo, or $499 managed setup for one workflow.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="__APP_ORIGIN__/">
   <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script>
@@ -193,7 +193,7 @@
     .nav-links { display: flex; align-items: center; gap: 24px; }
     .nav-links > a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 700; }
     .nav-links > a:hover { color: var(--text); }
-    .nav-buy, .button-primary {
+    .nav-buy, .button-primary, .button-pro {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -207,6 +207,49 @@
       font-weight: 850 !important;
       text-decoration: none;
     }
+    .nav-enterprise {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      border: 1px solid rgba(86, 227, 159, 0.45);
+      border-radius: 10px;
+      padding: 0 14px;
+      color: var(--green) !important;
+      background: rgba(86, 227, 159, 0.08);
+      font-weight: 800 !important;
+      font-size: 13px !important;
+      text-decoration: none;
+    }
+    .nav-enterprise:hover { background: rgba(86, 227, 159, 0.14); color: var(--text) !important; }
+    .offer-stack { display: grid; gap: 14px; }
+    .pro-card {
+      padding: 22px 24px;
+      border: 1px solid rgba(56, 215, 255, 0.35);
+      border-radius: 16px;
+      background: linear-gradient(160deg, rgba(18, 28, 40, 0.98), rgba(12, 16, 24, 0.98));
+    }
+    .pro-card .price strong { color: var(--cyan); }
+    .pro-card h2 { margin: 0 0 6px; font-size: 20px; }
+    .pro-card > p { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
+    .pro-card .button-pro { width: 100%; min-height: 48px; background: var(--cyan); color: #041016 !important; box-shadow: 0 12px 35px rgba(56, 215, 255, 0.18); }
+    .pro-card .checkout-note { margin: 10px 0 0 !important; color: var(--muted) !important; font-size: 12px; text-align: center; }
+    .offer-points { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+    .offer-points li {
+      position: relative;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .offer-points li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: var(--green);
+      font-weight: 900;
+    }
+    .checkout-card .button-primary { width: 100%; }
     .hero { padding: clamp(72px, 10vw, 128px) 0 72px; }
     .hero-grid { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr); gap: clamp(42px, 7vw, 88px); align-items: center; }
     .eyebrow, .section-kicker { color: var(--green); font: 800 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.13em; text-transform: uppercase; }
@@ -343,7 +386,8 @@
     .footer-links { display: flex; flex-wrap: wrap; gap: 18px; }
     .footer-links a { color: var(--muted); }
     @media (max-width: 840px) {
-      .nav-links > a:not(.nav-buy) { display: none; }
+      .nav-links > a:not(.nav-buy):not(.nav-enterprise) { display: none; }
+      .nav-links { gap: 10px; }
       .hero-grid, .proof-grid { grid-template-columns: 1fr; }
       .loop, .deliverables { grid-template-columns: 1fr; }
       .loop-step:not(:last-child)::after { content: "↓"; top: auto; right: 50%; bottom: -28px; transform: translateX(50%); }
@@ -351,10 +395,10 @@
     @media (max-width: 520px) {
       .shell { width: min(calc(100% - 24px), var(--max)); }
       .nav-inner { min-height: 62px; }
-      .nav-buy { padding: 0 13px; font-size: 13px; }
+      .nav-buy, .nav-enterprise { padding: 0 10px; font-size: 12px; min-height: 38px; }
       .hero { padding-top: 62px; }
       h1 { font-size: 46px; }
-      .checkout-card { padding: 22px 18px; }
+      .checkout-card, .pro-card { padding: 22px 18px; }
     }
   </style>
 </head>
@@ -367,9 +411,10 @@
       </a>
       <div class="nav-links">
         <a href="#how-it-works">How it works</a>
-        <a href="#deliverables">What you get</a>
+        <a href="#offers">Pricing</a>
         <a href="#proof">Proof</a>
-        <a class="nav-buy" href="#buy" data-offer-link data-cta-id="nav_diagnostic_buy">Enterprise gate · $499</a>
+        <a class="nav-buy" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_nav&amp;utm_campaign=pro_self_serve&amp;cta_id=nav_pro_buy&amp;cta_placement=nav&amp;plan_id=pro" data-offer-link data-cta-id="nav_pro_buy">Pro · $19/mo</a>
+        <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="nav_diagnostic_buy">Enterprise · $499</a>
       </div>
     </div>
   </nav>
@@ -382,7 +427,7 @@
           <div class="eyebrow">Self-improving under your control</div>
           <h1>Self-Improving Firewall for Your AI Agents.</h1>
           <p class="hero-lede">Every approval teaches it what to allow, block, or escalate next time.</p>
-          <p class="fit-line"><strong>$499 enterprise entry offer</strong> for engineering and security leads using Claude Code, Cursor, Codex, or similar agents after a real workflow failure.</p>
+          <p class="fit-line"><strong>Two paid paths:</strong> self-serve <strong>Pro at $19/mo</strong> for operators, or the <strong>$499 enterprise entry offer</strong> for engineering and security leads using Claude Code, Cursor, Codex, or similar agents after a real workflow failure.</p>
           <div class="spec-chips" aria-label="What the self-improving firewall does">
             <span class="spec-chip"><strong>Capture</strong> feedback</span>
             <span class="spec-chip"><strong>Rank</strong> lessons</span>
@@ -390,31 +435,46 @@
             <span class="spec-chip"><strong>Check</strong> next action</span>
           </div>
           <a class="proof-link" href="#proof">See a strict-mode deny example ↓</a>
-          <p class="install-hint"><code>npx thumbgate init</code> free local evaluate · <a href="/guide">setup guide</a></p>
+          <p class="install-hint"><code>npx thumbgate init</code> free local evaluate · <a href="/guide">setup guide</a> · <a href="/pricing">full pricing</a></p>
         </div>
-        <form id="buy" class="checkout-card" action="/go/diagnostic-pay" method="POST" data-primary-checkout>
-          <span id="workflow-sprint-intake" data-legacy-intake-alias aria-hidden="true"></span>
-          <input type="hidden" name="utm_source" value="website">
-          <input type="hidden" name="utm_medium" value="homepage_checkout">
-          <input type="hidden" name="utm_campaign" value="managed_workflow_gate">
-          <input type="hidden" name="utm_content" value="hero_direct_checkout">
-          <input type="hidden" name="cta_id" value="homepage_diagnostic_buy">
-          <input type="hidden" name="cta_placement" value="hero">
-          <input type="hidden" name="plan_id" value="sprint_diagnostic">
-          <input type="hidden" name="landing_path" value="/">
-          <div class="price"><strong>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</strong><span>one time</span></div>
-          <h2>Enterprise Workflow Gate</h2>
-          <p><strong>Managed AI Agent Workflow Gate.</strong> Bring the failure. Leave with one configured gate and proof it works.</p>
-          <label for="buyer-email">Work email for the receipt</label>
-          <input id="buyer-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
-          <button class="button-primary" type="submit" data-revenue-cta data-cta-id="homepage_diagnostic_buy" data-cta-placement="hero">Buy the $499 enterprise gate</button>
-          <p class="checkout-note">Secure Stripe checkout. No subscription.</p>
-          <ul class="offer-points">
-            <li>60-minute working review for one workflow</li>
-            <li>One configured local gate and its regression test</li>
-            <li>Rollout and rollback proof within two business days</li>
-          </ul>
-        </form>
+        <div id="offers" class="offer-stack">
+          <aside class="pro-card" id="pro" aria-label="ThumbGate Pro subscription">
+            <div class="price"><strong>$19</strong><span>/mo · or $149/yr</span></div>
+            <h2>Pro</h2>
+            <p><strong>Self-serve for individual operators.</strong> Local enforcement proof, dashboard evidence, recall, and proof-ready exports—start today.</p>
+            <a class="button-pro" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=pro_self_serve&amp;cta_id=homepage_pro_buy&amp;cta_placement=hero&amp;plan_id=pro" data-offer-link data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="hero">Start Pro — $19/mo</a>
+            <p class="checkout-note">Hosted checkout · cancel anytime · free local evaluate stays free</p>
+            <ul class="offer-points">
+              <li>Personal enforcement proof and local dashboard</li>
+              <li>Recall, managed adapter coverage, proof-ready exports</li>
+              <li>Preference-pair export for model-hardening workflows</li>
+            </ul>
+          </aside>
+          <form id="buy" class="checkout-card" action="/go/diagnostic-pay" method="POST" data-primary-checkout>
+            <span id="workflow-sprint-intake" data-legacy-intake-alias aria-hidden="true"></span>
+            <span id="enterprise-gate"></span>
+            <input type="hidden" name="utm_source" value="website">
+            <input type="hidden" name="utm_medium" value="homepage_checkout">
+            <input type="hidden" name="utm_campaign" value="managed_workflow_gate">
+            <input type="hidden" name="utm_content" value="hero_direct_checkout">
+            <input type="hidden" name="cta_id" value="homepage_diagnostic_buy">
+            <input type="hidden" name="cta_placement" value="hero">
+            <input type="hidden" name="plan_id" value="sprint_diagnostic">
+            <input type="hidden" name="landing_path" value="/">
+            <div class="price"><strong>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</strong><span>one time</span></div>
+            <h2>Enterprise Workflow Gate</h2>
+            <p><strong>Managed AI Agent Workflow Gate.</strong> Bring the failure. Leave with one configured gate and proof it works.</p>
+            <label for="buyer-email">Work email for the receipt</label>
+            <input id="buyer-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
+            <button class="button-primary" type="submit" data-revenue-cta data-cta-id="homepage_diagnostic_buy" data-cta-placement="hero">Buy the $499 enterprise gate</button>
+            <p class="checkout-note">Secure Stripe checkout. No subscription. One workflow, not an org-wide platform license.</p>
+            <ul class="offer-points">
+              <li>60-minute working review for one workflow</li>
+              <li>One configured local gate and its regression test</li>
+              <li>Rollout and rollback proof within two business days</li>
+            </ul>
+          </form>
+        </div>
       </div>
     </section>
 
@@ -540,10 +600,13 @@ next      decision recorded before execution</pre>
 
     <section class="final">
       <div class="shell">
-        <div class="section-kicker">One cash path</div>
-        <h2 class="section-title">Bring the failure that already cost you time.</h2>
-        <p class="section-lede">We install the first gate, wire the proof, and leave the firewall better for the next attempt—not another policy deck.</p>
-        <a class="nav-buy" href="#buy" data-offer-link data-cta-id="final_diagnostic_buy">Buy the $499 enterprise gate</a>
+        <div class="section-kicker">Two cash paths</div>
+        <h2 class="section-title">Start self-serve, or bring the failure that already cost you time.</h2>
+        <p class="section-lede">Pro is the self-serve subscription for operators. The $499 enterprise gate is a managed install for one painful workflow—not another policy deck.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:22px">
+          <a class="nav-buy" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_final&amp;utm_campaign=pro_self_serve&amp;cta_id=final_pro_buy&amp;cta_placement=final&amp;plan_id=pro" data-offer-link data-cta-id="final_pro_buy">Start Pro — $19/mo</a>
+          <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="final_diagnostic_buy">Buy the $499 enterprise gate</a>
+        </div>
       </div>
     </section>
   </main>
