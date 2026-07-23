@@ -120,11 +120,15 @@ test('landing page does not render empty revenue links', async () => {
   assert.doesNotMatch(html, /https:\/\/buy\.stripe\.com\/6oU00j8aw2iWdWh9uj3sI2K/);
   assert.match(html, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(html, /Buy the \$499 enterprise gate/);
-  assert.doesNotMatch(html, /\/checkout\/pro|\/go\/sprint|href="[^"]*workflow-sprint-intake/i);
+  // 2026-07-23: CEO reversed the single-cash-path policy — $19/mo Pro is a
+  // restored secondary self-serve link, never the primary form action.
+  assert.doesNotMatch(html, /\/go\/sprint|href="[^"]*workflow-sprint-intake/i);
+  assert.doesNotMatch(html, /action="[^"]*\/checkout\/pro/i);
+  assert.match(html, /class="pro-alt-offer"[^>]*>[^<]*<a href="\/checkout\/pro/);
   assert.match(html, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
 });
 
-test('landing page presents one fixed-price managed offer clearly', async () => {
+test('landing page presents $499 as the primary offer, with Pro only secondary', async () => {
   const res = await fetch(`${origin}/`);
   assert.equal(res.status, 200);
   const html = await res.text();
@@ -133,7 +137,8 @@ test('landing page presents one fixed-price managed offer clearly', async () => 
   assert.match(html, /One configured local gate and its regression test/);
   assert.match(html, /Rollout and rollback proof within two business days/);
   assert.match(html, /one supported local workflow/i);
-  assert.doesNotMatch(html, /\$19|\$149|\$1,500|\$3,000|\$10,000|\$15,000/);
+  assert.doesNotMatch(html, /\$149|\$1,500|\$3,000|\$10,000|\$15,000/);
+  assert.ok(html.indexOf('$499') < html.indexOf('/checkout/pro'));
 });
 
 test('landing page explains pre-action enforcement instead of passive logging', async () => {

@@ -828,7 +828,11 @@ test('root serves the landing page by default', async () => {
   assert.match(body, /strict mode/i);
   assert.doesNotMatch(body, /learns from every mistake/i);
   assert.doesNotMatch(body, /Thompson Sampling|DPO|LanceDB|MemAlign|FTS5/i);
-  assert.doesNotMatch(body, /\/checkout\/pro|\/go\/sprint|href="[^"]*workflow-sprint-intake/i);
+  // 2026-07-23: CEO reversed the single-cash-path policy — $19/mo Pro is a
+  // restored secondary self-serve link, never the primary form action.
+  assert.doesNotMatch(body, /\/go\/sprint|href="[^"]*workflow-sprint-intake/i);
+  assert.doesNotMatch(body, /action="[^"]*\/checkout\/pro/i);
+  assert.match(body, /class="pro-alt-offer"[^>]*>[^<]*<a href="\/checkout\/pro/);
   assert.match(body, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
   assert.match(body, /FAQPage/);
   assert.match(body, /SoftwareApplication/);
@@ -1023,10 +1027,14 @@ test('pricing page is the single source of truth for what ThumbGate sells', asyn
   assert.match(body, /one configured local pre-action gate/i);
   assert.match(body, /regression test/i);
   assert.match(body, /rollout and rollback proof/i);
-  assert.doesNotMatch(body, /\$19|\$149|\$1,500|\$3,000|\$10,000|\$15,000/);
+  assert.doesNotMatch(body, /\$149|\$1,500|\$3,000|\$10,000|\$15,000/);
   assert.doesNotMatch(body, /buy\.stripe\.com/);
   assert.doesNotMatch(body, /mailto:igor\.ganapolsky@gmail\.com/);
-  assert.doesNotMatch(body, /\/checkout\/pro|\/go\/sprint|workflow-sprint-intake/);
+  assert.doesNotMatch(body, /\/go\/sprint|workflow-sprint-intake/);
+  // 2026-07-23: CEO reversed the single-cash-path policy — $19/mo Pro is a
+  // restored secondary self-serve link, never the primary form action.
+  assert.doesNotMatch(body, /action="[^"]*\/checkout\/pro/i);
+  assert.match(body, /class="pro-alt-offer"[^>]*>[^<]*<a href="\/checkout\/pro/);
   assert.match(body, /href="\/support"/);
 });
 

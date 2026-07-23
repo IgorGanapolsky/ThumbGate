@@ -6,7 +6,10 @@ test.describe('/pricing single-offer cash path', () => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Stop one expensive agent mistake');
     await expect(page.locator('.price')).toHaveText('$499');
     await expect(page.locator('form[data-primary-checkout]')).toHaveCount(1);
-    await expect(page.getByText('$19', { exact: true })).toHaveCount(0);
+    // 2026-07-23: CEO reversed the single-cash-path policy — $19/mo Pro is a
+    // restored secondary self-serve link, never the primary form action.
+    await expect(page.locator('form[action*="/checkout/pro"]')).toHaveCount(0);
+    await expect(page.locator('.pro-alt-offer a[href*="/checkout/pro"]')).toHaveCount(1);
     await expect(page.getByText('$1,500', { exact: true })).toHaveCount(0);
   });
 

@@ -17,7 +17,10 @@ test.describe('/ single-offer conversion path', () => {
     await expect(page.locator('.loop-step')).toHaveCount(4);
     await expect(page.locator('.decision')).toHaveText(['ALLOW', 'WARN', 'DENY']);
 
-    await expect(page.locator('a[href*="/checkout/pro"]')).toHaveCount(0);
+    // 2026-07-23: CEO reversed the single-cash-path policy — $19/mo Pro is a
+    // restored secondary self-serve link, never the primary form action.
+    await expect(page.locator('form[action*="/checkout/pro"]')).toHaveCount(0);
+    await expect(page.locator('.pro-alt-offer a[href*="/checkout/pro"]')).toHaveCount(1);
     await expect(page.locator('#workflow-sprint-intake[data-legacy-intake-alias]')).toHaveCount(1);
   });
 
