@@ -6,6 +6,7 @@
 
 - Category: pre-action firewall / reliability gateway for agent tool calls
 - Differentiator: self-improving control plane (capture → rank lessons → promote repeated failures → expire stale gates → check the next action), not static policy alone and not model-weight updates
+- Transparency: the promotion/demotion/ranking logic ships in the public npm bundle (MIT licensed), not withheld behind a paywall — `npm pack thumbgate` to inspect it
 - Paid entry: $499 Managed AI Agent Workflow Gate for one supported repeated workflow failure
 - Free wedge: `npx thumbgate init` local evaluate
 
