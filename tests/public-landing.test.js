@@ -147,6 +147,10 @@ test('homepage explains the product with one four-stage self-improving loop', ()
   assert.match(landingPage, /Under the hood/);
   assert.match(landingPage, /initLoopDemos|data-loop-step/);
   assert.match(landingPage, /THUMBGATE_STRICT_ENFORCEMENT|warn-by-default/);
+  // Valid interactive cards: div[role=tab], not <button> wrapping <h3>/<div>
+  // (invalid nesting auto-closes the control and breaks clicks in browsers).
+  assert.match(landingPage, /<div class="loop-step" role="tab" tabindex="0"/);
+  assert.doesNotMatch(landingPage, /<button[^>]*class="loop-step"/);
 });
 
 test('paid wedge includes managed implementation, regression, and rollout proof', () => {
