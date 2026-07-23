@@ -138,6 +138,14 @@
           "@type": "Answer",
           "text": "No. ThumbGate does not change model weights. It improves the external control layer by storing feedback as local lessons, re-ranking relevant lessons, promoting repeated negative patterns into gates, and expiring stale auto-promoted gates."
         }
+      },
+      {
+        "@type": "Question",
+        "name": "Is the self-improving logic a black box I have to trust blindly?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. The promotion, demotion, and lesson-ranking logic ships in the public npm bundle under an MIT license — run npm pack thumbgate and read it yourself. Your lessons live in a local SQLite file you own, not a server you can't query. Paid tiers add hosted sync, the dashboard, and adapter coverage, not access to intelligence withheld from the free install."
+        }
       }
     ]
   }
@@ -504,7 +512,7 @@ next      decision recorded before execution</pre>
     <section id="faq">
       <div class="shell">
         <div class="section-kicker">Before you buy</div>
-        <h2 class="section-title">Four questions, answered plainly.</h2>
+        <h2 class="section-title">Five questions, answered plainly.</h2>
         <div class="faq-list">
           <div class="faq-item open">
             <button class="faq-q" type="button" aria-expanded="true">What do I get for $499?</button>
@@ -521,6 +529,10 @@ next      decision recorded before execution</pre>
           <div class="faq-item">
             <button class="faq-q" type="button" aria-expanded="false">Does self-improving mean ThumbGate retrains my model?</button>
             <div class="faq-a">No. ThumbGate does not change model weights. It improves the external control layer by storing feedback as local lessons, re-ranking relevant lessons, promoting repeated negative patterns into gates, and expiring stale auto-promoted gates.</div>
+          </div>
+          <div class="faq-item">
+            <button class="faq-q" type="button" aria-expanded="false">Is the self-improving logic a black box I have to trust blindly?</button>
+            <div class="faq-a">No. The promotion, demotion, and lesson-ranking logic ships in the public npm bundle under an MIT license — run <code>npm pack thumbgate</code> and read it yourself. Your lessons live in a local SQLite file you own, not a server you can't query. Paid tiers add hosted sync, the dashboard, and adapter coverage, not access to intelligence withheld from the free install.</div>
           </div>
         </div>
       </div>

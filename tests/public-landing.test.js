@@ -147,7 +147,7 @@ test('enforcement promise distinguishes default denies from strict-mode blocks',
   assert.match(landingPage, /mode\s+strict enforcement[\s\S]*decision\s+<span class="red">DENY<\/span>/i);
 });
 
-test('FAQPage JSON-LD matches the four visible buyer questions', () => {
+test('FAQPage JSON-LD matches the five visible buyer questions', () => {
   const jsonLd = parseJsonLd(landingPage);
   const faqSchema = jsonLd.find((document) => document['@type'] === 'FAQPage');
   const visibleFaq = visibleFaqAnswers(landingPage);
@@ -155,8 +155,8 @@ test('FAQPage JSON-LD matches the four visible buyer questions', () => {
   assert.ok(jsonLd.some((document) => document['@type'] === 'SoftwareApplication'));
   assert.ok(jsonLd.some((document) => document['@type'] === 'Service'));
   assert.ok(faqSchema);
-  assert.equal(faqSchema.mainEntity.length, 4);
-  assert.equal(visibleFaq.size, 4);
+  assert.equal(faqSchema.mainEntity.length, 5);
+  assert.equal(visibleFaq.size, 5);
   for (const entity of faqSchema.mainEntity) {
     const question = normalizeHtmlText(entity.name);
     const answer = normalizeHtmlText(entity.acceptedAnswer.text);
