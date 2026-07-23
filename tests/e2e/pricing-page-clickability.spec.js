@@ -1,19 +1,20 @@
 const { test, expect } = require('@playwright/test');
 
-test.describe('/pricing single-offer cash path', () => {
-  test('shows one fixed-price managed gate', async ({ page }) => {
+test.describe('/pricing dual-offer cash path', () => {
+  test('shows Pro self-serve and fixed-price managed gate', async ({ page }) => {
     await page.goto('/pricing');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Stop one expensive agent mistake');
-    await expect(page.locator('.price')).toHaveText('$499');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Self-serve Pro, or a managed gate');
+    await expect(page.getByRole('link', { name: 'Start Pro — $19/mo' })).toBeVisible();
+    await expect(page.locator('a[href*="/checkout/pro"]')).not.toHaveCount(0);
+    await expect(page.locator('#enterprise-gate .price')).toHaveText('$499');
     await expect(page.locator('form[data-primary-checkout]')).toHaveCount(1);
-    await expect(page.getByText('$19', { exact: true })).toHaveCount(0);
     await expect(page.getByText('$1,500', { exact: true })).toHaveCount(0);
   });
 
-  test('nav CTA moves to the same checkout form', async ({ page }) => {
+  test('nav Enterprise CTA moves to the managed checkout form', async ({ page }) => {
     await page.goto('/pricing');
     await page.locator('[data-cta-id="pricing_nav_buy"]').click();
-    await expect(page).toHaveURL(/\/pricing#buy$/);
+    await expect(page).toHaveURL(/\/pricing#enterprise-gate$/);
     await expect(page.locator('#pricing-email')).toBeVisible();
   });
 
