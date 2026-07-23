@@ -280,7 +280,7 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.doesNotMatch(publicLanding, /\$19|\$149|__PRO_PRICE_DOLLARS__/);
   assert.match(publicLanding, /__GA_BOOTSTRAP__/);
   assert.match(publicLanding, /__GOOGLE_SITE_VERIFICATION_META__/);
-  assert.match(publicLanding, /Stop the AI-agent mistake that keeps happening/i);
+  assert.match(publicLanding, /Self-Improving Firewall for Your AI Agents/i);
   assert.match(publicLanding, /test-backed verification evidence/i);
   assert.match(publicLanding, /strict-mode deny example/i);
   assert.match(publicLanding, /configured local gate and its regression test/i);

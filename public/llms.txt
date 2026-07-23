@@ -1,6 +1,13 @@
 # ThumbGate
 
-> ThumbGate is the local-first pre-action governance runtime for AI coding agents: Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and MCP-compatible tools. Thumbs-down feedback becomes history-aware lessons and PreToolUse checks that catch repeated mistakes before the next tool call. Stripe Connect marketplace engineering is a founder proof point, not the primary product category.
+> ThumbGate is the self-improving firewall for AI coding agents: Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode, and MCP-compatible tools. Thumbs-up/down feedback becomes reviewable local lessons; matching lessons are re-ranked per action; repeated negative patterns can promote from warning to blocking gates; stale auto-promoted gates expire; and PreToolUse checks gate the next tool call. Local-first by default. Stripe Connect marketplace engineering is a founder proof point, not the primary product category.
+
+## Positioning (2026-07)
+
+- Category: pre-action firewall / reliability gateway for agent tool calls
+- Differentiator: self-improving control plane (capture → rank lessons → promote repeated failures → expire stale gates → check the next action), not static policy alone and not model-weight updates
+- Paid entry: $499 Managed AI Agent Workflow Gate for one supported repeated workflow failure
+- Free wedge: `npx thumbgate init` local evaluate
 
 ## June 2026 Buyer Signal
 

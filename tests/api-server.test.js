@@ -819,7 +819,7 @@ test('root serves the landing page by default', async () => {
 
   const body = await res.text();
   assert.match(body, /ThumbGate/);
-  assert.match(body, /Stop the AI-agent mistake that keeps happening/i);
+  assert.match(body, /Self-Improving Firewall for Your AI Agents/i);
   assert.match(body, /Enterprise Workflow Gate/i);
   assert.match(body, /action="\/go\/diagnostic-pay" method="POST"/);
   assert.match(body, /Buy the \$499 enterprise gate/i);

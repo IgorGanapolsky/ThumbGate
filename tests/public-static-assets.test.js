@@ -141,9 +141,10 @@ test('landing page explains pre-action enforcement instead of passive logging', 
   assert.equal(res.status, 200);
   const html = await res.text();
 
-  assert.match(html, /Agent proposes/);
-  assert.match(html, /ThumbGate checks/);
-  assert.match(html, /Decision before execution/);
+  assert.match(html, /Capture feedback/);
+  assert.match(html, /Remember locally/);
+  assert.match(html, /Rank and refine/);
+  assert.match(html, /Gate the next action/);
   assert.match(html, />ALLOW</);
   assert.match(html, />WARN</);
   assert.match(html, />DENY</);
