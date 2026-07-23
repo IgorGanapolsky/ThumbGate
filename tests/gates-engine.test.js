@@ -1860,13 +1860,16 @@ test('network egress gate warns on executable egress but ignores URLs in read-on
 
 test('evaluateGatesAsync denies high-risk actions when recurring negative memory matches', async () => {
   // Isolation notes:
-  // - Clear local_only / taskScope so local-only-remote-side-effect cannot win.
+  // - Reset sandbox state files so prior suite tests cannot leave taskScope/local_only.
   // - Point THUMBGATE_GUARDS_PATH at a missing file so a fresh "allow" compiled
   //   artifact cannot short-circuit live hybrid evaluation (CI flake source).
-  // - Memory context must share ≥2 keywords with the serialized tool input
-  //   (hybrid hasTwoKeywordHits). Prefer "git push" + concrete path tokens.
+  // - Unique keyword tokens appear in BOTH feedback context and the Bash command
+  //   so hasTwoKeywordHits cannot miss after stopword filtering of "git".
+  // - Avoid DEFAULT_PROTECTED_FILE_GLOBS paths in changed_files (those short-circuit
+  //   memory deny when approval/scope logic treats the path as already governed).
   // - test:gates uses --test-concurrency=1: gates-engine mutates module path
   //   fields per test file and races under concurrent files.
+  cleanupStateFiles();
   const tmpConfig = makeTempPath('memory-only-gates.json');
   fs.writeFileSync(tmpConfig, JSON.stringify({ version: 1, gates: [] }));
   saveGovernanceState({ taskScope: null, protectedApprovals: [], branchGovernance: null });
@@ -1875,7 +1878,8 @@ test('evaluateGatesAsync denies high-risk actions when recurring negative memory
   const feedbackLog = makeTempPath('memory-feedback.jsonl');
   const attributedFeedback = makeTempPath('memory-attributed.jsonl');
   const missingGuards = makeTempPath('missing-pretool-guards.json');
-  const memoryContext = 'git push origin feature regression broke production';
+  // Unique tokens reduce collision with real local feedback in CI workspaces.
+  const memoryContext = 'zxqmemdeny git push origin feature regression broke production zxqmemdeny';
   const entries = [
     { id: 'mem-1', signal: 'negative', context: memoryContext, timestamp: new Date().toISOString() },
     { id: 'mem-2', signal: 'negative', context: memoryContext, timestamp: new Date().toISOString() },
@@ -1895,8 +1899,9 @@ test('evaluateGatesAsync denies high-risk actions when recurring negative memory
 
   try {
     const result = await evaluateGatesAsync('Bash', {
-      command: 'git push origin feature/x',
-      changed_files: ['src/app.js'],
+      // Include unique memory tokens so hybrid keyword match is deterministic.
+      command: 'git push origin feature/zxqmemdeny-regression',
+      changed_files: ['tmp/zxqmemdeny-scratch.js'],
     }, tmpConfig);
     assert.ok(result, `expected memory deny, got ${JSON.stringify(result)}`);
     assert.equal(result.decision, 'deny');
@@ -1914,6 +1919,7 @@ test('evaluateGatesAsync denies high-risk actions when recurring negative memory
     fs.rmSync(tmpConfig, { force: true });
     fs.rmSync(feedbackLog, { force: true });
     fs.rmSync(attributedFeedback, { force: true });
+    cleanupStateFiles();
   }
 });
 
