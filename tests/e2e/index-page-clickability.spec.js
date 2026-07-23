@@ -26,13 +26,16 @@ test.describe('/ dual-offer conversion path', () => {
     const panel = page.locator('#loop-panel');
     await expect(panel).toBeHidden();
 
-    await page.locator('[data-loop-step="1"]').click();
+    // Click the heading (not just the card edge) — proves the whole card is
+    // interactive even after browsers parse nested heading content.
+    await page.locator('[data-loop-step="1"] h3').click();
     await expect(panel).toBeVisible();
     await expect(panel).toContainText('Capture feedback');
     await expect(panel).toContainText('no-action');
     await expect(panel).toContainText('feedback-log.jsonl');
+    await expect(page.locator('[data-loop-step="1"]')).toHaveAttribute('aria-expanded', 'true');
 
-    await page.locator('[data-loop-step="4"]').click();
+    await page.locator('[data-loop-step="4"] h3').click();
     await expect(panel).toContainText('Gate the next action');
     await expect(panel).toContainText('warn-by-default');
     await page.locator('[data-gate-mode="strict"]').click();
