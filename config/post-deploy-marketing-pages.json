@@ -4,7 +4,7 @@
   "pages": [
     {
       "route": "/",
-      "sentinel": "Stop the AI-agent mistake that keeps happening",
+      "sentinel": "Self-Improving Firewall for Your AI Agents",
       "description": "Home page hero (lifeblood — never regress)"
     },
     {

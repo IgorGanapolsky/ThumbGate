@@ -10,16 +10,16 @@
 > Pre-action checks that flag repeated risky actions before execution and block matching actions when strict policy is enabled. Accepted feedback becomes local lessons; repeated failures can become prevention rules.
 
 ### Public Landing Page (thumbgate-production.up.railway.app)
-> ThumbGate's $499 workflow gate implements one hard, test-backed safety gate for a supported AI-agent workflow in two business days.
+> ThumbGate is the self-improving firewall for AI agents. The $499 offer installs one hard, test-backed safety gate for a supported AI-agent workflow in two business days.
 
 ### NPM package.json
-> ThumbGate Pre-Action Checks derive rules from repeated failures, flag risky tool calls, hard-block detected secret leaks, and block matches in strict mode.
+> ThumbGate Pre-Action Checks self-improve from ranked lessons and repeated failures, hard-block detected secret leaks, and block matches in strict mode.
 
 ### GitHub Repo About
 **Canonical source:** `config/github-about.json`
-> ThumbGate Pre-Action Checks derive rules from repeated failures, flag risky tool calls, hard-block detected secret leaks, and block matches in strict mode.
+> ThumbGate Pre-Action Checks self-improve from ranked lessons and repeated failures, hard-block detected secret leaks, and block matches in strict mode.
 
-**Canonical topics:** `thumbgate`, `pre-action-checks`, `mcp`, `mcp-server`, `ai-agents`, `agent-reliability`, `guardrails`, `ai-safety`, `developer-tools`, `feedback-loop`, `claude-code`, `cursor`, `codex`, `gemini`, `amp`, `opencode`, `thompson-sampling`
+**Canonical topics:** `thumbgate`, `pre-action-checks`, `mcp`, `mcp-server`, `ai-agents`, `agent-reliability`, `guardrails`, `ai-safety`, `developer-tools`, `feedback-loop`, `claude-code`, `cursor`, `codex`, `gemini`, `amp`, `opencode`, `thompson-sampling`, `self-improving-agents`
 
 ### Stripe Pro Offer
 **Title:** ThumbGate Pro — Personal Local Dashboard + DPO Export

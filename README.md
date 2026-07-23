@@ -6,11 +6,11 @@
   </a>
 </p>
 
-**AI coding agents repeat mistakes — and one wrong tool call can wipe a directory, leak a key, or push broken code.**
+**Self-Improving Firewall for Your AI Agents.** AI coding agents repeat mistakes — and one wrong tool call can wipe a directory, leak a key, or push broken code.
 
 ThumbGate is the local-first Pre-Action Checks engine for AI coding agents. It runs in the PreToolUse hook on your machine: it evaluates a proposed tool call and logs the decision before tool execution. It **hard-blocks detected secret leaks and two direct self-disable command classes by default** — commands that terminate the ThumbGate gate process or enable its bypass environment override. Other high-risk classes, including destructive deletes (`rm -rf`), force-push, fetch-and-run, direct guardrail-file edits, off-scope edits, and deploys, **warn and log by default**. Set `THUMBGATE_STRICT_ENFORCEMENT=1` to preserve deny decisions for every matched blocking rule. Works across configured Claude Code, Cursor, Codex, Gemini, Amp, Cline, and OpenCode integrations. No server is required on the local enforcement path. (Regulated-industry policy templates are roadmap directions, not shipped compliance claims.)
 
-Accepted feedback is stored as local lessons. Repeated concrete failures can become prevention rules that flag or block matching tool calls according to policy.
+Accepted feedback is stored as local lessons. Repeated concrete failures can become prevention rules that promote from warnings to blocking gates; relevant lessons are re-ranked for each proposed action; stale auto-promoted gates expire; and stale lessons archive. The firewall improves from operations without retraining the model.
 
 <p align="center">
   <img src="docs/media/thumbgate-demo.gif" alt="ThumbGate gating an AI agent's dangerous commands (rm -rf, force-push, chmod 777) in real time — flagging them by default and hard-blocking under strict mode, while letting safe commands through" width="820" />
