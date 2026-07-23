@@ -13,10 +13,10 @@
   <meta property="og:image" content="https://thumbgate.ai/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://thumbgate.ai/og.png">
-  <title>ThumbGate — Stop the AI-agent mistake that keeps happening</title>
-  <meta name="description" content="ThumbGate's $499 workflow gate implements one hard, test-backed safety gate for a supported AI-agent workflow in two business days.">
-  <meta property="og:title" content="ThumbGate — Stop the AI-agent mistake that keeps happening">
-  <meta property="og:description" content="The $499 Enterprise Workflow Gate turns one repeated AI-agent failure into a configured gate, regression test, and rollout proof.">
+  <title>ThumbGate — Self-Improving Firewall for AI Agents</title>
+  <meta name="description" content="Self-improving firewall for AI agents: ThumbGate's $499 workflow gate implements one hard, test-backed safety gate for a supported AI-agent workflow in two business days.">
+  <meta property="og:title" content="ThumbGate — Self-Improving Firewall for AI Agents">
+  <meta property="og:description" content="Not a static allowlist. ThumbGate captures corrections, promotes and demotes lessons, re-ranks rules, and gates the next tool call. $499 enterprise entry for one repeated workflow failure.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="__APP_ORIGIN__/">
   <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script>
@@ -39,8 +39,44 @@
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "macOS, Linux, Windows",
     "url": "__APP_ORIGIN__",
-    "description": "Local pre-action checks for AI coding agents. ThumbGate can deny detected secret exfiltration and gate-bypass commands by default, while strict mode blocks matching destructive-action rules.",
-    "codeRepository": "https://github.com/IgorGanapolsky/ThumbGate"
+    "description": "Self-improving firewall for AI coding agents. ThumbGate captures thumbs-up/down feedback, stores reviewable lessons, promotes or demotes rules over time, and runs pre-action checks before shell, file, git, deploy, or API tool calls. Detected secret exfiltration and gate-bypass commands are denied by default; strict mode blocks matching destructive-action rules.",
+    "codeRepository": "https://github.com/IgorGanapolsky/ThumbGate",
+    "featureList": [
+      "Pre-action PreToolUse checks for coding agents",
+      "Thumbs-up/down feedback becomes local lessons",
+      "Promotion, demotion, and re-ranking of prevention rules over time",
+      "Managed Enterprise Workflow Gate for one supported workflow",
+      "Local-first install with optional shared team enforcement"
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "How ThumbGate becomes a self-improving firewall",
+    "description": "Install local pre-action checks, capture a correction when an agent fails, and let ThumbGate promote the lesson into a rule that fires before the next tool call.",
+    "totalTime": "PT5M",
+    "step": [
+      {
+        "@type": "HowToStep",
+        "position": 1,
+        "name": "Agent proposes an action",
+        "text": "A coding agent asks to run a command, write a file, call a tool, or perform another governed action."
+      },
+      {
+        "@type": "HowToStep",
+        "position": 2,
+        "name": "ThumbGate checks before execution",
+        "text": "Local rules evaluate the proposed action, the configured mode, and the available workflow context, then return allow, warn, or deny."
+      },
+      {
+        "@type": "HowToStep",
+        "position": 3,
+        "name": "Feedback improves the firewall",
+        "text": "Accepted behavior or a thumbs-down correction becomes a reviewable lesson, then a promoted or demoted rule for the next matching tool call."
+      }
+    ]
   }
   </script>
   <script type="application/ld+json">
@@ -153,10 +189,61 @@
     .eyebrow, .section-kicker { color: var(--green); font: 800 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.13em; text-transform: uppercase; }
     h1 { max-width: 760px; margin: 18px 0; font-size: clamp(46px, 7vw, 78px); line-height: 0.98; letter-spacing: -0.055em; }
     .hero-lede { max-width: 650px; margin: 0 0 24px; color: #c5ceda; font-size: clamp(18px, 2vw, 22px); line-height: 1.5; }
-    .fit-line { margin: 0 0 30px; color: var(--muted); font-size: 14px; }
+    .fit-line { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
     .fit-line strong { color: var(--text); }
+    .spec-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 22px; }
+    .spec-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(56, 215, 255, 0.28);
+      border-radius: 999px;
+      padding: 6px 11px;
+      color: #d7e6f3;
+      background: rgba(17, 23, 34, 0.72);
+      font: 750 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .spec-chip strong { color: var(--cyan); font-weight: 850; }
     .proof-link { color: var(--cyan); font-weight: 750; text-decoration: none; }
     .proof-link:hover { text-decoration: underline; }
+    .install-hint {
+      margin: 14px 0 0;
+      color: var(--muted);
+      font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .install-hint code {
+      color: var(--cyan);
+      background: rgba(56, 215, 255, 0.08);
+      border: 1px solid rgba(56, 215, 255, 0.18);
+      border-radius: 6px;
+      padding: 2px 7px;
+    }
+    .install-hint a { color: var(--cyan); font-weight: 750; text-decoration: none; }
+    .install-hint a:hover { text-decoration: underline; }
+    .terminal-chrome {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 16px;
+      border-bottom: 1px solid #252f40;
+      background: #121824;
+      color: #8b97ab;
+      font: 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .terminal-chrome .dots { display: flex; gap: 7px; }
+    .terminal-chrome .dots span { width: 10px; height: 10px; border-radius: 50%; background: #536078; }
+    .terminal-chrome .title { color: #c8d2df; }
+    .terminal-status {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 16px 14px;
+      border-top: 1px solid #252f40;
+      color: #8b97ab;
+      font: 12px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .terminal-status .accent { color: var(--cyan); }
     .checkout-card {
       padding: 28px;
       border: 1px solid rgba(86, 227, 159, 0.35);
@@ -269,11 +356,18 @@
     <section class="hero">
       <div class="shell hero-grid">
         <div class="hero-copy">
-          <div class="eyebrow">One workflow. One failure. One enforceable boundary.</div>
+          <div class="eyebrow">Self-Improving Firewall for AI agents</div>
           <h1>Stop the AI-agent mistake that keeps happening.</h1>
-          <p class="hero-lede">ThumbGate turns one repeated risky workflow into a clear block, warning, or human-review rule—with a test your team can verify.</p>
+          <p class="hero-lede">Feedback becomes a rule that improves over time: block, warn, or human review for one repeated workflow—with a test you can verify.</p>
           <p class="fit-line"><strong>$499 enterprise entry offer</strong> for engineering and security leads using Claude Code, Cursor, Codex, or similar agents after a real workflow failure.</p>
+          <div class="spec-chips" aria-label="What the self-improving firewall does">
+            <span class="spec-chip"><strong>Capture</strong> thumbs</span>
+            <span class="spec-chip"><strong>Promote</strong> lessons</span>
+            <span class="spec-chip"><strong>Re-rank</strong> rules</span>
+            <span class="spec-chip"><strong>Gate</strong> next tool call</span>
+          </div>
           <a class="proof-link" href="#proof">See a strict-mode deny example ↓</a>
+          <p class="install-hint"><code>npx thumbgate init</code> free local evaluate · <a href="/guide">setup guide</a></p>
         </div>
         <form id="buy" class="checkout-card" action="/go/diagnostic-pay" method="POST" data-primary-checkout>
           <span id="workflow-sprint-intake" data-legacy-intake-alias aria-hidden="true"></span>
@@ -303,9 +397,9 @@
 
     <section id="how-it-works">
       <div class="shell">
-        <div class="section-kicker">The whole product loop</div>
-        <h2 class="section-title">The action gets checked before the tool runs.</h2>
-        <p class="section-lede">No governance novel. ThumbGate sits between an agent’s proposed action and the shell, database, browser, or deployment it wants to touch.</p>
+        <div class="section-kicker">Self-improving product loop</div>
+        <h2 class="section-title">Pre-action checks—and the systems that refine them.</h2>
+        <p class="section-lede">No governance novel. ThumbGate sits between an agent’s proposed action and the shell, database, browser, or deployment it wants to touch. Corrections do not vanish into a black box: they become reviewable lessons and explicit rules.</p>
         <div class="loop" role="img" aria-label="Agent proposes an action, ThumbGate checks the action, then the action is allowed, warned, or denied">
           <article class="loop-step">
             <span class="loop-number">1</span>
@@ -328,7 +422,7 @@
             </div>
           </article>
         </div>
-        <p class="loop-back"><strong>👍 accepted behavior or 👎 a correction</strong> can become a reviewable local lesson, then an explicit rule for the next action.</p>
+        <p class="loop-back"><strong>👍 accepted behavior or 👎 a correction</strong> becomes a reviewable local lesson, then a promoted or demoted rule that re-ranks for the next tool call. The firewall improves without retraining the model.</p>
       </div>
     </section>
 
@@ -361,12 +455,22 @@
         <h2 class="section-title">Hard deny where configured. Honest warning everywhere else.</h2>
         <div class="proof-grid">
           <div class="terminal" aria-label="Illustrative strict-mode ThumbGate deny decision">
-            <div class="terminal-bar" aria-hidden="true"><span></span><span></span><span></span></div>
+            <div class="terminal-chrome" aria-hidden="true">
+              <div class="dots"><span></span><span></span><span></span></div>
+              <span class="title">thumbgate — pretooluse</span>
+              <span>local</span>
+            </div>
             <pre><span class="green">proposed</span>  git push --force origin main
 mode      strict enforcement
 rule      protect-main
+source    lesson · thumbs-down · force-push main
 decision  <span class="red">DENY</span>
-reason    force-push to protected branch</pre>
+reason    force-push to protected branch
+next      rule stays promoted for future matches</pre>
+            <div class="terminal-status" aria-hidden="true">
+              <span>reviewable decision</span>
+              <span><span class="accent">self-improving</span> · local lesson store</span>
+            </div>
           </div>
           <div class="proof-copy">
             <p>Detected secret exfiltration and attempts to kill or bypass the gate process are denied by default. Matching destructive actions warn by default and deny in strict mode.</p>
@@ -402,7 +506,7 @@ reason    force-push to protected branch</pre>
       <div class="shell">
         <div class="section-kicker">One cash path</div>
         <h2 class="section-title">Bring the failure that already cost you time.</h2>
-        <p class="section-lede">We will install the first gate before another agent repeats it.</p>
+        <p class="section-lede">We install the first gate, wire the proof, and leave the firewall better for the next attempt—not another policy deck.</p>
         <a class="nav-buy" href="#buy" data-offer-link data-cta-id="final_diagnostic_buy">Buy the $499 enterprise gate</a>
       </div>
     </section>

@@ -99,11 +99,22 @@ test('hero names one buyer, one failure, and the enterprise entry outcome', () =
   );
   const lede = normalizeHtmlText((hero.match(/<p class="hero-lede">([\s\S]*?)<\/p>/) || [])[1]);
 
+  assert.match(landingPage, /Self-Improving Firewall for AI Agents/i);
+  assert.match(hero, /Self-Improving Firewall for AI agents/i);
   assert.match(hero, /Stop the AI-agent mistake that keeps happening/);
   assert.match(hero, /engineering and security leads/);
   assert.match(hero, /Enterprise Workflow Gate/);
   assert.match(hero, /\$499 enterprise entry offer/);
+  assert.match(hero, /Promote[\s\S]*lessons|lessons[\s\S]*Promote/i);
+  assert.match(hero, /npx thumbgate init/);
   assert.ok(lede.split(/\s+/).length <= 30, `hero lede is ${lede.split(/\s+/).length} words`);
+});
+
+test('how-it-works sells the self-improving loop, not a static allowlist', () => {
+  assert.match(landingPage, /Pre-action checks—and the systems that refine them/i);
+  assert.match(landingPage, /promoted or demoted rule that re-ranks/i);
+  assert.match(landingPage, /firewall improves without retraining the model/i);
+  assert.match(landingPage, /source\s+lesson · thumbs-down/i);
 });
 
 test('homepage explains the product with one three-step enforcement loop', () => {
