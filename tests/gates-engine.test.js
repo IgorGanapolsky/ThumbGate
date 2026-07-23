@@ -1859,30 +1859,46 @@ test('network egress gate warns on executable egress but ignores URLs in read-on
 });
 
 test('evaluateGatesAsync denies high-risk actions when recurring negative memory matches', async () => {
+  // Isolation notes:
+  // - Clear local_only / taskScope so local-only-remote-side-effect cannot win.
+  // - Point THUMBGATE_GUARDS_PATH at a missing file so a fresh "allow" compiled
+  //   artifact cannot short-circuit live hybrid evaluation (CI flake source).
+  // - Memory context must share ≥2 keywords with the serialized tool input
+  //   (hybrid hasTwoKeywordHits). Prefer "git push" + concrete path tokens.
+  // - test:gates uses --test-concurrency=1: gates-engine mutates module path
+  //   fields per test file and races under concurrent files.
   const tmpConfig = makeTempPath('memory-only-gates.json');
   fs.writeFileSync(tmpConfig, JSON.stringify({ version: 1, gates: [] }));
+  saveGovernanceState({ taskScope: null, protectedApprovals: [], branchGovernance: null });
+  saveConstraints({});
 
   const feedbackLog = makeTempPath('memory-feedback.jsonl');
   const attributedFeedback = makeTempPath('memory-attributed.jsonl');
+  const missingGuards = makeTempPath('missing-pretool-guards.json');
+  const memoryContext = 'git push origin feature regression broke production';
   const entries = [
-    { id: 'mem-1', signal: 'negative', context: 'git push AGENTS.md protected file regression', timestamp: new Date().toISOString() },
-    { id: 'mem-2', signal: 'negative', context: 'git push AGENTS.md protected file regression', timestamp: new Date().toISOString() },
-    { id: 'mem-3', signal: 'negative', context: 'git push AGENTS.md protected file regression', timestamp: new Date().toISOString() },
+    { id: 'mem-1', signal: 'negative', context: memoryContext, timestamp: new Date().toISOString() },
+    { id: 'mem-2', signal: 'negative', context: memoryContext, timestamp: new Date().toISOString() },
+    { id: 'mem-3', signal: 'negative', context: memoryContext, timestamp: new Date().toISOString() },
   ];
   fs.writeFileSync(feedbackLog, entries.map((entry) => JSON.stringify(entry)).join('\n') + '\n');
   fs.writeFileSync(attributedFeedback, '');
 
   const originalFeedbackLog = process.env.THUMBGATE_FEEDBACK_LOG;
   const originalAttributedFeedback = process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
+  const originalFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  const originalGuardsPath = process.env.THUMBGATE_GUARDS_PATH;
   process.env.THUMBGATE_FEEDBACK_LOG = feedbackLog;
   process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = attributedFeedback;
+  process.env.THUMBGATE_FEEDBACK_DIR = sandboxDir;
+  process.env.THUMBGATE_GUARDS_PATH = missingGuards;
 
   try {
     const result = await evaluateGatesAsync('Bash', {
       command: 'git push origin feature/x',
-      changed_files: ['AGENTS.md'],
+      changed_files: ['src/app.js'],
     }, tmpConfig);
-    assert.ok(result);
+    assert.ok(result, `expected memory deny, got ${JSON.stringify(result)}`);
     assert.equal(result.decision, 'deny');
     assert.equal(result.gate, 'memory-high-risk-default-deny');
     assert.match(result.message, /Recurring negative memory matched/i);
@@ -1891,6 +1907,10 @@ test('evaluateGatesAsync denies high-risk actions when recurring negative memory
     else process.env.THUMBGATE_FEEDBACK_LOG = originalFeedbackLog;
     if (originalAttributedFeedback === undefined) delete process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
     else process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = originalAttributedFeedback;
+    if (originalFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+    else process.env.THUMBGATE_FEEDBACK_DIR = originalFeedbackDir;
+    if (originalGuardsPath === undefined) delete process.env.THUMBGATE_GUARDS_PATH;
+    else process.env.THUMBGATE_GUARDS_PATH = originalGuardsPath;
     fs.rmSync(tmpConfig, { force: true });
     fs.rmSync(feedbackLog, { force: true });
     fs.rmSync(attributedFeedback, { force: true });
