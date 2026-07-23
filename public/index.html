@@ -643,25 +643,27 @@
         <h2 class="section-title">Pre-action checks—and the systems that refine them.</h2>
         <p class="section-lede">No governance novel. Corrections become reviewable local lessons; relevant lessons are re-ranked; repeated negative patterns can become explicit gates; and the next action is checked before execution. <strong style="color:var(--text)">Click a step</strong> to see what happens under the hood.</p>
         <div class="loop" role="tablist" aria-label="Self-improving product loop — click a step for under-the-hood demo">
-          <button type="button" class="loop-step" role="tab" id="loop-tab-1" data-loop-step="1" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
+          <!-- Cards are divs (not <button>) so headings/chips stay valid HTML; browsers
+               auto-close <button> around <h3>/<div>, which broke click targets. -->
+          <div class="loop-step" role="tab" tabindex="0" id="loop-tab-1" data-loop-step="1" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
             <span class="loop-number">1</span>
             <h3>Capture feedback</h3>
             <p>Record explicit 👍 or 👎 feedback with the action and outcome context that made it useful or wrong.</p>
             <span class="loop-hint">Under the hood ↓</span>
-          </button>
-          <button type="button" class="loop-step" role="tab" id="loop-tab-2" data-loop-step="2" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
+          </div>
+          <div class="loop-step" role="tab" tabindex="0" id="loop-tab-2" data-loop-step="2" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
             <span class="loop-number">2</span>
             <h3>Remember locally</h3>
             <p>Store a reviewable lesson that survives sessions and model changes without sending the control history into model weights.</p>
             <span class="loop-hint">Under the hood ↓</span>
-          </button>
-          <button type="button" class="loop-step" role="tab" id="loop-tab-3" data-loop-step="3" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
+          </div>
+          <div class="loop-step" role="tab" tabindex="0" id="loop-tab-3" data-loop-step="3" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
             <span class="loop-number">3</span>
             <h3>Rank and refine</h3>
             <p>Re-rank relevant lessons for the action. Repeated negative patterns can promote from warnings to blocking gates; stale gates expire.</p>
             <span class="loop-hint">Under the hood ↓</span>
-          </button>
-          <button type="button" class="loop-step" role="tab" id="loop-tab-4" data-loop-step="4" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
+          </div>
+          <div class="loop-step" role="tab" tabindex="0" id="loop-tab-4" data-loop-step="4" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
             <span class="loop-number">4</span>
             <h3>Gate the next action</h3>
             <p>The action is allowed, warned, or denied before the tool proceeds.</p>
@@ -671,7 +673,7 @@
               <span class="decision deny">DENY</span>
             </div>
             <span class="loop-hint">Under the hood ↓</span>
-          </button>
+          </div>
         </div>
         <div id="loop-panel" class="loop-panel" role="tabpanel" aria-labelledby="loop-tab-1" hidden>
           <div class="loop-panel-header">
@@ -1083,14 +1085,24 @@ next      decision recorded before execution</pre>
         });
       }
 
+      function activateTab(tab) {
+        const step = tab.getAttribute('data-loop-step');
+        if (activeStep === step) {
+          setOpen(null);
+        } else {
+          setOpen(step);
+          panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+
       tabs.forEach(function (tab) {
         tab.addEventListener('click', function () {
-          const step = tab.getAttribute('data-loop-step');
-          if (activeStep === step) {
-            setOpen(null);
-          } else {
-            setOpen(step);
-            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          activateTab(tab);
+        });
+        tab.addEventListener('keydown', function (event) {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            activateTab(tab);
           }
         });
       });
