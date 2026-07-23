@@ -29,6 +29,8 @@
 **Title:** ThumbGate Pro — Personal Local Dashboard + DPO Export
 **Description:** ThumbGate Pro gives individual operators a personal local dashboard, DPO export, advanced data exports, and review-ready workflow support. Enterprise remains intake-first for scoped shared-governance requirements; hosted team lesson sync and a hosted org dashboard are not general-availability runtime features.
 
+**Placement policy (updated 2026-07-23):** PR #2999 (2026-07-xx) removed the Pro lane from the primary conversion path entirely, citing near-zero self-serve conversion (documented elsewhere as 2,252 checkout sessions, 1 external completion). The CEO reversed this decision 2026-07-23 — Pro must be visible and reachable again on both `public/index.html` and `public/pricing.html`, but strictly as a secondary self-serve link (`.pro-alt-offer`, pointing to `/checkout/pro`) that appears *after* the primary $499 offer, never as a competing primary form action. `scripts/check-congruence.js` enforces this ordering, not Pro's absence.
+
 ### DEV.TO Blog Post
 **Title:** I built pre-action checks that flag Claude Code's repeat mistakes — and hard-block secret exfiltration by default
 

@@ -360,8 +360,16 @@ async function main() {
     'public/index.html must expose the one $499 managed gate offer'
   );
   check(
-    !/\/checkout\/pro|\/go\/sprint|href="[^"]*workflow-sprint-intake/i.test(landingHtml),
-    'public/index.html must not expose a competing Pro, sprint, or Enterprise cash path'
+    !/\/go\/sprint|href="[^"]*workflow-sprint-intake/i.test(landingHtml),
+    'public/index.html must not expose a competing sprint or Enterprise cash path'
+  );
+  // 2026-07-23: CEO reversed the "$19 Pro removed from primary path" policy —
+  // Pro must be visible again, but strictly as a secondary self-serve link
+  // (never the primary form action), so $499 stays the first/primary offer.
+  check(
+    !/action="[^"]*\/checkout\/pro/i.test(landingHtml)
+      && landingHtml.indexOf('$499') < landingHtml.indexOf('/checkout/pro'),
+    'public/index.html must keep $499 as the primary offer with Pro only as a secondary self-serve link'
   );
   check(
     /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/i.test(landingHtml),
@@ -372,8 +380,13 @@ async function main() {
     'public/pricing.html must use the same canonical managed-gate checkout route'
   );
   check(
-    !/\/checkout\/pro|\/go\/sprint|workflow-sprint-intake/i.test(pricingHtml),
-    'public/pricing.html must not expose a competing Pro, sprint, or Enterprise cash path'
+    !/\/go\/sprint|workflow-sprint-intake/i.test(pricingHtml),
+    'public/pricing.html must not expose a competing sprint or Enterprise cash path'
+  );
+  check(
+    !/action="[^"]*\/checkout\/pro/i.test(pricingHtml)
+      && pricingHtml.indexOf('$499') < pricingHtml.indexOf('/checkout/pro'),
+    'public/pricing.html must keep $499 as the primary offer with Pro only as a secondary self-serve link'
   );
   check(
     /ThumbGate Pre-Action Checks/i.test(githubAbout.githubDescription),

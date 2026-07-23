@@ -52,12 +52,16 @@ function visibleFaqAnswers(html) {
   ]));
 }
 
-test('homepage has one priced offer and one checkout form', () => {
+test('homepage has one primary priced offer and one primary checkout form', () => {
   const visibleText = visibleBodyText(landingPage);
-  const prices = [...visibleText.matchAll(/\$\d[\d,]*/g)].map((match) => match[0]);
+  const prices = [...visibleText.matchAll(/\$\d[\d,]*(?:\/mo)?/g)].map((match) => match[0]);
   const uniquePrices = [...new Set(prices)];
 
-  assert.deepEqual(uniquePrices, ['$499']);
+  // 2026-07-23: CEO reversed the single-cash-path policy — $499 stays the
+  // primary offer (must appear first), Pro $19/mo is a secondary self-serve
+  // link, not a second competing form on the page.
+  assert.deepEqual(uniquePrices, ['$499', '$19/mo']);
+  assert.ok(landingPage.indexOf('$499') < landingPage.indexOf('$19/mo'), '$499 must appear before the secondary Pro mention');
   assert.equal((landingPage.match(/data-primary-checkout/g) || []).length, 2);
   assert.equal((landingPage.match(/<form[^>]+action="\/go\/diagnostic-pay"/g) || []).length, 1);
   assert.match(landingPage, /method="POST"/);
@@ -70,10 +74,15 @@ test('visible text filtering consumes the complete script and style end tags', (
   assert.equal(visibleBodyText(html), 'shown after done');
 });
 
-test('homepage removes competing commercial funnels and conversion overlays', () => {
-  assert.doesNotMatch(landingPage, /\/checkout\/pro|\/go\/sprint|href="[^"]*workflow-sprint-intake/i);
+test('homepage removes competing sprint/Enterprise funnels but keeps Pro as a secondary self-serve link', () => {
+  assert.doesNotMatch(landingPage, /\/go\/sprint|href="[^"]*workflow-sprint-intake/i);
   assert.match(landingPage, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
-  assert.doesNotMatch(landingPage, /Start Pro|Upgrade to Pro|Enterprise pilot|newsletter/i);
+  // 2026-07-23: CEO reversed the single-cash-path policy — Pro must be
+  // present and reachable, but only via the secondary self-serve link, never
+  // as the primary form action.
+  assert.match(landingPage, /class="pro-alt-offer"[^>]*>[^<]*<a href="\/checkout\/pro/);
+  assert.doesNotMatch(landingPage, /action="[^"]*\/checkout\/pro/i);
+  assert.doesNotMatch(landingPage, /Upgrade to Pro|Enterprise pilot|newsletter/i);
   assert.doesNotMatch(landingPage, /offer-router|sticky-cta|buyer-intent\.js|revenue-assist-panel/i);
   assert.match(landingPage, /<body data-revenue-assist="off">/);
 });

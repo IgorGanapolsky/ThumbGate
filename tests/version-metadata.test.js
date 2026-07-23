@@ -277,7 +277,10 @@ test('hosted origin and repository metadata stay canonical across live-facing ar
   assert.match(publicLanding, /\$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
   assert.match(publicLanding, /Managed AI Agent Workflow Gate/);
   assert.match(publicLanding, /action="\/go\/diagnostic-pay" method="POST"/);
-  assert.doesNotMatch(publicLanding, /\$19|\$149|__PRO_PRICE_DOLLARS__/);
+  // 2026-07-23: CEO reversed the single-cash-path policy — $19/mo Pro is a
+  // restored secondary self-serve link (see MARKETING_COPY_CONGRUENCE.md).
+  assert.doesNotMatch(publicLanding, /\$149|__PRO_PRICE_DOLLARS__/);
+  assert.match(publicLanding, /\$19\/mo/);
   assert.match(publicLanding, /__GA_BOOTSTRAP__/);
   assert.match(publicLanding, /__GOOGLE_SITE_VERIFICATION_META__/);
   assert.match(publicLanding, /Self-Improving Firewall for Your AI Agents/i);

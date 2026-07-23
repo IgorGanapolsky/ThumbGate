@@ -10,22 +10,28 @@ const HOME_HTML = fs.readFileSync(path.join(ROOT, 'public', 'index.html'), 'utf8
 const PRICING_HTML = fs.readFileSync(path.join(ROOT, 'public', 'pricing.html'), 'utf8');
 const PRO_HTML = fs.readFileSync(path.join(ROOT, 'public', 'pro.html'), 'utf8');
 
-test('homepage commercial contract stays one $499 enterprise entry offer', () => {
+test('homepage commercial contract keeps $499 as the primary enterprise entry offer', () => {
   assert.match(HOME_HTML, /Enterprise Workflow Gate/);
   assert.match(HOME_HTML, /\$499 enterprise entry offer/i);
   assert.match(HOME_HTML, /action="\/go\/diagnostic-pay"/);
   assert.match(HOME_HTML, /\$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
-  assert.doesNotMatch(HOME_HTML, /\/checkout\/pro|href="[^"]*workflow-sprint-intake|\/go\/sprint/i);
+  assert.doesNotMatch(HOME_HTML, /href="[^"]*workflow-sprint-intake|\/go\/sprint/i);
   assert.match(HOME_HTML, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
+  // 2026-07-23: CEO reversed the single-cash-path policy — $19/mo Pro is a
+  // restored secondary self-serve link, never the primary form action.
+  assert.doesNotMatch(HOME_HTML, /action="[^"]*\/checkout\/pro/i);
+  assert.ok(HOME_HTML.indexOf('$499') < HOME_HTML.indexOf('/checkout/pro'));
 });
 
-test('pricing repeats the same offer without a competing cash path', () => {
+test('pricing repeats the same offer with Pro only as a secondary cash path', () => {
   assert.match(PRICING_HTML, /Enterprise Workflow Gate/);
   assert.match(PRICING_HTML, /Enterprise entry offer/i);
   assert.match(PRICING_HTML, /action="\/go\/diagnostic-pay"/);
   assert.match(PRICING_HTML, /\$499/);
-  assert.doesNotMatch(PRICING_HTML, /\/checkout\/pro|workflow-sprint-intake|\/go\/sprint/i);
-  assert.doesNotMatch(PRICING_HTML, /\$19|\$149|\$1,500|\$3,000|\$10,000|\$15,000/);
+  assert.doesNotMatch(PRICING_HTML, /workflow-sprint-intake|\/go\/sprint/i);
+  assert.doesNotMatch(PRICING_HTML, /action="[^"]*\/checkout\/pro/i);
+  assert.ok(PRICING_HTML.indexOf('$499') < PRICING_HTML.indexOf('/checkout/pro'));
+  assert.doesNotMatch(PRICING_HTML, /\$149|\$1,500|\$3,000|\$10,000|\$15,000/);
 });
 
 test('free-tier limits remain code truth without crowding the cash path', () => {
@@ -38,7 +44,7 @@ test('free-tier limits remain code truth without crowding the cash path', () => 
   assert.doesNotMatch(PRICING_HTML, /2 captures\/day|10 total|3 active prevention rules/i);
 });
 
-test('legacy Pro detail stays code-backed off the primary cash path', () => {
+test('Pro detail stays code-backed and reachable only as a secondary link', () => {
   const server = fs.readFileSync(path.join(ROOT, 'src', 'api', 'server.js'), 'utf8');
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
@@ -46,8 +52,13 @@ test('legacy Pro detail stays code-backed off the primary cash path', () => {
   assert.match(PRO_HTML, /DPO/i);
   assert.match(server, /'\/v1\/dpo\/export'/);
   assert.ok(pkg.files.includes('public/dashboard.html'));
-  assert.doesNotMatch(HOME_HTML, /\/checkout\/pro/i);
-  assert.doesNotMatch(PRICING_HTML, /\/checkout\/pro/i);
+  // 2026-07-23: CEO reversed the single-cash-path policy — /checkout/pro is
+  // restored as a secondary self-serve link (class="pro-alt-offer"), never
+  // the primary form action, on both pages.
+  assert.match(HOME_HTML, /class="pro-alt-offer"[^>]*>[^<]*<a href="\/checkout\/pro/);
+  assert.match(PRICING_HTML, /class="pro-alt-offer"[^>]*>[^<]*<a href="\/checkout\/pro/);
+  assert.doesNotMatch(HOME_HTML, /action="[^"]*\/checkout\/pro/i);
+  assert.doesNotMatch(PRICING_HTML, /action="[^"]*\/checkout\/pro/i);
 });
 
 test('pricing hides hosted team offers and states the availability boundary', () => {

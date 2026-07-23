@@ -241,7 +241,15 @@ test('public landing copy stays vendor-neutral while keeping the primary offer f
   assert.match(landingPage, /or similar agents/i);
   assert.match(landingPage, /Managed AI Agent Workflow Gate/i);
   assert.match(landingPage, /\$499/);
-  assert.doesNotMatch(landingPage, /\bPro\b/i);
+  // 2026-07-23: CEO reversed the "Pro lane removed from primary path" policy
+  // from #2999 — Pro must stay visible and reachable, but strictly secondary
+  // to the $499 offer, which stays the first/primary CTA on the page.
+  assert.match(landingPage, /Start Pro self-serve.*\$19\/mo/i);
+  assert.match(landingPage, /\/checkout\/pro/);
+  assert.ok(
+    landingPage.indexOf('$499') < landingPage.indexOf('Start Pro self-serve'),
+    '$499 enterprise offer must still appear before the secondary Pro self-serve mention'
+  );
   assert.doesNotMatch(landingPage, /Enterprise pilot|\/enterprise/i);
   assert.doesNotMatch(landingPage, /auto-detects supported local agent installs/i);
   assert.doesNotMatch(landingPage, /claude --mcp thumbgate/i);
