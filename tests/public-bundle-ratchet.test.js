@@ -131,7 +131,9 @@ const path = require('node:path');
 // buyer state, credential material, mutation path, or ThumbGate-Core import.
 // 354 -> 357: observability env loader, setup CLI, and bounded JSONL window
 // reader for hosted telemetry export / revenue doctor (no buyer state).
-const BASELINE_FILE_COUNT = 357;
+// 357 -> 359: Poolside-style blog essays under public/blog/ (hosted marketing
+// surface only; no new scripts, secrets, or buyer state).
+const BASELINE_FILE_COUNT = 359;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
