@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Enterprise Workflow Gate — $499 | Self-Improving Firewall | ThumbGate</title>
-  <meta name="description" content="Self-improving firewall for AI agents: ThumbGate's $499 enterprise entry offer reviews one risky AI-agent workflow, installs one local pre-action gate, adds a regression test, and hands back rollout and rollback proof.">
+  <title>Pricing — Pro $19/mo and Enterprise Gate $499 | ThumbGate</title>
+  <meta name="description" content="ThumbGate pricing: Pro at $19/mo (or $149/yr) for self-serve operators, and the $499 enterprise entry offer for one managed AI-agent workflow gate with regression and rollout proof.">
   <link rel="canonical" href="__APP_ORIGIN__/pricing">
   <link rel="alternate" type="text/markdown" title="ThumbGate LLM context" href="__APP_ORIGIN__/llm-context.md">
-  <meta property="og:title" content="Enterprise Workflow Gate — $499">
-  <meta property="og:description" content="One repeated AI-agent failure. One configured gate. One regression test. Rollout and rollback proof.">
+  <meta property="og:title" content="ThumbGate Pricing — Pro $19/mo · Enterprise Gate $499">
+  <meta property="og:description" content="Self-serve Pro for operators, or a $499 managed gate for one repeated AI-agent failure.">
   <meta property="og:url" content="__APP_ORIGIN__/pricing">
   <meta property="og:type" content="product">
   <style>
@@ -23,8 +23,14 @@
     .nav-links { display:flex; align-items:center; gap:18px; color:var(--muted); font-size:.92rem; }
     .nav-buy,.button { display:inline-flex; justify-content:center; align-items:center; border:0; border-radius:10px; background:var(--green); color:#fff; padding:12px 18px; font:inherit; font-weight:800; text-decoration:none; cursor:pointer; }
     .nav-buy:hover,.button:hover { background:var(--green2); }
+    .nav-pro { display:inline-flex; justify-content:center; align-items:center; border:0; border-radius:10px; background:var(--green); color:#fff; padding:12px 18px; font:inherit; font-weight:800; text-decoration:none; }
+    .nav-enterprise { display:inline-flex; justify-content:center; align-items:center; border:1px solid var(--green); border-radius:10px; color:var(--green); padding:10px 14px; font:inherit; font-weight:800; text-decoration:none; background:transparent; }
     main { padding:70px 0 84px; }
-    .hero { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(330px,.9fr); gap:52px; align-items:start; }
+    .hero { display:grid; grid-template-columns:minmax(0,1.05fr) minmax(300px,.95fr); gap:28px; align-items:start; }
+    .offer-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+    .pro-card { border:1px solid var(--line); border-radius:18px; background:var(--card); box-shadow:0 18px 50px rgba(38,45,41,.09); padding:30px; }
+    .pro-card .price { color:var(--green); }
+    @media (max-width:900px) { .offer-grid { grid-template-columns:1fr; } }
     .eyebrow { color:var(--green); font-size:.76rem; font-weight:850; letter-spacing:.14em; text-transform:uppercase; }
     h1 { max-width:760px; margin:14px 0 18px; font-size:clamp(2.5rem,6vw,5.15rem); line-height:.96; letter-spacing:-.055em; }
     .lede { max-width:660px; margin:0 0 28px; color:var(--muted); font-size:1.13rem; }
@@ -103,7 +109,8 @@
       <div class="nav-links">
         <a href="/guide">Technical setup</a>
         <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md" target="_blank" rel="noopener">Proof</a>
-        <a class="nav-buy" href="#buy" data-offer-link data-cta-id="pricing_nav_buy">Enterprise gate · $499</a>
+        <a class="nav-pro" href="/checkout/pro?utm_source=pricing&amp;utm_medium=nav&amp;utm_campaign=pro_self_serve&amp;cta_id=pricing_nav_pro&amp;plan_id=pro" data-offer-link data-cta-id="pricing_nav_pro">Pro · $19/mo</a>
+        <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="pricing_nav_buy">Enterprise · $499</a>
       </div>
     </div>
   </nav>
@@ -111,35 +118,44 @@
   <main class="shell">
     <div class="hero">
       <div>
-        <div class="eyebrow">One offer · one workflow · one fixed price</div>
-        <h1>Stop one expensive agent mistake before it repeats.</h1>
-        <p class="lede">Bring a real failure involving Git, shell, files, databases, deployment, browser actions, or outbound messages. ThumbGate turns it into a local pre-action gate your agent must pass.</p>
+        <div class="eyebrow">Two paid paths · one product</div>
+        <h1>Self-serve Pro, or a managed gate for one expensive mistake.</h1>
+        <p class="lede">Start with <strong>Pro at $19/mo</strong> for personal enforcement proof, or bring a real failure for the <strong>$499 enterprise entry</strong>—one local pre-action gate, a regression test, and rollout proof.</p>
         <div class="outcome">
-          <div class="outcome-row"><span class="tick">✓</span><span>One risky workflow reviewed with the person who owns it.</span></div>
-          <div class="outcome-row"><span class="tick">✓</span><span>One configured gate plus a regression test for the failure.</span></div>
-          <div class="outcome-row"><span class="tick">✓</span><span>Rollout, rollback, and verification proof within two business days.</span></div>
+          <div class="outcome-row"><span class="tick">✓</span><span><strong>Pro ($19/mo or $149/yr):</strong> self-serve dashboard, recall, adapter coverage, DPO export.</span></div>
+          <div class="outcome-row"><span class="tick">✓</span><span><strong>Enterprise gate ($499 one-time):</strong> one workflow reviewed, configured, tested, and proved.</span></div>
+          <div class="outcome-row"><span class="tick">✓</span><span>Free local evaluate stays free: <code>npx thumbgate init</code>.</span></div>
         </div>
       </div>
 
-      <aside class="card" id="buy">
-        <div class="eyebrow">Enterprise Workflow Gate</div>
-        <div class="price">$499</div>
-        <p class="price-note">Enterprise entry offer. Fixed price. One supported local workflow.</p>
-        <form action="/go/diagnostic-pay" method="POST" data-primary-checkout>
-          <label for="pricing-email">Work email for the receipt and scheduling</label>
-          <input id="pricing-email" name="customer_email" type="email" autocomplete="email" placeholder="you@company.com" required>
-          <input type="hidden" name="plan_id" value="sprint_diagnostic">
-          <input type="hidden" name="utm_source" value="pricing">
-          <input type="hidden" name="utm_medium" value="direct_checkout">
-          <input type="hidden" name="utm_campaign" value="managed_workflow_gate">
-          <input type="hidden" name="cta_id" value="pricing_managed_gate_buy">
-          <input type="hidden" name="cta_placement" value="pricing">
-          <input type="hidden" name="landing_path" value="/pricing">
-          <button class="button" type="submit">Buy the $499 enterprise gate</button>
-        </form>
-        <p class="fine">Secure payment. We reply with scheduling and the workflow checklist.</p>
-        <div class="boundary">Detected secret exfiltration and gate-process bypass attempts deny by default. Other destructive actions warn by default and deny when strict enforcement is enabled.</div>
-      </aside>
+      <div class="offer-grid" id="buy">
+        <aside class="pro-card" id="pro" aria-label="ThumbGate Pro">
+          <div class="eyebrow">Self-serve</div>
+          <div class="price">$19<span style="font-size:1rem;font-weight:700">/mo</span></div>
+          <p class="price-note">Or $149/yr. Individual operators. Cancel anytime.</p>
+          <a class="button" href="/checkout/pro?utm_source=pricing&amp;utm_medium=card&amp;utm_campaign=pro_self_serve&amp;cta_id=pricing_pro_buy&amp;plan_id=pro" data-offer-link data-cta-id="pricing_pro_buy" style="width:100%;box-sizing:border-box">Start Pro — $19/mo</a>
+          <p class="fine">Hosted checkout. Free local evaluate remains free after you subscribe.</p>
+        </aside>
+        <aside class="card" id="enterprise-gate">
+          <div class="eyebrow">Enterprise Workflow Gate</div>
+          <div class="price">$499</div>
+          <p class="price-note">Enterprise entry offer. Fixed price. One supported local workflow. No subscription.</p>
+          <form action="/go/diagnostic-pay" method="POST" data-primary-checkout>
+            <label for="pricing-email">Work email for the receipt and scheduling</label>
+            <input id="pricing-email" name="customer_email" type="email" autocomplete="email" placeholder="you@company.com" required>
+            <input type="hidden" name="plan_id" value="sprint_diagnostic">
+            <input type="hidden" name="utm_source" value="pricing">
+            <input type="hidden" name="utm_medium" value="direct_checkout">
+            <input type="hidden" name="utm_campaign" value="managed_workflow_gate">
+            <input type="hidden" name="cta_id" value="pricing_managed_gate_buy">
+            <input type="hidden" name="cta_placement" value="pricing">
+            <input type="hidden" name="landing_path" value="/pricing">
+            <button class="button" type="submit">Buy the $499 enterprise gate</button>
+          </form>
+          <p class="fine">Secure payment. We reply with scheduling and the workflow checklist.</p>
+          <div class="boundary">Detected secret exfiltration and gate-process bypass attempts deny by default. Other destructive actions warn by default and deny when strict enforcement is enabled.</div>
+        </aside>
+      </div>
     </div>
 
     <section>
