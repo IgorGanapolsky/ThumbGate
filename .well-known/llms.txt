@@ -11,6 +11,10 @@
 > stale auto-promoted gates expire; and stale lessons archive. ThumbGate improves
 > the external control layer without changing model weights.
 
+## Store story
+
+ThumbGate: the self-improving firewall for AI agents. Every approval teaches it what to allow, block, or escalate next time. Self-improving under your control—not silent policy rewrite. Hermes Mobile is the control surface; ThumbGate is the learning safety layer inside it.
+
 ## What ThumbGate solves
 
 - AI coding agents repeat costly mistakes across sessions
