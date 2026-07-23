@@ -680,7 +680,7 @@
     "test:utm": "node --test tests/utm.test.js",
     "test:product-feedback": "node --test tests/product-feedback.test.js",
     "test:feedback-root-consolidator": "node --test tests/feedback-root-consolidator.test.js",
-    "social:publish:launch": "node scripts/social-analytics/publish-thumbgate-launch.js",
+    "social:publish:launch": "node scripts/social-analytics/run-publish-thumbgate-launch.js",
     "social:publish:latest-release-article": "node scripts/social-analytics/publish-latest-release-article.js",
     "social:publish:latest-release-fallbacks": "node scripts/social-analytics/publish-latest-release-fallbacks.js",
     "social:verify:latest-release": "node scripts/social-analytics/verify-latest-release-posts.js",
