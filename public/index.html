@@ -345,11 +345,41 @@
     .section-title { max-width: 780px; margin: 12px 0 14px; font-size: clamp(32px, 4vw, 50px); line-height: 1.08; letter-spacing: -0.04em; }
     .section-lede { max-width: 700px; margin: 0; color: var(--muted); font-size: 18px; }
     .loop { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 38px; }
-    .loop-step { position: relative; min-height: 190px; padding: 24px; border: 1px solid var(--line); border-radius: 15px; background: var(--panel); }
-    .loop-step:not(:last-child)::after { content: "→"; position: absolute; top: 50%; right: -24px; z-index: 2; color: var(--cyan); font-size: 26px; transform: translateY(-50%); }
+    .loop-step {
+      position: relative;
+      display: block;
+      width: 100%;
+      min-height: 190px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: var(--panel);
+      color: inherit;
+      text-align: left;
+      font: inherit;
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+    }
+    .loop-step:hover, .loop-step:focus-visible {
+      border-color: rgba(56, 215, 255, 0.55);
+      box-shadow: 0 0 0 1px rgba(56, 215, 255, 0.25);
+      outline: none;
+    }
+    .loop-step.is-active {
+      border-color: rgba(56, 215, 255, 0.75);
+      box-shadow: 0 0 0 2px rgba(56, 215, 255, 0.2), 0 16px 40px rgba(0, 0, 0, 0.35);
+    }
+    .loop-step:not(:last-child)::after { content: "→"; position: absolute; top: 50%; right: -24px; z-index: 2; color: var(--cyan); font-size: 26px; transform: translateY(-50%); pointer-events: none; }
     .loop-number { display: inline-flex; width: 30px; height: 30px; align-items: center; justify-content: center; border-radius: 50%; color: #071018; background: var(--cyan); font-weight: 900; }
     .loop-step h3 { margin: 18px 0 7px; font-size: 20px; }
     .loop-step p { margin: 0; color: var(--muted); }
+    .loop-hint {
+      display: inline-block;
+      margin-top: 14px;
+      color: var(--cyan);
+      font: 750 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .loop-step.is-active .loop-hint { color: var(--green); }
     .decisions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
     .decision { border: 1px solid; border-radius: 999px; padding: 4px 9px; font: 800 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
     .allow { color: var(--green); border-color: rgba(86, 227, 159, 0.45); }
@@ -357,6 +387,135 @@
     .deny { color: var(--red); border-color: rgba(255, 100, 124, 0.45); }
     .loop-back { margin: 18px 0 0; color: #c5ceda; text-align: center; }
     .loop-back strong { color: var(--cyan); }
+    .loop-panel {
+      display: none;
+      margin-top: 18px;
+      padding: 22px 24px;
+      border: 1px solid rgba(56, 215, 255, 0.35);
+      border-radius: 16px;
+      background: linear-gradient(160deg, rgba(12, 18, 28, 0.98), rgba(8, 12, 18, 0.98));
+    }
+    .loop-panel.is-open { display: block; }
+    .loop-panel-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .loop-panel-kicker {
+      color: var(--cyan);
+      font: 800 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .loop-panel-title { margin: 0; font-size: 22px; letter-spacing: -0.02em; }
+    .loop-panel-close {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      padding: 6px 12px;
+      font: 700 12px/1 inherit;
+      cursor: pointer;
+    }
+    .loop-panel-close:hover { color: var(--text); border-color: var(--cyan); }
+    .loop-panel-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(220px, 0.85fr);
+      gap: 18px;
+      align-items: start;
+    }
+    .loop-panel-terminal {
+      overflow: hidden;
+      border: 1px solid #303b50;
+      border-radius: 12px;
+      background: #090d14;
+    }
+    .loop-panel-terminal .bar {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 14px;
+      border-bottom: 1px solid #252f40;
+      color: #8b97ab;
+      font: 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .loop-panel-terminal pre {
+      margin: 0;
+      padding: 16px 18px;
+      white-space: pre-wrap;
+      color: #c8d2df;
+      font: 13px/1.65 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .loop-panel-terminal .g { color: var(--green); }
+    .loop-panel-terminal .c { color: var(--cyan); }
+    .loop-panel-terminal .y { color: var(--yellow); }
+    .loop-panel-terminal .r { color: var(--red); }
+    .loop-panel-side h4 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      color: var(--text);
+    }
+    .loop-panel-side p, .loop-panel-side li {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .loop-panel-side ul {
+      margin: 0 0 14px;
+      padding-left: 18px;
+      display: grid;
+      gap: 6px;
+    }
+    .loop-mode-toggle {
+      display: flex;
+      gap: 8px;
+      margin: 0 0 12px;
+    }
+    .loop-mode-toggle button {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      padding: 6px 12px;
+      font: 750 12px/1 inherit;
+      cursor: pointer;
+    }
+    .loop-mode-toggle button.is-on {
+      border-color: rgba(56, 215, 255, 0.55);
+      color: var(--cyan);
+      background: rgba(56, 215, 255, 0.08);
+    }
+    .loop-panel-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .loop-panel-actions a, .loop-panel-actions button.copy-cmd {
+      display: inline-flex;
+      align-items: center;
+      min-height: 38px;
+      padding: 0 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(56, 215, 255, 0.35);
+      background: rgba(56, 215, 255, 0.08);
+      color: var(--cyan);
+      text-decoration: none;
+      font: 750 13px/1 inherit;
+      cursor: pointer;
+    }
+    .loop-panel-actions a.secondary, .loop-panel-actions button.copy-cmd {
+      border-color: var(--line);
+      background: transparent;
+      color: var(--muted);
+    }
+    @media (max-width: 840px) {
+      .loop-panel-grid { grid-template-columns: 1fr; }
+    }
     .deliverables { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 36px; }
     .deliverable { padding: 24px; border: 1px solid var(--line); border-radius: 15px; background: var(--panel); }
     .deliverable h3 { margin: 0 0 8px; font-size: 18px; }
@@ -482,24 +641,27 @@
       <div class="shell">
         <div class="section-kicker">Self-improving product loop</div>
         <h2 class="section-title">Pre-action checks—and the systems that refine them.</h2>
-        <p class="section-lede">No governance novel. Corrections become reviewable local lessons; relevant lessons are re-ranked; repeated negative patterns can become explicit gates; and the next action is checked before execution.</p>
-        <div class="loop" role="img" aria-label="Feedback becomes local lessons, relevant lessons refine gates, and the next agent action is checked before execution">
-          <article class="loop-step">
+        <p class="section-lede">No governance novel. Corrections become reviewable local lessons; relevant lessons are re-ranked; repeated negative patterns can become explicit gates; and the next action is checked before execution. <strong style="color:var(--text)">Click a step</strong> to see what happens under the hood.</p>
+        <div class="loop" role="tablist" aria-label="Self-improving product loop — click a step for under-the-hood demo">
+          <button type="button" class="loop-step" role="tab" id="loop-tab-1" data-loop-step="1" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
             <span class="loop-number">1</span>
             <h3>Capture feedback</h3>
             <p>Record explicit 👍 or 👎 feedback with the action and outcome context that made it useful or wrong.</p>
-          </article>
-          <article class="loop-step">
+            <span class="loop-hint">Under the hood ↓</span>
+          </button>
+          <button type="button" class="loop-step" role="tab" id="loop-tab-2" data-loop-step="2" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
             <span class="loop-number">2</span>
             <h3>Remember locally</h3>
             <p>Store a reviewable lesson that survives sessions and model changes without sending the control history into model weights.</p>
-          </article>
-          <article class="loop-step">
+            <span class="loop-hint">Under the hood ↓</span>
+          </button>
+          <button type="button" class="loop-step" role="tab" id="loop-tab-3" data-loop-step="3" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
             <span class="loop-number">3</span>
             <h3>Rank and refine</h3>
             <p>Re-rank relevant lessons for the action. Repeated negative patterns can promote from warnings to blocking gates; stale gates expire.</p>
-          </article>
-          <article class="loop-step">
+            <span class="loop-hint">Under the hood ↓</span>
+          </button>
+          <button type="button" class="loop-step" role="tab" id="loop-tab-4" data-loop-step="4" aria-selected="false" aria-controls="loop-panel" aria-expanded="false">
             <span class="loop-number">4</span>
             <h3>Gate the next action</h3>
             <p>The action is allowed, warned, or denied before the tool proceeds.</p>
@@ -508,7 +670,41 @@
               <span class="decision warn">WARN</span>
               <span class="decision deny">DENY</span>
             </div>
-          </article>
+            <span class="loop-hint">Under the hood ↓</span>
+          </button>
+        </div>
+        <div id="loop-panel" class="loop-panel" role="tabpanel" aria-labelledby="loop-tab-1" hidden>
+          <div class="loop-panel-header">
+            <div>
+              <div class="loop-panel-kicker" id="loop-panel-kicker">Under the hood</div>
+              <h3 class="loop-panel-title" id="loop-panel-title">Capture feedback</h3>
+            </div>
+            <button type="button" class="loop-panel-close" id="loop-panel-close" aria-label="Close under-the-hood demo">Close</button>
+          </div>
+          <div class="loop-panel-grid">
+            <div class="loop-panel-terminal" aria-live="polite">
+              <div class="bar">
+                <span id="loop-term-title">thumbgate · capture</span>
+                <span id="loop-term-mode">local</span>
+              </div>
+              <pre id="loop-term-body"></pre>
+            </div>
+            <div class="loop-panel-side">
+              <div id="loop-mode-row" class="loop-mode-toggle" hidden>
+                <button type="button" data-gate-mode="default" class="is-on">Default (warn)</button>
+                <button type="button" data-gate-mode="strict">Strict (deny)</button>
+              </div>
+              <h4>What actually happens</h4>
+              <ul id="loop-facts"></ul>
+              <h4>Honest default</h4>
+              <p id="loop-honest"></p>
+              <div class="loop-panel-actions">
+                <button type="button" class="copy-cmd" id="loop-copy-cmd">Copy command</button>
+                <a class="secondary" href="/guide">Setup guide</a>
+                <a href="#proof">Strict-mode example</a>
+              </div>
+            </div>
+          </div>
         </div>
         <p class="loop-back"><strong>Each reviewed outcome closes the loop—under your control.</strong> Lessons are re-ranked per action, repeated failures can promote into gates, and stale auto-promoted gates expire. The firewall improves from explicit feedback without retraining the model or silently rewriting policy.</p>
       </div>
@@ -717,6 +913,217 @@ next      decision recorded before execution</pre>
         button.setAttribute('aria-expanded', String(open));
       });
     });
+
+    // Interactive product loop — under-the-hood demos (real ThumbGate paths)
+    (function initLoopDemos() {
+      const panel = document.getElementById('loop-panel');
+      const tabs = Array.prototype.slice.call(document.querySelectorAll('[data-loop-step]'));
+      if (!panel || !tabs.length) return;
+
+      const titleEl = document.getElementById('loop-panel-title');
+      const kickerEl = document.getElementById('loop-panel-kicker');
+      const termTitle = document.getElementById('loop-term-title');
+      const termMode = document.getElementById('loop-term-mode');
+      const termBody = document.getElementById('loop-term-body');
+      const factsEl = document.getElementById('loop-facts');
+      const honestEl = document.getElementById('loop-honest');
+      const modeRow = document.getElementById('loop-mode-row');
+      const copyBtn = document.getElementById('loop-copy-cmd');
+      const closeBtn = document.getElementById('loop-panel-close');
+      let activeStep = null;
+      let gateMode = 'default';
+      let copyText = '';
+
+      const demos = {
+        1: {
+          title: 'Capture feedback',
+          kicker: 'Step 1 · capture',
+          termTitle: 'thumbgate · capture-feedback',
+          termMode: 'local JSONL',
+          body:
+            '$ node .claude/scripts/feedback/capture-feedback.js \\\n' +
+            '    --feedback=down \\\n' +
+            '    --context="git push --force origin main without tests" \\\n' +
+            '    --what-went-wrong="force-push skipped CI" \\\n' +
+            '    --what-to-change="block force-push to main"\n\n' +
+            '<span class="g">→ written</span>  .claude/memory/feedback/feedback-log.jsonl\n' +
+            '<span class="y">→ bare 👎</span>   no context  →  <span class="r">no-action</span> (not promoted)\n' +
+            '<span class="c">→ schema</span>    requires actionable context before storage',
+          facts: [
+            'Explicit thumbs-up/down with context becomes a feedback record',
+            'Bare thumbs-down without context is rejected (no-action)',
+            'Capture paths: CLI, hooks, MCP — not silent model training',
+          ],
+          honest: 'A vague 👎 does not invent a rule. Context is required before anything is stored or promoted.',
+          cmd: 'node .claude/scripts/feedback/capture-feedback.js --feedback=down --context="force-push without tests" --what-went-wrong="skipped CI" --what-to-change="block force-push to main"',
+          showModes: false,
+        },
+        2: {
+          title: 'Remember locally',
+          kicker: 'Step 2 · local memory',
+          termTitle: 'thumbgate · lesson store',
+          termMode: 'your machine',
+          body:
+            'lesson {\n' +
+            '  signal:  "negative",\n' +
+            '  context: "force-push to main without tests",\n' +
+            '  path:    "local feedback log / lesson DB",\n' +
+            '  model_weights: <span class="g">unchanged</span>  // always\n' +
+            '}\n\n' +
+            '<span class="c">survives</span>  session restarts + model swaps\n' +
+            '<span class="c">owned by</span>  you — local files, not a black-box cloud brain',
+          facts: [
+            'Lessons live in local paths you control',
+            'Survives sessions and model changes',
+            'Does not fine-tune or rewrite model weights',
+          ],
+          honest: 'This is a control-layer memory, not “the AI remembered forever.” Your files; your review.',
+          cmd: 'ls .claude/memory/feedback/',
+          showModes: false,
+        },
+        3: {
+          title: 'Rank and refine',
+          kicker: 'Step 3 · promote + expire',
+          termTitle: 'thumbgate · auto-promote-gates',
+          termMode: '30d window · 90d TTL',
+          body:
+            'recurring negatives (same pattern, 30 days)\n' +
+            '  count 1  →  auto-promote <span class="y">warn</span> gate\n' +
+            '  count 3  →  candidate <span class="r">block</span> (may stay warn if regression check fails)\n\n' +
+            'auto-promoted-gates.json\n' +
+            '  action:    warn | block\n' +
+            '  expiresAt: +90 days (refreshed when the gate keeps firing)\n' +
+            '  source:    auto-promote\n\n' +
+            '<span class="c">retrieve/rerank</span>  relevant lessons for the proposed action',
+          facts: [
+            '1 matching negative → warning gate (auto-promote)',
+            '3 in 30 days → hard-block candidate (with regression quarantine)',
+            'Stale auto-promoted gates expire ~90 days unless they keep firing',
+          ],
+          honest: 'Promotion can create warn gates without a human click. Review auto-promoted-gates.json; force-promote is permanent only when you say so.',
+          cmd: 'npm run feedback:rules',
+          showModes: false,
+        },
+        4: {
+          title: 'Gate the next action',
+          kicker: 'Step 4 · PreToolUse',
+          termTitle: 'thumbgate · pretooluse',
+          termMode: 'default',
+          bodyDefault:
+            'proposed  git push --force origin main\n' +
+            'hook      PreToolUse → gates-engine\n' +
+            'mode      <span class="y">warn-by-default</span>\n' +
+            'decision  <span class="y">WARN</span>\n' +
+            'note      logged + flagged; tool may still proceed\n\n' +
+            'secret exfil / gate-bypass floors  →  <span class="r">DENY</span> regardless',
+          bodyStrict:
+            'proposed  git push --force origin main\n' +
+            'hook      PreToolUse → gates-engine\n' +
+            'mode      <span class="c">THUMBGATE_STRICT_ENFORCEMENT=1</span>\n' +
+            'decision  <span class="r">DENY</span>\n' +
+            'rule      protect-main (or matching high-risk gate)\n' +
+            'next      blocked before execution',
+          facts: [
+            'PreToolUse hooks check Bash / Edit / Write before the tool runs',
+            'Outcomes: ALLOW, WARN, or DENY',
+            'Default install is warn + audit; hard deny needs strict mode (plus secret floors)',
+          ],
+          honest: 'Default is not “block everything.” Default warns. Strict mode denies matching high-risk actions. Secrets/exfil still hard-deny.',
+          cmd: 'export THUMBGATE_STRICT_ENFORCEMENT=1  # opt into hard deny',
+          showModes: true,
+        },
+      };
+
+      function setOpen(step) {
+        activeStep = step;
+        tabs.forEach(function (tab) {
+          const on = String(tab.getAttribute('data-loop-step')) === String(step);
+          tab.classList.toggle('is-active', on);
+          tab.setAttribute('aria-selected', String(on));
+          tab.setAttribute('aria-expanded', String(on));
+          const hint = tab.querySelector('.loop-hint');
+          if (hint) hint.textContent = on ? 'Showing under the hood ↑' : 'Under the hood ↓';
+        });
+        if (!step) {
+          panel.classList.remove('is-open');
+          panel.hidden = true;
+          return;
+        }
+        const demo = demos[step];
+        if (!demo) return;
+        titleEl.textContent = demo.title;
+        kickerEl.textContent = demo.kicker;
+        termTitle.textContent = demo.termTitle;
+        panel.setAttribute('aria-labelledby', 'loop-tab-' + step);
+        factsEl.innerHTML = demo.facts.map(function (f) { return '<li>' + f + '</li>'; }).join('');
+        honestEl.textContent = demo.honest;
+        copyText = demo.cmd;
+        modeRow.hidden = !demo.showModes;
+        if (demo.showModes) {
+          renderGateBody();
+        } else {
+          termMode.textContent = demo.termMode;
+          termBody.innerHTML = demo.body;
+        }
+        panel.hidden = false;
+        panel.classList.add('is-open');
+        try {
+          sendFirstPartyTelemetry('loop_demo_open', { step: String(step), landingPath: '/' });
+          window.plausible && window.plausible('loop_demo_open', { props: { step: String(step) } });
+        } catch (_) {}
+      }
+
+      function renderGateBody() {
+        const demo = demos[4];
+        const strict = gateMode === 'strict';
+        termMode.textContent = strict ? 'strict' : 'default';
+        termBody.innerHTML = strict ? demo.bodyStrict : demo.bodyDefault;
+        modeRow.querySelectorAll('button').forEach(function (btn) {
+          btn.classList.toggle('is-on', btn.getAttribute('data-gate-mode') === gateMode);
+        });
+      }
+
+      tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          const step = tab.getAttribute('data-loop-step');
+          if (activeStep === step) {
+            setOpen(null);
+          } else {
+            setOpen(step);
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        });
+      });
+
+      modeRow.querySelectorAll('button').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          gateMode = btn.getAttribute('data-gate-mode') || 'default';
+          renderGateBody();
+        });
+      });
+
+      closeBtn.addEventListener('click', function () { setOpen(null); });
+
+      copyBtn.addEventListener('click', function () {
+        const text = copyText || '';
+        if (!text) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () {
+            copyBtn.textContent = 'Copied';
+            setTimeout(function () { copyBtn.textContent = 'Copy command'; }, 1400);
+          }).catch(function () {});
+        }
+      });
+
+      // Deep-link: #how-it-works?step=4 or #loop-step-3
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const stepParam = params.get('step') || (window.location.hash.match(/loop-step-(\d)/) || [])[1];
+        if (stepParam && demos[stepParam]) {
+          setOpen(stepParam);
+        }
+      } catch (_) {}
+    })();
 
     if (!serverTelemetryCaptured) {
       sendFirstPartyTelemetry('page_view', { landingPath: '/' });

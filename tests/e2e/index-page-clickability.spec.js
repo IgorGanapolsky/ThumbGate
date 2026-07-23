@@ -21,6 +21,28 @@ test.describe('/ dual-offer conversion path', () => {
     await expect(page.locator('#workflow-sprint-intake[data-legacy-intake-alias]')).toHaveCount(1);
   });
 
+  test('loop cards open under-the-hood demos with default vs strict gate modes', async ({ page }) => {
+    await page.goto('/');
+    const panel = page.locator('#loop-panel');
+    await expect(panel).toBeHidden();
+
+    await page.locator('[data-loop-step="1"]').click();
+    await expect(panel).toBeVisible();
+    await expect(panel).toContainText('Capture feedback');
+    await expect(panel).toContainText('no-action');
+    await expect(panel).toContainText('feedback-log.jsonl');
+
+    await page.locator('[data-loop-step="4"]').click();
+    await expect(panel).toContainText('Gate the next action');
+    await expect(panel).toContainText('warn-by-default');
+    await page.locator('[data-gate-mode="strict"]').click();
+    await expect(panel).toContainText('THUMBGATE_STRICT_ENFORCEMENT=1');
+    await expect(panel).toContainText('DENY');
+
+    await page.locator('#loop-panel-close').click();
+    await expect(panel).toBeHidden();
+  });
+
   test('Pro nav goes to checkout; Enterprise nav returns to managed form', async ({ page }) => {
     await page.goto('/');
 
