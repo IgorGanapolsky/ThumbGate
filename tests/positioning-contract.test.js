@@ -229,7 +229,7 @@ test('continuity guide frames the gateway as downstream reliability, not a new o
 // part of the post-Reddit credibility cleanup (file admitted "$0 revenue"
 // publicly and read as launch-theater).
 
-test('public landing copy stays vendor-neutral while keeping the primary offer focused', () => {
+test('public landing copy stays vendor-neutral while offering Pro and Enterprise cash paths', () => {
   const congruence = readText(path.join('docs', 'MARKETING_COPY_CONGRUENCE.md'));
   const landingPage = readText(path.join('public', 'index.html'));
 
@@ -241,7 +241,8 @@ test('public landing copy stays vendor-neutral while keeping the primary offer f
   assert.match(landingPage, /or similar agents/i);
   assert.match(landingPage, /Managed AI Agent Workflow Gate/i);
   assert.match(landingPage, /\$499/);
-  assert.doesNotMatch(landingPage, /\bPro\b/i);
+  assert.match(landingPage, /Pro · \$19\/mo/);
+  assert.match(landingPage, /\/checkout\/pro/);
   assert.doesNotMatch(landingPage, /Enterprise pilot|\/enterprise/i);
   assert.doesNotMatch(landingPage, /auto-detects supported local agent installs/i);
   assert.doesNotMatch(landingPage, /claude --mcp thumbgate/i);

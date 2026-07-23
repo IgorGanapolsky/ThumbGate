@@ -3,7 +3,6 @@
   "repositoryUrl": "https://github.com/IgorGanapolsky/ThumbGate",
   "homepageUrl": "https://thumbgate.ai",
   "githubDescription": "ThumbGate Pre-Action Checks self-improve from ranked lessons and repeated failures, hard-block detected secret leaks, and block matches in strict mode.",
-  "metaDescription": "ThumbGate is the self-improving firewall for AI agents under your control. The $499 offer installs one hard, test-backed safety gate for a supported AI-agent workflow in two business days.",
   "topics": [
     "thumbgate",
     "pre-action-checks",
@@ -23,5 +22,6 @@
     "opencode",
     "thompson-sampling",
     "self-improving-agents"
-  ]
+  ],
+  "metaDescription": "ThumbGate is the self-improving firewall for AI agents under your control. Self-serve is $19/mo; the $499 managed entry installs one hard, test-backed safety gate for a supported AI-agent workflow in two business days."
 }
