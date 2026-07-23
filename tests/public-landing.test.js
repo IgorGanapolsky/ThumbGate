@@ -141,6 +141,12 @@ test('homepage explains the product with one four-stage self-improving loop', ()
   assert.match(landingPage, />WARN</);
   assert.match(landingPage, />DENY</);
   assert.match(landingPage, /Each reviewed outcome closes the loop/);
+  assert.match(landingPage, /data-loop-step="1"/);
+  assert.match(landingPage, /data-loop-step="4"/);
+  assert.match(landingPage, /id="loop-panel"/);
+  assert.match(landingPage, /Under the hood/);
+  assert.match(landingPage, /initLoopDemos|data-loop-step/);
+  assert.match(landingPage, /THUMBGATE_STRICT_ENFORCEMENT|warn-by-default/);
 });
 
 test('paid wedge includes managed implementation, regression, and rollout proof', () => {
