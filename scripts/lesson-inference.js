@@ -239,13 +239,27 @@ function searchLessons({ query = '', limit = 10, signal } = {}) {
 
 /**
  * Get lesson stats.
+ *
+ * Only counts entries with a non-empty `triggerMessage` — the one field that
+ * reliably distinguishes a genuine, reviewable feedback capture from the
+ * synthetic/automated entries dozens of internal harnesses (async job runner,
+ * proof scripts, dogfood tests, demo bridges) write into the same
+ * lessons-index.jsonl with empty triggerMessage and placeholder text like
+ * "SUCCESS: positive pattern 0". As of 2026-07-23, 4507 of 4613 lesson
+ * entries (97.7%) were synthetic — the displayed "N lessons" stat was
+ * overwhelmingly internal telemetry, not human feedback. See the discovery
+ * writeup: entries lacking triggerMessage carry no evidence a human ever
+ * reviewed or wrote them, so they are excluded from this human-facing stat.
  */
 function getLessonStats() {
   const lessons = readJsonl(getLessonsPath());
-  const positive = lessons.filter((l) => l.signal === 'positive' || l.signal === 'up').length;
-  const negative = lessons.filter((l) => l.signal === 'negative' || l.signal === 'down').length;
-  const avgConfidence = lessons.length > 0 ? Math.round(lessons.reduce((s, l) => s + (l.confidence || 0), 0) / lessons.length) : 0;
-  return { total: lessons.length, positive, negative, avgConfidence };
+  const reviewable = lessons.filter((l) => typeof l.triggerMessage === 'string' && l.triggerMessage.trim().length > 0);
+  const positive = reviewable.filter((l) => l.signal === 'positive' || l.signal === 'up').length;
+  const negative = reviewable.filter((l) => l.signal === 'negative' || l.signal === 'down').length;
+  const avgConfidence = reviewable.length > 0
+    ? Math.round(reviewable.reduce((s, l) => s + (l.confidence || 0), 0) / reviewable.length)
+    : 0;
+  return { total: reviewable.length, positive, negative, avgConfidence, rawTotal: lessons.length };
 }
 
 // ---------------------------------------------------------------------------
