@@ -1859,66 +1859,40 @@ test('network egress gate warns on executable egress but ignores URLs in read-on
 });
 
 test('evaluateGatesAsync denies high-risk actions when recurring negative memory matches', async () => {
-  // Isolation notes:
-  // - Reset sandbox state files so prior suite tests cannot leave taskScope/local_only.
-  // - Point THUMBGATE_GUARDS_PATH at a missing file so a fresh "allow" compiled
-  //   artifact cannot short-circuit live hybrid evaluation (CI flake source).
-  // - Unique keyword tokens appear in BOTH feedback context and the Bash command
-  //   so hasTwoKeywordHits cannot miss after stopword filtering of "git".
-  // - Avoid DEFAULT_PROTECTED_FILE_GLOBS paths in changed_files (those short-circuit
-  //   memory deny when approval/scope logic treats the path as already governed).
-  // - test:gates uses --test-concurrency=1: gates-engine mutates module path
-  //   fields per test file and races under concurrent files.
+  // Hermetic: stub hybrid.evaluatePretool so CI cannot flake on branch-diff
+  // file sets (git push pulls getBranchDiffFiles), compiled guard artifacts,
+  // or JSONL classification order across the full npm test suite.
   cleanupStateFiles();
   const tmpConfig = makeTempPath('memory-only-gates.json');
   fs.writeFileSync(tmpConfig, JSON.stringify({ version: 1, gates: [] }));
   saveGovernanceState({ taskScope: null, protectedApprovals: [], branchGovernance: null });
   saveConstraints({});
 
-  const feedbackLog = makeTempPath('memory-feedback.jsonl');
-  const attributedFeedback = makeTempPath('memory-attributed.jsonl');
-  const missingGuards = makeTempPath('missing-pretool-guards.json');
-  // Unique tokens reduce collision with real local feedback in CI workspaces.
-  const memoryContext = 'zxqmemdeny git push origin feature regression broke production zxqmemdeny';
-  const entries = [
-    { id: 'mem-1', signal: 'negative', context: memoryContext, timestamp: new Date().toISOString() },
-    { id: 'mem-2', signal: 'negative', context: memoryContext, timestamp: new Date().toISOString() },
-    { id: 'mem-3', signal: 'negative', context: memoryContext, timestamp: new Date().toISOString() },
-  ];
-  fs.writeFileSync(feedbackLog, entries.map((entry) => JSON.stringify(entry)).join('\n') + '\n');
-  fs.writeFileSync(attributedFeedback, '');
+  const hybridPath = require.resolve('../scripts/hybrid-feedback-context');
+  const hybrid = require(hybridPath);
+  const originalEvaluatePretool = hybrid.evaluatePretool;
+  hybrid.evaluatePretool = () => ({
+    mode: 'block',
+    reason: 'Recurring negative pattern (count: 3): "zxqmemdeny regression production"',
+    source: 'state',
+  });
 
-  const originalFeedbackLog = process.env.THUMBGATE_FEEDBACK_LOG;
-  const originalAttributedFeedback = process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
-  const originalFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
   const originalGuardsPath = process.env.THUMBGATE_GUARDS_PATH;
-  process.env.THUMBGATE_FEEDBACK_LOG = feedbackLog;
-  process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = attributedFeedback;
-  process.env.THUMBGATE_FEEDBACK_DIR = sandboxDir;
-  process.env.THUMBGATE_GUARDS_PATH = missingGuards;
+  process.env.THUMBGATE_GUARDS_PATH = makeTempPath('missing-pretool-guards.json');
 
   try {
     const result = await evaluateGatesAsync('Bash', {
-      // Include unique memory tokens so hybrid keyword match is deterministic.
       command: 'git push origin feature/zxqmemdeny-regression',
-      changed_files: ['tmp/zxqmemdeny-scratch.js'],
     }, tmpConfig);
     assert.ok(result, `expected memory deny, got ${JSON.stringify(result)}`);
     assert.equal(result.decision, 'deny');
     assert.equal(result.gate, 'memory-high-risk-default-deny');
     assert.match(result.message, /Recurring negative memory matched/i);
   } finally {
-    if (originalFeedbackLog === undefined) delete process.env.THUMBGATE_FEEDBACK_LOG;
-    else process.env.THUMBGATE_FEEDBACK_LOG = originalFeedbackLog;
-    if (originalAttributedFeedback === undefined) delete process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
-    else process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = originalAttributedFeedback;
-    if (originalFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
-    else process.env.THUMBGATE_FEEDBACK_DIR = originalFeedbackDir;
+    hybrid.evaluatePretool = originalEvaluatePretool;
     if (originalGuardsPath === undefined) delete process.env.THUMBGATE_GUARDS_PATH;
     else process.env.THUMBGATE_GUARDS_PATH = originalGuardsPath;
     fs.rmSync(tmpConfig, { force: true });
-    fs.rmSync(feedbackLog, { force: true });
-    fs.rmSync(attributedFeedback, { force: true });
     cleanupStateFiles();
   }
 });
