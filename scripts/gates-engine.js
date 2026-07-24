@@ -1211,10 +1211,43 @@ function isReadOnlyObservabilityTool(toolName) {
 }
 
 function evaluatePendingPrThreadResolutionGate(toolName, toolInput = {}) {
-  if (!hasAction(PR_THREAD_RESOLUTION_ACTION)) return null;
+  const pendingEntry = loadSessionActions()[PR_THREAD_RESOLUTION_ACTION];
+  if (!pendingEntry) return null;
+
+  // Scope to the repo that actually committed. Session-actions state lives in a
+  // single global file (~/.thumbgate/session-actions.json), shared by every repo
+  // on the machine. Without this check, a commit in repo A permanently locks out
+  // every tool call in an unrelated repo B's session until the 1-hour TTL expires
+  // (verified 2026-07-24: a commit in one repo/worktree blocked every Bash/Read/
+  // Skill/ToolSearch call in a completely unrelated repo's session).
+  const trackedRepoRoot = pendingEntry.metadata && pendingEntry.metadata.repoRoot;
+  if (trackedRepoRoot) {
+    const currentRepoRoot = resolveRepoRoot(toolInput);
+    if (currentRepoRoot && currentRepoRoot !== trackedRepoRoot) return null;
+  }
+
   if (isThreadResolutionSatisfied()) return null;
   if (isReadOnlyObservabilityTool(toolName)) return null;
-  if (isThreadResolutionEvidenceAction(toolName, toolInput)) return null;
+  if (isThreadResolutionEvidenceAction(toolName, toolInput)) {
+    // The triggering `git commit` itself is exempt from being blocked (it just armed
+    // the gate; it proves nothing about thread resolution) but must NOT auto-satisfy —
+    // otherwise the gate clears itself the instant it's registered.
+    //
+    // Every OTHER evidence action (gh pr view/checks/status, gh api .../reviewThreads,
+    // git status/diff/show, satisfy_gate/track_action) running the command itself must
+    // clear the gate, not just be exempted from this one check. Previously the exemption
+    // and the satisfaction were two disconnected mechanisms: the evidence command was
+    // allowed through, but nothing ever tracked pr_threads_checked, so every call after
+    // it was denied again — an unrecoverable lockout for any agent that didn't know about
+    // the separate satisfy_gate/track_action MCP tools (verified 2026-07-24).
+    if (!isGitCommitCommand(toolName, toolInput)) {
+      trackAction(PR_THREAD_RESOLUTION_REQUIRED_ACTIONS[0], {
+        autoSatisfiedBy: toolName,
+        repoRoot: trackedRepoRoot || resolveRepoRoot(toolInput) || null,
+      });
+    }
+    return null;
+  }
 
   const message = 'A git commit was made on a PR branch. Verify review threads are resolved before the next tool call.';
   return {

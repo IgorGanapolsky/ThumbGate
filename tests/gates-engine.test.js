@@ -2174,6 +2174,50 @@ test('pending PR-thread gate never blocks read-only observability tools (operato
   }
 });
 
+test('pending PR-thread gate does not leak across repos (regression 2026-07-24 mac-mini lockout)', () => {
+  cleanupStateFiles();
+  try {
+    const realRepoRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
+    trackAction(PR_THREAD_RESOLUTION_ACTION, { repoRoot: realRepoRoot, branchName: 'ops/main-sync' });
+    assert.ok(hasAction(PR_THREAD_RESOLUTION_ACTION));
+
+    const blockedSameRepo = evaluatePendingPrThreadResolutionGate('Read', { file_path: 'README.md' });
+    assert.ok(blockedSameRepo && blockedSameRepo.decision === 'deny', 'still gated inside the repo that actually committed');
+  } finally {
+    cleanupStateFiles();
+  }
+
+  cleanupStateFiles();
+  try {
+    trackAction(PR_THREAD_RESOLUTION_ACTION, { repoRoot: '/Users/example/workspace/some-other-repo', branchName: 'ops/main-sync' });
+    assert.ok(hasAction(PR_THREAD_RESOLUTION_ACTION));
+
+    const allowedOtherRepo = evaluatePendingPrThreadResolutionGate('Read', { file_path: 'README.md' });
+    assert.equal(allowedOtherRepo, null, 'a different repo must not be locked out by a commit made elsewhere');
+  } finally {
+    cleanupStateFiles();
+  }
+});
+
+test('running the evidence command clears the pending PR-thread gate for subsequent calls (regression 2026-07-24)', () => {
+  cleanupStateFiles();
+  try {
+    trackAction(PR_THREAD_RESOLUTION_ACTION, { branchName: 'fix/review-feedback' });
+    assert.ok(hasAction(PR_THREAD_RESOLUTION_ACTION));
+
+    const blockedBefore = evaluatePendingPrThreadResolutionGate('Read', { file_path: 'README.md' });
+    assert.ok(blockedBefore && blockedBefore.decision === 'deny', 'gated before any evidence command runs');
+
+    const evidenceCallResult = evaluatePendingPrThreadResolutionGate('Bash', { command: 'gh pr view --json reviewThreads' });
+    assert.equal(evidenceCallResult, null, 'the evidence command itself is allowed through');
+
+    const afterEvidence = evaluatePendingPrThreadResolutionGate('Read', { file_path: 'README.md' });
+    assert.equal(afterEvidence, null, 'the gate must clear for every subsequent call once evidence has run');
+  } finally {
+    cleanupStateFiles();
+  }
+});
+
 test('evaluateGates blocks raw GitHub auto-merge even after merge permission is satisfied', () => {
   cleanupStateFiles();
   setTaskScope({
