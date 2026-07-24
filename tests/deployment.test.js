@@ -42,6 +42,11 @@ function runDeployScopeFixture(changePath, eventName = 'push', beforeShaOverride
     execFileSync('git', ['init'], { cwd: repoDir, stdio: 'ignore' });
     execFileSync('git', ['config', 'user.email', 'deploy-scope@example.test'], { cwd: repoDir });
     execFileSync('git', ['config', 'user.name', 'Deploy Scope Test'], { cwd: repoDir });
+    // Root cause of #2774: background `git gc --auto` can hold a handle open
+    // in .git/objects just long enough for teardown's rmSync to race it.
+    // Disabling auto-gc for this short-lived fixture removes the race instead
+    // of only retrying around it.
+    execFileSync('git', ['config', 'gc.auto', '0'], { cwd: repoDir });
 
     fs.writeFileSync(path.join(repoDir, 'README.md'), 'initial\n');
     execFileSync('git', ['add', '.'], { cwd: repoDir });
@@ -75,13 +80,24 @@ function runDeployScopeFixture(changePath, eventName = 'push', beforeShaOverride
 
     return JSON.parse(fs.readFileSync(jsonOutput, 'utf8'));
   } finally {
-    // Retry transient APFS ENOTEMPTY teardown failures observed under Node 26.
-    fs.rmSync(repoDir, {
-      recursive: true,
-      force: true,
-      maxRetries: 5,
-      retryDelay: 50,
-    });
+    // Best-effort cleanup only (issue #2774): gc.auto=0 above removes the
+    // dominant root cause, and this retries transient APFS ENOTEMPTY
+    // failures observed under Node 26 as defense in depth — but an
+    // intermittent lingering-process hold can occasionally outlast even a
+    // generous retry budget. This directory is a unique mkdtempSync path
+    // never reused by another test, so a failed cleanup has no effect on
+    // test correctness or isolation — only on how much scratch disk briefly
+    // lingers. Warn instead of failing the test.
+    try {
+      fs.rmSync(repoDir, {
+        recursive: true,
+        force: true,
+        maxRetries: 10,
+        retryDelay: 100,
+      });
+    } catch (error) {
+      process.stderr.write(`[test cleanup] best-effort rmSync failed for ${repoDir}: ${error.message}\n`);
+    }
   }
 }
 
