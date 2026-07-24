@@ -13,10 +13,10 @@
   <meta property="og:image" content="https://thumbgate.ai/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://thumbgate.ai/og.png">
-  <title>ThumbGate: the self-improving firewall for AI agents</title>
-  <meta name="description" content="ThumbGate is the self-improving firewall for AI agents under your control. Self-serve is $19/mo; the $499 managed entry installs one hard, test-backed safety gate for a supported AI-agent workflow in two business days.">
-  <meta property="og:title" content="ThumbGate: the self-improving firewall for AI agents">
-  <meta property="og:description" content="Every approval teaches it what to allow, block, or escalate next time. Self-improving under your control. Self-serve $19/mo, or $499 managed setup for one workflow.">
+  <title>ThumbGate — Stop AI agent mistakes before they cost you</title>
+  <meta name="description" content="Stop AI agent mistakes before they cost you. Self-serve is $19/mo; the $499 Diagnostic installs one hard, test-backed safety gate for a supported AI-agent workflow in two business days.">
+  <meta property="og:title" content="ThumbGate — Stop AI agent mistakes before they cost you">
+  <meta property="og:description" content="Not a prompt. Not a postmortem. Pre-action gates + dual path: $19/mo Pro or $499 Diagnostic gate.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="__APP_ORIGIN__/">
   <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.tagged-events.js"></script>
@@ -572,8 +572,8 @@
         <a href="#how-it-works">How it works</a>
         <a href="#offers">Pricing</a>
         <a href="#proof">Proof</a>
-        <a class="nav-buy" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_nav&amp;utm_campaign=pro_self_serve&amp;cta_id=nav_pro_buy&amp;cta_placement=nav&amp;plan_id=pro" data-offer-link data-cta-id="nav_pro_buy">Pro · $19/mo</a>
-        <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="nav_diagnostic_buy">Enterprise · $499</a>
+        <a class="nav-enterprise" href="#enterprise-gate" data-offer-link data-cta-id="nav_diagnostic_buy">Get Started · $499</a>
+        <a class="nav-buy" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_nav&amp;utm_campaign=rally_style_gtm&amp;cta_id=nav_pro_buy&amp;cta_placement=nav&amp;plan_id=pro" data-offer-link data-cta-id="nav_pro_buy">Pro · $19/mo</a>
       </div>
     </div>
   </nav>
@@ -583,25 +583,49 @@
     <section class="hero">
       <div class="shell hero-grid">
         <div class="hero-copy">
-          <div class="eyebrow">Self-improving under your control</div>
-          <h1>Self-Improving Firewall for Your AI Agents.</h1>
-          <p class="hero-lede">Every approval teaches it what to allow, block, or escalate next time.</p>
-          <p class="fit-line"><strong>Two paid paths:</strong> self-serve <strong>Pro at $19/mo</strong> for operators, or the <strong>$499 enterprise entry offer</strong> for engineering and security leads using Claude Code, Cursor, Codex, or similar agents after a real workflow failure.</p>
-          <div class="spec-chips" aria-label="What the self-improving firewall does">
+          <div class="eyebrow">Now live · Pre-action gates · Not a prompt · Not a postmortem</div>
+          <h1>Stop AI agent mistakes before they cost you.</h1>
+          <p class="hero-lede">Hard allow/deny at the <strong>tool-call boundary</strong>. Audit entry written at decision time. Every approval teaches the next gate.</p>
+          <p class="fit-line"><strong>Dual path (buy + book):</strong> <strong>$499 Diagnostic</strong> maps one expensive failure on Claude Code, Cursor, Codex, or similar agents and installs a hard gate with proof — or self-serve <strong>Pro at $19/mo</strong> if you already know the loop. Free local evaluate stays free.</p>
+          <div class="spec-chips" aria-label="What ThumbGate does">
             <span class="spec-chip"><strong>Capture</strong> feedback</span>
             <span class="spec-chip"><strong>Rank</strong> lessons</span>
             <span class="spec-chip"><strong>Promote</strong> gates</span>
-            <span class="spec-chip"><strong>Check</strong> next action</span>
+            <span class="spec-chip"><strong>Block</strong> next action</span>
           </div>
           <a class="proof-link" href="#proof">See a strict-mode deny example ↓</a>
-          <p class="install-hint"><code>npx thumbgate init</code> free local evaluate · <a href="/guide">setup guide</a> · <a href="/pricing">full pricing</a></p>
+          <p class="install-hint"><code>npx thumbgate init</code> free local evaluate · first hard gate usually minutes after install · <a href="/pricing">how we stack up</a></p>
         </div>
         <div id="offers" class="offer-stack">
+          <form id="buy" class="checkout-card" action="/go/diagnostic-pay" method="POST" data-primary-checkout style="order:-1;border-color:rgba(0,110,82,.35);box-shadow:0 18px 50px rgba(0,110,82,.12);">
+            <span id="workflow-sprint-intake" data-legacy-intake-alias aria-hidden="true"></span>
+            <span id="enterprise-gate"></span>
+            <input type="hidden" name="utm_source" value="website">
+            <input type="hidden" name="utm_medium" value="homepage_checkout">
+            <input type="hidden" name="utm_campaign" value="rally_style_gtm">
+            <input type="hidden" name="utm_content" value="hero_direct_checkout">
+            <input type="hidden" name="cta_id" value="homepage_diagnostic_buy">
+            <input type="hidden" name="cta_placement" value="hero">
+            <input type="hidden" name="plan_id" value="sprint_diagnostic">
+            <input type="hidden" name="landing_path" value="/">
+            <div class="price"><strong>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</strong><span>one time · cash path</span></div>
+            <h2>Diagnostic Gate</h2>
+            <p><strong>Managed AI Agent Workflow Gate.</strong> Bring the failure. Leave with one hard gate and proof — ranked burn, configured pre-action check, regression test. Not a strategy deck.</p>
+            <label for="buyer-email">Work email for the receipt</label>
+            <input id="buyer-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
+            <button class="button-primary" type="submit" data-revenue-cta data-cta-id="homepage_diagnostic_buy" data-cta-placement="hero">Get Started — $499 Diagnostic</button>
+            <p class="checkout-note">Secure Stripe · no subscription · one workflow. Prefer a call first? <a href="#how-it-works" style="color:inherit;font-weight:700;">See how it works</a> or email after checkout.</p>
+            <ul class="offer-points">
+              <li>60-minute working review for one workflow</li>
+              <li>One configured local gate and its regression test</li>
+              <li>Rollout and rollback proof within two business days</li>
+            </ul>
+          </form>
           <aside class="pro-card" id="pro" aria-label="ThumbGate Pro subscription">
             <div class="price"><strong>$19</strong><span>/mo · or $149/yr</span></div>
             <h2>Pro</h2>
-            <p><strong>Self-serve for individual operators.</strong> Local enforcement proof, dashboard evidence, recall, and proof-ready exports—start today.</p>
-            <a class="button-pro" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=pro_self_serve&amp;cta_id=homepage_pro_buy&amp;cta_placement=hero&amp;plan_id=pro" data-offer-link data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="hero">Start Pro — $19/mo</a>
+            <p><strong>Self-serve for individual operators.</strong> Local enforcement proof, dashboard, recall, exports — start today.</p>
+            <a class="button-pro" href="/checkout/pro?utm_source=website&amp;utm_medium=homepage_hero&amp;utm_campaign=rally_style_gtm&amp;cta_id=homepage_pro_buy&amp;cta_placement=hero&amp;plan_id=pro" data-offer-link data-cta-id="homepage_pro_buy" data-revenue-cta data-cta-placement="hero">Start Pro — $19/mo</a>
             <p class="checkout-note">Hosted checkout · cancel anytime · free local evaluate stays free</p>
             <ul class="offer-points">
               <li>Personal enforcement proof and local dashboard</li>
@@ -609,30 +633,6 @@
               <li>Preference-pair export for model-hardening workflows</li>
             </ul>
           </aside>
-          <form id="buy" class="checkout-card" action="/go/diagnostic-pay" method="POST" data-primary-checkout>
-            <span id="workflow-sprint-intake" data-legacy-intake-alias aria-hidden="true"></span>
-            <span id="enterprise-gate"></span>
-            <input type="hidden" name="utm_source" value="website">
-            <input type="hidden" name="utm_medium" value="homepage_checkout">
-            <input type="hidden" name="utm_campaign" value="managed_workflow_gate">
-            <input type="hidden" name="utm_content" value="hero_direct_checkout">
-            <input type="hidden" name="cta_id" value="homepage_diagnostic_buy">
-            <input type="hidden" name="cta_placement" value="hero">
-            <input type="hidden" name="plan_id" value="sprint_diagnostic">
-            <input type="hidden" name="landing_path" value="/">
-            <div class="price"><strong>$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__</strong><span>one time</span></div>
-            <h2>Enterprise Workflow Gate</h2>
-            <p><strong>Managed AI Agent Workflow Gate.</strong> Bring the failure. Leave with one configured gate and proof it works.</p>
-            <label for="buyer-email">Work email for the receipt</label>
-            <input id="buyer-email" type="email" name="customer_email" autocomplete="email" required placeholder="you@company.com">
-            <button class="button-primary" type="submit" data-revenue-cta data-cta-id="homepage_diagnostic_buy" data-cta-placement="hero">Buy the $499 enterprise gate</button>
-            <p class="checkout-note">Secure Stripe checkout. No subscription. One workflow, not an org-wide platform license.</p>
-            <ul class="offer-points">
-              <li>60-minute working review for one workflow</li>
-              <li>One configured local gate and its regression test</li>
-              <li>Rollout and rollback proof within two business days</li>
-            </ul>
-          </form>
         </div>
       </div>
     </section>
