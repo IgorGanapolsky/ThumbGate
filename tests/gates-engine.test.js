@@ -2403,7 +2403,10 @@ test('git commit on a branch with a genuinely OPEN PR still arms the gate (no re
     assert.ok(result, 'an open PR must still register the claim gate');
     assert.equal(hasAction(PR_THREAD_RESOLUTION_ACTION), true);
 
-    const blocked = evaluatePendingPrThreadResolutionGate('Read', {});
+    // Same repo, later call: pass matching repoPath so the cross-repo scoping
+    // fix (2026-07-24) sees this as the same session/repo continuing, not an
+    // unrelated repo's tool call.
+    const blocked = evaluatePendingPrThreadResolutionGate('Read', { repoPath: repoDir });
     assert.ok(blocked);
     assert.equal(blocked.decision, 'deny');
     assert.equal(blocked.gate, 'pr-thread-resolution-verified-required');
@@ -2495,7 +2498,10 @@ test('a dormant-PR commit on one branch never leaks satisfaction into a differen
       mergedExec,
     );
 
-    const stillBlocked = evaluatePendingPrThreadResolutionGate('Read', {});
+    // Check from repo A's own session — matching repoPath so the cross-repo
+    // scoping fix (2026-07-24) evaluates this as "still in the repo that's
+    // actually gated," not an unrelated repo's tool call.
+    const stillBlocked = evaluatePendingPrThreadResolutionGate('Read', { repoPath: repoA });
     assert.ok(stillBlocked, 'a different branch\'s dormant-PR commit must never satisfy this branch\'s pending gate');
     assert.equal(stillBlocked.decision, 'deny');
     assert.equal(stillBlocked.gate, 'pr-thread-resolution-verified-required');
