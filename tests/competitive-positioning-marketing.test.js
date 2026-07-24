@@ -18,7 +18,7 @@ const deploymentReadinessHtml = read('public', 'guides', 'ai-deployment-readines
 
 test('homepage explains the enforcement point without an orchestration essay', () => {
   assert.match(indexHtml, /Pre-action checks—and the systems that refine them/i);
-  assert.match(indexHtml, /Self-Improving Firewall for Your AI Agents/i);
+  assert.match(indexHtml, /Stop AI agent mistakes before they cost you/i);
   assert.match(indexHtml, /Capture feedback/i);
   assert.match(indexHtml, /Remember locally/i);
   assert.match(indexHtml, /Rank and refine/i);

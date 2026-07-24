@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 test.describe('/pricing dual-offer cash path', () => {
   test('shows Pro self-serve and fixed-price managed gate', async ({ page }) => {
     await page.goto('/pricing');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Self-serve Pro, or a managed gate');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Stop paying for the same AI mistake twice');
     await expect(page.getByRole('link', { name: 'Start Pro — $19/mo' })).toBeVisible();
     await expect(page.locator('a[href*="/checkout/pro"]')).not.toHaveCount(0);
     await expect(page.locator('#enterprise-gate .price')).toHaveText('$499');
@@ -26,7 +26,7 @@ test.describe('/pricing dual-offer cash path', () => {
     });
     await page.goto('/pricing');
     await page.locator('#pricing-email').fill('buyer@example.com');
-    await page.getByRole('button', { name: 'Buy the $499 enterprise gate' }).click();
+    await page.getByRole('button', { name: 'Get Started — $499 Diagnostic' }).click();
     await expect.poll(() => submitted).toContain('customer_email=buyer%40example.com');
     expect(submitted).toContain('plan_id=sprint_diagnostic');
     expect(submitted).toContain('utm_source=pricing');
@@ -35,7 +35,7 @@ test.describe('/pricing dual-offer cash path', () => {
   test('browser validation blocks checkout without a valid email', async ({ page }) => {
     await page.goto('/pricing');
     await page.locator('#pricing-email').fill('not-an-email');
-    await page.getByRole('button', { name: 'Buy the $499 enterprise gate' }).click();
+    await page.getByRole('button', { name: 'Get Started — $499 Diagnostic' }).click();
     await expect(page).toHaveURL(/\/pricing$/);
     await expect(page.locator('#pricing-email')).toHaveJSProperty('validity.valid', false);
   });

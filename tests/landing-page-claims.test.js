@@ -10,9 +10,9 @@ const HOME_HTML = fs.readFileSync(path.join(ROOT, 'public', 'index.html'), 'utf8
 const PRICING_HTML = fs.readFileSync(path.join(ROOT, 'public', 'pricing.html'), 'utf8');
 const PRO_HTML = fs.readFileSync(path.join(ROOT, 'public', 'pro.html'), 'utf8');
 
-test('homepage commercial contract offers Pro $19/mo and Enterprise $499', () => {
-  assert.match(HOME_HTML, /Enterprise Workflow Gate/);
-  assert.match(HOME_HTML, /\$499 enterprise entry offer/i);
+test('homepage commercial contract offers Pro $19/mo and Diagnostic $499', () => {
+  assert.match(HOME_HTML, /Diagnostic Gate/);
+  assert.match(HOME_HTML, /\$499 Diagnostic/i);
   assert.match(HOME_HTML, /action="\/go\/diagnostic-pay"/);
   assert.match(HOME_HTML, /\$__SPRINT_DIAGNOSTIC_PRICE_DOLLARS__/);
   assert.match(HOME_HTML, /\/checkout\/pro/);
@@ -22,9 +22,9 @@ test('homepage commercial contract offers Pro $19/mo and Enterprise $499', () =>
   assert.match(HOME_HTML, /id="workflow-sprint-intake"[^>]*data-legacy-intake-alias/);
 });
 
-test('pricing surfaces Pro self-serve and Enterprise managed gate together', () => {
-  assert.match(PRICING_HTML, /Enterprise Workflow Gate/);
-  assert.match(PRICING_HTML, /Enterprise entry offer/i);
+test('pricing surfaces Pro self-serve and Diagnostic managed gate together', () => {
+  assert.match(PRICING_HTML, /Diagnostic gate|Get Started — \$499 Diagnostic|Cash path/i);
+  assert.match(PRICING_HTML, /Diagnostic gate|Get Started — \$499 Diagnostic/i);
   assert.match(PRICING_HTML, /action="\/go\/diagnostic-pay"/);
   assert.match(PRICING_HTML, /\$499/);
   assert.match(PRICING_HTML, /\/checkout\/pro/);
