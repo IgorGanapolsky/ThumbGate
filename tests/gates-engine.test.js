@@ -2222,7 +2222,7 @@ test('pending PR-thread gate does not leak across repos (regression 2026-07-24 m
   }
 });
 
-test('running the evidence command clears the pending PR-thread gate for subsequent calls (regression 2026-07-24)', () => {
+test('the evidence command itself is exempt from blocking, but does NOT auto-satisfy the gate for later calls (regression: PR #3030 review — a request-time pattern match is unsound since this hook fires pre-execution)', () => {
   cleanupStateFiles();
   try {
     trackAction(PR_THREAD_RESOLUTION_ACTION, { branchName: 'fix/review-feedback' });
@@ -2234,8 +2234,36 @@ test('running the evidence command clears the pending PR-thread gate for subsequ
     const evidenceCallResult = evaluatePendingPrThreadResolutionGate('Bash', { command: 'gh pr view --json reviewThreads' });
     assert.equal(evidenceCallResult, null, 'the evidence command itself is allowed through');
 
-    const afterEvidence = evaluatePendingPrThreadResolutionGate('Read', { file_path: 'README.md' });
-    assert.equal(afterEvidence, null, 'the gate must clear for every subsequent call once evidence has run');
+    // Merely requesting an evidence-shaped command must NOT clear the gate — the
+    // hook fires before the command runs, so it cannot know whether `gh pr view`
+    // will succeed or what it will report. A subsequent unrelated call must still
+    // be gated until the agent explicitly calls satisfy_gate with real evidence.
+    const stillBlockedAfter = evaluatePendingPrThreadResolutionGate('Read', { file_path: 'README.md' });
+    assert.ok(stillBlockedAfter && stillBlockedAfter.decision === 'deny', 'requesting the evidence command alone must not clear the gate');
+
+    // The explicit satisfy_gate path (satisfyCondition, as the real satisfy_gate
+    // tool calls under the hood) is the only sound way to clear it.
+    satisfyCondition('pr_threads_checked', 'gh pr view --json reviewThreads returned 0 unresolved');
+    const afterExplicitSatisfy = evaluatePendingPrThreadResolutionGate('Read', { file_path: 'README.md' });
+    assert.equal(afterExplicitSatisfy, null, 'explicit satisfy_gate evidence clears the gate for subsequent calls');
+  } finally {
+    cleanupStateFiles();
+  }
+});
+
+test('an evidence-shaped command that is content-blind (e.g. git status) never satisfies the gate (regression: PR #3030 review)', () => {
+  cleanupStateFiles();
+  try {
+    trackAction(PR_THREAD_RESOLUTION_ACTION, { branchName: 'fix/review-feedback' });
+    assert.ok(hasAction(PR_THREAD_RESOLUTION_ACTION));
+
+    // git status proves nothing about thread resolution; it is only exempt from
+    // this one block because it's a harmless local read, never treated as evidence.
+    const statusCallResult = evaluatePendingPrThreadResolutionGate('Bash', { command: 'git status' });
+    assert.equal(statusCallResult, null, 'git status is exempt from blocking');
+
+    const stillBlocked = evaluatePendingPrThreadResolutionGate('Read', { file_path: 'README.md' });
+    assert.ok(stillBlocked && stillBlocked.decision === 'deny', 'git status must never satisfy the pending gate');
   } finally {
     cleanupStateFiles();
   }

@@ -1348,26 +1348,20 @@ function evaluatePendingPrThreadResolutionGate(toolName, toolInput = {}) {
 
   if (isThreadResolutionSatisfied()) return null;
   if (isReadOnlyObservabilityTool(toolName)) return null;
-  if (isThreadResolutionEvidenceAction(toolName, toolInput)) {
-    // The triggering `git commit` itself is exempt from being blocked (it just armed
-    // the gate; it proves nothing about thread resolution) but must NOT auto-satisfy —
-    // otherwise the gate clears itself the instant it's registered.
-    //
-    // Every OTHER evidence action (gh pr view/checks/status, gh api .../reviewThreads,
-    // git status/diff/show, satisfy_gate/track_action) running the command itself must
-    // clear the gate, not just be exempted from this one check. Previously the exemption
-    // and the satisfaction were two disconnected mechanisms: the evidence command was
-    // allowed through, but nothing ever tracked pr_threads_checked, so every call after
-    // it was denied again — an unrecoverable lockout for any agent that didn't know about
-    // the separate satisfy_gate/track_action MCP tools (verified 2026-07-24).
-    if (!isGitCommitCommand(toolName, toolInput)) {
-      trackAction(PR_THREAD_RESOLUTION_REQUIRED_ACTIONS[0], {
-        autoSatisfiedBy: toolName,
-        repoRoot: trackedRepoRoot || resolveRepoRoot(toolInput) || null,
-      });
-    }
-    return null;
-  }
+  // Evidence actions (gh pr view/checks/status, gh api .../reviewThreads, git
+  // status/diff/show, the satisfy_gate/track_action tools themselves) are exempt
+  // from being blocked so an agent can actually gather evidence and call
+  // satisfy_gate — but running them must NOT itself satisfy the gate. This is a
+  // PreToolUse hook: it fires before the command executes, so at this point the
+  // command hasn't run, could still fail, or could return UNFAVORABLE evidence
+  // (N unresolved threads). Auto-satisfying on the mere shape of the request —
+  // as an earlier version of this fix did — let `git status` (which proves
+  // nothing about thread resolution) or a `gh pr view` that later errors clear
+  // a critical gate before any real verification happened (caught in review,
+  // PR #3030). The only sound way to clear this gate is the explicit,
+  // agent-asserted `satisfy_gate` tool call, which records real evidence via
+  // satisfyCondition() — never inferred from a pre-execution command guess.
+  if (isThreadResolutionEvidenceAction(toolName, toolInput)) return null;
 
   const message = 'A git commit was made on a PR branch. Verify review threads are resolved before the next tool call.';
   return {
@@ -1377,7 +1371,7 @@ function evaluatePendingPrThreadResolutionGate(toolName, toolInput = {}) {
     severity: 'critical',
     reasoning: [
       `Tracked action ${PR_THREAD_RESOLUTION_ACTION} is pending`,
-      'Satisfy pr_threads_checked or thread_resolution_verified with evidence before continuing',
+      'Check review threads (e.g. gh pr view --json reviewThreads), then call the satisfy_gate tool with gateId="pr_threads_checked" and the evidence — running a check command alone does not clear this gate',
     ],
   };
 }
