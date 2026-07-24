@@ -42,6 +42,11 @@ function runDeployScopeFixture(changePath, eventName = 'push', beforeShaOverride
     execFileSync('git', ['init'], { cwd: repoDir, stdio: 'ignore' });
     execFileSync('git', ['config', 'user.email', 'deploy-scope@example.test'], { cwd: repoDir });
     execFileSync('git', ['config', 'user.name', 'Deploy Scope Test'], { cwd: repoDir });
+    // Root cause of #2774: background `git gc --auto` can hold a handle open
+    // in .git/objects just long enough for teardown's rmSync to race it.
+    // Disabling auto-gc for this short-lived fixture removes the race instead
+    // of only retrying around it.
+    execFileSync('git', ['config', 'gc.auto', '0'], { cwd: repoDir });
 
     fs.writeFileSync(path.join(repoDir, 'README.md'), 'initial\n');
     execFileSync('git', ['add', '.'], { cwd: repoDir });
@@ -75,12 +80,14 @@ function runDeployScopeFixture(changePath, eventName = 'push', beforeShaOverride
 
     return JSON.parse(fs.readFileSync(jsonOutput, 'utf8'));
   } finally {
-    // Retry transient APFS ENOTEMPTY teardown failures observed under Node 26.
+    // Retry transient APFS ENOTEMPTY teardown failures observed under Node 26
+    // (defense in depth — gc.auto=0 above removes the root cause, this covers
+    // any other lingering-handle source).
     fs.rmSync(repoDir, {
       recursive: true,
       force: true,
-      maxRetries: 5,
-      retryDelay: 50,
+      maxRetries: 10,
+      retryDelay: 100,
     });
   }
 }
