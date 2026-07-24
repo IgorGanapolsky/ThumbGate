@@ -1169,7 +1169,11 @@ const GH_BINARY_FIXED_PATH_DIRS = ['/usr/local/bin', '/usr/bin', '/bin', '/opt/h
 
 // SonarCloud flags a bare `execFileSync('gh', ...)` as a PATH-injection hotspot
 // (same reasoning as scripts/ci-cd-hygiene-audit.js resolveGhBinary). Resolve
-// gh's absolute path from a fixed directory list instead of trusting $PATH.
+// gh's absolute path from a fixed directory list — and ONLY that list. Never
+// fall back to a PATH-resolved bare name: a workspace-controlled program
+// earlier on $PATH would otherwise execute with this hook's privileges during
+// a commit-time check, and could return crafted output to fake "merged" and
+// bypass thread-resolution enforcement entirely (found by review on PR #3027).
 function resolveGhBinaryForPrCheck() {
   for (const dir of GH_BINARY_FIXED_PATH_DIRS) {
     const candidate = path.join(dir, 'gh');
@@ -1179,20 +1183,7 @@ function resolveGhBinaryForPrCheck() {
       // keep searching
     }
   }
-  return 'gh';
-}
-
-function branchHasConfiguredUpstream(branchName, repoRoot, execFn) {
-  try {
-    const remote = execFn('git', ['config', '--get', `branch.${branchName}.remote`], {
-      cwd: repoRoot,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim();
-    return Boolean(remote);
-  } catch {
-    return false;
-  }
+  return null;
 }
 
 // 2026-07-24 self-lockout (issue #3025): a commit landing on a branch whose PR
@@ -1206,19 +1197,22 @@ function branchHasConfiguredUpstream(branchName, repoRoot, execFn) {
 // not be completed (gh unavailable/unauthenticated/timed out) — callers must
 // treat `null` as "cannot verify" and fall back to arming the gate as before,
 // never as license to relax enforcement.
+//
+// Deliberately does NOT trust local git config (e.g. a missing
+// `branch.<name>.remote`) as a signal that no PR exists: local config can be
+// wrong or stale relative to GitHub (unset upstream, push under a different
+// ref, etc.) while a real open PR with real unresolved threads still exists
+// (found by review on PR #3027) — the live `gh` check is the only source of
+// truth here.
 function checkPrDormantForBranch(branchName, repoRoot, execFn = execFileSync) {
   if (!branchName || !repoRoot) return null;
 
-  // Never pushed anywhere -> no PR can possibly exist. Skip the network call
-  // entirely (this also keeps unit tests that use throwaway local repos fast
-  // and offline).
-  if (!branchHasConfiguredUpstream(branchName, repoRoot, execFn)) {
-    return { dormant: true, reason: 'never-pushed-no-upstream' };
-  }
+  const ghBinary = resolveGhBinaryForPrCheck();
+  if (!ghBinary) return null; // gh not found in a trusted location — cannot verify
 
   let raw;
   try {
-    raw = execFn(resolveGhBinaryForPrCheck(), ['pr', 'view', branchName, '--json', 'number,state'], {
+    raw = execFn(ghBinary, ['pr', 'view', branchName, '--json', 'number,state'], {
       cwd: repoRoot,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -1229,7 +1223,7 @@ function checkPrDormantForBranch(branchName, repoRoot, execFn = execFileSync) {
     if (/no pull requests found/i.test(stderr)) {
       return { dormant: true, reason: 'no-pr-for-branch' };
     }
-    return null; // gh missing/unauthenticated/network error/timed out — cannot verify
+    return null; // gh unauthenticated/network error/timed out — cannot verify
   }
 
   let pr;
@@ -1258,9 +1252,16 @@ function registerPrThreadResolutionClaimGate(toolName, toolInput = {}, execOverr
   if (!hasExplicitPrReference(toolInput)) {
     const prState = checkPrDormantForBranch(branchName, repoRoot, execOverride || execFileSync);
     if (prState && prState.dormant) {
-      const evidence = `auto-satisfied: ${prState.reason}${prState.prNumber ? ` (PR #${prState.prNumber})` : ''} — no open PR/threads to verify`;
-      satisfyCondition('pr_threads_checked', evidence);
-      satisfyCondition('thread_resolution_verified', evidence);
+      // A dormant PR (merged/closed/nonexistent) means there is nothing to
+      // verify for THIS commit — simply don't arm the gate. Deliberately does
+      // NOT write to the shared pr_threads_checked/thread_resolution_verified
+      // condition store: those keys are global, not scoped to a branch, so
+      // writing to them here would leak satisfaction into a DIFFERENT
+      // branch's pending gate if a commit on that branch arms it within the
+      // same 5-minute TTL window — an agent could otherwise pre-satisfy the
+      // gate by committing on an abandoned merged-PR branch first, then
+      // switch to an active PR branch and skip real thread verification
+      // (found by review on PR #3027).
       return null;
     }
   }
@@ -3621,6 +3622,7 @@ module.exports = {
   registerPrThreadResolutionClaimGate,
   evaluatePendingPrThreadResolutionGate,
   checkPrDormantForBranch,
+  resolveGhBinaryForPrCheck,
   isReadOnlyObservabilityTool,
   getLocalOnlyScopeSources,
   isRemoteSideEffectCommand,

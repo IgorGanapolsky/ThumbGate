@@ -105,8 +105,19 @@ function makeTempPath(name) {
 // Retry transient APFS ENOTEMPTY teardown failures (issue #2774): a lingering
 // `git gc --auto`/fsmonitor handle on .git/objects can briefly block rmdir
 // right after a commit returns.
+// Best-effort cleanup only (issue #2774): an intermittent APFS/lingering-
+// process hold on .git/objects can occasionally outlast even a generous
+// retry budget. Each test mints a unique mkdtempSync directory it never
+// reuses, so a cleanup failure here has no effect on test correctness or
+// isolation — only on how much scratch disk briefly lingers. Warn instead of
+// failing the test so a transient OS-level race never produces a false CI
+// failure.
 function removeDirRobust(dir) {
-  fs.rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+  try {
+    fs.rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+  } catch (error) {
+    process.stderr.write(`[test cleanup] best-effort rmSync failed for ${dir}: ${error.message}\n`);
+  }
 }
 
 function createPushTestRepo(changedFile = 'src/app.js') {
@@ -196,7 +207,7 @@ afterEach(() => {
   if (ORIGINAL_ENV.THUMBGATE_GUARDS_PATH === undefined) delete process.env.THUMBGATE_GUARDS_PATH;
   else process.env.THUMBGATE_GUARDS_PATH = ORIGINAL_ENV.THUMBGATE_GUARDS_PATH;
   if (sandboxDir) {
-    fs.rmSync(sandboxDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    removeDirRobust(sandboxDir);
     sandboxDir = null;
   }
 });
@@ -2202,25 +2213,24 @@ function commitOnNewBranch(branchName, changedFile) {
 }
 
 test('checkPrDormantForBranch classifies merged/closed/open/no-PR/unverifiable states correctly', () => {
-  const withUpstream = (ghHandler) => (binary, args = []) => {
-    if (args[0] === 'config' && args[1] === '--get') return 'origin\n';
+  const onGhView = (ghHandler) => (binary, args = []) => {
     if (args[0] === 'pr' && args[1] === 'view') return ghHandler(args);
     throw new Error(`unexpected exec call: ${binary} ${args.join(' ')}`);
   };
 
-  const merged = gatesEngine.checkPrDormantForBranch('b', '/fake/repo', withUpstream(() => JSON.stringify({ number: 5, state: 'MERGED' })));
+  const merged = gatesEngine.checkPrDormantForBranch('b', '/fake/repo', onGhView(() => JSON.stringify({ number: 5, state: 'MERGED' })));
   assert.equal(merged.dormant, true);
   assert.equal(merged.reason, 'pr-merged');
   assert.equal(merged.prNumber, 5);
 
-  const closed = gatesEngine.checkPrDormantForBranch('b', '/fake/repo', withUpstream(() => JSON.stringify({ number: 6, state: 'CLOSED' })));
+  const closed = gatesEngine.checkPrDormantForBranch('b', '/fake/repo', onGhView(() => JSON.stringify({ number: 6, state: 'CLOSED' })));
   assert.equal(closed.dormant, true);
   assert.equal(closed.reason, 'pr-closed');
 
-  const open = gatesEngine.checkPrDormantForBranch('b', '/fake/repo', withUpstream(() => JSON.stringify({ number: 7, state: 'OPEN' })));
+  const open = gatesEngine.checkPrDormantForBranch('b', '/fake/repo', onGhView(() => JSON.stringify({ number: 7, state: 'OPEN' })));
   assert.equal(open.dormant, false);
 
-  const noPr = gatesEngine.checkPrDormantForBranch('b', '/fake/repo', withUpstream(() => {
+  const noPr = gatesEngine.checkPrDormantForBranch('b', '/fake/repo', onGhView(() => {
     const err = new Error('none');
     err.stderr = 'no pull requests found for branch "b"';
     throw err;
@@ -2230,33 +2240,28 @@ test('checkPrDormantForBranch classifies merged/closed/open/no-PR/unverifiable s
 
   // Any other gh failure (auth, network, timeout) must be treated as
   // "cannot verify" — never silently relax enforcement.
-  const unverifiable = gatesEngine.checkPrDormantForBranch('b', '/fake/repo', withUpstream(() => {
+  const unverifiable = gatesEngine.checkPrDormantForBranch('b', '/fake/repo', onGhView(() => {
     throw new Error('gh: authentication required');
   }));
   assert.equal(unverifiable, null);
 
-  // No configured upstream at all -> dormant without ever invoking gh.
-  let ghCalled = false;
-  const noUpstreamExec = (binary, args = []) => {
-    if (args[0] === 'config' && args[1] === '--get') return '';
-    if (args[0] === 'pr' && args[1] === 'view') { ghCalled = true; return '{}'; }
-    throw new Error(`unexpected exec call: ${binary} ${args.join(' ')}`);
-  };
-  const noUpstream = gatesEngine.checkPrDormantForBranch('b', '/fake/repo', noUpstreamExec);
-  assert.equal(noUpstream.dormant, true);
-  assert.equal(noUpstream.reason, 'never-pushed-no-upstream');
-  assert.equal(ghCalled, false, 'must never shell out to gh when the branch has no configured upstream');
-
-  assert.equal(gatesEngine.checkPrDormantForBranch('', '/fake/repo', noUpstreamExec), null);
-  assert.equal(gatesEngine.checkPrDormantForBranch('b', '', noUpstreamExec), null);
+  assert.equal(gatesEngine.checkPrDormantForBranch('', '/fake/repo', onGhView(() => '{}')), null);
+  assert.equal(gatesEngine.checkPrDormantForBranch('b', '', onGhView(() => '{}')), null);
 });
 
-test('git commit on a branch whose PR is already MERGED auto-satisfies the gate instead of locking out (regression: 2026-07-24 self-lockout, issue #3025)', () => {
+test('resolveGhBinaryForPrCheck never falls back to a PATH-resolved bare name (regression: PR #3027 review — a workspace-controlled gh on PATH could execute arbitrary code or fake PR state)', () => {
+  const resolved = gatesEngine.resolveGhBinaryForPrCheck();
+  assert.notEqual(resolved, 'gh', 'must never return the bare name for execFileSync to resolve via $PATH');
+  if (resolved !== null) {
+    assert.ok(path.isAbsolute(resolved), 'a resolved gh binary must be an absolute, trusted-directory path');
+  }
+});
+
+test('git commit on a branch whose PR is already MERGED does not arm the gate instead of locking out (regression: 2026-07-24 self-lockout, issue #3025)', () => {
   cleanupStateFiles();
   const repoDir = commitOnNewBranch('fix/dead-branch', 'src/dead-branch.js');
   try {
     const fakeExec = (binary, args = []) => {
-      if (args[0] === 'config' && args[1] === '--get') return 'origin\n';
       if (args[0] === 'pr' && args[1] === 'view') return JSON.stringify({ number: 110, state: 'MERGED' });
       throw new Error(`unexpected exec call: ${binary} ${args.join(' ')}`);
     };
@@ -2269,7 +2274,6 @@ test('git commit on a branch whose PR is already MERGED auto-satisfies the gate 
 
     assert.equal(result, null, 'a dormant PR must not register a claim gate');
     assert.equal(hasAction(PR_THREAD_RESOLUTION_ACTION), false, 'the pending action must never arm');
-    assert.equal(isConditionSatisfied('pr_threads_checked'), true, 'auto-satisfied evidence must be recorded');
 
     // The exact failure mode reproduced live on 2026-07-24: even a completely
     // unrelated, read-only follow-up call must never be blocked.
@@ -2281,12 +2285,11 @@ test('git commit on a branch whose PR is already MERGED auto-satisfies the gate 
   }
 });
 
-test('git commit on a branch whose PR is CLOSED (not merged) also auto-satisfies the gate', () => {
+test('git commit on a branch whose PR is CLOSED (not merged) also skips arming the gate', () => {
   cleanupStateFiles();
   const repoDir = commitOnNewBranch('fix/closed-branch', 'src/closed-branch.js');
   try {
     const fakeExec = (binary, args = []) => {
-      if (args[0] === 'config' && args[1] === '--get') return 'origin\n';
       if (args[0] === 'pr' && args[1] === 'view') return JSON.stringify({ number: 111, state: 'CLOSED' });
       throw new Error(`unexpected exec call: ${binary} ${args.join(' ')}`);
     };
@@ -2305,14 +2308,18 @@ test('git commit on a branch whose PR is CLOSED (not merged) also auto-satisfies
   }
 });
 
-test('git commit on a brand-new branch with no configured upstream never arms the gate (no PR can exist yet) and never shells out to gh', () => {
+test('git commit on a branch reported as having no PR still calls gh (does not trust local git config) and skips arming the gate', () => {
   cleanupStateFiles();
   const repoDir = commitOnNewBranch('feature/brand-new', 'src/fresh-branch.js');
   try {
     let ghCalled = false;
     const fakeExec = (binary, args = []) => {
-      if (args[0] === 'config' && args[1] === '--get') return '';
-      if (args[0] === 'pr' && args[1] === 'view') { ghCalled = true; return JSON.stringify({ number: 1, state: 'OPEN' }); }
+      if (args[0] === 'pr' && args[1] === 'view') {
+        ghCalled = true;
+        const err = new Error('none');
+        err.stderr = 'no pull requests found for branch "feature/brand-new"';
+        throw err;
+      }
       throw new Error(`unexpected exec call: ${binary} ${args.join(' ')}`);
     };
 
@@ -2324,19 +2331,21 @@ test('git commit on a brand-new branch with no configured upstream never arms th
 
     assert.equal(result, null);
     assert.equal(hasAction(PR_THREAD_RESOLUTION_ACTION), false);
-    assert.equal(ghCalled, false, 'must never shell out to gh when the branch has no configured upstream');
+    assert.equal(ghCalled, true, 'must always consult gh — local git config alone is not a trustworthy signal (regression: PR #3027 review)');
   } finally {
     removeDirRobust(repoDir);
     cleanupStateFiles();
   }
 });
 
-test('git commit on a branch with a genuinely OPEN PR still arms the gate (no regression from the dormant-PR fix)', () => {
+test('git commit on a branch with a genuinely OPEN PR still arms the gate (no regression from the dormant-PR fix), even with no configured upstream locally', () => {
   cleanupStateFiles();
   const repoDir = commitOnNewBranch('feature/open-pr', 'src/open-pr-branch.js');
   try {
+    // Deliberately does not configure any git remote for this branch — proves
+    // the dormant check no longer trusts local git config as a shortcut and
+    // still asks gh, which is the only source of truth (regression: PR #3027 review).
     const fakeExec = (binary, args = []) => {
-      if (args[0] === 'config' && args[1] === '--get') return 'origin\n';
       if (args[0] === 'pr' && args[1] === 'view') return JSON.stringify({ number: 42, state: 'OPEN' });
       throw new Error(`unexpected exec call: ${binary} ${args.join(' ')}`);
     };
@@ -2365,7 +2374,6 @@ test('gh CLI failure for an unrelated reason (e.g. unauthenticated) falls back t
   const repoDir = commitOnNewBranch('feature/gh-error', 'src/gh-error-branch.js');
   try {
     const fakeExec = (binary, args = []) => {
-      if (args[0] === 'config' && args[1] === '--get') return 'origin\n';
       if (args[0] === 'pr' && args[1] === 'view') {
         const err = new Error('gh: authentication required');
         err.stderr = 'gh: To authenticate, run `gh auth login`.';
@@ -2406,6 +2414,50 @@ test('an explicit prNumber is trusted directly — the dormant-PR check is never
     assert.equal(hasAction(PR_THREAD_RESOLUTION_ACTION), true);
   } finally {
     removeDirRobust(repoDir);
+    cleanupStateFiles();
+  }
+});
+
+test('a dormant-PR commit on one branch never leaks satisfaction into a different branch\'s already-armed gate (regression: PR #3027 review)', () => {
+  cleanupStateFiles();
+  const repoA = commitOnNewBranch('feature/open-pr-leak-check', 'src/open-pr-leak.js');
+  const repoB = commitOnNewBranch('fix/dead-branch-leak-check', 'src/dead-branch-leak.js');
+  try {
+    const openExec = (binary, args = []) => {
+      if (args[0] === 'pr' && args[1] === 'view') return JSON.stringify({ number: 200, state: 'OPEN' });
+      throw new Error(`unexpected exec call: ${binary} ${args.join(' ')}`);
+    };
+    const armed = gatesEngine.registerPrThreadResolutionClaimGate(
+      'Bash',
+      { command: 'git commit -m "address feedback"', repoPath: repoA },
+      openExec,
+    );
+    assert.ok(armed, 'repo A\'s genuinely open PR must arm the gate');
+    assert.equal(hasAction(PR_THREAD_RESOLUTION_ACTION), true);
+
+    // A commit on a COMPLETELY UNRELATED repo/branch whose PR is already
+    // merged must not satisfy repo A's still-pending gate. Before this fix,
+    // the dormant-branch path wrote to the shared, non-branch-scoped
+    // pr_threads_checked/thread_resolution_verified condition store, which an
+    // agent could exploit by committing on an abandoned merged-PR branch
+    // first to pre-satisfy the gate, then switching to an active PR branch.
+    const mergedExec = (binary, args = []) => {
+      if (args[0] === 'pr' && args[1] === 'view') return JSON.stringify({ number: 300, state: 'MERGED' });
+      throw new Error(`unexpected exec call: ${binary} ${args.join(' ')}`);
+    };
+    gatesEngine.registerPrThreadResolutionClaimGate(
+      'Bash',
+      { command: 'git commit -m "follow-up after merge"', repoPath: repoB },
+      mergedExec,
+    );
+
+    const stillBlocked = evaluatePendingPrThreadResolutionGate('Read', {});
+    assert.ok(stillBlocked, 'a different branch\'s dormant-PR commit must never satisfy this branch\'s pending gate');
+    assert.equal(stillBlocked.decision, 'deny');
+    assert.equal(stillBlocked.gate, 'pr-thread-resolution-verified-required');
+  } finally {
+    removeDirRobust(repoA);
+    removeDirRobust(repoB);
     cleanupStateFiles();
   }
 });
