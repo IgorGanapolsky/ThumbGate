@@ -1331,9 +1331,36 @@ function isReadOnlyObservabilityTool(toolName) {
 }
 
 function evaluatePendingPrThreadResolutionGate(toolName, toolInput = {}) {
-  if (!hasAction(PR_THREAD_RESOLUTION_ACTION)) return null;
+  const pendingEntry = loadSessionActions()[PR_THREAD_RESOLUTION_ACTION];
+  if (!pendingEntry) return null;
+
+  // Scope to the repo that actually committed. Session-actions state lives in a
+  // single global file (~/.thumbgate/session-actions.json), shared by every repo
+  // on the machine. Without this check, a commit in repo A permanently locks out
+  // every tool call in an unrelated repo B's session until the 1-hour TTL expires
+  // (verified 2026-07-24: a commit in one repo/worktree blocked every Bash/Read/
+  // Skill/ToolSearch call in a completely unrelated repo's session).
+  const trackedRepoRoot = pendingEntry.metadata && pendingEntry.metadata.repoRoot;
+  if (trackedRepoRoot) {
+    const currentRepoRoot = resolveRepoRoot(toolInput);
+    if (currentRepoRoot && currentRepoRoot !== trackedRepoRoot) return null;
+  }
+
   if (isThreadResolutionSatisfied()) return null;
   if (isReadOnlyObservabilityTool(toolName)) return null;
+  // Evidence actions (gh pr view/checks/status, gh api .../reviewThreads, git
+  // status/diff/show, the satisfy_gate/track_action tools themselves) are exempt
+  // from being blocked so an agent can actually gather evidence and call
+  // satisfy_gate — but running them must NOT itself satisfy the gate. This is a
+  // PreToolUse hook: it fires before the command executes, so at this point the
+  // command hasn't run, could still fail, or could return UNFAVORABLE evidence
+  // (N unresolved threads). Auto-satisfying on the mere shape of the request —
+  // as an earlier version of this fix did — let `git status` (which proves
+  // nothing about thread resolution) or a `gh pr view` that later errors clear
+  // a critical gate before any real verification happened (caught in review,
+  // PR #3030). The only sound way to clear this gate is the explicit,
+  // agent-asserted `satisfy_gate` tool call, which records real evidence via
+  // satisfyCondition() — never inferred from a pre-execution command guess.
   if (isThreadResolutionEvidenceAction(toolName, toolInput)) return null;
 
   const message = 'A git commit was made on a PR branch. Verify review threads are resolved before the next tool call.';
@@ -1344,7 +1371,7 @@ function evaluatePendingPrThreadResolutionGate(toolName, toolInput = {}) {
     severity: 'critical',
     reasoning: [
       `Tracked action ${PR_THREAD_RESOLUTION_ACTION} is pending`,
-      'Satisfy pr_threads_checked or thread_resolution_verified with evidence before continuing',
+      'Check review threads (e.g. gh pr view --json reviewThreads), then call the satisfy_gate tool with gateId="pr_threads_checked" and the evidence — running a check command alone does not clear this gate',
     ],
   };
 }

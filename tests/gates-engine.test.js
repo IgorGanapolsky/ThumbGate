@@ -2197,6 +2197,78 @@ test('pending PR-thread gate never blocks read-only observability tools (operato
   }
 });
 
+test('pending PR-thread gate does not leak across repos (regression 2026-07-24 mac-mini lockout)', () => {
+  cleanupStateFiles();
+  try {
+    const realRepoRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
+    trackAction(PR_THREAD_RESOLUTION_ACTION, { repoRoot: realRepoRoot, branchName: 'ops/main-sync' });
+    assert.ok(hasAction(PR_THREAD_RESOLUTION_ACTION));
+
+    const blockedSameRepo = evaluatePendingPrThreadResolutionGate('Read', { file_path: 'README.md' });
+    assert.ok(blockedSameRepo && blockedSameRepo.decision === 'deny', 'still gated inside the repo that actually committed');
+  } finally {
+    cleanupStateFiles();
+  }
+
+  cleanupStateFiles();
+  try {
+    trackAction(PR_THREAD_RESOLUTION_ACTION, { repoRoot: '/Users/example/workspace/some-other-repo', branchName: 'ops/main-sync' });
+    assert.ok(hasAction(PR_THREAD_RESOLUTION_ACTION));
+
+    const allowedOtherRepo = evaluatePendingPrThreadResolutionGate('Read', { file_path: 'README.md' });
+    assert.equal(allowedOtherRepo, null, 'a different repo must not be locked out by a commit made elsewhere');
+  } finally {
+    cleanupStateFiles();
+  }
+});
+
+test('the evidence command itself is exempt from blocking, but does NOT auto-satisfy the gate for later calls (regression: PR #3030 review — a request-time pattern match is unsound since this hook fires pre-execution)', () => {
+  cleanupStateFiles();
+  try {
+    trackAction(PR_THREAD_RESOLUTION_ACTION, { branchName: 'fix/review-feedback' });
+    assert.ok(hasAction(PR_THREAD_RESOLUTION_ACTION));
+
+    const blockedBefore = evaluatePendingPrThreadResolutionGate('Read', { file_path: 'README.md' });
+    assert.ok(blockedBefore && blockedBefore.decision === 'deny', 'gated before any evidence command runs');
+
+    const evidenceCallResult = evaluatePendingPrThreadResolutionGate('Bash', { command: 'gh pr view --json reviewThreads' });
+    assert.equal(evidenceCallResult, null, 'the evidence command itself is allowed through');
+
+    // Merely requesting an evidence-shaped command must NOT clear the gate — the
+    // hook fires before the command runs, so it cannot know whether `gh pr view`
+    // will succeed or what it will report. A subsequent unrelated call must still
+    // be gated until the agent explicitly calls satisfy_gate with real evidence.
+    const stillBlockedAfter = evaluatePendingPrThreadResolutionGate('Read', { file_path: 'README.md' });
+    assert.ok(stillBlockedAfter && stillBlockedAfter.decision === 'deny', 'requesting the evidence command alone must not clear the gate');
+
+    // The explicit satisfy_gate path (satisfyCondition, as the real satisfy_gate
+    // tool calls under the hood) is the only sound way to clear it.
+    satisfyCondition('pr_threads_checked', 'gh pr view --json reviewThreads returned 0 unresolved');
+    const afterExplicitSatisfy = evaluatePendingPrThreadResolutionGate('Read', { file_path: 'README.md' });
+    assert.equal(afterExplicitSatisfy, null, 'explicit satisfy_gate evidence clears the gate for subsequent calls');
+  } finally {
+    cleanupStateFiles();
+  }
+});
+
+test('an evidence-shaped command that is content-blind (e.g. git status) never satisfies the gate (regression: PR #3030 review)', () => {
+  cleanupStateFiles();
+  try {
+    trackAction(PR_THREAD_RESOLUTION_ACTION, { branchName: 'fix/review-feedback' });
+    assert.ok(hasAction(PR_THREAD_RESOLUTION_ACTION));
+
+    // git status proves nothing about thread resolution; it is only exempt from
+    // this one block because it's a harmless local read, never treated as evidence.
+    const statusCallResult = evaluatePendingPrThreadResolutionGate('Bash', { command: 'git status' });
+    assert.equal(statusCallResult, null, 'git status is exempt from blocking');
+
+    const stillBlocked = evaluatePendingPrThreadResolutionGate('Read', { file_path: 'README.md' });
+    assert.ok(stillBlocked && stillBlocked.decision === 'deny', 'git status must never satisfy the pending gate');
+  } finally {
+    cleanupStateFiles();
+  }
+});
+
 // ---------------------------------------------------------------------------
 // PR-thread-resolution gate: auto-detect dormant PRs (regression: 2026-07-24
 // self-lockout, issue #3025). Every test here injects a fake `gh`/`git config`
@@ -2359,7 +2431,10 @@ test('git commit on a branch with a genuinely OPEN PR still arms the gate (no re
     assert.ok(result, 'an open PR must still register the claim gate');
     assert.equal(hasAction(PR_THREAD_RESOLUTION_ACTION), true);
 
-    const blocked = evaluatePendingPrThreadResolutionGate('Read', {});
+    // Same repo, later call: pass matching repoPath so the cross-repo scoping
+    // fix (2026-07-24) sees this as the same session/repo continuing, not an
+    // unrelated repo's tool call.
+    const blocked = evaluatePendingPrThreadResolutionGate('Read', { repoPath: repoDir });
     assert.ok(blocked);
     assert.equal(blocked.decision, 'deny');
     assert.equal(blocked.gate, 'pr-thread-resolution-verified-required');
@@ -2451,7 +2526,10 @@ test('a dormant-PR commit on one branch never leaks satisfaction into a differen
       mergedExec,
     );
 
-    const stillBlocked = evaluatePendingPrThreadResolutionGate('Read', {});
+    // Check from repo A's own session — matching repoPath so the cross-repo
+    // scoping fix (2026-07-24) evaluates this as "still in the repo that's
+    // actually gated," not an unrelated repo's tool call.
+    const stillBlocked = evaluatePendingPrThreadResolutionGate('Read', { repoPath: repoA });
     assert.ok(stillBlocked, 'a different branch\'s dormant-PR commit must never satisfy this branch\'s pending gate');
     assert.equal(stillBlocked.decision, 'deny');
     assert.equal(stillBlocked.gate, 'pr-thread-resolution-verified-required');
@@ -2461,6 +2539,7 @@ test('a dormant-PR commit on one branch never leaks satisfaction into a differen
     cleanupStateFiles();
   }
 });
+
 
 test('evaluateGates blocks raw GitHub auto-merge even after merge permission is satisfied', () => {
   cleanupStateFiles();
