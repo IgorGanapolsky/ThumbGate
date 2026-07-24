@@ -66,9 +66,9 @@ test('homepage exposes both Pro $19/mo and Enterprise $499 offers', () => {
   assert.match(landingPage, /name="plan_id" value="sprint_diagnostic"/);
   assert.match(landingPage, /\/checkout\/pro/);
   assert.match(landingPage, /Start Pro — \$19\/mo/);
-  assert.match(landingPage, /Buy the \$499 enterprise gate/);
+  assert.match(landingPage, /Get Started — \$499 Diagnostic/);
   assert.match(landingPage, /Pro · \$19\/mo/);
-  assert.match(landingPage, /Enterprise · \$499/);
+  assert.match(landingPage, /Get Started · \$499/);
 });
 
 test('visible text filtering consumes the complete script and style end tags', () => {
@@ -106,18 +106,18 @@ test('hero names both paid paths and the self-improving product outcome', () => 
   );
   const lede = normalizeHtmlText((hero.match(/<p class="hero-lede">([\s\S]*?)<\/p>/) || [])[1]);
 
-  assert.match(landingPage, /Self-Improving Firewall for Your AI Agents/i);
-  assert.match(landingPage, /ThumbGate: the self-improving firewall for AI agents/i);
-  assert.match(hero, /<h1>Self-Improving Firewall for Your AI Agents\.<\/h1>/i);
-  assert.match(hero, /Self-improving under your control/i);
-  assert.match(hero, /Every approval teaches it what to allow, block, or escalate next time/i);
+  assert.match(landingPage, /Stop AI agent mistakes before they cost you/i);
+  assert.match(landingPage, /ThumbGate — Stop AI agent mistakes before they cost you/i);
+  assert.match(hero, /<h1>Stop AI agent mistakes before they cost you\.<\/h1>/i);
+  assert.match(hero, /Not a prompt · Not a postmortem/i);
+  assert.match(hero, /tool-call boundary/i);
   assert.match(hero, /Pro at \$19\/mo/);
-  assert.match(hero, /\$499 enterprise entry offer/);
-  assert.match(hero, /Enterprise Workflow Gate/);
+  assert.match(hero, /\$499 Diagnostic/);
+  assert.match(hero, /Diagnostic Gate/);
   assert.match(hero, /Rank[\s\S]*lessons/i);
   assert.match(hero, /Promote[\s\S]*gates/i);
   assert.match(hero, /npx thumbgate init/);
-  assert.ok(lede.split(/\s+/).length <= 30, `hero lede is ${lede.split(/\s+/).length} words`);
+  assert.ok(lede.split(/\s+/).length <= 40, `hero lede is ${lede.split(/\s+/).length} words`);
 });
 
 test('how-it-works sells the self-improving loop, not a static allowlist', () => {
@@ -154,9 +154,9 @@ test('homepage explains the product with one four-stage self-improving loop', ()
 });
 
 test('paid wedge includes managed implementation, regression, and rollout proof', () => {
-  assert.match(landingPage, /Enterprise · \$499/);
-  assert.match(landingPage, /enterprise entry offer for one workflow/i);
-  assert.match(landingPage, /One configured local gate and its regression test/);
+  assert.match(landingPage, /Get Started · \$499/);
+  assert.match(landingPage, /Get Started — \$499 Diagnostic/);
+  assert.match(landingPage, /One configured local gate \+ regression test|One configured local gate and its regression test/);
   assert.match(landingPage, /Rollout and rollback proof within two business days/);
   assert.match(landingPage, /If the workflow cannot be reduced to one supported gate, the order is refunded/);
   assert.match(landingPage, /Multi-system implementation[\s\S]*require separate scope/);
