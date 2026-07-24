@@ -149,6 +149,20 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   'slopsquat-guard',
   ...SELF_PROTECT_HARD_FLOOR_GATE_IDS,
 ]);
+// Issue #2782 (reported by Andy Martin, 2026-07-08): after the free-tier daily
+// block cap is hit, applyDailyBlockCap() downgraded EVERY config-declared
+// "block" gate to a warning — including these catastrophic, effectively
+// irreversible commands — with no THUMBGATE_STRICT_ENFORCEMENT check at all.
+// A free-tier user past their daily cap could have `rm -rf ~`, a force push,
+// `git reset --hard`, or `git clean -f` silently allowed through. These four
+// map directly to CLAUDE.md's own hard-block list and must never be subject
+// to the daily cap discount, regardless of tier or strict-mode setting.
+const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
+  'force-push',
+  'git-reset-hard',
+  'git-clean-force',
+  'rm-rf-home-or-root',
+]);
 const SELF_PROTECT_CONFIG_TARGET_PATTERN = /(?:^|\/)(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json$|\.thumbgate\/config\.json$|thumbgate\.json$)/i;
 const SELF_PROTECT_HOOK_TARGET_PATTERN = /(?:^|\/)(?:\.claude\/settings(?:\.local)?\.json|\.codex\/config\.toml|scripts\/hook-[^/]+\.(?:js|sh))$/i;
 const SELF_PROTECT_CONFIG_COMMAND_PATTERN = /(?:config\/gates\/|config\/(?:budget|enforcement|mcp-allowlists)\.json\b|\.thumbgate\/config\.json\b|thumbgate\.json\b)/i;
@@ -772,6 +786,11 @@ function incrementTodayBlockCount() {
  * a deny result to a warn with an upgrade CTA. Returns null if no cap applies.
  */
 function applyDailyBlockCap(denyResult) {
+  // Catastrophic/irreversible commands (force-push, git reset --hard, git
+  // clean -f, rm -rf on home/root) never get the free-tier daily-cap
+  // discount — see issue #2782. Checked first, before any tier/CI shortcut,
+  // so nothing can accidentally exempt a catastrophic gate from this floor.
+  if (denyResult && CATASTROPHIC_DECLARATIVE_GATE_IDS.has(denyResult.gate)) return null;
   // Pro, trial, CI, and THUMBGATE_NO_RATE_LIMIT users are uncapped
   if (isProTier()) return null;
   if (process.env.CI || process.env.GITHUB_ACTIONS) return null;
@@ -1140,12 +1159,113 @@ function hasPrBranchContext(toolInput = {}, repoRoot = null) {
   return Boolean(branchName && !isProtectedBranchName(branchName));
 }
 
-function registerPrThreadResolutionClaimGate(toolName, toolInput = {}) {
+function hasExplicitPrReference(toolInput = {}) {
+  return Boolean(
+    toolInput.prNumber || toolInput.prUrl || toolInput.pullRequestNumber || toolInput.pullRequestUrl
+  );
+}
+
+const GH_BINARY_FIXED_PATH_DIRS = ['/usr/local/bin', '/usr/bin', '/bin', '/opt/homebrew/bin'];
+
+// SonarCloud flags a bare `execFileSync('gh', ...)` as a PATH-injection hotspot
+// (same reasoning as scripts/ci-cd-hygiene-audit.js resolveGhBinary). Resolve
+// gh's absolute path from a fixed directory list — and ONLY that list. Never
+// fall back to a PATH-resolved bare name: a workspace-controlled program
+// earlier on $PATH would otherwise execute with this hook's privileges during
+// a commit-time check, and could return crafted output to fake "merged" and
+// bypass thread-resolution enforcement entirely (found by review on PR #3027).
+function resolveGhBinaryForPrCheck() {
+  for (const dir of GH_BINARY_FIXED_PATH_DIRS) {
+    const candidate = path.join(dir, 'gh');
+    try {
+      if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) return candidate;
+    } catch {
+      // keep searching
+    }
+  }
+  return null;
+}
+
+// 2026-07-24 self-lockout (issue #3025): a commit landing on a branch whose PR
+// was already merged armed this gate forever — the premise ("verify PR
+// threads") was checked purely by branch name, never against real GitHub PR
+// state, so there was nothing left to satisfy it once the PR closed. This
+// checks whether the branch's PR (if any) is already dormant — merged,
+// closed, or nonexistent — in which case there is nothing to verify. Returns
+// `{ dormant: true, reason }` when safe to skip the gate, `{ dormant: false }`
+// when a real open PR exists (keep gating), or `null` when the check could
+// not be completed (gh unavailable/unauthenticated/timed out) — callers must
+// treat `null` as "cannot verify" and fall back to arming the gate as before,
+// never as license to relax enforcement.
+//
+// Deliberately does NOT trust local git config (e.g. a missing
+// `branch.<name>.remote`) as a signal that no PR exists: local config can be
+// wrong or stale relative to GitHub (unset upstream, push under a different
+// ref, etc.) while a real open PR with real unresolved threads still exists
+// (found by review on PR #3027) — the live `gh` check is the only source of
+// truth here.
+function checkPrDormantForBranch(branchName, repoRoot, execFn = execFileSync) {
+  if (!branchName || !repoRoot) return null;
+
+  const ghBinary = resolveGhBinaryForPrCheck();
+  if (!ghBinary) return null; // gh not found in a trusted location — cannot verify
+
+  let raw;
+  try {
+    raw = execFn(ghBinary, ['pr', 'view', branchName, '--json', 'number,state'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: 5000,
+    });
+  } catch (error) {
+    const stderr = String((error && error.stderr) || (error && error.message) || '');
+    if (/no pull requests found/i.test(stderr)) {
+      return { dormant: true, reason: 'no-pr-for-branch' };
+    }
+    return null; // gh unauthenticated/network error/timed out — cannot verify
+  }
+
+  let pr;
+  try {
+    pr = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+
+  if (pr && pr.state === 'MERGED') return { dormant: true, reason: 'pr-merged', prNumber: pr.number };
+  if (pr && pr.state === 'CLOSED') return { dormant: true, reason: 'pr-closed', prNumber: pr.number };
+  return { dormant: false, reason: 'pr-open', prNumber: pr && pr.number };
+}
+
+function registerPrThreadResolutionClaimGate(toolName, toolInput = {}, execOverride) {
   if (!isGitCommitCommand(toolName, toolInput)) return null;
   const repoRoot = resolveRepoRoot(toolInput);
   if (!hasPrBranchContext(toolInput, repoRoot)) return null;
 
   const branchName = detectBranchName(toolInput, repoRoot);
+
+  // Only auto-detect dormant PRs when the branch name is the sole signal. An
+  // explicit prNumber/prUrl is a direct claim from the caller that a specific
+  // PR exists and matters here — trust it rather than re-deriving a possibly
+  // different answer from the branch name.
+  if (!hasExplicitPrReference(toolInput)) {
+    const prState = checkPrDormantForBranch(branchName, repoRoot, execOverride || execFileSync);
+    if (prState && prState.dormant) {
+      // A dormant PR (merged/closed/nonexistent) means there is nothing to
+      // verify for THIS commit — simply don't arm the gate. Deliberately does
+      // NOT write to the shared pr_threads_checked/thread_resolution_verified
+      // condition store: those keys are global, not scoped to a branch, so
+      // writing to them here would leak satisfaction into a DIFFERENT
+      // branch's pending gate if a commit on that branch arms it within the
+      // same 5-minute TTL window — an agent could otherwise pre-satisfy the
+      // gate by committing on an abandoned merged-PR branch first, then
+      // switch to an active PR branch and skip real thread verification
+      // (found by review on PR #3027).
+      return null;
+    }
+  }
+
   const claimGate = registerClaimGate(
     PR_THREAD_RESOLUTION_CLAIM_PATTERN,
     PR_THREAD_RESOLUTION_REQUIRED_ACTIONS,
@@ -3501,6 +3621,8 @@ module.exports = {
   evaluateBoostedRiskTagGuard,
   registerPrThreadResolutionClaimGate,
   evaluatePendingPrThreadResolutionGate,
+  checkPrDormantForBranch,
+  resolveGhBinaryForPrCheck,
   isReadOnlyObservabilityTool,
   getLocalOnlyScopeSources,
   isRemoteSideEffectCommand,
