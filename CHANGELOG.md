@@ -1,5 +1,63 @@
 # Changelog
 
+## 1.29.1
+
+### Patch Changes
+
+- a7ae83d: Rally-style GTM packaging: outcome hero ("Stop AI agent mistakes before they cost you"), dual cash-path CTAs with $499 Diagnostic primary and Pro $19/mo secondary, pricing comparison table (DIY / hire / GRC / ThumbGate), and congruent meta copy.
+
+## 1.29.0
+
+### Minor Changes
+
+- 545e9ae: Add exact product-attributed revenue auditing plus a dedicated zero-spend local hourly watcher for verified payments, while keeping the GitHub workflow manual and excluding account-wide Stripe activity from ThumbGate revenue.
+- a1fc97f: Focus the public conversion funnel on one $499 managed workflow gate, simplify the buyer-facing pages, and exclude internal or spam intake noise from commercial analytics.
+- 545e9ae: Add a fail-closed operator CLI for aggregate intake-queue readback and explicit mode-0600 private exports.
+- 545e9ae: Add fail-closed, approval-gated discovery packets for current first-party intakes and aggregate-only operator and Grafana observability.
+- 545e9ae: Reconcile live, product-attributed Stripe charges into refund-safe paid pipeline evidence alongside PayPal, including the verified booked-revenue path consumed by the aggregate Grafana dashboard.
+- 545e9ae: Fail closed unless Enterprise Reliability Operations references a same-buyer, provider-paid, proof-backed Enterprise Governance Pilot through a canonical SHA-256 evidence digest.
+
+### Patch Changes
+
+- 545e9ae: Bind Stripe revenue attribution to exact versioned offer identities, add a read-only live price and Payment Link drift audit, and expose only aggregate catalog integrity to the PII-free Grafana revenue-evidence dashboard.
+- 545e9ae: Bind every reconciled Stripe or PayPal payment to the sales lead's buyer identity, reviewed offer, and immutable gross amount before recording paid revenue. Preserve the pseudonymous buyer digest and matched offer ID in pipeline evidence, reject wrong-buyer, cross-offer, and multi-offer Stripe attribution, and keep documented diagnostic-credit and refund paths exact.
+- 2f62652: Align site header/app marks with the canonical Stripe TG gate monogram (dark tile, inset frame, arched gate, bold TG, threshold bar) so checkout and thumbgate.ai use the same emblem family — not the retired shield/thumbs-up and not a dual-rect simplification.
+- 545e9ae: Expire buyer replies and other high-intent stage signals as warm same-day revenue evidence after 14 days, prevent outbound activity from refreshing buyer intent, reject future-dated and placeholder receipts, and distinguish verified same-day evidence from fresh labels needing read-only review.
+- 545e9ae: Add an authenticated, no-store intake close queue that turns only current evidence-reviewed leads into exact approval-gated offer drafts. Preserve sparse Diagnostic intake intent, keep scoped services payment-free until written acceptance, and fail closed on forged reviews, stale signals, unsafe checkout origins, or unavailable private runtime capability. Expose only aggregate close-queue availability and approval-ready counts to the PII-free Grafana revenue-evidence dashboard.
+- 2bf9149: Fix CodeQL incomplete-url-substring-sanitization in SEO guide tests by parsing href hostnames instead of includes('buy.stripe.com'), and add SECURITY.md for GitHub security policy.
+- 545e9ae: Create the configured feedback directory before the API starts so a fresh mounted volume can pass the real health check.
+- 91919ab: Add `/compare/ent` buyer-intent page and internal competitor brief positioning Ent (ent.ai) endpoint pre-breach security as adjacent to ThumbGate's coding-agent PreToolUse Reliability Gateway — not a substitute.
+- 924420e: Fix homepage loop cards: invalid <button> wrapping headings broke browser click targets. Cards are now valid role=tab divs so under-the-hood demos open when the title is clicked.
+- 10dd895: Restore social:publish:launch CLI wiring so Creator Platform Promo can inject the live social adapter again (fixes bare direct_platform_publisher_required failures).
+- 29cc8db: Restore both cash paths on homepage and pricing: self-serve Pro at $19/mo plus the $499 enterprise workflow gate, so operators are not forced into a single enterprise CTA.
+- 7c400b0: Homepage conversion: larger above-the-fold diagrams, shorter hero copy, Free→Pro cash path, essay sections collapsed behind a deep-dive drawer.
+- 37004fc: Homepage visual conversion: four product diagrams, single Free→Pro cash path, compressed essay copy, and honest enforcement defaults on thumbgate.ai.
+- 545e9ae: Stop treating form-complete workflow intakes as qualified leads, expose the separate complete-intake count, and add a zero-spend, PII-free Grafana revenue-evidence exporter and dashboard.
+- 12cfc96: Make homepage product-loop cards clickable with under-the-hood demos for capture, local memory, promote/expire, and PreToolUse default vs strict decisions.
+- 9577cc7: Observability hardening: doctor probes hosted billing + journey export, Plausible primary domain always registered, bounded telemetry export reads, activation funnel on first feedback, and local observability secret loader/setup.
+- e83e62a: Add a fifth landing-page FAQ item (and matching FAQPage JSON-LD entry) stating that the self-improving promotion/demotion/ranking logic ships publicly under MIT — not withheld behind a paywall.
+- 49678c5: Rebuild the blog as a Poolside-style series index with process-over-outcome and inside-boundary posts, plus /blog/\* routing and sitemap inclusion.
+- 7577585: Fix a PR-thread-resolution gate self-lockout: a commit landing on a branch whose PR was already merged/closed used to arm the gate forever, since it never checked live GitHub PR state — only the branch name. Now auto-detects a dormant PR (merged, closed, or none found) via a single `gh` check at commit time and auto-satisfies instead of permanently blocking every subsequent tool call. Also closes a gap where the free-tier daily block cap could downgrade catastrophic commands (force-push, `git reset --hard`, `git clean -f`, `rm -rf` on home/root) to a warning even under `THUMBGATE_STRICT_ENFORCEMENT=1`.
+- 545e9ae: Add evidence-based qualification cards to the authenticated first-party intake queue, with freshness, missing-fact, fixed-offer, approval, checkout, and revenue-recognition gates that fail closed. Require a complete zero-spend review with actual evidence before qualification can advance or count in revenue analytics, and keep unavailable hosted team capabilities out of public offer claims.
+- d8d31f2: Clarify the self-improving firewall lifecycle: feedback becomes local lessons,
+  relevant lessons are re-ranked, repeated negative patterns can promote into
+  gates, stale controls expire, and PreToolUse checks gate the next action without
+  retraining the model.
+- 6a6dd26: Refresh vulnerable archive, glob, YAML, and protobuf transitive dependencies to patched releases without changing ThumbGate's public API.
+- 96caf24: Keep Stop hooks silent or JSON-only, honor Claude Code retry payloads, and prevent deployment verification output from corrupting the hook protocol.
+- 545e9ae: Harden repository revenue operations by requiring structured, stage-appropriate evidence for sales pipeline advances, auditing legacy stage gaps, preventing send attempts, checkout objects, payment links, or plausible-looking payment IDs from being counted as payment, requiring paid pipeline state to originate from authenticated live PayPal reconciliation with external ThumbGate attribution and a cryptographic evidence digest, preserving and cross-checking provider-returned invoice IDs, preventing one payment from being credited to multiple leads, updating partial refunds and retiring fully refunded booked revenue on re-reconciliation, requiring accepted-scope evidence and a reconciled paid sales record before team revenue labels, binding recurring and Enterprise labels to the exact fixed-price signed offer, agreement digest, workflow count, buyer identity, matching provider-paid record, and current 27–32 day billing period so generic Pro MRR, future-dated payments, scheduled or expired invoices, replayed historical payments, or unrelated payments cannot qualify, requiring a new provider-paid record for each recurring renewal, separating raw Stripe sessions from buyer and payment evidence, distinguishing recent intent from historical conversion, reconciling external Stripe identities through one secret-safe managed credential resolver while keeping missing identities unknown, refunds netted, trials excluded, recurring revenue normalized, zero-dollar paid statuses excluded, complete Stripe history paginated, and account-wide payments separate from ThumbGate product attribution, remotely verifying PayPal payment webhooks before bounded raw-evidence persistence, reconciling recent authenticated PayPal event history with current capture and order detail for individual-payment proof while keeping global PayPal revenue incomplete, preserving positive external attributed PayPal transactions as individual milestone proof without fabricated completeness, redacting diagnostic output, aligning the public diagnostic and sprint offer contract, productizing bounded proposal-only recurring and Enterprise service paths with deterministic qualification and target math, removing stale hosted-Enterprise promises across buyer pages and generators, requiring explicit email-backed confirmation before public Pro or diagnostic traffic can create a Stripe session, routing active buyer-facing generators and checkout recovery through first-party intent paths, deriving every GTM send-now row from verified stage evidence, zero-spend status, receipt chronology, a single-follow-up cooldown, buyer-confirmed checkout intent, and an exact action-time approval phrase, keeping held, monitoring, and internal-review rows outside send surfaces, making the observability doctor enforce both that required-email contract and payment-proof readiness for every active buyer rail, running the same fail-closed doctor against the promoted Railway service before a deployment can report success, requiring the authoritative lane to verify and preserve evidence for every reviewed public conversion surface, posting an explicit authoritative failure instead of allowing route-only verification to overclaim readiness, fail-closing unverified-cost email campaigns, archiving retired checkout packs, and permanently blocking Zernio mutations and aggregator fallbacks.
+
+  Add a read-only revenue evidence remediation queue that ranks verified buyer intent above legacy repair work, lists each independent proof or zero-spend blocker, emits only inert placeholder templates, requires authenticated PayPal reconciliation for paid state, and never authorizes an external side effect.
+
+- 545e9ae: Add an authenticated, no-store operator intake queue to billing summaries, batch today, 30-day, and lifetime revenue readback behind one reconciliation, preserve honest private-core capability failures, and keep lead identities out of aggregate revenue-status output.
+- 2f6a815: Remove the vulnerable Transformers.js image dependency path from published installs and use ThumbGate's deterministic in-process feature-hash embedder as the zero-dependency local fallback. Managed Gemini, Core AI, and explicitly installed Transformers.js providers remain supported.
+- d8d31f2: Pitch ThumbGate as the Self-Improving Firewall for AI Agents across homepage, GEO, and package metadata—capture → promote/demote → re-rank → gate—while keeping the $499 single cash path.
+- 3fa9cd8: Lock the store story and under-your-control qualifier: every approval teaches allow/block/escalate, without silent policy rewrite.
+- 545e9ae: Share the canonical sales pipeline across linked Git worktrees while preserving explicit local and hosted state overrides.
+- 545e9ae: Ship the claim-safe Grafana revenue-evidence exporter, installed command, and aggregate dashboard in the public npm artifact.
+- 9395b24: Simplify the landing page around one free-install path, concise local-first enforcement proof, and delayed buyer-intent prompts that no longer interrupt first-time visitors.
+- 545e9ae: Count confirmed diagnostic Payment Link redirects as checkout starts, expose the diagnostic subset separately in aggregate billing and Grafana evidence, and keep payment claims provider-only.
+
 ## 1.28.4
 
 ### Patch Changes
