@@ -12,8 +12,8 @@ test.describe('/ dual-offer conversion path', () => {
     await expect(page.locator('.hero h1')).toHaveText('Stop AI agent mistakes before they cost you.');
     await expect(page.locator('[data-primary-checkout]')).toBeVisible();
     await expect(page.locator('[data-primary-checkout] .price')).toContainText('$499');
-    await expect(page.locator('[data-primary-checkout]')).toContainText('Enterprise Workflow Gate');
-    await expect(page.locator('[data-primary-checkout]')).toContainText('Buy the $499 enterprise gate');
+    await expect(page.locator('[data-primary-checkout]')).toContainText('Diagnostic Gate');
+    await expect(page.locator('[data-primary-checkout]')).toContainText('Get Started — $499 Diagnostic');
     await expect(page.getByRole('link', { name: 'Start Pro — $19/mo' }).first()).toBeVisible();
     await expect(page.locator('a[href*="/checkout/pro"]')).not.toHaveCount(0);
     await expect(page.locator('.loop-step')).toHaveCount(4);
@@ -82,7 +82,7 @@ test.describe('/ dual-offer conversion path', () => {
     const form = new URLSearchParams(capturedRequest.postData());
     expect(form.get('customer_email')).toBe('buyer@company.com');
     expect(form.get('plan_id')).toBe('sprint_diagnostic');
-    expect(form.get('utm_campaign')).toBe('managed_workflow_gate');
+    expect(form.get('utm_campaign')).toBe('rally_style_gtm');
     expect(form.get('cta_id')).toBe('homepage_diagnostic_buy');
   });
 
