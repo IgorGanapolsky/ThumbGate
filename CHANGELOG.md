@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.29.1
+
+### Patch Changes
+
+- a7ae83d: Rally-style GTM packaging: outcome hero ("Stop AI agent mistakes before they cost you"), dual cash-path CTAs with $499 Diagnostic primary and Pro $19/mo secondary, pricing comparison table (DIY / hire / GRC / ThumbGate), and congruent meta copy.
+
 ## 1.29.0
 
 ### Minor Changes
