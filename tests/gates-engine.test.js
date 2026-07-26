@@ -1882,41 +1882,41 @@ test('network egress gate warns on executable egress but ignores URLs in read-on
 });
 
 test('evaluateGatesAsync denies high-risk actions when recurring negative memory matches', async () => {
+  // Hermetic: stub hybrid.evaluatePretool so CI cannot flake on branch-diff
+  // file sets (git push pulls getBranchDiffFiles), compiled guard artifacts,
+  // or JSONL classification order across the full npm test suite.
+  cleanupStateFiles();
   const tmpConfig = makeTempPath('memory-only-gates.json');
   fs.writeFileSync(tmpConfig, JSON.stringify({ version: 1, gates: [] }));
+  saveGovernanceState({ taskScope: null, protectedApprovals: [], branchGovernance: null });
+  saveConstraints({});
 
-  const feedbackLog = makeTempPath('memory-feedback.jsonl');
-  const attributedFeedback = makeTempPath('memory-attributed.jsonl');
-  const entries = [
-    { id: 'mem-1', signal: 'negative', context: 'git push AGENTS.md protected file regression', timestamp: new Date().toISOString() },
-    { id: 'mem-2', signal: 'negative', context: 'git push AGENTS.md protected file regression', timestamp: new Date().toISOString() },
-    { id: 'mem-3', signal: 'negative', context: 'git push AGENTS.md protected file regression', timestamp: new Date().toISOString() },
-  ];
-  fs.writeFileSync(feedbackLog, entries.map((entry) => JSON.stringify(entry)).join('\n') + '\n');
-  fs.writeFileSync(attributedFeedback, '');
+  const hybridPath = require.resolve('../scripts/hybrid-feedback-context');
+  const hybrid = require(hybridPath);
+  const originalEvaluatePretool = hybrid.evaluatePretool;
+  hybrid.evaluatePretool = () => ({
+    mode: 'block',
+    reason: 'Recurring negative pattern (count: 3): "zxqmemdeny regression production"',
+    source: 'state',
+  });
 
-  const originalFeedbackLog = process.env.THUMBGATE_FEEDBACK_LOG;
-  const originalAttributedFeedback = process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
-  process.env.THUMBGATE_FEEDBACK_LOG = feedbackLog;
-  process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = attributedFeedback;
+  const originalGuardsPath = process.env.THUMBGATE_GUARDS_PATH;
+  process.env.THUMBGATE_GUARDS_PATH = makeTempPath('missing-pretool-guards.json');
 
   try {
     const result = await evaluateGatesAsync('Bash', {
-      command: 'git push origin feature/x',
-      changed_files: ['AGENTS.md'],
+      command: 'git push origin feature/zxqmemdeny-regression',
     }, tmpConfig);
-    assert.ok(result);
+    assert.ok(result, `expected memory deny, got ${JSON.stringify(result)}`);
     assert.equal(result.decision, 'deny');
     assert.equal(result.gate, 'memory-high-risk-default-deny');
     assert.match(result.message, /Recurring negative memory matched/i);
   } finally {
-    if (originalFeedbackLog === undefined) delete process.env.THUMBGATE_FEEDBACK_LOG;
-    else process.env.THUMBGATE_FEEDBACK_LOG = originalFeedbackLog;
-    if (originalAttributedFeedback === undefined) delete process.env.THUMBGATE_ATTRIBUTED_FEEDBACK;
-    else process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = originalAttributedFeedback;
+    hybrid.evaluatePretool = originalEvaluatePretool;
+    if (originalGuardsPath === undefined) delete process.env.THUMBGATE_GUARDS_PATH;
+    else process.env.THUMBGATE_GUARDS_PATH = originalGuardsPath;
     fs.rmSync(tmpConfig, { force: true });
-    fs.rmSync(feedbackLog, { force: true });
-    fs.rmSync(attributedFeedback, { force: true });
+    cleanupStateFiles();
   }
 });
 

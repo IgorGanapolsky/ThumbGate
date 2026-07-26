@@ -114,3 +114,13 @@ TEST_EVIDENCE_E2E_HYBRID_CLAW.md
 TEST_EVIDENCE_*.md
 LAUNCH_*.md
 undefined/
+
+# --- Tech debt audit 2026-07-23: never re-commit runtime/prototype stores ---
+prototypes/**/db/
+**/*.sqlite-shm
+**/*.sqlite-wal
+undefined/
+tmp/
+**/lancedb/
+nova-*.png
+shawn-*.png

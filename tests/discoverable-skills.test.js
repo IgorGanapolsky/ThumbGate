@@ -20,6 +20,7 @@ const { TOOLS } = require(path.join(ROOT, 'scripts', 'tool-registry.js'));
 
 // The discoverable wrapper set (4–6 by design — keep it tight).
 const COMMANDS = [
+  'thumbgate-dashboard',
   'thumbgate-guard',
   'thumbgate-rules',
   'thumbgate-blocked',

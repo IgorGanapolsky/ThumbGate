@@ -65,11 +65,14 @@ Spec-driven agent frameworks like **GSD** (get-shit-done) and **GitHub Spec Kit*
 
 | Command | What it does | Wraps (existing capability) |
 |---------|--------------|------------------------------|
+| **`/thumbgate-dashboard`** | **Open the local project dashboard in your browser** (lessons, checks, tokens saved) | **`npx thumbgate dashboard --open`** (global bin after `npm i -g`) |
 | `/thumbgate-guard` | Turn the last agent mistake into a hard prevention rule | `capture_feedback` + `thumbgate force-gate` |
 | `/thumbgate-rules` | List the active prevention rules + lessons guarding this repo | `prevention_rules`, `get_reliability_rules`, `search_lessons` |
 | `/thumbgate-blocked` | Show what's actually been blocked — gate stats + enforcement matrix | `gate_stats`, `enforcement_matrix` |
 | `/thumbgate-protect` | Show branch/release governance; grant a scoped, expiring approval | `get_branch_governance`, `approve_protected_action` |
 | `/thumbgate-doctor` | Health-check the wiring (hooks, MCP, agent-readiness) | `thumbgate doctor` |
+
+> **Open the dashboard anytime:** after `npx thumbgate init`, run **`npx thumbgate dashboard --open`** (works without a global install). Type **`/thumbgate-dashboard`** in Claude Code / Cursor, or **`/project:thumbgate-dashboard`** in Grok. After `npm i -g thumbgate`, the **`thumbgate-dashboard`** bin is also on your PATH.
 
 Each is a thin wrapper over an existing MCP tool or CLI command — **no new enforcement logic, just discoverability**.
 
@@ -385,7 +388,7 @@ npx thumbgate background-governance  # review background-agent run risk
 npx thumbgate model-candidates --workload=dashboard-analysis --provider=openai --json  # evaluate GPT-5.5 routing
 npx thumbgate native-messaging-audit  # inspect local browser bridges and extension hosts
 npx thumbgate dashboard --open                                  # open local project-scoped dashboard in browser
-thumbgate-dashboard                                             # standalone browser dashboard shortcut (run '/project:thumbgate-dashboard' in Claude/Grok)
+thumbgate-dashboard                                             # global bin after npm i -g thumbgate; agents: /thumbgate-dashboard (Claude/Cursor) or /project:thumbgate-dashboard (Grok)
 npx thumbgate check-update                                      # check if a new version is available on npm/GitHub
 npx thumbgate self-update                                       # update ThumbGate to the latest version globally
 npx thumbgate serve      # start MCP server on stdio
