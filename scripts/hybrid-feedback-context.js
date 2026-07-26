@@ -532,12 +532,16 @@ function buildMatchHaystack(input) {
   return parts.join(' ');
 }
 
-// A guard word is "specific" when it is long or compound (keywords() preserves `-` and `_`,
-// so tokens like "generated-cache" survive intact). One specific token lifted straight out of
-// a recurring negative pattern is strong evidence on its own; generic short words are not,
-// and still require corroboration.
+// A guard word is "specific" when it is a compound identifier — keywords() preserves `-` and
+// `_`, so a token like "generated-cache" or "tool_registry" survives intact and is almost
+// always lifted from a real command, path or symbol rather than from prose. One such token
+// is strong evidence on its own.
+//
+// Deliberately NOT keyed on length: ordinary English words ("deployment", "permission",
+// "everything") are long but common, and letting one of them carry a block on its own would
+// over-block. Those still require a second corroborating hit.
 function isSpecificKeyword(word) {
-  return word.length >= 8 || /[-_]/.test(word);
+  return /[-_]/.test(word);
 }
 
 // Whole-word matching: a bare includes() let "app" hit "apps/", "application" and "happen".

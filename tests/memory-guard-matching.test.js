@@ -118,16 +118,25 @@ test('whole-word matching is case-insensitive and regex-safe', () => {
 // isSpecificKeyword
 // ---------------------------------------------------------------------------
 
-test('specificity: long or compound tokens are specific', () => {
-  assert.equal(isSpecificKeyword('generated-cache'), true, 'compound');
-  assert.equal(isSpecificKeyword('deployment'), true, 'long');
+test('specificity: compound identifiers are specific', () => {
+  assert.equal(isSpecificKeyword('generated-cache'), true, 'hyphen compound');
   assert.equal(isSpecificKeyword('tool_registry'), true, 'underscore compound');
+  assert.equal(isSpecificKeyword('force-push'), true, 'hyphen compound');
 });
 
-test('specificity: short generic words are not specific', () => {
-  for (const word of ['files', 'command', 'tool', 'name', 'path', 'runtime', 'removed']) {
+test('specificity: ordinary words are not specific, however long', () => {
+  // Long English words are common vocabulary; letting one carry a block on its own
+  // would over-block. They still require a second corroborating hit.
+  for (const word of ['files', 'command', 'tool', 'name', 'path', 'runtime', 'removed',
+    'deployment', 'permission', 'everything']) {
     assert.equal(isSpecificKeyword(word), false, `"${word}" must stay generic`);
   }
+});
+
+test('a single long-but-ordinary word does not block on its own', () => {
+  const guard = artifactFor('the deployment broke everything for the user');
+  const verdict = evaluateCompiledGuards(guard, 'Bash', envelope('kubectl rollout status deployment/api'));
+  assert.equal(verdict.mode, 'allow', `expected allow, got ${verdict.mode}: ${verdict.reason}`);
 });
 
 // ---------------------------------------------------------------------------
