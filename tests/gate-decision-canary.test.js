@@ -92,3 +92,115 @@ test('the real 2026-07-26 shape is caught: all four catastrophic gates go silent
   const silent = result.findings.filter((f) => f.kind === 'silent').map((f) => f.gate).sort();
   assert.deepEqual(silent, gates.slice().sort(), 'every silenced gate must be named');
 });
+
+// ---------------------------------------------------------------------------
+// CLI surface, driven as a child process so the env-derived paths are exercised
+// exactly as an operator would hit them.
+// ---------------------------------------------------------------------------
+
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { spawnSync } = require('node:child_process');
+
+const SCRIPT = path.join(__dirname, '..', 'scripts', 'gate-decision-canary.js');
+
+function runCanary(args, env) {
+  return spawnSync(process.execPath, [SCRIPT, ...args], {
+    encoding: 'utf8',
+    env: { ...process.env, ...env },
+  });
+}
+
+function canaryEnv() {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-canary-cli-'));
+  return {
+    dir,
+    env: {
+      THUMBGATE_STATS_PATH: path.join(dir, 'gate-stats.json'),
+      THUMBGATE_CANARY_BASELINE: path.join(dir, 'baseline.json'),
+    },
+  };
+}
+
+test('CLI exits 2 when there are no stats to read', () => {
+  const { env } = canaryEnv();
+  const result = runCanary(['--snapshot'], env);
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /no stats/);
+});
+
+test('CLI exits 2 when checking without a baseline', () => {
+  const { dir, env } = canaryEnv();
+  fs.writeFileSync(env.THUMBGATE_STATS_PATH, JSON.stringify({ blocked: 1, warned: 1, byGate: {} }));
+  assert.ok(fs.existsSync(dir));
+  const result = runCanary(['--check'], env);
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /no baseline/);
+});
+
+test('CLI snapshot then check reports no drift when enforcement holds', () => {
+  const { env } = canaryEnv();
+  const byGate = { 'git-reset-hard': { blocked: 100, warned: 0 } };
+  fs.writeFileSync(env.THUMBGATE_STATS_PATH, JSON.stringify({ blocked: 100, warned: 0, byGate }));
+
+  const snap = runCanary(['--snapshot'], env);
+  assert.equal(snap.status, 0);
+  assert.match(snap.stdout, /Baseline recorded/);
+
+  // Enforcement keeps pace with traffic.
+  fs.writeFileSync(env.THUMBGATE_STATS_PATH, JSON.stringify({
+    blocked: 200, warned: 100, byGate: { 'git-reset-hard': { blocked: 200, warned: 0 } },
+  }));
+  const check = runCanary(['--check'], env);
+  assert.equal(check.status, 0, check.stdout + check.stderr);
+  assert.match(check.stdout, /No enforcement drift/);
+});
+
+test('CLI exits 1 and names the gate when enforcement goes silent', () => {
+  const { env } = canaryEnv();
+  const byGate = { 'git-reset-hard': { blocked: 100, warned: 0 } };
+  fs.writeFileSync(env.THUMBGATE_STATS_PATH, JSON.stringify({ blocked: 100, warned: 0, byGate }));
+  runCanary(['--snapshot'], env);
+
+  // Traffic continues, blocking stops — the shipped-bypass shape.
+  fs.writeFileSync(env.THUMBGATE_STATS_PATH, JSON.stringify({ blocked: 100, warned: 900, byGate }));
+  const check = runCanary(['--check'], env);
+  assert.equal(check.status, 1);
+  assert.match(check.stdout, /ENFORCEMENT DRIFT/);
+  assert.match(check.stdout, /SILENT \(possible bypass\)/);
+  assert.match(check.stdout, /git-reset-hard/);
+});
+
+test('CLI --json emits machine-readable findings', () => {
+  const { env } = canaryEnv();
+  const byGate = { 'git-clean-force': { blocked: 60, warned: 0 } };
+  fs.writeFileSync(env.THUMBGATE_STATS_PATH, JSON.stringify({ blocked: 60, warned: 0, byGate }));
+  runCanary(['--snapshot'], env);
+  fs.writeFileSync(env.THUMBGATE_STATS_PATH, JSON.stringify({ blocked: 60, warned: 600, byGate }));
+
+  const check = runCanary(['--check', '--json'], env);
+  assert.equal(check.status, 1);
+  const parsed = JSON.parse(check.stdout);
+  assert.equal(parsed.evaluated, true);
+  assert.ok(parsed.findings.some((f) => f.kind === 'silent' && f.gate === 'git-clean-force'));
+});
+
+test('CLI prints usage and exits 0 with no arguments', () => {
+  const { env } = canaryEnv();
+  const result = runCanary([], env);
+  assert.equal(result.status, 0);
+  assert.match(result.stdout, /Usage:/);
+});
+
+test('CLI stays quiet below the traffic floor', () => {
+  const { env } = canaryEnv();
+  const byGate = { 'git-reset-hard': { blocked: 100, warned: 0 } };
+  fs.writeFileSync(env.THUMBGATE_STATS_PATH, JSON.stringify({ blocked: 100, warned: 0, byGate }));
+  runCanary(['--snapshot'], env);
+  fs.writeFileSync(env.THUMBGATE_STATS_PATH, JSON.stringify({ blocked: 100, warned: 5, byGate }));
+
+  const check = runCanary(['--check'], env);
+  assert.equal(check.status, 0);
+  assert.match(check.stdout, /Not enough traffic/);
+});

@@ -28,9 +28,9 @@
  * Exit codes: 0 = no drift, 1 = drift detected, 2 = cannot evaluate (no baseline/stats).
  */
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+const fs = require('node:fs');
+const path = require('node:path');
+const os = require('node:os');
 
 const HOME = process.env.THUMBGATE_HOME || path.join(os.homedir(), '.thumbgate');
 const STATS_PATH = process.env.THUMBGATE_STATS_PATH || path.join(HOME, 'gate-stats.json');
@@ -44,6 +44,12 @@ const MIN_TRAFFIC = Number(process.env.THUMBGATE_CANARY_MIN_TRAFFIC || 50);
 // A gate's share of total blocks may move by this much before it is called a spike.
 const SPIKE_RATIO = Number(process.env.THUMBGATE_CANARY_SPIKE_RATIO || 3);
 
+const FINDING_LABELS = {
+  silent: 'SILENT (possible bypass)',
+  spike: 'SPIKE (possible over-blocking)',
+  disappeared: 'DISAPPEARED',
+};
+
 function readJson(filePath) {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -53,12 +59,12 @@ function readJson(filePath) {
 }
 
 function gateTotals(stats) {
-  const byGate = (stats && stats.byGate) || {};
+  const byGate = stats?.byGate ?? {};
   const out = {};
   for (const [id, counts] of Object.entries(byGate)) {
     out[id] = {
-      blocked: Number((counts && counts.blocked) || 0),
-      warned: Number((counts && counts.warned) || 0),
+      blocked: Number(counts?.blocked ?? 0),
+      warned: Number(counts?.warned ?? 0),
     };
   }
   return out;
@@ -83,12 +89,36 @@ function snapshot() {
   return 0;
 }
 
+// SILENCE: a gate that carried real volume and has now stopped blocking entirely while the
+// system kept working. This is what a bypass looks like from the outside.
+function detectSilence(id, base, gateDelta, traffic) {
+  if (base.blocked < MIN_BASELINE_BLOCKS || gateDelta !== 0) return null;
+  return {
+    kind: 'silent',
+    gate: id,
+    detail: `blocked ${base.blocked} times before baseline, 0 times across ${traffic} evaluations since`,
+  };
+}
+
+// SPIKE: a gate taking a much larger share of blocks than it used to.
+function detectSpike(id, base, gateDelta, deltaBlocked, totalBlocked) {
+  if (deltaBlocked <= 0 || base.blocked <= 0 || gateDelta < MIN_BASELINE_BLOCKS) return null;
+  const baseShare = base.blocked / Math.max(1, totalBlocked);
+  const curShare = gateDelta / deltaBlocked;
+  if (curShare <= baseShare * SPIKE_RATIO) return null;
+  return {
+    kind: 'spike',
+    gate: id,
+    detail: `share of blocks rose from ${(baseShare * 100).toFixed(1)}% to ${(curShare * 100).toFixed(1)}%`,
+  };
+}
+
 /**
  * Compare two stat sets. Exported so tests can drive it without touching the filesystem.
  */
 function diffDecisions(baseline, current) {
   const findings = [];
-  const baseGates = (baseline && baseline.byGate) || {};
+  const baseGates = baseline?.byGate ?? {};
   const curGates = gateTotals(current);
 
   const deltaBlocked = Number(current.blocked || 0) - Number(baseline.totalBlocked || 0);
@@ -102,34 +132,11 @@ function diffDecisions(baseline, current) {
   for (const [id, base] of Object.entries(baseGates)) {
     const cur = curGates[id] || { blocked: 0, warned: 0 };
     const gateDelta = cur.blocked - base.blocked;
-
-    // SILENCE: a gate that carried real volume and has now stopped blocking entirely while
-    // the system kept working. This is what a bypass looks like from the outside.
-    if (base.blocked >= MIN_BASELINE_BLOCKS && gateDelta === 0) {
-      findings.push({
-        kind: 'silent',
-        gate: id,
-        detail: `blocked ${base.blocked} times before baseline, 0 times across ${traffic} evaluations since`,
-      });
-    }
-
-    // SPIKE: a gate taking a much larger share of blocks than it used to.
-    if (deltaBlocked > 0 && base.blocked > 0) {
-      const baseShare = base.blocked / Math.max(1, baseline.totalBlocked);
-      const curShare = gateDelta / deltaBlocked;
-      if (curShare > baseShare * SPIKE_RATIO && gateDelta >= MIN_BASELINE_BLOCKS) {
-        findings.push({
-          kind: 'spike',
-          gate: id,
-          detail: `share of blocks rose from ${(baseShare * 100).toFixed(1)}% to ${(curShare * 100).toFixed(1)}%`,
-        });
-      }
-    }
-  }
-
-  // NOVELTY: a gate that existed at baseline and is gone from the config entirely.
-  for (const id of Object.keys(baseGates)) {
-    if (!(id in curGates) && baseGates[id].blocked >= MIN_BASELINE_BLOCKS) {
+    const silent = detectSilence(id, base, gateDelta, traffic);
+    if (silent) findings.push(silent);
+    const spike = detectSpike(id, base, gateDelta, deltaBlocked, baseline.totalBlocked);
+    if (spike) findings.push(spike);
+    if (!(id in curGates) && base.blocked >= MIN_BASELINE_BLOCKS) {
       findings.push({ kind: 'disappeared', gate: id, detail: 'gate no longer present in stats' });
     }
   }
@@ -172,9 +179,7 @@ function check(asJson) {
 
   process.stdout.write(`\nENFORCEMENT DRIFT — ${result.findings.length} finding(s):\n`);
   for (const finding of result.findings) {
-    const label = finding.kind === 'silent' ? 'SILENT (possible bypass)'
-      : finding.kind === 'spike' ? 'SPIKE (possible over-blocking)'
-        : 'DISAPPEARED';
+    const label = FINDING_LABELS[finding.kind] || finding.kind.toUpperCase();
     process.stdout.write(`  [${label}] ${finding.gate}\n      ${finding.detail}\n`);
   }
   process.stdout.write('\nA silent gate is the signature of a bypass: enforcement stopped without an error.\n'
@@ -190,8 +195,20 @@ function main(argv) {
   return 0;
 }
 
-module.exports = { diffDecisions, gateTotals, MIN_BASELINE_BLOCKS, MIN_TRAFFIC, SPIKE_RATIO };
+module.exports = {
+  diffDecisions,
+  gateTotals,
+  detectSilence,
+  detectSpike,
+  snapshot,
+  check,
+  main,
+  FINDING_LABELS,
+  MIN_BASELINE_BLOCKS,
+  MIN_TRAFFIC,
+  SPIKE_RATIO,
+};
 
-if (require.main === module) {
+if (require.main && require.main.filename === module.filename) {
   process.exit(main(process.argv.slice(2)));
 }
