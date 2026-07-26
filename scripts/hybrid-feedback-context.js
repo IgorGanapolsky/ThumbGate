@@ -151,13 +151,14 @@ function isHookPromptEnvelope(context) {
         parsed.transcriptPath
       )
     );
-  } catch (_) {
+  } catch {
+    // Not JSON — by definition not a hook envelope.
     return false;
   }
 }
 
 function patternContext(entry) {
-  const context = entry && entry.context ? String(entry.context) : '';
+  const context = entry?.context ? String(entry.context) : '';
   if (!context) return '';
   const hasExplicitFeedback = Boolean(
     entry.whatWentWrong ||
@@ -188,48 +189,6 @@ function isAutomatedFeedback(entry) {
   return context.includes('gate "') || context.includes('blocked tool') || context.includes('warned tool');
 }
 
-
-function isHookPromptEnvelope(context) {
-  if (!context || typeof context !== 'string') return false;
-  try {
-    const parsed = JSON.parse(context);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false;
-    return Boolean(
-      parsed.prompt &&
-      (
-        parsed.hookEventName ||
-        parsed.hook_event_name ||
-        parsed.workspaceRoot ||
-        parsed.workspace_root ||
-        parsed.session_id ||
-        parsed.sessionId ||
-        parsed.transcript_path ||
-        parsed.transcriptPath
-      )
-    );
-  } catch (_) {
-    return false;
-  }
-}
-
-function patternContext(entry) {
-  const context = entry && entry.context ? String(entry.context) : '';
-  if (!context) return '';
-  const hasExplicitFeedback = Boolean(
-    entry.whatWentWrong ||
-    entry.what_went_wrong ||
-    entry.whatToChange ||
-    entry.what_to_change ||
-    entry.failureType ||
-    (Array.isArray(entry.tags) && entry.tags.length > 0) ||
-    entry.structuredRule
-  );
-  if (isHookPromptEnvelope(context) && !hasExplicitFeedback) return '';
-  if (isHookPromptEnvelope(context) && hasExplicitFeedback) {
-    return '';
-  }
-  return context;
-}
 
 /**
  * Extract ms from a timestamp value. Returns 0 on failure.
@@ -494,14 +453,94 @@ function buildAdditionalContext(state, constraints, maxChars) {
  * @param {string[]} words - keyword list from a pattern
  * @returns {boolean}
  */
+// Callers hand us the pending action in several shapes: a plain command string, an object,
+// or a JSON envelope like {"toolName":…,"command":…,"filePath":…,"affectedFiles":[…]}.
+// Matching over the raw JSON meant the envelope's own KEY NAMES were part of the haystack,
+// so the tokens "files", "command", "tool", "name" and "path" were present on every single
+// evaluation. With a two-hit block threshold, any guard whose keywords included two such
+// common words blocked every action regardless of what that action was. Match on the VALUES
+// only — the guard should key on the action, never on how we happened to serialize it.
+// normalize() runs text through sanitizeFeedbackText(), which exists to reject hook
+// TRANSPORT PAYLOADS and path-dominated blobs from human FEEDBACK. That is the wrong filter
+// for the pending action we are matching against: a real action is frequently just a command
+// plus a list of file paths, which sanitizeFeedbackText() discards wholesale as a "path blob",
+// leaving an empty haystack and silently matching nothing. Apply only the redactions here.
+function normalizeActionText(text) {
+  if (!text || typeof text !== 'string') return '';
+  return text
+    .replace(/\/Users\/[^\s/]+/g, '/Users/redacted')
+    .replace(/:\d{4,5}\b/g, ':PORT')
+    .toLowerCase()
+    .trim();
+}
+
+function buildMatchHaystack(input) {
+  if (input == null) return '';
+  let value = input;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!(trimmed.startsWith('{') || trimmed.startsWith('['))) return value;
+    try {
+      value = JSON.parse(trimmed);
+    } catch {
+      return value;
+    }
+  }
+  if (typeof value !== 'object') return String(value);
+
+  const parts = [];
+  const seen = new Set();
+  const walk = (node, depth) => {
+    if (node == null || depth > 6) return;
+    if (typeof node === 'object') {
+      if (seen.has(node)) return;
+      seen.add(node);
+      for (const child of Array.isArray(node) ? node : Object.values(node)) walk(child, depth + 1);
+      return;
+    }
+    if (typeof node === 'boolean') return; // "true"/"false" are structure, not content
+    parts.push(String(node));
+  };
+  walk(value, 0);
+  return parts.join(' ');
+}
+
+// A guard word is "specific" when it is a compound identifier — keywords() preserves `-` and
+// `_`, so a token like "generated-cache" or "tool_registry" survives intact and is almost
+// always lifted from a real command, path or symbol rather than from prose. One such token
+// is strong evidence on its own.
+//
+// Deliberately NOT keyed on length: ordinary English words ("deployment", "permission",
+// "everything") are long but common, and letting one of them carry a block on its own would
+// over-block. Those still require a second corroborating hit.
+function isSpecificKeyword(word) {
+  return /[-_]/.test(word);
+}
+
+// Whole-word matching: a bare includes() let "app" hit "apps/", "application" and "happen".
+// Boundaries are non-alphanumerics, so path and punctuation separators still delimit tokens
+// (`src/jobs/queue.js` matches the word "jobs").
+function containsWholeWord(haystack, word) {
+  const escaped = String(word).replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
+  try {
+    return new RegExp(`(?:^|[^a-z0-9])${escaped}(?:[^a-z0-9]|$)`, 'i').test(haystack);
+  } catch {
+    return haystack.includes(word);
+  }
+}
+
 function hasTwoKeywordHits(normalizedInput, words) {
   if (!normalizedInput || !words || words.length === 0) return false;
   let hits = 0;
+  const seen = new Set();
   for (const word of words) {
-    if (normalizedInput.includes(word)) {
-      hits++;
-      if (hits >= 2) return true;
-    }
+    if (!word || seen.has(word)) continue;
+    seen.add(word);
+    if (!containsWholeWord(normalizedInput, word)) continue;
+    // A specific compound/long token carries a match on its own; generic words need two.
+    if (isSpecificKeyword(word)) return true;
+    hits++;
+    if (hits >= 2) return true;
   }
   return false;
 }
@@ -614,7 +653,7 @@ function evaluateCompiledGuards(artifact, toolName, toolInput) {
     return { mode: 'allow', reason: '', source: 'compiled' };
   }
 
-  const normInput = normalize(toolInput || '');
+  const normInput = normalizeActionText(buildMatchHaystack(toolInput));
   const normTool = (toolName || '').toLowerCase();
 
   for (const guard of artifact.guards) {
@@ -656,7 +695,7 @@ function evaluateCompiledGuards(artifact, toolName, toolInput) {
  * @returns {{ mode: string, reason: string, source: string }}
  */
 function evaluatePretoolFromState(state, toolName, toolInput) {
-  const normInput = normalize(toolInput || '');
+  const normInput = normalizeActionText(buildMatchHaystack(toolInput));
   const normTool = (toolName || '').toLowerCase();
 
   for (const pattern of state.recurringNegativePatterns || []) {
@@ -824,6 +863,10 @@ module.exports = {
   keywords,
   hashText,
   hasTwoKeywordHits,
+  buildMatchHaystack,
+  normalizeActionText,
+  isSpecificKeyword,
+  containsWholeWord,
   readJsonl,
   getHybridPaths,
   PATHS,

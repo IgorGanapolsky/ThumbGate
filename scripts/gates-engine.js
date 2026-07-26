@@ -121,6 +121,9 @@ const BOOSTED_RISK_MIN_EXAMPLES = 3;
 const PR_THREAD_RESOLUTION_ACTION = 'pr_thread_resolution_verified_after_commit';
 const HELPER_BYPASS_ACTION = 'helper_script_modified';
 const KNOWLEDGE_ENTROPY_THRESHOLD = 0.7;
+// Generous character bound: keeps every affected file for realistic actions while still
+// preventing an unbounded haystack. Chosen over a file-count cap, which dropped targets.
+const MEMORY_GUARD_MAX_SERIALIZED_CHARS = 200000;
 const KNOWLEDGE_CONFLICT_STRICT_BASH_PATTERN = /\b(?:git\s+push\b|gh\s+pr\s+merge\b|gh\s+release\s+(?:create|delete|edit|upload)\b|(?:npm|yarn|pnpm)\s+publish\b|rm\s+-rf\b|git\s+reset\s+--hard\b|git\s+clean\s+-f[a-z]*|railway\s+(?:deploy|up)\b|gcloud\s+(?:run\s+deploy|app\s+deploy)\b|firebase\s+deploy\b|vercel\s+--prod\b|kubectl\s+(?:apply|delete)\b|terraform\s+(?:apply|destroy)\b)\b/i;
 const HELPER_SCRIPT_FILE_PATTERN = /(?:^|\/)(?:scripts|bin|tools|tasks|\.githooks|\.github\/workflows)\/|(?:^|\/)(?:package\.json|Makefile|justfile|Taskfile\.ya?ml)$|\.(?:sh|bash|zsh|fish|js|mjs|cjs|ts|tsx|py|rb|pl|ps1|yml|yaml)$/i;
 const PACKAGE_RUN_PATTERN = /\b(?:npm|yarn|pnpm)\s+run\s+([:@./\w-]+)\b/i;
@@ -948,25 +951,351 @@ function getBranchDiffFiles(repoRoot) {
   return safeExecFileLines('git', ['diff', '--name-only'], repoRoot);
 }
 
+// `git add`/`git commit` accept an explicit pathspec, and when one is present it — not the
+// working tree — defines what the command actually touches. Scanning the whole tree here
+// reported every dirty file as "affected", so in a repo with a large dirty tree (e.g. one
+// shared by several agents) a correctly scoped `git add -- a.js b.js` was reported as
+// thousands of affected files and tripped task-scope / protected-file gates that the command
+// never actually violated. Only fall back to a full tree scan when the command really does
+// stage broadly (`git add .`, `-A`, `-u`, or no pathspec at all).
+const GIT_BROAD_ADD_FLAGS = new Set(['-A', '--all', '-u', '--update', '--no-ignore-removal', '--ignore-removal']);
+
+// Minimal shell-word splitter: honours single/double quotes so a quoted path with spaces
+// stays one token. Deliberately does not expand variables or globs — an unresolvable token
+// is treated as "broad" by the callers below rather than guessed at.
+function tokenizeShellWords(segment) {
+  const tokens = [];
+  let current = '';
+  let quote = null;
+  let hasContent = false;
+  for (let i = 0; i < segment.length; i++) {
+    const char = segment[i];
+    // A backslash escapes the next character outside single quotes. Without this,
+    // `git add my\ dir/file.js` split at the escaped space into two fictional paths
+    // and the gates evaluated files git never touches.
+    if (char === '\\' && quote !== "'" && i + 1 < segment.length) {
+      current += segment[i + 1];
+      hasContent = true;
+      i += 1;
+      continue;
+    }
+    if (quote) {
+      if (char === quote) quote = null;
+      else current += char;
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      hasContent = true;
+      continue;
+    }
+    if (/\s/.test(char)) {
+      if (hasContent || current) tokens.push(current);
+      current = '';
+      hasContent = false;
+      continue;
+    }
+    current += char;
+  }
+  if (hasContent || current) tokens.push(current);
+  return tokens;
+}
+
+// Isolate the `git <sub>` run from a compound command so `git add a.js && git push` only
+// contributes `a.js` to the add pathspec.
+function extractGitSubcommandSegments(command, subcommand) {
+  const segments = [];
+  const pattern = new RegExp(`\\bgit\\s+${subcommand}\\b`, 'gi');
+  let match;
+  while ((match = pattern.exec(command)) !== null) {
+    const rest = command.slice(match.index + match[0].length);
+    const stop = rest.search(/(?:&&|\|\||[;|\n])/);
+    segments.push(stop === -1 ? rest : rest.slice(0, stop));
+  }
+  return segments;
+}
+
+/**
+ * Resolve the explicit pathspec of a git subcommand.
+ *
+ * @returns {{ broad: boolean, paths: string[] }} `broad` means "no usable pathspec — the
+ *   command may touch anything", which keeps the previous full-tree-scan behaviour.
+ */
+function parseGitPathspec(command, subcommand, options = {}) {
+  // `separatorOnly` is for subcommands whose bare arguments are usually flag VALUES rather
+  // than paths (`git commit -m "msg"`), where only tokens after `--` are a real pathspec.
+  const separatorOnly = options.separatorOnly === true;
+  const segments = extractGitSubcommandSegments(command, subcommand);
+  if (!segments.length) return { broad: true, paths: [] };
+
+  const paths = [];
+  for (const segment of segments) {
+    const tokens = tokenizeShellWords(segment);
+    let afterSeparator = false;
+    let sawPath = false;
+    for (const token of tokens) {
+      if (!token) continue;
+      if (token === '--') { afterSeparator = true; continue; }
+      if (separatorOnly && !afterSeparator) continue;
+      if (!afterSeparator && token.startsWith('-')) {
+        if (GIT_BROAD_ADD_FLAGS.has(token)) return { broad: true, paths: [] };
+        // `--pathspec-from-file` / interactive modes read paths we cannot resolve here.
+        if (/^--pathspec-from-file/.test(token) || token === '-i' || token === '--interactive'
+          || token === '-p' || token === '--patch') {
+          return { broad: true, paths: [] };
+        }
+        continue;
+      }
+      // A shell metacharacter or unexpanded glob/variable means the real pathspec is
+      // unknown at gate time — stay conservative rather than under-reporting.
+      if (/[*?$`]|^~/.test(token)) return { broad: true, paths: [] };
+      if (token === '.' || token === './') return { broad: true, paths: [] };
+      // Git pathspec MAGIC (gitglossary(7)): `:(exclude)x`, `:!x`, `:(icase)x`, `:/`, `:(top)`.
+      // These select a materially different set than the literal string — notably an
+      // exclude-only pathspec behaves as if NO pathspec were given, staging everything else.
+      // Treating them literally let them evade task-scope and protected-file checks entirely.
+      if (token.startsWith(':')) return { broad: true, paths: [] };
+      paths.push(token);
+      sawPath = true;
+    }
+    if (!sawPath) return { broad: true, paths: [] };
+  }
+
+  return paths.length ? { broad: false, paths } : { broad: true, paths: [] };
+}
+
+// A pathspec is relative to the shell's working directory, NOT the repo root. With
+// cwd=/repo/src, `git add a.js` stages src/a.js — reporting `a.js` made task-scope and
+// protected-file gates evaluate the wrong path, so a protected src/a.js edit could pass.
+// Track a leading `cd` too, since `cd src && git add a.js` is the common shape.
+// Returns null when the working directory cannot be determined. A `cd` whose target is a
+// glob or variable makes every later relative pathspec unresolvable — resolving it against
+// the ORIGINAL directory would silently produce a wrong path, which is exactly the
+// guess-instead-of-widen mistake that made pathspec magic evade scope checks. Callers treat
+// null as "unknown" and fall back to broad.
+function effectiveCommandCwd(command, toolInput) {
+  let cwd = String(toolInput?.cwd || toolInput?.repoPath || process.cwd());
+  const segments = String(command || '').split(/\r?\n|&&|\|\||[;|&]/);
+  for (const segment of segments) {
+    // Parsed without a regex: /^cd\s+(?:--\s+)?(.+)$/ has adjacent \s+ groups that backtrack
+    // polynomially on input like `cd\t\t\t…` (js/polynomial-redos). The command comes
+    // straight off the pending tool call, so stalling here stalls the gate.
+    const trimmed = segment.trim();
+    if (!trimmed.startsWith('cd')) break;    // only a LEADING cd chain applies
+    const afterCd = trimmed.slice(2);
+    if (afterCd && !/^[ \t]/.test(afterCd)) break;   // `cdfoo` is not `cd`
+    let argText = afterCd.trim();
+    if (argText === '--') argText = '';
+    else if (argText.startsWith('--') && /^[ \t]/.test(argText.slice(2))) argText = argText.slice(2).trim();
+    const target = tokenizeShellWords(argText)[0];
+    if (!target) break;                      // bare `cd` -> home; leave scope resolution alone
+    if (/[*?$`]|^~/.test(target)) return null;
+    cwd = path.resolve(cwd, target);
+  }
+  return cwd;
+}
+
+// Keep a tree-derived file only when it falls inside one of the declared pathspecs, so a
+// directory pathspec (`git add src/`) still reports the files under it and nothing else.
+function isExistingDirectory(relPath, repoRoot) {
+  if (!repoRoot) return false;
+  try {
+    return fs.statSync(path.join(repoRoot, relPath)).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+function isUnderPathspec(relPath, pathspecs) {
+  return pathspecs.some((spec) => relPath === spec || relPath.startsWith(`${spec}/`));
+}
+
+// Linear trailing-slash strip. A regex like /\/+$/ backtracks polynomially on a long run of
+// slashes (js/polynomial-redos), and the pathspec comes straight off the pending command —
+// stalling the gate is itself a way to defeat it.
+function stripTrailingSlashes(value) {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === '/') end -= 1;
+  return value.slice(0, end);
+}
+
+function applyPathspecScope(files, treeFiles, pathspec, repoRoot, commandCwd) {
+  if (pathspec.broad) {
+    for (const filePath of treeFiles) files.add(normalizePosix(filePath));
+    return;
+  }
+  const specs = pathspec.paths
+    .map((entry) => (path.isAbsolute(entry) ? entry : path.resolve(commandCwd || repoRoot || '.', entry)))
+    .map((entry) => toRepoRelativePath(entry, repoRoot))
+    .filter(Boolean)
+    .map((entry) => stripTrailingSlashes(normalizePosix(entry)));
+  if (!specs.length) {
+    for (const filePath of treeFiles) files.add(normalizePosix(filePath));
+    return;
+  }
+  const matchedSpecs = new Set();
+  for (const filePath of treeFiles) {
+    const normalized = normalizePosix(filePath);
+    for (const spec of specs) {
+      if (normalized === spec || normalized.startsWith(`${spec}/`)) {
+        files.add(normalized);
+        matchedSpecs.add(spec);
+      }
+    }
+  }
+  // An explicitly named file is in scope even when the tree scan does not list it (e.g. it
+  // is already staged). A directory spec that matched tree files is not itself a file, and
+  // an unmatched directory contributes nothing.
+  for (const spec of matchedSpecs.size === specs.length ? [] : specs) {
+    if (matchedSpecs.has(spec)) continue;
+    if (isExistingDirectory(spec, repoRoot)) continue;
+    files.add(spec);
+  }
+}
+
+// Git accepts global options BETWEEN `git` and the subcommand: `git -C <dir> push`,
+// `git -c k=v clean`, `git --git-dir=<p> reset`. Every command-pattern gate here is written
+// against the plain `git <subcommand>` form, so inserting one option was enough to walk past
+// force-push, git-reset-hard, git-clean-force and the local-only gates entirely — and to make
+// extractAffectedFiles report nothing, which silently disarms the task-scope and
+// protected-file gates too. Canonicalize the options away so the same command is recognised
+// however it is spelled. Callers match the ORIGINAL and the canonical form, so this can only
+// ever add a match, never remove one.
+const GIT_GLOBAL_OPTION_AFTER_GIT = /\bgit\s+(?:-[cC]\s+\S+|--(?:git-dir|work-tree|namespace|exec-path|super-prefix)(?:=\S+|\s+\S+)|--(?:paginate|no-pager|bare|literal-pathspecs|glob-pathspecs|noglob-pathspecs|icase-pathspecs|no-replace-objects|no-optional-locks)|-[pP])\s+/g;
+
+function canonicalizeGitCommand(command) {
+  let out = String(command || '');
+  // Bounded: a crafted command with many stacked options must not loop unboundedly.
+  for (let i = 0; i < 12; i += 1) {
+    const next = out.replace(GIT_GLOBAL_OPTION_AFTER_GIT, 'git ');
+    if (next === out) break;
+    out = next;
+  }
+  return out;
+}
+
+// The catastrophic gate patterns anchor the command position as `(?:^|[;&|]\s*)`, i.e. the
+// command must sit at the very start of the string or immediately after ; & |. That anchor
+// exists to avoid matching a command mentioned inside a quoted string, but it is far too
+// narrow: it does not recognise a command on a NEW LINE, nor any of the ordinary ways a
+// binary gets invoked. Each of the following defeated git-reset-hard and git-clean-force on
+// shipped main — no gate matched at all:
+//
+//   sudo git reset --hard          GIT_DIR=… git reset --hard      /usr/bin/git reset --hard
+//   command git reset --hard       "git" reset --hard              \git reset --hard
+//   echo hi\ngit reset --hard
+//
+// Rather than complicate every gate's regex, canonicalize the command POSITION: split on
+// separators (including newlines), strip env-assignment prefixes, wrapper binaries and any
+// directory/quoting on the binary token, then rejoin with `; ` so the existing anchor sees a
+// clean command. Callers match the original AND the canonical form, so this only ever adds.
+const COMMAND_WRAPPERS = new Set([
+  'sudo', 'doas', 'command', 'builtin', 'exec', 'nohup', 'time', 'env',
+  'nice', 'ionice', 'setsid', 'stdbuf', 'xargs',
+]);
+const ENV_ASSIGNMENT_PREFIX = /^[A-Za-z_][A-Za-z0-9_]*=(?:"[^"]*"|'[^']*'|[^\s]*)\s+/;
+const WRAPPER_HEAD = /^([A-Za-z_][\w.-]*)\s+/;
+
+function canonicalizeSegmentHead(segment) {
+  let text = String(segment || '').trim();
+  for (let i = 0; i < 12; i += 1) {
+    const before = text;
+    text = text.replace(ENV_ASSIGNMENT_PREFIX, '');
+    const wrapper = text.match(WRAPPER_HEAD);
+    if (wrapper && COMMAND_WRAPPERS.has(wrapper[1].toLowerCase())) {
+      text = text.slice(wrapper[0].length);
+    }
+    if (text === before) break;
+  }
+  // Unwrap quoting/escaping on the binary token: "git" / 'git' / \git
+  text = text.replace(/^\\(?=[A-Za-z_])/, '');
+  text = text.replace(/^(['"])([^'"\s]+)\1/, '$2');
+  // Drop a leading directory on the binary token: /usr/bin/git, ./bin/git, ../git
+  text = text.replace(/^((?:\.{1,2})?(?:\/[^\s/]+)*\/)([^\s/]+)/, '$2');
+  return text;
+}
+
+function canonicalizeCommandPositions(command) {
+  const text = String(command || '');
+  if (!text) return '';
+  return text
+    .split(/\r?\n|&&|\|\||[;|&]/)
+    .map((segment) => canonicalizeSegmentHead(segment))
+    .filter((segment) => segment.length > 0)
+    .join('; ');
+}
+
+// Full canonical form used for gate matching.
+function canonicalizeCommandForGates(command) {
+  return canonicalizeGitCommand(canonicalizeCommandPositions(command));
+}
+
+// Some gates anchor with a BARE `^` (local-only-git-writes, task-scope-required,
+// branch-governance-required, release-readiness-required) rather than the
+// `(?:^|[;&|]\s*)` form. A bare `^` only ever matches the FIRST command in the string, so
+// `echo hi && git commit -m x` slipped past while `git commit -m x` was denied — and
+// chaining is how agents normally work. Offer each canonicalized SEGMENT as its own
+// candidate so a `^` anchor sees every command in the chain, not just the head.
+//
+// This stays additive: unanchored patterns already match anywhere, so per-segment testing
+// adds nothing for them, and a `^` pattern matching a later segment is exactly the gate's
+// intent. A command merely quoted inside another (`echo "git commit"`) is unaffected,
+// because the segment head is still `echo`.
+function gateMatchCandidates(matchText) {
+  const canonical = canonicalizeCommandForGates(matchText);
+  const candidates = [matchText];
+  if (canonical && canonical !== matchText) candidates.push(canonical);
+  for (const segment of canonical.split('; ')) {
+    const trimmed = segment.trim();
+    if (trimmed && trimmed !== canonical) candidates.push(trimmed);
+  }
+  return candidates;
+}
+
+function patternMatchesCommand(regex, matchText) {
+  return gateMatchCandidates(matchText).some((candidate) => regex.test(candidate));
+}
+
 function extractAffectedFiles(toolName, toolInput = {}) {
   const repoRoot = resolveRepoRoot(toolInput);
   const files = new Set(collectInlineAffectedFiles(toolInput, repoRoot));
-  const command = String(toolInput.command || '');
+  // Full canonicalization, not just the git-option pass: `"git" add .` and `sudo git add .`
+  // otherwise fail the `\bgit\s+add\b` probes below and yield ZERO affected files, which in
+  // turn makes the scope gates (task-scope-required, protected-file-approval-required) find
+  // no violation and fall through — the file-list half of the same bypass.
+  const command = canonicalizeCommandForGates(String(toolInput.command || ''));
+
+  const commandCwd = effectiveCommandCwd(command, toolInput);
+  // An unresolvable `cd` makes every relative pathspec meaningless; widen rather than guess.
+  const cwdUnknown = commandCwd === null;
 
   if (toolName === 'Bash' && repoRoot && command) {
     if (/\bgit\s+commit\b/i.test(command)) {
-      for (const filePath of safeExecFileLines('git', ['diff', '--cached', '--name-only'], repoRoot)) {
-        files.add(normalizePosix(filePath));
-      }
+      // For commit only an explicit `-- <pathspec>` narrows the staged set; bare arguments
+      // after `git commit` are almost always flag values (`-m "msg"`), so anything else
+      // keeps the staged-diff behaviour.
+      const commitSpec = /\bgit\s+commit\b[^;|&\n]*?\s--\s/i.test(command)
+        ? parseGitPathspec(command, 'commit', { separatorOnly: true })
+        : { broad: true, paths: [] };
+      // `git commit -- <pathspec>` commits tracked files straight from the WORKING TREE, not
+      // only what is staged. Filtering the cached diff alone dropped exactly those files, so
+      // scope and protected-file gates missed changes the commit really carries.
+      const candidates = commitSpec.broad
+        ? safeExecFileLines('git', ['diff', '--cached', '--name-only'], repoRoot)
+        : [
+          ...safeExecFileLines('git', ['diff', '--cached', '--name-only'], repoRoot),
+          ...safeExecFileLines('git', ['diff', '--name-only'], repoRoot),
+        ];
+      applyPathspecScope(files, candidates, cwdUnknown ? { broad: true, paths: [] } : commitSpec, repoRoot, commandCwd);
     }
 
     if (/\bgit\s+add\b/i.test(command)) {
-      for (const filePath of safeExecFileLines('git', ['diff', '--name-only'], repoRoot)) {
-        files.add(normalizePosix(filePath));
-      }
-      for (const filePath of safeExecFileLines('git', ['ls-files', '--others', '--exclude-standard'], repoRoot)) {
-        files.add(normalizePosix(filePath));
-      }
+      const treeFiles = [
+        ...safeExecFileLines('git', ['diff', '--name-only'], repoRoot),
+        ...safeExecFileLines('git', ['ls-files', '--others', '--exclude-standard'], repoRoot),
+      ];
+      const addSpec = cwdUnknown ? { broad: true, paths: [] } : parseGitPathspec(command, 'add');
+      applyPathspecScope(files, treeFiles, addSpec, repoRoot, commandCwd);
     }
 
     if (/\bgit\s+push\b/i.test(command) || /\bgh\s+pr\s+(?:create|merge)\b/i.test(command) || isGhApiPrCreateCommand(command)) {
@@ -1634,7 +1963,11 @@ function buildProtectedApprovalViolation(protectedGlobs, approvals, affectedFile
 }
 
 function buildBranchGovernanceViolation(governanceState, toolInput = {}, affectedFiles = [], repoRoot = null, requireReleaseReadiness = false) {
-  const command = String(toolInput.command || '').trim();
+  // Canonicalized: this helper runs its OWN command analysis downstream of the gate's
+  // pattern test, so passing the raw text let `"npm" publish` / `sudo gh release create`
+  // through even once the pattern matched. Canonicalizing here keeps that second analysis
+  // consistent with the first.
+  const command = canonicalizeCommandForGates(String(toolInput.command || '').trim());
   if (!command) return null;
 
   const integrity = evaluateOperationalIntegrity({
@@ -1888,7 +2221,11 @@ function matchGate(gate, toolName, toolInput = {}) {
   if (gate.pattern) {
     try {
       const regex = new RegExp(gate.pattern);
-      if (!regex.test(matchText)) return { matched: false, matchText, affectedFiles };
+      // Match the original text or its git-canonical form, so `git -C <dir> push --force`
+      // is caught by the same pattern as `git push --force`.
+      if (!patternMatchesCommand(regex, matchText)) {
+        return { matched: false, matchText, affectedFiles };
+      }
       if (gate.id === 'permission-change-approval' && isSafeLocalCredentialHardeningCommand(toolName, toolInput)) {
         return { matched: false, matchText, affectedFiles };
       }
@@ -2002,7 +2339,8 @@ function matchSelfProtectHardFloor(gate, toolName, toolInput = {}) {
     if (!Array.isArray(gate.toolNames) || !gate.toolNames.includes(toolName)) return null;
     if (!matchText || !gate.pattern) return null;
     try {
-      if (!new RegExp(gate.pattern).test(matchText)) return null;
+      const regex = new RegExp(gate.pattern);
+      if (!patternMatchesCommand(regex, matchText)) return null;
     } catch {
       return null;
     }
@@ -2136,12 +2474,18 @@ function evaluateMemoryGuard(toolName, toolInput = {}) {
     return null;
   }
 
+  // The memory guard keyword-matches against this string. The false positives that motivated
+  // a cap here came from the JSON envelope's own KEY names polluting the haystack, which is
+  // fixed at the matcher (buildMatchHaystack). Truncating the file list instead silently
+  // dropped action targets: for a broad action, a guard whose keywords appear only in a later
+  // filename could no longer match, so a learned prevention rule was bypassable purely by
+  // filename ordering. Keep every target and bound the SIZE instead.
   const serializedInput = JSON.stringify({
     toolName,
     command: toolInput.command || null,
     filePath: toolInput.file_path || toolInput.path || null,
     affectedFiles,
-  });
+  }).slice(0, MEMORY_GUARD_MAX_SERIALIZED_CHARS);
   // Claw/hybrid support: pass context if agent provides claw metadata (for EnterpriseClaw/OpenShell/Perplexity hybrid agents)
   let guard;
   if (toolInput && (toolInput.clawContext || toolInput._claw || toolInput.hybridRoute || toolInput.agentId)) {
@@ -2280,7 +2624,7 @@ function isAutonomousRun() {
   return raw === '1' || raw === 'true';
 }
 
-async function evaluateGatesAsync(toolName, toolInput, configPath) {
+async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
   let config;
   try {
     let harnessPath;
@@ -2519,7 +2863,7 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
   return null;
 }
 
-function evaluateGates(toolName, toolInput, configPath) {
+function evaluateGatesInner(toolName, toolInput, configPath) {
   let config;
   try {
     let harnessPath;
@@ -3319,6 +3663,42 @@ function run(input) {
 
 }
 
+
+// A command can be spelled many ways without changing what it does: `sudo git …`,
+// `"git" …`, `/usr/bin/git …`, `GIT_DIR=… git …`, a chained `echo hi && git …`, or a git
+// global option before the subcommand. Roughly fifteen helpers below read
+// `toolInput.command` and run their own analysis on it, so patching each one individually
+// is how a spelling gets missed — that happened twice while fixing this.
+//
+// Instead: evaluate normally, and ONLY IF nothing matched, evaluate once more against the
+// canonicalized command. Every helper is covered without touching any of them, and it is
+// strictly additive — a command that already matched never reaches the second pass, so no
+// existing verdict changes and no stat is recorded twice.
+function canonicalRetryInput(toolName, toolInput) {
+  if (toolName !== 'Bash') return null;
+  const original = String((toolInput && toolInput.command) || '');
+  if (!original) return null;
+  const canonical = canonicalizeCommandForGates(original);
+  if (!canonical || canonical === original) return null;
+  return { ...toolInput, command: canonical, originalCommand: original };
+}
+
+async function evaluateGatesAsync(toolName, toolInput, configPath) {
+  const direct = await evaluateGatesAsyncInner(toolName, toolInput, configPath);
+  if (direct) return direct;
+  const retry = canonicalRetryInput(toolName, toolInput);
+  if (!retry) return null;
+  return evaluateGatesAsyncInner(toolName, retry, configPath);
+}
+
+function evaluateGates(toolName, toolInput, configPath) {
+  const direct = evaluateGatesInner(toolName, toolInput, configPath);
+  if (direct) return direct;
+  const retry = canonicalRetryInput(toolName, toolInput);
+  if (!retry) return null;
+  return evaluateGatesInner(toolName, retry, configPath);
+}
+
 // ---------------------------------------------------------------------------
 // Session action tracking and claim verification
 // ---------------------------------------------------------------------------
@@ -3605,6 +3985,12 @@ module.exports = {
   matchesGate,
   evaluateGates,
   evaluateGatesAsync,
+  extractAffectedFiles,
+  parseGitPathspec,
+  canonicalizeGitCommand,
+  canonicalizeCommandForGates,
+  canonicalizeCommandPositions,
+  patternMatchesCommand,
   isAutonomousRun,
   computeExecutableHash,
   formatOutput,
