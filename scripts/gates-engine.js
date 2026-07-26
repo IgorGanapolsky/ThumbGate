@@ -121,6 +121,7 @@ const BOOSTED_RISK_MIN_EXAMPLES = 3;
 const PR_THREAD_RESOLUTION_ACTION = 'pr_thread_resolution_verified_after_commit';
 const HELPER_BYPASS_ACTION = 'helper_script_modified';
 const KNOWLEDGE_ENTROPY_THRESHOLD = 0.7;
+const MEMORY_GUARD_MAX_SERIALIZED_FILES = 25;
 const KNOWLEDGE_CONFLICT_STRICT_BASH_PATTERN = /\b(?:git\s+push\b|gh\s+pr\s+merge\b|gh\s+release\s+(?:create|delete|edit|upload)\b|(?:npm|yarn|pnpm)\s+publish\b|rm\s+-rf\b|git\s+reset\s+--hard\b|git\s+clean\s+-f[a-z]*|railway\s+(?:deploy|up)\b|gcloud\s+(?:run\s+deploy|app\s+deploy)\b|firebase\s+deploy\b|vercel\s+--prod\b|kubectl\s+(?:apply|delete)\b|terraform\s+(?:apply|destroy)\b)\b/i;
 const HELPER_SCRIPT_FILE_PATTERN = /(?:^|\/)(?:scripts|bin|tools|tasks|\.githooks|\.github\/workflows)\/|(?:^|\/)(?:package\.json|Makefile|justfile|Taskfile\.ya?ml)$|\.(?:sh|bash|zsh|fish|js|mjs|cjs|ts|tsx|py|rb|pl|ps1|yml|yaml)$/i;
 const PACKAGE_RUN_PATTERN = /\b(?:npm|yarn|pnpm)\s+run\s+([:@./\w-]+)\b/i;
@@ -948,6 +949,153 @@ function getBranchDiffFiles(repoRoot) {
   return safeExecFileLines('git', ['diff', '--name-only'], repoRoot);
 }
 
+// `git add`/`git commit` accept an explicit pathspec, and when one is present it — not the
+// working tree — defines what the command actually touches. Scanning the whole tree here
+// reported every dirty file as "affected", so in a repo with a large dirty tree (e.g. one
+// shared by several agents) a correctly scoped `git add -- a.js b.js` was reported as
+// thousands of affected files and tripped task-scope / protected-file gates that the command
+// never actually violated. Only fall back to a full tree scan when the command really does
+// stage broadly (`git add .`, `-A`, `-u`, or no pathspec at all).
+const GIT_BROAD_ADD_FLAGS = new Set(['-A', '--all', '-u', '--update', '--no-ignore-removal', '--ignore-removal']);
+
+// Minimal shell-word splitter: honours single/double quotes so a quoted path with spaces
+// stays one token. Deliberately does not expand variables or globs — an unresolvable token
+// is treated as "broad" by the callers below rather than guessed at.
+function tokenizeShellWords(segment) {
+  const tokens = [];
+  let current = '';
+  let quote = null;
+  let hasContent = false;
+  for (let i = 0; i < segment.length; i++) {
+    const char = segment[i];
+    if (quote) {
+      if (char === quote) quote = null;
+      else current += char;
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      hasContent = true;
+      continue;
+    }
+    if (/\s/.test(char)) {
+      if (hasContent || current) tokens.push(current);
+      current = '';
+      hasContent = false;
+      continue;
+    }
+    current += char;
+  }
+  if (hasContent || current) tokens.push(current);
+  return tokens;
+}
+
+// Isolate the `git <sub>` run from a compound command so `git add a.js && git push` only
+// contributes `a.js` to the add pathspec.
+function extractGitSubcommandSegments(command, subcommand) {
+  const segments = [];
+  const pattern = new RegExp(`\\bgit\\s+${subcommand}\\b`, 'gi');
+  let match;
+  while ((match = pattern.exec(command)) !== null) {
+    const rest = command.slice(match.index + match[0].length);
+    const stop = rest.search(/(?:&&|\|\||[;|\n])/);
+    segments.push(stop === -1 ? rest : rest.slice(0, stop));
+  }
+  return segments;
+}
+
+/**
+ * Resolve the explicit pathspec of a git subcommand.
+ *
+ * @returns {{ broad: boolean, paths: string[] }} `broad` means "no usable pathspec — the
+ *   command may touch anything", which keeps the previous full-tree-scan behaviour.
+ */
+function parseGitPathspec(command, subcommand, options = {}) {
+  // `separatorOnly` is for subcommands whose bare arguments are usually flag VALUES rather
+  // than paths (`git commit -m "msg"`), where only tokens after `--` are a real pathspec.
+  const separatorOnly = options.separatorOnly === true;
+  const segments = extractGitSubcommandSegments(command, subcommand);
+  if (!segments.length) return { broad: true, paths: [] };
+
+  const paths = [];
+  for (const segment of segments) {
+    const tokens = tokenizeShellWords(segment);
+    let afterSeparator = false;
+    let sawPath = false;
+    for (const token of tokens) {
+      if (!token) continue;
+      if (token === '--') { afterSeparator = true; continue; }
+      if (separatorOnly && !afterSeparator) continue;
+      if (!afterSeparator && token.startsWith('-')) {
+        if (GIT_BROAD_ADD_FLAGS.has(token)) return { broad: true, paths: [] };
+        // `--pathspec-from-file` / interactive modes read paths we cannot resolve here.
+        if (/^--pathspec-from-file/.test(token) || token === '-i' || token === '--interactive'
+          || token === '-p' || token === '--patch') {
+          return { broad: true, paths: [] };
+        }
+        continue;
+      }
+      // A shell metacharacter or unexpanded glob/variable means the real pathspec is
+      // unknown at gate time — stay conservative rather than under-reporting.
+      if (/[*?$`]|^~/.test(token)) return { broad: true, paths: [] };
+      if (token === '.' || token === './' || token === ':/') return { broad: true, paths: [] };
+      paths.push(token);
+      sawPath = true;
+    }
+    if (!sawPath) return { broad: true, paths: [] };
+  }
+
+  return paths.length ? { broad: false, paths } : { broad: true, paths: [] };
+}
+
+// Keep a tree-derived file only when it falls inside one of the declared pathspecs, so a
+// directory pathspec (`git add src/`) still reports the files under it and nothing else.
+function isExistingDirectory(relPath, repoRoot) {
+  if (!repoRoot) return false;
+  try {
+    return fs.statSync(path.join(repoRoot, relPath)).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+function isUnderPathspec(relPath, pathspecs) {
+  return pathspecs.some((spec) => relPath === spec || relPath.startsWith(`${spec}/`));
+}
+
+function applyPathspecScope(files, treeFiles, pathspec, repoRoot) {
+  if (pathspec.broad) {
+    for (const filePath of treeFiles) files.add(normalizePosix(filePath));
+    return;
+  }
+  const specs = pathspec.paths
+    .map((entry) => toRepoRelativePath(entry, repoRoot))
+    .filter(Boolean)
+    .map((entry) => normalizePosix(entry).replace(/\/+$/, ''));
+  if (!specs.length) {
+    for (const filePath of treeFiles) files.add(normalizePosix(filePath));
+    return;
+  }
+  const matchedSpecs = new Set();
+  for (const filePath of treeFiles) {
+    const normalized = normalizePosix(filePath);
+    for (const spec of specs) {
+      if (normalized === spec || normalized.startsWith(`${spec}/`)) {
+        files.add(normalized);
+        matchedSpecs.add(spec);
+      }
+    }
+  }
+  // An explicitly named file is in scope even when the tree scan does not list it (e.g. it
+  // is already staged). A directory spec that matched tree files is not itself a file, and
+  // an unmatched directory contributes nothing.
+  for (const spec of matchedSpecs.size === specs.length ? [] : specs) {
+    if (matchedSpecs.has(spec)) continue;
+    if (isExistingDirectory(spec, repoRoot)) continue;
+    files.add(spec);
+  }
+}
+
 function extractAffectedFiles(toolName, toolInput = {}) {
   const repoRoot = resolveRepoRoot(toolInput);
   const files = new Set(collectInlineAffectedFiles(toolInput, repoRoot));
@@ -955,18 +1103,22 @@ function extractAffectedFiles(toolName, toolInput = {}) {
 
   if (toolName === 'Bash' && repoRoot && command) {
     if (/\bgit\s+commit\b/i.test(command)) {
-      for (const filePath of safeExecFileLines('git', ['diff', '--cached', '--name-only'], repoRoot)) {
-        files.add(normalizePosix(filePath));
-      }
+      // For commit only an explicit `-- <pathspec>` narrows the staged set; bare arguments
+      // after `git commit` are almost always flag values (`-m "msg"`), so anything else
+      // keeps the staged-diff behaviour.
+      const staged = safeExecFileLines('git', ['diff', '--cached', '--name-only'], repoRoot);
+      const commitSpec = /\bgit\s+commit\b[^;|&\n]*?\s--\s/i.test(command)
+        ? parseGitPathspec(command, 'commit', { separatorOnly: true })
+        : { broad: true, paths: [] };
+      applyPathspecScope(files, staged, commitSpec, repoRoot);
     }
 
     if (/\bgit\s+add\b/i.test(command)) {
-      for (const filePath of safeExecFileLines('git', ['diff', '--name-only'], repoRoot)) {
-        files.add(normalizePosix(filePath));
-      }
-      for (const filePath of safeExecFileLines('git', ['ls-files', '--others', '--exclude-standard'], repoRoot)) {
-        files.add(normalizePosix(filePath));
-      }
+      const treeFiles = [
+        ...safeExecFileLines('git', ['diff', '--name-only'], repoRoot),
+        ...safeExecFileLines('git', ['ls-files', '--others', '--exclude-standard'], repoRoot),
+      ];
+      applyPathspecScope(files, treeFiles, parseGitPathspec(command, 'add'), repoRoot);
     }
 
     if (/\bgit\s+push\b/i.test(command) || /\bgh\s+pr\s+(?:create|merge)\b/i.test(command) || isGhApiPrCreateCommand(command)) {
@@ -2136,11 +2288,15 @@ function evaluateMemoryGuard(toolName, toolInput = {}) {
     return null;
   }
 
+  // The memory guard keyword-matches against this string. Serializing an unbounded file
+  // list made the haystack grow with the working tree, so an unrelated command in a dirty
+  // repo accumulated enough incidental keyword hits to match almost any stored guard.
+  // Cap it: the guard is meant to recognise the ACTION, not the size of the checkout.
   const serializedInput = JSON.stringify({
     toolName,
     command: toolInput.command || null,
     filePath: toolInput.file_path || toolInput.path || null,
-    affectedFiles,
+    affectedFiles: affectedFiles.slice(0, MEMORY_GUARD_MAX_SERIALIZED_FILES),
   });
   // Claw/hybrid support: pass context if agent provides claw metadata (for EnterpriseClaw/OpenShell/Perplexity hybrid agents)
   let guard;
@@ -3605,6 +3761,8 @@ module.exports = {
   matchesGate,
   evaluateGates,
   evaluateGatesAsync,
+  extractAffectedFiles,
+  parseGitPathspec,
   isAutonomousRun,
   computeExecutableHash,
   formatOutput,
