@@ -91,6 +91,21 @@ test('haystack survives a JSON array envelope', () => {
   assert.ok(buildMatchHaystack('["alpha","beta"]').includes('alpha'));
 });
 
+test('haystack excludes claw metadata key names', () => {
+  // evaluateClawPretool wraps the input in {_claw:{actionType,agentId,hybridRoute,…}}
+  // and stringifies it; those key names must not become matchable tokens either.
+  const clawEnvelope = JSON.stringify({
+    raw: 'git status',
+    _claw: { actionType: 'shell', agentId: 'agent-7', hybridRoute: 'local', screenInteraction: false, fileAccess: true },
+  });
+  const hay = normalize(buildMatchHaystack(clawEnvelope));
+  for (const structural of ['_claw', 'actiontype', 'agentid', 'hybridroute', 'screeninteraction', 'fileaccess', 'raw']) {
+    assert.ok(!hay.includes(structural), `claw key "${structural}" must not be in the haystack`);
+  }
+  assert.ok(hay.includes('git status'), 'the actual action must survive');
+  assert.ok(hay.includes('agent-7'), 'metadata VALUES are still matchable');
+});
+
 // ---------------------------------------------------------------------------
 // containsWholeWord
 // ---------------------------------------------------------------------------
