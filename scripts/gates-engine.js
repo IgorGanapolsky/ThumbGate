@@ -1211,7 +1211,11 @@ function patternMatchesCommand(regex, matchText) {
 function extractAffectedFiles(toolName, toolInput = {}) {
   const repoRoot = resolveRepoRoot(toolInput);
   const files = new Set(collectInlineAffectedFiles(toolInput, repoRoot));
-  const command = canonicalizeGitCommand(String(toolInput.command || ''));
+  // Full canonicalization, not just the git-option pass: `"git" add .` and `sudo git add .`
+  // otherwise fail the `\bgit\s+add\b` probes below and yield ZERO affected files, which in
+  // turn makes the scope gates (task-scope-required, protected-file-approval-required) find
+  // no violation and fall through — the file-list half of the same bypass.
+  const command = canonicalizeCommandForGates(String(toolInput.command || ''));
 
   if (toolName === 'Bash' && repoRoot && command) {
     if (/\bgit\s+commit\b/i.test(command)) {
@@ -1898,7 +1902,11 @@ function buildProtectedApprovalViolation(protectedGlobs, approvals, affectedFile
 }
 
 function buildBranchGovernanceViolation(governanceState, toolInput = {}, affectedFiles = [], repoRoot = null, requireReleaseReadiness = false) {
-  const command = String(toolInput.command || '').trim();
+  // Canonicalized: this helper runs its OWN command analysis downstream of the gate's
+  // pattern test, so passing the raw text let `"npm" publish` / `sudo gh release create`
+  // through even once the pattern matched. Canonicalizing here keeps that second analysis
+  // consistent with the first.
+  const command = canonicalizeCommandForGates(String(toolInput.command || '').trim());
   if (!command) return null;
 
   const integrity = evaluateOperationalIntegrity({
@@ -2553,7 +2561,7 @@ function isAutonomousRun() {
   return raw === '1' || raw === 'true';
 }
 
-async function evaluateGatesAsync(toolName, toolInput, configPath) {
+async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
   let config;
   try {
     let harnessPath;
@@ -2792,7 +2800,7 @@ async function evaluateGatesAsync(toolName, toolInput, configPath) {
   return null;
 }
 
-function evaluateGates(toolName, toolInput, configPath) {
+function evaluateGatesInner(toolName, toolInput, configPath) {
   let config;
   try {
     let harnessPath;
@@ -3590,6 +3598,42 @@ function run(input) {
   const combinedContext = mergeContextStrings(lessonContext, recentContext, behavioralContext);
   return formatOutput(applyEnforcementPosture(result), combinedContext);
 
+}
+
+
+// A command can be spelled many ways without changing what it does: `sudo git …`,
+// `"git" …`, `/usr/bin/git …`, `GIT_DIR=… git …`, a chained `echo hi && git …`, or a git
+// global option before the subcommand. Roughly fifteen helpers below read
+// `toolInput.command` and run their own analysis on it, so patching each one individually
+// is how a spelling gets missed — that happened twice while fixing this.
+//
+// Instead: evaluate normally, and ONLY IF nothing matched, evaluate once more against the
+// canonicalized command. Every helper is covered without touching any of them, and it is
+// strictly additive — a command that already matched never reaches the second pass, so no
+// existing verdict changes and no stat is recorded twice.
+function canonicalRetryInput(toolName, toolInput) {
+  if (toolName !== 'Bash') return null;
+  const original = String((toolInput && toolInput.command) || '');
+  if (!original) return null;
+  const canonical = canonicalizeCommandForGates(original);
+  if (!canonical || canonical === original) return null;
+  return { ...toolInput, command: canonical, originalCommand: original };
+}
+
+async function evaluateGatesAsync(toolName, toolInput, configPath) {
+  const direct = await evaluateGatesAsyncInner(toolName, toolInput, configPath);
+  if (direct) return direct;
+  const retry = canonicalRetryInput(toolName, toolInput);
+  if (!retry) return null;
+  return evaluateGatesAsyncInner(toolName, retry, configPath);
+}
+
+function evaluateGates(toolName, toolInput, configPath) {
+  const direct = evaluateGatesInner(toolName, toolInput, configPath);
+  if (direct) return direct;
+  const retry = canonicalRetryInput(toolName, toolInput);
+  if (!retry) return null;
+  return evaluateGatesInner(toolName, retry, configPath);
 }
 
 // ---------------------------------------------------------------------------

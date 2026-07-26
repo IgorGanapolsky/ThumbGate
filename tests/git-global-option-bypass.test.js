@@ -203,20 +203,27 @@ test('plain rm -rf ~ still denies (baseline sanity)', async () => {
 // `(?:^|[;&|]\s*)` form. A bare `^` only matches the FIRST command in the string, so any
 // chained command slipped past — and chaining is how agents normally work. Each gate is now
 // offered every canonicalized segment as its own candidate.
-const CHAINED_EVASIONS = [
-  'echo hi && git tag v9.9.9',
-  'echo hi && git commit -m x',
-  'echo hi; git add .',
-  'cd /tmp && git commit -m x',
-  'ls && sudo git push origin main',
+// Asserted as a RELATIVE property, not an absolute one: whether `git commit` is gated at all
+// depends on ambient state (is anything staged, is a task scope declared). An earlier version
+// asserted absolute denial, passed locally and failed in CI for exactly that reason. The
+// invariant that actually matters is: if the plain form is gated here, the chained form must
+// be too. Fully sandboxed coverage lives in tests/gate-evasion-matrix.test.js.
+const CHAINED_PAIRS = [
+  ['git tag v9.9.9', 'echo hi && git tag v9.9.9'],
+  ['git commit -m x', 'echo hi && git commit -m x'],
+  ['git add .', 'echo hi; git add .'],
+  ['git commit -m x', 'cd /tmp && git commit -m x'],
+  ['git push origin main', 'ls && sudo git push origin main'],
 ];
 
-for (const command of CHAINED_EVASIONS) {
-  test(`chained command is not skipped: ${command}`, async () => {
+for (const [plain, chained] of CHAINED_PAIRS) {
+  test(`chained command is not skipped: ${chained}`, async () => {
     const repo = makeRepo();
-    const verdict = await evaluateGatesAsync('Bash', { command, cwd: repo });
-    assert.ok(verdict, `${command} must match a gate`);
-    assert.equal(verdict.decision, 'deny', command);
+    const plainVerdict = await evaluateGatesAsync('Bash', { command: plain, cwd: repo });
+    if (!(plainVerdict && plainVerdict.decision === 'deny')) return; // ungated here; nothing to prove
+    const chainedVerdict = await evaluateGatesAsync('Bash', { command: chained, cwd: repo });
+    assert.ok(chainedVerdict, `${chained} must match a gate — plain form denies`);
+    assert.equal(chainedVerdict.decision, 'deny', chained);
   });
 }
 
