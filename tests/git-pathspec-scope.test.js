@@ -267,3 +267,33 @@ test('a resolvable cd still narrows precisely', () => {
   const { files } = extractAffectedFiles('Bash', { command: 'cd src && git add a.js', cwd: repo });
   assert.deepEqual(files, ['src/a.js']);
 });
+
+// Second js/polynomial-redos in this PR, same class as the trailing-slash one: the original
+// `cd` matcher used /^cd\s+(?:--\s+)?(.+)$/, whose adjacent \s+ groups backtrack polynomially
+// on `cd\t\t\t…`. The command comes straight off the pending tool call, so stalling here
+// stalls the gate. Parsing is now linear.
+test('a pathological cd does not stall the gate', () => {
+  const repo = makeDirtyRepo(5);
+  const evil = `cd${'\t'.repeat(200000)}x && git add a.js`;
+  const started = Date.now();
+  extractAffectedFiles('Bash', { command: evil, cwd: repo });
+  const elapsed = Date.now() - started;
+  assert.ok(elapsed < 5000, `cd parsing took ${elapsed}ms — expected linear-time handling`);
+});
+
+test('cd parsing still handles its real forms', () => {
+  const repo = makeDirtyRepo(30);
+  const narrow = [
+    'cd src && git add a.js',
+    'cd -- src && git add a.js',
+    'cd\tsrc && git add a.js',
+  ];
+  for (const command of narrow) {
+    assert.deepEqual(extractAffectedFiles('Bash', { command, cwd: repo }).files, ['src/a.js'], command);
+  }
+  // `cdfoo` is a different command, not `cd` — the pathspec stays repo-relative.
+  assert.deepEqual(
+    extractAffectedFiles('Bash', { command: 'cdfoo && git add src/a.js', cwd: repo }).files,
+    ['src/a.js'],
+  );
+});

@@ -1077,9 +1077,17 @@ function effectiveCommandCwd(command, toolInput) {
   let cwd = String(toolInput?.cwd || toolInput?.repoPath || process.cwd());
   const segments = String(command || '').split(/\r?\n|&&|\|\||[;|&]/);
   for (const segment of segments) {
-    const match = segment.trim().match(/^cd\s+(?:--\s+)?(.+)$/);
-    if (!match) break;                       // only a LEADING cd chain applies
-    const target = tokenizeShellWords(match[1])[0];
+    // Parsed without a regex: /^cd\s+(?:--\s+)?(.+)$/ has adjacent \s+ groups that backtrack
+    // polynomially on input like `cd\t\t\t…` (js/polynomial-redos). The command comes
+    // straight off the pending tool call, so stalling here stalls the gate.
+    const trimmed = segment.trim();
+    if (!trimmed.startsWith('cd')) break;    // only a LEADING cd chain applies
+    const afterCd = trimmed.slice(2);
+    if (afterCd && !/^[ \t]/.test(afterCd)) break;   // `cdfoo` is not `cd`
+    let argText = afterCd.trim();
+    if (argText === '--') argText = '';
+    else if (argText.startsWith('--') && /^[ \t]/.test(argText.slice(2))) argText = argText.slice(2).trim();
+    const target = tokenizeShellWords(argText)[0];
     if (!target) break;                      // bare `cd` -> home; leave scope resolution alone
     if (/[*?$`]|^~/.test(target)) return null;
     cwd = path.resolve(cwd, target);
