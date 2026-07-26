@@ -1105,10 +1105,31 @@ function applyPathspecScope(files, treeFiles, pathspec, repoRoot) {
   }
 }
 
+// Git accepts global options BETWEEN `git` and the subcommand: `git -C <dir> push`,
+// `git -c k=v clean`, `git --git-dir=<p> reset`. Every command-pattern gate here is written
+// against the plain `git <subcommand>` form, so inserting one option was enough to walk past
+// force-push, git-reset-hard, git-clean-force and the local-only gates entirely — and to make
+// extractAffectedFiles report nothing, which silently disarms the task-scope and
+// protected-file gates too. Canonicalize the options away so the same command is recognised
+// however it is spelled. Callers match the ORIGINAL and the canonical form, so this can only
+// ever add a match, never remove one.
+const GIT_GLOBAL_OPTION_AFTER_GIT = /\bgit\s+(?:-[cC]\s+\S+|--(?:git-dir|work-tree|namespace|exec-path|super-prefix)(?:=\S+|\s+\S+)|--(?:paginate|no-pager|bare|literal-pathspecs|glob-pathspecs|noglob-pathspecs|icase-pathspecs|no-replace-objects|no-optional-locks)|-[pP])\s+/g;
+
+function canonicalizeGitCommand(command) {
+  let out = String(command || '');
+  // Bounded: a crafted command with many stacked options must not loop unboundedly.
+  for (let i = 0; i < 12; i += 1) {
+    const next = out.replace(GIT_GLOBAL_OPTION_AFTER_GIT, 'git ');
+    if (next === out) break;
+    out = next;
+  }
+  return out;
+}
+
 function extractAffectedFiles(toolName, toolInput = {}) {
   const repoRoot = resolveRepoRoot(toolInput);
   const files = new Set(collectInlineAffectedFiles(toolInput, repoRoot));
-  const command = String(toolInput.command || '');
+  const command = canonicalizeGitCommand(String(toolInput.command || ''));
 
   if (toolName === 'Bash' && repoRoot && command) {
     if (/\bgit\s+commit\b/i.test(command)) {
@@ -2049,7 +2070,11 @@ function matchGate(gate, toolName, toolInput = {}) {
   if (gate.pattern) {
     try {
       const regex = new RegExp(gate.pattern);
-      if (!regex.test(matchText)) return { matched: false, matchText, affectedFiles };
+      // Match the original text or its git-canonical form, so `git -C <dir> push --force`
+      // is caught by the same pattern as `git push --force`.
+      if (!regex.test(matchText) && !regex.test(canonicalizeGitCommand(matchText))) {
+        return { matched: false, matchText, affectedFiles };
+      }
       if (gate.id === 'permission-change-approval' && isSafeLocalCredentialHardeningCommand(toolName, toolInput)) {
         return { matched: false, matchText, affectedFiles };
       }
@@ -2163,7 +2188,8 @@ function matchSelfProtectHardFloor(gate, toolName, toolInput = {}) {
     if (!Array.isArray(gate.toolNames) || !gate.toolNames.includes(toolName)) return null;
     if (!matchText || !gate.pattern) return null;
     try {
-      if (!new RegExp(gate.pattern).test(matchText)) return null;
+      const regex = new RegExp(gate.pattern);
+      if (!regex.test(matchText) && !regex.test(canonicalizeGitCommand(matchText))) return null;
     } catch {
       return null;
     }
@@ -3772,6 +3798,7 @@ module.exports = {
   evaluateGatesAsync,
   extractAffectedFiles,
   parseGitPathspec,
+  canonicalizeGitCommand,
   isAutonomousRun,
   computeExecutableHash,
   formatOutput,

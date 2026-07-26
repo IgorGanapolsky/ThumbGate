@@ -104,17 +104,16 @@ test('multiple explicit paths are all reported', () => {
   assert.deepEqual(files.sort(), ['noise0.txt', 'src/a.js']);
 });
 
-// Documents a pre-existing limitation (unchanged by the pathspec work): the `git add`
-// detection regex does not match when global options sit between `git` and the subcommand,
-// so `git -C <dir> add …` contributes no affected files at all. Recorded so a future change
-// to that regex is a deliberate decision rather than a surprise.
-test('git -C form is not currently detected', () => {
+// This previously returned [] — global options between `git` and the subcommand defeated the
+// detection regex, so the scope gates saw no files and raised no violation. Now canonicalized.
+// Full bypass coverage lives in tests/git-global-option-bypass.test.js.
+test('git -C form is detected and scoped', () => {
   const repo = makeDirtyRepo(10);
   const { files } = extractAffectedFiles('Bash', {
     command: `git -C ${repo} add src/a.js`,
     cwd: repo,
   });
-  assert.deepEqual(files, []);
+  assert.deepEqual(files, ['src/a.js']);
 });
 
 // js/polynomial-redos: stripping trailing slashes with /\/+$/ backtracks polynomially on a
