@@ -83,6 +83,40 @@ test('unresolvable pathspecs stay conservative', () => {
   }
 });
 
+test('flag values and prefixes do not leak into the pathspec', () => {
+  const repo = makeDirtyRepo(30);
+  for (const command of [
+    `cd ${repo} && git add src/a.js`,
+    'git add --chmod=+x src/a.js',
+    'git add "src/a.js"',
+  ]) {
+    const { files } = extractAffectedFiles('Bash', { command, cwd: repo });
+    assert.deepEqual(files, ['src/a.js'], command);
+  }
+});
+
+test('multiple explicit paths are all reported', () => {
+  const repo = makeDirtyRepo(30);
+  const { files } = extractAffectedFiles('Bash', {
+    command: 'git add src/a.js noise0.txt',
+    cwd: repo,
+  });
+  assert.deepEqual(files.sort(), ['noise0.txt', 'src/a.js']);
+});
+
+// Documents a pre-existing limitation (unchanged by the pathspec work): the `git add`
+// detection regex does not match when global options sit between `git` and the subcommand,
+// so `git -C <dir> add …` contributes no affected files at all. Recorded so a future change
+// to that regex is a deliberate decision rather than a surprise.
+test('git -C form is not currently detected', () => {
+  const repo = makeDirtyRepo(10);
+  const { files } = extractAffectedFiles('Bash', {
+    command: `git -C ${repo} add src/a.js`,
+    cwd: repo,
+  });
+  assert.deepEqual(files, []);
+});
+
 test('quoted paths with spaces are parsed as a single pathspec', () => {
   const parsed = parseGitPathspec('git add -- "my dir/file.js"', 'add');
   assert.equal(parsed.broad, false);

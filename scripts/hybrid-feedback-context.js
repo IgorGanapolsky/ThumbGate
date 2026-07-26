@@ -501,6 +501,20 @@ function buildAdditionalContext(state, constraints, maxChars) {
 // evaluation. With a two-hit block threshold, any guard whose keywords included two such
 // common words blocked every action regardless of what that action was. Match on the VALUES
 // only — the guard should key on the action, never on how we happened to serialize it.
+// normalize() runs text through sanitizeFeedbackText(), which exists to reject hook
+// TRANSPORT PAYLOADS and path-dominated blobs from human FEEDBACK. That is the wrong filter
+// for the pending action we are matching against: a real action is frequently just a command
+// plus a list of file paths, which sanitizeFeedbackText() discards wholesale as a "path blob",
+// leaving an empty haystack and silently matching nothing. Apply only the redactions here.
+function normalizeActionText(text) {
+  if (!text || typeof text !== 'string') return '';
+  return text
+    .replace(/\/Users\/[^\s/]+/g, '/Users/redacted')
+    .replace(/:\d{4,5}\b/g, ':PORT')
+    .toLowerCase()
+    .trim();
+}
+
 function buildMatchHaystack(input) {
   if (input == null) return '';
   let value = input;
@@ -680,7 +694,7 @@ function evaluateCompiledGuards(artifact, toolName, toolInput) {
     return { mode: 'allow', reason: '', source: 'compiled' };
   }
 
-  const normInput = normalize(buildMatchHaystack(toolInput));
+  const normInput = normalizeActionText(buildMatchHaystack(toolInput));
   const normTool = (toolName || '').toLowerCase();
 
   for (const guard of artifact.guards) {
@@ -722,7 +736,7 @@ function evaluateCompiledGuards(artifact, toolName, toolInput) {
  * @returns {{ mode: string, reason: string, source: string }}
  */
 function evaluatePretoolFromState(state, toolName, toolInput) {
-  const normInput = normalize(buildMatchHaystack(toolInput));
+  const normInput = normalizeActionText(buildMatchHaystack(toolInput));
   const normTool = (toolName || '').toLowerCase();
 
   for (const pattern of state.recurringNegativePatterns || []) {
@@ -891,6 +905,7 @@ module.exports = {
   hashText,
   hasTwoKeywordHits,
   buildMatchHaystack,
+  normalizeActionText,
   isSpecificKeyword,
   containsWholeWord,
   readJsonl,

@@ -19,6 +19,7 @@ const {
   evaluateCompiledGuards,
   evaluatePretoolFromState,
   keywords,
+  normalizeActionText,
   normalize,
 } = require('../scripts/hybrid-feedback-context.js');
 
@@ -104,6 +105,36 @@ test('haystack excludes claw metadata key names', () => {
   }
   assert.ok(hay.includes('git status'), 'the actual action must survive');
   assert.ok(hay.includes('agent-7'), 'metadata VALUES are still matchable');
+});
+
+// A values-only haystack is often just a command plus a list of file paths. That shape
+// looks like a "path-dominated blob" to sanitizeFeedbackText(), whose job is rejecting hook
+// transport payloads in human FEEDBACK — applying it here emptied the haystack entirely and
+// silently matched nothing. Regression: a realistic path-heavy action must stay matchable.
+test('a path-heavy action does not collapse to an empty haystack', () => {
+  const files = [
+    'AGENTS.md', '.changeset/fix-a.md', '.changeset/fix-b.md', 'package-lock.json',
+    'package.json', 'scripts/gates-engine.js', 'scripts/hybrid-feedback-context.js',
+    'tests/git-pathspec-scope.test.js', 'tests/memory-guard-matching.test.js',
+  ];
+  for (let n = 1; n <= files.length; n++) {
+    const hay = normalizeActionText(buildMatchHaystack(envelope('git push origin feature/x', files.slice(0, n))));
+    assert.notEqual(hay, '', `haystack emptied after ${n} file(s): ${files[n - 1]}`);
+    assert.ok(hay.includes('git push'), `command lost after ${n} file(s)`);
+  }
+});
+
+test('a path-heavy action still matches a real guard', () => {
+  const guard = artifactFor('git push AGENTS.md protected file regression');
+  const verdict = evaluateCompiledGuards(
+    guard,
+    'Bash',
+    envelope('git push origin feature/x', [
+      'AGENTS.md', 'package.json', 'scripts/gates-engine.js',
+      'scripts/hybrid-feedback-context.js', 'tests/a.test.js',
+    ]),
+  );
+  assert.equal(verdict.mode, 'block', `expected block, got ${verdict.mode}: ${verdict.reason}`);
 });
 
 // ---------------------------------------------------------------------------
