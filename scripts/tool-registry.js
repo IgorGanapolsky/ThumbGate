@@ -60,6 +60,79 @@ const GOAL_CONTRACT_SCHEMA = {
   },
 };
 
+const TASK_OUTCOME_INPUT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['taskId', 'goal', 'status', 'verification', 'toolCalls', 'policy', 'efficiency'],
+  properties: {
+    taskId: { type: 'string', minLength: 1 },
+    taskType: { type: 'string' },
+    goal: { type: 'string', minLength: 1 },
+    expectedOutcome: { type: 'string' },
+    status: { type: 'string', enum: ['completed', 'failed', 'partial', 'escalated'] },
+    verification: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['performed', 'passed', 'evidence'],
+      properties: {
+        performed: { type: 'boolean' },
+        passed: { type: 'boolean' },
+        verifier: { type: 'string' },
+        method: { type: 'string' },
+        evidence: { type: 'array', items: { type: 'string' } },
+        unsupportedClaims: { type: 'integer', minimum: 0 },
+      },
+    },
+    toolCalls: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['name', 'contractValid', 'allowed', 'succeeded', 'attempts'],
+        properties: {
+          name: { type: 'string' },
+          contractValid: { type: 'boolean' },
+          allowed: { type: 'boolean' },
+          succeeded: { type: 'boolean' },
+          attempts: { type: 'integer', minimum: 1 },
+          latencyMs: { type: 'number', minimum: 0 },
+          costUsd: { type: 'number', minimum: 0 },
+          sideEffect: { type: 'boolean' },
+          idempotencyKey: { type: 'string' },
+          duplicateSideEffect: { type: 'boolean' },
+        },
+      },
+    },
+    policy: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['violations', 'unsafeEscapes', 'falseBlocks'],
+      properties: {
+        violations: { type: 'integer', minimum: 0 },
+        unsafeEscapes: { type: 'integer', minimum: 0 },
+        falseBlocks: { type: 'integer', minimum: 0 },
+      },
+    },
+    failure: { type: 'object', additionalProperties: true },
+    escalation: { type: 'object', additionalProperties: true },
+    efficiency: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['latencyMs', 'costUsd'],
+      properties: {
+        latencyMs: { type: 'number', minimum: 0 },
+        costUsd: { type: 'number', minimum: 0 },
+        firstAttempt: { type: 'boolean' },
+      },
+    },
+    businessOutcome: { type: 'object', additionalProperties: true },
+    traceId: { type: 'string' },
+    idempotencyKey: { type: 'string' },
+    versions: { type: 'object', additionalProperties: true },
+    metadata: { type: 'object', additionalProperties: true },
+  },
+};
+
 const TOOLS = [
   readOnlyTool({
     name: 'capture_feedback',
@@ -966,6 +1039,76 @@ const TOOLS = [
       properties: {
         actionId: { type: 'string', description: 'Optional action id to fetch the matching receipt for' },
         limit: { type: 'number', description: 'Max number of recent receipts to return when no actionId is given (default 20)' },
+      },
+    },
+  }),
+  destructiveTool({
+    name: 'record_task_outcome',
+    title: 'Record Verified Task Outcome',
+    description: 'Record an idempotent task-level outcome with verification evidence, tool correctness, policy behavior, latency, cost, and business KPI movement. A completed response without evidence is recorded as not working.',
+    inputSchema: TASK_OUTCOME_INPUT_SCHEMA,
+  }),
+  readOnlyTool({
+    name: 'get_task_outcomes',
+    title: 'Get Task Outcomes',
+    description: 'Read a task outcome by taskId or the most recent evidence-backed outcome receipts.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        taskId: { type: 'string' },
+        limit: { type: 'integer', minimum: 1, maximum: 100 },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'get_agent_outcome_metrics',
+    title: 'Get Agent Outcome Metrics',
+    description: 'Compute transparent task, tool, safety, escalation, latency, cost, and business metrics from recorded task outcomes. Empty data returns insufficient_evidence.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {},
+    },
+  }),
+  destructiveTool({
+    name: 'request_human_escalation',
+    title: 'Request Human Escalation',
+    description: 'Create an idempotent, expiring human-review request with requester identity and evidence. Agents cannot approve their own requests.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['taskId', 'reason', 'requester', 'evidence'],
+      properties: {
+        taskId: { type: 'string', minLength: 1 },
+        reason: { type: 'string', minLength: 1 },
+        severity: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
+        requester: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['id', 'kind'],
+          properties: {
+            id: { type: 'string', minLength: 1 },
+            kind: { type: 'string', enum: ['agent', 'service', 'human'] },
+            displayName: { type: 'string' },
+          },
+        },
+        evidence: { type: 'array', minItems: 1, items: { type: 'string', minLength: 1 } },
+        ttlMs: { type: 'number', minimum: 1 },
+        idempotencyKey: { type: 'string' },
+      },
+    },
+  }),
+  readOnlyTool({
+    name: 'list_human_escalations',
+    title: 'List Human Escalations',
+    description: 'List auditable human-escalation state. Approval decisions are deliberately absent from the agent tool surface.',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        status: { type: 'string', enum: ['pending', 'approved', 'rejected', 'cancelled', 'expired'] },
+        limit: { type: 'integer', minimum: 1, maximum: 100 },
       },
     },
   }),

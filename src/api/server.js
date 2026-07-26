@@ -167,6 +167,19 @@ const {
   evaluateWorkflowSentinel,
 } = require('../../scripts/workflow-sentinel');
 const {
+  calculateTaskOutcomeMetrics,
+  getTaskOutcome,
+  readTaskOutcomes,
+  recordTaskOutcome,
+} = require('../../scripts/task-outcomes');
+const { monitorTaskOutcomes } = require('../../scripts/agent-outcome-monitor');
+const {
+  calculateEscalationMetrics,
+  decideEscalation,
+  listEscalations,
+  requestEscalation,
+} = require('../../scripts/human-escalation');
+const {
   normalizeProviderAction,
 } = require('../../scripts/provider-action-normalizer');
 const {
@@ -9034,6 +9047,79 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           ttlMs: body.ttlMs,
         });
         sendJson(res, 200, { approved: true, approval });
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/task-outcomes') {
+        const body = await parseJsonBody(req);
+        try {
+          const result = recordTaskOutcome(body, { feedbackDir: requestFeedbackDir });
+          sendJson(res, result.recorded ? 201 : 200, result);
+        } catch (error) {
+          throw createHttpError(400, error.message);
+        }
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/v1/task-outcomes') {
+        const taskId = parsed.searchParams.get('taskId');
+        const limit = Math.max(1, Math.min(100, Number(parsed.searchParams.get('limit') || 20)));
+        if (taskId) {
+          const outcome = getTaskOutcome(taskId, { feedbackDir: requestFeedbackDir });
+          if (!outcome) throw createHttpError(404, `Task outcome not found: ${taskId}`);
+          sendJson(res, 200, outcome);
+        } else {
+          sendJson(res, 200, {
+            outcomes: readTaskOutcomes({ feedbackDir: requestFeedbackDir }).slice(-limit),
+          });
+        }
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/v1/task-outcomes/metrics') {
+        const outcomes = readTaskOutcomes({ feedbackDir: requestFeedbackDir });
+        sendJson(res, 200, calculateTaskOutcomeMetrics(outcomes));
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/v1/task-outcomes/monitor') {
+        const outcomes = readTaskOutcomes({ feedbackDir: requestFeedbackDir });
+        sendJson(res, 200, monitorTaskOutcomes(outcomes));
+        return;
+      }
+
+      if (req.method === 'POST' && pathname === '/v1/escalations') {
+        const body = await parseJsonBody(req);
+        try {
+          const result = requestEscalation(body, { feedbackDir: requestFeedbackDir });
+          sendJson(res, result.recorded ? 201 : 200, result);
+        } catch (error) {
+          throw createHttpError(400, error.message);
+        }
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/v1/escalations') {
+        const status = parsed.searchParams.get('status') || undefined;
+        const escalations = listEscalations({ feedbackDir: requestFeedbackDir, status });
+        sendJson(res, 200, {
+          escalations,
+          metrics: calculateEscalationMetrics(escalations),
+        });
+        return;
+      }
+
+      if (req.method === 'POST' && /^\/v1\/escalations\/[^/]+\/decision$/.test(pathname)) {
+        const escalationId = decodeURIComponent(pathname.split('/')[3]);
+        const body = await parseJsonBody(req);
+        try {
+          sendJson(res, 200, decideEscalation({
+            ...body,
+            escalationId,
+          }, { feedbackDir: requestFeedbackDir }));
+        } catch (error) {
+          throw createHttpError(400, error.message);
+        }
         return;
       }
 

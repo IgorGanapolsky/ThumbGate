@@ -57,7 +57,7 @@ test('buildCompositeReward blocks deterministic failures before judge compute', 
   assert.ok(reward.failureMode.includes('schema_valid'));
 });
 
-test('buildCompositeReward returns neutral reward on judge failure', () => {
+test('buildCompositeReward keeps deterministic score authoritative on judge failure', () => {
   const reward = buildCompositeReward({
     prediction: 'Next: verify with node --test. Evidence: source log passed.',
   }, {
@@ -66,9 +66,27 @@ test('buildCompositeReward returns neutral reward on judge failure', () => {
     },
   });
 
-  assert.ok(reward.failureMode.includes('judge_error_neutral_reward'));
-  assert.equal(reward.judge.score, 0.5);
-  assert.ok(reward.score > 0.5);
+  assert.ok(reward.failureMode.includes('judge_error'));
+  assert.equal(reward.judge.score, null);
+  assert.equal(reward.scoringMode, 'deterministic_only');
+  assert.equal(reward.score, reward.deterministic.score);
+});
+
+test('scoreBooleanRubric validates JSON against the supplied structured output schema', () => {
+  const invalid = scoreBooleanRubric({
+    requiresJson: true,
+    outputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['status'],
+      properties: {
+        status: { type: 'string', enum: ['ok'] },
+      },
+    },
+    prediction: '{"status":"maybe","extra":true}',
+  });
+
+  assert.equal(invalid.dimensions.schema_valid.pass, false);
 });
 
 test('buildPreferenceJudgment chooses higher composite reward', () => {

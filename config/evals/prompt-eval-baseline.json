@@ -1,0 +1,23 @@
+{
+  "suite": "ThumbGate Prompt Evaluation",
+  "score": 100,
+  "total": 12,
+  "passed": 12,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "results": [
+    { "id": "lesson-distill-negative-clear", "status": "pass", "score": 100 },
+    { "id": "lesson-distill-negative-vague", "status": "pass", "score": 100 },
+    { "id": "lesson-distill-positive", "status": "pass", "score": 100 },
+    { "id": "prevention-rule-repeated-mistake", "status": "pass", "score": 100 },
+    { "id": "feedback-capture-enrichment", "status": "pass", "score": 100 },
+    { "id": "self-distill-session-summary", "status": "pass", "score": 100 },
+    { "id": "lesson-distill-negative-clear__synthetic_1", "status": "pass", "score": 100 },
+    { "id": "lesson-distill-negative-vague__synthetic_1", "status": "pass", "score": 100 },
+    { "id": "lesson-distill-positive__synthetic_1", "status": "pass", "score": 100 },
+    { "id": "prevention-rule-repeated-mistake__synthetic_1", "status": "pass", "score": 100 },
+    { "id": "feedback-capture-enrichment__synthetic_1", "status": "pass", "score": 100 },
+    { "id": "self-distill-session-summary__synthetic_1", "status": "pass", "score": 100 }
+  ]
+}

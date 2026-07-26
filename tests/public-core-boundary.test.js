@@ -195,7 +195,11 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // contain no credential, buyer state, or external mutation path.
   // 354 -> 357 (2026-07-22): observability env loader, setup CLI, JSONL window.
   // 357 -> 359 (2026-07-23): Poolside-style blog essays under public/blog/.
-  const CEILING = 359;
+  // 359 -> 368 (2026-07-26): verified task-outcome runtime, escalation,
+  // monitoring, and their public schemas/golden regression artifacts.
+  // 368 -> 369 (2026-07-26): public local schedule manager required by the
+  // outcome monitor installer and the existing agent:schedule package script.
+  const CEILING = 369;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

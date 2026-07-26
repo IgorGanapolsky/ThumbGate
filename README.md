@@ -199,6 +199,60 @@ Hand-rolled hooks are the right tool for a small, static denylist you maintain b
 
 Prompt engineering still matters, but it is only the starting point. ThumbGate adds prompt evaluation on top: proof lanes, benchmarks, and self-heal checks produce reviewable evidence about whether a prompt and workflow held up under execution. Run `npx thumbgate eval --from-feedback --write-report=.thumbgate/prompt-eval-proof.md` to turn accepted thumbs-up/down feedback into reusable eval cases and a local proof report.
 
+### How ThumbGate knows an AI agent is working
+
+ThumbGate does not treat a plausible response, a successful tool call, or a
+demo as task success. The `record_task_outcome` MCP tool and
+`POST /v1/task-outcomes` API require a task-level receipt. A receipt is marked
+`working: true` only when the task is completed, verification passed, evidence
+is present, tool contracts and policy checks passed, no unsupported claim was
+recorded, and no side effect was duplicated.
+
+The metrics remain separate so a strong average cannot conceal an unsafe
+failure:
+
+| Layer | Measured signals |
+|-------|------------------|
+| Task | verified completion, evidence-backed completion, first-attempt success, repeated failure, recovery, rollback |
+| Tool | contract accuracy, execution success, retry rate, duplicate side effects |
+| Safety | unsafe escapes, policy violations, safe-action false blocks |
+| Escalation | correct escalation rate and human decision latency |
+| Efficiency | p50/p95 latency, total cost, cost per verified success |
+| Business | explicit KPI values grouped by unit; no inferred revenue |
+
+```bash
+npm run eval:agent-outcomes       # 8 reviewed golden cases; fails on regression
+npm run monitor:agent-outcomes    # local production receipts; fails on missing evidence
+npm run monitor:agent-outcomes -- --hosted
+npm run monitor:agent-outcomes -- --install-schedule
+```
+
+Prompt evaluation is deterministic first. JSON outputs are validated against
+their declared schema. An LLM judge may add a separate score, but an unavailable
+or failed judge is reported as `deterministic_only`; it is never converted into
+a neutral pass. Empty feedback or task-outcome datasets return
+`insufficient_evidence`.
+
+Task outcome receipts are stored locally in
+`.thumbgate/task-outcome-receipts.jsonl`. Observable tool traces are stored
+without raw hidden reasoning. Human escalation requests are append-only, must
+carry evidence and requester identity, expire, and can only be decided by a
+distinct human actor through the authenticated API.
+
+The installed daily monitor runs through ThumbGate's local scheduler rather
+than consuming a GitHub-hosted cron runner. It reads operator authentication
+from the existing environment or local operator config, never from command-line
+arguments, and writes a machine-readable report under
+`~/.thumbgate/reports/agent-outcome-monitor.json`. The GitHub workflow remains
+manual for release-time verification.
+
+The complete five-system architecture review—local RAG, tool-using agents,
+multi-agent handoffs, MCP enterprise integration, and production
+evaluation/observability—is maintained in
+[`VERIFICATION_EVIDENCE.md`](./VERIFICATION_EVIDENCE.md). It answers why each
+architecture exists, what can fail, how it is measured and secured, how it is
+deployed, and what evidence is required before claiming it works.
+
 ### Retrieval & latency: local-first, zero network hops
 
 ThumbGate's latency advantage is structural, not a tuned cloud cluster: there is no retrieval service and no model on the enforcement path, so the gate decision never leaves your machine.

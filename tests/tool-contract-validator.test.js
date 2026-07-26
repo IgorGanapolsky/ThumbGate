@@ -1,6 +1,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { validateToolContract } = require('../scripts/tool-contract-validator');
+const {
+  validateStructuredOutput,
+  validateToolContract,
+} = require('../scripts/tool-contract-validator');
 
 test('validateToolContract allows valid arguments', () => {
   const schema = {
@@ -85,4 +88,55 @@ test('validateToolContract rejects invalid enum values', () => {
   const result = validateToolContract(schema, args);
   assert.equal(result.valid, false);
   assert.deepEqual(result.errors, ["Parameter 'signal' must be one of [up, down] (got 'maybe')"]);
+});
+
+test('validateToolContract recursively enforces array items and unknown properties', () => {
+  const schema = {
+    type: 'object',
+    additionalProperties: false,
+    required: ['calls'],
+    properties: {
+      calls: {
+        type: 'array',
+        minItems: 1,
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['attempts'],
+          properties: {
+            attempts: { type: 'integer', minimum: 1 },
+          },
+        },
+      },
+    },
+  };
+  const result = validateToolContract(schema, {
+    calls: [{ attempts: 0, surprise: true }],
+    extra: true,
+  });
+
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.some((error) => /calls\[0\]\.attempts.*>= 1/.test(error)));
+  assert.ok(result.errors.includes("Unexpected parameter: 'calls[0].surprise'"));
+  assert.ok(result.errors.includes("Unexpected parameter: 'extra'"));
+});
+
+test('validateStructuredOutput parses JSON and enforces format and oneOf', () => {
+  const schema = {
+    type: 'object',
+    required: ['createdAt', 'result'],
+    properties: {
+      createdAt: { type: 'string', format: 'date-time' },
+      result: {
+        oneOf: [
+          { type: 'string', const: 'ok' },
+          { type: 'integer', minimum: 1 },
+        ],
+      },
+    },
+  };
+
+  assert.equal(validateStructuredOutput('{"createdAt":"2026-07-26T12:00:00Z","result":"ok"}', schema).valid, true);
+  assert.equal(validateStructuredOutput('{"createdAt":"yesterday","result":0}', schema).valid, false);
+  assert.match(validateStructuredOutput('{broken', schema).errors[0], /valid JSON/);
 });

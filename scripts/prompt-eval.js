@@ -143,6 +143,8 @@ function handleRejectExpectation(checks, result, expected) {
 
   const wasRejected = result.accepted === false
     || result.status === 'rejected'
+    || result.status === 'clarification_required'
+    || result.needsClarification === true
     || result.actionType === 'no-action';
   checks.push({
     criterion: 'shouldReject',
@@ -466,8 +468,9 @@ function runSuiteObject(suite, options = {}) {
   const skipped = results.filter((r) => r.status === 'skip').length;
   const totalScore = results.length > 0
     ? Math.round(results.reduce((s, r) => s + r.score, 0) / results.length)
-    : 100;
+    : 0;
   const minScore = options.minScore ?? 80;
+  const insufficientEvidence = results.length === 0;
 
   return {
     suite: suite.name,
@@ -478,8 +481,9 @@ function runSuiteObject(suite, options = {}) {
     skipped,
     score: totalScore,
     minScore,
-    pass: totalScore >= minScore,
-    noCases: results.length === 0,
+    pass: !insufficientEvidence && totalScore >= minScore,
+    noCases: insufficientEvidence,
+    evidenceStatus: insufficientEvidence ? 'insufficient_evidence' : 'measured',
     feedbackDerived: suite.source && suite.source.type === 'feedback-log',
     generatedAt: new Date().toISOString(),
     results,
@@ -685,6 +689,7 @@ function runSuite(suitePath = DEFAULT_SUITE, options = {}) {
 
 function compareReports(currentReport, baselineReport) {
   const baselineById = new Map((baselineReport?.results || []).map((result) => [result.id, result]));
+  const currentById = new Map((currentReport?.results || []).map((result) => [result.id, result]));
   const regressions = [];
   const improvements = [];
 
@@ -717,12 +722,29 @@ function compareReports(currentReport, baselineReport) {
     }
   }
 
+  for (const baseline of baselineReport?.results || []) {
+    if (currentById.has(baseline.id)) continue;
+    regressions.push({
+      id: baseline.id,
+      baselineScore: baseline.score,
+      currentScore: null,
+      delta: null,
+      baselineStatus: baseline.status,
+      currentStatus: 'missing',
+    });
+  }
+
   return {
     baselineSuite: baselineReport?.suite || null,
     baselineScore: Number.isFinite(Number(baselineReport?.score)) ? Number(baselineReport.score) : null,
     scoreDelta: Number.isFinite(Number(baselineReport?.score)) ? currentReport.score - Number(baselineReport.score) : null,
     regressions,
     improvements,
+    baselineCases: baselineById.size,
+    currentCases: currentById.size,
+    baselineCoverageRate: baselineById.size
+      ? Math.round((Array.from(baselineById.keys()).filter((id) => currentById.has(id)).length / baselineById.size) * 10000) / 10000
+      : null,
   };
 }
 

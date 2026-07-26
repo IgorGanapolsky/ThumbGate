@@ -77,6 +77,84 @@ components:
           enum: [chatgpt_gpt]
           default: chatgpt_gpt
           description: Attribution marker for ThumbGate analytics. The published ThumbGate GPT should send `chatgpt_gpt` so owner dashboards can distinguish GPT Action calls from local API calls.
+    TaskOutcomeReceipt:
+      type: object
+      additionalProperties: false
+      required: [taskId, goal, status, verification, toolCalls, policy, efficiency]
+      properties:
+        taskId:
+          type: string
+        taskType:
+          type: string
+        goal:
+          type: string
+        expectedOutcome:
+          type: string
+        status:
+          type: string
+          enum: [completed, failed, partial, escalated]
+        verification:
+          type: object
+          required: [performed, passed, evidence]
+          properties:
+            performed:
+              type: boolean
+            passed:
+              type: boolean
+            verifier:
+              type: string
+            method:
+              type: string
+            evidence:
+              type: array
+              items:
+                type: string
+            unsupportedClaims:
+              type: integer
+              minimum: 0
+        toolCalls:
+          type: array
+          items:
+            type: object
+            required: [name, contractValid, allowed, succeeded, attempts]
+            properties:
+              name:
+                type: string
+              contractValid:
+                type: boolean
+              allowed:
+                type: boolean
+              succeeded:
+                type: boolean
+              attempts:
+                type: integer
+                minimum: 1
+              idempotencyKey:
+                type: string
+              duplicateSideEffect:
+                type: boolean
+        policy:
+          type: object
+          required: [violations, unsafeEscapes, falseBlocks]
+          properties:
+            violations:
+              type: integer
+            unsafeEscapes:
+              type: integer
+            falseBlocks:
+              type: integer
+        efficiency:
+          type: object
+          required: [latencyMs, costUsd]
+          properties:
+            latencyMs:
+              type: number
+            costUsd:
+              type: number
+            firstAttempt:
+              type: boolean
+        idempotencyKey:
+          type: string
     IntentPlanRequest:
       type: object
       required: [intentId]
@@ -1940,3 +2018,85 @@ paths:
           description: Invalid PayPal transmission headers, event, or remote signature verification
         '503':
           description: PayPal verified the event but durable evidence storage failed
+  /v1/task-outcomes:
+    post:
+      operationId: recordTaskOutcome
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskOutcomeReceipt'
+      responses:
+        '201':
+          description: Task outcome recorded
+        '400':
+          description: Invalid or conflicting task outcome
+        '401':
+          description: Unauthorized
+    get:
+      operationId: listTaskOutcomes
+      parameters:
+        - in: query
+          name: taskId
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Task outcomes
+        '401':
+          description: Unauthorized
+  /v1/task-outcomes/metrics:
+    get:
+      operationId: getTaskOutcomeMetrics
+      responses:
+        '200':
+          description: Transparent task, tool, safety, escalation, cost, latency, and business metrics
+        '401':
+          description: Unauthorized
+  /v1/task-outcomes/monitor:
+    get:
+      operationId: monitorTaskOutcomes
+      responses:
+        '200':
+          description: Production task outcome threshold verdict
+        '401':
+          description: Unauthorized
+  /v1/escalations:
+    post:
+      operationId: requestHumanEscalation
+      responses:
+        '201':
+          description: Human escalation requested
+        '400':
+          description: Invalid or conflicting request
+        '401':
+          description: Unauthorized
+    get:
+      operationId: listHumanEscalations
+      responses:
+        '200':
+          description: Human escalation queue and metrics
+        '401':
+          description: Unauthorized
+  /v1/escalations/{escalationId}/decision:
+    post:
+      operationId: decideHumanEscalation
+      parameters:
+        - in: path
+          name: escalationId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Human escalation decision recorded
+        '400':
+          description: Decision must come from a distinct human actor
+        '401':
+          description: Unauthorized

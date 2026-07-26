@@ -386,7 +386,7 @@ test('CLI can write a synthetic expanded suite artifact', () => {
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
-test('runFeedbackEvalSuite handles empty feedback logs as bootstrapping proof', () => {
+test('runFeedbackEvalSuite fails closed when feedback logs contain no evidence', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-empty-prompt-eval-'));
   const feedbackLog = path.join(tmpDir, 'feedback-log.jsonl');
   fs.writeFileSync(feedbackLog, '', 'utf8');
@@ -395,7 +395,9 @@ test('runFeedbackEvalSuite handles empty feedback logs as bootstrapping proof', 
 
   assert.equal(suite.evaluations.length, 0);
   assert.equal(report.noCases, true);
-  assert.equal(report.pass, true);
+  assert.equal(report.pass, false);
+  assert.equal(report.score, 0);
+  assert.equal(report.evidenceStatus, 'insufficient_evidence');
 
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });

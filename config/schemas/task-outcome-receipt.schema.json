@@ -1,0 +1,296 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://thumbgate.ai/schemas/task-outcome-receipt.schema.json",
+  "title": "ThumbGate Task Outcome Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "taskId",
+    "taskType",
+    "goal",
+    "status",
+    "verification",
+    "toolCalls",
+    "policy",
+    "efficiency"
+  ],
+  "properties": {
+    "taskId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "taskType": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "goal": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "expectedOutcome": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "failed",
+        "partial",
+        "escalated"
+      ]
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "performed",
+        "passed",
+        "evidence"
+      ],
+      "properties": {
+        "performed": {
+          "type": "boolean"
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "verifier": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "method": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "evidence": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "unsupportedClaims": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "toolCalls": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "contractValid",
+          "allowed",
+          "succeeded",
+          "attempts"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "contractValid": {
+            "type": "boolean"
+          },
+          "allowed": {
+            "type": "boolean"
+          },
+          "succeeded": {
+            "type": "boolean"
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "latencyMs": {
+            "type": "number",
+            "minimum": 0
+          },
+          "costUsd": {
+            "type": "number",
+            "minimum": 0
+          },
+          "sideEffect": {
+            "type": "boolean"
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "duplicateSideEffect": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "violations",
+        "unsafeEscapes",
+        "falseBlocks"
+      ],
+      "properties": {
+        "violations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unsafeEscapes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "falseBlocks": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "recovered": {
+          "type": "boolean"
+        },
+        "repeated": {
+          "type": "boolean"
+        },
+        "rolledBack": {
+          "type": "boolean"
+        }
+      }
+    },
+    "escalation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "correct": {
+          "type": "boolean"
+        },
+        "escalationId": {
+          "type": "string",
+          "maxLength": 200
+        }
+      }
+    },
+    "efficiency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "latencyMs",
+        "costUsd"
+      ],
+      "properties": {
+        "latencyMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "costUsd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "firstAttempt": {
+          "type": "boolean"
+        }
+      }
+    },
+    "businessOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kpi",
+        "value",
+        "unit"
+      ],
+      "properties": {
+        "kpi": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "value": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        }
+      }
+    },
+    "traceId": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "maxLength": 300
+    },
+    "versions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "prompt": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "tools": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "policy": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "release": {
+          "type": "string",
+          "maxLength": 200
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "recordedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "receiptHash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "working": {
+      "type": "boolean"
+    },
+    "workingReasons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

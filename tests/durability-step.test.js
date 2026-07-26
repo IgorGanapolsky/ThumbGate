@@ -7,6 +7,7 @@ const {
   idempotencyKey,
   defaultClassify,
   TRANSIENT_CODES,
+  retryAfterMs,
 } = require('../scripts/durability/step');
 
 // Deterministic sleep replacement: counts calls instead of actually waiting.
@@ -200,6 +201,47 @@ test('runStep: throws TypeError when fn is missing', async () => {
     runStep('bad', {}),
     /fn must be a function/,
   );
+});
+
+test('runStep: side effects require and propagate an idempotency key', async () => {
+  await assert.rejects(
+    runStep('write', { sideEffect: true }, async () => 'unsafe'),
+    { code: 'THUMBGATE_IDEMPOTENCY_KEY_REQUIRED' },
+  );
+
+  const seen = [];
+  const result = await runStep('write', {
+    sideEffect: true,
+    idempotencyKey: 'stable-write',
+  }, async (context) => {
+    seen.push(context.idempotencyKey);
+    return 'ok';
+  });
+  assert.equal(result, 'ok');
+  assert.deepEqual(seen, ['stable-write']);
+});
+
+test('runStep: honors Retry-After and stops when retry budget is exhausted', async () => {
+  const sleeps = [];
+  let attempts = 0;
+  await assert.rejects(
+    runStep('budgeted', {
+      retries: 3,
+      maxElapsedMs: 1000,
+      sleepFn: async (ms) => sleeps.push(ms),
+      jitterRatio: 0,
+    }, async () => {
+      attempts += 1;
+      const error = new Error('rate limited');
+      error.status = 429;
+      error.headers = { 'retry-after': '2' };
+      throw error;
+    }),
+    (error) => error.retryBudgetExhausted === true,
+  );
+  assert.equal(attempts, 1);
+  assert.deepEqual(sleeps, []);
+  assert.equal(retryAfterMs({ headers: { 'retry-after': '2' } }), 2000);
 });
 
 // ---------------------------------------------------------------------------

@@ -51,6 +51,11 @@ test('chatgpt openapi includes all core API routes', () => {
     '/v1/intake/workflow-sprint',
     '/v1/intake/workflow-sprint/queue',
     '/v1/intake/workflow-sprint/advance',
+    '/v1/task-outcomes',
+    '/v1/task-outcomes/metrics',
+    '/v1/task-outcomes/monitor',
+    '/v1/escalations',
+    '/v1/escalations/{escalationId}/decision',
     '/v1/lessons/search',
   ];
 
