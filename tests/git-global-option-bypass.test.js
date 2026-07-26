@@ -172,6 +172,32 @@ for (const [label, command] of POSITION_EVASIONS) {
   });
 }
 
+// The same anchor guards rm-rf-home-or-root, the fourth catastrophic gate. Every form below
+// matched NO gate on unmodified origin/main — including `sudo rm -rf /`.
+const RM_EVASIONS = [
+  ['sudo', 'sudo rm -rf ~'],
+  ['sudo, root target', 'sudo rm -rf /'],
+  ['absolute binary path', '/bin/rm -rf ~'],
+  ['newline separator', 'echo hi\nrm -rf ~'],
+  ['env wrapper', 'env FOO=1 rm -rf $HOME'],
+];
+
+for (const [label, command] of RM_EVASIONS) {
+  test(`rm -rf evasion is blocked: ${label}`, async () => {
+    const repo = makeRepo();
+    const verdict = await evaluateGatesAsync('Bash', { command, cwd: repo });
+    assert.ok(verdict, `${command} must match a gate`);
+    assert.equal(verdict.decision, 'deny', command);
+  });
+}
+
+test('plain rm -rf ~ still denies (baseline sanity)', async () => {
+  const repo = makeRepo();
+  const verdict = await evaluateGatesAsync('Bash', { command: 'rm -rf ~', cwd: repo });
+  assert.ok(verdict);
+  assert.equal(verdict.decision, 'deny');
+});
+
 // Guards the other direction: canonicalization must not start denying ordinary work.
 const BENIGN = [
   'ls -la',

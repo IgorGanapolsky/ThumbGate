@@ -27,9 +27,23 @@ plain form denied:
 | `echo hi⏎git reset --hard HEAD~5` | no gate matched | deny |
 | `nohup time git clean -fd` | no gate matched | deny |
 
-These hit three of the four `CATASTROPHIC_DECLARATIVE_GATE_IDS` — the set this engine
-documents as effectively irreversible and exempts from the free-tier daily-cap discount
-"regardless of tier or strict-mode setting".
+The same anchor guards `rm-rf-home-or-root`, so the identical evasion applied there:
+
+| evaded form | before | after |
+|---|---|---|
+| `sudo rm -rf ~` | no gate matched | deny |
+| `sudo rm -rf /` | no gate matched | deny |
+| `/bin/rm -rf ~` | no gate matched | deny |
+| `echo hi⏎rm -rf ~` | no gate matched | deny |
+| `env FOO=1 rm -rf $HOME` | no gate matched | deny |
+
+That is **all four** `CATASTROPHIC_DECLARATIVE_GATE_IDS` — the set this engine documents as
+effectively irreversible and exempts from the free-tier daily-cap discount "regardless of
+tier or strict-mode setting". Each was evadable with a one-token prefix.
+
+Precision is preserved: `rm -rf node_modules`, `rm -rf build/` and
+`sudo rm -rf /tmp/scratch-dir` remain allowed, because the gate still targets only home and
+root.
 
 The same gap made `extractAffectedFiles()` return an empty list for the git-global-option
 forms, which silently disarmed `task-scope-required` and `protected-file-approval-required`
