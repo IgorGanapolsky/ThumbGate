@@ -117,6 +117,24 @@ test('git -C form is not currently detected', () => {
   assert.deepEqual(files, []);
 });
 
+// js/polynomial-redos: stripping trailing slashes with /\/+$/ backtracks polynomially on a
+// long run of slashes. The pathspec comes straight off the pending command, so stalling the
+// gate is itself a way to defeat it.
+test('a pathological pathspec does not stall the gate', () => {
+  const repo = makeDirtyRepo(5);
+  const evil = `a${'/'.repeat(200000)}x`;
+  const started = Date.now();
+  extractAffectedFiles('Bash', { command: `git add -- ${evil}`, cwd: repo });
+  const elapsed = Date.now() - started;
+  assert.ok(elapsed < 5000, `pathspec scoping took ${elapsed}ms — expected linear-time handling`);
+});
+
+test('trailing slashes are stripped from directory pathspecs', () => {
+  const repo = makeDirtyRepo(20);
+  const { files } = extractAffectedFiles('Bash', { command: 'git add src///', cwd: repo });
+  assert.deepEqual(files.sort(), ['src/a.js', 'src/b.js']);
+});
+
 test('quoted paths with spaces are parsed as a single pathspec', () => {
   const parsed = parseGitPathspec('git add -- "my dir/file.js"', 'add');
   assert.equal(parsed.broad, false);

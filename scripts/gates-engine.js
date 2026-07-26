@@ -1063,6 +1063,15 @@ function isUnderPathspec(relPath, pathspecs) {
   return pathspecs.some((spec) => relPath === spec || relPath.startsWith(`${spec}/`));
 }
 
+// Linear trailing-slash strip. A regex like /\/+$/ backtracks polynomially on a long run of
+// slashes (js/polynomial-redos), and the pathspec comes straight off the pending command —
+// stalling the gate is itself a way to defeat it.
+function stripTrailingSlashes(value) {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === '/') end -= 1;
+  return value.slice(0, end);
+}
+
 function applyPathspecScope(files, treeFiles, pathspec, repoRoot) {
   if (pathspec.broad) {
     for (const filePath of treeFiles) files.add(normalizePosix(filePath));
@@ -1071,7 +1080,7 @@ function applyPathspecScope(files, treeFiles, pathspec, repoRoot) {
   const specs = pathspec.paths
     .map((entry) => toRepoRelativePath(entry, repoRoot))
     .filter(Boolean)
-    .map((entry) => normalizePosix(entry).replace(/\/+$/, ''));
+    .map((entry) => stripTrailingSlashes(normalizePosix(entry)));
   if (!specs.length) {
     for (const filePath of treeFiles) files.add(normalizePosix(filePath));
     return;

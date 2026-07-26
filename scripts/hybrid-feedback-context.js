@@ -151,13 +151,14 @@ function isHookPromptEnvelope(context) {
         parsed.transcriptPath
       )
     );
-  } catch (_) {
+  } catch {
+    // Not JSON — by definition not a hook envelope.
     return false;
   }
 }
 
 function patternContext(entry) {
-  const context = entry && entry.context ? String(entry.context) : '';
+  const context = entry?.context ? String(entry.context) : '';
   if (!context) return '';
   const hasExplicitFeedback = Boolean(
     entry.whatWentWrong ||
@@ -188,48 +189,6 @@ function isAutomatedFeedback(entry) {
   return context.includes('gate "') || context.includes('blocked tool') || context.includes('warned tool');
 }
 
-
-function isHookPromptEnvelope(context) {
-  if (!context || typeof context !== 'string') return false;
-  try {
-    const parsed = JSON.parse(context);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false;
-    return Boolean(
-      parsed.prompt &&
-      (
-        parsed.hookEventName ||
-        parsed.hook_event_name ||
-        parsed.workspaceRoot ||
-        parsed.workspace_root ||
-        parsed.session_id ||
-        parsed.sessionId ||
-        parsed.transcript_path ||
-        parsed.transcriptPath
-      )
-    );
-  } catch (_) {
-    return false;
-  }
-}
-
-function patternContext(entry) {
-  const context = entry && entry.context ? String(entry.context) : '';
-  if (!context) return '';
-  const hasExplicitFeedback = Boolean(
-    entry.whatWentWrong ||
-    entry.what_went_wrong ||
-    entry.whatToChange ||
-    entry.what_to_change ||
-    entry.failureType ||
-    (Array.isArray(entry.tags) && entry.tags.length > 0) ||
-    entry.structuredRule
-  );
-  if (isHookPromptEnvelope(context) && !hasExplicitFeedback) return '';
-  if (isHookPromptEnvelope(context) && hasExplicitFeedback) {
-    return '';
-  }
-  return context;
-}
 
 /**
  * Extract ms from a timestamp value. Returns 0 on failure.
@@ -562,7 +521,7 @@ function isSpecificKeyword(word) {
 // Boundaries are non-alphanumerics, so path and punctuation separators still delimit tokens
 // (`src/jobs/queue.js` matches the word "jobs").
 function containsWholeWord(haystack, word) {
-  const escaped = String(word).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escaped = String(word).replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
   try {
     return new RegExp(`(?:^|[^a-z0-9])${escaped}(?:[^a-z0-9]|$)`, 'i').test(haystack);
   } catch {
