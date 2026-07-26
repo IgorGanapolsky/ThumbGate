@@ -1126,6 +1126,62 @@ function canonicalizeGitCommand(command) {
   return out;
 }
 
+// The catastrophic gate patterns anchor the command position as `(?:^|[;&|]\s*)`, i.e. the
+// command must sit at the very start of the string or immediately after ; & |. That anchor
+// exists to avoid matching a command mentioned inside a quoted string, but it is far too
+// narrow: it does not recognise a command on a NEW LINE, nor any of the ordinary ways a
+// binary gets invoked. Each of the following defeated git-reset-hard and git-clean-force on
+// shipped main — no gate matched at all:
+//
+//   sudo git reset --hard          GIT_DIR=… git reset --hard      /usr/bin/git reset --hard
+//   command git reset --hard       "git" reset --hard              \git reset --hard
+//   echo hi\ngit reset --hard
+//
+// Rather than complicate every gate's regex, canonicalize the command POSITION: split on
+// separators (including newlines), strip env-assignment prefixes, wrapper binaries and any
+// directory/quoting on the binary token, then rejoin with `; ` so the existing anchor sees a
+// clean command. Callers match the original AND the canonical form, so this only ever adds.
+const COMMAND_WRAPPERS = new Set([
+  'sudo', 'doas', 'command', 'builtin', 'exec', 'nohup', 'time', 'env',
+  'nice', 'ionice', 'setsid', 'stdbuf', 'xargs',
+]);
+const ENV_ASSIGNMENT_PREFIX = /^[A-Za-z_][A-Za-z0-9_]*=(?:"[^"]*"|'[^']*'|[^\s]*)\s+/;
+const WRAPPER_HEAD = /^([A-Za-z_][\w.-]*)\s+/;
+
+function canonicalizeSegmentHead(segment) {
+  let text = String(segment || '').trim();
+  for (let i = 0; i < 12; i += 1) {
+    const before = text;
+    text = text.replace(ENV_ASSIGNMENT_PREFIX, '');
+    const wrapper = text.match(WRAPPER_HEAD);
+    if (wrapper && COMMAND_WRAPPERS.has(wrapper[1].toLowerCase())) {
+      text = text.slice(wrapper[0].length);
+    }
+    if (text === before) break;
+  }
+  // Unwrap quoting/escaping on the binary token: "git" / 'git' / \git
+  text = text.replace(/^\\(?=[A-Za-z_])/, '');
+  text = text.replace(/^(['"])([^'"\s]+)\1/, '$2');
+  // Drop a leading directory on the binary token: /usr/bin/git, ./bin/git, ../git
+  text = text.replace(/^((?:\.{1,2})?(?:\/[^\s/]+)*\/)([^\s/]+)/, '$2');
+  return text;
+}
+
+function canonicalizeCommandPositions(command) {
+  const text = String(command || '');
+  if (!text) return '';
+  return text
+    .split(/\r?\n|&&|\|\||[;|&]/)
+    .map((segment) => canonicalizeSegmentHead(segment))
+    .filter((segment) => segment.length > 0)
+    .join('; ');
+}
+
+// Full canonical form used for gate matching.
+function canonicalizeCommandForGates(command) {
+  return canonicalizeGitCommand(canonicalizeCommandPositions(command));
+}
+
 function extractAffectedFiles(toolName, toolInput = {}) {
   const repoRoot = resolveRepoRoot(toolInput);
   const files = new Set(collectInlineAffectedFiles(toolInput, repoRoot));
@@ -2072,7 +2128,7 @@ function matchGate(gate, toolName, toolInput = {}) {
       const regex = new RegExp(gate.pattern);
       // Match the original text or its git-canonical form, so `git -C <dir> push --force`
       // is caught by the same pattern as `git push --force`.
-      if (!regex.test(matchText) && !regex.test(canonicalizeGitCommand(matchText))) {
+      if (!regex.test(matchText) && !regex.test(canonicalizeCommandForGates(matchText))) {
         return { matched: false, matchText, affectedFiles };
       }
       if (gate.id === 'permission-change-approval' && isSafeLocalCredentialHardeningCommand(toolName, toolInput)) {
@@ -2189,7 +2245,7 @@ function matchSelfProtectHardFloor(gate, toolName, toolInput = {}) {
     if (!matchText || !gate.pattern) return null;
     try {
       const regex = new RegExp(gate.pattern);
-      if (!regex.test(matchText) && !regex.test(canonicalizeGitCommand(matchText))) return null;
+      if (!regex.test(matchText) && !regex.test(canonicalizeCommandForGates(matchText))) return null;
     } catch {
       return null;
     }
@@ -3799,6 +3855,8 @@ module.exports = {
   extractAffectedFiles,
   parseGitPathspec,
   canonicalizeGitCommand,
+  canonicalizeCommandForGates,
+  canonicalizeCommandPositions,
   isAutonomousRun,
   computeExecutableHash,
   formatOutput,

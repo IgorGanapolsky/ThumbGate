@@ -2,31 +2,50 @@
 "thumbgate": patch
 ---
 
-Close a gate bypass via git global options
+Close command-position gate bypasses
 
-Git accepts global options between `git` and the subcommand — `git -C <dir> push`,
-`git -c k=v clean`, `git --git-dir=<p> reset`. Every command-pattern gate is written against
-the plain `git <subcommand>` form, so inserting a single option walked straight past them.
+The catastrophic gate patterns anchor the command position as `(?:^|[;&|]\s*)` — the command
+must sit at the very start of the string or immediately after `;`, `&` or `|`. That anchor
+exists to avoid matching a command merely mentioned inside a quoted string, but it is far too
+narrow. It does not recognise a command on a **new line**, nor any ordinary way a binary gets
+invoked. Separately, git accepts global options between `git` and the subcommand, which
+defeated the patterns from the other direction.
 
-Verified against unmodified `main`, all three denied normally and **none** matched any gate
-in the global-option form:
+Verified against unmodified `main` — every form below matched **no gate at all**, while the
+plain form denied:
 
-| command | before | after |
+| evaded form | before | after |
 |---|---|---|
-| `git -C <dir> push --force origin main` | no gate matched | deny |
 | `git -C <dir> reset --hard HEAD~5` | no gate matched | deny |
 | `git -c core.pager=cat clean -fd` | no gate matched | deny |
+| `sudo git reset --hard HEAD~5` | no gate matched | deny |
+| `GIT_DIR=… git reset --hard HEAD~5` | no gate matched | deny |
+| `/usr/bin/git reset --hard HEAD~5` | no gate matched | deny |
+| `command git reset --hard HEAD~5` | no gate matched | deny |
+| `"git" reset --hard HEAD~5` | no gate matched | deny |
+| `\git reset --hard HEAD~5` | no gate matched | deny |
+| `echo hi⏎git reset --hard HEAD~5` | no gate matched | deny |
+| `nohup time git clean -fd` | no gate matched | deny |
 
-These are three of the four `CATASTROPHIC_DECLARATIVE_GATE_IDS` — the set documented in the
-engine as effectively irreversible and explicitly exempted from the free-tier daily-cap
-discount "regardless of tier or strict-mode setting". A one-token insertion defeated all of
-them.
+These hit three of the four `CATASTROPHIC_DECLARATIVE_GATE_IDS` — the set this engine
+documents as effectively irreversible and exempts from the free-tier daily-cap discount
+"regardless of tier or strict-mode setting".
 
-The same gap made `extractAffectedFiles()` return an empty list for those forms, which
-silently disarmed `task-scope-required` and `protected-file-approval-required` as well — a
-gate that evaluates no files raises no violation.
+The same gap made `extractAffectedFiles()` return an empty list for the git-global-option
+forms, which silently disarmed `task-scope-required` and `protected-file-approval-required`
+as well: a gate that evaluates no files raises no violation.
 
-`canonicalizeGitCommand()` now strips the global-option prefix, and gate patterns are tested
-against the original text **and** the canonical form. Because both are tried, this can only
-ever add a match, never remove one. Subcommand options are untouched: `git add -p` still
-means `--patch`, not the global `--paginate`.
+Rather than complicate every gate regex, the command is canonicalized before matching —
+separators (including newlines) are normalised, env-assignment prefixes and wrapper binaries
+(`sudo`, `command`, `env`, `nohup`, `time`, …) are stripped, directory and quoting on the
+binary token are removed, and git global options are dropped. Patterns are tested against the
+**original text and the canonical form**, so this can only ever add a match, never remove one.
+
+Confirmed no new false positives: `echo "git reset --hard is dangerous"`,
+`grep -r "git clean -fd" docs/`, `sudo ls /var/log`, `git status`, `git diff` and the rest of
+the benign set behave exactly as they do on `main`.
+
+**Known residual:** resolving the binary through a subshell (`$(which git) reset --hard`)
+still evades. Canonicalization is static and cannot resolve a subshell without executing it;
+closing that needs exec-time gating rather than pattern matching. Recorded as an explicit
+test so it stays a known limit rather than a silent gap.

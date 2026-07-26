@@ -16,6 +16,7 @@ const { execFileSync } = require('node:child_process');
 
 const {
   canonicalizeGitCommand,
+  canonicalizeCommandPositions,
   extractAffectedFiles,
   evaluateGatesAsync,
 } = require('../scripts/gates-engine.js');
@@ -139,6 +140,92 @@ test('stacked global options do not evade', async () => {
   });
   assert.ok(verdict, 'stacked options must still match a gate');
   assert.equal(verdict.decision, 'deny');
+});
+
+// ---------------------------------------------------------------------------
+// Command-position canonicalization
+//
+// The catastrophic patterns anchor as (?:^|[;&|]\s*) — start of string or right after
+// ; & |. That anchor missed a command on a NEW LINE and every ordinary way a binary is
+// invoked. All of the forms below matched NO gate on unmodified origin/main.
+// ---------------------------------------------------------------------------
+
+const POSITION_EVASIONS = [
+  ['sudo', 'sudo git reset --hard HEAD~5'],
+  ['env assignment prefix', 'GIT_DIR=/x/.git git reset --hard HEAD~5'],
+  ['absolute binary path', '/usr/bin/git reset --hard HEAD~5'],
+  ['relative binary path', './bin/git reset --hard HEAD~5'],
+  ['command builtin', 'command git reset --hard HEAD~5'],
+  ['quoted binary', '"git" reset --hard HEAD~5'],
+  ['backslash-escaped binary', '\\git reset --hard HEAD~5'],
+  ['newline separator', 'echo hi\ngit reset --hard HEAD~5'],
+  ['stacked wrappers', 'sudo GIT_DIR=/x/.git /usr/bin/git reset --hard HEAD~5'],
+  ['nohup + time', 'nohup time git clean -fd'],
+];
+
+for (const [label, command] of POSITION_EVASIONS) {
+  test(`command-position evasion is blocked: ${label}`, async () => {
+    const repo = makeRepo();
+    const verdict = await evaluateGatesAsync('Bash', { command, cwd: repo });
+    assert.ok(verdict, `${command} must match a gate`);
+    assert.equal(verdict.decision, 'deny', command);
+  });
+}
+
+// Guards the other direction: canonicalization must not start denying ordinary work.
+const BENIGN = [
+  'ls -la',
+  'npm test',
+  'git status',
+  'git log --oneline -5',
+  'git diff',
+  'echo "git reset --hard is dangerous"',
+  'grep -r "git clean -fd" docs/',
+  'sudo ls /var/log',
+  'time npm run build',
+  'command -v node',
+];
+
+for (const command of BENIGN) {
+  test(`benign command is not denied: ${command}`, async () => {
+    const repo = makeRepo();
+    const verdict = await evaluateGatesAsync('Bash', { command, cwd: repo });
+    if (verdict) assert.notEqual(verdict.decision, 'deny', `${command} must not be denied`);
+  });
+}
+
+test('a command merely mentioned inside a quoted string is not treated as executed', () => {
+  const canonical = canonicalizeCommandPositions('echo "git reset --hard is dangerous"');
+  assert.ok(!/(?:^|[;&|]\s*)git\s+reset\s+--hard/.test(canonical),
+    `quoted mention must not reach command position: ${canonical}`);
+});
+
+test('command-position canonicalization terminates on stacked wrappers', () => {
+  const stacked = `${'sudo '.repeat(50)}git reset --hard`;
+  const started = Date.now();
+  canonicalizeCommandPositions(stacked);
+  assert.ok(Date.now() - started < 2000, 'canonicalization must not stall');
+});
+
+// KNOWN RESIDUAL, recorded deliberately. Resolving the binary through a subshell still
+// evades: canonicalization is static, and `$(which git)` cannot be resolved without
+// executing it. Documented so this is a known limit rather than a silent gap, and so
+// closing it later is a deliberate change. Covering it properly needs a different
+// mechanism than pattern matching (e.g. gating at exec time).
+test('KNOWN GAP: subshell-resolved binary still evades', async () => {
+  const repo = makeRepo();
+  const verdict = await evaluateGatesAsync('Bash', {
+    command: '$(which git) reset --hard HEAD~5',
+    cwd: repo,
+  });
+  const denied = Boolean(verdict && verdict.decision === 'deny');
+  assert.equal(denied, false,
+    'If this now passes, the subshell gap was closed — update this test and the changeset.');
+});
+
+test('command-position canonicalization handles empty input', () => {
+  assert.equal(canonicalizeCommandPositions(''), '');
+  assert.equal(canonicalizeCommandPositions(null), '');
 });
 
 test('canonicalization does not manufacture matches for non-git commands', async () => {
