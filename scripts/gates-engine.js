@@ -1182,6 +1182,32 @@ function canonicalizeCommandForGates(command) {
   return canonicalizeGitCommand(canonicalizeCommandPositions(command));
 }
 
+// Some gates anchor with a BARE `^` (local-only-git-writes, task-scope-required,
+// branch-governance-required, release-readiness-required) rather than the
+// `(?:^|[;&|]\s*)` form. A bare `^` only ever matches the FIRST command in the string, so
+// `echo hi && git commit -m x` slipped past while `git commit -m x` was denied — and
+// chaining is how agents normally work. Offer each canonicalized SEGMENT as its own
+// candidate so a `^` anchor sees every command in the chain, not just the head.
+//
+// This stays additive: unanchored patterns already match anywhere, so per-segment testing
+// adds nothing for them, and a `^` pattern matching a later segment is exactly the gate's
+// intent. A command merely quoted inside another (`echo "git commit"`) is unaffected,
+// because the segment head is still `echo`.
+function gateMatchCandidates(matchText) {
+  const canonical = canonicalizeCommandForGates(matchText);
+  const candidates = [matchText];
+  if (canonical && canonical !== matchText) candidates.push(canonical);
+  for (const segment of canonical.split('; ')) {
+    const trimmed = segment.trim();
+    if (trimmed && trimmed !== canonical) candidates.push(trimmed);
+  }
+  return candidates;
+}
+
+function patternMatchesCommand(regex, matchText) {
+  return gateMatchCandidates(matchText).some((candidate) => regex.test(candidate));
+}
+
 function extractAffectedFiles(toolName, toolInput = {}) {
   const repoRoot = resolveRepoRoot(toolInput);
   const files = new Set(collectInlineAffectedFiles(toolInput, repoRoot));
@@ -2128,7 +2154,7 @@ function matchGate(gate, toolName, toolInput = {}) {
       const regex = new RegExp(gate.pattern);
       // Match the original text or its git-canonical form, so `git -C <dir> push --force`
       // is caught by the same pattern as `git push --force`.
-      if (!regex.test(matchText) && !regex.test(canonicalizeCommandForGates(matchText))) {
+      if (!patternMatchesCommand(regex, matchText)) {
         return { matched: false, matchText, affectedFiles };
       }
       if (gate.id === 'permission-change-approval' && isSafeLocalCredentialHardeningCommand(toolName, toolInput)) {
@@ -2245,7 +2271,7 @@ function matchSelfProtectHardFloor(gate, toolName, toolInput = {}) {
     if (!matchText || !gate.pattern) return null;
     try {
       const regex = new RegExp(gate.pattern);
-      if (!regex.test(matchText) && !regex.test(canonicalizeCommandForGates(matchText))) return null;
+      if (!patternMatchesCommand(regex, matchText)) return null;
     } catch {
       return null;
     }
@@ -3857,6 +3883,7 @@ module.exports = {
   canonicalizeGitCommand,
   canonicalizeCommandForGates,
   canonicalizeCommandPositions,
+  patternMatchesCommand,
   isAutonomousRun,
   computeExecutableHash,
   formatOutput,

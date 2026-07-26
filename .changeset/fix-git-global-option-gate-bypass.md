@@ -63,3 +63,15 @@ the benign set behave exactly as they do on `main`.
 still evades. Canonicalization is static and cannot resolve a subshell without executing it;
 closing that needs exec-time gating rather than pattern matching. Recorded as an explicit
 test so it stays a known limit rather than a silent gap.
+
+**Second anchor bug, found by measuring instead of reasoning:** `local-only-git-writes`,
+`task-scope-required`, `branch-governance-required` and `release-readiness-required` anchor
+with a **bare `^`**, which matches only the first command in the string — not even after `;`.
+So `echo hi && git commit -m x` was skipped while `git commit -m x` denied, and chaining is
+how agents normally work. Each gate is now offered every canonicalized segment as its own
+match candidate.
+
+Measured over a corpus of gated commands crossed with nine ways of re-spelling them
+(sudo, env prefix, `&&`/`;`/newline chaining, absolute binary path, quoting, backslash, git
+global option): **62 evasion holes on unmodified `main`, 0 after this change.** That grid is
+now `tests/gate-evasion-matrix.test.js` so it cannot silently regress.

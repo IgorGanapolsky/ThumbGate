@@ -198,6 +198,28 @@ test('plain rm -rf ~ still denies (baseline sanity)', async () => {
   assert.equal(verdict.decision, 'deny');
 });
 
+// A second, distinct anchor bug: local-only-git-writes, task-scope-required,
+// branch-governance-required and release-readiness-required anchor with a BARE `^`, not the
+// `(?:^|[;&|]\s*)` form. A bare `^` only matches the FIRST command in the string, so any
+// chained command slipped past — and chaining is how agents normally work. Each gate is now
+// offered every canonicalized segment as its own candidate.
+const CHAINED_EVASIONS = [
+  'echo hi && git tag v9.9.9',
+  'echo hi && git commit -m x',
+  'echo hi; git add .',
+  'cd /tmp && git commit -m x',
+  'ls && sudo git push origin main',
+];
+
+for (const command of CHAINED_EVASIONS) {
+  test(`chained command is not skipped: ${command}`, async () => {
+    const repo = makeRepo();
+    const verdict = await evaluateGatesAsync('Bash', { command, cwd: repo });
+    assert.ok(verdict, `${command} must match a gate`);
+    assert.equal(verdict.decision, 'deny', command);
+  });
+}
+
 // Guards the other direction: canonicalization must not start denying ordinary work.
 const BENIGN = [
   'ls -la',
@@ -206,7 +228,10 @@ const BENIGN = [
   'git log --oneline -5',
   'git diff',
   'echo "git reset --hard is dangerous"',
+  'echo "git commit -m x"',
   'grep -r "git clean -fd" docs/',
+  'grep -r "git add" docs/',
+  'echo hi && ls',
   'sudo ls /var/log',
   'time npm run build',
   'command -v node',
