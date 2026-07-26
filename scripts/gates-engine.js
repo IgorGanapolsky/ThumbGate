@@ -121,7 +121,9 @@ const BOOSTED_RISK_MIN_EXAMPLES = 3;
 const PR_THREAD_RESOLUTION_ACTION = 'pr_thread_resolution_verified_after_commit';
 const HELPER_BYPASS_ACTION = 'helper_script_modified';
 const KNOWLEDGE_ENTROPY_THRESHOLD = 0.7;
-const MEMORY_GUARD_MAX_SERIALIZED_FILES = 25;
+// Generous character bound: keeps every affected file for realistic actions while still
+// preventing an unbounded haystack. Chosen over a file-count cap, which dropped targets.
+const MEMORY_GUARD_MAX_SERIALIZED_CHARS = 200000;
 const KNOWLEDGE_CONFLICT_STRICT_BASH_PATTERN = /\b(?:git\s+push\b|gh\s+pr\s+merge\b|gh\s+release\s+(?:create|delete|edit|upload)\b|(?:npm|yarn|pnpm)\s+publish\b|rm\s+-rf\b|git\s+reset\s+--hard\b|git\s+clean\s+-f[a-z]*|railway\s+(?:deploy|up)\b|gcloud\s+(?:run\s+deploy|app\s+deploy)\b|firebase\s+deploy\b|vercel\s+--prod\b|kubectl\s+(?:apply|delete)\b|terraform\s+(?:apply|destroy)\b)\b/i;
 const HELPER_SCRIPT_FILE_PATTERN = /(?:^|\/)(?:scripts|bin|tools|tasks|\.githooks|\.github\/workflows)\/|(?:^|\/)(?:package\.json|Makefile|justfile|Taskfile\.ya?ml)$|\.(?:sh|bash|zsh|fish|js|mjs|cjs|ts|tsx|py|rb|pl|ps1|yml|yaml)$/i;
 const PACKAGE_RUN_PATTERN = /\b(?:npm|yarn|pnpm)\s+run\s+([:@./\w-]+)\b/i;
@@ -968,6 +970,15 @@ function tokenizeShellWords(segment) {
   let hasContent = false;
   for (let i = 0; i < segment.length; i++) {
     const char = segment[i];
+    // A backslash escapes the next character outside single quotes. Without this,
+    // `git add my\ dir/file.js` split at the escaped space into two fictional paths
+    // and the gates evaluated files git never touches.
+    if (char === '\\' && quote !== "'" && i + 1 < segment.length) {
+      current += segment[i + 1];
+      hasContent = true;
+      i += 1;
+      continue;
+    }
     if (quote) {
       if (char === quote) quote = null;
       else current += char;
@@ -1038,7 +1049,12 @@ function parseGitPathspec(command, subcommand, options = {}) {
       // A shell metacharacter or unexpanded glob/variable means the real pathspec is
       // unknown at gate time — stay conservative rather than under-reporting.
       if (/[*?$`]|^~/.test(token)) return { broad: true, paths: [] };
-      if (token === '.' || token === './' || token === ':/') return { broad: true, paths: [] };
+      if (token === '.' || token === './') return { broad: true, paths: [] };
+      // Git pathspec MAGIC (gitglossary(7)): `:(exclude)x`, `:!x`, `:(icase)x`, `:/`, `:(top)`.
+      // These select a materially different set than the literal string — notably an
+      // exclude-only pathspec behaves as if NO pathspec were given, staging everything else.
+      // Treating them literally let them evade task-scope and protected-file checks entirely.
+      if (token.startsWith(':')) return { broad: true, paths: [] };
       paths.push(token);
       sawPath = true;
     }
@@ -1046,6 +1062,29 @@ function parseGitPathspec(command, subcommand, options = {}) {
   }
 
   return paths.length ? { broad: false, paths } : { broad: true, paths: [] };
+}
+
+// A pathspec is relative to the shell's working directory, NOT the repo root. With
+// cwd=/repo/src, `git add a.js` stages src/a.js — reporting `a.js` made task-scope and
+// protected-file gates evaluate the wrong path, so a protected src/a.js edit could pass.
+// Track a leading `cd` too, since `cd src && git add a.js` is the common shape.
+// Returns null when the working directory cannot be determined. A `cd` whose target is a
+// glob or variable makes every later relative pathspec unresolvable — resolving it against
+// the ORIGINAL directory would silently produce a wrong path, which is exactly the
+// guess-instead-of-widen mistake that made pathspec magic evade scope checks. Callers treat
+// null as "unknown" and fall back to broad.
+function effectiveCommandCwd(command, toolInput) {
+  let cwd = String(toolInput?.cwd || toolInput?.repoPath || process.cwd());
+  const segments = String(command || '').split(/\r?\n|&&|\|\||[;|&]/);
+  for (const segment of segments) {
+    const match = segment.trim().match(/^cd\s+(?:--\s+)?(.+)$/);
+    if (!match) break;                       // only a LEADING cd chain applies
+    const target = tokenizeShellWords(match[1])[0];
+    if (!target) break;                      // bare `cd` -> home; leave scope resolution alone
+    if (/[*?$`]|^~/.test(target)) return null;
+    cwd = path.resolve(cwd, target);
+  }
+  return cwd;
 }
 
 // Keep a tree-derived file only when it falls inside one of the declared pathspecs, so a
@@ -1072,12 +1111,13 @@ function stripTrailingSlashes(value) {
   return value.slice(0, end);
 }
 
-function applyPathspecScope(files, treeFiles, pathspec, repoRoot) {
+function applyPathspecScope(files, treeFiles, pathspec, repoRoot, commandCwd) {
   if (pathspec.broad) {
     for (const filePath of treeFiles) files.add(normalizePosix(filePath));
     return;
   }
   const specs = pathspec.paths
+    .map((entry) => (path.isAbsolute(entry) ? entry : path.resolve(commandCwd || repoRoot || '.', entry)))
     .map((entry) => toRepoRelativePath(entry, repoRoot))
     .filter(Boolean)
     .map((entry) => stripTrailingSlashes(normalizePosix(entry)));
@@ -1217,16 +1257,28 @@ function extractAffectedFiles(toolName, toolInput = {}) {
   // no violation and fall through — the file-list half of the same bypass.
   const command = canonicalizeCommandForGates(String(toolInput.command || ''));
 
+  const commandCwd = effectiveCommandCwd(command, toolInput);
+  // An unresolvable `cd` makes every relative pathspec meaningless; widen rather than guess.
+  const cwdUnknown = commandCwd === null;
+
   if (toolName === 'Bash' && repoRoot && command) {
     if (/\bgit\s+commit\b/i.test(command)) {
       // For commit only an explicit `-- <pathspec>` narrows the staged set; bare arguments
       // after `git commit` are almost always flag values (`-m "msg"`), so anything else
       // keeps the staged-diff behaviour.
-      const staged = safeExecFileLines('git', ['diff', '--cached', '--name-only'], repoRoot);
       const commitSpec = /\bgit\s+commit\b[^;|&\n]*?\s--\s/i.test(command)
         ? parseGitPathspec(command, 'commit', { separatorOnly: true })
         : { broad: true, paths: [] };
-      applyPathspecScope(files, staged, commitSpec, repoRoot);
+      // `git commit -- <pathspec>` commits tracked files straight from the WORKING TREE, not
+      // only what is staged. Filtering the cached diff alone dropped exactly those files, so
+      // scope and protected-file gates missed changes the commit really carries.
+      const candidates = commitSpec.broad
+        ? safeExecFileLines('git', ['diff', '--cached', '--name-only'], repoRoot)
+        : [
+          ...safeExecFileLines('git', ['diff', '--cached', '--name-only'], repoRoot),
+          ...safeExecFileLines('git', ['diff', '--name-only'], repoRoot),
+        ];
+      applyPathspecScope(files, candidates, cwdUnknown ? { broad: true, paths: [] } : commitSpec, repoRoot, commandCwd);
     }
 
     if (/\bgit\s+add\b/i.test(command)) {
@@ -1234,7 +1286,8 @@ function extractAffectedFiles(toolName, toolInput = {}) {
         ...safeExecFileLines('git', ['diff', '--name-only'], repoRoot),
         ...safeExecFileLines('git', ['ls-files', '--others', '--exclude-standard'], repoRoot),
       ];
-      applyPathspecScope(files, treeFiles, parseGitPathspec(command, 'add'), repoRoot);
+      const addSpec = cwdUnknown ? { broad: true, paths: [] } : parseGitPathspec(command, 'add');
+      applyPathspecScope(files, treeFiles, addSpec, repoRoot, commandCwd);
     }
 
     if (/\bgit\s+push\b/i.test(command) || /\bgh\s+pr\s+(?:create|merge)\b/i.test(command) || isGhApiPrCreateCommand(command)) {
@@ -2413,16 +2466,18 @@ function evaluateMemoryGuard(toolName, toolInput = {}) {
     return null;
   }
 
-  // The memory guard keyword-matches against this string. Serializing an unbounded file
-  // list made the haystack grow with the working tree, so an unrelated command in a dirty
-  // repo accumulated enough incidental keyword hits to match almost any stored guard.
-  // Cap it: the guard is meant to recognise the ACTION, not the size of the checkout.
+  // The memory guard keyword-matches against this string. The false positives that motivated
+  // a cap here came from the JSON envelope's own KEY names polluting the haystack, which is
+  // fixed at the matcher (buildMatchHaystack). Truncating the file list instead silently
+  // dropped action targets: for a broad action, a guard whose keywords appear only in a later
+  // filename could no longer match, so a learned prevention rule was bypassable purely by
+  // filename ordering. Keep every target and bound the SIZE instead.
   const serializedInput = JSON.stringify({
     toolName,
     command: toolInput.command || null,
     filePath: toolInput.file_path || toolInput.path || null,
-    affectedFiles: affectedFiles.slice(0, MEMORY_GUARD_MAX_SERIALIZED_FILES),
-  });
+    affectedFiles,
+  }).slice(0, MEMORY_GUARD_MAX_SERIALIZED_CHARS);
   // Claw/hybrid support: pass context if agent provides claw metadata (for EnterpriseClaw/OpenShell/Perplexity hybrid agents)
   let guard;
   if (toolInput && (toolInput.clawContext || toolInput._claw || toolInput.hybridRoute || toolInput.agentId)) {

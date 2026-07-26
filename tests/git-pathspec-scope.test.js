@@ -163,3 +163,107 @@ test('a commit message containing a path is not treated as a pathspec', () => {
   });
   assert.deepEqual(files, ['src/a.js']);
 });
+
+// ---------------------------------------------------------------------------
+// P1 findings raised on PR #3036 by chatgpt-codex-connector and greptile-apps,
+// both of which ran executable repros against real git. All five were real.
+// ---------------------------------------------------------------------------
+
+function makeRepoWithTree() {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-p1-'));
+  git(repo, ['init']);
+  git(repo, ['config', 'user.email', 'test@example.com']);
+  git(repo, ['config', 'user.name', 'test']);
+  fs.mkdirSync(path.join(repo, 'src'), { recursive: true });
+  fs.mkdirSync(path.join(repo, 'my dir'), { recursive: true });
+  fs.writeFileSync(path.join(repo, 'root.txt'), 'r\n');
+  fs.writeFileSync(path.join(repo, 'src', 'a.js'), 'a\n');
+  fs.writeFileSync(path.join(repo, 'my dir', 'file.js'), 'm\n');
+  git(repo, ['add', '-A']);
+  git(repo, ['commit', '-m', 'init']);
+  fs.writeFileSync(path.join(repo, 'root.txt'), 'r2\n');
+  fs.writeFileSync(path.join(repo, 'src', 'a.js'), 'a2\n');
+  fs.writeFileSync(path.join(repo, 'my dir', 'file.js'), 'm2\n');
+  return repo;
+}
+
+// A pathspec is relative to the SHELL's cwd, not the repo root. With cwd=/repo/src,
+// `git add a.js` stages src/a.js — reporting `a.js` made the gates evaluate the wrong path,
+// so a protected src/a.js change could pass.
+test('P1: pathspec resolves against the command working directory', () => {
+  const repo = makeRepoWithTree();
+  const { files } = extractAffectedFiles('Bash', {
+    command: 'git add a.js',
+    cwd: path.join(repo, 'src'),
+  });
+  assert.deepEqual(files, ['src/a.js']);
+});
+
+test('P1: a leading cd is followed when resolving the pathspec', () => {
+  const repo = makeRepoWithTree();
+  const { files } = extractAffectedFiles('Bash', { command: 'cd src && git add a.js', cwd: repo });
+  assert.deepEqual(files, ['src/a.js']);
+});
+
+// gitglossary(7): an exclude-only pathspec applies as though no pathspec were supplied, so
+// `git add ':(exclude)root.txt'` stages everything else. Treating the magic as a literal
+// filename let it evade task-scope and protected-file checks entirely.
+test('P1: git pathspec magic falls back to broad scope', () => {
+  const repo = makeRepoWithTree();
+  for (const command of [
+    "git add ':(exclude)root.txt'",
+    'git add :(icase)README',
+    'git add :!root.txt',
+    'git add :/',
+  ]) {
+    assert.equal(parseGitPathspec(command, 'add').broad, true, command);
+  }
+  const { files } = extractAffectedFiles('Bash', {
+    command: "git add ':(exclude)root.txt'",
+    cwd: repo,
+  });
+  assert.ok(files.length >= 3, `exclude-only magic must widen scope, got ${JSON.stringify(files)}`);
+});
+
+// `git add my\ dir/file.js` — the tokenizer kept the backslash and split at the escaped
+// space, producing two fictional paths.
+test('P1: backslash-escaped spaces stay one pathspec', () => {
+  const repo = makeRepoWithTree();
+  const { files } = extractAffectedFiles('Bash', {
+    command: 'git add my\\ dir/file.js',
+    cwd: repo,
+  });
+  assert.deepEqual(files, ['my dir/file.js']);
+});
+
+// `git commit -- <pathspec>` commits tracked files straight from the WORKING TREE. Filtering
+// only the cached diff dropped exactly those files.
+test('P1: commit pathspec includes unstaged tracked modifications', () => {
+  const repo = makeRepoWithTree();
+  git(repo, ['add', 'root.txt']);            // root.txt staged; src/a.js modified but not staged
+  const scoped = extractAffectedFiles('Bash', {
+    command: 'git commit -m x -- src/a.js',
+    cwd: repo,
+  });
+  assert.deepEqual(scoped.files, ['src/a.js'], 'git commits src/a.js from the working tree');
+
+  const staged = extractAffectedFiles('Bash', { command: 'git commit -m x', cwd: repo });
+  assert.deepEqual(staged.files, ['root.txt'], 'no pathspec still means the staged set');
+});
+
+// An unresolvable `cd` makes every later relative pathspec meaningless. Resolving it against
+// the ORIGINAL directory would silently produce a wrong path — the same guess-instead-of-widen
+// mistake that let pathspec magic evade scope checks. Found while edge-casing the cd handling.
+test('an unresolvable cd widens scope instead of guessing', () => {
+  const repo = makeDirtyRepo(30);
+  for (const command of ['cd s*c && git add a.js', 'cd $DIR && git add a.js']) {
+    const { files } = extractAffectedFiles('Bash', { command, cwd: repo });
+    assert.ok(files.length > 20, `${command} must widen (got ${files.length} files)`);
+  }
+});
+
+test('a resolvable cd still narrows precisely', () => {
+  const repo = makeDirtyRepo(30);
+  const { files } = extractAffectedFiles('Bash', { command: 'cd src && git add a.js', cwd: repo });
+  assert.deepEqual(files, ['src/a.js']);
+});
