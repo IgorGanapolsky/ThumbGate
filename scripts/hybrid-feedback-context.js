@@ -494,14 +494,76 @@ function buildAdditionalContext(state, constraints, maxChars) {
  * @param {string[]} words - keyword list from a pattern
  * @returns {boolean}
  */
+// Callers hand us the pending action in several shapes: a plain command string, an object,
+// or a JSON envelope like {"toolName":…,"command":…,"filePath":…,"affectedFiles":[…]}.
+// Matching over the raw JSON meant the envelope's own KEY NAMES were part of the haystack,
+// so the tokens "files", "command", "tool", "name" and "path" were present on every single
+// evaluation. With a two-hit block threshold, any guard whose keywords included two such
+// common words blocked every action regardless of what that action was. Match on the VALUES
+// only — the guard should key on the action, never on how we happened to serialize it.
+function buildMatchHaystack(input) {
+  if (input == null) return '';
+  let value = input;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!(trimmed.startsWith('{') || trimmed.startsWith('['))) return value;
+    try {
+      value = JSON.parse(trimmed);
+    } catch {
+      return value;
+    }
+  }
+  if (typeof value !== 'object') return String(value);
+
+  const parts = [];
+  const seen = new Set();
+  const walk = (node, depth) => {
+    if (node == null || depth > 6) return;
+    if (typeof node === 'object') {
+      if (seen.has(node)) return;
+      seen.add(node);
+      for (const child of Array.isArray(node) ? node : Object.values(node)) walk(child, depth + 1);
+      return;
+    }
+    if (typeof node === 'boolean') return; // "true"/"false" are structure, not content
+    parts.push(String(node));
+  };
+  walk(value, 0);
+  return parts.join(' ');
+}
+
+// A guard word is "specific" when it is long or compound (keywords() preserves `-` and `_`,
+// so tokens like "generated-cache" survive intact). One specific token lifted straight out of
+// a recurring negative pattern is strong evidence on its own; generic short words are not,
+// and still require corroboration.
+function isSpecificKeyword(word) {
+  return word.length >= 8 || /[-_]/.test(word);
+}
+
+// Whole-word matching: a bare includes() let "app" hit "apps/", "application" and "happen".
+// Boundaries are non-alphanumerics, so path and punctuation separators still delimit tokens
+// (`src/jobs/queue.js` matches the word "jobs").
+function containsWholeWord(haystack, word) {
+  const escaped = String(word).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  try {
+    return new RegExp(`(?:^|[^a-z0-9])${escaped}(?:[^a-z0-9]|$)`, 'i').test(haystack);
+  } catch {
+    return haystack.includes(word);
+  }
+}
+
 function hasTwoKeywordHits(normalizedInput, words) {
   if (!normalizedInput || !words || words.length === 0) return false;
   let hits = 0;
+  const seen = new Set();
   for (const word of words) {
-    if (normalizedInput.includes(word)) {
-      hits++;
-      if (hits >= 2) return true;
-    }
+    if (!word || seen.has(word)) continue;
+    seen.add(word);
+    if (!containsWholeWord(normalizedInput, word)) continue;
+    // A specific compound/long token carries a match on its own; generic words need two.
+    if (isSpecificKeyword(word)) return true;
+    hits++;
+    if (hits >= 2) return true;
   }
   return false;
 }
@@ -614,7 +676,7 @@ function evaluateCompiledGuards(artifact, toolName, toolInput) {
     return { mode: 'allow', reason: '', source: 'compiled' };
   }
 
-  const normInput = normalize(toolInput || '');
+  const normInput = normalize(buildMatchHaystack(toolInput));
   const normTool = (toolName || '').toLowerCase();
 
   for (const guard of artifact.guards) {
@@ -656,7 +718,7 @@ function evaluateCompiledGuards(artifact, toolName, toolInput) {
  * @returns {{ mode: string, reason: string, source: string }}
  */
 function evaluatePretoolFromState(state, toolName, toolInput) {
-  const normInput = normalize(toolInput || '');
+  const normInput = normalize(buildMatchHaystack(toolInput));
   const normTool = (toolName || '').toLowerCase();
 
   for (const pattern of state.recurringNegativePatterns || []) {
@@ -824,6 +886,9 @@ module.exports = {
   keywords,
   hashText,
   hasTwoKeywordHits,
+  buildMatchHaystack,
+  isSpecificKeyword,
+  containsWholeWord,
   readJsonl,
   getHybridPaths,
   PATHS,
