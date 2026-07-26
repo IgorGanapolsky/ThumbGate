@@ -117,6 +117,10 @@ test('hero names both paid paths and the self-improving product outcome', () => 
   assert.match(hero, /Rank[\s\S]*lessons/i);
   assert.match(hero, /Promote[\s\S]*gates/i);
   assert.match(hero, /npx thumbgate init/);
+  assert.match(hero, /thumbgate-dashboard/);
+  assert.match(hero, /\/thumbgate-dashboard/);
+  assert.match(hero, /npx thumbgate dashboard --open/);
+  assert.match(hero, /id="thumbgate-dashboard-command"/);
   assert.ok(lede.split(/\s+/).length <= 40, `hero lede is ${lede.split(/\s+/).length} words`);
 });
 
