@@ -3888,6 +3888,8 @@ function buildHostedRuntimePresence(hostedConfig, { expectedApiKey, expectedOper
     THUMBGATE_FEEDBACK_DIR: Boolean(process.env.THUMBGATE_FEEDBACK_DIR),
     THUMBGATE_OPERATOR_KEY: Boolean(expectedOperatorKey),
     THUMBGATE_API_KEY: Boolean(expectedApiKey),
+    THUMBGATE_HUMAN_REVIEWER_KEY: Boolean(process.env.THUMBGATE_HUMAN_REVIEWER_KEY),
+    THUMBGATE_HUMAN_REVIEWER_ID: Boolean(process.env.THUMBGATE_HUMAN_REVIEWER_ID),
     THUMBGATE_PUBLIC_APP_ORIGIN: Boolean(hostedConfig.appOrigin),
     THUMBGATE_BILLING_API_BASE_URL: Boolean(hostedConfig.billingApiBaseUrl),
     THUMBGATE_GA_MEASUREMENT_ID: Boolean(hostedConfig.gaMeasurementId),
@@ -4903,6 +4905,15 @@ function getExpectedOperatorKey() {
   return key || null;
 }
 
+function getHumanReviewerConfig(expectedApiKey, expectedOperatorKey) {
+  const key = String(process.env.THUMBGATE_HUMAN_REVIEWER_KEY || '').trim();
+  const id = String(process.env.THUMBGATE_HUMAN_REVIEWER_ID || '').trim();
+  const independent = Boolean(key)
+    && !safeKeyEqual(key, expectedApiKey)
+    && !safeKeyEqual(key, expectedOperatorKey);
+  return { key: key || null, id: id || null, independent };
+}
+
 function isAuthorized(req, expected) {
   if (!expected) return true;
   const token = extractApiKey(req);
@@ -4968,6 +4979,21 @@ function safeKeyEqual(a, b) {
   const y = Buffer.from(String(b || ''), 'utf8');
   if (x.length === 0 || y.length === 0 || x.length !== y.length) return false;
   return require('crypto').timingSafeEqual(x, y);
+}
+
+function authenticateHumanReviewer(req, reviewerConfig) {
+  if (!reviewerConfig.key || !reviewerConfig.id || !reviewerConfig.independent) {
+    throw createHttpError(503, 'Human escalation decisions are unavailable until an independent reviewer key and identity are configured');
+  }
+  const header = req.headers['x-thumbgate-human-reviewer-key'];
+  const presented = Array.isArray(header) ? header[0] : header;
+  if (!safeKeyEqual(presented, reviewerConfig.key)) {
+    throw createHttpError(403, 'A valid human reviewer credential is required to decide an escalation');
+  }
+  return {
+    id: reviewerConfig.id,
+    kind: 'human',
+  };
 }
 
 function resolveKeyRole(key) {
@@ -5156,6 +5182,7 @@ function resolveDocumentImportFilePath(inputPath, options = {}) {
 function createApiServer() {
   const expectedApiKey = getExpectedApiKey();
   const expectedOperatorKey = getExpectedOperatorKey();
+  const humanReviewerConfig = getHumanReviewerConfig(expectedApiKey, expectedOperatorKey);
 
   const eventBus = new EventEmitter();
   eventBus.setMaxListeners(200);
@@ -8455,14 +8482,19 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       return;
     }
 
-    // Operator key is allowed to bypass the general admin gate for its dedicated endpoint
+    // Operator key is allowed to bypass the general admin gate for dedicated
+    // read-only operational endpoints.
     const _reqToken = extractApiKey(req);
-    const isOperatorBillingRequest = Boolean(expectedOperatorKey)
-      && _reqToken === expectedOperatorKey
+    const isOperatorReadRequest = Boolean(expectedOperatorKey)
+      && safeKeyEqual(_reqToken, expectedOperatorKey)
       && req.method === 'GET'
-      && ['/v1/billing/summary', '/v1/intake/workflow-sprint/queue'].includes(pathname);
+      && [
+        '/v1/billing/summary',
+        '/v1/intake/workflow-sprint/queue',
+        '/v1/task-outcomes/monitor',
+      ].includes(pathname);
 
-    if (!isOperatorBillingRequest && !isAuthorized(req, expectedApiKey)) {
+    if (!isOperatorReadRequest && !isAuthorized(req, expectedApiKey)) {
       sendProblem(res, {
         type: PROBLEM_TYPES.UNAUTHORIZED,
         title: 'Unauthorized',
@@ -9111,12 +9143,16 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
 
       if (req.method === 'POST' && /^\/v1\/escalations\/[^/]+\/decision$/.test(pathname)) {
         const escalationId = decodeURIComponent(pathname.split('/')[3]);
+        const authenticatedActor = authenticateHumanReviewer(req, humanReviewerConfig);
         const body = await parseJsonBody(req);
         try {
           sendJson(res, 200, decideEscalation({
             ...body,
             escalationId,
-          }, { feedbackDir: requestFeedbackDir }));
+          }, {
+            authenticatedActor,
+            feedbackDir: requestFeedbackDir,
+          }));
         } catch (error) {
           throw createHttpError(400, error.message);
         }

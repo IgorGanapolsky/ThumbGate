@@ -178,14 +178,31 @@ test('human escalation requires evidence and a distinct human decision maker', (
       decision: 'approved',
       actor: { id: 'agent-1', kind: 'agent' },
       reason: 'self approve',
-    }, { feedbackDir, now }), /actor.kind must be human/);
+    }, { feedbackDir, now }), /actor is derived from the authenticated reviewer/);
+    assert.throws(() => decideEscalation({
+      escalationId: requested.escalation.escalationId,
+      decision: 'approved',
+      reason: 'missing reviewer authentication',
+    }, { feedbackDir, now }), /authenticatedActor identity is required/);
+    assert.throws(() => decideEscalation({
+      escalationId: requested.escalation.escalationId,
+      decision: 'approved',
+      reason: 'agent credential cannot approve',
+    }, {
+      authenticatedActor: { id: 'agent-2', kind: 'agent' },
+      feedbackDir,
+      now,
+    }), /authenticatedActor.kind must be human/);
 
     const decided = decideEscalation({
       escalationId: requested.escalation.escalationId,
       decision: 'approved',
-      actor: { id: 'reviewer-1', kind: 'human' },
       reason: 'Evidence is sufficient',
-    }, { feedbackDir, now: new Date('2026-07-26T12:05:00Z') });
+    }, {
+      authenticatedActor: { id: 'reviewer-1', kind: 'human' },
+      feedbackDir,
+      now: new Date('2026-07-26T12:05:00Z'),
+    });
     const rows = listEscalations({ feedbackDir, now });
     const metrics = calculateEscalationMetrics(rows, now);
 
@@ -227,6 +244,31 @@ test('production monitor distinguishes insufficient evidence, blocked, and healt
     policy: { violations: 1, unsafeEscapes: 1, falseBlocks: 0 },
   }));
   assert.equal(monitorTaskOutcomes([...healthyOutcomes.slice(0, 2), unsafe], { thresholds }).verdict, 'blocked');
+});
+
+test('production monitor blocks agents that complete demos but fail tools or policy', () => {
+  const brokenOutcomes = Array.from({ length: 20 }, (_, index) => normalizeTaskOutcome(verifiedReceipt({
+    taskId: `broken-${index}`,
+    idempotencyKey: `broken-${index}`,
+    toolCalls: [{
+      name: 'provider',
+      contractValid: true,
+      allowed: true,
+      succeeded: false,
+      attempts: 1,
+      duplicateSideEffect: false,
+    }],
+    policy: { violations: 1, unsafeEscapes: 0, falseBlocks: 0 },
+  })));
+
+  const report = monitorTaskOutcomes(brokenOutcomes);
+  assert.equal(report.verdict, 'blocked');
+  assert.equal(report.metrics.task.workingRate, 0);
+  assert.equal(report.metrics.tools.executionSuccessRate, 0);
+  assert.equal(report.metrics.safety.policyViolationRate, 1);
+  assert.ok(report.alerts.some((alert) => alert.id === 'workingRate-threshold'));
+  assert.ok(report.alerts.some((alert) => alert.id === 'executionSuccessRate-threshold'));
+  assert.ok(report.alerts.some((alert) => alert.id === 'policyViolationRate-threshold'));
 });
 
 test('hosted outcome monitor uses operator authentication without returning it', async () => {

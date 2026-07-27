@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const yaml = require('js-yaml');
 
 const root = path.join(__dirname, '..');
 
@@ -176,4 +177,33 @@ test('chatgpt adapter preserves core endpoint parity with canonical openapi', ()
 test('openapi file contains version header', () => {
   const content = fs.readFileSync(path.join(root, 'openapi/openapi.yaml'), 'utf-8');
   assert.match(content, /^openapi:\s/, 'openapi.yaml must start with openapi: version header');
+});
+
+test('human escalation OpenAPI contracts bind decisions to reviewer authentication', () => {
+  for (const relativePath of ['openapi/openapi.yaml', 'adapters/chatgpt/openapi.yaml']) {
+    const document = yaml.load(fs.readFileSync(path.join(root, relativePath), 'utf-8'));
+    const escalationRequest = document.paths['/v1/escalations'].post;
+    const escalationDecision = document.paths['/v1/escalations/{escalationId}/decision'].post;
+
+    assert.equal(
+      escalationRequest.requestBody.content['application/json'].schema.$ref,
+      '#/components/schemas/HumanEscalationRequest',
+    );
+    assert.equal(
+      escalationDecision.requestBody.content['application/json'].schema.$ref,
+      '#/components/schemas/HumanEscalationDecision',
+    );
+    assert.deepEqual(escalationDecision.security, [{
+      bearerAuth: [],
+      humanReviewerKey: [],
+    }]);
+    assert.equal(
+      document.components.securitySchemes.humanReviewerKey.name,
+      'X-ThumbGate-Human-Reviewer-Key',
+    );
+    assert.equal(
+      document.components.schemas.HumanEscalationDecision.properties.actor,
+      undefined,
+    );
+  }
 });

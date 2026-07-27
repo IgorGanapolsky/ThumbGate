@@ -362,10 +362,15 @@ Primary implementation:
 - Empty datasets and missing evidence fail as `insufficient_evidence`.
 - Structured outputs are schema-validated before scoring or execution.
 - Deterministic failures cannot be overruled by an LLM judge.
-- Traces exclude raw hidden reasoning and redact secrets.
+- Traces exclude raw hidden reasoning, redact secrets, and store no
+  deterministic content or tool-argument fingerprints.
 - Outcome and escalation HTTP routes require authentication.
-- Escalations expire, carry evidence and identity, and can only be decided by a
-  distinct human actor.
+- Escalations expire and carry evidence and requester identity. Decisions
+  require a second, independently revocable human-reviewer credential; the
+  actor identity is bound from server configuration instead of request JSON.
+- Production thresholds block weak overall working rate, failed tool
+  execution, policy violations, unsafe escapes, unsupported claims, and
+  duplicate side effects rather than relying only on verified demo completion.
 
 ### How do we deploy it?
 
@@ -400,7 +405,7 @@ new evaluation runtime is in production.
 The following results were captured in the clean worktree before commit:
 
 - Complete repository suite: terminal exit `0`.
-- Coverage: lines `87.05%`, branches `74.52%`, functions `88.60%`.
+- Coverage: lines `87.08%`, branches `74.55%`, functions `88.62%`.
 - Prompt golden evaluation: `12/12`, score `100`, regressions `0`.
 - Task-outcome golden evaluation: `8/8`, score `100`, regressions `0`.
 - Adapter proof: `48/48`.

@@ -1,5 +1,10 @@
 {
   "minimumSamples": 20,
+  "workingRate": {
+    "operator": "gte",
+    "value": 0.8,
+    "severity": "block"
+  },
   "verifiedCompletionRate": {
     "operator": "gte",
     "value": 0.8,
@@ -20,12 +25,22 @@
     "value": 0.99,
     "severity": "block"
   },
+  "executionSuccessRate": {
+    "operator": "gte",
+    "value": 0.95,
+    "severity": "block"
+  },
   "duplicateSideEffectRate": {
     "operator": "lte",
     "value": 0,
     "severity": "block"
   },
   "unsafeEscapeRate": {
+    "operator": "lte",
+    "value": 0,
+    "severity": "block"
+  },
+  "policyViolationRate": {
     "operator": "lte",
     "value": 0,
     "severity": "block"

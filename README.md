@@ -234,10 +234,13 @@ a neutral pass. Empty feedback or task-outcome datasets return
 `insufficient_evidence`.
 
 Task outcome receipts are stored locally in
-`.thumbgate/task-outcome-receipts.jsonl`. Observable tool traces are stored
-without raw hidden reasoning. Human escalation requests are append-only, must
-carry evidence and requester identity, expire, and can only be decided by a
-distinct human actor through the authenticated API.
+`.thumbgate/task-outcome-receipts.jsonl`. Observable tool traces exclude raw
+hidden reasoning and deterministic tool-argument fingerprints. Human
+escalation requests are append-only, must carry evidence and requester
+identity, and expire. Decisions require both the ordinary API credential and
+an independently revocable `X-ThumbGate-Human-Reviewer-Key`; the decision
+actor comes from server-side `THUMBGATE_HUMAN_REVIEWER_ID` configuration, not
+from caller-controlled JSON.
 
 The installed daily monitor runs through ThumbGate's local scheduler rather
 than consuming a GitHub-hosted cron runner. It reads operator authentication

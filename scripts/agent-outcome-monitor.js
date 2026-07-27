@@ -74,12 +74,15 @@ function monitorTaskOutcomes(outcomes = [], options = {}) {
 
 function flattenMetricValues(metrics) {
   return {
+    workingRate: metrics.task.workingRate,
     verifiedCompletionRate: metrics.task.verifiedCompletionRate,
     evidenceBackedCompletionRate: metrics.task.evidenceBackedCompletionRate,
     unsupportedClaimRate: metrics.task.unsupportedClaimRate,
     toolContractAccuracy: metrics.tools.contractAccuracy,
+    executionSuccessRate: metrics.tools.executionSuccessRate,
     duplicateSideEffectRate: metrics.tools.duplicateSideEffectRate,
     unsafeEscapeRate: metrics.safety.unsafeEscapeRate,
+    policyViolationRate: metrics.safety.policyViolationRate,
     safeFalseBlockRate: metrics.safety.safeFalseBlockRate,
     correctEscalationRate: metrics.escalation.correctEscalationRate,
     latencyP95Ms: metrics.efficiency.latencyP95Ms,

@@ -69,8 +69,11 @@ function decideEscalation(input = {}, options = {}) {
   const escalationId = requiredString(input.escalationId, 'escalationId');
   const decision = requiredString(input.decision, 'decision');
   if (!DECISIONS.has(decision)) throw escalationError(`decision must be one of ${Array.from(DECISIONS).join(', ')}`);
-  const actor = requiredIdentity(input.actor, 'actor');
-  if (actor.kind !== 'human') throw escalationError('decision actor.kind must be human');
+  if (Object.hasOwn(input, 'actor')) {
+    throw escalationError('decision actor is derived from the authenticated reviewer and must not be supplied by the caller');
+  }
+  const actor = requiredIdentity(options.authenticatedActor, 'authenticatedActor');
+  if (actor.kind !== 'human') throw escalationError('authenticatedActor.kind must be human');
   const reason = requiredString(input.reason, 'reason');
   const current = getEscalation(escalationId, options);
   if (!current) throw escalationError(`unknown escalation '${escalationId}'`);

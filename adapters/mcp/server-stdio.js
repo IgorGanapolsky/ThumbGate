@@ -856,7 +856,7 @@ function recordMcpToolTrace(name, args, outcome = {}) {
         {
           role: 'assistant',
           content: `tool: ${name}`,
-          tool_calls: [{ function: { name, arguments: args } }],
+          tool_calls: [{ function: { name } }],
         },
         {
           role: 'tool',
@@ -866,6 +866,7 @@ function recordMcpToolTrace(name, args, outcome = {}) {
       ],
       metadata: {
         latencyMs: outcome.latencyMs || 0,
+        argumentFingerprintStored: false,
         rawArgumentsStored: false,
       },
     });
