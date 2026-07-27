@@ -46,6 +46,72 @@ curl -H "Authorization: Bearer YOUR_KEY" \
 
 # Verification log
 
+## July 27, 2026: production agent architecture hardening
+
+Scope:
+
+- Made deterministic RAG quality thresholds release-blocking while keeping an
+  optional LLM judge diagnostic-only.
+- Filtered transport blobs and oversized records from retrieval and added
+  complete four-field memory scoping for enterprise isolation.
+- Aligned MCP discovery with executable profile capabilities, enforced OAuth
+  read/write scopes, validated structured outputs, and recorded KPI plus
+  reasoning evidence for every tool attempt.
+- Added a durable public-package parallel workflow runner that persists state,
+  propagates child failures, and terminates timed-out process groups.
+- Connected task outcomes, human escalation, and tool-call signals into a
+  fail-closed production monitor with explicit minimum sample requirements.
+- Expanded production readiness from five demo-shaped checks to deterministic
+  evaluation, contracts, outcomes, escalation, security, and deployment proof.
+
+Commands and observed local results:
+
+```text
+$ npm test
+exit=0 (complete chained repository test command)
+
+$ npm run test:coverage
+tests=7166
+pass=7164
+fail=0
+skipped=2
+lines=87.15%
+branches=74.62%
+functions=88.67%
+
+$ npm run eval:rag
+cases=6
+average_recall=100%
+average_precision=20.0%
+release_gate=PASS
+
+$ npm run prove:adapters
+tests=48
+pass=48
+fail=0
+
+$ npm run prove:automation
+tests=55
+pass=55
+fail=0
+
+$ npm run self-heal:check
+overall=HEALTHY
+checks=6/6 healthy
+
+$ npm pack --dry-run --json
+files=370
+unpacked_size=5417827
+package_size=1442423
+
+$ npm audit --omit=dev --audit-level=high
+vulnerabilities=0
+```
+
+Live production monitoring remains fail-closed until the deployed service has
+at least 20 verified task outcomes and 20 observed tool calls. Local, CI,
+deployment, and live-sample evidence remain distinct.
+
 ## July 16, 2026: revenue evidence remediation and real-pipeline proof
 
 Scope:

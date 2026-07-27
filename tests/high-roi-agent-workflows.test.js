@@ -552,14 +552,33 @@ test('production agent readiness requires decomposition, schemas, RAG, traces, a
   assert.equal(prototype.status, 'prototype');
   assert.ok(prototype.missing.includes('circuitBreakers'));
 
+  const demoOnly = evaluateProductionAgentReadiness({
+    subAgents: ['researcher', 'selector'],
+    structuredOutputs: true,
+    dynamicRag: true,
+    observability: true,
+    circuitBreakers: true,
+  });
+  assert.notEqual(demoOnly.status, 'production_ready');
+  assert.ok(demoOnly.missing.includes('evaluationDataset'));
+  assert.ok(demoOnly.missing.includes('deploymentEvidence'));
+
   const ready = evaluateProductionAgentReadiness({
     subAgents: ['researcher', 'selector', 'drafter'],
     structuredOutputs: true,
     dynamicRag: true,
     observability: true,
     circuitBreakers: true,
+    evaluationDataset: true,
+    deterministicRegression: true,
+    toolContractValidation: true,
+    taskOutcomeMonitoring: true,
+    humanEscalation: true,
+    securityControls: true,
+    deploymentEvidence: true,
   });
   assert.equal(ready.status, 'production_ready');
+  assert.equal(ready.score, 100);
 });
 
 test('inference economics planner scales reasoning depth by difficulty and budget', () => {

@@ -375,3 +375,12 @@ Adopted 2026-05-12 after a full PR/branch sweep. Persisted here so every future 
 - [ ] Mistakes logged to RAG.
 - [ ] RAG self-assessment reported.
 - [ ] Secrets rotated if any leaked in-session.
+
+## Production Architecture Regression Gates
+
+- RAG evaluation fails closed below 6 cases, 95% deterministic recall, 15% precision, or 100% per-case recall. LLM judging is non-gating diagnostics.
+- Retrieval rejects transport transcripts and oversized blobs; isolated retrieval uses complete entity/project/process/session scope.
+- MCP discovery matches active-profile and packaged-runtime executability. Enforce truthful side-effect hints, OAuth read/write scopes, and declared structured output schemas.
+- Record KPI telemetry for every MCP attempt and require idempotent, evidence-backed task outcomes before completion claims.
+- Keep public multi-agent workflows durable and executable without hosted-only modules; persist states, preserve failures, and terminate timed-out worker process groups.
+- Production monitoring is not healthy until at least 20 measured task outcomes and 20 observed tool calls pass the configured threshold set.
