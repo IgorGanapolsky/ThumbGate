@@ -49,6 +49,7 @@ test('sendWebhook posts JSON payloads over https and resolves response metadata'
   assert.equal(captured.options.method, 'POST');
   assert.equal(captured.options.headers['Content-Type'], 'application/json');
   assert.equal(captured.options.headers['Content-Length'], Buffer.byteLength('{"ok":true}'));
+  assert.match(captured.options.headers['Idempotency-Key'], /^[0-9a-f]{32}$/);
   assert.equal(captured.options.timeout, 10000);
   assert.equal(captured.body, '{"ok":true}');
   assert.deepEqual(result, { status: 202, body: 'accepted' });
@@ -89,7 +90,7 @@ test('sendWebhook rejects on request errors', async () => {
   });
 
   await assert.rejects(
-    webhookDelivery.sendWebhook('https://hooks.example.com/path', { ok: false }),
+    webhookDelivery.sendWebhook('https://hooks.example.com/path', { ok: false }, { retries: 0 }),
     /network down/,
   );
   restoreRequests();
@@ -110,12 +111,49 @@ test('sendWebhook rejects on timeout after destroying the request', async () => 
   });
 
   await assert.rejects(
-    webhookDelivery.sendWebhook('https://hooks.example.com/path', { ok: false }),
+    webhookDelivery.sendWebhook('https://hooks.example.com/path', { ok: false }, { retries: 0 }),
     /Webhook timeout/,
   );
   restoreRequests();
 
   assert.equal(destroyed, true);
+});
+
+test('sendWebhook retries retryable HTTP failures with the same idempotency key', async () => {
+  const keys = [];
+  let attempts = 0;
+  installRequestStub(https, (_url, options, callback) => {
+    attempts += 1;
+    keys.push(options.headers['Idempotency-Key']);
+    const response = new EventEmitter();
+    response.statusCode = attempts === 1 ? 503 : 200;
+    response.headers = {};
+    const request = new EventEmitter();
+    request.write = () => {};
+    request.end = () => {
+      callback(response);
+      response.emit('end');
+    };
+    request.destroy = () => {};
+    return request;
+  });
+
+  const sleeps = [];
+  const result = await webhookDelivery.sendWebhook(
+    'https://hooks.example.com/retry',
+    { event: 'verified' },
+    {
+      retries: 1,
+      jitterRatio: 0,
+      sleepFn: async (ms) => sleeps.push(ms),
+    },
+  );
+  restoreRequests();
+
+  assert.equal(result.status, 200);
+  assert.equal(attempts, 2);
+  assert.deepEqual(sleeps, [250]);
+  assert.equal(new Set(keys).size, 1);
 });
 
 test('deliverToTeams formats a MessageCard payload', async () => {

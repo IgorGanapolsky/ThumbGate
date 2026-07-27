@@ -107,10 +107,6 @@ function redactTraceText(value, maxLength = MAX_TEXT) {
   return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
 }
 
-function hashText(value) {
-  return crypto.createHash('sha256').update(String(value || '')).digest('hex').slice(0, 16);
-}
-
 function extractMessages(record = {}) {
   const candidates = [
     record.steps,
@@ -135,7 +131,7 @@ function normalizeAgentTraceRecord(record = {}, options = {}) {
   const messages = extractMessages(record);
   const steps = messages.map((message, index) => normalizeStep(message, index)).filter(Boolean);
   const taskType = options.taskType || record.taskType || inferTaskType(record, steps);
-  const traceId = record.traceId || record.id || record.uuid || `trace_${Date.now()}_${hashText(JSON.stringify(record)).slice(0, 8)}`;
+  const traceId = record.traceId || record.id || record.uuid || `trace_${crypto.randomUUID()}`;
   const outcome = normalizeOutcome(record);
 
   return {
@@ -171,11 +167,11 @@ function normalizeStep(message = {}, index = 0) {
     role,
     eventType,
     text: eventType === 'reasoning' ? '[REDACTED_REASONING_TRACE]' : redacted,
-    textHash: hashText(rawContent),
+    textHash: null,
     reasoning: reasoningRaw ? {
       present: true,
       charCount: String(reasoningRaw).length,
-      hash: hashText(reasoningRaw),
+      hash: null,
     } : null,
     toolCalls,
     error: detectError(redacted, message),
@@ -191,7 +187,10 @@ function extractToolCalls(message = {}, content = '') {
     const fn = call.function || call;
     calls.push({
       name: String(fn.name || call.name || call.tool || 'unknown'),
-      argumentsHash: hashText(JSON.stringify(fn.arguments || call.arguments || {})),
+      // Deliberately do not persist a deterministic argument fingerprint.
+      // Low-entropy values (flags, small IDs, booleans) can be recovered by
+      // enumerating candidate inputs even when only a truncated hash is stored.
+      argumentsHash: null,
     });
   }
 
@@ -584,7 +583,7 @@ function formatTraceAnalyticsReport(report = {}) {
     lines.push(`- ${candidate.gateId}: ${candidate.recommendation}`);
   }
   if (!report.gateCandidates?.length) lines.push('- None: trace shapes are currently healthy.');
-  lines.push('', 'Privacy: raw hidden reasoning is not stored; only hashes, event labels, and redacted observable text are retained.', '');
+  lines.push('', 'Privacy: raw hidden reasoning and deterministic content fingerprints are not stored; only event labels and redacted observable text are retained.', '');
   return `${lines.join('\n')}\n`;
 }
 

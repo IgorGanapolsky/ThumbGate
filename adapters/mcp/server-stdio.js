@@ -86,6 +86,17 @@ const {
   buildReceiptContextEntries,
 } = require('../../scripts/action-receipts');
 const {
+  calculateTaskOutcomeMetrics,
+  getTaskOutcome,
+  readTaskOutcomes,
+  recordTaskOutcome,
+} = require('../../scripts/task-outcomes');
+const {
+  listEscalations,
+  requestEscalation,
+} = require('../../scripts/human-escalation');
+const { recordReasoningTrace } = require('../../scripts/agent-reasoning-traces');
+const {
   evaluateOperationalIntegrity,
 } = require('../../scripts/operational-integrity');
 const {
@@ -773,6 +784,11 @@ async function callTool(name, args = {}) {
       const err = new Error(`Tool contract violation on '${name}': ${validation.errors.join('; ')}`);
       err.errorCategory = 'contract';
       err.isRetryable = false;
+      recordMcpToolTrace(name, args, {
+        success: false,
+        category: 'contract',
+        evidence: validation.errors,
+      });
       throw err;
     }
   }
@@ -783,12 +799,34 @@ async function callTool(name, args = {}) {
       const err = new Error(`Action blocked by Semantic Firewall: ${firewallResult.message}`);
       err.errorCategory = 'permission';
       err.isRetryable = false;
+      recordMcpToolTrace(name, args, {
+        success: false,
+        category: 'permission',
+        evidence: [firewallResult.message],
+      });
       throw err;
     }
   }
   const startMs = Date.now();
-  const result = await callToolInner(name, args);
+  let result;
+  try {
+    result = await callToolInner(name, args);
+  } catch (err) {
+    recordMcpToolTrace(name, args, {
+      success: false,
+      category: err.errorCategory || 'execution',
+      evidence: [err.code || err.message || 'tool execution failed'],
+      latencyMs: Date.now() - startMs,
+    });
+    throw err;
+  }
   const latencyMs = Date.now() - startMs;
+  recordMcpToolTrace(name, args, {
+    success: true,
+    category: 'success',
+    evidence: [`tool completed in ${latencyMs}ms`],
+    latencyMs,
+  });
   try {
     const { recordAuditEvent } = require('../../scripts/audit-trail');
     recordAuditEvent({
@@ -800,6 +838,41 @@ async function callTool(name, args = {}) {
     });
   } catch { /* audit write failure must never break tool response */ }
   return result;
+}
+
+function recordMcpToolTrace(name, args, outcome = {}) {
+  try {
+    const traceId = args.traceId || args.taskId || `mcp-${Date.now()}-${name}`;
+    recordReasoningTrace({
+      trace_id: traceId,
+      task_type: 'tool-use',
+      source: 'mcp-runtime',
+      success: outcome.success,
+      outcome: {
+        success: outcome.success,
+        terminalState: outcome.category,
+      },
+      messages: [
+        {
+          role: 'assistant',
+          content: `tool: ${name}`,
+          tool_calls: [{ function: { name } }],
+        },
+        {
+          role: 'tool',
+          content: `tool response: ${outcome.category}; ${outcome.evidence?.join('; ') || 'no evidence'}`,
+          success: outcome.success,
+        },
+      ],
+      metadata: {
+        latencyMs: outcome.latencyMs || 0,
+        argumentFingerprintStored: false,
+        rawArgumentsStored: false,
+      },
+    });
+  } catch {
+    // Trace telemetry must not change the tool's functional outcome.
+  }
 }
 
 async function callToolInner(name, args) {
@@ -1154,6 +1227,19 @@ async function callToolInner(name, args) {
           ? getReceiptForAction(args.actionId)
           : getRecentReceipts(Number(args.limit || 20)),
       );
+    case 'record_task_outcome':
+      return toTextResult(recordTaskOutcome(args));
+    case 'get_task_outcomes': {
+      if (args.taskId) return toTextResult(getTaskOutcome(args.taskId));
+      const limit = Number(args.limit || 20);
+      return toTextResult(readTaskOutcomes().slice(-limit));
+    }
+    case 'get_agent_outcome_metrics':
+      return toTextResult(calculateTaskOutcomeMetrics(readTaskOutcomes()));
+    case 'request_human_escalation':
+      return toTextResult(requestEscalation(args));
+    case 'list_human_escalations':
+      return toTextResult(listEscalations({ status: args.status }).slice(0, Number(args.limit || 20)));
     case 'verify_claim':
       return toTextResult(verifyClaimEvidence(args.claim, { goalContract: args.goalContract }));
     case 'require_evidence_for_claim': {

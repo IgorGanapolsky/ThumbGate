@@ -260,6 +260,9 @@ test('queueJob persists an idle state and verification-free jobs can resume with
     assert.equal(resumed.status, 'completed');
     assert.equal(resumed.phases.verification, null);
     assert.equal(resumed.phases.feedback, null);
+    assert.equal(resumed.taskOutcome.status, 'partial');
+    assert.equal(resumed.taskOutcome.working, false);
+    assert.ok(resumed.taskOutcome.workingReasons.includes('verification_not_performed'));
     assert.equal(state.status, 'completed');
     assert.equal(state.verification, null);
   } finally {

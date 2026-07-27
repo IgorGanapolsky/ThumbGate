@@ -389,9 +389,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // and bounded JSONL window reader used by telemetry export + revenue doctor.
   // Bumped 357 -> 359 (2026-07-23) for Poolside-style blog essays under public/blog/
   // (inside-your-boundary + process-over-outcome-gates) served by the hosted package.
+  // Bumped 359 -> 368 (2026-07-26) for verified task outcomes, human
+  // escalation, production monitoring, and their public eval/schema fixtures.
+  // Bumped 368 -> 369 (2026-07-26) to ship the existing schedule manager used
+  // by the public outcome-monitor installer and agent:schedule command.
   assert.ok(
-    manifest.fileCount <= 359,
-    `npm package should stay <= 359 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 369,
+    `npm package should stay <= 369 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

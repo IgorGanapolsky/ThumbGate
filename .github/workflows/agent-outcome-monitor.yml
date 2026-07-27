@@ -1,0 +1,47 @@
+name: Agent Outcome Monitor
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run deterministic golden outcome regression
+        run: npm run eval:agent-outcomes -- --output=agent-outcome-eval-report.json > /dev/null
+
+      - name: Read production outcome monitor
+        env:
+          THUMBGATE_MONITOR_API_KEY: ${{ secrets.THUMBGATE_API_KEY }}
+        run: |
+          if [ -z "$THUMBGATE_MONITOR_API_KEY" ]; then
+            node -e "require('node:fs').writeFileSync('agent-outcome-production-monitor.json', JSON.stringify({verdict:'not_configured', reason:'THUMBGATE_API_KEY secret is unavailable'}, null, 2) + '\n')"
+            exit 0
+          fi
+          curl --fail --silent --show-error \
+            --header "Authorization: Bearer $THUMBGATE_MONITOR_API_KEY" \
+            https://thumbgate-production.up.railway.app/v1/task-outcomes/monitor \
+            --output agent-outcome-production-monitor.json
+          node -e "const r=require('./agent-outcome-production-monitor.json'); if(r.verdict !== 'healthy') { console.error('Production agent outcome monitor: ' + r.verdict); process.exit(1) }"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: agent-outcome-monitor
+          retention-days: 30
+          path: |
+            agent-outcome-eval-report.json
+            agent-outcome-production-monitor.json

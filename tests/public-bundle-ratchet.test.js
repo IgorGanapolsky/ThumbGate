@@ -133,7 +133,12 @@ const path = require('node:path');
 // reader for hosted telemetry export / revenue doctor (no buyer state).
 // 357 -> 359: Poolside-style blog essays under public/blog/ (hosted marketing
 // surface only; no new scripts, secrets, or buyer state).
-const BASELINE_FILE_COUNT = 359;
+// 359 -> 368: verified task outcomes ship four public runtime modules plus
+// five schemas/evaluation artifacts required by the API, MCP tools, CI gate,
+// and production monitor. No buyer state, credentials, or private modules.
+// 368 -> 369: ship the existing local schedule manager required by the public
+// daily outcome-monitor installer and the already-advertised agent:schedule.
+const BASELINE_FILE_COUNT = 369;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
