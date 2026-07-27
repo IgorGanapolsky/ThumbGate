@@ -1922,22 +1922,22 @@ function captureFeedbackIdempotent(params = {}) {
   }
 }
 
-function incrementFeedbackBucket(buckets, key, signal) {
+function incrementBucket(buckets, key, signal) {
   if (!key) return;
   if (!buckets[key]) buckets[key] = { positive: 0, negative: 0, total: 0 };
   buckets[key][signal] += 1;
   buckets[key].total += 1;
 }
 
-function summarizeFeedbackRubric(entry, summary) {
+function summarizeRubric(entry, summary) {
   if (entry.actionType === 'no-action' && typeof entry.actionReason === 'string' && entry.actionReason.includes('Rubric gate')) {
-    summary.blockedPromotions += 1;
+    summary.blocked += 1;
   }
-  if (entry.rubric?.weightedScore != null) summary.rubricSamples += 1;
+  if (entry.rubric?.weightedScore != null) summary.samples += 1;
 
   for (const criterion of entry.rubric?.failingCriteria || []) {
-    if (!summary.rubricCriteria[criterion]) summary.rubricCriteria[criterion] = { failures: 0 };
-    summary.rubricCriteria[criterion].failures += 1;
+    if (!summary.criteria[criterion]) summary.criteria[criterion] = { failures: 0 };
+    summary.criteria[criterion].failures += 1;
   }
 }
 
@@ -1945,22 +1945,22 @@ function summarizeFeedbackEntries(entries) {
   const summary = {
     skills: {},
     tags: {},
-    rubricCriteria: {},
-    rubricSamples: 0,
-    blockedPromotions: 0,
-    totalPositive: 0,
-    totalNegative: 0,
+    criteria: {},
+    samples: 0,
+    blocked: 0,
+    positive: 0,
+    negative: 0,
   };
 
   for (const entry of entries) {
-    if (entry.signal === 'positive') summary.totalPositive += 1;
-    if (entry.signal === 'negative') summary.totalNegative += 1;
+    if (entry.signal === 'positive') summary.positive += 1;
+    if (entry.signal === 'negative') summary.negative += 1;
 
-    incrementFeedbackBucket(summary.skills, entry.skill, entry.signal);
+    incrementBucket(summary.skills, entry.skill, entry.signal);
     for (const tag of entry.tags || []) {
-      incrementFeedbackBucket(summary.tags, tag, entry.signal);
+      incrementBucket(summary.tags, tag, entry.signal);
     }
-    summarizeFeedbackRubric(entry, summary);
+    summarizeRubric(entry, summary);
   }
 
   return summary;
@@ -1970,14 +1970,19 @@ function roundedRate(numerator, denominator) {
   return denominator > 0 ? Math.round((numerator / denominator) * 1000) / 1000 : 0;
 }
 
-function determineFeedbackTrend(windowStats, rate7d, rate30d) {
+function addRec(output, message, remediation) {
+  output.messages.push(message);
+  output.remediations.push(remediation);
+}
+
+function feedbackTrend(windowStats, rate7d, rate30d) {
   if (windowStats['7d'].total === 0 || windowStats['30d'].total === 0) return 'stable';
   if (rate7d > rate30d + 0.05) return 'improving';
   if (rate7d < rate30d - 0.05) return 'degrading';
   return 'stable';
 }
 
-function buildFeedbackWindows(entries, totalPositive, total) {
+function feedbackWindows(entries, positive, total) {
   const now = Date.now();
   const windowStats = {
     '7d': { total: 0, positive: 0 },
@@ -2001,7 +2006,7 @@ function buildFeedbackWindows(entries, totalPositive, total) {
 
   const rate7d = roundedRate(windowStats['7d'].positive, windowStats['7d'].total);
   const rate30d = roundedRate(windowStats['30d'].positive, windowStats['30d'].total);
-  const trend = determineFeedbackTrend(windowStats, rate7d, rate30d);
+  const trend = feedbackTrend(windowStats, rate7d, rate30d);
 
   return {
     rate7d,
@@ -2010,17 +2015,16 @@ function buildFeedbackWindows(entries, totalPositive, total) {
     windows: {
       '7d': { ...windowStats['7d'], rate: rate7d },
       '30d': { ...windowStats['30d'], rate: rate30d },
-      lifetime: { total, positive: totalPositive, rate: roundedRate(totalPositive, total) },
+      lifetime: { total, positive, rate: roundedRate(positive, total) },
     },
   };
 }
 
-function appendSkillRecommendations(skills, output) {
+function addSkillRecs(skills, output) {
   for (const [skill, stat] of Object.entries(skills)) {
-    const negativeRate = stat.total > 0 ? stat.negative / stat.total : 0;
-    if (stat.total < 3 || negativeRate < 0.5) continue;
-    output.recommendations.push(`IMPROVE skill '${skill}' (${stat.negative}/${stat.total} negative)`);
-    output.actionableRemediations.push({
+    const negRate = stat.total > 0 ? stat.negative / stat.total : 0;
+    if (stat.total < 3 || negRate < 0.5) continue;
+    addRec(output, `IMPROVE skill '${skill}' (${stat.negative}/${stat.total} negative)`, {
       type: 'skill-improve',
       target: skill,
       evidence: {
@@ -2030,17 +2034,16 @@ function appendSkillRecommendations(skills, output) {
         negativeRate: roundedRate(stat.negative, stat.total),
       },
       action: 'review-and-update-skill',
-      rationale: `Skill '${skill}' has ${stat.negative}/${stat.total} negative feedback events (${Math.round(negativeRate * 100)}% negative rate).`,
+      rationale: `Skill '${skill}' has ${stat.negative}/${stat.total} negative feedback events (${Math.round(negRate * 100)}% negative rate).`,
     });
   }
 }
 
-function appendTagRecommendations(tags, output) {
+function addTagRecs(tags, output) {
   for (const [tag, stat] of Object.entries(tags)) {
-    const positiveRate = stat.total > 0 ? stat.positive / stat.total : 0;
-    if (stat.total < 3 || positiveRate < 0.8) continue;
-    output.recommendations.push(`REUSE pattern '${tag}' (${stat.positive}/${stat.total} positive)`);
-    output.actionableRemediations.push({
+    const posRate = stat.total > 0 ? stat.positive / stat.total : 0;
+    if (stat.total < 3 || posRate < 0.8) continue;
+    addRec(output, `REUSE pattern '${tag}' (${stat.positive}/${stat.total} positive)`, {
       type: 'pattern-reuse',
       target: tag,
       evidence: {
@@ -2050,16 +2053,15 @@ function appendTagRecommendations(tags, output) {
         positiveRate: roundedRate(stat.positive, stat.total),
       },
       action: 'replicate-pattern',
-      rationale: `Pattern '${tag}' has ${stat.positive}/${stat.total} positive feedback events (${Math.round(positiveRate * 100)}% positive rate).`,
+      rationale: `Pattern '${tag}' has ${stat.positive}/${stat.total} positive feedback events (${Math.round(posRate * 100)}% positive rate).`,
     });
   }
 }
 
-function appendTrendRecommendations(metrics, output) {
+function addTrendRecs(metrics, output) {
   const { recent, recentRate, approvalRate, trend, rate7d, rate30d } = metrics;
   if (recent.length >= 10 && recentRate < approvalRate - 0.1) {
-    output.recommendations.push('DECLINING trend in last 20 signals; tighten verification before response.');
-    output.actionableRemediations.push({
+    addRec(output, 'DECLINING trend in last 20 signals; tighten verification before response.', {
       type: 'trend-declining',
       target: 'recent-signals',
       evidence: { recentRate, approvalRate, sampleSize: recent.length },
@@ -2068,8 +2070,7 @@ function appendTrendRecommendations(metrics, output) {
     });
   }
   if (trend !== 'degrading') return;
-  output.recommendations.push(`DEGRADING 7d trend (${rate7d}) vs 30d (${rate30d}); increase prevention rule injection.`);
-  output.actionableRemediations.push({
+  addRec(output, `DEGRADING 7d trend (${rate7d}) vs 30d (${rate30d}); increase prevention rule injection.`, {
     type: 'trend-degrading',
     target: '7d-window',
     evidence: { rate7d, rate30d, delta: Math.round((rate7d - rate30d) * 1000) / 1000 },
@@ -2078,10 +2079,9 @@ function appendTrendRecommendations(metrics, output) {
   });
 }
 
-function appendRiskBuckets(buckets, kind, output) {
+function addRiskBuckets(buckets, kind, output) {
   for (const bucket of buckets.slice(0, 2)) {
-    output.recommendations.push(`CHECK high-risk ${kind} '${bucket.key}' (${bucket.highRisk}/${bucket.total} high-risk)`);
-    output.actionableRemediations.push({
+    addRec(output, `CHECK high-risk ${kind} '${bucket.key}' (${bucket.highRisk}/${bucket.total} high-risk)`, {
       type: `high-risk-${kind}`,
       target: bucket.key,
       evidence: { highRisk: bucket.highRisk, total: bucket.total, riskRate: bucket.riskRate },
@@ -2091,28 +2091,27 @@ function appendRiskBuckets(buckets, kind, output) {
   }
 }
 
-function appendRiskRecommendations(feedbackDir, output) {
+function addRiskRecs(feedbackDir, output) {
   try {
     const riskScorer = getRiskScorerModule();
     if (!riskScorer) return null;
     const boostedRisk = riskScorer.getRiskSummary(feedbackDir);
     if (!boostedRisk) return null;
-    appendRiskBuckets(boostedRisk.highRiskDomains, 'domain', output);
-    appendRiskBuckets(boostedRisk.highRiskTags, 'tag', output);
+    addRiskBuckets(boostedRisk.highRiskDomains, 'domain', output);
+    addRiskBuckets(boostedRisk.highRiskTags, 'tag', output);
     return boostedRisk;
   } catch {
     return null;
   }
 }
 
-function appendDelegationRecommendations(feedbackDir, output) {
+function addDelegationRecs(feedbackDir, output) {
   try {
     const delegationRuntime = getDelegationRuntimeModule();
     if (!delegationRuntime || typeof delegationRuntime.summarizeDelegation !== 'function') return null;
     const delegation = delegationRuntime.summarizeDelegation(feedbackDir);
     if (delegation.attemptCount >= 3 && delegation.verificationFailureRate >= 0.5) {
-      output.recommendations.push(`REDUCE delegation: verification failure rate is ${Math.round(delegation.verificationFailureRate * 100)}%`);
-      output.actionableRemediations.push({
+      addRec(output, `REDUCE delegation: verification failure rate is ${Math.round(delegation.verificationFailureRate * 100)}%`, {
         type: 'delegation-reduce',
         target: 'verification-failure-rate',
         evidence: {
@@ -2124,8 +2123,7 @@ function appendDelegationRecommendations(feedbackDir, output) {
       });
     }
     if (delegation.avoidedDelegationCount >= 3) {
-      output.recommendations.push(`REVIEW delegation policy: ${delegation.avoidedDelegationCount} handoff starts were blocked before execution`);
-      output.actionableRemediations.push({
+      addRec(output, `REVIEW delegation policy: ${delegation.avoidedDelegationCount} handoff starts were blocked before execution`, {
         type: 'delegation-policy-review',
         target: 'handoff-blocks',
         evidence: { avoidedDelegationCount: delegation.avoidedDelegationCount },
@@ -2139,10 +2137,9 @@ function appendDelegationRecommendations(feedbackDir, output) {
   }
 }
 
-function appendDiagnosticRecommendations(diagnostics, output) {
+function addDiagnosticRecs(diagnostics, output) {
   for (const bucket of diagnostics.categories.slice(0, 2)) {
-    output.recommendations.push(`DIAGNOSE '${bucket.key}' failures (${bucket.count})`);
-    output.actionableRemediations.push({
+    addRec(output, `DIAGNOSE '${bucket.key}' failures (${bucket.count})`, {
       type: 'diagnose-failure-category',
       target: bucket.key,
       evidence: { count: bucket.count },
@@ -2152,8 +2149,8 @@ function appendDiagnosticRecommendations(diagnostics, output) {
   }
 }
 
-function getSQLiteAnalysisFallback(shouldUseSQLite, entries) {
-  const db = shouldUseSQLite ? getLessonDB() : null;
+function getSQLiteFallback(useSQLite, entries) {
+  const db = useSQLite ? getLessonDB() : null;
   if (!db || entries.length > 0) return null;
   try {
     const { getStatsFromDB } = require('./lesson-db');
@@ -2166,41 +2163,41 @@ function getSQLiteAnalysisFallback(shouldUseSQLite, entries) {
 
 function analyzeFeedback(logPath, options = {}) {
   const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
-  const resolvedLogPath = logPath || FEEDBACK_LOG_PATH;
-  const feedbackDir = path.dirname(resolvedLogPath);
+  const resolvedPath = logPath || FEEDBACK_LOG_PATH;
+  const feedbackDir = path.dirname(resolvedPath);
   const paths = buildFeedbackPathsFromDir(feedbackDir);
-  const shouldUseSQLite = !options.humanOnly && (!logPath || path.resolve(resolvedLogPath) === path.resolve(FEEDBACK_LOG_PATH));
-  let entries = readJSONL(resolvedLogPath, { maxLines: 0 });
+  const useSQLite = !options.humanOnly && (!logPath || path.resolve(resolvedPath) === path.resolve(FEEDBACK_LOG_PATH));
+  let entries = readJSONL(resolvedPath, { maxLines: 0 });
   const rawTotal = entries.length;
   if (options.humanOnly) {
     entries = entries.filter((entry) => normalizeReviewOrigin(entry.reviewOrigin) === 'human');
   }
-  const sqliteFallback = getSQLiteAnalysisFallback(shouldUseSQLite, entries);
-  if (sqliteFallback) return sqliteFallback;
+  const fallback = getSQLiteFallback(useSQLite, entries);
+  if (fallback) return fallback;
 
   const diagnosticEntries = readDiagnosticEntries(path.join(feedbackDir, 'diagnostic-log.jsonl'));
   const summary = summarizeFeedbackEntries(entries);
-  const { skills, tags, rubricCriteria, rubricSamples, blockedPromotions, totalPositive, totalNegative } = summary;
-  const total = totalPositive + totalNegative;
-  const approvalRate = roundedRate(totalPositive, total);
+  const { skills, tags, criteria, samples, blocked, positive, negative } = summary;
+  const total = positive + negative;
+  const approvalRate = roundedRate(positive, total);
   const recent = entries.slice(-20);
   const recentPos = recent.filter((e) => e.signal === 'positive').length;
   const recentRate = roundedRate(recentPos, recent.length);
-  const { rate7d, rate30d, trend, windows } = buildFeedbackWindows(entries, totalPositive, total);
-  const recommendationOutput = { recommendations: [], actionableRemediations: [] };
+  const { rate7d, rate30d, trend, windows } = feedbackWindows(entries, positive, total);
+  const recs = { messages: [], remediations: [] };
 
-  appendSkillRecommendations(skills, recommendationOutput);
-  appendTagRecommendations(tags, recommendationOutput);
-  appendTrendRecommendations({ recent, recentRate, approvalRate, trend, rate7d, rate30d }, recommendationOutput);
-  const boostedRisk = appendRiskRecommendations(paths.FEEDBACK_DIR, recommendationOutput);
+  addSkillRecs(skills, recs);
+  addTagRecs(tags, recs);
+  addTrendRecs({ recent, recentRate, approvalRate, trend, rate7d, rate30d }, recs);
+  const boostedRisk = addRiskRecs(paths.FEEDBACK_DIR, recs);
   const diagnostics = aggregateFailureDiagnostics([...entries, ...diagnosticEntries]);
-  const delegation = appendDelegationRecommendations(paths.FEEDBACK_DIR, recommendationOutput);
-  appendDiagnosticRecommendations(diagnostics, recommendationOutput);
+  const delegation = addDelegationRecs(paths.FEEDBACK_DIR, recs);
+  addDiagnosticRecs(diagnostics, recs);
 
   return normalizeAnalysisShape({
     total,
-    totalPositive,
-    totalNegative,
+    totalPositive: positive,
+    totalNegative: negative,
     approvalRate,
     recentRate,
     windows,
@@ -2208,15 +2205,15 @@ function analyzeFeedback(logPath, options = {}) {
     skills,
     tags,
     rubric: {
-      samples: rubricSamples,
-      blockedPromotions,
-      failingCriteria: rubricCriteria,
+      samples,
+      blockedPromotions: blocked,
+      failingCriteria: criteria,
     },
     diagnostics,
     delegation,
     boostedRisk,
-    recommendations: recommendationOutput.recommendations,
-    actionableRemediations: recommendationOutput.actionableRemediations,
+    recommendations: recs.messages,
+    actionableRemediations: recs.remediations,
     rawTotal,
     excludedTotal: rawTotal - entries.length,
   });
