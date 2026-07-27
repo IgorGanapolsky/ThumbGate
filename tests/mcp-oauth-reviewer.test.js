@@ -5,13 +5,19 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
 const ADMIN_KEY = 'admin-key-for-tests';
 const REVIEWER_KEY = 'reviewer-key-for-tests';
+const SAVED_FEEDBACK_DIR = process.env.THUMBGATE_FEEDBACK_DIR;
+const FEEDBACK_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-mcp-oauth-kpi-'));
 process.env.THUMBGATE_API_KEY = ADMIN_KEY;
 process.env.THUMBGATE_REVIEWER_KEY = REVIEWER_KEY;
 process.env.THUMBGATE_ALLOW_INSECURE = 'true';
 process.env.THUMBGATE_PUBLIC_APP_ORIGIN = process.env.THUMBGATE_PUBLIC_APP_ORIGIN || 'http://127.0.0.1';
+process.env.THUMBGATE_FEEDBACK_DIR = FEEDBACK_DIR;
 
 const { startServer } = require('../src/api/server');
 
@@ -28,6 +34,9 @@ test.before(async () => {
 
 test.after(async () => {
   if (handle && handle.server) await new Promise((r) => handle.server.close(r));
+  if (SAVED_FEEDBACK_DIR === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+  else process.env.THUMBGATE_FEEDBACK_DIR = SAVED_FEEDBACK_DIR;
+  fs.rmSync(FEEDBACK_DIR, { recursive: true, force: true });
 });
 
 function pkce() {
@@ -120,4 +129,14 @@ test('OAuth scope blocks write tools even for an admin-bound token', async () =>
   const readOnlyAdminToken = await tokenFor(ADMIN_KEY, 'mcp:read');
   const response = await callTool(readOnlyAdminToken, writeTool.name);
   assert.equal(response.error?.code, -32003);
+  const kpiEntries = fs.readFileSync(path.join(FEEDBACK_DIR, 'tool-kpi.jsonl'), 'utf8')
+    .trim()
+    .split('\n')
+    .map((line) => JSON.parse(line));
+  assert.ok(kpiEntries.some((entry) => (
+    entry.toolName === writeTool.name
+      && entry.success === false
+      && entry.metadata?.deniedReason === 'insufficient_scope'
+      && entry.metadata?.requiredScope === 'mcp:write'
+  )));
 });

@@ -107,6 +107,7 @@ test('matchSkillPacks stripe', () => { assert.equal(packs.matchSkillPacks('strip
 test('matchSkillPacks railway', () => { assert.equal(packs.matchSkillPacks('deploy railway')[0].name, 'railway-deploy'); });
 test('matchSkillPacks database safety', () => { assert.equal(packs.matchSkillPacks('production database drop table')[0].name, 'database-agent-safety'); });
 test('matchSkillPacks empty for unrelated', () => { assert.equal(packs.matchSkillPacks('quantum physics').length, 0); });
+test('matchSkillPacks ignores short-token substring noise', () => { assert.equal(packs.matchSkillPacks('a to be').length, 0); });
 test('registerSkillPack persists', () => { packs.registerSkillPack({ name: 'test-pack', triggers: ['test'], rules: ['Rule 1'] }); assert.ok(fs.existsSync(path.join(packs.SKILL_PACKS_DIR, 'test-pack.json'))); });
 test('registerSkillPack validates name', () => { assert.throws(() => packs.registerSkillPack({ rules: ['x'] }), /name/); });
 test('registerSkillPack validates rules', () => { assert.throws(() => packs.registerSkillPack({ name: 'x', rules: [] }), /rule/); });

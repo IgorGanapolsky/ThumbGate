@@ -9,6 +9,7 @@ const {
   computeLexicalRecall,
   computeLexicalPrecision,
   evaluateThresholds,
+  retrieveEvalItems,
   runRagEval,
 } = require('../scripts/eval-rag');
 
@@ -45,6 +46,26 @@ test('evaluateThresholds fails closed on zero-quality retrieval', () => {
   assert.ok(gate.failures.some((failure) => failure.includes('recall')));
   assert.ok(gate.failures.some((failure) => failure.includes('precision')));
   assert.ok(gate.failures.some((failure) => failure.includes('zero-result')));
+});
+
+test('retrieveEvalItems routes only from runtime query inputs, not golden domain labels', () => {
+  const unrelated = retrieveEvalItems({
+    domain: 'stripe-integration',
+    query: 'completely unrelated phrase',
+    expectedRuleHit: 'card numbers',
+  });
+  assert.equal(
+    unrelated.some((item) => item.source === 'skill_pack'),
+    false,
+    'golden domain labels must not inject a skill pack',
+  );
+
+  const runtimeMatch = retrieveEvalItems({
+    domain: 'untrusted-golden-label',
+    query: 'Store customer credit card number',
+    expectedRuleHit: 'card numbers',
+  });
+  assert.equal(runtimeMatch.find((item) => item.source === 'skill_pack')?.title, 'stripe-integration');
 });
 
 test('runRagEval enforces deterministic quality thresholds and writes an isolated report', async () => {

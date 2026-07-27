@@ -71,18 +71,18 @@ $ npm test
 exit=0 (complete chained repository test command)
 
 $ npm run test:coverage
-tests=7163
-pass=7161
+tests=7166
+pass=7164
 fail=0
 skipped=2
-lines=87.12%
-branches=74.55%
-functions=88.62%
+lines=87.15%
+branches=74.62%
+functions=88.67%
 
 $ npm run eval:rag
 cases=6
 average_recall=100%
-average_precision=22.2%
+average_precision=20.0%
 release_gate=PASS
 
 $ npm run prove:adapters

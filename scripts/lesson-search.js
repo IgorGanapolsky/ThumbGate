@@ -576,11 +576,24 @@ function tryFts5Search(query, options) {
         .map((tag) => tag.trim())
         .filter(Boolean);
 
-    const rows = fts5Search(db, query || '', {
-      limit,
+    const candidateRows = fts5Search(db, query || '', {
+      limit: Math.max(limit * 5, 50),
       signal,
       tags: requiredTags.length > 0 ? requiredTags : undefined,
     });
+    const retrievableRows = selectRetrievalMemories(
+      candidateRows.map((row) => ({
+        ...row,
+        title: row.context || '',
+        content: [
+          row.whatWentWrong,
+          row.whatToChange,
+          row.whatWorked,
+        ].filter(Boolean).join('\n'),
+      })),
+      options,
+    );
+    const rows = retrievableRows.slice(0, limit);
 
     return {
       query: String(query || ''),
@@ -590,6 +603,7 @@ function tryFts5Search(query, options) {
         tags: requiredTags,
       },
       totalLessons: stats.total,
+      excludedLessons: candidateRows.length - retrievableRows.length,
       returned: rows.length,
       results: rows.map((row) => ({
         id: row.id,

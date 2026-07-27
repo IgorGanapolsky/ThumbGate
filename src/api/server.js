@@ -173,7 +173,7 @@ const {
   recordTaskOutcome,
 } = require('../../scripts/task-outcomes');
 const { monitorProductionSignals } = require('../../scripts/agent-outcome-monitor');
-const { computeToolKpis } = require('../../scripts/tool-kpi-tracker');
+const { computeToolKpis, recordToolCall } = require('../../scripts/tool-kpi-tracker');
 const {
   calculateEscalationMetrics,
   decideEscalation,
@@ -5270,6 +5270,14 @@ function createApiServer() {
                 ? mcpOauth.tokenAudienceValid(oauthSession, resourceUrl)
                 : rawKeyValid;
               if (!authed) {
+                recordToolCall({
+                  toolName: msg.params?.name || 'unknown',
+                  serverName: 'mcp-http',
+                  latencyMs: 0,
+                  success: false,
+                  agentId: 'unauthenticated',
+                  metadata: { denied: true, deniedReason: 'authentication_required' },
+                });
                 res.writeHead(401, {
                   'Content-Type': 'application/json',
                   // RFC 9728: point unauthenticated clients at the resource metadata.
@@ -5292,6 +5300,14 @@ function createApiServer() {
                 const tool = MCP_TOOLS.find((t) => t.name === name);
                 const readOnly = Boolean(tool && tool.annotations && tool.annotations.readOnlyHint === true);
                 if (!readOnly) {
+                  recordToolCall({
+                    toolName: name || 'unknown',
+                    serverName: 'mcp-http',
+                    latencyMs: 0,
+                    success: false,
+                    agentId: 'reviewer',
+                    metadata: { denied: true, deniedReason: 'reviewer_read_only' },
+                  });
                   sendJson(res, 200, {
                     jsonrpc: '2.0', id: msg.id,
                     error: { code: -32002, message: `Tool "${name}" requires write access; the reviewer credential is read-only.` },
@@ -5304,6 +5320,18 @@ function createApiServer() {
                 const tool = MCP_TOOLS.find((candidate) => candidate.name === name);
                 const requiredScope = tool?.annotations?.readOnlyHint === true ? 'mcp:read' : 'mcp:write';
                 if (!mcpOauth.scopeAllows(oauthSession, requiredScope)) {
+                  recordToolCall({
+                    toolName: name || 'unknown',
+                    serverName: 'mcp-http',
+                    latencyMs: 0,
+                    success: false,
+                    agentId: oauthSession.clientId || 'oauth-client',
+                    metadata: {
+                      denied: true,
+                      deniedReason: 'insufficient_scope',
+                      requiredScope,
+                    },
+                  });
                   sendJson(res, 200, {
                     jsonrpc: '2.0', id: msg.id,
                     error: { code: -32003, message: `OAuth token is missing required scope "${requiredScope}".` },

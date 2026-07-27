@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { constructContextPack } = require('./contextfs');
 const { BUILTIN_EVAL_CASES } = require('./eval-harness');
-const { getSkillPack, matchSkillPacks } = require('./skill-packs');
+const { matchSkillPacks } = require('./skill-packs');
 const llmClient = require('./llm-client');
 
 const REPORT_PATH = path.join(__dirname, '..', 'reports', 'eval-rag-report.md');
@@ -76,11 +76,10 @@ Return ONLY valid JSON. Do not include any explanation or markdown code fences o
 }
 
 function retrieveEvalItems(evalCase) {
-  const domainPack = getSkillPack(evalCase.domain);
-  const matchedPack = domainPack || matchSkillPacks(evalCase.query)[0] || null;
+  const matchedPacks = matchSkillPacks(evalCase.query);
   const items = [];
 
-  if (matchedPack) {
+  for (const matchedPack of matchedPacks) {
     items.push({
       source: 'skill_pack',
       title: matchedPack.name,
