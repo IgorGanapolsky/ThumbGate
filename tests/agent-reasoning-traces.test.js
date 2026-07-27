@@ -67,6 +67,26 @@ test('normalizeAgentTraceRecord keeps observable trace metadata without raw reas
   assert.doesNotMatch(JSON.stringify(trace), /secret hidden chain of thought/);
 });
 
+test('normalizeAgentTraceRecord never persists reversible tool-argument fingerprints', () => {
+  const trace = normalizeAgentTraceRecord(makeCodeTrace({
+    messages: [{
+      role: 'assistant',
+      content: 'Calling tool: approve',
+      tool_calls: [{
+        name: 'approve',
+        arguments: {
+          approved: true,
+          environment: 'prod',
+          reviewerCode: '0420',
+        },
+      }],
+    }],
+  }));
+
+  assert.equal(trace.steps[0].toolCalls[0].argumentsHash, null);
+  assert.doesNotMatch(JSON.stringify(trace), /0420|reviewerCode|environment/);
+});
+
 test('evaluateTraceShape rewards complete code-change traces', () => {
   const trace = normalizeAgentTraceRecord(makeCodeTrace());
   const evaluation = evaluateTraceShape(trace);
@@ -168,5 +188,5 @@ test('formatTraceAnalyticsReport includes privacy and gate information', () => {
   const markdown = formatTraceAnalyticsReport(report);
 
   assert.match(markdown, /Agent Reasoning Trace Intelligence/);
-  assert.match(markdown, /raw hidden reasoning is not stored/);
+  assert.match(markdown, /raw hidden reasoning.*not stored/);
 });

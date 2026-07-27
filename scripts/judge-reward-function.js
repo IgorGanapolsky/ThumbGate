@@ -12,6 +12,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { validateStructuredOutput } = require('./tool-contract-validator');
 
 const DEFAULT_CRITERIA = [
   {
@@ -117,15 +118,19 @@ function buildCompositeReward(sample = {}, options = {}) {
   }
 
   const judge = runJudgeSafely(sample, options.judge);
-  const judgeScore = judge.ok ? judge.score : 0.5;
-  const score = round((deterministic.score * 0.65) + (judgeScore * 0.35));
+  const score = judge.ok
+    ? round((deterministic.score * 0.65) + (judge.score * 0.35))
+    : deterministic.score;
   return {
     score,
-    label: rewardLabel(score),
+    label: judge.ok ? rewardLabel(score) : 'deterministic_only',
     deterministic,
     judge,
-    failureMode: judge.ok ? [] : ['judge_error_neutral_reward'],
-    recommendation: rewardRecommendation(score),
+    scoringMode: judge.ok ? 'deterministic_plus_llm_judge' : 'deterministic_only',
+    failureMode: judge.ok ? [] : [judge.available ? 'judge_error' : 'judge_unavailable'],
+    recommendation: judge.ok
+      ? rewardRecommendation(score)
+      : 'Use deterministic results only; do not represent unavailable judge evidence as a neutral judgment.',
   };
 }
 
@@ -148,7 +153,8 @@ function buildPreferenceJudgment(a, b, options = {}) {
 function buildJudgeReadinessReport(samples = [], options = {}) {
   const rewards = samples.map((sample) => buildCompositeReward(sample, options));
   const blocked = rewards.filter((reward) => reward.label === 'deterministic_block');
-  const neutralFallbacks = rewards.filter((reward) => reward.failureMode.includes('judge_error_neutral_reward'));
+  const neutralFallbacks = rewards.filter((reward) =>
+    reward.failureMode.includes('judge_error') || reward.failureMode.includes('judge_unavailable'));
   return {
     generatedAt: new Date().toISOString(),
     samples: samples.length,
@@ -186,7 +192,7 @@ function measureJudgeConsistency(samples = [], judge = null, options = {}) {
 
 function evaluateCriterion(id, prediction, sample, { requiresJson }) {
   if (id === 'schema_valid') {
-    return evaluateSchemaCriterion(prediction, requiresJson);
+    return evaluateSchemaCriterion(prediction, requiresJson, sample.outputSchema);
   }
   if (id === 'grounded_evidence') {
     return hasGroundedEvidence(prediction);
@@ -203,14 +209,17 @@ function evaluateCriterion(id, prediction, sample, { requiresJson }) {
   return true;
 }
 
-function evaluateSchemaCriterion(prediction, requiresJson) {
+function evaluateSchemaCriterion(prediction, requiresJson, outputSchema) {
   if (!requiresJson) return true;
-  try {
-    JSON.parse(prediction);
-    return true;
-  } catch {
-    return false;
+  if (!outputSchema) {
+    try {
+      JSON.parse(prediction);
+      return true;
+    } catch {
+      return false;
+    }
   }
+  return validateStructuredOutput(prediction, outputSchema).valid;
 }
 
 function hasGroundedEvidence(prediction) {
@@ -253,9 +262,10 @@ function buildCriterionReason(id, pass) {
 function runJudgeSafely(sample, judge) {
   if (typeof judge !== 'function') {
     return {
-      ok: true,
-      score: 0.5,
-      rationale: 'No external judge configured; deterministic checks carried the reward.',
+      ok: false,
+      available: false,
+      score: null,
+      rationale: 'No external judge configured; only deterministic checks are evidence.',
       raw: null,
     };
   }
@@ -264,6 +274,7 @@ function runJudgeSafely(sample, judge) {
     const score = clamp(Number(result.score ?? result), 0, 1);
     return {
       ok: true,
+      available: true,
       score,
       rationale: result.rationale || 'Judge returned a bounded score.',
       raw: result,
@@ -271,8 +282,9 @@ function runJudgeSafely(sample, judge) {
   } catch (err) {
     return {
       ok: false,
-      score: 0.5,
-      rationale: `Judge failed; returned neutral reward. ${err.message}`,
+      available: true,
+      score: null,
+      rationale: `Judge failed; deterministic checks remain authoritative. ${err.message}`,
       raw: null,
     };
   }

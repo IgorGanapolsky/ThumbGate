@@ -269,15 +269,17 @@ test('CI workflow stays test-only and leaves Railway deploys to the dedicated wo
   assert.doesNotMatch(workflow, /https:\/\/thumbgate-710216278770\.us-central1\.run\.app\/health/);
 });
 
-test('CI workflow writes and uploads a prompt evaluation artifact', () => {
+test('CI workflow enforces and uploads prompt and task-outcome evaluation artifacts', () => {
   const workflow = fs.readFileSync(path.join(PROJECT_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
 
-  assert.match(workflow, /name:\s*Write prompt evaluation report/);
+  assert.match(workflow, /name:\s*Run evaluation regression gates/);
   assert.match(workflow, /if:\s*always\(\)/);
-  assert.match(workflow, /node scripts\/prompt-eval\.js --min-score=0 --synthetic --synthetic-variants=1 --suite-output proof\/prompt-eval-suite\.generated\.json --output proof\/prompt-eval-report\.json --json > \/dev\/null/);
+  assert.match(workflow, /node scripts\/prompt-eval\.js --min-score=100 --synthetic --synthetic-variants=1 --baseline=config\/evals\/prompt-eval-baseline\.json --require-no-regressions/);
+  assert.match(workflow, /node scripts\/agent-outcome-eval\.js --baseline=config\/evals\/agent-outcomes-baseline\.json --output=proof\/agent-outcome-eval-report\.json/);
   assert.match(workflow, /GITHUB_STEP_SUMMARY/);
   assert.match(workflow, /proof\/prompt-eval-report\.json/);
   assert.match(workflow, /proof\/prompt-eval-suite\.generated\.json/);
+  assert.match(workflow, /proof\/agent-outcome-eval-report\.json/);
   assert.match(workflow, /Synthetic cases: /);
 });
 
