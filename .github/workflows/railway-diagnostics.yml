@@ -48,9 +48,9 @@ jobs:
       RAILWAY_SETTLE_SECONDS: ${{ github.event.inputs.settle_seconds || '20' }}
       RAILWAY_CLI_COMMAND_TIMEOUT_SECONDS: ${{ vars.RAILWAY_CLI_COMMAND_TIMEOUT_SECONDS || '60' }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 20
 
@@ -94,7 +94,7 @@ jobs:
 
       - name: Upload Railway diagnostics artifact
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           retention-days: 7
           name: railway-diagnostics-${{ github.run_id }}

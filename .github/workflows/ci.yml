@@ -34,7 +34,7 @@ jobs:
       THUMBGATE_API_KEY: ${{ secrets.THUMBGATE_API_KEY }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
 
@@ -78,7 +78,7 @@ jobs:
 
       - name: Setup Python
         if: steps.ci-scope.outputs.mode != 'web'
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.12"
 
@@ -91,7 +91,7 @@ jobs:
         # end users — these installs only affect the CI runner.
         run: pip install pytest scikit-learn joblib
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '20'
           cache: 'npm'
@@ -240,7 +240,7 @@ jobs:
 
       - name: Upload proof artifacts
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           retention-days: 7
           name: proof-artifacts

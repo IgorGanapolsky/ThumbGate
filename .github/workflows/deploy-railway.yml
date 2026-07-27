@@ -49,7 +49,7 @@ jobs:
       STRIPE_SECRET_KEY_ROTATED_AT: ${{ vars.STRIPE_SECRET_KEY_ROTATED_AT }}
       STRIPE_WEBHOOK_SECRET_ROTATED_AT: ${{ vars.STRIPE_WEBHOOK_SECRET_ROTATED_AT }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 2
       - name: Detect deployable changes
@@ -62,12 +62,12 @@ jobs:
           bash scripts/deploy-scope.sh
       - name: Upload deploy scope evidence
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           retention-days: 7
           name: deploy-scope
           path: deploy-scope.json
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 20
       - name: Check Railway deployment configuration
@@ -342,7 +342,7 @@ jobs:
           fi
       - name: Upload revenue observability evidence
         if: always() && steps.railway-config.outputs.enabled == 'true'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           retention-days: 7
           name: revenue-observability-${{ github.run_id }}
@@ -384,7 +384,7 @@ jobs:
           fi
       - name: Upload public conversion-surface evidence
         if: always() && steps.railway-config.outputs.enabled == 'true'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           retention-days: 7
           name: public-conversion-surfaces-${{ github.run_id }}
@@ -396,7 +396,7 @@ jobs:
         run: bash scripts/capture-railway-diagnostics.sh railway-diagnostics
       - name: Upload Railway diagnostics artifact
         if: always() && steps.railway-config.outputs.enabled == 'true'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           retention-days: 7
           name: railway-diagnostics-${{ github.run_id }}

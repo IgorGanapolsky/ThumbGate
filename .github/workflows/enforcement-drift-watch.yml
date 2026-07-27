@@ -1,0 +1,131 @@
+name: Enforcement Drift Watch
+
+# ThumbGate's production failure mode is SILENT. It decides whether tool calls are blocked,
+# so a regression does not throw — a gate either stops firing (a bypass) or starts firing on
+# everything. Neither shows up in uptime or latency monitoring, and on 2026-07-26 an audit
+# found 62 evasion holes in shipped code with nothing anywhere having reported a problem.
+#
+# This job is the automated half of docs/RELEASE-ROLLBACK.md: it re-runs the evasion matrix
+# against the CURRENTLY PUBLISHED package, and opens a P0 issue naming the rollback command
+# if the published artifact can be walked past. Per 2026 progressive-delivery practice,
+# rollback criteria are defined up front and checked by the system rather than by a human
+# remembering to look.
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to check (default: current latest)"
+        required: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: enforcement-drift-watch
+  cancel-in-progress: false
+
+jobs:
+  verify-published-enforcement:
+    name: verify published enforcement
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "24.x"
+
+      - name: Resolve versions
+        id: versions
+        run: |
+          published="${{ github.event.inputs.version }}"
+          if [ -z "$published" ]; then
+            published="$(npm view thumbgate version)"
+          fi
+          echo "published=$published" >> "$GITHUB_OUTPUT"
+          # The rollback anchor is the highest published version BELOW the current one.
+          previous="$(npm view thumbgate versions --json \
+            | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const v=JSON.parse(s);const i=v.indexOf(process.argv[1]);console.log(i>0?v[i-1]:"")})' "$published")"
+          echo "previous=$previous" >> "$GITHUB_OUTPUT"
+          echo "Checking thumbgate@$published (rollback anchor: ${previous:-none})"
+
+      - name: Install the PUBLISHED package
+        run: |
+          mkdir -p /tmp/published && cd /tmp/published
+          npm init -y >/dev/null 2>&1
+          npm install --no-audit --no-fund "thumbgate@${{ steps.versions.outputs.published }}"
+
+      - name: Run the evasion matrix against the published artifact
+        id: matrix
+        env:
+          # Sandboxed HOME: the matrix must measure the ENGINE, not whatever state happens to
+          # be on the runner. An earlier version of this check reported phantom holes because
+          # workflow-sentinel had accumulated session risk between runs.
+          HOME: /tmp/drift-home
+        run: |
+          mkdir -p /tmp/drift-home
+          set +e
+          node .github/scripts/verify-published-enforcement.mjs \
+            /tmp/published/node_modules/thumbgate > /tmp/matrix.txt 2>&1
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+          set -e
+          cat /tmp/matrix.txt
+          {
+            echo "### Enforcement matrix — thumbgate@${{ steps.versions.outputs.published }}"
+            echo '```'
+            cat /tmp/matrix.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open a P0 issue naming the rollback command
+        if: steps.matrix.outputs.exit != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUBLISHED: ${{ steps.versions.outputs.published }}
+          PREVIOUS: ${{ steps.versions.outputs.previous }}
+        run: |
+          title="P0: published thumbgate@${PUBLISHED} is evadable"
+          # One open issue per bad version, not one per scheduled run.
+          if gh issue list --state open --search "$title in:title" --json number \
+             | grep -q '"number"'; then
+            echo "Issue already open for ${PUBLISHED}"
+            exit 0
+          fi
+          {
+            echo "The scheduled enforcement check found that the **currently published**"
+            echo "package can be walked past. Agent machines resolve \`@latest\`, so this is"
+            echo "live on every paired machine."
+            echo
+            echo '```'
+            cat /tmp/matrix.txt
+            echo '```'
+            echo
+            echo "## Roll back now"
+            echo
+            echo '```sh'
+            if [ -n "$PREVIOUS" ]; then
+              echo "npm dist-tag add thumbgate@${PREVIOUS} latest"
+            else
+              echo "# No prior version resolved — pick the last known-good from: npm view thumbgate versions"
+            fi
+            echo '```'
+            echo
+            echo "Then remove cached runtimes so machines re-resolve:"
+            echo '```sh'
+            echo "rm -rf ~/.thumbgate/runtime/node_modules"
+            echo '```'
+            echo
+            echo "See docs/RELEASE-ROLLBACK.md and docs/INCIDENT-HOTFIX.md."
+          } > /tmp/issue.md
+          gh issue create --title "$title" --body-file /tmp/issue.md --label "P0" || \
+            gh issue create --title "$title" --body-file /tmp/issue.md
+
+      - name: Fail the run when enforcement is evadable
+        if: steps.matrix.outputs.exit != '0'
+        run: |
+          echo "::error::Published thumbgate@${{ steps.versions.outputs.published }} is evadable — see the issue and roll the dist-tag back."
+          exit 1
