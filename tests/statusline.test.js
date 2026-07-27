@@ -164,9 +164,9 @@ test('statusline rebuilds counters from local feedback logs when cache is empty'
   fs.writeFileSync(
     path.join(tmpDir, 'feedback-log.jsonl'),
     [
-      JSON.stringify({ signal: 'positive', timestamp: '2026-04-08T10:00:00.000Z', context: 'verified fix' }),
-      JSON.stringify({ signal: 'negative', timestamp: '2026-04-08T10:01:00.000Z', context: 'unverified claim' }),
-      JSON.stringify({ signal: 'negative', timestamp: '2026-04-08T10:02:00.000Z', context: 'scope creep' }),
+      JSON.stringify({ signal: 'positive', timestamp: '2026-04-08T10:00:00.000Z', context: 'verified fix', reviewOrigin: 'human' }),
+      JSON.stringify({ signal: 'negative', timestamp: '2026-04-08T10:01:00.000Z', context: 'unverified claim', reviewOrigin: 'human' }),
+      JSON.stringify({ signal: 'negative', timestamp: '2026-04-08T10:02:00.000Z', context: 'scope creep', reviewOrigin: 'human' }),
     ].join('\n') + '\n'
   );
   fs.writeFileSync(
@@ -352,9 +352,9 @@ test('statusline resolves project feedback from Claude cwd instead of the runtim
   fs.writeFileSync(
     path.join(feedbackDir, 'feedback-log.jsonl'),
     [
-      JSON.stringify({ signal: 'positive', timestamp: '2026-04-09T18:00:00.000Z', context: 'kept scope tight' }),
-      JSON.stringify({ signal: 'positive', timestamp: '2026-04-09T18:01:00.000Z', context: 'verified clean worktree' }),
-      JSON.stringify({ signal: 'negative', timestamp: '2026-04-09T18:02:00.000Z', context: 'stale runtime cwd' }),
+      JSON.stringify({ signal: 'positive', reviewOrigin: 'human', timestamp: '2026-04-09T18:00:00.000Z', context: 'kept scope tight' }),
+      JSON.stringify({ signal: 'positive', reviewOrigin: 'human', timestamp: '2026-04-09T18:01:00.000Z', context: 'verified clean worktree' }),
+      JSON.stringify({ signal: 'negative', reviewOrigin: 'human', timestamp: '2026-04-09T18:02:00.000Z', context: 'stale runtime cwd' }),
     ].join('\n') + '\n'
   );
 

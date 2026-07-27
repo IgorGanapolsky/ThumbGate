@@ -16,7 +16,7 @@ try {
   const scope = String(process.env.THUMBGATE_STATUSLINE_SCOPE || 'global').toLowerCase();
   const stats = scope !== 'project' && shouldAggregateFeedback({ env: process.env })
     ? computeAggregateFeedbackStats({ projectDir, env: process.env })
-    : analyzeFeedback();
+    : analyzeFeedback(undefined, { humanOnly: true });
   const payload = {
     ...normalizeStatsPayload(stats),
     aggregate: stats.aggregate || { enabled: false },

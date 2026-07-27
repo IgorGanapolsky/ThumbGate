@@ -2062,6 +2062,7 @@ test('feedback capture accepts valid payload', async () => {
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.equal(body.accepted, true);
+  assert.equal(body.feedbackEvent.reviewOrigin, 'human');
   assert.ok(body.memoryRecord);
 });
 
@@ -2169,20 +2170,42 @@ test('feedback capture promotes specific positive feedback even when tags are om
   assert.ok(body.memoryRecord.tags.includes('thumbgate'));
 });
 
-test('quick feedback capture via GET /feedback/quick?signal=up returns HTML confirmation', async () => {
+test('quick feedback GET renders a deliberate confirmation without recording feedback', async () => {
+  const { feedbackLogPath } = getConversationPaths(tmpFeedbackDir);
+  const before = readJsonl(feedbackLogPath).length;
   const res = await fetch(apiUrl('/feedback/quick?signal=up'), { headers: authHeader });
   assert.equal(res.status, 200);
   const html = await res.text();
   assert.ok(html.includes('👍'), 'should show thumbs up emoji');
-  assert.ok(html.includes('Positive feedback recorded'), 'should confirm capture with friendly label');
-  assert.ok(html.includes('Undo'), 'should offer undo action');
-  assert.ok(html.includes('signal=down'), 'undo link should point to opposite signal');
-  assert.ok(html.includes('Add follow-up context'), 'should offer follow-up context input');
-  assert.ok(html.includes('/feedback/quick/context'), 'should post follow-up notes to the public quick-feedback endpoint');
-  assert.match(html, /feedbackSessionId:'fbs_/i, 'quick-feedback page should carry the open feedback session id forward');
+  assert.ok(html.includes('Record positive feedback?'));
+  assert.match(html, /<form method="post" action="\/feedback\/quick\?signal=up"/);
+  assert.equal(readJsonl(feedbackLogPath).length, before);
 });
 
-test('quick feedback capture via GET /feedback/quick?signal=down returns HTML confirmation', async () => {
+test('quick feedback HEAD and unauthenticated POST never record human feedback', async () => {
+  const { feedbackLogPath } = getConversationPaths(tmpFeedbackDir);
+  const before = readJsonl(feedbackLogPath).length;
+  const headRes = await fetch(apiUrl('/feedback/quick?signal=up'), { method: 'HEAD' });
+  assert.equal(headRes.status, 200);
+  const postRes = await fetch(apiUrl('/feedback/quick?signal=up'), { method: 'POST' });
+  assert.equal(postRes.status, 401);
+  assert.equal(readJsonl(feedbackLogPath).length, before);
+});
+
+test('authenticated quick feedback POST records explicit human provenance', async () => {
+  const res = await fetch(apiUrl('/feedback/quick?signal=up'), {
+    method: 'POST',
+    headers: authHeader,
+  });
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.ok(html.includes('Positive feedback recorded'));
+  const { feedbackLogPath } = getConversationPaths(tmpFeedbackDir);
+  const latest = readJsonl(feedbackLogPath).at(-1);
+  assert.equal(latest.reviewOrigin, 'human');
+});
+
+test('authenticated quick feedback POST distills negative conversation context', async () => {
   recordConversationEntry({
     author: 'user',
     text: 'Never skip tests before claiming done.',
@@ -2194,13 +2217,16 @@ test('quick feedback capture via GET /feedback/quick?signal=down returns HTML co
     source: 'statusline-test',
   }, { feedbackDir: tmpFeedbackDir });
 
-  const res = await fetch(apiUrl('/feedback/quick?signal=down'), { headers: authHeader });
+  const res = await fetch(apiUrl('/feedback/quick?signal=down'), {
+    method: 'POST',
+    headers: authHeader,
+  });
   assert.equal(res.status, 200);
   const html = await res.text();
   assert.ok(html.includes('👎'), 'should show thumbs down emoji');
   assert.ok(html.includes('Negative feedback recorded'), 'should confirm capture with friendly label');
-  assert.ok(html.includes('Undo'), 'should offer undo action');
-  assert.ok(html.includes('signal=up'), 'undo link should point to opposite signal');
+  assert.ok(html.includes('Record 👍 instead'), 'should offer a deliberate opposite-signal action');
+  assert.ok(html.includes('signal=up'), 'opposite-signal link should point to the confirmation page');
 
   const { feedbackLogPath } = getConversationPaths(tmpFeedbackDir);
   const logEntries = readJsonl(feedbackLogPath);
@@ -2216,7 +2242,10 @@ test('quick feedback capture without signal returns 400', async () => {
 });
 
 test('quick feedback follow-up context endpoint enriches the original lesson without creating a duplicate record', async () => {
-  const captureRes = await fetch(apiUrl('/feedback/quick?signal=up'), { headers: authHeader });
+  const captureRes = await fetch(apiUrl('/feedback/quick?signal=up'), {
+    method: 'POST',
+    headers: authHeader,
+  });
   assert.equal(captureRes.status, 200);
   const captureHtml = await captureRes.text();
   const relatedFeedbackId = captureHtml.match(/\/lessons\/([^"']+)/)?.[1];
@@ -2226,7 +2255,7 @@ test('quick feedback follow-up context endpoint enriches the original lesson wit
 
   const res = await fetch(apiUrl('/feedback/quick/context'), {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...authHeader },
     body: JSON.stringify({
       signal: 'up',
       context: 'Thorough PR review',
@@ -2414,14 +2443,16 @@ test('default feedback stats stay on THUMBGATE_FEEDBACK_DIR even when INIT_CWD i
   const savedInitCwd = process.env.INIT_CWD;
   const feedbackLogPath = path.join(tmpFeedbackDir, 'feedback-log.jsonl');
   const baselineEntries = fs.existsSync(feedbackLogPath) ? readJsonl(feedbackLogPath) : [];
-  const baselineTotal = baselineEntries.length;
-  const baselinePositive = baselineEntries.filter((entry) => entry.signal === 'positive').length;
-  const baselineNegative = baselineEntries.filter((entry) => entry.signal === 'negative').length;
   process.env.INIT_CWD = path.join(os.tmpdir(), 'thumbgate-init-cwd-project');
   try {
+    const baselineRes = await fetch(apiUrl('/v1/feedback/stats'), { headers: authHeader });
+    assert.equal(baselineRes.status, 200);
+    const baseline = await baselineRes.json();
+
     fs.appendFileSync(feedbackLogPath, `${JSON.stringify({
       id: 'fb_initcwd_scope_guard',
       signal: 'positive',
+      reviewOrigin: 'human',
       context: 'Explicit feedback dir should remain authoritative',
       timestamp: '2026-04-08T10:00:00.000Z',
     })}\n`);
@@ -2429,9 +2460,9 @@ test('default feedback stats stay on THUMBGATE_FEEDBACK_DIR even when INIT_CWD i
     const updatedRes = await fetch(apiUrl('/v1/feedback/stats'), { headers: authHeader });
     assert.equal(updatedRes.status, 200);
     const updatedBody = await updatedRes.json();
-    assert.equal(updatedBody.total, baselineTotal + 1);
-    assert.equal(updatedBody.totalPositive, baselinePositive + 1);
-    assert.equal(updatedBody.totalNegative, baselineNegative);
+    assert.equal(updatedBody.total, baseline.total + 1);
+    assert.equal(updatedBody.totalPositive, baseline.totalPositive + 1);
+    assert.equal(updatedBody.totalNegative, baseline.totalNegative);
   } finally {
     if (baselineEntries.length > 0) {
       fs.writeFileSync(feedbackLogPath, `${baselineEntries.map((entry) => JSON.stringify(entry)).join('\n')}\n`);
@@ -2453,6 +2484,7 @@ test('project-scoped endpoints honor explicit project selection for stats, lesso
       JSON.stringify({
         id: 'fb_project_positive',
         signal: 'positive',
+        reviewOrigin: 'human',
         context: 'Verified project alpha release flow',
         tags: ['verification', 'alpha'],
         timestamp: '2026-04-08T09:00:00.000Z',
@@ -2460,6 +2492,7 @@ test('project-scoped endpoints honor explicit project selection for stats, lesso
       JSON.stringify({
         id: 'fb_project_negative',
         signal: 'negative',
+        reviewOrigin: 'human',
         context: 'Skipped rollback checklist for project alpha',
         tags: ['release', 'alpha'],
         timestamp: '2026-04-08T09:05:00.000Z',

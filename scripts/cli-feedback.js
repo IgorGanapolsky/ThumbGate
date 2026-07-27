@@ -13,13 +13,9 @@
  *   node scripts/cli-feedback.js down "what went wrong"
  */
 
-const { captureFeedback } = require('./feedback-loop');
+const { captureFeedback, analyzeFeedback } = require('./feedback-loop');
 const { loadOptionalModule } = require('./private-core-boundary');
-// `history-distiller` is a PRIVATE_CORE_MODULE — present in this checkout and
-// in ThumbGate-Core, but intentionally excluded from the public npm tarball.
-// The hard `require('./history-distiller')` form crashed `hook-auto-capture`
-// in published 1.19.0 with MODULE_NOT_FOUND. Public-shell fallback returns
-// null distillation; caller already handles a null distillResult.
+// Keep the optional distiller from breaking the public package.
 const { distillFromHistory } = loadOptionalModule('./history-distiller', () => ({
   distillFromHistory: () => null,
 }));
@@ -60,6 +56,7 @@ function processInlineFeedback({ signal, context, chatHistory, whatWentWrong, wh
       whatWorked: whatWorked || undefined,
       chatHistory,
       sourceEvent,
+      reviewOrigin: 'human',
     });
   } catch (err) {
     feedbackResult = { accepted: false, reason: err.message };
@@ -75,7 +72,16 @@ function processInlineFeedback({ signal, context, chatHistory, whatWentWrong, wh
 
   // 3. Get the most recent lesson and stats
   const recentLesson = getRecentLesson();
-  const stats = getLessonStats();
+  const lessonStats = getLessonStats();
+  const feedbackStats = analyzeFeedback(undefined, { humanOnly: true });
+  const stats = {
+    ...lessonStats,
+    total: feedbackStats.total,
+    positive: feedbackStats.totalPositive,
+    negative: feedbackStats.totalNegative,
+    rawTotal: feedbackStats.rawTotal,
+    excludedTotal: feedbackStats.excludedTotal,
+  };
 
   // 4. If the user wrote an explicit "never …" / "always …" directive, surface
   //    an OFFER (never auto-act): "never" on a thumbs-down → offer force-gate now.

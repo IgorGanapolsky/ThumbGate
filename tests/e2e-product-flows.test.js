@@ -362,9 +362,7 @@ test('E2E: vague thumbs-down distills a lesson and preserves linked follow-up co
 
   const followUpRes = await fetch(apiUrl(port, '/feedback/quick/context'), {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: adminHeaders,
     body: JSON.stringify({
       signal: 'down',
       context: 'Also ignored the design-system rule in the same pass.',

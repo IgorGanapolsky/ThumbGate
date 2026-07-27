@@ -32,6 +32,7 @@ function feedback(id, signal, daysAgo = 0, extra = {}) {
     signal,
     context: `${signal} feedback ${id}`,
     timestamp,
+    reviewOrigin: 'human',
     ...extra,
   };
 }
@@ -168,5 +169,35 @@ test('aggregate entry reader keeps temp feedback dirs isolated unless roots are 
   assert.equal(stats.totalPositive, 1);
   assert.equal(rows.entries.length, 1);
 
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('statusline aggregation excludes automated and unverified feedback rows', () => {
+  const root = tmpDir('thumbgate-human-only-');
+  const store = path.join(root, 'feedback');
+  writeJsonl(path.join(store, 'feedback-log.jsonl'), [
+    feedback('human-up', 'positive'),
+    feedback('automated-down', 'negative', 0, { reviewOrigin: 'automated' }),
+    {
+      id: 'legacy-unverified',
+      signal: 'negative',
+      timestamp: new Date().toISOString(),
+    },
+  ]);
+
+  const stats = computeAggregateFeedbackStats({
+    feedbackDir: store,
+    env: {
+      ...process.env,
+      HOME: path.join(root, 'home'),
+      USERPROFILE: path.join(root, 'home'),
+    },
+  });
+
+  assert.equal(stats.total, 1);
+  assert.equal(stats.totalPositive, 1);
+  assert.equal(stats.totalNegative, 0);
+  assert.equal(stats.rawTotal, 3);
+  assert.equal(stats.excludedTotal, 2);
   fs.rmSync(root, { recursive: true, force: true });
 });

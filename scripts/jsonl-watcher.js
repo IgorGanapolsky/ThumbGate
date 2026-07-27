@@ -71,6 +71,7 @@ function ingestEntry(entry) {
     whatWorked: entry.whatWorked || undefined,
     tags: [...(entry.tags || []), WATCHER_SOURCE_TAG, `bridged-from:${entry.source}`],
     skill: entry.skill || undefined,
+    reviewOrigin: entry.reviewOrigin || 'imported',
   });
 
   return result;

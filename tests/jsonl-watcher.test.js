@@ -85,6 +85,10 @@ test('processNewEntries: processes new bridged entries and returns correct count
   const result = processNewEntries(tmpDir, logPath);
   assert.strictEqual(result.processed, 2);
   assert.strictEqual(typeof result.promoted, 'number');
+  const rows = fs.readFileSync(logPath, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+  const bridged = rows.filter((entry) => entry.tags?.includes('watcher-ingested'));
+  assert.ok(bridged.length >= 1);
+  assert.ok(bridged.every((entry) => entry.reviewOrigin === 'imported'));
 });
 
 test('processNewEntries: skips already-processed entries (idempotency via offset)', (t) => {
