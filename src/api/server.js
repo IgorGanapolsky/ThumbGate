@@ -5684,10 +5684,31 @@ function createApiServer() {
       return;
     }
 
-    // Quick feedback capture via GET — for statusline clickable links
-    if (isGetLikeRequest && pathname === '/feedback/quick') {
+    // GET/HEAD only render a confirmation. Capture requires an authenticated
+    // POST so prefetchers and link checkers cannot create human feedback.
+    if ((isGetLikeRequest || req.method === 'POST') && pathname === '/feedback/quick') {
       const signal = parsed.searchParams.get('signal');
       if (signal === 'up' || signal === 'down') {
+        const emoji = signal === 'up' ? '👍' : '👎';
+        const label = signal === 'up' ? 'Positive' : 'Negative';
+        if (isHeadRequest) {
+          sendHtml(res, 200, '', {}, { headOnly: true });
+          return;
+        }
+        if (req.method === 'GET') {
+          sendHtml(res, 200, `<!DOCTYPE html><html><head><meta charset="utf-8"><title>ThumbGate feedback</title></head>
+<body style="background:#0a0a0a;color:#fff;font-family:system-ui;display:grid;place-items:center;height:100vh;margin:0">
+<form method="post" action="/feedback/quick?signal=${signal}" style="text-align:center;background:#141414;padding:40px;border-radius:16px">
+<div style="font-size:64px">${emoji}</div><h1>Record ${label.toLowerCase()} feedback?</h1>
+<p>This confirmation prevents previews and crawlers from recording feedback.</p>
+<button type="submit" style="padding:10px 20px;font-weight:700">Record ${emoji} feedback</button>
+</form></body></html>`);
+          return;
+        }
+        if (!isAuthorized(req, expectedApiKey)) {
+          sendJson(res, 401, { error: 'Authentication required to record human feedback' });
+          return;
+        }
         const chatHistory = readRecentConversationWindow({
           feedbackDir: requestSafeDataDir,
           limit: 10,
@@ -5699,34 +5720,15 @@ function createApiServer() {
           tags: ['statusline', 'quick-capture'],
           reviewOrigin: 'human',
         });
-        const emoji = signal === 'up' ? '👍' : '👎';
-        const color = signal === 'up' ? '#22c55e' : '#ef4444';
-        const label = signal === 'up' ? 'Positive' : 'Negative';
         const opposite = signal === 'up' ? 'down' : 'up';
         const oppEmoji = signal === 'up' ? '👎' : '👍';
         const feedbackId = result.feedbackEvent?.id || 'saved';
         const promoted = result.accepted ? 'Promoted to memory' : 'Stored';
         sendHtml(res, 200, `<!DOCTYPE html><html><head><meta charset="utf-8"><title>ThumbGate — ${label} feedback</title>
 <style>
-*{box-sizing:border-box}
 body{background:#0a0a0a;color:#fff;font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
 .card{text-align:center;background:#141414;border:1px solid #222;border-radius:16px;padding:48px 40px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.5)}
-.emoji{font-size:80px;margin-bottom:12px;animation:pop .4s ease-out}
-@keyframes pop{0%{transform:scale(0)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
-.msg{font-size:22px;color:${color};font-weight:700;margin-bottom:4px}
-.sub{font-size:13px;color:#666;margin-top:6px;font-family:ui-monospace,monospace}
-.context-form{margin-top:20px;text-align:left}
-.context-form label{font-size:12px;color:#888;display:block;margin-bottom:6px}
-.context-form textarea{width:100%;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#ccc;padding:10px;font-size:13px;resize:vertical;min-height:60px;font-family:system-ui}
-.context-form textarea:focus{outline:none;border-color:${color}}
-.context-form button{margin-top:8px;background:${color};color:#000;border:none;border-radius:8px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer}
-.context-form button:hover{opacity:.85}
-.actions{margin-top:24px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
-.actions a{color:#22d3ee;text-decoration:none;font-size:13px;padding:8px 16px;border:1px solid #333;border-radius:8px;transition:all .15s}
-.actions a:hover{background:#1a2a2e;border-color:#22d3ee}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#22c55e;color:#000;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:600;display:none;animation:slideUp .3s ease-out}
-@keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:4px;background:#1a1a1a;border:1px solid #333;color:#888;margin-top:8px}
+.emoji{font-size:64px}.sub,label{color:#888}textarea{width:100%;min-height:60px}.actions{margin-top:20px}.actions a{color:#22d3ee;margin:8px}
 </style></head><body>
 <div class="card">
   <div class="emoji">${emoji}</div>
@@ -5739,7 +5741,7 @@ body{background:#0a0a0a;color:#fff;font-family:system-ui,-apple-system,sans-seri
   </div>
   <div class="actions">
     <a href="/lessons/${feedbackId}" title="View the full lesson and edit it">📋 View Lesson</a>
-    <a href="/feedback/quick?signal=${opposite}" title="Meant to click ${oppEmoji}?">Undo → send ${oppEmoji} instead</a>
+    <a href="/feedback/quick?signal=${opposite}" title="Meant to click ${oppEmoji}?">Record ${oppEmoji} instead</a>
     <a href="/dashboard">Dashboard →</a>
   </div>
 </div>
@@ -5763,6 +5765,10 @@ async function addContext(){
     }
 
     if (req.method === 'POST' && pathname === '/feedback/quick/context') {
+      if (!isAuthorized(req, expectedApiKey)) {
+        sendJson(res, 401, { error: 'Authentication required to update human feedback' });
+        return;
+      }
       const body = await parseJsonBody(req);
       const signal = body.signal;
       const context = typeof body.context === 'string' ? body.context.trim() : '';

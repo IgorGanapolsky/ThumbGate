@@ -1185,7 +1185,7 @@ function capture() {
   }
 
   if (args.summary) {
-    console.log(feedbackSummary(Number(args.recent || 20)));
+    console.log(feedbackSummary(Number(args.recent || 20), { humanOnly: true }));
     return;
   }
 
@@ -1773,7 +1773,7 @@ function summary() {
     }, null, 2));
     return;
   }
-  console.log(feedbackSummary(Number(args.recent || 20)));
+  console.log(feedbackSummary(Number(args.recent || 20), { humanOnly: true }));
 }
 
 function lessons() {

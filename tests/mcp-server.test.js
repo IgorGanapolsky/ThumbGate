@@ -547,6 +547,8 @@ test('capture_feedback tool can be called', async () => {
 
   assert.equal(Array.isArray(result.content), true);
   assert.match(result.content[0].text, /accepted|Feedback/i);
+  const payload = JSON.parse(result.content[0].text);
+  assert.equal(payload.feedbackEvent.reviewOrigin, 'automated');
 });
 
 test('capture_feedback applies rubric anti-hacking gate', async () => {

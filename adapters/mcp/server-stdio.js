@@ -890,11 +890,11 @@ async function callToolInner(name, args) {
       const pairedFeedback = pairFeedbackWithReceipt(args);
       return toCaptureFeedbackTextResult(captureFeedback({
         ...pairedFeedback,
-        reviewOrigin: 'human',
+        reviewOrigin: 'automated',
       }));
     }
     case 'feedback_summary':
-      return toTextResult(feedbackSummary(Number(args.recent || 20)));
+      return toTextResult(feedbackSummary(Number(args.recent || 20), { humanOnly: true }));
     case 'search_lessons': {
       const module = loadPrivateMcpModule('lessonSearch');
       if (!module) return unavailablePrivateMcpFeature('search_lessons');

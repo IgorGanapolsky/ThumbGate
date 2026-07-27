@@ -26,7 +26,7 @@ function ingestFile(filePath) {
     context: content.slice(0, 500),
     whatWorked: signal === 'up' ? content : undefined,
     whatWentWrong: signal === 'down' ? content : undefined,
-    reviewOrigin: 'human',
+    reviewOrigin: 'imported',
     tags: ['manual-ingest', 'markdown-migration'],
   });
 

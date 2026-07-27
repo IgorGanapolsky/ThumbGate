@@ -1297,6 +1297,28 @@ describe('bin/cli.js', () => {
     fs.rmSync(freeHome, { recursive: true, force: true });
   });
 
+  test('summary text excludes automated and imported feedback like summary JSON', () => {
+    const feedbackDir = makeTmpDir();
+    fs.writeFileSync(path.join(feedbackDir, 'feedback-log.jsonl'), [
+      JSON.stringify({ signal: 'positive', reviewOrigin: 'human', timestamp: new Date().toISOString() }),
+      JSON.stringify({ signal: 'negative', reviewOrigin: 'automated', timestamp: new Date().toISOString() }),
+      JSON.stringify({ signal: 'negative', reviewOrigin: 'imported', timestamp: new Date().toISOString() }),
+    ].join('\n') + '\n');
+
+    const result = runCliSync(['summary'], {
+      env: {
+        ...process.env,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_NO_NUDGE: '1',
+      },
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /Feedback Summary \(last 1\)/);
+    assert.match(result.stdout, /Positive: 1/);
+    assert.match(result.stdout, /Negative: 0/);
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  });
+
   test('help command shows Pro nudge on stderr', () => {
     // proNudge gates on isProTier(); CI sets THUMBGATE_API_KEY at the workflow
     // level, so we must build an explicitly-unlicensed env to exercise the

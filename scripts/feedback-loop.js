@@ -2372,7 +2372,10 @@ function writePreventionRules(filePath, minOccurrences = 2) {
 
 function feedbackSummary(recentN = 20, options = {}) {
   const { FEEDBACK_LOG_PATH } = getFeedbackPaths(options);
-  const entries = readJSONL(FEEDBACK_LOG_PATH);
+  let entries = readJSONL(FEEDBACK_LOG_PATH);
+  if (options.humanOnly) {
+    entries = entries.filter((entry) => normalizeReviewOrigin(entry.reviewOrigin) === 'human');
+  }
   if (entries.length === 0) {
     return '## Feedback Summary\nNo feedback recorded yet.';
   }
@@ -2382,7 +2385,7 @@ function feedbackSummary(recentN = 20, options = {}) {
   const negative = recent.filter((e) => e.signal === 'negative').length;
   const pct = Math.round((positive / recent.length) * 100);
 
-  const analysis = analyzeFeedback(FEEDBACK_LOG_PATH);
+  const analysis = analyzeFeedback(FEEDBACK_LOG_PATH, { humanOnly: options.humanOnly });
 
   const lines = [
     `## Feedback Summary (last ${recent.length})`,
@@ -2455,7 +2458,7 @@ function runCli() {
   }
 
   if (args.summary) {
-    console.log(feedbackSummary(Number(args.recent || 20)));
+    console.log(feedbackSummary(Number(args.recent || 20), { humanOnly: true }));
     return;
   }
 

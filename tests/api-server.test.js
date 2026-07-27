@@ -2170,20 +2170,42 @@ test('feedback capture promotes specific positive feedback even when tags are om
   assert.ok(body.memoryRecord.tags.includes('thumbgate'));
 });
 
-test('quick feedback capture via GET /feedback/quick?signal=up returns HTML confirmation', async () => {
+test('quick feedback GET renders a deliberate confirmation without recording feedback', async () => {
+  const { feedbackLogPath } = getConversationPaths(tmpFeedbackDir);
+  const before = readJsonl(feedbackLogPath).length;
   const res = await fetch(apiUrl('/feedback/quick?signal=up'), { headers: authHeader });
   assert.equal(res.status, 200);
   const html = await res.text();
   assert.ok(html.includes('👍'), 'should show thumbs up emoji');
-  assert.ok(html.includes('Positive feedback recorded'), 'should confirm capture with friendly label');
-  assert.ok(html.includes('Undo'), 'should offer undo action');
-  assert.ok(html.includes('signal=down'), 'undo link should point to opposite signal');
-  assert.ok(html.includes('Add follow-up context'), 'should offer follow-up context input');
-  assert.ok(html.includes('/feedback/quick/context'), 'should post follow-up notes to the public quick-feedback endpoint');
-  assert.match(html, /feedbackSessionId:'fbs_/i, 'quick-feedback page should carry the open feedback session id forward');
+  assert.ok(html.includes('Record positive feedback?'));
+  assert.match(html, /<form method="post" action="\/feedback\/quick\?signal=up"/);
+  assert.equal(readJsonl(feedbackLogPath).length, before);
 });
 
-test('quick feedback capture via GET /feedback/quick?signal=down returns HTML confirmation', async () => {
+test('quick feedback HEAD and unauthenticated POST never record human feedback', async () => {
+  const { feedbackLogPath } = getConversationPaths(tmpFeedbackDir);
+  const before = readJsonl(feedbackLogPath).length;
+  const headRes = await fetch(apiUrl('/feedback/quick?signal=up'), { method: 'HEAD' });
+  assert.equal(headRes.status, 200);
+  const postRes = await fetch(apiUrl('/feedback/quick?signal=up'), { method: 'POST' });
+  assert.equal(postRes.status, 401);
+  assert.equal(readJsonl(feedbackLogPath).length, before);
+});
+
+test('authenticated quick feedback POST records explicit human provenance', async () => {
+  const res = await fetch(apiUrl('/feedback/quick?signal=up'), {
+    method: 'POST',
+    headers: authHeader,
+  });
+  assert.equal(res.status, 200);
+  const html = await res.text();
+  assert.ok(html.includes('Positive feedback recorded'));
+  const { feedbackLogPath } = getConversationPaths(tmpFeedbackDir);
+  const latest = readJsonl(feedbackLogPath).at(-1);
+  assert.equal(latest.reviewOrigin, 'human');
+});
+
+test('authenticated quick feedback POST distills negative conversation context', async () => {
   recordConversationEntry({
     author: 'user',
     text: 'Never skip tests before claiming done.',
@@ -2195,13 +2217,16 @@ test('quick feedback capture via GET /feedback/quick?signal=down returns HTML co
     source: 'statusline-test',
   }, { feedbackDir: tmpFeedbackDir });
 
-  const res = await fetch(apiUrl('/feedback/quick?signal=down'), { headers: authHeader });
+  const res = await fetch(apiUrl('/feedback/quick?signal=down'), {
+    method: 'POST',
+    headers: authHeader,
+  });
   assert.equal(res.status, 200);
   const html = await res.text();
   assert.ok(html.includes('👎'), 'should show thumbs down emoji');
   assert.ok(html.includes('Negative feedback recorded'), 'should confirm capture with friendly label');
-  assert.ok(html.includes('Undo'), 'should offer undo action');
-  assert.ok(html.includes('signal=up'), 'undo link should point to opposite signal');
+  assert.ok(html.includes('Record 👍 instead'), 'should offer a deliberate opposite-signal action');
+  assert.ok(html.includes('signal=up'), 'opposite-signal link should point to the confirmation page');
 
   const { feedbackLogPath } = getConversationPaths(tmpFeedbackDir);
   const logEntries = readJsonl(feedbackLogPath);
@@ -2217,7 +2242,10 @@ test('quick feedback capture without signal returns 400', async () => {
 });
 
 test('quick feedback follow-up context endpoint enriches the original lesson without creating a duplicate record', async () => {
-  const captureRes = await fetch(apiUrl('/feedback/quick?signal=up'), { headers: authHeader });
+  const captureRes = await fetch(apiUrl('/feedback/quick?signal=up'), {
+    method: 'POST',
+    headers: authHeader,
+  });
   assert.equal(captureRes.status, 200);
   const captureHtml = await captureRes.text();
   const relatedFeedbackId = captureHtml.match(/\/lessons\/([^"']+)/)?.[1];
@@ -2227,7 +2255,7 @@ test('quick feedback follow-up context endpoint enriches the original lesson wit
 
   const res = await fetch(apiUrl('/feedback/quick/context'), {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...authHeader },
     body: JSON.stringify({
       signal: 'up',
       context: 'Thorough PR review',
