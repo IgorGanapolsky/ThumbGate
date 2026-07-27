@@ -212,12 +212,14 @@ jobs:
         if: steps.ci-scope.outputs.mode != 'web'
         run: npm run prove:tessl
 
-      - name: Write prompt evaluation report
+      - name: Run evaluation regression gates
         if: always() && steps.ci-scope.outputs.mode != 'web'
         run: |
           mkdir -p proof
-          node scripts/prompt-eval.js --min-score=0 --synthetic --synthetic-variants=1 --suite-output proof/prompt-eval-suite.generated.json --output proof/prompt-eval-report.json --json > /dev/null
+          node scripts/prompt-eval.js --min-score=100 --synthetic --synthetic-variants=1 --baseline=config/evals/prompt-eval-baseline.json --require-no-regressions --suite-output proof/prompt-eval-suite.generated.json --output proof/prompt-eval-report.json --json > /dev/null
+          node scripts/agent-outcome-eval.js --baseline=config/evals/agent-outcomes-baseline.json --output=proof/agent-outcome-eval-report.json > /dev/null
           node -e "const fs=require('node:fs'); const report=JSON.parse(fs.readFileSync('proof/prompt-eval-report.json','utf8')); const lines=['## Prompt Evaluation', '- Score: ' + report.score + '%', '- Passed: ' + report.passed + '/' + report.total, '- Failed: ' + report.failed, '- Errors: ' + report.errors, '- Skipped: ' + report.skipped, '- Synthetic cases: ' + (report.syntheticCount || 0)]; if (report.comparison) lines.push('- Regressions: ' + report.comparison.regressions.length); fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');"
+          node -e "const fs=require('node:fs'); const report=JSON.parse(fs.readFileSync('proof/agent-outcome-eval-report.json','utf8')); const lines=['## Verified Agent Outcomes', '- Score: ' + report.score + '%', '- Passed: ' + report.passed + '/' + report.total, '- Regressions: ' + report.regressions.length, '- Evidence: ' + report.evidenceStatus]; fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');"
 
       - name: Sync GitHub About metadata on main
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -259,3 +261,4 @@ jobs:
             proof/tessl-report.md
             proof/prompt-eval-report.json
             proof/prompt-eval-suite.generated.json
+            proof/agent-outcome-eval-report.json
