@@ -404,3 +404,63 @@ test('retrieveRelevantLessons does not surface both sides of a same-rule contrad
   assert.ok(ids.length >= 1, 'still returns the surviving lesson');
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
+
+test('selectRetrievalMemories rejects transport transcripts and oversized records', () => {
+  const {
+    MAX_RETRIEVAL_MEMORY_CHARS,
+    selectRetrievalMemories,
+  } = require('../scripts/lesson-retrieval');
+  const selected = selectRetrievalMemories([
+    { id: 'valid', title: 'Deployment proof', content: 'Verify the health endpoint after deploy.' },
+    {
+      id: 'transport',
+      title: 'Raw hook event',
+      content: JSON.stringify({
+        session_id: 'session-1',
+        transcript_path: '/tmp/transcript.jsonl',
+        hook_event_name: 'PreToolUse',
+      }),
+    },
+    { id: 'oversized', title: 'Transcript dump', content: 'x'.repeat(MAX_RETRIEVAL_MEMORY_CHARS + 1) },
+  ]);
+  assert.deepEqual(selected.map((memory) => memory.id), ['valid']);
+});
+
+test('retrieveRelevantLessons enforces complete four-field memory scope', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lesson-scoped-retrieval-'));
+  const now = new Date().toISOString();
+  const common = {
+    projectId: 'thumbgate',
+    processId: 'agent-a',
+    sessionId: 'session-1',
+    title: 'bash deploy verification',
+    tags: ['negative'],
+    timestamp: now,
+  };
+  writeJsonl(path.join(tmpDir, 'memory-log.jsonl'), [
+    { ...common, id: 'alice', entityId: 'alice', content: 'Always verify deployment health.' },
+    { ...common, id: 'bob', entityId: 'bob', content: 'Never skip deployment health verification.' },
+    { id: 'shared', visibility: 'shared', title: 'deployment health', content: 'Shared deployment health rule.', timestamp: now },
+  ]);
+
+  const { retrieveRelevantLessons } = require('../scripts/lesson-retrieval');
+  const scope = {
+    entityId: 'alice',
+    projectId: 'thumbgate',
+    processId: 'agent-a',
+    sessionId: 'session-1',
+  };
+  const ids = retrieveRelevantLessons('Bash', 'verify deployment health', {
+    feedbackDir: tmpDir,
+    maxResults: 5,
+    scope,
+  }).map((lesson) => lesson.id);
+  assert.ok(ids.includes('alice'));
+  assert.ok(ids.includes('shared'));
+  assert.ok(!ids.includes('bob'));
+  assert.throws(
+    () => retrieveRelevantLessons('Bash', 'deploy', { feedbackDir: tmpDir, requireScope: true }),
+    /requires scope/,
+  );
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});

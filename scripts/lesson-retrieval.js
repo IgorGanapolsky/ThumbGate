@@ -14,6 +14,36 @@
 
 const RECENCY_DECAY_DAYS = 30;
 const RERANK_CANDIDATE_POOL = 50; // bi-encoder retrieves this many; reranker picks topK
+const MAX_RETRIEVAL_MEMORY_CHARS = 20000;
+
+function isRetrievableMemory(memory, options = {}) {
+  if (!memory || typeof memory !== 'object') return false;
+  const { looksLikeTransportBlob } = require('./feedback-sanitizer');
+  const title = String(memory.title || '');
+  const content = String(memory.content || '');
+  const combined = `${title}\n${content}`.trim();
+  const maxChars = Number.isFinite(options.maxMemoryChars)
+    ? Math.max(1, options.maxMemoryChars)
+    : MAX_RETRIEVAL_MEMORY_CHARS;
+  if (!combined || combined.length > maxChars) return false;
+  return !looksLikeTransportBlob(title)
+    && !looksLikeTransportBlob(content)
+    && !looksLikeTransportBlob(combined);
+}
+
+function selectRetrievalMemories(memories = [], options = {}) {
+  let selected = memories.filter((memory) => isRetrievableMemory(memory, options));
+  if (options.requireScope && !options.scope) {
+    throw new Error('Scoped lesson retrieval requires scope');
+  }
+  if (options.scope) {
+    const { selectRecordsForScope } = require('./memory-scope-readiness');
+    selected = selectRecordsForScope(selected, options.scope, {
+      includeShared: options.includeShared !== false,
+    }).allowed;
+  }
+  return selected;
+}
 
 function retrieveRelevantLessons(toolName, actionContext, options = {}) {
   const { maxResults = 5, feedbackDir } = options;
@@ -24,7 +54,10 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
     ? { MEMORY_LOG_PATH: pathMod.join(feedbackDir, 'memory-log.jsonl') }
     : getFeedbackPaths();
 
-  const memories = readJSONL(paths.MEMORY_LOG_PATH, { maxLines: 200 });
+  const memories = selectRetrievalMemories(
+    readJSONL(paths.MEMORY_LOG_PATH, { maxLines: 200 }),
+    options,
+  );
   if (memories.length === 0) return [];
 
   const actionSig = buildActionSignature(toolName, actionContext);
@@ -92,13 +125,16 @@ function reciprocalRankFusion(rankedLists = [], options = {}) {
     .sort((a, b) => b.score - a.score);
 }
 
-function loadMemories(feedbackDir) {
+function loadMemories(feedbackDir, options = {}) {
   const { getFeedbackPaths, readJSONL } = require('./feedback-loop');
   const pathMod = require('path');
   const paths = feedbackDir
     ? { MEMORY_LOG_PATH: pathMod.join(feedbackDir, 'memory-log.jsonl') }
     : getFeedbackPaths();
-  return readJSONL(paths.MEMORY_LOG_PATH, { maxLines: 200 });
+  return selectRetrievalMemories(
+    readJSONL(paths.MEMORY_LOG_PATH, { maxLines: 200 }),
+    options,
+  );
 }
 
 function shapeLesson(m) {
@@ -140,7 +176,7 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
     return retrieveRelevantLessons(toolName, actionContext, options);
   }
 
-  const memories = loadMemories(feedbackDir);
+  const memories = loadMemories(feedbackDir, options);
   if (memories.length === 0) return [];
 
   const actionSig = buildActionSignature(toolName, actionContext);
@@ -482,4 +518,7 @@ module.exports = {
   filterTopP,
   resolveTopP,
   dedupeSupersededLessons,
+  isRetrievableMemory,
+  selectRetrievalMemories,
+  MAX_RETRIEVAL_MEMORY_CHARS,
 };

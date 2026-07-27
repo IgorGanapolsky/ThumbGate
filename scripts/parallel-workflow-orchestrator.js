@@ -1,18 +1,41 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
+const { spawn } = require('node:child_process');
 const { getFeedbackPaths } = require('./feedback-loop');
 const { ensureDir } = require('./fs-utils');
 const { loadOptionalModule } = require('./private-core-boundary');
 
+const RUNNER_SCRIPT_PATH = path.join(__dirname, 'async-job-runner.js');
+
+function launchPublicManagedJob(jobSpec, options = {}) {
+  const publicRunner = require('./async-job-runner');
+  const jobId = options.jobId || jobSpec.id || `job_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  const { jobDir } = publicRunner.getJobRuntimePaths(jobId);
+  ensureDir(jobDir);
+  const jobFilePath = path.join(jobDir, 'job.json');
+  const finalSpec = { ...jobSpec, id: jobId };
+  fs.writeFileSync(jobFilePath, `${JSON.stringify(finalSpec, null, 2)}\n`, 'utf8');
+  publicRunner.queueJob({ ...finalSpec, jobFilePath });
+  const child = spawn(process.execPath, [RUNNER_SCRIPT_PATH, `--run-file=${jobFilePath}`], {
+    cwd: options.cwd || process.cwd(),
+    env: process.env,
+    detached: true,
+    stdio: 'ignore',
+  });
+  child.unref();
+  return {
+    jobId,
+    jobFilePath,
+    launchMode: 'public-background',
+    pid: child.pid || null,
+  };
+}
+
 const launcher = loadOptionalModule(path.join(__dirname, 'hosted-job-launcher'), () => ({
-  launchManagedJob: () => {
-    throw new Error('Managed jobs require ThumbGate-Core.');
-  },
-  resumeHostedJob: () => {
-    throw new Error('Resuming hosted jobs requires ThumbGate-Core.');
-  },
+  launchManagedJob: launchPublicManagedJob,
 }));
 
 const runner = loadOptionalModule(path.join(__dirname, 'async-job-runner'), () => ({
@@ -20,8 +43,8 @@ const runner = loadOptionalModule(path.join(__dirname, 'async-job-runner'), () =
   listJobStates: () => [],
 }));
 
-const { launchManagedJob, resumeHostedJob } = launcher;
-const { readJobState, listJobStates } = runner;
+const { launchManagedJob } = launcher;
+const { readJobState } = runner;
 
 const DEFAULT_CONCURRENCY = 3;
 const POLL_INTERVAL_MS = 200;
@@ -45,7 +68,7 @@ function planWorkflow(objective) {
       stages: [
         {
           name: 'secret_scan',
-          command: 'node scripts/secret-scanner.js --json || true',
+          command: 'node scripts/secret-scanner.js --json',
         }
       ]
     });
@@ -55,7 +78,7 @@ function planWorkflow(objective) {
       stages: [
         {
           name: 'npm_audit',
-          command: 'npm audit --json || true',
+          command: 'npm audit --json',
         }
       ]
     });
@@ -65,7 +88,7 @@ function planWorkflow(objective) {
       stages: [
         {
           name: 'credential_gate_check',
-          command: 'node scripts/single-use-credential-gate.js plan || true',
+          command: 'node scripts/single-use-credential-gate.js plan',
         }
       ]
     });
@@ -76,7 +99,7 @@ function planWorkflow(objective) {
       stages: [
         {
           name: 'run_bench',
-          command: 'npx thumbgate bench --json --min-score=90 || true',
+          command: 'npx thumbgate bench --json --min-score=90',
         }
       ]
     });
@@ -86,7 +109,7 @@ function planWorkflow(objective) {
       stages: [
         {
           name: 'budget_status',
-          command: 'node scripts/budget-guard.js --status || true',
+          command: 'node scripts/budget-guard.js --status',
         }
       ]
     });
@@ -98,7 +121,7 @@ function planWorkflow(objective) {
       stages: [
         {
           name: 'search_fs',
-          command: 'node scripts/filesystem-search.js --query="pretool" --limit=5 || true',
+          command: 'node scripts/filesystem-search.js --query="pretool" --limit=5',
         }
       ]
     });
@@ -108,7 +131,7 @@ function planWorkflow(objective) {
       stages: [
         {
           name: 'ops_integrity',
-          command: 'node scripts/operational-integrity.js --ci || true',
+          command: 'node scripts/operational-integrity.js --ci',
         }
       ]
     });
@@ -119,7 +142,7 @@ function planWorkflow(objective) {
     plannedAt: nowIso(),
     subtasks: subtasks.map((task, idx) => ({
       ...task,
-      id: `subtask_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 6)}`,
+      id: `subtask_${Date.now()}_${idx}_${crypto.randomBytes(3).toString('hex')}`,
       autoImprove: false,
       verificationMode: 'none',
       recordFeedback: false,
@@ -132,12 +155,14 @@ function planWorkflow(objective) {
  * Polls active jobs until all complete, then consolidates the results.
  */
 async function executeWorkflow(objective, options = {}) {
-  const plan = planWorkflow(objective);
+  const plan = options.plan || planWorkflow(objective);
   const concurrency = Number(options.concurrency) || DEFAULT_CONCURRENCY;
   const timeoutMs = Number(options.timeoutMs) || 60000; // 60s timeout safety
+  const launchJob = options.launchManagedJob || launchManagedJob;
+  const getJobState = options.readJobState || readJobState;
 
   const { FEEDBACK_DIR } = getFeedbackPaths();
-  const workflowId = `wf_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const workflowId = `wf_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
   const workflowDir = path.join(FEEDBACK_DIR, 'workflows', workflowId);
   ensureDir(workflowDir);
 
@@ -145,17 +170,33 @@ async function executeWorkflow(objective, options = {}) {
   const queue = [...plan.subtasks];
   const results = [];
   const start = Date.now();
+  const statePath = path.join(workflowDir, 'state.json');
+
+  const persistState = (status) => {
+    fs.writeFileSync(statePath, `${JSON.stringify({
+      workflowId,
+      objective,
+      status,
+      updatedAt: nowIso(),
+      queue: queue.map((task) => ({ id: task.id, name: task.name })),
+      activeJobs: [...activeJobs.entries()].map(([taskId, info]) => ({ taskId, ...info })),
+      results,
+    }, null, 2)}\n`, 'utf8');
+  };
 
   const runNext = () => {
     while (activeJobs.size < concurrency && queue.length > 0) {
       const task = queue.shift();
-      const launched = launchManagedJob(task, { cwd: options.cwd });
+      const launched = launchJob(task, { cwd: options.cwd });
       activeJobs.set(task.id, {
         jobId: launched.jobId,
         taskName: task.name,
         launchedAt: Date.now(),
+        pid: launched.pid || null,
+        launchMode: launched.launchMode || 'managed',
       });
     }
+    persistState('running');
   };
 
   runNext();
@@ -166,7 +207,7 @@ async function executeWorkflow(objective, options = {}) {
       let allDone = true;
 
       for (const [taskId, info] of activeJobs.entries()) {
-        const jobState = readJobState(info.jobId);
+        const jobState = getJobState(info.jobId);
         if (!jobState) {
           allDone = false;
           continue;
@@ -193,11 +234,21 @@ async function executeWorkflow(objective, options = {}) {
       const elapsed = Date.now() - start;
       if (allDone && queue.length === 0) {
         clearInterval(interval);
+        persistState(results.every((result) => result.status === 'completed')
+          ? 'completed'
+          : 'completed_with_failures');
         resolve();
       } else if (elapsed >= timeoutMs) {
         clearInterval(interval);
         // Timeout remaining active tasks
         for (const [taskId, info] of activeJobs.entries()) {
+          if (info.pid) {
+            try {
+              process.kill(process.platform === 'win32' ? info.pid : -info.pid, 'SIGTERM');
+            } catch {
+              // The worker may have exited between the last poll and timeout.
+            }
+          }
           results.push({
             taskId,
             taskName: info.taskName,
@@ -206,6 +257,17 @@ async function executeWorkflow(objective, options = {}) {
             lastError: { message: `Subtask timed out after ${timeoutMs}ms`, code: 'TIMEOUT' },
           });
         }
+        for (const task of queue.splice(0)) {
+          results.push({
+            taskId: task.id,
+            taskName: task.name,
+            jobId: null,
+            status: 'timeout',
+            lastError: { message: `Subtask was not launched before ${timeoutMs}ms`, code: 'TIMEOUT' },
+          });
+        }
+        activeJobs.clear();
+        persistState('timed_out');
         resolve();
       }
     }, POLL_INTERVAL_MS);
@@ -234,6 +296,7 @@ async function executeWorkflow(objective, options = {}) {
     durationMs,
     reportPath,
     results,
+    statePath,
   };
 }
 
@@ -290,4 +353,5 @@ module.exports = {
   planWorkflow,
   executeWorkflow,
   compileWorkflowReport,
+  launchPublicManagedJob,
 };

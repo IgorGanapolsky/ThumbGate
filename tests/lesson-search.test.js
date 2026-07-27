@@ -7,6 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const savedFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+const savedLessonDbPath = process.env.LESSON_DB_PATH;
 
 function writeJsonl(filePath, rows) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -16,6 +17,8 @@ function writeJsonl(filePath, rows) {
 test.after(() => {
   if (savedFeedbackDir === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
   else process.env.THUMBGATE_FEEDBACK_DIR = savedFeedbackDir;
+  if (savedLessonDbPath === undefined) delete process.env.LESSON_DB_PATH;
+  else process.env.LESSON_DB_PATH = savedLessonDbPath;
 });
 
 test('parseLessonContent extracts corrective-action fields', () => {
@@ -145,6 +148,106 @@ test('searchLessons can list recent lessons and filter by category/tags', () => 
     assert.match(formatLessonSearchResults(filtered), /Harness recommendations/);
     assert.ok(filtered.results[0].systemResponse.harnessRecommendations.some((recommendation) => recommendation.type === 'prevention_rule'));
     assert.ok(filtered.results[0].systemResponse.harnessRecommendations.some((recommendation) => recommendation.type === 'pre_action_gate'));
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('searchLessons filters polluted memories and isolates explicit scope', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lesson-search-scope-'));
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  try {
+    const common = {
+      projectId: 'thumbgate',
+      processId: 'agent-a',
+      sessionId: 'session-1',
+      category: 'error',
+      tags: ['negative', 'deployment'],
+      timestamp: '2026-07-27T12:00:00.000Z',
+    };
+    writeJsonl(path.join(tmpDir, 'memory-log.jsonl'), [
+      { ...common, id: 'alice', entityId: 'alice', title: 'Deployment check', content: 'Verify deployment health endpoint.' },
+      { ...common, id: 'bob', entityId: 'bob', title: 'Deployment check', content: 'Bob deployment health note.' },
+      {
+        ...common,
+        id: 'transport',
+        entityId: 'alice',
+        title: 'Raw transcript',
+        content: JSON.stringify({
+          session_id: 'session-1',
+          transcript_path: '/tmp/transcript.jsonl',
+          hook_event_name: 'PostToolUse',
+        }),
+      },
+    ]);
+
+    delete require.cache[require.resolve('../scripts/lesson-search')];
+    const { searchLessons } = require('../scripts/lesson-search');
+    const result = searchLessons('deployment health', {
+      scope: {
+        entityId: 'alice',
+        projectId: 'thumbgate',
+        processId: 'agent-a',
+        sessionId: 'session-1',
+      },
+    });
+    assert.deepEqual(result.results.map((entry) => entry.id), ['alice']);
+    assert.equal(result.totalLessons, 1);
+    assert.equal(result.excludedLessons, 2);
+    assert.equal(result.filters.requireScope, false);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('searchLessons applies transport and size filters to SQLite FTS5 results', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lesson-search-fts-filter-'));
+  const dbPath = path.join(tmpDir, 'lessons.sqlite');
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  process.env.LESSON_DB_PATH = dbPath;
+  const { initDB, upsertLesson } = require('../scripts/lesson-db');
+  const db = initDB(dbPath);
+  try {
+    const base = {
+      signal: 'negative',
+      tags: ['retrieval-filter'],
+      richContext: { domain: 'testing' },
+      timestamp: '2026-07-27T12:00:00.000Z',
+    };
+    upsertLesson(db, {
+      ...base,
+      id: 'fb_safe_fts',
+      context: 'Safe deployment lesson',
+      whatToChange: 'Verify the health endpoint before claiming deployment.',
+    }, { id: 'safe-fts', importance: 'high' });
+    upsertLesson(db, {
+      ...base,
+      id: 'fb_transport_fts',
+      context: JSON.stringify({
+        session_id: 'session-1',
+        transcript_path: '/tmp/transcript.jsonl',
+        hook_event_name: 'PostToolUse',
+      }),
+      whatToChange: 'Do not return raw transport envelopes.',
+    }, { id: 'transport-fts', importance: 'high' });
+    upsertLesson(db, {
+      ...base,
+      id: 'fb_oversized_fts',
+      context: 'Oversized transcript lesson',
+      whatWentWrong: 'x'.repeat(20001),
+      whatToChange: 'Keep lesson records bounded.',
+    }, { id: 'oversized-fts', importance: 'high' });
+  } finally {
+    db.close();
+  }
+
+  try {
+    delete require.cache[require.resolve('../scripts/lesson-search')];
+    const { searchLessons } = require('../scripts/lesson-search');
+    const result = searchLessons('', { limit: 10, useFts5: true });
+    assert.equal(result.backend, 'sqlite-fts5');
+    assert.deepEqual(result.results.map((entry) => entry.id), ['safe-fts']);
+    assert.equal(result.excludedLessons, 2);
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }

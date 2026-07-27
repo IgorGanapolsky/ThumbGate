@@ -207,7 +207,6 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     'scripts/pulse.js',
     'scripts/session-episode-store.js',
     'scripts/session-health-sensor.js',
-    'scripts/tool-kpi-tracker.js',
     'scripts/webhook-delivery.js',
     'scripts/managed-lesson-agent.js',
     'scripts/operator-artifacts.js',
@@ -393,9 +392,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // escalation, production monitoring, and their public eval/schema fixtures.
   // Bumped 368 -> 369 (2026-07-26) to ship the existing schedule manager used
   // by the public outcome-monitor installer and agent:schedule command.
+  // Bumped 369 -> 370 (2026-07-27) to ship tool-kpi-tracker, now wired into
+  // every MCP attempt in the public package.
   assert.ok(
-    manifest.fileCount <= 369,
-    `npm package should stay <= 369 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 370,
+    `npm package should stay <= 370 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -560,9 +561,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // artifact: 5,343,656 bytes; no credentials or buyer state are bundled.
   // Bumped 5.35 MB -> 5.40 MB (2026-07-22) for observability env/setup/jsonl
   // and TG monogram SVG rewrite for Stripe brand alignment.
+  // Bumped 5.40 MB -> 5.43 MB (2026-07-27) for scoped RAG retrieval, durable
+  // public parallel workflows, MCP output contracts, OAuth scope enforcement,
+  // and packaged tool KPI telemetry. Measured artifact: 5,417,827 bytes.
   assert.ok(
-    manifest.unpackedSize <= 5_400_000,
-    `npm package should stay <= 5.40 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 5_430_000,
+    `npm package should stay <= 5.43 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

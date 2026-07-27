@@ -29,6 +29,7 @@ const crypto = require('crypto');
 const AUTH_CODE_TTL_MS = 60 * 1000; // 1 minute
 const ACCESS_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const DEFAULT_SCOPE = 'mcp:read mcp:write';
+const SUPPORTED_SCOPES = Object.freeze(['mcp:read', 'mcp:write']);
 
 // Upper bounds on the in-memory store. The registration and authorization
 // endpoints are reachable pre-auth, so without a cap a malicious caller could
@@ -160,6 +161,27 @@ function getClient(store, clientId) {
   return store.clients.get(clientId) || null;
 }
 
+function normalizeScopes(scope = DEFAULT_SCOPE, allowedScopes = SUPPORTED_SCOPES) {
+  const requested = [...new Set(String(scope || DEFAULT_SCOPE).split(/\s+/).filter(Boolean))];
+  const supported = new Set(SUPPORTED_SCOPES);
+  const allowed = new Set(allowedScopes || SUPPORTED_SCOPES);
+  const invalid = requested.filter((candidate) => !supported.has(candidate));
+  const disallowed = requested.filter((candidate) => supported.has(candidate) && !allowed.has(candidate));
+  return {
+    valid: requested.length > 0 && invalid.length === 0 && disallowed.length === 0,
+    scopes: requested,
+    scope: requested.join(' '),
+    invalid,
+    disallowed,
+  };
+}
+
+function scopeAllows(session, requiredScope) {
+  if (!session || !requiredScope) return false;
+  const normalized = normalizeScopes(session.scope, SUPPORTED_SCOPES);
+  return normalized.valid && normalized.scopes.includes(requiredScope);
+}
+
 // ---------------------------------------------------------------------------
 // Authorization code (PKCE S256)
 // ---------------------------------------------------------------------------
@@ -169,20 +191,30 @@ function getClient(store, clientId) {
  * token will act as (resolved by the authorize step once the user consents).
  */
 function createAuthorizationCode(store, {
-  clientId, redirectUri, codeChallenge, codeChallengeMethod, scope, boundKey, state, resource,
+  clientId, redirectUri, codeChallenge, codeChallengeMethod, scope, allowedScopes, boundKey, state, resource,
 } = {}) {
   const client = getClient(store, clientId);
   if (!client) return { error: 'invalid_client' };
   if (!client.redirect_uris.includes(redirectUri)) return { error: 'invalid_request', error_description: 'redirect_uri mismatch' };
   if (codeChallengeMethod !== 'S256') return { error: 'invalid_request', error_description: 'code_challenge_method must be S256' };
   if (!codeChallenge || String(codeChallenge).length < 16) return { error: 'invalid_request', error_description: 'code_challenge required' };
+  const normalizedScopes = normalizeScopes(scope, allowedScopes || SUPPORTED_SCOPES);
+  if (!normalizedScopes.valid) {
+    return {
+      error: 'invalid_scope',
+      error_description: [
+        normalizedScopes.invalid.length > 0 ? `unsupported: ${normalizedScopes.invalid.join(', ')}` : '',
+        normalizedScopes.disallowed.length > 0 ? `not permitted: ${normalizedScopes.disallowed.join(', ')}` : '',
+      ].filter(Boolean).join('; ') || 'scope is required',
+    };
+  }
 
   const code = randomToken(24);
   capInsert(store.codes, code, {
     clientId,
     redirectUri,
     codeChallenge,
-    scope: scope || DEFAULT_SCOPE,
+    scope: normalizedScopes.scope,
     boundKey: boundKey || '',
     resource: resource || '', // RFC 8707 resource indicator (the MCP server URL)
     expiresAt: now() + AUTH_CODE_TTL_MS,
@@ -287,6 +319,9 @@ module.exports = {
   AUTH_CODE_TTL_MS,
   ACCESS_TOKEN_TTL_MS,
   DEFAULT_SCOPE,
+  SUPPORTED_SCOPES,
+  normalizeScopes,
+  scopeAllows,
   MAX_CLIENTS,
   MAX_CODES,
   MAX_TOKENS,

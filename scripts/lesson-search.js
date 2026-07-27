@@ -4,6 +4,7 @@ const path = require('node:path');
 const { readJSONL, getFeedbackPaths } = require('./feedback-loop');
 const { buildMemoryLifecycleView, scoreHybridMemoryMatch } = require('./agent-memory-lifecycle');
 const { loadOptionalModule } = require('./private-core-boundary');
+const { selectRetrievalMemories } = require('./lesson-retrieval');
 
 const HIGH_RISK_TAGS = new Set([
   'billing',
@@ -481,7 +482,8 @@ function searchLessons(query = '', options = {}) {
   const sqliteResults = tryFts5Search(query, options);
   if (sqliteResults) return sqliteResults;
 
-  const memories = readJSONL(MEMORY_LOG_PATH);
+  const allMemories = readJSONL(MEMORY_LOG_PATH);
+  const memories = selectRetrievalMemories(allMemories, options);
   const feedbackEntries = readJSONL(FEEDBACK_LOG_PATH);
   const feedbackById = new Map(feedbackEntries.map((entry) => [entry.id, entry]));
   const parsedLimit = Number(options.limit || 10);
@@ -534,9 +536,12 @@ function searchLessons(query = '', options = {}) {
     filters: {
       category: category || null,
       tags: requiredTags,
+      scope: options.scope || null,
+      requireScope: options.requireScope === true,
     },
     feedbackDir: FEEDBACK_DIR,
     totalLessons: memories.length,
+    excludedLessons: allMemories.length - memories.length,
     returned: Math.min(limit, results.length),
     results: results.slice(0, limit),
     backend: 'jsonl-jaccard',
@@ -548,6 +553,10 @@ function searchLessons(query = '', options = {}) {
  * or not opted in. Set LESSON_DB_SEARCH=1 to enable FTS5 as primary backend.
  */
 function tryFts5Search(query, options) {
+  // The SQLite index does not currently carry the complete four-field scope
+  // contract. Fall back to JSONL whenever isolation is requested rather than
+  // silently searching across tenants or sessions.
+  if (options.scope || options.requireScope) return null;
   if (!process.env.LESSON_DB_SEARCH && !options.useFts5) return null;
   try {
     const { initDB, searchLessons: fts5Search, getStats } = require('./lesson-db');
@@ -567,11 +576,24 @@ function tryFts5Search(query, options) {
         .map((tag) => tag.trim())
         .filter(Boolean);
 
-    const rows = fts5Search(db, query || '', {
-      limit,
+    const candidateRows = fts5Search(db, query || '', {
+      limit: Math.max(limit * 5, 50),
       signal,
       tags: requiredTags.length > 0 ? requiredTags : undefined,
     });
+    const retrievableRows = selectRetrievalMemories(
+      candidateRows.map((row) => ({
+        ...row,
+        title: row.context || '',
+        content: [
+          row.whatWentWrong,
+          row.whatToChange,
+          row.whatWorked,
+        ].filter(Boolean).join('\n'),
+      })),
+      options,
+    );
+    const rows = retrievableRows.slice(0, limit);
 
     return {
       query: String(query || ''),
@@ -581,6 +603,7 @@ function tryFts5Search(query, options) {
         tags: requiredTags,
       },
       totalLessons: stats.total,
+      excludedLessons: candidateRows.length - retrievableRows.length,
       returned: rows.length,
       results: rows.map((row) => ({
         id: row.id,

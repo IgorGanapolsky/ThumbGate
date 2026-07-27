@@ -4,6 +4,19 @@
 
 ### Patch Changes
 
+- Harden production AI architecture across RAG, agent tools, multi-agent
+  workflows, MCP, and monitoring:
+  - fail closed on deterministic RAG recall, precision, case-count, and
+    per-case regression thresholds;
+  - reject transcript pollution and enforce optional four-field memory scope;
+  - align MCP discovery with callable profile/runtime capability, enforce OAuth
+    read/write scope, correct feedback side-effect annotations, and validate
+    structured tool outputs;
+  - emit KPI telemetry for every MCP attempt and combine tool traffic with
+    task-outcome production monitoring;
+  - keep parallel workflows executable in the public package with durable state,
+    real failure propagation, concurrency limits, and timeout process cleanup.
+
 - 7bc22cc: Add Dependabot 7-day cooldown on npm and github-actions ecosystems so newly published packages and actions aren't auto-proposed immediately.
 - dda2cc9: Close command-position gate bypasses
 

@@ -16,7 +16,66 @@ test('recordToolCall defaults', () => { assert.equal(kpi.recordToolCall({}).tool
 test('recordToolCall tracks failures', () => { kpi.recordToolCall({ toolName: 'cf', latencyMs: 200, success: false }); kpi.recordToolCall({ toolName: 'cf', latencyMs: 150, success: true }); kpi.recordToolCall({ toolName: 'cf', latencyMs: 800, success: false }); });
 test('computeToolKpis per-tool metrics', () => { const r = kpi.computeToolKpis({ periodHours: 1 }); assert.ok(r.totalCalls >= 3); const cf = r.tools.find((t) => t.toolName === 'cf'); if (cf) { assert.ok(cf.successRate < 100); assert.ok(cf.p95 >= cf.p50); } });
 test('computeToolKpis server rollup', () => { assert.ok(kpi.computeToolKpis({ periodHours: 1 }).servers.length >= 1); });
+test('computeToolKpis reports whether traffic evidence exists', () => { assert.equal(kpi.computeToolKpis({ periodHours: 1 }).evidenceStatus, 'measured'); });
 test('getAtRiskTools finds bad tools', () => { for (let i = 0; i < 5; i++) kpi.recordToolCall({ toolName: 'bad', latencyMs: 900, success: false }); kpi.recordToolCall({ toolName: 'bad', latencyMs: 100, success: true }); assert.ok(kpi.getAtRiskTools({ periodHours: 1 }).find((t) => t.toolName === 'bad')); });
+test('computeToolKpis fails closed when no traffic evidence exists', () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-kpi-empty-'));
+  try {
+    assert.deepEqual(kpi.computeToolKpis({ feedbackDir }), {
+      periodHours: 24,
+      totalCalls: 0,
+      evidenceStatus: 'insufficient_evidence',
+      tools: [],
+      servers: [],
+    });
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+test('computeToolKpis excludes stale traffic and honors explicit storage', () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-kpi-stale-'));
+  try {
+    const logPath = kpi.getKpiLogPath({ feedbackDir });
+    fs.mkdirSync(path.dirname(logPath), { recursive: true });
+    fs.writeFileSync(logPath, `${JSON.stringify({
+      timestamp: '2020-01-01T00:00:00.000Z',
+      toolName: 'stale',
+      serverName: 'mcp',
+      latencyMs: 25,
+      success: true,
+    })}\n`);
+    assert.equal(kpi.computeToolKpis({ periodHours: 1, feedbackDir }).totalCalls, 0);
+    assert.equal(logPath, path.join(feedbackDir, 'tool-kpi.jsonl'));
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+test('getAtRiskTools detects latency-only risk and ignores low-volume noise', () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-kpi-risk-'));
+  try {
+    for (let i = 0; i < 3; i++) {
+      kpi.recordToolCall({
+        toolName: 'slow',
+        serverName: 'mcp',
+        latencyMs: 750,
+        success: true,
+        feedbackDir,
+      });
+    }
+    kpi.recordToolCall({
+      toolName: 'one-off-failure',
+      serverName: 'mcp',
+      latencyMs: 10,
+      success: false,
+      feedbackDir,
+    });
+    const atRisk = kpi.getAtRiskTools({ feedbackDir, successRateThreshold: 90, p95Threshold: 500 });
+    assert.ok(atRisk.some((tool) => tool.toolName === 'slow'));
+    assert.ok(!atRisk.some((tool) => tool.toolName === 'one-off-failure'));
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
 test('percentile', () => { assert.equal(kpi.percentile([10, 20, 30, 40, 50], 50), 30); assert.equal(kpi.percentile([], 50), 0); });
 test('getKpiLogPath', () => { assert.ok(kpi.getKpiLogPath().endsWith('tool-kpi.jsonl')); });
 // SLO

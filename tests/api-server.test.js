@@ -1279,7 +1279,7 @@ test('public MCP tool index supports just-in-time per-tool schema loading', asyn
   assert.ok(captureFeedback);
   assert.equal(captureFeedback.schemaUrl, 'https://app.example.com/.well-known/mcp/tools/capture_feedback.json');
   assert.equal(captureFeedback.inputSchema, undefined);
-  assert.ok(index.tools.some((tool) => tool.name === 'run_autoresearch'));
+  assert.equal(index.tools.some((tool) => tool.name === 'run_autoresearch'), false);
   assert.ok(index.tools.some((tool) => tool.name === 'plan_multimodal_retrieval'));
   assert.ok(index.tools.some((tool) => tool.name === 'plan_agent_design_governance'));
   assert.ok(index.tools.some((tool) => tool.name === 'plan_proactive_agent_eval_guardrails'));
@@ -1295,10 +1295,7 @@ test('public MCP tool index supports just-in-time per-tool schema loading', asyn
   assert.ok(schema.inputSchema.required.includes('signal'));
 
   const autoresearchSchemaRes = await fetch(apiUrl('/.well-known/mcp/tools/run_autoresearch.json'));
-  assert.equal(autoresearchSchemaRes.status, 200);
-  const autoresearchSchema = await autoresearchSchemaRes.json();
-  assert.equal(autoresearchSchema.name, 'run_autoresearch');
-  assert.equal(autoresearchSchema.inputSchema.properties.iterations.type, 'number');
+  assert.equal(autoresearchSchemaRes.status, 404);
 
   const multimodalSchemaRes = await fetch(apiUrl('/.well-known/mcp/tools/plan_multimodal_retrieval.json'));
   assert.equal(multimodalSchemaRes.status, 200);

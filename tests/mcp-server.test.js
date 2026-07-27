@@ -334,6 +334,9 @@ test('retrieve_lessons tool routes candidates through cross-encoder reranking', 
       options: {
         candidateCount: 20,
         maxResults: 2,
+        scope: undefined,
+        requireScope: false,
+        includeShared: true,
       },
     }]);
   } finally {
@@ -1447,4 +1450,39 @@ test('MCP tools/call rejects invalid tool contract schemas', async () => {
       },
     });
   }, /Tool contract violation on 'capture_feedback': Parameter 'signal' must be one of/);
+});
+
+test('MCP tool calls emit structured output and KPI telemetry', async () => {
+  const before = fs.existsSync(path.join(tmpFeedbackDir, 'tool-kpi.jsonl'))
+    ? fs.readFileSync(path.join(tmpFeedbackDir, 'tool-kpi.jsonl'), 'utf8').trim().split('\n').filter(Boolean).length
+    : 0;
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 32,
+    method: 'tools/call',
+    params: {
+      name: 'get_agent_outcome_metrics',
+      arguments: {},
+    },
+  });
+  assert.ok(['insufficient_evidence', 'measured'].includes(result.structuredContent.evidenceStatus));
+  const entries = fs.readFileSync(path.join(tmpFeedbackDir, 'tool-kpi.jsonl'), 'utf8')
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map(JSON.parse);
+  assert.equal(entries.length, before + 1);
+  assert.equal(entries.at(-1).toolName, 'get_agent_outcome_metrics');
+  assert.equal(entries.at(-1).success, true);
+  assert.equal(entries.at(-1).metadata.category, 'success');
+});
+
+test('MCP structured output validation fails closed', () => {
+  const tool = TOOLS.find((candidate) => candidate.name === 'record_task_outcome');
+  const validation = __test__.validateMcpToolOutput(tool, {
+    content: [{ type: 'text', text: '{}' }],
+    structuredContent: {},
+  });
+  assert.equal(validation.valid, false);
+  assert.ok(validation.errors.some((error) => error.includes('recorded')));
 });

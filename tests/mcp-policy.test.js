@@ -60,6 +60,13 @@ test('profile allowlists differentiate permissions', () => {
   assert.ok(isToolAllowed('report_product_issue', 'default'));
   assert.ok(isToolAllowed('report_product_issue', 'essential'));
   assert.equal(isToolAllowed('track_action', 'readonly'), false);
+  assert.equal(isToolAllowed('start_handoff', 'readonly'), false);
+  assert.equal(isToolAllowed('complete_handoff', 'readonly'), false);
+  assert.ok(isToolAllowed('record_task_outcome', 'essential'));
+  assert.ok(isToolAllowed('request_human_escalation', 'essential'));
+  assert.ok(isToolAllowed('parallel_workflow', 'essential'));
+  assert.ok(isToolAllowed('get_agent_outcome_metrics', 'locked'));
+  assert.ok(isToolAllowed('list_human_escalations', 'readonly'));
   assert.ok(isToolAllowed('register_claim_gate', 'default'));
   assert.ok(isToolAllowed('run_managed_lesson_agent', 'default'));
   assert.ok(isToolAllowed('managed_agent_status', 'default'));
