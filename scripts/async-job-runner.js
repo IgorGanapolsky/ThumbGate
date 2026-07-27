@@ -9,6 +9,7 @@ const { runVerificationLoop } = require('./verification-loop');
 const { createExperiment } = require('./experiment-tracker');
 const { recommendEvolutionTarget } = require('./workspace-evolver');
 const { ensureDir } = require('./fs-utils');
+const { recordTaskOutcome } = require('./task-outcomes');
 
 const JOB_LOG_FILENAME = 'job-log.jsonl';
 const JOB_CONTROL_FILENAME = 'job-control.json';
@@ -304,6 +305,107 @@ function buildResult({ state, recall, verification, feedback, improvementExperim
 
 function appendJobLog(result) {
   appendJSONL(getJobRuntimePaths(result.jobId).logPath, result);
+}
+
+function taskOutcomeStatus(result, verificationPassed) {
+  if (verificationPassed) return 'completed';
+  if (result.status === 'failed' || result.status === 'cancelled') return 'failed';
+  return 'partial';
+}
+
+function attachTaskOutcome(result, state, options = {}) {
+  const verification = result.phases?.verification;
+  const stageHistory = Array.isArray(state.stageHistory) ? state.stageHistory : [];
+  const failed = result.status === 'failed' || result.status === 'cancelled';
+  const verificationPassed = verification?.accepted === true;
+  const verificationPerformed = Boolean(verification);
+  const status = taskOutcomeStatus(result, verificationPassed);
+  const evidence = [];
+  if (verificationPerformed) {
+    evidence.push(`verification score ${verification.score}; attempts ${verification.attempts}`);
+  }
+  if (state.lastError?.message) evidence.push(`execution error: ${state.lastError.message}`);
+
+  const outcome = recordTaskOutcome({
+    taskId: result.jobId,
+    taskType: 'async-job',
+    goal: state.jobSpec?.context || `Execute managed job ${result.jobId}`,
+    expectedOutcome: 'Complete all stages and pass post-run verification',
+    status,
+    verification: {
+      performed: verificationPerformed,
+      passed: verificationPassed,
+      verifier: verificationPerformed ? 'verification-loop' : undefined,
+      method: verificationPerformed ? 'prevention-rule verification' : undefined,
+      evidence,
+      unsupportedClaims: 0,
+    },
+    toolCalls: stageHistory.map((stage) => ({
+      name: stage.name,
+      contractValid: true,
+      allowed: true,
+      succeeded: true,
+      attempts: 1,
+      latencyMs: 0,
+      costUsd: 0,
+      sideEffect: false,
+      duplicateSideEffect: false,
+    })),
+    policy: {
+      violations: 0,
+      unsafeEscapes: 0,
+      falseBlocks: 0,
+    },
+    failure: failed ? {
+      category: state.lastError?.code || result.status,
+      recovered: false,
+      repeated: false,
+      rolledBack: false,
+    } : undefined,
+    efficiency: {
+      latencyMs: result.durationMs,
+      costUsd: 0,
+      firstAttempt: verification?.attempts === 1,
+    },
+    traceId: result.jobId,
+    idempotencyKey: `${result.jobId}:${result.status}:${state.endedAt || state.updatedAt}`,
+    metadata: {
+      source: 'async-job-runner',
+      completedStages: stageHistory.length,
+    },
+  }, options);
+  result.taskOutcome = outcome.receipt;
+  return result;
+}
+
+function verificationFeedbackContext(job, verification) {
+  if (!verification) {
+    return `Job ${job.id} completed without post-run verification`;
+  }
+  if (verification.accepted) {
+    return `Job ${job.id} passed verification after ${verification.attempts} attempt(s)`;
+  }
+  const violations = verification.finalVerification?.violations || [];
+  const patterns = violations.map((violation) => violation.pattern).join('; ');
+  return `Job ${job.id} failed verification after ${verification.attempts} attempt(s): ${patterns}`;
+}
+
+function verificationFeedbackFields(verification) {
+  if (!verification) {
+    return {
+      whatWentWrong: 'Post-run verification was skipped, so task success is unverified',
+      whatToChange: 'Run standard verification before recording a completed task',
+    };
+  }
+  if (verification.accepted) {
+    return {
+      whatWorked: 'Verification loop accepted output',
+    };
+  }
+  return {
+    whatWentWrong: `Failed ${verification.attempts} verification attempts`,
+    whatToChange: 'Improve output to avoid known mistake patterns',
+  };
 }
 
 function readJobLog(limit) {
@@ -794,6 +896,7 @@ function executeJob(job, options = {}) {
         feedback,
         improvementExperiment,
       });
+      attachTaskOutcome(result, failedState);
       appendJobLog(result);
       return result;
     }
@@ -820,19 +923,9 @@ function executeJob(job, options = {}) {
   const feedback = normalizedJob.recordFeedback === false
     ? null
     : captureFeedback({
-      signal: !verification || verification.accepted ? 'up' : 'down',
-      context: !verification
-        ? `Job ${normalizedJob.id} completed without post-run verification`
-        : verification.accepted
-          ? `Job ${normalizedJob.id} passed verification after ${verification.attempts} attempt(s)`
-          : `Job ${normalizedJob.id} failed verification after ${verification.attempts} attempt(s): ${(verification.finalVerification.violations || []).map((violation) => violation.pattern).join('; ')}`,
-      whatWorked: !verification
-        ? 'Operational job completed successfully'
-        : verification.accepted
-          ? 'Verification loop accepted output'
-          : undefined,
-      whatWentWrong: verification && !verification.accepted ? `Failed ${verification.attempts} verification attempts` : undefined,
-      whatToChange: verification && !verification.accepted ? 'Improve output to avoid known mistake patterns' : undefined,
+      signal: verification?.accepted ? 'up' : 'down',
+      context: verificationFeedbackContext(normalizedJob, verification),
+      ...verificationFeedbackFields(verification),
       tags: !verification
         ? [...normalizedJob.tags, 'async-job-runner', 'verification-skipped']
         : [...normalizedJob.tags, 'verification-loop'],
@@ -863,6 +956,7 @@ function executeJob(job, options = {}) {
     feedback,
     improvementExperiment,
   });
+  attachTaskOutcome(result, terminalState);
   appendJobLog(result);
   return result;
 }

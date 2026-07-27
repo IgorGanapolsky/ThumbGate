@@ -107,7 +107,34 @@ function errMessage(err) {
   return err?.message ?? err;
 }
 
-function handleStepError({ err, attempt, retries, classify, backoffMs, name, onRetry, onFail, logger }) {
+function retryAfterMs(err) {
+  const raw = err?.retryAfterMs
+    ?? err?.headers?.['retry-after-ms']
+    ?? err?.headers?.['retry-after'];
+  if (raw === undefined || raw === null || raw === '') return null;
+  const numeric = Number(raw);
+  if (Number.isFinite(numeric)) {
+    return String(raw).includes('.') || err?.headers?.['retry-after'] !== undefined
+      ? Math.max(0, numeric * 1000)
+      : Math.max(0, numeric);
+  }
+  const dateMs = Date.parse(raw);
+  return Number.isNaN(dateMs) ? null : Math.max(0, dateMs - Date.now());
+}
+
+function handleStepError({
+  err,
+  attempt,
+  retries,
+  classify,
+  backoffMs,
+  name,
+  onRetry,
+  onFail,
+  logger,
+  jitterRatio,
+  randomFn,
+}) {
   const verdict = classify(err);
   const terminal = verdict === 'fail' || attempt >= retries;
   if (terminal) {
@@ -117,7 +144,11 @@ function handleStepError({ err, attempt, retries, classify, backoffMs, name, onR
     }
     return { terminal: true };
   }
-  const waitMs = backoffMs[Math.min(attempt, backoffMs.length - 1)];
+  const configuredWait = backoffMs[Math.min(attempt, backoffMs.length - 1)];
+  const serverWait = retryAfterMs(err);
+  const baseWait = serverWait === null ? configuredWait : Math.max(configuredWait, serverWait);
+  const jitter = jitterRatio > 0 ? baseWait * jitterRatio * ((randomFn() * 2) - 1) : 0;
+  const waitMs = Math.max(0, Math.round(baseWait + jitter));
   if (typeof onRetry === 'function') onRetry({ name, attempt, err, waitMs, verdict });
   if (typeof logger === 'function') {
     logger(`[step:${name}] RETRY attempt=${attempt} waitMs=${waitMs} err=${errMessage(err)}`);
@@ -126,10 +157,9 @@ function handleStepError({ err, attempt, retries, classify, backoffMs, name, onR
 }
 
 async function runStep(name, options, fn) {
-  if (typeof options === 'function') {
-    fn = options;
-    options = {};
-  }
+  const invocation = normalizeStepInvocation(options, fn);
+  options = invocation.options;
+  fn = invocation.fn;
   const {
     retries = 3,
     backoffMs = DEFAULT_BACKOFF_MS,
@@ -139,27 +169,105 @@ async function runStep(name, options, fn) {
     onFail,
     logger,
     sleepFn = sleep,
+    sideEffect = false,
+    idempotencyKey: stepIdempotencyKey,
+    maxElapsedMs = Infinity,
+    jitterRatio = 0,
+    randomFn = Math.random,
   } = options || {};
 
-  if (typeof fn !== 'function') {
-    throw new TypeError(`runStep(${name}): fn must be a function`);
-  }
+  validateStepConfiguration(name, fn, {
+    sideEffect,
+    stepIdempotencyKey,
+    maxElapsedMs,
+  });
 
   let lastErr;
+  const startedAt = Date.now();
   for (let attempt = 0; attempt <= retries; attempt++) {
-    if (typeof onAttempt === 'function') onAttempt({ name, attempt });
+    const context = {
+      name,
+      attempt,
+      idempotencyKey: stepIdempotencyKey || null,
+      elapsedMs: Date.now() - startedAt,
+    };
+    callIfFunction(onAttempt, context);
     try {
-      return await fn({ attempt });
+      return await fn(context);
     } catch (err) {
       lastErr = err;
       const outcome = handleStepError({
-        err, attempt, retries, classify, backoffMs, name, onRetry, onFail, logger,
+        err,
+        attempt,
+        retries,
+        classify,
+        backoffMs,
+        name,
+        onRetry,
+        onFail,
+        logger,
+        jitterRatio: Math.max(0, Number(jitterRatio) || 0),
+        randomFn,
       });
       if (outcome.terminal) throw err;
+      enforceRetryBudget({
+        err,
+        attempt,
+        name,
+        onFail,
+        startedAt,
+        waitMs: outcome.waitMs,
+        maxElapsedMs,
+      });
       await sleepFn(outcome.waitMs);
     }
   }
   throw lastErr;
+}
+
+function normalizeStepInvocation(options, fn) {
+  if (typeof options === 'function') return { options: {}, fn: options };
+  return { options: options || {}, fn };
+}
+
+function validateStepConfiguration(name, fn, options) {
+  if (typeof fn !== 'function') {
+    throw new TypeError(`runStep(${name}): fn must be a function`);
+  }
+  if (options.sideEffect && !String(options.stepIdempotencyKey || '').trim()) {
+    const error = new Error(`runStep(${name}): side-effecting steps require idempotencyKey`);
+    error.code = 'THUMBGATE_IDEMPOTENCY_KEY_REQUIRED';
+    error.nonRetryable = true;
+    throw error;
+  }
+  if (!Number.isFinite(Number(options.maxElapsedMs)) && options.maxElapsedMs !== Infinity) {
+    throw new TypeError(`runStep(${name}): maxElapsedMs must be finite or Infinity`);
+  }
+}
+
+function callIfFunction(callback, payload) {
+  if (typeof callback === 'function') callback(payload);
+}
+
+function enforceRetryBudget({
+  err,
+  attempt,
+  name,
+  onFail,
+  startedAt,
+  waitMs,
+  maxElapsedMs,
+}) {
+  if (Date.now() - startedAt + waitMs <= maxElapsedMs) return;
+  err.code = err.code || 'THUMBGATE_RETRY_BUDGET_EXHAUSTED';
+  err.retryBudgetExhausted = true;
+  callIfFunction(onFail, {
+    name,
+    attempt,
+    err,
+    verdict: 'retry_budget_exhausted',
+  });
+  throw err;
 }
 
 module.exports = {
@@ -168,4 +276,5 @@ module.exports = {
   defaultClassify,
   TRANSIENT_CODES,
   DEFAULT_BACKOFF_MS,
+  retryAfterMs,
 };

@@ -1,5 +1,171 @@
 # Changelog
 
+## 1.29.2
+
+### Patch Changes
+
+- 7bc22cc: Add Dependabot 7-day cooldown on npm and github-actions ecosystems so newly published packages and actions aren't auto-proposed immediately.
+- dda2cc9: Close command-position gate bypasses
+
+  The catastrophic gate patterns anchor the command position as `(?:^|[;&|]\s*)` — the command
+  must sit at the very start of the string or immediately after `;`, `&` or `|`. That anchor
+  exists to avoid matching a command merely mentioned inside a quoted string, but it is far too
+  narrow. It does not recognise a command on a **new line**, nor any ordinary way a binary gets
+  invoked. Separately, git accepts global options between `git` and the subcommand, which
+  defeated the patterns from the other direction.
+
+  Verified against unmodified `main` — every form below matched **no gate at all**, while the
+  plain form denied:
+
+  | evaded form                         | before          | after |
+  | ----------------------------------- | --------------- | ----- |
+  | `git -C <dir> reset --hard HEAD~5`  | no gate matched | deny  |
+  | `git -c core.pager=cat clean -fd`   | no gate matched | deny  |
+  | `sudo git reset --hard HEAD~5`      | no gate matched | deny  |
+  | `GIT_DIR=… git reset --hard HEAD~5` | no gate matched | deny  |
+  | `/usr/bin/git reset --hard HEAD~5`  | no gate matched | deny  |
+  | `command git reset --hard HEAD~5`   | no gate matched | deny  |
+  | `"git" reset --hard HEAD~5`         | no gate matched | deny  |
+  | `\git reset --hard HEAD~5`          | no gate matched | deny  |
+  | `echo hi⏎git reset --hard HEAD~5`   | no gate matched | deny  |
+  | `nohup time git clean -fd`          | no gate matched | deny  |
+
+  The same anchor guards `rm-rf-home-or-root`, so the identical evasion applied there:
+
+  | evaded form              | before          | after |
+  | ------------------------ | --------------- | ----- |
+  | `sudo rm -rf ~`          | no gate matched | deny  |
+  | `sudo rm -rf /`          | no gate matched | deny  |
+  | `/bin/rm -rf ~`          | no gate matched | deny  |
+  | `echo hi⏎rm -rf ~`       | no gate matched | deny  |
+  | `env FOO=1 rm -rf $HOME` | no gate matched | deny  |
+
+  That is **all four** `CATASTROPHIC_DECLARATIVE_GATE_IDS` — the set this engine documents as
+  effectively irreversible and exempts from the free-tier daily-cap discount "regardless of
+  tier or strict-mode setting". Each was evadable with a one-token prefix.
+
+  Precision is preserved: `rm -rf node_modules`, `rm -rf build/` and
+  `sudo rm -rf /tmp/scratch-dir` remain allowed, because the gate still targets only home and
+  root.
+
+  The same gap made `extractAffectedFiles()` return an empty list for the git-global-option
+  forms, which silently disarmed `task-scope-required` and `protected-file-approval-required`
+  as well: a gate that evaluates no files raises no violation.
+
+  Rather than complicate every gate regex, the command is canonicalized before matching —
+  separators (including newlines) are normalised, env-assignment prefixes and wrapper binaries
+  (`sudo`, `command`, `env`, `nohup`, `time`, …) are stripped, directory and quoting on the
+  binary token are removed, and git global options are dropped. Patterns are tested against the
+  **original text and the canonical form**, so this can only ever add a match, never remove one.
+
+  Confirmed no new false positives: `echo "git reset --hard is dangerous"`,
+  `grep -r "git clean -fd" docs/`, `sudo ls /var/log`, `git status`, `git diff` and the rest of
+  the benign set behave exactly as they do on `main`.
+
+  **Known residual:** resolving the binary through a subshell (`$(which git) reset --hard`)
+  still evades. Canonicalization is static and cannot resolve a subshell without executing it;
+  closing that needs exec-time gating rather than pattern matching. Recorded as an explicit
+  test so it stays a known limit rather than a silent gap.
+
+  **Second anchor bug, found by measuring instead of reasoning:** `local-only-git-writes`,
+  `task-scope-required`, `branch-governance-required` and `release-readiness-required` anchor
+  with a **bare `^`**, which matches only the first command in the string — not even after `;`.
+  So `echo hi && git commit -m x` was skipped while `git commit -m x` denied, and chaining is
+  how agents normally work. Each gate is now offered every canonicalized segment as its own
+  match candidate.
+
+  Measured over a corpus of gated commands crossed with nine ways of re-spelling them
+  (sudo, env prefix, `&&`/`;`/newline chaining, absolute binary path, quoting, backslash, git
+  global option): **62 evasion holes on unmodified `main`, 0 after this change.** That grid is
+  now `tests/gate-evasion-matrix.test.js` so it cannot silently regress.
+
+- dda2cc9: Scope `git add` / `git commit` blast radius to the command's pathspec
+
+  `extractAffectedFiles()` derived the affected-file set for `git add` by scanning the entire
+  working tree (`git diff --name-only` plus all untracked files), ignoring the pathspec the
+  command actually declared. In a repo with a large dirty tree — a checkout shared by several
+  agents, for example — a correctly scoped `git add -- src/a.js src/b.js` was reported as
+  thousands of affected files, so `task-scope-required` and `protected-file-approval-required`
+  blocked commits that never left their declared scope.
+
+  The pathspec now defines the scope: an explicit file list reports exactly those files, a
+  directory pathspec reports the dirty files beneath it, and only a genuinely broad add
+  (`git add .`, `-A`, `-u`, no pathspec, or an unexpandable glob/variable) falls back to the
+  full tree scan. `git commit` narrows the same way when an explicit `-- <pathspec>` is given.
+
+  Also caps the file list serialized into the memory-guard match input, so guard matching keys
+  on the action rather than on the size of the checkout.
+
+- dda2cc9: Stop the memory guard matching on its own serialization keys
+
+  `evaluateCompiledGuards` / `evaluatePretoolFromState` matched guard keywords as raw
+  substrings against a JSON-serialized envelope — `{"toolName":…,"command":…,"filePath":…,
+"affectedFiles":[…]}`. The envelope's own KEY NAMES were therefore part of the haystack on
+  every evaluation, so the tokens `files`, `command`, `tool`, `name` and `path` were always
+  present. With a two-hit block threshold, any guard whose keyword list contained two such
+  common words blocked **every** action, regardless of what that action was.
+
+  Three changes:
+
+  - Match against the VALUES only. Key names can no longer contribute a hit, and the callers
+    that pass a raw object (`context-manager`) or a plain command string are handled uniformly.
+  - Match whole words instead of raw substrings, so `app` no longer hits `apps/`,
+    `application` or `happen`. Boundaries are non-alphanumeric, so `src/jobs/queue.js` still
+    matches the word `jobs`.
+  - Weight by specificity: one long or compound token (`generated-cache`) is sufficient
+    evidence on its own, while generic short words still require corroboration. This keeps
+    exact-command-repeat detection working now that structural free hits are gone.
+
+  Verified on a clean checkout: a guard built from generic words previously blocked `ls -la`
+  and `curl 127.0.0.1:9333/json/version` unconditionally; both are now allowed, while a real
+  recurring destructive pattern still blocks.
+
+- dda2cc9: Fix five pathspec resolution defects found in review
+
+  Raised on PR #3036 by two independent reviewers (`chatgpt-codex-connector` and
+  `greptile-apps`, the latter running executable repros against real git). All five were real,
+  all introduced by the pathspec-scoping work in this same PR, and each produced **wrong gate
+  decisions** rather than merely wrong reporting.
+
+  1. **Pathspec resolved against the repo root instead of the shell's working directory.**
+     With `cwd=/repo/src`, `git add a.js` stages `src/a.js` but was reported as `a.js`, so
+     task-scope and protected-file gates evaluated a path that does not exist — a protected
+     `src/a.js` change could pass. A leading `cd` chain is now followed too, since
+     `cd src && git add a.js` is the common shape.
+
+  2. **Git pathspec magic treated as a literal filename.** Per `gitglossary(7)`, an
+     exclude-only pathspec applies as though no pathspec were supplied, so
+     `git add ':(exclude)root.txt'` stages _everything else_. Parsing it as the literal string
+     `:(exclude)root.txt` let exclude, `top` and `icase` magic evade scope checks entirely.
+     Any `:`-prefixed token now falls back to the conservative broad scope.
+
+  3. **Backslash-escaped paths split into fictional tokens.** `git add my\ dir/file.js` split
+     at the escaped space, so the gates evaluated two paths git never touches. The tokenizer
+     now honours backslash escapes outside single quotes.
+
+  4. **`git commit -- <pathspec>` missed working-tree files.** Git commits tracked files with
+     unstaged modifications directly from the working tree; filtering only the cached diff
+     dropped exactly those files from enforcement. The candidate set for a pathspec-scoped
+     commit now includes unstaged tracked modifications.
+
+  5. **The memory-guard file cap discarded action targets.** Truncating to the first 25
+     affected files meant a recurring-negative guard whose keywords appear only in a later
+     filename could no longer match, making a learned prevention rule bypassable purely by
+     filename ordering. The false positives that motivated the cap came from the JSON
+     envelope's key names polluting the haystack, which is fixed at the matcher instead — so
+     the cap was both unnecessary and harmful. Replaced with a generous character bound that
+     discards no targets.
+
+  Adds five regression tests reproducing each reported scenario.
+
+- ab26f71: Fix pr-thread-resolution-verified-required gate leaking across repos/worktrees: a commit on one repo's branch could permanently lock out an unrelated repo's session. The gate is now scoped to the repo that actually committed, and the block message tells the agent exactly how to clear it (the satisfy_gate tool with real evidence) instead of leaving no discoverable escape hatch.
+- 1d91e49: Highlight the `thumbgate-dashboard` / `/thumbgate-dashboard` command on the GitHub README and thumbgate.ai landing page so operators can open the project-scoped local dashboard without hunting the CLI reference.
+
+  Also bumps the brace-expansion override 5.0.7 → 5.0.8 to clear GHSA-mh99-v99m-4gvg so CI npm audit passes.
+
+- f50e69b: Remove accidentally committed manufacturing prototype SQLite/LanceDB runtime stores, move plan.md under docs/, and harden gitignore against re-adding binary prototype data.
+- bdde129: Add evidence-backed task outcome receipts, recursive tool and structured-output validation, privacy-safe runtime traces, bounded idempotent retries, a human-owned escalation queue, golden outcome regressions, and production monitoring that fails closed on missing evidence.
+
 ## 1.29.1
 
 ### Patch Changes
