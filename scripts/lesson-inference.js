@@ -170,6 +170,20 @@ function isPositiveSignal(signal) {
   return signal === 'positive' || signal === 'up';
 }
 
+function isHumanReviewedLesson(lesson = {}) {
+  return (lesson.metadata?.reviewOrigin || lesson.reviewOrigin) === 'human';
+}
+
+function dedupeHumanReviewedLessons(lessons = []) {
+  const byFeedback = new Map();
+  for (const lesson of lessons) {
+    if (isHumanReviewedLesson(lesson) && lesson.feedbackId) {
+      byFeedback.set(lesson.feedbackId, lesson);
+    }
+  }
+  return [...byFeedback.values()];
+}
+
 function selectStatusbarLesson() {
   const lessons = readJsonl(getLessonsPath())
     .slice()
@@ -242,10 +256,14 @@ function searchLessons({ query = '', limit = 10, signal } = {}) {
  */
 function getLessonStats() {
   const lessons = readJsonl(getLessonsPath());
-  const positive = lessons.filter((l) => l.signal === 'positive' || l.signal === 'up').length;
-  const negative = lessons.filter((l) => l.signal === 'negative' || l.signal === 'down').length;
-  const avgConfidence = lessons.length > 0 ? Math.round(lessons.reduce((s, l) => s + (l.confidence || 0), 0) / lessons.length) : 0;
-  return { total: lessons.length, positive, negative, avgConfidence };
+  const humanReviewed = dedupeHumanReviewedLessons(lessons);
+  const positive = humanReviewed.filter((lesson) => isPositiveSignal(lesson.signal)).length;
+  const negative = humanReviewed.filter((lesson) => isNegativeSignal(lesson.signal)).length;
+  const avgConfidence = humanReviewed.length > 0
+    ? Math.round(humanReviewed.reduce((sum, lesson) => sum + (lesson.confidence || 0), 0) / humanReviewed.length)
+    : 0;
+  return { total: positive + negative, positive, negative, avgConfidence,
+    rawTotal: lessons.length, excludedTotal: lessons.length - humanReviewed.length };
 }
 
 // ---------------------------------------------------------------------------
@@ -650,6 +668,7 @@ async function inferStructuredLessonLLM(conversationWindow, signal, context) {
 module.exports = {
   inferFromSurroundingMessages, createLesson, getRecentLesson,
   searchLessons, getLessonStats, getStatusbarLessonData, getAllLessonsForContext,
+  isHumanReviewedLesson,
   getLessonsPath, getRecentLessonPath,
   selectStatusbarLesson, getLessonKind, stripLessonPrefix,
   formatLessonTimestamp, buildStatusbarLessonLabel,

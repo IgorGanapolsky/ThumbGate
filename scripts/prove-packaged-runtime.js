@@ -219,8 +219,8 @@ async function runPackagedRuntimeSmoke(options = {}) {
   fs.writeFileSync(
     path.join(feedbackDir, 'feedback-log.jsonl'),
     [
-      JSON.stringify({ signal: 'positive', timestamp: '2026-04-08T20:00:00.000Z', context: 'packaged runtime smoke pass' }),
-      JSON.stringify({ signal: 'negative', timestamp: '2026-04-08T20:01:00.000Z', context: 'packaged runtime smoke fail path' }),
+      JSON.stringify({ signal: 'positive', reviewOrigin: 'human', timestamp: '2026-04-08T20:00:00.000Z', context: 'packaged runtime smoke pass' }),
+      JSON.stringify({ signal: 'negative', reviewOrigin: 'human', timestamp: '2026-04-08T20:01:00.000Z', context: 'packaged runtime smoke fail path' }),
     ].join('\n') + '\n'
   );
 

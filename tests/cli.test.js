@@ -727,6 +727,7 @@ describe('bin/cli.js', () => {
     const memoryLog = fs.readFileSync(path.join(feedbackDir, 'memory-log.jsonl'), 'utf8');
     assert.match(feedbackLog, new RegExp(payload.feedbackId));
     assert.match(memoryLog, new RegExp(payload.memoryId));
+    assert.equal(JSON.parse(feedbackLog.trim()).reviewOrigin, 'automated');
 
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
@@ -985,6 +986,7 @@ describe('bin/cli.js', () => {
         submittedContext: 'thumbs up Thorough PR review',
         whatWorked: 'thumbs up Thorough PR review',
         actionType: 'store-learning',
+        reviewOrigin: 'human',
         timestamp: '2026-04-09T15:07:34.046Z',
       })}\n`
     );
@@ -1293,6 +1295,28 @@ describe('bin/cli.js', () => {
     assert.match(result.stderr, /utm_source=cli_limit/);
     fs.rmSync(feedbackDir, { recursive: true, force: true });
     fs.rmSync(freeHome, { recursive: true, force: true });
+  });
+
+  test('summary text excludes automated and imported feedback like summary JSON', () => {
+    const feedbackDir = makeTmpDir();
+    fs.writeFileSync(path.join(feedbackDir, 'feedback-log.jsonl'), [
+      JSON.stringify({ signal: 'positive', reviewOrigin: 'human', timestamp: new Date().toISOString() }),
+      JSON.stringify({ signal: 'negative', reviewOrigin: 'automated', timestamp: new Date().toISOString() }),
+      JSON.stringify({ signal: 'negative', reviewOrigin: 'imported', timestamp: new Date().toISOString() }),
+    ].join('\n') + '\n');
+
+    const result = runCliSync(['summary'], {
+      env: {
+        ...process.env,
+        THUMBGATE_FEEDBACK_DIR: feedbackDir,
+        THUMBGATE_NO_NUDGE: '1',
+      },
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /Feedback Summary \(last 1\)/);
+    assert.match(result.stdout, /Positive: 1/);
+    assert.match(result.stdout, /Negative: 0/);
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
 
   test('help command shows Pro nudge on stderr', () => {
@@ -2857,6 +2881,7 @@ describe('bin/cli.js', () => {
       .split(/\r?\n/)
       .map((line) => JSON.parse(line));
     assert.equal(feedbackRows[0].context, 'skipped verification proof');
+    assert.equal(feedbackRows[0].reviewOrigin, 'human');
     fs.rmSync(isolatedDir, { recursive: true, force: true });
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
