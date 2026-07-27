@@ -138,7 +138,9 @@ const path = require('node:path');
 // and production monitor. No buyer state, credentials, or private modules.
 // 368 -> 369: ship the existing local schedule manager required by the public
 // daily outcome-monitor installer and the already-advertised agent:schedule.
-const BASELINE_FILE_COUNT = 369;
+// 369 -> 370: ship tool-kpi-tracker so every packaged MCP attempt feeds the
+// public production-observability contract instead of silently dropping KPIs.
+const BASELINE_FILE_COUNT = 370;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

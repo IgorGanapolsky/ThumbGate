@@ -97,6 +97,43 @@ test('happy path: authorize -> token, bound key resolves', () => {
   const session = oauth.resolveAccessToken(store, tok.access_token);
   assert.equal(session.boundKey, 'tg_operator_key_123');
   assert.match(session.scope, /mcp:read/);
+  assert.equal(oauth.scopeAllows(session, 'mcp:read'), true);
+  assert.equal(oauth.scopeAllows(session, 'mcp:write'), true);
+});
+
+test('authorization rejects unsupported and role-disallowed scopes', () => {
+  const store = oauth.createStore();
+  const client = registerTestClient(store);
+  const { challenge } = pkcePair();
+  const base = {
+    clientId: client.client_id,
+    redirectUri: client.redirect_uris[0],
+    codeChallenge: challenge,
+    codeChallengeMethod: 'S256',
+    boundKey: 'k',
+  };
+  assert.equal(oauth.createAuthorizationCode(store, {
+    ...base,
+    scope: 'mcp:admin',
+  }).error, 'invalid_scope');
+  assert.equal(oauth.createAuthorizationCode(store, {
+    ...base,
+    scope: 'mcp:read mcp:write',
+    allowedScopes: ['mcp:read'],
+  }).error, 'invalid_scope');
+  const readOnly = oauth.createAuthorizationCode(store, {
+    ...base,
+    scope: 'mcp:read',
+    allowedScopes: ['mcp:read'],
+  });
+  assert.ok(readOnly.code);
+});
+
+test('scopeAllows rejects malformed token scope sets instead of partially authorizing them', () => {
+  assert.equal(oauth.scopeAllows({ scope: 'mcp:read' }, 'mcp:read'), true);
+  assert.equal(oauth.scopeAllows({ scope: 'mcp:read unsupported' }, 'mcp:read'), false);
+  assert.equal(oauth.scopeAllows(null, 'mcp:read'), false);
+  assert.equal(oauth.scopeAllows({ scope: 'mcp:read' }, ''), false);
 });
 
 test('PKCE is enforced: wrong verifier is rejected', () => {

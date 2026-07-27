@@ -136,7 +136,16 @@ ThumbGate is not defended by a meaningful closed-source intelligence split today
 
 Rules:
 1. Do not describe the public repo as a thin shell or claim private Core holds the intelligence unless a fresh audit proves that boundary exists.
-2. Public code is permissive on purpose. New ranking, synthesis, and adaptive-gate inte
+2. Public code is permissive on purpose. Evaluate new ranking, synthesis, and adaptive-gate intelligence explicitly before deciding whether it belongs in the public runtime or hosted operation.
+
+## Production Architecture Regression Gates
+
+- RAG evaluation must fail closed: at least 6 golden cases, at least 95% deterministic recall, at least 15% precision, and 100% per-case recall. An LLM judge is diagnostic only.
+- Memory retrieval must reject transport transcripts and oversized blobs. Cross-user or cross-session retrieval requires the complete entity, project, process, and session scope.
+- MCP discovery must equal the tools callable by the active profile and packaged runtime. Side-effect annotations must be truthful, OAuth read/write scopes enforced, and declared structured outputs validated.
+- Every MCP attempt, including denied and failed calls, must emit tool KPI telemetry. Task completion claims require an idempotent task-outcome receipt with verification evidence.
+- The public multi-agent workflow must remain executable without hosted-only modules, persist workflow/job state, preserve worker failures, and terminate timed-out worker process groups.
+- Do not call production monitoring healthy without at least 20 measured task outcomes, 20 observed tool calls, and a healthy threshold verdict.
 
 ## 🛡️ Self-Harness Prevention Rules (Auto-Generated)
 

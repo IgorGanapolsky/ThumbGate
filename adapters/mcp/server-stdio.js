@@ -96,6 +96,7 @@ const {
   requestEscalation,
 } = require('../../scripts/human-escalation');
 const { recordReasoningTrace } = require('../../scripts/agent-reasoning-traces');
+const { recordToolCall } = require('../../scripts/tool-kpi-tracker');
 const {
   evaluateOperationalIntegrity,
 } = require('../../scripts/operational-integrity');
@@ -379,6 +380,9 @@ function toTextResult(payload) {
   const text = typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2);
   return {
     content: [{ type: 'text', text }],
+    ...(payload !== null && typeof payload === 'object'
+      ? { structuredContent: payload }
+      : {}),
   };
 }
 
@@ -416,7 +420,7 @@ function toCaptureFeedbackTextResult(result) {
   if (reminder) {
     blocks.push({ type: 'text', text: reminder });
   }
-  return { content: blocks };
+  return { content: blocks, structuredContent: result };
 }
 
 function formatContextPack(pack) {
@@ -758,10 +762,27 @@ function buildEstimateUncertaintyResponse(args = {}) {
 }
 
 async function callTool(name, args = {}) {
+  const attemptStartMs = Date.now();
   const activeProfile = getActiveMcpProfile();
-  assertToolAllowed(name, activeProfile);
+  try {
+    assertToolAllowed(name, activeProfile);
+  } catch (error) {
+    recordMcpToolTrace(name, args, {
+      success: false,
+      category: 'profile_denied',
+      evidence: [error.message],
+      latencyMs: Date.now() - attemptStartMs,
+    });
+    throw error;
+  }
   const capability = getToolCapability(name);
   if (!capability.available) {
+    recordMcpToolTrace(name, args, {
+      success: false,
+      category: 'capability',
+      evidence: capability.missingModules,
+      latencyMs: Date.now() - attemptStartMs,
+    });
     if (capability.availability === 'private_core') {
       return unavailablePrivateMcpFeature(name);
     }
@@ -788,6 +809,7 @@ async function callTool(name, args = {}) {
         success: false,
         category: 'contract',
         evidence: validation.errors,
+        latencyMs: Date.now() - attemptStartMs,
       });
       throw err;
     }
@@ -803,6 +825,7 @@ async function callTool(name, args = {}) {
         success: false,
         category: 'permission',
         evidence: [firewallResult.message],
+        latencyMs: Date.now() - attemptStartMs,
       });
       throw err;
     }
@@ -816,11 +839,24 @@ async function callTool(name, args = {}) {
       success: false,
       category: err.errorCategory || 'execution',
       evidence: [err.code || err.message || 'tool execution failed'],
-      latencyMs: Date.now() - startMs,
+      latencyMs: Date.now() - attemptStartMs,
     });
     throw err;
   }
   const latencyMs = Date.now() - startMs;
+  const outputValidation = validateMcpToolOutput(toolDef, result);
+  if (!outputValidation.valid) {
+    const err = new Error(`Structured output contract violation on '${name}': ${outputValidation.errors.join('; ')}`);
+    err.errorCategory = 'output_contract';
+    err.isRetryable = false;
+    recordMcpToolTrace(name, args, {
+      success: false,
+      category: 'output_contract',
+      evidence: outputValidation.errors,
+      latencyMs,
+    });
+    throw err;
+  }
   recordMcpToolTrace(name, args, {
     success: true,
     category: 'success',
@@ -840,7 +876,31 @@ async function callTool(name, args = {}) {
   return result;
 }
 
+function validateMcpToolOutput(toolDef, result) {
+  if (!toolDef || !toolDef.outputSchema) return { valid: true, errors: [] };
+  const { validateStructuredOutput } = require('../../scripts/tool-contract-validator');
+  if (!result || result.structuredContent === undefined) {
+    return { valid: false, errors: ['Tool response is missing structuredContent'] };
+  }
+  return validateStructuredOutput(result.structuredContent, toolDef.outputSchema);
+}
+
 function recordMcpToolTrace(name, args, outcome = {}) {
+  try {
+    recordToolCall({
+      toolName: name,
+      serverName: 'mcp',
+      latencyMs: Number(outcome.latencyMs || 0),
+      success: outcome.success === true,
+      agentId: args.agentId || args.processId || args.taskId || 'unknown',
+      metadata: {
+        category: outcome.category || 'unknown',
+        traceId: args.traceId || args.taskId || null,
+      },
+    });
+  } catch {
+    // KPI telemetry must not change the tool's functional outcome.
+  }
   try {
     const traceId = args.traceId || args.taskId || `mcp-${Date.now()}-${name}`;
     recordReasoningTrace({
@@ -902,6 +962,9 @@ async function callToolInner(name, args) {
         limit: Number(args.limit || 10),
         category: args.category,
         tags: Array.isArray(args.tags) ? args.tags : [],
+        scope: args.scope,
+        requireScope: args.requireScope === true,
+        includeShared: args.includeShared !== false,
       }));
     }
     case 'suggest_fix':
@@ -921,6 +984,9 @@ async function callToolInner(name, args) {
         {
           candidateCount: 20,
           maxResults: Number(args.maxResults || 5),
+          scope: args.scope,
+          requireScope: args.requireScope === true,
+          includeShared: args.includeShared !== false,
         },
       ));
     }
@@ -1747,5 +1813,6 @@ module.exports = {
     listAvailableTools,
     unavailablePrivateMcpFeature,
     callToolInner,
+    validateMcpToolOutput,
   },
 };

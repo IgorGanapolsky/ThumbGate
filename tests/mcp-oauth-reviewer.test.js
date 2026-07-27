@@ -46,23 +46,23 @@ async function register() {
   return r.client_id;
 }
 
-async function authorize(clientId, apiKey) {
+async function authorize(clientId, apiKey, scope = 'mcp:read mcp:write') {
   const { verifier, challenge } = pkce();
   const res = await fetch(`${base}/oauth/authorize`, {
     method: 'POST', redirect: 'manual',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       client_id: clientId, redirect_uri: REDIRECT, code_challenge: challenge,
-      code_challenge_method: 'S256', scope: 'mcp:read mcp:write', state: 's',
+      code_challenge_method: 'S256', scope, state: 's',
       resource, api_key: apiKey, approve: 'yes',
     }).toString(),
   });
   return { res, verifier };
 }
 
-async function tokenFor(apiKey) {
+async function tokenFor(apiKey, scope) {
   const clientId = await register();
-  const { res, verifier } = await authorize(clientId, apiKey);
+  const { res, verifier } = await authorize(clientId, apiKey, scope);
   assert.equal(res.status, 302, 'valid key authorizes');
   const code = new URL(res.headers.get('location')).searchParams.get('code');
   const tok = await (await fetch(`${base}/oauth/token`, {
@@ -98,7 +98,7 @@ test('reviewer key is read-only: read tools execute, write tools are blocked', a
   assert.ok(readTool, 'a read-only tool exists');
   assert.ok(writeTool, 'a write tool exists');
 
-  const reviewerTok = await tokenFor(REVIEWER_KEY);
+  const reviewerTok = await tokenFor(REVIEWER_KEY, 'mcp:read');
   const readRes = await callTool(reviewerTok, readTool.name);
   assert.notEqual(readRes.error && readRes.error.code, -32002, `reviewer may call read tool ${readTool.name}`);
   const writeRes = await callTool(reviewerTok, writeTool.name);
@@ -108,4 +108,16 @@ test('reviewer key is read-only: read tools execute, write tools are blocked', a
   const adminTok = await tokenFor(ADMIN_KEY);
   const adminWrite = await callTool(adminTok, writeTool.name);
   assert.notEqual(adminWrite.error && adminWrite.error.code, -32002, 'admin is not read-only restricted');
+});
+
+test('OAuth scope blocks write tools even for an admin-bound token', async () => {
+  const list = await (await fetch(`${base}/mcp`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 10, method: 'tools/list', params: {} }),
+  })).json();
+  const writeTool = list.result.tools.find((tool) => tool.annotations?.destructiveHint === true);
+  assert.ok(writeTool);
+  const readOnlyAdminToken = await tokenFor(ADMIN_KEY, 'mcp:read');
+  const response = await callTool(readOnlyAdminToken, writeTool.name);
+  assert.equal(response.error?.code, -32003);
 });

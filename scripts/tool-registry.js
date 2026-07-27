@@ -133,8 +133,20 @@ const TASK_OUTCOME_INPUT_SCHEMA = {
   },
 };
 
+const MEMORY_SCOPE_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['entityId', 'projectId', 'processId', 'sessionId'],
+  properties: {
+    entityId: { type: 'string', minLength: 1 },
+    projectId: { type: 'string', minLength: 1 },
+    processId: { type: 'string', minLength: 1 },
+    sessionId: { type: 'string', minLength: 1 },
+  },
+};
+
 const TOOLS = [
-  readOnlyTool({
+  destructiveTool({
     name: 'capture_feedback',
     description: 'Capture an up/down signal plus one line of why. Vague feedback is logged, then returned with a clarification prompt instead of memory promotion.',
     inputSchema: {
@@ -218,6 +230,9 @@ const TOOLS = [
         limit: { type: 'number', description: 'Maximum results to return (default 10)' },
         category: { type: 'string', enum: ['error', 'learning', 'preference'] },
         tags: { type: 'array', items: { type: 'string' }, description: 'Require all tags to be present on a lesson' },
+        scope: MEMORY_SCOPE_SCHEMA,
+        requireScope: { type: 'boolean', description: 'Fail closed unless a complete four-field scope is supplied.' },
+        includeShared: { type: 'boolean', description: 'Include explicitly shared memories with scoped results. Defaults true.' },
       },
     },
   }),
@@ -230,6 +245,9 @@ const TOOLS = [
         toolName: { type: 'string', description: 'The tool being called (e.g., Bash, Edit, Read)' },
         actionContext: { type: 'string', description: 'Description of what the tool call is doing' },
         maxResults: { type: 'number', description: 'Max lessons to return (default 5)' },
+        scope: MEMORY_SCOPE_SCHEMA,
+        requireScope: { type: 'boolean', description: 'Fail closed unless a complete four-field scope is supplied.' },
+        includeShared: { type: 'boolean', description: 'Include explicitly shared memories with scoped results. Defaults true.' },
       },
       required: ['toolName'],
     },
@@ -1047,6 +1065,16 @@ const TOOLS = [
     title: 'Record Verified Task Outcome',
     description: 'Record an idempotent task-level outcome with verification evidence, tool correctness, policy behavior, latency, cost, and business KPI movement. A completed response without evidence is recorded as not working.',
     inputSchema: TASK_OUTCOME_INPUT_SCHEMA,
+    outputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['recorded', 'duplicate', 'receipt'],
+      properties: {
+        recorded: { type: 'boolean' },
+        duplicate: { type: 'boolean' },
+        receipt: { type: 'object', additionalProperties: true },
+      },
+    },
   }),
   readOnlyTool({
     name: 'get_task_outcomes',
@@ -1069,6 +1097,22 @@ const TOOLS = [
       type: 'object',
       additionalProperties: false,
       properties: {},
+    },
+    outputSchema: {
+      type: 'object',
+      additionalProperties: true,
+      required: ['generatedAt', 'sampleSize', 'evidenceStatus', 'task', 'tools', 'safety', 'escalation', 'efficiency', 'businessOutcomes'],
+      properties: {
+        generatedAt: { type: 'string', format: 'date-time' },
+        sampleSize: { type: 'integer', minimum: 0 },
+        evidenceStatus: { type: 'string', enum: ['measured', 'insufficient_evidence'] },
+        task: { type: 'object', additionalProperties: true },
+        tools: { type: 'object', additionalProperties: true },
+        safety: { type: 'object', additionalProperties: true },
+        escalation: { type: 'object', additionalProperties: true },
+        efficiency: { type: 'object', additionalProperties: true },
+        businessOutcomes: { type: 'array' },
+      },
     },
   }),
   destructiveTool({

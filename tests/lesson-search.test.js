@@ -149,3 +149,50 @@ test('searchLessons can list recent lessons and filter by category/tags', () => 
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
+
+test('searchLessons filters polluted memories and isolates explicit scope', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lesson-search-scope-'));
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  try {
+    const common = {
+      projectId: 'thumbgate',
+      processId: 'agent-a',
+      sessionId: 'session-1',
+      category: 'error',
+      tags: ['negative', 'deployment'],
+      timestamp: '2026-07-27T12:00:00.000Z',
+    };
+    writeJsonl(path.join(tmpDir, 'memory-log.jsonl'), [
+      { ...common, id: 'alice', entityId: 'alice', title: 'Deployment check', content: 'Verify deployment health endpoint.' },
+      { ...common, id: 'bob', entityId: 'bob', title: 'Deployment check', content: 'Bob deployment health note.' },
+      {
+        ...common,
+        id: 'transport',
+        entityId: 'alice',
+        title: 'Raw transcript',
+        content: JSON.stringify({
+          session_id: 'session-1',
+          transcript_path: '/tmp/transcript.jsonl',
+          hook_event_name: 'PostToolUse',
+        }),
+      },
+    ]);
+
+    delete require.cache[require.resolve('../scripts/lesson-search')];
+    const { searchLessons } = require('../scripts/lesson-search');
+    const result = searchLessons('deployment health', {
+      scope: {
+        entityId: 'alice',
+        projectId: 'thumbgate',
+        processId: 'agent-a',
+        sessionId: 'session-1',
+      },
+    });
+    assert.deepEqual(result.results.map((entry) => entry.id), ['alice']);
+    assert.equal(result.totalLessons, 1);
+    assert.equal(result.excludedLessons, 2);
+    assert.equal(result.filters.requireScope, false);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});

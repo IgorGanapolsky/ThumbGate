@@ -76,7 +76,10 @@ test('task outcome and human escalation APIs preserve verification and identity 
       },
     });
     assert.equal(operatorMonitor.status, 200);
-    assert.equal((await operatorMonitor.json()).verdict, 'insufficient_evidence');
+    const monitorBody = await operatorMonitor.json();
+    assert.equal(monitorBody.verdict, 'insufficient_evidence');
+    assert.equal(monitorBody.observability.evidenceStatus, 'insufficient_evidence');
+    assert.equal(monitorBody.observability.minimumToolCalls, 20);
 
     const requested = await fetch(`${baseUrl}/v1/escalations`, {
       method: 'POST',

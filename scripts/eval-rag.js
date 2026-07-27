@@ -5,9 +5,16 @@ const fs = require('fs');
 const path = require('path');
 const { constructContextPack } = require('./contextfs');
 const { BUILTIN_EVAL_CASES } = require('./eval-harness');
+const { getSkillPack, matchSkillPacks } = require('./skill-packs');
 const llmClient = require('./llm-client');
 
 const REPORT_PATH = path.join(__dirname, '..', 'reports', 'eval-rag-report.md');
+const DEFAULT_THRESHOLDS = Object.freeze({
+  minCases: 6,
+  minRecall: 0.95,
+  minPrecision: 0.15,
+  minCaseRecall: 1,
+});
 
 // Helper to calculate exact lexical overlap/metric scoring
 function computeLexicalRecall(expected, text) {
@@ -68,36 +75,92 @@ Return ONLY valid JSON. Do not include any explanation or markdown code fences o
   }
 }
 
-async function runRagEval() {
+function retrieveEvalItems(evalCase) {
+  const domainPack = getSkillPack(evalCase.domain);
+  const matchedPack = domainPack || matchSkillPacks(evalCase.query)[0] || null;
+  const items = [];
+
+  if (matchedPack) {
+    items.push({
+      source: 'skill_pack',
+      title: matchedPack.name,
+      content: matchedPack.rules.join('\n'),
+    });
+  }
+
+  try {
+    const pack = constructContextPack({
+      query: evalCase.query,
+      maxItems: 5,
+      maxChars: 3000,
+    });
+    for (const item of (pack.items || [])) {
+      items.push({ ...item, source: item.source || 'learned_memory' });
+    }
+  } catch {
+    // Deterministic skill-pack evaluation still runs when no learned-memory
+    // store has been initialized in a clean install.
+  }
+
+  return items;
+}
+
+function evaluateThresholds(summary, thresholds = DEFAULT_THRESHOLDS) {
+  const failures = [];
+  if (summary.casesEvaluated < thresholds.minCases) {
+    failures.push(`cases ${summary.casesEvaluated} < ${thresholds.minCases}`);
+  }
+  if (summary.avgRecall < thresholds.minRecall) {
+    failures.push(`recall ${summary.avgRecall.toFixed(3)} < ${thresholds.minRecall.toFixed(3)}`);
+  }
+  if (summary.avgPrecision < thresholds.minPrecision) {
+    failures.push(`precision ${summary.avgPrecision.toFixed(3)} < ${thresholds.minPrecision.toFixed(3)}`);
+  }
+  for (const result of summary.results || []) {
+    if (result.lexicalRecall < thresholds.minCaseRecall) {
+      failures.push(`${result.id} recall ${result.lexicalRecall.toFixed(3)} < ${thresholds.minCaseRecall.toFixed(3)}`);
+    }
+  }
+  return {
+    passed: failures.length === 0,
+    failures,
+    thresholds,
+  };
+}
+
+async function runRagEval(options = {}) {
   console.log('Starting RAG Evaluation (Async Stack simulation)...');
+  const evalCases = options.cases || BUILTIN_EVAL_CASES;
+  const retrieveItems = options.retrieveItems || retrieveEvalItems;
+  const reportPath = options.reportPath || REPORT_PATH;
+  const enableLlmJudge = options.enableLlmJudge !== false;
   const results = [];
   let totalRecall = 0;
   let totalPrecision = 0;
   let casesEvaluated = 0;
 
-  for (const evalCase of BUILTIN_EVAL_CASES) {
-    let pack;
+  for (const evalCase of evalCases) {
+    let items = [];
     try {
-      pack = constructContextPack({ query: evalCase.query, maxItems: 5, maxChars: 3000 });
-    } catch (err) {
-      pack = { items: [], usedChars: 0 };
+      items = await retrieveItems(evalCase);
+    } catch {
+      items = [];
     }
-
-    const items = pack.items || [];
     const allText = items.map(i => (i.structuredContext && i.structuredContext.rawContent) || i.content || '').join('\n');
 
     // Lexical baseline scores
     const lexicalRecall = computeLexicalRecall(evalCase.expectedRuleHit, allText);
     const lexicalPrecision = computeLexicalPrecision(evalCase.expectedRuleHit, items);
 
-    // Dynamic LLM Ragas evaluation (optional)
-    const llmMetrics = await evaluateMetricsWithLlm(evalCase.query, evalCase.expectedRuleHit, items);
+    // The optional judge is diagnostic only. Deterministic metrics remain the
+    // release gate so credentials, model drift, and judge preference cannot
+    // turn the same retrieval result from pass to fail.
+    const llmMetrics = enableLlmJudge
+      ? await evaluateMetricsWithLlm(evalCase.query, evalCase.expectedRuleHit, items)
+      : null;
 
-    const finalRecall = llmMetrics ? llmMetrics.context_recall : lexicalRecall;
-    const finalPrecision = llmMetrics ? llmMetrics.context_precision : lexicalPrecision;
-
-    totalRecall += finalRecall;
-    totalPrecision += finalPrecision;
+    totalRecall += lexicalRecall;
+    totalPrecision += lexicalPrecision;
     casesEvaluated++;
 
     results.push({
@@ -108,22 +171,31 @@ async function runRagEval() {
       lexicalRecall,
       lexicalPrecision,
       llmMetrics,
-      finalRecall,
-      finalPrecision,
+      finalRecall: lexicalRecall,
+      finalPrecision: lexicalPrecision,
     });
   }
 
   const avgRecall = casesEvaluated > 0 ? (totalRecall / casesEvaluated) : 0;
   const avgPrecision = casesEvaluated > 0 ? (totalPrecision / casesEvaluated) : 0;
+  const gate = evaluateThresholds({
+    casesEvaluated,
+    avgRecall,
+    avgPrecision,
+    results,
+  }, options.thresholds || DEFAULT_THRESHOLDS);
 
   // Render markdown report
   const reportLines = [
-    '# RAG Precision & Evaluation Report (Ragas Metrics)',
+    '# RAG Precision & Evaluation Report',
     '',
     `**Timestamp**: ${new Date().toISOString()}`,
-    `**Average Context Recall**: ${(avgRecall * 100).toFixed(1)}%`,
-    `**Average Context Precision**: ${(avgPrecision * 100).toFixed(1)}%`,
-    `**API Key Available**: ${llmClient.isAvailable() ? 'Yes (LLM-as-a-judge active)' : 'No (Fallback to deterministic keyword eval)'}`,
+    `**Release Gate**: ${gate.passed ? 'PASS' : 'FAIL'}`,
+    `**Deterministic Context Recall**: ${(avgRecall * 100).toFixed(1)}%`,
+    `**Deterministic Context Precision**: ${(avgPrecision * 100).toFixed(1)}%`,
+    `**Cases**: ${casesEvaluated}`,
+    `**LLM Judge**: ${llmClient.isAvailable() && enableLlmJudge ? 'Diagnostic only' : 'Not active'}`,
+    `**Thresholds**: recall >= ${(gate.thresholds.minRecall * 100).toFixed(0)}%, precision >= ${(gate.thresholds.minPrecision * 100).toFixed(0)}%, cases >= ${gate.thresholds.minCases}, every case recall >= ${(gate.thresholds.minCaseRecall * 100).toFixed(0)}%`,
     '',
     '## Evaluation Results by Case',
     '',
@@ -132,10 +204,14 @@ async function runRagEval() {
   ];
 
   for (const r of results) {
-    const mode = r.llmMetrics ? 'LLM-Judge' : 'Lexical-Fallback';
+    const mode = r.llmMetrics ? 'Deterministic + diagnostic judge' : 'Deterministic';
     reportLines.push(
       `| ${r.id} | "${r.query}" | \`${r.expectedRuleHit}\` | ${r.retrievedCount} | ${(r.finalRecall * 100).toFixed(0)}% | ${(r.finalPrecision * 100).toFixed(0)}% | ${mode} |`
     );
+  }
+
+  if (!gate.passed) {
+    reportLines.push('', '## Release Gate Failures', '', ...gate.failures.map((failure) => `- ${failure}`));
   }
 
   reportLines.push('', '## Diagnostics and Reasoning');
@@ -150,26 +226,32 @@ async function runRagEval() {
   const reportContent = reportLines.join('\n');
 
   // Make sure directories exist
-  const dir = path.dirname(REPORT_PATH);
+  const dir = path.dirname(reportPath);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 
-  fs.writeFileSync(REPORT_PATH, reportContent, 'utf-8');
-  console.log(`RAG evaluation report saved to: ${REPORT_PATH}`);
+  fs.writeFileSync(reportPath, reportContent, 'utf-8');
+  console.log(`RAG evaluation report saved to: ${reportPath}`);
 
   return {
     results,
     summary: {
       avgRecall,
       avgPrecision,
-      reportPath: REPORT_PATH,
-    }
+      casesEvaluated,
+      reportPath,
+      passed: gate.passed,
+      failures: gate.failures,
+      thresholds: gate.thresholds,
+    },
   };
 }
 
 if (require.main === module) {
-  runRagEval().catch(err => {
+  runRagEval().then((outcome) => {
+    if (!outcome.summary.passed) process.exitCode = 1;
+  }).catch(err => {
     console.error('RAG evaluation failed:', err);
     process.exit(1);
   });
@@ -179,4 +261,7 @@ module.exports = {
   runRagEval,
   computeLexicalRecall,
   computeLexicalPrecision,
+  evaluateThresholds,
+  retrieveEvalItems,
+  DEFAULT_THRESHOLDS,
 };

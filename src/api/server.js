@@ -172,7 +172,8 @@ const {
   readTaskOutcomes,
   recordTaskOutcome,
 } = require('../../scripts/task-outcomes');
-const { monitorTaskOutcomes } = require('../../scripts/agent-outcome-monitor');
+const { monitorProductionSignals } = require('../../scripts/agent-outcome-monitor');
+const { computeToolKpis } = require('../../scripts/tool-kpi-tracker');
 const {
   calculateEscalationMetrics,
   decideEscalation,
@@ -876,11 +877,13 @@ function updateLessonRecord(feedbackDir, lessonId, updater) {
 }
 
 function getPublicMcpTools() {
-  return MCP_TOOLS.map((tool) => ({
+  const { getExposedTools } = require('../../adapters/mcp/server-stdio');
+  return getExposedTools().map((tool) => ({
     name: tool.name,
     ...(tool.title ? { title: tool.title } : {}),
     description: tool.description,
     inputSchema: tool.inputSchema,
+    ...(tool.outputSchema ? { outputSchema: tool.outputSchema } : {}),
     // Serve the tool-registry annotations (readOnlyHint/destructiveHint). Required
     // by the Claude Connectors Directory (missing annotations = the #1 rejection
     // cause) and used by MCP clients for permission prompts. Was being dropped here.
@@ -889,13 +892,7 @@ function getPublicMcpTools() {
 }
 
 function getServerCardTools() {
-  return MCP_TOOLS.map((tool) => ({
-    name: tool.name,
-    ...(tool.title ? { title: tool.title } : {}),
-    description: tool.description,
-    inputSchema: tool.inputSchema,
-    ...(tool.annotations ? { annotations: tool.annotations } : {}),
-  }));
+  return getPublicMcpTools();
 }
 
 function buildPublicUrl(hostedConfig, pathname) {
@@ -905,7 +902,7 @@ function buildPublicUrl(hostedConfig, pathname) {
 const VERIFICATION_EVIDENCE_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
 
 function getToolDiscoveryIndex(hostedConfig) {
-  return MCP_TOOLS.map((tool) => ({
+  return getPublicMcpTools().map((tool) => ({
     name: tool.name,
     description: tool.description,
     annotations: tool.annotations || {},
@@ -915,7 +912,7 @@ function getToolDiscoveryIndex(hostedConfig) {
 
 function getContextFootprintReport(hostedConfig) {
   return buildContextFootprintReport({
-    tools: MCP_TOOLS,
+    tools: getPublicMcpTools(),
     schemaUrlTemplate: buildPublicUrl(hostedConfig, '/.well-known/mcp/tools/{name}.json'),
   });
 }
@@ -5302,6 +5299,18 @@ function createApiServer() {
                   return;
                 }
               }
+              if (oauthSession) {
+                const name = msg.params && msg.params.name;
+                const tool = MCP_TOOLS.find((candidate) => candidate.name === name);
+                const requiredScope = tool?.annotations?.readOnlyHint === true ? 'mcp:read' : 'mcp:write';
+                if (!mcpOauth.scopeAllows(oauthSession, requiredScope)) {
+                  sendJson(res, 200, {
+                    jsonrpc: '2.0', id: msg.id,
+                    error: { code: -32003, message: `OAuth token is missing required scope "${requiredScope}".` },
+                  });
+                  return;
+                }
+              }
               (async () => {
                 try {
                   const { callTool } = require('../../adapters/mcp/server-stdio');
@@ -5310,7 +5319,7 @@ function createApiServer() {
                   const result = await callTool(name, args);
                   sendJson(res, 200, {
                     jsonrpc: '2.0', id: msg.id,
-                    result: { content: [{ type: 'text', text: typeof result === 'string' ? result : JSON.stringify(result) }] },
+                    result,
                   });
                 } catch (err) {
                   sendJson(res, 200, {
@@ -6993,7 +7002,8 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           // are configured (production) the key MUST match a configured admin /
           // operator / reviewer key — otherwise OAuth would authenticate nobody.
           // In insecure/dev mode (no keys configured) any non-empty key is accepted.
-          if (!resolveKeyRole(form.get('api_key') || '')) {
+          const keyRole = resolveKeyRole(form.get('api_key') || '');
+          if (!keyRole) {
             sendJson(res, 400, { error: 'access_denied', error_description: 'invalid ThumbGate API key' });
             return;
           }
@@ -7003,6 +7013,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
             codeChallenge: authorizationParams.codeChallenge,
             codeChallengeMethod: authorizationParams.codeChallengeMethod,
             scope: authorizationParams.scope,
+            allowedScopes: keyRole === 'reviewer' ? ['mcp:read'] : mcpOauth.SUPPORTED_SCOPES,
             resource: authorizationParams.resource || buildPublicUrl(hostedConfig, '/mcp'),
             boundKey: form.get('api_key') || '',
             state,
@@ -7046,7 +7057,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       sendJson(res, 200, {
         name: 'thumbgate',
         version: pkg.version,
-        count: MCP_TOOLS.length,
+        count: getPublicMcpTools().length,
         tools: getToolDiscoveryIndex(hostedConfig),
       }, {}, {
         headOnly: isHeadRequest,
@@ -7079,7 +7090,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         });
         return;
       }
-      const tool = MCP_TOOLS.find((candidate) => candidate.name === toolName);
+      const tool = getPublicMcpTools().find((candidate) => candidate.name === toolName);
       if (!tool) {
         sendJson(res, 404, {
           error: 'tool_not_found',
@@ -7095,6 +7106,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         description: tool.description,
         annotations: tool.annotations || {},
         inputSchema: tool.inputSchema,
+        ...(tool.outputSchema ? { outputSchema: tool.outputSchema } : {}),
       }, {}, {
         headOnly: isHeadRequest,
       });
@@ -9123,7 +9135,8 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
 
       if (req.method === 'GET' && pathname === '/v1/task-outcomes/monitor') {
         const outcomes = readTaskOutcomes({ feedbackDir: requestFeedbackDir });
-        sendJson(res, 200, monitorTaskOutcomes(outcomes));
+        const toolKpis = computeToolKpis({ feedbackDir: requestFeedbackDir });
+        sendJson(res, 200, monitorProductionSignals(outcomes, toolKpis));
         return;
       }
 

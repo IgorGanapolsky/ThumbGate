@@ -63,6 +63,14 @@ test('detectPrivilegeEscalation allows readonly profile reading', () => {
   assert.equal(r.escalation, false);
 });
 
+test('security profile allowlists stay identical to MCP execution policy', () => {
+  const { loadMcpPolicy } = require('../scripts/mcp-policy');
+  const policy = loadMcpPolicy();
+  for (const [profile, tools] of Object.entries(policy.profiles)) {
+    assert.deepEqual([...sec.PROFILE_ALLOWLISTS[profile]], tools);
+  }
+});
+
 test('detectPrivilegeEscalation handles unknown profile', () => {
   const r = sec.detectPrivilegeEscalation({ agentId: 'a1', toolName: 'recall', mcpProfile: 'custom_unknown' });
   assert.equal(r.escalation, false);
