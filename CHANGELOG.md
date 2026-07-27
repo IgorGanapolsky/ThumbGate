@@ -166,17 +166,6 @@
 - f50e69b: Remove accidentally committed manufacturing prototype SQLite/LanceDB runtime stores, move plan.md under docs/, and harden gitignore against re-adding binary prototype data.
 - bdde129: Add evidence-backed task outcome receipts, recursive tool and structured-output validation, privacy-safe runtime traces, bounded idempotent retries, a human-owned escalation queue, golden outcome regressions, and production monitoring that fails closed on missing evidence.
 
-## Unreleased
-
-### Patch Changes
-
-- Add verified task outcomes, recursive tool and structured-output contracts,
-  privacy-safe runtime traces, idempotent retry budgets, human escalation,
-  golden regressions, and production outcome monitoring. The npm bundle grows
-  from 359 to 369 files because the four new public runtime modules, five
-  schemas/evaluation artifacts, and existing local schedule manager must ship
-  with the advertised API, MCP tools, and daily monitor installer.
-
 ## 1.29.1
 
 ### Patch Changes
