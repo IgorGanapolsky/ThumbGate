@@ -338,7 +338,12 @@ function hashReceipt(receipt) {
 function stableStringify(value) {
   if (!value || typeof value !== 'object') return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
-  return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
+  const keys = Object.keys(value).sort((left, right) => left.localeCompare(right));
+  const properties = keys.map((key) => [
+    JSON.stringify(key),
+    stableStringify(value[key]),
+  ].join(':'));
+  return ['{', properties.join(','), '}'].join('');
 }
 
 function percentile(values, quantile) {

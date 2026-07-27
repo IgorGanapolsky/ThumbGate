@@ -157,10 +157,9 @@ function handleStepError({
 }
 
 async function runStep(name, options, fn) {
-  if (typeof options === 'function') {
-    fn = options;
-    options = {};
-  }
+  const invocation = normalizeStepInvocation(options, fn);
+  options = invocation.options;
+  fn = invocation.fn;
   const {
     retries = 3,
     backoffMs = DEFAULT_BACKOFF_MS,
@@ -177,18 +176,11 @@ async function runStep(name, options, fn) {
     randomFn = Math.random,
   } = options || {};
 
-  if (typeof fn !== 'function') {
-    throw new TypeError(`runStep(${name}): fn must be a function`);
-  }
-  if (sideEffect && !String(stepIdempotencyKey || '').trim()) {
-    const error = new Error(`runStep(${name}): side-effecting steps require idempotencyKey`);
-    error.code = 'THUMBGATE_IDEMPOTENCY_KEY_REQUIRED';
-    error.nonRetryable = true;
-    throw error;
-  }
-  if (!Number.isFinite(Number(maxElapsedMs)) && maxElapsedMs !== Infinity) {
-    throw new TypeError(`runStep(${name}): maxElapsedMs must be finite or Infinity`);
-  }
+  validateStepConfiguration(name, fn, {
+    sideEffect,
+    stepIdempotencyKey,
+    maxElapsedMs,
+  });
 
   let lastErr;
   const startedAt = Date.now();
@@ -199,7 +191,7 @@ async function runStep(name, options, fn) {
       idempotencyKey: stepIdempotencyKey || null,
       elapsedMs: Date.now() - startedAt,
     };
-    if (typeof onAttempt === 'function') onAttempt(context);
+    callIfFunction(onAttempt, context);
     try {
       return await fn(context);
     } catch (err) {
@@ -218,19 +210,64 @@ async function runStep(name, options, fn) {
         randomFn,
       });
       if (outcome.terminal) throw err;
-      const elapsedMs = Date.now() - startedAt;
-      if (elapsedMs + outcome.waitMs > maxElapsedMs) {
-        err.code = err.code || 'THUMBGATE_RETRY_BUDGET_EXHAUSTED';
-        err.retryBudgetExhausted = true;
-        if (typeof onFail === 'function') {
-          onFail({ name, attempt, err, verdict: 'retry_budget_exhausted' });
-        }
-        throw err;
-      }
+      enforceRetryBudget({
+        err,
+        attempt,
+        name,
+        onFail,
+        startedAt,
+        waitMs: outcome.waitMs,
+        maxElapsedMs,
+      });
       await sleepFn(outcome.waitMs);
     }
   }
   throw lastErr;
+}
+
+function normalizeStepInvocation(options, fn) {
+  if (typeof options === 'function') return { options: {}, fn: options };
+  return { options: options || {}, fn };
+}
+
+function validateStepConfiguration(name, fn, options) {
+  if (typeof fn !== 'function') {
+    throw new TypeError(`runStep(${name}): fn must be a function`);
+  }
+  if (options.sideEffect && !String(options.stepIdempotencyKey || '').trim()) {
+    const error = new Error(`runStep(${name}): side-effecting steps require idempotencyKey`);
+    error.code = 'THUMBGATE_IDEMPOTENCY_KEY_REQUIRED';
+    error.nonRetryable = true;
+    throw error;
+  }
+  if (!Number.isFinite(Number(options.maxElapsedMs)) && options.maxElapsedMs !== Infinity) {
+    throw new TypeError(`runStep(${name}): maxElapsedMs must be finite or Infinity`);
+  }
+}
+
+function callIfFunction(callback, payload) {
+  if (typeof callback === 'function') callback(payload);
+}
+
+function enforceRetryBudget({
+  err,
+  attempt,
+  name,
+  onFail,
+  startedAt,
+  waitMs,
+  maxElapsedMs,
+}) {
+  if (Date.now() - startedAt + waitMs <= maxElapsedMs) return;
+  err.code = err.code || 'THUMBGATE_RETRY_BUDGET_EXHAUSTED';
+  err.retryBudgetExhausted = true;
+  callIfFunction(onFail, {
+    name,
+    attempt,
+    err,
+    verdict: 'retry_budget_exhausted',
+  });
+  throw err;
 }
 
 module.exports = {

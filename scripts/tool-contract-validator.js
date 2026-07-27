@@ -10,7 +10,7 @@
 
 const FORMAT_CHECKS = Object.freeze({
   'date-time': (value) => !Number.isNaN(Date.parse(value)) && /T/.test(value),
-  email: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+  email: isEmail,
   uri: (value) => {
     try {
       new URL(value);
@@ -45,6 +45,21 @@ function validateStructuredOutput(output, schema) {
   return { ...result, value };
 }
 
+function validateConstant(schema, value, path, errors) {
+  if (schema.const !== undefined && !deepEqual(value, schema.const)) {
+    errors.push(`${label(path)} must equal ${display(schema.const)} (got ${display(value)})`);
+  }
+}
+
+function validateEnum(schema, value, path, errors) {
+  if (!Array.isArray(schema.enum) || schema.enum.some((entry) => deepEqual(entry, value))) return;
+  if (path && schema.type === 'string') {
+    errors.push(`Parameter '${path}' must be one of [${schema.enum.join(', ')}] (got '${value}')`);
+    return;
+  }
+  errors.push(`${label(path)} must be one of [${schema.enum.map(display).join(', ')}] (got ${display(value)})`);
+}
+
 function validateValue(schema, value, path, errors) {
   if (schema === true || !schema) return;
   if (schema === false) {
@@ -52,16 +67,8 @@ function validateValue(schema, value, path, errors) {
     return;
   }
 
-  if (schema.const !== undefined && !deepEqual(value, schema.const)) {
-    errors.push(`${label(path)} must equal ${display(schema.const)} (got ${display(value)})`);
-  }
-  if (Array.isArray(schema.enum) && !schema.enum.some((entry) => deepEqual(entry, value))) {
-    if (path && schema.type === 'string') {
-      errors.push(`Parameter '${path}' must be one of [${schema.enum.join(', ')}] (got '${value}')`);
-    } else {
-      errors.push(`${label(path)} must be one of [${schema.enum.map(display).join(', ')}] (got ${display(value)})`);
-    }
-  }
+  validateConstant(schema, value, path, errors);
+  validateEnum(schema, value, path, errors);
 
   validateCombinators(schema, value, path, errors);
 
@@ -103,15 +110,16 @@ function validateChild(schema, value) {
   return { valid: errors.length === 0, errors };
 }
 
-function validateObject(schema, value, path, errors) {
-  const keys = Object.keys(value);
+function validatePropertyCount(schema, keys, path, errors) {
   if (Number.isFinite(schema.minProperties) && keys.length < schema.minProperties) {
     errors.push(`${label(path)} must have at least ${schema.minProperties} properties`);
   }
   if (Number.isFinite(schema.maxProperties) && keys.length > schema.maxProperties) {
     errors.push(`${label(path)} must have at most ${schema.maxProperties} properties`);
   }
+}
 
+function validateRequiredProperties(schema, value, path, errors) {
   for (const required of schema.required || []) {
     if (value[required] === undefined || value[required] === null || value[required] === '') {
       const requiredPath = joinPath(path, required);
@@ -121,21 +129,34 @@ function validateObject(schema, value, path, errors) {
       if (path && requiredPath === path) break;
     }
   }
+}
 
+function validateKnownProperties(schema, value, path, errors) {
   const properties = schema.properties || {};
   for (const [key, childSchema] of Object.entries(properties)) {
     if (value[key] === undefined) continue;
     validateValue(childSchema, value[key], joinPath(path, key), errors);
   }
+}
 
+function validateAdditionalProperties(schema, value, keys, path, errors) {
+  const properties = schema.properties || {};
   for (const key of keys) {
-    if (Object.prototype.hasOwnProperty.call(properties, key)) continue;
+    if (Object.hasOwn(properties, key)) continue;
     if (schema.additionalProperties === false) {
       errors.push(`Unexpected parameter: '${joinPath(path, key)}'`);
     } else if (schema.additionalProperties && typeof schema.additionalProperties === 'object') {
       validateValue(schema.additionalProperties, value[key], joinPath(path, key), errors);
     }
   }
+}
+
+function validateObject(schema, value, path, errors) {
+  const keys = Object.keys(value);
+  validatePropertyCount(schema, keys, path, errors);
+  validateRequiredProperties(schema, value, path, errors);
+  validateKnownProperties(schema, value, path, errors);
+  validateAdditionalProperties(schema, value, keys, path, errors);
 }
 
 function validateArray(schema, value, path, errors) {
@@ -210,6 +231,15 @@ function matchesType(type, value) {
   return typeof value === type;
 }
 
+function isEmail(value) {
+  if (typeof value !== 'string' || /\s/.test(value)) return false;
+  const atIndex = value.indexOf('@');
+  if (atIndex <= 0 || atIndex !== value.lastIndexOf('@')) return false;
+  const domain = value.slice(atIndex + 1);
+  const dotIndex = domain.lastIndexOf('.');
+  return dotIndex > 0 && dotIndex < domain.length - 1;
+}
+
 function jsonType(value) {
   if (value === null) return 'null';
   if (Array.isArray(value)) return 'array';
@@ -220,9 +250,15 @@ function jsonType(value) {
 
 function typeError(path, types, value) {
   const expected = types.length === 1 ? types[0] : types.join(' or ');
-  const actual = value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value;
+  const actual = actualTypeName(value);
   if (!path) return `Expected ${expected}, got ${actual}`;
   return `Parameter '${path}' must be ${article(expected)} ${expected} (got ${actual})`;
+}
+
+function actualTypeName(value) {
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return 'array';
+  return typeof value;
 }
 
 function article(value) {
@@ -245,7 +281,12 @@ function display(value) {
 function stableStringify(value) {
   if (!value || typeof value !== 'object') return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
-  return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
+  const keys = Object.keys(value).sort((left, right) => left.localeCompare(right));
+  const properties = keys.map((key) => [
+    JSON.stringify(key),
+    stableStringify(value[key]),
+  ].join(':'));
+  return ['{', properties.join(','), '}'].join('');
 }
 
 function deepEqual(a, b) {

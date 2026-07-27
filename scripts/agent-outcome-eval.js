@@ -17,8 +17,10 @@ const DEFAULT_BASELINE = path.join(ROOT, 'config', 'evals', 'agent-outcomes-base
 function runCase(testCase = {}) {
   const receipt = normalizeTaskOutcome(testCase.receipt, new Date('2026-07-26T00:00:00.000Z'));
   const validation = validateToolContract(TASK_OUTCOME_SCHEMA, receipt);
-  const expectedReasons = [...(testCase.expected?.reasons || [])].sort();
-  const actualReasons = [...(receipt.workingReasons || [])].sort();
+  const expectedReasons = [...(testCase.expected?.reasons || [])]
+    .sort((left, right) => left.localeCompare(right));
+  const actualReasons = [...(receipt.workingReasons || [])]
+    .sort((left, right) => left.localeCompare(right));
   const checks = [
     {
       id: 'schema_valid',

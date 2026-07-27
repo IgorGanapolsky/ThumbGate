@@ -56,11 +56,15 @@ function monitorTaskOutcomes(outcomes = [], options = {}) {
       });
     }
   }
+  let verdict = 'healthy';
+  if (alerts.some((alert) => alert.severity === 'block')) {
+    verdict = 'blocked';
+  } else if (alerts.length > 0) {
+    verdict = 'watch';
+  }
   return {
     generatedAt: new Date().toISOString(),
-    verdict: alerts.some((alert) => alert.severity === 'block')
-      ? 'blocked'
-      : alerts.length ? 'watch' : 'healthy',
+    verdict,
     sampleSize: metrics.sampleSize,
     minimumSamples,
     alerts,
@@ -205,9 +209,9 @@ function buildAgentOutcomeMonitorSchedule(options = {}) {
   };
 }
 
-function installAgentOutcomeMonitorSchedule(options = {}, manager) {
+function installAgentOutcomeMonitorSchedule(options, manager) {
   const scheduleManager = manager || require('./schedule-manager');
-  return scheduleManager.createSchedule(buildAgentOutcomeMonitorSchedule(options));
+  return scheduleManager.createSchedule(buildAgentOutcomeMonitorSchedule(options || {}));
 }
 
 async function main(argv = process.argv.slice(2)) {

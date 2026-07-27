@@ -748,6 +748,60 @@ function compareReports(currentReport, baselineReport) {
   };
 }
 
+function logSafeResult(result, index) {
+  const allowedStatuses = new Set(['pass', 'fail', 'error', 'skip']);
+  return {
+    case: index + 1,
+    status: allowedStatuses.has(result.status) ? result.status : 'error',
+    score: Number(result.score || 0),
+    passCount: Number(result.passCount || 0),
+    totalChecks: Number(result.totalChecks || 0),
+  };
+}
+
+function logSafeReport(report, suite, fromFeedback) {
+  const source = suite?.source || {};
+  const comparison = report.comparison
+    ? {
+        baselineScore: Number(report.comparison.baselineScore || 0),
+        scoreDelta: Number(report.comparison.scoreDelta || 0),
+        regressionCount: Number(report.comparison.regressions?.length || 0),
+        improvementCount: Number(report.comparison.improvements?.length || 0),
+        baselineCases: Number(report.comparison.baselineCases || 0),
+        currentCases: Number(report.comparison.currentCases || 0),
+        baselineCoverageRate: report.comparison.baselineCoverageRate,
+      }
+    : undefined;
+  return {
+    suiteType: fromFeedback ? 'feedback-derived' : 'configured',
+    total: Number(report.total || 0),
+    passed: Number(report.passed || 0),
+    failed: Number(report.failed || 0),
+    errors: Number(report.errors || 0),
+    skipped: Number(report.skipped || 0),
+    score: Number(report.score || 0),
+    minScore: Number(report.minScore || 0),
+    pass: report.pass === true,
+    noCases: report.noCases === true,
+    evidenceStatus: report.evidenceStatus === 'measured' ? 'measured' : 'insufficient_evidence',
+    feedbackDerived: report.feedbackDerived === true,
+    syntheticCount: Number(report.syntheticCount || 0),
+    comparison,
+    results: (report.results || []).map(logSafeResult),
+    suiteDefinition: fromFeedback
+      ? {
+          version: Number(suite?.version || 0),
+          source: {
+            type: 'feedback-log',
+            totalEntries: Number(source.totalEntries || 0),
+            selectedCases: Number(source.selectedCases || 0),
+          },
+          evaluationCount: Number(suite?.evaluations?.length || 0),
+        }
+      : undefined,
+  };
+}
+
 function writeReport(report, outputPath) {
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, JSON.stringify(report, null, 2) + '\n');
@@ -869,7 +923,7 @@ if (isCliInvocation()) {
   }
 
   if (json) {
-    console.log(JSON.stringify({ ...report, suiteDefinition: fromFeedback ? suite : undefined }, null, 2));
+    console.log(JSON.stringify(logSafeReport(report, suite, fromFeedback), null, 2));
   } else {
     console.log(`\n${report.suite}`);
     console.log('='.repeat(50));
@@ -905,6 +959,7 @@ module.exports = {
   gradeOutput,
   loadSuite,
   loadReport,
+  logSafeReport,
   compareReports,
   readJsonl,
   runEvaluation,

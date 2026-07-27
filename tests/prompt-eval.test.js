@@ -14,6 +14,7 @@ const {
   runEvaluation,
   gradeOutput,
   loadSuite,
+  logSafeReport,
   compareReports,
   writeReport,
   loadReport,
@@ -329,6 +330,72 @@ test('runFeedbackEvalSuite reads feedback-log.jsonl and returns proof report dat
   assert.match(proof, /Feedback-Derived Coverage/);
   assert.match(proof, /Buyer Proof/);
 
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+test('logSafeReport excludes feedback text and file paths from console payloads', () => {
+  const confidential = 'confidential-customer-payload';
+  const suite = buildEvalSuiteFromFeedback([{
+    id: 'private-feedback-id',
+    signal: 'down',
+    context: confidential,
+    whatToChange: 'Verify results before completion',
+  }], {
+    sourcePath: `/private/${confidential}/feedback-log.jsonl`,
+  });
+  const report = {
+    total: 1,
+    passed: 0,
+    failed: 1,
+    errors: 0,
+    skipped: 0,
+    score: 0,
+    minScore: 80,
+    pass: false,
+    noCases: false,
+    evidenceStatus: 'measured',
+    feedbackDerived: true,
+    results: [{
+      id: confidential,
+      status: 'fail',
+      score: 0,
+      checks: [{ criterion: confidential, detail: confidential, pass: false }],
+    }],
+  };
+
+  const payload = JSON.stringify(logSafeReport(report, suite, true));
+  assert.doesNotMatch(payload, new RegExp(confidential));
+  assert.doesNotMatch(payload, /private-feedback-id/);
+  assert.equal(JSON.parse(payload).suiteDefinition.source.selectedCases, 1);
+});
+
+test('feedback-derived JSON CLI output does not log confidential feedback', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-prompt-eval-confidential-'));
+  const feedbackLog = path.join(tmpDir, 'feedback-log.jsonl');
+  const confidential = 'customer-secret-incident-context';
+  fs.writeFileSync(feedbackLog, `${JSON.stringify({
+    id: 'private-feedback-id',
+    signal: 'down',
+    context: confidential,
+    whatWentWrong: 'A private workflow failed',
+    whatToChange: 'Verify privately before completion',
+  })}\n`, 'utf8');
+
+  const result = spawnSync(process.execPath, [
+    path.join(__dirname, '..', 'scripts', 'prompt-eval.js'),
+    '--from-feedback',
+    `--feedback-log=${feedbackLog}`,
+    '--json',
+    '--min-score=0',
+  ], {
+    encoding: 'utf8',
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.doesNotMatch(result.stdout, new RegExp(confidential));
+  assert.doesNotMatch(result.stdout, /private-feedback-id/);
+  assert.doesNotMatch(result.stdout, new RegExp(tmpDir));
+  assert.equal(JSON.parse(result.stdout).suiteDefinition.source.selectedCases, 1);
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
