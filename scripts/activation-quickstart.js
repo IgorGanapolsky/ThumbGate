@@ -93,6 +93,7 @@ async function runActivationFlow({ ask, out, isTTY, deps = {} }) {
         whatToChange: `Block this action: ${mistake}`,
         tags: 'quickstart,activation,first-rule',
         gateAction: 'block',
+        reviewOrigin: 'human',
       });
     } catch {
       // Capture failure should not abort the activation aha.

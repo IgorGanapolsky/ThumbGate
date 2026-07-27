@@ -8,7 +8,6 @@ const {
   buildFeedbackSourceIdentity,
   getFeedbackPaths,
   readJSONL,
-  analyzeFeedback,
 } = require('./feedback-loop');
 const { detectFeedbackSignal, normalizeFeedbackText } = require('./feedback-quality');
 const {
@@ -279,6 +278,7 @@ function syncClaudeHistoryFeedback(options = {}) {
         whatWorked: candidate.signal === 'up' ? candidate.promptText : undefined,
         tags: ['claude-history-sync', 'auto-capture-fallback'],
         sourceEvent,
+        reviewOrigin: 'human',
       });
 
       if (captureResult?.duplicate) {
@@ -300,7 +300,8 @@ function syncClaudeHistoryFeedback(options = {}) {
     }, { feedbackDir });
 
     if (importedCount > 0) {
-      refreshStatuslineCache(analyzeFeedback(path.join(feedbackDir, 'feedback-log.jsonl')), path.join(feedbackDir, 'statusline_cache.json'));
+      const { analyzeFeedback } = require('./feedback-loop');
+      refreshStatuslineCache(analyzeFeedback(path.join(feedbackDir, 'feedback-log.jsonl'), { humanOnly: true }), path.join(feedbackDir, 'statusline_cache.json'));
     }
 
     return {

@@ -5697,6 +5697,7 @@ function createApiServer() {
           context: 'Quick capture from Claude Code statusline',
           chatHistory,
           tags: ['statusline', 'quick-capture'],
+          reviewOrigin: 'human',
         });
         const emoji = signal === 'up' ? '👍' : '👎';
         const color = signal === 'up' ? '#22c55e' : '#ef4444';
@@ -8514,7 +8515,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       if (req.method === 'GET' && pathname === '/v1/feedback/stats') {
         const stats = shouldAggregateFeedback()
           ? computeAggregateFeedbackStats({ feedbackDir: requestFeedbackPaths.FEEDBACK_DIR })
-          : analyzeFeedback(requestFeedbackPaths.FEEDBACK_LOG_PATH);
+          : analyzeFeedback(requestFeedbackPaths.FEEDBACK_LOG_PATH, { humanOnly: true });
         try {
           const { getStatuslineMeta } = require('../../scripts/statusline-meta');
           const meta = getStatuslineMeta({ env: process.env });
@@ -9329,6 +9330,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           guardrails: body.guardrails,
           tags: extractTags(body.tags),
           skill: body.skill,
+          reviewOrigin: 'human',
         });
         const actionIntegration = inferActionIntegration(body, req.headers);
         appendBestEffortTelemetry(requestFeedbackDir, {

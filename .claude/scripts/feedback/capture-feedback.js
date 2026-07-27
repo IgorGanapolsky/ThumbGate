@@ -37,7 +37,7 @@ function refreshStatuslineCacheBestEffort() {
     // wrong for the cache merge.
     let stats;
     try {
-      stats = analyzeFeedback() || {};
+      stats = analyzeFeedback(undefined, { humanOnly: true }) || {};
     } catch (_err) {
       stats = {};
     }
@@ -138,6 +138,7 @@ function main() {
     guardrails: args.guardrails,
     tags: args.tags,
     skill: args.skill,
+    reviewOrigin: 'human',
   });
 
   if (result.accepted) {

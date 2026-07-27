@@ -68,7 +68,10 @@ function dedupedSummary(...entryGroups) {
 function writeLog(dir, entries) {
   fs.mkdirSync(dir, { recursive: true });
   const logPath = path.join(dir, 'feedback-log.jsonl');
-  fs.writeFileSync(logPath, entries.map((e) => JSON.stringify(e)).join('\n') + '\n');
+  fs.writeFileSync(
+    logPath,
+    entries.map((entry) => JSON.stringify({ ...entry, reviewOrigin: 'human' })).join('\n') + '\n'
+  );
   return logPath;
 }
 

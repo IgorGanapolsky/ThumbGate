@@ -2062,6 +2062,7 @@ test('feedback capture accepts valid payload', async () => {
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.equal(body.accepted, true);
+  assert.equal(body.feedbackEvent.reviewOrigin, 'human');
   assert.ok(body.memoryRecord);
 });
 
@@ -2414,14 +2415,16 @@ test('default feedback stats stay on THUMBGATE_FEEDBACK_DIR even when INIT_CWD i
   const savedInitCwd = process.env.INIT_CWD;
   const feedbackLogPath = path.join(tmpFeedbackDir, 'feedback-log.jsonl');
   const baselineEntries = fs.existsSync(feedbackLogPath) ? readJsonl(feedbackLogPath) : [];
-  const baselineTotal = baselineEntries.length;
-  const baselinePositive = baselineEntries.filter((entry) => entry.signal === 'positive').length;
-  const baselineNegative = baselineEntries.filter((entry) => entry.signal === 'negative').length;
   process.env.INIT_CWD = path.join(os.tmpdir(), 'thumbgate-init-cwd-project');
   try {
+    const baselineRes = await fetch(apiUrl('/v1/feedback/stats'), { headers: authHeader });
+    assert.equal(baselineRes.status, 200);
+    const baseline = await baselineRes.json();
+
     fs.appendFileSync(feedbackLogPath, `${JSON.stringify({
       id: 'fb_initcwd_scope_guard',
       signal: 'positive',
+      reviewOrigin: 'human',
       context: 'Explicit feedback dir should remain authoritative',
       timestamp: '2026-04-08T10:00:00.000Z',
     })}\n`);
@@ -2429,9 +2432,9 @@ test('default feedback stats stay on THUMBGATE_FEEDBACK_DIR even when INIT_CWD i
     const updatedRes = await fetch(apiUrl('/v1/feedback/stats'), { headers: authHeader });
     assert.equal(updatedRes.status, 200);
     const updatedBody = await updatedRes.json();
-    assert.equal(updatedBody.total, baselineTotal + 1);
-    assert.equal(updatedBody.totalPositive, baselinePositive + 1);
-    assert.equal(updatedBody.totalNegative, baselineNegative);
+    assert.equal(updatedBody.total, baseline.total + 1);
+    assert.equal(updatedBody.totalPositive, baseline.totalPositive + 1);
+    assert.equal(updatedBody.totalNegative, baseline.totalNegative);
   } finally {
     if (baselineEntries.length > 0) {
       fs.writeFileSync(feedbackLogPath, `${baselineEntries.map((entry) => JSON.stringify(entry)).join('\n')}\n`);
@@ -2453,6 +2456,7 @@ test('project-scoped endpoints honor explicit project selection for stats, lesso
       JSON.stringify({
         id: 'fb_project_positive',
         signal: 'positive',
+        reviewOrigin: 'human',
         context: 'Verified project alpha release flow',
         tags: ['verification', 'alpha'],
         timestamp: '2026-04-08T09:00:00.000Z',
@@ -2460,6 +2464,7 @@ test('project-scoped endpoints honor explicit project selection for stats, lesso
       JSON.stringify({
         id: 'fb_project_negative',
         signal: 'negative',
+        reviewOrigin: 'human',
         context: 'Skipped rollback checklist for project alpha',
         tags: ['release', 'alpha'],
         timestamp: '2026-04-08T09:05:00.000Z',

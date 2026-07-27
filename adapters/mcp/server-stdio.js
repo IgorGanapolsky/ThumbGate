@@ -888,7 +888,10 @@ async function callToolInner(name, args) {
       // action receipt (this action -> this outcome) before promotion. Returns
       // args unchanged when there is no matching receipt (non-breaking).
       const pairedFeedback = pairFeedbackWithReceipt(args);
-      return toCaptureFeedbackTextResult(captureFeedback(pairedFeedback));
+      return toCaptureFeedbackTextResult(captureFeedback({
+        ...pairedFeedback,
+        reviewOrigin: 'human',
+      }));
     }
     case 'feedback_summary':
       return toTextResult(feedbackSummary(Number(args.recent || 20)));
@@ -970,7 +973,7 @@ async function callToolInner(name, args) {
       return toTextResult(document);
     }
     case 'feedback_stats':
-      return toTextResult(analyzeFeedback());
+      return toTextResult(analyzeFeedback(undefined, { humanOnly: true }));
     case 'diagnose_failure':
       return buildDiagnoseFailureResponse(args);
     case 'reflect_on_feedback':

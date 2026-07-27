@@ -727,6 +727,7 @@ describe('bin/cli.js', () => {
     const memoryLog = fs.readFileSync(path.join(feedbackDir, 'memory-log.jsonl'), 'utf8');
     assert.match(feedbackLog, new RegExp(payload.feedbackId));
     assert.match(memoryLog, new RegExp(payload.memoryId));
+    assert.equal(JSON.parse(feedbackLog.trim()).reviewOrigin, 'automated');
 
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   });
@@ -985,6 +986,7 @@ describe('bin/cli.js', () => {
         submittedContext: 'thumbs up Thorough PR review',
         whatWorked: 'thumbs up Thorough PR review',
         actionType: 'store-learning',
+        reviewOrigin: 'human',
         timestamp: '2026-04-09T15:07:34.046Z',
       })}\n`
     );
@@ -2857,6 +2859,7 @@ describe('bin/cli.js', () => {
       .split(/\r?\n/)
       .map((line) => JSON.parse(line));
     assert.equal(feedbackRows[0].context, 'skipped verification proof');
+    assert.equal(feedbackRows[0].reviewOrigin, 'human');
     fs.rmSync(isolatedDir, { recursive: true, force: true });
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   });

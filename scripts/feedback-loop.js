@@ -62,6 +62,11 @@ const FEEDBACK_EVENT_CLAIM_STALE_MS = 60 * 1000;
 const FEEDBACK_EVENT_CLAIM_WAIT_MS = 15 * 1000;
 const FEEDBACK_EVENT_CLAIM_POLL_MS = 25;
 
+function normalizeReviewOrigin(value) {
+  const origin = String(value || '').trim().toLowerCase();
+  return ['human', 'automated', 'imported'].includes(origin) ? origin : 'unverified';
+}
+
 function isSelfHarnessOptimizerEnabled(env = process.env) {
   return /^(?:1|true)$/i.test(String(env.THUMBGATE_SELF_HARNESS_OPTIMIZER || '').trim());
 }
@@ -387,6 +392,8 @@ function normalizeAnalysisShape(analysis = {}) {
     byImportance: Array.isArray(analysis.byImportance) ? analysis.byImportance : [],
     recentLessons: Array.isArray(analysis.recentLessons) ? analysis.recentLessons : [],
     sessionCount: Number.isFinite(analysis.sessionCount) ? analysis.sessionCount : 0,
+    rawTotal: analysis.rawTotal ?? total,
+    excludedTotal: analysis.excludedTotal ?? 0,
   };
 }
 
@@ -1431,6 +1438,7 @@ function captureFeedback(params) {
     structuredRule: structuredRule || null,
     ...(reflection && { reflection }),
     gateAction: params.gateAction || null,
+    reviewOrigin: normalizeReviewOrigin(params.reviewOrigin),
     sourceEvent: publicFeedbackSourceMetadata(params.sourceEvent),
     timestamp: now,
   };
@@ -1562,6 +1570,7 @@ function captureFeedback(params) {
     diagnosis: storedDiagnosis,
     structuredRule: structuredRule || null,
     sourceFeedbackId: feedbackEvent.id,
+    reviewOrigin: feedbackEvent.reviewOrigin,
     timestamp: now,
   };
 
@@ -1885,6 +1894,9 @@ function captureFeedback(params) {
         inferredLesson: memoryRecord ? memoryRecord.title : (feedbackEvent.context || '').slice(0, 200),
         confidence: memoryRecord ? 70 : 40,
         tags: feedbackEvent.tags || [],
+        metadata: {
+          reviewOrigin: feedbackEvent.reviewOrigin,
+        },
       });
     } catch { /* non-critical — lesson creation should never block feedback */ }
   });
@@ -1910,13 +1922,17 @@ function captureFeedbackIdempotent(params = {}) {
   }
 }
 
-function analyzeFeedback(logPath) {
+function analyzeFeedback(logPath, options = {}) {
   const { FEEDBACK_LOG_PATH } = getFeedbackPaths();
   const resolvedLogPath = logPath || FEEDBACK_LOG_PATH;
   const feedbackDir = path.dirname(resolvedLogPath);
   const paths = buildFeedbackPathsFromDir(feedbackDir);
-  const shouldUseSQLite = !logPath || path.resolve(resolvedLogPath) === path.resolve(FEEDBACK_LOG_PATH);
-  const entries = readJSONL(resolvedLogPath, { maxLines: 0 });
+  const shouldUseSQLite = !options.humanOnly && (!logPath || path.resolve(resolvedLogPath) === path.resolve(FEEDBACK_LOG_PATH));
+  let entries = readJSONL(resolvedLogPath, { maxLines: 0 });
+  const rawTotal = entries.length;
+  if (options.humanOnly) {
+    entries = entries.filter((entry) => normalizeReviewOrigin(entry.reviewOrigin) === 'human');
+  }
   const diagnosticLogPath = path.join(feedbackDir, 'diagnostic-log.jsonl');
   const diagnosticEntries = readDiagnosticEntries(diagnosticLogPath);
 
@@ -2157,6 +2173,8 @@ function analyzeFeedback(logPath) {
     boostedRisk,
     recommendations,
     actionableRemediations,
+    rawTotal,
+    excludedTotal: rawTotal - entries.length,
   });
 }
 

@@ -239,11 +239,12 @@ function trendFromRateWindows(windows) {
 function computeAggregateFeedbackStats(options = {}) {
   const { entries, stores } = collectAggregateLogEntries(FEEDBACK_LOG, options);
   const memory = collectAggregateLogEntries(MEMORY_LOG, options);
-  const { totalPositive, totalNegative, rubricSamples } = summarizeFeedbackEntries(entries);
+  const humanReviewedEntries = entries.filter((entry) => entry.reviewOrigin === 'human');
+  const { totalPositive, totalNegative, rubricSamples } = summarizeFeedbackEntries(humanReviewedEntries);
   const total = totalPositive + totalNegative;
   const approvalRate = total > 0 ? Math.round((totalPositive / total) * 1000) / 1000 : 0;
   const windows = createRateWindows(total, totalPositive, approvalRate);
-  updateRateWindows(windows, entries);
+  updateRateWindows(windows, humanReviewedEntries);
   finalizeRateWindows(windows);
   const trend = trendFromRateWindows(windows);
 
@@ -255,6 +256,8 @@ function computeAggregateFeedbackStats(options = {}) {
     recentRate: windows['7d'].rate || approvalRate,
     trend,
     windows,
+    rawTotal: entries.length,
+    excludedTotal: entries.length - humanReviewedEntries.length,
     rubric: { samples: rubricSamples || memory.entries.length, blockedPromotions: 0, failingCriteria: {} },
     aggregate: {
       enabled: true,

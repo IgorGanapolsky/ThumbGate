@@ -1271,6 +1271,7 @@ function capture() {
     whatWorked: args['what-worked'],
     tags: args.tags,
     gateAction: gateAction || undefined,
+    reviewOrigin: 'human',
   });
 
   if (result.accepted) {
@@ -1386,6 +1387,7 @@ function feedbackSelfTest() {
         ? (args['what-worked'] || 'Feedback capture persisted and was verified by a self-test')
         : undefined,
       tags: args.tags || 'self-test,dogfood,feedback-capture',
+      reviewOrigin: 'automated',
     });
 
     const paths = getFeedbackPaths();
@@ -1444,7 +1446,7 @@ function stats() {
   trackEvent('cli_stats', { command: 'stats' });
   const args = parseArgs(process.argv.slice(3));
   const { analyzeFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
-  const data = analyzeFeedback();
+  const data = analyzeFeedback(undefined, { humanOnly: true });
 
   // Gate enforcement stats — runtime intercepts + configured gates
   let gateData = { blocked: 0, warned: 0, passed: 0, byGate: {} };
@@ -1761,7 +1763,7 @@ function summary() {
   const args = parseArgs(process.argv.slice(3));
   const { feedbackSummary, analyzeFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   if (args.json) {
-    const data = analyzeFeedback();
+    const data = analyzeFeedback(undefined, { humanOnly: true });
     console.log(JSON.stringify({
       total: data.total,
       positives: data.totalPositive,
@@ -2861,7 +2863,7 @@ function sessionStart() {
   } catch (_) { /* best-effort fallback sync */ }
   const { analyzeFeedback } = require(path.join(PKG_ROOT, 'scripts', 'feedback-loop'));
   const { refreshStatuslineCache } = require(path.join(PKG_ROOT, 'scripts', 'hook-thumbgate-cache-updater'));
-  refreshStatuslineCache(analyzeFeedback());
+  refreshStatuslineCache(analyzeFeedback(undefined, { humanOnly: true }));
 
   // Build a top-level <system-reminder> block that Claude Code's SessionStart
   // hook surfaces to the agent as first-class context — not buried stderr.
