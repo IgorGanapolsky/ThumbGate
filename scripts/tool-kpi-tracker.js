@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
 const { resolveFeedbackDir } = require('./feedback-paths');
 const { readJsonl } = require('./fs-utils');
 
@@ -25,7 +26,7 @@ function recordToolCall({
   const logPath = getKpiLogPath({ feedbackDir });
   fs.mkdirSync(path.dirname(logPath), { recursive: true });
   const entry = {
-    id: `kpi_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    id: `kpi_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
     timestamp: new Date().toISOString(),
     toolName: toolName || 'unknown',
     serverName: serverName || 'default',

@@ -1,8 +1,9 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
-const { spawn } = require('child_process');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
+const { spawn } = require('node:child_process');
 const { getFeedbackPaths } = require('./feedback-loop');
 const { ensureDir } = require('./fs-utils');
 const { loadOptionalModule } = require('./private-core-boundary');
@@ -11,7 +12,7 @@ const RUNNER_SCRIPT_PATH = path.join(__dirname, 'async-job-runner.js');
 
 function launchPublicManagedJob(jobSpec, options = {}) {
   const publicRunner = require('./async-job-runner');
-  const jobId = options.jobId || jobSpec.id || `job_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const jobId = options.jobId || jobSpec.id || `job_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
   const { jobDir } = publicRunner.getJobRuntimePaths(jobId);
   ensureDir(jobDir);
   const jobFilePath = path.join(jobDir, 'job.json');
@@ -141,7 +142,7 @@ function planWorkflow(objective) {
     plannedAt: nowIso(),
     subtasks: subtasks.map((task, idx) => ({
       ...task,
-      id: `subtask_${Date.now()}_${idx}_${Math.random().toString(36).slice(2, 6)}`,
+      id: `subtask_${Date.now()}_${idx}_${crypto.randomBytes(3).toString('hex')}`,
       autoImprove: false,
       verificationMode: 'none',
       recordFeedback: false,
@@ -161,7 +162,7 @@ async function executeWorkflow(objective, options = {}) {
   const getJobState = options.readJobState || readJobState;
 
   const { FEEDBACK_DIR } = getFeedbackPaths();
-  const workflowId = `wf_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const workflowId = `wf_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
   const workflowDir = path.join(FEEDBACK_DIR, 'workflows', workflowId);
   ensureDir(workflowDir);
 

@@ -248,7 +248,7 @@ async function runRagEval(options = {}) {
   };
 }
 
-if (require.main === module) {
+if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
   runRagEval().then((outcome) => {
     if (!outcome.summary.passed) process.exitCode = 1;
   }).catch(err => {
