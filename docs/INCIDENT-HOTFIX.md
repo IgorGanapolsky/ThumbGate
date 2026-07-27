@@ -39,14 +39,41 @@ shim, **enforcement is down on this machine** — go to "Enforcement is dead" be
 
 ## Scenario: a gate is blocking legitimate work
 
-`THUMBGATE_HOTFIX_BYPASS=1` is the fastest lever. Scope it as tightly as the incident allows:
+`THUMBGATE_HOTFIX_BYPASS=1` is the lever — but it must be set in the environment of the
+**hook process**, which means the agent has to be restarted with it.
+
+**It does NOT work as a command prefix.** The hook evaluates the pending command as a *string*
+before any shell runs, so an inline assignment never reaches `process.env` in `bin/cli.js`.
+Verified against the published package:
+
+```
+command: "THUMBGATE_HOTFIX_BYPASS=1 rm -rf ~"   -> deny     (prefix has no effect)
+hook process env THUMBGATE_HOTFIX_BYPASS=1       -> approve  (this is the working form)
+```
+
+Command canonicalization also strips a leading `VAR=value` prefix before matching, so the
+inline form is doubly ineffective.
+
+Working options, in order of preference:
 
 ```sh
-# One command
-THUMBGATE_HOTFIX_BYPASS=1 <your command>
-
-# One shell session
+# 1. Restart the agent with the variable exported (most common)
 export THUMBGATE_HOTFIX_BYPASS=1
+#    ...then start your agent from THAT shell.
+
+# 2. For a GUI-launched agent, set it for the login session, then restart the agent
+launchctl setenv THUMBGATE_HOTFIX_BYPASS 1
+
+# 3. Edit the hook command in the project's .claude/settings.json to export it
+#    (this is itself a protected file — expect an approval prompt)
+```
+
+Verify the bypass is actually live before relying on it:
+
+```sh
+echo '{"tool_name":"Bash","tool_input":{"command":"rm -rf ~"}}' \
+  | THUMBGATE_HOTFIX_BYPASS=1 ~/.thumbgate/bin/thumbgate-hook gate-check
+# expect: "decision":"approve" ... "operator-bypass-opt-in"
 ```
 
 **This is a scoped bypass, not a kill switch.** `runHardFloor()` still runs first

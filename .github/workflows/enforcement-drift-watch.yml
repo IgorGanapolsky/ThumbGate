@@ -53,11 +53,18 @@ jobs:
           echo "previous=$previous" >> "$GITHUB_OUTPUT"
           echo "Checking thumbgate@$published (rollback anchor: ${previous:-none})"
 
-      - name: Install the PUBLISHED package
+      # The whole point of this job is to inspect a release we do not yet trust. Installing it
+      # normally would run its lifecycle scripts while a repo token with issues:write is on
+      # disk from checkout — handing arbitrary published code our credentials. So: no scripts,
+      # and the checkout credential is removed before the package is fetched.
+      - name: Drop repository credentials before touching untrusted code
+        run: git config --global --unset-all url."https://x-access-token:".insteadOf 2>/dev/null || true
+
+      - name: Install the PUBLISHED package (no lifecycle scripts)
         run: |
           mkdir -p /tmp/published && cd /tmp/published
           npm init -y >/dev/null 2>&1
-          npm install --no-audit --no-fund "thumbgate@${{ steps.versions.outputs.published }}"
+          npm install --ignore-scripts --no-audit --no-fund "thumbgate@${{ steps.versions.outputs.published }}"
 
       - name: Run the evasion matrix against the published artifact
         id: matrix
@@ -81,8 +88,18 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # Exit 1 = evadable (actionable). Exit 2 = INCONCLUSIVE — we could not evaluate the
+      # artifact. Treating those the same would open a misleading incident telling operators
+      # to roll back a version that may be perfectly fine, which is the exact
+      # absence-is-not-evidence mistake this job exists to catch.
+      - name: Report an inconclusive run without claiming evasion
+        if: steps.matrix.outputs.exit == '2'
+        run: |
+          echo "::warning::Enforcement check was INCONCLUSIVE for thumbgate@${{ steps.versions.outputs.published }} — could not evaluate the artifact. NOT evidence of evasion; do not roll back on this signal alone."
+          cat /tmp/matrix.txt
+
       - name: Open a P0 issue naming the rollback command
-        if: steps.matrix.outputs.exit != '0'
+        if: steps.matrix.outputs.exit == '1'
         env:
           GH_TOKEN: ${{ github.token }}
           PUBLISHED: ${{ steps.versions.outputs.published }}
@@ -125,7 +142,7 @@ jobs:
             gh issue create --title "$title" --body-file /tmp/issue.md
 
       - name: Fail the run when enforcement is evadable
-        if: steps.matrix.outputs.exit != '0'
+        if: steps.matrix.outputs.exit == '1'
         run: |
           echo "::error::Published thumbgate@${{ steps.versions.outputs.published }} is evadable — see the issue and roll the dist-tag back."
           exit 1
