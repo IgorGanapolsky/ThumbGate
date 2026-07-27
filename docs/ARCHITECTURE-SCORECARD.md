@@ -38,9 +38,9 @@ call so the agent sees prior mistakes at decision time. Retrieval is hybrid: `le
 3. *The corpus vanishes.* `lessons.sqlite` was wiped on the mini on 2026-07-26 and is
    unrecoverable. Nothing backs up `~/.thumbgate`.
 
-**How we measure it.** `eval-rag.js` computes `context_precision` via LLM judge. **`evals/` is
-empty** — there is no golden set, so precision is computed against whatever is at hand and is
-not comparable between runs. Nothing schedules it.
+**How we measure it.** `eval-rag.js` computes `context_precision` via LLM judge. **There is no
+`evals/` directory at all** — no golden set exists, so precision is computed against whatever
+is at hand and is not comparable between runs. Nothing schedules it.
 
 **How we secure it.** `sanitizeFeedbackText()` strips hook transport payloads and redacts
 `/Users/<name>` and ports before anything is persisted.
@@ -155,8 +155,15 @@ surface, and 496 test files behind it.
 | `action-receipts` | **no** | no |
 | `slo-alert-engine` | **no** | no |
 
-One of eight. Everything else runs only if a human types the command — which means in practice
-it does not run.
+One of eight, and that one is a CI job rather than a recurring check.
+
+Scheduling infrastructure is not the blocker — this machine has **89 launchd plists**, six of
+them ThumbGate-related (`thumbgate-aeo-monitor`, `thumbgate-slow-loop`, `thumbgate-daily-digest`,
+`thumbgate-weekly-post`, `hermes-connector`, `saas-watchdog`). Verified directly against
+`~/Library/LaunchAgents`: **none of the eight evaluation/observability scripts appears in any
+plist.** So recurring jobs exist and are used — for marketing, digests and connectors — while
+evaluation and enforcement observability are not scheduled at all. That is a prioritisation
+gap, not a tooling gap, which makes it cheap to close.
 
 **No OpenTelemetry instrumentation anywhere.** Against the July 2026 baseline (OTel GenAI
 semantic conventions v1.41: agent/workflow/tool/model spans, required latency and token
@@ -182,6 +189,19 @@ command.
 4. **No OTel spans** — largest structural gap, lowest urgency relative to 1–3.
 
 ---
+
+## A correction, recorded deliberately
+
+The first version of this scorecard asserted "`evals/` is empty" and "none scheduled by cron".
+Both came from commands that **failed** rather than returned zero: a `*.plist` glob that
+matched nothing in a repo containing no plists, and an `ls evals/` whose error was suppressed
+by `2>/dev/null`. The directory does not exist at all, and the cron question had to be asked
+against `~/Library/LaunchAgents` instead.
+
+The conclusions survived re-verification, but the evidence behind them did not exist when
+first stated. This is precisely the failure the rest of this document is about — an empty
+result and a failed command are indistinguishable unless you check — so it is recorded here
+rather than quietly amended.
 
 ## The pattern worth internalising
 
