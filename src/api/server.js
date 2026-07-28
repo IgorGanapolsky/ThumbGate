@@ -1644,15 +1644,26 @@ function projectWorkflowIntakeQueueLead(lead = {}, options = {}) {
       page: attribution.page || null,
       landingPath: attribution.landingPath || null,
     },
-    nextOperatorStep: options.closePacket?.status === 'approval_ready_not_authorized'
-      ? 'request_action_time_approval'
-      : options.discoveryPacket?.status === 'approval_ready_not_authorized'
-        ? 'request_action_time_approval_for_discovery'
-        : lead.status === 'new' ? 'review_and_qualify' : 'prepare_scope_or_hold',
+    nextOperatorStep: resolveNextOperatorStep(lead, options),
     qualificationCard: options.qualificationCard || buildIntakeQualificationCard(lead, options),
     discoveryPacket: options.discoveryPacket || buildIntakeDiscoveryPacket(lead, options),
     closePacket: options.closePacket || buildIntakeClosePacket(lead, options),
   };
+}
+
+/**
+ * Which action the operator should take next on an intake lead. Extracted from a three-level
+ * nested ternary: the precedence (close packet, then discovery packet, then lead status) is the
+ * actual logic and is far easier to check when it reads top to bottom.
+ */
+function resolveNextOperatorStep(lead, options) {
+  if (options.closePacket?.status === 'approval_ready_not_authorized') {
+    return 'request_action_time_approval';
+  }
+  if (options.discoveryPacket?.status === 'approval_ready_not_authorized') {
+    return 'request_action_time_approval_for_discovery';
+  }
+  return lead.status === 'new' ? 'review_and_qualify' : 'prepare_scope_or_hold';
 }
 
 function buildWorkflowIntakeQueue(parsed, workflowSprintIntake, feedbackDir, options = {}) {
@@ -8497,14 +8508,15 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         }
 
         const resolvedTraceId = result.traceId || requestedTraceId;
-        const nextSteps = result.apiKey
-          ? {
+        let nextSteps = {};
+        if (result.apiKey) {
+          nextSteps = {
             env: `THUMBGATE_API_KEY=${result.apiKey}\nTHUMBGATE_API_BASE_URL=${hostedConfig.billingApiBaseUrl}`,
             curl: `curl -X POST ${hostedConfig.billingApiBaseUrl}/v1/feedback/capture \\\n+  -H 'Authorization: Bearer ${result.apiKey}' \\\n+  -H 'Content-Type: application/json' \\\n+  -d '{"signal":"down","context":"example","whatWentWrong":"example","whatToChange":"example"}'`,
-          }
-          : result.offerKind === 'workflow_hardening_diagnostic'
-            ? { fulfillment: 'Payment confirmed. Diagnostic fulfillment is processing; an email will arrive when it completes.' }
-            : {};
+          };
+        } else if (result.offerKind === 'workflow_hardening_diagnostic') {
+          nextSteps = { fulfillment: 'Payment confirmed. Diagnostic fulfillment is processing; an email will arrive when it completes.' };
+        }
 
         sendJson(res, 200, {
           ...result,
