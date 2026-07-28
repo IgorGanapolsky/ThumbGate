@@ -200,6 +200,7 @@
     "scripts/revenue-action-eligibility.js",
     "scripts/revenue-evidence-remediation.js",
     "scripts/reward-hacking-guardrails.js",
+    "scripts/model-eval.js",
     "scripts/risk-scorer.js",
     "scripts/rlaif-self-audit.js",
     "scripts/rubric-engine.js",
