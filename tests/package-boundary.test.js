@@ -395,8 +395,12 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 369 -> 370 (2026-07-27) to ship tool-kpi-tracker, now wired into
   // every MCP attempt in the public package.
   assert.ok(
-    manifest.fileCount <= 370,
-    `npm package should stay <= 370 files, got ${manifest.fileCount}`
+    // Bumped 370 -> 371 (2026-07-28) to ship scripts/model-eval.js, which the packaged
+    // risk-scorer.js require()s at module load — without it the published package throws
+    // on require. It is the only new file in the tarball; model-calibration.js and
+    // eval-risk-model.js are development-only.
+    manifest.fileCount <= 371,
+    `npm package should stay <= 371 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -564,9 +568,14 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // Bumped 5.40 MB -> 5.43 MB (2026-07-27) for scoped RAG retrieval, durable
   // public parallel workflows, MCP output contracts, OAuth scope enforcement,
   // and packaged tool KPI telemetry. Measured artifact: 5,417,827 bytes.
+  // Bumped 5.43 MB -> 5.45 MB (2026-07-28) for held-out model evaluation. The shipped
+  // risk-scorer.js require()s scripts/model-eval.js at module load, so the package would
+  // otherwise throw on install — that is what this assertion caught. Only model-eval.js is
+  // added (~11 KB); model-calibration.js and eval-risk-model.js are development-only and stay
+  // out of the tarball. Measured artifact: 5,443,997 bytes.
   assert.ok(
-    manifest.unpackedSize <= 5_430_000,
-    `npm package should stay <= 5.43 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 5_450_000,
+    `npm package should stay <= 5.45 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

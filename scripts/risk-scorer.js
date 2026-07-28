@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { resolveFeedbackDir: resolveSharedFeedbackDir } = require('./feedback-paths');
 const { requireLearnedModelsEntitlement } = require('./entitlement');
+const { stratifiedSplit, evaluate, roundReport } = require('./model-eval');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_FEEDBACK_DIR = resolveSharedFeedbackDir();
@@ -187,10 +188,16 @@ function stumpPredict(value, threshold, polarity) {
   return decision * polarity;
 }
 
-function findBestWeakLearner(examples, weights, featureNames) {
+function findBestWeakLearner(examples, weights, featureNames, options = {}) {
+  const usage = options.usage || null;
+  const maxPerFeature = Number(options.maxPerFeature || Infinity);
   let best = null;
 
   featureNames.forEach((feature) => {
+    // Diversity bound: once a feature has been split on maxPerFeature times, later rounds must
+    // find signal elsewhere or stop. Off by default (Infinity) so existing behaviour is bit
+    // identical unless a caller opts in.
+    if (usage && Number.isFinite(maxPerFeature) && (usage.get(feature) || 0) >= maxPerFeature) return;
     const values = examples.map((example) => example.features[feature]);
     const thresholds = candidateThresholds(values);
     thresholds.forEach((threshold) => {
@@ -268,18 +275,14 @@ function buildPatternSummary(rows) {
   };
 }
 
-function trainRiskModel(rows, options = {}) {
-  requireLearnedModelsEntitlement({
-    ...(options.entitlement || {}),
-    label: 'risk-scorer AdaBoost training',
-  });
-  const registry = buildFeatureRegistry(rows, options);
-  const examples = rows.map((row) => ({
-    row,
-    label: deriveTargetRisk(row) === 1 ? 1 : -1,
-    features: extractFeatureMap(row, registry),
-  }));
-
+/**
+ * Fit the ensemble on a given set of examples.
+ *
+ * Extracted from trainRiskModel so that the held-out probe below is fitted by IDENTICAL code.
+ * If the probe were trained by a separate path, its score would describe a model we do not
+ * ship, and the resulting "generalization" number would be fiction.
+ */
+function fitBoostedModel(examples, registry, options = {}) {
   const model = {
     version: 1,
     algorithm: 'adaboost-stumps',
@@ -292,7 +295,7 @@ function trainRiskModel(rows, options = {}) {
     featureRegistry: registry,
     featureNames: examples[0] ? Object.keys(examples[0].features) : [],
     learners: [],
-    patterns: buildPatternSummary(rows),
+    patterns: options.patterns || { tags: [], domains: [], skills: [] },
     metrics: {
       trainingAccuracy: 0,
       rounds: 0,
@@ -307,9 +310,16 @@ function trainRiskModel(rows, options = {}) {
 
   let weights = normalizeWeights(Array(examples.length).fill(1));
   const rounds = Math.max(1, Math.min(12, Number(options.rounds || 8)));
+  // Boosting is free to pick the same feature every round. On the real corpus it did exactly
+  // that — six of eight stumps split on `recentTrend`, so an "ensemble" was in practice a
+  // one-feature model of how the session had been going lately. maxPerFeature bounds that.
+  // Default is Infinity (historical behaviour); enabling it is an evidence-based decision made
+  // by comparing held-out lift, not an assumption. See docs/ML-EVALUATION.md.
+  const maxPerFeature = Number(options.maxPerFeature || Infinity);
+  const usage = new Map();
 
   for (let round = 0; round < rounds; round += 1) {
-    const learner = findBestWeakLearner(examples, weights, model.featureNames);
+    const learner = findBestWeakLearner(examples, weights, model.featureNames, { usage, maxPerFeature });
     if (!learner) break;
 
     const clippedError = Math.min(Math.max(learner.error, 1e-6), 1 - 1e-6);
@@ -322,6 +332,7 @@ function trainRiskModel(rows, options = {}) {
       polarity: learner.polarity,
       alpha: Math.round(alpha * 1000) / 1000,
     });
+    usage.set(learner.feature, (usage.get(learner.feature) || 0) + 1);
 
     weights = normalizeWeights(weights.map((weight, index) => (
       weight * Math.exp(-alpha * examples[index].label * learner.predictions[index])
@@ -331,6 +342,119 @@ function trainRiskModel(rows, options = {}) {
   model.metrics.rounds = model.learners.length;
   model.metrics.mode = model.learners.length > 0 ? 'boosted' : 'baseline';
   model.metrics.trainingAccuracy = trainingAccuracy(model, examples);
+  return model;
+}
+
+/** Score a fitted model over examples as (probability, label) pairs for model-eval. */
+function scorePairs(model, examples) {
+  return examples.map((example) => ({
+    probability: predictRisk(model, example.row).probability,
+    label: example.label === 1 ? 1 : 0,
+  }));
+}
+
+/**
+ * Held-out estimate of what this training procedure generalizes to.
+ *
+ * Split on CONTENT, not position or an RNG. Content hashing gives two properties we need:
+ * the split is reproducible on every machine, and near-duplicate rows (which this corpus has
+ * plenty of, since similar actions recur) land in the SAME fold instead of leaking an answer
+ * from train into test and inflating the score.
+ */
+function holdoutEvaluation(examples, registry, options = {}) {
+  const { train, test } = stratifiedSplit(examples, {
+    testFraction: Number(options.testFraction || 0.25),
+    // splitSalt exists so the SAME corpus can be re-split many ways for repeated-resampling
+    // validation. A single split of a few hundred rows cannot distinguish a real improvement
+    // from sampling noise, and picking a configuration on one split is how you overfit the
+    // validation set itself.
+    // Key on the extracted feature vector ALONE. The model observes nothing else, so two rows
+    // with identical features are the same input to it and must share a fold. An earlier
+    // version also mixed in the raw `context` string, which split rows whose different prose
+    // maps to identical features — recreating the very leakage this splitter exists to stop.
+    keyFn: options.groupKeyFn
+      ? (example) => JSON.stringify([options.splitSalt || '', options.groupKeyFn(example)])
+      : (example) => JSON.stringify([options.splitSalt || '', example.features]),
+  });
+
+  // Saying "not measurable" is the honest output for a corpus too small or too one-sided to
+  // hold anything out. Reporting a number here would be worse than reporting nothing.
+  if (test.length === 0 || train.length < 6) {
+    return { available: false, reason: 'corpus-too-small-or-single-class' };
+  }
+
+  // REBUILD THE VOCABULARY FROM THE TRAINING FOLD ONLY.
+  //
+  // buildFeatureRegistry picks top tags and skills by frequency. Deriving it from the whole
+  // corpus lets held-out rows decide which features exist — a transductive fit. The probe would
+  // see vocabulary chosen with knowledge of the test fold, and the "held-out" number would then
+  // describe a procedure we never run in production. Registry and features come from train only.
+  const foldRegistry = buildFeatureRegistry(train.map((example) => example.row), options);
+  const trainRefit = train.map((example) => ({
+    row: example.row,
+    label: example.label,
+    features: extractFeatureMap(example.row, foldRegistry),
+  }));
+
+  const probe = fitBoostedModel(trainRefit, foldRegistry, { ...options, patterns: undefined });
+  // Test rows are scored via predictRisk, which extracts features using the probe's OWN
+  // registry — so the test fold is judged under exactly the vocabulary the probe learned.
+  const report = evaluate(scorePairs(probe, test));
+  return {
+    available: true,
+    trainCount: train.length,
+    testCount: test.length,
+    ...roundReport(report),
+  };
+}
+
+function trainRiskModel(rows, options = {}) {
+  requireLearnedModelsEntitlement({
+    ...(options.entitlement || {}),
+    label: 'risk-scorer AdaBoost training',
+  });
+  const registry = buildFeatureRegistry(rows, options);
+  const examples = rows.map((row) => ({
+    row,
+    label: deriveTargetRisk(row) === 1 ? 1 : -1,
+    features: extractFeatureMap(row, registry),
+  }));
+
+  const model = fitBoostedModel(examples, registry, {
+    ...options,
+    patterns: buildPatternSummary(rows),
+  });
+
+  // The shipped model is fitted on everything — that is the right thing to deploy. The probe
+  // above estimates what that procedure generalizes to. Both numbers are recorded, and
+  // `inSample` is labelled as such so it can never again be quoted as if it were quality.
+  model.metrics.inSample = roundReport(evaluate(scorePairs(model, examples)));
+  if (options.skipHoldout !== true) {
+    // TWO held-out estimates, because they answer different questions and only reporting the
+    // friendlier one would repeat the original sin of this file.
+    //
+    //   holdout             — IID split on the full feature vector. "Does this work on new
+    //                         rows of the kinds we have seen?"  Measured 2026-07-28: +0.091
+    //                         lift, AUC 0.884, 12/12 resamples beat baseline.
+    //
+    //   holdoutNovelContext — split by coarse content group, so whole action categories are
+    //                         absent from training. "Does this work on kinds of actions we
+    //                         have never seen?"  Measured: NEGATIVE lift.
+    //
+    // For a firewall the second question is the one that matters most — novel attacks are by
+    // definition unfamiliar — so the pessimistic number is recorded next to the optimistic one
+    // permanently, and docs/ML-EVALUATION.md explains the gap.
+    model.metrics.holdout = holdoutEvaluation(examples, registry, options);
+    model.metrics.holdoutNovelContext = holdoutEvaluation(examples, registry, {
+      ...options,
+      groupKeyFn: (example) => JSON.stringify([
+        example.row && example.row.context,
+        example.row && example.row.domain,
+        example.row && example.row.skill,
+        example.row && example.row.targetTags,
+      ]),
+    });
+  }
   return model;
 }
 
@@ -457,6 +581,11 @@ module.exports = {
   trainAndPersistRiskModel,
   trainRiskModel,
   getRiskSummary,
+  // Exported for the evaluation harness (scripts/eval-risk-model.js) and its tests: measuring
+  // this model requires fitting it on a fold, which requires reaching the fit step directly.
+  fitBoostedModel,
+  holdoutEvaluation,
+  scorePairs,
 };
 
 if (require.main === module) {
