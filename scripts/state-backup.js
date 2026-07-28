@@ -64,7 +64,11 @@ function listSnapshots() {
   try {
     return fs.readdirSync(BACKUP_ROOT)
       .filter((name) => name.startsWith('snapshot-'))
-      .sort();
+      // Explicit comparator: pruning below deletes the head of this list, so an
+      // implementation-defined sort order would delete the WRONG snapshots — the exact
+      // data loss this tool exists to prevent. Names are ISO-derived, so lexicographic
+      // order is chronological.
+      .sort((left, right) => left.localeCompare(right));
   } catch {
     return [];
   }
@@ -130,7 +134,7 @@ function verify(nowMs) {
     process.stderr.write(`state-backup: NO SNAPSHOTS in ${BACKUP_ROOT}. State loss would be unrecoverable.\n`);
     return 1;
   }
-  const newest = snapshots[snapshots.length - 1];
+  const newest = snapshots.at(-1);
   const ageHours = snapshotAgeMs(newest, nowMs) / 3_600_000;
   if (ageHours > STALE_HOURS) {
     process.stderr.write(`state-backup: newest snapshot is ${ageHours.toFixed(1)}h old (limit ${STALE_HOURS}h): ${newest}\n`);

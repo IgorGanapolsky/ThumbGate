@@ -26,7 +26,7 @@ PLIST="${HOME_DIR}/Library/LaunchAgents/${LABEL}.plist"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 NODE_BIN="$(command -v node || true)"
-if [ -z "${NODE_BIN}" ]; then
+if [[ -z "${NODE_BIN}" ]]; then
   echo "install-drift-watch: node not found on PATH" >&2
   exit 2
 fi
@@ -60,7 +60,7 @@ STATUS=$?
 rm -rf "${SANDBOX}"
 echo "$(date -u +%FT%TZ) thumbgate@${VERSION} exit=${STATUS}"
 echo "${OUT}"
-if [ "${STATUS}" -eq 1 ]; then
+if [[ "${STATUS}" -eq 1 ]]; then
   echo "!!! PUBLISHED ENFORCEMENT IS EVADABLE — roll back:"
   echo "    npm dist-tag add thumbgate@<last-good> latest"
   echo "    rm -rf ~/.thumbgate/runtime/node_modules"
