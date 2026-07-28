@@ -30,6 +30,7 @@ const {
   resolveFallbackArtifactPath,
 } = require('./feedback-paths');
 const { getTelemetryAnalytics, getTelemetrySourceDiagnostics } = require('./telemetry-analytics');
+const { normalizeCampaignId } = require('./growth-campaigns');
 const {
   PRO_MONTHLY_PRICE_ID,
   PRO_ANNUAL_PRICE_ID,
@@ -1154,7 +1155,7 @@ function extractAttribution(metadata = {}) {
   return {
     source: normalizeText(safe.utmSource || safe.source),
     medium: normalizeText(safe.utmMedium || safe.medium),
-    campaign: normalizeText(safe.utmCampaign || safe.campaign),
+    campaign: normalizeCampaignId(safe.utmCampaign || safe.campaign),
     content: normalizeText(safe.utmContent || safe.content),
     term: normalizeText(safe.utmTerm || safe.term),
     creator: normalizeText(safe.creator || safe.creatorHandle || safe.creator_handle),
@@ -4237,6 +4238,7 @@ module.exports = {
   _TRIAL_EMAIL_LEDGER_PATH: () => CONFIG.TRIAL_EMAIL_LEDGER_PATH,
   _ORDER_EMAIL_LEDGER_PATH: () => CONFIG.ORDER_EMAIL_LEDGER_PATH,
   _LOCAL_MODE: () => LOCAL_MODE(),
+  _extractAttribution: extractAttribution,
   _withTimeout: withTimeout,
   _mailer: mailer,
 };

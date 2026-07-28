@@ -697,6 +697,7 @@
     "social:publish:latest-release-article": "node scripts/social-analytics/publish-latest-release-article.js",
     "social:publish:latest-release-fallbacks": "node scripts/social-analytics/publish-latest-release-fallbacks.js",
     "social:verify:latest-release": "node scripts/social-analytics/verify-latest-release-posts.js",
+    "social:verify:marketing-agent": "node scripts/social-analytics/verify-marketing-agent-campaign.js",
     "social:schedule:campaign": "node scripts/social-analytics/schedule-thumbgate-campaign.js",
     "social:install:growth": "node scripts/social-analytics/install-growth-automation.js",
     "social:reconcile:campaign": "node scripts/social-analytics/reconcile-thumbgate-campaign.js",
