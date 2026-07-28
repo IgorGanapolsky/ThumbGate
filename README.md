@@ -1,5 +1,7 @@
 # ThumbGate
 
+[![MCP Toplist](https://mcptoplist.com/badge/glama%2FIgorGanapolsky%2Fmcp-memory-gateway.svg)](https://mcptoplist.com/server/glama%2FIgorGanapolsky%2Fmcp-memory-gateway)
+
 <p align="center">
   <a href="https://thumbgate.ai">
     <img src="public/assets/brand/thumbgate-icon-512.png" alt="ThumbGate" width="128" height="128" />
