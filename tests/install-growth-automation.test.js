@@ -49,6 +49,7 @@ test('buildGrowthSchedules includes revenue, reply, and money-watch automation',
     'thumbgate-growth-poll-zernio',
     'thumbgate-growth-sync-launch-assets',
     'thumbgate-growth-reply-monitor',
+    'thumbgate-growth-campaign-conversion',
     'thumbgate-growth-money-watch',
     'thumbgate-growth-revenue-loop',
     'thumbgate-growth-social-digest',
@@ -56,11 +57,16 @@ test('buildGrowthSchedules includes revenue, reply, and money-watch automation',
   const byId = Object.fromEntries(schedules.map((entry) => [entry.id, entry]));
   assert.match(byId['thumbgate-growth-revenue-loop'].command, /autonomous-sales-agent\.js/);
   assert.match(byId['thumbgate-growth-revenue-loop'].command, /gtm-revenue-loop/);
+  assert.match(
+    byId['thumbgate-growth-campaign-conversion'].command,
+    /verify-marketing-agent-campaign\.js/
+  );
+  assert.match(byId['thumbgate-growth-campaign-conversion'].command, /marketing-agent-campaign/);
   assert.match(byId['thumbgate-growth-money-watch'].command, /money-watcher\.js/);
   assert.match(byId['thumbgate-growth-sync-launch-assets'].command, /sync-launch-assets\.js/);
 });
 
-test('installGrowthAutomation registers seven recurring jobs', () => {
+test('installGrowthAutomation registers eight recurring jobs', () => {
   const scheduleManager = require('../scripts/schedule-manager');
   const originalCreate = scheduleManager.createSchedule;
   const originalList = scheduleManager.listSchedules;
@@ -77,13 +83,14 @@ test('installGrowthAutomation registers seven recurring jobs', () => {
   scheduleManager.createSchedule = originalCreate;
   scheduleManager.listSchedules = originalList;
 
-  assert.equal(result.installed.length, 7);
-  assert.equal(calls.length, 7);
+  assert.equal(result.installed.length, 8);
+  assert.equal(calls.length, 8);
   assert.equal(calls[0].id, 'thumbgate-growth-schedule-campaign');
   assert.equal(calls[1].id, 'thumbgate-growth-poll-zernio');
   assert.equal(calls[2].id, 'thumbgate-growth-sync-launch-assets');
   assert.equal(calls[3].id, 'thumbgate-growth-reply-monitor');
-  assert.equal(calls[4].id, 'thumbgate-growth-money-watch');
-  assert.equal(calls[5].id, 'thumbgate-growth-revenue-loop');
-  assert.equal(calls[6].id, 'thumbgate-growth-social-digest');
+  assert.equal(calls[4].id, 'thumbgate-growth-campaign-conversion');
+  assert.equal(calls[5].id, 'thumbgate-growth-money-watch');
+  assert.equal(calls[6].id, 'thumbgate-growth-revenue-loop');
+  assert.equal(calls[7].id, 'thumbgate-growth-social-digest');
 });

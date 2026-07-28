@@ -6,6 +6,13 @@ const scheduleManager = require('../schedule-manager');
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const GROWTH_REPORT_DIR = path.join(REPO_ROOT, '.thumbgate', 'reports', 'gtm-revenue-loop');
+const CAMPAIGN_REPORT_PATH = path.join(
+  REPO_ROOT,
+  '.thumbgate',
+  'reports',
+  'marketing-agent-campaign',
+  'latest.json'
+);
 
 function buildNodeEvalCommand(scriptPath, args = []) {
   const absolutePath = path.resolve(scriptPath);
@@ -55,6 +62,22 @@ function buildGrowthSchedules() {
       description: 'Checks social replies and posts supported follow-ups or drafts them for review.',
       schedule: 'hourly',
       command: buildNodeEvalCommand(path.join(REPO_ROOT, 'scripts', 'social-reply-monitor.js')),
+      workingDirectory: REPO_ROOT,
+    },
+    {
+      id: 'thumbgate-growth-campaign-conversion',
+      name: 'ThumbGate Marketing-Agent Campaign Conversion Monitor',
+      description: 'Verifies all seven tracked buyer routes and records campaign-specific hosted outcome truth without creating provider sessions.',
+      schedule: 'hourly',
+      command: buildNodeEvalCommand(path.join(
+        REPO_ROOT,
+        'scripts',
+        'social-analytics',
+        'verify-marketing-agent-campaign.js'
+      ), [
+        '--json',
+        `--out=${CAMPAIGN_REPORT_PATH}`,
+      ]),
       workingDirectory: REPO_ROOT,
     },
     {
@@ -108,6 +131,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  CAMPAIGN_REPORT_PATH,
   buildNodeEvalCommand,
   buildGrowthSchedules,
   installGrowthAutomation,

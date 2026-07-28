@@ -238,6 +238,7 @@ const { sendProblem, PROBLEM_TYPES } = require('../../scripts/problem-detail');
 const { TOOLS: MCP_TOOLS } = require('../../scripts/tool-registry');
 const mcpOauth = require('../../scripts/mcp-oauth');
 const { packCheckoutReference } = require('../../scripts/checkout-attribution-reference');
+const { normalizeCampaignId } = require('../../scripts/growth-campaigns');
 // OAuth 2.1 (PKCE) authorization-server state for the remote MCP connector
 // (Claude Connectors Directory requires OAuth for authenticated services).
 const oauthStore = mcpOauth.createStore();
@@ -1270,7 +1271,8 @@ function inferSearchQuery(referrer) {
 
 function getAttributionValue(params, key, fallbackValue) {
   const value = params.get(key);
-  return value && value.trim() ? value.trim() : fallbackValue;
+  const resolved = value && value.trim() ? value.trim() : fallbackValue;
+  return key === 'utm_campaign' ? normalizeCampaignId(resolved) : resolved;
 }
 
 function parseUrlSearchParams(urlValue) {
@@ -2686,7 +2688,10 @@ function appendTrackedLinkQueryParams(destinationUrl, parsed, target) {
   for (const key of TRACKED_LINK_QUERY_KEYS) {
     const value = params.get(key);
     if (value && value.trim()) {
-      destinationUrl.searchParams.set(key, value.trim());
+      destinationUrl.searchParams.set(
+        key,
+        key === 'utm_campaign' ? normalizeCampaignId(value) : value.trim()
+      );
     }
   }
   if (target.allowCustomerEmail) {
@@ -2742,7 +2747,9 @@ function buildTrackedLinkAttribution(target, parsed, req, journeyState, destinat
     source,
     utmSource: pickFirstText(params.get('utm_source'), source),
     utmMedium: pickFirstText(params.get('utm_medium'), target.defaults && target.defaults.utm_medium, 'link_router'),
-    utmCampaign: pickFirstText(params.get('utm_campaign'), target.defaults && target.defaults.utm_campaign, 'first_party_redirect'),
+    utmCampaign: normalizeCampaignId(
+      pickFirstText(params.get('utm_campaign'), target.defaults && target.defaults.utm_campaign, 'first_party_redirect')
+    ),
     utmContent: pickFirstText(params.get('utm_content')),
     utmTerm: pickFirstText(params.get('utm_term')),
     creator: pickFirstText(params.get('creator'), params.get('creator_handle')),
