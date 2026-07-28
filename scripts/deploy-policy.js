@@ -5,8 +5,16 @@ const { DEFAULT_PUBLIC_APP_ORIGIN, normalizeOrigin } = require('./hosted-config'
 
 const SECRET_POLICY = {
   THUMBGATE_API_KEY: { rotatedAtEnv: 'THUMBGATE_API_KEY_ROTATED_AT', maxAgeDays: 30 },
-  STRIPE_SECRET_KEY: { rotatedAtEnv: 'STRIPE_SECRET_KEY_ROTATED_AT', maxAgeDays: 30 },
-  STRIPE_WEBHOOK_SECRET: { rotatedAtEnv: 'STRIPE_WEBHOOK_SECRET_ROTATED_AT', maxAgeDays: 30 },
+  STRIPE_SECRET_KEY: {
+    rotatedAtEnv: 'STRIPE_SECRET_KEY_ROTATED_AT',
+    warnAgeDays: 30,
+    maxAgeDays: 90,
+  },
+  STRIPE_WEBHOOK_SECRET: {
+    rotatedAtEnv: 'STRIPE_WEBHOOK_SECRET_ROTATED_AT',
+    warnAgeDays: 30,
+    maxAgeDays: 90,
+  },
   RAILWAY_TOKEN: { rotatedAtEnv: 'RAILWAY_TOKEN_ROTATED_AT', maxAgeDays: 90 },
   GITHUB_MARKETPLACE_WEBHOOK_SECRET: {
     rotatedAtEnv: 'GITHUB_MARKETPLACE_WEBHOOK_SECRET_ROTATED_AT',
@@ -113,6 +121,7 @@ function evaluateDeployPolicy(env = process.env, { profiles = ['runtime'], now =
   const requiredSecrets = collectRequiredItems(selectedProfiles, 'requiredSecrets');
   const requiredVars = collectRequiredItems(selectedProfiles, 'requiredVars');
   const errors = [];
+  const warnings = [];
 
   for (const name of requiredVars) {
     const value = resolveEnvValue(name, env);
@@ -178,6 +187,12 @@ function evaluateDeployPolicy(env = process.env, { profiles = ['runtime'], now =
         name,
         message: `${name} is stale (${ageDays}d old, max ${policy.maxAgeDays}d)`,
       });
+    } else if (policy.warnAgeDays != null && ageDays > policy.warnAgeDays) {
+      warnings.push({
+        type: 'secret_rotation_due',
+        name,
+        message: `${name} rotation is due (${ageDays}d old, target ${policy.warnAgeDays}d, hard max ${policy.maxAgeDays}d)`,
+      });
     }
   }
 
@@ -188,6 +203,7 @@ function evaluateDeployPolicy(env = process.env, { profiles = ['runtime'], now =
     requiredSecrets,
     requiredVars,
     errors,
+    warnings,
   };
 }
 
@@ -198,8 +214,17 @@ function formatReport(report) {
   lines.push(`Result: ${report.ok ? 'PASS' : 'FAIL'}`);
   lines.push(`Secrets checked: ${report.requiredSecrets.length}`);
   lines.push(`Variables checked: ${report.requiredVars.length}`);
-  if (report.errors.length) {
+  if (report.warnings.length) {
+    lines.push(`Warnings: ${report.warnings.length}`);
     lines.push('');
+    for (const warning of report.warnings) {
+      lines.push(`- WARNING: ${warning.message}`);
+    }
+  }
+  if (report.errors.length) {
+    if (!report.warnings.length) {
+      lines.push('');
+    }
     for (const error of report.errors) {
       lines.push(`- ${error.message}`);
     }

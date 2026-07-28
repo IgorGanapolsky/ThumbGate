@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 
 const {
   evaluateDeployPolicy,
+  formatReport,
   parseTimestamp,
   getAgeDays,
   resolveEnvValue,
@@ -46,6 +47,7 @@ test('deploy policy passes when required vars and fresh secrets are present', ()
 
   assert.equal(report.ok, true);
   assert.equal(report.errors.length, 0);
+  assert.equal(report.warnings.length, 0);
 });
 
 test('deploy policy infers canonical hosted config when billing vars are omitted', () => {
@@ -77,7 +79,31 @@ test('deploy policy ignores unknown alias env names', () => {
   assert.equal(resolveEnvValue('THUMBGATE_BILLING_API_BASE_URL', {}), 'https://thumbgate-production.up.railway.app');
 });
 
-test('deploy policy fails stale Stripe secret timestamps', () => {
+test('deploy policy warns when Stripe secret rotation passes the 30-day target', () => {
+  const report = evaluateDeployPolicy({
+    STRIPE_SECRET_KEY: 'sk_live_example',
+    STRIPE_SECRET_KEY_ROTATED_AT: isoDaysAgo(42),
+    STRIPE_WEBHOOK_SECRET: 'whsec_example',
+    STRIPE_WEBHOOK_SECRET_ROTATED_AT: isoDaysAgo(42),
+    THUMBGATE_PUBLIC_APP_ORIGIN: 'https://thumbgate-production.up.railway.app',
+    THUMBGATE_BILLING_API_BASE_URL: 'https://billing.example.com',
+  }, {
+    profiles: ['billing'],
+  });
+
+  assert.equal(report.ok, true);
+  assert.equal(report.errors.length, 0);
+  assert.deepEqual(
+    report.warnings.map((entry) => [entry.type, entry.name]),
+    [
+      ['secret_rotation_due', 'STRIPE_SECRET_KEY'],
+      ['secret_rotation_due', 'STRIPE_WEBHOOK_SECRET'],
+    ]
+  );
+  assert.match(formatReport(report), /Result: PASS[\s\S]*Warnings: 2[\s\S]*- WARNING: STRIPE_SECRET_KEY rotation is due/);
+});
+
+test('deploy policy fails Stripe secret timestamps beyond the hard maximum', () => {
   const report = evaluateDeployPolicy({
     STRIPE_SECRET_KEY: 'sk_live_example',
     STRIPE_SECRET_KEY_ROTATED_AT: isoDaysAgo(120),
@@ -91,4 +117,6 @@ test('deploy policy fails stale Stripe secret timestamps', () => {
 
   assert.equal(report.ok, false);
   assert.ok(report.errors.some((entry) => entry.type === 'stale_secret' && entry.name === 'STRIPE_SECRET_KEY'));
+  assert.equal(report.warnings.length, 0);
+  assert.match(formatReport(report), /Result: FAIL[\s\S]*STRIPE_SECRET_KEY is stale/);
 });
