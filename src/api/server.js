@@ -419,7 +419,7 @@ const BUILD_METADATA = resolveBuildMetadata();
 const TERMINAL_JOB_STATUSES = new Set(['completed', 'failed', 'cancelled']);
 const IDLE_JOB_STATUSES = new Set(['queued', 'paused', 'resume_requested']);
 const JOB_CONTROL_ACTIONS = new Set(['pause', 'cancel', 'resume']);
-const TRACKED_LINK_QUERY_KEYS = [
+const TRACKED_LINK_QUERY_KEYS = new Set([
   'utm_source',
   'utm_medium',
   'utm_campaign',
@@ -447,7 +447,7 @@ const TRACKED_LINK_QUERY_KEYS = [
   'seat_count',
   'landing_path',
   'referrer_host',
-];
+]);
 const TRACKED_LINK_TARGETS = Object.freeze({
   gpt: {
     href: 'https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate',
@@ -1733,7 +1733,7 @@ function sendInvalidAnalyticsWindowProblem(res, title, err) {
 }
 
 function sendWorkflowIntakeQueueProblem(res, err) {
-  const status = Number(err && err.statusCode) || 400;
+  const status = Number(err?.statusCode) || 400;
   sendProblem(res, {
     type: status >= 500 ? PROBLEM_TYPES.INTERNAL : PROBLEM_TYPES.INVALID_REQUEST,
     title: status >= 500
@@ -5349,7 +5349,7 @@ function createApiServer() {
               (async () => {
                 try {
                   const { callTool } = require('../../adapters/mcp/server-stdio');
-                  const name = msg.params && msg.params.name;
+                  const name = msg.params?.name;
                   const args = (msg.params && msg.params.arguments) || {};
                   const result = await callTool(name, args);
                   sendJson(res, 200, {
@@ -5637,7 +5637,7 @@ function createApiServer() {
       let trackedParsed = parsed;
       if (req.method === 'POST') {
         const target = getTrackedLinkTarget(trackedLinkMatch[1]);
-        if (!target || !target.requiresPost) {
+        if (!target?.requiresPost) {
           sendJson(res, target ? 405 : 404, target
             ? { error: 'POST is not supported for this tracked link' }
             : { error: 'Tracked link not found', allowed: Object.keys(TRACKED_LINK_TARGETS) }, {
@@ -5656,7 +5656,7 @@ function createApiServer() {
         const form = await parseFormBody(req, 16 * 1024);
         trackedParsed = new URL(parsed.toString());
         for (const [key, value] of Object.entries(form)) {
-          if (key === 'customer_email' || TRACKED_LINK_QUERY_KEYS.includes(key)) {
+          if (key === 'customer_email' || TRACKED_LINK_QUERY_KEYS.has(key)) {
             trackedParsed.searchParams.set(key, String(value || '').trim());
           }
         }
@@ -6521,7 +6521,7 @@ async function addContext(){
           if (
             key === 'confirm'
             || key === 'customer_email'
-            || TRACKED_LINK_QUERY_KEYS.includes(key)
+            || TRACKED_LINK_QUERY_KEYS.has(key)
           ) {
             parsed.searchParams.set(key, String(value || '').trim());
           }
@@ -8309,7 +8309,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           });
           return;
         }
-        if (result && result.retryable === true) {
+        if (result?.retryable === true) {
           sendProblem(res, {
             type: PROBLEM_TYPES.INTERNAL,
             title: 'Fulfillment temporarily unavailable',
