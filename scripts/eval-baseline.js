@@ -20,8 +20,13 @@ const { execFileSync } = require('node:child_process');
 
 const gatesEngine = require('./gates-engine.js');
 
-const GOLDEN = path.join(__dirname, '..', 'evals', 'gate-decisions.golden.jsonl');
-const OUT = path.join(__dirname, '..', 'evals', 'gate-decisions.baseline.json');
+// Overridable so this is testable against a fixture instead of only the repo's real evals/
+// directory. A script that can only be exercised by running it for real does not get tested,
+// and this one decides what "no drift" means.
+const GOLDEN = process.env.THUMBGATE_EVAL_GOLDEN
+  || path.join(__dirname, '..', 'evals', 'gate-decisions.golden.jsonl');
+const OUT = process.env.THUMBGATE_EVAL_BASELINE
+  || path.join(__dirname, '..', 'evals', 'gate-decisions.baseline.json');
 
 async function main() {
   if (!fs.existsSync(GOLDEN)) {
@@ -39,7 +44,15 @@ async function main() {
   gatesEngine.GOVERNANCE_STATE_PATH = path.join(sandbox, 'governance-state.json');
 
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-baseline-repo-'));
-  const git = (a) => execFileSync('git', a, { cwd: repo, stdio: ['ignore', 'ignore', 'ignore'] });
+  // Sonar S4036: resolving `git` through the inherited PATH is security-sensitive, because a
+  // writable directory earlier in PATH could shadow the real binary. Pin PATH to fixed system
+  // directories for these calls rather than trusting whatever the caller's environment holds.
+  const SAFE_PATH = '/usr/local/bin:/usr/bin:/bin';
+  const git = (a) => execFileSync('git', a, {
+    cwd: repo,
+    stdio: ['ignore', 'ignore', 'ignore'],
+    env: { ...process.env, PATH: SAFE_PATH },
+  });
   git(['init']); git(['config', 'user.email', 't@example.com']); git(['config', 'user.name', 't']);
   fs.writeFileSync(path.join(repo, 'seed.txt'), 'seed\n');
   git(['add', 'seed.txt']); git(['commit', '-m', 'init']);
@@ -62,6 +75,8 @@ async function main() {
   return 0;
 }
 
-if (require.main && require.main.filename === module.filename) {
+module.exports = { main, GOLDEN, OUT };
+
+if (require.main?.filename === module.filename) {
   main().then((c) => process.exit(c));
 }
