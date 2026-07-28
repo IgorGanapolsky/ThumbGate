@@ -140,7 +140,12 @@ const path = require('node:path');
 // daily outcome-monitor installer and the already-advertised agent:schedule.
 // 369 -> 370: ship tool-kpi-tracker so every packaged MCP attempt feeds the
 // public production-observability contract instead of silently dropping KPIs.
-const BASELINE_FILE_COUNT = 370;
+// 370 -> 371: ship scripts/model-eval.js. The packaged risk-scorer.js require()s it
+// at module load, so omitting it makes the published package throw on require. Pure
+// evaluation arithmetic (classification metrics + deterministic group-aware
+// splitting); no Core imports, no filesystem, network, credentials, or buyer state.
+// model-calibration.js and eval-risk-model.js are development-only and stay out.
+const BASELINE_FILE_COUNT = 371;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

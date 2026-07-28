@@ -200,7 +200,13 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 368 -> 369 (2026-07-26): public local schedule manager required by the
   // outcome monitor installer and the existing agent:schedule package script.
   // 369 -> 370 (2026-07-27): public MCP KPI telemetry runtime.
-  const CEILING = 370;
+  // 370 -> 371 (2026-07-28): scripts/model-eval.js. The packaged risk-scorer.js
+  // require()s it at module load, so without it the published package throws on
+  // require. It is pure evaluation arithmetic (metrics + deterministic splitting),
+  // imports no Core code, touches no filesystem, network, or buyer state, and stays
+  // inside the public shell scope. model-calibration.js and eval-risk-model.js are
+  // development-only and deliberately stay OUT of the tarball.
+  const CEILING = 371;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
