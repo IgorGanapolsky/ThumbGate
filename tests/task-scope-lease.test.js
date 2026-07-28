@@ -238,3 +238,84 @@ test('the exemption is narrow: ordinary task-scope denials still downgrade', () 
   assert.strictEqual(gatesEngine.applyEnforcementPosture(ordinary).decision, 'warn',
     'ordinary task-scope denials are no longer downgradable — the exemption was too broad');
 });
+
+// --- End-to-end through the real evaluation path ---------------------------------------
+//
+// Everything above tests pieces. This drives evaluateGatesAsync, the entrypoint the hook
+// actually calls, because today's two P1s both had the same shape: correct in the unit,
+// broken in the path a user reaches. A truth table is the only honest proof — "it denies"
+// means nothing without "and it still permits the things it should".
+
+const { execFileSync } = require('node:child_process');
+
+function withRealRepo(run) {
+  const stateDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-lease-e2e-'));
+  const keys = ['STATE_PATH', 'STATS_PATH', 'CONSTRAINTS_PATH', 'SESSION_ACTIONS_PATH', 'GOVERNANCE_STATE_PATH'];
+  const saved = {};
+  for (const key of keys) {
+    saved[key] = gatesEngine[key];
+    gatesEngine[key] = path.join(stateDir, `${key.toLowerCase()}.json`);
+  }
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-lease-repo-'));
+  // Absolute git path: resolving through PATH is the S4036 hazard flagged elsewhere in this repo.
+  const git = (args) => execFileSync('/usr/bin/git', args, { cwd: repo, stdio: ['ignore', 'ignore', 'ignore'] });
+  git(['init']);
+  git(['config', 'user.email', 'test@example.com']);
+  git(['config', 'user.name', 'test']);
+  fs.writeFileSync(path.join(repo, 'seed.txt'), 'seed\n');
+  git(['add', 'seed.txt']);
+  git(['commit', '-m', 'init']);
+  fs.mkdirSync(path.join(repo, 'src'), { recursive: true });
+  fs.writeFileSync(path.join(repo, 'src', 'app.js'), 'code\n');
+
+  return Promise.resolve(run(repo)).finally(() => {
+    for (const key of keys) gatesEngine[key] = saved[key];
+    fs.rmSync(stateDir, { recursive: true, force: true });
+    fs.rmSync(repo, { recursive: true, force: true });
+  });
+}
+
+function editInScope(repo) {
+  return gatesEngine.evaluateGatesAsync('Edit', {
+    file_path: path.join(repo, 'src', 'app.js'),
+    old_string: 'code',
+    new_string: 'changed',
+    cwd: repo,
+  });
+}
+
+function rewriteScope(mutate) {
+  const state = JSON.parse(fs.readFileSync(gatesEngine.GOVERNANCE_STATE_PATH, 'utf8'));
+  mutate(state.taskScope);
+  fs.writeFileSync(gatesEngine.GOVERNANCE_STATE_PATH, JSON.stringify(state));
+}
+
+test('e2e: a live lease permits an in-scope edit', async () => {
+  await withRealRepo(async (repo) => {
+    setTaskScope({ allowedPaths: ['src/**'], repoPath: repo, ttlMs: 15 * 60 * 1000 });
+    const verdict = await editInScope(repo);
+    assert.strictEqual(verdict, null, 'a live lease blocked work inside its own paths');
+  });
+});
+
+test('e2e: an expired lease DENIES an in-scope edit, even in warn-by-default posture', async () => {
+  await withRealRepo(async (repo) => {
+    setTaskScope({ allowedPaths: ['src/**'], repoPath: repo, ttlMs: 90 * 1000 });
+    rewriteScope((scope) => { scope.expiresAt = Date.now() - 1000; });
+
+    const verdict = await editInScope(repo);
+    assert.ok(verdict, 'an expired lease permitted an in-scope edit through the real hook path');
+    assert.strictEqual(verdict.decision, 'deny',
+      `expired lease was downgraded to "${verdict.decision}" — the fail-closed guarantee does not survive the real path`);
+    assert.strictEqual(verdict.gate, gatesEngine.TASK_SCOPE_LEASE_EXPIRED_GATE_ID);
+  });
+});
+
+test('e2e: a permanent scope still permits its own paths (no lease, no regression)', async () => {
+  await withRealRepo(async (repo) => {
+    setTaskScope({ allowedPaths: ['src/**'], repoPath: repo });
+    rewriteScope((scope) => { scope.expiresAt = null; scope.leaseMs = null; });
+    const verdict = await editInScope(repo);
+    assert.strictEqual(verdict, null, 'a permanent scope stopped permitting its own paths');
+  });
+});
