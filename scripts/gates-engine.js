@@ -146,10 +146,18 @@ const SELF_PROTECT_HARD_FLOOR_GATE_IDS = new Set([
   'self-protect-env-override',
   'self-protect-hooks-disable',
 ]);
+// An expired task-scope lease gets its OWN gate id so it can be exempted from the two downgrade
+// paths without touching ordinary task-scope denials. Without this the fail-closed guarantee is
+// cosmetic: applyEnforcementPosture turns denials into warnings by default, and applyDailyBlockCap
+// does the same for capped free-tier users — so an edit under a lapsed lease would execute anyway.
+// A lease that stops binding when you are busy or over quota is not a lease.
+const TASK_SCOPE_LEASE_EXPIRED_GATE_ID = 'task-scope-lease-expired';
+
 const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   'secret-exfiltration',
   'security-vuln-scan',
   'slopsquat-guard',
+  TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   ...SELF_PROTECT_HARD_FLOOR_GATE_IDS,
 ]);
 // Issue #2782 (reported by Andy Martin, 2026-07-08): after the free-tier daily
@@ -161,6 +169,7 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
 // map directly to CLAUDE.md's own hard-block list and must never be subject
 // to the daily cap discount, regardless of tier or strict-mode setting.
 const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
+  TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   'force-push',
   'git-reset-hard',
   'git-clean-force',
@@ -2812,7 +2821,13 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
     });
 
     if (gate.action === 'block') {
-      const denyResult = { decision: 'deny', gate: gate.id, message, severity: gate.severity, reasoning };
+      // Expired leases report under their own gate id so neither the enforcement posture nor
+      // the daily block cap can quietly turn this denial into a warning.
+      const gateId = matchDetails && matchDetails.taskScopeViolation
+        && matchDetails.taskScopeViolation.reasonCode === 'expired_task_scope'
+        ? TASK_SCOPE_LEASE_EXPIRED_GATE_ID
+        : gate.id;
+      const denyResult = { decision: 'deny', gate: gateId, message, severity: gate.severity, reasoning };
       // Free-tier daily block cap: after N blocks/day, deny → warn + upgrade CTA
       const cappedResult = applyDailyBlockCap(denyResult);
       if (cappedResult) {
@@ -3025,7 +3040,13 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
     const reasoning = buildReasoning(gate, toolName, toolInput, matchDetails);
 
     if (gate.action === 'block') {
-      const denyResult = { decision: 'deny', gate: gate.id, message, severity: gate.severity, reasoning };
+      // Expired leases report under their own gate id so neither the enforcement posture nor
+      // the daily block cap can quietly turn this denial into a warning.
+      const gateId = matchDetails && matchDetails.taskScopeViolation
+        && matchDetails.taskScopeViolation.reasonCode === 'expired_task_scope'
+        ? TASK_SCOPE_LEASE_EXPIRED_GATE_ID
+        : gate.id;
+      const denyResult = { decision: 'deny', gate: gateId, message, severity: gate.severity, reasoning };
       // Free-tier daily block cap: after N blocks/day, deny → warn + upgrade CTA
       const cappedResult = applyDailyBlockCap(denyResult);
       if (cappedResult) {
@@ -4021,6 +4042,8 @@ module.exports = {
   saveGovernanceState,
   setTaskScope,
   isTaskScopeExpired,
+  TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
+  applyEnforcementPosture,
   buildTaskScopeViolation,
   setBranchGovernance,
   approveProtectedAction,

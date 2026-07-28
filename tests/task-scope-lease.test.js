@@ -166,3 +166,75 @@ test('a permanent scope written by an older version still loads and still grants
     'a legacy permanent scope stopped granting its own paths',
   );
 });
+
+// --- Reachability and enforcement-path tests -------------------------------------------
+//
+// The lease logic above was correct and the feature was still dead end-to-end. Review caught
+// two P1s that unit tests on setTaskScope could never see:
+//
+//   1. `ttlMs` was dropped by every public surface. Both handlers enumerate fields explicitly,
+//      so callers could pass ttlMs and silently receive a permanent scope.
+//   2. The fail-closed denial was downgradable. applyEnforcementPosture turns denials into
+//      warnings by default and applyDailyBlockCap does the same past the free-tier cap, so an
+//      edit under a lapsed lease executed anyway.
+//
+// These tests exist because "the function is right" and "the feature works" are different
+// claims, and only the second one matters to a user.
+
+test('the published set_task_scope schema advertises ttlMs', () => {
+  const { TOOLS } = require('../scripts/tool-registry.js');
+  const tool = (TOOLS || []).find((entry) => entry.name === 'set_task_scope');
+  assert.ok(tool, 'set_task_scope is not in the public tool registry');
+  assert.ok(tool.inputSchema?.properties?.ttlMs,
+    'ttlMs is not in the public schema, so no MCP client can discover the lease');
+});
+
+test('both public handlers forward ttlMs to setTaskScope', () => {
+  // Source-level on purpose: the defect was a field omitted from an explicit object literal,
+  // which is invisible to any test that calls setTaskScope directly.
+  for (const file of ['../adapters/mcp/server-stdio.js', '../src/api/server.js']) {
+    const source = fs.readFileSync(path.join(__dirname, file), 'utf8');
+    const call = source.slice(source.indexOf('setTaskScope({'));
+    const block = call.slice(0, call.indexOf('})') + 2);
+    assert.match(block, /ttlMs/,
+      `${file} builds its setTaskScope call without ttlMs — the lease is unreachable from this surface`);
+  }
+});
+
+test('an expired-lease denial survives the enforcement posture', () => {
+  const denial = {
+    decision: 'deny',
+    gate: gatesEngine.TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
+    message: 'lease expired',
+    severity: 'high',
+    reasoning: [],
+  };
+  assert.strictEqual(gatesEngine.applyEnforcementPosture(denial).decision, 'deny',
+    'warn-by-default downgraded an expired lease, so the fail-closed guarantee is cosmetic');
+});
+
+test('an expired-lease denial survives the free-tier daily block cap', () => {
+  const denial = {
+    decision: 'deny',
+    gate: gatesEngine.TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
+    message: 'lease expired',
+    severity: 'high',
+    reasoning: [],
+  };
+  assert.strictEqual(gatesEngine.applyDailyBlockCap(denial), null,
+    'the daily cap converted an expired lease to a warning');
+});
+
+test('the exemption is narrow: ordinary task-scope denials still downgrade', () => {
+  // Guards against fixing the hole by exempting every scope gate, which would turn a
+  // warn-by-default product into a blocking one for existing users.
+  const ordinary = {
+    decision: 'deny',
+    gate: 'task-scope-edit-boundary',
+    message: 'outside scope',
+    severity: 'high',
+    reasoning: [],
+  };
+  assert.strictEqual(gatesEngine.applyEnforcementPosture(ordinary).decision, 'warn',
+    'ordinary task-scope denials are no longer downgradable — the exemption was too broad');
+});

@@ -1217,6 +1217,7 @@ async function callToolInner(name, args) {
           workflowContract: args.workflowContract,
           repoPath: args.repoPath,
           localOnly: args.localOnly === true,
+          ttlMs: args.ttlMs,
           clear: args.clear === true,
         }),
       });

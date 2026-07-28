@@ -9088,6 +9088,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           workflowContract: body.workflowContract,
           repoPath: body.repoPath,
           localOnly: body.localOnly === true,
+          ttlMs: body.ttlMs,
           clear: body.clear === true,
         });
         sendJson(res, 200, { scope });
