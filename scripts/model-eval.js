@@ -95,11 +95,14 @@ function stratifiedSplit(examples, options = {}) {
   const ordered = [...groups.entries()].sort((left, right) => left[0] - right[0]);
 
   for (const [, group] of ordered) {
-    // Take the group only while every class it contains is still under quota. A group that
-    // would push any class past its quota goes to training instead.
+    // Take the group only if it fits ENTIRELY within the remaining quota of every class it
+    // contains. Checking merely "is this class still under quota" admitted the whole group and
+    // let it overshoot by hundreds of rows — the real corpus has a 655-row content group, so a
+    // nominal 25% fold could be swamped by one category and the base rate the lift is measured
+    // against would shift underneath it.
     let fits = true;
-    for (const label of group.counts.keys()) {
-      if ((taken.get(label) || 0) >= (quotas.get(label) || 0)) { fits = false; break; }
+    for (const [label, count] of group.counts) {
+      if ((taken.get(label) || 0) + count > (quotas.get(label) || 0)) { fits = false; break; }
     }
     if (fits) {
       test.push(...group.members);
@@ -108,6 +111,13 @@ function stratifiedSplit(examples, options = {}) {
       train.push(...group.members);
     }
   }
+
+  // Both classes must appear in the test fold. With a small minority class the floor()'d quota
+  // can be 0, which would leave every minority group in training and produce a single-class
+  // test fold: ROC-AUC is undefined there and precision/recall/MCC are degenerate, yet the
+  // report would still be marked available. Refusing to split is the honest outcome.
+  const testClasses = new Set(test.map((example) => toBinaryLabel(example.label)));
+  if (testClasses.size < 2) return { train: examples.slice(), test: [] };
 
   // If either side collapsed, report no test fold instead of a meaningless one.
   if (test.length === 0 || train.length === 0) return { train: examples.slice(), test: [] };

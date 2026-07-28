@@ -368,17 +368,13 @@ function holdoutEvaluation(examples, registry, options = {}) {
     // validation. A single split of a few hundred rows cannot distinguish a real improvement
     // from sampling noise, and picking a configuration on one split is how you overfit the
     // validation set itself.
-    // Key on the FULL extracted feature vector, not a handful of row fields. Two rows with the
-    // same feature vector are the same input as far as this model is concerned, so they must
-    // share a fold. Keying on a few coarse fields instead collapsed the corpus into a handful
-    // of groups, and group-wise assignment then produced wildly unbalanced folds.
+    // Key on the extracted feature vector ALONE. The model observes nothing else, so two rows
+    // with identical features are the same input to it and must share a fold. An earlier
+    // version also mixed in the raw `context` string, which split rows whose different prose
+    // maps to identical features — recreating the very leakage this splitter exists to stop.
     keyFn: options.groupKeyFn
       ? (example) => JSON.stringify([options.splitSalt || '', options.groupKeyFn(example)])
-      : (example) => JSON.stringify([
-        options.splitSalt || '',
-        example.features,
-        example.row && example.row.context,
-      ]),
+      : (example) => JSON.stringify([options.splitSalt || '', example.features]),
   });
 
   // Saying "not measurable" is the honest output for a corpus too small or too one-sided to
@@ -387,7 +383,22 @@ function holdoutEvaluation(examples, registry, options = {}) {
     return { available: false, reason: 'corpus-too-small-or-single-class' };
   }
 
-  const probe = fitBoostedModel(train, registry, { ...options, patterns: undefined });
+  // REBUILD THE VOCABULARY FROM THE TRAINING FOLD ONLY.
+  //
+  // buildFeatureRegistry picks top tags and skills by frequency. Deriving it from the whole
+  // corpus lets held-out rows decide which features exist — a transductive fit. The probe would
+  // see vocabulary chosen with knowledge of the test fold, and the "held-out" number would then
+  // describe a procedure we never run in production. Registry and features come from train only.
+  const foldRegistry = buildFeatureRegistry(train.map((example) => example.row), options);
+  const trainRefit = train.map((example) => ({
+    row: example.row,
+    label: example.label,
+    features: extractFeatureMap(example.row, foldRegistry),
+  }));
+
+  const probe = fitBoostedModel(trainRefit, foldRegistry, { ...options, patterns: undefined });
+  // Test rows are scored via predictRisk, which extracts features using the probe's OWN
+  // registry — so the test fold is judged under exactly the vocabulary the probe learned.
   const report = evaluate(scorePairs(probe, test));
   return {
     available: true,

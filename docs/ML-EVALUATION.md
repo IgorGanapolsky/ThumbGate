@@ -49,28 +49,37 @@ Real corpus, 1,791 rows, 12 independent group-aware stratified splits
 in-sample accuracy                    0.8202     <- the number that used to be reported alone
 
 IID held-out (familiar kinds)
-  lift over majority baseline        +0.091 ± 0.014     12/12 folds beat baseline
-  ROC-AUC                             0.883 ± 0.012
-  MCC                                 0.528
-  ECE                                 0.063
+  lift over majority baseline        +0.099 ± 0.017     12/12 folds beat baseline
+  ROC-AUC                             0.887 ± 0.011
+  MCC                                 0.542
+  Brier / ECE                         0.125 / 0.059
 
 Novel-context held-out (unseen action types)
-  lift over majority baseline        +0.016 ± 0.077     10/12 folds beat baseline
-  ROC-AUC                             0.873 ± 0.091
-  MCC                                 0.488
-  ECE                                 0.144
+  lift over majority baseline        -0.105 ± 0.090      1/12 folds beat baseline
+  ROC-AUC                             0.718 ± 0.058
+  MCC                                 0.244
+  Brier / ECE                         0.300 / 0.310
 ```
 
-**The honest reading.** On familiar traffic the model is genuinely useful: +9 points over the
-trivial baseline, every fold, with AUC 0.88. On *unfamiliar* action types its accuracy lift is
-statistically indistinguishable from zero — the spread (±0.077) is five times the mean, and a
-re-run at 8 resamples produced −0.017. Ranking still holds up there (AUC 0.87), but the
-thresholded decision does not.
+**Evidence.** These figures are reproducible from the harness rather than asserted:
+`npm run eval:risk -- --corpus <path> --json` emits the same report machine-readably, and the
+repository's verification policy and artifacts are in
+[VERIFICATION_EVIDENCE.md](../VERIFICATION_EVIDENCE.md)
+([docs copy](./VERIFICATION_EVIDENCE.md)). Every number above carries the baseline it is
+measured against and the spread across 12 resamples; a single split of this corpus has a
+standard deviation large enough to reverse the sign of the novel-context result, so
+single-split figures are not quoted anywhere.
 
-For a firewall this distinction is the important one, because novel actions are exactly the
-case that matters. Treat the model as a **triage/ranking signal**, not as a binary authority on
-unfamiliar input. That is also why the deterministic gate rules — not the model — remain the
-enforcement mechanism.
+**The honest reading.** On familiar traffic the model is genuinely useful: about **+10 points**
+over the trivial baseline, on every fold, with AUC 0.89. On **unfamiliar** action types it is
+**worse than answering "high-risk" unconditionally** — only 1 of 12 folds beats the baseline,
+and calibration collapses (ECE 0.31 versus 0.06).
+
+For a firewall that distinction is the important one, because novel actions are exactly the
+case that matters. The model is therefore a **triage/ranking signal, not an authority on
+unfamiliar input** — its AUC of 0.72 there still orders better than chance even while its
+thresholded decisions do not. This is also why the deterministic gate rules, not the model,
+remain the enforcement mechanism.
 
 ## Why both numbers are reported
 
@@ -84,20 +93,35 @@ The two splits differ only in what defines a "group" that must not straddle the 
 Neither is wrong; they answer different questions. Reporting only the first would be the same
 error as reporting only in-sample accuracy, one level up.
 
-## Two bugs the tests caught in this work
+## Five leakage bugs found while building this
 
-Both were in the splitter, and both would have inflated every number above.
+Every one would have inflated the numbers above. Two were caught by the new tests, three by
+adversarial code review of the evaluator itself.
 
 1. **Tied-hash leakage.** Rows were assigned individually after sorting by hash. Identical rows
-   share a hash and sort adjacently, so a cut point landing inside a tied block put one copy in
-   train and its twin in test.
-2. **Cross-class leakage.** Grouping per class still split duplicates: with label noise, one
+   share a hash and sort adjacently, so a cut point inside a tied block put one copy in train
+   and its twin in test.
+2. **Cross-class leakage.** Grouping per class still split duplicates: with label noise one
    feature vector can carry both labels, so its copies landed in different class buckets and
-   different folds.
+   different folds. Fixed by group-first assignment across classes with per-class quotas
+   (`StratifiedGroupKFold` semantics).
+3. **Quota overshoot.** A group was admitted whenever its class was *not yet* at quota, so one
+   large group could blow past that quota by hundreds of rows. With a 655-row content group in
+   this corpus, a nominal 25% fold could be swamped by a single category and the base rate would
+   shift underneath the measurement. Groups must now fit entirely within the remaining quota of
+   every class they contain. **This one mattered: it moved the novel-context result from
+   +0.016 to −0.105.**
+4. **Transductive vocabulary.** `buildFeatureRegistry` picks top tags and skills by frequency,
+   and it was built from the whole corpus *before* the split — so held-out rows influenced which
+   features existed for the probe. Registry and derived features are now rebuilt from the
+   training fold alone.
+5. **Context in the group key.** The key mixed the raw `context` string in with the feature
+   vector, so two rows whose different prose maps to identical features could land on opposite
+   sides. The model observes only the features, so those are duplicate inputs. The key is now
+   the feature vector alone.
 
-The fix is group-first assignment across classes with per-class quotas
-(`StratifiedGroupKFold` semantics). `tests/risk-model-quality.test.js` asserts no key appears
-in both folds.
+The lesson is uncomfortable and worth stating plainly: **the evaluator is as capable of being
+wrong as the model it measures**, and its errors are harder to notice because they flatter you.
 
 ## The CI gate
 
@@ -131,9 +155,9 @@ that every accuracy is accompanied by its baseline; and that splits are reproduc
   non-significant gain.
 - **`feedback-model.json` is absent on at least one machine**, so the Thompson-sampling
   reliability model has no posterior there.
-- **Lesson retrieval is recency-truncated.** `lesson-retrieval.js` reads the memory log with
-  `maxLines: 200` and `slice(-200)`, so with 383 lessons on disk roughly half are unreachable
-  regardless of relevance — a recency window, not a relevance ranking.
+- **Lesson retrieval was recency-truncated** — fixed separately. It read only the newest 200
+  memory-log lines, so with 383 lessons on disk about half were unreachable regardless of
+  relevance. The cap is now measurement-sized rather than arbitrary.
 
 ## Running it
 

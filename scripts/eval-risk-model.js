@@ -31,10 +31,23 @@ function mean(values) {
   return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
 }
 
+/** Population standard deviation — for describing a set of observed resample scores. */
 function standardDeviation(values) {
   if (values.length < 2) return 0;
   const average = mean(values);
   return Math.sqrt(mean(values.map((value) => (value - average) ** 2)));
+}
+
+/**
+ * Sample standard deviation (n-1). The paired t statistic requires this, not the population
+ * form: dividing by n understates the spread and inflates t, which can push a configuration
+ * sitting near the significance boundary onto the wrong side of it.
+ */
+function sampleStandardDeviation(values) {
+  if (values.length < 2) return 0;
+  const average = mean(values);
+  const sumSquares = values.reduce((sum, value) => sum + ((value - average) ** 2), 0);
+  return Math.sqrt(sumSquares / (values.length - 1));
 }
 
 /**
@@ -46,7 +59,7 @@ function standardDeviation(values) {
  */
 function pairedT(left, right) {
   const differences = left.map((value, index) => value - right[index]);
-  const spread = standardDeviation(differences);
+  const spread = sampleStandardDeviation(differences);
   if (spread === 0 || differences.length < 2) return { t: 0, meanDifference: mean(differences), n: differences.length };
   return {
     t: mean(differences) / (spread / Math.sqrt(differences.length)),
@@ -158,7 +171,7 @@ function main(argv) {
   return 0;
 }
 
-module.exports = { mean, standardDeviation, pairedT, summarize, resample, main };
+module.exports = { mean, standardDeviation, sampleStandardDeviation, pairedT, summarize, resample, main };
 
 if (require.main && require.main.filename === module.filename) {
   process.exit(main(process.argv.slice(2)));
