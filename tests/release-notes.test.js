@@ -235,7 +235,7 @@ test('publish workflow writes full release notes instead of GitHub generated not
   assert.match(workflow, /--npm-published-at="\$\{NPM_PUBLISHED_AT\}"/);
   assert.match(workflow, /GITHUB_STEP_SUMMARY/);
   assert.match(workflow, /Upload full release notes artifact/);
-  assert.match(workflow, /actions\/upload-artifact@v7/);
+  assert.match(workflow, /actions\/upload-artifact@(?:v7|[0-9a-f]{40} # v7)/);
   assert.match(workflow, /if-no-files-found:\s*error/);
   assert.match(workflow, /gh release create "v\$\{VERSION\}" --title "thumbgate@\$\{VERSION\}" --notes-file "\$\{notes_file\}"/);
   assert.match(workflow, /gh release edit "v\$\{VERSION\}" --title "thumbgate@\$\{VERSION\}" --notes-file "\$\{notes_file\}"/);

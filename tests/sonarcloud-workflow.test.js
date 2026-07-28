@@ -36,7 +36,7 @@ test('SonarCloud workflow polls quality gates only for PR and merge-queue scans'
     scanSection,
     /if:\s*steps\.sonar-scope\.outputs\.scan == 'true' && !\(github\.event_name == 'pull_request' && github\.event\.pull_request\.user\.login == 'dependabot\[bot\]'\) && \(github\.event_name == 'pull_request' \|\| github\.event_name == 'merge_group'\)/,
   );
-  assert.match(scanSection, /uses:\s*SonarSource\/sonarqube-scan-action@v8\.0\.0/);
+  assert.match(scanSection, /uses:\s*SonarSource\/sonarqube-scan-action@(?:v8\.0\.0|[0-9a-f]{40} # v8\.0\.0)/);
   assert.match(scanSection, /-Dsonar\.projectVersion=\$\{\{\s*steps\.package-version\.outputs\.version\s*\}\}/);
   assert.match(scanSection, /-Dsonar\.sources=\$\{\{\s*steps\.sonar-scope\.outputs\.source_paths\s*\}\}/);
   assert.doesNotMatch(scanSection, /qualitygate\.wait=true/);
@@ -45,7 +45,7 @@ test('SonarCloud workflow polls quality gates only for PR and merge-queue scans'
     gatedSection,
     /if:\s*steps\.sonar-scope\.outputs\.scan == 'true' && !\(github\.event_name == 'pull_request' && github\.event\.pull_request\.user\.login == 'dependabot\[bot\]'\) && \(github\.event_name == 'pull_request' \|\| github\.event_name == 'merge_group'\)/,
   );
-  assert.match(gatedSection, /uses:\s*SonarSource\/sonarqube-quality-gate-action@v1\.2\.0/);
+  assert.match(gatedSection, /uses:\s*SonarSource\/sonarqube-quality-gate-action@(?:v1\.2\.0|[0-9a-f]{40} # v1\.2\.0)/);
   assert.match(gatedSection, /pollingTimeoutSec:\s*600/);
   assert.match(
     refreshSection,
@@ -53,7 +53,7 @@ test('SonarCloud workflow polls quality gates only for PR and merge-queue scans'
   );
   assert.match(refreshSection, /Skipping default-branch Sonar scanner refresh/);
   assert.match(refreshSection, /mainline_version=\$\{\{\s*steps\.sonar-mainline-version\.outputs\.value\s*\}\}/);
-  assert.doesNotMatch(refreshSection, /uses:\s*SonarSource\/sonarqube-scan-action@v8\.0\.0/);
+  assert.doesNotMatch(refreshSection, /uses:\s*SonarSource\/sonarqube-scan-action@(?:v8\.0\.0|[0-9a-f]{40} # v8\.0\.0)/);
   assert.doesNotMatch(refreshSection, /timeout-minutes:\s*8/);
   assert.doesNotMatch(refreshSection, /continue-on-error:\s*true/);
   assert.doesNotMatch(refreshSection, /-Dsonar\.qualitygate\.wait=true/);
@@ -85,7 +85,7 @@ test('SonarCloud workflow caches scanner packages for real scans', () => {
   const cacheSection = workflow.slice(cacheStart, installStart);
 
   assert.match(cacheSection, /if: steps\.sonar-scope\.outputs\.scan == 'true'/);
-  assert.match(cacheSection, /uses: actions\/cache@v5/);
+  assert.match(cacheSection, /uses: actions\/cache@(?:v5|[0-9a-f]{40} # v5)/);
   assert.match(cacheSection, /path: ~\/\.sonar\/cache/);
   assert.match(cacheSection, /key: \$\{\{\s*runner\.os\s*\}\}-sonar/);
   assert.match(cacheSection, /restore-keys: \$\{\{\s*runner\.os\s*\}\}-sonar/);

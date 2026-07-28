@@ -189,6 +189,6 @@ test('Perplexity command-center workflow is manual, secret-backed, and artifact-
   assert.match(workflow, /PERPLEXITY_API_KEY:\s*\$\{\{\s*secrets\.PERPLEXITY_API_KEY\s*\}\}/);
   assert.match(workflow, /node scripts\/perplexity-command-center\.js "\$COMMAND"/);
   assert.match(workflow, /--allow-chat-fallback/);
-  assert.match(workflow, /actions\/upload-artifact@v7/);
+  assert.match(workflow, /actions\/upload-artifact@(?:v7|[0-9a-f]{40} # v7)/);
   assert.doesNotMatch(workflow, /git commit|git push/);
 });
