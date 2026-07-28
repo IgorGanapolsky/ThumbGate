@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 
 const {
   evaluateDeployPolicy,
+  formatReport,
   parseTimestamp,
   getAgeDays,
   resolveEnvValue,
@@ -99,6 +100,7 @@ test('deploy policy warns when Stripe secret rotation passes the 30-day target',
       ['secret_rotation_due', 'STRIPE_WEBHOOK_SECRET'],
     ]
   );
+  assert.match(formatReport(report), /Result: PASS[\s\S]*Warnings: 2[\s\S]*- WARNING: STRIPE_SECRET_KEY rotation is due/);
 });
 
 test('deploy policy fails Stripe secret timestamps beyond the hard maximum', () => {
@@ -116,4 +118,5 @@ test('deploy policy fails Stripe secret timestamps beyond the hard maximum', () 
   assert.equal(report.ok, false);
   assert.ok(report.errors.some((entry) => entry.type === 'stale_secret' && entry.name === 'STRIPE_SECRET_KEY'));
   assert.equal(report.warnings.length, 0);
+  assert.match(formatReport(report), /Result: FAIL[\s\S]*STRIPE_SECRET_KEY is stale/);
 });
