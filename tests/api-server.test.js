@@ -859,6 +859,21 @@ test('/go/pro 302 redirects to /checkout/pro with caller-provided UTM params pre
   assert.equal(url.searchParams.get('cta_id'), 'go_pro');
 });
 
+test('/go/pro canonicalizes the short marketing-agent campaign alias on a side-effect-free HEAD probe', async () => {
+  const res = await fetch(
+    apiUrl('/go/pro?utm_source=bluesky&utm_medium=social&utm_campaign=mg27'),
+    { method: 'HEAD', redirect: 'manual' }
+  );
+  assert.equal(res.status, 302);
+  const url = new URL(res.headers.get('location'));
+  assert.equal(url.pathname, '/checkout/pro');
+  assert.equal(url.searchParams.get('utm_source'), 'bluesky');
+  assert.equal(
+    url.searchParams.get('utm_campaign'),
+    'marketing_agent_governance_20260727'
+  );
+});
+
 test('/go/teams 302 redirects to Pro per CEO pivot', async () => {
   const res = await fetch(apiUrl('/go/teams?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_teams_listing&cta_id=aiventyx_teams_listing&cta_placement=marketplace_listing'), { redirect: 'manual' });
   assert.equal(res.status, 302);
