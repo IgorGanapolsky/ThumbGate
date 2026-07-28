@@ -172,7 +172,8 @@ const {
   readTaskOutcomes,
   recordTaskOutcome,
 } = require('../../scripts/task-outcomes');
-const { monitorTaskOutcomes } = require('../../scripts/agent-outcome-monitor');
+const { monitorProductionSignals } = require('../../scripts/agent-outcome-monitor');
+const { computeToolKpis, recordToolCall } = require('../../scripts/tool-kpi-tracker');
 const {
   calculateEscalationMetrics,
   decideEscalation,
@@ -237,6 +238,7 @@ const { sendProblem, PROBLEM_TYPES } = require('../../scripts/problem-detail');
 const { TOOLS: MCP_TOOLS } = require('../../scripts/tool-registry');
 const mcpOauth = require('../../scripts/mcp-oauth');
 const { packCheckoutReference } = require('../../scripts/checkout-attribution-reference');
+const { normalizeCampaignId } = require('../../scripts/growth-campaigns');
 // OAuth 2.1 (PKCE) authorization-server state for the remote MCP connector
 // (Claude Connectors Directory requires OAuth for authenticated services).
 const oauthStore = mcpOauth.createStore();
@@ -876,11 +878,13 @@ function updateLessonRecord(feedbackDir, lessonId, updater) {
 }
 
 function getPublicMcpTools() {
-  return MCP_TOOLS.map((tool) => ({
+  const { getExposedTools } = require('../../adapters/mcp/server-stdio');
+  return getExposedTools().map((tool) => ({
     name: tool.name,
     ...(tool.title ? { title: tool.title } : {}),
     description: tool.description,
     inputSchema: tool.inputSchema,
+    ...(tool.outputSchema ? { outputSchema: tool.outputSchema } : {}),
     // Serve the tool-registry annotations (readOnlyHint/destructiveHint). Required
     // by the Claude Connectors Directory (missing annotations = the #1 rejection
     // cause) and used by MCP clients for permission prompts. Was being dropped here.
@@ -889,13 +893,7 @@ function getPublicMcpTools() {
 }
 
 function getServerCardTools() {
-  return MCP_TOOLS.map((tool) => ({
-    name: tool.name,
-    ...(tool.title ? { title: tool.title } : {}),
-    description: tool.description,
-    inputSchema: tool.inputSchema,
-    ...(tool.annotations ? { annotations: tool.annotations } : {}),
-  }));
+  return getPublicMcpTools();
 }
 
 function buildPublicUrl(hostedConfig, pathname) {
@@ -905,7 +903,7 @@ function buildPublicUrl(hostedConfig, pathname) {
 const VERIFICATION_EVIDENCE_URL = 'https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md';
 
 function getToolDiscoveryIndex(hostedConfig) {
-  return MCP_TOOLS.map((tool) => ({
+  return getPublicMcpTools().map((tool) => ({
     name: tool.name,
     description: tool.description,
     annotations: tool.annotations || {},
@@ -915,7 +913,7 @@ function getToolDiscoveryIndex(hostedConfig) {
 
 function getContextFootprintReport(hostedConfig) {
   return buildContextFootprintReport({
-    tools: MCP_TOOLS,
+    tools: getPublicMcpTools(),
     schemaUrlTemplate: buildPublicUrl(hostedConfig, '/.well-known/mcp/tools/{name}.json'),
   });
 }
@@ -1273,7 +1271,8 @@ function inferSearchQuery(referrer) {
 
 function getAttributionValue(params, key, fallbackValue) {
   const value = params.get(key);
-  return value && value.trim() ? value.trim() : fallbackValue;
+  const resolved = value?.trim() || fallbackValue;
+  return key === 'utm_campaign' ? normalizeCampaignId(resolved) : resolved;
 }
 
 function parseUrlSearchParams(urlValue) {
@@ -2689,7 +2688,10 @@ function appendTrackedLinkQueryParams(destinationUrl, parsed, target) {
   for (const key of TRACKED_LINK_QUERY_KEYS) {
     const value = params.get(key);
     if (value && value.trim()) {
-      destinationUrl.searchParams.set(key, value.trim());
+      const normalizedValue = key === 'utm_campaign'
+        ? normalizeCampaignId(value)
+        : value.trim();
+      destinationUrl.searchParams.set(key, normalizedValue);
     }
   }
   if (target.allowCustomerEmail) {
@@ -2730,7 +2732,7 @@ function buildTrackedLinkAttribution(target, parsed, req, journeyState, destinat
   const source = pickFirstText(
     params.get('source'),
     params.get('utm_source'),
-    target.defaults && target.defaults.utm_source,
+    target.defaults?.utm_source,
     inferSource(referrerHost)
   );
 
@@ -2744,19 +2746,21 @@ function buildTrackedLinkAttribution(target, parsed, req, journeyState, destinat
     traceId: pickFirstText(params.get('trace_id')),
     source,
     utmSource: pickFirstText(params.get('utm_source'), source),
-    utmMedium: pickFirstText(params.get('utm_medium'), target.defaults && target.defaults.utm_medium, 'link_router'),
-    utmCampaign: pickFirstText(params.get('utm_campaign'), target.defaults && target.defaults.utm_campaign, 'first_party_redirect'),
+    utmMedium: pickFirstText(params.get('utm_medium'), target.defaults?.utm_medium, 'link_router'),
+    utmCampaign: normalizeCampaignId(
+      pickFirstText(params.get('utm_campaign'), target.defaults?.utm_campaign, 'first_party_redirect')
+    ),
     utmContent: pickFirstText(params.get('utm_content')),
     utmTerm: pickFirstText(params.get('utm_term')),
     creator: pickFirstText(params.get('creator'), params.get('creator_handle')),
     community: pickFirstText(params.get('community'), params.get('subreddit')),
     postId: pickFirstText(params.get('post_id')),
     commentId: pickFirstText(params.get('comment_id')),
-    campaignVariant: pickFirstText(params.get('campaign_variant'), target.defaults && target.defaults.campaign_variant),
+    campaignVariant: pickFirstText(params.get('campaign_variant'), target.defaults?.campaign_variant),
     offerCode: pickFirstText(params.get('offer_code')),
     ctaId: pickFirstText(params.get('cta_id'), target.ctaId),
     ctaPlacement: pickFirstText(params.get('cta_placement'), target.ctaPlacement),
-    planId: pickFirstText(params.get('plan_id'), target.defaults && target.defaults.plan_id),
+    planId: pickFirstText(params.get('plan_id'), target.defaults?.plan_id),
     landingPath: pickFirstText(params.get('landing_path'), `/go/${target.slug}`),
     page: `/go/${target.slug}`,
     referrer,
@@ -5273,6 +5277,14 @@ function createApiServer() {
                 ? mcpOauth.tokenAudienceValid(oauthSession, resourceUrl)
                 : rawKeyValid;
               if (!authed) {
+                recordToolCall({
+                  toolName: msg.params?.name || 'unknown',
+                  serverName: 'mcp-http',
+                  latencyMs: 0,
+                  success: false,
+                  agentId: 'unauthenticated',
+                  metadata: { denied: true, deniedReason: 'authentication_required' },
+                });
                 res.writeHead(401, {
                   'Content-Type': 'application/json',
                   // RFC 9728: point unauthenticated clients at the resource metadata.
@@ -5295,9 +5307,41 @@ function createApiServer() {
                 const tool = MCP_TOOLS.find((t) => t.name === name);
                 const readOnly = Boolean(tool && tool.annotations && tool.annotations.readOnlyHint === true);
                 if (!readOnly) {
+                  recordToolCall({
+                    toolName: name || 'unknown',
+                    serverName: 'mcp-http',
+                    latencyMs: 0,
+                    success: false,
+                    agentId: 'reviewer',
+                    metadata: { denied: true, deniedReason: 'reviewer_read_only' },
+                  });
                   sendJson(res, 200, {
                     jsonrpc: '2.0', id: msg.id,
                     error: { code: -32002, message: `Tool "${name}" requires write access; the reviewer credential is read-only.` },
+                  });
+                  return;
+                }
+              }
+              if (oauthSession) {
+                const name = msg.params && msg.params.name;
+                const tool = MCP_TOOLS.find((candidate) => candidate.name === name);
+                const requiredScope = tool?.annotations?.readOnlyHint === true ? 'mcp:read' : 'mcp:write';
+                if (!mcpOauth.scopeAllows(oauthSession, requiredScope)) {
+                  recordToolCall({
+                    toolName: name || 'unknown',
+                    serverName: 'mcp-http',
+                    latencyMs: 0,
+                    success: false,
+                    agentId: oauthSession.clientId || 'oauth-client',
+                    metadata: {
+                      denied: true,
+                      deniedReason: 'insufficient_scope',
+                      requiredScope,
+                    },
+                  });
+                  sendJson(res, 200, {
+                    jsonrpc: '2.0', id: msg.id,
+                    error: { code: -32003, message: `OAuth token is missing required scope "${requiredScope}".` },
                   });
                   return;
                 }
@@ -5310,7 +5354,7 @@ function createApiServer() {
                   const result = await callTool(name, args);
                   sendJson(res, 200, {
                     jsonrpc: '2.0', id: msg.id,
-                    result: { content: [{ type: 'text', text: typeof result === 'string' ? result : JSON.stringify(result) }] },
+                    result,
                   });
                 } catch (err) {
                   sendJson(res, 200, {
@@ -6993,7 +7037,8 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           // are configured (production) the key MUST match a configured admin /
           // operator / reviewer key — otherwise OAuth would authenticate nobody.
           // In insecure/dev mode (no keys configured) any non-empty key is accepted.
-          if (!resolveKeyRole(form.get('api_key') || '')) {
+          const keyRole = resolveKeyRole(form.get('api_key') || '');
+          if (!keyRole) {
             sendJson(res, 400, { error: 'access_denied', error_description: 'invalid ThumbGate API key' });
             return;
           }
@@ -7003,6 +7048,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
             codeChallenge: authorizationParams.codeChallenge,
             codeChallengeMethod: authorizationParams.codeChallengeMethod,
             scope: authorizationParams.scope,
+            allowedScopes: keyRole === 'reviewer' ? ['mcp:read'] : mcpOauth.SUPPORTED_SCOPES,
             resource: authorizationParams.resource || buildPublicUrl(hostedConfig, '/mcp'),
             boundKey: form.get('api_key') || '',
             state,
@@ -7046,7 +7092,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       sendJson(res, 200, {
         name: 'thumbgate',
         version: pkg.version,
-        count: MCP_TOOLS.length,
+        count: getPublicMcpTools().length,
         tools: getToolDiscoveryIndex(hostedConfig),
       }, {}, {
         headOnly: isHeadRequest,
@@ -7079,7 +7125,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         });
         return;
       }
-      const tool = MCP_TOOLS.find((candidate) => candidate.name === toolName);
+      const tool = getPublicMcpTools().find((candidate) => candidate.name === toolName);
       if (!tool) {
         sendJson(res, 404, {
           error: 'tool_not_found',
@@ -7095,6 +7141,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         description: tool.description,
         annotations: tool.annotations || {},
         inputSchema: tool.inputSchema,
+        ...(tool.outputSchema ? { outputSchema: tool.outputSchema } : {}),
       }, {}, {
         headOnly: isHeadRequest,
       });
@@ -9123,7 +9170,8 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
 
       if (req.method === 'GET' && pathname === '/v1/task-outcomes/monitor') {
         const outcomes = readTaskOutcomes({ feedbackDir: requestFeedbackDir });
-        sendJson(res, 200, monitorTaskOutcomes(outcomes));
+        const toolKpis = computeToolKpis({ feedbackDir: requestFeedbackDir });
+        sendJson(res, 200, monitorProductionSignals(outcomes, toolKpis));
         return;
       }
 

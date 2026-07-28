@@ -5,11 +5,13 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { calculateTaskOutcomeMetrics, readTaskOutcomes } = require('./task-outcomes');
+const { computeToolKpis } = require('./tool-kpi-tracker');
 
 const DEFAULT_THRESHOLDS = path.join(__dirname, '..', 'config', 'agent-outcome-monitor-thresholds.json');
 const DEFAULT_HOSTED_ORIGIN = 'https://thumbgate-production.up.railway.app';
 const DEFAULT_MONITOR_PATH = '/v1/task-outcomes/monitor';
 const DEFAULT_SCHEDULE_ID = 'thumbgate-agent-outcome-monitor';
+const DEFAULT_MINIMUM_TOOL_CALLS = 20;
 
 function monitorTaskOutcomes(outcomes = [], options = {}) {
   const metrics = calculateTaskOutcomeMetrics(outcomes);
@@ -69,6 +71,71 @@ function monitorTaskOutcomes(outcomes = [], options = {}) {
     minimumSamples,
     alerts,
     metrics,
+  };
+}
+
+function monitorProductionSignals(outcomes = [], toolKpis = {}, options = {}) {
+  const taskReport = monitorTaskOutcomes(outcomes, options);
+  const requestedMinimumToolCalls = Number(options.minimumToolCalls);
+  const minimumToolCalls = Number.isFinite(requestedMinimumToolCalls) && requestedMinimumToolCalls >= 1
+    ? Math.floor(requestedMinimumToolCalls)
+    : DEFAULT_MINIMUM_TOOL_CALLS;
+  const measuredToolCalls = Number(toolKpis.totalCalls);
+  const totalToolCalls = Number.isFinite(measuredToolCalls) && measuredToolCalls >= 0
+    ? Math.floor(measuredToolCalls)
+    : 0;
+  const toolAlerts = [];
+
+  if (totalToolCalls < minimumToolCalls) {
+    toolAlerts.push({
+      id: 'minimum-tool-calls',
+      severity: 'block',
+      message: `Need ${minimumToolCalls} observed tool calls; observed ${totalToolCalls}.`,
+    });
+  }
+  for (const tool of (toolKpis.tools || [])) {
+    if (tool.requestCount < 3) continue;
+    if (tool.successRate < 90) {
+      toolAlerts.push({
+        id: `tool-success-${tool.toolName}`,
+        severity: 'block',
+        actual: tool.successRate,
+        expected: 'gte 90',
+        message: `${tool.toolName} success rate ${tool.successRate}% is below 90%.`,
+      });
+    }
+    if (tool.p95 > 500) {
+      toolAlerts.push({
+        id: `tool-latency-${tool.toolName}`,
+        severity: 'warn',
+        actual: tool.p95,
+        expected: 'lte 500',
+        message: `${tool.toolName} p95 latency ${tool.p95}ms is above 500ms.`,
+      });
+    }
+  }
+
+  const alerts = [...taskReport.alerts, ...toolAlerts];
+  let verdict = taskReport.verdict;
+  if (taskReport.verdict !== 'blocked' && toolAlerts.some((alert) => alert.id === 'minimum-tool-calls')) {
+    verdict = 'insufficient_evidence';
+  } else if (toolAlerts.some((alert) => alert.severity === 'block')) {
+    verdict = 'blocked';
+  } else if (verdict === 'healthy' && toolAlerts.length > 0) {
+    verdict = 'watch';
+  }
+
+  return {
+    ...taskReport,
+    verdict,
+    alerts,
+    observability: {
+      minimumToolCalls,
+      totalToolCalls,
+      evidenceStatus: totalToolCalls >= minimumToolCalls ? 'measured' : 'insufficient_evidence',
+      tools: toolKpis.tools || [],
+      servers: toolKpis.servers || [],
+    },
   };
 }
 
@@ -228,8 +295,9 @@ async function main(argv = process.argv.slice(2)) {
 
   const report = options.hosted
     ? await fetchHostedMonitor(options)
-    : monitorTaskOutcomes(
+    : monitorProductionSignals(
       readTaskOutcomes({ inputPath: options.inputPath }),
+      computeToolKpis(),
       { thresholdsPath: options.thresholdsPath },
     );
   if (options.outputPath) {
@@ -255,7 +323,9 @@ module.exports = {
   flattenMetricValues,
   installAgentOutcomeMonitorSchedule,
   main,
+  monitorProductionSignals,
   monitorTaskOutcomes,
   parseArgs,
   passesRule,
+  DEFAULT_MINIMUM_TOOL_CALLS,
 };

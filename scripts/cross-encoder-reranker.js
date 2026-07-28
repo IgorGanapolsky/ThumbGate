@@ -133,6 +133,9 @@ async function retrieveWithReranking(toolName, actionContext, options = {}) {
   const candidates = retrieveRelevantLessons(toolName, actionContext, {
     maxResults: candidateCount,
     feedbackDir,
+    scope: options.scope,
+    requireScope: options.requireScope,
+    includeShared: options.includeShared,
   });
 
   if (candidates.length === 0) return [];

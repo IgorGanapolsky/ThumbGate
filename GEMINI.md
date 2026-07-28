@@ -33,3 +33,12 @@ An agent holding an owner's credential can do anything the owner can. That is pr
 ## 🛡️ Self-Harness Prevention Rules (Auto-Generated)
 
 - No active auto-generated prevention rules at this time.
+
+## Production Architecture Regression Gates
+
+- RAG release gates are deterministic and fail closed; LLM judges are diagnostic only.
+- Scoped retrieval must use entity, project, process, and session IDs and reject transcript blobs.
+- MCP discovery must match callable tools; enforce truthful side-effect hints, OAuth scopes, structured outputs, and KPI telemetry.
+- Completion requires an idempotent task-outcome receipt with verification evidence.
+- Public multi-agent workflows must persist state, preserve failures, and work without hosted-only modules.
+- Production monitoring requires at least 20 measured task outcomes and 20 observed tool calls before a healthy claim.

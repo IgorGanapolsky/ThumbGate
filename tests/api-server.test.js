@@ -859,6 +859,21 @@ test('/go/pro 302 redirects to /checkout/pro with caller-provided UTM params pre
   assert.equal(url.searchParams.get('cta_id'), 'go_pro');
 });
 
+test('/go/pro canonicalizes the short marketing-agent campaign alias on a side-effect-free HEAD probe', async () => {
+  const res = await fetch(
+    apiUrl('/go/pro?utm_source=bluesky&utm_medium=social&utm_campaign=mg27'),
+    { method: 'HEAD', redirect: 'manual' }
+  );
+  assert.equal(res.status, 302);
+  const url = new URL(res.headers.get('location'));
+  assert.equal(url.pathname, '/checkout/pro');
+  assert.equal(url.searchParams.get('utm_source'), 'bluesky');
+  assert.equal(
+    url.searchParams.get('utm_campaign'),
+    'marketing_agent_governance_20260727'
+  );
+});
+
 test('/go/teams 302 redirects to Pro per CEO pivot', async () => {
   const res = await fetch(apiUrl('/go/teams?utm_source=aiventyx&utm_medium=marketplace&utm_campaign=aiventyx_teams_listing&cta_id=aiventyx_teams_listing&cta_placement=marketplace_listing'), { redirect: 'manual' });
   assert.equal(res.status, 302);
@@ -1279,7 +1294,7 @@ test('public MCP tool index supports just-in-time per-tool schema loading', asyn
   assert.ok(captureFeedback);
   assert.equal(captureFeedback.schemaUrl, 'https://app.example.com/.well-known/mcp/tools/capture_feedback.json');
   assert.equal(captureFeedback.inputSchema, undefined);
-  assert.ok(index.tools.some((tool) => tool.name === 'run_autoresearch'));
+  assert.equal(index.tools.some((tool) => tool.name === 'run_autoresearch'), false);
   assert.ok(index.tools.some((tool) => tool.name === 'plan_multimodal_retrieval'));
   assert.ok(index.tools.some((tool) => tool.name === 'plan_agent_design_governance'));
   assert.ok(index.tools.some((tool) => tool.name === 'plan_proactive_agent_eval_guardrails'));
@@ -1295,10 +1310,7 @@ test('public MCP tool index supports just-in-time per-tool schema loading', asyn
   assert.ok(schema.inputSchema.required.includes('signal'));
 
   const autoresearchSchemaRes = await fetch(apiUrl('/.well-known/mcp/tools/run_autoresearch.json'));
-  assert.equal(autoresearchSchemaRes.status, 200);
-  const autoresearchSchema = await autoresearchSchemaRes.json();
-  assert.equal(autoresearchSchema.name, 'run_autoresearch');
-  assert.equal(autoresearchSchema.inputSchema.properties.iterations.type, 'number');
+  assert.equal(autoresearchSchemaRes.status, 404);
 
   const multimodalSchemaRes = await fetch(apiUrl('/.well-known/mcp/tools/plan_multimodal_retrieval.json'));
   assert.equal(multimodalSchemaRes.status, 200);

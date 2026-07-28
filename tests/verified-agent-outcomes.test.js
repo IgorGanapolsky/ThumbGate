@@ -24,8 +24,10 @@ const {
   buildAgentOutcomeMonitorSchedule,
   fetchHostedMonitor,
   installAgentOutcomeMonitorSchedule,
+  monitorProductionSignals,
   monitorTaskOutcomes,
   parseArgs,
+  passesRule,
 } = require('../scripts/agent-outcome-monitor');
 
 function tempFeedbackDir() {
@@ -271,6 +273,101 @@ test('production monitor blocks agents that complete demos but fail tools or pol
   assert.ok(report.alerts.some((alert) => alert.id === 'policyViolationRate-threshold'));
 });
 
+test('production monitor requires observed tool traffic and blocks degraded tools', () => {
+  const healthyOutcomes = Array.from({ length: 20 }, (_, index) => normalizeTaskOutcome(verifiedReceipt({
+    taskId: `production-${index}`,
+    idempotencyKey: `production-${index}`,
+  })));
+  const insufficient = monitorProductionSignals(healthyOutcomes, {
+    totalCalls: 0,
+    tools: [],
+    servers: [],
+  });
+  assert.equal(insufficient.verdict, 'insufficient_evidence');
+  assert.equal(insufficient.observability.evidenceStatus, 'insufficient_evidence');
+
+  const degraded = monitorProductionSignals(healthyOutcomes, {
+    totalCalls: 20,
+    tools: [{
+      toolName: 'provider',
+      requestCount: 20,
+      successRate: 70,
+      p95: 100,
+    }],
+    servers: [{ serverName: 'mcp', totalCalls: 20, successRate: 70 }],
+  });
+  assert.equal(degraded.verdict, 'blocked');
+  assert.ok(degraded.alerts.some((alert) => alert.id === 'tool-success-provider'));
+
+  const healthy = monitorProductionSignals(healthyOutcomes, {
+    totalCalls: 20,
+    tools: [{
+      toolName: 'provider',
+      requestCount: 20,
+      successRate: 100,
+      p95: 100,
+    }],
+    servers: [{ serverName: 'mcp', totalCalls: 20, successRate: 100 }],
+  });
+  assert.equal(healthy.verdict, 'watch');
+  assert.equal(healthy.observability.evidenceStatus, 'measured');
+  assert.ok(healthy.alerts.some((alert) => alert.id === 'correctEscalationRate-missing'));
+});
+
+test('production monitor warns on measured latency and ignores low-volume noise', () => {
+  const healthyOutcomes = Array.from({ length: 20 }, (_, index) => normalizeTaskOutcome(verifiedReceipt({
+    taskId: `latency-${index}`,
+    idempotencyKey: `latency-${index}`,
+  })));
+  const report = monitorProductionSignals(healthyOutcomes, {
+    totalCalls: 8,
+    tools: [{
+      toolName: 'slow-provider',
+      requestCount: 7,
+      successRate: 100,
+      p95: 750,
+    }, {
+      toolName: 'one-off-failure',
+      requestCount: 1,
+      successRate: 0,
+      p95: 900,
+    }],
+  }, {
+    minimumToolCalls: 8,
+  });
+
+  assert.equal(report.verdict, 'watch');
+  assert.ok(report.alerts.some((alert) => alert.id === 'tool-latency-slow-provider'));
+  assert.ok(!report.alerts.some((alert) => alert.id.includes('one-off-failure')));
+  assert.deepEqual(report.observability.servers, []);
+});
+
+test('production monitor treats malformed traffic counters as missing evidence', () => {
+  const healthyOutcomes = Array.from({ length: 20 }, (_, index) => normalizeTaskOutcome(verifiedReceipt({
+    taskId: `malformed-traffic-${index}`,
+    idempotencyKey: `malformed-traffic-${index}`,
+  })));
+  const report = monitorProductionSignals(healthyOutcomes, {
+    totalCalls: 'not-a-number',
+    tools: [],
+  }, {
+    minimumToolCalls: -1,
+  });
+
+  assert.equal(report.verdict, 'insufficient_evidence');
+  assert.equal(report.observability.totalToolCalls, 0);
+  assert.equal(report.observability.minimumToolCalls, 20);
+});
+
+test('monitor threshold operators are deterministic and reject unknown operators', () => {
+  assert.equal(passesRule(5, { operator: 'gte', value: 5 }), true);
+  assert.equal(passesRule(5, { operator: 'lte', value: 5 }), true);
+  assert.equal(passesRule(5, { operator: 'gt', value: 4 }), true);
+  assert.equal(passesRule(5, { operator: 'lt', value: 6 }), true);
+  assert.equal(passesRule(5, { operator: 'eq', value: 5 }), true);
+  assert.throws(() => passesRule(5, { operator: 'approx', value: 5 }), /Unsupported threshold operator/);
+});
+
 test('hosted outcome monitor uses operator authentication without returning it', async () => {
   const calls = [];
   const report = await fetchHostedMonitor({
@@ -295,6 +392,45 @@ test('hosted outcome monitor uses operator authentication without returning it',
   assert.doesNotMatch(JSON.stringify(report), /unit-operator-token/);
 });
 
+test('hosted outcome monitor distinguishes missing auth, HTTP errors, and request failures', async () => {
+  const missingConfigPath = path.join(os.tmpdir(), `thumbgate-no-observability-${process.pid}.json`);
+  const unconfigured = await fetchHostedMonitor({
+    env: {},
+    observabilityPath: missingConfigPath,
+    operatorPath: missingConfigPath,
+  });
+  assert.equal(unconfigured.verdict, 'not_configured');
+
+  const httpError = await fetchHostedMonitor({
+    env: { THUMBGATE_API_KEY: 'fallback-test-token' },
+    baseUrl: 'https://example.test',
+    fetchImpl: async () => ({ ok: false, status: 503 }),
+  });
+  assert.equal(httpError.verdict, 'unavailable');
+  assert.equal(httpError.httpStatus, 503);
+  assert.equal(httpError.reason, 'hosted_monitor_http_error');
+
+  const requestFailure = await fetchHostedMonitor({
+    env: { THUMBGATE_OPERATOR_KEY: 'operator-test-token' },
+    baseUrl: 'https://example.test',
+    fetchImpl: async () => {
+      throw new Error('offline');
+    },
+  });
+  assert.equal(requestFailure.reason, 'hosted_monitor_request_failed');
+
+  const timeout = await fetchHostedMonitor({
+    env: { THUMBGATE_OPERATOR_KEY: 'operator-test-token' },
+    baseUrl: 'https://example.test',
+    fetchImpl: async () => {
+      const error = new Error('aborted');
+      error.name = 'AbortError';
+      throw error;
+    },
+  });
+  assert.equal(timeout.reason, 'hosted_monitor_timeout');
+});
+
 test('agent outcome monitor installs outside GitHub-hosted cron', () => {
   const parsed = parseArgs([
     '--install-schedule',
@@ -313,6 +449,15 @@ test('agent outcome monitor installs outside GitHub-hosted cron', () => {
   assert.match(schedule.command, /--hosted/);
   assert.match(schedule.command, /thumbgate-report\.json/);
   assert.doesNotMatch(schedule.command, /OPERATOR_KEY|API_KEY|Bearer/);
+
+  const customSchedule = buildAgentOutcomeMonitorSchedule({
+    workingDirectory: '/tmp/thumbgate-project',
+    outputPath: '/tmp/thumbgate-report.json',
+    baseUrl: 'https://example.test',
+    schedule: 'hourly',
+  });
+  assert.equal(customSchedule.schedule, 'hourly');
+  assert.match(customSchedule.command, /--base-url=https:\/\/example\.test/);
 
   const calls = [];
   const result = installAgentOutcomeMonitorSchedule({

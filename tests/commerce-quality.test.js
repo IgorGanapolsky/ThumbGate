@@ -229,6 +229,11 @@ test('commerce MCP profile has the right tools', () => {
     'prevention_rules',
     'feedback_stats',
     'feedback_summary',
+    'get_agent_outcome_metrics',
+    'get_task_outcomes',
+    'list_human_escalations',
+    'record_task_outcome',
+    'request_human_escalation',
     'workflow_sentinel',
   ];
   assert.deepEqual(allowlists.profiles.commerce.sort(), expected.sort());

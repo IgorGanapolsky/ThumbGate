@@ -2,7 +2,7 @@
 'use strict';
 
 const { constructContextPack } = require('./contextfs');
-const { matchSkillPacks, getSkillPack } = require('./skill-packs');
+const { matchSkillPacks } = require('./skill-packs');
 
 const BUILTIN_EVAL_CASES = [
   { id: 'stripe-no-idempotency', domain: 'stripe-integration', query: 'Create a PaymentIntent for $50 USD', expectedRuleHit: 'idempotency', description: 'Agent should use idempotency keys' },
@@ -15,13 +15,11 @@ const BUILTIN_EVAL_CASES = [
 
 function runEvalCase(evalCase) {
   const withoutContext = { hasRules: false, ruleCount: 0, matchedSkillPack: null, contextChars: 0, wouldPrevent: false };
-  const domainPack = getSkillPack(evalCase.domain);
   const matchedPacks = matchSkillPacks(evalCase.query);
-  const skillPack = domainPack || (matchedPacks.length > 0 ? matchedPacks[0] : null);
   let ruleHit = false, matchedRuleCount = 0, contextChars = 0;
-  if (skillPack) {
+  for (const skillPack of matchedPacks) {
     for (const rule of skillPack.rules) { if (evalCase.expectedRuleHit && rule.toLowerCase().includes(evalCase.expectedRuleHit.toLowerCase())) ruleHit = true; matchedRuleCount++; }
-    contextChars = skillPack.rules.join('\n').length;
+    contextChars += skillPack.rules.join('\n').length;
   }
   let packItems = 0;
   try {
@@ -29,7 +27,7 @@ function runEvalCase(evalCase) {
     packItems = pack.items.length; contextChars += pack.usedChars;
     for (const item of pack.items) { const c = (item.structuredContext && item.structuredContext.rawContent) || ''; if (evalCase.expectedRuleHit && c.toLowerCase().includes(evalCase.expectedRuleHit.toLowerCase())) ruleHit = true; }
   } catch { /* ok in test envs */ }
-  return { id: evalCase.id, domain: evalCase.domain, description: evalCase.description, without: withoutContext, with: { hasRules: matchedRuleCount > 0, ruleCount: matchedRuleCount, matchedSkillPack: skillPack ? skillPack.name : null, contextChars, packItems, wouldPrevent: ruleHit }, passed: ruleHit };
+  return { id: evalCase.id, domain: evalCase.domain, description: evalCase.description, without: withoutContext, with: { hasRules: matchedRuleCount > 0, ruleCount: matchedRuleCount, matchedSkillPack: matchedPacks.map((pack) => pack.name).join(', ') || null, contextChars, packItems, wouldPrevent: ruleHit }, passed: ruleHit };
 }
 
 function runEvalSuite(cases) {

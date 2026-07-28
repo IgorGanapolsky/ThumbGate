@@ -24,6 +24,30 @@ test('capture_feedback tool exists with required signal param', () => {
   assert.ok(captureTool.inputSchema.properties.chatHistory, 'capture_feedback must expose chatHistory for history-aware distillation');
   assert.ok(captureTool.inputSchema.properties.conversationWindow, 'capture_feedback must expose conversationWindow for structured reflection');
   assert.ok(captureTool.inputSchema.properties.relatedFeedbackId, 'capture_feedback must expose relatedFeedbackId');
+  assert.equal(captureTool.annotations.destructiveHint, true, 'capture_feedback mutates durable feedback state');
+  assert.equal(captureTool.annotations.readOnlyHint, undefined);
+});
+
+test('lesson retrieval tools expose complete memory scope controls', () => {
+  for (const name of ['search_lessons', 'retrieve_lessons']) {
+    const tool = TOOLS.find((candidate) => candidate.name === name);
+    assert.ok(tool, `${name} must exist`);
+    assert.deepEqual(tool.inputSchema.properties.scope.required, [
+      'entityId',
+      'projectId',
+      'processId',
+      'sessionId',
+    ]);
+    assert.ok(tool.inputSchema.properties.requireScope);
+    assert.ok(tool.inputSchema.properties.includeShared);
+  }
+});
+
+test('outcome tools publish structured output contracts', () => {
+  for (const name of ['record_task_outcome', 'get_agent_outcome_metrics']) {
+    const tool = TOOLS.find((candidate) => candidate.name === name);
+    assert.ok(tool.outputSchema, `${name} must define outputSchema`);
+  }
 });
 
 test('document import tools exist and search_thumbgate exposes document search', () => {
