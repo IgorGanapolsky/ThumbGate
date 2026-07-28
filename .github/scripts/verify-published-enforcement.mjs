@@ -16,7 +16,7 @@
 // Exit 0 = no evasion holes. Exit 1 = evadable. Exit 2 = INCONCLUSIVE (could not evaluate).
 
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { mkdtempSync, writeFileSync, mkdirSync, existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -86,14 +86,24 @@ git(["add", "staged.txt"]);
 let inconclusive = 0;
 
 // Drive the same JSON contract a PreToolUse hook uses.
+//
+// FRESH STATE PER CALL. Several gates are stateful — `push-without-thread-check` is satisfied
+// by prior activity in the same session, and `workflow-sentinel` accumulates risk. Reusing one
+// sandbox HOME across a ~130-call run therefore makes later commands stop being denied for
+// reasons that have nothing to do with evasion, and the matrix reports phantom holes. That
+// false positive is worse than no check at all: it would open a P0 telling an operator to roll
+// back a perfectly good release. Each measurement gets its own state directory so a "hole"
+// means the ENGINE let it through, not that the session had moved on.
 function decide(command) {
+  const stateHome = mkdtempSync(path.join(tmpdir(), "tg-verify-home-"));
   const result = spawnSync(process.execPath, [cli, "gate-check"], {
     input: JSON.stringify({ tool_name: "Bash", tool_input: { command, cwd: repo } }),
     encoding: "utf8",
     cwd: repo,
     timeout: 60_000,
-    env: { ...process.env, THUMBGATE_STRICT_ENFORCEMENT: "1" },
+    env: { ...process.env, HOME: stateHome, THUMBGATE_STRICT_ENFORCEMENT: "1" },
   });
+  try { rmSync(stateHome, { recursive: true, force: true }); } catch { /* best effort */ }
   if (result.error || result.status === null) {
     inconclusive += 1;
     return null;

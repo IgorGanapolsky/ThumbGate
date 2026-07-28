@@ -11,9 +11,13 @@ name: Enforcement Drift Watch
 # rollback criteria are defined up front and checked by the system rather than by a human
 # remembering to look.
 
+# NOTE: deliberately NOT scheduled here. tests/ci-cd-hygiene-audit.test.js limits `schedule:`
+# to codeql.yml, with the stated alternative that recurring loops "must run outside
+# GitHub-hosted Actions or via workflow_dispatch". Weakening that guard to fit this job would
+# be optimising the policy around my own change, so the recurring cadence lives in launchd
+# (scripts/install-drift-watch.sh) and this workflow stays dispatch-only for manual runs and
+# for CI-side reruns after a release.
 on:
-  schedule:
-    - cron: "17 */6 * * *"
   workflow_dispatch:
     inputs:
       version:
