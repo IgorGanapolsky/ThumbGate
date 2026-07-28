@@ -840,7 +840,9 @@
     "observability:setup": "node scripts/observability-setup.js",
     "observability:doctor": "node scripts/revenue-observability-doctor.js",
     "test:jsonl-window": "node --test tests/jsonl-window.test.js",
-    "test:observability-env": "node --test tests/observability-env.test.js"
+    "test:observability-env": "node --test tests/observability-env.test.js",
+    "eval:risk": "node scripts/eval-risk-model.js",
+    "test:risk-quality": "node --test tests/risk-model-quality.test.js tests/model-eval.test.js"
   },
   "keywords": [
     "mcp",
