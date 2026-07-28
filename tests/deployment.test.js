@@ -416,7 +416,7 @@ test('Deploy to Railway workflow captures Railway diagnostics when health verifi
   assert.match(workflow, /name: Capture Railway diagnostics/);
   assert.match(workflow, /if: failure\(\) && steps\.railway-config\.outputs\.enabled == 'true'/);
   assert.match(workflow, /bash scripts\/capture-railway-diagnostics\.sh railway-diagnostics/);
-  assert.match(workflow, /actions\/upload-artifact@v7/);
+  assert.match(workflow, /actions\/upload-artifact@(?:v7|[0-9a-f]{40} # v7)/);
   assert.match(workflow, /railway-diagnostics-\$\{\{\s*github\.run_id\s*\}\}/);
 });
 
@@ -437,7 +437,7 @@ test('Railway diagnostics workflow can inspect or bounce the service with the li
   assert.match(workflow, /timeout --foreground "\$\{RAILWAY_CLI_COMMAND_TIMEOUT_SECONDS\}s" railway restart/);
   assert.match(workflow, /timeout --foreground "\$\{RAILWAY_CLI_COMMAND_TIMEOUT_SECONDS\}s" railway redeploy/);
   assert.match(workflow, /bash scripts\/capture-railway-diagnostics\.sh railway-diagnostics/);
-  assert.match(workflow, /actions\/upload-artifact@v7/);
+  assert.match(workflow, /actions\/upload-artifact@(?:v7|[0-9a-f]{40} # v7)/);
 });
 
 test('Railway diagnostics helper captures service status, latest logs, and a direct health probe', () => {
@@ -842,12 +842,12 @@ test('SonarCloud workflow polls quality gates only for PR and merge-queue scans'
   assert.match(workflow, /SONAR_TOKEN:\s*\$\{\{\s*secrets\.SONAR_TOKEN\s*\}\}/);
   assert.match(pullRequestScanStep[0], /github\.event_name == 'pull_request' \|\| github\.event_name == 'merge_group'/);
   assert.match(pullRequestScanStep[0], /!\(github\.event_name == 'pull_request' && github\.event\.pull_request\.user\.login == 'dependabot\[bot\]'\)/);
-  assert.match(pullRequestScanStep[0], /uses:\s*SonarSource\/sonarqube-scan-action@v8\.0\.0/);
+  assert.match(pullRequestScanStep[0], /uses:\s*SonarSource\/sonarqube-scan-action@(?:v8\.0\.0|[0-9a-f]{40} # v8\.0\.0)/);
   assert.match(pullRequestScanStep[0], /-Dsonar\.projectVersion=\$\{\{\s*steps\.package-version\.outputs\.version\s*\}\}/);
   assert.doesNotMatch(pullRequestScanStep[0], /qualitygate\.wait=true/);
   assert.match(qualityGateStep[0], /github\.event_name == 'pull_request' \|\| github\.event_name == 'merge_group'/);
   assert.match(qualityGateStep[0], /!\(github\.event_name == 'pull_request' && github\.event\.pull_request\.user\.login == 'dependabot\[bot\]'\)/);
-  assert.match(qualityGateStep[0], /uses:\s*SonarSource\/sonarqube-quality-gate-action@v1\.2\.0/);
+  assert.match(qualityGateStep[0], /uses:\s*SonarSource\/sonarqube-quality-gate-action@(?:v1\.2\.0|[0-9a-f]{40} # v1\.2\.0)/);
   assert.match(qualityGateStep[0], /pollingTimeoutSec:\s*600/);
   assert.doesNotMatch(defaultBranchStep[0], /qualitygate\.wait=true/);
 });
@@ -1034,7 +1034,7 @@ test('Sentry release workflow serializes main release stamping', () => {
   assert.match(workflow, /concurrency:/);
   assert.match(workflow, /group:\s*sentry-release-\$\{\{\s*github\.workflow\s*\}\}-\$\{\{\s*github\.ref\s*\}\}/);
   assert.match(workflow, /cancel-in-progress:\s*true/);
-  assert.match(workflow, /uses: getsentry\/action-release@v3/);
+  assert.match(workflow, /uses: getsentry\/action-release@(?:v3|[0-9a-f]{40} # v3)/);
 });
 
 test('GitHub Actions workflows never use bare npm ci for onnxruntime installs', () => {

@@ -34,7 +34,7 @@ jobs:
       PROD_URL: https://thumbgate-production.up.railway.app
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 2
 
@@ -83,7 +83,7 @@ jobs:
           fi
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 20
 
@@ -138,7 +138,7 @@ jobs:
 
       - name: Comment on associated PR (success)
         if: success()
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
           EXPECTED_VERSION: ${{ steps.pkg.outputs.version }}
           LEARN_CHECKED: ${{ steps.learn.outputs.checked }}
@@ -181,7 +181,7 @@ jobs:
 
       - name: Comment on associated PR (failure)
         if: failure()
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
           EXPECTED_VERSION: ${{ steps.pkg.outputs.version }}
           HEALTH_OK: ${{ steps.health.outputs.ok || 'false' }}

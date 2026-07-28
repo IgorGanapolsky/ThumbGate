@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Comment authoritative deploy or revenue-readiness failure
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
             const run = context.payload.workflow_run;
@@ -65,7 +65,7 @@ jobs:
       PROD_URL: https://thumbgate.ai
       MERGE_SHA: ${{ github.event.workflow_run.head_sha }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 5
           ref: ${{ github.event.workflow_run.head_sha }}

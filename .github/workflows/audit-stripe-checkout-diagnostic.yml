@@ -14,8 +14,8 @@ jobs:
   diag:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with: { node-version: '20', cache: 'npm' }
       - run: npm ci --no-audit --no-fund
       - name: Run stripe-checkout-diagnostic
@@ -26,7 +26,7 @@ jobs:
           node scripts/stripe-checkout-diagnostic.js | tee reports/revenue/stripe-checkout-diagnostic.md
           node scripts/stripe-checkout-diagnostic.js --json > reports/revenue/stripe-checkout-diagnostic.json
       - name: Upload diagnostic artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: stripe-checkout-diagnostic-${{ github.run_id }}
           path: reports/revenue/
