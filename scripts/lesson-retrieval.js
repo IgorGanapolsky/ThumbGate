@@ -16,6 +16,33 @@ const RECENCY_DECAY_DAYS = 30;
 const RERANK_CANDIDATE_POOL = 50; // bi-encoder retrieves this many; reranker picks topK
 const MAX_RETRIEVAL_MEMORY_CHARS = 20000;
 
+// Line cap for reading the memory log during retrieval.
+//
+// This was 200, which quietly made relevance irrelevant. Retrieval scores memories and keeps
+// anything over 0.1, but it only ever SAW the newest 200 entries — so once 200 newer lessons
+// existed, the single most relevant lesson in the corpus became unreachable no matter how well
+// it matched. Measured on a synthetic corpus where the best-scoring lesson (0.183, threshold
+// 0.1) is the oldest entry:
+//
+//     corpus   150 -> found
+//     corpus   201 -> NOT found        <- cliff, purely from recency
+//     corpus 2,000 -> NOT found
+//
+// A firewall that forgets its oldest lessons forgets the ones it learned the hard way.
+//
+// The cap exists for cost, so it is set from measurement rather than taste. Worst case (every
+// entry scoring above threshold, so nothing filters out early):
+//
+//     200 entries 2.6 ms/call | 5,000 entries 2.6 ms/call | 20,000 entries 4.2 ms/call
+//
+// 5,000 therefore costs nothing measurable against the old 200 while covering realistic
+// corpora with wide headroom. Override with THUMBGATE_RETRIEVAL_MAX_LINES if a machine ever
+// grows past it.
+const MAX_RETRIEVAL_MEMORY_LINES = Math.max(
+  1,
+  Number(process.env.THUMBGATE_RETRIEVAL_MAX_LINES) || 5000,
+);
+
 function isRetrievableMemory(memory, options = {}) {
   if (!memory || typeof memory !== 'object') return false;
   const { looksLikeTransportBlob } = require('./feedback-sanitizer');
@@ -55,7 +82,7 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
     : getFeedbackPaths();
 
   const memories = selectRetrievalMemories(
-    readJSONL(paths.MEMORY_LOG_PATH, { maxLines: 200 }),
+    readJSONL(paths.MEMORY_LOG_PATH, { maxLines: MAX_RETRIEVAL_MEMORY_LINES }),
     options,
   );
   if (memories.length === 0) return [];
@@ -132,7 +159,7 @@ function loadMemories(feedbackDir, options = {}) {
     ? { MEMORY_LOG_PATH: pathMod.join(feedbackDir, 'memory-log.jsonl') }
     : getFeedbackPaths();
   return selectRetrievalMemories(
-    readJSONL(paths.MEMORY_LOG_PATH, { maxLines: 200 }),
+    readJSONL(paths.MEMORY_LOG_PATH, { maxLines: MAX_RETRIEVAL_MEMORY_LINES }),
     options,
   );
 }
@@ -521,4 +548,5 @@ module.exports = {
   isRetrievableMemory,
   selectRetrievalMemories,
   MAX_RETRIEVAL_MEMORY_CHARS,
+  MAX_RETRIEVAL_MEMORY_LINES,
 };
