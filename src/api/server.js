@@ -1271,7 +1271,7 @@ function inferSearchQuery(referrer) {
 
 function getAttributionValue(params, key, fallbackValue) {
   const value = params.get(key);
-  const resolved = value && value.trim() ? value.trim() : fallbackValue;
+  const resolved = value?.trim() || fallbackValue;
   return key === 'utm_campaign' ? normalizeCampaignId(resolved) : resolved;
 }
 
@@ -2688,10 +2688,10 @@ function appendTrackedLinkQueryParams(destinationUrl, parsed, target) {
   for (const key of TRACKED_LINK_QUERY_KEYS) {
     const value = params.get(key);
     if (value && value.trim()) {
-      destinationUrl.searchParams.set(
-        key,
-        key === 'utm_campaign' ? normalizeCampaignId(value) : value.trim()
-      );
+      const normalizedValue = key === 'utm_campaign'
+        ? normalizeCampaignId(value)
+        : value.trim();
+      destinationUrl.searchParams.set(key, normalizedValue);
     }
   }
   if (target.allowCustomerEmail) {
@@ -2732,7 +2732,7 @@ function buildTrackedLinkAttribution(target, parsed, req, journeyState, destinat
   const source = pickFirstText(
     params.get('source'),
     params.get('utm_source'),
-    target.defaults && target.defaults.utm_source,
+    target.defaults?.utm_source,
     inferSource(referrerHost)
   );
 
@@ -2746,9 +2746,9 @@ function buildTrackedLinkAttribution(target, parsed, req, journeyState, destinat
     traceId: pickFirstText(params.get('trace_id')),
     source,
     utmSource: pickFirstText(params.get('utm_source'), source),
-    utmMedium: pickFirstText(params.get('utm_medium'), target.defaults && target.defaults.utm_medium, 'link_router'),
+    utmMedium: pickFirstText(params.get('utm_medium'), target.defaults?.utm_medium, 'link_router'),
     utmCampaign: normalizeCampaignId(
-      pickFirstText(params.get('utm_campaign'), target.defaults && target.defaults.utm_campaign, 'first_party_redirect')
+      pickFirstText(params.get('utm_campaign'), target.defaults?.utm_campaign, 'first_party_redirect')
     ),
     utmContent: pickFirstText(params.get('utm_content')),
     utmTerm: pickFirstText(params.get('utm_term')),
@@ -2756,11 +2756,11 @@ function buildTrackedLinkAttribution(target, parsed, req, journeyState, destinat
     community: pickFirstText(params.get('community'), params.get('subreddit')),
     postId: pickFirstText(params.get('post_id')),
     commentId: pickFirstText(params.get('comment_id')),
-    campaignVariant: pickFirstText(params.get('campaign_variant'), target.defaults && target.defaults.campaign_variant),
+    campaignVariant: pickFirstText(params.get('campaign_variant'), target.defaults?.campaign_variant),
     offerCode: pickFirstText(params.get('offer_code')),
     ctaId: pickFirstText(params.get('cta_id'), target.ctaId),
     ctaPlacement: pickFirstText(params.get('cta_placement'), target.ctaPlacement),
-    planId: pickFirstText(params.get('plan_id'), target.defaults && target.defaults.plan_id),
+    planId: pickFirstText(params.get('plan_id'), target.defaults?.plan_id),
     landingPath: pickFirstText(params.get('landing_path'), `/go/${target.slug}`),
     page: `/go/${target.slug}`,
     referrer,

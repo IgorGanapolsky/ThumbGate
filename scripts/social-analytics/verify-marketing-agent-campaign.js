@@ -10,8 +10,13 @@ const {
   validateMarketingAgentCampaign,
 } = require('../growth-campaigns');
 
+const APPROVED_CHECKOUT_ORIGINS = Object.freeze([
+  'https://thumbgate.ai',
+]);
+
 function classifyPublicationStatus(status) {
-  if (status >= 200 && status < 400) return 'LIVE';
+  if (status >= 200 && status < 300) return 'LIVE';
+  if (status >= 300 && status < 400) return 'PARTIAL';
   if ([401, 403, 405, 429].includes(status)) return 'PARTIAL';
   if ([404, 410].includes(status)) return 'NOT DONE';
   return 'PARTIAL';
@@ -61,6 +66,10 @@ async function probeTrackedBuyerPath(entry, options = {}) {
     sourceUrl.pathname + sourceUrl.search,
     options.appOrigin || sourceUrl.origin
   );
+  const approvedCheckoutOrigins = new Set([
+    probeUrl.origin,
+    ...(options.approvedCheckoutOrigins || APPROVED_CHECKOUT_ORIGINS),
+  ]);
 
   try {
     const response = await fetchImpl(probeUrl, {
@@ -77,6 +86,7 @@ async function probeTrackedBuyerPath(entry, options = {}) {
       destination?.searchParams.get('utm_campaign')
     );
     const ok = [302, 303].includes(response.status)
+      && approvedCheckoutOrigins.has(destination?.origin)
       && destination?.pathname === '/checkout/pro'
       && destination.searchParams.get('utm_source') === entry.channel
       && actualCampaign === expectedCampaign;
@@ -87,6 +97,7 @@ async function probeTrackedBuyerPath(entry, options = {}) {
       httpStatus: response.status,
       trackedBuyerUrl: entry.trackedBuyerUrl,
       location,
+      destinationOrigin: destination?.origin || null,
       destinationPath: destination?.pathname || null,
       source: destination?.searchParams.get('utm_source') || null,
       campaign: actualCampaign,
@@ -152,6 +163,19 @@ function summarizeCampaignOutcome(summary = {}, campaign = MARKETING_AGENT_CAMPA
   };
 }
 
+function resolveReportStatus(
+  routeProofPassed,
+  publicationProofPassed,
+  publicationProofFullyLive,
+  verifiedHostedLedger,
+  skipPermalinks
+) {
+  if (!routeProofPassed || !publicationProofPassed) return 'NOT DONE';
+  if (!verifiedHostedLedger) return 'PARTIAL';
+  if (!skipPermalinks && !publicationProofFullyLive) return 'PARTIAL';
+  return 'VERIFIED';
+}
+
 async function buildMarketingAgentCampaignReport(options = {}) {
   const campaign = options.campaign || MARKETING_AGENT_CAMPAIGN;
   const manifest = validateMarketingAgentCampaign(campaign);
@@ -177,7 +201,7 @@ async function buildMarketingAgentCampaignReport(options = {}) {
 
   try {
     const result = await getOperationalSummary({
-      window: options.window || '30d',
+      window: options.window || 'lifetime',
     });
     outcome = {
       source: result.source,
@@ -214,14 +238,13 @@ async function buildMarketingAgentCampaignReport(options = {}) {
       channels: publications,
     },
     outcomeProof: outcome,
-    status: !routeProofPassed || !publicationProofPassed
-      ? 'NOT DONE'
-      : (
-        outcome.verifiedHostedLedger
-        && (options.skipPermalinks || publicationProofFullyLive)
-          ? 'VERIFIED'
-          : 'PARTIAL'
-      ),
+    status: resolveReportStatus(
+      routeProofPassed,
+      publicationProofPassed,
+      publicationProofFullyLive,
+      outcome.verifiedHostedLedger,
+      options.skipPermalinks
+    ),
     claimBoundary: (
       'Route and publication proof do not prove a lead, checkout completion, '
       + 'buyer, or captured payment. Provider verification is separate.'
@@ -236,7 +259,7 @@ function parseArgs(argv = []) {
     strictHosted: false,
     outPath: null,
     appOrigin: null,
-    window: '30d',
+    window: 'lifetime',
   };
 
   for (const arg of argv) {
@@ -248,10 +271,23 @@ function parseArgs(argv = []) {
     } else if (arg.startsWith('--app-origin=')) {
       options.appOrigin = arg.slice('--app-origin='.length).trim() || null;
     } else if (arg.startsWith('--window=')) {
-      options.window = arg.slice('--window='.length).trim() || '30d';
+      options.window = arg.slice('--window='.length).trim() || 'lifetime';
     }
   }
   return options;
+}
+
+function formatCliOutput(report, json, output) {
+  if (json) return output;
+  const buyerRouteStatus = report.routeProof.passed ? 'PASS' : 'FAIL';
+  const hostedOutcomeStatus = report.outcomeProof.verifiedHostedLedger
+    ? 'VERIFIED'
+    : 'UNVERIFIED';
+  return (
+    `Marketing-agent campaign: ${report.status}\n`
+    + `Buyer routes: ${buyerRouteStatus}\n`
+    + `Hosted outcome ledger: ${hostedOutcomeStatus}\n`
+  );
 }
 
 async function runCli(argv = process.argv.slice(2)) {
@@ -263,15 +299,7 @@ async function runCli(argv = process.argv.slice(2)) {
     fs.mkdirSync(path.dirname(resolved), { recursive: true });
     fs.writeFileSync(resolved, output, 'utf8');
   }
-  process.stdout.write(options.json
-    ? output
-    : (
-      `Marketing-agent campaign: ${report.status}\n`
-      + `Buyer routes: ${report.routeProof.passed ? 'PASS' : 'FAIL'}\n`
-      + `Hosted outcome ledger: ${
-        report.outcomeProof.verifiedHostedLedger ? 'VERIFIED' : 'UNVERIFIED'
-      }\n`
-    ));
+  process.stdout.write(formatCliOutput(report, options.json, output));
   if (
     report.status === 'NOT DONE'
     || (options.strictHosted && !report.outcomeProof.verifiedHostedLedger)
@@ -282,17 +310,20 @@ async function runCli(argv = process.argv.slice(2)) {
 }
 
 module.exports = {
+  APPROVED_CHECKOUT_ORIGINS,
   buildMarketingAgentCampaignReport,
   classifyPublicationStatus,
+  formatCliOutput,
   parseArgs,
   probePublication,
   probeTrackedBuyerPath,
   runCli,
+  resolveReportStatus,
   sumCampaignCounter,
   summarizeCampaignOutcome,
 };
 
-if (require.main === module) {
+if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
   runCli().catch((error) => {
     process.stderr.write(`${error?.message || String(error)}\n`);
     process.exit(1);

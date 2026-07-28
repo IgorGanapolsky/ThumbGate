@@ -13,6 +13,11 @@ const CAMPAIGN_REPORT_PATH = path.join(
   'marketing-agent-campaign',
   'latest.json'
 );
+const RETIRED_GROWTH_SCHEDULE_IDS = Object.freeze([
+  'thumbgate-growth-schedule-campaign',
+  'thumbgate-growth-poll-zernio',
+  'thumbgate-growth-sync-launch-assets',
+]);
 
 function buildNodeEvalCommand(scriptPath, args = []) {
   const absolutePath = path.resolve(scriptPath);
@@ -33,30 +38,6 @@ function buildNodeEvalCommand(scriptPath, args = []) {
 function buildGrowthSchedules() {
   return [
     {
-      id: 'thumbgate-growth-schedule-campaign',
-      name: 'ThumbGate Growth Campaign Scheduler',
-      description: 'Schedules the next day of tracked Zernio launch posts.',
-      schedule: 'daily 21:15',
-      command: buildNodeEvalCommand(path.join(__dirname, 'schedule-thumbgate-campaign.js')),
-      workingDirectory: REPO_ROOT,
-    },
-    {
-      id: 'thumbgate-growth-poll-zernio',
-      name: 'ThumbGate Growth Poll Zernio',
-      description: 'Polls Zernio analytics into the local engagement store every hour.',
-      schedule: 'hourly',
-      command: buildNodeEvalCommand(path.join(__dirname, 'pollers', 'zernio.js')),
-      workingDirectory: REPO_ROOT,
-    },
-    {
-      id: 'thumbgate-growth-sync-launch-assets',
-      name: 'ThumbGate Growth Sync Launch Assets',
-      description: 'Syncs published and scheduled launch assets from Zernio into a durable local registry.',
-      schedule: 'hourly',
-      command: buildNodeEvalCommand(path.join(__dirname, 'sync-launch-assets.js')),
-      workingDirectory: REPO_ROOT,
-    },
-    {
       id: 'thumbgate-growth-reply-monitor',
       name: 'ThumbGate Growth Reply Monitor',
       description: 'Checks social replies and posts supported follow-ups or drafts them for review.',
@@ -76,6 +57,7 @@ function buildGrowthSchedules() {
         'verify-marketing-agent-campaign.js'
       ), [
         '--json',
+        '--window=lifetime',
         `--out=${CAMPAIGN_REPORT_PATH}`,
       ]),
       workingDirectory: REPO_ROOT,
@@ -114,9 +96,12 @@ function buildGrowthSchedules() {
 
 function installGrowthAutomation(manager = scheduleManager) {
   const schedules = buildGrowthSchedules();
-
+  const retired = RETIRED_GROWTH_SCHEDULE_IDS.map((id) => (
+    manager.deleteSchedule(id)
+  ));
   const installed = schedules.map((schedule) => manager.createSchedule(schedule));
   return {
+    retired,
     installed,
     schedules: manager.listSchedules().filter((schedule) => schedule.id.startsWith('thumbgate-growth-')),
   };
@@ -132,6 +117,7 @@ if (require.main === module) {
 
 module.exports = {
   CAMPAIGN_REPORT_PATH,
+  RETIRED_GROWTH_SCHEDULE_IDS,
   buildNodeEvalCommand,
   buildGrowthSchedules,
   installGrowthAutomation,

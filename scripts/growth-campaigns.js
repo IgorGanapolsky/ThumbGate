@@ -5,6 +5,28 @@ const MARKETING_AGENT_CAMPAIGN_ID = 'marketing_agent_governance_20260727';
 const CAMPAIGN_ALIASES = Object.freeze({
   mg27: MARKETING_AGENT_CAMPAIGN_ID,
 });
+const CAMPAIGN_BUYER_ORIGIN = 'https://thumbgate-production.up.railway.app';
+
+function campaignChannel(
+  channel,
+  permalink,
+  medium,
+  content = null,
+  campaignId = MARKETING_AGENT_CAMPAIGN_ID
+) {
+  const buyerUrl = new URL('/go/pro', CAMPAIGN_BUYER_ORIGIN);
+  buyerUrl.searchParams.set('utm_source', channel);
+  buyerUrl.searchParams.set('utm_medium', medium);
+  buyerUrl.searchParams.set('utm_campaign', campaignId);
+  if (content) buyerUrl.searchParams.set('utm_content', content);
+  return Object.freeze({
+    channel,
+    status: 'LIVE',
+    permalink,
+    trackedBuyerUrl: buyerUrl.toString(),
+  });
+}
+
 const MARKETING_AGENT_CAMPAIGN = Object.freeze({
   campaignId: MARKETING_AGENT_CAMPAIGN_ID,
   aliases: ['mg27'],
@@ -13,48 +35,50 @@ const MARKETING_AGENT_CAMPAIGN = Object.freeze({
     url: 'https://www.youtube.com/watch?v=U2hogriGmEw',
   },
   channels: [
-    {
-      channel: 'linkedin',
-      status: 'LIVE',
-      permalink: 'https://www.linkedin.com/feed/update/urn:li:share:7487654549785128960/',
-      trackedBuyerUrl: 'https://thumbgate-production.up.railway.app/go/pro?utm_source=linkedin&utm_medium=organic_social&utm_campaign=marketing_agent_governance_20260727&utm_content=episode_response',
-    },
-    {
-      channel: 'hashnode',
-      status: 'LIVE',
-      permalink: 'https://ai-agent-blog-12345.hashnode.dev/your-marketing-agent-can-publish-and-pause-ads-who-gates-the-write',
-      trackedBuyerUrl: 'https://thumbgate-production.up.railway.app/go/pro?utm_source=hashnode&utm_medium=organic_article&utm_campaign=marketing_agent_governance_20260727&utm_content=episode_deep_dive',
-    },
-    {
-      channel: 'bluesky',
-      status: 'LIVE',
-      permalink: 'https://bsky.app/profile/iganapolsky.bsky.social/post/3mro3mkmrzc2y',
-      trackedBuyerUrl: 'https://thumbgate-production.up.railway.app/go/pro?utm_source=bluesky&utm_medium=social&utm_campaign=mg27',
-    },
-    {
-      channel: 'threads',
-      status: 'LIVE',
-      permalink: 'https://www.threads.com/@igorganapolsky/post/DbUMBzXDlj8',
-      trackedBuyerUrl: 'https://thumbgate-production.up.railway.app/go/pro?utm_source=threads&utm_medium=social&utm_campaign=mg27',
-    },
-    {
-      channel: 'instagram',
-      status: 'LIVE',
-      permalink: 'https://www.instagram.com/igorganapolsky/p/DbUNjFsDQz3/',
-      trackedBuyerUrl: 'https://thumbgate-production.up.railway.app/go/pro?utm_source=instagram&utm_medium=organic_social&utm_campaign=marketing_agent_governance_20260727&utm_content=episode_card',
-    },
-    {
-      channel: 'reddit',
-      status: 'LIVE',
-      permalink: 'https://www.reddit.com/r/SideProject/comments/1v8i0it/i_built_a_preaction_firewall_for_ai_agents_that/',
-      trackedBuyerUrl: 'https://thumbgate-production.up.railway.app/go/pro?utm_source=reddit&utm_medium=organic_social&utm_campaign=marketing_agent_governance_20260727&utm_content=sideproject_build',
-    },
-    {
-      channel: 'youtube',
-      status: 'LIVE',
-      permalink: 'https://www.youtube.com/post/UgkxERIbGUvSgCkGQ_dx2W0nbTl5_abcF17O',
-      trackedBuyerUrl: 'https://thumbgate-production.up.railway.app/go/pro?utm_source=youtube&utm_medium=community_post&utm_campaign=marketing_agent_governance_20260727&utm_content=episode_response',
-    },
+    campaignChannel(
+      'linkedin',
+      'https://www.linkedin.com/feed/update/urn:li:share:7487654549785128960/',
+      'organic_social',
+      'episode_response'
+    ),
+    campaignChannel(
+      'hashnode',
+      'https://ai-agent-blog-12345.hashnode.dev/your-marketing-agent-can-publish-and-pause-ads-who-gates-the-write',
+      'organic_article',
+      'episode_deep_dive'
+    ),
+    campaignChannel(
+      'bluesky',
+      'https://bsky.app/profile/iganapolsky.bsky.social/post/3mro3mkmrzc2y',
+      'social',
+      null,
+      'mg27'
+    ),
+    campaignChannel(
+      'threads',
+      'https://www.threads.com/@igorganapolsky/post/DbUMBzXDlj8',
+      'social',
+      null,
+      'mg27'
+    ),
+    campaignChannel(
+      'instagram',
+      'https://www.instagram.com/igorganapolsky/p/DbUNjFsDQz3/',
+      'organic_social',
+      'episode_card'
+    ),
+    campaignChannel(
+      'reddit',
+      'https://www.reddit.com/r/SideProject/comments/1v8i0it/i_built_a_preaction_firewall_for_ai_agents_that/',
+      'organic_social',
+      'sideproject_build'
+    ),
+    campaignChannel(
+      'youtube',
+      'https://www.youtube.com/post/UgkxERIbGUvSgCkGQ_dx2W0nbTl5_abcF17O',
+      'community_post',
+      'episode_response'
+    ),
   ],
 });
 
@@ -69,6 +93,57 @@ function campaignAttributionKeys(campaign = MARKETING_AGENT_CAMPAIGN) {
     campaign.campaignId,
     ...(campaign.aliases || []),
   ].map((value) => String(value || '').trim()).filter(Boolean))];
+}
+
+function validateCampaignChannel(entry, campaign, seenChannels, seenSources) {
+  const issues = [];
+  const channel = String(entry.channel || '').trim().toLowerCase();
+  if (!channel || seenChannels.has(channel)) {
+    issues.push(`duplicate_or_missing_channel:${channel || 'unknown'}`);
+  }
+  seenChannels.add(channel);
+
+  if (entry.status !== 'LIVE') {
+    issues.push(`channel_not_live:${channel || 'unknown'}`);
+  }
+
+  let permalink;
+  let trackedBuyerUrl;
+  try {
+    permalink = new URL(entry.permalink);
+    trackedBuyerUrl = new URL(entry.trackedBuyerUrl);
+  } catch {
+    issues.push(`invalid_url:${channel || 'unknown'}`);
+    return issues;
+  }
+
+  if (permalink.protocol !== 'https:') {
+    issues.push(`permalink_not_https:${channel}`);
+  }
+  if (
+    trackedBuyerUrl.protocol !== 'https:'
+    || trackedBuyerUrl.origin !== CAMPAIGN_BUYER_ORIGIN
+    || trackedBuyerUrl.pathname !== '/go/pro'
+  ) {
+    issues.push(`buyer_path_not_canonical:${channel}`);
+  }
+
+  const source = trackedBuyerUrl.searchParams.get('utm_source');
+  if (source !== channel || seenSources.has(source)) {
+    issues.push(`source_mismatch_or_duplicate:${channel}`);
+  }
+  seenSources.add(source);
+
+  if (
+    normalizeCampaignId(trackedBuyerUrl.searchParams.get('utm_campaign'))
+    !== campaign.campaignId
+  ) {
+    issues.push(`campaign_mismatch:${channel}`);
+  }
+  if (!trackedBuyerUrl.searchParams.get('utm_medium')) {
+    issues.push(`missing_medium:${channel}`);
+  }
+  return issues;
 }
 
 function validateMarketingAgentCampaign(campaign = MARKETING_AGENT_CAMPAIGN) {
@@ -86,51 +161,13 @@ function validateMarketingAgentCampaign(campaign = MARKETING_AGENT_CAMPAIGN) {
   if (channels.length !== 7) {
     issues.push('expected_seven_channels');
   }
-
   for (const entry of channels) {
-    const channel = String(entry.channel || '').trim().toLowerCase();
-    if (!channel || seenChannels.has(channel)) {
-      issues.push(`duplicate_or_missing_channel:${channel || 'unknown'}`);
-    }
-    seenChannels.add(channel);
-
-    if (entry.status !== 'LIVE') {
-      issues.push(`channel_not_live:${channel || 'unknown'}`);
-    }
-
-    let permalink;
-    let trackedBuyerUrl;
-    try {
-      permalink = new URL(entry.permalink);
-      trackedBuyerUrl = new URL(entry.trackedBuyerUrl);
-    } catch {
-      issues.push(`invalid_url:${channel || 'unknown'}`);
-      continue;
-    }
-
-    if (permalink.protocol !== 'https:') {
-      issues.push(`permalink_not_https:${channel}`);
-    }
-    if (
-      trackedBuyerUrl.protocol !== 'https:'
-      || trackedBuyerUrl.hostname !== 'thumbgate-production.up.railway.app'
-      || trackedBuyerUrl.pathname !== '/go/pro'
-    ) {
-      issues.push(`buyer_path_not_canonical:${channel}`);
-    }
-
-    const source = trackedBuyerUrl.searchParams.get('utm_source');
-    if (source !== channel || seenSources.has(source)) {
-      issues.push(`source_mismatch_or_duplicate:${channel}`);
-    }
-    seenSources.add(source);
-
-    if (normalizeCampaignId(trackedBuyerUrl.searchParams.get('utm_campaign')) !== campaign.campaignId) {
-      issues.push(`campaign_mismatch:${channel}`);
-    }
-    if (!trackedBuyerUrl.searchParams.get('utm_medium')) {
-      issues.push(`missing_medium:${channel}`);
-    }
+    issues.push(...validateCampaignChannel(
+      entry,
+      campaign,
+      seenChannels,
+      seenSources
+    ));
   }
 
   return {

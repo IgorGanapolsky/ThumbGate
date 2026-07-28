@@ -97,8 +97,10 @@ const {
 } = require('../scripts/growth-campaigns');
 const {
   buildMarketingAgentCampaignReport,
+  formatCliOutput: formatMarketingAgentCliOutput,
   probePublication,
   probeTrackedBuyerPath,
+  resolveReportStatus,
   summarizeCampaignOutcome,
 } = require('../scripts/social-analytics/verify-marketing-agent-campaign');
 const {
@@ -439,6 +441,23 @@ test('marketing-agent buyer-path probe is side-effect free and requires canonica
   assert.equal(fetchCalls[0].options.redirect, 'manual');
 });
 
+test('marketing-agent buyer-path probe rejects a matching checkout path on another origin', async () => {
+  const entry = MARKETING_AGENT_CAMPAIGN.channels.find((channel) => channel.channel === 'bluesky');
+  const result = await probeTrackedBuyerPath(entry, {
+    fetchImpl: async () => ({
+      status: 302,
+      headers: {
+        get: (name) => name === 'location'
+          ? 'https://malicious.example/checkout/pro?utm_source=bluesky&utm_campaign=marketing_agent_governance_20260727'
+          : null,
+      },
+    }),
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.destinationOrigin, 'https://malicious.example');
+});
+
 test('publication probe retries with a bounded GET before treating a HEAD-only 404 as missing', async () => {
   const calls = [];
   const result = await probePublication({
@@ -455,6 +474,16 @@ test('publication probe retries with a bounded GET before treating a HEAD-only 4
   assert.equal(result.method, 'GET');
   assert.deepEqual(calls.map((entry) => entry.method), ['HEAD', 'GET']);
   assert.equal(calls[1].headers.range, 'bytes=0-1023');
+});
+
+test('publication probe treats an unverified redirect as partial', async () => {
+  const result = await probePublication({
+    channel: 'bluesky',
+    permalink: 'https://social.example/post/1',
+  }, async () => ({ status: 302 }));
+
+  assert.equal(result.status, 'PARTIAL');
+  assert.equal(result.httpStatus, 302);
 });
 
 test('marketing-agent outcome summary combines campaign aliases but keeps channel truth separate', () => {
@@ -494,6 +523,7 @@ test('marketing-agent outcome summary combines campaign aliases but keeps channe
 });
 
 test('marketing-agent report separates verified routes from hosted and provider outcome proof', async () => {
+  let requestedWindow = null;
   const report = await buildMarketingAgentCampaignReport({
     skipPermalinks: true,
     fetchImpl: async (url) => {
@@ -507,19 +537,22 @@ test('marketing-agent report separates verified routes from hosted and provider 
         },
       };
     },
-    getOperationalSummary: async () => ({
-      source: 'hosted',
-      fallbackReason: null,
-      summary: {
-        attribution: {
-          acquisitionByCampaign: {
-            marketing_agent_governance_20260727: 4,
+    getOperationalSummary: async (options) => {
+      requestedWindow = options.window;
+      return {
+        source: 'hosted',
+        fallbackReason: null,
+        summary: {
+          attribution: {
+            acquisitionByCampaign: {
+              marketing_agent_governance_20260727: 4,
+            },
+            paidByCampaign: {},
+            bookedRevenueByCampaignCents: {},
           },
-          paidByCampaign: {},
-          bookedRevenueByCampaignCents: {},
         },
-      },
-    }),
+      };
+    },
   });
 
   assert.equal(report.routeProof.passed, true);
@@ -529,7 +562,27 @@ test('marketing-agent report separates verified routes from hosted and provider 
   assert.equal(report.outcomeProof.paymentProviderVerified, false);
   assert.equal(report.outcomeProof.metrics.acquisition, 4);
   assert.equal(report.outcomeProof.metrics.paidOrders, 0);
+  assert.equal(requestedWindow, 'lifetime');
   assert.match(report.claimBoundary, /do not prove/);
+});
+
+test('marketing-agent report status and CLI formatter preserve proof boundaries', () => {
+  assert.equal(resolveReportStatus(false, true, true, true, false), 'NOT DONE');
+  assert.equal(resolveReportStatus(true, false, true, true, false), 'NOT DONE');
+  assert.equal(resolveReportStatus(true, true, true, false, false), 'PARTIAL');
+  assert.equal(resolveReportStatus(true, true, false, true, false), 'PARTIAL');
+  assert.equal(resolveReportStatus(true, true, false, true, true), 'VERIFIED');
+
+  const report = {
+    status: 'PARTIAL',
+    routeProof: { passed: true },
+    outcomeProof: { verifiedHostedLedger: false },
+  };
+  assert.match(
+    formatMarketingAgentCliOutput(report, false, '{}\n'),
+    /Buyer routes: PASS\nHosted outcome ledger: UNVERIFIED/
+  );
+  assert.equal(formatMarketingAgentCliOutput(report, true, '{}\n'), '{}\n');
 });
 
 test('AI org governance plans persistent agent teams with budget and approval gates', () => {
