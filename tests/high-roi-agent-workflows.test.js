@@ -90,8 +90,19 @@ const {
   evaluateProductionAgentReadiness,
 } = require('../scripts/production-agent-readiness');
 const {
+  MARKETING_AGENT_CAMPAIGN,
   buildCreatorGrowthCampaign,
+  normalizeCampaignId,
+  validateMarketingAgentCampaign,
 } = require('../scripts/growth-campaigns');
+const {
+  buildMarketingAgentCampaignReport,
+  formatCliOutput: formatMarketingAgentCliOutput,
+  probePublication,
+  probeTrackedBuyerPath,
+  resolveReportStatus,
+  summarizeCampaignOutcome,
+} = require('../scripts/social-analytics/verify-marketing-agent-campaign');
 const {
   buildMemoryStoreGovernance,
   classifyMemoryFile,
@@ -392,6 +403,186 @@ test('creator growth campaign packages webinar, paywall, and posts', () => {
   assert.ok(campaign.channelFit.includes('beehiiv'));
   assert.match(campaign.webinar.cta, /utm_campaign=creator_webinar_agent_governance/);
   assert.ok(campaign.paywall.paidContent.some((item) => item.includes('Data Table Agent')));
+});
+
+test('marketing-agent campaign registry pins seven live tracked buyer paths', () => {
+  const validation = validateMarketingAgentCampaign();
+
+  assert.equal(validation.ok, true);
+  assert.equal(validation.channelCount, 7);
+  assert.equal(normalizeCampaignId('mg27'), 'marketing_agent_governance_20260727');
+  assert.equal(normalizeCampaignId('another_campaign'), 'another_campaign');
+  assert.ok(MARKETING_AGENT_CAMPAIGN.channels.every((entry) => (
+    new URL(entry.trackedBuyerUrl).pathname === '/go/pro'
+  )));
+});
+
+test('marketing-agent buyer-path probe is side-effect free and requires canonical attribution', async () => {
+  const entry = MARKETING_AGENT_CAMPAIGN.channels.find((channel) => channel.channel === 'bluesky');
+  const fetchCalls = [];
+  const result = await probeTrackedBuyerPath(entry, {
+    fetchImpl: async (url, options) => {
+      fetchCalls.push({ url: String(url), options });
+      return {
+        status: 302,
+        headers: {
+          get: (name) => name === 'location'
+            ? '/checkout/pro?utm_source=bluesky&utm_medium=social&utm_campaign=marketing_agent_governance_20260727'
+            : null,
+        },
+      };
+    },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.campaign, 'marketing_agent_governance_20260727');
+  assert.equal(result.createsProviderSession, false);
+  assert.equal(fetchCalls[0].options.method, 'HEAD');
+  assert.equal(fetchCalls[0].options.redirect, 'manual');
+});
+
+test('marketing-agent buyer-path probe rejects a matching checkout path on another origin', async () => {
+  const entry = MARKETING_AGENT_CAMPAIGN.channels.find((channel) => channel.channel === 'bluesky');
+  const result = await probeTrackedBuyerPath(entry, {
+    fetchImpl: async () => ({
+      status: 302,
+      headers: {
+        get: (name) => name === 'location'
+          ? 'https://malicious.example/checkout/pro?utm_source=bluesky&utm_campaign=marketing_agent_governance_20260727'
+          : null,
+      },
+    }),
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.destinationOrigin, 'https://malicious.example');
+});
+
+test('publication probe retries with a bounded GET before treating a HEAD-only 404 as missing', async () => {
+  const calls = [];
+  const result = await probePublication({
+    channel: 'bluesky',
+    permalink: 'https://social.example/post/1',
+  }, async (_url, options) => {
+    calls.push(options);
+    return { status: options.method === 'HEAD' ? 404 : 200 };
+  });
+
+  assert.equal(result.status, 'LIVE');
+  assert.equal(result.headStatus, 404);
+  assert.equal(result.httpStatus, 200);
+  assert.equal(result.method, 'GET');
+  assert.deepEqual(calls.map((entry) => entry.method), ['HEAD', 'GET']);
+  assert.equal(calls[1].headers.range, 'bytes=0-1023');
+});
+
+test('publication probe treats an unverified redirect as partial', async () => {
+  const result = await probePublication({
+    channel: 'bluesky',
+    permalink: 'https://social.example/post/1',
+  }, async () => ({ status: 302 }));
+
+  assert.equal(result.status, 'PARTIAL');
+  assert.equal(result.httpStatus, 302);
+});
+
+test('marketing-agent outcome summary combines campaign aliases but keeps channel truth separate', () => {
+  const outcome = summarizeCampaignOutcome({
+    attribution: {
+      acquisitionByCampaign: {
+        marketing_agent_governance_20260727: 3,
+        mg27: 2,
+      },
+      paidByCampaign: {
+        mg27: 1,
+      },
+      bookedRevenueByCampaignCents: {
+        mg27: 1900,
+      },
+      acquisitionBySource: {
+        bluesky: 2,
+      },
+      paidBySource: {
+        bluesky: 1,
+      },
+      bookedRevenueBySourceCents: {
+        bluesky: 1900,
+      },
+    },
+  });
+
+  assert.equal(outcome.acquisition, 5);
+  assert.equal(outcome.paidOrders, 1);
+  assert.equal(outcome.bookedRevenueCents, 1900);
+  assert.equal(outcome.conversionRate, 0.2);
+  assert.deepEqual(outcome.bySource.bluesky, {
+    acquisition: 2,
+    paidOrders: 1,
+    bookedRevenueCents: 1900,
+  });
+});
+
+test('marketing-agent report separates verified routes from hosted and provider outcome proof', async () => {
+  let requestedWindow = null;
+  const report = await buildMarketingAgentCampaignReport({
+    skipPermalinks: true,
+    fetchImpl: async (url) => {
+      const parsed = new URL(url);
+      return {
+        status: 302,
+        headers: {
+          get: (name) => name === 'location'
+            ? `/checkout/pro?utm_source=${parsed.searchParams.get('utm_source')}&utm_campaign=marketing_agent_governance_20260727`
+            : null,
+        },
+      };
+    },
+    getOperationalSummary: async (options) => {
+      requestedWindow = options.window;
+      return {
+        source: 'hosted',
+        fallbackReason: null,
+        summary: {
+          attribution: {
+            acquisitionByCampaign: {
+              marketing_agent_governance_20260727: 4,
+            },
+            paidByCampaign: {},
+            bookedRevenueByCampaignCents: {},
+          },
+        },
+      };
+    },
+  });
+
+  assert.equal(report.routeProof.passed, true);
+  assert.equal(report.routeProof.createsProviderSession, false);
+  assert.equal(report.status, 'VERIFIED');
+  assert.equal(report.outcomeProof.verifiedHostedLedger, true);
+  assert.equal(report.outcomeProof.paymentProviderVerified, false);
+  assert.equal(report.outcomeProof.metrics.acquisition, 4);
+  assert.equal(report.outcomeProof.metrics.paidOrders, 0);
+  assert.equal(requestedWindow, 'lifetime');
+  assert.match(report.claimBoundary, /do not prove/);
+});
+
+test('marketing-agent report status and CLI formatter preserve proof boundaries', () => {
+  assert.equal(resolveReportStatus(false, true, true, true, false), 'NOT DONE');
+  assert.equal(resolveReportStatus(true, false, true, true, false), 'NOT DONE');
+  assert.equal(resolveReportStatus(true, true, true, false, false), 'PARTIAL');
+  assert.equal(resolveReportStatus(true, true, false, true, false), 'PARTIAL');
+  assert.equal(resolveReportStatus(true, true, false, true, true), 'VERIFIED');
+
+  const report = {
+    status: 'PARTIAL',
+    routeProof: { passed: true },
+    outcomeProof: { verifiedHostedLedger: false },
+  };
+  assert.match(
+    formatMarketingAgentCliOutput(report, false, '{}\n'),
+    /Buyer routes: PASS\nHosted outcome ledger: UNVERIFIED/
+  );
+  assert.equal(formatMarketingAgentCliOutput(report, true, '{}\n'), '{}\n');
 });
 
 test('AI org governance plans persistent agent teams with budget and approval gates', () => {

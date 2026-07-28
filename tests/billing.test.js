@@ -233,6 +233,29 @@ function writeNewsletterSubscribers(entries) {
   return newsletterPath;
 }
 
+test('billing attribution canonicalizes short campaign aliases before rollup', () => {
+  const billing = requireFreshBilling('');
+  assert.deepEqual(billing._extractAttribution({
+    utmSource: 'bluesky',
+    utmCampaign: 'mg27',
+  }), {
+    source: 'bluesky',
+    medium: null,
+    campaign: 'marketing_agent_governance_20260727',
+    content: null,
+    term: null,
+    creator: null,
+    community: null,
+    postId: null,
+    commentId: null,
+    campaignVariant: null,
+    offerCode: null,
+    referrer: null,
+    landingPath: null,
+    ctaId: null,
+  });
+});
+
 describe('billing.js — provisionApiKey', () => {
   let keyStorePath;
   beforeEach(() => { keyStorePath = setupTempStore(); });
