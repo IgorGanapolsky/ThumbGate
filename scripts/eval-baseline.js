@@ -44,11 +44,18 @@ async function main() {
   gatesEngine.GOVERNANCE_STATE_PATH = path.join(sandbox, 'governance-state.json');
 
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-baseline-repo-'));
-  // Sonar S4036: resolving `git` through the inherited PATH is security-sensitive, because a
-  // writable directory earlier in PATH could shadow the real binary. Pin PATH to fixed system
-  // directories for these calls rather than trusting whatever the caller's environment holds.
+  // Sonar S4036: resolving `git` through the inherited PATH is security-sensitive — a writable
+  // directory earlier in PATH could shadow the real binary. Pinning PATH is not enough, because
+  // the lookup still happens; the binary is therefore addressed absolutely, and the child's PATH
+  // is pinned as well so anything git shells out to is resolved from fixed directories too.
   const SAFE_PATH = '/usr/local/bin:/usr/bin:/bin';
-  const git = (a) => execFileSync('git', a, {
+  const GIT_BIN = ['/usr/bin/git', '/usr/local/bin/git', '/opt/homebrew/bin/git']
+    .find((candidate) => fs.existsSync(candidate));
+  if (!GIT_BIN) {
+    process.stderr.write('eval-baseline: no git binary at a known absolute path\n');
+    return 2;
+  }
+  const git = (a) => execFileSync(GIT_BIN, a, {
     cwd: repo,
     stdio: ['ignore', 'ignore', 'ignore'],
     env: { ...process.env, PATH: SAFE_PATH },
