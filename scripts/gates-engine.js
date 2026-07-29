@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
+const { AsyncLocalStorage } = require('async_hooks');
 const { execFileSync } = require('child_process');
 const { loadOptionalModule } = require('./private-core-boundary');
 
@@ -775,12 +776,16 @@ const EXECUTION_DISPOSITIONS = {
   log: 'allowed_logged',
   allow: 'allowed',
 };
+const enforcementTelemetryContext = new AsyncLocalStorage();
 
 function actionToDecision(action) { return ACTION_DECISIONS[action] || 'allow'; }
 function decisionToAction(decision) { return DECISION_ACTIONS[decision] || 'pass'; }
 function executionDisposition(decision) { return EXECUTION_DISPOSITIONS[decision] || 'allowed'; }
 
 function resolveEnforcementTelemetry(policyDecision, gateId, options = {}) {
+  const enforcementSurface = options.enforcementSurface
+    || enforcementTelemetryContext.getStore()?.enforcementSurface
+    || 'direct';
   const policyResult = {
     decision: policyDecision || 'allow',
     gate: gateId || null,
@@ -788,7 +793,11 @@ function resolveEnforcementTelemetry(policyDecision, gateId, options = {}) {
   };
   const effectiveResult = options.effectiveDecision
     ? { ...policyResult, decision: options.effectiveDecision }
-    : (applyEnforcementPosture(policyResult) || policyResult);
+    : (
+      enforcementSurface === 'hook'
+        ? (applyEnforcementPosture(policyResult) || policyResult)
+        : policyResult
+    );
   const effectiveDecision = effectiveResult.decision || policyResult.decision;
 
   const strict = process.env.THUMBGATE_STRICT_ENFORCEMENT === '1' || (
@@ -2953,8 +2962,28 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
           // Autonomous run: no human to approve. Fail CLOSED so the actions that
           // most need sign-off cannot slip through unattended.
           const failClosedMessage = `[autonomous run — no approver present, failing closed] ${message}`;
-          recordStat(gate.id, 'block', gate, { toolName, toolInput, autonomousFailClosed: true });
-          const failClosedAudit = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: failClosedMessage, severity: gate.severity, source: 'gates-engine', autonomousFailClosed: true });
+          recordStat(gate.id, 'block', gate, {
+            toolName,
+            toolInput,
+            policyAction: 'approve',
+            effectiveAction: 'block',
+            effectiveDecision: 'deny',
+            enforcementMode: 'autonomous_fail_closed',
+            autonomousFailClosed: true,
+          });
+          const failClosedAudit = recordAuditEvent({
+            toolName,
+            toolInput,
+            decision: 'deny',
+            policyDecision: 'approve',
+            effectiveDecision: 'deny',
+            enforcementMode: 'autonomous_fail_closed',
+            gateId: gate.id,
+            message: failClosedMessage,
+            severity: gate.severity,
+            source: 'gates-engine',
+            autonomousFailClosed: true,
+          });
           auditToFeedback(failClosedAudit);
           return { decision: 'deny', gate: gate.id, message: failClosedMessage, severity: gate.severity, reasoning, requiresApproval: true, failedClosed: true };
         }
@@ -3172,8 +3201,28 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
           // Autonomous run: no human to approve. Fail CLOSED so the actions that
           // most need sign-off cannot slip through unattended.
           const failClosedMessage = `[autonomous run — no approver present, failing closed] ${message}`;
-          recordStat(gate.id, 'block', gate, { toolName, toolInput, autonomousFailClosed: true });
-          const failClosedAudit = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: failClosedMessage, severity: gate.severity, source: 'gates-engine', autonomousFailClosed: true });
+          recordStat(gate.id, 'block', gate, {
+            toolName,
+            toolInput,
+            policyAction: 'approve',
+            effectiveAction: 'block',
+            effectiveDecision: 'deny',
+            enforcementMode: 'autonomous_fail_closed',
+            autonomousFailClosed: true,
+          });
+          const failClosedAudit = recordAuditEvent({
+            toolName,
+            toolInput,
+            decision: 'deny',
+            policyDecision: 'approve',
+            effectiveDecision: 'deny',
+            enforcementMode: 'autonomous_fail_closed',
+            gateId: gate.id,
+            message: failClosedMessage,
+            severity: gate.severity,
+            source: 'gates-engine',
+            autonomousFailClosed: true,
+          });
           auditToFeedback(failClosedAudit);
           return { decision: 'deny', gate: gate.id, message: failClosedMessage, severity: gate.severity, reasoning, requiresApproval: true, failedClosed: true };
         }
@@ -3775,7 +3824,9 @@ async function runAsync(input) {
     return formatOutput(applyEnforcementPosture(sequenceGuard));
   }
 
-  const result = await evaluateGatesAsync(toolName, toolInput);
+  const result = await evaluateGatesAsync(toolName, toolInput, undefined, {
+    enforcementSurface: 'hook',
+  });
 
   // Attach security warnings to allow/warn results
   if (securityScan && securityScan.decision === 'warn') {
@@ -3814,7 +3865,9 @@ function run(input) {
     return formatOutput(applyEnforcementPosture(sequenceGuard));
   }
 
-  const result = evaluateGates(toolName, toolInput);
+  const result = evaluateGates(toolName, toolInput, undefined, {
+    enforcementSurface: 'hook',
+  });
 
   // Attach security warnings to allow/warn results
   if (securityScan && securityScan.decision === 'warn') {
@@ -3860,20 +3913,26 @@ function canonicalRetryInput(toolName, toolInput) {
   return { ...toolInput, command: canonical, originalCommand: original };
 }
 
-async function evaluateGatesAsync(toolName, toolInput, configPath) {
-  const direct = await evaluateGatesAsyncInner(toolName, toolInput, configPath);
-  if (direct) return direct;
-  const retry = canonicalRetryInput(toolName, toolInput);
-  if (!retry) return null;
-  return evaluateGatesAsyncInner(toolName, retry, configPath);
+async function evaluateGatesAsync(toolName, toolInput, configPath, options = {}) {
+  const enforcementSurface = options.enforcementSurface || 'direct';
+  return enforcementTelemetryContext.run({ enforcementSurface }, async () => {
+    const direct = await evaluateGatesAsyncInner(toolName, toolInput, configPath);
+    if (direct) return direct;
+    const retry = canonicalRetryInput(toolName, toolInput);
+    if (!retry) return null;
+    return evaluateGatesAsyncInner(toolName, retry, configPath);
+  });
 }
 
-function evaluateGates(toolName, toolInput, configPath) {
-  const direct = evaluateGatesInner(toolName, toolInput, configPath);
-  if (direct) return direct;
-  const retry = canonicalRetryInput(toolName, toolInput);
-  if (!retry) return null;
-  return evaluateGatesInner(toolName, retry, configPath);
+function evaluateGates(toolName, toolInput, configPath, options = {}) {
+  const enforcementSurface = options.enforcementSurface || 'direct';
+  return enforcementTelemetryContext.run({ enforcementSurface }, () => {
+    const direct = evaluateGatesInner(toolName, toolInput, configPath);
+    if (direct) return direct;
+    const retry = canonicalRetryInput(toolName, toolInput);
+    if (!retry) return null;
+    return evaluateGatesInner(toolName, retry, configPath);
+  });
 }
 
 // ---------------------------------------------------------------------------

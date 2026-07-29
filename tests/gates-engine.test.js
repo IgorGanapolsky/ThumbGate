@@ -828,8 +828,8 @@ test('recordStat increments blocked count', () => {
   assert.equal(stats.telemetryVersion, 2);
   assert.equal(stats.policy.blocked, 2);
   assert.equal(stats.policy.warned, 1);
-  assert.equal(stats.effective.blocked, 0);
-  assert.equal(stats.effective.warned, 3);
+  assert.equal(stats.effective.blocked, 2);
+  assert.equal(stats.effective.warned, 1);
   cleanupStateFiles();
 });
 
@@ -1100,6 +1100,73 @@ test('strict knowledge conflict mode can still block external destructive side e
 // ---------------------------------------------------------------------------
 // Full run integration
 // ---------------------------------------------------------------------------
+
+test('direct evaluators record a real block while hook callers record warn-by-default', async () => {
+  cleanupStateFiles();
+  const tmpConfig = makeTempPath('surface-specific-enforcement.json');
+  fs.writeFileSync(tmpConfig, JSON.stringify({
+    version: 1,
+    gates: [{
+      id: 'surface-specific-block',
+      pattern: 'dangerous operation',
+      action: 'block',
+      message: 'Dangerous operation blocked',
+      severity: 'high',
+    }],
+  }));
+
+  const originalConfig = process.env.THUMBGATE_GATES_CONFIG;
+  try {
+    const direct = await evaluateGatesAsync(
+      'Bash',
+      { command: 'dangerous operation' },
+      tmpConfig,
+    );
+    assert.equal(direct?.decision, 'deny');
+
+    let stats = loadStats();
+    assert.equal(stats.policy.blocked, 1);
+    assert.equal(stats.effective.blocked, 1);
+    assert.equal(stats.effective.warned, 0);
+
+    const auditPath = path.join(process.env.THUMBGATE_FEEDBACK_DIR, 'audit-trail.jsonl');
+    let auditEntries = fs.readFileSync(auditPath, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+    const directAudit = auditEntries.find((entry) => (
+      entry.gateId === 'surface-specific-block'
+      && entry.policyDecision === 'deny'
+      && entry.effectiveDecision === 'deny'
+      && entry.enforcementMode === 'direct'
+    ));
+    assert.ok(directAudit, 'a direct evaluator consumer such as MCP must audit the blocked outcome');
+
+    cleanupStateFiles();
+    process.env.THUMBGATE_GATES_CONFIG = tmpConfig;
+    const hook = JSON.parse(run({
+      tool_name: 'Bash',
+      tool_input: { command: 'dangerous operation' },
+    }));
+    assert.notEqual(hook.hookSpecificOutput.permissionDecision, 'deny');
+    assert.match(hook.hookSpecificOutput.additionalContext, /warn-by-default/);
+
+    stats = loadStats();
+    assert.equal(stats.policy.blocked, 1);
+    assert.equal(stats.effective.blocked, 0);
+    assert.equal(stats.effective.warned, 1);
+    auditEntries = fs.readFileSync(auditPath, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+    const hookAudit = auditEntries.find((entry) => (
+      entry.gateId === 'surface-specific-block'
+      && entry.policyDecision === 'deny'
+      && entry.effectiveDecision === 'warn'
+      && entry.enforcementMode === 'warn_by_default'
+    ));
+    assert.ok(hookAudit, 'the hook surface must audit the allowed-with-warning outcome');
+  } finally {
+    if (originalConfig === undefined) delete process.env.THUMBGATE_GATES_CONFIG;
+    else process.env.THUMBGATE_GATES_CONFIG = originalConfig;
+    fs.rmSync(tmpConfig, { force: true });
+    cleanupStateFiles();
+  }
+});
 
 test('run warns on git push by default, denies under strict enforcement', () => {
   cleanupStateFiles();
@@ -1634,6 +1701,20 @@ test('evaluateGates: approval gate fails CLOSED (deny) in an autonomous run', ()
     const autonomous = evaluateGates('Bash', { command: 'deploy to production' }, tmpConfig);
     assert.equal(autonomous && autonomous.decision, 'deny', 'autonomous run must fail closed on an approval gate');
     assert.equal(autonomous.failedClosed, true);
+    const stats = loadStats();
+    assert.equal(stats.policy.pendingApproval, 2, 'both evaluations matched an approval policy');
+    assert.equal(stats.policy.blocked, 0, 'fail-closed execution must not rewrite the policy match');
+    assert.equal(stats.effective.pendingApproval, 1, 'the interactive evaluation remains pending approval');
+    assert.equal(stats.effective.blocked, 1, 'the autonomous evaluation is effectively blocked');
+    const auditPath = path.join(process.env.THUMBGATE_FEEDBACK_DIR, 'audit-trail.jsonl');
+    const auditEntries = fs.readFileSync(auditPath, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+    const failClosedAudit = auditEntries.find((entry) => (
+      entry.gateId === 'needs-human-approval'
+      && entry.policyDecision === 'approve'
+      && entry.effectiveDecision === 'deny'
+      && entry.enforcementMode === 'autonomous_fail_closed'
+    ));
+    assert.ok(failClosedAudit, 'autonomous fail-closed must preserve policy approve and effective deny');
 
     // The hook-level runner applies the global enforcement posture after
     // evaluation. It must still emit a real deny, not downgrade fail-closed
