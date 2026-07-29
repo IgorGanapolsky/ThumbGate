@@ -14,6 +14,13 @@ test.describe('Operations Dashboard stat cards', () => {
     await expect(page.locator('#statGates')).toHaveText(/\d+/);
   });
 
+  test('renders Active Gates from fast stats while the full dashboard is still loading', async ({ page }) => {
+    await page.unrouteAll({ behavior: 'wait' });
+    await mockDashboardApis(page, { dashboardDelayMs: 3000 });
+    await page.goto('/dashboard');
+    await expect(page.locator('#statGates')).toHaveText('5', { timeout: 1500 });
+  });
+
   test('clicking Positive card lands on Timeline tab filtered to positive feedback', async ({ page }) => {
     await page.goto('/dashboard');
     await page.locator('[data-card-action="up"]').click();

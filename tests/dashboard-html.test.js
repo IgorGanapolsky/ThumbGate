@@ -117,6 +117,8 @@ test('dashboard defaults to the Total Feedback card highlight on first render', 
     /renderStats\(data\);\s+setSelectedCard\('all'\);[\s\S]*?scheduleDashboardHydration\(10000\);/,
     'first render should select Total Feedback before deferring dashboard hydration',
   );
+  assert.match(dashboard, /const totalGates = Number\(data\.totalGates\)/);
+  assert.match(dashboard, /document\.getElementById\('statGates'\)\.textContent = totalGates/);
   assert.match(dashboard, /document\.getElementById\('statGates'\)\.textContent = '14';\s+setSelectedCard\('all'\);/);
 });
 

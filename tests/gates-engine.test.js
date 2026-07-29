@@ -26,6 +26,7 @@ const {
   loadStats,
   saveStats,
   recordStat,
+  applyEnforcementPosture,
   loadState,
   saveState,
   computeExecutableHash,
@@ -824,6 +825,11 @@ test('recordStat increments blocked count', () => {
   assert.equal(stats.warned, 1);
   assert.equal(stats.byGate['test-gate'].blocked, 2);
   assert.equal(stats.byGate['test-gate'].warned, 1);
+  assert.equal(stats.telemetryVersion, 2);
+  assert.equal(stats.policy.blocked, 2);
+  assert.equal(stats.policy.warned, 1);
+  assert.equal(stats.effective.blocked, 0);
+  assert.equal(stats.effective.warned, 3);
   cleanupStateFiles();
 });
 
@@ -1104,6 +1110,20 @@ test('run warns on git push by default, denies under strict enforcement', () => 
     tool_input: { command: 'git push origin feature/test' },
   }));
   assert.notEqual(warnOut.hookSpecificOutput.permissionDecision, 'deny');
+  let stats = loadStats();
+  assert.equal(stats.policy.blocked, 1);
+  assert.equal(stats.effective.blocked, 0);
+  assert.equal(stats.effective.warned, 1);
+  const auditPath = path.join(process.env.THUMBGATE_FEEDBACK_DIR, 'audit-trail.jsonl');
+  let auditEntries = fs.readFileSync(auditPath, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+  const warningAudit = auditEntries.find((entry) => (
+    entry.policyDecision === 'deny'
+    && entry.effectiveDecision === 'warn'
+    && entry.executionDisposition === 'allowed_with_warning'
+  ));
+  assert.ok(warningAudit, 'default posture must audit a raw deny as an allowed warning');
+  assert.equal(warningAudit.decision, 'warn');
+  assert.equal(warningAudit.enforcementMode, 'warn_by_default');
   // Full hard enforcement is available via opt-in.
   process.env.THUMBGATE_STRICT_ENFORCEMENT = '1';
   try {
@@ -1112,6 +1132,17 @@ test('run warns on git push by default, denies under strict enforcement', () => 
       tool_input: { command: 'git push origin feature/test' },
     }));
     assert.equal(denyOut.hookSpecificOutput.permissionDecision, 'deny');
+    stats = loadStats();
+    assert.equal(stats.effective.blocked, 1);
+    assert.equal(stats.effective.warned, 1);
+    auditEntries = fs.readFileSync(auditPath, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+    const strictAudit = auditEntries.find((entry) => (
+      entry.policyDecision === 'deny'
+      && entry.effectiveDecision === 'deny'
+      && entry.enforcementMode === 'strict'
+    ));
+    assert.ok(strictAudit, 'strict posture must audit an effective block');
+    assert.equal(strictAudit.executionDisposition, 'blocked');
   } finally {
     delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
   }
@@ -1590,6 +1621,7 @@ test('evaluateGates: approval gate fails CLOSED (deny) in an autonomous run', ()
     }],
   }));
   const orig = process.env.THUMBGATE_AUTONOMOUS;
+  const origConfig = process.env.THUMBGATE_GATES_CONFIG;
   try {
     // Interactive (default): defer to a human — decision 'approve'.
     delete process.env.THUMBGATE_AUTONOMOUS;
@@ -1602,11 +1634,36 @@ test('evaluateGates: approval gate fails CLOSED (deny) in an autonomous run', ()
     const autonomous = evaluateGates('Bash', { command: 'deploy to production' }, tmpConfig);
     assert.equal(autonomous && autonomous.decision, 'deny', 'autonomous run must fail closed on an approval gate');
     assert.equal(autonomous.failedClosed, true);
+
+    // The hook-level runner applies the global enforcement posture after
+    // evaluation. It must still emit a real deny, not downgrade fail-closed
+    // approval to warn-by-default.
+    process.env.THUMBGATE_GATES_CONFIG = tmpConfig;
+    const hookOutput = JSON.parse(run({
+      tool_name: 'Bash',
+      tool_input: { command: 'deploy to production' },
+    }));
+    assert.equal(hookOutput.hookSpecificOutput.permissionDecision, 'deny');
+    assert.match(hookOutput.hookSpecificOutput.permissionDecisionReason, /needs-human-approval/);
   } finally {
     if (orig === undefined) delete process.env.THUMBGATE_AUTONOMOUS;
     else process.env.THUMBGATE_AUTONOMOUS = orig;
+    if (origConfig === undefined) delete process.env.THUMBGATE_GATES_CONFIG;
+    else process.env.THUMBGATE_GATES_CONFIG = origConfig;
     fs.rmSync(tmpConfig, { force: true });
   }
+});
+
+test('warn-by-default never downgrades an autonomous fail-closed denial', () => {
+  delete process.env.THUMBGATE_STRICT_ENFORCEMENT;
+  const result = applyEnforcementPosture({
+    decision: 'deny',
+    gate: 'needs-human-approval',
+    message: 'No approver is present',
+    failedClosed: true,
+  });
+  assert.equal(result.decision, 'deny');
+  assert.equal(result.failedClosed, true);
 });
 
 test('isAutonomousRun is opt-in via THUMBGATE_AUTONOMOUS (off by default)', () => {

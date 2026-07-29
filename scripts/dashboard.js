@@ -245,8 +245,8 @@ function buildReviewSnapshot(feedbackDir, options = {}) {
     positiveCount: feedbackEntries.filter((entry) => entry.signal === 'positive').length,
     negativeCount: feedbackEntries.filter((entry) => entry.signal === 'negative').length,
     lessonCount: memoryEntries.length,
-    blockedCount: auditEntries.filter((entry) => entry && entry.decision === 'deny').length,
-    warnedCount: auditEntries.filter((entry) => entry && entry.decision === 'warn').length,
+    blockedCount: auditEntries.filter((entry) => getEffectiveAuditDecision(entry) === 'deny').length,
+    warnedCount: auditEntries.filter((entry) => getEffectiveAuditDecision(entry) === 'warn').length,
     latestFeedbackAt: findLatestTimestamp(feedbackEntries),
     latestLessonAt: findLatestTimestamp(memoryEntries),
     gitHead: readGitHead(projectRoot),
@@ -286,8 +286,8 @@ function summarizeReviewDelta(feedbackEntries, memoryEntries, auditEntries, base
     feedbackAdded: feedbackEntries.length,
     negativeAdded: feedbackEntries.filter((entry) => entry.signal === 'negative').length,
     lessonsAdded: memoryEntries.length,
-    blocksAdded: auditEntries.filter((entry) => entry && entry.decision === 'deny').length,
-    warnsAdded: auditEntries.filter((entry) => entry && entry.decision === 'warn').length,
+    blocksAdded: auditEntries.filter((entry) => getEffectiveAuditDecision(entry) === 'deny').length,
+    warnsAdded: auditEntries.filter((entry) => getEffectiveAuditDecision(entry) === 'warn').length,
     headline: 'No review checkpoint yet. Mark the current dashboard as reviewed to start seeing only new changes.',
     latestFeedback: selectLatestRecord(feedbackEntries, (entry) => ({
       title: pickFirstText(entry.title, entry.context, entry.whatWentWrong, entry.whatWorked) || 'Feedback event',
@@ -319,8 +319,8 @@ function summarizeReviewDelta(feedbackEntries, memoryEntries, auditEntries, base
   const feedbackAdded = newFeedback.length;
   const negativeAdded = newFeedback.filter((entry) => entry.signal === 'negative').length;
   const lessonsAdded = newLessons.length;
-  const blocksAdded = newAudit.filter((entry) => entry && entry.decision === 'deny').length;
-  const warnsAdded = newAudit.filter((entry) => entry && entry.decision === 'warn').length;
+  const blocksAdded = newAudit.filter((entry) => getEffectiveAuditDecision(entry) === 'deny').length;
+  const warnsAdded = newAudit.filter((entry) => getEffectiveAuditDecision(entry) === 'warn').length;
   let headline = 'No new review activity since your last checkpoint.';
 
   if (feedbackAdded || lessonsAdded || blocksAdded || warnsAdded) {
@@ -398,14 +398,14 @@ function computeApprovalStats(entries) {
 // Gate enforcement stats
 // ---------------------------------------------------------------------------
 
-function computeGateStats() {
+function computeGateStats(options = {}) {
   const autoGatesPath = getAutoGatesPath();
   const statsPath = path.join(
     process.env.HOME || '/tmp',
     '.thumbgate',
     'gate-stats.json'
   );
-  const stats = readJsonFile(statsPath) || { blocked: 0, warned: 0, passed: 0, byGate: {} };
+  const stats = options.stats || readJsonFile(statsPath) || { blocked: 0, warned: 0, passed: 0, byGate: {} };
 
   // Count manual vs auto-promoted gates
   const defaultGates = readJsonFile(DEFAULT_GATES_PATH);
@@ -413,12 +413,15 @@ function computeGateStats() {
   const manualCount = defaultGates && Array.isArray(defaultGates.gates) ? defaultGates.gates.length : 0;
   const autoCount = autoGates && Array.isArray(autoGates.gates) ? autoGates.gates.length : 0;
   const totalGates = manualCount + autoCount;
+  const hasEffectiveTelemetry = stats.telemetryVersion >= 2 && stats.effective;
+  const reportedStats = hasEffectiveTelemetry ? stats.effective : stats;
+  const policyStats = stats.policy || stats;
 
   // Top blocked gate
   let topBlocked = null;
   let topBlockedCount = 0;
-  if (stats.byGate) {
-    for (const [gateId, gateStat] of Object.entries(stats.byGate)) {
+  if (reportedStats.byGate) {
+    for (const [gateId, gateStat] of Object.entries(reportedStats.byGate)) {
       const blocked = gateStat.blocked || 0;
       if (blocked > topBlockedCount) {
         topBlockedCount = blocked;
@@ -431,13 +434,23 @@ function computeGateStats() {
     totalGates,
     manualCount,
     autoCount,
-    blocked: stats.blocked || 0,
-    warned: stats.warned || 0,
-    passed: stats.passed || 0,
+    blocked: reportedStats.blocked || 0,
+    warned: reportedStats.warned || 0,
+    pendingApproval: reportedStats.pendingApproval || 0,
+    logged: reportedStats.logged || 0,
+    passed: reportedStats.passed || 0,
     topBlocked,
     topBlockedCount,
-    byGate: stats.byGate || {},
+    byGate: reportedStats.byGate || {},
+    policyMatches: policyStats,
+    telemetryVersion: stats.telemetryVersion || 1,
+    telemetryStartedAt: stats.telemetryStartedAt || null,
   };
+}
+
+function getEffectiveAuditDecision(entry) {
+  if (!entry) return null;
+  return entry.effectiveDecision || entry.decision || null;
 }
 
 function computeGateAuditSeries(feedbackDir, options = {}) {
@@ -449,13 +462,14 @@ function computeGateAuditSeries(feedbackDir, options = {}) {
   const countsByDay = new Map();
 
   for (const entry of entries) {
-    if (!['allow', 'deny', 'warn'].includes(entry.decision)) continue;
+    const effectiveDecision = getEffectiveAuditDecision(entry);
+    if (!['allow', 'deny', 'warn'].includes(effectiveDecision)) continue;
     const dayKey = toLocalDayKey(entry.timestamp);
     if (!dayKey) continue;
     if (!countsByDay.has(dayKey)) {
       countsByDay.set(dayKey, { allow: 0, deny: 0, warn: 0 });
     }
-    countsByDay.get(dayKey)[entry.decision] += 1;
+    countsByDay.get(dayKey)[effectiveDecision] += 1;
   }
 
   const days = [];
@@ -1444,12 +1458,13 @@ function computeAgentSurfaceInventory(feedbackDir, options = {}) {
   for (const entry of auditEntries) {
     if (!entry) continue;
     const bucket = getToolBucket(entry.toolName);
-    if (entry.decision === 'allow') bucket.allow += 1;
-    if (entry.decision === 'warn') {
+    const effectiveDecision = getEffectiveAuditDecision(entry);
+    if (effectiveDecision === 'allow') bucket.allow += 1;
+    if (effectiveDecision === 'warn') {
       bucket.warn += 1;
       bucket.intercepted += 1;
     }
-    if (entry.decision === 'deny') {
+    if (effectiveDecision === 'deny') {
       bucket.deny += 1;
       bucket.intercepted += 1;
     }
@@ -1841,6 +1856,9 @@ function printDashboard(data) {
   console.log(`  Active Gates     : ${gateStats.totalGates} (${gateStats.manualCount} manual, ${gateStats.autoCount} auto-promoted)`);
   console.log(`  Actions Blocked  : ${gateStats.blocked}`);
   console.log(`  Actions Warned   : ${gateStats.warned}`);
+  if (gateStats.telemetryVersion >= 2) {
+    console.log(`  Policy Denies    : ${gateStats.policyMatches.blocked || 0} (raw matches)`);
+  }
   if (gateStats.topBlocked) {
     console.log(`  Top Blocked      : ${gateStats.topBlocked} (${gateStats.topBlockedCount}\u00D7)`);
   }

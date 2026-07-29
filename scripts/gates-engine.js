@@ -70,7 +70,7 @@ const { evaluateSequenceState } = loadOptionalModule('./sequence-guard', () => (
   evaluateSequenceState: () => null,
 }));
 const { getAutoGatesPath } = require('./auto-promote-gates');
-const { recordAuditEvent, auditToFeedback } = require('./audit-trail');
+const { recordAuditEvent: appendAuditEvent, auditToFeedback } = require('./audit-trail');
 
 const DEFAULT_CONFIG_PATH = path.join(__dirname, '..', 'config', 'gates', 'default.json');
 const DEFAULT_CLAIM_GATES_PATH = path.join(__dirname, '..', 'config', 'gates', 'claim-verification.json');
@@ -187,6 +187,7 @@ function isSelfProtectGate(gateId) {
 
 function applyEnforcementPosture(result) {
   if (!result || (result.decision !== 'deny' && result.decision !== 'approve')) return result;
+  if (result.failedClosed || result.autonomousFailClosed) return result;
   // Defensive backstop: hard-floor results must never be posture-downgraded.
   if (UNCONDITIONAL_HARD_FLOOR_GATE_IDS.has(result.gate)) return result;
   // Full hard enforcement opt-in: keep every deny.
@@ -743,6 +744,87 @@ function buildGateActionFingerprint(gateId, options = {}) {
   return actionFingerprint(parts);
 }
 
+function emptyActionCounts() {
+  return { blocked: 0, warned: 0, pendingApproval: 0, logged: 0, passed: 0, byGate: {} };
+}
+
+const ACTION_COUNTER_KEYS = {
+  block: 'blocked',
+  warn: 'warned',
+  approve: 'pendingApproval',
+  log: 'logged',
+  pass: 'passed',
+};
+
+function incrementActionCount(counts, gateId, action) {
+  const key = ACTION_COUNTER_KEYS[action] || ACTION_COUNTER_KEYS.pass;
+  counts[key] = (counts[key] || 0) + 1;
+  if (!counts.byGate) counts.byGate = {};
+  const gateCounts = counts.byGate[gateId] || (counts.byGate[gateId] = {
+    blocked: 0, warned: 0, pendingApproval: 0, logged: 0, passed: 0,
+  });
+  gateCounts[key] = (gateCounts[key] || 0) + 1;
+}
+
+const ACTION_DECISIONS = { block: 'deny', approve: 'approve', warn: 'warn', log: 'log', pass: 'allow' };
+const DECISION_ACTIONS = { deny: 'block', approve: 'approve', warn: 'warn', log: 'log', allow: 'pass' };
+const EXECUTION_DISPOSITIONS = {
+  deny: 'blocked',
+  approve: 'approval_required',
+  warn: 'allowed_with_warning',
+  log: 'allowed_logged',
+  allow: 'allowed',
+};
+
+function actionToDecision(action) { return ACTION_DECISIONS[action] || 'allow'; }
+function decisionToAction(decision) { return DECISION_ACTIONS[decision] || 'pass'; }
+function executionDisposition(decision) { return EXECUTION_DISPOSITIONS[decision] || 'allowed'; }
+
+function resolveEnforcementTelemetry(policyDecision, gateId, options = {}) {
+  const policyResult = {
+    decision: policyDecision || 'allow',
+    gate: gateId || null,
+    failedClosed: Boolean(options.failedClosed || options.autonomousFailClosed),
+  };
+  const effectiveResult = options.effectiveDecision
+    ? { ...policyResult, decision: options.effectiveDecision }
+    : (applyEnforcementPosture(policyResult) || policyResult);
+  const effectiveDecision = effectiveResult.decision || policyResult.decision;
+
+  const strict = process.env.THUMBGATE_STRICT_ENFORCEMENT === '1' || (
+      process.env.THUMBGATE_STRICT_KNOWLEDGE_CONFLICT === '1'
+      && gateId === 'knowledge-conflict-gate'
+  );
+  let enforcementMode = options.enforcementMode;
+  if (!enforcementMode) {
+    if (policyResult.failedClosed) enforcementMode = 'autonomous_fail_closed';
+    else if (UNCONDITIONAL_HARD_FLOOR_GATE_IDS.has(gateId)) enforcementMode = 'hard_floor';
+    else if (strict) enforcementMode = 'strict';
+    else if (effectiveDecision !== policyResult.decision) enforcementMode = 'warn_by_default';
+    else enforcementMode = 'direct';
+  }
+
+  return {
+    policyDecision: policyResult.decision,
+    effectiveDecision,
+    executionDisposition: executionDisposition(effectiveDecision),
+    enforcementMode,
+  };
+}
+
+function recordAuditEvent(params = {}) {
+  const telemetry = resolveEnforcementTelemetry(
+    params.policyDecision || params.decision || 'allow',
+    params.gateId,
+    params,
+  );
+  return appendAuditEvent({
+    ...params,
+    ...telemetry,
+    decision: telemetry.effectiveDecision,
+  });
+}
+
 function recordStat(gateId, action, gate, options = {}) {
   const stats = loadStats();
   if (action === 'block') stats.blocked = (stats.blocked || 0) + 1;
@@ -756,6 +838,28 @@ function recordStat(gateId, action, gate, options = {}) {
   else if (action === 'warn') stats.byGate[gateId].warned += 1;
   else if (action === 'approve') stats.byGate[gateId].pendingApproval = (stats.byGate[gateId].pendingApproval || 0) + 1;
   else if (action === 'log') stats.byGate[gateId].logged = (stats.byGate[gateId].logged || 0) + 1;
+
+  if (!stats.telemetryVersion || stats.telemetryVersion < 2) {
+    stats.telemetryVersion = 2;
+    stats.telemetryStartedAt = new Date().toISOString();
+    stats.policy = emptyActionCounts();
+    stats.effective = emptyActionCounts();
+  }
+  if (!stats.policy) stats.policy = emptyActionCounts();
+  if (!stats.effective) stats.effective = emptyActionCounts();
+  const policyAction = options.policyAction || action;
+  const telemetry = resolveEnforcementTelemetry(
+    actionToDecision(policyAction),
+    options.effectiveGateId || gateId,
+    {
+      ...options,
+      effectiveDecision: options.effectiveDecision || (
+        options.policyAction ? actionToDecision(options.effectiveAction || action) : undefined
+      ),
+    },
+  );
+  incrementActionCount(stats.policy, gateId, policyAction);
+  incrementActionCount(stats.effective, gateId, options.effectiveAction || decisionToAction(telemetry.effectiveDecision));
 
   // Track same-action recurrence within a session for first-time fix rate.
   // Gate-only recurrence over-counts noisy gates; repeats require a stable,
@@ -2831,13 +2935,13 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
       // Free-tier daily block cap: after N blocks/day, deny → warn + upgrade CTA
       const cappedResult = applyDailyBlockCap(denyResult);
       if (cappedResult) {
-        recordStat(gate.id, 'warn', gate, { toolName, toolInput });
-        const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: cappedResult.message, severity: gate.severity, source: 'gates-engine', dailyBlockCapApplied: true });
+        recordStat(gate.id, 'warn', gate, { toolName, toolInput, policyAction: 'block' });
+        const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', policyDecision: 'deny', effectiveDecision: 'warn', enforcementMode: 'daily_block_cap', gateId: gate.id, message: cappedResult.message, severity: gate.severity, source: 'gates-engine', dailyBlockCapApplied: true });
         auditToFeedback(auditRecord);
         return cappedResult;
       }
-      recordStat(gate.id, 'block', gate, { toolName, toolInput });
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+      recordStat(gateId, 'block', gate, { toolName, toolInput });
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return denyResult;
     }
@@ -2849,7 +2953,7 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
           // Autonomous run: no human to approve. Fail CLOSED so the actions that
           // most need sign-off cannot slip through unattended.
           const failClosedMessage = `[autonomous run — no approver present, failing closed] ${message}`;
-          recordStat(gate.id, 'block', gate, { toolName, toolInput });
+          recordStat(gate.id, 'block', gate, { toolName, toolInput, autonomousFailClosed: true });
           const failClosedAudit = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: failClosedMessage, severity: gate.severity, source: 'gates-engine', autonomousFailClosed: true });
           auditToFeedback(failClosedAudit);
           return { decision: 'deny', gate: gate.id, message: failClosedMessage, severity: gate.severity, reasoning, requiresApproval: true, failedClosed: true };
@@ -2860,9 +2964,9 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
         auditToFeedback(auditRecord);
         return result;
       }
-      recordStat(gate.id, 'warn', gate, { toolName, toolInput });
+      recordStat(gate.id, 'warn', gate, { toolName, toolInput, policyAction: 'approve' });
       const result = { decision: 'warn', gate: gate.id, message: `[approval gate disabled] ${message}`, severity: gate.severity, reasoning };
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', policyDecision: 'approve', effectiveDecision: 'warn', enforcementMode: 'approval_disabled', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return result;
     }
@@ -3050,13 +3154,13 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
       // Free-tier daily block cap: after N blocks/day, deny → warn + upgrade CTA
       const cappedResult = applyDailyBlockCap(denyResult);
       if (cappedResult) {
-        recordStat(gate.id, 'warn', gate, { toolName, toolInput });
-        const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message: cappedResult.message, severity: gate.severity, source: 'gates-engine', dailyBlockCapApplied: true });
+        recordStat(gate.id, 'warn', gate, { toolName, toolInput, policyAction: 'block' });
+        const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', policyDecision: 'deny', effectiveDecision: 'warn', enforcementMode: 'daily_block_cap', gateId: gate.id, message: cappedResult.message, severity: gate.severity, source: 'gates-engine', dailyBlockCapApplied: true });
         auditToFeedback(auditRecord);
         return cappedResult;
       }
-      recordStat(gate.id, 'block', gate, { toolName, toolInput });
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+      recordStat(gateId, 'block', gate, { toolName, toolInput });
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return denyResult;
     }
@@ -3068,7 +3172,7 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
           // Autonomous run: no human to approve. Fail CLOSED so the actions that
           // most need sign-off cannot slip through unattended.
           const failClosedMessage = `[autonomous run — no approver present, failing closed] ${message}`;
-          recordStat(gate.id, 'block', gate, { toolName, toolInput });
+          recordStat(gate.id, 'block', gate, { toolName, toolInput, autonomousFailClosed: true });
           const failClosedAudit = recordAuditEvent({ toolName, toolInput, decision: 'deny', gateId: gate.id, message: failClosedMessage, severity: gate.severity, source: 'gates-engine', autonomousFailClosed: true });
           auditToFeedback(failClosedAudit);
           return { decision: 'deny', gate: gate.id, message: failClosedMessage, severity: gate.severity, reasoning, requiresApproval: true, failedClosed: true };
@@ -3079,9 +3183,9 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
         auditToFeedback(auditRecord);
         return result;
       }
-      recordStat(gate.id, 'warn', gate, { toolName, toolInput });
+      recordStat(gate.id, 'warn', gate, { toolName, toolInput, policyAction: 'approve' });
       const result = { decision: 'warn', gate: gate.id, message: `[approval gate disabled] ${message}`, severity: gate.severity, reasoning };
-      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
+      const auditRecord = recordAuditEvent({ toolName, toolInput, decision: 'warn', policyDecision: 'approve', effectiveDecision: 'warn', enforcementMode: 'approval_disabled', gateId: gate.id, message, severity: gate.severity, source: 'gates-engine' });
       auditToFeedback(auditRecord);
       return result;
     }

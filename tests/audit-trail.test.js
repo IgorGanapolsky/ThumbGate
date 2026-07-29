@@ -55,6 +55,9 @@ test('recordAuditEvent writes a valid JSONL record', () => {
 
     assert.ok(record.id.startsWith('audit_'));
     assert.equal(record.decision, 'deny');
+    assert.equal(record.policyDecision, 'deny');
+    assert.equal(record.effectiveDecision, 'deny');
+    assert.equal(record.executionDisposition, 'blocked');
     assert.equal(record.gateId, 'force-push');
     assert.equal(record.source, 'gates-engine');
 
@@ -64,6 +67,26 @@ test('recordAuditEvent writes a valid JSONL record', () => {
     const entries = readAuditLog(logPath);
     assert.equal(entries.length, 1);
     assert.equal(entries[0].decision, 'deny');
+  });
+});
+
+test('recordAuditEvent preserves raw policy verdict separately from effective warning', () => {
+  withTempDir(() => {
+    const record = recordAuditEvent({
+      toolName: 'Bash',
+      decision: 'warn',
+      policyDecision: 'deny',
+      effectiveDecision: 'warn',
+      executionDisposition: 'allowed_with_warning',
+      enforcementMode: 'warn_by_default',
+      gateId: 'git-push',
+    });
+
+    assert.equal(record.decision, 'warn');
+    assert.equal(record.policyDecision, 'deny');
+    assert.equal(record.effectiveDecision, 'warn');
+    assert.equal(record.executionDisposition, 'allowed_with_warning');
+    assert.equal(record.enforcementMode, 'warn_by_default');
   });
 });
 

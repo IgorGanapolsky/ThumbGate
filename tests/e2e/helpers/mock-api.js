@@ -13,9 +13,12 @@ async function mockDashboardApis(page, overrides = {}) {
   const timeline = overrides.timeline || loadFixture('timeline-search.json');
   const lessons = overrides.lessons || loadFixture('lessons-search.json');
 
-  await page.route(/\/v1\/dashboard(\?|$)/, (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(dashboard) }),
-  );
+  await page.route(/\/v1\/dashboard(\?|$)/, async (route) => {
+    if (overrides.dashboardDelayMs) {
+      await new Promise((resolve) => setTimeout(resolve, overrides.dashboardDelayMs));
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(dashboard) });
+  });
   await page.route(/\/v1\/dashboard\/render-spec/, (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ blocks: [] }) }),
   );

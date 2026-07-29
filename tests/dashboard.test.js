@@ -19,6 +19,7 @@ const {
   writeDashboardReviewState,
   computeApprovalStats,
   computeSessionTrend,
+  computeGateStats,
   printDashboard,
   readJSONL,
   readJsonFile,
@@ -26,6 +27,41 @@ const {
 const { listGateTemplates } = require('../scripts/gate-templates');
 
 const EXPECTED_TEMPLATE_COUNT = listGateTemplates().length;
+
+test('computeGateStats reports effective outcomes and exposes raw policy matches separately', () => {
+  const stats = computeGateStats({
+    stats: {
+      telemetryVersion: 2,
+      telemetryStartedAt: '2026-07-29T12:00:00.000Z',
+      blocked: 9,
+      warned: 1,
+      byGate: { 'git-push': { blocked: 9, warned: 1 } },
+      policy: {
+        blocked: 2,
+        warned: 0,
+        pendingApproval: 0,
+        logged: 0,
+        passed: 0,
+        byGate: { 'git-push': { blocked: 2, warned: 0 } },
+      },
+      effective: {
+        blocked: 1,
+        warned: 1,
+        pendingApproval: 0,
+        logged: 0,
+        passed: 0,
+        byGate: { 'git-push': { blocked: 1, warned: 1 } },
+      },
+    },
+  });
+
+  assert.equal(stats.blocked, 1);
+  assert.equal(stats.warned, 1);
+  assert.equal(stats.policyMatches.blocked, 2);
+  assert.equal(stats.topBlocked, 'git-push');
+  assert.equal(stats.topBlockedCount, 1);
+  assert.equal(stats.telemetryVersion, 2);
+});
 
 test.beforeEach(() => {
   for (const fileName of [

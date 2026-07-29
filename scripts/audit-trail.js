@@ -36,7 +36,7 @@ function getAuditLogPath() {
  * @param {object} params
  * @param {string} params.toolName   — tool that was evaluated
  * @param {object} params.toolInput  — the tool input payload
- * @param {string} params.decision   — 'allow' | 'deny' | 'warn'
+ * @param {string} params.decision   — effective 'allow' | 'deny' | 'warn' decision
  * @param {string} [params.gateId]   — which gate matched (null for allow)
  * @param {string} [params.message]  — gate message
  * @param {string} [params.severity] — gate severity
@@ -47,13 +47,19 @@ function getAuditLogPath() {
 function recordAuditEvent(params = {}) {
   const logPath = getAuditLogPath();
   ensureDir(path.dirname(logPath));
+  const effectiveDecision = params.effectiveDecision || params.decision || 'allow';
+  const policyDecision = params.policyDecision || params.decision || effectiveDecision;
 
   const record = {
     id: `audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     timestamp: new Date().toISOString(),
     toolName: params.toolName || 'unknown',
     toolInput: sanitizeToolInput(params.toolInput || {}),
-    decision: params.decision || 'allow',
+    decision: effectiveDecision,
+    policyDecision,
+    effectiveDecision,
+    executionDisposition: params.executionDisposition || defaultExecutionDisposition(effectiveDecision),
+    enforcementMode: params.enforcementMode || 'direct',
     gateId: params.gateId || null,
     message: params.message || null,
     severity: params.severity || null,
@@ -69,6 +75,14 @@ function recordAuditEvent(params = {}) {
     // Keep audit recording resilient even if the learned policy refresh fails.
   }
   return record;
+}
+
+function defaultExecutionDisposition(decision) {
+  if (decision === 'deny') return 'blocked';
+  if (decision === 'approve') return 'approval_required';
+  if (decision === 'warn') return 'allowed_with_warning';
+  if (decision === 'log') return 'allowed_logged';
+  return 'allowed';
 }
 
 /**
@@ -119,6 +133,10 @@ function auditToFeedback(auditRecord) {
       id: `gate_${crypto.randomUUID()}`,
       gateId: auditRecord.gateId,
       decision: auditRecord.decision,
+      policyDecision: auditRecord.policyDecision || auditRecord.decision,
+      effectiveDecision: auditRecord.effectiveDecision || auditRecord.decision,
+      executionDisposition: auditRecord.executionDisposition || defaultExecutionDisposition(auditRecord.decision),
+      enforcementMode: auditRecord.enforcementMode || 'direct',
       toolName: auditRecord.toolName,
       message: auditRecord.message || null,
       source: auditRecord.source || null,
