@@ -242,3 +242,53 @@ test('bundle server shim resolves bin/cli.js INSIDE the bundle', () => {
       `shim escapes the bundle: path.join(__dirname${args}) climbs ${ups} levels`);
   }
 });
+
+test('staged bundle shim EXECUTES: real MCP initialize against the built artifact', async () => {
+  // The string assertions above check what the shim says; this checks what it DOES. Both
+  // Desktop failures shipped through builds whose shim was syntactically plausible and
+  // dead at runtime (wrong path level; Electron spawn). Staging the bundle exactly as the
+  // build does and driving one MCP handshake through it is the only test that would have
+  // caught either.
+  const os = require('os');
+  const { spawn } = require('child_process');
+  const { stageClaudeMcpbBundle } = require('../scripts/build-claude-mcpb.js');
+
+  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-mcpb-e2e-'));
+  const sandboxHome = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-mcpb-home-'));
+  try {
+    const { stageDir } = stageClaudeMcpbBundle(outDir);
+    const shimPath = path.join(stageDir, 'server', 'index.js');
+    assert.ok(fs.existsSync(shimPath), 'staging produced no server shim');
+
+    const child = spawn(process.execPath, [shimPath], {
+      cwd: '/', // Desktop-like: never the bundle dir
+      // Minimal env, not a spread: inherited THUMBGATE_FEEDBACK_DIR / THUMBGATE_PROJECT_DIR
+      // (or a project .thumbgate reachable via PWD) would defeat the sandboxed HOME and let
+      // the spawned server's jsonl-watcher write into LIVE feedback state. Review caught it.
+      env: { PATH: process.env.PATH, HOME: sandboxHome, THUMBGATE_HOME: path.join(sandboxHome, '.thumbgate') },
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+
+    const reply = await new Promise((resolve, reject) => {
+      let buffer = '';
+      const timer = setTimeout(() => reject(new Error(`no initialize reply in 20s; stderr: ${errBuf.slice(0, 400)}`)), 20000);
+      let errBuf = '';
+      child.stderr.on('data', (d) => { errBuf += d; });
+      child.stdout.on('data', (chunk) => {
+        buffer += chunk;
+        const line = buffer.split('\n').find((l) => l.trim().startsWith('{'));
+        if (line) { clearTimeout(timer); resolve(JSON.parse(line)); }
+      });
+      child.on('error', (err) => { clearTimeout(timer); reject(err); });
+      child.on('exit', (code) => { clearTimeout(timer); reject(new Error(`shim exited ${code} before replying; stderr: ${errBuf.slice(0, 400)}`)); });
+      child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 0, method: 'initialize', params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'mcpb-e2e', version: '0' } } }) + '\n');
+    }).finally(() => { try { child.kill(); } catch { /* already dead */ } });
+
+    assert.equal(reply.id, 0);
+    assert.equal(reply.result.serverInfo.name, 'thumbgate-mcp',
+      'the staged bundle did not answer as the ThumbGate MCP server');
+  } finally {
+    fs.rmSync(outDir, { recursive: true, force: true });
+    fs.rmSync(sandboxHome, { recursive: true, force: true });
+  }
+});
