@@ -2,5 +2,6 @@
   "total": 12,
   "up": 10,
   "down": 2,
-  "approvalRate": 83
+  "approvalRate": 83,
+  "activeGateCount": 5
 }

@@ -110,7 +110,13 @@ test('dashboard defaults to the Total Feedback card highlight on first render', 
   assert.match(dashboard, /data-card-action="all"/);
   assert.match(dashboard, /function setSelectedCard\(action\)/);
   assert.match(dashboard, /card\.classList\.toggle\('selected', card\.dataset\.cardAction === action\)/);
-  assert.match(dashboard, /renderStats\(data\);\s+setSelectedCard\('all'\);\s+await loadDashboardData\(\);/);
+  assert.match(dashboard, /<body data-revenue-assist="off">/);
+  assert.match(dashboard, /function disconnectKey\(\)\s*\{\s*pauseDashboardHydration\(\);\s*dashboardDataPromise = null;/);
+  assert.match(
+    dashboard,
+    /renderStats\(data\);\s+setSelectedCard\('all'\);[\s\S]*?scheduleDashboardHydration\(10000\);/,
+    'first render should select Total Feedback before deferring dashboard hydration',
+  );
   assert.match(dashboard, /document\.getElementById\('statGates'\)\.textContent = '14';\s+setSelectedCard\('all'\);/);
 });
 

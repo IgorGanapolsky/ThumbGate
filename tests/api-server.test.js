@@ -2674,6 +2674,19 @@ test('dpo export endpoint works with local memory log', async () => {
   assert.equal(fs.existsSync(outputPath), true);
 });
 
+test('dpo export endpoint returns downloadable records when requested by the dashboard', async () => {
+  const res = await fetch(apiUrl('/v1/dpo/export'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...authHeader },
+    body: JSON.stringify({ includePairs: true }),
+  });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.ok(Array.isArray(body.records));
+  assert.equal(body.pairCount, body.records.length);
+  assert.equal(body.pairs, body.records.length);
+});
+
 test('databricks export endpoint writes analytics bundle', async () => {
   const outputPath = path.join(tmpFeedbackDir, 'analytics', 'bundle-api');
   fs.mkdirSync(path.join(tmpProofDir, 'automation'), { recursive: true });
