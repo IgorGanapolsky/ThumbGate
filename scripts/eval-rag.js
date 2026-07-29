@@ -244,15 +244,32 @@ async function collectStageMetrics({ avgRecall, avgPrecision, results } = {}) {
   };
 }
 
+/**
+ * Boolean health metrics must be true to count as healthy.
+ * Presence alone is not success (e.g. lancedb_module_resolvable: false).
+ */
+function isMetricHealthy(value) {
+  if (value === undefined || value === null) return false;
+  if (typeof value === 'boolean') return value === true;
+  return true;
+}
+
 function buildStageStatus(stageMetrics = {}) {
   return STAGES.map((stage) => {
-    const missing = (stage.metricKeys || []).filter((k) => stageMetrics[k] === undefined || stageMetrics[k] === null);
+    const keys = stage.metricKeys || [];
+    const missing = keys.filter((k) => stageMetrics[k] === undefined || stageMetrics[k] === null);
+    const unhealthy = keys.filter((k) => {
+      const v = stageMetrics[k];
+      if (v === undefined || v === null) return false;
+      return !isMetricHealthy(v);
+    });
     return {
       id: stage.id,
       name: stage.name,
-      ok: missing.length === 0,
+      ok: missing.length === 0 && unhealthy.length === 0,
       missingMetrics: missing,
-      metrics: Object.fromEntries((stage.metricKeys || []).map((k) => [k, stageMetrics[k]])),
+      unhealthyMetrics: unhealthy,
+      metrics: Object.fromEntries(keys.map((k) => [k, stageMetrics[k]])),
     };
   });
 }

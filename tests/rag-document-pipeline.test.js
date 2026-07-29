@@ -28,6 +28,18 @@ test('parseDocument splits markdown on headings', () => {
   assert.match(r.records[0].content, /idempotency/i);
 });
 
+test('parseDocument accepts context-only memory records (native feedback shape)', () => {
+  const r = parseDocument({
+    id: 'fb-1',
+    context: 'NEVER claim deployed without curling /health',
+    signal: 'down',
+    tags: ['deploy'],
+  });
+  assert.equal(r.ok, true);
+  assert.equal(r.records.length, 1);
+  assert.match(r.records[0].content, /\/health/);
+});
+
 test('cleanRecord drops placeholder thumbs text', () => {
   const dropped = cleanRecord({ id: '1', title: '', content: 'thumbs down' });
   assert.equal(dropped.kept, false);

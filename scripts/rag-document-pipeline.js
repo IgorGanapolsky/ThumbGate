@@ -91,31 +91,39 @@ function parseDocument(input = {}) {
 
   if (type === 'markdown' || type === 'md' || type === 'text' || !type) {
     const raw = String(input.content || input.text || '');
-    if (!raw.trim()) {
-      return { ok: false, records: [], errors: [{ code: 'empty_document', message: 'No content' }] };
+    if (raw.trim()) {
+      // Split on markdown ## headings when present; else single record.
+      const sections = splitMarkdownSections(raw, input.title || input.id || 'document');
+      const records = sections.map((sec, i) => ({
+        id: input.id ? `${input.id}#${i}` : `doc-${sha1(sec.title + sec.content)}`,
+        title: sec.title,
+        content: sec.content,
+        signal: input.signal || '',
+        tags: Array.isArray(input.tags) ? [...input.tags] : [],
+        metadata: { ...(input.metadata || {}), sectionIndex: i, source: input.source || 'markdown' },
+        source: input.source || 'markdown',
+      }));
+      return { ok: true, records, errors, parse_success_rate: 1 };
     }
-    // Split on markdown ## headings when present; else single record.
-    const sections = splitMarkdownSections(raw, input.title || input.id || 'document');
-    const records = sections.map((sec, i) => ({
-      id: input.id ? `${input.id}#${i}` : `doc-${sha1(sec.title + sec.content)}`,
-      title: sec.title,
-      content: sec.content,
-      signal: input.signal || '',
-      tags: Array.isArray(input.tags) ? [...input.tags] : [],
-      metadata: { ...(input.metadata || {}), sectionIndex: i, source: input.source || 'markdown' },
-      source: input.source || 'markdown',
-    }));
-    return { ok: true, records, errors, parse_success_rate: 1 };
+    // Empty content/text: fall through to memory-shaped fields (context-only feedback).
   }
 
-  // Structured memory/lesson object
-  if (input.title || input.content || input.context) {
+  // Structured memory/lesson object (native feedback often has context without content/text)
+  if (input.title || input.content || input.context || input.whatWentWrong || input.whatWorked) {
+    const body = input.content
+      || input.context
+      || input.whatWentWrong
+      || input.whatWorked
+      || '';
+    if (!String(body).trim() && !input.title) {
+      return { ok: false, records: [], errors: [{ code: 'empty_document', message: 'No content' }] };
+    }
     return {
       ok: true,
       records: [{
-        id: input.id || `rec-${sha1(input.title || input.content || '')}`,
-        title: input.title || '',
-        content: input.content || input.context || input.whatWentWrong || input.whatWorked || '',
+        id: input.id || `rec-${sha1(input.title || body || '')}`,
+        title: input.title || String(body).slice(0, 80),
+        content: body,
         signal: input.signal || input.feedback || '',
         tags: Array.isArray(input.tags) ? input.tags : [],
         metadata: { ...(input.metadata || {}), source: input.source || 'memory' },
@@ -124,6 +132,10 @@ function parseDocument(input = {}) {
       errors,
       parse_success_rate: 1,
     };
+  }
+
+  if (type === 'markdown' || type === 'md' || type === 'text' || !type) {
+    return { ok: false, records: [], errors: [{ code: 'empty_document', message: 'No content' }] };
   }
 
   return {

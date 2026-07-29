@@ -79,6 +79,10 @@ function validateStructuredAnswer(payload, sources = []) {
     (sources || []).map((_, i) => String(i + 1)),
   );
 
+  if (payload.confidence === undefined || payload.confidence === null) {
+    errors.push('missing_confidence');
+  }
+
   const citations = [];
   for (const c of citationsIn || []) {
     if (!c || typeof c !== 'object') {
@@ -91,15 +95,23 @@ function validateStructuredAnswer(payload, sources = []) {
       errors.push('citation_missing_id');
       continue;
     }
-    const idOk = id && (sourceIds.has(id) || sourceIndexes.has(id) || /^\[\d+\]$/.test(id));
-    const indexOk = Number.isFinite(index) && index >= 1 && index <= (sources.length || index);
+    // Bracket form "[n]" is only valid when n is a real 1-based source index.
+    let bracketOk = false;
+    const bracketMatch = id && id.match(/^\[(\d+)\]$/);
+    if (bracketMatch) {
+      const n = Number(bracketMatch[1]);
+      bracketOk = Number.isFinite(n) && n >= 1 && n <= sources.length;
+    }
+    const idOk = Boolean(id && (sourceIds.has(id) || sourceIndexes.has(id) || bracketOk));
+    const indexOk = Number.isFinite(index) && index >= 1 && index <= sources.length;
     if (sources.length > 0 && !idOk && !indexOk) {
       errors.push(`citation_unknown:${id || index}`);
+      continue; // do not accept citations that point outside the retrieved set
     }
     citations.push({
       id: id || String(index),
       title: typeof c.title === 'string' ? c.title : undefined,
-      index: Number.isFinite(index) ? index : undefined,
+      index: Number.isFinite(index) ? index : (bracketMatch ? Number(bracketMatch[1]) : undefined),
     });
   }
 

@@ -53,3 +53,26 @@ test('structuredOutputInstruction asks for JSON schema', () => {
   assert.match(structuredOutputInstruction(), /ONLY valid JSON/i);
   assert.match(structuredOutputInstruction(), /citations/);
 });
+
+test('validateStructuredAnswer rejects bracket citations outside retrieved set', () => {
+  const oneSource = [{ id: 'lesson-a', title: 'Idempotency' }];
+  const r = validateStructuredAnswer({
+    answer: 'Something invented.',
+    citations: [{ id: '[999]' }],
+    grounded: true,
+    confidence: 0.9,
+  }, oneSource);
+  assert.equal(r.ok, false);
+  assert.ok(r.errors.some((e) => String(e).startsWith('citation_unknown')));
+  assert.equal(r.value.citations.length, 0);
+});
+
+test('validateStructuredAnswer rejects missing confidence', () => {
+  const r = validateStructuredAnswer({
+    answer: 'Use idempotency keys.',
+    citations: [{ id: 'lesson-a', index: 1 }],
+    grounded: true,
+  }, sources);
+  assert.equal(r.ok, false);
+  assert.ok(r.errors.includes('missing_confidence'));
+});
