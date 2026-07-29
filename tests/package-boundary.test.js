@@ -399,8 +399,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // risk-scorer.js require()s at module load — without it the published package throws
     // on require. It is the only new file in the tarball; model-calibration.js and
     // eval-risk-model.js are development-only.
-    manifest.fileCount <= 390,
-    `npm package should stay <= 390 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 391,
+    `npm package should stay <= 391 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

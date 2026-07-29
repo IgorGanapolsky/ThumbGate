@@ -337,15 +337,7 @@
     "scripts/generate-eval-scorecard.js",
     "scripts/refresh-proof-pack.js",
     "scripts/generate-case-study-outreach.js",
-    "scripts/rag-stage-contracts.js",
-    "scripts/rag-document-pipeline.js",
-    "scripts/rag-structured-output.js",
-    "scripts/prove-rag-pipeline.js",
-    "scripts/eval-rag.js",
-    "docs/RAG_PIPELINE.md",
-    "scripts/ir-metrics.js",
-    "scripts/retrieval-ranking-eval.js",
-    "config/evals/retrieval-ranking-golden.json"
+    "scripts/rag-structured-output.js"
   ],
   "scripts": {
     "canary:snapshot": "node scripts/gate-decision-canary.js --snapshot",
