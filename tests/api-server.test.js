@@ -1066,16 +1066,18 @@ test('support page exposes email, GitHub issues, status, and refund paths', asyn
 });
 
 test('case studies page surfaces verifiable signal', async () => {
-  // Conversion-optimization surface: until this PR, thumbgate.ai had no
-  // proof page. Buyers saw CLI install commands and bounced. This page
-  // anchors trust with reproducible third-party signal.
+  // Conversion-optimization surface: buyers need a proof page with
+  // reproducible first-party dogfood narratives (not empty placeholders)
+  // plus legal triangle links for procurement navigation.
   const res = await fetch(apiUrl('/case-studies'));
   assert.equal(res.status, 200);
   assert.match(String(res.headers.get('content-type')), /text\/html/);
   const body = await res.text();
-  assert.match(body, /Case Studies/);
+  assert.match(body, /Case Studies/i);
   assert.match(body, /href="\/pricing"/);
   assert.match(body, /href="\/privacy"/);
+  assert.match(body, /62 evasion holes|evasion/);
+  assert.doesNotMatch(body, /coming soon/i);
 });
 
 test('public HEAD routes stay unauthenticated and side-effect free', async () => {
