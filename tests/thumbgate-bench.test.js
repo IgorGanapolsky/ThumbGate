@@ -14,6 +14,8 @@ const {
   DEFAULT_PROGRAMBENCH_SUITE_PATH,
   loadScenarioSuite,
   loadProgramBenchSmokeSuite,
+  resolveBenchFeedbackDir,
+  withGateRuntime,
   runSuitePass,
   runProgramBenchSmokeSuite,
   scoreResults,
@@ -177,6 +179,117 @@ test('ThumbGate Bench CLI emits JSON report when requested', () => {
     assert.ok(report.reportPaths.json.endsWith('thumbgate-bench-report.json'));
   } finally {
     fs.rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+test('resolveBenchFeedbackDir defaults to an isolated temp dir', () => {
+  const resolved = resolveBenchFeedbackDir({});
+  try {
+    assert.equal(resolved.isTemporary, true);
+    assert.ok(path.basename(resolved.dir).startsWith('thumbgate-bench-feedback-'));
+    assert.ok(fs.existsSync(resolved.dir));
+  } finally {
+    fs.rmSync(resolved.dir, { recursive: true, force: true });
+  }
+});
+
+test('resolveBenchFeedbackDir honors an explicit --feedback-dir option', () => {
+  const explicitDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-bench-explicit-'));
+  try {
+    const resolved = resolveBenchFeedbackDir({ feedbackDir: explicitDir });
+    assert.equal(resolved.isTemporary, false);
+    assert.equal(resolved.dir, path.resolve(explicitDir));
+  } finally {
+    fs.rmSync(explicitDir, { recursive: true, force: true });
+  }
+});
+
+test('resolveBenchFeedbackDir honors THUMBGATE_BENCH_FEEDBACK_DIR', () => {
+  const explicitDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-bench-envdir-'));
+  const previous = process.env.THUMBGATE_BENCH_FEEDBACK_DIR;
+  process.env.THUMBGATE_BENCH_FEEDBACK_DIR = explicitDir;
+  try {
+    const resolved = resolveBenchFeedbackDir({});
+    assert.equal(resolved.isTemporary, false);
+    assert.equal(resolved.dir, path.resolve(explicitDir));
+  } finally {
+    if (previous === undefined) delete process.env.THUMBGATE_BENCH_FEEDBACK_DIR;
+    else process.env.THUMBGATE_BENCH_FEEDBACK_DIR = previous;
+    fs.rmSync(explicitDir, { recursive: true, force: true });
+  }
+});
+
+test('withGateRuntime isolates feedback env even with --use-runtime-state', () => {
+  const previousProjectDir = process.env.CLAUDE_PROJECT_DIR;
+  process.env.CLAUDE_PROJECT_DIR = path.join(__dirname, '..');
+  const previousFeedbackDir = process.env.THUMBGATE_FEEDBACK_DIR;
+  try {
+    const observed = withGateRuntime({ useRuntimeState: true }, () => ({
+      feedbackDir: process.env.THUMBGATE_FEEDBACK_DIR,
+      feedbackLog: process.env.THUMBGATE_FEEDBACK_LOG,
+      projectDir: process.env.CLAUDE_PROJECT_DIR,
+    }));
+
+    assert.ok(path.basename(observed.feedbackDir).startsWith('thumbgate-bench-feedback-'));
+    assert.equal(observed.feedbackLog, path.join(observed.feedbackDir, 'feedback-log.jsonl'));
+    assert.equal(observed.projectDir, undefined, 'project scope must not suppress the feedback override');
+    assert.equal(fs.existsSync(observed.feedbackDir), false, 'temp feedback dir is cleaned up');
+    assert.equal(process.env.THUMBGATE_FEEDBACK_DIR, previousFeedbackDir);
+    assert.equal(process.env.CLAUDE_PROJECT_DIR, path.join(__dirname, '..'));
+  } finally {
+    if (previousProjectDir === undefined) delete process.env.CLAUDE_PROJECT_DIR;
+    else process.env.CLAUDE_PROJECT_DIR = previousProjectDir;
+  }
+});
+
+test('withGateRuntime keeps an explicit feedback dir in place', () => {
+  const explicitDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-bench-keep-'));
+  try {
+    const observed = withGateRuntime({ useRuntimeState: true, feedbackDir: explicitDir }, () => ({
+      feedbackDir: process.env.THUMBGATE_FEEDBACK_DIR,
+    }));
+
+    assert.equal(observed.feedbackDir, path.resolve(explicitDir));
+    assert.equal(fs.existsSync(explicitDir), true, 'explicit feedback dir must not be deleted');
+  } finally {
+    fs.rmSync(explicitDir, { recursive: true, force: true });
+  }
+});
+
+test('ThumbGate Bench CLI leaves the operator feedback store untouched', () => {
+  const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-bench-repo-'));
+  try {
+    const storeDir = path.join(fixtureRoot, '.thumbgate');
+    fs.mkdirSync(storeDir, { recursive: true });
+    const storePath = path.join(storeDir, 'feedback-log.jsonl');
+    const sentinel = `${JSON.stringify({ id: 'operator-entry', feedback: 'up' })}\n`;
+    fs.writeFileSync(storePath, sentinel);
+    const outDir = path.join(fixtureRoot, 'bench-out');
+
+    // Simulate the leak vector: an agent-session env whose project scope made
+    // resolveFeedbackDir() prefer <project>/.thumbgate over any override.
+    const env = {
+      ...process.env,
+      CLAUDE_PROJECT_DIR: fixtureRoot,
+      THUMBGATE_PROJECT_DIR: fixtureRoot,
+    };
+    delete env.THUMBGATE_FEEDBACK_DIR;
+    delete env.THUMBGATE_FEEDBACK_LOG;
+    delete env.THUMBGATE_BENCH_FEEDBACK_DIR;
+
+    const stdout = execFileSync(
+      process.execPath,
+      [path.join(__dirname, '..', 'scripts', 'thumbgate-bench.js'), '--json', `--out-dir=${outDir}`],
+      { cwd: fixtureRoot, encoding: 'utf8', env },
+    );
+    const report = JSON.parse(stdout);
+
+    assert.equal(report.passed, true);
+    assert.equal(fs.readFileSync(storePath, 'utf8'), sentinel, 'operator feedback log must be byte-identical');
+    assert.deepEqual(fs.readdirSync(storeDir).sort(), ['feedback-log.jsonl'], 'no bench artifacts may appear in the operator store');
+    assert.ok(fs.existsSync(path.join(outDir, 'thumbgate-bench-report.json')), 'report output location unchanged');
+  } finally {
+    fs.rmSync(fixtureRoot, { recursive: true, force: true });
   }
 });
 

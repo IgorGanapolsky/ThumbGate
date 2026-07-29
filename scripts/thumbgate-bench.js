@@ -75,6 +75,7 @@ function parseValueOption(args, arg) {
   return parsePathOption(args, arg, '--scenarios', 'suitePath')
     || parsePathOption(args, arg, '--programbench-scenarios', 'programbenchSuitePath')
     || parsePathOption(args, arg, '--out-dir', 'outDir')
+    || parsePathOption(args, arg, '--feedback-dir', 'feedbackDir')
     || parseMinScoreOption(args, arg);
 }
 
@@ -82,6 +83,7 @@ function parseArgs(argv = process.argv.slice(2)) {
   const args = {
     suitePath: DEFAULT_SUITE_PATH,
     outDir: null,
+    feedbackDir: null,
     json: false,
     useRuntimeState: false,
     programbenchSmoke: false,
@@ -107,6 +109,10 @@ function usage() {
     '  --programbench          Alias for --programbench-smoke.',
     `  --programbench-scenarios=<path> ProgramBench-style smoke suite JSON. Default: ${path.relative(ROOT, DEFAULT_PROGRAMBENCH_SUITE_PATH)}`,
     '  --out-dir=<path>        Report directory. Default: .thumbgate/bench/<timestamp>',
+    '  --feedback-dir=<path>   Feedback capture directory for the bench run. Default: an',
+    '                          isolated temp dir (also THUMBGATE_BENCH_FEEDBACK_DIR). Bench',
+    '                          runs never write to the operator feedback store unless this',
+    '                          is set explicitly.',
     '  --min-score=<0-100>     Required score before exit code 1. Default: 90',
     '  --json                  Print the JSON report to stdout.',
     '  --use-runtime-state     Evaluate against current runtime state instead of an isolated temp state.',
@@ -250,6 +256,17 @@ function restoreEnv(snapshot) {
   }
 }
 
+function resolveBenchFeedbackDir(options = {}) {
+  const explicit = options.feedbackDir || process.env.THUMBGATE_BENCH_FEEDBACK_DIR || null;
+  if (explicit) {
+    return { dir: path.resolve(String(explicit)), isTemporary: false };
+  }
+  return {
+    dir: fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-bench-feedback-')),
+    isTemporary: true,
+  };
+}
+
 function withGateRuntime(options, callback) {
   const gatesEngine = require('./gates-engine');
   const originalPaths = {
@@ -264,6 +281,10 @@ function withGateRuntime(options, callback) {
     'THUMBGATE_FEEDBACK_DIR',
     'THUMBGATE_FEEDBACK_LOG',
     'THUMBGATE_ATTRIBUTED_FEEDBACK',
+    // Project-scope env suppresses THUMBGATE_FEEDBACK_DIR (feedback-paths.js), so
+    // an agent-session bench run would silently write into <project>/.thumbgate.
+    'THUMBGATE_PROJECT_DIR',
+    'CLAUDE_PROJECT_DIR',
     'THUMBGATE_GUARDS_PATH',
     'THUMBGATE_SECRET_SCAN_PROVIDER',
     'THUMBGATE_HARNESS',
@@ -279,10 +300,27 @@ function withGateRuntime(options, callback) {
   const runtimeDir = options.useRuntimeState
     ? null
     : fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-bench-runtime-'));
+  // Bench replays scenario documents through the live capture path. Those writes
+  // must never land in the operator's production feedback store (an audit found
+  // one bench document replayed 210x into .thumbgate/feedback-log.jsonl). Every
+  // bench run, including --use-runtime-state, defaults feedback writes to an
+  // isolated temp dir; only --feedback-dir / THUMBGATE_BENCH_FEEDBACK_DIR opt out.
+  const benchFeedback = resolveBenchFeedbackDir(options);
 
   try {
     delete process.env.THUMBGATE_HARNESS;
     delete process.env.THUMBGATE_HARNESS_CONFIG;
+
+    delete process.env.THUMBGATE_PROJECT_DIR;
+    delete process.env.CLAUDE_PROJECT_DIR;
+    process.env.THUMBGATE_FEEDBACK_DIR = benchFeedback.dir;
+    process.env.THUMBGATE_FEEDBACK_LOG = path.join(benchFeedback.dir, 'feedback-log.jsonl');
+    process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = path.join(benchFeedback.dir, 'attributed-feedback.jsonl');
+    fs.mkdirSync(benchFeedback.dir, { recursive: true });
+    if (benchFeedback.isTemporary) {
+      fs.writeFileSync(process.env.THUMBGATE_FEEDBACK_LOG, '');
+      fs.writeFileSync(process.env.THUMBGATE_ATTRIBUTED_FEEDBACK, '');
+    }
 
     if (!options.useRuntimeState) {
       gatesEngine.STATE_PATH = path.join(runtimeDir, 'gate-state.json');
@@ -291,9 +329,6 @@ function withGateRuntime(options, callback) {
       gatesEngine.SESSION_ACTIONS_PATH = path.join(runtimeDir, 'session-actions.json');
       gatesEngine.CUSTOM_CLAIM_GATES_PATH = path.join(runtimeDir, 'claim-verification.json');
       gatesEngine.GOVERNANCE_STATE_PATH = path.join(runtimeDir, 'governance-state.json');
-      process.env.THUMBGATE_FEEDBACK_DIR = path.join(runtimeDir, 'feedback');
-      process.env.THUMBGATE_FEEDBACK_LOG = path.join(runtimeDir, 'feedback-log.jsonl');
-      process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = path.join(runtimeDir, 'attributed-feedback.jsonl');
       process.env.THUMBGATE_GUARDS_PATH = path.join(runtimeDir, 'pretool-guards.json');
       process.env.THUMBGATE_SECRET_SCAN_PROVIDER = 'heuristic';
       // Pin enforcement posture for golden deny expectations (scorecard reproducibility).
@@ -302,9 +337,6 @@ function withGateRuntime(options, callback) {
       delete process.env.THUMBGATE_ENFORCE_ENTITLEMENTS;
       delete process.env.THUMBGATE_PRO_LICENSE_KEY;
       delete process.env.THUMBGATE_LICENSE_KEY;
-      fs.mkdirSync(process.env.THUMBGATE_FEEDBACK_DIR, { recursive: true });
-      fs.writeFileSync(process.env.THUMBGATE_FEEDBACK_LOG, '');
-      fs.writeFileSync(process.env.THUMBGATE_ATTRIBUTED_FEEDBACK, '');
     }
 
     return callback(gatesEngine);
@@ -313,6 +345,9 @@ function withGateRuntime(options, callback) {
     restoreEnv(envSnapshot);
     if (runtimeDir) {
       fs.rmSync(runtimeDir, { recursive: true, force: true });
+    }
+    if (benchFeedback.isTemporary) {
+      fs.rmSync(benchFeedback.dir, { recursive: true, force: true });
     }
   }
 }
@@ -719,6 +754,8 @@ module.exports = {
   loadProgramBenchSmokeSuite,
   normalizeDecision,
   expectedMatches,
+  resolveBenchFeedbackDir,
+  withGateRuntime,
   runScenario,
   runSuitePass,
   runProgramBenchSmokeScenario,

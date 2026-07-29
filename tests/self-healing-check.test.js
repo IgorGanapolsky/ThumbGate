@@ -7,10 +7,27 @@ const path = require('node:path');
 const {
   DEFAULT_CHECKS,
   DEFAULT_TESTS_TIMEOUT_MS,
+  EMBEDDING_DRIFT_MAX_LAG_HOURS,
+  evaluateEmbeddingIndexDrift,
   collectHealthReport,
   runCommand,
   reportToText,
 } = require('../scripts/self-healing-check');
+
+function makeDriftFixture({ feedbackLogContent, feedbackLogMtime, embeddingsMtime } = {}) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-embedding-drift-'));
+  const feedbackLogPath = path.join(dir, 'feedback-log.jsonl');
+  const embeddingsPath = path.join(dir, 'lesson-embeddings.json');
+  if (feedbackLogContent !== undefined) {
+    fs.writeFileSync(feedbackLogPath, feedbackLogContent);
+    if (feedbackLogMtime) fs.utimesSync(feedbackLogPath, feedbackLogMtime, feedbackLogMtime);
+  }
+  if (embeddingsMtime) {
+    fs.writeFileSync(embeddingsPath, '{}');
+    fs.utimesSync(embeddingsPath, embeddingsMtime, embeddingsMtime);
+  }
+  return { dir, feedbackLogPath, embeddingsPath };
+}
 
 test('DEFAULT_CHECKS delegates verification through npm test', () => {
   const testsCheck = DEFAULT_CHECKS.find((check) => check.name === 'tests');
@@ -29,6 +46,125 @@ test('DEFAULT_CHECKS isolates proof artifacts for prove checks', () => {
   assert.equal(proveAutomation.useTempProofDir, true);
   assert.equal(proveDataPipeline.useTempProofDir, true);
   assert.equal(proveTessl.useTempProofDir, true);
+});
+
+test('DEFAULT_CHECKS includes the embedding index drift check', () => {
+  const drift = DEFAULT_CHECKS.find((check) => check.name === 'embedding_index_drift');
+  assert.ok(drift, 'embedding_index_drift check must be part of the self-heal surface');
+  assert.equal(typeof drift.evaluate, 'function');
+  assert.equal(EMBEDDING_DRIFT_MAX_LAG_HOURS, 24);
+});
+
+test('evaluateEmbeddingIndexDrift is healthy when the index is fresh', () => {
+  const now = new Date();
+  const fixture = makeDriftFixture({
+    feedbackLogContent: '{"id":"lesson-1"}\n',
+    feedbackLogMtime: now,
+    embeddingsMtime: now,
+  });
+  try {
+    const result = evaluateEmbeddingIndexDrift({ feedbackDir: fixture.dir });
+    assert.equal(result.exitCode, 0);
+    assert.match(result.stdout, /fresh/);
+  } finally {
+    fs.rmSync(fixture.dir, { recursive: true, force: true });
+  }
+});
+
+test('evaluateEmbeddingIndexDrift tolerates lag under 24h', () => {
+  const now = new Date();
+  const fixture = makeDriftFixture({
+    feedbackLogContent: '{"id":"lesson-1"}\n',
+    feedbackLogMtime: now,
+    embeddingsMtime: new Date(now.getTime() - (23 * 3_600_000)),
+  });
+  try {
+    const result = evaluateEmbeddingIndexDrift({ feedbackDir: fixture.dir });
+    assert.equal(result.exitCode, 0);
+  } finally {
+    fs.rmSync(fixture.dir, { recursive: true, force: true });
+  }
+});
+
+test('evaluateEmbeddingIndexDrift flags a stale index with both paths, lag hours, and remediation', () => {
+  const now = new Date();
+  const fixture = makeDriftFixture({
+    feedbackLogContent: '{"id":"lesson-1"}\n',
+    feedbackLogMtime: now,
+    embeddingsMtime: new Date(now.getTime() - (30 * 3_600_000)),
+  });
+  try {
+    const result = evaluateEmbeddingIndexDrift({ feedbackDir: fixture.dir });
+    assert.equal(result.exitCode, 1);
+    assert.ok(result.stdout.includes(fixture.feedbackLogPath), 'names the feedback log path');
+    assert.ok(result.stdout.includes(fixture.embeddingsPath), 'names the embeddings path');
+    assert.match(result.stdout, /30h newer/);
+    assert.match(result.stdout, /run: node scripts\/backfill-lesson-embeddings\.js/);
+  } finally {
+    fs.rmSync(fixture.dir, { recursive: true, force: true });
+  }
+});
+
+test('evaluateEmbeddingIndexDrift flags a missing index while lessons exist', () => {
+  const fixture = makeDriftFixture({ feedbackLogContent: '{"id":"lesson-1"}\n' });
+  try {
+    const result = evaluateEmbeddingIndexDrift({ feedbackDir: fixture.dir });
+    assert.equal(result.exitCode, 1);
+    assert.ok(result.stdout.includes(fixture.feedbackLogPath));
+    assert.ok(result.stdout.includes(fixture.embeddingsPath));
+    assert.match(result.stdout, /run: node scripts\/backfill-lesson-embeddings\.js/);
+  } finally {
+    fs.rmSync(fixture.dir, { recursive: true, force: true });
+  }
+});
+
+test('evaluateEmbeddingIndexDrift skips when there is no feedback log', () => {
+  const fixture = makeDriftFixture({});
+  try {
+    const result = evaluateEmbeddingIndexDrift({ feedbackDir: fixture.dir });
+    assert.equal(result.exitCode, 0);
+    assert.match(result.stdout, /skipped/);
+  } finally {
+    fs.rmSync(fixture.dir, { recursive: true, force: true });
+  }
+});
+
+test('evaluateEmbeddingIndexDrift stays healthy for an empty log with no index', () => {
+  const fixture = makeDriftFixture({ feedbackLogContent: '' });
+  try {
+    const result = evaluateEmbeddingIndexDrift({ feedbackDir: fixture.dir });
+    assert.equal(result.exitCode, 0);
+  } finally {
+    fs.rmSync(fixture.dir, { recursive: true, force: true });
+  }
+});
+
+test('collectHealthReport surfaces embedding drift as an unhealthy check', () => {
+  const now = new Date();
+  const fixture = makeDriftFixture({
+    feedbackLogContent: '{"id":"lesson-1"}\n',
+    feedbackLogMtime: now,
+    embeddingsMtime: new Date(now.getTime() - (48 * 3_600_000)),
+  });
+  try {
+    const report = collectHealthReport({
+      checks: [{
+        name: 'embedding_index_drift',
+        command: ['internal', 'embedding-index-drift'],
+        evaluate: () => evaluateEmbeddingIndexDrift({ feedbackDir: fixture.dir }),
+      }],
+      runner: () => {
+        throw new Error('runner must not be invoked for evaluate-based checks');
+      },
+    });
+
+    assert.equal(report.overall_status, 'unhealthy');
+    assert.equal(report.checks[0].status, 'unhealthy');
+    assert.match(report.checks[0].outputTail, /48h newer/);
+    assert.match(report.checks[0].outputTail, /run: node scripts\/backfill-lesson-embeddings\.js/);
+  } finally {
+    fs.rmSync(fixture.dir, { recursive: true, force: true });
+  }
 });
 
 test('collectHealthReport marks overall healthy when all checks pass', () => {

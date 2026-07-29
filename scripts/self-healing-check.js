@@ -5,6 +5,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { diagnoseFailure } = require('./failure-diagnostics');
 const { appendDiagnosticRecord } = require('./feedback-loop');
+const { resolveFeedbackDir } = require('./feedback-paths');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_MAX_BUFFER_BYTES = 64 * 1024 * 1024;
@@ -12,6 +13,63 @@ const DEFAULT_TESTS_TIMEOUT_MS = Number.parseInt(
   process.env.THUMBGATE_SELF_HEAL_TEST_TIMEOUT_MS || '',
   10,
 ) || 60 * 60_000;
+const EMBEDDING_DRIFT_MAX_LAG_HOURS = 24;
+const EMBEDDING_DRIFT_REMEDIATION = 'run: node scripts/backfill-lesson-embeddings.js';
+
+function safeStat(filePath) {
+  try {
+    return fs.statSync(filePath);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Detects lesson-embedding index drift: the feedback log kept growing while
+ * <feedbackDir>/lesson-embeddings.json stopped updating (an audit found the
+ * embedding store frozen for 11 days with no alarm). Returns a run-shaped
+ * result so it plugs into collectHealthReport like any other check.
+ */
+function evaluateEmbeddingIndexDrift({ feedbackDir } = {}) {
+  const started = Date.now();
+  const resolvedDir = feedbackDir || resolveFeedbackDir();
+  const feedbackLogPath = path.join(resolvedDir, 'feedback-log.jsonl');
+  const embeddingsPath = path.join(resolvedDir, 'lesson-embeddings.json');
+  const finish = (exitCode, message) => ({
+    exitCode,
+    durationMs: Date.now() - started,
+    stdout: message,
+    stderr: '',
+    error: null,
+  });
+
+  const feedbackLogStat = safeStat(feedbackLogPath);
+  if (!feedbackLogStat) {
+    return finish(0, `No feedback log at ${feedbackLogPath}; embedding-index drift check skipped.`);
+  }
+
+  const embeddingsStat = safeStat(embeddingsPath);
+  if (!embeddingsStat) {
+    if (feedbackLogStat.size === 0) {
+      return finish(0, `Feedback log ${feedbackLogPath} is empty and no embedding index exists at ${embeddingsPath}; nothing to index yet.`);
+    }
+    return finish(1, [
+      `Lesson embedding index missing: ${embeddingsPath} does not exist while lessons exist in ${feedbackLogPath}.`,
+      `Remediation: ${EMBEDDING_DRIFT_REMEDIATION}`,
+    ].join('\n'));
+  }
+
+  const lagHours = (feedbackLogStat.mtimeMs - embeddingsStat.mtimeMs) / 3_600_000;
+  const roundedLagHours = Math.round(lagHours * 10) / 10;
+  if (lagHours > EMBEDDING_DRIFT_MAX_LAG_HOURS) {
+    return finish(1, [
+      `Lesson embedding index is stale: ${feedbackLogPath} is ${roundedLagHours}h newer than ${embeddingsPath} (max ${EMBEDDING_DRIFT_MAX_LAG_HOURS}h).`,
+      `Remediation: ${EMBEDDING_DRIFT_REMEDIATION}`,
+    ].join('\n'));
+  }
+
+  return finish(0, `Lesson embedding index fresh: ${embeddingsPath} lags ${feedbackLogPath} by ${Math.max(0, roundedLagHours)}h (max ${EMBEDDING_DRIFT_MAX_LAG_HOURS}h).`);
+}
 
 const DEFAULT_CHECKS = [
   { name: 'budget_status', command: ['npm', 'run', 'budget:status'], timeoutMs: 60_000 },
@@ -20,6 +78,12 @@ const DEFAULT_CHECKS = [
   { name: 'prove_automation', command: ['npm', 'run', 'prove:automation'], timeoutMs: 10 * 60_000, useTempProofDir: true },
   { name: 'prove_data_pipeline', command: ['npm', 'run', 'prove:data-pipeline'], timeoutMs: 10 * 60_000, useTempProofDir: true },
   { name: 'prove_tessl', command: ['npm', 'run', 'prove:tessl'], timeoutMs: 10 * 60_000, useTempProofDir: true },
+  {
+    name: 'embedding_index_drift',
+    command: ['internal', 'embedding-index-drift'],
+    timeoutMs: 60_000,
+    evaluate: (options = {}) => evaluateEmbeddingIndexDrift(options),
+  },
 ];
 
 function runCommand(command, {
@@ -79,7 +143,9 @@ function collectHealthReport({
     const { env, cleanup } = createCheckEnvironment(check);
     let run;
     try {
-      run = runner(check.command, { cwd, timeoutMs: check.timeoutMs, env });
+      run = typeof check.evaluate === 'function'
+        ? check.evaluate({ cwd })
+        : runner(check.command, { cwd, timeoutMs: check.timeoutMs, env });
     } finally {
       if (cleanup) {
         cleanup();
@@ -183,11 +249,14 @@ module.exports = {
   DEFAULT_CHECKS,
   DEFAULT_TESTS_TIMEOUT_MS,
   DEFAULT_MAX_BUFFER_BYTES,
+  EMBEDDING_DRIFT_MAX_LAG_HOURS,
+  evaluateEmbeddingIndexDrift,
   runCommand,
   collectHealthReport,
   reportToText,
 };
 
-if (require.main === module) {
+// Path-based direct-execution check (SonarCloud S3403 flags `require.main === module`).
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
   runCli();
 }
