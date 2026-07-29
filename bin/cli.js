@@ -636,18 +636,26 @@ function setupCodex() {
   return configChanged || hookResult.changed;
 }
 
-function setupGemini() {
-  // Try to import custom commands as a Gemini plugin if the CLI is installed
-  const { execSync } = require('child_process');
+function setupGemini(options = {}) {
+  // Importing a plugin executes an external CLI and can perform network work.
+  // Do it only for an explicitly selected Gemini setup (or `install`), never
+  // merely because a Gemini binary happens to be on PATH.
   let pluginImported = false;
-  for (const binName of ['agy', 'gemini']) {
-    try {
-      execSync(`${binName} plugin import "${PKG_ROOT}" --force`, { stdio: 'ignore' });
-      console.log(`  Gemini: imported thumbgate plugin via ${binName}`);
-      pluginImported = true;
-      break;
-    } catch (err) {
-      // ignore errors if command doesn't exist or fails
+  if (options.importPlugin !== false) {
+    for (const binName of ['agy', 'gemini']) {
+      try {
+        execFileSync(binName, ['plugin', 'import', PKG_ROOT, '--force'], {
+          stdio: 'ignore',
+          timeout: 5000,
+          killSignal: 'SIGKILL',
+        });
+        console.log(`  Gemini: imported thumbgate plugin via ${binName}`);
+        pluginImported = true;
+        break;
+      } catch (err) {
+        // Ignore missing, failed, or timed-out importers. Settings wiring below
+        // remains deterministic and does not depend on the external command.
+      }
     }
   }
 
@@ -878,7 +886,7 @@ function quickStart() {
   console.log('');
 
   // 1. Run init with the resolved agent so hook wiring uses the same target.
-  init({ ...qsArgs, agent });
+  init({ ...qsArgs, agent, singleAgent: true });
 
   // 2. Copy default gates
   const defaultGates = path.join(PKG_ROOT, 'config', 'gates', 'default.json');
@@ -1037,17 +1045,22 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
   let configured = 0;
 
   const platforms = [
-    { name: 'Claude Code', detect: [
+    { name: 'Claude Code', agents: ['claude-code', 'claude'], detect: [
       () => whichExists('claude'),
       () => fs.existsSync(path.join(HOME, '.claude')),
       () => fs.existsSync(path.join(CWD, '.claude')),
     ], setup: setupClaude },
-    { name: 'Codex', detect: [() => whichExists('codex'), () => fs.existsSync(path.join(HOME, '.codex'))], setup: setupCodex },
-    { name: 'Gemini', detect: [() => whichExists('gemini'), () => fs.existsSync(path.join(HOME, '.gemini'))], setup: setupGemini },
-    { name: 'Amp', detect: [() => whichExists('amp'), () => fs.existsSync(path.join(HOME, '.amp'))], setup: setupAmp },
-    { name: 'Cursor', detect: [() => fs.existsSync(path.join(HOME, '.cursor', 'mcp.json')), () => fs.existsSync(path.join(CWD, '.cursor'))], setup: setupCursor },
-    { name: 'ForgeCode', detect: [() => whichExists('forge'), () => fs.existsSync(path.join(CWD, 'forge.yaml'))], setup: setupForge },
-    { name: 'Cline', detect: [
+    { name: 'Codex', agents: ['codex'], detect: [() => whichExists('codex'), () => fs.existsSync(path.join(HOME, '.codex'))], setup: setupCodex },
+    {
+      name: 'Gemini',
+      agents: ['gemini'],
+      detect: [() => whichExists('gemini'), () => fs.existsSync(path.join(HOME, '.gemini'))],
+      setup: () => setupGemini({ importPlugin: args.agent === 'gemini' }),
+    },
+    { name: 'Amp', agents: ['amp'], detect: [() => whichExists('amp'), () => fs.existsSync(path.join(HOME, '.amp'))], setup: setupAmp },
+    { name: 'Cursor', agents: ['cursor'], detect: [() => fs.existsSync(path.join(HOME, '.cursor', 'mcp.json')), () => fs.existsSync(path.join(CWD, '.cursor'))], setup: setupCursor },
+    { name: 'ForgeCode', agents: ['forge', 'forgecode', 'forge-code'], detect: [() => whichExists('forge'), () => fs.existsSync(path.join(CWD, 'forge.yaml'))], setup: setupForge },
+    { name: 'Cline', agents: ['cline'], detect: [
       () => fs.existsSync(path.join(CWD, '.clinerules')),
       () => process.platform === 'darwin' && fs.existsSync(path.join(HOME, 'Library', 'Application Support', 'Code', 'User', 'globalStorage', 'saoudrizwan.claude-dev')),
       () => process.platform === 'linux' && fs.existsSync(path.join(HOME, '.config', 'Code', 'User', 'globalStorage', 'saoudrizwan.claude-dev')),
@@ -1056,7 +1069,9 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
   ];
 
   for (const p of platforms) {
-    if (detectPlatform(p.name, p.detect)) {
+    const selectedForQuickStart = args.singleAgent && p.agents.includes(args.agent);
+    if (args.singleAgent && !selectedForQuickStart) continue;
+    if (selectedForQuickStart || detectPlatform(p.name, p.detect)) {
       const didSetup = p.setup();
       if (didSetup) configured++;
       else console.log(`  ${p.name}: already configured`);

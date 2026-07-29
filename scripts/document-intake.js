@@ -1152,6 +1152,84 @@ function persistDocument(document, options = {}) {
   return document;
 }
 
+function upgradeLegacyDocument(document, options = {}) {
+  if (!document || typeof document !== 'object') {
+    throw new Error('document is required for legacy migration');
+  }
+  if (
+    Number(document.schemaVersion) >= DOCUMENT_SCHEMA_VERSION
+    && safeArray(document.chunks).length > 0
+  ) {
+    const migrated = document._legacyMigrated === true;
+    if (migrated && options.persist === true) persistDocument(document, options);
+    return { document, migrated };
+  }
+
+  const sourceFormat = String(document.sourceFormat || 'text').toLowerCase();
+  const cleaned = cleanDocumentBody(document.content, sourceFormat);
+  const content = cleaned.content;
+  const title = String(document.title || document.sourceName || 'Imported document').trim();
+  const sourceKey = document.sourceKey || sha256([
+    document.sourceUrl || '',
+    document.sourcePath || '',
+    document.sourceName || '',
+    title,
+  ].join('\n'));
+  const importedAt = document.importedAt || nowIso();
+  const upgraded = {
+    ...document,
+    schemaVersion: DOCUMENT_SCHEMA_VERSION,
+    title,
+    sourceFormat,
+    sourceKey,
+    importedAt,
+    fingerprint: document.fingerprint || sha256(`${title}\n${content}`),
+    contentFingerprint: document.contentFingerprint || sha256(content),
+    version: Math.max(1, Number(document.version) || 1),
+    isCurrent: document.isCurrent !== false,
+    scope: document.scope || buildDocumentScope(),
+    trustLevel: document.trustLevel === 'trusted' ? 'trusted' : 'untrusted',
+    instructionRisk: document.instructionRisk || cleaned.diagnostics.instructionRisk,
+    language: document.language || inferLanguage(content),
+    entities: document.entities || extractEntities(content),
+    deduplication: document.deduplication || { status: 'unique' },
+    indexing: document.indexing || { status: 'not_attempted' },
+    parser: document.parser || {
+      version: PARSER_VERSION,
+      format: sourceFormat,
+      parsedAt: importedAt,
+      diagnostics: {
+        migratedLegacyDocument: true,
+        ...cleaned.diagnostics,
+      },
+    },
+    excerpt: document.excerpt || buildExcerpt(content),
+    content,
+    contentBytes: Buffer.byteLength(content, 'utf8'),
+    lineCount: content.split('\n').filter(Boolean).length,
+    headings: safeArray(document.headings).length
+      ? document.headings
+      : extractHeadings(content),
+    proposals: safeArray(document.proposals),
+    matchedTemplateIds: safeArray(document.matchedTemplateIds),
+    migration: {
+      fromSchemaVersion: Number(document.schemaVersion) || 1,
+      migratedAt: nowIso(),
+      reason: 'reindex_legacy_document_backfill',
+    },
+  };
+  const chunked = buildDocumentChunks(upgraded, options);
+  upgraded.sections = chunked.sections;
+  upgraded.chunks = chunked.chunks;
+  Object.defineProperty(upgraded, '_legacyMigrated', {
+    value: true,
+    enumerable: false,
+  });
+
+  if (options.persist === true) persistDocument(upgraded, options);
+  return { document: upgraded, migrated: true };
+}
+
 function scoreImportedDocument(document, tokens) {
   const title = String(document.title || '');
   const excerpt = String(document.excerpt || '');
@@ -1575,4 +1653,5 @@ module.exports = {
   readImportedDocument,
   retryPendingDocumentIndexes,
   searchImportedDocuments,
+  upgradeLegacyDocument,
 };

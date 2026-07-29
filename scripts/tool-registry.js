@@ -294,6 +294,22 @@ const TOOLS = [
           type: 'number',
           description: 'Maximum recent privacy-safe RAG run records to summarize (default 200, maximum 2000).',
         },
+        warm: {
+          type: 'boolean',
+          description: 'Issue a transient LanceDB data/index prewarm hint and report measured duration.',
+        },
+        evaluateRecall: {
+          type: 'boolean',
+          description: 'Explicitly compare ANN results with exhaustive vector search. This can be expensive.',
+        },
+        recallSamples: {
+          type: 'number',
+          description: 'Number of vectors to sample for ANN recall (default 25, maximum 100).',
+        },
+        recallTopK: {
+          type: 'number',
+          description: 'Recall cutoff k (default 10, maximum 100).',
+        },
       },
     },
   }),

@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('node:crypto');
+const { performance } = require('node:perf_hooks');
 const { ensureDir } = require('./fs-utils');
 const {
   resolveEmbeddingProfile,
@@ -25,6 +26,7 @@ const DEFAULT_LANCE_DIR = path.join(DEFAULT_FEEDBACK_DIR, 'lancedb');
 let _lancedb = null;
 let _lancedbLoader = null;
 const _pipelineCache = new Map();
+const _ragWarmState = new Map();
 let _lastEmbeddingProfile = null;
 let _pipelineLoader = null;
 let _geminiEmbedderForTests = null;
@@ -662,6 +664,274 @@ function buildLanceFilter(filters = {}) {
   return clauses.join(' AND ');
 }
 
+function applyVectorQueryOptions(builder, options = {}) {
+  if (options.filter && typeof builder.where === 'function') {
+    builder = builder.where(options.filter);
+  }
+  if (options.exhaustive && typeof builder.bypassVectorIndex === 'function') {
+    builder = builder.bypassVectorIndex();
+  }
+  return builder.limit(options.limit);
+}
+
+function vectorIndexConfigs(indices = []) {
+  return indices.filter((index) => (
+    Array.isArray(index.columns)
+    && index.columns.includes('vector')
+  ));
+}
+
+function resultIds(rows, excludedId, topK) {
+  return rows
+    .filter((row) => String(row.id) !== String(excludedId))
+    .slice(0, topK)
+    .map((row) => String(row.id));
+}
+
+function percentile(values, fraction) {
+  const sorted = values.filter(Number.isFinite).sort((left, right) => left - right);
+  if (sorted.length === 0) return null;
+  return Number(sorted[Math.min(Math.ceil(sorted.length * fraction) - 1, sorted.length - 1)].toFixed(3));
+}
+
+function isUnsupportedNativePrewarm(error) {
+  return /prewarm_(?:data|index).*only supported on remote tables/i.test(
+    String(error && error.message || error || ''),
+  );
+}
+
+async function boundedLocalPrewarm(table, columns, maxRows) {
+  let builder = table.query();
+  if (typeof builder.select === 'function') builder = builder.select(columns);
+  const rows = await builder.limit(maxRows).toArray();
+  return rows.length;
+}
+
+async function sampleRecallRows(table, options = {}) {
+  const num = Math.max(1, Math.min(Number(options.num) || 25, 100));
+  const maxScanRows = Math.max(num, Math.min(Number(options.maxScanRows) || 2000, 10_000));
+  let builder = table.query();
+  if (options.filter && typeof builder.where === 'function') builder = builder.where(options.filter);
+  if (typeof builder.select === 'function') builder = builder.select(['id', 'vector']);
+  const rows = await builder.limit(maxScanRows).toArray();
+  return rows
+    .filter((row) => row && row.id && row.vector)
+    .sort((left, right) => sha256(left.id).localeCompare(sha256(right.id)))
+    .slice(0, num);
+}
+
+/**
+ * Explicit pre-flight cache hint for latency-sensitive retrieval.
+ *
+ * LanceDB owns the real memory/OS cache. This state records only that a warm
+ * request completed; it never claims the cache will remain resident.
+ */
+async function warmRagIndex(options = {}) {
+  const lanceDir = getLanceDir(options.feedbackDir);
+  ensureDir(lanceDir);
+  const { connect } = await getLanceDB();
+  const db = await connect(lanceDir);
+  const names = (await db.tableNames()).filter((name) => name.startsWith(`${RAG_TABLE_PREFIX}_`));
+  const tables = [];
+  const maxRows = Math.max(1, Math.min(Number(options.maxRows) || 10_000, 100_000));
+
+  for (const name of names) {
+    const startedAt = performance.now();
+    const table = await db.openTable(name);
+    const indices = typeof table.listIndices === 'function' ? await table.listIndices() : [];
+    const warmedIndices = [];
+    const unsupportedNativeIndices = [];
+    const columns = [
+      'id',
+      'vector',
+      'tenantId',
+      'projectId',
+      'entityId',
+      'visibility',
+      'source',
+      'signal',
+      'isCurrent',
+    ];
+    let dataPrewarmMethod = 'none';
+    let rowsRead = 0;
+
+    if (typeof table.prewarmData === 'function') {
+      try {
+        await table.prewarmData(columns);
+        dataPrewarmMethod = 'native';
+      } catch (error) {
+        if (!isUnsupportedNativePrewarm(error)) throw error;
+        rowsRead = await boundedLocalPrewarm(table, columns, maxRows);
+        dataPrewarmMethod = 'bounded_local_scan';
+      }
+    } else {
+      rowsRead = await boundedLocalPrewarm(table, columns, maxRows);
+      dataPrewarmMethod = 'bounded_local_scan';
+    }
+    if (typeof table.prewarmIndex === 'function') {
+      for (const index of indices) {
+        try {
+          await table.prewarmIndex(index.name);
+          warmedIndices.push(index.name);
+        } catch (error) {
+          if (!isUnsupportedNativePrewarm(error)) throw error;
+          unsupportedNativeIndices.push(index.name);
+        }
+      }
+    }
+
+    const record = {
+      tableName: name,
+      warmedAt: new Date().toISOString(),
+      durationMs: Number((performance.now() - startedAt).toFixed(3)),
+      dataPrewarmed: dataPrewarmMethod !== 'none',
+      dataPrewarmMethod,
+      rowsRead,
+      maxRows,
+      warmedIndices,
+      unsupportedNativeIndices,
+    };
+    _ragWarmState.set(name, record);
+    tables.push(record);
+  }
+
+  return {
+    status: names.length ? 'warmed' : 'no_tables',
+    tableCount: names.length,
+    tables,
+  };
+}
+
+/**
+ * Compare the configured ANN path with LanceDB's exhaustive path.
+ *
+ * The check is intentionally explicit because exhaustive search can be
+ * expensive. Small indexes without a vector index report exact_only instead
+ * of manufacturing a perfect ANN recall score.
+ */
+async function evaluateRagRecall(options = {}) {
+  const num = Math.max(1, Math.min(Number(options.num) || 25, 100));
+  const topK = Math.max(1, Math.min(Number(options.topK) || 10, 100));
+  const threshold = Math.max(0, Math.min(Number(options.threshold) || 0.9, 1));
+  const filter = buildLanceFilter(options.filters);
+  const lanceDir = getLanceDir(options.feedbackDir);
+  ensureDir(lanceDir);
+  const { connect } = await getLanceDB();
+  const db = await connect(lanceDir);
+  const names = (await db.tableNames()).filter((name) => name.startsWith(`${RAG_TABLE_PREFIX}_`));
+  const tables = [];
+  const recalls = [];
+  const annDurations = [];
+  const exhaustiveDurations = [];
+
+  for (const name of names) {
+    const table = await db.openTable(name);
+    const indices = typeof table.listIndices === 'function' ? await table.listIndices() : [];
+    const vectorIndices = vectorIndexConfigs(indices);
+    if (vectorIndices.length === 0) {
+      tables.push({
+        tableName: name,
+        mode: 'exact_only',
+        sampleCount: 0,
+        vectorIndices: [],
+      });
+      continue;
+    }
+
+    const samples = await sampleRecallRows(table, {
+      filter,
+      num,
+      maxScanRows: options.maxScanRows,
+    });
+    const tableRecalls = [];
+    let annCount = 0;
+    let exhaustiveCount = 0;
+
+    for (const sample of samples) {
+      const vector = Array.from(sample.vector);
+      const requested = topK + 1;
+      const annStartedAt = performance.now();
+      const annRows = await applyVectorQueryOptions(table.search(vector), {
+        filter,
+        limit: requested,
+      }).toArray();
+      annDurations.push(performance.now() - annStartedAt);
+
+      const exactStartedAt = performance.now();
+      const exhaustiveRows = await applyVectorQueryOptions(table.search(vector), {
+        filter,
+        limit: requested,
+        exhaustive: true,
+      }).toArray();
+      exhaustiveDurations.push(performance.now() - exactStartedAt);
+
+      const annIds = resultIds(annRows, sample.id, topK);
+      const exactIds = resultIds(exhaustiveRows, sample.id, topK);
+      const annSet = new Set(annIds);
+      const recall = exactIds.length
+        ? exactIds.filter((id) => annSet.has(id)).length / exactIds.length
+        : 1;
+      tableRecalls.push(recall);
+      recalls.push(recall);
+      annCount += annIds.length;
+      exhaustiveCount += exactIds.length;
+    }
+
+    tables.push({
+      tableName: name,
+      mode: 'ann_vs_exhaustive',
+      sampleCount: samples.length,
+      avgRecall: tableRecalls.length
+        ? Number((tableRecalls.reduce((sum, value) => sum + value, 0) / tableRecalls.length).toFixed(4))
+        : null,
+      avgAnnCount: samples.length ? Number((annCount / samples.length).toFixed(2)) : 0,
+      avgExhaustiveCount: samples.length ? Number((exhaustiveCount / samples.length).toFixed(2)) : 0,
+      vectorIndices: vectorIndices.map((index) => ({
+        name: index.name,
+        indexType: index.indexType,
+      })),
+    });
+  }
+
+  if (names.length === 0) {
+    return {
+      status: 'no_tables',
+      threshold,
+      topK,
+      requestedSamples: num,
+      sampleCount: 0,
+      avgRecall: null,
+      tables,
+    };
+  }
+  if (recalls.length === 0) {
+    return {
+      status: 'exact_only',
+      threshold,
+      topK,
+      requestedSamples: num,
+      sampleCount: 0,
+      avgRecall: null,
+      tables,
+    };
+  }
+
+  const avgRecall = recalls.reduce((sum, value) => sum + value, 0) / recalls.length;
+  return {
+    status: avgRecall >= threshold ? 'pass' : 'fail',
+    threshold,
+    topK,
+    requestedSamples: num,
+    sampleCount: recalls.length,
+    avgRecall: Number(avgRecall.toFixed(4)),
+    annLatencyP50Ms: percentile(annDurations, 0.5),
+    annLatencyP95Ms: percentile(annDurations, 0.95),
+    exhaustiveLatencyP50Ms: percentile(exhaustiveDurations, 0.5),
+    exhaustiveLatencyP95Ms: percentile(exhaustiveDurations, 0.95),
+    tables,
+  };
+}
+
 async function searchRag(queryText, options = {}) {
   const query = String(queryText || '').trim();
   if (!query) throw new Error('query is required');
@@ -766,10 +1036,15 @@ async function getRagIndexStatus(options = {}) {
   const { connect } = await getLanceDB();
   const db = await connect(lanceDir);
   const names = await db.tableNames();
+  const ragTables = names.filter((name) => name.startsWith(`${RAG_TABLE_PREFIX}_`));
   return {
     schemaVersion: RAG_INDEX_SCHEMA_VERSION,
     directory: lanceDir,
-    tables: names.filter((name) => name.startsWith(`${RAG_TABLE_PREFIX}_`)),
+    tables: ragTables,
+    warmState: ragTables.map((name) => _ragWarmState.get(name) || {
+      tableName: name,
+      warmedAt: null,
+    }),
   };
 }
 
@@ -805,12 +1080,14 @@ module.exports = {
   RAG_INDEX_SCHEMA_VERSION,
   RAG_TABLE_PREFIX,
   buildLanceFilter,
+  evaluateRagRecall,
   getActiveEmbeddingIdentity,
   getRagIndexStatus,
   indexDocument,
   retireDocument,
   rowMatchesFilters,
   searchRag,
+  warmRagIndex,
   upsertVectorRecords,
   upsertFeedback,
   searchSimilar,

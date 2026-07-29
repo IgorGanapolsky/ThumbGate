@@ -8,7 +8,7 @@
 <title>Case Studies — ThumbGate Dogfood Proof</title>
 <meta name="description" content="Real ThumbGate case studies from dogfood on this product: sudo evasion grid, fail-open hook recovery, catastrophic free-tier floor, and adversarial measurement. No fabricated logos.">
 <meta property="og:title" content="ThumbGate Case Studies">
-<meta property="og:description" content="Seven reproducible dogfood narratives: 62 evasion holes closed, fail-open recovery, catastrophic safety floor, adversarial grids, ranked RAG repair, and an ingestion evaluator that found version split-brain.">
+<meta property="og:description" content="Nine reproducible dogfood narratives: 62 evasion holes closed, fail-open recovery, catastrophic safety floor, adversarial grids, ranked RAG repair, ingestion version repair, a rejected retrieval regression, and replayable recovery proofs.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://thumbgate.ai/case-studies">
 <link rel="canonical" href="https://thumbgate.ai/case-studies">
@@ -151,6 +151,31 @@ thumbgate@1.29.2 → 0 holes</pre>
     <p><strong>Action.</strong> Added a nine-dimension ingestion evaluator using real PDF, DOCX, and Tesseract adapters. The first run exposed the mismatch; version retirement now updates both the catalog and the old document record with a forward lineage pointer.</p>
     <p><strong>Result.</strong> All implementation fixtures pass, including exact/near deduplication, stable chunk reuse, scope/provenance, current-only retrieval, re-index reconciliation, and bidirectional version lineage. The overall rating remains A-, not A+, because evidence maturity is only 70/100 without a labeled live customer corpus or drift baseline.</p>
     <p><strong>Artifact.</strong> <code>scripts/eval-document-ingestion.js</code> and <code>npm run eval:ingestion</code>.</p>
+  </article>
+
+  <article id="rejected-rag-regression">
+    <h2>8. We rejected a plausible retrieval “best practice”</h2>
+    <p class="meta">Deep research · falsification before adoption</p>
+    <span class="metric">Recall@1 70.8% → 62.5%</span>
+    <span class="metric">MRR 0.819 → 0.774</span>
+    <span class="metric">reverted</span>
+    <p><strong>Problem.</strong> Field-weighted BM25 is a credible way to make titles and metadata more influential, but importing a technique is not proof it helps this corpus.</p>
+    <p><strong>Action.</strong> Implemented the weighting and ran the fixed 24-case suite without moving thresholds. Recall@10 stayed 1.000, but early ordering regressed: Recall@1 fell to 0.625, MRR@10 to 0.774, and nDCG@10 to 0.825.</p>
+    <p><strong>Result.</strong> The weighting was removed. We kept the changes that have falsifiable operational value: cache preflight, ANN-versus-exhaustive recall, and preservation of lexical plus dense evidence for bounded reranking.</p>
+    <p><strong>Artifact.</strong> <code>docs/RESEARCH-TURBOPUFFER-PRAGMATIC-2026-07.md</code>, <code>npm run eval:rag</code>, and <code>npm run rag:recall</code>.</p>
+  </article>
+
+  <article id="rag-deterministic-fault-replay">
+    <h2>9. Seeded fault replay found two false-green recovery gaps</h2>
+    <p class="meta">Antithesis-inspired reliability · application-level simulation</p>
+    <span class="metric">3/3 scenarios pass</span>
+    <span class="metric">14/14 properties</span>
+    <span class="metric">2 real bugs found</span>
+    <span class="metric">replay receipt</span>
+    <p><strong>Problem.</strong> Green happy-path tests did not prove that re-index recovery preserved completed embeddings or that operations targeted the requested data store.</p>
+    <p><strong>Action.</strong> Added a seeded simulator over the real re-index, hybrid retrieval, telemetry, and structured-output modules. It injects one embedding failure, a vector outage, and two invalid model responses, then checks named recovery properties. A negative control flips one property false and must make the report fail.</p>
+    <p><strong>Result.</strong> The first interruption replay exposed that <code>partial_failure</code> discarded successful checkpoints; only <code>in_progress</code> resumed. A real warm-up then exposed that <code>--feedback-dir</code> was accepted but ignored, producing a false-green empty-store report. Both are fixed and guarded. The current seeded proof passes all three scenarios and emits the exact replay command.</p>
+    <p><strong>Artifact.</strong> <code>docs/RESEARCH-ANTITHESIS-PRAGMATIC-2026-07.md</code>, <code>proof/rag-reliability-report.json</code>, and <code>npm run prove:rag -- --reliability-seed &lt;seed&gt;</code>.</p>
   </article>
 
   <p>

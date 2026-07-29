@@ -209,6 +209,7 @@ function getRagOperationsSpec() {
       scopeLeakageRate: 0,
       staleRetrievalRate: 0,
       finalStructuredOutputValidRate: 1,
+      annRecallAt10: 0.9,
     },
   };
 }

@@ -60,6 +60,45 @@ test('RRF combines lexical and semantic ranks without mixing raw score scales', 
   ]);
 });
 
+test('RRF preserves lexical and vector evidence for cross-signal reranking', () => {
+  const fused = reciprocalRankFusion([
+    [{ id: 'shared', bm25Score: 4.2, context: 'deployment proof' }],
+    [{ id: 'shared', vectorScore: 0.91, vectorDistance: 0.09 }],
+  ]);
+  assert.equal(fused.length, 1);
+  assert.equal(fused[0].bm25Score, 4.2);
+  assert.equal(fused[0].vectorScore, 0.91);
+  assert.equal(fused[0].vectorDistance, 0.09);
+
+  const reranked = rerankCandidates('deployment proof', fused);
+  assert.equal(reranked[0].rerankFeatures.normalizedBm25, 1);
+  assert.equal(reranked[0].rerankFeatures.normalizedVector, 1);
+});
+
+test('cross-signal vector evidence breaks an otherwise symmetric lexical/RRF tie', () => {
+  const shared = {
+    context: 'production deployment evidence',
+    isCurrent: true,
+    trustLevel: 'trusted',
+    timestamp: '2026-07-29T00:00:00.000Z',
+  };
+  const fused = reciprocalRankFusion([
+    [
+      { ...shared, id: 'lexical-only', bm25Score: 1 },
+      { ...shared, id: 'hybrid-winner', bm25Score: 1 },
+    ],
+    [
+      { ...shared, id: 'hybrid-winner', vectorScore: 0.95, vectorDistance: 0.05 },
+      { ...shared, id: 'lexical-only', vectorScore: 0.2, vectorDistance: 0.8 },
+    ],
+  ]);
+  const reranked = rerankCandidates('production deployment evidence', fused, {
+    nowMs: Date.parse('2026-07-29T12:00:00.000Z'),
+  });
+  assert.equal(reranked[0].id, 'hybrid-winner');
+  assert.ok(reranked[0].rerankScore > reranked[1].rerankScore);
+});
+
 test('bounded reranking promotes complete current evidence and suppresses stale rows', () => {
   const lexical = bm25Rank('Railway deployment build SHA health', candidates);
   const fused = reciprocalRankFusion([lexical]);

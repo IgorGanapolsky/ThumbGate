@@ -108,8 +108,11 @@ npm run self-heal:check</pre>
   <h3>Ranked RAG release gate</h3>
   <p>The document and lesson retrieval path has a separate deterministic gate: 24 cross-domain queries with real distractors, scored with Recall@k, MRR@10, nDCG@10, Precision@5, scope leakage, and stale-version hits. The current seeded snapshot is Recall@10 1.000, MRR@10 0.819, nDCG@10 0.842, Precision@5 0.200, and zero scope/stale hits.</p>
   <pre>npm run eval:rag
-npm run prove:rag</pre>
+npm run prove:rag
+npm run rag:recall</pre>
   <p>Honest scope: these are seeded regression metrics. Production-corpus quality also requires live query judgments and drift telemetry; the release suite is not presented as customer-corpus proof.</p>
+  <p>Vector-index quality is a separate operational surface: an explicit bounded probe compares ANN results with exhaustive LanceDB ground truth and requires Recall@10 &ge; 0.90. An exact-only table is labeled <code>exact_only</code>. A field-weighted BM25 experiment was also rejected after it reduced Recall@1, MRR, and nDCG on the fixed suite.</p>
+  <p>The same release proof now includes three deterministic boundary-failure scenarios: interrupt re-index embedding work and replay it without repeating successful checkpoints; remove vector retrieval and require bounded scoped lexical fallback; return invalid structured output twice and require exactly one repair before a typed failure. Each run records a seed, scenario order, selected fault boundary, named invariants, and replay command. A planted false invariant proves the report fails closed. This is deliberately narrower than Antithesis's deterministic hypervisor: ThumbGate does not claim control over OS clocks, thread scheduling, network partitions, or exhaustive state exploration.</p>
 
   <h3>Document ingestion gate</h3>
   <p>The ingestion evaluator runs the real PDF and DOCX adapters, a real Tesseract OCR smoke, and deterministic checks for exact and near-duplicate handling, normalization, parent-child chunks, scope/provenance metadata, stable incremental updates, checkpointed re-indexing, and version retirement. The 2026-07-29 snapshot is 100/100 implementation readiness, 70/100 evidence maturity, and 91/100 overall (A-); OCR confidence was 96.34% on the smoke fixture.</p>

@@ -7,9 +7,18 @@
 - production-rag-stage-contracts: Add bounded PDF, DOCX, and OCR ingestion;
   versioned parent-child chunks and index recovery; scoped hybrid retrieval,
   reranking, token-budgeted cited prompts, strict structured output; and
-  privacy-safe RAG operations/evaluation surfaces. The public npm artifact adds
-  thirteen runtime files (389 to 402) required by the packaged API and MCP
-  paths; no private core, customer data, or credentials are included.
+  privacy-safe RAG operations/evaluation surfaces. Adds explicit LanceDB cache
+  preflight, sampled ANN-versus-exhaustive recall auditing, and cross-signal
+  lexical/vector reranking features. Quick-start configures only the selected
+  agent so an unrelated installer cannot race cleanup. A seeded reliability
+  proof now injects re-index interruption, vector outage, and repeated invalid
+  model output, asserts recovery properties, and emits a replay receipt. It
+  found and fixes discarded `partial_failure` checkpoints plus a CLI parser
+  that silently ignored `--feedback-dir`; local cache warming now reports its
+  bounded scan fallback when native remote-only prewarm is unavailable. The
+  public npm artifact adds thirteen runtime files (389 to 402) required by the
+  packaged API and MCP paths; no private core, customer data, or credentials
+  are included.
 - 97365d1: Fix lesson retrieval silently ignoring relevance past 200 entries. Retrieval read only
   the newest 200 lines of the memory log, so the best-matching lesson in the corpus became
   unreachable once 200 newer entries existed — measured cliff at exactly 201. The cap is now

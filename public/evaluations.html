@@ -125,9 +125,24 @@
       <tr><td>Scope leaks / stale hits</td><td class="good">0 / 0</td><td>0 / 0</td></tr>
     </table>
     <p class="chart-caption">The suite ranks real distractor rules; the expected label is used by the evaluator only, never by retrieval. This is regression evidence for the seeded corpus, not a claim that every live customer corpus has the same scores.</p>
+    <p><strong>Rejected experiment.</strong> Field-weighted BM25 sounded reasonable but reduced Recall@1 from 70.8% to 62.5%, MRR@10 from 0.819 to 0.774, and nDCG@10 from 0.842 to 0.825. It was reverted. ANN deployments also have an explicit Recall@10 &ge; 0.90 probe against exhaustive ground truth; exact-only tables are reported as such.</p>
   </div>
   <pre>npm run eval:rag
-npm run prove:rag</pre>
+npm run prove:rag
+npm run rag:recall</pre>
+
+  <h3>Replayable RAG failure invariants</h3>
+  <div class="panel">
+    <p><strong>3/3 bounded scenarios · 14/14 properties · 3/3 hostile paths reached · seeded local proof · 2026-07-29</strong></p>
+    <table>
+      <tr><th>Injected fault</th><th>Required recovery property</th></tr>
+      <tr><td>Embedding interruption</td><td>No completed embedding repeats; failed document retries once; reconciliation and lock release pass</td></tr>
+      <tr><td>Vector outage</td><td>Bounded, local-scoped lexical fallback remains available and is reported explicitly</td></tr>
+      <tr><td>Invalid output twice</td><td>One repair only, then typed fail-closed output</td></tr>
+    </table>
+    <p class="chart-caption">The artifact records seed, scenario order, fault position, assertions, and a replay command. A negative-control mutation proves one false invariant fails the report. This is application-level deterministic fault injection, not a claim of hypervisor-level clock, network, or scheduling control.</p>
+  </div>
+  <pre>npm run prove:rag -- --reliability-seed release-candidate-1</pre>
 
   <h2>Document ingestion</h2>
   <div class="panel">
@@ -164,6 +179,7 @@ npm run prove:rag</pre>
     <li><strong>Published-artifact verification</strong> — the npm tarball itself is installed into a throwaway prefix and driven through its public hook contract twice daily. CI proving the <em>source</em> blocks something is a different claim from the artifact users receive blocking it.</li>
     <li><strong>Decision canary</strong> — live decision-distribution drift: a gate going <em>silent</em>, a <em>spike</em> in blocks, or a gate appearing/disappearing.</li>
     <li><strong>Ranked RAG suite</strong> — 24 cross-domain cases gate Recall@10, MRR@10, nDCG@10, Precision@5, scoped leakage, and stale-version retrieval.</li>
+    <li><strong>Vector index truth</strong> — explicit sampled ANN results are compared with LanceDB exhaustive search; no ANN index means <code>exact_only</code>, not a manufactured recall pass.</li>
     <li><strong>Document ingestion suite</strong> — real PDF, DOCX, and OCR adapters plus deterministic deduplication, chunking, metadata, update, re-index, and version-lineage checks.</li>
   </ul>
 

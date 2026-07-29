@@ -342,13 +342,17 @@ function collectCandidates({
 }
 
 function mapVectorResult(row) {
+  const vectorScore = Number.isFinite(row._distance)
+    ? Number((1 / (1 + row._distance)).toFixed(6))
+    : 0;
   return {
     id: row.id || null,
     chunkId: row.source === 'document' ? row.id : null,
     documentId: row.documentId || null,
     parentId: row.parentId || null,
     source: row.source === 'document' ? 'document' : row.source,
-    score: Number.isFinite(row._distance) ? Number((1 / (1 + row._distance)).toFixed(6)) : 0,
+    score: vectorScore,
+    vectorScore,
     signal: normalizeRecordSignal(row.signal),
     tags: String(row.tags || '').split(',').filter(Boolean),
     timestamp: row.timestamp || null,
@@ -503,7 +507,7 @@ async function searchThumbgateAsync(options = {}) {
   const vectorSource = denseSourceFilter(normalizedSource);
   if (vectorSource !== '__not_indexed__') {
     try {
-      const { searchRag } = require('./vector-store');
+      const searchRag = options.searchRag || require('./vector-store').searchRag;
       vectorDiagnostics = await searchRag(queryPlan.rewritten, {
         feedbackDir: options.feedbackDir,
         limit: fetchLimit,

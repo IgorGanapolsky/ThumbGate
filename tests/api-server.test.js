@@ -713,6 +713,16 @@ test('RAG operations API exposes stage contracts and live health without raw que
   assert.equal(typeof body.documents.total, 'number');
   assert.equal(typeof body.index.available, 'boolean');
   assert.equal(JSON.stringify(body).includes('private customer prompt'), false);
+
+  const qualityResponse = await fetch(apiUrl(
+    '/v1/rag/operations?warm=true&evaluateRecall=true&recallSamples=3&recallTopK=2',
+  ), {
+    headers: authHeader,
+  });
+  assert.equal(qualityResponse.status, 200);
+  const qualityBody = await qualityResponse.json();
+  assert.ok(['warmed', 'no_tables'].includes(qualityBody.cacheWarm.status));
+  assert.ok(['pass', 'fail', 'exact_only', 'no_tables'].includes(qualityBody.recall.status));
 });
 
 test('admin API sets, reads, and clears task scope via HTTP', async () => {

@@ -10,6 +10,7 @@ const { importDocument } = require('../scripts/document-intake');
 const { RagRunTelemetry } = require('../scripts/rag-stage-contract');
 const {
   getRagOperationsSnapshot,
+  parseCliArgs,
   summarizeDocuments,
 } = require('../scripts/rag-operations');
 
@@ -41,6 +42,34 @@ test('document operations summary separates freshness, deduplication, and indexi
   assert.equal(summary.byFormat.pdf, 2);
   assert.equal(summary.pendingRetry, 1);
   assert.equal(summary.quarantined, 1);
+});
+
+test('RAG operations CLI keeps expensive quality checks opt-in and bounded downstream', () => {
+  assert.deepEqual(parseCliArgs([]), {
+    feedbackDir: undefined,
+    warm: false,
+    evaluateRecall: false,
+    recallSamples: 25,
+    recallTopK: 10,
+    recallThreshold: 0.9,
+  });
+  assert.deepEqual(parseCliArgs([
+    '--feedback-dir', '/tmp/thumbgate-rag-ops',
+    '--warm',
+    '--recall',
+    '--samples=8',
+    '--top-k',
+    '4',
+    '--threshold',
+    '0.95',
+  ]), {
+    feedbackDir: '/tmp/thumbgate-rag-ops',
+    warm: true,
+    evaluateRecall: true,
+    recallSamples: 8,
+    recallTopK: 4,
+    recallThreshold: 0.95,
+  });
 });
 
 test('RAG operations snapshot exposes contracts, telemetry, catalog, and index status', async () => {
@@ -98,6 +127,55 @@ test('RAG operations snapshot reports vector index failures without hiding stage
     assert.equal(snapshot.index.errorType, 'TypeError');
     assert.equal('message' in snapshot.index, false);
     assert.equal(snapshot.health.runs, 0);
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('RAG operations runs cache warming and ANN recall only when explicitly requested', async () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-rag-operations-quality-'));
+  try {
+    const snapshot = await getRagOperationsSnapshot({
+      feedbackDir,
+      warm: true,
+      evaluateRecall: true,
+      recallSamples: 12,
+      recallTopK: 5,
+      getIndexStatus: async () => ({ schemaVersion: 2, tables: ['rag_quality'] }),
+      warmIndex: async () => ({ status: 'warmed', tableCount: 1 }),
+      evaluateRecallFn: async (options) => ({
+        status: 'pass',
+        sampleCount: options.num,
+        topK: options.topK,
+        avgRecall: 0.96,
+      }),
+    });
+    assert.equal(snapshot.index.available, true);
+    assert.equal(snapshot.cacheWarm.status, 'warmed');
+    assert.equal(snapshot.recall.status, 'pass');
+    assert.equal(snapshot.recall.sampleCount, 12);
+    assert.equal(snapshot.recall.topK, 5);
+    assert.equal(snapshot.hardGates.annRecallAt10, 0.9);
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('RAG operations isolates recall failures from vector-index availability', async () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-rag-operations-recall-failure-'));
+  try {
+    const snapshot = await getRagOperationsSnapshot({
+      feedbackDir,
+      evaluateRecall: true,
+      getIndexStatus: async () => ({ schemaVersion: 2, tables: ['rag_quality'] }),
+      evaluateRecallFn: async () => {
+        throw new RangeError('private recall failure detail');
+      },
+    });
+    assert.equal(snapshot.index.available, true);
+    assert.equal(snapshot.recall.status, 'failed');
+    assert.equal(snapshot.recall.errorType, 'RangeError');
+    assert.equal('message' in snapshot.recall, false);
   } finally {
     fs.rmSync(feedbackDir, { recursive: true, force: true });
   }

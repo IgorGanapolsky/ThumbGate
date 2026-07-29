@@ -7,12 +7,272 @@
  */
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { STAGES, formatStageContractsMarkdown } = require('./rag-stage-contracts');
 const { runRagEval } = require('./eval-rag');
 const { ensureDir } = require('./fs-utils');
 
 const ROOT = path.join(__dirname, '..');
+const DEFAULT_RELIABILITY_SEED = 'thumbgate-rag-reliability-v1';
+
+function normalizeReliabilitySeed(value) {
+  const normalized = String(value || DEFAULT_RELIABILITY_SEED)
+    .trim()
+    .replace(/[^a-zA-Z0-9_.:-]+/g, '-')
+    .slice(0, 80);
+  return normalized || DEFAULT_RELIABILITY_SEED;
+}
+
+function seededRandom(seed) {
+  let state = 0x811c9dc5;
+  for (const byte of Buffer.from(String(seed), 'utf8')) {
+    state ^= byte;
+    state = Math.imul(state, 0x01000193) >>> 0;
+  }
+  return () => {
+    state += 0x6D2B79F5;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function deterministicShuffle(values, seed) {
+  const output = [...values];
+  const random = seededRandom(seed);
+  for (let index = output.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(random() * (index + 1));
+    [output[index], output[swapIndex]] = [output[swapIndex], output[index]];
+  }
+  return output;
+}
+
+function property(id, pass, observation, kind = 'always') {
+  return {
+    id,
+    kind,
+    pass: Boolean(pass),
+    observation,
+  };
+}
+
+async function simulateReindexInterruption(seed) {
+  const { importDocument } = require('./document-intake');
+  const { reindexRag, resolveReindexPaths } = require('./reindex-rag');
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-rag-sim-reindex-'));
+  const attempts = [];
+  const random = seededRandom(`${seed}:reindex`);
+  const failurePosition = 2 + Math.floor(random() * 2);
+  let faultArmed = true;
+  let faultedDocumentId = null;
+
+  try {
+    const documents = ['alpha', 'beta', 'gamma'].map((suffix) => importDocument({
+      feedbackDir,
+      title: `Reliability checkpoint ${suffix}`,
+      sourceUrl: `https://example.invalid/reliability/${suffix}`,
+      content: `# Checkpoint ${suffix}\n\nPreserve completed work across a seeded interruption.`,
+      sourceFormat: 'markdown',
+      proposeGates: false,
+    }));
+    const dependencies = {
+      indexDocument: async (document) => {
+        attempts.push(document.documentId);
+        if (faultArmed && attempts.length === failurePosition) {
+          faultedDocumentId = document.documentId;
+          faultArmed = false;
+          throw new Error('seeded_embedding_outage');
+        }
+        return {
+          embeddedCount: document.chunks.length,
+          reusedCount: 0,
+        };
+      },
+      retireDocument: async () => ({ retired: false }),
+      getRagIndexStatus: async () => ({
+        schemaVersion: 2,
+        tables: ['thumbgate_rag_v2_reliability_384'],
+      }),
+    };
+
+    const interrupted = await reindexRag({ feedbackDir }, dependencies);
+    const completedBeforeReplay = new Set(interrupted.completedDocumentIds);
+    const replayed = await reindexRag({ feedbackDir }, dependencies);
+    const attemptCounts = new Map();
+    for (const documentId of attempts) {
+      attemptCounts.set(documentId, (attemptCounts.get(documentId) || 0) + 1);
+    }
+    const completedRepeated = [...completedBeforeReplay]
+      .filter((documentId) => attemptCounts.get(documentId) !== 1);
+    const paths = resolveReindexPaths({ feedbackDir });
+    const properties = [
+      property('fault_is_observable', interrupted.status === 'partial_failure', interrupted.status, 'reachable'),
+      property('replay_completes', replayed.status === 'complete', replayed.status),
+      property(
+        'completed_embeddings_are_not_repeated',
+        completedRepeated.length === 0,
+        { completedBeforeReplay: completedBeforeReplay.size, repeated: completedRepeated.length },
+      ),
+      property(
+        'failed_document_is_retried_once',
+        Boolean(faultedDocumentId) && attemptCounts.get(faultedDocumentId) === 2,
+        attemptCounts.get(faultedDocumentId) || 0,
+      ),
+      property(
+        'catalog_and_index_reconcile',
+        replayed.reconciliation?.documentCountMatches === true
+          && replayed.completedDocumentIds.length === documents.length,
+        replayed.reconciliation?.completedDocuments || 0,
+      ),
+      property('lock_is_released', fs.existsSync(paths.lockPath) === false, fs.existsSync(paths.lockPath)),
+    ];
+    return {
+      id: 'reindex_interruption_resume',
+      fault: 'embedding outage at a seed-selected document boundary',
+      failurePosition,
+      properties,
+    };
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+}
+
+async function simulateVectorOutage(seed) {
+  const { searchThumbgateAsync } = require('./thumbgate-search');
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-rag-sim-vector-'));
+  try {
+    fs.writeFileSync(path.join(feedbackDir, 'feedback-log.jsonl'), `${JSON.stringify({
+      id: `fb_reliability_${normalizeReliabilitySeed(seed).slice(0, 16)}`,
+      signal: 'negative',
+      context: 'A release claim requires a verified production receipt.',
+      whatToChange: 'Keep lexical retrieval available when the vector index is unavailable.',
+      tags: ['reliability', 'release'],
+      timestamp: '2026-07-29T00:00:00.000Z',
+    })}\n`);
+    const result = await searchThumbgateAsync({
+      query: 'release production receipt',
+      source: 'feedback',
+      limit: 3,
+      feedbackDir,
+      searchRag: async () => {
+        throw new RangeError('seeded_vector_outage');
+      },
+    });
+    return {
+      id: 'vector_outage_lexical_fallback',
+      fault: 'vector search throws before fusion',
+      properties: [
+        property('query_returns_lexical_evidence', result.returned > 0, result.returned),
+        property('fallback_is_explicit', result.retrieval.vectorFallback === 'RangeError', result.retrieval.vectorFallback, 'reachable'),
+        property('retrieval_remains_bounded', result.returned <= 3, result.returned),
+        property('scope_remains_local', result.results.every((row) => row.scope?.tenantId === 'local'), result.scope),
+      ],
+    };
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+}
+
+async function simulateInvalidStructuredOutput() {
+  const { answerDataQuestion } = require('./dashboard-chat');
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-rag-sim-structured-'));
+  let providerCalls = 0;
+  try {
+    const result = await answerDataQuestion('What production evidence exists?', {
+      apiKey: 'reliability-test-key',
+      feedbackDir,
+      fetch: async () => {
+        providerCalls += 1;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            candidates: [{ content: { parts: [{ text: 'invalid structured output' }] } }],
+          }),
+        };
+      },
+    });
+    return {
+      id: 'invalid_structured_output_fail_closed',
+      fault: 'provider returns invalid JSON twice',
+      properties: [
+        property('invalid_output_is_rejected', result.ok === false, result.ok),
+        property('failure_is_typed', result.error === 'invalid_structured_output', result.error, 'reachable'),
+        property('repair_is_bounded_to_one', providerCalls === 2 && result.providerCalls === 2, providerCalls),
+        property('repair_failure_is_explicit', result.structuredRepairSucceeded === false, result.structuredRepairSucceeded),
+      ],
+    };
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+}
+
+function summarizeReliabilityScenarios(seed, scenarios) {
+  const normalized = scenarios.map((scenario) => {
+    const failedProperties = scenario.properties.filter((entry) => entry.pass !== true);
+    return {
+      ...scenario,
+      status: failedProperties.length === 0 ? 'pass' : 'fail',
+      failedProperties: failedProperties.map((entry) => entry.id),
+    };
+  });
+  const failed = normalized.filter((scenario) => scenario.status === 'fail');
+  const properties = normalized.flatMap((scenario) => scenario.properties);
+  const reachable = properties.filter((entry) => entry.kind === 'reachable');
+  const reached = reachable.filter((entry) => entry.pass === true);
+  return {
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    seed,
+    ok: failed.length === 0,
+    scenarioCount: normalized.length,
+    passedCount: normalized.length - failed.length,
+    failedCount: failed.length,
+    propertyCount: properties.length,
+    passedPropertyCount: properties.filter((entry) => entry.pass === true).length,
+    reachablePropertyCount: reachable.length,
+    reachedPropertyCount: reached.length,
+    reachabilityRate: reachable.length ? reached.length / reachable.length : null,
+    scenarioOrder: normalized.map((scenario) => scenario.id),
+    replayCommand: `npm run prove:rag -- --reliability-seed ${seed}`,
+    scenarios: normalized,
+  };
+}
+
+async function runRagReliabilitySimulation(options = {}) {
+  const seed = normalizeReliabilitySeed(options.seed);
+  const registry = [
+    { id: 'reindex_interruption_resume', run: () => simulateReindexInterruption(seed) },
+    { id: 'vector_outage_lexical_fallback', run: () => simulateVectorOutage(seed) },
+    { id: 'invalid_structured_output_fail_closed', run: simulateInvalidStructuredOutput },
+  ];
+  const ordered = deterministicShuffle(registry, `${seed}:scenario-order`);
+  const scenarios = [];
+  for (const scenario of ordered) {
+    try {
+      scenarios.push(await scenario.run());
+    } catch (error) {
+      scenarios.push({
+        id: scenario.id,
+        fault: 'scenario execution failure',
+        properties: [
+          property('scenario_completes', false, error && error.name || 'Error'),
+        ],
+      });
+    }
+  }
+  const report = summarizeReliabilityScenarios(seed, scenarios);
+  if (options.proofDir) {
+    ensureDir(options.proofDir);
+    fs.writeFileSync(
+      path.join(options.proofDir, 'rag-reliability-report.json'),
+      `${JSON.stringify(report, null, 2)}\n`,
+    );
+  }
+  return report;
+}
 
 function evaluateStageMetricValues(stageId, metrics = {}) {
   const failures = [];
@@ -123,6 +383,21 @@ async function proveRagPipeline(options = {}) {
     ndcgAt10: evalOut.summary?.ndcgAt10,
     failures: evalOut.summary?.failures || [],
   });
+  const reliability = await runRagReliabilitySimulation({
+    seed: options.reliabilitySeed,
+    proofDir: PROOF_DIR,
+  });
+  checks.push({
+    id: 'deterministic_reliability',
+    name: 'Seeded failure invariants',
+    status: reliability.ok ? 'pass' : 'fail',
+    seed: reliability.seed,
+    scenarioCount: reliability.scenarioCount,
+    failures: reliability.scenarios
+      .filter((scenario) => scenario.status === 'fail')
+      .map((scenario) => `${scenario.id}: ${scenario.failedProperties.join(', ')}`),
+    replayCommand: reliability.replayCommand,
+  });
 
   const failed = checks.filter((c) => c.status === 'fail');
   const report = {
@@ -132,6 +407,7 @@ async function proveRagPipeline(options = {}) {
     checks,
     evalSummary: evalOut.summary,
     stageMetrics: evalOut.stageMetrics,
+    reliability,
   };
 
   ensureDir(PROOF_DIR);
@@ -186,7 +462,12 @@ function isMain() {
 }
 
 if (isMain()) {
-  proveRagPipeline()
+  const seedIndex = process.argv.indexOf('--reliability-seed');
+  const inlineSeed = process.argv.find((argument) => argument.startsWith('--reliability-seed='));
+  const reliabilitySeed = inlineSeed
+    ? inlineSeed.slice('--reliability-seed='.length)
+    : (seedIndex >= 0 ? process.argv[seedIndex + 1] : undefined);
+  proveRagPipeline({ reliabilitySeed })
     .then((report) => {
       process.exitCode = report.ok ? 0 : 1;
     })
@@ -196,4 +477,13 @@ if (isMain()) {
     });
 }
 
-module.exports = { evaluateStageMetricValues, proveRagPipeline };
+module.exports = {
+  DEFAULT_RELIABILITY_SEED,
+  deterministicShuffle,
+  evaluateStageMetricValues,
+  normalizeReliabilitySeed,
+  proveRagPipeline,
+  runRagReliabilitySimulation,
+  seededRandom,
+  summarizeReliabilityScenarios,
+};

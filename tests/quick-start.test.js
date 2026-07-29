@@ -12,7 +12,7 @@ function makeTmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'tg-qs-'));
 }
 
-function runQuickStart(cwd, extraArgs = []) {
+function runQuickStart(cwd, extraArgs = [], envOverrides = {}) {
   const homeDir = path.join(cwd, '.home');
   fs.mkdirSync(homeDir, { recursive: true });
   return execFileSync(process.execPath, [CLI_PATH, 'quick-start', ...extraArgs], {
@@ -26,6 +26,27 @@ function runQuickStart(cwd, extraArgs = []) {
       HOME: homeDir,
       USERPROFILE: homeDir,
       XDG_CONFIG_HOME: path.join(homeDir, '.config'),
+      ...envOverrides,
+    },
+    timeout: 15000,
+    encoding: 'utf8',
+  });
+}
+
+function runInit(cwd, extraArgs = [], envOverrides = {}) {
+  const homeDir = path.join(cwd, '.home');
+  fs.mkdirSync(homeDir, { recursive: true });
+  return execFileSync(process.execPath, [CLI_PATH, 'init', ...extraArgs], {
+    cwd,
+    env: {
+      ...process.env,
+      THUMBGATE_NO_NUDGE: '1',
+      THUMBGATE_NO_TELEMETRY: '1',
+      THUMBGATE_FEEDBACK_DIR: path.join(cwd, '.thumbgate'),
+      HOME: homeDir,
+      USERPROFILE: homeDir,
+      XDG_CONFIG_HOME: path.join(homeDir, '.config'),
+      ...envOverrides,
     },
     timeout: 15000,
     encoding: 'utf8',
@@ -116,6 +137,57 @@ test('quick-start defaults to claude-code when no agent detected', () => {
     runQuickStart(tmp);
     const config = JSON.parse(fs.readFileSync(path.join(tmp, '.thumbgate', 'config.json'), 'utf8'));
     assert.strictEqual(config.agent, 'claude-code', 'should default to claude-code');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('quick-start configures only the resolved agent', () => {
+  const tmp = makeTmpDir();
+  try {
+    const fakeBin = path.join(tmp, 'fake-bin');
+    const geminiMarker = path.join(tmp, '.home', 'gemini-plugin-imported');
+    fs.mkdirSync(fakeBin, { recursive: true });
+    const fakeGemini = path.join(fakeBin, 'gemini');
+    fs.writeFileSync(
+      fakeGemini,
+      `#!/bin/sh\ntouch "${geminiMarker}"\n`,
+      { mode: 0o755 }
+    );
+
+    runQuickStart(tmp, [], {
+      PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`,
+    });
+
+    assert.ok(
+      !fs.existsSync(geminiMarker),
+      'default Claude quick-start must not invoke unrelated Gemini plugin import'
+    );
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('init does not execute an unrelated Gemini importer merely because it is on PATH', () => {
+  const tmp = makeTmpDir();
+  try {
+    const fakeBin = path.join(tmp, 'fake-bin');
+    const geminiMarker = path.join(tmp, '.home', 'gemini-plugin-imported');
+    fs.mkdirSync(fakeBin, { recursive: true });
+    fs.writeFileSync(
+      path.join(fakeBin, 'gemini'),
+      `#!/bin/sh\ntouch "${geminiMarker}"\n`,
+      { mode: 0o755 }
+    );
+
+    runInit(tmp, [], {
+      PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`,
+    });
+
+    assert.ok(
+      !fs.existsSync(geminiMarker),
+      'auto-detection may wire settings but must not execute an unrelated external installer'
+    );
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }

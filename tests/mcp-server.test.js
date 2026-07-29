@@ -101,6 +101,9 @@ test('tools/list returns only tools allowed by the active profile and available 
   assert.ok(result.tools.length < TOOLS.length);
   assert.ok(result.tools.some((tool) => tool.name === 'run_autoresearch'));
   assert.ok(result.tools.some((tool) => tool.name === 'rag_operations'));
+  const ragOperations = result.tools.find((tool) => tool.name === 'rag_operations');
+  assert.equal(ragOperations.inputSchema.properties.warm.type, 'boolean');
+  assert.equal(ragOperations.inputSchema.properties.evaluateRecall.type, 'boolean');
   assert.ok(result.tools.some((tool) => tool.name === 'plan_multimodal_retrieval'));
   assert.ok(result.tools.some((tool) => tool.name === 'plan_context_footprint'));
   assert.ok(result.tools.some((tool) => tool.name === 'plan_agent_design_governance'));

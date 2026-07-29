@@ -1067,6 +1067,10 @@ async function callToolInner(name, args) {
       const { getRagOperationsSnapshot } = require('../../scripts/rag-operations');
       return toTextResult(await getRagOperationsSnapshot({
         telemetryLimit: args.telemetryLimit,
+        warm: args.warm === true,
+        evaluateRecall: args.evaluateRecall === true,
+        recallSamples: args.recallSamples,
+        recallTopK: args.recallTopK,
       }));
     }
     case 'import_document':

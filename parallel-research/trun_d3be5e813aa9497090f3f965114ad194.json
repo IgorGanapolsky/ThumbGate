@@ -1,0 +1,415 @@
+{
+  "run_id": "trun_d3be5e813aa9497090f3f965114ad194",
+  "interaction_id": "trun_d3be5e813aa9497090f3f965114ad194",
+  "result_url": "https://platform.parallel.ai/play/deep-research/trun_d3be5e813aa9497090f3f965114ad194",
+  "status": "completed",
+  "output": {
+    "basis": [
+      {
+        "field": "answer",
+        "reasoning": "Assessment reasoning:\n- The field_description asks for a thorough, decision-grade implementation brief focusing on transferable, high-ROI practices for a local Node.js RAG and agent-governance system, with explicit source tagging, measurable criteria, and clear when-not-to-adopt guidance. The provided field_answer delivers a structured, multi-section brief covering DST, properties/invariants, seeded fault scheduling, whole-system testing, triage, agent verification loops, coverage, CI integration, agent skills, exploration, cross-cutting tactics, case studies, synthesis, and ROI-driven recommendations. It also explicitly labels SOURCE vs INFERENCE, includes acceptance criteria, complexity, costs, and adoption timing. Therefore, completeness is satisfied.\n\n- Excerpts are provided and appear to include multiple relevant Antithesis sources and Pragmatic Engineer references that align with the claims and structure used in the field_answer. The field_answer consistently uses SOURCE annotations and maps concepts to local implementations, which is consistent with the excerpts list (e.g., deterministic simulation testing, whole-system testing, fault injection, properties, CI integration).\n\n- While the field_answer is long and detailed, it remains within the scope of the provided field_description and query, and it distinguishes source claims from inferences as requested. No evident gaps requiring additional sections were identified, given the breadth of the recommendations and the associated rationale, acceptance criteria, and ROI ordering.\n\n- Confidence: medium-high that the answer is complete and supported by excerpts. If new requirements emerged (e.g., more concrete code templates or exact API signatures), those could be added, but not required by the current field description.\n",
+        "citations": [
+          {
+            "url": "https://cardanofoundation.org/blog/improving-cardano-antithesis",
+            "excerpts": [
+              "Improving Cardano testing with Antithesis\nJul 15, 2025 \u2014 Antithesis is a testing platform combining: a deterministic hypervisor that can run nearly arbitrary pieces of software, emulating the full"
+            ],
+            "title": "Improving Cardano testing with Antithesis"
+          },
+          {
+            "url": "https://antithesis.com/",
+            "excerpts": [
+              "Antithesis: autonomous software testing\nAntithesis de-risks agentic development of critical systems. Our platform runs your complete system, exhaustively analyzes its behavior, and exposes bugs"
+            ],
+            "title": "Antithesis: autonomous software testing"
+          },
+          {
+            "url": "http://antithesis.com/learn",
+            "excerpts": [
+              "Read, watch, and learn. Everything Antithesis. Blog Jul 2, 2026 ## My quest to see all of Tetris We're just trying to keep up with the teenagers. Ep. 19 Podcast Apr 8, 2026 ### Why simple workloads find the hardest bugs Filters Sort by Newest Oldest Category All Blog Bug Bash talks Customer stories Newsletter Other talks Podcast Reports Topic All Coding agents Culture Debugging Distributed systems Formal methods Games Physical reliability Product features Programming languages Property-based testing Testing better UI testing Newest Oldest Category All Blog Bug Bash talks Customer stories Newsletter Other talks Podcast Reports ... Topic 13 Podcast Feb 25, 2026 ### How rr Became a Protected Species: A Story of Necessary Hacks Customer stories Feb 19, 2026 ### Catching a caching bug at Readyset Ep. 12 Podcast Feb 18, 2026 ### Re-Designing Data-Intensive Applications: The Shift to Cloud-Native Storage Blog Jan 29, 2026 ### How we interfaced single-threaded C++ with multi-threaded Rust Ep. 11 Podcast Dec 10, 2025 ### Hypothesis vs. hallucinations: Property testing AI-generated code Blog Dec 3, 2025 ### When your customer leads your Series A [Other talks Dec 1, 2025 ### Testing a single-node, single threaded, distributed system written in 1985](https://www.youtube.com/watch?v=zc4cqtibTzs) Ep. 10 Podcast Nov 26, 2025 ### From the Lab to Production: Making Cutting-Edge Testing Practical Ep. 9 Podcast Nov 12, 2025 ### Ergonomics, reliability, durability Blog Nov 5, 2025 ### Antithesis launches Kubernetes support Blog Oct 31, 2025 ### They don't even have eyes Ep. ... Blog May 22, 2025 ### Finding a way to make on-call better Bug Bash talks May 18, 2025 ### Adoption is a social problem Blog May 12, 2025 ### The pragmatic magic of semi-formal methods Customer stories May 1, 2025 ### How Antithesis lets Cl\u00e9ment Sala\u00fcn of Formance sleep soundly at night Blog Apr 30, 2025 ### Antithesis for founders Customer stories Apr 2, 2025 ### No power, no programs Blog Mar 27, 2025 ### Our own ~~worst~~ best customer Customer stories Mar 18, 2025 ### Hunting for one-in-a-million bugs in NATS Blog Feb 21, 2025 ### Depth is all you need: how Antithesis crushes Gradius Blog Feb 13, 2025 ### How to make your own luck Blog Feb 10, 2025 ### How much did Sony's recent PlayStation Network outage cost? Customer stories Jan 16, 2025 ### An interview with Mark Logan, Tech Lead for Sui Core Blog Nov 20, 2024 ### Rolling for our new initiative: Test Composer Blog Nov 13, 2024 ### Introducing our reactive Notebook: the paradigm devs deserve. ... Blog Aug 20, 2024 ### In the labyrinth of unknown unknowns Blog Aug 6, 2024 ### The Testing Pyramid is upside-down Blog Jul 10, 2024 ### At the Mountains of Madness Blog Jun 18, 2024 ### An ounce of prevention is worth a pound of cure Blog Jun 3, 2024 ### Solving Zelda with the Antithesis SDK Blog May 21, 2024 ### The worst bug we faced at Antithesis Blog May 9, 2024 ### From zero to first bug Customer stories Apr 22, 2024 ### Working with Antithesis at MongoDB Blog Apr 17, 2024"
+            ],
+            "title": "Learn | Antithesis"
+          },
+          {
+            "url": "https://antithesis.com/blog/2026/tigris_report",
+            "excerpts": [
+              "Antithesis report: Tigris Data\nApr 21, 2026 \u2014 Antithesis is essentially trying to explore the full state space of a complex distributed system, to see if undesirable states \u2014 bugs \u2014 are ever"
+            ],
+            "title": "Antithesis report: Tigris Data"
+          },
+          {
+            "url": "http://antithesis.com/blog/2026/agent_skills",
+            "excerpts": [
+              "Search Home [Blog](https://antithesis.com/learn/?category=Blog \"Blog\") Antithesis skills for agents March 25, 2026 | Carl Sverre , Senior Software Engineer Antithesis skills for agents Carl Sverre Senior Software Engineer In this post Do some research Do my setup Write me some tests It's available now The latest from antithesis The latest Monthly reliability and distributed systems news, curated for teams building critical software. Subscribe Hi, I'm Carl. I had the dubious pleasure of being the first human being outside the company to attempt to use Antithesis without the assistance of their extraordinarily nice, extraordinarily skilled forward-deployed engineers. That was exactly a year ago, in March 2025. ... Do some research `antithesis-research` helps an agent analyze your codebase and figure out how it should be tested with Antithesis. It produces three markdown files that become part of the context for the other skills. One captures your system's architecture, state and concurrency behaviors, and looks for failure-prone areas of functionality. A second provides a prioritized list of testable properties that a system with this architecture should probably have (created using the context in our [extensive reliability resources](https://antithesis.com/docs/resources/reliability_glossary/) ). The third describes the minimal useful container topology for an Antithesis deployment \u2013 the minimal system topology that allows for testing of the properties in the property catalog. The names may change, because we're iterating so fast, but this structure should stay constant. ... It's available now I want to end with a couple of thoughts about this process. At this point, LLMs are able to quickly get from knowing nothing about a topic to a reasonable level of understanding about how it works, especially if \"it\" is a piece of software. The main obstacle to using Antithesis has always been the specialized, tacit knowledge involved: not just about Antithesis, or even about builds and containerization. It's the specialized, tacit knowledge about distributed systems in general. We're no longer surprised when customers tell us \"this sounds great, but what properties should my system have?\" As AI-assisted coding becomes more and more common, engineers are having to reason about system specs, and consequently system properties, in ways they never used to. These skills don't just bootstrap the system into place, they also bootstrap your reasoning about how the system should behave. We think you'll find them useful \u2013 and you might even learn a thing or two!\n`antithesis-research` helps an agent analyze your codebase and figure out how it should be tested with Antithesis. It produces three markdown files that become part of the context for the other skills. One captures your system's architecture, state and concurrency behaviors, and looks for failure-prone areas of functionality. A second provides a prioritized list of testable properties that a system with this architecture should probably have (created using the context in our [extensive reliability resources](https://antithesis.com/docs/resources/reliability_glossary/) ). The third describes the minimal useful container topology for an Antithesis deployment \u2013 the minimal system topology that allows for testing of the properties in the property catalog. The names may change, because we're iterating so fast, but this structure should stay constant. ... It's available now I want to end with a couple of thoughts about this process. At this point, LLMs are able to quickly get from knowing nothing about a topic to a reasonable level of understanding about how it works, especially if \"it\" is a piece of software. The main obstacle to using Antithesis has always been the specialized, tacit knowledge involved: not just about Antithesis, or even about builds and containerization. It's the specialized, tacit knowledge about distributed systems in general. We're no longer surprised when customers tell us \"this sounds great, but what properties should my system have?\" As AI-assisted coding becomes more and more common, engineers are having to reason about system specs, and consequently system properties, in ways they never used to. These skills don't just bootstrap the system into place, they also bootstrap your reasoning about how the system should behave. We think you'll find them useful \u2013 and you might even learn a thing or two!\nSo the first thing I'm shipping here is a set of Antithesis skills for agents ( [repo](https://github.com/antithesishq/antithesis-skills) ) that give you just that. First up is a trio of skills for Claude (or your agent of choice) that help bootstrap your system onto Antithesis. You can use them together or (somewhat) separately. Together, they can generally one-shot a system to the end of setup, provide you with a set of basic but valuable test properties, and a similarly basic but valuable workload with which to validate them. Once you get to that point, iterating on your Antithesis testing becomes much easier \u2013 for me, it was positively enjoyable ( [you can read about the good bits here](https://sqlsync.dev/posts/antithesis-driven-testing/) ). To show these skills in action, we forked [rqlite](https://rqlite.io/) , and used the skills to bootstrap the system into Antithesis. [Here's the repo](https://github.com/antithesishq/rqlite-demo/tree/antithesis-skills) (make sure you're on the `antithesis-skills` branch). rqlite is a pretty great system \u2014 it's a highly available, fault-tolerant distributed database, with really clean code and a strong test suite already in place, which contributes to a well-deserved reputation for reliability. Do some research `antithesis-research` helps an agent analyze your codebase and figure out how it should be tested with Antithesis. It produces three markdown files that become part of the context for the other skills. One captures your system's architecture, state and concurrency behaviors, and looks for failure-prone areas of functionality. A second provides a prioritized list of testable properties that a system with this architecture should probably have (created using the context in our [extensive reliability resources](https://antithesis.com/docs/resources/reliability_glossary/) ). The third describes the minimal useful container topology for an Antithesis deployment \u2013 the minimal system topology that allows for testing of the properties in the property catalog. The names may change, because we're iterating so fast, but this structure should stay constant. You can and should review these artifacts thoroughly before proceeding \u2013 context is everything. The ones our agent generated are at [`/antithesis/scratchbook/`](https://github.com/antithesishq/rqlite-demo/tree/antithesis-skills/antithesis/scratchbook) . ... Write me some tests `antithesis-workload` creates tests for the properties outlined in the property catalog. It adds the necessary assertions to the codebase and creates a test directory (think: a client) that allows Antithesis to exercise the relevant portions of your system's functionality. This is what our agent came up with \u2014 the test directory at [`/antithesis/test/v1`](https://github.com/antithesishq/rqlite-demo/tree/antithesis-skills/antithesis/test/v1/rqlite) is basically a pointer to the collection of client scripts in [`/antithesis/workload/`](https://github.com/antithesishq/rqlite-demo/tree/antithesis-skills/antithesis/workload) . The agent decided to build the test command binaries in a slightly strange way (line 88 in the [dockerfile](https://github.com/antithesishq/rqlite-demo/blob/antithesis-skills/antithesis/Dockerfile) ). This is not how I'd choose to do it, but it works. It's available now\nThis is what our agent came up with \u2014 the test directory at [`/antithesis/test/v1`](https://github.com/antithesishq/rqlite-demo/tree/antithesis-skills/antithesis/test/v1/rqlite) is basically a pointer to the collection of client scripts in [`/antithesis/workload/`](https://github.com/antithesishq/rqlite-demo/tree/antithesis-skills/antithesis/workload) . The agent decided to build the test command binaries in a slightly strange way (line 88 in the [dockerfile](https://github.com/antithesishq/rqlite-demo/blob/antithesis-skills/antithesis/Dockerfile) ). This is not how I'd choose to do it, but it works. It's available now\nSearch Home [Blog](https://antithesis.com/learn/?category=Blog \"Blog\") Antithesis skills for agents March 25, 2026 | Carl Sverre , Senior Software Engineer Antithesis skills for agents Carl Sverre Senior Software Engineer In this post Do some research Do my setup Write me some tests It's available now The latest from antithesis The latest Monthly reliability and distributed systems news, curated for teams building critical software. Subscribe Hi, I'm Carl. I had the dubious pleasure of being the first human being outside the company to attempt to use Antithesis without the assistance of their extraordinarily nice, extraordinarily skilled forward-deployed engineers. That was exactly a year ago, in March 2025. ... I work at Antithesis now, and the product has become much more usable in the last year \u2014 but setup is still pretty painful, partly because there's just a lot of tacit knowledge involved that's hard to write down. So the first thing I'm shipping here is a set of Antithesis skills for agents ( [repo](https://github.com/antithesishq/antithesis-skills) ) that give you just that. First up is a trio of skills for Claude (or your agent of choice) that help bootstrap your system onto Antithesis. You can use them together or (somewhat) separately. Together, they"
+            ],
+            "title": "Antithesis skills for agents | Antithesis"
+          },
+          {
+            "url": "http://antithesis.com/product",
+            "excerpts": [
+              "Search Verify every Pull Request ... Traditional tests confirm. 4 steps to get started with Antithesis Send us your system Deploy your whole system to Antithesis \u2013 including dependencies like Kafka and Postgres \u2013 just like you'd deploy to production. Orchestrate with Docker or Kubernetes. [Or just have your agents handle this](https://github.com/antithesishq/antithesis-skills) ... Optimized for code verification deterministic hypervisor Deterministic down to the instruction stream Our platform's foundation is a custom deterministic hypervisor that runs your whole system on a single CPU core. We massively parallelize runs and fully utilize every core to get you results faster. Never fight another flaky test. Find rare, multi-factorial bugs in minutes. Instruction-level determinism works with any x86 binary. intelligent exploration Years of production experience in minutes Our feedback-guided exploration algorithm synthesizes unusual input data and injects faults to actively increase test coverage, so no time is wasted blindly repeating the same scenarios. If your system survives our tailored torture regime, it _will_ stay up in production. Simulate clock, scheduling, network, and storage faults with zero configuration. Exercise hard-to-reach code paths like exception handling and leader election. Prioritize exploration of particularly critical code. debugging superpowers Perfect reproductions are just the start Especially in complex systems, identifying bugs is only half the battle: root causing them is often equally hard. Deterministic replay lets Antithesis replace hours of spelunking through logs with automated root cause analysis and interactive debugging. Get unified, perfectly ordered traces of distributed execution. Pull custom artifacts from your system, like data files or core dumps. Edges surfaced in minutes, not months Suspend execution, rewind time, and analyze your system as bugs occur. Skills, CLIS, & APIS Verification in the agentic loop Our skills let you integrate Antithesis into your harness's feedback loop, so your agent only declares victory once our platform has verified its output. While you're just getting started, our skills also help with every step of onboarding. Have agents: Always produce battle-tested, correct code. Write Docker Compose or Kubernetes manifests for your system. Build a precise specification of your system's expected behavior. Triage and debug for you. [Book a demo](https://antithesis.com/company/contact/?topic=book-a-demo) customer testimonials ... Good questions deserve straight answers. How is Antithesis different from chaos testing? Antithesis supports any containerized x86 software, including many common open source dependencies. Postgres, Redis, Kafka, NATS, Ceph, and a long list of other software works well \u2014 just reference the image in your Docker Compose or Kubernetes manifest. If your system depends on software that's not available as a container, you'll need to use a mock. Our documentation includes a list of ready-to-use mocks for many cloud and SaaS services. #### Does Antithesis support multicast networking? Yes \u2014 many of our capital markets customers use Antithesis to test systems that rely on multicast networking. Multicast works out of the box when using Docker Compose manifests with Antithesis. Because Antithesis runs your whole system on a single physical machine, all the complexity of multi-node production multicast setups (such as CNI networking) disappears. #### Can I buy Antithesis through the AWS Marketplace? Yes! We often transact via AWS Marketplace Private Offers, so purchasing Antithesis usually draws down your organization's committed spend. As always, the details depend on the terms of your particular AWS Private Pricing Agreement. #### Does Antithesis offer an on-premise / VPC option? You can run Antithesis in your own AWS VPC, keeping proprietary binaries and source code fully under your control. In this architecture, Antithesis's ephemeral execution environments and container image registry run exclusively in your VPC, while the control plane remains in our VPC with customer-isolated, fully single-tenant compute and databases. We do not offer a fully on-premise option at this time. #### Is there a free or open-source version of Antithesis? ... Go deeper on the technology When did the bug start? Causality analysis for Antithesis. ... Velocity and verification. Finally, both. Talk with one of our product experts to see how Antithesis can help you ship confidently, no matter who's writing your code. [Book a demo](https://antithesis.com/company/contact/?topic=book-a-demo) [Chat with us](https://discord.com/invite/antithesis) Curated reliability news Monthly Subscribe Check out our [previous issues](https://antithesis.com/learn/?category=Newsletter) . [](https://www.linkedin.com/company/antithesis-operations/) [](https://github.com/antithesishq) [](https://discord.com/invite/antithesis) [](https://www.youtube.com/@antithesis-hq) [](https://x.com/antithesishq/) [](https://trust.antithesis.com/) [](https://aws.amazon.com/marketplace/seller-profile?id=seller-r72bkjfiyczum) Antithesis logomark Privacy policy Security Terms of use"
+            ],
+            "title": "Antithesis"
+          },
+          {
+            "url": "http://antithesis.com/product/how_is_antithesis_different",
+            "excerpts": [
+              "Product Developers Learn Company Book a demo Product Developers Learn Company Search Book a demo Verify every Pull Request Traditional tests confirm. Antithesis discovers. See how it works \u2014 5 min Mockup of Antithesis' web application for debugging and investigating software bugs Trusted by engineering teams building mission-critical systems why antithesis Unleash your team. Antithesis catches unforeseen bugs in minutes, so humans and agents can ship quickly without risking outages. Prevent outages By injecting realistic faults and leveraging our simulator's unique replay capabilities, we explore the execution paths that even years of traditional testing miss. Skip debugging Our simulator is 100% deterministic and automatically root causes every bug."
+            ],
+            "title": "Antithesis"
+          },
+          {
+            "url": "http://boulderventures.com/antithesis",
+            "excerpts": [
+              "Antithesis is a Virginia-based enterprise software company that aims to revolutionize the way software is quality tested."
+            ],
+            "title": "Antithesis \u2014 Boulder Ventures Ltd."
+          },
+          {
+            "url": "https://www.crunchbase.com/organization/antithesis",
+            "excerpts": [
+              "Antithesis SDK and Instrumentation Tools Software development kits and instrumentation tools that enable integration of assertions and code coverage into software to enhance autonomous testing and fault injection."
+            ],
+            "title": null
+          },
+          {
+            "url": "https://antithesis.com/docs/resources/deterministic_simulation_testing",
+            "excerpts": [
+              "Deterministic simulation testing - how it works and when to use it\nDST platforms like Antithesis enable most types of software to be tested using DST, but still require external dependencies to be mocked or otherwise\u00a0... What is deterministic... \u00b7 How do I implement... \u00b7 What are the strengths and"
+            ],
+            "title": "Deterministic simulation testing - how it works and when to use it"
+          },
+          {
+            "url": "http://antithesis.com/docs/introduction/welcome",
+            "excerpts": [
+              "Antithesis is a testing platform that works like an additional staging environment.\nAntithesis is a testing platform that works like an additional staging environment. You ensure your software is reliable by deploying it to Antithesis and You ensure your software is reliable by deploying it to Antithesis and running it there before you deploy it to production. It supplements or replaces your existing testing tools and lives alongside your normal CI workflow. When you deploy to Antithesis, we run multiple copies of your software in a simulation environment that's much more hostile than prod. This quickly exposes the bugs in your software \u2014 even the most complicated, unlikely, and lethal ones."
+            ],
+            "title": "Welcome to Antithesis | Antithesis Docs"
+          },
+          {
+            "url": "https://antithesis.com/docs/introduction/welcome_to_antithesis",
+            "excerpts": [
+              "Welcome to Antithesis\nWhat is Antithesis. Antithesis is a testing platform that works like an additional staging environment. You ensure your software is reliable by deploying it to"
+            ],
+            "title": "Welcome to Antithesis"
+          },
+          {
+            "url": "http://antithesis.com/docs/environment/the_antithesis_environment",
+            "excerpts": [
+              "Antithesis deploys your containerized software in a controlled and deterministic simulation environment, the Antithesis environment"
+            ],
+            "title": "The Antithesis environment"
+          },
+          {
+            "url": "https://antithesis.com/docs/introduction/welcome",
+            "excerpts": [
+              "Welcome to Antithesis | Antithesis Docs\nAntithesis is a testing platform that works like an additional staging environment. You ensure your software is reliable by deploying it to Antithesis and"
+            ],
+            "title": "Welcome to Antithesis | Antithesis Docs"
+          },
+          {
+            "url": "https://www.linkedin.com/company/antithesis-operations",
+            "excerpts": [
+              "Antithesis\nWebsite: https://antithesis.com/. External link for Antithesis ; Industry: IT System Testing and Evaluation ; Company size: 51-200 employees."
+            ],
+            "title": "Antithesis"
+          },
+          {
+            "url": "http://x.com/Pragmatic_Eng",
+            "excerpts": [
+              "@Pragmatic\\_Eng Big Tech and startups, from the inside. The #1 technology newsletter on Substack. Sign up at [http:// pragmaticengineer.com](https://t.co/MPNdQSVnwV) ."
+            ],
+            "title": "The Pragmatic Engineer (@Pragmatic_Eng) / Posts / X"
+          },
+          {
+            "url": "http://linkedin.com/in/gergelyorosz",
+            "excerpts": [
+              "I write The Pragmatic Engineer, the #1 technology newsletter on Substack."
+            ],
+            "title": "Gergely Orosz - The Pragmatic Engineer"
+          },
+          {
+            "url": "https://antithesis.com/blog/2026/agent_skills",
+            "excerpts": [],
+            "title": "Antithesis skills for agents | Antithesis"
+          },
+          {
+            "url": "https://antithesis.com/docs/environment/the_antithesis_environment",
+            "excerpts": [],
+            "title": "The Antithesis environment"
+          },
+          {
+            "url": "http://coindesk.com/business/2025/12/03/jane-street-leads-usd105m-funding-for-antithesis-a-testing-tool-used-by-ethereum-network",
+            "excerpts": [
+              "(last verified: 2026-06-09) Dec 3, 2025 \u2014 Antithesis, a Northern Virginia startup pitching itself as infrastructure for never-down software, raised a $105 million Series A led by"
+            ],
+            "title": null
+          },
+          {
+            "url": "http://antithesis.com/docs/introduction/how_antithesis_works",
+            "excerpts": [
+              "Autonomous testing that generates test cases, explores system states, and reproduces bugs deterministically"
+            ],
+            "title": "How Antithesis works | Antithesis Docs"
+          },
+          {
+            "url": "http://pragmaticengineer.com/",
+            "excerpts": [
+              "The Pragmatic Engineer is the #1 newsletter for engineering managers and senior engineers"
+            ],
+            "title": null
+          },
+          {
+            "url": "https://blog.pragmaticengineer.com/newsletter",
+            "excerpts": [
+              "Newsletter\nWeekly issues in your inbox with in-depth takes on engineering and eng management topics. \u00b7 Actionable advice for engineering managers and software engineers."
+            ],
+            "title": "Newsletter"
+          },
+          {
+            "url": "http://blog.pragmaticengineer.com/tech-industry-analyst-2026",
+            "excerpts": [
+              "The Pragmatic Engineer is one of the most popular tech publications, with more than 1 million readers"
+            ],
+            "title": null
+          },
+          {
+            "url": "http://linkedin.com/company/antithesis-operations",
+            "excerpts": [
+              "Platform Engineer jobs \u00b7 Vice President of\nAntithesis Industry Software Development Company size 51-200 employees Headquarters Vienna, VA Type Privately Held Locations Primary Vienna, VA, US"
+            ],
+            "title": "Antithesis"
+          },
+          {
+            "url": "http://antithesis.com/company/careers",
+            "excerpts": [
+              "Feb 13, 2024 \u2014 Antithesis is an autonomous software testing platform that finds the bugs others miss. Open positions at Antithesis. Blog Feb 13, 2024"
+            ],
+            "title": "Help redefine how software gets built."
+          },
+          {
+            "url": "https://www.pragmaticengineer.com/",
+            "excerpts": [
+              "Gergely Orosz has built an absolutely amazing resource for the software engineering industry, The Pragmatic Engineer. I believe that if you are a senior+ level engineer, this is one of the most invaluable resources you can have, and is worth every penny."
+            ],
+            "title": "The Pragmatic Engineer"
+          },
+          {
+            "url": "https://mnemonicdictionary.com/word/antithesis",
+            "excerpts": [
+              "antithesis meaning"
+            ],
+            "title": "antithesis meaning Mnemonic Dictionary https://mnemonicdictionary.com \u203a word \u203a antithesis"
+          },
+          {
+            "url": "https://newsletter.pragmaticengineer.com/p/antithesis",
+            "excerpts": [],
+            "title": "How to debug large, distributed systems: Antithesis"
+          },
+          {
+            "url": "https://pragmaticengineer.substack.com/p/antithesis",
+            "excerpts": [],
+            "title": "How to debug large, distributed systems: Antithesis"
+          },
+          {
+            "url": "https://antithesis.com/docs/using_antithesis/sdk/javascript_sdk",
+            "excerpts": [
+              "JavaScript SDK\nAntithesis can instrument projects in JavaScript-target languages such as TypeScript if you provide us with transpiled JavaScript code."
+            ],
+            "title": "JavaScript SDK"
+          },
+          {
+            "url": "http://antithesis.com/docs/reference/sdk",
+            "excerpts": [
+              "Antithesis SDKs are the most straightforward way to integrate Antithesis in your development lifecycle, and define properties for your Antithesis tests"
+            ],
+            "title": "SDKs | Antithesis Docs"
+          },
+          {
+            "url": "https://antithesis.com/docs/using_antithesis/ci",
+            "excerpts": [
+              "CI integration\nAntithesis provides native integration with GitHub Actions via the Antithesis Trigger Action. You can easily trigger a test run via a GitHub action."
+            ],
+            "title": "CI integration"
+          },
+          {
+            "url": "http://antithesis.com/docs/product/tooling_integrations/ci",
+            "excerpts": [
+              "Antithesis is an autonomous software testing. Antithesis provides native integration with GitHub Actions via the Antithesis Trigger Action. Your Slack callback"
+            ],
+            "title": "CI integration | Antithesis Docs"
+          },
+          {
+            "url": "https://github.com/tursodatabase/turso/blob/main/.github/workflows/antithesis.yml",
+            "excerpts": [
+              "antithesis.yml - turso - GitHub\n2 days ago \u00b7 REPOSITORIES. Topics \u00b7 Trending \u00b7 Collections. Enterprise. ENTERPRISE SOLUTIONS. Enterprise platformAI-powered developer platform. AVAILABLE ADD"
+            ],
+            "title": "antithesis.yml - turso - GitHub"
+          },
+          {
+            "url": "https://github.com/antithesishq/antithesis-trigger-action",
+            "excerpts": [
+              "antithesishq/antithesis-trigger-action: A ...\nAntithesis is a continuous reliability platform that autonomously searches for problems in your software within a simulated environment."
+            ],
+            "title": "antithesishq/antithesis-trigger-action: A ..."
+          },
+          {
+            "url": "https://github.com/antithesishq",
+            "excerpts": [
+              "Antithesis - GitHub\nAntithesis is an autonomous testing platform that finds bugs in your software with perfect reproducibility to help you fix them. Read more about what problems"
+            ],
+            "title": "Antithesis - GitHub"
+          },
+          {
+            "url": "https://tdlpropertiesone.rentalfy.com/",
+            "excerpts": [
+              "TDL PROPERTIES ONE LLC"
+            ],
+            "title": "TDL PROPERTIES ONE LLC TDL PROPERTIES ONE LLC https://tdlpropertiesone.rentalfy.com"
+          },
+          {
+            "url": "http://pitchbook.com/profiles/company/433266-67",
+            "excerpts": [
+              "Antithesis has 91 total employees. Antithesis's primary industry is Business/Productivity Software"
+            ],
+            "title": "Antithesis 2026 Company Profile: Valuation, Funding & ..."
+          },
+          {
+            "url": "https://antithesis.com/docs/introduction/how_antithesis_works",
+            "excerpts": [],
+            "title": "How Antithesis works"
+          },
+          {
+            "url": "https://antithesis.com/learn",
+            "excerpts": [],
+            "title": "Learn | Antithesis"
+          },
+          {
+            "url": "https://www.poetryfoundation.org/education/glossary/antithesis",
+            "excerpts": [
+              "Antithesis | The Poetry Foundation\nContrasting or combining two terms, phrases, or clauses with opposite meanings. William Blake pits love's competing impulses\u2014selflessness and self-interest\u2014"
+            ],
+            "title": "Antithesis | The Poetry Foundation"
+          },
+          {
+            "url": "https://antithesis.com/product",
+            "excerpts": [
+              "Traditional tests confirm. Antithesis discovers.\nAntithesis is an autonomous software testing platform that finds the bugs others miss. Antithesis catches unforeseen bugs in minutes, so humans and agents can"
+            ],
+            "title": "Traditional tests confirm. Antithesis discovers."
+          },
+          {
+            "url": "https://en.wikipedia.org/wiki/Antithesis",
+            "excerpts": [
+              "Antithesis - Wikipedia\nAntithesis can be defined as a figure of speech involving a seeming contradiction of ideas, words, clauses, or sentences within a balanced grammatical\u00a0... Rhetorical antithesis \u00b7 Some literary examples"
+            ],
+            "title": "Antithesis - Wikipedia"
+          },
+          {
+            "url": "https://finance.yahoo.com/sectors/technology/articles/antithesis-teaches-ais-correct-own-134500841.html",
+            "excerpts": [
+              "Antithesis Teaches AIs To Correct Their Own Output\nAntithesis enables AIs to autocorrect when writing code, removing a key bottleneck to their widespread use."
+            ],
+            "title": "Antithesis Teaches AIs To Correct Their Own Output"
+          },
+          {
+            "url": "http://antithesis.com/docs/reference/rest_api",
+            "excerpts": [
+              "Test templates Creating test templates Test commands How to check a test template locally How to port tests to Antithesis Test launchers The triage report Findings Environment Utilization Properties Logs Explorer & multiverse map Debugging Causality analysis Simple Multiverse debugging Advanced multiverse debugging The Antithesis multiverse Querying with event sets Environment utilities Using the Antithesis Notebook Cookbook Tooling integrations CI integration Discord and Slack integrations Issue tracker integration - BETA Configuration Access and authentication The Antithesis environment Best practices Docker best practices Kubernetes best practices Optimizing for testing References ..."
+            ],
+            "title": "Antithesis API | Antithesis Docs"
+          },
+          {
+            "url": "https://antithesis.com/docs/reference/sdk",
+            "excerpts": [
+              "SDKs | Antithesis Docs\nAntithesis SDKs are the most straightforward way to integrate Antithesis in your development lifecycle, and define properties for your Antithesis tests."
+            ],
+            "title": "SDKs | Antithesis Docs"
+          },
+          {
+            "url": "https://antithesis.com/docs/reference/sdk/go",
+            "excerpts": [
+              "Go SDK | Antithesis Docs\nFunctions in the assert and lifecycle packages have three modes for local execution: Default, where assert and lifecycle use local implementations of"
+            ],
+            "title": "Go SDK | Antithesis Docs"
+          },
+          {
+            "url": "https://antithesis.com/docs/concepts/fault_injection",
+            "excerpts": [
+              "Overview | Antithesis Docs\nBy default, faults are injected throughout the test, interleaved randomly with your workload. Antithesis will pause faults, restore killed containers or pods"
+            ],
+            "title": "Overview | Antithesis Docs"
+          },
+          {
+            "url": "http://antithesis.com/",
+            "excerpts": [
+              "Book a demo Read More Aggressive fault injection We simulate clock, scheduling, network, and storage faults to exercise all your error-handling code. Intelligent exploration Antithesis guides exploration to maximize efficiency, running thousands of distinct scenarios in minutes. Debugging superpowers Perfect reproductions, automated root cause analysis, and a time-traveling debugger save time and tokens. Skills, CLIs, and APIs Our skills help agents onboard your project, build a specification of its behavior, and call Antithesis in the loop. customer testimonials Accelerating reliability for elite teams \\ What would otherwise take six months of testing in production, running the software -- we can get that in an hour. Cl\u00e9ment Sala\u00fcn\nBook a demo [Chat with us](https://discord.com/invite/antithesis) Curated reliability news Monthly Subscribe Check out our previous issues . [](https://www.linkedin.com/company/antithesis-operations/) [](https://github.com/antithesishq) [](https://discord.com/invite/antithesis) [](https://www.youtube.com/@antithesis-hq) [](https://x.com/antithesishq/) [](https://trust.antithesis.com/) [](https://aws.amazon.com/marketplace/seller-profile?id=seller-r72bkjfiyczum) Antithesis logomark Privacy policy Security Terms of use\nProduct Developers Learn Company Book a demo Product Developers Learn Company Search Book a demo Release with confidence Bug-free systems, unlimited velocity: Compress years of production hardening into minutes \u2014 in CI, in your development loop, or as an agent skill \u2014 so you can merge fearlessly. Book a demo [Chat with us](https://discord.com/invite/antithesis) Trusted by engineering teams building mission-critical systems 40x Faster change verification 75+ Severe bugs found that all other testing missed 10 x Faster time-to-release with fewer critical failures what is antithesis As AI drives down the cost of producing code, the pressure to ship faster rises \u2014 but the time required to review, test, and trust each change hasn't budged. Verification is the new bottleneck.\nAntithesis compresses years of production hardening into a few minutes, fast enough to run in CI, in the local development loop, or as an agent skill. Our deterministic simulation platform runs your complete system, stresses it with faults and toxic inputs, finds the bugs you didn't anticipate, and enriches every bug report with a root cause analysis and a perfect reproduction \u2014 so every engineer can merge fearlessly. why antithesis Unleash your team Antithesis catches unforeseen bugs in minutes, so humans and agents can ship quickly without risking outages. Prevent outages By injecting realistic faults and leveraging our simulator's unique replay capabilities, we explore the execution paths that even years of traditional testing miss. Skip debugging Our simulator is 100% deterministic and automatically root causes every bug. Rather than wasting time and tokens chasing flaky heisenbugs, your team can jump straight to a fix. Ship faster When every pull request has already survived the Antithesis gauntlet, your team can merge big changes confidently \u2014 even when they're authored by agents. the antithesis platform Autonomous verification, not just automated review Perfect determinism Deterministic simulation testing goes beyond chaos testing, static analysis, and AI code review: from hypervisor to debugger, our whole stack is designed to efficiently verify your _running_ system. The foundation of our platform is a custom hypervisor that lets us rewind time, try alternate execution paths, and perfectly reproduce every bug. [Book a demo](https://antithesis.com/company/contact/?topic=book-a-demo) Read about the hypervisor Aggressive fault injection We simulate clock, scheduling, network, and storage faults to exercise all your error-handling code. Intelligent exploration Antithesis guides exploration to maximize efficiency, running thousands of distinct scenarios in minutes. ... Accelerating reliability for elite teams What would otherwise take six months of testing in production, running the software -- we can get that in an hour.\nAntithesis is an autonomous software testing platform that finds the bugs others miss. for debugging and investigating software bugs. Chat with us product\nSearch Release with confidence Bug-free systems, unlimited velocity: Compress years of production hardening into minutes \u2014 in CI, in your development loop, or as an agent skill \u2014 so you can merge fearlessly. [Book a demo](https://antithesis.com/company/contact/?topic=book-a-demo) [Chat with us](https://discord.com/invite/antithesis) Trusted by engineering teams building mission-critical systems 40x Faster change verification 75+ Severe bugs found that all other testing missed 10 x Faster time-to-release with fewer critical failures what is antithesis As AI drives down the cost of producing code, the pressure to ship faster rises \u2014 but the time required to review, test, and trust each change hasn't budged. Verification is the new bottleneck. Antithesis compresses years of production hardening into a few minutes, fast enough to run in CI, in the local development loop, or as an agent skill. Our deterministic simulation platform runs your complete system, stresses it with faults and toxic inputs, finds the bugs you didn't anticipate, and enriches every bug report with a root cause analysis and a perfect reproduction \u2014 so every engineer can merge fearlessly. why antithesis Unleash your team Antithesis catches unforeseen bugs in minutes, so humans and agents can ship quickly without risking outages. Prevent outages By injecting realistic faults and leveraging our simulator's unique replay capabilities, we explore the execution paths that even years of traditional testing miss. Skip debugging Our simulator is 100% deterministic and automatically root causes every bug. Rather than wasting time and tokens chasing flaky heisenbugs, your team can jump straight to a fix. Ship faster When every pull request has already survived the Antithesis gauntlet, your team can merge big changes confidently \u2014 even when they're authored by agents. the antithesis platform Autonomous verification, not just automated review Perfect determinism Deterministic simulation testing goes beyond chaos testing, static analysis, and AI code review: from hypervisor to debugger, our whole stack is designed to efficiently verify your _running_ system. The foundation of our platform is a custom hypervisor that lets us rewind time, try alternate execution paths, and perfectly reproduce every bug. [Book a demo](https://antithesis.com/company/contact/?topic=book-a-demo) Read about the hypervisor Aggressive fault injection We simulate clock, scheduling, network, and storage faults to exercise all your error-handling code. Intelligent exploration Antithesis guides exploration to maximize efficiency, running thousands of distinct scenarios in minutes. ... Accelerating reliability for elite teams What would otherwise take six months of testing in production, running the software -- we can get that in an hour.\nAntithesis is an autonomous software testing platform that finds the bugs others miss. Search Book a demo. We simulate clock, scheduling, network, and storage"
+            ],
+            "title": "Antithesis"
+          },
+          {
+            "url": "https://www.keysight.com/blogs/en/tech/nwvs/2024/07/02/clock-glitching-in-device-security-analysis",
+            "excerpts": [
+              "Clock Glitching in Device Security Analysis | Keysight Blogs\nVoltage glitching, electromagnetic pulse injection, and laser fault injection each have unique strengths, but clock glitching offers a degree of specificity that can be more targeted when the vulnerability lies in timing-related pathways."
+            ],
+            "title": "Clock Glitching in Device Security Analysis | Keysight Blogs"
+          },
+          {
+            "url": "http://antithesis.com/company/contact",
+            "excerpts": [
+              "Antithesis is an autonomous software testing. Come find us at our HQ in Northern Virginia or. Antithesis HQ 8607 Westwood Center Dr Suite 550, Vienna, VA 22182"
+            ],
+            "title": "Contact us"
+          },
+          {
+            "url": "http://antithesis.com/solutions/working_with_antithesis",
+            "excerpts": [
+              "Product Solutions Docs Company Blog Book a demo Working with Antithesis If your software needs to work all of the time, our expert team can help you realize the benefits of Antithesis' unique approach to finding and fixing reliability problems. These are the customer onboarding and lifecycle steps that our customer success engineering team will follow: System evaluation and sizing Our customer success engineering team will meet with you to learn about the system you'd like to test with us, and your goals for the engagement. If we believe your system is a good fit for our platform, we will propose an appropriately sized Antithesis solution to meet your objectives. Agreement signed and team assigned Once the paperwork is out of the way, one of our customer success engineers will be assigned to lead the relationship and ensure your success with Antithesis. Packaging your software and workload Our team will help you package your software container images, so that it can run inside Antithesis's controlled simulation environment. We will also help you create a workload that simulates your software's function in production. (Optional) Define assertions with the SDK Antithesis comes out of the box with over 60 \"default\" test properties that we believe most distributed systems should have\u2014like not crashing, no memory leaks, eventual availability, etc. We also provide an SDK that allows you to add many sorts of assertions that Antithesis will evaluate in all future runs."
+            ],
+            "title": "Working with Antithesis | Antithesis"
+          },
+          {
+            "url": "http://antithesis.com/docs/docs_for_ai",
+            "excerpts": [
+              "Agents use Antithesis via [the Snouty CLI](https://github.com/antithesishq/snouty) . You'll need to install Snouty to use the skills. Snouty is under active development and likely to change. It's intended primarily as an interface for agents."
+            ],
+            "title": "Using Antithesis with AI | Antithesis Docs"
+          },
+          {
+            "url": "http://github.com/antithesishq/antithesis-skills",
+            "excerpts": [
+              "README.md lychee.toml pyproject.toml uv.lock antithesis-skills Enable AI agents to set up Antithesis, bootstrap your first Antithesis test, launch Antithesis runs, and triage the results. > Table of contents: > **Working with LLM agents** \u00b7 **Recommended workflow** \u00b7 **Starter prompts** \u00b7 **Prerequisites** \u00b7 **Install** ... Skills overview `antithesis-research` is thorough by design. It fans out across sub-agents to study your system from several angles \u2014 reading source, comments, docs, commit history, and issues \u2014 then runs multiple evaluation passes over the properties it discovers. That depth is what makes the artifacts valuable, but it also means the run is not quick: on most codebases, expect it to work for > _30 minutes to an hour_ * and to use a meaningful amount of tokens along the way.\nThis skill initializes an `antithesis/` directory and creates manifests there along with some other helpful tools to understand the AI's thinking. Here's an example: `antithesis/config/manifests` are the manifests that will be run in Antithesis `antithesis/scratchbook/k8s-minimization/working.md` will contain the progress of the AI during the skill. Refer to this to understand the decisions that the AI made. ... Compatibility **Platform** : macOS or Linux. **AI agent** : Tested with [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and [OpenAI Codex\n**Platform** : macOS or Linux. **AI agent** : Tested with [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and [OpenAI Codex](https://openai.com/index/openai-codex/) . These skills work best with agents that can spawn sub-agents for self-review. Other agents that support skills may also work. Prerequisites You'll need an AI agent, npm, a container runtime (Docker or Podman), and the Snouty CLI. See [PREREQUISITES.md](https://github.com/antithesishq/antithesis-skills/blob/main/PREREQUISITES.md) for the full list and platform-specific installation instructions. Permissions These skills invoke external tools (Docker, Snouty, agent-browser) that your AI agent may prompt you to approve. The skills themselves do not configure permissions \u2014 that's up to you based on your security preferences. Here are the tools each skill may invoke, so you can pre-approve them if you prefer fewer interruptions: | Skill | Tools used | | `antithesis-research` | No explicit external tools | | `antithesis-setup` | `docker` / `podman` , `snouty` | | `antithesis-setup-k8s` | `docker` / `podman` , `snouty` | | `antithesis-workload` | `snouty` | | `antithesis-launch` | `docker` / `podman` , `snouty` | | `antithesis-triage` | `snouty` , `jq` | | `antithesis-debug` | `agent-browser` , `jq` | | `antithesis-query-logs` | `snouty` , `agent-browser` , `jq` | | `antithesis-agent-browser` | `agent-browser` , `jq` | | `antithesis-documentation` | `snouty docs` | Install npx skills installer\nREADME.md lychee.toml pyproject.toml uv.lock antithesis-skills Enable AI agents to set up Antithesis, bootstrap your first Antithesis test, launch Antithesis runs, and triage the results. > Table of contents: > **Working with LLM agents** \u00b7 **Recommended workflow** \u00b7 **Starter prompts** \u00b7 **Prerequisites** \u00b7 **Install** Skills overview `antithesis-documentation` is a foundational skill that enables agents to work with [our docs](https://antithesis.com/docs/) more efficiently. It's used by the research, setup, and workload skills. You can also use it to ask questions about how to use Antithesis. `antithesis-research` , `antithesis-setup` , and `antithesis-workload` work together to bootstrap a new system into Antithesis. Together, they will: Analyze your system to provide a basic catalog of relevant [reliability properties](https://antithesis.com/docs/resources/reliability_glossary/) . Provide a suggested system topology for testing. Handle your [initial deployment to Antithesis](https://antithesis.com/docs/getting_started/setup/) . Create a basic [test template](https://antithesis.com/docs/test_templates/) to validate properties in the catalog. **`antithesis-research` produces planning artifacts that you should review carefully.** Important `antithesis-research` is thorough by design. It fans out across sub-agents to study your system from several angles \u2014 reading source, comments, docs, commit history, and issues \u2014 then runs multiple evaluation passes over the properties it discovers. That depth is what makes the artifacts valuable, but it also means the run is not quick: on most codebases, expect it to work for > _30 minutes to an hour_ * and to use a meaningful amount of tokens along the way. `antithesis-setup-k8s` enables agents to adapt Kubernetes manifests to run inside Antithesis. Given Kubernetes manifests in any form (helm charts, kustomize, raw YAML), the skill drives an interview-based workflow to adapt, convert, and validate manifests to work in Antithesis. This skill is still in development and does not provide all the same tools as `antithesis-setup` , specifically regarding instrumentation and SDK usage. `antithesis-triage` enables agents to parse and analyze the results of your Antithesis test runs. `antithesis-debug` enables agents to interactively debug Antithesis test runs using the [multiverse debugger](https://antithesis.com/docs/multiverse_debugging/) \u2014 inspecting container filesystems and runtime state, running shell commands, and extracting evidence from inside the Antithesis environment. `antithesis-query-logs` enables agents to search across all timelines in an Antithesis test run to find events, correlate property failures, and answer temporal questions about ordering and causation \u2014 e.g., cascade elimination, fault correlation, and root cause hypothesis testing. `antithesis-agent-browser` is a helper skill that handles interactive browser authentication to your Antithesis tenant and reads Antithesis web pages. Other skills (e.g. `antithesis-debug` , `antithesis-query-logs` ) delegate to it when they need authenticated web access; you usually won't invoke it directly. `antithesis-launch` enables agents to build the harness, run `snouty validate` , and submit `snouty launch` with sensible metadata once the harness is ready. `antithesis-skills-feedback` helps you file bug reports against these skills by opening a pre-filled GitHub issue. Note These skills are under active development. LLMs are inherently non-deterministic, so they may not work perfectly with your AI"
+            ],
+            "title": "GitHub - antithesishq/antithesis-skills: AI Skills for Antithesis Users \u00b7 GitHub"
+          },
+          {
+            "url": "http://antithesis.com/blog/2025/testing_pangolin",
+            "excerpts": [
+              "Mar 27, 2025 \u2014 In this post, we'll walk you through how we used Antithesis to test one of our most technically ambitious projects: Pangolin, our new, in-house distributed"
+            ],
+            "title": "Our own <s>worst</s> best customer"
+          },
+          {
+            "url": "https://soundcloud.com/project-antithesis",
+            "excerpts": [
+              "A N T I T H E S I S\nANTITHESIS is a piano project created by Georgii Speakman (founder of OUT.LI.ER Records). ANTITHESIS is rooted in storytelling, thematics, and arthouse content."
+            ],
+            "title": "A N T I T H E S I S"
+          },
+          {
+            "url": "https://www.tools-of-computing.com/ThomasChristopher/seminars/Antithesis2.pdf",
+            "excerpts": [
+              "Antithesis Example"
+            ],
+            "title": "Antithesis Example tools-of-computing.com https://www.tools-of-computing.com \u203a Antithesis2"
+          }
+        ],
+        "confidence": "high"
+      }
+    ],
+    "type": "text",
+    "beta_fields": null,
+    "mcp_tool_calls": null,
+    "content_file": "trun_d3be5e813aa9497090f3f965114ad194.md"
+  }
+}

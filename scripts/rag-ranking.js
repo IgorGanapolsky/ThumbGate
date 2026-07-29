@@ -130,7 +130,7 @@ function reciprocalRankFusion(rankedLists = [], options = {}) {
       const existing = byId.get(id) || { candidate, rrfScore: 0, ranks: [] };
       existing.rrfScore += weight / (rankConstant + index + 1);
       existing.ranks.push({ list: listIndex, rank: index + 1 });
-      if (!existing.candidate.context && candidate.context) existing.candidate = candidate;
+      existing.candidate = mergeRetrievalSignals(existing.candidate, candidate);
       byId.set(id, existing);
     });
   });
@@ -143,6 +143,46 @@ function reciprocalRankFusion(rankedLists = [], options = {}) {
     .sort((left, right) => (
       right.rrfScore - left.rrfScore || candidateId(left).localeCompare(candidateId(right))
     ));
+}
+
+function mergeRetrievalSignals(existing, incoming) {
+  const merged = { ...existing };
+  for (const key of ['bm25Score', 'vectorScore']) {
+    const existingHasMetric = existing[key] !== null
+      && existing[key] !== undefined
+      && Number.isFinite(Number(existing[key]));
+    const incomingHasMetric = incoming[key] !== null
+      && incoming[key] !== undefined
+      && Number.isFinite(Number(incoming[key]));
+    if (!existingHasMetric && incomingHasMetric) {
+      merged[key] = Number(incoming[key]);
+    }
+  }
+  if (
+    (existing.vectorDistance === null
+      || existing.vectorDistance === undefined
+      || !Number.isFinite(Number(existing.vectorDistance)))
+    && incoming.vectorDistance !== null
+    && incoming.vectorDistance !== undefined
+    && Number.isFinite(Number(incoming.vectorDistance))
+  ) {
+    merged.vectorDistance = Number(incoming.vectorDistance);
+  }
+  for (const key of ['parentContext', 'headingPath', 'citation']) {
+    const value = incoming[key];
+    if (
+      (merged[key] === undefined || merged[key] === null || merged[key] === '')
+      &&
+      value !== undefined
+      && value !== null
+      && value !== ''
+      && (!Array.isArray(value) || value.length > 0)
+    ) {
+      merged[key] = value;
+    }
+  }
+  if (!merged.context && incoming.context) merged.context = incoming.context;
+  return merged;
 }
 
 function queryCoverage(queryTokens, textTokens) {
@@ -162,7 +202,9 @@ function rerankCandidates(query, candidates = [], options = {}) {
   const queryTokens = [...new Set(tokenizeRagText(query).filter((token) => !STOP_WORDS.has(token)))];
   const phrase = queryTokens.join(' ');
   const maxBm25 = Math.max(...candidates.map((candidate) => Number(candidate.bm25Score) || 0), 1);
+  const maxVector = Math.max(...candidates.map((candidate) => Number(candidate.vectorScore) || 0), 0.000001);
   const maxRrf = Math.max(...candidates.map((candidate) => Number(candidate.rrfScore) || 0), 0.000001);
+  const hasVectorSignals = candidates.some((candidate) => Number(candidate.vectorScore) > 0);
   const nowMs = Number(options.nowMs) || Date.now();
   return candidates
     .slice(0, Math.max(1, Number(options.candidateLimit) || 50))
@@ -174,10 +216,26 @@ function rerankCandidates(query, candidates = [], options = {}) {
       const current = candidate.isCurrent === false ? 0 : 1;
       const trust = candidate.trustLevel === 'trusted' ? 1 : 0;
       const freshness = freshnessScore(candidate.timestamp, nowMs);
+      const normalizedBm25 = Number(candidate.bm25Score || 0) / maxBm25;
+      const normalizedVector = Number(candidate.vectorScore || 0) / maxVector;
+      const weights = hasVectorSignals
+        ? {
+          rrf: 0.30,
+          bm25: 0.20,
+          vector: 0.16,
+          coverage: 0.20,
+        }
+        : {
+          rrf: 0.38,
+          bm25: 0.24,
+          vector: 0,
+          coverage: 0.24,
+        };
       const score = (
-        (Number(candidate.rrfScore || 0) / maxRrf) * 0.38
-        + (Number(candidate.bm25Score || 0) / maxBm25) * 0.24
-        + coverage * 0.24
+        (Number(candidate.rrfScore || 0) / maxRrf) * weights.rrf
+        + normalizedBm25 * weights.bm25
+        + normalizedVector * weights.vector
+        + coverage * weights.coverage
         + exactPhrase * 0.08
         + trust * 0.03
         + freshness * 0.03
@@ -191,6 +249,8 @@ function rerankCandidates(query, candidates = [], options = {}) {
           trust,
           freshness: Number(freshness.toFixed(4)),
           current,
+          normalizedBm25: Number(normalizedBm25.toFixed(4)),
+          normalizedVector: Number(normalizedVector.toFixed(4)),
         },
       };
     })

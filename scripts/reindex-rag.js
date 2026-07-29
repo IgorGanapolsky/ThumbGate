@@ -7,6 +7,7 @@ const {
   getDocumentStorePaths,
   listImportedDocuments,
   readImportedDocument,
+  upgradeLegacyDocument,
 } = require('./document-intake');
 const vectorStore = require('./vector-store');
 
@@ -74,7 +75,12 @@ function loadDocuments(options = {}) {
   }).documents
     .map((summary) => {
       const document = readImportedDocument(summary.documentId, options);
-      return document ? { ...document, isCurrent: summary.isCurrent !== false } : null;
+      if (!document) return null;
+      const currentDocument = { ...document, isCurrent: summary.isCurrent !== false };
+      return upgradeLegacyDocument(currentDocument, {
+        ...options,
+        persist: false,
+      }).document;
     })
     .filter(Boolean);
 }
@@ -87,6 +93,9 @@ async function reindexRag(options = {}, dependencies = {}) {
     && (!document.deduplication || document.deduplication.status !== 'near_duplicate_review')
   ));
   const stale = documents.filter((document) => document.isCurrent === false);
+  const legacyDocumentsToUpgrade = documents.filter((document) => (
+    document._legacyMigrated === true
+  )).length;
   const expectedChunks = current.reduce((sum, document) => sum + (document.chunks || []).length, 0);
   if (options.dryRun === true) {
     return {
@@ -94,6 +103,7 @@ async function reindexRag(options = {}, dependencies = {}) {
       currentDocuments: current.length,
       staleDocuments: stale.length,
       expectedChunks,
+      legacyDocumentsToUpgrade,
     };
   }
 
@@ -102,7 +112,8 @@ async function reindexRag(options = {}, dependencies = {}) {
   const retireDocument = dependencies.retireDocument || vectorStore.retireDocument;
   const getIndexStatus = dependencies.getRagIndexStatus || vectorStore.getRagIndexStatus;
   const previousState = options.resume === false ? null : readJson(paths.statePath);
-  const completed = new Set(previousState && previousState.status === 'in_progress'
+  const resumableStatuses = new Set(['in_progress', 'partial_failure']);
+  const completed = new Set(previousState && resumableStatuses.has(previousState.status)
     ? previousState.completedDocumentIds || []
     : []);
   const state = {
@@ -117,6 +128,7 @@ async function reindexRag(options = {}, dependencies = {}) {
     embeddedCount: 0,
     reusedCount: 0,
     retiredDocuments: 0,
+    migratedLegacyDocuments: 0,
   };
   writeJsonAtomic(paths.statePath, state);
 
@@ -126,6 +138,13 @@ async function reindexRag(options = {}, dependencies = {}) {
       if (retired.retired) state.retiredDocuments += 1;
     }
     for (const document of current) {
+      if (document._legacyMigrated === true) {
+        upgradeLegacyDocument(document, {
+          ...options,
+          persist: true,
+        });
+        state.migratedLegacyDocuments += 1;
+      }
       if (completed.has(document.documentId)) continue;
       try {
         const result = await indexDocument(document, options);
@@ -150,6 +169,7 @@ async function reindexRag(options = {}, dependencies = {}) {
       completedDocuments: completed.size,
       expectedChunks,
       documentCountMatches: completed.size === current.length,
+      migratedLegacyDocuments: state.migratedLegacyDocuments,
     };
     writeJsonAtomic(paths.statePath, state);
     return state;

@@ -134,15 +134,18 @@
       <rect class="node" x="210" y="188" width="150" height="58"/><text x="285" y="212" text-anchor="middle">Token budget</text><text x="285" y="232" text-anchor="middle">untrusted evidence</text>
       <rect class="node" x="25" y="188" width="140" height="58"/><text x="95" y="212" text-anchor="middle">Strict JSON</text><text x="95" y="232" text-anchor="middle">one repair or fail</text>
       <path class="edge" d="M600 217 H555"/><path class="edge" d="M405 217 H360"/><path class="edge" d="M210 217 H165"/>
-      <text x="480" y="295" text-anchor="middle">Deterministic orchestration bounds every probabilistic parser, ranker, embedding, and model call.</text>
+      <text x="480" y="285" text-anchor="middle">Deterministic orchestration bounds every probabilistic parser, ranker, embedding, and model call.</text>
+      <text x="480" y="307" text-anchor="middle">Seeded faults assert recovery properties and emit an exact replay command.</text>
     </svg>
-    <figcaption>PDF/DOCX/image ingestion, parent-child retrieval, hybrid search, bounded reranking, token-aware prompt assembly, and schema validation. Scope and current-version filters are hard gates, not prompt instructions.</figcaption>
+    <figcaption>PDF/DOCX/image ingestion, parent-child retrieval, hybrid search, bounded reranking, token-aware prompt assembly, and schema validation. Scope and current-version filters are hard gates, not prompt instructions. Cache preflight and ANN-versus-exhaustive recall checks are explicit operator actions, not hidden work on every request.</figcaption>
   </figure>
 
   <div class="grid">
     <div class="card"><h3>Failure recovery</h3><p>Stable row IDs, pending-index retry, checkpointed re-index, stale-version retirement, provider timeouts, and one structured-output repair.</p></div>
     <div class="card"><h3>Cost control</h3><p>Embedding reuse, fixed candidate pools, exact-query rewrite bypass, prompt token budgets, capped retries, and no agent-controlled retrieval loop.</p></div>
     <div class="card"><h3>Measured ranking</h3><p>24 seeded cross-domain cases gate Recall@10, MRR@10, nDCG@10, Precision@5, scope leakage, and stale hits.</p></div>
+    <div class="card"><h3>Index truth</h3><p>When an ANN index exists, a bounded probe compares it with exhaustive LanceDB results. Exact-only tables are labeled <code>exact_only</code>, never reported as perfect ANN recall.</p></div>
+    <div class="card"><h3>Replayable fault proof</h3><p>Three seeded scenarios inject an embedding interruption, vector outage, and repeated invalid model output. Named invariants, fault position, scenario order, and a replay command are retained in the proof artifact.</p></div>
   </div>
   <p><a class="secondary" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/RAG_PIPELINE.md">RAG stage contracts and tradeoffs on GitHub →</a></p>
 

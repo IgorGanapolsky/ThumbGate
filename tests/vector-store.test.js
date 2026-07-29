@@ -236,6 +236,200 @@ describe('vector-store — multiple upserts, top-k returns nearest', () => {
   });
 });
 
+function vectorDistance(left, right) {
+  return left.reduce((sum, value, index) => sum + ((value - right[index]) ** 2), 0);
+}
+
+function makeVectorQualityModule(tmpDir, options = {}) {
+  delete require.cache[require.resolve('../scripts/vector-store')];
+  process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+  process.env.THUMBGATE_VECTOR_STUB_EMBED = 'true';
+  const vectorStore = require('../scripts/vector-store');
+  const tables = new Map();
+  const warmCalls = { data: 0, indices: [] };
+
+  function openTable(name) {
+    const rows = tables.get(name) || [];
+    return {
+      add: async (records) => {
+        rows.push(...records);
+        tables.set(name, rows);
+      },
+      delete: async (predicate) => {
+        const id = predicate.match(/id = '([^']+)'/)?.[1];
+        tables.set(name, rows.filter((row) => row.id !== id));
+      },
+      listIndices: async () => (
+        options.withVectorIndex === false
+          ? []
+          : [{ name: 'vector_idx', indexType: 'IVF_PQ', columns: ['vector'] }]
+      ),
+      prewarmData: async () => {
+        if (options.remoteOnlyPrewarm === true) {
+          throw new Error('prewarm_data is currently only supported on remote tables');
+        }
+        warmCalls.data += 1;
+      },
+      prewarmIndex: async (indexName) => {
+        if (options.remoteOnlyPrewarm === true) {
+          throw new Error('prewarm_index is currently only supported on remote tables');
+        }
+        warmCalls.indices.push(indexName);
+      },
+      query: () => {
+        let queryLimit = rows.length;
+        const builder = {
+          where: () => builder,
+          select: () => builder,
+          limit: (limit) => {
+            queryLimit = limit;
+            return builder;
+          },
+          toArray: async () => rows.slice(0, queryLimit),
+        };
+        return builder;
+      },
+      search: (queryVector) => {
+        let queryLimit = rows.length;
+        let exhaustive = false;
+        const builder = {
+          where: () => builder,
+          bypassVectorIndex: () => {
+            exhaustive = true;
+            return builder;
+          },
+          limit: (limit) => {
+            queryLimit = limit;
+            return builder;
+          },
+          toArray: async () => {
+            const ranked = rows
+              .map((row) => ({ ...row, _distance: vectorDistance(queryVector, row.vector) }))
+              .sort((left, right) => left._distance - right._distance);
+            if (options.degradeAnn === true && exhaustive === false) ranked.reverse();
+            return ranked.slice(0, queryLimit);
+          },
+        };
+        return builder;
+      },
+    };
+  }
+
+  vectorStore.setLanceLoaderForTests(async () => ({
+    connect: async () => ({
+      tableNames: async () => [...tables.keys()],
+      openTable: async (name) => openTable(name),
+      createTable: async (name, records) => {
+        tables.set(name, [...records]);
+        return openTable(name);
+      },
+    }),
+  }));
+  return { vectorStore, warmCalls };
+}
+
+async function seedVectorQualityIndex(vectorStore) {
+  const identity = {
+    model: 'quality-test',
+    modelHash: 'qualitytest',
+    dimensions: 2,
+    source: 'test',
+    fallbackUsed: false,
+  };
+  await vectorStore.upsertVectorRecords([
+    { id: 'a', text: 'alpha', vector: [1, 0], embeddingIdentity: identity },
+    { id: 'b', text: 'alpha near', vector: [0.9, 0.1], embeddingIdentity: identity },
+    { id: 'c', text: 'beta', vector: [0, 1], embeddingIdentity: identity },
+    { id: 'd', text: 'opposite', vector: [-1, 0], embeddingIdentity: identity },
+  ]);
+}
+
+describe('vector-store — Turbopuffer-inspired quality operations', () => {
+  it('prewarms data and vector indices and reports only measured hints', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-test-warm-'));
+    try {
+      const { vectorStore, warmCalls } = makeVectorQualityModule(tmpDir);
+      await seedVectorQualityIndex(vectorStore);
+      const result = await vectorStore.warmRagIndex({ feedbackDir: tmpDir });
+      assert.equal(result.status, 'warmed');
+      assert.equal(result.tableCount, 1);
+      assert.equal(result.tables[0].dataPrewarmed, true);
+      assert.deepEqual(result.tables[0].warmedIndices, ['vector_idx']);
+      assert.equal(warmCalls.data, 1);
+      assert.deepEqual(warmCalls.indices, ['vector_idx']);
+
+      const status = await vectorStore.getRagIndexStatus({ feedbackDir: tmpDir });
+      assert.ok(status.warmState[0].warmedAt);
+      assert.ok(status.warmState[0].durationMs >= 0);
+    } finally {
+      delete require.cache[require.resolve('../scripts/vector-store')];
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('falls back to a bounded local scan when native prewarm is remote-only', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-test-local-warm-'));
+    try {
+      const { vectorStore, warmCalls } = makeVectorQualityModule(tmpDir, {
+        remoteOnlyPrewarm: true,
+      });
+      await seedVectorQualityIndex(vectorStore);
+      const result = await vectorStore.warmRagIndex({
+        feedbackDir: tmpDir,
+        maxRows: 3,
+      });
+
+      assert.equal(result.status, 'warmed');
+      assert.equal(result.tables[0].dataPrewarmMethod, 'bounded_local_scan');
+      assert.equal(result.tables[0].rowsRead, 3);
+      assert.equal(result.tables[0].maxRows, 3);
+      assert.deepEqual(result.tables[0].warmedIndices, []);
+      assert.deepEqual(result.tables[0].unsupportedNativeIndices, ['vector_idx']);
+      assert.equal(warmCalls.data, 0);
+      assert.deepEqual(warmCalls.indices, []);
+    } finally {
+      delete require.cache[require.resolve('../scripts/vector-store')];
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('detects degraded ANN retrieval against exhaustive ground truth', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-test-recall-'));
+    try {
+      const { vectorStore } = makeVectorQualityModule(tmpDir, { degradeAnn: true });
+      await seedVectorQualityIndex(vectorStore);
+      const result = await vectorStore.evaluateRagRecall({
+        feedbackDir: tmpDir,
+        num: 4,
+        topK: 1,
+        threshold: 0.9,
+      });
+      assert.equal(result.status, 'fail');
+      assert.equal(result.sampleCount, 4);
+      assert.ok(result.avgRecall < 0.9);
+      assert.ok(result.exhaustiveLatencyP50Ms >= 0);
+    } finally {
+      delete require.cache[require.resolve('../scripts/vector-store')];
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('does not mislabel an exact-only table as perfect ANN recall', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-test-exact-only-'));
+    try {
+      const { vectorStore } = makeVectorQualityModule(tmpDir, { withVectorIndex: false });
+      await seedVectorQualityIndex(vectorStore);
+      const result = await vectorStore.evaluateRagRecall({ feedbackDir: tmpDir });
+      assert.equal(result.status, 'exact_only');
+      assert.equal(result.avgRecall, null);
+      assert.equal(result.sampleCount, 0);
+    } finally {
+      delete require.cache[require.resolve('../scripts/vector-store')];
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+});
+
 describe('vector-store — fallback profile', () => {
   it('falls back to the safe profile when the primary profile load fails', async () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-test-fallback-'));

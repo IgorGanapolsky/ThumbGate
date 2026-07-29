@@ -9413,10 +9413,16 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
 
       if (req.method === 'GET' && pathname === '/v1/rag/operations') {
         const telemetryLimit = Number(parsed.searchParams.get('telemetryLimit') || 200);
+        const recallSamples = Number(parsed.searchParams.get('recallSamples') || 25);
+        const recallTopK = Number(parsed.searchParams.get('recallTopK') || 10);
         const { getRagOperationsSnapshot } = require('../../scripts/rag-operations');
         sendJson(res, 200, await getRagOperationsSnapshot({
           feedbackDir: requestFeedbackDir,
           telemetryLimit: Number.isFinite(telemetryLimit) ? telemetryLimit : 200,
+          warm: parsed.searchParams.get('warm') === 'true',
+          evaluateRecall: parsed.searchParams.get('evaluateRecall') === 'true',
+          recallSamples: Number.isFinite(recallSamples) ? recallSamples : 25,
+          recallTopK: Number.isFinite(recallTopK) ? recallTopK : 10,
         }));
         return;
       }
