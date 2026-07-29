@@ -154,7 +154,7 @@
   <div class="rule">The rule all of this enforces: no accuracy figure ships without the baseline it beats and the split it was measured on.</div>
 
   <h2>Reproduce it</h2>
-  <p>Honest scoping: the measured corpus is <strong>private operator feedback telemetry</strong> and does not ship in the public repo. A clean clone gives you the methodology write-up, the CI quality gate (synthetic fixtures / no private data), and the same harness to run against <em>your</em> feedback log. The figures on this page are first-party operator measurements documented in <a style="color:var(--cyan)" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/ML-EVALUATION.md">docs/ML-EVALUATION.md</a> — not a committed private corpus dump.</p>
+  <p>Honest scoping: the measured corpus is <strong>private operator feedback telemetry</strong> and does not ship in the public repo. The exact machine-readable report behind the figures on this page is checked in with provenance at <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/evals/risk-model-report.json">evals/risk-model-report.json</a>. A clean clone gives you that report, the methodology write-up, the CI quality gate (synthetic fixtures / no private data), and the same harness to run against <em>your</em> feedback log. The figures on this page are first-party operator measurements documented in <a style="color:var(--cyan)" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/ML-EVALUATION.md">docs/ML-EVALUATION.md</a> — not a committed private corpus dump.</p>
   <pre>git clone https://github.com/IgorGanapolsky/ThumbGate
 cd ThumbGate &amp;&amp; npm ci
 npm run test:risk-quality              # CI quality gate — no private data needed
