@@ -2,5 +2,11 @@
   "total": 12,
   "up": 10,
   "down": 2,
-  "approvalRate": 83
+  "approvalRate": 83,
+  "activeGateCount": 14,
+  "gateStats": {
+    "totalGates": 14,
+    "manualCount": 10,
+    "autoCount": 4
+  }
 }
