@@ -765,10 +765,14 @@ function persistDocument(document, options = {}) {
   const paths = getDocumentStorePaths(options);
   ensureDir(paths.documentsDir);
   writeJson(getDocumentPath(document.documentId, options), document);
-  const summaries = listImportedDocuments({
-    ...options,
-    limit: MAX_SEARCH_SCAN,
-  }).documents.filter((entry) => entry.documentId !== document.documentId);
+  // The catalog rewrite must see EVERY existing summary. It previously rebuilt from
+  // listImportedDocuments, whose limit is CLAMPED to MAX_SEARCH_SCAN internally — so the
+  // (cap+1)th import silently evicted the oldest entries: their JSON stayed on disk but
+  // they became unlistable and unsearchable, because search iterates the catalog. (A first
+  // fix passed a huge limit and was silently re-clamped — search budgets and persistence
+  // must not share a code path at all.) Read the catalog directly.
+  const summaries = readJsonl(paths.catalogPath)
+    .filter((entry) => entry && entry.documentId && entry.documentId !== document.documentId);
   const nextSummaries = [
     buildDocumentSummary(document),
     ...summaries,

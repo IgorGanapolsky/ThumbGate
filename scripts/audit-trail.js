@@ -27,6 +27,49 @@ function getAuditLogPath() {
   return path.join(resolveFeedbackDir(), AUDIT_LOG_FILENAME);
 }
 
+/**
+ * Most recent audited tool action within `windowMs`, for feedback attribution.
+ *
+ * Feedback has carried a `lastAction` field since #203, but no caller ever populated it —
+ * 0 of 1,793 entries on the reference machine — which left retrieval evaluation with no
+ * (query -> relevant lesson) labels: an offline trace-join recovered only 7 usable pairs.
+ * Deriving the attribution at capture time, from the audit trail the gate already writes,
+ * makes labels accrue automatically from live use. Input is already sanitized by
+ * sanitizeToolInput at record time; the command is additionally length-capped here.
+ */
+function recentAuditedAction({ windowMs = 5 * 60 * 1000, nowMs = Date.now(), auditPath } = {}) {
+  const filePath = auditPath || getAuditLogPath();
+  let raw;
+  try {
+    raw = fs.readFileSync(filePath, 'utf8');
+  } catch {
+    return null;
+  }
+  const lines = raw.split('\n');
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    let entry;
+    try { entry = JSON.parse(line); } catch { continue; }
+    if (!['Bash', 'Edit', 'Write', 'MultiEdit'].includes(entry.toolName)) continue;
+    const ts = Date.parse(entry.timestamp || '');
+    if (!Number.isFinite(ts)) continue;
+    if (nowMs - ts > windowMs) return null;   // sorted file: older lines only get older
+    const input = entry.toolInput || {};
+    return {
+      tool: entry.toolName,
+      command: typeof input.command === 'string' ? input.command.slice(0, 500) : null,
+      file: input.file_path || input.path || null,
+      auditId: entry.id || null,
+      decision: entry.decision || null,
+      timestamp: entry.timestamp,
+      ageMs: nowMs - ts,
+      derivedFrom: 'audit-trail',
+    };
+  }
+  return null;
+}
+
 
 // ---------------------------------------------------------------------------
 // Core audit record
@@ -314,6 +357,7 @@ function tuneCacheThreshold(logPath) {
 // ---------------------------------------------------------------------------
 
 module.exports = {
+  recentAuditedAction,
   recordAuditEvent,
   auditToFeedback,
   readAuditLog,

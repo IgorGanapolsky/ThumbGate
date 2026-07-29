@@ -5202,7 +5202,13 @@ function resolveDocumentImportFilePath(inputPath, options = {}) {
   if (!fs.existsSync(resolved)) {
     throw createHttpError(400, `Path does not exist: ${resolved}`);
   }
-  return resolved;
+  // Symlink escape: containment must hold for the REAL path, not just the lexical one.
+  const real = fs.realpathSync(resolved);
+  const realRoot = (dir) => { try { return fs.realpathSync(dir); } catch { return dir; } };
+  if (!isWithinDir(real, realRoot(projectDir)) && !isWithinDir(real, realRoot(safeDataDir))) {
+    throw createHttpError(400, `Path resolves outside the allowed roots via symlink`);
+  }
+  return real;
 }
 
 function createApiServer() {

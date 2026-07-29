@@ -83,7 +83,11 @@ function expandTerms(terms) {
   const expanded = new Set(terms);
   for (const term of terms) {
     for (const group of SYNONYM_GROUPS) {
-      if (group.some((syn) => syn.split(/\s+/).some((w) => w === term || term.includes(w)))) {
+      if (group.some((syn) => syn.split(/\s+/).some((w) => w === term || (w.length >= 4 && term.startsWith(w))))) {
+      // Prefix-only, min 4 chars — NOT substring. `term.includes(w)` made 'format' match the
+      // synonym word 'rm', so a formatting query got delete/remove/drop/destroy/wipe injected
+      // as expansions, and 'domain' matched 'main'. Substring matching on 2-3 char synonym
+      // words poisons precision with exactly the terms a firewall cares most about.
         group.forEach((syn) => tokenize(syn).forEach((t) => expanded.add(t)));
       }
     }

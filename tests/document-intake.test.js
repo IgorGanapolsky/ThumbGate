@@ -106,3 +106,23 @@ test('importDocument strips script/style tags even when closing tags include whi
   assert.doesNotMatch(document.content, /color:\s*red/);
   assert.match(document.content, /Never force-push to main/);
 });
+
+test('the 201st import does not evict earlier documents from the catalog', () => {
+  // Regression: persistDocument rebuilt the catalog via listImportedDocuments, whose limit
+  // is CLAMPED to MAX_SEARCH_SCAN(200) internally — so import cap+1 silently dropped the
+  // oldest summaries; files stayed on disk but became unlistable and unsearchable. The
+  // store honours THUMBGATE_FEEDBACK_DIR, already pinned for this file, so assert on the
+  // catalog's line-count delta after importing well past the cap.
+  const catalogPath = path.join(tmpFeedbackDir, 'documents', 'catalog.jsonl');
+  const countCatalog = () => (fs.existsSync(catalogPath)
+    ? fs.readFileSync(catalogPath, 'utf8').split('\n').filter(Boolean).length
+    : 0);
+  const before = countCatalog();
+  const total = 210;
+  for (let i = 0; i < total; i += 1) {
+    importDocument({ content: `# Evict Doc ${i}\n\nbody ${i}`, sourceFormat: 'markdown', title: `Evict Doc ${i}` });
+  }
+  const after = countCatalog();
+  assert.equal(after, before + total,
+    `catalog grew by ${after - before}/${total} — imports beyond the search cap were evicted`);
+});

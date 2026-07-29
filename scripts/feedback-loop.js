@@ -1379,15 +1379,33 @@ function captureFeedback(params) {
     rubricEvaluation,
   });
 
-  // Tool-call attribution: link feedback to specific action (#203)
-  const lastAction = params.lastAction
+  // Tool-call attribution: link feedback to specific action (#203).
+  //
+  // The field existed since #203 but NO caller ever passed it — 0 of 1,793 entries on the
+  // reference machine — so feedback could never be joined back to the action that earned it,
+  // and retrieval evaluation had no labels. When the caller omits it, derive it from the
+  // audit trail the gate already writes (5-minute window, sanitized at record time). The
+  // caller-supplied form now also carries `command`, the field retrieval labels need.
+  const suppliedAction = params.lastAction
     ? {
       tool: params.lastAction.tool || 'unknown',
+      command: typeof params.lastAction.command === 'string'
+        ? params.lastAction.command.slice(0, 500)
+        : null,
       contextKey: params.lastAction.contextKey || null,
       file: params.lastAction.file || null,
       timestamp: params.lastAction.timestamp || null,
     }
     : null;
+  let lastAction = suppliedAction;
+  if (!lastAction) {
+    try {
+      const { recentAuditedAction } = require('./audit-trail');
+      lastAction = recentAuditedAction();
+    } catch {
+      lastAction = null;   // attribution is best-effort; capture must never fail on it
+    }
+  }
 
   const now = new Date().toISOString();
   const rawFeedbackEvent = {

@@ -33,7 +33,13 @@ const MAX_RETRIEVAL_MEMORY_CHARS = 20000;
 // The cap exists for cost, so it is set from measurement rather than taste. Worst case (every
 // entry scoring above threshold, so nothing filters out early):
 //
-//     200 entries 2.6 ms/call | 5,000 entries 2.6 ms/call | 20,000 entries 4.2 ms/call
+//     CORRECTION (2026-07-29 audit): the 2.6 ms figures below were measured on synthetic
+//     stub lessons with tiny texts. Re-measured with realistic ~350-char lessons the cost is
+//     179-226 ms/call at 5,000 entries (bigram-set construction dominates), and the full hook
+//     costs ~0.46 s warm / ~1.29 s cold per tool call because each hook spawns a fresh node
+//     process. The cap remains correct — relevance must not be recency-truncated — but the
+//     honest latency ceiling comes from process spawn, not this scan.
+//     [superseded] 200 entries 2.6 ms/call | 5,000 entries 2.6 ms/call | 20,000 4.2 ms/call
 //
 // 5,000 therefore costs nothing measurable against the old 200 while covering realistic
 // corpora with wide headroom. Override with THUMBGATE_RETRIEVAL_MAX_LINES if a machine ever

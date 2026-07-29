@@ -99,8 +99,17 @@ function isEmbedderAvailable() {
     const cfg = resolveGeminiEmbeddingConfig();
     if (cfg && cfg.enabled && cfg.apiKey) return true;
   } catch { /* policy module unavailable */ }
-  // The zero-dependency feature-hash provider is always available locally.
-  return true;
+  // Local transformers path: a cheap resolve probe, honouring the no-model-load constraint.
+  try {
+    require.resolve('@huggingface/transformers');
+    return true;
+  } catch { /* not installed */ }
+  // HONESTY CONTRACT (see module docstring): the feature-hash fallback is NOT a semantic
+  // embedder, and counting it as "available" made hybrid retrieval run on fake vectors —
+  // exactly the overclaiming this module promises never to do. With no real provider,
+  // callers must degrade to lexical. This bites in practice: @huggingface/transformers was
+  // absent from package.json, so every clean `npm ci` install silently landed here.
+  return false;
 }
 
 function defaultEmbedder() {
@@ -158,14 +167,24 @@ async function semanticRank(queryText, lessons = [], options = {}) {
     const hash = hashText(text);
 
     let entry = cache[lesson.id];
-    if (!entry || entry.hash !== hash || !Array.isArray(entry.vector)) {
+    // Cache entries are valid only for the SAME embedder and dimensionality. Keying on text
+    // hash alone served stale vectors across provider switches (Gemini 768-dim appearing or
+    // disappearing with an env var vs local 384-dim), and cosine over mixed-dimension vectors
+    // is not a similarity, it is a bug.
+    const expectedDim = Number(queryVector.length) || null;
+    const stale = !entry
+      || entry.hash !== hash
+      || !Array.isArray(entry.vector)
+      || (expectedDim && entry.vector.length !== expectedDim && !truncateDimension);
+    if (stale) {
       const vector = await embedder(text, {
         kind: 'document',
         task: 'code retrieval',
         title: lesson.title || undefined,
       });
       if (!Array.isArray(vector) || vector.length === 0) continue;
-      entry = { hash, vector };
+      if (expectedDim && vector.length !== expectedDim && !truncateDimension) continue;
+      entry = { hash, dim: vector.length, vector };
       cache[lesson.id] = entry;
       cacheDirty = true;
     }

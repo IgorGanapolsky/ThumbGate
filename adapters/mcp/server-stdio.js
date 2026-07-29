@@ -362,7 +362,20 @@ function resolveImportDocumentPath(targetPath) {
     throw new Error(`Path does not exist: ${resolved}`);
   }
 
-  return resolved;
+  // Symlink escape: path.resolve + prefix comparison approves an IN-workspace symlink that
+  // points OUTSIDE it. Containment must hold for the real path too.
+  const real = fs.realpathSync(resolved);
+  const realAllowed = allowedRoots.some((root) => {
+    let realRoot;
+    try { realRoot = fs.realpathSync(root); } catch { realRoot = root; }
+    const relative = path.relative(realRoot, real);
+    return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+  });
+  if (!realAllowed) {
+    throw new Error(`Path resolves outside the allowed roots via symlink: ${resolved}`);
+  }
+
+  return real;
 }
 
 function resolveWorkspaceCwd(targetPath) {
