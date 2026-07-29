@@ -291,7 +291,7 @@ async function parseDocumentFile(filePath, options = {}) {
     parsed = await parsePdf(resolvedPath, options);
     sourceFormat = 'pdf';
   } else if (extension === '.docx') {
-    parsed = await parseDocx(resolvedPath, options);
+    parsed = await parseDocx(resolvedPath);
     sourceFormat = 'docx';
   } else if (IMAGE_EXTENSIONS.has(extension)) {
     parsed = await parseImage(resolvedPath, options);
