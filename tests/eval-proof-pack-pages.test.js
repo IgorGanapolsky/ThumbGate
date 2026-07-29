@@ -1,8 +1,9 @@
 'use strict';
 
-const { describe, it } = require('node:test');
+const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 
 const root = path.join(__dirname, '..');
@@ -163,5 +164,123 @@ describe('server routes for proof pack', () => {
       server,
       /New case studies for individual Pro operators coming soon/,
     );
+  });
+});
+
+// Live-boot coverage for the #3072 route registrations in src/api/server.js.
+// SonarCloud flagged the /architecture, /whitepaper, /case-studies, and
+// /eval-scorecard handlers (and their 404 error fallbacks) as uncovered:
+// the static string assertions above never execute the handlers. Boot the
+// real server once on an ephemeral port and fetch each route.
+describe('proof pack routes served live by src/api/server', () => {
+  const tmpFeedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-proof-pack-feedback-'));
+  const tmpProofDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-proof-pack-proof-'));
+  const savedEnv = {
+    THUMBGATE_FEEDBACK_DIR: process.env.THUMBGATE_FEEDBACK_DIR,
+    THUMBGATE_PROOF_DIR: process.env.THUMBGATE_PROOF_DIR,
+  };
+  let handle = null;
+  let origin = '';
+
+  before(async () => {
+    // CODEX_SANDBOX blocks socket listen permission; tests below self-skip.
+    if (process.env.CODEX_SANDBOX) return;
+    // Isolate every writable dir to tmp and self-inject the API key so a clean
+    // clone with no CI env or operator data still passes (audit rule).
+    process.env.THUMBGATE_FEEDBACK_DIR = tmpFeedbackDir;
+    process.env.THUMBGATE_PROOF_DIR = tmpProofDir;
+    process.env.THUMBGATE_API_KEY = process.env.THUMBGATE_API_KEY || 'test-api-key';
+    const { startServer } = require('../src/api/server');
+    try {
+      handle = await startServer({ port: 0, host: '127.0.0.1' });
+    } catch (err) {
+      if (err && err.code === 'EPERM') {
+        handle = null;
+        return;
+      }
+      throw err;
+    }
+    origin = `http://localhost:${handle.port}`;
+  });
+
+  after(async () => {
+    if (handle) {
+      await new Promise((resolve) => handle.server.close(resolve));
+    }
+    for (const [key, value] of Object.entries(savedEnv)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    try {
+      fs.rmSync(tmpFeedbackDir, { recursive: true, force: true });
+      fs.rmSync(tmpProofDir, { recursive: true, force: true });
+    } catch {
+      // Best-effort teardown; tmp reaper handles leftovers.
+    }
+  });
+
+  const LIVE_ROUTES = [
+    { route: '/architecture', marker: 'Architecture diagrams' },
+    { route: '/whitepaper', marker: 'How we know ThumbGate works' },
+    { route: '/case-studies', marker: 'Case studies' },
+    { route: '/eval-scorecard', marker: 'Eval scorecard' },
+  ];
+
+  for (const { route, marker } of LIVE_ROUTES) {
+    it(`${route} serves its public page over HTTP`, async (t) => {
+      if (!handle) return t.skip('socket listen unavailable in this sandbox');
+      const res = await fetch(new URL(route, origin));
+      assert.equal(res.status, 200, `${route} must return 200`);
+      assert.match(String(res.headers.get('content-type')), /text\/html/);
+      const html = await res.text();
+      assert.ok(
+        html.toLowerCase().includes(marker.toLowerCase()),
+        `${route} body missing marker: ${marker}`,
+      );
+    });
+  }
+
+  it('registered aliases resolve to the same canonical pages', async (t) => {
+    if (!handle) return t.skip('socket listen unavailable in this sandbox');
+    const ALIASES = [
+      { route: '/bench', marker: 'Eval scorecard' },
+      { route: '/scorecard', marker: 'Eval scorecard' },
+      { route: '/how-we-know', marker: 'How we know ThumbGate works' },
+      { route: '/architecture.html', marker: 'Architecture diagrams' },
+      { route: '/case-studies.html', marker: 'Case studies' },
+    ];
+    for (const { route, marker } of ALIASES) {
+      const res = await fetch(new URL(route, origin));
+      assert.equal(res.status, 200, `${route} must return 200`);
+      const html = await res.text();
+      assert.ok(
+        html.toLowerCase().includes(marker.toLowerCase()),
+        `${route} body missing marker: ${marker}`,
+      );
+    }
+  });
+
+  it('/eval-scorecard falls back to 404 JSON when the page file is unreadable', async (t) => {
+    if (!handle) return t.skip('socket listen unavailable in this sandbox');
+    const scorecardPath = path.join(root, 'public', 'eval-scorecard.html');
+    const realReadFileSync = fs.readFileSync;
+    // Inject an unreadable page file: only the scorecard path throws, every
+    // other read (telemetry, config, sibling pages) passes through untouched.
+    fs.readFileSync = function patchedReadFileSync(target, ...rest) {
+      if (typeof target === 'string' && path.resolve(target) === scorecardPath) {
+        const err = new Error(`ENOENT: no such file or directory, open '${target}'`);
+        err.code = 'ENOENT';
+        throw err;
+      }
+      return realReadFileSync.apply(this, [target, ...rest]);
+    };
+    try {
+      const res = await fetch(new URL('/eval-scorecard', origin));
+      assert.equal(res.status, 404);
+      const body = await res.json();
+      assert.equal(body.error, 'Eval scorecard page not found');
+    } finally {
+      fs.readFileSync = realReadFileSync;
+    }
   });
 });
