@@ -1,9 +1,9 @@
 {
   "_provenance": {
     "generatedAt": "2026-07-29",
-    "generator": "node scripts/eval-risk-model.js --resamples 12 --json",
+    "generator": "node scripts/eval-risk-model.js --corpus ~/.thumbgate/feedback-sequences.jsonl --resamples 12 --json",
     "corpus": "operator feedback telemetry \u2014 PRIVATE, not distributable; row count and metrics only",
-    "note": "Backs thumbgate.ai/evaluations and docs/ML-EVALUATION.md. Regenerate on any corpus with the same command; the CI quality gate (npm run test:risk-quality) is runnable from a clean clone with no private data."
+    "note": "Backs thumbgate.ai/evaluations and docs/ML-EVALUATION.md. The script's raw --json output is the body of this file; this _provenance block is added by hand at check-in. From a clean clone the command exits 2 unless --corpus points at a real feedback log (the repo-local fixture is too small to evaluate); the CI quality gate (npm run test:risk-quality) is runnable from a clean clone with no private data."
   },
   "source": "private feedback telemetry (redacted path); 1,791 rows as of 2026-07-29",
   "rows": 1791,
