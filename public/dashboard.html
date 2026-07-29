@@ -1115,6 +1115,22 @@ async function connect(options) {
   }
 }
 
+function resolveActiveGateCount(data) {
+  if (!data || typeof data !== 'object') return null;
+  if (data.activeGateCount != null && data.activeGateCount !== '') {
+    var fromCount = Number(data.activeGateCount);
+    if (Number.isFinite(fromCount)) return fromCount;
+  }
+  var gateStats = data.gateStats || {};
+  if (gateStats.totalGates != null && gateStats.totalGates !== '') {
+    var fromStats = Number(gateStats.totalGates);
+    if (Number.isFinite(fromStats)) return fromStats;
+  }
+  if (Array.isArray(data.gates)) return data.gates.length;
+  if (Array.isArray(data.activeGates)) return data.activeGates.length;
+  return null;
+}
+
 function renderStats(data) {
   const total = (data.totalFeedback || data.total || 0);
   const pos = (data.totalPositive || data.positive || data.thumbsUp || 0);
@@ -1122,6 +1138,14 @@ function renderStats(data) {
   document.getElementById('statTotal').textContent = total;
   document.getElementById('statPositive').textContent = pos;
   document.getElementById('statNegative').textContent = neg;
+  // Active Gates used to stay on the HTML placeholder "—" because only
+  // renderDashboardData(/v1/dashboard) set it. Connect + live refresh only call
+  // /v1/feedback/stats → renderStats. Prefer activeGateCount from stats; fall
+  // back to gateStats/gates when present.
+  var gateCount = resolveActiveGateCount(data);
+  if (gateCount != null) {
+    document.getElementById('statGates').textContent = gateCount;
+  }
 }
 
 function setSelectedCard(action) {
@@ -1390,6 +1414,13 @@ async function loadGates() {
     const data = await res.json();
     renderDashboardData(data);
   } catch (e) {
+    // Do not leave Active Gates stuck on the HTML placeholder "—" when the
+    // full dashboard payload fails — feedback stats may already have painted a
+    // real count; only fall back to 0 if still unset.
+    var gatesEl = document.getElementById('statGates');
+    if (gatesEl && (gatesEl.textContent === '—' || gatesEl.textContent === '' || gatesEl.textContent == null)) {
+      gatesEl.textContent = '0';
+    }
     setMessageState(document.getElementById('gatesList'), 'empty', e && e.message ? e.message : 'Failed to load gates');
     setMessageState(document.getElementById('teamSummaryCards'), 'empty', e && e.message ? e.message : 'Failed to load team metrics');
     setMessageState(document.getElementById('predictiveSummaryCards'), 'empty', e && e.message ? e.message : 'Failed to load predictive insights');
@@ -1552,7 +1583,11 @@ function renderDashboardData(data) {
   if (reviewButton) reviewButton.disabled = false;
   const gates = data.gates || data.activeGates || [];
   const gateStats = data.gateStats || {};
-  document.getElementById('statGates').textContent = gates.length || gateStats.totalGates || 0;
+  // Prefer explicit count; never leave the hero card on the "—" placeholder.
+  // Note: `gates.length || totalGates` is wrong when length is 0 but totalGates
+  // is also 0 — use resolveActiveGateCount so 0 still renders as "0".
+  var gateCount = resolveActiveGateCount(data);
+  document.getElementById('statGates').textContent = gateCount != null ? gateCount : 0;
   if (!gates.length) {
     document.getElementById('gatesList').innerHTML = '<div class="empty">No active checks</div>';
   } else {

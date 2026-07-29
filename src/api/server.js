@@ -8665,6 +8665,33 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           stats.tier = 'Pro';
         }
 
+        // Active gates for the dashboard hero cards. Connect only fetches
+        // /v1/feedback/stats first; without these fields Active Gates stays
+        // stuck on the HTML placeholder "—" until a later /v1/dashboard call
+        // succeeds (and never updates if that call fails).
+        try {
+          const { computeGateStats } = require('../../scripts/dashboard');
+          const gateStats = computeGateStats();
+          stats.activeGateCount = Number(gateStats.totalGates) || 0;
+          stats.gateStats = {
+            totalGates: Number(gateStats.totalGates) || 0,
+            manualCount: Number(gateStats.manualCount) || 0,
+            autoCount: Number(gateStats.autoCount) || 0,
+            blocked: Number(gateStats.blocked) || 0,
+            warned: Number(gateStats.warned) || 0,
+          };
+        } catch (error) {
+          debugApiFallback('gate stats unavailable for feedback/stats', error);
+          stats.activeGateCount = 0;
+          stats.gateStats = {
+            totalGates: 0,
+            manualCount: 0,
+            autoCount: 0,
+            blocked: 0,
+            warned: 0,
+          };
+        }
+
         const projectChatSettings = readProjectChatSettings(req, parsed);
 
         stats.geminiConfigured = Boolean(

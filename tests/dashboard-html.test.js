@@ -114,6 +114,31 @@ test('dashboard defaults to the Total Feedback card highlight on first render', 
   assert.match(dashboard, /document\.getElementById\('statGates'\)\.textContent = '14';\s+setSelectedCard\('all'\);/);
 });
 
+test('dashboard paints Active Gates from feedback/stats so the hero card is never stuck on —', () => {
+  // Match against full HTML (dashboard may have multiple <script> tags; the
+  // first is not always the main app script).
+  const dashboard = readDashboard();
+
+  // Connect path only calls /v1/feedback/stats → renderStats first. That path
+  // must set #statGates from activeGateCount/gateStats, not leave the HTML "—".
+  assert.match(dashboard, /function resolveActiveGateCount\(data\)/);
+  assert.match(dashboard, /function renderStats\(data\)/);
+  assert.match(dashboard, /activeGateCount/);
+  assert.match(dashboard, /document\.getElementById\('statGates'\)\.textContent = gateCount/);
+  // On /v1/dashboard failure, never leave the placeholder dash if still blank.
+  assert.match(dashboard, /gatesEl\.textContent === '—'/);
+  assert.match(dashboard, /gatesEl\.textContent = '0'/);
+  // Dashboard payload path uses resolveActiveGateCount (not `length || totalGates`
+  // which mis-handles zeros).
+  assert.match(dashboard, /function renderDashboardData\(data\)/);
+  assert.match(dashboard, /resolveActiveGateCount\(data\)/);
+  assert.doesNotMatch(
+    dashboard,
+    /statGates'\)\.textContent = gates\.length \|\| gateStats\.totalGates \|\| 0/,
+  );
+  assert.match(dashboard, /id="statGates"/);
+});
+
 test('dashboard has noindex and meta description for SEO safety', () => {
   const dashboard = readDashboard();
   assert.match(dashboard, /noindex/, 'dashboard must have noindex to prevent Google indexing a Pro-only page');
