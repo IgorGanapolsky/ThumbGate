@@ -262,7 +262,10 @@ test('staged bundle shim EXECUTES: real MCP initialize against the built artifac
 
     const child = spawn(process.execPath, [shimPath], {
       cwd: '/', // Desktop-like: never the bundle dir
-      env: { ...process.env, HOME: sandboxHome }, // never touch real state
+      // Minimal env, not a spread: inherited THUMBGATE_FEEDBACK_DIR / THUMBGATE_PROJECT_DIR
+      // (or a project .thumbgate reachable via PWD) would defeat the sandboxed HOME and let
+      // the spawned server's jsonl-watcher write into LIVE feedback state. Review caught it.
+      env: { PATH: process.env.PATH, HOME: sandboxHome, THUMBGATE_HOME: path.join(sandboxHome, '.thumbgate') },
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 
