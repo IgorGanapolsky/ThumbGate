@@ -44,31 +44,19 @@ the baseline it must beat.
 
 ```mermaid
 flowchart LR
-    subgraph corpus["feedback-sequences.jsonl (1,791 rows)"]
+    subgraph corpus["feedback-sequences.jsonl — 1,791 rows"]
         R[rows] --> F["extractFeatureMap()"]
     end
-    F --> S{{"stratifiedSplit()
-group-aware, content-hashed,
-salted per resample"}}
-    S -->|"train fold"| REG["buildFeatureRegistry()
-(train fold ONLY —
-no transductive vocabulary)"]
-    REG --> FIT["fitBoostedModel()
-AdaBoost stumps"]
-    S -->|"test fold"| EV
-    FIT --> EV["evaluate()
-lift · MCC · AUC · Brier · ECE
-+ confusion matrix"]
-    EV --> IID["metrics.holdout
-(IID: familiar kinds)"]
-    EV --> NOV["metrics.holdoutNovelContext
-(distribution shift:
-unseen action types)"]
-    IID & NOV --> RS["eval-risk-model.js
-12 resamples → mean ± sd
-paired t (n−1) for comparisons"]
-    RS --> GATE{{"CI quality gate
-risk-model-quality.test.js"}}
+    F --> S{{"stratifiedSplit()<br/>group-aware, content-hashed,<br/>salted per resample"}}
+    S -->|train fold| REG["buildFeatureRegistry()<br/>train fold ONLY —<br/>no transductive vocabulary"]
+    REG --> FIT["fitBoostedModel()<br/>AdaBoost stumps"]
+    S -->|test fold| EV
+    FIT --> EV["evaluate()<br/>lift · MCC · AUC · Brier · ECE<br/>+ confusion matrix"]
+    EV --> IID["metrics.holdout<br/>IID: familiar kinds"]
+    EV --> NOV["metrics.holdoutNovelContext<br/>distribution shift:<br/>unseen action types"]
+    IID --> RS
+    NOV --> RS["eval-risk-model.js<br/>12 resamples, mean ± sd<br/>paired t for comparisons"]
+    RS --> GATE{{"CI quality gate<br/>risk-model-quality.test.js"}}
 ```
 
 Two design rules are load-bearing in that picture: the registry is rebuilt **inside** each
@@ -102,7 +90,7 @@ Novel-context held-out (unseen action types)
 ```mermaid
 xychart-beta
     title "Accuracy lift over the majority-class baseline (points)"
-    x-axis ["in-sample (the old headline)", "held-out IID", "held-out novel-context"]
+    x-axis ["in-sample (old headline)", "held-out IID", "held-out novel-context"]
     y-axis "lift (accuracy points)" -12 --> 12
     bar [10.9, 9.9, -10.5]
 ```
@@ -180,23 +168,14 @@ production traces to the published npm artifact:
 
 ```mermaid
 flowchart TD
-    A["audit-trail.jsonl
-(real production decisions)"] -->|"mine-eval-set.js
-redact + dedupe by shape"| G["evals/gate-decisions.golden.jsonl
-60 cases · 12 gates"]
-    G -->|"eval-baseline.js"| B["gate-decisions.baseline.json
-(recorded verdicts)"]
-    G & B --> D{{"gate-golden-set.test.js
-fails when any real command's
-verdict MOVES"}}
-    E["gate-evasion-matrix
-14 commands × 9 transforms"] --> CI[("CI")]
+    A["audit-trail.jsonl<br/>real production decisions"] -->|"mine-eval-set.js<br/>redact + dedupe by shape"| G["gate-decisions.golden.jsonl<br/>60 cases · 12 gates"]
+    G -->|eval-baseline.js| B["gate-decisions.baseline.json<br/>recorded verdicts"]
+    G --> D
+    B --> D{{"gate-golden-set.test.js<br/>fails when any real command's<br/>verdict MOVES"}}
+    E["gate-evasion-matrix<br/>14 commands × 9 transforms"] --> CI[("CI")]
     D --> CI
-    P["npm tarball (what users get)"] -->|"verify-published-enforcement.mjs
-fresh HOME, public hook contract"| W{{"launchd drift-watch
-2× daily"}}
-    L["live decision stream"] --> C{{"gate-decision-canary
-silent · spike · novelty"}}
+    P["npm tarball — what users get"] -->|"verify-published-enforcement.mjs<br/>fresh HOME, public hook contract"| W{{"launchd drift-watch<br/>2× daily"}}
+    L["live decision stream"] --> C{{"gate-decision-canary<br/>silent · spike · novelty"}}
 ```
 
 Drift, not correctness-vs-production, is what the golden set asserts: most gates are
