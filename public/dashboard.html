@@ -1094,7 +1094,12 @@ async function connect(options) {
     }
     renderStats(data);
     setSelectedCard('all');
-    await loadDashboardData();
+    var deepLinkedTab = getDeepLinkTab();
+    if (deepLinkedTab && deepLinkedTab !== 'search') {
+      switchTab(deepLinkedTab);
+    } else {
+      scheduleDashboardHydration(10000);
+    }
     // Open a live-events stream so feedback/rule-regen events surface
     // without a manual refresh. Non-fatal: if the browser doesn't support
     // ReadableStream over fetch (very old), we simply stay on the polled path.
@@ -1175,6 +1180,7 @@ async function search() {
     return;
   }
 
+  pauseDashboardHydration();
   try {
     const res = await fetch('/v1/search', {
       method: 'POST',
@@ -1191,6 +1197,8 @@ async function search() {
     container.innerHTML = results.map(renderResult).join('');
   } catch (e) {
     setMessageState(container, 'empty', e && e.message ? e.message : 'Search failed');
+  } finally {
+    scheduleDashboardHydration(3000);
   }
 }
 
@@ -1376,6 +1384,20 @@ function switchTab(name) {
       history.replaceState(null, '', '#' + name);
     }
   } catch (e) { /* ignore: older browsers or sandboxed frames */ }
+  if (API_KEY && !isDemo) {
+    if (name === 'ai-inventory') {
+      loadAiInventory();
+    } else if (name === 'enterprise') {
+      loadEnterpriseDataChatStatus();
+    } else if (name !== 'search' && name !== 'export') {
+      ensureDashboardDataLoaded().then(function() {
+        if (name === 'generated') loadGeneratedView(currentGeneratedView);
+        if (name === 'insights') requestAnimationFrame(renderPendingInsightsCharts);
+      });
+    }
+  } else if (name === 'insights') {
+    requestAnimationFrame(renderPendingInsightsCharts);
+  }
 }
 
 /**
@@ -1433,15 +1455,36 @@ async function loadGates() {
 
 async function loadDashboardData() {
   await loadGates();
-  await loadGeneratedView(currentGeneratedView);
-  // Fetch full dashboard for insights charts
-  try {
-    var res = await fetch('/v1/dashboard', { headers: getHeaders() });
-    if (res.ok) {
-      var data = await res.json();
-      renderDashboardData(data);
-    }
-  } catch (e) { /* insights degrade gracefully */ }
+}
+
+var dashboardDataPromise = null;
+var dashboardHydrationTimer = null;
+
+function pauseDashboardHydration() {
+  if (dashboardHydrationTimer) {
+    clearTimeout(dashboardHydrationTimer);
+    dashboardHydrationTimer = null;
+  }
+}
+
+function ensureDashboardDataLoaded() {
+  pauseDashboardHydration();
+  if (!dashboardDataPromise) {
+    dashboardDataPromise = loadDashboardData().catch(function(error) {
+      dashboardDataPromise = null;
+      throw error;
+    });
+  }
+  return dashboardDataPromise;
+}
+
+function scheduleDashboardHydration(delayMs) {
+  if (!API_KEY || isDemo || dashboardDataPromise) return;
+  pauseDashboardHydration();
+  dashboardHydrationTimer = setTimeout(function() {
+    dashboardHydrationTimer = null;
+    ensureDashboardDataLoaded();
+  }, delayMs);
 }
 
 // Live-events SSE subscription. We use fetch() + ReadableStream instead of
@@ -1608,8 +1651,6 @@ function renderDashboardData(data) {
   renderRegulatedProof(data.regulatedProof || {});
   renderTemplates(data.templateLibrary || {});
   renderInsights(data);
-  loadAiInventory();
-  loadEnterpriseDataChatStatus();
 }
 
 async function loadAiInventory() {
@@ -2501,17 +2542,23 @@ async function exportDpo() {
   const status = document.getElementById('exportStatus');
   status.textContent = 'Exporting...';
   try {
-    const res = await fetch('/v1/dpo/export', { headers: getHeaders() });
-    if (!res.ok) throw new Error('Export failed');
+    const res = await fetch('/v1/dpo/export', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ includePairs: true })
+    });
     const data = await res.json();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    if (!res.ok) throw new Error(data.detail || data.error || 'Export failed');
+    if (!Array.isArray(data.records)) throw new Error('Export response did not include DPO pairs');
+    const records = data.records;
+    const blob = new Blob([JSON.stringify(records, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = 'thumbgate-dpo-pairs-' + new Date().toISOString().slice(0,10) + '.json';
     a.click();
     URL.revokeObjectURL(url);
-    const count = data.pairs ? data.pairs.length : Array.isArray(data) ? data.length : 0;
+    const count = records.length;
     status.textContent = '✓ Exported ' + count + ' preference pairs';
     status.style.color = 'var(--green)';
   } catch (e) {
@@ -2526,14 +2573,24 @@ async function exportDpo() {
 var feedbackChart = null;
 var lessonChart = null;
 var gateAuditChart = null;
+var pendingInsightsData = null;
 
 function renderInsights(data) {
   renderTokenSavings(data.tokenSavings, data.gateStats || {});
   renderPipeline(data.lessonPipeline || {});
-  renderFeedbackTrendChart(data.feedbackTimeSeries || {});
-  renderLessonTrendChart(data.feedbackTimeSeries || {});
-  renderGateAuditChartFromData(data.gateAudit || {});
   renderActionableRemediations(data.actionableRemediations || []);
+  pendingInsightsData = data;
+  var insightsTab = document.getElementById('tab-insights');
+  if (insightsTab && insightsTab.classList.contains('active')) {
+    requestAnimationFrame(renderPendingInsightsCharts);
+  }
+}
+
+function renderPendingInsightsCharts() {
+  if (!pendingInsightsData) return;
+  renderFeedbackTrendChart(pendingInsightsData.feedbackTimeSeries || {});
+  renderLessonTrendChart(pendingInsightsData.feedbackTimeSeries || {});
+  renderGateAuditChartFromData(pendingInsightsData.gateAudit || {});
 }
 
 function renderActionableRemediations(remediations) {
@@ -2643,7 +2700,7 @@ function renderFeedbackTrendChart(ts) {
   var canvas = document.getElementById('feedbackTrendChart');
   if (!canvas) return;
   if (typeof Chart === 'undefined') return;
-  var days = ts.days || [];
+  var days = (ts.days || []).slice(-90);
   if (feedbackChart) feedbackChart.destroy();
 
   var labels = days.map(function(d) { return d.dayKey.slice(5); });
@@ -2684,7 +2741,7 @@ function renderFeedbackTrendChart(ts) {
       },
       scales: {
         x: { ticks: { color: '#8b8b96', font: { size: 10 }, maxRotation: 45 }, grid: { color: 'rgba(34,34,37,0.5)' } },
-        y: { beginAtZero: true, ticks: { color: '#8b8b96', stepSize: 1 }, grid: { color: 'rgba(34,34,37,0.5)' } },
+        y: { beginAtZero: true, ticks: { color: '#8b8b96', precision: 0, maxTicksLimit: 6 }, grid: { color: 'rgba(34,34,37,0.5)' } },
       },
     },
   });
@@ -2694,7 +2751,7 @@ function renderLessonTrendChart(ts) {
   var canvas = document.getElementById('lessonTrendChart');
   if (!canvas) return;
   if (typeof Chart === 'undefined') return;
-  var days = ts.days || [];
+  var days = (ts.days || []).slice(-90);
   if (lessonChart) lessonChart.destroy();
 
   var labels = days.map(function(d) { return d.dayKey.slice(5); });
@@ -2742,8 +2799,8 @@ function renderLessonTrendChart(ts) {
       },
       scales: {
         x: { ticks: { color: '#8b8b96', font: { size: 10 }, maxRotation: 45 }, grid: { color: 'rgba(34,34,37,0.5)' } },
-        y: { beginAtZero: true, position: 'left', ticks: { color: '#22d3ee', stepSize: 1 }, grid: { color: 'rgba(34,34,37,0.5)' } },
-        y1: { beginAtZero: true, position: 'right', ticks: { color: '#4ade80' }, grid: { drawOnChartArea: false } },
+        y: { beginAtZero: true, position: 'left', ticks: { color: '#22d3ee', precision: 0, maxTicksLimit: 6 }, grid: { color: 'rgba(34,34,37,0.5)' } },
+        y1: { beginAtZero: true, position: 'right', ticks: { color: '#4ade80', precision: 0, maxTicksLimit: 6 }, grid: { drawOnChartArea: false } },
       },
     },
   });
@@ -2753,7 +2810,7 @@ function renderGateAuditChartFromData(gateAudit) {
   var canvas = document.getElementById('gateAuditChart');
   if (!canvas) return;
   if (typeof Chart === 'undefined') return;
-  var days = gateAudit.days || [];
+  var days = (gateAudit.days || []).slice(-90);
   if (gateAuditChart) gateAuditChart.destroy();
 
   var labels = days.map(function(d) { return (d.dayKey || '').slice(5); });
@@ -2791,7 +2848,7 @@ function renderGateAuditChartFromData(gateAudit) {
       },
       scales: {
         x: { stacked: true, ticks: { color: '#8b8b96', font: { size: 10 } }, grid: { color: 'rgba(34,34,37,0.5)' } },
-        y: { stacked: true, beginAtZero: true, ticks: { color: '#8b8b96', stepSize: 1 }, grid: { color: 'rgba(34,34,37,0.5)' } },
+        y: { stacked: true, beginAtZero: true, ticks: { color: '#8b8b96', precision: 0, maxTicksLimit: 6 }, grid: { color: 'rgba(34,34,37,0.5)' } },
       },
     },
   });

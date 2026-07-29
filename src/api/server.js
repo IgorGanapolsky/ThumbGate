@@ -9634,14 +9634,19 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           fs.writeFileSync(paths.outputPath, result.jsonl);
         }
 
-        sendJson(res, 200, {
+        const response = {
           pairs: result.pairs.length,
+          pairCount: result.pairs.length,
           errors: result.errors.length,
           learnings: result.learnings.length,
           unpairedErrors: result.unpairedErrors.length,
           unpairedLearnings: result.unpairedLearnings.length,
           outputPath: paths.outputPath,
-        });
+        };
+        if (body.includePairs === true) {
+          response.records = result.pairs;
+        }
+        sendJson(res, 200, response);
         return;
       }
 

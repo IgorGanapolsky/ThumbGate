@@ -1,5 +1,6 @@
+const fs = require('node:fs');
 const { test, expect } = require('@playwright/test');
-const { mockDashboardApis } = require('./helpers/mock-api');
+const { mockDashboardApis, loadFixture } = require('./helpers/mock-api');
 
 // Comprehensive clickability coverage for the NON-stat-card surfaces on
 // /dashboard. The four stat tiles are already covered by
@@ -112,6 +113,44 @@ test.describe('/dashboard clickability — non-stat-card surfaces', () => {
     });
   }
 
+  test('search stays responsive while large insight totals render', async ({ page }) => {
+    const dashboard = loadFixture('dashboard.json');
+    dashboard.feedbackTimeSeries = {
+      days: Array.from({ length: 365 }, (_, index) => ({
+        dayKey: `2025-${String(Math.floor(index / 28) % 12 + 1).padStart(2, '0')}-${String(index % 28 + 1).padStart(2, '0')}`,
+        up: index === 364 ? 1771 : 0,
+        down: 0,
+        lessons: index === 364 ? 1771 : 0,
+      })),
+    };
+    await mockDashboardApis(page, { dashboard });
+    await page.unroute(/\/v1\/search/);
+    await page.route(/\/v1\/search/, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          results: [{
+            id: 'fb_search_proof',
+            signal: 'up',
+            context: 'dashboard search proof',
+            tags: ['search'],
+          }],
+        }),
+      }),
+    );
+    const dashboardRequests = [];
+    page.on('request', (request) => {
+      if (new URL(request.url()).pathname === '/v1/dashboard') dashboardRequests.push(request.url());
+    });
+    await page.goto('/dashboard');
+    expect(await page.evaluate(() => feedbackChart === null && lessonChart === null && gateAuditChart === null)).toBe(true);
+    await page.locator('#searchQuery').fill('dashboard search proof');
+    await page.locator('button[onclick="search()"]').click();
+    await expect(page.locator('#searchResults')).toContainText('dashboard search proof', { timeout: 2500 });
+    expect(dashboardRequests).toHaveLength(0);
+  });
+
   // --- Mark Current Dashboard Reviewed (review checkpoint button) ---
 
   test('clicking "Mark Current Dashboard Reviewed" disables the button while saving then re-enables', async ({ page }) => {
@@ -152,18 +191,34 @@ test.describe('/dashboard clickability — non-stat-card surfaces', () => {
     await expect(status).toHaveText(/Exported \d+ preference pairs|Exporting\.\.\./);
   });
 
-  test('exportDpo with a non-empty payload reports the pair count', async ({ page }) => {
-    await mockDashboardApis(page, {});
-    await page.route(/\/v1\/dpo\/export/, (route) =>
-      route.fulfill({
+  test('exportDpo POSTs for records and downloads the real pair array', async ({ page }) => {
+    let exportRequest = null;
+    await page.unroute(/\/v1\/dpo\/export/);
+    await page.route(/\/v1\/dpo\/export/, (route) => {
+      exportRequest = {
+        method: route.request().method(),
+        body: route.request().postDataJSON(),
+      };
+      return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ pairs: [{ chosen: 'a', rejected: 'b' }, { chosen: 'c', rejected: 'd' }] }),
-      }),
-    );
+        body: JSON.stringify({
+          pairCount: 2,
+          records: [{ chosen: 'a', rejected: 'b' }, { chosen: 'c', rejected: 'd' }],
+        }),
+      });
+    });
     await page.goto('/dashboard#export');
+    const downloadPromise = page.waitForEvent('download');
     await page.locator('.export-btn', { hasText: /Download DPO Pairs/ }).click();
+    const download = await downloadPromise;
     await expect(page.locator('#exportStatus')).toHaveText('✓ Exported 2 preference pairs');
+    expect(exportRequest).toEqual({ method: 'POST', body: { includePairs: true } });
+    const savedPath = await download.path();
+    expect(JSON.parse(fs.readFileSync(savedPath, 'utf8'))).toEqual([
+      { chosen: 'a', rejected: 'b' },
+      { chosen: 'c', rejected: 'd' },
+    ]);
   });
 
   // --- nav anchors ---
