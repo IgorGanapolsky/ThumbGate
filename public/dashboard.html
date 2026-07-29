@@ -1013,6 +1013,12 @@ async function checkLocalLlmReachable(url) {
 }
 
 function disconnectKey() {
+  pauseDashboardHydration();
+  dashboardDataPromise = null;
+  if (__liveEventsController) {
+    try { __liveEventsController.abort(); } catch (_) { /* already aborted */ }
+    __liveEventsController = null;
+  }
   API_KEY = '';
   isDemo = false;
   var input = document.getElementById('apiKey');

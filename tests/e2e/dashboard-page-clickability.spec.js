@@ -81,6 +81,28 @@ test.describe('/dashboard clickability — non-stat-card surfaces', () => {
     await expect(page.locator('#authStatus')).toHaveClass(/ok/);
   });
 
+  test('Disconnect cancels deferred hydration and reconnect can load dashboard data', async ({ page }) => {
+    await disableDashboardBootstrap(page);
+    const dashboardRequests = [];
+    page.on('request', (request) => {
+      if (new URL(request.url()).pathname === '/v1/dashboard') dashboardRequests.push(request.url());
+    });
+    await page.goto('/dashboard?noauto');
+    await page.locator('#apiKey').fill('test-key-123');
+    await page.locator('#connectBtn').click();
+    await expect(page.locator('#dashboardContent')).toBeVisible();
+    expect(await page.evaluate(() => dashboardHydrationTimer !== null)).toBe(true);
+
+    await page.locator('#disconnectBtn').click();
+    expect(await page.evaluate(() => dashboardHydrationTimer === null && dashboardDataPromise === null)).toBe(true);
+    expect(dashboardRequests).toHaveLength(0);
+
+    await page.locator('#apiKey').fill('test-key-456');
+    await page.locator('#connectBtn').click();
+    await page.locator('.tab', { hasText: 'Active Gates' }).click();
+    await expect.poll(() => dashboardRequests.length).toBe(1);
+  });
+
   // --- 8 tab headers (demo auto-loads, so they're available immediately) ---
 
   for (const [label, tabId] of [
