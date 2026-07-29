@@ -268,6 +268,11 @@ const CODEX_PLUGIN_PAGE_PATH = path.resolve(__dirname, '../../public/codex-plugi
 const COMPARE_PAGE_PATH = path.resolve(__dirname, '../../public/compare.html');
 const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
 const NUMBERS_PAGE_PATH = path.resolve(__dirname, '../../public/numbers.html');
+const ARCHITECTURE_PAGE_PATH = path.resolve(__dirname, '../../public/architecture.html');
+const WHITEPAPER_PAGE_PATH = path.resolve(__dirname, '../../public/whitepaper.html');
+const EVAL_SCORECARD_PAGE_PATH = path.resolve(__dirname, '../../public/eval-scorecard.html');
+const EVALUATIONS_PAGE_PATH = path.resolve(__dirname, '../../public/evaluations.html');
+const CASE_STUDIES_PAGE_PATH = path.resolve(__dirname, '../../public/case-studies.html');
 const FEDERAL_PAGE_PATH = path.resolve(__dirname, '../../public/federal.html');
 const PRICING_PAGE_PATH = path.resolve(__dirname, '../../public/pricing.html');
 const ABOUT_PAGE_PATH = path.resolve(__dirname, '../../public/about.html');
@@ -6268,6 +6273,74 @@ async function addContext(){
       return;
     }
 
+    if (isGetLikeRequest && (pathname === '/architecture' || pathname === '/architecture.html')) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(ARCHITECTURE_PAGE_PATH, 'utf-8'),
+          extraTelemetry: { pageType: 'architecture' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Architecture page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/whitepaper' || pathname === '/whitepaper.html' || pathname === '/how-we-know' || pathname === '/how-we-know-it-works')) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(WHITEPAPER_PAGE_PATH, 'utf-8'),
+          extraTelemetry: { pageType: 'whitepaper' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'White paper page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/eval-scorecard' || pathname === '/eval-scorecard.html' || pathname === '/scorecard' || pathname === '/bench')) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(EVAL_SCORECARD_PAGE_PATH, 'utf-8'),
+          extraTelemetry: { pageType: 'eval_scorecard' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Eval scorecard page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/evaluations' || pathname === '/evaluations.html')) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(EVALUATIONS_PAGE_PATH, 'utf-8'),
+          extraTelemetry: { pageType: 'evaluations' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Evaluations page not found' });
+      }
+      return;
+    }
+
     if (isGetLikeRequest && (pathname === '/federal' || pathname === '/federal.html' || pathname === '/government' || pathname === '/gov')) {
       // Federal lead-gen page. Routed through servePublicMarketingPage so agency
       // arrivals via SBIR / GSA / outbound channels capture UTM attribution and
@@ -8143,28 +8216,24 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
       return;
     }
 
-    // Public case studies — proof surface for buyers. Conversion-optimization
-    // surface that was missing: thumbgate.ai had no /case-studies, so visitors
-    // landed on CLI install commands without seeing whether anyone actually
-    // got value. First entry is the Aiventyx Teams listing integration: real
-    // third-party CTR signal (5/8 clicks before the /go/teams fix, now routed
-    // through team intake so scope happens before checkout).
-    if (isGetLikeRequest && pathname === '/case-studies') {
-      sendHtml(res, 200, `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Case Studies — ThumbGate</title><meta name="description" content="Real integrations of ThumbGate's pre-action checks for AI coding agents. Proof, not promises."><style>body{font-family:system-ui,-apple-system,sans-serif;max-width:780px;margin:0 auto;padding:32px 20px;line-height:1.55;color:#1f2937}h1{font-size:32px;margin:0 0 8px}.lede{color:#6b7280;font-size:18px;margin:0 0 32px}article{border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:24px;background:#fff}article h2{margin:0 0 4px;font-size:22px}.meta{color:#6b7280;font-size:13px;margin-bottom:16px}h3{font-size:15px;margin:20px 0 8px;color:#374151;text-transform:uppercase;letter-spacing:0.5px}.metric{display:inline-block;background:#0f172a;color:#fff;padding:4px 10px;border-radius:6px;font-weight:600;font-size:14px;margin:0 4px 4px 0}p{margin:8px 0}a{color:#0066cc}code{background:#f3f4f6;padding:1px 6px;border-radius:4px;font-size:13.5px}footer{margin-top:48px;padding-top:24px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px}</style></head><body>
-<h1>Case Studies</h1>
-<p class="lede">Real integrations. No fabricated logos, no aspirational numbers — every claim below is reproducible.</p>
-
-<p><em>New case studies for individual Pro operators coming soon.</em></p>
-
-<footer>
-<p>Want to be the next case study? The product is real, the integration is 30 seconds: <code>npx thumbgate init</code>. If you ship something with ThumbGate and want it documented here, email <a href="mailto:igor.ganapolsky@gmail.com">igor.ganapolsky@gmail.com</a>.</p>
-<p><a href="https://thumbgate.ai">Home</a> · <a href="/pricing">Pricing</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/support">Support</a></p>
-</footer>
-</body></html>`, {}, {
-        headOnly: isHeadRequest,
-      });
+    // Public case studies — dogfood proof narratives (static HTML; no fabricated logos).
+    if (isGetLikeRequest && (pathname === '/case-studies' || pathname === '/case-studies.html')) {
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(CASE_STUDIES_PAGE_PATH, 'utf-8'),
+          extraTelemetry: { pageType: 'case_studies' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Case studies page not found' });
+      }
       return;
     }
+
 
         // Public canonical pricing page. The audit flagged "pricing schizophrenia":
     // sales/pricing.json said $49 / $299, COMMERCIAL_TRUTH.md said $19 / $149,

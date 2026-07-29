@@ -369,3 +369,13 @@ Three-phase rollout the Agent Manager navigates, with ThumbGate's role in each:
 Dedicated landing page at `/agent-manager` documents the mapping in full, including JSON-LD `TechArticle` markup with `about[]: Agent Manager / Claude Code rollout / Pre-Action Checks`.
 
 *Last updated: 2026-05-19*
+
+## Evaluation proof pack (public)
+
+- White paper: https://thumbgate.ai/whitepaper
+- Architecture diagrams: https://thumbgate.ai/architecture
+- Eval scorecard: https://thumbgate.ai/eval-scorecard
+- ML evaluations: https://thumbgate.ai/evaluations
+- Case studies: https://thumbgate.ai/case-studies
+- Numbers: https://thumbgate.ai/numbers
+- Verification evidence: https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md

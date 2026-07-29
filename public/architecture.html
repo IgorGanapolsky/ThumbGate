@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="ThumbGate">
+<meta name="author" content="Igor Ganapolsky">
+<title>ThumbGate Architecture Diagrams — Pre-Action Gate Loop</title>
+<meta name="description" content="Architecture diagrams for ThumbGate: system map, feedback pipeline, agent integration, and pre-action gate loop. The same visuals used in the open-source README, published on thumbgate.ai.">
+<meta property="og:title" content="ThumbGate Architecture Diagrams">
+<meta property="og:description" content="System architecture, feedback pipeline, agent integration, and pre-action gate loop — the visual proof pack for buyers and reviewers.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/architecture">
+<link rel="canonical" href="https://thumbgate.ai/architecture">
+<link rel="icon" type="image/png" href="/thumbgate-icon.png">
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "ThumbGate Architecture Diagrams",
+  "description": "System architecture, feedback pipeline, agent integration, and pre-action gate loop diagrams for the ThumbGate Reliability Gateway.",
+  "url": "https://thumbgate.ai/architecture",
+  "dateModified": "2026-07-29",
+  "author": { "@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" }
+}
+</script>
+<style>
+  :root {
+    --bg:#0b0f14; --panel:#111823; --border:#1e2a3a; --text:#e6edf3;
+    --muted:#8b98a5; --cyan:#39c5cf;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; line-height:1.65; }
+  nav { padding:1rem 2rem; border-bottom:1px solid var(--border); display:flex; gap:1.25rem; flex-wrap:wrap; align-items:center; }
+  nav a { color:var(--muted); text-decoration:none; font-size:0.9rem; }
+  nav a:hover { color:var(--cyan); }
+  nav .brand { color:var(--text); font-weight:700; }
+  .container { max-width:980px; margin:0 auto; padding:2.5rem 1.5rem 4rem; }
+  h1 { font-size:2rem; margin-bottom:0.4rem; }
+  h2 { font-size:1.3rem; margin:2.4rem 0 0.75rem; color:var(--cyan); }
+  .subtitle { color:var(--muted); font-size:1.05rem; margin-bottom:1.5rem; }
+  figure { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:1rem; margin:1rem 0 1.75rem; }
+  figure img { width:100%; height:auto; display:block; border-radius:8px; background:#050816; }
+  figcaption { color:var(--muted); font-size:0.9rem; margin-top:0.75rem; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; margin:1.25rem 0; }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:1rem 1.1rem; }
+  .card h3 { font-size:1rem; margin-bottom:0.35rem; }
+  .card p { color:var(--muted); font-size:0.92rem; }
+  a.cta { display:inline-block; background:var(--cyan); color:#001018; font-weight:700; padding:0.7rem 1rem; border-radius:8px; text-decoration:none; margin:0.5rem 0.75rem 0.5rem 0; }
+  a.secondary { color:var(--cyan); }
+  .footer-note { color:var(--muted); font-size:0.85rem; margin-top:2.5rem; text-align:center; }
+  .footer-note a { color:var(--cyan); text-decoration:none; }
+</style>
+</head>
+<body>
+<nav>
+  <a class="brand" href="/">ThumbGate</a>
+  <a href="/whitepaper">White paper</a>
+  <a href="/architecture">Architecture</a>
+  <a href="/eval-scorecard">Scorecard</a>
+  <a href="/evaluations">Evaluations</a>
+  <a href="/case-studies">Case studies</a>
+  <a href="/numbers">Numbers</a>
+  <a href="/pricing">Pricing</a>
+</nav>
+<main class="container">
+  <h1>Architecture diagrams</h1>
+  <p class="subtitle">The same system diagrams that ship in the open-source README, published here so buyers and reviewers do not need GitHub to see how PreToolUse enforcement, feedback, and promotion fit together.</p>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Local-first enforcement</h3>
+      <p>No LLM on the block/allow path. Deterministic rules first; local semantic recall only when needed.</p>
+    </div>
+    <div class="card">
+      <h3>Feedback → rules</h3>
+      <p>Thumbs-down becomes a reviewable lesson, then a prevention rule that fires before the next tool call.</p>
+    </div>
+    <div class="card">
+      <h3>Multi-agent surface</h3>
+      <p>One gate layer across Claude Code, Cursor, Codex, Gemini, Amp, Cline, OpenCode, and MCP.</p>
+    </div>
+  </div>
+
+  <h2>System architecture</h2>
+  <figure>
+    <img src="/assets/diagrams/thumbgate-architecture.png" alt="ThumbGate architecture: agent layer, hooks, MCP tools, gate engine, governance, security, feedback memory, and orchestration" width="1200" height="800" loading="eager">
+    <figcaption>Agents → hooks → MCP tools → gate engine (match / verdict / reasoning / stats), with governance, secret scanning, feedback promotion, and orchestration around the decision path.</figcaption>
+  </figure>
+
+  <h2>Feedback pipeline (session 1 → session 2)</h2>
+  <figure>
+    <img src="/assets/diagrams/feedback-pipeline.png" alt="Sequence diagram: agent mistake, thumbs-down capture, rule promotion, next session blocked" width="1200" height="700" loading="lazy">
+    <figcaption>Session 1 captures a thumbs-down; the lesson is promoted; session 2 blocks the repeat before execution.</figcaption>
+  </figure>
+
+  <h2>Pre-action gate loop</h2>
+  <figure>
+    <img src="/assets/diagrams/pre-action-gate-loop.svg" alt="Pre-action gate loop: capture, remember, rank, gate" width="900" height="400" loading="lazy">
+    <figcaption>Capture feedback → remember locally → rank and promote → gate the next tool call.</figcaption>
+  </figure>
+
+  <h2>Agent integration</h2>
+  <figure>
+    <img src="/assets/diagrams/agent-integration.png" alt="ThumbGate agent integration map across coding agents and MCP" width="1200" height="700" loading="lazy">
+    <figcaption>How ThumbGate attaches to coding agents and MCP tool surfaces without putting a remote model on the enforcement path.</figcaption>
+  </figure>
+
+  <h2>Plugin topology</h2>
+  <figure>
+    <img src="/assets/diagrams/plugin-topology.png" alt="ThumbGate plugin topology across IDE and CLI surfaces" width="1200" height="700" loading="lazy">
+    <figcaption>Where plugins and marketplace packages sit relative to the local gate runtime.</figcaption>
+  </figure>
+
+  <h2>Related proof surfaces</h2>
+  <p>
+    <a class="cta" href="/whitepaper">How we know it works</a>
+    <a class="cta" href="/eval-scorecard">Eval scorecard</a>
+    <a class="secondary" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/diagrams/thumbgate_architecture.mmd">Mermaid sources on GitHub →</a>
+  </p>
+
+  <p class="footer-note">
+    Source diagrams live in <code>docs/diagrams/</code> and are mirrored here for production serving.
+    Also see <a href="/evaluations">ML evaluations</a> and
+    <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md">verification evidence</a>.
+  </p>
+</main>
+</body>
+</html>
