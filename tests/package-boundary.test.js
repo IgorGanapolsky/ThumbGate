@@ -399,8 +399,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // risk-scorer.js require()s at module load — without it the published package throws
     // on require. It is the only new file in the tarball; model-calibration.js and
     // eval-risk-model.js are development-only.
-    manifest.fileCount <= 371,
-    `npm package should stay <= 371 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 372,
+    `npm package should stay <= 372 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing
@@ -577,9 +577,11 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // capability-scoped authority that expires, plus its fail-closed enforcement. Shipped
   // runtime logic in an already-shipped file; no new files enter the tarball (still 371).
   // Measured artifact: 5,450,871 bytes.
+  // Bumped 5.46 MB -> 5.47 MB (2026-07-29) for public/evaluations.html (~13 KB static
+  // methodology page with an inline SVG chart). Measured artifact: 5,465,873 bytes.
   assert.ok(
-    manifest.unpackedSize <= 5_460_000,
-    `npm package should stay <= 5.46 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 5_470_000,
+    `npm package should stay <= 5.47 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

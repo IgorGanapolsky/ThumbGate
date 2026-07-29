@@ -40,6 +40,42 @@ Each carries `accuracy`, `baselineAccuracy`, `lift`, `precision`, `recall`, `spe
 `lift` sits next to `accuracy` in every report so accuracy can never again be quoted without
 the baseline it must beat.
 
+### The pipeline, end to end
+
+```mermaid
+flowchart LR
+    subgraph corpus["feedback-sequences.jsonl (1,791 rows)"]
+        R[rows] --> F["extractFeatureMap()"]
+    end
+    F --> S{{"stratifiedSplit()
+group-aware, content-hashed,
+salted per resample"}}
+    S -->|"train fold"| REG["buildFeatureRegistry()
+(train fold ONLY —
+no transductive vocabulary)"]
+    REG --> FIT["fitBoostedModel()
+AdaBoost stumps"]
+    S -->|"test fold"| EV
+    FIT --> EV["evaluate()
+lift · MCC · AUC · Brier · ECE
++ confusion matrix"]
+    EV --> IID["metrics.holdout
+(IID: familiar kinds)"]
+    EV --> NOV["metrics.holdoutNovelContext
+(distribution shift:
+unseen action types)"]
+    IID & NOV --> RS["eval-risk-model.js
+12 resamples → mean ± sd
+paired t (n−1) for comparisons"]
+    RS --> GATE{{"CI quality gate
+risk-model-quality.test.js"}}
+```
+
+Two design rules are load-bearing in that picture: the registry is rebuilt **inside** each
+training fold (building it before the split let held-out rows choose the vocabulary), and the
+split key is the feature vector itself (the model sees nothing else, so rows sharing one are
+duplicate inputs and must share a fold).
+
 ## Current results
 
 Real corpus, 1,791 rows, 12 independent group-aware stratified splits
@@ -60,6 +96,20 @@ Novel-context held-out (unseen action types)
   MCC                                 0.244
   Brier / ECE                         0.300 / 0.310
 ```
+
+### The same result as a picture
+
+```mermaid
+xychart-beta
+    title "Accuracy lift over the majority-class baseline (points)"
+    x-axis ["in-sample (the old headline)", "held-out IID", "held-out novel-context"]
+    y-axis "lift (accuracy points)" -12 --> 12
+    bar [10.9, 9.9, -10.5]
+```
+
+The first bar is why in-sample accuracy was retired as a quality number: measured properly,
+the model keeps most of that lift on familiar traffic and **inverts** on unfamiliar action
+types — the case a firewall exists for.
 
 **Evidence.** These figures are reproducible from the harness rather than asserted:
 `npm run eval:risk -- --corpus <path> --json` emits the same report machine-readably, and the
@@ -122,6 +172,36 @@ adversarial code review of the evaluator itself.
 
 The lesson is uncomfortable and worth stating plainly: **the evaluator is as capable of being
 wrong as the model it measures**, and its errors are harder to notice because they flatter you.
+
+## The enforcement evaluation loop
+
+The model harness above is one half. The other half evaluates the **gates themselves**, from
+production traces to the published npm artifact:
+
+```mermaid
+flowchart TD
+    A["audit-trail.jsonl
+(real production decisions)"] -->|"mine-eval-set.js
+redact + dedupe by shape"| G["evals/gate-decisions.golden.jsonl
+60 cases · 12 gates"]
+    G -->|"eval-baseline.js"| B["gate-decisions.baseline.json
+(recorded verdicts)"]
+    G & B --> D{{"gate-golden-set.test.js
+fails when any real command's
+verdict MOVES"}}
+    E["gate-evasion-matrix
+14 commands × 9 transforms"] --> CI[("CI")]
+    D --> CI
+    P["npm tarball (what users get)"] -->|"verify-published-enforcement.mjs
+fresh HOME, public hook contract"| W{{"launchd drift-watch
+2× daily"}}
+    L["live decision stream"] --> C{{"gate-decision-canary
+silent · spike · novelty"}}
+```
+
+Drift, not correctness-vs-production, is what the golden set asserts: most gates are
+state-conditional, so a fresh sandbox cannot reproduce the verdict — but a verdict that
+*changes* for a real command is exactly the signature of every bypass found in this codebase.
 
 ## The CI gate
 

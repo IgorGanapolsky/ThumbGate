@@ -306,6 +306,7 @@
     "public/chatgpt-app.html",
     "public/codex-plugin.html",
     "public/compare.html",
+    "public/evaluations.html",
     "public/dashboard.html",
     "public/diagnostic.html",
     "public/federal.html",

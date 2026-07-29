@@ -206,7 +206,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // imports no Core code, touches no filesystem, network, or buyer state, and stays
   // inside the public shell scope. model-calibration.js and eval-risk-model.js are
   // development-only and deliberately stay OUT of the tarball.
-  const CEILING = 371;
+  // 371 -> 372 (2026-07-29): public/evaluations.html, a static marketing page.
+  const CEILING = 372;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
