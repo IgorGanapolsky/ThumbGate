@@ -43,8 +43,9 @@ function seedFromString(s) {
 }
 
 // --- Fault catalog (environment faults Antithesis injects, in Node form) ---
+// High-ROI agent harness faults first; keep deterministic pick order stable.
 const FAULTS = Object.freeze([
-  { id: 'none', description: 'No fault — baseline' },
+  { id: 'none', description: 'No fault — baseline force-push probe' },
   { id: 'empty-memory', description: 'Empty memory-log.jsonl' },
   { id: 'corrupt-jsonl', description: 'Malformed lines in memory log' },
   { id: 'missing-feedback-dir', description: 'Feedback dir does not exist' },
@@ -53,6 +54,10 @@ const FAULTS = Object.freeze([
   { id: 'stub-embedder', description: 'Force vector stub embed (degraded semantics)' },
   { id: 'clock-skew-past', description: 'Memory timestamps far in the past' },
   { id: 'scope-isolation', description: 'Mixed-scope memories under requireScope' },
+  // High-ROI agent failure modes (PE Antithesis: bizarre failures are certainty)
+  { id: 'rm-rf-root', description: 'Recursive force-delete of filesystem root' },
+  { id: 'secret-inline', description: 'Inline API key / sk_live style secret in Bash' },
+  { id: 'force-push-main', description: 'Explicit git push --force origin main' },
 ]);
 
 function mkSandbox(label) {
@@ -90,9 +95,26 @@ function buildScenario(rng, fault) {
   const recent = new Date(now - 3600 * 1000).toISOString();
   const ts = fault.id === 'clock-skew-past' ? past : recent;
 
+  // Four-field memory scope (entityId/projectId/processId/sessionId) — matches
+  // lesson-retrieval / memory-scope-readiness contract. High-ROI: isolation tests
+  // must use the real shape or they false-positive as "retrieval threw".
+  const aliceScope = {
+    entityId: 'alice',
+    projectId: 'thumbgate',
+    processId: 'agent-a',
+    sessionId: 'session-1',
+  };
+  const bobScope = {
+    entityId: 'bob',
+    projectId: 'thumbgate',
+    processId: 'agent-a',
+    sessionId: 'session-1',
+  };
+
   const baseMemories = [
     {
       id: 'alice-force',
+      ...aliceScope,
       title: 'MISTAKE: force push to main',
       content: 'NEVER git push --force to main/master. Use --force-with-lease on personal branches.',
       tags: ['negative', 'git'],
@@ -101,6 +123,7 @@ function buildScenario(rng, fault) {
     },
     {
       id: 'bob-other',
+      ...bobScope,
       title: 'MISTAKE: unrelated deploy claim',
       content: 'NEVER say deployed without curling /health.',
       tags: ['negative', 'deploy'],
@@ -109,6 +132,7 @@ function buildScenario(rng, fault) {
     },
     {
       id: 'alice-rm',
+      ...aliceScope,
       title: 'MISTAKE: rm -rf production data',
       content: 'NEVER wipe production directories without backup.',
       tags: ['negative'],
@@ -138,16 +162,21 @@ function buildScenario(rng, fault) {
 
   if (memories) writeMemoryLog(feedbackDir, memories);
 
-  const toolInput = fault.id === 'toxic-tool-input'
-    ? { command: null, nested: { self: null }, huge: 'x'.repeat(50_000) }
-    : { command: 'git push --force origin main' };
-
+  let toolInput = { command: 'git push --force origin main' };
   if (fault.id === 'toxic-tool-input') {
+    toolInput = { command: null, nested: { self: null }, huge: 'x'.repeat(50_000) };
     try {
       toolInput.nested.self = toolInput;
     } catch {
       // ignore circular assignment issues
     }
+  } else if (fault.id === 'rm-rf-root') {
+    toolInput = { command: 'rm -rf /' };
+  } else if (fault.id === 'secret-inline') {
+    // Synthetic fixture token — not a live credential; secret-scanner must still fire.
+    toolInput = { command: 'export OPENAI_API_KEY=sk-ant-api03-TESTONLY_NOT_A_REAL_KEY_xxxxxxxx && curl https://example.com' };
+  } else if (fault.id === 'force-push-main') {
+    toolInput = { command: 'git push --force origin main' };
   }
 
   return {
@@ -155,9 +184,25 @@ function buildScenario(rng, fault) {
     feedbackDir,
     toolName: 'Bash',
     toolInput,
-    scope: fault.id === 'scope-isolation' ? 'alice' : null,
+    scope: fault.id === 'scope-isolation' ? aliceScope : null,
     requireScope: fault.id === 'scope-isolation',
   };
+}
+
+function isGateBlocked(result) {
+  if (!result || typeof result !== 'object') return false;
+  const action = result.action || result.decision || result.permission || null;
+  return result.blocked === true
+    || action === 'block'
+    || action === 'deny'
+    || result.permissionDecision === 'deny'
+    || result.continue === false;
+}
+
+function isGateWarned(result) {
+  if (!result || typeof result !== 'object') return false;
+  const action = result.action || result.decision || null;
+  return action === 'warn' || result.warned === true || result.permissionDecision === 'ask';
 }
 
 function checkGateInvariants(scenario, result, thrown) {
@@ -169,8 +214,28 @@ function checkGateInvariants(scenario, result, thrown) {
     });
     return violations;
   }
-  // gates-engine uses null to mean "no deny / allow through" — that is a valid shape.
+  // gates-engine uses null to mean "no deny / allow through" — valid shape for non-dangerous cmds.
   if (result === null || result === undefined) {
+    // High-ROI dangerous faults must never silent-allow via null.
+    if (scenario.fault.id === 'rm-rf-root') {
+      violations.push({
+        invariantId: 'gate-rm-rf-blocked',
+        detail: 'rm -rf / returned null (silent allow)',
+      });
+    } else if (scenario.fault.id === 'secret-inline') {
+      violations.push({
+        invariantId: 'gate-secret-exfil-blocked',
+        detail: 'inline secret returned null (silent allow)',
+      });
+    } else if (
+      scenario.fault.id === 'force-push-main'
+      || scenario.fault.id === 'none'
+    ) {
+      violations.push({
+        invariantId: 'gate-force-push-blocked',
+        detail: 'force-push returned null (silent allow)',
+      });
+    }
     return violations;
   }
   if (typeof result !== 'object') {
@@ -181,37 +246,104 @@ function checkGateInvariants(scenario, result, thrown) {
     return violations;
   }
   const action = result.action || result.decision || result.permission || null;
-  const blocked = result.blocked === true
-    || action === 'block'
-    || action === 'deny'
-    || result.permissionDecision === 'deny';
+  const blocked = isGateBlocked(result);
   const hasShape = 'action' in result
     || 'blocked' in result
     || 'permissionDecision' in result
     || 'decision' in result
     || 'ok' in result
-    || 'message' in result;
+    || 'message' in result
+    || 'continue' in result
+    || 'gate' in result;
   if (!hasShape) {
     violations.push({
       invariantId: 'gate-result-shape',
       detail: `missing decision fields: ${Object.keys(result).join(',')}`,
     });
   }
-  // Force-push must block when strict enforcement is on
-  if (scenario.fault.id !== 'strict-enforcement-off'
-    && scenario.fault.id !== 'toxic-tool-input'
-    && String(scenario.toolInput?.command || '').includes('push --force')) {
-    if (!blocked && scenario.fault.id !== 'empty-memory') {
-      // May warn in free tier — treat missing block as soft violation only when
-      // result explicitly allows with no warning either
-      const warned = action === 'warn' || result.warned === true;
-      if (!warned && action === 'allow') {
-        violations.push({
-          invariantId: 'gate-force-push-blocked',
-          detail: `force-push allowed without warn/block: ${JSON.stringify(result).slice(0, 200)}`,
-        });
+
+  const cmd = String(scenario.toolInput?.command || '');
+  const strictOff = scenario.fault.id === 'strict-enforcement-off';
+  const toxic = scenario.fault.id === 'toxic-tool-input';
+
+  // Force-push must block (or at least warn) when strict enforcement is on
+  if (!strictOff && !toxic && cmd.includes('push --force')) {
+    const warned = isGateWarned(result);
+    if (!blocked && !warned && action === 'allow') {
+      violations.push({
+        invariantId: 'gate-force-push-blocked',
+        detail: `force-push allowed without warn/block: ${safeSnippet(result)}`,
+      });
+    }
+  }
+
+  // rm -rf / must hard-block regardless of free-tier cap
+  if (scenario.fault.id === 'rm-rf-root' || /rm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+|.*\s-rf\s).*(\/|~)/.test(cmd)) {
+    if (!blocked) {
+      violations.push({
+        invariantId: 'gate-rm-rf-blocked',
+        detail: `rm -rf root/home not blocked: ${safeSnippet(result)}`,
+      });
+    }
+  }
+
+  // Inline secret must block or redact (never silent allow with secret still in message echo)
+  if (scenario.fault.id === 'secret-inline' || /sk-(?:ant-api|proj|live)_/i.test(cmd) || /OPENAI_API_KEY=sk-/i.test(cmd)) {
+    if (!blocked && !isGateWarned(result)) {
+      violations.push({
+        invariantId: 'gate-secret-exfil-blocked',
+        detail: `inline secret not blocked/warned: ${safeSnippet(result)}`,
+      });
+    }
+  }
+
+  return violations;
+}
+
+function safeSnippet(value) {
+  try {
+    return JSON.stringify(value).slice(0, 200);
+  } catch {
+    return String(value).slice(0, 200);
+  }
+}
+
+function checkAuditInvariants(scenario) {
+  const violations = [];
+  if (scenario.fault.id !== 'toxic-tool-input' && scenario.fault.id !== 'secret-inline') {
+    return violations;
+  }
+  try {
+    const audit = require('./audit-trail');
+    const record = audit.recordAuditEvent || audit.record;
+    if (typeof record !== 'function') return violations;
+    // Isolate audit path to temp dir so we don't pollute operator feedback
+    const prev = process.env.THUMBGATE_FEEDBACK_DIR;
+    const tmp = mkSandbox('audit');
+    process.env.THUMBGATE_FEEDBACK_DIR = tmp;
+    try {
+      record({
+        toolName: scenario.toolName,
+        toolInput: scenario.toolInput,
+        decision: 'deny',
+        gateId: 'explorer-probe',
+        message: 'audit resilience probe',
+        source: 'autonomous-reliability-explorer',
+      });
+    } finally {
+      if (prev === undefined) delete process.env.THUMBGATE_FEEDBACK_DIR;
+      else process.env.THUMBGATE_FEEDBACK_DIR = prev;
+      try {
+        fs.rmSync(tmp, { recursive: true, force: true });
+      } catch {
+        // ignore
       }
     }
+  } catch (err) {
+    violations.push({
+      invariantId: 'audit-never-throws',
+      detail: err.message || String(err),
+    });
   }
   return violations;
 }
@@ -239,19 +371,23 @@ function checkRetrievalInvariants(scenario, lessons, thrown) {
     });
   }
   if (scenario.requireScope && scenario.scope) {
+    const wantEntity = scenario.scope.entityId || scenario.scope;
     for (const lesson of lessons) {
-      const scope = lesson.metadata?.scope || lesson.scope;
+      const entity = lesson.entityId
+        || lesson.metadata?.entityId
+        || lesson.metadata?.scope
+        || lesson.scope;
       // shaped lessons may drop metadata — check id convention
-      if (lesson.id && lesson.id.startsWith('bob')) {
+      if (lesson.id && String(lesson.id).startsWith('bob')) {
         violations.push({
           invariantId: 'retrieval-scope-isolation',
           detail: `out-of-scope id returned: ${lesson.id}`,
         });
       }
-      if (scope && scope !== scenario.scope) {
+      if (entity && entity !== wantEntity && entity !== 'shared' && lesson.visibility !== 'shared') {
         violations.push({
           invariantId: 'retrieval-scope-isolation',
-          detail: `scope ${scope} != ${scenario.scope} for ${lesson.id}`,
+          detail: `entity ${entity} != ${wantEntity} for ${lesson.id}`,
         });
       }
     }
@@ -343,6 +479,9 @@ function runScenario(scenario) {
     }
     for (const v of checkGateInvariants(scenario, gateResult, gateErr)) {
       findings.push({ ...v, phase: 'gates', faultId: scenario.fault.id });
+    }
+    for (const v of checkAuditInvariants(scenario)) {
+      findings.push({ ...v, phase: 'audit', faultId: scenario.fault.id });
     }
 
     // Retrieval
@@ -557,13 +696,136 @@ function writeReport(report, outDir) {
   return { jsonPath, mdPath };
 }
 
+/**
+ * High-ROI loop close: promote invariant violations into feedback/memory so
+ * feedback:rules can mint prevention rules (Antithesis: fix new bugs fanatically).
+ *
+ * Writes to an isolated feedbackDir when provided; defaults to proof/ explorer-promotions.
+ * Never writes into the operator's live .claude/memory unless promoteToLive=true.
+ */
+function promoteFindings(report, options = {}) {
+  const findings = Array.isArray(report?.findings) ? report.findings : [];
+  const out = {
+    promoted: 0,
+    skipped: 0,
+    path: null,
+    memoryPath: null,
+    entries: [],
+    ok: true,
+    error: null,
+  };
+  if (findings.length === 0) {
+    out.skipped = 0;
+    return out;
+  }
+
+  const root = options.feedbackDir
+    || path.join(options.outDir || path.join(process.cwd(), 'proof'), 'explorer-promotions');
+  try {
+    fs.mkdirSync(root, { recursive: true });
+    const feedbackPath = path.join(root, 'feedback-log.jsonl');
+    const memoryPath = path.join(root, 'memory-log.jsonl');
+    const seen = new Set();
+    const lines = [];
+    const memoryLines = [];
+
+    for (const f of findings) {
+      const inv = getInvariant(f.invariantId);
+      const key = `${f.invariantId}|${f.faultId}|${String(f.detail || '').slice(0, 80)}`;
+      if (seen.has(key)) {
+        out.skipped += 1;
+        continue;
+      }
+      seen.add(key);
+
+      const entry = {
+        id: `explorer_${report.seed}_${f.runIndex}_${f.invariantId}`,
+        timestamp: report.generatedAt || new Date().toISOString(),
+        feedback: 'down',
+        context: `Autonomous reliability explorer violation under fault=${f.faultId} seed=${report.seed}`,
+        whatWentWrong: inv?.name || f.invariantId,
+        whatToChange: f.detail || 'See explorer RCA report',
+        tags: [
+          'autonomous-reliability-explorer',
+          'antithesis-style',
+          f.phase || 'unknown',
+          f.invariantId,
+          f.faultId,
+          inv?.severity || 'unknown',
+        ].filter(Boolean),
+        source: 'autonomous-reliability-explorer',
+        metadata: {
+          seed: report.seed,
+          iterations: report.iterations,
+          runIndex: f.runIndex,
+          invariantId: f.invariantId,
+          faultId: f.faultId,
+          phase: f.phase,
+          reproduction: report.reproduction?.command || null,
+        },
+      };
+      lines.push(JSON.stringify(entry));
+
+      memoryLines.push(JSON.stringify({
+        id: `mem_${entry.id}`,
+        title: `MISTAKE: ${inv?.name || f.invariantId}`,
+        content: `NEVER allow invariant ${f.invariantId} to fail. Fault=${f.faultId}. Detail: ${f.detail}`,
+        tags: ['negative', 'explorer', f.invariantId, f.faultId],
+        metadata: {
+          toolsUsed: ['Bash'],
+          domain: 'reliability-explorer',
+          occurrences: 1,
+          source: 'autonomous-reliability-explorer',
+          seed: report.seed,
+        },
+        timestamp: entry.timestamp,
+      }));
+      out.entries.push(entry);
+      out.promoted += 1;
+    }
+
+    if (lines.length) {
+      fs.appendFileSync(feedbackPath, `${lines.join('\n')}\n`, 'utf8');
+      fs.appendFileSync(memoryPath, `${memoryLines.join('\n')}\n`, 'utf8');
+    }
+    out.path = feedbackPath;
+    out.memoryPath = memoryPath;
+
+    // Meta-property: promotion succeeded for at least one finding when any existed
+    if (findings.length > 0 && out.promoted === 0) {
+      out.ok = false;
+      out.error = 'findings present but none promoted';
+    }
+  } catch (err) {
+    out.ok = false;
+    out.error = err.message || String(err);
+  }
+  return out;
+}
+
 function parseArgs(argv = process.argv.slice(2)) {
-  const opts = { iterations: 12, seed: null, outDir: null };
+  const opts = {
+    iterations: 12,
+    seed: null,
+    outDir: null,
+    promote: false,
+    checkReplay: true,
+  };
   for (const a of argv) {
     if (a.startsWith('--seed=')) opts.seed = Number(a.slice(7));
     else if (a.startsWith('--iterations=')) opts.iterations = Number(a.slice(13));
     else if (a.startsWith('--out=')) opts.outDir = a.slice(6);
+    else if (a === '--promote' || a === '--promote=true') opts.promote = true;
+    else if (a === '--no-replay') opts.checkReplay = false;
   }
+  // CI/self-heal can pin via env without argv churn
+  if (opts.seed == null && process.env.THUMBGATE_RELIABILITY_SEED) {
+    opts.seed = Number(process.env.THUMBGATE_RELIABILITY_SEED);
+  }
+  if (process.env.THUMBGATE_RELIABILITY_ITERATIONS) {
+    opts.iterations = Number(process.env.THUMBGATE_RELIABILITY_ITERATIONS);
+  }
+  if (process.env.THUMBGATE_RELIABILITY_PROMOTE === '1') opts.promote = true;
   return opts;
 }
 
@@ -575,7 +837,29 @@ if (isMain()) {
   const opts = parseArgs();
   const report = exploreReliability(opts);
   const paths = writeReport(report, opts.outDir);
+  let promotion = null;
+  if (opts.promote || !report.summary.passed) {
+    // Always promote on FAIL so new bugs enter the feedback loop (PE fanatical new-bug fix)
+    promotion = promoteFindings(report, { outDir: opts.outDir || path.dirname(paths.jsonPath) });
+    report.promotion = promotion;
+    if (promotion && !promotion.ok) {
+      report.findings.push({
+        invariantId: 'findings-promoteable',
+        detail: promotion.error || 'promotion failed',
+        phase: 'meta',
+        faultId: 'promote',
+        runIndex: -1,
+      });
+      report.summary.violations = report.findings.length;
+      report.summary.passed = false;
+    }
+    // rewrite report with promotion block
+    writeReport(report, opts.outDir || path.dirname(paths.jsonPath));
+  }
   console.log(formatExplorerReport(report));
+  if (promotion) {
+    console.log(`Promoted ${promotion.promoted} findings → ${promotion.path || '(none)'}`);
+  }
   console.log(`Wrote ${paths.jsonPath}`);
   console.log(`Wrote ${paths.mdPath}`);
   process.exitCode = report.summary.passed ? 0 : 1;
@@ -588,7 +872,11 @@ module.exports = {
   exploreReliability,
   formatExplorerReport,
   writeReport,
+  promoteFindings,
   runScenario,
   buildScenario,
   parseArgs,
+  isGateBlocked,
+  checkGateInvariants,
+  checkAuditInvariants,
 };

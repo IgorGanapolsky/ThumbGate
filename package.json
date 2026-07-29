@@ -879,7 +879,9 @@
     "test:ir-metrics": "node --test tests/ir-metrics.test.js tests/retrieval-ranking-eval.test.js",
     "test:pragmatic-hybrid": "node --test tests/pragmatic-hybrid-search.test.js",
     "explore:reliability": "node scripts/autonomous-reliability-explorer.js --seed=1 --iterations=12",
-    "test:autonomous-reliability": "node --test tests/autonomous-reliability-explorer.test.js"
+    "test:autonomous-reliability": "node --test tests/autonomous-reliability-explorer.test.js tests/prove-reliability.test.js",
+    "prove:reliability": "node scripts/prove-reliability.js",
+    "explore:reliability:ci": "node scripts/prove-reliability.js --seed=42 --iterations=10"
   },
   "keywords": [
     "mcp",

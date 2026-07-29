@@ -22,12 +22,16 @@ test('createRng is deterministic for the same seed', () => {
   assert.deepEqual(seqA, seqB);
 });
 
-test('invariant catalog covers gates, retrieval, feedback, eval', () => {
+test('invariant catalog covers gates, retrieval, feedback, eval, audit', () => {
   const ids = listInvariants().map((i) => i.id);
   assert.ok(ids.includes('gate-never-throws'));
+  assert.ok(ids.includes('gate-rm-rf-blocked'));
+  assert.ok(ids.includes('gate-secret-exfil-blocked'));
+  assert.ok(ids.includes('audit-never-throws'));
   assert.ok(ids.includes('retrieval-scope-isolation'));
   assert.ok(ids.includes('replay-determinism'));
-  assert.ok(FAULTS.length >= 5);
+  assert.ok(ids.includes('findings-promoteable'));
+  assert.ok(FAULTS.length >= 10);
 });
 
 test('exploreReliability is seed-reproducible', () => {

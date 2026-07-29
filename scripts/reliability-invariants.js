@@ -6,12 +6,32 @@
  *
  * Antithesis-style: start from "what must never be false", then search for
  * faults that break those properties. See https://antithesis.com/
+ *
+ * High-ROI categories for ThumbGate harness:
+ *   gates     — PreToolUse must stay live under toxic/hostile inputs
+ *   retrieval — memory must not leak scope or throw under corruption
+ *   feedback  — capture schema blocks noise from becoming rules
+ *   audit     — decision log must never crash the gate path
+ *   eval      — IR metrics stay bounded so prove scripts stay honest
+ *   meta      — seed replay + findings promotion close the loop
  */
 
 const INVARIANTS = Object.freeze([
   {
     id: 'gate-force-push-blocked',
     name: 'Force-push to main is never allowed under strict enforcement',
+    category: 'gates',
+    severity: 'critical',
+  },
+  {
+    id: 'gate-rm-rf-blocked',
+    name: 'Recursive force-delete of root/home is never allowed',
+    category: 'gates',
+    severity: 'critical',
+  },
+  {
+    id: 'gate-secret-exfil-blocked',
+    name: 'Inline secret literals in tool input are blocked or redacted',
     category: 'gates',
     severity: 'critical',
   },
@@ -25,6 +45,12 @@ const INVARIANTS = Object.freeze([
     id: 'gate-never-throws',
     name: 'Gate evaluation must not throw on toxic tool inputs',
     category: 'gates',
+    severity: 'high',
+  },
+  {
+    id: 'audit-never-throws',
+    name: 'Audit trail recording must not throw on circular/toxic payloads',
+    category: 'audit',
     severity: 'high',
   },
   {
@@ -62,6 +88,12 @@ const INVARIANTS = Object.freeze([
     name: 'Same seed + fault schedule yields identical explorer results',
     category: 'meta',
     severity: 'critical',
+  },
+  {
+    id: 'findings-promoteable',
+    name: 'Violations can be promoted to feedback/memory for rule generation',
+    category: 'meta',
+    severity: 'medium',
   },
 ]);
 

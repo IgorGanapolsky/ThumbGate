@@ -24,11 +24,15 @@ test('DEFAULT_CHECKS isolates proof artifacts for prove checks', () => {
   const proveAutomation = DEFAULT_CHECKS.find((check) => check.name === 'prove_automation');
   const proveDataPipeline = DEFAULT_CHECKS.find((check) => check.name === 'prove_data_pipeline');
   const proveTessl = DEFAULT_CHECKS.find((check) => check.name === 'prove_tessl');
+  const proveReliability = DEFAULT_CHECKS.find((check) => check.name === 'prove_reliability');
 
   assert.equal(proveAdapters.useTempProofDir, true);
   assert.equal(proveAutomation.useTempProofDir, true);
   assert.equal(proveDataPipeline.useTempProofDir, true);
   assert.equal(proveTessl.useTempProofDir, true);
+  assert.ok(proveReliability, 'prove_reliability check is registered');
+  assert.equal(proveReliability.useTempProofDir, true);
+  assert.deepEqual(proveReliability.command, ['npm', 'run', 'prove:reliability']);
 });
 
 test('collectHealthReport marks overall healthy when all checks pass', () => {
