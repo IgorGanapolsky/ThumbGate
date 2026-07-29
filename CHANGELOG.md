@@ -1,11 +1,129 @@
 # Changelog
 
+## 1.30.0
+
+### Minor Changes
+
+- 97365d1: Fix lesson retrieval silently ignoring relevance past 200 entries. Retrieval read only
+  the newest 200 lines of the memory log, so the best-matching lesson in the corpus became
+  unreachable once 200 newer entries existed — measured cliff at exactly 201. The cap is now
+  5,000 (configurable via THUMBGATE_RETRIEVAL_MAX_LINES), which measurement shows costs
+  nothing: worst-case retrieval is 2.6 ms/call at both 200 and 5,000 entries.
+- dc98362: Measure the learned risk model honestly. Trained models now record held-out metrics
+  (precision/recall/F1/MCC/ROC-AUC/Brier/ECE) under both an IID split and a
+  distribution-shift split, each alongside the majority-class baseline it must beat —
+  replacing a lone in-sample accuracy that scored 0.820 against a 0.711 base rate. Adds
+  a repeated-resampling harness (`npm run eval:risk`) and a CI quality gate that fails
+  if the trainer stops learning planted signal or starts finding signal in pure noise.
+- 9f5b5da: Task scopes can now take a lease. `set_task_scope` accepts `ttlMs`, giving capability-scoped
+  authority a deadline ("write under ./src for 90 seconds") instead of a standing grant that
+  never says when it stops. Expiry fails closed: a lapsed lease authorises nothing rather than
+  silently removing the boundary, and the lapsed scope stays visible so "your lease expired" is
+  distinguishable from "no scope was declared". Scopes declared without `ttlMs` remain permanent,
+  so existing behaviour is unchanged.
+
+### Patch Changes
+
+- 83d9d88: Update the development coverage toolchain to c8 12.
+- e0465e5: Add canonical campaign attribution, safe buyer-route verification, and hourly
+  hosted outcome monitoring for the seven-channel marketing-agent campaign.
+- 0a3d81e: Keep Stripe credential rotation visible after 30 days while reserving the
+  deployment-blocking threshold for credentials older than 90 days.
+- 4111072: Publish the buyer evaluation proof pack on thumbgate.ai: architecture diagram gallery, evaluation white paper, regenerated ThumbGate Bench scorecard, ML evaluations page, and dogfood case studies (replacing the empty case-studies placeholder). Wires production routes, post-deploy sentinels, and package assets.
+- bcf5071: Separate human-reviewed feedback from automated and imported lessons using explicit provenance, conservative legacy classification, and duplicate-resistant CLI statistics.
+- 9bca664: Stop baking machine-absolute paths into shared install surfaces. `init` no longer writes
+  the installing machine's home path into committed `.mcp.json` — project-scope entries are
+  now repo-relative inside the ThumbGate checkout and the portable npx launcher elsewhere
+  (absolute paths remain only in machine-local home-scope config). Also fixes the Claude
+  Desktop `.mcpb` bundle shim, which resolved `bin/cli.js` one directory above the bundle
+  and crashed on launch with "Server disconnected".
+- 3a73c59: Harden production RAG evaluation, scoped retrieval, MCP tool contracts and
+  OAuth permissions, durable public multi-agent workflows, and evidence-backed
+  agent outcome monitoring.
+- 2c0a36f: Add proof-pack scorecard cadence (refresh/check + workflow_dispatch, local schedule) and dogfood case-study outreach generators with tracked UTMs.
+- 738e664: Add local state backup, and harden the release/incident path
+
+  **`scripts/state-backup.js`** — rolling snapshots of `~/.thumbgate`, exposed as
+  `npm run state:backup`, `state:backup:verify` and `state:restore`.
+
+  On 2026-07-26 a ThumbGate home directory went from ~50 files to 4. The lessons database,
+  feedback log, gate statistics, governance state and audit trail were lost and **not**
+  recoverable — no `.bak` files existed and Time Machine returned "Operation not permitted".
+  Nothing alerted; it was found by accident. That corpus is the entire accumulated value of a
+  self-improving firewall, and losing it silently is worse than a crash, because the product
+  keeps running and quietly knows nothing.
+
+  Snapshots cover the small irreplaceable files only, deliberately skipping `runtime/`
+  (reinstallable from npm) and `logs/` (bulky, low value). Two behaviours matter as much as the
+  copying:
+
+  - `--verify` exits **non-zero** when there is no snapshot or the newest is stale, so "no
+    backup" is a failure rather than silence.
+  - An **empty snapshot is refused** rather than recorded. A snapshot holding nothing looks like
+    protection and provides none — the same absence-read-as-success failure that caused the
+    incident it guards against.
+
+  Proven end to end against the real incident shape: seed state → snapshot → delete every file →
+  restore → content round-trips.
+
+  Also in this change:
+
+  - **`docs/INCIDENT-HOTFIX.md`** — documents `THUMBGATE_HOTFIX_BYPASS=1`, which was previously
+    discoverable only by reading `bin/cli.js`. Documented accurately: it is a _scoped_ bypass,
+    not a kill switch, because `runHardFloor()` still runs first. Also covers the failure mode
+    where a missing `~/.thumbgate/bin/thumbgate-hook` makes every PreToolUse hook **fail open**.
+  - **All 33 workflows SHA-pinned.** Tags are mutable, and 2026 saw repeated npm and GitHub
+    Actions supply-chain compromises. Tag retained as a trailing comment so Dependabot can still
+    propose updates.
+  - **`enforcement-drift-watch.yml`** — runs the evasion matrix against the _published tarball_
+    every 6h and opens a P0 issue naming the exact `npm dist-tag add` rollback command. Tests
+    prove the source is correct; this proves the artifact users receive is correct, which is a
+    different claim and was the one that went unverified.
+
+- 738e664: Mine a regression benchmark from real production gate traces
+
+  `evals/` did not exist. Enforcement quality was not comparable between runs, so a behaviour
+  change could only be noticed by someone remembering what used to happen — which is how 62
+  evasion holes survived months of green CI.
+
+  Following the eval-engineering argument that production traces, not invented examples, are the
+  source of good evals:
+
+  - **`npm run eval:mine`** distills `audit-trail.jsonl` into
+    `evals/gate-decisions.golden.jsonl` — 60 distinct real commands across 12 gates, redacted.
+  - **`npm run eval:baseline`** records the current engine's verdict for each.
+  - **`tests/gate-golden-set.test.js`** fails when a real command's verdict moves.
+
+  Two things this deliberately is NOT:
+
+  _Not mined from `gate-events-log.jsonl`._ That log records the verdict but drops `toolInput`,
+  so nothing in it can be replayed — mining it yielded 7 cases with empty commands, a benchmark
+  that passes trivially while looking like coverage. `audit-trail.jsonl` keeps
+  `sanitizeToolInput(toolInput)`, which is what makes a case runnable.
+
+  _Not asserted against production's own verdict._ The first version did, and immediately
+  reported 14 "regressions" that were nothing of the sort: almost every gate in this trace
+  window is state-conditional (`pr-thread-resolution` needs a prior commit, `memory-high-risk`
+  needs the learned corpus, `self-protect-kill` needs a running process), and the trace does not
+  record the state that produced the verdict. Isolated replay therefore cannot reproduce it. The
+  benchmark asserts DRIFT from a recorded baseline instead — which is the property that actually
+  went unwatched.
+
+  Guards: replayability check, ≥5 gates, ≥20 cases compared, and redaction asserted as a
+  correctness property (a dash-encoded home path `-Users-<name>` slipped past the slash-based
+  regex and was caught by a leak scan).
+
+  Proven to detect: flipping one recorded verdict fails the test with the exact command named.
+
+- f8195fb: Update the worker development type definitions to Node.js 26.
+
 ## 1.29.2
 
 ### Patch Changes
 
 - Harden production AI architecture across RAG, agent tools, multi-agent
   workflows, MCP, and monitoring:
+
   - fail closed on deterministic RAG recall, precision, case-count, and
     per-case regression thresholds;
   - reject transcript pollution and enforce optional four-field memory scope;
