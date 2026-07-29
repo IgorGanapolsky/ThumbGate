@@ -248,14 +248,19 @@ CI runs `--check` on every push. If it fails, files are out of sync.
 
 ## Local Data (git-ignored)
 
+Canonical store is the repo-local `.thumbgate/` directory (resolution: `scripts/feedback-paths.js`):
+
 ```
-.claude/memory/feedback/feedback-log.jsonl    # raw feedback entries
-.claude/memory/feedback/memory-log.jsonl      # promoted memories
-.claude/memory/feedback/feedback-summary.json # aggregated stats
-.claude/memory/feedback/prevention-rules.md   # generated rules
-.claude/memory/feedback/contextfs/            # context packs
-.claude/memory/feedback/lancedb/              # vector index
+.thumbgate/feedback-log.jsonl            # raw feedback entries
+.thumbgate/feedback-log.quarantine.jsonl # quarantined raw hook payload entries
+.thumbgate/memory-log.jsonl              # promoted memories
+.thumbgate/lessons-index.jsonl           # lesson index
+.thumbgate/lesson-embeddings.json        # dense embedding cache (hybrid retrieval)
+.thumbgate/prevention-rules.md           # generated rules (feedback:rules)
+.thumbgate/contextfs/                    # context packs
 ```
+
+Global fallback when no repo-local `.thumbgate/` exists: `~/.thumbgate/projects/<project-name>/` with the same files. `.claude/memory/feedback/` is a legacy dead path kept only for backward compat — do not write new data there.
 
 ## MCP Profiles
 

@@ -330,11 +330,12 @@ test('findBlockingRisk returns null when risk model is empty', () => {
   }
 });
 
-test('formatLessonsAsReminder renders numbered lessons with tag suffixes and truncates long text', () => {
+test('formatLessonsAsReminder renders a full first lesson and one-line runners-up', () => {
   const { formatLessonsAsReminder } = require(HOOK_PATH);
+  const longFirst = 'never claim deployed without curling production health first '.repeat(20); // > 700 chars
   const out = formatLessonsAsReminder(
     [
-      { whatToChange: 'run npm test before push', tags: ['git', 'verification'] },
+      { whatToChange: longFirst, tags: ['git', 'verification'] },
       { howToAvoid: 'verify /health before saying deployed' },
       { content: 'x'.repeat(500) },
       { title: 'no-op' },
@@ -344,10 +345,16 @@ test('formatLessonsAsReminder renders numbered lessons with tag suffixes and tru
   );
   assert.match(out, /^<system-reminder>/);
   assert.match(out, /<\/system-reminder>$/);
-  assert.match(out, /1\. run npm test before push \[git, verification\]/);
+  assert.match(out, /1\. never claim deployed without curling production health/);
+  const first = out.split('\n').find((l) => l.startsWith('1.'));
+  // Tier 1: up to 700 chars of lesson text, cut at a word boundary (no mid-word cut).
+  assert.ok(first.length <= 3 + 700 + ' [git, verification]'.length, `first lesson over cap: ${first.length}`);
+  assert.ok(first.length > 400, `first lesson should keep long text: ${first.length}`);
+  assert.doesNotMatch(first, /\w\[git/, 'first lesson must end on a word boundary before tags');
   assert.match(out, /2\. verify \/health before saying deployed/);
   const third = out.split('\n').find((l) => l.startsWith('3.'));
-  assert.ok(third.length <= 304, `third lesson not truncated: ${third.length}`);
+  // Tier 2: runners-up are single lines capped at 160 chars of lesson text.
+  assert.ok(third.length <= 3 + 160, `third lesson not truncated to one-liner: ${third.length}`);
 });
 
 test('formatLessonsAsReminder appends auto-gate notice when extras.autogate is present', () => {
@@ -360,7 +367,7 @@ test('formatLessonsAsReminder appends auto-gate notice when extras.autogate is p
   assert.match(out, /0 unresolved threads/);
 });
 
-test('formatLessonsAsReminder adds action profile, hot risk signals, and safer next move context', () => {
+test('formatLessonsAsReminder adds action profile and hot risk signals without a SAFER NEXT MOVE duplicate', () => {
   const hook = require(HOOK_PATH);
   const riskScorerPath = path.join(REPO_ROOT, 'scripts', 'risk-scorer.js');
   const realMod = require.cache[riskScorerPath];
@@ -390,7 +397,8 @@ test('formatLessonsAsReminder adds action profile, hot risk signals, and safer n
     assert.match(out, /HOT RISK SIGNALS:/);
     assert.match(out, /force-push/);
     assert.match(out, /git-workflow domain/);
-    assert.match(out, /SAFER NEXT MOVE:/);
+    // The SAFER NEXT MOVE block duplicated lesson 1 verbatim — it must be gone.
+    assert.doesNotMatch(out, /SAFER NEXT MOVE:/);
     assert.match(out, /branch PR instead of force-pushing/);
   } finally {
     if (realMod) require.cache[riskScorerPath] = realMod;

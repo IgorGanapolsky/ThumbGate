@@ -201,6 +201,30 @@ function toRules(report) {
   return lines.join('\n');
 }
 
+// A rule is only worth persisting when it says something enforceable: the
+// "Investigate and prevent recurrence" placeholder (and anything without a
+// concrete NEVER/ALWAYS clause) would just pad prevention-rules.md with noise.
+function isConcreteRule(issue) {
+  const text = String(issue?.suggestedRule || '');
+  if (/investigate and prevent recurrence/i.test(text)) return false;
+  return /\b(?:NEVER|ALWAYS)\b\s+\S+/i.test(text);
+}
+
+/**
+ * Persist the generated rules markdown next to the feedback log, excluding
+ * placeholder rules. Returns the absolute path written.
+ */
+function writeRulesMarkdown(report, feedbackDir) {
+  const filtered = {
+    ...report,
+    recurringIssues: (report.recurringIssues || []).filter(isConcreteRule),
+  };
+  const outPath = path.resolve(feedbackDir, 'prevention-rules.md');
+  fs.mkdirSync(path.dirname(outPath), { recursive: true });
+  fs.writeFileSync(outPath, `${toRules(filtered)}\n`);
+  return outPath;
+}
+
 // ---------------------------------------------------------------------------
 // LLM-Powered Rule Analysis
 // ---------------------------------------------------------------------------
@@ -334,6 +358,10 @@ if (require.main === module) {
 
       if (process.argv.includes('--rules')) {
         console.log(toRules(report));
+        // Persist the artifact next to the log we read from — stdout alone
+        // meant `npm run feedback:rules` never updated prevention-rules.md.
+        const writtenPath = writeRulesMarkdown(report, path.dirname(path.resolve(logPath)));
+        console.log(`wrote ${writtenPath}`);
       } else {
         console.log(JSON.stringify(report, null, 2));
       }
@@ -344,4 +372,4 @@ if (require.main === module) {
   })();
 }
 
-module.exports = { parseFeedbackFile, classifySignal, analyze, analyzeWithLLM, promoteToGates, toRules, normalize };
+module.exports = { parseFeedbackFile, classifySignal, analyze, analyzeWithLLM, promoteToGates, toRules, normalize, isConcreteRule, writeRulesMarkdown };

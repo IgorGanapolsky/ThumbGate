@@ -1,0 +1,128 @@
+{
+  "description": "Golden corpus + rank-aware cases for the hook lesson-retrieval path (retrieveWithRerankingSync). Contains exactly 2 raw-payload junk docs that must never surface in top-3.",
+  "corpus": [
+    {
+      "id": "lesson-force-push",
+      "title": "MISTAKE: git push --force to main destroyed shared history",
+      "content": "What went wrong: ran git push --force origin main and rewrote shared history other agents had built on.\nHow to avoid: NEVER force push to main; create a feature branch and open a PR instead.",
+      "tags": ["negative", "git-workflow", "force-push"],
+      "metadata": { "toolsUsed": ["Bash"] }
+    },
+    {
+      "id": "lesson-deploy-claim",
+      "title": "MISTAKE: claimed deployed without curling production health",
+      "content": "What went wrong: said deployed while the Railway rebuild was still running and production served the old version.\nHow to avoid: ALWAYS curl the production /health endpoint and grep the new version string before claiming deployed.",
+      "tags": ["negative", "deploy", "verification"],
+      "metadata": { "toolsUsed": ["Bash"] }
+    },
+    {
+      "id": "lesson-stale-pr",
+      "title": "MISTAKE: acted on a stale open-PR listing",
+      "content": "What went wrong: used a 40-minute-old gh pr list snapshot; gh pr edit succeeds silently on closed PRs, so a duplicate PR was created.\nHow to avoid: ALWAYS re-query the PR state with gh pr view immediately before pushing to or editing a PR.",
+      "tags": ["negative", "git-workflow", "pr-hygiene"],
+      "metadata": { "toolsUsed": ["Bash"] }
+    },
+    {
+      "id": "lesson-api-key-test-boot",
+      "title": "MISTAKE: server test boot failed without THUMBGATE_API_KEY",
+      "content": "What went wrong: booted the server test suite without THUMBGATE_API_KEY exported, so every request returned 401 and the suite looked broken.\nHow to avoid: ALWAYS export THUMBGATE_API_KEY (a test value is fine) before booting server tests.",
+      "tags": ["negative", "testing", "environment"],
+      "metadata": { "toolsUsed": ["Bash"] }
+    },
+    {
+      "id": "lesson-missing-changeset",
+      "title": "MISTAKE: release PR merged without a changeset",
+      "content": "What went wrong: the release PR shipped without a .changeset entry, so the version bump and CHANGELOG never happened.\nHow to avoid: ALWAYS add a .changeset markdown file with the thumbgate bump before merging a release PR.",
+      "tags": ["negative", "release", "changeset"],
+      "metadata": { "toolsUsed": ["Bash"] }
+    },
+    {
+      "id": "lesson-sonar-coverage",
+      "title": "MISTAKE: SonarCloud quality gate failed on missing coverage env",
+      "content": "What went wrong: the SonarCloud quality gate went red because the lcov coverage reportPaths env was not exported before the scanner step.\nHow to avoid: ALWAYS set the sonar coverage reportPaths env before running sonar-scanner in CI.",
+      "tags": ["negative", "ci", "sonarcloud"],
+      "metadata": { "toolsUsed": ["Bash"] }
+    },
+    {
+      "id": "lesson-reddit-drafts",
+      "title": "SUCCESS: reply drafts queued for human review",
+      "content": "What worked: queueing social reply drafts to a review file instead of auto-posting kept the voice human and avoided spam flags.",
+      "tags": ["positive", "social"]
+    },
+    {
+      "id": "lesson-npm-hand-publish",
+      "title": "MISTAKE: hand-published the npm package from an incomplete dir",
+      "content": "What went wrong: npm publish ran from a partial checkout and shipped a broken tarball.\nHow to avoid: NEVER hand-publish; bump the version on main and let the publish workflow ship it.",
+      "tags": ["negative", "release", "npm"],
+      "metadata": { "toolsUsed": ["Bash"] }
+    },
+    {
+      "id": "junk-payload-1",
+      "title": "",
+      "content": "{\"session_id\":\"sess-4f2a\",\"transcript_path\":\"/tmp/claude/transcripts/sess-4f2a.jsonl\",\"hookEventName\":\"PreToolUse\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git push --force origin main\",\"description\":\"push branch\"},\"cwd\":\"/Users/op/project\"}",
+      "tags": ["negative"]
+    },
+    {
+      "id": "junk-payload-2",
+      "title": "",
+      "content": "{\"session_id\":\"sess-9b31\",\"transcript_path\":\"/tmp/claude/transcripts/sess-9b31.jsonl\",\"hookEventName\":\"PreToolUse\",\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"gh pr edit 3079 --title fix\"",
+      "tags": ["negative"]
+    }
+  ],
+  "cases": [
+    {
+      "id": "case-force-push-main",
+      "toolName": "Bash",
+      "toolInput": {
+        "command": "git push --force origin main",
+        "description": "Push rewritten history to main"
+      },
+      "expectedId": "lesson-force-push"
+    },
+    {
+      "id": "case-deploy-claim",
+      "toolName": "Bash",
+      "toolInput": {
+        "command": "sleep 180 && curl -s https://thumbgate-production.up.railway.app/health",
+        "description": "Verify production deploy before claiming deployed"
+      },
+      "expectedId": "lesson-deploy-claim"
+    },
+    {
+      "id": "case-stale-pr-listing",
+      "toolName": "Bash",
+      "toolInput": {
+        "command": "gh pr edit 3079 --title \"fix: retrieval quality\"",
+        "description": "Update the open PR found in the session-start listing"
+      },
+      "expectedId": "lesson-stale-pr"
+    },
+    {
+      "id": "case-server-test-boot",
+      "toolName": "Bash",
+      "toolInput": {
+        "command": "npm run test:api",
+        "description": "Boot the server test suite; requires THUMBGATE_API_KEY in env"
+      },
+      "expectedId": "lesson-api-key-test-boot"
+    },
+    {
+      "id": "case-missing-changeset",
+      "toolName": "Bash",
+      "toolInput": {
+        "command": "gh pr create --title \"feat: retrieval quality\" --body \"release PR\"",
+        "description": "Open the release PR; needs a .changeset entry"
+      },
+      "expectedId": "lesson-missing-changeset"
+    },
+    {
+      "id": "case-sonar-coverage-env",
+      "toolName": "Bash",
+      "toolInput": {
+        "command": "npx sonar-scanner -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info",
+        "description": "Run the SonarCloud scanner with the coverage reportPaths env"
+      },
+      "expectedId": "lesson-sonar-coverage"
+    }
+  ]
+}

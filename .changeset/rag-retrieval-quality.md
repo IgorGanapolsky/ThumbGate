@@ -1,0 +1,5 @@
+---
+thumbgate: patch
+---
+
+Lesson RAG retrieval quality: quarantine raw hook payload feedback entries at ingestion (feedback-log.quarantine.jsonl) and filter any that already leaked out of retrieval results (scripts/lesson-hygiene.js); build the PreToolUse retrieval query from salient tool-input fields instead of JSON.stringify so JSON-shaped queries stop promoting junk docs; render injected lessons tiered (first lesson up to 700 chars at a word boundary, runners-up as one-liners) and drop the duplicated SAFER NEXT MOVE block; `npm run feedback:rules` now persists prevention-rules.md (placeholder rules excluded) instead of printing only; add scripts/backfill-lesson-embeddings.js to close the dense-arm embedding coverage gap; add a rank-aware golden eval of the real hook retrieval path (scripts/eval-lesson-retrieval.js, gated at junk@3=0, MRR>=0.5, Recall@3>=0.66) wired into the test chain. Bundle note: scripts/lesson-hygiene.js is added to package.json files (389 -> 390, at the existing ratchet ceiling, no baseline bump) because the packaged feedback-loop.js requires it; backfill-lesson-embeddings.js and eval-lesson-retrieval.js stay repo-only.

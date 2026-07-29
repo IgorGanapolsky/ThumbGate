@@ -337,8 +337,34 @@ function getMemoryFirewallModule() {
 }
 
 
+// Ingestion gate: a feedback entry whose lesson text is a raw hook transport
+// payload (stdin envelope with session_id/transcript_path/hookEventName) is
+// noise that later outranks real lessons in retrieval. Route it to a sibling
+// quarantine file instead of the main log — never drop it, never throw.
+function isQuarantinableFeedbackRecord(record) {
+  try {
+    const { isRawHookPayload } = require('./lesson-hygiene');
+    const combined = [record?.context, record?.whatWentWrong, record?.whatWorked]
+      .filter(Boolean)
+      .join('\n');
+    return isRawHookPayload(combined);
+  } catch {
+    return false;
+  }
+}
+
 function appendJSONL(filePath, record) {
   ensureDir(path.dirname(filePath));
+  if (path.basename(filePath) === 'feedback-log.jsonl' && isQuarantinableFeedbackRecord(record)) {
+    const quarantinePath = path.join(path.dirname(filePath), 'feedback-log.quarantine.jsonl');
+    try {
+      fs.appendFileSync(quarantinePath, `${JSON.stringify(record)}\n`);
+      process.stderr.write(`[thumbgate] quarantined raw hook payload feedback entry ${record?.id || '(no id)'} -> ${quarantinePath}\n`);
+      return;
+    } catch {
+      // Quarantine write failed — fall through to the main log rather than drop.
+    }
+  }
   fs.appendFileSync(filePath, `${JSON.stringify(record)}\n`);
 }
 
@@ -2616,6 +2642,7 @@ module.exports = {
   feedbackSummary,
   listEnforcementMatrix,
   readJSONL,
+  appendJSONL,
   appendDiagnosticRecord,
   readDiagnosticEntries,
   getFeedbackPaths,

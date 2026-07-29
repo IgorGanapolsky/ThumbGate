@@ -41,6 +41,10 @@ const VERIFICATION_MARKER = path.join(os.tmpdir(), '.thumbgate-last-deploy-verif
 const DEFAULT_RISK_THRESHOLD = 5;
 const MAX_LESSONS = 3;
 const MAX_LESSON_TEXT_LEN = 300;
+// Tiered rendering: the top lesson gets room to finish its sentences; the
+// runners-up are one-line reminders so three lessons never crowd the prompt.
+const MAX_PRIMARY_LESSON_LEN = 700;
+const MAX_SECONDARY_LESSON_LEN = 160;
 const MAX_ACTION_CONTEXT_LEN = 512;
 const MAX_WRITE_SNIPPET_LEN = 240;
 
@@ -124,9 +128,19 @@ function trackCurlToProd(toolName, toolInput) {
 
 function extractActionContext(toolName, toolInput) {
   if (!toolInput || typeof toolInput !== 'object') return '';
-  if (toolName === 'Bash') return String(toolInput.command || toolInput.cmd || '');
+  if (toolName === 'Bash') {
+    return [toolInput.command || toolInput.cmd, toolInput.description]
+      .filter(Boolean)
+      .map(String)
+      .join(' | ')
+      .slice(0, MAX_ACTION_CONTEXT_LEN);
+  }
   if (toolName === 'Edit') {
-    return [toolInput.file_path, toolInput.old_string, toolInput.new_string]
+    return [
+      toolInput.file_path,
+      String(toolInput.old_string || '').slice(0, MAX_WRITE_SNIPPET_LEN),
+      String(toolInput.new_string || '').slice(0, MAX_WRITE_SNIPPET_LEN),
+    ]
       .filter(Boolean)
       .join(' | ');
   }
@@ -135,18 +149,27 @@ function extractActionContext(toolName, toolInput) {
       .filter(Boolean)
       .join(' | ');
   }
-  return JSON.stringify(toolInput).slice(0, MAX_ACTION_CONTEXT_LEN);
+  // Other tools: query on the string-valued fields only. JSON.stringify here
+  // made the query JSON-shaped, which lexically promoted raw hook payload
+  // docs into the top-3 retrieved lessons.
+  return Object.values(toolInput)
+    .filter((value) => typeof value === 'string' && value.trim())
+    .map((value) => value.trim())
+    .join(' ')
+    .slice(0, MAX_ACTION_CONTEXT_LEN);
 }
 
 function retrieveLessons(toolName, actionContext) {
   try {
     const pkgRoot = path.resolve(__dirname, '..');
     const { retrieveWithRerankingSync } = require(path.join(pkgRoot, 'scripts', 'cross-encoder-reranker'));
+    const { filterRetrievedLessons } = require(path.join(pkgRoot, 'scripts', 'lesson-hygiene'));
     const results = retrieveWithRerankingSync(toolName, actionContext, {
       candidateCount: 20,
       maxResults: MAX_LESSONS,
     });
-    return Array.isArray(results) ? results : [];
+    if (!Array.isArray(results)) return [];
+    return filterRetrievedLessons(results, (lesson) => `${lesson.title || ''}\n${lesson.content || ''}`);
   } catch (err) {
     failOpen(err);
     return [];
@@ -275,6 +298,16 @@ function maybeRegisterPrCommitGate(toolName, toolInput) {
   }
 }
 
+// Trim to maxLen without cutting mid-word. Falls back to a hard cut when the
+// text has no usable space (one giant token).
+function cutAtWordBoundary(text, maxLen) {
+  const s = String(text || '').trim();
+  if (s.length <= maxLen) return s;
+  const head = s.slice(0, maxLen);
+  const lastSpace = head.lastIndexOf(' ');
+  return (lastSpace > maxLen * 0.5 ? head.slice(0, lastSpace) : head).trimEnd();
+}
+
 function formatLessonsAsReminder(lessons, extras) {
   const lines = [
     '<system-reminder>',
@@ -286,7 +319,10 @@ function formatLessonsAsReminder(lessons, extras) {
     if (!text) return;
     const tags = tagsForLesson(lesson);
     const tagSuffix = tags.length ? ` [${tags.slice(0, 4).join(', ')}]` : '';
-    lines.push(`${idx + 1}. ${String(text).trim().slice(0, MAX_LESSON_TEXT_LEN)}${tagSuffix}`);
+    const rendered = idx === 0
+      ? cutAtWordBoundary(text, MAX_PRIMARY_LESSON_LEN)
+      : cutAtWordBoundary(String(text).replace(/\s+/g, ' '), MAX_SECONDARY_LESSON_LEN);
+    lines.push(`${idx + 1}. ${rendered}${tagSuffix}`);
   });
   if (extras?.autogate) {
     lines.push(
@@ -301,10 +337,6 @@ function formatLessonsAsReminder(lessons, extras) {
   }
   if (riskContext.hotSignals.length > 0) {
     lines.push(`HOT RISK SIGNALS: ${riskContext.hotSignals.join(' · ')}`);
-  }
-  const saferMove = buildSaferNextMove(lessons);
-  if (saferMove) {
-    lines.push(`SAFER NEXT MOVE: ${saferMove}`);
   }
   lines.push('</system-reminder>');
   return lines.join('\n');
@@ -344,7 +376,10 @@ function summarizeActionRiskContext(toolName, toolInput, lessons) {
       const key = String(bucket && bucket.key || '').toLowerCase();
       if (!key) continue;
       if (actionContext.includes(key) || lessonTags.has(key)) {
-        hotSignals.push(`${key} (${Math.round(Number(bucket.riskRate || 0) * 100)}% risk)`);
+        const rate = Number(bucket && bucket.riskRate);
+        // Render the score only when it is a real number — "risk=?" noise
+        // teaches the agent to ignore the signal line.
+        hotSignals.push(Number.isFinite(rate) ? `${key} (${Math.round(rate * 100)}% risk)` : key);
       }
       if (hotSignals.length >= 2) break;
     }
@@ -355,7 +390,8 @@ function summarizeActionRiskContext(toolName, toolInput, lessons) {
       if ((key === 'git-workflow' && /\bgit\b|\bgh\s+pr\b/.test(actionContext))
         || (key === 'security' && /\bsecret|token|credential|key\b/.test(actionContext))
         || (key === 'testing' && /\btest|coverage|verify\b/.test(actionContext))) {
-        hotSignals.push(`${key} domain (${Math.round(Number(bucket.riskRate || 0) * 100)}% risk)`);
+        const rate = Number(bucket && bucket.riskRate);
+        hotSignals.push(Number.isFinite(rate) ? `${key} domain (${Math.round(rate * 100)}% risk)` : `${key} domain`);
       }
       if (hotSignals.length >= 3) break;
     }
@@ -367,6 +403,8 @@ function summarizeActionRiskContext(toolName, toolInput, lessons) {
   };
 }
 
+// No longer rendered: the SAFER NEXT MOVE line duplicated lesson 1 verbatim.
+// Kept exported for callers/tests that consume it directly.
 function buildSaferNextMove(lessons) {
   for (const lesson of lessons || []) {
     const text = lesson && (lesson.whatToChange || lesson.howToAvoid || lesson.content || lesson.title);
@@ -609,6 +647,7 @@ module.exports = {
   formatLessonsAsReminder,
   summarizeActionRiskContext,
   buildSaferNextMove,
+  cutAtWordBoundary,
   resolveEffectiveInput,
   maybeBlockOnRisk,
   maybeBlockViaBayesOptimal,
