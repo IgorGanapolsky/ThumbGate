@@ -214,6 +214,17 @@ test('claude desktop submission doc covers history-aware lesson distillation', (
   assert.match(extensionDoc, /60-second follow-up/i);
 });
 
+test('bundle server shim runs the CLI in-process — no child_process', () => {
+  // Under Claude Desktop, process.execPath is the Electron binary. A spawn that loses
+  // ELECTRON_RUN_AS_NODE boots a second app instance that dies silently ~2s later. The
+  // only spawn-proof shim is one that does not spawn.
+  const shim = fs.readFileSync(
+    path.join(__dirname, '..', '.claude-plugin', 'bundle', 'server', 'index.js'), 'utf8');
+  assert.ok(!/child_process|\bspawn\b|execPath/.test(shim),
+    'shim reintroduced a child process — this dies under Electron hosts');
+  assert.match(shim, /require\(cliPath\)/, 'shim no longer requires the CLI in-process');
+});
+
 test('bundle server shim resolves bin/cli.js INSIDE the bundle', () => {
   // Regression: the shim joined __dirname with '..','..' — one level too many — so the
   // installed Desktop extension looked for "Claude Extensions/bin/cli.js", crashed with
