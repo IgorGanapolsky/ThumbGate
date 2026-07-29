@@ -193,17 +193,37 @@ function publishedCliAvailable(pkgVersion) {
   return cliAvailabilityCache.get(pkgVersion);
 }
 
+/**
+ * Project-scope entries land in COMMITTED, SHARED config (.mcp.json / .cursor/mcp.json —
+ * init's own banner says the file serves every agent on the repo). A machine-absolute path
+ * there is a bug by construction: run init on machine A (or a Cowork sandbox with a home
+ * like /Users/busy-clever-newton) and the committed config breaks for every other machine,
+ * teammate, and CI runner. Observed for real on 2026-07-29.
+ *
+ * So: absolute paths may only ever go to HOME-scope config (machine-local by definition).
+ * Project scope gets a repo-relative path when the project IS the ThumbGate checkout
+ * (dogfooding unpublished source still works — project MCP servers launch with cwd at the
+ * project root), and the portable npx launcher otherwise.
+ */
+function relativeLocalMcpEntry(pkgRoot, targetDir) {
+  const rel = path.relative(targetDir, resolveLocalServerPath(pkgRoot, 'project'));
+  // Committed config must be separator-portable too.
+  return { command: 'node', args: [rel.split(path.sep).join('/')] };
+}
+
 function resolveMcpEntry({ pkgRoot, pkgVersion, scope = 'project', targetDir = pkgRoot }) {
   if (!isSourceCheckout(pkgRoot)) {
     return codexAutoUpdateMcpEntry();
   }
-  if (scope === 'home' && publishedCliAvailable(pkgVersion)) {
-    return codexAutoUpdateMcpEntry();
+  if (scope === 'home') {
+    if (publishedCliAvailable(pkgVersion)) return codexAutoUpdateMcpEntry();
+    return localMcpEntry(pkgRoot, scope);
   }
-  if (scope === 'project' && !isSameCheckoutFamily(pkgRoot, targetDir) && publishedCliAvailable(pkgVersion)) {
-    return codexAutoUpdateMcpEntry();
+  // scope === 'project': this is going into shared, committed config.
+  if (isSameCheckoutFamily(pkgRoot, targetDir)) {
+    return relativeLocalMcpEntry(pkgRoot, targetDir);
   }
-  return localMcpEntry(pkgRoot, scope);
+  return codexAutoUpdateMcpEntry();
 }
 
 module.exports = {
@@ -214,6 +234,7 @@ module.exports = {
   localMcpEntry,
   parseWorktreePaths,
   portableMcpEntry,
+  relativeLocalMcpEntry,
   resolveGitCommonDir,
   resolveLocalServerPath,
   resolveMcpEntry,

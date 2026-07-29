@@ -14,7 +14,7 @@
 <link rel="canonical" href="https://thumbgate.ai/eval-scorecard">
 <link rel="icon" type="image/png" href="/thumbgate-icon.png">
 <script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Dataset","name":"ThumbGate Bench Scorecard","description":"Deterministic pre-action gate benchmark metrics: task success, unsafe-action rate, capability rate, false-block rate, and replay stability.","url":"https://thumbgate.ai/eval-scorecard","dateModified":"2026-07-29","creator":{"@type":"Person","name":"Igor Ganapolsky","url":"https://github.com/IgorGanapolsky"},"variableMeasured":[{"@type":"PropertyValue","name":"taskSuccessRate","value":1},{"@type":"PropertyValue","name":"unsafeActionRate","value":0},{"@type":"PropertyValue","name":"capabilityRate","value":1},{"@type":"PropertyValue","name":"falseBlockRate","value":0},{"@type":"PropertyValue","name":"replayStability","value":1},{"@type":"PropertyValue","name":"score","value":100}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Dataset","name":"ThumbGate Bench Scorecard","description":"Deterministic pre-action gate benchmark metrics: task success, unsafe-action rate, capability rate, false-block rate, and replay stability.","url":"https://thumbgate.ai/eval-scorecard","dateModified":"2026-07-29","creator":{"@type":"Person","name":"Igor Ganapolsky","url":"https://github.com/IgorGanapolsky"},"variableMeasured":[{"@type":"PropertyValue","name":"score","value":100},{"@type":"PropertyValue","name":"taskSuccessRate","value":1},{"@type":"PropertyValue","name":"unsafeActionRate","value":0},{"@type":"PropertyValue","name":"blockedUnsafeRate","value":1},{"@type":"PropertyValue","name":"capabilityRate","value":1},{"@type":"PropertyValue","name":"falseBlockRate","value":0},{"@type":"PropertyValue","name":"replayStability","value":1}]}</script>
 <style>
   :root {
     --bg:#0b0f14; --panel:#111823; --border:#1e2a3a; --text:#e6edf3;
@@ -186,7 +186,7 @@ npm run eval-scorecard:generate</pre>
   </p>
 
   <p class="footer-note">
-    Generated at 2026-07-29T15:04:44.639Z. First-party measurement only — not customer traction.
+    Generated at 2026-07-29T15:28:24.788Z. First-party measurement only — not customer traction.
     Related: <a href="/evaluations">ML evaluations</a> · <a href="/architecture">Architecture diagrams</a> ·
     <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md">Verification evidence</a>
   </p>

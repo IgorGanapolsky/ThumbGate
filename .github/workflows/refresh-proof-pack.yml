@@ -1,0 +1,81 @@
+name: Refresh proof pack
+
+# Cadence note: repo policy limits GitHub schedule: to CodeQL only
+# (tests/ci-cd-hygiene-audit.test.js). This workflow is workflow_dispatch /
+# callable from other automation. Local daily cadence:
+#   npm run proof-pack:schedule
+
+on:
+  workflow_dispatch:
+    inputs:
+      open_pr:
+        description: 'Open a PR if the scorecard HTML/JSON changed'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci --onnxruntime-node-install-cuda=skip
+
+      - name: Refresh scorecard
+        run: npm run proof-pack:refresh
+
+      - name: Fail if bench score is below gate
+        run: npm run proof-pack:refresh:check
+
+      - name: Open PR when public scorecard drifts
+        if: ${{ github.event.inputs.open_pr == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- public/eval-scorecard.html public/eval-scorecard.json; then
+            echo "No scorecard changes."
+            exit 0
+          fi
+
+          BRANCH="auto/proof-pack-scorecard-${{ github.run_id }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add public/eval-scorecard.html public/eval-scorecard.json
+          git commit -m "chore(proof): refresh public eval scorecard"
+          git push origin "$BRANCH"
+
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "chore(proof): refresh public eval scorecard" \
+            --body "Automated scorecard refresh from \`npm run proof-pack:refresh\` (isolated ThumbGate Bench). Review metrics drift, then merge so thumbgate.ai/eval-scorecard stays current." \
+            || true
+
+      - name: Upload scorecard artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: eval-scorecard
+          path: |
+            public/eval-scorecard.html
+            public/eval-scorecard.json
+          retention-days: 14
