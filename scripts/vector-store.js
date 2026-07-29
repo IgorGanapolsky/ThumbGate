@@ -297,7 +297,9 @@ async function embed(text, options = {}) {
       if (!geminiConfig.fallbackToLocal) {
         throw geminiError;
       }
-      console.warn(`Gemini embedding fallback: ${geminiError.message}`);
+      // Do not log raw provider/user-controlled error text (Sonar jssecurity:S5145).
+      const code = geminiError && (geminiError.code || geminiError.name || 'Error');
+      console.warn(`Gemini embedding fallback: ${code}`);
     }
   }
   if (hasLocalTransformerProvider()) {

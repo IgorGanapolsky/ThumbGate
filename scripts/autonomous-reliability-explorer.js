@@ -205,49 +205,15 @@ function isGateWarned(result) {
   return action === 'warn' || result.warned === true || result.permissionDecision === 'ask';
 }
 
-function checkGateInvariants(scenario, result, thrown) {
-  const violations = [];
-  if (thrown) {
-    violations.push({
-      invariantId: 'gate-never-throws',
-      detail: thrown.message || String(thrown),
-    });
-    return violations;
-  }
-  // gates-engine uses null to mean "no deny / allow through" — valid shape for non-dangerous cmds.
-  if (result === null || result === undefined) {
-    // High-ROI dangerous faults must never silent-allow via null.
-    if (scenario.fault.id === 'rm-rf-root') {
-      violations.push({
-        invariantId: 'gate-rm-rf-blocked',
-        detail: 'rm -rf / returned null (silent allow)',
-      });
-    } else if (scenario.fault.id === 'secret-inline') {
-      violations.push({
-        invariantId: 'gate-secret-exfil-blocked',
-        detail: 'inline secret returned null (silent allow)',
-      });
-    } else if (
-      scenario.fault.id === 'force-push-main'
-      || scenario.fault.id === 'none'
-    ) {
-      violations.push({
-        invariantId: 'gate-force-push-blocked',
-        detail: 'force-push returned null (silent allow)',
-      });
-    }
-    return violations;
-  }
-  if (typeof result !== 'object') {
-    violations.push({
-      invariantId: 'gate-result-shape',
-      detail: `non-object result: ${typeof result}`,
-    });
-    return violations;
-  }
-  const action = result.action || result.decision || result.permission || null;
-  const blocked = isGateBlocked(result);
-  const hasShape = 'action' in result
+const NULL_SILENT_ALLOW = Object.freeze({
+  'rm-rf-root': { invariantId: 'gate-rm-rf-blocked', detail: 'root wipe returned null (silent allow)' },
+  'secret-inline': { invariantId: 'gate-secret-exfil-blocked', detail: 'inline secret returned null (silent allow)' },
+  'force-push-main': { invariantId: 'gate-force-push-blocked', detail: 'force-push returned null (silent allow)' },
+  none: { invariantId: 'gate-force-push-blocked', detail: 'force-push returned null (silent allow)' },
+});
+
+function hasGateResultShape(result) {
+  return 'action' in result
     || 'blocked' in result
     || 'permissionDecision' in result
     || 'decision' in result
@@ -255,40 +221,42 @@ function checkGateInvariants(scenario, result, thrown) {
     || 'message' in result
     || 'continue' in result
     || 'gate' in result;
-  if (!hasShape) {
-    violations.push({
-      invariantId: 'gate-result-shape',
-      detail: `missing decision fields: ${Object.keys(result).join(',')}`,
-    });
-  }
+}
 
-  const cmd = String(scenario.toolInput?.command || '');
+function isRootWipeCommand(cmd) {
+  // Avoid super-linear backtracking: fixed flags token then path root/home.
+  return /(?:^|\s)rm\s+-[a-zA-Z]*f[a-zA-Z]*\s+(?:\/|~)(?:\s|$)/.test(cmd)
+    || /(?:^|\s)rm\s+-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*\s+(?:\/|~)(?:\s|$)/.test(cmd);
+}
+
+function looksLikeInlineSecret(cmd) {
+  return /sk-(?:ant-api|proj|live)_/i.test(cmd) || /OPENAI_API_KEY=sk-/i.test(cmd);
+}
+
+function checkDangerousGateBlocks(scenario, result, cmd) {
+  const violations = [];
+  const action = result.action || result.decision || result.permission || null;
+  const blocked = isGateBlocked(result);
   const strictOff = scenario.fault.id === 'strict-enforcement-off';
   const toxic = scenario.fault.id === 'toxic-tool-input';
 
-  // Force-push must block (or at least warn) when strict enforcement is on
   if (!strictOff && !toxic && cmd.includes('push --force')) {
-    const warned = isGateWarned(result);
-    if (!blocked && !warned && action === 'allow') {
+    if (!blocked && !isGateWarned(result) && action === 'allow') {
       violations.push({
         invariantId: 'gate-force-push-blocked',
         detail: `force-push allowed without warn/block: ${safeSnippet(result)}`,
       });
     }
   }
-
-  // rm -rf / must hard-block regardless of free-tier cap
-  if (scenario.fault.id === 'rm-rf-root' || /rm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+|.*\s-rf\s).*(\/|~)/.test(cmd)) {
+  if (scenario.fault.id === 'rm-rf-root' || isRootWipeCommand(cmd)) {
     if (!blocked) {
       violations.push({
         invariantId: 'gate-rm-rf-blocked',
-        detail: `rm -rf root/home not blocked: ${safeSnippet(result)}`,
+        detail: `root wipe not blocked: ${safeSnippet(result)}`,
       });
     }
   }
-
-  // Inline secret must block or redact (never silent allow with secret still in message echo)
-  if (scenario.fault.id === 'secret-inline' || /sk-(?:ant-api|proj|live)_/i.test(cmd) || /OPENAI_API_KEY=sk-/i.test(cmd)) {
+  if (scenario.fault.id === 'secret-inline' || looksLikeInlineSecret(cmd)) {
     if (!blocked && !isGateWarned(result)) {
       violations.push({
         invariantId: 'gate-secret-exfil-blocked',
@@ -296,7 +264,39 @@ function checkGateInvariants(scenario, result, thrown) {
       });
     }
   }
+  return violations;
+}
 
+function checkGateInvariants(scenario, result, thrown) {
+  if (thrown) {
+    return [{
+      invariantId: 'gate-never-throws',
+      detail: thrown.message || String(thrown),
+    }];
+  }
+  // null = allow-through for non-dangerous cmds; dangerous faults must not silent-allow.
+  if (result === null || result === undefined) {
+    const mapped = NULL_SILENT_ALLOW[scenario.fault.id];
+    return mapped ? [mapped] : [];
+  }
+  if (typeof result !== 'object') {
+    return [{
+      invariantId: 'gate-result-shape',
+      detail: `non-object result: ${typeof result}`,
+    }];
+  }
+  const violations = [];
+  if (!hasGateResultShape(result)) {
+    violations.push({
+      invariantId: 'gate-result-shape',
+      detail: `missing decision fields: ${Object.keys(result).join(',')}`,
+    });
+  }
+  violations.push(...checkDangerousGateBlocks(
+    scenario,
+    result,
+    String(scenario.toolInput?.command || ''),
+  ));
   return violations;
 }
 
@@ -493,7 +493,7 @@ function runScenario(scenario) {
       const opts = {
         maxResults: 5,
         feedbackDir: scenario.feedbackDir,
-        pragmatic: scenario.fault.id !== 'none' ? true : true,
+        pragmatic: true,
       };
       if (scenario.requireScope) {
         opts.scope = scenario.scope;
@@ -576,19 +576,16 @@ function exploreReliability(options = {}) {
 
   // Meta invariant: re-run first scenario shape with same seed must match finding count
   if (options.checkReplay !== false) {
-    const rng2 = createRng(seed);
-    const fault2 = pick(rng2, FAULTS);
-    // Consume same number of rng calls as buildScenario for first run — approximate by replaying full first plan item
-    const plan2 = [];
-    const rng3 = createRng(seed);
-    plan2.push(pick(rng3, FAULTS));
-    const s2 = buildScenario(rng3, plan2[0]);
+    // Replay only the first plan item under a fresh RNG from the same seed.
+    const rngReplay = createRng(seed);
+    const firstFault = pick(rngReplay, FAULTS);
+    const s2 = buildScenario(rngReplay, firstFault);
     const r2 = runScenario(s2);
     const firstFindings = runs[0]?.findings?.length || 0;
-    if (r2.findings.length !== firstFindings && plan2[0].id === runs[0]?.faultId) {
+    if (r2.findings.length !== firstFindings && firstFault.id === runs[0]?.faultId) {
       allFindings.push({
         invariantId: 'replay-determinism',
-        detail: `replay findings ${r2.findings.length} != original ${firstFindings} for fault ${plan2[0].id}`,
+        detail: `replay findings ${r2.findings.length} != original ${firstFindings} for fault ${firstFault.id}`,
         phase: 'meta',
         faultId: 'replay',
         runIndex: -1,

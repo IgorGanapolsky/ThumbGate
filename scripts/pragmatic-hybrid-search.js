@@ -22,6 +22,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const crypto = require('node:crypto');
 
 const DEFAULT_RRF_K = 60;
 const DEFAULT_POOL = 50;
@@ -303,7 +304,9 @@ function sampleRetrievalRecall(event, options = {}) {
   try {
     if (options.enabled === false) return { sampled: false };
     const rate = Number(options.sampleRate ?? process.env.THUMBGATE_RETRIEVAL_RECALL_SAMPLE_RATE ?? 0.02);
-    if (!(rate > 0) || Math.random() > rate) return { sampled: false };
+    // crypto PRNG — not security-critical sampling, but avoid Math.random for Sonar S2245
+    const roll = crypto.randomInt(0, 1_000_000) / 1_000_000;
+    if (!(rate > 0) || roll > rate) return { sampled: false };
 
     const feedbackDir = options.feedbackDir
       || process.env.THUMBGATE_FEEDBACK_DIR
