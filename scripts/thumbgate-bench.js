@@ -268,6 +268,13 @@ function withGateRuntime(options, callback) {
     'THUMBGATE_SECRET_SCAN_PROVIDER',
     'THUMBGATE_HARNESS',
     'THUMBGATE_HARNESS_CONFIG',
+    // Isolated bench must not inherit operator license / posture / daily-cap state.
+    // Without strict enforcement, deny expectations become warn-by-default and the
+    // published scorecard is unreproducible on a clean free-tier install.
+    'THUMBGATE_STRICT_ENFORCEMENT',
+    'THUMBGATE_ENFORCE_ENTITLEMENTS',
+    'THUMBGATE_PRO_LICENSE_KEY',
+    'THUMBGATE_LICENSE_KEY',
   ]);
   const runtimeDir = options.useRuntimeState
     ? null
@@ -289,6 +296,12 @@ function withGateRuntime(options, callback) {
       process.env.THUMBGATE_ATTRIBUTED_FEEDBACK = path.join(runtimeDir, 'attributed-feedback.jsonl');
       process.env.THUMBGATE_GUARDS_PATH = path.join(runtimeDir, 'pretool-guards.json');
       process.env.THUMBGATE_SECRET_SCAN_PROVIDER = 'heuristic';
+      // Pin enforcement posture for golden deny expectations (scorecard reproducibility).
+      process.env.THUMBGATE_STRICT_ENFORCEMENT = '1';
+      // Do not hard-fail free-tier installs; isolation already avoids daily-cap state.
+      delete process.env.THUMBGATE_ENFORCE_ENTITLEMENTS;
+      delete process.env.THUMBGATE_PRO_LICENSE_KEY;
+      delete process.env.THUMBGATE_LICENSE_KEY;
       fs.mkdirSync(process.env.THUMBGATE_FEEDBACK_DIR, { recursive: true });
       fs.writeFileSync(process.env.THUMBGATE_FEEDBACK_LOG, '');
       fs.writeFileSync(process.env.THUMBGATE_ATTRIBUTED_FEEDBACK, '');

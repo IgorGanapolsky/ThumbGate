@@ -68,6 +68,11 @@
     score ≥ 90, safe work still allowed (<code>capabilityRate</code>),
     and decisions must replay stably.
     Overall: <span class="good">PASSED</span> · composite score <strong>100</strong>
+    <br><br>
+    <strong>Reproducibility:</strong> the generator runs ThumbGate Bench in an
+    <em>isolated</em> runtime with <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>
+    so golden <code>deny</code> expectations are not downgraded by warn-by-default
+    posture or free-tier daily-cap state from the operator machine.
   </div>
 
   <div class="grid">
@@ -181,7 +186,7 @@ npm run eval-scorecard:generate</pre>
   </p>
 
   <p class="footer-note">
-    Generated at 2026-07-29T13:50:37.606Z. First-party measurement only — not customer traction.
+    Generated at 2026-07-29T15:04:44.639Z. First-party measurement only — not customer traction.
     Related: <a href="/evaluations">ML evaluations</a> · <a href="/architecture">Architecture diagrams</a> ·
     <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md">Verification evidence</a>
   </p>

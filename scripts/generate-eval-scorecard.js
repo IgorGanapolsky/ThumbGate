@@ -186,6 +186,11 @@ function renderScorecard(input) {
     score ≥ 90, safe work still allowed (<code>capabilityRate</code>),
     and decisions must replay stably.
     Overall: ${passed ? '<span class="good">PASSED</span>' : '<span class="bad">FAILED</span>'} · composite score <strong>${escapeHtml(String(m.score ?? 'n/a'))}</strong>
+    <br><br>
+    <strong>Reproducibility:</strong> the generator runs ThumbGate Bench in an
+    <em>isolated</em> runtime with <code>THUMBGATE_STRICT_ENFORCEMENT=1</code>
+    so golden <code>deny</code> expectations are not downgraded by warn-by-default
+    posture or free-tier daily-cap state from the operator machine.
   </div>
 
   <div class="grid">
