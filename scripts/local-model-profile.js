@@ -85,6 +85,34 @@ const LONG_CONTEXT_TAGS = new Set([
   'xmemory',
 ]);
 
+const LOCAL_INFERENCE_USE_POLICY = Object.freeze({
+  interactive_ready: Object.freeze({
+    recommended: Object.freeze([
+      'private retrieval',
+      'classification',
+      'policy support',
+      'interactive local chat',
+    ]),
+    blocked: Object.freeze([]),
+  }),
+  batch_ready: Object.freeze({
+    recommended: Object.freeze([
+      'private retrieval',
+      'offline classification',
+      'batch policy analysis',
+    ]),
+    blocked: Object.freeze(['latency-sensitive interactive routing']),
+  }),
+  evaluation_only: Object.freeze({
+    recommended: Object.freeze(['private experimentation', 'model evaluation']),
+    blocked: Object.freeze(['production routing', 'policy decisions', 'autonomous actions']),
+  }),
+  unavailable: Object.freeze({
+    recommended: Object.freeze([]),
+    blocked: Object.freeze(['production routing']),
+  }),
+});
+
 function parseNumber(value, fallback) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -101,17 +129,23 @@ function parseBoolean(value, fallback) {
 
 function normalizeSlug(value, fallback = '') {
   if (value === undefined || value === null || value === '') return fallback;
-  const normalized = String(value)
+  const sanitized = String(value)
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/[^a-z0-9]+/g, '-');
+  let start = 0;
+  let end = sanitized.length;
+  while (sanitized[start] === '-') start += 1;
+  while (sanitized[end - 1] === '-') end -= 1;
+  const normalized = sanitized.slice(start, end);
   return normalized || fallback;
 }
 
 function normalizeEndpoint(value) {
   const endpoint = String(value || DEFAULT_LOCAL_LLM_ENDPOINT).trim();
-  return endpoint.replace(/\/+$/, '');
+  let end = endpoint.length;
+  while (endpoint[end - 1] === '/') end -= 1;
+  return endpoint.slice(0, end);
 }
 
 function clampInteger(value, fallback, min, max) {
@@ -221,6 +255,45 @@ function extractAssistantText(payload) {
     .trim();
 }
 
+function classifyLocalInference({
+  successRate,
+  contractPassRate,
+  p95LatencyMs,
+  maxInteractiveLatencyMs,
+}) {
+  const passedAllContracts = successRate === 1 && contractPassRate === 1;
+  const metInteractiveBudget = (
+    p95LatencyMs !== null
+    && p95LatencyMs <= maxInteractiveLatencyMs
+  );
+  if (passedAllContracts && metInteractiveBudget) {
+    return {
+      status: 'interactive_ready',
+      route: 'interactive_local',
+      reason: `local inference passed every response contract within the ${maxInteractiveLatencyMs}ms interactive latency budget.`,
+    };
+  }
+  if (passedAllContracts) {
+    return {
+      status: 'batch_ready',
+      route: 'private_batch_local',
+      reason: `local inference passed every response contract, but p95 latency exceeded the ${maxInteractiveLatencyMs}ms interactive budget.`,
+    };
+  }
+  if (successRate === 1) {
+    return {
+      status: 'evaluation_only',
+      route: 'evaluation_only_local',
+      reason: 'local inference returned non-empty responses, but at least one deterministic response contract failed.',
+    };
+  }
+  return {
+    status: 'unavailable',
+    route: 'managed_fallback',
+    reason: 'local inference did not return a non-empty assistant response for every sample.',
+  };
+}
+
 function evaluateLocalInferenceBenchmark(samples, options = {}) {
   const maxInteractiveLatencyMs = clampInteger(
     options.maxInteractiveLatencyMs,
@@ -245,33 +318,16 @@ function evaluateLocalInferenceBenchmark(samples, options = {}) {
   const tokensPerSecond = totalLatencyMs > 0
     ? totalOutputTokens / (totalLatencyMs / 1000)
     : null;
-
-  let status = 'unavailable';
-  let route = 'managed_fallback';
-  let reason = 'local inference did not return a non-empty assistant response for every sample.';
-  if (
-    successRate === 1
-    && contractPassRate === 1
-    && p95LatencyMs !== null
-    && p95LatencyMs <= maxInteractiveLatencyMs
-  ) {
-    status = 'interactive_ready';
-    route = 'interactive_local';
-    reason = `local inference passed every response contract within the ${maxInteractiveLatencyMs}ms interactive latency budget.`;
-  } else if (successRate === 1 && contractPassRate === 1) {
-    status = 'batch_ready';
-    route = 'private_batch_local';
-    reason = `local inference passed every response contract, but p95 latency exceeded the ${maxInteractiveLatencyMs}ms interactive budget.`;
-  } else if (successRate === 1) {
-    status = 'evaluation_only';
-    route = 'evaluation_only_local';
-    reason = 'local inference returned non-empty responses, but at least one deterministic response contract failed.';
-  }
+  const classification = classifyLocalInference({
+    successRate,
+    contractPassRate,
+    p95LatencyMs,
+    maxInteractiveLatencyMs,
+  });
+  const usePolicy = LOCAL_INFERENCE_USE_POLICY[classification.status];
 
   return {
-    status,
-    route,
-    reason,
+    ...classification,
     successRate: Number(successRate.toFixed(4)),
     contractPassRate: Number(contractPassRate.toFixed(4)),
     contractPassingSamples: contractPassing.length,
@@ -284,20 +340,8 @@ function evaluateLocalInferenceBenchmark(samples, options = {}) {
     tokensPerSecond: tokensPerSecond === null
       ? null
       : Number(tokensPerSecond.toFixed(3)),
-    recommendedUses: status === 'interactive_ready'
-      ? ['private retrieval', 'classification', 'policy support', 'interactive local chat']
-      : status === 'batch_ready'
-        ? ['private retrieval', 'offline classification', 'batch policy analysis']
-        : status === 'evaluation_only'
-          ? ['private experimentation', 'model evaluation']
-        : [],
-    blockedUses: status === 'interactive_ready'
-      ? []
-      : status === 'batch_ready'
-        ? ['latency-sensitive interactive routing']
-        : status === 'evaluation_only'
-          ? ['production routing', 'policy decisions', 'autonomous actions']
-        : ['production routing'],
+    recommendedUses: [...usePolicy.recommended],
+    blockedUses: [...usePolicy.blocked],
   };
 }
 
@@ -310,7 +354,7 @@ async function probeLocalInference(options = {}) {
   const config = resolveLocalInferenceConfig(env, options);
   const fetchImpl = options.fetchImpl || globalThis.fetch;
   if (typeof fetchImpl !== 'function') {
-    throw new Error('fetch_unavailable');
+    throw new TypeError('fetch_unavailable');
   }
   const now = options.now || (() => Date.now());
   const headers = { 'content-type': 'application/json' };

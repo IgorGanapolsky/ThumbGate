@@ -235,8 +235,12 @@ test('resolveModelRole throws on unknown role', () => {
 
 test('GLM_MODEL_ROLES covers all valid roles and uses lite variant for compaction', () => {
   for (const role of VALID_MODEL_ROLES) {
-    assert.ok(typeof GLM_MODEL_ROLES[role] === 'string' && GLM_MODEL_ROLES[role].length > 0,
-      `GLM_MODEL_ROLES missing role: ${role}`);
+    assert.equal(
+      typeof GLM_MODEL_ROLES[role],
+      'string',
+      `GLM_MODEL_ROLES must contain a string for role: ${role}`,
+    );
+    assert.ok(GLM_MODEL_ROLES[role].length > 0, `GLM_MODEL_ROLES missing role: ${role}`);
   }
   assert.ok(GLM_MODEL_ROLES.compaction.includes('4-9b') || GLM_MODEL_ROLES.compaction.includes('lite'),
     'compaction should use a lighter GLM model');
