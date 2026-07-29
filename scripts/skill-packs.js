@@ -11,7 +11,7 @@ const BUILTIN_PACKS = {
   'database-agent-safety': {
     name: 'database-agent-safety',
     description: 'Pre-action checks for AI agents before they touch production databases.',
-    triggers: ['database', 'postgres', 'mysql', 'sql', 'migration', 'prisma', 'rails db:migrate', 'drop table', 'truncate', 'production database'],
+    triggers: ['database', 'postgres', 'mysql', 'sql', 'migration', 'prisma', 'rails db:migrate', 'drop table', 'truncate', 'update', 'delete without where', 'where clause', 'production database'],
     rules: [
       'NEVER allow an autonomous agent to run DROP, TRUNCATE, DROP SCHEMA, or DROP DATABASE without explicit human approval and rollback evidence.',
       'ALWAYS require a backup, snapshot, or reversible rollback plan before production schema migrations.',

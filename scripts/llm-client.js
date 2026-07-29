@@ -14,9 +14,43 @@ const DEFAULT_MAX_TOKENS = 1024;
 const DEFAULT_CACHE_TTL = '5m';
 const DEFAULT_ZAI_BASE_URL = 'https://api.z.ai/api/paas/v4';
 const DEFAULT_ZAI_MODEL = 'glm-5.2-flash';
+const DEFAULT_LLM_TIMEOUT_MS = 30000;
+const MAX_LLM_RETRIES = 2;
 
 let _anthropicClient = null;
 let _geminiClient = null;
+
+function normalizeLlmTimeout(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return DEFAULT_LLM_TIMEOUT_MS;
+  return Math.max(1000, Math.min(120000, Math.floor(parsed)));
+}
+
+function normalizeLlmRetries(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 1;
+  return Math.max(0, Math.min(MAX_LLM_RETRIES, Math.floor(parsed)));
+}
+
+async function withTimeout(promise, timeoutMs, label = 'LLM request') {
+  const bounded = normalizeLlmTimeout(timeoutMs);
+  let timer;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((resolve, reject) => {
+        timer = setTimeout(() => {
+          const error = new Error(`${label} timed out after ${bounded}ms`);
+          error.code = 'ETIMEDOUT';
+          error.retryable = true;
+          reject(error);
+        }, bounded);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 function isAvailable() {
   return Boolean(process.env.ANTHROPIC_API_KEY);
@@ -243,13 +277,17 @@ async function callGeminiInternal(options = {}) {
     }
 
     const response = await runStep('llm.callGemini', {
-      retries: 2,
+      retries: normalizeLlmRetries(options.retries),
       logger: (msg) => console.warn(msg),
-    }, async () => _geminiClient.models.generateContent({
-      model: options.model,
-      contents,
-      config,
-    }));
+    }, async () => withTimeout(
+      _geminiClient.models.generateContent({
+        model: options.model,
+        contents,
+        config,
+      }),
+      options.timeoutMs,
+      'Gemini request',
+    ));
 
     return {
       text: response.text || '',
@@ -300,9 +338,13 @@ async function callClaudeInternal(options = {}) {
 
   try {
     const response = await runStep('llm.callClaude', {
-      retries: 2,
+      retries: normalizeLlmRetries(options.retries),
       logger: (msg) => console.warn(msg),
-    }, async () => client.messages.create(buildClaudeRequest(options)));
+    }, async () => withTimeout(
+      client.messages.create(buildClaudeRequest(options)),
+      options.timeoutMs,
+      'Anthropic request',
+    ));
 
     const text = stripCodeFences(extractTextContent(response));
     return {
@@ -332,21 +374,72 @@ async function callClaudeJson(options = {}) {
   const result = await callClaudeInternal(options);
   if (!result) return null;
 
-  const parsed = parseClaudeJson(result.text);
-  if (parsed === null) return null;
+  let parsed = parseClaudeJson(result.text);
+  let validation = validateParsedJson(parsed, options.outputSchema);
+  let repaired = false;
+  let repairAttempted = false;
+  let finalResult = result;
+
+  if (!validation.valid && options.outputSchema && options.repair !== false) {
+    repairAttempted = true;
+    const repair = await callClaudeInternal({
+      ...options,
+      messages: undefined,
+      retries: 0,
+      userPrompt: buildJsonRepairPrompt(
+        result.text,
+        options.outputSchema,
+        validation.errors,
+      ),
+    });
+    if (repair) {
+      const repairedParsed = parseClaudeJson(repair.text);
+      const repairedValidation = validateParsedJson(repairedParsed, options.outputSchema);
+      if (repairedValidation.valid) {
+        parsed = repairedParsed;
+        validation = repairedValidation;
+        repaired = true;
+        finalResult = repair;
+      } else {
+        validation = repairedValidation;
+      }
+    }
+  }
+
+  if (!validation.valid) return null;
 
   if (options.returnMetadata) {
     return {
       parsed,
-      text: result.text,
-      usage: result.usage,
-      stopReason: result.stopReason,
-      id: result.id,
-      model: result.model,
+      text: finalResult.text,
+      usage: finalResult.usage,
+      stopReason: finalResult.stopReason,
+      id: finalResult.id,
+      model: finalResult.model,
+      structuredValidation: validation,
+      structuredRepairAttempted: repairAttempted,
+      structuredRepairSucceeded: repaired,
     };
   }
 
   return parsed;
+}
+
+function validateParsedJson(parsed, schema) {
+  if (parsed === null) return { valid: false, errors: ['invalid_json'], value: null };
+  if (!schema) return { valid: true, errors: [], value: parsed };
+  const { validateStructuredOutput } = require('./tool-contract-validator');
+  return validateStructuredOutput(parsed, schema);
+}
+
+function buildJsonRepairPrompt(text, schema, errors = []) {
+  return [
+    'Repair the response into JSON that satisfies the schema.',
+    'Do not add facts. Return only the repaired JSON.',
+    `Schema: ${JSON.stringify(schema).slice(0, 8000)}`,
+    `Validation errors: ${JSON.stringify(errors).slice(0, 2000)}`,
+    `Response: ${String(text || '').slice(0, 6000)}`,
+  ].join('\n');
 }
 
 async function callZaiJson(options = {}) {
@@ -383,5 +476,10 @@ module.exports = {
   normalizeCacheOptions,
   buildClaudeRequest,
   buildSafeProviderError,
+  buildJsonRepairPrompt,
+  validateParsedJson,
+  withTimeout,
+  normalizeLlmRetries,
+  normalizeLlmTimeout,
   MODELS,
 };

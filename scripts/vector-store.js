@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('node:crypto');
 const { ensureDir } = require('./fs-utils');
 const {
   resolveEmbeddingProfile,
@@ -28,7 +29,11 @@ let _lastEmbeddingProfile = null;
 let _pipelineLoader = null;
 let _geminiEmbedderForTests = null;
 const TABLE_NAME = 'thumbgate_memories';
+const RAG_TABLE_PREFIX = 'thumbgate_rag_v2';
+const RAG_INDEX_SCHEMA_VERSION = 2;
 const FEATURE_HASH_DIMENSIONS = 384;
+const DEFAULT_VECTOR_TIMEOUT_MS = 8000;
+const EMBEDDING_CACHE_DIRNAME = 'embedding-cache-v2';
 
 async function getLanceDB() {
   if (!_lancedb) {
@@ -37,12 +42,12 @@ async function getLanceDB() {
   return _lancedb;
 }
 
-function getFeedbackDir() {
-  return resolveFeedbackDir();
+function getFeedbackDir(explicitDir) {
+  return explicitDir || resolveFeedbackDir();
 }
 
-function getLanceDir() {
-  return path.join(getFeedbackDir(), 'lancedb');
+function getLanceDir(explicitDir) {
+  return path.join(getFeedbackDir(explicitDir), 'lancedb');
 }
 
 
@@ -88,6 +93,10 @@ function fnv1a32(value) {
     hash = Math.imul(hash, 0x01000193) >>> 0;
   }
   return hash;
+}
+
+function sha256(value) {
+  return crypto.createHash('sha256').update(String(value || ''), 'utf8').digest('hex');
 }
 
 function addHashedFeature(vector, feature, weight) {
@@ -205,6 +214,7 @@ async function embedWithGemini(text, options = {}) {
       'x-goog-api-key': config.apiKey,
     },
     body: JSON.stringify(requestBody),
+    signal: AbortSignal.timeout(Number(options.timeoutMs) || DEFAULT_VECTOR_TIMEOUT_MS),
   });
 
   if (!response.ok) {
@@ -254,6 +264,17 @@ async function embed(text, options = {}) {
     // Deterministic 384-dim unit vector: first element = 1.0, rest = 0.0
     const stub = Array(384).fill(0);
     stub[0] = 1.0;
+    _lastEmbeddingProfile = {
+      generatedAt: new Date().toISOString(),
+      source: 'test',
+      activeProfile: {
+        id: 'stub',
+        model: 'ThumbGate deterministic test embedding',
+        outputDimensionality: stub.length,
+        task: options.task || 'code retrieval',
+      },
+      fallbackUsed: false,
+    };
     return stub;
   }
   const geminiConfig = resolveGeminiEmbeddingConfig();
@@ -314,6 +335,8 @@ async function embed(text, options = {}) {
   }
 
   const vector = embedWithFeatureHash(text);
+  // Feature-hash is a last-resort degrade, not production semantic quality.
+  // Callers (prove/eval/chat health) must treat quality_tier=degraded.
   _lastEmbeddingProfile = {
     generatedAt: new Date().toISOString(),
     source: 'built-in',
@@ -322,11 +345,207 @@ async function embed(text, options = {}) {
       model: 'ThumbGate feature hashing',
       outputDimensionality: FEATURE_HASH_DIMENSIONS,
       task: options.task || 'code retrieval',
-      rationale: 'Deterministic zero-dependency local text embedding.',
+      rationale: 'DEGRADED: deterministic zero-dependency hash embedding — not semantic. Configure Gemini or local transformers for production retrieval quality.',
+      qualityTier: 'degraded',
     },
-    fallbackUsed: false,
+    fallbackUsed: true,
+    fallbackReason: 'no_managed_or_transformer_embedder',
   };
   return vector;
+}
+
+function getActiveEmbeddingIdentity(vector) {
+  const profile = _lastEmbeddingProfile && _lastEmbeddingProfile.activeProfile || {};
+  const model = String(profile.model || profile.id || 'unknown');
+  const modelHash = fnv1a32(model).toString(16).padStart(8, '0');
+  return {
+    model,
+    modelHash,
+    dimensions: Array.isArray(vector) ? vector.length : Number(profile.outputDimensionality || 0),
+    source: _lastEmbeddingProfile && _lastEmbeddingProfile.source || 'unknown',
+    fallbackUsed: Boolean(_lastEmbeddingProfile && _lastEmbeddingProfile.fallbackUsed),
+  };
+}
+
+function resolveRagTableName(identity) {
+  const dimensions = Number(identity && identity.dimensions);
+  if (!Number.isFinite(dimensions) || dimensions <= 0) {
+    throw new Error('embedding dimensions are required for a versioned RAG index');
+  }
+  const modelHash = String(identity.modelHash || 'unknown').replaceAll(/[^a-z0-9]/gi, '').slice(0, 12);
+  return `${RAG_TABLE_PREFIX}_${modelHash}_${dimensions}`;
+}
+
+function resolveConfiguredEmbeddingKey() {
+  if (process.env.THUMBGATE_VECTOR_STUB_EMBED === 'true') return 'stub:384:v1';
+  const managed = resolveGeminiEmbeddingConfig();
+  if (managed.provider === 'coreai') return 'coreai:configured';
+  if (managed.enabled) {
+    return `gemini:${managed.model}:${managed.outputDimensionality}`;
+  }
+  if (hasLocalTransformerProvider()) {
+    const selected = resolveEmbeddingProfile().selectedProfile;
+    return `transformers:${selected.model}:${selected.quantized ? 'q' : 'f'}`;
+  }
+  return `feature-hash:${FEATURE_HASH_DIMENSIONS}:v1`;
+}
+
+function embeddingCachePath(text, options = {}) {
+  const configuredKey = resolveConfiguredEmbeddingKey();
+  const textHash = sha256(text);
+  const fileName = `${sha256(`${configuredKey}:${textHash}`)}.json`;
+  return {
+    configuredKey,
+    textHash,
+    filePath: path.join(getLanceDir(options.feedbackDir), EMBEDDING_CACHE_DIRNAME, fileName),
+  };
+}
+
+function readCachedEmbedding(text, options = {}) {
+  const cache = embeddingCachePath(text, options);
+  if (!fs.existsSync(cache.filePath)) return null;
+  try {
+    const record = JSON.parse(fs.readFileSync(cache.filePath, 'utf8'));
+    if (
+      record.configuredKey !== cache.configuredKey
+      || record.textHash !== cache.textHash
+      || !Array.isArray(record.vector)
+      || !record.identity
+      || record.identity.fallbackUsed === true
+    ) return null;
+    return record;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedEmbedding(text, vector, identity, options = {}) {
+  if (identity.fallbackUsed === true) return;
+  const cache = embeddingCachePath(text, options);
+  ensureDir(path.dirname(cache.filePath));
+  fs.writeFileSync(cache.filePath, `${JSON.stringify({
+    schemaVersion: 1,
+    configuredKey: cache.configuredKey,
+    textHash: cache.textHash,
+    identity,
+    vector,
+    createdAt: new Date().toISOString(),
+  })}\n`, 'utf8');
+}
+
+function escapeSqlLiteral(value) {
+  return String(value || '').replaceAll("'", "''");
+}
+
+async function replaceRows(table, records) {
+  if (typeof table.delete === 'function') {
+    for (const record of records) {
+      await table.delete(`id = '${escapeSqlLiteral(record.id)}'`);
+    }
+  }
+  await table.add(records);
+}
+
+function normalizeIndexRecord(record, vector, identity) {
+  const scope = record.scope || {};
+  return {
+    id: String(record.id || ''),
+    text: String(record.text || ''),
+    vector,
+    source: String(record.source || 'unknown'),
+    documentId: String(record.documentId || ''),
+    sourceKey: String(record.sourceKey || ''),
+    parentId: String(record.parentId || ''),
+    tenantId: String(scope.tenantId || record.tenantId || 'local'),
+    projectId: String(scope.projectId || record.projectId || ''),
+    entityId: String(scope.entityId || record.entityId || ''),
+    visibility: String(scope.visibility || record.visibility || 'private'),
+    isCurrent: record.isCurrent !== false,
+    trustLevel: String(record.trustLevel || 'untrusted'),
+    instructionRisk: Boolean(record.instructionRisk && (
+      record.instructionRisk.detected === true || record.instructionRisk === true
+    )),
+    version: Number(record.version || 1),
+    startOffset: Number(record.startOffset || 0),
+    endOffset: Number(record.endOffset || String(record.text || '').length),
+    title: String(record.title || ''),
+    tags: Array.isArray(record.tags) ? record.tags.join(',') : String(record.tags || ''),
+    signal: String(record.signal || ''),
+    timestamp: String(record.timestamp || record.importedAt || ''),
+    context: String(record.context || record.text || ''),
+    embeddingModel: identity.model,
+    embeddingModelHash: identity.modelHash,
+    embeddingDimensions: identity.dimensions,
+    embeddingSource: identity.source,
+    embeddingFallback: identity.fallbackUsed,
+    indexSchemaVersion: RAG_INDEX_SCHEMA_VERSION,
+  };
+}
+
+async function upsertVectorRecords(records, options = {}) {
+  const input = Array.isArray(records) ? records : [];
+  if (input.length === 0) return { indexed: 0, tables: [], fallbackCount: 0 };
+  const lanceDir = getLanceDir(options.feedbackDir);
+  ensureDir(lanceDir);
+  const { connect } = await getLanceDB();
+  const db = await connect(lanceDir);
+  const grouped = new Map();
+  let reusedCount = 0;
+  let embeddedCount = 0;
+
+  for (const record of input) {
+    if (!record || !record.id || !record.text) continue;
+    const cached = Array.isArray(record.vector)
+      ? null
+      : readCachedEmbedding(record.text, options);
+    const vector = Array.isArray(record.vector)
+      ? record.vector
+      : cached
+        ? cached.vector
+        : await embed(record.text, {
+        kind: 'document',
+        task: options.task || 'code retrieval',
+        title: record.title || record.id,
+        timeoutMs: options.timeoutMs,
+      });
+    const identity = record.embeddingIdentity || (cached
+      ? cached.identity
+      : getActiveEmbeddingIdentity(vector));
+    if (cached) reusedCount += 1;
+    else if (!Array.isArray(record.vector)) {
+      embeddedCount += 1;
+      writeCachedEmbedding(record.text, vector, identity, options);
+    }
+    const tableName = options.tableName || resolveRagTableName(identity);
+    if (!grouped.has(tableName)) grouped.set(tableName, []);
+    grouped.get(tableName).push(normalizeIndexRecord(record, vector, identity));
+  }
+
+  await runStep('vector-store.upsertVectorRecords', {
+    retries: 2,
+    logger: (message) => console.warn(message),
+  }, async () => {
+    const tableNames = await db.tableNames();
+    for (const [tableName, rows] of grouped.entries()) {
+      if (rows.length === 0) continue;
+      if (tableNames.includes(tableName)) {
+        const table = await db.openTable(tableName);
+        await replaceRows(table, rows);
+      } else {
+        await db.createTable(tableName, rows);
+      }
+    }
+  });
+
+  const rows = [...grouped.values()].flat();
+  return {
+    indexed: rows.length,
+    tables: [...grouped.keys()],
+    fallbackCount: rows.filter((row) => row.embeddingFallback).length,
+    reusedCount,
+    embeddedCount,
+    embeddingModels: [...new Set(rows.map((row) => row.embeddingModel))],
+  };
 }
 
 async function upsertFeedback(feedbackEvent) {
@@ -375,11 +594,31 @@ async function upsertFeedback(feedbackEvent) {
     const tableNames = await db.tableNames();
     if (tableNames.includes(TABLE_NAME)) {
       const table = await db.openTable(TABLE_NAME);
-      await table.add([record]);
+      await replaceRows(table, [record]);
     } else {
       await db.createTable(TABLE_NAME, [record]);
     }
   });
+
+  await upsertVectorRecords([{
+    id: feedbackEvent.id,
+    text: textForEmbedding,
+    source: 'feedback',
+    signal: feedbackEvent.signal,
+    tags: feedbackEvent.tags,
+    timestamp: feedbackEvent.timestamp,
+    context: feedbackEvent.context || '',
+    scope: feedbackEvent.scope || {
+      tenantId: feedbackEvent.tenantId || 'local',
+      projectId: feedbackEvent.projectId || null,
+      entityId: feedbackEvent.entityId || null,
+      visibility: feedbackEvent.visibility || 'private',
+    },
+    trustLevel: 'trusted',
+    isCurrent: true,
+    vector,
+    embeddingIdentity: getActiveEmbeddingIdentity(vector),
+  }]);
 }
 
 async function searchSimilar(queryText, limit = 5) {
@@ -399,6 +638,139 @@ async function searchSimilar(queryText, limit = 5) {
   const table = await db.openTable(TABLE_NAME);
   const results = await table.search(vector).limit(limit).toArray();
   return results;
+}
+
+function rowMatchesFilters(row, filters = {}) {
+  if (filters.tenantId && row.tenantId !== filters.tenantId) return false;
+  if (filters.projectId && row.projectId !== filters.projectId) return false;
+  if (filters.entityId && row.entityId !== filters.entityId) return false;
+  if (filters.visibility && row.visibility !== filters.visibility) return false;
+  if (filters.source && filters.source !== 'all' && row.source !== filters.source) return false;
+  if (filters.signal && row.signal !== filters.signal) return false;
+  if (filters.currentOnly !== false && row.isCurrent === false) return false;
+  return true;
+}
+
+function buildLanceFilter(filters = {}) {
+  const clauses = [];
+  for (const key of ['tenantId', 'projectId', 'entityId', 'visibility', 'source', 'signal']) {
+    const value = filters[key];
+    if (!value || (key === 'source' && value === 'all')) continue;
+    clauses.push(`${key} = '${escapeSqlLiteral(value)}'`);
+  }
+  if (filters.currentOnly !== false) clauses.push('isCurrent = true');
+  return clauses.join(' AND ');
+}
+
+async function searchRag(queryText, options = {}) {
+  const query = String(queryText || '').trim();
+  if (!query) throw new Error('query is required');
+  const limit = Math.max(1, Math.min(Number(options.limit) || 10, 100));
+  const lanceDir = getLanceDir(options.feedbackDir);
+  ensureDir(lanceDir);
+  const { connect } = await getLanceDB();
+  const db = await connect(lanceDir);
+  const tableNames = await db.tableNames();
+  const ragTables = tableNames.filter((name) => name.startsWith(`${RAG_TABLE_PREFIX}_`));
+  if (ragTables.length === 0) {
+    return {
+      results: [],
+      tableName: null,
+      embedding: null,
+      filterApplied: buildLanceFilter(options.filters),
+    };
+  }
+  const vector = await embed(query, {
+    kind: 'query',
+    task: options.task || 'code retrieval',
+    timeoutMs: options.timeoutMs,
+  });
+  const identity = getActiveEmbeddingIdentity(vector);
+  const tableName = resolveRagTableName(identity);
+  if (!tableNames.includes(tableName)) {
+    return {
+      results: [],
+      tableName,
+      embedding: identity,
+      filterApplied: buildLanceFilter(options.filters),
+    };
+  }
+
+  const table = await db.openTable(tableName);
+  let builder = table.search(vector);
+  const filter = buildLanceFilter(options.filters);
+  if (filter && typeof builder.where === 'function') builder = builder.where(filter);
+  const scanLimit = filter && typeof builder.where !== 'function'
+    ? Math.min(Math.max(limit * 10, 100), 1000)
+    : limit;
+  const rows = await builder.limit(scanLimit).toArray();
+  const filtered = rows.filter((row) => rowMatchesFilters(row, options.filters)).slice(0, limit);
+  return {
+    results: filtered,
+    tableName,
+    embedding: identity,
+    filterApplied: filter,
+  };
+}
+
+async function indexDocument(document, options = {}) {
+  if (document && document.supersedesDocumentId) {
+    await retireDocument(document.supersedesDocumentId, options);
+  }
+  const chunks = Array.isArray(document && document.chunks) ? document.chunks : [];
+  return upsertVectorRecords(chunks.map((chunk) => ({
+    id: chunk.chunkId,
+    text: [
+      document.title,
+      (chunk.headingPath || []).join(' > '),
+      chunk.content,
+    ].filter(Boolean).join('\n'),
+    source: 'document',
+    documentId: document.documentId,
+    sourceKey: document.sourceKey,
+    parentId: chunk.parentId,
+    scope: document.scope,
+    isCurrent: document.isCurrent,
+    trustLevel: document.trustLevel,
+    instructionRisk: document.instructionRisk,
+    version: document.version,
+    startOffset: chunk.startOffset,
+    endOffset: chunk.endOffset,
+    title: document.title,
+    tags: document.tags,
+    importedAt: document.importedAt,
+    context: chunk.content,
+  })), options);
+}
+
+async function retireDocument(documentId, options = {}) {
+  const normalizedId = String(documentId || '').trim();
+  if (!normalizedId) return { retired: false, tables: [] };
+  const lanceDir = getLanceDir(options.feedbackDir);
+  ensureDir(lanceDir);
+  const { connect } = await getLanceDB();
+  const db = await connect(lanceDir);
+  const names = (await db.tableNames()).filter((name) => name.startsWith(`${RAG_TABLE_PREFIX}_`));
+  for (const name of names) {
+    const table = await db.openTable(name);
+    if (typeof table.delete === 'function') {
+      await table.delete(`documentId = '${escapeSqlLiteral(normalizedId)}'`);
+    }
+  }
+  return { retired: names.length > 0, tables: names };
+}
+
+async function getRagIndexStatus(options = {}) {
+  const lanceDir = getLanceDir(options.feedbackDir);
+  ensureDir(lanceDir);
+  const { connect } = await getLanceDB();
+  const db = await connect(lanceDir);
+  const names = await db.tableNames();
+  return {
+    schemaVersion: RAG_INDEX_SCHEMA_VERSION,
+    directory: lanceDir,
+    tables: names.filter((name) => name.startsWith(`${RAG_TABLE_PREFIX}_`)),
+  };
 }
 
 function getEmbeddingConfig() {
@@ -429,6 +801,17 @@ function setGeminiEmbedderForTests(loader) {
 }
 
 module.exports = {
+  DEFAULT_VECTOR_TIMEOUT_MS,
+  RAG_INDEX_SCHEMA_VERSION,
+  RAG_TABLE_PREFIX,
+  buildLanceFilter,
+  getActiveEmbeddingIdentity,
+  getRagIndexStatus,
+  indexDocument,
+  retireDocument,
+  rowMatchesFilters,
+  searchRag,
+  upsertVectorRecords,
   upsertFeedback,
   searchSimilar,
   embed,

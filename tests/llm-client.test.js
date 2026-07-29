@@ -118,6 +118,37 @@ test('parseClaudeJson strips fences before parsing', () => {
   assert.equal(parseClaudeJson('not json'), null);
 });
 
+test('structured JSON validation fails closed on schema mismatches', () => {
+  const {
+    buildJsonRepairPrompt,
+    validateParsedJson,
+  } = require('../scripts/llm-client');
+  const schema = {
+    type: 'object',
+    required: ['answer'],
+    properties: { answer: { type: 'string' } },
+  };
+  assert.equal(validateParsedJson({ answer: 'ok' }, schema).valid, true);
+  const invalid = validateParsedJson({ answer: 42 }, schema);
+  assert.equal(invalid.valid, false);
+  const prompt = buildJsonRepairPrompt('{"answer":42}', schema, invalid.errors);
+  assert.match(prompt, /Do not add facts/);
+  assert.match(prompt, /"answer"/);
+});
+
+test('LLM retry and timeout controls are bounded', async () => {
+  const {
+    normalizeLlmRetries,
+    normalizeLlmTimeout,
+    withTimeout,
+  } = require('../scripts/llm-client');
+  assert.equal(normalizeLlmRetries(99), 2);
+  assert.equal(normalizeLlmRetries(-3), 0);
+  assert.equal(normalizeLlmTimeout(1), 1000);
+  assert.equal(normalizeLlmTimeout(999999), 120000);
+  assert.equal(await withTimeout(Promise.resolve('ok'), 1000), 'ok');
+});
+
 test('buildSafeProviderError omits request metadata and redacts credential-bearing messages', () => {
   const { buildSafeProviderError } = require('../scripts/llm-client');
   const error = new Error('invalid_grant refresh_token=1//fake-refresh-credential-value');

@@ -4,6 +4,12 @@
 
 ### Minor Changes
 
+- production-rag-stage-contracts: Add bounded PDF, DOCX, and OCR ingestion;
+  versioned parent-child chunks and index recovery; scoped hybrid retrieval,
+  reranking, token-budgeted cited prompts, strict structured output; and
+  privacy-safe RAG operations/evaluation surfaces. The public npm artifact adds
+  thirteen runtime files (389 to 402) required by the packaged API and MCP
+  paths; no private core, customer data, or credentials are included.
 - 97365d1: Fix lesson retrieval silently ignoring relevance past 200 entries. Retrieval read only
   the newest 200 lines of the memory log, so the best-matching lesson in the corpus became
   unreachable once 200 newer entries existed — measured cliff at exactly 201. The cap is now

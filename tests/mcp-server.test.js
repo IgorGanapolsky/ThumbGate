@@ -100,6 +100,7 @@ test('tools/list returns only tools allowed by the active profile and available 
   assert.equal(result.tools.length, getExposedTools('default').length);
   assert.ok(result.tools.length < TOOLS.length);
   assert.ok(result.tools.some((tool) => tool.name === 'run_autoresearch'));
+  assert.ok(result.tools.some((tool) => tool.name === 'rag_operations'));
   assert.ok(result.tools.some((tool) => tool.name === 'plan_multimodal_retrieval'));
   assert.ok(result.tools.some((tool) => tool.name === 'plan_context_footprint'));
   assert.ok(result.tools.some((tool) => tool.name === 'plan_agent_design_governance'));
@@ -114,6 +115,25 @@ test('tools/list returns only tools allowed by the active profile and available 
     assert.equal(hasReadOnlyHint || hasDestructiveHint, true, `${tool.name} must declare a safety annotation`);
     assert.equal(hasReadOnlyHint && hasDestructiveHint, false, `${tool.name} must not claim both readOnlyHint and destructiveHint`);
   }
+});
+
+test('rag_operations reports stage contracts and privacy-safe runtime health', async () => {
+  const result = await handleRequest({
+    jsonrpc: '2.0',
+    id: 38,
+    method: 'tools/call',
+    params: {
+      name: 'rag_operations',
+      arguments: { telemetryLimit: 25 },
+    },
+  });
+
+  const payload = JSON.parse(result.content[0].text);
+  assert.equal(payload.schemaVersion, 1);
+  assert.ok(payload.stages.some((stage) => stage.id === 'retrieval'));
+  assert.equal(typeof payload.documents.total, 'number');
+  assert.equal(typeof payload.index.available, 'boolean');
+  assert.equal(JSON.stringify(payload).includes('private customer prompt'), false);
 });
 
 test('plan_agent_design_governance returns eval and tool-risk safeguards', async () => {

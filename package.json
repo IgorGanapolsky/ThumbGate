@@ -83,6 +83,7 @@
     "scripts/deepseek-v4-runtime-guardrails.js",
     "scripts/docker-sandbox-planner.js",
     "scripts/document-intake.js",
+    "scripts/document-parser.js",
     "scripts/document-workflow-governance.js",
     "scripts/durability/step.js",
     "scripts/evolution-state.js",
@@ -336,7 +337,19 @@
     "src/",
     "scripts/generate-eval-scorecard.js",
     "scripts/refresh-proof-pack.js",
-    "scripts/generate-case-study-outreach.js"
+    "scripts/generate-case-study-outreach.js",
+    "scripts/rag-stage-contracts.js",
+    "scripts/rag-stage-contract.js",
+    "scripts/rag-operations.js",
+    "scripts/eval-document-ingestion.js",
+    "scripts/rag-document-pipeline.js",
+    "scripts/rag-prompt-assembly.js",
+    "scripts/rag-ranking.js",
+    "scripts/rag-structured-output.js",
+    "scripts/prove-rag-pipeline.js",
+    "scripts/reindex-rag.js",
+    "scripts/eval-rag.js",
+    "docs/RAG_PIPELINE.md"
   ],
   "scripts": {
     "canary:snapshot": "node scripts/gate-decision-canary.js --snapshot",
@@ -490,6 +503,8 @@
     "eval:feedback-quality": "python3 scripts/feedback_quality_eval.py",
     "eval:classifier": "python3 scripts/eval_gate_classifier.py",
     "eval:rag": "node scripts/eval-rag.js",
+    "eval:ingestion": "node scripts/eval-document-ingestion.js --live-adapters",
+    "rag:reindex": "node scripts/reindex-rag.js",
     "test:eval-rag": "node --test tests/eval-rag.test.js",
     "eval:async-observability": "node scripts/async-eval-observability.js",
     "test:async-eval-observability": "node --test tests/async-eval-observability.test.js",
@@ -870,7 +885,9 @@
     "proof-pack:schedule": "node scripts/schedule-manager.js install --label proof-pack-scorecard --spec 'daily 06:15' --command 'npm run proof-pack:refresh' --workingDirectory .",
     "outreach:case-study": "node scripts/generate-case-study-outreach.js",
     "test:proof-pack-cadence": "node --test tests/refresh-proof-pack.test.js tests/case-study-outreach.test.js",
-    "test:evaluations-page": "node --test tests/evaluations-page.test.js"
+    "test:evaluations-page": "node --test tests/evaluations-page.test.js && npm run test:rag-pipeline",
+    "prove:rag": "node scripts/prove-rag-pipeline.js",
+    "test:rag-pipeline": "node --test tests/document-parser.test.js tests/document-intake.test.js tests/eval-document-ingestion.test.js tests/rag-document-pipeline.test.js tests/rag-operations.test.js tests/rag-prompt-assembly.test.js tests/rag-ranking.test.js tests/rag-stage-contract.test.js tests/rag-stage-contracts.test.js tests/rag-structured-output.test.js tests/reindex-rag.test.js tests/prove-rag-pipeline.test.js"
   },
   "keywords": [
     "mcp",
@@ -931,6 +948,7 @@
     "apache-arrow": "^18.1.0",
     "better-sqlite3": "^12.9.0",
     "dotenv": "^17.4.2",
+    "mammoth": "1.12.0",
     "playwright-core": "^1.59.1",
     "protobufjs": "^8.7.1",
     "stripe": "^22.2.0"

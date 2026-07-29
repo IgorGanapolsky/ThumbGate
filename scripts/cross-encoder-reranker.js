@@ -138,15 +138,26 @@ async function retrieveWithReranking(toolName, actionContext, options = {}) {
     includeShared: options.includeShared,
   });
 
+  const query = `${toolName || ''} ${actionContext || ''}`.trim();
+  return rerankLessonCandidates(query, candidates, {
+    maxResults,
+    useLLM,
+  });
+}
+
+/**
+ * Rerank an already-retrieved candidate pool. Keeping retrieval and reranking
+ * separate lets async hybrid retrieval feed the same bounded cross-encoder
+ * without performing a second, inconsistent lexical search.
+ */
+async function rerankLessonCandidates(query, candidates = [], options = {}) {
+  const maxResults = Math.max(1, Number(options.maxResults) || 5);
   if (candidates.length === 0) return [];
   if (candidates.length <= maxResults) return candidates;
 
-  const query = `${toolName || ''} ${actionContext || ''}`.trim();
-
-  // Stage 2: Cross-encoder reranking
   let rerankedScores;
 
-  if (useLLM) {
+  if (options.useLLM === true) {
     rerankedScores = await llmCrossEncode(query, candidates);
   }
 
@@ -231,6 +242,7 @@ function extractVerbs(text) {
 module.exports = {
   heuristicCrossEncode,
   llmCrossEncode,
+  rerankLessonCandidates,
   retrieveWithReranking,
   retrieveWithRerankingSync,
   extractPhrases,

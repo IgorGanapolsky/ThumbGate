@@ -24,7 +24,7 @@ FROM node:22-bookworm-slim AS runtime
 # git is invoked by some maintenance scripts; wget is used by the HEALTHCHECK
 # and is NOT preinstalled on bookworm-slim, so install both here.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git wget \
+    && apt-get install -y --no-install-recommends git wget poppler-utils tesseract-ocr \
     && rm -rf /var/lib/apt/lists/*
 
 # Non-root user for security

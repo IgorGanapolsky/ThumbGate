@@ -16,6 +16,9 @@ const PAGES = [
       '/assets/diagrams/thumbgate-architecture.png',
       '/assets/diagrams/feedback-pipeline.png',
       '/assets/diagrams/pre-action-gate-loop.svg',
+      'Production RAG: source bytes to cited output',
+      'BM25 + vector',
+      'Strict JSON',
     ],
   },
   {
@@ -23,6 +26,8 @@ const PAGES = [
     mustInclude: [
       'How we know ThumbGate works',
       'Golden evaluation dataset',
+      'Ranked RAG release gate',
+      'Document ingestion gate',
       'Tool-call correctness',
       'unsafeActionRate',
       'Human review',
@@ -37,6 +42,8 @@ const PAGES = [
       'fail open',
       'No fabricated logos',
       'THUMBGATE-CASE-STUDIES.md',
+      'MRR@10 0.699',
+      'version split-brain',
     ],
   },
   {
@@ -45,6 +52,9 @@ const PAGES = [
       'How We Evaluate',
       'held-out',
       'majority baseline',
+      'Ranked RAG retrieval',
+      'MRR@10',
+      'Overall ingestion rating',
     ],
   },
   {

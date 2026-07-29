@@ -111,6 +111,40 @@
   </div>
   <p>On familiar traffic the model genuinely helps. On action types it has never seen, it is <span class="bad">worse than a constant classifier</span> — and unfamiliar actions are precisely the case a firewall exists for. That asymmetry is why <strong>deterministic rules enforce and the model only triages</strong>. We consider publishing that inversion more valuable than hiding it: it is the reason ThumbGate's blocking behaviour does not degrade with the model.</p>
 
+  <h2>Ranked RAG retrieval</h2>
+  <div class="panel">
+    <p><strong>Deterministic seeded release suite · 24 cross-domain cases · 2026-07-29 snapshot</strong></p>
+    <table>
+      <tr><th>Metric</th><th>Observed</th><th>Release threshold</th></tr>
+      <tr><td>Recall@1</td><td>70.8%</td><td>diagnostic</td></tr>
+      <tr><td>Recall@5</td><td>95.8%</td><td>diagnostic</td></tr>
+      <tr><td>Recall@10</td><td class="good">100.0%</td><td>&ge; 90%</td></tr>
+      <tr><td>MRR@10</td><td class="good">0.819</td><td>&ge; 0.75</td></tr>
+      <tr><td>nDCG@10</td><td class="good">0.842</td><td>&ge; 0.80</td></tr>
+      <tr><td>Precision@5</td><td>20.0%</td><td>&ge; 15%</td></tr>
+      <tr><td>Scope leaks / stale hits</td><td class="good">0 / 0</td><td>0 / 0</td></tr>
+    </table>
+    <p class="chart-caption">The suite ranks real distractor rules; the expected label is used by the evaluator only, never by retrieval. This is regression evidence for the seeded corpus, not a claim that every live customer corpus has the same scores.</p>
+  </div>
+  <pre>npm run eval:rag
+npm run prove:rag</pre>
+
+  <h2>Document ingestion</h2>
+  <div class="panel">
+    <p><strong>Real local adapters + deterministic fixtures · 2026-07-29 snapshot</strong></p>
+    <table>
+      <tr><th>Measure</th><th>Observed</th><th>Evidence boundary</th></tr>
+      <tr><td>Implementation readiness</td><td class="good">100 / 100 (A)</td><td>all nine requested dimensions passed fixtures</td></tr>
+      <tr><td>Evidence maturity</td><td>70 / 100 (C-)</td><td>no labeled customer corpus or drift baseline yet</td></tr>
+      <tr><td>Overall ingestion rating</td><td class="good">91 / 100 (A-)</td><td>70% implementation + 30% evidence maturity</td></tr>
+      <tr><td>OCR smoke confidence</td><td class="good">96.34%</td><td>one real generated scan, not a representative benchmark</td></tr>
+      <tr><td>PDF / DOCX / OCR adapters</td><td class="good">pass / pass / pass</td><td>local production binaries and parser code</td></tr>
+      <tr><td>Scope/version consistency</td><td class="good">pass</td><td>stale catalog and document records both retired</td></tr>
+    </table>
+    <p class="chart-caption">Dimensions: parsing, OCR, exact/near deduplication, normalization, parent-child chunking, metadata, incremental updates, checkpointed re-indexing, and lineage versioning. The evaluator reports implementation and evidence maturity separately so fixture success cannot masquerade as live-corpus quality.</p>
+  </div>
+  <pre>npm run eval:ingestion</pre>
+
   <h2>The methodology</h2>
   <table>
     <tr><th>Practice</th><th>What it prevents</th></tr>
@@ -129,6 +163,8 @@
     <li><strong>Evasion matrix</strong> — 14 dangerous commands × 9 canonicalization transforms; this is the suite that measured the 62 holes closed in v1.29.2.</li>
     <li><strong>Published-artifact verification</strong> — the npm tarball itself is installed into a throwaway prefix and driven through its public hook contract twice daily. CI proving the <em>source</em> blocks something is a different claim from the artifact users receive blocking it.</li>
     <li><strong>Decision canary</strong> — live decision-distribution drift: a gate going <em>silent</em>, a <em>spike</em> in blocks, or a gate appearing/disappearing.</li>
+    <li><strong>Ranked RAG suite</strong> — 24 cross-domain cases gate Recall@10, MRR@10, nDCG@10, Precision@5, scoped leakage, and stale-version retrieval.</li>
+    <li><strong>Document ingestion suite</strong> — real PDF, DOCX, and OCR adapters plus deterministic deduplication, chunking, metadata, update, re-index, and version-lineage checks.</li>
   </ul>
 
   <h2>The gates that block a release</h2>

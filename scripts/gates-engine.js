@@ -1680,7 +1680,7 @@ const READ_ONLY_TOOL_FALLBACK = new Set([
   'get_scope_state', 'get_branch_governance', 'context_provenance', 'native_messaging_audit',
   'list_harnesses', 'list_intents', 'list_imported_documents', 'get_imported_document',
   'check_operational_integrity', 'workflow_sentinel', 'recall', 'search_lessons',
-  'retrieve_lessons', 'search_thumbgate', 'unified_context', 'verify_claim',
+  'retrieve_lessons', 'search_thumbgate', 'rag_operations', 'unified_context', 'verify_claim',
 ]);
 let readOnlyToolCache = null;
 function getReadOnlyToolNames() {

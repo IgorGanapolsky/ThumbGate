@@ -399,8 +399,15 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // risk-scorer.js require()s at module load — without it the published package throws
     // on require. It is the only new file in the tarball; model-calibration.js and
     // eval-risk-model.js are development-only.
-    manifest.fileCount <= 390,
-    `npm package should stay <= 390 files, got ${manifest.fileCount}`
+    // Bumped 390 -> 402 (2026-07-29) after measuring origin/main at 389 files
+    // and this branch at 402. The 13 additions are the production RAG document
+    // parser, ingestion evaluator, evaluation/proof entrypoints, stage
+    // contracts, hybrid ranking/prompt/structured-output modules, operations
+    // telemetry, checkpointed re-indexer, and their operator guide. Each is
+    // explicitly listed in package.json; no broad repo/test directory was
+    // admitted, and the packed artifact remains below the byte-size ceiling.
+    manifest.fileCount <= 402,
+    `npm package should stay <= 402 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

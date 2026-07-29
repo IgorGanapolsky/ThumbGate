@@ -345,3 +345,105 @@ describe('vector-store — Core AI embedding provider', () => {
     }
   });
 });
+
+describe('vector-store — versioned scoped RAG index', () => {
+  it('replaces stable IDs and applies hard metadata filters before returning rows', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-test-rag-v2-'));
+    const tables = new Map();
+    try {
+      process.env.THUMBGATE_FEEDBACK_DIR = tmpDir;
+      process.env.THUMBGATE_VECTOR_STUB_EMBED = 'true';
+      delete require.cache[require.resolve('../scripts/vector-store')];
+      const vectorStore = require('../scripts/vector-store');
+      vectorStore.setLanceLoaderForTests(async () => ({
+        connect: async () => ({
+          tableNames: async () => [...tables.keys()],
+          openTable: async (name) => {
+            const tableApi = {
+              add: async (records) => {
+                tables.set(name, [...(tables.get(name) || []), ...records]);
+              },
+              delete: async (predicate) => {
+                const id = predicate.match(/^id = '(.+)'$/)?.[1]?.replaceAll("''", "'");
+                tables.set(name, (tables.get(name) || []).filter((row) => row.id !== id));
+              },
+              search: () => {
+                let filter = '';
+                const builder = {
+                  where: (value) => {
+                    filter = value;
+                    return builder;
+                  },
+                  limit: (limit) => ({
+                    toArray: async () => {
+                      let rows = [...(tables.get(name) || [])];
+                      for (const clause of filter.split(' AND ').filter(Boolean)) {
+                        if (clause === 'isCurrent = true') {
+                          rows = rows.filter((row) => row.isCurrent === true);
+                          continue;
+                        }
+                        const match = clause.match(/^(\w+) = '(.+)'$/);
+                        if (match) rows = rows.filter((row) => row[match[1]] === match[2]);
+                      }
+                      return rows.slice(0, limit);
+                    },
+                  }),
+                };
+                return builder;
+              },
+            };
+            return tableApi;
+          },
+          createTable: async (name, records) => {
+            tables.set(name, [...records]);
+          },
+        }),
+      }));
+
+      const base = {
+        id: 'chunk-1',
+        text: 'current recovery procedure',
+        source: 'document',
+        documentId: 'doc-1',
+        scope: { tenantId: 'tenant-a', projectId: 'alpha', visibility: 'private' },
+        isCurrent: true,
+      };
+      const firstIndex = await vectorStore.upsertVectorRecords([base]);
+      const updatedIndex = await vectorStore.upsertVectorRecords([{ ...base, text: 'updated recovery procedure' }]);
+      const cachedIndex = await vectorStore.upsertVectorRecords([{ ...base, text: 'updated recovery procedure' }]);
+      await vectorStore.upsertVectorRecords([{
+        ...base,
+        id: 'chunk-2',
+        documentId: 'doc-2',
+        text: 'other tenant recovery procedure',
+        scope: { tenantId: 'tenant-b', projectId: 'beta', visibility: 'private' },
+      }]);
+
+      const indexedRows = [...tables.values()].flat();
+      assert.equal(indexedRows.filter((row) => row.id === 'chunk-1').length, 1);
+      assert.equal(indexedRows.find((row) => row.id === 'chunk-1').text, 'updated recovery procedure');
+      assert.equal(firstIndex.embeddedCount, 1);
+      assert.equal(updatedIndex.embeddedCount, 1);
+      assert.equal(cachedIndex.reusedCount, 1);
+      assert.equal(cachedIndex.embeddedCount, 0);
+      assert.ok([...tables.keys()].every((name) => name.startsWith('thumbgate_rag_v2_')));
+
+      const result = await vectorStore.searchRag('recovery procedure', {
+        limit: 10,
+        filters: {
+          tenantId: 'tenant-a',
+          projectId: 'alpha',
+          currentOnly: true,
+        },
+      });
+      assert.deepEqual(result.results.map((row) => row.id), ['chunk-1']);
+      assert.match(result.filterApplied, /tenantId = 'tenant-a'/);
+      assert.match(result.filterApplied, /projectId = 'alpha'/);
+      assert.match(result.filterApplied, /isCurrent = true/);
+    } finally {
+      delete process.env.THUMBGATE_VECTOR_STUB_EMBED;
+      delete require.cache[require.resolve('../scripts/vector-store')];
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+});

@@ -243,3 +243,86 @@ the instrument that made the fix checkable. Before it, "the bypass class is clos
 opinion, and it was wrong twice. After it, the same sentence is a measurement with a number
 attached. For any security control, build the adversarial measurement *before* claiming the
 control works; the measurement outlives the specific bug and catches the next one.
+
+---
+
+## 6. The ranked RAG gate failed before retrieval improved
+
+**Situation.** The production RAG checklist had grown to include parsing, chunking, embeddings,
+hybrid retrieval, reranking, prompt assembly, and structured output. The existing evaluation
+still used six cases and a binary substring anywhere in the retrieved context.
+
+**Problem.** That check could report 100% recall without measuring whether the relevant item
+was first, tenth, or buried behind noise. Replacing it with 24 cross-domain cases and genuine
+distractors produced an honest first result: MRR@10 0.699 and nDCG@10 0.774, both below the
+fixed release thresholds of 0.75 and 0.80.
+
+**Action.** Kept the thresholds unchanged and improved retrieval:
+
+1. Original and selectively expanded queries produce separate BM25 candidate lists.
+2. Reciprocal Rank Fusion combines the lists without comparing incompatible score scales.
+3. Exact paths, hashes, quoted strings, and issue identifiers bypass rewriting.
+4. A bounded safety lexicon expands implied database, deployment, and payment risks.
+5. Reranking remains bounded and is measured by MRR/nDCG rather than described as a
+   "cross-encoder" without model evidence.
+
+**Result.**
+
+```
+cases          24
+Recall@1       0.708
+Recall@5       0.958
+Recall@10      1.000
+Precision@5    0.200
+MRR@10         0.819
+nDCG@10        0.842
+scope leaks    0
+stale hits     0
+```
+
+**Evidence boundary.** This is a deterministic seeded release suite with real distractors,
+not a claim about every live customer corpus. Production quality additionally needs judged
+live queries and drift telemetry.
+
+**What we learned.** A retrieval test that does not measure rank can reward a system for
+finding the right evidence too late to matter. Thresholds should expose retrieval work, not
+be relaxed until current code passes.
+
+---
+
+## 7. The ingestion evaluator found version split-brain
+
+**Situation.** Document ingestion had acquired PDF, DOCX, and OCR adapters, stable chunks,
+scope metadata, incremental versions, and checkpointed re-indexing. Those features existed
+as separate tests, but there was no single measured rating over the full ingestion path.
+
+**Problem.** The first end-to-end ingestion evaluation found that a superseded document was
+marked stale in the catalog and re-index path while its persisted document JSON still said
+`isCurrent: true`. A catalog reader and a direct document reader could therefore disagree.
+
+**Action.** Added `scripts/eval-document-ingestion.js` with distinct scores for parsing, OCR,
+deduplication, normalization, chunking, metadata, incremental updates, re-indexing, and
+versioning. The evaluator exercises real PDF and DOCX extraction and a real Tesseract OCR
+smoke. Version retirement now updates both the catalog summary and old document record, and
+records `supersededByDocumentId` for forward lineage.
+
+**Result.**
+
+```
+implementation readiness  100 / 100 (A)
+evidence maturity          70 / 100 (C-)
+overall                    91 / 100 (A-)
+OCR smoke confidence       96.34%
+```
+
+All nine implementation dimensions passed. The overall score remains below A because the
+evidence layer still lacks a labeled customer-document corpus and enough production volume
+for drift baselines.
+
+**Evidence boundary.** A real adapter smoke proves the code and installed binaries can parse
+the fixture. It does not prove production OCR accuracy across languages, scan qualities, or
+customer formats.
+
+**What we learned.** A version flag is a distributed invariant. Testing the catalog alone
+was insufficient; every persisted representation and reader must agree on current/stale
+state.

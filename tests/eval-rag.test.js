@@ -8,6 +8,7 @@ const {
   DEFAULT_THRESHOLDS,
   computeLexicalRecall,
   computeLexicalPrecision,
+  computeRankedMetrics,
   evaluateThresholds,
   retrieveEvalItems,
   runRagEval,
@@ -33,6 +34,23 @@ test('computeLexicalPrecision computes ratio of chunks containing expected hit',
 
 test('computeLexicalPrecision handles empty array safely', () => {
   assert.equal(computeLexicalPrecision('idempotency', []), 0);
+});
+
+test('computeRankedMetrics reports Recall@k, MRR, and graded nDCG', () => {
+  const evalCase = {
+    domain: 'railway-deploy',
+    expectedRuleHit: 'health endpoint',
+  };
+  const metrics = computeRankedMetrics(evalCase, [
+    { id: 'noise', domain: 'other', content: 'Quarterly planning notes.' },
+    { id: 'partial', domain: 'railway-deploy', content: 'Inspect build logs.' },
+    { id: 'relevant', domain: 'railway-deploy', content: 'Verify the health endpoint.' },
+  ]);
+  assert.equal(metrics.recallAt1, 0);
+  assert.equal(metrics.recallAt5, 1);
+  assert.equal(metrics.recallAt10, 1);
+  assert.equal(metrics.mrrAt10, 1 / 3);
+  assert.ok(metrics.ndcgAt10 > 0 && metrics.ndcgAt10 < 1);
 });
 
 test('evaluateThresholds fails closed on zero-quality retrieval', () => {
@@ -65,7 +83,7 @@ test('retrieveEvalItems routes only from runtime query inputs, not golden domain
     query: 'Store customer credit card number',
     expectedRuleHit: 'card numbers',
   });
-  assert.equal(runtimeMatch.find((item) => item.source === 'skill_pack')?.title, 'stripe-integration');
+  assert.equal(runtimeMatch.find((item) => item.source === 'skill_pack')?.domain, 'stripe-integration');
 });
 
 test('runRagEval enforces deterministic quality thresholds and writes an isolated report', async () => {
@@ -87,8 +105,9 @@ test('runRagEval enforces deterministic quality thresholds and writes an isolate
     const content = fs.readFileSync(reportPath, 'utf-8');
     assert.match(content, /# RAG Precision & Evaluation Report/);
     assert.match(content, /Release Gate.*PASS/);
-    assert.match(content, /Deterministic Context Recall/);
-    assert.match(content, /Deterministic Context Precision/);
+    assert.match(content, /Recall@10/);
+    assert.match(content, /MRR@10/);
+    assert.match(content, /nDCG@10/);
   } finally {
     if (originalKey) {
       process.env.ANTHROPIC_API_KEY = originalKey;

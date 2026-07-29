@@ -210,7 +210,7 @@ const {
   getSettingsStatus,
 } = require('../../scripts/settings-hierarchy');
 const {
-  searchThumbgate,
+  searchThumbgateAsync,
 } = require('../../scripts/thumbgate-search');
 const {
   appendTelemetryPing,
@@ -226,7 +226,7 @@ const {
   resolveAnalyticsWindow,
 } = require('../../scripts/analytics-window');
 const {
-  importDocument,
+  importDocumentAsync,
   listImportedDocuments,
   readImportedDocument,
 } = require('../../scripts/document-intake');
@@ -6560,7 +6560,7 @@ async function addContext(){
           version: pkg.version,
           status: 'ok',
           docs: 'https://github.com/IgorGanapolsky/ThumbGate',
-          endpoints: ['/health', '/dashboard', '/guide', '/chatgpt-app', '/codex-plugin', '/compare', '/learn', '/pricing', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/documents', '/v1/documents/import', '/v1/documents/{documentId}', '/v1/dashboard', '/v1/dashboard/ai-inventory', '/v1/dashboard/render-spec', '/v1/decisions/evaluate', '/v1/decisions/outcome', '/v1/decisions/metrics', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
+          endpoints: ['/health', '/dashboard', '/guide', '/chatgpt-app', '/codex-plugin', '/compare', '/learn', '/pricing', '/v1/feedback/capture', '/v1/feedback/stats', '/v1/feedback/summary', '/v1/lessons/search', '/v1/search', '/v1/rag/operations', '/v1/documents', '/v1/documents/import', '/v1/documents/{documentId}', '/v1/dashboard', '/v1/dashboard/ai-inventory', '/v1/dashboard/render-spec', '/v1/decisions/evaluate', '/v1/decisions/outcome', '/v1/decisions/metrics', '/v1/settings/status', '/v1/dpo/export', '/v1/jobs', '/v1/jobs/harness', '/v1/analytics/databricks/export'],
         }, {}, {
           headOnly: isHeadRequest,
         });
@@ -9392,17 +9392,32 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         let results;
         try {
           const requestFeedbackPaths = getRequestFeedbackPaths(req, parsed);
-          results = searchThumbgate({
+          results = await searchThumbgateAsync({
             query,
             limit: Number.isFinite(limit) ? limit : 10,
             source,
             signal,
+            tenantId: parsed.searchParams.get('tenantId') || 'local',
+            projectId: parsed.searchParams.get('projectId') || null,
+            entityId: parsed.searchParams.get('entityId') || null,
+            visibility: parsed.searchParams.get('visibility') || null,
+            conversationContext: parsed.searchParams.get('conversationContext') || '',
             feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
           });
         } catch (err) {
           throw createHttpError(400, err.message || 'Invalid ThumbGate search request');
         }
         sendJson(res, 200, results);
+        return;
+      }
+
+      if (req.method === 'GET' && pathname === '/v1/rag/operations') {
+        const telemetryLimit = Number(parsed.searchParams.get('telemetryLimit') || 200);
+        const { getRagOperationsSnapshot } = require('../../scripts/rag-operations');
+        sendJson(res, 200, await getRagOperationsSnapshot({
+          feedbackDir: requestFeedbackDir,
+          telemetryLimit: Number.isFinite(telemetryLimit) ? telemetryLimit : 200,
+        }));
         return;
       }
 
@@ -9416,11 +9431,16 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         let results;
         try {
           const requestFeedbackPaths = getRequestFeedbackPaths(req, parsed);
-          results = searchThumbgate({
+          results = await searchThumbgateAsync({
             query: body.query || body.q || '',
             limit: body.limit,
             source: body.source,
             signal: body.signal,
+            tenantId: body.tenantId || 'local',
+            projectId: body.projectId || null,
+            entityId: body.entityId || null,
+            visibility: body.visibility || null,
+            conversationContext: body.conversationContext || '',
             feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
           });
         } catch (err) {
@@ -9569,7 +9589,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
 
       if (req.method === 'POST' && pathname === '/v1/documents/import') {
         const body = await parseJsonBody(req, 2 * 1024 * 1024);
-        const document = importDocument({
+        const document = await importDocumentAsync({
           filePath: body.filePath
             ? resolveDocumentImportFilePath(body.filePath, {
               req,
@@ -9583,6 +9603,14 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           sourceUrl: normalizeNullableText(body.sourceUrl),
           tags: extractTags(body.tags),
           proposeGates: body.proposeGates !== false,
+          tenantId: normalizeNullableText(body.tenantId),
+          projectId: normalizeNullableText(body.projectId),
+          entityId: normalizeNullableText(body.entityId),
+          visibility: normalizeNullableText(body.visibility) || 'private',
+          trustLevel: normalizeNullableText(body.trustLevel),
+          author: normalizeNullableText(body.author),
+          publishedAt: normalizeNullableText(body.publishedAt),
+          language: normalizeNullableText(body.language),
           feedbackDir: requestFeedbackDir,
         });
         sendJson(res, 201, {

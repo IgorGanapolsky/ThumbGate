@@ -9,9 +9,25 @@ const { loadGateTemplates } = require('./gate-templates');
 
 const DOCUMENTS_DIRNAME = 'documents';
 const DOCUMENT_CATALOG_FILENAME = 'catalog.jsonl';
+const DOCUMENT_DEDUP_EVENTS_FILENAME = 'dedup-events.jsonl';
 const DOCUMENT_FILE_SUFFIX = '.json';
 const MAX_POLICY_PROPOSALS = 8;
 const MAX_SEARCH_SCAN = 200;
+const DOCUMENT_SCHEMA_VERSION = 2;
+const PARSER_VERSION = 'thumbgate-parser-v2';
+const CLEANER_VERSION = 'thumbgate-cleaner-v2';
+const DEFAULT_CHUNK_MAX_CHARS = 1200;
+const DEFAULT_CHUNK_OVERLAP_CHARS = 120;
+const MIN_CHUNK_CHARS = 240;
+const VALID_VISIBILITIES = new Set(['private', 'shared', 'public']);
+const NEAR_DUPLICATE_THRESHOLD = 0.92;
+const INSTRUCTION_RISK_PATTERNS = [
+  /\bignore (?:all |any )?(?:previous|prior|system|developer) instructions?\b/i,
+  /\breveal (?:the )?(?:system|developer) prompt\b/i,
+  /\byou are now\b/i,
+  /\bjailbreak\b/i,
+  /\bdo not follow (?:the )?(?:system|developer|user) instructions?\b/i,
+];
 
 const TEXT_FORMAT_ALIASES = {
   '.md': 'markdown',
@@ -27,6 +43,15 @@ const TEXT_FORMAT_ALIASES = {
   '.json': 'json',
   '.html': 'html',
   '.htm': 'html',
+  '.pdf': 'pdf',
+  '.docx': 'docx',
+  '.png': 'image',
+  '.jpg': 'image',
+  '.jpeg': 'image',
+  '.tif': 'image',
+  '.tiff': 'image',
+  '.bmp': 'image',
+  '.webp': 'image',
 };
 
 const POLICY_LINE_PATTERNS = [
@@ -170,12 +195,25 @@ function writeJsonl(filePath, records) {
 
 function normalizeText(value) {
   const withoutBom = String(value || '').split('\uFEFF').join('');
-  const normalizedNewlines = normalizeNewlines(withoutBom);
+  const withoutZeroWidth = withoutBom.replaceAll(/[\u200B-\u200D\u2060]/g, '');
+  const withoutUnsafeControls = stripUnsafeControls(withoutZeroWidth);
+  const normalizedNewlines = normalizeNewlines(withoutUnsafeControls);
   const trimmedLines = normalizedNewlines
     .split('\n')
     .map(trimTrailingSpacesAndTabs)
     .join('\n');
   return collapseBlankLines(trimmedLines).trim();
+}
+
+function stripUnsafeControls(value) {
+  let output = '';
+  for (const char of String(value || '')) {
+    const code = char.charCodeAt(0);
+    const allowedWhitespace = char === '\n' || char === '\r' || char === '\t';
+    if ((code < 32 || code === 127) && !allowedWhitespace) continue;
+    output += char;
+  }
+  return output;
 }
 
 function safeArray(values) {
@@ -412,11 +450,36 @@ function normalizeDocumentBody(rawContent, sourceFormat) {
     }
   }
 
-  if (['markdown', 'text', 'yaml'].includes(normalizedFormat)) {
+  if (['markdown', 'text', 'yaml', 'pdf', 'docx', 'image'].includes(normalizedFormat)) {
     return normalizeText(rawText);
   }
 
   throw new Error(`Unsupported document format: ${normalizedFormat || 'unknown'}`);
+}
+
+function detectInstructionRisk(content) {
+  const matchedPatterns = INSTRUCTION_RISK_PATTERNS
+    .map((pattern, index) => (pattern.test(content) ? `instruction_pattern_${index + 1}` : null))
+    .filter(Boolean);
+  return {
+    detected: matchedPatterns.length > 0,
+    matchedPatterns,
+  };
+}
+
+function cleanDocumentBody(rawContent, sourceFormat) {
+  const normalized = normalizeDocumentBody(rawContent, sourceFormat);
+  const instructionRisk = detectInstructionRisk(normalized);
+  return {
+    content: normalized,
+    diagnostics: {
+      cleanerVersion: CLEANER_VERSION,
+      originalBytes: Buffer.byteLength(String(rawContent || ''), 'utf8'),
+      cleanedBytes: Buffer.byteLength(normalized, 'utf8'),
+      emptyAfterCleaning: normalized.length === 0,
+      instructionRisk,
+    },
+  };
 }
 
 function extractMarkdownTitle(normalizedContent) {
@@ -501,11 +564,284 @@ function extractMarkdownHeading(line) {
   return heading || null;
 }
 
+function parseMarkdownHeading(line) {
+  const text = String(line || '');
+  let level = 0;
+  while (level < text.length && text[level] === '#' && level < 6) level += 1;
+  if (level === 0 || text[level] !== ' ') return null;
+  const title = text.slice(level + 1).trim();
+  return title ? { level, title } : null;
+}
+
 function buildExcerpt(content, maxLength = 280) {
   const compact = String(content || '').replaceAll(/\s+/g, ' ').trim();
   if (!compact) return '';
   if (compact.length <= maxLength) return compact;
   return `${compact.slice(0, maxLength - 1)}\u2026`;
+}
+
+function normalizeScopeValue(value) {
+  const normalized = String(value || '').trim();
+  return normalized || null;
+}
+
+function buildDocumentScope(options = {}) {
+  const visibility = String(options.visibility || 'private').trim().toLowerCase();
+  if (!VALID_VISIBILITIES.has(visibility)) {
+    throw new Error(`visibility must be one of: ${[...VALID_VISIBILITIES].join(', ')}`);
+  }
+  return {
+    tenantId: normalizeScopeValue(options.tenantId) || 'local',
+    projectId: normalizeScopeValue(options.projectId),
+    entityId: normalizeScopeValue(options.entityId),
+    visibility,
+  };
+}
+
+function inferLanguage(content, explicitLanguage) {
+  const provided = normalizeScopeValue(explicitLanguage);
+  if (provided) return provided.toLowerCase();
+  const letters = String(content || '').match(/\p{L}/gu) || [];
+  if (letters.length === 0) return 'und';
+  const asciiLetters = letters.filter((char) => /[a-z]/i.test(char)).length;
+  return asciiLetters / letters.length >= 0.9 ? 'en' : 'und';
+}
+
+function extractEntities(content) {
+  const text = String(content || '');
+  const urls = Array.from(new Set(text.match(/https?:\/\/[^\s<>"')\]]+/g) || [])).slice(0, 20);
+  const identifiers = Array.from(new Set(
+    text.match(/\b(?:PR\s*#?\d+|[A-Z][A-Z0-9_]{2,}|[a-z][a-z0-9_-]*\.[a-z0-9_.-]+)\b/g) || [],
+  )).slice(0, 30);
+  return { urls, identifiers };
+}
+
+function buildTokenShingles(content, size = 5) {
+  const words = String(content || '').toLowerCase().match(/[\p{L}\p{N}_-]+/gu) || [];
+  if (words.length < size) return new Set(words.length ? [words.join(' ')] : []);
+  const shingles = new Set();
+  for (let index = 0; index <= words.length - size; index += 1) {
+    shingles.add(words.slice(index, index + size).join(' '));
+    if (shingles.size >= 5000) break;
+  }
+  return shingles;
+}
+
+function computeNearDuplicateSimilarity(left, right) {
+  const leftShingles = buildTokenShingles(left);
+  const rightShingles = buildTokenShingles(right);
+  if (leftShingles.size === 0 || rightShingles.size === 0) return 0;
+  let intersection = 0;
+  for (const shingle of leftShingles) {
+    if (rightShingles.has(shingle)) intersection += 1;
+  }
+  const union = leftShingles.size + rightShingles.size - intersection;
+  return union > 0 ? intersection / union : 0;
+}
+
+function findDuplicateDocument(content, contentFingerprint, sourceKey, scope, options = {}) {
+  const summaries = listImportedDocuments({
+    ...options,
+    includeStale: false,
+    tenantId: scope.tenantId,
+    limit: MAX_SEARCH_SCAN,
+  }).documents;
+  for (const summary of summaries) {
+    if (summary.contentFingerprint === contentFingerprint) {
+      return {
+        kind: 'exact',
+        similarity: 1,
+        sameSource: summary.sourceKey === sourceKey,
+        document: readImportedDocument(summary.documentId, options),
+      };
+    }
+  }
+  for (const summary of summaries) {
+    if (summary.sourceKey === sourceKey) continue;
+    const existing = readImportedDocument(summary.documentId, options);
+    if (!existing) continue;
+    const similarity = computeNearDuplicateSimilarity(content, existing.content);
+    if (similarity >= (Number(options.nearDuplicateThreshold) || NEAR_DUPLICATE_THRESHOLD)) {
+      return {
+        kind: 'near',
+        similarity,
+        sameSource: false,
+        document: existing,
+      };
+    }
+  }
+  return null;
+}
+
+function recordDedupEvent(event, options = {}) {
+  const paths = getDocumentStorePaths(options);
+  ensureDir(paths.documentsDir);
+  fs.appendFileSync(
+    path.join(paths.documentsDir, DOCUMENT_DEDUP_EVENTS_FILENAME),
+    `${JSON.stringify(event)}\n`,
+    'utf8',
+  );
+}
+
+function scanLines(content) {
+  const lines = [];
+  let offset = 0;
+  const text = String(content || '');
+  while (offset < text.length) {
+    const newline = text.indexOf('\n', offset);
+    const endOffset = newline === -1 ? text.length : newline + 1;
+    lines.push({
+      text: text.slice(offset, newline === -1 ? text.length : newline),
+      startOffset: offset,
+      endOffset,
+    });
+    offset = endOffset;
+  }
+  if (text.length === 0) return [];
+  return lines;
+}
+
+function trimRange(content, startOffset, endOffset) {
+  let start = startOffset;
+  let end = endOffset;
+  while (start < end && /\s/.test(content[start])) start += 1;
+  while (end > start && /\s/.test(content[end - 1])) end -= 1;
+  return { startOffset: start, endOffset: end, content: content.slice(start, end) };
+}
+
+function buildDocumentSections(content, sourceIdentity, documentTitle) {
+  const sections = [];
+  const headingStack = [];
+  let currentStart = 0;
+  let currentPath = [];
+
+  function closeSection(endOffset) {
+    const range = trimRange(content, currentStart, endOffset);
+    if (!range.content) return;
+    const index = sections.length;
+    sections.push({
+      sectionId: `section_${sourceIdentity.slice(0, 12)}_${String(index).padStart(4, '0')}`,
+      title: currentPath[currentPath.length - 1] || documentTitle,
+      headingPath: [...currentPath],
+      startOffset: range.startOffset,
+      endOffset: range.endOffset,
+      content: range.content,
+      contentHash: sha256(range.content),
+    });
+  }
+
+  for (const line of scanLines(content)) {
+    const heading = parseMarkdownHeading(line.text);
+    if (!heading) continue;
+    if (line.startOffset > currentStart) closeSection(line.startOffset);
+    headingStack.length = heading.level - 1;
+    headingStack[heading.level - 1] = heading.title;
+    currentPath = headingStack.filter(Boolean);
+    currentStart = line.startOffset;
+  }
+  closeSection(content.length);
+
+  if (sections.length === 0 && content) {
+    const range = trimRange(content, 0, content.length);
+    sections.push({
+      sectionId: `section_${sourceIdentity.slice(0, 12)}_0000`,
+      title: documentTitle,
+      headingPath: [],
+      startOffset: range.startOffset,
+      endOffset: range.endOffset,
+      content: range.content,
+      contentHash: sha256(range.content),
+    });
+  }
+  return sections;
+}
+
+function findChunkBoundary(text, startOffset, idealEnd, minEnd) {
+  const delimiters = ['\n\n', '\n', '. ', '; ', ' '];
+  for (const delimiter of delimiters) {
+    const index = text.lastIndexOf(delimiter, idealEnd);
+    if (index >= minEnd && index >= startOffset) {
+      return index + delimiter.length;
+    }
+  }
+  return idealEnd;
+}
+
+function advancePastWhitespace(text, offset) {
+  let cursor = offset;
+  while (cursor < text.length && /\s/.test(text[cursor])) cursor += 1;
+  return cursor;
+}
+
+function chunkSection(section, options = {}) {
+  const maxChars = Math.max(
+    MIN_CHUNK_CHARS,
+    Number(options.maxChars) || DEFAULT_CHUNK_MAX_CHARS,
+  );
+  const overlapChars = Math.max(
+    0,
+    Math.min(Number(options.overlapChars) || DEFAULT_CHUNK_OVERLAP_CHARS, Math.floor(maxChars / 3)),
+  );
+  const text = section.content;
+  const chunks = [];
+  let start = 0;
+
+  while (start < text.length) {
+    const idealEnd = Math.min(start + maxChars, text.length);
+    const minEnd = Math.min(start + Math.floor(maxChars * 0.6), idealEnd);
+    const end = idealEnd === text.length
+      ? text.length
+      : findChunkBoundary(text, start, idealEnd, minEnd);
+    const range = trimRange(text, start, end);
+    if (range.content) {
+      chunks.push({
+        parentId: section.sectionId,
+        headingPath: [...section.headingPath],
+        startOffset: section.startOffset + range.startOffset,
+        endOffset: section.startOffset + range.endOffset,
+        content: range.content,
+        contentHash: sha256(range.content),
+        estimatedTokens: Math.ceil(range.content.length / 4),
+      });
+    }
+    if (end >= text.length) break;
+    const nextStart = Math.max(end - overlapChars, start + 1);
+    start = advancePastWhitespace(text, nextStart);
+  }
+  return chunks;
+}
+
+function buildDocumentChunks(document, options = {}) {
+  const sourceIdentity = document.sourceKey || document.fingerprint;
+  const sections = buildDocumentSections(document.content, sourceIdentity, document.title);
+  const chunks = sections.flatMap((section) => chunkSection(section, {
+    maxChars: options.chunkMaxChars,
+    overlapChars: options.chunkOverlapChars,
+  }));
+  const occurrences = new Map();
+  return {
+    sections,
+    chunks: chunks.map((chunk, index) => {
+      const occurrence = (occurrences.get(chunk.contentHash) || 0) + 1;
+      occurrences.set(chunk.contentHash, occurrence);
+      return {
+      ...chunk,
+      chunkId: `chunk_${sourceIdentity.slice(0, 12)}_${chunk.contentHash.slice(0, 16)}_${occurrence}`,
+      chunkIndex: index,
+      documentId: document.documentId,
+      sourceKey: document.sourceKey,
+      title: document.title,
+      scope: document.scope,
+      sourceFormat: document.sourceFormat,
+      sourceUrl: document.sourceUrl,
+      importedAt: document.importedAt,
+      trustLevel: document.trustLevel,
+      instructionRisk: document.instructionRisk,
+      version: document.version,
+      isCurrent: document.isCurrent,
+      };
+    }),
+  };
 }
 
 function normalizePolicyLine(line) {
@@ -692,6 +1028,7 @@ function getDocumentStorePaths(options = {}) {
     feedbackDir,
     documentsDir,
     catalogPath: path.join(documentsDir, DOCUMENT_CATALOG_FILENAME),
+    dedupEventsPath: path.join(documentsDir, DOCUMENT_DEDUP_EVENTS_FILENAME),
   };
 }
 
@@ -702,6 +1039,7 @@ function getDocumentPath(documentId, options = {}) {
 
 function buildDocumentSummary(document) {
   return {
+    schemaVersion: document.schemaVersion || 1,
     documentId: document.documentId,
     title: document.title,
     sourceType: document.sourceType,
@@ -716,6 +1054,20 @@ function buildDocumentSummary(document) {
     proposalCount: safeArray(document.proposals).length,
     matchedTemplateIds: safeArray(document.matchedTemplateIds),
     fingerprint: document.fingerprint,
+    contentFingerprint: document.contentFingerprint || null,
+    sourceKey: document.sourceKey || null,
+    version: document.version || 1,
+    isCurrent: document.isCurrent !== false,
+    supersedesDocumentId: document.supersedesDocumentId || null,
+    supersededByDocumentId: document.supersededByDocumentId || null,
+    scope: document.scope || buildDocumentScope(),
+    trustLevel: document.trustLevel || 'untrusted',
+    instructionRisk: document.instructionRisk || { detected: false, matchedPatterns: [] },
+    parserVersion: document.parser && document.parser.version,
+    chunkCount: safeArray(document.chunks).length,
+    sectionCount: safeArray(document.sections).length,
+    deduplication: document.deduplication || { status: 'unique' },
+    indexing: document.indexing || { status: 'not_attempted' },
   };
 }
 
@@ -738,7 +1090,16 @@ function listImportedDocuments(options = {}) {
   const { catalogPath } = getDocumentStorePaths(options);
   const documents = readJsonl(catalogPath);
 
+  const includeStale = options.includeStale === true;
+  const requestedTenantId = normalizeScopeValue(options.tenantId);
+  const requestedProjectId = normalizeScopeValue(options.projectId);
+  const requestedVisibility = normalizeScopeValue(options.visibility);
   const filtered = documents.filter((document) => {
+    if (!includeStale && document.isCurrent === false) return false;
+    const scope = document.scope || {};
+    if (requestedTenantId && scope.tenantId !== requestedTenantId) return false;
+    if (requestedProjectId && scope.projectId !== requestedProjectId) return false;
+    if (requestedVisibility && scope.visibility !== requestedVisibility) return false;
     const tags = safeArray(document.tags).map((tag) => String(tag).toLowerCase());
     const matchedTemplateIds = safeArray(document.matchedTemplateIds).map((tag) => String(tag).toLowerCase());
     if (requestedTag && !tags.includes(requestedTag) && !matchedTemplateIds.includes(requestedTag)) {
@@ -765,10 +1126,24 @@ function persistDocument(document, options = {}) {
   const paths = getDocumentStorePaths(options);
   ensureDir(paths.documentsDir);
   writeJson(getDocumentPath(document.documentId, options), document);
-  const summaries = listImportedDocuments({
-    ...options,
-    limit: MAX_SEARCH_SCAN,
-  }).documents.filter((entry) => entry.documentId !== document.documentId);
+  const summaries = readJsonl(paths.catalogPath)
+    .filter((entry) => entry.documentId !== document.documentId)
+    .map((entry) => {
+      if (!document.sourceKey || entry.sourceKey !== document.sourceKey) return entry;
+      const staleDocument = readImportedDocument(entry.documentId, options);
+      if (staleDocument) {
+        writeJson(getDocumentPath(entry.documentId, options), {
+          ...staleDocument,
+          isCurrent: false,
+          supersededByDocumentId: document.documentId,
+        });
+      }
+      return {
+        ...entry,
+        isCurrent: false,
+        supersededByDocumentId: document.documentId,
+      };
+    });
   const nextSummaries = [
     buildDocumentSummary(document),
     ...summaries,
@@ -829,13 +1204,39 @@ function searchImportedDocuments(options = {}) {
   }).documents
     .map((summary) => readImportedDocument(summary.documentId, options))
     .filter(Boolean)
-    .map((document) => {
-      const scored = scoreImportedDocument(document, tokens);
-      return {
-        ...document,
-        _score: Number(scored.score.toFixed(4)),
-        _matchedTokens: scored.matchedTokens,
-      };
+    .flatMap((document) => {
+      const chunks = safeArray(document.chunks).length
+        ? document.chunks
+        : [{
+          chunkId: `${document.documentId}_legacy`,
+          parentId: null,
+          content: document.content,
+          headingPath: [],
+          startOffset: 0,
+          endOffset: String(document.content || '').length,
+        }];
+      return chunks.map((chunk) => {
+        const parentSection = safeArray(document.sections)
+          .find((section) => section.sectionId === chunk.parentId);
+        const scored = scoreImportedDocument({
+          ...document,
+          content: chunk.content,
+          excerpt: chunk.content,
+        }, tokens);
+        return {
+          ...document,
+          content: chunk.content,
+          excerpt: buildExcerpt(chunk.content),
+          chunkId: chunk.chunkId,
+          parentId: chunk.parentId,
+          headingPath: safeArray(chunk.headingPath),
+          startOffset: chunk.startOffset,
+          endOffset: chunk.endOffset,
+          parentContext: parentSection ? parentSection.content : chunk.content,
+          _score: Number(scored.score.toFixed(4)),
+          _matchedTokens: scored.matchedTokens,
+        };
+      });
     })
     .filter((document) => document._score > 0)
     .sort((left, right) => {
@@ -861,15 +1262,19 @@ function importDocument(options = {}) {
     throw new Error(`Path does not exist: ${sourcePath}`);
   }
 
+  const sourceFormat = inferSourceFormat(sourcePath, options.sourceFormat);
+  if (['pdf', 'docx', 'image'].includes(sourceFormat) && options.preparsedBinary !== true) {
+    throw new Error(`${sourceFormat.toUpperCase()} files require importDocumentAsync so the binary parser can run safely`);
+  }
   const rawContent = hasContent
     ? String(options.content)
     : fs.readFileSync(sourcePath, 'utf8');
-  const sourceFormat = inferSourceFormat(sourcePath, options.sourceFormat);
   if (!sourceFormat) {
     throw new Error('Unsupported document format. Supported formats: markdown, text, yaml, json, html.');
   }
 
-  const normalizedContent = normalizeDocumentBody(rawContent, sourceFormat);
+  const cleaned = cleanDocumentBody(rawContent, sourceFormat);
+  const normalizedContent = cleaned.content;
   if (!normalizedContent) {
     throw new Error('document content is empty after normalization');
   }
@@ -885,7 +1290,48 @@ function importDocument(options = {}) {
   const importedAt = nowIso();
   const sourceName = sourcePath ? path.basename(sourcePath) : null;
   const documentId = `doc_${slugify(title || sourceName || 'document').slice(0, 24) || 'document'}_${fingerprint.slice(0, 12)}`;
+  const sourceKey = sha256([
+    options.sourceUrl ? String(options.sourceUrl).trim() : '',
+    sourcePath || '',
+    title,
+  ].join('\n'));
+  const scope = buildDocumentScope(options);
+  const contentFingerprint = sha256(normalizedContent);
+  const duplicate = findDuplicateDocument(
+    normalizedContent,
+    contentFingerprint,
+    sourceKey,
+    scope,
+    options,
+  );
+  if (duplicate && duplicate.kind === 'exact' && duplicate.document) {
+    const event = {
+      timestamp: importedAt,
+      status: 'exact_duplicate',
+      duplicateOf: duplicate.document.documentId,
+      sourceKey,
+      tenantId: scope.tenantId,
+      contentFingerprint,
+    };
+    recordDedupEvent(event, options);
+    return {
+      ...duplicate.document,
+      deduplication: event,
+      indexing: {
+        ...(duplicate.document.indexing || {}),
+        status: duplicate.document.indexing && duplicate.document.indexing.status || 'already_present',
+        skippedDuplicate: true,
+      },
+    };
+  }
+  const previous = listImportedDocuments({
+    ...options,
+    includeStale: true,
+    limit: MAX_SEARCH_SCAN,
+  }).documents.find((entry) => entry.sourceKey === sourceKey && entry.documentId !== documentId);
+  const trustLevel = options.trustLevel === 'trusted' ? 'trusted' : 'untrusted';
   const document = {
+    schemaVersion: DOCUMENT_SCHEMA_VERSION,
     documentId,
     title,
     sourceType: sourcePath ? 'file' : 'inline',
@@ -893,15 +1339,49 @@ function importDocument(options = {}) {
     sourceName,
     sourceFormat,
     sourceUrl: options.sourceUrl ? String(options.sourceUrl).trim() : null,
+    sourceKey,
     importedAt,
     tags: normalizeTags(options.tags),
     fingerprint,
+    contentFingerprint,
+    version: Number.isFinite(Number(options.version))
+      ? Math.max(1, Number(options.version))
+      : Math.max(1, Number(previous && previous.version || 0) + 1),
+    isCurrent: !(duplicate && duplicate.kind === 'near'),
+    supersedesDocumentId: previous ? previous.documentId : null,
+    scope,
+    trustLevel,
+    instructionRisk: cleaned.diagnostics.instructionRisk,
+    author: normalizeScopeValue(options.author),
+    publishedAt: normalizeScopeValue(options.publishedAt),
+    language: inferLanguage(normalizedContent, options.language),
+    entities: extractEntities(normalizedContent),
+    deduplication: duplicate && duplicate.kind === 'near'
+      ? {
+        status: 'near_duplicate_review',
+        duplicateOf: duplicate.document.documentId,
+        similarity: Number(duplicate.similarity.toFixed(4)),
+      }
+      : { status: 'unique' },
+    parser: {
+      version: options.parserDiagnostics && options.parserDiagnostics.parserAdapterVersion
+        || PARSER_VERSION,
+      format: sourceFormat,
+      parsedAt: importedAt,
+      diagnostics: {
+        ...cleaned.diagnostics,
+        ...(options.parserDiagnostics || {}),
+      },
+    },
     excerpt: buildExcerpt(normalizedContent),
     content: normalizedContent,
     contentBytes: Buffer.byteLength(normalizedContent, 'utf8'),
     lineCount: normalizedContent.split('\n').filter(Boolean).length,
     headings: extractHeadings(normalizedContent),
   };
+  const chunked = buildDocumentChunks(document, options);
+  document.sections = chunked.sections;
+  document.chunks = chunked.chunks;
   document.proposals = options.proposeGates === false
     ? []
     : proposeGatesFromDocument(document, options);
@@ -910,18 +1390,189 @@ function importDocument(options = {}) {
     .filter(Boolean);
 
   persistDocument(document, options);
+  if (document.deduplication.status === 'near_duplicate_review') {
+    recordDedupEvent({
+      timestamp: importedAt,
+      documentId: document.documentId,
+      sourceKey,
+      tenantId: scope.tenantId,
+      ...document.deduplication,
+    }, options);
+  }
   return document;
 }
 
+async function importDocumentAsync(options = {}) {
+  const { RagRunTelemetry } = require('./rag-stage-contract');
+  const telemetry = options.telemetry || new RagRunTelemetry({
+    query: options.title || options.filePath || options.sourceUrl || 'document import',
+    feedbackDir: options.feedbackDir,
+    scope: buildDocumentScope(options),
+  });
+  telemetry.start('documents', {
+    sourceType: options.filePath ? 'file' : 'inline',
+  });
+  let document;
+  try {
+    let preparedOptions = options;
+    if (options.filePath) {
+      const { parseDocumentFile } = require('./document-parser');
+      const parsedBinary = await parseDocumentFile(options.filePath, options.parserOptions || options);
+      if (parsedBinary) {
+        preparedOptions = {
+          ...options,
+          content: parsedBinary.content,
+          sourceFormat: parsedBinary.sourceFormat,
+          parserDiagnostics: parsedBinary.diagnostics,
+          preparsedBinary: true,
+        };
+      }
+    }
+    document = importDocument(preparedOptions);
+    telemetry.success('documents', { acceptedDocuments: 1 });
+    telemetry.start('parsing').success('parsing', {
+      sourceFormat: document.sourceFormat,
+      parsedBytes: document.contentBytes,
+      parserVersion: document.parser.version,
+    });
+    telemetry.start('cleaning').success('cleaning', {
+      cleanedBytes: document.parser.diagnostics.cleanedBytes,
+      instructionRisk: document.instructionRisk.detected,
+    });
+    telemetry.start('chunking').success('chunking', {
+      chunkCount: document.chunks.length,
+      sectionCount: document.sections.length,
+      maxChunkChars: document.chunks.reduce(
+        (maximum, chunk) => Math.max(maximum, chunk.content.length),
+        0,
+      ),
+    });
+    telemetry.start('metadata_extraction').success('metadata_extraction', {
+      tenantPresent: Boolean(document.scope.tenantId),
+      provenanceCoverage: document.chunks.every((chunk) => (
+        chunk.parentId && Number.isFinite(chunk.startOffset) && Number.isFinite(chunk.endOffset)
+      )),
+      deduplicationStatus: document.deduplication.status,
+    });
+  } catch (error) {
+    telemetry.failure('documents', error);
+    telemetry.finish({ acceptedDocuments: 0 });
+    throw error;
+  }
+
+  if (document.deduplication.status === 'exact_duplicate') {
+    telemetry.finish({ indexed: true, duplicate: 'exact' });
+    return document;
+  }
+  if (document.deduplication.status === 'near_duplicate_review') {
+    document.indexing = {
+      status: 'quarantined',
+      reason: 'near_duplicate_review',
+      attemptedAt: nowIso(),
+    };
+    persistDocument(document, options);
+    telemetry.finish({ indexed: false, duplicate: 'near' });
+    return document;
+  }
+
+  telemetry.start('embeddings', { chunkCount: document.chunks.length });
+  telemetry.start('vector_database', { chunkCount: document.chunks.length });
+  try {
+    const { indexDocument } = require('./vector-store');
+    const indexResult = await indexDocument(document, {
+      feedbackDir: options.feedbackDir,
+      timeoutMs: options.vectorTimeoutMs,
+    });
+    document.indexing = {
+      status: 'indexed',
+      indexedAt: nowIso(),
+      ...indexResult,
+    };
+    telemetry.success('embeddings', {
+      embeddedCount: indexResult.indexed,
+      fallbackCount: indexResult.fallbackCount,
+    });
+    telemetry.success('vector_database', {
+      indexedCount: indexResult.indexed,
+      tableCount: indexResult.tables.length,
+    });
+  } catch (error) {
+    document.indexing = {
+      status: 'pending_retry',
+      attemptedAt: nowIso(),
+      errorType: error && error.name || 'Error',
+      errorFingerprint: sha256(error && error.message || error).slice(0, 16),
+    };
+    telemetry.failure('embeddings', error);
+    telemetry.failure('vector_database', error);
+    if (options.requireVectorIndex === true) {
+      persistDocument(document, options);
+      telemetry.finish({ indexed: false });
+      throw error;
+    }
+  }
+  persistDocument(document, options);
+  telemetry.finish({
+    indexed: document.indexing.status === 'indexed',
+    chunkCount: document.chunks.length,
+  });
+  return document;
+}
+
+async function retryPendingDocumentIndexes(options = {}) {
+  const pending = listImportedDocuments({
+    ...options,
+    includeStale: false,
+    limit: MAX_SEARCH_SCAN,
+  }).documents
+    .map((summary) => readImportedDocument(summary.documentId, options))
+    .filter((document) => document && document.indexing && document.indexing.status === 'pending_retry');
+  const results = [];
+  for (const document of pending) {
+    try {
+      const { indexDocument } = require('./vector-store');
+      const indexed = await indexDocument(document, options);
+      document.indexing = { status: 'indexed', indexedAt: nowIso(), ...indexed };
+      persistDocument(document, options);
+      results.push({ documentId: document.documentId, status: 'indexed', indexed: indexed.indexed });
+    } catch (error) {
+      results.push({
+        documentId: document.documentId,
+        status: 'pending_retry',
+        errorFingerprint: sha256(error && error.message || error).slice(0, 16),
+      });
+    }
+  }
+  return {
+    attempted: pending.length,
+    indexed: results.filter((result) => result.status === 'indexed').length,
+    pending: results.filter((result) => result.status !== 'indexed').length,
+    results,
+  };
+}
+
 module.exports = {
+  CLEANER_VERSION,
+  DEFAULT_CHUNK_MAX_CHARS,
+  DEFAULT_CHUNK_OVERLAP_CHARS,
+  DOCUMENT_SCHEMA_VERSION,
   DOCUMENTS_DIRNAME,
   DOCUMENT_CATALOG_FILENAME,
+  DOCUMENT_DEDUP_EVENTS_FILENAME,
+  PARSER_VERSION,
+  buildDocumentChunks,
+  buildDocumentScope,
+  cleanDocumentBody,
+  computeNearDuplicateSimilarity,
+  detectInstructionRisk,
   getDocumentStorePaths,
   getDocumentPath,
   importDocument,
+  importDocumentAsync,
   listImportedDocuments,
   normalizeDocumentBody,
   proposeGatesFromDocument,
   readImportedDocument,
+  retryPendingDocumentIndexes,
   searchImportedDocuments,
 };

@@ -14,12 +14,19 @@
 // -----------------------------------------------------------------------------
 
 const path = require('path');
+const {
+  buildStructuredRepairPrompt,
+  parseStrictStructuredAnswer,
+  structuredOutputInstruction,
+} = require('./rag-structured-output');
+const { assembleRagPrompt } = require('./rag-prompt-assembly');
 
 const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 const PERPLEXITY_ENDPOINT = 'https://api.perplexity.ai/chat/completions';
 const DEFAULT_MODEL = 'gemini-2.5-flash';
 const MAX_QUESTION_CHARS = 2000;
 const MAX_CONTEXT_LESSONS = 8;
+const DEFAULT_PROVIDER_TIMEOUT_MS = 15000;
 
 // Allowlist the model so a user-supplied `model` cannot route the call to an
 // arbitrary / unexpected (or more expensive) endpoint. Anything not on the list
@@ -168,35 +175,68 @@ function retrieveMetricsContext() {
   return snapshot;
 }
 
+/**
+ * Hybrid lesson retrieval (lexical + dense RRF + rerank) when available.
+ * Falls back to lesson-search. Always merges optional LanceDB vector hits.
+ */
+async function retrieveHybridLessonContext(question, opts = {}) {
+  try {
+    const {
+      retrieveRelevantLessonsAsync,
+      retrieveRelevantLessons,
+    } = require(path.join(__dirname, 'lesson-retrieval'));
+    const actionContext = String(question || '');
+    const toolName = opts.toolName || 'dashboard_chat';
+    let rows = [];
+    if (typeof retrieveRelevantLessonsAsync === 'function' && opts.useHybrid !== false) {
+      rows = await retrieveRelevantLessonsAsync(toolName, actionContext, {
+        maxResults: MAX_CONTEXT_LESSONS,
+        feedbackDir: opts.feedbackDir,
+        embedder: opts.embedder,
+      });
+    } else if (typeof retrieveRelevantLessons === 'function') {
+      rows = retrieveRelevantLessons(toolName, actionContext, {
+        maxResults: MAX_CONTEXT_LESSONS,
+        feedbackDir: opts.feedbackDir,
+      });
+    }
+    return (rows || []).map((lesson) => lessonToContextItem({
+      id: lesson.id || lesson.memoryId,
+      signal: lesson.signal || lesson.feedback,
+      title: lesson.title || lesson.summary || '',
+      content: lesson.content || lesson.whatWentWrong || lesson.rule || lesson.summary || '',
+      tags: lesson.tags || [],
+    }));
+  } catch (err) {
+    debugChatFallback('hybrid lesson retrieval unavailable', err);
+    return [];
+  }
+}
+
 // Retrieve relevant stored lessons and optional raw feedback vector matches.
 async function retrieveContext(question, opts = {}) {
-  const lessons = retrieveLessonContext(question, opts);
+  const hybrid = await retrieveHybridLessonContext(question, opts);
+  const lessons = hybrid.length ? hybrid : retrieveLessonContext(question, opts);
   const vectors = await retrieveVectorContext(question, opts);
   return dedupeContextItems([...lessons, ...vectors]);
 }
 
+function buildChatPromptWithDiagnostics(question, lessons, metrics, options = {}) {
+  return assembleRagPrompt({
+    question: String(question || '').slice(0, MAX_QUESTION_CHARS).trim(),
+    items: lessons,
+    metrics,
+    structuredInstruction: options.structured !== false
+      ? structuredOutputInstruction()
+      : '',
+    totalTokenBudget: options.totalTokenBudget,
+    reservedOutputTokens: options.reservedOutputTokens,
+  });
+}
+
 // Build a grounded RAG prompt. Pure function (testable).
-function buildChatPrompt(question, lessons, metrics) {
-  const q = String(question || '').slice(0, MAX_QUESTION_CHARS).trim();
-  const context = (lessons || []).map((l, i) => {
-    const mark = /pos|up/i.test(l.signal) ? 'WORKED' : (/neg|down/i.test(l.signal) ? 'MISTAKE' : 'NOTE');
-    const tags = (l.tags || []).length ? ` [tags: ${l.tags.join(', ')}]` : '';
-    return `(${i + 1}) [${mark}] ${l.title || ''}${tags}\n    ${l.content}`;
-  }).join('\n');
-
-  const metricsBlock = metrics && Object.keys(metrics).length
-    ? `\n=== Live numeric snapshot (your data, current) ===\n${JSON.stringify(metrics, null, 2)}\n`
-    : '';
-
-  const system = [
-    'You are ThumbGate\'s "chat with your data" assistant. Answer the user\'s question',
-    'using ONLY the captured lessons and the live numeric snapshot below (this team\'s real data).',
-    'For count/quantity questions ("how many X", "what\'s our rate"), use the numeric snapshot.',
-    'For pattern/why questions, cite the lesson numbers like [1], [3].',
-    'If neither source contains the answer, say so plainly — do not invent facts.',
-  ].join(' ');
-
-  return `${system}\n\n=== Captured lessons (your data) ===\n${context || '(no relevant lessons found)'}\n${metricsBlock}\n=== Question ===\n${q}`;
+function buildChatPrompt(question, lessons, metrics, options = {}) {
+  return buildChatPromptWithDiagnostics(question, lessons, metrics, options).prompt;
 }
 
 // Parse the Gemini generateContent response into plain text. Pure (testable).
@@ -223,6 +263,22 @@ function parseModelError(json, status) {
   return json?.error?.message ? String(json.error.message).split('\n')[0] : `HTTP ${status}`;
 }
 
+function normalizeProviderTimeout(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return DEFAULT_PROVIDER_TIMEOUT_MS;
+  return Math.max(1000, Math.min(30000, Math.floor(parsed)));
+}
+
+async function fetchWithTimeout(fetchImpl, url, init = {}, timeoutMs = DEFAULT_PROVIDER_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), normalizeProviderTimeout(timeoutMs));
+  try {
+    return await fetchImpl(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function trimTrailingSlashes(value) {
   let text = String(value || '');
   while (text.endsWith('/')) {
@@ -231,18 +287,20 @@ function trimTrailingSlashes(value) {
   return text;
 }
 
-async function callLocalOpenAiEndpoint({ endpoint, apiKey, model, prompt, fetchImpl, sources }) {
+async function callLocalOpenAiEndpoint({
+  endpoint, apiKey, model, prompt, fetchImpl, sources, timeoutMs,
+}) {
   const url = endpoint.includes('/chat/completions')
     ? endpoint
     : `${trimTrailingSlashes(endpoint)}/chat/completions`;
-  const res = await fetchImpl(url, {
+  const res = await fetchWithTimeout(fetchImpl, url, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
       'Authorization': `Bearer ${apiKey || 'local'}`
     },
     body: buildOpenAiChatPayload(prompt, model),
-  });
+  }, timeoutMs);
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     return { ok: false, error: 'local_llm_error', status: res.status, message: parseModelError(json, res.status), sources };
@@ -251,12 +309,14 @@ async function callLocalOpenAiEndpoint({ endpoint, apiKey, model, prompt, fetchI
   return { ok: true, answer: answer.trim() || '(no answer returned)', sources, model: json.model || model };
 }
 
-async function callPerplexityEndpoint({ apiKey, prompt, fetchImpl, sources }) {
-  const res = await fetchImpl(PERPLEXITY_ENDPOINT, {
+async function callPerplexityEndpoint({
+  apiKey, prompt, fetchImpl, sources, timeoutMs,
+}) {
+  const res = await fetchWithTimeout(fetchImpl, PERPLEXITY_ENDPOINT, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
     body: buildOpenAiChatPayload(prompt, 'sonar'),
-  });
+  }, timeoutMs);
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     return { ok: false, error: 'perplexity_error', status: res.status, message: parseModelError(json, res.status), sources };
@@ -265,15 +325,22 @@ async function callPerplexityEndpoint({ apiKey, prompt, fetchImpl, sources }) {
   return { ok: true, answer: answer.trim() || '(no answer returned)', sources, model: json.model || 'perplexity-hybrid' };
 }
 
-async function callGeminiEndpoint({ apiKey, model, prompt, fetchImpl, sources }) {
-  const res = await fetchImpl(`${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:generateContent`, {
+async function callGeminiEndpoint({
+  apiKey, model, prompt, fetchImpl, sources, timeoutMs,
+}) {
+  const res = await fetchWithTimeout(
+    fetchImpl,
+    `${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:generateContent`,
+    {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: { temperature: 0.2, maxOutputTokens: 1024 },
     }),
-  });
+    },
+    timeoutMs,
+  );
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     return { ok: false, error: 'gemini_error', status: res.status, message: parseModelError(json, res.status), sources };
@@ -282,8 +349,23 @@ async function callGeminiEndpoint({ apiKey, model, prompt, fetchImpl, sources })
   return { ok: true, answer: answer || '(no answer returned)', sources, model: json.modelVersion || model };
 }
 
+function attachStructured(result, sources) {
+  if (!result || !result.ok) return result;
+  const structured = parseStrictStructuredAnswer(result.answer, sources);
+  return {
+    ...result,
+    // Keep plain answer string for existing dashboard clients.
+    answer: structured.value?.answer || result.answer,
+    structured: structured.value,
+    structuredMode: structured.mode,
+    structuredValid: structured.ok,
+    structuredErrors: structured.errors || [],
+    sources,
+  };
+}
+
 // Answer a question grounded in this install's lessons. Returns
-// { ok, answer, sources, model } or { ok:false, error, ... }.
+// { ok, answer, sources, model, structured? } or { ok:false, error, ... }.
 async function answerDataQuestion(question, opts = {}) {
   const q = String(question || '').trim();
   if (!q) return { ok: false, error: 'empty_question', message: 'Ask a question about your data.' };
@@ -295,27 +377,121 @@ async function answerDataQuestion(question, opts = {}) {
   const localModel = opts.localModel || process.env.THUMBGATE_LOCAL_LLM_MODEL || 'llama3';
   const apiKey = resolveApiKey(opts);
   const lessons = await retrieveContext(q, opts);
-  const sources = lessons.map((l) => ({ id: l.id, title: l.title, signal: l.signal }));
+  const retrievedSources = lessons.map((l, i) => ({
+    id: l.id || `lesson-${i + 1}`,
+    title: l.title,
+    signal: l.signal,
+  }));
 
   if (!apiKey && !localEndpoint) {
     return {
       ok: false,
       error: 'no_api_key',
       message: 'Chat is not configured. Set a valid GEMINI_API_KEY, PERPLEXITY_API_KEY, or THUMBGATE_LOCAL_LLM_ENDPOINT in the project .env.',
-      sources,
+      sources: retrievedSources,
     };
   }
 
   const model = resolveModel(opts.model);
   const metrics = retrieveMetricsContext();
-  const prompt = buildChatPrompt(q, lessons, metrics);
+  const promptAssembly = buildChatPromptWithDiagnostics(q, lessons, metrics, {
+    structured: opts.structured !== false,
+    totalTokenBudget: opts.totalTokenBudget,
+    reservedOutputTokens: opts.reservedOutputTokens,
+  });
+  const prompt = promptAssembly.prompt;
+  const sources = promptAssembly.sourceMetadata;
   const fetchImpl = opts.fetch || globalThis.fetch;
   const isPerplexity = apiKey && (apiKey.startsWith('pplx-') || apiKey.includes('perplexity'));
+  const timeoutMs = normalizeProviderTimeout(opts.timeoutMs);
 
   try {
-    if (localEndpoint) return await callLocalOpenAiEndpoint({ endpoint: localEndpoint, apiKey, model: localModel, prompt, fetchImpl, sources });
-    if (isPerplexity) return await callPerplexityEndpoint({ apiKey, prompt, fetchImpl, sources });
-    return await callGeminiEndpoint({ apiKey, model, prompt, fetchImpl, sources });
+    const invokeProvider = async (activePrompt) => {
+      if (localEndpoint) {
+        return callLocalOpenAiEndpoint({
+          endpoint: localEndpoint,
+          apiKey,
+          model: localModel,
+          prompt: activePrompt,
+          fetchImpl,
+          sources,
+          timeoutMs,
+        });
+      }
+      if (isPerplexity) {
+        return callPerplexityEndpoint({
+          apiKey,
+          prompt: activePrompt,
+          fetchImpl,
+          sources,
+          timeoutMs,
+        });
+      }
+      return callGeminiEndpoint({
+        apiKey,
+        model,
+        prompt: activePrompt,
+        fetchImpl,
+        sources,
+        timeoutMs,
+      });
+    };
+
+    const result = await invokeProvider(prompt);
+    if (!result?.ok || opts.structured === false) {
+      return {
+        ...result,
+        promptDiagnostics: promptAssembly.diagnostics,
+        providerCalls: 1,
+      };
+    }
+
+    let attached = attachStructured(result, sources);
+    if (!attached.structuredValid) {
+      const repairPrompt = buildStructuredRepairPrompt(
+        result.answer,
+        sources,
+        attached.structuredErrors,
+      );
+      const repairedResult = await invokeProvider(repairPrompt);
+      if (repairedResult?.ok) {
+        const repaired = attachStructured(repairedResult, sources);
+        if (repaired.structuredValid) {
+          attached = {
+            ...repaired,
+            structuredRepairAttempted: true,
+            structuredRepairSucceeded: true,
+          };
+        } else {
+          attached = {
+            ok: false,
+            error: 'invalid_structured_output',
+            message: 'The model returned invalid structured output after one repair attempt.',
+            sources,
+            structuredValid: false,
+            structuredErrors: repaired.structuredErrors,
+            structuredRepairAttempted: true,
+            structuredRepairSucceeded: false,
+          };
+        }
+      } else {
+        attached = {
+          ok: false,
+          error: 'structured_output_repair_failed',
+          message: 'The model response was invalid and its single repair attempt failed.',
+          sources,
+          structuredValid: false,
+          structuredErrors: attached.structuredErrors,
+          structuredRepairAttempted: true,
+          structuredRepairSucceeded: false,
+        };
+      }
+    }
+    return {
+      ...attached,
+      promptDiagnostics: promptAssembly.diagnostics,
+      providerCalls: attached.structuredRepairAttempted ? 2 : 1,
+    };
   } catch (err) {
     const safeMessage = (err && err.message) ? String(err.message).split('\n')[0].slice(0, 100) : 'An unexpected error occurred.';
     return { ok: false, error: 'network', message: safeMessage, sources };
@@ -325,8 +501,10 @@ async function answerDataQuestion(question, opts = {}) {
 module.exports = {
   answerDataQuestion,
   buildChatPrompt,
+  buildChatPromptWithDiagnostics,
   parseGeminiAnswer,
   retrieveContext,
+  retrieveHybridLessonContext,
   DEFAULT_MODEL,
   MAX_QUESTION_CHARS,
 };

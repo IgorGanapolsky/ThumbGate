@@ -126,21 +126,27 @@ const {
 } = require('../../scripts/thompson-sampling');
 const {
   retrieveRelevantLessons,
+  retrieveRelevantLessonsAsync,
 } = loadOptionalModule(path.join(__dirname, '../../scripts/lesson-retrieval'), () => ({
   retrieveRelevantLessons: () => {
     const error = new Error('retrieve_lessons is unavailable because the packaged retrieval modules are missing.');
     error.code = 'THUMBGATE_CAPABILITY_UNAVAILABLE';
     throw error;
   },
+  retrieveRelevantLessonsAsync: async (toolName, actionContext, options) => retrieveRelevantLessons(
+    toolName,
+    actionContext,
+    options,
+  ),
 }));
 const {
-  searchThumbgate,
+  searchThumbgateAsync,
 } = require('../../scripts/thumbgate-search');
 const {
   buildMultimodalRetrievalPlan,
 } = require('../../scripts/multimodal-retrieval-plan');
 const {
-  importDocument,
+  importDocumentAsync,
   listImportedDocuments,
   readImportedDocument,
 } = require('../../scripts/document-intake');
@@ -445,9 +451,36 @@ function formatContextPack(pack) {
   return lines.join('\n');
 }
 
-function buildRecallResponse(args = {}) {
+function formatHybridRecall(retrieval) {
+  const lines = [
+    '## Hybrid Retrieval',
+    '',
+    `Engine: ${retrieval.engine}`,
+    `Results: ${retrieval.returned}`,
+  ];
+  for (const [index, item] of (retrieval.results || []).entries()) {
+    lines.push(
+      `${index + 1}. [${item.source}] ${item.title || item.id || 'Untitled'}`
+      + ` (score ${item.rerankScore ?? item.bm25Score ?? item.score ?? 0})`,
+    );
+    if (item.context) lines.push(`   ${String(item.context).slice(0, 320)}`);
+  }
+  return lines.join('\n');
+}
+
+async function buildRecallResponse(args = {}) {
   const limit = checkLimit('recall');
   ensureContextFs();
+  const retrieval = await searchThumbgateAsync({
+    query: args.query || '',
+    limit: Number(args.limit || 5),
+    source: 'all',
+    tenantId: args.tenantId || 'local',
+    projectId: args.projectId,
+    entityId: args.entityId,
+    visibility: args.visibility,
+    conversationContext: args.conversationContext || '',
+  });
   const pack = constructContextPack({
     query: args.query || '',
     maxItems: Number(args.limit || 5),
@@ -458,9 +491,8 @@ function buildRecallResponse(args = {}) {
     repoPath: args.repoPath,
   });
   const section = formatCodeGraphRecallSection(impact);
-  let text = section
-    ? `${formatContextPack(pack)}\n\n${section}`
-    : formatContextPack(pack);
+  let text = `${formatHybridRecall(retrieval)}\n\n${formatContextPack(pack)}`;
+  if (section) text += `\n\n${section}`;
 
   if (!limit.allowed) {
     text += '\n\n---\n';
@@ -970,24 +1002,35 @@ async function callToolInner(name, args) {
     case 'suggest_fix':
       return buildSuggestFixResponse(args);
     case 'retrieve_lessons': {
-      // Cross-encoder reranking: retrieve more candidates, then rerank for precision
-      const { retrieveWithRerankingSync } = loadOptionalModule(path.join(__dirname, '../../scripts/cross-encoder-reranker'), () => ({
-        retrieveWithRerankingSync: (toolName, actionContext, options = {}) => retrieveRelevantLessons(
-          toolName,
-          actionContext,
-          { maxResults: options.maxResults || 5 },
-        ),
-      }));
-      return toTextResult(retrieveWithRerankingSync(
+      const retrievalOptions = {
+        candidateCount: 20,
+        maxResults: Number(args.maxResults || 5),
+        scope: args.scope,
+        requireScope: args.requireScope === true,
+        includeShared: args.includeShared !== false,
+      };
+      const reranker = require(PUBLIC_MCP_MODULES.crossEncoderReranker);
+      if (typeof reranker.rerankLessonCandidates !== 'function') {
+        return toTextResult(reranker.retrieveWithRerankingSync(
+          args.toolName,
+          args.actionContext || '',
+          retrievalOptions,
+        ));
+      }
+      const candidates = await retrieveRelevantLessonsAsync(
         args.toolName,
         args.actionContext || '',
         {
-          candidateCount: 20,
-          maxResults: Number(args.maxResults || 5),
-          scope: args.scope,
-          requireScope: args.requireScope === true,
-          includeShared: args.includeShared !== false,
+          maxResults: retrievalOptions.candidateCount,
+          scope: retrievalOptions.scope,
+          requireScope: retrievalOptions.requireScope,
+          includeShared: retrievalOptions.includeShared,
         },
+      );
+      return toTextResult(await reranker.rerankLessonCandidates(
+        `${args.toolName || ''} ${args.actionContext || ''}`.trim(),
+        candidates,
+        { maxResults: retrievalOptions.maxResults },
       ));
     }
     case 'ai_component_inventory': {
@@ -1009,14 +1052,25 @@ async function callToolInner(name, args) {
     }
     case 'search_thumbgate':
       enforceLimit('search_thumbgate');
-      return toTextResult(searchThumbgate({
+      return toTextResult(await searchThumbgateAsync({
         query: args.query,
         limit: args.limit,
         source: args.source,
         signal: args.signal,
+        tenantId: args.tenantId || 'local',
+        projectId: args.projectId,
+        entityId: args.entityId,
+        visibility: args.visibility,
+        conversationContext: args.conversationContext || '',
       }));
+    case 'rag_operations': {
+      const { getRagOperationsSnapshot } = require('../../scripts/rag-operations');
+      return toTextResult(await getRagOperationsSnapshot({
+        telemetryLimit: args.telemetryLimit,
+      }));
+    }
     case 'import_document':
-      return toTextResult(importDocument({
+      return toTextResult(await importDocumentAsync({
         filePath: args.filePath ? resolveImportDocumentPath(args.filePath) : null,
         content: typeof args.content === 'string' ? args.content : null,
         title: args.title,
@@ -1024,6 +1078,14 @@ async function callToolInner(name, args) {
         sourceUrl: args.sourceUrl,
         tags: Array.isArray(args.tags) ? args.tags : [],
         proposeGates: args.proposeGates !== false,
+        tenantId: args.tenantId,
+        projectId: args.projectId,
+        entityId: args.entityId,
+        visibility: args.visibility,
+        trustLevel: args.trustLevel,
+        author: args.author,
+        publishedAt: args.publishedAt,
+        language: args.language,
       }));
     case 'list_imported_documents':
       return toTextResult(listImportedDocuments({
@@ -1177,7 +1239,7 @@ async function callToolInner(name, args) {
         }),
       });
     case 'recall':
-      return buildRecallResponse(args);
+      return await buildRecallResponse(args);
     case 'unified_context': {
       const ctx = assembleUnifiedContext({
         query: args.query || '',

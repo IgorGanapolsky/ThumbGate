@@ -8,7 +8,7 @@
 <title>Case Studies — ThumbGate Dogfood Proof</title>
 <meta name="description" content="Real ThumbGate case studies from dogfood on this product: sudo evasion grid, fail-open hook recovery, catastrophic free-tier floor, and adversarial measurement. No fabricated logos.">
 <meta property="og:title" content="ThumbGate Case Studies">
-<meta property="og:description" content="Five reproducible dogfood narratives: 62 evasion holes closed, fail-open recovery, catastrophic safety floor, and adversarial grids.">
+<meta property="og:description" content="Seven reproducible dogfood narratives: 62 evasion holes closed, fail-open recovery, catastrophic safety floor, adversarial grids, ranked RAG repair, and an ingestion evaluator that found version split-brain.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://thumbgate.ai/case-studies">
 <link rel="canonical" href="https://thumbgate.ai/case-studies">
@@ -127,6 +127,30 @@ thumbgate@1.29.2 → 0 holes</pre>
     <p><strong>Problem.</strong> “We fixed the bypass class” had been claimed twice and been wrong twice.</p>
     <p><strong>Action.</strong> Built a property suite over commands × spellings, with sandboxing and a minimum number of plain-form denials so empty measurements cannot pass.</p>
     <p><strong>Result.</strong> “Is it fixed?” became a command with a number, including against the npm tarball users actually install.</p>
+  </article>
+
+  <article id="rag-ranking-gate">
+    <h2>6. The RAG gate failed before we improved retrieval</h2>
+    <p class="meta">Retrieval quality · measured repair, not threshold theater</p>
+    <span class="metric">24 cross-domain queries</span>
+    <span class="metric">MRR@10 0.699 → 0.819</span>
+    <span class="metric">nDCG@10 0.774 → 0.842</span>
+    <p><strong>Problem.</strong> The earlier RAG check used six substring cases and could not measure ordering. When replaced with ranked judgments and real distractors, the first run failed its MRR and nDCG gates.</p>
+    <p><strong>Action.</strong> Kept the thresholds fixed. Added original-plus-expanded candidate fusion, exact-query rewrite bypass, and bounded safety-aware query expansion for implied database, deployment, and payment risks.</p>
+    <p><strong>Result.</strong> Seeded Recall@10 reached 1.000, MRR@10 0.819, nDCG@10 0.842, Precision@5 0.200, with zero scoped or stale hits. These are deterministic seeded-regression results, not customer-corpus claims.</p>
+    <p><strong>Artifact.</strong> <code>scripts/eval-rag.js</code>, <code>scripts/rag-ranking.js</code>, and <code>npm run prove:rag</code>.</p>
+  </article>
+
+  <article id="ingestion-version-consistency">
+    <h2>7. The ingestion evaluator found version split-brain</h2>
+    <p class="meta">Document ingestion · evaluator-driven repair</p>
+    <span class="metric">overall A- / 91</span>
+    <span class="metric">OCR confidence 96.34%</span>
+    <span class="metric">stale JSON bug found</span>
+    <p><strong>Problem.</strong> A superseded document was retired in the catalog and vector re-index path, but its own persisted JSON still said <code>isCurrent: true</code>. Different readers could disagree about which version was current.</p>
+    <p><strong>Action.</strong> Added a nine-dimension ingestion evaluator using real PDF, DOCX, and Tesseract adapters. The first run exposed the mismatch; version retirement now updates both the catalog and the old document record with a forward lineage pointer.</p>
+    <p><strong>Result.</strong> All implementation fixtures pass, including exact/near deduplication, stable chunk reuse, scope/provenance, current-only retrieval, re-index reconciliation, and bidirectional version lineage. The overall rating remains A-, not A+, because evidence maturity is only 70/100 without a labeled live customer corpus or drift baseline.</p>
+    <p><strong>Artifact.</strong> <code>scripts/eval-document-ingestion.js</code> and <code>npm run eval:ingestion</code>.</p>
   </article>
 
   <p>

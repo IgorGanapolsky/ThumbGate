@@ -700,6 +700,21 @@ test('document import API persists searchable policy docs and exposes proposed g
   assert.match(detailBody.document.content, /Never force-push to main/);
 });
 
+test('RAG operations API exposes stage contracts and live health without raw queries', async () => {
+  const response = await fetch(apiUrl('/v1/rag/operations?telemetryLimit=25'), {
+    headers: authHeader,
+  });
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.schemaVersion, 1);
+  assert.ok(body.stages.some((stage) => stage.id === 'documents'));
+  assert.ok(body.stages.some((stage) => stage.id === 'structured_output'));
+  assert.equal(typeof body.health.runs, 'number');
+  assert.equal(typeof body.documents.total, 'number');
+  assert.equal(typeof body.index.available, 'boolean');
+  assert.equal(JSON.stringify(body).includes('private customer prompt'), false);
+});
+
 test('admin API sets, reads, and clears task scope via HTTP', async () => {
   const setRes = await fetch(apiUrl('/v1/gates/task-scope'), {
     method: 'POST',

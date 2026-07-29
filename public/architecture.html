@@ -51,6 +51,9 @@
   a.secondary { color:var(--cyan); }
   .footer-note { color:var(--muted); font-size:0.85rem; margin-top:2.5rem; text-align:center; }
   .footer-note a { color:var(--cyan); text-decoration:none; }
+  .rag-flow text { fill:var(--text); font:600 13px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+  .rag-flow .node { fill:#0d1420; stroke:var(--cyan); stroke-width:1.5; rx:8; }
+  .rag-flow .edge { stroke:#6f8294; stroke-width:1.5; fill:none; marker-end:url(#arrow); }
 </style>
 </head>
 <body>
@@ -112,6 +115,36 @@
     <img src="/assets/diagrams/plugin-topology.png" alt="ThumbGate plugin topology across IDE and CLI surfaces" width="1200" height="700" loading="lazy">
     <figcaption>Where plugins and marketplace packages sit relative to the local gate runtime.</figcaption>
   </figure>
+
+  <h2>Production RAG: source bytes to cited output</h2>
+  <figure>
+    <svg class="rag-flow" viewBox="0 0 960 330" role="img" aria-label="ThumbGate production RAG flow: parse and OCR, normalize and deduplicate, version and chunk, hybrid retrieval and reranking, token bounded prompt, strict structured output">
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#6f8294"/></marker>
+      </defs>
+      <rect class="node" x="25" y="40" width="140" height="58"/><text x="95" y="64" text-anchor="middle">Parse + OCR</text><text x="95" y="84" text-anchor="middle">bounded adapters</text>
+      <rect class="node" x="210" y="40" width="150" height="58"/><text x="285" y="64" text-anchor="middle">Normalize + dedup</text><text x="285" y="84" text-anchor="middle">quarantine near copies</text>
+      <rect class="node" x="405" y="40" width="150" height="58"/><text x="480" y="64" text-anchor="middle">Version + chunk</text><text x="480" y="84" text-anchor="middle">parent / child offsets</text>
+      <rect class="node" x="600" y="40" width="150" height="58"/><text x="675" y="64" text-anchor="middle">Scope + embed</text><text x="675" y="84" text-anchor="middle">model-version table</text>
+      <rect class="node" x="795" y="40" width="140" height="58"/><text x="865" y="64" text-anchor="middle">Versioned index</text><text x="865" y="84" text-anchor="middle">checkpoint / retry</text>
+      <path class="edge" d="M165 69 H210"/><path class="edge" d="M360 69 H405"/><path class="edge" d="M555 69 H600"/><path class="edge" d="M750 69 H795"/>
+      <path class="edge" d="M865 98 V150 H675 V188"/>
+      <rect class="node" x="600" y="188" width="150" height="58"/><text x="675" y="212" text-anchor="middle">BM25 + vector</text><text x="675" y="232" text-anchor="middle">RRF + rerank</text>
+      <rect class="node" x="405" y="188" width="150" height="58"/><text x="480" y="212" text-anchor="middle">Parent expansion</text><text x="480" y="232" text-anchor="middle">exact citations</text>
+      <rect class="node" x="210" y="188" width="150" height="58"/><text x="285" y="212" text-anchor="middle">Token budget</text><text x="285" y="232" text-anchor="middle">untrusted evidence</text>
+      <rect class="node" x="25" y="188" width="140" height="58"/><text x="95" y="212" text-anchor="middle">Strict JSON</text><text x="95" y="232" text-anchor="middle">one repair or fail</text>
+      <path class="edge" d="M600 217 H555"/><path class="edge" d="M405 217 H360"/><path class="edge" d="M210 217 H165"/>
+      <text x="480" y="295" text-anchor="middle">Deterministic orchestration bounds every probabilistic parser, ranker, embedding, and model call.</text>
+    </svg>
+    <figcaption>PDF/DOCX/image ingestion, parent-child retrieval, hybrid search, bounded reranking, token-aware prompt assembly, and schema validation. Scope and current-version filters are hard gates, not prompt instructions.</figcaption>
+  </figure>
+
+  <div class="grid">
+    <div class="card"><h3>Failure recovery</h3><p>Stable row IDs, pending-index retry, checkpointed re-index, stale-version retirement, provider timeouts, and one structured-output repair.</p></div>
+    <div class="card"><h3>Cost control</h3><p>Embedding reuse, fixed candidate pools, exact-query rewrite bypass, prompt token budgets, capped retries, and no agent-controlled retrieval loop.</p></div>
+    <div class="card"><h3>Measured ranking</h3><p>24 seeded cross-domain cases gate Recall@10, MRR@10, nDCG@10, Precision@5, scope leakage, and stale hits.</p></div>
+  </div>
+  <p><a class="secondary" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/RAG_PIPELINE.md">RAG stage contracts and tradeoffs on GitHub →</a></p>
 
   <h2>Related proof surfaces</h2>
   <p>
