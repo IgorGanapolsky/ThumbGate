@@ -37,6 +37,17 @@ test('validateStructuredAnswer rejects missing answer', () => {
   assert.equal(r.ok, false);
 });
 
+test('validateStructuredAnswer rejects grounded claims without a valid retrieved citation', () => {
+  const result = validateStructuredAnswer({
+    answer: 'Made-up claim.',
+    citations: [],
+    grounded: true,
+    confidence: 1,
+  }, sources);
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.includes('grounded_without_valid_citation'));
+});
+
 test('parseModelStructuredAnswer reads fenced JSON', () => {
   const text = '```json\n{"answer":"Wait for Railway rebuild.","citations":[{"id":"lesson-b","index":2}],"grounded":true,"confidence":0.8}\n```';
   const r = parseModelStructuredAnswer(text, sources);

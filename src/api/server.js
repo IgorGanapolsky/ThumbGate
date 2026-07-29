@@ -4962,6 +4962,40 @@ function isAuthorized(req, expected) {
   return false;
 }
 
+function stableCustomerTenantId(customerId) {
+  const digest = crypto.createHash('sha256').update(String(customerId || ''), 'utf8').digest('hex');
+  return `customer_${digest.slice(0, 24)}`;
+}
+
+function resolveAuthenticatedRagScope(req, expectedApiKey) {
+  const token = extractApiKey(req);
+  const localScope = {
+    tenantId: 'local',
+    projectId: null,
+    entityId: null,
+    visibility: 'private',
+  };
+  if (!expectedApiKey || !token || safeKeyEqual(token, expectedApiKey)) return localScope;
+  const validation = validateApiKey(token);
+  if (!validation.valid || !validation.customerId) {
+    throw createHttpError(403, 'RAG scope requires an authenticated customer identity');
+  }
+  return {
+    tenantId: stableCustomerTenantId(validation.customerId),
+    projectId: null,
+    entityId: null,
+    visibility: 'private',
+  };
+}
+
+function documentMatchesRagScope(document, expectedScope) {
+  const actualScope = document?.scope || {};
+  return (actualScope.tenantId || 'local') === expectedScope.tenantId
+    && (actualScope.projectId || null) === expectedScope.projectId
+    && (actualScope.entityId || null) === expectedScope.entityId
+    && (actualScope.visibility || 'private') === expectedScope.visibility;
+}
+
 function extractBearerToken(req) {
   const auth = req.headers.authorization || '';
   return auth.startsWith('Bearer ') ? auth.slice(7) : '';
@@ -9400,15 +9434,13 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         let results;
         try {
           const requestFeedbackPaths = getRequestFeedbackPaths(req, parsed);
+          const requestRagScope = resolveAuthenticatedRagScope(req, expectedApiKey);
           results = await searchThumbgateAsync({
             query,
             limit: Number.isFinite(limit) ? limit : 10,
             source,
             signal,
-            tenantId: parsed.searchParams.get('tenantId') || 'local',
-            projectId: parsed.searchParams.get('projectId') || null,
-            entityId: parsed.searchParams.get('entityId') || null,
-            visibility: parsed.searchParams.get('visibility') || null,
+            ...requestRagScope,
             conversationContext: parsed.searchParams.get('conversationContext') || '',
             feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
           });
@@ -9445,15 +9477,13 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         let results;
         try {
           const requestFeedbackPaths = getRequestFeedbackPaths(req, parsed);
+          const requestRagScope = resolveAuthenticatedRagScope(req, expectedApiKey);
           results = await searchThumbgateAsync({
             query: body.query || body.q || '',
             limit: body.limit,
             source: body.source,
             signal: body.signal,
-            tenantId: body.tenantId || 'local',
-            projectId: body.projectId || null,
-            entityId: body.entityId || null,
-            visibility: body.visibility || null,
+            ...requestRagScope,
             conversationContext: body.conversationContext || '',
             feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
           });
@@ -9468,11 +9498,13 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         const limit = Number(parsed.searchParams.get('limit') || 20);
         const query = parsed.searchParams.get('q') || parsed.searchParams.get('query') || '';
         const tag = parsed.searchParams.get('tag') || '';
+        const requestRagScope = resolveAuthenticatedRagScope(req, expectedApiKey);
         const results = listImportedDocuments({
           feedbackDir: requestFeedbackDir,
           limit: Number.isFinite(limit) ? limit : 20,
           query,
           tag,
+          ...requestRagScope,
         });
         sendJson(res, 200, results);
         return;
@@ -9487,7 +9519,8 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           const document = readImportedDocument(documentId, {
             feedbackDir: requestFeedbackDir,
           });
-          if (!document) {
+          const requestRagScope = resolveAuthenticatedRagScope(req, expectedApiKey);
+          if (!document || !documentMatchesRagScope(document, requestRagScope)) {
             throw createHttpError(404, `Imported document not found: ${escapeHtml(documentId)}`);
           }
           sendJson(res, 200, { document });
@@ -9603,6 +9636,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
 
       if (req.method === 'POST' && pathname === '/v1/documents/import') {
         const body = await parseJsonBody(req, 2 * 1024 * 1024);
+        const requestRagScope = resolveAuthenticatedRagScope(req, expectedApiKey);
         const document = await importDocumentAsync({
           filePath: body.filePath
             ? resolveDocumentImportFilePath(body.filePath, {
@@ -9617,10 +9651,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           sourceUrl: normalizeNullableText(body.sourceUrl),
           tags: extractTags(body.tags),
           proposeGates: body.proposeGates !== false,
-          tenantId: normalizeNullableText(body.tenantId),
-          projectId: normalizeNullableText(body.projectId),
-          entityId: normalizeNullableText(body.entityId),
-          visibility: normalizeNullableText(body.visibility) || 'private',
+          ...requestRagScope,
           trustLevel: normalizeNullableText(body.trustLevel),
           author: normalizeNullableText(body.author),
           publishedAt: normalizeNullableText(body.publishedAt),

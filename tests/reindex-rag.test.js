@@ -82,6 +82,57 @@ test('re-index dry-run predicts and real run persists legacy document chunk back
   }
 });
 
+test('re-index pages through the complete catalog beyond the 200-row listing cap', async () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-reindex-full-catalog-'));
+  try {
+    for (let index = 0; index < 205; index += 1) {
+      importDocument({
+        feedbackDir,
+        title: `Catalog document ${index}`,
+        content: `# Document ${index}\n\nAlways verify catalog row ${index}.`,
+        sourceFormat: 'markdown',
+        proposeGates: false,
+      });
+    }
+    const result = await reindexRag({ feedbackDir, dryRun: true });
+    assert.equal(result.status, 'dry_run');
+    assert.equal(result.currentDocuments, 205);
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
+test('re-index safely takes over a lock owned by a dead process', async () => {
+  const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-reindex-stale-lock-'));
+  try {
+    importDocument({
+      feedbackDir,
+      title: 'Stale lock recovery',
+      content: '# Recovery\n\nResume after a terminated re-index process.',
+      sourceFormat: 'markdown',
+      proposeGates: false,
+    });
+    const paths = resolveReindexPaths({ feedbackDir });
+    fs.mkdirSync(path.dirname(paths.lockPath), { recursive: true });
+    fs.writeFileSync(paths.lockPath, `${JSON.stringify({
+      pid: 2_147_483_647,
+      startedAt: '2026-07-01T00:00:00.000Z',
+    })}\n`);
+    const result = await reindexRag({ feedbackDir }, {
+      indexDocument: async (document) => ({
+        embeddedCount: document.chunks.length,
+        reusedCount: 0,
+      }),
+      retireDocument: async () => ({ retired: false }),
+      getRagIndexStatus: async () => ({ schemaVersion: 2, tables: ['rag_stale_lock'] }),
+    });
+    assert.equal(result.status, 'complete');
+    assert.equal(fs.existsSync(paths.lockPath), false);
+  } finally {
+    fs.rmSync(feedbackDir, { recursive: true, force: true });
+  }
+});
+
 test('re-index checkpoints work, retires stale versions, and reconciles completion', async () => {
   const feedbackDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-reindex-run-'));
   const indexed = [];

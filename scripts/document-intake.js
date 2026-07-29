@@ -598,6 +598,19 @@ function buildDocumentScope(options = {}) {
   };
 }
 
+function documentScopeKey(scope = {}) {
+  return [
+    normalizeScopeValue(scope.tenantId) || 'local',
+    normalizeScopeValue(scope.projectId) || '',
+    normalizeScopeValue(scope.entityId) || '',
+    normalizeScopeValue(scope.visibility) || 'private',
+  ].join('\n');
+}
+
+function documentScopesEqual(left = {}, right = {}) {
+  return documentScopeKey(left) === documentScopeKey(right);
+}
+
 function inferLanguage(content, explicitLanguage) {
   const provided = normalizeScopeValue(explicitLanguage);
   if (provided) return provided.toLowerCase();
@@ -1085,6 +1098,9 @@ function listImportedDocuments(options = {}) {
   const limit = Number.isFinite(Number(options.limit))
     ? Math.max(1, Math.min(MAX_SEARCH_SCAN, Number(options.limit)))
     : 20;
+  const offset = Number.isFinite(Number(options.offset))
+    ? Math.max(0, Math.floor(Number(options.offset)))
+    : 0;
   const query = String(options.query || '').trim().toLowerCase();
   const requestedTag = String(options.tag || '').trim().toLowerCase();
   const { catalogPath } = getDocumentStorePaths(options);
@@ -1117,8 +1133,9 @@ function listImportedDocuments(options = {}) {
 
   return {
     total: filtered.length,
-    returned: filtered.slice(0, limit).length,
-    documents: filtered.slice(0, limit),
+    offset,
+    returned: filtered.slice(offset, offset + limit).length,
+    documents: filtered.slice(offset, offset + limit),
   };
 }
 
@@ -1129,7 +1146,13 @@ function persistDocument(document, options = {}) {
   const summaries = readJsonl(paths.catalogPath)
     .filter((entry) => entry.documentId !== document.documentId)
     .map((entry) => {
-      if (!document.sourceKey || entry.sourceKey !== document.sourceKey) return entry;
+      if (
+        !document.sourceKey
+        || entry.sourceKey !== document.sourceKey
+        || !documentScopesEqual(entry.scope, document.scope)
+      ) {
+        return entry;
+      }
       const staleDocument = readImportedDocument(entry.documentId, options);
       if (staleDocument) {
         writeJson(getDocumentPath(entry.documentId, options), {
@@ -1364,16 +1387,18 @@ function importDocument(options = {}) {
     normalizedContent,
     sourceFormat,
   });
-  const fingerprint = sha256(`${title}\n${normalizedContent}`);
+  const scope = buildDocumentScope(options);
+  const scopeKey = documentScopeKey(scope);
+  const fingerprint = sha256(`${scopeKey}\n${title}\n${normalizedContent}`);
   const importedAt = nowIso();
   const sourceName = sourcePath ? path.basename(sourcePath) : null;
   const documentId = `doc_${slugify(title || sourceName || 'document').slice(0, 24) || 'document'}_${fingerprint.slice(0, 12)}`;
   const sourceKey = sha256([
+    scopeKey,
     options.sourceUrl ? String(options.sourceUrl).trim() : '',
     sourcePath || '',
     title,
   ].join('\n'));
-  const scope = buildDocumentScope(options);
   const contentFingerprint = sha256(normalizedContent);
   const duplicate = findDuplicateDocument(
     normalizedContent,
@@ -1637,6 +1662,7 @@ module.exports = {
   DOCUMENTS_DIRNAME,
   DOCUMENT_CATALOG_FILENAME,
   DOCUMENT_DEDUP_EVENTS_FILENAME,
+  MAX_SEARCH_SCAN,
   PARSER_VERSION,
   buildDocumentChunks,
   buildDocumentScope,

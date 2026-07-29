@@ -247,6 +247,37 @@ test('exact duplicates are idempotent and recorded without a second catalog row'
   assert.equal(rows.documents.filter((entry) => entry.documentId === first.documentId).length, 1);
 });
 
+test('document identities and version lineage are isolated by tenant scope', () => {
+  const common = {
+    title: 'Shared Tenant Policy',
+    content: '# Rule\n\nAlways verify tenant isolation before indexing.',
+    sourceFormat: 'markdown',
+    sourceUrl: 'https://example.invalid/shared-tenant-policy',
+    proposeGates: false,
+  };
+  const tenantA = importDocument({ ...common, tenantId: 'tenant-a' });
+  const tenantB = importDocument({ ...common, tenantId: 'tenant-b' });
+  assert.notEqual(tenantA.documentId, tenantB.documentId);
+  assert.notEqual(tenantA.sourceKey, tenantB.sourceKey);
+  assert.equal(tenantA.supersedesDocumentId, null);
+  assert.equal(tenantB.supersedesDocumentId, null);
+
+  const tenantADocuments = listImportedDocuments({
+    feedbackDir: tmpFeedbackDir,
+    tenantId: 'tenant-a',
+    query: 'Shared Tenant Policy',
+    includeStale: true,
+  });
+  const tenantBDocuments = listImportedDocuments({
+    feedbackDir: tmpFeedbackDir,
+    tenantId: 'tenant-b',
+    query: 'Shared Tenant Policy',
+    includeStale: true,
+  });
+  assert.deepEqual(tenantADocuments.documents.map((entry) => entry.documentId), [tenantA.documentId]);
+  assert.deepEqual(tenantBDocuments.documents.map((entry) => entry.documentId), [tenantB.documentId]);
+});
+
 test('near-duplicate content from another source is quarantined for review', () => {
   const repeated = [
     'Always verify the production build SHA before release.',

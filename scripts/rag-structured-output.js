@@ -80,6 +80,7 @@ function validateStructuredAnswer(payload, sources = []) {
   );
 
   const citations = [];
+  let validCitationCount = 0;
   for (const c of citationsIn || []) {
     if (!c || typeof c !== 'object') {
       errors.push('citation_not_object');
@@ -95,6 +96,8 @@ function validateStructuredAnswer(payload, sources = []) {
     const indexOk = Number.isFinite(index) && index >= 1 && index <= (sources.length || index);
     if (sources.length > 0 && !idOk && !indexOk) {
       errors.push(`citation_unknown:${id || index}`);
+    } else if (sources.length > 0 && (idOk || indexOk)) {
+      validCitationCount += 1;
     }
     citations.push({
       id: id || String(index),
@@ -114,13 +117,20 @@ function validateStructuredAnswer(payload, sources = []) {
     grounded = false;
     errors.push('grounded_forced_false_empty_sources');
   }
+  if (sources.length > 0 && grounded === true && validCitationCount === 0) {
+    errors.push('grounded_without_valid_citation');
+  }
 
   const confidence = clampConfidence(payload.confidence);
   const abstain_reason = typeof payload.abstain_reason === 'string'
     ? payload.abstain_reason
     : undefined;
 
-  const hardErrors = errors.filter((e) => !e.startsWith('grounded_') && e !== 'grounded_coerced');
+  const advisoryErrors = new Set([
+    'grounded_coerced',
+    'grounded_forced_false_empty_sources',
+  ]);
+  const hardErrors = errors.filter((error) => !advisoryErrors.has(error));
   const value = {
     answer,
     citations,

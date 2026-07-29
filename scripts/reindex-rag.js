@@ -6,6 +6,7 @@ const path = require('node:path');
 const {
   getDocumentStorePaths,
   listImportedDocuments,
+  MAX_SEARCH_SCAN,
   readImportedDocument,
   upgradeLegacyDocument,
 } = require('./document-intake');
@@ -41,7 +42,19 @@ function readJson(filePath) {
   }
 }
 
-function acquireLock(lockPath) {
+function isProcessAlive(pid) {
+  if (!Number.isSafeInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    if (error.code === 'EPERM') return true;
+    if (error.code === 'ESRCH') return false;
+    throw error;
+  }
+}
+
+function acquireLock(lockPath, staleRetry = false) {
   fs.mkdirSync(path.dirname(lockPath), { recursive: true });
   try {
     const descriptor = fs.openSync(lockPath, 'wx');
@@ -53,6 +66,10 @@ function acquireLock(lockPath) {
   } catch (error) {
     if (error.code === 'EEXIST') {
       const lock = readJson(lockPath);
+      if (!staleRetry && lock && !isProcessAlive(Number(lock.pid))) {
+        fs.rmSync(lockPath, { force: true });
+        return acquireLock(lockPath, true);
+      }
       throw new Error(`RAG re-index already running${lock && lock.pid ? ` (pid ${lock.pid})` : ''}`);
     }
     throw error;
@@ -68,11 +85,20 @@ function releaseLock(descriptor, lockPath) {
 }
 
 function loadDocuments(options = {}) {
-  return listImportedDocuments({
-    ...options,
-    includeStale: true,
-    limit: 200,
-  }).documents
+  const summaries = [];
+  let offset = 0;
+  while (true) {
+    const page = listImportedDocuments({
+      ...options,
+      includeStale: true,
+      limit: MAX_SEARCH_SCAN,
+      offset,
+    });
+    summaries.push(...page.documents);
+    offset += page.documents.length;
+    if (page.documents.length === 0 || offset >= page.total) break;
+  }
+  return summaries
     .map((summary) => {
       const document = readImportedDocument(summary.documentId, options);
       if (!document) return null;

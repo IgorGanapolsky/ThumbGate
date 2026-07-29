@@ -700,6 +700,65 @@ test('document import API persists searchable policy docs and exposes proposed g
   assert.match(detailBody.document.content, /Never force-push to main/);
 });
 
+test('customer RAG scope is derived from the authenticated key and blocks cross-tenant reads', async () => {
+  const tenantAKey = billing.provisionApiKey('cus_rag_tenant_a').key;
+  const tenantBKey = billing.provisionApiKey('cus_rag_tenant_b').key;
+  const commonBody = {
+    title: 'Shared Customer Policy',
+    content: '# Customer Policy\n\nUse the customer-specific recovery procedure.',
+    sourceFormat: 'markdown',
+    sourceUrl: 'https://example.invalid/customer-policy',
+    proposeGates: false,
+  };
+  const importFor = async (key, tenantId) => {
+    const response = await fetch(apiUrl('/v1/documents/import'), {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${key}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...commonBody,
+        tenantId,
+        visibility: 'public',
+      }),
+    });
+    assert.equal(response.status, 201);
+    return (await response.json()).document;
+  };
+
+  const tenantA = await importFor(tenantAKey, 'attacker-selected-tenant');
+  const tenantB = await importFor(tenantBKey, tenantA.scope.tenantId);
+  assert.notEqual(tenantA.scope.tenantId, 'attacker-selected-tenant');
+  assert.notEqual(tenantA.scope.tenantId, tenantB.scope.tenantId);
+  assert.equal(tenantA.scope.visibility, 'private');
+  assert.notEqual(tenantA.documentId, tenantB.documentId);
+
+  const tenantAList = await fetch(apiUrl('/v1/documents?query=Shared%20Customer%20Policy'), {
+    headers: { authorization: `Bearer ${tenantAKey}` },
+  });
+  const tenantAListBody = await tenantAList.json();
+  assert.deepEqual(
+    tenantAListBody.documents.map((entry) => entry.documentId),
+    [tenantA.documentId],
+  );
+
+  const crossTenantDetail = await fetch(apiUrl(`/v1/documents/${tenantB.documentId}`), {
+    headers: { authorization: `Bearer ${tenantAKey}` },
+  });
+  assert.equal(crossTenantDetail.status, 404);
+
+  const scopedSearch = await fetch(
+    apiUrl(`/v1/search?q=customer-specific&tenantId=${encodeURIComponent(tenantB.scope.tenantId)}`),
+    { headers: { authorization: `Bearer ${tenantAKey}` } },
+  );
+  assert.equal(scopedSearch.status, 200);
+  const searchBody = await scopedSearch.json();
+  assert.ok(searchBody.results.every((entry) => (
+    !entry.scope || entry.scope.tenantId === tenantA.scope.tenantId
+  )));
+});
+
 test('RAG operations API exposes stage contracts and live health without raw queries', async () => {
   const response = await fetch(apiUrl('/v1/rag/operations?telemetryLimit=25'), {
     headers: authHeader,
