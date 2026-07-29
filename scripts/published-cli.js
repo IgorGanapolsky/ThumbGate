@@ -13,6 +13,14 @@ function runtimePrefixDir(prefixDir) {
   return prefixDir || path.join(os.homedir(), '.thumbgate', 'runtime');
 }
 
+// For GENERATED SHELL COMMANDS only. Shell command strings land in shared, committed config
+// (.mcp.json entries, hook command lines), so expanding os.homedir() at generation time bakes
+// the generating machine's home into files other machines execute — /Users/alice/.thumbgate
+// fails with a permission error on bob's machine. shellQuote uses double quotes, so a literal
+// $HOME expands at RUNTIME on whichever machine runs the command. Non-shell consumers
+// (execFileSync paths) must keep using runtimePrefixDir, which returns a real filesystem path.
+const SHELL_RUNTIME_PREFIX = '$HOME/.thumbgate/runtime';
+
 function installedRuntimeBin(prefixDir) {
   return path.join(runtimePrefixDir(prefixDir), 'node_modules', '.bin', 'thumbgate');
 }
@@ -32,7 +40,9 @@ function publishedCliArgs(pkgVersion, commandArgs = [], options = {}) {
 }
 
 function publishedCliShellCommand(pkgVersion, commandArgs = [], options = {}) {
-  const prefixDir = runtimePrefixDir(options.prefixDir);
+  // Default to the runtime-expanded $HOME form; an explicit options.prefixDir (tests,
+  // throwaway prefixes) is honoured verbatim.
+  const prefixDir = options.prefixDir || SHELL_RUNTIME_PREFIX;
   const runtimeBin = installedRuntimeBin(prefixDir);
   const escapedArgs = commandArgs.map(shellQuote).join(' ');
   const fastPath = `[ -x ${shellQuote(runtimeBin)} ] && exec ${shellQuote(runtimeBin)}${escapedArgs ? ` ${escapedArgs}` : ''}`;
