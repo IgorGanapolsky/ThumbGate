@@ -55,7 +55,8 @@ ThumbGate Bench scores PreToolUse decisions directly:
 | `replayStability` | Same suite → same decisions |
 
 Public scorecard: [thumbgate.ai/eval-scorecard](https://thumbgate.ai/eval-scorecard)  
-Reproduce: `npm run thumbgate:bench -- --json`
+Reproduce: `npm run thumbgate:bench -- --json`  
+Cadence: `npm run proof-pack:refresh` (write) · `npm run proof-pack:refresh:check` (CI) · `npm run proof-pack:schedule` (local daily LaunchAgent; GitHub `schedule:` is reserved for CodeQL) · workflow_dispatch: **Refresh proof pack**
 
 ### 4. Latency
 

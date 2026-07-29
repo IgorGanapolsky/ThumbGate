@@ -145,7 +145,7 @@ const path = require('node:path');
 // evaluation arithmetic (classification metrics + deterministic group-aware
 // splitting); no Core imports, no filesystem, network, credentials, or buyer state.
 // model-calibration.js and eval-risk-model.js are development-only and stay out.
-const BASELINE_FILE_COUNT = 386; // 2026-07-29: proof pack pages + diagrams + scorecard generator
+const BASELINE_FILE_COUNT = 390; // 2026-07-29: proof-pack cadence scripts + scorecard json // 2026-07-29: proof pack pages + diagrams + scorecard generator
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
