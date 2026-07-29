@@ -6,8 +6,8 @@
  *   why / failure modes (contracts) + measured metrics (eval).
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 const { STAGES, formatStageContractsMarkdown } = require('./rag-stage-contracts');
 const { runRagEval } = require('./eval-rag');
 const { ensureDir } = require('./fs-utils');

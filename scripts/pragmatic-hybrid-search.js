@@ -184,15 +184,23 @@ function pragmaticHybridSearch(params = {}) {
   const actionSig = buildActionSignature(toolName, query);
 
   // --- Query 1: lexical / sparse (always) ---
+  // Attribute boost reorders candidates that already have lexical signal (or will
+  // enter via dense multi-query). It must NOT alone promote zero-overlap docs —
+  // that would break the lexical-vs-hybrid paraphrase contract and flood top-K
+  // with recent-but-unrelated mistakes (turbopuffer: attr is another clause, not
+  // a substitute for matching).
+  const denseIdSet = new Set((denseRankedIds || []).slice(0, pool));
   const lexicalScored = corpus.map((mem) => {
     const base = scoreRelevance(mem, toolName, query, actionSig);
     const attr = attributeBoost(mem, options.attribute);
-    // First-stage combined objective (turbopuffer: BM25 + attribute in same stage)
+    const inDense = denseIdSet.has(mem.id);
+    // First-stage combined objective only when text or dense already matched.
+    const relevanceScore = (base > 0.1 || inDense) ? (base + attr) : 0;
     return {
       ...mem,
       lexicalScore: base,
       attributeBoost: attr,
-      relevanceScore: base + attr,
+      relevanceScore,
     };
   })
     .filter((m) => m.relevanceScore > 0.05)

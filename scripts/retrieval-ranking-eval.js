@@ -8,8 +8,8 @@
  * This is the ranking evaluation path — distinct from skill-pack keyword smoke.
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 const {
   scoreRanking,
   aggregateRankingScores,
@@ -27,7 +27,7 @@ function loadGolden(goldenPath = DEFAULT_GOLDEN_PATH) {
   const raw = fs.readFileSync(goldenPath, 'utf8');
   const data = JSON.parse(raw);
   if (!Array.isArray(data.corpus) || !Array.isArray(data.queries)) {
-    throw new Error('retrieval golden must include corpus[] and queries[]');
+    throw new TypeError('retrieval golden must include corpus[] and queries[]');
   }
   return data;
 }

@@ -142,9 +142,25 @@ function evaluateThresholds(summary, thresholds = DEFAULT_THRESHOLDS) {
   };
 }
 
-async function collectStageMetrics({ avgRecall, avgPrecision, results } = {}) {
-  const pipeline = runDocumentPipeline(skillPacksToDocuments(), { maxChars: 900, overlap: 120 });
-  let embedMetrics = {
+function classifyEmbedProfile(profile) {
+  const id = profile?.activeProfile?.id || profile?.source || 'unknown';
+  if (process.env.THUMBGATE_VECTOR_STUB_EMBED === 'true') {
+    return { provider: 'stub', tier: 'test_stub' };
+  }
+  if (id === 'feature-hash-v1' || profile?.source === 'built-in') {
+    return { provider: 'feature-hash', tier: 'degraded' };
+  }
+  if (id === 'gemini' || profile?.source === 'managed') {
+    return { provider: 'gemini', tier: 'production' };
+  }
+  if (id === 'coreai') {
+    return { provider: 'coreai', tier: 'production' };
+  }
+  return { provider: id || 'transformers', tier: 'production' };
+}
+
+async function probeEmbedMetrics() {
+  const embedMetrics = {
     embedding_provider: 'unknown',
     embedding_quality_tier: 'degraded',
     embedding_dim: 0,
@@ -153,48 +169,43 @@ async function collectStageMetrics({ avgRecall, avgPrecision, results } = {}) {
     const vectorStore = require('./vector-store');
     const vec = await vectorStore.embed('ThumbGate embedding health probe', { kind: 'query' });
     const profile = vectorStore.getLastEmbeddingProfile?.() || null;
-    const id = profile?.activeProfile?.id || profile?.source || 'unknown';
-    let tier = 'production';
-    let provider = id;
-    if (process.env.THUMBGATE_VECTOR_STUB_EMBED === 'true') {
-      provider = 'stub';
-      tier = 'test_stub';
-    } else if (id === 'feature-hash-v1' || profile?.source === 'built-in') {
-      provider = 'feature-hash';
-      tier = 'degraded';
-    } else if (id === 'gemini' || profile?.source === 'managed') {
-      provider = 'gemini';
-    } else if (id === 'coreai') {
-      provider = 'coreai';
-    } else {
-      provider = id || 'transformers';
-    }
-    embedMetrics = {
-      embedding_provider: provider,
-      embedding_quality_tier: tier,
-      embedding_dim: Array.isArray(vec) ? vec.length : (profile?.activeProfile?.outputDimensionality || 0),
-    };
+    const { provider, tier } = classifyEmbedProfile(profile);
+    embedMetrics.embedding_provider = provider;
+    embedMetrics.embedding_quality_tier = tier;
+    embedMetrics.embedding_dim = Array.isArray(vec)
+      ? vec.length
+      : (profile?.activeProfile?.outputDimensionality || 0);
   } catch (err) {
     embedMetrics.error = err.message;
   }
+  return embedMetrics;
+}
 
-  let lancedb_module_resolvable = false;
+function probeLlmConfigured() {
+  if (process.env.THUMBGATE_LOCAL_LLM_ENDPOINT) return 'local';
+  if (process.env.PERPLEXITY_API_KEY || process.env.THUMBGATE_PERPLEXITY_API_KEY) return 'perplexity';
+  if (process.env.GEMINI_API_KEY || process.env.THUMBGATE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY) {
+    return 'gemini';
+  }
+  return 'none';
+}
+
+function isLancedbResolvable() {
   try {
     require.resolve('@lancedb/lancedb');
-    lancedb_module_resolvable = true;
+    return true;
   } catch {
-    lancedb_module_resolvable = false;
+    return false;
   }
+}
 
-  const local = Boolean(process.env.THUMBGATE_LOCAL_LLM_ENDPOINT);
-  const gemini = Boolean(process.env.GEMINI_API_KEY || process.env.THUMBGATE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY);
-  const perplexity = Boolean(process.env.PERPLEXITY_API_KEY || process.env.THUMBGATE_PERPLEXITY_API_KEY);
-  let llm_configured = 'none';
-  if (local) llm_configured = 'local';
-  else if (perplexity) llm_configured = 'perplexity';
-  else if (gemini) llm_configured = 'gemini';
-
-  const sampleSources = [{ id: 's1', title: 'Sample', content: 'ALWAYS use idempotency keys.', signal: 'negative' }];
+async function collectStageMetrics({ avgRecall, avgPrecision, results } = {}) {
+  const pipeline = runDocumentPipeline(skillPacksToDocuments(), { maxChars: 900, overlap: 120 });
+  const embedMetrics = await probeEmbedMetrics();
+  const lancedb_module_resolvable = isLancedbResolvable();
+  const sampleSources = [
+    { id: 's1', title: 'Sample', content: 'ALWAYS use idempotency keys.', signal: 'negative' },
+  ];
   const prompt = buildChatPrompt('Create a PaymentIntent', sampleSources, { gates: { total: 1 } });
   const structured = validateStructuredAnswer({
     answer: 'Use idempotency keys [1].',
@@ -218,7 +229,7 @@ async function collectStageMetrics({ avgRecall, avgPrecision, results } = {}) {
     prompt_contains_grounding_instruction: /ONLY the captured lessons/i.test(prompt) ? 1 : 0,
     prompt_contains_question: /PaymentIntent/.test(prompt) ? 1 : 0,
     prompt_context_item_count: sampleSources.length,
-    llm_configured,
+    llm_configured: probeLlmConfigured(),
     llm_allowlist_enforced: true,
     deterministic_fallback_available: true,
     structured_schema_valid_rate: structured.ok ? 1 : 0,
@@ -246,16 +257,10 @@ function buildStageStatus(stageMetrics = {}) {
   });
 }
 
-async function runRagEval(options = {}) {
-  console.log('Starting RAG Evaluation (Async Stack simulation)...');
-  const evalCases = options.cases || BUILTIN_EVAL_CASES;
-  const retrieveItems = options.retrieveItems || retrieveEvalItems;
-  const reportPath = options.reportPath || REPORT_PATH;
-  const enableLlmJudge = options.enableLlmJudge !== false;
+async function evaluateSkillPackCases(evalCases, retrieveItems, enableLlmJudge) {
   const results = [];
   let totalRecall = 0;
   let totalPrecision = 0;
-  let casesEvaluated = 0;
 
   for (const evalCase of evalCases) {
     let items = [];
@@ -264,23 +269,17 @@ async function runRagEval(options = {}) {
     } catch {
       items = [];
     }
-    const allText = items.map(i => (i.structuredContext && i.structuredContext.rawContent) || i.content || '').join('\n');
-
-    // Lexical baseline scores
+    const allText = items
+      .map((i) => (i.structuredContext && i.structuredContext.rawContent) || i.content || '')
+      .join('\n');
     const lexicalRecall = computeLexicalRecall(evalCase.expectedRuleHit, allText);
     const lexicalPrecision = computeLexicalPrecision(evalCase.expectedRuleHit, items);
-
-    // The optional judge is diagnostic only. Deterministic metrics remain the
-    // release gate so credentials, model drift, and judge preference cannot
-    // turn the same retrieval result from pass to fail.
     const llmMetrics = enableLlmJudge
       ? await evaluateMetricsWithLlm(evalCase.query, evalCase.expectedRuleHit, items)
       : null;
 
     totalRecall += lexicalRecall;
     totalPrecision += lexicalPrecision;
-    casesEvaluated++;
-
     results.push({
       id: evalCase.id,
       query: evalCase.query,
@@ -294,8 +293,146 @@ async function runRagEval(options = {}) {
     });
   }
 
-  const avgRecall = casesEvaluated > 0 ? (totalRecall / casesEvaluated) : 0;
-  const avgPrecision = casesEvaluated > 0 ? (totalPrecision / casesEvaluated) : 0;
+  const casesEvaluated = results.length;
+  const avgRecall = casesEvaluated > 0 ? totalRecall / casesEvaluated : 0;
+  const avgPrecision = casesEvaluated > 0 ? totalPrecision / casesEvaluated : 0;
+  return { results, casesEvaluated, avgRecall, avgPrecision };
+}
+
+function runRankingGate(options, stageMetrics) {
+  try {
+    const ranking = evaluateRankingGolden({
+      goldenPath: options.rankingGoldenPath,
+      thresholds: options.rankingThresholds,
+    });
+    if (stageMetrics && ranking.summary) {
+      stageMetrics.retrieval_recall_at_k = ranking.summary['recall@5'];
+      stageMetrics.retrieval_mrr = ranking.summary.mrr;
+      stageMetrics.retrieval_ndcg_at_5 = ranking.summary['ndcg@5'];
+      stageMetrics.retrieval_precision_at_k = ranking.summary['precision@5'];
+      stageMetrics.ranking_eval_passed = ranking.passed;
+    }
+    return ranking;
+  } catch (err) {
+    return {
+      passed: false,
+      failures: [`ranking_eval_error: ${err.message}`],
+      summary: {},
+      perQuery: [],
+      sliceSummary: {},
+      goldenPath: options.rankingGoldenPath || 'config/evals/retrieval-ranking-golden.json',
+    };
+  }
+}
+
+function rankingHeadline(ranking) {
+  if (!ranking || !ranking.summary) return null;
+  const s = ranking.summary;
+  const mrr = ((s.mrr || 0) * 100).toFixed(1);
+  const r5 = ((s['recall@5'] || 0) * 100).toFixed(1);
+  const n5 = ((s['ndcg@5'] || 0) * 100).toFixed(1);
+  return `**MRR / Recall@5 / nDCG@5**: ${mrr}% / ${r5}% / ${n5}%`;
+}
+
+function buildRagReportMarkdown({
+  releasePassed,
+  gate,
+  ranking,
+  avgRecall,
+  avgPrecision,
+  casesEvaluated,
+  enableLlmJudge,
+  stageStatus,
+  results,
+}) {
+  const rankingStatus = ranking ? (ranking.passed ? 'PASS' : 'FAIL') : 'SKIPPED';
+  const lines = [
+    '# RAG Precision & Evaluation Report',
+    '',
+    `**Timestamp**: ${new Date().toISOString()}`,
+    `**Release Gate**: ${releasePassed ? 'PASS' : 'FAIL'}`,
+    `**Skill-pack keyword smoke**: ${gate.passed ? 'PASS' : 'FAIL'} (contains-string recall/precision — not IR ranking)`,
+    `**Ranking gate (Recall@k / MRR / nDCG)**: ${rankingStatus}`,
+    `**Deterministic Context Recall (skill-pack)**: ${(avgRecall * 100).toFixed(1)}%`,
+    `**Deterministic Context Precision (skill-pack)**: ${(avgPrecision * 100).toFixed(1)}%`,
+    rankingHeadline(ranking),
+    `**Cases**: ${casesEvaluated}`,
+    `**LLM Judge**: ${llmClient.isAvailable() && enableLlmJudge ? 'Diagnostic only' : 'Not active'}`,
+    `**Skill-pack thresholds**: recall >= ${(gate.thresholds.minRecall * 100).toFixed(0)}%, precision >= ${(gate.thresholds.minPrecision * 100).toFixed(0)}%, cases >= ${gate.thresholds.minCases}, every case recall >= ${(gate.thresholds.minCaseRecall * 100).toFixed(0)}%`,
+    '',
+  ].filter((line) => line != null);
+
+  if (stageStatus.length) {
+    lines.push(
+      '## Per-stage metrics (contracts: reports/rag-stage-contracts.md)',
+      '',
+      '| Stage | OK | Metrics |',
+      '|---|---|---|',
+    );
+    for (const s of stageStatus) {
+      const summary = Object.entries(s.metrics || {})
+        .map(([k, v]) => `${k}=${typeof v === 'object' ? JSON.stringify(v) : v}`)
+        .join('; ');
+      lines.push(`| ${s.name} | ${s.ok ? 'yes' : 'no'} | ${summary} |`);
+    }
+    lines.push('');
+  }
+
+  lines.push(
+    '## Evaluation Results by Case',
+    '',
+    '| Case ID | Query | Expected Rule | Retrieved | Recall | Precision | Mode |',
+    '|---|---|---|---|---|---|---|',
+  );
+  for (const r of results) {
+    const mode = r.llmMetrics ? 'Deterministic + diagnostic judge' : 'Deterministic';
+    lines.push(
+      `| ${r.id} | "${r.query}" | \`${r.expectedRuleHit}\` | ${r.retrievedCount} | ${(r.finalRecall * 100).toFixed(0)}% | ${(r.finalPrecision * 100).toFixed(0)}% | ${mode} |`,
+    );
+  }
+  if (!gate.passed) {
+    lines.push('', '## Skill-pack smoke failures', '', ...gate.failures.map((f) => `- ${f}`));
+  }
+  if (ranking) lines.push('', formatRankingReport(ranking));
+  lines.push('', '## Diagnostics and Reasoning');
+  for (const r of results) {
+    if (r.llmMetrics && r.llmMetrics.reasoning) {
+      lines.push(`- **${r.id}**: ${r.llmMetrics.reasoning}`);
+    } else {
+      lines.push(
+        `- **${r.id}**: Retrieved ${r.retrievedCount} chunks. Deterministic keyword match was ${r.lexicalRecall ? 'successful' : 'unsuccessful'}.`,
+      );
+    }
+  }
+  return `${lines.join('\n')}\n`;
+}
+
+function writeRagReports(reportPath, reportContent) {
+  const dir = path.dirname(reportPath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(reportPath, reportContent, 'utf-8');
+  console.log(`RAG evaluation report saved to: ${reportPath}`);
+  try {
+    const stageDir = path.dirname(STAGE_REPORT_PATH);
+    if (!fs.existsSync(stageDir)) fs.mkdirSync(stageDir, { recursive: true });
+    fs.writeFileSync(STAGE_REPORT_PATH, formatStageContractsMarkdown(), 'utf-8');
+  } catch {
+    // non-fatal
+  }
+}
+
+async function runRagEval(options = {}) {
+  console.log('Starting RAG Evaluation (Async Stack simulation)...');
+  const evalCases = options.cases || BUILTIN_EVAL_CASES;
+  const retrieveItems = options.retrieveItems || retrieveEvalItems;
+  const reportPath = options.reportPath || REPORT_PATH;
+  const enableLlmJudge = options.enableLlmJudge !== false;
+
+  const { results, casesEvaluated, avgRecall, avgPrecision } = await evaluateSkillPackCases(
+    evalCases,
+    retrieveItems,
+    enableLlmJudge,
+  );
   const gate = evaluateThresholds({
     casesEvaluated,
     avgRecall,
@@ -311,122 +448,28 @@ async function runRagEval(options = {}) {
     stageStatus = collected.stageStatus;
   }
 
-  // True IR ranking metrics on the gate scoring stack (not skill-pack keyword smoke).
   let ranking = null;
   if (options.skipRanking !== true) {
-    try {
-      ranking = evaluateRankingGolden({
-        goldenPath: options.rankingGoldenPath,
-        thresholds: options.rankingThresholds,
-      });
-      // Surface ranking metrics on stage snapshot for prove-rag.
-      if (stageMetrics && ranking.summary) {
-        stageMetrics.retrieval_recall_at_k = ranking.summary['recall@5'];
-        stageMetrics.retrieval_mrr = ranking.summary.mrr;
-        stageMetrics.retrieval_ndcg_at_5 = ranking.summary['ndcg@5'];
-        stageMetrics.retrieval_precision_at_k = ranking.summary['precision@5'];
-        stageMetrics.ranking_eval_passed = ranking.passed;
-        // Rebuild status so retrieval metricKeys (mrr/ndcg) are present.
-        stageStatus = buildStageStatus(stageMetrics);
-      }
-    } catch (err) {
-      ranking = {
-        passed: false,
-        failures: [`ranking_eval_error: ${err.message}`],
-        summary: {},
-        perQuery: [],
-        sliceSummary: {},
-        goldenPath: options.rankingGoldenPath || 'config/evals/retrieval-ranking-golden.json',
-      };
+    ranking = runRankingGate(options, stageMetrics);
+    if (stageMetrics && Object.keys(stageMetrics).length) {
+      stageStatus = buildStageStatus(stageMetrics);
     }
   }
 
-  const releasePassed = gate.passed && (ranking ? ranking.passed : true);
-
-  // Render markdown report
-  const reportLines = [
-    '# RAG Precision & Evaluation Report',
-    '',
-    `**Timestamp**: ${new Date().toISOString()}`,
-    `**Release Gate**: ${releasePassed ? 'PASS' : 'FAIL'}`,
-    `**Skill-pack keyword smoke**: ${gate.passed ? 'PASS' : 'FAIL'} (contains-string recall/precision — not IR ranking)`,
-    `**Ranking gate (Recall@k / MRR / nDCG)**: ${ranking ? (ranking.passed ? 'PASS' : 'FAIL') : 'SKIPPED'}`,
-    `**Deterministic Context Recall (skill-pack)**: ${(avgRecall * 100).toFixed(1)}%`,
-    `**Deterministic Context Precision (skill-pack)**: ${(avgPrecision * 100).toFixed(1)}%`,
-    ranking && ranking.summary
-      ? `**MRR / Recall@5 / nDCG@5**: ${(ranking.summary.mrr * 100).toFixed(1)}% / ${((ranking.summary['recall@5'] || 0) * 100).toFixed(1)}% / ${((ranking.summary['ndcg@5'] || 0) * 100).toFixed(1)}%`
-      : null,
-    `**Cases**: ${casesEvaluated}`,
-    `**LLM Judge**: ${llmClient.isAvailable() && enableLlmJudge ? 'Diagnostic only' : 'Not active'}`,
-    `**Skill-pack thresholds**: recall >= ${(gate.thresholds.minRecall * 100).toFixed(0)}%, precision >= ${(gate.thresholds.minPrecision * 100).toFixed(0)}%, cases >= ${gate.thresholds.minCases}, every case recall >= ${(gate.thresholds.minCaseRecall * 100).toFixed(0)}%`,
-    '',
-  ].filter((line) => line != null);
-
-  if (stageStatus.length) {
-    reportLines.push(
-      '## Per-stage metrics (contracts: reports/rag-stage-contracts.md)',
-      '',
-      '| Stage | OK | Metrics |',
-      '|---|---|---|',
-    );
-    for (const s of stageStatus) {
-      const summary = Object.entries(s.metrics || {})
-        .map(([k, v]) => `${k}=${typeof v === 'object' ? JSON.stringify(v) : v}`)
-        .join('; ');
-      reportLines.push(`| ${s.name} | ${s.ok ? 'yes' : 'no'} | ${summary} |`);
-    }
-    reportLines.push('');
-  }
-
-  reportLines.push(
-    '## Evaluation Results by Case',
-    '',
-    '| Case ID | Query | Expected Rule | Retrieved | Recall | Precision | Mode |',
-    '|---|---|---|---|---|---|---|',
-  );
-
-  for (const r of results) {
-    const mode = r.llmMetrics ? 'Deterministic + diagnostic judge' : 'Deterministic';
-    reportLines.push(
-      `| ${r.id} | "${r.query}" | \`${r.expectedRuleHit}\` | ${r.retrievedCount} | ${(r.finalRecall * 100).toFixed(0)}% | ${(r.finalPrecision * 100).toFixed(0)}% | ${mode} |`
-    );
-  }
-
-  if (!gate.passed) {
-    reportLines.push('', '## Skill-pack smoke failures', '', ...gate.failures.map((failure) => `- ${failure}`));
-  }
-
-  if (ranking) {
-    reportLines.push('', formatRankingReport(ranking));
-  }
-
-  reportLines.push('', '## Diagnostics and Reasoning');
-  for (const r of results) {
-    if (r.llmMetrics && r.llmMetrics.reasoning) {
-      reportLines.push(`- **${r.id}**: ${r.llmMetrics.reasoning}`);
-    } else {
-      reportLines.push(`- **${r.id}**: Retrieved ${r.retrievedCount} chunks. Deterministic keyword match was ${r.lexicalRecall ? 'successful' : 'unsuccessful'}.`);
-    }
-  }
-
-  const reportContent = reportLines.join('\n');
-
-  // Make sure directories exist
-  const dir = path.dirname(reportPath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-
-  fs.writeFileSync(reportPath, reportContent, 'utf-8');
-  console.log(`RAG evaluation report saved to: ${reportPath}`);
-
-  try {
-    const stageDir = path.dirname(STAGE_REPORT_PATH);
-    if (!fs.existsSync(stageDir)) fs.mkdirSync(stageDir, { recursive: true });
-    fs.writeFileSync(STAGE_REPORT_PATH, formatStageContractsMarkdown(), 'utf-8');
-  } catch {
-    // non-fatal
-  }
+  const rankingOk = !ranking || ranking.passed;
+  const releasePassed = gate.passed && rankingOk;
+  const reportContent = buildRagReportMarkdown({
+    releasePassed,
+    gate,
+    ranking,
+    avgRecall,
+    avgPrecision,
+    casesEvaluated,
+    enableLlmJudge,
+    stageStatus,
+    results,
+  });
+  writeRagReports(reportPath, reportContent);
 
   const combinedFailures = [
     ...gate.failures,
