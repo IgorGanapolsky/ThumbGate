@@ -40,6 +40,26 @@ Each carries `accuracy`, `baselineAccuracy`, `lift`, `precision`, `recall`, `spe
 `lift` sits next to `accuracy` in every report so accuracy can never again be quoted without
 the baseline it must beat.
 
+### The pipeline, end to end
+
+```mermaid
+flowchart LR
+    subgraph corpus["feedback-sequences.jsonl — 1,791 rows"]
+        R[rows] --> F["extractFeatureMap()"]
+    end
+    F --> S{{"stratifiedSplit()<br/>group-aware, content-hashed,<br/>salted per resample"}}
+    S -->|train fold| REG["buildFeatureRegistry()<br/>train fold ONLY —<br/>no transductive vocabulary"]
+    REG --> FIT["fitBoostedModel()<br/>AdaBoost stumps"]
+    S -->|test fold| EV
+    FIT --> EV["evaluate()<br/>lift · MCC · AUC · Brier · ECE<br/>+ confusion matrix"]
+    EV --> IID["metrics.holdout<br/>IID: familiar kinds"]
+    EV --> NOV["metrics.holdoutNovelContext<br/>distribution shift:<br/>unseen action types"]
+    IID --> RS
+    NOV --> RS["eval-risk-model.js<br/>12 resamples, mean ± sd<br/>paired t for comparisons"]
+    RS --> GATE{{"CI quality gate<br/>risk-model-quality.test.js"}}
+```
+
+
 ## Current results
 
 Real corpus, 1,791 rows, 12 independent group-aware stratified splits
@@ -59,6 +79,16 @@ Novel-context held-out (unseen action types)
   ROC-AUC                             0.718 ± 0.058
   MCC                                 0.244
   Brier / ECE                         0.300 / 0.310
+```
+
+### The same result as a picture
+
+```mermaid
+xychart-beta
+    title "Accuracy lift over the majority-class baseline (points)"
+    x-axis ["in-sample (old headline)", "held-out IID", "held-out novel-context"]
+    y-axis "lift (accuracy points)" -12 --> 12
+    bar [10.9, 9.9, -10.5]
 ```
 
 **Evidence.** These figures are reproducible from the harness rather than asserted:
@@ -122,6 +152,27 @@ adversarial code review of the evaluator itself.
 
 The lesson is uncomfortable and worth stating plainly: **the evaluator is as capable of being
 wrong as the model it measures**, and its errors are harder to notice because they flatter you.
+
+## The enforcement evaluation loop
+
+The model harness above is one half. The other half evaluates the **gates themselves**, from
+production traces to the published npm artifact:
+
+```mermaid
+flowchart TD
+    A["audit-trail.jsonl<br/>real production decisions"] -->|"mine-eval-set.js<br/>redact + dedupe by shape"| G["gate-decisions.golden.jsonl<br/>60 cases · 12 gates"]
+    G -->|eval-baseline.js| B["gate-decisions.baseline.json<br/>recorded verdicts"]
+    G --> D
+    B --> D{{"gate-golden-set.test.js<br/>fails when any real command's<br/>verdict MOVES"}}
+    E["gate-evasion-matrix<br/>14 commands × 9 transforms"] --> CI[("CI")]
+    D --> CI
+    P["npm tarball — what users get"] -->|"verify-published-enforcement.mjs<br/>fresh HOME, public hook contract"| W{{"launchd drift-watch<br/>2× daily"}}
+    L["live decision stream"] --> C{{"gate-decision-canary<br/>silent · spike · novelty"}}
+```
+
+Drift, not correctness-vs-production, is what the golden set asserts: most gates are
+state-conditional, so a fresh sandbox cannot reproduce the verdict — but a verdict that
+*changes* for a real command is exactly the signature of every bypass found in this codebase.
 
 ## The CI gate
 
