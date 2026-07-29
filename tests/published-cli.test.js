@@ -80,3 +80,17 @@ test('publishedCliShellCommand latest-resolving serve launcher includes the subc
   assert.match(fastPath, /exec\s+"[^"]+"\s+"serve"/, 'fast-path exec must include the subcommand');
   assert.match(fallback, /serve/, 'npx fallback must include the subcommand');
 });
+
+test('generated shell commands never embed the generating machine home', () => {
+  // Regression: runtimePrefixDir expanded os.homedir() at GENERATION time, so shared config
+  // (.mcp.json entries, hook command lines) carried /Users/<generating-user>/.thumbgate and
+  // failed with permission errors on every other machine. Shell strings must defer to $HOME.
+  const os = require('os');
+  for (const args of [['serve'], ['--version'], []]) {
+    const cmd = publishedCliShellCommand('1.29.2', args);
+    assert.ok(!cmd.includes(os.homedir()),
+      `generated shell command bakes in this machine's home: ${cmd.slice(0, 90)}`);
+    assert.ok(cmd.includes('$HOME/.thumbgate/runtime'),
+      'shell command lost its runtime-expanded $HOME prefix');
+  }
+});

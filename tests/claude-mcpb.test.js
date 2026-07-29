@@ -213,3 +213,32 @@ test('claude desktop submission doc covers history-aware lesson distillation', (
   assert.match(extensionDoc, /up to 8 prior recorded entries/i);
   assert.match(extensionDoc, /60-second follow-up/i);
 });
+
+test('bundle server shim runs the CLI in-process — no child_process', () => {
+  // Under Claude Desktop, process.execPath is the Electron binary. A spawn that loses
+  // ELECTRON_RUN_AS_NODE boots a second app instance that dies silently ~2s later. The
+  // only spawn-proof shim is one that does not spawn.
+  const shim = fs.readFileSync(
+    path.join(__dirname, '..', '.claude-plugin', 'bundle', 'server', 'index.js'), 'utf8');
+  // The invariant is about CODE — the shim's comments legitimately name spawn/execPath
+  // while explaining why they are forbidden, so strip comments before matching.
+  const code = shim.split('\n').filter((line) => !line.trim().startsWith('//')).join('\n');
+  assert.ok(!/child_process|\bspawn\b|execPath/.test(code),
+    'shim reintroduced a child process — this dies under Electron hosts');
+  assert.match(code, /require\(cliPath\)/, 'shim no longer requires the CLI in-process');
+});
+
+test('bundle server shim resolves bin/cli.js INSIDE the bundle', () => {
+  // Regression: the shim joined __dirname with '..','..' — one level too many — so the
+  // installed Desktop extension looked for "Claude Extensions/bin/cli.js", crashed with
+  // MODULE_NOT_FOUND on launch, and Desktop showed only "Server disconnected".
+  const shim = fs.readFileSync(
+    path.join(__dirname, '..', '.claude-plugin', 'bundle', 'server', 'index.js'), 'utf8');
+  const joins = [...shim.matchAll(/path\.join\(__dirname([^)]*)\)/g)].map((m) => m[1]);
+  assert.ok(joins.length > 0, 'shim no longer resolves via path.join(__dirname, ...)');
+  for (const args of joins) {
+    const ups = (args.match(/'\.\.'/g) || []).length;
+    assert.ok(ups <= 1,
+      `shim escapes the bundle: path.join(__dirname${args}) climbs ${ups} levels`);
+  }
+});
