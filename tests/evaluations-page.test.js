@@ -20,6 +20,12 @@ if (process.env.CODEX_SANDBOX === 'seatbelt') {
 
 const ROOT = path.resolve(__dirname, '..');
 const PAGE = path.join(ROOT, 'public', 'evaluations.html');
+
+// startServer refuses to boot without an API key. Inject the same test literal
+// api-server.test.js uses so this file passes in any runner (the SonarCloud
+// coverage job does not receive CI's THUMBGATE_API_KEY env).
+process.env.THUMBGATE_API_KEY = process.env.THUMBGATE_API_KEY || 'test-api-key';
+
 const { startServer } = require('../src/api/server');
 
 describe('public/evaluations.html', () => {
