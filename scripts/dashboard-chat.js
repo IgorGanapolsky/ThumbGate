@@ -14,6 +14,10 @@
 // -----------------------------------------------------------------------------
 
 const path = require('path');
+const {
+  parseModelStructuredAnswer,
+  structuredOutputInstruction,
+} = require('./rag-structured-output');
 
 const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 const PERPLEXITY_ENDPOINT = 'https://api.perplexity.ai/chat/completions';
@@ -168,20 +172,60 @@ function retrieveMetricsContext() {
   return snapshot;
 }
 
+/**
+ * Hybrid lesson retrieval (lexical + dense RRF + rerank) when available.
+ * Falls back to lesson-search. Always merges optional LanceDB vector hits.
+ */
+async function retrieveHybridLessonContext(question, opts = {}) {
+  try {
+    const {
+      retrieveRelevantLessonsAsync,
+      retrieveRelevantLessons,
+    } = require(path.join(__dirname, 'lesson-retrieval'));
+    const actionContext = String(question || '');
+    const toolName = opts.toolName || 'dashboard_chat';
+    let rows = [];
+    if (typeof retrieveRelevantLessonsAsync === 'function' && opts.useHybrid !== false) {
+      rows = await retrieveRelevantLessonsAsync(toolName, actionContext, {
+        maxResults: MAX_CONTEXT_LESSONS,
+        feedbackDir: opts.feedbackDir,
+        embedder: opts.embedder,
+      });
+    } else if (typeof retrieveRelevantLessons === 'function') {
+      rows = retrieveRelevantLessons(toolName, actionContext, {
+        maxResults: MAX_CONTEXT_LESSONS,
+        feedbackDir: opts.feedbackDir,
+      });
+    }
+    return (rows || []).map((lesson) => lessonToContextItem({
+      id: lesson.id || lesson.memoryId,
+      signal: lesson.signal || lesson.feedback,
+      title: lesson.title || lesson.summary || '',
+      content: lesson.content || lesson.whatWentWrong || lesson.rule || lesson.summary || '',
+      tags: lesson.tags || [],
+    }));
+  } catch (err) {
+    debugChatFallback('hybrid lesson retrieval unavailable', err);
+    return [];
+  }
+}
+
 // Retrieve relevant stored lessons and optional raw feedback vector matches.
 async function retrieveContext(question, opts = {}) {
-  const lessons = retrieveLessonContext(question, opts);
+  const hybrid = await retrieveHybridLessonContext(question, opts);
+  const lessons = hybrid.length ? hybrid : retrieveLessonContext(question, opts);
   const vectors = await retrieveVectorContext(question, opts);
   return dedupeContextItems([...lessons, ...vectors]);
 }
 
 // Build a grounded RAG prompt. Pure function (testable).
-function buildChatPrompt(question, lessons, metrics) {
+function buildChatPrompt(question, lessons, metrics, options = {}) {
   const q = String(question || '').slice(0, MAX_QUESTION_CHARS).trim();
   const context = (lessons || []).map((l, i) => {
     const mark = /pos|up/i.test(l.signal) ? 'WORKED' : (/neg|down/i.test(l.signal) ? 'MISTAKE' : 'NOTE');
     const tags = (l.tags || []).length ? ` [tags: ${l.tags.join(', ')}]` : '';
-    return `(${i + 1}) [${mark}] ${l.title || ''}${tags}\n    ${l.content}`;
+    const idHint = l.id ? ` id=${l.id}` : '';
+    return `(${i + 1}) [${mark}]${idHint} ${l.title || ''}${tags}\n    ${l.content}`;
   }).join('\n');
 
   const metricsBlock = metrics && Object.keys(metrics).length
@@ -196,7 +240,11 @@ function buildChatPrompt(question, lessons, metrics) {
     'If neither source contains the answer, say so plainly — do not invent facts.',
   ].join(' ');
 
-  return `${system}\n\n=== Captured lessons (your data) ===\n${context || '(no relevant lessons found)'}\n${metricsBlock}\n=== Question ===\n${q}`;
+  const structured = options.structured !== false
+    ? `\n${structuredOutputInstruction()}\n`
+    : '';
+
+  return `${system}${structured}\n=== Captured lessons (your data) ===\n${context || '(no relevant lessons found)'}\n${metricsBlock}\n=== Question ===\n${q}`;
 }
 
 // Parse the Gemini generateContent response into plain text. Pure (testable).
@@ -282,8 +330,23 @@ async function callGeminiEndpoint({ apiKey, model, prompt, fetchImpl, sources })
   return { ok: true, answer: answer || '(no answer returned)', sources, model: json.modelVersion || model };
 }
 
+function attachStructured(result, sources) {
+  if (!result || !result.ok) return result;
+  const structured = parseModelStructuredAnswer(result.answer, sources);
+  return {
+    ...result,
+    // Keep plain answer string for existing dashboard clients.
+    answer: structured.value?.answer || result.answer,
+    structured: structured.value,
+    structuredMode: structured.mode,
+    structuredValid: structured.ok,
+    structuredErrors: structured.errors || [],
+    sources,
+  };
+}
+
 // Answer a question grounded in this install's lessons. Returns
-// { ok, answer, sources, model } or { ok:false, error, ... }.
+// { ok, answer, sources, model, structured? } or { ok:false, error, ... }.
 async function answerDataQuestion(question, opts = {}) {
   const q = String(question || '').trim();
   if (!q) return { ok: false, error: 'empty_question', message: 'Ask a question about your data.' };
@@ -295,7 +358,11 @@ async function answerDataQuestion(question, opts = {}) {
   const localModel = opts.localModel || process.env.THUMBGATE_LOCAL_LLM_MODEL || 'llama3';
   const apiKey = resolveApiKey(opts);
   const lessons = await retrieveContext(q, opts);
-  const sources = lessons.map((l) => ({ id: l.id, title: l.title, signal: l.signal }));
+  const sources = lessons.map((l, i) => ({
+    id: l.id || `lesson-${i + 1}`,
+    title: l.title,
+    signal: l.signal,
+  }));
 
   if (!apiKey && !localEndpoint) {
     return {
@@ -308,14 +375,22 @@ async function answerDataQuestion(question, opts = {}) {
 
   const model = resolveModel(opts.model);
   const metrics = retrieveMetricsContext();
-  const prompt = buildChatPrompt(q, lessons, metrics);
+  const prompt = buildChatPrompt(q, lessons, metrics, { structured: opts.structured !== false });
   const fetchImpl = opts.fetch || globalThis.fetch;
   const isPerplexity = apiKey && (apiKey.startsWith('pplx-') || apiKey.includes('perplexity'));
 
   try {
-    if (localEndpoint) return await callLocalOpenAiEndpoint({ endpoint: localEndpoint, apiKey, model: localModel, prompt, fetchImpl, sources });
-    if (isPerplexity) return await callPerplexityEndpoint({ apiKey, prompt, fetchImpl, sources });
-    return await callGeminiEndpoint({ apiKey, model, prompt, fetchImpl, sources });
+    let result;
+    if (localEndpoint) {
+      result = await callLocalOpenAiEndpoint({
+        endpoint: localEndpoint, apiKey, model: localModel, prompt, fetchImpl, sources,
+      });
+    } else if (isPerplexity) {
+      result = await callPerplexityEndpoint({ apiKey, prompt, fetchImpl, sources });
+    } else {
+      result = await callGeminiEndpoint({ apiKey, model, prompt, fetchImpl, sources });
+    }
+    return attachStructured(result, sources);
   } catch (err) {
     const safeMessage = (err && err.message) ? String(err.message).split('\n')[0].slice(0, 100) : 'An unexpected error occurred.';
     return { ok: false, error: 'network', message: safeMessage, sources };
@@ -327,6 +402,7 @@ module.exports = {
   buildChatPrompt,
   parseGeminiAnswer,
   retrieveContext,
+  retrieveHybridLessonContext,
   DEFAULT_MODEL,
   MAX_QUESTION_CHARS,
 };
