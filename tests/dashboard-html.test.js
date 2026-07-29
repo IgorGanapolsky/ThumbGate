@@ -110,6 +110,7 @@ test('dashboard defaults to the Total Feedback card highlight on first render', 
   assert.match(dashboard, /data-card-action="all"/);
   assert.match(dashboard, /function setSelectedCard\(action\)/);
   assert.match(dashboard, /card\.classList\.toggle\('selected', card\.dataset\.cardAction === action\)/);
+  assert.match(dashboard, /<body data-revenue-assist="off">/);
   assert.match(
     dashboard,
     /renderStats\(data\);\s+setSelectedCard\('all'\);[\s\S]*?scheduleDashboardHydration\(10000\);/,
