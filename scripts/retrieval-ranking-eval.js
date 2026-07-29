@@ -53,39 +53,37 @@ function corpusToMemory(doc) {
 }
 
 /**
- * Rank corpus for one query using gate scoring pieces (no network, no LanceDB).
+ * Rank corpus for one query using pragmatic multi-stage hybrid
+ * (turbopuffer-style: multi-query features + attribute boost + RRF-capable + BM25 rerank).
  */
 function rankCorpusForQuery(corpus, queryCase, options = {}) {
-  const { scoreRelevance, buildActionSignature } = require('./lesson-retrieval');
-  const { rerankLessons } = require('./lesson-reranker');
+  const { buildActionSignature } = require('./lesson-retrieval');
+  const { pragmaticHybridSearch } = require('./pragmatic-hybrid-search');
 
   const toolName = queryCase.toolName || options.toolName || 'Bash';
   const actionContext = String(queryCase.query || '');
   const topK = options.topK || 10;
   const memories = (corpus || []).map(corpusToMemory);
 
-  // Stage 1 — bi-encoder-style relevance (same as retrieveRelevantLessons)
-  const scored = memories.map((mem) => {
-    const relevanceScore = scoreRelevance(mem, toolName, actionContext);
-    return { ...mem, relevanceScore };
-  });
-  scored.sort((a, b) => b.relevanceScore - a.relevanceScore);
-
-  // Keep a candidate pool similar to production RERANK_CANDIDATE_POOL (capped by corpus size)
-  const pool = scored.slice(0, Math.min(50, scored.length));
-
-  // Stage 2 — field-weighted BM25 rerank
-  const reranked = rerankLessons(actionContext, pool, {
-    topK,
+  const { results, meta } = pragmaticHybridSearch({
+    corpus: memories,
+    query: actionContext,
     toolName,
+    options: {
+      topK,
+      pool: Math.min(50, memories.length),
+      diversify: options.diversify !== false,
+      denseRankedIds: options.denseRankedIds || queryCase.denseRankedIds || [],
+    },
   });
 
   return {
-    ranked: reranked,
+    ranked: results,
     signature: typeof buildActionSignature === 'function'
       ? buildActionSignature(toolName, actionContext)
       : null,
-    poolSize: pool.length,
+    poolSize: meta.fused || meta.lexicalPool || results.length,
+    meta,
   };
 }
 
@@ -167,7 +165,7 @@ function formatRankingReport(result) {
   const lines = [
     '## Ranking metrics (Recall@k / MRR / nDCG)',
     '',
-    `**System under test:** scoreRelevance + field-weighted BM25 rerank (gate stack)`,
+    `**System under test:** pragmatic hybrid (lexical+attribute first-stage, optional dense multi-query, RRF, BM25 rerank, diversify) — turbopuffer-inspired, local-only`,
     `**Golden:** \`${path.relative(process.cwd(), result.goldenPath) || result.goldenPath}\``,
     `**Queries:** ${s.queries}`,
     `**Gate:** ${result.passed ? 'PASS' : 'FAIL'}`,

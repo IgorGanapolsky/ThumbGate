@@ -212,7 +212,8 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 386 -> 390 (2026-07-29): refresh-proof-pack + outreach generators + eval-scorecard.json
   // 390 -> 391 (2026-07-29): scripts/rag-structured-output.js required by dashboard-chat
   // structured answers. IR/eval tooling (ir-metrics, ranking golden) stays repo-local.
-  const CEILING = 391;
+  // 391 -> 392: pragmatic-hybrid-search required by lesson-retrieval
+  const CEILING = 392;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
