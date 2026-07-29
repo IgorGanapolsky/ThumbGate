@@ -2488,6 +2488,27 @@ test('default feedback stats stay on THUMBGATE_FEEDBACK_DIR even when INIT_CWD i
   }
 });
 
+test('feedback stats includes activeGateCount for the dashboard hero card', async () => {
+  // The dashboard connect path paints Total/Positive/Negative from this
+  // endpoint and used to leave Active Gates stuck on "—" because gate counts
+  // only arrived later (and only if /v1/dashboard succeeded).
+  const res = await fetch(apiUrl('/v1/feedback/stats'), { headers: authHeader });
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.ok(Number.isFinite(Number(body.activeGateCount)), 'activeGateCount must be a finite number');
+  assert.ok(Number(body.activeGateCount) >= 0);
+  assert.ok(body.gateStats && typeof body.gateStats === 'object');
+  assert.equal(Number(body.gateStats.totalGates), Number(body.activeGateCount));
+  assert.ok(Number.isFinite(Number(body.gateStats.manualCount)));
+  assert.ok(Number.isFinite(Number(body.gateStats.autoCount)));
+  // Default shipped gates exist in config/gates/default.json — count must be > 0
+  // on a normal package checkout so the dashboard never looks "empty of gates".
+  assert.ok(
+    Number(body.activeGateCount) > 0,
+    `expected default gates to be counted, got ${body.activeGateCount}`,
+  );
+});
+
 test('project-scoped endpoints honor explicit project selection for stats, lessons, and dashboard', async () => {
   const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-project-scope-api-'));
   const feedbackDir = path.join(projectDir, '.thumbgate');
