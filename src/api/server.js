@@ -127,6 +127,7 @@ const {
   getCheckoutSessionStatus,
   provisionApiKey,
   validateApiKey,
+  getOrCreateRagTenantId,
   recordUsage,
   rotateApiKey,
   handleWebhook,
@@ -4962,11 +4963,6 @@ function isAuthorized(req, expected) {
   return false;
 }
 
-function stableCustomerTenantId(customerId) {
-  const digest = crypto.createHash('sha256').update(String(customerId || ''), 'utf8').digest('hex');
-  return `customer_${digest.slice(0, 24)}`;
-}
-
 function resolveAuthenticatedRagScope(req, expectedApiKey) {
   const token = extractApiKey(req);
   const localScope = {
@@ -4980,8 +4976,12 @@ function resolveAuthenticatedRagScope(req, expectedApiKey) {
   if (!validation.valid || !validation.customerId) {
     throw createHttpError(403, 'RAG scope requires an authenticated customer identity');
   }
+  const ragTenantId = getOrCreateRagTenantId(token);
+  if (!ragTenantId) {
+    throw createHttpError(403, 'RAG scope requires an active customer tenant');
+  }
   return {
-    tenantId: stableCustomerTenantId(validation.customerId),
+    tenantId: ragTenantId,
     projectId: null,
     entityId: null,
     visibility: 'private',

@@ -731,6 +731,8 @@ test('customer RAG scope is derived from the authenticated key and blocks cross-
   const tenantB = await importFor(tenantBKey, tenantA.scope.tenantId);
   assert.notEqual(tenantA.scope.tenantId, 'attacker-selected-tenant');
   assert.notEqual(tenantA.scope.tenantId, tenantB.scope.tenantId);
+  assert.doesNotMatch(tenantA.scope.tenantId, new RegExp(tenantAKey));
+  assert.doesNotMatch(tenantA.scope.tenantId, /cus_rag_tenant_a/);
   assert.equal(tenantA.scope.visibility, 'private');
   assert.notEqual(tenantA.documentId, tenantB.documentId);
 
@@ -757,6 +759,18 @@ test('customer RAG scope is derived from the authenticated key and blocks cross-
   assert.ok(searchBody.results.every((entry) => (
     !entry.scope || entry.scope.tenantId === tenantA.scope.tenantId
   )));
+
+  const rotatedTenantA = billing.rotateApiKey(tenantAKey);
+  assert.equal(rotatedTenantA.rotated, true);
+  const rotatedList = await fetch(apiUrl('/v1/documents?query=Shared%20Customer%20Policy'), {
+    headers: { authorization: `Bearer ${rotatedTenantA.key}` },
+  });
+  assert.equal(rotatedList.status, 200);
+  const rotatedListBody = await rotatedList.json();
+  assert.deepEqual(
+    rotatedListBody.documents.map((entry) => entry.scope.tenantId),
+    [tenantA.scope.tenantId],
+  );
 });
 
 test('RAG operations API exposes stage contracts and live health without raw queries', async () => {

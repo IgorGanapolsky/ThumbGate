@@ -3213,6 +3213,9 @@ function provisionApiKey(customerId, opts = {}) {
 
     const customerKeys = Object.entries(store.keys)
       .filter(([, metadata]) => metadata.customerId === customerId);
+    const existingRagTenantId = customerKeys
+      .map(([, metadata]) => metadata.ragTenantId)
+      .find((value) => typeof value === 'string' && /^customer_[a-f0-9]{24}$/.test(value));
     const activeCustomerKey = customerKeys.find(([, metadata]) => metadata.active);
     const latestDisabledKey = customerKeys
       .filter(([, metadata]) => !metadata.active && metadata.disabledAt)
@@ -3283,6 +3286,7 @@ function provisionApiKey(customerId, opts = {}) {
     const createdAt = new Date().toISOString();
     store.keys[key] = {
       customerId,
+      ragTenantId: existingRagTenantId || `customer_${crypto.randomBytes(12).toString('hex')}`,
       active: true,
       usageCount: 0,
       createdAt,
@@ -3312,6 +3316,7 @@ function rotateApiKey(oldKey) {
     const newKey = `tg_${crypto.randomBytes(16).toString('hex')}`;
     store.keys[newKey] = {
       customerId: meta.customerId,
+      ragTenantId: meta.ragTenantId || `customer_${crypto.randomBytes(12).toString('hex')}`,
       active: true,
       usageCount: 0,
       createdAt: new Date().toISOString(),
@@ -3346,6 +3351,34 @@ function validateApiKey(key) {
     createdAt: meta.createdAt,
     metadata: meta,
   };
+}
+
+function getOrCreateRagTenantId(key) {
+  if (!key) return null;
+  return withKeyStoreLock(() => {
+    const store = loadKeyStore();
+    const meta = store.keys[key];
+    if (!meta || !meta.active) return null;
+    if (meta.remainingCredits !== undefined && meta.remainingCredits !== null && meta.remainingCredits <= 0) {
+      return null;
+    }
+
+    const customerEntries = Object.entries(store.keys)
+      .filter(([, metadata]) => metadata.customerId === meta.customerId);
+    const existing = customerEntries
+      .map(([, metadata]) => metadata.ragTenantId)
+      .find((value) => typeof value === 'string' && /^customer_[a-f0-9]{24}$/.test(value));
+    const ragTenantId = existing || `customer_${crypto.randomBytes(12).toString('hex')}`;
+    let changed = false;
+    for (const [, metadata] of customerEntries) {
+      if (metadata.ragTenantId !== ragTenantId) {
+        metadata.ragTenantId = ragTenantId;
+        changed = true;
+      }
+    }
+    if (changed) saveKeyStore(store);
+    return ragTenantId;
+  });
 }
 
 function recordUsage(key) {
@@ -4220,7 +4253,7 @@ function handleGithubWebhook(event, provenance = {}) {
 }
 
 module.exports = {
-  CONFIG, createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
+  CONFIG, createCheckoutSession, getCheckoutSessionStatus, provisionApiKey, rotateApiKey, validateApiKey, getOrCreateRagTenantId, recordUsage, disableCustomerKeys, handleWebhook, verifyWebhookSignature, verifyGithubWebhookSignature, verifyPayPalWebhookSignature, recordGithubMarketplaceWebhookDelivery, recordPayPalWebhookDelivery, handleGithubWebhook, loadKeyStore, appendFunnelEvent, appendRevenueEvent, loadFunnelLedger, loadRevenueLedger, loadGithubMarketplaceWebhookLedger, loadPayPalWebhookLedger, loadNewsletterSubscribers, loadResolvedRevenueEvents, getFunnelAnalytics, getBusinessAnalytics, getBillingSummary, getBillingSummaryLive, getBillingSummariesLive, listStripeReconciledRevenueEvents, repairGithubMarketplaceRevenueLedger,
   _buildCheckoutSessionPayload: buildCheckoutSessionPayload,
   _buildTrialActivationEmail: buildTrialActivationEmail,
   _sendTrialActivationEmail: sendTrialActivationEmail,
