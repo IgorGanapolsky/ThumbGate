@@ -1,0 +1,60 @@
+{
+  "_provenance": {
+    "generatedAt": "2026-07-29",
+    "generator": "node scripts/eval-risk-model.js --resamples 12 --json",
+    "corpus": "operator feedback telemetry \u2014 PRIVATE, not distributable; row count and metrics only",
+    "note": "Backs thumbgate.ai/evaluations and docs/ML-EVALUATION.md. Regenerate on any corpus with the same command; the CI quality gate (npm run test:risk-quality) is runnable from a clean clone with no private data."
+  },
+  "source": "private feedback telemetry (redacted path); 1,791 rows as of 2026-07-29",
+  "rows": 1791,
+  "resamples": 12,
+  "inSample": 0.820212171970966,
+  "iid": {
+    "available": true,
+    "resamples": 12,
+    "meanTestCount": 447,
+    "lift": {
+      "mean": 0.09898333333333333,
+      "sd": 0.017157886103933536,
+      "foldsBeatingBaseline": 12
+    },
+    "rocAuc": {
+      "mean": 0.8864583333333332,
+      "sd": 0.011073049740498565
+    },
+    "mcc": {
+      "mean": 0.5418499999999999,
+      "sd": 0.04016780427158048
+    },
+    "brierScore": {
+      "mean": 0.12461666666666665
+    },
+    "expectedCalibrationError": {
+      "mean": 0.05855
+    }
+  },
+  "novel": {
+    "available": true,
+    "resamples": 12,
+    "meanTestCount": 444,
+    "lift": {
+      "mean": -0.10450833333333333,
+      "sd": 0.09044392791792175,
+      "foldsBeatingBaseline": 1
+    },
+    "rocAuc": {
+      "mean": 0.7182833333333334,
+      "sd": 0.05803586295463254
+    },
+    "mcc": {
+      "mean": 0.24397500000000003,
+      "sd": 0.13112322528192072
+    },
+    "brierScore": {
+      "mean": 0.29959166666666665
+    },
+    "expectedCalibrationError": {
+      "mean": 0.30955000000000005
+    }
+  }
+}
