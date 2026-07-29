@@ -648,6 +648,16 @@ Pro operators can invoke `search_lessons` through MCP and use `npx thumbgate les
 
 The package includes a local data-chat path over ThumbGate data using lesson retrieval, LanceDB-backed vectors, and an operator-configured LLM. Set `THUMBGATE_LOCAL_LLM_ENDPOINT` to an OpenAI-compatible local endpoint (Ollama, llama.cpp, vLLM, LM Studio, etc.) when you want generated answers without sending dashboard data to Google. This is a local package capability, not a hosted org-dashboard claim.
 
+Prove the endpoint before routing work to it:
+
+```bash
+THUMBGATE_LOCAL_LLM_ENDPOINT=http://127.0.0.1:8000/v1 \
+THUMBGATE_LOCAL_MODEL=qwen3-0.6b-4bit \
+npm run local-inference:prove
+```
+
+The proof checks model discovery and three real chat completions, then returns one of four deterministic routes: `interactive_local`, `private_batch_local`, `evaluation_only_local`, or `managed_fallback`. A slow but contract-compliant local model stays eligible for private batch work without being misrepresented as interactive-ready; contract failures exit nonzero and remain evaluation-only.
+
 Google Cloud is an optional adapter, not a dashboard requirement. The package provides setup and guard-adapter code for operators who already use Vertex AI or Dialogflow CX; each deployment and data boundary must be configured and verified in that tenancy.
 
 ### Optional Vertex Setup

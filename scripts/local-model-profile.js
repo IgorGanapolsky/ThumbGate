@@ -9,6 +9,10 @@ const { resolveFeedbackDir: resolveSharedFeedbackDir } = require('./feedback-pat
 const PROJECT_ROOT = path.join(__dirname, '..');
 const DEFAULT_FEEDBACK_DIR = resolveSharedFeedbackDir();
 const DEFAULT_EMBED_MODEL = 'Xenova/all-MiniLM-L6-v2';
+const DEFAULT_LOCAL_LLM_ENDPOINT = 'http://127.0.0.1:8000/v1';
+const DEFAULT_LOCAL_INFERENCE_SAMPLES = 3;
+const DEFAULT_LOCAL_INFERENCE_TIMEOUT_MS = 30000;
+const DEFAULT_INTERACTIVE_LATENCY_MS = 8000;
 
 // ---------------------------------------------------------------------------
 // Model Role Router (OpenDev workload-specialized model routing)
@@ -103,6 +107,326 @@ function normalizeSlug(value, fallback = '') {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
   return normalized || fallback;
+}
+
+function normalizeEndpoint(value) {
+  const endpoint = String(value || DEFAULT_LOCAL_LLM_ENDPOINT).trim();
+  return endpoint.replace(/\/+$/, '');
+}
+
+function clampInteger(value, fallback, min, max) {
+  const parsed = Math.floor(parseNumber(value, fallback));
+  return Math.max(min, Math.min(max, parsed));
+}
+
+function resolveLocalInferenceConfig(env = process.env, overrides = {}) {
+  const endpoint = normalizeEndpoint(
+    overrides.endpoint
+      || env.THUMBGATE_LOCAL_LLM_ENDPOINT
+      || env.THUMBGATE_OMLX_BASE_URL
+      || env.THUMBGATE_LOCAL_MODEL_ENDPOINT,
+  );
+  const model = String(
+    overrides.model
+      || env.THUMBGATE_OMLX_MODEL
+      || env.THUMBGATE_LOCAL_MODEL
+      || env.THUMBGATE_MODEL_ID
+      || '',
+  ).trim();
+  const samples = clampInteger(
+    overrides.samples ?? env.THUMBGATE_LOCAL_INFERENCE_SAMPLES,
+    DEFAULT_LOCAL_INFERENCE_SAMPLES,
+    1,
+    10,
+  );
+  const timeoutMs = clampInteger(
+    overrides.timeoutMs ?? env.THUMBGATE_LOCAL_INFERENCE_TIMEOUT_MS,
+    DEFAULT_LOCAL_INFERENCE_TIMEOUT_MS,
+    1000,
+    120000,
+  );
+  const maxInteractiveLatencyMs = clampInteger(
+    overrides.maxInteractiveLatencyMs ?? env.THUMBGATE_LOCAL_INTERACTIVE_LATENCY_MS,
+    DEFAULT_INTERACTIVE_LATENCY_MS,
+    250,
+    120000,
+  );
+  const apiKey = String(
+    overrides.apiKey
+      || env.THUMBGATE_OMLX_API_KEY
+      || env.THUMBGATE_LOCAL_LLM_API_KEY
+      || '',
+  ).trim();
+
+  return {
+    endpoint,
+    model,
+    samples,
+    timeoutMs,
+    maxInteractiveLatencyMs,
+    authorizationConfigured: Boolean(apiKey),
+  };
+}
+
+function resolveLocalAuthorization(env = process.env, overrides = {}) {
+  const apiKey = String(
+    overrides.apiKey
+      || env.THUMBGATE_OMLX_API_KEY
+      || env.THUMBGATE_LOCAL_LLM_API_KEY
+      || '',
+  ).trim();
+  return apiKey ? `Bearer ${apiKey}` : '';
+}
+
+async function fetchJson(fetchImpl, url, init, timeoutMs) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetchImpl(url, { ...init, signal: controller.signal });
+    const body = await response.text();
+    let payload = {};
+    if (body) {
+      try {
+        payload = JSON.parse(body);
+      } catch {
+        throw new Error(`non_json_response:${response.status}`);
+      }
+    }
+    if (!response.ok) {
+      throw new Error(`http_${response.status}`);
+    }
+    return { status: response.status, payload };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function percentile(values, pct) {
+  if (!Array.isArray(values) || values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const index = Math.max(
+    0,
+    Math.min(sorted.length - 1, Math.ceil((pct / 100) * sorted.length) - 1),
+  );
+  return sorted[index];
+}
+
+function extractAssistantText(payload) {
+  const content = payload?.choices?.[0]?.message?.content;
+  if (typeof content === 'string') return content.trim();
+  if (!Array.isArray(content)) return '';
+  return content
+    .map((part) => (typeof part?.text === 'string' ? part.text : ''))
+    .join(' ')
+    .trim();
+}
+
+function evaluateLocalInferenceBenchmark(samples, options = {}) {
+  const maxInteractiveLatencyMs = clampInteger(
+    options.maxInteractiveLatencyMs,
+    DEFAULT_INTERACTIVE_LATENCY_MS,
+    250,
+    120000,
+  );
+  const successful = samples.filter((sample) => sample.ok);
+  const contractPassing = successful.filter((sample) => sample.contractOk);
+  const latencies = successful.map((sample) => sample.latencyMs);
+  const totalOutputTokens = successful.reduce(
+    (sum, sample) => sum + Number(sample.outputTokens || 0),
+    0,
+  );
+  const totalLatencyMs = latencies.reduce((sum, value) => sum + value, 0);
+  const successRate = samples.length > 0 ? successful.length / samples.length : 0;
+  const contractPassRate = samples.length > 0
+    ? contractPassing.length / samples.length
+    : 0;
+  const p50LatencyMs = percentile(latencies, 50);
+  const p95LatencyMs = percentile(latencies, 95);
+  const tokensPerSecond = totalLatencyMs > 0
+    ? totalOutputTokens / (totalLatencyMs / 1000)
+    : null;
+
+  let status = 'unavailable';
+  let route = 'managed_fallback';
+  let reason = 'local inference did not return a non-empty assistant response for every sample.';
+  if (
+    successRate === 1
+    && contractPassRate === 1
+    && p95LatencyMs !== null
+    && p95LatencyMs <= maxInteractiveLatencyMs
+  ) {
+    status = 'interactive_ready';
+    route = 'interactive_local';
+    reason = `local inference passed every response contract within the ${maxInteractiveLatencyMs}ms interactive latency budget.`;
+  } else if (successRate === 1 && contractPassRate === 1) {
+    status = 'batch_ready';
+    route = 'private_batch_local';
+    reason = `local inference passed every response contract, but p95 latency exceeded the ${maxInteractiveLatencyMs}ms interactive budget.`;
+  } else if (successRate === 1) {
+    status = 'evaluation_only';
+    route = 'evaluation_only_local';
+    reason = 'local inference returned non-empty responses, but at least one deterministic response contract failed.';
+  }
+
+  return {
+    status,
+    route,
+    reason,
+    successRate: Number(successRate.toFixed(4)),
+    contractPassRate: Number(contractPassRate.toFixed(4)),
+    contractPassingSamples: contractPassing.length,
+    successfulSamples: successful.length,
+    totalSamples: samples.length,
+    p50LatencyMs,
+    p95LatencyMs,
+    maxInteractiveLatencyMs,
+    totalOutputTokens,
+    tokensPerSecond: tokensPerSecond === null
+      ? null
+      : Number(tokensPerSecond.toFixed(3)),
+    recommendedUses: status === 'interactive_ready'
+      ? ['private retrieval', 'classification', 'policy support', 'interactive local chat']
+      : status === 'batch_ready'
+        ? ['private retrieval', 'offline classification', 'batch policy analysis']
+        : status === 'evaluation_only'
+          ? ['private experimentation', 'model evaluation']
+        : [],
+    blockedUses: status === 'interactive_ready'
+      ? []
+      : status === 'batch_ready'
+        ? ['latency-sensitive interactive routing']
+        : status === 'evaluation_only'
+          ? ['production routing', 'policy decisions', 'autonomous actions']
+        : ['production routing'],
+  };
+}
+
+function localInferenceProofExitCode(result) {
+  return String(result?.evaluation?.status || '').endsWith('_ready') ? 0 : 1;
+}
+
+async function probeLocalInference(options = {}) {
+  const env = options.env || process.env;
+  const config = resolveLocalInferenceConfig(env, options);
+  const fetchImpl = options.fetchImpl || globalThis.fetch;
+  if (typeof fetchImpl !== 'function') {
+    throw new Error('fetch_unavailable');
+  }
+  const now = options.now || (() => Date.now());
+  const headers = { 'content-type': 'application/json' };
+  const authorization = resolveLocalAuthorization(env, options);
+  if (authorization) headers.authorization = authorization;
+
+  let model = config.model;
+  let models = [];
+  try {
+    const response = await fetchJson(
+      fetchImpl,
+      `${config.endpoint}/models`,
+      { method: 'GET', headers },
+      config.timeoutMs,
+    );
+    models = Array.isArray(response.payload?.data)
+      ? response.payload.data.map((item) => String(item?.id || '')).filter(Boolean)
+      : [];
+    model = model || models[0] || '';
+  } catch (error) {
+    return {
+      generatedAt: new Date().toISOString(),
+      provider: 'openai-compatible-local',
+      endpoint: config.endpoint,
+      model,
+      models,
+      authorizationConfigured: config.authorizationConfigured,
+      endpointReady: false,
+      samples: [],
+      evaluation: evaluateLocalInferenceBenchmark([], config),
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+
+  if (!model) {
+    return {
+      generatedAt: new Date().toISOString(),
+      provider: 'openai-compatible-local',
+      endpoint: config.endpoint,
+      model: '',
+      models,
+      authorizationConfigured: config.authorizationConfigured,
+      endpointReady: true,
+      samples: [],
+      evaluation: evaluateLocalInferenceBenchmark([], config),
+      error: 'models_empty',
+    };
+  }
+
+  const samples = [];
+  for (let index = 0; index < config.samples; index += 1) {
+    const startedAt = now();
+    try {
+      const response = await fetchJson(
+        fetchImpl,
+        `${config.endpoint}/chat/completions`,
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            model,
+            messages: [
+              {
+                role: 'system',
+                content: 'You are a deterministic health probe. Output exactly READY and nothing else.',
+              },
+              {
+                role: 'user',
+                content: '/no_think\nOutput exactly READY.',
+              },
+            ],
+            temperature: 0,
+            max_tokens: 16,
+          }),
+        },
+        config.timeoutMs,
+      );
+      const text = extractAssistantText(response.payload);
+      const latencyMs = Math.max(0, Math.round(now() - startedAt));
+      samples.push({
+        index: index + 1,
+        ok: Boolean(text),
+        contractOk: text === 'READY',
+        latencyMs,
+        outputTokens: Number(
+          response.payload?.usage?.completion_tokens
+            ?? response.payload?.usage?.output_tokens
+            ?? 0,
+        ),
+        textPreview: text.slice(0, 80),
+        error: text ? null : 'empty_assistant_response',
+      });
+    } catch (error) {
+      samples.push({
+        index: index + 1,
+        ok: false,
+        contractOk: false,
+        latencyMs: Math.max(0, Math.round(now() - startedAt)),
+        outputTokens: 0,
+        textPreview: '',
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  return {
+    generatedAt: new Date().toISOString(),
+    provider: 'openai-compatible-local',
+    endpoint: config.endpoint,
+    model,
+    models,
+    authorizationConfigured: config.authorizationConfigured,
+    endpointReady: true,
+    samples,
+    evaluation: evaluateLocalInferenceBenchmark(samples, config),
+  };
 }
 
 function isSparseAttentionFamily(modelFamily) {
@@ -382,6 +706,10 @@ function writeModelFitReport(feedbackDir, options = {}) {
 module.exports = {
   DEFAULT_EMBED_MODEL,
   DEFAULT_FEEDBACK_DIR,
+  DEFAULT_INTERACTIVE_LATENCY_MS,
+  DEFAULT_LOCAL_INFERENCE_SAMPLES,
+  DEFAULT_LOCAL_INFERENCE_TIMEOUT_MS,
+  DEFAULT_LOCAL_LLM_ENDPOINT,
   EMBEDDING_PROFILES,
   GLM_MODEL_ROLES,
   INDEXCACHE_SERVER_ENGINES,
@@ -397,11 +725,44 @@ module.exports = {
   writeModelFitReport,
   getModelFitReportPath,
   isLongContextTask,
+  evaluateLocalInferenceBenchmark,
+  localInferenceProofExitCode,
+  probeLocalInference,
   recommendInferenceBackend,
   resolveFeedbackDir,
+  resolveLocalInferenceConfig,
 };
 
-if (require.main === module) {
-  const report = buildModelFitReport();
-  process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+async function main(argv = process.argv.slice(2)) {
+  const probe = argv.includes('--probe');
+  const samplesArg = argv.find((arg) => arg.startsWith('--samples='));
+  const maxLatencyArg = argv.find((arg) => arg.startsWith('--max-interactive-latency-ms='));
+  if (!probe) {
+    const report = buildModelFitReport();
+    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+    return 0;
+  }
+
+  const result = await probeLocalInference({
+    samples: samplesArg ? samplesArg.split('=', 2)[1] : undefined,
+    maxInteractiveLatencyMs: maxLatencyArg
+      ? maxLatencyArg.split('=', 2)[1]
+      : undefined,
+  });
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  return localInferenceProofExitCode(result);
+}
+
+module.exports.main = main;
+
+if (
+  process.argv[1]
+  && path.resolve(process.argv[1]) === path.resolve(__filename)
+) {
+  main().then((exitCode) => {
+    process.exitCode = exitCode;
+  }).catch((error) => {
+    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+    process.exitCode = 1;
+  });
 }
