@@ -573,9 +573,13 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // otherwise throw on install — that is what this assertion caught. Only model-eval.js is
   // added (~11 KB); model-calibration.js and eval-risk-model.js are development-only and stay
   // out of the tarball. Measured artifact: 5,443,997 bytes.
+  // Bumped 5.45 MB -> 5.46 MB (2026-07-28) for task-scope leases in gates-engine.js:
+  // capability-scoped authority that expires, plus its fail-closed enforcement. Shipped
+  // runtime logic in an already-shipped file; no new files enter the tarball (still 371).
+  // Measured artifact: 5,450,871 bytes.
   assert.ok(
-    manifest.unpackedSize <= 5_450_000,
-    `npm package should stay <= 5.45 MB unpacked, got ${manifest.unpackedSize}`
+    manifest.unpackedSize <= 5_460_000,
+    `npm package should stay <= 5.46 MB unpacked, got ${manifest.unpackedSize}`
   );
 
   for (const file of requiredRuntimeFiles) {

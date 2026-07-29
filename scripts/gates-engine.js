@@ -146,10 +146,18 @@ const SELF_PROTECT_HARD_FLOOR_GATE_IDS = new Set([
   'self-protect-env-override',
   'self-protect-hooks-disable',
 ]);
+// An expired task-scope lease gets its OWN gate id so it can be exempted from the two downgrade
+// paths without touching ordinary task-scope denials. Without this the fail-closed guarantee is
+// cosmetic: applyEnforcementPosture turns denials into warnings by default, and applyDailyBlockCap
+// does the same for capped free-tier users — so an edit under a lapsed lease would execute anyway.
+// A lease that stops binding when you are busy or over quota is not a lease.
+const TASK_SCOPE_LEASE_EXPIRED_GATE_ID = 'task-scope-lease-expired';
+
 const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
   'secret-exfiltration',
   'security-vuln-scan',
   'slopsquat-guard',
+  TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   ...SELF_PROTECT_HARD_FLOOR_GATE_IDS,
 ]);
 // Issue #2782 (reported by Andy Martin, 2026-07-08): after the free-tier daily
@@ -161,6 +169,7 @@ const UNCONDITIONAL_HARD_FLOOR_GATE_IDS = new Set([
 // map directly to CLAUDE.md's own hard-block list and must never be subject
 // to the daily cap discount, regardless of tier or strict-mode setting.
 const CATASTROPHIC_DECLARATIVE_GATE_IDS = new Set([
+  TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
   'force-push',
   'git-reset-hard',
   'git-clean-force',
@@ -425,6 +434,25 @@ function clampTtlMs(value, fallbackMs) {
   return Math.min(Math.max(numeric, 60 * 1000), 24 * 60 * 60 * 1000);
 }
 
+// Default lease when a caller asks for one without saying how long. clampTtlMs floors at 60s.
+const TASK_SCOPE_LEASE_MS = 15 * 60 * 1000;
+
+/**
+ * A task scope with no `expiresAt` is permanent — that is the historical contract and every
+ * existing scope on disk has it. Only a scope that explicitly took a lease can expire.
+ */
+function isTaskScopeExpired(taskScope, nowMs = Date.now()) {
+  if (!taskScope || typeof taskScope !== 'object') return false;
+  // `expiresAt: null` means permanent, and it MUST be checked before the numeric coercion:
+  // Number(null) is 0, not NaN, so a null deadline would otherwise read as "expired in 1970".
+  // Combined with fail-closed enforcement that would revoke authority from every permanent
+  // scope the moment this shipped. Caught by tests/task-scope-lease.test.js.
+  if (taskScope.expiresAt == null) return false;
+  const deadline = Number(taskScope.expiresAt);
+  if (!Number.isFinite(deadline)) return false;
+  return nowMs >= deadline;
+}
+
 function loadGovernanceState() {
   const raw = loadJSON(module.exports.GOVERNANCE_STATE_PATH);
   const state = {
@@ -438,6 +466,12 @@ function loadGovernanceState() {
       : null,
   };
   const now = Date.now();
+  // Annotate rather than delete. A vanished scope is indistinguishable from one never set, and
+  // the difference matters: "your lease lapsed, renew it" is a different instruction from
+  // "you never declared a scope".
+  if (state.taskScope) {
+    state.taskScope = { ...state.taskScope, expired: isTaskScopeExpired(state.taskScope, now) };
+  }
   const activeApprovals = state.protectedApprovals.filter((entry) => {
     if (!entry || typeof entry !== 'object') return false;
     if (!entry.timestamp || !entry.expiresAt) return false;
@@ -485,6 +519,11 @@ function setTaskScope(scopeInput = {}) {
       ? scopeInput.protectedPaths
       : DEFAULT_PROTECTED_FILE_GLOBS
   ), repoPath);
+  // Optional LEASE. Without ttlMs the scope is permanent, which is the historical behaviour
+  // and stays byte-identical. With ttlMs the scope becomes time-bounded authority: "write under
+  // ./src for 90 seconds" rather than a standing approval that never says when it stops.
+  const scopeNow = Date.now();
+  const leaseMs = scopeInput.ttlMs == null ? null : clampTtlMs(scopeInput.ttlMs, TASK_SCOPE_LEASE_MS);
   const taskScope = {
     taskId: String(scopeInput.taskId || '').trim() || null,
     summary: String(scopeInput.summary || '').trim() || null,
@@ -493,7 +532,9 @@ function setTaskScope(scopeInput = {}) {
     localOnly: scopeInput.localOnly === true,
     repoPath,
     createdAt: new Date().toISOString(),
-    timestamp: Date.now(),
+    timestamp: scopeNow,
+    leaseMs,
+    expiresAt: leaseMs == null ? null : scopeNow + leaseMs,
   };
   const state = loadGovernanceState();
   state.taskScope = taskScope;
@@ -1921,8 +1962,23 @@ function formatFileList(files, limit = 5) {
   return `${items.slice(0, limit).join(', ')} (+${items.length - limit} more)`;
 }
 
-function buildTaskScopeViolation(taskScope, affectedFiles) {
+function buildTaskScopeViolation(taskScope, affectedFiles, nowMs = Date.now()) {
   if (!Array.isArray(affectedFiles) || affectedFiles.length === 0) return null;
+  // EXPIRY FAILS CLOSED, and that direction is the whole point.
+  //
+  // A task scope is a restriction, so simply dropping it on expiry would make the agent MORE
+  // powerful the moment its lease ran out — expiry would remove a boundary instead of removing
+  // authority. A lease has to mean the opposite: while it is live you may work in these paths,
+  // and when it lapses the authority is gone until it is renewed.
+  if (taskScope && isTaskScopeExpired(taskScope, nowMs)) {
+    return {
+      reasonCode: 'expired_task_scope',
+      outsideFiles: affectedFiles.slice(),
+      allowedPaths: Array.isArray(taskScope.allowedPaths) ? taskScope.allowedPaths.slice() : [],
+      summary: taskScope.summary || null,
+      expiresAt: taskScope.expiresAt || null,
+    };
+  }
   if (!taskScope || !Array.isArray(taskScope.allowedPaths) || taskScope.allowedPaths.length === 0) {
     return {
       reasonCode: 'missing_task_scope',
@@ -1995,6 +2051,11 @@ function buildBranchGovernanceViolation(governanceState, toolInput = {}, affecte
 function buildGateMessage(gate, matchDetails) {
   if (matchDetails && matchDetails.taskScopeViolation) {
     const violation = matchDetails.taskScopeViolation;
+    if (violation.reasonCode === 'expired_task_scope') {
+      const lapsed = violation.expiresAt ? new Date(violation.expiresAt).toISOString() : 'unknown time';
+      return `The task-scope lease expired at ${lapsed}, so its authority no longer applies. `
+        + `Renew it with set_task_scope (allowed paths were: ${formatFileList(violation.allowedPaths)}).`;
+    }
     if (violation.reasonCode === 'missing_task_scope') {
       return `No task scope is declared for this high-risk action. Affected files: ${formatFileList(violation.outsideFiles)}.`;
     }
@@ -2760,7 +2821,13 @@ async function evaluateGatesAsyncInner(toolName, toolInput, configPath) {
     });
 
     if (gate.action === 'block') {
-      const denyResult = { decision: 'deny', gate: gate.id, message, severity: gate.severity, reasoning };
+      // Expired leases report under their own gate id so neither the enforcement posture nor
+      // the daily block cap can quietly turn this denial into a warning.
+      const gateId = matchDetails && matchDetails.taskScopeViolation
+        && matchDetails.taskScopeViolation.reasonCode === 'expired_task_scope'
+        ? TASK_SCOPE_LEASE_EXPIRED_GATE_ID
+        : gate.id;
+      const denyResult = { decision: 'deny', gate: gateId, message, severity: gate.severity, reasoning };
       // Free-tier daily block cap: after N blocks/day, deny → warn + upgrade CTA
       const cappedResult = applyDailyBlockCap(denyResult);
       if (cappedResult) {
@@ -2973,7 +3040,13 @@ function evaluateGatesInner(toolName, toolInput, configPath) {
     const reasoning = buildReasoning(gate, toolName, toolInput, matchDetails);
 
     if (gate.action === 'block') {
-      const denyResult = { decision: 'deny', gate: gate.id, message, severity: gate.severity, reasoning };
+      // Expired leases report under their own gate id so neither the enforcement posture nor
+      // the daily block cap can quietly turn this denial into a warning.
+      const gateId = matchDetails && matchDetails.taskScopeViolation
+        && matchDetails.taskScopeViolation.reasonCode === 'expired_task_scope'
+        ? TASK_SCOPE_LEASE_EXPIRED_GATE_ID
+        : gate.id;
+      const denyResult = { decision: 'deny', gate: gateId, message, severity: gate.severity, reasoning };
       // Free-tier daily block cap: after N blocks/day, deny → warn + upgrade CTA
       const cappedResult = applyDailyBlockCap(denyResult);
       if (cappedResult) {
@@ -3968,6 +4041,10 @@ module.exports = {
   loadGovernanceState,
   saveGovernanceState,
   setTaskScope,
+  isTaskScopeExpired,
+  TASK_SCOPE_LEASE_EXPIRED_GATE_ID,
+  applyEnforcementPosture,
+  buildTaskScopeViolation,
   setBranchGovernance,
   approveProtectedAction,
   breakGlassEmergency,

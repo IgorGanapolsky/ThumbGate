@@ -922,6 +922,10 @@ const TOOLS = [
           items: { type: 'string' },
           description: 'Optional protected-file globs that require explicit approval before editing or publishing',
         },
+        ttlMs: {
+          type: 'number',
+          description: 'Optional lease length in milliseconds. With it the scope becomes time-bounded authority (e.g. 90000 for "write under ./src for 90 seconds") and FAILS CLOSED on expiry: a lapsed lease authorises nothing until renewed. Omit for a permanent scope. Clamped to 60s..24h.',
+        },
         workflowContract: {
           type: 'object',
           description: 'Optional deterministic workflow run contract. Supports workflowId, allowedBranches, blockedActions, requiredEvidence, and completionGate.',

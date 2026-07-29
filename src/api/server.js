@@ -419,7 +419,7 @@ const BUILD_METADATA = resolveBuildMetadata();
 const TERMINAL_JOB_STATUSES = new Set(['completed', 'failed', 'cancelled']);
 const IDLE_JOB_STATUSES = new Set(['queued', 'paused', 'resume_requested']);
 const JOB_CONTROL_ACTIONS = new Set(['pause', 'cancel', 'resume']);
-const TRACKED_LINK_QUERY_KEYS = [
+const TRACKED_LINK_QUERY_KEYS = new Set([
   'utm_source',
   'utm_medium',
   'utm_campaign',
@@ -447,7 +447,7 @@ const TRACKED_LINK_QUERY_KEYS = [
   'seat_count',
   'landing_path',
   'referrer_host',
-];
+]);
 const TRACKED_LINK_TARGETS = Object.freeze({
   gpt: {
     href: 'https://chatgpt.com/g/g-69dcfd1cd5f881918ae31874631d6f08-thumbgate',
@@ -1644,15 +1644,26 @@ function projectWorkflowIntakeQueueLead(lead = {}, options = {}) {
       page: attribution.page || null,
       landingPath: attribution.landingPath || null,
     },
-    nextOperatorStep: options.closePacket?.status === 'approval_ready_not_authorized'
-      ? 'request_action_time_approval'
-      : options.discoveryPacket?.status === 'approval_ready_not_authorized'
-        ? 'request_action_time_approval_for_discovery'
-        : lead.status === 'new' ? 'review_and_qualify' : 'prepare_scope_or_hold',
+    nextOperatorStep: resolveNextOperatorStep(lead, options),
     qualificationCard: options.qualificationCard || buildIntakeQualificationCard(lead, options),
     discoveryPacket: options.discoveryPacket || buildIntakeDiscoveryPacket(lead, options),
     closePacket: options.closePacket || buildIntakeClosePacket(lead, options),
   };
+}
+
+/**
+ * Which action the operator should take next on an intake lead. Extracted from a three-level
+ * nested ternary: the precedence (close packet, then discovery packet, then lead status) is the
+ * actual logic and is far easier to check when it reads top to bottom.
+ */
+function resolveNextOperatorStep(lead, options) {
+  if (options.closePacket?.status === 'approval_ready_not_authorized') {
+    return 'request_action_time_approval';
+  }
+  if (options.discoveryPacket?.status === 'approval_ready_not_authorized') {
+    return 'request_action_time_approval_for_discovery';
+  }
+  return lead.status === 'new' ? 'review_and_qualify' : 'prepare_scope_or_hold';
 }
 
 function buildWorkflowIntakeQueue(parsed, workflowSprintIntake, feedbackDir, options = {}) {
@@ -1733,7 +1744,7 @@ function sendInvalidAnalyticsWindowProblem(res, title, err) {
 }
 
 function sendWorkflowIntakeQueueProblem(res, err) {
-  const status = Number(err && err.statusCode) || 400;
+  const status = Number(err?.statusCode) || 400;
   sendProblem(res, {
     type: status >= 500 ? PROBLEM_TYPES.INTERNAL : PROBLEM_TYPES.INVALID_REQUEST,
     title: status >= 500
@@ -5349,7 +5360,7 @@ function createApiServer() {
               (async () => {
                 try {
                   const { callTool } = require('../../adapters/mcp/server-stdio');
-                  const name = msg.params && msg.params.name;
+                  const name = msg.params?.name;
                   const args = (msg.params && msg.params.arguments) || {};
                   const result = await callTool(name, args);
                   sendJson(res, 200, {
@@ -5637,7 +5648,7 @@ function createApiServer() {
       let trackedParsed = parsed;
       if (req.method === 'POST') {
         const target = getTrackedLinkTarget(trackedLinkMatch[1]);
-        if (!target || !target.requiresPost) {
+        if (!target?.requiresPost) {
           sendJson(res, target ? 405 : 404, target
             ? { error: 'POST is not supported for this tracked link' }
             : { error: 'Tracked link not found', allowed: Object.keys(TRACKED_LINK_TARGETS) }, {
@@ -5656,7 +5667,7 @@ function createApiServer() {
         const form = await parseFormBody(req, 16 * 1024);
         trackedParsed = new URL(parsed.toString());
         for (const [key, value] of Object.entries(form)) {
-          if (key === 'customer_email' || TRACKED_LINK_QUERY_KEYS.includes(key)) {
+          if (key === 'customer_email' || TRACKED_LINK_QUERY_KEYS.has(key)) {
             trackedParsed.searchParams.set(key, String(value || '').trim());
           }
         }
@@ -6521,7 +6532,7 @@ async function addContext(){
           if (
             key === 'confirm'
             || key === 'customer_email'
-            || TRACKED_LINK_QUERY_KEYS.includes(key)
+            || TRACKED_LINK_QUERY_KEYS.has(key)
           ) {
             parsed.searchParams.set(key, String(value || '').trim());
           }
@@ -8309,7 +8320,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           });
           return;
         }
-        if (result && result.retryable === true) {
+        if (result?.retryable === true) {
           sendProblem(res, {
             type: PROBLEM_TYPES.INTERNAL,
             title: 'Fulfillment temporarily unavailable',
@@ -8497,14 +8508,15 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         }
 
         const resolvedTraceId = result.traceId || requestedTraceId;
-        const nextSteps = result.apiKey
-          ? {
+        let nextSteps = {};
+        if (result.apiKey) {
+          nextSteps = {
             env: `THUMBGATE_API_KEY=${result.apiKey}\nTHUMBGATE_API_BASE_URL=${hostedConfig.billingApiBaseUrl}`,
             curl: `curl -X POST ${hostedConfig.billingApiBaseUrl}/v1/feedback/capture \\\n+  -H 'Authorization: Bearer ${result.apiKey}' \\\n+  -H 'Content-Type: application/json' \\\n+  -d '{"signal":"down","context":"example","whatWentWrong":"example","whatToChange":"example"}'`,
-          }
-          : result.offerKind === 'workflow_hardening_diagnostic'
-            ? { fulfillment: 'Payment confirmed. Diagnostic fulfillment is processing; an email will arrive when it completes.' }
-            : {};
+          };
+        } else if (result.offerKind === 'workflow_hardening_diagnostic') {
+          nextSteps = { fulfillment: 'Payment confirmed. Diagnostic fulfillment is processing; an email will arrive when it completes.' };
+        }
 
         sendJson(res, 200, {
           ...result,
@@ -9088,6 +9100,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
           workflowContract: body.workflowContract,
           repoPath: body.repoPath,
           localOnly: body.localOnly === true,
+          ttlMs: body.ttlMs,
           clear: body.clear === true,
         });
         sendJson(res, 200, { scope });
