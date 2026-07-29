@@ -1,5 +1,12 @@
 {
-  "totalGates": 5,
+  "activeGateCount": 5,
+  "gateStats": {
+    "totalGates": 5,
+    "manualCount": 5,
+    "autoCount": 0,
+    "blocked": 0,
+    "warned": 0
+  },
   "total": 12,
   "up": 10,
   "down": 2,

@@ -194,7 +194,6 @@ const {
   readDashboardReviewState,
   writeDashboardReviewState,
   collectAllFeedbackEntries,
-  computeGateStats,
 } = require('../../scripts/dashboard');
 const {
   collectAggregateLogEntries,
@@ -8718,7 +8717,6 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         stats.localLlmConfigured = Boolean(process.env.THUMBGATE_LOCAL_LLM_ENDPOINT);
         stats.localLlmEndpoint = process.env.THUMBGATE_LOCAL_LLM_ENDPOINT || null;
         stats.localLlmModel = process.env.THUMBGATE_LOCAL_LLM_MODEL || null;
-        stats.totalGates = computeGateStats().totalGates;
         sendJson(res, 200, stats);
         return;
       }

@@ -2462,8 +2462,6 @@ test('default feedback stats stay on THUMBGATE_FEEDBACK_DIR even when INIT_CWD i
     const baselineRes = await fetch(apiUrl('/v1/feedback/stats'), { headers: authHeader });
     assert.equal(baselineRes.status, 200);
     const baseline = await baselineRes.json();
-    assert.ok(Number.isInteger(baseline.totalGates));
-    assert.ok(baseline.totalGates > 0);
 
     fs.appendFileSync(feedbackLogPath, `${JSON.stringify({
       id: 'fb_initcwd_scope_guard',
