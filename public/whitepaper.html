@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="ThumbGate">
+<meta name="author" content="Igor Ganapolsky">
+<title>How We Know ThumbGate Works — Evaluation White Paper</title>
+<meta name="description" content="Evaluation white paper for ThumbGate: golden datasets, offline regression, tool-call correctness, latency, cost, human review, and production monitoring — with diagrams and re-run commands.">
+<meta property="og:title" content="How We Know ThumbGate Works">
+<meta property="og:description" content="Seven proof dimensions for a pre-action gate: goldens, offline tests, tool-call metrics, latency, cost, human review, production monitoring.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/whitepaper">
+<link rel="canonical" href="https://thumbgate.ai/whitepaper">
+<link rel="icon" type="image/png" href="/thumbgate-icon.png">
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "How We Know ThumbGate Works",
+  "description": "Buyer-facing evaluation white paper covering golden datasets, offline regression, tool-call correctness, latency, cost, human review, and production monitoring.",
+  "url": "https://thumbgate.ai/whitepaper",
+  "dateModified": "2026-07-29",
+  "author": { "@type": "Person", "name": "Igor Ganapolsky", "url": "https://github.com/IgorGanapolsky" }
+}
+</script>
+<style>
+  :root {
+    --bg:#0b0f14; --panel:#111823; --border:#1e2a3a; --text:#e6edf3;
+    --muted:#8b98a5; --cyan:#39c5cf; --green:#3fb950; --red:#f85149;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; line-height:1.65; }
+  nav { padding:1rem 2rem; border-bottom:1px solid var(--border); display:flex; gap:1.25rem; flex-wrap:wrap; align-items:center; }
+  nav a { color:var(--muted); text-decoration:none; font-size:0.9rem; }
+  nav a:hover { color:var(--cyan); }
+  nav .brand { color:var(--text); font-weight:700; }
+  .container { max-width:900px; margin:0 auto; padding:2.5rem 1.5rem 4rem; }
+  h1 { font-size:2rem; margin-bottom:0.4rem; }
+  h2 { font-size:1.3rem; margin:2.3rem 0 0.7rem; color:var(--cyan); }
+  h3 { font-size:1.05rem; margin:1.3rem 0 0.4rem; }
+  .subtitle { color:var(--muted); font-size:1.05rem; margin-bottom:1.25rem; }
+  p, li { margin:0.65rem 0; }
+  ul, ol { padding-left:1.3rem; }
+  table { width:100%; border-collapse:collapse; margin:1rem 0; font-size:0.92rem; }
+  th, td { text-align:left; padding:0.5rem 0.65rem; border-bottom:1px solid var(--border); vertical-align:top; }
+  th { color:var(--muted); }
+  code { background:#0d1420; border:1px solid var(--border); border-radius:4px; padding:0.1rem 0.35rem; font-size:0.86em; color:var(--cyan); }
+  pre { background:#0d1420; border:1px solid var(--border); border-radius:8px; padding:1rem; overflow-x:auto; font-size:0.85rem; margin:1rem 0; }
+  .panel { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:1.1rem 1.25rem; margin:1rem 0; }
+  .rule { border-left:3px solid var(--cyan); padding:0.65rem 1rem; background:var(--panel); margin:1.25rem 0; font-weight:600; }
+  figure { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:1rem; margin:1rem 0; }
+  figure img { width:100%; height:auto; display:block; border-radius:8px; }
+  figcaption { color:var(--muted); font-size:0.88rem; margin-top:0.65rem; }
+  a.cta { display:inline-block; background:var(--cyan); color:#001018; font-weight:700; padding:0.7rem 1rem; border-radius:8px; text-decoration:none; margin:0.4rem 0.6rem 0.4rem 0; }
+  a.inline { color:var(--cyan); }
+  .footer-note { color:var(--muted); font-size:0.85rem; margin-top:2.5rem; text-align:center; }
+  .footer-note a { color:var(--cyan); text-decoration:none; }
+  .good { color:var(--green); } .bad { color:var(--red); }
+</style>
+</head>
+<body>
+<nav>
+  <a class="brand" href="/">ThumbGate</a>
+  <a href="/whitepaper">White paper</a>
+  <a href="/architecture">Architecture</a>
+  <a href="/eval-scorecard">Scorecard</a>
+  <a href="/evaluations">Evaluations</a>
+  <a href="/case-studies">Case studies</a>
+  <a href="/numbers">Numbers</a>
+  <a href="/pricing">Pricing</a>
+</nav>
+<main class="container">
+  <h1>How we know ThumbGate works</h1>
+  <p class="subtitle">Evaluation white paper · Updated 2026-07-29 · Source: <code>docs/HOW-WE-KNOW-IT-WORKS.md</code></p>
+
+  <div class="rule">Offline goldens + live monitors, not vibes. <code>unsafeActionRate</code> must stay <span class="good">0</span>.</div>
+
+  <p>ThumbGate is a local-first PreToolUse enforcement layer: feedback becomes lessons, repeated failures become gates, and risky tool calls are checked before execution. This page is the buyer-readable map from that claim to evidence.</p>
+
+  <figure>
+    <img src="/assets/diagrams/thumbgate-architecture.png" alt="ThumbGate system architecture diagram" width="1200" height="800" loading="eager">
+    <figcaption>System map: agents, hooks, gate engine, governance, security, feedback promotion. Full gallery on <a class="inline" href="/architecture">/architecture</a>.</figcaption>
+  </figure>
+
+  <h2>1. Golden evaluation dataset</h2>
+  <p>Committed suites encode expected allow / deny / warn decisions and reference answers — not aspirational prose.</p>
+  <table>
+    <tr><th>Pack</th><th>Path</th></tr>
+    <tr><td>ThumbGate Bench</td><td><code>bench/thumbgate-bench.json</code></td></tr>
+    <tr><td>Agent safety eval</td><td><code>config/evals/agent-safety-eval.json</code></td></tr>
+    <tr><td>Prompt eval</td><td><code>bench/prompt-eval-suite.json</code></td></tr>
+    <tr><td>Observability / grounding</td><td><code>bench/observability-eval-suite.json</code></td></tr>
+    <tr><td>ProgramBench smoke</td><td><code>bench/programbench-smoke.json</code></td></tr>
+    <tr><td>Shell golden tests</td><td><code>verification/golden_tests/**</code></td></tr>
+  </table>
+  <p>Live failures feed offline goldens through <code>scripts/llm-behavior-monitor.js</code> promotion candidates.</p>
+
+  <h2>2. Offline regression tests</h2>
+  <pre>npm test
+npm run test:coverage
+npm run prove:adapters
+npm run prove:automation
+npm run self-heal:check</pre>
+  <p>Observed results land in <a class="inline" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/VERIFICATION_EVIDENCE.md">docs/VERIFICATION_EVIDENCE.md</a>. Releases also require Changesets, SemVer, and version sync.</p>
+
+  <h2>3. Tool-call correctness</h2>
+  <p>ThumbGate Bench measures whether the gate decides correctly on the actual tool call.</p>
+  <table>
+    <tr><th>Metric</th><th>Intent</th></tr>
+    <tr><td><code>taskSuccessRate</code></td><td>Decision matches expected</td></tr>
+    <tr><td><code>unsafeActionRate</code></td><td class="good">Must stay 0</td></tr>
+    <tr><td><code>capabilityRate</code></td><td>Safe work still allowed</td></tr>
+    <tr><td><code>falseBlockRate</code></td><td>No “block everything” cheat</td></tr>
+    <tr><td><code>replayStability</code></td><td>Same suite → same decisions</td></tr>
+  </table>
+  <p><a class="cta" href="/eval-scorecard">Open the live scorecard</a> <a class="inline" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/THUMBGATE_BENCH.md">Bench methodology →</a></p>
+
+  <h2>4. Latency</h2>
+  <figure>
+    <img src="/assets/diagrams/pre-action-gate-loop.svg" alt="Pre-action gate loop" width="900" height="360" loading="lazy">
+    <figcaption>Enforcement is local: deterministic match first, optional local embeddings, no cloud model on the critical path.</figcaption>
+  </figure>
+  <ul>
+    <li>No LLM on block/allow for the PreToolUse decision</li>
+    <li>Routing budgets: <code>lowLatencyBudgetMs: 300</code> for the fast classical lane</li>
+    <li>High-risk ambiguity can stop for human review instead of spending tokens</li>
+  </ul>
+
+  <h2>5. Cost</h2>
+  <ul>
+    <li>A blocked tool call does not spend the model round-trip</li>
+    <li><code>npx thumbgate cost</code> prints conservative $ saved from recorded blocks</li>
+    <li>Budget ledger + tokenomics guardrails prevent runaway spend</li>
+    <li>Methodology: <a class="inline" href="/agents-cost-savings">/agents-cost-savings</a> · inventory: <a class="inline" href="/numbers">/numbers</a></li>
+  </ul>
+
+  <h2>6. Human review</h2>
+  <ul>
+    <li>Classifier route <code>human_review</code> for credentials, customer data, regulated workflows, payments</li>
+    <li>Rubrics require verification evidence before “done”</li>
+    <li>Protected actions need scoped approval; break-glass is short-lived and narrow</li>
+    <li>Outbound social replies stay draft-only until a human publishes</li>
+  </ul>
+
+  <h2>7. Production monitoring</h2>
+  <figure>
+    <img src="/assets/diagrams/feedback-pipeline.png" alt="Feedback pipeline sequence diagram" width="1200" height="700" loading="lazy">
+    <figcaption>Capture → promote → block the repeat. Production monitors exist to catch silence (fail-open hooks) as well as loud breakage.</figcaption>
+  </figure>
+  <ul>
+    <li>Deploy health: Railway <code>/health</code> version + dashboard smoke</li>
+    <li><code>self-heal:check</code> — budget, tests, prove lanes must be HEALTHY</li>
+    <li>Gate stats + LLM behavior rates (wrong-tool, malformed, drift)</li>
+    <li>Published-artifact evasion jobs and silent-gate canaries</li>
+  </ul>
+
+  <h2>20-minute buyer audit</h2>
+  <pre>git clone https://github.com/IgorGanapolsky/ThumbGate
+cd ThumbGate &amp;&amp; npm ci
+npm test
+npm run prove:adapters &amp;&amp; npm run prove:automation
+npm run self-heal:check
+npm run thumbgate:bench -- --json
+curl -s https://thumbgate-production.up.railway.app/health</pre>
+
+  <h2>What this paper is not</h2>
+  <div class="panel">
+    <ul>
+      <li>Not external customer revenue proof — see commercial truth in the repo</li>
+      <li>Not a claim that free installs hard-block every risky command by default</li>
+      <li>Not a substitute for human review on payments, credentials, or regulated actions</li>
+    </ul>
+  </div>
+
+  <p>
+    <a class="cta" href="/case-studies">Case studies</a>
+    <a class="cta" href="/evaluations">ML evaluations</a>
+    <a class="cta" href="/architecture">Diagram gallery</a>
+  </p>
+
+  <p class="footer-note">
+    Longform source: <a href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/HOW-WE-KNOW-IT-WORKS.md">docs/HOW-WE-KNOW-IT-WORKS.md</a>.
+    Built by <a href="https://github.com/IgorGanapolsky">Igor Ganapolsky</a>.
+  </p>
+</main>
+</body>
+</html>

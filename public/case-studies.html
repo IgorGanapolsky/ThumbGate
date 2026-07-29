@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="ThumbGate">
+<meta name="author" content="Igor Ganapolsky">
+<title>Case Studies — ThumbGate Dogfood Proof</title>
+<meta name="description" content="Real ThumbGate case studies from dogfood on this product: sudo evasion grid, fail-open hook recovery, catastrophic free-tier floor, and adversarial measurement. No fabricated logos.">
+<meta property="og:title" content="ThumbGate Case Studies">
+<meta property="og:description" content="Five reproducible dogfood narratives: 62 evasion holes closed, fail-open recovery, catastrophic safety floor, and adversarial grids.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/case-studies">
+<link rel="canonical" href="https://thumbgate.ai/case-studies">
+<link rel="icon" type="image/png" href="/thumbgate-icon.png">
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "ThumbGate Case Studies",
+  "description": "Reproducible dogfood case studies for ThumbGate pre-action checks. No fabricated customer logos.",
+  "url": "https://thumbgate.ai/case-studies",
+  "dateModified": "2026-07-29"
+}
+</script>
+<style>
+  :root {
+    --bg:#0b0f14; --panel:#111823; --border:#1e2a3a; --text:#e6edf3;
+    --muted:#8b98a5; --cyan:#39c5cf; --green:#3fb950; --amber:#d29922;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; line-height:1.65; }
+  nav { padding:1rem 2rem; border-bottom:1px solid var(--border); display:flex; gap:1.25rem; flex-wrap:wrap; align-items:center; }
+  nav a { color:var(--muted); text-decoration:none; font-size:0.9rem; }
+  nav a:hover { color:var(--cyan); }
+  nav .brand { color:var(--text); font-weight:700; }
+  .container { max-width:900px; margin:0 auto; padding:2.5rem 1.5rem 4rem; }
+  h1 { font-size:2rem; margin-bottom:0.4rem; }
+  h2 { font-size:1.25rem; margin:0 0 0.35rem; }
+  .subtitle { color:var(--muted); font-size:1.05rem; margin-bottom:1.5rem; }
+  article { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:1.35rem 1.4rem; margin:1.1rem 0; }
+  .meta { color:var(--muted); font-size:0.85rem; margin-bottom:0.75rem; }
+  .metric { display:inline-block; background:#0d1420; border:1px solid var(--border); color:var(--cyan); padding:0.2rem 0.55rem; border-radius:6px; font-size:0.82rem; font-weight:600; margin:0 0.35rem 0.35rem 0; }
+  p { margin:0.55rem 0; }
+  pre { background:#0d1420; border:1px solid var(--border); border-radius:8px; padding:0.85rem 1rem; overflow-x:auto; font-size:0.84rem; margin:0.75rem 0; }
+  code { color:var(--cyan); }
+  a.inline { color:var(--cyan); }
+  a.cta { display:inline-block; background:var(--cyan); color:#001018; font-weight:700; padding:0.7rem 1rem; border-radius:8px; text-decoration:none; margin:0.5rem 0.6rem 0.5rem 0; }
+  .note { border-left:3px solid var(--amber); background:var(--panel); padding:0.7rem 1rem; margin:1.25rem 0; color:var(--muted); }
+  .footer-note { color:var(--muted); font-size:0.85rem; margin-top:2.5rem; text-align:center; }
+  .footer-note a { color:var(--cyan); text-decoration:none; }
+</style>
+</head>
+<body>
+<nav>
+  <a class="brand" href="/">ThumbGate</a>
+  <a href="/whitepaper">White paper</a>
+  <a href="/architecture">Architecture</a>
+  <a href="/eval-scorecard">Scorecard</a>
+  <a href="/evaluations">Evaluations</a>
+  <a href="/case-studies">Case studies</a>
+  <a href="/numbers">Numbers</a>
+  <a href="/pricing">Pricing</a>
+</nav>
+<main class="container">
+  <h1>Case studies</h1>
+  <p class="subtitle">Real work on this codebase. No fabricated logos, no aspirational customer counts — every technical claim is verifiable against the open repo or the commands recorded in the full write-up.</p>
+
+  <div class="note">
+    <strong>Honesty boundary:</strong> these are first-party dogfood / incident narratives, not third-party customer ROI claims.
+    Full longform: <a class="inline" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/THUMBGATE-CASE-STUDIES.md">docs/THUMBGATE-CASE-STUDIES.md</a>.
+  </div>
+
+  <article id="sudo-evasion">
+    <h2>1. A guardrail you could walk past with <code>sudo</code></h2>
+    <p class="meta">Hard technical problem · shipped in v1.29.2</p>
+    <span class="metric">62 evasion holes → 0</span>
+    <span class="metric">14 commands × 9 transforms</span>
+    <span class="metric">published tarball verified</span>
+    <p><strong>Problem.</strong> Catastrophic gates (<code>rm -rf ~</code>, force-push, hard reset) matched the happy path but missed wrappers: <code>sudo rm -rf ~</code> produced no match on 1.29.1.</p>
+    <p><strong>Action.</strong> Built an adversarial grid instead of hand-picking examples; canonicalized commands centrally; re-evaluated only when the original form missed.</p>
+    <pre>rm -rf ~        → deny
+sudo rm -rf ~   → deny (after fix)
+thumbgate@1.29.1 → 34+ holes
+thumbgate@1.29.2 → 0 holes</pre>
+    <p><strong>Artifact.</strong> <code>tests/gate-evasion-matrix.test.js</code> in CI + 6-hourly job against the published npm artifact.</p>
+  </article>
+
+  <article id="hypothesis-report">
+    <h2>2. A seven-defect report where most defects weren’t real</h2>
+    <p class="meta">Ambiguous problem · investigation discipline</p>
+    <span class="metric">2 of 7 defects real</span>
+    <span class="metric">disconfirming evidence first</span>
+    <p><strong>Problem.</strong> A confident multi-defect report with statistics would have forced a core rewrite if accepted wholesale.</p>
+    <p><strong>Action.</strong> Treated each claim as a hypothesis: read the consumer’s config, recompute totals from source data, reproduce before believing.</p>
+    <p><strong>Result.</strong> Strict-mode env explained “warn-by-default not working.” Filtered tables understated warns. The investigation also surfaced the sudo evasion class above — worse than anything in the original report.</p>
+  </article>
+
+  <article id="fail-open">
+    <h2>3. Production failure: a firewall enforcing nothing</h2>
+    <p class="meta">Incident · fail-open PreToolUse hook</p>
+    <span class="metric">hook binary missing</span>
+    <span class="metric">erroring hook = fail open</span>
+    <span class="metric">silent-gate canary added</span>
+    <p><strong>Problem.</strong> Local state vanished and <code>thumbgate-hook</code> was missing. An erroring PreToolUse hook fails open — the product looked “fine” while blocking nothing.</p>
+    <p><strong>Action.</strong> Restored via <code>thumbgate init</code>, then proved enforcement with the same dangerous commands that must deny.</p>
+    <p><strong>Lesson.</strong> This product’s failure mode is silence. Uptime green is not enough; known-dangerous commands must still be denied on a schedule against the published artifact.</p>
+  </article>
+
+  <article id="catastrophic-floor">
+    <h2>4. Monetization that almost sold off the safety floor</h2>
+    <p class="meta">Stakeholder conflict · product policy</p>
+    <span class="metric">catastrophic gates exempt from daily cap</span>
+    <span class="metric">hotfix bypass still hard-floors secrets</span>
+    <p><strong>Problem.</strong> Free-tier daily block caps + warn-by-default posture could downgrade irreversible actions to warnings after the cap.</p>
+    <p><strong>Action.</strong> Split <em>how many</em> blocks free users get from <em>which</em> actions can never be discounted. Named catastrophic IDs stay deny regardless of tier.</p>
+    <p><strong>Result.</strong> Upgrade pressure remains on negotiable gates; irreversible classes are not for sale.</p>
+  </article>
+
+  <article id="evasion-matrix">
+    <h2>5. Built the measurement before claiming “fixed”</h2>
+    <p class="meta">Instrument first · property tests</p>
+    <span class="metric">relative invariant</span>
+    <span class="metric">vacuity guards</span>
+    <span class="metric">artifact, not only source</span>
+    <p><strong>Problem.</strong> “We fixed the bypass class” had been claimed twice and been wrong twice.</p>
+    <p><strong>Action.</strong> Built a property suite over commands × spellings, with sandboxing and a minimum number of plain-form denials so empty measurements cannot pass.</p>
+    <p><strong>Result.</strong> “Is it fixed?” became a command with a number, including against the npm tarball users actually install.</p>
+  </article>
+
+  <p>
+    <a class="cta" href="/whitepaper">Evaluation white paper</a>
+    <a class="cta" href="/eval-scorecard">Bench scorecard</a>
+    <a class="cta" href="/diagnostic">$499 diagnostic gate</a>
+  </p>
+
+  <p class="footer-note">
+    Want a customer case study here? Ship with ThumbGate and write <a href="mailto:igor.ganapolsky@gmail.com">igor.ganapolsky@gmail.com</a>.
+    We only publish reproducible claims.
+  </p>
+  <p class="footer-note">
+    <a href="/">Home</a> ·
+    <a href="/pricing">Pricing</a> ·
+    <a href="/privacy">Privacy</a> ·
+    <a href="/terms">Terms</a> ·
+    <a href="/support">Support</a>
+  </p>
+</main>
+</body>
+</html>

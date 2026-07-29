@@ -315,6 +315,12 @@
     "public/learn.html",
     "public/lessons.html",
     "public/numbers.html",
+    "public/assets/diagrams/",
+    "public/whitepaper.html",
+    "public/evaluations.html",
+    "public/eval-scorecard.html",
+    "public/case-studies.html",
+    "public/architecture.html",
     "public/partner-intake.html",
     "public/pricing.html",
     "public/pro.html",
@@ -326,7 +332,8 @@
     "public/brand/",
     "public/js/",
     "skills/thumbgate/SKILL.md",
-    "src/"
+    "src/",
+    "scripts/generate-eval-scorecard.js"
   ],
   "scripts": {
     "canary:snapshot": "node scripts/gate-decision-canary.js --snapshot",
@@ -568,7 +575,7 @@
     "test:training-export": "node --test tests/training-export.test.js tests/databricks-export.test.js",
     "test:deployment": "node --test tests/deployment.test.js tests/deploy-policy.test.js tests/publish-decision.test.js tests/changeset-check.test.js tests/release-notes.test.js tests/sonarcloud-workflow.test.js tests/package-boundary.test.js tests/public-package-boundary.test.js tests/packed-feedback-retrieval-e2e.test.js tests/packed-provider-payment-reconciler-e2e.test.js tests/packed-revenue-remediation-e2e.test.js",
     "test:operational-integrity": "node --test tests/operational-integrity.test.js tests/sync-branch-protection.test.js",
-    "test:workflow": "node --test tests/parallel-workflow.test.js tests/parallel-workflow-public.test.js tests/workflow-contract.test.js tests/positioning-contract.test.js tests/docs-claim-hygiene.test.js tests/thumbgate-scope.test.js tests/workflow-runs.test.js tests/workflow-sprint-intake.test.js tests/workflow-intake-queue.test.js tests/revenue-pack-utils.test.js tests/apollo-acquisition.test.js tests/sales-pipeline.test.js tests/provider-payment-reconciler.test.js tests/reddit-dm-outreach-evidence.test.js tests/gtm-sales-evidence-commands.test.js tests/revenue-action-eligibility.test.js tests/revenue-evidence-remediation.test.js tests/gtm-revenue-action-eligibility.test.js tests/revenue-offer-ladder.test.js tests/revenue-offer-system.test.js tests/buyer-paths.test.js tests/github-outreach.test.js tests/enterprise-story.test.js tests/guide-conversion-path.test.js tests/buyer-intent-revenue-assist.test.js",
+    "test:workflow": "node --test tests/parallel-workflow.test.js tests/parallel-workflow-public.test.js tests/workflow-contract.test.js tests/positioning-contract.test.js tests/docs-claim-hygiene.test.js tests/thumbgate-scope.test.js tests/workflow-runs.test.js tests/workflow-sprint-intake.test.js tests/workflow-intake-queue.test.js tests/revenue-pack-utils.test.js tests/apollo-acquisition.test.js tests/sales-pipeline.test.js tests/provider-payment-reconciler.test.js tests/reddit-dm-outreach-evidence.test.js tests/gtm-sales-evidence-commands.test.js tests/revenue-action-eligibility.test.js tests/revenue-evidence-remediation.test.js tests/gtm-revenue-action-eligibility.test.js tests/revenue-offer-ladder.test.js tests/revenue-offer-system.test.js tests/buyer-paths.test.js tests/github-outreach.test.js tests/enterprise-story.test.js tests/guide-conversion-path.test.js tests/buyer-intent-revenue-assist.test.js && node --test tests/eval-proof-pack-pages.test.js",
     "test:revenue-evidence-remediation": "node --test tests/revenue-evidence-remediation.test.js",
     "test:grafana-revenue-evidence": "node --test tests/grafana-revenue-evidence.test.js",
     "test:sales-pipeline": "node --test tests/sales-pipeline.test.js tests/provider-payment-reconciler.test.js tests/reddit-dm-outreach-evidence.test.js tests/gtm-sales-evidence-commands.test.js",
@@ -853,7 +860,8 @@
     "eval:baseline": "node scripts/eval-baseline.js",
     "test:eval-golden": "node --test tests/gate-golden-set.test.js",
     "test:eval-mining": "node --test tests/mine-eval-set.test.js tests/eval-baseline.test.js",
-    "test:task-scope-lease": "node --test tests/task-scope-lease.test.js"
+    "test:task-scope-lease": "node --test tests/task-scope-lease.test.js",
+    "eval-scorecard:generate": "node scripts/generate-eval-scorecard.js"
   },
   "keywords": [
     "mcp",

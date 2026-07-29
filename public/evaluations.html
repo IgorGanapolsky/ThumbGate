@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="ThumbGate">
+<meta name="author" content="Igor Ganapolsky">
+<title>ThumbGate — How We Evaluate | Held-Out Metrics, Drift Gates, Error Analysis</title>
+<meta name="description" content="ThumbGate's evaluation methodology, published including the numbers that don't flatter us: held-out lift over trivial baselines, dual IID/distribution-shift splits, trace-mined drift benchmarks, and the five evaluator bugs we found and fixed.">
+<meta property="og:title" content="ThumbGate — How We Evaluate">
+<meta property="og:description" content="Evaluation methodology with the unflattering numbers left in: +9.9 points held-out lift on familiar traffic, −10.5 on unseen action types. That asymmetry is why deterministic rules enforce and the model only triages.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://thumbgate.ai/evaluations">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://thumbgate.ai/evaluations">
+<link rel="icon" type="image/png" href="/thumbgate-icon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<script defer data-domain="thumbgate.ai" src="https://plausible.io/js/script.js"></script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "How ThumbGate Evaluates Its Own Enforcement",
+  "description": "Held-out evaluation methodology for an AI-agent firewall: dual IID/distribution-shift splits, lift over trivial baselines, trace-mined drift benchmarks, published-artifact verification, and the error analysis behind them.",
+  "url": "https://thumbgate.ai/evaluations",
+  "dateModified": "2026-07-29",
+  "author": {
+    "@type": "Person",
+    "name": "Igor Ganapolsky",
+    "url": "https://github.com/IgorGanapolsky",
+    "sameAs": [
+      "https://github.com/IgorGanapolsky",
+      "https://www.linkedin.com/in/igorganapolsky"
+    ]
+  }
+}
+</script>
+
+<style>
+  :root {
+    --bg: #0b0f14; --panel: #111823; --border: #1e2a3a; --text: #e6edf3;
+    --muted: #8b98a5; --cyan: #39c5cf; --green: #3fb950; --red: #f85149; --amber: #d29922;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; }
+  nav { padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
+  nav a { color: var(--muted); text-decoration: none; font-size: 0.9rem; }
+  nav a:hover { color: var(--cyan); }
+  nav .brand { color: var(--text); font-weight: 700; font-size: 1.05rem; text-decoration: none; }
+  .container { max-width: 880px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+  h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+  h2 { font-size: 1.35rem; margin: 2.5rem 0 0.75rem; color: var(--cyan); }
+  h3 { font-size: 1.05rem; margin: 1.5rem 0 0.5rem; }
+  p { margin: 0.75rem 0; color: var(--text); }
+  .subtitle { color: var(--muted); font-size: 1.05rem; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem 1.5rem; margin: 1.25rem 0; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.92rem; }
+  th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; }
+  code { background: #0d1420; border: 1px solid var(--border); border-radius: 4px; padding: 0.1rem 0.35rem; font-size: 0.86em; color: var(--cyan); }
+  pre { background: #0d1420; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; font-size: 0.85rem; margin: 1rem 0; }
+  .good { color: var(--green); } .bad { color: var(--red); } .warn { color: var(--amber); }
+  .chart-caption { color: var(--muted); font-size: 0.85rem; margin-top: 0.4rem; }
+  ul { margin: 0.5rem 0 0.75rem 1.4rem; }
+  li { margin: 0.35rem 0; }
+  .footer-note { color: var(--muted); font-size: 0.85rem; margin-top: 2.5rem; text-align: center; }
+  .footer-note a { color: var(--cyan); text-decoration: none; }
+  .rule { border-left: 3px solid var(--cyan); padding: 0.6rem 1rem; background: var(--panel); margin: 1.25rem 0; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="brand" href="/">ThumbGate</a>
+  <a href="/whitepaper">White paper</a>
+  <a href="/architecture">Architecture</a>
+  <a href="/eval-scorecard">Scorecard</a>
+  <a href="/evaluations">Evaluations</a>
+  <a href="/case-studies">Case studies</a>
+  <a href="/numbers">Numbers</a>
+  <a href="/pricing">Pricing</a>
+</nav>
+
+<main class="container">
+  <h1>How We Evaluate</h1>
+  <p class="subtitle">The methodology behind ThumbGate's enforcement quality — published with the numbers that don't flatter us left in. Every figure on this page is reproducible from the open-source repo with one command.</p>
+
+  <h2>The headline we retired</h2>
+  <p>ThumbGate's learned risk model used to report one quality figure: <code>trainingAccuracy: 0.820</code> — measured on the same rows it trained on, against a corpus where answering "risky" unconditionally scores 71.1%. That is an 11-point in-sample lift presented as an 82-point achievement, and it said nothing about generalization at all.</p>
+  <p>We replaced it with held-out evaluation under two different splits, and we publish both results — including the one that inverts.</p>
+
+  <h2>The result, honestly</h2>
+  <div class="panel">
+    <svg viewBox="0 0 640 260" role="img" aria-label="Bar chart: accuracy lift over the majority baseline. In-sample plus 10.9 points, held-out IID plus 9.9 points, held-out novel-context minus 10.5 points.">
+      <line x1="60" y1="130" x2="620" y2="130" stroke="#1e2a3a" stroke-width="1"/>
+      <text x="30" y="40" fill="#8b98a5" font-size="11">+12</text>
+      <text x="30" y="134" fill="#8b98a5" font-size="11">0</text>
+      <text x="30" y="230" fill="#8b98a5" font-size="11">−12</text>
+      <rect x="90"  y="48"  width="120" height="82" fill="#d29922" rx="3"/>
+      <rect x="270" y="55"  width="120" height="75" fill="#3fb950" rx="3"/>
+      <rect x="450" y="130" width="120" height="79" fill="#f85149" rx="3"/>
+      <text x="150" y="40"  fill="#d29922" font-size="13" text-anchor="middle">+10.9</text>
+      <text x="330" y="47"  fill="#3fb950" font-size="13" text-anchor="middle">+9.9</text>
+      <text x="510" y="225" fill="#f85149" font-size="13" text-anchor="middle">−10.5</text>
+      <text x="150" y="250" fill="#8b98a5" font-size="11" text-anchor="middle">in-sample (old headline)</text>
+      <text x="330" y="250" fill="#8b98a5" font-size="11" text-anchor="middle">held-out, familiar kinds</text>
+      <text x="510" y="250" fill="#8b98a5" font-size="11" text-anchor="middle">held-out, unseen kinds</text>
+    </svg>
+    <p class="chart-caption">Accuracy lift over the majority-class baseline, in points. 1,791 production rows, 12 independent group-aware stratified splits, mean across resamples. IID: +9.9 ± 1.7, AUC 0.887, 12/12 folds beat baseline. Novel-context: −10.5 ± 9.0, 1/12 folds, calibration error 0.31 vs 0.06.</p>
+  </div>
+  <p>On familiar traffic the model genuinely helps. On action types it has never seen, it is <span class="bad">worse than a constant classifier</span> — and unfamiliar actions are precisely the case a firewall exists for. That asymmetry is why <strong>deterministic rules enforce and the model only triages</strong>. We consider publishing that inversion more valuable than hiding it: it is the reason ThumbGate's blocking behaviour does not degrade with the model.</p>
+
+  <h2>The methodology</h2>
+  <table>
+    <tr><th>Practice</th><th>What it prevents</th></tr>
+    <tr><td>Lift vs the majority baseline, reported beside every accuracy</td><td>71% base-rate corpora making any model look strong</td></tr>
+    <tr><td>MCC + ROC-AUC + Brier + calibration error</td><td>accuracy hiding degenerate or miscalibrated behaviour</td></tr>
+    <tr><td>Dual holdouts: IID <em>and</em> whole-category (distribution shift)</td><td>quoting only the flattering generalization estimate</td></tr>
+    <tr><td>Group-aware splits keyed on the feature vector</td><td>duplicate inputs straddling folds and inflating scores</td></tr>
+    <tr><td>12 resamples, mean ± sd, paired t on shared folds</td><td>single lucky splits shipping as "improvements"</td></tr>
+    <tr><td>Per-fold vocabulary rebuild</td><td>held-out rows choosing the model's features (transductive fit)</td></tr>
+  </table>
+
+  <h2>The evaluation suites</h2>
+  <ul>
+    <li><strong>Model harness</strong> — <code>npm run eval:risk</code>: the resampling harness; <code>--json</code> emits the machine-readable report backing this page.</li>
+    <li><strong>Trace-mined drift benchmark</strong> — real production gate decisions, redacted, become 60 replayable cases across 12 gates; CI fails when any real command's verdict <em>moves</em>. Silent gate death is the signature of every bypass we have found.</li>
+    <li><strong>Evasion matrix</strong> — 14 dangerous commands × 9 canonicalization transforms; this is the suite that measured the 62 holes closed in v1.29.2.</li>
+    <li><strong>Published-artifact verification</strong> — the npm tarball itself is installed into a throwaway prefix and driven through its public hook contract twice daily. CI proving the <em>source</em> blocks something is a different claim from the artifact users receive blocking it.</li>
+    <li><strong>Decision canary</strong> — live decision-distribution drift: a gate going <em>silent</em>, a <em>spike</em> in blocks, or a gate appearing/disappearing.</li>
+  </ul>
+
+  <h2>The gates that block a release</h2>
+  <ul>
+    <li>A synthetic-fixture quality gate that separates <em>"the trainer broke"</em> from <em>"the data lacks signal"</em> — different problems, different fixes.</li>
+    <li>A <strong>pure-noise canary</strong>: a trainer that finds &gt;15 points of lift in random labels has labels leaking into features, and CI fails.</li>
+    <li><strong>Vacuity guards</strong>: a drift test that compared fewer than 20 cases fails; a single-class test fold refuses to report rather than emitting a meaningless pass. A check that cannot fail is treated as no check.</li>
+    <li>Non-significant improvements do not ship. Two candidate upgrades (a feature-diversity cap, Platt calibration) are implemented, tested, and <em>off</em> — paired t of −0.31 and −0.72.</li>
+  </ul>
+
+  <h2>Error analysis: the five bugs we found in our own evaluator</h2>
+  <p>The uncomfortable finding of this work: the evaluator was wrong more often than the model, and its errors all flattered us.</p>
+  <table>
+    <tr><th>Bug</th><th>Effect before the fix</th></tr>
+    <tr><td>Tied-hash rows straddling folds</td><td>test fold contained memorized rows</td></tr>
+    <tr><td>Cross-class duplicate leakage under label noise</td><td>same input in both folds with different labels</td></tr>
+    <tr><td>Group quota overshoot (one 655-row category)</td><td class="bad">novel-context result read +0.016; truth is −0.105</td></tr>
+    <tr><td>Vocabulary built before the split</td><td>held-out rows chose the model's features</td></tr>
+    <tr><td>Raw text in the split key</td><td>identical model inputs split across folds</td></tr>
+  </table>
+  <p>Three of the five were found by adversarial review <em>after</em> we had published numbers from the leaky evaluator. The corrected conclusion was stronger, not weaker — and the correction is documented in the repo, not overwritten.</p>
+
+  <div class="rule">The rule all of this enforces: no accuracy figure ships without the baseline it beats and the split it was measured on.</div>
+
+  <h2>Reproduce it</h2>
+  <p>Honest scoping: the measured corpus is <strong>private operator feedback telemetry</strong> and does not ship in the public repo. A clean clone gives you the methodology write-up, the CI quality gate (synthetic fixtures / no private data), and the same harness to run against <em>your</em> feedback log. The figures on this page are first-party operator measurements documented in <a style="color:var(--cyan)" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/ML-EVALUATION.md">docs/ML-EVALUATION.md</a> — not a committed private corpus dump.</p>
+  <pre>git clone https://github.com/IgorGanapolsky/ThumbGate
+cd ThumbGate &amp;&amp; npm ci
+npm run test:risk-quality              # CI quality gate — no private data needed
+# Optional: re-run the harness on your own feedback log
+node scripts/eval-risk-model.js --corpus &lt;your-own-feedback-log&gt; --resamples 12 --json</pre>
+  <p>Full methodology: <a style="color:var(--cyan)" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/ML-EVALUATION.md">docs/ML-EVALUATION.md</a> · case studies: <a style="color:var(--cyan)" href="/case-studies">/case-studies</a> · gate scorecard: <a style="color:var(--cyan)" href="/eval-scorecard">/eval-scorecard</a></p>
+
+  <p class="footer-note">ThumbGate is built in the open by <a href="https://github.com/IgorGanapolsky">Igor Ganapolsky</a>. This page reports first-party measurements only — no customer counts, no install volume, no revenue claims.</p>
+</main>
+</body>
+</html>

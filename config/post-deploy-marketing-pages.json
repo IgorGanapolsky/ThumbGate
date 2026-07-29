@@ -5,7 +5,7 @@
     {
       "route": "/",
       "sentinel": "Stop AI agent mistakes before they cost you",
-      "description": "Home page hero (lifeblood — never regress)"
+      "description": "Home page hero (lifeblood \u2014 never regress)"
     },
     {
       "route": "/pro",
@@ -75,6 +75,31 @@
       "route": "/leash-beta",
       "sentinel": "Stop Runaway AI Agents From Freezing Your Machine",
       "description": "Hermes Mobile founding beta / Leash Pro pricing landing"
+    },
+    {
+      "route": "/whitepaper",
+      "sentinel": "How we know ThumbGate works",
+      "description": "Evaluation white paper"
+    },
+    {
+      "route": "/architecture",
+      "sentinel": "Architecture diagrams",
+      "description": "Public diagram gallery"
+    },
+    {
+      "route": "/eval-scorecard",
+      "sentinel": "Eval scorecard",
+      "description": "ThumbGate Bench scorecard"
+    },
+    {
+      "route": "/evaluations",
+      "sentinel": "How We Evaluate",
+      "description": "ML evaluation methodology page"
+    },
+    {
+      "route": "/case-studies",
+      "sentinel": "Case studies",
+      "description": "Dogfood case studies proof page"
     }
   ]
 }

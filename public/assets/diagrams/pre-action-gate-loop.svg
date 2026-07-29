@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="520" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
+  <title id="title">ThumbGate pre-action gate loop</title>
+  <desc id="desc">Diagram showing an AI agent proposing a tool call, ThumbGate checking it before execution, then either blocking repeated failures or allowing safe actions with an audit receipt.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#081014"/>
+      <stop offset="100%" stop-color="#111113"/>
+    </linearGradient>
+    <linearGradient id="cyan" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#4ade80"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#22d3ee"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="520" rx="28" fill="url(#bg)"/>
+  <text x="60" y="72" fill="#e8e8ec" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="34" font-weight="800">ThumbGate checks agent intent before execution</text>
+  <text x="60" y="106" fill="#8b8b96" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="17">Feedback becomes rules. Rules become PreToolUse gates. Gates produce receipts before files, APIs, or production systems change.</text>
+
+  <g filter="url(#shadow)">
+    <rect x="60" y="170" width="235" height="145" rx="18" fill="#161618" stroke="#222225"/>
+    <text x="86" y="205" fill="#22d3ee" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="13" font-weight="800" letter-spacing="1.4">AGENT INTENT</text>
+    <text x="86" y="244" fill="#e8e8ec" font-family="SFMono-Regular,Consolas,monospace" font-size="18">git push --force</text>
+    <text x="86" y="272" fill="#e8e8ec" font-family="SFMono-Regular,Consolas,monospace" font-size="18">origin main</text>
+    <text x="86" y="296" fill="#8b8b96" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="13">Still only proposed. Nothing has run.</text>
+
+    <rect x="390" y="160" width="270" height="165" rx="18" fill="#10181a" stroke="#22d3ee" stroke-opacity="0.52"/>
+    <text x="416" y="196" fill="#22d3ee" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="13" font-weight="800" letter-spacing="1.4">PRETOOLUSE GATE</text>
+    <text x="416" y="232" fill="#e8e8ec" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="18" font-weight="700">Known repeated failure?</text>
+    <text x="416" y="262" fill="#8b8b96" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="14">Checks active rules, protected paths, approvals,</text>
+    <text x="416" y="284" fill="#8b8b96" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="14">secrets, evidence, and workflow scope.</text>
+
+    <rect x="755" y="120" width="245" height="135" rx="18" fill="#201113" stroke="#f87171" stroke-opacity="0.55"/>
+    <text x="781" y="154" fill="#f87171" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="13" font-weight="800" letter-spacing="1.4">BLOCK</text>
+    <text x="781" y="191" fill="#e8e8ec" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="18" font-weight="700">Stop before damage</text>
+    <text x="781" y="220" fill="#8b8b96" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="14">Return the rule and safer next step.</text>
+
+    <rect x="755" y="305" width="245" height="135" rx="18" fill="#102017" stroke="#4ade80" stroke-opacity="0.55"/>
+    <text x="781" y="339" fill="#4ade80" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="13" font-weight="800" letter-spacing="1.4">ALLOW</text>
+    <text x="781" y="376" fill="#e8e8ec" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="18" font-weight="700">Run and log receipt</text>
+    <text x="781" y="405" fill="#8b8b96" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="14">Safe actions keep moving with proof.</text>
+  </g>
+
+  <path d="M310 242 H370" stroke="#22d3ee" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M670 230 C710 190 725 175 745 170" stroke="#f87171" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+  <path d="M670 270 C710 335 725 365 745 375" stroke="#4ade80" stroke-width="3" fill="none" marker-end="url(#arrow)"/>
+
+  <g>
+    <rect x="60" y="380" width="600" height="70" rx="16" fill="#0a0a0b" stroke="#222225"/>
+    <text x="86" y="412" fill="#8b8b96" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="13" font-weight="800" letter-spacing="1.4">FEEDBACK LOOP</text>
+    <text x="86" y="438" fill="#e8e8ec" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="16">Thumbs-down becomes a lesson, then a prevention rule shared across agents.</text>
+  </g>
+  <path d="M820 120 C760 70 240 72 196 165" stroke="url(#cyan)" stroke-width="3" fill="none" stroke-dasharray="8 8" marker-end="url(#arrow)"/>
+  <text x="900" y="486" fill="#22d3ee" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="16" font-weight="800">npx thumbgate init</text>
+</svg>
