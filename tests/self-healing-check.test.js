@@ -370,3 +370,25 @@ test('reportToText includes multiple checks', () => {
   assert.match(text, /budget/);
   assert.match(text, /tests/);
 });
+
+test('evaluateEmbeddingIndexDrift stays healthy when promoted index is fresh though raw log is newer', () => {
+  // P1 review case: vague/schema-rejected entries grow feedback-log.jsonl without
+  // promoting anything embeddable; the check must key on lessons-index.jsonl.
+  const now = new Date();
+  const fixture = makeDriftFixture({
+    feedbackLogContent: '{"id":"vague-signal"}\n',
+    feedbackLogMtime: now,
+    embeddingsMtime: new Date(now.getTime() - (30 * 3_600_000)),
+  });
+  try {
+    const lessonsIndexPath = path.join(fixture.dir, 'lessons-index.jsonl');
+    fs.writeFileSync(lessonsIndexPath, '{"id":"lesson-1"}\n');
+    const indexMtime = new Date(now.getTime() - (31 * 3_600_000));
+    fs.utimesSync(lessonsIndexPath, indexMtime, indexMtime);
+    const result = evaluateEmbeddingIndexDrift({ feedbackDir: fixture.dir });
+    assert.equal(result.exitCode, 0, 'fresh promoted corpus must not alarm on raw-log churn');
+    assert.ok(result.stdout.includes(lessonsIndexPath), 'drift is keyed on the lessons index');
+  } finally {
+    fs.rmSync(fixture.dir, { recursive: true, force: true });
+  }
+});

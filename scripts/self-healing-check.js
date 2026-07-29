@@ -33,6 +33,11 @@ function safeStat(filePath) {
 function evaluateEmbeddingIndexDrift({ feedbackDir } = {}) {
   const started = Date.now();
   const resolvedDir = feedbackDir || resolveFeedbackDir();
+  // Drift is measured against the PROMOTED corpus (lessons-index.jsonl), not the raw
+  // feedback log: vague/schema-rejected entries grow the log without creating anything
+  // embeddable, and keying on the log pages operators for corpus movement that has no
+  // retrieval consequence. Fall back to the log only on stores without an index.
+  const lessonsIndexPath = path.join(resolvedDir, 'lessons-index.jsonl');
   const feedbackLogPath = path.join(resolvedDir, 'feedback-log.jsonl');
   const embeddingsPath = path.join(resolvedDir, 'lesson-embeddings.json');
   const finish = (exitCode, message) => ({
@@ -43,32 +48,35 @@ function evaluateEmbeddingIndexDrift({ feedbackDir } = {}) {
     error: null,
   });
 
-  const feedbackLogStat = safeStat(feedbackLogPath);
-  if (!feedbackLogStat) {
-    return finish(0, `No feedback log at ${feedbackLogPath}; embedding-index drift check skipped.`);
+  const lessonsIndexStat = safeStat(lessonsIndexPath);
+  const feedbackLogStat = lessonsIndexStat ? null : safeStat(feedbackLogPath);
+  const sourceStat = lessonsIndexStat || feedbackLogStat;
+  const sourcePath = lessonsIndexStat ? lessonsIndexPath : feedbackLogPath;
+  if (!sourceStat) {
+    return finish(0, `No lesson corpus at ${lessonsIndexPath} or ${feedbackLogPath}; embedding-index drift check skipped.`);
   }
 
   const embeddingsStat = safeStat(embeddingsPath);
   if (!embeddingsStat) {
-    if (feedbackLogStat.size === 0) {
-      return finish(0, `Feedback log ${feedbackLogPath} is empty and no embedding index exists at ${embeddingsPath}; nothing to index yet.`);
+    if (sourceStat.size === 0) {
+      return finish(0, `Lesson corpus ${sourcePath} is empty and no embedding index exists at ${embeddingsPath}; nothing to index yet.`);
     }
     return finish(1, [
-      `Lesson embedding index missing: ${embeddingsPath} does not exist while lessons exist in ${feedbackLogPath}.`,
+      `Lesson embedding index missing: ${embeddingsPath} does not exist while lessons exist in ${sourcePath}.`,
       `Remediation: ${EMBEDDING_DRIFT_REMEDIATION}`,
     ].join('\n'));
   }
 
-  const lagHours = (feedbackLogStat.mtimeMs - embeddingsStat.mtimeMs) / 3_600_000;
+  const lagHours = (sourceStat.mtimeMs - embeddingsStat.mtimeMs) / 3_600_000;
   const roundedLagHours = Math.round(lagHours * 10) / 10;
   if (lagHours > EMBEDDING_DRIFT_MAX_LAG_HOURS) {
     return finish(1, [
-      `Lesson embedding index is stale: ${feedbackLogPath} is ${roundedLagHours}h newer than ${embeddingsPath} (max ${EMBEDDING_DRIFT_MAX_LAG_HOURS}h).`,
+      `Lesson embedding index is stale: ${sourcePath} is ${roundedLagHours}h newer than ${embeddingsPath} (max ${EMBEDDING_DRIFT_MAX_LAG_HOURS}h).`,
       `Remediation: ${EMBEDDING_DRIFT_REMEDIATION}`,
     ].join('\n'));
   }
 
-  return finish(0, `Lesson embedding index fresh: ${embeddingsPath} lags ${feedbackLogPath} by ${Math.max(0, roundedLagHours)}h (max ${EMBEDDING_DRIFT_MAX_LAG_HOURS}h).`);
+  return finish(0, `Lesson embedding index fresh: ${embeddingsPath} lags ${sourcePath} by ${Math.max(0, roundedLagHours)}h (max ${EMBEDDING_DRIFT_MAX_LAG_HOURS}h).`);
 }
 
 const DEFAULT_CHECKS = [
