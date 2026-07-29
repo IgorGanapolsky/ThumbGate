@@ -220,9 +220,12 @@ test('bundle server shim runs the CLI in-process — no child_process', () => {
   // only spawn-proof shim is one that does not spawn.
   const shim = fs.readFileSync(
     path.join(__dirname, '..', '.claude-plugin', 'bundle', 'server', 'index.js'), 'utf8');
-  assert.ok(!/child_process|\bspawn\b|execPath/.test(shim),
+  // The invariant is about CODE — the shim's comments legitimately name spawn/execPath
+  // while explaining why they are forbidden, so strip comments before matching.
+  const code = shim.split('\n').filter((line) => !line.trim().startsWith('//')).join('\n');
+  assert.ok(!/child_process|\bspawn\b|execPath/.test(code),
     'shim reintroduced a child process — this dies under Electron hosts');
-  assert.match(shim, /require\(cliPath\)/, 'shim no longer requires the CLI in-process');
+  assert.match(code, /require\(cliPath\)/, 'shim no longer requires the CLI in-process');
 });
 
 test('bundle server shim resolves bin/cli.js INSIDE the bundle', () => {
