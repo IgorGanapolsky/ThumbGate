@@ -210,7 +210,10 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // inside the public shell scope. model-calibration.js and eval-risk-model.js are
   // development-only and deliberately stay OUT of the tarball.
   // 386 -> 390 (2026-07-29): refresh-proof-pack + outreach generators + eval-scorecard.json
-  const CEILING = 390;
+  // 390 -> 391 (2026-07-29): scripts/rag-structured-output.js required by dashboard-chat
+  // structured answers. IR/eval tooling (ir-metrics, ranking golden) stays repo-local.
+  // 391 -> 392: pragmatic-hybrid-search required by lesson-retrieval
+  const CEILING = 392;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

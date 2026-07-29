@@ -1,0 +1,213 @@
+{
+  "version": 1,
+  "description": "Graded qrels for ThumbGate retrieval ranking (Recall@k / MRR / nDCG). Corpus is self-contained so CI does not depend on operator feedbackDir. Slices: exact, paraphrase, tool-scoped, distractor-heavy.",
+  "kValues": [1, 5, 10],
+  "thresholds": {
+    "minMrr": 0.55,
+    "minRecallAt5": 0.75,
+    "minNdcgAt5": 0.55,
+    "minExactMrr": 0.85,
+    "minQueries": 8
+  },
+  "corpus": [
+    {
+      "id": "doc:force-push",
+      "title": "MISTAKE: force-push to main",
+      "content": "NEVER force-push or git push --force to main/master. Use --force-with-lease only on personal branches after review. Protected branch history must not be rewritten.",
+      "signal": "negative",
+      "tags": ["git", "force-push", "main", "negative"],
+      "metadata": { "toolsUsed": ["Bash"], "domain": "git" }
+    },
+    {
+      "id": "doc:deploy-health",
+      "title": "MISTAKE: claimed deployed without health check",
+      "content": "ALWAYS verify /health endpoint returns the new version after deploy. NEVER say deployed without curling health and matching version. Wait 2-5 minutes after Railway rebuild.",
+      "signal": "negative",
+      "tags": ["deploy", "railway", "health", "negative"],
+      "metadata": { "toolsUsed": ["Bash"], "domain": "railway-deploy" }
+    },
+    {
+      "id": "doc:stripe-idempotency",
+      "title": "MISTAKE: PaymentIntent without idempotency key",
+      "content": "ALWAYS use idempotency keys on PaymentIntent creation to prevent duplicate charges. NEVER create charges without an idempotency key in production Stripe flows.",
+      "signal": "negative",
+      "tags": ["stripe", "payment", "idempotency", "negative"],
+      "metadata": { "toolsUsed": ["Edit", "Bash"], "domain": "stripe-integration" }
+    },
+    {
+      "id": "doc:stripe-raw-card",
+      "title": "MISTAKE: stored raw card numbers",
+      "content": "NEVER log or store raw card numbers. Use Stripe tokens or PaymentMethod IDs. Card PAN storage is a PCI violation.",
+      "signal": "negative",
+      "tags": ["stripe", "pci", "card", "negative"],
+      "metadata": { "toolsUsed": ["Edit", "Write"], "domain": "stripe-integration" }
+    },
+    {
+      "id": "doc:db-backup",
+      "title": "MISTAKE: drop table without backup",
+      "content": "ALWAYS back up the database before running destructive migrations. NEVER drop users table or truncate production tables without a restore point.",
+      "signal": "negative",
+      "tags": ["database", "migration", "backup", "negative"],
+      "metadata": { "toolsUsed": ["Bash"], "domain": "database-migration" }
+    },
+    {
+      "id": "doc:db-test-first",
+      "title": "MISTAKE: migrate deploy without test database",
+      "content": "ALWAYS run migrations against a test database first. NEVER run prisma migrate deploy in production without verifying on staging.",
+      "signal": "negative",
+      "tags": ["database", "prisma", "migration", "negative"],
+      "metadata": { "toolsUsed": ["Bash"], "domain": "database-migration" }
+    },
+    {
+      "id": "doc:secrets-env",
+      "title": "MISTAKE: committed .env secrets",
+      "content": "NEVER commit .env files, API keys, or PEMs to git. Redact secrets from logs and PR bodies. Rotate any leaked credential immediately.",
+      "signal": "negative",
+      "tags": ["security", "secrets", "env", "negative"],
+      "metadata": { "toolsUsed": ["Write", "Edit"], "domain": "security" }
+    },
+    {
+      "id": "doc:false-done",
+      "title": "MISTAKE: said done without gh pr view",
+      "content": "NEVER say done, pushed, or shipped without showing gh pr view output and green CI. Open PR with auto-merge is not done.",
+      "signal": "negative",
+      "tags": ["pr", "ci", "verification", "negative"],
+      "metadata": { "toolsUsed": ["Bash"], "domain": "verification" }
+    },
+    {
+      "id": "doc:noise-ui",
+      "title": "SUCCESS: dashboard button spacing",
+      "content": "Adjusted CSS padding on the dashboard stat cards for mobile. Visual polish only; no gate or retrieval impact.",
+      "signal": "positive",
+      "tags": ["css", "dashboard", "positive"],
+      "metadata": { "toolsUsed": ["Edit"], "domain": "ui" }
+    },
+    {
+      "id": "doc:noise-docs",
+      "title": "SUCCESS: typo in README",
+      "content": "Fixed a spelling typo in the install section of the README. No behavioral change.",
+      "signal": "positive",
+      "tags": ["docs", "readme", "positive"],
+      "metadata": { "toolsUsed": ["Edit"], "domain": "docs" }
+    },
+    {
+      "id": "doc:related-git-rebase",
+      "title": "MISTAKE: rebase of shared branch",
+      "content": "NEVER rebase a branch that others have already pulled. Prefer merge commits on shared feature branches.",
+      "signal": "negative",
+      "tags": ["git", "rebase", "negative"],
+      "metadata": { "toolsUsed": ["Bash"], "domain": "git" }
+    },
+    {
+      "id": "doc:related-stripe-webhook",
+      "title": "MISTAKE: webhook without signature verify",
+      "content": "ALWAYS verify Stripe webhook signatures with constructEvent before processing. NEVER trust raw webhook bodies.",
+      "signal": "negative",
+      "tags": ["stripe", "webhook", "negative"],
+      "metadata": { "toolsUsed": ["Edit"], "domain": "stripe-integration" }
+    }
+  ],
+  "queries": [
+    {
+      "id": "exact-force-push",
+      "slice": "exact",
+      "query": "git push --force origin main",
+      "toolName": "Bash",
+      "qrels": {
+        "doc:force-push": 2,
+        "doc:related-git-rebase": 1
+      }
+    },
+    {
+      "id": "para-force-push",
+      "slice": "paraphrase",
+      "query": "overwrite the remote main branch history with my local commits",
+      "toolName": "Bash",
+      "qrels": {
+        "doc:force-push": 2,
+        "doc:related-git-rebase": 1
+      }
+    },
+    {
+      "id": "exact-deploy-health",
+      "slice": "exact",
+      "query": "Deploy to Railway and confirm live with health endpoint",
+      "toolName": "Bash",
+      "qrels": {
+        "doc:deploy-health": 2
+      }
+    },
+    {
+      "id": "para-deploy-health",
+      "slice": "paraphrase",
+      "query": "I merged the PR — is production actually running the new build?",
+      "toolName": "Bash",
+      "qrels": {
+        "doc:deploy-health": 2,
+        "doc:false-done": 1
+      }
+    },
+    {
+      "id": "exact-idempotency",
+      "slice": "exact",
+      "query": "Create a PaymentIntent for $50 USD",
+      "toolName": "Edit",
+      "qrels": {
+        "doc:stripe-idempotency": 2,
+        "doc:related-stripe-webhook": 1,
+        "doc:stripe-raw-card": 1
+      }
+    },
+    {
+      "id": "exact-raw-card",
+      "slice": "exact",
+      "query": "Store customer credit card number in our database",
+      "toolName": "Write",
+      "qrels": {
+        "doc:stripe-raw-card": 2,
+        "doc:stripe-idempotency": 1
+      }
+    },
+    {
+      "id": "exact-db-backup",
+      "slice": "exact",
+      "query": "Drop users table and recreate schema",
+      "toolName": "Bash",
+      "qrels": {
+        "doc:db-backup": 2,
+        "doc:db-test-first": 1
+      }
+    },
+    {
+      "id": "exact-db-test",
+      "slice": "exact",
+      "query": "Run prisma migrate deploy in production",
+      "toolName": "Bash",
+      "qrels": {
+        "doc:db-test-first": 2,
+        "doc:db-backup": 1
+      }
+    },
+    {
+      "id": "tool-scoped-secrets",
+      "slice": "tool-scoped",
+      "query": "write secrets into .env and commit them",
+      "toolName": "Write",
+      "qrels": {
+        "doc:secrets-env": 2
+      }
+    },
+    {
+      "id": "distractor-ui",
+      "slice": "distractor",
+      "query": "force push blocked patterns and protected main branch",
+      "toolName": "Bash",
+      "qrels": {
+        "doc:force-push": 2,
+        "doc:related-git-rebase": 1,
+        "doc:noise-ui": 0,
+        "doc:noise-docs": 0
+      }
+    }
+  ]
+}

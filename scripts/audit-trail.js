@@ -61,7 +61,18 @@ function recordAuditEvent(params = {}) {
     source: params.source || 'gates-engine',
   };
 
-  fs.appendFileSync(logPath, JSON.stringify(record) + '\n');
+  // Safe stringify: never let circular/toxic tool inputs crash the gate path
+  // (Antithesis-style invariant: evaluation + audit must not throw).
+  let line;
+  try {
+    line = JSON.stringify(record);
+  } catch (err) {
+    line = JSON.stringify({
+      ...record,
+      toolInput: { _unserializable: true, reason: String(err.message || err).slice(0, 120) },
+    });
+  }
+  fs.appendFileSync(logPath, `${line}\n`);
   try {
     const { trainAndPersistInterventionPolicy } = require('./intervention-policy');
     trainAndPersistInterventionPolicy(path.dirname(logPath));
@@ -73,10 +84,13 @@ function recordAuditEvent(params = {}) {
 
 /**
  * Strip secrets and large payloads from tool input before audit storage.
+ * Drop circular references so JSON.stringify never throws mid-gate evaluation.
  */
 function sanitizeToolInput(toolInput) {
+  if (!toolInput || typeof toolInput !== 'object') return {};
   const safe = {};
   const MAX_VALUE_LEN = 200;
+  const seen = new WeakSet();
 
   for (const [key, value] of Object.entries(toolInput)) {
     if (typeof value === 'string') {
@@ -88,11 +102,33 @@ function sanitizeToolInput(toolInput) {
           ? value.slice(0, MAX_VALUE_LEN) + '...'
           : value;
       }
+    } else if (value && typeof value === 'object') {
+      if (seen.has(value)) {
+        safe[key] = '[Circular]';
+        continue;
+      }
+      seen.add(value);
+      try {
+        safe[key] = JSON.parse(JSON.stringify(value, getCircularReplacer()));
+      } catch {
+        safe[key] = `[unserializable:${typeof value}]`;
+      }
     } else {
       safe[key] = value;
     }
   }
   return safe;
+}
+
+function getCircularReplacer() {
+  const seen = new WeakSet();
+  return function circularReplacer(_key, value) {
+    if (value && typeof value === 'object') {
+      if (seen.has(value)) return '[Circular]';
+      seen.add(value);
+    }
+    return value;
+  };
 }
 
 // ---------------------------------------------------------------------------

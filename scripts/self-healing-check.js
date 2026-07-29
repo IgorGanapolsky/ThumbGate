@@ -20,6 +20,13 @@ const DEFAULT_CHECKS = [
   { name: 'prove_automation', command: ['npm', 'run', 'prove:automation'], timeoutMs: 10 * 60_000, useTempProofDir: true },
   { name: 'prove_data_pipeline', command: ['npm', 'run', 'prove:data-pipeline'], timeoutMs: 10 * 60_000, useTempProofDir: true },
   { name: 'prove_tessl', command: ['npm', 'run', 'prove:tessl'], timeoutMs: 10 * 60_000, useTempProofDir: true },
+  // Antithesis-style reliability explorer (fixed seed, cheap, deterministic)
+  {
+    name: 'prove_reliability',
+    command: ['npm', 'run', 'prove:reliability'],
+    timeoutMs: 3 * 60_000,
+    useTempProofDir: true,
+  },
 ];
 
 function runCommand(command, {
@@ -59,6 +66,12 @@ function createCheckEnvironment(check) {
     environment.THUMBGATE_PROOF_DIR = proofDir;
     if (check.name === 'prove_automation') {
       environment.THUMBGATE_AUTOMATION_PROOF_DIR = proofDir;
+    }
+    if (check.name === 'prove_reliability') {
+      environment.THUMBGATE_RELIABILITY_PROOF_DIR = proofDir;
+      // Pin cheap deterministic exploration for health checks
+      environment.THUMBGATE_RELIABILITY_SEED = environment.THUMBGATE_RELIABILITY_SEED || '42';
+      environment.THUMBGATE_RELIABILITY_ITERATIONS = environment.THUMBGATE_RELIABILITY_ITERATIONS || '8';
     }
     cleanup = () => {
       fs.rmSync(proofDir, { recursive: true, force: true });

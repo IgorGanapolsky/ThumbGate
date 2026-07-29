@@ -12,22 +12,40 @@ const SCRIPTS_DIR = path.join(REPO_ROOT, 'scripts');
 const REQUIRE_PROOF = path.join(SCRIPTS_DIR, 'require-proof.js');
 const INGEST_FEEDBACK = path.join(SCRIPTS_DIR, 'ingest-manual-feedback.js');
 const TEST_DIR = path.join(REPO_ROOT, 'tests', 'proof-test-sandbox');
-const SESSION_ACTIONS_PATH = path.join(process.env.HOME || '/tmp', '.thumbgate', 'session-actions.json');
+// Isolate session-actions from the live operator file AND from concurrent CI
+// suites that also write ~/.thumbgate/session-actions.json (race → empty JSON).
+const SESSION_HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-truth-proof-home-'));
+const SESSION_ACTIONS_PATH = path.join(SESSION_HOME, '.thumbgate', 'session-actions.json');
+process.env.HOME = SESSION_HOME;
+process.env.USERPROFILE = SESSION_HOME;
+
+function readSessionActionsSafe() {
+  if (!fs.existsSync(SESSION_ACTIONS_PATH)) return {};
+  try {
+    const raw = fs.readFileSync(SESSION_ACTIONS_PATH, 'utf8').trim();
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    // Concurrent writers can leave a partial file; recover instead of crashing.
+    return {};
+  }
+}
 
 function setTestAction(actionId, exists = true) {
   if (!fs.existsSync(path.dirname(SESSION_ACTIONS_PATH))) {
     fs.mkdirSync(path.dirname(SESSION_ACTIONS_PATH), { recursive: true });
   }
-  let actions = {};
-  if (fs.existsSync(SESSION_ACTIONS_PATH)) {
-    actions = JSON.parse(fs.readFileSync(SESSION_ACTIONS_PATH, 'utf8'));
-  }
+  const actions = readSessionActionsSafe();
   if (exists) {
     actions[actionId] = { timestamp: Date.now(), metadata: { test: true } };
   } else {
     delete actions[actionId];
   }
-  fs.writeFileSync(SESSION_ACTIONS_PATH, JSON.stringify(actions));
+  // Atomic write to reduce torn-read races under parallel suites.
+  const tmp = `${SESSION_ACTIONS_PATH}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(actions));
+  fs.renameSync(tmp, SESSION_ACTIONS_PATH);
 }
 
 test('require-proof.js - blocks commit when source changed but no tests_passed', (t) => {

@@ -74,6 +74,44 @@ function selectRetrievalMemories(memories = [], options = {}) {
 
 function retrieveRelevantLessons(toolName, actionContext, options = {}) {
   const { maxResults = 5, feedbackDir } = options;
+
+  // Prefer pragmatic path (attribute-aware first stage + diversify) when enabled.
+  // Scope / requireScope / maxMemoryChars must flow into loadMemories so we never
+  // bypass four-field memory scope filters.
+  if (options.pragmatic !== false) {
+    try {
+      const { pragmaticHybridSearch, sampleRetrievalRecall } = require('./pragmatic-hybrid-search');
+      const memories = loadMemories(feedbackDir, options);
+      if (memories.length === 0) return [];
+      const { results, meta } = pragmaticHybridSearch({
+        corpus: memories,
+        query: actionContext,
+        toolName,
+        options: {
+          topK: Math.max(maxResults * 2, maxResults),
+          pool: RERANK_CANDIDATE_POOL,
+          diversify: options.diversify !== false,
+          perLimit: options.perLimit || 3,
+          attribute: options.attribute,
+        },
+      });
+      sampleRetrievalRecall({
+        toolName,
+        queryPreview: String(actionContext || '').slice(0, 200),
+        strategy: meta.strategy,
+        topIds: results.slice(0, maxResults).map((r) => r.id),
+        mode: 'sync',
+      }, { feedbackDir });
+      return filterTopP(
+        dedupeSupersededLessons(results),
+        resolveTopP(options),
+        { minKeep: options.minKeep },
+      ).slice(0, maxResults).map(shapeLesson);
+    } catch {
+      // fall through to classic path
+    }
+  }
+
   const { getFeedbackPaths, readJSONL } = require('./feedback-loop');
   const { rerankLessons } = require('./lesson-reranker');
   const pathMod = require('path');
@@ -280,6 +318,42 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
       // Embedding failed at runtime → fall back to pure lexical.
       return retrieveRelevantLessons(toolName, actionContext, options);
     }
+  }
+
+  // Pragmatic multi-stage path (turbopuffer hybrid playbook, local-only):
+  // multi-query (lexical ⊕ dense) → RRF → attribute-aware BM25 rerank → diversify.
+  // Falls back to legacy fuse+rerank if pragmatic module is unavailable.
+  try {
+    const { pragmaticHybridSearch, sampleRetrievalRecall } = require('./pragmatic-hybrid-search');
+    const { results, meta } = pragmaticHybridSearch({
+      corpus: memories,
+      query: actionContext,
+      toolName,
+      options: {
+        topK: Math.max(maxResults * 2, maxResults),
+        pool: RERANK_CANDIDATE_POOL,
+        denseRankedIds: semanticRanked,
+        diversify: options.diversify !== false,
+        perLimit: options.perLimit || 3,
+        attribute: options.attribute,
+      },
+    });
+    sampleRetrievalRecall({
+      toolName,
+      queryPreview: String(actionContext || '').slice(0, 200),
+      strategy: meta.strategy,
+      topIds: results.slice(0, maxResults).map((r) => r.id),
+      densePool: meta.densePool,
+      lexicalPool: meta.lexicalPool,
+    }, { feedbackDir });
+    const cut = filterTopP(
+      dedupeSupersededLessons(results),
+      resolveTopP(options),
+      { minKeep: options.minKeep },
+    ).slice(0, maxResults);
+    return cut.map(shapeLesson);
+  } catch {
+    // Legacy fuse path below
   }
 
   // Fuse. Candidate pool is the union — dense can introduce lessons lexical missed.
