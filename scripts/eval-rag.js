@@ -17,6 +17,10 @@ const {
   structuredOutputInstruction,
 } = require('./rag-structured-output');
 const { buildChatPrompt } = require('./dashboard-chat');
+const {
+  evaluateRankingGolden,
+  formatRankingReport,
+} = require('./retrieval-ranking-eval');
 
 const REPORT_PATH = path.join(__dirname, '..', 'reports', 'eval-rag-report.md');
 const STAGE_REPORT_PATH = path.join(__dirname, '..', 'reports', 'rag-stage-contracts.md');
@@ -222,7 +226,15 @@ async function collectStageMetrics({ avgRecall, avgPrecision, results } = {}) {
     structured_output_instruction_present: Boolean(structuredOutputInstruction()),
   };
 
-  const stageStatus = STAGES.map((stage) => {
+  return {
+    stageMetrics,
+    stageStatus: buildStageStatus(stageMetrics),
+    pipeline,
+  };
+}
+
+function buildStageStatus(stageMetrics = {}) {
+  return STAGES.map((stage) => {
     const missing = (stage.metricKeys || []).filter((k) => stageMetrics[k] === undefined || stageMetrics[k] === null);
     return {
       id: stage.id,
@@ -232,8 +244,6 @@ async function collectStageMetrics({ avgRecall, avgPrecision, results } = {}) {
       metrics: Object.fromEntries((stage.metricKeys || []).map((k) => [k, stageMetrics[k]])),
     };
   });
-
-  return { stageMetrics, stageStatus, pipeline };
 }
 
 async function runRagEval(options = {}) {
@@ -293,23 +303,64 @@ async function runRagEval(options = {}) {
     results,
   }, options.thresholds || DEFAULT_THRESHOLDS);
 
-  const { stageMetrics, stageStatus } = options.skipStageMetrics
-    ? { stageMetrics: {}, stageStatus: [] }
-    : await collectStageMetrics({ avgRecall, avgPrecision, results });
+  let stageMetrics = {};
+  let stageStatus = [];
+  if (!options.skipStageMetrics) {
+    const collected = await collectStageMetrics({ avgRecall, avgPrecision, results });
+    stageMetrics = collected.stageMetrics;
+    stageStatus = collected.stageStatus;
+  }
+
+  // True IR ranking metrics on the gate scoring stack (not skill-pack keyword smoke).
+  let ranking = null;
+  if (options.skipRanking !== true) {
+    try {
+      ranking = evaluateRankingGolden({
+        goldenPath: options.rankingGoldenPath,
+        thresholds: options.rankingThresholds,
+      });
+      // Surface ranking metrics on stage snapshot for prove-rag.
+      if (stageMetrics && ranking.summary) {
+        stageMetrics.retrieval_recall_at_k = ranking.summary['recall@5'];
+        stageMetrics.retrieval_mrr = ranking.summary.mrr;
+        stageMetrics.retrieval_ndcg_at_5 = ranking.summary['ndcg@5'];
+        stageMetrics.retrieval_precision_at_k = ranking.summary['precision@5'];
+        stageMetrics.ranking_eval_passed = ranking.passed;
+        // Rebuild status so retrieval metricKeys (mrr/ndcg) are present.
+        stageStatus = buildStageStatus(stageMetrics);
+      }
+    } catch (err) {
+      ranking = {
+        passed: false,
+        failures: [`ranking_eval_error: ${err.message}`],
+        summary: {},
+        perQuery: [],
+        sliceSummary: {},
+        goldenPath: options.rankingGoldenPath || 'config/evals/retrieval-ranking-golden.json',
+      };
+    }
+  }
+
+  const releasePassed = gate.passed && (ranking ? ranking.passed : true);
 
   // Render markdown report
   const reportLines = [
     '# RAG Precision & Evaluation Report',
     '',
     `**Timestamp**: ${new Date().toISOString()}`,
-    `**Release Gate**: ${gate.passed ? 'PASS' : 'FAIL'}`,
-    `**Deterministic Context Recall**: ${(avgRecall * 100).toFixed(1)}%`,
-    `**Deterministic Context Precision**: ${(avgPrecision * 100).toFixed(1)}%`,
+    `**Release Gate**: ${releasePassed ? 'PASS' : 'FAIL'}`,
+    `**Skill-pack keyword smoke**: ${gate.passed ? 'PASS' : 'FAIL'} (contains-string recall/precision — not IR ranking)`,
+    `**Ranking gate (Recall@k / MRR / nDCG)**: ${ranking ? (ranking.passed ? 'PASS' : 'FAIL') : 'SKIPPED'}`,
+    `**Deterministic Context Recall (skill-pack)**: ${(avgRecall * 100).toFixed(1)}%`,
+    `**Deterministic Context Precision (skill-pack)**: ${(avgPrecision * 100).toFixed(1)}%`,
+    ranking && ranking.summary
+      ? `**MRR / Recall@5 / nDCG@5**: ${(ranking.summary.mrr * 100).toFixed(1)}% / ${((ranking.summary['recall@5'] || 0) * 100).toFixed(1)}% / ${((ranking.summary['ndcg@5'] || 0) * 100).toFixed(1)}%`
+      : null,
     `**Cases**: ${casesEvaluated}`,
     `**LLM Judge**: ${llmClient.isAvailable() && enableLlmJudge ? 'Diagnostic only' : 'Not active'}`,
-    `**Thresholds**: recall >= ${(gate.thresholds.minRecall * 100).toFixed(0)}%, precision >= ${(gate.thresholds.minPrecision * 100).toFixed(0)}%, cases >= ${gate.thresholds.minCases}, every case recall >= ${(gate.thresholds.minCaseRecall * 100).toFixed(0)}%`,
+    `**Skill-pack thresholds**: recall >= ${(gate.thresholds.minRecall * 100).toFixed(0)}%, precision >= ${(gate.thresholds.minPrecision * 100).toFixed(0)}%, cases >= ${gate.thresholds.minCases}, every case recall >= ${(gate.thresholds.minCaseRecall * 100).toFixed(0)}%`,
     '',
-  ];
+  ].filter((line) => line != null);
 
   if (stageStatus.length) {
     reportLines.push(
@@ -342,7 +393,11 @@ async function runRagEval(options = {}) {
   }
 
   if (!gate.passed) {
-    reportLines.push('', '## Release Gate Failures', '', ...gate.failures.map((failure) => `- ${failure}`));
+    reportLines.push('', '## Skill-pack smoke failures', '', ...gate.failures.map((failure) => `- ${failure}`));
+  }
+
+  if (ranking) {
+    reportLines.push('', formatRankingReport(ranking));
   }
 
   reportLines.push('', '## Diagnostics and Reasoning');
@@ -373,8 +428,14 @@ async function runRagEval(options = {}) {
     // non-fatal
   }
 
+  const combinedFailures = [
+    ...gate.failures,
+    ...(ranking && !ranking.passed ? (ranking.failures || ['ranking gate failed']) : []),
+  ];
+
   return {
     results,
+    ranking,
     stageMetrics,
     stageStatus,
     summary: {
@@ -382,10 +443,15 @@ async function runRagEval(options = {}) {
       avgPrecision,
       casesEvaluated,
       reportPath,
-      passed: gate.passed,
-      failures: gate.failures,
+      passed: releasePassed,
+      failures: combinedFailures,
       thresholds: gate.thresholds,
-      passedThresholds: gate.passed,
+      passedThresholds: releasePassed,
+      skillPackPassed: gate.passed,
+      rankingPassed: ranking ? ranking.passed : null,
+      mrr: ranking?.summary?.mrr,
+      recallAt5: ranking?.summary?.['recall@5'],
+      ndcgAt5: ranking?.summary?.['ndcg@5'],
     },
   };
 }
@@ -402,9 +468,11 @@ if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
 module.exports = {
   runRagEval,
   collectStageMetrics,
+  buildStageStatus,
   computeLexicalRecall,
   computeLexicalPrecision,
   evaluateThresholds,
   retrieveEvalItems,
   DEFAULT_THRESHOLDS,
+  evaluateRankingGolden,
 };

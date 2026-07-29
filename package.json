@@ -342,7 +342,10 @@
     "scripts/rag-structured-output.js",
     "scripts/prove-rag-pipeline.js",
     "scripts/eval-rag.js",
-    "docs/RAG_PIPELINE.md"
+    "docs/RAG_PIPELINE.md",
+    "scripts/ir-metrics.js",
+    "scripts/retrieval-ranking-eval.js",
+    "config/evals/retrieval-ranking-golden.json"
   ],
   "scripts": {
     "canary:snapshot": "node scripts/gate-decision-canary.js --snapshot",
@@ -878,7 +881,9 @@
     "test:proof-pack-cadence": "node --test tests/refresh-proof-pack.test.js tests/case-study-outreach.test.js",
     "test:evaluations-page": "node --test tests/evaluations-page.test.js",
     "prove:rag": "node scripts/prove-rag-pipeline.js",
-    "test:rag-pipeline": "node --test tests/rag-document-pipeline.test.js tests/rag-structured-output.test.js tests/rag-stage-contracts.test.js tests/prove-rag-pipeline.test.js"
+    "test:rag-pipeline": "node --test tests/rag-document-pipeline.test.js tests/rag-structured-output.test.js tests/rag-stage-contracts.test.js tests/prove-rag-pipeline.test.js tests/ir-metrics.test.js tests/retrieval-ranking-eval.test.js",
+    "eval:ranking": "node scripts/retrieval-ranking-eval.js",
+    "test:ir-metrics": "node --test tests/ir-metrics.test.js tests/retrieval-ranking-eval.test.js"
   },
   "keywords": [
     "mcp",

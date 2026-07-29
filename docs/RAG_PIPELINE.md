@@ -22,12 +22,26 @@ npm run prove:rag
 ## How to measure
 
 ```bash
-npm run eval:rag          # seeded skill-pack corpus; recall/precision thresholds
+npm run eval:rag          # skill-pack smoke + IR ranking (Recall@k / MRR / nDCG)
+npm run eval:ranking      # ranking-only gate (gate scoring stack on golden qrels)
 npm run prove:rag         # every stage has why + failure modes + metrics
-npm run test:rag-pipeline # unit tests for pipeline + contracts + structured out
+npm run test:rag-pipeline # unit tests for pipeline + contracts + structured out + IR metrics
 npm run test:eval-rag
 npm run test:dashboard-chat
 ```
+
+### IR ranking metrics (not keyword smoke)
+
+| Metric | Meaning | Computed by |
+|--------|---------|-------------|
+| **Recall@k** | Fraction of relevant doc IDs found in top-k | `scripts/ir-metrics.js` |
+| **MRR** | 1/rank of first relevant hit | same |
+| **nDCG@k** | Graded relevance with log discount | same |
+
+Golden qrels: `config/evals/retrieval-ranking-golden.json`  
+System under test: `scoreRelevance` + field-weighted BM25 rerank (same pieces as gate retrieval).
+
+Skill-pack “context recall/precision” in the report is a **separate smoke** (substring contains). Do not treat it as Recall@k/MRR/nDCG.
 
 Reports:
 

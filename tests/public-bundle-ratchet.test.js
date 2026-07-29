@@ -145,7 +145,7 @@ const path = require('node:path');
 // evaluation arithmetic (classification metrics + deterministic group-aware
 // splitting); no Core imports, no filesystem, network, credentials, or buyer state.
 // model-calibration.js and eval-risk-model.js are development-only and stay out.
-const BASELINE_FILE_COUNT = 395; // 2026-07-29: RAG pipeline stage contracts + document pipeline + structured output
+const BASELINE_FILE_COUNT = 398; // 2026-07-29: RAG stages + IR ranking metrics (Recall@k/MRR/nDCG)
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

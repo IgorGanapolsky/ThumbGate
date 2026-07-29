@@ -52,12 +52,35 @@ async function proveRagPipeline(options = {}) {
   const retrievalPass = Boolean(evalOut.summary?.passed);
   checks.push({
     id: 'eval_thresholds',
-    name: 'Eval recall/precision thresholds',
+    name: 'Eval skill-pack + ranking gates',
     status: retrievalPass ? 'pass' : 'fail',
     avgRecall: evalOut.summary?.avgRecall,
     avgPrecision: evalOut.summary?.avgPrecision,
+    mrr: evalOut.summary?.mrr,
+    recallAt5: evalOut.summary?.recallAt5,
+    ndcgAt5: evalOut.summary?.ndcgAt5,
     failures: evalOut.summary?.failures || [],
   });
+
+  const ranking = evalOut.ranking;
+  if (ranking) {
+    checks.push({
+      id: 'ranking_ir_metrics',
+      name: 'IR ranking (Recall@k / MRR / nDCG)',
+      status: ranking.passed ? 'pass' : 'fail',
+      mrr: ranking.summary?.mrr,
+      recallAt5: ranking.summary?.['recall@5'],
+      ndcgAt5: ranking.summary?.['ndcg@5'],
+      failures: ranking.failures || [],
+    });
+  } else {
+    checks.push({
+      id: 'ranking_ir_metrics',
+      name: 'IR ranking (Recall@k / MRR / nDCG)',
+      status: 'fail',
+      failures: ['ranking eval missing from runRagEval output'],
+    });
+  }
 
   const failed = checks.filter((c) => c.status === 'fail');
   const report = {
