@@ -410,7 +410,7 @@ function parseArgs(argv) {
   return options;
 }
 
-if (require.main === module) {
+if (require.main?.filename === __filename) {
   const options = parseArgs(process.argv.slice(2));
   runDocumentIngestionEval(options)
     .then((report) => {

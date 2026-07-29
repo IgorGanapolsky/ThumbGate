@@ -215,7 +215,7 @@ function parseArgs(argv) {
   return options;
 }
 
-if (require.main === module) {
+if (require.main?.filename === __filename) {
   reindexRag(parseArgs(process.argv.slice(2)))
     .then((result) => {
       process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);

@@ -132,11 +132,19 @@ function parseCliArgs(argv = process.argv.slice(2)) {
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     if (!argument.startsWith('--')) continue;
-    const [name, inlineValue] = argument.slice(2).split('=', 2);
-    const nextValue = argv[index + 1] && !argv[index + 1].startsWith('--')
-      ? argv[++index]
-      : true;
-    values.set(name, inlineValue === undefined ? nextValue : inlineValue);
+    const separatorIndex = argument.indexOf('=');
+    if (separatorIndex >= 0) {
+      values.set(argument.slice(2, separatorIndex), argument.slice(separatorIndex + 1));
+      continue;
+    }
+    const name = argument.slice(2);
+    const nextArgument = argv[index + 1];
+    if (nextArgument && !nextArgument.startsWith('--')) {
+      values.set(name, nextArgument);
+      index += 1;
+    } else {
+      values.set(name, true);
+    }
   }
   return {
     feedbackDir: values.get('feedback-dir') || undefined,
@@ -156,7 +164,7 @@ async function main() {
   }
 }
 
-if (require.main === module) {
+if (require.main?.filename === __filename) {
   main().catch((error) => {
     process.stderr.write(`${error.name || 'Error'}: ${error.message}\n`);
     process.exitCode = 1;
