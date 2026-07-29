@@ -185,31 +185,49 @@ async function evaluateBinaryAdapters(tempDir, options = {}) {
   return result;
 }
 
-function scoreDimensions(evidence) {
-  const dimensions = {
-    parsing: evidence.adapters.docx.passed && evidence.adapters.pdf.passed ? 100
-      : (evidence.adapters.docx.passed ? 70 : 0),
-    ocr: evidence.adapters.ocr.passed ? 100
-      : (evidence.adapters.capabilities.tesseract && evidence.adapters.capabilities.pdftoppm ? 70 : 0),
-    deduplication: evidence.exactDuplicate && evidence.nearDuplicateQuarantined ? 100 : 50,
-    normalization: evidence.normalized && evidence.instructionRiskTagged ? 100 : 50,
-    chunking: evidence.boundedChunks && evidence.offsetProvenance && evidence.stableChunkReuse ? 100 : 50,
-    metadata: evidence.scopeComplete && evidence.provenanceComplete ? 100 : 50,
-    incrementalUpdates: evidence.currentOnly && evidence.stableChunkReuse ? 100 : 50,
-    reindexing: evidence.reindexComplete && evidence.reindexReconciled ? 100 : 50,
-    versioning: evidence.versionIncremented && evidence.lineagePreserved && evidence.oldVersionRetired ? 100 : 50,
+function scoreComplete(...conditions) {
+  return conditions.every(Boolean) ? 100 : 50;
+}
+
+function scoreParsing(adapters) {
+  if (adapters.docx.passed && adapters.pdf.passed) return 100;
+  return adapters.docx.passed ? 70 : 0;
+}
+
+function scoreOcr(adapters) {
+  if (adapters.ocr.passed) return 100;
+  return adapters.capabilities.tesseract && adapters.capabilities.pdftoppm ? 70 : 0;
+}
+
+function buildDimensionScores(evidence) {
+  return {
+    parsing: scoreParsing(evidence.adapters),
+    ocr: scoreOcr(evidence.adapters),
+    deduplication: scoreComplete(evidence.exactDuplicate, evidence.nearDuplicateQuarantined),
+    normalization: scoreComplete(evidence.normalized, evidence.instructionRiskTagged),
+    chunking: scoreComplete(evidence.boundedChunks, evidence.offsetProvenance, evidence.stableChunkReuse),
+    metadata: scoreComplete(evidence.scopeComplete, evidence.provenanceComplete),
+    incrementalUpdates: scoreComplete(evidence.currentOnly, evidence.stableChunkReuse),
+    reindexing: scoreComplete(evidence.reindexComplete, evidence.reindexReconciled),
+    versioning: scoreComplete(
+      evidence.versionIncremented,
+      evidence.lineagePreserved,
+      evidence.oldVersionRetired,
+    ),
   };
+}
+
+function scoreEvidenceMaturity(evidence) {
+  const binaryAdapterScore = evidence.adapters.pdf.passed && evidence.adapters.docx.passed ? 15 : 5;
+  const ocrScore = evidence.adapters.ocr.passed ? 15 : 5;
+  return 20 + binaryAdapterScore + ocrScore + 10 + 10;
+}
+
+function scoreDimensions(evidence) {
+  const dimensions = buildDimensionScores(evidence);
   const implementationScore = Object.entries(DIMENSION_WEIGHTS)
     .reduce((total, [key, weight]) => total + dimensions[key] * weight, 0);
-  const evidenceMaturityScore = (
-    20 // deterministic ingestion fixtures
-    + (evidence.adapters.pdf.passed && evidence.adapters.docx.passed ? 15 : 5)
-    + (evidence.adapters.ocr.passed ? 15 : 5)
-    + 10 // explicit failure-path tests and bounded parsers
-    + 10 // runtime stage telemetry and operations snapshot
-    + 0 // no labeled live customer corpus yet
-    + 0 // no drift alert backed by production volume yet
-  );
+  const evidenceMaturityScore = scoreEvidenceMaturity(evidence);
   const overallScore = implementationScore * 0.7 + evidenceMaturityScore * 0.3;
   return {
     dimensions,

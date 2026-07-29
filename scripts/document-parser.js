@@ -67,24 +67,41 @@ function parsePdfPageCount(output) {
   return match ? Math.max(1, Number(match[1])) : 1;
 }
 
+function parseTesseractRow(row) {
+  if (!row.trim()) return null;
+  const columns = row.split('\t');
+  if (columns.length < 12) return null;
+  const text = columns.slice(11).join('\t').trim();
+  if (!text) return null;
+  return {
+    lineKey: columns.slice(1, 5).join(':'),
+    confidence: Number(columns[10]),
+    text,
+  };
+}
+
+function appendTesseractWord(words, entry, previousLine) {
+  if (previousLine !== null && previousLine !== entry.lineKey) {
+    words.push('\n');
+  } else if (words.length > 0 && words[words.length - 1] !== '\n') {
+    words.push(' ');
+  }
+  words.push(entry.text);
+  return entry.lineKey;
+}
+
 function parseTesseractTsv(tsv) {
   const rows = String(tsv || '').split('\n').slice(1);
   const words = [];
   const confidences = [];
   let previousLine = null;
   for (const row of rows) {
-    if (!row.trim()) continue;
-    const columns = row.split('\t');
-    if (columns.length < 12) continue;
-    const lineKey = columns.slice(1, 5).join(':');
-    const confidence = Number(columns[10]);
-    const text = columns.slice(11).join('\t').trim();
-    if (!text) continue;
-    if (previousLine !== null && previousLine !== lineKey) words.push('\n');
-    else if (words.length > 0 && words[words.length - 1] !== '\n') words.push(' ');
-    words.push(text);
-    previousLine = lineKey;
-    if (Number.isFinite(confidence) && confidence >= 0) confidences.push(confidence);
+    const entry = parseTesseractRow(row);
+    if (!entry) continue;
+    previousLine = appendTesseractWord(words, entry, previousLine);
+    if (Number.isFinite(entry.confidence) && entry.confidence >= 0) {
+      confidences.push(entry.confidence);
+    }
   }
   return {
     text: words.join('').replaceAll(/[ \t]+\n/g, '\n').trim(),

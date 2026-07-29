@@ -296,8 +296,8 @@ async function embed(text, options = {}) {
         fallbackUsed: false,
       };
       return vector;
-    } catch (coreaiError) {
-      console.warn(`Core AI embedding failed, falling back to local: ${coreaiError.message}`);
+    } catch {
+      console.warn('Core AI embedding failed; using the configured local fallback');
     }
   }
   if (geminiConfig.enabled) {
@@ -320,7 +320,7 @@ async function embed(text, options = {}) {
       if (!geminiConfig.fallbackToLocal) {
         throw geminiError;
       }
-      console.warn(`Gemini embedding fallback: ${geminiError.message}`);
+      console.warn('Gemini embedding failed; using the configured local fallback');
     }
   }
   if (hasLocalTransformerProvider()) {
@@ -331,8 +331,8 @@ async function embed(text, options = {}) {
         normalize: true,
       });
       return Array.from(output.data); // Float32Array -> plain number[] for LanceDB Arrow serialization
-    } catch (transformerError) {
-      console.warn(`Transformers.js embedding fallback: ${transformerError.message}`);
+    } catch {
+      console.warn('Transformers.js embedding failed; using the built-in fallback');
     }
   }
 
@@ -484,6 +484,55 @@ function normalizeIndexRecord(record, vector, identity) {
   };
 }
 
+async function resolveRecordEmbedding(record, options) {
+  const suppliedVector = Array.isArray(record.vector);
+  const cached = suppliedVector ? null : readCachedEmbedding(record.text, options);
+  let vector = record.vector;
+  if (!suppliedVector && cached) {
+    vector = cached.vector;
+  } else if (!suppliedVector) {
+    vector = await embed(record.text, {
+      kind: 'document',
+      task: options.task || 'code retrieval',
+      title: record.title || record.id,
+      timeoutMs: options.timeoutMs,
+    });
+  }
+
+  const identity = record.embeddingIdentity
+    || cached?.identity
+    || getActiveEmbeddingIdentity(vector);
+  const embedded = !suppliedVector && !cached;
+  if (embedded) writeCachedEmbedding(record.text, vector, identity, options);
+  return {
+    vector,
+    identity,
+    reused: Boolean(cached),
+    embedded,
+  };
+}
+
+function appendVectorRecord(grouped, record, embedding, options) {
+  const tableName = options.tableName || resolveRagTableName(embedding.identity);
+  if (!grouped.has(tableName)) grouped.set(tableName, []);
+  grouped.get(tableName).push(
+    normalizeIndexRecord(record, embedding.vector, embedding.identity),
+  );
+}
+
+async function persistVectorGroups(db, grouped) {
+  const tableNames = await db.tableNames();
+  for (const [tableName, rows] of grouped.entries()) {
+    if (rows.length === 0) continue;
+    if (tableNames.includes(tableName)) {
+      const table = await db.openTable(tableName);
+      await replaceRows(table, rows);
+    } else {
+      await db.createTable(tableName, rows);
+    }
+  }
+}
+
 async function upsertVectorRecords(records, options = {}) {
   const input = Array.isArray(records) ? records : [];
   if (input.length === 0) return { indexed: 0, tables: [], fallbackCount: 0 };
@@ -497,47 +546,16 @@ async function upsertVectorRecords(records, options = {}) {
 
   for (const record of input) {
     if (!record || !record.id || !record.text) continue;
-    const cached = Array.isArray(record.vector)
-      ? null
-      : readCachedEmbedding(record.text, options);
-    const vector = Array.isArray(record.vector)
-      ? record.vector
-      : cached
-        ? cached.vector
-        : await embed(record.text, {
-        kind: 'document',
-        task: options.task || 'code retrieval',
-        title: record.title || record.id,
-        timeoutMs: options.timeoutMs,
-      });
-    const identity = record.embeddingIdentity || (cached
-      ? cached.identity
-      : getActiveEmbeddingIdentity(vector));
-    if (cached) reusedCount += 1;
-    else if (!Array.isArray(record.vector)) {
-      embeddedCount += 1;
-      writeCachedEmbedding(record.text, vector, identity, options);
-    }
-    const tableName = options.tableName || resolveRagTableName(identity);
-    if (!grouped.has(tableName)) grouped.set(tableName, []);
-    grouped.get(tableName).push(normalizeIndexRecord(record, vector, identity));
+    const embedding = await resolveRecordEmbedding(record, options);
+    if (embedding.reused) reusedCount += 1;
+    if (embedding.embedded) embeddedCount += 1;
+    appendVectorRecord(grouped, record, embedding, options);
   }
 
   await runStep('vector-store.upsertVectorRecords', {
     retries: 2,
     logger: (message) => console.warn(message),
-  }, async () => {
-    const tableNames = await db.tableNames();
-    for (const [tableName, rows] of grouped.entries()) {
-      if (rows.length === 0) continue;
-      if (tableNames.includes(tableName)) {
-        const table = await db.openTable(tableName);
-        await replaceRows(table, rows);
-      } else {
-        await db.createTable(tableName, rows);
-      }
-    }
-  });
+  }, () => persistVectorGroups(db, grouped));
 
   const rows = [...grouped.values()].flat();
   return {

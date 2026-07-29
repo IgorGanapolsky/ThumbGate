@@ -2694,41 +2694,49 @@ function getTrackedLinkTarget(slug) {
     : null;
 }
 
-function appendTrackedLinkQueryParams(destinationUrl, parsed, target) {
-  const params = parsed.searchParams;
+function applyTrackedLinkDefaults(destinationUrl, target) {
   for (const [key, value] of Object.entries(target.defaults || {})) {
     if (!destinationUrl.searchParams.has(key)) {
       appendQueryParam(destinationUrl, key, value);
     }
   }
+}
+
+function applyTrackedAttributionParams(destinationUrl, params) {
   for (const key of TRACKED_LINK_QUERY_KEYS) {
     const value = params.get(key);
-    if (value && value.trim()) {
-      const normalizedValue = key === 'utm_campaign'
-        ? normalizeCampaignId(value)
-        : value.trim();
-      destinationUrl.searchParams.set(key, normalizedValue);
-    }
+    if (!value || !value.trim()) continue;
+    const normalizedValue = key === 'utm_campaign'
+      ? normalizeCampaignId(value)
+      : value.trim();
+    destinationUrl.searchParams.set(key, normalizedValue);
   }
-  if (target.allowCustomerEmail) {
-    const customerEmail = normalizeCheckoutCustomerEmail(params.get('customer_email'));
-    if (customerEmail) {
-      appendQueryParam(
-        destinationUrl,
-        target.prefillStripeEmail ? 'prefilled_email' : 'customer_email',
-        customerEmail
-      );
-    }
+}
+
+function applyTrackedCustomerEmail(destinationUrl, params, target) {
+  if (!target.allowCustomerEmail) return;
+  const customerEmail = normalizeCheckoutCustomerEmail(params.get('customer_email'));
+  if (!customerEmail) return;
+  appendQueryParam(
+    destinationUrl,
+    target.prefillStripeEmail ? 'prefilled_email' : 'customer_email',
+    customerEmail,
+  );
+}
+
+function ensureTrackedLinkParam(destinationUrl, key, value) {
+  if (!destinationUrl.searchParams.has(key)) {
+    appendQueryParam(destinationUrl, key, value);
   }
-  if (!destinationUrl.searchParams.has('cta_id')) {
-    appendQueryParam(destinationUrl, 'cta_id', target.ctaId);
-  }
-  if (!destinationUrl.searchParams.has('cta_placement')) {
-    appendQueryParam(destinationUrl, 'cta_placement', target.ctaPlacement);
-  }
-  if (!destinationUrl.searchParams.has('landing_path')) {
-    appendQueryParam(destinationUrl, 'landing_path', `/go/${target.slug}`);
-  }
+}
+
+function appendTrackedLinkQueryParams(destinationUrl, parsed, target) {
+  applyTrackedLinkDefaults(destinationUrl, target);
+  applyTrackedAttributionParams(destinationUrl, parsed.searchParams);
+  applyTrackedCustomerEmail(destinationUrl, parsed.searchParams, target);
+  ensureTrackedLinkParam(destinationUrl, 'cta_id', target.ctaId);
+  ensureTrackedLinkParam(destinationUrl, 'cta_placement', target.ctaPlacement);
+  ensureTrackedLinkParam(destinationUrl, 'landing_path', `/go/${target.slug}`);
 }
 
 function buildTrackedLinkDestination(target, hostedConfig, parsed) {

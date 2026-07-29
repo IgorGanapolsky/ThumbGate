@@ -59,7 +59,7 @@ class RagRunTelemetry {
     this.feedbackDir = options.feedbackDir || null;
     this.persist = options.persist !== false;
     this.startedAtMs = this.clock();
-    this.runId = options.runId || `rag_${this.startedAtMs}_${Math.random().toString(36).slice(2, 8)}`;
+    this.runId = options.runId || `rag_${this.startedAtMs}_${crypto.randomBytes(4).toString('hex')}`;
     this.queryFingerprint = sha256(options.query || '').slice(0, 16);
     this.scope = sanitizeMetrics(options.scope || {});
     this.stages = [];

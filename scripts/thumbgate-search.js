@@ -207,52 +207,64 @@ function extractFeedbackId(str) {
   return match ? match[0].replace(/-/g, '_').toLowerCase() : null;
 }
 
-function deduplicateResults(results) {
-  const bestByFeedbackId = new Map();
+const RESULT_SOURCE_ORDER = {
+  feedback: 4,
+  contextfs: 3,
+  prevention_rule: 2,
+  document: 1,
+};
 
-  for (const r of results) {
-    const feedId = extractFeedbackId(r.id || r.title || r.file || '');
-    if (feedId) {
-      const existing = bestByFeedbackId.get(feedId);
-      if (!existing) {
-        bestByFeedbackId.set(feedId, r);
-      } else {
-        const sourceOrder = { feedback: 4, contextfs: 3, prevention_rule: 2, document: 1 };
-        const existingOrder = sourceOrder[existing.source] || 0;
-        const currentOrder = sourceOrder[r.source] || 0;
-        if (currentOrder > existingOrder) {
-          bestByFeedbackId.set(feedId, r);
-        } else if (currentOrder === existingOrder && (r.score || 0) > (existing.score || 0)) {
-          bestByFeedbackId.set(feedId, r);
-        }
-      }
-    }
+function resultIdentityText(result) {
+  return result.id || result.title || result.file || '';
+}
+
+function choosePreferredFeedbackRecord(existing, candidate) {
+  if (!existing) return candidate;
+  const existingOrder = RESULT_SOURCE_ORDER[existing.source] || 0;
+  const candidateOrder = RESULT_SOURCE_ORDER[candidate.source] || 0;
+  if (candidateOrder > existingOrder) return candidate;
+  if (candidateOrder === existingOrder && (candidate.score || 0) > (existing.score || 0)) {
+    return candidate;
   }
+  return existing;
+}
 
+function collectBestFeedbackRecords(results) {
+  const bestByFeedbackId = new Map();
+  for (const result of results) {
+    const feedbackId = extractFeedbackId(resultIdentityText(result));
+    if (!feedbackId) continue;
+    bestByFeedbackId.set(
+      feedbackId,
+      choosePreferredFeedbackRecord(bestByFeedbackId.get(feedbackId), result),
+    );
+  }
+  return bestByFeedbackId;
+}
+
+function hasUsableResultId(result) {
+  return Boolean(result.id && result.id !== 'null' && String(result.id).trim());
+}
+
+function resultContentKey(result) {
+  const title = String(result.title || '').trim().toLowerCase();
+  const context = String(result.context || '').trim().toLowerCase();
+  return `${title}|${context}`;
+}
+
+function deduplicateResults(results) {
+  const bestByFeedbackId = collectBestFeedbackRecords(results);
   const finalResults = [];
   const seenContent = new Set();
   const seenIds = new Set();
 
-  for (const r of results) {
-    const feedId = extractFeedbackId(r.id || r.title || r.file || '');
-    let recordToUse = r;
-    if (feedId) {
-      recordToUse = bestByFeedbackId.get(feedId);
-      if (seenIds.has(recordToUse.id)) continue;
-    } else {
-      if (r.id && r.id !== 'null' && String(r.id).trim() !== '') {
-        if (seenIds.has(r.id)) continue;
-      }
-    }
-
-    const normTitle = String(recordToUse.title || '').trim().toLowerCase();
-    const normContext = String(recordToUse.context || '').trim().toLowerCase();
-    const contentKey = `${normTitle}|${normContext}`;
+  for (const result of results) {
+    const feedbackId = extractFeedbackId(resultIdentityText(result));
+    const recordToUse = feedbackId ? bestByFeedbackId.get(feedbackId) : result;
+    if (hasUsableResultId(recordToUse) && seenIds.has(recordToUse.id)) continue;
+    const contentKey = resultContentKey(recordToUse);
     if (seenContent.has(contentKey)) continue;
-
-    if (recordToUse.id && recordToUse.id !== 'null' && String(recordToUse.id).trim() !== '') {
-      seenIds.add(recordToUse.id);
-    }
+    if (hasUsableResultId(recordToUse)) seenIds.add(recordToUse.id);
     seenContent.add(contentKey);
     finalResults.push(recordToUse);
   }

@@ -297,63 +297,74 @@ function extractMetadata(record) {
   };
 }
 
-/**
- * Full pipeline: documents → cleaned chunks with metadata.
- * @returns {{ documents, chunks, metrics }}
- */
-function runDocumentPipeline(inputs = [], options = {}) {
-  const documents = [];
-  const chunks = [];
-  let parseAttempts = 0;
-  let parseSuccesses = 0;
-  let parseErrors = 0;
-  let cleanKept = 0;
-  let cleanRejected = 0;
-  let placeholderRejects = 0;
-  const sourceMix = {};
+function createPipelineState() {
+  return {
+    documents: [],
+    chunks: [],
+    parseAttempts: 0,
+    parseSuccesses: 0,
+    parseErrors: 0,
+    cleanKept: 0,
+    cleanRejected: 0,
+    placeholderRejects: 0,
+    sourceMix: {},
+  };
+}
 
-  const list = Array.isArray(inputs) ? inputs : [inputs];
-  for (const input of list) {
-    parseAttempts += 1;
-    const parsed = parseDocument(input);
-    parseErrors += (parsed.errors || []).length;
-    if (parsed.ok && parsed.records.length) parseSuccesses += 1;
-
-    for (const rec of parsed.records || []) {
-      const cleaned = cleanRecord(rec, options);
-      if (!cleaned.kept) {
-        cleanRejected += 1;
-        if (cleaned.reason === 'placeholder') placeholderRejects += 1;
-        continue;
-      }
-      cleanKept += 1;
-      const withMeta = extractMetadata(cleaned.record);
-      documents.push(withMeta);
-      const src = withMeta.source || 'unknown';
-      sourceMix[src] = (sourceMix[src] || 0) + 1;
-
-      const parts = chunkRecord(withMeta, options);
-      for (const part of parts) {
-        chunks.push(extractMetadata(part));
-      }
-    }
+function addPipelineRecord(record, state, options) {
+  const cleaned = cleanRecord(record, options);
+  if (!cleaned.kept) {
+    state.cleanRejected += 1;
+    if (cleaned.reason === 'placeholder') state.placeholderRejects += 1;
+    return;
   }
 
-  const chunkChars = chunks.map((c) => String(c.content || '').length);
-  const sourceChars = documents.reduce((s, d) => s + String(d.content || '').length, 0);
-  const chunkedChars = chunkChars.reduce((s, n) => s + n, 0);
+  state.cleanKept += 1;
+  const withMeta = extractMetadata(cleaned.record);
+  state.documents.push(withMeta);
+  const source = withMeta.source || 'unknown';
+  state.sourceMix[source] = (state.sourceMix[source] || 0) + 1;
+  for (const part of chunkRecord(withMeta, options)) {
+    state.chunks.push(extractMetadata(part));
+  }
+}
 
-  const metrics = {
+function processPipelineInput(input, state, options) {
+  state.parseAttempts += 1;
+  const parsed = parseDocument(input);
+  state.parseErrors += (parsed.errors || []).length;
+  if (parsed.ok && parsed.records.length) state.parseSuccesses += 1;
+  for (const record of parsed.records || []) {
+    addPipelineRecord(record, state, options);
+  }
+}
+
+function ratio(numerator, denominator) {
+  return denominator ? numerator / denominator : 0;
+}
+
+function buildPipelineMetrics(state) {
+  const { documents, chunks } = state;
+  const chunkChars = chunks.map((chunk) => String(chunk.content || '').length);
+  const sourceChars = documents.reduce((sum, document) => (
+    sum + String(document.content || '').length
+  ), 0);
+  const chunkedChars = chunkChars.reduce((s, n) => s + n, 0);
+  const cleanTotal = state.cleanKept + state.cleanRejected;
+
+  return {
     corpus_document_count: documents.length,
-    corpus_source_mix: sourceMix,
-    parse_success_rate: parseAttempts ? parseSuccesses / parseAttempts : 0,
-    parse_error_count: parseErrors,
+    corpus_source_mix: state.sourceMix,
+    parse_success_rate: ratio(state.parseSuccesses, state.parseAttempts),
+    parse_error_count: state.parseErrors,
     records_emitted: documents.length,
-    clean_reject_rate: (cleanKept + cleanRejected) ? cleanRejected / (cleanKept + cleanRejected) : 0,
-    clean_kept_rate: (cleanKept + cleanRejected) ? cleanKept / (cleanKept + cleanRejected) : 0,
-    placeholder_reject_count: placeholderRejects,
+    clean_reject_rate: ratio(state.cleanRejected, cleanTotal),
+    clean_kept_rate: ratio(state.cleanKept, cleanTotal),
+    placeholder_reject_count: state.placeholderRejects,
     chunk_count: chunks.length,
-    avg_chunk_chars: chunkChars.length ? Math.round(chunkChars.reduce((a, b) => a + b, 0) / chunkChars.length) : 0,
+    avg_chunk_chars: chunkChars.length
+      ? Math.round(chunkChars.reduce((a, b) => a + b, 0) / chunkChars.length)
+      : 0,
     max_chunk_chars: chunkChars.length ? Math.max(...chunkChars) : 0,
     chunk_coverage_ratio: sourceChars ? Math.min(1, chunkedChars / sourceChars) : 0,
     metadata_field_fill_rate: documents.length
@@ -367,8 +378,23 @@ function runDocumentPipeline(inputs = [], options = {}) {
       : 0,
     no_transport_blob_rate: 1, // transport blobs rejected in clean
   };
+}
 
-  return { documents, chunks, metrics };
+/**
+ * Full pipeline: documents → cleaned chunks with metadata.
+ * @returns {{ documents, chunks, metrics }}
+ */
+function runDocumentPipeline(inputs = [], options = {}) {
+  const state = createPipelineState();
+  const list = Array.isArray(inputs) ? inputs : [inputs];
+  for (const input of list) {
+    processPipelineInput(input, state, options);
+  }
+  return {
+    documents: state.documents,
+    chunks: state.chunks,
+    metrics: buildPipelineMetrics(state),
+  };
 }
 
 /**
