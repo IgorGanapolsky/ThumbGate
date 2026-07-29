@@ -336,10 +336,10 @@ npx thumbgate init --agent gemini</code></pre>
 <h2>Common Scenarios</h2>
 
 <h3>Agent keeps deleting files</h3>
-<p>Give a thumbs-down: "deleted production config file." After 2-3 occurrences, ThumbGate generates a check that blocks <code>rm</code> commands targeting config files.</p>
+<p>Give a thumbs-down: "deleted production config file." After repeated validated occurrences, ThumbGate can generate a scoped check. It warns by default and hard-blocks when the action reaches the safety floor or strict mode.</p>
 
 <h3>Agent ignores test failures</h3>
-<p>Give a thumbs-down: "committed code with failing tests." ThumbGate learns the pattern and checks future commits when test results show failures.</p>
+<p>Give a thumbs-down: "committed code with failing tests." ThumbGate records the evidence, learns the repeated pattern, and checks future commits when test results show failures.</p>
 
 <h3>Agent uses wrong API endpoint</h3>
 <p>Give a thumbs-down: "called staging API in production code." The check flags and logs tool calls that reference staging URLs in production contexts (and hard-blocks them under strict mode).</p>

@@ -18,7 +18,8 @@ sequenceDiagram
     FB->>FB: Validate schema, score quality
     FB->>FB: Store in JSONL + ContextFS
     FB->>Promo: Analyze for promotion
-    Promo->>Config: Auto-promote to prevention rule
+    Promo->>Promo: Require repeated, validated evidence
+    Promo->>Config: Promote scoped prevention rule
 
     Note over Dev,Config: Session 2 — Gate catches the repeat
     Dev->>Agent: "Refactor the auth module"
@@ -26,6 +27,6 @@ sequenceDiagram
     Hook->>Gate: Evaluate gates
     Gate->>Gate: Pattern match ✓
     Gate->>Gate: Build reasoning chain
-    Gate-->>Hook: ⛔ BLOCK + explanation
-    Hook-->>Agent: Blocked with reason
-    Agent->>Dev: "Gate blocked: Never overwrite auth.js without tests"
+    Gate-->>Hook: ⚠ WARN by default / ⛔ DENY if hard floor or strict
+    Hook-->>Agent: Effective outcome + explanation
+    Agent->>Dev: "Gate warned: add tests before overwriting auth.js"

@@ -47,6 +47,9 @@
   .card { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:1rem 1.1rem; }
   .card h3 { font-size:1rem; margin-bottom:0.35rem; }
   .card p { color:var(--muted); font-size:0.92rem; }
+  .card p + p { margin-top:0.45rem; }
+  .card strong { color:var(--text); }
+  .decision { border-left:3px solid var(--cyan); }
   a.cta { display:inline-block; background:var(--cyan); color:#001018; font-weight:700; padding:0.7rem 1rem; border-radius:8px; text-decoration:none; margin:0.5rem 0.75rem 0.5rem 0; }
   a.secondary { color:var(--cyan); }
   .footer-note { color:var(--muted); font-size:0.85rem; margin-top:2.5rem; text-align:center; }
@@ -75,7 +78,7 @@
     </div>
     <div class="card">
       <h3>Feedback → rules</h3>
-      <p>Thumbs-down becomes a reviewable lesson, then a prevention rule that fires before the next tool call.</p>
+      <p>Thumbs-down becomes a reviewable lesson. Repeated, validated failures can promote a scoped prevention rule.</p>
     </div>
     <div class="card">
       <h3>Multi-agent surface</h3>
@@ -89,10 +92,56 @@
     <figcaption>Agents → hooks → MCP tools → gate engine (match / verdict / reasoning / stats), with governance, secret scanning, feedback promotion, and orchestration around the decision path.</figcaption>
   </figure>
 
+  <h2>What each layer is for</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>User / agent</h3>
+      <p><strong>Why it exists:</strong> turns an intent into proposed tool calls.</p>
+      <p><strong>What can fail:</strong> ambiguous scope, hallucinated facts, or a risky action.</p>
+      <p><strong>How we know:</strong> the request, normalized action, and outcome receipt are linked in the audit trail.</p>
+    </div>
+    <div class="card">
+      <h3>Planner / tool router</h3>
+      <p><strong>Why it exists:</strong> chooses a bounded workflow and the least-powerful suitable tool.</p>
+      <p><strong>What can fail:</strong> excessive fan-out, wrong tool, budget drift, or a retry loop.</p>
+      <p><strong>How we know:</strong> scope, checkpoints, tool choice, action count, and budget are deterministic fields.</p>
+    </div>
+    <div class="card">
+      <h3>MCP / API adapters</h3>
+      <p><strong>Why it exists:</strong> gives every client one versioned contract instead of bespoke integration logic.</p>
+      <p><strong>What can fail:</strong> schema drift, auth failure, timeout, or an over-privileged tool.</p>
+      <p><strong>How we know:</strong> adapter contract tests, capability profiles, and per-call status receipts.</p>
+    </div>
+    <div class="card">
+      <h3>Enterprise systems</h3>
+      <p><strong>Why it exists:</strong> performs the real read or mutation in GitHub, CI, data, billing, and internal services.</p>
+      <p><strong>What can fail:</strong> partial writes, stale reads, provider errors, or permission changes.</p>
+      <p><strong>How we know:</strong> provider-visible receipts and post-action readback, never the agent claim alone.</p>
+    </div>
+    <div class="card">
+      <h3>Evaluator</h3>
+      <p><strong>Why it exists:</strong> compares behavior with golden cases and evidence-backed acceptance checks.</p>
+      <p><strong>What can fail:</strong> vacuous tests, skewed samples, evaluator gaming, or silent regression.</p>
+      <p><strong>How we know:</strong> held-out metrics, replay stability, false-block rate, and published scorecard artifacts.</p>
+    </div>
+    <div class="card">
+      <h3>ThumbGate policies</h3>
+      <p><strong>Why it exists:</strong> converts risk and workflow constraints into an effective allow, warn, approval, or deny outcome.</p>
+      <p><strong>What can fail:</strong> evasion, over-blocking, fail-open hooks, or confusing a raw match with an actual block.</p>
+      <p><strong>How we know:</strong> raw policy decision and effective execution disposition are stored separately and exercised by adversarial tests.</p>
+    </div>
+    <div class="card">
+      <h3>Human escalation</h3>
+      <p><strong>Why it exists:</strong> keeps consequential, ambiguous, or authority-expanding actions with an accountable reviewer.</p>
+      <p><strong>What can fail:</strong> no approver, stale approval, or approval for the wrong action.</p>
+      <p><strong>How we know:</strong> identity-bound, action-bound, expiring approval evidence; autonomous runs fail closed.</p>
+    </div>
+  </div>
+
   <h2>Feedback pipeline (session 1 → session 2)</h2>
   <figure>
-    <img src="/assets/diagrams/feedback-pipeline.png" alt="Sequence diagram: agent mistake, thumbs-down capture, rule promotion, next session blocked" width="1200" height="700" loading="lazy">
-    <figcaption>Session 1 captures a thumbs-down; the lesson is promoted; session 2 blocks the repeat before execution.</figcaption>
+    <img src="/assets/diagrams/feedback-pipeline.png" alt="Sequence diagram: agent mistake, thumbs-down capture, validated rule promotion, later effective warning or denial" width="1200" height="700" loading="lazy">
+    <figcaption>Session 1 captures evidence. Repeated, validated failures can promote a scoped rule. A later match warns by default, or denies when it reaches the hard safety floor or strict mode.</figcaption>
   </figure>
 
   <h2>Pre-action gate loop</h2>
@@ -112,6 +161,34 @@
     <img src="/assets/diagrams/plugin-topology.png" alt="ThumbGate plugin topology across IDE and CLI surfaces" width="1200" height="700" loading="lazy">
     <figcaption>Where plugins and marketplace packages sit relative to the local gate runtime.</figcaption>
   </figure>
+
+  <h2>Why it is built this way</h2>
+  <div class="grid">
+    <div class="card decision">
+      <h3>Deterministic orchestration around agents</h3>
+      <p>Models propose; code owns scope, sequencing, permissions, budgets, retries, and terminal states. The same input can be replayed and audited without asking another model to reinterpret policy.</p>
+    </div>
+    <div class="card decision">
+      <h3>MCP instead of direct integrations</h3>
+      <p>One typed protocol supports multiple agents, capability profiles, and local or hosted transports. Provider-specific logic stays behind adapters, so auth and schema changes do not leak into every client.</p>
+    </div>
+    <div class="card decision">
+      <h3>Cost control</h3>
+      <p>Regex, schemas, cached local retrieval, and hard floors run before optional model calls. Workflows carry action, time, and model budgets; repeated or low-value calls are stopped before spend compounds.</p>
+    </div>
+    <div class="card decision">
+      <h3>Failure recovery</h3>
+      <p>Operations are checkpointed and receipts are idempotent. Retryable transport failures use bounded backoff; ambiguous writes fail closed and require provider readback before resuming.</p>
+    </div>
+    <div class="card decision">
+      <h3>Loop limits</h3>
+      <p>Every workflow has a maximum action count, retry count, elapsed-time budget, and explicit terminal states. Repeated action fingerprints and no-progress checks stop circular plans.</p>
+    </div>
+    <div class="card decision">
+      <h3>Append-only evidence model</h3>
+      <p>Feedback, lessons, policy verdicts, effective outcomes, approvals, and receipts remain separate linked records. That preserves provenance, supports replay, and avoids rewriting history when policy changes.</p>
+    </div>
+  </div>
 
   <h2>Related proof surfaces</h2>
   <p>

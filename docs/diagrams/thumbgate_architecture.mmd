@@ -21,7 +21,7 @@ graph TB
 
     subgraph "Gate Engine"
         G1["Pattern Matcher\n(regex + glob)"]
-        G2["Verdict Engine\n(block / warn / log)"]
+        G2["Verdict Engine\n(allow / warn / approve / deny / log)"]
         G3["Reasoning Chain\nBuilder"]
         G4["Stats Tracker"]
     end
@@ -64,7 +64,7 @@ graph TB
     G2 -->|"thumbs down"| F1
     F1 --> F2
     F2 --> F3
-    F3 -->|"auto-promote"| G1
+    F3 -->|"validated promotion"| G1
     F2 --> F4
     M2 --> O1
     O1 --> O2

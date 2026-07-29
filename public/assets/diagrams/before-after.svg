@@ -16,6 +16,6 @@
     <text x="720" y="118" text-anchor="middle" fill="#f5f5f7" font-size="20" font-weight="700">👎 once</text>
     <text x="720" y="152" text-anchor="middle" fill="#e5e7eb" font-size="16">Rule saved locally</text>
     <text x="720" y="182" text-anchor="middle" fill="#e5e7eb" font-size="16">Next attempt is checked</text>
-    <text x="720" y="218" text-anchor="middle" fill="#9ca3af" font-size="14">one correction → permanent gate</text>
+    <text x="720" y="218" text-anchor="middle" fill="#9ca3af" font-size="14">repeated validated failures → scoped gate</text>
   </g>
 </svg>

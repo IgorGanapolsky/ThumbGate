@@ -16,6 +16,13 @@ const PAGES = [
       '/assets/diagrams/thumbgate-architecture.png',
       '/assets/diagrams/feedback-pipeline.png',
       '/assets/diagrams/pre-action-gate-loop.svg',
+      'What each layer is for',
+      'Why it exists:',
+      'How we know:',
+      'Deterministic orchestration around agents',
+      'MCP instead of direct integrations',
+      'Loop limits',
+      'raw policy decision and effective execution disposition',
     ],
   },
   {
