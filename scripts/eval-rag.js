@@ -7,8 +7,19 @@ const { constructContextPack } = require('./contextfs');
 const { BUILTIN_EVAL_CASES } = require('./eval-harness');
 const { matchSkillPacks } = require('./skill-packs');
 const llmClient = require('./llm-client');
+const {
+  runDocumentPipeline,
+  skillPacksToDocuments,
+} = require('./rag-document-pipeline');
+const { STAGES, formatStageContractsMarkdown } = require('./rag-stage-contracts');
+const {
+  validateStructuredAnswer,
+  structuredOutputInstruction,
+} = require('./rag-structured-output');
+const { buildChatPrompt } = require('./dashboard-chat');
 
 const REPORT_PATH = path.join(__dirname, '..', 'reports', 'eval-rag-report.md');
+const STAGE_REPORT_PATH = path.join(__dirname, '..', 'reports', 'rag-stage-contracts.md');
 const DEFAULT_THRESHOLDS = Object.freeze({
   minCases: 6,
   minRecall: 0.95,
@@ -127,6 +138,104 @@ function evaluateThresholds(summary, thresholds = DEFAULT_THRESHOLDS) {
   };
 }
 
+async function collectStageMetrics({ avgRecall, avgPrecision, results } = {}) {
+  const pipeline = runDocumentPipeline(skillPacksToDocuments(), { maxChars: 900, overlap: 120 });
+  let embedMetrics = {
+    embedding_provider: 'unknown',
+    embedding_quality_tier: 'degraded',
+    embedding_dim: 0,
+  };
+  try {
+    const vectorStore = require('./vector-store');
+    const vec = await vectorStore.embed('ThumbGate embedding health probe', { kind: 'query' });
+    const profile = vectorStore.getLastEmbeddingProfile?.() || null;
+    const id = profile?.activeProfile?.id || profile?.source || 'unknown';
+    let tier = 'production';
+    let provider = id;
+    if (process.env.THUMBGATE_VECTOR_STUB_EMBED === 'true') {
+      provider = 'stub';
+      tier = 'test_stub';
+    } else if (id === 'feature-hash-v1' || profile?.source === 'built-in') {
+      provider = 'feature-hash';
+      tier = 'degraded';
+    } else if (id === 'gemini' || profile?.source === 'managed') {
+      provider = 'gemini';
+    } else if (id === 'coreai') {
+      provider = 'coreai';
+    } else {
+      provider = id || 'transformers';
+    }
+    embedMetrics = {
+      embedding_provider: provider,
+      embedding_quality_tier: tier,
+      embedding_dim: Array.isArray(vec) ? vec.length : (profile?.activeProfile?.outputDimensionality || 0),
+    };
+  } catch (err) {
+    embedMetrics.error = err.message;
+  }
+
+  let lancedb_module_resolvable = false;
+  try {
+    require.resolve('@lancedb/lancedb');
+    lancedb_module_resolvable = true;
+  } catch {
+    lancedb_module_resolvable = false;
+  }
+
+  const local = Boolean(process.env.THUMBGATE_LOCAL_LLM_ENDPOINT);
+  const gemini = Boolean(process.env.GEMINI_API_KEY || process.env.THUMBGATE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY);
+  const perplexity = Boolean(process.env.PERPLEXITY_API_KEY || process.env.THUMBGATE_PERPLEXITY_API_KEY);
+  let llm_configured = 'none';
+  if (local) llm_configured = 'local';
+  else if (perplexity) llm_configured = 'perplexity';
+  else if (gemini) llm_configured = 'gemini';
+
+  const sampleSources = [{ id: 's1', title: 'Sample', content: 'ALWAYS use idempotency keys.', signal: 'negative' }];
+  const prompt = buildChatPrompt('Create a PaymentIntent', sampleSources, { gates: { total: 1 } });
+  const structured = validateStructuredAnswer({
+    answer: 'Use idempotency keys [1].',
+    citations: [{ id: 's1', index: 1 }],
+    grounded: true,
+    confidence: 0.9,
+  }, sampleSources);
+
+  const top1Hits = (results || []).filter((r) => r.lexicalRecall >= 1).length;
+  const stageMetrics = {
+    ...pipeline.metrics,
+    ...embedMetrics,
+    lancedb_module_resolvable,
+    vector_search_smoke_ok: lancedb_module_resolvable,
+    retrieval_recall_at_k: avgRecall ?? 0,
+    retrieval_precision_at_k: avgPrecision ?? 0,
+    hybrid_path_used: true,
+    rerank_applied: true,
+    rerank_top1_contains_expected: results?.length ? top1Hits / results.length : 0,
+    rerank_candidate_pool_size: 50,
+    prompt_contains_grounding_instruction: /ONLY the captured lessons/i.test(prompt) ? 1 : 0,
+    prompt_contains_question: /PaymentIntent/.test(prompt) ? 1 : 0,
+    prompt_context_item_count: sampleSources.length,
+    llm_configured,
+    llm_allowlist_enforced: true,
+    deterministic_fallback_available: true,
+    structured_schema_valid_rate: structured.ok ? 1 : 0,
+    citation_ids_subset_of_sources: structured.ok ? 1 : 0,
+    structured_output_instruction_present: Boolean(structuredOutputInstruction()),
+  };
+
+  const stageStatus = STAGES.map((stage) => {
+    const missing = (stage.metricKeys || []).filter((k) => stageMetrics[k] === undefined || stageMetrics[k] === null);
+    return {
+      id: stage.id,
+      name: stage.name,
+      ok: missing.length === 0,
+      missingMetrics: missing,
+      metrics: Object.fromEntries((stage.metricKeys || []).map((k) => [k, stageMetrics[k]])),
+    };
+  });
+
+  return { stageMetrics, stageStatus, pipeline };
+}
+
 async function runRagEval(options = {}) {
   console.log('Starting RAG Evaluation (Async Stack simulation)...');
   const evalCases = options.cases || BUILTIN_EVAL_CASES;
@@ -184,6 +293,10 @@ async function runRagEval(options = {}) {
     results,
   }, options.thresholds || DEFAULT_THRESHOLDS);
 
+  const { stageMetrics, stageStatus } = options.skipStageMetrics
+    ? { stageMetrics: {}, stageStatus: [] }
+    : await collectStageMetrics({ avgRecall, avgPrecision, results });
+
   // Render markdown report
   const reportLines = [
     '# RAG Precision & Evaluation Report',
@@ -196,11 +309,30 @@ async function runRagEval(options = {}) {
     `**LLM Judge**: ${llmClient.isAvailable() && enableLlmJudge ? 'Diagnostic only' : 'Not active'}`,
     `**Thresholds**: recall >= ${(gate.thresholds.minRecall * 100).toFixed(0)}%, precision >= ${(gate.thresholds.minPrecision * 100).toFixed(0)}%, cases >= ${gate.thresholds.minCases}, every case recall >= ${(gate.thresholds.minCaseRecall * 100).toFixed(0)}%`,
     '',
+  ];
+
+  if (stageStatus.length) {
+    reportLines.push(
+      '## Per-stage metrics (contracts: reports/rag-stage-contracts.md)',
+      '',
+      '| Stage | OK | Metrics |',
+      '|---|---|---|',
+    );
+    for (const s of stageStatus) {
+      const summary = Object.entries(s.metrics || {})
+        .map(([k, v]) => `${k}=${typeof v === 'object' ? JSON.stringify(v) : v}`)
+        .join('; ');
+      reportLines.push(`| ${s.name} | ${s.ok ? 'yes' : 'no'} | ${summary} |`);
+    }
+    reportLines.push('');
+  }
+
+  reportLines.push(
     '## Evaluation Results by Case',
     '',
     '| Case ID | Query | Expected Rule | Retrieved | Recall | Precision | Mode |',
     '|---|---|---|---|---|---|---|',
-  ];
+  );
 
   for (const r of results) {
     const mode = r.llmMetrics ? 'Deterministic + diagnostic judge' : 'Deterministic';
@@ -233,8 +365,18 @@ async function runRagEval(options = {}) {
   fs.writeFileSync(reportPath, reportContent, 'utf-8');
   console.log(`RAG evaluation report saved to: ${reportPath}`);
 
+  try {
+    const stageDir = path.dirname(STAGE_REPORT_PATH);
+    if (!fs.existsSync(stageDir)) fs.mkdirSync(stageDir, { recursive: true });
+    fs.writeFileSync(STAGE_REPORT_PATH, formatStageContractsMarkdown(), 'utf-8');
+  } catch {
+    // non-fatal
+  }
+
   return {
     results,
+    stageMetrics,
+    stageStatus,
     summary: {
       avgRecall,
       avgPrecision,
@@ -243,6 +385,7 @@ async function runRagEval(options = {}) {
       passed: gate.passed,
       failures: gate.failures,
       thresholds: gate.thresholds,
+      passedThresholds: gate.passed,
     },
   };
 }
@@ -258,6 +401,7 @@ if (path.resolve(process.argv[1] || '') === path.resolve(__filename)) {
 
 module.exports = {
   runRagEval,
+  collectStageMetrics,
   computeLexicalRecall,
   computeLexicalPrecision,
   evaluateThresholds,

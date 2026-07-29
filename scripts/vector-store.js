@@ -314,6 +314,8 @@ async function embed(text, options = {}) {
   }
 
   const vector = embedWithFeatureHash(text);
+  // Feature-hash is a last-resort degrade, not production semantic quality.
+  // Callers (prove/eval/chat health) must treat quality_tier=degraded.
   _lastEmbeddingProfile = {
     generatedAt: new Date().toISOString(),
     source: 'built-in',
@@ -322,9 +324,11 @@ async function embed(text, options = {}) {
       model: 'ThumbGate feature hashing',
       outputDimensionality: FEATURE_HASH_DIMENSIONS,
       task: options.task || 'code retrieval',
-      rationale: 'Deterministic zero-dependency local text embedding.',
+      rationale: 'DEGRADED: deterministic zero-dependency hash embedding — not semantic. Configure Gemini or local transformers for production retrieval quality.',
+      qualityTier: 'degraded',
     },
-    fallbackUsed: false,
+    fallbackUsed: true,
+    fallbackReason: 'no_managed_or_transformer_embedder',
   };
   return vector;
 }
