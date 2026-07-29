@@ -2695,12 +2695,15 @@ describe('bin/cli.js', () => {
     const mcp = JSON.parse(fs.readFileSync(mcpPath, 'utf8'));
     assert.ok(mcp.mcpServers, '.mcp.json should have mcpServers');
     assert.ok(mcp.mcpServers.thumbgate, 'Should have canonical ThumbGate server entry');
-    assertLocalMcpEntry(mcp.mcpServers.thumbgate);
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });
 
-  test('init keeps a local source launcher for unpublished external installs', () => {
+  test('init NEVER writes a machine-absolute server path into committed .mcp.json', () => {
+    // Regression for the 2026-07-29 Cowork-sandbox report: init on machine A baked A's
+    // absolute home path into .mcp.json — shared, committed repo config — and the file
+    // broke on every other machine. Portable entries only; absolute paths belong solely
+    // to home-scope (machine-local) config.
     const isolatedDir = makeTmpDir();
     const result = runCliSync(['init'], {
       cwd: isolatedDir,
@@ -2714,8 +2717,12 @@ describe('bin/cli.js', () => {
 
     const mcpPath = path.join(isolatedDir, '.mcp.json');
     const mcp = JSON.parse(fs.readFileSync(mcpPath, 'utf8'));
-    assert.equal(mcp.mcpServers.thumbgate.command, 'node');
-    assert.deepEqual(mcp.mcpServers.thumbgate.args, [MCP_SERVER_PATH]);
+    for (const [name, entry] of Object.entries(mcp.mcpServers)) {
+      for (const arg of entry.args || []) {
+        assert.ok(!path.isAbsolute(arg) || !/server-stdio|cli\.js/.test(arg),
+          `${name}: committed .mcp.json carries a machine-absolute server path: ${arg}`);
+      }
+    }
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });

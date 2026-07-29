@@ -132,26 +132,29 @@ describe('install-mcp', () => {
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });
 
-  test('resolveMcpServerConfig keeps a local launcher for unpublished external project installs', () => {
+  // INVARIANT CHANGE (2026-07-29): project-scope entries land in COMMITTED, SHARED config.
+  // The two tests that used to live here asserted an absolute local launcher was "kept" for
+  // external projects — which is precisely the bug reported from the Cowork sandbox: init on
+  // machine A (home /Users/busy-clever-newton) wrote that machine's absolute path into
+  // .mcp.json, and the committed file broke every other machine, teammate, and CI runner.
+  // Shared config now always gets a portable entry; absolute paths are legal only in
+  // HOME-scope (machine-local) config. A developer who needs unpublished source against an
+  // external repo uses home scope for exactly that reason.
+
+  test('project-scope entries for external repos are NEVER machine-absolute', () => {
     const isolatedDir = makeTmpDir();
 
-    const projectConfig = withPublishState('unpublished', () => withCliState('unavailable', () => resolveMcpServerConfig({ project: true, cwd: isolatedDir })));
-
-    assert.equal(projectConfig.command, 'node');
-    assert.equal(projectConfig.args.length, 1);
-    assert.match(projectConfig.args[0], /adapters[\\/]mcp[\\/]server-stdio\.js$/);
-
-    fs.rmSync(isolatedDir, { recursive: true, force: true });
-  });
-
-  test('resolveMcpServerConfig keeps a local launcher when the published CLI is unavailable', () => {
-    const isolatedDir = makeTmpDir();
-
-    const projectConfig = withCliState('unavailable', () => resolveMcpServerConfig({ project: true, cwd: isolatedDir }));
-
-    assert.equal(projectConfig.command, 'node');
-    assert.equal(projectConfig.args.length, 1);
-    assert.match(projectConfig.args[0], /adapters[\\/]mcp[\\/]server-stdio\.js$/);
+    for (const setup of [
+      () => withPublishState('unpublished', () => withCliState('unavailable', () => resolveMcpServerConfig({ project: true, cwd: isolatedDir }))),
+      () => withCliState('unavailable', () => resolveMcpServerConfig({ project: true, cwd: isolatedDir })),
+      () => resolveMcpServerConfig({ project: true, cwd: isolatedDir }),
+    ]) {
+      const projectConfig = setup();
+      for (const arg of projectConfig.args) {
+        assert.ok(!path.isAbsolute(arg) || !arg.includes('adapters'),
+          `committed project config contains a machine-absolute server path: ${arg}`);
+      }
+    }
 
     fs.rmSync(isolatedDir, { recursive: true, force: true });
   });
