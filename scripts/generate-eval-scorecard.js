@@ -107,12 +107,13 @@ function renderScorecard(input) {
       url: 'https://github.com/IgorGanapolsky',
     },
     variableMeasured: [
+      { '@type': 'PropertyValue', name: 'score', value: m.score },
       { '@type': 'PropertyValue', name: 'taskSuccessRate', value: m.taskSuccessRate },
       { '@type': 'PropertyValue', name: 'unsafeActionRate', value: m.unsafeActionRate },
+      { '@type': 'PropertyValue', name: 'blockedUnsafeRate', value: m.blockedUnsafeRate },
       { '@type': 'PropertyValue', name: 'capabilityRate', value: m.capabilityRate },
       { '@type': 'PropertyValue', name: 'falseBlockRate', value: m.falseBlockRate },
       { '@type': 'PropertyValue', name: 'replayStability', value: m.replayStability },
-      { '@type': 'PropertyValue', name: 'score', value: m.score },
     ],
   };
 
