@@ -153,10 +153,12 @@
   <div class="rule">The rule all of this enforces: no accuracy figure ships without the baseline it beats and the split it was measured on.</div>
 
   <h2>Reproduce it</h2>
+  <p>Honest scoping: the measured corpus is <strong>private operator feedback telemetry</strong> and does not ship. What a clean clone gives you: the checked-in machine-readable report these figures come from (<a style="color:var(--cyan)" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/evals/risk-model-report.json">evals/risk-model-report.json</a>, with provenance), the CI quality gate runnable with <em>no private data</em>, and the identical harness to run against your own agent's feedback log.</p>
   <pre>git clone https://github.com/IgorGanapolsky/ThumbGate
 cd ThumbGate &amp;&amp; npm install
-node scripts/eval-risk-model.js --corpus &lt;your-feedback-log&gt; --resamples 12
-npm run test:risk-quality   # the CI quality gate, runnable locally</pre>
+npm run test:risk-quality       # the CI quality gate — no private data needed
+cat evals/risk-model-report.json # the exact report behind this page
+node scripts/eval-risk-model.js --corpus &lt;your-own-feedback-log&gt; --resamples 12</pre>
   <p>Full methodology, diagrams, and known weaknesses: <a style="color:var(--cyan)" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/ML-EVALUATION.md">docs/ML-EVALUATION.md</a> · case studies: <a style="color:var(--cyan)" href="https://github.com/IgorGanapolsky/ThumbGate/blob/main/docs/THUMBGATE-CASE-STUDIES.md">docs/THUMBGATE-CASE-STUDIES.md</a></p>
 
   <p class="footer-note">ThumbGate is built in the open by <a href="https://github.com/IgorGanapolsky">Igor Ganapolsky</a>. This page reports first-party measurements only — no customer counts, no install volume, no revenue claims.</p>

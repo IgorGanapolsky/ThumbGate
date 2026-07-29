@@ -268,6 +268,7 @@ const CODEX_PLUGIN_PAGE_PATH = path.resolve(__dirname, '../../public/codex-plugi
 const COMPARE_PAGE_PATH = path.resolve(__dirname, '../../public/compare.html');
 const LEARN_PAGE_PATH = path.resolve(__dirname, '../../public/learn.html');
 const NUMBERS_PAGE_PATH = path.resolve(__dirname, '../../public/numbers.html');
+const EVALUATIONS_PAGE_PATH = path.resolve(__dirname, '../../public/evaluations.html');
 const FEDERAL_PAGE_PATH = path.resolve(__dirname, '../../public/federal.html');
 const PRICING_PAGE_PATH = path.resolve(__dirname, '../../public/pricing.html');
 const ABOUT_PAGE_PATH = path.resolve(__dirname, '../../public/about.html');
@@ -6264,6 +6265,27 @@ async function addContext(){
         });
       } catch {
         sendJson(res, 404, { error: 'Numbers page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/evaluations' || pathname === '/evaluations.html')) {
+      // Evaluation-methodology white paper. Served through servePublicMarketingPage like
+      // /numbers so arrivals (e.g. from the LinkedIn/GitHub evaluation threads) capture
+      // landing_page_view telemetry with UTM attribution. Without an explicit route this
+      // page 404s in production: the Railway entrypoint only serves selected assets.
+      try {
+        servePublicMarketingPage({
+          req,
+          res,
+          parsed,
+          hostedConfig,
+          isHeadRequest,
+          renderHtml: () => fs.readFileSync(EVALUATIONS_PAGE_PATH, 'utf-8'),
+          extraTelemetry: { pageType: 'evaluations' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Evaluations page not found' });
       }
       return;
     }
