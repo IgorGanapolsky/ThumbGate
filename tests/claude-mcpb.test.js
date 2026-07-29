@@ -213,3 +213,18 @@ test('claude desktop submission doc covers history-aware lesson distillation', (
   assert.match(extensionDoc, /up to 8 prior recorded entries/i);
   assert.match(extensionDoc, /60-second follow-up/i);
 });
+
+test('bundle server shim resolves bin/cli.js INSIDE the bundle', () => {
+  // Regression: the shim joined __dirname with '..','..' — one level too many — so the
+  // installed Desktop extension looked for "Claude Extensions/bin/cli.js", crashed with
+  // MODULE_NOT_FOUND on launch, and Desktop showed only "Server disconnected".
+  const shim = fs.readFileSync(
+    path.join(__dirname, '..', '.claude-plugin', 'bundle', 'server', 'index.js'), 'utf8');
+  const joins = [...shim.matchAll(/path\.join\(__dirname([^)]*)\)/g)].map((m) => m[1]);
+  assert.ok(joins.length > 0, 'shim no longer resolves via path.join(__dirname, ...)');
+  for (const args of joins) {
+    const ups = (args.match(/'\.\.'/g) || []).length;
+    assert.ok(ups <= 1,
+      `shim escapes the bundle: path.join(__dirname${args}) climbs ${ups} levels`);
+  }
+});

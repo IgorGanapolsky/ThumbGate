@@ -4,7 +4,11 @@
 const path = require('path');
 const { spawn } = require('child_process');
 
-const cliPath = path.join(__dirname, '..', '..', 'bin', 'cli.js');
+// __dirname is <bundle>/server; bin/cli.js is ONE level up, inside the bundle.
+// A second '..' escapes the bundle entirely — installed under Claude Desktop this
+// resolved to "Claude Extensions/bin/cli.js", which does not exist, so the server
+// crashed on launch and Desktop showed "Server disconnected" with no other clue.
+const cliPath = path.join(__dirname, '..', 'bin', 'cli.js');
 const child = spawn(process.execPath, [cliPath, 'serve'], {
   stdio: 'inherit',
   env: process.env,
