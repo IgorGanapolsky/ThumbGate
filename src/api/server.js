@@ -2501,8 +2501,9 @@ ${hiddenInputs}
 <p class="email-note">Required so the checkout has attributable buyer intent and your receipt can be recovered.</p>
 <button type="submit" class="primary">Pay $19/mo with Stripe →</button>
 </form>
+<a class="secondary" data-i="pro_checkout_direct_stripe" rel="nofollow noopener noreferrer" target="_blank" href="${PRO_CHECKOUT_URL}">Skip form — open Stripe checkout directly →</a>
 <a class="secondary" data-i="workflow_sprint_intake" href="/#workflow-sprint-intake">Not sure yet? Send the workflow first</a>
-<p class="choice-note">Cancel anytime. 7-day refund, no questions. Diagnostics and sprints have their own pages.</p>
+<p class="choice-note">Cancel anytime. 7-day refund, no questions. Diagnostics and sprints have their own pages. Email path keeps receipts attributable; the direct Stripe link is for buyers who bounce on the form.</p>
 <div class="objection-box" aria-label="Checkout feedback">
 <strong>Not buying today?</strong>
 <p class="objection-note">Tap one reason so we know what to fix. This does not sign you up.</p>
