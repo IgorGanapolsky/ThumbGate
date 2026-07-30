@@ -213,7 +213,9 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 390 -> 391 (2026-07-29): scripts/rag-structured-output.js required by dashboard-chat
   // structured answers. IR/eval tooling (ir-metrics, ranking golden) stays repo-local.
   // 391 -> 392: pragmatic-hybrid-search required by lesson-retrieval
-  const CEILING = 392;
+  // 392 -> 395 (2026-07-30): server.json + glama.json + smithery.yaml for
+  // Glama/MCP registry stdio start contract (npx -y thumbgate serve).
+  const CEILING = 395;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

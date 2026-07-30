@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.IgorGanapolsky/thumbgate",
-  "description": "Pre-action gates that block AI agents from repeating known mistakes.",
+  "description": "ThumbGate pre-action gates for AI coding agents. Captures thumbs-up/down feedback as lessons, promotes repeated failures into prevention rules, and evaluates tool calls over stdio MCP before they run.",
   "title": "ThumbGate",
   "websiteUrl": "https://thumbgate.ai",
   "repository": {
@@ -15,9 +15,31 @@
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "thumbgate",
       "version": "1.30.0",
+      "runtimeHint": "npx",
+      "runtimeArguments": [
+        {
+          "type": "positional",
+          "value": "-y"
+        }
+      ],
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "serve"
+        }
+      ],
       "transport": {
         "type": "stdio"
-      }
+      },
+      "environmentVariables": [
+        {
+          "name": "THUMBGATE_MCP_PROFILE",
+          "description": "MCP tool profile: default | readonly | locked",
+          "default": "default",
+          "isRequired": false,
+          "format": "string"
+        }
+      ]
     }
   ]
 }
