@@ -213,7 +213,9 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 390 -> 391 (2026-07-29): scripts/rag-structured-output.js required by dashboard-chat
   // structured answers. IR/eval tooling (ir-metrics, ranking golden) stays repo-local.
   // 391 -> 392: pragmatic-hybrid-search required by lesson-retrieval
-  const CEILING = 392;
+  // 392 -> 393 (2026-07-30): config/directory-manifest.json — the GENERATED MCP tool list. It ships so the published package and the directory listing cannot disagree; see scripts/export-directory-manifest.js.
+
+  const CEILING = 393;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +
