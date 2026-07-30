@@ -103,7 +103,7 @@ async function evaluateHybridAblation(options = {}) {
   }
 }
 
-if (require.main === module) {
+if (!module.parent) {
   evaluateHybridAblation().then((result) => {
     console.log(JSON.stringify(result, null, 2));
     if (!result.passed) process.exitCode = 1;

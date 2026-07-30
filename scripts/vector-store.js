@@ -88,10 +88,11 @@ function getOllamaEmbeddingConfig() {
     || 'http://127.0.0.1:11434',
   ).trim();
   if (endpoint && !/^https?:\/\//i.test(endpoint)) endpoint = `http://${endpoint}`;
+  while (endpoint.endsWith('/')) endpoint = endpoint.slice(0, -1);
   return {
     enabled: Boolean(model),
     model,
-    endpoint: endpoint.replace(/\/+$/, ''),
+    endpoint,
     timeoutMs: Math.max(
       250,
       Math.min(30_000, Number(process.env.THUMBGATE_OLLAMA_TIMEOUT_MS) || 10_000),
@@ -133,7 +134,7 @@ function addHashedFeature(vector, feature, weight) {
 }
 
 function embedWithFeatureHash(text) {
-  const vector = Array(FEATURE_HASH_DIMENSIONS).fill(0);
+  const vector = new Array(FEATURE_HASH_DIMENSIONS).fill(0);
   const tokens = String(text || '').toLowerCase().match(/[\p{L}\p{N}_-]+/gu) || [];
 
   for (let index = 0; index < tokens.length; index += 1) {

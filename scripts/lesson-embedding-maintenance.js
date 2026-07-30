@@ -133,16 +133,16 @@ async function runCli() {
   } catch (error) {
     report = { ok: false, status: 'error', error: error.message, code: error.code || 'ERROR' };
   }
-  if (options.json) console.log(JSON.stringify(report, null, 2));
-  else console.log(
-    `Lesson embeddings: ${report.status}; ${report.indexedCount || 0}/${report.corpusCount || 0} indexed; coverage=${report.coverage || 0}`,
-  );
+  const output = options.json
+    ? JSON.stringify(report, null, 2)
+    : `Lesson embeddings: ${report.status}; ${report.indexedCount || 0}/${report.corpusCount || 0} indexed; coverage=${report.coverage || 0}`;
+  process.stdout.write(`${output}\n`);
   if (!report.ok || (options.requireSemantic && !report.semanticProviderAvailable)) {
     process.exitCode = 1;
   }
 }
 
-if (require.main === module) {
+if (!module.parent) {
   runCli();
 }
 

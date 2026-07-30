@@ -31,8 +31,10 @@ function looksLikePlaceholder(text) {
 
 function sanitizeText(text) {
   return String(text || '')
-    .replace(/\r\n/g, '\n')
-    .replace(/[ \t]+\n/g, '\n')
+    .replaceAll('\r\n', '\n')
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .replace(/[^\S\n]{2,}/g, ' ')
     .trim();
@@ -152,9 +154,14 @@ function splitMarkdownSections(raw, fallbackTitle) {
   }
   const parts = text.split(/(?=^#{1,3}\s+)/m).map((p) => p.trim()).filter(Boolean);
   return parts.map((part) => {
-    const m = part.match(/^#{1,3}\s+(.+)\n?([\s\S]*)$/);
-    if (!m) return { title: fallbackTitle, content: part };
-    return { title: m[1].trim(), content: (m[2] || '').trim() };
+    const lines = part.split('\n');
+    const heading = lines.shift() || '';
+    const markerEnd = heading.indexOf(' ');
+    if (markerEnd < 1 || markerEnd > 3) return { title: fallbackTitle, content: part };
+    return {
+      title: heading.slice(markerEnd + 1).trim(),
+      content: lines.join('\n').trim(),
+    };
   });
 }
 
@@ -266,11 +273,24 @@ function chunkRecord(record, options = {}) {
   }));
 }
 
-const PATH_RE = /(?:\.\/|\/)?[\w.-]+(?:\/[\w.-]+)+(?:\.\w+)?/g;
 const TOOL_HINTS = [
   'bash', 'shell', 'git', 'npm', 'node', 'curl', 'docker', 'railway',
   'stripe', 'prisma', 'sqlite', 'postgres', 'write', 'edit', 'read',
 ];
+
+function extractPathCandidates(content) {
+  const boundaryChars = new Set(['"', "'", '`', '(', ')', '[', ']', '{', '}', '<', '>', ',', ':', ';']);
+  return String(content || '').split(/\s+/).map((rawToken) => {
+    let start = 0;
+    let end = rawToken.length;
+    while (start < end && boundaryChars.has(rawToken[start])) start += 1;
+    while (end > start && boundaryChars.has(rawToken[end - 1])) end -= 1;
+    return rawToken.slice(start, end);
+  }).filter((candidate) => {
+    if (!candidate.includes('/') || candidate.length <= 3 || candidate.length >= 200) return false;
+    return candidate.split('/').filter(Boolean).length >= 2;
+  });
+}
 
 function extractMetadata(record) {
   const content = `${record.title || ''}\n${record.content || ''}`;
@@ -286,7 +306,7 @@ function extractMetadata(record) {
     }
   }
 
-  const paths = content.match(PATH_RE) || [];
+  const paths = extractPathCandidates(content);
   for (const p of paths.slice(0, 12)) {
     if (p.length > 3 && p.length < 200) filesInvolved.add(p);
   }
