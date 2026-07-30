@@ -106,7 +106,26 @@ function checkContract() {
   return { checks, failed, passed: failed.length === 0 };
 }
 
-function smokeInitialize(timeoutMs = 4000) {
+function isSmokeSuccess(out) {
+  return /"name"\s*:\s*"thumbgate-mcp"/.test(out) || /protocolVersion/.test(out);
+}
+
+function buildInitializeFrame() {
+  const body = JSON.stringify({
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'initialize',
+    params: {
+      protocolVersion: '2024-11-05',
+      capabilities: {},
+      clientInfo: { name: 'prove-glama-mcp-start', version: '0' },
+    },
+  });
+  return `Content-Length: ${Buffer.byteLength(body)}\r\n\r\n${body}`;
+}
+
+function smokeInitialize(timeoutMs = 4000, options = {}) {
+  const spawner = options.spawnFn || spawn;
   return new Promise((resolve) => {
     const cli = path.join(ROOT, 'bin', 'cli.js');
     const env = { ...process.env, THUMBGATE_MCP_PROFILE: 'essential' };
@@ -114,7 +133,7 @@ function smokeInitialize(timeoutMs = 4000) {
     const tmp = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'tg-glama-smoke-'));
     env.THUMBGATE_FEEDBACK_DIR = tmp;
 
-    const child = spawn(process.execPath, [cli, 'serve'], {
+    const child = spawner(process.execPath, [cli, 'serve'], {
       env,
       stdio: ['pipe', 'pipe', 'pipe'],
       cwd: ROOT,
@@ -122,44 +141,45 @@ function smokeInitialize(timeoutMs = 4000) {
 
     let out = '';
     let err = '';
-    child.stdout.on('data', (d) => { out += d; });
-    child.stderr.on('data', (d) => { err += d; });
+    let settled = false;
+    const finish = (payload) => {
+      if (settled) return;
+      settled = true;
+      try { fs.rmSync(tmp, { recursive: true, force: true }); } catch { /* ignore */ }
+      resolve(payload);
+    };
 
-    const body = JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'initialize',
-      params: {
-        protocolVersion: '2024-11-05',
-        capabilities: {},
-        clientInfo: { name: 'prove-glama-mcp-start', version: '0' },
-      },
-    });
-    const framed = `Content-Length: ${Buffer.byteLength(body)}\r\n\r\n${body}`;
+    if (child.stdout && child.stdout.on) child.stdout.on('data', (d) => { out += d; });
+    if (child.stderr && child.stderr.on) child.stderr.on('data', (d) => { err += d; });
 
+    const framed = buildInitializeFrame();
     const timer = setTimeout(() => {
-      try { child.kill('SIGKILL'); } catch { /* ignore */ }
-      resolve({
-        ok: /"name"\s*:\s*"thumbgate-mcp"/.test(out) || /protocolVersion/.test(out),
+      try { if (child.kill) child.kill('SIGKILL'); } catch { /* ignore */ }
+      finish({
+        ok: isSmokeSuccess(out),
         out: out.slice(0, 800),
         err: err.slice(0, 800),
         timedOut: true,
       });
-      try { fs.rmSync(tmp, { recursive: true, force: true }); } catch { /* ignore */ }
     }, timeoutMs);
 
     setTimeout(() => {
       try {
-        child.stdin.write(framed);
+        if (child.stdin && child.stdin.write) child.stdin.write(framed);
       } catch { /* ignore */ }
     }, 150);
 
-    child.on('exit', () => {
-      clearTimeout(timer);
-      const ok = /"name"\s*:\s*"thumbgate-mcp"/.test(out) || /protocolVersion/.test(out);
-      resolve({ ok, out: out.slice(0, 800), err: err.slice(0, 800), timedOut: false });
-      try { fs.rmSync(tmp, { recursive: true, force: true }); } catch { /* ignore */ }
-    });
+    if (child.on) {
+      child.on('exit', () => {
+        clearTimeout(timer);
+        finish({
+          ok: isSmokeSuccess(out),
+          out: out.slice(0, 800),
+          err: err.slice(0, 800),
+          timedOut: false,
+        });
+      });
+    }
   });
 }
 
@@ -230,4 +250,6 @@ module.exports = {
   proveGlamaMcpStart,
   writeReport,
   smokeInitialize,
+  isSmokeSuccess,
+  buildInitializeFrame,
 };
