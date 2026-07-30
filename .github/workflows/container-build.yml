@@ -64,13 +64,42 @@ jobs:
           tags: thumbgate:ci
           cache-from: type=gha
 
-      - name: Container must actually serve /health
+      # Two runs, because they pin two different contracts.
+      #
+      # A bare `docker run` with no configuration is what a directory or third-party
+      # builder does first. The server deliberately refuses to start without an API
+      # key — that is correct — but the failure has to be FAST and SELF-EXPLANATORY,
+      # not a hang or a stack trace, or the builder reports "build failed" with
+      # nothing anyone can act on. That is the situation we were in with Glama.
+      - name: Unconfigured container must fail fast with an actionable message
         run: |
           set -euo pipefail
-          docker run -d --name tg -p 8787:8787 thumbgate:ci
+          docker run --name tg-bare thumbgate:ci > /tmp/bare.log 2>&1 && rc=0 || rc=$?
+          docker rm -f tg-bare >/dev/null 2>&1 || true
+          echo "--- container output ---"; cat /tmp/bare.log
+          if [ "$rc" -eq 0 ]; then
+            echo "::error::unconfigured container exited 0 — it must refuse to serve without a key"
+            exit 1
+          fi
+          if ! grep -q 'THUMBGATE_API_KEY is required unless THUMBGATE_ALLOW_INSECURE=true' /tmp/bare.log; then
+            echo "::error::refusal message is no longer actionable — a builder cannot self-serve from this"
+            exit 1
+          fi
+          echo "refuses to start without a key, and says exactly how to fix it"
+
+      - name: Configured container must actually serve /health
+        run: |
+          set -euo pipefail
+          docker run -d --name tg -p 8787:8787 -e THUMBGATE_ALLOW_INSECURE=true thumbgate:ci
           for i in $(seq 1 30); do
             if curl -fsS http://localhost:8787/health >/dev/null 2>&1; then
               echo "healthy after ${i}s"
+              # Vacuity guard: /health answering is not proof the app is up if any
+              # route would answer. Assert a real page renders from inside the image.
+              curl -fsS http://localhost:8787/privacy | grep -q 'capture_feedback' \
+                || { echo "::error::/health answers but the app is not really serving"; \
+                     docker logs tg | tail -50; docker rm -f tg >/dev/null; exit 1; }
+              echo "and serves real content, not just /health"
               docker rm -f tg >/dev/null
               exit 0
             fi
