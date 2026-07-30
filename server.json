@@ -34,8 +34,7 @@
       "environmentVariables": [
         {
           "name": "THUMBGATE_MCP_PROFILE",
-          "description": "MCP tool profile: default | readonly | locked",
-          "default": "default",
+          "description": "Optional MCP tool profile override (essential | default | readonly | locked). Omit to keep the factory least-privilege essential profile; only set when expanded tools are intentional.",
           "isRequired": false,
           "format": "string"
         }
