@@ -77,10 +77,21 @@ function checkContract() {
     ok: Object.keys(glama).filter((k) => k !== '$schema').join(',') === 'maintainers',
     detail: 'glama.json only maintainers (official schema)',
   });
+  // Scope to commandFunction.args block — description text can also say "serve".
+  const smitheryArgs = [];
+  const argsBlock = smithery.match(/args:\s*\n((?:\s+-\s+"[^"]+"\s*\n)+)/);
+  if (argsBlock) {
+    for (const m of argsBlock[1].matchAll(/-\s+"([^"]+)"/g)) smitheryArgs.push(m[1]);
+  }
+  const smitheryCommand = /command:\s*"npx"/.test(smithery);
+  const smitheryArgOk = smitheryArgs.length >= 3
+    && smitheryArgs[0] === '-y'
+    && smitheryArgs[1] === 'thumbgate'
+    && smitheryArgs[2] === 'serve';
   checks.push({
     id: 'smithery_serve',
-    ok: /command:\s*"npx"/.test(smithery) && /serve/.test(smithery) && /thumbgate/.test(smithery),
-    detail: 'smithery.yaml npx thumbgate serve',
+    ok: smitheryCommand && smitheryArgOk,
+    detail: `smithery commandFunction.args=${JSON.stringify(smitheryArgs)}`,
   });
   checks.push({
     id: 'package_ships_manifests',
