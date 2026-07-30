@@ -2,6 +2,15 @@
 
 ## 1.30.0
 
+### Public bundle: 393 -> 394 files
+
+Added `public/privacy.html`, the data-handling disclosure required by the Claude
+MCP directory review. It ships in the tarball so a self-hosted install can serve
+/privacy without network access. It replaces an inline privacy page that had been
+rendered from `src/api/server.js` since 2026-03-11 and was silently shadowed by an
+earlier-matching route; every disclosure that page made (hosted tier, telemetry
+opt-out, sharing, retention) was carried over and is now pinned by a test.
+
 ### Minor Changes
 
 - 97365d1: Fix lesson retrieval silently ignoring relevance past 200 entries. Retrieval read only

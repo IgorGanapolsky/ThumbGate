@@ -147,7 +147,7 @@ const path = require('node:path');
 // model-calibration.js and eval-risk-model.js are development-only and stay out.
 // 392 -> 393 (2026-07-30): config/directory-manifest.json — the GENERATED MCP tool list. It ships so the published package and the directory listing cannot disagree; see scripts/export-directory-manifest.js.
 
-const BASELINE_FILE_COUNT = 393; // pragmatic-hybrid-search runtime
+const BASELINE_FILE_COUNT = 394; // + public/privacy.html (data-handling disclosure)
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
