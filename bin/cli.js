@@ -4236,7 +4236,7 @@ switch (COMMAND) {
     });
     req.on('error', (err) => {
       console.error(`✗ Subscribe failed: ${err.message}`);
-      console.error('  Network issue? Try again, or email igor.ganapolsky@gmail.com directly.');
+      console.error('  Network issue? Try again, or email igor@igorganapolsky.com directly.');
       process.exit(3);
     });
     req.on('timeout', () => {

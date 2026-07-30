@@ -56,7 +56,19 @@
   <p class="subtitle">What ThumbGate stores, where it lives, and exactly how to delete it. Last updated 2026-07-30.</p>
 
   <h2>Where your data lives by default</h2>
-  <p>ThumbGate runs <strong>locally</strong>. Feedback, lessons, gate decisions and audit records are written to <code>~/.thumbgate</code> on your own machine. There is no account, no upload step, and no remote index in the default configuration. Sending data to a hosted API is <strong>opt-in</strong> and only happens if you configure an API key.</p>
+  <p>ThumbGate runs <strong>locally</strong>. Feedback, lessons, gate decisions, proof artifacts, context packs and audit records are written to <code>~/.thumbgate</code> and your project files on your own machine. There is no account, no upload step, and no remote index in the default configuration.</p>
+
+  <h2>The hosted tier</h2>
+  <p>If — and only if — you configure an API key against the hosted endpoint (<code>thumbgate-production.up.railway.app</code>), feedback signals, memory entries and related workflow metadata are stored server-side and associated with that API key. Self-hosted installs never contact it.</p>
+  <p>Optional CLI telemetry is best-effort and covers install and usage metadata used to understand adoption and failures. Disable it with <code>THUMBGATE_NO_TELEMETRY=1</code>.</p>
+
+  <h2>What is stored</h2>
+  <ul>
+    <li>Feedback signals (thumbs up / thumbs down) with the context you provide</li>
+    <li>Promoted memory entries and the lessons derived from them</li>
+    <li>Prevention rules generated from your feedback</li>
+    <li>Conversation excerpts, but only via the two tools named below</li>
+  </ul>
 
   <h2 id="conversation-data">Conversation excerpts — stated plainly</h2>
   <div class="panel flag">
@@ -92,6 +104,9 @@ rm -rf ~/.thumbgate</pre>
     <li>No training on your data. Captured feedback trains only the local model on your own machine.</li>
     <li>No telemetry of your commands. Website analytics (Plausible) are cookieless and cover the marketing site only, not the CLI or MCP server.</li>
   </ul>
+
+  <h2>Sharing and retention</h2>
+  <p>We do not sell customer data. Hosted data is used to operate the service and is not shared with third parties beyond the infrastructure providers required to run it. Local data is retained until you delete the files — see above. Hosted data is retained while the API key remains active, or until you request deletion, subject to operational and legal retention requirements. To delete hosted data, email <a href="mailto:igor@igorganapolsky.com">igor@igorganapolsky.com</a>.</p>
 
   <h2>Secrets</h2>
   <p>ThumbGate scans captured feedback for credential patterns and redacts them before writing. This reduces, but cannot eliminate, the chance of a secret appearing in a stored excerpt — treat <code>~/.thumbgate</code> with the same care as your shell history.</p>

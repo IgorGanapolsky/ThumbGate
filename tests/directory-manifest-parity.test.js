@@ -77,3 +77,37 @@ test('the public privacy page names exactly the tools that take conversation dat
     'no tool takes conversation data — if that is now true, rewrite the privacy page section '
     + 'rather than leaving a disclosure that describes tools that no longer exist');
 });
+
+test('there is exactly one /privacy handler, and it is the drift-tested page', () => {
+  // A second, earlier-matching route silently shadowed the real privacy page for months:
+  // production served an inline copy from src/api/server.js, last updated 2026-03-11,
+  // that predated the conversation-excerpt tools entirely. One handler, one source.
+  const server = fs.readFileSync(
+    require('node:path').resolve(__dirname, '../src/api/server.js'), 'utf8');
+  const handlers = server.match(/pathname === '\/privacy'/g) || [];
+  assert.equal(handlers.length, 1,
+    `expected exactly 1 /privacy route handler, found ${handlers.length} — an earlier match `
+    + 'shadows the later one and the dead copy will drift');
+  assert.ok(server.includes('PRIVACY_PAGE_PATH'),
+    'the surviving handler must serve public/privacy.html, not an inline string');
+});
+
+test('the privacy page keeps every disclosure the previous page made', () => {
+  // Regression guard for the migration: replacing a published policy with a shorter one
+  // silently removes disclosures. These are the facts the 2026-03-11 page stated.
+  const page = fs.readFileSync(
+    require('node:path').resolve(__dirname, '../public/privacy.html'), 'utf8');
+  const required = {
+    'hosted tier endpoint': /thumbgate-production\.up\.railway\.app/,
+    'telemetry opt-out': /THUMBGATE_NO_TELEMETRY=1/,
+    'no-sale commitment': /do not sell/i,
+    'retention terms': /retain/i,
+    'deletion contact': /igor@igorganapolsky\.com/,
+    'prevention rules': /prevention rule/i,
+  };
+  for (const [label, pattern] of Object.entries(required)) {
+    assert.match(page, pattern, `privacy page lost a disclosure the old page made: ${label}`);
+  }
+  assert.ok(!page.includes('igor.ganapolsky@gmail.com'),
+    'privacy page must use the support contact given to the MCP directory');
+});

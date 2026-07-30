@@ -8231,7 +8231,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
 <p>These terms are governed by the laws of the State of New York, United States.</p>
 <h2>Changes</h2>
 <p>We may update these terms; material changes will be announced via the email on file at least 14 days before they take effect.</p>
-<h2>Contact</h2><p>igor.ganapolsky@gmail.com</p>
+<h2>Contact</h2><p>igor@igorganapolsky.com</p>
 <p><a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a> · <a href="/privacy">Privacy</a> · <a href="/support">Support</a></p>
 </body></html>`, {}, {
         headOnly: isHeadRequest,
@@ -8321,7 +8321,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
 <div class="note">For directory reviewers: ThumbGate issues a dedicated <strong>read-only</strong> reviewer credential. A token bound to that credential may invoke only tools annotated <code>readOnlyHint: true</code>; any write or mutating tool call is rejected. This makes the credential safe to share for review without granting the ability to mutate shared server state. Request it from the contact below.</div>
 
 <h2>Source &amp; contact</h2>
-<p>Open-source CLI and server: <a href="https://github.com/IgorGanapolsky/ThumbGate">github.com/IgorGanapolsky/ThumbGate</a>. Questions or reviewer-credential requests: <a href="mailto:igor.ganapolsky@gmail.com">igor.ganapolsky@gmail.com</a>.</p>
+<p>Open-source CLI and server: <a href="https://github.com/IgorGanapolsky/ThumbGate">github.com/IgorGanapolsky/ThumbGate</a>. Questions or reviewer-credential requests: <a href="mailto:igor@igorganapolsky.com">igor@igorganapolsky.com</a>.</p>
 
 <footer><a href="/">ThumbGate</a> · <a href="/support">Support</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></footer>
 </body></html>`, {}, { headOnly: isHeadRequest });
@@ -8336,7 +8336,7 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
 <h1>Support</h1>
 <p><strong>ThumbGate</strong> support, billing, and contact paths.</p>
 <h2>Email</h2>
-<p>For billing questions, refunds, subscription changes, or technical issues with the hosted tier: <a href="mailto:igor.ganapolsky@gmail.com">igor.ganapolsky@gmail.com</a>. We reply within one business day.</p>
+<p>For billing questions, refunds, subscription changes, or technical issues with the hosted tier: <a href="mailto:igor@igorganapolsky.com">igor@igorganapolsky.com</a>. We reply within one business day.</p>
 <h2>GitHub Issues</h2>
 <p>For bugs, CLI questions, and feature requests in the open-source CLI: <a href="https://github.com/IgorGanapolsky/ThumbGate/issues">github.com/IgorGanapolsky/ThumbGate/issues</a>.</p>
 <h2>Status</h2>
@@ -8353,33 +8353,10 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
     }
 
     // Public privacy policy — required for GPT Store and marketplace listings
-    if (isGetLikeRequest && pathname === '/privacy') {
-      sendHtml(res, 200, `<!DOCTYPE html><html><head><title>Privacy Policy — ThumbGate</title></head><body>
-<h1>Privacy Policy</h1>
-<p><strong>ThumbGate</strong> (npm: thumbgate)</p>
-<p>Last updated: 2026-03-11</p>
-<h2>Data Collection</h2>
-<p>The self-hosted version stores workflow data locally on your machine. Local feedback, memory entries, proof artifacts, and context packs stay in your project files unless you explicitly point the system at a hosted endpoint.</p>
-<p>The hosted tier (thumbgate-production.up.railway.app) stores feedback signals, memory entries, and related workflow metadata associated with your API key.</p>
-<p>Optional CLI telemetry is best-effort and covers install or usage metadata needed to understand adoption and failures. You can disable it with <code>THUMBGATE_NO_TELEMETRY=1</code>.</p>
-<h2>Data Stored</h2><ul>
-<li>Feedback signals (thumbs up/down) with context you provide</li>
-<li>Promoted memory entries</li>
-<li>Prevention rules generated from your feedback</li>
-</ul>
-<h2>Data Sharing</h2>
-<p>We do not sell customer data. Hosted data is used to operate the service and is not shared with third parties except for infrastructure providers needed to run the product.</p>
-<h2>Data Retention</h2>
-<p>Local data is retained until you delete the files. Hosted data is retained while your account or API key remains active, or until you request deletion, subject to operational or legal retention requirements.</p>
-<h2>Data Deletion</h2>
-<p>Contact igor.ganapolsky@gmail.com to request deletion of hosted data.</p>
-<h2>Contact</h2><p>igor.ganapolsky@gmail.com</p>
-<p><a href="https://github.com/IgorGanapolsky/ThumbGate">GitHub</a></p>
-</body></html>`, {}, {
-        headOnly: isHeadRequest,
-      });
-      return;
-    }
+    // The /privacy page moved to public/privacy.html (served above) so the disclosure
+    // can be drift-tested against the generated MCP tool manifest. The inline copy that
+    // used to live here was already unreachable — the route above matches first — and it
+    // predated the conversation-excerpt tools entirely.
 
     // Stripe webhook is unauthenticated — uses HMAC signature verification instead
     if (req.method === 'POST' && pathname === '/v1/billing/webhook') {

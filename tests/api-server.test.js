@@ -1004,12 +1004,18 @@ test('privacy policy route covers collection, sharing, retention, and contact de
   assert.match(String(res.headers.get('content-type')), /text\/html/);
 
   const body = await res.text();
-  assert.match(body, /Privacy Policy/i);
-  assert.match(body, /Data Collection/i);
-  assert.match(body, /Data Sharing/i);
-  assert.match(body, /Data Retention/i);
+  assert.match(body, /Privacy/i);
+  // Substance, not headings: the page was rewritten to disclose conversation excerpts,
+  // so pin the FACTS it must state rather than the old section titles.
+  assert.match(body, /~\/\.thumbgate/, 'must say where data is stored');
+  assert.match(body, /do not sell/i, 'must state the sharing position');
+  assert.match(body, /retain/i, 'must state retention');
   assert.match(body, /optional CLI telemetry/i);
-  assert.match(body, /igor\.ganapolsky@gmail\.com/i);
+  assert.match(body, /THUMBGATE_NO_TELEMETRY=1/, 'must give the telemetry opt-out');
+  assert.match(body, /capture_feedback/, 'must disclose the conversation-excerpt tools');
+  assert.match(body, /reflect_on_feedback/);
+  assert.match(body, /rm -rf ~\/\.thumbgate/, 'must say how to delete everything');
+  assert.match(body, /igor@igorganapolsky\.com/i);
 });
 
 test('terms of service route covers payment, refunds, acceptable use, and limitation of liability', async () => {
@@ -1022,7 +1028,7 @@ test('terms of service route covers payment, refunds, acceptable use, and limita
   assert.match(body, /Refunds/i);
   assert.match(body, /Acceptable Use/i);
   assert.match(body, /Limitation of Liability/i);
-  assert.match(body, /igor\.ganapolsky@gmail\.com/i);
+  assert.match(body, /igor@igorganapolsky\.com/i);
   // Cross-links to /privacy and /support keep the legal triangle navigable.
   assert.match(body, /href="\/privacy"/);
   assert.match(body, /href="\/support"/);
@@ -1057,7 +1063,7 @@ test('support page exposes email, GitHub issues, status, and refund paths', asyn
   assert.match(String(res.headers.get('content-type')), /text\/html/);
   const body = await res.text();
   assert.match(body, /Support/i);
-  assert.match(body, /mailto:igor\.ganapolsky@gmail\.com/i);
+  assert.match(body, /mailto:igor@igorganapolsky\.com/i);
   assert.match(body, /github\.com\/IgorGanapolsky\/ThumbGate\/issues/i);
   assert.match(body, /\/health/);
   assert.match(body, /Refunds/i);
