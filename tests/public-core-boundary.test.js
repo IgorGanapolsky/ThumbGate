@@ -215,7 +215,11 @@ test('public-core-boundary: npm bundle stays thin (file count ceiling)', () => {
   // 391 -> 392: pragmatic-hybrid-search required by lesson-retrieval
   // 392 -> 395 (2026-07-30): server.json + glama.json + smithery.yaml for
   // Glama/MCP registry stdio start contract (npx -y thumbgate serve).
-  const CEILING = 395;
+  // 395 -> 400 (2026-07-30): public lesson embedding maintenance, executable
+  // hybrid ablation + golden fixture, and the document chunker/skill-pack
+  // dependencies now reachable from packaged document search. These are local
+  // retrieval runtime/eval surfaces and import no private Core module.
+  const CEILING = 400;
   assert.ok(
     files.length <= CEILING,
     `public npm bundle should stay <= ${CEILING} files, got ${files.length}. ` +

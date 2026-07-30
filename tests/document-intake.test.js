@@ -15,6 +15,7 @@ const {
   listImportedDocuments,
   readImportedDocument,
   searchImportedDocuments,
+  searchImportedDocumentsAsync,
 } = require('../scripts/document-intake');
 
 test.after(() => {
@@ -81,6 +82,113 @@ test('document listing and search surfaces imported runbooks for ThumbGate recal
   assert.equal(results.length >= 1, true);
   assert.equal(results[0].documentId, document.documentId);
   assert.ok(results[0].proposals.some((proposal) => proposal.templateId === 'evidence-before-done'));
+});
+
+test('async document search ranks child chunks and hydrates bounded parent evidence', async () => {
+  const filler = 'ordinary operational notes without relevant details. '.repeat(80);
+  const target = importDocument({
+    title: 'Deep Runbook',
+    content: `${filler}\nIdempotency prevents duplicate payment processing.`,
+    sourceFormat: 'markdown',
+    tags: ['payments', 'runbook'],
+  });
+  importDocument({
+    title: 'Cooking Notes',
+    content: 'Recipe ingredients and kitchen temperature guidance.',
+    sourceFormat: 'text',
+    tags: ['cooking'],
+  });
+  const conceptEmbedder = async (text) => {
+    const value = String(text).toLowerCase();
+    const payment = /(charge|replay|idempotency|duplicate payment)/.test(value);
+    return payment ? [1, 0, 0] : [0, 1, 0];
+  };
+
+  const results = await searchImportedDocumentsAsync({
+    feedbackDir: tmpFeedbackDir,
+    query: 'charge replay protection',
+    limit: 3,
+    maxChunkChars: 180,
+    chunkOverlap: 30,
+    embedder: conceptEmbedder,
+    embedderId: 'document-concept-test',
+    metadataFilters: { tags: ['payments', 'runbook'] },
+  });
+
+  assert.equal(results[0].documentId, target.documentId);
+  assert.equal(results[0]._retrieval.parentChild, true);
+  assert.equal(results[0]._retrieval.semanticProvider, 'document-concept-test');
+  assert.ok(results[0]._retrieval.chunkCount > 1);
+  assert.ok(results[0]._matchedChunks.length <= 3);
+  assert.ok(results[0]._matchedChunks.some((chunk) => /idempotency/i.test(chunk.content)));
+  assert.ok(results[0]._matchedChunks.some((chunk) => chunk.startChar > 1000));
+  assert.equal(results.some((result) => result.title === 'Cooking Notes'), false);
+});
+
+test('async document search rejects tool-only candidates without query or dense evidence', async () => {
+  importDocument({
+    title: 'Reading Notes',
+    content: 'Read this ordinary handbook before beginning routine work.',
+    sourceFormat: 'text',
+    tags: ['reading'],
+  });
+
+  const results = await searchImportedDocumentsAsync({
+    feedbackDir: tmpFeedbackDir,
+    query: 'quantum flux capacitor',
+    queryRewrite: false,
+    embedder: async () => [],
+    embedderId: 'no-dense-results',
+  });
+
+  assert.deepEqual(results, []);
+});
+
+test('metadata-filtered document searches preserve cached vectors across filters', async () => {
+  importDocument({
+    title: 'Alpha Cache Note',
+    content: 'Alpha-specific recovery evidence.',
+    sourceFormat: 'text',
+    tags: ['cache-alpha'],
+  });
+  importDocument({
+    title: 'Beta Cache Note',
+    content: 'Beta-specific recovery evidence.',
+    sourceFormat: 'text',
+    tags: ['cache-beta'],
+  });
+
+  let documentEmbeds = 0;
+  const countingEmbedder = async (text, options = {}) => {
+    if (options.kind === 'document') documentEmbeds += 1;
+    return String(text).toLowerCase().includes('alpha') ? [1, 0] : [0, 1];
+  };
+  const shared = {
+    feedbackDir: tmpFeedbackDir,
+    limit: 1,
+    embedder: countingEmbedder,
+    embedderId: 'filtered-cache-test',
+  };
+
+  await searchImportedDocumentsAsync({
+    ...shared,
+    query: 'alpha recovery',
+    metadataFilters: { tags: ['cache-alpha'] },
+  });
+  await searchImportedDocumentsAsync({
+    ...shared,
+    query: 'beta recovery',
+    metadataFilters: { tags: ['cache-beta'] },
+  });
+  const afterDistinctFilters = documentEmbeds;
+  await searchImportedDocumentsAsync({
+    ...shared,
+    query: 'alpha recovery',
+    metadataFilters: { tags: ['cache-alpha'] },
+  });
+
+  assert.equal(afterDistinctFilters, 2, 'each filtered document is embedded once');
+  assert.equal(documentEmbeds, 2, 'returning to a prior filter reuses its cached vector');
 });
 
 test('importDocument strips script/style tags even when closing tags include whitespace', () => {

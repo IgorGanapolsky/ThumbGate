@@ -114,6 +114,41 @@ describe('vector-store — built-in feature-hash embeddings', () => {
   });
 });
 
+describe('vector-store — Ollama semantic embedding provider', () => {
+  it('uses the explicitly configured local model and records production provenance', async () => {
+    const originalFetch = global.fetch;
+    try {
+      process.env.THUMBGATE_OLLAMA_EMBED_MODEL = 'nomic-embed-text';
+      process.env.THUMBGATE_OLLAMA_ENDPOINT = 'http://127.0.0.1:11434/';
+      delete process.env.THUMBGATE_VECTOR_STUB_EMBED;
+      delete process.env.THUMBGATE_EMBED_PROVIDER;
+      delete require.cache[require.resolve('../scripts/vector-store')];
+      const vectorStore = require('../scripts/vector-store');
+      const calls = [];
+      global.fetch = async (url, request) => {
+        calls.push({ url, body: JSON.parse(request.body) });
+        return {
+          ok: true,
+          json: async () => ({ embeddings: [[1, 0, 0, 0]] }),
+        };
+      };
+
+      assert.equal(vectorStore.hasSemanticEmbeddingProvider(), true);
+      const vector = await vectorStore.embed('erase a directory', { kind: 'query' });
+      assert.deepEqual(vector, [1, 0, 0, 0]);
+      assert.equal(calls[0].url, 'http://127.0.0.1:11434/api/embed');
+      assert.equal(calls[0].body.model, 'nomic-embed-text');
+      assert.equal(vectorStore.getLastEmbeddingProfile().source, 'local-ollama');
+      assert.equal(vectorStore.getLastEmbeddingProfile().activeProfile.qualityTier, 'production');
+    } finally {
+      global.fetch = originalFetch;
+      delete process.env.THUMBGATE_OLLAMA_EMBED_MODEL;
+      delete process.env.THUMBGATE_OLLAMA_ENDPOINT;
+      delete require.cache[require.resolve('../scripts/vector-store')];
+    }
+  });
+});
+
 describe('vector-store — Gemini Embedding 2 provider', () => {
   it('uses task-prefixed Gemini embeddings when the managed provider is enabled', async () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'vs-test-gemini-'));

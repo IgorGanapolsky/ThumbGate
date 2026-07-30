@@ -69,7 +69,65 @@ function selectRetrievalMemories(memories = [], options = {}) {
       includeShared: options.includeShared !== false,
     }).allowed;
   }
-  return selected;
+  return selected.filter((memory) => matchesMetadataFilters(
+    memory,
+    options.metadataFilters || options.filters,
+  ));
+}
+
+function normalizedValues(value) {
+  const values = Array.isArray(value) ? value : value == null ? [] : [value];
+  return values.map((item) => String(item).trim().toLowerCase()).filter(Boolean);
+}
+
+function memoryValues(memory, field) {
+  if (field === 'toolsUsed') {
+    return normalizedValues([
+      ...(memory.metadata?.toolsUsed || []),
+      ...(memory.structuredRule?.metadata?.toolsUsed || []),
+    ]);
+  }
+  if (field === 'tags') return normalizedValues(memory.tags);
+  if (field === 'signal') {
+    return normalizedValues([
+      memory.signal,
+      memory.feedback,
+      ...(memory.tags || []),
+    ]);
+  }
+  return normalizedValues(memory.metadata?.[field] ?? memory[field]);
+}
+
+function matchesMetadataFilters(memory, filters = {}) {
+  if (!filters || typeof filters !== 'object') return true;
+  for (const field of ['domain', 'signal', 'source', 'toolsUsed']) {
+    const required = normalizedValues(filters[field]);
+    if (required.length === 0) continue;
+    const actual = memoryValues(memory, field);
+    if (!required.some((value) => actual.includes(value))) return false;
+  }
+  const requiredTags = normalizedValues(filters.tags);
+  if (requiredTags.length > 0) {
+    const actualTags = memoryValues(memory, 'tags');
+    const matches = filters.requireAllTags === false
+      ? requiredTags.some((tag) => actualTags.includes(tag))
+      : requiredTags.every((tag) => actualTags.includes(tag));
+    if (!matches) return false;
+  }
+  return true;
+}
+
+function buildQueryVariants(query, options = {}) {
+  const original = String(query || '').trim();
+  if (!original || options.queryRewrite === false) return original ? [original] : [];
+  const { tokenize, expandTerms } = require('./lesson-reranker');
+  const originalTerms = tokenize(original);
+  const originalSet = new Set(originalTerms);
+  const additions = expandTerms(originalTerms)
+    .filter((term) => !originalSet.has(term))
+    .slice(0, Math.max(1, Math.min(12, Number(options.maxRewriteTerms) || 8)));
+  if (additions.length === 0) return [original];
+  return [original, `${original} ${additions.join(' ')}`.slice(0, 500)];
 }
 
 function retrieveRelevantLessons(toolName, actionContext, options = {}) {
@@ -176,13 +234,16 @@ function retrieveRelevantLessons(toolName, actionContext, options = {}) {
  */
 function reciprocalRankFusion(rankedLists = [], options = {}) {
   const k = Number.isFinite(options.k) ? options.k : 60;
+  const weights = Array.isArray(options.weights) ? options.weights : [];
   const scores = new Map();
-  for (const list of rankedLists) {
+  for (let listIndex = 0; listIndex < rankedLists.length; listIndex += 1) {
+    const list = rankedLists[listIndex];
     if (!Array.isArray(list)) continue;
+    const weight = Number(weights[listIndex]) || 1;
     list.forEach((id, index) => {
       if (id === undefined || id === null) return;
       const rank = index + 1;
-      scores.set(id, (scores.get(id) || 0) + 1 / (k + rank));
+      scores.set(id, (scores.get(id) || 0) + weight / (k + rank));
     });
   }
   return [...scores.entries()]
@@ -202,8 +263,8 @@ function loadMemories(feedbackDir, options = {}) {
   );
 }
 
-function shapeLesson(m) {
-  return {
+function shapeLesson(m, retrieval = null) {
+  const shaped = {
     id: m.id,
     title: m.title,
     content: m.content,
@@ -212,6 +273,8 @@ function shapeLesson(m) {
     relevanceScore: m.rerankedScore ?? m.relevanceScore,
     timestamp: m.timestamp,
   };
+  if (retrieval) shaped.retrieval = retrieval;
+  return shaped;
 }
 
 /**
@@ -252,6 +315,11 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
     .filter((m) => m.relevanceScore > 0.1)
     .sort((a, b) => b.relevanceScore - a.relevanceScore);
   const lexicalRanked = lexicalScored.slice(0, RERANK_CANDIDATE_POOL).map((m) => m.id);
+  const queryVariants = (
+    lexicalScored[0]?.relevanceScore >= (options.rewriteBelowScore ?? 0.6)
+      ? [String(actionContext || '')]
+      : buildQueryVariants(actionContext, options)
+  );
 
   // Check if any lexical match is conclusive (exact/regex match on structured rule or high relevance)
   let conclusive = false;
@@ -293,14 +361,18 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
     const score = scoreRelevance(mem, toolName, actionContext, actionSig);
     if (score > 0.1) return true;
 
-    // 2. Otherwise, check tool compatibility: if toolsUsed is specified, it must contain our tool
-    const memTools = mem.metadata?.toolsUsed || [];
-    if (memTools.length > 0 && !memTools.some(t => t.toLowerCase() === toolName.toLowerCase())) {
-      return false;
-    }
-    const ruleTools = mem.structuredRule?.metadata?.toolsUsed || [];
-    if (ruleTools.length > 0 && !ruleTools.some(t => t.toLowerCase() === toolName.toLowerCase())) {
-      return false;
+    // 2. Tool compatibility is opt-in. A lesson learned through Bash can still
+    // matter while a Read/agent tool diagnoses the same incident. Callers that
+    // need a hard WHERE clause can use strictToolFilter or metadataFilters.
+    if (options.strictToolFilter === true) {
+      const memTools = mem.metadata?.toolsUsed || [];
+      if (memTools.length > 0 && !memTools.some(t => t.toLowerCase() === toolName.toLowerCase())) {
+        return false;
+      }
+      const ruleTools = mem.structuredRule?.metadata?.toolsUsed || [];
+      if (ruleTools.length > 0 && !ruleTools.some(t => t.toLowerCase() === toolName.toLowerCase())) {
+        return false;
+      }
     }
     return true;
   });
@@ -309,11 +381,29 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
   let semanticRanked = [];
   if (prunedMemories.length > 0) {
     try {
-      const dense = await embeddingIndex.semanticRank(actionContext, prunedMemories, {
-        feedbackDir,
-        embedder: options.embedder,
-      });
-      semanticRanked = dense.slice(0, RERANK_CANDIDATE_POOL).map((d) => d.id);
+      const denseLists = [];
+      for (const variant of queryVariants) {
+        const dense = await embeddingIndex.semanticRank(variant, prunedMemories, {
+          feedbackDir,
+          embedder: options.embedder,
+          embedderId: options.embedderId,
+          strictToolFilter: options.strictToolFilter,
+        });
+        const topScore = dense[0]?.score ?? 0;
+        const minimum = Math.max(
+          Number(options.minSemanticScore) || 0.15,
+          topScore - (Number(options.semanticScoreWindow) || 0.2),
+        );
+        denseLists.push(
+          dense
+            .filter((entry) => entry.score >= minimum)
+            .slice(0, RERANK_CANDIDATE_POOL)
+            .map((entry) => entry.id),
+        );
+      }
+      semanticRanked = reciprocalRankFusion(denseLists)
+        .slice(0, RERANK_CANDIDATE_POOL)
+        .map((entry) => entry.id);
     } catch {
       // Embedding failed at runtime → fall back to pure lexical.
       return retrieveRelevantLessons(toolName, actionContext, options);
@@ -333,6 +423,9 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
         topK: Math.max(maxResults * 2, maxResults),
         pool: RERANK_CANDIDATE_POOL,
         denseRankedIds: semanticRanked,
+        queryVariants,
+        denseWeight: options.denseWeight,
+        fusionWeight: options.fusionWeight,
         diversify: options.diversify !== false,
         perLimit: options.perLimit || 3,
         attribute: options.attribute,
@@ -351,7 +444,12 @@ async function retrieveRelevantLessonsAsync(toolName, actionContext, options = {
       resolveTopP(options),
       { minKeep: options.minKeep },
     ).slice(0, maxResults);
-    return cut.map(shapeLesson);
+    const retrieval = options.includeRetrievalMeta ? {
+      ...meta,
+      queryVariants,
+      semanticProvider: options.embedderId || 'configured',
+    } : null;
+    return cut.map((lesson) => shapeLesson(lesson, retrieval));
   } catch {
     // Legacy fuse path below
   }
@@ -621,6 +719,8 @@ module.exports = {
   dedupeSupersededLessons,
   isRetrievableMemory,
   selectRetrievalMemories,
+  matchesMetadataFilters,
+  buildQueryVariants,
   MAX_RETRIEVAL_MEMORY_CHARS,
   MAX_RETRIEVAL_MEMORY_LINES,
 };

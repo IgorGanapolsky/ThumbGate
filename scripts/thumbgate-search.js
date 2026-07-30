@@ -8,6 +8,7 @@ const {
 } = require('./filesystem-search');
 const {
   searchImportedDocuments,
+  searchImportedDocumentsAsync,
 } = require('./document-intake');
 
 const VALID_SOURCES = ['all', 'feedback', 'context', 'rules', 'documents'];
@@ -139,7 +140,22 @@ function mapDocumentResult(record) {
     proposalCount: safeArray(record.proposals).length,
     matchedTemplateIds: safeArray(record.matchedTemplateIds),
     sourceFormat: record.sourceFormat || null,
+    matchedChunks: safeArray(record._matchedChunks),
+    retrieval: record._retrieval || null,
   };
+}
+
+async function getDocumentResultsAsync(query, limit, feedbackDir, options = {}) {
+  const documents = await searchImportedDocumentsAsync({
+    query,
+    limit,
+    feedbackDir,
+    metadataFilters: options.metadataFilters,
+    queryRewrite: options.queryRewrite,
+    embedder: options.embedder,
+    embedderId: options.embedderId,
+  });
+  return documents.map(mapDocumentResult);
 }
 
 function sortResults(results) {
@@ -278,9 +294,69 @@ function searchThumbgate({ query, source = 'all', limit = 10, signal = null, fee
   };
 }
 
+async function searchThumbgateAsync({
+  query,
+  source = 'all',
+  limit = 10,
+  signal = null,
+  feedbackDir = null,
+  metadataFilters = null,
+  queryRewrite = true,
+  embedder,
+  embedderId,
+} = {}) {
+  const trimmedQuery = String(query || '').trim();
+  if (!trimmedQuery) throw new Error('query is required');
+  const normalizedSource = normalizeSource(source);
+  const normalizedSignal = normalizeSignal(signal);
+  const normalizedLimit = normalizeLimit(limit);
+  const fetchLimit = Math.max(100, normalizedLimit * 5);
+  const documentOptions = {
+    metadataFilters,
+    queryRewrite,
+    embedder,
+    embedderId,
+  };
+
+  let results;
+  if (normalizedSource === 'documents') {
+    results = deduplicateResults(
+      await getDocumentResultsAsync(trimmedQuery, fetchLimit, feedbackDir, documentOptions),
+    ).slice(0, normalizedLimit);
+  } else if (normalizedSource === 'all') {
+    const combined = [
+      ...getFeedbackResults(trimmedQuery, fetchLimit, normalizedSignal, feedbackDir),
+      ...getContextResults(trimmedQuery, fetchLimit, feedbackDir),
+      ...getRuleResults(trimmedQuery, fetchLimit, feedbackDir),
+      ...await getDocumentResultsAsync(trimmedQuery, fetchLimit, feedbackDir, documentOptions),
+    ];
+    results = deduplicateResults(sortResults(combined)).slice(0, normalizedLimit);
+  } else {
+    return searchThumbgate({
+      query: trimmedQuery,
+      source: normalizedSource,
+      limit: normalizedLimit,
+      signal: normalizedSignal,
+      feedbackDir,
+    });
+  }
+
+  return {
+    query: trimmedQuery,
+    source: normalizedSource,
+    signal: normalizedSignal,
+    limit: normalizedLimit,
+    engine: 'hybrid-parent-child',
+    returned: results.length,
+    total: results.length,
+    results,
+  };
+}
+
 module.exports = {
   VALID_SOURCES,
   normalizeSearchSource: normalizeSource,
   normalizeSearchSignal: normalizeSignal,
   searchThumbgate,
+  searchThumbgateAsync,
 };

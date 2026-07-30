@@ -18,7 +18,10 @@
  * Falls back to enhanced heuristic scoring when LLM is unavailable.
  */
 
-const { retrieveRelevantLessons, scoreRelevance, buildActionSignature } = require('./lesson-retrieval');
+const {
+  retrieveRelevantLessons,
+  retrieveRelevantLessonsAsync,
+} = require('./lesson-retrieval');
 
 /**
  * Heuristic cross-encoder: scores a (query, document) pair jointly.
@@ -130,12 +133,17 @@ async function retrieveWithReranking(toolName, actionContext, options = {}) {
   } = options;
 
   // Stage 1: Fast candidate retrieval (existing system)
-  const candidates = retrieveRelevantLessons(toolName, actionContext, {
+  const candidates = await retrieveRelevantLessonsAsync(toolName, actionContext, {
     maxResults: candidateCount,
     feedbackDir,
     scope: options.scope,
     requireScope: options.requireScope,
     includeShared: options.includeShared,
+    metadataFilters: options.metadataFilters,
+    queryRewrite: options.queryRewrite,
+    includeRetrievalMeta: options.includeRetrievalMeta,
+    embedder: options.embedder,
+    embedderId: options.embedderId,
   });
 
   if (candidates.length === 0) return [];
@@ -184,6 +192,12 @@ function retrieveWithRerankingSync(toolName, actionContext, options = {}) {
   const candidates = retrieveRelevantLessons(toolName, actionContext, {
     maxResults: candidateCount,
     feedbackDir,
+    scope: options.scope,
+    requireScope: options.requireScope,
+    includeShared: options.includeShared,
+    metadataFilters: options.metadataFilters,
+    queryRewrite: options.queryRewrite,
+    includeRetrievalMeta: options.includeRetrievalMeta,
   });
 
   if (candidates.length === 0) return [];

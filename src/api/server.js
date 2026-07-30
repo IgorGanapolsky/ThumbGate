@@ -210,7 +210,7 @@ const {
   getSettingsStatus,
 } = require('../../scripts/settings-hierarchy');
 const {
-  searchThumbgate,
+  searchThumbgateAsync,
 } = require('../../scripts/thumbgate-search');
 const {
   appendTelemetryPing,
@@ -9392,12 +9392,18 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         let results;
         try {
           const requestFeedbackPaths = getRequestFeedbackPaths(req, parsed);
-          results = searchThumbgate({
+          results = await searchThumbgateAsync({
             query,
             limit: Number.isFinite(limit) ? limit : 10,
             source,
             signal,
             feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
+            metadataFilters: {
+              tags: (parsed.searchParams.get('tags') || '').split(',').map((tag) => tag.trim()).filter(Boolean),
+              sourceFormat: parsed.searchParams.get('sourceFormat') || undefined,
+              sourceType: parsed.searchParams.get('sourceType') || undefined,
+            },
+            queryRewrite: parsed.searchParams.get('queryRewrite') !== 'false',
           });
         } catch (err) {
           throw createHttpError(400, err.message || 'Invalid ThumbGate search request');
@@ -9416,12 +9422,14 @@ a{color:#8b9}</style></head><body><form class="card" method="post" action="/oaut
         let results;
         try {
           const requestFeedbackPaths = getRequestFeedbackPaths(req, parsed);
-          results = searchThumbgate({
+          results = await searchThumbgateAsync({
             query: body.query || body.q || '',
             limit: body.limit,
             source: body.source,
             signal: body.signal,
             feedbackDir: requestFeedbackPaths.FEEDBACK_DIR,
+            metadataFilters: body.filters,
+            queryRewrite: body.queryRewrite !== false,
           });
         } catch (err) {
           throw createHttpError(400, err.message || 'Invalid ThumbGate search request');
