@@ -343,6 +343,12 @@ Adopted 2026-05-12 after a full PR/branch sweep. Persisted here so every future 
 - Never say "done", "deployed", "shipped", "live", or "merged" without first running the relevant verification:
   - PRs: `gh pr view --json reviewDecision,mergeStateStatus,statusCheckRollup` showing CLEAN + SUCCESS + merged=true.
   - Deploys: the full Deployment Verification Gate (`/health` version grep + `/dashboard` grep + a route-specific 302/200 grep for the change shipped).
+- **Completion Claim Contract (2026-07-30 CEO thumbs-down):** also never say "fixed", "crisis over", or "kill-switch complete" without the matching evidence class:
+  - prod `/health.buildSha` equals claimed main tip when production is in scope;
+  - terminal required CI on that exact SHA;
+  - for Actions-minutes claims, raw billing/usage after the change (workflow disable alone is not proof);
+  - full private workflow inventory including push CI and `dynamic/dependabot/*`, not only `disabled_manually` schedules.
+  - Partial progress stays labeled partial. TRUE/FALSE ledger first after any "are you sure?".
 
 ### No Manual Handoffs
 - Never instruct the CEO to run a command, click a dashboard, or paste a value if the CTO can do it.
@@ -359,6 +365,7 @@ Adopted 2026-05-12 after a full PR/branch sweep. Persisted here so every future 
 - Lying is not allowed. "Code shipped ≠ outcome achieved." Verify against production data before framing as solved.
 - Failures must be surfaced as they happen, not buried under retries.
 - Mistakes get logged to the local lesson DB via `.claude/scripts/feedback/capture-feedback.js`.
+- Manual appends to `.thumbgate/prevention-rules.md` are **not durable** (meta-agent regen wipes them). Permanent behavioral contracts belong in tracked `AGENTS.md` / `CLAUDE.md` (this file), not only local runtime rules.
 
 ### Continuous Learning
 - Record every trade and lesson in RAG.
