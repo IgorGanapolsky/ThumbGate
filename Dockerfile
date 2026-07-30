@@ -14,6 +14,10 @@ WORKDIR /app
 
 # Copy manifests first to leverage layer cache
 COPY package*.json ./
+# bin/ must land BEFORE npm ci: package.json declares a postinstall that runs
+# bin/postinstall.js. `--ignore-scripts` is not an option here — better-sqlite3
+# relies on its own install script to fetch a prebuilt binary.
+COPY bin/ ./bin/
 
 # Install production dependencies only
 RUN npm ci --omit=dev --no-audit --no-fund
@@ -28,7 +32,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Non-root user for security
-RUN groupadd -r thumbgate && useradd -r -g thumbgate thumbgate
+RUN groupadd -r thumbgate \
+    && useradd -r -m -d /home/thumbgate -g thumbgate thumbgate
 
 WORKDIR /app
 
@@ -37,6 +42,7 @@ COPY --from=builder /app/node_modules ./node_modules
 
 # Copy application source
 COPY package*.json ./
+COPY bin/ ./bin/
 COPY scripts/ ./scripts/
 COPY assets/ ./assets/
 COPY src/ ./src/
@@ -47,13 +53,17 @@ COPY public/ ./public/
 COPY .well-known/ ./.well-known/
 
 # Data directory for runtime feedback logs
-RUN mkdir -p /data && chown thumbgate:thumbgate /data
+RUN mkdir -p /data && chown thumbgate:thumbgate /data \
+    && chown -R thumbgate:thumbgate /home/thumbgate
 
 USER thumbgate
 
 # Railway / Cloud Run sets PORT dynamically; default to 8787
 ENV PORT=8787
 ENV NODE_ENV=production
+# Some orchestrators start containers without HOME set; os.homedir() then falls back
+# to the passwd entry, but being explicit keeps state in one predictable place.
+ENV HOME=/home/thumbgate
 
 EXPOSE ${PORT}
 
