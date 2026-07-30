@@ -936,6 +936,9 @@ async function searchImportedDocumentsAsync(options = {}) {
           embedder: options.embedder,
           embedderId: options.embedderId,
           cacheFile: 'document-chunk-embeddings.json',
+          // `chunks` is metadata-filtered. Pruning this shared cache against a
+          // subset would make alternating filters evict and re-embed each other.
+          pruneCache: false,
         });
         const topScore = dense[0]?.score ?? 0;
         const minimum = Math.max(
@@ -965,11 +968,25 @@ async function searchImportedDocumentsAsync(options = {}) {
       diversify: false,
     },
   });
+  const lexicalEvidenceTokens = Array.from(new Set(
+    queryVariants.flatMap((variant) => tokenize(variant)),
+  ));
+  const denseEvidenceIds = new Set(denseRankedIds);
   const byDocumentId = new Map(documents.map((document) => [document.documentId, document]));
   const grouped = new Map();
   for (const chunk of rankedChunks) {
     const documentId = chunk.metadata?.documentId;
     if (!documentId || !byDocumentId.has(documentId)) continue;
+    const lexicalHaystack = [
+      chunk.title,
+      chunk.content,
+      safeArray(chunk.tags).join(' '),
+    ].join(' ').toLowerCase();
+    const hasQueryOverlap = lexicalEvidenceTokens.some((token) => lexicalHaystack.includes(token));
+    const hasDenseEvidence = denseEvidenceIds.has(chunk.id);
+    // A synthetic tool name such as `Read` can contribute to scoreRelevance,
+    // but it is not query evidence. Require lexical overlap or a dense hit.
+    if (!hasQueryOverlap && !hasDenseEvidence) continue;
     const score = Number(chunk.rerankedScore ?? chunk.relevanceScore ?? 0);
     const group = grouped.get(documentId) || { score, chunks: [] };
     group.score = Math.max(group.score, score);

@@ -160,6 +160,7 @@ async function semanticRank(queryText, lessons = [], options = {}) {
     feedbackDir,
     embedder = defaultEmbedder(),
     persist = true,
+    pruneCache = true,
     truncateDimension = null,
     cacheFile = CACHE_FILE,
   } = options;
@@ -213,12 +214,16 @@ async function semanticRank(queryText, lessons = [], options = {}) {
     scored.push({ id: lesson.id, score: cosineSimilarity(queryVector, docVector) });
   }
 
-  // Prune cache entries for lessons no longer present (bounded growth).
-  const liveIds = new Set(lessons.map((l) => l && l.id).filter(Boolean));
-  for (const id of Object.keys(cache)) {
-    if (!liveIds.has(id)) {
-      delete cache[id];
-      cacheDirty = true;
+  // Prune only when the caller supplied the complete corpus. Metadata-filtered
+  // searches pass pruneCache=false so alternating filters cannot evict and
+  // regenerate one another's vectors.
+  if (pruneCache) {
+    const liveIds = new Set(lessons.map((l) => l && l.id).filter(Boolean));
+    for (const id of Object.keys(cache)) {
+      if (!liveIds.has(id)) {
+        delete cache[id];
+        cacheDirty = true;
+      }
     }
   }
 

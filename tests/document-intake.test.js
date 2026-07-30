@@ -125,6 +125,72 @@ test('async document search ranks child chunks and hydrates bounded parent evide
   assert.equal(results.some((result) => result.title === 'Cooking Notes'), false);
 });
 
+test('async document search rejects tool-only candidates without query or dense evidence', async () => {
+  importDocument({
+    title: 'Reading Notes',
+    content: 'Read this ordinary handbook before beginning routine work.',
+    sourceFormat: 'text',
+    tags: ['reading'],
+  });
+
+  const results = await searchImportedDocumentsAsync({
+    feedbackDir: tmpFeedbackDir,
+    query: 'quantum flux capacitor',
+    queryRewrite: false,
+    embedder: async () => [],
+    embedderId: 'no-dense-results',
+  });
+
+  assert.deepEqual(results, []);
+});
+
+test('metadata-filtered document searches preserve cached vectors across filters', async () => {
+  importDocument({
+    title: 'Alpha Cache Note',
+    content: 'Alpha-specific recovery evidence.',
+    sourceFormat: 'text',
+    tags: ['cache-alpha'],
+  });
+  importDocument({
+    title: 'Beta Cache Note',
+    content: 'Beta-specific recovery evidence.',
+    sourceFormat: 'text',
+    tags: ['cache-beta'],
+  });
+
+  let documentEmbeds = 0;
+  const countingEmbedder = async (text, options = {}) => {
+    if (options.kind === 'document') documentEmbeds += 1;
+    return String(text).toLowerCase().includes('alpha') ? [1, 0] : [0, 1];
+  };
+  const shared = {
+    feedbackDir: tmpFeedbackDir,
+    limit: 1,
+    embedder: countingEmbedder,
+    embedderId: 'filtered-cache-test',
+  };
+
+  await searchImportedDocumentsAsync({
+    ...shared,
+    query: 'alpha recovery',
+    metadataFilters: { tags: ['cache-alpha'] },
+  });
+  await searchImportedDocumentsAsync({
+    ...shared,
+    query: 'beta recovery',
+    metadataFilters: { tags: ['cache-beta'] },
+  });
+  const afterDistinctFilters = documentEmbeds;
+  await searchImportedDocumentsAsync({
+    ...shared,
+    query: 'alpha recovery',
+    metadataFilters: { tags: ['cache-alpha'] },
+  });
+
+  assert.equal(afterDistinctFilters, 2, 'each filtered document is embedded once');
+  assert.equal(documentEmbeds, 2, 'returning to a prior filter reuses its cached vector');
+});
+
 test('importDocument strips script/style tags even when closing tags include whitespace', () => {
   const document = importDocument({
     content: [
