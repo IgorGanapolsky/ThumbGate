@@ -48,8 +48,7 @@
   ],
   "conversationDataTools": [
     "capture_feedback",
-    "reflect_on_feedback",
-    "require_evidence_for_claim"
+    "reflect_on_feedback"
   ],
   "dataHandling": {
     "conversationExcerptsStored": true,

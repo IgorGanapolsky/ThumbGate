@@ -76,7 +76,12 @@ function buildManifest(tools) {
   // data — the directory review flagged that our listing claimed otherwise while
   // capture_feedback accepted raw chatHistory/conversationWindow.
   const conversationTools = tools
-    .filter((tool) => /chatHistory|conversationWindow|messages|turns/i.test(JSON.stringify(tool.inputSchema || {})))
+    // Match FIELD NAMES with word boundaries, never a substring scan of the whole schema:
+    // /turns/ matched the word "returns" inside a description and produced a false positive
+    // (require_evidence_for_claim). Same substring-poisoning class as the reranker bug fixed
+    // in the same week — descriptions are prose and must never be treated as field names.
+    .filter((tool) => Object.keys((tool.inputSchema || {}).properties || {})
+      .some((field) => /^(chatHistory|conversationWindow|messages|turns|transcript)$/i.test(field)))
     .map((tool) => tool.name)
     .sort();
   return {
