@@ -55,6 +55,17 @@ describe('GET /evaluations route', () => {
     if (handle) await new Promise((resolve) => handle.server.close(resolve));
   });
 
+  for (const route of ['/privacy', '/privacy.html']) {
+    it(`serves the privacy disclosure at ${route}`, async () => {
+      const res = await fetch(`${base}${route}`);
+      assert.equal(res.status, 200, `${route} must not 404 — it is a required disclosure surface`);
+      const body = await res.text();
+      assert.ok(body.includes('capture_feedback') && body.includes('reflect_on_feedback'),
+        'privacy page must name the tools that receive conversation excerpts');
+      assert.match(body, /delete/i, 'privacy page must say how to delete stored data');
+    });
+  }
+
   for (const route of ['/evaluations', '/evaluations.html']) {
     it(`serves the page at ${route}`, async () => {
       const res = await fetch(`${base}${route}`);

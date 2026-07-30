@@ -394,6 +394,9 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
   // by the public outcome-monitor installer and agent:schedule command.
   // Bumped 369 -> 370 (2026-07-27) to ship tool-kpi-tracker, now wired into
   // every MCP attempt in the public package.
+  // Bumped 393 -> 394 (2026-07-30) to ship public/privacy.html, the data-handling
+  // disclosure surface. It is static marketing HTML with no imports; it ships so a
+  // self-hosted install can still serve /privacy.
   assert.ok(
     // Bumped 370 -> 371 (2026-07-28) to ship scripts/model-eval.js, which the packaged
     // risk-scorer.js require()s at module load — without it the published package throws
@@ -401,8 +404,8 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // eval-risk-model.js are development-only.
     // 392 -> 393 (2026-07-30): config/directory-manifest.json — the GENERATED MCP tool list. It ships so the published package and the directory listing cannot disagree; see scripts/export-directory-manifest.js.
 
-    manifest.fileCount <= 393,
-    `npm package should stay <= 393 files, got ${manifest.fileCount}`
+    manifest.fileCount <= 394,
+    `npm package should stay <= 394 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

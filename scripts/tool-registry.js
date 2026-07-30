@@ -856,7 +856,7 @@ const TOOLS = [
   }),
   readOnlyTool({
     name: 'recall',
-    description: 'Recall relevant past feedback, memories, and prevention rules for the current task. Call this at the start of any task to inject past learnings into the conversation.',
+    description: 'Retrieve past feedback, lessons, and prevention rules relevant to the current action. Useful when about to repeat work that has failed before, when a task resembles earlier corrected mistakes, or when prior decisions on this codebase would change the approach.',
     inputSchema: {
       type: 'object',
       required: ['query'],

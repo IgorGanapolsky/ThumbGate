@@ -272,6 +272,7 @@ const ARCHITECTURE_PAGE_PATH = path.resolve(__dirname, '../../public/architectur
 const WHITEPAPER_PAGE_PATH = path.resolve(__dirname, '../../public/whitepaper.html');
 const EVAL_SCORECARD_PAGE_PATH = path.resolve(__dirname, '../../public/eval-scorecard.html');
 const EVALUATIONS_PAGE_PATH = path.resolve(__dirname, '../../public/evaluations.html');
+const PRIVACY_PAGE_PATH = path.resolve(__dirname, '../../public/privacy.html');
 const CASE_STUDIES_PAGE_PATH = path.resolve(__dirname, '../../public/case-studies.html');
 const FEDERAL_PAGE_PATH = path.resolve(__dirname, '../../public/federal.html');
 const PRICING_PAGE_PATH = path.resolve(__dirname, '../../public/pricing.html');
@@ -6275,6 +6276,22 @@ async function addContext(){
         });
       } catch {
         sendJson(res, 404, { error: 'Numbers page not found' });
+      }
+      return;
+    }
+
+    if (isGetLikeRequest && (pathname === '/privacy' || pathname === '/privacy.html')) {
+      // Required disclosure surface: the MCP directory review (2026-07-29) needed a plain
+      // statement that two tools receive conversation excerpts, and how to view/delete them.
+      // Routed like other marketing pages so it cannot 404 in production.
+      try {
+        servePublicMarketingPage({
+          req, res, parsed, hostedConfig, isHeadRequest,
+          renderHtml: () => fs.readFileSync(PRIVACY_PAGE_PATH, 'utf-8'),
+          extraTelemetry: { pageType: 'privacy' },
+        });
+      } catch {
+        sendJson(res, 404, { error: 'Privacy page not found' });
       }
       return;
     }
