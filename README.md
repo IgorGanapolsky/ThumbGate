@@ -30,6 +30,19 @@ Accepted feedback is stored as local lessons. Repeated concrete failures can bec
 npx thumbgate init   # auto-detects the supported agent and wires its integration
 ```
 
+### MCP / Glama / registry install (stdio)
+
+Directories and clients that install ThumbGate as an MCP server must start **stdio MCP**, not the HTTP API:
+
+```bash
+npx -y thumbgate serve
+```
+
+- Equivalent: `npx -y thumbgate mcp`
+- Do **not** use `npm start` for MCP — that launches the hosted HTTP API (`src/api/server.js`), not the agent-facing stdio server.
+- Canonical package metadata: `server.json` (`runtimeHint: npx` + `packageArguments: ["serve"]`), Smithery: `smithery.yaml`, maintainers: `glama.json`.
+- Product name is **ThumbGate** only (npm: `thumbgate`). Retired legacy package aliases are not active product surfaces.
+
 Works with **Claude Code, Cursor, Codex, Gemini CLI, Amp, Cline, OpenCode** and MCP-compatible agents after their integration is configured. Free tier: 2 feedback captures/day (10 total) and up to 3 active auto-promoted prevention rules. [Pro: $19/mo or $149/yr](https://thumbgate.ai/checkout/pro?utm_source=github&utm_medium=readme) is the individual tier for unlimited rules, history-aware lessons, feedback sessions, a personal dashboard, and DPO export. Enterprise is custom and scoped after intake; hosted team sync and a hosted org dashboard are not in the current general-availability runtime.
 
 [![CI](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml/badge.svg)](https://github.com/IgorGanapolsky/ThumbGate/actions/workflows/ci.yml)

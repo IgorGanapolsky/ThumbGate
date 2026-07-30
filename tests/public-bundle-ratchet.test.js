@@ -145,7 +145,10 @@ const path = require('node:path');
 // evaluation arithmetic (classification metrics + deterministic group-aware
 // splitting); no Core imports, no filesystem, network, credentials, or buyer state.
 // model-calibration.js and eval-risk-model.js are development-only and stay out.
-const BASELINE_FILE_COUNT = 392; // pragmatic-hybrid-search runtime
+// 392 -> 395 (2026-07-30): ship server.json + glama.json + smithery.yaml so
+// Glama/MCP registry installs receive explicit stdio start metadata
+// (`npx -y thumbgate serve`) instead of guessing `npm start` (HTTP API).
+const BASELINE_FILE_COUNT = 395;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');
