@@ -101,33 +101,42 @@ function buildManifest(tools) {
   };
 }
 
-async function main(argv) {
-  const tools = await liveTools();
+// `deps` exists so the --check guard can be tested without booting a server. It is the
+// guard the entire anti-drift story rests on, and until now nothing proved it actually
+// returns non-zero on a stale file — a CI gate no test exercises is not a gate.
+async function main(argv, deps = {}) {
+  const {
+    readTools = liveTools,
+    outPath = OUT_PATH,
+    stdout = (text) => process.stdout.write(text),
+    stderr = (text) => process.stderr.write(text),
+  } = deps;
+  const tools = await readTools();
   const manifest = buildManifest(tools);
   const serialized = `${JSON.stringify(manifest, null, 2)}\n`;
 
   if (argv.includes('--check')) {
     let committed;
     try {
-      committed = fs.readFileSync(OUT_PATH, 'utf8');
+      committed = fs.readFileSync(outPath, 'utf8');
     } catch {
-      process.stderr.write(`directory manifest missing at ${OUT_PATH}; run: npm run manifest:export\n`);
+      stderr(`directory manifest missing at ${outPath}; run: npm run manifest:export\n`);
       return 1;
     }
     if (committed !== serialized) {
-      process.stderr.write('Directory manifest is STALE — the live server no longer matches the declared list.\n'
+      stderr('Directory manifest is STALE — the live server no longer matches the declared list.\n'
         + `  live tools: ${manifest.toolCount}\n  run: npm run manifest:export, then update the directory listing to match.\n`);
       return 1;
     }
-    process.stdout.write(`OK: declared list matches the live server (${manifest.toolCount} tools)\n`);
+    stdout(`OK: declared list matches the live server (${manifest.toolCount} tools)\n`);
     return 0;
   }
 
-  fs.mkdirSync(path.dirname(OUT_PATH), { recursive: true });
-  fs.writeFileSync(OUT_PATH, serialized);
-  process.stdout.write(`Wrote ${manifest.toolCount} tools -> ${path.relative(process.cwd(), OUT_PATH)}\n`);
+  fs.mkdirSync(path.dirname(outPath), { recursive: true });
+  fs.writeFileSync(outPath, serialized);
+  stdout(`Wrote ${manifest.toolCount} tools -> ${path.relative(process.cwd(), outPath)}\n`);
   if (manifest.conversationDataTools.length) {
-    process.stdout.write(`  conversation-data tools (must be disclosed): ${manifest.conversationDataTools.join(', ')}\n`);
+    stdout(`  conversation-data tools (must be disclosed): ${manifest.conversationDataTools.join(', ')}\n`);
   }
   return 0;
 }
