@@ -26,6 +26,7 @@ test('DEFAULT_CHECKS isolates proof artifacts for prove checks', () => {
   const proveTessl = DEFAULT_CHECKS.find((check) => check.name === 'prove_tessl');
   const proveReliability = DEFAULT_CHECKS.find((check) => check.name === 'prove_reliability');
   const proveGlamaMcp = DEFAULT_CHECKS.find((check) => check.name === 'prove_glama_mcp');
+  const lessonEmbeddingIndex = DEFAULT_CHECKS.find((check) => check.name === 'lesson_embedding_index');
 
   assert.equal(proveAdapters.useTempProofDir, true);
   assert.equal(proveAutomation.useTempProofDir, true);
@@ -37,6 +38,12 @@ test('DEFAULT_CHECKS isolates proof artifacts for prove checks', () => {
   assert.ok(proveGlamaMcp, 'prove_glama_mcp check is registered');
   assert.equal(proveGlamaMcp.useTempProofDir, true);
   assert.deepEqual(proveGlamaMcp.command, ['npm', 'run', 'prove:glama-mcp']);
+  assert.ok(lessonEmbeddingIndex, 'lesson embedding drift canary is registered');
+  assert.deepEqual(lessonEmbeddingIndex.command, [
+    'node',
+    'scripts/lesson-embedding-maintenance.js',
+    '--json',
+  ]);
 });
 
 test('collectHealthReport marks overall healthy when all checks pass', () => {

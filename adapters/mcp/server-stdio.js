@@ -133,9 +133,7 @@ const {
     throw error;
   },
 }));
-const {
-  searchThumbgate,
-} = require('../../scripts/thumbgate-search');
+const { searchThumbgateAsync } = require('../../scripts/thumbgate-search');
 const {
   buildMultimodalRetrievalPlan,
 } = require('../../scripts/multimodal-retrieval-plan');
@@ -971,14 +969,14 @@ async function callToolInner(name, args) {
       return buildSuggestFixResponse(args);
     case 'retrieve_lessons': {
       // Cross-encoder reranking: retrieve more candidates, then rerank for precision
-      const { retrieveWithRerankingSync } = loadOptionalModule(path.join(__dirname, '../../scripts/cross-encoder-reranker'), () => ({
-        retrieveWithRerankingSync: (toolName, actionContext, options = {}) => retrieveRelevantLessons(
+      const { retrieveWithReranking } = loadOptionalModule(path.join(__dirname, '../../scripts/cross-encoder-reranker'), () => ({
+        retrieveWithReranking: async (toolName, actionContext, options = {}) => retrieveRelevantLessons(
           toolName,
           actionContext,
           { maxResults: options.maxResults || 5 },
         ),
       }));
-      return toTextResult(retrieveWithRerankingSync(
+      return toTextResult(await retrieveWithReranking(
         args.toolName,
         args.actionContext || '',
         {
@@ -987,6 +985,9 @@ async function callToolInner(name, args) {
           scope: args.scope,
           requireScope: args.requireScope === true,
           includeShared: args.includeShared !== false,
+          metadataFilters: args.filters,
+          queryRewrite: args.queryRewrite !== false,
+          includeRetrievalMeta: args.includeRetrievalMeta === true,
         },
       ));
     }
@@ -1009,11 +1010,13 @@ async function callToolInner(name, args) {
     }
     case 'search_thumbgate':
       enforceLimit('search_thumbgate');
-      return toTextResult(searchThumbgate({
+      return toTextResult(await searchThumbgateAsync({
         query: args.query,
         limit: args.limit,
         source: args.source,
         signal: args.signal,
+        metadataFilters: args.filters,
+        queryRewrite: args.queryRewrite !== false,
       }));
     case 'import_document':
       return toTextResult(importDocument({

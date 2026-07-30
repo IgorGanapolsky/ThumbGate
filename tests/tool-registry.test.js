@@ -43,6 +43,16 @@ test('lesson retrieval tools expose complete memory scope controls', () => {
   }
 });
 
+test('hybrid retrieval controls are declared on the MCP tool that consumes them', () => {
+  const searchTool = TOOLS.find((candidate) => candidate.name === 'search_lessons');
+  const retrieveTool = TOOLS.find((candidate) => candidate.name === 'retrieve_lessons');
+
+  for (const property of ['filters', 'queryRewrite', 'includeRetrievalMeta']) {
+    assert.equal(searchTool.inputSchema.properties[property], undefined);
+    assert.ok(retrieveTool.inputSchema.properties[property], `retrieve_lessons must expose ${property}`);
+  }
+});
+
 test('outcome tools publish structured output contracts', () => {
   for (const name of ['record_task_outcome', 'get_agent_outcome_metrics']) {
     const tool = TOOLS.find((candidate) => candidate.name === name);

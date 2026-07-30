@@ -31,8 +31,10 @@ function looksLikePlaceholder(text) {
 
 function sanitizeText(text) {
   return String(text || '')
-    .replace(/\r\n/g, '\n')
-    .replace(/[ \t]+\n/g, '\n')
+    .replaceAll('\r\n', '\n')
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .replace(/[^\S\n]{2,}/g, ' ')
     .trim();
@@ -152,9 +154,14 @@ function splitMarkdownSections(raw, fallbackTitle) {
   }
   const parts = text.split(/(?=^#{1,3}\s+)/m).map((p) => p.trim()).filter(Boolean);
   return parts.map((part) => {
-    const m = part.match(/^#{1,3}\s+(.+)\n?([\s\S]*)$/);
-    if (!m) return { title: fallbackTitle, content: part };
-    return { title: m[1].trim(), content: (m[2] || '').trim() };
+    const lines = part.split('\n');
+    const heading = lines.shift() || '';
+    const markerEnd = heading.indexOf(' ');
+    if (markerEnd < 1 || markerEnd > 3) return { title: fallbackTitle, content: part };
+    return {
+      title: heading.slice(markerEnd + 1).trim(),
+      content: lines.join('\n').trim(),
+    };
   });
 }
 
@@ -200,12 +207,12 @@ function cleanRecord(record, options = {}) {
 /**
  * Chunk long text with overlap. Short records stay single-chunk.
  */
-function chunkText(text, options = {}) {
+function chunkTextWithOffsets(text, options = {}) {
   const maxChars = Math.max(MIN_CHUNK_CHARS, Number(options.maxChars) || DEFAULT_CHUNK_CHARS);
   const overlap = Math.max(0, Math.min(maxChars - 1, Number(options.overlap) || DEFAULT_CHUNK_OVERLAP));
   const raw = String(text || '').trim();
   if (!raw) return [];
-  if (raw.length <= maxChars) return [raw];
+  if (raw.length <= maxChars) return [{ content: raw, startChar: 0, endChar: raw.length }];
 
   const chunks = [];
   let start = 0;
@@ -222,8 +229,17 @@ function chunkText(text, options = {}) {
       else if (sent >= searchFrom) breakAt = sent + 2;
       if (breakAt > 0) end = start + breakAt;
     }
-    const piece = raw.slice(start, end).trim();
-    if (piece) chunks.push(piece);
+    const window = raw.slice(start, end);
+    const leftTrim = window.length - window.trimStart().length;
+    const rightTrim = window.length - window.trimEnd().length;
+    const piece = window.trim();
+    if (piece) {
+      chunks.push({
+        content: piece,
+        startChar: start + leftTrim,
+        endChar: end - rightTrim,
+      });
+    }
     if (end >= raw.length) break;
     start = Math.max(0, end - overlap);
     if (start >= end) start = end; // safety
@@ -231,27 +247,50 @@ function chunkText(text, options = {}) {
   return chunks;
 }
 
+function chunkText(text, options = {}) {
+  return chunkTextWithOffsets(text, options).map((chunk) => chunk.content);
+}
+
 function chunkRecord(record, options = {}) {
-  const pieces = chunkText(`${record.title ? `${record.title}\n\n` : ''}${record.content || ''}`, options);
+  const sourceText = `${record.title ? `${record.title}\n\n` : ''}${record.content || ''}`;
+  const pieces = chunkTextWithOffsets(sourceText, options);
   if (pieces.length === 0) return [];
-  return pieces.map((content, i) => ({
+  const versionHash = crypto.createHash('sha256').update(sourceText).digest('hex');
+  return pieces.map((piece, i) => ({
     ...record,
     id: pieces.length === 1 ? record.id : `${record.id}::c${i}`,
-    content,
+    content: piece.content,
     metadata: {
       ...(record.metadata || {}),
       chunkIndex: i,
       chunkTotal: pieces.length,
       parentId: record.id,
+      startChar: piece.startChar,
+      endChar: piece.endChar,
+      contentHash: crypto.createHash('sha256').update(piece.content).digest('hex'),
+      parentVersionHash: versionHash,
     },
   }));
 }
 
-const PATH_RE = /(?:\.\/|\/)?[\w.-]+(?:\/[\w.-]+)+(?:\.\w+)?/g;
 const TOOL_HINTS = [
   'bash', 'shell', 'git', 'npm', 'node', 'curl', 'docker', 'railway',
   'stripe', 'prisma', 'sqlite', 'postgres', 'write', 'edit', 'read',
 ];
+
+function extractPathCandidates(content) {
+  const boundaryChars = new Set(['"', "'", '`', '(', ')', '[', ']', '{', '}', '<', '>', ',', ':', ';']);
+  return String(content || '').split(/\s+/).map((rawToken) => {
+    let start = 0;
+    let end = rawToken.length;
+    while (start < end && boundaryChars.has(rawToken[start])) start += 1;
+    while (end > start && boundaryChars.has(rawToken[end - 1])) end -= 1;
+    return rawToken.slice(start, end);
+  }).filter((candidate) => {
+    if (!candidate.includes('/') || candidate.length <= 3 || candidate.length >= 200) return false;
+    return candidate.split('/').filter(Boolean).length >= 2;
+  });
+}
 
 function extractMetadata(record) {
   const content = `${record.title || ''}\n${record.content || ''}`;
@@ -267,7 +306,7 @@ function extractMetadata(record) {
     }
   }
 
-  const paths = content.match(PATH_RE) || [];
+  const paths = extractPathCandidates(content);
   for (const p of paths.slice(0, 12)) {
     if (p.length > 3 && p.length < 200) filesInvolved.add(p);
   }
@@ -412,6 +451,7 @@ module.exports = {
   parseDocument,
   cleanRecord,
   chunkText,
+  chunkTextWithOffsets,
   chunkRecord,
   extractMetadata,
   runDocumentPipeline,

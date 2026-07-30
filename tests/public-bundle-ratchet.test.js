@@ -148,7 +148,10 @@ const path = require('node:path');
 // 392 -> 395 (2026-07-30): ship server.json + glama.json + smithery.yaml so
 // Glama/MCP registry installs receive explicit stdio start metadata
 // (`npx -y thumbgate serve`) instead of guessing `npm start` (HTTP API).
-const BASELINE_FILE_COUNT = 395;
+// 395 -> 400 (2026-07-30): local embedding maintenance + hybrid ablation
+// runtime/fixture plus document chunker + skill-pack dependencies now reachable
+// from packaged document search; public retrieval proof, no private Core code.
+const BASELINE_FILE_COUNT = 400;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

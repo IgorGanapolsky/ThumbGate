@@ -10,6 +10,7 @@ const {
   retrieveRelevantLessons,
   retrieveRelevantLessonsAsync,
   reciprocalRankFusion,
+  buildQueryVariants,
 } = require('../scripts/lesson-retrieval');
 const {
   cosineSimilarity,
@@ -188,10 +189,149 @@ test('document vectors are cached and reused across calls', async () => {
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
+test('embedding cache invalidates when the provider fingerprint or dimension changes', async () => {
+  const tmp = mkTmp();
+  writeJsonl(path.join(tmp, 'memory-log.jsonl'), [{
+    id: 'c-provider',
+    title: 'rm danger',
+    content: 'never erase data',
+    tags: ['negative'],
+    timestamp: new Date().toISOString(),
+  }]);
+
+  let docEmbeds = 0;
+  const embed4 = async (_text, opts = {}) => {
+    if (opts.kind === 'document') docEmbeds += 1;
+    return [1, 0, 0, 0];
+  };
+  const embed3 = async (_text, opts = {}) => {
+    if (opts.kind === 'document') docEmbeds += 1;
+    return [1, 0, 0];
+  };
+
+  await retrieveRelevantLessonsAsync('Bash', 'wipe directory', {
+    feedbackDir: tmp,
+    embedder: embed4,
+    embedderId: 'provider-a',
+  });
+  await retrieveRelevantLessonsAsync('Bash', 'wipe directory', {
+    feedbackDir: tmp,
+    embedder: embed4,
+    embedderId: 'provider-b',
+  });
+  await retrieveRelevantLessonsAsync('Bash', 'wipe directory', {
+    feedbackDir: tmp,
+    embedder: embed3,
+    embedderId: 'provider-b',
+  });
+
+  assert.equal(docEmbeds, 3, 'each provider/dimension transition must re-embed documents');
+  const cachePath = path.join(tmp, 'lesson-embeddings.json');
+  assert.equal(fs.statSync(cachePath).mode & 0o777, 0o600);
+  const cache = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+  assert.equal(cache['c-provider'].provider, 'provider-b');
+  assert.equal(cache['c-provider'].dimension, 3);
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
 // --- availability check is callable and boolean ---------------------------
 
 test('isEmbedderAvailable returns a boolean without loading a model', () => {
   assert.equal(typeof isEmbedderAvailable(), 'boolean');
+});
+
+test('runtime provider failure degrades to lexical instead of accepting feature-hash vectors', async () => {
+  const tmp = mkTmp();
+  writeJsonl(path.join(tmp, 'memory-log.jsonl'), [{
+    id: 'provider-failure',
+    title: 'rm -rf warning',
+    content: 'never delete data',
+    tags: ['negative'],
+    timestamp: new Date().toISOString(),
+  }]);
+  const originalFetch = global.fetch;
+  try {
+    process.env.THUMBGATE_OLLAMA_EMBED_MODEL = 'missing-local-model';
+    delete process.env.THUMBGATE_VECTOR_STUB_EMBED;
+    global.fetch = async () => { throw new Error('provider offline'); };
+    delete require.cache[require.resolve('../scripts/vector-store')];
+    const lexical = retrieveRelevantLessons('Bash', 'permanently erase a directory', {
+      feedbackDir: tmp,
+    });
+    const result = await retrieveRelevantLessonsAsync('Bash', 'permanently erase a directory', {
+      feedbackDir: tmp,
+    });
+    assert.deepEqual(result.map((row) => row.id), lexical.map((row) => row.id));
+    assert.equal(fs.existsSync(path.join(tmp, 'lesson-embeddings.json')), false);
+  } finally {
+    global.fetch = originalFetch;
+    delete process.env.THUMBGATE_OLLAMA_EMBED_MODEL;
+    delete require.cache[require.resolve('../scripts/vector-store')];
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('bounded query rewriting preserves the original and expands known concepts only', () => {
+  const variants = buildQueryVariants('wipe the folder');
+  assert.equal(variants[0], 'wipe the folder');
+  assert.equal(variants.length, 2);
+  assert.match(variants[1], /\b(delete|remove|destroy)\b/);
+
+  const formatting = buildQueryVariants('format the report');
+  assert.equal(formatting.some((variant) => /\brm\b/.test(variant)), false,
+    'the short synonym "rm" must not match the substring in "format"');
+
+  const device = buildQueryVariants('tablet over the overlay');
+  assert.match(device[1], /\bipad\b/);
+  assert.match(device[1], /\btailscale\b/);
+});
+
+test('metadata filters prune domain, tags, signal, source, and tools before embedding', async () => {
+  const tmp = mkTmp();
+  writeJsonl(path.join(tmp, 'memory-log.jsonl'), [
+    {
+      id: 'wanted',
+      title: 'payment retry failed',
+      content: 'never retry a charge without idempotency',
+      signal: 'negative',
+      source: 'operator',
+      tags: ['stripe', 'incident'],
+      metadata: { domain: 'billing', toolsUsed: ['Bash'] },
+      timestamp: new Date().toISOString(),
+    },
+    {
+      id: 'wrong-domain',
+      title: 'payment retry failed',
+      content: 'database retry notes',
+      signal: 'negative',
+      source: 'operator',
+      tags: ['database', 'incident'],
+      metadata: { domain: 'database', toolsUsed: ['SQL'] },
+      timestamp: new Date().toISOString(),
+    },
+  ]);
+  const embedded = [];
+  const embedder = async (text, options = {}) => {
+    if (options.kind === 'document') embedded.push(text);
+    return [1, 0, 0, 0];
+  };
+  const results = await retrieveRelevantLessonsAsync('Bash', 'retry the charge', {
+    feedbackDir: tmp,
+    embedder,
+    embedderId: 'filter-test',
+    metadataFilters: {
+      domain: 'billing',
+      tags: ['stripe', 'incident'],
+      signal: 'negative',
+      source: 'operator',
+      toolsUsed: 'bash',
+    },
+  });
+
+  assert.deepEqual(results.map((result) => result.id), ['wanted']);
+  assert.equal(embedded.some((text) => text.includes('database retry')), false);
+  fs.rmSync(tmp, { recursive: true, force: true });
 });
 
 // --- hybrid pre-filtering / short-circuiting & WHERE-clause pruning -------
@@ -263,6 +403,7 @@ test('hybrid retrieval performs WHERE-clause pruning before vector search', asyn
     feedbackDir: tmp,
     embedder: spyEmbedder,
     maxResults: 3,
+    strictToolFilter: true,
   });
 
   // Verify that prune-2 was excluded from embedding generation completely

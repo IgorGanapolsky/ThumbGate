@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('node:os');
 const { constructContextPack } = require('./contextfs');
 const { BUILTIN_EVAL_CASES } = require('./eval-harness');
 const { matchSkillPacks } = require('./skill-packs');
@@ -199,10 +200,83 @@ function isLancedbResolvable() {
   }
 }
 
+async function probeVectorSearch() {
+  let tempDir = null;
+  try {
+    const { connect } = await import('@lancedb/lancedb');
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-vector-smoke-'));
+    const db = await connect(tempDir);
+    const table = await db.createTable('health_probe', [
+      { id: 'expected', vector: [1, 0, 0] },
+      { id: 'other', vector: [0, 1, 0] },
+    ]);
+    const rows = await table.search([1, 0, 0]).limit(1).toArray();
+    return rows.length === 1 && rows[0].id === 'expected';
+  } catch {
+    return false;
+  } finally {
+    if (tempDir) fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
+async function probeHybridRetrievalPath() {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thumbgate-hybrid-smoke-'));
+  try {
+    fs.writeFileSync(path.join(tempDir, 'memory-log.jsonl'), [
+      JSON.stringify({
+        id: 'semantic-hit',
+        title: 'MISTAKE: rm -rf wiped contents',
+        content: 'Never delete data without a snapshot.',
+        tags: ['negative'],
+        timestamp: new Date().toISOString(),
+      }),
+      JSON.stringify({
+        id: 'noise',
+        title: 'network timeout',
+        content: 'Set an HTTP timeout.',
+        tags: ['positive'],
+        timestamp: new Date().toISOString(),
+      }),
+    ].join('\n') + '\n');
+    const embedder = async (text) => {
+      const value = String(text || '').toLowerCase();
+      return /(erase|directory|rm|wipe|delete|snapshot)/.test(value)
+        ? [1, 0, 0]
+        : [0, 1, 0];
+    };
+    const { retrieveRelevantLessonsAsync } = require('./lesson-retrieval');
+    const results = await retrieveRelevantLessonsAsync(
+      'Bash',
+      'permanently erase a directory tree',
+      {
+        feedbackDir: tempDir,
+        maxResults: 2,
+        embedder,
+        embedderId: 'deterministic-eval-fixture',
+        includeRetrievalMeta: true,
+      },
+    );
+    const retrieval = results[0]?.retrieval;
+    return {
+      ok: results[0]?.id === 'semantic-hit'
+        && retrieval?.densePool > 0
+        && retrieval?.rerankApplied === true,
+      mode: 'deterministic-eval-fixture',
+      strategy: retrieval?.strategy || 'none',
+      densePool: retrieval?.densePool || 0,
+      rerankApplied: retrieval?.rerankApplied === true,
+    };
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
 async function collectStageMetrics({ avgRecall, avgPrecision, results } = {}) {
   const pipeline = runDocumentPipeline(skillPacksToDocuments(), { maxChars: 900, overlap: 120 });
   const embedMetrics = await probeEmbedMetrics();
   const lancedb_module_resolvable = isLancedbResolvable();
+  const vector_search_smoke_ok = await probeVectorSearch();
+  const hybridProbe = await probeHybridRetrievalPath();
   const sampleSources = [
     { id: 's1', title: 'Sample', content: 'ALWAYS use idempotency keys.', signal: 'negative' },
   ];
@@ -219,11 +293,14 @@ async function collectStageMetrics({ avgRecall, avgPrecision, results } = {}) {
     ...pipeline.metrics,
     ...embedMetrics,
     lancedb_module_resolvable,
-    vector_search_smoke_ok: lancedb_module_resolvable,
+    vector_search_smoke_ok,
     retrieval_recall_at_k: avgRecall ?? 0,
     retrieval_precision_at_k: avgPrecision ?? 0,
-    hybrid_path_used: true,
-    rerank_applied: true,
+    hybrid_path_used: hybridProbe.ok,
+    hybrid_probe_mode: hybridProbe.mode,
+    hybrid_probe_strategy: hybridProbe.strategy,
+    hybrid_probe_dense_pool: hybridProbe.densePool,
+    rerank_applied: hybridProbe.rerankApplied,
     rerank_top1_contains_expected: results?.length ? top1Hits / results.length : 0,
     rerank_candidate_pool_size: 50,
     prompt_contains_grounding_instruction: /ONLY the captured lessons/i.test(prompt) ? 1 : 0,
@@ -328,6 +405,8 @@ function runRankingGate(options, stageMetrics) {
       stageMetrics.retrieval_ndcg_at_5 = ranking.summary['ndcg@5'];
       stageMetrics.retrieval_precision_at_k = ranking.summary['precision@5'];
       stageMetrics.ranking_eval_passed = ranking.passed;
+      stageMetrics.ranking_hybrid_queries = ranking.summary.hybridQueries || 0;
+      stageMetrics.ranking_reranked_queries = ranking.summary.rerankedQueries || 0;
     }
     return ranking;
   } catch (err) {
