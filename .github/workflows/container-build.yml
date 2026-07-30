@@ -1,0 +1,82 @@
+name: Container Build
+
+# We SHIP a Dockerfile and no job ever built it, so third-party builders (Glama, Smithery)
+# were our only test of our own container — and on 2026-07-29 Glama's build failed while
+# every local check passed. This builds the image we publish and proves it actually serves,
+# on amd64 AND arm64, because the likeliest failure is a native module with no prebuild for
+# the builder's architecture (the Dockerfile's own comments record that exact history).
+# This repo is public, so GitHub-hosted runners are free.
+
+on:
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'src/**'
+      - 'scripts/**'
+      - '.github/workflows/container-build.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'Dockerfile'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'src/**'
+      - 'scripts/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-serve:
+    name: build image and prove /health
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: docker/setup-qemu-action@49b3bc8e6bdd4a60e6116a5414239cba5943d3cf # v3.2.0
+      - uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
+
+      # arm64 first: it is the architecture most likely to lack a native prebuild, which is
+      # the failure third-party builders hit and we never did.
+      - name: Build for linux/arm64
+        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        with:
+          context: .
+          platforms: linux/arm64
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build for linux/amd64 and load
+        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: thumbgate:ci
+          cache-from: type=gha
+
+      - name: Container must actually serve /health
+        run: |
+          set -euo pipefail
+          docker run -d --name tg -p 8787:8787 thumbgate:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8787/health >/dev/null 2>&1; then
+              echo "healthy after ${i}s"
+              docker rm -f tg >/dev/null
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::container never answered /health — this is what a directory build sees"
+          docker logs tg | tail -50
+          docker rm -f tg >/dev/null
+          exit 1
