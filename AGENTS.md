@@ -121,6 +121,23 @@ On explicit user preference signals (`up/down`, `correct/wrong`, or subjective "
 - Never claim completion before verification.
 - Report failures immediately and factually.
 
+## Completion Claim Contract (CEO thumbs-down 2026-07-30)
+
+Permanent (not auto-generated; do not dilute into generic "investigate"). Applies to **done / fixed / shipped / live / crisis over / kill-switch complete**.
+
+| Claim type | Required evidence before the word |
+|------------|-----------------------------------|
+| Code on `main` | Merge commit SHA is tip (or ancestor) of `origin/main` |
+| Production live | `GET /health` `buildSha` **equals** that SHA (and version when versioned) |
+| CI green | Terminal required checks on **that exact SHA** (not an older branch run) |
+| Actions / minutes "fixed" | Raw billing or usage readout after the change — not "workflows disabled" alone |
+| Private workflow burn stopped | Full inventory including **active push CI** and `dynamic/dependabot/*`, not only `disabled_manually` schedules |
+
+**Rules:**
+- **Partial = partial.** Mid-flight deploy, pending CI, or remaining active burners are not "complete."
+- **TRUE/FALSE ledger first** when the CEO asks "are you sure?" or after any overclaim correction.
+- **NEVER** dress partial progress as a closed crisis. Feedback: `fb_1785435078277_umex12`.
+
 ## Operational Standards
 
 - Adhere to two-space indentation and single-quote strings.
