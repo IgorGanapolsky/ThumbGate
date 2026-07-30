@@ -62,9 +62,12 @@ function checkContract() {
     ok: pack.transport && pack.transport.type === 'stdio',
     detail: `transport=${JSON.stringify(pack.transport)}`,
   });
+  const descLower = String(server.description || '').toLowerCase();
   checks.push({
     id: 'server_no_legacy_name',
-    ok: !/mcp-memory-gateway|MCP Memory Gateway|rlhf-loop/i.test(String(server.description || '')),
+    ok: !descLower.includes('mcp-memory-gateway')
+      && !descLower.includes('mcp memory gateway')
+      && !descLower.includes('rlhf-loop'),
     detail: 'server.json description free of retired product names',
   });
   checks.push({
@@ -77,22 +80,23 @@ function checkContract() {
     ok: Object.keys(glama).filter((k) => k !== '$schema').join(',') === 'maintainers',
     detail: 'glama.json only maintainers (official schema)',
   });
-  // Scope to commandFunction.args — parse line-by-line (no super-linear regex).
+  // Scope to commandFunction.args — pure string parse (no regex; Sonar S5852).
   const smitheryArgs = [];
   let inArgs = false;
   for (const line of smithery.split('\n')) {
-    if (/^\s*args:\s*$/.test(line)) {
+    if (line.trim() === 'args:') {
       inArgs = true;
       continue;
     }
     if (inArgs) {
-      const m = line.match(/^\s+-\s+"([^"]+)"\s*$/);
-      if (m) {
-        smitheryArgs.push(m[1]);
+      const t = line.trim();
+      // YAML list item: - "value"
+      if (t.startsWith('- "') && t.endsWith('"') && t.length >= 4) {
+        smitheryArgs.push(t.slice(3, -1));
         continue;
       }
       // left the list
-      if (line.trim() !== '') inArgs = false;
+      if (t !== '') inArgs = false;
     }
   }
   const smitheryCommand = smithery.includes('command: "npx"') || smithery.includes("command: 'npx'");
@@ -112,7 +116,8 @@ function checkContract() {
   });
   checks.push({
     id: 'readme_documents_serve',
-    ok: /npx -y thumbgate serve/.test(readme) && /Do \*\*not\*\* use `npm start` for MCP/.test(readme),
+    ok: readme.includes('npx -y thumbgate serve')
+      && readme.includes('Do **not** use `npm start` for MCP'),
     detail: 'README documents Glama/MCP stdio start',
   });
 
@@ -130,7 +135,10 @@ function checkContract() {
 }
 
 function isSmokeSuccess(out) {
-  return /"name"\s*:\s*"thumbgate-mcp"/.test(out) || /protocolVersion/.test(out);
+  const s = String(out || '');
+  return s.includes('protocolVersion')
+    || s.includes('"name":"thumbgate-mcp"')
+    || s.includes('"name": "thumbgate-mcp"');
 }
 
 function buildInitializeFrame() {
