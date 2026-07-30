@@ -709,7 +709,17 @@ function setupOpenCode() {
 
   let config = {};
   if (fs.existsSync(configPath)) {
-    try { config = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch (_) { config = {}; }
+    try {
+      config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    } catch (error) {
+      // Resetting to {} here and writing would replace the whole file — silently deleting
+      // the user's model, provider, plugin and other MCP settings just to add ours.
+      // A config we cannot parse is a reason to stop, not to overwrite.
+      console.error(`  OpenCode: ${configPath} could not be parsed (${error.message}).`);
+      console.error('  Refusing to overwrite it. Fix or move the file, then re-run.');
+      process.exitCode = 1;
+      return false;
+    }
   }
   config.mcp = config.mcp || {};
   if (JSON.stringify(config.mcp[MCP_SERVER_NAME]) === JSON.stringify(desired)) return false;
@@ -726,6 +736,12 @@ function setupOpenCode() {
 // and README.md must appear here with a real handler, or the flag lies.
 // `hookAgent: true` means scripts/auto-wire-hooks.js can wire a pre-tool hook;
 // the rest integrate over MCP only and are wired by their setup function.
+const AGENT_ALIASES = {
+  claude: 'claude-code',
+  'claude_code': 'claude-code',
+  'open-code': 'opencode',
+};
+
 const SUPPORTED_AGENTS = {
   'claude-code': { hookAgent: true },
   codex: { hookAgent: true },
@@ -979,6 +995,9 @@ function quickstart() {
 function init(cliArgs = parseArgs(process.argv.slice(3))) {
   const args = { ...cliArgs };
   // A typo used to exit 0 having wired nothing for the requested agent.
+  // Aliases must resolve BEFORE validation: scripts/auto-wire-hooks.js accepts `claude`
+  // for `claude-code`, and plugins/claude-skill/README.md publishes that exact command.
+  if (args.agent && AGENT_ALIASES[args.agent]) args.agent = AGENT_ALIASES[args.agent];
   if (args.agent && !Object.prototype.hasOwnProperty.call(SUPPORTED_AGENTS, args.agent)) {
     console.error(`Unknown --agent "${args.agent}". Supported: ${Object.keys(SUPPORTED_AGENTS).join(', ')}`);
     process.exit(1);
@@ -1132,7 +1151,12 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
   // while writing nothing for that agent.
   const agentSpec = args.agent ? SUPPORTED_AGENTS[args.agent] : null;
   if (agentSpec && agentSpec.setup) {
-    if (!agentSpec.setup()) console.log(`  ${args.agent}: already configured`);
+    // A setup function returns false both when nothing needed doing and when it refused
+    // (e.g. an unparseable config it declined to overwrite). Reporting "already
+    // configured" for a refusal would repeat the original sin of this PR: a failure
+    // dressed up as success. The refusal path sets process.exitCode, so key off that.
+    const changed = agentSpec.setup();
+    if (!changed && !process.exitCode) console.log(`  ${args.agent}: already configured`);
   } else if (args.agent || args['wire-hooks']) {
     const { wireHooks } = require(path.join(PKG_ROOT, 'scripts', 'auto-wire-hooks'));
     const hookResult = wireHooks({ agent: args.agent, dryRun: args['dry-run'] });

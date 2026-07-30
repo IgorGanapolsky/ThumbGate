@@ -1045,9 +1045,11 @@ async function callToolInner(name, args) {
       // Same engine the PreToolUse hook uses, so an MCP client and a hook cannot
       // disagree about whether an action is allowed.
       const { runAsync } = require('../../scripts/gates-engine');
+      const { canonicalizeToolCall } = require('../../scripts/harness-tool-names');
+      const canonical = canonicalizeToolCall(args.tool_name, args.tool_input || {});
       const raw = await runAsync({
-        tool_name: args.tool_name,
-        tool_input: args.tool_input || {},
+        tool_name: canonical.toolName,
+        tool_input: canonical.toolInput,
       });
       let decision = 'allow';
       let reason = '';

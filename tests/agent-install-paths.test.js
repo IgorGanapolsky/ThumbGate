@@ -95,3 +95,44 @@ test('setupOpenCode writes a real OpenCode MCP config', () => {
   assert.ok(Array.isArray(config.mcp.thumbgate.command), 'server entry must carry a launch command');
   fs.rmSync(home, { recursive: true, force: true });
 });
+
+test('documented agent aliases resolve instead of being rejected', () => {
+  // scripts/auto-wire-hooks.js accepts `claude` for `claude-code`, and
+  // plugins/claude-skill/README.md publishes `npx thumbgate init --agent claude`.
+  // The first version of the unknown-agent guard used an exact-key lookup and turned
+  // that published command into exit 1 — fixing one silent failure by creating a loud one.
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-alias-'));
+  execFileSync(process.execPath, [CLI, 'init', '--agent', 'claude'], {
+    cwd: home,
+    env: { ...process.env, HOME: home, THUMBGATE_NONINTERACTIVE: '1', CI: '1' },
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  assert.ok(fs.existsSync(path.join(home, '.claude', 'settings.json')),
+    '--agent claude must wire Claude Code, not error');
+  fs.rmSync(home, { recursive: true, force: true });
+});
+
+test('an unparseable OpenCode config is preserved, never overwritten', () => {
+  // OpenCode configs accept JSONC. Treating a parse failure as an empty object and
+  // writing would replace the whole file — deleting the user's model, provider and
+  // plugin settings to add ours.
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-ocp-'));
+  const configPath = path.join(home, '.config', 'opencode', 'opencode.json');
+  fs.mkdirSync(path.dirname(configPath), { recursive: true });
+  const original = '{\n  // JSONC comment\n  "model": "anthropic/claude-opus-4",\n  "provider": { "anthropic": { "apiKey": "sk-user-key" } },\n}\n';
+  fs.writeFileSync(configPath, original);
+
+  try {
+    execFileSync(process.execPath, [CLI, 'init', '--agent', 'opencode'], {
+      cwd: home,
+      env: { ...process.env, HOME: home, THUMBGATE_NONINTERACTIVE: '1', CI: '1' },
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+  } catch { /* non-zero exit is the correct refusal signal */ }
+
+  assert.equal(fs.readFileSync(configPath, 'utf8'), original,
+    'a config we cannot parse must be left exactly as-is');
+  fs.rmSync(home, { recursive: true, force: true });
+});
