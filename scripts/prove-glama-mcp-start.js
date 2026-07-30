@@ -77,13 +77,25 @@ function checkContract() {
     ok: Object.keys(glama).filter((k) => k !== '$schema').join(',') === 'maintainers',
     detail: 'glama.json only maintainers (official schema)',
   });
-  // Scope to commandFunction.args block — description text can also say "serve".
+  // Scope to commandFunction.args — parse line-by-line (no super-linear regex).
   const smitheryArgs = [];
-  const argsBlock = smithery.match(/args:\s*\n((?:\s+-\s+"[^"]+"\s*\n)+)/);
-  if (argsBlock) {
-    for (const m of argsBlock[1].matchAll(/-\s+"([^"]+)"/g)) smitheryArgs.push(m[1]);
+  let inArgs = false;
+  for (const line of smithery.split('\n')) {
+    if (/^\s*args:\s*$/.test(line)) {
+      inArgs = true;
+      continue;
+    }
+    if (inArgs) {
+      const m = line.match(/^\s+-\s+"([^"]+)"\s*$/);
+      if (m) {
+        smitheryArgs.push(m[1]);
+        continue;
+      }
+      // left the list
+      if (line.trim() !== '') inArgs = false;
+    }
   }
-  const smitheryCommand = /command:\s*"npx"/.test(smithery);
+  const smitheryCommand = smithery.includes('command: "npx"') || smithery.includes("command: 'npx'");
   const smitheryArgOk = smitheryArgs.length >= 3
     && smitheryArgs[0] === '-y'
     && smitheryArgs[1] === 'thumbgate'
