@@ -25,6 +25,7 @@ test('DEFAULT_CHECKS isolates proof artifacts for prove checks', () => {
   const proveDataPipeline = DEFAULT_CHECKS.find((check) => check.name === 'prove_data_pipeline');
   const proveTessl = DEFAULT_CHECKS.find((check) => check.name === 'prove_tessl');
   const proveReliability = DEFAULT_CHECKS.find((check) => check.name === 'prove_reliability');
+  const proveGlamaMcp = DEFAULT_CHECKS.find((check) => check.name === 'prove_glama_mcp');
 
   assert.equal(proveAdapters.useTempProofDir, true);
   assert.equal(proveAutomation.useTempProofDir, true);
@@ -33,6 +34,9 @@ test('DEFAULT_CHECKS isolates proof artifacts for prove checks', () => {
   assert.ok(proveReliability, 'prove_reliability check is registered');
   assert.equal(proveReliability.useTempProofDir, true);
   assert.deepEqual(proveReliability.command, ['npm', 'run', 'prove:reliability']);
+  assert.ok(proveGlamaMcp, 'prove_glama_mcp check is registered');
+  assert.equal(proveGlamaMcp.useTempProofDir, true);
+  assert.deepEqual(proveGlamaMcp.command, ['npm', 'run', 'prove:glama-mcp']);
 });
 
 test('collectHealthReport marks overall healthy when all checks pass', () => {

@@ -27,6 +27,13 @@ const DEFAULT_CHECKS = [
     timeoutMs: 3 * 60_000,
     useTempProofDir: true,
   },
+  // Glama/MCP registry start contract — cheap pin vs recurring "Build failed for ThumbGate"
+  {
+    name: 'prove_glama_mcp',
+    command: ['npm', 'run', 'prove:glama-mcp'],
+    timeoutMs: 60_000,
+    useTempProofDir: true,
+  },
 ];
 
 function runCommand(command, {
