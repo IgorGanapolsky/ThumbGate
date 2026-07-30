@@ -151,7 +151,8 @@ const path = require('node:path');
 // 395 -> 400 (2026-07-30): local embedding maintenance + hybrid ablation
 // runtime/fixture plus document chunker + skill-pack dependencies now reachable
 // from packaged document search; public retrieval proof, no private Core code.
-const BASELINE_FILE_COUNT = 400;
+// 400 -> 401 (2026-07-30): scripts/harness-tool-names.js. adapters/mcp/server-stdio.js require()s it during gate_check, so the published package throws without it. Pure lookup table mapping harness tool vocabularies to canonical gate names; no I/O, no Core imports.
+const BASELINE_FILE_COUNT = 401;
 
 function readBundleSnapshot() {
   const repoRoot = path.resolve(__dirname, '..');

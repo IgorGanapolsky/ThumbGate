@@ -118,6 +118,7 @@
     "scripts/grafana-revenue-evidence.js",
     "scripts/gate-stats.js",
     "scripts/gate-templates.js",
+    "scripts/harness-tool-names.js",
     "scripts/gates-engine.js",
     "scripts/gemini-embedding-policy.js",
     "scripts/growth-campaigns.js",
