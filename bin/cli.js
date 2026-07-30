@@ -693,6 +693,50 @@ function setupAmp() {
   return true;
 }
 
+function setupOpenCode() {
+  // OpenCode was listed in README's install table and in `init --help` since the
+  // adapter asset landed, but no setup function ever existed — `--agent opencode`
+  // silently wrote Claude/Codex/Gemini config and exited 0. OpenCode has no hook
+  // surface, so this wires the MCP server, which is its real integration point.
+  const configPath = path.join(HOME, '.config', 'opencode', 'opencode.json');
+  const srcPath = path.join(PKG_ROOT, 'adapters', 'opencode', 'opencode.json');
+  if (!fs.existsSync(srcPath)) return false;
+
+  let src;
+  try { src = JSON.parse(fs.readFileSync(srcPath, 'utf8')); } catch (_) { return false; }
+  const desired = (src.mcp || {}).thumbgate;
+  if (!desired) return false;
+
+  let config = {};
+  if (fs.existsSync(configPath)) {
+    try { config = JSON.parse(fs.readFileSync(configPath, 'utf8')); } catch (_) { config = {}; }
+  }
+  config.mcp = config.mcp || {};
+  if (JSON.stringify(config.mcp[MCP_SERVER_NAME]) === JSON.stringify(desired)) return false;
+
+  config.$schema = config.$schema || src.$schema;
+  config.mcp[MCP_SERVER_NAME] = desired;
+  fs.mkdirSync(path.dirname(configPath), { recursive: true });
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
+  console.log(`  OpenCode: registered thumbgate MCP server in ${configPath}`);
+  return true;
+}
+
+// Single source of truth for `--agent`. Every value advertised in `init --help`
+// and README.md must appear here with a real handler, or the flag lies.
+// `hookAgent: true` means scripts/auto-wire-hooks.js can wire a pre-tool hook;
+// the rest integrate over MCP only and are wired by their setup function.
+const SUPPORTED_AGENTS = {
+  'claude-code': { hookAgent: true },
+  codex: { hookAgent: true },
+  gemini: { hookAgent: true },
+  forge: { hookAgent: true },
+  cursor: { hookAgent: true },
+  cline: { hookAgent: false, setup: () => setupCline() },
+  amp: { hookAgent: false, setup: () => setupAmp() },
+  opencode: { hookAgent: false, setup: () => setupOpenCode() },
+};
+
 function setupCursor() {
   return mergeMcpJson(path.join(CWD, '.cursor', 'mcp.json'), 'Cursor', 'project');
 }
@@ -934,13 +978,18 @@ function quickstart() {
 
 function init(cliArgs = parseArgs(process.argv.slice(3))) {
   const args = { ...cliArgs };
+  // A typo used to exit 0 having wired nothing for the requested agent.
+  if (args.agent && !Object.prototype.hasOwnProperty.call(SUPPORTED_AGENTS, args.agent)) {
+    console.error(`Unknown --agent "${args.agent}". Supported: ${Object.keys(SUPPORTED_AGENTS).join(', ')}`);
+    process.exit(1);
+  }
   if (args.help || args.h) {
     console.log('Usage: npx thumbgate init [--agent <name>] [--wire-hooks] [--email you@company.com]');
     console.log('');
     console.log('Scaffold ThumbGate in the current project and wire detected agent integrations.');
     console.log('');
     console.log('Options:');
-    console.log('  --agent <name>           Wire a specific agent: claude-code, codex, gemini, amp, cursor, cline, opencode');
+    console.log(`  --agent <name>           Wire a specific agent: ${Object.keys(SUPPORTED_AGENTS).join(', ')}`);
     console.log('  --wire-hooks             Wire hooks only; do not scaffold project files');
     console.log('  --email <email>          Subscribe installer to the setup guide and trial reminders');
     console.log('  --dry-run                Show hook changes without writing them');
@@ -1076,15 +1125,22 @@ function init(cliArgs = parseArgs(process.argv.slice(3))) {
 
   if (configured === 0) console.log('  All detected platforms already configured.');
 
-  // Cline uses .clinerules (no native hook surface). Run setupCline directly
-  // and skip wireHooks, which does not support cline.
-  if (args.agent === 'cline') {
-    setupCline();
+  // Agents without a native pre-tool hook surface (cline, amp, opencode) are wired
+  // by their own setup function. Previously only cline was handled here: `--agent amp`
+  // and `--agent opencode` fell through to wireHooks, which rejected them, printed the
+  // rejection as an ordinary log line, and exited 0 — so the flag appeared to work
+  // while writing nothing for that agent.
+  const agentSpec = args.agent ? SUPPORTED_AGENTS[args.agent] : null;
+  if (agentSpec && agentSpec.setup) {
+    if (!agentSpec.setup()) console.log(`  ${args.agent}: already configured`);
   } else if (args.agent || args['wire-hooks']) {
     const { wireHooks } = require(path.join(PKG_ROOT, 'scripts', 'auto-wire-hooks'));
     const hookResult = wireHooks({ agent: args.agent, dryRun: args['dry-run'] });
     if (hookResult.error) {
-      console.log(`  Hook wiring: ${hookResult.error}`);
+      // An explicit --agent that cannot be wired is a FAILURE, not a note. Exiting 0
+      // here is what let a user believe `--agent opencode` had protected them.
+      console.error(`  Hook wiring failed for --agent ${args.agent}: ${hookResult.error}`);
+      process.exitCode = 1;
     } else if (!hookResult.changed) {
       console.log(`  Hooks: already wired for ${hookResult.agent}`);
     } else {
