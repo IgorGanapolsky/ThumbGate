@@ -343,6 +343,19 @@ test('API POST /v1/search returns results for context source', async () => {
   assert.ok(body.results.some((entry) => entry.source === 'contextfs'));
 });
 
+test('API document search uses hybrid child chunks and returns bounded parent evidence', async () => {
+  const response = await apiFetch('/v1/search?q=force%20push%20main&source=documents&tags=policy', {
+    headers: authHeader,
+  });
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.engine, 'hybrid-parent-child');
+  assert.ok(body.results.length > 0);
+  assert.equal(body.results[0].source, 'document');
+  assert.equal(body.results[0].retrieval.parentChild, true);
+  assert.ok(body.results[0].matchedChunks.length <= 3);
+});
+
 test('API /v1/search requires auth', async () => {
   const response = await apiFetch('/v1/search?q=database');
   assert.equal(response.status, 401);

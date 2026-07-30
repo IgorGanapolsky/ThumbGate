@@ -400,8 +400,10 @@ test('npm package ships a slim runtime boundary instead of repo/dev surfaces', (
     // on require. It is the only new file in the tarball; model-calibration.js and
     // eval-risk-model.js are development-only.
     // 392 -> 395 (2026-07-30): server.json + glama.json + smithery.yaml for MCP registry start
-    manifest.fileCount <= 395,
-    `npm package should stay <= 395 files, got ${manifest.fileCount}`
+    // 395 -> 400 (2026-07-30): embedding maintenance + hybrid ablation runtime/fixture
+    // plus document chunker + skill-pack dependencies required by packed search
+    manifest.fileCount <= 400,
+    `npm package should stay <= 400 files, got ${manifest.fileCount}`
   );
   // Ceiling bumped from 2.75 MB → 2.85 MB (2026-04-16) to accommodate the
   // incremental review-delta demo content in public/dashboard.html landing

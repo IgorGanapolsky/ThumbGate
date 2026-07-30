@@ -200,12 +200,12 @@ function cleanRecord(record, options = {}) {
 /**
  * Chunk long text with overlap. Short records stay single-chunk.
  */
-function chunkText(text, options = {}) {
+function chunkTextWithOffsets(text, options = {}) {
   const maxChars = Math.max(MIN_CHUNK_CHARS, Number(options.maxChars) || DEFAULT_CHUNK_CHARS);
   const overlap = Math.max(0, Math.min(maxChars - 1, Number(options.overlap) || DEFAULT_CHUNK_OVERLAP));
   const raw = String(text || '').trim();
   if (!raw) return [];
-  if (raw.length <= maxChars) return [raw];
+  if (raw.length <= maxChars) return [{ content: raw, startChar: 0, endChar: raw.length }];
 
   const chunks = [];
   let start = 0;
@@ -222,8 +222,17 @@ function chunkText(text, options = {}) {
       else if (sent >= searchFrom) breakAt = sent + 2;
       if (breakAt > 0) end = start + breakAt;
     }
-    const piece = raw.slice(start, end).trim();
-    if (piece) chunks.push(piece);
+    const window = raw.slice(start, end);
+    const leftTrim = window.length - window.trimStart().length;
+    const rightTrim = window.length - window.trimEnd().length;
+    const piece = window.trim();
+    if (piece) {
+      chunks.push({
+        content: piece,
+        startChar: start + leftTrim,
+        endChar: end - rightTrim,
+      });
+    }
     if (end >= raw.length) break;
     start = Math.max(0, end - overlap);
     if (start >= end) start = end; // safety
@@ -231,18 +240,28 @@ function chunkText(text, options = {}) {
   return chunks;
 }
 
+function chunkText(text, options = {}) {
+  return chunkTextWithOffsets(text, options).map((chunk) => chunk.content);
+}
+
 function chunkRecord(record, options = {}) {
-  const pieces = chunkText(`${record.title ? `${record.title}\n\n` : ''}${record.content || ''}`, options);
+  const sourceText = `${record.title ? `${record.title}\n\n` : ''}${record.content || ''}`;
+  const pieces = chunkTextWithOffsets(sourceText, options);
   if (pieces.length === 0) return [];
-  return pieces.map((content, i) => ({
+  const versionHash = crypto.createHash('sha256').update(sourceText).digest('hex');
+  return pieces.map((piece, i) => ({
     ...record,
     id: pieces.length === 1 ? record.id : `${record.id}::c${i}`,
-    content,
+    content: piece.content,
     metadata: {
       ...(record.metadata || {}),
       chunkIndex: i,
       chunkTotal: pieces.length,
       parentId: record.id,
+      startChar: piece.startChar,
+      endChar: piece.endChar,
+      contentHash: crypto.createHash('sha256').update(piece.content).digest('hex'),
+      parentVersionHash: versionHash,
     },
   }));
 }
@@ -412,6 +431,7 @@ module.exports = {
   parseDocument,
   cleanRecord,
   chunkText,
+  chunkTextWithOffsets,
   chunkRecord,
   extractMetadata,
   runDocumentPipeline,

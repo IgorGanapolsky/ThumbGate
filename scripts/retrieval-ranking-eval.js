@@ -98,7 +98,7 @@ function evaluateRankingGolden(options = {}) {
   const bySlice = {};
 
   for (const q of golden.queries) {
-    const { ranked, poolSize } = rankCorpusForQuery(golden.corpus, q, { topK });
+    const { ranked, poolSize, meta } = rankCorpusForQuery(golden.corpus, q, { topK });
     const metrics = scoreRanking(ranked, q.qrels || {}, { kValues });
     const row = {
       id: q.id,
@@ -108,6 +108,7 @@ function evaluateRankingGolden(options = {}) {
       poolSize,
       rankedIds: ranked.map((r) => r.id),
       metrics,
+      retrievalMeta: meta,
     };
     perQuery.push(row);
     const slice = row.slice;
@@ -120,6 +121,8 @@ function evaluateRankingGolden(options = {}) {
     { kValues },
   );
   summary.queries = perQuery.length;
+  summary.hybridQueries = perQuery.filter((row) => row.retrievalMeta?.densePool > 0).length;
+  summary.rerankedQueries = perQuery.filter((row) => row.retrievalMeta?.rerankApplied === true).length;
 
   const sliceSummary = {};
   for (const [slice, scores] of Object.entries(bySlice)) {

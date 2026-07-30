@@ -299,7 +299,7 @@ test('retrieve_lessons tool routes candidates through cross-encoder reranking', 
   const previous = require.cache[RERANKER_PATH];
   const calls = [];
   stubModule(RERANKER_PATH, {
-    retrieveWithRerankingSync(toolName, actionContext, options) {
+    async retrieveWithReranking(toolName, actionContext, options) {
       calls.push({ toolName, actionContext, options });
       return [{
         id: 'lesson-reranked',
@@ -337,6 +337,9 @@ test('retrieve_lessons tool routes candidates through cross-encoder reranking', 
         scope: undefined,
         requireScope: false,
         includeShared: true,
+        metadataFilters: undefined,
+        queryRewrite: true,
+        includeRetrievalMeta: false,
       },
     }]);
   } finally {

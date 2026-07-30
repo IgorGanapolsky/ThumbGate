@@ -849,6 +849,169 @@ function searchImportedDocuments(options = {}) {
   return docs.slice(0, limit);
 }
 
+function importedDocumentMatchesFilters(document, filters = {}) {
+  if (!filters || typeof filters !== 'object') return true;
+  const normalize = (value) => (
+    (Array.isArray(value) ? value : value == null ? [] : [value])
+      .map((item) => String(item).trim().toLowerCase())
+      .filter(Boolean)
+  );
+  for (const [field, actualValue] of [
+    ['sourceFormat', document.sourceFormat],
+    ['sourceType', document.sourceType],
+  ]) {
+    const required = normalize(filters[field]);
+    if (required.length > 0 && !required.includes(String(actualValue || '').toLowerCase())) {
+      return false;
+    }
+  }
+  const requiredTags = normalize(filters.tags);
+  if (requiredTags.length > 0) {
+    const actualTags = normalize(document.tags);
+    const matches = filters.requireAllTags === false
+      ? requiredTags.some((tag) => actualTags.includes(tag))
+      : requiredTags.every((tag) => actualTags.includes(tag));
+    if (!matches) return false;
+  }
+  return true;
+}
+
+/**
+ * Production document retrieval: rank child chunks, then hydrate their parent
+ * documents. Whole-file results stay bounded while evidence can come from any
+ * position in a long document.
+ */
+async function searchImportedDocumentsAsync(options = {}) {
+  const query = String(options.query || '').trim();
+  if (!query) throw new Error('query is required');
+  const limit = Number.isFinite(Number(options.limit))
+    ? Math.max(1, Math.min(50, Number(options.limit)))
+    : 10;
+  const documents = listImportedDocuments({
+    ...options,
+    limit: MAX_SEARCH_SCAN,
+    query: '',
+  }).documents
+    .map((summary) => readImportedDocument(summary.documentId, options))
+    .filter(Boolean)
+    .filter((document) => importedDocumentMatchesFilters(
+      document,
+      options.metadataFilters || options.filters,
+    ));
+  if (documents.length === 0) return [];
+
+  const { runDocumentPipeline } = require('./rag-document-pipeline');
+  const { pragmaticHybridSearch } = require('./pragmatic-hybrid-search');
+  const { buildQueryVariants, reciprocalRankFusion } = require('./lesson-retrieval');
+  const pipeline = runDocumentPipeline(documents.map((document) => ({
+    type: 'text',
+    id: document.documentId,
+    title: document.title,
+    content: document.content,
+    tags: document.tags,
+    source: 'imported_document',
+    metadata: {
+      documentId: document.documentId,
+      sourceFormat: document.sourceFormat,
+      sourceType: document.sourceType,
+      importedAt: document.importedAt,
+    },
+  })), {
+    maxChars: options.maxChunkChars || 900,
+    overlap: options.chunkOverlap || 120,
+  });
+  const chunks = pipeline.chunks;
+  if (chunks.length === 0) return [];
+
+  const queryVariants = buildQueryVariants(query, options);
+  let denseRankedIds = [];
+  let semanticProvider = null;
+  try {
+    const embeddingIndex = require('./lesson-embedding-index');
+    if (options.embedder || embeddingIndex.isEmbedderAvailable()) {
+      const denseLists = [];
+      for (const variant of queryVariants) {
+        const dense = await embeddingIndex.semanticRank(variant, chunks, {
+          feedbackDir: options.feedbackDir,
+          embedder: options.embedder,
+          embedderId: options.embedderId,
+          cacheFile: 'document-chunk-embeddings.json',
+        });
+        const topScore = dense[0]?.score ?? 0;
+        const minimum = Math.max(
+          Number(options.minSemanticScore) || 0.15,
+          topScore - (Number(options.semanticScoreWindow) || 0.2),
+        );
+        denseLists.push(
+          dense.filter((entry) => entry.score >= minimum).map((entry) => entry.id),
+        );
+      }
+      denseRankedIds = reciprocalRankFusion(denseLists).map((entry) => entry.id);
+      semanticProvider = options.embedderId || 'configured';
+    }
+  } catch {
+    denseRankedIds = [];
+  }
+
+  const { results: rankedChunks, meta } = pragmaticHybridSearch({
+    corpus: chunks,
+    query,
+    toolName: options.toolName || 'Read',
+    options: {
+      topK: Math.min(chunks.length, Math.max(limit * 4, 20)),
+      pool: Math.min(chunks.length, Math.max(limit * 10, 50)),
+      queryVariants,
+      denseRankedIds,
+      diversify: false,
+    },
+  });
+  const byDocumentId = new Map(documents.map((document) => [document.documentId, document]));
+  const grouped = new Map();
+  for (const chunk of rankedChunks) {
+    const documentId = chunk.metadata?.documentId;
+    if (!documentId || !byDocumentId.has(documentId)) continue;
+    const score = Number(chunk.rerankedScore ?? chunk.relevanceScore ?? 0);
+    const group = grouped.get(documentId) || { score, chunks: [] };
+    group.score = Math.max(group.score, score);
+    if (group.chunks.length < 3) {
+      group.chunks.push({
+        chunkId: chunk.id,
+        chunkIndex: chunk.metadata?.chunkIndex ?? 0,
+        startChar: chunk.metadata?.startChar ?? null,
+        endChar: chunk.metadata?.endChar ?? null,
+        content: String(chunk.content || '').slice(0, 700),
+        score: Number(score.toFixed(4)),
+      });
+    }
+    grouped.set(documentId, group);
+  }
+
+  const queryTokens = tokenize(query);
+  return [...grouped.entries()]
+    .sort((left, right) => right[1].score - left[1].score)
+    .slice(0, limit)
+    .map(([documentId, group]) => {
+      const document = byDocumentId.get(documentId);
+      return {
+        ...document,
+        excerpt: group.chunks[0]?.content || document.excerpt,
+        _score: Number(group.score.toFixed(4)),
+        _matchedTokens: queryTokens.filter((token) => (
+          group.chunks.some((chunk) => chunk.content.toLowerCase().includes(token))
+        )),
+        _matchedChunks: group.chunks,
+        _retrieval: {
+          strategy: meta.strategy,
+          parentChild: true,
+          chunkCount: chunks.length,
+          queryVariants,
+          densePool: meta.densePool,
+          semanticProvider,
+        },
+      };
+    });
+}
+
 function importDocument(options = {}) {
   const hasFilePath = Boolean(options.filePath);
   const hasContent = typeof options.content === 'string' && options.content.trim().length > 0;
@@ -924,4 +1087,6 @@ module.exports = {
   proposeGatesFromDocument,
   readImportedDocument,
   searchImportedDocuments,
+  searchImportedDocumentsAsync,
+  importedDocumentMatchesFilters,
 };

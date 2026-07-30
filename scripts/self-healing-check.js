@@ -34,6 +34,11 @@ const DEFAULT_CHECKS = [
     timeoutMs: 60_000,
     useTempProofDir: true,
   },
+  {
+    name: 'lesson_embedding_index',
+    command: ['node', 'scripts/lesson-embedding-maintenance.js', '--json'],
+    timeoutMs: 60_000,
+  },
 ];
 
 function runCommand(command, {
