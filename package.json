@@ -884,7 +884,7 @@
     "prove:reliability": "node scripts/prove-reliability.js",
     "explore:reliability:ci": "node scripts/prove-reliability.js --seed=42 --iterations=10",
     "manifest:export": "node scripts/export-directory-manifest.js",
-    "test:directory-manifest": "node --test tests/directory-manifest-parity.test.js"
+    "test:directory-manifest": "node --test tests/directory-manifest-parity.test.js tests/directory-manifest-export.test.js"
   },
   "keywords": [
     "mcp",
