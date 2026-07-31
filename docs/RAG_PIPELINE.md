@@ -22,10 +22,12 @@ npm run prove:rag
 ## How to measure
 
 ```bash
+npm run eval:quality      # A+ unified gate: IR + offline faithfulness/groundedness/answer_relevance
 npm run eval:rag          # skill-pack smoke + IR ranking (Recall@k / MRR / nDCG)
 npm run eval:ranking      # ranking-only gate (gate scoring stack on golden qrels)
 npm run prove:rag         # every stage has why + failure modes + metrics
 npm run test:rag-pipeline # unit tests for pipeline + contracts + structured out + IR metrics
+npm run test:eval-quality # IR + Ragas-style unit tests
 npm run test:eval-rag
 npm run test:dashboard-chat
 ```
@@ -35,13 +37,26 @@ npm run test:dashboard-chat
 | Metric | Meaning | Computed by |
 |--------|---------|-------------|
 | **Recall@k** | Fraction of relevant doc IDs found in top-k | `scripts/ir-metrics.js` |
+| **Precision@k** | Fraction of top-k that are relevant | same |
 | **MRR** | 1/rank of first relevant hit | same |
 | **nDCG@k** | Graded relevance with log discount | same |
 
-Golden qrels: `config/evals/retrieval-ranking-golden.json`  
-System under test: `scoreRelevance` + field-weighted BM25 rerank (same pieces as gate retrieval).
+Golden qrels: `config/evals/retrieval-ranking-golden.json` (20 graded queries)  
+System under test: pragmatic hybrid + BM25 second stage (same pieces as gate retrieval).
 
-Skill-pack “context recall/precision” in the report is a **separate smoke** (substring contains). Do not treat it as Recall@k/MRR/nDCG.
+### Generation quality (offline Ragas-style)
+
+| Metric | Meaning | Computed by |
+|--------|---------|-------------|
+| **Faithfulness** | Answer claims supported by context | `scripts/ragas-style-metrics.js` |
+| **Groundedness** | Answer content attributable to context | same |
+| **Answer relevance** | Answer addresses the query | same |
+| **Context precision / recall** | Retrieval chunk relevance + gold keyword hit | same |
+
+Golden: `config/evals/generation-quality-golden.json`  
+Unified floors: `npm run eval:quality` → `reports/eval-quality-suite.md`
+
+Skill-pack “context recall/precision” in the smoke path is a **separate smoke** (substring contains). Do not treat it as IR Recall@k/MRR/nDCG.
 
 Reports:
 

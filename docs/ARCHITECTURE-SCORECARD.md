@@ -15,7 +15,7 @@ So "the code exists" is not a passing grade anywhere below.
 
 | Area | Repo | Deployed |
 |---|---|---|
-| RAG / retrieval | B | C− |
+| RAG / retrieval | A− | B |
 | Agent with tools | A− | B+ |
 | Multi-agent workflow | B+ | B |
 | MCP enterprise integration | B+ | B− |
@@ -38,17 +38,25 @@ call so the agent sees prior mistakes at decision time. Retrieval is hybrid: `le
 3. *The corpus vanishes.* `lessons.sqlite` was wiped on the mini on 2026-07-26 and is
    unrecoverable. Nothing backs up `~/.thumbgate`.
 
-**How we measure it.** `eval-rag.js` computes `context_precision` via LLM judge. **There is no
-`evals/` directory at all** — no golden set exists, so precision is computed against whatever
-is at hand and is not comparable between runs. Nothing schedules it.
+**How we measure it (A+ suite, 2026-07-31).** Offline, CI-comparable metrics:
+
+| Family | Metrics | Golden | Command |
+|--------|---------|--------|---------|
+| IR ranking | Recall@k, Precision@k, MRR, nDCG@k | `config/evals/retrieval-ranking-golden.json` (20 queries) | `npm run eval:ranking` |
+| Generation quality | faithfulness, groundedness, answer_relevance, context_precision/recall | `config/evals/generation-quality-golden.json` | offline via `ragas-style-metrics.js` |
+| Unified gate | both families with floors | reports under `reports/eval-quality-suite.*` | `npm run eval:quality` |
+
+Optional LLM judges in `eval-rag.js` may refine scores when an API key is present; they
+cannot invent a pass when offline floors fail. Skill-pack substring smoke is **not** IR.
 
 **How we secure it.** `sanitizeFeedbackText()` strips hook transport payloads and redacts
 `/Users/<name>` and ports before anything is persisted.
 
 **How we deploy it.** Ships inside the npm package; corpus is local per machine.
 
-**How we know it works.** *We largely don't.* Unit tests cover the matcher; no benchmark
-covers retrieval quality. **Top gap: build a golden set in `evals/` and schedule `eval-rag`.**
+**How we know it works.** `npm run eval:quality` must PASS (A+ floors). Ranking golden is
+self-contained (no operator feedbackDir). Generation metrics are deterministic claim/overlap
+proxies — honest, not full neural Ragas.
 
 ---
 
