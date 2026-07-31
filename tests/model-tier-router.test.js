@@ -2,6 +2,9 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
 const {
   TIERS,
@@ -9,7 +12,11 @@ const {
   shouldEscalate,
   FrontierBudget,
   recommendExecutionPlan,
+  inferProvider,
+  normalizeGenerationResult,
   createOpenAiCompatibleAdapter,
+  createDefaultGenerationAdapters,
+  createJsonlTelemetrySink,
   executeRoutedGeneration,
   evaluateRoutingHoldout,
 } = require('../scripts/model-tier-router');
@@ -339,6 +346,89 @@ test('execution plan calls the architecture risk-aware routing, not MoE', () => 
   const plan = recommendExecutionPlan({ type: 'review' }, {});
   assert.equal(plan.architecture, 'risk-aware-model-routing');
   assert.equal(plan.mixtureOfExperts, false);
+});
+
+test('provider inference distinguishes local, OpenAI, Anthropic, Gemini, and custom models', () => {
+  assert.equal(inferProvider('local-model', 'localFrontier'), 'openai-compatible');
+  assert.equal(inferProvider('gpt-5.5', 'frontier'), 'openai');
+  assert.equal(inferProvider('o3', 'frontier'), 'openai');
+  assert.equal(inferProvider('claude-opus-4', 'frontier'), 'anthropic');
+  assert.equal(inferProvider('gemini-3-pro', 'frontier'), 'gemini');
+  assert.equal(inferProvider('vertex-gemini', 'frontier'), 'gemini');
+  assert.equal(inferProvider('private-router-v1', 'mini'), 'custom');
+});
+
+test('generation result normalization supports text adapters and rejects empty results', () => {
+  assert.deepEqual(normalizeGenerationResult('ok', {
+    model: 'gpt-test',
+    provider: 'openai',
+  }), {
+    text: 'ok',
+    model: 'gpt-test',
+    provider: 'openai',
+    usage: null,
+    costCents: null,
+  });
+  assert.throws(() => normalizeGenerationResult(null), /returned no result/);
+  assert.deepEqual(normalizeGenerationResult({ text: 42 }, {
+    model: 'fallback-model',
+    provider: 'custom',
+  }), {
+    text: '42',
+    model: 'fallback-model',
+    provider: 'custom',
+    usage: null,
+    costCents: null,
+  });
+});
+
+test('default adapters share the OpenAI-compatible contract and JSONL telemetry is durable', async (t) => {
+  const adapters = createDefaultGenerationAdapters({
+    env: { THUMBGATE_LOCAL_MODEL_BASE_URL: 'http://127.0.0.1:9000/v1' },
+    fetchImpl: async () => ({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: 'local-ok' } }] }),
+    }),
+  });
+  assert.equal(adapters.openai, adapters['openai-compatible']);
+  const local = await adapters['openai-compatible']({
+    request: { messages: [{ role: 'user', content: 'hello' }] },
+    model: 'local-model',
+    provider: 'openai-compatible',
+  });
+  assert.equal(local.text, 'local-ok');
+  assert.equal(local.model, 'local-model');
+
+  assert.throws(() => createJsonlTelemetrySink(), /file path is required/);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-route-telemetry-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const file = path.join(dir, 'nested', 'routes.jsonl');
+  const sink = createJsonlTelemetrySink(file);
+  sink({ tier: 'nano', outcome: 'success' });
+  assert.deepEqual(
+    fs.readFileSync(file, 'utf8').trim().split('\n').map((line) => JSON.parse(line)),
+    [{ tier: 'nano', outcome: 'success' }],
+  );
+});
+
+test('OpenAI-compatible adapter enforces credentials and reports upstream HTTP failures', async () => {
+  const noKey = createOpenAiCompatibleAdapter({
+    env: {},
+    fetchImpl: async () => ({ ok: true, json: async () => ({}) }),
+  });
+  await assert.rejects(
+    noKey({ request: {}, model: 'gpt-test', provider: 'openai' }),
+    /OPENAI_API_KEY is required/,
+  );
+
+  const upstreamFailure = createOpenAiCompatibleAdapter({
+    env: { OPENAI_API_KEY: 'test-key' },
+    fetchImpl: async () => ({ ok: false, status: 429 }),
+  });
+  await assert.rejects(
+    upstreamFailure({ request: { prompt: 'hello' }, model: 'gpt-test', provider: 'openai' }),
+    /HTTP 429/,
+  );
 });
 
 test('executeRoutedGeneration dispatches the selected adapter and emits prompt-free telemetry', async () => {
