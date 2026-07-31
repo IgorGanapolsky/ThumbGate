@@ -12,6 +12,7 @@ const indexHtml = read('public', 'index.html');
 const compareHtml = read('public', 'compare.html');
 const orchestrationHtml = read('public', 'compare', 'ai-experience-orchestration.html');
 const agentixHtml = read('public', 'compare', 'agentix-labs.html');
+const farAiHtml = read('public', 'compare', 'far-ai.html');
 const platformTeamsHtml = read('public', 'use-cases', 'platform-teams.html');
 const regulatedHtml = read('public', 'use-cases', 'regulated-workflows.html');
 const deploymentReadinessHtml = read('public', 'guides', 'ai-deployment-readiness.html');
@@ -57,6 +58,18 @@ test('Agentix comparison page frames agency services as adjacent competition', (
   assert.match(agentixHtml, /productized enforcement layer/i);
   assert.match(agentixHtml, /\$499 one-time Managed AI Agent Workflow Gate/i);
   assert.doesNotMatch(agentixHtml, /Pro \$19|\$149|Workflow Hardening Sprint/i);
+});
+
+test('FAR.AI comparison keeps research, evaluation, and runtime enforcement separate', () => {
+  assert.match(farAiHtml, /"@type": "TechArticle"/);
+  assert.match(farAiHtml, /"@type": "FAQPage"/);
+  assert.match(farAiHtml, /Adjacent, not a direct product substitute/i);
+  assert.match(farAiHtml, /They research failure modes\. We enforce what your agent may do next/i);
+  assert.match(farAiHtml, /FAR\.AI discovers and measures failure modes/i);
+  assert.match(farAiHtml, /That absence is our inference/i);
+  assert.match(farAiHtml, /https:\/\/www\.far\.ai\/research/);
+  assert.match(farAiHtml, /utm_source=far_ai_comparison/);
+  assert.match(compareHtml, /href="\/compare\/far-ai"/);
 });
 
 test('platform-team use case page exists with rollout language', () => {
