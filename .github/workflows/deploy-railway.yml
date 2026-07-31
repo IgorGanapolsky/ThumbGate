@@ -15,6 +15,7 @@ jobs:
     env:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       THUMBGATE_API_KEY: ${{ secrets.THUMBGATE_API_KEY }}
+      THUMBGATE_OPERATOR_KEY: ${{ secrets.THUMBGATE_OPERATOR_KEY }}
       STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
       STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
@@ -298,10 +299,15 @@ jobs:
             echo "Observed build SHA: ${LIVE_SHA:-<missing>}"
             exit 1
           fi
+      # Health prove is the hard deploy gate. Revenue/observability doctor is
+      # advisory here so missing operator/analytics secrets do not paint a
+      # successful Railway ship as a failed deploy (CEO: code live ≠ doctor ready).
+      # Hard revenue truth remains in revenue-truth-audit.yml.
       - name: Verify revenue and buyer-path readiness
         id: revenue-readiness
         if: steps.railway-config.outputs.enabled == 'true'
         timeout-minutes: 3
+        continue-on-error: true
         run: |
           SERVICE_ARGS=()
           if [ -n "$RAILWAY_SERVICE" ]; then
@@ -320,7 +326,8 @@ jobs:
           set -e
 
           if [ ! -s revenue-observability-doctor.json ]; then
-            echo "::error::Revenue observability doctor returned no JSON evidence."
+            echo "::warning::Revenue observability doctor returned no JSON evidence (advisory)."
+            echo "revenue_ready=false" >> "$GITHUB_OUTPUT"
             exit 1
           fi
 
@@ -337,9 +344,11 @@ jobs:
           '
 
           if [ "$DOCTOR_EXIT" -ne 0 ]; then
-            echo "::error::Revenue and buyer-path readiness is blocked; see the uploaded doctor evidence."
+            echo "::warning::Revenue and buyer-path readiness is blocked (advisory; deploy health already verified)."
+            echo "revenue_ready=false" >> "$GITHUB_OUTPUT"
             exit "$DOCTOR_EXIT"
           fi
+          echo "revenue_ready=true" >> "$GITHUB_OUTPUT"
       - name: Upload revenue observability evidence
         if: always() && steps.railway-config.outputs.enabled == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
